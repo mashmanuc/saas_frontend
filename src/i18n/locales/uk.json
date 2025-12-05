@@ -1,0 +1,102 @@
+{
+  "app": {
+    "title": "Платформа M4SH"
+  },
+  "lang": {
+    "label": "Мова",
+    "uk": "Українська",
+    "en": "Англійська"
+  },
+  "nav": {
+    "logout": "Вийти",
+    "side": "Бічна навігація",
+    "theme": {
+      "label": "Тема інтерфейсу",
+      "light": "Світла",
+      "dark": "Темна",
+      "system": "Системна"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Вхід",
+      "description": "Увійдіть у кабінет за email та паролем.",
+      "email": "Email",
+      "password": "Пароль",
+      "submit": "Увійти",
+      "loading": "Вхід...",
+      "noAccount": "Немає акаунта?",
+      "registerLink": "Зареєструватися"
+    },
+    "register": {
+      "title": "Реєстрація",
+      "description": "Самостійна реєстрація (self-learning).",
+      "firstName": "Ім'я",
+      "lastName": "Прізвище",
+      "email": "Email",
+      "password": "Пароль",
+      "submit": "Зареєструватися",
+      "loading": "Створюємо акаунт...",
+      "haveAccount": "Вже маєте акаунт?",
+      "loginLink": "Увійти"
+    },
+    "invite": {
+      "validation": {
+        "title": "Перевірка запрошення",
+        "description": "Валідуємо посилання...",
+        "loading": "Зачекайте, будь ласка…",
+        "valid": "Запрошення дійсне",
+        "emailLabel": "Email:",
+        "nameLabel": "Ім'я:",
+        "roleLabel": "Роль:",
+        "continue": "Продовжити реєстрацію",
+        "error": "Інвайт недійсний або вже використаний."
+      },
+      "accept": {
+        "title": "Прийняти запрошення",
+        "description": "Створіть пароль та активуйте акаунт.",
+        "password": "Пароль",
+        "confirmPassword": "Підтвердження пароля",
+        "firstName": "Ім'я",
+        "lastName": "Прізвище",
+        "submit": "Активувати акаунт",
+        "loading": "Активуємо...",
+        "passwordMismatch": "Паролі не співпадають.",
+        "genericError": "Не вдалося прийняти запрошення."
+      }
+    },
+    "layout": {
+      "ariaLabel": "Секція автентифікації"
+    }
+  },
+  "menu": {
+    "dashboard": "Панель",
+    "users": "Користувачі",
+    "classrooms": "Класи",
+    "lessons": "Уроки",
+    "students": "Учні",
+    "analytics": "Аналітика",
+    "tutorDashboard": "Кабінет тьютора",
+    "studentDashboard": "Кабінет студента"
+  },
+  "role": {
+    "superadmin": "Суперадмін",
+    "admin": "Адмін",
+    "tutor": "Тьютор",
+    "student": "Студент"
+  },
+  "notify": {
+    "types": {
+      "success": "Успіх",
+      "error": "Помилка",
+      "warning": "Попередження",
+      "info": "Інформація"
+    }
+  },
+  "loader": {
+    "loading": "Завантаження..."
+  },
+  "dashboard": {
+    "nextLessonAt": "Наступний урок"
+  }
+}

@@ -1,0 +1,102 @@
+{
+  "app": {
+    "title": "M4SH Platform"
+  },
+  "lang": {
+    "label": "Language",
+    "uk": "Ukrainian",
+    "en": "English"
+  },
+  "nav": {
+    "logout": "Logout",
+    "side": "Side navigation",
+    "theme": {
+      "label": "Theme",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Sign in",
+      "description": "Enter your email and password to continue.",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign in",
+      "loading": "Signing in...",
+      "noAccount": "Don't have an account?",
+      "registerLink": "Register"
+    },
+    "register": {
+      "title": "Register",
+      "description": "Self-paced registration (self-learning).",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Create account",
+      "loading": "Creating account...",
+      "haveAccount": "Already have an account?",
+      "loginLink": "Sign in"
+    },
+    "invite": {
+      "validation": {
+        "title": "Invite validation",
+        "description": "Checking your link...",
+        "loading": "Please wait...",
+        "valid": "Invite is valid",
+        "emailLabel": "Email:",
+        "nameLabel": "Name:",
+        "roleLabel": "Role:",
+        "continue": "Continue",
+        "error": "Invite is invalid or already used."
+      },
+      "accept": {
+        "title": "Accept invite",
+        "description": "Create a password and activate your account.",
+        "password": "Password",
+        "confirmPassword": "Confirm password",
+        "firstName": "First name",
+        "lastName": "Last name",
+        "submit": "Activate account",
+        "loading": "Activating...",
+        "passwordMismatch": "Passwords do not match.",
+        "genericError": "Unable to accept invite."
+      }
+    },
+    "layout": {
+      "ariaLabel": "Authentication section"
+    }
+  },
+  "menu": {
+    "dashboard": "Dashboard",
+    "users": "Users",
+    "classrooms": "Classrooms",
+    "lessons": "Lessons",
+    "students": "Students",
+    "analytics": "Analytics",
+    "tutorDashboard": "Tutor dashboard",
+    "studentDashboard": "Student dashboard"
+  },
+  "role": {
+    "superadmin": "Super admin",
+    "admin": "Admin",
+    "tutor": "Tutor",
+    "student": "Student"
+  },
+  "notify": {
+    "types": {
+      "success": "Success",
+      "error": "Error",
+      "warning": "Warning",
+      "info": "Info"
+    }
+  },
+  "loader": {
+    "loading": "Loading..."
+  },
+  "dashboard": {
+    "nextLessonAt": "Next lesson"
+  }
+}
