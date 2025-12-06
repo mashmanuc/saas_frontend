@@ -13,6 +13,7 @@ import ClassroomList from '../modules/classrooms/views/ClassroomList.vue'
 import ClassroomView from '../modules/classrooms/views/ClassroomView.vue'
 import ClassroomListView from '../modules/classrooms/views/ClassroomListView.vue'
 import ClassroomDetailView from '../modules/classrooms/views/ClassroomDetailView.vue'
+import DashboardClassroomsView from '../modules/classrooms/views/DashboardClassroomsView.vue'
 import LessonList from '../modules/lessons/views/LessonList.vue'
 import LessonView from '../modules/lessons/views/LessonView.vue'
 
@@ -46,6 +47,18 @@ const routes = [
         path: 'tutor',
         name: 'tutor-dashboard',
         component: DashboardTutor,
+        meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR] },
+      },
+      {
+        path: 'dashboard/classrooms',
+        name: 'dashboard-classrooms',
+        component: DashboardClassroomsView,
+        meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR] },
+      },
+      {
+        path: 'dashboard/classrooms/:id',
+        name: 'dashboard-classroom-detail',
+        component: ClassroomDetailView,
         meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR] },
       },
       {

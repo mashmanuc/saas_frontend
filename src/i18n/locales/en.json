@@ -155,7 +155,34 @@
       "studentEmail": "Email",
       "studentStatus": "Status",
       "empty": "This classroom has no students yet.",
-      "loadError": "Failed to load classroom data"
+      "loadError": "Failed to load classroom data",
+      "notFound": "Classroom not found",
+      "forbidden": "You don't have access to this classroom"
+    },
+    "dashboard": {
+      "title": "My classrooms",
+      "subtitle": "Organise your students into groups and track their progress.",
+      "create": "Create classroom",
+      "empty": "You don't have any classrooms yet.",
+      "createSuccess": "Classroom created successfully.",
+      "createError": "Failed to create classroom."
+    },
+    "card": {
+      "students": "students"
+    },
+    "invite": {
+      "title": "Invite student",
+      "description": "Enter the student's email to send an invitation to this classroom.",
+      "emailLabel": "Student email",
+      "emailPlaceholder": "student@example.com",
+      "button": "Invite student",
+      "submit": "Send invite",
+      "success": "Invitation sent.",
+      "errors": {
+        "required": "Email is required.",
+        "invalid": "Invalid email address.",
+        "generic": "Failed to send invitation."
+      }
     }
   }
 }

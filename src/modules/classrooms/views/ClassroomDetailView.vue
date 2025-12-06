@@ -18,88 +18,86 @@
         {{ error }}
       </p>
 
-      <div v-else>
-        <h2 class="text-lg font-semibold mb-2">{{ $t('classroom.detail.studentsTitle') }}</h2>
+      <div v-else class="space-y-3">
+        <div class="flex items-center justify-between gap-3">
+          <h2 class="text-lg font-semibold">{{ $t('classroom.detail.studentsTitle') }}</h2>
 
-        <table v-if="students.length" class="min-w-full text-sm">
-          <thead>
-            <tr class="border-b border-border-subtle text-left text-xs uppercase text-gray-500 dark:text-gray-400">
-              <th class="py-2 pr-4">{{ $t('classroom.detail.studentName') }}</th>
-              <th class="py-2 pr-4">{{ $t('classroom.detail.studentEmail') }}</th>
-              <th class="py-2 pr-4">{{ $t('classroom.detail.studentStatus') }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="student in students"
-              :key="student.id || student.email"
-              class="border-b border-border-subtle last:border-b-0"
-            >
-              <td class="py-2 pr-4 font-medium text-foreground">
-                {{ getStudentName(student) }}
-              </td>
-              <td class="py-2 pr-4 text-gray-600 dark:text-gray-300">
-                {{ student.email }}
-              </td>
-              <td class="py-2 pr-4 text-gray-600 dark:text-gray-300">
-                {{ student.status || '—' }}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+          <button
+            type="button"
+            class="inline-flex items-center justify-center rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background disabled:opacity-60 disabled:cursor-not-allowed"
+            @click="inviteOpen = true"
+          >
+            {{ $t('classroom.invite.button') }}
+          </button>
+        </div>
+
+        <ul
+          v-if="students.length"
+          class="space-y-2"
+        >
+          <StudentListItem
+            v-for="student in students"
+            :key="student.id || student.email"
+            :student="student"
+          />
+        </ul>
 
         <p v-else class="text-sm text-gray-500 dark:text-gray-400">
           {{ $t('classroom.detail.empty') }}
         </p>
       </div>
     </Card>
+
+    <InviteStudentModal v-model="inviteOpen" />
   </div>
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import Card from '../../../ui/Card.vue'
-import apiClient from '../../../utils/apiClient'
 import { notifyError } from '../../../utils/notify'
-
-const classroom = ref(null)
-const students = ref([])
-const loading = ref(false)
-const error = ref(null)
+import { useClassroomStore } from '../store/classroomStore'
+import StudentListItem from '../components/StudentListItem.vue'
+import InviteStudentModal from '../components/InviteStudentModal.vue'
 
 const route = useRoute()
 const { t } = useI18n()
+const classroomStore = useClassroomStore()
 
-function getStudentName(student) {
-  if (!student) return '—'
-  const { first_name: firstName, last_name: lastName, email } = student
-  const fullName = [firstName, lastName].filter(Boolean).join(' ').trim()
-  return fullName || email || '—'
-}
+const inviteOpen = ref(false)
 
-async function loadClassroom() {
+const classroom = computed(() => classroomStore.currentClassroom)
+const students = computed(() => classroomStore.currentClassroom?.students || [])
+const loading = computed(() => classroomStore.currentLoading)
+
+const rawError = computed(() => classroomStore.currentError)
+const errorCode = computed(() => classroomStore.currentErrorCode)
+
+const error = computed(() => {
+  if (!rawError.value && !errorCode.value) return null
+
+  if (errorCode.value === 404) {
+    return t('classroom.detail.notFound') || 'Клас не знайдено'
+  }
+
+  if (errorCode.value === 403) {
+    return t('classroom.detail.forbidden') || 'Немає доступу до цього класу'
+  }
+
+  return rawError.value || t('classroom.detail.loadError')
+})
+
+onMounted(() => {
   const id = route.params.id
   if (!id) return
 
-  loading.value = true
-  error.value = null
-
-  try {
-    const data = await apiClient.get(`/tutor/classrooms/${id}/`)
-    classroom.value = data
-    students.value = data?.students || []
-  } catch (e) {
-    const message = e?.response?.data?.detail || t('classroom.detail.loadError')
-    error.value = message
-    notifyError(message)
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(() => {
-  loadClassroom()
+  classroomStore
+    .loadClassroomById(id)
+    .catch(() => {
+      // На випадок неочікуваної помилки все одно покажемо тост
+      notifyError(t('classroom.detail.loadError'))
+    })
 })
 </script>

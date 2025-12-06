@@ -1,7 +1,9 @@
 <template>
   <div class="space-y-6">
     <Card class="space-y-2">
-      <h1 class="text-2xl font-semibold">{{ $t('menu.studentDashboard') }}</h1>
+      <Heading :level="1">
+        {{ $t('menu.studentDashboard') }}
+      </Heading>
       <p class="text-gray-500 text-sm dark:text-gray-400">
         <!-- базовий опис можна доповнити пізніше -->
       </p>
@@ -9,11 +11,15 @@
 
     <Card class="space-y-4">
       <template v-if="isSelfLearning">
-        <h2 class="text-lg font-semibold">{{ $t('student.withoutTutor') }}</h2>
+        <Heading :level="2">
+          {{ $t('student.withoutTutor') }}
+        </Heading>
         <TutorSearchView />
       </template>
       <template v-else>
-        <h2 class="text-lg font-semibold">{{ $t('student.withTutor') }}</h2>
+        <Heading :level="2">
+          {{ $t('student.withTutor') }}
+        </Heading>
 
         <div v-if="tutorLoading" class="text-sm text-gray-500 dark:text-gray-400">
           {{ $t('loader.loading') }}
@@ -51,6 +57,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import Card from '../../../ui/Card.vue'
+import Heading from '../../../ui/Heading.vue'
 import { useAuthStore } from '../../auth/store/authStore'
 import TutorSearchView from '../../tutor/views/TutorSearchView.vue'
 import apiClient from '../../../utils/apiClient'
