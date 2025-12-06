@@ -120,5 +120,23 @@
         "inactive": "Inactive"
       }
     }
+  },
+  "tutor": {
+    "search": {
+      "title": "Find a tutor",
+      "loadError": "Failed to load tutors list"
+    },
+    "request": {
+      "button": "Send request",
+      "success": "Request sent to tutor",
+      "error": "Failed to send request",
+      "accepted": "Student request accepted",
+      "acceptError": "Failed to accept student request"
+    },
+    "requests": "Student requests"
+  },
+  "student": {
+    "withoutTutor": "You are learning on your own. Choose a tutor to start lessons.",
+    "withTutor": "You already have a tutor. More information about your lessons will appear here soon."
   }
 }

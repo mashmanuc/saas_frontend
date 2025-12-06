@@ -65,16 +65,67 @@
         {{ $t('dashboard.tutor.empty') }}
       </p>
     </Card>
+
+    <Card class="space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-semibold">{{ $t('tutor.requests') }}</h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400">
+            <!-- короткий опис можна додати пізніше -->
+          </p>
+        </div>
+        <span v-if="isLoading" class="text-sm text-gray-500 dark:text-gray-400">
+          {{ $t('loader.loading') }}
+        </span>
+      </div>
+
+      <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
+
+      <ul
+        v-if="invitedStudents.length"
+        class="divide-y divide-border-subtle border border-border-subtle rounded-lg overflow-hidden"
+      >
+        <li
+          v-for="relation in invitedStudents"
+          :key="relation.id"
+          class="flex flex-wrap items-center justify-between gap-4 bg-surface-muted/40 p-4"
+        >
+          <div>
+            <p class="font-medium text-base text-foreground">{{ getStudentName(relation.student) }}</p>
+            <p class="text-sm text-gray-500 dark:text-gray-300">{{ relation.student?.email }}</p>
+            <p v-if="relation.notes" class="text-xs text-gray-500 dark:text-gray-400">
+              {{ relation.notes }}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            class="inline-flex items-center justify-center rounded-md border border-transparent bg-primary px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed"
+            :disabled="acceptLoadingId === relation.id"
+            @click="acceptRequest(relation.id)"
+          >
+            <span v-if="acceptLoadingId === relation.id">{{ $t('loader.loading') }}</span>
+            <span v-else>{{ $t('common.accept') || 'Підтвердити' }}</span>
+          </button>
+        </li>
+      </ul>
+
+      <p v-else class="text-sm text-gray-500 dark:text-gray-400">
+        {{ $t('dashboard.tutor.empty') }}
+      </p>
+    </Card>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Card from '../../../ui/Card.vue'
 import { formatDateTime } from '../../../utils/datetime'
 import { useAuthStore } from '../../auth/store/authStore'
 import { useDashboardStore } from '../store/dashboardStore'
+import apiClient from '../../../utils/apiClient'
+import { notifySuccess, notifyError } from '../../../utils/notify'
 
 const auth = useAuthStore()
 const dashboard = useDashboardStore()
@@ -85,6 +136,10 @@ const nextLessonAt = computed(() => dashboard.nextLessonAt)
 const isLoading = computed(() => dashboard.loading)
 const error = computed(() => dashboard.error)
 const userTimezone = computed(() => auth.user?.timezone)
+
+const activeStudents = computed(() => students.value.filter((rel) => rel.status === 'active'))
+const invitedStudents = computed(() => students.value.filter((rel) => rel.status === 'invited'))
+const acceptLoadingId = ref(null)
 
 const statusLabels = computed(() => ({
   pending: t('dashboard.tutor.status.pending'),
@@ -107,6 +162,19 @@ function statusClass(status) {
     inactive: 'bg-gray-500/10 text-gray-400 border-gray-500/30',
   }
   return `${base} ${map[status] || 'bg-gray-500/10 text-gray-400 border-gray-500/30'}`
+}
+
+async function acceptRequest(relationId) {
+  acceptLoadingId.value = relationId
+  try {
+    await apiClient.post('/tutor/accept_request/', { relation_id: relationId })
+    await dashboard.fetchTutorStudents().catch(() => {})
+    notifySuccess(t('tutor.request.accepted') || 'Запит підтверджено')
+  } catch (error) {
+    notifyError(t('tutor.request.acceptError') || 'Не вдалося підтвердити запит')
+  } finally {
+    acceptLoadingId.value = null
+  }
 }
 
 onMounted(() => {
