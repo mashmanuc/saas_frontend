@@ -138,5 +138,24 @@
   "student": {
     "withoutTutor": "You are learning on your own. Choose a tutor to start lessons.",
     "withTutor": "You already have a tutor. More information about your lessons will appear here soon."
+  },
+  "classroom": {
+    "list": {
+      "title": "My classrooms",
+      "name": "Class name",
+      "studentsCount": "Students",
+      "open": "Open",
+      "empty": "You don't have any classrooms yet.",
+      "loadError": "Failed to load classrooms list"
+    },
+    "detail": {
+      "title": "Classroom",
+      "studentsTitle": "Class students",
+      "studentName": "Student name",
+      "studentEmail": "Email",
+      "studentStatus": "Status",
+      "empty": "This classroom has no students yet.",
+      "loadError": "Failed to load classroom data"
+    }
   }
 }

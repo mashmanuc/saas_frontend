@@ -12,7 +12,7 @@ export const MENU_BY_ROLE = {
   ],
   tutor: [
     { label: 'menu.dashboard', icon: 'home', to: '/tutor' },
-    { label: 'menu.classrooms', icon: 'class', to: '/classrooms' },
+    { label: 'menu.classrooms', icon: 'class', to: '/tutor/classrooms' },
     { label: 'menu.students', icon: 'users', to: '/tutor/students' },
     { label: 'menu.lessons', icon: 'book', to: '/lessons' },
   ],
