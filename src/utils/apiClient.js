@@ -3,6 +3,8 @@ import { useAuthStore } from '../modules/auth/store/authStore'
 import { useLoaderStore } from '../stores/loaderStore'
 import { notifyError, notifyWarning } from './notify'
 
+axios.defaults.withCredentials = true
+
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
   headers: { 'Content-Type': 'application/json' },
@@ -56,9 +58,8 @@ api.interceptors.response.use(
     }
 
     const status = error.response.status
-    const code = error.response.data?.code
 
-    if (status === 401 && code === 'token_not_valid' && !original._retry) {
+    if (status === 401 && !original._retry) {
       original._retry = true
 
       try {

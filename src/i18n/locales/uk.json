@@ -45,10 +45,17 @@
         "title": "Перевірка запрошення",
         "description": "Валідуємо посилання...",
         "loading": "Зачекайте, будь ласка…",
-        "valid": "Запрошення дійсне",
-        "emailLabel": "Email:",
-        "nameLabel": "Ім'я:",
-        "roleLabel": "Роль:",
+        "status": {
+          "valid": "Запрошення дійсне",
+          "invalid": "Статус інвайта: {status}"
+        },
+        "statusLabel": "Статус:",
+        "invalidStatusHint": "Зв'яжіться з тьютором, щоб отримати нове запрошення.",
+        "emailLabel": "Email",
+        "tutorLabel": "Тьютор",
+        "expiresLabel": "Діє до",
+        "noteLabel": "Нотатка",
+        "extraTitle": "Додаткові дані",
         "continue": "Продовжити реєстрацію",
         "error": "Інвайт недійсний або вже використаний."
       },
@@ -97,6 +104,21 @@
     "loading": "Завантаження..."
   },
   "dashboard": {
-    "nextLessonAt": "Наступний урок"
+    "nextLessonAt": "Наступний урок",
+    "tutor": {
+      "title": "Кабінет тьютора",
+      "description": "Слідкуйте за учнями, уроками та інвайтами.",
+      "nextLessonFallback": "Немає запланованих уроків",
+      "studentsTitle": "Учні",
+      "studentsDescription": "Останні прив'язані учні та їх статус.",
+      "empty": "У вас ще немає прив'язаних учнів.",
+      "timezoneLabel": "Таймзона:",
+      "timezoneUnknown": "не вказано",
+      "status": {
+        "pending": "Очікує",
+        "active": "Активний",
+        "inactive": "Неактивний"
+      }
+    }
   }
 }

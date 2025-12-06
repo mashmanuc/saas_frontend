@@ -13,6 +13,7 @@ export const useAuthStore = defineStore('auth', {
     loading: false,
     error: null,
     initialized: false,
+    refreshPromise: null,
   }),
 
   getters: {
@@ -58,8 +59,8 @@ export const useAuthStore = defineStore('auth', {
       this.error = null
 
       try {
-        const data = await authApi.login(form)
-        this.setAuth(data)
+        const { access } = await authApi.login(form)
+        this.setAuth({ access })
         this.startProactiveRefresh()
         await this.reloadUser()
         return this.user
@@ -76,8 +77,8 @@ export const useAuthStore = defineStore('auth', {
       this.error = null
 
       try {
-        const data = await authApi.register(form)
-        this.setAuth(data)
+        const { access } = await authApi.register(form)
+        this.setAuth({ access })
         this.startProactiveRefresh()
         await this.reloadUser()
         return this.user
@@ -94,8 +95,8 @@ export const useAuthStore = defineStore('auth', {
       this.error = null
 
       try {
-        const data = await authApi.acceptInvite(payload)
-        this.setAuth(data)
+        const { access } = await authApi.acceptInvite(payload)
+        this.setAuth({ access })
         this.startProactiveRefresh()
         await this.reloadUser()
         return this.user
@@ -120,23 +121,41 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    setAuth({ access, user }) {
-      this.access = access || null
-      this.user = user || null
-      this.error = null
+    setAuth({ access, user } = {}) {
+      if (typeof access !== 'undefined') {
+        this.access = access || null
+        storage.setAccess(this.access)
+      }
 
-      storage.setAccess(this.access)
-      storage.setUser(this.user)
+      if (typeof user !== 'undefined') {
+        this.user = user || null
+        storage.setUser(this.user)
+      }
+
+      this.error = null
     },
 
     async refreshAccess() {
-      const res = await authApi.refresh()
-      if (!res?.access) {
-        throw new Error('Не вдалося оновити токен')
+      if (this.refreshPromise) {
+        return this.refreshPromise
       }
-      this.access = res.access
-      storage.setAccess(this.access)
-      return res.access
+
+      this.refreshPromise = (async () => {
+        const res = await authApi.refresh()
+        if (!res?.access) {
+          throw new Error('Не вдалося оновити токен')
+        }
+
+        this.access = res.access
+        storage.setAccess(this.access)
+        return this.access
+      })()
+
+      try {
+        return await this.refreshPromise
+      } finally {
+        this.refreshPromise = null
+      }
     },
 
     async fetchCurrentUser() {
@@ -192,6 +211,7 @@ export const useAuthStore = defineStore('auth', {
       this.user = null
       this.error = null
       this.loading = false
+      this.refreshPromise = null
 
       storage.clearAll()
     },

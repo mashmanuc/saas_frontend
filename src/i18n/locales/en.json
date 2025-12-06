@@ -45,10 +45,17 @@
         "title": "Invite validation",
         "description": "Checking your link...",
         "loading": "Please wait...",
-        "valid": "Invite is valid",
-        "emailLabel": "Email:",
-        "nameLabel": "Name:",
-        "roleLabel": "Role:",
+        "status": {
+          "valid": "Invite is valid",
+          "invalid": "Invite status: {status}"
+        },
+        "statusLabel": "Status:",
+        "invalidStatusHint": "Contact the tutor to request a new invite.",
+        "emailLabel": "Email",
+        "tutorLabel": "Tutor",
+        "expiresLabel": "Expires at",
+        "noteLabel": "Note",
+        "extraTitle": "Additional data",
         "continue": "Continue",
         "error": "Invite is invalid or already used."
       },
@@ -97,6 +104,21 @@
     "loading": "Loading..."
   },
   "dashboard": {
-    "nextLessonAt": "Next lesson"
+    "nextLessonAt": "Next lesson",
+    "tutor": {
+      "title": "Tutor workspace",
+      "description": "Monitor your students, lessons and invitations.",
+      "nextLessonFallback": "No upcoming lessons",
+      "studentsTitle": "Students",
+      "studentsDescription": "Latest linked students and their status.",
+      "empty": "You have no students linked yet.",
+      "timezoneLabel": "Timezone:",
+      "timezoneUnknown": "not set",
+      "status": {
+        "pending": "Pending",
+        "active": "Active",
+        "inactive": "Inactive"
+      }
+    }
   }
 }

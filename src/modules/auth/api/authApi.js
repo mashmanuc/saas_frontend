@@ -10,11 +10,11 @@ const authApi = {
   },
 
   refresh() {
-    return api.post('/auth/refresh/', {})
+    return api.post('/auth/refresh/')
   },
 
   logout() {
-    return api.post('/auth/logout/', {})
+    return api.post('/auth/logout/')
   },
 
   getCurrentUser() {
