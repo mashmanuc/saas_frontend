@@ -59,7 +59,11 @@ api.interceptors.response.use(
 
     const status = error.response.status
 
-    if (status === 401 && !original._retry) {
+    const url = original.url || ''
+    const isAuthRefresh = url.includes('/auth/refresh/')
+    const isAuthLogout = url.includes('/auth/logout/')
+
+    if (status === 401 && !isAuthRefresh && !original._retry) {
       original._retry = true
 
       try {
@@ -74,6 +78,12 @@ api.interceptors.response.use(
         notifyWarning('Сесію завершено. Увійдіть знову.')
         return Promise.reject(refreshError)
       }
+    }
+
+    if (status === 401 && (isAuthRefresh || isAuthLogout || original._retry)) {
+      await store.forceLogout()
+      notifyWarning('Сесію завершено. Увійдіть знову.')
+      return Promise.reject(error)
     }
 
     if (status === 403) {

@@ -47,7 +47,7 @@
         </div>
 
         <span class="hidden md:inline text-gray-700 dark:text-gray-200 text-sm">
-          {{ auth.user.first_name }}
+          {{ userName }}
         </span>
       </div>
 
@@ -99,9 +99,12 @@ const theme = useThemeStore()
 const { t } = useI18n()
 
 /* ------------------------- Logout ------------------------- */
-function logout() {
-  auth.logout()
-  router.push('/auth/login')
+async function logout() {
+  try {
+    await auth.logout()
+  } finally {
+    router.push('/auth/login').catch(() => {})
+  }
 }
 
 /* ------------------------- User initials ------------------------- */
@@ -110,6 +113,11 @@ const userInitials = computed(() => {
   const f = auth.user.first_name?.[0] ?? ''
   const l = auth.user.last_name?.[0] ?? ''
   return (f + l).toUpperCase()
+})
+
+const userName = computed(() => {
+  if (!auth.user) return ''
+  return auth.user.first_name || auth.user.email || ''
 })
 
 /* ------------------------- Theme toggle ------------------------- */
