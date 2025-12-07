@@ -84,7 +84,8 @@
     "students": "Учні",
     "analytics": "Аналітика",
     "tutorDashboard": "Кабінет тьютора",
-    "studentDashboard": "Кабінет студента"
+    "studentDashboard": "Кабінет студента",
+    "profile": "Профіль"
   },
   "role": {
     "superadmin": "Суперадмін",
@@ -138,6 +139,79 @@
   "student": {
     "withoutTutor": "Ви навчаєтесь самостійно. Оберіть тьютора, щоб розпочати заняття.",
     "withTutor": "У вас вже є тьютор. Скоро тут зʼявиться більше інформації про ваші заняття."
+  },
+  "profile": {
+    "title": "Профіль",
+    "subtitle": "Актуалізуйте свою особисту інформацію.",
+    "editButton": "Редагувати профіль",
+    "settingsButton": "Налаштування акаунта",
+    "email": "Email",
+    "role": "Роль",
+    "timezone": "Таймзона",
+    "bio": "Про себе",
+    "bioEmpty": "Додайте короткий опис про себе.",
+    "headline": "Заголовок",
+    "subjectsTitle": "Предмети",
+    "subjectsEmpty": "Додайте предмети, які викладаєте, щоб виділити експертизу.",
+    "subjectsAddPlaceholder": "Новий предмет",
+    "subjectsAddButton": "Додати",
+    "accountSettingsTitle": "Акаунт та вподобання",
+    "accountSettingsDescription": "Мова, приватність та сповіщення.",
+    "settingsPage": {
+      "title": "Налаштування профілю",
+      "description": "Керуйте таймзоною, мовою інтерфейсу та приватністю.",
+      "timezone": {
+        "title": "Таймзона",
+        "subtitle": "Вкажіть, де прив’язаний ваш календар."
+      },
+      "language": {
+        "label": "Мова інтерфейсу",
+        "subtitle": "Застосовується одразу у всіх розділах."
+      },
+      "preferences": {
+        "title": "Уподобання",
+        "subtitle": "Сповіщення та публічність профілю."
+      },
+      "actions": {
+        "saveTimezone": "Зберегти таймзону",
+        "saving": "Зберігаємо..."
+      },
+      "notifications": {
+        "label": "Email-сповіщення",
+        "subtitle": "Отримуйте новини про уроки та запрошення."
+      },
+      "privacy": {
+        "label": "Публічний профіль",
+        "subtitle": "Показувати профіль у маркетплейсі."
+      }
+    },
+    "form": {
+      "firstName": "Ім’я",
+      "lastName": "Прізвище",
+      "timezone": "Таймзона",
+      "bio": "Про себе",
+      "headline": "Заголовок",
+      "bioPlaceholder": "Розкажіть про свій підхід, досвід чи цілі.",
+      "headlineHint": "Короткий слоган, який бачать студенти.",
+      "timezonePlaceholder": "Оберіть таймзону"
+    },
+    "actions": {
+      "save": "Зберегти зміни",
+      "saving": "Зберігаємо...",
+      "cancel": "Скасувати"
+    },
+    "messages": {
+      "validationName": "Вкажіть щонайменше 2 символи.",
+      "validationTimezone": "Оберіть таймзону."
+    },
+    "avatar": {
+      "upload": "Завантажити",
+      "change": "Змінити",
+      "drop": "Відпустіть",
+      "update": "Оновити фото",
+      "remove": "Видалити фото",
+      "hint": "Перетягніть або оберіть файл. До 5 МБ, JPG/PNG/WebP."
+    }
   },
   "classroom": {
     "list": {

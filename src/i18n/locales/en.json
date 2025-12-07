@@ -84,7 +84,8 @@
     "students": "Students",
     "analytics": "Analytics",
     "tutorDashboard": "Tutor dashboard",
-    "studentDashboard": "Student dashboard"
+    "studentDashboard": "Student dashboard",
+    "profile": "Profile"
   },
   "role": {
     "superadmin": "Super admin",
@@ -138,6 +139,81 @@
   "student": {
     "withoutTutor": "You are learning on your own. Choose a tutor to start lessons.",
     "withTutor": "You already have a tutor. More information about your lessons will appear here soon."
+  },
+  "profile": {
+    "title": "Profile",
+    "subtitle": "Keep your personal information up to date.",
+    "editButton": "Edit profile",
+    "settingsButton": "Account settings",
+    "editTitle": "Edit profile",
+    "editDescription": "Update your personal data and how students see you.",
+    "email": "Email",
+    "role": "Role",
+    "timezone": "Timezone",
+    "bio": "About",
+    "bioEmpty": "Add a short description about yourself.",
+    "headline": "Headline",
+    "subjectsTitle": "Subjects",
+    "subjectsEmpty": "Add the subjects you teach to highlight your expertise.",
+    "subjectsAddPlaceholder": "New subject",
+    "subjectsAddButton": "Add",
+    "accountSettingsTitle": "Account & preferences",
+    "accountSettingsDescription": "Language, privacy and notifications.",
+    "settingsPage": {
+      "title": "Profile settings",
+      "description": "Control timezone, interface language and privacy.",
+      "timezone": {
+        "title": "Timezone",
+        "subtitle": "Choose where your calendar is anchored."
+      },
+      "language": {
+        "label": "Interface language",
+        "subtitle": "Applies instantly across the app."
+      },
+      "preferences": {
+        "title": "Preferences",
+        "subtitle": "Notifications and public profile visibility."
+      },
+      "actions": {
+        "saveTimezone": "Save timezone",
+        "saving": "Saving..."
+      },
+      "notifications": {
+        "label": "Email notifications",
+        "subtitle": "Receive updates about lessons and invites."
+      },
+      "privacy": {
+        "label": "Public profile",
+        "subtitle": "Show your profile in tutor marketplace."
+      }
+    },
+    "form": {
+      "firstName": "First name",
+      "lastName": "Last name",
+      "timezone": "Timezone",
+      "bio": "About",
+      "headline": "Headline",
+      "bioPlaceholder": "Tell students about your approach, experience or goals.",
+      "headlineHint": "Short punchline that appears in marketplace profiles.",
+      "timezonePlaceholder": "Select timezone"
+    },
+    "actions": {
+      "save": "Save changes",
+      "saving": "Saving...",
+      "cancel": "Cancel"
+    },
+    "messages": {
+      "validationName": "Please enter at least 2 characters.",
+      "validationTimezone": "Select timezone."
+    },
+    "avatar": {
+      "upload": "Upload",
+      "change": "Change",
+      "drop": "Drop here",
+      "update": "Update photo",
+      "remove": "Remove photo",
+      "hint": "Drag & drop or pick a file. Up to 5MB, JPG/PNG/WebP."
+    }
   },
   "classroom": {
     "list": {

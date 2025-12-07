@@ -16,8 +16,13 @@ import ClassroomDetailView from '../modules/classrooms/views/ClassroomDetailView
 import DashboardClassroomsView from '../modules/classrooms/views/DashboardClassroomsView.vue'
 import LessonList from '../modules/lessons/views/LessonList.vue'
 import LessonView from '../modules/lessons/views/LessonView.vue'
+import ProfileOverviewView from '../modules/profile/views/ProfileOverviewView.vue'
+const ProfileEditView = () => import('../modules/profile/views/ProfileEditView.vue')
+const ProfileSettingsView = () => import('../modules/profile/views/ProfileSettingsView.vue')
+const ProfileActivityView = () => import('../modules/profile/views/ProfileActivityView.vue')
 
 import { useAuthStore } from '../modules/auth/store/authStore'
+import { useProfileStore } from '../modules/profile/store/profileStore'
 import { USER_ROLES } from '../types/user'
 import { getDefaultRouteForRole, hasAccess } from '../config/routes'
 
@@ -103,6 +108,30 @@ const routes = [
         component: LessonView,
         meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
       },
+      {
+        path: 'dashboard/profile',
+        name: 'profile-overview',
+        component: ProfileOverviewView,
+        meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
+      },
+      {
+        path: 'dashboard/profile/edit',
+        name: 'profile-edit',
+        component: ProfileEditView,
+        meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
+      },
+      {
+        path: 'dashboard/profile/settings',
+        name: 'profile-settings',
+        component: ProfileSettingsView,
+        meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
+      },
+      {
+        path: 'dashboard/profile/activity',
+        name: 'profile-activity',
+        component: ProfileActivityView,
+        meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
+      },
     ],
   },
   { path: '/:pathMatch(.*)*', redirect: '/auth/login' },
@@ -115,6 +144,7 @@ const router = createRouter({
 
 router.beforeEach(async (to, from, next) => {
   const auth = useAuthStore()
+  const profileStore = useProfileStore()
 
   if (!auth.isBootstrapped) {
     await auth.bootstrap()
@@ -151,6 +181,15 @@ router.beforeEach(async (to, from, next) => {
       return next(homeRoute)
     }
     return next(false)
+  }
+
+  const isProfileRoute = to.path.startsWith('/dashboard/profile')
+  if (isProfileRoute && auth.isAuthenticated && !profileStore.initialized) {
+    try {
+      await profileStore.loadProfile()
+    } catch (error) {
+      console.error('Failed to bootstrap profile', error)
+    }
   }
 
   next()
