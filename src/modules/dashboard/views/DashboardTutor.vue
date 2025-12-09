@@ -2,117 +2,131 @@
   <div class="space-y-6">
     <Card class="space-y-4">
       <header class="space-y-1">
-        <h1 class="text-2xl font-semibold">{{ $t('dashboard.tutor.title') }}</h1>
-        <p class="text-gray-500 text-sm dark:text-gray-400">
+        <h1 class="text-2xl font-semibold text-body">{{ $t('dashboard.tutor.title') }}</h1>
+        <p class="text-sm text-muted">
           {{ $t('dashboard.tutor.description') }}
         </p>
       </header>
 
-      <div class="rounded-lg border border-border-subtle bg-surface-muted/30 p-4">
-        <p class="text-sm text-gray-500 dark:text-gray-300">
+      <div class="rounded-2xl border border-default bg-surface p-4 shadow-theme">
+        <p class="text-sm text-muted">
           {{ $t('dashboard.nextLessonAt') }}:
-          <span v-if="nextLessonAt" class="font-medium text-foreground">
+          <span v-if="nextLessonAt" class="font-medium text-body">
             {{ formatDateTime(nextLessonAt, userTimezone) }}
           </span>
-          <span v-else class="font-medium text-foreground">{{ $t('dashboard.tutor.nextLessonFallback') }}</span>
+          <span v-else class="font-medium text-body">{{ $t('dashboard.tutor.nextLessonFallback') }}</span>
         </p>
       </div>
-    </Card>
-
-    <Card class="space-y-4">
-      <div class="flex flex-col gap-1">
-        <div class="flex items-center justify-between">
-          <div>
-            <h2 class="text-lg font-semibold">{{ $t('dashboard.tutor.studentsTitle') }}</h2>
-            <p class="text-sm text-gray-500 dark:text-gray-400">
-              {{ $t('dashboard.tutor.studentsDescription') }}
-            </p>
-          </div>
-          <span v-if="isLoading" class="text-sm text-gray-500 dark:text-gray-400">
-            {{ $t('loader.loading') }}
-          </span>
-        </div>
-        <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
-      </div>
-
-      <ul
-        v-if="students.length"
-        class="divide-y divide-border-subtle border border-border-subtle rounded-lg overflow-hidden"
-      >
-        <li
-          v-for="relation in students"
-          :key="relation.id"
-          class="flex flex-wrap items-center justify-between gap-4 bg-surface-muted/40 p-4"
-        >
-          <div>
-            <p class="font-medium text-base text-foreground">{{ getStudentName(relation.student) }}</p>
-            <p class="text-sm text-gray-500 dark:text-gray-300">{{ relation.student?.email }}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">
-              {{ $t('dashboard.tutor.timezoneLabel') }}
-              <span class="font-medium">
-                {{ relation.student?.timezone || $t('dashboard.tutor.timezoneUnknown') }}
-              </span>
-            </p>
-          </div>
-
-          <span class="text-xs font-semibold px-3 py-1 rounded-full" :class="statusClass(relation.status)">
-            {{ statusLabels[relation.status] || relation.status }}
-          </span>
-        </li>
-      </ul>
-
-      <p v-else class="text-sm text-gray-500 dark:text-gray-400">
-        {{ $t('dashboard.tutor.empty') }}
-      </p>
     </Card>
 
     <Card class="space-y-4">
       <div class="flex items-center justify-between">
         <div>
-          <h2 class="text-lg font-semibold">{{ $t('tutor.requests') }}</h2>
-          <p class="text-sm text-gray-500 dark:text-gray-400">
-            <!-- короткий опис можна додати пізніше -->
+          <h2 class="text-lg font-semibold">{{ $t('dashboard.tutor.studentsTitle') }}</h2>
+          <p class="text-sm text-muted">
+            {{ $t('dashboard.tutor.studentsDescription') }}
           </p>
         </div>
-        <span v-if="isLoading" class="text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('loader.loading') }}
-        </span>
+        <div class="inline-flex rounded-full border border-default overflow-hidden text-xs">
+          <button
+            v-for="tab in tabs"
+            :key="tab.value"
+            type="button"
+            class="px-3 py-1 transition"
+            :class="tutorFilter === tab.value ? 'bg-accent text-white' : 'text-muted'"
+            @click="setFilter(tab.value)"
+          >
+            {{ $t(tab.label) }}
+          </button>
+        </div>
       </div>
 
-      <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
-
-      <ul
-        v-if="invitedStudents.length"
-        class="divide-y divide-border-subtle border border-border-subtle rounded-lg overflow-hidden"
-      >
-        <li
-          v-for="relation in invitedStudents"
-          :key="relation.id"
-          class="flex flex-wrap items-center justify-between gap-4 bg-surface-muted/40 p-4"
+      <div v-if="relationsLoading" class="text-sm text-muted">{{ $t('loader.loading') }}</div>
+      <p v-else-if="relationsError" class="text-sm text-danger">{{ relationsError }}</p>
+      <template v-else>
+        <div
+          v-if="tabHint"
+          class="rounded-2xl border border-dashed border-default bg-surface-soft p-4 space-y-1"
         >
-          <div>
-            <p class="font-medium text-base text-foreground">{{ getStudentName(relation.student) }}</p>
-            <p class="text-sm text-gray-500 dark:text-gray-300">{{ relation.student?.email }}</p>
-            <p v-if="relation.notes" class="text-xs text-gray-500 dark:text-gray-400">
-              {{ relation.notes }}
-            </p>
-          </div>
+          <p class="text-sm font-semibold text-body">
+            {{ tabHint.title }}
+          </p>
+          <p class="text-sm text-muted">
+            {{ tabHint.description }}
+          </p>
+        </div>
 
-          <Button
-            variant="primary"
-            size="sm"
-            :disabled="acceptLoadingId === relation.id"
-            :loading="acceptLoadingId === relation.id"
-            @click="acceptRequest(relation.id)"
+        <ul
+          v-if="filteredRelations.length"
+          class="divide-y divide-border-subtle border border-border-subtle rounded-lg overflow-hidden"
+        >
+          <li
+            v-for="relation in filteredRelations"
+            :key="relation.relation_id || relation.id"
+            class="flex flex-wrap items-center justify-between gap-4 bg-surface-soft p-4"
           >
-            {{ acceptLoadingId === relation.id ? $t('loader.loading') : ($t('common.accept') || 'Підтвердити') }}
-          </Button>
-        </li>
-      </ul>
+            <div>
+              <p class="font-medium text-base text-body">{{ getStudentName(relation.student) }}</p>
+              <p class="text-sm text-muted">{{ relation.student?.email }}</p>
+              <p class="text-xs text-muted">
+                {{ $t('dashboard.tutor.timezoneLabel') }}
+                <span class="font-medium">
+                  {{ relation.student?.timezone || $t('dashboard.tutor.timezoneUnknown') }}
+                </span>
+              </p>
+              <p v-if="relation.notes" class="text-xs text-muted">
+                {{ relation.notes }}
+              </p>
+            </div>
 
-      <p v-else class="text-sm text-gray-500 dark:text-gray-400">
-        {{ $t('dashboard.tutor.empty') }}
-      </p>
+            <div class="flex flex-wrap gap-3 items-center">
+              <span class="text-xs font-semibold px-3 py-1 rounded-full border border-default text-muted">
+                {{ statusLabels[relation.status] || relation.status }}
+              </span>
+              <template v-if="relation.status === 'invited'">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  :disabled="actionLoadingId === relation.relation_id"
+                  :loading="actionLoadingId === relation.relation_id"
+                  @click="handleAccept(relation.relation_id)"
+                >
+                  {{ $t('common.accept') }}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  :disabled="actionLoadingId === relation.relation_id"
+                  @click="handleDecline(relation.relation_id)"
+                >
+                  {{ $t('common.decline') }}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  :disabled="resendLoadingId === relation.relation_id"
+                  :loading="resendLoadingId === relation.relation_id"
+                  @click="handleResend(relation.relation_id)"
+                >
+                  {{ $t('tutor.actions.resend') }}
+                </Button>
+              </template>
+            </div>
+          </li>
+        </ul>
+
+        <div
+          v-else
+          class="rounded-2xl border border-dashed border-default bg-surface-soft p-6 space-y-2 text-center"
+        >
+          <p class="font-semibold text-body">
+            {{ emptyState.title }}
+          </p>
+          <p class="text-sm text-muted">
+            {{ emptyState.description }}
+          </p>
+        </div>
+      </template>
     </Card>
   </div>
 </template>
@@ -125,28 +139,68 @@ import Card from '../../../ui/Card.vue'
 import { formatDateTime } from '../../../utils/datetime'
 import { useAuthStore } from '../../auth/store/authStore'
 import { useDashboardStore } from '../store/dashboardStore'
-import apiClient from '../../../utils/apiClient'
+import { useRelationsStore } from '../../../stores/relationsStore'
 import { notifySuccess, notifyError } from '../../../utils/notify'
 
 const auth = useAuthStore()
 const dashboard = useDashboardStore()
+const relationsStore = useRelationsStore()
 const { t } = useI18n()
 
-const students = computed(() => dashboard.tutorStudents)
 const nextLessonAt = computed(() => dashboard.nextLessonAt)
-const isLoading = computed(() => dashboard.loading)
-const error = computed(() => dashboard.error)
 const userTimezone = computed(() => auth.user?.timezone)
+const relationsLoading = computed(() => relationsStore.tutorLoading)
+const relationsError = computed(() => relationsStore.tutorError)
+const filteredRelations = computed(() => relationsStore.filteredTutorRelations)
+const tutorFilter = computed(() => relationsStore.tutorFilter)
 
-const activeStudents = computed(() => students.value.filter((rel) => rel.status === 'active'))
-const invitedStudents = computed(() => students.value.filter((rel) => rel.status === 'invited'))
-const acceptLoadingId = ref(null)
+const actionLoadingId = ref(null)
+const resendLoadingId = ref(null)
+
+const tabs = [
+  { value: 'all', label: 'dashboard.tutor.tabs.all' },
+  { value: 'invited', label: 'dashboard.tutor.tabs.invited' },
+  { value: 'active', label: 'dashboard.tutor.tabs.active' },
+]
 
 const statusLabels = computed(() => ({
   pending: t('dashboard.tutor.status.pending'),
   active: t('dashboard.tutor.status.active'),
   inactive: t('dashboard.tutor.status.inactive'),
+  invited: t('dashboard.tutor.status.invited'),
 }))
+
+const tabHint = computed(() => {
+  const map = {
+    invited: {
+      title: t('dashboard.tutor.tabHints.invited.title'),
+      description: t('dashboard.tutor.tabHints.invited.description'),
+    },
+    active: {
+      title: t('dashboard.tutor.tabHints.active.title'),
+      description: t('dashboard.tutor.tabHints.active.description'),
+    },
+  }
+  return map[tutorFilter.value] || null
+})
+
+const emptyState = computed(() => {
+  const map = {
+    all: {
+      title: t('dashboard.tutor.emptyStates.all.title'),
+      description: t('dashboard.tutor.emptyStates.all.description'),
+    },
+    invited: {
+      title: t('dashboard.tutor.emptyStates.invited.title'),
+      description: t('dashboard.tutor.emptyStates.invited.description'),
+    },
+    active: {
+      title: t('dashboard.tutor.emptyStates.active.title'),
+      description: t('dashboard.tutor.emptyStates.active.description'),
+    },
+  }
+  return map[tutorFilter.value] || map.all
+})
 
 function getStudentName(student) {
   if (!student) return '—'
@@ -155,30 +209,48 @@ function getStudentName(student) {
   return fullName || email || '—'
 }
 
-function statusClass(status) {
-  const base = 'border'
-  const map = {
-    pending: 'bg-amber-500/10 text-amber-500 border-amber-500/40',
-    active: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
-    inactive: 'bg-gray-500/10 text-gray-400 border-gray-500/30',
-  }
-  return `${base} ${map[status] || 'bg-gray-500/10 text-gray-400 border-gray-500/30'}`
+function setFilter(value) {
+  relationsStore.setTutorFilter(value)
 }
 
-async function acceptRequest(relationId) {
-  acceptLoadingId.value = relationId
+async function handleAccept(relationId) {
+  actionLoadingId.value = relationId
   try {
-    await apiClient.post('/tutor/accept_request/', { relation_id: relationId })
-    await dashboard.fetchTutorStudents().catch(() => {})
-    notifySuccess(t('tutor.request.accepted') || 'Запит підтверджено')
+    await relationsStore.acceptRelation(relationId)
+    notifySuccess(t('tutor.notifications.acceptSuccess'))
   } catch (error) {
-    notifyError(t('tutor.request.acceptError') || 'Не вдалося підтвердити запит')
+    notifyError(error?.response?.data?.detail || t('tutor.notifications.acceptError'))
   } finally {
-    acceptLoadingId.value = null
+    actionLoadingId.value = null
+  }
+}
+
+async function handleDecline(relationId) {
+  actionLoadingId.value = relationId
+  try {
+    await relationsStore.declineRelation(relationId)
+    notifySuccess(t('tutor.notifications.declineSuccess'))
+  } catch (error) {
+    notifyError(error?.response?.data?.detail || t('tutor.notifications.declineError'))
+  } finally {
+    actionLoadingId.value = null
+  }
+}
+
+async function handleResend(relationId) {
+  resendLoadingId.value = relationId
+  try {
+    await relationsStore.resendRelation(relationId)
+    notifySuccess(t('tutor.notifications.resendSuccess'))
+  } catch (error) {
+    notifyError(error?.response?.data?.detail || t('tutor.notifications.resendError'))
+  } finally {
+    resendLoadingId.value = null
   }
 }
 
 onMounted(() => {
   dashboard.fetchTutorStudents().catch(() => {})
+  relationsStore.fetchTutorRelations().catch(() => {})
 })
 </script>

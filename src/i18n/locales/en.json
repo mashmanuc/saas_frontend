@@ -87,6 +87,13 @@
     "studentDashboard": "Student dashboard",
     "profile": "Profile"
   },
+  "common": {
+    "accept": "Accept",
+    "decline": "Decline",
+    "cancel": "Cancel",
+    "resend": "Resend",
+    "close": "Close"
+  },
   "role": {
     "superadmin": "Super admin",
     "admin": "Admin",
@@ -107,18 +114,48 @@
   "dashboard": {
     "nextLessonAt": "Next lesson",
     "tutor": {
-      "title": "Tutor workspace",
-      "description": "Monitor your students, lessons and invitations.",
+      "title": "Tutor dashboard",
+      "description": "Track your students, lessons and invites.",
+      "empty": "No tutors available right now.",
       "nextLessonFallback": "No upcoming lessons",
       "studentsTitle": "Students",
       "studentsDescription": "Latest linked students and their status.",
-      "empty": "You have no students linked yet.",
       "timezoneLabel": "Timezone:",
       "timezoneUnknown": "not set",
       "status": {
         "pending": "Pending",
         "active": "Active",
-        "inactive": "Inactive"
+        "inactive": "Inactive",
+        "invited": "Invited"
+      },
+      "tabs": {
+        "all": "All",
+        "invited": "Invited",
+        "active": "Active"
+      },
+      "tabHints": {
+        "invited": {
+          "title": "Pending invitations",
+          "description": "Remind students about invites or cancel ones that are no longer relevant."
+        },
+        "active": {
+          "title": "Active students",
+          "description": "Manage schedules, notes and keep track of student activity here."
+        }
+      },
+      "emptyStates": {
+        "all": {
+          "title": "No students yet",
+          "description": "Send invites or accept incoming requests to populate the list."
+        },
+        "invited": {
+          "title": "No pending invites",
+          "description": "Invite new students you want to work with."
+        },
+        "active": {
+          "title": "No active students",
+          "description": "Once invitations are accepted, students will appear in this tab."
+        }
       }
     }
   },
@@ -134,7 +171,18 @@
       "accepted": "Student request accepted",
       "acceptError": "Failed to accept student request"
     },
-    "requests": "Student requests"
+    "requests": "Student requests",
+    "actions": {
+      "resend": "Resend"
+    },
+    "notifications": {
+      "acceptSuccess": "Invite accepted",
+      "acceptError": "Failed to accept invite",
+      "declineSuccess": "Invite declined",
+      "declineError": "Failed to decline invite",
+      "resendSuccess": "Invite resent",
+      "resendError": "Failed to resend invite"
+    }
   },
   "student": {
     "withoutTutor": "You are learning on your own. Choose a tutor to start lessons.",
@@ -192,17 +240,17 @@
       "lastName": "Last name",
       "timezone": "Timezone",
       "bio": "About",
-      "headline": "Headline",
-      "bioPlaceholder": "Tell students about your approach, experience or goals.",
-      "headlineHint": "Short punchline that appears in marketplace profiles.",
-      "timezonePlaceholder": "Select timezone"
-    },
-    "actions": {
-      "save": "Save changes",
-      "saving": "Saving...",
-      "cancel": "Cancel"
+      "foundDescription": "Unsaved changes from {time} detected. Restore them or start over?",
+      "foundDescriptionNoTime": "Unsaved changes detected. Restore them or start over?",
+      "restore": "Restore draft",
+      "discard": "Discard draft",
+      "error": "Failed to load draft",
+      "discardError": "Failed to delete draft"
     },
     "messages": {
+      "loadError": "Failed to load profile",
+      "saveSuccess": "Profile saved",
+      "saveError": "Failed to save changes",
       "validationName": "Please enter at least 2 characters.",
       "validationTimezone": "Select timezone."
     },
