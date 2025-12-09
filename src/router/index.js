@@ -17,6 +17,8 @@ import DashboardClassroomsView from '../modules/classrooms/views/DashboardClassr
 import LessonList from '../modules/lessons/views/LessonList.vue'
 import LessonView from '../modules/lessons/views/LessonView.vue'
 import ProfileOverviewView from '../modules/profile/views/ProfileOverviewView.vue'
+const MarketplaceListView = () => import('../modules/marketplace/views/MarketplaceListView.vue')
+const MarketplaceTutorView = () => import('../modules/marketplace/views/MarketplaceTutorView.vue')
 const ProfileEditView = () => import('../modules/profile/views/ProfileEditView.vue')
 const ProfileSettingsView = () => import('../modules/profile/views/ProfileSettingsView.vue')
 const ProfileActivityView = () => import('../modules/profile/views/ProfileActivityView.vue')
@@ -131,6 +133,18 @@ const routes = [
         name: 'profile-activity',
         component: ProfileActivityView,
         meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
+      },
+      {
+        path: 'marketplace',
+        name: 'marketplace-list',
+        component: MarketplaceListView,
+        meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN] },
+      },
+      {
+        path: 'marketplace/tutors/:id',
+        name: 'marketplace-tutor',
+        component: MarketplaceTutorView,
+        meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN] },
       },
     ],
   },

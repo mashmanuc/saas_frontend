@@ -10,13 +10,9 @@
             {{ $t('profile.settingsPage.description') }}
           </p>
         </div>
-        <button
-          type="button"
-          class="inline-flex items-center rounded-md border border-border-subtle px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          @click="goBack"
-        >
+        <Button variant="outline" size="sm" @click="goBack">
           {{ $t('profile.actions.cancel') }}
-        </button>
+        </Button>
       </div>
     </Card>
 
@@ -56,14 +52,9 @@
             </p>
           </div>
 
-          <button
-            type="submit"
-            class="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
-            :disabled="isSaving"
-          >
-            <span v-if="isSaving">{{ $t('profile.settingsPage.actions.saving') }}</span>
-            <span v-else>{{ $t('profile.settingsPage.actions.saveTimezone') }}</span>
-          </button>
+          <Button type="submit" variant="primary" :disabled="isSaving" :loading="isSaving">
+            {{ isSaving ? $t('profile.settingsPage.actions.saving') : $t('profile.settingsPage.actions.saveTimezone') }}
+          </Button>
         </form>
 
         <div class="mt-8 space-y-3">
@@ -107,7 +98,7 @@
               type="button"
               class="relative inline-flex h-6 w-11 items-center rounded-full transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               :class="form.notifications_enabled ? 'bg-primary' : 'bg-border-subtle'"
-              :disabled="isSaving"
+              :disabled="isPreferencesDisabled"
               @click="toggleNotifications"
             >
               <span class="sr-only">{{ $t('profile.settingsPage.notifications.label') }}</span>
@@ -131,7 +122,7 @@
               type="button"
               class="relative inline-flex h-6 w-11 items-center rounded-full transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               :class="form.privacy_public_profile ? 'bg-primary' : 'bg-border-subtle'"
-              :disabled="isSaving"
+              :disabled="isPreferencesDisabled"
               @click="togglePrivacy"
             >
               <span class="sr-only">{{ $t('profile.settingsPage.privacy.label') }}</span>
@@ -151,6 +142,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import Button from '../../../ui/Button.vue'
 import Card from '../../../ui/Card.vue'
 import Heading from '../../../ui/Heading.vue'
 import ProfileCard from '../components/ProfileCard.vue'
@@ -173,6 +165,8 @@ const form = reactive({
 const timezoneError = ref('')
 
 const isSaving = computed(() => profileStore.saving)
+const isLoadingProfile = computed(() => profileStore.loading && !profileStore.initialized)
+const isPreferencesDisabled = computed(() => !profileStore.initialized || profileStore.loading || profileStore.saving)
 const errorMessage = computed(() => profileStore.error)
 const languageOptions = computed(() => [
   { value: 'uk', label: t('lang.uk') },

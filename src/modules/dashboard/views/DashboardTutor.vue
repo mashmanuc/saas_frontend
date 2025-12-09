@@ -98,15 +98,15 @@
             </p>
           </div>
 
-          <button
-            type="button"
-            class="inline-flex items-center justify-center rounded-md border border-transparent bg-primary px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background disabled:opacity-60 disabled:cursor-not-allowed"
+          <Button
+            variant="primary"
+            size="sm"
             :disabled="acceptLoadingId === relation.id"
+            :loading="acceptLoadingId === relation.id"
             @click="acceptRequest(relation.id)"
           >
-            <span v-if="acceptLoadingId === relation.id">{{ $t('loader.loading') }}</span>
-            <span v-else>{{ $t('common.accept') || 'Підтвердити' }}</span>
-          </button>
+            {{ acceptLoadingId === relation.id ? $t('loader.loading') : ($t('common.accept') || 'Підтвердити') }}
+          </Button>
         </li>
       </ul>
 
@@ -120,6 +120,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import Button from '../../../ui/Button.vue'
 import Card from '../../../ui/Card.vue'
 import { formatDateTime } from '../../../utils/datetime'
 import { useAuthStore } from '../../auth/store/authStore'

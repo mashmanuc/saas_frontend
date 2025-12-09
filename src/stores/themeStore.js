@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia'
 
 const STORAGE_KEY = 'theme'
-const DEFAULT_THEME = 'system'
+const DEFAULT_THEME = 'light'
 
-export const THEME_OPTIONS = Object.freeze(['light', 'dark', 'system'])
+// Available themes: light (green), dark (blue-cyan), classic (purple)
+export const THEME_OPTIONS = Object.freeze(['light', 'dark', 'classic'])
 
 const getStoredTheme = () => {
   if (typeof window === 'undefined') return DEFAULT_THEME
@@ -56,25 +57,16 @@ export const useThemeStore = defineStore('theme', {
       this.applyTheme(value)
     },
 
-    applyTheme(theme, systemPrefersDark) {
+    applyTheme(theme) {
       if (typeof document === 'undefined') return
 
-      let prefersDark = typeof systemPrefersDark === 'boolean' ? systemPrefersDark : null
-
-      if (prefersDark === null) {
-        if (this._mediaQuery) {
-          prefersDark = this._mediaQuery.matches
-        } else if (typeof window !== 'undefined') {
-          prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-        } else {
-          prefersDark = false
-        }
-      }
-
-      const isDark = theme === 'dark' || (theme === 'system' && prefersDark)
       const root = document.documentElement
 
-      if (isDark) {
+      // Set data-theme attribute for CSS variable switching
+      root.setAttribute('data-theme', theme)
+
+      // Also set class for Tailwind dark mode compatibility
+      if (theme === 'dark') {
         root.classList.add('dark')
       } else {
         root.classList.remove('dark')

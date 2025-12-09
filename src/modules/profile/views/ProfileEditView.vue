@@ -10,24 +10,31 @@
             {{ $t('profile.editDescription') }}
           </p>
         </div>
-        <div class="flex gap-2">
-          <button
-            type="button"
-            class="inline-flex items-center rounded-md border border-border-subtle px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
-            :disabled="isSaving"
-            @click="goBack"
-          >
-            {{ $t('profile.actions.cancel') }}
-          </button>
-          <button
-            type="button"
-            class="inline-flex items-center rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
-            :disabled="isSaving"
-            @click="handleSubmit"
-          >
-            <span v-if="isSaving">{{ $t('profile.actions.saving') }}</span>
-            <span v-else>{{ $t('profile.actions.save') }}</span>
-          </button>
+        <div class="flex flex-col items-end gap-2">
+          <div class="flex gap-2">
+            <Button variant="outline" size="sm" :disabled="isSaving" @click="goBack">
+              {{ $t('profile.actions.cancel') }}
+            </Button>
+            <Button variant="primary" size="sm" :disabled="isSaving" :loading="isSaving" @click="handleSubmit">
+              {{ isSaving ? $t('profile.actions.saving') : $t('profile.actions.save') }}
+            </Button>
+          </div>
+          <div class="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+            <span v-if="autosaveStatus === 'saving'">Автозбереження…</span>
+            <span v-else-if="autosaveStatus === 'error'" class="text-red-500">Не вдалося зберегти чернетку</span>
+            <span v-else-if="profileStore.hasUnsavedChanges">Є незбережені зміни</span>
+            <span v-else-if="lastAutosaveLabel">Чернетку збережено о {{ lastAutosaveLabel }}</span>
+            <span v-else>Зміни відсутні</span>
+            <button
+              v-if="profileStore.hasUnsavedChanges"
+              type="button"
+              class="text-primary underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+              :disabled="isSaving || autosaveStatus === 'saving'"
+              @click="revertChanges"
+            >
+              Відкотити зміни
+            </button>
+          </div>
         </div>
       </div>
     </Card>
@@ -102,9 +109,10 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import Button from '../../../ui/Button.vue'
 import Card from '../../../ui/Card.vue'
 import Heading from '../../../ui/Heading.vue'
 import AvatarUpload from '../components/AvatarUpload.vue'
@@ -112,6 +120,7 @@ import ProfileForm from '../components/ProfileForm.vue'
 import { useProfileStore } from '../store/profileStore'
 import { USER_ROLES } from '../../../types/user'
 import { TIMEZONES } from '../../../utils/timezones'
+import { debounce } from '../../../utils/debounce'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -132,10 +141,36 @@ const formErrors = reactive({
 })
 const subjects = ref([])
 const newSubject = ref('')
+const autosaveStatus = ref('idle')
+const isHydrating = ref(true)
+const lastServerSnapshot = ref({ user: null, profile: null, subjects: [] })
 
 const isTutor = computed(() => profileStore.user?.role === USER_ROLES.TUTOR)
 const isSaving = computed(() => profileStore.saving)
 const errorMessage = computed(() => profileStore.error)
+const lastAutosaveLabel = computed(() => {
+  if (!profileStore.lastAutosavedAt) return ''
+  try {
+    return new Intl.DateTimeFormat('uk-UA', { hour: '2-digit', minute: '2-digit' }).format(profileStore.lastAutosavedAt)
+  } catch (_err) {
+    return profileStore.lastAutosavedAt.toLocaleTimeString()
+  }
+})
+
+function captureSnapshot() {
+  lastServerSnapshot.value = {
+    user: profileStore.user ? { ...profileStore.user } : null,
+    profile: profileStore.profile ? { ...profileStore.profile } : null,
+    subjects: [...subjects.value],
+  }
+}
+
+function finishHydration() {
+  nextTick(() => {
+    captureSnapshot()
+    isHydrating.value = false
+  })
+}
 
 watch(
   () => profileStore.user,
@@ -143,6 +178,7 @@ watch(
     form.first_name = user?.first_name || ''
     form.last_name = user?.last_name || ''
     form.timezone = user?.timezone || profileStore.settings?.timezone || 'Europe/Kyiv'
+    finishHydration()
   },
   { immediate: true },
 )
@@ -153,22 +189,12 @@ watch(
     form.headline = profile?.headline || ''
     form.bio = profile?.bio || ''
     subjects.value = Array.isArray(profile?.subjects) ? [...profile.subjects] : []
+    finishHydration()
   },
   { immediate: true },
 )
 
-function validateForm() {
-  formErrors.first_name = form.first_name?.trim().length >= 2 ? '' : t('profile.messages.validationName')
-  formErrors.last_name = form.last_name?.trim().length >= 2 ? '' : t('profile.messages.validationName')
-  formErrors.timezone = form.timezone ? '' : t('profile.messages.validationTimezone')
-  return !formErrors.first_name && !formErrors.last_name && !formErrors.timezone
-}
-
-async function handleSubmit() {
-  if (!validateForm()) {
-    return
-  }
-
+function buildPayload() {
   const payload = {
     user: {
       first_name: form.first_name?.trim(),
@@ -189,8 +215,23 @@ async function handleSubmit() {
   }
   delete payload.profile
 
+  return payload
+}
+
+function validateForm() {
+  formErrors.first_name = form.first_name?.trim().length >= 2 ? '' : t('profile.messages.validationName')
+  formErrors.last_name = form.last_name?.trim().length >= 2 ? '' : t('profile.messages.validationName')
+  formErrors.timezone = form.timezone ? '' : t('profile.messages.validationTimezone')
+  return !formErrors.first_name && !formErrors.last_name && !formErrors.timezone
+}
+
+async function handleSubmit() {
+  if (!validateForm()) {
+    return
+  }
+
   try {
-    await profileStore.saveProfile(payload)
+    await profileStore.saveProfile(buildPayload())
     router.push('/dashboard/profile')
   } catch (error) {
     // error already handled in store
@@ -224,4 +265,54 @@ function addSubject() {
 function removeSubject(subject) {
   subjects.value = subjects.value.filter((item) => item !== subject)
 }
+
+function canAutosave() {
+  return form.first_name.trim().length >= 2 && form.last_name.trim().length >= 2 && Boolean(form.timezone)
+}
+
+const triggerAutosave = debounce(async () => {
+  if (isHydrating.value || isSaving.value || !profileStore.initialized) return
+  if (!canAutosave()) {
+    profileStore.hasUnsavedChanges = true
+    return
+  }
+  autosaveStatus.value = 'saving'
+  try {
+    await profileStore.autosaveDraft(buildPayload())
+    autosaveStatus.value = 'idle'
+  } catch (error) {
+    autosaveStatus.value = 'error'
+  }
+}, 800)
+
+watch(
+  () => ({
+    ...form,
+    subjects: [...subjects.value],
+  }),
+  () => {
+    if (isHydrating.value) return
+    triggerAutosave()
+  },
+  { deep: true },
+)
+
+function revertChanges() {
+  if (!lastServerSnapshot.value.user) return
+  isHydrating.value = true
+  const { user, profile, subjects: snapshotSubjects } = lastServerSnapshot.value
+  form.first_name = user?.first_name || ''
+  form.last_name = user?.last_name || ''
+  form.timezone = user?.timezone || profileStore.settings?.timezone || 'Europe/Kyiv'
+  form.headline = profile?.headline || ''
+  form.bio = profile?.bio || ''
+  subjects.value = [...snapshotSubjects]
+  profileStore.hasUnsavedChanges = false
+  autosaveStatus.value = 'idle'
+  finishHydration()
+}
+
+onBeforeUnmount(() => {
+  triggerAutosave.cancel?.()
+})
 </script>

@@ -41,23 +41,23 @@
     </div>
 
     <div class="flex items-center justify-center gap-3">
-      <button
-        type="button"
-        class="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
+      <Button
+        variant="primary"
+        size="sm"
         :disabled="disabled"
         @click="openFileDialog"
       >
-        {{ $t('profile.avatar.update') || 'Оновити' }}
-      </button>
+        {{ $t('profile.avatar.update') || 'Оновити фото' }}
+      </Button>
 
-      <button
-        type="button"
-        class="inline-flex items-center rounded-md border border-border-subtle px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
+      <Button
+        variant="outline"
+        size="sm"
         :disabled="disabled || !previewUrl"
         @click="$emit('delete')"
       >
-        {{ $t('profile.avatar.remove') || 'Видалити' }}
-      </button>
+        {{ $t('profile.avatar.remove') || 'Видалити фото' }}
+      </Button>
     </div>
 
     <p class="text-center text-xs text-muted-foreground">
@@ -68,6 +68,7 @@
 
 <script setup>
 import { computed, ref } from 'vue'
+import Button from '../../../ui/Button.vue'
 
 const props = defineProps({
   imageUrl: {

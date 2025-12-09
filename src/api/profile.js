@@ -8,6 +8,10 @@ export async function patchMeProfile(payload) {
   return apiClient.patch('/me/profile/', payload)
 }
 
+export async function autosaveProfile(payload) {
+  return apiClient.post('/me/profile/autosave/', payload)
+}
+
 export async function updateAvatar(formData) {
   return apiClient.post('/me/avatar/', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },

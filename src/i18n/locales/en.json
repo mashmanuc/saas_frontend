@@ -14,7 +14,7 @@
       "label": "Theme",
       "light": "Light",
       "dark": "Dark",
-      "system": "System"
+      "classic": "Classic"
     }
   },
   "auth": {

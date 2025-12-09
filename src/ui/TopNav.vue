@@ -1,19 +1,20 @@
 <template>
   <header
-    class="w-full h-16 bg-white dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-800/70
-           flex items-center justify-between px-6 sticky top-0 z-40 backdrop-blur"
+    class="w-full h-16 flex items-center justify-between px-6 sticky top-0 z-40"
+    style="background-color: var(--nav-bg); border-bottom: 1px solid var(--border-color); backdrop-filter: blur(10px);"
   >
     <!-- LEFT: Logo + Mobile Menu Button -->
     <div class="flex items-center gap-4">
       <!-- Mobile menu toggle -->
       <button
-        class="md:hidden text-gray-700 dark:text-gray-300"
+        class="md:hidden"
+        style="color: var(--text-primary);"
         @click="$emit('toggleSideNav')"
       >
         ☰
       </button>
 
-      <h1 class="font-semibold text-lg text-gray-800 dark:text-gray-100">
+      <h1 class="font-semibold text-lg" style="color: var(--text-primary);">
         M4SH Platform
       </h1>
     </div>
@@ -22,15 +23,19 @@
     <div class="flex items-center gap-4">
 
       <!-- Theme toggle -->
-      <div class="flex items-center gap-1 rounded-full border border-gray-200 dark:border-neutral-700 overflow-hidden text-xs" :aria-label="$t('nav.theme.label')">
+      <div
+        class="flex items-center gap-1 rounded-full overflow-hidden text-xs"
+        style="border: 1px solid var(--border-color);"
+        :aria-label="$t('nav.theme.label')"
+      >
         <button
           v-for="option in themeOptions"
           :key="option.value"
           type="button"
           class="px-2.5 py-1 flex items-center gap-1 transition"
-          :class="theme.theme === option.value
-            ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
-            : 'text-gray-600 dark:text-gray-300'"
+          :style="theme.theme === option.value
+            ? 'background: var(--accent); color: var(--accent-contrast);'
+            : 'color: var(--text-secondary);'"
           :title="$t(option.labelKey)"
           :aria-pressed="theme.theme === option.value"
           @click="setTheme(option.value)"
@@ -42,11 +47,14 @@
 
       <!-- User avatar -->
       <div class="flex items-center gap-2">
-        <div class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold">
+        <div
+          class="w-8 h-8 rounded-full flex items-center justify-center font-bold"
+          style="background: var(--accent); color: var(--accent-contrast);"
+        >
           {{ userInitials }}
         </div>
 
-        <span class="hidden md:inline text-gray-700 dark:text-gray-200 text-sm">
+        <span class="hidden md:inline text-sm" style="color: var(--text-primary);">
           {{ userName }}
         </span>
       </div>
@@ -54,7 +62,8 @@
       <!-- Logout -->
       <button
         @click="logout"
-        class="text-sm text-red-500 hover:text-red-600 dark:text-red-400"
+        class="text-sm transition"
+        style="color: var(--danger-bg);"
       >
         {{ $t('nav.logout') }}
       </button>
@@ -62,20 +71,26 @@
       <!-- Role badge -->
       <span
         v-if="roleLabel"
-        class="px-2 py-1 rounded-full bg-gray-100 text-gray-700 text-xs font-medium dark:bg-neutral-800 dark:text-gray-200"
+        class="px-2 py-1 rounded-full text-xs font-medium"
+        style="background-color: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color);"
       >
         {{ roleLabel }}
       </span>
 
       <!-- Language switch -->
-      <div class="flex items-center rounded-full border border-gray-200 dark:border-neutral-700 overflow-hidden text-xs">
+      <div
+        class="flex items-center rounded-full overflow-hidden text-xs"
+        style="border: 1px solid var(--border-color);"
+      >
         <button
           v-for="locale in localeOptions"
           :key="locale"
           type="button"
           @click="changeLocale(locale)"
           class="px-3 py-1 transition-colors"
-          :class="locale === currentLocale ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'text-gray-600 dark:text-gray-300'"
+          :style="locale === currentLocale
+            ? 'background: var(--accent); color: var(--accent-contrast);'
+            : 'color: var(--text-secondary);'"
         >
           {{ locale.toUpperCase() }}
         </button>
@@ -122,9 +137,9 @@ const userName = computed(() => {
 
 /* ------------------------- Theme toggle ------------------------- */
 const themeOptions = [
-  { value: 'light', icon: '☀️', labelKey: 'nav.theme.light' },
+  { value: 'light', icon: '🌿', labelKey: 'nav.theme.light' },
   { value: 'dark', icon: '🌙', labelKey: 'nav.theme.dark' },
-  { value: 'system', icon: '🖥', labelKey: 'nav.theme.system' },
+  { value: 'classic', icon: '🎓', labelKey: 'nav.theme.classic' },
 ]
 
 function setTheme(value) {

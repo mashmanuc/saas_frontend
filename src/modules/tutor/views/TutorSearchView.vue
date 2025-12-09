@@ -47,19 +47,15 @@
             </p>
 
             <div class="flex items-center justify-between mt-2">
-              <button
-                type="button"
-                class="inline-flex items-center justify-center rounded-md border border-transparent bg-primary px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed"
+              <Button
+                variant="primary"
+                size="sm"
                 :disabled="requestLoadingId === tutor.id"
+                :loading="requestLoadingId === tutor.id"
                 @click="requestTutor(tutor.id)"
               >
-                <span v-if="requestLoadingId === tutor.id">
-                  {{ $t('loader.loading') }}
-                </span>
-                <span v-else>
-                  {{ $t('tutor.request.button') }}
-                </span>
-              </button>
+                {{ requestLoadingId === tutor.id ? $t('loader.loading') : $t('tutor.request.button') }}
+              </Button>
 
               <span v-if="requestSuccessId === tutor.id" class="text-xs text-emerald-600 dark:text-emerald-400">
                 ✓
@@ -82,6 +78,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import Button from '../../../ui/Button.vue'
 import { useAuthStore } from '../../auth/store/authStore'
 import apiClient from '../../../utils/apiClient'
 import { notifySuccess, notifyError } from '../../../utils/notify'

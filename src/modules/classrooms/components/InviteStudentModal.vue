@@ -36,23 +36,12 @@
       </div>
 
       <footer class="flex justify-end gap-2 border-t border-border-subtle px-4 py-3">
-        <button
-          type="button"
-          class="inline-flex items-center justify-center rounded-md px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-surface-muted/60"
-          :disabled="loading"
-          @click="handleCancel"
-        >
+        <Button variant="ghost" size="sm" :disabled="loading" @click="handleCancel">
           {{ $t('common.cancel') || 'Скасувати' }}
-        </button>
-        <button
-          type="button"
-          class="inline-flex items-center justify-center rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed"
-          :disabled="loading"
-          @click="handleSubmit"
-        >
-          <span v-if="loading">{{ $t('loader.loading') }}</span>
-          <span v-else>{{ $t('classroom.invite.submit') }}</span>
-        </button>
+        </Button>
+        <Button variant="primary" size="sm" :disabled="loading" :loading="loading" @click="handleSubmit">
+          {{ loading ? $t('loader.loading') : $t('classroom.invite.submit') }}
+        </Button>
       </footer>
     </div>
   </div>
@@ -61,6 +50,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import Button from '../../../ui/Button.vue'
 import { notifySuccess, notifyError } from '../../../utils/notify'
 
 const props = defineProps({

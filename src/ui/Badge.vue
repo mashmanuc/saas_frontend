@@ -1,9 +1,7 @@
 <template>
   <span
-    :class="[
-      'inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium',
-      variantClass,
-    ]"
+    class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+    :style="variantStyle"
   >
     <slot />
   </span>
@@ -19,16 +17,16 @@ const props = defineProps({
   },
 })
 
-const variantClass = computed(() => {
+const variantStyle = computed(() => {
   switch (props.variant) {
     case 'success':
-      return 'bg-emerald-500/10 text-emerald-500 border-emerald-500/40'
+      return 'background: color-mix(in srgb, var(--success-bg) 15%, transparent); color: var(--success-bg); border: 1px solid color-mix(in srgb, var(--success-bg) 40%, transparent);'
     case 'warning':
-      return 'bg-amber-500/10 text-amber-500 border-amber-500/40'
+      return 'background: color-mix(in srgb, var(--warning-bg) 15%, transparent); color: var(--warning-bg); border: 1px solid color-mix(in srgb, var(--warning-bg) 40%, transparent);'
     case 'muted':
-      return 'bg-gray-500/10 text-gray-400 border-gray-500/30'
+      return 'background: color-mix(in srgb, var(--text-secondary) 10%, transparent); color: var(--text-secondary); border: 1px solid color-mix(in srgb, var(--text-secondary) 30%, transparent);'
     default:
-      return 'bg-primary/10 text-primary border-primary/40'
+      return 'background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);'
   }
 })
 </script>

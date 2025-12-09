@@ -2,7 +2,7 @@
   <Card class="space-y-6">
     <header class="space-y-1">
       <h1 class="text-xl font-semibold">{{ $t('auth.login.title') }}</h1>
-      <p class="text-sm text-gray-500">{{ $t('auth.login.description') }}</p>
+      <p class="text-sm" style="color: var(--text-secondary);">{{ $t('auth.login.description') }}</p>
     </header>
 
     <form class="space-y-4" @submit.prevent="onSubmit">
@@ -22,7 +22,7 @@
         autocomplete="current-password"
       />
 
-      <p v-if="auth.error" class="text-sm text-red-600">
+      <p v-if="auth.error" class="text-sm" style="color: var(--danger-bg);">
         {{ auth.error }}
       </p>
 
@@ -32,9 +32,9 @@
       </Button>
     </form>
 
-    <p class="text-center text-sm text-gray-500">
+    <p class="text-center text-sm" style="color: var(--text-secondary);">
       {{ $t('auth.login.noAccount') }}
-      <RouterLink to="/auth/register" class="text-indigo-600 hover:underline font-medium">
+      <RouterLink to="/auth/register" class="hover:underline font-medium" style="color: var(--accent);">
         {{ $t('auth.login.registerLink') }}
       </RouterLink>
     </p>

@@ -11,20 +11,12 @@
           </p>
         </div>
         <div class="flex flex-wrap gap-2">
-          <button
-            type="button"
-            class="inline-flex items-center rounded-md border border-border-subtle px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
-            @click="goToSettings"
-          >
+          <Button variant="outline" size="sm" @click="goToSettings">
             {{ $t('profile.settingsButton') }}
-          </button>
-          <button
-            type="button"
-            class="inline-flex items-center rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
-            @click="goToEdit"
-          >
+          </Button>
+          <Button variant="primary" size="sm" @click="goToEdit">
             {{ $t('profile.editButton') }}
-          </button>
+          </Button>
         </div>
       </div>
     </Card>
@@ -106,6 +98,7 @@
 <script setup>
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import Button from '../../../ui/Button.vue'
 import Card from '../../../ui/Card.vue'
 import Heading from '../../../ui/Heading.vue'
 import AvatarUpload from '../components/AvatarUpload.vue'

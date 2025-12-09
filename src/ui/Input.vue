@@ -5,10 +5,11 @@
     <label
       v-if="label"
       :for="id"
-      class="block mb-1 text-sm font-medium text-primary"
+      class="block mb-1 text-sm font-medium"
+      style="color: var(--text-primary);"
     >
       {{ label }}
-      <span v-if="required" class="text-red-500">*</span>
+      <span v-if="required" style="color: var(--danger-bg);">*</span>
     </label>
 
     <!-- INPUT WRAPPER -->
@@ -31,7 +32,8 @@
     <!-- ERROR MESSAGE -->
     <p
       v-if="error"
-      class="mt-1 text-sm text-red-500"
+      class="mt-1 text-sm"
+      style="color: var(--danger-bg);"
     >
       {{ error }}
     </p>
@@ -39,7 +41,8 @@
     <!-- HELP TEXT -->
     <p
       v-else-if="help"
-      class="mt-1 text-sm text-secondary"
+      class="mt-1 text-sm"
+      style="color: var(--text-secondary);"
     >
       {{ help }}
     </p>

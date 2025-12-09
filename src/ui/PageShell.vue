@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen flex bg-primary text-primary">
+  <div class="min-h-screen flex bg-page text-body">
 
     <!-- Side navigation -->
     <SideNav />

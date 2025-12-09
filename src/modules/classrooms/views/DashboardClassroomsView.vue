@@ -11,15 +11,9 @@
           </p>
         </div>
 
-        <button
-          type="button"
-          class="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background disabled:opacity-60 disabled:cursor-not-allowed"
-          :disabled="creating"
-          @click="handleCreate"
-        >
-          <span v-if="creating">{{ $t('loader.loading') }}</span>
-          <span v-else>{{ $t('classroom.dashboard.create') }}</span>
-        </button>
+        <Button variant="primary" :disabled="creating" :loading="creating" @click="handleCreate">
+          {{ creating ? $t('loader.loading') : $t('classroom.dashboard.create') }}
+        </Button>
       </div>
 
       <p v-if="error" class="text-sm text-red-600">
@@ -67,6 +61,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import Button from '../../../ui/Button.vue'
 import Card from '../../../ui/Card.vue'
 import ClassroomCard from '../components/ClassroomCard.vue'
 import { useClassroomStore } from '../store/classroomStore'

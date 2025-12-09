@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { getMeProfile, patchMeProfile, updateAvatar, deleteAvatar } from '../../../api/profile'
+import { getMeProfile, patchMeProfile, autosaveProfile, updateAvatar, deleteAvatar } from '../../../api/profile'
 import { notifyError, notifySuccess } from '../../../utils/notify'
 import { resolveMediaUrl } from '../../../utils/media'
 
@@ -45,6 +45,8 @@ export const useProfileStore = defineStore('profile', {
     saving: false,
     error: null,
     lastSavedAt: null,
+    lastAutosavedAt: null,
+    hasUnsavedChanges: false,
   }),
   getters: {
     fullName: (state) => {
@@ -64,6 +66,7 @@ export const useProfileStore = defineStore('profile', {
       this.settings = normalized.settings
       this.avatarUrl = normalized.avatarUrl
       this.initialized = true
+      this.hasUnsavedChanges = false
       return normalized.raw || normalized
     },
     async loadProfile() {
@@ -89,6 +92,8 @@ export const useProfileStore = defineStore('profile', {
         const data = await patchMeProfile(payload)
         this.setProfileState(data)
         this.lastSavedAt = new Date()
+        this.lastAutosavedAt = this.lastSavedAt
+        this.hasUnsavedChanges = false
         notifySuccess('Зміни збережено')
         return data
       } catch (error) {
@@ -132,6 +137,18 @@ export const useProfileStore = defineStore('profile', {
       } catch (error) {
         notifyError('Не вдалося видалити аватар')
         throw error
+      }
+    },
+    async autosaveDraft(payload) {
+      if (!payload || this.saving) return
+      try {
+        const data = await autosaveProfile(payload)
+        this.lastAutosavedAt = new Date()
+        this.hasUnsavedChanges = true
+        return data
+      } catch (error) {
+        this.error = error?.response?.data?.detail || 'Не вдалося зберегти чернетку'
+        return null
       }
     },
   },

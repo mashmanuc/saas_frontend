@@ -38,13 +38,9 @@
                 {{ classroom.students_count ?? classroom.studentsCount ?? 0 }}
               </td>
               <td class="py-2 pr-4 text-right">
-                <button
-                  type="button"
-                  class="inline-flex items-center justify-center rounded-md border border-transparent bg-primary px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-primary/90"
-                  @click="openClassroom(classroom.id)"
-                >
+                <Button variant="primary" size="sm" @click="openClassroom(classroom.id)">
                   {{ $t('classroom.list.open') }}
-                </button>
+                </Button>
               </td>
             </tr>
           </tbody>
@@ -62,6 +58,7 @@
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import Button from '../../../ui/Button.vue'
 import Card from '../../../ui/Card.vue'
 import apiClient from '../../../utils/apiClient'
 import { notifyError } from '../../../utils/notify'

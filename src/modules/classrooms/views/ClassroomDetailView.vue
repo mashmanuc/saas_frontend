@@ -22,13 +22,9 @@
         <div class="flex items-center justify-between gap-3">
           <h2 class="text-lg font-semibold">{{ $t('classroom.detail.studentsTitle') }}</h2>
 
-          <button
-            type="button"
-            class="inline-flex items-center justify-center rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background disabled:opacity-60 disabled:cursor-not-allowed"
-            @click="inviteOpen = true"
-          >
+          <Button variant="primary" size="sm" @click="inviteOpen = true">
             {{ $t('classroom.invite.button') }}
-          </button>
+          </Button>
         </div>
 
         <ul
@@ -56,6 +52,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import Button from '../../../ui/Button.vue'
 import Card from '../../../ui/Card.vue'
 import { notifyError } from '../../../utils/notify'
 import { useClassroomStore } from '../store/classroomStore'
