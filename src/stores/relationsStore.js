@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import relationsApi from '../api/relations'
-import { notifyError, notifySuccess } from '../utils/notify'
+import { notifyError, notifySuccess, notifyWarning, notifyInfo } from '../utils/notify'
 import { i18n } from '../i18n'
 
 const translate = (key, params) => {
@@ -20,30 +20,66 @@ export const useRelationsStore = defineStore('relations', {
     studentLoading: false,
     studentError: null,
     tutorRelations: [],
+    tutorSummary: null,
+    tutorCursor: null,
+    tutorHasMore: false,
     tutorLoading: false,
+    tutorLoadingMore: false,
+    tutorBulkLoading: false,
     tutorError: null,
+    tutorErrorCode: null,
     tutorFilter: 'all',
+    tutorSelectedIds: [],
   }),
 
   getters: {
     invitedStudentRelations: (state) => state.studentRelations.filter((rel) => rel.status === 'invited'),
     activeStudentRelations: (state) => state.studentRelations.filter((rel) => rel.status === 'active'),
-    invitedTutorRelations: (state) => state.tutorRelations.filter((rel) => rel.status === 'invited'),
-    activeTutorRelations: (state) => state.tutorRelations.filter((rel) => rel.status === 'active'),
-    filteredTutorRelations: (state) => {
-      if (state.tutorFilter === 'invited') {
-        return state.tutorRelations.filter((rel) => rel.status === 'invited')
-      }
-      if (state.tutorFilter === 'active') {
-        return state.tutorRelations.filter((rel) => rel.status === 'active')
-      }
-      return state.tutorRelations
+    filteredTutorRelations: (state) => state.tutorRelations,
+    selectedTutorRelations(state) {
+      return state.tutorRelations.filter((relation) => state.tutorSelectedIds.includes(relation.id))
     },
+    selectedTutorCount() {
+      return this.selectedTutorRelations.length
+    },
+    selectedInvitedCount() {
+      return this.selectedTutorRelations.filter((relation) => relation.status === 'invited').length
+    },
+    canBulkAccept() {
+      return this.selectedInvitedCount > 0
+    },
+    canBulkArchive() {
+      return this.selectedTutorRelations.length > 0
+    },
+    isTutorSelected: (state) => (relationId) => state.tutorSelectedIds.includes(relationId),
   },
 
   actions: {
-    setTutorFilter(value) {
+    async setTutorFilter(value) {
+      if (this.tutorFilter === value) return
       this.tutorFilter = value
+      this.tutorCursor = null
+      this.tutorHasMore = false
+      this.tutorRelations = []
+      this.clearTutorSelection()
+      await this.fetchTutorRelations()
+    },
+    toggleTutorSelection(id) {
+      if (this.tutorSelectedIds.includes(id)) {
+        this.tutorSelectedIds = this.tutorSelectedIds.filter((selectedId) => selectedId !== id)
+      } else {
+        this.tutorSelectedIds = [...this.tutorSelectedIds, id]
+      }
+    },
+    selectAllCurrentTutorRelations() {
+      this.tutorSelectedIds = this.tutorRelations.map((relation) => relation.id)
+    },
+    clearTutorSelection() {
+      this.tutorSelectedIds = []
+    },
+    pruneTutorSelection() {
+      const availableIds = new Set(this.tutorRelations.map((relation) => relation.id))
+      this.tutorSelectedIds = this.tutorSelectedIds.filter((id) => availableIds.has(id))
     },
 
     async fetchStudentRelations(params = {}) {
@@ -61,19 +97,59 @@ export const useRelationsStore = defineStore('relations', {
       }
     },
 
-    async fetchTutorRelations(params = {}) {
-      this.tutorLoading = true
+    async fetchTutorRelations({ cursor = null, append = false } = {}) {
+      if (append && !this.tutorHasMore) {
+        return
+      }
+
+      if (append) {
+        this.tutorLoadingMore = true
+      } else {
+        this.tutorLoading = true
+      }
+
       this.tutorError = null
+      this.tutorErrorCode = null
 
       try {
-        const data = await relationsApi.getTutorRelations(params)
-        this.tutorRelations = Array.isArray(data) ? data : data?.results || []
+        const params = { status: this.tutorFilter }
+        if (cursor) {
+          params.cursor = cursor
+        }
+        const response = await relationsApi.getTutorRelations(params)
+        const results = Array.isArray(response) ? response : response?.results || []
+        if (append) {
+          this.tutorRelations = [...this.tutorRelations, ...results]
+        } else {
+          this.tutorRelations = results
+        }
+
+        this.tutorCursor = response?.cursor || null
+        this.tutorHasMore = Boolean(response?.has_more)
+        this.tutorSummary = response?.summary || null
+        this.pruneTutorSelection()
       } catch (error) {
-        this.tutorError = error?.response?.data?.detail || 'Не вдалося отримати звʼязки тьютора.'
+        const status = error?.response?.status
+        if (!error?.response) {
+          this.tutorErrorCode = 'offline'
+          this.tutorError = translate('relations.errors.offline')
+        } else if (status === 429) {
+          this.tutorErrorCode = 'rate-limit'
+          this.tutorError = translate('relations.errors.rateLimit')
+        } else {
+          this.tutorErrorCode = 'backend'
+          this.tutorError = error?.response?.data?.detail || translate('relations.errors.loadTutor')
+        }
         throw error
       } finally {
         this.tutorLoading = false
+        this.tutorLoadingMore = false
       }
+    },
+
+    async loadMoreTutorRelations() {
+      if (!this.tutorCursor || this.tutorLoadingMore) return
+      await this.fetchTutorRelations({ cursor: this.tutorCursor, append: true })
     },
 
     async acceptRelation(id) {
@@ -109,6 +185,76 @@ export const useRelationsStore = defineStore('relations', {
       } catch (error) {
         notifyError(error?.response?.data?.detail || translate('relations.actions.resendError'))
         throw error
+      } finally {
+        await this.fetchTutorRelations().catch(() => {})
+      }
+    },
+
+    async bulkAcceptSelectedTutorRelations() {
+      const ids = this.selectedTutorRelations.filter((relation) => relation.status === 'invited').map((relation) => relation.id)
+      if (!ids.length) {
+        notifyWarning(translate('relations.bulk.noInvited'))
+        return
+      }
+
+      this.tutorBulkLoading = true
+      try {
+        const result = await relationsApi.bulkAcceptTutorRelations(ids)
+        this.handleBulkResult('accept', result)
+        this.clearTutorSelection()
+        await this.fetchTutorRelations().catch(() => {})
+        await this.fetchStudentRelations().catch(() => {})
+      } catch (error) {
+        notifyError(error?.response?.data?.detail || translate('relations.bulk.genericError'))
+        throw error
+      } finally {
+        this.tutorBulkLoading = false
+      }
+    },
+
+    async bulkArchiveSelectedTutorRelations() {
+      if (!this.selectedTutorRelations.length) {
+        notifyWarning(translate('relations.bulk.emptySelection'))
+        return
+      }
+
+      this.tutorBulkLoading = true
+      try {
+        const result = await relationsApi.bulkArchiveTutorRelations(this.tutorSelectedIds)
+        this.handleBulkResult('archive', result)
+        this.clearTutorSelection()
+        await this.fetchTutorRelations().catch(() => {})
+      } catch (error) {
+        notifyError(error?.response?.data?.detail || translate('relations.bulk.genericError'))
+        throw error
+      }
+      finally {
+        this.tutorBulkLoading = false
+      }
+    },
+
+    handleBulkResult(type, result = {}) {
+      const processedCount = Array.isArray(result?.processed) ? result.processed.length : 0
+      const failedCount = Array.isArray(result?.failed) ? result.failed.length : 0
+
+      if (processedCount) {
+        notifySuccess(
+          translate(`relations.bulk.${type}Success`, {
+            count: processedCount,
+          }),
+        )
+      }
+
+      if (failedCount) {
+        notifyWarning(
+          translate('relations.bulk.partialFailure', {
+            failed: failedCount,
+          }),
+        )
+      }
+
+      if (!processedCount && !failedCount) {
+        notifyInfo(translate('relations.bulk.noChanges'))
       }
     },
   },

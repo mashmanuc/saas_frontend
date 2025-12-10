@@ -122,16 +122,19 @@
       "studentsDescription": "Latest linked students and their status.",
       "timezoneLabel": "Timezone:",
       "timezoneUnknown": "not set",
+      "loadMore": "Load more",
       "status": {
         "pending": "Pending",
         "active": "Active",
         "inactive": "Inactive",
-        "invited": "Invited"
+        "invited": "Invited",
+        "archived": "Archived"
       },
       "tabs": {
         "all": "All",
         "invited": "Invited",
-        "active": "Active"
+        "active": "Active",
+        "archived": "Archived"
       },
       "tabHints": {
         "invited": {
@@ -141,6 +144,10 @@
         "active": {
           "title": "Active students",
           "description": "Manage schedules, notes and keep track of student activity here."
+        },
+        "archived": {
+          "title": "Archived relations",
+          "description": "Past students and archived connections stay here for reference."
         }
       },
       "emptyStates": {
@@ -155,8 +162,65 @@
         "active": {
           "title": "No active students",
           "description": "Once invitations are accepted, students will appear in this tab."
+        },
+        "archived": {
+          "title": "No archived relations",
+          "description": "Archived students will stay here for your records."
         }
+      },
+      "cta": {
+        "createLesson": "Create lesson",
+        "openChat": "Open chat"
+      },
+      "bulk": {
+        "selectHint": "Select students to perform bulk actions.",
+        "selected": "{count} selected",
+        "selectAllCurrent": "Select page",
+        "clearSelection": "Clear",
+        "acceptSelected": "Accept selected",
+        "archiveSelected": "Archive selected"
+      },
+      "notifications": {
+        "loadError": "Failed to load tutor relations",
+        "emptySelection": "Select at least one relation to proceed.",
+        "noInvited": "Only invited students can be accepted in bulk.",
+        "genericError": "Something went wrong. Try again later.",
+        "acceptSuccess": "{count} relation(s) accepted",
+        "archiveSuccess": "{count} relation(s) archived",
+        "partialFailure": "{failed} relation(s) failed. See details in logs.",
+        "noChanges": "Nothing changed."
       }
+    }
+  },
+  "relations": {
+    "errors": {
+      "offline": "We could not connect to the server. Please check your internet connection.",
+      "rateLimit": "Too many requests. Please wait a moment and try again.",
+      "loadTutor": "Failed to load tutor relations.",
+      "backend": "Unexpected server error. Try again later.",
+      "offlineTitle": "You are offline",
+      "offlineDescription": "We cannot reach the API right now. Check your internet connection and try again.",
+      "backendTitle": "Something went wrong",
+      "backendDescription": "The server responded with an error. Please retry.",
+      "rateLimitTitle": "Rate limit reached",
+      "rateLimitDescription": "Too many operations were sent in a short time. Wait a few seconds and try again.",
+      "retry": "Retry"
+    },
+    "bulk": {
+      "noInvited": "Select at least one invited student to accept in bulk.",
+      "emptySelection": "Select at least one relation to proceed.",
+      "genericError": "Unable to process bulk action.",
+      "acceptSuccess": "{count} relation(s) accepted",
+      "archiveSuccess": "{count} relation(s) archived",
+      "partialFailure": "{failed} relation(s) failed. Check logs.",
+      "noChanges": "Nothing changed."
+    },
+    "meta": {
+      "lessonCount": "Lessons",
+      "recentActivity": "Last activity",
+      "invitedAt": "Invite sent",
+      "acceptedAt": "Invite accepted",
+      "never": "Never"
     }
   },
   "tutor": {
@@ -306,6 +370,65 @@
         "required": "Email is required.",
         "invalid": "Invalid email address.",
         "generic": "Failed to send invitation."
+      }
+    }
+  },
+  "lessons": {
+    "calendar": {
+      "title": "Lessons calendar",
+      "subtitle": "Create, reschedule and manage lessons across timezones.",
+      "hint": "Drag events to reschedule, resize to adjust duration. Use the buttons above to create or refresh.",
+      "roles": {
+        "tutor": "Tutor view",
+        "student": "Student view"
+      },
+      "buttons": {
+        "today": "Today",
+        "week": "Week",
+        "day": "Day"
+      },
+      "actions": {
+        "new": "New lesson",
+        "refresh": "Refresh",
+        "saveLesson": "Save lesson",
+        "confirmCancel": "Cancel lesson"
+      },
+      "status": {
+        "label": "Status",
+        "all": "All",
+        "scheduled": "Scheduled",
+        "completed": "Completed",
+        "cancelled": "Cancelled"
+      },
+      "createTitle": "Create lesson",
+      "cancelTitle": "Cancel lesson",
+      "cancelDescription": "Are you sure you want to cancel this lesson?",
+      "fields": {
+        "studentId": "Student ID",
+        "start": "Start time",
+        "end": "End time"
+      },
+      "placeholders": {
+        "studentId": "ID or email"
+      },
+      "series": {
+        "label": "Series ID",
+        "placeholder": "Optional series identifier",
+        "none": "Not part of a series"
+      },
+      "eventTitle": "Lesson #{id}",
+      "notifications": {
+        "created": "Lesson created",
+        "createError": "Failed to create lesson",
+        "rescheduled": "Lesson rescheduled",
+        "resized": "Lesson duration updated",
+        "rescheduleError": "Failed to reschedule lesson",
+        "cancelled": "Lesson cancelled",
+        "cancelError": "Failed to cancel lesson",
+        "validation": "Fill in all required fields before saving."
+      },
+      "info": {
+        "partial": "Showing first {limit} events. Narrow your range or status to load more."
       }
     }
   }
