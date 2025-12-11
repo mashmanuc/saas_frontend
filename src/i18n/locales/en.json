@@ -780,5 +780,31 @@
       "unknown": "Connection error occurred.",
       "syncing": "Reconnected — syncing data..."
     }
+  },
+  "network": {
+    "title": "Network Health",
+    "status": "Status",
+    "latency": "Latency",
+    "avg": "Average",
+    "jitter": "Jitter",
+    "packetLoss": "Packet Loss",
+    "reconnects": "Reconnects",
+    "expand": "Expand network monitor",
+    "collapse": "Collapse network monitor",
+    "wsStatus": {
+      "connected": "Connected",
+      "connecting": "Connecting...",
+      "reconnecting": "Reconnecting...",
+      "disconnected": "Disconnected"
+    },
+    "warnings": {
+      "packetLoss": "High packet loss detected",
+      "highLatency": "High latency detected"
+    }
+  },
+  "session": {
+    "refreshed": "Your session has been refreshed",
+    "expired": "Your session has expired. Please log in again.",
+    "refreshing": "Refreshing session..."
   }
 }
