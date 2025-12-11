@@ -2,7 +2,7 @@
   <div class="playground-grid">
     <aside class="playground-sidebar">
       <p class="eyebrow">{{ t('devPlayground.sidebar.label') }}</p>
-      <nav class="sidebar-nav" aria-label="Playground navigation">
+      <nav class="sidebar-nav" :aria-label="t('devPlayground.sidebar.ariaLabel')">
         <button
           v-for="item in navItems"
           :key="item.id"
@@ -22,10 +22,10 @@
 
     <div class="space-y-8">
       <header class="space-y-3" id="playground-hero">
-        <p class="eyebrow">{{ t('devPlayground.eyebrow') }}</p>
+        <p class="eyebrow">{{ t('dev.theme') }}</p>
         <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 class="headline">{{ t('devPlayground.title') }}</h1>
+            <h1 class="headline">{{ t('dev.playground') }}</h1>
             <p class="text-muted max-w-2xl">
               {{ t('devPlayground.subtitle') }}
             </p>
@@ -109,21 +109,33 @@
             <Badge>{{ t('devPlayground.badges.default') }}</Badge>
             <Badge variant="success">{{ t('devPlayground.badges.success') }}</Badge>
             <Badge variant="warning">{{ t('devPlayground.badges.warning') }}</Badge>
+            <Badge variant="danger">{{ t('devPlayground.badges.danger') }}</Badge>
             <Badge variant="muted">{{ t('devPlayground.badges.muted') }}</Badge>
           </div>
           <div class="space-y-3">
-            <div class="playground-alert playground-alert--success">
-              <strong>{{ t('devPlayground.alerts.success.title') }}</strong>
-              {{ t('devPlayground.alerts.success.body') }}
-            </div>
-            <div class="playground-alert playground-alert--warning">
-              <strong>{{ t('devPlayground.alerts.warning.title') }}</strong>
-              {{ t('devPlayground.alerts.warning.body') }}
-            </div>
-            <div class="playground-alert playground-alert--danger">
-              <strong>{{ t('devPlayground.alerts.danger.title') }}</strong>
-              {{ t('devPlayground.alerts.danger.body') }}
-            </div>
+            <Alert
+              variant="success"
+              :title="t('devPlayground.alerts.success.title')"
+              :description="t('devPlayground.alerts.success.body')"
+            />
+            <Alert
+              variant="warning"
+              :title="t('devPlayground.alerts.warning.title')"
+              :description="t('devPlayground.alerts.warning.body')"
+            >
+              <Button variant="outline" size="sm">
+                {{ t('devPlayground.actions.refresh') }}
+              </Button>
+            </Alert>
+            <Alert
+              variant="danger"
+              :title="t('devPlayground.alerts.danger.title')"
+              :description="t('devPlayground.alerts.danger.body')"
+            >
+              <Button variant="primary" size="sm" @click="toggleModal(true)">
+                {{ t('devPlayground.actions.openModal') }}
+              </Button>
+            </Alert>
           </div>
         </Card>
 
@@ -188,6 +200,96 @@
         </Card>
       </section>
 
+      <section id="playground-notifications" class="space-y-4" data-section-id="notifications">
+        <Card variant="outline" class="space-y-5">
+          <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 class="section-title">{{ t('devPlayground.notifications.title') }}</h2>
+              <p class="text-muted text-sm">
+                {{ t('devPlayground.notifications.subtitle') }}
+              </p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <Button size="sm" variant="ghost" @click="toggleOfflineSimulation">
+                {{
+                  isOfflineSimulated
+                    ? t('devPlayground.notifications.simulateOfflineOn')
+                    : t('devPlayground.notifications.simulateOfflineOff')
+                }}
+              </Button>
+              <Button
+                size="sm"
+                variant="primary"
+                :disabled="Boolean(jsonError || !parsedNotification)"
+                @click="pushMockNotification"
+              >
+                {{ t('devPlayground.notifications.pushButton') }}
+              </Button>
+            </div>
+          </div>
+
+          <div class="notif-debug-grid">
+            <div class="notif-debug-panel">
+              <label class="notif-label" for="notif-debug-json">
+                {{ t('devPlayground.notifications.jsonLabel') }}
+              </label>
+              <textarea
+                id="notif-debug-json"
+                v-model="debugJson"
+                class="notif-json-input"
+                spellcheck="false"
+                rows="12"
+              />
+              <p v-if="jsonError" class="notif-json-error">
+                {{ jsonError }}
+              </p>
+              <p v-else class="notif-json-hint">
+                {{ t('devPlayground.notifications.jsonHint') }}
+              </p>
+
+              <div class="notif-preview-card" :class="`notif-preview-card--${notificationsPreview.tone}`">
+                <div class="notif-preview-pill">
+                  {{ notificationsPreview.tag }}
+                </div>
+                <h3>{{ notificationsPreview.title }}</h3>
+                <p>{{ notificationsPreview.body }}</p>
+                <div class="notif-preview-meta">
+                  <span>{{ t('devPlayground.notifications.previewTone') }}: {{ notificationsPreview.tone }}</span>
+                  <span>{{ t('devPlayground.notifications.previewTag') }}: {{ notificationsPreview.tag }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="notif-debug-log">
+              <div class="notif-debug-log__header">
+                <div>
+                  <p class="notif-label">{{ t('devPlayground.notifications.logTitle') }}</p>
+                  <p class="text-muted text-xs">
+                    {{ t('devPlayground.notifications.logSubtitle') }}
+                  </p>
+                </div>
+                <Button variant="ghost" size="sm" @click="notificationsStore.logDebugEvent('manual.log', {})">
+                  {{ t('devPlayground.notifications.logPing') }}
+                </Button>
+              </div>
+
+              <ul class="notif-debug-log__list">
+                <li v-for="event in debugEvents" :key="event.id" class="notif-log-item">
+                  <div class="notif-log-item__header">
+                    <strong>{{ event.event }}</strong>
+                    <span>{{ formatLogTimestamp(event.timestamp) }}</span>
+                  </div>
+                  <pre>{{ formatLogPayload(event.payload) }}</pre>
+                </li>
+                <li v-if="!debugEvents.length" class="notif-log-empty">
+                  {{ t('devPlayground.notifications.logEmpty') }}
+                </li>
+              </ul>
+            </div>
+          </div>
+        </Card>
+      </section>
+
       <section
         id="playground-tokens"
         class="grid gap-6 lg:grid-cols-[2fr,1fr]"
@@ -245,13 +347,15 @@ import { useI18n } from 'vue-i18n'
 import Button from '../../../ui/Button.vue'
 import Card from '../../../ui/Card.vue'
 import Input from '../../../ui/Input.vue'
+import Alert from '../../../ui/Alert.vue'
 import Badge from '../../../ui/Badge.vue'
 import Select from '../../../ui/Select.vue'
 import { useThemeStore, THEME_OPTIONS } from '../../../stores/themeStore'
+import { useNotificationsStore } from '../../../stores/notificationsStore'
 
 const { t } = useI18n()
 const themeStore = useThemeStore()
-const sectionIds = ['controls', 'feedback', 'tables', 'tokens']
+const sectionIds = ['controls', 'feedback', 'tables', 'tokens', 'notifications']
 const activeSection = ref(sectionIds[0])
 let sectionObserver
 
@@ -280,27 +384,42 @@ const navItems = computed(() => [
     label: t('devPlayground.sidebar.tokens'),
     hint: t('devPlayground.sidebar.tokensHint'),
   },
+  {
+    id: 'notifications',
+    icon: '📣',
+    label: t('devPlayground.sidebar.notifications'),
+    hint: t('devPlayground.sidebar.notificationsHint'),
+  },
 ])
 
-const themeOptions = THEME_OPTIONS.map((value) => ({
-  value,
-  icon: value === 'light' ? '🌿' : value === 'dark' ? '🌙' : '🎓',
-  label: value.charAt(0).toUpperCase() + value.slice(1),
-  description:
-    value === 'light'
-      ? 'Emerald accent, airy surfaces'
-      : value === 'dark'
-        ? 'Deep cyan palette, glassmorphism'
-        : 'Classic purple, nostalgic gradients',
+const themeOptions = computed(() =>
+  THEME_OPTIONS.map((value) => ({
+    value,
+    icon: value === 'light' ? '🌿' : value === 'dark' ? '🌙' : '🎓',
+    label: t(`devPlayground.themeOptions.${value}.label`),
+    description: t(`devPlayground.themeOptions.${value}.description`),
+  })),
+)
+
+const themeMeta = computed(() => ({
+  light: {
+    title: t('devPlayground.themeMeta.light.title'),
+    subtitle: t('devPlayground.themeMeta.light.subtitle'),
+  },
+  dark: {
+    title: t('devPlayground.themeMeta.dark.title'),
+    subtitle: t('devPlayground.themeMeta.dark.subtitle'),
+  },
+  classic: {
+    title: t('devPlayground.themeMeta.classic.title'),
+    subtitle: t('devPlayground.themeMeta.classic.subtitle'),
+  },
 }))
 
-const themeMeta = {
-  light: { title: 'Light', subtitle: 'Основна production-тема' },
-  dark: { title: 'Dark', subtitle: 'Контрастні темні поверхні' },
-  classic: { title: 'Classic', subtitle: 'Фіолетовий legacy-комплект' },
-}
-
-const activeThemeMeta = computed(() => themeMeta[themeStore.theme] || themeMeta.light)
+const activeThemeMeta = computed(() => {
+  const meta = themeMeta.value
+  return meta[themeStore.theme] || meta.light
+})
 
 function setTheme(value) {
   if (themeStore.theme === value) return
@@ -314,11 +433,11 @@ const formState = reactive({
   select: '',
 })
 
-const selectOptions = [
-  { label: 'Emerald', value: 'emerald' },
-  { label: 'Cyan', value: 'cyan' },
-  { label: 'Violet', value: 'violet' },
-]
+const selectOptions = computed(() => [
+  { label: t('devPlayground.inputs.selectOptions.emerald'), value: 'emerald' },
+  { label: t('devPlayground.inputs.selectOptions.cyan'), value: 'cyan' },
+  { label: t('devPlayground.inputs.selectOptions.violet'), value: 'violet' },
+])
 
 const showModal = ref(false)
 const modalForm = reactive({
@@ -334,29 +453,29 @@ function confirmModal() {
   toggleModal(false)
 }
 
-const tableRows = [
+const tableRows = computed(() => [
   {
-    component: 'Button / Primary',
-    state: 'Hover',
+    component: t('devPlayground.table.rows.buttons.component'),
+    state: t('devPlayground.table.rows.buttons.state'),
     badge: 'success',
-    contrast: 'AA+',
-    notes: 'Перевірити glow у dark theme.',
+    contrast: t('devPlayground.table.rows.buttons.contrast'),
+    notes: t('devPlayground.table.rows.buttons.notes'),
   },
   {
-    component: 'Input / Outline',
-    state: 'Error',
+    component: t('devPlayground.table.rows.inputs.component'),
+    state: t('devPlayground.table.rows.inputs.state'),
     badge: 'warning',
-    contrast: 'AA',
-    notes: 'Потрібно затвердити червоний відтінок.',
+    contrast: t('devPlayground.table.rows.inputs.contrast'),
+    notes: t('devPlayground.table.rows.inputs.notes'),
   },
   {
-    component: 'Badge',
-    state: 'Muted',
+    component: t('devPlayground.table.rows.badges.component'),
+    state: t('devPlayground.table.rows.badges.state'),
     badge: 'muted',
-    contrast: 'AA-',
-    notes: 'Підсилити opacity тексту.',
+    contrast: t('devPlayground.table.rows.badges.contrast'),
+    notes: t('devPlayground.table.rows.badges.notes'),
   },
-]
+])
 
 const cssTokenMap = [
   { label: 'Accent', variable: '--accent' },
@@ -430,6 +549,59 @@ watch(
     requestAnimationFrame(() => refreshTokens())
   },
 )
+
+const notificationsStore = useNotificationsStore()
+const debugJson = ref(
+  JSON.stringify(
+    {
+      title: 'Lesson rescheduled',
+      body: 'Student moved lesson #104 to 18:30.',
+      payload: {
+        lesson_id: 104,
+        tag: 'Schedule',
+        tone: 'warning',
+      },
+    },
+    null,
+    2,
+  ),
+)
+
+const parsedNotification = computed(() => {
+  try {
+    return JSON.parse(debugJson.value)
+  } catch {
+    return null
+  }
+})
+
+const jsonError = computed(() => {
+  try {
+    JSON.parse(debugJson.value)
+    return ''
+  } catch (error) {
+    return error instanceof Error ? error.message : t('devPlayground.notifications.invalidJson')
+  }
+})
+
+const debugEvents = computed(() => notificationsStore.debugEvents)
+const isOfflineSimulated = computed(() => notificationsStore.mockOffline)
+
+function pushMockNotification() {
+  if (!parsedNotification.value) return
+  notificationsStore.addMockNotification(parsedNotification.value)
+}
+
+function toggleOfflineSimulation() {
+  notificationsStore.toggleOfflineSimulation()
+}
+
+const notificationsPreview = computed(() => ({
+  title: parsedNotification.value?.title || t('devPlayground.notifications.previewFallbackTitle'),
+  body: parsedNotification.value?.body || parsedNotification.value?.payload?.body || t('devPlayground.notifications.previewFallbackBody'),
+  tag: parsedNotification.value?.payload?.tag || 'Dev',
+  tone: parsedNotification.value?.payload?.tone || 'info',
+}))
 </script>
 
 <style scoped>

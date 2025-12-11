@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
 import { notifications, notifySuccess, notifyError, notifyWarning, notifyInfo } from '../utils/notify'
 
-const DEFAULT_AUTO_HIDE_MS = 4000
+const DEFAULT_AUTO_HIDE_MS = 5000
+const MAX_VISIBLE_TOASTS = 3
 let unsubscribe = null
 
 export const useNotifyStore = defineStore('notify', {
@@ -18,10 +19,21 @@ export const useNotifyStore = defineStore('notify', {
     },
 
     enqueue(payload) {
+      const duration = payload.meta?.timeout ?? DEFAULT_AUTO_HIDE_MS
       const entry = {
         ...payload,
-        timer: setTimeout(() => this.dismiss(payload.id), payload.meta?.timeout ?? DEFAULT_AUTO_HIDE_MS),
+        duration,
+        createdAt: Date.now(),
+        timer: setTimeout(() => this.dismiss(payload.id), duration),
       }
+
+      if (this.items.length >= MAX_VISIBLE_TOASTS) {
+        const removed = this.items.shift()
+        if (removed?.timer) {
+          clearTimeout(removed.timer)
+        }
+      }
+
       this.items.push(entry)
     },
 

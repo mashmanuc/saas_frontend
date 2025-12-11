@@ -1,0 +1,457 @@
+0. Цілі MASH v2.0
+
+Щоб не довелося нічого “ламати”, архітектура має гарантувати:
+
+Модульний моноліт:
+Один Django-проєкт, але багато чітких доменів (apps), кожен зі своїми моделями, API, services, tests.
+
+3 поверхи платформи (з маніфесту):
+
+Discovery — пошук тьютора/курсу (Marketplace).
+
+Learning — уроки, дошки, тести, домашки (Learning Engine).
+
+Growth — прогрес, аналітика, рекомендації (Analytics & Intelligence).
+
+Принцип “розширювати, а не переписувати”
+Нова фіча = новий домен або розширення існуючого, а не хаос в старих apps.
+
+1. Слої архітектури
+1.1. Core Layer
+
+apps.core
+
+базові утиліти, абстрактні моделі, mixin-и
+
+BaseModel, TimeStampedModel, SoftDelete, Tenant (якщо буде multi-org)
+
+apps.auth_ext
+
+JWT/Session логіка, OAuth, email login, device sessions
+
+Правило: усі інші домени МОЖУТЬ залежати від core, але core не залежить ні від кого.
+
+1.2. People & Identity Layer
+
+Це наш “UNIVERSAL PROFILE MODULE” (v0.6)
+
+apps.users
+
+User (акаунт)
+
+UserEmail / UserPhone (контакти)
+
+UserSecuritySettings
+
+apps.profiles
+
+AbstractProfile
+
+TutorProfile
+
+StudentProfile
+
+OrgAdminProfile
+
+PsychologistProfile (якщо розширюємо)
+
+apps.settings
+
+UserSettings (мови, timezone, privacy, theme, notifications)
+
+Це “People System” — база для всього.
+Жоден інший домен не створює своїх “юзерів”, тільки посилається на них.
+
+1.3. Relations & Organizations Layer
+
+Тут все про зв’язки: хто з ким пов’язаний.
+
+apps.organizations
+
+Organization (школа, центр, компанія)
+
+OrgMembership (роль: owner/admin/teacher/student)
+
+OrgClassroomGroup (класи, групи)
+
+apps.relations
+
+TutorStudentRelation
+
+статуси: invited, pending, active, archived, blocked
+
+RelationStatusLog (історія змін)
+
+MyTutorResolverService (щоб завжди знати “активного” тьютора)
+
+apps.classrooms
+
+Classroom (група навчання)
+
+ClassroomMembership
+
+ClassroomRole: teacher/student/assistant
+
+Правило:
+
+relations може посилатись на users, profiles.
+
+lessons, assignments, boards, chat — завжди прив’язуються до relations / classrooms.
+
+1.4. Learning Engine Layer
+
+Те, що перетворює наш продукт з “каталогу тьюторів” на реальний інструмент навчання (v0.8+).
+
+apps.lessons
+
+Lesson
+
+tutor, student (або classroom)
+
+start_at, end_at, timezone
+
+status: scheduled, completed, cancelled, no_show
+
+series_id для повторюваних занять (зарезервовано на v2.x)
+
+LessonNote (нотатки тьютора/студента)
+
+LessonRecording (лінк на відео/аудіо)
+
+apps.schedule
+
+TutorAvailability (слоти: day-of-week, time ranges, timezone)
+
+TimeSlot (інстанси слотів у календарі)
+
+BookingRequest (заявка студента на конкретний слот)
+
+apps.assignments
+
+Assignment (домашка / завдання)
+
+AssignmentAttachment
+
+StudentSubmission
+
+SubmissionFeedback (оцінки, коментарі)
+
+apps.board
+
+BoardSession
+
+BoardSnapshot (версії дошки)
+
+BoardAsset (зображення, файли)
+
+Realtime channel id (для WS)
+
+apps.tests_engine
+
+TestTemplate (структура тесту)
+
+QuestionBank
+
+Question
+
+AnswerOption
+
+StudentTestSession
+
+TestResult
+
+Правило:
+
+Уроки/домашки/дошки завжди прив’язуються до relations/classroom.
+
+Ніде не дублікуємо user_id, якщо вже є relation_id / classroom_id.
+
+1.5. Content & Knowledge Layer
+
+Це все, що стосується навчального контенту, підручників, PDF, NMT/ZNO.
+
+apps.courses
+
+Course
+
+Module (розділ)
+
+LessonContent (теоретичний матеріал)
+
+ResourceLink (відео, pdf, інші ресурси)
+
+apps.knowledge
+
+Concept (математичне поняття, тема)
+
+ConceptLink (зв’язки: prerequisite/related)
+
+ConceptTagging (зв’язок з Question, Test, LessonContent)
+
+LearningPath (автоматичні/ручні маршрути по поняттях)
+
+apps.content_ingest
+
+PdfSource
+
+ParsedPage
+
+ContentBlock (вихід від Marker/Nougat)
+
+MappingRules (як прив’язувати блоки до Concepts/Courses)
+
+Це шар, який дає нам “розумні” пояснення, зв’язки між задачами, персоналізацію.
+
+1.6. Discovery & Marketplace Layer
+
+Це v0.7 MARKETPLACE CORE + майбутні розширення.
+
+apps.marketplace
+
+TutorPublicProfile (view-проєкція з TutorProfile + UserSettings)
+
+SearchIndex (денормалізований індекс для швидкого пошуку)
+
+Filters: subjects, price, experience, languages, rating
+
+AvailabilitySummary (згенерований з schedule)
+
+apps.reviews
+
+Review
+
+ReviewRating (структура оцінки: пояснення, пунктуальність, materials)
+
+AggregatedRating
+
+apps.discovery
+
+RecommendationFeed (найкращі тьютори/курси для студента)
+
+FeaturedBlocks (ручний промо-вибір)
+
+Важливо:
+
+Marketplace читає профілі й relations, але не змінює їх.
+
+Всі write-операції — через базові домени (profiles/relations/lessons).
+
+1.7. Communication & Realtime Layer
+
+Це v0.9 REAL-TIME COLLABORATION.
+
+apps.chat
+
+Conversation (tutor-student, груповий, classroom)
+
+Message
+
+Attachment
+
+ReadMarker
+
+apps.presence
+
+PresenceState (online/away/offline, last_seen)
+
+LessonPresence (хто в онлайні в певній сесії)
+
+apps.notifications
+
+Notification (in-app)
+
+EmailNotification
+
+PushNotification
+
+Templates
+
+apps.realtime
+
+Channel definitions (WS-шлюз)
+
+Events (lesson.start, board.update, chat.message, presence.update)
+
+Auth / scopes для підписок
+
+Архітектурно: один WS endpoint, але різні канали.
+Потім можна винести в окремий сервіс, не чіпаючи домени.
+
+1.8. Analytics & Intelligence Layer
+
+Це Growth Floor з маніфесту.
+
+apps.analytics
+
+ActivityLog (уже є)
+
+EventLog (узагальнені події)
+
+PerformanceMetrics
+
+StudentProgress (агрегації)
+
+apps.reports
+
+LessonReport
+
+AssignmentReport
+
+PaymentReport
+
+OrgDashboardAggregates
+
+apps.ai_assist (v2.x)
+
+ExplanationRequest
+
+GeneratedExplanation
+
+RecommendationEngineConfig
+
+Усі домени шлють події в ActivityLog/EventLog.
+Аналітика читає, агрегує, формує insights, не змінюючи “production” дані.
+
+1.9. Monetization & Admin Layer
+
+Це наш майбутній v1.0 FULL SaaS RELEASE.
+
+apps.payments
+
+SubscriptionPlan
+
+Subscription
+
+Invoice
+
+PaymentProvider (Stripe/LiqPay/WayForPay wrapper)
+
+TransactionLog
+
+apps.billing_rules
+
+TariffRule (що саме дає план)
+
+Quotas & Limits (кількість учнів/класів/дошок)
+
+apps.admin_panel
+
+AdminActionLog
+
+AbuseReport
+
+SupportTicket
+
+2. Правила залежностей між доменами
+
+Щоб моноліт лишався модульним, вводимо “піраміду залежностей”:
+
+Core — в основі.
+Всі можуть імпортувати core.
+
+People (users/profiles/settings)
+Може залежати тільки від core.
+
+Relations/Organizations/Classrooms
+Залежать від People + core.
+
+Learning (lessons/assignments/board/tests)
+Залежить від Relations + People + core.
+
+Content/Knowledge
+Може посилатися на Learning (для прив’язки контенту до уроків/курсів) і People (автори).
+
+Marketplace
+Читає profiles, relations, schedule, reviews. Не змінює їх.
+
+Communication & Realtime
+Може посилатися на users, relations, lessons, board.
+
+Analytics
+Може слухати події з усього, але тільки читати/агрегувати, не змінювати першоджерела.
+
+Payments/Admin
+Працює з users, organizations, marketplace.
+
+Заборона:
+
+Ніяких крос-імпортів “зверху вниз” (наприклад, users НЕ імпортує marketplace).
+
+Вся взаємодія доменів — або через services, або через події/ActivityLog.
+
+3. Відображення на фронтенді (Vue 3 + Pinia)
+
+Щоб backend і frontend співали в унісон:
+
+src/modules/
+  accounts/        → apps.users, apps.settings
+  profiles/        → apps.profiles
+  relations/       → apps.relations, apps.classrooms
+  marketplace/     → apps.marketplace, apps.reviews
+  lessons/         → apps.lessons, apps.schedule
+  assignments/     → apps.assignments
+  board/           → apps.board
+  tests_engine/    → apps.tests_engine
+  courses/         → apps.courses, apps.knowledge
+  chat/            → apps.chat, apps.realtime
+  analytics/       → apps.analytics, apps.reports
+  payments/        → apps.payments
+  orgs/            → apps.organizations
+  admin_panel/     → apps.admin_panel
+
+
+Кожен модуль має:
+
+свій store
+
+свій api (axios-клієнт)
+
+свої views (сторінки)
+
+свої components
+
+4. Як це лягає на наш ROADMAP (v1.0 → v2.0)
+v0.6–v0.9 (поточна перша гілка)
+
+v0.6 — Users/Profiles/Settings ✅ (People System)
+
+v0.7 — Marketplace Core ✅
+
+v0.8 — Lessons & Scheduling (база вже частково є, ми її доробимо під цей план)
+
+v0.9 — Realtime (чат, дошка, presence)
+
+v1.0 — Full SaaS Release
+
+З цієї архітектури вже не треба нічого ламати:
+
+включаємо Payments, Subscriptions
+
+Admin Panel
+
+Org-режим (школи, компанії)
+
+базові Reports
+
+v2.0 — Розумна платформа
+
+Тут уже не rebuild, а розширення:
+
+Knowledge Graph (apps.knowledge)
+
+AI Assist (apps.ai_assist)
+
+Assignment Engine v2 (шаблони, автоперевірка)
+
+Org Analytics (розрізи по школах, класах, вчителях)
+
+Multi-tenant (якщо потрібно)
+
+5. Чим це все тобі корисно прямо зараз
+
+Можемо спокійно планувати версії 0.9, 1.0, 2.0, не боячись, що “вистрілить у ногу”.
+
+Будь-яка нова ідея (наприклад, “психологічні тести”, “шахи”, “фізика”) — це просто новий домен:
+apps.psy_tests, apps.chess_lessons, apps.subject_physics — без зміни базових людей/уроків/відносин.
+
+Якщо ти завтра захочеш винести, наприклад, board або chat в окремий сервіс — воно вже відокремлено.

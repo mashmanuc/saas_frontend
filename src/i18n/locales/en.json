@@ -17,6 +17,192 @@
       "classic": "Classic"
     }
   },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications yet.",
+    "markAllRead": "Mark all as read",
+    "new": "New notification",
+    "unreadCount": "{count} unread",
+    "loadMore": "Load more",
+    "dropdown": {
+      "ariaLabel": "Notifications",
+      "open": "Open notification menu",
+      "title": "Notifications",
+      "markAll": "Mark all read",
+      "loadMore": "Load more",
+      "loadingMore": "Loading…",
+      "refresh": "Refresh",
+      "noUnread": "Everything is up to date",
+      "unread": "Unread: {count}",
+      "loadingSubtitle": "Syncing activity…",
+      "errorSubtitle": "Connection issue",
+      "emptySubtitle": "No new notifications",
+      "emptyTitle": "All clear",
+      "emptyDescription": "You will see realtime alerts here.",
+      "errorTitle": "Unable to load",
+      "errorDescription": "The feed did not respond. Try again in a moment.",
+      "retry": "Retry",
+      "genericDescription": "New activity in your workspace."
+    }
+  },
+  "dev": {
+    "playground": "Component playground",
+    "theme": "Themes"
+  },
+  "devPlayground": {
+    "sidebar": {
+      "label": "Sections",
+      "ariaLabel": "Component playground navigation",
+      "controls": "Controls",
+      "controlsHint": "Buttons, inputs, selectors",
+      "feedback": "Feedback",
+      "feedbackHint": "Alerts, badges, empty states",
+      "tables": "Tables",
+      "tablesHint": "Layouts & contrast",
+      "tokens": "Tokens",
+      "tokensHint": "Live CSS variables"
+    },
+    "subtitle": "Visually QA every theme variant, state, and token before promoting a release.",
+    "themeSwitcher": {
+      "label": "Theme presets",
+      "active": "Active:"
+    },
+    "themeOptions": {
+      "light": {
+        "label": "Light",
+        "description": "Emerald accent, airy surfaces"
+      },
+      "dark": {
+        "label": "Dark",
+        "description": "Deep cyan palette, glassmorphism"
+      },
+      "classic": {
+        "label": "Classic",
+        "description": "Legacy purple gradients"
+      }
+    },
+    "themeMeta": {
+      "light": {
+        "title": "Light",
+        "subtitle": "Primary production theme"
+      },
+      "dark": {
+        "title": "Dark",
+        "subtitle": "High-contrast immersive mode"
+      },
+      "classic": {
+        "title": "Classic",
+        "subtitle": "Purple heritage kit"
+      }
+    },
+    "sections": {
+      "buttons": "Buttons",
+      "inputs": "Inputs & selects",
+      "badges": "Badges & alerts",
+      "modal": "Modal",
+      "modalDescription": "Dialog layout, focus trap, and form preview.",
+      "table": "Table sample"
+    },
+    "buttons": {
+      "primary": "Primary",
+      "secondary": "Secondary",
+      "outline": "Outline",
+      "ghost": "Ghost",
+      "danger": "Danger",
+      "loading": "Loading",
+      "disabled": "Disabled"
+    },
+    "inputs": {
+      "normalLabel": "Default input",
+      "normalPlaceholder": "Type something…",
+      "errorLabel": "Error state",
+      "errorMessage": "Please fix validation issues.",
+      "successLabel": "Success state",
+      "successHelp": "Synced value: {value}",
+      "selectLabel": "Select variant",
+      "selectPlaceholder": "Pick a colorway",
+      "selectOptions": {
+        "emerald": "Emerald",
+        "cyan": "Cyan",
+        "violet": "Violet"
+      }
+    },
+    "badges": {
+      "default": "Default",
+      "success": "Success",
+      "warning": "Warning",
+      "danger": "Danger",
+      "muted": "Muted"
+    },
+    "alerts": {
+      "success": {
+        "title": "Tokens synced",
+        "body": "Design tokens match specs across all modes."
+      },
+      "warning": {
+        "title": "API delay detected",
+        "body": "Latency is above threshold. Re-run checks."
+      },
+      "danger": {
+        "title": "Critical regression",
+        "body": "Current theme differs from release baseline."
+      }
+    },
+    "actions": {
+      "refresh": "Refresh tokens",
+      "openModal": "Open modal",
+      "save": "Save draft"
+    },
+    "modal": {
+      "title": "Create showcase card",
+      "fields": {
+        "title": "Title",
+        "subtitle": "Subtitle"
+      }
+    },
+    "table": {
+      "headers": {
+        "component": "Component",
+        "state": "State",
+        "contrast": "Contrast",
+        "notes": "Notes"
+      },
+      "rows": {
+        "buttons": {
+          "component": "Button / Primary",
+          "state": "Hover",
+          "contrast": "AA+",
+          "notes": "Verify glow intensity in dark mode."
+        },
+        "inputs": {
+          "component": "Input / Outline",
+          "state": "Error",
+          "contrast": "AA",
+          "notes": "Finalize danger tint for WCAG."
+        },
+        "badges": {
+          "component": "Badge",
+          "state": "Muted",
+          "contrast": "AA-",
+          "notes": "Increase text opacity for readability."
+        }
+      }
+    },
+    "liveTokens": {
+      "title": "Live CSS tokens",
+      "subtitle": "Snapshot of values applied to :root."
+    },
+    "designTokens": {
+      "title": "Design tokens",
+      "subtitle": "Reference list for QA & Percy diffs."
+    }
+  },
+  "ui": {
+    "emptyState": {
+      "defaultTitle": "Nothing here yet",
+      "defaultDescription": "There is no data to show right now."
+    }
+  },
   "auth": {
     "login": {
       "title": "Sign in",
@@ -252,6 +438,77 @@
     "withoutTutor": "You are learning on your own. Choose a tutor to start lessons.",
     "withTutor": "You already have a tutor. More information about your lessons will appear here soon."
   },
+  "chat": {
+    "header": {
+      "subtitle": "Lesson chat",
+      "title": "Live conversation"
+    },
+    "status": {
+      "offline": "Offline",
+      "connected": "Connected"
+    },
+    "typing": {
+      "single": "{name} is typing…",
+      "many": "{count} people are typing…",
+      "unknown": "Someone"
+    },
+    "loader": {
+      "loadMore": "Load earlier messages",
+      "loadingHistory": "Loading…"
+    },
+    "empty": "No messages yet. Say hi!",
+    "edited": "edited",
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "cancelEdit": "Cancel editing"
+    },
+    "input": {
+      "placeholder": "Write a message… Markdown and MathJax are supported.",
+      "hint": "Press Enter to send, Shift+Enter for newline.",
+      "send": "Send",
+      "sending": "Sending…"
+    },
+    "readSingle": "saw this",
+    "readMany": "saw this",
+    "editing": "Editing message",
+    "confirm": {
+      "delete": "Delete this message?"
+    }
+  },
+  "presence": {
+    "online": "Online",
+    "offline": "Offline",
+    "label": "Presence"
+  },
+  "board": {
+    "title": "Collaborative whiteboard",
+    "participants": "{count} participant | {count} participants",
+    "participantsLabel": "{count} in this session",
+    "empty": "Start drawing to share ideas with everyone in the lesson.",
+    "toolbar": {
+      "tools": "Tools",
+      "colors": "Colors",
+      "thickness": "Brush size",
+      "undo": "Undo",
+      "redo": "Redo",
+      "clear": "Clear board"
+    },
+    "tools": {
+      "pencil": "Pencil",
+      "eraser": "Eraser"
+    },
+    "status": {
+      "saving": "Saving...",
+      "saved": "Saved",
+      "savedAt": "Saved at {time}"
+    },
+    "participantsList": {
+      "title": "Participants",
+      "subtitle": "Live presence & cursors",
+      "cursorActive": "{name} is drawing now"
+    }
+  },
   "profile": {
     "title": "Profile",
     "subtitle": "Keep your personal information up to date.",
@@ -429,6 +686,28 @@
       },
       "info": {
         "partial": "Showing first {limit} events. Narrow your range or status to load more."
+      }
+    },
+    "detail": {
+      "title": "Lesson overview",
+      "subtitle": "Lesson #{id}",
+      "fallbackTitle": "Lesson #{id}",
+      "fields": {
+        "start": "Start time",
+        "end": "End time",
+        "timezone": "Timezone",
+        "status": "Status",
+        "duration": "Duration"
+      },
+      "participants": "Participants",
+      "roles": {
+        "tutor": "Tutor",
+        "student": "Student"
+      },
+      "notes": "Notes",
+      "error": "Failed to load lesson data.",
+      "actions": {
+        "retry": "Retry"
       }
     }
   }

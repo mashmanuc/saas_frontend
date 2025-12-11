@@ -4,6 +4,9 @@ const lessonsApi = {
   listMyLessons(params = {}) {
     return apiClient.get('/lessons/my/', { params })
   },
+  getLesson(id) {
+    return apiClient.get(`/lessons/${id}/`)
+  },
   createLesson(payload) {
     return apiClient.post('/lessons/', payload)
   },

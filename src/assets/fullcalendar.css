@@ -1,3 +1,1 @@
-/* FullCalendar styles - imported globally in main.js */
-@import '@fullcalendar/core/main.css';
-@import '@fullcalendar/timegrid/main.css';
+/* FullCalendar v6 auto-injects its styles via JS; no manual CSS imports needed */

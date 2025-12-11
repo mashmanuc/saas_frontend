@@ -9,6 +9,8 @@ import './styles/m4sh.css'
 import { useNotifyStore } from './stores/notifyStore'
 import { useSettingsStore } from './stores/settingsStore'
 import { useThemeStore } from './stores/themeStore'
+import { useRealtimeStore } from './stores/realtimeStore'
+import { useNotificationsStore } from './stores/notificationsStore'
 
 const app = createApp(App)
 app.use(pinia)
@@ -22,6 +24,12 @@ theme.init()
 
 const notify = useNotifyStore()
 notify.init()
+
+const realtime = useRealtimeStore()
+realtime.init()
+
+const notifications = useNotificationsStore()
+notifications.init()
 
 app.use(router)
 app.mount('#app')

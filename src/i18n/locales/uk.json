@@ -17,6 +17,192 @@
       "classic": "Класична"
     }
   },
+  "notifications": {
+    "title": "Сповіщення",
+    "empty": "Поки немає сповіщень.",
+    "markAllRead": "Позначити всі прочитаними",
+    "new": "Нове сповіщення",
+    "unreadCount": "Непрочитано: {count}",
+    "loadMore": "Завантажити ще",
+    "dropdown": {
+      "ariaLabel": "Сповіщення",
+      "open": "Відкрити меню сповіщень",
+      "title": "Сповіщення",
+      "markAll": "Позначити всі прочитаними",
+      "loadMore": "Завантажити ще",
+      "loadingMore": "Завантаження…",
+      "refresh": "Оновити",
+      "noUnread": "Усі сповіщення переглянуті",
+      "unread": "Непрочитано: {count}",
+      "loadingSubtitle": "Синхронізуємо активність…",
+      "errorSubtitle": "Немає звʼязку",
+      "emptySubtitle": "Нових сповіщень немає",
+      "emptyTitle": "Тут поки тихо",
+      "emptyDescription": "Реальні оновлення з’являтимуться тут.",
+      "errorTitle": "Не вдалось завантажити",
+      "errorDescription": "Спробуйте повторити за хвилину.",
+      "retry": "Повторити",
+      "genericDescription": "Нове оновлення у вашому просторі."
+    }
+  },
+  "dev": {
+    "playground": "Пісочниця компонентів",
+    "theme": "Теми"
+  },
+  "devPlayground": {
+    "sidebar": {
+      "label": "Розділи",
+      "ariaLabel": "Навігація по пісочниці компонентів",
+      "controls": "Контроли",
+      "controlsHint": "Кнопки, інпути, селекти",
+      "feedback": "Фідбек",
+      "feedbackHint": "Алерти, бейджі, пусті стани",
+      "tables": "Таблиці",
+      "tablesHint": "Макети та контраст",
+      "tokens": "Токени",
+      "tokensHint": "Живі CSS змінні"
+    },
+    "subtitle": "Перевіряйте кожну тему, стан і токен перед релізом.",
+    "themeSwitcher": {
+      "label": "Пресети тем",
+      "active": "Активна:"
+    },
+    "themeOptions": {
+      "light": {
+        "label": "Light",
+        "description": "Смарагдові акценти, повітряні поверхні"
+      },
+      "dark": {
+        "label": "Dark",
+        "description": "Глибокий бірюзовий, скляні ефекти"
+      },
+      "classic": {
+        "label": "Classic",
+        "description": "Спадок фіолетових градієнтів"
+      }
+    },
+    "themeMeta": {
+      "light": {
+        "title": "Light",
+        "subtitle": "Основна production-тема"
+      },
+      "dark": {
+        "title": "Dark",
+        "subtitle": "Контрастна immersive-версія"
+      },
+      "classic": {
+        "title": "Classic",
+        "subtitle": "Фіолетовий legacy-комплект"
+      }
+    },
+    "sections": {
+      "buttons": "Кнопки",
+      "inputs": "Інпути та селекти",
+      "badges": "Бейджі й алерти",
+      "modal": "Модальне вікно",
+      "modalDescription": "Оцінка діалогу, фокусу та форм.",
+      "table": "Приклад таблиці"
+    },
+    "buttons": {
+      "primary": "Primary",
+      "secondary": "Secondary",
+      "outline": "Outline",
+      "ghost": "Ghost",
+      "danger": "Danger",
+      "loading": "Loading",
+      "disabled": "Disabled"
+    },
+    "inputs": {
+      "normalLabel": "Стандартний інпут",
+      "normalPlaceholder": "Введіть текст…",
+      "errorLabel": "Помилка валідації",
+      "errorMessage": "Виправте помилки перед відправкою.",
+      "successLabel": "Успішний стан",
+      "successHelp": "Синхронізоване значення: {value}",
+      "selectLabel": "Варіант селекта",
+      "selectPlaceholder": "Оберіть палітру",
+      "selectOptions": {
+        "emerald": "Emerald",
+        "cyan": "Cyan",
+        "violet": "Violet"
+      }
+    },
+    "badges": {
+      "default": "Стандарт",
+      "success": "Успіх",
+      "warning": "Попередження",
+      "danger": "Небезпека",
+      "muted": "Приглушений"
+    },
+    "alerts": {
+      "success": {
+        "title": "Токени синхронізовано",
+        "body": "Нинішні значення збігаються з дизайн-спеком."
+      },
+      "warning": {
+        "title": "Затримка API",
+        "body": "Затримка перевищує поріг — оновіть дані."
+      },
+      "danger": {
+        "title": "Критичний регрес",
+        "body": "Тема відрізняється від релізної бази."
+      }
+    },
+    "actions": {
+      "refresh": "Оновити токени",
+      "openModal": "Відкрити модалку",
+      "save": "Зберегти чернетку"
+    },
+    "modal": {
+      "title": "Створити демо-картку",
+      "fields": {
+        "title": "Заголовок",
+        "subtitle": "Підзаголовок"
+      }
+    },
+    "table": {
+      "headers": {
+        "component": "Компонент",
+        "state": "Стан",
+        "contrast": "Контраст",
+        "notes": "Нотатки"
+      },
+      "rows": {
+        "buttons": {
+          "component": "Button / Primary",
+          "state": "Hover",
+          "contrast": "AA+",
+          "notes": "Перевірити свічення у dark-mode."
+        },
+        "inputs": {
+          "component": "Input / Outline",
+          "state": "Error",
+          "contrast": "AA",
+          "notes": "Погодити відтінок червоного по WCAG."
+        },
+        "badges": {
+          "component": "Badge",
+          "state": "Muted",
+          "contrast": "AA-",
+          "notes": "Підсилити непрозорість тексту."
+        }
+      }
+    },
+    "liveTokens": {
+      "title": "Живі CSS токени",
+      "subtitle": "Значення, застосовані до :root."
+    },
+    "designTokens": {
+      "title": "Design tokens",
+      "subtitle": "Референс для QA та Percy-скрінів."
+    }
+  },
+  "ui": {
+    "emptyState": {
+      "defaultTitle": "Поки порожньо",
+      "defaultDescription": "Немає даних для відображення."
+    }
+  },
   "auth": {
     "login": {
       "title": "Вхід",
@@ -44,7 +230,7 @@
       "title": "Запросити студента",
       "description": "Введіть email студента, щоб надіслати запрошення до цього класу.",
       "emailLabel": "Email студента",
-      "emailPlaceholder": "student@example.com",
+      "emailPlaceholder": "student@@example.com",
       "errors": {
         "required": "Email є обов'язковим.",
         "invalid": "Невірний email.",
@@ -432,7 +618,80 @@
       "title": "Запросити студента",
       "description": "Введіть email студента, щоб надіслати запрошення до цього класу.",
       "emailLabel": "Email студента",
-      "emailPlaceholder": "student@example.com"
+      "emailPlaceholder": "student@example.com",
+      "button": "Запросити",
+      "submit": "Надіслати запрошення",
+      "success": "Запрошення надіслано.",
+      "errors": {
+        "required": "Email є обовʼязковим.",
+        "invalid": "Некоректна email-адреса.",
+        "generic": "Не вдалося надіслати запрошення."
+      }
+    }
+  },
+  "chat": {
+    "header": {
+      "subtitle": "Чат уроку",
+      "title": "Реальний час"
+    },
+    "status": {
+      "offline": "Офлайн",
+      "connected": "Зʼєднано"
+    },
+    "typing": {
+      "single": "{name} набирає…",
+      "many": "{count} учасників набирають…",
+      "unknown": "Хтось"
+    },
+    "loader": {
+      "loadMore": "Завантажити попередні повідомлення",
+      "loadingHistory": "Завантажуємо…"
+    },
+    "empty": "Повідомлень ще немає. Напишіть першим!",
+    "edited": "відредаговано",
+    "actions": {
+      "edit": "Редагувати",
+      "delete": "Видалити",
+      "cancelEdit": "Скасувати редагування"
+    },
+    "input": {
+      "placeholder": "Напишіть повідомлення… Підтримується Markdown і MathJax.",
+      "hint": "Enter — надіслати, Shift+Enter — новий рядок.",
+      "send": "Надіслати",
+      "sending": "Надсилаємо…"
+    },
+    "readSingle": "переглянув(ла)",
+    "readMany": "переглянули",
+    "editing": "Редагування повідомлення",
+    "confirm": {
+      "delete": "Видалити це повідомлення?"
+    }
+  },
+  "presence": {
+    "online": "Онлайн",
+    "offline": "Офлайн",
+    "label": "Статус присутності"
+  },
+  "board": {
+    "title": "Спільна дошка",
+    "participants": "{count} учасник | {count} учасники | {count} учасників",
+    "participantsLabel": "{count} у сесії",
+    "empty": "Почніть малювати, щоб поділитися ідеями з іншими учасниками уроку.",
+    "toolbar": {
+      "tools": "Інструменти",
+      "colors": "Кольори",
+      "thickness": "Товщина",
+      "undo": "Скасувати",
+      "redo": "Повторити",
+      "clear": "Очистити дошку"
+    },
+    "tools": {
+      "pencil": "Олівець",
+      "eraser": "Гумка"
+    },
+    "status": {
+      "saving": "Зберігаємо…",
+      "saved": "Збережено"
     }
   },
   "lessons": {
@@ -491,6 +750,28 @@
       },
       "info": {
         "partial": "Показуємо перші {limit} подій. Звузьте діапазон або статус, щоб завантажити більше."
+      }
+    },
+    "detail": {
+      "title": "Перегляд уроку",
+      "subtitle": "Урок №{id}",
+      "fallbackTitle": "Урок №{id}",
+      "fields": {
+        "start": "Початок",
+        "end": "Завершення",
+        "timezone": "Таймзона",
+        "status": "Статус",
+        "duration": "Тривалість"
+      },
+      "participants": "Учасники",
+      "roles": {
+        "tutor": "Тьютор",
+        "student": "Студент"
+      },
+      "notes": "Нотатки",
+      "error": "Не вдалося завантажити дані уроку.",
+      "actions": {
+        "retry": "Повторити"
       }
     }
   }

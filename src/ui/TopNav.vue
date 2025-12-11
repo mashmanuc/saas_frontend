@@ -45,6 +45,8 @@
         </button>
       </div>
 
+      <NotificationDropdown class="hidden sm:block" />
+
       <!-- User avatar -->
       <div class="flex items-center gap-2">
         <div
@@ -106,6 +108,7 @@ import { useAuthStore } from '../modules/auth/store/authStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useThemeStore } from '../stores/themeStore'
 import { useI18n } from 'vue-i18n'
+import NotificationDropdown from './NotificationDropdown.vue'
 
 const router = useRouter()
 const auth = useAuthStore()

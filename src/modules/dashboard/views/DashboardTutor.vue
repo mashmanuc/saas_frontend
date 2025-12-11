@@ -218,21 +218,25 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import Button from '../../../ui/Button.vue'
 import Card from '../../../ui/Card.vue'
 import Avatar from '../../../ui/Avatar.vue'
+import PresenceDot from '../../../ui/PresenceDot.vue'
 import { formatDateTime } from '../../../utils/datetime'
 import { useAuthStore } from '../../auth/store/authStore'
 import { useDashboardStore } from '../store/dashboardStore'
 import { useRelationsStore } from '../../../stores/relationsStore'
+import { usePresenceStore } from '../../../stores/presenceStore'
 import { notifySuccess, notifyError } from '../../../utils/notify'
 
 const auth = useAuthStore()
 const dashboard = useDashboardStore()
 const relationsStore = useRelationsStore()
+const presenceStore = usePresenceStore()
+presenceStore.init()
 const router = useRouter()
 const { t } = useI18n()
 
@@ -250,6 +254,22 @@ const canBulkArchive = computed(() => relationsStore.canBulkArchive)
 const bulkLoading = computed(() => relationsStore.tutorBulkLoading)
 const hasMore = computed(() => relationsStore.tutorHasMore)
 const loadingMore = computed(() => relationsStore.tutorLoadingMore)
+const trackedStudentIds = computed(() =>
+  filteredRelations.value
+    .map((relation) => relation.student?.id)
+    .filter((id) => id != null)
+    .map((id) => String(id)),
+)
+
+watch(
+  trackedStudentIds,
+  (ids) => {
+    if (ids?.length) {
+      presenceStore.track(ids)
+    }
+  },
+  { immediate: true },
+)
 
 const actionLoadingId = ref(null)
 const resendLoadingId = ref(null)
@@ -444,6 +464,11 @@ async function handleRetryFetch() {
   } finally {
     retryLoading.value = false
   }
+}
+
+function isOnline(userId) {
+  if (!userId) return false
+  return presenceStore.isOnline?.(String(userId)) || false
 }
 
 onMounted(() => {
