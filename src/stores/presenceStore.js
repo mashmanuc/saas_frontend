@@ -14,6 +14,7 @@ export const usePresenceStore = defineStore('presence', {
     timer: null,
     initialized: false,
     trackedIds: [],
+    subscription: null,
   }),
 
   getters: {
@@ -82,7 +83,11 @@ export const usePresenceStore = defineStore('presence', {
     },
 
     subscribeRealtime() {
-      realtimeService.subscribe('presence', (payload) => {
+      if (this.subscription) {
+        this.subscription()
+        this.subscription = null
+      }
+      this.subscription = realtimeService.subscribe('presence', (payload) => {
         if (payload?.type === 'user.online') {
           this.setStatus(payload.userId, true)
         }
@@ -113,9 +118,14 @@ export const usePresenceStore = defineStore('presence', {
       this.statuses = {}
       this.lastUpdated = null
       this.trackedIds = []
+      this.initialized = false
       if (this.timer) {
         clearInterval(this.timer)
         this.timer = null
+      }
+      if (this.subscription) {
+        this.subscription()
+        this.subscription = null
       }
     },
   },

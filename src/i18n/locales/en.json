@@ -720,5 +720,65 @@
         "retry": "Retry"
       }
     }
+  },
+  "errors": {
+    "http": {
+      "badRequest": "Invalid request. Please check your input.",
+      "unauthorized": "Session expired. Please log in again.",
+      "forbidden": "Access denied. Contact administrator.",
+      "notFound": "Resource not found.",
+      "timeout": "Request timed out. Try again.",
+      "conflict": "Conflict with existing data.",
+      "validation": "Validation error. Check your input.",
+      "rateLimit": "Too many requests. Please wait.",
+      "serverError": "Server error. Try again later.",
+      "badGateway": "Service temporarily unavailable.",
+      "serviceUnavailable": "Service is down for maintenance.",
+      "gatewayTimeout": "Server took too long to respond.",
+      "unknown": "An unexpected error occurred."
+    },
+    "api": {
+      "invalidCredentials": "Invalid email or password.",
+      "tokenExpired": "Your session has expired.",
+      "tokenInvalid": "Invalid authentication token.",
+      "sessionExpired": "Session expired. Please log in again.",
+      "validationError": "Please correct the errors below.",
+      "fieldRequired": "{field} is required.",
+      "invalidFormat": "Invalid format.",
+      "relationNotFound": "Relation not found.",
+      "relationAlreadyExists": "This relation already exists.",
+      "cannotInviteSelf": "You cannot invite yourself.",
+      "lessonNotFound": "Lesson not found.",
+      "lessonAlreadyCancelled": "This lesson is already cancelled.",
+      "invalidScheduleTime": "Invalid schedule time.",
+      "messageNotFound": "Message not found.",
+      "messageEditForbidden": "You cannot edit this message.",
+      "notFound": "Not found.",
+      "permissionDenied": "Permission denied.",
+      "rateLimited": "Too many requests. Please wait.",
+      "serverError": "Server error. Try again later."
+    },
+    "network": {
+      "offline": "No internet connection. Check your network.",
+      "timeout": "Connection timed out.",
+      "connectionRefused": "Cannot connect to server.",
+      "dnsError": "DNS lookup failed.",
+      "sslError": "Secure connection failed."
+    },
+    "websocket": {
+      "disconnected": "Real-time connection lost.",
+      "reconnecting": "Reconnecting... (attempt {attempt}/{max})",
+      "reconnected": "Connection restored.",
+      "maxRetries": "Could not reconnect. Please refresh the page.",
+      "timeout": "Connection timed out. Retrying...",
+      "invalidChannel": "Invalid channel subscription.",
+      "forbidden": "Access denied to this channel.",
+      "unauthorized": "Please log in to access real-time features.",
+      "rateLimited": "Too many requests. Please wait.",
+      "malformedJson": "Invalid message format.",
+      "serverError": "Server error. Retrying...",
+      "unknown": "Connection error occurred.",
+      "syncing": "Reconnected — syncing data..."
+    }
   }
 }

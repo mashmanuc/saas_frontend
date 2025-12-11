@@ -42,6 +42,7 @@ export const useChatStore = defineStore('chat', {
     subscriptionCleanup: null,
     statusUnsubscribe: null,
     currentChannel: null,
+    syncing: false,
   }),
 
   getters: {
@@ -208,9 +209,20 @@ export const useChatStore = defineStore('chat', {
       if (this.statusUnsubscribe) return
       this.statusUnsubscribe = realtimeService.on('status', (status) => {
         if (status === 'open' && this.activeLessonId) {
-          this.fetchHistory({ replace: true })
+          // Reconnected — sync data
+          this.syncAfterReconnect()
         }
       })
+    },
+
+    async syncAfterReconnect() {
+      if (!this.activeLessonId) return
+      this.syncing = true
+      try {
+        await this.fetchHistory({ replace: true })
+      } finally {
+        this.syncing = false
+      }
     },
 
     markTyping({ userId, lessonId, displayName }) {
