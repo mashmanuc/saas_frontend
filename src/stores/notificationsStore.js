@@ -16,6 +16,7 @@ export const useNotificationsStore = defineStore('notifications', {
     cursor: null,
     hasMore: false,
     loading: false,
+    loadingMore: false,
     initialized: false,
     subscriptionCleanup: null,
     statusUnsubscribe: null,
@@ -24,6 +25,8 @@ export const useNotificationsStore = defineStore('notifications', {
     currentUserId: null,
     debugEvents: [],
     mockOffline: false,
+    lastError: null,
+    realtimeStatus: 'closed',
   }),
 
   getters: {
@@ -101,8 +104,15 @@ export const useNotificationsStore = defineStore('notifications', {
     },
 
     async fetchNotifications({ cursor = null, replace = false } = {}) {
-      if (this.loading || !this.currentUserId) return
-      this.loading = true
+      if (!this.currentUserId) return
+      const isPagination = Boolean(cursor && !replace)
+      if (!isPagination && this.loading) return
+      if (isPagination && this.loadingMore) return
+      if (isPagination) {
+        this.loadingMore = true
+      } else {
+        this.loading = true
+      }
       try {
         const response = await notificationsApi.list(cursor)
         const results = Array.isArray(response?.results) ? response.results : []
@@ -113,12 +123,18 @@ export const useNotificationsStore = defineStore('notifications', {
         }
         this.cursor = response?.cursor || null
         this.hasMore = Boolean(response?.has_more)
+        this.lastError = null
         this.logDebugEvent('fetch.success', { count: results.length, replace })
       } catch (error) {
         console.error('[notifications] fetch failed', error)
+        this.lastError = error?.message || 'fetch_failed'
         this.logDebugEvent('fetch.error', { message: error?.message })
       } finally {
-        this.loading = false
+        if (isPagination) {
+          this.loadingMore = false
+        } else {
+          this.loading = false
+        }
       }
     },
 
@@ -132,29 +148,33 @@ export const useNotificationsStore = defineStore('notifications', {
     },
 
     async loadMore() {
-      if (!this.cursor) return
+      if (!this.cursor || this.loadingMore) return
       await this.fetchNotifications({ cursor: this.cursor, replace: false })
     },
 
     async markAsRead(id) {
       if (!id) return
+      const index = this.items.findIndex((item) => item.id === id)
+      if (index === -1) return
+      const snapshot = { ...this.items[index] }
+      if (snapshot.read_at) return
+      this.items[index] = {
+        ...snapshot,
+        read_at: new Date().toISOString(),
+      }
       try {
         await notificationsApi.markRead(id)
-        this.items = this.items.map((item) =>
-          item.id === id
-            ? {
-                ...item,
-                read_at: item.read_at || new Date().toISOString(),
-              }
-            : item,
-        )
       } catch (error) {
         console.error('[notifications] mark read failed', error)
+        this.items[index] = snapshot
+        this.lastError = error?.message || 'mark_read_failed'
+        this.logDebugEvent('markRead.error', { id, message: error?.message })
       }
     },
 
     async markAllAsRead() {
       const unread = this.items.filter((item) => !item.read_at)
+      if (!unread.length) return
       await Promise.all(unread.map((item) => this.markAsRead(item.id)))
     },
 
@@ -180,6 +200,7 @@ export const useNotificationsStore = defineStore('notifications', {
 
     bindRealtimeStatus() {
       this.statusUnsubscribe = realtimeService.on?.('status', (status) => {
+        this.realtimeStatus = status
         if (status === 'open' && this.initialized && this.currentUserId) {
           this.fetchNotifications({ replace: true })
         }

@@ -461,17 +461,27 @@
     "actions": {
       "edit": "Edit",
       "delete": "Delete",
-      "cancelEdit": "Cancel editing"
+      "cancelEdit": "Cancel editing",
+      "retry": "Retry"
     },
     "input": {
       "placeholder": "Write a message… Markdown and MathJax are supported.",
       "hint": "Press Enter to send, Shift+Enter for newline.",
       "send": "Send",
-      "sending": "Sending…"
+      "sending": "Sending…",
+      "rateLimited": "Please wait…"
     },
     "readSingle": "saw this",
     "readMany": "saw this",
     "editing": "Editing message",
+    "messageStatus": {
+      "sending": "Sending…",
+      "delivered": "Delivered",
+      "error": "Failed"
+    },
+    "errors": {
+      "failedToSend": "Message failed to send. Please retry."
+    },
     "confirm": {
       "delete": "Delete this message?"
     }

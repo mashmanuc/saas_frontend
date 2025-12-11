@@ -1,31 +1,41 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { useNotificationsStore } from '../../src/stores/notificationsStore'
 
 const listMock = vi.fn()
 const markReadMock = vi.fn()
-vi.mock('../../src/api/notifications', () => ({
-  notificationsApi: {
-    list: listMock,
-    markRead: markReadMock,
-  },
-}))
-
 const publishMock = vi.fn()
 const subscribeMock = vi.fn(() => () => {})
 const onMock = vi.fn()
-vi.mock('../../src/services/realtime', () => ({
-  realtimeService: {
-    subscribe: subscribeMock,
-    publish: publishMock,
-    on: onMock,
+const notifyInfoMock = vi.fn()
+
+vi.mock('../../src/api/notifications', () => ({
+  notificationsApi: {
+    list: (...args) => listMock(...args),
+    markRead: (...args) => markReadMock(...args),
   },
 }))
 
-const notifyInfoMock = vi.fn()
-vi.mock('../../src/utils/notify', () => ({
-  notifyInfo: notifyInfoMock,
+vi.mock('../../src/services/realtime', () => ({
+  realtimeService: {
+    subscribe: (...args) => subscribeMock(...args),
+    publish: (...args) => publishMock(...args),
+    on: (...args) => onMock(...args),
+  },
 }))
+
+vi.mock('../../src/utils/notify', () => ({
+  notifyInfo: (...args) => notifyInfoMock(...args),
+}))
+
+vi.mock('../../src/modules/auth/store/authStore', () => ({
+  useAuthStore: () => ({
+    user: { id: 'user-1' },
+    access: 'token',
+    $onAction: vi.fn(),
+  }),
+}))
+
+const { useNotificationsStore } = await import('../../src/stores/notificationsStore')
 
 describe('notifications store', () => {
   beforeEach(() => {

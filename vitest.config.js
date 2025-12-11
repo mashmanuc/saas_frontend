@@ -7,6 +7,7 @@ export default defineConfig({
     environment: 'happy-dom',
     globals: true,
     setupFiles: ['./tests/setup.js'],
+    exclude: ['**/node_modules/**', '**/e2e/**'],
     coverage: {
       reporter: ['text', 'lcov'],
       include: ['src/modules/profile/**/*.{js,vue}'],

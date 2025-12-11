@@ -1,3 +1,9 @@
+const isSupportedChannel = (channel) => {
+  if (!channel) return false
+  const [root] = String(channel).split(':')
+  return SUPPORTED_CHANNELS.has(root)
+}
+
 const SUPPORTED_CHANNELS = new Set(['chat', 'board', 'presence', 'notifications'])
 const DEFAULT_HEARTBEAT_MS = 25_000
 const MAX_BACKOFF_MS = 15_000
@@ -125,7 +131,7 @@ class RealtimeService {
   }
 
   subscribe(channel, handler) {
-    if (!SUPPORTED_CHANNELS.has(channel)) {
+    if (!isSupportedChannel(channel)) {
       throw new Error(`[realtime] Unsupported channel ${channel}`)
     }
     const subscribers = this.channelSubscriptions.get(channel) || new Set()
@@ -152,7 +158,7 @@ class RealtimeService {
   }
 
   publish(channel, payload) {
-    if (!SUPPORTED_CHANNELS.has(channel)) {
+    if (!isSupportedChannel(channel)) {
       throw new Error(`[realtime] Unsupported channel ${channel}`)
     }
     this.send({
@@ -239,7 +245,7 @@ class RealtimeService {
     this.channelSubscriptions.forEach((subscribers, channel) => {
       if (subscribers.size) {
         this.send({
-          action: 'subscribe',
+          type: 'subscribe',
           channel,
         })
       }

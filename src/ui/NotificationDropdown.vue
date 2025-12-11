@@ -16,8 +16,13 @@
     <transition name="fade-scale">
       <div v-if="open" class="notif-panel" role="menu">
         <header class="panel-header">
-          <div>
-            <p class="panel-title">{{ $t('notifications.dropdown.title') }}</p>
+          <div class="panel-title-group">
+            <div class="panel-title-row">
+              <p class="panel-title">{{ $t('notifications.dropdown.title') }}</p>
+              <span v-if="isRealtimeOffline" class="status-pill status-pill--offline">
+                {{ $t('notifications.dropdown.offlineBadge') }}
+              </span>
+            </div>
             <p class="panel-subtitle">{{ headerSubtitle }}</p>
           </div>
           <button
@@ -33,7 +38,7 @@
         <section class="panel-body">
           <ul v-if="showList" class="notif-list">
             <li
-              v-for="item in previewItems"
+              v-for="item in displayItems"
               :key="item.id"
               class="notif-item"
               :class="itemClasses(item)"
@@ -58,7 +63,7 @@
             </li>
           </ul>
 
-          <div v-else-if="isLoading" class="notif-skeleton">
+          <div v-else-if="showSkeleton" class="notif-skeleton">
             <div class="skeleton-row" v-for="idx in skeletonItems" :key="idx">
               <div class="avatar-skeleton" aria-hidden="true" />
               <div class="text-skeleton" aria-hidden="true">
@@ -66,6 +71,16 @@
                 <span />
               </div>
             </div>
+          </div>
+
+          <div v-else-if="hasError" class="notif-state notif-state--error" role="alert">
+            <p class="notif-state__title">{{ $t('notifications.dropdown.errorTitle') }}</p>
+            <p class="notif-state__description">
+              {{ $t('notifications.dropdown.errorDescription') }}
+            </p>
+            <button type="button" class="ghost-button" @click="refresh">
+              {{ $t('notifications.dropdown.retry') }}
+            </button>
           </div>
 
           <div v-else class="notif-state" role="status">
@@ -80,8 +95,17 @@
         </section>
 
         <footer class="panel-footer">
-          <button type="button" class="link-button" @click="refresh">
-            {{ isLoading ? $t('notifications.dropdown.loadingMore') : $t('notifications.dropdown.refresh') }}
+          <button
+            v-if="hasMore"
+            type="button"
+            class="link-button"
+            :disabled="loading"
+            @click="handleLoadMore"
+          >
+            {{ loading ? $t('notifications.dropdown.loadingMore') : $t('notifications.dropdown.loadMore') }}
+          </button>
+          <button type="button" class="link-button" :disabled="loading" @click="refresh">
+            {{ $t('notifications.dropdown.refresh') }}
           </button>
         </footer>
       </div>
@@ -106,7 +130,7 @@ const rootRef = ref(null)
 const open = ref(false)
 
 const notificationsStore = useNotificationsStore()
-const { sortedItems, unreadCount, loading, hasMore } = storeToRefs(notificationsStore)
+const { sortedItems, unreadCount, loading, hasMore, lastError, realtimeStatus } = storeToRefs(notificationsStore)
 
 const palette = {
   success: 'linear-gradient(135deg, #c8f5cb, #9de29a)',
@@ -117,12 +141,16 @@ const palette = {
 }
 
 const skeletonItems = [1, 2, 3]
-const isLoading = computed(() => loading.value)
-const showSkeleton = computed(() => isLoading.value && !sortedItems.value.length)
+const showSkeleton = computed(() => loading.value && !sortedItems.value.length)
 const showList = computed(() => displayItems.value.length > 0)
 const canMarkAll = computed(() => sortedItems.value.some((item) => !item.read_at))
+const hasError = computed(() => Boolean(lastError.value))
+const isRealtimeOffline = computed(() => realtimeStatus.value !== 'open')
 
 const headerSubtitle = computed(() => {
+  if (isRealtimeOffline.value) {
+    return t('notifications.dropdown.offlineSubtitle')
+  }
   if (loading.value && !sortedItems.value.length) {
     return t('notifications.dropdown.loadingSubtitle')
   }

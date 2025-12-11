@@ -45,7 +45,13 @@
         </button>
       </div>
 
-      <NotificationDropdown class="hidden sm:block" />
+      <div class="flex items-center gap-2">
+        <span v-if="isRealtimeOffline" class="realtime-indicator" role="status">
+          <span class="dot" aria-hidden="true" />
+          <span class="label">{{ $t('realtime.offline') }}</span>
+        </span>
+        <NotificationDropdown class="hidden sm:block" />
+      </div>
 
       <!-- User avatar -->
       <div class="flex items-center gap-2">
@@ -109,12 +115,16 @@ import { useSettingsStore } from '../stores/settingsStore'
 import { useThemeStore } from '../stores/themeStore'
 import { useI18n } from 'vue-i18n'
 import NotificationDropdown from './NotificationDropdown.vue'
+import { useRealtimeStore } from '../stores/realtimeStore'
 
 const router = useRouter()
 const auth = useAuthStore()
 const settings = useSettingsStore()
 const theme = useThemeStore()
+const realtime = useRealtimeStore()
 const { t } = useI18n()
+
+const isRealtimeOffline = computed(() => realtime.status !== 'open')
 
 /* ------------------------- Logout ------------------------- */
 async function logout() {

@@ -13,12 +13,28 @@
       </div>
       <div
         ref="bodyRef"
-        class="rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm"
+        class="rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm message-bubble"
         :class="isOwn ? 'bg-accent text-white rounded-br-sm' : 'bg-surface-soft text-body rounded-bl-sm'"
         v-html="renderedBody"
       ></div>
       <div v-if="readNames.length" class="text-[11px] text-muted">
         {{ readNames.join(', ') }} {{ readNames.length === 1 ? $t('chat.readSingle') : $t('chat.readMany') }}
+      </div>
+      <div v-if="showStatusRow" class="message-status text-[11px]" :class="isOwn ? 'justify-end' : 'justify-start'">
+        <span class="status-pill" :class="`status-pill--${message.status || 'delivered'}`">
+          {{ statusLabel }}
+        </span>
+        <button
+          v-if="canRetry"
+          type="button"
+          class="retry-link"
+          @click="$emit('retry', message)"
+        >
+          {{ $t('chat.actions.retry') }}
+        </button>
+      </div>
+      <div v-if="message.status === 'error'" class="text-[11px] text-danger">
+        {{ message.errorMessage || $t('chat.errors.failedToSend') }}
       </div>
     </div>
     <div v-if="isOwn" class="flex flex-col items-end gap-1 text-[11px] text-muted">
@@ -30,6 +46,7 @@
 
 <script setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import dayjs from 'dayjs'
 import { renderMarkdown } from '../../../utils/markdown'
 import { renderMath } from '../../../utils/mathjax'
@@ -49,7 +66,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['edit', 'delete'])
+const emit = defineEmits(['edit', 'delete', 'retry'])
 
 const bodyRef = ref(null)
 const renderedBody = computed(() => renderMarkdown(props.message?.text || ''))
@@ -73,6 +90,16 @@ const readNames = computed(() => {
   const entries = Object.values(props.readPointers || {})
   return entries.filter((entry) => entry?.messageId === props.message?.id).map((entry) => entry?.name || '—')
 })
+
+const { t } = useI18n()
+
+const statusLabel = computed(() => {
+  const status = props.message?.status || 'delivered'
+  return t(`chat.messageStatus.${status}`, t('chat.messageStatus.delivered'))
+})
+
+const showStatusRow = computed(() => isOwn.value || props.message?.status === 'error')
+const canRetry = computed(() => props.message?.status === 'error')
 
 watch(
   () => props.message?.text,
@@ -101,5 +128,54 @@ onMounted(() => {
 }
 .bg-accent {
   background: linear-gradient(135deg, #2563eb, #7c3aed);
+}
+.message-status {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  color: rgba(7, 15, 30, 0.6);
+}
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0 0.6rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+  background-color: rgba(7, 15, 30, 0.08);
+}
+.status-pill::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background-color: currentColor;
+}
+.status-pill--sending {
+  color: #2563eb;
+  background-color: rgba(37, 99, 235, 0.12);
+}
+.status-pill--delivered {
+  color: #059669;
+  background-color: rgba(5, 150, 105, 0.12);
+}
+.status-pill--error {
+  color: #dc2626;
+  background-color: rgba(220, 38, 38, 0.12);
+}
+.retry-link {
+  border: none;
+  background: none;
+  padding: 0;
+  color: #dc2626;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+.retry-link:hover {
+  opacity: 0.8;
 }
 </style>

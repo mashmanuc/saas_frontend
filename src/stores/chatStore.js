@@ -7,6 +7,24 @@ import { useAuthStore } from '../modules/auth/store/authStore'
 
 const MAX_TYPING_AGE_MS = 5000
 const TYPING_CHECK_INTERVAL = 2000
+const DEFAULT_STATUS = 'delivered'
+const SEND_RATE_LIMIT_MS = 300
+
+let tempIdCounter = 0
+const createTempId = () => `tmp-${Date.now()}-${++tempIdCounter}`
+
+const normalizeMessage = (message = {}, overrides = {}) => {
+  const normalizedStatus = overrides.status ?? message.status ?? DEFAULT_STATUS
+  const normalizedError = overrides.errorMessage ?? message.errorMessage ?? null
+  return {
+    attachments: [],
+    errorMessage: null,
+    ...message,
+    ...overrides,
+    status: normalizedStatus,
+    errorMessage: normalizedError,
+  }
+}
 
 export const useChatStore = defineStore('chat', {
   state: () => ({
@@ -15,11 +33,15 @@ export const useChatStore = defineStore('chat', {
     hasMore: false,
     loading: false,
     sending: false,
+    sendLocked: false,
+    sendLockTimer: null,
     activeLessonId: null,
     typingUsers: {},
     typingTimer: null,
     readPointers: {},
     subscriptionCleanup: null,
+    statusUnsubscribe: null,
+    currentChannel: null,
   }),
 
   getters: {
@@ -39,17 +61,20 @@ export const useChatStore = defineStore('chat', {
       this.cursor = null
       this.hasMore = false
       this.readPointers = {}
-      this.fetchHistory()
+      this.fetchHistory({ replace: true })
       this.subscribeToRealtime()
+      this.ensureRealtimeStatusListener()
     },
 
-    async fetchHistory({ cursor } = {}) {
+    async fetchHistory({ cursor, replace = false } = {}) {
       if (!this.activeLessonId || this.loading) return
       this.loading = true
       try {
-        const response = await chatApi.fetchHistory({ lessonId: this.activeLessonId, cursor: cursor ?? this.cursor })
+        const requestCursor = typeof cursor === 'undefined' ? this.cursor : cursor
+        const response = await chatApi.fetchHistory({ lessonId: this.activeLessonId, cursor: requestCursor ?? undefined })
         const results = Array.isArray(response?.results) ? response.results : response?.messages || []
-        this.messages = [...results, ...this.messages]
+        const normalized = results.map((item) => normalizeMessage(item))
+        this.messages = replace ? normalized : [...normalized, ...this.messages]
         this.cursor = response?.cursor || null
         this.hasMore = Boolean(response?.has_more)
       } catch (error) {
@@ -59,19 +84,53 @@ export const useChatStore = defineStore('chat', {
       }
     },
 
-    async sendMessage({ text, attachments }) {
-      if (!text?.trim()) return
+    async sendMessage({ text, attachments } = {}) {
+      if (!text?.trim() || !this.activeLessonId) return
+      if (this.sendLocked || this.sending) return
+      const auth = useAuthStore()
+      const tempId = this.addOptimisticMessage({
+        text,
+        attachments,
+        author: auth.user,
+      })
+      await this.performSendRequest({ text, attachments, tempId })
+    },
+
+    async retryMessage(messageId) {
+      if (!messageId || this.sending || this.sendLocked) return
+      const target = this.messages.find((message) => String(message.id) === String(messageId) || String(message.clientId) === String(messageId))
+      if (!target || target.status !== 'error') return
+      const tempId = target.clientId || target.id
+      this.upsertMessage(
+        normalizeMessage(target, {
+          status: 'sending',
+          errorMessage: null,
+        }),
+      )
+      await this.performSendRequest({
+        text: target.text,
+        attachments: target.attachments,
+        tempId,
+      })
+    },
+
+    async performSendRequest({ text, attachments, tempId }) {
+      if (!tempId) return
       this.sending = true
+      this.startSendCooldown()
+      const payload = {
+        lesson_id: this.activeLessonId,
+        text,
+        attachments,
+      }
       try {
-        const response = await chatApi.sendMessage({
-          lesson_id: this.activeLessonId,
-          text,
-          attachments,
-        })
-        this.upsertMessage(response)
+        const response = await chatApi.sendMessage(payload)
+        this.replaceOptimisticMessage(tempId, response)
         realtimeService.publish('chat', { type: 'chat.message.new', payload: response })
       } catch (error) {
-        notifyError(error?.response?.data?.detail || 'Не вдалося надіслати повідомлення')
+        const message = error?.response?.data?.detail || 'Не вдалося надіслати повідомлення'
+        this.markMessageError(tempId, message)
+        notifyError(message)
       } finally {
         this.sending = false
       }
@@ -99,11 +158,14 @@ export const useChatStore = defineStore('chat', {
 
     upsertMessage(message) {
       if (!message) return
-      const index = this.messages.findIndex((item) => item.id === message.id)
+      const normalized = normalizeMessage(message)
+      const index = this.messages.findIndex(
+        (item) => item.id === normalized.id || (normalized.clientId && item.clientId === normalized.clientId),
+      )
       if (index === -1) {
-        this.messages = [...this.messages, message]
+        this.messages = [...this.messages, normalized]
       } else {
-        this.messages = this.messages.map((item) => (item.id === message.id ? { ...item, ...message } : item))
+        this.messages = this.messages.map((item, idx) => (idx === index ? { ...item, ...normalized } : item))
       }
     },
 
@@ -112,23 +174,41 @@ export const useChatStore = defineStore('chat', {
         this.subscriptionCleanup()
         this.subscriptionCleanup = null
       }
-      this.subscriptionCleanup = realtimeService.subscribe('chat', (payload) => {
-        switch (payload?.type) {
+      const auth = useAuthStore()
+      const userId = auth.user?.id
+      if (!userId) return
+      const channel = `chat:user:${userId}`
+      this.currentChannel = channel
+      this.subscriptionCleanup = realtimeService.subscribe(channel, (payload) => {
+        const eventType = payload?.type
+        const eventPayload = payload?.payload ?? payload
+        if (eventPayload?.lessonId && String(eventPayload.lessonId) !== String(this.activeLessonId)) return
+        if (eventPayload?.lesson_id && String(eventPayload.lesson_id) !== String(this.activeLessonId)) return
+        switch (eventType) {
           case 'chat.message.new':
           case 'chat.message.edited':
-            this.upsertMessage(payload.payload)
+            this.upsertMessage(eventPayload)
             break
           case 'chat.message.deleted':
-            this.messages = this.messages.filter((message) => message.id !== payload.payload?.id)
+            this.messages = this.messages.filter((message) => String(message.id) !== String(eventPayload?.id))
             break
           case 'chat.typing':
-            this.markTyping(payload.payload)
+            this.markTyping(eventPayload)
             break
           case 'chat.read':
-            this.updateReadPointer(payload.payload)
+            this.updateReadPointer(eventPayload)
             break
           default:
             break
+        }
+      })
+    },
+
+    ensureRealtimeStatusListener() {
+      if (this.statusUnsubscribe) return
+      this.statusUnsubscribe = realtimeService.on('status', (status) => {
+        if (status === 'open' && this.activeLessonId) {
+          this.fetchHistory({ replace: true })
         }
       })
     },
@@ -175,6 +255,7 @@ export const useChatStore = defineStore('chat', {
         type: 'chat.typing',
         payload: {
           lessonId: this.activeLessonId,
+          lesson_id: this.activeLessonId,
         },
       })
     },
@@ -202,6 +283,7 @@ export const useChatStore = defineStore('chat', {
         type: 'chat.read',
         payload: {
           lessonId: this.activeLessonId,
+          lesson_id: this.activeLessonId,
           messageId,
           displayName: auth.user?.full_name || auth.user?.email,
         },
@@ -219,10 +301,87 @@ export const useChatStore = defineStore('chat', {
         this.subscriptionCleanup()
         this.subscriptionCleanup = null
       }
+      if (this.statusUnsubscribe) {
+        this.statusUnsubscribe()
+        this.statusUnsubscribe = null
+      }
+      this.currentChannel = null
       if (this.typingTimer) {
         clearInterval(this.typingTimer)
         this.typingTimer = null
       }
+      this.clearSendCooldown()
+    },
+
+    addOptimisticMessage({ text, attachments = [], author }) {
+      const tempId = createTempId()
+      const optimistic = normalizeMessage(
+        {
+          id: tempId,
+          clientId: tempId,
+          text,
+          attachments,
+          created_at: new Date().toISOString(),
+          author_id: author?.id,
+          author_name: author?.full_name || author?.email,
+          author,
+        },
+        {
+          status: 'sending',
+          optimistic: true,
+        },
+      )
+      this.messages = [...this.messages, optimistic]
+      return tempId
+    },
+
+    replaceOptimisticMessage(tempId, nextMessage) {
+      if (!tempId || !nextMessage) return
+      const normalized = normalizeMessage(nextMessage, { optimistic: false })
+      let replaced = false
+      this.messages = this.messages.map((item) => {
+        if (String(item.id) === String(tempId) || String(item.clientId) === String(tempId)) {
+          replaced = true
+          return normalized
+        }
+        return item.id === normalized.id ? { ...item, ...normalized } : item
+      })
+      if (!replaced) {
+        this.upsertMessage(normalized)
+      }
+    },
+
+    markMessageError(tempId, errorMessage) {
+      if (!tempId) return
+      this.messages = this.messages.map((item) => {
+        if (String(item.id) === String(tempId) || String(item.clientId) === String(tempId)) {
+          return normalizeMessage(item, {
+            status: 'error',
+            errorMessage,
+            optimistic: true,
+          })
+        }
+        return item
+      })
+    },
+
+    startSendCooldown() {
+      this.sendLocked = true
+      if (this.sendLockTimer) {
+        clearTimeout(this.sendLockTimer)
+      }
+      this.sendLockTimer = setTimeout(() => {
+        this.sendLocked = false
+        this.sendLockTimer = null
+      }, SEND_RATE_LIMIT_MS)
+    },
+
+    clearSendCooldown() {
+      if (this.sendLockTimer) {
+        clearTimeout(this.sendLockTimer)
+        this.sendLockTimer = null
+      }
+      this.sendLocked = false
     },
   },
 })

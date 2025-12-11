@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
+import { setActivePinia, createPinia } from 'pinia'
 import DashboardTutor from '../../../src/modules/dashboard/views/DashboardTutor.vue'
 const dashboardStoreModule = vi.hoisted(() => ({
   useDashboardStore: vi.fn(),
@@ -91,6 +92,7 @@ describe('DashboardTutor.vue', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    setActivePinia(createPinia())
     dashboardStore = createDashboardStore()
     relationsStore = createRelationsStore()
     dashboardStoreModule.useDashboardStore.mockReturnValue(dashboardStore)
