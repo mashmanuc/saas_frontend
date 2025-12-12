@@ -271,7 +271,9 @@
     "analytics": "Analytics",
     "tutorDashboard": "Tutor dashboard",
     "studentDashboard": "Student dashboard",
-    "profile": "Profile"
+    "profile": "Profile",
+    "sandbox": "Sandbox",
+    "soloWorkspace": "Solo Workspace"
   },
   "common": {
     "accept": "Accept",
@@ -282,6 +284,9 @@
     "back": "Back",
     "next": "Next",
     "save": "Save",
+    "clear": "Clear",
+    "retry": "Retry",
+    "exit": "Exit",
     "later": "Later",
     "there": "there",
     "justNow": "Just now",
@@ -604,10 +609,93 @@
     }
   },
   "classroom": {
+    "solo": {
+      "title": "Sandbox",
+      "lastSaved": "Last saved"
+    },
+    "soloWorkspace": {
+      "title": "Solo Workspace",
+      "untitled": "Untitled",
+      "save": "Save",
+      "exportPng": "Export PNG",
+      "exportJson": "Export JSON",
+      "exit": "Exit",
+      "saved": "Saved",
+      "clearConfirm": "Clear this page? This cannot be undone.",
+      "enterText": "Enter text:",
+      "pageName": "Page name:",
+      "addPage": "Add page",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "resetZoom": "Reset zoom",
+      "fullscreen": "Fullscreen",
+      "exitFullscreen": "Exit fullscreen"
+    },
+    "board": {
+      "placeholder": "Start drawing on the board",
+      "layers": "Layers"
+    },
+    "tools": {
+      "pen": "Pen",
+      "highlighter": "Highlighter",
+      "line": "Line",
+      "rectangle": "Rectangle",
+      "circle": "Circle",
+      "eraser": "Eraser",
+      "text": "Text",
+      "select": "Select",
+      "undo": "Undo",
+      "redo": "Redo",
+      "clear": "Clear board"
+    },
+    "reconnect": {
+      "title": "Reconnecting…",
+      "attempt": "Attempt {current} of {max}",
+      "leave": "Leave lesson",
+      "tips": {
+        "title": "Tips:",
+        "checkConnection": "Check your internet connection",
+        "refreshPage": "Try refreshing the page",
+        "contactSupport": "Contact support if the problem persists"
+      }
+    },
+    "roles": {
+      "host": "Host"
+    },
+    "video": {
+      "muted": "Muted",
+      "more": "more"
+    },
+    "status": {
+      "participants": "participants",
+      "reconnecting": "reconnecting"
+    },
+    "loader": {
+      "connecting": "Connecting to lesson..."
+    },
+    "toolbar": {
+      "leave": "Leave"
+    },
+    "controls": {
+      "mute": "Mute microphone",
+      "unmute": "Unmute microphone",
+      "stopVideo": "Stop video",
+      "startVideo": "Start video",
+      "stopShare": "Stop sharing",
+      "shareScreen": "Share screen"
+    },
+    "participants": {
+      "title": "Participants",
+      "empty": "No participants yet"
+    },
+    "tabs": {
+      "video": "Video",
+      "board": "Board"
+    },
     "list": {
       "title": "My classrooms",
       "name": "Class name",
-      "studentsCount": "Students",
+      "studentsCount": "Students count",
       "open": "Open",
       "empty": "You don't have any classrooms yet.",
       "loadError": "Failed to load classrooms list"

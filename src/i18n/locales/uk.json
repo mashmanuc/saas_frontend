@@ -250,7 +250,9 @@
     "analytics": "Аналітика",
     "tutorDashboard": "Кабінет тьютора",
     "studentDashboard": "Кабінет студента",
-    "profile": "Профіль"
+    "profile": "Профіль",
+    "sandbox": "Пісочниця",
+    "soloWorkspace": "Робочий простір"
   },
   "common": {
     "accept": "Прийняти",
@@ -261,6 +263,9 @@
     "back": "Назад",
     "next": "Далі",
     "save": "Зберегти",
+    "clear": "Очистити",
+    "retry": "Повторити",
+    "exit": "Вийти",
     "later": "Пізніше",
     "there": "друже",
     "justNow": "Щойно",
@@ -360,6 +365,9 @@
         "createLesson": "Створити урок",
         "openChat": "Відкрити чат"
       },
+      "viewBookings": "Переглянути бронювання",
+      "viewLessons": "Мої уроки",
+      "todaysLessons": "Уроки сьогодні",
       "bulk": {
         "selectHint": "Обирайте учнів для групових дій.",
         "selected": "Вибрано: {count}",
@@ -596,6 +604,89 @@
     }
   },
   "classroom": {
+    "solo": {
+      "title": "Пісочниця",
+      "lastSaved": "Останнє збереження"
+    },
+    "soloWorkspace": {
+      "title": "Робочий простір",
+      "untitled": "Без назви",
+      "save": "Зберегти",
+      "exportPng": "Експорт PNG",
+      "exportJson": "Експорт JSON",
+      "exit": "Вийти",
+      "saved": "Збережено",
+      "clearConfirm": "Очистити сторінку? Цю дію неможливо скасувати.",
+      "enterText": "Введіть текст:",
+      "pageName": "Назва сторінки:",
+      "addPage": "Додати сторінку",
+      "zoomIn": "Збільшити",
+      "zoomOut": "Зменшити",
+      "resetZoom": "Скинути масштаб",
+      "fullscreen": "Повноекранний режим",
+      "exitFullscreen": "Вийти з повноекранного режиму"
+    },
+    "board": {
+      "placeholder": "Почніть малювати на дошці",
+      "layers": "Шари"
+    },
+    "tools": {
+      "pen": "Олівець",
+      "highlighter": "Маркер",
+      "line": "Лінія",
+      "rectangle": "Прямокутник",
+      "circle": "Коло",
+      "eraser": "Гумка",
+      "text": "Текст",
+      "select": "Виділення",
+      "undo": "Скасувати",
+      "redo": "Повторити",
+      "clear": "Очистити"
+    },
+    "reconnect": {
+      "title": "Перепідключення...",
+      "attempt": "Спроба {current} з {max}",
+      "leave": "Вийти з уроку",
+      "tips": {
+        "title": "Поради:",
+        "checkConnection": "Перевірте інтернет-з'єднання",
+        "refreshPage": "Спробуйте оновити сторінку",
+        "contactSupport": "Зверніться до підтримки"
+      }
+    },
+    "roles": {
+      "host": "Ведучий"
+    },
+    "video": {
+      "muted": "Звук вимкнено",
+      "more": "ще"
+    },
+    "status": {
+      "participants": "учасників",
+      "reconnecting": "перепідключаються"
+    },
+    "loader": {
+      "connecting": "Підключення до уроку..."
+    },
+    "toolbar": {
+      "leave": "Вийти"
+    },
+    "controls": {
+      "mute": "Вимкнути мікрофон",
+      "unmute": "Увімкнути мікрофон",
+      "stopVideo": "Вимкнути камеру",
+      "startVideo": "Увімкнути камеру",
+      "stopShare": "Зупинити демонстрацію",
+      "shareScreen": "Демонстрація екрану"
+    },
+    "participants": {
+      "title": "Учасники",
+      "empty": "Немає учасників"
+    },
+    "tabs": {
+      "video": "Відео",
+      "board": "Дошка"
+    },
     "list": {
       "title": "Мої класи",
       "name": "Назва класу",

@@ -41,6 +41,9 @@ import { setCurrentRoute } from '@/modules/diagnostics/plugins/errorCollector'
 const LessonRoom = () => import('../modules/classroom/views/LessonRoom.vue')
 const SoloRoom = () => import('../modules/classroom/views/SoloRoom.vue')
 
+// Solo Workspace (v0.26)
+const SoloWorkspace = () => import('../modules/solo/views/SoloWorkspace.vue')
+
 // Classroom views (v0.24.3)
 const LessonSummary = () => import('../modules/classroom/summary/LessonSummary.vue')
 const LessonReplay = () => import('../modules/classroom/views/LessonReplay.vue')
@@ -227,6 +230,13 @@ const routes = [
         name: 'solo-room',
         component: SoloRoom,
         meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
+      },
+      // v0.26: Solo Workspace
+      {
+        path: 'solo',
+        name: 'solo-workspace',
+        component: SoloWorkspace,
+        meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR] },
       },
       // v0.24.3: Classroom history routes
       {
