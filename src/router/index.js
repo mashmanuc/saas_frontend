@@ -195,6 +195,25 @@ const routes = [
         component: ChecklistView,
         meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
       },
+      // v0.25-FIX: Booking routes
+      {
+        path: 'bookings',
+        name: 'bookings',
+        component: () => import('../modules/booking/views/MyLessonsView.vue'),
+        meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
+      },
+      {
+        path: 'bookings/:id',
+        name: 'booking-detail',
+        component: () => import('../modules/booking/views/BookingDetailView.vue'),
+        meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
+      },
+      {
+        path: 'book/:slug',
+        name: 'book-lesson',
+        component: () => import('../modules/booking/views/BookLessonView.vue'),
+        meta: { roles: [USER_ROLES.STUDENT] },
+      },
       // v0.24.2: Classroom routes
       {
         path: 'classroom/:sessionId',

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // TASK MF4: Tutor Profile View
-import { onMounted, watch, computed } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useMarketplaceStore } from '../stores/marketplaceStore'
@@ -12,6 +12,7 @@ import ProfileBadges from '../components/profile/ProfileBadges.vue'
 import ProfileContact from '../components/profile/ProfileContact.vue'
 import LoadingSpinner from '@/ui/LoadingSpinner.vue'
 import NotFound from '@/ui/NotFound.vue'
+import BookingModal from '@/modules/booking/components/BookingModal.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -19,6 +20,7 @@ const store = useMarketplaceStore()
 const { currentProfile, isLoadingProfile, error } = storeToRefs(store)
 
 const slug = computed(() => route.params.slug as string)
+const showBookingModal = ref(false)
 
 onMounted(() => {
   if (slug.value) {
@@ -33,7 +35,12 @@ watch(slug, (newSlug) => {
 })
 
 function handleBook() {
-  router.push(`/book/${slug.value}`)
+  showBookingModal.value = true
+}
+
+function handleBooked(booking: unknown) {
+  const b = booking as { id: number }
+  router.push(`/bookings/${b.id}`)
 }
 
 function handleMessage() {
@@ -96,6 +103,14 @@ function goBack() {
     >
       <button class="btn btn-primary" @click="goBack">Browse Tutors</button>
     </NotFound>
+
+    <!-- Booking Modal -->
+    <BookingModal
+      v-if="showBookingModal && currentProfile"
+      :tutor-id="currentProfile.user.id"
+      @close="showBookingModal = false"
+      @booked="handleBooked"
+    />
   </div>
 </template>
 
