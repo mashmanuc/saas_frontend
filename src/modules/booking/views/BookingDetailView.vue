@@ -18,6 +18,7 @@ import { useBooking } from '../composables/useBooking'
 // Components
 import BookingStatus from '../components/booking/BookingStatus.vue'
 import BookingActions from '../components/booking/BookingActions.vue'
+import ClassroomButton from '@/components/buttons/ClassroomButton.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -28,6 +29,13 @@ const { booking, isLoading, canCancel, canReschedule, canJoin, cancel, joinLesso
   useBooking(bookingId.value)
 
 const { currentBooking } = storeToRefs(store)
+
+// v0.24.2: Determine if current user is student
+const isStudent = computed(() => {
+  // This would typically come from auth store
+  // For now, check if user is not the tutor
+  return true // Default to student view
+})
 
 // Format helpers
 function formatDate(dateStr: string): string {
@@ -198,6 +206,18 @@ function handleReschedule() {
         <div class="notes-card">
           <p>{{ currentBooking.student_notes }}</p>
         </div>
+      </section>
+
+      <!-- Classroom Entry -->
+      <section v-if="currentBooking.classroom_session" class="classroom-section">
+        <h2>Classroom</h2>
+        <ClassroomButton
+          :booking-id="currentBooking.id"
+          :session-id="currentBooking.classroom_session.uuid"
+          :session-status="currentBooking.classroom_session.status"
+          :scheduled-start="currentBooking.time_slot.start_datetime"
+          :user-role="isStudent ? 'student' : 'tutor'"
+        />
       </section>
 
       <!-- Actions -->

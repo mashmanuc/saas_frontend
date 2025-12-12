@@ -42,6 +42,12 @@ export type BookingStatus =
   | 'no_show'
   | 'rescheduled'
 
+// v0.24.2: Classroom session reference in booking
+export interface ClassroomSessionRef {
+  uuid: string
+  status: 'scheduled' | 'waiting' | 'active' | 'paused' | 'completed' | 'terminated'
+}
+
 export interface Booking {
   id: number
   booking_id: string
@@ -56,6 +62,7 @@ export interface Booking {
   price: number
   currency: string
   classroom_id?: string
+  classroom_session?: ClassroomSessionRef // v0.24.2
   created_at: string
   updated_at: string
   cancelled_at?: string

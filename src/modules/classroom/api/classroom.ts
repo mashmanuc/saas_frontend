@@ -68,6 +68,25 @@ export interface BoardSnapshot {
   created_by: { id: number; name: string }
 }
 
+// v0.24.2 Types
+export interface JWTResponse {
+  token: string
+  expires_at: string
+  permissions: RoomPermissions
+  session: ClassroomSession
+}
+
+export interface MediaStateInput {
+  video_enabled?: boolean
+  audio_enabled?: boolean
+  screen_sharing?: boolean
+}
+
+export interface SessionEventInput {
+  event_type: string
+  data?: Record<string, unknown>
+}
+
 // API Client
 export const classroomApi = {
   // Session management
@@ -160,5 +179,26 @@ export const classroomApi = {
     role: SessionParticipant['role']
   ): Promise<void> => {
     await apiClient.post(`/classroom/session/${uuid}/role/`, { user_id: userId, role })
+  },
+
+  // v0.24.2 Methods
+  getJwt: async (sessionId: string): Promise<JWTResponse> => {
+    const response = await apiClient.post<JWTResponse>(`/classroom/session/${sessionId}/jwt/`)
+    return response.data
+  },
+
+  getPermissions: async (sessionId: string): Promise<RoomPermissions> => {
+    const response = await apiClient.get<RoomPermissions>(
+      `/classroom/session/${sessionId}/permissions/`
+    )
+    return response.data
+  },
+
+  updateMediaState: async (sessionId: string, state: MediaStateInput): Promise<void> => {
+    await apiClient.post(`/classroom/session/${sessionId}/media-state/`, state)
+  },
+
+  logEvent: async (sessionId: string, event: SessionEventInput): Promise<void> => {
+    await apiClient.post(`/classroom/session/${sessionId}/event/`, event)
   },
 }

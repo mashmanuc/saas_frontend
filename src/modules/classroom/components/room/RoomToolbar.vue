@@ -19,10 +19,29 @@
 
     <!-- Actions -->
     <div class="toolbar-group">
+      <!-- Save Snapshot -->
+      <button
+        v-if="isHost"
+        class="toolbar-btn"
+        title="Зберегти знімок"
+        @click="$emit('save-snapshot')"
+      >
+        <span class="icon">💾</span>
+      </button>
+
+      <!-- History -->
+      <button
+        class="toolbar-btn"
+        title="Історія дошки"
+        @click="$emit('show-history')"
+      >
+        <span class="icon">📜</span>
+      </button>
+
       <!-- Settings -->
       <button
         class="toolbar-btn"
-        :title="$t('classroom.toolbar.settings')"
+        title="Налаштування"
         @click="showSettings = true"
       >
         <span class="icon">⚙️</span>
@@ -31,7 +50,7 @@
       <!-- Fullscreen -->
       <button
         class="toolbar-btn"
-        :title="$t('classroom.toolbar.fullscreen')"
+        title="Повноекранний режим"
         @click="toggleFullscreen"
       >
         <span class="icon">{{ isFullscreen ? '⊙' : '⛶' }}</span>
@@ -43,15 +62,35 @@
       <div class="toolbar-separator"></div>
 
       <div class="toolbar-group">
+        <!-- Pause/Resume -->
+        <button
+          v-if="!isPaused"
+          class="toolbar-btn toolbar-btn--warning"
+          title="Призупинити урок"
+          @click="$emit('pause')"
+        >
+          <span class="icon">⏸️</span>
+          <span class="label">Пауза</span>
+        </button>
+        <button
+          v-else
+          class="toolbar-btn toolbar-btn--success"
+          title="Продовжити урок"
+          @click="$emit('resume')"
+        >
+          <span class="icon">▶️</span>
+          <span class="label">Продовжити</span>
+        </button>
+
         <!-- Terminate -->
         <button
           v-if="canTerminate"
           class="toolbar-btn toolbar-btn--danger"
-          :title="$t('classroom.toolbar.terminate')"
+          title="Завершити урок"
           @click="$emit('terminate')"
         >
           <span class="icon">⏹️</span>
-          <span class="label">{{ $t('classroom.toolbar.end') }}</span>
+          <span class="label">Завершити</span>
         </button>
       </div>
     </template>
@@ -82,18 +121,24 @@ interface Props {
   isHost?: boolean
   layoutMode?: LayoutMode
   canTerminate?: boolean
+  isPaused?: boolean
 }
 
 withDefaults(defineProps<Props>(), {
   isHost: false,
   layoutMode: 'side-by-side',
   canTerminate: false,
+  isPaused: false,
 })
 
 defineEmits<{
   'layout-change': [mode: string]
   terminate: []
   leave: []
+  pause: []
+  resume: []
+  'save-snapshot': []
+  'show-history': []
 }>()
 
 // State
@@ -182,6 +227,15 @@ function toggleFullscreen(): void {
 
 .toolbar-btn--warning:hover {
   background: var(--color-warning-light);
+}
+
+.toolbar-btn--success {
+  border-color: var(--color-success, #10b981);
+  color: var(--color-success, #10b981);
+}
+
+.toolbar-btn--success:hover {
+  background: var(--color-success-light, rgba(16, 185, 129, 0.1));
 }
 
 .icon {

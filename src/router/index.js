@@ -34,6 +34,11 @@ import { useAuthStore } from '../modules/auth/store/authStore'
 import { useProfileStore } from '../modules/profile/store/profileStore'
 import { USER_ROLES } from '../types/user'
 import { getDefaultRouteForRole, hasAccess } from '../config/routes'
+import { classroomGuard } from './guards/classroomGuard'
+
+// Classroom views (v0.24.2)
+const LessonRoom = () => import('../modules/classroom/views/LessonRoom.vue')
+const SoloRoom = () => import('../modules/classroom/views/SoloRoom.vue')
 
 const routes = [
   {
@@ -182,6 +187,20 @@ const routes = [
         path: 'checklist',
         name: 'checklist',
         component: ChecklistView,
+        meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
+      },
+      // v0.24.2: Classroom routes
+      {
+        path: 'classroom/:sessionId',
+        name: 'lesson-room',
+        component: LessonRoom,
+        beforeEnter: classroomGuard,
+        meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
+      },
+      {
+        path: 'classroom/solo',
+        name: 'solo-room',
+        component: SoloRoom,
         meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
       },
     ],

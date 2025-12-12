@@ -12,3 +12,6 @@ export * from './layout'
 
 // Participant components
 export * from './participants'
+
+// Modal components
+export * from './modals'

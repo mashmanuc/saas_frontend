@@ -9,7 +9,7 @@ import type {
   SessionParticipant,
 } from '../api/classroom'
 
-export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'reconnecting'
+export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'reconnecting' | 'waiting' | 'terminated'
 export type LayoutMode = 'side-by-side' | 'pip' | 'board-focus' | 'video-focus'
 
 export const useRoomStore = defineStore('room', () => {
@@ -188,6 +188,42 @@ export const useRoomStore = defineStore('room', () => {
     currentUserId.value = userId
   }
 
+  // v0.24.2: Set session data from JWT response (before joining)
+  function setSessionData(sessionData: ClassroomSession, perms: RoomPermissions): void {
+    session.value = sessionData
+    permissions.value = perms
+  }
+
+  // v0.24.2: Validate JWT token
+  function validateToken(jwtToken: string): boolean {
+    if (!jwtToken) return false
+
+    try {
+      // Decode JWT payload (base64)
+      const payload = JSON.parse(atob(jwtToken.split('.')[1]))
+      const exp = payload.exp * 1000 // Convert to milliseconds
+
+      return Date.now() < exp
+    } catch {
+      return false
+    }
+  }
+
+  // v0.24.2: Reconnect to room
+  async function reconnect(): Promise<void> {
+    if (!session.value || !token.value) return
+
+    connectionStatus.value = 'reconnecting'
+
+    try {
+      await roomEngine.value?.connect()
+      connectionStatus.value = 'connected'
+    } catch (err) {
+      connectionStatus.value = 'disconnected'
+      error.value = err instanceof Error ? err.message : 'Reconnection failed'
+    }
+  }
+
   function $reset(): void {
     session.value = null
     token.value = null
@@ -235,6 +271,9 @@ export const useRoomStore = defineStore('room', () => {
     updateBoardState,
     setLayoutMode,
     setCurrentUserId,
+    setSessionData,
+    validateToken,
+    reconnect,
     $reset,
   }
 })
