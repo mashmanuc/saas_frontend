@@ -1,0 +1,63 @@
+<script setup lang="ts">
+import { ArrowUpDown } from 'lucide-vue-next'
+
+interface Props {
+  value: string
+}
+
+defineProps<Props>()
+
+const emit = defineEmits<{
+  (e: 'update', sort: string): void
+}>()
+
+const sortOptions = [
+  { value: '-average_rating', label: 'Highest Rated' },
+  { value: '-total_lessons', label: 'Most Lessons' },
+  { value: 'hourly_rate', label: 'Price: Low to High' },
+  { value: '-hourly_rate', label: 'Price: High to Low' },
+  { value: '-created_at', label: 'Newest' },
+]
+
+function handleChange(event: Event) {
+  const target = event.target as HTMLSelectElement
+  emit('update', target.value)
+}
+</script>
+
+<template>
+  <div class="catalog-sort">
+    <ArrowUpDown :size="16" class="icon" />
+    <select :value="value" @change="handleChange">
+      <option v-for="opt in sortOptions" :key="opt.value" :value="opt.value">
+        {{ opt.label }}
+      </option>
+    </select>
+  </div>
+</template>
+
+<style scoped>
+.catalog-sort {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.icon {
+  color: #6b7280;
+}
+
+select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  background: white;
+  cursor: pointer;
+}
+
+select:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+</style>

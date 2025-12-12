@@ -204,8 +204,11 @@
     }
   },
   "auth": {
+    "layout": {
+      "ariaLabel": "Authentication layout"
+    },
     "login": {
-      "title": "Sign in",
+      "title": "Login",
       "description": "Enter your email and password to continue.",
       "email": "Email",
       "password": "Password",
@@ -257,9 +260,6 @@
         "passwordMismatch": "Passwords do not match.",
         "genericError": "Unable to accept invite."
       }
-    },
-    "layout": {
-      "ariaLabel": "Authentication section"
     }
   },
   "menu": {
@@ -782,7 +782,7 @@
     }
   },
   "network": {
-    "title": "Network Health",
+    "title": "Network status",
     "status": "Status",
     "latency": "Latency",
     "avg": "Average",
@@ -806,5 +806,8 @@
     "refreshed": "Your session has been refreshed",
     "expired": "Your session has expired. Please log in again.",
     "refreshing": "Refreshing session..."
+  },
+  "realtime": {
+    "offline": "Disconnected from realtime services"
   }
 }

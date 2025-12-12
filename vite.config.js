@@ -1,5 +1,9 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const fullcalendarCssMockPlugin = () => ({
   name: 'fullcalendar-css-mock',
@@ -36,23 +40,16 @@ export default defineConfig({
           // Feature chunks
           'chunk-whiteboard': [
             './src/modules/board/views/BoardView.vue',
-            './src/modules/board/components/Whiteboard.vue',
             './src/stores/boardStore.js',
           ],
           'chunk-chat': [
-            './src/modules/chat/views/ChatView.vue',
             './src/modules/chat/components/ChatPanel.vue',
             './src/modules/chat/components/ChatMessage.vue',
             './src/stores/chatStore.js',
           ],
           'chunk-dashboard': [
-            './src/modules/dashboard/views/DashboardView.vue',
             './src/modules/dashboard/views/DashboardTutor.vue',
             './src/modules/dashboard/views/DashboardStudent.vue',
-          ],
-          'chunk-notifications': [
-            './src/modules/notifications/components/NotificationsDropdown.vue',
-            './src/stores/notificationsStore.js',
           ],
         },
       },
@@ -63,7 +60,11 @@ export default defineConfig({
   // Resolve aliases
   resolve: {
     alias: {
-      '@': '/src',
+      '@': path.resolve(__dirname, 'src'),
+      '@core': path.resolve(__dirname, 'src/core'),
+      '@modules': path.resolve(__dirname, 'src/modules'),
+      '@stores': path.resolve(__dirname, 'src/stores'),
+      '@components': path.resolve(__dirname, 'src/components'),
     },
   },
 })
