@@ -1,22 +1,158 @@
 <script setup lang="ts">
-// TASK MF7: CatalogFilters component
-import { ref, watch } from 'vue'
+// TASK MF7 + F8: CatalogFilters component (enhanced for v0.20.0)
+import { ref, watch, computed } from 'vue'
 import { X, Filter } from 'lucide-vue-next'
-import type { CatalogFilters, FilterOptions } from '../../api/marketplace'
+import type {
+  CatalogFilters,
+  FilterOptions,
+  SearchFilters,
+  ExtendedFilterOptions,
+} from '../../api/marketplace'
+import FilterSection from './FilterSection.vue'
+import PriceRangeSlider from './PriceRangeSlider.vue'
+import RatingFilter from './RatingFilter.vue'
+
+// Support both old CatalogFilters and new SearchFilters
+type AnyFilters = CatalogFilters | SearchFilters
+type AnyOptions = FilterOptions | ExtendedFilterOptions | null
 
 interface Props {
-  filters: CatalogFilters
-  options: FilterOptions | null
+  filters: AnyFilters
+  options: AnyOptions
+  loading?: boolean
 }
 
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  (e: 'update', filters: CatalogFilters): void
+  (e: 'update', filters: Partial<AnyFilters>): void
   (e: 'clear'): void
 }>()
 
-const localFilters = ref<CatalogFilters>({ ...props.filters })
+// Detect if using new extended options
+const isExtendedOptions = computed(() => {
+  return props.options && 'categories' in props.options
+})
+
+// Get subjects based on options type
+const subjectOptions = computed(() => {
+  if (!props.options) return []
+  if (isExtendedOptions.value) {
+    const opts = props.options as ExtendedFilterOptions
+    return opts.subjects.map((s) => ({
+      value: s.name,
+      label: s.name,
+      count: s.tutor_count,
+      category: s.category,
+    }))
+  }
+  return (props.options as FilterOptions).subjects
+})
+
+// Get countries
+const countryOptions = computed(() => {
+  if (!props.options) return []
+  if (isExtendedOptions.value) {
+    const opts = props.options as ExtendedFilterOptions
+    return opts.countries.map((c) => ({
+      value: c.code,
+      label: c.name,
+      count: c.count,
+    }))
+  }
+  return (props.options as FilterOptions).countries
+})
+
+// Get languages
+const languageOptions = computed(() => {
+  if (!props.options) return []
+  if (isExtendedOptions.value) {
+    const opts = props.options as ExtendedFilterOptions
+    return opts.languages.map((l) => ({
+      value: l.code,
+      label: l.name,
+      count: l.count,
+    }))
+  }
+  return (props.options as FilterOptions).languages
+})
+
+// Get categories (only for extended)
+const categoryOptions = computed(() => {
+  if (!props.options || !isExtendedOptions.value) return []
+  return (props.options as ExtendedFilterOptions).categories
+})
+
+// Filter subjects by selected category
+const filteredSubjects = computed(() => {
+  const category = (props.filters as SearchFilters).category
+  if (!category || !isExtendedOptions.value) return subjectOptions.value
+  return subjectOptions.value.filter((s: any) => s.category === category)
+})
+
+// Price range
+const priceRange = computed(() => {
+  if (!props.options) return { min: 0, max: 200 }
+  return props.options.priceRange
+})
+
+const localFilters = ref<AnyFilters>({ ...props.filters })
+
+// Normalized accessors for mixed property names
+const minPrice = computed({
+  get: () => (localFilters.value as any).min_price ?? (localFilters.value as any).minPrice ?? null,
+  set: (v) => {
+    if ('minPrice' in localFilters.value) {
+      (localFilters.value as any).minPrice = v
+    } else {
+      (localFilters.value as any).min_price = v
+    }
+  },
+})
+
+const maxPrice = computed({
+  get: () => (localFilters.value as any).max_price ?? (localFilters.value as any).maxPrice ?? null,
+  set: (v) => {
+    if ('maxPrice' in localFilters.value) {
+      (localFilters.value as any).maxPrice = v
+    } else {
+      (localFilters.value as any).max_price = v
+    }
+  },
+})
+
+const minRating = computed({
+  get: () => (localFilters.value as any).min_rating ?? (localFilters.value as any).minRating ?? null,
+  set: (v) => {
+    if ('minRating' in localFilters.value) {
+      (localFilters.value as any).minRating = v
+    } else {
+      (localFilters.value as any).min_rating = v
+    }
+  },
+})
+
+const hasVideo = computed({
+  get: () => (localFilters.value as any).has_video ?? (localFilters.value as any).hasVideo ?? false,
+  set: (v) => {
+    if ('hasVideo' in localFilters.value) {
+      (localFilters.value as any).hasVideo = v
+    } else {
+      (localFilters.value as any).has_video = v
+    }
+  },
+})
+
+const isVerified = computed({
+  get: () => (localFilters.value as any).is_verified ?? (localFilters.value as any).isVerified ?? false,
+  set: (v) => {
+    if ('isVerified' in localFilters.value) {
+      (localFilters.value as any).isVerified = v
+    } else {
+      (localFilters.value as any).is_verified = v
+    }
+  },
+})
 
 watch(
   () => props.filters,
@@ -57,7 +193,7 @@ function hasActiveFilters(): boolean {
       <select v-model="localFilters.subject" @change="applyFilters">
         <option value="">All Subjects</option>
         <option
-          v-for="opt in options?.subjects"
+          v-for="opt in filteredSubjects"
           :key="opt.value"
           :value="opt.value"
         >
@@ -71,7 +207,7 @@ function hasActiveFilters(): boolean {
       <select v-model="localFilters.country" @change="applyFilters">
         <option value="">All Countries</option>
         <option
-          v-for="opt in options?.countries"
+          v-for="opt in countryOptions"
           :key="opt.value"
           :value="opt.value"
         >
@@ -85,7 +221,7 @@ function hasActiveFilters(): boolean {
       <select v-model="localFilters.language" @change="applyFilters">
         <option value="">All Languages</option>
         <option
-          v-for="opt in options?.languages"
+          v-for="opt in languageOptions"
           :key="opt.value"
           :value="opt.value"
         >
@@ -98,7 +234,7 @@ function hasActiveFilters(): boolean {
       <label>Price Range</label>
       <div class="price-inputs">
         <input
-          v-model.number="localFilters.min_price"
+          v-model.number="minPrice"
           type="number"
           placeholder="Min"
           min="0"
@@ -106,7 +242,7 @@ function hasActiveFilters(): boolean {
         />
         <span>—</span>
         <input
-          v-model.number="localFilters.max_price"
+          v-model.number="maxPrice"
           type="number"
           placeholder="Max"
           min="0"
@@ -117,7 +253,7 @@ function hasActiveFilters(): boolean {
 
     <div class="filter-group">
       <label>Minimum Rating</label>
-      <select v-model.number="localFilters.min_rating" @change="applyFilters">
+      <select v-model.number="minRating" @change="applyFilters">
         <option value="">Any Rating</option>
         <option :value="4">4+ Stars</option>
         <option :value="4.5">4.5+ Stars</option>
@@ -128,7 +264,7 @@ function hasActiveFilters(): boolean {
     <div class="filter-group">
       <label class="checkbox-label">
         <input
-          v-model="localFilters.has_video"
+          v-model="hasVideo"
           type="checkbox"
           @change="applyFilters"
         />
@@ -139,7 +275,7 @@ function hasActiveFilters(): boolean {
     <div class="filter-group">
       <label class="checkbox-label">
         <input
-          v-model="localFilters.is_verified"
+          v-model="isVerified"
           type="checkbox"
           @change="applyFilters"
         />
