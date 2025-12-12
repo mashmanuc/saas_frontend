@@ -35,6 +35,7 @@ import { useProfileStore } from '../modules/profile/store/profileStore'
 import { USER_ROLES } from '../types/user'
 import { getDefaultRouteForRole, hasAccess } from '../config/routes'
 import { classroomGuard } from './guards/classroomGuard'
+import { setCurrentRoute } from '@/modules/diagnostics/plugins/errorCollector'
 
 // Classroom views (v0.24.2)
 const LessonRoom = () => import('../modules/classroom/views/LessonRoom.vue')
@@ -288,6 +289,16 @@ router.beforeEach(async (to, from, next) => {
   }
 
   next()
+})
+
+// Update route context for diagnostics
+router.afterEach((to) => {
+  setCurrentRoute({
+    name: to.name,
+    path: to.path,
+    params: to.params,
+    query: to.query
+  })
 })
 
 export default router

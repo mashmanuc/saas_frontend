@@ -11,10 +11,17 @@ import { useSettingsStore } from './stores/settingsStore'
 import { useThemeStore } from './stores/themeStore'
 import { useRealtimeStore } from './stores/realtimeStore'
 import { useNotificationsStore } from './stores/notificationsStore'
+import { createErrorCollector } from './modules/diagnostics/plugins/errorCollector'
 
 const app = createApp(App)
 app.use(pinia)
 app.use(i18n)
+
+// Install error collector for diagnostics
+const errorCollector = createErrorCollector({
+  mode: import.meta.env.DEV ? 'console+remote' : 'console+remote'
+})
+app.use(errorCollector)
 
 const settings = useSettingsStore()
 settings.init()

@@ -2,8 +2,20 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { execSync } from 'child_process'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+// Get git info for app version
+function getGitInfo() {
+  try {
+    const tag = execSync('git describe --tags --always').toString().trim()
+    const hash = execSync('git rev-parse --short HEAD').toString().trim()
+    return `${tag}+${hash}`
+  } catch {
+    return 'dev'
+  }
+}
 
 const fullcalendarCssMockPlugin = () => ({
   name: 'fullcalendar-css-mock',
@@ -25,6 +37,9 @@ const fullcalendarCssMockPlugin = () => ({
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [vue(), fullcalendarCssMockPlugin()],
+  define: {
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(getGitInfo()),
+  },
   test: {
     css: false,
   },

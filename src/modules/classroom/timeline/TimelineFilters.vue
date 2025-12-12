@@ -18,7 +18,7 @@
 </template>
 
 <script setup lang="ts">
-import { Users, Pencil, Video, Settings, AlertCircle } from 'lucide-vue-next'
+import { TIMELINE_FILTERS } from './filterUtils'
 
 interface Props {
   selected: string[]
@@ -31,38 +31,7 @@ const emit = defineEmits<{
   (e: 'change'): void
 }>()
 
-const filters = [
-  {
-    type: 'participants',
-    label: 'Учасники',
-    icon: Users,
-    types: ['participant_join', 'participant_leave', 'participant_reconnect'],
-  },
-  {
-    type: 'board',
-    label: 'Дошка',
-    icon: Pencil,
-    types: ['board_stroke', 'board_object_create', 'board_object_delete', 'board_clear'],
-  },
-  {
-    type: 'media',
-    label: 'Медіа',
-    icon: Video,
-    types: ['media_toggle', 'screen_share_start', 'screen_share_stop'],
-  },
-  {
-    type: 'system',
-    label: 'Система',
-    icon: Settings,
-    types: ['session_start', 'session_end', 'session_pause', 'session_resume'],
-  },
-  {
-    type: 'errors',
-    label: 'Помилки',
-    icon: AlertCircle,
-    types: ['error'],
-  },
-]
+const filters = TIMELINE_FILTERS
 
 function isSelected(type: string): boolean {
   return props.selected.includes(type)
@@ -75,20 +44,5 @@ function toggleFilter(type: string): void {
 
   emit('update:selected', newSelected)
   emit('change')
-}
-
-/**
- * Get event types for selected filter categories.
- */
-export function getEventTypesForFilters(selectedFilters: string[]): string[] {
-  if (selectedFilters.length === 0) return []
-
-  const types: string[] = []
-  for (const filter of filters) {
-    if (selectedFilters.includes(filter.type)) {
-      types.push(...filter.types)
-    }
-  }
-  return types
 }
 </script>
