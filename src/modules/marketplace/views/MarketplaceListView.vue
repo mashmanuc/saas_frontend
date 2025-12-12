@@ -97,6 +97,7 @@ import TutorFilterPanel from '../components/TutorFilterPanel.vue'
 import { useMarketplaceStore } from '../store/marketplaceStore'
 import { telemetry } from '../../../services/telemetry'
 import { debounce } from '../../../utils/debounce'
+import { getLanguageOptions } from '../../../config/languages'
 
 const store = useMarketplaceStore()
 const router = useRouter()
@@ -117,10 +118,8 @@ const subjectOptions = [
   { label: 'Англійська', value: 'english' },
 ]
 
-const languageOptions = [
-  { label: 'Українська', value: 'uk' },
-  { label: 'English', value: 'en' },
-]
+// Language options from centralized config
+const languageOptions = getLanguageOptions()
 
 const experienceOptions = [
   { label: '1+ років', value: '1' },
