@@ -255,7 +255,7 @@ describe('calendarStore', () => {
 
       await store.addException({ date: '2024-12-25', exception_type: 'unavailable' })
 
-      expect(store.exceptions).toContain(newException)
+      expect(store.exceptions).toContainEqual(newException)
     })
 
     it('deleteException should remove from list', async () => {

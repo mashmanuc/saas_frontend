@@ -94,12 +94,12 @@ export function useFilters() {
     key: K,
     value: SearchFilters[K]
   ) => {
-    filters.value[key] = value
-
     // Clear subject when category changes
     if (key === 'category' && value !== filters.value.category) {
       filters.value.subject = null
     }
+
+    filters.value[key] = value
   }
 
   // Set multiple filters

@@ -278,7 +278,16 @@
     "decline": "Decline",
     "cancel": "Cancel",
     "resend": "Resend",
-    "close": "Close"
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "save": "Save",
+    "later": "Later",
+    "there": "there",
+    "justNow": "Just now",
+    "minutesAgo": "{count} min ago",
+    "hoursAgo": "{count}h ago",
+    "daysAgo": "{count}d ago"
   },
   "role": {
     "superadmin": "Super admin",
@@ -809,5 +818,144 @@
   },
   "realtime": {
     "offline": "Disconnected from realtime services"
+  },
+  "onboarding": {
+    "skip": "Skip",
+    "finish": "Finish",
+    "dismissForNow": "I'll do this later",
+    "continue": "Continue setup",
+    "welcomeBack": "Welcome back, {name}!",
+    "continueSetup": "Your profile is {percentage}% complete",
+    "welcome": {
+      "title": "Welcome to M4SH!",
+      "subtitle": "Let's get you set up in just a few steps",
+      "feature1": "Find the perfect tutor for your needs",
+      "feature2": "Schedule lessons that fit your calendar",
+      "feature3": "Track your progress and achievements"
+    },
+    "profile": {
+      "title": "Set up your profile",
+      "description": "Help others get to know you better",
+      "displayName": "Display name",
+      "namePlaceholder": "How should we call you?",
+      "uploadPhoto": "Upload photo"
+    },
+    "preferences": {
+      "title": "Your preferences",
+      "description": "Customize your learning experience",
+      "subjects": "Subjects you're interested in",
+      "schedule": "Preferred schedule",
+      "notifications": "Enable notifications"
+    },
+    "firstAction": {
+      "student": {
+        "title": "Find your first tutor",
+        "description": "Browse our tutors and book your first lesson",
+        "cta": "Browse tutors",
+        "hint": "You can always do this later from the dashboard"
+      },
+      "tutor": {
+        "title": "Complete verification",
+        "description": "Verify your identity to start accepting students",
+        "cta": "Start verification",
+        "hint": "This helps build trust with potential students"
+      }
+    },
+    "completion": {
+      "title": "You're all set!",
+      "message": "Your profile is ready. Start exploring the platform!",
+      "stepsCompleted": "Steps completed",
+      "profileComplete": "Profile complete",
+      "goToDashboard": "Go to dashboard"
+    },
+    "student": {
+      "welcome": {
+        "title": "Welcome, Student!",
+        "description": "Let's personalize your learning journey",
+        "greeting": "Ready to start learning?",
+        "intro": "We'll help you find the perfect tutor and set up your profile."
+      },
+      "profile": {
+        "title": "Your profile",
+        "description": "Tell us about yourself",
+        "name": "Your name",
+        "avatar": "Profile photo"
+      },
+      "preferences": {
+        "title": "Learning preferences",
+        "description": "Help us match you with the right tutors",
+        "subjects": "What do you want to learn?",
+        "schedule": "When do you prefer to study?"
+      },
+      "firstTutor": {
+        "title": "Find a tutor",
+        "description": "Browse our verified tutors",
+        "cta": "Find a tutor"
+      },
+      "completion": {
+        "title": "All done!",
+        "description": "You're ready to start learning",
+        "congrats": "Congratulations!",
+        "message": "Your student profile is complete. Start exploring tutors!"
+      }
+    },
+    "tutor": {
+      "welcome": {
+        "title": "Welcome, Tutor!",
+        "description": "Let's set up your teaching profile",
+        "greeting": "Ready to start teaching?",
+        "intro": "Complete your profile to attract students.",
+        "benefit1": "Reach thousands of potential students",
+        "benefit2": "Set your own schedule and rates",
+        "benefit3": "Get paid securely through our platform"
+      },
+      "profile": {
+        "title": "Professional profile",
+        "description": "Make a great first impression",
+        "headline": "Professional headline",
+        "headlinePlaceholder": "e.g., Experienced Math Tutor",
+        "bio": "About you",
+        "bioPlaceholder": "Tell students about your teaching experience...",
+        "photo": "Profile photo"
+      },
+      "subjects": {
+        "title": "Subjects & pricing",
+        "description": "What will you teach?",
+        "select": "Select a subject",
+        "price": "Price/hour",
+        "addMore": "Add another subject"
+      },
+      "availability": {
+        "title": "Set your availability",
+        "description": "Let students know when you're free",
+        "setup": "Set up schedule"
+      },
+      "verification": {
+        "title": "Verify your identity",
+        "description": "Build trust with students by verifying your profile",
+        "start": "Start verification"
+      },
+      "completion": {
+        "title": "Profile complete!",
+        "description": "You're ready to accept students",
+        "congrats": "Congratulations!",
+        "message": "Your tutor profile is live. Students can now find you!"
+      }
+    }
+  },
+  "checklist": {
+    "title": "Profile Checklist",
+    "subtitle": "Complete these steps to get the most out of M4SH",
+    "panelTitle": "Complete your profile",
+    "nextStep": "Suggested next step",
+    "viewAll": "View all tasks",
+    "complete": "Complete",
+    "points": "points",
+    "categories": {
+      "profile": "Profile",
+      "verification": "Verification",
+      "settings": "Settings",
+      "engagement": "Engagement"
+    }
   }
 }

@@ -24,6 +24,12 @@ const ProfileSettingsView = () => import('../modules/profile/views/ProfileSettin
 const ProfileActivityView = () => import('../modules/profile/views/ProfileActivityView.vue')
 const DevThemePlaygroundView = () => import('../modules/dev/views/DevThemePlayground.vue')
 
+// Onboarding views
+const OnboardingView = () => import('../modules/onboarding/views/OnboardingView.vue')
+const StudentOnboardingView = () => import('../modules/onboarding/views/StudentOnboardingView.vue')
+const TutorOnboardingView = () => import('../modules/onboarding/views/TutorOnboardingView.vue')
+const ChecklistView = () => import('../modules/onboarding/views/ChecklistView.vue')
+
 import { useAuthStore } from '../modules/auth/store/authStore'
 import { useProfileStore } from '../modules/profile/store/profileStore'
 import { USER_ROLES } from '../types/user'
@@ -152,6 +158,31 @@ const routes = [
         name: 'dev-theme-playground',
         component: DevThemePlaygroundView,
         meta: { roles: [USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN] },
+      },
+      // Onboarding routes
+      {
+        path: 'onboarding',
+        name: 'onboarding',
+        component: OnboardingView,
+        meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
+      },
+      {
+        path: 'onboarding/student',
+        name: 'onboarding-student',
+        component: StudentOnboardingView,
+        meta: { roles: [USER_ROLES.STUDENT] },
+      },
+      {
+        path: 'onboarding/tutor',
+        name: 'onboarding-tutor',
+        component: TutorOnboardingView,
+        meta: { roles: [USER_ROLES.TUTOR] },
+      },
+      {
+        path: 'checklist',
+        name: 'checklist',
+        component: ChecklistView,
+        meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
       },
     ],
   },

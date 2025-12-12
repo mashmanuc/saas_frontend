@@ -239,7 +239,7 @@ describe('bookingStore', () => {
       })
 
       expect(result).toEqual(mockBooking)
-      expect(store.bookings).toContain(mockBooking)
+      expect(store.bookings).toContainEqual(mockBooking)
     })
   })
 
@@ -298,7 +298,7 @@ describe('bookingStore', () => {
       const store = useBookingStore()
       store.handleBookingCreated(mockBooking)
 
-      expect(store.bookings).toContain(mockBooking)
+      expect(store.bookings).toContainEqual(mockBooking)
     })
 
     it('handleBookingCreated should not duplicate', () => {

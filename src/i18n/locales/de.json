@@ -1,0 +1,160 @@
+{
+  "app": {
+    "title": "M4SH Plattform"
+  },
+  "common": {
+    "accept": "Akzeptieren",
+    "decline": "Ablehnen",
+    "cancel": "Abbrechen",
+    "resend": "Erneut senden",
+    "close": "Schließen",
+    "back": "Zurück",
+    "next": "Weiter",
+    "save": "Speichern",
+    "later": "Später",
+    "there": "dort",
+    "justNow": "Gerade eben",
+    "minutesAgo": "vor {count} Min.",
+    "hoursAgo": "vor {count} Std.",
+    "daysAgo": "vor {count} Tagen"
+  },
+  "onboarding": {
+    "skip": "Überspringen",
+    "finish": "Fertig",
+    "dismissForNow": "Später erledigen",
+    "continue": "Einrichtung fortsetzen",
+    "welcomeBack": "Willkommen zurück, {name}!",
+    "continueSetup": "Ihr Profil ist zu {percentage}% vollständig",
+    "welcome": {
+      "title": "Willkommen bei M4SH!",
+      "subtitle": "Lassen Sie uns alles in wenigen Schritten einrichten",
+      "feature1": "Finden Sie den perfekten Tutor",
+      "feature2": "Planen Sie Unterricht nach Ihrem Zeitplan",
+      "feature3": "Verfolgen Sie Fortschritte und Erfolge"
+    },
+    "profile": {
+      "title": "Profil einrichten",
+      "description": "Helfen Sie anderen, Sie besser kennenzulernen",
+      "displayName": "Anzeigename",
+      "namePlaceholder": "Wie sollen wir Sie nennen?",
+      "uploadPhoto": "Foto hochladen"
+    },
+    "preferences": {
+      "title": "Ihre Präferenzen",
+      "description": "Passen Sie Ihr Lernerlebnis an",
+      "subjects": "Fächer, die Sie interessieren",
+      "schedule": "Bevorzugter Zeitplan",
+      "notifications": "Benachrichtigungen aktivieren"
+    },
+    "firstAction": {
+      "student": {
+        "title": "Finden Sie Ihren ersten Tutor",
+        "description": "Durchsuchen Sie unsere Tutoren und buchen Sie Ihre erste Lektion",
+        "cta": "Tutoren durchsuchen",
+        "hint": "Sie können dies später vom Dashboard aus tun"
+      },
+      "tutor": {
+        "title": "Verifizierung abschließen",
+        "description": "Verifizieren Sie Ihre Identität, um Schüler anzunehmen",
+        "cta": "Verifizierung starten",
+        "hint": "Dies hilft, Vertrauen bei potenziellen Schülern aufzubauen"
+      }
+    },
+    "completion": {
+      "title": "Alles bereit!",
+      "message": "Ihr Profil ist fertig. Entdecken Sie die Plattform!",
+      "stepsCompleted": "Abgeschlossene Schritte",
+      "profileComplete": "Profil vollständig",
+      "goToDashboard": "Zum Dashboard"
+    },
+    "student": {
+      "welcome": {
+        "title": "Willkommen, Schüler!",
+        "description": "Personalisieren wir Ihren Lernweg",
+        "greeting": "Bereit zum Lernen?",
+        "intro": "Wir helfen Ihnen, den perfekten Tutor zu finden und Ihr Profil einzurichten."
+      },
+      "profile": {
+        "title": "Ihr Profil",
+        "description": "Erzählen Sie uns von sich",
+        "name": "Ihr Name",
+        "avatar": "Profilbild"
+      },
+      "preferences": {
+        "title": "Lernpräferenzen",
+        "description": "Helfen Sie uns, die richtigen Tutoren zu finden",
+        "subjects": "Was möchten Sie lernen?",
+        "schedule": "Wann lernen Sie am liebsten?"
+      },
+      "firstTutor": {
+        "title": "Tutor finden",
+        "description": "Durchsuchen Sie verifizierte Tutoren",
+        "cta": "Tutor finden"
+      },
+      "completion": {
+        "title": "Fertig!",
+        "description": "Sie sind bereit zum Lernen",
+        "congrats": "Herzlichen Glückwunsch!",
+        "message": "Ihr Schülerprofil ist fertig. Suchen Sie nach Tutoren!"
+      }
+    },
+    "tutor": {
+      "welcome": {
+        "title": "Willkommen, Tutor!",
+        "description": "Richten wir Ihr Lehrerprofil ein",
+        "greeting": "Bereit zum Unterrichten?",
+        "intro": "Vervollständigen Sie Ihr Profil, um Schüler anzuziehen.",
+        "benefit1": "Erreichen Sie Tausende potenzieller Schüler",
+        "benefit2": "Legen Sie Ihren eigenen Zeitplan und Preise fest",
+        "benefit3": "Erhalten Sie sichere Zahlungen über die Plattform"
+      },
+      "profile": {
+        "title": "Berufliches Profil",
+        "description": "Machen Sie einen guten ersten Eindruck",
+        "headline": "Berufliche Überschrift",
+        "headlinePlaceholder": "z.B. Erfahrener Mathematik-Tutor",
+        "bio": "Über Sie",
+        "bioPlaceholder": "Erzählen Sie Schülern von Ihrer Unterrichtserfahrung...",
+        "photo": "Profilbild"
+      },
+      "subjects": {
+        "title": "Fächer & Preise",
+        "description": "Was werden Sie unterrichten?",
+        "select": "Fach auswählen",
+        "price": "Preis/Stunde",
+        "addMore": "Weiteres Fach hinzufügen"
+      },
+      "availability": {
+        "title": "Verfügbarkeit festlegen",
+        "description": "Lassen Sie Schüler wissen, wann Sie frei sind",
+        "setup": "Zeitplan einrichten"
+      },
+      "verification": {
+        "title": "Identität verifizieren",
+        "description": "Bauen Sie Vertrauen auf, indem Sie Ihr Profil verifizieren",
+        "start": "Verifizierung starten"
+      },
+      "completion": {
+        "title": "Profil fertig!",
+        "description": "Sie sind bereit, Schüler anzunehmen",
+        "congrats": "Herzlichen Glückwunsch!",
+        "message": "Ihr Tutorprofil ist aktiv. Schüler können Sie jetzt finden!"
+      }
+    }
+  },
+  "checklist": {
+    "title": "Profil-Checkliste",
+    "subtitle": "Führen Sie diese Schritte aus, um M4SH optimal zu nutzen",
+    "panelTitle": "Profil vervollständigen",
+    "nextStep": "Empfohlener nächster Schritt",
+    "viewAll": "Alle Aufgaben anzeigen",
+    "complete": "Ausführen",
+    "points": "Punkte",
+    "categories": {
+      "profile": "Profil",
+      "verification": "Verifizierung",
+      "settings": "Einstellungen",
+      "engagement": "Aktivität"
+    }
+  }
+}

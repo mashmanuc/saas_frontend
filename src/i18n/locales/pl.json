@@ -1,0 +1,160 @@
+{
+  "app": {
+    "title": "Platforma M4SH"
+  },
+  "common": {
+    "accept": "Akceptuj",
+    "decline": "Odrzuć",
+    "cancel": "Anuluj",
+    "resend": "Wyślij ponownie",
+    "close": "Zamknij",
+    "back": "Wstecz",
+    "next": "Dalej",
+    "save": "Zapisz",
+    "later": "Później",
+    "there": "tam",
+    "justNow": "Przed chwilą",
+    "minutesAgo": "{count} min temu",
+    "hoursAgo": "{count} godz. temu",
+    "daysAgo": "{count} dni temu"
+  },
+  "onboarding": {
+    "skip": "Pomiń",
+    "finish": "Zakończ",
+    "dismissForNow": "Zrobię to później",
+    "continue": "Kontynuuj konfigurację",
+    "welcomeBack": "Witaj ponownie, {name}!",
+    "continueSetup": "Twój profil jest ukończony w {percentage}%",
+    "welcome": {
+      "title": "Witaj w M4SH!",
+      "subtitle": "Skonfigurujmy wszystko w kilku krokach",
+      "feature1": "Znajdź idealnego korepetytora",
+      "feature2": "Planuj lekcje według swojego harmonogramu",
+      "feature3": "Śledź postępy i osiągnięcia"
+    },
+    "profile": {
+      "title": "Skonfiguruj swój profil",
+      "description": "Pomóż innym lepiej Cię poznać",
+      "displayName": "Wyświetlana nazwa",
+      "namePlaceholder": "Jak mamy Cię nazywać?",
+      "uploadPhoto": "Prześlij zdjęcie"
+    },
+    "preferences": {
+      "title": "Twoje preferencje",
+      "description": "Dostosuj swoje doświadczenie nauki",
+      "subjects": "Przedmioty, które Cię interesują",
+      "schedule": "Preferowany harmonogram",
+      "notifications": "Włącz powiadomienia"
+    },
+    "firstAction": {
+      "student": {
+        "title": "Znajdź swojego pierwszego korepetytora",
+        "description": "Przeglądaj naszych korepetytorów i zarezerwuj pierwszą lekcję",
+        "cta": "Przeglądaj korepetytorów",
+        "hint": "Zawsze możesz to zrobić później z panelu"
+      },
+      "tutor": {
+        "title": "Ukończ weryfikację",
+        "description": "Zweryfikuj swoją tożsamość, aby zacząć przyjmować uczniów",
+        "cta": "Rozpocznij weryfikację",
+        "hint": "To pomaga budować zaufanie z potencjalnymi uczniami"
+      }
+    },
+    "completion": {
+      "title": "Wszystko gotowe!",
+      "message": "Twój profil jest gotowy. Zacznij odkrywać platformę!",
+      "stepsCompleted": "Ukończone kroki",
+      "profileComplete": "Profil ukończony",
+      "goToDashboard": "Przejdź do panelu"
+    },
+    "student": {
+      "welcome": {
+        "title": "Witaj, Uczniu!",
+        "description": "Spersonalizujmy Twoją ścieżkę nauki",
+        "greeting": "Gotowy do nauki?",
+        "intro": "Pomożemy Ci znaleźć idealnego korepetytora i skonfigurować profil."
+      },
+      "profile": {
+        "title": "Twój profil",
+        "description": "Opowiedz nam o sobie",
+        "name": "Twoje imię",
+        "avatar": "Zdjęcie profilowe"
+      },
+      "preferences": {
+        "title": "Preferencje nauki",
+        "description": "Pomóż nam dopasować odpowiednich korepetytorów",
+        "subjects": "Czego chcesz się uczyć?",
+        "schedule": "Kiedy wolisz się uczyć?"
+      },
+      "firstTutor": {
+        "title": "Znajdź korepetytora",
+        "description": "Przeglądaj zweryfikowanych korepetytorów",
+        "cta": "Znajdź korepetytora"
+      },
+      "completion": {
+        "title": "Gotowe!",
+        "description": "Jesteś gotowy do nauki",
+        "congrats": "Gratulacje!",
+        "message": "Twój profil ucznia jest gotowy. Zacznij szukać korepetytorów!"
+      }
+    },
+    "tutor": {
+      "welcome": {
+        "title": "Witaj, Korepetytorze!",
+        "description": "Skonfigurujmy Twój profil nauczyciela",
+        "greeting": "Gotowy do nauczania?",
+        "intro": "Uzupełnij profil, aby przyciągnąć uczniów.",
+        "benefit1": "Dotrzyj do tysięcy potencjalnych uczniów",
+        "benefit2": "Ustal własny harmonogram i stawki",
+        "benefit3": "Otrzymuj płatności bezpiecznie przez platformę"
+      },
+      "profile": {
+        "title": "Profil zawodowy",
+        "description": "Zrób dobre pierwsze wrażenie",
+        "headline": "Nagłówek zawodowy",
+        "headlinePlaceholder": "np. Doświadczony korepetytor matematyki",
+        "bio": "O Tobie",
+        "bioPlaceholder": "Opowiedz uczniom o swoim doświadczeniu...",
+        "photo": "Zdjęcie profilowe"
+      },
+      "subjects": {
+        "title": "Przedmioty i ceny",
+        "description": "Czego będziesz uczyć?",
+        "select": "Wybierz przedmiot",
+        "price": "Cena/godzina",
+        "addMore": "Dodaj kolejny przedmiot"
+      },
+      "availability": {
+        "title": "Ustaw dostępność",
+        "description": "Poinformuj uczniów, kiedy jesteś wolny",
+        "setup": "Skonfiguruj harmonogram"
+      },
+      "verification": {
+        "title": "Zweryfikuj tożsamość",
+        "description": "Buduj zaufanie z uczniami, weryfikując swój profil",
+        "start": "Rozpocznij weryfikację"
+      },
+      "completion": {
+        "title": "Profil gotowy!",
+        "description": "Jesteś gotowy przyjmować uczniów",
+        "congrats": "Gratulacje!",
+        "message": "Twój profil korepetytora jest aktywny. Uczniowie mogą Cię teraz znaleźć!"
+      }
+    }
+  },
+  "checklist": {
+    "title": "Lista kontrolna profilu",
+    "subtitle": "Wykonaj te kroki, aby w pełni wykorzystać M4SH",
+    "panelTitle": "Uzupełnij swój profil",
+    "nextStep": "Sugerowany następny krok",
+    "viewAll": "Zobacz wszystkie zadania",
+    "complete": "Wykonaj",
+    "points": "punktów",
+    "categories": {
+      "profile": "Profil",
+      "verification": "Weryfikacja",
+      "settings": "Ustawienia",
+      "engagement": "Aktywność"
+    }
+  }
+}

@@ -214,7 +214,7 @@ describe('paymentStore', () => {
 
       await store.addPaymentMethod('pm_123')
 
-      expect(store.paymentMethods).toContain(mockPaymentMethod)
+      expect(store.paymentMethods).toContainEqual(mockPaymentMethod)
     })
   })
 

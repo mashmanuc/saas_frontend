@@ -41,7 +41,7 @@ const mockReview = {
   is_anonymous: false,
   helpful_count: 10,
   is_helpful_by_me: false,
-  response: null,
+  response: undefined,
   created_at: '2024-12-10T10:00:00Z',
   updated_at: '2024-12-10T10:00:00Z',
 }
@@ -221,7 +221,7 @@ describe('reviewStore', () => {
       })
 
       expect(result).toEqual(mockReview)
-      expect(store.myReviews).toContain(mockReview)
+      expect(store.myReviews).toContainEqual(mockReview)
     })
   })
 
@@ -321,7 +321,7 @@ describe('reviewStore', () => {
       const store = useReviewStore()
       store.handleReviewCreated(mockReview)
 
-      expect(store.reviews).toContain(mockReview)
+      expect(store.reviews).toContainEqual(mockReview)
       expect(store.totalCount).toBe(1)
     })
 

@@ -165,7 +165,7 @@ describe('walletStore', () => {
       const result = await store.requestPayout(50000)
 
       expect(result).toEqual(mockPayout)
-      expect(store.payouts).toContain(mockPayout)
+      expect(store.payouts).toContainEqual(mockPayout)
       expect(store.wallet?.balance).toBe(50000)
     })
   })

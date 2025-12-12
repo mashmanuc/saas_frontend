@@ -1,15 +1,22 @@
 import { createI18n } from 'vue-i18n'
 import uk from './locales/uk.json'
 import en from './locales/en.json'
+import pl from './locales/pl.json'
+import de from './locales/de.json'
 
 export const DEFAULT_LOCALE = 'uk'
 export const STORAGE_KEY = 'lang'
+export const SUPPORTED_LOCALES = ['uk', 'en', 'pl', 'de']
 
 export function getInitialLocale() {
   if (typeof window === 'undefined') {
     return DEFAULT_LOCALE
   }
-  return localStorage.getItem(STORAGE_KEY) || DEFAULT_LOCALE
+  const stored = localStorage.getItem(STORAGE_KEY)
+  if (stored && SUPPORTED_LOCALES.includes(stored)) {
+    return stored
+  }
+  return DEFAULT_LOCALE
 }
 
 const initialLocale = getInitialLocale()
@@ -22,15 +29,18 @@ export const i18n = createI18n({
   messages: {
     uk,
     en,
+    pl,
+    de,
   },
 })
 
 export function setI18nLocale(locale) {
-  if (!locale) return
+  if (!locale || !SUPPORTED_LOCALES.includes(locale)) return
   i18n.global.locale.value = locale
   if (typeof document !== 'undefined') {
     document.documentElement.setAttribute('lang', locale)
   }
+  localStorage.setItem(STORAGE_KEY, locale)
 }
 
 setI18nLocale(initialLocale)
