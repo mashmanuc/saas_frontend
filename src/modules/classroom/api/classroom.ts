@@ -87,6 +87,56 @@ export interface SessionEventInput {
   data?: Record<string, unknown>
 }
 
+// v0.24.3 Types
+export interface TimelineEventResponse {
+  id: number
+  event_type: string
+  timestamp_ms: number
+  user: { id: number; name: string } | null
+  data: Record<string, unknown>
+}
+
+export interface SnapshotResponse {
+  version: number
+  snapshot_type: string
+  created_at: string
+  created_by: { id: number; name: string } | null
+  size_bytes: number
+  thumbnail_url: string | null
+}
+
+export interface ReplayManifestResponse {
+  session_id: string
+  duration_ms: number
+  events: { t: number; type: string; user?: number; data?: Record<string, unknown> }[]
+  snapshots: { version: number; t: number }[]
+  participants: { id: number; name: string; role: string }[]
+}
+
+export interface SessionSummaryResponse {
+  session: {
+    uuid: string
+    started_at: string
+    ended_at: string
+    duration_ms: number
+  }
+  stats: {
+    total_events: number
+    board_events: number
+    participant_count: number
+    snapshot_count: number
+  }
+  participants: {
+    id: number
+    name: string
+    role: string
+    joined_at: string
+    left_at: string | null
+    duration_ms: number
+  }[]
+  snapshots: SnapshotResponse[]
+}
+
 // API Client
 export const classroomApi = {
   // Session management
@@ -200,5 +250,79 @@ export const classroomApi = {
 
   logEvent: async (sessionId: string, event: SessionEventInput): Promise<void> => {
     await apiClient.post(`/classroom/session/${sessionId}/event/`, event)
+  },
+
+  // v0.24.3 Methods - Timeline
+  getTimeline: async (
+    sessionId: string,
+    params?: {
+      offset?: number
+      limit?: number
+      from_ms?: number
+      to_ms?: number
+      event_types?: string[]
+    }
+  ): Promise<{
+    events: TimelineEventResponse[]
+    total: number
+    has_more: boolean
+  }> => {
+    const response = await apiClient.get(`/classroom/session/${sessionId}/timeline/`, {
+      params,
+    })
+    return response.data
+  },
+
+  // v0.24.3 Methods - Snapshots
+  getSnapshots: async (
+    sessionId: string,
+    type?: string
+  ): Promise<{ snapshots: SnapshotResponse[] }> => {
+    const response = await apiClient.get(`/classroom/session/${sessionId}/snapshots/`, {
+      params: { type },
+    })
+    return response.data
+  },
+
+  getSnapshot: async (
+    sessionId: string,
+    version: number
+  ): Promise<{ board_state: Record<string, unknown>; version: number }> => {
+    const response = await apiClient.get(
+      `/classroom/session/${sessionId}/snapshots/${version}/`
+    )
+    return response.data
+  },
+
+  exportSnapshot: async (
+    sessionId: string,
+    version: number,
+    format: 'json' | 'png' | 'svg'
+  ): Promise<Blob> => {
+    const response = await apiClient.get(
+      `/classroom/session/${sessionId}/snapshots/${version}/export/`,
+      {
+        params: { format },
+        responseType: 'blob',
+      }
+    )
+    return response.data
+  },
+
+  // v0.24.3 Methods - Replay
+  getReplayStream: async (sessionId: string): Promise<ReplayManifestResponse> => {
+    const response = await apiClient.get(`/classroom/session/${sessionId}/replay/stream/`)
+    return response.data
+  },
+
+  getReplayManifest: async (sessionId: string): Promise<ReplayManifestResponse> => {
+    const response = await apiClient.get(`/classroom/session/${sessionId}/replay/manifest/`)
+    return response.data
+  },
+
+  // v0.24.3 Methods - Summary
+  getSummary: async (sessionId: string): Promise<SessionSummaryResponse> => {
+    const response = await apiClient.get(`/classroom/session/${sessionId}/summary/`)
+    return response.data
   },
 }

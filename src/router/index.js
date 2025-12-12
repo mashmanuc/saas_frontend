@@ -40,6 +40,11 @@ import { classroomGuard } from './guards/classroomGuard'
 const LessonRoom = () => import('../modules/classroom/views/LessonRoom.vue')
 const SoloRoom = () => import('../modules/classroom/views/SoloRoom.vue')
 
+// Classroom views (v0.24.3)
+const LessonSummary = () => import('../modules/classroom/summary/LessonSummary.vue')
+const LessonReplay = () => import('../modules/classroom/views/LessonReplay.vue')
+const LessonHistory = () => import('../modules/classroom/views/LessonHistory.vue')
+
 const routes = [
   {
     path: '/auth',
@@ -201,6 +206,25 @@ const routes = [
         path: 'classroom/solo',
         name: 'solo-room',
         component: SoloRoom,
+        meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
+      },
+      // v0.24.3: Classroom history routes
+      {
+        path: 'classroom/:sessionId/summary',
+        name: 'lesson-summary',
+        component: LessonSummary,
+        meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
+      },
+      {
+        path: 'classroom/:sessionId/replay',
+        name: 'lesson-replay',
+        component: LessonReplay,
+        meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
+      },
+      {
+        path: 'classroom/:sessionId/history',
+        name: 'lesson-history',
+        component: LessonHistory,
         meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
       },
     ],
