@@ -78,11 +78,23 @@
             <p class="font-medium text-body">
               {{ $t('student.upcomingLessons.title') }}
             </p>
-            <ul class="space-y-2">
-              <li class="text-sm text-muted">
-                {{ $t('student.upcomingLessons.placeholder') }}
-              </li>
-            </ul>
+            <div v-if="dashboardStore.isLoading" class="text-sm text-muted">
+              {{ $t('loader.loading') }}
+            </div>
+            <div v-else-if="dashboardStore.upcomingLessons.length > 0" class="space-y-2">
+              <UpcomingLessonCard
+                v-for="lesson in dashboardStore.upcomingLessons"
+                :key="lesson.id"
+                :lesson="lesson"
+                :is-tutor="false"
+              />
+            </div>
+            <p v-else class="text-sm text-muted">
+              {{ $t('student.upcomingLessons.placeholder') }}
+            </p>
+            <router-link to="/bookings" class="text-sm text-accent hover:underline">
+              {{ $t('student.actions.viewAllLessons') || 'Переглянути всі уроки' }}
+            </router-link>
           </div>
         </section>
 
@@ -157,12 +169,15 @@ import Button from '../../../ui/Button.vue'
 import Card from '../../../ui/Card.vue'
 import Heading from '../../../ui/Heading.vue'
 import { useRelationsStore } from '../../../stores/relationsStore'
+import { useDashboardStore } from '../store/dashboardStore'
 import TutorSearchView from '../../tutor/views/TutorSearchView.vue'
+import UpcomingLessonCard from '../components/UpcomingLessonCard.vue'
 import { notifyError, notifySuccess } from '../../../utils/notify'
 
 const router = useRouter()
 const { t } = useI18n()
 const relationsStore = useRelationsStore()
+const dashboardStore = useDashboardStore()
 
 const relationsLoading = computed(() => relationsStore.studentLoading)
 const relationsError = computed(() => relationsStore.studentError)
@@ -244,5 +259,6 @@ async function handleDecline(id) {
 
 onMounted(() => {
   relationsStore.fetchStudentRelations().catch(() => {})
+  dashboardStore.fetchStudentDashboard().catch(() => {})
 })
 </script>

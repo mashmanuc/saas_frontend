@@ -17,6 +17,29 @@
           <span v-else class="font-medium text-body">{{ $t('dashboard.tutor.nextLessonFallback') }}</span>
         </p>
       </div>
+
+      <!-- Today's Lessons -->
+      <div v-if="dashboard.todaysLessons?.length > 0" class="space-y-3">
+        <h3 class="text-base font-medium text-body">{{ $t('dashboard.tutor.todaysLessons') || 'Уроки сьогодні' }}</h3>
+        <div class="space-y-2">
+          <UpcomingLessonCard
+            v-for="lesson in dashboard.todaysLessons"
+            :key="lesson.id"
+            :lesson="lesson"
+            :is-tutor="true"
+          />
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="flex flex-wrap gap-3">
+        <router-link to="/bookings" class="text-sm text-accent hover:underline">
+          {{ $t('dashboard.tutor.viewBookings') || 'Переглянути бронювання' }}
+        </router-link>
+        <router-link to="/lessons" class="text-sm text-accent hover:underline">
+          {{ $t('dashboard.tutor.viewLessons') || 'Мої уроки' }}
+        </router-link>
+      </div>
     </Card>
 
     <Card class="space-y-6">
@@ -225,6 +248,7 @@ import Button from '../../../ui/Button.vue'
 import Card from '../../../ui/Card.vue'
 import Avatar from '../../../ui/Avatar.vue'
 import PresenceDot from '../../../ui/PresenceDot.vue'
+import UpcomingLessonCard from '../components/UpcomingLessonCard.vue'
 import { formatDateTime } from '../../../utils/datetime'
 import { useAuthStore } from '../../auth/store/authStore'
 import { useDashboardStore } from '../store/dashboardStore'
@@ -472,7 +496,12 @@ function isOnline(userId) {
 }
 
 onMounted(() => {
-  dashboard.fetchTutorStudents().catch(() => {})
+  // Use new method if available, fallback to old
+  if (dashboard.fetchTutorDashboard) {
+    dashboard.fetchTutorDashboard().catch(() => {})
+  } else if (dashboard.fetchTutorStudents) {
+    dashboard.fetchTutorStudents().catch(() => {})
+  }
   relationsStore.fetchTutorRelations().catch(() => {})
 })
 </script>
