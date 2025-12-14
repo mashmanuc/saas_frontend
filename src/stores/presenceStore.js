@@ -3,6 +3,7 @@ import dayjs from 'dayjs'
 import { presenceApi } from '../api/presence'
 import { realtimeService } from '../services/realtime'
 import { notifyError } from '../utils/notify'
+import { useAuthStore } from '../modules/auth/store/authStore'
 
 const TTL_SECONDS = 90
 const REFRESH_INTERVAL = 30_000
@@ -34,13 +35,15 @@ export const usePresenceStore = defineStore('presence', {
 
   actions: {
     init() {
-      if (this.initialized) return
+      const authStore = useAuthStore()
+      if (this.initialized || !authStore?.access) return
       this.initialized = true
       this.subscribeRealtime()
     },
 
     async fetch(ids = []) {
-      if (!ids.length) return
+      const authStore = useAuthStore()
+      if (!ids.length || !authStore?.access) return
       try {
         const response = await presenceApi.getStatuses(ids)
         if (Array.isArray(response)) {
@@ -50,11 +53,17 @@ export const usePresenceStore = defineStore('presence', {
         }
         this.lastUpdated = new Date().toISOString()
       } catch (error) {
+        if (error?.response?.status === 401) {
+          this.dispose()
+          return
+        }
         notifyError(error?.response?.data?.detail || 'Не вдалося оновити статус онлайн')
       }
     },
 
     track(ids = []) {
+      const authStore = useAuthStore()
+      if (!authStore?.access) return
       const normalized = ids.map((id) => String(id)).filter(Boolean)
       if (!normalized.length) return
       const current = new Set(this.trackedIds)
@@ -83,6 +92,8 @@ export const usePresenceStore = defineStore('presence', {
     },
 
     subscribeRealtime() {
+      const authStore = useAuthStore()
+      if (!authStore?.access) return
       if (this.subscription) {
         this.subscription()
         this.subscription = null

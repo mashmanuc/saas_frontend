@@ -206,7 +206,7 @@ export const marketplaceApi = {
       page_size: pageSize,
       ordering: sort,
     }
-    const response = await apiClient.get('/api/v1/marketplace/tutors/', { params })
+    const response = await apiClient.get('/v1/marketplace/tutors/', { params })
     return response.data
   },
 
@@ -214,7 +214,7 @@ export const marketplaceApi = {
    * Get tutor profile by slug.
    */
   async getTutorProfile(slug: string): Promise<TutorProfile> {
-    const response = await apiClient.get(`/api/v1/marketplace/tutors/${slug}/`)
+    const response = await apiClient.get(`/v1/marketplace/tutors/${slug}/`)
     return response.data
   },
 
@@ -222,7 +222,7 @@ export const marketplaceApi = {
    * Get own profile.
    */
   async getMyProfile(): Promise<TutorProfile> {
-    const response = await apiClient.get('/api/v1/marketplace/profile/')
+    const response = await apiClient.get('/v1/marketplace/profile/')
     return response.data
   },
 
@@ -230,7 +230,7 @@ export const marketplaceApi = {
    * Create profile.
    */
   async createProfile(data: Partial<TutorProfile>): Promise<TutorProfile> {
-    const response = await apiClient.post('/api/v1/marketplace/profile/', data)
+    const response = await apiClient.post('/v1/marketplace/profile/', data)
     return response.data
   },
 
@@ -238,7 +238,7 @@ export const marketplaceApi = {
    * Update profile.
    */
   async updateProfile(data: Partial<TutorProfile>): Promise<TutorProfile> {
-    const response = await apiClient.patch('/api/v1/marketplace/profile/', data)
+    const response = await apiClient.patch('/v1/marketplace/profile/', data)
     return response.data
   },
 
@@ -246,7 +246,7 @@ export const marketplaceApi = {
    * Submit profile for review.
    */
   async submitForReview(): Promise<TutorProfile> {
-    const response = await apiClient.post('/api/v1/marketplace/profile/submit/')
+    const response = await apiClient.post('/v1/marketplace/profile/submit/')
     return response.data
   },
 
@@ -254,7 +254,7 @@ export const marketplaceApi = {
    * Publish profile.
    */
   async publishProfile(): Promise<TutorProfile> {
-    const response = await apiClient.post('/api/v1/marketplace/profile/publish/')
+    const response = await apiClient.post('/v1/marketplace/profile/publish/')
     return response.data
   },
 
@@ -262,7 +262,7 @@ export const marketplaceApi = {
    * Unpublish profile.
    */
   async unpublishProfile(): Promise<TutorProfile> {
-    const response = await apiClient.post('/api/v1/marketplace/profile/unpublish/')
+    const response = await apiClient.post('/v1/marketplace/profile/unpublish/')
     return response.data
   },
 
@@ -272,7 +272,7 @@ export const marketplaceApi = {
   async uploadPhoto(file: File): Promise<{ url: string }> {
     const formData = new FormData()
     formData.append('photo', file)
-    const response = await apiClient.post('/api/v1/marketplace/profile/photo/', formData, {
+    const response = await apiClient.post('/v1/marketplace/profile/photo/', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
     return response.data
@@ -284,7 +284,7 @@ export const marketplaceApi = {
   async uploadVideoIntro(file: File): Promise<{ url: string }> {
     const formData = new FormData()
     formData.append('video', file)
-    const response = await apiClient.post('/api/v1/marketplace/profile/video/', formData, {
+    const response = await apiClient.post('/v1/marketplace/profile/video/', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
     return response.data
@@ -294,7 +294,7 @@ export const marketplaceApi = {
    * Get all badges.
    */
   async getBadges(): Promise<Badge[]> {
-    const response = await apiClient.get('/api/v1/marketplace/badges/')
+    const response = await apiClient.get('/v1/marketplace/badges/')
     return response.data
   },
 
@@ -302,7 +302,7 @@ export const marketplaceApi = {
    * Get filter options (subjects, countries, languages).
    */
   async getFilterOptions(): Promise<FilterOptions> {
-    const response = await apiClient.get('/api/v1/marketplace/filters/')
+    const response = await apiClient.get('/v1/marketplace/filters/')
     return response.data
   },
 
@@ -310,7 +310,7 @@ export const marketplaceApi = {
    * Search tutors.
    */
   async searchTutors(query: string): Promise<TutorListItem[]> {
-    const response = await apiClient.get('/api/v1/marketplace/tutors/search/', {
+    const response = await apiClient.get('/v1/marketplace/tutors/search/', {
       params: { q: query },
     })
     return response.data
@@ -341,7 +341,7 @@ export const marketplaceApi = {
     const cleanParams = Object.fromEntries(
       Object.entries(params).filter(([_, v]) => v != null && v !== '')
     )
-    const response = await apiClient.get('/api/v1/marketplace/search/', { params: cleanParams })
+    const response = await apiClient.get('/v1/marketplace/search/', { params: cleanParams })
     return response.data
   },
 
@@ -349,7 +349,7 @@ export const marketplaceApi = {
    * Get search suggestions (autocomplete).
    */
   async getSearchSuggestions(query: string): Promise<Suggestion[]> {
-    const response = await apiClient.get('/api/v1/marketplace/search/suggestions/', {
+    const response = await apiClient.get('/v1/marketplace/search/suggestions/', {
       params: { q: query },
     })
     return response.data
@@ -359,7 +359,7 @@ export const marketplaceApi = {
    * Get extended filter options.
    */
   async getExtendedFilterOptions(): Promise<ExtendedFilterOptions> {
-    const response = await apiClient.get('/api/v1/marketplace/filters/')
+    const response = await apiClient.get('/v1/marketplace/filters/')
     return response.data
   },
 
@@ -367,7 +367,7 @@ export const marketplaceApi = {
    * Get subject categories.
    */
   async getCategories(): Promise<Category[]> {
-    const response = await apiClient.get('/api/v1/marketplace/categories/')
+    const response = await apiClient.get('/v1/marketplace/categories/')
     return response.data
   },
 
@@ -375,7 +375,7 @@ export const marketplaceApi = {
    * Get popular tutors.
    */
   async getPopularTutors(limit: number = 10): Promise<TutorListItem[]> {
-    const response = await apiClient.get('/api/v1/marketplace/tutors/popular/', {
+    const response = await apiClient.get('/v1/marketplace/tutors/popular/', {
       params: { limit },
     })
     return response.data
@@ -385,7 +385,7 @@ export const marketplaceApi = {
    * Get new tutors.
    */
   async getNewTutors(limit: number = 10): Promise<TutorListItem[]> {
-    const response = await apiClient.get('/api/v1/marketplace/tutors/new/', {
+    const response = await apiClient.get('/v1/marketplace/tutors/new/', {
       params: { limit },
     })
     return response.data
@@ -395,7 +395,7 @@ export const marketplaceApi = {
    * Get recommended tutors for current user.
    */
   async getRecommendedTutors(limit: number = 10): Promise<TutorListItem[]> {
-    const response = await apiClient.get('/api/v1/marketplace/tutors/recommended/', {
+    const response = await apiClient.get('/v1/marketplace/tutors/recommended/', {
       params: { limit },
     })
     return response.data
@@ -405,7 +405,7 @@ export const marketplaceApi = {
    * Get featured tutors.
    */
   async getFeaturedTutors(limit: number = 10): Promise<TutorListItem[]> {
-    const response = await apiClient.get('/api/v1/marketplace/tutors/featured/', {
+    const response = await apiClient.get('/v1/marketplace/tutors/featured/', {
       params: { limit },
     })
     return response.data
@@ -415,7 +415,7 @@ export const marketplaceApi = {
    * Get similar tutors.
    */
   async getSimilarTutors(slug: string, limit: number = 5): Promise<TutorListItem[]> {
-    const response = await apiClient.get(`/api/v1/marketplace/tutors/${slug}/similar/`, {
+    const response = await apiClient.get(`/v1/marketplace/tutors/${slug}/similar/`, {
       params: { limit },
     })
     return response.data
@@ -425,7 +425,7 @@ export const marketplaceApi = {
    * Log search click for analytics.
    */
   async logSearchClick(searchLogId: number, profileId: number, position: number): Promise<void> {
-    await apiClient.post('/api/v1/marketplace/search/log-click/', {
+    await apiClient.post('/v1/marketplace/search/log-click/', {
       search_log_id: searchLogId,
       profile_id: profileId,
       position,

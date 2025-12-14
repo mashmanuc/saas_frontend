@@ -86,7 +86,7 @@ describe('featureFlagsStore', () => {
       const store = useFeatureFlagsStore()
       await store.fetchFlags()
       
-      expect(apiClient.get).toHaveBeenCalledWith('/api/v1/feature-flags/')
+      expect(apiClient.get).toHaveBeenCalledWith('/v1/feature-flags/')
       expect(store.flags.chat_reactions).toBe(true)
       expect(store.flags.new_feature).toBe(true)
       // Default flags should be preserved

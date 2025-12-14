@@ -1,17 +1,17 @@
 /* Solo Workspace CSS Variables */
 :root {
-  --solo-bg: #1a1a2e;
-  --solo-header-bg: #2d2d44;
-  --solo-toolbar-bg: #2d2d44;
-  --solo-footer-bg: #2d2d44;
+  --solo-bg: #f1f5f9;
+  --solo-header-bg: #7c3aed;
+  --solo-toolbar-bg: #ffffff;
+  --solo-footer-bg: #ffffff;
   --solo-canvas-bg: #ffffff;
-  --solo-border: #3d3d5c;
-  --solo-text: #eeeeee;
-  --solo-text-muted: #888888;
-  --solo-accent: #6366f1;
-  --solo-hover: rgba(255, 255, 255, 0.1);
-  --solo-active: rgba(99, 102, 241, 0.3);
-  --solo-danger: #ff6b6b;
+  --solo-border: #e2e8f0;
+  --solo-text: #0f172a;
+  --solo-text-muted: #64748b;
+  --solo-accent: #7c3aed;
+  --solo-hover: rgba(0, 0, 0, 0.05);
+  --solo-active: rgba(124, 58, 237, 0.15);
+  --solo-danger: #ef4444;
   --solo-video-bg: #000000;
 }
 
@@ -31,7 +31,213 @@
   z-index: 9999;
 }
 
-/* Header */
+/* Header - ТЗ v0.28: 64px height, padding 0 24px (desktop) / 0 16px (≤1024px) */
+.solo-workspace__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  background: var(--solo-header-bg);
+  color: white;
+  height: 64px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 1024px) {
+  .solo-workspace__header {
+    padding: 0 16px;
+  }
+}
+
+.solo-workspace__title {
+  flex: 1;
+  min-width: 0;
+}
+
+.solo-workspace__title .title-input {
+  width: 100%;
+  max-width: 200px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.solo-workspace__title .title-input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.solo-workspace__title .title-input:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.solo-workspace__status {
+  flex-shrink: 0;
+}
+
+.solo-workspace__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.solo-workspace__actions .action-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.solo-workspace__actions .action-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.solo-workspace__actions .action-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.solo-workspace__actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.solo-workspace__actions .btn-primary {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+}
+
+.solo-workspace__actions .btn-primary:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Main content area */
+.solo-workspace__main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Left toolbar */
+.solo-workspace__toolbar {
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+/* Board area */
+.solo-workspace__board {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+/* Footer - ТЗ v0.28: 48px height, padding 0 20px */
+.solo-workspace__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  height: 48px;
+  background: var(--solo-footer-bg);
+  border-top: 1px solid var(--solo-border);
+  flex-shrink: 0;
+}
+
+.solo-workspace__footer .page-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.solo-workspace__footer .page-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+  border: 1px solid var(--solo-border);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--solo-text);
+  transition: all 0.15s ease;
+}
+
+.solo-workspace__footer .page-btn:hover:not(:disabled) {
+  background: #f1f5f9;
+}
+
+.solo-workspace__footer .page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.solo-workspace__footer .page-indicator {
+  font-size: 0.8125rem;
+  color: var(--solo-text-muted);
+  min-width: 40px;
+  text-align: center;
+}
+
+.solo-workspace__footer .zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.solo-workspace__footer .zoom-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+  border: 1px solid var(--solo-border);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--solo-text);
+  transition: all 0.15s ease;
+}
+
+.solo-workspace__footer .zoom-btn:hover {
+  background: #f1f5f9;
+}
+
+.solo-workspace__footer .zoom-level {
+  font-size: 0.8125rem;
+  color: var(--solo-text-muted);
+  min-width: 48px;
+  text-align: center;
+}
+
+/* Legacy styles below - kept for compatibility */
+
+/* Header (old) */
 .solo-header {
   display: flex;
   align-items: center;
@@ -53,17 +259,17 @@
 .solo-header__title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--solo-text);
+  color: white;
 }
 
-/* Main content area */
+/* Main content area (old) */
 .solo-main {
   display: flex;
   flex: 1;
   overflow: hidden;
 }
 
-/* Toolbar */
+/* Toolbar (old) */
 .solo-toolbar {
   display: flex;
   flex-direction: column;
@@ -88,7 +294,7 @@
   background: var(--solo-border);
 }
 
-/* Canvas area */
+/* Canvas area (old) */
 .solo-canvas-wrapper {
   flex: 1;
   position: relative;

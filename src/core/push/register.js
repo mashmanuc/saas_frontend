@@ -10,8 +10,8 @@ import { apiClient } from '../../utils/apiClient'
  */
 const CONFIG = {
   vapidPublicKey: import.meta.env.VITE_VAPID_PUBLIC_KEY || '',
-  registerEndpoint: '/api/v1/push/register',
-  unregisterEndpoint: '/api/v1/push/unregister',
+  registerEndpoint: '/v1/push/register',
+  unregisterEndpoint: '/v1/push/unregister',
   refreshIntervalMs: 24 * 60 * 60 * 1000, // 24 hours
 }
 

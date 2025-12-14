@@ -60,45 +60,37 @@ export interface TutorDashboardData {
 // API
 export const dashboardApi = {
   // Student endpoints
-  async getStudentDashboard(): Promise<StudentDashboardData> {
-    const response = await apiClient.get('/api/v1/dashboard/student/')
-    return response.data
+  getStudentDashboard(): Promise<StudentDashboardData> {
+    return apiClient.get('/v1/dashboard/student/')
   },
 
-  async getStudentActiveLessons(): Promise<{ count: number; results: ActiveLesson[] }> {
-    const response = await apiClient.get('/api/v1/dashboard/student/active-lessons/')
-    return response.data
+  getStudentActiveLessons(): Promise<{ count: number; results: ActiveLesson[] }> {
+    return apiClient.get('/v1/dashboard/student/active-lessons/')
   },
 
-  async getStudentTeacher(): Promise<{ tutor: AssignedTutor | null }> {
-    const response = await apiClient.get('/api/v1/dashboard/student/teacher/')
-    return response.data
+  getStudentTeacher(): Promise<{ tutor: AssignedTutor | null }> {
+    return apiClient.get('/v1/dashboard/student/teacher/')
   },
 
-  async getStudentStats(): Promise<StudentStats> {
-    const response = await apiClient.get('/api/v1/dashboard/student/stats/')
-    return response.data
+  getStudentStats(): Promise<StudentStats> {
+    return apiClient.get('/v1/dashboard/student/stats/')
   },
 
   // Tutor endpoints
-  async getTutorDashboard(): Promise<TutorDashboardData> {
-    const response = await apiClient.get('/api/v1/dashboard/tutor/')
-    return response.data
+  getTutorDashboard(): Promise<TutorDashboardData> {
+    return apiClient.get('/v1/dashboard/tutor/')
   },
 
-  async getTutorUpcoming(): Promise<{ count: number; results: ActiveLesson[] }> {
-    const response = await apiClient.get('/api/v1/dashboard/tutor/upcoming/')
-    return response.data
+  getTutorUpcoming(): Promise<{ count: number; results: ActiveLesson[] }> {
+    return apiClient.get('/v1/dashboard/tutor/upcoming/')
   },
 
-  async getTutorStudents(): Promise<{ count: number; results: unknown[] }> {
-    const response = await apiClient.get('/api/v1/dashboard/tutor/students/')
-    return response.data
+  getTutorStudents(): Promise<{ count: number; results: unknown[] }> {
+    return apiClient.get('/v1/dashboard/tutor/students/')
   },
 
-  async getTutorStats(): Promise<TutorStats> {
-    const response = await apiClient.get('/api/v1/dashboard/tutor/stats/')
-    return response.data
+  getTutorStats(): Promise<TutorStats> {
+    return apiClient.get('/v1/dashboard/tutor/stats/')
   },
 }
 

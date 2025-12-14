@@ -12,10 +12,12 @@ import { useThemeStore } from './stores/themeStore'
 import { useRealtimeStore } from './stores/realtimeStore'
 import { useNotificationsStore } from './stores/notificationsStore'
 import { createErrorCollector } from './modules/diagnostics/plugins/errorCollector'
+import VueKonva from 'vue-konva'
 
 const app = createApp(App)
 app.use(pinia)
 app.use(i18n)
+app.use(VueKonva)
 
 // Install error collector for diagnostics
 const errorCollector = createErrorCollector({

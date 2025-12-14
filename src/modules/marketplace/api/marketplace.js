@@ -15,7 +15,7 @@ export const marketplaceApi = {
   getTutor: fetchMarketplaceTutor,
   async getTutorBySlug(slug) {
     if (!slug) throw new Error('Tutor slug is required')
-    const response = await apiClient.get(`/api/v1/marketplace/tutors/${slug}/`)
+    const response = await apiClient.get(`/v1/marketplace/tutors/${slug}/`)
     return response.data
   },
 }

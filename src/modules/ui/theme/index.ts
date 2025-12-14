@@ -1,0 +1,5 @@
+export { themes, themeA, themeB, themeC, themeToCssVars, defaultThemeId } from './themes'
+export type { ThemeId, ThemeTokens } from './themes'
+export { useThemeStore } from './themeStore'
+export { default as PageThemeProvider } from './PageThemeProvider.vue'
+export { default as ThemeSwitcher } from './ThemeSwitcher.vue'

@@ -1,3 +1,5 @@
+import { buildV1Url } from '../config/apiPrefixes'
+
 /**
  * @typedef {'all' | 'invited' | 'active' | 'archived'} TutorRelationFilter
  *
@@ -29,11 +31,13 @@
  */
 
 export const RELATION_ENDPOINTS = Object.freeze({
-  STUDENT_RELATIONS: '/student/relations/',
-  TUTOR_RELATIONS: '/tutor/relations/',
-  TUTOR_RELATIONS_BULK_ACCEPT: '/tutor/relations/batch/accept/',
-  TUTOR_RELATIONS_BULK_ARCHIVE: '/tutor/relations/batch/archive/',
-  ACCEPT: (id) => `/relations/${id}/accept/`,
-  DECLINE: (id) => `/relations/${id}/decline/`,
-  RESEND: (id) => `/relations/${id}/resend/`,
+  STUDENT_RELATIONS: buildV1Url('/student/relations/'),
+  TUTOR_RELATIONS: buildV1Url('/tutor/relations/'),
+  TUTOR_RELATIONS_BULK_ACCEPT: buildV1Url('/tutor/relations/batch/accept/'),
+  TUTOR_RELATIONS_BULK_ARCHIVE: buildV1Url('/tutor/relations/batch/archive/'),
+  // Student accepts/declines tutor invitation
+  ACCEPT: (id) => buildV1Url(`/student/relations/${id}/accept/`),
+  DECLINE: (id) => buildV1Url(`/student/relations/${id}/decline/`),
+  // Tutor resends invitation
+  RESEND: (id) => buildV1Url(`/tutor/relations/${id}/resend/`),
 })

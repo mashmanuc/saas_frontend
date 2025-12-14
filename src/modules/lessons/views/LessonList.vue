@@ -117,13 +117,13 @@
 
         <div class="space-y-4 px-5 py-4">
           <div class="space-y-1">
-            <label class="text-xs font-medium text-muted">{{ t('lessons.calendar.fields.studentId') }}</label>
-            <input
+            <StudentAutocomplete
               v-model="createForm.studentId"
-              type="text"
-              class="w-full rounded-md border border-border-subtle bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-              :placeholder="t('lessons.calendar.placeholders.studentId')"
-              data-test="student-id-input"
+              :label="t('lessons.calendar.fields.studentId')"
+              :placeholder="t('booking.typeToSearch')"
+              :show-invite-cta="true"
+              data-test="student-autocomplete"
+              @invite="handleInviteStudent"
             />
           </div>
 
@@ -220,6 +220,7 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import dayjs from 'dayjs'
 import FullCalendar from '@fullcalendar/vue3'
@@ -229,10 +230,12 @@ import interactionPlugin from '@fullcalendar/interaction'
 
 import Button from '../../../ui/Button.vue'
 import Card from '../../../ui/Card.vue'
+import StudentAutocomplete from '../../booking/components/StudentAutocomplete.vue'
 import { notifyError, notifySuccess } from '../../../utils/notify'
 import { useLessonStore, LESSON_STATUSES } from '../store/lessonStore'
 import { useSettingsStore } from '../../../stores/settingsStore'
 
+const router = useRouter()
 const { t } = useI18n()
 const lessonStore = useLessonStore()
 const settingsStore = useSettingsStore()
@@ -373,6 +376,12 @@ function formatSeriesSuffix(seriesId) {
 async function handleDatesSet(arg) {
   lessonStore.setRange({ start: arg.startStr, end: arg.endStr })
   await lessonStore.fetchLessons().catch(() => {})
+}
+
+function handleInviteStudent() {
+  // Close modal and redirect to invite student page
+  closeCreateModal()
+  router.push('/relations/invite').catch(() => {})
 }
 
 async function submitCreateLesson() {

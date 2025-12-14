@@ -148,93 +148,93 @@ export interface CalendarResponse {
 export const bookingApi = {
   // Settings
   async getSettings(): Promise<TutorSettings> {
-    const response = await apiClient.get('/api/v1/booking/settings/')
+    const response = await apiClient.get('/v1/booking/settings/')
     return response
   },
 
   async updateSettings(data: Partial<TutorSettings>): Promise<TutorSettings> {
-    const response = await apiClient.patch('/api/v1/booking/settings/', data)
+    const response = await apiClient.patch('/v1/booking/settings/', data)
     return response
   },
 
   // Availability
   async getAvailability(): Promise<Availability[]> {
-    const response = await apiClient.get('/api/v1/booking/availability/')
+    const response = await apiClient.get('/v1/booking/availability/')
     return response
   },
 
   async setAvailability(schedule: AvailabilityInput[]): Promise<void> {
-    await apiClient.post('/api/v1/booking/availability/', { schedule })
+    await apiClient.post('/v1/booking/availability/', { schedule })
   },
 
   async deleteAvailability(id: number): Promise<void> {
-    await apiClient.delete(`/api/v1/booking/availability/${id}/`)
+    await apiClient.delete(`/v1/booking/availability/${id}/`)
   },
 
   // Exceptions
   async getExceptions(start: string, end: string): Promise<DateException[]> {
-    const response = await apiClient.get('/api/v1/booking/exceptions/', {
+    const response = await apiClient.get('/v1/booking/exceptions/', {
       params: { start, end },
     })
     return response
   },
 
   async addException(data: ExceptionInput): Promise<DateException> {
-    const response = await apiClient.post('/api/v1/booking/exceptions/', data)
+    const response = await apiClient.post('/v1/booking/exceptions/', data)
     return response
   },
 
   async deleteException(id: number): Promise<void> {
-    await apiClient.delete(`/api/v1/booking/exceptions/${id}/`)
+    await apiClient.delete(`/v1/booking/exceptions/${id}/`)
   },
 
   // Slots
   async getSlots(tutorId: number, start: string, end: string): Promise<TimeSlot[]> {
-    const response = await apiClient.get('/api/v1/booking/slots/', {
+    const response = await apiClient.get('/v1/booking/slots/', {
       params: { tutor_id: tutorId, start, end },
     })
     return response
   },
 
   async blockSlot(slotId: number, reason?: string): Promise<void> {
-    await apiClient.post('/api/v1/booking/slots/block/', {
+    await apiClient.post('/v1/booking/slots/block/', {
       slot_id: slotId,
       reason,
     })
   },
 
   async unblockSlot(slotId: number): Promise<void> {
-    await apiClient.post('/api/v1/booking/slots/unblock/', { slot_id: slotId })
+    await apiClient.post('/v1/booking/slots/unblock/', { slot_id: slotId })
   },
 
   async createCustomSlot(data: CustomSlotInput): Promise<TimeSlot> {
-    const response = await apiClient.post('/api/v1/booking/slots/custom/', data)
+    const response = await apiClient.post('/v1/booking/slots/custom/', data)
     return response
   },
 
   // Bookings
   async getBookings(params?: BookingListParams): Promise<PaginatedResponse<Booking>> {
-    const response = await apiClient.get('/api/v1/booking/bookings/', { params })
+    const response = await apiClient.get('/v1/booking/bookings/', { params })
     return response
   },
 
   async getBooking(id: number): Promise<Booking> {
-    const response = await apiClient.get(`/api/v1/booking/bookings/${id}/`)
+    const response = await apiClient.get(`/v1/booking/bookings/${id}/`)
     return response
   },
 
   async createBooking(data: BookingInput): Promise<Booking> {
-    const response = await apiClient.post('/api/v1/booking/bookings/', data)
+    const response = await apiClient.post('/v1/booking/bookings/', data)
     return response
   },
 
   async confirmBooking(id: number): Promise<Booking> {
-    const response = await apiClient.post(`/api/v1/booking/bookings/${id}/confirm/`)
+    const response = await apiClient.post(`/v1/booking/bookings/${id}/confirm/`)
     return response
   },
 
   async cancelBooking(id: number, reason?: string): Promise<Booking> {
-    const response = await apiClient.post(`/api/v1/booking/bookings/${id}/cancel/`, {
+    const response = await apiClient.post(`/v1/booking/bookings/${id}/cancel/`, {
       reason,
     })
     return response
@@ -246,7 +246,7 @@ export const bookingApi = {
     reason?: string
   ): Promise<Booking> {
     const response = await apiClient.post(
-      `/api/v1/booking/bookings/${id}/reschedule/`,
+      `/v1/booking/bookings/${id}/reschedule/`,
       {
         new_slot_id: newSlotId,
         reason,
@@ -261,7 +261,7 @@ export const bookingApi = {
     month: number,
     year: number
   ): Promise<CalendarResponse> {
-    const response = await apiClient.get('/api/v1/booking/calendar/', {
+    const response = await apiClient.get('/v1/booking/calendar/', {
       params: { tutor_id: tutorId, month, year },
     })
     return response

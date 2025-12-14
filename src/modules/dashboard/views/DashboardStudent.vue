@@ -124,17 +124,17 @@
               <Button
                 variant="primary"
                 size="sm"
-                :disabled="actionLoadingId === relation.relation_id"
-                :loading="actionLoadingId === relation.relation_id"
-                @click="handleAccept(relation.relation_id)"
+                :disabled="actionLoadingId === getRelationId(relation)"
+                :loading="actionLoadingId === getRelationId(relation)"
+                @click="handleAccept(getRelationId(relation))"
               >
                 {{ $t('common.accept') }}
               </Button>
               <Button
                 variant="outline"
                 size="sm"
-                :disabled="actionLoadingId === relation.relation_id"
-                @click="handleDecline(relation.relation_id)"
+                :disabled="actionLoadingId === getRelationId(relation)"
+                @click="handleDecline(getRelationId(relation))"
               >
                 {{ $t('common.decline') }}
               </Button>
@@ -231,6 +231,13 @@ function getTutorInitials(tutor) {
   const first = tutor.first_name?.[0] ?? ''
   const last = tutor.last_name?.[0] ?? ''
   return (first + last || tutor.email?.[0] || 'T').toUpperCase()
+}
+
+/**
+ * Get relation ID with fallback (API may return 'id' or 'relation_id')
+ */
+function getRelationId(relation) {
+  return relation?.id ?? relation?.relation_id
 }
 
 async function handleAccept(id) {

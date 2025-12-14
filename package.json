@@ -18,11 +18,15 @@
     "axios": "^1.13.2",
     "dayjs": "^1.11.13",
     "dompurify": "^3.1.7",
+    "jspdf": "^2.5.2",
+    "konva": "^10.0.12",
     "lucide-vue-next": "^0.294.0",
     "marked": "^15.0.11",
+    "perfect-freehand": "^1.2.2",
     "pinia": "^3.0.4",
     "vue": "^3.5.24",
     "vue-i18n": "^11.2.2",
+    "vue-konva": "^3.2.6",
     "vue-router": "^4.6.3"
   },
   "devDependencies": {

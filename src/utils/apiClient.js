@@ -63,6 +63,13 @@ api.interceptors.response.use(
     const isAuthRefresh = url.includes('/auth/refresh/')
     const isAuthLogout = url.includes('/auth/logout/')
 
+    const notifySessionExpired = () => {
+      if (!store.sessionExpiredNotified) {
+        notifyWarning('Сесію завершено. Увійдіть знову.')
+        store.sessionExpiredNotified = true
+      }
+    }
+
     if (status === 401 && !isAuthRefresh && !original._retry) {
       original._retry = true
 
@@ -74,15 +81,21 @@ api.interceptors.response.use(
         original.headers.Authorization = `Bearer ${newAccess}`
         return api(original)
       } catch (refreshError) {
+        const hadSession = Boolean(store.access)
         await store.forceLogout()
-        notifyWarning('Сесію завершено. Увійдіть знову.')
+        if (hadSession) {
+          notifySessionExpired()
+        }
         return Promise.reject(refreshError)
       }
     }
 
     if (status === 401 && (isAuthRefresh || isAuthLogout || original._retry)) {
+      const hadSession = Boolean(store.access)
       await store.forceLogout()
-      notifyWarning('Сесію завершено. Увійдіть знову.')
+      if (hadSession) {
+        notifySessionExpired()
+      }
       return Promise.reject(error)
     }
 

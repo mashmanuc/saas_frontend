@@ -1,46 +1,83 @@
 <template>
   <div class="solo-workspace" :class="{ 'solo-workspace--fullscreen': isFullscreen }">
-    <SoloHeader
-      :name="workspaceName"
-      :last-saved="lastSaved"
-      @update:name="workspaceName = $event"
-      @save="handleSave"
-      @export-png="handleExportPNG"
-      @export-json="handleExportJSON"
-      @exit="handleExit"
-    />
+    <!-- Header -->
+    <header class="solo-workspace__header">
+      <div class="solo-workspace__title">
+        <input
+          v-model="sessionName"
+          class="title-input"
+          placeholder="Untitled"
+          @blur="handleTitleBlur"
+          @keydown.enter="($event.target as HTMLInputElement).blur()"
+        />
+      </div>
 
-    <div class="solo-main">
-      <SoloToolbar
-        :current-tool="currentTool"
-        :current-color="currentColor"
-        :current-size="currentSize"
-        :preset-colors="PRESET_COLORS"
-        :preset-sizes="PRESET_SIZES"
-        @tool-change="setTool"
-        @color-change="setColor"
-        @size-change="setSize"
-        @undo="handleUndo"
-        @redo="handleRedo"
-        @clear="handleClear"
-      />
+      <div class="solo-workspace__status">
+        <CloudStatus
+          :status="boardStore.syncStatus"
+          :last-saved-at="boardStore.lastSavedAt"
+          @retry="boardStore.retrySync"
+        />
+      </div>
 
-      <SoloCanvas
-        ref="canvasRef"
-        :page="activePage"
-        :tool="currentTool"
-        :color="currentColor"
-        :size="currentSize"
-        :zoom="zoom"
-        :pan-x="pan.x"
-        :pan-y="pan.y"
-        @stroke-end="handleStrokeEnd"
-        @shape-end="handleShapeEnd"
-        @text-create="handleTextCreate"
-        @zoom-change="zoom = $event"
-        @pan-change="handlePanChange"
-      />
+      <div class="solo-workspace__actions">
+        <button class="action-btn" :title="$t('classroom.tools.undo')" @click="handleUndo">
+          <IconUndo />
+        </button>
+        <button class="action-btn" :title="$t('classroom.tools.redo')" @click="handleRedo">
+          <IconRedo />
+        </button>
+        <ExportMenu
+          v-if="boardStore.sessionId"
+          :session-id="boardStore.sessionId"
+          :stage-ref="boardDockRef"
+          :board-state="boardStore.serializedState"
+          @export-start="handleExportStart"
+          @export-complete="handleExportComplete"
+          @export-error="handleExportError"
+        />
+        <button class="btn btn-primary" @click="handleExit">
+          {{ $t('common.exit') }}
+        </button>
+      </div>
+    </header>
 
+    <!-- Main content: Toolbar + Board -->
+    <div class="solo-workspace__main">
+      <!-- Left Toolbar (Kami-style vertical) -->
+      <aside class="solo-workspace__toolbar">
+        <BoardToolbarVertical
+          :current-tool="boardStore.currentTool"
+          :current-color="boardStore.currentColor"
+          :current-size="boardStore.currentSize"
+          :can-undo="boardStore.canUndo"
+          :can-redo="boardStore.canRedo"
+          @tool-change="handleToolChange"
+          @color-change="handleColorChange"
+          @size-change="handleSizeChange"
+          @undo="handleUndo"
+          @redo="handleRedo"
+          @clear="handleClear"
+        />
+      </aside>
+
+      <!-- Board Canvas -->
+      <div class="solo-workspace__board">
+        <BoardDock
+          ref="boardDockRef"
+          :strokes="boardStore.currentStrokes"
+          :assets="boardStore.currentAssets"
+          :permissions="soloPermissions"
+          :readonly="false"
+          :tool="boardStore.currentTool"
+          :color="boardStore.currentColor"
+          :size="boardStore.currentSize"
+          @event="handleBoardEvent"
+          @state-change="handleStateChange"
+        />
+      </div>
+
+      <!-- Video Preview -->
       <LocalVideoPreview
         v-if="showVideo"
         :stream="stream"
@@ -51,200 +88,257 @@
       />
     </div>
 
-    <SoloFooter
-      :pages="pages"
-      :active-page-id="activePageId"
-      :zoom="zoom"
-      :fullscreen="isFullscreen"
-      @page-switch="switchPage"
-      @page-add="addPage"
-      @page-delete="deletePage"
-      @page-rename="renamePage"
-      @zoom-in="zoomIn"
-      @zoom-out="zoomOut"
-      @zoom-reset="resetZoom"
-      @toggle-fullscreen="toggleFullscreen"
-    />
+    <!-- Footer: Page navigation + Zoom -->
+    <footer class="solo-workspace__footer">
+      <div class="page-nav">
+        <button class="page-btn" :disabled="currentPage <= 1" @click="prevPage">←</button>
+        <span class="page-indicator">{{ currentPage }} / {{ totalPages }}</span>
+        <button class="page-btn" :disabled="currentPage >= totalPages" @click="nextPage">→</button>
+        <button class="page-btn" @click="addPage">+</button>
+      </div>
+      <div class="zoom-controls">
+        <button class="zoom-btn" @click="zoomOut">−</button>
+        <span class="zoom-level">{{ Math.round(boardStore.zoom * 100) }}%</span>
+        <button class="zoom-btn" @click="zoomIn">+</button>
+        <button class="zoom-btn" @click="toggleFullscreen">⛶</button>
+      </div>
+    </footer>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import type { Stroke, Shape, TextElement, PageState } from '../types/solo'
-import { HistoryManager } from '../engine/HistoryManager'
-import { useTools } from '../composables/useTools'
-import { usePages } from '../composables/usePages'
-import { useStorage } from '../composables/useStorage'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { useBoardStore } from '@/modules/classroom/board/state/boardStore'
+import { DEFAULT_PERMISSIONS } from '@/modules/classroom/engine/permissionsEngine'
+import type { RoomPermissions } from '@/modules/classroom/api/classroom'
 import { useLocalMedia } from '../composables/useLocalMedia'
 
-import SoloHeader from '../components/header/SoloHeader.vue'
-import SoloToolbar from '../components/toolbar/SoloToolbar.vue'
-import SoloCanvas from '../components/canvas/SoloCanvas.vue'
-import SoloFooter from '../components/footer/SoloFooter.vue'
+// Components
+import BoardDock from '@/modules/classroom/components/board/BoardDock.vue'
+import BoardToolbarVertical from '@/modules/classroom/components/board/BoardToolbarVertical.vue'
+import CloudStatus from '@/modules/classroom/components/board/CloudStatus.vue'
+import ExportMenu from '@/modules/classroom/components/board/ExportMenu.vue'
+import IconUndo from '@/modules/classroom/components/board/icons/IconUndo.vue'
+import IconRedo from '@/modules/classroom/components/board/icons/IconRedo.vue'
 import LocalVideoPreview from '../components/video/LocalVideoPreview.vue'
 
 import '../styles/solo.css'
 
 const router = useRouter()
+const route = useRoute()
+const boardStore = useBoardStore()
 
-// Tools
-const {
-  currentTool,
-  currentColor,
-  currentSize,
-  setTool,
-  setColor,
-  setSize,
-  handleKeyboardShortcut,
-  PRESET_COLORS,
-  PRESET_SIZES,
-} = useTools()
-
-// Pages
-const {
-  pages,
-  activePageId,
-  activePage,
-  addPage,
-  deletePage,
-  switchPage,
-  renamePage,
-  addStroke,
-  addShape,
-  addText,
-  removeStroke,
-  removeShape,
-  removeText,
-  clearPage,
-  setPages,
-  getPageState,
-} = usePages()
-
-// Storage
-const { lastSaved, save, load, startAutosave, stopAutosave, exportPNG, exportJSON } = useStorage()
+// Refs
+const boardDockRef = ref<InstanceType<typeof BoardDock> | null>(null)
+const sessionName = ref('')
+const currentPage = ref(1)
+const totalPages = ref(1)
+const isFullscreen = ref(false)
+const showVideo = ref(false)
 
 // Media
 const { stream, videoEnabled, audioEnabled, startCamera, stopCamera, toggleVideo, toggleAudio } =
   useLocalMedia()
 
-// Canvas ref
-const canvasRef = ref<InstanceType<typeof SoloCanvas> | null>(null)
+// Solo permissions (full access)
+const soloPermissions: RoomPermissions = DEFAULT_PERMISSIONS.solo
 
-// State
-const workspaceName = ref('Untitled')
-const zoom = ref(1)
-const pan = ref({ x: 0, y: 0 })
-const isFullscreen = ref(false)
-const showVideo = ref(true)
+// Lifecycle
+onMounted(async () => {
+  const sessionId = route.params.id as string | undefined
 
-// History
-const history = new HistoryManager()
+  if (sessionId) {
+    // Load existing session
+    const loaded = await boardStore.loadSession(sessionId)
+    if (loaded) {
+      sessionName.value = boardStore.sessionName
+      totalPages.value = boardStore.pages.length || 1
+    } else {
+      // Session not found, create new
+      await boardStore.createSession()
+      if (boardStore.sessionId) {
+        router.replace(`/solo/${boardStore.sessionId}`)
+      }
+    }
+  } else {
+    // Create new session
+    await boardStore.createSession()
+    sessionName.value = boardStore.sessionName
+    if (boardStore.sessionId) {
+      router.replace(`/solo/${boardStore.sessionId}`)
+    }
+  }
+
+  // Paste is handled by BoardCanvas component directly
+
+  // Keyboard shortcuts
+  window.addEventListener('keydown', handleKeyDown)
+
+  // Fullscreen change
+  document.addEventListener('fullscreenchange', () => {
+    isFullscreen.value = !!document.fullscreenElement
+  })
+
+  // Start camera
+  await startCamera()
+})
+
+onBeforeUnmount(async () => {
+  // Flush any pending changes before leaving
+  await boardStore.autosave()
+  window.removeEventListener('keydown', handleKeyDown)
+  stopCamera()
+})
+
+// Watch for name changes to update store
+watch(sessionName, (newName) => {
+  if (newName !== boardStore.sessionName) {
+    boardStore.sessionName = newName
+    boardStore.markDirty()
+  }
+})
 
 // Handlers
-function handleStrokeEnd(stroke: Stroke): void {
-  addStroke(stroke)
-  history.push({
-    pageId: activePageId.value,
-    type: 'add-stroke',
-    payload: stroke,
-  })
+function handleTitleBlur(): void {
+  if (!sessionName.value.trim()) {
+    sessionName.value = 'Untitled'
+  }
 }
 
-function handleShapeEnd(shape: Shape): void {
-  addShape(shape)
-  history.push({
-    pageId: activePageId.value,
-    type: 'add-shape',
-    payload: shape,
-  })
+function handleBoardEvent(eventType: string, data: Record<string, unknown>): void {
+  switch (eventType) {
+    case 'stroke_add':
+      if (data.stroke) {
+        boardStore.addStroke(data.stroke)
+      }
+      break
+    case 'stroke_update':
+      if (data.stroke) {
+        boardStore.updateStroke(data.stroke)
+      }
+      break
+    case 'stroke_delete':
+      if (data.strokeId) {
+        boardStore.deleteStroke(data.strokeId as string)
+      }
+      break
+    case 'asset_add':
+      if (data.asset) {
+        boardStore.addAsset(data.asset)
+      }
+      break
+    case 'asset_update':
+      if (data.asset) {
+        boardStore.updateAsset(data.asset)
+      }
+      break
+    case 'asset_delete':
+      if (data.assetId) {
+        boardStore.deleteAsset(data.assetId as string)
+      }
+      break
+    case 'tool_change':
+      boardStore.setTool(data.tool as string)
+      break
+    case 'color_change':
+      boardStore.setColor(data.color as string)
+      break
+    case 'size_change':
+      boardStore.setSize(data.size as number)
+      break
+    case 'undo':
+      boardStore.undo()
+      break
+    case 'redo':
+      boardStore.redo()
+      break
+    case 'clear_all':
+      boardStore.clearBoard()
+      break
+  }
 }
 
-function handleTextCreate(text: TextElement): void {
-  addText(text)
-  history.push({
-    pageId: activePageId.value,
-    type: 'add-text',
-    payload: text,
-  })
+function handleStateChange(newState: Record<string, unknown>): void {
+  boardStore.markDirty()
+}
+
+function handleToolChange(tool: string): void {
+  boardStore.setTool(tool)
+}
+
+function handleColorChange(color: string): void {
+  boardStore.setColor(color)
+}
+
+function handleSizeChange(size: number): void {
+  boardStore.setSize(size)
 }
 
 function handleUndo(): void {
-  const action = history.undo()
-  if (!action) return
-
-  switch (action.type) {
-    case 'add-stroke':
-      removeStroke((action.payload as Stroke).id)
-      break
-    case 'add-shape':
-      removeShape((action.payload as Shape).id)
-      break
-    case 'add-text':
-      removeText((action.payload as TextElement).id)
-      break
-  }
+  boardStore.undo()
 }
 
 function handleRedo(): void {
-  const action = history.redo()
-  if (!action) return
-
-  switch (action.type) {
-    case 'add-stroke':
-      addStroke(action.payload as Stroke)
-      break
-    case 'add-shape':
-      addShape(action.payload as Shape)
-      break
-    case 'add-text':
-      addText(action.payload as TextElement)
-      break
-  }
+  boardStore.redo()
 }
 
 function handleClear(): void {
-  if (confirm('Clear this page? This cannot be undone.')) {
-    clearPage()
-    history.clear()
+  if (confirm('Clear the board? This cannot be undone.')) {
+    boardStore.clearBoard()
   }
 }
 
-function handleSave(): void {
-  save(getPageState(), workspaceName.value)
+async function handleExit(): Promise<void> {
+  await boardStore.autosave()
+  router.push('/solo')
 }
 
-function handleExportPNG(): void {
-  const canvas = canvasRef.value?.getCanvas()
-  if (canvas) {
-    exportPNG(canvas, `${workspaceName.value}.png`)
+// Paste is handled by BoardCanvas directly
+
+// Export handlers
+function handleExportStart(): void {
+  boardStore.setExporting(true)
+}
+
+function handleExportComplete(url: string): void {
+  boardStore.setExporting(false)
+  console.log('[SoloWorkspace] Export complete:', url)
+}
+
+function handleExportError(error: string): void {
+  boardStore.setExporting(false)
+  console.error('[SoloWorkspace] Export error:', error)
+}
+
+// Page navigation
+function prevPage(): void {
+  if (currentPage.value > 1) {
+    currentPage.value--
+    boardStore.goToPage(currentPage.value - 1)
   }
 }
 
-function handleExportJSON(): void {
-  exportJSON(getPageState(), `${workspaceName.value}.json`)
+function nextPage(): void {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++
+    boardStore.goToPage(currentPage.value - 1)
+  }
 }
 
-function handleExit(): void {
-  handleSave()
-  router.push('/dashboard')
+function addPage(): void {
+  boardStore.addPage()
+  totalPages.value = boardStore.pages.length
+  currentPage.value = totalPages.value
 }
 
-function handlePanChange(x: number, y: number): void {
-  pan.value = { x, y }
-}
-
+// Zoom
 function zoomIn(): void {
-  zoom.value = Math.min(4, zoom.value + 0.1)
+  boardStore.setZoom(Math.min(3, boardStore.zoom + 0.25))
 }
 
 function zoomOut(): void {
-  zoom.value = Math.max(0.25, zoom.value - 0.1)
-}
-
-function resetZoom(): void {
-  zoom.value = 1
-  pan.value = { x: 0, y: 0 }
+  boardStore.setZoom(Math.max(0.5, boardStore.zoom - 0.25))
 }
 
 function toggleFullscreen(): void {
@@ -275,47 +369,8 @@ function handleKeyDown(e: KeyboardEvent): void {
   // Ctrl+S - Save
   if ((e.ctrlKey || e.metaKey) && e.key === 's') {
     e.preventDefault()
-    handleSave()
+    boardStore.autosave()
     return
   }
-
-  // Tool shortcuts (only if not in input)
-  if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-    return
-  }
-
-  handleKeyboardShortcut(e.key)
 }
-
-// Lifecycle
-onMounted(async () => {
-  // Load saved state
-  const saved = load()
-  if (saved) {
-    setPages(saved.pages)
-    workspaceName.value = saved.name
-    zoom.value = saved.zoom
-    pan.value = saved.pan
-  }
-
-  // Start autosave
-  startAutosave(getPageState, () => workspaceName.value)
-
-  // Start camera
-  await startCamera()
-
-  // Keyboard shortcuts
-  window.addEventListener('keydown', handleKeyDown)
-
-  // Fullscreen change
-  document.addEventListener('fullscreenchange', () => {
-    isFullscreen.value = !!document.fullscreenElement
-  })
-})
-
-onUnmounted(() => {
-  stopAutosave()
-  stopCamera()
-  window.removeEventListener('keydown', handleKeyDown)
-})
 </script>

@@ -1,28 +1,27 @@
 <template>
   <div class="board-dock" :class="{ 'board-dock--readonly': readonly }">
-    <!-- Board container -->
+    <!-- Board container with Konva Canvas -->
     <div ref="boardContainer" class="board-dock__canvas">
-      <!-- Whiteboard would be rendered here -->
-      <div class="board-placeholder">
-        <span class="icon">📝</span>
-        <p>{{ $t('classroom.board.placeholder') }}</p>
-      </div>
+      <BoardCanvas
+        ref="canvasRef"
+        :tool="currentTool"
+        :color="currentColor"
+        :size="currentSize"
+        :opacity="currentOpacity"
+        :strokes="currentStrokes"
+        :assets="currentAssets"
+        :width="canvasWidth"
+        :height="canvasHeight"
+        :zoom="zoom"
+        @stroke-add="handleStrokeAdd"
+        @stroke-update="handleStrokeUpdate"
+        @stroke-delete="handleStrokeDelete"
+        @asset-add="handleAssetAdd"
+        @asset-update="handleAssetUpdate"
+        @asset-delete="handleAssetDelete"
+        @select="handleSelect"
+      />
     </div>
-
-    <!-- Toolbar -->
-    <BoardToolbar
-      v-if="!readonly"
-      :permissions="permissions"
-      :current-tool="currentTool"
-      :current-color="currentColor"
-      :current-size="currentSize"
-      @tool-change="handleToolChange"
-      @color-change="handleColorChange"
-      @size-change="handleSizeChange"
-      @undo="handleUndo"
-      @redo="handleRedo"
-      @clear="handleClear"
-    />
 
     <!-- Zoom controls -->
     <div class="board-dock__zoom">
@@ -48,18 +47,53 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import type { RoomPermissions } from '../../api/classroom'
-import BoardToolbar from './BoardToolbar.vue'
+import BoardCanvas from './BoardCanvas.vue'
+
+// Types
+type ToolType = 'pen' | 'highlighter' | 'line' | 'rectangle' | 'circle' | 'text' | 'eraser' | 'select'
+
+interface Stroke {
+  id: string
+  tool: ToolType
+  color: string
+  size: number
+  opacity: number
+  points: Array<{ x: number; y: number; t?: number }>
+  text?: string
+  width?: number
+  height?: number
+}
+
+interface Asset {
+  id: string
+  type: 'image'
+  src: string
+  x: number
+  y: number
+  w: number
+  h: number
+  rotation: number
+}
 
 interface Props {
-  boardState: Record<string, unknown>
+  strokes?: unknown[]
+  assets?: unknown[]
   permissions: RoomPermissions | null
   readonly?: boolean
+  tool?: string
+  color?: string
+  size?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  strokes: () => [],
+  assets: () => [],
   readonly: false,
+  tool: 'pen',
+  color: '#111111',
+  size: 4,
 })
 
 const emit = defineEmits<{
@@ -69,62 +103,106 @@ const emit = defineEmits<{
 
 // Refs
 const boardContainer = ref<HTMLElement | null>(null)
+const canvasRef = ref<InstanceType<typeof BoardCanvas> | null>(null)
 
-// State
-const currentTool = ref('pen')
-const currentColor = ref('#000000')
-const currentSize = ref(2)
+// State - use props for tool/color/size, local refs for others
+const currentTool = computed(() => props.tool)
+const currentColor = computed(() => props.color)
+const currentSize = computed(() => props.size)
+const currentOpacity = ref(1)
 const zoom = ref(1)
 const layerCount = ref(1)
+const selectedId = ref<string | null>(null)
 
-// Watch board state changes
-watch(
-  () => props.boardState,
-  (newState) => {
-    // Apply state to board
-    console.log('[BoardDock] State updated:', newState)
-  },
-  { deep: true }
-)
+// Canvas dimensions (Kami-style: 920px max width)
+const canvasWidth = ref(920)
+const canvasHeight = ref(1200)
+
+// Strokes and assets from props (directly from store)
+const currentStrokes = computed<Stroke[]>(() => {
+  return (props.strokes || []) as Stroke[]
+})
+
+const currentAssets = computed<Asset[]>(() => {
+  return (props.assets || []) as Asset[]
+})
 
 // Lifecycle
 onMounted(() => {
-  // Initialize whiteboard engine here
   console.log('[BoardDock] Mounted')
 })
 
 onUnmounted(() => {
-  // Cleanup
   console.log('[BoardDock] Unmounted')
 })
 
-// Handlers
+// Canvas event handlers
+function handleStrokeAdd(stroke: Stroke): void {
+  emit('event', 'stroke_add', { stroke })
+  emitStateChange()
+}
+
+function handleStrokeUpdate(stroke: Stroke): void {
+  if (stroke.points.length === 0) {
+    // Delete stroke
+    emit('event', 'stroke_delete', { strokeId: stroke.id })
+  } else {
+    emit('event', 'stroke_update', { stroke })
+  }
+  emitStateChange()
+}
+
+function handleAssetAdd(asset: Asset): void {
+  emit('event', 'asset_add', { asset })
+  emitStateChange()
+}
+
+function handleAssetUpdate(asset: Asset): void {
+  emit('event', 'asset_update', { asset })
+  emitStateChange()
+}
+
+function handleStrokeDelete(strokeId: string): void {
+  emit('event', 'stroke_delete', { strokeId })
+  emitStateChange()
+}
+
+function handleAssetDelete(assetId: string): void {
+  emit('event', 'asset_delete', { assetId })
+  emitStateChange()
+}
+
+function handleSelect(id: string | null): void {
+  selectedId.value = id
+  emit('event', 'select', { id })
+}
+
+function emitStateChange(): void {
+  // Build state from current data
+  const state = {
+    version: '1',
+    pages: [{
+      id: 'p1',
+      strokes: currentStrokes.value,
+      assets: currentAssets.value,
+    }],
+    activePageId: 'p1',
+    meta: { title: 'Untitled' },
+  }
+  emit('state-change', state)
+}
+
+// Tool handlers (called from parent) - just emit, props will update from parent
 function handleToolChange(tool: string): void {
-  currentTool.value = tool
   emit('event', 'tool_change', { tool })
 }
 
 function handleColorChange(color: string): void {
-  currentColor.value = color
   emit('event', 'color_change', { color })
 }
 
 function handleSizeChange(size: number): void {
-  currentSize.value = size
   emit('event', 'size_change', { size })
-}
-
-function handleUndo(): void {
-  emit('event', 'undo', {})
-}
-
-function handleRedo(): void {
-  emit('event', 'redo', {})
-}
-
-function handleClear(): void {
-  if (!props.permissions?.can_clear_board) return
-  emit('event', 'clear_all', {})
 }
 
 function handleZoomIn(): void {
@@ -138,6 +216,18 @@ function handleZoomOut(): void {
 function handleZoomReset(): void {
   zoom.value = 1
 }
+
+// Expose methods for parent
+defineExpose({
+  handleToolChange,
+  handleColorChange,
+  handleSizeChange,
+  currentTool,
+  currentColor,
+  currentSize,
+  zoom,
+  getStage: () => canvasRef.value?.getStage?.() || null,
+})
 </script>
 
 <style scoped>

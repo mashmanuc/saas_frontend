@@ -6,6 +6,7 @@
 import { defineStore } from 'pinia'
 import { apiClient } from '../utils/apiClient'
 import { realtimeService } from '../services/realtime'
+import { buildV1Url } from '../config/apiPrefixes'
 
 const CACHE_KEY = 'feature_flags_cache'
 const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
@@ -105,7 +106,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', {
       this.error = null
       
       try {
-        const response = await apiClient.get('/api/v1/feature-flags/')
+        const response = await apiClient.get(buildV1Url('/feature-flags/'))
         const flags = response.data?.flags || response.data || {}
         
         // Merge with defaults

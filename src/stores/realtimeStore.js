@@ -10,6 +10,7 @@ export const useRealtimeStore = defineStore('realtime', {
     lastHeartbeat: null,
     offline: false,
     subscriptions: new Map(),
+    authUnsubscribe: null,
   }),
 
   actions: {
@@ -17,12 +18,10 @@ export const useRealtimeStore = defineStore('realtime', {
       if (this.initialized) return
       this.initialized = true
 
+      const auth = useAuthStore()
+
       realtimeService.init({
         tokenProvider: async () => {
-          const auth = useAuthStore()
-          if (!auth.access) {
-            await auth.refreshAccess?.().catch(() => {})
-          }
           return auth.access
         },
         ...options,
@@ -47,10 +46,30 @@ export const useRealtimeStore = defineStore('realtime', {
         }
       })
 
-      this.connect()
+      this.bindAuthWatcher(auth)
+    },
+
+    bindAuthWatcher(auth) {
+      if (this.authUnsubscribe) return
+
+      this.authUnsubscribe = auth.$subscribe(
+        (_mutation, state) => {
+          if (state.access) {
+            this.connect()
+          } else {
+            this.disconnect()
+          }
+        },
+        { detached: true }
+      )
+
+      if (auth.access) {
+        this.connect()
+      }
     },
 
     connect() {
+      if (!useAuthStore().access) return
       realtimeService.connect()
     },
 

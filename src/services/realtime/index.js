@@ -58,6 +58,8 @@ class RealtimeService {
     this.backoff = INITIAL_BACKOFF_MS
     this.shouldReconnect = false
     this.heartbeatTimer = null
+    this.tokenRefreshCallback = null
+    this.lastToken = null
     this.options = {
       url: null,
       tokenProvider: null,
@@ -68,6 +70,26 @@ class RealtimeService {
     if (typeof window !== 'undefined') {
       window.addEventListener('online', () => this.handleNetworkChange(true))
       window.addEventListener('offline', () => this.handleNetworkChange(false))
+    }
+  }
+
+  /**
+   * Register callback for token refresh events from auth store
+   * @param {Function} callback - Called when token is refreshed
+   */
+  onTokenRefresh(callback) {
+    this.tokenRefreshCallback = callback
+  }
+
+  /**
+   * Called by auth store when token is refreshed
+   * Reconnects with new token if currently connected
+   */
+  handleTokenRefresh() {
+    if (this.status === READY_STATES.OPEN || this.status === READY_STATES.CONNECTING) {
+      this.options.logger?.info?.('[realtime] Token refreshed, reconnecting...')
+      this.disconnect()
+      this.connect()
     }
   }
 
@@ -207,6 +229,15 @@ class RealtimeService {
     this.status = READY_STATES.CLOSED
     this.emitter.emit('status', this.status)
     this.clearHeartbeat()
+
+    // Handle 401 Unauthorized - emit auth_required event
+    if (event?.code === 4001 || event?.code === 4003 || event?.reason?.includes('401')) {
+      this.options.logger?.warn?.('[realtime] Auth required, emitting auth_required')
+      this.emitter.emit('auth_required', { code: event?.code, reason: event?.reason })
+      this.shouldReconnect = false
+      return
+    }
+
     if (this.shouldReconnect) {
       this.scheduleReconnect()
     }

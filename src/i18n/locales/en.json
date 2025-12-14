@@ -292,7 +292,15 @@
     "justNow": "Just now",
     "minutesAgo": "{count} min ago",
     "hoursAgo": "{count}h ago",
-    "daysAgo": "{count}d ago"
+    "daysAgo": "{count}d ago",
+    "loading": "Loading...",
+    "open": "Open",
+    "copy": "Copy",
+    "lock": "Lock",
+    "unlock": "Unlock",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "confirmDelete": "Are you sure you want to delete?"
   },
   "role": {
     "superadmin": "Super admin",
@@ -405,6 +413,14 @@
       "rateLimitTitle": "Rate limit reached",
       "rateLimitDescription": "Too many operations were sent in a short time. Wait a few seconds and try again.",
       "retry": "Retry"
+    },
+    "actions": {
+      "acceptSuccess": "Invitation accepted",
+      "acceptError": "Failed to accept invitation",
+      "declineSuccess": "Invitation declined",
+      "declineError": "Failed to decline invitation",
+      "resendSuccess": "Invitation resent",
+      "resendError": "Failed to resend invitation"
     },
     "bulk": {
       "noInvited": "Select at least one invited student to accept in bulk.",
@@ -609,10 +625,6 @@
     }
   },
   "classroom": {
-    "solo": {
-      "title": "Sandbox",
-      "lastSaved": "Last saved"
-    },
     "soloWorkspace": {
       "title": "Solo Workspace",
       "untitled": "Untitled",
@@ -646,7 +658,12 @@
       "select": "Select",
       "undo": "Undo",
       "redo": "Redo",
-      "clear": "Clear board"
+      "clear": "Clear board",
+      "toolbar": "Drawing toolbar",
+      "drawingTools": "Drawing tools",
+      "colorPalette": "Color palette",
+      "strokeSize": "Stroke size",
+      "actions": "Actions"
     },
     "reconnect": {
       "title": "Reconnecting…",
@@ -816,6 +833,71 @@
       "actions": {
         "retry": "Retry"
       }
+    }
+  },
+  "solo": {
+    "pages": "pages",
+    "shared": "Shared",
+    "share": "Share",
+    "duplicate": "Duplicate",
+    "delete": "Delete",
+    "mySessions": {
+      "title": "My Boards",
+      "createNew": "Create new board",
+      "search": "Search boards...",
+      "sortUpdated": "Sort by last updated",
+      "sortCreated": "Sort by creation date",
+      "sortName": "Sort by name",
+      "empty": "You don't have any saved boards yet.",
+      "createFirst": "Create your first board to see it here."
+    },
+    "sharing": {
+      "title": "Share board",
+      "createLink": "Create link",
+      "expiresIn": "Expires in",
+      "expiresAt": "Expires at",
+      "day": "day",
+      "days": "days",
+      "never": "Never",
+      "allowDownload": "Allow downloads",
+      "maxViews": "Max views",
+      "unlimited": "Unlimited",
+      "views": "Views",
+      "revoke": "Revoke access"
+    },
+    "export": {
+      "title": "Export",
+      "format": "Format",
+      "pageSize": "Page size",
+      "orientation": "Orientation",
+      "landscape": "Landscape",
+      "portrait": "Portrait",
+      "export": "Export",
+      "exporting": "Exporting...",
+      "success": "Export completed successfully",
+      "error": "Export failed. Please try again.",
+      "statusPending": "Preparing export...",
+      "statusProcessing": "Processing...",
+      "statusCompleted": "Ready for download",
+      "statusFailed": "Export failed"
+    },
+    "sync": {
+      "cloudStatus": "Cloud status",
+      "syncing": "Saving...",
+      "saved": "Saved",
+      "error": "Save failed",
+      "loadError": "Failed to load session",
+      "createError": "Failed to create session",
+      "saveError": "Failed to save changes"
+    },
+    "assets": {
+      "upload": "Upload file",
+      "addToBoard": "Add to board",
+      "empty": "No files uploaded yet"
+    },
+    "public": {
+      "notFound": "Board not found",
+      "download": "Download"
     }
   },
   "errors": {
@@ -1045,5 +1127,11 @@
       "settings": "Settings",
       "engagement": "Engagement"
     }
+  },
+  "booking": {
+    "selectStudent": "Select a student",
+    "noStudentsFound": "No students found",
+    "inviteStudent": "Invite a new student",
+    "typeToSearch": "Type at least 2 characters to search"
   }
 }

@@ -26,6 +26,16 @@ vi.mock('../../src/stores/settingsStore', () => ({
   useSettingsStore: () => settingsStoreMock,
 }))
 
+// Mock StudentAutocomplete component
+vi.mock('../../src/modules/booking/components/StudentAutocomplete.vue', () => ({
+  default: {
+    name: 'StudentAutocomplete',
+    props: ['modelValue', 'label', 'placeholder', 'showInviteCta'],
+    emits: ['update:modelValue', 'invite'],
+    template: '<div data-test="student-autocomplete"><input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" /></div>',
+  },
+}))
+
 import LessonList from '../../src/modules/lessons/views/LessonList.vue'
 
 let lessonStoreMock
@@ -174,11 +184,13 @@ describe('LessonList.vue', () => {
     const newLessonButton = wrapper.find('[data-test="create-lesson-button"]')
     await newLessonButton.trigger('click')
 
-    const studentInput = wrapper.find('[data-test="student-id-input"]')
+    // StudentAutocomplete is mocked - find input inside it
+    const studentAutocompleteInput = wrapper.find('[data-test="student-autocomplete"] input')
     const seriesInput = wrapper.find('[data-test="series-id-input"]')
     const datetimeInputs = wrapper.findAll('input[type="datetime-local"]')
 
-    await studentInput.setValue('student-1')
+    // Set student ID via mocked autocomplete input
+    await studentAutocompleteInput.setValue('student-1')
     await seriesInput.setValue('SERIES-10')
     await datetimeInputs[0].setValue('2024-01-01T10:00')
     await datetimeInputs[1].setValue('2024-01-01T11:00')

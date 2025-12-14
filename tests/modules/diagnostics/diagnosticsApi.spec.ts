@@ -65,10 +65,7 @@ describe('DiagnosticsApi', () => {
 
       const result = await diagnosticsApi.logFrontendError(payload)
 
-      expect(apiClient.post).toHaveBeenCalledWith(
-        '/api/v1/logs/frontend/',
-        payload
-      )
+      expect(apiClient.post).toHaveBeenCalledWith('/v1/logs/frontend/', payload)
       expect(result).toEqual({ status: 'ok', id: 1 })
     })
 
@@ -111,10 +108,9 @@ describe('DiagnosticsApi', () => {
 
       const result = await diagnosticsApi.logBatch(errors)
 
-      expect(apiClient.post).toHaveBeenCalledWith(
-        '/api/v1/logs/frontend/',
-        { errors }
-      )
+      expect(apiClient.post).toHaveBeenCalledWith('/v1/logs/frontend/', {
+        errors,
+      })
       expect(result).toEqual({ status: 'ok', count: 2 })
     })
 

@@ -9,7 +9,7 @@ import { apiClient } from '../../utils/apiClient'
  * Configuration
  */
 const CONFIG = {
-  refreshEndpoint: '/api/v1/auth/refresh/',
+  refreshEndpoint: '/v1/auth/refresh/',
   tokenRefreshThresholdMs: 5 * 60 * 1000, // 5 minutes before expiry
   maxRefreshRetries: 3,
   refreshRetryDelayMs: 1000,

@@ -14,6 +14,7 @@ export const useAuthStore = defineStore('auth', {
     error: null,
     initialized: false,
     refreshPromise: null,
+    sessionExpiredNotified: false,
   }),
 
   getters: {
@@ -27,16 +28,10 @@ export const useAuthStore = defineStore('auth', {
       if (this.initialized) return
       this.initialized = true
 
+      // Якщо немає access токена — не намагаємося refresh, просто виходимо
       if (!this.access) {
-        try {
-          await this.refreshAccess()
-        } catch (error) {
-          await this.forceLogout()
-          return
-        }
+        return
       }
-
-      if (!this.access) return
 
       if (!this.user) {
         try {
@@ -125,6 +120,9 @@ export const useAuthStore = defineStore('auth', {
       if (typeof access !== 'undefined') {
         this.access = access || null
         storage.setAccess(this.access)
+        if (access) {
+          this.sessionExpiredNotified = false
+        }
       }
 
       if (typeof user !== 'undefined') {

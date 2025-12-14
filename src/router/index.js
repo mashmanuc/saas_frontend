@@ -41,8 +41,10 @@ import { setCurrentRoute } from '@/modules/diagnostics/plugins/errorCollector'
 const LessonRoom = () => import('../modules/classroom/views/LessonRoom.vue')
 const SoloRoom = () => import('../modules/classroom/views/SoloRoom.vue')
 
-// Solo Workspace (v0.26)
+// Solo Workspace (v0.26, v0.27)
 const SoloWorkspace = () => import('../modules/solo/views/SoloWorkspace.vue')
+const SoloSessionList = () => import('../modules/solo/views/SoloSessionList.vue')
+const SoloPublicView = () => import('../modules/solo/views/SoloPublicView.vue')
 
 // Classroom views (v0.24.3)
 const LessonSummary = () => import('../modules/classroom/summary/LessonSummary.vue')
@@ -231,12 +233,30 @@ const routes = [
         component: SoloRoom,
         meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
       },
-      // v0.26: Solo Workspace
+      // v0.26-v0.27: Solo Workspace
       {
         path: 'solo',
+        name: 'solo-sessions',
+        component: SoloSessionList,
+        meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR] },
+      },
+      {
+        path: 'solo/new',
         name: 'solo-workspace',
         component: SoloWorkspace,
         meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR] },
+      },
+      {
+        path: 'solo/:id',
+        name: 'solo-workspace-edit',
+        component: SoloWorkspace,
+        meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR] },
+      },
+      {
+        path: 'solo/shared/:token',
+        name: 'solo-public',
+        component: SoloPublicView,
+        meta: { public: true },
       },
       // v0.24.3: Classroom history routes
       {

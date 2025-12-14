@@ -3,10 +3,11 @@
  * Sends frontend errors to backend for analysis.
  */
 import apiClient from '@/utils/apiClient'
+import { buildV1Url } from '@/config/apiPrefixes'
 import type { FrontendErrorPayload, LogResponse } from '../types'
 
 class DiagnosticsApi {
-  private readonly baseUrl = '/api/v1/logs'
+  private readonly baseUrl = buildV1Url('/logs')
   private queue: FrontendErrorPayload[] = []
   private isProcessing = false
   private readonly batchSize = 10
