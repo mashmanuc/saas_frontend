@@ -15,9 +15,12 @@
 
       <!-- Center: Cloud status -->
       <div class="solo-room__status">
+        <!-- F29-STEALTH: quiet=true for opacity-only transitions, no layout changes -->
         <CloudStatus
-          :status="boardStore.syncStatus"
-          :last-saved-at="boardStore.lastSavedAt"
+          :status="syncStore.syncStatus"
+          :last-saved-at="syncStore.lastSavedAt"
+          :quiet="true"
+          :pending-count="syncStore.pendingCount"
           @retry="boardStore.retrySync"
         />
       </div>
@@ -63,14 +66,18 @@
       </aside>
 
       <!-- Board Canvas -->
+      <!-- F29-FLICKER-FIX: Pass stable refs instead of serializedState -->
       <div class="solo-room__board" @paste="handlePaste">
         <BoardDock
           ref="boardDockRef"
-          :board-state="boardStore.serializedState"
+          :strokes="boardStore.currentStrokes"
+          :assets="boardStore.currentAssets"
           :permissions="soloPermissions"
           :readonly="false"
+          :tool="boardStore.currentTool"
+          :color="boardStore.currentColor"
+          :size="boardStore.currentSize"
           @event="handleBoardEvent"
-          @state-change="handleStateChange"
         />
       </div>
     </div>
@@ -97,6 +104,7 @@ import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useBoardStore } from '../board/state/boardStore'
+import { useBoardSyncStore } from '../board/state/boardSyncStore'
 import { DEFAULT_PERMISSIONS } from '../engine/permissionsEngine'
 import type { RoomPermissions } from '../api/classroom'
 
@@ -111,6 +119,7 @@ import IconRedo from '../components/board/icons/IconRedo.vue'
 const router = useRouter()
 const route = useRoute()
 const boardStore = useBoardStore()
+const syncStore = useBoardSyncStore()
 
 // Refs
 const boardDockRef = ref<InstanceType<typeof BoardDock> | null>(null)
@@ -202,10 +211,7 @@ function handleBoardEvent(eventType: string, data: Record<string, unknown>): voi
   }
 }
 
-function handleStateChange(newState: Record<string, unknown>): void {
-  // State changed from board, mark dirty for autosave
-  boardStore.markDirty()
-}
+// F29-FLICKER-FIX: handleStateChange removed - no longer needed with stable refs
 
 function handleToolChange(tool: string): void {
   boardStore.setTool(tool)

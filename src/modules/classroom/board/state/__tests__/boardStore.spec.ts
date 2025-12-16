@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useBoardStore } from '../boardStore'
+import { useBoardSyncStore } from '../boardSyncStore'
 
 // Mock soloApi
 vi.mock('@/modules/solo/api/soloApi', () => ({
@@ -74,11 +75,12 @@ describe('boardStore', () => {
   describe('markDirty', () => {
     it('should set isDirty to true', () => {
       const store = useBoardStore()
-      expect(store.isDirty).toBe(false)
+      const syncStore = useBoardSyncStore()
+      expect(syncStore.isDirty).toBe(false)
 
       store.markDirty()
 
-      expect(store.isDirty).toBe(true)
+      expect(syncStore.isDirty).toBe(true)
     })
 
     it('should schedule autosave with debounce', async () => {
@@ -134,6 +136,7 @@ describe('boardStore', () => {
       vi.mocked(soloApi.getSession).mockResolvedValue(mockSession as any)
 
       const store = useBoardStore()
+      const syncStore = useBoardSyncStore()
       const result = await store.loadSession('session-789')
 
       expect(result).toBe(true)
@@ -141,7 +144,7 @@ describe('boardStore', () => {
       expect(store.sessionName).toBe('Loaded Session')
       // Strokes are now inside pages[currentPageIndex].strokes
       expect(store.currentStrokes).toEqual([{ id: 'stroke-1' }])
-      expect(store.syncStatus).toBe('saved')
+      expect(syncStore.syncStatus).toBe('saved')
     })
 
     it('should return false on error', async () => {
@@ -149,10 +152,11 @@ describe('boardStore', () => {
       vi.mocked(soloApi.getSession).mockRejectedValue(new Error('Not found'))
 
       const store = useBoardStore()
+      const syncStore = useBoardSyncStore()
       const result = await store.loadSession('nonexistent')
 
       expect(result).toBe(false)
-      expect(store.syncStatus).toBe('error')
+      expect(syncStore.syncStatus).toBe('error')
     })
   })
 
@@ -189,9 +193,11 @@ describe('boardStore', () => {
 
     it('should mark as dirty', () => {
       const store = useBoardStore()
+      const syncStore = useBoardSyncStore()
+
       store.addStroke({ id: 'stroke' })
 
-      expect(store.isDirty).toBe(true)
+      expect(syncStore.isDirty).toBe(true)
     })
   })
 

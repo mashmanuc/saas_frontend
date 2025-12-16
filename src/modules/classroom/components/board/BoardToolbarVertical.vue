@@ -204,6 +204,7 @@ onUnmounted(() => {
 
 <style scoped>
 /* Kami-style vertical toolbar - ТЗ v0.28: 48px width, 40x40 buttons */
+/* F29-AS.25: CSS containment to prevent layout/reflow of canvas */
 .toolbar-vertical {
   display: flex;
   flex-direction: column;
@@ -215,6 +216,9 @@ onUnmounted(() => {
   box-shadow: var(--toolbar-shadow, 2px 0 8px rgba(0, 0, 0, 0.06));
   overflow-y: auto;
   max-height: 100vh;
+  /* F29-AS.25: CSS containment */
+  contain: layout style;
+  will-change: contents;
 }
 
 .toolbar-group {

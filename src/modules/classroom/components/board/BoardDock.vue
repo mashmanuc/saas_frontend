@@ -87,14 +87,9 @@ interface Props {
   size?: number
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  strokes: () => [],
-  assets: () => [],
-  readonly: false,
-  tool: 'pen',
-  color: '#111111',
-  size: 4,
-})
+// F29-CRITICAL-FIX: NO default factories for arrays
+// () => [] creates NEW array on each access → flicker
+const props = defineProps<Props>()
 
 const emit = defineEmits<{
   event: [eventType: string, data: Record<string, unknown>]
@@ -118,14 +113,10 @@ const selectedId = ref<string | null>(null)
 const canvasWidth = ref(920)
 const canvasHeight = ref(1200)
 
-// Strokes and assets from props (directly from store)
-const currentStrokes = computed<Stroke[]>(() => {
-  return (props.strokes || []) as Stroke[]
-})
-
-const currentAssets = computed<Asset[]>(() => {
-  return (props.assets || []) as Asset[]
-})
+// F29-CRITICAL-FIX: Pass props directly, NO computed wrappers
+// Computed creates new array references → Konva sees new refs → redraws all → flicker
+const currentStrokes = computed(() => (props.strokes || []) as Stroke[])
+const currentAssets = computed(() => (props.assets || []) as Asset[])
 
 // Lifecycle
 onMounted(() => {

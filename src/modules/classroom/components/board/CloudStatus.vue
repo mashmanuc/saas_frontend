@@ -1,7 +1,12 @@
 <template>
+  <!-- F29-STEALTH: quiet mode uses opacity-only transitions, no layout changes -->
   <div
     class="cloud-status"
-    :class="[`cloud-status--${status}`, { 'cloud-status--compact': compact }]"
+    :class="[
+      `cloud-status--${status}`,
+      { 'cloud-status--compact': compact },
+      { 'cloud-status--quiet': quiet && status !== 'error' }
+    ]"
     role="status"
     :aria-live="status === 'error' ? 'assertive' : 'polite'"
     :aria-label="statusLabel"
@@ -10,15 +15,18 @@
       <IconCloud v-if="status === 'idle' || status === 'saved'" />
       <IconCloudSync v-else-if="status === 'syncing'" class="cloud-status__spin" />
       <IconCloudOff v-else-if="status === 'error'" />
-      <IconCloudCheck v-else-if="status === 'saved'" />
     </span>
 
     <span v-if="!compact" class="cloud-status__text">
       {{ statusText }}
+      <!-- F29-STEALTH: Show queued count if any -->
+      <span v-if="pendingCount > 0" class="cloud-status__pending">
+        ({{ pendingCount }})
+      </span>
     </span>
 
     <button
-      v-if="status === 'error' && !compact"
+      v-if="status === 'error' && !compact && !quiet"
       class="cloud-status__retry"
       @click="$emit('retry')"
       :aria-label="$t('common.retry')"
@@ -49,6 +57,8 @@ interface Props {
   lastSavedAt?: Date | string | null
   compact?: boolean
   errorMessage?: string
+  quiet?: boolean // F29-STEALTH: opacity-only mode
+  pendingCount?: number // F29-STEALTH: queued saves count
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -56,6 +66,8 @@ const props = withDefaults(defineProps<Props>(), {
   lastSavedAt: null,
   compact: false,
   errorMessage: '',
+  quiet: true,
+  pendingCount: 0,
 })
 
 defineEmits<{
@@ -88,6 +100,7 @@ function formatTime(date: Date | string): string {
 </script>
 
 <style scoped>
+/* F29-AS.7, F29-AS.25: Zero-repaint CloudStatus with CSS containment */
 .cloud-status {
   display: inline-flex;
   align-items: center;
@@ -96,10 +109,16 @@ function formatTime(date: Date | string): string {
   border-radius: var(--radius-full, 9999px);
   font-size: 0.8125rem;
   font-weight: 500;
-  transition: all 0.2s ease;
+  transition: opacity 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
   background: var(--color-bg-secondary, #f8fafc);
   color: var(--color-fg-secondary, #475569);
   border: 1px solid var(--color-border, #e2e8f0);
+  /* F29-AS.25: CSS containment to prevent layout/reflow of canvas */
+  contain: content;
+  will-change: opacity, background-color;
+  /* Ensure fixed dimensions to prevent layout shifts */
+  min-width: 80px;
+  min-height: 32px;
 }
 
 .cloud-status--compact {
@@ -173,6 +192,31 @@ function formatTime(date: Date | string): string {
 .cloud-status__time {
   margin-left: 4px;
   font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+/* F29-STEALTH: Quiet mode - opacity-only transitions, no layout changes */
+.cloud-status--quiet {
+  /* Override color transitions with opacity-only */
+  transition: opacity 0.15s ease;
+  /* Keep same background/border to prevent layout shifts */
+  background: var(--color-bg-secondary, #f8fafc) !important;
+  border-color: var(--color-border, #e2e8f0) !important;
+  color: var(--color-fg-secondary, #475569) !important;
+}
+
+.cloud-status--quiet.cloud-status--syncing {
+  opacity: 0.7;
+}
+
+.cloud-status--quiet.cloud-status--saved {
+  opacity: 1;
+}
+
+.cloud-status__pending {
+  font-size: 0.7rem;
+  opacity: 0.6;
+  margin-left: 2px;
   opacity: 0.7;
 }
 </style>

@@ -5,6 +5,9 @@
     tabindex="0"
     @keydown="handleKeydown"
   >
+    <!-- F29.8: Performance HUD (Ctrl+Alt+P to toggle) -->
+    <PerfHUD ref="perfHudRef" :stage-ref="stageRef" />
+
     <v-stage
       ref="stageRef"
       :config="stageConfig"
@@ -16,7 +19,7 @@
       @touchend="handleMouseUp"
     >
       <!-- Background layer -->
-      <v-layer>
+      <v-layer ref="backgroundLayerRef">
         <v-rect :config="backgroundConfig" />
       </v-layer>
 
@@ -34,6 +37,7 @@
 
       <!-- Strokes layer - ABOVE images -->
       <v-layer ref="strokesLayerRef">
+        <!-- F29-FLICKER-FIX: Vue incremental rendering via :key -->
         <template v-for="stroke in strokes" :key="stroke.id">
           <!-- Pen / Highlighter strokes (use v-path for SVG path data) -->
           <v-path
@@ -74,27 +78,8 @@
         </template>
       </v-layer>
 
-      <!-- UI layer (transformer, current drawing) -->
+      <!-- UI layer (transformer only) -->
       <v-layer ref="uiLayerRef">
-        <!-- Current drawing preview (use v-path for SVG path data) -->
-        <v-path
-          v-if="isDrawing && currentPoints.length > 0 && (currentTool === 'pen' || currentTool === 'highlighter')"
-          :config="currentStrokeConfig"
-        />
-        <!-- Shape preview -->
-        <v-rect
-          v-if="isDrawing && currentTool === 'rectangle' && shapePreview"
-          :config="shapePreviewConfig"
-        />
-        <v-line
-          v-if="isDrawing && currentTool === 'line' && shapePreview"
-          :config="linePreviewConfig"
-        />
-        <v-ellipse
-          v-if="isDrawing && currentTool === 'circle' && shapePreview"
-          :config="circlePreviewConfig"
-        />
-        <!-- Transformer for selection -->
         <v-transformer
           v-if="selectedNode"
           ref="transformerRef"
@@ -103,9 +88,15 @@
       </v-layer>
     </v-stage>
 
+    <!-- Offscreen preview canvas overlay -->
+    <canvas
+      ref="previewCanvasRef"
+      class="board-preview-canvas"
+    />
+
     <!-- Text editing overlay -->
     <textarea
-      v-if="editingText"
+      v-show="editingText"
       ref="textareaRef"
       v-model="editingTextValue"
       class="text-edit-overlay"
@@ -120,6 +111,11 @@
 import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import Konva from 'konva'
 import getStroke from 'perfect-freehand'
+import PerfHUD from './PerfHUD.vue'
+// F29-STEALTH: Import stealth autosave utilities
+import { setStageRef } from '../../board/state/boardStore'
+import { initSnapshotOverlay, destroySnapshotOverlay } from '../../board/render/snapshotOverlay'
+import { recordPointerEvent } from '../../board/perf/saveWindowMetrics'
 
 // Types
 interface Point {
@@ -163,17 +159,21 @@ interface Props {
   zoom?: number
 }
 
+// F29-STEALTH: NO default factories for arrays - prevents new reference on each access
+// Canvas receives strokes/assets directly from parent, no sync props
 const props = withDefaults(defineProps<Props>(), {
   tool: 'pen',
   color: '#111111',
   size: 4,
   opacity: 1,
-  strokes: () => [],
-  assets: () => [],
   width: 920,
   height: 1200,
   zoom: 1,
 })
+
+// F29-STEALTH: Stable references - use props directly, fallback to empty array only once
+const strokes = computed(() => props.strokes ?? [])
+const assets = computed(() => props.assets ?? [])
 
 const emit = defineEmits<{
   'stroke-add': [stroke: Stroke]
@@ -188,11 +188,14 @@ const emit = defineEmits<{
 // Refs
 const containerRef = ref<HTMLElement | null>(null)
 const stageRef = ref<InstanceType<typeof Konva.Stage> | null>(null)
-const strokesLayerRef = ref(null)
-const assetsLayerRef = ref(null)
+const backgroundLayerRef = ref<{ getNode: () => Konva.Layer } | null>(null)
+const strokesLayerRef = ref<{ getNode: () => Konva.Layer } | null>(null)
+const assetsLayerRef = ref<{ getNode: () => Konva.Layer } | null>(null)
 const uiLayerRef = ref(null)
+const previewCanvasRef = ref<HTMLCanvasElement | null>(null)
 const transformerRef = ref<{ getNode: () => Konva.Transformer } | null>(null)
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
+const perfHudRef = ref<InstanceType<typeof PerfHUD> | null>(null)
 
 // State
 const isDrawing = ref(false)
@@ -202,6 +205,270 @@ const selectedNode = ref<Konva.Node | null>(null)
 const editingText = ref<Stroke | null>(null)
 const editingTextValue = ref('')
 const loadedImages = reactive<Map<string, HTMLImageElement>>(new Map())
+
+// F29-AS.26: Input pipeline guard - track if we're in active drawing mode
+// During active draw, we skip sync watchers to prevent Vue updates from triggering Konva redraws
+const isActiveDrawing = ref(false)
+
+// F29-CRITICAL-FIX: Konva v10+ has automatic batching
+// Manual batchDraw() calls cause flickering - removed
+
+function hasRenderableArea(layer: Konva.Layer): boolean {
+  const stage = layer.getStage?.()
+  if (!stage) return false
+  const stageSize = stage.size?.()
+  if (!stageSize || stageSize.width <= 0 || stageSize.height <= 0) return false
+  const childrenCount = typeof layer.getChildren === 'function' ? layer.getChildren().length : 0
+  if (childrenCount === 0) return false
+  try {
+    const rect = layer.getClientRect?.({ skipTransform: true })
+    if (rect && (rect.width <= 0 || rect.height <= 0)) {
+      return false
+    }
+  } catch {
+    return false
+  }
+  return true
+}
+
+function cacheLayer(layerRef: typeof backgroundLayerRef | typeof strokesLayerRef) {
+  const konvaLayer = layerRef.value?.getNode?.()
+  if (!konvaLayer) return
+  if (!hasRenderableArea(konvaLayer)) {
+    return
+  }
+  try {
+    if (!konvaLayer.isCached?.()) {
+      konvaLayer.cache()
+    }
+  } catch (error) {
+    console.warn('[BoardCanvas] layer cache failed', error)
+  }
+}
+
+// F29-CRITICAL-FIX: Removed scheduleLayerBatchDraw
+// Konva v10+ automatically batches all draws
+// Manual batchDraw() interferes with automatic batching
+
+// F29-AS.19: Freeze/unfreeze hit graph during drawing for performance
+function freezeHitGraph(freeze: boolean): void {
+  const layers = [strokesLayerRef, assetsLayerRef]
+  for (const layerRef of layers) {
+    const konvaLayer = layerRef.value?.getNode?.()
+    if (!konvaLayer) continue
+    try {
+      konvaLayer.listening(!freeze)
+    } catch (error) {
+      console.warn('[BoardCanvas] freezeHitGraph failed', error)
+    }
+  }
+}
+
+// F29-AS.36: Prewarm glyphs/fonts to avoid first-text freeze
+function prewarmFonts(): void {
+  // Create offscreen canvas to render alphabet and trigger font loading
+  const canvas = document.createElement('canvas')
+  canvas.width = 200
+  canvas.height = 50
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+
+  const fonts = ['system-ui', '-apple-system', 'sans-serif']
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789АБВГДЕЄЖЗИІЇЙКЛМНОПРСТУФХЦЧШЩЬЮЯабвгдеєжзиіїйклмнопрстуфхцчшщьюя'
+
+  for (const font of fonts) {
+    ctx.font = `16px ${font}`
+    ctx.fillText(alphabet, 0, 20)
+  }
+
+  // Clean up
+  canvas.width = 0
+  canvas.height = 0
+}
+
+// Offscreen preview (F29.2)
+const supportsOffscreenCanvas =
+  typeof window !== 'undefined' && typeof OffscreenCanvas !== 'undefined' && 'OffscreenCanvas' in window
+const isSafari = typeof navigator !== 'undefined' && /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+
+interface CanvasBuffer {
+  canvas: OffscreenCanvas | HTMLCanvasElement
+  ctx: OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D
+}
+
+const offscreenBuffers: CanvasBuffer[] = []
+let activeBufferIndex = 0
+let previewCtx: CanvasRenderingContext2D | null = null
+let currentBitmap: ImageBitmap | null = null
+
+function getStagePixelSize() {
+  return {
+    width: stageConfig.value.width,
+    height: stageConfig.value.height,
+  }
+}
+
+function createOffscreenBuffer(width: number, height: number): CanvasBuffer | null {
+  if (supportsOffscreenCanvas) {
+    const canvas = new OffscreenCanvas(width, height)
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return null
+    return { canvas, ctx }
+  }
+
+  const fallback = document.createElement('canvas')
+  fallback.width = width
+  fallback.height = height
+  const ctx = fallback.getContext('2d')
+  if (!ctx) return null
+  return { canvas: fallback, ctx }
+}
+
+function initPreviewCanvas() {
+  const canvas = previewCanvasRef.value
+  if (!canvas) return
+  const { width, height } = getStagePixelSize()
+  canvas.width = width
+  canvas.height = height
+  previewCtx = canvas.getContext('2d')
+
+  offscreenBuffers.length = 0
+  activeBufferIndex = 0
+  for (let i = 0; i < 2; i++) {
+    const buffer = createOffscreenBuffer(width, height)
+    if (buffer) {
+      offscreenBuffers.push(buffer)
+    }
+  }
+
+  clearPreviewCanvas()
+}
+
+function getActiveBuffer(): CanvasBuffer | null {
+  if (!offscreenBuffers.length) return null
+  return offscreenBuffers[activeBufferIndex]
+}
+
+function advanceBuffer(): void {
+  if (!offscreenBuffers.length) return
+  activeBufferIndex = (activeBufferIndex + 1) % offscreenBuffers.length
+}
+
+function clearPreviewCanvas() {
+  const { width, height } = getStagePixelSize()
+  if (previewCtx) {
+    previewCtx.clearRect(0, 0, width, height)
+  }
+}
+
+function flushPreviewCanvas() {
+  if (!previewCtx) return
+  const activeBuffer = getActiveBuffer()
+  if (!activeBuffer) return
+
+  const { width, height } = getStagePixelSize()
+
+  previewCtx.clearRect(0, 0, width, height)
+
+  // F29-FLICKER-FIX: Disable transferToImageBitmap for Safari (unstable)
+  if (!isSafari && supportsOffscreenCanvas && activeBuffer.canvas instanceof OffscreenCanvas && 'transferToImageBitmap' in activeBuffer.canvas) {
+    const bitmap = activeBuffer.canvas.transferToImageBitmap()
+    if (currentBitmap) {
+      currentBitmap.close()
+    }
+    currentBitmap = bitmap
+    previewCtx.drawImage(bitmap, 0, 0, width, height)
+  } else {
+    previewCtx.drawImage(activeBuffer.canvas, 0, 0, width, height)
+  }
+}
+
+function drawPreviewCanvas() {
+  const buffer = getActiveBuffer()
+  if (!isDrawing.value || !buffer || !previewCtx) {
+    clearPreviewCanvas()
+    return
+  }
+
+  const tool = currentTool.value
+  const shouldPreview =
+    tool === 'pen' || tool === 'highlighter' || tool === 'rectangle' || tool === 'line' || tool === 'circle'
+  if (!shouldPreview) {
+    clearPreviewCanvas()
+    return
+  }
+
+  const { width, height } = getStagePixelSize()
+  const ctx = buffer.ctx
+  ctx.save()
+  ctx.clearRect(0, 0, width, height)
+
+  const scale = props.zoom
+
+  if ((tool === 'pen' || tool === 'highlighter') && currentPoints.value.length >= 2) {
+    const scaledPoints = currentPoints.value.map((p) => [p.x * scale, p.y * scale] as [number, number])
+    const strokePath = getSvgPathFromStroke(
+      getStroke(scaledPoints, {
+        size: props.size * scale,
+        thinning: 0.5,
+        smoothing: 0.5,
+        streamline: 0.5,
+      })
+    )
+    const path = new Path2D(strokePath)
+    ctx.fillStyle = props.color
+    ctx.globalAlpha = tool === 'highlighter' ? 0.4 : props.opacity
+    ctx.globalCompositeOperation = tool === 'highlighter' ? 'multiply' : 'source-over'
+    ctx.fill(path)
+  } else if (tool === 'rectangle' && shapePreview.value) {
+    ctx.strokeStyle = props.color
+    ctx.lineWidth = props.size * scale
+    ctx.globalAlpha = props.opacity
+    ctx.strokeRect(
+      shapePreview.value.x * scale,
+      shapePreview.value.y * scale,
+      shapePreview.value.width * scale,
+      shapePreview.value.height * scale
+    )
+  } else if (tool === 'line' && currentPoints.value.length >= 2) {
+    const start = currentPoints.value[0]
+    const end = currentPoints.value[currentPoints.value.length - 1]
+    ctx.strokeStyle = props.color
+    ctx.lineWidth = props.size * scale
+    ctx.globalAlpha = props.opacity
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+    ctx.beginPath()
+    ctx.moveTo(start.x * scale, start.y * scale)
+    ctx.lineTo(end.x * scale, end.y * scale)
+    ctx.stroke()
+  } else if (tool === 'circle' && shapePreview.value) {
+    ctx.strokeStyle = props.color
+    ctx.lineWidth = props.size * scale
+    ctx.globalAlpha = props.opacity
+    const centerX = shapePreview.value.x * scale + (shapePreview.value.width * scale) / 2
+    const centerY = shapePreview.value.y * scale + (shapePreview.value.height * scale) / 2
+    ctx.beginPath()
+    ctx.ellipse(
+      centerX,
+      centerY,
+      (shapePreview.value.width * scale) / 2,
+      (shapePreview.value.height * scale) / 2,
+      0,
+      0,
+      Math.PI * 2
+    )
+    ctx.stroke()
+  } else {
+    ctx.restore()
+    clearPreviewCanvas()
+    return
+  }
+
+  ctx.restore()
+  flushPreviewCanvas()
+  advanceBuffer()
+}
 
 // Computed
 const currentTool = computed(() => props.tool)
@@ -219,10 +486,11 @@ const backgroundConfig = computed(() => ({
   width: props.width,
   height: props.height,
   fill: '#ffffff',
+  name: 'background',
 }))
 
-const strokes = computed(() => props.strokes)
-const assets = computed(() => props.assets)
+// F29-STEALTH: strokes/assets computed defined at top of script
+// Removed duplicate declaration here
 
 // Current stroke preview config
 const currentStrokeConfig = computed(() => {
@@ -324,6 +592,9 @@ function getPointerPosition(): Point | null {
 }
 
 function handleMouseDown(e: Konva.KonvaEventObject<MouseEvent | TouchEvent>): void {
+  // F29-STEALTH: Record pointer event timestamp for input latency metrics
+  recordPointerEvent(performance.now())
+  
   const pos = getPointerPosition()
   if (!pos) return
 
@@ -352,14 +623,23 @@ function handleMouseDown(e: Konva.KonvaEventObject<MouseEvent | TouchEvent>): vo
 
   // Start drawing
   isDrawing.value = true
+  isActiveDrawing.value = true // F29-AS.26: Enable input pipeline guard
   currentPoints.value = [pos]
   
   if (currentTool.value === 'rectangle' || currentTool.value === 'line' || currentTool.value === 'circle') {
     shapePreview.value = { x: pos.x, y: pos.y, width: 0, height: 0 }
   }
+
+  // F29-AS.19: Freeze hit graph during drawing for performance
+  freezeHitGraph(true)
+
+  drawPreviewCanvas()
 }
 
 function handleMouseMove(e: Konva.KonvaEventObject<MouseEvent | TouchEvent>): void {
+  // F29-STEALTH: Record pointer event timestamp for input latency metrics
+  recordPointerEvent(performance.now())
+  
   if (!isDrawing.value) return
   
   const pos = getPointerPosition()
@@ -384,11 +664,17 @@ function handleMouseMove(e: Konva.KonvaEventObject<MouseEvent | TouchEvent>): vo
     }
     currentPoints.value = [start, pos]
   }
+
+  drawPreviewCanvas()
 }
 
 function handleMouseUp(): void {
   if (!isDrawing.value) return
   isDrawing.value = false
+  isActiveDrawing.value = false // F29-AS.26: Disable input pipeline guard
+
+  // F29-AS.19: Unfreeze hit graph after drawing
+  freezeHitGraph(false)
 
   if (currentPoints.value.length < 2) {
     currentPoints.value = []
@@ -417,6 +703,13 @@ function handleMouseUp(): void {
   // Reset
   currentPoints.value = []
   shapePreview.value = null
+
+  // Clear preview canvas after stroke is added
+  clearPreviewCanvas()
+  
+  // F29-FLICKER-FIX: No forced re-render needed
+  // Vue will detect props.strokes change via Pinia reactivity
+  // and incrementally add only the new <v-path> element
 }
 
 function handleErase(pos: Point): void {
@@ -462,17 +755,24 @@ function createTextAtPosition(pos: Point): void {
     text: '',
   }
   
+  console.log('[BoardCanvas] Setting editingText', stroke)
   editingText.value = stroke
   editingTextValue.value = ''
   
+  console.log('[BoardCanvas] editingText.value after set:', editingText.value)
+  
   // Use double nextTick to ensure DOM is fully updated
   nextTick(() => {
+    console.log('[BoardCanvas] First nextTick - editingText:', editingText.value)
     nextTick(() => {
+      console.log('[BoardCanvas] Second nextTick - textareaRef:', textareaRef.value)
       console.log('[BoardCanvas] Focusing textarea', textareaRef.value)
       if (textareaRef.value) {
         textareaRef.value.focus()
         // Ensure textarea is visible by scrolling into view if needed
         textareaRef.value.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+      } else {
+        console.error('[BoardCanvas] textareaRef.value is null!')
       }
     })
   })
@@ -682,6 +982,8 @@ function getStrokeConfig(stroke: Stroke): Record<string, unknown> {
     opacity: stroke.opacity,
     globalCompositeOperation: stroke.tool === 'highlighter' ? 'multiply' : 'source-over',
     draggable: currentTool.value === 'select',
+    perfectDrawEnabled: false,
+    listening: currentTool.value === 'select',
   }
 }
 
@@ -699,6 +1001,8 @@ function getLineConfig(stroke: Stroke): Record<string, unknown> {
     lineJoin: 'round',
     opacity: stroke.opacity,
     draggable: currentTool.value === 'select',
+    perfectDrawEnabled: false,
+    listening: currentTool.value === 'select',
   }
 }
 
@@ -716,6 +1020,8 @@ function getRectConfig(stroke: Stroke): Record<string, unknown> {
     fill: 'transparent',
     opacity: stroke.opacity,
     draggable: currentTool.value === 'select',
+    perfectDrawEnabled: false,
+    listening: currentTool.value === 'select',
   }
 }
 
@@ -734,6 +1040,8 @@ function getCircleConfig(stroke: Stroke): Record<string, unknown> {
     fill: 'transparent',
     opacity: stroke.opacity,
     draggable: currentTool.value === 'select',
+    perfectDrawEnabled: false,
+    listening: currentTool.value === 'select',
   }
 }
 
@@ -749,20 +1057,20 @@ function getTextConfig(stroke: Stroke): Record<string, unknown> {
     fill: stroke.color,
     fontFamily: 'system-ui, -apple-system, sans-serif',
     draggable: currentTool.value === 'select',
+    perfectDrawEnabled: false,
+    listening: currentTool.value === 'select',
   }
 }
 
 function getAssetConfig(asset: Asset): Record<string, unknown> {
-  let image = loadedImages.get(asset.src)
-  
-  if (!image) {
-    image = new Image()
-    image.src = asset.src
+  if (!loadedImages.has(asset.src)) {
+    const image = new Image()
     image.onload = () => {
-      loadedImages.set(asset.src, image!)
-      // Force re-render
-      stageRef.value?.getStage()?.batchDraw()
+      loadedImages.set(asset.src, image)
+      // F29-CRITICAL-FIX: Konva v10+ auto-redraws on image load
+      // No manual batchDraw needed
     }
+    image.src = asset.src
   }
   
   return {
@@ -775,6 +1083,8 @@ function getAssetConfig(asset: Asset): Record<string, unknown> {
     rotation: asset.rotation,
     image: loadedImages.get(asset.src),
     draggable: currentTool.value === 'select',
+    perfectDrawEnabled: false,
+    listening: currentTool.value === 'select',
   }
 }
 
@@ -800,11 +1110,59 @@ onMounted(() => {
   containerRef.value?.focus()
   // Register paste listener globally
   document.addEventListener('paste', handlePaste as EventListener)
+
+  // F29-AS.34: Fixed pixelRatio manager
+  // Keep Konva.pixelRatio = 1 to prevent line thickness "breathing" between frames/zoom
+  // Scale is handled via Stage/viewport transform instead
+  if (typeof Konva !== 'undefined') {
+    Konva.pixelRatio = 1
+  }
+
+  // F29-AS.36: Prewarm glyphs/fonts to avoid first-text freeze
+  prewarmFonts()
+
+  nextTick(() => {
+    // F29-FLICKER-FIX: Only cache static background layer
+    // Do NOT cache dynamic layers (strokes/assets) - causes flicker on updates
+    cacheLayer(backgroundLayerRef)
+    initPreviewCanvas()
+    
+    // F29-STEALTH: Initialize snapshot overlay and set stage ref for autosave
+    const stage = stageRef.value?.getStage?.()
+    if (stage && containerRef.value) {
+      setStageRef(stage)
+      initSnapshotOverlay(containerRef.value)
+    }
+  })
 })
 
 onUnmounted(() => {
   document.removeEventListener('paste', handlePaste as EventListener)
+  clearPreviewCanvas()
+  currentBitmap?.close?.()
+  currentBitmap = null
+  offscreenBuffers.length = 0
+  previewCtx = null
+  
+  // F29-STEALTH: Cleanup
+  setStageRef(null)
+  destroySnapshotOverlay()
 })
+
+// F29-FLICKER-FIX: Removed watchers on props.strokes and props.assets
+// Watchers with deep:true can trigger during autosave, causing flicker
+// Vue will automatically detect changes via Pinia reactivity and update v-for incrementally
+
+watch(
+  () => [props.width, props.height, props.zoom],
+  () => {
+    // F29-FLICKER-FIX: Skip reinit during active drawing
+    if (isActiveDrawing.value) return
+    initPreviewCanvas()
+    drawPreviewCanvas()
+  },
+  { immediate: false }
+)
 
 // Expose stageRef for export
 defineExpose({
@@ -825,6 +1183,19 @@ defineExpose({
 .board-canvas:focus {
   outline: 2px solid var(--color-brand, #2563eb);
   outline-offset: -2px;
+}
+
+/* F29-AS.32: Offscreen preview canvas overlay */
+.board-preview-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 10;
+  /* F29-AS.33: No CSS filters/shadows on canvas */
+  filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
 }
 
 .text-edit-overlay {

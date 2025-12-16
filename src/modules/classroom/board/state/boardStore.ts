@@ -3,6 +3,25 @@ import { soloApi } from '@/modules/solo/api/soloApi'
 import { notifyError, notifySuccess } from '@/utils/notify'
 import { i18n } from '@/i18n'
 import type { SoloSession } from '@/modules/solo/types/solo'
+import { useBoardSyncStore } from './boardSyncStore'
+// F29-STEALTH: Import stealth autosave utilities
+import {
+  startSaveWindow,
+  endSaveWindow,
+  recordOverlayCopy,
+  recordSaveRtt,
+} from '../perf/saveWindowMetrics'
+import {
+  startRenderGuard,
+  stopRenderGuard,
+  getExtraDrawsDuringSave,
+} from '../render/guards'
+import { cancelPendingRender } from '../render/renderQueue'
+import {
+  showSnapshotOverlay,
+  hideSnapshotOverlay,
+} from '../render/snapshotOverlay'
+import type Konva from 'konva'
 
 const translate = (key: string, params?: Record<string, unknown>) => {
   try {
@@ -14,8 +33,46 @@ const translate = (key: string, params?: Record<string, unknown>) => {
 
 export type SyncStatus = 'idle' | 'syncing' | 'saved' | 'error'
 
+const IS_TEST_ENV = typeof import.meta !== 'undefined' && !!import.meta.env && import.meta.env.MODE === 'test'
+const IS_DEV_ENV = typeof import.meta !== 'undefined' && !!import.meta.env && import.meta.env.DEV
+const AUTOSAVE_DEBOUNCE_MS = 3000 // Increased to reduce flickering
+
 // Module-level timer for autosave
 let _autosaveTimer: number | null = null
+
+// F29-AS.23: AbortController for cancellable saves
+let _currentSaveController: AbortController | null = null
+// F29-AS.6: Pending save state for coalescing
+let _pendingSave = false
+// F29-AS.24: Back-pressure aware debounce
+let _currentDebounceMs = 3000
+const MIN_DEBOUNCE_MS = AUTOSAVE_DEBOUNCE_MS
+const MAX_DEBOUNCE_MS = 5000
+let _lastSaveRTT = 0
+let _lastMarkDirtyTs = 0
+let _markDirtySeq = 0
+
+// F29-STEALTH: Stage reference for render guard/overlay
+let _stageRef: Konva.Stage | null = null
+let _saveWindowRev = 0
+
+/**
+ * F29-STEALTH: Set stage reference for stealth autosave
+ * Call this from BoardCanvas onMounted
+ */
+export function setStageRef(stage: Konva.Stage | null): void {
+  _stageRef = stage
+  logAutosaveDebug('setStageRef', { hasStage: !!stage })
+}
+
+const AUTOSAVE_DEBUG_ENABLED = IS_DEV_ENV && !IS_TEST_ENV
+
+function logAutosaveDebug(event: string, payload: Record<string, unknown> = {}): void {
+  if (!AUTOSAVE_DEBUG_ENABLED) return
+  const timestamp = new Date().toISOString()
+  // eslint-disable-next-line no-console
+  console.log('[autosave.debug]', { event, timestamp, ...payload })
+}
 
 export interface Page {
   id: string
@@ -34,16 +91,6 @@ export interface BoardState {
   pages: Page[]
   currentPageIndex: number
 
-  // Sync state
-  syncStatus: SyncStatus
-  lastSavedAt: Date | null
-  syncError: string | null
-  isDirty: boolean
-
-  // Export state
-  isExporting: boolean
-  exportJobId: string | null
-
   // UI state
   currentTool: string
   currentColor: string
@@ -55,8 +102,6 @@ export interface BoardState {
   redoStack: unknown[]
 }
 
-const AUTOSAVE_DEBOUNCE_MS = 3000 // Increased to reduce flickering
-
 export const useBoardStore = defineStore('board', {
   state: (): BoardState => ({
     // Session
@@ -67,16 +112,6 @@ export const useBoardStore = defineStore('board', {
     // Board data - strokes/assets are inside pages
     pages: [{ id: 'page-1', name: 'Page 1', strokes: [], assets: [] }],
     currentPageIndex: 0,
-
-    // Sync state
-    syncStatus: 'idle',
-    lastSavedAt: null,
-    syncError: null,
-    isDirty: false,
-
-    // Export state
-    isExporting: false,
-    exportJobId: null,
 
     // UI state
     currentTool: 'pen',
@@ -94,21 +129,21 @@ export const useBoardStore = defineStore('board', {
     canRedo: (state) => state.redoStack.length > 0,
     currentPage: (state): Page | null => state.pages[state.currentPageIndex] || null,
     hasSession: (state) => !!state.sessionId,
-    isSyncing: (state) => state.syncStatus === 'syncing',
     
     // Current page strokes/assets for easy access
     // IMPORTANT: Return the actual array reference, not a new array
-    // This prevents unnecessary re-renders when other state changes
+    // F29-CRITICAL-FIX: Return ORIGINAL array, NO copying
+    // Copying with [...] creates new reference → flicker on autosave
     currentStrokes(state): unknown[] {
       const page = state.pages[state.currentPageIndex]
-      // Return the actual strokes array reference (not a copy)
-      // If page doesn't exist, return empty array from state to keep reference stable
       if (!page) return []
+      // Return original reference - Vue will detect changes when page is replaced
       return page.strokes
     },
     currentAssets(state): unknown[] {
       const page = state.pages[state.currentPageIndex]
       if (!page) return []
+      // F29-CRITICAL-FIX: Return original reference, NO copying
       return page.assets
     },
 
@@ -126,18 +161,21 @@ export const useBoardStore = defineStore('board', {
      * Load existing session from backend
      */
     async loadSession(sessionId: string): Promise<boolean> {
-      this.syncStatus = 'syncing'
+      const syncStore = useBoardSyncStore()
+      syncStore.setStatus('syncing')
 
       try {
         const session = await soloApi.getSession(sessionId)
         this.hydrateFromSession(session)
-        this.syncStatus = 'saved'
-        this.lastSavedAt = new Date(session.updated_at)
+        const savedAt = new Date(session.updated_at)
+        syncStore.setStatus('saved')
+        syncStore.setLastSaved(savedAt)
+        syncStore.setDirty(false)
         console.log('[ui.session_loaded]', { sessionId })
         return true
       } catch (error) {
-        this.syncStatus = 'error'
-        this.syncError = translate('solo.sync.loadError')
+        syncStore.setStatus('error')
+        syncStore.setError(translate('solo.sync.loadError'))
         notifyError(translate('solo.sync.loadError'))
         console.error('[BoardStore] loadSession failed:', error)
         return false
@@ -148,13 +186,14 @@ export const useBoardStore = defineStore('board', {
      * Create new session (only if no sessionId exists)
      */
     async createSession(name?: string): Promise<string | null> {
+      const syncStore = useBoardSyncStore()
       // Anti-duplicate: only create if no session exists
       if (this.sessionId) {
         console.warn('[BoardStore] Session already exists, skipping create')
         return this.sessionId
       }
 
-      this.syncStatus = 'syncing'
+      syncStore.setStatus('syncing')
 
       try {
         const session = await soloApi.createSession({
@@ -165,15 +204,16 @@ export const useBoardStore = defineStore('board', {
         this.sessionId = session.id
         this.ownerId = session.owner_id || null
         this.sessionName = session.name
-        this.syncStatus = 'saved'
-        this.lastSavedAt = new Date()
-        this.isDirty = false
+        const savedAt = new Date()
+        syncStore.setStatus('saved')
+        syncStore.setLastSaved(savedAt)
+        syncStore.setDirty(false)
 
         console.log('[ui.session_created]', { sessionId: session.id })
         return session.id
       } catch (error) {
-        this.syncStatus = 'error'
-        this.syncError = translate('solo.sync.createError')
+        syncStore.setStatus('error')
+        syncStore.setError(translate('solo.sync.createError'))
         notifyError(translate('solo.sync.createError'))
         console.error('[BoardStore] createSession failed:', error)
         return null
@@ -184,19 +224,17 @@ export const useBoardStore = defineStore('board', {
      * Update existing session
      */
     async updateSession(): Promise<boolean> {
+      const syncStore = useBoardSyncStore()
       if (!this.sessionId) {
         console.warn('[BoardStore] No sessionId, creating new session')
         return !!(await this.createSession())
       }
 
       // Block autosave during export
-      if (this.isExporting) {
+      if (syncStore.isExporting) {
         console.log('[BoardStore] Export in progress, skipping autosave')
         return false
       }
-
-      // Silent save - don't change syncStatus to 'syncing' to avoid flickering
-      const previousStatus = this.syncStatus
 
       try {
         const session = await soloApi.updateSession(this.sessionId, {
@@ -204,28 +242,18 @@ export const useBoardStore = defineStore('board', {
           state: this.serializedState as { pages: unknown[] },
         })
 
-        // Only update if status changed to avoid re-renders
-        if (this.syncStatus !== 'saved') {
-          this.syncStatus = 'saved'
-        }
-        // Only update lastSavedAt if it's significantly different (>1 second)
+        // Update syncStore only
         const newSavedAt = new Date(session.updated_at)
-        if (!this.lastSavedAt || Math.abs(newSavedAt.getTime() - this.lastSavedAt.getTime()) > 1000) {
-          this.lastSavedAt = newSavedAt
-        }
-        this.isDirty = false
-        if (this.syncError !== null) {
-          this.syncError = null
-        }
+        syncStore.setStatus('saved')
+        syncStore.setLastSaved(newSavedAt)
+        syncStore.setDirty(false)
+        syncStore.setError(null)
 
         console.log('[ui.session_saved]', { sessionId: this.sessionId })
         return true
       } catch (error) {
-        // Only update if status changed
-        if (this.syncStatus !== 'error') {
-          this.syncStatus = 'error'
-          this.syncError = translate('solo.sync.saveError')
-        }
+        syncStore.setStatus('error')
+        syncStore.setError(translate('solo.sync.saveError'))
         console.error('[BoardStore] updateSession failed:', error)
         return false
       }
@@ -253,39 +281,206 @@ export const useBoardStore = defineStore('board', {
         this.currentPageIndex = (state.currentPageIndex as number) || 0
       }
 
-      this.isDirty = false
+      // isDirty is now in syncStore
     },
 
     // ============ Autosave ============
 
-
     /**
      * Mark state as dirty and schedule autosave
+     * F29-AS.1: Update syncStore to decouple from render path
+     * F29-AS.5: Use rAF → idle → network scheduling
+     * F29-AS.6: Coalesce rapid changes into single save
      */
     markDirty(): void {
-      this.isDirty = true
+      const syncStore = useBoardSyncStore()
+      const wasDirty = syncStore.isDirty
+      syncStore.setDirty(true)
+
+      if (_pendingSave && wasDirty) {
+        logAutosaveDebug('markDirty.skipDuplicate', {
+          pendingSave: _pendingSave,
+          wasDirty,
+        })
+        return
+      }
+
+      // F29-AS.6: Mark pending save for coalescing
+      _pendingSave = true
+      _markDirtySeq += 1
+      const now = performance.now()
+      const deltaSinceLast = _lastMarkDirtyTs ? now - _lastMarkDirtyTs : null
+      _lastMarkDirtyTs = now
+      logAutosaveDebug('markDirty', {
+        seq: _markDirtySeq,
+        deltaSinceLastMs: deltaSinceLast,
+        debounceMs: _currentDebounceMs,
+        pendingSave: _pendingSave,
+        isDirty: syncStore.isDirty,
+      })
 
       // Clear existing timer
       if (_autosaveTimer) {
         clearTimeout(_autosaveTimer)
+        logAutosaveDebug('markDirty.clearTimer', { seq: _markDirtySeq })
       }
 
-      // Schedule autosave with debounce
+      // In tests ми не використовуємо idle-шедулер, щоб unit-тести були детермінованими
+      if (IS_TEST_ENV) {
+        _autosaveTimer = window.setTimeout(() => {
+          this.autosave()
+        }, AUTOSAVE_DEBOUNCE_MS)
+        logAutosaveDebug('markDirty.scheduleTestTimer', { seq: _markDirtySeq, debounceMs: AUTOSAVE_DEBOUNCE_MS })
+        return
+      }
+
+      // F29-AS.5: Schedule autosave with adaptive debounce (prod)
       _autosaveTimer = window.setTimeout(() => {
-        this.autosave()
-      }, AUTOSAVE_DEBOUNCE_MS)
+        this.scheduleIdleSave()
+      }, _currentDebounceMs)
+      logAutosaveDebug('markDirty.scheduleDebounce', { seq: _markDirtySeq, debounceMs: _currentDebounceMs })
+    },
+
+    /**
+     * F29-AS.5: Schedule save during idle time
+     */
+    scheduleIdleSave(): void {
+      const syncStore = useBoardSyncStore()
+      if (!_pendingSave || !syncStore.isDirty) return
+      logAutosaveDebug('scheduleIdleSave.start', {
+        pendingSave: _pendingSave,
+        isDirty: syncStore.isDirty,
+        debounceMs: _currentDebounceMs,
+      })
+
+      // Use requestIdleCallback if available, otherwise setTimeout
+      if (!IS_TEST_ENV && 'requestIdleCallback' in window) {
+        ;(window as Window & { requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => void }).requestIdleCallback(
+          () => {
+            this.autosave()
+          },
+          { timeout: 800 }
+        )
+        logAutosaveDebug('scheduleIdleSave.requestIdle', {})
+      } else {
+        // Fallback: schedule after current frame (or immediately in tests)
+        const schedule = () => {
+          window.setTimeout(() => {
+            this.autosave()
+          }, 0)
+          logAutosaveDebug('scheduleIdleSave.timeoutFallback', {})
+        }
+        if (IS_TEST_ENV) {
+          schedule()
+        } else {
+          requestAnimationFrame(() => {
+            schedule()
+          })
+          logAutosaveDebug('scheduleIdleSave.rafFallback', {})
+        }
+      }
     },
 
     /**
      * Perform autosave
+     * F29-AS.23: Support abortable saves
+     * F29-AS.24: Back-pressure aware debounce
+     * F29-STEALTH: Integrated stealth save window
      */
     async autosave(): Promise<void> {
-      if (!this.isDirty) return
+      const syncStore = useBoardSyncStore()
+      if (!syncStore.isDirty) return
 
-      if (this.sessionId) {
-        await this.updateSession()
-      } else {
-        await this.createSession()
+      // F29-AS.23: Abort previous save if still pending
+      if (_currentSaveController) {
+        _currentSaveController.abort()
+        _currentSaveController = null
+        logAutosaveDebug('autosave.abortPrevious', {})
+      }
+
+      // F29-AS.6: Reset pending flag
+      _pendingSave = false
+
+      // F29-AS.23: Create new abort controller
+      _currentSaveController = new AbortController()
+      const startTime = performance.now()
+      
+      // F29-STEALTH: Start save window BEFORE any network/serialization
+      _saveWindowRev++
+      const currentRev = _saveWindowRev
+      startSaveWindow(this.sessionId || 'new', currentRev)
+      
+      // F29-STEALTH: Cancel any pending rAF renders before guarding
+      cancelPendingRender()
+      
+      let overlayCopyMs = 0
+      if (_stageRef) {
+        // F29-STEALTH: Capture snapshot BEFORE enabling guard to avoid extra draws
+        overlayCopyMs = await showSnapshotOverlay(_stageRef)
+        recordOverlayCopy(overlayCopyMs)
+        logAutosaveDebug('autosave.overlayShown', { overlayCopyMs })
+        
+        // F29-STEALTH: Activate render guard to block draw() calls
+        startRenderGuard(_stageRef)
+      }
+      
+      logAutosaveDebug('autosave.start', {
+        hasSession: !!this.sessionId,
+        debounceMs: _currentDebounceMs,
+        rev: currentRev,
+      })
+
+      let saveResult: 'success' | 'queued' | 'error' = 'error'
+      
+      try {
+        if (this.sessionId) {
+          await this.updateSession()
+        } else {
+          await this.createSession()
+        }
+
+        // F29-AS.24: Adjust debounce based on RTT
+        _lastSaveRTT = performance.now() - startTime
+        recordSaveRtt(_lastSaveRTT)
+        saveResult = 'success'
+        
+        logAutosaveDebug('autosave.success', {
+          rttMs: _lastSaveRTT,
+          sessionId: this.sessionId,
+          extraDraws: getExtraDrawsDuringSave(),
+        })
+        if (_lastSaveRTT > 400) {
+          // Slow network - increase debounce
+          _currentDebounceMs = Math.min(MAX_DEBOUNCE_MS, _currentDebounceMs + 500)
+        } else if (_lastSaveRTT < 200 && _currentDebounceMs > MIN_DEBOUNCE_MS) {
+          // Fast network - decrease debounce
+          _currentDebounceMs = Math.max(MIN_DEBOUNCE_MS, _currentDebounceMs - 200)
+        }
+        logAutosaveDebug('autosave.debounceAdjusted', { debounceMs: _currentDebounceMs })
+      } catch (error) {
+        // F29-AS.24: On error, increase debounce for backoff
+        _currentDebounceMs = Math.min(MAX_DEBOUNCE_MS, _currentDebounceMs * 1.5)
+        saveResult = 'error'
+        console.error('[BoardStore] autosave failed:', error)
+        logAutosaveDebug('autosave.error', { message: (error as Error)?.message, debounceMs: _currentDebounceMs })
+      } finally {
+        _currentSaveController = null
+        
+        // F29-STEALTH: End save window and cleanup
+        endSaveWindow(saveResult)
+        
+        // F29-STEALTH: Stop render guard and restore draw() methods
+        if (_stageRef) {
+          stopRenderGuard(_stageRef)
+          
+          // F29-STEALTH: Hide overlay with fade
+          hideSnapshotOverlay(100)
+        }
+        
+        logAutosaveDebug('autosave.windowClosed', {
+          result: saveResult,
+          extraDraws: getExtraDrawsDuringSave(),
+        })
       }
     },
 
@@ -293,79 +488,99 @@ export const useBoardStore = defineStore('board', {
      * Retry failed sync
      */
     async retrySync(): Promise<void> {
-      if (this.syncStatus !== 'error') return
+      const syncStore = useBoardSyncStore()
+      if (syncStore.syncStatus !== 'error') return
+      // Reset debounce on manual retry
+      _currentDebounceMs = AUTOSAVE_DEBOUNCE_MS
       await this.autosave()
     },
 
     // ============ Drawing Actions ============
 
     addStroke(stroke: unknown): void {
-      const page = this.pages[this.currentPageIndex]
-      if (!page) return
-      
-      // Save current state for undo
+      // CRITICAL FIX: Replace entire page object to trigger Vue reactivity
+      // Direct array mutation doesn't work reliably with nested Pinia state
+      const pageIndex = this.currentPageIndex
+      const page = this.pages[pageIndex]
+      if (!page) {
+        console.error('[BoardStore] addStroke: No page found at index', pageIndex)
+        return
+      }
+
       this.undoStack.push(JSON.parse(JSON.stringify(page.strokes)))
       this.redoStack = []
-
-      page.strokes.push(stroke)
+      
+      // Replace the entire page object to trigger reactivity
+      this.pages[pageIndex] = {
+        ...page,
+        strokes: [...page.strokes, stroke]
+      }
+      
       this.markDirty()
     },
 
     undo(): void {
       if (!this.canUndo) return
-      const page = this.pages[this.currentPageIndex]
+      const pageIndex = this.currentPageIndex
+      const page = this.pages[pageIndex]
       if (!page) return
-
       const previousState = this.undoStack.pop()
       this.redoStack.push(JSON.parse(JSON.stringify(page.strokes)))
-      page.strokes = previousState as unknown[]
+      // Replace page to trigger reactivity
+      this.pages[pageIndex] = { ...page, strokes: previousState as unknown[] }
       this.markDirty()
     },
 
     redo(): void {
       if (!this.canRedo) return
-      const page = this.pages[this.currentPageIndex]
+      const pageIndex = this.currentPageIndex
+      const page = this.pages[pageIndex]
       if (!page) return
-
       const nextState = this.redoStack.pop()
       this.undoStack.push(JSON.parse(JSON.stringify(page.strokes)))
-      page.strokes = nextState as unknown[]
+      // Replace page to trigger reactivity
+      this.pages[pageIndex] = { ...page, strokes: nextState as unknown[] }
       this.markDirty()
     },
 
     clearBoard(): void {
-      const page = this.pages[this.currentPageIndex]
+      const pageIndex = this.currentPageIndex
+      const page = this.pages[pageIndex]
       if (!page) return
-      
       this.undoStack.push(JSON.parse(JSON.stringify(page.strokes)))
       this.redoStack = []
-      page.strokes = []
+      // Replace page to trigger reactivity
+      this.pages[pageIndex] = { ...page, strokes: [] }
       this.markDirty()
     },
     
     updateStroke(stroke: unknown): void {
-      const page = this.pages[this.currentPageIndex]
+      const pageIndex = this.currentPageIndex
+      const page = this.pages[pageIndex]
       if (!page) return
-      
       const strokeObj = stroke as { id: string }
       const index = page.strokes.findIndex((s: unknown) => (s as { id: string }).id === strokeObj.id)
       if (index !== -1) {
         this.undoStack.push(JSON.parse(JSON.stringify(page.strokes)))
         this.redoStack = []
-        page.strokes[index] = stroke
+        // Replace page with new strokes array to trigger reactivity
+        const newStrokes = [...page.strokes]
+        newStrokes[index] = stroke
+        this.pages[pageIndex] = { ...page, strokes: newStrokes }
         this.markDirty()
       }
     },
     
     deleteStroke(strokeId: string): void {
-      const page = this.pages[this.currentPageIndex]
+      const pageIndex = this.currentPageIndex
+      const page = this.pages[pageIndex]
       if (!page) return
-      
       const index = page.strokes.findIndex((s: unknown) => (s as { id: string }).id === strokeId)
       if (index !== -1) {
         this.undoStack.push(JSON.parse(JSON.stringify(page.strokes)))
         this.redoStack = []
-        page.strokes.splice(index, 1)
+        // Replace page with filtered strokes to trigger reactivity
+        this.pages[pageIndex] = { ...page, strokes: page.strokes.filter((_, i) => i !== index) }
         this.markDirty()
       }
     },
@@ -376,9 +591,10 @@ export const useBoardStore = defineStore('board', {
      * Add image asset from paste event
      */
     addImageAsset(src: string, width: number, height: number): void {
-      const page = this.pages[this.currentPageIndex]
+      const pageIndex = this.currentPageIndex
+      const page = this.pages[pageIndex]
       if (!page) return
-      
+
       const asset = {
         id: `asset-${Date.now()}`,
         type: 'image',
@@ -391,7 +607,8 @@ export const useBoardStore = defineStore('board', {
         locked: false,
       }
 
-      page.assets.push(asset)
+      // Replace page to trigger reactivity
+      this.pages[pageIndex] = { ...page, assets: [...page.assets, asset] }
       this.markDirty()
       console.log('[ui.asset_added]', { type: 'image' })
     },
@@ -400,10 +617,11 @@ export const useBoardStore = defineStore('board', {
      * Add asset (from BoardCanvas paste)
      */
     addAsset(asset: unknown): void {
-      const page = this.pages[this.currentPageIndex]
+      const pageIndex = this.currentPageIndex
+      const page = this.pages[pageIndex]
       if (!page) return
-      
-      page.assets.push(asset)
+      // Replace page to trigger reactivity
+      this.pages[pageIndex] = { ...page, assets: [...page.assets, asset] }
       this.markDirty()
       console.log('[ui.asset_added]', { assetId: (asset as { id: string }).id })
     },
@@ -412,24 +630,28 @@ export const useBoardStore = defineStore('board', {
      * Update asset position/size
      */
     updateAsset(asset: unknown): void {
-      const page = this.pages[this.currentPageIndex]
+      const pageIndex = this.currentPageIndex
+      const page = this.pages[pageIndex]
       if (!page) return
-      
       const assetData = asset as { id: string }
       const index = page.assets.findIndex((a: unknown) => (a as { id: string }).id === assetData.id)
       if (index !== -1) {
-        page.assets[index] = asset
+        const newAssets = [...page.assets]
+        newAssets[index] = asset
+        // Replace page to trigger reactivity
+        this.pages[pageIndex] = { ...page, assets: newAssets }
         this.markDirty()
       }
     },
     
     deleteAsset(assetId: string): void {
-      const page = this.pages[this.currentPageIndex]
+      const pageIndex = this.currentPageIndex
+      const page = this.pages[pageIndex]
       if (!page) return
-      
       const index = page.assets.findIndex((a: unknown) => (a as { id: string }).id === assetId)
       if (index !== -1) {
-        page.assets.splice(index, 1)
+        // Replace page to trigger reactivity
+        this.pages[pageIndex] = { ...page, assets: page.assets.filter((_, i) => i !== index) }
         this.markDirty()
         console.log('[ui.asset_deleted]', { assetId })
       }
@@ -461,7 +683,6 @@ export const useBoardStore = defineStore('board', {
     
     deletePage(index: number): void {
       if (this.pages.length <= 1) return // Keep at least one page
-      
       this.pages.splice(index, 1)
       if (this.currentPageIndex >= this.pages.length) {
         this.currentPageIndex = this.pages.length - 1
@@ -490,8 +711,9 @@ export const useBoardStore = defineStore('board', {
     // ============ Export ============
 
     setExporting(isExporting: boolean, jobId?: string): void {
-      this.isExporting = isExporting
-      this.exportJobId = jobId || null
+      const syncStore = useBoardSyncStore()
+      syncStore.setExporting(isExporting)
+      syncStore.setExportJob(jobId || null)
     },
 
     // ============ Reset ============

@@ -1,0 +1,139 @@
+# F29-STEALTH: Board Performance Benchmark CI
+# Runs on PRs that touch board-related files
+
+name: Board Benchmark
+
+on:
+  pull_request:
+    paths:
+      - 'src/modules/classroom/**'
+      - 'src/modules/solo/**'
+      - 'src/workers/**'
+      - 'scripts/board-bench.ts'
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium
+
+      - name: Build app
+        run: npm run build
+
+      - name: Start preview server
+        run: npm run preview &
+        env:
+          PORT: 4173
+
+      - name: Wait for server
+        run: npx wait-on http://localhost:4173 --timeout 30000
+
+      - name: Run benchmark
+        run: npm run board:bench:ci
+        env:
+          BENCH_URL: http://localhost:4173
+
+      - name: Upload bench.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-results
+          path: bench.json
+          retention-days: 30
+
+      - name: Check thresholds
+        run: |
+          node -e "
+            const bench = require('./bench.json');
+            const failures = [];
+            const warnings = [];
+            
+            // FAIL thresholds
+            if (bench.extraDrawsDuringSave > 0) {
+              failures.push('extraDrawsDuringSave: ' + bench.extraDrawsDuringSave + ' > 0');
+            }
+            if (bench.mainThreadBlockMsDuringSave > 8) {
+              failures.push('mainThreadBlockMsDuringSave: ' + bench.mainThreadBlockMsDuringSave + ' > 8');
+            }
+            if (bench.fpsDuringSave < 55) {
+              failures.push('fpsDuringSave: ' + bench.fpsDuringSave + ' < 55');
+            }
+            
+            // WARN thresholds
+            if (bench.initialRenderMs > 1200) {
+              warnings.push('initialRenderMs: ' + bench.initialRenderMs + ' > 1200');
+            }
+            if (bench.pageSwitchMs > 150) {
+              warnings.push('pageSwitchMs: ' + bench.pageSwitchMs + ' > 150');
+            }
+            if (bench.bulkUndoMs > 400) {
+              warnings.push('bulkUndoMs: ' + bench.bulkUndoMs + ' > 400');
+            }
+            
+            if (warnings.length > 0) {
+              console.log('⚠️ WARNINGS:');
+              warnings.forEach(w => console.log('  - ' + w));
+            }
+            
+            if (failures.length > 0) {
+              console.error('❌ FAILURES:');
+              failures.forEach(f => console.error('  - ' + f));
+              process.exit(1);
+            }
+            
+            console.log('✅ All benchmark checks passed!');
+          "
+
+      - name: Comment on PR
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let bench = {};
+            try {
+              bench = JSON.parse(fs.readFileSync('bench.json', 'utf8'));
+            } catch (e) {
+              bench = { error: 'Failed to read bench.json' };
+            }
+            
+            const body = `## 📊 Board Benchmark Results
+            
+            | Metric | Value | Threshold | Status |
+            |--------|-------|-----------|--------|
+            | Initial Render | ${bench.initialRenderMs?.toFixed(0) || 'N/A'}ms | ≤1200ms | ${bench.initialRenderMs <= 1200 ? '✅' : '⚠️'} |
+            | Page Switch | ${bench.pageSwitchMs?.toFixed(0) || 'N/A'}ms | ≤150ms | ${bench.pageSwitchMs <= 150 ? '✅' : '⚠️'} |
+            | Bulk Undo | ${bench.bulkUndoMs?.toFixed(0) || 'N/A'}ms | ≤400ms | ${bench.bulkUndoMs <= 400 ? '✅' : '⚠️'} |
+            | FPS During Save | ${bench.fpsDuringSave?.toFixed(0) || 'N/A'} | ≥55 | ${bench.fpsDuringSave >= 55 ? '✅' : '❌'} |
+            | Extra Draws | ${bench.extraDrawsDuringSave || 'N/A'} | =0 | ${bench.extraDrawsDuringSave === 0 ? '✅' : '❌'} |
+            | Main Thread Block | ${bench.mainThreadBlockMsDuringSave?.toFixed(1) || 'N/A'}ms | ≤8ms | ${bench.mainThreadBlockMsDuringSave <= 8 ? '✅' : '❌'} |
+            | Input Latency | ${bench.inputLatencyMsDuringSave?.toFixed(1) || 'N/A'}ms | ≤16ms | ${bench.inputLatencyMsDuringSave <= 16 ? '✅' : '⚠️'} |
+            
+            <details>
+            <summary>Raw Results</summary>
+            
+            \`\`\`json
+            ${JSON.stringify(bench, null, 2)}
+            \`\`\`
+            </details>
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
