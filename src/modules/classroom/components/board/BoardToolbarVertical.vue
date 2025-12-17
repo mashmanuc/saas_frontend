@@ -170,10 +170,14 @@ const sizePresets = [
 
 // Global keyboard shortcuts
 function handleKeydown(event: KeyboardEvent): void {
+  if (event.defaultPrevented) return
+  if (event.repeat) return
+
   // Skip if in input
   if ((event.target as HTMLElement).tagName === 'INPUT') return
 
   const key = event.key.toUpperCase()
+  const code = event.code
 
   // Tool shortcuts
   const tool = drawingTools.find((t) => t.shortcut === key)
@@ -183,13 +187,18 @@ function handleKeydown(event: KeyboardEvent): void {
   }
 
   // Undo/Redo
-  if ((event.ctrlKey || event.metaKey) && key === 'Z') {
+  if ((event.ctrlKey || event.metaKey) && code === 'KeyZ') {
     event.preventDefault()
     if (event.shiftKey) {
       emit('redo')
     } else {
       emit('undo')
     }
+  }
+
+  if ((event.ctrlKey || event.metaKey) && code === 'KeyY') {
+    event.preventDefault()
+    emit('redo')
   }
 }
 

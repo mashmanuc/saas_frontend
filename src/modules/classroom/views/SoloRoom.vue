@@ -27,6 +27,9 @@
 
       <!-- Right: Actions -->
       <div class="solo-room__actions">
+        <button class="action-btn" title="Save (Ctrl/Cmd+S)" @click="handleManualSave">
+          Save
+        </button>
         <button class="action-btn" :title="$t('classroom.tools.undo')" @click="handleUndo">
           <IconUndo />
         </button>
@@ -130,8 +133,45 @@ const totalPages = ref(1)
 // Solo permissions (full access)
 const soloPermissions: RoomPermissions = DEFAULT_PERMISSIONS.solo
 
+function handleGlobalKeydown(event: KeyboardEvent): void {
+  if (event.defaultPrevented) return
+  if (event.repeat) return
+
+  // Do not hijack typing
+  if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+    return
+  }
+
+  const ctrl = event.ctrlKey || event.metaKey
+  const code = event.code
+
+  if (ctrl && code === 'KeyZ' && !event.shiftKey) {
+    event.preventDefault()
+    boardStore.undo()
+    return
+  }
+
+  if (ctrl && code === 'KeyZ' && event.shiftKey) {
+    event.preventDefault()
+    boardStore.redo()
+    return
+  }
+
+  if (ctrl && code === 'KeyY') {
+    event.preventDefault()
+    boardStore.redo()
+    return
+  }
+
+  if (ctrl && code === 'KeyS') {
+    event.preventDefault()
+    void boardStore.manualSave()
+  }
+}
+
 // Lifecycle
 onMounted(async () => {
+  window.addEventListener('keydown', handleGlobalKeydown)
   const sessionId = route.params.sessionId as string | undefined
 
   if (sessionId) {
@@ -165,6 +205,7 @@ onMounted(async () => {
 onBeforeUnmount(async () => {
   // Flush any pending changes before leaving
   await boardStore.autosave()
+  window.removeEventListener('keydown', handleGlobalKeydown)
   document.removeEventListener('paste', handlePaste)
 })
 
@@ -243,6 +284,10 @@ async function handleExit(): Promise<void> {
   // Save before exit
   await boardStore.autosave()
   router.push('/dashboard')
+}
+
+function handleManualSave(): void {
+  void boardStore.manualSave()
 }
 
 // Paste handler for images

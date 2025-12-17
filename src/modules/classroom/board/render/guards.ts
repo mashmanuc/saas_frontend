@@ -11,6 +11,8 @@ import { recordExtraDraw } from '../perf/saveWindowMetrics'
 let extraDrawsDuringSave = 0
 let isGuardActive = false
 
+let originalAutoDrawEnabled: boolean | null = null
+
 // Internal Konva batching fields we need to flush before guarding
 type BatchAnim = {
   isRunning?: () => boolean
@@ -71,12 +73,6 @@ function detachActiveTransformers(stage: Konva.Stage): void {
         nodeIds: nodes.map((node) => node._id),
       })
     }
-
-    const uiLayer = transformer.getLayer()
-    if (uiLayer && uiLayer.listening()) {
-      uiLayer.listening(false)
-      disabledLayers.add(uiLayer)
-    }
   })
 }
 
@@ -108,8 +104,7 @@ interface OriginalLayerMethods {
 }
 const originalLayerMethods = new WeakMap<Konva.Layer, OriginalLayerMethods>()
 
-// Layers that had listening/hitGraph disabled
-const disabledLayers = new Set<Konva.Layer>()
+const WARN_LIMIT = 3
 
 /**
  * Start render guard - blocks all draw calls and disables hit detection
@@ -117,11 +112,25 @@ const disabledLayers = new Set<Konva.Layer>()
 export function startRenderGuard(stage: Konva.Stage | null): void {
   if (!stage || isGuardActive) return
   
-  isGuardActive = true
   extraDrawsDuringSave = 0
+
+  if (originalAutoDrawEnabled === null) {
+    originalAutoDrawEnabled = Konva.autoDrawEnabled
+  }
+  Konva.autoDrawEnabled = false
 
   // Drain pending Konva rAF flushes before proxying
   drainPendingBatch(stage, 'stage')
+
+  detachActiveTransformers(stage)
+
+  // Drain layers after detaching transformers to reduce any pending Transformer/UI layer flushes
+  const layers = stage.getLayers()
+  layers.forEach((layer: Konva.Layer) => {
+    drainPendingBatch(layer, 'layer')
+  })
+
+  isGuardActive = true
 
   // Proxy stage draw methods
   const stageDraw = stage.draw.bind(stage)
@@ -136,7 +145,8 @@ export function startRenderGuard(stage: Konva.Stage | null): void {
   stage.draw = () => {
     extraDrawsDuringSave++
     recordExtraDraw()
-    console.debug('[guards] Blocked stage.draw() during save', {
+    const log = extraDrawsDuringSave <= WARN_LIMIT ? console.warn : console.debug
+    log('[guards] Blocked stage.draw() during save', {
       stageId: stage._id,
       extraDrawsDuringSave,
       stack: new Error().stack,
@@ -146,7 +156,8 @@ export function startRenderGuard(stage: Konva.Stage | null): void {
   stage.batchDraw = () => {
     extraDrawsDuringSave++
     recordExtraDraw()
-    console.debug('[guards] Blocked stage.batchDraw() during save', {
+    const log = extraDrawsDuringSave <= WARN_LIMIT ? console.warn : console.debug
+    log('[guards] Blocked stage.batchDraw() during save', {
       stageId: stage._id,
       extraDrawsDuringSave,
       stack: new Error().stack,
@@ -155,10 +166,7 @@ export function startRenderGuard(stage: Konva.Stage | null): void {
   }
 
   // Disable listening and hit graph on ALL layers + proxy their draw methods
-  const layers = stage.getLayers()
   layers.forEach((layer: Konva.Layer) => {
-    drainPendingBatch(layer, 'layer')
-    detachActiveTransformers(stage)
     // Save original layer methods
     const layerDraw = layer.draw.bind(layer)
     const layerBatchDraw = layer.batchDraw.bind(layer)
@@ -171,28 +179,26 @@ export function startRenderGuard(stage: Konva.Stage | null): void {
     layer.draw = () => {
       extraDrawsDuringSave++
       recordExtraDraw()
-      console.debug('[guards] Blocked layer.draw() during save', {
+      const log = extraDrawsDuringSave <= WARN_LIMIT ? console.warn : console.debug
+      log('[guards] Blocked layer.draw() during save', {
         layerId: layer._id,
         layerName: layer.name?.(),
         extraDrawsDuringSave,
+        stack: new Error().stack,
       })
       return layer
     }
     layer.batchDraw = () => {
       extraDrawsDuringSave++
       recordExtraDraw()
-      console.debug('[guards] Blocked layer.batchDraw() during save', {
+      const log = extraDrawsDuringSave <= WARN_LIMIT ? console.warn : console.debug
+      log('[guards] Blocked layer.batchDraw() during save', {
         layerId: layer._id,
         layerName: layer.name?.(),
         extraDrawsDuringSave,
+        stack: new Error().stack,
       })
       return layer
-    }
-    
-    // Disable listening
-    if (layer.listening()) {
-      layer.listening(false)
-      disabledLayers.add(layer)
     }
   })
 }
@@ -204,6 +210,11 @@ export function stopRenderGuard(stage: Konva.Stage | null): void {
   if (!stage || !isGuardActive) return
 
   isGuardActive = false
+
+  if (originalAutoDrawEnabled !== null) {
+    Konva.autoDrawEnabled = originalAutoDrawEnabled
+    originalAutoDrawEnabled = null
+  }
 
   // Restore stage methods
   const original = originalMethods.get(stage)
@@ -224,11 +235,6 @@ export function stopRenderGuard(stage: Konva.Stage | null): void {
     }
   })
 
-  // Re-enable listening on layers
-  disabledLayers.forEach((layer) => {
-    layer.listening(true)
-  })
-  disabledLayers.clear()
   restoreTransformers()
 
   // Log if any extra draws were attempted

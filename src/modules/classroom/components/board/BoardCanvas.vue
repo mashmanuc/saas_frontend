@@ -113,9 +113,16 @@ import Konva from 'konva'
 import getStroke from 'perfect-freehand'
 import PerfHUD from './PerfHUD.vue'
 // F29-STEALTH: Import stealth autosave utilities
-import { setStageRef } from '../../board/state/boardStore'
+import {
+  setIsPointerInputActive,
+  setIsTextEditingActive,
+  setStableAutosaveStore,
+  setStageRef,
+  useBoardStore,
+} from '../../board/state/boardStore'
 import { initSnapshotOverlay, destroySnapshotOverlay } from '../../board/render/snapshotOverlay'
-import { recordPointerEvent } from '../../board/perf/saveWindowMetrics'
+import { isSaveWindowActive, recordPointerEvent } from '../../board/perf/saveWindowMetrics'
+import { isRenderGuardActive } from '../../board/render/guards'
 
 // Types
 interface Point {
@@ -205,6 +212,8 @@ const selectedNode = ref<Konva.Node | null>(null)
 const editingText = ref<Stroke | null>(null)
 const editingTextValue = ref('')
 const loadedImages = reactive<Map<string, HTMLImageElement>>(new Map())
+
+const strokeConfigCache = new Map<string, { sig: string; config: Record<string, unknown> }>()
 
 // F29-AS.26: Input pipeline guard - track if we're in active drawing mode
 // During active draw, we skip sync watchers to prevent Vue updates from triggering Konva redraws
@@ -610,6 +619,7 @@ function handleMouseDown(e: Konva.KonvaEventObject<MouseEvent | TouchEvent>): vo
 
   // Eraser mode - start erasing and set isDrawing for drag
   if (currentTool.value === 'eraser') {
+    setIsPointerInputActive(true)
     isDrawing.value = true
     handleErase(pos)
     return
@@ -622,6 +632,7 @@ function handleMouseDown(e: Konva.KonvaEventObject<MouseEvent | TouchEvent>): vo
   }
 
   // Start drawing
+  setIsPointerInputActive(true)
   isDrawing.value = true
   isActiveDrawing.value = true // F29-AS.26: Enable input pipeline guard
   currentPoints.value = [pos]
@@ -673,6 +684,9 @@ function handleMouseUp(): void {
   isDrawing.value = false
   isActiveDrawing.value = false // F29-AS.26: Disable input pipeline guard
 
+  // F29-STABLE: input ended, allow idle-save scheduling
+  setIsPointerInputActive(false)
+
   // F29-AS.19: Unfreeze hit graph after drawing
   freezeHitGraph(false)
 
@@ -704,12 +718,16 @@ function handleMouseUp(): void {
   currentPoints.value = []
   shapePreview.value = null
 
-  // Clear preview canvas after stroke is added
-  clearPreviewCanvas()
-  
-  // F29-FLICKER-FIX: No forced re-render needed
-  // Vue will detect props.strokes change via Pinia reactivity
-  // and incrementally add only the new <v-path> element
+  // Ensure the committed stroke is rendered before removing the preview overlay.
+  // Otherwise the user can see a brief gap where the preview disappears but
+  // the Konva layer hasn't painted the new node yet.
+  void nextTick(() => {
+    const stage = stageRef.value?.getStage?.()
+    stage?.batchDraw()
+    requestAnimationFrame(() => {
+      clearPreviewCanvas()
+    })
+  })
 }
 
 function handleErase(pos: Point): void {
@@ -758,6 +776,7 @@ function createTextAtPosition(pos: Point): void {
   console.log('[BoardCanvas] Setting editingText', stroke)
   editingText.value = stroke
   editingTextValue.value = ''
+  setIsTextEditingActive(true)
   
   console.log('[BoardCanvas] editingText.value after set:', editingText.value)
   
@@ -781,6 +800,7 @@ function createTextAtPosition(pos: Point): void {
 function handleTextEdit(stroke: Stroke): void {
   editingText.value = stroke
   editingTextValue.value = stroke.text || ''
+  setIsTextEditingActive(true)
   
   nextTick(() => {
     textareaRef.value?.focus()
@@ -805,6 +825,7 @@ function finishTextEdit(): void {
   
   editingText.value = null
   editingTextValue.value = ''
+  setIsTextEditingActive(false)
 }
 
 function handlePaste(e: ClipboardEvent): void {
@@ -888,6 +909,7 @@ function handleAssetDragEnd(asset: Asset, e: Konva.KonvaEventObject<DragEvent>):
 // Stroke selection and drag handlers
 function handleStrokeClick(stroke: Stroke, e: Konva.KonvaEventObject<MouseEvent>): void {
   if (currentTool.value !== 'select') return
+  if (isSaveWindowActive() || isRenderGuardActive()) return
   
   e.cancelBubble = true
   selectedNode.value = e.target
@@ -895,6 +917,7 @@ function handleStrokeClick(stroke: Stroke, e: Konva.KonvaEventObject<MouseEvent>
   
   // Attach transformer
   nextTick(() => {
+    if (isSaveWindowActive() || isRenderGuardActive()) return
     const transformer = transformerRef.value?.getNode()
     if (transformer && e.target) {
       transformer.nodes([e.target])
@@ -947,6 +970,7 @@ function handleAssetTransformEnd(asset: Asset, e: Konva.KonvaEventObject<Event>)
 // Asset click handler for selection
 function handleAssetClick(asset: Asset, e: Konva.KonvaEventObject<MouseEvent>): void {
   if (currentTool.value !== 'select') return
+  if (isSaveWindowActive() || isRenderGuardActive()) return
   
   e.cancelBubble = true
   selectedNode.value = e.target
@@ -954,6 +978,7 @@ function handleAssetClick(asset: Asset, e: Konva.KonvaEventObject<MouseEvent>): 
   
   // Attach transformer
   nextTick(() => {
+    if (isSaveWindowActive() || isRenderGuardActive()) return
     const transformer = transformerRef.value?.getNode()
     if (transformer && e.target) {
       transformer.nodes([e.target])
@@ -964,6 +989,15 @@ function handleAssetClick(asset: Asset, e: Konva.KonvaEventObject<MouseEvent>): 
 // Stroke configs
 function getStrokeConfig(stroke: Stroke): Record<string, unknown> {
   if (stroke.points.length < 2) return { visible: false }
+
+  const selectable = currentTool.value === 'select'
+  const last = stroke.points[stroke.points.length - 1]
+  const first = stroke.points[0]
+  const sig = `${stroke.tool}|${stroke.color}|${stroke.size}|${stroke.opacity}|${selectable ? 1 : 0}|${stroke.points.length}|${first?.x ?? 0},${first?.y ?? 0}|${last?.x ?? 0},${last?.y ?? 0}`
+  const cached = strokeConfigCache.get(stroke.id)
+  if (cached && cached.sig === sig) {
+    return cached.config
+  }
   
   const strokePath = getSvgPathFromStroke(
     getStroke(stroke.points.map(p => [p.x, p.y]), {
@@ -974,17 +1008,20 @@ function getStrokeConfig(stroke: Stroke): Record<string, unknown> {
     })
   )
   
-  return {
+  const config: Record<string, unknown> = {
     id: stroke.id,
     name: `stroke-${stroke.id}`,
     data: strokePath,
     fill: stroke.color,
     opacity: stroke.opacity,
     globalCompositeOperation: stroke.tool === 'highlighter' ? 'multiply' : 'source-over',
-    draggable: currentTool.value === 'select',
+    draggable: selectable,
     perfectDrawEnabled: false,
-    listening: currentTool.value === 'select',
+    listening: selectable,
   }
+
+  strokeConfigCache.set(stroke.id, { sig, config })
+  return config
 }
 
 function getLineConfig(stroke: Stroke): Record<string, unknown> {
@@ -1106,8 +1143,29 @@ function getSvgPathFromStroke(stroke: number[][]): string {
 }
 
 // Lifecycle
+let persistOnExitHandler: (() => void) | null = null
+let visibilityChangeHandler: (() => void) | null = null
+
 onMounted(() => {
   containerRef.value?.focus()
+
+  // F29-STABLE: Provide board store reference for module-level idle-save scheduler
+  const boardStore = useBoardStore()
+  setStableAutosaveStore(boardStore)
+
+  persistOnExitHandler = () => {
+    boardStore.persistOnExit()
+  }
+
+  visibilityChangeHandler = () => {
+    if (document.visibilityState === 'hidden') {
+      persistOnExitHandler?.()
+    }
+  }
+
+  window.addEventListener('pagehide', persistOnExitHandler)
+  document.addEventListener('visibilitychange', visibilityChangeHandler)
+
   // Register paste listener globally
   document.addEventListener('paste', handlePaste as EventListener)
 
@@ -1115,7 +1173,8 @@ onMounted(() => {
   // Keep Konva.pixelRatio = 1 to prevent line thickness "breathing" between frames/zoom
   // Scale is handled via Stage/viewport transform instead
   if (typeof Konva !== 'undefined') {
-    Konva.pixelRatio = 1
+    const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1
+    Konva.pixelRatio = Math.min(Math.max(dpr, 1), 2)
   }
 
   // F29-AS.36: Prewarm glyphs/fonts to avoid first-text freeze
@@ -1137,6 +1196,15 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  if (persistOnExitHandler) {
+    window.removeEventListener('pagehide', persistOnExitHandler)
+    persistOnExitHandler = null
+  }
+  if (visibilityChangeHandler) {
+    document.removeEventListener('visibilitychange', visibilityChangeHandler)
+    visibilityChangeHandler = null
+  }
+
   document.removeEventListener('paste', handlePaste as EventListener)
   clearPreviewCanvas()
   currentBitmap?.close?.()
@@ -1145,7 +1213,9 @@ onUnmounted(() => {
   previewCtx = null
   
   // F29-STEALTH: Cleanup
+  setIsPointerInputActive(false)
   setStageRef(null)
+  setStableAutosaveStore(null)
   destroySnapshotOverlay()
 })
 

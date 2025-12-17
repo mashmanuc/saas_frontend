@@ -235,6 +235,9 @@ function handleKeydown(event: KeyboardEvent): void {
 
 // Global keyboard shortcuts
 function handleGlobalKeydown(event: KeyboardEvent): void {
+  if (event.defaultPrevented) return
+  if (event.repeat) return
+
   // Ignore if typing in input
   if (
     event.target instanceof HTMLInputElement ||
@@ -244,6 +247,7 @@ function handleGlobalKeydown(event: KeyboardEvent): void {
   }
 
   const key = event.key.toUpperCase()
+  const code = event.code
 
   // Tool shortcuts
   const tool = tools.find((t) => t.shortcut === key)
@@ -254,7 +258,7 @@ function handleGlobalKeydown(event: KeyboardEvent): void {
   }
 
   // Undo/Redo
-  if ((event.ctrlKey || event.metaKey) && key === 'Z') {
+  if ((event.ctrlKey || event.metaKey) && code === 'KeyZ') {
     event.preventDefault()
     if (event.shiftKey) {
       emit('redo')
@@ -263,7 +267,7 @@ function handleGlobalKeydown(event: KeyboardEvent): void {
     }
   }
 
-  if ((event.ctrlKey || event.metaKey) && key === 'Y') {
+  if ((event.ctrlKey || event.metaKey) && code === 'KeyY') {
     event.preventDefault()
     emit('redo')
   }

@@ -355,22 +355,33 @@ function toggleFullscreen(): void {
 }
 
 function handleKeyDown(e: KeyboardEvent): void {
+  if (e.defaultPrevented) return
+  if (e.repeat) return
+
+  // Do not hijack typing
+  if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+    return
+  }
+
+  const ctrl = e.ctrlKey || e.metaKey
+  const code = e.code
+
   // Ctrl+Z - Undo
-  if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+  if (ctrl && code === 'KeyZ' && !e.shiftKey) {
     e.preventDefault()
     handleUndo()
     return
   }
 
   // Ctrl+Y or Ctrl+Shift+Z - Redo
-  if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+  if (ctrl && (code === 'KeyY' || (code === 'KeyZ' && e.shiftKey))) {
     e.preventDefault()
     handleRedo()
     return
   }
 
   // Ctrl+S - Save
-  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+  if (ctrl && code === 'KeyS') {
     e.preventDefault()
     boardStore.autosave()
     return
