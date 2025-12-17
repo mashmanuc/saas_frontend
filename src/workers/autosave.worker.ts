@@ -12,7 +12,8 @@ export interface SaveDiffMsg {
   type: 'SAVE_DIFF'
   sessionId: string
   rev: number
-  diff: unknown
+  ops: unknown
+  etag?: string | null
   token: string
   baseUrl: string
 }
@@ -21,7 +22,8 @@ export interface SaveFullMsg {
   type: 'SAVE_FULL'
   sessionId: string
   rev: number
-  page: unknown
+  state: unknown
+  etag?: string | null
   token: string
   baseUrl: string
 }
@@ -64,6 +66,13 @@ let backoffMs = 500
 const MAX_BACKOFF_MS = 20000
 const BACKOFF_MULTIPLIER = 2
 
+const DIFF_MAX_BYTES = 512 * 1024
+const STREAM_MAX_BYTES = 2 * 1024 * 1024
+
+function jsonSizeBytes(value: unknown): number {
+  return new TextEncoder().encode(JSON.stringify(value)).byteLength
+}
+
 // Backoff helper
 function getNextBackoff(): number {
   const current = backoffMs
@@ -101,19 +110,52 @@ self.onmessage = async (event: MessageEvent<SaveMsg>) => {
     const startTime = performance.now()
 
     try {
-      // Build payload
+      const v1Base = `${msg.baseUrl}/api/v1/solo/sessions/${msg.sessionId}`
+      const diffUrl = `${v1Base}/diff/`
+      const streamUrl = `${v1Base}/save-stream/`
+
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${msg.token}`,
+      }
+
+      const etag = (msg as SaveDiffMsg | SaveFullMsg).etag
+      if (etag) {
+        headers['If-Match'] = etag
+      } else {
+        headers['X-Rev'] = String(msg.rev)
+      }
+
       const payload = msg.type === 'SAVE_DIFF'
-        ? { diff: msg.diff }
-        : { state: { pages: [msg.page], currentPageIndex: 0 } }
+        ? { rev: msg.rev, ops: (msg as SaveDiffMsg).ops, client_ts: new Date().toISOString() }
+        : { state: (msg as SaveFullMsg).state }
+
+      const bytes = jsonSizeBytes(payload)
+
+      const shouldDiff = msg.type === 'SAVE_DIFF' && bytes <= DIFF_MAX_BYTES
+      const shouldStream = msg.type === 'SAVE_FULL' && bytes <= STREAM_MAX_BYTES
+
+      const url = shouldDiff ? diffUrl : streamUrl
+      const method = shouldDiff ? 'PATCH' : 'POST'
+
+      if (!shouldDiff && !shouldStream) {
+        const ackError: AckErrorMsg = {
+          type: 'ACK_ERROR',
+          sessionId: msg.sessionId,
+          rev: msg.rev,
+          code: 413,
+          retriable: false,
+          message: 'HTTP 413',
+        }
+        self.postMessage(ackError)
+        return
+      }
 
       // Use scheduler.postTask if available for background priority
       const doFetch = async () => {
-        const response = await fetch(`${msg.baseUrl}/api/solo/sessions/${msg.sessionId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${msg.token}`,
-          },
+        const response = await fetch(url, {
+          method,
+          headers,
           body: JSON.stringify(payload),
           signal: currentController?.signal,
           keepalive: true,

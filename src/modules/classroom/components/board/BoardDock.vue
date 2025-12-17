@@ -143,8 +143,8 @@ function handleStrokeUpdate(stroke: Stroke): void {
   emitStateChange()
 }
 
-function handleAssetAdd(asset: Asset): void {
-  emit('event', 'asset_add', { asset })
+function handleAssetAdd(asset: Asset, file?: File): void {
+  emit('event', 'asset_add', { asset, file })
   emitStateChange()
 }
 

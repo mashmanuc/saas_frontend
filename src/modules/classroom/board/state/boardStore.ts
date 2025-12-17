@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { soloApi } from '@/modules/solo/api/soloApi'
-import { notifyError, notifySuccess } from '@/utils/notify'
+import { notifyError, notifySuccess, notifyWarning } from '@/utils/notify'
 import { i18n } from '@/i18n'
 import type { SoloSession } from '@/modules/solo/types/solo'
 import { useBoardSyncStore } from './boardSyncStore'
@@ -22,6 +22,7 @@ import {
   hideSnapshotOverlay,
 } from '../render/snapshotOverlay'
 import type Konva from 'konva'
+import { saveCoordinator, SaveCoordinatorError, type DiffOp } from './saveCoordinator'
 
 const translate = (key: string, params?: Record<string, unknown>) => {
   try {
@@ -71,6 +72,125 @@ let _stableIdleSaveTimer: number | null = null
 
 // F29-STABLE: store reference for module-level schedulers (set once from component)
 let _stableAutosaveStore: ReturnType<typeof useBoardStore> | null = null
+
+// v0.30: diff ops buffer for Save-Coordinator
+let _pendingOps: DiffOp[] = []
+let _forceStreamSave = false
+
+const AUTOSAVE_PREF_KEY = 'solo.autosave_beta.enabled'
+
+function safeLocalStorageGet(key: string): string | null {
+  try {
+    return window.localStorage.getItem(key)
+  } catch {
+    return null
+  }
+}
+
+function safeLocalStorageSet(key: string, value: string): void {
+  try {
+    window.localStorage.setItem(key, value)
+  } catch {
+    // ignore
+  }
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function parseBackoffMs(headers: Record<string, unknown> | undefined | null): number | null {
+  const h = (headers || {}) as Record<string, unknown>
+  const backoffRaw = h['x-backoff-ms'] ?? h['X-Backoff-Ms']
+  if (typeof backoffRaw === 'string') {
+    const n = Number(backoffRaw)
+    if (Number.isFinite(n) && n > 0) return n
+  }
+  const retryAfterRaw = h['retry-after'] ?? h['Retry-After']
+  if (typeof retryAfterRaw === 'string') {
+    const n = Number(retryAfterRaw)
+    if (Number.isFinite(n) && n > 0) return Math.round(n * 1000)
+  }
+  return null
+}
+
+function guessExtFromContentType(contentType: string): 'png' | 'jpg' | 'jpeg' | 'webp' | null {
+  if (contentType === 'image/png') return 'png'
+  if (contentType === 'image/jpeg') return 'jpeg'
+  if (contentType === 'image/webp') return 'webp'
+  return null
+}
+
+async function downscaleImageToBlob(params: {
+  file: File
+  maxSide: number
+  quality: number
+}): Promise<{ blob: Blob; contentType: 'image/png' | 'image/jpeg' | 'image/webp'; width: number; height: number }> {
+  const { file, maxSide, quality } = params
+
+  const objectUrl = URL.createObjectURL(file)
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const i = new Image()
+      i.onload = () => resolve(i)
+      i.onerror = () => reject(new Error('image_load_failed'))
+      i.src = objectUrl
+    })
+
+    const srcW = img.width
+    const srcH = img.height
+
+    const scale = Math.min(1, maxSide / Math.max(srcW, srcH))
+    const outW = Math.max(1, Math.round(srcW * scale))
+    const outH = Math.max(1, Math.round(srcH * scale))
+
+    const canvas = document.createElement('canvas')
+    canvas.width = outW
+    canvas.height = outH
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('no_canvas_context')
+    ctx.drawImage(img, 0, 0, outW, outH)
+
+    const originalType = file.type as 'image/png' | 'image/jpeg' | 'image/webp'
+    let targetType: 'image/png' | 'image/jpeg' | 'image/webp' = originalType === 'image/png' ? 'image/png' : 'image/webp'
+
+    if (targetType === 'image/webp') {
+      const test = canvas.toDataURL('image/webp')
+      if (!test.startsWith('data:image/webp')) {
+        targetType = 'image/jpeg'
+      }
+    }
+
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(
+        (b) => {
+          if (!b) reject(new Error('toBlob_failed'))
+          else resolve(b)
+        },
+        targetType,
+        targetType === 'image/png' ? undefined : quality
+      )
+    })
+
+    return { blob, contentType: targetType, width: outW, height: outH }
+  } finally {
+    try {
+      URL.revokeObjectURL(objectUrl)
+    } catch {
+      // ignore
+    }
+  }
+}
+
+function enqueueOp(op: DiffOp): void {
+  _pendingOps.push(op)
+}
+
+function drainOps(): DiffOp[] {
+  const ops = _pendingOps
+  _pendingOps = []
+  return ops
+}
 
 export function setStableAutosaveStore(store: ReturnType<typeof useBoardStore> | null): void {
   _stableAutosaveStore = store
@@ -164,6 +284,7 @@ export interface BoardState {
   sessionId: string | null
   sessionName: string
   ownerId: string | null
+  autosaveEnabled: boolean
   pages: Page[]
   currentPageIndex: number
   currentTool: string
@@ -181,6 +302,8 @@ export const useBoardStore = defineStore('board', {
     sessionId: null,
     sessionName: 'Untitled',
     ownerId: null,
+
+    autosaveEnabled: true,
 
     // Board data - strokes/assets are inside pages
     pages: [{ id: 'page-1', name: 'Page 1', strokes: [], assets: [] }],
@@ -228,6 +351,153 @@ export const useBoardStore = defineStore('board', {
   },
 
   actions: {
+    async uploadImageAsset(assetId: string, file: File): Promise<void> {
+      if (!this.sessionId) return
+
+      const allowed = new Set(['image/png', 'image/jpeg', 'image/webp'])
+      if (!allowed.has(file.type)) {
+        notifyError('Формат зображення не підтримується')
+        return
+      }
+
+      const SOFT_WARN_BYTES = 5 * 1024 * 1024
+      const HARD_MAX_BYTES = 8 * 1024 * 1024
+      if (file.size > SOFT_WARN_BYTES) {
+        notifyWarning('Зображення велике. Може знадобитися стиснення')
+      }
+
+      const processed = await downscaleImageToBlob({
+        file,
+        maxSide: 1920,
+        quality: 0.82,
+      })
+
+      if (processed.blob.size > HARD_MAX_BYTES) {
+        notifyError('Файл завеликий, зменшіть або оберіть легший')
+        return
+      }
+
+      const ext = guessExtFromContentType(processed.contentType)
+      if (!ext) {
+        notifyError('Формат зображення не підтримується')
+        return
+      }
+
+      const applyCdnUrl = (cdnUrl: string): void => {
+        const page = this.pages[this.currentPageIndex]
+        const current = page?.assets?.find((a: unknown) => (a as { id: string }).id === assetId) as
+          | (Record<string, unknown> & { src?: string })
+          | undefined
+        const prevSrc = current?.src
+        if (typeof prevSrc === 'string' && prevSrc.startsWith('blob:')) {
+          try {
+            URL.revokeObjectURL(prevSrc)
+          } catch {
+            // ignore
+          }
+        }
+
+        const patch = { ...(current || {}), id: assetId, src: cdnUrl }
+        this.updateAsset(patch, { skipHistory: true })
+      }
+
+      const doPresignAndPut = async (): Promise<string> => {
+        const presign = await soloApi.presignUpload({
+          session_id: this.sessionId as string,
+          content_type: processed.contentType,
+          size_bytes: processed.blob.size,
+          ext,
+        })
+
+        if (presign.max_bytes && processed.blob.size > presign.max_bytes) {
+          const err = Object.assign(new Error('payload_too_large'), {
+            status: 413,
+            data: { error: 'payload_too_large', limit: presign.max_bytes },
+          })
+          throw err
+        }
+
+        const putRes = await fetch(presign.upload_url, {
+          method: presign.method,
+          headers: presign.headers,
+          body: processed.blob,
+        })
+
+        if (!putRes.ok) {
+          const err = Object.assign(new Error('put_failed'), { status: putRes.status, _kind: 'put' })
+          throw err
+        }
+
+        return presign.cdn_url
+      }
+
+      try {
+        const cdnUrl = await doPresignAndPut()
+        applyCdnUrl(cdnUrl)
+      } catch (err: unknown) {
+        const e = err as any
+        const status: number | undefined = e?.response?.status ?? e?.status
+        const data: any = e?.response?.data ?? e?.data
+        const headers: Record<string, unknown> | undefined = e?.response?.headers
+
+        if (status === 403 && data?.error === 'quota_exceeded') {
+          notifyError('Перевищено квоту, звільніть місце або оновіть план')
+          return
+        }
+
+        if (status === 413 && data?.error === 'payload_too_large') {
+          notifyError('Файл завеликий, зменшіть або оберіть легший')
+          return
+        }
+
+        if (status === 415 && data?.error === 'unsupported_media_type') {
+          notifyError('Формат зображення не підтримується')
+          return
+        }
+
+        if (status === 429) {
+          const backoffMs = parseBackoffMs(headers) ?? 1000
+          notifyWarning('Обмеження запитів. Спробуємо пізніше')
+          await sleep(backoffMs)
+          try {
+            const cdnUrl = await doPresignAndPut()
+            applyCdnUrl(cdnUrl)
+          } catch {
+            return
+          }
+          return
+        }
+
+        if (e?._kind === 'put') {
+          notifyError('Не вдалося завантажити зображення')
+          return
+        }
+
+        // eslint-disable-next-line no-console
+        console.error('[BoardStore] uploadImageAsset failed', err)
+      }
+    },
+    initAutosavePrefs(): void {
+      const raw = safeLocalStorageGet(AUTOSAVE_PREF_KEY)
+      if (raw === null) return
+      this.autosaveEnabled = raw === '1'
+    },
+
+    setAutosaveEnabled(enabled: boolean): void {
+      this.autosaveEnabled = enabled
+      safeLocalStorageSet(AUTOSAVE_PREF_KEY, enabled ? '1' : '0')
+
+      if (!enabled) {
+        if (_autosaveTimer) {
+          clearTimeout(_autosaveTimer)
+          _autosaveTimer = null
+        }
+        clearStableIdleSaveTimer()
+      } else {
+        scheduleStableIdleSave()
+      }
+    },
+
     // ============ Session Management ============
 
     /**
@@ -244,6 +514,15 @@ export const useBoardStore = defineStore('board', {
         syncStore.setStatus('saved')
         syncStore.setLastSaved(savedAt)
         syncStore.setDirty(false)
+        // v0.30: best-effort ETag resync for diff-save
+        try {
+          const resync = await saveCoordinator.resyncSession(sessionId)
+          if (resync.etag) {
+            syncStore.setEtag(resync.etag)
+          }
+        } catch {
+          // Ignore - will fallback to X-Rev until ETag is available
+        }
         console.log('[ui.session_loaded]', { sessionId })
         return true
       } catch (error) {
@@ -310,21 +589,85 @@ export const useBoardStore = defineStore('board', {
       }
 
       try {
-        const session = await soloApi.updateSession(this.sessionId, {
-          name: this.sessionName,
-          state: this.serializedState as { pages: unknown[] },
+        const ops = _forceStreamSave ? [] : drainOps()
+        // Coordinator will route by size using TextEncoder (uncompressed JSON).
+        // Local force flag still switches to stream by skipping ops.
+        const shouldStream = _forceStreamSave
+
+        const statePayload = { state: this.serializedState as Record<string, unknown> }
+        const stateBytes = new TextEncoder().encode(JSON.stringify(statePayload)).byteLength
+        if (stateBytes > SOLO_SAVE_STREAM_MAX_BYTES) {
+          notifyError(`Payload завеликий: ліміт ${SOLO_SAVE_STREAM_MAX_BYTES} для save-stream. ID: -`)
+          throw new SaveCoordinatorError(413, 'save-stream', {
+            limit: SOLO_SAVE_STREAM_MAX_BYTES,
+            endpoint: 'save-stream',
+          })
+        }
+
+        const result = await saveCoordinator.save({
+          sessionId: this.sessionId,
+          etag: syncStore.etag,
+          rev: syncStore.rev,
+          ops: shouldStream ? [] : ops,
+          state: this.serializedState as Record<string, unknown>,
+          extraDrawsDuringSave: getExtraDrawsDuringSave(),
         })
 
-        // Update syncStore only
-        const newSavedAt = new Date(session.updated_at)
+        _forceStreamSave = false
+        if (result.etag) {
+          syncStore.setEtag(result.etag)
+        }
+        if (typeof result.nextRev === 'number') {
+          syncStore.setRev(result.nextRev)
+        }
+
         syncStore.setStatus('saved')
-        syncStore.setLastSaved(newSavedAt)
+        syncStore.setLastSaved(new Date(result.serverTs))
         syncStore.setDirty(false)
         syncStore.setError(null)
 
         console.log('[ui.session_saved]', { sessionId: this.sessionId })
         return true
       } catch (error) {
+        // Re-queue drained ops on failure
+        if (!_forceStreamSave) {
+          _pendingSave = true
+        }
+
+        if (error instanceof SaveCoordinatorError) {
+          const payload = error.payload || {}
+
+          if (error.code === 413) {
+            notifyError(`Payload завеликий: ліміт ${payload.limit ?? '-'} для ${payload.endpoint ?? error.endpoint}. ID: ${payload.request_id ?? '-'}`)
+          } else if (error.code === 422) {
+            notifyError('Невалідні операції')
+            // details → console/telemetry (telemetry is handled in coordinator)
+            // eslint-disable-next-line no-console
+            console.error('[BoardStore] invalid ops', payload)
+          } else if (error.code === 429) {
+            notifyWarning('Обмеження запитів. Спробуємо пізніше')
+            const backoffMs = (payload.backoff_ms as number) || 1000
+            _pendingSave = true
+            if (_autosaveTimer) {
+              clearTimeout(_autosaveTimer)
+              _autosaveTimer = null
+            }
+            _autosaveTimer = window.setTimeout(() => {
+              this.scheduleIdleSave()
+            }, backoffMs)
+          } else if (error.code === 412 || error.code === 409) {
+            // silent resync + single retry is handled in coordinator; if still here, do soft resync.
+            try {
+              const resync = await saveCoordinator.resyncSession(this.sessionId)
+              if (resync.etag) syncStore.setEtag(resync.etag)
+              if (typeof resync.rev === 'number') syncStore.setRev(resync.rev)
+            } catch (e) {
+              // eslint-disable-next-line no-console
+              console.warn('[BoardStore] softResync failed', e)
+            }
+          }
+        }
+
         syncStore.setStatus('error')
         syncStore.setError(translate('solo.sync.saveError'))
         console.error('[BoardStore] updateSession failed:', error)
@@ -429,64 +772,18 @@ export const useBoardStore = defineStore('board', {
     persistOnExit(): void {
       if (!this.sessionId) return
 
-      const base = `/api/v1/solo/sessions/${this.sessionId}`
-      const beaconUrl = `${base}/beacon/`
-      const saveStreamUrl = `${base}/save-stream/`
+      const syncStore = useBoardSyncStore()
 
-      const statePayload = JSON.stringify({ state: this.serializedState })
-      const stateBytes = new Blob([statePayload]).size
-
-      const heartbeatPayload = JSON.stringify({ heartbeat: true })
-
-      // Small payload: try beacon with state
-      if (stateBytes <= SOLO_BEACON_MAX_BYTES) {
-        try {
-          const ok = navigator.sendBeacon(
-            beaconUrl,
-            new Blob([statePayload], { type: 'application/json' })
-          )
-          logAutosaveDebug('persistOnExit.beaconState', { ok, bytes: stateBytes })
-          return
-        } catch (error) {
-          logAutosaveDebug('persistOnExit.beaconStateError', { error })
-        }
+      // v0.30: beacon is telemetry/heartbeat only (no state)
+      const heartbeatPayload = {
+        type: 'heartbeat',
+        lastLocalRev: syncStore.rev,
+        version: (import.meta.env.VITE_APP_VERSION as string) || 'unknown',
       }
-
-      // Medium payload: try keepalive fetch to save-stream
-      if (stateBytes <= SOLO_SAVE_STREAM_MAX_BYTES) {
-        try {
-          void fetch(saveStreamUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ state: this.serializedState }),
-            keepalive: true,
-            credentials: 'include',
-          })
-          logAutosaveDebug('persistOnExit.saveStreamKeepalive', { bytes: stateBytes })
-          return
-        } catch (error) {
-          logAutosaveDebug('persistOnExit.saveStreamKeepaliveError', { error })
-        }
-      }
-
-      // Fallback: persist locally + heartbeat beacon
-      try {
-        const key = `board.persistOnExit.${this.sessionId}`
-        localStorage.setItem(key, statePayload)
-        logAutosaveDebug('persistOnExit.localStorage', { key, bytes: stateBytes })
-      } catch (error) {
-        logAutosaveDebug('persistOnExit.localStorageError', { error })
-      }
-
-      try {
-        const ok = navigator.sendBeacon(
-          beaconUrl,
-          new Blob([heartbeatPayload], { type: 'application/json' })
-        )
-        logAutosaveDebug('persistOnExit.beaconHeartbeat', { ok })
-      } catch (error) {
-        logAutosaveDebug('persistOnExit.beaconHeartbeatError', { error })
-      }
+      const body = JSON.stringify(heartbeatPayload)
+      const bytes = new TextEncoder().encode(body).byteLength
+      if (bytes > SOLO_BEACON_MAX_BYTES) return
+      void saveCoordinator.beaconTelemetry(this.sessionId, heartbeatPayload)
     },
 
     /**
@@ -521,6 +818,11 @@ export const useBoardStore = defineStore('board', {
         pendingSave: _pendingSave,
         isDirty: syncStore.isDirty,
       })
+
+      if (!this.autosaveEnabled) {
+        logAutosaveDebug('markDirty.autosaveDisabled', { seq: _markDirtySeq })
+        return
+      }
 
       // Stable Board: while any input gate is active, do not schedule autosave timers.
       // We'll save after input ends (idle>=10s or explicit finish).
@@ -578,6 +880,8 @@ export const useBoardStore = defineStore('board', {
     scheduleIdleSave(): void {
       const syncStore = useBoardSyncStore()
       if (!_pendingSave || !syncStore.isDirty) return
+
+      if (!this.autosaveEnabled) return
       logAutosaveDebug('scheduleIdleSave.start', {
         pendingSave: _pendingSave,
         isDirty: syncStore.isDirty,
@@ -621,6 +925,11 @@ export const useBoardStore = defineStore('board', {
     async autosave(): Promise<void> {
       const syncStore = useBoardSyncStore()
       if (!syncStore.isDirty) return
+
+      if (!this.autosaveEnabled) {
+        _pendingSave = true
+        return
+      }
 
       // Defer autosave while text editing is active to avoid interrupting typing
       if (_isTextEditingActive) {
@@ -759,12 +1068,18 @@ export const useBoardStore = defineStore('board', {
         ...page,
         strokes: [...page.strokes, stroke]
       }
-      
+
+      // v0.30: diff op
+      try {
+        const value = stroke as Record<string, unknown>
+        enqueueOp({ op: 'add', kind: 'stroke', page_id: page.id, value })
+      } catch {
+        _forceStreamSave = true
+      }
       this.markDirty()
     },
 
     undo(): void {
-      if (!this.canUndo) return
       const pageIndex = this.currentPageIndex
       const page = this.pages[pageIndex]
       if (!page) return
@@ -773,6 +1088,7 @@ export const useBoardStore = defineStore('board', {
         | { type: 'addStroke'; stroke: unknown; index: number }
         | { type: 'deleteStroke'; stroke: unknown; index: number }
         | { type: 'updateStroke'; prev: unknown; next: unknown; index: number }
+        | { type: 'updateAsset'; prev: unknown; next: unknown; index: number }
         | { type: 'clearBoard'; prevStrokes: unknown[]; prevAssets: unknown[] }
 
       if (!action) return
@@ -791,15 +1107,23 @@ export const useBoardStore = defineStore('board', {
         nextStrokes[action.index] = action.prev
         this.pages[pageIndex] = { ...page, strokes: nextStrokes }
         this.redoStack.push(action)
+      } else if (action.type === 'updateAsset') {
+        const nextAssets = [...page.assets]
+        nextAssets[action.index] = action.prev
+        this.pages[pageIndex] = { ...page, assets: nextAssets }
+        this.redoStack.push(action)
       } else if (action.type === 'clearBoard') {
         this.pages[pageIndex] = { ...page, strokes: action.prevStrokes, assets: action.prevAssets }
         this.redoStack.push(action)
       }
+
+      // Undo changes are easiest/safer to persist via stream
+      _pendingOps = []
+      _forceStreamSave = true
       this.markDirty()
     },
 
     redo(): void {
-      if (!this.canRedo) return
       const pageIndex = this.currentPageIndex
       const page = this.pages[pageIndex]
       if (!page) return
@@ -808,27 +1132,37 @@ export const useBoardStore = defineStore('board', {
         | { type: 'addStroke'; stroke: unknown; index: number }
         | { type: 'deleteStroke'; stroke: unknown; index: number }
         | { type: 'updateStroke'; prev: unknown; next: unknown; index: number }
+        | { type: 'updateAsset'; prev: unknown; next: unknown; index: number }
         | { type: 'clearBoard'; prevStrokes: unknown[]; prevAssets: unknown[] }
 
       if (!action) return
 
       if (action.type === 'addStroke') {
-        this.undoStack.push(action)
         const nextStrokes = [...page.strokes]
         nextStrokes.splice(action.index, 0, action.stroke)
         this.pages[pageIndex] = { ...page, strokes: nextStrokes }
+        this.undoStack.push(action)
       } else if (action.type === 'deleteStroke') {
+        const nextStrokes = page.strokes.filter((_, i) => i !== action.index)
+        this.pages[pageIndex] = { ...page, strokes: nextStrokes }
         this.undoStack.push(action)
-        this.pages[pageIndex] = { ...page, strokes: page.strokes.filter((_, i) => i !== action.index) }
       } else if (action.type === 'updateStroke') {
-        this.undoStack.push(action)
         const nextStrokes = [...page.strokes]
         nextStrokes[action.index] = action.next
         this.pages[pageIndex] = { ...page, strokes: nextStrokes }
-      } else if (action.type === 'clearBoard') {
         this.undoStack.push(action)
+      } else if (action.type === 'updateAsset') {
+        const nextAssets = [...page.assets]
+        nextAssets[action.index] = action.next
+        this.pages[pageIndex] = { ...page, assets: nextAssets }
+        this.undoStack.push(action)
+      } else if (action.type === 'clearBoard') {
         this.pages[pageIndex] = { ...page, strokes: [], assets: [] }
+        this.undoStack.push(action)
       }
+
+      _pendingOps = []
+      _forceStreamSave = true
       this.markDirty()
     },
 
@@ -840,22 +1174,49 @@ export const useBoardStore = defineStore('board', {
       this.redoStack = []
       // Replace page to trigger reactivity
       this.pages[pageIndex] = { ...page, strokes: [], assets: [] }
+
+      // v0.30: clear is cheaper/safer as stream save
+      _pendingOps = []
+      _forceStreamSave = true
+      this.markDirty()
+    },
+
+    goToPage(index: number): void {
+      if (!Number.isFinite(index)) return
+      const next = Math.max(0, Math.min(this.pages.length - 1, index))
+      this.currentPageIndex = next
+    },
+
+    addPage(): void {
+      const id = `page-${this.pages.length + 1}`
+      this.pages = [...this.pages, { id, name: `Page ${this.pages.length + 1}`, strokes: [], assets: [] }]
+      this.currentPageIndex = this.pages.length - 1
       this.markDirty()
     },
     
-    updateStroke(stroke: unknown): void {
+    updateStroke(updatedStroke: unknown): void {
       const pageIndex = this.currentPageIndex
       const page = this.pages[pageIndex]
       if (!page) return
-      const strokeObj = stroke as { id: string }
-      const index = page.strokes.findIndex((s: unknown) => (s as { id: string }).id === strokeObj.id)
-      if (index !== -1) {
-        this.undoStack.push({ type: 'updateStroke', prev: page.strokes[index], next: stroke, index })
+
+      const strokeObj = updatedStroke as { id: string }
+      const idx = page.strokes.findIndex((s: unknown) => (s as { id: string }).id === strokeObj.id)
+      if (idx !== -1) {
+        this.undoStack.push({ type: 'updateStroke', prev: page.strokes[idx], next: updatedStroke, index: idx })
         this.redoStack = []
         // Replace page with new strokes array to trigger reactivity
         const newStrokes = [...page.strokes]
-        newStrokes[index] = stroke
+        newStrokes[idx] = updatedStroke
         this.pages[pageIndex] = { ...page, strokes: newStrokes }
+
+        // v0.30: diff op
+        try {
+          const patch = updatedStroke as Record<string, unknown>
+          const id = (patch.id as string) || strokeObj.id
+          enqueueOp({ op: 'update', kind: 'stroke', id, page_id: page.id, patch })
+        } catch {
+          _forceStreamSave = true
+        }
         this.markDirty()
       }
     },
@@ -864,21 +1225,24 @@ export const useBoardStore = defineStore('board', {
       const pageIndex = this.currentPageIndex
       const page = this.pages[pageIndex]
       if (!page) return
-      const index = page.strokes.findIndex((s: unknown) => (s as { id: string }).id === strokeId)
-      if (index !== -1) {
-        this.undoStack.push({ type: 'deleteStroke', stroke: page.strokes[index], index })
+
+      const idx = page.strokes.findIndex((s: unknown) => (s as { id: string }).id === strokeId)
+      if (idx !== -1) {
+        this.undoStack.push({ type: 'deleteStroke', stroke: page.strokes[idx], index: idx })
         this.redoStack = []
         // Replace page with filtered strokes to trigger reactivity
-        this.pages[pageIndex] = { ...page, strokes: page.strokes.filter((_, i) => i !== index) }
+        this.pages[pageIndex] = { ...page, strokes: page.strokes.filter((_, i) => i !== idx) }
+
+        // v0.30: diff op
+        try {
+          enqueueOp({ op: 'remove', kind: 'stroke', id: strokeId, page_id: page.id })
+        } catch {
+          _forceStreamSave = true
+        }
         this.markDirty()
       }
     },
 
-    // ============ Asset Management (Paste) ============
-
-    /**
-     * Add image asset from paste event
-     */
     addImageAsset(src: string, width: number, height: number): void {
       const pageIndex = this.currentPageIndex
       const page = this.pages[pageIndex]
@@ -890,45 +1254,69 @@ export const useBoardStore = defineStore('board', {
         src,
         x: 100,
         y: 100,
-        width,
-        height,
+        w: width,
+        h: height,
         zIndex: page.assets.length + 1,
         locked: false,
       }
 
       // Replace page to trigger reactivity
       this.pages[pageIndex] = { ...page, assets: [...page.assets, asset] }
+
+      // v0.30: diff op
+      try {
+        const value = asset as Record<string, unknown>
+        enqueueOp({ op: 'add', kind: 'asset', page_id: page.id, value })
+      } catch {
+        _forceStreamSave = true
+      }
       this.markDirty()
       console.log('[ui.asset_added]', { type: 'image' })
     },
     
-    /**
-     * Add asset (from BoardCanvas paste)
-     */
     addAsset(asset: unknown): void {
       const pageIndex = this.currentPageIndex
       const page = this.pages[pageIndex]
       if (!page) return
       // Replace page to trigger reactivity
       this.pages[pageIndex] = { ...page, assets: [...page.assets, asset] }
+
+      // v0.30: diff op
+      try {
+        const value = asset as Record<string, unknown>
+        enqueueOp({ op: 'add', kind: 'asset', page_id: page.id, value })
+      } catch {
+        _forceStreamSave = true
+      }
       this.markDirty()
       console.log('[ui.asset_added]', { assetId: (asset as { id: string }).id })
     },
     
-    /**
-     * Update asset position/size
-     */
-    updateAsset(asset: unknown): void {
+    updateAsset(asset: unknown, opts?: { skipHistory?: boolean }): void {
       const pageIndex = this.currentPageIndex
       const page = this.pages[pageIndex]
       if (!page) return
       const assetData = asset as { id: string }
       const index = page.assets.findIndex((a: unknown) => (a as { id: string }).id === assetData.id)
       if (index !== -1) {
+        if (!opts?.skipHistory) {
+          const prev = page.assets[index]
+          this.undoStack.push({ type: 'updateAsset', prev, next: asset, index })
+          this.redoStack = []
+        }
         const newAssets = [...page.assets]
         newAssets[index] = asset
         // Replace page to trigger reactivity
         this.pages[pageIndex] = { ...page, assets: newAssets }
+
+        // v0.30: diff op
+        try {
+          const patch = asset as Record<string, unknown>
+          const id = (patch.id as string) || assetData.id
+          enqueueOp({ op: 'update', kind: 'asset', id, page_id: page.id, patch })
+        } catch {
+          _forceStreamSave = true
+        }
         this.markDirty()
       }
     },
@@ -941,43 +1329,19 @@ export const useBoardStore = defineStore('board', {
       if (index !== -1) {
         // Replace page to trigger reactivity
         this.pages[pageIndex] = { ...page, assets: page.assets.filter((_, i) => i !== index) }
+
+        // v0.30: diff op
+        try {
+          const id = (page.assets[index] as Record<string, unknown>).id as string
+          enqueueOp({ op: 'remove', kind: 'asset', id, page_id: page.id })
+        } catch {
+          _forceStreamSave = true
+        }
         this.markDirty()
         console.log('[ui.asset_deleted]', { assetId })
       }
     },
-    
-    // ============ Page Management ============
-    
-    addPage(): void {
-      const newPage: Page = {
-        id: `page-${Date.now()}`,
-        name: `Page ${this.pages.length + 1}`,
-        strokes: [],
-        assets: [],
-      }
-      this.pages.push(newPage)
-      this.currentPageIndex = this.pages.length - 1
-      this.undoStack = []
-      this.redoStack = []
-      this.markDirty()
-    },
-    
-    goToPage(index: number): void {
-      if (index >= 0 && index < this.pages.length) {
-        this.currentPageIndex = index
-        this.undoStack = []
-        this.redoStack = []
-      }
-    },
-    
-    deletePage(index: number): void {
-      if (this.pages.length <= 1) return // Keep at least one page
-      this.pages.splice(index, 1)
-      if (this.currentPageIndex >= this.pages.length) {
-        this.currentPageIndex = this.pages.length - 1
-      }
-      this.markDirty()
-    },
+
 
     // ============ Tool State ============
 

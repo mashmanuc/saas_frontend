@@ -10,6 +10,7 @@ export interface BoardSyncState {
   exportJobId: string | null
   // F29-STEALTH: New fields for worker-based autosave
   rev: number
+  etag: string | null
   pendingCount: number
   networkRtt: number
   isQuiet: boolean // true = opacity-only UI updates
@@ -25,6 +26,7 @@ export const useBoardSyncStore = defineStore('board-sync', {
     exportJobId: null,
     // F29-STEALTH: Worker-based autosave fields
     rev: 0,
+    etag: null,
     pendingCount: 0,
     networkRtt: 0,
     isQuiet: true, // Default to quiet mode
@@ -51,6 +53,9 @@ export const useBoardSyncStore = defineStore('board-sync', {
     // F29-STEALTH: New actions for worker-based autosave
     setRev(rev: number): void {
       this.rev = rev
+    },
+    setEtag(etag: string | null): void {
+      this.etag = etag
     },
     incrementPending(): void {
       this.pendingCount++

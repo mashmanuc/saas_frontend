@@ -300,16 +300,32 @@ function handlePaste(event: ClipboardEvent): void {
       event.preventDefault()
       const blob = item.getAsFile()
       if (blob) {
-        const reader = new FileReader()
-        reader.onload = (e) => {
-          const src = e.target?.result as string
-          const img = new Image()
-          img.onload = () => {
-            boardStore.addImageAsset(src, img.width, img.height)
+        const objectUrl = URL.createObjectURL(blob)
+        const img = new Image()
+        img.onload = () => {
+          const asset = {
+            id: `asset-${Date.now()}`,
+            type: 'image',
+            src: objectUrl,
+            x: 100,
+            y: 100,
+            width: img.width,
+            height: img.height,
+            zIndex: (boardStore.currentAssets?.length || 0) + 1,
+            locked: false,
           }
-          img.src = src
+
+          boardStore.addAsset(asset)
+          void boardStore.uploadImageAsset(asset.id, blob)
         }
-        reader.readAsDataURL(blob)
+        img.onerror = () => {
+          try {
+            URL.revokeObjectURL(objectUrl)
+          } catch {
+            // ignore
+          }
+        }
+        img.src = objectUrl
       }
       break
     }

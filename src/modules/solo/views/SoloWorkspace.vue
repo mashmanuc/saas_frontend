@@ -24,6 +24,10 @@
       </div>
 
       <div class="solo-workspace__actions">
+        <label class="autosave-toggle">
+          <input type="checkbox" v-model="autosaveEnabled" />
+          AutoSave (β)
+        </label>
         <button class="action-btn" :title="$t('classroom.tools.undo')" @click="handleUndo">
           <IconUndo />
         </button>
@@ -134,6 +138,11 @@ const route = useRoute()
 const boardStore = useBoardStore()
 const syncStore = useBoardSyncStore()
 
+const autosaveEnabled = computed({
+  get: () => boardStore.autosaveEnabled,
+  set: (v: boolean) => boardStore.setAutosaveEnabled(v),
+})
+
 // Refs
 const boardDockRef = ref<InstanceType<typeof BoardDock> | null>(null)
 const sessionName = ref('')
@@ -175,6 +184,8 @@ onMounted(async () => {
     }
   }
 
+  boardStore.initAutosavePrefs()
+
   // Paste is handled by BoardCanvas component directly
 
   // Keyboard shortcuts
@@ -190,8 +201,11 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(async () => {
-  // Flush any pending changes before leaving
-  await boardStore.autosave()
+  // Safety beacon is always allowed (telemetry-only)
+  boardStore.persistOnExit()
+  if (boardStore.autosaveEnabled) {
+    await boardStore.autosave()
+  }
   window.removeEventListener('keydown', handleKeyDown)
   stopCamera()
 })
@@ -231,6 +245,11 @@ function handleBoardEvent(eventType: string, data: Record<string, unknown>): voi
     case 'asset_add':
       if (data.asset) {
         boardStore.addAsset(data.asset)
+
+        const file = data.file
+        if (file instanceof File) {
+          void boardStore.uploadImageAsset((data.asset as { id: string }).id, file)
+        }
       }
       break
     case 'asset_update':
@@ -388,3 +407,17 @@ function handleKeyDown(e: KeyboardEvent): void {
   }
 }
 </script>
+
+<style scoped>
+.autosave-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.autosave-toggle input {
+  transform: translateY(1px);
+}
+</style>

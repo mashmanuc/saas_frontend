@@ -4,9 +4,12 @@
     class="board-canvas"
     tabindex="0"
     @keydown="handleKeydown"
+    @dragover.prevent
+    @dragenter.prevent
+    @drop.prevent="handleDrop"
   >
     <!-- F29.8: Performance HUD (Ctrl+Alt+P to toggle) -->
-    <PerfHUD ref="perfHudRef" :stage-ref="stageRef" />
+    <PerfHUD ref="perfHudRef" :stage-ref="perfHudStageRef" />
 
     <v-stage
       ref="stageRef"
@@ -186,7 +189,7 @@ const emit = defineEmits<{
   'stroke-add': [stroke: Stroke]
   'stroke-update': [stroke: Stroke]
   'stroke-delete': [strokeId: string]
-  'asset-add': [asset: Asset]
+  'asset-add': [asset: Asset, file?: File]
   'asset-update': [asset: Asset]
   'asset-delete': [assetId: string]
   'select': [id: string | null]
@@ -203,6 +206,10 @@ const previewCanvasRef = ref<HTMLCanvasElement | null>(null)
 const transformerRef = ref<{ getNode: () => Konva.Transformer } | null>(null)
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const perfHudRef = ref<InstanceType<typeof PerfHUD> | null>(null)
+
+const perfHudStageRef = computed(() => ({
+  getStage: () => (stageRef.value as unknown as { getDrawCalls?: () => number } | null),
+}))
 
 // State
 const isDrawing = ref(false)
@@ -253,6 +260,59 @@ function cacheLayer(layerRef: typeof backgroundLayerRef | typeof strokesLayerRef
   } catch (error) {
     console.warn('[BoardCanvas] layer cache failed', error)
   }
+}
+
+function handleDrop(e: DragEvent): void {
+  const dt = e.dataTransfer
+  if (!dt) return
+
+  const file = Array.from(dt.files || []).find((f) => f.type.startsWith('image/'))
+  if (!file) return
+
+  const objectUrl = URL.createObjectURL(file)
+  const img = new Image()
+  img.onload = () => {
+    let w = img.width
+    let h = img.height
+    const maxSize = Math.min(props.width * 0.8, 4096)
+    if (w > maxSize || h > maxSize) {
+      const scale = maxSize / Math.max(w, h)
+      w = Math.round(w * scale)
+      h = Math.round(h * scale)
+    }
+
+    let x = (props.width - w) / 2
+    let y = 100
+
+    const rect = containerRef.value?.getBoundingClientRect()
+    if (rect) {
+      const px = e.clientX - rect.left
+      const py = e.clientY - rect.top
+      x = (px / (props.zoom || 1)) - w / 2
+      y = (py / (props.zoom || 1)) - h / 2
+    }
+
+    const asset: Asset = {
+      id: generateId(),
+      type: 'image',
+      src: objectUrl,
+      x,
+      y,
+      w,
+      h,
+      rotation: 0,
+    }
+
+    emit('asset-add', asset, file)
+  }
+  img.onerror = () => {
+    try {
+      URL.revokeObjectURL(objectUrl)
+    } catch {
+      // ignore
+    }
+  }
+  img.src = objectUrl
 }
 
 // F29-CRITICAL-FIX: Removed scheduleLayerBatchDraw
@@ -837,38 +897,41 @@ function handlePaste(e: ClipboardEvent): void {
       e.preventDefault()
       const blob = item.getAsFile()
       if (blob) {
-        const reader = new FileReader()
-        reader.onload = (event) => {
-          const src = event.target?.result as string
-          const img = new Image()
-          img.onload = () => {
-            // Scale if too large
-            let w = img.width
-            let h = img.height
-            const maxSize = Math.min(props.width * 0.8, 4096)
-            
-            if (w > maxSize || h > maxSize) {
-              const scale = maxSize / Math.max(w, h)
-              w = Math.round(w * scale)
-              h = Math.round(h * scale)
-            }
-            
-            const asset: Asset = {
-              id: generateId(),
-              type: 'image',
-              src,
-              x: (props.width - w) / 2,
-              y: 100,
-              w,
-              h,
-              rotation: 0,
-            }
-            
-            emit('asset-add', asset)
+        const objectUrl = URL.createObjectURL(blob)
+        const img = new Image()
+        img.onload = () => {
+          // Scale preview if too large
+          let w = img.width
+          let h = img.height
+          const maxSize = Math.min(props.width * 0.8, 4096)
+
+          if (w > maxSize || h > maxSize) {
+            const scale = maxSize / Math.max(w, h)
+            w = Math.round(w * scale)
+            h = Math.round(h * scale)
           }
-          img.src = src
+
+          const asset: Asset = {
+            id: generateId(),
+            type: 'image',
+            src: objectUrl,
+            x: (props.width - w) / 2,
+            y: 100,
+            w,
+            h,
+            rotation: 0,
+          }
+
+          emit('asset-add', asset, blob)
         }
-        reader.readAsDataURL(blob)
+        img.onerror = () => {
+          try {
+            URL.revokeObjectURL(objectUrl)
+          } catch {
+            // ignore
+          }
+        }
+        img.src = objectUrl
       }
       break
     }

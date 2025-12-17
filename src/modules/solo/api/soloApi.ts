@@ -1,6 +1,23 @@
 import apiClient from '@/utils/apiClient'
 import type { SoloSession, ShareToken, ExportRequest } from '../types/solo'
 
+export type PresignReq = {
+  session_id: string
+  content_type: 'image/png' | 'image/jpeg' | 'image/webp'
+  size_bytes: number
+  ext?: 'png' | 'jpg' | 'jpeg' | 'webp'
+  sha256?: string
+}
+
+export type PresignResp = {
+  upload_url: string
+  cdn_url: string
+  method: 'PUT'
+  headers: Record<string, string>
+  max_bytes: number
+  expires_at: string
+}
+
 // Note: apiClient interceptor returns res.data directly, not AxiosResponse
 // So all methods return Promise<T> where T is the response data type
 
@@ -51,4 +68,8 @@ export const soloApi = {
   // Thumbnail
   regenerateThumbnail: (id: string): Promise<{ thumbnail_url: string; status: string }> =>
     apiClient.post(`/v1/solo/sessions/${id}/thumbnail/`),
+
+  // Uploads (v0.30)
+  presignUpload: (payload: PresignReq): Promise<PresignResp> =>
+    apiClient.post('/v1/solo/uploads/presign/', payload),
 }
