@@ -10,6 +10,9 @@
         :opacity="currentOpacity"
         :strokes="currentStrokes"
         :assets="currentAssets"
+        :remote-cursors="remoteCursors"
+        :teacher-user-id="teacherUserId"
+        :follow-teacher-enabled="followTeacherEnabled"
         :width="canvasWidth"
         :height="canvasHeight"
         :zoom="zoom"
@@ -19,6 +22,7 @@
         @asset-add="handleAssetAdd"
         @asset-update="handleAssetUpdate"
         @asset-delete="handleAssetDelete"
+        @cursor-move="handleCursorMove"
         @select="handleSelect"
       />
     </div>
@@ -80,6 +84,9 @@ interface Asset {
 interface Props {
   strokes?: unknown[]
   assets?: unknown[]
+  remoteCursors?: Array<{ userId: string; x: number; y: number; tool: string; color: string; ts: number }>
+  teacherUserId?: string | null
+  followTeacherEnabled?: boolean
   permissions: RoomPermissions | null
   readonly?: boolean
   tool?: string
@@ -117,6 +124,9 @@ const canvasHeight = ref(1200)
 // Computed creates new array references → Konva sees new refs → redraws all → flicker
 const currentStrokes = computed(() => (props.strokes || []) as Stroke[])
 const currentAssets = computed(() => (props.assets || []) as Asset[])
+const remoteCursors = computed(() => props.remoteCursors || [])
+const teacherUserId = computed(() => props.teacherUserId ?? null)
+const followTeacherEnabled = computed(() => props.followTeacherEnabled ?? false)
 
 // Lifecycle
 onMounted(() => {
@@ -168,6 +178,10 @@ function handleSelect(id: string | null): void {
   emit('event', 'select', { id })
 }
 
+function handleCursorMove(payload: { x: number; y: number; tool: string; color: string }): void {
+  emit('event', 'cursor_move', payload)
+}
+
 function emitStateChange(): void {
   // Build state from current data
   const state = {
@@ -208,11 +222,30 @@ function handleZoomReset(): void {
   zoom.value = 1
 }
 
+// v0.31: Follow-teacher viewport sync - scroll canvas to center on position
+function scrollToPosition(x: number, y: number): void {
+  const container = boardContainer.value
+  if (!container) return
+
+  // Calculate the center offset based on zoom and container size
+  const containerRect = container.getBoundingClientRect()
+  const centerX = x * zoom.value - containerRect.width / 2
+  const centerY = y * zoom.value - containerRect.height / 2
+
+  // Smooth scroll to the position
+  container.scrollTo({
+    left: Math.max(0, centerX),
+    top: Math.max(0, centerY),
+    behavior: 'smooth',
+  })
+}
+
 // Expose methods for parent
 defineExpose({
   handleToolChange,
   handleColorChange,
   handleSizeChange,
+  scrollToPosition,
   currentTool,
   currentColor,
   currentSize,

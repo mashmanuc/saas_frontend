@@ -20,6 +20,11 @@
           <p class="toast-message">
             {{ item.message }}
           </p>
+          <div v-if="item.meta.action" class="toast-actions">
+            <a class="toast-action" :href="item.meta.action.href">
+              {{ item.meta.action.label }}
+            </a>
+          </div>
           <div class="toast-progress">
             <div class="toast-progress__fill" :style="progressStyle(item)" />
           </div>
@@ -57,6 +62,7 @@ const TYPE_META = {
 const toastMeta = (item) => {
   const meta = TYPE_META[item.type] || TYPE_META.info
   return {
+    ...(item.meta || {}),
     ...meta,
     timestamp: new Intl.DateTimeFormat(t('lang.en') ? 'en' : 'uk', {
       hour: '2-digit',
@@ -172,6 +178,27 @@ const progressStyle = (item) => {
 .toast-message {
   margin: 0;
   font-size: 0.92rem;
+}
+
+.toast-actions {
+  margin: 0 0 0.5rem;
+}
+
+.toast-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.45rem 0.65rem;
+  border-radius: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--toast-accent) 60%, transparent);
+  color: var(--toast-accent);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.toast-action:hover {
+  background: color-mix(in srgb, var(--toast-accent) 8%, transparent);
 }
 
 .toast-progress {

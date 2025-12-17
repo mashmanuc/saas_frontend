@@ -107,6 +107,21 @@
       @blur="finishTextEdit"
       @keydown.enter.exact="finishTextEdit"
     />
+
+    <div class="remote-cursors" aria-hidden="true">
+      <div
+        v-for="c in remoteCursors"
+        :key="c.userId"
+        class="remote-cursor"
+        :style="{ transform: `translate(${c.x * props.zoom}px, ${c.y * props.zoom}px)` }"
+      >
+        <div
+          class="remote-cursor__dot"
+          :class="{ 'remote-cursor__dot--teacher': c.userId === teacherUserId, 'remote-cursor__dot--follow': followTeacherEnabled && c.userId === teacherUserId }"
+          :style="{ backgroundColor: c.color }"
+        />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -164,6 +179,9 @@ interface Props {
   opacity?: number
   strokes?: Stroke[]
   assets?: Asset[]
+  remoteCursors?: Array<{ userId: string; x: number; y: number; tool: string; color: string; ts: number }>
+  teacherUserId?: string | null
+  followTeacherEnabled?: boolean
   width?: number
   height?: number
   zoom?: number
@@ -185,6 +203,10 @@ const props = withDefaults(defineProps<Props>(), {
 const strokes = computed(() => props.strokes ?? [])
 const assets = computed(() => props.assets ?? [])
 
+const remoteCursors = computed(() => props.remoteCursors ?? [])
+const teacherUserId = computed(() => props.teacherUserId ?? null)
+const followTeacherEnabled = computed(() => props.followTeacherEnabled ?? false)
+
 const emit = defineEmits<{
   'stroke-add': [stroke: Stroke]
   'stroke-update': [stroke: Stroke]
@@ -193,6 +215,7 @@ const emit = defineEmits<{
   'asset-update': [asset: Asset]
   'asset-delete': [assetId: string]
   'select': [id: string | null]
+  'cursor-move': [payload: { x: number; y: number; tool: string; color: string }]
 }>()
 
 // Refs
@@ -710,6 +733,16 @@ function handleMouseDown(e: Konva.KonvaEventObject<MouseEvent | TouchEvent>): vo
 function handleMouseMove(e: Konva.KonvaEventObject<MouseEvent | TouchEvent>): void {
   // F29-STEALTH: Record pointer event timestamp for input latency metrics
   recordPointerEvent(performance.now())
+
+  const cursorPos = getPointerPosition()
+  if (cursorPos) {
+    emit('cursor-move', {
+      x: cursorPos.x,
+      y: cursorPos.y,
+      tool: currentTool.value,
+      color: props.color,
+    })
+  }
   
   if (!isDrawing.value) return
   
@@ -1308,7 +1341,31 @@ defineExpose({
   position: relative;
   width: 100%;
   height: 100%;
-  overflow: auto;
+  overflow: hidden;
+}
+
+.remote-cursors {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.remote-cursor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  will-change: transform;
+}
+
+.remote-cursor__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9);
+}
+
+.board-canvas {
   background: var(--board-canvas-bg, #f8fafc);
   outline: none;
 }

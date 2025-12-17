@@ -72,6 +72,8 @@ export const useRoomStore = defineStore('room', () => {
       token.value = response.token
       permissions.value = response.permissions
       boardState.value = response.board_state
+      currentUserId.value = response.participant?.user_id ?? currentUserId.value
+      boardVersion.value = response.session.board_version
 
       // Initialize engine
       roomEngine.value = new RoomEngine({

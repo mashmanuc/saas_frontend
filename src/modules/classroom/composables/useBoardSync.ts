@@ -167,11 +167,15 @@ export function useBoardSync(options: BoardSyncOptions = {}) {
     isSyncing.value = true
 
     try {
-      await classroomApi.autosave(
+      const res = await classroomApi.autosave(
         roomStore.session.uuid,
         roomStore.boardState,
         roomStore.boardVersion
       )
+
+      if (typeof res?.version === 'number') {
+        roomStore.updateBoardState(roomStore.boardState, res.version)
+      }
 
       // Clear pending operations after successful save
       pendingOperations.value = []
@@ -208,11 +212,14 @@ export function useBoardSync(options: BoardSyncOptions = {}) {
     isSyncing.value = true
 
     try {
-      const restoredState = await classroomApi.restoreSnapshot(
+      const restored = await classroomApi.restoreSnapshot(
         roomStore.session.uuid,
         version
       )
-      roomStore.updateBoardState(restoredState, version)
+
+      const nextState = (restored.board_state || restored.state || {}) as Record<string, unknown>
+      const nextVersion = typeof restored.version === 'number' ? restored.version : version
+      roomStore.updateBoardState(nextState, nextVersion)
       lastSyncTime.value = new Date()
     } catch (error) {
       syncError.value = 'Не вдалося відновити версію'

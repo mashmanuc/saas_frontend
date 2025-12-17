@@ -4,6 +4,7 @@ import { notifyError, notifySuccess, notifyWarning } from '@/utils/notify'
 import { i18n } from '@/i18n'
 import type { SoloSession } from '@/modules/solo/types/solo'
 import { useBoardSyncStore } from './boardSyncStore'
+import { telemetry } from '@/services/telemetry'
 // F29-STEALTH: Import stealth autosave utilities
 import {
   startSaveWindow,
@@ -441,7 +442,9 @@ export const useBoardStore = defineStore('board', {
         const headers: Record<string, unknown> | undefined = e?.response?.headers
 
         if (status === 403 && data?.error === 'quota_exceeded') {
-          notifyError('Перевищено квоту, звільніть місце або оновіть план')
+          notifyError('Перевищено квоту, звільніть місце або оновіть план', {
+            action: { label: 'Оновити план', href: '/plans' },
+          })
           return
         }
 
@@ -469,10 +472,26 @@ export const useBoardStore = defineStore('board', {
         }
 
         if (e?._kind === 'put') {
+          telemetry.trigger('upload_put_failed', {
+            status: status ?? 0,
+            size: processed.blob.size,
+            content_type: processed.contentType,
+            endpoint: 'put',
+            version: (import.meta.env.VITE_APP_VERSION as string) || 'unknown',
+          })
           notifyError('Не вдалося завантажити зображення')
           return
         }
 
+        // Presign failed
+        telemetry.trigger('upload_presign_failed', {
+          status: status ?? 0,
+          size: processed.blob.size,
+          content_type: processed.contentType,
+          endpoint: 'presign',
+          request_id: data?.request_id,
+          version: (import.meta.env.VITE_APP_VERSION as string) || 'unknown',
+        })
         // eslint-disable-next-line no-console
         console.error('[BoardStore] uploadImageAsset failed', err)
       }

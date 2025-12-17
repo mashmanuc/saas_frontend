@@ -1,5 +1,11 @@
 <template>
   <div class="room-toolbar">
+    <div v-if="quotaLimit && quotaLimit > 0" class="quota-pill" :title="`Використано ${quotaUsed}/${quotaLimit}`">
+      <span class="quota-pill__label">Квота</span>
+      <span class="quota-pill__value">{{ quotaUsed }} / {{ quotaLimit }}</span>
+      <a class="quota-pill__cta" href="/plans">Оновити</a>
+    </div>
+
     <!-- Layout switcher -->
     <div class="toolbar-group">
       <button
@@ -101,6 +107,15 @@
 
       <div class="toolbar-group">
         <button
+          class="toolbar-btn"
+          :class="{ 'toolbar-btn--active': isFollowTeacher }"
+          title="Слідувати за викладачем"
+          @click="$emit('toggle-follow-teacher')"
+        >
+          <span class="icon">👁️</span>
+        </button>
+
+        <button
           class="toolbar-btn toolbar-btn--warning"
           :title="$t('classroom.toolbar.leave')"
           @click="$emit('leave')"
@@ -122,6 +137,9 @@ interface Props {
   layoutMode?: LayoutMode
   canTerminate?: boolean
   isPaused?: boolean
+  isFollowTeacher?: boolean
+  quotaUsed?: number
+  quotaLimit?: number | null
 }
 
 withDefaults(defineProps<Props>(), {
@@ -129,6 +147,9 @@ withDefaults(defineProps<Props>(), {
   layoutMode: 'side-by-side',
   canTerminate: false,
   isPaused: false,
+  isFollowTeacher: false,
+  quotaUsed: 0,
+  quotaLimit: null,
 })
 
 defineEmits<{
@@ -139,6 +160,7 @@ defineEmits<{
   resume: []
   'save-snapshot': []
   'show-history': []
+  'toggle-follow-teacher': []
 }>()
 
 // State
@@ -174,6 +196,38 @@ function toggleFullscreen(): void {
   padding: 0.75rem 1rem;
   background: var(--color-bg-secondary);
   border-top: 1px solid var(--color-border);
+}
+
+.quota-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-primary);
+}
+
+.quota-pill__label {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.quota-pill__value {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.quota-pill__cta {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.quota-pill__cta:hover {
+  text-decoration: underline;
 }
 
 .toolbar-group {

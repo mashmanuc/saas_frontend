@@ -105,6 +105,10 @@ export interface SnapshotResponse {
   thumbnail_url: string | null
 }
 
+export interface AutosaveResponse {
+  version?: number
+}
+
 export interface ReplayManifestResponse {
   session_id: string
   duration_ms: number
@@ -185,11 +189,12 @@ export const classroomApi = {
     uuid: string,
     boardState: Record<string, unknown>,
     version: number
-  ): Promise<void> => {
-    await apiClient.post(`/classroom/session/${uuid}/autosave/`, {
+  ): Promise<AutosaveResponse> => {
+    const response = await apiClient.post<AutosaveResponse>(`/classroom/session/${uuid}/autosave/`, {
       board_state: boardState,
       version,
     })
+    return response.data
   },
 
   getHistory: async (uuid: string): Promise<BoardSnapshot[]> => {
@@ -197,11 +202,14 @@ export const classroomApi = {
     return response.data
   },
 
-  restoreSnapshot: async (uuid: string, version: number): Promise<Record<string, unknown>> => {
-    const response = await apiClient.post<Record<string, unknown>>(
+  restoreSnapshot: async (
+    uuid: string,
+    version: number
+  ): Promise<{ board_state?: Record<string, unknown>; state?: Record<string, unknown>; version?: number }> => {
+    const response = await apiClient.post(
       `/classroom/history/${uuid}/restore/${version}/`
     )
-    return response.data
+    return response.data as { board_state?: Record<string, unknown>; state?: Record<string, unknown>; version?: number }
   },
 
   exportBoard: async (uuid: string, format: 'json' | 'png' | 'svg'): Promise<Blob> => {
