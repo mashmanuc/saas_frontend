@@ -214,6 +214,11 @@ export const useAuthStore = defineStore('auth', {
       storage.clearAll()
     },
 
+    dispose() {
+      this.stopProactiveRefresh()
+      this.refreshPromise = null
+    },
+
     handleError(error) {
       const data = error?.response?.data
 

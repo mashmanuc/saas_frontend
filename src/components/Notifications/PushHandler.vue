@@ -126,6 +126,9 @@ const isEnabling = ref(false)
 const toasts = ref([])
 const bannerDismissed = ref(false)
 
+let bannerTimer = null
+const toastTimers = new Map()
+
 // Toast types and icons
 const TOAST_TYPES = {
   message: 'message',
@@ -163,7 +166,12 @@ const checkAndShowBanner = async () => {
   
   // Show banner if supported but not permitted and not denied
   if (status.supported && !status.permitted && !status.denied) {
-    setTimeout(() => {
+    if (bannerTimer) {
+      clearTimeout(bannerTimer)
+      bannerTimer = null
+    }
+    bannerTimer = setTimeout(() => {
+      bannerTimer = null
       showPermissionBanner.value = true
     }, props.bannerDelay)
   }
@@ -229,15 +237,27 @@ const addToast = (toast) => {
   
   // Auto-dismiss
   if (props.toastDuration > 0) {
-    setTimeout(() => {
+    const existing = toastTimers.get(id)
+    if (existing) {
+      clearTimeout(existing)
+      toastTimers.delete(id)
+    }
+    const timer = setTimeout(() => {
+      toastTimers.delete(id)
       dismissToast(id)
     }, props.toastDuration)
+    toastTimers.set(id, timer)
   }
   
   return id
 }
 
 const dismissToast = (id) => {
+  const timer = toastTimers.get(id)
+  if (timer) {
+    clearTimeout(timer)
+    toastTimers.delete(id)
+  }
   const index = toasts.value.findIndex(t => t.id === id)
   if (index > -1) {
     toasts.value.splice(index, 1)
@@ -295,6 +315,15 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  if (bannerTimer) {
+    clearTimeout(bannerTimer)
+    bannerTimer = null
+  }
+  for (const timer of toastTimers.values()) {
+    clearTimeout(timer)
+  }
+  toastTimers.clear()
+
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.removeEventListener('message', handleServiceWorkerMessage)
   }

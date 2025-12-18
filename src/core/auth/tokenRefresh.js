@@ -24,6 +24,10 @@ let refreshRetryCount = 0
 let tokenExpiresAt = null
 let refreshTimer = null
 
+let requestInterceptorId = null
+let responseInterceptorId = null
+let interceptorAxiosInstance = null
+
 /**
  * Callbacks
  */
@@ -178,8 +182,21 @@ function handleSessionExpired() {
  * Create axios interceptor for 401 handling
  */
 function createAuthInterceptor(axiosInstance) {
+  // If re-initializing, ensure we don't accumulate interceptors
+  if (interceptorAxiosInstance && interceptorAxiosInstance === axiosInstance) {
+    if (requestInterceptorId !== null) {
+      interceptorAxiosInstance.interceptors.request.eject(requestInterceptorId)
+      requestInterceptorId = null
+    }
+    if (responseInterceptorId !== null) {
+      interceptorAxiosInstance.interceptors.response.eject(responseInterceptorId)
+      responseInterceptorId = null
+    }
+  }
+  interceptorAxiosInstance = axiosInstance
+
   // Request interceptor - add token
-  axiosInstance.interceptors.request.use(
+  requestInterceptorId = axiosInstance.interceptors.request.use(
     (config) => {
       // Token is now in httpOnly cookie, no need to add header
       // But we can check if refresh is needed
@@ -193,7 +210,7 @@ function createAuthInterceptor(axiosInstance) {
   )
   
   // Response interceptor - handle 401
-  axiosInstance.interceptors.response.use(
+  responseInterceptorId = axiosInstance.interceptors.response.use(
     (response) => response,
     async (error) => {
       const originalRequest = error.config
@@ -265,6 +282,18 @@ export function initTokenRefresh(options = {}) {
       if (refreshTimer) {
         clearTimeout(refreshTimer)
         refreshTimer = null
+      }
+
+      if (interceptorAxiosInstance) {
+        if (requestInterceptorId !== null) {
+          interceptorAxiosInstance.interceptors.request.eject(requestInterceptorId)
+          requestInterceptorId = null
+        }
+        if (responseInterceptorId !== null) {
+          interceptorAxiosInstance.interceptors.response.eject(responseInterceptorId)
+          responseInterceptorId = null
+        }
+        interceptorAxiosInstance = null
       }
       tokenExpiresAt = null
       isRefreshing = false

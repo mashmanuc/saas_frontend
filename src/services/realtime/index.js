@@ -58,8 +58,12 @@ class RealtimeService {
     this.backoff = INITIAL_BACKOFF_MS
     this.shouldReconnect = false
     this.heartbeatTimer = null
+    this.reconnectTimer = null
     this.tokenRefreshCallback = null
     this.lastToken = null
+
+    this.handleOnlineEvent = () => this.handleNetworkChange(true)
+    this.handleOfflineEvent = () => this.handleNetworkChange(false)
     this.options = {
       url: null,
       tokenProvider: null,
@@ -68,8 +72,16 @@ class RealtimeService {
     }
 
     if (typeof window !== 'undefined') {
-      window.addEventListener('online', () => this.handleNetworkChange(true))
-      window.addEventListener('offline', () => this.handleNetworkChange(false))
+      window.addEventListener('online', this.handleOnlineEvent)
+      window.addEventListener('offline', this.handleOfflineEvent)
+    }
+  }
+
+  destroy() {
+    this.disconnect()
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('online', this.handleOnlineEvent)
+      window.removeEventListener('offline', this.handleOfflineEvent)
     }
   }
 
@@ -145,6 +157,10 @@ class RealtimeService {
 
   disconnect() {
     this.shouldReconnect = false
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
     this.clearHeartbeat()
     if (this.socket) {
       this.socket.close()
@@ -303,7 +319,12 @@ class RealtimeService {
   scheduleReconnect() {
     if (!this.shouldReconnect) return
     const delay = Math.min(this.backoff, MAX_BACKOFF_MS)
-    setTimeout(() => {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null
       if (!this.shouldReconnect) return
       this.backoff = Math.min(this.backoff * 2, MAX_BACKOFF_MS)
       this.connect()

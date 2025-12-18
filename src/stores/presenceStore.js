@@ -98,6 +98,10 @@ export const usePresenceStore = defineStore('presence', {
         this.subscription()
         this.subscription = null
       }
+      if (this.timer) {
+        clearInterval(this.timer)
+        this.timer = null
+      }
       this.subscription = realtimeService.subscribe('presence', (payload) => {
         if (payload?.type === 'user.online') {
           this.setStatus(payload.userId, true)

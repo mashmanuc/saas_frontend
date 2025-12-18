@@ -1396,6 +1396,15 @@ export const useBoardStore = defineStore('board', {
         _autosaveTimer = null
       }
 
+      clearStableIdleSaveTimer()
+
+      if (_currentSaveController) {
+        _currentSaveController.abort()
+        _currentSaveController = null
+      }
+
+      _pendingSave = false
+
       this.$reset()
     },
   },

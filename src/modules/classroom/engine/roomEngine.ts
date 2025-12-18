@@ -51,6 +51,8 @@ export class RoomEngine {
   private reconnectAttempts: number = 0
   private maxReconnectAttempts: number = 5
   private reconnectDelay: number = 1000
+  private reconnectAbort: boolean = false
+  private reconnectTimeoutId: number | null = null
 
   private localStream: MediaStream | null = null
   private mediaState: MediaState = {
@@ -76,6 +78,7 @@ export class RoomEngine {
 
   async connect(): Promise<void> {
     try {
+      this.reconnectAbort = false
       await Promise.all([
         this.connectWebRTC(),
         this.connectBoard(),
@@ -147,6 +150,7 @@ export class RoomEngine {
   }
 
   private async attemptReconnect(): Promise<void> {
+    if (this.reconnectAbort) return
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
       console.error('[RoomEngine] Max reconnect attempts reached')
       return
@@ -156,7 +160,19 @@ export class RoomEngine {
     this.eventEmitter.emit('reconnecting')
 
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1)
-    await new Promise((resolve) => setTimeout(resolve, delay))
+    if (this.reconnectTimeoutId) {
+      clearTimeout(this.reconnectTimeoutId)
+      this.reconnectTimeoutId = null
+    }
+
+    await new Promise<void>((resolve) => {
+      this.reconnectTimeoutId = window.setTimeout(() => {
+        this.reconnectTimeoutId = null
+        resolve()
+      }, delay)
+    })
+
+    if (this.reconnectAbort) return
 
     try {
       await this.connect()
@@ -208,6 +224,13 @@ export class RoomEngine {
 
   async disconnect(): Promise<void> {
     this.isConnected = false
+    this.reconnectAbort = true
+
+    if (this.reconnectTimeoutId) {
+      clearTimeout(this.reconnectTimeoutId)
+      this.reconnectTimeoutId = null
+    }
+
     this.storageEngine.stopAutosave()
 
     this.wsWebRTC?.close()

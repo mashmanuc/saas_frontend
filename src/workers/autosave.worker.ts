@@ -63,6 +63,7 @@ export type AckMsg = AckSuccessMsg | AckQueuedMsg | AckErrorMsg
 let currentController: AbortController | null = null
 let pendingRequest: { sessionId: string; rev: number } | null = null
 let backoffMs = 500
+let retryTimer: ReturnType<typeof setTimeout> | null = null
 const MAX_BACKOFF_MS = 20000
 const BACKOFF_MULTIPLIER = 2
 
@@ -89,6 +90,10 @@ self.onmessage = async (event: MessageEvent<SaveMsg>) => {
   const msg = event.data
 
   if (msg.type === 'ABORT_PENDING') {
+    if (retryTimer) {
+      clearTimeout(retryTimer)
+      retryTimer = null
+    }
     if (currentController) {
       currentController.abort()
       currentController = null
@@ -98,6 +103,10 @@ self.onmessage = async (event: MessageEvent<SaveMsg>) => {
   }
 
   if (msg.type === 'SAVE_DIFF' || msg.type === 'SAVE_FULL') {
+    if (retryTimer) {
+      clearTimeout(retryTimer)
+      retryTimer = null
+    }
     // Abort previous request if still pending (coalescing)
     if (currentController) {
       currentController.abort()
@@ -216,7 +225,12 @@ self.onmessage = async (event: MessageEvent<SaveMsg>) => {
         self.postMessage(ackQueued)
 
         // Schedule retry
-        setTimeout(() => {
+        if (retryTimer) {
+          clearTimeout(retryTimer)
+          retryTimer = null
+        }
+        retryTimer = setTimeout(() => {
+          retryTimer = null
           if (pendingRequest?.sessionId === msg.sessionId && pendingRequest?.rev === msg.rev) {
             // Re-send the same message
             self.onmessage?.(event)

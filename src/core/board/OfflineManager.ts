@@ -31,6 +31,9 @@ export class OfflineManager {
   private overflowCount = 0
   private db: IDBDatabase | null = null
 
+  private readonly handleOnlineEvent = (): void => this.setOnlineStatus(true)
+  private readonly handleOfflineEvent = (): void => this.setOnlineStatus(false)
+
   public readonly events = new BoardEventEmitter<OfflineEvents>()
 
   constructor(sessionId: string) {
@@ -41,8 +44,8 @@ export class OfflineManager {
     this.loadQueue()
 
     // Listen for online/offline events
-    window.addEventListener('online', () => this.setOnlineStatus(true))
-    window.addEventListener('offline', () => this.setOnlineStatus(false))
+    window.addEventListener('online', this.handleOnlineEvent)
+    window.addEventListener('offline', this.handleOfflineEvent)
 
     // Initial status
     this.isOnline = navigator.onLine
@@ -292,8 +295,8 @@ export class OfflineManager {
   }
 
   destroy(): void {
-    window.removeEventListener('online', () => this.setOnlineStatus(true))
-    window.removeEventListener('offline', () => this.setOnlineStatus(false))
+    window.removeEventListener('online', this.handleOnlineEvent)
+    window.removeEventListener('offline', this.handleOfflineEvent)
     this.events.removeAll()
   }
 }

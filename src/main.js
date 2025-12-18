@@ -11,6 +11,7 @@ import { useSettingsStore } from './stores/settingsStore'
 import { useThemeStore } from './stores/themeStore'
 import { useRealtimeStore } from './stores/realtimeStore'
 import { useNotificationsStore } from './stores/notificationsStore'
+import { useAuthStore } from './modules/auth/store/authStore'
 import { createErrorCollector } from './modules/diagnostics/plugins/errorCollector'
 import VueKonva from 'vue-konva'
 
@@ -39,6 +40,26 @@ realtime.init()
 
 const notifications = useNotificationsStore()
 notifications.init()
+
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    try {
+      useRealtimeStore().dispose?.()
+    } catch {
+      // ignore
+    }
+    try {
+      useNotificationsStore().dispose?.()
+    } catch {
+      // ignore
+    }
+    try {
+      useAuthStore().dispose?.()
+    } catch {
+      // ignore
+    }
+  })
+}
 
 app.use(router)
 app.mount('#app')

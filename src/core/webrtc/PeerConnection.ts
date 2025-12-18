@@ -12,6 +12,8 @@ export class PeerConnection {
   private reconnectAttempts = 0
   private readonly maxReconnectAttempts: number
   private readonly backoffBaseMs: number
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null
+  private reconnectAbort = false
 
   constructor(private options: PeerConnectionOptions) {
     this.maxReconnectAttempts = options.maxReconnectAttempts ?? 5
@@ -84,6 +86,7 @@ export class PeerConnection {
 
   async reconnect(): Promise<boolean> {
     if (!this.pc) return false
+    if (this.reconnectAbort) return false
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
       return false
     }
@@ -92,9 +95,21 @@ export class PeerConnection {
     try {
       if (typeof this.pc.restartIce === 'function') {
         this.pc.restartIce()
-        await new Promise((resolve) =>
-          setTimeout(resolve, this.backoffBaseMs * Math.pow(2, this.reconnectAttempts - 1))
-        )
+        const delay = this.backoffBaseMs * Math.pow(2, this.reconnectAttempts - 1)
+
+        if (this.reconnectTimer) {
+          clearTimeout(this.reconnectTimer)
+          this.reconnectTimer = null
+        }
+
+        await new Promise<void>((resolve) => {
+          this.reconnectTimer = setTimeout(() => {
+            this.reconnectTimer = null
+            resolve()
+          }, delay)
+        })
+
+        if (this.reconnectAbort) return false
         return true
       }
       return false
@@ -108,6 +123,11 @@ export class PeerConnection {
   }
 
   close(): void {
+    this.reconnectAbort = true
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
     this.pc?.close()
     this.pc = null
   }

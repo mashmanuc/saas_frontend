@@ -23,6 +23,15 @@ export class InfiniteCanvas {
   private pinchStartDistance: number | null = null
   private pinchStartZoom: number | null = null
 
+  private readonly onWheel: (e: WheelEvent) => void
+  private readonly onPointerDown: (e: PointerEvent) => void
+  private readonly onPointerMove: (e: PointerEvent) => void
+  private readonly onPointerUp: (e: PointerEvent) => void
+  private readonly onTouchStart: (e: TouchEvent) => void
+  private readonly onTouchMove: (e: TouchEvent) => void
+  private readonly onTouchEnd: (e: TouchEvent) => void
+  private resizeObserver: ResizeObserver | null = null
+
   public readonly events = new BoardEventEmitter<InfiniteCanvasEvents>()
 
   constructor(container: HTMLElement, config?: InfiniteCanvasConfig) {
@@ -36,6 +45,14 @@ export class InfiniteCanvas {
       pinchZoom: config?.pinchZoom ?? true,
     }
 
+    this.onWheel = this.handleWheel.bind(this)
+    this.onPointerDown = this.handlePointerDown.bind(this)
+    this.onPointerMove = this.handlePointerMove.bind(this)
+    this.onPointerUp = this.handlePointerUp.bind(this)
+    this.onTouchStart = this.handleTouchStart.bind(this)
+    this.onTouchMove = this.handleTouchMove.bind(this)
+    this.onTouchEnd = this.handleTouchEnd.bind(this)
+
     this.viewport = {
       ...DEFAULT_VIEWPORT,
       width: container.clientWidth,
@@ -46,22 +63,22 @@ export class InfiniteCanvas {
   }
 
   private bindEvents(): void {
-    this.container.addEventListener('wheel', this.handleWheel.bind(this), { passive: false })
-    this.container.addEventListener('pointerdown', this.handlePointerDown.bind(this))
-    this.container.addEventListener('pointermove', this.handlePointerMove.bind(this))
-    this.container.addEventListener('pointerup', this.handlePointerUp.bind(this))
-    this.container.addEventListener('pointerleave', this.handlePointerUp.bind(this))
-    this.container.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: false })
-    this.container.addEventListener('touchmove', this.handleTouchMove.bind(this), { passive: false })
-    this.container.addEventListener('touchend', this.handleTouchEnd.bind(this))
+    this.container.addEventListener('wheel', this.onWheel, { passive: false })
+    this.container.addEventListener('pointerdown', this.onPointerDown)
+    this.container.addEventListener('pointermove', this.onPointerMove)
+    this.container.addEventListener('pointerup', this.onPointerUp)
+    this.container.addEventListener('pointerleave', this.onPointerUp)
+    this.container.addEventListener('touchstart', this.onTouchStart, { passive: false })
+    this.container.addEventListener('touchmove', this.onTouchMove, { passive: false })
+    this.container.addEventListener('touchend', this.onTouchEnd)
 
     // Resize observer
-    const resizeObserver = new ResizeObserver(() => {
+    this.resizeObserver = new ResizeObserver(() => {
       this.viewport.width = this.container.clientWidth
       this.viewport.height = this.container.clientHeight
       this.events.emit('viewport-change', { ...this.viewport })
     })
-    resizeObserver.observe(this.container)
+    this.resizeObserver.observe(this.container)
   }
 
   getViewport(): Viewport {
@@ -304,6 +321,19 @@ export class InfiniteCanvas {
   }
 
   destroy(): void {
+    this.container.removeEventListener('wheel', this.onWheel)
+    this.container.removeEventListener('pointerdown', this.onPointerDown)
+    this.container.removeEventListener('pointermove', this.onPointerMove)
+    this.container.removeEventListener('pointerup', this.onPointerUp)
+    this.container.removeEventListener('pointerleave', this.onPointerUp)
+    this.container.removeEventListener('touchstart', this.onTouchStart)
+    this.container.removeEventListener('touchmove', this.onTouchMove)
+    this.container.removeEventListener('touchend', this.onTouchEnd)
+
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect()
+      this.resizeObserver = null
+    }
     this.events.removeAll()
   }
 }

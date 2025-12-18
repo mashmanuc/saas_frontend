@@ -38,6 +38,8 @@ export class SignalingChannel {
   private reconnecting = false
   private reconnectAttempt = 0
   private heartbeatTimer: number | null = null
+  private reconnectTimer: number | null = null
+  private reconnectAbort = false
   private queue: SignalingMessage[] = []
   private sessionId: string | null = null
 
@@ -50,6 +52,7 @@ export class SignalingChannel {
 
   async connect(sessionId: string): Promise<void> {
     this.sessionId = sessionId
+    this.reconnectAbort = false
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       return
     }
@@ -80,6 +83,11 @@ export class SignalingChannel {
   }
 
   disconnect(): void {
+    this.reconnectAbort = true
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
     this.stopHeartbeat()
     this.ws?.close()
     this.ws = null
@@ -150,6 +158,7 @@ export class SignalingChannel {
   }
 
   private async tryReconnect(sessionId: string): Promise<void> {
+    if (this.reconnectAbort) return
     if (this.reconnecting) return
     const maxAttempts = this.options.reconnectAttempts ?? 5
     if (this.reconnectAttempt >= maxAttempts) {
@@ -161,7 +170,19 @@ export class SignalingChannel {
       (this.options.reconnectDelayMs ?? 1000) *
       Math.pow(this.options.reconnectBackoffMultiplier ?? 1.5, this.reconnectAttempt - 1)
 
-    await new Promise((resolve) => setTimeout(resolve, delay))
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
+
+    await new Promise<void>((resolve) => {
+      this.reconnectTimer = window.setTimeout(() => {
+        this.reconnectTimer = null
+        resolve()
+      }, delay)
+    })
+
+    if (this.reconnectAbort) return
     this.reconnecting = false
     await this.connect(sessionId)
   }

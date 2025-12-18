@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { soloApi } from '../api/soloApi'
 import { useStorage } from './useStorage'
 import type { SoloSession, PageState } from '../types/solo'
@@ -16,14 +16,22 @@ export function useCloudStorage(sessionId?: string) {
   // Current session
   const currentSession = ref<SoloSession | null>(null)
 
+  const handleOnline = () => {
+    isOnline.value = true
+    void syncPending()
+  }
+
+  const handleOffline = () => {
+    isOnline.value = false
+  }
+
   /**
    * Load session from cloud or localStorage fallback.
    */
   async function load(id: string): Promise<SoloSession | null> {
     if (isOnline.value) {
       try {
-        const response = await soloApi.getSession(id)
-        const session = response.data
+        const session = await soloApi.getSession(id)
         currentSession.value = session
 
         // Cache locally
@@ -65,20 +73,18 @@ export function useCloudStorage(sessionId?: string) {
 
       if (sessionId && currentSession.value) {
         // Update existing
-        const response = await soloApi.updateSession(sessionId, {
+        session = await soloApi.updateSession(sessionId, {
           state,
           name: name || currentSession.value.name,
           page_count: pages.length,
         })
-        session = response.data
       } else {
         // Create new
-        const response = await soloApi.createSession({
+        session = await soloApi.createSession({
           name: name || 'Untitled',
           state,
           page_count: pages.length,
         })
-        session = response.data
       }
 
       currentSession.value = session
@@ -156,16 +162,17 @@ export function useCloudStorage(sessionId?: string) {
   }
 
   // Listen for online/offline
-  if (typeof window !== 'undefined') {
-    window.addEventListener('online', () => {
-      isOnline.value = true
-      syncPending()
-    })
+  onMounted(() => {
+    if (typeof window === 'undefined') return
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+  })
 
-    window.addEventListener('offline', () => {
-      isOnline.value = false
-    })
-  }
+  onUnmounted(() => {
+    if (typeof window === 'undefined') return
+    window.removeEventListener('online', handleOnline)
+    window.removeEventListener('offline', handleOffline)
+  })
 
   return {
     // State

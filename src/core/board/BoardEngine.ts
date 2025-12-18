@@ -58,6 +58,13 @@ export class BoardEngine {
   private animationFrameId: number | null = null
   private remoteCursors: Map<string, RemoteCursor> = new Map()
 
+  private resizeObserver: ResizeObserver | null = null
+  private onCanvasPointerDown: ((e: PointerEvent) => void) | null = null
+  private onCanvasPointerMove: ((e: PointerEvent) => void) | null = null
+  private onCanvasPointerUp: ((e: PointerEvent) => void) | null = null
+  private onWindowKeyDown: ((e: KeyboardEvent) => void) | null = null
+  private onWindowKeyUp: ((e: KeyboardEvent) => void) | null = null
+
   public readonly events = new BoardEventEmitter<BoardEvents>()
 
   constructor(config: BoardConfig) {
@@ -172,39 +179,46 @@ export class BoardEngine {
   private setupInputHandlers(): void {
     if (!this.canvasElement || !this.infiniteCanvas) return
 
-    this.canvasElement.addEventListener('pointerdown', (e) => {
+    this.onCanvasPointerDown = (e: PointerEvent) => {
       if (e.button !== 0) return // Only left click
       const point = this.infiniteCanvas!.screenToCanvas(e.offsetX, e.offsetY)
       this.toolManager.handlePointerDown(e, point)
-    })
+    }
 
-    this.canvasElement.addEventListener('pointermove', (e) => {
+    this.onCanvasPointerMove = (e: PointerEvent) => {
       const point = this.infiniteCanvas!.screenToCanvas(e.offsetX, e.offsetY)
       this.toolManager.handlePointerMove(e, point)
       this.updateLocalCursor(point)
-    })
+    }
 
-    this.canvasElement.addEventListener('pointerup', (e) => {
+    this.onCanvasPointerUp = (e: PointerEvent) => {
       const point = this.infiniteCanvas!.screenToCanvas(e.offsetX, e.offsetY)
       this.toolManager.handlePointerUp(e, point)
-    })
+    }
 
-    window.addEventListener('keydown', (e) => {
+    this.onWindowKeyDown = (e: KeyboardEvent) => {
       this.toolManager.handleKeyDown(e)
-    })
+    }
 
-    window.addEventListener('keyup', (e) => {
+    this.onWindowKeyUp = (e: KeyboardEvent) => {
       this.toolManager.handleKeyUp(e)
-    })
+    }
+
+    this.canvasElement.addEventListener('pointerdown', this.onCanvasPointerDown)
+    this.canvasElement.addEventListener('pointermove', this.onCanvasPointerMove)
+    this.canvasElement.addEventListener('pointerup', this.onCanvasPointerUp)
+    window.addEventListener('keydown', this.onWindowKeyDown)
+    window.addEventListener('keyup', this.onWindowKeyUp)
 
     // Resize observer
-    const resizeObserver = new ResizeObserver(() => {
+    this.resizeObserver?.disconnect()
+    this.resizeObserver = new ResizeObserver(() => {
       if (this.canvas && this.container) {
         this.canvas.resize(this.container.clientWidth, this.container.clientHeight)
         this.requestRender()
       }
     })
-    resizeObserver.observe(this.container!)
+    this.resizeObserver.observe(this.container!)
   }
 
   async loadSession(): Promise<void> {
@@ -524,6 +538,35 @@ export class BoardEngine {
     }
     if (this.cursorSyncTimer) {
       clearInterval(this.cursorSyncTimer)
+    }
+
+    if (this.canvasElement) {
+      if (this.onCanvasPointerDown) {
+        this.canvasElement.removeEventListener('pointerdown', this.onCanvasPointerDown)
+      }
+      if (this.onCanvasPointerMove) {
+        this.canvasElement.removeEventListener('pointermove', this.onCanvasPointerMove)
+      }
+      if (this.onCanvasPointerUp) {
+        this.canvasElement.removeEventListener('pointerup', this.onCanvasPointerUp)
+      }
+    }
+    if (this.onWindowKeyDown) {
+      window.removeEventListener('keydown', this.onWindowKeyDown)
+    }
+    if (this.onWindowKeyUp) {
+      window.removeEventListener('keyup', this.onWindowKeyUp)
+    }
+
+    this.onCanvasPointerDown = null
+    this.onCanvasPointerMove = null
+    this.onCanvasPointerUp = null
+    this.onWindowKeyDown = null
+    this.onWindowKeyUp = null
+
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect()
+      this.resizeObserver = null
     }
 
     this.infiniteCanvas?.destroy()

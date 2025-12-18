@@ -43,7 +43,7 @@
 
 <script setup>
 import { reactive } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../store/authStore'
 import Button from '../../../ui/Button.vue'
 import Card from '../../../ui/Card.vue'
@@ -51,6 +51,7 @@ import Input from '../../../ui/Input.vue'
 import { getDefaultRouteForRole } from '../../../config/routes'
 
 const router = useRouter()
+const route = useRoute()
 const auth = useAuthStore()
 
 const form = reactive({
@@ -61,7 +62,8 @@ const form = reactive({
 async function onSubmit() {
   try {
     const user = await auth.login(form)
-    const target = getDefaultRouteForRole(user?.role)
+    const redirect = route.query?.redirect
+    const target = typeof redirect === 'string' && redirect ? redirect : getDefaultRouteForRole(user?.role)
     router.push(target)
   } catch (error) {
     // помилка вже відображається через auth.error

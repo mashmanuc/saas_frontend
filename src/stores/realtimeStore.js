@@ -11,6 +11,9 @@ export const useRealtimeStore = defineStore('realtime', {
     offline: false,
     subscriptions: new Map(),
     authUnsubscribe: null,
+    statusUnsubscribe: null,
+    errorUnsubscribe: null,
+    messageUnsubscribe: null,
   }),
 
   actions: {
@@ -27,7 +30,11 @@ export const useRealtimeStore = defineStore('realtime', {
         ...options,
       })
 
-      realtimeService.on('status', (status) => {
+      if (this.statusUnsubscribe) {
+        this.statusUnsubscribe()
+        this.statusUnsubscribe = null
+      }
+      this.statusUnsubscribe = realtimeService.on('status', (status) => {
         if (status === 'offline') {
           this.offline = true
         } else {
@@ -36,11 +43,19 @@ export const useRealtimeStore = defineStore('realtime', {
         }
       })
 
-      realtimeService.on('error', (error) => {
+      if (this.errorUnsubscribe) {
+        this.errorUnsubscribe()
+        this.errorUnsubscribe = null
+      }
+      this.errorUnsubscribe = realtimeService.on('error', (error) => {
         this.lastError = error
       })
 
-      realtimeService.on('message', (payload) => {
+      if (this.messageUnsubscribe) {
+        this.messageUnsubscribe()
+        this.messageUnsubscribe = null
+      }
+      this.messageUnsubscribe = realtimeService.on('message', (payload) => {
         if (payload?.type === 'pong') {
           this.lastHeartbeat = Date.now()
         }
@@ -75,6 +90,35 @@ export const useRealtimeStore = defineStore('realtime', {
 
     disconnect() {
       realtimeService.disconnect()
+    },
+
+    dispose() {
+      this.disconnect()
+
+      if (this.authUnsubscribe) {
+        this.authUnsubscribe()
+        this.authUnsubscribe = null
+      }
+
+      if (this.statusUnsubscribe) {
+        this.statusUnsubscribe()
+        this.statusUnsubscribe = null
+      }
+      if (this.errorUnsubscribe) {
+        this.errorUnsubscribe()
+        this.errorUnsubscribe = null
+      }
+      if (this.messageUnsubscribe) {
+        this.messageUnsubscribe()
+        this.messageUnsubscribe = null
+      }
+
+      this.subscriptions = new Map()
+      this.status = 'disconnected'
+      this.offline = false
+      this.lastError = null
+      this.lastHeartbeat = null
+      this.initialized = false
     },
 
     subscribe(channel, handler) {

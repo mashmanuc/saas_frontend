@@ -151,6 +151,10 @@ const totalPages = ref(1)
 const isFullscreen = ref(false)
 const showVideo = ref(false)
 
+function handleFullscreenChange(): void {
+  isFullscreen.value = !!document.fullscreenElement
+}
+
 // Media
 const { stream, videoEnabled, audioEnabled, startCamera, stopCamera, toggleVideo, toggleAudio } =
   useLocalMedia()
@@ -192,9 +196,7 @@ onMounted(async () => {
   window.addEventListener('keydown', handleKeyDown)
 
   // Fullscreen change
-  document.addEventListener('fullscreenchange', () => {
-    isFullscreen.value = !!document.fullscreenElement
-  })
+  document.addEventListener('fullscreenchange', handleFullscreenChange)
 
   // Start camera
   await startCamera()
@@ -207,6 +209,7 @@ onBeforeUnmount(async () => {
     await boardStore.autosave()
   }
   window.removeEventListener('keydown', handleKeyDown)
+  document.removeEventListener('fullscreenchange', handleFullscreenChange)
   stopCamera()
 })
 

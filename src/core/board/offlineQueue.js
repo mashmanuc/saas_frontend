@@ -35,6 +35,9 @@ export class OfflineBoardQueue {
     this.isSyncing = false
     this.syncTimer = null
     this.boardId = options.boardId || null
+
+    this.handleOnlineBound = this.handleOnline.bind(this)
+    this.handleOfflineBound = this.handleOffline.bind(this)
     
     // Callbacks
     this.onSync = options.onSync || (() => {})
@@ -50,8 +53,8 @@ export class OfflineBoardQueue {
     
     // Listen for online/offline events
     if (typeof window !== 'undefined') {
-      window.addEventListener('online', () => this.handleOnline())
-      window.addEventListener('offline', () => this.handleOffline())
+      window.addEventListener('online', this.handleOnlineBound)
+      window.addEventListener('offline', this.handleOfflineBound)
     }
   }
 
@@ -330,11 +333,12 @@ export class OfflineBoardQueue {
   destroy() {
     if (this.syncTimer) {
       clearTimeout(this.syncTimer)
+      this.syncTimer = null
     }
     
     if (typeof window !== 'undefined') {
-      window.removeEventListener('online', this.handleOnline)
-      window.removeEventListener('offline', this.handleOffline)
+      window.removeEventListener('online', this.handleOnlineBound)
+      window.removeEventListener('offline', this.handleOfflineBound)
     }
   }
 }
