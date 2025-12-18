@@ -759,6 +759,21 @@
       "title": "Lessons calendar",
       "subtitle": "Create, reschedule and manage lessons across timezones.",
       "hint": "Drag events to reschedule, resize to adjust duration. Use the buttons above to create or refresh.",
+      "myStudents": {
+        "emptyTitle": "No students yet",
+        "emptyDescription": "To create lessons, you first need at least one active student in your classroom (membership). Accept a request or invite a student.",
+        "actions": {
+          "refresh": "Refresh",
+          "cta": "Open requests"
+        }
+      },
+      "syncIssue": {
+        "title": "Access is still syncing",
+        "description": "We could not create the lesson due to a temporary access sync issue. Refresh and try again.",
+        "actions": {
+          "refresh": "Refresh data"
+        }
+      },
       "roles": {
         "tutor": "Tutor view",
         "student": "Student view"

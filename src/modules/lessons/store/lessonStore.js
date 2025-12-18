@@ -156,8 +156,9 @@ export const useLessonStore = defineStore('lessons', {
         await this.fetchLessons()
       } catch (error) {
         const code = normalizeErrorCode(error)
+        error.mappedCode = code
         if (code === 'not_a_member') {
-          error.mappedMessage = 'Учень не доданий до класу/немає доступу.'
+          error.mappedMessage = 'Проблема синхронізації доступів. Спробуйте оновити дані та повторити.'
         }
         if (code === 'time_conflict') {
           error.mappedMessage = 'Конфлікт часу, оберіть інший слот.'
@@ -172,6 +173,7 @@ export const useLessonStore = defineStore('lessons', {
         await this.fetchLessons()
       } catch (error) {
         const code = normalizeErrorCode(error)
+        error.mappedCode = code
         if (code === 'time_conflict') {
           error.mappedMessage = 'Конфлікт часу, оберіть інший слот.'
         }

@@ -157,7 +157,36 @@
         </header>
 
         <div class="space-y-4 px-5 py-4">
-          <div class="space-y-1">
+          <div
+            v-if="myStudentsGate.loading"
+            class="rounded-lg border border-border-subtle bg-background px-3 py-2 text-sm text-muted"
+            data-test="my-students-loading"
+          >
+            {{ t('common.loading') }}
+          </div>
+
+          <div
+            v-else-if="myStudentsGate.isEmpty"
+            class="rounded-lg border border-border-subtle bg-background px-3 py-3"
+            data-test="my-students-empty"
+          >
+            <p class="text-sm font-semibold text-foreground">
+              {{ t('lessons.calendar.myStudents.emptyTitle') }}
+            </p>
+            <p class="mt-1 text-sm text-muted">
+              {{ t('lessons.calendar.myStudents.emptyDescription') }}
+            </p>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <Button variant="secondary" size="sm" data-test="my-students-refresh" @click="refreshMyStudents">
+                {{ t('lessons.calendar.myStudents.actions.refresh') }}
+              </Button>
+              <Button variant="ghost" size="sm" data-test="my-students-cta" @click="goToMyStudentsHelp">
+                {{ t('lessons.calendar.myStudents.actions.cta') }}
+              </Button>
+            </div>
+          </div>
+
+          <div v-else class="space-y-1">
             <StudentAutocomplete
               v-model="createForm.studentId"
               :label="t('lessons.calendar.fields.studentId')"
@@ -166,6 +195,27 @@
               data-test="student-autocomplete"
               @invite="handleInviteStudent"
             />
+          </div>
+
+          <div
+            v-if="createModalError.isSyncIssue"
+            class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-3"
+            data-test="create-lesson-sync-issue"
+          >
+            <p class="text-sm font-semibold text-amber-900">
+              {{ t('lessons.calendar.syncIssue.title') }}
+            </p>
+            <p class="mt-1 text-sm text-amber-900/80">
+              {{ t('lessons.calendar.syncIssue.description') }}
+            </p>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <Button variant="secondary" size="sm" data-test="sync-refresh" @click="handleSyncRefresh">
+                {{ t('lessons.calendar.syncIssue.actions.refresh') }}
+              </Button>
+              <Button variant="primary" size="sm" data-test="sync-retry" @click="handleSyncRetry">
+                {{ t('common.retry') }}
+              </Button>
+            </div>
           </div>
 
           <div class="space-y-1">
@@ -276,6 +326,7 @@ import { notifyError, notifySuccess } from '../../../utils/notify'
 import { useLessonStore, LESSON_STATUSES } from '../store/lessonStore'
 import { useSettingsStore } from '../../../stores/settingsStore'
 import { getLocaleCalendarRules, normalizeLocale } from '../utils/calendarLocaleRules'
+import { studentsApi } from '../../booking/api/studentsApi'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -288,6 +339,22 @@ const cancelModalOpen = ref(false)
 const createSubmitting = ref(false)
 const cancelSubmitting = ref(false)
 const selectedLesson = ref(null)
+
+const myStudentsGate = reactive({
+  loading: false,
+  count: null,
+  error: null,
+  get isEmpty() {
+    return typeof this.count === 'number' && this.count <= 0
+  },
+})
+
+const createModalError = reactive({
+  code: null,
+  get isSyncIssue() {
+    return this.code === 'not_a_member'
+  },
+})
 
 const calendarLocale = computed(() => normalizeLocale(settingsStore.language || 'en'))
 const localeCalendarRules = computed(() => getLocaleCalendarRules(calendarLocale.value))
@@ -440,10 +507,37 @@ function openCreateModal(range) {
   createForm.start = formatLocalInput(range?.start)
   createForm.end = formatLocalInput(range?.end || dayjs(range?.start).add(1, 'hour'))
   createForm.seriesId = ''
+
+  createModalError.code = null
+  void refreshMyStudents()
 }
 
 function closeCreateModal() {
   createModalOpen.value = false
+}
+
+async function refreshMyStudents() {
+  myStudentsGate.loading = true
+  myStudentsGate.error = null
+
+  try {
+    const data = await studentsApi.listStudents(undefined, 1)
+    myStudentsGate.count = Number.isFinite(data?.count) ? data.count : 0
+  } catch (e) {
+    myStudentsGate.error = e
+    myStudentsGate.count = 0
+  } finally {
+    myStudentsGate.loading = false
+  }
+}
+
+function goToMyStudentsHelp() {
+  // Default CTA: tutor goes to their dashboard to accept requests; student goes to marketplace.
+  if (lessonStore.role === 'student') {
+    router.push('/marketplace').catch(() => {})
+    return
+  }
+  router.push('/tutor').catch(() => {})
 }
 
 function handleSelectRange(selectionInfo) {
@@ -498,12 +592,12 @@ async function handleDatesSet(arg) {
 }
 
 function handleInviteStudent() {
-  // Close modal and redirect to invite student page
   closeCreateModal()
-  router.push('/relations/invite').catch(() => {})
+  goToMyStudentsHelp()
 }
 
 async function submitCreateLesson() {
+  createModalError.code = null
   if (!createForm.studentId) {
     notifyError(t('lessons.calendar.notifications.validation'))
     return
@@ -525,10 +619,26 @@ async function submitCreateLesson() {
     notifySuccess(t('lessons.calendar.notifications.created'))
     closeCreateModal()
   } catch (error) {
+    if (error?.mappedCode === 'not_a_member') {
+      createModalError.code = 'not_a_member'
+      return
+    }
     notifyError(error?.mappedMessage || error?.response?.data?.detail || t('lessons.calendar.notifications.createError'))
   } finally {
     createSubmitting.value = false
   }
+}
+
+async function handleSyncRefresh() {
+  await Promise.all([
+    refreshMyStudents(),
+    lessonStore.fetchLessons().catch(() => {}),
+  ])
+}
+
+async function handleSyncRetry() {
+  await handleSyncRefresh()
+  await submitCreateLesson()
 }
 
 async function confirmCancelLesson() {
