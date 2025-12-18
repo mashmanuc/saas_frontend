@@ -23,6 +23,7 @@ export const MENU_BY_ROLE = {
   ],
   student: [
     { label: 'menu.dashboard', icon: 'home', to: '/student' },
+    { label: 'menu.marketplace', icon: 'users', to: '/marketplace' },
     { label: 'menu.lessons', icon: 'book', to: '/lessons' },
     { label: 'menu.soloWorkspace', icon: 'edit', to: '/solo' },
     { label: 'menu.profile', icon: 'user', to: '/dashboard/profile' },

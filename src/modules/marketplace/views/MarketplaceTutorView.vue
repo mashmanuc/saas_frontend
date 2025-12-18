@@ -27,7 +27,7 @@
             </li>
           </ul>
           <div class="hero-actions">
-            <button class="btn-primary" @click="contactTutor">
+            <button class="btn-primary" :disabled="isRequesting" @click="requestTutor">
               Запитати тьютора
             </button>
             <button class="ghost" @click="saveTutor">
@@ -98,15 +98,19 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMarketplaceStore } from '../store/marketplaceStore'
 import { telemetry } from '../../../services/telemetry'
 import { resolveMediaUrl } from '../../../utils/media'
+import apiClient from '../../../utils/apiClient'
+import { notifyError, notifySuccess } from '../../../utils/notify'
 
 const store = useMarketplaceStore()
 const route = useRoute()
 const router = useRouter()
+
+const isRequesting = ref(false)
 
 const tutor = computed(() => store.currentTutor)
 const avatarUrl = computed(() => {
@@ -136,6 +140,22 @@ async function bootTutorProfile(id) {
 
 function contactTutor() {
   telemetry.trigger('marketplace.click.cta', { tutor_id: tutor.value?.id, action: 'contact' })
+}
+
+async function requestTutor() {
+  const tutorId = tutor.value?.id
+  if (!tutorId) return
+
+  isRequesting.value = true
+  try {
+    await apiClient.post('/student/request_tutor/', { tutor_id: tutorId })
+    notifySuccess('Запит надіслано')
+    telemetry.trigger('marketplace.request_tutor', { tutor_id: tutorId })
+  } catch (e) {
+    notifyError(e?.response?.data?.detail || 'Не вдалося надіслати запит')
+  } finally {
+    isRequesting.value = false
+  }
 }
 
 function saveTutor() {

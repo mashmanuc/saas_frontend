@@ -12,6 +12,42 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-3">
+          <div class="inline-flex items-center gap-2 rounded-full border border-border-subtle bg-background px-3 py-1.5" data-test="week-nav">
+            <button
+              type="button"
+              class="text-muted hover:text-foreground"
+              data-test="week-prev"
+              @click="goPrev"
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              class="text-sm font-semibold text-foreground"
+              data-test="week-label"
+              @click="goToday"
+            >
+              {{ weekLabel }}
+            </button>
+            <button
+              type="button"
+              class="text-muted hover:text-foreground"
+              data-test="week-next"
+              @click="goNext"
+            >
+              ›
+            </button>
+          </div>
+
+          <Button
+            variant="primary"
+            size="sm"
+            data-test="mark-free-time"
+            @click="markFreeTime"
+          >
+            {{ t('lessons.calendar.actions.markFreeTime') }}
+          </Button>
+
           <div class="inline-flex rounded-lg border border-border-subtle p-1" data-test="role-filter">
             <button
               v-for="option in roleOptions"
@@ -52,9 +88,14 @@
             </div>
           </div>
 
-          <Button variant="secondary" size="sm" data-test="create-lesson-button" @click="openCreateModal()">
-            {{ t('lessons.calendar.actions.new') }}
-          </Button>
+          <button
+            type="button"
+            class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary text-white shadow hover:brightness-110"
+            data-test="create-lesson-button"
+            @click="openCreateModal()"
+          >
+            +
+          </button>
 
           <Button
             variant="ghost"
@@ -121,7 +162,7 @@
               v-model="createForm.studentId"
               :label="t('lessons.calendar.fields.studentId')"
               :placeholder="t('booking.typeToSearch')"
-              :show-invite-cta="true"
+              :show-invite-cta="false"
               data-test="student-autocomplete"
               @invite="handleInviteStudent"
             />
@@ -234,6 +275,7 @@ import StudentAutocomplete from '../../booking/components/StudentAutocomplete.vu
 import { notifyError, notifySuccess } from '../../../utils/notify'
 import { useLessonStore, LESSON_STATUSES } from '../store/lessonStore'
 import { useSettingsStore } from '../../../stores/settingsStore'
+import { getLocaleCalendarRules, normalizeLocale } from '../utils/calendarLocaleRules'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -247,8 +289,39 @@ const createSubmitting = ref(false)
 const cancelSubmitting = ref(false)
 const selectedLesson = ref(null)
 
+const calendarLocale = computed(() => normalizeLocale(settingsStore.language || 'en'))
+const localeCalendarRules = computed(() => getLocaleCalendarRules(calendarLocale.value))
+const calendarFirstDay = computed(() => localeCalendarRules.value.firstDay)
+
+function getCalendarDayMeta(date) {
+  const dt = date instanceof Date ? date : new Date(date)
+  const day = dt.getDay() // 0..6 (Sun..Sat)
+
+  const { firstDay, weekendDays } = localeCalendarRules.value
+  const index = (day - firstDay + 7) % 7 // 0..6 relative to week start
+
+  return {
+    day,
+    index,
+    isWeekend: weekendDays.includes(day),
+    isZebra: index % 2 === 1,
+  }
+}
+
+function formatCalendarDayHeader(date) {
+  const locale = calendarLocale.value
+  const dt = date instanceof Date ? date : new Date(date)
+
+  const weekday = new Intl.DateTimeFormat(locale, { weekday: 'short' })
+    .format(dt)
+    .replace('.', '')
+    .toLowerCase()
+  const day = new Intl.DateTimeFormat(locale, { day: '2-digit' }).format(dt)
+  return `${weekday}, ${day}`
+}
+
 const createForm = reactive({
-  studentId: '',
+  studentId: null,
   start: '',
   end: '',
   seriesId: '',
@@ -258,6 +331,29 @@ const roleOptions = computed(() => [
   { value: 'tutor', label: t('lessons.calendar.roles.tutor') },
   { value: 'student', label: t('lessons.calendar.roles.student') },
 ])
+
+const weekLabel = computed(() => {
+  const api = calendarRef.value?.getApi?.()
+  const start = api?.view?.currentStart
+  const end = api?.view?.currentEnd
+  if (!start || !end) {
+    return ''
+  }
+
+  const locale = settingsStore.language || 'en'
+  const fmt = new Intl.DateTimeFormat(locale, { day: '2-digit', month: 'short' })
+  const fmtDay = new Intl.DateTimeFormat(locale, { day: '2-digit' })
+  const fmtMonthYear = new Intl.DateTimeFormat(locale, { month: 'short', year: 'numeric' })
+
+  const startD = dayjs(start)
+  const endD = dayjs(end).subtract(1, 'day')
+
+  if (startD.year() === endD.year() && startD.month() === endD.month()) {
+    return `${fmtDay.format(startD.toDate())}–${fmtDay.format(endD.toDate())} ${fmtMonthYear.format(endD.toDate())}`
+  }
+
+  return `${fmt.format(startD.toDate())} – ${fmt.format(endD.toDate())}`
+})
 
 const statusOptions = computed(() => [
   { value: 'all', label: t('lessons.calendar.status.all') },
@@ -285,20 +381,27 @@ const calendarOptions = computed(() => ({
   selectMirror: true,
   editable: true,
   eventOverlap: false,
+  allDaySlot: false,
   slotMinTime: '06:00:00',
   slotMaxTime: '23:00:00',
-  locale: settingsStore.language || 'en',
+  locale: calendarLocale.value,
+  firstDay: calendarFirstDay.value,
+  dayHeaderContent: (arg) => formatCalendarDayHeader(arg.date),
+  dayHeaderClassNames: (arg) => {
+    const meta = getCalendarDayMeta(arg.date)
+    return [meta.isZebra ? 'cal-zebra' : '', meta.isWeekend ? 'cal-weekend' : ''].filter(Boolean)
+  },
+  dayCellClassNames: (arg) => {
+    const meta = getCalendarDayMeta(arg.date)
+    return [meta.isZebra ? 'cal-zebra' : '', meta.isWeekend ? 'cal-weekend' : ''].filter(Boolean)
+  },
   events: events.value,
   select: handleSelectRange,
   eventClick: handleEventClick,
   eventDrop: handleEventDrop,
   eventResize: handleEventResize,
   datesSet: handleDatesSet,
-  headerToolbar: {
-    left: 'prev,next today',
-    center: 'title',
-    right: 'timeGridWeek,timeGridDay',
-  },
+  headerToolbar: false,
   nowIndicator: true,
   buttonText: {
     today: t('lessons.calendar.buttons.today'),
@@ -306,6 +409,22 @@ const calendarOptions = computed(() => ({
     day: t('lessons.calendar.buttons.day'),
   },
 }))
+
+function goPrev() {
+  calendarRef.value?.getApi?.()?.prev()
+}
+
+function goNext() {
+  calendarRef.value?.getApi?.()?.next()
+}
+
+function goToday() {
+  calendarRef.value?.getApi?.()?.today()
+}
+
+function markFreeTime() {
+  router.push('/availability').catch(() => {})
+}
 
 function formatLocalInput(date) {
   return dayjs(date || new Date()).format('YYYY-MM-DDTHH:mm')
@@ -317,7 +436,7 @@ function formatDisplay(value) {
 
 function openCreateModal(range) {
   createModalOpen.value = true
-  createForm.studentId = ''
+  createForm.studentId = null
   createForm.start = formatLocalInput(range?.start)
   createForm.end = formatLocalInput(range?.end || dayjs(range?.start).add(1, 'hour'))
   createForm.seriesId = ''
@@ -344,26 +463,26 @@ function closeCancelModal() {
 async function handleEventDrop(info) {
   try {
     await lessonStore.rescheduleLesson(info.event.id, {
-      start: info.event.start.toISOString(),
-      end: info.event.end?.toISOString() ?? info.event.start.toISOString(),
+      start: dayjs(info.event.start).toISOString(),
+      end: dayjs(info.event.end).toISOString(),
     })
     notifySuccess(t('lessons.calendar.notifications.rescheduled'))
   } catch (error) {
     info.revert()
-    notifyError(error?.response?.data?.detail || t('lessons.calendar.notifications.rescheduleError'))
+    notifyError(error?.mappedMessage || error?.response?.data?.detail || t('lessons.calendar.notifications.rescheduleError'))
   }
 }
 
 async function handleEventResize(info) {
   try {
     await lessonStore.rescheduleLesson(info.event.id, {
-      start: info.event.start.toISOString(),
-      end: info.event.end?.toISOString() ?? info.event.start.toISOString(),
+      start: dayjs(info.event.start).toISOString(),
+      end: dayjs(info.event.end).toISOString(),
     })
     notifySuccess(t('lessons.calendar.notifications.resized'))
   } catch (error) {
     info.revert()
-    notifyError(error?.response?.data?.detail || t('lessons.calendar.notifications.rescheduleError'))
+    notifyError(error?.mappedMessage || error?.response?.data?.detail || t('lessons.calendar.notifications.rescheduleError'))
   }
 }
 
@@ -385,6 +504,11 @@ function handleInviteStudent() {
 }
 
 async function submitCreateLesson() {
+  if (!createForm.studentId) {
+    notifyError(t('lessons.calendar.notifications.validation'))
+    return
+  }
+
   if (!createForm.start || !createForm.end) {
     notifyError(t('lessons.calendar.notifications.validation'))
     return
@@ -393,7 +517,7 @@ async function submitCreateLesson() {
   createSubmitting.value = true
   try {
     await lessonStore.createLesson({
-      student_id: createForm.studentId || undefined,
+      student_id: createForm.studentId,
       start: dayjs(createForm.start).toISOString(),
       end: dayjs(createForm.end).toISOString(),
       series_id: createForm.seriesId || undefined,
@@ -401,7 +525,7 @@ async function submitCreateLesson() {
     notifySuccess(t('lessons.calendar.notifications.created'))
     closeCreateModal()
   } catch (error) {
-    notifyError(error?.response?.data?.detail || t('lessons.calendar.notifications.createError'))
+    notifyError(error?.mappedMessage || error?.response?.data?.detail || t('lessons.calendar.notifications.createError'))
   } finally {
     createSubmitting.value = false
   }
@@ -415,7 +539,7 @@ async function confirmCancelLesson() {
     notifySuccess(t('lessons.calendar.notifications.cancelled'))
     closeCancelModal()
   } catch (error) {
-    notifyError(error?.response?.data?.detail || t('lessons.calendar.notifications.cancelError'))
+    notifyError(error?.mappedMessage || error?.response?.data?.detail || t('lessons.calendar.notifications.cancelError'))
   } finally {
     cancelSubmitting.value = false
   }
@@ -451,6 +575,76 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.lesson-calendar :deep(.fc) {
+  --fc-border-color: var(--color-border-subtle);
+  --fc-page-bg-color: var(--color-bg-primary);
+  --fc-neutral-bg-color: var(--color-bg-secondary);
+  --fc-neutral-text-color: var(--color-text-secondary);
+  --fc-today-bg-color: transparent;
+}
+
+.lesson-calendar :deep(.fc .fc-scrollgrid) {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.lesson-calendar :deep(.fc .fc-col-header-cell) {
+  background: var(--color-bg-primary);
+  border-color: var(--color-border-subtle);
+}
+
+.lesson-calendar :deep(.fc .fc-col-header-cell-cushion) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  margin: 6px 0;
+  border-radius: 999px;
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 1;
+  text-transform: none;
+}
+
+.lesson-calendar :deep(.fc .fc-timegrid-axis-cushion) {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+}
+
+.lesson-calendar :deep(.fc .fc-timegrid-slot-label-cushion) {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+}
+
+.lesson-calendar :deep(.fc .fc-timegrid-slot) {
+  border-color: var(--color-border-subtle);
+}
+
+.lesson-calendar :deep(.fc .fc-timegrid-col) {
+  border-color: var(--color-border-subtle);
+}
+
+/* Zebra columns */
+.lesson-calendar :deep(.fc .fc-timegrid-col.cal-zebra .fc-timegrid-col-frame) {
+  background: color-mix(in srgb, var(--color-bg-secondary) 55%, transparent);
+}
+
+/* Weekend shading (overrides zebra) */
+.lesson-calendar :deep(.fc .fc-timegrid-col.cal-weekend .fc-timegrid-col-frame) {
+  background: color-mix(in srgb, var(--color-bg-secondary) 70%, transparent);
+}
+
+.lesson-calendar :deep(.fc .fc-col-header-cell.cal-weekend .fc-col-header-cell-cushion) {
+  background: color-mix(in srgb, var(--color-bg-secondary) 85%, transparent);
+}
+
+.lesson-calendar :deep(.fc .fc-timegrid-now-indicator-line) {
+  border-color: var(--color-primary);
+}
+
 .lesson-calendar :deep(.lesson-event.lesson-cancelled) {
   background-color: #fee2e2;
   border-color: #fecdd3;

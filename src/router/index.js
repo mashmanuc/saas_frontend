@@ -17,6 +17,7 @@ import DashboardClassroomsView from '../modules/classrooms/views/DashboardClassr
 import LessonList from '../modules/lessons/views/LessonList.vue'
 import LessonView from '../modules/lessons/views/LessonView.vue'
 import ProfileOverviewView from '../modules/profile/views/ProfileOverviewView.vue'
+import LessonInviteResolveView from '../modules/lessons/views/LessonInviteResolveView.vue'
 const MarketplaceListView = () => import('../modules/marketplace/views/MarketplaceListView.vue')
 const MarketplaceTutorView = () => import('../modules/marketplace/views/MarketplaceTutorView.vue')
 const ProfileEditView = () => import('../modules/profile/views/ProfileEditView.vue')
@@ -67,6 +68,12 @@ const routes = [
       { path: 'validation/:token', name: 'invite-validation', component: InviteValidationView },
       { path: 'accept/:token', name: 'invite-accept', component: InviteAcceptView },
     ],
+  },
+  {
+    path: '/lesson-invites/:token',
+    name: 'lesson-invite-resolve',
+    component: LessonInviteResolveView,
+    meta: { requiresAuth: true },
   },
   {
     path: '/',

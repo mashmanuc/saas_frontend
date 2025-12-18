@@ -15,6 +15,19 @@
           <p class="text-sm text-muted">{{ $t('lessons.detail.subtitle', { id: lesson?.id }) }}</p>
         </header>
 
+        <div class="flex flex-wrap items-center gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            :disabled="inviteLoading || !lessonId"
+            data-test="lesson-copy-invite"
+            @click="copyInvite"
+          >
+            <span v-if="inviteLoading">{{ $t('common.loading') }}</span>
+            <span v-else>{{ $t('lessons.detail.actions.copyInvite') }}</span>
+          </Button>
+        </div>
+
         <section class="grid gap-4 md:grid-cols-2">
           <div class="detail-block">
             <p class="detail-label">{{ $t('lessons.detail.fields.start') }}</p>
@@ -135,6 +148,7 @@ import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import dayjs from 'dayjs'
 import Card from '../../../ui/Card.vue'
+import Button from '../../../ui/Button.vue'
 import ChatPanel from '../../chat/components/ChatPanel.vue'
 import PresenceDot from '../../../ui/PresenceDot.vue'
 import BoardToolbar from '../../board/components/BoardToolbar.vue'
@@ -144,6 +158,7 @@ import lessonsApi from '../../../api/lessons'
 import { formatDateTime } from '../../../utils/datetime'
 import { usePresenceStore } from '../../../stores/presenceStore'
 import { useBoardStore } from '../../../stores/boardStore'
+import { notifyError, notifySuccess } from '../../../utils/notify'
 
 const route = useRoute()
 const { t } = useI18n()
@@ -156,6 +171,7 @@ const boardStore = useBoardStore()
 const lesson = ref(null)
 const loading = ref(true)
 const error = ref(null)
+const inviteLoading = ref(false)
 
 const lessonId = computed(() => route.params.id)
 
@@ -258,6 +274,27 @@ async function loadLesson(id) {
     error.value = err?.response?.data?.detail || t('lessons.detail.error')
   } finally {
     loading.value = false
+  }
+}
+
+async function copyInvite() {
+  if (!lessonId.value) return
+  inviteLoading.value = true
+  try {
+    const response = await lessonsApi.createInvite(lessonId.value)
+    const data = response?.data ?? response
+    const inviteUrl = data?.invite_url || data?.inviteUrl
+    if (!inviteUrl) {
+      notifyError(t('lessons.detail.actions.copyInviteError'))
+      return
+    }
+
+    await navigator.clipboard.writeText(inviteUrl)
+    notifySuccess(t('lessons.detail.actions.copyInviteSuccess'))
+  } catch (err) {
+    notifyError(err?.response?.data?.detail || t('lessons.detail.actions.copyInviteError'))
+  } finally {
+    inviteLoading.value = false
   }
 }
 

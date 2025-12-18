@@ -109,7 +109,7 @@
         <button
           class="toolbar-btn"
           :class="{ 'toolbar-btn--active': isFollowTeacher }"
-          title="Слідувати за викладачем"
+          :title="isFollowTeacher && !hasTeacherCursor ? 'Очікуємо курсор викладача…' : 'Слідувати за викладачем'"
           @click="$emit('toggle-follow-teacher')"
         >
           <span class="icon">👁️</span>
@@ -138,6 +138,7 @@ interface Props {
   canTerminate?: boolean
   isPaused?: boolean
   isFollowTeacher?: boolean
+  hasTeacherCursor?: boolean
   quotaUsed?: number
   quotaLimit?: number | null
 }
@@ -148,6 +149,7 @@ withDefaults(defineProps<Props>(), {
   canTerminate: false,
   isPaused: false,
   isFollowTeacher: false,
+  hasTeacherCursor: false,
   quotaUsed: 0,
   quotaLimit: null,
 })

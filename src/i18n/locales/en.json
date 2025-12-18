@@ -770,6 +770,7 @@
       },
       "actions": {
         "new": "New lesson",
+        "markFreeTime": "Mark free time",
         "refresh": "Refresh",
         "saveLesson": "Save lesson",
         "confirmCancel": "Cancel lesson"
@@ -785,7 +786,7 @@
       "cancelTitle": "Cancel lesson",
       "cancelDescription": "Are you sure you want to cancel this lesson?",
       "fields": {
-        "studentId": "Student ID",
+        "studentId": "Student",
         "start": "Start time",
         "end": "End time"
       },
@@ -812,6 +813,40 @@
         "partial": "Showing first {limit} events. Narrow your range or status to load more."
       }
     },
+    "inviteResolve": {
+      "title": "Lesson invite",
+      "loading": "Checking invite…",
+      "loadingDescription": "We are validating the invite link and preparing your session.",
+      "redirecting": "Redirecting to lesson…",
+      "redirectingDescription": "You will be redirected automatically.",
+      "failed": "Invite link cannot be used",
+      "failedDescription": "This link may be invalid, expired, or you may not have access.",
+      "actions": {
+        "backToLessons": "Back to lessons"
+      },
+      "errors": {
+        "expired": {
+          "title": "Invite expired",
+          "description": "Ask the teacher to generate a new invite link."
+        },
+        "invalid": {
+          "title": "Invite invalid",
+          "description": "This invite link is not valid. Please double-check the URL."
+        },
+        "forbidden": {
+          "title": "Access denied",
+          "description": "You do not have access to this lesson."
+        },
+        "notFound": {
+          "title": "Lesson not found",
+          "description": "The lesson referenced by this invite link does not exist."
+        },
+        "generic": {
+          "title": "Something went wrong",
+          "description": "Unable to resolve invite link. Try again later."
+        }
+      }
+    },
     "detail": {
       "title": "Lesson overview",
       "subtitle": "Lesson #{id}",
@@ -831,7 +866,10 @@
       "notes": "Notes",
       "error": "Failed to load lesson data.",
       "actions": {
-        "retry": "Retry"
+        "retry": "Retry",
+        "copyInvite": "Copy invite link",
+        "copyInviteSuccess": "Invite link copied",
+        "copyInviteError": "Failed to copy invite link"
       }
     }
   },

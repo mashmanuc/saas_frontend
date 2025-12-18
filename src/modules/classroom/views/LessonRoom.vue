@@ -61,6 +61,7 @@
         :can-terminate="canTerminate"
         :is-paused="isPaused"
         :is-follow-teacher="followTeacherEnabled"
+        :has-teacher-cursor="Boolean(teacherCursor)"
         :quota-used="lessonsQuotaUsed"
         :quota-limit="lessonsQuotaLimit"
         @layout-change="setLayoutMode"

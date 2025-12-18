@@ -18,6 +18,16 @@ export const LESSON_STATUSES = Object.freeze({
 
 const POLLING_INTERVAL = 30_000
 
+function unwrapResponse(response) {
+  return response?.data ?? response
+}
+
+function normalizeErrorCode(error) {
+  const raw = error?.response?.data?.error?.code ?? error?.response?.data?.code
+  if (!raw) return null
+  return String(raw).toLowerCase().replace(/-/g, '_')
+}
+
 export const useLessonStore = defineStore('lessons', {
   state: () => ({
     items: [],
@@ -74,8 +84,8 @@ export const useLessonStore = defineStore('lessons', {
     },
 
     normalizeLesson(rawLesson, fallbackTimezone) {
-      const rawStartUtc = rawLesson.utc_start || rawLesson.start
-      const rawEndUtc = rawLesson.utc_end || rawLesson.end
+      const rawStartUtc = rawLesson.utc_start || rawLesson.utcStart || rawLesson.starts_at || rawLesson.start
+      const rawEndUtc = rawLesson.utc_end || rawLesson.utcEnd || rawLesson.ends_at || rawLesson.end
       const start = dayjs.utc(rawStartUtc)
       const end = dayjs.utc(rawEndUtc)
       const timezone = rawLesson.timezone || fallbackTimezone
@@ -123,12 +133,17 @@ export const useLessonStore = defineStore('lessons', {
 
       try {
         const response = await lessonsApi.listMyLessons(queryParams)
-        const lessonsArray = Array.isArray(response) ? response : response?.results || []
+        const data = unwrapResponse(response)
+        const lessonsArray = Array.isArray(data) ? data : data?.results || []
         this.items = lessonsArray.map((lesson) => this.normalizeLesson(lesson, timezone))
 
-        this.hasMoreEvents = Boolean(response?.has_more_events)
+        this.hasMoreEvents = Boolean(data?.has_more_events)
       } catch (error) {
-        this.setError(error?.response?.data?.detail || 'Не вдалося завантажити уроки.')
+        const code = normalizeErrorCode(error)
+        if (code === 'forbidden') {
+          error.mappedMessage = 'Доступ заборонено.'
+        }
+        this.setError(error?.mappedMessage || error?.response?.data?.detail || 'Не вдалося завантажити уроки.')
         throw error
       } finally {
         this.setLoading(false)
@@ -136,13 +151,32 @@ export const useLessonStore = defineStore('lessons', {
     },
 
     async createLesson(payload) {
-      await lessonsApi.createLesson(payload)
-      await this.fetchLessons()
+      try {
+        await lessonsApi.createLesson(payload)
+        await this.fetchLessons()
+      } catch (error) {
+        const code = normalizeErrorCode(error)
+        if (code === 'not_a_member') {
+          error.mappedMessage = 'Учень не доданий до класу/немає доступу.'
+        }
+        if (code === 'time_conflict') {
+          error.mappedMessage = 'Конфлікт часу, оберіть інший слот.'
+        }
+        throw error
+      }
     },
 
     async rescheduleLesson(id, payload) {
-      await lessonsApi.rescheduleLesson(id, payload)
-      await this.fetchLessons()
+      try {
+        await lessonsApi.rescheduleLesson(id, payload)
+        await this.fetchLessons()
+      } catch (error) {
+        const code = normalizeErrorCode(error)
+        if (code === 'time_conflict') {
+          error.mappedMessage = 'Конфлікт часу, оберіть інший слот.'
+        }
+        throw error
+      }
     },
 
     async cancelLesson(id, payload) {

@@ -14,6 +14,13 @@ export interface StudentsListResponse {
   results: StudentListItem[]
 }
 
+const MY_STUDENTS_V032_PATH = '/api/classroom/my-students/'
+const MY_STUDENTS_LEGACY_PATH = '/v1/tutor/students/'
+
+function getData<T>(request: Promise<any>): Promise<T> {
+  return request.then((res: any) => (res?.data ?? res) as T)
+}
+
 /**
  * API for tutor's student list
  */
@@ -28,13 +35,34 @@ export const studentsApi = {
     if (query) {
       params.q = query
     }
-    return apiClient.get('/v1/tutor/students/', { params })
+
+    return getData<StudentsListResponse>(
+      apiClient
+        .get(MY_STUDENTS_V032_PATH, { params })
+        .catch((err: any) => {
+          const status = err?.response?.status
+          if (status === 404) {
+            return apiClient.get(MY_STUDENTS_LEGACY_PATH, { params })
+          }
+          throw err
+        })
+    )
   },
 
   /**
    * Get a single student by ID
    */
   getStudent(id: number): Promise<StudentListItem> {
-    return apiClient.get(`/v1/tutor/students/${id}/`)
+    return getData<StudentListItem>(
+      apiClient
+        .get(`${MY_STUDENTS_V032_PATH}${id}/`)
+        .catch((err: any) => {
+          const status = err?.response?.status
+          if (status === 404) {
+            return apiClient.get(`${MY_STUDENTS_LEGACY_PATH}${id}/`)
+          }
+          throw err
+        })
+    )
   },
 }

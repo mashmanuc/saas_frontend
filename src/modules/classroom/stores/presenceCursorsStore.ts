@@ -31,6 +31,7 @@ export const usePresenceCursorsStore = defineStore('presenceCursors', () => {
   const state = ref<ConnectionState>('disconnected')
 
   const client = ref<ClassroomPresenceClient | null>(null)
+  const localUserId = ref<string | null>(null)
   const remoteCursors = ref<Record<string, RemoteCursor>>({})
   const presentUsers = ref<Record<string, { role?: string; lastSeenTs: number }>>({})
 
@@ -46,7 +47,11 @@ export const usePresenceCursorsStore = defineStore('presenceCursors', () => {
   const MAX_BACKOFF_MS = 15000
   let reconnectAbort = false
 
-  const cursorsList = computed(() => Object.values(remoteCursors.value))
+  const cursorsList = computed(() => {
+    const list = Object.values(remoteCursors.value)
+    if (!localUserId.value) return list
+    return list.filter((c) => String(c.userId) !== String(localUserId.value))
+  })
 
   const teacherCursor = computed(() => {
     if (!teacherUserId.value) return null
@@ -54,6 +59,7 @@ export const usePresenceCursorsStore = defineStore('presenceCursors', () => {
   })
 
   function resetRuntime(): void {
+    localUserId.value = null
     remoteCursors.value = {}
     presentUsers.value = {}
     teacherUserId.value = null
@@ -99,7 +105,9 @@ export const usePresenceCursorsStore = defineStore('presenceCursors', () => {
     }
 
     if (msg.type === 'cursor.update') {
-      // do not store own cursor here; server may echo - ok
+      if (localUserId.value && String(msg.userId) === String(localUserId.value)) {
+        return
+      }
       remoteCursors.value = {
         ...remoteCursors.value,
         [msg.userId]: {
@@ -135,6 +143,8 @@ export const usePresenceCursorsStore = defineStore('presenceCursors', () => {
   }): Promise<void> {
     disconnect()
     resetRuntime()
+
+    localUserId.value = opts.userId
 
     reconnectAbort = false
     state.value = 'connecting'
