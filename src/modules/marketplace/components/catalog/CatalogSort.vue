@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ArrowUpDown } from 'lucide-vue-next'
+import { useI18n } from 'vue-i18n'
+import { computed } from 'vue'
 
 interface Props {
   value: string
@@ -7,17 +9,18 @@ interface Props {
 
 defineProps<Props>()
 
+const { t } = useI18n()
+
 const emit = defineEmits<{
   (e: 'update', sort: string): void
 }>()
 
-const sortOptions = [
-  { value: '-average_rating', label: 'Highest Rated' },
-  { value: '-total_lessons', label: 'Most Lessons' },
-  { value: 'hourly_rate', label: 'Price: Low to High' },
-  { value: '-hourly_rate', label: 'Price: High to Low' },
-  { value: '-created_at', label: 'Newest' },
-]
+const sortOptions = computed(() => [
+  { value: 'rating', label: t('marketplace.sort.rating') },
+  { value: 'price_asc', label: t('marketplace.sort.price_asc') },
+  { value: 'price_desc', label: t('marketplace.sort.price_desc') },
+  { value: 'experience_desc', label: t('marketplace.sort.experience_desc') },
+])
 
 function handleChange(event: Event) {
   const target = event.target as HTMLSelectElement
@@ -26,9 +29,9 @@ function handleChange(event: Event) {
 </script>
 
 <template>
-  <div class="catalog-sort">
+  <div class="catalog-sort" data-test="marketplace-sort">
     <ArrowUpDown :size="16" class="icon" />
-    <select :value="value" @change="handleChange">
+    <select :value="value" data-test="marketplace-sort-select" @change="handleChange">
       <option v-for="opt in sortOptions" :key="opt.value" :value="opt.value">
         {{ opt.label }}
       </option>

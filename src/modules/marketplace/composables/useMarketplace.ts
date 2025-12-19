@@ -163,7 +163,6 @@ export function useMyProfile() {
     submitForReview: store.submitForReview,
     publishProfile: store.publishProfile,
     unpublishProfile: store.unpublishProfile,
-    uploadPhoto: store.uploadPhoto,
   }
 }
 

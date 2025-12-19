@@ -7,9 +7,12 @@ import ProfileEditor from '../components/editor/ProfileEditor.vue'
 import ProfileStatusBadge from '../components/shared/ProfileStatusBadge.vue'
 import CreateProfilePrompt from '../components/editor/CreateProfilePrompt.vue'
 import LoadingSpinner from '@/ui/LoadingSpinner.vue'
-import type { TutorProfile } from '../api/marketplace'
+import type { TutorProfileUpsertPayload, TutorProfilePatchPayload } from '../api/marketplace'
+import { telemetry } from '@/services/telemetry'
+import { useI18n } from 'vue-i18n'
 
 const store = useMarketplaceStore()
+const { t } = useI18n()
 const {
   myProfile,
   isLoadingMyProfile,
@@ -18,43 +21,55 @@ const {
   canSubmitForReview,
   canPublish,
   error,
+  validationErrors,
+  filterOptions,
 } = storeToRefs(store)
+
+const hasValidationErrors = computed(() => {
+  return validationErrors.value && Object.keys(validationErrors.value).length > 0
+})
 
 const profileUrl = computed(() => {
   if (!myProfile.value?.slug) return null
-  return `/tutor/${myProfile.value.slug}`
+  return `/marketplace/tutors/${myProfile.value.slug}`
 })
 
 onMounted(() => {
   store.loadMyProfile()
+  store.loadFilterOptions()
 })
 
-async function handleSave(data: Partial<TutorProfile>) {
+async function handleSave(data: TutorProfilePatchPayload) {
+  telemetry.trigger('marketplace_profile_save', { has_id: typeof myProfile.value?.id === 'number' })
   await store.updateProfile(data)
 }
 
-async function handleCreate(data: Partial<TutorProfile>) {
+async function handleCreate(data: TutorProfileUpsertPayload) {
+  telemetry.trigger('marketplace_profile_create', {})
   await store.createProfile(data)
 }
 
 async function handleSubmit() {
+  telemetry.trigger('marketplace_profile_submit', { is_complete: isProfileComplete.value })
   await store.submitForReview()
 }
 
 async function handlePublish() {
+  telemetry.trigger('marketplace_profile_publish', { status: myProfile.value?.status || null })
   await store.publishProfile()
 }
 
 async function handleUnpublish() {
+  telemetry.trigger('marketplace_profile_unpublish', {})
   await store.unpublishProfile()
 }
 </script>
 
 <template>
-  <div class="my-profile-view">
+  <div class="my-profile-view" data-test="marketplace-my-profile">
     <header class="page-header">
       <div class="header-content">
-        <h1>My Tutor Profile</h1>
+        <h1>{{ t('marketplace.profile.title') }}</h1>
         <div class="header-actions">
           <ProfileStatusBadge v-if="myProfile" :status="myProfile.status" />
 
@@ -64,34 +79,37 @@ async function handleUnpublish() {
             target="_blank"
             class="btn btn-ghost"
           >
-            View Public Profile
+            {{ t('marketplace.profile.viewPublic') }}
           </a>
 
           <button
             v-if="canPublish && !myProfile?.is_public"
             class="btn btn-primary"
             :disabled="isSaving"
+            data-test="marketplace-publish"
             @click="handlePublish"
           >
-            {{ isSaving ? 'Publishing...' : 'Publish Profile' }}
+            {{ isSaving ? t('marketplace.profile.publishing') : t('marketplace.profile.publish') }}
           </button>
 
           <button
             v-if="myProfile?.is_public"
             class="btn btn-secondary"
             :disabled="isSaving"
+            data-test="marketplace-unpublish"
             @click="handleUnpublish"
           >
-            {{ isSaving ? 'Unpublishing...' : 'Unpublish' }}
+            {{ isSaving ? t('marketplace.profile.unpublishing') : t('marketplace.profile.unpublish') }}
           </button>
 
           <button
             v-if="canSubmitForReview"
             class="btn btn-secondary"
             :disabled="isSaving"
+            data-test="marketplace-submit"
             @click="handleSubmit"
           >
-            {{ isSaving ? 'Submitting...' : 'Submit for Review' }}
+            {{ isSaving ? t('marketplace.profile.submitting') : t('marketplace.profile.submit') }}
           </button>
         </div>
       </div>
@@ -101,19 +119,30 @@ async function handleUnpublish() {
       <LoadingSpinner v-if="isLoadingMyProfile" />
 
       <template v-else>
-        <div v-if="error" class="error-banner">
+        <div v-if="error" class="error-banner" data-test="marketplace-profile-error">
           {{ error }}
         </div>
 
-        <div v-if="!isProfileComplete && myProfile" class="incomplete-banner">
-          <strong>Your profile is incomplete.</strong>
-          Complete all required fields to submit for review.
+        <div v-if="hasValidationErrors" class="validation-banner" data-test="marketplace-profile-validation">
+          <strong>{{ t('marketplace.profile.validationTitle') }}</strong>
+          <ul>
+            <li v-for="(messages, field) in validationErrors" :key="field">
+              {{ field }}: {{ (messages || []).join(', ') }}
+            </li>
+          </ul>
+        </div>
+
+        <div v-if="!isProfileComplete && myProfile" class="incomplete-banner" data-test="marketplace-profile-incomplete">
+          <strong>{{ t('marketplace.profile.incompleteTitle') }}</strong>
+          {{ t('marketplace.profile.incompleteDescription') }}
         </div>
 
         <ProfileEditor
           v-if="myProfile"
           :profile="myProfile"
           :saving="isSaving"
+          :filter-options="filterOptions"
+          data-test="marketplace-profile-editor"
           @save="handleSave"
         />
 
@@ -126,12 +155,12 @@ async function handleUnpublish() {
 <style scoped>
 .my-profile-view {
   min-height: 100vh;
-  background: #f9fafb;
+  background: var(--surface-marketplace);
 }
 
 .page-header {
-  background: white;
-  border-bottom: 1px solid #e5e7eb;
+  background: var(--nav-bg);
+  border-bottom: 1px solid var(--border-color);
   padding: 1.5rem;
 }
 
@@ -149,7 +178,7 @@ async function handleUnpublish() {
   font-size: 1.5rem;
   font-weight: 600;
   margin: 0;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .header-actions {
@@ -166,68 +195,35 @@ async function handleUnpublish() {
 }
 
 .error-banner {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #991b1b;
+  background: color-mix(in srgb, var(--danger-bg) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger-bg) 28%, transparent);
+  color: var(--text-primary);
   padding: 1rem;
   border-radius: 8px;
   margin-bottom: 1.5rem;
 }
 
 .incomplete-banner {
-  background: #fffbeb;
-  border: 1px solid #fde68a;
-  color: #92400e;
+  background: color-mix(in srgb, var(--warning-bg) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warning-bg) 32%, transparent);
+  color: var(--text-primary);
   padding: 1rem;
   border-radius: 8px;
   margin-bottom: 1.5rem;
 }
 
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.625rem 1.25rem;
-  border: none;
+.validation-banner {
+  background: color-mix(in srgb, var(--info-bg) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--info-bg) 28%, transparent);
+  color: var(--text-primary);
+  padding: 1rem;
   border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  text-decoration: none;
+  margin-bottom: 1.5rem;
 }
 
-.btn-primary {
-  background: #3b82f6;
-  color: white;
+.validation-banner ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
 }
 
-.btn-primary:hover {
-  background: #2563eb;
-}
-
-.btn-secondary {
-  background: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
-}
-
-.btn-secondary:hover {
-  background: #f9fafb;
-}
-
-.btn-ghost {
-  background: transparent;
-  color: #3b82f6;
-}
-
-.btn-ghost:hover {
-  background: #eff6ff;
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
 </style>

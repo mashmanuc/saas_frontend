@@ -135,7 +135,7 @@ const clearHistory = () => {
 const handleSuggestionSelect = (suggestion: Suggestion) => {
   if (suggestion.type === 'tutor' && suggestion.slug) {
     // Navigate to tutor profile
-    window.location.href = `/tutor/${suggestion.slug}`
+    window.location.href = `/marketplace/tutors/${suggestion.slug}`
   } else {
     emit('update:modelValue', suggestion.text)
     emit('search', suggestion.text)

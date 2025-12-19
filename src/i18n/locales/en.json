@@ -271,9 +271,130 @@
     "analytics": "Analytics",
     "tutorDashboard": "Tutor dashboard",
     "studentDashboard": "Student dashboard",
+    "marketplace": "Marketplace",
     "profile": "Profile",
+    "marketplaceMyProfile": "My tutor profile",
+    "tutorProfile": "Tutor profile",
     "sandbox": "Sandbox",
     "soloWorkspace": "Solo Workspace"
+  },
+  "marketplace": {
+    "sort": {
+      "label": "Sort",
+      "default": "Default",
+      "rating": "Highest rated",
+      "price_asc": "Price: low to high",
+      "price_desc": "Price: high to low",
+      "experience_desc": "Most experienced"
+    },
+    "catalog": {
+      "title": "Find your perfect tutor",
+      "subtitle": "Browse {count} tutors ready to help you learn",
+      "resultsCount": "{count} found",
+      "errorTitle": "Something went wrong",
+      "errorDescription": "Please try again or clear filters",
+      "clearFilters": "Clear filters",
+      "loading": "Loading…",
+      "loadMore": "Load more",
+      "emptyTitle": "No tutors found",
+      "emptyDescription": "Try adjusting your filters or search criteria"
+    },
+    "filters": {
+      "title": "Filters",
+      "clear": "Clear",
+      "search": "Search",
+      "searchPlaceholder": "Type at least 2 characters",
+      "language": "Language",
+      "subject": "Subject",
+      "category": "Category",
+      "country": "Country",
+      "allCountries": "All countries",
+      "price": "Price",
+      "priceRangeLabel": "Price range",
+      "min": "Min",
+      "max": "Max",
+      "priceRange": "${min} – ${max}",
+      "rating": "Rating",
+      "ratingMin": "{rating}+",
+      "experience": "Experience (years)",
+      "experiencePlaceholder": "e.g. 3",
+      "format": "Format",
+      "any": "Any",
+      "formatOnline": "Online",
+      "formatOffline": "Offline",
+      "formatHybrid": "Hybrid",
+      "timezone": "Timezone",
+      "timezonePlaceholder": "e.g. Europe/Kyiv",
+      "video": "Video",
+      "hasVideo": "Has video intro",
+      "hasCertifications": "Has certifications",
+      "verified": "Verification",
+      "verifiedOnly": "Verified only",
+      "clearAll": "Clear all"
+    },
+    "profile": {
+      "title": "My tutor profile",
+      "viewPublic": "View public profile",
+      "publish": "Publish profile",
+      "publishing": "Publishing…",
+      "unpublish": "Unpublish",
+      "unpublishing": "Unpublishing…",
+      "submit": "Submit for review",
+      "submitting": "Submitting…",
+      "validationTitle": "Validation errors:",
+      "incompleteTitle": "Your profile is incomplete.",
+      "incompleteDescription": "Complete required fields to submit your profile for review.",
+      "create": {
+        "title": "Create your tutor profile",
+        "subtitle": "Start sharing your expertise with students around the world.",
+        "headlinePlaceholder": "Enter a headline, e.g. 'Experienced Math Tutor'",
+        "creating": "Creating…",
+        "cta": "Get started",
+        "benefit1": "Reach thousands of students",
+        "benefit2": "Set your own schedule and rates",
+        "benefit3": "Build your reputation with reviews",
+        "benefit4": "Get paid securely"
+      },
+      "editor": {
+        "photoTitle": "Photo",
+        "noPhoto": "No photo",
+        "uploadPhoto": "Upload photo",
+        "basicTitle": "Basic information",
+        "headlineLabel": "Headline",
+        "headlinePlaceholder": "e.g. Experienced Math Tutor",
+        "headlineHint": "A short tagline that describes you",
+        "bioLabel": "About me",
+        "bioPlaceholder": "Tell students about yourself, your teaching style, and experience…",
+        "countryLabel": "Country",
+        "countryPlaceholder": "e.g. Ukraine",
+        "timezoneLabel": "Timezone",
+        "timezonePlaceholder": "e.g. Europe/Kyiv",
+        "subjectsLanguagesTitle": "Subjects & languages",
+        "subjectsLabel": "Subjects",
+        "selectSubject": "Select subject…",
+        "languagesLabel": "Languages",
+        "selectLanguage": "Select language…",
+        "add": "Add",
+        "remove": "Remove",
+        "pricingTitle": "Pricing",
+        "hourlyRateLabel": "Hourly rate",
+        "trialPriceLabel": "Trial lesson price",
+        "trialPricePlaceholder": "Leave empty for no trial",
+        "trialPriceHint": "Optional discounted price for first lesson",
+        "videoTitle": "Video introduction",
+        "videoUrlLabel": "Video URL",
+        "videoUrlPlaceholder": "https://youtube.com/watch?v=…",
+        "videoHint": "YouTube or Vimeo link to your introduction video",
+        "saving": "Saving…",
+        "save": "Save changes",
+        "languageLevels": {
+          "basic": "Basic",
+          "conversational": "Conversational",
+          "fluent": "Fluent",
+          "native": "Native"
+        }
+      }
+    }
   },
   "common": {
     "accept": "Accept",
@@ -465,8 +586,46 @@
     }
   },
   "student": {
+    "dashboard": {
+      "subtitle": "Track your lessons, tutors, and invitations."
+    },
     "withoutTutor": "You are learning on your own. Choose a tutor to start lessons.",
-    "withTutor": "You already have a tutor. More information about your lessons will appear here soon."
+    "withTutor": "You already have a tutor.",
+    "noTutor": {
+      "description": "Browse tutors in the marketplace and send collaboration requests."
+    },
+    "invited": {
+      "header": "Tutor invitation",
+      "title": "You were invited by tutor: {name}",
+      "description": "Accept or decline the invitation to start learning."
+    },
+    "stateHints": {
+      "active": {
+        "title": "You have an assigned tutor",
+        "description": "Use chat and plan lessons right from your dashboard."
+      },
+      "invited": {
+        "title": "You have a pending invitation",
+        "description": "Accept or decline the invitation to choose who you learn with."
+      }
+    },
+    "actions": {
+      "chooseTutor": "Choose a tutor",
+      "exploreMarketplace": "Explore marketplace",
+      "messageTutor": "Message tutor",
+      "bookLesson": "Book a lesson",
+      "viewAllLessons": "View all lessons"
+    },
+    "upcomingLessons": {
+      "title": "Upcoming lessons",
+      "placeholder": "Scheduled lessons will appear here soon."
+    },
+    "notifications": {
+      "acceptSuccess": "Invitation accepted",
+      "acceptError": "Failed to accept invitation",
+      "declineSuccess": "Invitation declined",
+      "declineError": "Failed to decline invitation"
+    }
   },
   "chat": {
     "header": {

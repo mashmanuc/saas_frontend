@@ -2,14 +2,21 @@
 // TASK MF8: ProfileHeader component
 import { ArrowLeft, MapPin, Clock, Star, Play } from 'lucide-vue-next'
 import type { TutorProfile } from '../../api/marketplace'
+import { resolveMediaUrl } from '@/utils/media'
 import Rating from '../shared/Rating.vue'
 import BadgeIcon from '../shared/Badge.vue'
+import { computed } from 'vue'
 
 interface Props {
   profile: TutorProfile
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
+
+const avatarUrl = computed(() => {
+  const value = props.profile?.user?.avatar_url || ''
+  return value ? resolveMediaUrl(value) : ''
+})
 
 const emit = defineEmits<{
   (e: 'back'): void
@@ -29,8 +36,8 @@ const emit = defineEmits<{
       <div class="profile-info">
         <div class="photo-container">
           <img
-            v-if="profile.photo"
-            :src="profile.photo"
+            v-if="avatarUrl"
+            :src="avatarUrl"
             :alt="profile.user.full_name"
             class="photo"
           />

@@ -1,7 +1,7 @@
 <template>
   <div class="sort-dropdown" ref="dropdownRef">
     <button type="button" class="sort-dropdown__button" @click="toggle">
-      <span class="sort-dropdown__label">Сортування</span>
+      <span class="sort-dropdown__label">{{ t('marketplace.sort.label') }}</span>
       <span class="sort-dropdown__value">{{ activeLabel }}</span>
       <span class="sort-dropdown__chevron" :class="{ 'is-open': open }">⌄</span>
     </button>
@@ -24,6 +24,7 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps({
   modelValue: {
@@ -40,9 +41,11 @@ const emit = defineEmits(['update:modelValue'])
 const open = ref(false)
 const dropdownRef = ref(null)
 
+const { t } = useI18n()
+
 const activeLabel = computed(() => {
   const match = props.options.find((option) => option.value === props.modelValue)
-  return match?.label || 'За замовчуванням'
+  return match?.label || t('marketplace.sort.default')
 })
 
 function toggle() {

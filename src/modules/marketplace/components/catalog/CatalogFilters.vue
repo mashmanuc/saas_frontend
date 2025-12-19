@@ -2,18 +2,12 @@
 // TASK MF7 + F8: CatalogFilters component (enhanced for v0.20.0)
 import { ref, watch, computed } from 'vue'
 import { X, Filter } from 'lucide-vue-next'
-import type {
-  CatalogFilters,
-  FilterOptions,
-  SearchFilters,
-  ExtendedFilterOptions,
-} from '../../api/marketplace'
-import FilterSection from './FilterSection.vue'
-import PriceRangeSlider from './PriceRangeSlider.vue'
-import RatingFilter from './RatingFilter.vue'
+import type { CatalogFilters, FilterOptions, ExtendedFilterOptions } from '../../api/marketplace'
+import { useI18n } from 'vue-i18n'
+import { getLanguageName } from '@/config/languages'
 
 // Support both old CatalogFilters and new SearchFilters
-type AnyFilters = CatalogFilters | SearchFilters
+type AnyFilters = CatalogFilters
 type AnyOptions = FilterOptions | ExtendedFilterOptions | null
 
 interface Props {
@@ -23,6 +17,9 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+
+const { t, locale } = useI18n()
+const useNativeLanguageNames = computed(() => locale.value === 'uk')
 
 const emit = defineEmits<{
   (e: 'update', filters: Partial<AnyFilters>): void
@@ -70,87 +67,46 @@ const languageOptions = computed(() => {
     const opts = props.options as ExtendedFilterOptions
     return opts.languages.map((l) => ({
       value: l.code,
-      label: l.name,
+      label: getLanguageName(l.code, useNativeLanguageNames.value),
       count: l.count,
     }))
   }
-  return (props.options as FilterOptions).languages
+  return (props.options as FilterOptions).languages.map((l) => ({
+    ...l,
+    label: getLanguageName(l.value, useNativeLanguageNames.value),
+  }))
 })
 
 // Get categories (only for extended)
-const categoryOptions = computed(() => {
-  if (!props.options || !isExtendedOptions.value) return []
-  return (props.options as ExtendedFilterOptions).categories
-})
-
-// Filter subjects by selected category
-const filteredSubjects = computed(() => {
-  const category = (props.filters as SearchFilters).category
-  if (!category || !isExtendedOptions.value) return subjectOptions.value
-  return subjectOptions.value.filter((s: any) => s.category === category)
-})
-
-// Price range
-const priceRange = computed(() => {
-  if (!props.options) return { min: 0, max: 200 }
-  return props.options.priceRange
-})
+const filteredSubjects = computed(() => subjectOptions.value)
 
 const localFilters = ref<AnyFilters>({ ...props.filters })
 
-// Normalized accessors for mixed property names
-const minPrice = computed({
-  get: () => (localFilters.value as any).min_price ?? (localFilters.value as any).minPrice ?? null,
+const priceMin = computed({
+  get: () => (localFilters.value as any).price_min ?? null,
   set: (v) => {
-    if ('minPrice' in localFilters.value) {
-      (localFilters.value as any).minPrice = v
-    } else {
-      (localFilters.value as any).min_price = v
-    }
+    ;(localFilters.value as any).price_min = v
   },
 })
 
-const maxPrice = computed({
-  get: () => (localFilters.value as any).max_price ?? (localFilters.value as any).maxPrice ?? null,
+const priceMax = computed({
+  get: () => (localFilters.value as any).price_max ?? null,
   set: (v) => {
-    if ('maxPrice' in localFilters.value) {
-      (localFilters.value as any).maxPrice = v
-    } else {
-      (localFilters.value as any).max_price = v
-    }
+    ;(localFilters.value as any).price_max = v
   },
 })
 
-const minRating = computed({
-  get: () => (localFilters.value as any).min_rating ?? (localFilters.value as any).minRating ?? null,
-  set: (v) => {
-    if ('minRating' in localFilters.value) {
-      (localFilters.value as any).minRating = v
-    } else {
-      (localFilters.value as any).min_rating = v
-    }
+const selectedLanguages = computed({
+  get: () => (Array.isArray((localFilters.value as any).language) ? (localFilters.value as any).language : []),
+  set: (v: string[]) => {
+    ;(localFilters.value as any).language = v
   },
 })
 
-const hasVideo = computed({
-  get: () => (localFilters.value as any).has_video ?? (localFilters.value as any).hasVideo ?? false,
-  set: (v) => {
-    if ('hasVideo' in localFilters.value) {
-      (localFilters.value as any).hasVideo = v
-    } else {
-      (localFilters.value as any).has_video = v
-    }
-  },
-})
-
-const isVerified = computed({
-  get: () => (localFilters.value as any).is_verified ?? (localFilters.value as any).isVerified ?? false,
-  set: (v) => {
-    if ('isVerified' in localFilters.value) {
-      (localFilters.value as any).isVerified = v
-    } else {
-      (localFilters.value as any).is_verified = v
-    }
+const selectedSubjects = computed({
+  get: () => (Array.isArray((localFilters.value as any).subject) ? (localFilters.value as any).subject : []),
+  set: (v: string[]) => {
+    ;(localFilters.value as any).subject = v
   },
 })
 
@@ -177,129 +133,162 @@ function hasActiveFilters(): boolean {
 
 <template>
   <div class="catalog-filters">
-    <div class="filters-header">
+    <div class="filters-header" data-test="marketplace-filters">
       <h3>
         <Filter :size="18" />
-        Filters
+        {{ t('marketplace.filters.title') }}
       </h3>
-      <button v-if="hasActiveFilters()" class="clear-btn" @click="clearFilters">
+      <button v-if="hasActiveFilters()" class="clear-btn" type="button" @click="clearFilters">
         <X :size="14" />
-        Clear
+        {{ t('marketplace.filters.clear') }}
       </button>
     </div>
 
-    <div class="filter-group">
-      <label>Subject</label>
-      <select v-model="localFilters.subject" @change="applyFilters">
-        <option value="">All Subjects</option>
-        <option
-          v-for="opt in filteredSubjects"
-          :key="opt.value"
-          :value="opt.value"
-        >
-          {{ opt.label }} ({{ opt.count }})
-        </option>
-      </select>
-    </div>
-
-    <div class="filter-group">
-      <label>Country</label>
-      <select v-model="localFilters.country" @change="applyFilters">
-        <option value="">All Countries</option>
-        <option
-          v-for="opt in countryOptions"
-          :key="opt.value"
-          :value="opt.value"
-        >
-          {{ opt.label }} ({{ opt.count }})
-        </option>
-      </select>
-    </div>
-
-    <div class="filter-group">
-      <label>Language</label>
-      <select v-model="localFilters.language" @change="applyFilters">
-        <option value="">All Languages</option>
-        <option
-          v-for="opt in languageOptions"
-          :key="opt.value"
-          :value="opt.value"
-        >
-          {{ opt.label }} ({{ opt.count }})
-        </option>
-      </select>
-    </div>
-
-    <div class="filter-group">
-      <label>Price Range</label>
-      <div class="price-inputs">
+    <div class="filters-body">
+      <div class="filter-group">
+        <label>{{ t('marketplace.filters.search') }}</label>
         <input
-          v-model.number="minPrice"
-          type="number"
-          placeholder="Min"
-          min="0"
-          @change="applyFilters"
-        />
-        <span>—</span>
-        <input
-          v-model.number="maxPrice"
-          type="number"
-          placeholder="Max"
-          min="0"
+          v-model="localFilters.q"
+          type="text"
+          :placeholder="t('marketplace.filters.searchPlaceholder')"
+          data-test="marketplace-filter-q"
           @change="applyFilters"
         />
       </div>
-    </div>
 
-    <div class="filter-group">
-      <label>Minimum Rating</label>
-      <select v-model.number="minRating" @change="applyFilters">
-        <option value="">Any Rating</option>
-        <option :value="4">4+ Stars</option>
-        <option :value="4.5">4.5+ Stars</option>
-        <option :value="5">5 Stars</option>
-      </select>
-    </div>
+      <div class="filter-group">
+        <label>{{ t('marketplace.filters.subject') }}</label>
+        <select v-model="selectedSubjects" multiple data-test="marketplace-filter-subject" @change="applyFilters">
+          <option
+            v-for="opt in filteredSubjects"
+            :key="opt.value"
+            :value="opt.value"
+          >
+            {{ opt.label }} ({{ opt.count }})
+          </option>
+        </select>
+      </div>
 
-    <div class="filter-group">
-      <label class="checkbox-label">
+      <div class="filter-group">
+        <label>{{ t('marketplace.filters.country') }}</label>
+        <select v-model="localFilters.country" data-test="marketplace-filter-country" @change="applyFilters">
+          <option value="">{{ t('marketplace.filters.allCountries') }}</option>
+          <option
+            v-for="opt in countryOptions"
+            :key="opt.value"
+            :value="opt.value"
+          >
+            {{ opt.label }} ({{ opt.count }})
+          </option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>{{ t('marketplace.filters.language') }}</label>
+        <select v-model="selectedLanguages" multiple data-test="marketplace-filter-language" @change="applyFilters">
+          <option
+            v-for="opt in languageOptions"
+            :key="opt.value"
+            :value="opt.value"
+          >
+            {{ opt.label }} ({{ opt.count }})
+          </option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>{{ t('marketplace.filters.priceRangeLabel') }}</label>
+        <div class="price-inputs">
+          <input
+            v-model.number="priceMin"
+            type="number"
+            :placeholder="t('marketplace.filters.min')"
+            min="0"
+            data-test="marketplace-filter-price-min"
+            @change="applyFilters"
+          />
+          <span class="dash">—</span>
+          <input
+            v-model.number="priceMax"
+            type="number"
+            :placeholder="t('marketplace.filters.max')"
+            min="0"
+            data-test="marketplace-filter-price-max"
+            @change="applyFilters"
+          />
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <label>{{ t('marketplace.filters.experience') }}</label>
         <input
-          v-model="hasVideo"
-          type="checkbox"
+          v-model.number="localFilters.experience_min"
+          type="number"
+          min="0"
+          :placeholder="t('marketplace.filters.experiencePlaceholder')"
+          data-test="marketplace-filter-experience-min"
           @change="applyFilters"
         />
-        Has Video Introduction
-      </label>
-    </div>
+      </div>
 
-    <div class="filter-group">
-      <label class="checkbox-label">
+      <div class="filter-group">
+        <label>{{ t('marketplace.filters.format') }}</label>
+        <select v-model="localFilters.format" data-test="marketplace-filter-format" @change="applyFilters">
+          <option value="">{{ t('marketplace.filters.any') }}</option>
+          <option value="online">{{ t('marketplace.filters.formatOnline') }}</option>
+          <option value="offline">{{ t('marketplace.filters.formatOffline') }}</option>
+          <option value="hybrid">{{ t('marketplace.filters.formatHybrid') }}</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>{{ t('marketplace.filters.timezone') }}</label>
         <input
-          v-model="isVerified"
-          type="checkbox"
+          v-model="localFilters.timezone"
+          type="text"
+          :placeholder="t('marketplace.filters.timezonePlaceholder')"
+          data-test="marketplace-filter-timezone"
           @change="applyFilters"
         />
-        Verified Tutors Only
-      </label>
+      </div>
+
+      <div class="filter-group">
+        <label class="checkbox-label">
+          <input
+            v-model="localFilters.has_certifications"
+            type="checkbox"
+            data-test="marketplace-filter-has-certifications"
+            @change="applyFilters"
+          />
+          {{ t('marketplace.filters.hasCertifications') }}
+        </label>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
 .catalog-filters {
-  background: white;
-  border-radius: 12px;
-  padding: 1.25rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: var(--surface-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  box-shadow: var(--shadow-card);
+}
+
+.filters-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
 }
 
 .filters-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1.25rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .filters-header h3 {
@@ -309,7 +298,7 @@ function hasActiveFilters(): boolean {
   font-size: 1rem;
   font-weight: 600;
   margin: 0;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .clear-btn {
@@ -318,45 +307,48 @@ function hasActiveFilters(): boolean {
   gap: 0.25rem;
   padding: 0.375rem 0.75rem;
   background: transparent;
-  border: none;
-  color: #6b7280;
+  border: 1px solid transparent;
+  color: var(--text-muted);
   font-size: 0.8125rem;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: var(--radius-full);
 }
 
 .clear-btn:hover {
-  background: #f3f4f6;
-  color: #374151;
+  background: color-mix(in srgb, var(--accent-primary) 10%, transparent);
+  border-color: color-mix(in srgb, var(--accent-primary) 25%, transparent);
+  color: var(--text-primary);
 }
 
 .filter-group {
-  margin-bottom: 1rem;
+  margin-bottom: 0;
 }
 
 .filter-group label {
   display: block;
   font-size: 0.8125rem;
   font-weight: 500;
-  color: #374151;
-  margin-bottom: 0.375rem;
+  color: var(--text-muted);
+  margin-bottom: var(--space-xs);
 }
 
 .filter-group select,
+.filter-group input[type='text'],
 .filter-group input[type='number'] {
   width: 100%;
   padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   font-size: 0.875rem;
-  background: white;
+  background: var(--surface-card);
+  color: var(--text-primary);
 }
 
 .filter-group select:focus,
 .filter-group input:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: color-mix(in srgb, var(--accent-primary) 60%, var(--border-color));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 18%, transparent);
 }
 
 .price-inputs {
@@ -365,12 +357,17 @@ function hasActiveFilters(): boolean {
   gap: 0.5rem;
 }
 
+.dash {
+  width: 1rem;
+  text-align: center;
+}
+
 .price-inputs input {
   flex: 1;
 }
 
 .price-inputs span {
-  color: #9ca3af;
+  color: var(--text-muted);
 }
 
 .checkbox-label {

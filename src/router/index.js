@@ -18,8 +18,9 @@ import LessonList from '../modules/lessons/views/LessonList.vue'
 import LessonView from '../modules/lessons/views/LessonView.vue'
 import ProfileOverviewView from '../modules/profile/views/ProfileOverviewView.vue'
 import LessonInviteResolveView from '../modules/lessons/views/LessonInviteResolveView.vue'
-const MarketplaceListView = () => import('../modules/marketplace/views/MarketplaceListView.vue')
-const MarketplaceTutorView = () => import('../modules/marketplace/views/MarketplaceTutorView.vue')
+const MarketplaceListView = () => import('../modules/marketplace/views/TutorCatalogView.vue')
+const MarketplaceTutorView = () => import('../modules/marketplace/views/TutorProfileView.vue')
+const MarketplaceMyProfileView = () => import('../modules/marketplace/views/MyProfileView.vue')
 const ProfileEditView = () => import('../modules/profile/views/ProfileEditView.vue')
 const ProfileSettingsView = () => import('../modules/profile/views/ProfileSettingsView.vue')
 const ProfileActivityView = () => import('../modules/profile/views/ProfileActivityView.vue')
@@ -171,10 +172,26 @@ const routes = [
         meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN] },
       },
       {
-        path: 'marketplace/tutors/:id',
+        path: 'marketplace/tutors/:slug',
         name: 'marketplace-tutor',
         component: MarketplaceTutorView,
         meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN] },
+      },
+      {
+        path: 'marketplace/my-profile',
+        name: 'marketplace-my-profile',
+        component: MarketplaceMyProfileView,
+        meta: {
+          requiresAuth: true,
+          roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN],
+        },
+        beforeEnter: (to, from, next) => {
+          const auth = useAuthStore()
+          if (auth.user?.role !== USER_ROLES.TUTOR) {
+            return next('/marketplace')
+          }
+          return next()
+        },
       },
       {
         path: 'dev/theme',

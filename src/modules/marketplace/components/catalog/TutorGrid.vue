@@ -11,8 +11,8 @@ defineProps<Props>()
 </script>
 
 <template>
-  <div class="tutor-grid" :class="{ loading }">
-    <TutorCard v-for="tutor in tutors" :key="tutor.id" :tutor="tutor" />
+  <div class="tutor-grid" :class="{ loading }" data-test="marketplace-grid">
+    <TutorCard v-for="tutor in tutors" :key="tutor.id" :tutor="tutor" data-test="marketplace-tutor-card" />
   </div>
 </template>
 

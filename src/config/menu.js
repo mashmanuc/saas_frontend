@@ -19,7 +19,8 @@ export const MENU_BY_ROLE = {
     { label: 'menu.students', icon: 'users', to: '/tutor/students' },
     { label: 'menu.lessons', icon: 'book', to: '/lessons' },
     { label: 'menu.soloWorkspace', icon: 'edit', to: '/solo' },
-    { label: 'menu.profile', icon: 'user', to: '/dashboard/profile' },
+    { label: 'menu.profile', icon: 'user', to: '/dashboard/profile/edit' },
+    { label: 'menu.tutorProfile', icon: 'users', to: '/marketplace/my-profile' },
   ],
   student: [
     { label: 'menu.dashboard', icon: 'home', to: '/student' },

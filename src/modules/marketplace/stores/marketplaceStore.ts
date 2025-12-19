@@ -2,12 +2,15 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { debounce } from '@/utils/debounce'
 import {
   marketplaceApi,
   type TutorListItem,
   type TutorProfile,
   type CatalogFilters,
   type FilterOptions,
+  type TutorProfileUpsertPayload,
+  type TutorProfilePatchPayload,
 } from '../api/marketplace'
 
 export const useMarketplaceStore = defineStore('marketplace', () => {
@@ -15,10 +18,10 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
   const tutors = ref<TutorListItem[]>([])
   const totalCount = ref(0)
   const currentPage = ref(1)
-  const pageSize = ref(20)
+  const pageSize = ref(24)
   const isLoading = ref(false)
   const filters = ref<CatalogFilters>({})
-  const sortBy = ref('-average_rating')
+  const sortBy = ref('rating')
 
   // Current profile state (viewing)
   const currentProfile = ref<TutorProfile | null>(null)
@@ -34,6 +37,60 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
 
   // Error state
   const error = ref<string | null>(null)
+  const validationErrors = ref<Record<string, string[]> | null>(null)
+
+  function mapApiError(err: unknown, fallback: string): string {
+    const anyErr = err as any
+    const status = anyErr?.response?.status
+    const payload = anyErr?.response?.data
+    const detail = payload?.detail
+    const code = payload?.error || detail
+
+    if (status === 422) {
+      return 'Перевірте коректність даних профілю.'
+    }
+
+    if (status === 429 || code === 'rate_limited') {
+      return 'Забагато запитів. Спробуйте ще раз трохи пізніше.'
+    }
+    if (status === 413 || code === 'payload_too_large') {
+      return 'Дані завеликі. Зменшіть обсяг і спробуйте ще раз.'
+    }
+    if (status === 403 || code === 'forbidden') {
+      return 'Доступ заборонено.'
+    }
+    if (status >= 500) {
+      return 'Помилка сервера. Спробуйте пізніше.'
+    }
+
+    return detail || payload?.message || fallback
+  }
+
+  function setValidationErrorsFromApi(err: unknown): void {
+    const anyErr = err as any
+    const status = anyErr?.response?.status
+    const payload = anyErr?.response?.data
+    if (status !== 422 || !payload || typeof payload !== 'object') {
+      validationErrors.value = null
+      return
+    }
+
+    const next: Record<string, string[]> = {}
+    const errors = (payload as any).errors || (payload as any)
+    if (errors && typeof errors === 'object') {
+      for (const [k, v] of Object.entries(errors)) {
+        if (k === 'detail' || k === 'error') continue
+        if (Array.isArray(v)) {
+          next[k] = v.map((x) => String(x))
+        } else if (typeof v === 'string') {
+          next[k] = [v]
+        } else if (v != null) {
+          next[k] = [JSON.stringify(v)]
+        }
+      }
+    }
+    validationErrors.value = Object.keys(next).length ? next : null
+  }
 
   // Getters
   const hasMore = computed(() => tutors.value.length < totalCount.value)
@@ -44,6 +101,7 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
       myProfile.value.photo &&
       myProfile.value.bio &&
       myProfile.value.subjects.length > 0 &&
+      myProfile.value.languages.length > 0 &&
       myProfile.value.hourly_rate > 0
     )
   })
@@ -57,6 +115,10 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
   })
 
   // Actions
+  const debouncedReload = debounce(() => {
+    void loadTutors(true)
+  }, 300)
+
   async function loadTutors(reset: boolean = false): Promise<void> {
     if (reset) {
       currentPage.value = 1
@@ -81,7 +143,7 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
       }
       totalCount.value = response.count
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to load tutors'
+      error.value = mapApiError(err, 'Не вдалося завантажити тьюторів.')
       console.error('[MarketplaceStore] loadTutors error:', err)
     } finally {
       isLoading.value = false
@@ -94,19 +156,30 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     await loadTutors(false)
   }
 
-  function setFilters(newFilters: CatalogFilters): void {
-    filters.value = newFilters
-    loadTutors(true)
+  function setFilters(newFilters: Partial<CatalogFilters>): void {
+    const next: CatalogFilters = { ...filters.value, ...newFilters }
+
+    if (typeof next.q === 'string') {
+      const v = next.q.trim()
+      if (v.length < 2) {
+        delete (next as any).q
+      } else {
+        next.q = v
+      }
+    }
+
+    filters.value = next
+    debouncedReload()
   }
 
   function clearFilters(): void {
     filters.value = {}
-    loadTutors(true)
+    debouncedReload()
   }
 
   function setSort(sort: string): void {
     sortBy.value = sort
-    loadTutors(true)
+    debouncedReload()
   }
 
   async function loadProfile(slug: string): Promise<void> {
@@ -116,7 +189,7 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     try {
       currentProfile.value = await marketplaceApi.getTutorProfile(slug)
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to load profile'
+      error.value = mapApiError(err, 'Не вдалося завантажити профіль тьютора.')
       currentProfile.value = null
       console.error('[MarketplaceStore] loadProfile error:', err)
     } finally {
@@ -142,28 +215,37 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     }
   }
 
-  async function createProfile(data: Partial<TutorProfile>): Promise<void> {
+  async function createProfile(data: TutorProfileUpsertPayload): Promise<void> {
     isSaving.value = true
     error.value = null
+    validationErrors.value = null
 
     try {
       myProfile.value = await marketplaceApi.createProfile(data)
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to create profile'
+      setValidationErrorsFromApi(err)
+      error.value = mapApiError(err, 'Не вдалося створити профіль.')
       throw err
     } finally {
       isSaving.value = false
     }
   }
 
-  async function updateProfile(data: Partial<TutorProfile>): Promise<void> {
+  async function updateProfile(data: TutorProfilePatchPayload): Promise<void> {
     isSaving.value = true
     error.value = null
+    validationErrors.value = null
 
     try {
-      myProfile.value = await marketplaceApi.updateProfile(data)
+      const id = myProfile.value?.id
+      if (typeof id === 'number') {
+        myProfile.value = await marketplaceApi.updateProfile(id, data)
+      } else {
+        throw new Error('profile_not_found')
+      }
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to update profile'
+      setValidationErrorsFromApi(err)
+      error.value = mapApiError(err, 'Не вдалося зберегти профіль.')
       throw err
     } finally {
       isSaving.value = false
@@ -173,11 +255,13 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
   async function submitForReview(): Promise<void> {
     isSaving.value = true
     error.value = null
+    validationErrors.value = null
 
     try {
       myProfile.value = await marketplaceApi.submitForReview()
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to submit for review'
+      setValidationErrorsFromApi(err)
+      error.value = mapApiError(err, 'Не вдалося відправити профіль на модерацію.')
       throw err
     } finally {
       isSaving.value = false
@@ -187,11 +271,17 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
   async function publishProfile(): Promise<void> {
     isSaving.value = true
     error.value = null
+    validationErrors.value = null
 
     try {
-      myProfile.value = await marketplaceApi.publishProfile()
+      const id = myProfile.value?.id
+      if (typeof id !== 'number') {
+        throw new Error('profile_not_found')
+      }
+      myProfile.value = await marketplaceApi.publishProfile(id)
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to publish profile'
+      setValidationErrorsFromApi(err)
+      error.value = mapApiError(err, 'Не вдалося опублікувати профіль.')
       throw err
     } finally {
       isSaving.value = false
@@ -201,29 +291,17 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
   async function unpublishProfile(): Promise<void> {
     isSaving.value = true
     error.value = null
+    validationErrors.value = null
 
     try {
-      myProfile.value = await marketplaceApi.unpublishProfile()
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to unpublish profile'
-      throw err
-    } finally {
-      isSaving.value = false
-    }
-  }
-
-  async function uploadPhoto(file: File): Promise<string> {
-    isSaving.value = true
-    error.value = null
-
-    try {
-      const result = await marketplaceApi.uploadPhoto(file)
-      if (myProfile.value) {
-        myProfile.value.photo = result.url
+      const id = myProfile.value?.id
+      if (typeof id !== 'number') {
+        throw new Error('profile_not_found')
       }
-      return result.url
+      myProfile.value = await marketplaceApi.unpublishProfile(id)
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to upload photo'
+      setValidationErrorsFromApi(err)
+      error.value = mapApiError(err, 'Не вдалося зняти профіль з публікації.')
       throw err
     } finally {
       isSaving.value = false
@@ -270,6 +348,7 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     isSaving,
     filterOptions,
     error,
+    validationErrors,
 
     // Getters
     hasMore,
@@ -291,7 +370,6 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     submitForReview,
     publishProfile,
     unpublishProfile,
-    uploadPhoto,
     loadFilterOptions,
     $reset,
   }

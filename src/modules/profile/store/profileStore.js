@@ -11,6 +11,7 @@ import {
 import { notifyError, notifySuccess } from '../../../utils/notify'
 import { resolveMediaUrl } from '../../../utils/media'
 import { i18n } from '../../../i18n'
+import { useAuthStore } from '../../auth/store/authStore'
 
 const translate = (key, params) => {
   try {
@@ -148,6 +149,11 @@ export const useProfileStore = defineStore('profile', {
         if (this.user) {
           this.user = { ...this.user, avatar_url: avatarUrl }
         }
+
+        const auth = useAuthStore()
+        if (auth.user) {
+          auth.setAuth({ user: { ...auth.user, avatar_url: avatarUrl } })
+        }
         notifySuccess(translate('profile.messages.avatarUpdateSuccess'))
         return data
       } catch (error) {
@@ -161,6 +167,11 @@ export const useProfileStore = defineStore('profile', {
         this.avatarUrl = null
         if (this.user) {
           this.user = { ...this.user, avatar_url: null }
+        }
+
+        const auth = useAuthStore()
+        if (auth.user) {
+          auth.setAuth({ user: { ...auth.user, avatar_url: null } })
         }
         notifySuccess(translate('profile.messages.avatarDeleteSuccess'))
       } catch (error) {

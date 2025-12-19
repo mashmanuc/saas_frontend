@@ -3,11 +3,15 @@
 import { computed } from 'vue'
 import { X } from 'lucide-vue-next'
 import type { SearchFilters, ExtendedFilterOptions } from '../../api/marketplace'
+import { useI18n } from 'vue-i18n'
+import { getLanguageName } from '@/config/languages'
 
 const props = defineProps<{
   filters: SearchFilters
   options: ExtendedFilterOptions | null
 }>()
+
+const { t } = useI18n()
 
 const emit = defineEmits<{
   remove: [key: string]
@@ -26,7 +30,7 @@ const activeChips = computed<Chip[]>(() => {
   if (props.filters.subject) {
     chips.push({
       key: 'subject',
-      label: 'Subject',
+      label: t('marketplace.filters.subject'),
       value: props.filters.subject,
     })
   }
@@ -35,7 +39,7 @@ const activeChips = computed<Chip[]>(() => {
     const cat = props.options?.categories.find((c) => c.slug === props.filters.category)
     chips.push({
       key: 'category',
-      label: 'Category',
+      label: t('marketplace.filters.category'),
       value: cat?.name || props.filters.category,
     })
   }
@@ -44,17 +48,16 @@ const activeChips = computed<Chip[]>(() => {
     const country = props.options?.countries.find((c) => c.code === props.filters.country)
     chips.push({
       key: 'country',
-      label: 'Country',
+      label: t('marketplace.filters.country'),
       value: country?.name || props.filters.country,
     })
   }
 
   if (props.filters.language) {
-    const lang = props.options?.languages.find((l) => l.code === props.filters.language)
     chips.push({
       key: 'language',
-      label: 'Language',
-      value: lang?.name || props.filters.language,
+      label: t('marketplace.filters.language'),
+      value: getLanguageName(String(props.filters.language)),
     })
   }
 
@@ -63,32 +66,32 @@ const activeChips = computed<Chip[]>(() => {
     const max = props.filters.maxPrice ?? '∞'
     chips.push({
       key: 'price',
-      label: 'Price',
-      value: `$${min} - $${max}`,
+      label: t('marketplace.filters.price'),
+      value: t('marketplace.filters.priceRange', { min, max }),
     })
   }
 
   if (props.filters.minRating !== null) {
     chips.push({
       key: 'minRating',
-      label: 'Rating',
-      value: `${props.filters.minRating}+ stars`,
+      label: t('marketplace.filters.rating'),
+      value: t('marketplace.filters.ratingMin', { rating: props.filters.minRating }),
     })
   }
 
   if (props.filters.hasVideo) {
     chips.push({
       key: 'hasVideo',
-      label: 'Video',
-      value: 'Has video intro',
+      label: t('marketplace.filters.video'),
+      value: t('marketplace.filters.hasVideo'),
     })
   }
 
   if (props.filters.isVerified) {
     chips.push({
       key: 'isVerified',
-      label: 'Verified',
-      value: 'Verified only',
+      label: t('marketplace.filters.verified'),
+      value: t('marketplace.filters.verifiedOnly'),
     })
   }
 
@@ -126,7 +129,7 @@ const handleRemove = (key: string) => {
       </div>
     </div>
     <button class="clear-all" type="button" @click="emit('clear')">
-      Clear all
+      {{ t('marketplace.filters.clearAll') }}
     </button>
   </div>
 </template>

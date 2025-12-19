@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // TASK MF3: Tutor Catalog View
-import { onMounted, computed } from 'vue'
+import { onMounted, computed, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useMarketplaceStore } from '../stores/marketplaceStore'
 import CatalogFilters from '../components/catalog/CatalogFilters.vue'
@@ -9,8 +9,11 @@ import TutorGrid from '../components/catalog/TutorGrid.vue'
 import EmptyState from '@/ui/EmptyState.vue'
 import LoadingSpinner from '@/ui/LoadingSpinner.vue'
 import type { CatalogFilters as CatalogFiltersType } from '../api/marketplace'
+import { telemetry } from '@/services/telemetry'
+import { useI18n } from 'vue-i18n'
 
 const store = useMarketplaceStore()
+const { t } = useI18n()
 const {
   tutors,
   totalCount,
@@ -19,6 +22,7 @@ const {
   filters,
   sortBy,
   filterOptions,
+  error,
 } = storeToRefs(store)
 
 const showFilters = computed(() => filterOptions.value !== null)
@@ -27,7 +31,7 @@ onMounted(async () => {
   await Promise.all([store.loadTutors(true), store.loadFilterOptions()])
 })
 
-function handleFiltersUpdate(newFilters: CatalogFiltersType) {
+function handleFiltersUpdate(newFilters: Partial<CatalogFiltersType>) {
   store.setFilters(newFilters)
 }
 
@@ -42,15 +46,41 @@ function handleLoadMore() {
 function handleClearFilters() {
   store.clearFilters()
 }
+
+function handleRetry() {
+  store.loadTutors(true)
+}
+
+watch(
+  () => ({
+    ...filters.value,
+    sort: sortBy.value,
+  }),
+  (payload) => {
+    // no PII
+    telemetry.trigger('marketplace_search', {
+      has_q: typeof payload.q === 'string' ? payload.q.length >= 2 : false,
+      language_count: Array.isArray(payload.language) ? payload.language.length : 0,
+      subject_count: Array.isArray(payload.subject) ? payload.subject.length : 0,
+      has_price_min: typeof payload.price_min === 'number',
+      has_price_max: typeof payload.price_max === 'number',
+      has_experience_min: typeof payload.experience_min === 'number',
+      format: payload.format || null,
+      has_certifications: payload.has_certifications ?? null,
+      sort: payload.sort,
+    })
+  },
+  { deep: true }
+)
 </script>
 
 <template>
-  <div class="catalog-view">
+  <div class="catalog-view" data-test="marketplace-catalog">
     <header class="catalog-header">
       <div class="header-content">
-        <h1>Find Your Perfect Tutor</h1>
+        <h1>{{ t('marketplace.catalog.title') }}</h1>
         <p class="subtitle">
-          Browse {{ totalCount }} tutors ready to help you learn
+          {{ t('marketplace.catalog.subtitle', { count: totalCount }) }}
         </p>
       </div>
     </header>
@@ -69,11 +99,28 @@ function handleClearFilters() {
         <div class="catalog-toolbar">
           <CatalogSort :value="sortBy" @update="handleSortUpdate" />
           <span class="results-count">
-            {{ totalCount }} tutor{{ totalCount !== 1 ? 's' : '' }} found
+            {{ t('marketplace.catalog.resultsCount', { count: totalCount }) }}
           </span>
         </div>
 
-        <LoadingSpinner v-if="isLoading && tutors.length === 0" />
+        <LoadingSpinner v-if="isLoading && tutors.length === 0" data-test="marketplace-loading" />
+
+        <EmptyState
+          v-else-if="!isLoading && !!error"
+          data-test="marketplace-error"
+          :title="t('marketplace.catalog.errorTitle')"
+          :description="t('marketplace.catalog.errorDescription')"
+          icon="alert"
+        >
+          <div class="error-actions">
+            <button class="btn btn-secondary" data-test="marketplace-retry" @click="handleRetry">
+              {{ t('common.retry') }}
+            </button>
+            <button class="btn btn-primary" data-test="marketplace-clear" @click="handleClearFilters">
+              {{ t('marketplace.catalog.clearFilters') }}
+            </button>
+          </div>
+        </EmptyState>
 
         <TutorGrid v-else :tutors="tutors" :loading="isLoading" />
 
@@ -81,20 +128,22 @@ function handleClearFilters() {
           <button
             class="btn btn-secondary"
             :disabled="isLoading"
+            data-test="marketplace-load-more"
             @click="handleLoadMore"
           >
-            {{ isLoading ? 'Loading...' : 'Load More' }}
+            {{ isLoading ? t('marketplace.catalog.loading') : t('marketplace.catalog.loadMore') }}
           </button>
         </div>
 
         <EmptyState
           v-if="!isLoading && tutors.length === 0"
-          title="No tutors found"
-          description="Try adjusting your filters or search criteria"
+          data-test="marketplace-empty"
+          :title="t('marketplace.catalog.emptyTitle')"
+          :description="t('marketplace.catalog.emptyDescription')"
           icon="search"
         >
           <button class="btn btn-primary" @click="handleClearFilters">
-            Clear Filters
+            {{ t('marketplace.catalog.clearFilters') }}
           </button>
         </EmptyState>
       </main>
@@ -105,12 +154,12 @@ function handleClearFilters() {
 <style scoped>
 .catalog-view {
   min-height: 100vh;
-  background: #f9fafb;
+  background: var(--surface-marketplace);
 }
 
 .catalog-header {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-  color: white;
+  background: var(--bg-gradient);
+  color: var(--text-primary);
   padding: 3rem 1.5rem;
 }
 
@@ -166,9 +215,10 @@ function handleClearFilters() {
   justify-content: space-between;
   margin-bottom: 1.5rem;
   padding: 1rem;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: var(--surface-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
 }
 
 .results-count {
@@ -218,5 +268,11 @@ function handleClearFilters() {
 .btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.error-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 </style>

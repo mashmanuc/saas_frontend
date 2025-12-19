@@ -18,16 +18,16 @@ const displaySubjects = computed(() => props.tutor.subjects.slice(0, 3))
 </script>
 
 <template>
-  <RouterLink :to="`/tutor/${tutor.slug}`" class="tutor-card">
+  <RouterLink :to="`/marketplace/tutors/${tutor.slug}`" class="tutor-card">
     <div class="card-image">
       <img
         v-if="tutor.photo"
         :src="tutor.photo"
-        :alt="tutor.full_name"
+        :alt="tutor.full_name || 'Tutor'"
         class="photo"
       />
       <div v-else class="photo-placeholder">
-        {{ tutor.full_name.charAt(0) }}
+        {{ (tutor.full_name || 'T').charAt(0) }}
       </div>
       <div v-if="displayBadges.length > 0" class="badges">
         <BadgeIcon
