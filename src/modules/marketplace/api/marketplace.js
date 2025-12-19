@@ -2,6 +2,7 @@ import apiClient from '../../../utils/apiClient'
 
 // Runtime API object (used by non-TS imports).
 // Keep this in sync with marketplace.ts.
+
 export const marketplaceApi = {
   async getTutors(filters = {}, page = 1, pageSize = 20, sort = 'rating') {
     const params = {
@@ -20,43 +21,50 @@ export const marketplaceApi = {
       }
     }
 
-    return apiClient.get('/marketplace/tutors/', { params })
+    return apiClient.get('/v1/marketplace/tutors/', { params })
   },
 
   async getTutorProfile(slug) {
     if (!slug) throw new Error('Tutor slug is required')
-    return apiClient.get(`/marketplace/tutors/${slug}/`)
+    return apiClient.get(`/v1/marketplace/tutors/${slug}/`)
   },
 
   async getMyProfile() {
-    return apiClient.get('/marketplace/profile/')
+    return apiClient.get('/v1/marketplace/tutors/me/')
   },
 
   async createProfile(data) {
-    return apiClient.post('/marketplace/profile/', data)
+    return apiClient.patch('/v1/marketplace/tutors/me/', data)
   },
 
-  async updateProfile(id, data) {
-    if (typeof id !== 'number') throw new Error('Profile id is required')
-    return apiClient.patch('/marketplace/profile/', data)
+  async updateProfile(data) {
+    return apiClient.patch('/v1/marketplace/tutors/me/', data)
   },
 
   async submitForReview() {
-    return apiClient.post('/marketplace/profile/submit/')
+    return apiClient.post('/v1/marketplace/tutors/me/submit/')
   },
 
-  async publishProfile(id) {
-    if (typeof id !== 'number') throw new Error('Profile id is required')
-    return apiClient.post('/marketplace/profile/publish/')
+  async publishProfile() {
+    return apiClient.post('/v1/marketplace/tutors/me/publish/')
   },
 
-  async unpublishProfile(id) {
-    if (typeof id !== 'number') throw new Error('Profile id is required')
-    return apiClient.post('/marketplace/profile/unpublish/')
+  async unpublishProfile() {
+    return apiClient.post('/v1/marketplace/tutors/me/unpublish/')
+  },
+
+  async getWeeklyAvailability(slug, params) {
+    if (!slug) throw new Error('Tutor slug is required')
+    return apiClient.get(`/v1/marketplace/tutors/${slug}/availability/weekly/`, { params })
+  },
+
+  async createTrialRequest(slug, payload) {
+    if (!slug) throw new Error('Tutor slug is required')
+    return apiClient.post(`/v1/marketplace/tutors/${slug}/trial-request/`, payload)
   },
 
   async getFilterOptions() {
-    const response = await apiClient.get('/marketplace/filters/')
+    const response = await apiClient.get('/v1/marketplace/filters/')
     const rawPrice = response.priceRange || response.price_range || {}
 
     const normalizeOption = (item, keys) => {
@@ -121,6 +129,54 @@ export const marketplaceApi = {
         max: Number(rawPrice.max || 0),
       },
     }
+  },
+
+  async search(params) {
+    const cleanParams = Object.fromEntries(
+      Object.entries(params || {}).filter(([_, v]) => v != null && v !== '')
+    )
+    return apiClient.get('/v1/marketplace/search/', { params: cleanParams })
+  },
+
+  async getSearchSuggestions(query) {
+    return apiClient.get('/v1/marketplace/search/suggestions/', { params: { q: query } })
+  },
+
+  async getExtendedFilterOptions() {
+    return apiClient.get('/v1/marketplace/filters/')
+  },
+
+  async getCategories() {
+    return apiClient.get('/v1/marketplace/categories/')
+  },
+
+  async getPopularTutors(limit = 10) {
+    return apiClient.get('/v1/marketplace/tutors/popular/', { params: { limit } })
+  },
+
+  async getNewTutors(limit = 10) {
+    return apiClient.get('/v1/marketplace/tutors/new/', { params: { limit } })
+  },
+
+  async getRecommendedTutors(limit = 10) {
+    return apiClient.get('/v1/marketplace/tutors/recommended/', { params: { limit } })
+  },
+
+  async getFeaturedTutors(limit = 10) {
+    return apiClient.get('/v1/marketplace/tutors/featured/', { params: { limit } })
+  },
+
+  async getSimilarTutors(slug, limit = 5) {
+    if (!slug) throw new Error('Tutor slug is required')
+    return apiClient.get(`/v1/marketplace/tutors/${slug}/similar/`, { params: { limit } })
+  },
+
+  async logSearchClick(searchLogId, profileId, position) {
+    await apiClient.post('/v1/marketplace/search/log-click/', {
+      search_log_id: searchLogId,
+      profile_id: profileId,
+      position,
+    })
   },
 }
 

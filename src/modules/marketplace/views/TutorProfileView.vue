@@ -12,7 +12,9 @@ import ProfileBadges from '../components/profile/ProfileBadges.vue'
 import ProfileContact from '../components/profile/ProfileContact.vue'
 import LoadingSpinner from '@/ui/LoadingSpinner.vue'
 import NotFound from '@/ui/NotFound.vue'
-import BookingModal from '@/modules/booking/components/BookingModal.vue'
+import WeeklyAvailabilityWidget from '../components/trial/WeeklyAvailabilityWidget.vue'
+import TrialRequestModal from '../components/trial/TrialRequestModal.vue'
+import type { WeeklyAvailabilitySlot } from '../api/marketplace'
 
 const route = useRoute()
 const router = useRouter()
@@ -20,7 +22,7 @@ const store = useMarketplaceStore()
 const { currentProfile, isLoadingProfile, error } = storeToRefs(store)
 
 const slug = computed(() => route.params.slug as string)
-const showBookingModal = ref(false)
+const selectedSlot = ref<WeeklyAvailabilitySlot | null>(null)
 
 onMounted(() => {
   if (slug.value) {
@@ -35,12 +37,10 @@ watch(slug, (newSlug) => {
 })
 
 function handleBook() {
-  showBookingModal.value = true
-}
-
-function handleBooked(booking: unknown) {
-  const b = booking as { id: number }
-  router.push(`/bookings/${b.id}`)
+  // Booking is now handled via trial-request flow (weekly availability).
+  // Keep CTA wired, but require slot selection.
+  const el = document.querySelector('[data-test="marketplace-availability"]') as HTMLElement | null
+  el?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
 }
 
 function handleMessage() {
@@ -74,6 +74,11 @@ function goBack() {
             :subjects="currentProfile.subjects"
           />
 
+          <WeeklyAvailabilityWidget
+            :slug="slug"
+            @select-slot="(slot) => (selectedSlot = slot)"
+          />
+
           <!-- Reviews section placeholder -->
           <section class="profile-section">
             <h2>Reviews</h2>
@@ -104,12 +109,12 @@ function goBack() {
       <button class="btn btn-primary" @click="goBack">Browse Tutors</button>
     </NotFound>
 
-    <!-- Booking Modal -->
-    <BookingModal
-      v-if="showBookingModal && currentProfile"
-      :tutor-id="currentProfile.user.id"
-      @close="showBookingModal = false"
-      @booked="handleBooked"
+    <TrialRequestModal
+      v-if="selectedSlot"
+      :slug="slug"
+      :slot="selectedSlot"
+      @close="selectedSlot = null"
+      @created="() => {}"
     />
   </div>
 </template>

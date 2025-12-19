@@ -7,6 +7,7 @@ import { useSearchStore } from '../../stores/searchStore'
 import SearchHistory from './SearchHistory.vue'
 import SearchSuggestions from './SearchSuggestions.vue'
 import type { Suggestion } from '../../api/marketplace'
+import { useRouter } from 'vue-router'
 
 const props = withDefaults(
   defineProps<{
@@ -28,6 +29,7 @@ const emit = defineEmits<{
 
 const store = useSearchStore()
 const { suggestions, isLoadingSuggestions, searchHistory } = storeToRefs(store)
+const router = useRouter()
 
 const inputRef = ref<HTMLInputElement | null>(null)
 const isFocused = ref(false)
@@ -135,7 +137,7 @@ const clearHistory = () => {
 const handleSuggestionSelect = (suggestion: Suggestion) => {
   if (suggestion.type === 'tutor' && suggestion.slug) {
     // Navigate to tutor profile
-    window.location.href = `/marketplace/tutors/${suggestion.slug}`
+    router.push(`/marketplace/tutors/${suggestion.slug}`)
   } else {
     emit('update:modelValue', suggestion.text)
     emit('search', suggestion.text)

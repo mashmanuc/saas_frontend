@@ -7,15 +7,21 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { resolveMediaUrl } from '@/utils/media'
 import { TIMEZONES } from '@/utils/timezones'
+import { fromApi, toApi, type TutorProfileFormModel } from '../../tutorProfileFormModel'
+import { updateAvatar } from '@/api/profile'
+import { notifyError, notifySuccess } from '@/utils/notify'
 import type {
   FilterOptions,
   TutorProfile,
   TutorProfilePatchPayload,
-  TutorProfileUpsertPayload,
-  SubjectWriteRef,
-  LanguageWriteRef,
   LanguageLevel,
 } from '../../api/marketplace'
+
+type FormState = TutorProfileFormModel & {
+  newSubject: string
+  newLanguageCode: string
+  newLanguageLevel: LanguageLevel
+}
 
 interface Props {
   profile: TutorProfile
@@ -49,6 +55,17 @@ function removeLanguage(code: string) {
   formData.value.languages = formData.value.languages.filter((l) => l.code !== code)
 }
 
+function addCertification() {
+  formData.value.certifications = [
+    ...(formData.value.certifications || []),
+    { name: '', issuer: '', is_public: true },
+  ]
+}
+
+function removeCertification(index: number) {
+  formData.value.certifications = (formData.value.certifications || []).filter((_, i) => i !== index)
+}
+
 const props = defineProps<Props>()
 
 const { t, locale } = useI18n()
@@ -56,39 +73,45 @@ const useNativeLanguageNames = computed(() => locale.value === 'uk')
 
 const auth = useAuthStore()
 
+const isAvatarUploading = ref(false)
+
 const avatarUrl = computed(() => {
   const value = auth.user?.avatar_url || props.profile?.user?.avatar_url || ''
   return value ? resolveMediaUrl(value) : ''
 })
 
+async function handleAvatarSelected(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file || isAvatarUploading.value) return
+
+  isAvatarUploading.value = true
+  try {
+    const formData = new FormData()
+    formData.append('avatar', file)
+    const data = (await updateAvatar(formData)) as any
+    const avatarUrl = data?.avatar_url ? resolveMediaUrl(data.avatar_url) : null
+
+    if (auth.user) {
+      auth.setAuth({ user: { ...auth.user, avatar_url: avatarUrl } })
+    }
+
+    notifySuccess(t('profile.messages.avatarUpdateSuccess') || 'Фото оновлено')
+  } catch (error) {
+    notifyError(t('profile.messages.avatarUpdateError') || 'Не вдалося оновити фото')
+    throw error
+  } finally {
+    isAvatarUploading.value = false
+  }
+}
+
 const emit = defineEmits<{
   (e: 'save', data: TutorProfilePatchPayload): void
 }>()
 
-function mapProfileSubjectsToValues(profile: TutorProfile): string[] {
-  const available = props.filterOptions?.subjects || []
-  return (profile.subjects || []).map((s) => {
-    const byLabel = available.find((o) => o.label === s.name)
-    return byLabel?.value ?? s.name
-  })
-}
-
-function mapProfileLanguagesToItems(profile: TutorProfile): Array<{ code: string; level: LanguageLevel }> {
-  return (profile.languages || []).map((l) => ({ code: l.code, level: l.level }))
-}
-
-const formData = ref({
-  headline: props.profile.headline || '',
-  bio: props.profile.bio || '',
-  hourly_rate: Number(props.profile.hourly_rate ?? 0),
-  currency: props.profile.currency || 'USD',
-  trial_lesson_price:
-    props.profile.trial_lesson_price == null ? props.profile.trial_lesson_price : Number(props.profile.trial_lesson_price),
-  video_intro_url: props.profile.video_intro_url || '',
-  country: props.profile.country || '',
-  timezone: props.profile.timezone || '',
-  subjects: mapProfileSubjectsToValues(props.profile),
-  languages: mapProfileLanguagesToItems(props.profile),
+const formData = ref<FormState>({
+  ...fromApi(props.profile),
   newSubject: '',
   newLanguageCode: '',
   newLanguageLevel: 'fluent' as LanguageLevel,
@@ -98,17 +121,7 @@ watch(
   () => props.profile,
   (newProfile) => {
     formData.value = {
-      headline: newProfile.headline || '',
-      bio: newProfile.bio || '',
-      hourly_rate: Number(newProfile.hourly_rate ?? 0),
-      currency: newProfile.currency || 'USD',
-      trial_lesson_price:
-        newProfile.trial_lesson_price == null ? newProfile.trial_lesson_price : Number(newProfile.trial_lesson_price),
-      video_intro_url: newProfile.video_intro_url || '',
-      country: newProfile.country || '',
-      timezone: newProfile.timezone || '',
-      subjects: mapProfileSubjectsToValues(newProfile),
-      languages: mapProfileLanguagesToItems(newProfile),
+      ...fromApi(newProfile),
       newSubject: '',
       newLanguageCode: '',
       newLanguageLevel: 'fluent' as LanguageLevel,
@@ -118,26 +131,8 @@ watch(
 
 function handleSubmit() {
   if (!canSubmit.value) return
-  const subjects: SubjectWriteRef[] = (formData.value.subjects || []).map((code) => ({ code }))
-  const languages: LanguageWriteRef[] = (formData.value.languages || []).map((l) => ({
-    code: l.code,
-    level: l.level,
-  }))
-
-  const payload: TutorProfileUpsertPayload = {
-    headline: formData.value.headline,
-    bio: formData.value.bio,
-    hourly_rate: formData.value.hourly_rate,
-    currency: formData.value.currency,
-    trial_lesson_price: formData.value.trial_lesson_price ?? null,
-    video_intro_url: formData.value.video_intro_url || undefined,
-    country: formData.value.country || undefined,
-    timezone: formData.value.timezone || undefined,
-    subjects,
-    languages,
-  }
-
-  emit('save', payload)
+  const { newSubject, newLanguageCode, newLanguageLevel, ...model } = formData.value
+  emit('save', toApi(model))
 }
 
 const currencies = ['USD', 'EUR', 'GBP', 'UAH', 'PLN']
@@ -210,9 +205,113 @@ const languageLevels = computed<Array<{ value: LanguageLevel; label: string }>>(
           {{ t('marketplace.profile.editor.noPhoto') }}
         </div>
 
-        <RouterLink class="btn btn-secondary" to="/dashboard/profile/edit">
-          {{ t('profile.avatar.update') || 'Оновити фото' }}
-        </RouterLink>
+        <label class="btn btn-secondary photo-upload" :class="{ disabled: saving || isAvatarUploading }">
+          {{ isAvatarUploading ? (t('profile.avatar.uploading') || 'Оновлюємо…') : (t('profile.avatar.update') || 'Оновити фото') }}
+          <input
+            type="file"
+            accept="image/*"
+            class="file-input"
+            :disabled="saving || isAvatarUploading"
+            data-test="marketplace-editor-avatar-input"
+            @change="handleAvatarSelected"
+          />
+        </label>
+      </div>
+    </section>
+
+    <section class="editor-section">
+      <h2>{{ t('marketplace.profile.editor.privacyTitle') }}</h2>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="gender">{{ t('marketplace.profile.editor.genderLabel') }}</label>
+          <input
+            id="gender"
+            v-model="formData.gender"
+            type="text"
+            :placeholder="t('marketplace.profile.editor.genderPlaceholder')"
+            data-test="marketplace-editor-gender"
+          />
+          <label class="checkbox-label">
+            <input v-model="formData.show_gender" type="checkbox" data-test="marketplace-editor-show-gender" />
+            {{ t('marketplace.profile.editor.showGender') }}
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label for="birth_year">{{ t('marketplace.profile.editor.birthYearLabel') }}</label>
+          <input
+            id="birth_year"
+            v-model.number="formData.birth_year"
+            type="number"
+            min="1900"
+            max="2100"
+            :placeholder="t('marketplace.profile.editor.birthYearPlaceholder')"
+            data-test="marketplace-editor-birth-year"
+          />
+          <label class="checkbox-label">
+            <input v-model="formData.show_age" type="checkbox" data-test="marketplace-editor-show-age" />
+            {{ t('marketplace.profile.editor.showAge') }}
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="telegram">{{ t('marketplace.profile.editor.telegramLabel') }}</label>
+        <input
+          id="telegram"
+          v-model="formData.telegram_username"
+          type="text"
+          :placeholder="t('marketplace.profile.editor.telegramPlaceholder')"
+          data-test="marketplace-editor-telegram"
+        />
+        <label class="checkbox-label">
+          <input v-model="formData.show_telegram" type="checkbox" data-test="marketplace-editor-show-telegram" />
+          {{ t('marketplace.profile.editor.showTelegram') }}
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label>{{ t('marketplace.profile.editor.certificationsTitle') }}</label>
+
+        <div class="list-editor" data-test="marketplace-editor-certifications">
+          <div v-if="formData.certifications.length" class="list-items">
+            <div
+              v-for="(c, idx) in formData.certifications"
+              :key="idx"
+              class="list-item certification-item"
+              data-test="marketplace-editor-certification-item"
+            >
+              <div class="cert-fields">
+                <input
+                  v-model="c.name"
+                  type="text"
+                  :placeholder="t('marketplace.profile.editor.certificationNamePlaceholder')"
+                  data-test="marketplace-editor-certification-name"
+                />
+                <input
+                  v-model="c.issuer"
+                  type="text"
+                  :placeholder="t('marketplace.profile.editor.certificationIssuerPlaceholder')"
+                  data-test="marketplace-editor-certification-issuer"
+                />
+              </div>
+
+              <label class="checkbox-label">
+                <input v-model="c.is_public" type="checkbox" data-test="marketplace-editor-certification-public" />
+                {{ t('marketplace.profile.editor.certificationPublic') }}
+              </label>
+
+              <button type="button" class="btn btn-ghost" @click="removeCertification(idx)">
+                {{ t('marketplace.profile.editor.remove') }}
+              </button>
+            </div>
+          </div>
+
+          <button type="button" class="btn btn-secondary" @click="addCertification">
+            {{ t('marketplace.profile.editor.addCertification') }}
+          </button>
+        </div>
       </div>
     </section>
 

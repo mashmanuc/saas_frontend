@@ -104,6 +104,21 @@ export interface TutorProfileUpsertPayload {
   languages?: LanguageWriteRef[]
 }
 
+export type WeeklyAvailabilitySlot = {
+  starts_at: string
+  duration_min: number
+}
+
+export type WeeklyAvailabilityResponse = {
+  slots: WeeklyAvailabilitySlot[]
+}
+
+export type TrialRequestPayload = {
+  starts_at: string
+  duration_min: number
+  message?: string
+}
+
 export type TutorProfilePatchPayload = Partial<TutorProfileUpsertPayload>
 
 export interface TutorListItem {
@@ -259,7 +274,7 @@ export const marketplaceApi = {
       }
     }
 
-    const response = await apiClient.get('/marketplace/tutors/', { params })
+    const response = await apiClient.get('/v1/marketplace/tutors/', { params })
     return response as unknown as PaginatedResponse<TutorListItem>
   },
 
@@ -267,7 +282,7 @@ export const marketplaceApi = {
    * Get tutor profile by slug.
    */
   async getTutorProfile(slug: string): Promise<TutorProfile> {
-    const response = await apiClient.get(`/marketplace/tutors/${slug}/`)
+    const response = await apiClient.get(`/v1/marketplace/tutors/${slug}/`)
     return response as unknown as TutorProfile
   },
 
@@ -275,7 +290,7 @@ export const marketplaceApi = {
    * Get own profile.
    */
   async getMyProfile(): Promise<TutorProfile> {
-    const response = await apiClient.get('/marketplace/profile/')
+    const response = await apiClient.get('/v1/marketplace/tutors/me/')
     return response as unknown as TutorProfile
   },
 
@@ -283,16 +298,17 @@ export const marketplaceApi = {
    * Create profile.
    */
   async createProfile(data: TutorProfileUpsertPayload): Promise<TutorProfile> {
-    const response = await apiClient.post('/marketplace/profile/', data)
+    // v0.35: canonical owner endpoint
+    // (backend may upsert on PATCH; keep this method for UI compatibility)
+    const response = await apiClient.patch('/v1/marketplace/tutors/me/', data)
     return response as unknown as TutorProfile
   },
 
   /**
    * Update profile.
    */
-  async updateProfile(id: number, data: TutorProfilePatchPayload): Promise<TutorProfile> {
-    void id
-    const response = await apiClient.patch('/marketplace/profile/', data)
+  async updateProfile(data: TutorProfilePatchPayload): Promise<TutorProfile> {
+    const response = await apiClient.patch('/v1/marketplace/tutors/me/', data)
     return response as unknown as TutorProfile
   },
 
@@ -300,26 +316,34 @@ export const marketplaceApi = {
    * Submit profile for review.
    */
   async submitForReview(): Promise<TutorProfile> {
-    const response = await apiClient.post('/marketplace/profile/submit/')
+    const response = await apiClient.post('/v1/marketplace/tutors/me/submit/')
     return response as unknown as TutorProfile
   },
 
   /**
    * Publish profile.
    */
-  async publishProfile(id: number): Promise<TutorProfile> {
-    void id
-    const response = await apiClient.post('/marketplace/profile/publish/')
+  async publishProfile(): Promise<TutorProfile> {
+    const response = await apiClient.post('/v1/marketplace/tutors/me/publish/')
     return response as unknown as TutorProfile
   },
 
   /**
    * Unpublish profile.
    */
-  async unpublishProfile(id: number): Promise<TutorProfile> {
-    void id
-    const response = await apiClient.post('/marketplace/profile/unpublish/')
+  async unpublishProfile(): Promise<TutorProfile> {
+    const response = await apiClient.post('/v1/marketplace/tutors/me/unpublish/')
     return response as unknown as TutorProfile
+  },
+
+  async getWeeklyAvailability(slug: string, params?: { week_start?: string; tz?: string }): Promise<WeeklyAvailabilityResponse> {
+    const response = await apiClient.get(`/v1/marketplace/tutors/${slug}/availability/weekly/`, { params })
+    return response as unknown as WeeklyAvailabilityResponse
+  },
+
+  async createTrialRequest(slug: string, payload: TrialRequestPayload): Promise<any> {
+    const response = await apiClient.post(`/v1/marketplace/tutors/${slug}/trial-request/`, payload)
+    return response as unknown as any
   },
 
   /**
@@ -328,7 +352,7 @@ export const marketplaceApi = {
   async uploadVideoIntro(file: File): Promise<{ url: string }> {
     const formData = new FormData()
     formData.append('video', file)
-    const response = await apiClient.post('/marketplace/tutors/video/', formData, {
+    const response = await apiClient.post('/v1/marketplace/tutors/video/', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
     return response as unknown as { url: string }
@@ -338,7 +362,7 @@ export const marketplaceApi = {
    * Get all badges.
    */
   async getBadges(): Promise<Badge[]> {
-    const response = await apiClient.get('/marketplace/badges/')
+    const response = await apiClient.get('/v1/marketplace/badges/')
     return response as unknown as Badge[]
   },
 
@@ -346,7 +370,7 @@ export const marketplaceApi = {
    * Get filter options (subjects, countries, languages).
    */
   async getFilterOptions(): Promise<FilterOptions> {
-    const response = (await apiClient.get('/marketplace/filters/')) as unknown as RawFilterOptionsResponse
+    const response = (await apiClient.get('/v1/marketplace/filters/')) as unknown as RawFilterOptionsResponse
     const rawPrice = response.priceRange || response.price_range || {}
 
     const normalizeOption = (
@@ -423,7 +447,7 @@ export const marketplaceApi = {
    * Search tutors.
    */
   async searchTutors(query: string): Promise<TutorListItem[]> {
-    const response = await apiClient.get('/marketplace/tutors/search/', {
+    const response = await apiClient.get('/v1/marketplace/tutors/search/', {
       params: { q: query },
     })
     return response as unknown as TutorListItem[]
@@ -452,7 +476,7 @@ export const marketplaceApi = {
     const cleanParams = Object.fromEntries(
       Object.entries(params).filter(([_, v]) => v != null && v !== '')
     )
-    const response = await apiClient.get('/marketplace/search/', { params: cleanParams })
+    const response = await apiClient.get('/v1/marketplace/search/', { params: cleanParams })
     return response as unknown as SearchResponse
   },
 
@@ -460,9 +484,7 @@ export const marketplaceApi = {
    * Get search suggestions (autocomplete).
    */
   async getSearchSuggestions(query: string): Promise<Suggestion[]> {
-    const response = await apiClient.get('/marketplace/search/suggestions/', {
-      params: { q: query },
-    })
+    const response = await apiClient.get('/v1/marketplace/search/suggestions/', { params: { q: query } })
     return response as unknown as Suggestion[]
   },
 
@@ -470,7 +492,7 @@ export const marketplaceApi = {
    * Get extended filter options.
    */
   async getExtendedFilterOptions(): Promise<ExtendedFilterOptions> {
-    const response = await apiClient.get('/marketplace/filters/')
+    const response = await apiClient.get('/v1/marketplace/filters/')
     return response as unknown as ExtendedFilterOptions
   },
 
@@ -478,7 +500,7 @@ export const marketplaceApi = {
    * Get subject categories.
    */
   async getCategories(): Promise<Category[]> {
-    const response = await apiClient.get('/marketplace/categories/')
+    const response = await apiClient.get('/v1/marketplace/categories/')
     return response as unknown as Category[]
   },
 
@@ -486,9 +508,7 @@ export const marketplaceApi = {
    * Get popular tutors.
    */
   async getPopularTutors(limit: number = 10): Promise<TutorListItem[]> {
-    const response = await apiClient.get('/marketplace/tutors/popular/', {
-      params: { limit },
-    })
+    const response = await apiClient.get('/v1/marketplace/tutors/popular/', { params: { limit } })
     return response as unknown as TutorListItem[]
   },
 
@@ -496,9 +516,7 @@ export const marketplaceApi = {
    * Get new tutors.
    */
   async getNewTutors(limit: number = 10): Promise<TutorListItem[]> {
-    const response = await apiClient.get('/marketplace/tutors/new/', {
-      params: { limit },
-    })
+    const response = await apiClient.get('/v1/marketplace/tutors/new/', { params: { limit } })
     return response as unknown as TutorListItem[]
   },
 
@@ -506,9 +524,7 @@ export const marketplaceApi = {
    * Get recommended tutors for current user.
    */
   async getRecommendedTutors(limit: number = 10): Promise<TutorListItem[]> {
-    const response = await apiClient.get('/marketplace/tutors/recommended/', {
-      params: { limit },
-    })
+    const response = await apiClient.get('/v1/marketplace/tutors/recommended/', { params: { limit } })
     return response as unknown as TutorListItem[]
   },
 
@@ -516,9 +532,7 @@ export const marketplaceApi = {
    * Get featured tutors.
    */
   async getFeaturedTutors(limit: number = 10): Promise<TutorListItem[]> {
-    const response = await apiClient.get('/marketplace/tutors/featured/', {
-      params: { limit },
-    })
+    const response = await apiClient.get('/v1/marketplace/tutors/featured/', { params: { limit } })
     return response as unknown as TutorListItem[]
   },
 
@@ -526,9 +540,7 @@ export const marketplaceApi = {
    * Get similar tutors.
    */
   async getSimilarTutors(slug: string, limit: number = 5): Promise<TutorListItem[]> {
-    const response = await apiClient.get(`/marketplace/tutors/${slug}/similar/`, {
-      params: { limit },
-    })
+    const response = await apiClient.get(`/v1/marketplace/tutors/${slug}/similar/`, { params: { limit } })
     return response as unknown as TutorListItem[]
   },
 
@@ -536,7 +548,7 @@ export const marketplaceApi = {
    * Log search click for analytics.
    */
   async logSearchClick(searchLogId: number, profileId: number, position: number): Promise<void> {
-    await apiClient.post('/marketplace/search/log-click/', {
+    await apiClient.post('/v1/marketplace/search/log-click/', {
       search_log_id: searchLogId,
       profile_id: profileId,
       position,

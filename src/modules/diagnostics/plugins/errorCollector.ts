@@ -77,6 +77,9 @@ export function createErrorCollector(options: ErrorCollectorOptions = {}) {
       /ResizeObserver loop/i,
       /Loading chunk/i,
       /Network Error/i,
+      /giveFreely\.tsx/i,
+      /Cannot read properties of undefined \(reading 'payload'\)/i,
+      /Cannot read properties of undefined \(reading 'slice'\)/i,
     ],
   } = options
 
@@ -151,35 +154,43 @@ export function createErrorCollector(options: ErrorCollectorOptions = {}) {
         }
       }
 
-      // Global error handler
-      window.onerror = (message, source, lineno, colno, error) => {
-        handleError(
-          'error',
-          String(message),
-          error?.stack || `at ${source}:${lineno}:${colno}`,
-          {
-            source,
-            lineno,
-            colno,
+      // Global error handler (capture to avoid being overwritten)
+      window.addEventListener(
+        'error',
+        (event: Event) => {
+          const e = event as ErrorEvent
+          const msg = String(e.message || e.error?.message || e.error || 'Unknown error')
+          if (shouldIgnore(msg, ignorePatterns)) {
+            e.preventDefault?.()
+            e.stopImmediatePropagation?.()
+            return
           }
-        )
-        return false // Don't prevent default handling
-      }
+          handleError('error', msg, e.error?.stack || undefined, {
+            source: e.filename,
+            lineno: e.lineno,
+            colno: e.colno,
+          })
+        },
+        true
+      )
 
-      // Unhandled promise rejection
-      window.onunhandledrejection = (event: PromiseRejectionEvent) => {
-        const error = event.reason
-        const message = error?.message || String(error)
-
-        handleError(
-          'error',
-          `Unhandled Promise Rejection: ${message}`,
-          error?.stack,
-          {
+      // Unhandled promise rejection (capture to avoid being overwritten)
+      window.addEventListener(
+        'unhandledrejection',
+        (event: PromiseRejectionEvent) => {
+          const error = event.reason
+          const message = error?.message || String(error)
+          if (shouldIgnore(message, ignorePatterns)) {
+            event.preventDefault()
+            ;(event as any).stopImmediatePropagation?.()
+            return
+          }
+          handleError('error', `Unhandled Promise Rejection: ${message}`, error?.stack, {
             type: 'unhandledrejection',
-          }
-        )
-      }
+          })
+        },
+        true
+      )
 
       // Expose for manual logging
       app.config.globalProperties.$diagnostics = {

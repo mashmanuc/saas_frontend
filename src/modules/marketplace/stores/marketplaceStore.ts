@@ -3,6 +3,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { debounce } from '@/utils/debounce'
+import { mapMarketplaceErrorToMessage, parseMarketplaceApiError } from '../utils/apiErrors'
 import {
   marketplaceApi,
   type TutorListItem,
@@ -40,56 +41,12 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
   const validationErrors = ref<Record<string, string[]> | null>(null)
 
   function mapApiError(err: unknown, fallback: string): string {
-    const anyErr = err as any
-    const status = anyErr?.response?.status
-    const payload = anyErr?.response?.data
-    const detail = payload?.detail
-    const code = payload?.error || detail
-
-    if (status === 422) {
-      return 'Перевірте коректність даних профілю.'
-    }
-
-    if (status === 429 || code === 'rate_limited') {
-      return 'Забагато запитів. Спробуйте ще раз трохи пізніше.'
-    }
-    if (status === 413 || code === 'payload_too_large') {
-      return 'Дані завеликі. Зменшіть обсяг і спробуйте ще раз.'
-    }
-    if (status === 403 || code === 'forbidden') {
-      return 'Доступ заборонено.'
-    }
-    if (status >= 500) {
-      return 'Помилка сервера. Спробуйте пізніше.'
-    }
-
-    return detail || payload?.message || fallback
+    return mapMarketplaceErrorToMessage(parseMarketplaceApiError(err), fallback)
   }
 
   function setValidationErrorsFromApi(err: unknown): void {
-    const anyErr = err as any
-    const status = anyErr?.response?.status
-    const payload = anyErr?.response?.data
-    if (status !== 422 || !payload || typeof payload !== 'object') {
-      validationErrors.value = null
-      return
-    }
-
-    const next: Record<string, string[]> = {}
-    const errors = (payload as any).errors || (payload as any)
-    if (errors && typeof errors === 'object') {
-      for (const [k, v] of Object.entries(errors)) {
-        if (k === 'detail' || k === 'error') continue
-        if (Array.isArray(v)) {
-          next[k] = v.map((x) => String(x))
-        } else if (typeof v === 'string') {
-          next[k] = [v]
-        } else if (v != null) {
-          next[k] = [JSON.stringify(v)]
-        }
-      }
-    }
-    validationErrors.value = Object.keys(next).length ? next : null
+    const info = parseMarketplaceApiError(err)
+    validationErrors.value = info.fields
   }
 
   // Getters
@@ -97,8 +54,9 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
 
   const isProfileComplete = computed(() => {
     if (!myProfile.value) return false
+    const avatarUrl = (myProfile.value as any).avatar_url || myProfile.value.user?.avatar_url
     return !!(
-      myProfile.value.photo &&
+      avatarUrl &&
       myProfile.value.bio &&
       myProfile.value.subjects.length > 0 &&
       myProfile.value.languages.length > 0 &&
@@ -237,12 +195,7 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     validationErrors.value = null
 
     try {
-      const id = myProfile.value?.id
-      if (typeof id === 'number') {
-        myProfile.value = await marketplaceApi.updateProfile(id, data)
-      } else {
-        throw new Error('profile_not_found')
-      }
+      myProfile.value = await marketplaceApi.updateProfile(data)
     } catch (err) {
       setValidationErrorsFromApi(err)
       error.value = mapApiError(err, 'Не вдалося зберегти профіль.')
@@ -274,11 +227,7 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     validationErrors.value = null
 
     try {
-      const id = myProfile.value?.id
-      if (typeof id !== 'number') {
-        throw new Error('profile_not_found')
-      }
-      myProfile.value = await marketplaceApi.publishProfile(id)
+      myProfile.value = await marketplaceApi.publishProfile()
     } catch (err) {
       setValidationErrorsFromApi(err)
       error.value = mapApiError(err, 'Не вдалося опублікувати профіль.')
@@ -294,11 +243,7 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     validationErrors.value = null
 
     try {
-      const id = myProfile.value?.id
-      if (typeof id !== 'number') {
-        throw new Error('profile_not_found')
-      }
-      myProfile.value = await marketplaceApi.unpublishProfile(id)
+      myProfile.value = await marketplaceApi.unpublishProfile()
     } catch (err) {
       setValidationErrorsFromApi(err)
       error.value = mapApiError(err, 'Не вдалося зняти профіль з публікації.')

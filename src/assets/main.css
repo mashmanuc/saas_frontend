@@ -27,6 +27,13 @@
     --warning-bg: #f59e0b;
     --danger-bg: #ef4444;
     --info-bg: #06b6d4;
+
+    --color-bg-primary: var(--bg-primary);
+    --color-bg-secondary: var(--bg-secondary);
+    --color-text-primary: var(--text-primary);
+    --color-text-secondary: var(--text-secondary);
+    --color-border-subtle: var(--border-color);
+    --color-primary: var(--accent);
   }
 
   /* ========================================
@@ -52,6 +59,13 @@
     --warning-bg: #fbbf24;
     --danger-bg: #f87171;
     --info-bg: #22d3ee;
+
+    --color-bg-primary: var(--bg-primary);
+    --color-bg-secondary: var(--bg-secondary);
+    --color-text-primary: var(--text-primary);
+    --color-text-secondary: var(--text-secondary);
+    --color-border-subtle: var(--border-color);
+    --color-primary: var(--accent);
   }
 
   /* ========================================
@@ -77,6 +91,13 @@
     --warning-bg: #f59e0b;
     --danger-bg: #dc2626;
     --info-bg: #0ea5e9;
+
+    --color-bg-primary: var(--bg-primary);
+    --color-bg-secondary: var(--bg-secondary);
+    --color-text-primary: var(--text-primary);
+    --color-text-secondary: var(--text-secondary);
+    --color-border-subtle: var(--border-color);
+    --color-primary: var(--accent);
   }
 
   html {

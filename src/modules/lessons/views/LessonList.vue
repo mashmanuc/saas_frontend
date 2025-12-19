@@ -356,7 +356,7 @@ const createModalError = reactive({
   },
 })
 
-const calendarLocale = computed(() => normalizeLocale(settingsStore.language || 'en'))
+const calendarLocale = computed(() => normalizeLocale(settingsStore.locale || 'en'))
 const localeCalendarRules = computed(() => getLocaleCalendarRules(calendarLocale.value))
 const calendarFirstDay = computed(() => localeCalendarRules.value.firstDay)
 
@@ -407,7 +407,7 @@ const weekLabel = computed(() => {
     return ''
   }
 
-  const locale = settingsStore.language || 'en'
+  const locale = settingsStore.locale || 'en'
   const fmt = new Intl.DateTimeFormat(locale, { day: '2-digit', month: 'short' })
   const fmtDay = new Intl.DateTimeFormat(locale, { day: '2-digit' })
   const fmtMonthYear = new Intl.DateTimeFormat(locale, { month: 'short', year: 'numeric' })

@@ -2,15 +2,37 @@ import apiClient from '../utils/apiClient'
 
 let queue = []
 let isFlushing = false
+let isDisabled = false
+
+const PRIMARY_ENDPOINT = '/v1/logs/frontend/'
+const FALLBACK_ENDPOINT = '/activity/events/'
 
 async function flushQueue() {
-  if (isFlushing || !queue.length) return
+  if (isDisabled || isFlushing || !queue.length) return
   isFlushing = true
   const payload = [...queue]
   queue = []
   try {
-    await apiClient.post('/activity/events/', { events: payload })
+    // v0.34: canonical logs ingestion endpoint
+    // (keep fallback for older deployments)
+    try {
+      await apiClient.post(PRIMARY_ENDPOINT, { events: payload })
+    } catch (primaryError) {
+      const status = primaryError?.response?.status
+      if (status === 404) {
+        await apiClient.post(FALLBACK_ENDPOINT, { events: payload })
+      } else {
+        throw primaryError
+      }
+    }
   } catch (error) {
+    const status = error?.response?.status
+    if (status === 404) {
+      isDisabled = true
+      queue = []
+      isFlushing = false
+      return
+    }
     console.error('[telemetry] failed to flush events', error)
     queue = [...payload, ...queue].slice(-50)
   } finally {
