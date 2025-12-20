@@ -125,7 +125,7 @@ import { useNotificationsStore } from '../stores/notificationsStore'
 dayjs.extend(relativeTime)
 
 const router = useRouter()
-const { t } = useI18n()
+const { t, te } = useI18n()
 const rootRef = ref(null)
 const open = ref(false)
 
@@ -167,10 +167,11 @@ const displayItems = computed(() => sortedItems.value.slice(0, 5).map(enhanceIte
 
 function enhanceItem(item) {
   const payload = item.payload || {}
+  const titleTemplate = te('notifications.dropdown.titleTemplate') ? t('notifications.dropdown.titleTemplate') : ''
   const title =
     payload.title ||
     payload.message ||
-    t('notifications.dropdown.titleTemplate') ||
+    titleTemplate ||
     item.type?.replace(/\./g, ' ')
   const description = payload.description || payload.body || payload.message || ''
   const tone = payload.tone || deriveTone(item.type)

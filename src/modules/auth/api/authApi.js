@@ -9,8 +9,12 @@ const authApi = {
     return api.post('/v1/auth/register', payload)
   },
 
-  refresh(payload) {
-    return api.post('/v1/auth/token/refresh', payload)
+  refresh() {
+    return api.post('/v1/auth/refresh')
+  },
+
+  csrf() {
+    return api.post('/v1/auth/csrf')
   },
 
   logout(payload) {

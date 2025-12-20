@@ -7,6 +7,17 @@
 import Konva from 'konva'
 import { recordExtraDraw } from '../perf/saveWindowMetrics'
 
+const logWarn = (...args: any[]) => {
+  const isDev = Boolean((import.meta as any)?.env?.DEV)
+  if (isDev) {
+    // eslint-disable-next-line no-console
+    console.warn(...args)
+    return
+  }
+  // eslint-disable-next-line no-console
+  console.debug(...args)
+}
+
 // Counter for extra draws during save (should be 0)
 let extraDrawsDuringSave = 0
 let isGuardActive = false
@@ -42,7 +53,7 @@ function drainPendingBatch(node: Konva.Stage | Konva.Layer, scope: 'stage' | 'la
     try {
       node.draw()
     } catch (error) {
-      console.warn('[guards] Failed to flush node before guard', {
+      logWarn('[guards] Failed to flush node before guard', {
         scope,
         nodeId: node._id,
         error,
@@ -81,7 +92,7 @@ function restoreTransformers(): void {
     try {
       transformer.nodes(nodes)
     } catch (error) {
-      console.warn('[guards] Failed to reattach transformer nodes after save', {
+      logWarn('[guards] Failed to reattach transformer nodes after save', {
         transformerId: transformer._id,
         error,
       })
@@ -145,7 +156,7 @@ export function startRenderGuard(stage: Konva.Stage | null): void {
   stage.draw = () => {
     extraDrawsDuringSave++
     recordExtraDraw()
-    const log = extraDrawsDuringSave <= WARN_LIMIT ? console.warn : console.debug
+    const log = extraDrawsDuringSave <= WARN_LIMIT ? logWarn : console.debug
     log('[guards] Blocked stage.draw() during save', {
       stageId: stage._id,
       extraDrawsDuringSave,
@@ -156,7 +167,7 @@ export function startRenderGuard(stage: Konva.Stage | null): void {
   stage.batchDraw = () => {
     extraDrawsDuringSave++
     recordExtraDraw()
-    const log = extraDrawsDuringSave <= WARN_LIMIT ? console.warn : console.debug
+    const log = extraDrawsDuringSave <= WARN_LIMIT ? logWarn : console.debug
     log('[guards] Blocked stage.batchDraw() during save', {
       stageId: stage._id,
       extraDrawsDuringSave,
@@ -179,7 +190,7 @@ export function startRenderGuard(stage: Konva.Stage | null): void {
     layer.draw = () => {
       extraDrawsDuringSave++
       recordExtraDraw()
-      const log = extraDrawsDuringSave <= WARN_LIMIT ? console.warn : console.debug
+      const log = extraDrawsDuringSave <= WARN_LIMIT ? logWarn : console.debug
       log('[guards] Blocked layer.draw() during save', {
         layerId: layer._id,
         layerName: layer.name?.(),
@@ -191,7 +202,7 @@ export function startRenderGuard(stage: Konva.Stage | null): void {
     layer.batchDraw = () => {
       extraDrawsDuringSave++
       recordExtraDraw()
-      const log = extraDrawsDuringSave <= WARN_LIMIT ? console.warn : console.debug
+      const log = extraDrawsDuringSave <= WARN_LIMIT ? logWarn : console.debug
       log('[guards] Blocked layer.batchDraw() during save', {
         layerId: layer._id,
         layerName: layer.name?.(),
@@ -239,7 +250,7 @@ export function stopRenderGuard(stage: Konva.Stage | null): void {
 
   // Log if any extra draws were attempted
   if (extraDrawsDuringSave > 0) {
-    console.warn(`[guards] ${extraDrawsDuringSave} extra draw calls blocked during save`)
+    logWarn(`[guards] ${extraDrawsDuringSave} extra draw calls blocked during save`)
   }
 }
 

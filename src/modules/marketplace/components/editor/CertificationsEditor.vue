@@ -16,6 +16,7 @@ const newIssuer = ref('')
 const newIssuedYear = ref<number | null>(null)
 const newIsPublic = ref(true)
 const newFile = ref<File | null>(null)
+const fileInputId = `cert-upload-${Math.random().toString(36).slice(2)}`
 
 const canSubmit = computed(() => {
   return !!newFile.value && newTitle.value.trim().length > 0
@@ -45,6 +46,7 @@ function resetForm() {
   newIsPublic.value = true
   newFile.value = null
   uploadProgress.value = null
+  resetFileInput()
 }
 
 function handleFileChange(e: Event) {
@@ -52,6 +54,13 @@ function handleFileChange(e: Event) {
   const file = input.files?.[0] || null
   input.value = ''
   newFile.value = file
+}
+
+function resetFileInput() {
+  const el = document.getElementById(fileInputId) as HTMLInputElement | null
+  if (el) {
+    el.value = ''
+  }
 }
 
 async function putWithProgress(uploadUrl: string, file: File): Promise<void> {
@@ -219,16 +228,34 @@ onMounted(() => {
           <label>{{ t('marketplace.profile.editor.certificationsIssuedYearLabel') }}</label>
           <input v-model.number="newIssuedYear" type="number" min="1900" max="2100" :disabled="isUploading" />
         </div>
-
         <div class="form-group">
           <label>{{ t('marketplace.profile.editor.certificationsFileLabel') }}</label>
-          <input
-            type="file"
-            accept="application/pdf,image/png,image/jpeg,image/webp"
-            :disabled="isUploading"
-            data-test="marketplace-certifications-file"
-            @change="handleFileChange"
-          />
+          <div class="file-upload-control">
+            <input
+              :id="fileInputId"
+              type="file"
+              class="file-input-hidden"
+              accept="application/pdf,image/png,image/jpeg,image/webp"
+              :disabled="isUploading"
+              data-test="marketplace-certifications-file"
+              @change="handleFileChange"
+            />
+            <label
+              class="btn btn-secondary"
+              :class="{ disabled: isUploading }"
+              :for="fileInputId"
+              data-test="marketplace-certifications-file-button"
+            >
+              {{ t('marketplace.profile.editor.certificationsUploadButton') }}
+            </label>
+            <span class="file-name" data-test="marketplace-certifications-file-name">
+              {{
+                newFile
+                  ? t('marketplace.profile.editor.certificationsSelectedFile', { name: newFile.name })
+                  : t('marketplace.profile.editor.certificationsNoFile')
+              }}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -338,6 +365,29 @@ onMounted(() => {
 
 .form-group input {
   width: 100%;
+}
+
+.file-upload-control {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.file-input-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.file-name {
+  font-size: 0.85rem;
+  color: var(--text-muted);
 }
 
 .progress {

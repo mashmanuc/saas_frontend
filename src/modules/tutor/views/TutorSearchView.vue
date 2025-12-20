@@ -121,10 +121,10 @@ async function requestTutor(tutorId) {
     await apiClient.post('/student/request_tutor/', { tutor_id: tutorId })
     await authStore.reloadUser()
     requestSuccessId.value = tutorId
-    notifySuccess(t('tutor.request.success') || 'Запит надіслано')
+    notifySuccess(t('tutor.request.success'))
   } catch (e) {
     requestErrorId.value = tutorId
-    notifyError(t('tutor.request.error') || 'Не вдалося надіслати запит')
+    notifyError(t('tutor.request.error'))
   } finally {
     requestLoadingId.value = null
   }

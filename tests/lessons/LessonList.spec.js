@@ -214,6 +214,44 @@ describe('LessonList.vue', () => {
     expect(notifySuccess).toHaveBeenCalled()
   })
 
+  it('create lesson shows validation error when required fields missing', async () => {
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    const newLessonButton = wrapper.find('[data-test="create-lesson-button"]')
+    await newLessonButton.trigger('click')
+    await flushPromises()
+
+    const saveButton = wrapper.find('[data-test="submit-create-lesson"]')
+    await saveButton.trigger('click')
+    await flushPromises()
+
+    expect(lessonStoreMock.createLesson).not.toHaveBeenCalled()
+    expect(notifyError).toHaveBeenCalled()
+  })
+
+  it('create lesson not_a_member shows sync issue banner', async () => {
+    lessonStoreMock.createLesson.mockRejectedValueOnce({ mappedCode: 'not_a_member' })
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    const newLessonButton = wrapper.find('[data-test="create-lesson-button"]')
+    await newLessonButton.trigger('click')
+    await flushPromises()
+
+    const studentAutocompleteInput = wrapper.find('[data-test="student-autocomplete"] input')
+    const datetimeInputs = wrapper.findAll('input[type="datetime-local"]')
+    await studentAutocompleteInput.setValue('student-1')
+    await datetimeInputs[0].setValue('2024-01-01T10:00')
+    await datetimeInputs[1].setValue('2024-01-01T11:00')
+
+    const saveButton = wrapper.find('[data-test="submit-create-lesson"]')
+    await saveButton.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="create-lesson-sync-issue"]').exists()).toBe(true)
+  })
+
   it('event drag invokes reschedule API and notifications', async () => {
     const wrapper = mountComponent()
     await flushPromises()

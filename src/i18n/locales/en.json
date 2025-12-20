@@ -47,6 +47,11 @@
     "uk": "Ukrainian",
     "en": "English"
   },
+  "userProg": {
+    "label": "Language",
+    "uk": "Ukrainian",
+    "en": "English"
+  },
   "nav": {
     "logout": "Logout",
     "side": "Side navigation",
@@ -316,6 +321,15 @@
       "backToLogin": "Back to login"
     },
     "invite": {
+      "title": "Invite student",
+      "description": "Enter the student's email to send an invite to this classroom.",
+      "emailLabel": "Student email",
+      "emailPlaceholder": "student@example.com",
+      "errors": {
+        "required": "Email is required.",
+        "invalid": "Invalid email address.",
+        "generic": "Failed to send invite."
+      },
       "validation": {
         "title": "Invite validation",
         "description": "Checking your link...",
@@ -460,6 +474,17 @@
       "loadMore": "Load more",
       "emptyTitle": "No tutors found",
       "emptyDescription": "Try adjusting your filters or search criteria"
+    },
+    "categories": {
+      "title": "Categories",
+      "featured": "Featured",
+      "featuredBadge": "Recommended",
+      "all": "All",
+      "tutorsAvailable": "{count} tutors available",
+      "allTutorsTitle": "All tutors",
+      "subjectTutorsTitle": "Tutors for: {subject}",
+      "emptyTitle": "No tutors in this category yet",
+      "emptyDescription": "Try another category or come back later"
     },
     "search": {
       "placeholder": "Search tutors, subjects…",
@@ -669,6 +694,9 @@
         "certificationsIssuerLabel": "Issuer (optional)",
         "certificationsIssuedYearLabel": "Issued year (optional)",
         "certificationsFileLabel": "File",
+        "certificationsUploadButton": "Choose file",
+        "certificationsSelectedFile": "Selected: {name}",
+        "certificationsNoFile": "No file selected",
         "certificationsAdd": "Add diploma",
         "certificationsUploading": "Uploading…",
         "certificationsEmpty": "No diplomas yet",
@@ -768,12 +796,30 @@
       "timezoneUnknown": "not set",
       "loadMore": "Load more",
       "status": {
+        "label": "Status",
+        "all": "All",
+        "scheduled": "Scheduled",
+        "completed": "Completed",
+        "cancelled": "Cancelled",
         "pending": "Pending",
         "active": "Active",
         "inactive": "Inactive",
         "invited": "Invited",
         "archived": "Archived"
       },
+      "actions": {
+        "new": "New",
+        "markFreeTime": "Mark free time",
+        "refresh": "Refresh",
+        "saveLesson": "Save lesson",
+        "confirmCancel": "Cancel lesson"
+      },
+      "createTitle": "Create lesson",
+      "cancelTitle": "Cancel lesson",
+      "cancelDescription": "Are you sure you want to cancel this lesson?",
+      "todaysLessons": "Today's lessons",
+      "viewBookings": "View bookings",
+      "viewLessons": "View lessons",
       "tabs": {
         "all": "All",
         "invited": "Invited",
@@ -876,6 +922,29 @@
     }
   },
   "tutor": {
+    "relations": {
+      "info": {
+        "partial": "Some relations require attention"
+      },
+      "actions": {
+        "acceptSuccess": "Invitation accepted",
+        "acceptError": "Failed to accept invitation",
+        "declineSuccess": "Invitation declined",
+        "declineError": "Failed to decline invitation",
+        "resendSuccess": "Invitation resent",
+        "resendError": "Failed to resend invitation"
+      },
+      "notifications": {
+        "created": "Invitation created",
+        "createError": "Failed to create invitation",
+        "cancelled": "Invitation cancelled",
+        "cancelError": "Failed to cancel invitation",
+        "rescheduled": "Invitation rescheduled",
+        "rescheduleError": "Failed to reschedule invitation",
+        "resized": "Invitation updated",
+        "validation": "Please check your input."
+      }
+    },
     "search": {
       "title": "Find a tutor",
       "loadError": "Failed to load tutors list"
@@ -1075,6 +1144,10 @@
       "lastName": "Last name",
       "timezone": "Timezone",
       "bio": "About",
+      "bioPlaceholder": "Tell us about your teaching style, experience, or goals…",
+      "headline": "Headline",
+      "headlineHint": "A short tagline that students will see.",
+      "timezonePlaceholder": "Select timezone",
       "foundDescription": "Unsaved changes from {time} detected. Restore them or start over?",
       "foundDescriptionNoTime": "Unsaved changes detected. Restore them or start over?",
       "restore": "Restore draft",
@@ -1082,10 +1155,36 @@
       "error": "Failed to load draft",
       "discardError": "Failed to delete draft"
     },
+    "actions": {
+      "save": "Save",
+      "saving": "Saving...",
+      "cancel": "Cancel",
+      "revert": "Revert"
+    },
+    "autosave": {
+      "saving": "Autosaving…",
+      "error": "Failed to save draft",
+      "clean": "No changes",
+      "unsaved": "Unsaved changes",
+      "savedAt": "Draft saved at {time}",
+      "restored": "Draft restored"
+    },
+    "draft": {
+      "loading": "Checking for a draft…",
+      "foundTitle": "Draft found",
+      "foundDescription": "Unsaved changes from {time} detected. Restore them or start over?",
+      "foundDescriptionNoTime": "Unsaved changes detected. Restore them or start over?",
+      "restore": "Restore",
+      "discard": "Discard draft",
+      "error": "Failed to fetch draft",
+      "discardError": "Failed to delete draft"
+    },
     "messages": {
       "loadError": "Failed to load profile",
       "saveSuccess": "Profile saved",
       "saveError": "Failed to save changes",
+      "avatarUpdateSuccess": "Photo updated.",
+      "avatarUpdateError": "Failed to update photo.",
       "validationName": "Please enter at least 2 characters.",
       "validationTimezone": "Select timezone."
     },
@@ -1093,6 +1192,7 @@
       "upload": "Upload",
       "change": "Change",
       "drop": "Drop here",
+      "uploading": "Updating…",
       "update": "Update photo",
       "remove": "Remove photo",
       "hint": "Drag & drop or pick a file. Up to 5MB, JPG/PNG/WebP."
@@ -1116,6 +1216,62 @@
       "resetZoom": "Reset zoom",
       "fullscreen": "Fullscreen",
       "exitFullscreen": "Exit fullscreen"
+    },
+    "solo": {
+      "title": "Sandbox",
+      "pages": "pages",
+      "shared": "Shared",
+      "share": "Share",
+      "duplicate": "Duplicate",
+      "delete": "Delete",
+      "mySessions": {
+        "title": "My Boards",
+        "createNew": "Create new board",
+        "search": "Search boards...",
+        "sortUpdated": "Sort by last updated",
+        "sortCreated": "Sort by creation date",
+        "sortName": "Sort by name",
+        "empty": "You don't have any saved boards yet.",
+        "createFirst": "Create your first board"
+      },
+      "sharing": {
+        "title": "Share board",
+        "createLink": "Create link",
+        "expiresIn": "Expires in",
+        "expiresAt": "Expires at",
+        "day": "day",
+        "days": "days",
+        "never": "Never",
+        "allowDownload": "Allow downloads",
+        "maxViews": "Max views",
+        "unlimited": "Unlimited",
+        "views": "Views",
+        "revoke": "Revoke access",
+        "education": {
+          "title": "Education",
+          "present": "Present",
+          "in": "in"
+        }
+      },
+      "export": {
+        "title": "Export",
+        "format": "Format",
+        "pageSize": "Page size",
+        "orientation": "Orientation",
+        "landscape": "Landscape",
+        "portrait": "Portrait",
+        "export": "Export",
+        "exporting": "Exporting..."
+      },
+      "assets": {
+        "upload": "Upload file",
+        "addToBoard": "Add to board",
+        "empty": "No files uploaded yet"
+      },
+      "public": {
+        "notFound": "Board not found",
+        "download": "Download"
+      }
     },
     "board": {
       "placeholder": "Start drawing on the board",

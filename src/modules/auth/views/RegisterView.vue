@@ -30,12 +30,14 @@
         <Input
           :label="$t('auth.register.firstName')"
           v-model="form.first_name"
+          :error="fieldError('first_name')"
           required
           autocomplete="given-name"
         />
         <Input
           :label="$t('auth.register.lastName')"
           v-model="form.last_name"
+          :error="fieldError('last_name')"
           required
           autocomplete="family-name"
         />
@@ -44,6 +46,7 @@
       <Input
         :label="$t('auth.register.username')"
         v-model="form.username"
+        :error="fieldError('username')"
         autocomplete="username"
       />
 
@@ -51,6 +54,7 @@
         :label="$t('auth.register.email')"
         type="email"
         v-model="form.email"
+        :error="fieldError('email')"
         required
         autocomplete="email"
       />
@@ -59,13 +63,10 @@
         :label="$t('auth.register.password')"
         type="password"
         v-model="form.password"
+        :error="fieldError('password')"
         required
         autocomplete="new-password"
       />
-
-      <p v-if="auth.error" class="text-sm" style="color: var(--danger-bg);">
-        {{ auth.error }}
-      </p>
 
       <Button class="w-full" type="submit" :disabled="auth.loading">
         <span v-if="auth.loading">{{ $t('auth.register.loading') }}</span>
@@ -80,18 +81,51 @@
       </RouterLink>
     </p>
   </Card>
+
+  <OnboardingModal
+    :show="showErrorModal"
+    :title="$t('errors.http.serverError')"
+    closable
+    @close="showErrorModal = false"
+  >
+    <p class="text-sm" style="color: var(--text-primary);">
+      {{ auth.error }}
+    </p>
+
+    <template #footer>
+      <Button @click="showErrorModal = false">OK</Button>
+    </template>
+  </OnboardingModal>
 </template>
 
 <script setup>
-import { reactive } from 'vue'
+import { reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../store/authStore'
 import Button from '../../../ui/Button.vue'
 import Card from '../../../ui/Card.vue'
 import Input from '../../../ui/Input.vue'
+import OnboardingModal from '../../onboarding/components/widgets/OnboardingModal.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
+
+const showErrorModal = ref(false)
+
+watch(
+  () => [auth.error, auth.lastErrorCode],
+  ([value, code]) => {
+    showErrorModal.value = Boolean(value) && code !== 'validation_failed'
+  }
+)
+
+function fieldError(field) {
+  const map = auth.lastFieldMessages
+  if (!map || typeof map !== 'object') return ''
+  const list = map[field]
+  if (!Array.isArray(list) || list.length === 0) return ''
+  return String(list[0])
+}
 
 const form = reactive({
   account_type: 'student',

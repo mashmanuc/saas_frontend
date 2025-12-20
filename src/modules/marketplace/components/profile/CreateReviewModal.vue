@@ -31,7 +31,7 @@ const canSubmit = computed(() => {
 async function submit() {
   if (isSubmitting.value || !props.slug) return
   if (!canSubmit.value) {
-    notifyError(t('marketplace.profile.reviews.write.validation') || 'Перевірте коректність даних.')
+    notifyError(t('marketplace.profile.reviews.write.validation'))
     return
   }
 
@@ -46,7 +46,7 @@ async function submit() {
 
   try {
     await marketplaceApi.createTutorReview(props.slug, payload as CreateReviewPayload)
-    notifySuccess(t('marketplace.profile.reviews.write.success') || 'Відгук надіслано')
+    notifySuccess(t('marketplace.profile.reviews.write.success'))
     emit('created')
     emit('close')
   } catch (e: any) {

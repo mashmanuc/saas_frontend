@@ -7,6 +7,11 @@
     "uk": "Українська",
     "en": "Англійська"
   },
+  "lang": {
+    "label": "Мова",
+    "uk": "Українська",
+    "en": "Англійська"
+  },
   "nav": {
     "logout": "Вийти",
     "side": "Бічна навігація",
@@ -284,7 +289,77 @@
         "required": "Email є обов'язковим.",
         "invalid": "Невірний email.",
         "generic": "Не вдалося надіслати запрошення."
+      },
+      "validation": {
+        "title": "Перевірка запрошення",
+        "description": "Перевіряємо посилання...",
+        "loading": "Зачекайте...",
+        "status": {
+          "valid": "Запрошення дійсне",
+          "invalid": "Статус запрошення: {status}"
+        },
+        "statusLabel": "Статус:",
+        "invalidStatusHint": "Зверніться до тьютора, щоб отримати нове запрошення.",
+        "emailLabel": "Email",
+        "tutorLabel": "Тьютор",
+        "expiresLabel": "Діє до",
+        "noteLabel": "Нотатка",
+        "extraTitle": "Додаткові дані",
+        "continue": "Продовжити",
+        "error": "Запрошення недійсне або вже використане."
+      },
+      "accept": {
+        "title": "Прийняти запрошення",
+        "description": "Створіть пароль та активуйте акаунт.",
+        "password": "Пароль",
+        "confirmPassword": "Повторіть пароль",
+        "firstName": "Імʼя",
+        "lastName": "Прізвище",
+        "submit": "Активувати акаунт",
+        "loading": "Активуємо...",
+        "passwordMismatch": "Паролі не збігаються.",
+        "genericError": "Не вдалося прийняти запрошення."
       }
+    }
+  },
+  "userProfile": {
+    "account": {
+      "title": "Акаунт",
+      "subtitle": "Основні дані користувача.",
+      "firstName": "Імʼя",
+      "lastName": "Прізвище",
+      "username": "Username",
+      "timezone": "Таймзона",
+      "save": "Зберегти",
+      "loadError": "Не вдалося завантажити акаунт.",
+      "saveSuccess": "Збережено.",
+      "saveError": "Не вдалося зберегти.",
+      "avatarUpdated": "Аватар оновлено.",
+      "avatarUpdateError": "Не вдалося оновити аватар.",
+      "avatarDeleted": "Аватар видалено.",
+      "avatarDeleteError": "Не вдалося видалити аватар.",
+      "changeEmail": "Змінити email",
+      "changePassword": "Змінити пароль"
+    },
+    "changeEmail": {
+      "title": "Зміна email",
+      "subtitle": "Введіть новий email та поточний пароль.",
+      "newEmail": "Новий email",
+      "password": "Поточний пароль",
+      "submit": "Змінити email",
+      "success": "Лист підтвердження надіслано на нову адресу.",
+      "error": "Не вдалося змінити email."
+    },
+    "changePassword": {
+      "title": "Зміна пароля",
+      "subtitle": "Введіть поточний та новий пароль.",
+      "currentPassword": "Поточний пароль",
+      "newPassword": "Новий пароль",
+      "confirmPassword": "Повторіть новий пароль",
+      "submit": "Змінити пароль",
+      "success": "Пароль успішно змінено.",
+      "error": "Не вдалося змінити пароль.",
+      "mismatch": "Паролі не збігаються."
     }
   },
   "menu": {
@@ -400,6 +475,23 @@
       "emptyTitle": "Репетиторів не знайдено",
       "emptyDescription": "Спробуйте змінити фільтри або критерії пошуку"
     },
+    "search": {
+      "placeholder": "Пошук тьюторів, предметів…",
+      "recentTitle": "Останні пошуки",
+      "suggestionsTitle": "Підказки",
+      "pressEnter": "Натисніть Enter, щоб шукати \"{query}\"",
+      "resultsCount": "Знайдено: {count}",
+      "showResults": "Показати результати ({count})",
+      "tutorsPlural": "тьюторів"
+    },
+    "sections": {
+      "popular": "Популярні тьютори",
+      "new": "Нові тьютори",
+      "recommended": "Рекомендовано для вас",
+      "featured": "Топ тьюторів",
+      "viewAll": "Переглянути всі",
+      "loadError": "Не вдалося завантажити тьюторів"
+    },
     "categories": {
       "title": "Категорії",
       "featured": "Топ",
@@ -502,6 +594,14 @@
         "empty": "Відгуків ще немає",
         "loadMore": "Показати ще",
         "loadError": "Не вдалося завантажити відгуки",
+        "rating": "Оцінка",
+        "ratingLabel": "Оцінка",
+        "review": "Відгук",
+        "reviewsLabel": "Відгуки",
+        "reviewsCount": "{count} відгуків",
+        "reviewsEmpty": "Відгуків ще немає",
+        "reviewsLoadMore": "Показати ще",
+        "reviewsLoadError": "Не вдалося завантажити відгуки",
         "write": {
           "title": "Залишити відгук",
           "ratingLabel": "Оцінка",
@@ -594,6 +694,9 @@
         "certificationsIssuerLabel": "Організація (опційно)",
         "certificationsIssuedYearLabel": "Рік видачі (опційно)",
         "certificationsFileLabel": "Файл",
+        "certificationsUploadButton": "Обрати файл",
+        "certificationsSelectedFile": "Обрано: {name}",
+        "certificationsNoFile": "Файл не обрано",
         "certificationsAdd": "Додати диплом",
         "certificationsUploading": "Завантаження…",
         "certificationsEmpty": "Дипломів ще немає",
@@ -793,6 +896,14 @@
       "rateLimitDescription": "Було виконано надто багато дій за короткий час. Зачекайте кілька секунд і повторіть.",
       "retry": "Повторити"
     },
+    "actions": {
+      "acceptSuccess": "Запрошення прийнято",
+      "acceptError": "Не вдалося прийняти запрошення",
+      "declineSuccess": "Запрошення відхилено",
+      "declineError": "Не вдалося відхилити запрошення",
+      "resendSuccess": "Запрошення повторно надіслано",
+      "resendError": "Не вдалося повторно надіслати запрошення"
+    },
     "bulk": {
       "noInvited": "Оберіть щонайменше одного запрошеного студента для пакетного прийняття.",
       "emptySelection": "Оберіть щонайменше один зв'язок для продовження.",
@@ -905,6 +1016,8 @@
     "subtitle": "Актуалізуйте свою особисту інформацію.",
     "editButton": "Редагувати профіль",
     "settingsButton": "Налаштування акаунта",
+    "editTitle": "Редагування профілю",
+    "editDescription": "Оновіть персональні дані та те, як вас бачать студенти.",
     "email": "Email",
     "role": "Роль",
     "timezone": "Таймзона",
@@ -953,7 +1066,13 @@
       "headline": "Заголовок",
       "bioPlaceholder": "Розкажіть про свій підхід, досвід чи цілі.",
       "headlineHint": "Короткий слоган, який бачать студенти.",
-      "timezonePlaceholder": "Оберіть таймзону"
+      "timezonePlaceholder": "Оберіть таймзону",
+      "foundDescription": "Виявлено незбережені зміни від {time}. Відновити їх чи почати заново?",
+      "foundDescriptionNoTime": "Виявлено незбережені зміни. Відновити їх чи почати заново?",
+      "restore": "Відновити чернетку",
+      "discard": "Відхилити чернетку",
+      "error": "Не вдалося завантажити чернетку",
+      "discardError": "Не вдалося видалити чернетку"
     },
     "actions": {
       "save": "Зберегти зміни",
@@ -983,6 +1102,8 @@
       "loadError": "Не вдалося завантажити профіль",
       "saveSuccess": "Зміни збережено",
       "saveError": "Не вдалося зберегти зміни",
+      "avatarUpdateSuccess": "Фото оновлено.",
+      "avatarUpdateError": "Не вдалося оновити фото.",
       "validationName": "Введіть щонайменше 2 символи.",
       "validationTimezone": "Оберіть таймзону."
     },
@@ -990,6 +1111,7 @@
       "upload": "Завантажити",
       "change": "Змінити",
       "drop": "Відпустіть",
+      "uploading": "Оновлюємо…",
       "update": "Оновити фото",
       "remove": "Видалити фото",
       "hint": "Перетягніть або оберіть файл. До 5 МБ, JPG/PNG/WebP."
@@ -1204,17 +1326,27 @@
     "actions": {
       "edit": "Редагувати",
       "delete": "Видалити",
-      "cancelEdit": "Скасувати редагування"
+      "cancelEdit": "Скасувати редагування",
+      "retry": "Повторити"
+    },
+    "errors": {
+      "failedToSend": "Не вдалося надіслати повідомлення. Спробуйте ще раз."
     },
     "input": {
       "placeholder": "Напишіть повідомлення… Підтримується Markdown і MathJax.",
       "hint": "Enter — надіслати, Shift+Enter — новий рядок.",
       "send": "Надіслати",
-      "sending": "Надсилаємо…"
+      "sending": "Надсилаємо…",
+      "rateLimited": "Забагато повідомлень. Зачекайте трохи."
     },
     "readSingle": "переглянув(ла)",
     "readMany": "переглянули",
     "editing": "Редагування повідомлення",
+    "messageStatus": {
+      "sending": "Надсилаємо…",
+      "delivered": "Доставлено",
+      "error": "Помилка"
+    },
     "confirm": {
       "delete": "Видалити це повідомлення?"
     }
@@ -1243,7 +1375,13 @@
     },
     "status": {
       "saving": "Зберігаємо…",
-      "saved": "Збережено"
+      "saved": "Збережено",
+      "savedAt": "Збережено о {time}"
+    },
+    "participantsList": {
+      "title": "Учасники",
+      "subtitle": "Присутність та курсори",
+      "cursorActive": "{name} зараз малює"
     }
   },
   "lessons": {
@@ -1277,6 +1415,7 @@
       },
       "actions": {
         "new": "Новий урок",
+        "markFreeTime": "Відмітити вільний час",
         "refresh": "Оновити",
         "saveLesson": "Зберегти урок",
         "confirmCancel": "Скасувати урок"

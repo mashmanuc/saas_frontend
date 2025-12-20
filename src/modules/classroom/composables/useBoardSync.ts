@@ -27,6 +27,17 @@ export function useBoardSync(options: BoardSyncOptions = {}) {
 
   const roomStore = useRoomStore()
 
+  const logWarn = (...args: any[]) => {
+    const isDev = Boolean((import.meta as any)?.env?.DEV)
+    if (isDev) {
+      // eslint-disable-next-line no-console
+      console.warn(...args)
+      return
+    }
+    // eslint-disable-next-line no-console
+    console.debug(...args)
+  }
+
   // State
   const isSyncing = ref(false)
   const lastSyncTime = ref<Date | null>(null)
@@ -62,7 +73,7 @@ export function useBoardSync(options: BoardSyncOptions = {}) {
   }): void {
     // Check for version conflict
     if (event.version < roomStore.boardVersion) {
-      console.warn('[useBoardSync] Received outdated event, ignoring')
+      logWarn('[useBoardSync] Received outdated event, ignoring')
       return
     }
 
@@ -132,7 +143,7 @@ export function useBoardSync(options: BoardSyncOptions = {}) {
         break
 
       default:
-        console.warn('[useBoardSync] Unknown event type:', type)
+        logWarn('[useBoardSync] Unknown event type:', type)
     }
 
     roomStore.updateBoardState(currentState, roomStore.boardVersion)

@@ -10,6 +10,7 @@
         :label="$t('auth.login.email')"
         type="email"
         v-model="form.email"
+        :error="fieldError('email')"
         required
         autocomplete="email"
       />
@@ -18,13 +19,10 @@
         :label="$t('auth.login.password')"
         type="password"
         v-model="form.password"
+        :error="fieldError('password')"
         required
         autocomplete="current-password"
       />
-
-      <p v-if="auth.error" class="text-sm" style="color: var(--danger-bg);">
-        {{ auth.error }}
-      </p>
 
       <RouterLink
         to="/auth/forgot-password"
@@ -57,16 +55,32 @@
       </RouterLink>
     </p>
   </Card>
+
+  <OnboardingModal
+    :show="showErrorModal"
+    :title="$t('errors.http.serverError')"
+    closable
+    @close="showErrorModal = false"
+  >
+    <p class="text-sm" style="color: var(--text-primary);">
+      {{ auth.error }}
+    </p>
+
+    <template #footer>
+      <Button @click="showErrorModal = false">OK</Button>
+    </template>
+  </OnboardingModal>
 </template>
 
 <script setup>
-import { computed, reactive } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../store/authStore'
 import Button from '../../../ui/Button.vue'
 import Card from '../../../ui/Card.vue'
 import Input from '../../../ui/Input.vue'
 import { getDefaultRouteForRole } from '../../../config/routes'
+import OnboardingModal from '../../onboarding/components/widgets/OnboardingModal.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -78,6 +92,23 @@ const form = reactive({
 })
 
 const showResendVerify = computed(() => auth.lastErrorCode === 'email_not_verified' && Boolean(form.email))
+
+const showErrorModal = ref(false)
+
+watch(
+  () => [auth.error, auth.lastErrorCode],
+  ([value, code]) => {
+    showErrorModal.value = Boolean(value) && code !== 'validation_failed'
+  }
+)
+
+function fieldError(field) {
+  const map = auth.lastFieldMessages
+  if (!map || typeof map !== 'object') return ''
+  const list = map[field]
+  if (!Array.isArray(list) || list.length === 0) return ''
+  return String(list[0])
+}
 
 function goToCheckEmail() {
   router.push({ name: 'auth-check-email', query: { email: form.email } })

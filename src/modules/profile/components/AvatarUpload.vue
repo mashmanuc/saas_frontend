@@ -29,13 +29,13 @@
           />
           <div class="absolute inset-0 rounded-full bg-black/40 opacity-0 transition hover:opacity-100">
             <span class="absolute inset-0 flex items-center justify-center text-xs font-medium text-white">
-              {{ $t('profile.avatar.change') || 'Змінити' }}
+              {{ $t('profile.avatar.change') }}
             </span>
           </div>
         </template>
         <template v-else>
           <span class="text-2xl font-semibold text-primary">{{ initials }}</span>
-          <span class="mt-1 text-xs">{{ dragActive ? $t('profile.avatar.drop') || 'Відпустіть' : $t('profile.avatar.upload') || 'Завантажити' }}</span>
+          <span class="mt-1 text-xs">{{ dragActive ? $t('profile.avatar.drop') : $t('profile.avatar.upload') }}</span>
         </template>
       </button>
     </div>
@@ -47,7 +47,7 @@
         :disabled="disabled"
         @click="openFileDialog"
       >
-        {{ $t('profile.avatar.update') || 'Оновити фото' }}
+        {{ $t('profile.avatar.update') }}
       </Button>
 
       <Button
@@ -56,12 +56,12 @@
         :disabled="disabled || !previewUrl"
         @click="$emit('delete')"
       >
-        {{ $t('profile.avatar.remove') || 'Видалити фото' }}
+        {{ $t('profile.avatar.remove') }}
       </Button>
     </div>
 
     <p class="text-center text-xs text-muted-foreground">
-      {{ $t('profile.avatar.hint') || 'Drag & drop або оберіть з пристрою. До 5 МБ, JPG/PNG/WebP.' }}
+      {{ $t('profile.avatar.hint') }}
     </p>
   </div>
 </template>

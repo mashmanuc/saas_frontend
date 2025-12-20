@@ -93,7 +93,7 @@
               {{ $t('student.upcomingLessons.placeholder') }}
             </p>
             <router-link to="/bookings" class="text-sm text-accent hover:underline">
-              {{ $t('student.actions.viewAllLessons') || 'Переглянути всі уроки' }}
+              {{ $t('student.actions.viewAllLessons') }}
             </router-link>
           </div>
         </section>

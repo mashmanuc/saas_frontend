@@ -236,6 +236,58 @@ describe('boardStore', () => {
       const store = useBoardStore()
       expect(store.canRedo).toBe(false)
     })
+
+    it('undo/redo should work for deleteStroke', () => {
+      const store = useBoardStore()
+      store.pages[0].strokes = [{ id: 'stroke-1' }, { id: 'stroke-2' }]
+      store.undoStack = [{ type: 'deleteStroke', stroke: { id: 'stroke-2' }, index: 1 }] as any
+
+      store.undo()
+      expect(store.currentStrokes).toEqual([{ id: 'stroke-1' }, { id: 'stroke-2' }, { id: 'stroke-2' }])
+
+      // redo should remove the re-inserted stroke at index
+      store.redo()
+      expect(store.currentStrokes).toEqual([{ id: 'stroke-1' }, { id: 'stroke-2' }])
+    })
+
+    it('undo/redo should work for updateStroke', () => {
+      const store = useBoardStore()
+      store.pages[0].strokes = [{ id: 's1', v: 2 }]
+      store.undoStack = [{ type: 'updateStroke', prev: { id: 's1', v: 1 }, next: { id: 's1', v: 2 }, index: 0 }] as any
+
+      store.undo()
+      expect(store.currentStrokes).toEqual([{ id: 's1', v: 1 }])
+
+      store.redo()
+      expect(store.currentStrokes).toEqual([{ id: 's1', v: 2 }])
+    })
+
+    it('undo/redo should work for clearBoard', () => {
+      const store = useBoardStore()
+      store.pages[0].strokes = [{ id: 's1' }]
+      store.pages[0].assets = [{ id: 'a1' }]
+      store.undoStack = [{ type: 'clearBoard', prevStrokes: [{ id: 's1' }], prevAssets: [{ id: 'a1' }] }] as any
+
+      store.undo()
+      expect(store.pages[0].strokes).toEqual([{ id: 's1' }])
+      expect(store.pages[0].assets).toEqual([{ id: 'a1' }])
+
+      store.redo()
+      expect(store.pages[0].strokes).toEqual([])
+      expect(store.pages[0].assets).toEqual([])
+    })
+
+    it('undo/redo should work for updateAsset', () => {
+      const store = useBoardStore()
+      store.pages[0].assets = [{ id: 'a1', x: 10 }]
+      store.undoStack = [{ type: 'updateAsset', prev: { id: 'a1', x: 1 }, next: { id: 'a1', x: 10 }, index: 0 }] as any
+
+      store.undo()
+      expect(store.pages[0].assets).toEqual([{ id: 'a1', x: 1 }])
+
+      store.redo()
+      expect(store.pages[0].assets).toEqual([{ id: 'a1', x: 10 }])
+    })
   })
 
   describe('tool state', () => {

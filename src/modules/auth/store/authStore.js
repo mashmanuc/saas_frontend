@@ -9,11 +9,14 @@ let refreshInterval = null
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     access: storage.getAccess(),
-    refresh: storage.getRefresh(),
     user: storage.getUser(),
+    csrfToken: null,
     loading: false,
     error: null,
     lastErrorCode: null,
+    lastRequestId: null,
+    lastFieldMessages: null,
+    lastSummary: null,
     initialized: false,
     refreshPromise: null,
     sessionExpiredNotified: false,
@@ -55,10 +58,14 @@ export const useAuthStore = defineStore('auth', {
       this.loading = true
       this.error = null
       this.lastErrorCode = null
+      this.lastRequestId = null
+      this.lastFieldMessages = null
+      this.lastSummary = null
 
       try {
-        const { access, refresh, user } = await authApi.login(form)
-        this.setAuth({ access, refresh, user })
+        const { access, user } = await authApi.login(form)
+        this.setAuth({ access, user })
+        await this.ensureCsrfToken()
         this.startProactiveRefresh()
         if (!this.user) {
           await this.reloadUser()
@@ -72,10 +79,31 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    async validateInvite(token) {
+      this.loading = true
+      this.error = null
+      this.lastErrorCode = null
+      this.lastRequestId = null
+      this.lastFieldMessages = null
+      this.lastSummary = null
+
+      try {
+        return await authApi.validateInvite(token)
+      } catch (error) {
+        this.handleError(error)
+        throw error
+      } finally {
+        this.loading = false
+      }
+    },
+
     async register(form) {
       this.loading = true
       this.error = null
       this.lastErrorCode = null
+      this.lastRequestId = null
+      this.lastFieldMessages = null
+      this.lastSummary = null
 
       try {
         const res = await authApi.register(form)
@@ -92,10 +120,14 @@ export const useAuthStore = defineStore('auth', {
       this.loading = true
       this.error = null
       this.lastErrorCode = null
+      this.lastRequestId = null
+      this.lastFieldMessages = null
+      this.lastSummary = null
 
       try {
         const { access } = await authApi.acceptInvite(payload)
         this.setAuth({ access })
+        await this.ensureCsrfToken()
         this.startProactiveRefresh()
         await this.reloadUser()
         return this.user
@@ -129,11 +161,6 @@ export const useAuthStore = defineStore('auth', {
         }
       }
 
-      if (typeof arguments[0]?.refresh !== 'undefined') {
-        this.refresh = arguments[0].refresh || null
-        storage.setRefresh(this.refresh)
-      }
-
       if (typeof user !== 'undefined') {
         this.user = user || null
         storage.setUser(this.user)
@@ -141,6 +168,9 @@ export const useAuthStore = defineStore('auth', {
 
       this.error = null
       this.lastErrorCode = null
+      this.lastRequestId = null
+      this.lastFieldMessages = null
+      this.lastSummary = null
     },
 
     async refreshAccess() {
@@ -148,12 +178,8 @@ export const useAuthStore = defineStore('auth', {
         return this.refreshPromise
       }
 
-      if (!this.refresh) {
-        throw new Error('refresh_missing')
-      }
-
       this.refreshPromise = (async () => {
-        const res = await authApi.refresh({ refresh: this.refresh })
+        const res = await authApi.refresh()
         if (!res?.access) {
           throw new Error('Не вдалося оновити токен')
         }
@@ -161,9 +187,8 @@ export const useAuthStore = defineStore('auth', {
         this.access = res.access
         storage.setAccess(this.access)
 
-        if (res.refresh) {
-          this.refresh = res.refresh
-          storage.setRefresh(this.refresh)
+        if (!this.csrfToken) {
+          await this.ensureCsrfToken()
         }
         return this.access
       })()
@@ -214,11 +239,7 @@ export const useAuthStore = defineStore('auth', {
 
     async logout() {
       try {
-        if (this.refresh) {
-          await authApi.logout({ refresh: this.refresh })
-        } else {
-          await authApi.logout()
-        }
+        await authApi.logout()
       } catch (error) {
         // ігноруємо помилку logout, головне очистити стан локально
       }
@@ -229,14 +250,29 @@ export const useAuthStore = defineStore('auth', {
     async forceLogout() {
       this.stopProactiveRefresh()
       this.access = null
-      this.refresh = null
       this.user = null
+      this.csrfToken = null
       this.error = null
       this.lastErrorCode = null
       this.loading = false
       this.refreshPromise = null
+      this.lastRequestId = null
+      this.lastFieldMessages = null
+      this.lastSummary = null
 
       storage.clearAll()
+    },
+
+    async ensureCsrfToken() {
+      try {
+        const res = await authApi.csrf()
+        const token = res?.csrf
+        if (typeof token === 'string' && token.trim().length > 0) {
+          this.csrfToken = token
+        }
+      } catch (_err) {
+        // CSRF token може бути не обов'язковим на деяких середовищах; не ламаємо флоу
+      }
     },
 
     dispose() {
@@ -248,46 +284,84 @@ export const useAuthStore = defineStore('auth', {
       const status = error?.response?.status
       const data = error?.response?.data
 
+      const requestId = data && typeof data === 'object' ? data.request_id : null
+      this.lastRequestId = typeof requestId === 'string' ? requestId : null
+
+      const withRequestId = (msg) => (this.lastRequestId ? `${msg} (request_id: ${this.lastRequestId})` : msg)
+
       this.lastErrorCode = null
+      this.lastFieldMessages = null
+      this.lastSummary = null
 
       if (status === 429) {
         this.lastErrorCode = 'rate_limited'
-        this.error = 'Забагато запитів. Спробуйте пізніше.'
+        const retryAfter = error?.response?.headers?.['retry-after']
+        if (retryAfter) {
+          this.error = withRequestId(`Забагато запитів. Спробуйте через ${retryAfter}с.`)
+        } else {
+          this.error = withRequestId('Забагато запитів. Спробуйте пізніше.')
+        }
         return
       }
 
-      if (status === 401 && data && typeof data === 'object' && typeof data.error === 'string') {
-        if (data.error === 'email_not_verified') {
-          this.lastErrorCode = 'email_not_verified'
-          this.error = 'Email не підтверджено.'
-          return
-        }
-        if (data.error === 'invalid_credentials') {
-          this.lastErrorCode = 'invalid_credentials'
-          this.error = 'Невірний email або пароль.'
-          return
-        }
+      if (status === 401) {
+        this.lastErrorCode = 'invalid_credentials'
+        const message = data && typeof data === 'object' ? data.message : null
+        this.error = withRequestId(typeof message === 'string' && message.trim().length > 0 ? message : 'Невірні дані для входу.')
+        return
       }
 
-      if (status === 422 && data && typeof data === 'object' && data.error === 'validation_failed') {
+      if (status === 422 && data && typeof data === 'object') {
         this.lastErrorCode = 'validation_failed'
-        const firstKey = data.fields ? Object.keys(data.fields)[0] : null
-        const firstVal = firstKey ? data.fields[firstKey] : null
-        if (Array.isArray(firstVal) && firstVal.length) {
-          this.error = String(firstVal[0])
+
+        const fieldMessages = data.field_messages && typeof data.field_messages === 'object' ? data.field_messages : null
+        const summary = Array.isArray(data.summary) ? data.summary : null
+        this.lastFieldMessages = fieldMessages
+        this.lastSummary = summary
+
+        // Для простого UI (де немає inline під кожним полем) — показуємо перше повідомлення
+        if (fieldMessages) {
+          const firstKey = Object.keys(fieldMessages)[0]
+          const firstVal = firstKey ? fieldMessages[firstKey] : null
+          if (Array.isArray(firstVal) && firstVal.length) {
+            this.error = withRequestId(String(firstVal[0]))
+            return
+          }
+        }
+
+        if (summary && summary.length > 0) {
+          this.error = withRequestId(String(summary[0]))
           return
         }
-        this.error = 'Перевірте дані.'
+
+        const message = data.message
+        this.error = withRequestId(typeof message === 'string' && message.trim().length > 0 ? message : 'Перевірте дані.')
+        return
+      }
+
+      if (typeof status === 'number' && status >= 500) {
+        this.lastErrorCode = 'internal_error'
+        const message = data && typeof data === 'object' ? data.message : null
+        this.error = withRequestId(
+          typeof message === 'string' && message.trim().length > 0
+            ? message
+            : 'Тимчасова помилка. Спробуйте пізніше.'
+        )
         return
       }
 
       if (!data) {
-        this.error = 'Невідома помилка. Спробуйте ще раз.'
+        this.error = withRequestId('Невідома помилка. Спробуйте ще раз.')
+        return
+      }
+
+      if (data.message && typeof data.message === 'string') {
+        this.error = withRequestId(data.message)
         return
       }
 
       if (data.detail) {
-        this.error = data.detail
+        this.error = withRequestId(data.detail)
         return
       }
 

@@ -115,13 +115,14 @@
 
 <script setup lang="ts">
 // TASK MF10: ProfileEditor component
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onBeforeUnmount } from 'vue'
 import { Save } from 'lucide-vue-next'
 import { getLanguageName, getLanguageOptions } from '@/config/languages'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { resolveMediaUrl } from '@/utils/media'
 import { TIMEZONES } from '@/utils/timezones'
+import { debounce } from '@/utils/debounce'
 import { fromApi, toApi, type TutorProfileFormModel } from '../../tutorProfileFormModel'
 import { updateAvatar } from '@/api/profile'
 import { notifyError, notifySuccess } from '@/utils/notify'
@@ -208,9 +209,9 @@ async function handleAvatarSelected(e: Event) {
       auth.setAuth({ user: { ...auth.user, avatar_url: avatarUrl } })
     }
 
-    notifySuccess(t('profile.messages.avatarUpdateSuccess') || 'Фото оновлено')
+    notifySuccess(t('profile.messages.avatarUpdateSuccess'))
   } catch (error) {
-    notifyError(t('profile.messages.avatarUpdateError') || 'Не вдалося оновити фото')
+    notifyError(t('profile.messages.avatarUpdateError'))
     throw error
   } finally {
     isAvatarUploading.value = false
@@ -240,6 +241,157 @@ const formData = ref<FormState>({
   newLanguageLevel: 'fluent' as LanguageLevel,
 })
 
+const draftKey = computed(() => {
+  const id = props.profile?.id
+  const suffix = typeof id === 'number' ? String(id) : 'new'
+  return `marketplace:profile:draft:${suffix}`
+})
+
+type LocalDraft = {
+  savedAt: number
+  data: TutorProfilePatchPayload
+}
+
+const autosaveStatus = ref<'idle' | 'saving' | 'saved' | 'restored'>('idle')
+const lastAutosavedAt = ref<number | null>(null)
+const hasLocalDraft = ref(false)
+const showDraftBanner = ref(false)
+
+type EditorStepId = 'photo' | 'basic' | 'subjects' | 'pricing' | 'video' | 'privacy' | 'publish'
+
+const steps = computed<Array<{ id: EditorStepId; title: string }>>(() => [
+  { id: 'photo', title: t('marketplace.profile.editor.photoTitle') },
+  { id: 'basic', title: t('marketplace.profile.editor.basicTitle') },
+  { id: 'subjects', title: t('marketplace.profile.editor.subjectsLanguagesTitle') },
+  { id: 'pricing', title: t('marketplace.profile.editor.pricingTitle') },
+  { id: 'video', title: t('marketplace.profile.editor.videoTitle') },
+  { id: 'privacy', title: t('marketplace.profile.editor.privacyTitle') },
+  { id: 'publish', title: t('marketplace.profile.publish') },
+])
+
+const stepIndex = ref(0)
+const currentStep = computed<EditorStepId>(() => steps.value[Math.min(stepIndex.value, steps.value.length - 1)]?.id || 'basic')
+const isFirstStep = computed(() => stepIndex.value <= 0)
+const isLastStep = computed(() => stepIndex.value >= steps.value.length - 1)
+
+const stepErrors = computed(() => {
+  const e = errors.value
+  const next: Record<EditorStepId, string[]> = {
+    photo: [],
+    basic: ['headline', 'bio'],
+    subjects: ['subjects', 'languages'],
+    pricing: ['hourly_rate'],
+    video: [],
+    privacy: [],
+    publish: [],
+  }
+
+  const out: Record<EditorStepId, number> = {
+    photo: 0,
+    basic: 0,
+    subjects: 0,
+    pricing: 0,
+    video: 0,
+    privacy: 0,
+    publish: 0,
+  }
+
+  for (const [step, fields] of Object.entries(next) as Array<[EditorStepId, string[]]>) {
+    out[step] = fields.reduce((acc, f) => (e[f] ? acc + 1 : acc), 0)
+  }
+
+  return out
+})
+
+const canGoNext = computed(() => {
+  const count = stepErrors.value[currentStep.value] || 0
+  return count === 0
+})
+
+function goPrev() {
+  if (isFirstStep.value) return
+  stepIndex.value -= 1
+}
+
+function goNext() {
+  if (isLastStep.value) return
+  if (!canGoNext.value) return
+  stepIndex.value += 1
+}
+
+function buildPayloadFromForm(): TutorProfilePatchPayload {
+  const { newSubject, newLanguageCode, newLanguageLevel, ...model } = formData.value
+  return toApi(model)
+}
+
+function readLocalDraft(): LocalDraft | null {
+  try {
+    const raw = localStorage.getItem(draftKey.value)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as LocalDraft
+    if (!parsed || typeof parsed !== 'object') return null
+    if (typeof parsed.savedAt !== 'number' || !parsed.data || typeof parsed.data !== 'object') return null
+    return parsed
+  } catch (_err) {
+    return null
+  }
+}
+
+function writeLocalDraft(payload: TutorProfilePatchPayload): void {
+  try {
+    const draft: LocalDraft = { savedAt: Date.now(), data: payload }
+    localStorage.setItem(draftKey.value, JSON.stringify(draft))
+    hasLocalDraft.value = true
+    lastAutosavedAt.value = draft.savedAt
+  } catch (_err) {
+    // ignore localStorage errors
+  }
+}
+
+function clearLocalDraft(): void {
+  try {
+    localStorage.removeItem(draftKey.value)
+  } catch (_err) {
+    // ignore
+  }
+  hasLocalDraft.value = false
+  showDraftBanner.value = false
+}
+
+function restoreLocalDraft(): void {
+  const draft = readLocalDraft()
+  if (!draft) {
+    clearLocalDraft()
+    return
+  }
+  const model = fromApi({ ...(props.profile as any), ...(draft.data as any) })
+  formData.value = {
+    ...(model as any),
+    newSubject: '',
+    newLanguageCode: '',
+    newLanguageLevel: 'fluent' as LanguageLevel,
+  }
+  autosaveStatus.value = 'restored'
+  showDraftBanner.value = false
+}
+
+function discardLocalDraft(): void {
+  clearLocalDraft()
+  autosaveStatus.value = 'idle'
+}
+
+const debouncedAutosave = debounce(() => {
+  if (props.saving) return
+  autosaveStatus.value = 'saving'
+  const payload = buildPayloadFromForm()
+  writeLocalDraft(payload)
+  autosaveStatus.value = 'saved'
+}, 800) as ((...args: any[]) => void) & { cancel?: () => void }
+
+onBeforeUnmount(() => {
+  debouncedAutosave.cancel?.()
+})
+
 watch(
   () => props.profile,
   (newProfile) => {
@@ -248,6 +400,36 @@ watch(
       newSubject: '',
       newLanguageCode: '',
       newLanguageLevel: 'fluent' as LanguageLevel,
+    }
+
+    const draft = readLocalDraft()
+    if (draft) {
+      hasLocalDraft.value = true
+      lastAutosavedAt.value = draft.savedAt
+      showDraftBanner.value = true
+    } else {
+      hasLocalDraft.value = false
+      showDraftBanner.value = false
+      lastAutosavedAt.value = null
+    }
+  }
+)
+
+watch(
+  formData,
+  () => {
+    debouncedAutosave()
+  },
+  { deep: true }
+)
+
+watch(
+  () => props.saving,
+  (next, prev) => {
+    if (prev && !next) {
+      clearLocalDraft()
+      autosaveStatus.value = 'idle'
+      lastAutosavedAt.value = null
     }
   }
 )
@@ -398,12 +580,78 @@ const genderOptions = computed(() => [
   { value: 'other', label: t('marketplace.profile.editor.genderOptions.other') },
   { value: '', label: t('marketplace.profile.editor.genderOptions.unspecified') },
 ])
+
+const publishMissingItems = computed(() => {
+  const items: string[] = []
+
+  if (!avatarUrl.value) {
+    items.push(t('marketplace.profile.editor.photoTitle'))
+  }
+
+  if (localErrors.value.headline) {
+    items.push(t('marketplace.profile.editor.headlineLabel'))
+  }
+
+  if (localErrors.value.bio) {
+    items.push(t('marketplace.profile.editor.bioLabel'))
+  }
+
+  if (localErrors.value.subjects) {
+    items.push(t('marketplace.profile.editor.subjectsLabel'))
+  }
+
+  if (localErrors.value.languages) {
+    items.push(t('marketplace.profile.editor.languagesLabel'))
+  }
+
+  if (localErrors.value.hourly_rate) {
+    items.push(t('marketplace.profile.editor.hourlyRateLabel'))
+  }
+
+  return items
+})
 </script>
 
 <template>
   <form class="profile-editor" data-test="marketplace-editor-form" @submit.prevent="handleSubmit">
-    <section class="editor-section">
+    <div v-if="showDraftBanner" class="draft-banner" data-test="marketplace-editor-draft-banner">
+      <div class="draft-banner-text">
+        {{ t('profile.draft.foundTitle') }}
+      </div>
+      <div class="draft-banner-actions">
+        <button type="button" class="btn btn-secondary" @click="restoreLocalDraft">
+          {{ t('profile.draft.restore') }}
+        </button>
+        <button type="button" class="btn btn-ghost" @click="discardLocalDraft">
+          {{ t('profile.draft.discard') }}
+        </button>
+      </div>
+    </div>
+
+    <nav class="editor-steps" data-test="marketplace-editor-steps">
+      <button
+        v-for="(s, idx) in steps"
+        :key="s.id"
+        type="button"
+        class="step-pill"
+        :class="{ 'is-active': idx === stepIndex, 'has-errors': (stepErrors[s.id] || 0) > 0 }"
+        :disabled="idx > stepIndex && !canGoNext"
+        @click="() => { if (idx <= stepIndex || canGoNext) stepIndex = idx }"
+      >
+        <span class="step-pill-title">{{ s.title }}</span>
+      </button>
+    </nav>
+
+    <section v-show="currentStep === 'publish'" class="editor-section">
       <h2>{{ t('marketplace.profile.publish') }}</h2>
+
+      <div v-if="publishMissingItems.length" class="incomplete-banner" data-test="marketplace-editor-incomplete">
+        <strong>{{ t('marketplace.profile.incompleteTitle') }}</strong>
+        <p class="hint">{{ t('marketplace.profile.incompleteDescription') }}</p>
+        <ul class="incomplete-list">
+          <li v-for="item in publishMissingItems" :key="item">{{ item }}</li>
+        </ul>
+      </div>
 
       <div class="form-group">
         <label class="inline-toggle">
@@ -422,7 +670,7 @@ const genderOptions = computed(() => [
       </div>
     </section>
 
-    <section class="editor-section">
+    <section v-show="currentStep === 'photo'" class="editor-section">
       <h2>{{ t('marketplace.profile.editor.photoTitle') }}</h2>
 
       <div class="photo-row">
@@ -438,7 +686,7 @@ const genderOptions = computed(() => [
         </div>
 
         <label class="btn btn-secondary photo-upload" :class="{ disabled: saving || isAvatarUploading }">
-          {{ isAvatarUploading ? tr('profile.avatar.uploading', 'Оновлюємо…') : tr('profile.avatar.update', 'Оновити фото') }}
+          {{ isAvatarUploading ? t('profile.avatar.uploading') : t('profile.avatar.update') }}
           <input
             type="file"
             accept="image/*"
@@ -451,7 +699,7 @@ const genderOptions = computed(() => [
       </div>
     </section>
 
-    <section class="editor-section privacy-section">
+    <section v-show="currentStep === 'privacy'" class="editor-section privacy-section">
       <h2>{{ t('marketplace.profile.editor.privacyTitle') }}</h2>
 
       <div class="privacy-grid">
@@ -523,7 +771,7 @@ const genderOptions = computed(() => [
       </div>
     </section>
 
-    <section class="editor-section">
+    <section v-show="currentStep === 'basic'" class="editor-section">
       <h2>{{ t('marketplace.profile.editor.basicTitle') }}</h2>
 
       <div class="form-group">
@@ -575,7 +823,7 @@ const genderOptions = computed(() => [
       </div>
     </section>
 
-    <section class="editor-section">
+    <section v-show="currentStep === 'subjects'" class="editor-section">
       <h2>{{ t('marketplace.profile.editor.subjectsLanguagesTitle') }}</h2>
 
       <div class="form-row">
@@ -650,7 +898,7 @@ const genderOptions = computed(() => [
       </div>
     </section>
 
-    <section class="editor-section">
+    <section v-show="currentStep === 'pricing'" class="editor-section">
       <h2>{{ t('marketplace.profile.editor.pricingTitle') }}</h2>
 
       <div class="form-row">
@@ -690,7 +938,7 @@ const genderOptions = computed(() => [
       </div>
     </section>
 
-    <section class="editor-section">
+    <section v-show="currentStep === 'video'" class="editor-section">
       <h2>{{ t('marketplace.profile.editor.videoTitle') }}</h2>
 
       <div class="form-group">
@@ -707,10 +955,28 @@ const genderOptions = computed(() => [
     </section>
 
     <div class="editor-actions">
-      <button type="submit" class="btn btn-primary" :disabled="saving || !canSubmit" data-test="marketplace-editor-save">
+      <button type="button" class="btn btn-secondary" :disabled="isFirstStep" @click="goPrev">
+        {{ t('common.back') }}
+      </button>
+
+      <button type="button" class="btn btn-secondary" :disabled="isLastStep || !canGoNext" @click="goNext">
+        {{ t('common.next') }}
+      </button>
+
+      <button
+        v-if="isLastStep"
+        type="submit"
+        class="btn btn-primary"
+        :disabled="saving || !canSubmit"
+        data-test="marketplace-editor-save"
+      >
         <Save :size="18" />
         {{ saving ? t('marketplace.profile.editor.saving') : t('marketplace.profile.editor.save') }}
       </button>
+
+      <span v-if="lastAutosavedAt" class="autosave-status" data-test="marketplace-editor-autosave-status">
+        {{ t('profile.autosave.savedAt', { time: new Date(lastAutosavedAt).toLocaleTimeString() }) }}
+      </span>
     </div>
   </form>
 </template>
@@ -720,6 +986,57 @@ const genderOptions = computed(() => [
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+}
+
+.draft-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-xs);
+}
+
+.draft-banner-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.autosave-status {
+  margin-left: auto;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.editor-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.step-pill {
+  border: 1px solid var(--border-color);
+  background: var(--surface-card);
+  color: var(--text-secondary);
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.step-pill.is-active {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  background: color-mix(in srgb, var(--accent-primary) 10%, transparent);
+}
+
+.step-pill.has-errors {
+  border-color: color-mix(in srgb, var(--danger) 70%, var(--border-color));
 }
 
 .photo-row {
@@ -779,6 +1096,19 @@ const genderOptions = computed(() => [
   font-weight: 600;
   margin: 0 0 1.25rem;
   color: var(--text-primary);
+}
+
+.incomplete-banner {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--surface-base);
+}
+
+.incomplete-list {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
 }
 
 .form-group {

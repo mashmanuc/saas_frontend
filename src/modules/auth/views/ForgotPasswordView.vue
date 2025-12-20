@@ -15,7 +15,6 @@
       />
 
       <p v-if="message" class="text-sm" style="color: var(--accent);">{{ $t('auth.forgot.success') }}</p>
-      <p v-if="error" class="text-sm" style="color: var(--danger-bg);">{{ $t('auth.forgot.error') }}</p>
 
       <Button class="w-full" type="submit" :disabled="loading">
         <span v-if="loading">{{ $t('auth.forgot.loading') }}</span>
@@ -27,19 +26,71 @@
       {{ $t('auth.forgot.backToLogin') }}
     </RouterLink>
   </Card>
+
+  <OnboardingModal
+    :show="showErrorModal"
+    :title="$t('errors.http.serverError')"
+    closable
+    @close="showErrorModal = false"
+  >
+    <p class="text-sm" style="color: var(--text-primary);">
+      {{ error }}
+    </p>
+
+    <template #footer>
+      <Button @click="showErrorModal = false">OK</Button>
+    </template>
+  </OnboardingModal>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import authApi from '../api/authApi'
 import Button from '../../../ui/Button.vue'
 import Card from '../../../ui/Card.vue'
 import Input from '../../../ui/Input.vue'
+import OnboardingModal from '../../onboarding/components/widgets/OnboardingModal.vue'
 
 const email = ref('')
 const loading = ref(false)
 const error = ref('')
 const message = ref('')
+
+const showErrorModal = ref(false)
+
+watch(
+  () => error.value,
+  (value) => {
+    showErrorModal.value = Boolean(value)
+  }
+)
+
+const formatError = (err) => {
+  const status = err?.response?.status
+  const data = err?.response?.data
+  const requestId = data && typeof data === 'object' ? data.request_id : null
+  const withRequestId = (msg) => (requestId ? `${msg} (request_id: ${requestId})` : msg)
+
+  if (status === 429) {
+    const retryAfter = err?.response?.headers?.['retry-after']
+    return withRequestId(
+      retryAfter ? `Забагато запитів. Спробуйте через ${retryAfter}с.` : 'Забагато запитів. Спробуйте пізніше.'
+    )
+  }
+
+  if (data && typeof data === 'object') {
+    const msg = data.message || data.detail
+    if (typeof msg === 'string' && msg.trim().length > 0) return withRequestId(msg)
+    const fieldMessages = data.field_messages
+    if (fieldMessages && typeof fieldMessages === 'object') {
+      const firstKey = Object.keys(fieldMessages)[0]
+      const firstVal = firstKey ? fieldMessages[firstKey] : null
+      if (Array.isArray(firstVal) && firstVal.length) return withRequestId(String(firstVal[0]))
+    }
+  }
+
+  return withRequestId('Тимчасова помилка. Спробуйте пізніше.')
+}
 
 async function onSubmit() {
   error.value = ''
@@ -49,8 +100,7 @@ async function onSubmit() {
     await authApi.requestPasswordReset({ email: email.value })
     message.value = 'ok'
   } catch (err) {
-    const data = err?.response?.data
-    error.value = data?.error || data?.detail || 'unknown'
+    error.value = formatError(err)
   } finally {
     loading.value = false
   }

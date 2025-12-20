@@ -9,10 +9,6 @@
       {{ $t('auth.invite.validation.loading') }}
     </div>
 
-    <div v-else-if="error" class="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-600">
-      {{ error }}
-    </div>
-
     <div v-else-if="invite" class="space-y-4">
       <div
         class="rounded border p-3 text-sm"
@@ -57,23 +53,41 @@
       </p>
     </div>
   </Card>
+
+  <OnboardingModal :open="showErrorModal" @close="showErrorModal = false">
+    <template #title>
+      {{ $t('notify.types.error') }}
+    </template>
+
+    <p class="text-sm text-gray-600">
+      {{ error }}
+    </p>
+
+    <template #footer>
+      <Button @click="showErrorModal = false">OK</Button>
+    </template>
+  </OnboardingModal>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import authApi from '../api/authApi'
+import { useAuthStore } from '../store/authStore'
+import Button from '../../../ui/Button.vue'
 import Card from '../../../ui/Card.vue'
 import { useI18n } from 'vue-i18n'
 import { formatDateTime } from '../../../utils/datetime'
+import OnboardingModal from '../../onboarding/components/widgets/OnboardingModal.vue'
 
 const route = useRoute()
 const token = route.params.token
 const { t } = useI18n()
+const auth = useAuthStore()
 
 const loading = ref(true)
 const error = ref(null)
 const invite = ref(null)
+const showErrorModal = ref(false)
 
 const inviteStatus = computed(() => invite.value?.status || 'unknown')
 const isValid = computed(() => inviteStatus.value?.toLowerCase() === 'valid')
@@ -122,11 +136,27 @@ const extraFields = computed(() => {
 
 onMounted(async () => {
   try {
-    invite.value = await authApi.validateInvite(token)
+    invite.value = await auth.validateInvite(token)
   } catch (err) {
-    error.value = err.response?.data?.detail || t('auth.invite.validation.error')
+    // authStore.handleError вже нормалізує message + request_id
+    error.value = auth.error
+    if (!error.value) {
+      error.value = t('auth.invite.validation.error')
+    }
   } finally {
     loading.value = false
   }
 })
+
+watch(
+  () => auth.error,
+  (v) => {
+    if (!v) {
+      showErrorModal.value = false
+      return
+    }
+    error.value = v
+    showErrorModal.value = true
+  }
+)
 </script>

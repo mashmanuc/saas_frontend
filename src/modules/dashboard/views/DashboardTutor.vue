@@ -20,7 +20,7 @@
 
       <!-- Today's Lessons -->
       <div v-if="dashboard.todaysLessons?.length > 0" class="space-y-3">
-        <h3 class="text-base font-medium text-body">{{ $t('dashboard.tutor.todaysLessons') || 'Уроки сьогодні' }}</h3>
+        <h3 class="text-base font-medium text-body">{{ $t('dashboard.tutor.todaysLessons') }}</h3>
         <div class="space-y-2">
           <UpcomingLessonCard
             v-for="lesson in dashboard.todaysLessons"
@@ -34,10 +34,10 @@
       <!-- Quick Actions -->
       <div class="flex flex-wrap gap-3">
         <router-link to="/bookings" class="text-sm text-accent hover:underline">
-          {{ $t('dashboard.tutor.viewBookings') || 'Переглянути бронювання' }}
+          {{ $t('dashboard.tutor.viewBookings') }}
         </router-link>
         <router-link to="/lessons" class="text-sm text-accent hover:underline">
-          {{ $t('dashboard.tutor.viewLessons') || 'Мої уроки' }}
+          {{ $t('dashboard.tutor.viewLessons') }}
         </router-link>
       </div>
     </Card>

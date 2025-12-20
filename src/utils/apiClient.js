@@ -6,9 +6,9 @@ import { notifyError, notifyWarning } from './notify'
 axios.defaults.withCredentials = false
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+  baseURL: import.meta.env.DEV ? '/api' : (import.meta.env.VITE_API_BASE_URL || '/api'),
   headers: { 'Content-Type': 'application/json' },
-  withCredentials: false,
+  withCredentials: true,
 })
 
 const createRequestId = () =>
@@ -26,8 +26,14 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${store.access}`
     }
 
-    if (!config.headers['X-Request-ID']) {
-      config.headers['X-Request-ID'] = createRequestId()
+    if (!config.headers['X-Request-Id']) {
+      config.headers['X-Request-Id'] = createRequestId()
+    }
+
+    const method = String(config.method || 'get').toUpperCase()
+    const isStateChanging = method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE'
+    if (isStateChanging && store.csrfToken && !config.headers['X-CSRF-Token']) {
+      config.headers['X-CSRF-Token'] = store.csrfToken
     }
 
     return config
@@ -58,6 +64,8 @@ api.interceptors.response.use(
     }
 
     const status = error.response.status
+    const data = error.response?.data
+    const requestId = (data && typeof data === 'object' && data.request_id) ? data.request_id : null
 
     if (status === 429) {
       const retryAfter = error.response?.headers?.['retry-after']
@@ -69,7 +77,7 @@ api.interceptors.response.use(
     }
 
     const url = original.url || ''
-    const isAuthRefresh = url.includes('/v1/auth/token/refresh')
+    const isAuthRefresh = url.includes('/v1/auth/refresh')
     const isAuthLogout = url.includes('/v1/auth/logout')
 
     const notifySessionExpired = () => {
@@ -111,7 +119,7 @@ api.interceptors.response.use(
     if (status === 403) {
       notifyError('Доступ заборонено. Зверніться до адміністратора.')
     } else if (status >= 500) {
-      notifyError('На сервері сталася помилка. Спробуйте пізніше.')
+      notifyError(requestId ? `На сервері сталася помилка. Спробуйте пізніше. request_id: ${requestId}` : 'На сервері сталася помилка. Спробуйте пізніше.')
     }
 
     return Promise.reject(error)

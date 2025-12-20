@@ -4,10 +4,10 @@
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 class="text-2xl font-semibold">
-            {{ $t('classroom.dashboard.title') || 'Мої класи' }}
+            {{ $t('classroom.dashboard.title') }}
           </h1>
           <p class="text-sm text-gray-500 dark:text-gray-400">
-            {{ $t('classroom.dashboard.subtitle') || '' }}
+            {{ $t('classroom.dashboard.subtitle') }}
           </p>
         </div>
 
@@ -51,7 +51,7 @@
           v-if="!classrooms.length && !error"
           class="text-sm text-gray-500 dark:text-gray-400 col-span-full"
         >
-          {{ $t('classroom.dashboard.empty') || 'Немає класів' }}
+          {{ $t('classroom.dashboard.empty') }}
         </p>
       </div>
     </div>

@@ -76,11 +76,11 @@ const error = computed(() => {
   if (!rawError.value && !errorCode.value) return null
 
   if (errorCode.value === 404) {
-    return t('classroom.detail.notFound') || 'Клас не знайдено'
+    return t('classroom.detail.notFound')
   }
 
   if (errorCode.value === 403) {
-    return t('classroom.detail.forbidden') || 'Немає доступу до цього класу'
+    return t('classroom.detail.forbidden')
   }
 
   return rawError.value || t('classroom.detail.loadError')

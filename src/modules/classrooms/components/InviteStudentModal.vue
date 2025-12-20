@@ -37,7 +37,7 @@
 
       <footer class="flex justify-end gap-2 border-t border-border-subtle px-4 py-3">
         <Button variant="ghost" size="sm" :disabled="loading" @click="handleCancel">
-          {{ $t('common.cancel') || 'Скасувати' }}
+          {{ $t('common.cancel') }}
         </Button>
         <Button variant="primary" size="sm" :disabled="loading" :loading="loading" @click="handleSubmit">
           {{ loading ? $t('loader.loading') : $t('classroom.invite.submit') }}

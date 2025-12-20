@@ -40,6 +40,15 @@ export default defineConfig({
   define: {
     'import.meta.env.VITE_APP_VERSION': JSON.stringify(getGitInfo()),
   },
+  server: {
+    proxy: {
+      '/api': {
+        target: process.env.VITE_DEV_API_TARGET || 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
   test: {
     css: false,
   },

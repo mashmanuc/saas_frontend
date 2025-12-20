@@ -45,6 +45,17 @@ export class SyncEngine {
   private eventEmitter: Emitter<SyncEvents> = mitt<SyncEvents>()
   private isConnected: boolean = false
 
+  private logWarn(...args: any[]): void {
+    const isDev = Boolean((import.meta as any)?.env?.DEV)
+    if (isDev) {
+      // eslint-disable-next-line no-console
+      console.warn(...args)
+      return
+    }
+    // eslint-disable-next-line no-console
+    console.debug(...args)
+  }
+
   constructor(initialVersion: number = 0) {
     this.localVersion = initialVersion
   }
@@ -115,7 +126,7 @@ export class SyncEngine {
           this.handleAck(data)
           break
         default:
-          console.warn('[SyncEngine] Unknown message type:', data.type)
+          this.logWarn('[SyncEngine] Unknown message type:', data.type)
       }
     } catch (error) {
       console.error('[SyncEngine] Failed to parse message:', error)
