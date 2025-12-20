@@ -22,7 +22,7 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
   const pageSize = ref(24)
   const isLoading = ref(false)
   const filters = ref<CatalogFilters>({})
-  const sortBy = ref('rating')
+  const sortBy = ref('recommended')
 
   // Current profile state (viewing)
   const currentProfile = ref<TutorProfile | null>(null)

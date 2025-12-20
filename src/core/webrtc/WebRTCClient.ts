@@ -204,12 +204,12 @@ export class WebRTCClient {
   }
 
   private async setupPeerConnection(): Promise<void> {
-    this.peerConnection = new PeerConnection(
-      this.config.iceServers ?? DEFAULT_ICE_SERVERS,
-      (candidate: RTCIceCandidate) => this.signalingChannel?.sendIceCandidate(candidate),
-      (stream: MediaStream) => this.handleRemoteStream(stream),
-      (state: RTCPeerConnectionState) => this.handlePeerConnectionState(state)
-    )
+    this.peerConnection = new PeerConnection({
+      iceServers: this.config.iceServers ?? DEFAULT_ICE_SERVERS,
+      onIceCandidate: (candidate: RTCIceCandidate) => this.signalingChannel?.sendIceCandidate(candidate),
+      onTrack: (stream: MediaStream) => this.handleRemoteStream(stream),
+      onStateChange: (state: RTCPeerConnectionState) => this.handlePeerConnectionState(state),
+    })
 
     await this.peerConnection.create()
 

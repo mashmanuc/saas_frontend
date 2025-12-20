@@ -14,4 +14,29 @@ export * from './views'
 export * from './components'
 
 // Composables
-export * from './composables'
+export {
+  useRoom,
+  useRoomEvents,
+  useReconnect,
+  useWebRTC,
+  useClassroomEntry,
+  useMediaSync,
+  useBoardSync,
+  useLayoutManager,
+  useTimeline,
+} from './composables'
+
+export type {
+  RoomEventHandlers,
+  ReconnectOptions,
+  WebRTCConfig,
+  PeerConnection,
+  MediaSyncOptions,
+  MediaSyncState,
+  BoardSyncOptions,
+  BoardOperation,
+  LayoutManagerOptions,
+  TimelineEvent,
+  TimelineBucket,
+  TimelineParams,
+} from './composables'

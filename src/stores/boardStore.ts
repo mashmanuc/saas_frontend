@@ -60,6 +60,8 @@ export const useBoardStore = defineStore('board', () => {
   const isFollowMode = ref(false)
   const followingUserId = ref<string | null>(null)
 
+  const recentConflicts = ref<unknown[]>([])
+
   // Getters
   const activeLayer = computed(() => layers.value.find((l) => l.id === activeLayerId.value))
 
@@ -309,6 +311,10 @@ export const useBoardStore = defineStore('board', () => {
     // TODO: Send to server
   }
 
+  function clearRecentConflicts(): void {
+    recentConflicts.value = []
+  }
+
   return {
     // State
     engine,
@@ -332,6 +338,7 @@ export const useBoardStore = defineStore('board', () => {
     videoLayout,
     isFollowMode,
     followingUserId,
+    recentConflicts,
 
     // Getters
     activeLayer,
@@ -372,6 +379,7 @@ export const useBoardStore = defineStore('board', () => {
     setVideoLayout,
     toggleFollowMode,
     updateCursorPosition,
+    clearRecentConflicts,
   }
 })
 

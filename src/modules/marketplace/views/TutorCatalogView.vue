@@ -1,8 +1,6 @@
 <script setup lang="ts">
 // TASK MF3: Tutor Catalog View
 import { onMounted, computed, watch } from 'vue'
-import { storeToRefs } from 'pinia'
-import { useMarketplaceStore } from '../stores/marketplaceStore'
 import CatalogFilters from '../components/catalog/CatalogFilters.vue'
 import CatalogSort from '../components/catalog/CatalogSort.vue'
 import TutorGrid from '../components/catalog/TutorGrid.vue'
@@ -11,44 +9,37 @@ import LoadingSpinner from '@/ui/LoadingSpinner.vue'
 import type { CatalogFilters as CatalogFiltersType } from '../api/marketplace'
 import { telemetry } from '@/services/telemetry'
 import { useI18n } from 'vue-i18n'
+import { useMarketplace } from '../composables/useMarketplace'
 
-const store = useMarketplaceStore()
 const { t } = useI18n()
-const {
-  tutors,
-  totalCount,
-  isLoading,
-  hasMore,
-  filters,
-  sortBy,
-  filterOptions,
-  error,
-} = storeToRefs(store)
+const { tutors, totalCount, isLoading, hasMore, filters, sortBy, filterOptions, error, setFilters, setSort, loadTutors, loadMore, clearFilters, loadFilterOptions, syncFiltersWithUrl } =
+  useMarketplace()
 
 const showFilters = computed(() => filterOptions.value !== null)
 
 onMounted(async () => {
-  await Promise.all([store.loadTutors(true), store.loadFilterOptions()])
+  syncFiltersWithUrl()
+  await Promise.all([loadTutors(true), loadFilterOptions()])
 })
 
-function handleFiltersUpdate(newFilters: Partial<CatalogFiltersType>) {
-  store.setFilters(newFilters)
+function handleFiltersUpdate(newFilters: Partial<any>) {
+  setFilters(newFilters as Partial<CatalogFiltersType>)
 }
 
 function handleSortUpdate(sort: string) {
-  store.setSort(sort)
+  setSort(sort)
 }
 
 function handleLoadMore() {
-  store.loadMore()
+  loadMore()
 }
 
 function handleClearFilters() {
-  store.clearFilters()
+  clearFilters()
 }
 
 function handleRetry() {
-  store.loadTutors(true)
+  loadTutors(true)
 }
 
 watch(
@@ -65,6 +56,8 @@ watch(
       has_price_min: typeof payload.price_min === 'number',
       has_price_max: typeof payload.price_max === 'number',
       has_experience_min: typeof payload.experience_min === 'number',
+      has_experience_max: typeof payload.experience_max === 'number',
+      direction: payload.direction || null,
       format: payload.format || null,
       has_certifications: payload.has_certifications ?? null,
       sort: payload.sort,

@@ -51,7 +51,7 @@ export const useThemeStore = defineStore('theme', {
       const root = document.documentElement
 
       Object.entries(vars).forEach(([key, value]) => {
-        root.style.setProperty(key, value)
+        root.style.setProperty(key, String(value))
       })
     },
 

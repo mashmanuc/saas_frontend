@@ -13,13 +13,53 @@ export interface Education {
   current: boolean
 }
 
+export type CertificationStatus = 'pending' | 'approved' | 'rejected'
+
 export interface Certification {
   id: number
-  name: string
+  title: string
   issuer: string
-  issueDate: string
-  expiryDate?: string
-  credentialUrl?: string
+  issued_year: number
+  file_url: string
+  status: CertificationStatus
+  is_public: boolean
+  rejection_reason: string | null
+  created_at: string
+}
+
+export type PresignCertificationRequest = {
+  filename: string
+  content_type: string
+  size: number
+}
+
+export type PresignCertificationResponse = {
+  upload_url: string
+  asset_key: string
+  expires_in: number
+}
+
+export type CreateCertificationPayload = {
+  title: string
+  issuer: string
+  issued_year: number
+  asset_key: string
+  is_public: boolean
+}
+
+export type UpdateCertificationPayload = Partial<Pick<Certification, 'title' | 'issuer' | 'issued_year' | 'is_public'>>
+
+export type Review = {
+  id: number
+  rating: number
+  text: string
+  created_at: string
+}
+
+export type CreateReviewPayload = {
+  rating: number
+  text: string
+  source_lesson_id?: number
 }
 
 export interface Subject {
@@ -145,6 +185,8 @@ export interface CatalogFilters {
   price_min?: number
   price_max?: number
   experience_min?: number
+  experience_max?: number
+  direction?: string
   country?: string
   timezone?: string
   format?: 'online' | 'offline' | 'hybrid'
@@ -250,7 +292,7 @@ export const marketplaceApi = {
     filters?: CatalogFilters,
     page: number = 1,
     pageSize: number = 20,
-    sort: string = 'rating'
+    sort: string = 'recommended'
   ): Promise<PaginatedResponse<TutorListItem>> {
     const params: Record<string, unknown> = {
       ...(filters || {}),
@@ -344,6 +386,43 @@ export const marketplaceApi = {
   async createTrialRequest(slug: string, payload: TrialRequestPayload): Promise<any> {
     const response = await apiClient.post(`/v1/marketplace/tutors/${slug}/trial-request/`, payload)
     return response as unknown as any
+  },
+
+  async presignCertificationUpload(payload: PresignCertificationRequest): Promise<PresignCertificationResponse> {
+    const response = await apiClient.post('/v1/uploads/presign/certification/', payload)
+    return response as unknown as PresignCertificationResponse
+  },
+
+  async getMyCertifications(): Promise<Certification[]> {
+    const response = await apiClient.get('/v1/marketplace/tutors/me/certifications/')
+    return response as unknown as Certification[]
+  },
+
+  async createMyCertification(payload: CreateCertificationPayload): Promise<Certification> {
+    const response = await apiClient.post('/v1/marketplace/tutors/me/certifications/', payload)
+    return response as unknown as Certification
+  },
+
+  async updateMyCertification(id: number, payload: UpdateCertificationPayload): Promise<Certification> {
+    const response = await apiClient.patch(`/v1/marketplace/tutors/me/certifications/${id}/`, payload)
+    return response as unknown as Certification
+  },
+
+  async deleteMyCertification(id: number): Promise<void> {
+    await apiClient.delete(`/v1/marketplace/tutors/me/certifications/${id}/`)
+  },
+
+  async getTutorReviews(
+    slug: string,
+    params?: { page?: number; page_size?: number }
+  ): Promise<PaginatedResponse<Review>> {
+    const response = await apiClient.get(`/v1/marketplace/tutors/${slug}/reviews/`, { params })
+    return response as unknown as PaginatedResponse<Review>
+  },
+
+  async createTutorReview(slug: string, payload: CreateReviewPayload): Promise<Review> {
+    const response = await apiClient.post(`/v1/marketplace/tutors/${slug}/reviews/`, payload)
+    return response as unknown as Review
   },
 
   /**

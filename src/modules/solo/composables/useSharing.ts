@@ -23,7 +23,7 @@ export function useSharing() {
         max_views: options.max_views ?? undefined,
         allow_download: options.allow_download ?? false,
       })
-      return response.data
+      return response
     } catch (err) {
       error.value = 'Failed to create share link'
       console.error('[useSharing] createShareToken failed:', err)
@@ -36,7 +36,7 @@ export function useSharing() {
   async function getShareToken(sessionId: string): Promise<ShareToken | null> {
     try {
       const response = await soloApi.getShare(sessionId)
-      return response.data
+      return response
     } catch {
       // No share exists
       return null

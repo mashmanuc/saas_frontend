@@ -41,7 +41,7 @@ const canSubmit = computed(() => {
 const price = computed(() => {
   if (!tutor.value || !selectedSlot.value) return 0
   if (lessonType.value === 'trial') {
-    return tutor.value.trial_price || 0
+    return tutor.value.trial_lesson_price || 0
   }
   return tutor.value.hourly_rate || 0
 })
@@ -50,7 +50,7 @@ const price = computed(() => {
 onMounted(async () => {
   isLoadingTutor.value = true
   try {
-    tutor.value = await marketplaceApi.getTutorBySlug(tutorSlug.value)
+    tutor.value = await marketplaceApi.getTutorProfile(tutorSlug.value)
     if (tutor.value) {
       // Load slots for this tutor
       await calendarStore.loadWeekSlots(tutor.value.id)
@@ -158,11 +158,11 @@ function goToLessons() {
         <section class="tutor-info">
           <img
             :src="tutor.photo || '/default-avatar.png'"
-            :alt="tutor.display_name"
+            :alt="tutor.user.full_name"
             class="tutor-photo"
           />
           <div class="tutor-details">
-            <h2>{{ tutor.display_name }}</h2>
+            <h2>{{ tutor.user.full_name }}</h2>
             <p class="tutor-headline">{{ tutor.headline }}</p>
             <div class="tutor-meta">
               <span class="price">
@@ -171,7 +171,7 @@ function goToLessons() {
               </span>
               <span class="duration">
                 <Clock :size="16" />
-                {{ tutor.lesson_duration || 60 }} min
+                {{ selectedSlot?.duration_minutes || 60 }} min
               </span>
             </div>
           </div>
@@ -191,7 +191,7 @@ function goToLessons() {
             v-model:lesson-type="lessonType"
             v-model:notes="notes"
             :subjects="tutor.subjects || []"
-            :trial-available="!!tutor.trial_price"
+            :trial-available="!!tutor.trial_lesson_price"
           />
         </section>
 

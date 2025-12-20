@@ -29,14 +29,30 @@ export function useMarketplace() {
   function syncFiltersWithUrl() {
     const urlFilters: CatalogFilters = {}
 
-    if (route.query.subject) urlFilters.subject = route.query.subject as string
-    if (route.query.country) urlFilters.country = route.query.country as string
-    if (route.query.language) urlFilters.language = route.query.language as string
-    if (route.query.min_price) urlFilters.min_price = Number(route.query.min_price)
-    if (route.query.max_price) urlFilters.max_price = Number(route.query.max_price)
-    if (route.query.min_rating) urlFilters.min_rating = Number(route.query.min_rating)
-    if (route.query.has_video === 'true') urlFilters.has_video = true
-    if (route.query.is_verified === 'true') urlFilters.is_verified = true
+    if (typeof route.query.q === 'string') urlFilters.q = route.query.q
+
+    if (route.query.subject) {
+      const v = route.query.subject
+      const raw = Array.isArray(v) ? (v as string[]) : [v as string]
+      urlFilters.subject = raw.flatMap((s) => String(s).split(',').filter(Boolean))
+    }
+    if (route.query.language) {
+      const v = route.query.language
+      const raw = Array.isArray(v) ? (v as string[]) : [v as string]
+      urlFilters.language = raw.flatMap((s) => String(s).split(',').filter(Boolean))
+    }
+
+    if (typeof route.query.country === 'string') urlFilters.country = route.query.country
+    if (typeof route.query.timezone === 'string') urlFilters.timezone = route.query.timezone
+    if (typeof route.query.format === 'string') urlFilters.format = route.query.format as any
+    if (typeof route.query.direction === 'string') urlFilters.direction = route.query.direction
+
+    if (typeof route.query.price_min === 'string') urlFilters.price_min = Number(route.query.price_min)
+    if (typeof route.query.price_max === 'string') urlFilters.price_max = Number(route.query.price_max)
+    if (typeof route.query.experience_min === 'string') urlFilters.experience_min = Number(route.query.experience_min)
+    if (typeof route.query.experience_max === 'string') urlFilters.experience_max = Number(route.query.experience_max)
+
+    if (route.query.has_certifications === 'true') urlFilters.has_certifications = true
 
     if (Object.keys(urlFilters).length > 0) {
       store.setFilters(urlFilters)
@@ -49,25 +65,42 @@ export function useMarketplace() {
 
   // Update URL when filters change
   function updateUrlWithFilters(newFilters: CatalogFilters) {
-    const query: Record<string, string> = {}
+    const query: Record<string, string | string[]> = {}
 
-    if (newFilters.subject) query.subject = newFilters.subject
+    if (typeof newFilters.q === 'string' && newFilters.q.trim().length >= 2) query.q = newFilters.q.trim()
+
+    if (Array.isArray(newFilters.subject) && newFilters.subject.length > 0) {
+      query.subject = newFilters.subject.length === 1 ? newFilters.subject[0] : newFilters.subject
+    }
+    if (Array.isArray(newFilters.language) && newFilters.language.length > 0) {
+      query.language = newFilters.language.length === 1 ? newFilters.language[0] : newFilters.language
+    }
+
     if (newFilters.country) query.country = newFilters.country
-    if (newFilters.language) query.language = newFilters.language
-    if (newFilters.min_price) query.min_price = String(newFilters.min_price)
-    if (newFilters.max_price) query.max_price = String(newFilters.max_price)
-    if (newFilters.min_rating) query.min_rating = String(newFilters.min_rating)
-    if (newFilters.has_video) query.has_video = 'true'
-    if (newFilters.is_verified) query.is_verified = 'true'
-    if (sortBy.value !== '-average_rating') query.sort = sortBy.value
+    if (newFilters.timezone) query.timezone = newFilters.timezone
+    if (newFilters.format) query.format = newFilters.format
+    if (newFilters.direction) query.direction = newFilters.direction
+
+    if (typeof newFilters.price_min === 'number') query.price_min = String(newFilters.price_min)
+    if (typeof newFilters.price_max === 'number') query.price_max = String(newFilters.price_max)
+    if (typeof newFilters.experience_min === 'number') query.experience_min = String(newFilters.experience_min)
+    if (typeof newFilters.experience_max === 'number') query.experience_max = String(newFilters.experience_max)
+
+    if (newFilters.has_certifications) query.has_certifications = 'true'
+    if (sortBy.value !== 'recommended') query.sort = sortBy.value
 
     router.replace({ query })
   }
 
   // Watch for filter changes and update URL
-  watch(filters, (newFilters) => {
-    updateUrlWithFilters(newFilters)
-  })
+  watch(
+    () => ({ ...filters.value, sort: sortBy.value }),
+    (payload) => {
+      const { sort, ...rest } = payload as any
+      updateUrlWithFilters(rest)
+    },
+    { deep: true }
+  )
 
   onMounted(() => {
     syncFiltersWithUrl()
@@ -91,6 +124,7 @@ export function useMarketplace() {
     clearFilters: store.clearFilters,
     setSort: store.setSort,
     loadFilterOptions: store.loadFilterOptions,
+    syncFiltersWithUrl,
   }
 }
 

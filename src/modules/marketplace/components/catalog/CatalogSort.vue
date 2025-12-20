@@ -16,6 +16,7 @@ const emit = defineEmits<{
 }>()
 
 const sortOptions = computed(() => [
+  { value: 'recommended', label: t('marketplace.sort.default') },
   { value: 'rating', label: t('marketplace.sort.rating') },
   { value: 'price_asc', label: t('marketplace.sort.price_asc') },
   { value: 'price_desc', label: t('marketplace.sort.price_desc') },

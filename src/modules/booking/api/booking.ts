@@ -149,18 +149,18 @@ export const bookingApi = {
   // Settings
   async getSettings(): Promise<TutorSettings> {
     const response = await apiClient.get('/v1/booking/settings/')
-    return response
+    return response as unknown as TutorSettings
   },
 
   async updateSettings(data: Partial<TutorSettings>): Promise<TutorSettings> {
     const response = await apiClient.patch('/v1/booking/settings/', data)
-    return response
+    return response as unknown as TutorSettings
   },
 
   // Availability
   async getAvailability(): Promise<Availability[]> {
     const response = await apiClient.get('/v1/booking/availability/')
-    return response
+    return response as unknown as Availability[]
   },
 
   async setAvailability(schedule: AvailabilityInput[]): Promise<void> {
@@ -176,12 +176,12 @@ export const bookingApi = {
     const response = await apiClient.get('/v1/booking/exceptions/', {
       params: { start, end },
     })
-    return response
+    return response as unknown as DateException[]
   },
 
   async addException(data: ExceptionInput): Promise<DateException> {
     const response = await apiClient.post('/v1/booking/exceptions/', data)
-    return response
+    return response as unknown as DateException
   },
 
   async deleteException(id: number): Promise<void> {
@@ -193,7 +193,7 @@ export const bookingApi = {
     const response = await apiClient.get('/v1/booking/slots/', {
       params: { tutor_id: tutorId, start, end },
     })
-    return response
+    return response as unknown as TimeSlot[]
   },
 
   async blockSlot(slotId: number, reason?: string): Promise<void> {
@@ -209,35 +209,35 @@ export const bookingApi = {
 
   async createCustomSlot(data: CustomSlotInput): Promise<TimeSlot> {
     const response = await apiClient.post('/v1/booking/slots/custom/', data)
-    return response
+    return response as unknown as TimeSlot
   },
 
   // Bookings
   async getBookings(params?: BookingListParams): Promise<PaginatedResponse<Booking>> {
     const response = await apiClient.get('/v1/booking/bookings/', { params })
-    return response
+    return response as unknown as PaginatedResponse<Booking>
   },
 
   async getBooking(id: number): Promise<Booking> {
     const response = await apiClient.get(`/v1/booking/bookings/${id}/`)
-    return response
+    return response as unknown as Booking
   },
 
   async createBooking(data: BookingInput): Promise<Booking> {
     const response = await apiClient.post('/v1/booking/bookings/', data)
-    return response
+    return response as unknown as Booking
   },
 
   async confirmBooking(id: number): Promise<Booking> {
     const response = await apiClient.post(`/v1/booking/bookings/${id}/confirm/`)
-    return response
+    return response as unknown as Booking
   },
 
   async cancelBooking(id: number, reason?: string): Promise<Booking> {
     const response = await apiClient.post(`/v1/booking/bookings/${id}/cancel/`, {
       reason,
     })
-    return response
+    return response as unknown as Booking
   },
 
   async rescheduleBooking(
@@ -252,7 +252,7 @@ export const bookingApi = {
         reason,
       }
     )
-    return response
+    return response as unknown as Booking
   },
 
   // Calendar
@@ -264,7 +264,7 @@ export const bookingApi = {
     const response = await apiClient.get('/v1/booking/calendar/', {
       params: { tutor_id: tutorId, month, year },
     })
-    return response
+    return response as unknown as CalendarResponse
   },
 }
 

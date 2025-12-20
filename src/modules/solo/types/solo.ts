@@ -16,12 +16,13 @@ export interface Point {
 
 export interface Stroke {
   id: string
-  tool: Exclude<Tool, 'text' | 'note' | 'select'>
+  tool: Tool
   color: string
   size: number
   opacity: number
   points: Point[]
   composite?: GlobalCompositeOperation
+  text?: string
 }
 
 export interface Shape {
@@ -29,10 +30,15 @@ export interface Shape {
   type: 'line' | 'rectangle' | 'circle'
   color: string
   size: number
-  startX: number
-  startY: number
-  endX: number
-  endY: number
+  startX?: number
+  startY?: number
+  endX?: number
+  endY?: number
+  x?: number
+  y?: number
+  width?: number
+  height?: number
+  points?: Point[]
 }
 
 export interface TextElement {

@@ -22,9 +22,6 @@ export type TutorProfileFormModel = {
   show_age: boolean
   telegram_username: string
   show_telegram: boolean
-
-  // Certifications (text-only)
-  certifications: Array<{ name: string; issuer: string; is_public: boolean }>
 }
 
 function asString(v: unknown): string {
@@ -79,21 +76,6 @@ export function fromApi(profile: TutorProfile): TutorProfileFormModel {
         .filter(Boolean) as FormLanguageItem[])
     : []
 
-  const certifications = Array.isArray((profile as any)?.certifications)
-    ? ((profile as any).certifications
-        .map((c: any) => {
-          const name = asString(c?.name).trim()
-          const issuer = asString(c?.issuer).trim()
-          if (!name && !issuer) return null
-          return {
-            name,
-            issuer,
-            is_public: asBool(c?.is_public, true),
-          }
-        })
-        .filter(Boolean) as Array<{ name: string; issuer: string; is_public: boolean }>)
-    : []
-
   return {
     headline: asString(profile?.headline).trim(),
     bio: asString(profile?.bio).trim(),
@@ -113,8 +95,6 @@ export function fromApi(profile: TutorProfile): TutorProfileFormModel {
     show_age: asBool((profile as any)?.show_age, false),
     telegram_username: asString((profile as any)?.telegram_username).trim(),
     show_telegram: asBool((profile as any)?.show_telegram, false),
-
-    certifications,
   }
 }
 
@@ -138,12 +118,6 @@ export function toApi(model: TutorProfileFormModel): TutorProfilePatchPayload & 
     show_age: model.show_age,
     telegram_username: model.telegram_username || undefined,
     show_telegram: model.show_telegram,
-
-    certifications: (model.certifications || []).map((c) => ({
-      name: c.name,
-      issuer: c.issuer,
-      is_public: c.is_public,
-    })),
   }
 
   // Explicitly ensure marketplace write payload does NOT include `photo`.

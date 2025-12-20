@@ -7,10 +7,10 @@ import { classroomApi } from '../api/classroom'
 
 export interface MediaSyncOptions {
   autoStart?: boolean
-  onMediaStateChange?: (state: MediaState) => void
+  onMediaStateChange?: (state: MediaSyncState) => void
 }
 
-export interface MediaState {
+export interface MediaSyncState {
   videoEnabled: boolean
   audioEnabled: boolean
   screenSharing: boolean
@@ -55,7 +55,7 @@ export function useMediaSync(options: MediaSyncOptions = {}) {
   async function syncMediaState(): Promise<void> {
     if (!roomStore.session) return
 
-    const state: MediaState = {
+    const state: MediaSyncState = {
       videoEnabled: webRTC.isVideoEnabled.value,
       audioEnabled: webRTC.isAudioEnabled.value,
       screenSharing: webRTC.isScreenSharing.value,

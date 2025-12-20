@@ -4,11 +4,14 @@ import { ref, onMounted, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useMarketplaceStore } from '../stores/marketplaceStore'
+import { useAuthStore } from '@/modules/auth/store/authStore'
 import ProfileHeader from '../components/profile/ProfileHeader.vue'
 import ProfileAbout from '../components/profile/ProfileAbout.vue'
 import ProfileEducation from '../components/profile/ProfileEducation.vue'
 import ProfileSubjects from '../components/profile/ProfileSubjects.vue'
 import ProfileBadges from '../components/profile/ProfileBadges.vue'
+import ProfileReviews from '../components/profile/ProfileReviews.vue'
+import CreateReviewModal from '../components/profile/CreateReviewModal.vue'
 import ProfileContact from '../components/profile/ProfileContact.vue'
 import LoadingSpinner from '@/ui/LoadingSpinner.vue'
 import NotFound from '@/ui/NotFound.vue'
@@ -19,10 +22,16 @@ import type { WeeklyAvailabilitySlot } from '../api/marketplace'
 const route = useRoute()
 const router = useRouter()
 const store = useMarketplaceStore()
+const auth = useAuthStore()
 const { currentProfile, isLoadingProfile, error } = storeToRefs(store)
 
 const slug = computed(() => route.params.slug as string)
 const selectedSlot = ref<WeeklyAvailabilitySlot | null>(null)
+
+const isCreateReviewOpen = ref(false)
+const reviewsRef = ref<InstanceType<typeof ProfileReviews> | null>(null)
+
+const canWriteReview = computed(() => auth.isAuthenticated && auth.userRole === 'student')
 
 onMounted(() => {
   if (slug.value) {
@@ -50,6 +59,18 @@ function handleMessage() {
 
 function goBack() {
   router.push('/tutors')
+}
+
+function openCreateReview() {
+  isCreateReviewOpen.value = true
+}
+
+function closeCreateReview() {
+  isCreateReviewOpen.value = false
+}
+
+function handleReviewCreated() {
+  reviewsRef.value?.reload?.()
 }
 </script>
 
@@ -81,8 +102,24 @@ function goBack() {
 
           <!-- Reviews section placeholder -->
           <section class="profile-section">
-            <h2>Reviews</h2>
-            <p class="placeholder">Reviews coming soon...</p>
+            <div class="reviews-header">
+              <button
+                v-if="canWriteReview"
+                type="button"
+                class="btn btn-secondary"
+                data-test="marketplace-write-review"
+                @click="openCreateReview"
+              >
+                {{ $t('marketplace.profile.reviews.write.title') }}
+              </button>
+            </div>
+
+            <ProfileReviews
+              ref="reviewsRef"
+              :slug="slug"
+              :average-rating="currentProfile.average_rating"
+              :total-reviews="currentProfile.total_reviews"
+            />
           </section>
         </main>
 
@@ -115,6 +152,13 @@ function goBack() {
       :slot="selectedSlot"
       @close="selectedSlot = null"
       @created="() => {}"
+    />
+
+    <CreateReviewModal
+      v-if="isCreateReviewOpen"
+      :slug="slug"
+      @close="closeCreateReview"
+      @created="handleReviewCreated"
     />
   </div>
 </template>
@@ -176,9 +220,10 @@ function goBack() {
   color: #111827;
 }
 
-.placeholder {
-  color: #6b7280;
-  font-style: italic;
+.reviews-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.75rem;
 }
 
 .btn {

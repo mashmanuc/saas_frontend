@@ -2,12 +2,12 @@
 // TASK MF7 + F8: CatalogFilters component (enhanced for v0.20.0)
 import { ref, watch, computed } from 'vue'
 import { X, Filter } from 'lucide-vue-next'
-import type { CatalogFilters, FilterOptions, ExtendedFilterOptions } from '../../api/marketplace'
+import type { CatalogFilters, FilterOptions, ExtendedFilterOptions, SearchFilters } from '../../api/marketplace'
 import { useI18n } from 'vue-i18n'
 import { getLanguageName } from '@/config/languages'
 
 // Support both old CatalogFilters and new SearchFilters
-type AnyFilters = CatalogFilters
+type AnyFilters = CatalogFilters | SearchFilters
 type AnyOptions = FilterOptions | ExtendedFilterOptions | null
 
 interface Props {
@@ -80,7 +80,7 @@ const languageOptions = computed(() => {
 // Get categories (only for extended)
 const filteredSubjects = computed(() => subjectOptions.value)
 
-const localFilters = ref<AnyFilters>({ ...props.filters })
+const localFilters = ref<Record<string, any>>({ ...(props.filters as any) })
 
 const priceMin = computed({
   get: () => (localFilters.value as any).price_min ?? null,
@@ -97,23 +97,41 @@ const priceMax = computed({
 })
 
 const selectedLanguages = computed({
-  get: () => (Array.isArray((localFilters.value as any).language) ? (localFilters.value as any).language : []),
+  get: () => {
+    const raw = (localFilters.value as any).language
+    if (Array.isArray(raw)) return raw
+    if (typeof raw === 'string' && raw.length > 0) return [raw]
+    return []
+  },
   set: (v: string[]) => {
-    ;(localFilters.value as any).language = v
+    if (Array.isArray((props.filters as any).language)) {
+      ;(localFilters.value as any).language = v
+    } else {
+      ;(localFilters.value as any).language = v[0] ?? null
+    }
   },
 })
 
 const selectedSubjects = computed({
-  get: () => (Array.isArray((localFilters.value as any).subject) ? (localFilters.value as any).subject : []),
+  get: () => {
+    const raw = (localFilters.value as any).subject
+    if (Array.isArray(raw)) return raw
+    if (typeof raw === 'string' && raw.length > 0) return [raw]
+    return []
+  },
   set: (v: string[]) => {
-    ;(localFilters.value as any).subject = v
+    if (Array.isArray((props.filters as any).subject)) {
+      ;(localFilters.value as any).subject = v
+    } else {
+      ;(localFilters.value as any).subject = v[0] ?? null
+    }
   },
 })
 
 watch(
   () => props.filters,
   (newFilters) => {
-    localFilters.value = { ...newFilters }
+    localFilters.value = { ...(newFilters as any) }
   }
 )
 
@@ -229,6 +247,27 @@ function hasActiveFilters(): boolean {
           data-test="marketplace-filter-experience-min"
           @change="applyFilters"
         />
+      </div>
+
+      <div class="filter-group">
+        <label>{{ t('marketplace.filters.experienceMax') }}</label>
+        <input
+          v-model.number="localFilters.experience_max"
+          type="number"
+          min="0"
+          :placeholder="t('marketplace.filters.experienceMaxPlaceholder')"
+          data-test="marketplace-filter-experience-max"
+          @change="applyFilters"
+        />
+      </div>
+
+      <div class="filter-group">
+        <label>{{ t('marketplace.filters.direction') }}</label>
+        <select v-model="localFilters.direction" data-test="marketplace-filter-direction" @change="applyFilters">
+          <option value="">{{ t('marketplace.filters.any') }}</option>
+          <option value="nmt">{{ t('marketplace.filters.directionNmt') }}</option>
+          <option value="dpa">{{ t('marketplace.filters.directionDpa') }}</option>
+        </select>
       </div>
 
       <div class="filter-group">

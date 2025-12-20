@@ -10,6 +10,7 @@ import { TIMEZONES } from '@/utils/timezones'
 import { fromApi, toApi, type TutorProfileFormModel } from '../../tutorProfileFormModel'
 import { updateAvatar } from '@/api/profile'
 import { notifyError, notifySuccess } from '@/utils/notify'
+import CertificationsEditor from './CertificationsEditor.vue'
 import type {
   FilterOptions,
   TutorProfile,
@@ -53,17 +54,6 @@ function addLanguage() {
 
 function removeLanguage(code: string) {
   formData.value.languages = formData.value.languages.filter((l) => l.code !== code)
-}
-
-function addCertification() {
-  formData.value.certifications = [
-    ...(formData.value.certifications || []),
-    { name: '', issuer: '', is_public: true },
-  ]
-}
-
-function removeCertification(index: number) {
-  formData.value.certifications = (formData.value.certifications || []).filter((_, i) => i !== index)
 }
 
 const props = defineProps<Props>()
@@ -272,46 +262,7 @@ const languageLevels = computed<Array<{ value: LanguageLevel; label: string }>>(
       </div>
 
       <div class="form-group">
-        <label>{{ t('marketplace.profile.editor.certificationsTitle') }}</label>
-
-        <div class="list-editor" data-test="marketplace-editor-certifications">
-          <div v-if="formData.certifications.length" class="list-items">
-            <div
-              v-for="(c, idx) in formData.certifications"
-              :key="idx"
-              class="list-item certification-item"
-              data-test="marketplace-editor-certification-item"
-            >
-              <div class="cert-fields">
-                <input
-                  v-model="c.name"
-                  type="text"
-                  :placeholder="t('marketplace.profile.editor.certificationNamePlaceholder')"
-                  data-test="marketplace-editor-certification-name"
-                />
-                <input
-                  v-model="c.issuer"
-                  type="text"
-                  :placeholder="t('marketplace.profile.editor.certificationIssuerPlaceholder')"
-                  data-test="marketplace-editor-certification-issuer"
-                />
-              </div>
-
-              <label class="checkbox-label">
-                <input v-model="c.is_public" type="checkbox" data-test="marketplace-editor-certification-public" />
-                {{ t('marketplace.profile.editor.certificationPublic') }}
-              </label>
-
-              <button type="button" class="btn btn-ghost" @click="removeCertification(idx)">
-                {{ t('marketplace.profile.editor.remove') }}
-              </button>
-            </div>
-          </div>
-
-          <button type="button" class="btn btn-secondary" @click="addCertification">
-            {{ t('marketplace.profile.editor.addCertification') }}
-          </button>
-        </div>
+        <CertificationsEditor />
       </div>
     </section>
 
