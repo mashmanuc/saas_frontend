@@ -7,6 +7,8 @@ export type MarketplaceApiErrorInfo = {
   fields: MarketplaceValidationErrors | null
 }
 
+import { i18n } from '@/i18n'
+
 export function parseMarketplaceApiError(err: unknown): MarketplaceApiErrorInfo {
   const anyErr = err as any
   const status = anyErr?.response?.status ?? null
@@ -34,23 +36,31 @@ export function parseMarketplaceApiError(err: unknown): MarketplaceApiErrorInfo 
 }
 
 export function mapMarketplaceErrorToMessage(info: MarketplaceApiErrorInfo, fallback: string): string {
+  const t = (key: string): string => {
+    try {
+      return (i18n as any)?.global?.t?.(key) ?? key
+    } catch (_err) {
+      return key
+    }
+  }
+
   if (info.status === 422 || info.code === 'validation_failed') {
-    return 'Перевірте коректність даних.'
+    return t('marketplace.errors.validation')
   }
   if (info.status === 409 || info.code === 'slot_conflict') {
-    return 'Слот вже зайнятий. Оберіть інший час.'
+    return t('marketplace.errors.slotConflict')
   }
   if (info.status === 429 || info.code === 'rate_limited') {
-    return 'Забагато запитів. Спробуйте трохи пізніше.'
+    return t('marketplace.errors.rateLimited')
   }
   if (info.status === 413 || info.code === 'payload_too_large') {
-    return 'Дані завеликі. Зменшіть обсяг і спробуйте ще раз.'
+    return t('marketplace.errors.payloadTooLarge')
   }
   if (info.status === 403 || info.code === 'forbidden') {
-    return 'Доступ заборонено.'
+    return t('marketplace.errors.forbidden')
   }
   if (typeof info.status === 'number' && info.status >= 500) {
-    return 'Помилка сервера. Спробуйте пізніше.'
+    return t('marketplace.errors.serverError')
   }
   return info.detail || fallback
 }

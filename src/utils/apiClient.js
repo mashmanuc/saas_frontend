@@ -3,12 +3,12 @@ import { useAuthStore } from '../modules/auth/store/authStore'
 import { useLoaderStore } from '../stores/loaderStore'
 import { notifyError, notifyWarning } from './notify'
 
-axios.defaults.withCredentials = true
+axios.defaults.withCredentials = false
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
   headers: { 'Content-Type': 'application/json' },
-  withCredentials: true,
+  withCredentials: false,
 })
 
 const createRequestId = () =>
@@ -59,9 +59,18 @@ api.interceptors.response.use(
 
     const status = error.response.status
 
+    if (status === 429) {
+      const retryAfter = error.response?.headers?.['retry-after']
+      if (retryAfter) {
+        notifyWarning(`Забагато запитів. Спробуйте через ${retryAfter}с.`)
+      } else {
+        notifyWarning('Забагато запитів. Спробуйте пізніше.')
+      }
+    }
+
     const url = original.url || ''
-    const isAuthRefresh = url.includes('/auth/refresh/')
-    const isAuthLogout = url.includes('/auth/logout/')
+    const isAuthRefresh = url.includes('/v1/auth/token/refresh')
+    const isAuthLogout = url.includes('/v1/auth/logout')
 
     const notifySessionExpired = () => {
       if (!store.sessionExpiredNotified) {

@@ -53,12 +53,11 @@ function handleBook() {
 }
 
 function handleMessage() {
-  // TODO: Open chat with tutor
-  console.log('Message tutor:', currentProfile.value?.user.id)
+  return
 }
 
 function goBack() {
-  router.push('/tutors')
+  router.push('/marketplace')
 }
 
 function openCreateReview() {
@@ -86,12 +85,12 @@ function handleReviewCreated() {
           <ProfileAbout :bio="currentProfile.bio" />
 
           <ProfileEducation
-            v-if="currentProfile.education.length > 0"
+            v-if="Array.isArray(currentProfile.education) && currentProfile.education.length > 0"
             :education="currentProfile.education"
           />
 
           <ProfileSubjects
-            v-if="currentProfile.subjects.length > 0"
+            v-if="Array.isArray(currentProfile.subjects) && currentProfile.subjects.length > 0"
             :subjects="currentProfile.subjects"
           />
 
@@ -131,7 +130,7 @@ function handleReviewCreated() {
           />
 
           <ProfileBadges
-            v-if="currentProfile.badges.length > 0"
+            v-if="Array.isArray(currentProfile.badges) && currentProfile.badges.length > 0"
             :badges="currentProfile.badges"
           />
         </aside>
@@ -140,10 +139,10 @@ function handleReviewCreated() {
 
     <NotFound
       v-else-if="error"
-      title="Tutor not found"
-      description="The tutor profile you're looking for doesn't exist or has been removed."
+      :title="$t('marketplace.profile.notFound.title')"
+      :description="$t('marketplace.profile.notFound.description')"
     >
-      <button class="btn btn-primary" @click="goBack">Browse Tutors</button>
+      <button class="btn btn-primary" @click="goBack">{{ $t('marketplace.profile.notFound.backCta') }}</button>
     </NotFound>
 
     <TrialRequestModal
@@ -166,7 +165,7 @@ function handleReviewCreated() {
 <style scoped>
 .profile-view {
   min-height: 100vh;
-  background: #f9fafb;
+  background: var(--surface-marketplace);
 }
 
 .loading {
@@ -207,17 +206,16 @@ function handleReviewCreated() {
 }
 
 .profile-section {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: var(--surface-card);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-sm);
 }
 
 .profile-section h2 {
-  font-size: 1.25rem;
-  font-weight: 600;
+  font: var(--font-headline);
   margin: 0 0 1rem;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .reviews-header {
@@ -226,26 +224,4 @@ function handleReviewCreated() {
   margin-bottom: 0.75rem;
 }
 
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-primary {
-  background: #3b82f6;
-  color: white;
-}
-
-.btn-primary:hover {
-  background: #2563eb;
-}
 </style>

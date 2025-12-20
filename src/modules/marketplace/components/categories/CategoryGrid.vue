@@ -39,7 +39,7 @@ defineProps<{
 }
 
 .category-skeleton {
-  background: var(--color-bg-primary, white);
+  background: var(--surface-card);
   border-radius: 12px;
   padding: 24px;
   display: flex;
@@ -52,7 +52,12 @@ defineProps<{
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--border-color) 35%, transparent) 25%,
+    color-mix(in srgb, var(--border-color) 55%, transparent) 50%,
+    color-mix(in srgb, var(--border-color) 35%, transparent) 75%
+  );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
@@ -61,7 +66,12 @@ defineProps<{
   width: 80%;
   height: 16px;
   border-radius: 4px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--border-color) 35%, transparent) 25%,
+    color-mix(in srgb, var(--border-color) 55%, transparent) 50%,
+    color-mix(in srgb, var(--border-color) 35%, transparent) 75%
+  );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
@@ -70,7 +80,12 @@ defineProps<{
   width: 50%;
   height: 12px;
   border-radius: 4px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--border-color) 35%, transparent) 25%,
+    color-mix(in srgb, var(--border-color) 55%, transparent) 50%,
+    color-mix(in srgb, var(--border-color) 35%, transparent) 75%
+  );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }

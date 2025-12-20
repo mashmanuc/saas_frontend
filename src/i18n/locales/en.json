@@ -2,6 +2,46 @@
   "app": {
     "title": "M4SH Platform"
   },
+  "userProfile": {
+    "account": {
+      "title": "Account",
+      "subtitle": "Your basic user details.",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "username": "Username",
+      "timezone": "Timezone",
+      "save": "Save",
+      "loadError": "Failed to load account.",
+      "saveSuccess": "Saved.",
+      "saveError": "Failed to save.",
+      "avatarUpdated": "Avatar updated.",
+      "avatarUpdateError": "Failed to update avatar.",
+      "avatarDeleted": "Avatar deleted.",
+      "avatarDeleteError": "Failed to delete avatar.",
+      "changeEmail": "Change email",
+      "changePassword": "Change password"
+    },
+    "changeEmail": {
+      "title": "Change email",
+      "subtitle": "Enter your new email and current password.",
+      "newEmail": "New email",
+      "password": "Current password",
+      "submit": "Change email",
+      "success": "Verification email sent to new address.",
+      "error": "Failed to change email."
+    },
+    "changePassword": {
+      "title": "Change password",
+      "subtitle": "Enter your current and new password.",
+      "currentPassword": "Current password",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm new password",
+      "submit": "Change password",
+      "success": "Password changed successfully.",
+      "error": "Failed to change password.",
+      "mismatch": "Passwords do not match."
+    }
+  },
   "lang": {
     "label": "Language",
     "uk": "Ukrainian",
@@ -214,20 +254,66 @@
       "password": "Password",
       "submit": "Sign in",
       "loading": "Signing in...",
+      "forgotPassword": "Forgot password?",
+      "resendVerifyCta": "Resend verification email",
       "noAccount": "Don't have an account?",
       "registerLink": "Register"
     },
     "register": {
       "title": "Register",
       "description": "Self-paced registration (self-learning).",
+      "accountType": "Account type",
+      "accountTypeStudent": "Student",
+      "accountTypeStudentHint": "Self-learning and booking lessons.",
+      "accountTypeTutor": "Tutor",
+      "accountTypeTutorHint": "Create your tutor profile and accept students.",
       "firstName": "First name",
       "lastName": "Last name",
+      "username": "Username",
       "email": "Email",
       "password": "Password",
       "submit": "Create account",
       "loading": "Creating account...",
       "haveAccount": "Already have an account?",
       "loginLink": "Sign in"
+    },
+    "checkEmail": {
+      "title": "Check your email",
+      "description": "We sent you a verification email.",
+      "sentTo": "Sent to:",
+      "success": "Email sent.",
+      "error": "Failed to send email. Please try again later.",
+      "resend": "Resend email",
+      "resendLoading": "Sending...",
+      "backToLogin": "Back to login"
+    },
+    "verifyEmail": {
+      "title": "Verify email",
+      "description": "Please wait while we verify your token.",
+      "loading": "Verifying...",
+      "success": "Email verified. You can sign in.",
+      "loginCta": "Sign in"
+    },
+    "forgot": {
+      "title": "Forgot password?",
+      "description": "Enter your email and we will send a reset link.",
+      "email": "Email",
+      "success": "If this email exists, we sent a reset link.",
+      "error": "Failed to send email. Please try again later.",
+      "submit": "Send reset email",
+      "loading": "Sending...",
+      "backToLogin": "Back to login"
+    },
+    "reset": {
+      "title": "Reset password",
+      "description": "Set a new password.",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm password",
+      "success": "Password updated. You can sign in.",
+      "error": "Failed to reset password. Please check the form.",
+      "submit": "Change password",
+      "loading": "Saving...",
+      "backToLogin": "Back to login"
     },
     "invite": {
       "validation": {
@@ -279,10 +365,81 @@
     "soloWorkspace": "Solo Workspace"
   },
   "marketplace": {
+    "subjects": {
+      "english": "English",
+      "spanish": "Spanish",
+      "french": "French",
+      "german": "German",
+      "ukrainian": "Ukrainian",
+      "polish": "Polish",
+      "chinese": "Chinese",
+      "japanese": "Japanese",
+      "mathematics": "Mathematics",
+      "physics": "Physics",
+      "chemistry": "Chemistry",
+      "biology": "Biology",
+      "computer-science": "Computer Science",
+      "business-english": "Business English",
+      "marketing": "Marketing",
+      "finance": "Finance",
+      "management": "Management",
+      "piano": "Piano",
+      "guitar": "Guitar",
+      "drawing": "Drawing",
+      "photography": "Photography",
+      "ielts": "IELTS preparation",
+      "toefl": "TOEFL preparation",
+      "sat": "SAT preparation",
+      "gre": "GRE preparation"
+    },
+    "countries": {
+      "ukraine": "Ukraine",
+      "poland": "Poland",
+      "germany": "Germany",
+      "spain": "Spain",
+      "france": "France",
+      "italy": "Italy",
+      "unitedKingdom": "United Kingdom",
+      "unitedStates": "United States",
+      "canada": "Canada",
+      "australia": "Australia",
+      "turkey": "Turkey",
+      "india": "India",
+      "china": "China",
+      "brazil": "Brazil",
+      "czechia": "Czechia",
+      "slovakia": "Slovakia",
+      "romania": "Romania",
+      "hungary": "Hungary"
+    },
+    "availability": {
+      "title": "Tutor availability",
+      "empty": "No available slots",
+      "loadError": "Failed to load availability slots."
+    },
+    "trialRequest": {
+      "title": "Confirm trial lesson",
+      "timeLabel": "Time",
+      "durationLabel": "Duration",
+      "minutesShort": "min",
+      "submit": "Book a free trial lesson",
+      "submitting": "Submitting…",
+      "success": "Trial lesson request sent (pending).",
+      "error": "Failed to create trial request."
+    },
+    "common": {
+      "perHour": "/ hour"
+    },
+    "tutorCard": {
+      "experience": "Experience",
+      "rate": "Rate",
+      "language": "Language",
+      "experienceYears": "{years} years"
+    },
     "sort": {
       "label": "Sort",
       "default": "Default",
-      "rating": "Highest rated",
+      "rating": "Highest rating",
       "price_asc": "Price: low to high",
       "price_desc": "Price: high to low",
       "experience_desc": "Most experienced"
@@ -291,13 +448,35 @@
       "title": "Find your perfect tutor",
       "subtitle": "Browse {count} tutors ready to help you learn",
       "resultsCount": "{count} found",
+      "tabs": {
+        "summary": "Summary",
+        "about": "About",
+        "calendar": "Calendar"
+      },
       "errorTitle": "Something went wrong",
-      "errorDescription": "Please try again or clear filters",
+      "errorDescription": "Please retry or clear filters",
       "clearFilters": "Clear filters",
       "loading": "Loading…",
       "loadMore": "Load more",
       "emptyTitle": "No tutors found",
       "emptyDescription": "Try adjusting your filters or search criteria"
+    },
+    "search": {
+      "placeholder": "Search tutors, subjects…",
+      "recentTitle": "Recent searches",
+      "suggestionsTitle": "Suggestions",
+      "pressEnter": "Press Enter to search for \"{query}\"",
+      "resultsCount": "{count} found",
+      "showResults": "Show results ({count})",
+      "tutorsPlural": "tutors"
+    },
+    "sections": {
+      "popular": "Popular tutors",
+      "new": "New tutors",
+      "recommended": "Recommended for you",
+      "featured": "Featured tutors",
+      "viewAll": "View all",
+      "loadError": "Failed to load tutors"
     },
     "filters": {
       "title": "Filters",
@@ -337,13 +516,69 @@
       "verifiedOnly": "Verified only",
       "clearAll": "Clear all"
     },
+    "errors": {
+      "validation": "Please check your input.",
+      "slotConflict": "This slot is already taken. Please pick another time.",
+      "rateLimited": "Too many requests. Please try again later.",
+      "payloadTooLarge": "Payload is too large. Please reduce size and try again.",
+      "forbidden": "Access denied.",
+      "serverError": "Server error. Please try again later.",
+      "loadTutors": "Failed to load tutors.",
+      "loadProfile": "Failed to load tutor profile.",
+      "createProfile": "Failed to create profile.",
+      "updateProfile": "Failed to save profile.",
+      "submitForReview": "Failed to submit profile for review.",
+      "publishProfile": "Failed to publish profile.",
+      "unpublishProfile": "Failed to unpublish profile."
+    },
     "profile": {
       "title": "Tutor profile",
       "viewPublic": "View public profile",
-      "publish": "Publish profile",
+      "backToCatalog": "Back to catalog",
+      "watchIntro": "Watch introduction",
+      "stats": {
+        "lessons": "lessons",
+        "students": "students"
+      },
+      "notFound": {
+        "title": "Tutor not found",
+        "description": "The tutor profile you're looking for doesn't exist or has been removed.",
+        "backCta": "Back to catalog"
+      },
+      "subjectsTitle": "Subjects",
+      "subjectLevel": {
+        "beginner": "Beginner",
+        "intermediate": "Intermediate",
+        "advanced": "Advanced",
+        "expert": "Expert"
+      },
+      "badgesTitle": "Badges & achievements",
+      "contact": {
+        "trialLesson": "Trial lesson",
+        "respondsInHours": "Usually responds in {hours}h",
+        "bookLesson": "Book a lesson",
+        "sendMessage": "Send message"
+      },
+      "education": {
+        "title": "Education",
+        "present": "Present",
+        "in": "in"
+      },
+      "publish": "Publish",
       "publishing": "Publishing…",
+      "publishSuccess": "Profile published.",
+      "publishError": "Unable to publish profile.",
       "unpublish": "Unpublish",
       "unpublishing": "Unpublishing…",
+      "unpublishSuccess": "Profile unpublished.",
+      "unpublishError": "Unable to unpublish profile.",
+      "submit": "Submit for review",
+      "submitting": "Submitting for review…",
+      "submitSuccess": "Profile submitted for review.",
+      "submitError": "Unable to submit profile for review.",
+      "validationTitle": "Please fix:",
+      "incompleteTitle": "Profile is not ready",
+      "incompleteDescription": "Add avatar, bio, subjects, languages, and rate.",
       "reviews": {
         "title": "Reviews",
         "empty": "No reviews yet",
@@ -356,7 +591,8 @@
           "textPlaceholder": "Describe your lesson experience…",
           "submit": "Submit",
           "success": "Review submitted",
-          "validation": "Please check your input."
+          "validation": "Please check your input.",
+          "sendError": "Failed to submit review."
         },
         "rating": "Rating",
         "ratingLabel": "Rating",
@@ -367,11 +603,6 @@
         "reviewsLoadMore": "Load more reviews",
         "reviewsLoadError": "Failed to load reviews"
       },
-      "submit": "Submit for review",
-      "submitting": "Submitting…",
-      "validationTitle": "Validation errors:",
-      "incompleteTitle": "Your profile is incomplete.",
-      "incompleteDescription": "Complete required fields to submit your profile for review.",
       "create": {
         "title": "Create your tutor profile",
         "subtitle": "Start sharing your expertise with students around the world.",
@@ -416,6 +647,12 @@
         "privacyTitle": "Privacy",
         "genderLabel": "Gender",
         "genderPlaceholder": "e.g. Female / Male / Other",
+        "genderOptions": {
+          "female": "Female",
+          "male": "Male",
+          "other": "Other",
+          "unspecified": "Not specified"
+        },
         "showGender": "Show gender on public profile",
         "birthYearLabel": "Birth year",
         "birthYearPlaceholder": "e.g. 1995",
@@ -423,39 +660,53 @@
         "telegramLabel": "Telegram",
         "telegramPlaceholder": "username without @",
         "showTelegram": "Show Telegram on public profile",
-        "certificationsTitle": "Certifications",
-        "addCertification": "Add certification",
-        "certificationNamePlaceholder": "Certification name",
-        "certificationIssuerPlaceholder": "Issued by",
+        "certificationsTitle": "Diplomas (certificates)",
+        "addCertification": "Add diploma",
+        "certificationNamePlaceholder": "Diploma title",
+        "certificationIssuerPlaceholder": "Issued by (optional)",
         "certificationPublic": "Show on public profile",
         "certificationsTitleLabel": "Title",
-        "certificationsIssuerLabel": "Issuer",
-        "certificationsIssuedYearLabel": "Issued year",
+        "certificationsIssuerLabel": "Issuer (optional)",
+        "certificationsIssuedYearLabel": "Issued year (optional)",
         "certificationsFileLabel": "File",
-        "certificationsAdd": "Add certification",
+        "certificationsAdd": "Add diploma",
         "certificationsUploading": "Uploading…",
-        "certificationsEmpty": "No certifications yet",
+        "certificationsEmpty": "No diplomas yet",
         "certificationsStatusPending": "Pending review",
         "certificationsStatusApproved": "Approved",
         "certificationsStatusRejected": "Rejected",
-        "certificationsLoadError": "Failed to load certifications",
-        "certificationsUploadError": "Failed to upload certification",
-        "certificationsCreateSuccess": "Certification added",
-        "certificationsUpdateError": "Failed to update certification",
-        "certificationsDeleteSuccess": "Certification deleted",
-        "certificationsDeleteError": "Failed to delete certification",
-        "certificationsValidationError": "Please check certification details",
+        "certificationsLoadError": "Failed to load diplomas",
+        "certificationsUploadError": "Failed to upload diploma",
+        "certificationsCreateSuccess": "Diploma added",
+        "certificationsUpdateError": "Failed to update diploma",
+        "certificationsDeleteSuccess": "Diploma deleted",
+        "certificationsDeleteError": "Failed to delete diploma",
+        "certificationsValidationError": "Please check diploma details",
         "certificationsRateLimited": "Too many requests. Try again later",
         "certificationsUnsupportedType": "Unsupported file type",
         "certificationsTooLarge": "File is too large",
         "saving": "Saving…",
         "save": "Save changes",
+        "validation": {
+          "headline": "Headline is required (min 3 characters).",
+          "bio": "Bio is required (min 10 characters).",
+          "hourlyRate": "Hourly rate must be greater than 0.",
+          "subjects": "Select at least one subject.",
+          "languages": "Select at least one language."
+        },
         "languageLevels": {
           "basic": "Basic",
           "conversational": "Conversational",
           "fluent": "Fluent",
           "native": "Native"
         }
+      },
+      "status": {
+        "draft": "Draft",
+        "pending_review": "Pending review",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "suspended": "Suspended"
       }
     }
   },
@@ -473,6 +724,7 @@
     "exit": "Exit",
     "later": "Later",
     "there": "there",
+    "notSpecified": "Not specified",
     "justNow": "Just now",
     "minutesAgo": "{count} min ago",
     "hoursAgo": "{count}h ago",

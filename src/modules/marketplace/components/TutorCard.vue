@@ -5,35 +5,33 @@
         <img
           v-if="avatarUrl"
           :src="avatarUrl"
-          :alt="tutor?.full_name || 'Tutor avatar'"
+          :alt="tutorName"
           loading="lazy"
         />
         <span v-else>{{ initials }}</span>
       </div>
       <div>
-        <h3 class="tutor-card__name">{{ tutor?.full_name || 'Tutor Name' }}</h3>
-        <p class="tutor-card__headline">{{ tutor?.headline || 'Short description' }}</p>
+        <h3 class="tutor-card__name">{{ tutorName }}</h3>
+        <p class="tutor-card__headline">{{ tutorHeadline }}</p>
       </div>
     </header>
 
-    <section class="tutor-card__subjects" v-if="(tutor?.subjects || []).length">
-      <span v-for="subject in tutor.subjects" :key="subject">{{ subject }}</span>
+    <section class="tutor-card__subjects" v-if="subjects.length">
+      <span v-for="subject in subjects" :key="subject">{{ subject }}</span>
     </section>
 
     <section class="tutor-card__meta">
       <div>
-        <p class="label">Досвід</p>
-        <p class="value">{{ tutor?.experience_years ? tutor.experience_years + ' років' : 'N/A' }}</p>
+        <p class="label">{{ t('marketplace.tutorCard.experience') }}</p>
+        <p class="value">{{ experienceText }}</p>
       </div>
       <div>
-        <p class="label">Ставка</p>
-        <p class="value">
-          {{ tutor?.hourly_rate ? `$${tutor.hourly_rate}/год` : 'Договірна' }}
-        </p>
+        <p class="label">{{ t('marketplace.tutorCard.rate') }}</p>
+        <p class="value">{{ rateText }}</p>
       </div>
       <div>
-        <p class="label">Мова</p>
-        <p class="value">{{ tutor?.language || 'uk' }}</p>
+        <p class="label">{{ t('marketplace.tutorCard.language') }}</p>
+        <p class="value">{{ languageText }}</p>
       </div>
     </section>
 
@@ -46,6 +44,8 @@
 <script setup>
 import { computed } from 'vue'
 import { resolveMediaUrl } from '../../../utils/media'
+import { useI18n } from 'vue-i18n'
+import { toDisplayText, toStringArray } from '../utils/formatters'
 
 const props = defineProps({
   tutor: {
@@ -56,13 +56,25 @@ const props = defineProps({
 
 defineEmits(['click'])
 
+const { t } = useI18n()
+
+const tutorName = computed(() => {
+  const v = props.tutor?.full_name
+  return typeof v === 'string' && v.trim().length ? v : t('common.notSpecified')
+})
+
+const tutorHeadline = computed(() => {
+  const v = props.tutor?.headline
+  return typeof v === 'string' && v.trim().length ? v : t('common.notSpecified')
+})
+
 const avatarUrl = computed(() => {
   const value = props.tutor?.avatar_url || props.tutor?.avatar
   return value ? resolveMediaUrl(value) : null
 })
 
 const initials = computed(() => {
-  const name = props.tutor?.full_name || ''
+  const name = typeof props.tutor?.full_name === 'string' ? props.tutor.full_name : ''
   if (!name) return 'T'
   return name
     .split(' ')
@@ -70,6 +82,38 @@ const initials = computed(() => {
     .join('')
     .slice(0, 2)
     .toUpperCase()
+})
+
+const subjects = computed(() => {
+  const raw = props.tutor?.subjects
+  const arr = Array.isArray(raw) ? raw : []
+  // Avoid rendering [object Object]
+  return toStringArray(arr)
+})
+
+const experienceText = computed(() => {
+  const years = props.tutor?.experience_years
+  if (typeof years === 'number' && Number.isFinite(years) && years >= 0) {
+    return t('marketplace.tutorCard.experienceYears', { years })
+  }
+  return t('common.notSpecified')
+})
+
+const rateText = computed(() => {
+  const amount = props.tutor?.hourly_rate
+  const currency = props.tutor?.currency
+  if (typeof amount === 'number' && Number.isFinite(amount)) {
+    const unit = t('marketplace.common.perHour')
+    if (typeof currency === 'string' && currency.trim().length > 0) {
+      return `${currency}${amount}${unit}`
+    }
+    return `${amount}${unit}`
+  }
+  return t('common.notSpecified')
+})
+
+const languageText = computed(() => {
+  return toDisplayText(props.tutor?.language, t('common.notSpecified'))
 })
 </script>
 
@@ -82,13 +126,13 @@ const initials = computed(() => {
   border-radius: var(--radius-lg);
   background: var(--surface-card);
   box-shadow: var(--shadow-card);
-  border: 1px solid rgba(15, 23, 42, 0.06);
+  border: 1px solid var(--border-color);
   transition: box-shadow 0.2s ease, transform 0.2s ease;
   cursor: pointer;
 }
 
 .tutor-card:hover {
-  box-shadow: 0 8px 24px rgba(12, 15, 25, 0.12);
+  box-shadow: var(--shadow-card);
   transform: translateY(-2px);
 }
 
@@ -102,12 +146,12 @@ const initials = computed(() => {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: rgba(15, 23, 42, 0.08);
+  background: color-mix(in srgb, var(--border-color) 60%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--text-primary);
   text-transform: uppercase;
   overflow: hidden;
 }
@@ -125,7 +169,7 @@ const initials = computed(() => {
 
 .tutor-card__headline {
   font: var(--font-body);
-  color: rgba(15, 23, 42, 0.7);
+  color: var(--text-muted);
   margin: 0.1rem 0 0;
 }
 
@@ -138,9 +182,9 @@ const initials = computed(() => {
 .tutor-card__subjects span {
   padding: 0.2rem 0.6rem;
   border-radius: 999px;
-  background: rgba(15, 23, 42, 0.05);
+  background: color-mix(in srgb, var(--border-color) 30%, transparent);
   font-size: 0.85rem;
-  color: rgba(15, 23, 42, 0.7);
+  color: var(--text-muted);
 }
 
 .tutor-card__meta {
@@ -152,13 +196,13 @@ const initials = computed(() => {
 .label {
   font-size: 0.75rem;
   text-transform: uppercase;
-  color: rgba(15, 23, 42, 0.6);
+  color: var(--text-muted);
   margin-bottom: 0.2rem;
 }
 
 .value {
   font-weight: 600;
-  color: rgba(15, 23, 42, 0.9);
+  color: var(--text-primary);
 }
 
 .tutor-card__footer {

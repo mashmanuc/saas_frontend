@@ -6,6 +6,7 @@ import { TrendingUp, Sparkles, ThumbsUp, Star, ArrowRight } from 'lucide-vue-nex
 import { marketplaceApi } from '../../api/marketplace'
 import type { TutorListItem } from '../../api/marketplace'
 import TutorCard from '../catalog/TutorCard.vue'
+import { useI18n } from 'vue-i18n'
 
 const props = withDefaults(
   defineProps<{
@@ -19,40 +20,44 @@ const props = withDefaults(
 
 const router = useRouter()
 
+const { t } = useI18n()
+
 const config = {
   popular: {
-    title: 'Popular Tutors',
+    title: 'marketplace.sections.popular',
     icon: TrendingUp,
     endpoint: 'getPopularTutors',
     sortParam: '-lessons',
   },
   new: {
-    title: 'New Tutors',
+    title: 'marketplace.sections.new',
     icon: Sparkles,
     endpoint: 'getNewTutors',
     sortParam: '-newest',
   },
   recommended: {
-    title: 'Recommended for You',
+    title: 'marketplace.sections.recommended',
     icon: ThumbsUp,
     endpoint: 'getRecommendedTutors',
     sortParam: '-relevance',
   },
   featured: {
-    title: 'Featured Tutors',
+    title: 'marketplace.sections.featured',
     icon: Star,
     endpoint: 'getFeaturedTutors',
     sortParam: '-rating',
   },
 }
 
-const { title, icon, endpoint, sortParam } = config[props.type]
+const { title: titleKey, icon, endpoint, sortParam } = config[props.type]
+
+const title = computed(() => t(titleKey))
 
 const tutors = ref<TutorListItem[]>([])
 const isLoading = ref(false)
 const error = ref<string | null>(null)
 
-const viewAllLink = computed(() => `/tutors?sort=${sortParam}`)
+const viewAllLink = computed(() => `/marketplace?sort=${sortParam}`)
 
 onMounted(async () => {
   isLoading.value = true
@@ -64,7 +69,7 @@ onMounted(async () => {
     ) => Promise<TutorListItem[]>
     tutors.value = await apiMethod(props.limit)
   } catch (e: any) {
-    error.value = e.message || 'Failed to load tutors'
+    error.value = t('marketplace.sections.loadError')
   } finally {
     isLoading.value = false
   }
@@ -82,8 +87,8 @@ const handleViewAll = () => {
         <component :is="icon" :size="24" class="section-icon" />
         {{ title }}
       </h2>
-      <button class="view-all-btn" @click="handleViewAll">
-        View All
+      <button class="btn btn-ghost" @click="handleViewAll">
+        {{ t('marketplace.sections.viewAll') }}
         <ArrowRight :size="16" />
       </button>
     </div>
@@ -136,31 +141,11 @@ const handleViewAll = () => {
   font-size: 1.5rem;
   font-weight: 600;
   margin: 0;
-  color: var(--color-text-primary, #111827);
+  color: var(--text-primary);
 }
 
 .section-icon {
-  color: var(--color-primary, #3b82f6);
-}
-
-.view-all-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  background: none;
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-primary, #111827);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.view-all-btn:hover {
-  border-color: var(--color-primary, #3b82f6);
-  color: var(--color-primary, #3b82f6);
+  color: var(--accent-primary);
 }
 
 .tutors-carousel {
@@ -177,12 +162,12 @@ const handleViewAll = () => {
 }
 
 .tutors-carousel::-webkit-scrollbar-track {
-  background: var(--color-bg-secondary, #f5f5f5);
+  background: var(--surface-card-muted);
   border-radius: 3px;
 }
 
 .tutors-carousel::-webkit-scrollbar-thumb {
-  background: var(--color-border, #d1d5db);
+  background: var(--border-color);
   border-radius: 3px;
 }
 
@@ -194,8 +179,8 @@ const handleViewAll = () => {
 
 /* Loading skeleton */
 .tutor-skeleton {
-  background: var(--color-bg-primary, white);
-  border-radius: 12px;
+  background: var(--surface-card);
+  border-radius: var(--radius-lg);
   padding: 16px;
   width: 280px;
 }
@@ -204,7 +189,12 @@ const handleViewAll = () => {
   width: 100%;
   height: 160px;
   border-radius: 8px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--border-color) 35%, transparent) 25%,
+    color-mix(in srgb, var(--border-color) 55%, transparent) 50%,
+    color-mix(in srgb, var(--border-color) 35%, transparent) 75%
+  );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   margin-bottom: 12px;
@@ -219,7 +209,12 @@ const handleViewAll = () => {
 .skeleton-line {
   height: 14px;
   border-radius: 4px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--border-color) 35%, transparent) 25%,
+    color-mix(in srgb, var(--border-color) 55%, transparent) 50%,
+    color-mix(in srgb, var(--border-color) 35%, transparent) 75%
+  );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
@@ -248,7 +243,7 @@ const handleViewAll = () => {
 .error-state {
   text-align: center;
   padding: 32px;
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--text-muted);
 }
 
 @media (max-width: 640px) {

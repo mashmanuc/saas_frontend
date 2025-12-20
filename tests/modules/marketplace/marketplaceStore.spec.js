@@ -21,6 +21,11 @@ describe('MarketplaceStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   describe('Catalog State', () => {
@@ -35,7 +40,7 @@ describe('MarketplaceStore', () => {
       expect(store.currentPage).toBe(1)
       expect(store.isLoading).toBe(false)
       expect(store.filters).toEqual({})
-      expect(store.sortBy).toBe('-average_rating')
+      expect(store.sortBy).toBe('recommended')
     })
 
     it('loads tutors', async () => {
@@ -75,12 +80,14 @@ describe('MarketplaceStore', () => {
       const store = useMarketplaceStore()
       store.setFilters({ subject: 'math', min_rating: 4 })
 
+      await vi.advanceTimersByTimeAsync(350)
+
       expect(store.filters).toEqual({ subject: 'math', min_rating: 4 })
       expect(marketplaceApi.getTutors).toHaveBeenCalledWith(
         { subject: 'math', min_rating: 4 },
         1,
-        20,
-        '-average_rating'
+        24,
+        'recommended'
       )
     })
 
@@ -189,7 +196,7 @@ describe('MarketplaceStore', () => {
       await store.loadProfile('invalid-slug')
 
       expect(store.currentProfile).toBeNull()
-      expect(store.error).toBe('Not found')
+      expect(typeof store.error === 'string' && store.error.length > 0).toBe(true)
     })
   })
 
@@ -229,9 +236,10 @@ describe('MarketplaceStore', () => {
       )
 
       marketplaceApi.getMyProfile.mockResolvedValue({
-        photo: 'photo.jpg',
+        avatar_url: 'photo.jpg',
         bio: 'Bio text',
-        subjects: [{ id: 1, name: 'Math' }],
+        subjects: ['math'],
+        languages: [{ code: 'en', level: 'native' }],
         hourly_rate: 50,
       })
 

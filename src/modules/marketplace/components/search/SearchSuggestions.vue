@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // TASK F5: Search Suggestions Component
 import { User, BookOpen, FolderOpen } from 'lucide-vue-next'
+import { useI18n } from 'vue-i18n'
 import type { Suggestion } from '../../api/marketplace'
 
 defineProps<{
@@ -12,6 +13,8 @@ defineProps<{
 const emit = defineEmits<{
   select: [suggestion: Suggestion]
 }>()
+
+const { t } = useI18n()
 
 const getIcon = (type: string) => {
   switch (type) {
@@ -29,7 +32,7 @@ const getIcon = (type: string) => {
   <div class="suggestions-list">
     <div v-if="loading" class="loading">
       <div class="spinner" />
-      Loading suggestions...
+      {{ t('common.loading') }}
     </div>
 
     <ul v-else>
@@ -72,15 +75,15 @@ const getIcon = (type: string) => {
   align-items: center;
   gap: 12px;
   padding: 16px;
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--text-muted);
   font-size: 14px;
 }
 
 .spinner {
   width: 16px;
   height: 16px;
-  border: 2px solid var(--color-border, #e5e7eb);
-  border-top-color: var(--color-primary, #3b82f6);
+  border: 2px solid var(--border-color);
+  border-top-color: var(--accent-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -102,7 +105,7 @@ const getIcon = (type: string) => {
 
 .suggestion-item:hover,
 .suggestion-item.is-selected {
-  background: var(--color-bg-secondary, #f5f5f5);
+  background: var(--surface-card-muted);
 }
 
 .suggestion-icon {
@@ -111,9 +114,9 @@ const getIcon = (type: string) => {
   justify-content: center;
   width: 32px;
   height: 32px;
-  background: var(--color-bg-secondary, #f5f5f5);
+  background: var(--surface-card-muted);
   border-radius: 8px;
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--text-muted);
 }
 
 .suggestion-content {
@@ -125,7 +128,7 @@ const getIcon = (type: string) => {
   display: block;
   font-size: 14px;
   font-weight: 500;
-  color: var(--color-text-primary, #111827);
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -134,7 +137,7 @@ const getIcon = (type: string) => {
 .suggestion-category {
   display: block;
   font-size: 12px;
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--text-muted);
   margin-top: 2px;
 }
 

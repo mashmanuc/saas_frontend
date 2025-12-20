@@ -57,8 +57,8 @@ function getIconSize(): number {
   border-radius: 6px;
   font-size: 0.75rem;
   font-weight: 500;
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--surface-card-muted);
+  color: var(--text-secondary);
 }
 
 .badge--sm {
@@ -71,23 +71,23 @@ function getIconSize(): number {
 }
 
 .badge--verified {
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: color-mix(in srgb, var(--info-bg) 16%, transparent);
+  color: color-mix(in srgb, var(--info-bg) 72%, var(--text-primary));
 }
 
 .badge--top_rated {
-  background: #fef3c7;
-  color: #b45309;
+  background: color-mix(in srgb, var(--warning-bg) 16%, transparent);
+  color: color-mix(in srgb, var(--warning-bg) 72%, var(--text-primary));
 }
 
 .badge--fast_response {
-  background: #d1fae5;
-  color: #047857;
+  background: color-mix(in srgb, var(--success-bg) 16%, transparent);
+  color: color-mix(in srgb, var(--success-bg) 72%, var(--text-primary));
 }
 
 .badge--experienced {
-  background: #ede9fe;
-  color: #6d28d9;
+  background: color-mix(in srgb, var(--accent-primary) 14%, transparent);
+  color: var(--accent-primary);
 }
 
 .badge-name {

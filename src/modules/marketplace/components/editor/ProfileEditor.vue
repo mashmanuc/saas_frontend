@@ -1,3 +1,118 @@
+<style scoped>
+.choice-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.choice-pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.85rem;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.choice-pill input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  margin: 0;
+}
+
+.privacy-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.privacy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--space-lg);
+}
+
+.privacy-card {
+  background: var(--surface-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-xs);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.privacy-card legend,
+.privacy-card-header {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.privacy-card-title {
+  font: var(--font-subtitle);
+  color: var(--text-primary);
+}
+
+.privacy-card-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.pill-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.5rem;
+}
+
+.privacy-section .choice-pill {
+  justify-content: center;
+  color: var(--text-secondary);
+  background: var(--surface-base);
+}
+
+.privacy-section .choice-pill.is-active {
+  border-color: var(--accent-primary);
+  background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+  color: var(--accent-primary);
+}
+
+.inline-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.privacy-card input[type='number'],
+.privacy-card input[type='text'] {
+  width: 100%;
+}
+
+.span-2 {
+  grid-column: span 2;
+}
+
+@media (max-width: 768px) {
+  .span-2 {
+    grid-column: span 1;
+  }
+}
+</style>
+
 <script setup lang="ts">
 // TASK MF10: ProfileEditor component
 import { ref, watch, computed } from 'vue'
@@ -17,6 +132,7 @@ import type {
   TutorProfilePatchPayload,
   LanguageLevel,
 } from '../../api/marketplace'
+import type { MarketplaceValidationErrors } from '../../utils/apiErrors'
 
 type FormState = TutorProfileFormModel & {
   newSubject: string
@@ -28,6 +144,7 @@ interface Props {
   profile: TutorProfile
   saving: boolean
   filterOptions?: FilterOptions | null
+  apiErrors?: MarketplaceValidationErrors | null
 }
 
 function addSubject() {
@@ -58,8 +175,12 @@ function removeLanguage(code: string) {
 
 const props = defineProps<Props>()
 
-const { t, locale } = useI18n()
+const { t, te, locale } = useI18n()
 const useNativeLanguageNames = computed(() => locale.value === 'uk')
+
+function tr(key: string, fallback: string) {
+  return te(key) ? t(key) : fallback
+}
 
 const auth = useAuthStore()
 
@@ -98,7 +219,19 @@ async function handleAvatarSelected(e: Event) {
 
 const emit = defineEmits<{
   (e: 'save', data: TutorProfilePatchPayload): void
+  (e: 'publish'): void
+  (e: 'unpublish'): void
 }>()
+
+function handlePublishToggle(event: Event) {
+  const input = event.target as HTMLInputElement | null
+  if (!input) return
+  if (input.checked) {
+    emit('publish')
+  } else {
+    emit('unpublish')
+  }
+}
 
 const formData = ref<FormState>({
   ...fromApi(props.profile),
@@ -127,36 +260,118 @@ function handleSubmit() {
 
 const currencies = ['USD', 'EUR', 'GBP', 'UAH', 'PLN']
 
-const errors = computed(() => {
+const localErrors = computed(() => {
   const next: Record<string, string> = {}
   if (!formData.value.headline || formData.value.headline.trim().length < 3) {
-    next.headline = 'Headline is required (min 3 characters).'
+    next.headline = t('marketplace.profile.editor.validation.headline')
   }
   if (!formData.value.bio || formData.value.bio.trim().length < 10) {
-    next.bio = 'Bio is required (min 10 characters).'
+    next.bio = t('marketplace.profile.editor.validation.bio')
   }
   if (typeof formData.value.hourly_rate !== 'number' || formData.value.hourly_rate <= 0) {
-    next.hourly_rate = 'Hourly rate must be greater than 0.'
+    next.hourly_rate = t('marketplace.profile.editor.validation.hourlyRate')
   }
   if (!Array.isArray(formData.value.subjects) || formData.value.subjects.length === 0) {
-    next.subjects = 'Select at least one subject.'
+    next.subjects = t('marketplace.profile.editor.validation.subjects')
   }
   if (!Array.isArray(formData.value.languages) || formData.value.languages.length === 0) {
-    next.languages = 'Select at least one language.'
+    next.languages = t('marketplace.profile.editor.validation.languages')
+  }
+  return next
+})
+
+const errors = computed(() => {
+  const next: Record<string, string> = { ...localErrors.value }
+  const api = props.apiErrors
+  if (api && typeof api === 'object') {
+    for (const [field, messages] of Object.entries(api)) {
+      if (!field) continue
+      const text = Array.isArray(messages) ? messages.filter(Boolean).join(', ') : String(messages)
+      if (text.trim().length > 0) next[field] = text
+    }
   }
   return next
 })
 
 const canSubmit = computed(() => Object.keys(errors.value).length === 0)
 
+const FALLBACK_SUBJECT_CODES = [
+  'english',
+  'spanish',
+  'french',
+  'german',
+  'ukrainian',
+  'polish',
+  'chinese',
+  'japanese',
+  'mathematics',
+  'physics',
+  'chemistry',
+  'biology',
+  'computer-science',
+  'business-english',
+  'marketing',
+  'finance',
+  'management',
+  'piano',
+  'guitar',
+  'drawing',
+  'photography',
+  'ielts',
+  'toefl',
+  'sat',
+  'gre',
+] as const
+
+const fallbackSubjectOptions = computed(() =>
+  FALLBACK_SUBJECT_CODES.map((code) => ({
+    value: code,
+    label: t(`marketplace.subjects.${code}`),
+  }))
+)
+
 const subjectOptions = computed(() => {
-  const opts = props.filterOptions?.subjects || []
-  return opts.map((o) => ({ value: o.value, label: o.label }))
+  const opts = props.filterOptions?.subjects
+  if (Array.isArray(opts) && opts.length > 0) {
+    return opts.map((o) => ({ value: o.value, label: o.label }))
+  }
+  return fallbackSubjectOptions.value
 })
 
+const FALLBACK_COUNTRIES = [
+  { value: 'UA', labelKey: 'ukraine' },
+  { value: 'PL', labelKey: 'poland' },
+  { value: 'DE', labelKey: 'germany' },
+  { value: 'ES', labelKey: 'spain' },
+  { value: 'FR', labelKey: 'france' },
+  { value: 'IT', labelKey: 'italy' },
+  { value: 'GB', labelKey: 'unitedKingdom' },
+  { value: 'US', labelKey: 'unitedStates' },
+  { value: 'CA', labelKey: 'canada' },
+  { value: 'AU', labelKey: 'australia' },
+  { value: 'TR', labelKey: 'turkey' },
+  { value: 'IN', labelKey: 'india' },
+  { value: 'CN', labelKey: 'china' },
+  { value: 'BR', labelKey: 'brazil' },
+  { value: 'CZ', labelKey: 'czechia' },
+  { value: 'SK', labelKey: 'slovakia' },
+  { value: 'RO', labelKey: 'romania' },
+  { value: 'HU', labelKey: 'hungary' },
+] as const
+
+const fallbackCountryOptions = computed(() =>
+  FALLBACK_COUNTRIES.map((country) => ({
+    value: country.value,
+    label: t(`marketplace.countries.${country.labelKey}`),
+  }))
+)
+
 const countryOptions = computed(() => {
-  const opts = props.filterOptions?.countries || []
-  return opts.map((o) => ({ value: o.value, label: o.label }))
+  const opts = props.filterOptions?.countries
+  if (Array.isArray(opts) && opts.length > 0) {
+    return opts.map((o) => ({ value: o.value, label: o.label }))
+  }
+  return fallbackCountryOptions.value
 })
 
 const timezoneOptions = TIMEZONES
@@ -176,10 +391,37 @@ const languageLevels = computed<Array<{ value: LanguageLevel; label: string }>>(
   { value: 'fluent', label: t('marketplace.profile.editor.languageLevels.fluent') },
   { value: 'native', label: t('marketplace.profile.editor.languageLevels.native') },
 ])
+
+const genderOptions = computed(() => [
+  { value: 'female', label: t('marketplace.profile.editor.genderOptions.female') },
+  { value: 'male', label: t('marketplace.profile.editor.genderOptions.male') },
+  { value: 'other', label: t('marketplace.profile.editor.genderOptions.other') },
+  { value: '', label: t('marketplace.profile.editor.genderOptions.unspecified') },
+])
 </script>
 
 <template>
   <form class="profile-editor" data-test="marketplace-editor-form" @submit.prevent="handleSubmit">
+    <section class="editor-section">
+      <h2>{{ t('marketplace.profile.publish') }}</h2>
+
+      <div class="form-group">
+        <label class="inline-toggle">
+          <input
+            type="checkbox"
+            :checked="Boolean(profile.is_public)"
+            :disabled="saving || profile.status !== 'approved'"
+            data-test="marketplace-editor-publish-toggle"
+            @change="handlePublishToggle"
+          />
+          {{ profile.is_public ? t('marketplace.profile.unpublish') : t('marketplace.profile.publish') }}
+        </label>
+        <p v-if="profile.status !== 'approved'" class="hint">
+          {{ t('marketplace.profile.status.pending_review') }}
+        </p>
+      </div>
+    </section>
+
     <section class="editor-section">
       <h2>{{ t('marketplace.profile.editor.photoTitle') }}</h2>
 
@@ -196,7 +438,7 @@ const languageLevels = computed<Array<{ value: LanguageLevel; label: string }>>(
         </div>
 
         <label class="btn btn-secondary photo-upload" :class="{ disabled: saving || isAvatarUploading }">
-          {{ isAvatarUploading ? (t('profile.avatar.uploading') || 'Оновлюємо…') : (t('profile.avatar.update') || 'Оновити фото') }}
+          {{ isAvatarUploading ? tr('profile.avatar.uploading', 'Оновлюємо…') : tr('profile.avatar.update', 'Оновити фото') }}
           <input
             type="file"
             accept="image/*"
@@ -209,27 +451,36 @@ const languageLevels = computed<Array<{ value: LanguageLevel; label: string }>>(
       </div>
     </section>
 
-    <section class="editor-section">
+    <section class="editor-section privacy-section">
       <h2>{{ t('marketplace.profile.editor.privacyTitle') }}</h2>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label for="gender">{{ t('marketplace.profile.editor.genderLabel') }}</label>
-          <input
-            id="gender"
-            v-model="formData.gender"
-            type="text"
-            :placeholder="t('marketplace.profile.editor.genderPlaceholder')"
-            data-test="marketplace-editor-gender"
-          />
-          <label class="checkbox-label">
+      <div class="privacy-grid">
+        <fieldset class="privacy-card span-2">
+          <legend class="privacy-card-header">
+            <span class="privacy-card-title">{{ t('marketplace.profile.editor.genderLabel') }}</span>
+            <p class="privacy-card-hint">{{ t('marketplace.profile.editor.genderPlaceholder') }}</p>
+          </legend>
+          <div class="choice-group pill-grid" data-test="marketplace-editor-gender">
+            <label
+              v-for="option in genderOptions"
+              :key="option.value"
+              :class="['choice-pill', { 'is-active': formData.gender === option.value }]"
+            >
+              <input v-model="formData.gender" type="radio" :value="option.value" />
+              <span>{{ option.label }}</span>
+            </label>
+          </div>
+          <label class="inline-toggle">
             <input v-model="formData.show_gender" type="checkbox" data-test="marketplace-editor-show-gender" />
             {{ t('marketplace.profile.editor.showGender') }}
           </label>
-        </div>
+        </fieldset>
 
-        <div class="form-group">
-          <label for="birth_year">{{ t('marketplace.profile.editor.birthYearLabel') }}</label>
+        <div class="privacy-card">
+          <div class="privacy-card-header">
+            <span class="privacy-card-title">{{ t('marketplace.profile.editor.birthYearLabel') }}</span>
+            <p class="privacy-card-hint">{{ t('marketplace.profile.editor.birthYearPlaceholder') }}</p>
+          </div>
           <input
             id="birth_year"
             v-model.number="formData.birth_year"
@@ -239,30 +490,36 @@ const languageLevels = computed<Array<{ value: LanguageLevel; label: string }>>(
             :placeholder="t('marketplace.profile.editor.birthYearPlaceholder')"
             data-test="marketplace-editor-birth-year"
           />
-          <label class="checkbox-label">
+          <label class="inline-toggle">
             <input v-model="formData.show_age" type="checkbox" data-test="marketplace-editor-show-age" />
             {{ t('marketplace.profile.editor.showAge') }}
           </label>
         </div>
-      </div>
 
-      <div class="form-group">
-        <label for="telegram">{{ t('marketplace.profile.editor.telegramLabel') }}</label>
-        <input
-          id="telegram"
-          v-model="formData.telegram_username"
-          type="text"
-          :placeholder="t('marketplace.profile.editor.telegramPlaceholder')"
-          data-test="marketplace-editor-telegram"
-        />
-        <label class="checkbox-label">
-          <input v-model="formData.show_telegram" type="checkbox" data-test="marketplace-editor-show-telegram" />
-          {{ t('marketplace.profile.editor.showTelegram') }}
-        </label>
-      </div>
+        <div class="privacy-card">
+          <div class="privacy-card-header">
+            <span class="privacy-card-title">{{ t('marketplace.profile.editor.telegramLabel') }}</span>
+            <p class="privacy-card-hint">{{ t('marketplace.profile.editor.telegramPlaceholder') }}</p>
+          </div>
+          <input
+            id="telegram"
+            v-model="formData.telegram_username"
+            type="text"
+            :placeholder="t('marketplace.profile.editor.telegramPlaceholder')"
+            data-test="marketplace-editor-telegram"
+          />
+          <label class="inline-toggle">
+            <input v-model="formData.show_telegram" type="checkbox" data-test="marketplace-editor-show-telegram" />
+            {{ t('marketplace.profile.editor.showTelegram') }}
+          </label>
+        </div>
 
-      <div class="form-group">
-        <CertificationsEditor />
+        <div class="privacy-card span-2">
+          <div class="privacy-card-header">
+            <span class="privacy-card-title">{{ t('marketplace.profile.editor.certificationsTitle') }}</span>
+          </div>
+          <CertificationsEditor />
+        </div>
       </div>
     </section>
 
@@ -475,21 +732,21 @@ const languageLevels = computed<Array<{ value: LanguageLevel; label: string }>>(
 .photo-preview {
   width: 96px;
   height: 96px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   object-fit: cover;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-color);
 }
 
 .photo-placeholder {
   width: 96px;
   height: 96px;
-  border-radius: 12px;
-  background: #f3f4f6;
-  border: 1px solid #e5e7eb;
+  border-radius: var(--radius-lg);
+  background: var(--surface-card-muted);
+  border: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #6b7280;
+  color: var(--text-muted);
   font-size: 0.875rem;
 }
 
@@ -511,17 +768,17 @@ const languageLevels = computed<Array<{ value: LanguageLevel; label: string }>>(
 }
 
 .editor-section {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: var(--surface-card);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-sm);
 }
 
 .editor-section h2 {
   font-size: 1.125rem;
   font-weight: 600;
   margin: 0 0 1.25rem;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .form-group {
@@ -536,7 +793,7 @@ const languageLevels = computed<Array<{ value: LanguageLevel; label: string }>>(
   display: block;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--text-secondary);
   margin-bottom: 0.375rem;
 }
 
@@ -545,7 +802,7 @@ const languageLevels = computed<Array<{ value: LanguageLevel; label: string }>>(
 .form-group select {
   width: 100%;
   padding: 0.625rem 0.875rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   font-size: 0.9375rem;
   transition: border-color 0.2s, box-shadow 0.2s;
@@ -555,7 +812,7 @@ const languageLevels = computed<Array<{ value: LanguageLevel; label: string }>>(
 .form-group textarea:focus,
 .form-group select:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: var(--accent-primary);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
@@ -567,14 +824,14 @@ const languageLevels = computed<Array<{ value: LanguageLevel; label: string }>>(
 .hint {
   display: block;
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--text-muted);
   margin-top: 0.25rem;
 }
 
 .field-error {
   margin-top: 0.25rem;
   font-size: 0.75rem;
-  color: #b91c1c;
+  color: color-mix(in srgb, var(--danger-bg) 72%, var(--text-primary));
 }
 
 .list-editor {
@@ -602,14 +859,14 @@ const languageLevels = computed<Array<{ value: LanguageLevel; label: string }>>(
   gap: 0.5rem;
   align-items: center;
   padding: 0.5rem;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
+  background: var(--surface-card-muted);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
 }
 
 .item-label {
   font-size: 0.875rem;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .form-row {
@@ -641,32 +898,5 @@ const languageLevels = computed<Array<{ value: LanguageLevel; label: string }>>(
   display: flex;
   justify-content: flex-end;
   padding-top: 1rem;
-}
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.9375rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-primary {
-  background: #3b82f6;
-  color: white;
-}
-
-.btn-primary:hover {
-  background: #2563eb;
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 </style>

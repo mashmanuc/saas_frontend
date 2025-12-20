@@ -6,6 +6,8 @@ import { resolveMediaUrl } from '@/utils/media'
 import Rating from '../shared/Rating.vue'
 import BadgeIcon from '../shared/Badge.vue'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { toDisplayText } from '../../utils/formatters'
 
 interface Props {
   profile: TutorProfile
@@ -13,10 +15,34 @@ interface Props {
 
 const props = defineProps<Props>()
 
+const { t } = useI18n()
+
 const avatarUrl = computed(() => {
   const value = props.profile?.user?.avatar_url || ''
   return value ? resolveMediaUrl(value) : ''
 })
+
+const fullName = computed(() => {
+  const raw = props.profile?.user?.full_name
+  if (typeof raw === 'string' && raw.trim().length > 0) return raw
+  return t('common.notSpecified')
+})
+
+const avatarInitial = computed(() => {
+  const name = props.profile?.user?.full_name
+  if (typeof name === 'string' && name.trim().length > 0) {
+    return name.trim().charAt(0)
+  }
+  return 'T'
+})
+
+const headlineText = computed(() => {
+  const raw = props.profile?.headline
+  return typeof raw === 'string' && raw.trim().length > 0 ? raw : t('common.notSpecified')
+})
+
+const countryText = computed(() => toDisplayText((props.profile as any)?.country, t('common.notSpecified')))
+const timezoneText = computed(() => toDisplayText((props.profile as any)?.timezone, t('common.notSpecified')))
 
 const emit = defineEmits<{
   (e: 'back'): void
@@ -30,7 +56,7 @@ const emit = defineEmits<{
     <div class="header-content">
       <button class="back-btn" @click="emit('back')">
         <ArrowLeft :size="20" />
-        Back to Tutors
+        {{ t('marketplace.profile.backToCatalog') }}
       </button>
 
       <div class="profile-info">
@@ -38,34 +64,34 @@ const emit = defineEmits<{
           <img
             v-if="avatarUrl"
             :src="avatarUrl"
-            :alt="profile.user.full_name"
+            :alt="fullName"
             class="photo"
           />
           <div v-else class="photo-placeholder">
-            {{ profile.user.full_name.charAt(0) }}
+            {{ avatarInitial }}
           </div>
 
           <button
             v-if="profile.video_intro_url"
             class="video-btn"
-            title="Watch Introduction"
+            :title="t('marketplace.profile.watchIntro')"
           >
             <Play :size="24" />
           </button>
         </div>
 
         <div class="info">
-          <h1>{{ profile.user.full_name }}</h1>
-          <p class="headline">{{ profile.headline }}</p>
+          <h1>{{ fullName }}</h1>
+          <p class="headline">{{ headlineText }}</p>
 
           <div class="meta">
-            <div v-if="profile.country" class="meta-item">
+            <div class="meta-item">
               <MapPin :size="16" />
-              {{ profile.country }}
+              {{ countryText }}
             </div>
-            <div v-if="profile.timezone" class="meta-item">
+            <div class="meta-item">
               <Clock :size="16" />
-              {{ profile.timezone }}
+              {{ timezoneText }}
             </div>
           </div>
 
@@ -77,15 +103,15 @@ const emit = defineEmits<{
             />
             <div class="stat">
               <span class="stat-value">{{ profile.total_lessons }}</span>
-              <span class="stat-label">lessons</span>
+              <span class="stat-label">{{ t('marketplace.profile.stats.lessons') }}</span>
             </div>
             <div class="stat">
               <span class="stat-value">{{ profile.total_students }}</span>
-              <span class="stat-label">students</span>
+              <span class="stat-label">{{ t('marketplace.profile.stats.students') }}</span>
             </div>
           </div>
 
-          <div v-if="profile.badges.length > 0" class="badges">
+          <div v-if="Array.isArray(profile.badges) && profile.badges.length > 0" class="badges">
             <BadgeIcon
               v-for="badge in profile.badges"
               :key="badge.type"
@@ -101,7 +127,7 @@ const emit = defineEmits<{
 <style scoped>
 .profile-header {
   position: relative;
-  background: white;
+  background: var(--surface-card);
 }
 
 .header-bg {
@@ -110,7 +136,12 @@ const emit = defineEmits<{
   left: 0;
   right: 0;
   height: 200px;
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  background: radial-gradient(1200px circle at 20% 0%, color-mix(in srgb, var(--accent-primary) 28%, transparent), transparent 55%),
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--accent-primary) 85%, transparent),
+      color-mix(in srgb, var(--accent-primary) 55%, transparent)
+    );
 }
 
 .header-content {
@@ -125,7 +156,7 @@ const emit = defineEmits<{
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background: rgba(255, 255, 255, 0.2);
+  background: color-mix(in srgb, var(--surface-card) 20%, transparent);
   border: none;
   border-radius: 8px;
   color: white;
@@ -136,7 +167,7 @@ const emit = defineEmits<{
 }
 
 .back-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: color-mix(in srgb, var(--surface-card) 30%, transparent);
 }
 
 .profile-info {
@@ -162,9 +193,9 @@ const emit = defineEmits<{
 .photo-placeholder {
   width: 180px;
   height: 180px;
-  border-radius: 16px;
-  border: 4px solid white;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border-radius: var(--radius-xl);
+  border: 4px solid var(--surface-card);
+  box-shadow: var(--shadow-lg);
 }
 
 .photo {
@@ -177,8 +208,8 @@ const emit = defineEmits<{
   justify-content: center;
   font-size: 4rem;
   font-weight: 600;
-  color: #9ca3af;
-  background: #e5e7eb;
+  color: var(--text-muted);
+  background: var(--surface-card-muted);
 }
 
 .video-btn {
@@ -190,12 +221,12 @@ const emit = defineEmits<{
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #3b82f6;
-  border: 3px solid white;
+  background: var(--accent-primary);
+  border: 3px solid var(--surface-card);
   border-radius: 50%;
   color: white;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-md);
   transition: transform 0.2s;
 }
 
@@ -211,12 +242,12 @@ const emit = defineEmits<{
   font-size: 1.75rem;
   font-weight: 700;
   margin: 0 0 0.5rem;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .headline {
   font-size: 1.125rem;
-  color: #6b7280;
+  color: var(--text-muted);
   margin: 0 0 1rem;
 }
 
@@ -231,7 +262,7 @@ const emit = defineEmits<{
   align-items: center;
   gap: 0.375rem;
   font-size: 0.9375rem;
-  color: #6b7280;
+  color: var(--text-muted);
 }
 
 .stats {
@@ -249,12 +280,12 @@ const emit = defineEmits<{
 .stat-value {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .stat-label {
   font-size: 0.8125rem;
-  color: #6b7280;
+  color: var(--text-muted);
 }
 
 .badges {

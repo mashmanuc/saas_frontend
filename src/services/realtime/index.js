@@ -57,6 +57,7 @@ class RealtimeService {
     this.emitter = createEmitter()
     this.backoff = INITIAL_BACKOFF_MS
     this.shouldReconnect = false
+    this.wsUnavailable = false
     this.heartbeatTimer = null
     this.reconnectTimer = null
     this.tokenRefreshCallback = null
@@ -245,6 +246,13 @@ class RealtimeService {
     this.status = READY_STATES.CLOSED
     this.emitter.emit('status', this.status)
     this.clearHeartbeat()
+
+    if (event?.code === 1006 && !this.wsUnavailable) {
+      this.wsUnavailable = true
+      this.shouldReconnect = false
+      this.options.logger?.warn?.('[realtime] websocket unavailable, realtime disabled')
+      return
+    }
 
     // Handle 401 Unauthorized - emit auth_required event
     if (event?.code === 4001 || event?.code === 4003 || event?.reason?.includes('401')) {

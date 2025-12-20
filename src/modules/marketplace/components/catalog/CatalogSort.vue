@@ -48,20 +48,20 @@ function handleChange(event: Event) {
 }
 
 .icon {
-  color: #6b7280;
+  color: var(--text-muted);
 }
 
 select {
   padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 0.875rem;
-  background: white;
+  background: var(--surface-card);
   cursor: pointer;
 }
 
 select:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: var(--accent-primary);
 }
 </style>

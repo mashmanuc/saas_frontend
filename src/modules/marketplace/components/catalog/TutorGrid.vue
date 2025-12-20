@@ -11,19 +11,19 @@ defineProps<Props>()
 </script>
 
 <template>
-  <div class="tutor-grid" :class="{ loading }" data-test="marketplace-grid">
+  <div class="tutor-list" :class="{ loading }" data-test="marketplace-grid">
     <TutorCard v-for="tutor in tutors" :key="tutor.id" :tutor="tutor" data-test="marketplace-tutor-card" />
   </div>
 </template>
 
 <style scoped>
-.tutor-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.5rem;
+.tutor-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
 }
 
-.tutor-grid.loading {
+.tutor-list.loading {
   opacity: 0.6;
   pointer-events: none;
 }

@@ -52,7 +52,7 @@ async function submit() {
   } catch (e: any) {
     const info = parseMarketplaceApiError(e)
     fieldErrors.value = info.fields
-    errorMessage.value = mapMarketplaceErrorToMessage(info, 'Не вдалося надіслати відгук.')
+    errorMessage.value = mapMarketplaceErrorToMessage(info, t('marketplace.profile.reviews.write.sendError'))
     notifyError(errorMessage.value)
   } finally {
     isSubmitting.value = false
@@ -130,7 +130,7 @@ async function submit() {
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(17, 24, 39, 0.45);
+  background: color-mix(in srgb, var(--text-primary) 45%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -140,9 +140,9 @@ async function submit() {
 
 .modal {
   width: min(560px, 100%);
-  background: white;
-  border-radius: 14px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  background: var(--surface-card);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
 }
 
@@ -151,7 +151,7 @@ async function submit() {
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.25rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .top h3 {
@@ -186,7 +186,7 @@ async function submit() {
 
 .label {
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .rating-pills {
@@ -196,8 +196,8 @@ async function submit() {
 }
 
 .pill {
-  border: 1px solid #e5e7eb;
-  background: white;
+  border: 1px solid var(--border-color);
+  background: var(--surface-card);
   border-radius: 999px;
   padding: 0.375rem 0.75rem;
   cursor: pointer;
@@ -205,9 +205,9 @@ async function submit() {
 }
 
 .pill.active {
-  border-color: #3b82f6;
-  color: #1d4ed8;
-  background: #eff6ff;
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
 }
 
 .pill:disabled {
@@ -217,17 +217,17 @@ async function submit() {
 
 .textarea {
   width: 100%;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
   padding: 0.75rem;
   resize: vertical;
 }
 
 .error {
-  color: #b91c1c;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 12px;
+  color: color-mix(in srgb, var(--danger-bg) 72%, var(--text-primary));
+  background: color-mix(in srgb, var(--danger-bg) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger-bg) 30%, transparent);
+  border-radius: var(--radius-lg);
   padding: 0.75rem;
   margin-top: 0.5rem;
 }
@@ -238,7 +238,7 @@ async function submit() {
 
 .field-error {
   font-size: 0.875rem;
-  color: #991b1b;
+  color: color-mix(in srgb, var(--danger-bg) 72%, var(--text-primary));
 }
 
 .actions {
@@ -246,35 +246,6 @@ async function submit() {
   justify-content: flex-end;
   gap: 0.75rem;
   padding: 1rem 1.25rem;
-  border-top: 1px solid #e5e7eb;
-}
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-primary {
-  background: #3b82f6;
-  color: white;
-}
-
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: #f3f4f6;
-  color: #111827;
+  border-top: 1px solid var(--border-color);
 }
 </style>

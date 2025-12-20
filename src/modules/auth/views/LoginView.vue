@@ -26,6 +26,24 @@
         {{ auth.error }}
       </p>
 
+      <RouterLink
+        to="/auth/forgot-password"
+        class="block text-sm hover:underline"
+        style="color: var(--accent);"
+      >
+        {{ $t('auth.login.forgotPassword') }}
+      </RouterLink>
+
+      <button
+        v-if="showResendVerify"
+        type="button"
+        class="block text-left text-sm hover:underline"
+        style="color: var(--accent);"
+        @click="goToCheckEmail"
+      >
+        {{ $t('auth.login.resendVerifyCta') }}
+      </button>
+
       <Button class="w-full" type="submit" :disabled="auth.loading">
         <span v-if="auth.loading">{{ $t('auth.login.loading') }}</span>
         <span v-else>{{ $t('auth.login.submit') }}</span>
@@ -42,7 +60,7 @@
 </template>
 
 <script setup>
-import { reactive } from 'vue'
+import { computed, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../store/authStore'
 import Button from '../../../ui/Button.vue'
@@ -58,6 +76,12 @@ const form = reactive({
   email: '',
   password: '',
 })
+
+const showResendVerify = computed(() => auth.lastErrorCode === 'email_not_verified' && Boolean(form.email))
+
+function goToCheckEmail() {
+  router.push({ name: 'auth-check-email', query: { email: form.email } })
+}
 
 async function onSubmit() {
   try {

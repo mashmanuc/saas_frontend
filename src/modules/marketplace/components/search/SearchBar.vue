@@ -8,6 +8,7 @@ import SearchHistory from './SearchHistory.vue'
 import SearchSuggestions from './SearchSuggestions.vue'
 import type { Suggestion } from '../../api/marketplace'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 const props = withDefaults(
   defineProps<{
@@ -16,10 +17,12 @@ const props = withDefaults(
     loading?: boolean
   }>(),
   {
-    placeholder: 'Search tutors, subjects...',
+    placeholder: undefined,
     loading: false,
   }
 )
+
+const { t } = useI18n()
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
@@ -155,7 +158,7 @@ const handleSuggestionSelect = (suggestion: Suggestion) => {
         ref="inputRef"
         type="text"
         :value="modelValue"
-        :placeholder="placeholder"
+        :placeholder="placeholder || t('marketplace.search.placeholder')"
         class="search-input"
         @input="handleInput"
         @focus="handleFocus"
@@ -190,9 +193,9 @@ const handleSuggestionSelect = (suggestion: Suggestion) => {
           class="dropdown-section"
         >
           <div class="section-header">
-            <span>Recent Searches</span>
+            <span>{{ t('marketplace.search.recentTitle') }}</span>
             <button class="clear-history" type="button" @click="clearHistory">
-              Clear
+              {{ t('marketplace.filters.clear') }}
             </button>
           </div>
           <SearchHistory
@@ -205,7 +208,7 @@ const handleSuggestionSelect = (suggestion: Suggestion) => {
 
         <!-- Suggestions -->
         <div v-if="suggestions.length > 0" class="dropdown-section">
-          <div class="section-header">Suggestions</div>
+          <div class="section-header">{{ t('marketplace.search.suggestionsTitle') }}</div>
           <SearchSuggestions
             :suggestions="suggestions"
             :selected-index="selectedIndex - searchHistory.length"
@@ -219,7 +222,7 @@ const handleSuggestionSelect = (suggestion: Suggestion) => {
           v-if="modelValue && !isLoadingSuggestions && suggestions.length === 0"
           class="no-suggestions"
         >
-          Press Enter to search for "{{ modelValue }}"
+          {{ t('marketplace.search.pressEnter', { query: modelValue }) }}
         </div>
       </div>
     </Transition>
@@ -236,20 +239,20 @@ const handleSuggestionSelect = (suggestion: Suggestion) => {
 .search-input-wrapper {
   display: flex;
   align-items: center;
-  background: var(--color-bg-primary, white);
-  border: 2px solid var(--color-border, #e5e7eb);
+  background: var(--surface-card);
+  border: 2px solid var(--border-color);
   border-radius: 12px;
   padding: 0 16px;
   transition: all 0.2s ease;
 }
 
 .search-bar.is-focused .search-input-wrapper {
-  border-color: var(--color-primary, #3b82f6);
+  border-color: var(--accent-primary);
   box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
 }
 
 .search-icon {
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--text-muted);
   flex-shrink: 0;
 }
 
@@ -260,11 +263,11 @@ const handleSuggestionSelect = (suggestion: Suggestion) => {
   padding: 14px 12px;
   font-size: 16px;
   outline: none;
-  color: var(--color-text-primary, #111827);
+  color: var(--text-primary);
 }
 
 .search-input::placeholder {
-  color: var(--color-text-secondary, #9ca3af);
+  color: var(--text-muted);
 }
 
 .clear-btn,
@@ -276,24 +279,24 @@ const handleSuggestionSelect = (suggestion: Suggestion) => {
   border: none;
   padding: 8px;
   cursor: pointer;
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--text-muted);
   transition: color 0.2s;
 }
 
 .clear-btn:hover,
 .submit-btn:hover {
-  color: var(--color-text-primary, #111827);
+  color: var(--text-primary);
 }
 
 .submit-btn {
-  background: var(--color-primary, #3b82f6);
+  background: var(--accent-primary);
   color: white;
   border-radius: 8px;
   margin-left: 8px;
 }
 
 .submit-btn:hover {
-  background: var(--color-primary-dark, #2563eb);
+  background: color-mix(in srgb, var(--accent-primary) 86%, transparent);
   color: white;
 }
 
@@ -318,8 +321,8 @@ const handleSuggestionSelect = (suggestion: Suggestion) => {
   left: 0;
   right: 0;
   margin-top: 8px;
-  background: var(--color-bg-primary, white);
-  border: 1px solid var(--color-border, #e5e7eb);
+  background: var(--surface-card);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   z-index: 100;
@@ -331,7 +334,7 @@ const handleSuggestionSelect = (suggestion: Suggestion) => {
 }
 
 .dropdown-section + .dropdown-section {
-  border-top: 1px solid var(--color-border, #e5e7eb);
+  border-top: 1px solid var(--border-color);
 }
 
 .section-header {
@@ -340,14 +343,14 @@ const handleSuggestionSelect = (suggestion: Suggestion) => {
   padding: 8px 16px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--text-muted);
   text-transform: uppercase;
 }
 
 .clear-history {
   background: none;
   border: none;
-  color: var(--color-primary, #3b82f6);
+  color: var(--accent-primary);
   cursor: pointer;
   font-size: 12px;
   font-weight: 500;
@@ -361,7 +364,7 @@ const handleSuggestionSelect = (suggestion: Suggestion) => {
 .no-suggestions {
   padding: 16px;
   text-align: center;
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--text-muted);
   font-size: 14px;
 }
 

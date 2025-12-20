@@ -2,6 +2,29 @@
 
 import apiClient from '@/utils/apiClient'
 
+async function fetchFirstOk<T>(paths: string[]): Promise<T> {
+  let lastErr: unknown = null
+
+  for (const path of paths) {
+    try {
+      const res = await apiClient.get(path)
+      return res as unknown as T
+    } catch (err: any) {
+      const status = err?.response?.status
+      lastErr = err
+      if (status === 404) continue
+      throw err
+    }
+  }
+
+  throw lastErr ?? new Error('not_found')
+}
+
+function isHttp404(err: unknown): boolean {
+  const status = (err as any)?.response?.status
+  return status === 404
+}
+
 // Types
 export interface Education {
   id: number
@@ -41,8 +64,8 @@ export type PresignCertificationResponse = {
 
 export type CreateCertificationPayload = {
   title: string
-  issuer: string
-  issued_year: number
+  issuer?: string
+  issued_year?: number | null
   asset_key: string
   is_public: boolean
 }
@@ -395,7 +418,8 @@ export const marketplaceApi = {
 
   async getMyCertifications(): Promise<Certification[]> {
     const response = await apiClient.get('/v1/marketplace/tutors/me/certifications/')
-    return response as unknown as Certification[]
+    const results = (response as any)?.results
+    return (Array.isArray(results) ? results : []) as Certification[]
   },
 
   async createMyCertification(payload: CreateCertificationPayload): Promise<Certification> {
@@ -449,7 +473,24 @@ export const marketplaceApi = {
    * Get filter options (subjects, countries, languages).
    */
   async getFilterOptions(): Promise<FilterOptions> {
-    const response = (await apiClient.get('/v1/marketplace/filters/')) as unknown as RawFilterOptionsResponse
+    let response: RawFilterOptionsResponse
+    try {
+      response = (await fetchFirstOk<RawFilterOptionsResponse>([
+        '/v1/marketplace/filters/',
+        '/v1/marketplace/filter-options/',
+        '/v1/marketplace/filters/options/',
+      ])) as unknown as RawFilterOptionsResponse
+    } catch (err) {
+      if (isHttp404(err)) {
+        return {
+          subjects: [],
+          countries: [],
+          languages: [],
+          priceRange: { min: 0, max: 0 },
+        }
+      }
+      throw err
+    }
     const rawPrice = response.priceRange || response.price_range || {}
 
     const normalizeOption = (
@@ -571,8 +612,26 @@ export const marketplaceApi = {
    * Get extended filter options.
    */
   async getExtendedFilterOptions(): Promise<ExtendedFilterOptions> {
-    const response = await apiClient.get('/v1/marketplace/filters/')
-    return response as unknown as ExtendedFilterOptions
+    try {
+      const response = await fetchFirstOk<ExtendedFilterOptions>([
+        '/v1/marketplace/filters/',
+        '/v1/marketplace/filter-options/',
+        '/v1/marketplace/filters/options/',
+      ])
+      return response as unknown as ExtendedFilterOptions
+    } catch (err) {
+      if (isHttp404(err)) {
+        return {
+          categories: [],
+          subjects: [],
+          countries: [],
+          languages: [],
+          priceRange: { min: 0, max: 0, avg: 0 },
+          experienceRange: { min: 0, max: 0 },
+        }
+      }
+      throw err
+    }
   },
 
   /**

@@ -90,6 +90,12 @@ export const useRelationsStore = defineStore('relations', {
         const data = await relationsApi.getStudentRelations(params)
         this.studentRelations = Array.isArray(data) ? data : data?.results || []
       } catch (error) {
+        const status = error?.response?.status
+        if (status === 404) {
+          this.studentRelations = []
+          this.studentError = null
+          return
+        }
         this.studentError = error?.response?.data?.detail || 'Не вдалося отримати звʼязки студента.'
         throw error
       } finally {

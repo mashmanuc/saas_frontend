@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { GraduationCap } from 'lucide-vue-next'
+import { useI18n } from 'vue-i18n'
 import type { Education } from '../../api/marketplace'
 
 interface Props {
@@ -8,9 +9,11 @@ interface Props {
 
 defineProps<Props>()
 
+const { t } = useI18n()
+
 function formatYears(edu: Education): string {
   if (edu.current) {
-    return `${edu.startYear} - Present`
+    return `${edu.startYear} - ${t('marketplace.profile.education.present')}`
   }
   return edu.endYear ? `${edu.startYear} - ${edu.endYear}` : `${edu.startYear}`
 }
@@ -20,7 +23,7 @@ function formatYears(edu: Education): string {
   <section class="profile-education">
     <h2>
       <GraduationCap :size="20" />
-      Education
+      {{ t('marketplace.profile.education.title') }}
     </h2>
 
     <div class="education-list">
@@ -29,7 +32,7 @@ function formatYears(edu: Education): string {
           <GraduationCap :size="20" />
         </div>
         <div class="edu-content">
-          <h3>{{ edu.degree }} in {{ edu.field }}</h3>
+          <h3>{{ edu.degree }} {{ t('marketplace.profile.education.in') }} {{ edu.field }}</h3>
           <p class="institution">{{ edu.institution }}</p>
           <p class="years">{{ formatYears(edu) }}</p>
         </div>
@@ -40,20 +43,19 @@ function formatYears(edu: Education): string {
 
 <style scoped>
 .profile-education {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: var(--surface-card);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-sm);
 }
 
 h2 {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 1.25rem;
-  font-weight: 600;
+  font: var(--font-headline);
   margin: 0 0 1.25rem;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .education-list {
@@ -73,9 +75,9 @@ h2 {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #eff6ff;
-  color: #3b82f6;
-  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+  color: var(--accent-primary);
+  border-radius: var(--radius-md);
   flex-shrink: 0;
 }
 
@@ -83,18 +85,18 @@ h2 {
   font-size: 1rem;
   font-weight: 600;
   margin: 0 0 0.25rem;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .institution {
   font-size: 0.9375rem;
-  color: #374151;
+  color: var(--text-secondary);
   margin: 0 0 0.25rem;
 }
 
 .years {
   font-size: 0.8125rem;
-  color: #6b7280;
+  color: var(--text-muted);
   margin: 0;
 }
 </style>

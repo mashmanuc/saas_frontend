@@ -1,15 +1,31 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 // Mock apiClient
-vi.mock('../../src/utils/apiClient', () => ({
-  apiClient: {
-    post: vi.fn(),
-    interceptors: {
-      request: { use: vi.fn() },
-      response: { use: vi.fn() },
+vi.mock('../../src/utils/apiClient', () => {
+  const createInterceptorMock = () => {
+    const interceptors = []
+    return {
+      use: vi.fn((fulfilled, rejected) => {
+        const id = interceptors.length
+        interceptors[id] = { fulfilled, rejected }
+        return id
+      }),
+      eject: vi.fn((id) => {
+        interceptors[id] = null
+      }),
+    }
+  }
+
+  return {
+    apiClient: {
+      post: vi.fn(),
+      interceptors: {
+        request: createInterceptorMock(),
+        response: createInterceptorMock(),
+      },
     },
-  },
-}))
+  }
+})
 
 import { initTokenRefresh, useTokenRefresh } from '../../src/core/auth/tokenRefresh'
 import { apiClient } from '../../src/utils/apiClient'

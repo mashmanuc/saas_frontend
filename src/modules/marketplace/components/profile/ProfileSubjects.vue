@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { BookOpen } from 'lucide-vue-next'
+import { useI18n } from 'vue-i18n'
 import type { Subject } from '../../api/marketplace'
 
 interface Props {
@@ -8,19 +9,11 @@ interface Props {
 
 defineProps<Props>()
 
-function getLevelColor(level: string): string {
-  switch (level) {
-    case 'beginner':
-      return '#22c55e'
-    case 'intermediate':
-      return '#3b82f6'
-    case 'advanced':
-      return '#8b5cf6'
-    case 'expert':
-      return '#f59e0b'
-    default:
-      return '#6b7280'
-  }
+const { t } = useI18n()
+
+function formatLevel(level: string): string {
+  if (!level) return t('common.notSpecified')
+  return t(`marketplace.profile.subjectLevel.${level}`)
 }
 </script>
 
@@ -28,7 +21,7 @@ function getLevelColor(level: string): string {
   <section class="profile-subjects">
     <h2>
       <BookOpen :size="20" />
-      Subjects
+      {{ t('marketplace.profile.subjectsTitle') }}
     </h2>
 
     <div class="subjects-list">
@@ -37,9 +30,8 @@ function getLevelColor(level: string): string {
           <span class="subject-name">{{ subject.name }}</span>
           <span
             class="subject-level"
-            :style="{ color: getLevelColor(subject.level) }"
           >
-            {{ subject.level }}
+            {{ formatLevel(subject.level) }}
           </span>
         </div>
         <p v-if="subject.description" class="subject-desc">
@@ -52,20 +44,19 @@ function getLevelColor(level: string): string {
 
 <style scoped>
 .profile-subjects {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: var(--surface-card);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-sm);
 }
 
 h2 {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 1.25rem;
-  font-weight: 600;
+  font: var(--font-headline);
   margin: 0 0 1.25rem;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .subjects-list {
@@ -76,8 +67,8 @@ h2 {
 
 .subject-item {
   padding: 0.75rem;
-  background: #f9fafb;
-  border-radius: 8px;
+  background: var(--surface-card-muted);
+  border-radius: var(--radius-md);
 }
 
 .subject-header {
@@ -88,18 +79,18 @@ h2 {
 
 .subject-name {
   font-weight: 500;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .subject-level {
   font-size: 0.75rem;
   font-weight: 500;
-  text-transform: capitalize;
+  color: var(--text-muted);
 }
 
 .subject-desc {
   font-size: 0.8125rem;
-  color: #6b7280;
+  color: var(--text-muted);
   margin: 0.5rem 0 0;
 }
 </style>

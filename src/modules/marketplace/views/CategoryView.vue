@@ -5,6 +5,7 @@ import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { BookOpen } from 'lucide-vue-next'
 import { useSearchStore } from '../stores/searchStore'
+import { useI18n } from 'vue-i18n'
 
 // Components
 import SubjectList from '../components/categories/SubjectList.vue'
@@ -13,6 +14,8 @@ import TutorGrid from '../components/catalog/TutorGrid.vue'
 
 const route = useRoute()
 const store = useSearchStore()
+
+const { t } = useI18n()
 
 const categorySlug = computed(() => route.params.slug as string)
 
@@ -52,7 +55,7 @@ const loadMore = () => {
 }
 
 // Get category icon dynamically
-const getCategoryColor = computed(() => category.value?.color || '#3b82f6')
+const getCategoryColor = computed(() => category.value?.color || 'var(--accent-primary)')
 </script>
 
 <template>
@@ -63,14 +66,14 @@ const getCategoryColor = computed(() => category.value?.color || '#3b82f6')
         <BookOpen :size="48" />
       </div>
       <div class="category-info">
-        <h1>{{ category?.name || 'Category' }}</h1>
-        <p>{{ category?.tutor_count || 0 }} tutors available</p>
+        <h1>{{ category?.name || t('marketplace.categories.title') }}</h1>
+        <p>{{ t('marketplace.categories.tutorsAvailable', { count: category?.tutor_count || 0 }) }}</p>
       </div>
     </header>
 
     <!-- Subjects in Category -->
     <section v-if="subjects.length > 0" class="subjects-section">
-      <h2>Subjects</h2>
+      <h2>{{ t('marketplace.profile.subjectsTitle') }}</h2>
       <SubjectList
         :subjects="subjects"
         :selected="selectedSubject"
@@ -82,7 +85,7 @@ const getCategoryColor = computed(() => category.value?.color || '#3b82f6')
     <section class="tutors-section">
       <div class="section-header">
         <h2>
-          {{ selectedSubject ? `${selectedSubject} Tutors` : 'All Tutors' }}
+          {{ selectedSubject ? t('marketplace.categories.subjectTutorsTitle', { subject: selectedSubject }) : t('marketplace.categories.allTutorsTitle') }}
         </h2>
         <CatalogSort :value="sortBy" @update="handleSortUpdate" />
       </div>
@@ -95,14 +98,14 @@ const getCategoryColor = computed(() => category.value?.color || '#3b82f6')
         :disabled="isLoading"
         @click="loadMore"
       >
-        {{ isLoading ? 'Loading...' : 'Load More' }}
+        {{ isLoading ? t('common.loading') : t('marketplace.catalog.loadMore') }}
       </button>
 
       <!-- Empty State -->
       <div v-if="!isLoading && tutors.length === 0" class="empty-state">
         <div class="empty-icon">📚</div>
-        <h3>No tutors in this category yet</h3>
-        <p>Check back later or explore other categories</p>
+        <h3>{{ t('marketplace.categories.emptyTitle') }}</h3>
+        <p>{{ t('marketplace.categories.emptyDescription') }}</p>
       </div>
     </section>
   </div>
@@ -111,7 +114,7 @@ const getCategoryColor = computed(() => category.value?.color || '#3b82f6')
 <style scoped>
 .category-view {
   min-height: 100vh;
-  background: var(--color-bg-secondary, #f5f5f5);
+  background: var(--surface-marketplace);
 }
 
 .category-header {
@@ -155,7 +158,7 @@ const getCategoryColor = computed(() => category.value?.color || '#3b82f6')
   font-size: 1.25rem;
   font-weight: 600;
   margin: 0 0 16px;
-  color: var(--color-text-primary, #111827);
+  color: var(--text-primary);
 }
 
 .tutors-section {
@@ -177,7 +180,7 @@ const getCategoryColor = computed(() => category.value?.color || '#3b82f6')
   font-size: 1.25rem;
   font-weight: 600;
   margin: 0;
-  color: var(--color-text-primary, #111827);
+  color: var(--text-primary);
 }
 
 .load-more {
@@ -185,39 +188,11 @@ const getCategoryColor = computed(() => category.value?.color || '#3b82f6')
   margin: 32px auto 0;
 }
 
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px 24px;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-secondary {
-  background: var(--color-bg-primary, white);
-  color: var(--color-text-primary, #111827);
-  border: 1px solid var(--color-border, #e5e7eb);
-}
-
-.btn-secondary:hover {
-  background: var(--color-bg-secondary, #f5f5f5);
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
 
 .empty-state {
   text-align: center;
   padding: 60px 20px;
-  background: var(--color-bg-primary, white);
+  background: var(--surface-card);
   border-radius: 12px;
 }
 
@@ -230,11 +205,11 @@ const getCategoryColor = computed(() => category.value?.color || '#3b82f6')
   font-size: 1.25rem;
   font-weight: 600;
   margin: 0 0 8px;
-  color: var(--color-text-primary, #111827);
+  color: var(--text-primary);
 }
 
 .empty-state p {
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--text-muted);
   margin: 0;
 }
 

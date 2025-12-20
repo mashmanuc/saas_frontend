@@ -1,35 +1,48 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 interface Props {
-  amount: number
-  currency: string
+  amount?: number | null
+  currency?: string | null
   size?: 'sm' | 'md' | 'lg'
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  amount: 0,
+  currency: 'USD',
   size: 'md',
 })
 
-function formatPrice(): string {
-  const formatter = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: props.currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  })
-  return formatter.format(props.amount)
-}
+const displayPrice = computed(() => {
+  const amount = typeof props.amount === 'number' ? props.amount : Number(props.amount)
+  const currency = typeof props.currency === 'string' ? props.currency : ''
+
+  if (!Number.isFinite(amount) || currency.trim().length === 0) return '—'
+
+  try {
+    const formatter = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    })
+    return formatter.format(amount)
+  } catch (_err) {
+    return '—'
+  }
+})
 </script>
 
 <template>
   <span class="price-tag" :class="`price-tag--${size}`">
-    {{ formatPrice() }}
+    {{ displayPrice }}
   </span>
 </template>
 
 <style scoped>
 .price-tag {
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .price-tag--sm {

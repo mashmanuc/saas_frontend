@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // TASK MF9: ProfileBadges component
 import { Award } from 'lucide-vue-next'
+import { useI18n } from 'vue-i18n'
 import type { Badge } from '../../api/marketplace'
 import BadgeIcon from '../shared/Badge.vue'
 
@@ -9,13 +10,15 @@ interface Props {
 }
 
 defineProps<Props>()
+
+const { t } = useI18n()
 </script>
 
 <template>
   <section class="profile-badges">
     <h3>
       <Award :size="18" />
-      Badges & Achievements
+      {{ t('marketplace.profile.badgesTitle') }}
     </h3>
 
     <div class="badges-grid">
@@ -32,20 +35,19 @@ defineProps<Props>()
 
 <style scoped>
 .profile-badges {
-  background: white;
-  border-radius: 12px;
-  padding: 1.25rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: var(--surface-card);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-sm);
 }
 
 h3 {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 1rem;
-  font-weight: 600;
+  font: var(--font-subtitle);
   margin: 0 0 1rem;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .badges-grid {

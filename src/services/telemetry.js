@@ -4,8 +4,39 @@ let queue = []
 let isFlushing = false
 let isDisabled = false
 
-const PRIMARY_ENDPOINT = '/v1/logs/frontend/'
+const PRIMARY_ENDPOINT = '/v1/logs/telemetry/'
 const FALLBACK_ENDPOINT = '/activity/events/'
+const APP_VERSION = import.meta.env.VITE_APP_VERSION || ''
+
+function extractSessionId(metadata) {
+  if (!metadata) return ''
+  return metadata.sessionId || metadata.session_id || ''
+}
+
+async function postTelemetryEvent(event) {
+  const payload = {
+    event_type: event.action || 'telemetry_event',
+    version: APP_VERSION,
+    session_id: extractSessionId(event.metadata),
+    payload: {
+      timestamp: event.timestamp,
+      metadata: event.metadata || {},
+    },
+  }
+
+  try {
+    await apiClient.post(PRIMARY_ENDPOINT, payload)
+    return
+  } catch (primaryError) {
+    const status = primaryError?.response?.status
+    if (status === 404) {
+      // Legacy deployments still expecting the old /activity/events/ shape.
+      await apiClient.post(FALLBACK_ENDPOINT, { events: [event] })
+      return
+    }
+    throw primaryError
+  }
+}
 
 async function flushQueue() {
   if (isDisabled || isFlushing || !queue.length) return
@@ -13,17 +44,10 @@ async function flushQueue() {
   const payload = [...queue]
   queue = []
   try {
-    // v0.34: canonical logs ingestion endpoint
-    // (keep fallback for older deployments)
-    try {
-      await apiClient.post(PRIMARY_ENDPOINT, { events: payload })
-    } catch (primaryError) {
-      const status = primaryError?.response?.status
-      if (status === 404) {
-        await apiClient.post(FALLBACK_ENDPOINT, { events: payload })
-      } else {
-        throw primaryError
-      }
+    for (const event of payload) {
+      // Send sequentially to keep ordering and simplify fallback handling.
+      // eslint-disable-next-line no-await-in-loop
+      await postTelemetryEvent(event)
     }
   } catch (error) {
     const status = error?.response?.status

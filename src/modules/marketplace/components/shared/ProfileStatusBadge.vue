@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { Clock, CheckCircle, XCircle, AlertCircle, Eye } from 'lucide-vue-next'
+import { Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-vue-next'
 import type { ProfileStatus } from '../../api/marketplace'
+import { useI18n } from 'vue-i18n'
 
 interface Props {
   status: ProfileStatus
@@ -8,23 +9,29 @@ interface Props {
 
 const props = defineProps<Props>()
 
-const statusConfig: Record<ProfileStatus, { label: string; icon: typeof Clock; class: string }> = {
-  draft: { label: 'Draft', icon: Clock, class: 'status--draft' },
-  pending_review: { label: 'Pending Review', icon: Clock, class: 'status--pending' },
-  approved: { label: 'Approved', icon: CheckCircle, class: 'status--approved' },
-  rejected: { label: 'Rejected', icon: XCircle, class: 'status--rejected' },
-  suspended: { label: 'Suspended', icon: AlertCircle, class: 'status--suspended' },
+const { t } = useI18n()
+
+const statusConfig: Record<ProfileStatus, { labelKey: string; icon: typeof Clock; class: string }> = {
+  draft: { labelKey: 'marketplace.profile.status.draft', icon: Clock, class: 'status--draft' },
+  pending_review: {
+    labelKey: 'marketplace.profile.status.pending_review',
+    icon: Clock,
+    class: 'status--pending',
+  },
+  approved: { labelKey: 'marketplace.profile.status.approved', icon: CheckCircle, class: 'status--approved' },
+  rejected: { labelKey: 'marketplace.profile.status.rejected', icon: XCircle, class: 'status--rejected' },
+  suspended: { labelKey: 'marketplace.profile.status.suspended', icon: AlertCircle, class: 'status--suspended' },
 }
 
 function getConfig() {
-  return statusConfig[props.status] || statusConfig.draft
+  return statusConfig[props.status]
 }
 </script>
 
 <template>
   <span class="status-badge" :class="getConfig().class">
     <component :is="getConfig().icon" :size="14" />
-    {{ getConfig().label }}
+    {{ t(getConfig().labelKey) }}
   </span>
 </template>
 
@@ -40,27 +47,27 @@ function getConfig() {
 }
 
 .status--draft {
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--surface-card-muted);
+  color: var(--text-muted);
 }
 
 .status--pending {
-  background: #fef3c7;
-  color: #b45309;
+  background: color-mix(in srgb, var(--warning-bg) 16%, transparent);
+  color: color-mix(in srgb, var(--warning-bg) 72%, var(--text-primary));
 }
 
 .status--approved {
-  background: #d1fae5;
-  color: #047857;
+  background: color-mix(in srgb, var(--success-bg) 16%, transparent);
+  color: color-mix(in srgb, var(--success-bg) 72%, var(--text-primary));
 }
 
 .status--rejected {
-  background: #fee2e2;
-  color: #b91c1c;
+  background: color-mix(in srgb, var(--danger-bg) 16%, transparent);
+  color: color-mix(in srgb, var(--danger-bg) 72%, var(--text-primary));
 }
 
 .status--suspended {
-  background: #fef2f2;
-  color: #991b1b;
+  background: color-mix(in srgb, var(--danger-bg) 16%, transparent);
+  color: color-mix(in srgb, var(--danger-bg) 72%, var(--text-primary));
 }
 </style>

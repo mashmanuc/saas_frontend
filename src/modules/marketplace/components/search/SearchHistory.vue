@@ -53,18 +53,18 @@ const emit = defineEmits<{
 
 .history-item:hover,
 .history-item.is-selected {
-  background: var(--color-bg-secondary, #f5f5f5);
+  background: var(--surface-card-muted);
 }
 
 .icon {
-  color: var(--color-text-secondary, #9ca3af);
+  color: var(--text-muted);
   flex-shrink: 0;
 }
 
 .history-text {
   flex: 1;
   font-size: 14px;
-  color: var(--color-text-primary, #111827);
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -78,7 +78,7 @@ const emit = defineEmits<{
   border: none;
   padding: 4px;
   cursor: pointer;
-  color: var(--color-text-secondary, #9ca3af);
+  color: var(--text-muted);
   border-radius: 4px;
   transition: all 0.15s;
   opacity: 0;
@@ -89,7 +89,7 @@ const emit = defineEmits<{
 }
 
 .remove-btn:hover {
-  background: var(--color-bg-tertiary, #e5e7eb);
-  color: var(--color-text-primary, #111827);
+  background: color-mix(in srgb, var(--border-color) 65%, transparent);
+  color: var(--text-primary);
 }
 </style>

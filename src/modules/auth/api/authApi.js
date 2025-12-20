@@ -2,23 +2,61 @@ import api from '../../../utils/apiClient'
 
 const authApi = {
   login(payload) {
-    return api.post('/auth/login/', payload)
+    return api.post('/v1/auth/login', payload)
   },
 
   register(payload) {
-    return api.post('/auth/register/', payload)
+    return api.post('/v1/auth/register', payload)
   },
 
-  refresh() {
-    return api.post('/auth/refresh/')
+  refresh(payload) {
+    return api.post('/v1/auth/token/refresh', payload)
   },
 
-  logout() {
-    return api.post('/auth/logout/')
+  logout(payload) {
+    return api.post('/v1/auth/logout', payload)
   },
 
   getCurrentUser() {
-    return api.get('/users/me/')
+    return api.get('/v1/me').then((res) => res?.user || res)
+  },
+
+  verifyEmail(payload) {
+    return api.post('/v1/auth/verify-email', payload)
+  },
+
+  resendVerifyEmail(payload) {
+    return api.post('/v1/auth/resend-verify-email', payload)
+  },
+
+  requestPasswordReset(payload) {
+    return api.post('/v1/auth/request-password-reset', payload)
+  },
+
+  resetPassword(payload) {
+    return api.post('/v1/auth/reset-password', payload)
+  },
+
+  changeEmail(payload) {
+    return api.post('/v1/me/change-email', payload)
+  },
+
+  confirmEmailChange(payload) {
+    return api.post('/v1/me/confirm-email-change', payload)
+  },
+
+  changePassword(payload) {
+    return api.post('/v1/me/change-password', payload)
+  },
+
+  uploadAvatar(formData) {
+    return api.post('/v1/me/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
+
+  deleteAvatar() {
+    return api.delete('/v1/me/avatar')
   },
 
   validateInvite(token) {

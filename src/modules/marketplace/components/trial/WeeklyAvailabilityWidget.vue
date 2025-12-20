@@ -3,8 +3,12 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next'
 import { marketplaceApi, type WeeklyAvailabilitySlot } from '../../api/marketplace'
 import LoadingSpinner from '@/ui/LoadingSpinner.vue'
+import { useI18n } from 'vue-i18n'
+import { mapMarketplaceErrorToMessage, parseMarketplaceApiError } from '../../utils/apiErrors'
 
 const props = defineProps<{ slug: string }>()
+
+const { t } = useI18n()
 
 const emit = defineEmits<{
   (e: 'select-slot', slot: WeeklyAvailabilitySlot): void
@@ -72,7 +76,7 @@ async function load() {
     })
     slots.value = Array.isArray(data?.slots) ? data.slots : []
   } catch (e: any) {
-    error.value = e?.response?.data?.detail || 'Не вдалося завантажити слоти.'
+    error.value = mapMarketplaceErrorToMessage(parseMarketplaceApiError(e), t('marketplace.availability.loadError'))
     slots.value = []
   } finally {
     isLoading.value = false
@@ -108,7 +112,7 @@ watch(weekStart, load)
 <template>
   <section class="availability" data-test="marketplace-availability">
     <div class="header">
-      <h2>Розклад викладача</h2>
+      <h2>{{ t('marketplace.availability.title') }}</h2>
       <div class="nav">
         <button type="button" class="btn btn-ghost" @click="prevWeek" :disabled="isLoading">
           <ChevronLeft :size="18" />
@@ -138,7 +142,7 @@ watch(weekStart, load)
           >
             {{ formatTime(s.starts_at) }}
           </button>
-          <div v-if="slotsByDay[toIsoDate(day)].length === 0" class="empty">Немає вільних годин</div>
+          <div v-if="slotsByDay[toIsoDate(day)].length === 0" class="empty">{{ t('marketplace.availability.empty') }}</div>
         </div>
       </div>
     </div>
@@ -147,10 +151,10 @@ watch(weekStart, load)
 
 <style scoped>
 .availability {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: var(--surface-card);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-sm);
 }
 
 .header {
@@ -163,10 +167,9 @@ watch(weekStart, load)
 }
 
 .header h2 {
-  font-size: 1.25rem;
-  font-weight: 600;
+  font: var(--font-headline);
   margin: 0;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .nav {
@@ -177,7 +180,7 @@ watch(weekStart, load)
 
 .range {
   font-size: 0.875rem;
-  color: #374151;
+  color: var(--text-muted);
   min-width: 220px;
   text-align: center;
 }
@@ -195,14 +198,14 @@ watch(weekStart, load)
 }
 
 .day {
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   padding: 0.75rem;
 }
 
 .day-title {
   font-size: 0.8125rem;
-  color: #6b7280;
+  color: var(--text-muted);
   margin-bottom: 0.5rem;
 }
 
@@ -213,8 +216,8 @@ watch(weekStart, load)
 }
 
 .slot {
-  border: 1px solid #d1d5db;
-  background: white;
+  border: 1px solid var(--border-color);
+  background: var(--surface-card);
   border-radius: 8px;
   padding: 0.5rem;
   font-size: 0.875rem;
@@ -222,16 +225,16 @@ watch(weekStart, load)
 }
 
 .slot:hover {
-  border-color: #3b82f6;
+  border-color: var(--accent-primary);
 }
 
 .empty {
   font-size: 0.8125rem;
-  color: #9ca3af;
+  color: var(--text-muted);
 }
 
 .error {
-  color: #b91c1c;
+  color: color-mix(in srgb, var(--danger-bg) 72%, var(--text-primary));
   font-size: 0.875rem;
 }
 </style>

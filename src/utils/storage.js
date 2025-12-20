@@ -1,6 +1,7 @@
 const hasWindow = typeof window !== 'undefined'
 
 const ACCESS_KEY = 'access'
+const REFRESH_KEY = 'refresh'
 const USER_KEY = 'user'
 
 const safeSet = (key, value) => {
@@ -32,6 +33,15 @@ export const storage = {
   clearAccess() {
     safeRemove(ACCESS_KEY)
   },
+  setRefresh(token) {
+    safeSet(REFRESH_KEY, token)
+  },
+  getRefresh() {
+    return safeGet(REFRESH_KEY)
+  },
+  clearRefresh() {
+    safeRemove(REFRESH_KEY)
+  },
   setUser(user) {
     if (!user) {
       safeRemove(USER_KEY)
@@ -54,6 +64,7 @@ export const storage = {
   },
   clearAll() {
     this.clearAccess()
+    this.clearRefresh()
     this.clearUser()
   },
 }

@@ -4,6 +4,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { debounce } from '@/utils/debounce'
 import { mapMarketplaceErrorToMessage, parseMarketplaceApiError } from '../utils/apiErrors'
+import { i18n } from '@/i18n'
 import {
   marketplaceApi,
   type TutorListItem,
@@ -39,6 +40,14 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
   // Error state
   const error = ref<string | null>(null)
   const validationErrors = ref<Record<string, string[]> | null>(null)
+
+  const t = (key: string): string => {
+    try {
+      return (i18n as any)?.global?.t?.(key) ?? key
+    } catch (_err) {
+      return key
+    }
+  }
 
   function mapApiError(err: unknown, fallback: string): string {
     return mapMarketplaceErrorToMessage(parseMarketplaceApiError(err), fallback)
@@ -101,7 +110,7 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
       }
       totalCount.value = response.count
     } catch (err) {
-      error.value = mapApiError(err, 'Не вдалося завантажити тьюторів.')
+      error.value = mapApiError(err, t('marketplace.errors.loadTutors'))
       console.error('[MarketplaceStore] loadTutors error:', err)
     } finally {
       isLoading.value = false
@@ -147,7 +156,7 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     try {
       currentProfile.value = await marketplaceApi.getTutorProfile(slug)
     } catch (err) {
-      error.value = mapApiError(err, 'Не вдалося завантажити профіль тьютора.')
+      error.value = mapApiError(err, t('marketplace.errors.loadProfile'))
       currentProfile.value = null
       console.error('[MarketplaceStore] loadProfile error:', err)
     } finally {
@@ -182,7 +191,7 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
       myProfile.value = await marketplaceApi.createProfile(data)
     } catch (err) {
       setValidationErrorsFromApi(err)
-      error.value = mapApiError(err, 'Не вдалося створити профіль.')
+      error.value = mapApiError(err, t('marketplace.errors.createProfile'))
       throw err
     } finally {
       isSaving.value = false
@@ -198,7 +207,7 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
       myProfile.value = await marketplaceApi.updateProfile(data)
     } catch (err) {
       setValidationErrorsFromApi(err)
-      error.value = mapApiError(err, 'Не вдалося зберегти профіль.')
+      error.value = mapApiError(err, t('marketplace.errors.updateProfile'))
       throw err
     } finally {
       isSaving.value = false
@@ -214,7 +223,7 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
       myProfile.value = await marketplaceApi.submitForReview()
     } catch (err) {
       setValidationErrorsFromApi(err)
-      error.value = mapApiError(err, 'Не вдалося відправити профіль на модерацію.')
+      error.value = mapApiError(err, t('marketplace.errors.submitForReview'))
       throw err
     } finally {
       isSaving.value = false
@@ -230,7 +239,7 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
       myProfile.value = await marketplaceApi.publishProfile()
     } catch (err) {
       setValidationErrorsFromApi(err)
-      error.value = mapApiError(err, 'Не вдалося опублікувати профіль.')
+      error.value = mapApiError(err, t('marketplace.errors.publishProfile'))
       throw err
     } finally {
       isSaving.value = false
@@ -246,7 +255,7 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
       myProfile.value = await marketplaceApi.unpublishProfile()
     } catch (err) {
       setValidationErrorsFromApi(err)
-      error.value = mapApiError(err, 'Не вдалося зняти профіль з публікації.')
+      error.value = mapApiError(err, t('marketplace.errors.unpublishProfile'))
       throw err
     } finally {
       isSaving.value = false

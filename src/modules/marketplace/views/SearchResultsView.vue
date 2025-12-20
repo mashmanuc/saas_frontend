@@ -5,6 +5,7 @@ import { storeToRefs } from 'pinia'
 import { SlidersHorizontal } from 'lucide-vue-next'
 import { useSearchStore } from '../stores/searchStore'
 import type { SearchFilters } from '../api/marketplace'
+import { useI18n } from 'vue-i18n'
 
 // Components
 import SearchBar from '../components/search/SearchBar.vue'
@@ -31,6 +32,8 @@ const {
 const searchQuery = ref('')
 const showFilters = ref(false)
 const loadMoreTrigger = ref<HTMLElement | null>(null)
+
+const { t } = useI18n()
 
 // Intersection observer for infinite scroll
 let observer: IntersectionObserver | null = null
@@ -105,7 +108,7 @@ const toggleFilters = () => {
 
       <div v-if="totalCount > 0" class="search-meta">
         <span class="results-count">
-          {{ totalCount }} tutor{{ totalCount !== 1 ? 's' : '' }} found
+          {{ t('marketplace.search.resultsCount', { count: totalCount }) }}
         </span>
         <span v-if="searchTime > 0" class="search-time"> ({{ searchTime }}ms) </span>
       </div>
@@ -124,7 +127,7 @@ const toggleFilters = () => {
       <!-- Filters Sidebar -->
       <aside class="filters-sidebar" :class="{ 'is-open': showFilters }">
         <div class="sidebar-header">
-          <h3>Filters</h3>
+          <h3>{{ t('marketplace.filters.title') }}</h3>
           <button class="close-btn" @click="showFilters = false">×</button>
         </div>
         <CatalogFilters
@@ -148,7 +151,7 @@ const toggleFilters = () => {
         <div class="results-toolbar">
           <button class="btn-filters-toggle" @click="toggleFilters">
             <SlidersHorizontal :size="18" />
-            Filters
+            {{ t('marketplace.filters.title') }}
             <span v-if="activeFiltersCount" class="badge">
               {{ activeFiltersCount }}
             </span>
@@ -170,10 +173,10 @@ const toggleFilters = () => {
         <!-- Empty State -->
         <div v-if="!isLoading && results.length === 0" class="empty-state">
           <div class="empty-icon">🔍</div>
-          <h3>No tutors found</h3>
-          <p>Try adjusting your search or filters</p>
+          <h3>{{ t('marketplace.catalog.emptyTitle') }}</h3>
+          <p>{{ t('marketplace.catalog.emptyDescription') }}</p>
           <button class="btn btn-primary" @click="handleClearFilters">
-            Clear Filters
+            {{ t('marketplace.catalog.clearFilters') }}
           </button>
         </div>
       </main>
@@ -184,19 +187,19 @@ const toggleFilters = () => {
 <style scoped>
 .search-results-view {
   min-height: 100vh;
-  background: var(--color-bg-secondary, #f5f5f5);
+  background: var(--surface-marketplace);
 }
 
 .search-header {
-  background: var(--color-bg-primary, white);
+  background: var(--surface-card);
   padding: 24px;
-  border-bottom: 1px solid var(--color-border, #e5e7eb);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .search-meta {
   margin-top: 12px;
   font-size: 14px;
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--text-muted);
 }
 
 .search-time {
@@ -215,7 +218,7 @@ const toggleFilters = () => {
 .filters-sidebar {
   width: 280px;
   flex-shrink: 0;
-  background: var(--color-bg-primary, white);
+  background: var(--surface-card);
   border-radius: 12px;
   padding: 20px;
   height: fit-content;
@@ -245,8 +248,8 @@ const toggleFilters = () => {
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
-  background: var(--color-bg-primary, white);
-  border: 1px solid var(--color-border, #e5e7eb);
+  background: var(--surface-card);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
@@ -255,11 +258,11 @@ const toggleFilters = () => {
 }
 
 .btn-filters-toggle:hover {
-  border-color: var(--color-primary, #3b82f6);
+  border-color: var(--accent-primary);
 }
 
 .btn-filters-toggle .badge {
-  background: var(--color-primary, #3b82f6);
+  background: var(--accent-primary);
   color: white;
   padding: 2px 8px;
   border-radius: 10px;
@@ -281,8 +284,8 @@ const toggleFilters = () => {
 .spinner {
   width: 32px;
   height: 32px;
-  border: 3px solid var(--color-border, #e5e7eb);
-  border-top-color: var(--color-primary, #3b82f6);
+  border: 3px solid var(--border-color);
+  border-top-color: var(--accent-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -296,7 +299,7 @@ const toggleFilters = () => {
 .empty-state {
   text-align: center;
   padding: 60px 20px;
-  background: var(--color-bg-primary, white);
+  background: var(--surface-card);
   border-radius: 12px;
 }
 
@@ -309,34 +312,12 @@ const toggleFilters = () => {
   font-size: 1.25rem;
   font-weight: 600;
   margin: 0 0 8px;
-  color: var(--color-text-primary, #111827);
+  color: var(--text-primary);
 }
 
 .empty-state p {
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--text-muted);
   margin: 0 0 24px;
-}
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-primary {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-}
-
-.btn-primary:hover {
-  background: var(--color-primary-dark, #2563eb);
 }
 
 .filters-overlay {
@@ -351,7 +332,7 @@ const toggleFilters = () => {
     bottom: 0;
     width: 100%;
     max-width: 320px;
-    background: var(--color-bg-primary, white);
+    background: var(--surface-card);
     z-index: 100;
     transform: translateX(-100%);
     transition: transform 0.3s ease;
@@ -369,7 +350,7 @@ const toggleFilters = () => {
     justify-content: space-between;
     align-items: center;
     padding: 16px 20px;
-    border-bottom: 1px solid var(--color-border, #e5e7eb);
+    border-bottom: 1px solid var(--border-color);
   }
 
   .sidebar-header h3 {
@@ -382,7 +363,7 @@ const toggleFilters = () => {
     border: none;
     font-size: 24px;
     cursor: pointer;
-    color: var(--color-text-secondary, #6b7280);
+    color: var(--text-muted);
   }
 
   .btn-filters-toggle {
@@ -393,7 +374,7 @@ const toggleFilters = () => {
     display: block;
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: color-mix(in srgb, var(--text-primary) 50%, transparent);
     z-index: 99;
   }
 }

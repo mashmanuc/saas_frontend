@@ -2,7 +2,7 @@
   "app": {
     "title": "Платформа M4SH"
   },
-  "lang": {
+  "userProg": {
     "label": "Мова",
     "uk": "Українська",
     "en": "Англійська"
@@ -214,20 +214,66 @@
       "password": "Пароль",
       "submit": "Увійти",
       "loading": "Вхід...",
+      "forgotPassword": "Забули пароль?",
+      "resendVerifyCta": "Надіслати лист підтвердження ще раз",
       "noAccount": "Немає акаунта?",
       "registerLink": "Зареєструватися"
     },
     "register": {
       "title": "Реєстрація",
       "description": "Самостійна реєстрація (self-learning).",
+      "accountType": "Тип акаунта",
+      "accountTypeStudent": "Студент",
+      "accountTypeStudentHint": "Самонавчання та бронювання уроків.",
+      "accountTypeTutor": "Тьютор",
+      "accountTypeTutorHint": "Створіть профіль тьютора та приймайте студентів.",
       "firstName": "Ім'я",
       "lastName": "Прізвище",
+      "username": "Username",
       "email": "Email",
       "password": "Пароль",
       "submit": "Зареєструватися",
       "loading": "Створюємо акаунт...",
       "haveAccount": "Вже маєте акаунт?",
       "loginLink": "Увійти"
+    },
+    "checkEmail": {
+      "title": "Перевірте пошту",
+      "description": "Ми надіслали лист із підтвердженням email.",
+      "sentTo": "Надіслано на:",
+      "success": "Лист надіслано.",
+      "error": "Не вдалося надіслати лист. Спробуйте пізніше.",
+      "resend": "Надіслати ще раз",
+      "resendLoading": "Надсилаємо...",
+      "backToLogin": "Повернутися до входу"
+    },
+    "verifyEmail": {
+      "title": "Підтвердження email",
+      "description": "Зачекайте, ми перевіряємо ваш токен.",
+      "loading": "Підтверджуємо...",
+      "success": "Email підтверджено. Можете увійти.",
+      "loginCta": "Увійти"
+    },
+    "forgot": {
+      "title": "Забули пароль?",
+      "description": "Введіть email — ми надішлемо посилання для скидання пароля.",
+      "email": "Email",
+      "success": "Якщо цей email існує — ми надіслали посилання.",
+      "error": "Не вдалося надіслати лист. Спробуйте пізніше.",
+      "submit": "Надіслати лист",
+      "loading": "Надсилаємо...",
+      "backToLogin": "Повернутися до входу"
+    },
+    "reset": {
+      "title": "Скидання пароля",
+      "description": "Встановіть новий пароль.",
+      "newPassword": "Новий пароль",
+      "confirmPassword": "Повторіть пароль",
+      "success": "Пароль змінено. Можете увійти.",
+      "error": "Не вдалося змінити пароль. Перевірте дані.",
+      "submit": "Змінити пароль",
+      "loading": "Зберігаємо...",
+      "backToLogin": "Повернутися до входу"
     },
     "invite": {
       "title": "Запросити студента",
@@ -258,6 +304,77 @@
     "soloWorkspace": "Робочий простір"
   },
   "marketplace": {
+    "subjects": {
+      "english": "Англійська",
+      "spanish": "Іспанська",
+      "french": "Французька",
+      "german": "Німецька",
+      "ukrainian": "Українська",
+      "polish": "Польська",
+      "chinese": "Китайська",
+      "japanese": "Японська",
+      "mathematics": "Математика",
+      "physics": "Фізика",
+      "chemistry": "Хімія",
+      "biology": "Біологія",
+      "computer-science": "Комп’ютерні науки",
+      "business-english": "Бізнес-англійська",
+      "marketing": "Маркетинг",
+      "finance": "Фінанси",
+      "management": "Менеджмент",
+      "piano": "Фортепіано",
+      "guitar": "Гітара",
+      "drawing": "Малювання",
+      "photography": "Фотографія",
+      "ielts": "Підготовка до IELTS",
+      "toefl": "Підготовка до TOEFL",
+      "sat": "Підготовка до SAT",
+      "gre": "Підготовка до GRE"
+    },
+    "countries": {
+      "ukraine": "Україна",
+      "poland": "Польща",
+      "germany": "Німеччина",
+      "spain": "Іспанія",
+      "france": "Франція",
+      "italy": "Італія",
+      "unitedKingdom": "Велика Британія",
+      "unitedStates": "США",
+      "canada": "Канада",
+      "australia": "Австралія",
+      "turkey": "Туреччина",
+      "india": "Індія",
+      "china": "Китай",
+      "brazil": "Бразилія",
+      "czechia": "Чехія",
+      "slovakia": "Словаччина",
+      "romania": "Румунія",
+      "hungary": "Угорщина"
+    },
+    "availability": {
+      "title": "Розклад викладача",
+      "empty": "Немає вільних годин",
+      "loadError": "Не вдалося завантажити слоти."
+    },
+    "trialRequest": {
+      "title": "Підтвердження пробного уроку",
+      "timeLabel": "Час",
+      "durationLabel": "Тривалість",
+      "minutesShort": "хв",
+      "submit": "Забронювати безкоштовний урок",
+      "submitting": "Надсилаємо…",
+      "success": "Заявку на пробний урок надіслано (pending).",
+      "error": "Не вдалося створити заявку."
+    },
+    "common": {
+      "perHour": "/ год"
+    },
+    "tutorCard": {
+      "experience": "Досвід",
+      "rate": "Ставка",
+      "language": "Мова",
+      "experienceYears": "{years} років"
+    },
     "sort": {
       "label": "Сортування",
       "default": "За замовчуванням",
@@ -270,6 +387,11 @@
       "title": "Знайдіть свого репетитора",
       "subtitle": "Доступно {count} репетиторів",
       "resultsCount": "Знайдено: {count}",
+      "tabs": {
+        "summary": "Резюме",
+        "about": "Про себе",
+        "calendar": "Календар"
+      },
       "errorTitle": "Щось пішло не так",
       "errorDescription": "Спробуйте повторити або очистити фільтри",
       "clearFilters": "Очистити фільтри",
@@ -277,6 +399,17 @@
       "loadMore": "Показати ще",
       "emptyTitle": "Репетиторів не знайдено",
       "emptyDescription": "Спробуйте змінити фільтри або критерії пошуку"
+    },
+    "categories": {
+      "title": "Категорії",
+      "featured": "Топ",
+      "featuredBadge": "Рекомендовано",
+      "all": "Усі",
+      "tutorsAvailable": "Доступно {count} репетиторів",
+      "allTutorsTitle": "Усі репетитори",
+      "subjectTutorsTitle": "Репетитори з предмету: {subject}",
+      "emptyTitle": "Поки немає репетиторів у цій категорії",
+      "emptyDescription": "Спробуйте іншу категорію або поверніться пізніше"
     },
     "filters": {
       "title": "Фільтри",
@@ -316,9 +449,54 @@
       "verifiedOnly": "Лише верифіковані",
       "clearAll": "Очистити все"
     },
+    "errors": {
+      "validation": "Перевірте коректність даних.",
+      "slotConflict": "Слот вже зайнятий. Оберіть інший час.",
+      "rateLimited": "Забагато запитів. Спробуйте трохи пізніше.",
+      "payloadTooLarge": "Дані завеликі. Зменшіть обсяг і спробуйте ще раз.",
+      "forbidden": "Доступ заборонено.",
+      "serverError": "Помилка сервера. Спробуйте пізніше.",
+      "loadTutors": "Не вдалося завантажити тьюторів.",
+      "loadProfile": "Не вдалося завантажити профіль тьютора.",
+      "createProfile": "Не вдалося створити профіль.",
+      "updateProfile": "Не вдалося зберегти профіль.",
+      "submitForReview": "Не вдалося відправити профіль на модерацію.",
+      "publishProfile": "Не вдалося опублікувати профіль.",
+      "unpublishProfile": "Не вдалося зняти профіль з публікації."
+    },
     "profile": {
       "title": "Профіль репетитора",
       "viewPublic": "Переглянути публічний профіль",
+      "backToCatalog": "Назад до каталогу",
+      "watchIntro": "Дивитись інтро",
+      "stats": {
+        "lessons": "уроків",
+        "students": "студентів"
+      },
+      "education": {
+        "title": "Освіта",
+        "present": "Зараз",
+        "in": "у галузі"
+      },
+      "notFound": {
+        "title": "Репетитора не знайдено",
+        "description": "Профіль репетитора не існує або був видалений.",
+        "backCta": "До каталогу"
+      },
+      "subjectsTitle": "Предмети",
+      "subjectLevel": {
+        "beginner": "Початковий",
+        "intermediate": "Середній",
+        "advanced": "Просунутий",
+        "expert": "Експерт"
+      },
+      "badgesTitle": "Нагороди та досягнення",
+      "contact": {
+        "trialLesson": "Пробний урок",
+        "respondsInHours": "Зазвичай відповідає за {hours} год",
+        "bookLesson": "Забронювати урок",
+        "sendMessage": "Надіслати повідомлення"
+      },
       "reviews": {
         "title": "Відгуки",
         "empty": "Відгуків ще немає",
@@ -331,18 +509,25 @@
           "textPlaceholder": "Опишіть ваш досвід занять…",
           "submit": "Надіслати",
           "success": "Відгук надіслано",
-          "validation": "Перевірте коректність даних."
+          "validation": "Перевірте коректність даних.",
+          "sendError": "Не вдалося надіслати відгук."
         }
       },
       "publish": "Опублікувати",
       "publishing": "Публікація…",
+      "publishSuccess": "Профіль опубліковано.",
+      "publishError": "Не вдалося опублікувати профіль.",
       "unpublish": "Зняти з публікації",
       "unpublishing": "Знімаємо з публікації…",
+      "unpublishSuccess": "Профіль знято з публікації.",
+      "unpublishError": "Не вдалося зняти профіль з публікації.",
       "submit": "Надіслати на модерацію",
-      "submitting": "Надсилаємо…",
-      "validationTitle": "Помилки валідації:",
-      "incompleteTitle": "Профіль заповнений не повністю.",
-      "incompleteDescription": "Заповніть обовʼязкові поля, щоб надіслати профіль на модерацію.",
+      "submitting": "Надсилаємо на модерацію…",
+      "submitSuccess": "Профіль відправлено на модерацію.",
+      "submitError": "Не вдалося відправити профіль на модерацію.",
+      "validationTitle": "Потрібно виправити:",
+      "incompleteTitle": "Профіль ще не готовий",
+      "incompleteDescription": "Заповніть аватар, біо, предмети, мови та ставку.",
       "create": {
         "title": "Створіть профіль репетитора",
         "subtitle": "Додайте інформацію про себе — і студенти зможуть вас знайти.",
@@ -387,6 +572,12 @@
         "privacyTitle": "Приватність",
         "genderLabel": "Стать",
         "genderPlaceholder": "Напр. Жінка / Чоловік / Інше",
+        "genderOptions": {
+          "female": "Жінка",
+          "male": "Чоловік",
+          "other": "Інше",
+          "unspecified": "Не вказано"
+        },
         "showGender": "Показувати стать у публічному профілі",
         "birthYearLabel": "Рік народження",
         "birthYearPlaceholder": "Напр. 1995",
@@ -394,39 +585,53 @@
         "telegramLabel": "Telegram",
         "telegramPlaceholder": "username без @",
         "showTelegram": "Показувати Telegram у публічному профілі",
-        "certificationsTitle": "Сертифікати",
-        "addCertification": "Додати сертифікат",
-        "certificationNamePlaceholder": "Назва сертифікату",
-        "certificationIssuerPlaceholder": "Ким видано",
+        "certificationsTitle": "Дипломи (сертифікати)",
+        "addCertification": "Додати диплом",
+        "certificationNamePlaceholder": "Назва диплому",
+        "certificationIssuerPlaceholder": "Ким видано (опційно)",
         "certificationPublic": "Показувати у публічному профілі",
         "certificationsTitleLabel": "Назва",
-        "certificationsIssuerLabel": "Організація",
-        "certificationsIssuedYearLabel": "Рік видачі",
+        "certificationsIssuerLabel": "Організація (опційно)",
+        "certificationsIssuedYearLabel": "Рік видачі (опційно)",
         "certificationsFileLabel": "Файл",
-        "certificationsAdd": "Додати сертифікат",
+        "certificationsAdd": "Додати диплом",
         "certificationsUploading": "Завантаження…",
-        "certificationsEmpty": "Сертифікатів ще немає",
+        "certificationsEmpty": "Дипломів ще немає",
         "certificationsStatusPending": "На модерації",
         "certificationsStatusApproved": "Підтверджено",
         "certificationsStatusRejected": "Відхилено",
-        "certificationsLoadError": "Не вдалося завантажити сертифікати",
-        "certificationsUploadError": "Не вдалося завантажити сертифікат",
-        "certificationsCreateSuccess": "Сертифікат додано",
-        "certificationsUpdateError": "Не вдалося оновити сертифікат",
-        "certificationsDeleteSuccess": "Сертифікат видалено",
-        "certificationsDeleteError": "Не вдалося видалити сертифікат",
-        "certificationsValidationError": "Перевірте дані сертифікату",
+        "certificationsLoadError": "Не вдалося завантажити дипломи",
+        "certificationsUploadError": "Не вдалося завантажити диплом",
+        "certificationsCreateSuccess": "Диплом додано",
+        "certificationsUpdateError": "Не вдалося оновити диплом",
+        "certificationsDeleteSuccess": "Диплом видалено",
+        "certificationsDeleteError": "Не вдалося видалити диплом",
+        "certificationsValidationError": "Перевірте дані диплому",
         "certificationsRateLimited": "Забагато запитів. Спробуйте пізніше",
         "certificationsUnsupportedType": "Непідтримуваний тип файлу",
         "certificationsTooLarge": "Файл завеликий",
         "saving": "Збереження…",
         "save": "Зберегти зміни",
+        "validation": {
+          "headline": "Заголовок обовʼязковий (мін. 3 символи).",
+          "bio": "Опис обовʼязковий (мін. 10 символів).",
+          "hourlyRate": "Ціна за годину має бути більшою за 0.",
+          "subjects": "Оберіть хоча б один предмет.",
+          "languages": "Оберіть хоча б одну мову."
+        },
         "languageLevels": {
           "basic": "Початковий",
           "conversational": "Розмовний",
           "fluent": "Вільно",
           "native": "Рідна"
         }
+      },
+      "status": {
+        "draft": "Чернетка",
+        "pending_review": "На модерації",
+        "approved": "Схвалено",
+        "rejected": "Відхилено",
+        "suspended": "Призупинено"
       }
     }
   },
@@ -444,6 +649,7 @@
     "exit": "Вийти",
     "later": "Пізніше",
     "there": "друже",
+    "notSpecified": "не вказано",
     "justNow": "Щойно",
     "minutesAgo": "{count} хв тому",
     "hoursAgo": "{count} год тому",
@@ -837,7 +1043,12 @@
         "maxViews": "Максимум переглядів",
         "unlimited": "Необмежено",
         "views": "Переглядів",
-        "revoke": "Скасувати доступ"
+        "revoke": "Скасувати доступ",
+        "education": {
+          "title": "Освіта",
+          "present": "Зараз",
+          "in": "у галузі"
+        }
       },
       "export": {
         "title": "Експорт",

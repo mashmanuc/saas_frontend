@@ -3,8 +3,27 @@ import apiClient from '../../../utils/apiClient'
 // Runtime API object (used by non-TS imports).
 // Keep this in sync with marketplace.ts.
 
+async function fetchFirstOk(paths) {
+  let lastErr = null
+  for (const path of paths) {
+    try {
+      return await apiClient.get(path)
+    } catch (err) {
+      const status = err && err.response ? err.response.status : undefined
+      lastErr = err
+      if (status === 404) continue
+      throw err
+    }
+  }
+  throw lastErr || new Error('not_found')
+}
+
+function isHttp404(err) {
+  return Boolean(err && err.response && err.response.status === 404)
+}
+
 export const marketplaceApi = {
-  async getTutors(filters = {}, page = 1, pageSize = 20, sort = 'rating') {
+  async getTutors(filters = {}, page = 1, pageSize = 20, sort = 'recommended') {
     const params = {
       ...(filters || {}),
       page,
@@ -63,8 +82,57 @@ export const marketplaceApi = {
     return apiClient.post(`/v1/marketplace/tutors/${slug}/trial-request/`, payload)
   },
 
+  async presignCertificationUpload(payload) {
+    return apiClient.post('/v1/uploads/presign/certification/', payload)
+  },
+
+  async getMyCertifications() {
+    const response = await apiClient.get('/v1/marketplace/tutors/me/certifications/')
+    const results = response && Array.isArray(response.results) ? response.results : []
+    return results
+  },
+
+  async createMyCertification(payload) {
+    return apiClient.post('/v1/marketplace/tutors/me/certifications/', payload)
+  },
+
+  async updateMyCertification(id, payload) {
+    return apiClient.patch(`/v1/marketplace/tutors/me/certifications/${id}/`, payload)
+  },
+
+  async deleteMyCertification(id) {
+    await apiClient.delete(`/v1/marketplace/tutors/me/certifications/${id}/`)
+  },
+
+  async getTutorReviews(slug, params = {}) {
+    if (!slug) throw new Error('Tutor slug is required')
+    return apiClient.get(`/v1/marketplace/tutors/${slug}/reviews/`, { params })
+  },
+
+  async createTutorReview(slug, payload) {
+    if (!slug) throw new Error('Tutor slug is required')
+    return apiClient.post(`/v1/marketplace/tutors/${slug}/reviews/`, payload)
+  },
+
   async getFilterOptions() {
-    const response = await apiClient.get('/v1/marketplace/filters/')
+    let response
+    try {
+      response = await fetchFirstOk([
+        '/v1/marketplace/filters/',
+        '/v1/marketplace/filter-options/',
+        '/v1/marketplace/filters/options/',
+      ])
+    } catch (err) {
+      if (isHttp404(err)) {
+        return {
+          subjects: [],
+          countries: [],
+          languages: [],
+          priceRange: { min: 0, max: 0 },
+        }
+      }
+      throw err
+    }
     const rawPrice = response.priceRange || response.price_range || {}
 
     const normalizeOption = (item, keys) => {
@@ -143,7 +211,25 @@ export const marketplaceApi = {
   },
 
   async getExtendedFilterOptions() {
-    return apiClient.get('/v1/marketplace/filters/')
+    try {
+      return await fetchFirstOk([
+        '/v1/marketplace/filters/',
+        '/v1/marketplace/filter-options/',
+        '/v1/marketplace/filters/options/',
+      ])
+    } catch (err) {
+      if (isHttp404(err)) {
+        return {
+          categories: [],
+          subjects: [],
+          countries: [],
+          languages: [],
+          priceRange: { min: 0, max: 0, avg: 0 },
+          experienceRange: { min: 0, max: 0 },
+        }
+      }
+      throw err
+    }
   },
 
   async getCategories() {

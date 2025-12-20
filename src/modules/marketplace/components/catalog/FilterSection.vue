@@ -36,7 +36,7 @@ const toggle = () => {
 
 <style scoped>
 .filter-section {
-  border-bottom: 1px solid var(--color-border, #e5e7eb);
+  border-bottom: 1px solid var(--border-color);
   padding-bottom: 16px;
   margin-bottom: 16px;
 }
@@ -62,11 +62,11 @@ const toggle = () => {
 .section-title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--color-text-primary, #111827);
+  color: var(--text-primary);
 }
 
 .chevron {
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--text-muted);
   transition: transform 0.2s ease;
 }
 

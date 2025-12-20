@@ -179,7 +179,7 @@ describe('boardStore', () => {
       store.addStroke({ id: 'new' })
 
       expect(store.undoStack.length).toBe(1)
-      expect(store.undoStack[0]).toEqual([{ id: 'existing' }])
+      expect(store.undoStack[0]).toEqual({ type: 'addStroke', stroke: { id: 'new' }, index: 1 })
     })
 
     it('should clear redoStack', () => {
@@ -206,7 +206,8 @@ describe('boardStore', () => {
       const store = useBoardStore()
       // Set up strokes in the current page
       store.pages[0].strokes = [{ id: 'stroke-1' }, { id: 'stroke-2' }]
-      store.undoStack = [[{ id: 'stroke-1' }]] as any
+      // UndoStack stores operations now. To revert to [{stroke-1}], we undo a previous addStroke of stroke-2.
+      store.undoStack = [{ type: 'addStroke', stroke: { id: 'stroke-2' }, index: 1 }] as any
 
       store.undo()
 
@@ -218,7 +219,7 @@ describe('boardStore', () => {
       const store = useBoardStore()
       // Set up strokes in the current page
       store.pages[0].strokes = [{ id: 'stroke-1' }]
-      store.redoStack = [[{ id: 'stroke-1' }, { id: 'stroke-2' }]] as any
+      store.redoStack = [{ type: 'addStroke', stroke: { id: 'stroke-2' }, index: 1 }] as any
 
       store.redo()
 

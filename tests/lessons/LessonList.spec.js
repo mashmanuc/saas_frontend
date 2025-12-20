@@ -36,6 +36,12 @@ vi.mock('../../src/modules/booking/components/StudentAutocomplete.vue', () => ({
   },
 }))
 
+vi.mock('../../src/modules/booking/api/studentsApi', () => ({
+  studentsApi: {
+    listStudents: vi.fn().mockResolvedValue({ count: 1, results: [{ id: 'student-1', full_name: 'Student 1' }] }),
+  },
+}))
+
 import LessonList from '../../src/modules/lessons/views/LessonList.vue'
 
 let lessonStoreMock

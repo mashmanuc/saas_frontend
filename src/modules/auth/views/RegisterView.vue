@@ -6,6 +6,26 @@
     </header>
 
     <form class="space-y-4" @submit.prevent="onSubmit">
+      <div class="space-y-2">
+        <p class="text-sm font-medium" style="color: var(--text-primary);">{{ $t('auth.register.accountType') }}</p>
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <label class="flex items-start gap-3 rounded-lg border p-3 cursor-pointer" :class="form.account_type === 'student' ? 'border-[var(--accent)]' : 'border-[var(--border)]'">
+            <input v-model="form.account_type" type="radio" value="student" name="account_type" />
+            <div>
+              <div class="text-sm font-medium">{{ $t('auth.register.accountTypeStudent') }}</div>
+              <div class="text-xs" style="color: var(--text-secondary);">{{ $t('auth.register.accountTypeStudentHint') }}</div>
+            </div>
+          </label>
+          <label class="flex items-start gap-3 rounded-lg border p-3 cursor-pointer" :class="form.account_type === 'tutor' ? 'border-[var(--accent)]' : 'border-[var(--border)]'">
+            <input v-model="form.account_type" type="radio" value="tutor" name="account_type" />
+            <div>
+              <div class="text-sm font-medium">{{ $t('auth.register.accountTypeTutor') }}</div>
+              <div class="text-xs" style="color: var(--text-secondary);">{{ $t('auth.register.accountTypeTutorHint') }}</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Input
           :label="$t('auth.register.firstName')"
@@ -20,6 +40,12 @@
           autocomplete="family-name"
         />
       </div>
+
+      <Input
+        :label="$t('auth.register.username')"
+        v-model="form.username"
+        autocomplete="username"
+      />
 
       <Input
         :label="$t('auth.register.email')"
@@ -63,22 +89,31 @@ import { useAuthStore } from '../store/authStore'
 import Button from '../../../ui/Button.vue'
 import Card from '../../../ui/Card.vue'
 import Input from '../../../ui/Input.vue'
-import { getDefaultRouteForRole } from '../../../config/routes'
 
 const router = useRouter()
 const auth = useAuthStore()
 
 const form = reactive({
+  account_type: 'student',
   first_name: '',
   last_name: '',
+  username: '',
   email: '',
   password: '',
 })
 
 async function onSubmit() {
   try {
-    const user = await auth.register(form)
-    router.push(getDefaultRouteForRole(user?.role))
+    const origin = typeof window !== 'undefined' ? window.location.origin : ''
+    const redirect = form.account_type === 'tutor' ? '/marketplace/my-profile' : ''
+    const redirectQuery = redirect ? `&redirect=${encodeURIComponent(redirect)}` : ''
+    const verify_url = origin ? `${origin}/auth/verify-email?token={token}${redirectQuery}` : undefined
+
+    await auth.register({ ...form, verify_url })
+    router.push({
+      name: 'auth-check-email',
+      query: { email: form.email, account_type: form.account_type },
+    })
   } catch (error) {
     // помилка вже міститься у auth.error
   }

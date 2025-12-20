@@ -18,7 +18,7 @@ const newIsPublic = ref(true)
 const newFile = ref<File | null>(null)
 
 const canSubmit = computed(() => {
-  return !!newFile.value && newTitle.value.trim().length > 0 && newIssuer.value.trim().length > 0 && typeof newIssuedYear.value === 'number'
+  return !!newFile.value && newTitle.value.trim().length > 0
 })
 
 function statusLabel(status: CertificationStatus): string {
@@ -32,8 +32,7 @@ async function load() {
   try {
     certifications.value = await marketplaceApi.getMyCertifications()
   } catch (err) {
-    notifyError(t('marketplace.profile.editor.certificationsLoadError') || 'Не вдалося завантажити сертифікати')
-    throw err
+    notifyError(t('marketplace.profile.editor.certificationsLoadError'))
   } finally {
     isLoading.value = false
   }
@@ -92,7 +91,7 @@ async function createCertification() {
   const file = newFile.value as File
   const title = newTitle.value.trim()
   const issuer = newIssuer.value.trim()
-  const issuedYear = newIssuedYear.value as number
+  const issuedYear = typeof newIssuedYear.value === 'number' ? newIssuedYear.value : null
 
   const allowed = new Set([
     'application/pdf',
@@ -102,13 +101,13 @@ async function createCertification() {
   ])
 
   if (!allowed.has(file.type)) {
-    notifyError(t('marketplace.profile.editor.certificationsUnsupportedType') || 'Непідтримуваний тип файлу')
+    notifyError(t('marketplace.profile.editor.certificationsUnsupportedType'))
     return
   }
 
-  const HARD_MAX_BYTES = 10 * 1024 * 1024
+  const HARD_MAX_BYTES = 5 * 1024 * 1024
   if (file.size > HARD_MAX_BYTES) {
-    notifyError(t('marketplace.profile.editor.certificationsTooLarge') || 'Файл завеликий')
+    notifyError(t('marketplace.profile.editor.certificationsTooLarge'))
     return
   }
 
@@ -122,7 +121,7 @@ async function createCertification() {
 
     await putWithProgress(presign.upload_url, file)
 
-    const created = await marketplaceApi.createMyCertification({
+    await marketplaceApi.createMyCertification({
       title,
       issuer,
       issued_year: issuedYear,
@@ -130,24 +129,33 @@ async function createCertification() {
       is_public: newIsPublic.value,
     })
 
-    certifications.value = [created, ...certifications.value]
-    notifySuccess(t('marketplace.profile.editor.certificationsCreateSuccess') || 'Сертифікат додано')
+    await load()
+    notifySuccess(t('marketplace.profile.editor.certificationsCreateSuccess'))
     resetForm()
   } catch (err: any) {
     const status = err?.response?.status ?? err?.status
 
+    if (status === 413) {
+      notifyError(t('marketplace.profile.editor.certificationsTooLarge'))
+      return
+    }
+
+    if (status === 415) {
+      notifyError(t('marketplace.profile.editor.certificationsUnsupportedType'))
+      return
+    }
+
     if (status === 422) {
-      notifyError(t('marketplace.profile.editor.certificationsValidationError') || 'Перевірте дані сертифікату')
+      notifyError(t('marketplace.profile.editor.certificationsValidationError'))
       return
     }
 
     if (status === 429) {
-      notifyError(t('marketplace.profile.editor.certificationsRateLimited') || 'Забагато запитів. Спробуйте пізніше')
+      notifyError(t('marketplace.profile.editor.certificationsRateLimited'))
       return
     }
 
-    notifyError(t('marketplace.profile.editor.certificationsUploadError') || 'Не вдалося завантажити сертифікат')
-    throw err
+    notifyError(t('marketplace.profile.editor.certificationsUploadError'))
   } finally {
     isUploading.value = false
   }
@@ -158,22 +166,26 @@ async function togglePublic(c: Certification) {
   try {
     const updated = await marketplaceApi.updateMyCertification(c.id, { is_public: next })
     certifications.value = certifications.value.map((x) => (x.id === c.id ? updated : x))
-  } catch (err) {
-    notifyError(t('marketplace.profile.editor.certificationsUpdateError') || 'Не вдалося оновити сертифікат')
-    throw err
+  } catch (err: any) {
+    const status = err?.response?.status ?? err?.status
+    if (status === 429) {
+      notifyError(t('marketplace.profile.editor.certificationsRateLimited'))
+      return
+    }
+    notifyError(t('marketplace.profile.editor.certificationsUpdateError'))
   }
 }
 
 async function removeCertification(c: Certification) {
-  const ok = window.confirm(t('common.confirmDelete') || 'Ви впевнені, що хочете видалити?')
+  const ok = window.confirm(t('common.confirmDelete'))
   if (!ok) return
 
   try {
     await marketplaceApi.deleteMyCertification(c.id)
     certifications.value = certifications.value.filter((x) => x.id !== c.id)
-    notifySuccess(t('marketplace.profile.editor.certificationsDeleteSuccess') || 'Сертифікат видалено')
+    notifySuccess(t('marketplace.profile.editor.certificationsDeleteSuccess'))
   } catch (err) {
-    notifyError(t('marketplace.profile.editor.certificationsDeleteError') || 'Не вдалося видалити сертифікат')
+    notifyError(t('marketplace.profile.editor.certificationsDeleteError'))
     throw err
   }
 }
@@ -386,21 +398,21 @@ onMounted(() => {
 }
 
 .status[data-status='approved'] {
-  border-color: color-mix(in srgb, #16a34a 40%, var(--border-color));
+  border-color: color-mix(in srgb, var(--success-bg) 45%, var(--border-color));
 }
 
 .status[data-status='pending'] {
-  border-color: color-mix(in srgb, #f59e0b 40%, var(--border-color));
+  border-color: color-mix(in srgb, var(--warning-bg) 45%, var(--border-color));
 }
 
 .status[data-status='rejected'] {
-  border-color: color-mix(in srgb, #ef4444 40%, var(--border-color));
+  border-color: color-mix(in srgb, var(--danger-bg) 45%, var(--border-color));
 }
 
 .rejection {
   display: block;
   margin-top: 0.35rem;
-  color: color-mix(in srgb, #ef4444 80%, var(--text-muted));
+  color: color-mix(in srgb, var(--danger-bg) 70%, var(--text-muted));
   font-size: 0.875rem;
 }
 

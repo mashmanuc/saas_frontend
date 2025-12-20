@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // TASK F11: RatingFilter component
 import { Star } from 'lucide-vue-next'
+import { useI18n } from 'vue-i18n'
 
 defineProps<{
   value: number | null
@@ -11,6 +12,8 @@ const emit = defineEmits<{
 }>()
 
 const ratings = [4.5, 4.0, 3.5, 3.0]
+
+const { t } = useI18n()
 
 const handleClick = (rating: number) => {
   emit('update', rating)
@@ -40,7 +43,7 @@ const handleClear = () => {
       type="button"
       @click="handleClear"
     >
-      Any
+      {{ t('marketplace.filters.any') }}
     </button>
   </div>
 </template>
@@ -57,47 +60,47 @@ const handleClear = () => {
   align-items: center;
   gap: 4px;
   padding: 8px 12px;
-  background: var(--color-bg-secondary, #f3f4f6);
+  background: var(--surface-card-muted);
   border: 1px solid transparent;
   border-radius: 20px;
   font-size: 13px;
   font-weight: 500;
-  color: var(--color-text-primary, #111827);
+  color: var(--text-primary);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .rating-option:hover {
-  background: var(--color-bg-tertiary, #e5e7eb);
+  background: color-mix(in srgb, var(--border-color) 65%, transparent);
 }
 
 .rating-option.is-selected {
-  background: var(--color-primary-light, #eff6ff);
-  border-color: var(--color-primary, #3b82f6);
-  color: var(--color-primary, #3b82f6);
+  background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
 }
 
 .star {
-  color: var(--color-warning, #f59e0b);
+  color: color-mix(in srgb, var(--warning-bg) 72%, var(--text-primary));
 }
 
 .star.filled {
-  fill: var(--color-warning, #f59e0b);
+  fill: color-mix(in srgb, var(--warning-bg) 72%, var(--text-primary));
 }
 
 .clear-btn {
   padding: 8px 12px;
   background: none;
-  border: 1px dashed var(--color-border, #d1d5db);
+  border: 1px dashed var(--border-color);
   border-radius: 20px;
   font-size: 13px;
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--text-muted);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .clear-btn:hover {
-  border-color: var(--color-text-secondary, #6b7280);
-  color: var(--color-text-primary, #111827);
+  border-color: var(--text-muted);
+  color: var(--text-primary);
 }
 </style>

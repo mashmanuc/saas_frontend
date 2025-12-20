@@ -10,6 +10,7 @@ import LoadingSpinner from '@/ui/LoadingSpinner.vue'
 import type { TutorProfileUpsertPayload, TutorProfilePatchPayload } from '../api/marketplace'
 import { telemetry } from '@/services/telemetry'
 import { useI18n } from 'vue-i18n'
+import { notifyError, notifySuccess } from '@/utils/notify'
 
 const store = useMarketplaceStore()
 const { t } = useI18n()
@@ -51,17 +52,32 @@ async function handleCreate(data: TutorProfileUpsertPayload) {
 
 async function handleSubmit() {
   telemetry.trigger('marketplace_profile_submit', { is_complete: isProfileComplete.value })
-  await store.submitForReview()
+  try {
+    await store.submitForReview()
+    notifySuccess(t('marketplace.profile.submitSuccess'))
+  } catch (err) {
+    notifyError(store.error || t('marketplace.profile.submitError'))
+  }
 }
 
 async function handlePublish() {
   telemetry.trigger('marketplace_profile_publish', { status: myProfile.value?.status || null })
-  await store.publishProfile()
+  try {
+    await store.publishProfile()
+    notifySuccess(t('marketplace.profile.publishSuccess'))
+  } catch (err) {
+    notifyError(store.error || t('marketplace.profile.publishError'))
+  }
 }
 
 async function handleUnpublish() {
   telemetry.trigger('marketplace_profile_unpublish', {})
-  await store.unpublishProfile()
+  try {
+    await store.unpublishProfile()
+    notifySuccess(t('marketplace.profile.unpublishSuccess'))
+  } catch (err) {
+    notifyError(store.error || t('marketplace.profile.unpublishError'))
+  }
 }
 </script>
 
@@ -141,9 +157,12 @@ async function handleUnpublish() {
           v-if="myProfile"
           :profile="myProfile"
           :saving="isSaving"
+          :api-errors="validationErrors"
           :filter-options="filterOptions"
           data-test="marketplace-profile-editor"
           @save="handleSave"
+          @publish="handlePublish"
+          @unpublish="handleUnpublish"
         />
 
         <CreateProfilePrompt v-else @create="handleCreate" />

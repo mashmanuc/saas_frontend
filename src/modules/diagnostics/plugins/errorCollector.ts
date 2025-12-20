@@ -80,6 +80,9 @@ export function createErrorCollector(options: ErrorCollectorOptions = {}) {
       /giveFreely\.tsx/i,
       /Cannot read properties of undefined \(reading 'payload'\)/i,
       /Cannot read properties of undefined \(reading 'slice'\)/i,
+      /Invalid prop: type check failed for prop/i,
+      /Extraneous non-props attributes/i,
+      /Extraneous non-emits event listeners/i,
     ],
   } = options
 

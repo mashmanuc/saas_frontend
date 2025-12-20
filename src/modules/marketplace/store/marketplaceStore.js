@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
-import { fetchMarketplaceTutors, fetchMarketplaceTutor } from '../api/marketplace'
+import { marketplaceApi } from '../api/marketplace'
+import { i18n } from '../../../i18n'
 
 const SORT_TO_ORDERING = {
   relevance: null,
@@ -74,6 +75,13 @@ export const useMarketplaceStore = defineStore('marketplace', {
     error: null,
   }),
   actions: {
+    _t(key) {
+      try {
+        return i18n?.global?.t?.(key) ?? key
+      } catch (_err) {
+        return key
+      }
+    },
     setFilters(partial = {}) {
       this.filters = { ...this.filters, ...partial }
     },
@@ -97,10 +105,12 @@ export const useMarketplaceStore = defineStore('marketplace', {
       this.error = null
       try {
         const paginationParams = { ...params }
-        const payload = await fetchMarketplaceTutors({
-          ...normalizeFilters(this.filters),
-          ...paginationParams,
-        })
+        const payload = await marketplaceApi.getTutors(
+          { ...normalizeFilters(this.filters), ...paginationParams },
+          1,
+          24,
+          this.filters.sort || 'recommended'
+        )
         const results = payload?.results || []
         const isPaginationRequest = Boolean(paginationParams.cursor || paginationParams.page)
         if (isPaginationRequest) {
@@ -112,7 +122,7 @@ export const useMarketplaceStore = defineStore('marketplace', {
         this.cursor = this.nextPageParams?.cursor || null
         this.hasMore = Boolean(this.nextPageParams)
       } catch (error) {
-        this.error = error?.response?.data?.detail || 'Не вдалося завантажити тьюторів'
+        this.error = error?.response?.data?.detail || this._t('marketplace.errors.loadTutors')
         throw error
       } finally {
         this.loading = false
@@ -127,11 +137,11 @@ export const useMarketplaceStore = defineStore('marketplace', {
       this.tutorLoading = true
       this.error = null
       try {
-        const data = await fetchMarketplaceTutor(id)
+        const data = await marketplaceApi.getTutorProfile(id)
         this.currentTutor = data
         return data
       } catch (error) {
-        this.error = error?.response?.data?.detail || 'Не вдалося завантажити профіль тьютора'
+        this.error = error?.response?.data?.detail || this._t('marketplace.errors.loadProfile')
         throw error
       } finally {
         this.tutorLoading = false

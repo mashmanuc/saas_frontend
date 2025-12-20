@@ -145,14 +145,14 @@ const emitChange = () => {
   display: flex;
   justify-content: space-between;
   font-size: 13px;
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--text-muted);
   margin-bottom: 8px;
 }
 
 .slider-track {
   position: relative;
   height: 6px;
-  background: var(--color-bg-tertiary, #e5e7eb);
+  background: var(--border-color);
   border-radius: 3px;
   margin: 16px 0;
 }
@@ -160,7 +160,7 @@ const emitChange = () => {
 .slider-range {
   position: absolute;
   height: 100%;
-  background: var(--color-primary, #3b82f6);
+  background: var(--accent-primary);
   border-radius: 3px;
 }
 
@@ -180,8 +180,8 @@ const emitChange = () => {
   appearance: none;
   width: 18px;
   height: 18px;
-  background: white;
-  border: 2px solid var(--color-primary, #3b82f6);
+  background: var(--surface-card);
+  border: 2px solid var(--accent-primary);
   border-radius: 50%;
   cursor: pointer;
   pointer-events: auto;
@@ -191,8 +191,8 @@ const emitChange = () => {
 .slider-input::-moz-range-thumb {
   width: 18px;
   height: 18px;
-  background: white;
-  border: 2px solid var(--color-primary, #3b82f6);
+  background: var(--surface-card);
+  border: 2px solid var(--accent-primary);
   border-radius: 50%;
   cursor: pointer;
   pointer-events: auto;
@@ -210,14 +210,14 @@ const emitChange = () => {
   flex: 1;
   display: flex;
   align-items: center;
-  border: 1px solid var(--color-border, #d1d5db);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   overflow: hidden;
 }
 
 .input-prefix {
   padding: 8px 0 8px 10px;
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--text-muted);
   font-size: 14px;
 }
 
@@ -231,11 +231,11 @@ const emitChange = () => {
 }
 
 .input-group:focus-within {
-  border-color: var(--color-primary, #3b82f6);
+  border-color: var(--accent-primary);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .separator {
-  color: var(--color-text-secondary, #9ca3af);
+  color: var(--text-muted);
 }
 </style>

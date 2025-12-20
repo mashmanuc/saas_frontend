@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { Calendar, MessageCircle, Clock } from 'lucide-vue-next'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { TutorProfile } from '../../api/marketplace'
 import PriceTag from '../shared/PriceTag.vue'
 
@@ -7,7 +9,14 @@ interface Props {
   profile: TutorProfile
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
+
+const { t } = useI18n()
+
+const responseTimeText = computed(() => {
+  const hours = (props.profile as any)?.response_time_hours
+  return typeof hours === 'number' ? t('marketplace.profile.contact.respondsInHours', { hours }) : t('common.notSpecified')
+})
 
 const emit = defineEmits<{
   (e: 'book'): void
@@ -24,11 +33,11 @@ const emit = defineEmits<{
           :currency="profile.currency"
           size="lg"
         />
-        <span class="per-hour">/ hour</span>
+        <span class="per-hour">{{ t('marketplace.common.perHour') }}</span>
       </div>
 
       <div v-if="profile.trial_lesson_price !== null" class="trial-price">
-        Trial lesson:
+        {{ t('marketplace.profile.contact.trialLesson') }}:
         <PriceTag
           :amount="profile.trial_lesson_price"
           :currency="profile.currency"
@@ -38,17 +47,17 @@ const emit = defineEmits<{
 
     <div class="response-time">
       <Clock :size="16" />
-      Usually responds in {{ profile.response_time_hours }}h
+      {{ responseTimeText }}
     </div>
 
     <div class="actions">
       <button class="btn btn-primary" @click="emit('book')">
         <Calendar :size="18" />
-        Book a Lesson
+        {{ t('marketplace.profile.contact.bookLesson') }}
       </button>
       <button class="btn btn-secondary" @click="emit('message')">
         <MessageCircle :size="18" />
-        Send Message
+        {{ t('marketplace.profile.contact.sendMessage') }}
       </button>
     </div>
   </div>
@@ -56,16 +65,16 @@ const emit = defineEmits<{
 
 <style scoped>
 .profile-contact {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: var(--surface-card);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-sm);
 }
 
 .price-section {
   margin-bottom: 1rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .price-main {
@@ -76,13 +85,13 @@ const emit = defineEmits<{
 
 .per-hour {
   font-size: 0.9375rem;
-  color: #6b7280;
+  color: var(--text-muted);
 }
 
 .trial-price {
   margin-top: 0.5rem;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--text-muted);
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -93,7 +102,7 @@ const emit = defineEmits<{
   align-items: center;
   gap: 0.5rem;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--text-muted);
   margin-bottom: 1.25rem;
 }
 
@@ -103,36 +112,4 @@ const emit = defineEmits<{
   gap: 0.75rem;
 }
 
-.btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.875rem 1.25rem;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.9375rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-primary {
-  background: #3b82f6;
-  color: white;
-}
-
-.btn-primary:hover {
-  background: #2563eb;
-}
-
-.btn-secondary {
-  background: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
-}
-
-.btn-secondary:hover {
-  background: #f9fafb;
-}
 </style>

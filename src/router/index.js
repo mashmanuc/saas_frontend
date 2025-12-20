@@ -4,6 +4,10 @@ import PageShell from '../ui/PageShell.vue'
 
 import LoginView from '../modules/auth/views/LoginView.vue'
 import RegisterView from '../modules/auth/views/RegisterView.vue'
+import CheckEmailView from '../modules/auth/views/CheckEmailView.vue'
+import VerifyEmailView from '../modules/auth/views/VerifyEmailView.vue'
+import ForgotPasswordView from '../modules/auth/views/ForgotPasswordView.vue'
+import ResetPasswordView from '../modules/auth/views/ResetPasswordView.vue'
 import InviteValidationView from '../modules/auth/views/InviteValidationView.vue'
 import InviteAcceptView from '../modules/auth/views/InviteAcceptView.vue'
 
@@ -21,9 +25,14 @@ import LessonInviteResolveView from '../modules/lessons/views/LessonInviteResolv
 const MarketplaceListView = () => import('../modules/marketplace/views/TutorCatalogView.vue')
 const MarketplaceTutorView = () => import('../modules/marketplace/views/TutorProfileView.vue')
 const MarketplaceMyProfileView = () => import('../modules/marketplace/views/MyProfileView.vue')
+const MarketplaceSearchResultsView = () => import('../modules/marketplace/views/SearchResultsView.vue')
+const MarketplaceCategoryView = () => import('../modules/marketplace/views/CategoryView.vue')
 const ProfileEditView = () => import('../modules/profile/views/ProfileEditView.vue')
 const ProfileSettingsView = () => import('../modules/profile/views/ProfileSettingsView.vue')
 const ProfileActivityView = () => import('../modules/profile/views/ProfileActivityView.vue')
+const UserAccountView = () => import('../modules/profile/views/UserAccountView.vue')
+const ChangeEmailView = () => import('../modules/profile/views/ChangeEmailView.vue')
+const ChangePasswordView = () => import('../modules/profile/views/ChangePasswordView.vue')
 const DevThemePlaygroundView = () => import('../modules/dev/views/DevThemePlayground.vue')
 
 // Onboarding views
@@ -60,6 +69,10 @@ const routes = [
     children: [
       { path: 'login', name: 'login', component: LoginView },
       { path: 'register', name: 'register', component: RegisterView },
+      { path: 'check-email', name: 'auth-check-email', component: CheckEmailView },
+      { path: 'verify-email', name: 'auth-verify-email', component: VerifyEmailView },
+      { path: 'forgot-password', name: 'auth-forgot-password', component: ForgotPasswordView },
+      { path: 'reset-password', name: 'auth-reset-password', component: ResetPasswordView },
     ],
   },
   {
@@ -116,6 +129,21 @@ const routes = [
         name: 'student-dashboard',
         component: DashboardStudent,
         meta: { roles: [USER_ROLES.STUDENT] },
+      },
+      {
+        path: 'dashboard/account',
+        name: 'user-account',
+        component: UserAccountView,
+      },
+      {
+        path: 'dashboard/account/change-email',
+        name: 'change-email',
+        component: ChangeEmailView,
+      },
+      {
+        path: 'dashboard/account/change-password',
+        name: 'change-password',
+        component: ChangePasswordView,
       },
       {
         path: 'classrooms',
@@ -175,6 +203,18 @@ const routes = [
         path: 'marketplace/tutors/:slug',
         name: 'marketplace-tutor',
         component: MarketplaceTutorView,
+        meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN] },
+      },
+      {
+        path: 'marketplace/search',
+        name: 'marketplace-search',
+        component: MarketplaceSearchResultsView,
+        meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN] },
+      },
+      {
+        path: 'marketplace/categories/:slug',
+        name: 'marketplace-category',
+        component: MarketplaceCategoryView,
         meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN] },
       },
       {

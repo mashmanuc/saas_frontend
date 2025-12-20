@@ -4,6 +4,7 @@ import { ref, watch } from 'vue'
 import { X } from 'lucide-vue-next'
 import CatalogFilters from '../catalog/CatalogFilters.vue'
 import type { SearchFilters, ExtendedFilterOptions } from '../../api/marketplace'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
   isOpen: boolean
@@ -17,6 +18,8 @@ const emit = defineEmits<{
   apply: [filters: SearchFilters]
   clear: []
 }>()
+
+const { t } = useI18n()
 
 const localFilters = ref<SearchFilters>({ ...props.filters })
 
@@ -63,7 +66,7 @@ const handleClear = () => {
       <div v-if="isOpen" class="filters-modal-overlay" @click.self="close">
         <div class="filters-modal">
           <header class="modal-header">
-            <h2>Filters</h2>
+            <h2>{{ t('marketplace.filters.title') }}</h2>
             <button class="close-btn" type="button" @click="close">
               <X :size="24" />
             </button>
@@ -79,10 +82,10 @@ const handleClear = () => {
 
           <footer class="modal-footer">
             <button class="btn btn-secondary" type="button" @click="handleClear">
-              Clear All
+              {{ t('marketplace.filters.clearAll') }}
             </button>
             <button class="btn btn-primary" type="button" @click="handleApply">
-              Show {{ resultsCount }} Results
+              {{ t('marketplace.search.showResults', { count: resultsCount }) }}
             </button>
           </footer>
         </div>
@@ -95,7 +98,7 @@ const handleClear = () => {
 .filters-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: color-mix(in srgb, var(--text-primary) 50%, transparent);
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -103,7 +106,7 @@ const handleClear = () => {
 }
 
 .filters-modal {
-  background: var(--color-bg-primary, white);
+  background: var(--surface-card);
   border-radius: 16px 16px 0 0;
   width: 100%;
   max-width: 500px;
@@ -117,14 +120,14 @@ const handleClear = () => {
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  border-bottom: 1px solid var(--color-border, #e5e7eb);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .modal-header h2 {
   margin: 0;
   font-size: 1.125rem;
   font-weight: 600;
-  color: var(--color-text-primary, #111827);
+  color: var(--text-primary);
 }
 
 .close-btn {
@@ -135,14 +138,14 @@ const handleClear = () => {
   border: none;
   padding: 4px;
   cursor: pointer;
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--text-muted);
   border-radius: 8px;
   transition: all 0.15s;
 }
 
 .close-btn:hover {
-  background: var(--color-bg-secondary, #f5f5f5);
-  color: var(--color-text-primary, #111827);
+  background: var(--surface-card-muted);
+  color: var(--text-primary);
 }
 
 .modal-body {
@@ -155,39 +158,7 @@ const handleClear = () => {
   display: flex;
   gap: 12px;
   padding: 16px 20px;
-  border-top: 1px solid var(--color-border, #e5e7eb);
-}
-
-.btn {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 12px 20px;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-secondary {
-  background: var(--color-bg-secondary, #f5f5f5);
-  color: var(--color-text-primary, #111827);
-}
-
-.btn-secondary:hover {
-  background: var(--color-bg-tertiary, #e5e7eb);
-}
-
-.btn-primary {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-}
-
-.btn-primary:hover {
-  background: var(--color-primary-dark, #2563eb);
+  border-top: 1px solid var(--border-color);
 }
 
 /* Modal transition */

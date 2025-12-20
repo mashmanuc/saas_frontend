@@ -140,8 +140,8 @@ const handleRemove = (key: string) => {
   align-items: center;
   gap: 12px;
   padding: 12px 24px;
-  background: var(--color-bg-primary, white);
-  border-bottom: 1px solid var(--color-border, #e5e7eb);
+  background: var(--surface-card);
+  border-bottom: 1px solid var(--border-color);
   flex-wrap: wrap;
 }
 
@@ -157,17 +157,17 @@ const handleRemove = (key: string) => {
   align-items: center;
   gap: 6px;
   padding: 6px 10px;
-  background: var(--color-bg-secondary, #f3f4f6);
+  background: var(--surface-card-muted);
   border-radius: 20px;
   font-size: 13px;
 }
 
 .chip-label {
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--text-muted);
 }
 
 .chip-value {
-  color: var(--color-text-primary, #111827);
+  color: var(--text-primary);
   font-weight: 500;
 }
 
@@ -179,20 +179,20 @@ const handleRemove = (key: string) => {
   border: none;
   padding: 2px;
   cursor: pointer;
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--text-muted);
   border-radius: 50%;
   transition: all 0.15s;
 }
 
 .chip-remove:hover {
-  background: var(--color-bg-tertiary, #e5e7eb);
-  color: var(--color-text-primary, #111827);
+  background: color-mix(in srgb, var(--border-color) 65%, transparent);
+  color: var(--text-primary);
 }
 
 .clear-all {
   background: none;
   border: none;
-  color: var(--color-primary, #3b82f6);
+  color: var(--accent-primary);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;

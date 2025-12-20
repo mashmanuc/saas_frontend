@@ -1,11 +1,14 @@
 <script setup lang="ts">
 // TASK F14: SubjectList component
+import { useI18n } from 'vue-i18n'
 import type { SubjectOption } from '../../api/marketplace'
 
 defineProps<{
   subjects: SubjectOption[]
   selected: string | null
 }>()
+
+const { t } = useI18n()
 
 const emit = defineEmits<{
   select: [subject: string | null]
@@ -23,7 +26,7 @@ const handleSelect = (subject: string | null) => {
       :class="{ 'is-selected': selected === null }"
       @click="handleSelect(null)"
     >
-      All
+      {{ t('marketplace.categories.all') }}
     </button>
     <button
       v-for="subject in subjects"
@@ -32,7 +35,7 @@ const handleSelect = (subject: string | null) => {
       :class="{ 'is-selected': selected === subject.name }"
       @click="handleSelect(subject.name)"
     >
-      {{ subject.name }}
+      {{ t(`marketplace.categories.${subject.name}`) }}
       <span class="count">({{ subject.tutor_count }})</span>
     </button>
   </div>
@@ -50,25 +53,25 @@ const handleSelect = (subject: string | null) => {
   align-items: center;
   gap: 4px;
   padding: 8px 16px;
-  background: var(--color-bg-primary, white);
-  border: 1px solid var(--color-border, #e5e7eb);
+  background: var(--surface-card);
+  border: 1px solid var(--border-color);
   border-radius: 20px;
   font-size: 14px;
   font-weight: 500;
-  color: var(--color-text-primary, #111827);
+  color: var(--text-primary);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .subject-chip:hover {
-  border-color: var(--color-primary, #3b82f6);
-  background: var(--color-primary-light, #eff6ff);
+  border-color: var(--accent-primary);
+  background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
 }
 
 .subject-chip.is-selected {
-  background: var(--color-primary, #3b82f6);
-  border-color: var(--color-primary, #3b82f6);
-  color: white;
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: var(--text-on-accent);
 }
 
 .subject-chip.is-selected .count {
@@ -77,6 +80,6 @@ const handleSelect = (subject: string | null) => {
 
 .count {
   font-size: 12px;
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--text-muted);
 }
 </style>

@@ -4,14 +4,18 @@ import { useI18n } from 'vue-i18n'
 import Rating from '../shared/Rating.vue'
 import { marketplaceApi, type Review } from '../../api/marketplace'
 import { notifyError } from '@/utils/notify'
+import { mapMarketplaceErrorToMessage, parseMarketplaceApiError } from '../../utils/apiErrors'
 
 interface Props {
   slug: string
-  averageRating: number
-  totalReviews: number
+  averageRating?: number | null
+  totalReviews?: number | null
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  averageRating: 0,
+  totalReviews: 0,
+})
 
 const { t } = useI18n()
 
@@ -36,7 +40,7 @@ async function load(reset: boolean) {
     page.value = nextPage + 1
     hasMore.value = Boolean(res.next)
   } catch (err) {
-    notifyError(t('marketplace.profile.reviews.loadError') || 'Не вдалося завантажити відгуки')
+    notifyError(mapMarketplaceErrorToMessage(parseMarketplaceApiError(err), t('marketplace.profile.reviews.loadError')))
     throw err
   } finally {
     isLoading.value = false
@@ -71,7 +75,7 @@ watch(
   <section class="profile-section" data-test="marketplace-reviews">
     <div class="header">
       <h2>{{ title }}</h2>
-      <Rating :value="averageRating" :count="totalReviews" />
+      <Rating :value="averageRating ?? 0" :count="totalReviews ?? 0" />
     </div>
 
     <div v-if="!isLoading && reviews.length === 0" class="empty" data-test="marketplace-reviews-empty">
@@ -103,10 +107,10 @@ watch(
 
 <style scoped>
 .profile-section {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: var(--surface-card);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-sm);
 }
 
 .header {
@@ -118,14 +122,13 @@ watch(
 }
 
 .header h2 {
-  font-size: 1.25rem;
-  font-weight: 600;
+  font: var(--font-headline);
   margin: 0;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .empty {
-  color: #6b7280;
+  color: var(--text-muted);
 }
 
 .list {
@@ -135,8 +138,8 @@ watch(
 }
 
 .review {
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
   padding: 1rem;
 }
 
@@ -149,12 +152,12 @@ watch(
 
 .date {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--text-muted);
 }
 
 .text {
   margin: 0.75rem 0 0;
-  color: #111827;
+  color: var(--text-primary);
   white-space: pre-wrap;
 }
 </style>
