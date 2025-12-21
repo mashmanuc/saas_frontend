@@ -2,7 +2,7 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
 import pinia from './stores'
-import i18n from './i18n'
+import i18n, { setupI18n } from './i18n'
 import './assets/main.css'
 import './assets/fullcalendar.css'
 import './styles/m4sh.css'
@@ -26,40 +26,42 @@ const errorCollector = createErrorCollector({
 })
 app.use(errorCollector)
 
-const settings = useSettingsStore()
-settings.init()
+setupI18n(localStorage.getItem('locale') || 'uk').then(() => {
+  const settings = useSettingsStore()
+  settings.init()
 
-const theme = useThemeStore()
-theme.init()
+  const theme = useThemeStore()
+  theme.init()
 
-const notify = useNotifyStore()
-notify.init()
+  const notify = useNotifyStore()
+  notify.init()
 
-const realtime = useRealtimeStore()
-realtime.init()
+  const realtime = useRealtimeStore()
+  realtime.init()
 
-const notifications = useNotificationsStore()
-notifications.init()
+  const notifications = useNotificationsStore()
+  notifications.init()
 
-if (import.meta.hot) {
-  import.meta.hot.dispose(() => {
-    try {
-      useRealtimeStore().dispose?.()
-    } catch {
-      // ignore
-    }
-    try {
-      useNotificationsStore().dispose?.()
-    } catch {
-      // ignore
-    }
-    try {
-      useAuthStore().dispose?.()
-    } catch {
-      // ignore
-    }
-  })
-}
+  if (import.meta.hot) {
+    import.meta.hot.dispose(() => {
+      try {
+        useRealtimeStore().dispose?.()
+      } catch {
+        // ignore
+      }
+      try {
+        useNotificationsStore().dispose?.()
+      } catch {
+        // ignore
+      }
+      try {
+        useAuthStore().dispose?.()
+      } catch {
+        // ignore
+      }
+    })
+  }
 
-app.use(router)
-app.mount('#app')
+  app.use(router)
+  app.mount('#app')
+})

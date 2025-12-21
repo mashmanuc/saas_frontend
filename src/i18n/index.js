@@ -45,4 +45,9 @@ export function setI18nLocale(locale) {
 
 setI18nLocale(initialLocale)
 
+export async function setupI18n(locale = DEFAULT_LOCALE) {
+  setI18nLocale(locale)
+  return Promise.resolve()
+}
+
 export default i18n

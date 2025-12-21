@@ -101,7 +101,8 @@ function handleClose() {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(4, 6, 20, 0.78);
+  backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -110,13 +111,91 @@ function handleClose() {
 }
 
 .modal-content {
-  background: var(--surface-card);
+  background-color: var(--surface-card-solid, var(--surface-card));
   border-radius: var(--radius-lg, 12px);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 30px 60px rgba(2, 6, 23, 0.55),
+    0 8px 16px rgba(0, 0, 0, 0.35);
   max-width: 500px;
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
+  border: 1px solid var(--border-strong, rgba(148, 163, 184, 0.4));
+  color: var(--text-primary);
+}
+
+:global(html[data-theme='light']) .modal-overlay,
+:global(html[data-theme='classic']) .modal-overlay {
+  background: rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(8px);
+}
+
+:global(html[data-theme='light']) .modal-content,
+:global(html[data-theme='classic']) .modal-content {
+  background-color: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  box-shadow:
+    0 20px 45px rgba(15, 23, 42, 0.12),
+    0 8px 20px rgba(15, 23, 42, 0.07);
+  color: var(--text-primary, #111827);
+}
+
+:global(html[data-theme='classic']) .modal-content {
+  background-color: rgba(249, 247, 255, 0.98);
+  border-color: rgba(109, 40, 217, 0.18);
+  box-shadow:
+    0 24px 50px rgba(109, 40, 217, 0.15),
+    0 12px 24px rgba(15, 23, 42, 0.05);
+}
+
+:global(html[data-theme='light']) .description,
+:global(html[data-theme='classic']) .description,
+:global(html[data-theme='light']) .steps-list li,
+:global(html[data-theme='classic']) .steps-list li {
+  color: rgba(15, 23, 42, 0.82);
+  text-shadow: 0 0 1px rgba(255, 255, 255, 0.6);
+}
+
+:global(html[data-theme='light']) .info-box {
+  background: rgba(14, 165, 233, 0.1);
+  color: #0f172a;
+  border: 1px solid rgba(14, 165, 233, 0.35);
+}
+
+:global(html[data-theme='classic']) .info-box {
+  background: rgba(109, 40, 217, 0.12);
+  color: #3c165f;
+  border: 1px solid rgba(109, 40, 217, 0.3);
+}
+
+:global(html[data-theme='light']) .beta-badge,
+:global(html[data-theme='classic']) .beta-badge {
+  background: rgba(245, 158, 11, 0.15);
+  color: #b45309;
+}
+
+:global(html[data-theme='light']) .modal-header,
+:global(html[data-theme='classic']) .modal-header,
+:global(html[data-theme='light']) .modal-footer,
+:global(html[data-theme='classic']) .modal-footer {
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
+:global(html[data-theme='light']) .btn-secondary,
+:global(html[data-theme='classic']) .btn-secondary {
+  background: rgba(15, 23, 42, 0.04);
+  color: rgba(15, 23, 42, 0.85);
+}
+
+:global(html[data-theme='light']) .btn-secondary:hover:not(:disabled),
+:global(html[data-theme='classic']) .btn-secondary:hover:not(:disabled) {
+  background: rgba(15, 23, 42, 0.08);
+}
+
+:global(html[data-theme='light']) .btn-primary,
+:global(html[data-theme='classic']) .btn-primary {
+  background: var(--accent, #2563eb);
+  color: #fff;
 }
 
 .modal-header {

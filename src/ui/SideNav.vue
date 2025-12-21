@@ -1,6 +1,6 @@
 <template>
   <aside
-    class="hidden md:block w-64 min-h-screen p-4"
+    class="hidden md:block w-64 h-screen sticky top-0 self-start p-4 overflow-y-auto"
     style="background-color: var(--nav-bg); color: var(--text-secondary); border-right: 1px solid var(--border-color); backdrop-filter: blur(10px);"
     role="navigation"
     :aria-label="$t('nav.side')"

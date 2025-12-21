@@ -385,30 +385,6 @@
         "passwordMismatch": "Passwords do not match.",
         "genericError": "Unable to accept invite."
       }
-    },
-    "webauthn": {
-      "betaLabel": "Beta",
-      "enrollTitle": "Set up WebAuthn",
-      "enrollDescription": "Add biometric authentication or a hardware key for fast and secure sign-in.",
-      "enrollInfo": "WebAuthn is a modern authentication standard. You can sign in using your fingerprint, Face ID, or a hardware key.",
-      "enrollCta": "Set up",
-      "enrolling": "Setting up…",
-      "enrollError": "Failed to set up WebAuthn",
-      "step1": "Click \"Set up\" below",
-      "step2": "Allow your browser to access your device",
-      "step3": "Confirm using biometrics or your key",
-      "promptTitle": "WebAuthn Authentication",
-      "promptDescription": "Use your fingerprint, Face ID, or hardware key to sign in.",
-      "authenticate": "Authenticate",
-      "authenticating": "Authenticating…",
-      "authError": "Failed to authenticate",
-      "useOtpInstead": "Use OTP instead",
-      "errors": {
-        "replayDetected": "Replay attack detected. Please try again.",
-        "attestationInvalid": "Invalid WebAuthn attestation. Please try again.",
-        "challengeExpired": "WebAuthn challenge expired. Please retry.",
-        "invalidAssertion": "Invalid WebAuthn assertion. Please try again."
-      }
     }
   },
   "menu": {
@@ -832,17 +808,6 @@
       "refresh": "Refresh",
       "view": "View",
       "executeError": "Failed to execute action."
-    },
-    "matches": {
-      "title": "Matches Console",
-      "status": "Status",
-      "tutorId": "Tutor ID",
-      "studentId": "Student ID",
-      "empty": "No matches found",
-      "matchId": "Match ID",
-      "tutor": "Tutor",
-      "student": "Student",
-      "lastActivity": "Last Activity"
     }
   },
   "common": {
@@ -871,44 +836,7 @@
     "unlock": "Unlock",
     "moveUp": "Move up",
     "moveDown": "Move down",
-    "confirmDelete": "Are you sure you want to delete?",
-    "saving": "Saving...",
-    "search": "Search",
-    "refresh": "Refresh",
-    "remove": "Remove",
-    "all": "All",
-    "years": "years",
-    "currency": "USD",
-    "hour": "hr",
-    "weekdays": {
-      "monday": "Monday",
-      "tuesday": "Tuesday",
-      "wednesday": "Wednesday",
-      "thursday": "Thursday",
-      "friday": "Friday",
-      "saturday": "Saturday",
-      "sunday": "Sunday"
-    },
-    "offline": {
-      "title": "You're offline",
-      "message": "Continue working in draft mode. Changes will sync when connection is restored.",
-      "lastSync": "Last sync",
-      "retry": "Try again",
-      "retrying": "Connecting..."
-    },
-    "rateLimit": {
-      "title": "Rate limit exceeded",
-      "message": "You've sent too many requests. Please wait before trying again.",
-      "seconds": "seconds",
-      "waiting": "Waiting...",
-      "tryNow": "Try now",
-      "features": {
-        "drafts": "Too many draft updates. Wait before next save.",
-        "auth": "Too many login attempts. Wait before retrying.",
-        "telemetry": "Too many telemetry requests. Wait before refreshing.",
-        "operator": "Too many operator actions. Wait before next command."
-      }
-    }
+    "confirmDelete": "Are you sure you want to delete?"
   },
   "role": {
     "superadmin": "Super admin",
@@ -1153,13 +1081,6 @@
       "acceptError": "Failed to accept invitation",
       "declineSuccess": "Invitation declined",
       "declineError": "Failed to decline invitation"
-    },
-    "myTutor": {
-      "title": "My Tutor",
-      "noTutor": "You don't have a tutor yet",
-      "findTutor": "Find a Tutor",
-      "message": "Message",
-      "bookLesson": "Book Lesson"
     }
   },
   "chat": {
@@ -1405,39 +1326,6 @@
       "update": "Update photo",
       "remove": "Remove photo",
       "hint": "Drag & drop or pick a file. Up to 5MB, JPG/PNG/WebP."
-    },
-    "editor": {
-      "education": {
-        "title": "Education",
-        "add": "Add Education",
-        "institution": "Institution",
-        "degree": "Degree",
-        "field": "Field",
-        "startYear": "Start Year",
-        "endYear": "End Year"
-      },
-      "languages": {
-        "title": "Languages",
-        "add": "Add Language",
-        "language": "Language",
-        "level": "Level"
-      },
-      "certifications": {
-        "title": "Certifications",
-        "add": "Add Certification",
-        "name": "Name",
-        "issuer": "Issuer",
-        "year": "Year"
-      },
-      "pricing": {
-        "title": "Pricing",
-        "hourlyRate": "Hourly Rate",
-        "trialRate": "Trial Lesson",
-        "packages": "Packages",
-        "lessons": "Lessons",
-        "price": "Price",
-        "discount": "Discount %"
-      }
     }
   },
   "classroom": {
@@ -2071,75 +1959,6 @@
     "selectStudent": "Select a student",
     "noStudentsFound": "No students found",
     "inviteStudent": "Invite a new student",
-    "typeToSearch": "Type at least 2 characters to search",
-    "modal": {
-      "title": "Book a Lesson",
-      "selectedSlot": "Selected slot",
-      "noteLabel": "Note",
-      "notePlaceholder": "Add a note to your request...",
-      "tutorResponseTime": "Tutor typically responds within 24 hours",
-      "successTitle": "Request sent!",
-      "successMessage": "The tutor has received your booking request",
-      "confirming": "Confirming...",
-      "confirm": "Confirm booking"
-    },
-    "timeline": {
-      "title": "Booking History",
-      "empty": "No history yet",
-      "by": "By: {actor}",
-      "requestId": "Request ID",
-      "events": {
-        "created": "Created",
-        "confirmed": "Confirmed",
-        "canceled": "Canceled"
-      }
-    }
-  },
-  "matches": {
-    "title": "My Connections",
-    "empty": "No connections yet",
-    "tabs": {
-      "invited": "Invitations",
-      "active": "Active",
-      "archived": "Archived"
-    },
-    "status": {
-      "invited": "Invited",
-      "active": "Active",
-      "archived": "Archived"
-    },
-    "lastActivity": "Last activity: {time}",
-    "detail": {
-      "title": "Connection Details",
-      "tutor": "Tutor",
-      "student": "Student",
-      "timeline": "Timeline"
-    },
-    "actions": {
-      "accept": "Accept",
-      "decline": "Decline",
-      "archive": "Archive"
-    },
-    "messaging": {
-      "banner": "This is a pre-lesson chat. Please be courteous and professional.",
-      "placeholder": "Type a message..."
-    }
-  },
-  "availability": {
-    "editor": {
-      "title": "Availability Editor",
-      "weeklyTemplate": "Weekly Schedule",
-      "copyWeek": "Copy Week",
-      "addSlot": "Add Slot",
-      "overrides": "Overrides",
-      "addOverride": "Add Override",
-      "blackoutDates": "Blackout Dates",
-      "addBlackout": "Add Date"
-    },
-    "calendar": {
-      "weekOf": "Week of {date}",
-      "noSlots": "No slots available",
-      "selected": "Selected"
-    }
+    "typeToSearch": "Type at least 2 characters to search"
   }
 }

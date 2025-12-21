@@ -3,7 +3,7 @@
 /**
  * security-manifest-check.mjs
  * 
- * Validates security-sensitive files and configurations for v0.41.0
+ * Validates security-sensitive files and configurations for v0.42.0
  * 
  * Checks:
  * - MFA setup wizard exists and has required components
@@ -14,6 +14,9 @@
  * - Operator actions with idempotency
  * - Telemetry charts with real data
  * - Rate limit UX components exist
+ * - Matches/messaging/booking components (v0.42)
+ * - Availability editor and calendar (v0.42)
+ * - Profile editor sections (education, languages, etc.)
  * - I18n keys for new features exist
  * - Playwright tests for all flows exist
  */
@@ -45,6 +48,37 @@ const REQUIRED_FILES = [
   'src/modules/marketplace/components/MergeConfirmationModal.vue',
   'src/modules/marketplace/components/PublishGuardModal.vue',
   'src/modules/marketplace/api/marketplace.ts',
+  'src/modules/marketplace/api/tutorApi.js',
+  'src/modules/marketplace/components/MarketplaceSearch.vue',
+  
+  // v0.42: Matches components
+  'src/modules/matches/api/matchesApi.js',
+  'src/modules/matches/api/messagesApi.js',
+  'src/modules/matches/api/availabilityApi.js',
+  'src/modules/matches/api/bookingsApi.js',
+  'src/modules/matches/store/matchStore.js',
+  'src/modules/matches/store/messageStore.js',
+  'src/modules/matches/store/availabilityStore.js',
+  'src/modules/matches/store/bookingStore.js',
+  'src/modules/matches/components/MatchList.vue',
+  'src/modules/matches/components/MatchDetail.vue',
+  'src/modules/matches/components/ConversationView.vue',
+  'src/modules/matches/components/AvailabilityEditor.vue',
+  'src/modules/matches/components/AvailabilityCalendar.vue',
+  'src/modules/matches/components/BookingModal.vue',
+  'src/modules/matches/components/BookingTimeline.vue',
+  'src/modules/matches/views/MatchListView.vue',
+  'src/modules/matches/views/MatchDetailView.vue',
+  
+  // v0.42: Profile editor sections
+  'src/modules/marketplace/components/editor/EducationSection.vue',
+  'src/modules/marketplace/components/editor/LanguagesSection.vue',
+  'src/modules/marketplace/components/editor/CertificationsSection.vue',
+  'src/modules/marketplace/components/editor/PricingSection.vue',
+  
+  // v0.42: Student/Operator components
+  'src/modules/student/components/MyTutorWidget.vue',
+  'src/modules/operator/components/MatchesConsole.vue',
   
   // Operator components
   'src/modules/operator/components/TelemetryChart.vue',
@@ -63,6 +97,7 @@ const REQUIRED_FILES = [
   'tests/e2e/v041-webauthn-integration.spec.ts',
   'tests/e2e/v041-draft-merge.spec.ts',
   'tests/e2e/v041-operator-actions.spec.ts',
+  'tests/e2e/v042-matches.spec.ts',
   
   // I18n
   'src/i18n/locales/uk.json',

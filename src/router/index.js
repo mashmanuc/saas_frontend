@@ -290,6 +290,19 @@ const routes = [
         component: () => import('../modules/booking/views/BookLessonView.vue'),
         meta: { roles: [USER_ROLES.STUDENT] },
       },
+      // v0.42: Matches routes
+      {
+        path: 'matches',
+        name: 'matches',
+        component: () => import('../modules/matches/views/MatchListView.vue'),
+        meta: { roles: [USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
+      },
+      {
+        path: 'matches/:id',
+        name: 'match-detail',
+        component: () => import('../modules/matches/views/MatchDetailView.vue'),
+        meta: { roles: [USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
+      },
       // v0.24.2: Classroom routes
       {
         path: 'classroom/:sessionId',
