@@ -76,6 +76,20 @@ function isHttp404(err: unknown): boolean {
   return status === 404
 }
 
+export interface ProfileDraft {
+  payload: any
+  server_rev: number
+  conflict_state?: boolean
+  conflict_fields?: string[]
+  client_payload?: any
+  server_payload?: any
+}
+
+export interface DraftConflictResolution {
+  strategy: 'server' | 'client' | 'merge'
+  payload?: any
+}
+
 // Types
 export interface Education {
   id: number
@@ -806,6 +820,34 @@ export const marketplaceApi = {
       profile_id: profileId,
       position,
     })
+  },
+
+  /**
+   * Save profile draft with conflict detection.
+   */
+  async saveProfileDraft(payload: any, clientRev: number, clientHash: string): Promise<ProfileDraft> {
+    const response = await apiClient.put('/v1/marketplace/me/profile/draft', {
+      payload,
+      client_rev: clientRev,
+      client_hash: clientHash,
+    })
+    return response as unknown as ProfileDraft
+  },
+
+  /**
+   * Get current profile draft.
+   */
+  async getProfileDraft(): Promise<ProfileDraft> {
+    const response = await apiClient.get('/v1/marketplace/me/profile/draft')
+    return response as unknown as ProfileDraft
+  },
+
+  /**
+   * Resolve draft conflict.
+   */
+  async resolveProfileDraftConflict(resolution: DraftConflictResolution): Promise<ProfileDraft> {
+    const response = await apiClient.post('/v1/marketplace/me/profile/draft/resolve', resolution)
+    return response as unknown as ProfileDraft
   },
 }
 

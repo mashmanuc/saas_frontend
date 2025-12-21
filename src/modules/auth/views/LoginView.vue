@@ -101,6 +101,13 @@
       <Button @click="showErrorModal = false">OK</Button>
     </template>
   </OnboardingModal>
+
+  <WebAuthnPrompt
+    :show="showWebAuthnPrompt"
+    :on-authenticate="handleWebAuthnAuthenticate"
+    :on-fallback-to-otp="handleWebAuthnFallback"
+    :on-cancel="handleWebAuthnCancel"
+  />
 </template>
 
 <script setup>
@@ -112,6 +119,7 @@ import Card from '../../../ui/Card.vue'
 import Input from '../../../ui/Input.vue'
 import { getDefaultRouteForRole } from '../../../config/routes'
 import OnboardingModal from '../../onboarding/components/widgets/OnboardingModal.vue'
+import WebAuthnPrompt from '../components/WebAuthnPrompt.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -124,6 +132,7 @@ const form = reactive({
 
 const step = ref('password')
 const otp = ref('')
+const showWebAuthnPrompt = ref(false)
 
 const showResendVerify = computed(() => auth.lastErrorCode === 'email_not_verified' && Boolean(form.email))
 
@@ -151,6 +160,10 @@ function goToCheckEmail() {
 async function onSubmit() {
   try {
     const res = await auth.login(form)
+    if (res && typeof res === 'object' && res.webauthn_required) {
+      showWebAuthnPrompt.value = true
+      return
+    }
     if (res && typeof res === 'object' && res.mfa_required) {
       step.value = 'otp'
       otp.value = ''
@@ -193,5 +206,37 @@ async function resendOtp() {
   } catch (_error) {
     // помилка вже відображається через auth.error
   }
+}
+
+async function handleWebAuthnAuthenticate() {
+  try {
+    // Тут має бути виклик navigator.credentials.get() для отримання assertion
+    // Поки що заглушка, бо WebAuthn API потребує реального credential
+    const mockAssertion = {
+      credential_id: 'mock_credential',
+      client_data_json: 'mock_client_data',
+      authenticator_data: 'mock_auth_data',
+      signature: 'mock_signature',
+      user_handle: 'mock_handle'
+    }
+    const user = await auth.verifyWebAuthn(mockAssertion)
+    showWebAuthnPrompt.value = false
+    const redirect = route.query?.redirect
+    const target = typeof redirect === 'string' && redirect ? redirect : getDefaultRouteForRole(user?.role)
+    router.push(target)
+  } catch (error) {
+    // помилка вже відображається через auth.error
+  }
+}
+
+function handleWebAuthnFallback() {
+  showWebAuthnPrompt.value = false
+  step.value = 'otp'
+  otp.value = ''
+}
+
+function handleWebAuthnCancel() {
+  showWebAuthnPrompt.value = false
+  auth.pendingWebAuthnSessionId = null
 }
 </script>

@@ -88,6 +88,36 @@
       </div>
     </Card>
 
+    <Card class="space-y-6">
+      <div class="space-y-2">
+        <p class="text-sm font-semibold text-foreground">{{ $t('profile.security.webauthn.title') }}</p>
+        <p class="text-sm text-muted-foreground">{{ $t('profile.security.webauthn.subtitle') }}</p>
+      </div>
+
+      <div class="space-y-4">
+        <Button variant="primary" :disabled="loading" @click="showWebAuthnEnroll = true">
+          {{ $t('profile.security.webauthn.enrollCta') }}
+        </Button>
+
+        <div v-if="webauthnCredentials.length" class="space-y-3">
+          <p class="text-sm font-medium text-foreground">{{ $t('profile.security.webauthn.credentialsList') }}</p>
+          <div
+            v-for="cred in webauthnCredentials"
+            :key="cred.credential_id"
+            class="flex flex-wrap items-start justify-between gap-3 rounded-lg border p-4"
+          >
+            <div class="space-y-1">
+              <p class="text-sm font-medium text-foreground">{{ cred.device_label || $t('profile.security.webauthn.unknownDevice') }}</p>
+              <p class="text-sm text-muted-foreground">{{ $t('profile.security.webauthn.lastUsed') }}: {{ formatDateTime(cred.last_used_at) }}</p>
+            </div>
+            <Button variant="outline" size="sm" type="button" :disabled="loading">
+              {{ $t('profile.security.webauthn.remove') }}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </Card>
+
     <Card class="space-y-4">
       <div class="space-y-1">
         <p class="text-sm font-semibold text-foreground">{{ $t('profile.security.sessions.title') }}</p>
@@ -139,6 +169,12 @@
         </div>
       </div>
     </Card>
+
+    <WebAuthnEnrollModal
+      :show="showWebAuthnEnroll"
+      :on-close="() => showWebAuthnEnroll = false"
+      :on-enroll="handleWebAuthnEnroll"
+    />
   </div>
 </template>
 
@@ -151,6 +187,7 @@ import Card from '../../../ui/Card.vue'
 import Heading from '../../../ui/Heading.vue'
 import Input from '../../../ui/Input.vue'
 import authApi from '../../auth/api/authApi'
+import WebAuthnEnrollModal from '../../auth/components/WebAuthnEnrollModal.vue'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -168,6 +205,9 @@ const otp = ref('')
 const sessionsLoading = ref(false)
 const sessions = ref([])
 const revokeLoadingId = ref(null)
+
+const showWebAuthnEnroll = ref(false)
+const webauthnCredentials = ref([])
 
 function goBack() {
   router.push('/dashboard/profile')
@@ -259,6 +299,26 @@ async function revoke(id) {
     }
   } finally {
     revokeLoadingId.value = null
+  }
+}
+
+async function handleWebAuthnEnroll() {
+  error.value = ''
+  success.value = ''
+  try {
+    // Тут має бути виклик navigator.credentials.create() для створення credential
+    // Поки що заглушка, бо WebAuthn API потребує реального пристрою
+    const mockCredential = {
+      credential_id: 'mock_cred_' + Date.now(),
+      device_label: 'Mock Device',
+      public_key: 'mock_public_key',
+      attestation_object: 'mock_attestation'
+    }
+    await authApi.webauthnRegister(mockCredential)
+    success.value = t('profile.security.webauthn.enrollSuccess')
+    showWebAuthnEnroll.value = false
+  } catch (err) {
+    error.value = err?.response?.data?.message || err?.response?.data?.detail || t('profile.security.webauthn.enrollError')
   }
 }
 

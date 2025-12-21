@@ -774,6 +774,40 @@
         "rejected": "Rejected",
         "suspended": "Suspended"
       }
+    },
+    "draft": {
+      "conflictTitle": "Change conflict",
+      "conflictDescription": "Your local changes conflict with the server version. Choose a resolution strategy.",
+      "conflictFields": "Conflicting fields",
+      "useServer": "Use server version",
+      "useServerDescription": "Discard local changes and load version from server.",
+      "useClient": "Use local version",
+      "useClientDescription": "Overwrite server version with your local changes.",
+      "useMerge": "Merge changes",
+      "useMergeDescription": "Attempt to automatically merge both versions.",
+      "resolveError": "Failed to resolve conflict."
+    }
+  },
+  "operator": {
+    "console": {
+      "title": "Activity Console",
+      "subtitle": "Monitor system events and metrics."
+    },
+    "filters": {
+      "domain": "Domain",
+      "severity": "Severity",
+      "allDomains": "All domains",
+      "allSeverities": "All severities"
+    },
+    "feed": {
+      "loading": "Loading events…",
+      "empty": "No events to display.",
+      "loadError": "Failed to load feed."
+    },
+    "actions": {
+      "refresh": "Refresh",
+      "view": "View",
+      "executeError": "Failed to execute action."
     }
   },
   "common": {
@@ -1138,7 +1172,18 @@
     "security": {
       "navLabel": "Security",
       "title": "Security",
-      "subtitle": "Manage sign-in protection and active sessions.",
+      "subtitle": "Manage login protection and active sessions.",
+      "webauthn": {
+        "title": "WebAuthn / Security Keys",
+        "subtitle": "Use biometrics or hardware keys for login.",
+        "enrollCta": "Add security key",
+        "enrollSuccess": "Security key successfully added.",
+        "enrollError": "Failed to add security key.",
+        "credentialsList": "Registered keys",
+        "unknownDevice": "Unknown device",
+        "lastUsed": "Last used",
+        "remove": "Remove"
+      },
       "mfa": {
         "title": "Two-factor authentication (MFA)",
         "subtitle": "Add an extra layer of security to your account.",

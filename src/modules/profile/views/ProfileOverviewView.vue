@@ -91,6 +91,24 @@
           </button>
         </div>
       </ProfileCard>
+
+      <ProfileCard
+        :title="$t('profile.security.title')"
+        :subtitle="$t('profile.security.subtitle')"
+      >
+        <div class="flex items-center justify-between">
+          <p class="text-sm text-muted-foreground">
+            {{ $t('profile.security.subtitle') }}
+          </p>
+          <button
+            type="button"
+            class="text-sm font-medium text-primary hover:underline"
+            @click="goToSecurity"
+          >
+            {{ $t('profile.security.navLabel') }}
+          </button>
+        </div>
+      </ProfileCard>
     </div>
   </div>
 </template>
@@ -153,6 +171,10 @@ function goToEdit() {
 
 function goToSettings() {
   router.push('/dashboard/profile/settings')
+}
+
+function goToSecurity() {
+  router.push('/dashboard/profile/security')
 }
 
 onMounted(() => {

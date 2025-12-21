@@ -17,6 +17,18 @@ const authApi = {
     return api.post('/v1/auth/mfa/confirm', payload)
   },
 
+  webauthnChallenge(payload) {
+    return api.post('/v1/auth/webauthn/challenge', payload)
+  },
+
+  webauthnVerify(payload) {
+    return api.post('/v1/auth/webauthn/verify', payload)
+  },
+
+  webauthnRegister(payload) {
+    return api.post('/v1/auth/webauthn/register', payload)
+  },
+
   getSessions() {
     return api.get('/v1/me/sessions/')
   },

@@ -12,6 +12,8 @@ export const useAuthStore = defineStore('auth', {
     user: storage.getUser(),
     csrfToken: null,
     pendingMfaSessionId: null,
+    pendingWebAuthnSessionId: null,
+    webAuthnChallenge: null,
     loading: false,
     error: null,
     lastErrorCode: null,
@@ -63,11 +65,20 @@ export const useAuthStore = defineStore('auth', {
       this.lastFieldMessages = null
       this.lastSummary = null
       this.pendingMfaSessionId = null
+      this.pendingWebAuthnSessionId = null
+      this.webAuthnChallenge = null
 
       try {
         const res = await authApi.login(form)
         const mfaRequired = Boolean(res?.mfa_required)
+        const webauthnRequired = Boolean(res?.webauthn_required)
         const sessionId = res?.session_id
+
+        if (webauthnRequired) {
+          this.pendingWebAuthnSessionId = typeof sessionId === 'string' && sessionId.trim().length > 0 ? sessionId : null
+          this.lastErrorCode = 'webauthn_required'
+          return { webauthn_required: true, session_id: this.pendingWebAuthnSessionId }
+        }
 
         if (mfaRequired) {
           this.pendingMfaSessionId = typeof sessionId === 'string' && sessionId.trim().length > 0 ? sessionId : null
@@ -108,6 +119,33 @@ export const useAuthStore = defineStore('auth', {
         this.startProactiveRefresh()
         await this.reloadUser()
         this.pendingMfaSessionId = null
+        return this.user
+      } catch (error) {
+        this.handleError(error)
+        throw error
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async verifyWebAuthn(assertion) {
+      this.loading = true
+      this.error = null
+      this.lastErrorCode = null
+      this.lastRequestId = null
+      this.lastFieldMessages = null
+      this.lastSummary = null
+
+      try {
+        const sessionId = this.pendingWebAuthnSessionId
+        const res = await authApi.webauthnVerify({ session_id: sessionId, ...assertion })
+        const access = res?.access
+        this.setAuth({ access })
+        await this.ensureCsrfToken()
+        this.startProactiveRefresh()
+        await this.reloadUser()
+        this.pendingWebAuthnSessionId = null
+        this.webAuthnChallenge = null
         return this.user
       } catch (error) {
         this.handleError(error)
@@ -374,6 +412,28 @@ export const useAuthStore = defineStore('auth', {
         const message = typeof data.message === 'string' && data.message.trim().length > 0 ? data.message : 'Невірний код підтвердження.'
         this.lastFieldMessages = { otp: [withRequestId(message)] }
         this.error = withRequestId(message)
+        return
+      }
+
+      if (status === 422 && data && typeof data === 'object' && code === 'webauthn_invalid_assertion') {
+        this.lastErrorCode = 'webauthn_invalid_assertion'
+        const message = typeof data.message === 'string' && data.message.trim().length > 0 ? data.message : 'Невірний WebAuthn assertion.'
+        this.error = withRequestId(message)
+        return
+      }
+
+      if (status === 410 && data && typeof data === 'object' && code === 'webauthn_challenge_expired') {
+        this.lastErrorCode = 'webauthn_challenge_expired'
+        const message = typeof data.message === 'string' && data.message.trim().length > 0 ? data.message : 'WebAuthn challenge завершився.'
+        this.error = withRequestId(message)
+        return
+      }
+
+      if (status === 401 && data && typeof data === 'object' && code === 'session_revoked') {
+        this.lastErrorCode = 'session_revoked'
+        const message = typeof data.message === 'string' && data.message.trim().length > 0 ? data.message : 'Сесію відкликано.'
+        this.error = withRequestId(message)
+        this.forceLogout()
         return
       }
 
