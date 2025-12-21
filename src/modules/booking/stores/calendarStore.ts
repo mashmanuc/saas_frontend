@@ -46,6 +46,9 @@ export const useCalendarStore = defineStore('calendar', () => {
   const viewMode = ref<'week' | 'month'>('week')
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+  const syncStatus = ref<'syncing' | 'synced' | 'error'>('synced')
+  const lastSyncTime = ref<Date | null>(null)
+  const pendingChanges = ref<any[]>([])
 
   // Computed
   const slotsByDate = computed(() => {
@@ -125,6 +128,26 @@ export const useCalendarStore = defineStore('calendar', () => {
   async function setAvailability(schedule: AvailabilityInput[]): Promise<void> {
     await bookingApi.setAvailability(schedule)
     await loadAvailability()
+  }
+
+  async function syncAvailability(): Promise<void> {
+    syncStatus.value = 'syncing'
+    try {
+      await bookingApi.setAvailability(availability.value as any)
+      lastSyncTime.value = new Date()
+      syncStatus.value = 'synced'
+      pendingChanges.value = []
+    } catch (err) {
+      syncStatus.value = 'error'
+      throw err
+    }
+  }
+
+  function updateSlotStatus(slotId: number, status: string): void {
+    const slot = slots.value.find((s) => s.id === slotId)
+    if (slot) {
+      slot.status = status as any
+    }
   }
 
   async function deleteAvailabilitySlot(id: number): Promise<void> {
@@ -270,6 +293,9 @@ export const useCalendarStore = defineStore('calendar', () => {
     viewMode,
     isLoading,
     error,
+    syncStatus,
+    lastSyncTime,
+    pendingChanges,
 
     // Computed
     slotsByDate,
@@ -285,6 +311,8 @@ export const useCalendarStore = defineStore('calendar', () => {
     updateSettings,
     loadAvailability,
     setAvailability,
+    syncAvailability,
+    updateSlotStatus,
     deleteAvailabilitySlot,
     loadSlots,
     loadWeekSlots,

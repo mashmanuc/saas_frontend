@@ -18,7 +18,10 @@ import LoadingSpinner from '@/ui/LoadingSpinner.vue'
 import NotFound from '@/ui/NotFound.vue'
 import WeeklyAvailabilityWidget from '../components/trial/WeeklyAvailabilityWidget.vue'
 import TrialRequestModal from '../components/trial/TrialRequestModal.vue'
+import TutorAvailabilityWidget from '../components/TutorAvailabilityWidget.vue'
+import StudentAvailabilityCalendar from '../../booking/components/calendar/StudentAvailabilityCalendar.vue'
 import type { WeeklyAvailabilitySlot } from '../api/marketplace'
+import type { TimeSlot } from '../../booking/api/availabilityApi'
 
 const route = useRoute()
 const router = useRouter()
@@ -28,6 +31,8 @@ const { currentProfile, isLoadingProfile, error } = storeToRefs(store)
 
 const slug = computed(() => route.params.slug as string)
 const selectedSlot = ref<WeeklyAvailabilitySlot | null>(null)
+const showFullCalendar = ref(false)
+const selectedBookingSlot = ref<TimeSlot | null>(null)
 
 const isCreateReviewOpen = ref(false)
 const reviewsRef = ref<InstanceType<typeof ProfileReviews> | null>(null)
@@ -99,6 +104,24 @@ function handleReviewCreated() {
             :slug="slug"
             @select-slot="(slot) => (selectedSlot = slot)"
           />
+
+          <!-- New Availability Section for v0.43 -->
+          <section class="profile-section availability-section">
+            <h2>{{ $t('marketplace.profile.availability') }}</h2>
+            
+            <TutorAvailabilityWidget
+              :tutor-slug="slug"
+              @view-calendar="showFullCalendar = true"
+              @book-lesson="showFullCalendar = true"
+            />
+            
+            <StudentAvailabilityCalendar
+              v-if="showFullCalendar"
+              :tutor-slug="slug"
+              @slot-selected="(slot) => (selectedBookingSlot = slot)"
+              class="mt-4"
+            />
+          </section>
 
           <!-- Reviews section placeholder -->
           <section class="profile-section">
@@ -225,6 +248,17 @@ function handleReviewCreated() {
   display: flex;
   justify-content: flex-end;
   margin-bottom: 0.75rem;
+}
+
+.availability-section {
+  background: var(--surface-card);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-sm);
+}
+
+.mt-4 {
+  margin-top: 1.5rem;
 }
 
 </style>

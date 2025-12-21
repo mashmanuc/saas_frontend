@@ -570,7 +570,8 @@
       "allCountries": "Усі країни",
       "price": "Ціна",
       "priceRangeLabel": "Діапазон ціни",
-      "min": "Мін.",
+      "min": "хв",
+      "today": "Сьогодні",
       "max": "Макс.",
       "priceRange": "${min} – ${max}",
       "rating": "Рейтинг",
@@ -612,6 +613,16 @@
       "unpublishProfile": "Не вдалося зняти профіль з публікації."
     },
     "profile": {
+      "availability": "Доступність",
+      "viewFullCalendar": "Переглянути повний календар",
+      "viewCalendar": "Переглянути календар",
+      "nextAvailable": "Наступний доступний слот",
+      "availabilityThisWeek": "Доступність цього тижня",
+      "noAvailability": "Немає доступних слотів",
+      "noSlotsAvailable": "Немає доступних слотів",
+      "today": "Сьогодні",
+      "tomorrow": "Завтра",
+      "loadError": "Не вдалося завантажити доступність",
       "title": "Профіль репетитора",
       "viewPublic": "Переглянути публічний профіль",
       "backToCatalog": "Назад до каталогу",
@@ -2074,6 +2085,32 @@
     }
   },
   "booking": {
+    "bookLesson": "Забронювати урок",
+    "modal": {
+      "title": "Забронювати урок",
+      "tutor": "Тьютор",
+      "date": "Дата",
+      "time": "Час",
+      "subject": "Предмет",
+      "selectSubject": "Оберіть предмет",
+      "subjectRequired": "Предмет обов'язковий",
+      "noteLabel": "Примітка (необов'язково)",
+      "notePlaceholder": "Додайте примітку до запиту...",
+      "noteTooLong": "Примітка занадто довга (максимум 500 символів)",
+      "tutorResponseTime": "Тьютор зазвичай відповідає протягом 24 годин",
+      "successTitle": "Запит надіслано!",
+      "successMessage": "Тьютор отримав ваш запит на бронювання",
+      "confirming": "Підтверджуємо...",
+      "confirm": "Підтвердити бронювання",
+      "selectedSlot": "Обраний слот"
+    },
+    "errors": {
+      "slotUnavailable": "Цей слот вже заброньовано. Оберіть інший.",
+      "matchNotAccepted": "Спочатку прийміть запрошення від тьютора",
+      "generic": "Не вдалося забронювати урок. Спробуйте ще раз."
+    }
+  },
+  "oldBooking": {
     "selectStudent": "Оберіть студента",
     "noStudentsFound": "Студентів не знайдено",
     "inviteStudent": "Запросити нового студента",
@@ -2146,6 +2183,27 @@
       "weekOf": "Тиждень від {date}",
       "noSlots": "Немає слотів",
       "selected": "Обрано"
+    }
+  },
+  "calendar": {
+    "weekOf": "Тиждень {date}",
+    "noSlots": "Немає доступних слотів",
+    "noSlotsDescription": "Спробуйте обрати інший тиждень",
+    "noSlotsThisDay": "Немає слотів",
+    "selected": "Обрано",
+    "slots": "слотів",
+    "syncStatus": {
+      "syncing": "Синхронізація...",
+      "synced": "Синхронізовано",
+      "error": "Помилка синхронізації"
+    },
+    "notifications": {
+      "slotBooked": "{student} забронював(ла) слот о {time}",
+      "availabilityUpdated": "Розклад оновлено"
+    },
+    "errors": {
+      "blockFailed": "Не вдалося заблокувати слот",
+      "loadFailed": "Не вдалося завантажити календар"
     }
   }
 }

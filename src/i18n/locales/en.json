@@ -640,6 +640,16 @@
         "unknownBadge": "Badge",
         "loadError": "Failed to load badge history."
       },
+      "availability": "Availability",
+      "viewFullCalendar": "View full calendar",
+      "viewCalendar": "View calendar",
+      "nextAvailable": "Next available slot",
+      "availabilityThisWeek": "Availability this week",
+      "noAvailability": "No available slots",
+      "noSlotsAvailable": "No available slots",
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "loadError": "Failed to load availability",
       "contact": {
         "trialLesson": "Trial lesson",
         "respondsInHours": "Usually responds in {hours}h",
@@ -2098,10 +2108,15 @@
   "matches": {
     "title": "My Connections",
     "empty": "No connections yet",
+    "bookLesson": "Book a Lesson",
     "tabs": {
       "invited": "Invitations",
       "active": "Active",
-      "archived": "Archived"
+      "archived": "Archived",
+      "details": "Details",
+      "chat": "Chat",
+      "calendar": "Calendar",
+      "bookings": "Bookings"
     },
     "status": {
       "invited": "Invited",
@@ -2128,7 +2143,7 @@
   "availability": {
     "editor": {
       "title": "Availability Editor",
-      "weeklyTemplate": "Weekly Schedule",
+      "weeklyTemplate": "Weekly Template",
       "copyWeek": "Copy Week",
       "addSlot": "Add Slot",
       "overrides": "Overrides",
@@ -2140,6 +2155,27 @@
       "weekOf": "Week of {date}",
       "noSlots": "No slots available",
       "selected": "Selected"
+    }
+  },
+  "calendar": {
+    "weekOf": "Week of {date}",
+    "noSlots": "No available slots",
+    "noSlotsDescription": "Try selecting a different week",
+    "noSlotsThisDay": "No slots",
+    "selected": "Selected",
+    "slots": "slots",
+    "syncStatus": {
+      "syncing": "Syncing...",
+      "synced": "Synced",
+      "error": "Sync error"
+    },
+    "notifications": {
+      "slotBooked": "{student} booked a slot at {time}",
+      "availabilityUpdated": "Schedule updated"
+    },
+    "errors": {
+      "blockFailed": "Failed to block slot",
+      "loadFailed": "Failed to load calendar"
     }
   }
 }
