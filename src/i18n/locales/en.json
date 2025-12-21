@@ -255,14 +255,39 @@
     "login": {
       "title": "Login",
       "description": "Enter your email and password to continue.",
+      "otpTitle": "Verify sign in",
+      "otpDescription": "Enter the one-time code from your authenticator app.",
       "email": "Email",
       "password": "Password",
       "submit": "Sign in",
       "loading": "Signing in...",
+      "otpLabel": "Verification code",
+      "otpSubmit": "Verify",
+      "otpLoading": "Verifying…",
+      "otpBack": "Back",
+      "otpResend": "Resend code",
       "forgotPassword": "Forgot password?",
       "resendVerifyCta": "Resend verification email",
       "noAccount": "Don't have an account?",
-      "registerLink": "Register"
+      "registerLink": "Register",
+      "webauthn": {
+        "betaLabel": "Beta",
+        "enrollTitle": "Set up WebAuthn",
+        "enrollDescription": "Add biometric authentication or a hardware key for fast and secure sign-in.",
+        "enrollInfo": "WebAuthn is a modern authentication standard. You can sign in using your fingerprint, Face ID, or a hardware key.",
+        "enrollCta": "Set up",
+        "enrolling": "Setting up…",
+        "enrollError": "Failed to set up WebAuthn",
+        "step1": "Click 'Set up' below",
+        "step2": "Allow your browser to access your device",
+        "step3": "Confirm using biometrics or your key",
+        "promptTitle": "WebAuthn Authentication",
+        "promptDescription": "Use your fingerprint, Face ID, or hardware key to sign in.",
+        "authenticate": "Authenticate",
+        "authenticating": "Authenticating…",
+        "authError": "Failed to authenticate",
+        "useOtpInstead": "Use OTP instead"
+      }
     },
     "register": {
       "title": "Register",
@@ -506,6 +531,12 @@
     "filters": {
       "title": "Filters",
       "clear": "Clear",
+      "refresh": "Refresh",
+      "cacheExpiredTitle": "Filter data is outdated",
+      "cacheExpiredDays": "Updated {count} days ago",
+      "cacheExpiredHours": "Updated {count} hours ago",
+      "cacheExpiredMinutes": "Updated {count} minutes ago",
+      "cacheExpiredJustNow": "Just updated",
       "search": "Search",
       "searchPlaceholder": "Type at least 2 characters",
       "language": "Language",
@@ -578,6 +609,13 @@
         "expert": "Expert"
       },
       "badgesTitle": "Badges & achievements",
+      "badgesHistory": {
+        "title": "Badges history",
+        "loading": "Loading history…",
+        "empty": "No badge history yet.",
+        "unknownBadge": "Badge",
+        "loadError": "Failed to load badge history."
+      },
       "contact": {
         "trialLesson": "Trial lesson",
         "respondsInHours": "Usually responds in {hours}h",
@@ -1097,6 +1135,53 @@
     "subtitle": "Keep your personal information up to date.",
     "editButton": "Edit profile",
     "settingsButton": "Account settings",
+    "security": {
+      "navLabel": "Security",
+      "title": "Security",
+      "subtitle": "Manage sign-in protection and active sessions.",
+      "mfa": {
+        "title": "Two-factor authentication (MFA)",
+        "subtitle": "Add an extra layer of security to your account.",
+        "setupTitle": "MFA setup",
+        "start": "Enable MFA",
+        "qrTitle": "Scan QR code",
+        "qrSubtitle": "Scan with your authenticator app to link MFA.",
+        "secretHintLabel": "Secret hint",
+        "backupCodesTitle": "Backup codes",
+        "backupCodesSubtitle": "Store these codes somewhere safe. Each code can be used once.",
+        "otpLabel": "Verification code",
+        "confirm": "Confirm",
+        "cancel": "Cancel",
+        "reset": "Start over",
+        "success": {
+          "enabled": "MFA has been enabled."
+        },
+        "errors": {
+          "setupFailed": "Failed to start MFA setup.",
+          "confirmFailed": "Failed to confirm MFA."
+        }
+      },
+      "sessions": {
+        "title": "Active sessions",
+        "subtitle": "Review devices signed in to your account.",
+        "loading": "Loading sessions…",
+        "empty": "No active sessions.",
+        "current": "Current",
+        "unknownDevice": "Unknown device",
+        "ip": "IP",
+        "lastActive": "Last active",
+        "revoke": "Sign out",
+        "success": {
+          "revoked": "Session revoked."
+        },
+        "errors": {
+          "loadFailed": "Failed to load sessions.",
+          "revokeFailed": "Failed to revoke session.",
+          "currentForbidden": "You cannot revoke the current session.",
+          "notFound": "Session not found."
+        }
+      }
+    },
     "editTitle": "Edit profile",
     "editDescription": "Update your personal data and how students see you.",
     "email": "Email",
@@ -1199,6 +1284,18 @@
     }
   },
   "classroom": {
+    "realtime": {
+      "statusConnected": "Connected",
+      "statusConnecting": "Connecting…",
+      "statusDisconnected": "Disconnected",
+      "statusError": "Connection error",
+      "statusOffline": "No internet",
+      "gatewayUrl": "Gateway",
+      "rateLimitedTitle": "Too many requests",
+      "rateLimitedDescription": "Please wait before trying again.",
+      "rateLimitedRetryIn": "Retry in {time}",
+      "rateLimitedRetry": "Retry now"
+    },
     "soloWorkspace": {
       "title": "Solo Workspace",
       "untitled": "Untitled",
@@ -1691,6 +1788,8 @@
       "description": "Help others get to know you better",
       "displayName": "Display name",
       "namePlaceholder": "How should we call you?",
+      "bio": "Bio",
+      "submit": "Continue",
       "uploadPhoto": "Upload photo"
     },
     "preferences": {

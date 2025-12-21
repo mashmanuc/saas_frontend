@@ -2,6 +2,57 @@
 
 import apiClient from '@/utils/apiClient'
 
+type ApiClientFullResponse<T> = {
+  status: number
+  data: T
+  headers: Record<string, any>
+}
+
+async function apiGetFull<T>(path: string, config: any = {}): Promise<ApiClientFullResponse<T>> {
+  const res = (await apiClient.get(path, { ...config, meta: { ...(config?.meta || {}), fullResponse: true } })) as any
+  return {
+    status: Number(res?.status ?? 0),
+    data: res?.data as T,
+    headers: (res?.headers || {}) as Record<string, any>,
+  }
+}
+
+const FILTERS_CACHE_KEY = 'marketplace_filters_cache_v38'
+const EXT_FILTERS_CACHE_KEY = 'marketplace_ext_filters_cache_v38'
+
+function loadCachedFilters(key: string): { etag: string | null; expiresAt: number | null; data: any | null } {
+  try {
+    const raw = localStorage.getItem(key)
+    if (!raw) return { etag: null, expiresAt: null, data: null }
+    const parsed = JSON.parse(raw)
+    return {
+      etag: typeof parsed?.etag === 'string' ? parsed.etag : null,
+      expiresAt: typeof parsed?.expiresAt === 'number' ? parsed.expiresAt : null,
+      data: parsed?.data ?? null,
+    }
+  } catch {
+    return { etag: null, expiresAt: null, data: null }
+  }
+}
+
+function saveCachedFilters(key: string, payload: { etag: string | null; expiresIn: number | null; data: any }): void {
+  try {
+    const expiresAt = typeof payload.expiresIn === 'number' && payload.expiresIn > 0
+      ? Date.now() + payload.expiresIn * 1000
+      : null
+    localStorage.setItem(
+      key,
+      JSON.stringify({
+        etag: payload.etag,
+        expiresAt,
+        data: payload.data,
+      })
+    )
+  } catch {
+    // ignore
+  }
+}
+
 async function fetchFirstOk<T>(paths: string[]): Promise<T> {
   let lastErr: unknown = null
 
@@ -106,6 +157,14 @@ export interface Badge {
   description: string
   icon: string
   earnedAt: string
+}
+
+export type BadgeHistoryItem = {
+  badge: any
+  action: string
+  actor: any
+  reason: string | null
+  created_at: string
 }
 
 export type ProfileStatus = 'draft' | 'pending_review' | 'approved' | 'rejected' | 'suspended'
@@ -416,6 +475,11 @@ export const marketplaceApi = {
     return response as unknown as PresignCertificationResponse
   },
 
+  async getBadgeHistory(): Promise<BadgeHistoryItem[]> {
+    const response = await apiClient.get('/v1/marketplace/badges/history/')
+    return (Array.isArray(response) ? response : ((response as any)?.results || [])) as BadgeHistoryItem[]
+  },
+
   async getMyCertifications(): Promise<Certification[]> {
     const response = await apiClient.get('/v1/marketplace/tutors/me/certifications/')
     const results = (response as any)?.results
@@ -473,13 +537,39 @@ export const marketplaceApi = {
    * Get filter options (subjects, countries, languages).
    */
   async getFilterOptions(): Promise<FilterOptions> {
+    const cached = loadCachedFilters(FILTERS_CACHE_KEY)
+    if (cached.data && cached.expiresAt && cached.expiresAt > Date.now()) {
+      return cached.data as FilterOptions
+    }
+
     let response: RawFilterOptionsResponse
     try {
-      response = (await fetchFirstOk<RawFilterOptionsResponse>([
-        '/v1/marketplace/filters/',
-        '/v1/marketplace/filter-options/',
-        '/v1/marketplace/filters/options/',
-      ])) as unknown as RawFilterOptionsResponse
+      // Try modern endpoint first to support ETag/expires_in contract
+      if (cached.etag) {
+        const full = await apiGetFull<any>('/v1/marketplace/filters/', {
+          headers: { 'If-None-Match': cached.etag },
+          validateStatus: (s: number) => (s >= 200 && s < 300) || s === 304,
+        })
+        if (full.status === 304 && cached.data) {
+          return cached.data as FilterOptions
+        }
+        const payload = full.data
+        const data = payload?.data ?? payload
+        const etag = (payload?.etag ?? full.headers?.etag ?? cached.etag) || null
+        const expiresIn = typeof payload?.expires_in === 'number' ? payload.expires_in : null
+        response = data as RawFilterOptionsResponse
+        saveCachedFilters(FILTERS_CACHE_KEY, { etag: etag ? String(etag) : null, expiresIn, data: response })
+      } else {
+        const full = await apiGetFull<any>('/v1/marketplace/filters/', {
+          validateStatus: (s: number) => s >= 200 && s < 300,
+        })
+        const payload = full.data
+        const data = payload?.data ?? payload
+        const etag = (payload?.etag ?? full.headers?.etag ?? null)
+        const expiresIn = typeof payload?.expires_in === 'number' ? payload.expires_in : null
+        response = data as RawFilterOptionsResponse
+        saveCachedFilters(FILTERS_CACHE_KEY, { etag: etag ? String(etag) : null, expiresIn, data: response })
+      }
     } catch (err) {
       if (isHttp404(err)) {
         return {
@@ -612,13 +702,38 @@ export const marketplaceApi = {
    * Get extended filter options.
    */
   async getExtendedFilterOptions(): Promise<ExtendedFilterOptions> {
+    const cached = loadCachedFilters(EXT_FILTERS_CACHE_KEY)
+    if (cached.data && cached.expiresAt && cached.expiresAt > Date.now()) {
+      return cached.data as ExtendedFilterOptions
+    }
+
     try {
-      const response = await fetchFirstOk<ExtendedFilterOptions>([
-        '/v1/marketplace/filters/',
-        '/v1/marketplace/filter-options/',
-        '/v1/marketplace/filters/options/',
-      ])
-      return response as unknown as ExtendedFilterOptions
+      // Prefer contract endpoint with ETag
+      if (cached.etag) {
+        const full = await apiGetFull<any>('/v1/marketplace/filters/', {
+          headers: { 'If-None-Match': cached.etag },
+          validateStatus: (s: number) => (s >= 200 && s < 300) || s === 304,
+        })
+        if (full.status === 304 && cached.data) {
+          return cached.data as ExtendedFilterOptions
+        }
+        const payload = full.data
+        const data = payload?.data ?? payload
+        const etag = (payload?.etag ?? full.headers?.etag ?? cached.etag) || null
+        const expiresIn = typeof payload?.expires_in === 'number' ? payload.expires_in : null
+        saveCachedFilters(EXT_FILTERS_CACHE_KEY, { etag: etag ? String(etag) : null, expiresIn, data })
+        return data as ExtendedFilterOptions
+      }
+
+      const full = await apiGetFull<any>('/v1/marketplace/filters/', {
+        validateStatus: (s: number) => s >= 200 && s < 300,
+      })
+      const payload = full.data
+      const data = payload?.data ?? payload
+      const etag = (payload?.etag ?? full.headers?.etag ?? null)
+      const expiresIn = typeof payload?.expires_in === 'number' ? payload.expires_in : null
+      saveCachedFilters(EXT_FILTERS_CACHE_KEY, { etag: etag ? String(etag) : null, expiresIn, data })
+      return data as ExtendedFilterOptions
     } catch (err) {
       if (isHttp404(err)) {
         return {

@@ -47,6 +47,8 @@ export const usePresenceCursorsStore = defineStore('presenceCursors', () => {
   const MAX_BACKOFF_MS = 15000
   let reconnectAbort = false
 
+  const rateLimitedUntil = ref<number | null>(null)
+
   const cursorsList = computed(() => {
     const list = Object.values(remoteCursors.value)
     if (!localUserId.value) return list
@@ -128,6 +130,12 @@ export const usePresenceCursorsStore = defineStore('presenceCursors', () => {
     }
 
     if (msg.type === 'error') {
+      if (msg.code === 'rate_limited') {
+        const seconds = typeof (msg as any).retry_after_seconds === 'number' ? Number((msg as any).retry_after_seconds) : 5
+        rateLimitedUntil.value = Date.now() + Math.max(1, seconds) * 1000
+        notifyWarning(`Забагато запитів. Спробуйте через ${Math.max(1, seconds)}с.`)
+      }
+
       // Message-level errors are optional; close code is authoritative.
       return
     }
@@ -178,6 +186,12 @@ export const usePresenceCursorsStore = defineStore('presenceCursors', () => {
         notifyWarning('Сесія доступу завершилась. Оновіть сторінку')
       }
 
+      if (code === 4429) {
+        // Rate limited
+        rateLimitedUntil.value = Date.now() + 5_000
+        notifyWarning('Забагато запитів. Спробуйте трохи пізніше.')
+      }
+
       // 4400/4429/1011 → backoff reconnect
       if (!reconnectAbort) {
         void scheduleReconnect(opts)
@@ -205,6 +219,13 @@ export const usePresenceCursorsStore = defineStore('presenceCursors', () => {
   }): Promise<void> {
     if (reconnectAbort) return
     state.value = 'reconnecting'
+
+    const rl = rateLimitedUntil.value
+    if (typeof rl === 'number' && rl > Date.now()) {
+      await sleep(rl - Date.now())
+      if (reconnectAbort) return
+      rateLimitedUntil.value = null
+    }
 
     const delay = jitter(backoffMs.value)
     await sleep(delay)

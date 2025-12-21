@@ -53,6 +53,10 @@
 <script setup>
 import { computed, useAttrs } from 'vue'
 
+defineOptions({
+  inheritAttrs: false,
+})
+
 const props = defineProps({
   modelValue: {
     type: [String, Number],

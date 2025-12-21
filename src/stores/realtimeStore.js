@@ -1,6 +1,34 @@
 import { defineStore } from 'pinia'
 import { realtimeService } from '../services/realtime'
 import { useAuthStore } from '../modules/auth/store/authStore'
+import api from '../utils/apiClient'
+
+function buildWsUrlFromOrigin(path) {
+  const origin = globalThis?.location?.origin || ''
+  const wsOrigin = origin.startsWith('https:')
+    ? origin.replace(/^https:/, 'wss:')
+    : origin.replace(/^http:/, 'ws:')
+  return `${wsOrigin}${path}`
+}
+
+function normalizeWsUrl(wsHost) {
+  if (!wsHost) {
+    return buildWsUrlFromOrigin('/ws/gateway/')
+  }
+
+  const value = String(wsHost)
+
+  if (value.startsWith('ws://') || value.startsWith('wss://')) {
+    return value
+  }
+
+  if (value.startsWith('/')) {
+    return buildWsUrlFromOrigin(value)
+  }
+
+  // Assume hostname
+  return `wss://${value.replace(/\/$/, '')}/ws/gateway/`
+}
 
 export const useRealtimeStore = defineStore('realtime', {
   state: () => ({
@@ -9,6 +37,8 @@ export const useRealtimeStore = defineStore('realtime', {
     lastError: null,
     lastHeartbeat: null,
     offline: false,
+    wsUrl: null,
+    healthPromise: null,
     subscriptions: new Map(),
     authUnsubscribe: null,
     statusUnsubscribe: null,
@@ -23,7 +53,10 @@ export const useRealtimeStore = defineStore('realtime', {
 
       const auth = useAuthStore()
 
+      this.healthPromise = this.refreshHealth().catch(() => {})
+
       realtimeService.init({
+        url: this.wsUrl || normalizeWsUrl(null),
         tokenProvider: async () => {
           return auth.access
         },
@@ -83,8 +116,28 @@ export const useRealtimeStore = defineStore('realtime', {
       }
     },
 
-    connect() {
+    async refreshHealth() {
+      try {
+        const res = await api.get('/v1/realtime/health')
+        const wsHost = res?.ws_host
+        this.wsUrl = normalizeWsUrl(wsHost)
+        // Update service config for the next connect attempt
+        realtimeService.init({ url: this.wsUrl })
+      } catch (_err) {
+        // keep default url
+        this.wsUrl = this.wsUrl || normalizeWsUrl(null)
+      }
+    },
+
+    async connect() {
       if (!useAuthStore().access) return
+      if (this.healthPromise) {
+        try {
+          await this.healthPromise
+        } catch {
+          // ignore
+        }
+      }
       realtimeService.connect()
     },
 

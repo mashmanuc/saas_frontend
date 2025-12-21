@@ -48,6 +48,8 @@ export const useSearchStore = defineStore('search', () => {
   // Filter options
   const filterOptions = ref<ExtendedFilterOptions | null>(null)
   const isLoadingOptions = ref(false)
+  const filtersCacheExpired = ref(false)
+  const filtersCacheLastUpdated = ref<number | null>(null)
 
   // Search history
   const searchHistory = ref<string[]>([])
@@ -160,13 +162,15 @@ export const useSearchStore = defineStore('search', () => {
     }
   }
 
-  async function loadFilterOptions(): Promise<void> {
-    if (filterOptions.value) return
+  async function loadFilterOptions(forceRefresh: boolean = false): Promise<void> {
+    if (filterOptions.value && !forceRefresh) return
 
     isLoadingOptions.value = true
 
     try {
       filterOptions.value = await marketplaceApi.getExtendedFilterOptions()
+      filtersCacheLastUpdated.value = Date.now()
+      filtersCacheExpired.value = false
     } catch {
       // Fallback to empty options
       filterOptions.value = {
@@ -180,6 +184,26 @@ export const useSearchStore = defineStore('search', () => {
     } finally {
       isLoadingOptions.value = false
     }
+  }
+
+  function checkFiltersCacheExpiry(): void {
+    const EXT_FILTERS_CACHE_KEY = 'marketplace_ext_filters_cache_v38'
+    try {
+      const raw = localStorage.getItem(EXT_FILTERS_CACHE_KEY)
+      if (!raw) return
+      const parsed = JSON.parse(raw)
+      const expiresAt = typeof parsed?.expiresAt === 'number' ? parsed.expiresAt : null
+      if (expiresAt && expiresAt < Date.now()) {
+        filtersCacheExpired.value = true
+        filtersCacheLastUpdated.value = expiresAt
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  async function refreshFilters(): Promise<void> {
+    await loadFilterOptions(true)
   }
 
   function setFilter<K extends keyof SearchFilters>(
@@ -288,6 +312,7 @@ export const useSearchStore = defineStore('search', () => {
 
   // Initialize
   loadSearchHistory()
+  checkFiltersCacheExpiry()
 
   // Reset store
   function $reset(): void {
@@ -328,6 +353,8 @@ export const useSearchStore = defineStore('search', () => {
     isLoadingSuggestions,
     filterOptions,
     isLoadingOptions,
+    filtersCacheExpired,
+    filtersCacheLastUpdated,
     searchHistory,
     sortBy,
 
@@ -341,6 +368,7 @@ export const useSearchStore = defineStore('search', () => {
     loadMore,
     getSuggestions,
     loadFilterOptions,
+    refreshFilters,
     setFilter,
     setFilters,
     clearFilters,

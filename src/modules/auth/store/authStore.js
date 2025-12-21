@@ -11,6 +11,7 @@ export const useAuthStore = defineStore('auth', {
     access: storage.getAccess(),
     user: storage.getUser(),
     csrfToken: null,
+    pendingMfaSessionId: null,
     loading: false,
     error: null,
     lastErrorCode: null,
@@ -61,15 +62,52 @@ export const useAuthStore = defineStore('auth', {
       this.lastRequestId = null
       this.lastFieldMessages = null
       this.lastSummary = null
+      this.pendingMfaSessionId = null
 
       try {
-        const { access, user } = await authApi.login(form)
+        const res = await authApi.login(form)
+        const mfaRequired = Boolean(res?.mfa_required)
+        const sessionId = res?.session_id
+
+        if (mfaRequired) {
+          this.pendingMfaSessionId = typeof sessionId === 'string' && sessionId.trim().length > 0 ? sessionId : null
+          this.lastErrorCode = 'mfa_required'
+          return { mfa_required: true, session_id: this.pendingMfaSessionId }
+        }
+
+        const { access, user } = res || {}
         this.setAuth({ access, user })
         await this.ensureCsrfToken()
         this.startProactiveRefresh()
         if (!this.user) {
           await this.reloadUser()
         }
+        return this.user
+      } catch (error) {
+        this.handleError(error)
+        throw error
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async verifyMfa(otp) {
+      this.loading = true
+      this.error = null
+      this.lastErrorCode = null
+      this.lastRequestId = null
+      this.lastFieldMessages = null
+      this.lastSummary = null
+
+      try {
+        const sessionId = this.pendingMfaSessionId
+        const res = await authApi.mfaVerify({ otp, session_id: sessionId })
+        const access = res?.access
+        this.setAuth({ access })
+        await this.ensureCsrfToken()
+        this.startProactiveRefresh()
+        await this.reloadUser()
+        this.pendingMfaSessionId = null
         return this.user
       } catch (error) {
         this.handleError(error)
@@ -284,6 +322,8 @@ export const useAuthStore = defineStore('auth', {
       const status = error?.response?.status
       const data = error?.response?.data
 
+      const code = data && typeof data === 'object' ? data.code : null
+
       const requestId = data && typeof data === 'object' ? data.request_id : null
       this.lastRequestId = typeof requestId === 'string' ? requestId : null
 
@@ -304,10 +344,36 @@ export const useAuthStore = defineStore('auth', {
         return
       }
 
+      if (status === 423) {
+        this.lastErrorCode = 'account_locked'
+        const message = data && typeof data === 'object' ? data.message : null
+        this.error = withRequestId(typeof message === 'string' && message.trim().length > 0 ? message : 'Акаунт тимчасово заблоковано.')
+        return
+      }
+
+      if (status === 410) {
+        this.lastErrorCode = 'session_expired'
+        const message = data && typeof data === 'object' ? data.message : null
+        const finalMessage = typeof message === 'string' && message.trim().length > 0
+          ? message
+          : 'Сесія підтвердження завершилась. Спробуйте увійти ще раз.'
+        this.lastFieldMessages = { otp: [withRequestId(finalMessage)] }
+        this.error = withRequestId(finalMessage)
+        return
+      }
+
       if (status === 401) {
         this.lastErrorCode = 'invalid_credentials'
         const message = data && typeof data === 'object' ? data.message : null
         this.error = withRequestId(typeof message === 'string' && message.trim().length > 0 ? message : 'Невірні дані для входу.')
+        return
+      }
+
+      if (status === 422 && data && typeof data === 'object' && code === 'mfa_invalid_code') {
+        this.lastErrorCode = 'mfa_invalid_code'
+        const message = typeof data.message === 'string' && data.message.trim().length > 0 ? data.message : 'Невірний код підтвердження.'
+        this.lastFieldMessages = { otp: [withRequestId(message)] }
+        this.error = withRequestId(message)
         return
       }
 

@@ -215,10 +215,35 @@
     "login": {
       "title": "Вхід",
       "description": "Увійдіть у кабінет за email та паролем.",
+      "otpTitle": "Підтвердження входу",
+      "otpDescription": "Введіть одноразовий код із застосунку-автентифікатора.",
       "email": "Email",
       "password": "Пароль",
       "submit": "Увійти",
       "loading": "Вхід...",
+      "otpLabel": "Код підтвердження",
+      "otpSubmit": "Підтвердити",
+      "otpLoading": "Перевіряємо...",
+      "otpBack": "Назад",
+      "otpResend": "Надіслати код ще раз",
+      "webauthn": {
+        "betaLabel": "Beta",
+        "enrollTitle": "Налаштувати WebAuthn",
+        "enrollDescription": "Додайте біометричну автентифікацію або апаратний ключ для швидкого та безпечного входу.",
+        "enrollInfo": "WebAuthn — це сучасний стандарт автентифікації. Ви зможете входити за допомогою відбитка пальця, Face ID або апаратного ключа.",
+        "enrollCta": "Налаштувати",
+        "enrolling": "Налаштовуємо…",
+        "enrollError": "Не вдалося налаштувати WebAuthn",
+        "step1": "Натисніть 'Налаштувати' нижче",
+        "step2": "Дозвольте браузеру доступ до вашого пристрою",
+        "step3": "Підтвердіть за допомогою біометрії або ключа",
+        "promptTitle": "Автентифікація WebAuthn",
+        "promptDescription": "Використайте відбиток пальця, Face ID або апаратний ключ для входу.",
+        "authenticate": "Автентифікувати",
+        "authenticating": "Автентифікуємо…",
+        "authError": "Не вдалося автентифікувати",
+        "useOtpInstead": "Використати OTP замість цього"
+      },
       "forgotPassword": "Забули пароль?",
       "resendVerifyCta": "Надіслати лист підтвердження ще раз",
       "noAccount": "Немає акаунта?",
@@ -506,6 +531,12 @@
     "filters": {
       "title": "Фільтри",
       "clear": "Очистити",
+      "refresh": "Оновити",
+      "cacheExpiredTitle": "Дані фільтрів застаріли",
+      "cacheExpiredDays": "Оновлено {count} дн. тому",
+      "cacheExpiredHours": "Оновлено {count} год. тому",
+      "cacheExpiredMinutes": "Оновлено {count} хв. тому",
+      "cacheExpiredJustNow": "Щойно оновлено",
       "search": "Пошук",
       "searchPlaceholder": "Введіть щонайменше 2 символи",
       "language": "Мова",
@@ -583,6 +614,13 @@
         "expert": "Експерт"
       },
       "badgesTitle": "Нагороди та досягнення",
+      "badgesHistory": {
+        "title": "Історія нагород",
+        "loading": "Завантажуємо історію…",
+        "empty": "Історія нагород поки порожня.",
+        "unknownBadge": "Нагорода",
+        "loadError": "Не вдалося завантажити історію нагород."
+      },
       "contact": {
         "trialLesson": "Пробний урок",
         "respondsInHours": "Зазвичай відповідає за {hours} год",
@@ -1016,6 +1054,53 @@
     "subtitle": "Актуалізуйте свою особисту інформацію.",
     "editButton": "Редагувати профіль",
     "settingsButton": "Налаштування акаунта",
+    "security": {
+      "navLabel": "Безпека",
+      "title": "Безпека",
+      "subtitle": "Керуйте захистом входу та активними сесіями.",
+      "mfa": {
+        "title": "Двофакторна автентифікація (MFA)",
+        "subtitle": "Додайте додатковий рівень захисту до акаунта.",
+        "setupTitle": "Налаштування MFA",
+        "start": "Увімкнути MFA",
+        "qrTitle": "Скануйте QR-код",
+        "qrSubtitle": "Скануйте в застосунку-автентифікаторі, щоб підʼєднати MFA.",
+        "secretHintLabel": "Підказка секрету",
+        "backupCodesTitle": "Резервні коди",
+        "backupCodesSubtitle": "Збережіть їх у безпечному місці. Кожен код можна використати один раз.",
+        "otpLabel": "Код підтвердження",
+        "confirm": "Підтвердити",
+        "cancel": "Скасувати",
+        "reset": "Почати заново",
+        "success": {
+          "enabled": "MFA увімкнено."
+        },
+        "errors": {
+          "setupFailed": "Не вдалося розпочати налаштування MFA.",
+          "confirmFailed": "Не вдалося підтвердити MFA."
+        }
+      },
+      "sessions": {
+        "title": "Активні сесії",
+        "subtitle": "Перевірте пристрої, з яких виконано вхід.",
+        "loading": "Завантажуємо сесії…",
+        "empty": "Немає активних сесій.",
+        "current": "Поточна",
+        "unknownDevice": "Невідомий пристрій",
+        "ip": "IP",
+        "lastActive": "Остання активність",
+        "revoke": "Вийти",
+        "success": {
+          "revoked": "Сесію завершено."
+        },
+        "errors": {
+          "loadFailed": "Не вдалося завантажити сесії.",
+          "revokeFailed": "Не вдалося завершити сесію.",
+          "currentForbidden": "Неможливо завершити поточну сесію.",
+          "notFound": "Сесію не знайдено."
+        }
+      }
+    },
     "editTitle": "Редагування профілю",
     "editDescription": "Оновіть персональні дані та те, як вас бачать студенти.",
     "email": "Email",
@@ -1118,6 +1203,18 @@
     }
   },
   "classroom": {
+    "realtime": {
+      "statusConnected": "Підключено",
+      "statusConnecting": "Підключення…",
+      "statusDisconnected": "Відключено",
+      "statusError": "Помилка підключення",
+      "statusOffline": "Немає інтернету",
+      "gatewayUrl": "Шлюз",
+      "rateLimitedTitle": "Забагато запитів",
+      "rateLimitedDescription": "Будь ласка, зачекайте перед наступною спробою.",
+      "rateLimitedRetryIn": "Спробувати через {time}",
+      "rateLimitedRetry": "Спробувати знову"
+    },
     "soloWorkspace": {
       "title": "Робочий простір",
       "untitled": "Без назви",
@@ -1691,7 +1788,9 @@
       "description": "Допоможіть іншим дізнатися про вас більше",
       "displayName": "Ім'я для відображення",
       "namePlaceholder": "Як вас називати?",
-      "uploadPhoto": "Завантажити фото"
+      "uploadPhoto": "Завантажити фото",
+      "bio": "Про себе",
+      "submit": "Продовжити"
     },
     "preferences": {
       "title": "Ваші вподобання",

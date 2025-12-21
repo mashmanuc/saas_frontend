@@ -31,6 +31,7 @@ const ProfileEditView = () => import('../modules/profile/views/ProfileEditView.v
 const ProfileSettingsView = () => import('../modules/profile/views/ProfileSettingsView.vue')
 const ProfileActivityView = () => import('../modules/profile/views/ProfileActivityView.vue')
 const UserAccountView = () => import('../modules/profile/views/UserAccountView.vue')
+const SettingsSecurityView = () => import('../modules/profile/views/SettingsSecurityView.vue')
 const ChangeEmailView = () => import('../modules/profile/views/ChangeEmailView.vue')
 const ChangePasswordView = () => import('../modules/profile/views/ChangePasswordView.vue')
 const DevThemePlaygroundView = () => import('../modules/dev/views/DevThemePlayground.vue')
@@ -185,6 +186,12 @@ const routes = [
         path: 'dashboard/profile/settings',
         name: 'profile-settings',
         component: ProfileSettingsView,
+        meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
+      },
+      {
+        path: 'dashboard/profile/security',
+        name: 'profile-security',
+        component: SettingsSecurityView,
         meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
       },
       {

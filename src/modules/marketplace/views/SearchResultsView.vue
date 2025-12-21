@@ -13,6 +13,7 @@ import FilterChips from '../components/catalog/FilterChips.vue'
 import CatalogFilters from '../components/catalog/CatalogFilters.vue'
 import CatalogSort from '../components/catalog/CatalogSort.vue'
 import TutorGrid from '../components/catalog/TutorGrid.vue'
+import FiltersStatusBanner from '../components/filters/FiltersStatusBanner.vue'
 
 const store = useSearchStore()
 const {
@@ -27,6 +28,8 @@ const {
   filterOptions,
   isLoadingOptions,
   sortBy,
+  filtersCacheExpired,
+  filtersCacheLastUpdated,
 } = storeToRefs(store)
 
 const searchQuery = ref('')
@@ -93,6 +96,10 @@ const handleSortUpdate = (sort: string) => {
 const toggleFilters = () => {
   showFilters.value = !showFilters.value
 }
+
+const handleRefreshFilters = async () => {
+  await store.refreshFilters()
+}
 </script>
 
 <template>
@@ -113,6 +120,13 @@ const toggleFilters = () => {
         <span v-if="searchTime > 0" class="search-time"> ({{ searchTime }}ms) </span>
       </div>
     </header>
+
+    <!-- Cache Status Banner -->
+    <FiltersStatusBanner
+      :cache-expired="filtersCacheExpired"
+      :last-updated="filtersCacheLastUpdated"
+      :on-refresh="handleRefreshFilters"
+    />
 
     <!-- Active Filters -->
     <FilterChips

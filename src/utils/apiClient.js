@@ -49,6 +49,9 @@ api.interceptors.response.use(
   (res) => {
     const loader = useLoaderStore()
     loader.stop()
+    if (res?.config?.meta?.fullResponse) {
+      return res
+    }
     return res.data
   },
   async (error) => {

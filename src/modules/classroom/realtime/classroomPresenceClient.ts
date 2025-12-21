@@ -46,6 +46,7 @@ export type ServerErrorMsg = {
     | 'unauthorized'
     | 'forbidden'
   message?: string
+  retry_after_seconds?: number
 }
 
 export type ServerToClientMsg =

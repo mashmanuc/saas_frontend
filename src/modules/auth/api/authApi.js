@@ -5,6 +5,26 @@ const authApi = {
     return api.post('/v1/auth/login', payload)
   },
 
+  mfaVerify(payload) {
+    return api.post('/v1/auth/mfa/verify', payload)
+  },
+
+  mfaSetup(payload) {
+    return api.post('/v1/auth/mfa/setup', payload)
+  },
+
+  mfaConfirm(payload) {
+    return api.post('/v1/auth/mfa/confirm', payload)
+  },
+
+  getSessions() {
+    return api.get('/v1/me/sessions/')
+  },
+
+  revokeSession(id) {
+    return api.post(`/v1/me/sessions/${id}/revoke`)
+  },
+
   register(payload) {
     return api.post('/v1/auth/register', payload)
   },

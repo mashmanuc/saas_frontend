@@ -94,6 +94,34 @@ async function putWithProgress(uploadUrl: string, file: File): Promise<void> {
   })
 }
 
+async function putWithRetry(uploadUrl: string, file: File): Promise<void> {
+  const MAX_ATTEMPTS = 3
+  let attempt = 0
+  let lastErr: any = null
+
+  while (attempt < MAX_ATTEMPTS) {
+    try {
+      await putWithProgress(uploadUrl, file)
+      return
+    } catch (err: any) {
+      lastErr = err
+      const status = err?.status
+      const isNetwork = !status || status === 0
+      const isRetryable = isNetwork || status >= 500
+
+      attempt += 1
+      if (!isRetryable || attempt >= MAX_ATTEMPTS) {
+        throw err
+      }
+
+      const delay = 500 * Math.pow(2, attempt - 1)
+      await new Promise((r) => setTimeout(r, delay))
+    }
+  }
+
+  throw lastErr ?? new Error('put_failed')
+}
+
 async function createCertification() {
   if (!canSubmit.value || isUploading.value) return
 
@@ -128,7 +156,7 @@ async function createCertification() {
       size: file.size,
     })
 
-    await putWithProgress(presign.upload_url, file)
+    await putWithRetry(presign.upload_url, file)
 
     await marketplaceApi.createMyCertification({
       title,

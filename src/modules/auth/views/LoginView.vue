@@ -1,11 +1,13 @@
 <template>
   <Card class="space-y-6">
     <header class="space-y-1">
-      <h1 class="text-xl font-semibold">{{ $t('auth.login.title') }}</h1>
-      <p class="text-sm" style="color: var(--text-secondary);">{{ $t('auth.login.description') }}</p>
+      <h1 class="text-xl font-semibold">{{ step === 'otp' ? $t('auth.login.otpTitle') : $t('auth.login.title') }}</h1>
+      <p class="text-sm" style="color: var(--text-secondary);">
+        {{ step === 'otp' ? $t('auth.login.otpDescription') : $t('auth.login.description') }}
+      </p>
     </header>
 
-    <form class="space-y-4" @submit.prevent="onSubmit">
+    <form v-if="step === 'password'" class="space-y-4" @submit.prevent="onSubmit">
       <Input
         :label="$t('auth.login.email')"
         type="email"
@@ -13,6 +15,7 @@
         :error="fieldError('email')"
         required
         autocomplete="email"
+        data-testid="login-email-input"
       />
 
       <Input
@@ -22,6 +25,7 @@
         :error="fieldError('password')"
         required
         autocomplete="current-password"
+        data-testid="login-password-input"
       />
 
       <RouterLink
@@ -45,6 +49,33 @@
       <Button class="w-full" type="submit" :disabled="auth.loading">
         <span v-if="auth.loading">{{ $t('auth.login.loading') }}</span>
         <span v-else>{{ $t('auth.login.submit') }}</span>
+      </Button>
+    </form>
+
+    <form v-else class="space-y-4" @submit.prevent="onSubmitOtp">
+      <Input
+        :label="$t('auth.login.otpLabel')"
+        type="text"
+        v-model="otp"
+        :error="fieldError('otp')"
+        required
+        autocomplete="one-time-code"
+        inputmode="numeric"
+        data-testid="login-otp-input"
+      />
+
+      <div class="flex items-center justify-between gap-3">
+        <Button variant="ghost" type="button" :disabled="auth.loading" @click="backToPassword">
+          {{ $t('auth.login.otpBack') }}
+        </Button>
+        <Button variant="outline" type="button" :disabled="auth.loading" @click="resendOtp">
+          {{ $t('auth.login.otpResend') }}
+        </Button>
+      </div>
+
+      <Button class="w-full" type="submit" :disabled="auth.loading">
+        <span v-if="auth.loading">{{ $t('auth.login.otpLoading') }}</span>
+        <span v-else>{{ $t('auth.login.otpSubmit') }}</span>
       </Button>
     </form>
 
@@ -91,6 +122,9 @@ const form = reactive({
   password: '',
 })
 
+const step = ref('password')
+const otp = ref('')
+
 const showResendVerify = computed(() => auth.lastErrorCode === 'email_not_verified' && Boolean(form.email))
 
 const showErrorModal = ref(false)
@@ -98,7 +132,7 @@ const showErrorModal = ref(false)
 watch(
   () => [auth.error, auth.lastErrorCode],
   ([value, code]) => {
-    showErrorModal.value = Boolean(value) && code !== 'validation_failed'
+    showErrorModal.value = Boolean(value) && code !== 'validation_failed' && code !== 'mfa_invalid_code' && code !== 'session_expired'
   }
 )
 
@@ -116,11 +150,47 @@ function goToCheckEmail() {
 
 async function onSubmit() {
   try {
-    const user = await auth.login(form)
+    const res = await auth.login(form)
+    if (res && typeof res === 'object' && res.mfa_required) {
+      step.value = 'otp'
+      otp.value = ''
+      return
+    }
+
+    const user = res
     const redirect = route.query?.redirect
     const target = typeof redirect === 'string' && redirect ? redirect : getDefaultRouteForRole(user?.role)
     router.push(target)
   } catch (error) {
+    // помилка вже відображається через auth.error
+  }
+}
+
+async function onSubmitOtp() {
+  try {
+    const user = await auth.verifyMfa(otp.value)
+    const redirect = route.query?.redirect
+    const target = typeof redirect === 'string' && redirect ? redirect : getDefaultRouteForRole(user?.role)
+    router.push(target)
+  } catch (error) {
+    // помилка вже відображається через auth.error
+  }
+}
+
+function backToPassword() {
+  step.value = 'password'
+  otp.value = ''
+  auth.pendingMfaSessionId = null
+}
+
+async function resendOtp() {
+  // Повторний login за тими ж credentials може створити нову MFA-сесію / відправити OTP повторно
+  try {
+    const res = await auth.login(form)
+    if (res && typeof res === 'object' && res.mfa_required) {
+      otp.value = ''
+    }
+  } catch (_error) {
     // помилка вже відображається через auth.error
   }
 }

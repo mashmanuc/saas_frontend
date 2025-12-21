@@ -10,6 +10,7 @@ import ProfileAbout from '../components/profile/ProfileAbout.vue'
 import ProfileEducation from '../components/profile/ProfileEducation.vue'
 import ProfileSubjects from '../components/profile/ProfileSubjects.vue'
 import ProfileBadges from '../components/profile/ProfileBadges.vue'
+import TutorBadgeHistory from '../components/profile/TutorBadgeHistory.vue'
 import ProfileReviews from '../components/profile/ProfileReviews.vue'
 import CreateReviewModal from '../components/profile/CreateReviewModal.vue'
 import ProfileContact from '../components/profile/ProfileContact.vue'
@@ -133,6 +134,8 @@ function handleReviewCreated() {
             v-if="Array.isArray(currentProfile.badges) && currentProfile.badges.length > 0"
             :badges="currentProfile.badges"
           />
+
+          <TutorBadgeHistory />
         </aside>
       </div>
     </template>

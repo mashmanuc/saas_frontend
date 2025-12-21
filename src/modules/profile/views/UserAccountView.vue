@@ -7,6 +7,9 @@
           <p class="text-sm text-muted-foreground">{{ $t('userProfile.account.subtitle') }}</p>
         </div>
         <div class="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" @click="goToSecurity">
+            {{ $t('profile.security.navLabel') }}
+          </Button>
           <Button variant="outline" size="sm" @click="goToChangeEmail">
             {{ $t('userProfile.account.changeEmail') }}
           </Button>
@@ -99,6 +102,10 @@ function goToChangeEmail() {
 
 function goToChangePassword() {
   router.push({ name: 'change-password' })
+}
+
+function goToSecurity() {
+  router.push({ name: 'profile-security' })
 }
 
 onMounted(() => {
