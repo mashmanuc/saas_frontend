@@ -1,5 +1,6 @@
 /**
  * Draft cache using IndexedDB for offline support
+ * v0.40.0: Added IndexedDB detection and fallback
  */
 
 const DB_NAME = 'marketplace_drafts'
@@ -16,8 +17,29 @@ interface DraftCacheEntry {
 }
 
 let dbPromise: Promise<IDBDatabase> | null = null
+let indexedDBAvailable: boolean | null = null
+let inMemoryCache: Map<string, DraftCacheEntry> = new Map()
+
+/**
+ * Check if IndexedDB is available
+ */
+export function isIndexedDBAvailable(): boolean {
+  if (indexedDBAvailable !== null) return indexedDBAvailable
+
+  try {
+    indexedDBAvailable = !!(window.indexedDB && typeof window.indexedDB.open === 'function')
+  } catch {
+    indexedDBAvailable = false
+  }
+
+  return indexedDBAvailable
+}
 
 function openDB(): Promise<IDBDatabase> {
+  if (!isIndexedDBAvailable()) {
+    return Promise.reject(new Error('IndexedDB not available'))
+  }
+
   if (dbPromise) return dbPromise
 
   dbPromise = new Promise((resolve, reject) => {
@@ -38,15 +60,20 @@ function openDB(): Promise<IDBDatabase> {
 }
 
 export async function saveDraftToCache(entry: Omit<DraftCacheEntry, 'id'>): Promise<void> {
+  const fullEntry: DraftCacheEntry = {
+    id: 'current_draft',
+    ...entry,
+  }
+
+  if (!isIndexedDBAvailable()) {
+    inMemoryCache.set('current_draft', fullEntry)
+    return
+  }
+
   try {
     const db = await openDB()
     const tx = db.transaction(STORE_NAME, 'readwrite')
     const store = tx.objectStore(STORE_NAME)
-    
-    const fullEntry: DraftCacheEntry = {
-      id: 'current_draft',
-      ...entry,
-    }
     
     store.put(fullEntry)
     
@@ -55,11 +82,16 @@ export async function saveDraftToCache(entry: Omit<DraftCacheEntry, 'id'>): Prom
       tx.onerror = () => reject(tx.error)
     })
   } catch (err) {
-    console.error('Failed to save draft to IndexedDB:', err)
+    console.error('Failed to save draft to IndexedDB, using in-memory fallback:', err)
+    inMemoryCache.set('current_draft', fullEntry)
   }
 }
 
 export async function getDraftFromCache(): Promise<DraftCacheEntry | null> {
+  if (!isIndexedDBAvailable()) {
+    return inMemoryCache.get('current_draft') || null
+  }
+
   try {
     const db = await openDB()
     const tx = db.transaction(STORE_NAME, 'readonly')
@@ -71,12 +103,17 @@ export async function getDraftFromCache(): Promise<DraftCacheEntry | null> {
       request.onerror = () => reject(request.error)
     })
   } catch (err) {
-    console.error('Failed to get draft from IndexedDB:', err)
-    return null
+    console.error('Failed to get draft from IndexedDB, using in-memory fallback:', err)
+    return inMemoryCache.get('current_draft') || null
   }
 }
 
 export async function clearDraftCache(): Promise<void> {
+  if (!isIndexedDBAvailable()) {
+    inMemoryCache.delete('current_draft')
+    return
+  }
+
   try {
     const db = await openDB()
     const tx = db.transaction(STORE_NAME, 'readwrite')
@@ -88,7 +125,8 @@ export async function clearDraftCache(): Promise<void> {
       tx.onerror = () => reject(tx.error)
     })
   } catch (err) {
-    console.error('Failed to clear draft from IndexedDB:', err)
+    console.error('Failed to clear draft from IndexedDB, using in-memory fallback:', err)
+    inMemoryCache.delete('current_draft')
   }
 }
 

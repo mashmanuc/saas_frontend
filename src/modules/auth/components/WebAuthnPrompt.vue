@@ -2,10 +2,13 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Fingerprint, AlertCircle, Loader2 } from 'lucide-vue-next'
+import { authenticateWithWebAuthn } from '@/utils/webauthn'
+import type { WebAuthnChallenge } from '@/utils/webauthn'
 
 const props = defineProps<{
   show: boolean
-  onAuthenticate?: () => Promise<void>
+  challenge?: WebAuthnChallenge
+  onSuccess?: (credential: any) => Promise<void>
   onFallbackToOtp?: () => void
   onCancel?: () => void
 }>()
@@ -14,17 +17,21 @@ const { t } = useI18n()
 
 const isAuthenticating = ref(false)
 const error = ref('')
+const requestId = ref('')
 
 async function handleAuthenticate() {
-  if (!props.onAuthenticate) return
+  if (!props.challenge || !props.onSuccess) return
   
   isAuthenticating.value = true
   error.value = ''
+  requestId.value = ''
   
   try {
-    await props.onAuthenticate()
+    const credential = await authenticateWithWebAuthn(props.challenge)
+    await props.onSuccess(credential)
   } catch (err: any) {
     error.value = err?.message || t('auth.webauthn.authError')
+    requestId.value = err?.request_id || ''
   } finally {
     isAuthenticating.value = false
   }
@@ -60,7 +67,10 @@ function handleCancel() {
 
           <div v-if="error" class="error-box">
             <AlertCircle :size="18" />
-            <p>{{ error }}</p>
+            <div>
+              <p>{{ error }}</p>
+              <p v-if="requestId" class="request-id">Request ID: {{ requestId }}</p>
+            </div>
           </div>
 
           <div v-if="isAuthenticating" class="authenticating-box">
@@ -195,6 +205,13 @@ function handleCancel() {
 .error-box p {
   margin: 0;
   flex: 1;
+}
+
+.request-id {
+  font-size: 0.75rem;
+  opacity: 0.8;
+  margin-top: 0.25rem;
+  font-family: monospace;
 }
 
 .authenticating-box {

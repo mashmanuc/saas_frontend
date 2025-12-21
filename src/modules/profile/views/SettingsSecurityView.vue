@@ -37,6 +37,9 @@
         <Button variant="primary" :disabled="loading" :loading="loading" @click="startSetup">
           {{ $t('profile.security.mfa.start') }}
         </Button>
+        <Button variant="outline" :disabled="loading" @click="showBackupCodes = true">
+          {{ $t('profile.security.mfa.viewBackupCodes') }}
+        </Button>
       </div>
 
       <div v-else-if="step === 'setup'" class="space-y-6">
@@ -103,14 +106,22 @@
           <p class="text-sm font-medium text-foreground">{{ $t('profile.security.webauthn.credentialsList') }}</p>
           <div
             v-for="cred in webauthnCredentials"
-            :key="cred.credential_id"
+            :key="cred.id"
             class="flex flex-wrap items-start justify-between gap-3 rounded-lg border p-4"
           >
             <div class="space-y-1">
               <p class="text-sm font-medium text-foreground">{{ cred.device_label || $t('profile.security.webauthn.unknownDevice') }}</p>
               <p class="text-sm text-muted-foreground">{{ $t('profile.security.webauthn.lastUsed') }}: {{ formatDateTime(cred.last_used_at) }}</p>
+              <p class="text-xs text-muted-foreground">Created: {{ formatDateTime(cred.created_at) }}</p>
             </div>
-            <Button variant="outline" size="sm" type="button" :disabled="loading">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              type="button" 
+              :disabled="loading || credentialRevokeId === cred.id"
+              :data-testid="`webauthn-revoke-${cred.id}`"
+              @click="revokeCredential(cred.id)"
+            >
               {{ $t('profile.security.webauthn.remove') }}
             </Button>
           </div>
@@ -175,6 +186,11 @@
       :on-close="() => showWebAuthnEnroll = false"
       :on-enroll="handleWebAuthnEnroll"
     />
+
+    <BackupCodesModal
+      :show="showBackupCodes"
+      :on-close="() => showBackupCodes = false"
+    />
   </div>
 </template>
 
@@ -188,6 +204,7 @@ import Heading from '../../../ui/Heading.vue'
 import Input from '../../../ui/Input.vue'
 import authApi from '../../auth/api/authApi'
 import WebAuthnEnrollModal from '../../auth/components/WebAuthnEnrollModal.vue'
+import BackupCodesModal from '../../auth/components/BackupCodesModal.vue'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -208,9 +225,35 @@ const revokeLoadingId = ref(null)
 
 const showWebAuthnEnroll = ref(false)
 const webauthnCredentials = ref([])
+const credentialRevokeId = ref(null)
+const showBackupCodes = ref(false)
 
 function goBack() {
   router.push('/dashboard/profile')
+}
+
+async function loadWebAuthnCredentials() {
+  try {
+    const res = await authApi.getWebAuthnCredentials()
+    webauthnCredentials.value = Array.isArray(res) ? res : []
+  } catch (err) {
+    console.error('Failed to load WebAuthn credentials', err)
+  }
+}
+
+async function revokeCredential(credentialId) {
+  if (!confirm(t('profile.security.webauthn.removeConfirm'))) return
+  
+  credentialRevokeId.value = credentialId
+  try {
+    await authApi.revokeWebAuthnCredential(credentialId)
+    await loadWebAuthnCredentials()
+    success.value = t('profile.security.webauthn.removeSuccess')
+  } catch (err) {
+    error.value = err?.response?.data?.message || t('profile.security.webauthn.removeError')
+  } finally {
+    credentialRevokeId.value = null
+  }
 }
 
 function reset() {
@@ -302,27 +345,24 @@ async function revoke(id) {
   }
 }
 
-async function handleWebAuthnEnroll() {
+async function handleWebAuthnEnroll(registration) {
   error.value = ''
   success.value = ''
+  loading.value = true
   try {
-    // Тут має бути виклик navigator.credentials.create() для створення credential
-    // Поки що заглушка, бо WebAuthn API потребує реального пристрою
-    const mockCredential = {
-      credential_id: 'mock_cred_' + Date.now(),
-      device_label: 'Mock Device',
-      public_key: 'mock_public_key',
-      attestation_object: 'mock_attestation'
-    }
-    await authApi.webauthnRegister(mockCredential)
-    success.value = t('profile.security.webauthn.enrollSuccess')
+    await authApi.webauthnRegister(registration)
+    await loadWebAuthnCredentials()
     showWebAuthnEnroll.value = false
+    success.value = t('profile.security.webauthn.enrollSuccess')
   } catch (err) {
-    error.value = err?.response?.data?.message || err?.response?.data?.detail || t('profile.security.webauthn.enrollError')
+    error.value = err?.response?.data?.message || t('profile.security.webauthn.enrollError')
+  } finally {
+    loading.value = false
   }
 }
 
 onMounted(() => {
   loadSessions()
+  loadWebAuthnCredentials()
 })
 </script>

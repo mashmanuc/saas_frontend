@@ -104,7 +104,8 @@
 
   <WebAuthnPrompt
     :show="showWebAuthnPrompt"
-    :on-authenticate="handleWebAuthnAuthenticate"
+    :challenge="auth.webAuthnChallenge"
+    :on-success="handleWebAuthnSuccess"
     :on-fallback-to-otp="handleWebAuthnFallback"
     :on-cancel="handleWebAuthnCancel"
   />
@@ -208,24 +209,15 @@ async function resendOtp() {
   }
 }
 
-async function handleWebAuthnAuthenticate() {
+async function handleWebAuthnSuccess(credential) {
   try {
-    // Тут має бути виклик navigator.credentials.get() для отримання assertion
-    // Поки що заглушка, бо WebAuthn API потребує реального credential
-    const mockAssertion = {
-      credential_id: 'mock_credential',
-      client_data_json: 'mock_client_data',
-      authenticator_data: 'mock_auth_data',
-      signature: 'mock_signature',
-      user_handle: 'mock_handle'
-    }
-    const user = await auth.verifyWebAuthn(mockAssertion)
+    const user = await auth.verifyWebAuthn(credential)
     showWebAuthnPrompt.value = false
     const redirect = route.query?.redirect
     const target = typeof redirect === 'string' && redirect ? redirect : getDefaultRouteForRole(user?.role)
     router.push(target)
   } catch (error) {
-    // помилка вже відображається через auth.error
+    throw error
   }
 }
 

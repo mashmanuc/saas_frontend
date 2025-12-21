@@ -29,6 +29,22 @@ const authApi = {
     return api.post('/v1/auth/webauthn/register', payload)
   },
 
+  getWebAuthnCredentials() {
+    return api.get('/v1/auth/webauthn/credentials/')
+  },
+
+  revokeWebAuthnCredential(id) {
+    return api.post(`/v1/auth/webauthn/credentials/${id}/revoke/`)
+  },
+
+  getBackupCodes() {
+    return api.get('/v1/auth/mfa/backup-codes/')
+  },
+
+  regenerateBackupCodes() {
+    return api.post('/v1/auth/mfa/backup-codes/regenerate')
+  },
+
   getSessions() {
     return api.get('/v1/me/sessions/')
   },

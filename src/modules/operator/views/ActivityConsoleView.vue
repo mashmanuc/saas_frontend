@@ -16,9 +16,24 @@ const severityFilter = ref('')
 const domains = ['auth', 'marketplace', 'classroom']
 const severities = ['info', 'warning', 'critical']
 
+const selectedDataPoint = ref<{ ts: number; value: number } | null>(null)
+
 const filteredItems = computed(() => {
-  return items.value
+  if (!selectedDataPoint.value) return items.value
+  
+  // Filter items by timestamp range around selected data point
+  const pointTime = selectedDataPoint.value.ts
+  const timeWindow = 300000 // 5 minutes
+  
+  return items.value.filter(item => {
+    const itemTime = item.ts
+    return Math.abs(itemTime - pointTime) <= timeWindow
+  })
 })
+
+function handleChartDataPointClick(dataPoint: { ts: number; value: number }) {
+  selectedDataPoint.value = dataPoint
+}
 
 async function loadFeed() {
   loading.value = true

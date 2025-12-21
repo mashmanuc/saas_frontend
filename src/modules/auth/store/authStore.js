@@ -23,6 +23,8 @@ export const useAuthStore = defineStore('auth', {
     initialized: false,
     refreshPromise: null,
     sessionExpiredNotified: false,
+    showSessionRevokedBanner: false,
+    sessionRevokedRequestId: null,
   }),
 
   getters: {
@@ -431,8 +433,10 @@ export const useAuthStore = defineStore('auth', {
 
       if (status === 401 && data && typeof data === 'object' && code === 'session_revoked') {
         this.lastErrorCode = 'session_revoked'
+        this.sessionRevokedRequestId = data.request_id || ''
         const message = typeof data.message === 'string' && data.message.trim().length > 0 ? data.message : 'Сесію відкликано.'
         this.error = withRequestId(message)
+        this.showSessionRevokedBanner = true
         this.forceLogout()
         return
       }

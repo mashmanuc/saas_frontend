@@ -44,6 +44,7 @@ export const useRealtimeStore = defineStore('realtime', {
     statusUnsubscribe: null,
     errorUnsubscribe: null,
     messageUnsubscribe: null,
+    failoverUnsubscribe: null,
   }),
 
   actions: {
@@ -92,6 +93,18 @@ export const useRealtimeStore = defineStore('realtime', {
         if (payload?.type === 'pong') {
           this.lastHeartbeat = Date.now()
         }
+      })
+
+      // Track failover events
+      this.failoverUnsubscribe = realtimeService.on('failover', (data) => {
+        import('../utils/telemetryAgent').then(({ trackEvent }) => {
+          trackEvent('ws.failover', {
+            host_from: data.from,
+            host_to: data.to,
+            latency: data.latency,
+            reason: data.reason,
+          })
+        })
       })
 
       this.bindAuthWatcher(auth)

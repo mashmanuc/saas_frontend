@@ -17,6 +17,14 @@ const { t } = useI18n()
 const isResolving = ref(false)
 const error = ref('')
 
+function formatFieldValue(value: any): string {
+  if (value === null || value === undefined) return '(empty)'
+  if (typeof value === 'string') return value
+  if (Array.isArray(value)) return JSON.stringify(value, null, 2)
+  if (typeof value === 'object') return JSON.stringify(value, null, 2)
+  return String(value)
+}
+
 async function handleResolve(strategy: 'server' | 'client' | 'merge') {
   if (!props.onResolve) return
   
@@ -64,9 +72,26 @@ function handleCancel() {
 
           <div v-if="conflictFields && conflictFields.length" class="conflict-fields">
             <p class="fields-label">{{ t('marketplace.draft.conflictFields') }}:</p>
-            <ul class="fields-list">
-              <li v-for="field in conflictFields" :key="field">{{ field }}</li>
-            </ul>
+            
+            <div class="diff-container">
+              <div v-for="field in conflictFields" :key="field" class="field-diff">
+                <h4 class="field-name">{{ field }}</h4>
+                <div class="diff-columns">
+                  <div class="diff-column server">
+                    <div class="column-header">{{ t('marketplace.draft.serverVersion') }}</div>
+                    <div class="column-content">
+                      <pre>{{ formatFieldValue(serverPayload?.[field]) }}</pre>
+                    </div>
+                  </div>
+                  <div class="diff-column client">
+                    <div class="column-header">{{ t('marketplace.draft.clientVersion') }}</div>
+                    <div class="column-content">
+                      <pre>{{ formatFieldValue(clientPayload?.[field]) }}</pre>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div v-if="error" class="error-box">
@@ -235,7 +260,78 @@ function handleCancel() {
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--text-primary);
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 1rem 0;
+}
+
+.diff-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.field-diff {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.field-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.diff-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.diff-column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.column-header {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.5rem;
+  border-radius: var(--radius-sm, 4px);
+}
+
+.diff-column.server .column-header {
+  background: var(--info-bg, #dbeafe);
+  color: var(--info, #3b82f6);
+}
+
+.diff-column.client .column-header {
+  background: var(--success-bg, #d1fae5);
+  color: var(--success, #059669);
+}
+
+.column-content {
+  padding: 0.75rem;
+  background: var(--surface-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm, 4px);
+  overflow-x: auto;
+}
+
+.column-content pre {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-family: 'Courier New', monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text-primary);
+  line-height: 1.5;
 }
 
 .fields-list {

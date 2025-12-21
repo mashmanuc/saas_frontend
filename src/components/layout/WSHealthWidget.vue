@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Wifi, WifiOff, AlertCircle } from 'lucide-vue-next'
+import { Wifi, WifiOff, AlertCircle, RefreshCw } from 'lucide-vue-next'
 import { useRealtimeStore } from '@/stores/realtimeStore'
 
 const { t } = useI18n()
 const realtime = useRealtimeStore()
+
+const reconnecting = ref(false)
 
 const statusIcon = computed(() => {
   switch (realtime.status) {
@@ -67,14 +69,36 @@ const lastPingText = computed(() => {
   const minutes = Math.floor(seconds / 60)
   return `${minutes}m ago`
 })
+
+async function handleReconnect() {
+  if (reconnecting.value) return
+  
+  reconnecting.value = true
+  try {
+    await realtime.connect()
+  } finally {
+    reconnecting.value = false
+  }
+}
 </script>
 
 <template>
   <Transition name="slide-down">
     <div v-if="showWidget" class="ws-health-widget" :style="{ borderColor: statusColor }">
       <component :is="statusIcon" :size="16" :style="{ color: statusColor }" />
-      <span class="status-text">{{ statusText }}</span>
-      <span v-if="lastPingText" class="ping-text">{{ lastPingText }}</span>
+      <div class="widget-content">
+        <span class="status-text">{{ statusText }}</span>
+        <span v-if="lastPingText" class="ping-text">{{ lastPingText }}</span>
+      </div>
+      <button
+        v-if="realtime.status !== 'connecting'"
+        type="button"
+        class="reconnect-btn"
+        :disabled="reconnecting"
+        @click="handleReconnect"
+      >
+        <RefreshCw :size="14" :class="{ 'animate-spin': reconnecting }" />
+      </button>
     </div>
   </Transition>
 </template>
@@ -101,9 +125,47 @@ const lastPingText = computed(() => {
   color: var(--text-primary);
 }
 
+.widget-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
 .ping-text {
   font-size: 0.75rem;
   color: var(--text-secondary);
+}
+
+.reconnect-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm, 4px);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.reconnect-btn:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+
+.reconnect-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .slide-down-enter-active,

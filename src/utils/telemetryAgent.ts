@@ -11,6 +11,19 @@ export interface TelemetryEvent {
   metrics?: Record<string, number>
 }
 
+export function trackEvent(
+  eventType: string,
+  context: Record<string, any> = {},
+  metrics?: Record<string, number>
+): void {
+  if (!eventType) return
+  track({
+    event_type: eventType,
+    context,
+    metrics,
+  })
+}
+
 interface TelemetryBatch {
   events: TelemetryEvent[]
   session_id: string | null

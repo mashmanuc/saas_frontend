@@ -16,6 +16,13 @@
     <!-- Toasts & Loader overlay -->
     <ToastContainer class="z-50" />
     <GlobalLoader />
+    
+    <!-- Session Revoked Banner -->
+    <SessionRevokedBanner
+      :show="authStore.showSessionRevokedBanner"
+      :request-id="authStore.sessionRevokedRequestId"
+      @close="authStore.showSessionRevokedBanner = false"
+    />
   </div>
 </template>
 
@@ -24,4 +31,8 @@ import SideNav from './SideNav.vue'
 import TopNav from './TopNav.vue'
 import ToastContainer from './ToastContainer.vue'
 import GlobalLoader from './GlobalLoader.vue'
+import SessionRevokedBanner from '../components/SessionRevokedBanner.vue'
+import { useAuthStore } from '../modules/auth/store/authStore'
+
+const authStore = useAuthStore()
 </script>
