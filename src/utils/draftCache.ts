@@ -28,8 +28,26 @@ export function isIndexedDBAvailable(): boolean {
 
   try {
     indexedDBAvailable = !!(window.indexedDB && typeof window.indexedDB.open === 'function')
+    
+    if (!indexedDBAvailable) {
+      // Track telemetry for missing IndexedDB
+      import('./telemetryAgent').then(({ trackEvent }) => {
+        trackEvent('offline.indexeddb_missing', {
+          user_agent: navigator.userAgent,
+          platform: navigator.platform,
+        })
+      }).catch(() => {})
+    }
   } catch {
     indexedDBAvailable = false
+    
+    // Track telemetry for IndexedDB error
+    import('./telemetryAgent').then(({ trackEvent }) => {
+      trackEvent('offline.indexeddb_error', {
+        user_agent: navigator.userAgent,
+        platform: navigator.platform,
+      })
+    }).catch(() => {})
   }
 
   return indexedDBAvailable

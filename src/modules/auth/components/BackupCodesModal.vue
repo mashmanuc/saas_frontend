@@ -101,7 +101,16 @@ async function loadCodes() {
   copied.value = false
   
   try {
-    const res = await authApi.getBackupCodes()
+    // Request token first
+    const tokenRes = await authApi.requestBackupCodesToken()
+    const token = tokenRes?.token
+    
+    if (!token) {
+      throw new Error('No token received')
+    }
+    
+    // Get codes with token
+    const res = await authApi.getBackupCodesWithToken(token)
     codes.value = Array.isArray(res?.codes) ? res.codes : []
   } catch (err) {
     error.value = err?.response?.data?.message || t('profile.security.mfa.errors.loadCodesFailed')

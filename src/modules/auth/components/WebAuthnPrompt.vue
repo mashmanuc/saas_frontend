@@ -30,8 +30,19 @@ async function handleAuthenticate() {
     const credential = await authenticateWithWebAuthn(props.challenge)
     await props.onSuccess(credential)
   } catch (err: any) {
-    error.value = err?.message || t('auth.webauthn.authError')
-    requestId.value = err?.request_id || ''
+    const errorCode = err?.response?.data?.error || err?.error
+    if (errorCode === 'webauthn_replay_detected') {
+      error.value = t('auth.webauthn.errors.replayDetected')
+    } else if (errorCode === 'webauthn_attestation_invalid') {
+      error.value = t('auth.webauthn.errors.attestationInvalid')
+    } else if (errorCode === 'webauthn_challenge_expired') {
+      error.value = t('auth.webauthn.errors.challengeExpired')
+    } else if (errorCode === 'webauthn_invalid_assertion') {
+      error.value = t('auth.webauthn.errors.invalidAssertion')
+    } else {
+      error.value = err?.message || t('auth.webauthn.authError')
+    }
+    requestId.value = err?.response?.data?.request_id || err?.request_id || ''
   } finally {
     isAuthenticating.value = false
   }

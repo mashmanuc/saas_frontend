@@ -78,6 +78,7 @@
 import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { AlertTriangle, AlertCircle } from 'lucide-vue-next'
+import operatorApi from '../api/operatorApi'
 
 const props = defineProps({
   show: {
@@ -119,6 +120,10 @@ const risks = computed(() => {
   return risksText.split('|').filter(r => r.trim())
 })
 
+function generateIdempotencyKey() {
+  return `op_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`
+}
+
 async function handleExecute() {
   if (!confirmedRisks.value || executing.value) return
   
@@ -128,15 +133,15 @@ async function handleExecute() {
   requestId.value = ''
   
   try {
-    if (props.onExecute) {
-      const result = await props.onExecute(props.action, props.payload)
-      requestId.value = result?.request_id || ''
-      success.value = t('operator.actions.executeSuccess')
-      
-      setTimeout(() => {
-        handleClose()
-      }, 2000)
-    }
+    const idempotencyKey = generateIdempotencyKey()
+    const result = await operatorApi.executeAction(props.action, props.payload, idempotencyKey)
+    
+    requestId.value = result?.request_id || ''
+    success.value = t('operator.actions.executeSuccess')
+    
+    setTimeout(() => {
+      handleClose()
+    }, 2000)
   } catch (err) {
     error.value = err?.response?.data?.message || err?.message || t('operator.actions.executeError')
     requestId.value = err?.response?.data?.request_id || ''

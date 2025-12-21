@@ -31,6 +31,9 @@
             <div>
               <p>{{ error }}</p>
               <p v-if="requestId" class="request-id">Request ID: {{ requestId }}</p>
+              <button type="button" class="btn btn-sm btn-ghost" @click="handleRetry" :disabled="loading">
+                {{ $t('common.retry') }}
+              </button>
             </div>
           </div>
         </div>
@@ -101,7 +104,8 @@ async function handleConfirm() {
   requestId.value = ''
   
   try {
-    await props.onConfirm()
+    const result = await props.onConfirm()
+    requestId.value = result?.request_id || ''
   } catch (err) {
     error.value = err?.response?.data?.message || err?.message || t('marketplace.draft.confirmError')
     requestId.value = err?.response?.data?.request_id || ''
@@ -110,16 +114,23 @@ async function handleConfirm() {
   }
 }
 
+async function handleRetry() {
+  await handleConfirm()
+}
+
 async function handleRollback() {
   if (!confirm(t('marketplace.draft.rollbackConfirm'))) return
   
   loading.value = true
   error.value = ''
+  requestId.value = ''
   
   try {
-    await props.onRollback()
+    const result = await props.onRollback()
+    requestId.value = result?.request_id || ''
   } catch (err) {
     error.value = err?.response?.data?.message || err?.message || t('marketplace.draft.rollbackError')
+    requestId.value = err?.response?.data?.request_id || ''
   } finally {
     loading.value = false
   }

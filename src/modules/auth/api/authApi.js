@@ -17,8 +17,8 @@ const authApi = {
     return api.post('/v1/auth/mfa/confirm', payload)
   },
 
-  webauthnChallenge(payload) {
-    return api.post('/v1/auth/webauthn/challenge', payload)
+  webauthnChallenge(sessionId) {
+    return api.post('/v1/auth/webauthn/challenge', { session_id: sessionId })
   },
 
   webauthnVerify(payload) {
@@ -27,6 +27,14 @@ const authApi = {
 
   webauthnRegister(payload) {
     return api.post('/v1/auth/webauthn/register', payload)
+  },
+
+  requestBackupCodesToken() {
+    return api.post('/v1/auth/mfa/backup-codes/request/')
+  },
+
+  getBackupCodesWithToken(token) {
+    return api.get(`/v1/auth/mfa/backup-codes/${token}/`)
   },
 
   getWebAuthnCredentials() {

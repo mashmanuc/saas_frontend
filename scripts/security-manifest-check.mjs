@@ -3,16 +3,19 @@
 /**
  * security-manifest-check.mjs
  * 
- * Validates security-sensitive files and configurations for v0.38.0+
+ * Validates security-sensitive files and configurations for v0.41.0
  * 
  * Checks:
  * - MFA setup wizard exists and has required components
  * - Session manager UI exists
- * - WebAuthn components exist (alpha)
- * - Realtime gateway health check exists
+ * - WebAuthn components with real backend integration
+ * - Backup codes with token-based flow
+ * - Draft merge conflict resolution
+ * - Operator actions with idempotency
+ * - Telemetry charts with real data
  * - Rate limit UX components exist
  * - I18n keys for new features exist
- * - Playwright smoke tests for auth/security exist
+ * - Playwright tests for all flows exist
  */
 
 import fs from 'fs'
@@ -29,23 +32,37 @@ const REQUIRED_FILES = [
   'src/modules/auth/views/LoginView.vue',
   'src/modules/auth/api/authApi.js',
   
-  // WebAuthn components (alpha)
+  // WebAuthn components
   'src/modules/auth/components/WebAuthnEnrollModal.vue',
   'src/modules/auth/components/WebAuthnPrompt.vue',
+  'src/modules/auth/components/BackupCodesModal.vue',
   
   // Marketplace components
   'src/modules/marketplace/components/editor/CertificationsEditor.vue',
   'src/modules/marketplace/components/profile/TutorBadgeHistory.vue',
   'src/modules/marketplace/components/filters/FiltersStatusBanner.vue',
+  'src/modules/marketplace/components/DraftConflictModal.vue',
+  'src/modules/marketplace/components/MergeConfirmationModal.vue',
+  'src/modules/marketplace/components/PublishGuardModal.vue',
   'src/modules/marketplace/api/marketplace.ts',
+  
+  // Operator components
+  'src/modules/operator/components/TelemetryChart.vue',
+  'src/modules/operator/components/OperatorActionModal.vue',
+  'src/modules/operator/api/operatorApi.js',
   
   // Classroom realtime components
   'src/modules/classroom/components/ConnectionHealthBanner.vue',
   'src/modules/classroom/components/RateLimitedNotice.vue',
+  'src/components/RateLimitCenter.vue',
+  'src/components/OfflineBanner.vue',
   'src/stores/realtimeStore.js',
   
   // Tests
   'tests/e2e/auth-security.smoke.spec.ts',
+  'tests/e2e/v041-webauthn-integration.spec.ts',
+  'tests/e2e/v041-draft-merge.spec.ts',
+  'tests/e2e/v041-operator-actions.spec.ts',
   
   // I18n
   'src/i18n/locales/uk.json',
@@ -163,7 +180,7 @@ function checkComponentContent(filePath, requiredStrings) {
   }
 }
 
-console.log('🔒 Running security manifest check for v0.38.0...\n')
+console.log('🔒 Running security manifest check for v0.41.0...\n')
 
 // Check required files
 console.log('📁 Checking required files...')

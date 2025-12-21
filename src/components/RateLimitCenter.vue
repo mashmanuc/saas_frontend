@@ -6,7 +6,7 @@
           <Clock :size="32" />
         </div>
         <h2 class="rate-limit-title">{{ $t('common.rateLimit.title') }}</h2>
-        <p class="rate-limit-message">{{ $t('common.rateLimit.message') }}</p>
+        <p class="rate-limit-message">{{ getFeatureMessage() }}</p>
         
         <div class="countdown-container">
           <div class="countdown-ring">
@@ -66,6 +66,10 @@ const props = defineProps({
     type: String,
     default: '',
   },
+  feature: {
+    type: String,
+    default: 'general',
+  },
   onRetry: {
     type: Function,
     default: () => {},
@@ -80,6 +84,12 @@ const { t } = useI18n()
 
 const remainingSeconds = ref(0)
 let countdownInterval = null
+
+function getFeatureMessage() {
+  const featureKey = `common.rateLimit.features.${props.feature}`
+  const hasFeatureMessage = t(featureKey) !== featureKey
+  return hasFeatureMessage ? t(featureKey) : t('common.rateLimit.message')
+}
 
 const progressOffset = computed(() => {
   if (props.retryAfterSeconds === 0) return 283
@@ -125,6 +135,7 @@ watch(() => props.show, (newVal) => {
     trackEvent('rate_limit_hit', {
       retry_after_seconds: props.retryAfterSeconds,
       request_id: props.requestId,
+      feature: props.feature,
     })
   } else {
     stopCountdown()

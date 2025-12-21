@@ -12,20 +12,15 @@
       </div>
     </Card>
 
-    <Card
-      v-if="error"
-      class="border-red-200 bg-red-50 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200"
-    >
-      {{ error }}
-    </Card>
+    <div v-if="error" class="rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-800">
+      <p>{{ error }}</p>
+      <p v-if="lastRequestId" class="mt-1 text-xs opacity-80">Request ID: {{ lastRequestId }}</p>
+    </div>
 
-    <Card
-      v-if="success"
-      class="border-green-200 bg-green-50 text-sm text-green-700 dark:border-green-900 dark:bg-green-950/40 dark:text-green-200"
-      data-testid="sessions-success"
-    >
-      {{ success }}
-    </Card>
+    <div v-if="success" class="rounded-lg border border-green-300 bg-green-50 p-4 text-sm text-green-800">
+      <p>{{ success }}</p>
+      <p v-if="lastRequestId" class="mt-1 text-xs opacity-80">Request ID: {{ lastRequestId }}</p>
+    </div>
 
     <Card class="space-y-6">
       <div class="space-y-2">
@@ -227,6 +222,7 @@ const showWebAuthnEnroll = ref(false)
 const webauthnCredentials = ref([])
 const credentialRevokeId = ref(null)
 const showBackupCodes = ref(false)
+const lastRequestId = ref('')
 
 function goBack() {
   router.push('/dashboard/profile')
@@ -245,12 +241,18 @@ async function revokeCredential(credentialId) {
   if (!confirm(t('profile.security.webauthn.removeConfirm'))) return
   
   credentialRevokeId.value = credentialId
+  error.value = ''
+  success.value = ''
+  lastRequestId.value = ''
+  
   try {
-    await authApi.revokeWebAuthnCredential(credentialId)
+    const res = await authApi.revokeWebAuthnCredential(credentialId)
     await loadWebAuthnCredentials()
     success.value = t('profile.security.webauthn.removeSuccess')
+    lastRequestId.value = res?.request_id || ''
   } catch (err) {
     error.value = err?.response?.data?.message || t('profile.security.webauthn.removeError')
+    lastRequestId.value = err?.response?.data?.request_id || ''
   } finally {
     credentialRevokeId.value = null
   }

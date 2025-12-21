@@ -20,9 +20,28 @@ const error = ref('')
 function formatFieldValue(value: any): string {
   if (value === null || value === undefined) return '(empty)'
   if (typeof value === 'string') return value
-  if (Array.isArray(value)) return JSON.stringify(value, null, 2)
-  if (typeof value === 'object') return JSON.stringify(value, null, 2)
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+  if (Array.isArray(value)) {
+    // Format arrays with better readability
+    if (value.length === 0) return '[]'
+    return JSON.stringify(value, null, 2)
+  }
+  if (typeof value === 'object') {
+    // Format objects with better readability
+    if (Object.keys(value).length === 0) return '{}'
+    return JSON.stringify(value, null, 2)
+  }
   return String(value)
+}
+
+function getNestedValue(obj: any, path: string): any {
+  const keys = path.split('.')
+  let current = obj
+  for (const key of keys) {
+    if (current === null || current === undefined) return undefined
+    current = current[key]
+  }
+  return current
 }
 
 async function handleResolve(strategy: 'server' | 'client' | 'merge') {
@@ -80,13 +99,13 @@ function handleCancel() {
                   <div class="diff-column server">
                     <div class="column-header">{{ t('marketplace.draft.serverVersion') }}</div>
                     <div class="column-content">
-                      <pre>{{ formatFieldValue(serverPayload?.[field]) }}</pre>
+                      <pre>{{ formatFieldValue(getNestedValue(serverPayload, field)) }}</pre>
                     </div>
                   </div>
                   <div class="diff-column client">
                     <div class="column-header">{{ t('marketplace.draft.clientVersion') }}</div>
                     <div class="column-content">
-                      <pre>{{ formatFieldValue(clientPayload?.[field]) }}</pre>
+                      <pre>{{ formatFieldValue(getNestedValue(clientPayload, field)) }}</pre>
                     </div>
                   </div>
                 </div>

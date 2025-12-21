@@ -162,6 +162,7 @@ async function onSubmit() {
   try {
     const res = await auth.login(form)
     if (res && typeof res === 'object' && res.webauthn_required) {
+      await auth.loadWebAuthnChallenge()
       showWebAuthnPrompt.value = true
       return
     }

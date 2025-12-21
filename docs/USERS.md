@@ -35,3 +35,6 @@ v036_student_2@example.com
 v036_student_3@example.com
 v036_student_4@example.com
 v036_student_5@example.com
+
+
+python manage.py create_operator_user admin@example.com --admin

@@ -130,6 +130,21 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    async loadWebAuthnChallenge() {
+      try {
+        const sessionId = this.pendingWebAuthnSessionId
+        if (!sessionId) {
+          throw new Error('No pending WebAuthn session')
+        }
+        const res = await authApi.webauthnChallenge(sessionId)
+        this.webAuthnChallenge = res
+        return res
+      } catch (error) {
+        this.handleError(error)
+        throw error
+      }
+    },
+
     async verifyWebAuthn(assertion) {
       this.loading = true
       this.error = null

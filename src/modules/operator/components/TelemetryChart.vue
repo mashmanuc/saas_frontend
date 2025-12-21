@@ -52,6 +52,7 @@
 import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Loader2, AlertCircle } from 'lucide-vue-next'
+import operatorApi from '../api/operatorApi'
 
 const props = defineProps({
   title: {
@@ -106,17 +107,28 @@ async function loadData() {
   error.value = ''
   
   try {
-    // Mock data - replace with actual API call
-    const mockData = generateMockData()
-    series.value = mockData.series
-    meta.value = mockData.meta
+    const params = getTimeRangeParams()
+    const res = await operatorApi.getTelemetryMetrics(props.domain, params)
+    
+    series.value = res?.series || []
+    meta.value = res?.meta || null
     
     renderChart()
   } catch (err) {
-    error.value = err?.message || t('operator.telemetry.loadError')
+    error.value = err?.response?.data?.message || err?.message || t('operator.telemetry.loadError')
   } finally {
     loading.value = false
   }
+}
+
+function getTimeRangeParams() {
+  const ranges = {
+    '1h': { hours: 1, window_minutes: 1 },
+    '6h': { hours: 6, window_minutes: 5 },
+    '24h': { hours: 24, window_minutes: 15 },
+    '7d': { hours: 168, window_minutes: 60 },
+  }
+  return ranges[selectedTimeRange.value] || ranges['24h']
 }
 
 function generateMockData() {
