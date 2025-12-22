@@ -19,7 +19,7 @@
             <span class="value">{{ formatNextAvailable(summary.next_available_slot) }}</span>
           </div>
         </div>
-        <button @click="$emit('view-calendar')" class="btn btn-sm btn-outline">
+        <button @click="openDrawer" class="btn btn-sm btn-outline">
           {{ t('marketplace.profile.viewCalendar') }} →
         </button>
       </div>
@@ -50,13 +50,32 @@
       <CalendarX :size="32" />
       <p>{{ t('marketplace.profile.noAvailability') }}</p>
     </div>
+
+    <!-- Calendar Drawer -->
+    <Teleport to="body">
+      <div v-if="showDrawer" class="drawer-overlay" @click="closeDrawer">
+        <div class="drawer-container" @click.stop>
+          <div class="drawer-header">
+            <h3>{{ t('marketplace.profile.fullCalendar') }}</h3>
+            <button @click="closeDrawer" class="close-button">
+              <X :size="20" />
+            </button>
+          </div>
+          <div class="drawer-body">
+            <slot name="calendar" :close="closeDrawer">
+              <p>{{ t('marketplace.profile.calendarPlaceholder') }}</p>
+            </slot>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Calendar, CalendarX, Loader2, AlertCircle } from 'lucide-vue-next'
+import { Calendar, CalendarX, Loader2, AlertCircle, X } from 'lucide-vue-next'
 import { availabilityApi } from '../../booking/api/availabilityApi'
 import type { AvailabilitySummary } from '../../booking/api/availabilityApi'
 
@@ -79,6 +98,7 @@ const { t } = useI18n()
 const summary = ref<AvailabilitySummary | null>(null)
 const loading = ref(false)
 const error = ref<string | null>(null)
+const showDrawer = ref(false)
 
 const weekDays = ref([
   { name: t('common.weekdays.monday'), slots: 0 },
@@ -93,28 +113,63 @@ const weekDays = ref([
 function formatNextAvailable(datetime: string | null): string {
   if (!datetime) return t('marketplace.profile.noSlotsAvailable')
   
+  return formatRelativeTime(datetime)
+}
+
+function formatRelativeTime(datetime: string): string {
   const date = new Date(datetime)
   const now = new Date()
-  const diffDays = Math.floor((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+  const diffMs = date.getTime() - now.getTime()
+  const diffMinutes = Math.floor(diffMs / (1000 * 60))
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
   
+  // Less than 1 hour
+  if (diffMinutes < 60) {
+    return t('marketplace.profile.inMinutes', { count: diffMinutes })
+  }
+  
+  // Less than 24 hours
+  if (diffHours < 24) {
+    return t('marketplace.profile.inHours', { count: diffHours })
+  }
+  
+  // Today
   if (diffDays === 0) {
     return t('marketplace.profile.today') + ', ' + date.toLocaleTimeString(undefined, {
       hour: '2-digit',
       minute: '2-digit'
     })
-  } else if (diffDays === 1) {
+  }
+  
+  // Tomorrow
+  if (diffDays === 1) {
     return t('marketplace.profile.tomorrow') + ', ' + date.toLocaleTimeString(undefined, {
       hour: '2-digit',
       minute: '2-digit'
     })
-  } else {
-    return date.toLocaleDateString(undefined, {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
   }
+  
+  // This week (next 7 days)
+  if (diffDays < 7) {
+    return t('marketplace.profile.inDays', { count: diffDays })
+  }
+  
+  // Default format
+  return date.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+function openDrawer(): void {
+  showDrawer.value = true
+}
+
+function closeDrawer(): void {
+  showDrawer.value = false
 }
 
 async function loadSummary(): Promise<void> {
@@ -285,5 +340,72 @@ onMounted(() => {
   .week-summary {
     grid-template-columns: repeat(3, 1fr);
   }
+}
+
+.drawer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  z-index: 1000;
+}
+
+.drawer-container {
+  background-color: var(--surface);
+  width: 90%;
+  max-width: 600px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.15);
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.drawer-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  color: var(--text-secondary);
+  border-radius: 0.375rem;
+  transition: background-color 0.2s;
+}
+
+.close-button:hover {
+  background-color: var(--surface-muted);
 }
 </style>

@@ -1,4 +1,16 @@
 import apiClient from '@/utils/apiClient'
+import { useErrorRecovery } from '@/composables/useErrorRecovery'
+
+export class BookingConflictError extends Error {
+  constructor(
+    message: string,
+    public alternativeSlots?: any[],
+    public slotId?: number
+  ) {
+    super(message)
+    this.name = 'BookingConflictError'
+  }
+}
 
 export interface TrialBookingRequest {
   slot_id: number
@@ -51,11 +63,33 @@ export const bookingApi = {
     matchId: string,
     data: TrialBookingRequest
   ): Promise<Booking> {
-    const { data: response } = await apiClient.post(
-      `/api/v1/matches/${matchId}/trial-request`,
-      data
-    )
-    return response
+    const { executeWithRetry } = useErrorRecovery({
+      maxRetries: 2,
+      retryDelay: 200,
+      exponentialBackoff: true,
+      onRetry: (attempt, error) => {
+        console.warn(`[bookingApi] Retry attempt ${attempt} for trial booking`, error)
+      }
+    })
+
+    return executeWithRetry(async () => {
+      try {
+        const { data: response } = await apiClient.post(
+          `/api/v1/matches/${matchId}/trial-request`,
+          data
+        )
+        return response
+      } catch (err: any) {
+        if (err.response?.status === 409) {
+          throw new BookingConflictError(
+            err.response?.data?.detail || 'Slot unavailable',
+            err.response?.data?.alternative_slots,
+            data.slot_id
+          )
+        }
+        throw err
+      }
+    }, 'createTrialBooking')
   },
 
   async confirmBooking(

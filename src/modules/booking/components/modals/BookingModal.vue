@@ -66,7 +66,19 @@
             </div>
           </div>
 
-          <div v-if="error" class="error-banner">
+          <!-- Conflict Warning -->
+          <div v-if="conflictDetected" class="conflict-warning">
+            <AlertCircle :size="20" />
+            <div class="conflict-content">
+              <h4>{{ t('booking.conflict.title') }}</h4>
+              <p>{{ t('booking.conflict.body') }}</p>
+              <button @click="handleSelectAnother" class="btn btn-sm btn-outline">
+                {{ t('booking.conflict.selectAnother') }}
+              </button>
+            </div>
+          </div>
+
+          <div v-if="error && !conflictDetected" class="error-banner">
             <AlertCircle :size="20" />
             <span>{{ error }}</span>
           </div>
@@ -126,6 +138,8 @@ const formData = ref({
 const errors = ref<Record<string, string>>({})
 const submitting = ref(false)
 const error = ref<string | null>(null)
+const conflictDetected = ref(false)
+const submitStartTime = ref<number>(0)
 
 const isValid = computed(() => {
   return formData.value.subject.trim().length > 0
@@ -175,6 +189,8 @@ async function handleConfirm(): Promise<void> {
   
   submitting.value = true
   error.value = null
+  conflictDetected.value = false
+  submitStartTime.value = Date.now()
   
   try {
     const booking = await bookingApi.createTrialBooking(props.matchId, {
@@ -183,19 +199,52 @@ async function handleConfirm(): Promise<void> {
       student_notes: formData.value.student_notes || undefined
     })
     
+    // Telemetry
+    const latency = Date.now() - submitStartTime.value
+    if (typeof window !== 'undefined' && (window as any).telemetry) {
+      (window as any).telemetry.track('booking.modal_submit', {
+        match_id: props.matchId,
+        slot_id: props.slot.id,
+        latency_ms: latency,
+        success: true
+      })
+    }
+    
     emit('confirmed', booking)
     resetForm()
   } catch (err: any) {
+    const latency = Date.now() - submitStartTime.value
+    
+    // Telemetry for errors
+    if (typeof window !== 'undefined' && (window as any).telemetry) {
+      (window as any).telemetry.track('booking.modal_submit', {
+        match_id: props.matchId,
+        slot_id: props.slot?.id,
+        latency_ms: latency,
+        success: false,
+        error_code: err.response?.status
+      })
+    }
+    
     if (err.response?.status === 409) {
+      conflictDetected.value = true
       error.value = t('booking.errors.slotUnavailable')
     } else if (err.response?.status === 403) {
       error.value = t('booking.errors.matchNotAccepted')
+    } else if (err.response?.status === 422) {
+      error.value = t('booking.errors.validationFailed')
     } else {
       error.value = err.message || t('booking.errors.generic')
     }
   } finally {
     submitting.value = false
   }
+}
+
+function handleSelectAnother(): void {
+  conflictDetected.value = false
+  emit('close')
+  // Parent component should reopen calendar
 }
 
 function handleOverlayClick(): void {
@@ -211,6 +260,8 @@ function resetForm(): void {
   }
   errors.value = {}
   error.value = null
+  conflictDetected.value = false
+  submitStartTime.value = 0
 }
 
 watch(() => props.show, (newVal) => {
@@ -362,9 +413,10 @@ watch(() => props.show, (newVal) => {
   font-size: 0.875rem;
 }
 
-.error-banner {
+.error-banner,
+.conflict-warning {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.75rem;
   padding: 1rem;
   background-color: var(--error-bg);
@@ -372,6 +424,31 @@ watch(() => props.show, (newVal) => {
   border-radius: 0.5rem;
   border: 1px solid var(--error-border);
   margin-top: 1rem;
+}
+
+.conflict-warning {
+  background-color: var(--warning-bg);
+  color: var(--warning-text);
+  border-color: var(--warning-border);
+  flex-direction: column;
+}
+
+.conflict-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.conflict-content h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.conflict-content p {
+  margin: 0;
+  font-size: 0.875rem;
 }
 
 .modal-footer {

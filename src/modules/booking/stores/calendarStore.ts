@@ -150,6 +150,34 @@ export const useCalendarStore = defineStore('calendar', () => {
     }
   }
 
+  function applySlotEvent(event: { type: string; payload: any }): void {
+    const { type, payload } = event
+
+    switch (type) {
+      case 'slot.booked':
+        updateSlotStatus(payload.slot_id, 'booked')
+        break
+      case 'slot.blocked':
+        updateSlotStatus(payload.slot_id, 'blocked')
+        break
+      case 'slot.released':
+        updateSlotStatus(payload.slot_id, 'available')
+        break
+      case 'slot.created':
+        // Optionally reload slots or add to array
+        if (payload.slot) {
+          slots.value.push(payload.slot)
+        }
+        break
+      case 'availability.updated':
+        // Trigger reload
+        pendingChanges.value.push({ type: 'reload', timestamp: Date.now() })
+        break
+      default:
+        console.warn('[calendarStore] Unknown event type:', type)
+    }
+  }
+
   async function deleteAvailabilitySlot(id: number): Promise<void> {
     await bookingApi.deleteAvailability(id)
     availability.value = availability.value.filter((a) => a.id !== id)
@@ -310,21 +338,20 @@ export const useCalendarStore = defineStore('calendar', () => {
     loadSettings,
     updateSettings,
     loadAvailability,
+    loadExceptions,
+    loadCalendar,
     setAvailability,
     syncAvailability,
     updateSlotStatus,
+    applySlotEvent,
     deleteAvailabilitySlot,
     loadSlots,
     loadWeekSlots,
     blockSlot,
     unblockSlot,
     createCustomSlot,
-    loadExceptions,
     addException,
     deleteException,
-    loadCalendar,
-
-    // Navigation
     setSelectedDate,
     setSelectedSlot,
     setViewMode,

@@ -23,21 +23,21 @@ const displayBadges = computed(() => {
 })
 
 const headlineText = computed(() => {
-  const v = (props.tutor as any)?.headline
+  const v = props.tutor?.headline
   return typeof v === 'string' && v.trim().length > 0 ? v : t('common.notSpecified')
 })
 
 const countryText = computed(() => {
-  return toDisplayText((props.tutor as any)?.country, t('common.notSpecified'))
+  return toDisplayText(props.tutor?.country, t('common.notSpecified'))
 })
 
 const lessonsText = computed(() => {
-  return toDisplayText((props.tutor as any)?.total_lessons, t('common.notSpecified'))
+  return toDisplayText(props.tutor?.total_lessons, t('common.notSpecified'))
 })
 
 const hourlyRateText = computed(() => {
-  const amount = (props.tutor as any)?.hourly_rate
-  const currency = (props.tutor as any)?.currency
+  const amount = props.tutor?.hourly_rate
+  const currency = props.tutor?.currency
   if (typeof amount === 'number' && Number.isFinite(amount) && typeof currency === 'string' && currency.trim().length > 0) {
     return null
   }
@@ -48,7 +48,11 @@ type TabKey = 'summary' | 'about' | 'calendar'
 const activeTab = ref<TabKey>('summary')
 
 const subjectsText = computed(() => {
-  return formatList((props.tutor as any)?.subjects, t('common.notSpecified'))
+  return formatList(props.tutor?.subjects, t('common.notSpecified'))
+})
+
+const languagesText = computed(() => {
+  return formatList(props.tutor?.languages, t('common.notSpecified'))
 })
 
 const aboutText = computed(() => {
@@ -106,7 +110,11 @@ const aboutText = computed(() => {
         </div>
 
         <div class="subjects">
-          {{ subjectsText }}
+          <strong>{{ t('marketplace.filters.subjects') }}:</strong> {{ subjectsText }}
+        </div>
+        
+        <div class="languages">
+          <strong>{{ t('marketplace.filters.languages') }}:</strong> {{ languagesText }}
         </div>
       </div>
     </div>
@@ -256,6 +264,12 @@ const aboutText = computed(() => {
 
 .subjects {
   margin-top: var(--space-sm);
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.languages {
+  margin-top: var(--space-xs);
   color: var(--text-muted);
   font-size: 0.875rem;
 }

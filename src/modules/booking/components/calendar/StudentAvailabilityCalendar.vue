@@ -1,22 +1,39 @@
 <template>
   <div class="student-availability-calendar">
-    <div v-if="error" class="error-banner">
+    <!-- WebSocket Disconnected Banner -->
+    <div v-if="!wsConnected" class="ws-banner">
+      <AlertCircle :size="20" />
+      <span>{{ t('calendar.realtime.status.disconnected') }}</span>
+      <button @click="reconnectWebSocket" class="btn btn-sm">{{ t('common.retry') }}</button>
+    </div>
+
+    <!-- Cache Stale Banner -->
+    <div v-if="state === 'cache_stale'" class="cache-banner">
+      <span>{{ t('calendar.cache.staleLabel') }}</span>
+      <button @click="loadAvailability" class="btn btn-sm">{{ t('common.retry') }}</button>
+    </div>
+
+    <!-- Error Banner -->
+    <div v-if="error && state === 'error'" class="error-banner">
       <AlertCircle :size="20" />
       <span>{{ error }}</span>
       <button @click="loadAvailability" class="btn btn-sm">{{ t('common.retry') }}</button>
     </div>
 
     <div class="calendar-header">
-      <button @click="navigateWeek(-1)" class="btn btn-ghost" :disabled="loading">
+      <button @click="navigateWeek(-1)" class="btn btn-ghost" :disabled="state === 'loading'">
         <ChevronLeft :size="20" />
       </button>
       
       <div class="week-info">
         <h3>{{ t('calendar.weekOf', { date: formatDate(currentWeekStart) }) }}</h3>
         <span class="timezone">{{ timezone }}</span>
+        <span v-if="lastSuccessfulFetch" class="last-sync">
+          {{ t('calendar.lastSync') }}: {{ formatLastSync(lastSuccessfulFetch) }}
+        </span>
       </div>
       
-      <button @click="navigateWeek(1)" class="btn btn-ghost" :disabled="loading">
+      <button @click="navigateWeek(1)" class="btn btn-ghost" :disabled="state === 'loading'">
         <ChevronRight :size="20" />
       </button>
       
@@ -25,7 +42,7 @@
       </button>
     </div>
 
-    <div v-if="loading" class="calendar-skeleton">
+    <div v-if="state === 'loading'" class="calendar-skeleton">
       <div v-for="i in 7" :key="i" class="day-skeleton">
         <div class="skeleton-header"></div>
         <div class="skeleton-slot"></div>
@@ -87,6 +104,7 @@ import { useI18n } from 'vue-i18n'
 import { Calendar, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-vue-next'
 import { availabilityApi } from '../../api/availabilityApi'
 import { useWebSocket } from '@/composables/useWebSocket'
+import { useCalendarDeepLink } from '@/composables/useCalendarDeepLink'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import type { TimeSlot } from '../../api/availabilityApi'
 
@@ -104,13 +122,18 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const authStore = useAuthStore()
 const { subscribeStudentAvailability } = useWebSocket()
+const { selectedDate: deepLinkDate, selectedSlotId: deepLinkSlotId, updateDeepLink } = useCalendarDeepLink()
+
+type CalendarState = 'idle' | 'loading' | 'success' | 'cache_stale' | 'error'
 
 const currentWeekStart = ref<string>(getMonday(new Date()))
 const selectedSlot = ref<TimeSlot | null>(null)
 const timezone = ref<string>(Intl.DateTimeFormat().resolvedOptions().timeZone)
 const slots = ref<TimeSlot[]>([])
-const loading = ref(false)
+const state = ref<CalendarState>('idle')
 const error = ref<string | null>(null)
+const wsConnected = ref(true)
+const lastSuccessfulFetch = ref<Date | null>(null)
 let wsUnsubscribe: (() => void) | null = null
 
 const weekDays = computed(() => {
@@ -166,14 +189,47 @@ function formatSlotDateTime(slot: TimeSlot): string {
   })
 }
 
+function formatLastSync(date: Date): string {
+  const now = Date.now()
+  const diff = now - date.getTime()
+  const seconds = Math.floor(diff / 1000)
+  const minutes = Math.floor(seconds / 60)
+  
+  if (minutes < 1) return t('calendar.justNow')
+  if (minutes === 1) return t('calendar.oneMinuteAgo')
+  if (minutes < 60) return t('calendar.minutesAgo', { count: minutes })
+  return date.toLocaleTimeString()
+}
+
+function reconnectWebSocket(): void {
+  wsConnected.value = true
+  // Telemetry
+  if (typeof window !== 'undefined' && (window as any).telemetry) {
+    (window as any).telemetry.track('calendar.ws_status', { status: 'reconnecting' })
+  }
+}
+
 function selectSlot(slot: TimeSlot): void {
   selectedSlot.value = slot
+  
+  // Update deep link
+  updateDeepLink({
+    calendar: props.tutorSlug,
+    date: slot.date,
+    slot: slot.id.toString()
+  })
 }
 
 function navigateWeek(direction: number): void {
   const current = new Date(currentWeekStart.value)
   current.setDate(current.getDate() + direction * 7)
   currentWeekStart.value = getMonday(current)
+  
+  // Update deep link
+  updateDeepLink({
+    calendar: props.tutorSlug,
+    date: currentWeekStart.value
+  })
 }
 
 function goToToday(): void {
@@ -181,8 +237,9 @@ function goToToday(): void {
 }
 
 async function loadAvailability(): Promise<void> {
-  loading.value = true
+  state.value = 'loading'
   error.value = null
+  
   try {
     const response = await availabilityApi.getTutorAvailability(
       props.tutorSlug,
@@ -192,12 +249,61 @@ async function loadAvailability(): Promise<void> {
       }
     )
     slots.value = response.slots
+    state.value = 'success'
+    lastSuccessfulFetch.value = new Date()
+    
+    // Save to localStorage for offline mode
+    saveToCache(response.slots)
+    
+    // Telemetry
+    if (typeof window !== 'undefined' && (window as any).telemetry) {
+      (window as any).telemetry.track('calendar.week_loaded', {
+        tutor_slug: props.tutorSlug,
+        week_start: currentWeekStart.value,
+        slot_count: response.slots.length,
+        timezone: timezone.value
+      })
+    }
   } catch (err: any) {
     const errorMsg = err.response?.data?.detail || err.message || t('calendar.errors.loadFailed')
     error.value = errorMsg
+    state.value = 'error'
     console.error('[calendar] Failed to load availability:', err)
-  } finally {
-    loading.value = false
+    
+    // Try to load from cache
+    loadFromCache()
+  }
+}
+
+function getCacheKey(): string {
+  return `calendar_${props.tutorSlug}_${currentWeekStart.value}_${timezone.value}`
+}
+
+function saveToCache(slotsData: TimeSlot[]): void {
+  try {
+    const cacheData = {
+      slots: slotsData,
+      timestamp: Date.now(),
+      weekStart: currentWeekStart.value,
+      timezone: timezone.value
+    }
+    localStorage.setItem(getCacheKey(), JSON.stringify(cacheData))
+  } catch (err) {
+    console.warn('[calendar] Failed to save cache:', err)
+  }
+}
+
+function loadFromCache(): void {
+  try {
+    const cached = localStorage.getItem(getCacheKey())
+    if (cached) {
+      const cacheData = JSON.parse(cached)
+      slots.value = cacheData.slots
+      state.value = 'cache_stale'
+      console.info('[calendar] Loaded from cache')
+    }
+  } catch (err) {
+    console.warn('[calendar] Failed to load cache:', err)
   }
 }
 
@@ -206,10 +312,24 @@ watch(currentWeekStart, () => {
 })
 
 onMounted(() => {
-  if (props.preselectedDate) {
+  // Deep link takes priority over preselectedDate
+  if (deepLinkDate.value) {
+    currentWeekStart.value = getMonday(deepLinkDate.value)
+  } else if (props.preselectedDate) {
     currentWeekStart.value = getMonday(new Date(props.preselectedDate))
   }
+  
   loadAvailability()
+  
+  // If deep link has slot ID, try to select it after loading
+  if (deepLinkSlotId.value) {
+    watch(() => slots.value, (newSlots) => {
+      const slot = newSlots.find(s => s.id === deepLinkSlotId.value)
+      if (slot) {
+        selectSlot(slot)
+      }
+    }, { immediate: true })
+  }
   
   // Subscribe to availability updates via WebSocket
   if (authStore.user?.id) {
@@ -217,17 +337,40 @@ onMounted(() => {
       authStore.user.id,
       props.tutorSlug,
       (event) => {
+        wsConnected.value = true
+        
+        // Telemetry
+        if (typeof window !== 'undefined' && (window as any).telemetry) {
+          (window as any).telemetry.track('calendar.ws_status', { status: 'connected' })
+        }
+        
         if (event.event === 'availability.updated') {
           loadAvailability()
         } else if (event.event === 'slot.unavailable') {
           const slotId = event.data.slot_id
           slots.value = slots.value.filter(s => s.id !== slotId)
+          
+          // Show toast if selected slot became unavailable
           if (selectedSlot.value?.id === slotId) {
             selectedSlot.value = null
+            if (typeof window !== 'undefined' && (window as any).toast) {
+              (window as any).toast.warning(t('calendar.slotBecameUnavailable'))
+            }
           }
         }
       }
     )
+    
+    // Monitor WebSocket connection status
+    const wsStatusInterval = setInterval(() => {
+      // This would be enhanced with actual WebSocket status from useWebSocket
+      // For now, we assume connection is good if we're subscribed
+    }, 5000)
+    
+    // Cleanup interval on unmount
+    onUnmounted(() => {
+      clearInterval(wsStatusInterval)
+    })
   }
 })
 
@@ -245,7 +388,9 @@ onUnmounted(() => {
   gap: 1.5rem;
 }
 
-.error-banner {
+.error-banner,
+.ws-banner,
+.cache-banner {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -254,6 +399,18 @@ onUnmounted(() => {
   color: var(--error-text);
   border-radius: 0.5rem;
   border: 1px solid var(--error-border);
+}
+
+.ws-banner {
+  background-color: var(--warning-bg);
+  color: var(--warning-text);
+  border-color: var(--warning-border);
+}
+
+.cache-banner {
+  background-color: var(--info-bg);
+  color: var(--info-text);
+  border-color: var(--info-border);
 }
 
 .calendar-header {
@@ -279,6 +436,13 @@ onUnmounted(() => {
 .timezone {
   font-size: 0.875rem;
   color: var(--text-secondary);
+}
+
+.last-sync {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
 }
 
 .calendar-skeleton {

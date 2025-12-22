@@ -1,4 +1,4 @@
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 
 export interface OfflineQueueItem {
   id: string
@@ -10,6 +10,7 @@ export interface OfflineQueueItem {
 
 const STORAGE_KEY = 'offline_queue'
 const MAX_RETRIES = 3
+const QUEUE_LIMIT = 20
 
 class OfflineQueue {
   private queue: OfflineQueueItem[] = []
@@ -38,7 +39,12 @@ class OfflineQueue {
     }
   }
 
-  add(action: string, payload: any) {
+  add(action: string, payload: any): boolean {
+    if (this.queue.length >= QUEUE_LIMIT) {
+      console.warn('[offline] Queue limit reached, cannot add more items')
+      return false
+    }
+    
     const item: OfflineQueueItem = {
       id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       action,
@@ -48,6 +54,7 @@ class OfflineQueue {
     }
     this.queue.push(item)
     this.saveQueue()
+    return true
   }
 
   async process(executor: (item: OfflineQueueItem) => Promise<void>) {
@@ -110,9 +117,15 @@ export function useOfflineSupport() {
     isOnline.value = false
   }
 
-  function addToQueue(action: string, payload: any) {
-    offlineQueue.add(action, payload)
+  function addToQueue(action: string, payload: any): boolean {
+    const added = offlineQueue.add(action, payload)
     queueSize.value = offlineQueue.size()
+    
+    if (!added && typeof window !== 'undefined' && (window as any).toast) {
+      (window as any).toast.warning('Offline queue is full. Please clear the queue.')
+    }
+    
+    return added
   }
 
   async function processQueue(executor: (item: OfflineQueueItem) => Promise<void>) {
@@ -135,9 +148,15 @@ export function useOfflineSupport() {
     window.removeEventListener('offline', handleOffline)
   })
 
+  const isQueueFull = computed(() => queueSize.value >= QUEUE_LIMIT)
+  const queuePercentage = computed(() => Math.round((queueSize.value / QUEUE_LIMIT) * 100))
+
   return {
     isOnline,
     queueSize,
+    isQueueFull,
+    queuePercentage,
+    queueLimit: QUEUE_LIMIT,
     addToQueue,
     processQueue,
     clearQueue,

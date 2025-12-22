@@ -6,6 +6,7 @@ const isSupportedChannel = (channel) => {
 
 const SUPPORTED_CHANNELS = new Set(['chat', 'board', 'presence', 'notifications', 'tutor', 'student', 'match', 'availability'])
 const DEFAULT_HEARTBEAT_MS = 25_000
+const HEARTBEAT_TIMEOUT_MS = 30_000
 const MAX_BACKOFF_MS = 15_000
 const INITIAL_BACKOFF_MS = 1_000
 
@@ -59,6 +60,8 @@ class RealtimeService {
     this.shouldReconnect = false
     this.wsUnavailable = false
     this.heartbeatTimer = null
+    this.heartbeatTimeoutTimer = null
+    this.lastPongTime = null
     this.reconnectTimer = null
     this.tokenRefreshCallback = null
     this.lastToken = null
@@ -220,6 +223,8 @@ class RealtimeService {
     try {
       const data = JSON.parse(event.data)
       if (data?.type === 'pong') {
+        this.lastPongTime = Date.now()
+        this.resetHeartbeatTimeout()
         return
       }
       if (data?.channel && this.channelSubscriptions.has(data.channel)) {
@@ -310,11 +315,38 @@ class RealtimeService {
   startHeartbeat() {
     this.clearHeartbeat()
     if (!this.options.heartbeatInterval) return
+    
+    this.lastPongTime = Date.now()
+    
     this.heartbeatTimer = setInterval(() => {
       if (this.socket?.readyState === WebSocket.OPEN) {
         this.socket.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }))
+        this.startHeartbeatTimeout()
       }
     }, this.options.heartbeatInterval)
+  }
+
+  startHeartbeatTimeout() {
+    this.clearHeartbeatTimeout()
+    this.heartbeatTimeoutTimer = setTimeout(() => {
+      const timeSinceLastPong = Date.now() - (this.lastPongTime || 0)
+      if (timeSinceLastPong > HEARTBEAT_TIMEOUT_MS) {
+        this.options.logger?.warn?.('[realtime] Heartbeat timeout, reconnecting...')
+        this.socket?.close()
+        this.scheduleReconnect()
+      }
+    }, HEARTBEAT_TIMEOUT_MS)
+  }
+
+  resetHeartbeatTimeout() {
+    this.clearHeartbeatTimeout()
+  }
+
+  clearHeartbeatTimeout() {
+    if (this.heartbeatTimeoutTimer) {
+      clearTimeout(this.heartbeatTimeoutTimer)
+      this.heartbeatTimeoutTimer = null
+    }
   }
 
   clearHeartbeat() {
@@ -322,6 +354,7 @@ class RealtimeService {
       clearInterval(this.heartbeatTimer)
       this.heartbeatTimer = null
     }
+    this.clearHeartbeatTimeout()
   }
 
   scheduleReconnect() {

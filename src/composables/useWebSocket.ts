@@ -1,13 +1,54 @@
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { websocketService } from '@/services/websocket'
 import type { WebSocketEvent } from '@/services/websocket'
 
-export function useWebSocket() {
+export interface UseWebSocketOptions {
+  autoConnect?: boolean
+  autoReconnect?: boolean
+  onMessage?: (data: any) => void
+  onError?: (error: any) => void
+  onReconnect?: () => void
+  onStatusChange?: (status: string) => void
+}
+
+export function useWebSocket(options: UseWebSocketOptions = {}) {
+  const {
+    autoConnect = true,
+    autoReconnect = true,
+    onMessage,
+    onError,
+    onReconnect,
+    onStatusChange
+  } = options
+
+  const status = ref('disconnected')
+  const isConnected = ref(false)
+
   onMounted(() => {
-    websocketService.connect()
+    if (autoConnect) {
+      websocketService.connect()
+    }
   })
 
+  function connect() {
+    websocketService.connect()
+    status.value = 'connecting'
+    isConnected.value = false
+    if (onStatusChange) onStatusChange('connecting')
+  }
+
+  function disconnect() {
+    websocketService.disconnect()
+    status.value = 'disconnected'
+    isConnected.value = false
+    if (onStatusChange) onStatusChange('disconnected')
+  }
+
   return {
+    status,
+    isConnected,
+    connect,
+    disconnect,
     subscribe: websocketService.subscribe.bind(websocketService),
     unsubscribe: websocketService.unsubscribe.bind(websocketService),
     subscribeTutorSlots: websocketService.subscribeTutorSlots.bind(websocketService),

@@ -564,7 +564,9 @@
       "search": "Search",
       "searchPlaceholder": "Type at least 2 characters",
       "language": "Language",
+      "languages": "Languages",
       "subject": "Subject",
+      "subjects": "Subjects",
       "category": "Category",
       "country": "Country",
       "allCountries": "All countries",
@@ -643,12 +645,17 @@
       "availability": "Availability",
       "viewFullCalendar": "View full calendar",
       "viewCalendar": "View calendar",
-      "nextAvailable": "Next available slot",
+      "nextAvailable": "Next available",
       "availabilityThisWeek": "Availability this week",
-      "noAvailability": "No available slots",
-      "noSlotsAvailable": "No available slots",
+      "noAvailability": "No availability",
+      "noSlotsAvailable": "No slots available",
       "today": "Today",
       "tomorrow": "Tomorrow",
+      "inMinutes": "in {count} min",
+      "inHours": "in {count} hrs",
+      "inDays": "in {count} days",
+      "fullCalendar": "Full calendar",
+      "calendarPlaceholder": "Loading calendar...",
       "loadError": "Failed to load availability",
       "contact": {
         "trialLesson": "Trial lesson",
@@ -2164,6 +2171,21 @@
     "noSlotsThisDay": "No slots",
     "selected": "Selected",
     "slots": "slots",
+    "realtime": {
+      "status": {
+        "connected": "Connected to real-time",
+        "disconnected": "Connection lost. Attempting to reconnect...",
+        "retrying": "Reconnecting..."
+      }
+    },
+    "cache": {
+      "staleLabel": "Showing cached data. Click 'Retry' to refresh."
+    },
+    "slotBecameUnavailable": "Selected slot is no longer available",
+    "justNow": "just now",
+    "oneMinuteAgo": "a minute ago",
+    "minutesAgo": "{count} min ago",
+    "lastSync": "Last sync",
     "syncStatus": {
       "syncing": "Syncing...",
       "synced": "Synced",

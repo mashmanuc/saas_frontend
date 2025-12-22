@@ -564,7 +564,9 @@
       "search": "Пошук",
       "searchPlaceholder": "Введіть щонайменше 2 символи",
       "language": "Мова",
+      "languages": "Мови",
       "subject": "Предмет",
+      "subjects": "Предмети",
       "category": "Категорія",
       "country": "Країна",
       "allCountries": "Усі країни",
@@ -616,13 +618,18 @@
       "availability": "Доступність",
       "viewFullCalendar": "Переглянути повний календар",
       "viewCalendar": "Переглянути календар",
-      "nextAvailable": "Наступний доступний слот",
-      "availabilityThisWeek": "Доступність цього тижня",
+      "nextAvailable": "Наступний доступний час",
+      "availabilityThisWeek": "Доступність на цьому тижні",
       "noAvailability": "Немає доступних слотів",
       "noSlotsAvailable": "Немає доступних слотів",
       "today": "Сьогодні",
       "tomorrow": "Завтра",
-      "loadError": "Не вдалося завантажити доступність",
+      "inMinutes": "через {count} хв",
+      "inHours": "через {count} год",
+      "inDays": "через {count} дн",
+      "fullCalendar": "Повний календар",
+      "calendarPlaceholder": "Календар завантажується...",
+      "loadError": "Помилка завантаження доступності",
       "title": "Профіль репетитора",
       "viewPublic": "Переглянути публічний профіль",
       "backToCatalog": "Назад до каталогу",
@@ -2085,6 +2092,11 @@
     }
   },
   "booking": {
+    "conflict": {
+      "title": "Слот вже зайнятий",
+      "body": "На жаль, цей час вже заброньовано іншим студентом. Оберіть інший час.",
+      "selectAnother": "Обрати інший час"
+    },
     "bookLesson": "Забронювати урок",
     "modal": {
       "title": "Забронювати урок",
@@ -2192,6 +2204,21 @@
     "noSlotsThisDay": "Немає слотів",
     "selected": "Обрано",
     "slots": "слотів",
+    "realtime": {
+      "status": {
+        "connected": "Підключено до реального часу",
+        "disconnected": "Втрачено зв'язок. Спробуємо перепідключитися...",
+        "retrying": "Перепідключення..."
+      }
+    },
+    "cache": {
+      "staleLabel": "Показано кешовані дані. Натисніть 'Повторити' для оновлення."
+    },
+    "slotBecameUnavailable": "Обраний слот більше недоступний",
+    "justNow": "щойно",
+    "oneMinuteAgo": "хвилину тому",
+    "minutesAgo": "{count} хв тому",
+    "lastSync": "Остання синхронізація",
     "syncStatus": {
       "syncing": "Синхронізація...",
       "synced": "Синхронізовано",
