@@ -212,6 +212,25 @@
     "layout": {
       "ariaLabel": "Секція авторизації"
     },
+    "register": {
+      "title": "Створіть акаунт",
+      "description": "Заповніть форму нижче, щоб приєднатися до платформи",
+      "accountType": "Тип акаунта",
+      "accountTypeStudent": "Я студент",
+      "accountTypeStudentHint": "Хочу знайти тьютора і проходити уроки",
+      "accountTypeTutor": "Я тьютор",
+      "accountTypeTutorHint": "Хочу викладати та отримувати оплату через платформу",
+      "firstName": "Ім’я",
+      "lastName": "Прізвище",
+      "username": "Нікнейм (опційно)",
+      "email": "Email",
+      "password": "Пароль",
+      "passwordConfirm": "Підтвердьте пароль",
+      "loading": "Реєструємо...",
+      "submit": "Зареєструватися",
+      "haveAccount": "Вже маєте акаунт?",
+      "loginLink": "Увійти"
+    },
     "login": {
       "title": "Вхід",
       "description": "Введіть email і пароль, щоб продовжити.",
@@ -425,7 +444,8 @@
     "marketplaceMyProfile": "Мій профіль",
     "tutorProfile": "Профіль репетитора",
     "sandbox": "Пісочниця",
-    "soloWorkspace": "Робочий простір"
+    "soloWorkspace": "Робочий простір",
+    "tutorCalendar": "Календар тьютора"
   },
   "marketplace": {
     "subjects": {
@@ -629,6 +649,10 @@
       "inDays": "через {count} дн",
       "fullCalendar": "Повний календар",
       "calendarPlaceholder": "Календар завантажується...",
+      "weeklyHours": "Годин на тиждень",
+      "nextSlots": "Наступні слоти",
+      "upcomingSlots": "Найближчі слоти",
+      "noUpcomingSlots": "Немає найближчих слотів",
       "loadError": "Помилка завантаження доступності",
       "title": "Профіль репетитора",
       "viewPublic": "Переглянути публічний профіль",
@@ -871,6 +895,13 @@
       }
     },
     "open": "Відкрити",
+    "showing": "Показано",
+    "of": "з",
+    "other": "Інше",
+    "minutes": "хв",
+    "searching": "Пошук...",
+    "reset": "Скинути",
+    "apply": "Застосувати",
     "copy": "Копіювати",
     "lock": "Заблокувати",
     "unlock": "Розблокувати",
@@ -1862,6 +1893,8 @@
     }
   },
   "errors": {
+    "somethingWentWrong": "Щось пішло не так",
+    "networkError": "Помилка мережі",
     "http": {
       "badRequest": "Невірний запит. Перевірте введені дані.",
       "unauthorized": "Сесія закінчилась. Увійдіть знову.",
@@ -2092,6 +2125,37 @@
     }
   },
   "booking": {
+    "actions": {
+      "bookLesson": "Забронювати урок",
+      "blockTime": "Заблокувати час",
+      "clearAvailability": "Очистити доступність",
+      "makeAvailable": "Зробити доступним",
+      "viewDetails": "Переглянути деталі",
+      "cancelLesson": "Скасувати урок"
+    },
+    "manualBooking": {
+      "title": "Створити урок вручну",
+      "student": "Учень",
+      "searchStudent": "Пошук учня...",
+      "recentStudents": "Нещодавні учні",
+      "noStudentsFound": "Учнів не знайдено",
+      "startTime": "Час початку",
+      "duration": "Тривалість",
+      "notes": "Примітки",
+      "notesPlaceholder": "Додаткова інформація про урок...",
+      "createLesson": "Створити урок"
+    },
+    "draft": {
+      "changesCount": "{count} змін"
+    },
+    "dst": {
+      "transitionWarning": "Увага: перехід на літній/зимовий час {date}"
+    },
+    "calendar": {
+      "noSchedule": "Розклад не налаштовано",
+      "noScheduleDesc": "Створіть шаблон доступності, щоб студенти могли бронювати уроки",
+      "setupSchedule": "Налаштувати розклад"
+    },
     "conflict": {
       "title": "Слот вже зайнятий",
       "body": "На жаль, цей час вже заброньовано іншим студентом. Оберіть інший час.",
@@ -2183,54 +2247,55 @@
   "availability": {
     "editor": {
       "title": "Редактор доступності",
+      "showPreview": "Показати попередній перегляд",
+      "hidePreview": "Сховати попередній перегляд",
+      "applyTemplate": "Застосувати шаблон",
+      "applying": "Застосовується...",
+      "templateApplied": "Шаблон застосовано. Слоти будуть згенеровані за ~{eta} хв",
+      "slotsGenerated": "Слоти успішно згенеровані",
+      "applyFailed": "Не вдалося застосувати шаблон",
+      "pendingChanges": "{count} змін очікують синхронізації",
+      "preview": "Попередній перегляд",
       "weeklyTemplate": "Щотижневий розклад",
-      "copyWeek": "Копіювати тиждень",
-      "addSlot": "Додати слот",
-      "overrides": "Виключення",
-      "addOverride": "Додати виключення",
-      "blackoutDates": "Недоступні дати",
-      "addBlackout": "Додати дату"
+      "weeklyHours": "Тижневий графік",
+      "nextSlots": "Наступні слоти",
+      "upcomingSlots": "Надхідні слоти"
     },
     "calendar": {
-      "weekOf": "Тиждень від {date}",
-      "noSlots": "Немає слотів",
-      "selected": "Обрано"
-    }
-  },
-  "calendar": {
-    "weekOf": "Тиждень {date}",
-    "noSlots": "Немає доступних слотів",
-    "noSlotsDescription": "Спробуйте обрати інший тиждень",
-    "noSlotsThisDay": "Немає слотів",
-    "selected": "Обрано",
-    "slots": "слотів",
-    "realtime": {
-      "status": {
-        "connected": "Підключено до реального часу",
-        "disconnected": "Втрачено зв'язок. Спробуємо перепідключитися...",
-        "retrying": "Перепідключення..."
+      "weekOf": "Тиждень {date}",
+      "noSlots": "Немає доступних слотів",
+      "noSlotsDescription": "Спробуйте обрати інший тиждень",
+      "noSlotsThisDay": "Немає слотів",
+      "selected": "Обрано",
+      "slots": "слотів",
+      "realtime": {
+        "status": {
+          "connected": "Підключено до реального часу",
+          "disconnected": "Втрачено зв'язок. Спробуємо перепідключитися...",
+          "retrying": "Перепідключення..."
+        }
+      },
+      "cache": {
+        "staleLabel": "Показано кешовані дані. Натисніть 'Повторити' для оновлення."
+      },
+      "slotBecameUnavailable": "Обраний слот більше недоступний",
+      "justNow": "щойно",
+      "oneMinuteAgo": "хвилину тому",
+      "minutesAgo": "{count} хв тому",
+      "lastSync": "Остання синхронізація",
+      "syncStatus": {
+        "syncing": "Синхронізація...",
+        "synced": "Синхронізовано",
+        "error": "Помилка синхронізації"
+      },
+      "notifications": {
+        "slotBooked": "{student} забронював(ла) слот о {time}",
+        "availabilityUpdated": "Розклад оновлено"
+      },
+      "errors": {
+        "blockFailed": "Не вдалося заблокувати слот",
+        "loadFailed": "Не вдалося завантажити календар"
       }
-    },
-    "cache": {
-      "staleLabel": "Показано кешовані дані. Натисніть 'Повторити' для оновлення."
-    },
-    "slotBecameUnavailable": "Обраний слот більше недоступний",
-    "justNow": "щойно",
-    "oneMinuteAgo": "хвилину тому",
-    "minutesAgo": "{count} хв тому",
-    "lastSync": "Остання синхронізація",
-    "syncStatus": {
-      "syncing": "Синхронізація...",
-      "synced": "Синхронізовано",
-      "error": "Помилка синхронізації"
-    },
-    "notifications": {
-      "slotBooked": "{student} забронював(ла) слот о {time}",
-      "availabilityUpdated": "Розклад оновлено"
-    },
-    "errors": {
-      "blockFailed": "Не вдалося заблокувати слот",
-      "loadFailed": "Не вдалося завантажити календар"
     }
   }
 }

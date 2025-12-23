@@ -285,6 +285,12 @@ const routes = [
         meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
       },
       {
+        path: 'booking/tutor',
+        name: 'tutor-calendar',
+        component: () => import('../modules/booking/views/TutorCalendarView.vue'),
+        meta: { roles: [USER_ROLES.TUTOR] },
+      },
+      {
         path: 'book/:slug',
         name: 'book-lesson',
         component: () => import('../modules/booking/views/BookLessonView.vue'),

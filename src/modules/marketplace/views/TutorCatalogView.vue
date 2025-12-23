@@ -1,7 +1,9 @@
 <script setup lang="ts">
 // TASK MF3: Tutor Catalog View
-import { onMounted, computed, watch } from 'vue'
-import CatalogFilters from '../components/catalog/CatalogFilters.vue'
+import { ref, onMounted, computed, watch } from 'vue'
+import CatalogFilterBar from '../components/catalog/CatalogFilterBar.vue'
+import AdvancedFiltersModal from '../components/catalog/AdvancedFiltersModal.vue'
+import CatalogPagination from '../components/catalog/CatalogPagination.vue'
 import CatalogSort from '../components/catalog/CatalogSort.vue'
 import TutorGrid from '../components/catalog/TutorGrid.vue'
 import EmptyState from '@/ui/EmptyState.vue'
@@ -12,10 +14,20 @@ import { useI18n } from 'vue-i18n'
 import { useMarketplace } from '../composables/useMarketplace'
 
 const { t } = useI18n()
-const { tutors, totalCount, isLoading, hasMore, filters, sortBy, filterOptions, error, setFilters, setSort, loadTutors, loadMore, clearFilters, loadFilterOptions, syncFiltersWithUrl } =
+const { tutors, totalCount, totalPages, currentPage, pageSize, isLoading, hasMore, filters, sortBy, filterOptions, error, setFilters, setSort, setPage, loadTutors, loadMore, clearFilters, loadFilterOptions, syncFiltersWithUrl } =
   useMarketplace()
 
-const showFilters = computed(() => filterOptions.value !== null)
+const showAdvancedFilters = ref(false)
+const activeFiltersCount = computed(() => {
+  let count = 0
+  if (filters.value.experience_min) count++
+  if (filters.value.experience_max) count++
+  if (filters.value.direction) count++
+  if (filters.value.format) count++
+  if (filters.value.timezone) count++
+  if (filters.value.has_certifications) count++
+  return count
+})
 
 onMounted(async () => {
   syncFiltersWithUrl()
@@ -34,8 +46,21 @@ function handleLoadMore() {
   loadMore()
 }
 
+function handlePageChange(page: number) {
+  setPage(page)
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
 function handleClearFilters() {
   clearFilters()
+}
+
+function handleOpenAdvanced() {
+  showAdvancedFilters.value = true
+}
+
+function handleCloseAdvanced() {
+  showAdvancedFilters.value = false
 }
 
 function handleRetry() {
@@ -78,16 +103,27 @@ watch(
       </div>
     </header>
 
-    <div class="catalog-layout">
-      <aside v-if="showFilters" class="catalog-sidebar">
-        <CatalogFilters
-          :filters="filters"
-          :options="filterOptions"
-          @update="handleFiltersUpdate"
-          @clear="handleClearFilters"
-        />
-      </aside>
+    <!-- Filter Bar -->
+    <CatalogFilterBar
+      :filters="filters"
+      :options="filterOptions"
+      :active-filters-count="activeFiltersCount"
+      @update="handleFiltersUpdate"
+      @clear="handleClearFilters"
+      @open-advanced="handleOpenAdvanced"
+    />
 
+    <!-- Advanced Filters Modal -->
+    <AdvancedFiltersModal
+      :show="showAdvancedFilters"
+      :filters="filters"
+      :options="filterOptions"
+      @update="handleFiltersUpdate"
+      @close="handleCloseAdvanced"
+      @apply="handleCloseAdvanced"
+    />
+
+    <div class="catalog-layout">
       <main class="catalog-main">
         <div class="catalog-toolbar">
           <CatalogSort :value="sortBy" @update="handleSortUpdate" />
@@ -117,16 +153,15 @@ watch(
 
         <TutorGrid v-else :tutors="tutors" :loading="isLoading" />
 
-        <div v-if="hasMore && tutors.length > 0" class="load-more">
-          <button
-            class="btn btn-secondary"
-            :disabled="isLoading"
-            data-test="marketplace-load-more"
-            @click="handleLoadMore"
-          >
-            {{ isLoading ? t('marketplace.catalog.loading') : t('marketplace.catalog.loadMore') }}
-          </button>
-        </div>
+        <!-- Pagination -->
+        <CatalogPagination
+          v-if="!isLoading && tutors.length > 0 && totalPages > 1"
+          :current-page="currentPage"
+          :total-pages="totalPages"
+          :total-count="totalCount"
+          :page-size="pageSize"
+          @update:page="handlePageChange"
+        />
 
         <EmptyState
           v-if="!isLoading && tutors.length === 0"
@@ -147,55 +182,39 @@ watch(
 <style scoped>
 .catalog-view {
   min-height: 100vh;
-  background: var(--surface-marketplace);
+  background: #f7f8fa;
 }
 
 .catalog-header {
-  background: var(--bg-gradient);
-  color: var(--text-primary);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
   padding: 3rem 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 .header-content {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
 .catalog-header h1 {
-  font-size: 2rem;
+  font-size: 2.25rem;
   font-weight: 700;
-  margin: 0 0 0.5rem;
+  margin: 0 0 0.75rem;
+  letter-spacing: -0.025em;
 }
 
 .subtitle {
   font-size: 1.125rem;
-  opacity: 0.9;
+  opacity: 0.95;
   margin: 0;
+  font-weight: 400;
 }
 
 .catalog-layout {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 1.5rem;
-  display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: 1.5rem;
-}
-
-@media (max-width: 768px) {
-  .catalog-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .catalog-sidebar {
-    display: none;
-  }
-}
-
-.catalog-sidebar {
-  position: sticky;
-  top: 1.5rem;
-  height: fit-content;
+  padding: 2rem 1.5rem;
 }
 
 .catalog-main {
@@ -207,16 +226,17 @@ watch(
   align-items: center;
   justify-content: space-between;
   margin-bottom: 1.5rem;
-  padding: 1rem;
-  background: var(--surface-card);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-card);
+  padding: 1rem 1.25rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
 }
 
 .results-count {
   font-size: 0.875rem;
-  color: var(--text-muted);
+  font-weight: 500;
+  color: #6b7280;
 }
 
 .load-more {
@@ -229,5 +249,17 @@ watch(
   display: flex;
   gap: 0.75rem;
   flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .catalog-header h1 {
+    font-size: 1.75rem;
+  }
+
+  .catalog-layout {
+    padding: 1rem;
+  }
 }
 </style>

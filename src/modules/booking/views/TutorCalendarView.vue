@@ -2,22 +2,30 @@
 // F6: Tutor Calendar View
 import { ref, computed, onMounted, watch } from 'vue'
 import { storeToRefs } from 'pinia'
-import { Settings, Calendar as CalendarIcon, List } from 'lucide-vue-next'
+import { Settings, Calendar as CalendarIcon, List, Edit3 } from 'lucide-vue-next'
 import { useCalendarStore } from '../stores/calendarStore'
 import { useBookingStore } from '../stores/bookingStore'
 import { useAuthStore } from '@/modules/auth/store/authStore'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useToast } from '@/composables/useToast'
+import type { CalendarCell } from '@/modules/booking/types/calendar'
 
 // Components
 import WeekCalendar from '../components/calendar/WeekCalendar.vue'
+import CalendarCellGrid from '../components/calendar/CalendarCellGrid.vue'
+import DraftToolbar from '../components/calendar/DraftToolbar.vue'
 import MonthCalendar from '../components/calendar/MonthCalendar.vue'
 import CalendarHeader from '../components/calendar/CalendarHeader.vue'
 import BookingCard from '../components/booking/BookingCard.vue'
 import AvailabilityEditor from '../components/availability/AvailabilityEditor.vue'
 import BookingSettings from '../components/settings/BookingSettings.vue'
+import ManualBookingModal from '../components/modals/ManualBookingModal.vue'
 
 const calendarStore = useCalendarStore()
 const bookingStore = useBookingStore()
 const authStore = useAuthStore()
+const { isV045CalendarSyncEnabled, isV046CalendarClickMode } = useFeatureFlags()
+const { success, error: showError } = useToast()
 
 const {
   slots,
@@ -26,6 +34,7 @@ const {
   viewMode,
   isLoading: isLoadingSlots,
   settings,
+  editMode,
 } = storeToRefs(calendarStore)
 
 const { pendingBookings, isLoading: isLoadingBookings } = storeToRefs(bookingStore)
@@ -34,8 +43,26 @@ type SidebarTab = 'pending' | 'availability' | 'settings'
 const sidebarTab = ref<SidebarTab>('pending')
 
 const tutorId = computed(() => authStore.user?.id || 0)
+const isDev = import.meta.env.DEV
+const currentWeekStart = ref(getMonday(new Date()))
+const userTimezone = ref('Europe/Kiev')
+const showBookingModal = ref(false)
+const bookingCell = ref<CalendarCell | null>(null)
+
+function getMonday(date: Date): string {
+  const d = new Date(date)
+  const day = d.getDay()
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
+  d.setDate(diff)
+  return d.toISOString().split('T')[0]
+}
 
 onMounted(async () => {
+  console.log('[TutorCalendarView] Mounted, tutorId:', tutorId.value)
+  console.log('[TutorCalendarView] User:', authStore.user)
+  console.log('[TutorCalendarView] currentWeekStart:', currentWeekStart.value)
+  console.log('[TutorCalendarView] isV046CalendarClickMode:', isV046CalendarClickMode.value)
+  
   if (tutorId.value) {
     await Promise.all([
       calendarStore.loadWeekSlots(tutorId.value),
@@ -43,6 +70,8 @@ onMounted(async () => {
       calendarStore.loadAvailability(),
       bookingStore.loadBookings({ role: 'tutor', status: 'pending' }),
     ])
+  } else {
+    console.warn('[TutorCalendarView] No tutorId, user not authenticated?')
   }
 })
 
@@ -75,6 +104,42 @@ async function handleCancelBooking(bookingId: number) {
     await calendarStore.loadWeekSlots(tutorId.value)
   }
 }
+
+function toggleEditMode() {
+  if (editMode.value) {
+    calendarStore.exitEditMode()
+  } else {
+    calendarStore.enterEditMode()
+  }
+}
+
+function toggleCalendarMode() {
+  const { setFlag } = useFeatureFlags()
+  setFlag('ENABLE_V046_CALENDAR_CLICK_MODE', !isV046CalendarClickMode.value)
+}
+
+async function handleCreateSlot(data: { date: string; start: string; end: string }) {
+  try {
+    await calendarStore.createSlot(data)
+    success('Slot created successfully')
+  } catch (err: any) {
+    showError(err.message || 'Failed to create slot')
+  }
+}
+
+function handleCellClick(cell: CalendarCell) {
+  console.log('Cell clicked:', cell)
+}
+
+function handleBookLesson(cell: CalendarCell) {
+  bookingCell.value = cell
+  showBookingModal.value = true
+}
+
+function handleBookingSuccess(lessonId: number) {
+  console.log('Booking created:', lessonId)
+  showBookingModal.value = false
+}
 </script>
 
 <template>
@@ -90,14 +155,60 @@ async function handleCancelBooking(bookingId: number) {
         @view-change="calendarStore.setViewMode"
       />
 
+      <div class="calendar-toolbar">
+        <!-- Dev mode toggle -->
+        <div v-if="isDev" class="mode-toggle">
+          <button 
+            class="btn btn-secondary btn-sm"
+            @click="toggleCalendarMode"
+          >
+            {{ isV046CalendarClickMode ? '🔵 Click Mode (v0.46)' : '🟢 Drag Mode (v0.45)' }}
+          </button>
+        </div>
+        
+        <button 
+          v-if="isV045CalendarSyncEnabled && !isV046CalendarClickMode"
+          class="btn btn-secondary btn-sm"
+          :class="{ active: editMode }"
+          @click="toggleEditMode"
+        >
+          <Edit3 :size="16" />
+          {{ editMode ? 'Exit Edit Mode' : 'Edit Availability' }}
+        </button>
+      </div>
+      
+      <DraftToolbar v-if="isV046CalendarClickMode" />
+
       <div class="calendar-container">
+        <!-- v0.46 Click Mode -->
+        <CalendarCellGrid
+          v-if="isV046CalendarClickMode && viewMode === 'week'"
+          :tutor-id="tutorId"
+          :week-start="currentWeekStart"
+          :timezone="userTimezone"
+          @cell-click="handleCellClick"
+          @book-lesson="handleBookLesson"
+        />
+        
+        <ManualBookingModal
+          v-if="bookingCell"
+          :visible="showBookingModal"
+          :cell="bookingCell"
+          @close="showBookingModal = false"
+          @success="handleBookingSuccess"
+        />
+        
+        <!-- v0.45 Drag Mode (fallback) -->
         <WeekCalendar
-          v-if="viewMode === 'week'"
+          v-else-if="viewMode === 'week'"
           :slots-by-date="slotsByDate"
           :week-days="calendarStore.weekDays"
           :loading="isLoadingSlots"
+          :edit-mode="editMode"
           @slot-click="handleSlotClick"
+          @create-slot="handleCreateSlot"
         />
+        
         <MonthCalendar
           v-else
           :calendar-days="calendarStore.calendarDays"
@@ -200,15 +311,28 @@ async function handleCancelBooking(bookingId: number) {
 
 .calendar-main {
   flex: 1;
-  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.calendar-toolbar {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.calendar-toolbar .btn.active {
+  background: var(--primary);
+  color: white;
 }
 
 .calendar-container {
-  background: var(--color-bg-primary, white);
-  border-radius: 12px;
-  border: 1px solid var(--color-border, #e5e7eb);
-  overflow: hidden;
-  margin-bottom: 16px;
+  flex: 1;
+  overflow: auto;
+  padding: 1rem;
 }
 
 .calendar-legend {

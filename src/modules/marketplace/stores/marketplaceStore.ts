@@ -19,6 +19,7 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
   // Catalog state
   const tutors = ref<TutorListItem[]>([])
   const totalCount = ref(0)
+  const totalPages = ref(0)
   const currentPage = ref(1)
   const pageSize = ref(24)
   const isLoading = ref(false)
@@ -109,6 +110,7 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
         tutors.value = [...tutors.value, ...response.results]
       }
       totalCount.value = response.count
+      totalPages.value = response.total_pages || 0
     } catch (err) {
       error.value = mapApiError(err, t('marketplace.errors.loadTutors'))
       console.error('[MarketplaceStore] loadTutors error:', err)
@@ -147,6 +149,11 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
   function setSort(sort: string): void {
     sortBy.value = sort
     debouncedReload()
+  }
+
+  function setPage(page: number): void {
+    currentPage.value = page
+    void loadTutors(true)
   }
 
   async function loadProfile(slug: string): Promise<void> {
@@ -290,6 +297,7 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     // State
     tutors,
     totalCount,
+    totalPages,
     currentPage,
     pageSize,
     isLoading,
@@ -316,6 +324,7 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     setFilters,
     clearFilters,
     setSort,
+    setPage,
     loadProfile,
     clearCurrentProfile,
     loadMyProfile,

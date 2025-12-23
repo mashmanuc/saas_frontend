@@ -67,6 +67,14 @@
         required
         autocomplete="new-password"
       />
+      <Input
+        :label="$t('auth.register.passwordConfirm')"
+        type="password"
+        v-model="form.password_confirm"
+        :error="fieldError('password_confirm')"
+        required
+        autocomplete="new-password"
+      />
 
       <Button class="w-full" type="submit" :disabled="auth.loading">
         <span v-if="auth.loading">{{ $t('auth.register.loading') }}</span>
@@ -134,6 +142,7 @@ const form = reactive({
   username: '',
   email: '',
   password: '',
+  password_confirm: '',
 })
 
 async function onSubmit() {

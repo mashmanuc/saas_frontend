@@ -1,10 +1,12 @@
 <script setup lang="ts">
 // TASK MF6: TutorCard component
-import { computed, ref } from 'vue'
-import { MapPin, BookOpen, Calendar } from 'lucide-vue-next'
+import { computed, ref, onMounted } from 'vue'
+import { MapPin, BookOpen, Calendar, Clock } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import type { TutorListItem, Badge } from '../../api/marketplace'
 import { formatList, toDisplayText } from '../../utils/formatters'
+import { availabilityApi } from '@/modules/booking/api/availabilityApi'
+import type { AvailabilitySummary } from '@/modules/booking/api/availabilityApi'
 import BadgeIcon from '../shared/Badge.vue'
 import Rating from '../shared/Rating.vue'
 import PriceTag from '../shared/PriceTag.vue'
@@ -47,6 +49,9 @@ const hourlyRateText = computed(() => {
 type TabKey = 'summary' | 'about' | 'calendar'
 const activeTab = ref<TabKey>('summary')
 
+const availabilitySummary = ref<AvailabilitySummary | null>(null)
+const loadingAvailability = ref(false)
+
 const subjectsText = computed(() => {
   return formatList(props.tutor?.subjects, t('common.notSpecified'))
 })
@@ -59,6 +64,48 @@ const aboutText = computed(() => {
   // TutorListItem does not include full bio, so show headline as fallback.
   return headlineText.value || t('common.notSpecified')
 })
+
+const nextAvailableText = computed(() => {
+  if (!availabilitySummary.value?.next_available_slot) {
+    return t('marketplace.profile.noSlotsAvailable')
+  }
+  
+  const date = new Date(availabilitySummary.value.next_available_slot)
+  const now = new Date()
+  const diffMs = date.getTime() - now.getTime()
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+  
+  if (diffHours < 24) {
+    return t('marketplace.profile.today')
+  } else if (diffDays === 1) {
+    return t('marketplace.profile.tomorrow')
+  } else if (diffDays < 7) {
+    return t('marketplace.profile.inDays', { count: diffDays })
+  }
+  
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+})
+
+async function loadAvailability() {
+  if (activeTab.value !== 'calendar') return
+  
+  loadingAvailability.value = true
+  try {
+    availabilitySummary.value = await availabilityApi.getTutorAvailabilitySummary(props.tutor.slug)
+  } catch (err) {
+    console.error('[TutorCard] Failed to load availability:', err)
+  } finally {
+    loadingAvailability.value = false
+  }
+}
+
+function handleTabChange(tab: TabKey) {
+  activeTab.value = tab
+  if (tab === 'calendar' && !availabilitySummary.value) {
+    loadAvailability()
+  }
+}
 </script>
 
 <template>
@@ -139,13 +186,13 @@ const aboutText = computed(() => {
       </RouterLink>
 
       <div class="tabs">
-        <button type="button" class="tab" :class="{ active: activeTab === 'summary' }" @click="activeTab = 'summary'">
+        <button type="button" class="tab" :class="{ active: activeTab === 'summary' }" @click="handleTabChange('summary')">
           {{ t('marketplace.catalog.tabs.summary') }}
         </button>
-        <button type="button" class="tab" :class="{ active: activeTab === 'about' }" @click="activeTab = 'about'">
+        <button type="button" class="tab" :class="{ active: activeTab === 'about' }" @click="handleTabChange('about')">
           {{ t('marketplace.catalog.tabs.about') }}
         </button>
-        <button type="button" class="tab" :class="{ active: activeTab === 'calendar' }" @click="activeTab = 'calendar'">
+        <button type="button" class="tab" :class="{ active: activeTab === 'calendar' }" @click="handleTabChange('calendar')">
           {{ t('marketplace.catalog.tabs.calendar') }}
         </button>
       </div>
@@ -158,9 +205,28 @@ const aboutText = computed(() => {
           <div class="about">{{ aboutText }}</div>
         </div>
         <div v-else class="tab-panel">
-          <div class="calendar">
+          <div v-if="loadingAvailability" class="calendar-loading">
+            <span>{{ t('common.loading') }}</span>
+          </div>
+          <div v-else-if="availabilitySummary" class="calendar-info">
+            <div class="availability-row">
+              <Calendar :size="16" />
+              <div class="availability-details">
+                <span class="availability-label">{{ t('marketplace.profile.nextAvailable') }}:</span>
+                <span class="availability-value">{{ nextAvailableText }}</span>
+              </div>
+            </div>
+            <div v-if="availabilitySummary.weekly_hours" class="availability-row">
+              <Clock :size="16" />
+              <div class="availability-details">
+                <span class="availability-label">{{ t('marketplace.profile.weeklyHours') }}:</span>
+                <span class="availability-value">{{ availabilitySummary.weekly_hours }}h</span>
+              </div>
+            </div>
+          </div>
+          <div v-else class="calendar-empty">
             <Calendar :size="16" />
-            <span>{{ t('common.notSpecified') }}</span>
+            <span>{{ t('marketplace.profile.noAvailability') }}</span>
           </div>
         </div>
       </div>
@@ -172,8 +238,19 @@ const aboutText = computed(() => {
 .tutor-card {
   display: grid;
   grid-template-columns: 96px 1fr 340px;
-  gap: var(--space-lg);
+  gap: 1.5rem;
   align-items: start;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.tutor-card:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  transform: translateY(-2px);
 }
 
 @media (max-width: 900px) {
@@ -201,10 +278,12 @@ const aboutText = computed(() => {
 .photo-placeholder {
   width: 96px;
   height: 96px;
+  border-radius: 12px;
 }
 
 .photo {
   object-fit: cover;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .photo-placeholder {
@@ -213,8 +292,9 @@ const aboutText = computed(() => {
   justify-content: center;
   font-size: 2.25rem;
   font-weight: 600;
-  color: var(--text-muted);
-  background: color-mix(in srgb, var(--surface-card-muted) 70%, transparent);
+  color: #9ca3af;
+  background: #f3f4f6;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .name-row {
@@ -231,13 +311,16 @@ const aboutText = computed(() => {
 }
 
 .name {
-  font: var(--font-headline);
-  color: var(--text-primary);
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
   text-decoration: none;
+  transition: color 0.2s;
 }
 
 .name:hover {
-  text-decoration: underline;
+  color: #3b82f6;
+  text-decoration: none;
 }
 
 .trust {
@@ -250,28 +333,47 @@ const aboutText = computed(() => {
 
 .meta-row {
   display: flex;
-  gap: var(--space-md);
-  margin-top: var(--space-sm);
-  color: var(--text-muted);
+  gap: 1rem;
+  margin-top: 0.75rem;
+  color: #6b7280;
   font-size: 0.875rem;
 }
 
 .meta-item {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  background: #f9fafb;
+  border-radius: 6px;
 }
 
 .subjects {
-  margin-top: var(--space-sm);
-  color: var(--text-muted);
+  margin-top: 0.75rem;
+  padding: 0.5rem;
+  background: #fef3c7;
+  border-left: 3px solid #f59e0b;
+  border-radius: 4px;
+  color: #78350f;
   font-size: 0.875rem;
 }
 
+.subjects strong {
+  color: #92400e;
+}
+
 .languages {
-  margin-top: var(--space-xs);
-  color: var(--text-muted);
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: #dbeafe;
+  border-left: 3px solid #3b82f6;
+  border-radius: 4px;
+  color: #1e40af;
   font-size: 0.875rem;
+}
+
+.languages strong {
+  color: #1e3a8a;
 }
 
 .right {
@@ -283,19 +385,26 @@ const aboutText = computed(() => {
 
 .price {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: var(--space-sm);
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border: 1px solid #86efac;
+  border-radius: 8px;
 }
 
 .price-label {
-  font-size: 0.8125rem;
-  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #166534;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .price-value {
-  font-weight: 600;
-  color: var(--text-primary);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #15803d;
 }
 
 .per-hour {
@@ -306,6 +415,22 @@ const aboutText = computed(() => {
 
 .cta {
   width: 100%;
+  padding: 0.75rem 1.5rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+}
+
+.cta:hover {
+  background: #2563eb;
+  box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.4);
+  transform: translateY(-1px);
 }
 
 .tabs {
@@ -340,5 +465,41 @@ const aboutText = computed(() => {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+.calendar-loading,
+.calendar-empty {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-muted);
+}
+
+.calendar-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.availability-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.availability-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.availability-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.availability-value {
+  font-weight: 600;
+  color: var(--text-primary);
 }
 </style>

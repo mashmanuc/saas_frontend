@@ -17,6 +17,9 @@ export function useMarketplace() {
   const {
     tutors,
     totalCount,
+    totalPages,
+    currentPage,
+    pageSize,
     isLoading,
     hasMore,
     filters,
@@ -110,6 +113,9 @@ export function useMarketplace() {
     // State
     tutors,
     totalCount,
+    totalPages,
+    currentPage,
+    pageSize,
     isLoading,
     hasMore,
     filters,
@@ -123,6 +129,7 @@ export function useMarketplace() {
     setFilters: store.setFilters,
     clearFilters: store.clearFilters,
     setSort: store.setSort,
+    setPage: store.setPage,
     loadFilterOptions: store.loadFilterOptions,
     syncFiltersWithUrl,
   }

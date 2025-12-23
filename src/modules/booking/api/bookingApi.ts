@@ -97,18 +97,18 @@ export const bookingApi = {
     data: BookingConfirmRequest
   ): Promise<Booking> {
     const { data: response } = await apiClient.post(
-      `/api/v1/bookings/${bookingId}/confirm`,
+      `/booking/bookings/${bookingId}/confirm/`,
       data
     )
     return response
   },
 
   async cancelBooking(
-    bookingId: string,
+    bookingId: number,
     data: BookingCancelRequest
   ): Promise<Booking> {
     const { data: response } = await apiClient.post(
-      `/api/v1/bookings/${bookingId}/cancel`,
+      `/booking/bookings/${bookingId}/cancel/`,
       data
     )
     return response

@@ -656,6 +656,10 @@
       "inDays": "in {count} days",
       "fullCalendar": "Full calendar",
       "calendarPlaceholder": "Loading calendar...",
+      "weeklyHours": "Weekly hours",
+      "nextSlots": "Next slots",
+      "upcomingSlots": "Upcoming slots",
+      "noUpcomingSlots": "No upcoming slots",
       "loadError": "Failed to load availability",
       "contact": {
         "trialLesson": "Trial lesson",
@@ -883,6 +887,9 @@
     "daysAgo": "{count}d ago",
     "loading": "Loading...",
     "open": "Open",
+    "showing": "Showing",
+    "of": "of",
+    "other": "Other",
     "copy": "Copy",
     "lock": "Lock",
     "unlock": "Unlock",
@@ -2141,22 +2148,27 @@
       "accept": "Accept",
       "decline": "Decline",
       "archive": "Archive"
-    },
-    "messaging": {
-      "banner": "This is a pre-lesson chat. Please be courteous and professional.",
-      "placeholder": "Type a message..."
     }
   },
   "availability": {
     "editor": {
-      "title": "Availability Editor",
-      "weeklyTemplate": "Weekly Template",
-      "copyWeek": "Copy Week",
-      "addSlot": "Add Slot",
+      "title": "Availability editor",
+      "showPreview": "Show preview",
+      "hidePreview": "Hide preview",
+      "applyTemplate": "Apply template",
+      "applying": "Applying...",
+      "templateApplied": "Template applied. Slots will be generated in ~{eta} min",
+      "slotsGenerated": "Slots successfully generated",
+      "applyFailed": "Failed to apply template",
+      "pendingChanges": "{count} changes pending sync",
+      "preview": "Preview",
+      "weeklyTemplate": "Weekly template",
+      "copyWeek": "Copy week",
+      "addSlot": "Add slot",
       "overrides": "Overrides",
-      "addOverride": "Add Override",
-      "blackoutDates": "Blackout Dates",
-      "addBlackout": "Add Date"
+      "addOverride": "Add override",
+      "blackoutDates": "Blackout dates",
+      "addBlackout": "Add date"
     },
     "calendar": {
       "weekOf": "Week of {date}",

@@ -52,7 +52,7 @@ api.interceptors.response.use(
     if (res?.config?.meta?.fullResponse) {
       return res
     }
-    return res.data
+    return res?.data
   },
   async (error) => {
     const loader = useLoaderStore()

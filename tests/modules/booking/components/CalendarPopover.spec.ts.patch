@@ -1,0 +1,121 @@
+--- a/tests/modules/booking/components/CalendarPopover.spec.ts
++++ b/tests/modules/booking/components/CalendarPopover.spec.ts
+@@ -136,6 +136,11 @@ describe('CalendarPopover', () => {
+           visible: true,
+           anchorEl: mockAnchorEl,
+         },
++        global: {
++          mocks: {
++            $t: (key: string) => key,
++          },
++        },
+         attachTo: document.body,
+       })
+ 
+@@ -150,6 +155,11 @@ describe('CalendarPopover', () => {
+           visible: true,
+           anchorEl: mockAnchorEl,
+         },
++        global: {
++          mocks: {
++            $t: (key: string) => key,
++          },
++        },
+         attachTo: document.body,
+       })
+ 
+@@ -186,6 +196,11 @@ describe('CalendarPopover', () => {
+           visible: true,
+           anchorEl: mockAnchorEl,
+         },
++        global: {
++          mocks: {
++            $t: (key: string) => key,
++          },
++        },
+         attachTo: document.body,
+       })
+ 
+@@ -200,6 +215,11 @@ describe('CalendarPopover', () => {
+           visible: true,
+           anchorEl: mockAnchorEl,
+         },
++        global: {
++          mocks: {
++            $t: (key: string) => key,
++          },
++        },
+         attachTo: document.body,
+       })
+ 
+@@ -218,6 +238,11 @@ describe('CalendarPopover', () => {
+           visible: true,
+           anchorEl: mockAnchorEl,
+         },
++        global: {
++          mocks: {
++            $t: (key: string) => key,
++          },
++        },
+         attachTo: document.body,
+       })
+ 
+@@ -240,6 +265,11 @@ describe('CalendarPopover', () => {
+           visible: true,
+           anchorEl: mockAnchorEl,
+         },
++        global: {
++          mocks: {
++            $t: (key: string) => key,
++          },
++        },
+         attachTo: document.body,
+       })
+ 
+@@ -269,6 +299,11 @@ describe('CalendarPopover', () => {
+           visible: true,
+           anchorEl: wideAnchor,
+         },
++        global: {
++          mocks: {
++            $t: (key: string) => key,
++          },
++        },
+         attachTo: document.body,
+       })
+ 
+@@ -286,6 +321,11 @@ describe('CalendarPopover', () => {
+           visible: true,
+           anchorEl: mockAnchorEl,
+         },
++        global: {
++          mocks: {
++            $t: (key: string) => key,
++          },
++        },
+         attachTo: document.body,
+       })
+ 
+@@ -302,6 +342,11 @@ describe('CalendarPopover', () => {
+           visible: true,
+           anchorEl: mockAnchorEl,
+         },
++        global: {
++          mocks: {
++            $t: (key: string) => key,
++          },
++        },
+         attachTo: document.body,
+       })
+ 
+@@ -326,6 +371,11 @@ describe('CalendarPopover', () => {
+           visible: true,
+           anchorEl: mockAnchorEl,
+         },
++        global: {
++          mocks: {
++            $t: (key: string) => key,
++          },
++        },
+         attachTo: document.body,
+       })

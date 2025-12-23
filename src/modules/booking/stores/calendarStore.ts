@@ -11,6 +11,9 @@ import type {
   ExceptionInput,
   CalendarDay,
 } from '../api/booking'
+import type { CalendarCell, WeekViewResponse } from '../types/calendar'
+import { calendarApi } from '../api/calendarApi'
+import { useDraftStore } from './draftStore'
 
 // Utility functions
 function getWeekStart(date: Date): Date {
@@ -46,9 +49,16 @@ export const useCalendarStore = defineStore('calendar', () => {
   const viewMode = ref<'week' | 'month'>('week')
   const isLoading = ref(false)
   const error = ref<string | null>(null)
-  const syncStatus = ref<'syncing' | 'synced' | 'error'>('synced')
+  const syncStatus = ref<'idle' | 'syncing' | 'synced' | 'error'>('idle')
   const lastSyncTime = ref<Date | null>(null)
   const pendingChanges = ref<any[]>([])
+  const editMode = ref(false)
+  const generationJob = ref<{ job_id: string; status: string; progress?: number } | null>(null)
+  const weekCells = ref<CalendarCell[]>([])
+  const weekViewLoading = ref(false)
+  const weekViewError = ref<string | null>(null)
+  
+  const draftStore = useDraftStore()
 
   // Computed
   const slotsByDate = computed(() => {
@@ -91,6 +101,23 @@ export const useCalendarStore = defineStore('calendar', () => {
     const start = getWeekStart(selectedDate.value)
     const end = getWeekEnd(selectedDate.value)
     return { start, end }
+  })
+
+  const effectiveCells = computed(() => {
+    return weekCells.value.map(cell => {
+      const patch = draftStore.getPatch(cell.startAtUTC)
+      
+      if (!patch) return cell
+      
+      // Apply draft patch візуально
+      return {
+        ...cell,
+        status: patch.action === 'set_available' ? 'available' as const :
+                patch.action === 'set_blocked' ? 'blocked' as const :
+                'empty' as const,
+        isDraft: true,
+      }
+    })
   })
 
   const availabilityByDay = computed(() => {
@@ -164,18 +191,177 @@ export const useCalendarStore = defineStore('calendar', () => {
         updateSlotStatus(payload.slot_id, 'available')
         break
       case 'slot.created':
-        // Optionally reload slots or add to array
         if (payload.slot) {
           slots.value.push(payload.slot)
         }
         break
       case 'availability.updated':
-        // Trigger reload
         pendingChanges.value.push({ type: 'reload', timestamp: Date.now() })
+        break
+      case 'job.status':
+        if (generationJob.value && generationJob.value.job_id === payload.job_id) {
+          generationJob.value.status = payload.status
+          generationJob.value.progress = payload.progress
+        }
         break
       default:
         console.warn('[calendarStore] Unknown event type:', type)
     }
+  }
+
+  function enterEditMode(): void {
+    editMode.value = true
+    draftStore.clearAllPatches()
+  }
+
+  function exitEditMode(): void {
+    editMode.value = false
+    draftStore.clearAllPatches()
+  }
+
+  async function createSlot(data: { date: string; start: string; end: string }): Promise<TimeSlot> {
+    const optimisticSlot: TimeSlot = {
+      id: Date.now(),
+      date: data.date,
+      start_time: data.start,
+      end_time: data.end,
+      status: 'available',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
+    
+    slots.value.push(optimisticSlot)
+    
+    try {
+      const slot = await bookingApi.createCustomSlot({
+        date: data.date,
+        start_time: data.start,
+        end_time: data.end
+      })
+      
+      const index = slots.value.findIndex(s => s.id === optimisticSlot.id)
+      if (index !== -1) {
+        slots.value[index] = slot
+      }
+      
+      if (typeof window !== 'undefined' && (window as any).telemetry) {
+        (window as any).telemetry.track('availability.slot_created', {
+          slot_id: slot.id,
+          date: data.date,
+          duration_minutes: calculateDuration(data.start, data.end)
+        })
+      }
+      
+      return slot
+    } catch (err) {
+      const index = slots.value.findIndex(s => s.id === optimisticSlot.id)
+      if (index !== -1) {
+        slots.value.splice(index, 1)
+      }
+      throw err
+    }
+  }
+
+  function calculateDuration(start: string, end: string): number {
+    const [startHour, startMin] = start.split(':').map(Number)
+    const [endHour, endMin] = end.split(':').map(Number)
+    return (endHour * 60 + endMin) - (startHour * 60 + startMin)
+  }
+
+  async function updateSlot(slotId: number, data: { start?: string; end?: string }): Promise<void> {
+    const slot = slots.value.find(s => s.id === slotId)
+    if (!slot) return
+    
+    const original = { ...slot }
+    
+    if (data.start) slot.start_time = data.start
+    if (data.end) slot.end_time = data.end
+    
+    try {
+      await bookingApi.updateSlot(slotId, data)
+    } catch (err) {
+      Object.assign(slot, original)
+      throw err
+    }
+  }
+
+  async function deleteSlot(slotId: number): Promise<void> {
+    const index = slots.value.findIndex(s => s.id === slotId)
+    if (index === -1) return
+    
+    const backup = slots.value[index]
+    slots.value.splice(index, 1)
+    
+    try {
+      await bookingApi.deleteSlot(slotId)
+      
+      if (typeof window !== 'undefined' && (window as any).telemetry) {
+        (window as any).telemetry.track('availability.slot_deleted', {
+          slot_id: slotId
+        })
+      }
+    } catch (err) {
+      slots.value.splice(index, 0, backup)
+      throw err
+    }
+  }
+
+  async function pollJobStatus(jobId: string, maxAttempts = 24): Promise<void> {
+    let attempts = 0
+    const pollInterval = 5000
+    
+    const poll = async (): Promise<void> => {
+      if (attempts >= maxAttempts) {
+        generationJob.value = { job_id: jobId, status: 'timeout' }
+        
+        if (typeof window !== 'undefined' && (window as any).telemetry) {
+          (window as any).telemetry.track('availability.job_failed', {
+            job_id: jobId,
+            reason: 'timeout',
+            attempts
+          })
+        }
+        
+        throw new Error('Job polling timeout')
+      }
+      
+      try {
+        const response = await fetch(`/api/v1/availability/jobs/${jobId}`)
+        const data = await response.json()
+        
+        generationJob.value = {
+          job_id: jobId,
+          status: data.status,
+          progress: data.progress
+        }
+        
+        if (data.status === 'done') {
+          return
+        }
+        
+        if (data.status === 'failed') {
+          if (typeof window !== 'undefined' && (window as any).telemetry) {
+            (window as any).telemetry.track('availability.job_failed', {
+              job_id: jobId,
+              reason: data.error || 'unknown',
+              attempts
+            })
+          }
+          throw new Error(data.error || 'Job failed')
+        }
+        
+        if (data.status === 'queued' || data.status === 'running') {
+          attempts++
+          await new Promise(resolve => setTimeout(resolve, pollInterval))
+          return poll()
+        }
+      } catch (err) {
+        generationJob.value = { job_id: jobId, status: 'error' }
+        throw err
+      }
+    }
+    
+    await poll()
   }
 
   async function deleteAvailabilitySlot(id: number): Promise<void> {
@@ -266,6 +452,30 @@ export const useCalendarStore = defineStore('calendar', () => {
     }
   }
 
+  async function loadWeekView(params: {
+    tutorId?: number
+    weekStart: string
+    timezone: string
+  }): Promise<void> {
+    weekViewLoading.value = true
+    weekViewError.value = null
+    
+    try {
+      console.log('[calendarStore] Loading week view with params:', params)
+      const response = await calendarApi.getWeekView(params)
+      console.log('[calendarStore] API response:', response)
+      console.log('[calendarStore] Cells received:', response.cells?.length || 0)
+      weekCells.value = response.cells
+      console.log('[calendarStore] weekCells updated:', weekCells.value.length)
+    } catch (err: any) {
+      weekViewError.value = err.message || 'Failed to load week view'
+      console.error('[calendarStore] Failed to load week view:', err)
+      console.error('[calendarStore] Error details:', err.response?.data || err)
+    } finally {
+      weekViewLoading.value = false
+    }
+  }
+
   // Navigation
   function setSelectedDate(date: Date): void {
     selectedDate.value = date
@@ -324,8 +534,14 @@ export const useCalendarStore = defineStore('calendar', () => {
     syncStatus,
     lastSyncTime,
     pendingChanges,
+    editMode,
+    generationJob,
+    weekCells,
+    weekViewLoading,
+    weekViewError,
 
     // Computed
+    effectiveCells,
     slotsByDate,
     availableSlots,
     bookedSlots,
@@ -338,6 +554,12 @@ export const useCalendarStore = defineStore('calendar', () => {
     loadSettings,
     updateSettings,
     loadAvailability,
+    enterEditMode,
+    exitEditMode,
+    createSlot,
+    updateSlot,
+    deleteSlot,
+    pollJobStatus,
     loadExceptions,
     loadCalendar,
     setAvailability,
@@ -358,6 +580,7 @@ export const useCalendarStore = defineStore('calendar', () => {
     navigateWeek,
     navigateMonth,
     goToToday,
+    loadWeekView,
 
     $reset,
   }

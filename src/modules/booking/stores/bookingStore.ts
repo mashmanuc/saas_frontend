@@ -3,6 +3,15 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { bookingApi } from '../api/booking'
 import type { Booking, BookingInput, BookingListParams } from '../api/booking'
+import { useCalendarStore } from './calendarStore'
+
+function generateUUID(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0
+    const v = c === 'x' ? r : (r & 0x3 | 0x8)
+    return v.toString(16)
+  })
+}
 
 export const useBookingStore = defineStore('booking', () => {
   // State
@@ -11,6 +20,8 @@ export const useBookingStore = defineStore('booking', () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
   const totalCount = ref(0)
+  const recentStudents = ref<any[]>([])
+  const searchResults = ref<any[]>([])
 
   // Computed
   const upcomingBookings = computed(() =>
@@ -139,6 +150,42 @@ export const useBookingStore = defineStore('booking', () => {
     }
   }
 
+  async function createManualBooking(params: {
+    studentId: number
+    startAtUTC: string
+    durationMin: number
+    notes?: string
+  }) {
+    const idempotencyKey = generateUUID()
+    
+    const lesson = await bookingApi.createManualBooking({
+      student_id: params.studentId,
+      start_at_utc: params.startAtUTC,
+      duration_min: params.durationMin,
+      notes: params.notes,
+    }, idempotencyKey)
+    
+    const calendarStore = useCalendarStore()
+    const weekRange = calendarStore.currentWeekRange
+    await calendarStore.loadWeekView({
+      tutorId: undefined,
+      weekStart: weekRange.start.toISOString().split('T')[0],
+      timezone: 'Europe/Kiev',
+    })
+    
+    return lesson
+  }
+  
+  async function searchStudents(query: string) {
+    try {
+      const results = await bookingApi.searchStudents(query)
+      searchResults.value = results
+    } catch (err) {
+      console.error('Failed to search students:', err)
+      searchResults.value = []
+    }
+  }
+
   // Reset
   function $reset(): void {
     bookings.value = []
@@ -155,6 +202,8 @@ export const useBookingStore = defineStore('booking', () => {
     isLoading,
     error,
     totalCount,
+    recentStudents,
+    searchResults,
 
     // Computed
     upcomingBookings,
@@ -170,6 +219,8 @@ export const useBookingStore = defineStore('booking', () => {
     cancelBooking,
     rescheduleBooking,
     updateBookingInList,
+    createManualBooking,
+    searchStudents,
 
     // WebSocket handlers
     handleBookingCreated,

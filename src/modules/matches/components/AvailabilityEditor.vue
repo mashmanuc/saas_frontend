@@ -1,11 +1,18 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAvailabilityStore } from '../store/availabilityStore'
-import { Calendar, Plus, Trash2, Copy } from 'lucide-vue-next'
+import { useCalendarStore } from '@/modules/booking/stores/calendarStore'
+import { availabilityApi } from '@/modules/booking/api/availabilityApi'
+import type { TemplateSlot } from '@/modules/booking/api/availabilityApi'
+import { Calendar, Plus, Trash2, Copy, Play } from 'lucide-vue-next'
 
 const { t } = useI18n()
 const availabilityStore = useAvailabilityStore()
+const calendarStore = useCalendarStore()
+
+const applyingTemplate = ref(false)
+const showPreview = ref(false)
 
 const weekdays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
 
@@ -75,6 +82,81 @@ async function saveAvailability() {
   }
 }
 
+async function applyTemplate() {
+  applyingTemplate.value = true
+  const startTime = Date.now()
+  
+  try {
+    const templateSlots: TemplateSlot[] = weeklyTemplate.value.map(slot => ({
+      weekday: getWeekdayNumber(slot.weekday),
+      start_time: slot.start,
+      end_time: slot.end
+    }))
+    
+    await availabilityApi.createTemplate(templateSlots)
+    const { job_id, eta_seconds } = await availabilityApi.applyTemplate()
+    
+    if (typeof window !== 'undefined' && (window as any).telemetry) {
+      (window as any).telemetry.track('availability.template_applied', {
+        job_id,
+        slots_count: templateSlots.length,
+        eta_seconds
+      })
+    }
+    
+    if (typeof window !== 'undefined' && (window as any).toast) {
+      (window as any).toast.success(
+        t('availability.editor.templateApplied', { eta: Math.round(eta_seconds / 60) })
+      )
+    }
+    
+    calendarStore.generationJob = { job_id, status: 'queued' }
+    await calendarStore.pollJobStatus(job_id)
+    
+    const duration = Date.now() - startTime
+    
+    if (typeof window !== 'undefined' && (window as any).telemetry) {
+      (window as any).telemetry.track('availability.template_applied_success', {
+        job_id,
+        duration_ms: duration
+      })
+    }
+    
+    if (typeof window !== 'undefined' && (window as any).toast) {
+      (window as any).toast.success(t('availability.editor.slotsGenerated'))
+    }
+    
+    await calendarStore.loadWeekSlots(0)
+  } catch (err: any) {
+    if (typeof window !== 'undefined' && (window as any).toast) {
+      (window as any).toast.error(err.message || t('availability.editor.applyFailed'))
+    }
+  } finally {
+    applyingTemplate.value = false
+  }
+}
+
+function getWeekdayNumber(weekday: string): number {
+  const map: Record<string, number> = {
+    monday: 1,
+    tuesday: 2,
+    wednesday: 3,
+    thursday: 4,
+    friday: 5,
+    saturday: 6,
+    sunday: 0
+  }
+  return map[weekday] || 1
+}
+
+const previewSlots = computed(() => {
+  return calendarStore.slotsByDate
+})
+
+const pendingChangesCount = computed(() => {
+  return calendarStore.pendingChanges.length
+})
+
 onMounted(() => {
   if (availabilityStore.myAvailability) {
     weeklyTemplate.value = availabilityStore.myAvailability.weekly_template || []
@@ -97,6 +179,10 @@ onMounted(() => {
       <div class="section-header">
         <h3>{{ t('availability.editor.weeklyTemplate') }}</h3>
         <div class="actions">
+          <button class="btn btn-secondary btn-sm" @click="showPreview = !showPreview">
+            <Calendar :size="16" />
+            {{ showPreview ? t('availability.editor.hidePreview') : t('availability.editor.showPreview') }}
+          </button>
           <button class="btn btn-secondary btn-sm" @click="copyWeek">
             <Copy :size="16" />
             {{ t('availability.editor.copyWeek') }}
@@ -105,6 +191,36 @@ onMounted(() => {
             <Plus :size="16" />
             {{ t('availability.editor.addSlot') }}
           </button>
+          <button 
+            class="btn btn-primary btn-sm" 
+            :disabled="applyingTemplate || weeklyTemplate.length === 0"
+            @click="applyTemplate"
+          >
+            <Play :size="16" />
+            {{ applyingTemplate ? t('availability.editor.applying') : t('availability.editor.applyTemplate') }}
+          </button>
+        </div>
+      </div>
+
+      <div v-if="pendingChangesCount > 0" class="pending-changes">
+        {{ t('availability.editor.pendingChanges', { count: pendingChangesCount }) }}
+      </div>
+
+      <div v-if="showPreview" class="preview-grid">
+        <div class="preview-header">{{ t('availability.editor.preview') }}</div>
+        <div class="preview-days">
+          <div v-for="day in weekdays" :key="day" class="preview-day">
+            <div class="preview-day-name">{{ t(`common.weekdays.${day}`) }}</div>
+            <div class="preview-slots">
+              <div 
+                v-for="(slot, idx) in weeklyTemplate.filter(s => s.weekday === day)" 
+                :key="idx"
+                class="preview-slot"
+              >
+                {{ slot.start }} - {{ slot.end }}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -225,8 +341,8 @@ onMounted(() => {
 .override-row,
 .blackout-row {
   display: flex;
+  gap: 0.5rem;
   align-items: center;
-  gap: 0.75rem;
 }
 
 .input {
@@ -307,5 +423,63 @@ onMounted(() => {
 
 .btn-icon:hover {
   color: var(--danger, #dc2626);
+}
+
+.pending-changes {
+  padding: 0.75rem;
+  background: var(--warning-bg, #fef3c7);
+  border: 1px solid var(--warning, #f59e0b);
+  border-radius: 0.375rem;
+  color: var(--warning-text, #92400e);
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.preview-grid {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--surface-muted, #f9fafb);
+  border-radius: 0.5rem;
+}
+
+.preview-header {
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: var(--text-primary);
+}
+
+.preview-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.5rem;
+}
+
+.preview-day {
+  padding: 0.5rem;
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 0.375rem;
+}
+
+.preview-day-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.preview-slots {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.preview-slot {
+  padding: 0.25rem 0.5rem;
+  background: var(--primary-bg, #dbeafe);
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--primary, #3b82f6);
 }
 </style>

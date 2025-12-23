@@ -28,10 +28,12 @@ export interface TimeSlot {
   date: string
   start_time: string
   end_time: string
-  start_datetime: string
-  end_datetime: string
+  start_datetime?: string
+  end_datetime?: string
   status: 'available' | 'booked' | 'blocked'
-  duration_minutes: number
+  duration_minutes?: number
+  created_at?: string
+  updated_at?: string
 }
 
 export type BookingStatus =
@@ -148,93 +150,102 @@ export interface CalendarResponse {
 export const bookingApi = {
   // Settings
   async getSettings(): Promise<TutorSettings> {
-    const response = await apiClient.get('/v1/booking/settings/')
+    const response = await apiClient.get('/booking/settings/')
     return response as unknown as TutorSettings
   },
 
   async updateSettings(data: Partial<TutorSettings>): Promise<TutorSettings> {
-    const response = await apiClient.patch('/v1/booking/settings/', data)
+    const response = await apiClient.patch('/booking/settings/', data)
     return response as unknown as TutorSettings
   },
 
   // Availability
   async getAvailability(): Promise<Availability[]> {
-    const response = await apiClient.get('/v1/booking/availability/')
+    const response = await apiClient.get('/booking/availability/')
     return response as unknown as Availability[]
   },
 
   async setAvailability(schedule: AvailabilityInput[]): Promise<void> {
-    await apiClient.post('/v1/booking/availability/', { schedule })
+    await apiClient.post('/booking/availability/', { schedule })
   },
 
   async deleteAvailability(id: number): Promise<void> {
-    await apiClient.delete(`/v1/booking/availability/${id}/`)
+    await apiClient.delete(`/booking/availability/${id}/`)
   },
 
   // Exceptions
   async getExceptions(start: string, end: string): Promise<DateException[]> {
-    const response = await apiClient.get('/v1/booking/exceptions/', {
+    const response = await apiClient.get('/booking/exceptions/', {
       params: { start, end },
     })
     return response as unknown as DateException[]
   },
 
   async addException(data: ExceptionInput): Promise<DateException> {
-    const response = await apiClient.post('/v1/booking/exceptions/', data)
+    const response = await apiClient.post('/booking/exceptions/', data)
     return response as unknown as DateException
   },
 
   async deleteException(id: number): Promise<void> {
-    await apiClient.delete(`/v1/booking/exceptions/${id}/`)
+    await apiClient.delete(`/booking/exceptions/${id}/`)
   },
 
   // Slots
   async getSlots(tutorId: number, start: string, end: string): Promise<TimeSlot[]> {
-    const response = await apiClient.get('/v1/booking/slots/', {
+    const response = await apiClient.get('/booking/slots/', {
       params: { tutor_id: tutorId, start, end },
     })
     return response as unknown as TimeSlot[]
   },
 
   async blockSlot(slotId: number, reason?: string): Promise<void> {
-    await apiClient.post('/v1/booking/slots/block/', {
+    await apiClient.post('/booking/slots/block/', {
       slot_id: slotId,
       reason,
     })
   },
 
   async unblockSlot(slotId: number): Promise<void> {
-    await apiClient.post('/v1/booking/slots/unblock/', { slot_id: slotId })
+    await apiClient.post('/booking/slots/unblock/', { slot_id: slotId })
   },
 
   async createCustomSlot(data: CustomSlotInput): Promise<TimeSlot> {
-    const response = await apiClient.post('/v1/booking/slots/custom/', data)
-    return response as unknown as TimeSlot
+    const response = await apiClient.post('/booking/slots/custom/', data)
+    return response.data
+  },
+
+  async updateSlot(slotId: number, data: { start?: string; end?: string }): Promise<TimeSlot> {
+    const response = await apiClient.patch(`/booking/slots/${slotId}/`, data)
+    return response.data
+  },
+
+  async deleteSlot(slotId: number): Promise<void> {
+    await apiClient.delete(`/booking/slots/${slotId}/`)
   },
 
   // Bookings
   async getBookings(params?: BookingListParams): Promise<PaginatedResponse<Booking>> {
-    const response = await apiClient.get('/v1/booking/bookings/', { params })
+    const response = await apiClient.get('/booking/bookings/', { params })
     return response as unknown as PaginatedResponse<Booking>
   },
 
   async getBooking(id: number): Promise<Booking> {
-    const response = await apiClient.get(`/v1/booking/bookings/${id}/`)
+    const response = await apiClient.get(`/booking/bookings/${id}/`)
     return response as unknown as Booking
   },
 
   async createBooking(data: BookingInput): Promise<Booking> {
-    const response = await apiClient.post('/v1/booking/bookings/', data)
+    const response = await apiClient.post('/booking/bookings/', data)
     return response as unknown as Booking
   },
 
   async confirmBooking(id: number): Promise<Booking> {
-    const response = await apiClient.post(`/v1/booking/bookings/${id}/confirm/`)
+    const response = await apiClient.post(`/booking/bookings/${id}/confirm/`)
     return response as unknown as Booking
   },
 
   async cancelBooking(id: number, reason?: string): Promise<Booking> {
-    const response = await apiClient.post(`/v1/booking/bookings/${id}/cancel/`, {
+    const response = await apiClient.post(`/booking/bookings/${id}/cancel/`, {
       reason,
     })
     return response as unknown as Booking
@@ -246,7 +257,7 @@ export const bookingApi = {
     reason?: string
   ): Promise<Booking> {
     const response = await apiClient.post(
-      `/v1/booking/bookings/${id}/reschedule/`,
+      `/booking/bookings/${id}/reschedule/`,
       {
         new_slot_id: newSlotId,
         reason,
@@ -261,10 +272,26 @@ export const bookingApi = {
     month: number,
     year: number
   ): Promise<CalendarResponse> {
-    const response = await apiClient.get('/v1/booking/calendar/', {
+    const response = await apiClient.get('/booking/calendar/', {
       params: { tutor_id: tutorId, month, year },
     })
     return response as unknown as CalendarResponse
+  },
+
+  async createManualBooking(data: any, idempotencyKey: string): Promise<any> {
+    const response = await apiClient.post('/api/bookings/manual/', data, {
+      headers: {
+        'Idempotency-Key': idempotencyKey,
+      },
+    })
+    return response.data
+  },
+
+  async searchStudents(query: string): Promise<any[]> {
+    const response = await apiClient.get('/api/v1/students/search', {
+      params: { q: query },
+    })
+    return response.data.results || []
   },
 }
 

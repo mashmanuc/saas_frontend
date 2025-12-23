@@ -27,21 +27,32 @@
       <div v-else class="full-view">
         <h4>{{ t('marketplace.profile.availabilityThisWeek') }}</h4>
         
-        <div class="week-summary">
-          <div v-for="(day, index) in weekDays" :key="index" class="day-summary">
-            <span class="day-name">{{ day.name }}</span>
-            <span class="slots-count">{{ day.slots }}</span>
-            <span class="slots-label">{{ t('calendar.slots') }}</span>
+        <div class="stats-row">
+          <div class="stat-item">
+            <Clock :size="16" />
+            <span class="stat-value">{{ summary.weekly_hours }}h</span>
+            <span class="stat-label">{{ t('marketplace.profile.weeklyHours') }}</span>
+          </div>
+          <div class="stat-item">
+            <Calendar :size="16" />
+            <span class="stat-value">{{ nextSlots.length }}</span>
+            <span class="stat-label">{{ t('marketplace.profile.nextSlots') }}</span>
           </div>
         </div>
 
-        <div class="next-slot-info">
-          <Calendar :size="16" />
-          <span>{{ t('marketplace.profile.nextAvailable') }}: {{ formatNextAvailable(summary.next_available_slot) }}</span>
+        <div class="next-slots-list">
+          <div class="list-header">{{ t('marketplace.profile.upcomingSlots') }}</div>
+          <div v-for="(slot, idx) in nextSlots" :key="idx" class="slot-item">
+            <Calendar :size="14" />
+            <span>{{ formatSlotTime(slot.start) }}</span>
+          </div>
+          <div v-if="nextSlots.length === 0" class="no-slots">
+            {{ t('marketplace.profile.noUpcomingSlots') }}
+          </div>
         </div>
 
-        <button @click="$emit('book-lesson')" class="btn btn-primary btn-block">
-          {{ t('booking.bookLesson') }}
+        <button @click="openDrawer" class="btn btn-primary btn-block">
+          {{ t('marketplace.profile.viewFullCalendar') }}
         </button>
       </div>
     </div>
@@ -75,9 +86,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Calendar, CalendarX, Loader2, AlertCircle, X } from 'lucide-vue-next'
+import { Calendar, CalendarX, Loader2, AlertCircle, X, Clock } from 'lucide-vue-next'
 import { availabilityApi } from '../../booking/api/availabilityApi'
-import type { AvailabilitySummary } from '../../booking/api/availabilityApi'
+import type { AvailabilitySummary, TutorAvailabilityFull } from '../../booking/api/availabilityApi'
 
 interface Props {
   tutorSlug: string
@@ -96,9 +107,11 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const summary = ref<AvailabilitySummary | null>(null)
+const fullData = ref<TutorAvailabilityFull | null>(null)
 const loading = ref(false)
 const error = ref<string | null>(null)
 const showDrawer = ref(false)
+const nextSlots = ref<Array<{ start: string; end: string }>>([])
 
 const weekDays = ref([
   { name: t('common.weekdays.monday'), slots: 0 },
@@ -124,17 +137,14 @@ function formatRelativeTime(datetime: string): string {
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
   
-  // Less than 1 hour
   if (diffMinutes < 60) {
     return t('marketplace.profile.inMinutes', { count: diffMinutes })
   }
   
-  // Less than 24 hours
   if (diffHours < 24) {
     return t('marketplace.profile.inHours', { count: diffHours })
   }
   
-  // Today
   if (diffDays === 0) {
     return t('marketplace.profile.today') + ', ' + date.toLocaleTimeString(undefined, {
       hour: '2-digit',
@@ -142,7 +152,6 @@ function formatRelativeTime(datetime: string): string {
     })
   }
   
-  // Tomorrow
   if (diffDays === 1) {
     return t('marketplace.profile.tomorrow') + ', ' + date.toLocaleTimeString(undefined, {
       hour: '2-digit',
@@ -150,13 +159,22 @@ function formatRelativeTime(datetime: string): string {
     })
   }
   
-  // This week (next 7 days)
   if (diffDays < 7) {
     return t('marketplace.profile.inDays', { count: diffDays })
   }
   
-  // Default format
   return date.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+function formatSlotTime(datetime: string): string {
+  const date = new Date(datetime)
+  return date.toLocaleDateString(undefined, {
+    weekday: 'short',
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
@@ -178,6 +196,14 @@ async function loadSummary(): Promise<void> {
   
   try {
     summary.value = await availabilityApi.getTutorAvailabilitySummary(props.tutorSlug)
+    
+    const full = await availabilityApi.getTutorAvailabilityFull(props.tutorSlug)
+    fullData.value = full
+    
+    nextSlots.value = full.slots
+      .filter(s => s.status === 'available')
+      .slice(0, 3)
+      .map(s => ({ start: s.start_datetime, end: s.end_datetime }))
   } catch (err: any) {
     error.value = err.message || t('marketplace.profile.loadError')
   } finally {
@@ -407,5 +433,63 @@ onMounted(() => {
 
 .close-button:hover {
   background-color: var(--surface-muted);
+}
+
+.stats-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  background: var(--surface-muted);
+  border-radius: 0.5rem;
+  gap: 0.5rem;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.next-slots-list {
+  margin-bottom: 1.5rem;
+}
+
+.list-header {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+}
+
+.slot-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: var(--surface-muted);
+  border-radius: 0.375rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.no-slots {
+  padding: 1rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.875rem;
 }
 </style>
