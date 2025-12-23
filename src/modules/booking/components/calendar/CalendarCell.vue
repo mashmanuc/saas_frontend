@@ -2,7 +2,13 @@
   <div
     :class="cellClasses"
     :data-utc-key="cell.startAtUTC"
-    @click="handleClick($event)"
+    role="button"
+    :tabindex="readOnly ? -1 : 0"
+    :aria-disabled="readOnly"
+    :aria-label="ariaLabel"
+    @click="handleClick"
+    @keydown.enter.prevent="handleClick"
+    @keydown.space.prevent="handleClick"
   >
     <div v-if="cell.isDraft" class="draft-indicator">
       <PencilIcon class="w-3 h-3" />
@@ -31,10 +37,11 @@ import { formatInTimezone } from '@/utils/timezone'
 const props = defineProps<{
   cell: CalendarCell
   timezone?: string
+  readOnly?: boolean
 }>()
 
 const emit = defineEmits<{
-  click: [event: MouseEvent]
+  cellClick: [cell: CalendarCell, event: MouseEvent]
 }>()
 
 const cellClasses = computed(() => [
@@ -47,6 +54,20 @@ const cellClasses = computed(() => [
   },
 ])
 
+const ariaLabel = computed(() => {
+  const time = formatTime(props.cell.startAtUTC)
+  if (props.cell.booking) {
+    return `Booked lesson at ${time} with ${props.cell.booking.student.name}`
+  }
+  if (props.cell.status === 'available') {
+    return `Available time slot at ${time}`
+  }
+  if (props.cell.status === 'blocked') {
+    return `Blocked time slot at ${time}`
+  }
+  return `Time slot at ${time}`
+})
+
 function formatTime(utcTime: string): string {
   if (props.timezone) {
     return formatInTimezone(utcTime, props.timezone)
@@ -58,8 +79,9 @@ function formatTime(utcTime: string): string {
   })
 }
 
-function handleClick(event: MouseEvent) {
-  emit('click', event)
+function handleClick(event: MouseEvent | KeyboardEvent) {
+  if (props.readOnly) return
+  emit('cellClick', props.cell, event as MouseEvent)
 }
 </script>
 
@@ -69,17 +91,20 @@ function handleClick(event: MouseEvent) {
   border-bottom: 1px solid #e5e7eb;
   padding: 4px;
   cursor: default;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
+  outline: none;
 }
 
 .cell-clickable {
   cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.cell-clickable:hover {
+.cell-clickable:hover,
+.cell-clickable:focus-visible {
   transform: scale(1.02);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
   z-index: 10;
 }
 

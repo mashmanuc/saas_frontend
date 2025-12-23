@@ -293,6 +293,42 @@ export const bookingApi = {
     })
     return response.data.results || []
   },
+
+  // Booking Requests (v0.47)
+  async createBookingRequest(data: {
+    tutor_id: number
+    start_datetime: string
+    duration_minutes: number
+    student_message?: string
+  }): Promise<any> {
+    const response = await apiClient.post('/booking/requests/', data)
+    return response.data
+  },
+
+  async getBookingRequests(params: { status?: string; page?: number; page_size?: number }): Promise<any> {
+    const response = await apiClient.get('/booking/requests/', { params })
+    return response.data
+  },
+
+  async getMyBookingRequests(params: { status?: string }): Promise<any> {
+    const response = await apiClient.get('/booking/my-requests/', { params })
+    return response.data
+  },
+
+  async acceptBookingRequest(id: number, data?: { tutor_response?: string }): Promise<any> {
+    const response = await apiClient.post(`/booking/requests/${id}/accept/`, data || {})
+    return response.data
+  },
+
+  async rejectBookingRequest(id: number, data?: { tutor_response?: string }): Promise<any> {
+    const response = await apiClient.post(`/booking/requests/${id}/reject/`, data || {})
+    return response.data
+  },
+
+  async cancelBookingRequest(id: number): Promise<any> {
+    const response = await apiClient.post(`/booking/requests/${id}/cancel/`)
+    return response.data
+  },
 }
 
 export default bookingApi

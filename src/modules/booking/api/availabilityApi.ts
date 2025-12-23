@@ -146,12 +146,8 @@ export const availabilityApi = {
     await apiClient.post(`/api/v1/availability/slots/${slotId}/block`, { reason })
   },
 
-  async bulkApply(data: { patches: any[] }, idempotencyKey: string): Promise<any> {
-    const response = await apiClient.post('/api/v1/marketplace/availability/bulk/', data, {
-      headers: {
-        'Idempotency-Key': idempotencyKey,
-      },
-    })
+  async bulkApply(data: { changes: any[] }): Promise<any> {
+    const response = await apiClient.post('/booking/availability/bulk', data)
     return response.data
   },
 }

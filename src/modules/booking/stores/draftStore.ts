@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { CalendarCell } from '@/modules/booking/types/calendar'
-import { availabilityApi } from '@/modules/booking/api/availabilityApi'
+import { bookingApi } from '@/modules/booking/api/booking'
 import { useCalendarStore } from './calendarStore'
 
 function generateUUID(): string {
@@ -14,9 +14,8 @@ function generateUUID(): string {
 
 export interface DraftPatch {
   startAtUTC: string // ISO 8601 — canonical key
-  durationMin: number
-  action: 'set_available' | 'set_blocked' | 'clear'
-  originalStatus?: string
+  action: 'set_available' | 'set_blocked'
+  originalStatus: CalendarCell['status']
 }
 
 export const useDraftStore = defineStore('draft', () => {
@@ -30,7 +29,6 @@ export const useDraftStore = defineStore('draft', () => {
     
     draftPatchByKey.value.set(key, {
       startAtUTC: cell.startAtUTC,
-      durationMin: cell.durationMin,
       action,
       originalStatus: cell.status,
     })
@@ -59,26 +57,17 @@ export const useDraftStore = defineStore('draft', () => {
       return { applied: [], rejected: [], summary: { total: 0, applied: 0, rejected: 0 } }
     }
     
-    const idempotencyKey = generateUUID()
-    
-    const result = await availabilityApi.bulkApply({
-      patches: patches.map(p => ({
-        startAtUTC: p.startAtUTC,
-        durationMin: p.durationMin,
-        action: p.action,
-      })),
-    }, idempotencyKey)
+    const result = await bookingApi.bulkAvailability({ changes: patches })
     
     for (const applied of result.applied) {
       removePatch(applied.startAtUTC)
     }
     
     const calendarStore = useCalendarStore()
-    const weekRange = calendarStore.currentWeekRange
     await calendarStore.loadWeekView({
       tutorId: undefined,
-      weekStart: weekRange.start.toISOString().split('T')[0],
-      timezone: 'Europe/Kiev',
+      weekStart: calendarStore.currentWeekRange.start.toISOString().split('T')[0],
+      timezone: calendarStore.settings?.timezone || 'Europe/Kiev',
     })
     
     return result

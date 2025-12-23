@@ -1,54 +1,70 @@
 <template>
   <div class="calendar-cell-grid">
     <DSTWarningBanner :week-start="weekStart" :timezone="timezone" />
-    
+
     <!-- Error state -->
-    <div v-if="error" class="error-state">
-      <WifiOffIcon class="w-12 h-12 text-gray-400" />
-      <h3 class="error-title">{{ $t('errors.networkError') }}</h3>
-      <p class="error-message">{{ error }}</p>
-      <button @click="handleRetry" class="btn-primary">
-        <RefreshCwIcon class="w-4 h-4" />
-        {{ $t('common.retry') }}
-      </button>
-    </div>
-    
+    <template v-if="error">
+      <Transition name="fade">
+        <div class="error-state">
+          <WifiOffIcon class="w-12 h-12 text-gray-400" />
+          <h3 class="error-title">{{ $t('errors.networkError') }}</h3>
+          <p class="error-message">{{ error }}</p>
+          <button @click="handleRetry" class="btn-primary">
+            <RefreshCwIcon class="w-4 h-4" />
+            {{ $t('common.retry') }}
+          </button>
+        </div>
+      </Transition>
+    </template>
+
     <!-- Loading skeleton -->
-    <CalendarSkeleton v-else-if="loading" />
-    
+    <template v-else-if="loading">
+      <Transition name="fade">
+        <CalendarSkeleton />
+      </Transition>
+    </template>
+
     <!-- Empty state -->
-    <div v-else-if="cells.length === 0" class="empty-state">
-      <CalendarIcon class="empty-icon" />
-      <h3 class="empty-title">{{ $t('booking.calendar.noSchedule') }}</h3>
-      <p class="empty-message">
-        {{ $t('booking.calendar.noScheduleDesc') }}
-      </p>
-      <div class="empty-actions">
-        <button @click="goToSettings" class="btn-primary">
-          <SettingsIcon class="w-4 h-4" />
-          {{ $t('booking.calendar.setupSchedule') }}
-        </button>
-        <button @click="handleRetry" class="btn-secondary">
-          <RefreshCwIcon class="w-4 h-4" />
-          {{ $t('common.retry') }}
-        </button>
-      </div>
-    </div>
-    
+    <template v-else-if="cells.length === 0">
+      <Transition name="fade">
+        <div class="empty-state">
+          <CalendarIcon class="empty-icon" />
+          <h3 class="empty-title">{{ $t('booking.calendar.noSchedule') }}</h3>
+          <p class="empty-message">
+            {{ $t('booking.calendar.noScheduleDesc') }}
+          </p>
+          <div class="empty-actions">
+            <button @click="goToSettings" class="btn-primary">
+              <SettingsIcon class="w-4 h-4" />
+              {{ $t('booking.calendar.setupSchedule') }}
+            </button>
+            <button @click="handleRetry" class="btn-secondary">
+              <RefreshCwIcon class="w-4 h-4" />
+              {{ $t('common.retry') }}
+            </button>
+          </div>
+        </div>
+      </Transition>
+    </template>
+
     <!-- Success state -->
     <template v-else>
-      <WeekHeader :week-start="weekStart" :timezone="timezone" />
-      
-      <div class="grid-container">
-        <TimeColumn :timezone="timezone" />
-        
-        <CellGrid
-          :cells="cells"
-          :week-start="weekStart"
-          :timezone="timezone"
-          @cell-click="handleCellClick"
-        />
-      </div>
+      <Transition name="fade" mode="out-in">
+        <div>
+          <WeekHeader :week-start="weekStart" :timezone="timezone" />
+
+          <div class="grid-container">
+            <TimeColumn :timezone="timezone" />
+
+            <CellGrid
+              :cells="cells"
+              :week-start="weekStart"
+              :timezone="timezone"
+              @cell-click="handleCellClick"
+            />
+          </div>
+        </div>
+      </Transition>
     </template>
     
     <CalendarPopover
@@ -60,9 +76,17 @@
       @block-time="handleBlockTime"
       @make-available="handleMakeAvailable"
       @clear-availability="handleClearAvailability"
-      @book-lesson="handleBookLesson"
+      @book-lesson="handleBookLessonFromPopover"
       @view-lesson="handleViewLesson"
       @cancel-lesson="handleCancelLesson"
+    />
+    
+    <ManualBookingModal
+      v-if="bookingCell"
+      :visible="showBookingModal"
+      :cell="bookingCell"
+      @close="handleBookingModalClose"
+      @success="handleBookingSuccess"
     />
   </div>
 </template>
@@ -81,6 +105,7 @@ import CellGrid from './CellGrid.vue'
 import CalendarPopover from './CalendarPopover.vue'
 import DSTWarningBanner from './DSTWarningBanner.vue'
 import CalendarSkeleton from './CalendarSkeleton.vue'
+import ManualBookingModal from '../modals/ManualBookingModal.vue'
 
 const props = defineProps<{
   tutorId?: number
@@ -105,6 +130,9 @@ const cells = computed(() => calendarStore.effectiveCells || [])
 const popoverVisible = ref(false)
 const popoverCell = ref<CalendarCell | null>(null)
 const popoverAnchor = ref<HTMLElement | null>(null)
+
+const showBookingModal = ref(false)
+const bookingCell = ref<CalendarCell | null>(null)
 
 onMounted(async () => {
   await loadWeekView()
@@ -174,11 +202,29 @@ function handleMakeAvailable(cell: CalendarCell) {
 }
 
 function handleClearAvailability(cell: CalendarCell) {
-  draftStore.addPatch(cell, 'clear')
+  draftStore.removePatch(cell.startAtUTC)
+}
+
+function handleBookLessonFromPopover(cell: CalendarCell) {
+  popoverVisible.value = false
+  bookingCell.value = cell
+  showBookingModal.value = true
 }
 
 function handleBookLesson(cell: CalendarCell) {
   emit('bookLesson', cell)
+}
+
+function handleBookingModalClose() {
+  showBookingModal.value = false
+  bookingCell.value = null
+}
+
+function handleBookingSuccess(lessonId: number) {
+  console.log('[CalendarCellGrid] Booking created:', lessonId)
+  showBookingModal.value = false
+  bookingCell.value = null
+  loadWeekView()
 }
 
 function handleViewLesson(lessonId: number) {
@@ -304,5 +350,15 @@ function handleCancelLesson(lessonId: number) {
 
 .btn-secondary:hover {
   background-color: #e5e7eb;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

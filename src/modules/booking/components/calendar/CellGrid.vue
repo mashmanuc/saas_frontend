@@ -9,7 +9,7 @@
         v-for="cell in getCellsForDay(day - 1)"
         :key="cell.startAtUTC"
         :cell="cell"
-        @click="(event) => emit('cellClick', cell, event)"
+        @cell-click="(cellData, event) => emit('cellClick', cellData, event)"
       />
     </div>
   </div>

@@ -5,18 +5,22 @@ import DraftToolbar from '@/modules/booking/components/calendar/DraftToolbar.vue
 import { useDraftStore } from '@/modules/booking/stores/draftStore'
 import type { CalendarCell } from '@/modules/booking/types/calendar'
 
+const toastMock = {
+  success: vi.fn(),
+  error: vi.fn(),
+  info: vi.fn(),
+  warning: vi.fn(),
+}
+
+vi.mock('@/composables/useToast', () => ({
+  useToast: () => toastMock,
+}))
+
 describe('DraftToolbar', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
-    
-    // Mock window.toast
-    ;(window as any).toast = {
-      success: vi.fn(),
-      error: vi.fn(),
-      info: vi.fn(),
-      warning: vi.fn(),
-    }
+    Object.values(toastMock).forEach(fn => fn.mockReset())
   })
 
   const mockCell: CalendarCell = {
@@ -122,11 +126,6 @@ describe('DraftToolbar', () => {
         summary: { total: 1, applied: 1, rejected: 0 },
       })
 
-      const mockToast = {
-        success: vi.fn(),
-      }
-      ;(window as any).toast = mockToast
-
       const wrapper = mount(DraftToolbar)
 
       const applyButton = wrapper.find('.btn-primary')
@@ -134,7 +133,7 @@ describe('DraftToolbar', () => {
 
       await wrapper.vm.$nextTick()
 
-      expect(mockToast.success).toHaveBeenCalledWith(
+      expect(toastMock.success).toHaveBeenCalledWith(
         expect.stringContaining('Застосовано 1 змін')
       )
     })
@@ -154,11 +153,6 @@ describe('DraftToolbar', () => {
         summary: { total: 2, applied: 1, rejected: 1 },
       })
 
-      const mockToast = {
-        warning: vi.fn(),
-      }
-      ;(window as any).toast = mockToast
-
       const wrapper = mount(DraftToolbar)
 
       const applyButton = wrapper.find('.btn-primary')
@@ -166,7 +160,7 @@ describe('DraftToolbar', () => {
 
       await wrapper.vm.$nextTick()
 
-      expect(mockToast.warning).toHaveBeenCalledWith(
+      expect(toastMock.warning).toHaveBeenCalledWith(
         expect.stringContaining('1 відхилено')
       )
     })
@@ -178,11 +172,6 @@ describe('DraftToolbar', () => {
       const applyPatchesSpy = vi.spyOn(draftStore, 'applyPatches')
       applyPatchesSpy.mockRejectedValue(new Error('Network error'))
 
-      const mockToast = {
-        error: vi.fn(),
-      }
-      ;(window as any).toast = mockToast
-
       const wrapper = mount(DraftToolbar)
 
       const applyButton = wrapper.find('.btn-primary')
@@ -190,7 +179,7 @@ describe('DraftToolbar', () => {
 
       await wrapper.vm.$nextTick()
 
-      expect(mockToast.error).toHaveBeenCalledWith(
+      expect(toastMock.error).toHaveBeenCalledWith(
         'Помилка при застосуванні змін'
       )
     })
@@ -258,17 +247,12 @@ describe('DraftToolbar', () => {
       const confirmSpy = vi.spyOn(window, 'confirm')
       confirmSpy.mockReturnValue(true)
 
-      const mockToast = {
-        info: vi.fn(),
-      }
-      ;(window as any).toast = mockToast
-
       const wrapper = mount(DraftToolbar)
 
       const resetButton = wrapper.find('.btn-secondary')
       await resetButton.trigger('click')
 
-      expect(mockToast.info).toHaveBeenCalledWith('Зміни скасовано')
+      expect(toastMock.info).toHaveBeenCalledWith('Зміни скасовано')
     })
   })
 

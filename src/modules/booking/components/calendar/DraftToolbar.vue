@@ -1,5 +1,6 @@
 <template>
-  <div v-if="isDirty" class="draft-toolbar">
+  <Transition name="slide-down">
+    <div v-if="isDirty" class="draft-toolbar" role="status" aria-live="polite">
     <div class="draft-info">
       <AlertCircleIcon class="w-5 h-5 text-amber-600" />
       <span>
@@ -8,19 +9,21 @@
     </div>
     
     <div class="draft-actions">
-      <button @click="handleReset" class="btn-secondary">
+      <button @click="handleReset" class="btn-secondary" aria-label="Reset all draft changes">
         {{ $t('common.reset') }}
       </button>
       <button
         @click="handleApply"
         :disabled="applying"
         class="btn-primary"
+        aria-label="Apply all draft changes"
       >
         <LoaderIcon v-if="applying" class="w-4 h-4 animate-spin" />
         {{ $t('common.apply') }}
       </button>
     </div>
-  </div>
+    </div>
+  </Transition>
 </template>
 
 <script setup lang="ts">
@@ -30,7 +33,7 @@ import { useDraftStore } from '@/modules/booking/stores/draftStore'
 import { useToast } from '@/composables/useToast'
 
 const draftStore = useDraftStore()
-const { success, error, warning, info } = useToast()
+const toast = useToast()
 
 const applying = ref(false)
 
@@ -44,13 +47,13 @@ async function handleApply() {
     const result = await draftStore.applyPatches()
     
     if (result.summary.rejected > 0) {
-      warning(`Застосовано ${result.summary.applied} змін. ${result.summary.rejected} відхилено через конфлікти.`)
+      toast.warning(`Застосовано ${result.summary.applied} змін. ${result.summary.rejected} відхилено через конфлікти.`)
     } else {
-      success(`Застосовано ${result.summary.applied} змін`)
+      toast.success(`Застосовано ${result.summary.applied} змін`)
     }
     
   } catch (err) {
-    error('Помилка при застосуванні змін')
+    toast.error('Помилка при застосуванні змін')
   } finally {
     applying.value = false
   }
@@ -59,7 +62,7 @@ async function handleApply() {
 function handleReset() {
   if (confirm('Скасувати всі зміни?')) {
     draftStore.clearAllPatches()
-    info('Зміни скасовано')
+    toast.info('Зміни скасовано')
   }
 }
 </script>
@@ -122,5 +125,20 @@ function handleReset() {
 .btn-primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-down-enter-from {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.slide-down-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
 }
 </style>

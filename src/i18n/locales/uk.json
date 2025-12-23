@@ -690,7 +690,7 @@
       "contact": {
         "trialLesson": "Пробний урок",
         "respondsInHours": "Зазвичай відповідає за {hours} год",
-        "bookLesson": "Забронювати урок",
+        "bookLesson": "Запланувати урок",
         "sendMessage": "Надіслати повідомлення"
       },
       "reviews": {

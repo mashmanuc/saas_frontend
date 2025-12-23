@@ -27,6 +27,7 @@ const MarketplaceTutorView = () => import('../modules/marketplace/views/TutorPro
 const MarketplaceMyProfileView = () => import('../modules/marketplace/views/MyProfileView.vue')
 const MarketplaceSearchResultsView = () => import('../modules/marketplace/views/SearchResultsView.vue')
 const MarketplaceCategoryView = () => import('../modules/marketplace/views/CategoryView.vue')
+const BookingRequestsView = () => import('../modules/booking/views/BookingRequestsView.vue')
 const ProfileEditView = () => import('../modules/profile/views/ProfileEditView.vue')
 const ProfileSettingsView = () => import('../modules/profile/views/ProfileSettingsView.vue')
 const ProfileActivityView = () => import('../modules/profile/views/ProfileActivityView.vue')
@@ -238,6 +239,15 @@ const routes = [
             return next('/marketplace')
           }
           return next()
+        },
+      },
+      {
+        path: 'booking/requests',
+        name: 'booking-requests',
+        component: BookingRequestsView,
+        meta: {
+          requiresAuth: true,
+          roles: [USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN],
         },
       },
       {

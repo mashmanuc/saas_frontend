@@ -91,7 +91,7 @@ describe('CalendarCell', () => {
     expect(wrapper.find('.draft-indicator').exists()).toBe(true)
   })
 
-  it('emits click event when clicked', async () => {
+  it('emits cellClick with cell payload when clicked', async () => {
     const cell: CalendarCellType = {
       ...baseCell,
       status: 'available',
@@ -104,8 +104,26 @@ describe('CalendarCell', () => {
 
     await wrapper.trigger('click')
 
-    expect(wrapper.emitted('click')).toBeTruthy()
-    expect(wrapper.emitted('click')?.[0]).toHaveLength(1)
+    expect(wrapper.emitted('cellClick')).toBeTruthy()
+    const [firstPayload] = wrapper.emitted('cellClick') ?? []
+    expect(firstPayload?.[0]).toEqual(cell)
+    expect(firstPayload?.[1]).toBeInstanceOf(MouseEvent)
+  })
+
+  it('does not emit cellClick when readOnly', async () => {
+    const cell: CalendarCellType = {
+      ...baseCell,
+      status: 'available',
+      source: 'template',
+    }
+
+    const wrapper = mount(CalendarCell, {
+      props: { cell, readOnly: true },
+    })
+
+    await wrapper.trigger('click')
+
+    expect(wrapper.emitted('cellClick')).toBeFalsy()
   })
 
   it('does not add clickable class to empty cells', () => {

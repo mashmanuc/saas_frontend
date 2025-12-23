@@ -849,6 +849,23 @@ export const marketplaceApi = {
     const response = await apiClient.post('/v1/marketplace/me/profile/draft/resolve', resolution)
     return response as unknown as ProfileDraft
   },
+
+  /**
+   * Get tutor calendar (v0.47 - public availability)
+   */
+  async getTutorCalendar(params: {
+    tutorId: number
+    weekStart: string
+    timezone: string
+  }): Promise<any> {
+    const response = await apiClient.get(`/marketplace/tutors/${params.tutorId}/calendar`, {
+      params: {
+        start: params.weekStart,
+        tz: params.timezone,
+      },
+    })
+    return response.data
+  },
 }
 
 export default marketplaceApi

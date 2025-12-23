@@ -1,7 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { setActivePinia, createPinia } from 'pinia'
 import CalendarPopover from '@/modules/booking/components/calendar/CalendarPopover.vue'
 import type { CalendarCell } from '@/modules/booking/types/calendar'
+import { useDraftStore } from '@/modules/booking/stores/draftStore'
 
 describe('CalendarPopover', () => {
   const mockAnchorEl = document.createElement('div')
@@ -26,36 +28,32 @@ describe('CalendarPopover', () => {
 
   beforeEach(() => {
     document.body.innerHTML = ''
+    setActivePinia(createPinia())
   })
 
-  describe('Available cell actions', () => {
-    it('renders all actions for available cell', async () => {
-      const wrapper = mount(CalendarPopover, {
+  describe('Available state actions', () => {
+    it('shows block + book buttons for available cell', async () => {
+      mount(CalendarPopover, {
         props: {
           cell: baseCell,
           visible: true,
           anchorEl: mockAnchorEl,
         },
         global: {
-          mocks: {
-            $t: (key: string) => key,
-          },
+          mocks: { $t: (key: string) => key },
         },
         attachTo: document.body,
       })
 
-      await wrapper.vm.$nextTick()
-      
+      await Promise.resolve()
+
       const popover = document.querySelector('.calendar-popover')
       expect(popover).toBeTruthy()
+      expect(popover?.textContent).toContain('booking.actions.setBlocked')
       expect(popover?.textContent).toContain('booking.actions.bookLesson')
-      expect(popover?.textContent).toContain('booking.actions.blockTime')
-      expect(popover?.textContent).toContain('booking.actions.clearAvailability')
-      
-      wrapper.unmount()
     })
 
-    it('emits bookLesson event when clicked', async () => {
+    it('adds blocked patch via draftStore', async () => {
       const wrapper = mount(CalendarPopover, {
         props: {
           cell: baseCell,
@@ -63,264 +61,146 @@ describe('CalendarPopover', () => {
           anchorEl: mockAnchorEl,
         },
         global: {
-          mocks: {
-            $t: (key: string) => key,
-          },
+          mocks: { $t: (key: string) => key },
         },
         attachTo: document.body,
       })
 
       await wrapper.vm.$nextTick()
-      
-      const buttons = document.querySelectorAll('.action-btn')
-      const bookButton = Array.from(buttons).find(btn => 
-        btn.textContent?.includes('bookLesson')
+      const draftStore = useDraftStore()
+      const blockBtn = Array.from(document.querySelectorAll('.action-btn')).find(btn =>
+        btn.textContent?.includes('booking.actions.setBlocked'),
       ) as HTMLElement
-      
-      expect(bookButton).toBeTruthy()
-      bookButton?.click()
+
+      blockBtn?.click()
+      expect(draftStore.draftPatchByKey.get(baseCell.startAtUTC)?.action).toBe('set_blocked')
+      expect(wrapper.emitted('close')).toBeTruthy()
+    })
+
+    it('emits bookLesson on book click', async () => {
+      const wrapper = mount(CalendarPopover, {
+        props: {
+          cell: baseCell,
+          visible: true,
+          anchorEl: mockAnchorEl,
+        },
+        global: {
+          mocks: { $t: (key: string) => key },
+        },
+        attachTo: document.body,
+      })
+
       await wrapper.vm.$nextTick()
 
+      const bookBtn = Array.from(document.querySelectorAll('.action-btn')).find(btn =>
+        btn.textContent?.includes('booking.actions.bookLesson'),
+      ) as HTMLElement
+
+      bookBtn?.click()
       expect(wrapper.emitted('bookLesson')).toBeTruthy()
       expect(wrapper.emitted('bookLesson')?.[0]).toEqual([baseCell])
-      expect(wrapper.emitted('close')).toBeTruthy()
-      
-      wrapper.unmount()
-    })
-
-    it('emits blockTime event when clicked', async () => {
-      const wrapper = mount(CalendarPopover, {
-        props: {
-          cell: baseCell,
-          visible: true,
-          anchorEl: mockAnchorEl,
-        },
-        global: {
-          mocks: {
-            $t: (key: string) => key,
-          },
-        },
-        attachTo: document.body,
-      })
-
-      await wrapper.vm.$nextTick()
-      
-      const buttons = document.querySelectorAll('.action-btn')
-      const blockButton = Array.from(buttons).find(btn => 
-        btn.textContent?.includes('blockTime')
-      ) as HTMLElement
-      
-      expect(blockButton).toBeTruthy()
-      blockButton?.click()
-      await wrapper.vm.$nextTick()
-
-      expect(wrapper.emitted('blockTime')).toBeTruthy()
-      expect(wrapper.emitted('blockTime')?.[0]).toEqual([baseCell])
-      
-      wrapper.unmount()
-    })
-
-    it('emits clearAvailability event when clicked', async () => {
-      const wrapper = mount(CalendarPopover, {
-        props: {
-          cell: baseCell,
-          visible: true,
-          anchorEl: mockAnchorEl,
-        },
-        global: {
-          mocks: {
-            $t: (key: string) => key,
-          },
-        },
-        attachTo: document.body,
-      })
-
-      await wrapper.vm.$nextTick()
-      
-      const buttons = document.querySelectorAll('.action-btn')
-      const clearButton = Array.from(buttons).find(btn => 
-        btn.textContent?.includes('clearAvailability')
-      ) as HTMLElement
-      
-      expect(clearButton).toBeTruthy()
-      clearButton?.click()
-      await wrapper.vm.$nextTick()
-
-      expect(wrapper.emitted('clearAvailability')).toBeTruthy()
-      expect(wrapper.emitted('clearAvailability')?.[0]).toEqual([baseCell])
-      
-      wrapper.unmount()
     })
   })
 
-  describe('Blocked cell actions', () => {
+  describe('Blocked state actions', () => {
     const blockedCell: CalendarCell = {
       ...baseCell,
       status: 'blocked',
       source: 'manual',
     }
 
-    it('renders actions for blocked cell', async () => {
-      const wrapper = mount(CalendarPopover, {
+    it('shows setAvailable button for blocked cell', async () => {
+      mount(CalendarPopover, {
         props: {
           cell: blockedCell,
           visible: true,
           anchorEl: mockAnchorEl,
         },
         global: {
-          mocks: {
-            $t: (key: string) => key,
-          },
+          mocks: { $t: (key: string) => key },
         },
         attachTo: document.body,
       })
 
-      await wrapper.vm.$nextTick()
-      
+      await Promise.resolve()
       const popover = document.querySelector('.calendar-popover')
-      expect(popover).toBeTruthy()
-      expect(popover?.textContent).toContain('booking.actions.makeAvailable')
-      expect(popover?.textContent).toContain('booking.actions.bookLesson')
-      
-      wrapper.unmount()
+      expect(popover?.textContent).toContain('booking.actions.setAvailable')
     })
 
-    it('emits makeAvailable event when clicked', async () => {
+    it('adds available patch on click', async () => {
       const wrapper = mount(CalendarPopover, {
         props: {
-          cell: blockedCell,
           visible: true,
+          cell: blockedCell,
           anchorEl: mockAnchorEl,
         },
         global: {
-          mocks: {
-            $t: (key: string) => key,
-          },
+          mocks: { $t: (key: string) => key },
         },
         attachTo: document.body,
       })
 
       await wrapper.vm.$nextTick()
-      
-      const buttons = document.querySelectorAll('.action-btn')
-      const makeAvailableButton = Array.from(buttons).find(btn => 
-        btn.textContent?.includes('makeAvailable')
-      ) as HTMLElement
-      
-      expect(makeAvailableButton).toBeTruthy()
-      makeAvailableButton?.click()
-      await wrapper.vm.$nextTick()
+      const draftStore = useDraftStore()
 
-      expect(wrapper.emitted('makeAvailable')).toBeTruthy()
-      expect(wrapper.emitted('makeAvailable')?.[0]).toEqual([blockedCell])
-      
-      wrapper.unmount()
+      const availableBtn = Array.from(document.querySelectorAll('.action-btn')).find(btn =>
+        btn.textContent?.includes('booking.actions.setAvailable'),
+      ) as HTMLElement
+
+      availableBtn?.click()
+      expect(draftStore.draftPatchByKey.get(blockedCell.startAtUTC)?.action).toBe('set_available')
     })
   })
 
-  describe('Booked cell info', () => {
-    const bookedCell: CalendarCell = {
-      ...baseCell,
-      status: 'booked',
-      source: 'lesson',
-      booking: {
-        id: 123,
-        student: {
-          id: 45,
-          name: 'Іван Петренко',
-        },
-        lesson_id: 789,
-      },
-    }
+  describe('Draft actions', () => {
+    it('shows clear button only when draft exists', async () => {
+      const draftStore = useDraftStore()
+      draftStore.addPatch(baseCell, 'set_blocked')
 
-    it('renders booking info', async () => {
-      const wrapper = mount(CalendarPopover, {
+      mount(CalendarPopover, {
         props: {
-          cell: bookedCell,
+          cell: baseCell,
           visible: true,
           anchorEl: mockAnchorEl,
         },
         global: {
-          mocks: {
-            $t: (key: string) => key,
-          },
+          mocks: { $t: (key: string) => key },
         },
         attachTo: document.body,
       })
 
-      await wrapper.vm.$nextTick()
-      
-      const popover = document.querySelector('.calendar-popover')
-      expect(popover).toBeTruthy()
-      expect(popover?.textContent).toContain('Іван Петренко')
-      expect(popover?.textContent).toContain('booking.actions.viewDetails')
-      expect(popover?.textContent).toContain('booking.actions.cancelLesson')
-      
-      wrapper.unmount()
+      await Promise.resolve()
+
+      const clearBtn = Array.from(document.querySelectorAll('.action-btn')).find(btn =>
+        btn.textContent?.includes('booking.actions.clearDraft'),
+      )
+      expect(clearBtn).toBeTruthy()
     })
 
-    it('emits viewLesson event with lesson_id', async () => {
+    it('removes draft when clear clicked', async () => {
+      const draftStore = useDraftStore()
+      draftStore.addPatch(baseCell, 'set_blocked')
+
       const wrapper = mount(CalendarPopover, {
         props: {
-          cell: bookedCell,
+          cell: baseCell,
           visible: true,
           anchorEl: mockAnchorEl,
         },
         global: {
-          mocks: {
-            $t: (key: string) => key,
-          },
+          mocks: { $t: (key: string) => key },
         },
         attachTo: document.body,
       })
 
       await wrapper.vm.$nextTick()
-      
-      const buttons = document.querySelectorAll('.action-btn')
-      const viewButton = Array.from(buttons).find(btn => 
-        btn.textContent?.includes('viewDetails')
+
+      const clearBtn = Array.from(document.querySelectorAll('.action-btn')).find(btn =>
+        btn.textContent?.includes('booking.actions.clearDraft'),
       ) as HTMLElement
-      
-      expect(viewButton).toBeTruthy()
-      viewButton?.click()
-      await wrapper.vm.$nextTick()
 
-      expect(wrapper.emitted('viewLesson')).toBeTruthy()
-      expect(wrapper.emitted('viewLesson')?.[0]).toEqual([789])
-      
-      wrapper.unmount()
-    })
-
-    it('emits cancelLesson event with lesson_id', async () => {
-      const wrapper = mount(CalendarPopover, {
-        props: {
-          cell: bookedCell,
-          visible: true,
-          anchorEl: mockAnchorEl,
-        },
-        global: {
-          mocks: {
-            $t: (key: string) => key,
-          },
-        },
-        attachTo: document.body,
-      })
-
-      await wrapper.vm.$nextTick()
-      
-      const buttons = document.querySelectorAll('.action-btn')
-      const cancelButton = Array.from(buttons).find(btn => 
-        btn.textContent?.includes('cancelLesson')
-      ) as HTMLElement
-      
-      expect(cancelButton).toBeTruthy()
-      cancelButton?.click()
-      await wrapper.vm.$nextTick()
-
-      expect(wrapper.emitted('cancelLesson')).toBeTruthy()
-      expect(wrapper.emitted('cancelLesson')?.[0]).toEqual([789])
-      
-      wrapper.unmount()
+      clearBtn?.click()
+      expect(draftStore.draftPatchByKey.get(baseCell.startAtUTC)).toBeUndefined()
     })
   })
 
@@ -409,7 +289,7 @@ describe('CalendarPopover', () => {
 
       await wrapper.vm.$nextTick()
       
-      const closeBtn = document.querySelector('.close-btn') as HTMLElement
+      const closeBtn = document.querySelector('.icon-button') as HTMLElement
       expect(closeBtn).toBeTruthy()
       closeBtn?.click()
       await wrapper.vm.$nextTick()
