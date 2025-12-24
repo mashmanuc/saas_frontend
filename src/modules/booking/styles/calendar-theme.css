@@ -1,0 +1,98 @@
+/* ========================================
+   CALENDAR THEME TOKENS v0.49.3
+   Інтеграція з глобальними темами
+   ======================================== */
+
+:root {
+  /* Calendar Grid */
+  --calendar-grid-bg: var(--bg-primary);
+  --calendar-grid-border: var(--border-color);
+  --calendar-cell-bg: var(--card-bg);
+  --calendar-cell-hover: color-mix(in srgb, var(--accent) 10%, var(--card-bg));
+  
+  /* Time Scale */
+  --calendar-time-bg: var(--bg-secondary);
+  --calendar-time-text: var(--text-secondary);
+  --calendar-time-border: var(--border-color);
+  
+  /* Day Headers */
+  --calendar-header-bg: var(--bg-secondary);
+  --calendar-header-text: var(--text-primary);
+  --calendar-header-border: var(--border-color);
+  --calendar-today-highlight: var(--accent);
+  
+  /* Event Blocks */
+  --calendar-event-bg: var(--accent);
+  --calendar-event-text: var(--accent-contrast);
+  --calendar-event-border: color-mix(in srgb, var(--accent) 80%, black);
+  --calendar-event-shadow: var(--shadow);
+  
+  /* Status Colors */
+  --calendar-status-available: #10b981;
+  --calendar-status-booked: var(--accent);
+  --calendar-status-blocked: #ef4444;
+  --calendar-status-empty: transparent;
+  
+  /* Payment Status */
+  --calendar-paid: #10b981;
+  --calendar-unpaid: #f59e0b;
+  
+  /* Done Status */
+  --calendar-done: #10b981;
+  --calendar-not-done: #6b7280;
+  --calendar-missed: #ef4444;
+  
+  /* Hover & Active States */
+  --calendar-hover-overlay: color-mix(in srgb, var(--accent) 15%, transparent);
+  --calendar-active-overlay: color-mix(in srgb, var(--accent) 25%, transparent);
+  --calendar-focus-ring: var(--accent);
+  
+  /* Shadows */
+  --calendar-shadow-sm: 0 1px 3px var(--shadow);
+  --calendar-shadow-md: 0 4px 12px var(--shadow);
+  --calendar-shadow-lg: 0 8px 25px var(--shadow-strong);
+  
+  /* Spacing */
+  --calendar-cell-height: 48px;
+  --calendar-cell-gap: 1px;
+  --calendar-event-padding: 8px;
+  --calendar-event-gap: 4px;
+}
+
+/* ========================================
+   THEME: LIGHT
+   ======================================== */
+[data-theme="light"] {
+  --calendar-grid-bg: #e0f7f4;
+  --calendar-cell-bg: rgba(255, 255, 255, 0.9);
+  --calendar-event-bg: #059669;
+  --calendar-event-text: #ffffff;
+  --calendar-today-highlight: #059669;
+}
+
+/* ========================================
+   THEME: DARK
+   ======================================== */
+[data-theme="dark"] {
+  --calendar-grid-bg: #0a1929;
+  --calendar-cell-bg: rgba(21, 32, 43, 0.9);
+  --calendar-event-bg: #26c6da;
+  --calendar-event-text: #0a1929;
+  --calendar-today-highlight: #26c6da;
+  
+  /* Adjust shadows for dark theme */
+  --calendar-shadow-sm: 0 1px 3px rgba(38, 198, 218, 0.2);
+  --calendar-shadow-md: 0 4px 12px rgba(38, 198, 218, 0.25);
+  --calendar-shadow-lg: 0 8px 25px rgba(38, 198, 218, 0.35);
+}
+
+/* ========================================
+   THEME: CLASSIC
+   ======================================== */
+[data-theme="classic"] {
+  --calendar-grid-bg: #f8f7fd;
+  --calendar-cell-bg: #ffffff;
+  --calendar-event-bg: #6d28d9;
+  --calendar-event-text: #ffffff;
+  --calendar-today-highlight: #6d28d9;
+}

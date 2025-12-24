@@ -5,23 +5,33 @@
       :key="layout.eventId"
       :event="eventsById[layout.eventId]"
       :layout="layout"
+      :is-draggable="draggable"
+      :is-optimistic="optimisticEventIdsSet.has(layout.eventId)"
       @click="handleEventClick(layout.eventId)"
     />
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import EventBlock from './EventBlock.vue'
 import type { EventLayout, CalendarEvent } from '@/modules/booking/types/calendarWeek'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   eventLayouts: EventLayout[]
   eventsById: Record<number, CalendarEvent>
-}>()
+  optimisticEventIds?: number[]
+  draggable?: boolean
+}>(), {
+  optimisticEventIds: () => [],
+  draggable: false,
+})
 
 const emit = defineEmits<{
   eventClick: [eventId: number]
 }>()
+
+const optimisticEventIdsSet = computed(() => new Set(props.optimisticEventIds))
 
 function handleEventClick(eventId: number) {
   emit('eventClick', eventId)

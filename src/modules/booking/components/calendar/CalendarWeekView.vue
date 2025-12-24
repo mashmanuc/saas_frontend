@@ -1,5 +1,11 @@
 <template>
   <div class="calendar-week-view">
+    <!-- Connection status -->
+    <div v-if="!connected" class="connection-warning">
+      <AlertCircleIcon class="w-4 h-4" />
+      <span>{{ t('calendar.warnings.disconnected') }}</span>
+    </div>
+
     <!-- Week Navigation -->
     <WeekNavigation
       :week-start="weekMeta?.weekStart"
@@ -61,15 +67,24 @@ import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { Loader as LoaderIcon, AlertCircle as AlertCircleIcon } from 'lucide-vue-next'
 import { useCalendarWeekStore } from '@/modules/booking/stores/calendarWeekStore'
+import { useCalendarWebSocket } from '@/modules/booking/composables/useCalendarWebSocket'
+import { useErrorHandler } from '@/modules/booking/composables/useErrorHandler'
 import CalendarBoard from './CalendarBoard.vue'
 import WeekNavigation from './WeekNavigation.vue'
 import CreateLessonModal from '../modals/CreateLessonModal.vue'
 import EventModal from '../modals/EventModal.vue'
 import type { CalendarCell } from '@/modules/booking/types/calendarWeek'
+import '@/modules/booking/styles/calendar-theme.css'
+import '@/modules/booking/styles/calendar-layout.css'
+import '@/modules/booking/styles/calendar-animations.css'
+import '@/modules/booking/styles/calendar-responsive.css'
 
 const { t } = useI18n()
 
 const store = useCalendarWeekStore()
+const { connected } = useCalendarWebSocket()
+const { handleError } = useErrorHandler()
+
 const {
   weekMeta,
   daysOrdered,
@@ -89,8 +104,12 @@ const showEventModal = ref(false)
 const selectedCell = ref<CalendarCell | null>(null)
 const selectedEventId = ref<number | null>(null)
 
-onMounted(() => {
-  store.fetchWeek(0)
+onMounted(async () => {
+  try {
+    await store.fetchWeek(0)
+  } catch (err: any) {
+    handleError(err)
+  }
 })
 
 function handleNavigate(direction: -1 | 1) {
@@ -165,5 +184,18 @@ function handleEventDeleted() {
 
 .btn-secondary:hover {
   background-color: #f3f4f6;
+}
+
+.connection-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #fef3c7;
+  border: 1px solid #fbbf24;
+  border-radius: 8px;
+  color: #92400e;
+  font-size: 14px;
+  font-weight: 500;
 }
 </style>

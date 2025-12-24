@@ -1,0 +1,165 @@
+/* ========================================
+   CALENDAR RESPONSIVE v0.49.3
+   Mobile-first adaptive layout
+   ======================================== */
+
+/* ========================================
+   Mobile (< 768px)
+   ======================================== */
+@media (max-width: 767px) {
+  .calendar-week-view {
+    padding: var(--space-md);
+  }
+
+  .calendar-board {
+    grid-template-columns: 60px 1fr;
+    font-size: 0.875rem;
+  }
+
+  /* Show only 1 day at a time on mobile */
+  .day-column:not(.day-column--active) {
+    display: none;
+  }
+
+  .day-header {
+    padding: var(--space-sm);
+  }
+
+  .day-header__date {
+    font-size: 1.25rem;
+  }
+
+  .event-block {
+    padding: var(--space-sm);
+  }
+
+  .event-block__client {
+    font-size: 0.75rem;
+  }
+
+  .week-navigation {
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .week-navigation__controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  /* Stack modals on mobile */
+  .modal-content {
+    width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+}
+
+/* ========================================
+   Tablet (768px - 1024px)
+   ======================================== */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .calendar-board {
+    grid-template-columns: 70px repeat(7, 1fr);
+  }
+
+  .event-block {
+    font-size: 0.875rem;
+  }
+
+  .day-header__date {
+    font-size: 1.25rem;
+  }
+}
+
+/* ========================================
+   Desktop (> 1024px)
+   ======================================== */
+@media (min-width: 1025px) {
+  .calendar-board {
+    grid-template-columns: 80px repeat(7, 1fr);
+  }
+
+  /* Show more details on desktop */
+  .event-block__details {
+    display: block;
+  }
+
+  /* Larger modals on desktop */
+  .modal-content {
+    max-width: 600px;
+  }
+}
+
+/* ========================================
+   Large Desktop (> 1440px)
+   ======================================== */
+@media (min-width: 1441px) {
+  .calendar-week-view {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .calendar-cell {
+    height: 56px;
+  }
+
+  .event-block {
+    padding: 12px;
+  }
+}
+
+/* ========================================
+   Print Styles
+   ======================================== */
+@media print {
+  .calendar-week-view {
+    background: white;
+    color: black;
+  }
+
+  .week-navigation__controls,
+  .event-block:hover,
+  .calendar-cell:hover {
+    display: none;
+  }
+
+  .calendar-board {
+    border: 1px solid #000;
+  }
+
+  .event-block {
+    box-shadow: none;
+    border: 1px solid #000;
+  }
+}
+
+/* ========================================
+   Reduced Motion
+   ======================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ========================================
+   High Contrast Mode
+   ======================================== */
+@media (prefers-contrast: high) {
+  .calendar-cell {
+    border: 2px solid currentColor;
+  }
+
+  .event-block {
+    border: 2px solid currentColor;
+  }
+
+  .status-badge {
+    border: 1px solid currentColor;
+  }
+}

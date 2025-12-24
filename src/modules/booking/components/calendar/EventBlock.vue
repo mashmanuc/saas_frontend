@@ -9,14 +9,24 @@
     @keydown.enter.prevent="handleClick"
     @keydown.space.prevent="handleClick"
   >
-    <div class="event-content">
-      <span class="event-time">{{ formatTime(event.start) }}</span>
-      <span class="event-client">{{ event.clientName }}</span>
-      <span class="event-duration">{{ event.durationMin }} {{ t('common.minutes') }}</span>
+    <div class="event-block__header">
+      <span class="event-block__time">{{ formatTime(event.start) }}</span>
+      <div class="event-block__status-badges">
+        <span v-if="event.paidStatus === 'paid'" class="status-badge status-badge--paid">
+          {{ $t('calendar.paidStatus.paid') }}
+        </span>
+        <span v-if="event.doneStatus === 'done'" class="status-badge status-badge--done">
+          {{ $t('calendar.doneStatus.done') }}
+        </span>
+      </div>
     </div>
     
-    <div v-if="event.paidStatus === 'paid'" class="paid-indicator">
-      <CheckCircleIcon class="w-3 h-3" />
+    <div class="event-block__client">{{ event.clientName }}</div>
+    <div class="event-block__duration">{{ event.durationMin }} {{ t('common.minutes') }}</div>
+    
+    <!-- Drag handle -->
+    <div v-if="isDraggable" class="event-block__drag-handle">
+      <GripVerticalIcon class="w-4 h-4" />
     </div>
   </div>
 </template>
@@ -24,15 +34,20 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { CheckCircle as CheckCircleIcon } from 'lucide-vue-next'
+import { GripVertical as GripVerticalIcon } from 'lucide-vue-next'
 import type { CalendarEvent, EventLayout } from '@/modules/booking/types/calendarWeek'
 
 const { t } = useI18n()
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   event: CalendarEvent
   layout: EventLayout
-}>()
+  isDraggable?: boolean
+  isOptimistic?: boolean
+}>(), {
+  isDraggable: false,
+  isOptimistic: false,
+})
 
 const emit = defineEmits<{
   click: []
@@ -40,10 +55,10 @@ const emit = defineEmits<{
 
 const eventClasses = computed(() => [
   'event-block',
-  `event-${props.event.type}`,
-  `event-${props.event.doneStatus}`,
+  'hover-lift',
   {
-    'event-paid': props.event.paidStatus === 'paid',
+    'event-block--draggable': props.isDraggable,
+    'optimistic-update': props.isOptimistic,
   },
 ])
 
@@ -72,83 +87,25 @@ function handleClick() {
 </script>
 
 <style scoped>
-.event-block {
+.event-block__drag-handle {
   position: absolute;
-  pointer-events: auto;
-  border-radius: 6px;
-  padding: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-  outline: none;
+  top: 50%;
+  left: 4px;
+  transform: translateY(-50%);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  cursor: grab;
 }
 
-.event-block:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 20;
+.event-block:hover .event-block__drag-handle {
+  opacity: 0.5;
 }
 
-.event-block:focus-visible {
-  outline: 2px solid #3b82f6;
-  outline-offset: 2px;
-  z-index: 21;
+.event-block--draggable {
+  cursor: grab;
 }
 
-.event-class {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
-}
-
-.event-trial {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  color: white;
-}
-
-.event-other {
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-  color: white;
-}
-
-.event-done {
-  opacity: 0.7;
-}
-
-.event-content {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.event-time {
-  font-size: 11px;
-  font-weight: 600;
-  opacity: 0.9;
-}
-
-.event-client {
-  font-size: 13px;
-  font-weight: 700;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.event-duration {
-  font-size: 10px;
-  opacity: 0.8;
-}
-
-.paid-indicator {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  padding: 2px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.event-block--draggable:active {
+  cursor: grabbing;
 }
 </style>

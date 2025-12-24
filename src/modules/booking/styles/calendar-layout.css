@@ -1,0 +1,407 @@
+/* ========================================
+   CALENDAR LAYOUT v0.49.3
+   Grid-based responsive layout
+   ======================================== */
+
+.calendar-week-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  padding: var(--space-lg);
+  background: var(--calendar-grid-bg);
+  border-radius: var(--radius-lg);
+  min-height: 600px;
+}
+
+/* ========================================
+   Week Navigation
+   ======================================== */
+.week-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md);
+  background: var(--calendar-header-bg);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--calendar-header-border);
+}
+
+.week-navigation__controls {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.week-navigation__date {
+  font: var(--font-headline);
+  color: var(--calendar-header-text);
+}
+
+.week-navigation__today-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--calendar-today-highlight);
+  color: white;
+  border-radius: var(--radius-full);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+/* ========================================
+   Calendar Board
+   ======================================== */
+.calendar-board {
+  display: grid;
+  grid-template-columns: 80px repeat(7, 1fr);
+  gap: var(--calendar-cell-gap);
+  background: var(--calendar-grid-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  position: relative;
+}
+
+/* ========================================
+   Day Headers
+   ======================================== */
+.calendar-board__headers {
+  display: contents;
+}
+
+.day-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md);
+  background: var(--calendar-header-bg);
+  border-bottom: 2px solid var(--calendar-header-border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.day-header--today {
+  background: var(--calendar-today-highlight);
+  color: white;
+  font-weight: 600;
+}
+
+.day-header__dow {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.8;
+}
+
+.day-header__date {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* ========================================
+   Time Scale
+   ======================================== */
+.time-scale {
+  display: flex;
+  flex-direction: column;
+  background: var(--calendar-time-bg);
+  border-right: 1px solid var(--calendar-time-border);
+}
+
+.time-scale__slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--calendar-cell-height);
+  padding: var(--space-xs);
+  font-size: 0.75rem;
+  color: var(--calendar-time-text);
+  border-bottom: 1px solid var(--calendar-time-border);
+}
+
+.time-scale__slot--hour {
+  font-weight: 600;
+  background: color-mix(in srgb, var(--calendar-time-bg) 95%, var(--accent) 5%);
+}
+
+/* ========================================
+   Day Columns
+   ======================================== */
+.day-column {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* ========================================
+   Cells
+   ======================================== */
+.calendar-cell {
+  height: var(--calendar-cell-height);
+  background: var(--calendar-cell-bg);
+  border-bottom: 1px solid var(--calendar-grid-border);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.calendar-cell:hover {
+  background: var(--calendar-cell-hover);
+  box-shadow: inset 0 0 0 2px var(--calendar-focus-ring);
+}
+
+.calendar-cell:focus-visible {
+  outline: 2px solid var(--calendar-focus-ring);
+  outline-offset: -2px;
+  z-index: 5;
+}
+
+.calendar-cell--available {
+  background: color-mix(in srgb, var(--calendar-status-available) 10%, var(--calendar-cell-bg));
+}
+
+.calendar-cell--booked {
+  background: color-mix(in srgb, var(--calendar-status-booked) 5%, var(--calendar-cell-bg));
+  cursor: default;
+}
+
+.calendar-cell--blocked {
+  background: color-mix(in srgb, var(--calendar-status-blocked) 10%, var(--calendar-cell-bg));
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ========================================
+   Events Overlay
+   ======================================== */
+.events-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.events-overlay > * {
+  pointer-events: auto;
+}
+
+/* ========================================
+   Event Blocks
+   ======================================== */
+.event-block {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  padding: var(--calendar-event-padding);
+  background: var(--calendar-event-bg);
+  color: var(--calendar-event-text);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--calendar-event-border);
+  box-shadow: var(--calendar-shadow-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.event-block:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--calendar-shadow-lg);
+  z-index: 10;
+}
+
+.event-block:active {
+  transform: translateY(0);
+}
+
+.event-block__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--calendar-event-gap);
+  margin-bottom: var(--space-xs);
+}
+
+.event-block__time {
+  font-size: 0.75rem;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.event-block__status-badges {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.event-block__client {
+  font-weight: 600;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.event-block__duration {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+/* ========================================
+   Status Badges
+   ======================================== */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.status-badge--paid {
+  background: var(--calendar-paid);
+  color: white;
+}
+
+.status-badge--unpaid {
+  background: var(--calendar-unpaid);
+  color: white;
+}
+
+.status-badge--done {
+  background: var(--calendar-done);
+  color: white;
+}
+
+.status-badge--not-done {
+  background: var(--calendar-not-done);
+  color: white;
+}
+
+.status-badge--missed {
+  background: var(--calendar-missed);
+  color: white;
+}
+
+/* ========================================
+   Empty States
+   ======================================== */
+.calendar-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: var(--space-md);
+  padding: var(--space-xl);
+  text-align: center;
+}
+
+.calendar-empty-state__icon {
+  width: 64px;
+  height: 64px;
+  color: var(--text-secondary);
+  opacity: 0.5;
+}
+
+.calendar-empty-state__title {
+  font: var(--font-headline);
+  color: var(--text-primary);
+}
+
+.calendar-empty-state__description {
+  font: var(--font-body);
+  color: var(--text-secondary);
+  max-width: 400px;
+}
+
+/* ========================================
+   Loading States
+   ======================================== */
+.calendar-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: var(--space-md);
+}
+
+.calendar-loading__spinner {
+  width: 48px;
+  height: 48px;
+  color: var(--accent);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.calendar-loading__text {
+  font: var(--font-body);
+  color: var(--text-secondary);
+}
+
+/* ========================================
+   Skeleton Loaders
+   ======================================== */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-secondary) 0%,
+    color-mix(in srgb, var(--bg-secondary) 90%, var(--accent) 10%) 50%,
+    var(--bg-secondary) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.skeleton-event {
+  height: 80px;
+  margin-bottom: var(--space-sm);
+}
+
+.skeleton-cell {
+  height: var(--calendar-cell-height);
+}
+
+/* ========================================
+   Connection Warning
+   ======================================== */
+.connection-warning {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--warning-bg);
+  color: white;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+/* ========================================
+   Error State
+   ======================================== */
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 1rem;
+}

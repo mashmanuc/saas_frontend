@@ -150,6 +150,7 @@ import { X as XIcon, Loader as LoaderIcon, AlertCircle as AlertCircleIcon, Trash
 import { useCalendarWeekStore } from '@/modules/booking/stores/calendarWeekStore'
 import { useToast } from '@/composables/useToast'
 import { useFocusTrap } from '@/composables/useFocusTrap'
+import { useErrorHandler } from '@/modules/booking/composables/useErrorHandler'
 import { sanitizeComment } from '@/utils/sanitize'
 import EventDetailsView from './EventDetailsView.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
@@ -167,6 +168,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const store = useCalendarWeekStore()
 const toast = useToast()
+const { handleError } = useErrorHandler()
 
 const modalRef = ref<HTMLElement | null>(null)
 useFocusTrap(modalRef, {
@@ -247,7 +249,7 @@ async function loadEventDetails() {
     }
   } catch (err: any) {
     console.error('[EventModal] Load error:', err)
-    error.value = t('calendar.errors.loadFailed')
+    handleError(err, t('calendar.errors.loadFailed'))
   } finally {
     isLoading.value = false
   }
@@ -311,24 +313,16 @@ async function handleSaveEdit() {
       start: editForm.value.start,
       durationMin: editForm.value.durationMin,
       tutorComment: sanitizeComment(editForm.value.tutorComment || ''),
+      notifyStudent: true,
     })
     
     console.info('[EventModal] Event updated:', props.eventId)
-    toast.success(t('calendar.success.updated'))
     
     // Перезавантажити деталі
     await loadEventDetails()
     isEditing.value = false
   } catch (err: any) {
-    console.error('[EventModal] Update error:', err)
-    
-    if (err.response?.data?.error?.code === 'TIME_OVERLAP') {
-      error.value = t('calendar.errors.timeOverlap')
-    } else if (err.response?.data?.error?.code === 'VALIDATION_ERROR') {
-      error.value = err.response.data.error.message || t('calendar.errors.validationError')
-    } else {
-      error.value = t('calendar.errors.updateFailed')
-    }
+    handleError(err, t('calendar.errors.updateFailed'))
   } finally {
     isSaving.value = false
   }

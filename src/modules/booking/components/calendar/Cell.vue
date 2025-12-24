@@ -4,15 +4,21 @@
     :data-day-key="cell.dayKey"
     :data-slot-index="cell.slotIndex"
     :data-utc-key="cell.startAtUTC"
-    role="button"
-    :tabindex="cell.status !== 'notAllow' ? 0 : -1"
-    :aria-disabled="cell.status === 'notAllow'"
+    role="gridcell"
+    :tabindex="isInteractive ? 0 : -1"
+    :aria-disabled="!isInteractive"
     :aria-label="ariaLabel"
     @click="handleClick"
     @keydown.enter.prevent="handleClick"
     @keydown.space.prevent="handleClick"
   >
-    <span v-if="showTime" class="time-label">{{ formatTime(cell.startAtUTC) }}</span>
+    <!-- Status indicator -->
+    <div v-if="cell.status !== 'empty'" class="cell-status-indicator" />
+    
+    <!-- Hover tooltip -->
+    <div v-if="isInteractive" class="cell-tooltip">
+      {{ tooltipText }}
+    </div>
   </div>
 </template>
 
@@ -32,22 +38,32 @@ const emit = defineEmits<{
   click: []
 }>()
 
+const isInteractive = computed(() => {
+  return props.cell.status === 'empty' || props.cell.status === 'available'
+})
+
 const cellClasses = computed(() => [
   'calendar-cell',
-  `cell-${props.cell.status}`,
+  `calendar-cell--${props.cell.status}`,
   {
-    'cell-clickable': props.cell.status !== 'notAllow' && props.cell.status !== 'booked',
+    'calendar-cell--interactive': isInteractive.value,
   },
 ])
-
-const showTime = computed(() => {
-  return props.cell.slotIndex % 2 === 0 && (props.cell.status === 'available' || props.cell.status === 'empty')
-})
 
 const ariaLabel = computed(() => {
   const time = formatTime(props.cell.startAtUTC)
   const statusLabel = t(`calendar.cellStatus.${props.cell.status}`)
-  return `${statusLabel} о ${time}`
+  return `${time}, ${statusLabel}`
+})
+
+const tooltipText = computed(() => {
+  if (props.cell.status === 'available') {
+    return t('calendar.tooltips.clickToBook')
+  }
+  if (props.cell.status === 'empty') {
+    return t('calendar.tooltips.clickToCreate')
+  }
+  return ''
 })
 
 function formatTime(utcTime: string): string {
@@ -60,71 +76,52 @@ function formatTime(utcTime: string): string {
 }
 
 function handleClick() {
-  if (props.cell.status === 'notAllow' || props.cell.status === 'booked') return
-  emit('click')
+  if (isInteractive.value) {
+    emit('click')
+  }
 }
 </script>
 
 <style scoped>
-.calendar-cell {
-  height: 36px;
-  min-height: 36px;
-  border-bottom: 1px solid #f3f4f6;
-  padding: 4px 8px;
-  cursor: default;
-  transition: all 0.15s ease;
-  position: relative;
-  outline: none;
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
-}
-
-.cell-clickable {
-  cursor: pointer;
-}
-
-.cell-clickable:hover {
-  background-color: rgba(59, 130, 246, 0.05);
-}
-
-.cell-clickable:focus-visible {
-  outline: 2px solid #3b82f6;
-  outline-offset: -2px;
-  z-index: 1;
-}
-
-.cell-empty {
-  background-color: #ffffff;
-}
-
-.cell-available {
-  background-color: #dbeafe;
-}
-
-.cell-available:hover {
-  background-color: #bfdbfe;
-}
-
-.cell-booked {
-  background-color: #f3f4f6;
-  cursor: not-allowed;
-}
-
-.cell-blocked {
-  background-color: #fafafa;
-  cursor: not-allowed;
-}
-
-.cell-notAllow {
-  background-color: #fee2e2;
-  cursor: not-allowed;
+.cell-status-indicator {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
   opacity: 0.5;
 }
 
-.time-label {
-  font-size: 10px;
-  color: #6b7280;
-  font-weight: 500;
+.calendar-cell--available .cell-status-indicator {
+  background: var(--calendar-status-available);
+  opacity: 1;
+}
+
+.calendar-cell--blocked .cell-status-indicator {
+  background: var(--calendar-status-blocked);
+  opacity: 1;
+}
+
+.cell-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 100;
+}
+
+.calendar-cell:hover .cell-tooltip {
+  opacity: 1;
 }
 </style>

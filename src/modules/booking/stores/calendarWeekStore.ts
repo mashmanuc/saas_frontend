@@ -55,6 +55,16 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
   const selectedEventId = ref<number | null>(null)
   const lastFetchedAt = ref<Date | null>(null)
   
+  // v0.49.3: ETag caching
+  const etag = ref<string>('')
+  
+  // v0.49.3: Optimistic updates
+  const optimisticUpdates = ref<Map<number, any>>(new Map())
+  
+  // v0.49.3: Current page/timezone for refetch
+  const currentPage = ref(0)
+  const currentTimezone = ref('Europe/Kiev')
+  
   // ===== GETTERS / SELECTORS =====
   
   const daysOrdered = computed(() => days.value)
@@ -246,15 +256,32 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
   async function fetchWeek(page: number = 0, timezone: string = 'Europe/Kiev') {
     isLoading.value = true
     error.value = null
+    currentPage.value = page
+    currentTimezone.value = timezone
     
     try {
-      const snapshot = await calendarWeekApi.getWeekSnapshot({ page, timezone })
-      normalizeSnapshot(snapshot)
+      const result = await calendarWeekApi.getWeekSnapshot({
+        page,
+        timezone,
+        includePayments: true,
+        includeStats: true,
+        etag: etag.value,
+      })
+      
+      if (result.cached) {
+        console.log('[calendarWeekStore] Using cached snapshot (304)')
+        isLoading.value = false
+        return
+      }
+      
+      etag.value = result.etag
+      normalizeSnapshot(result.data)
       
       console.log('[calendarWeekStore] Week loaded:', {
         weekStart: weekMeta.value?.weekStart,
         eventsCount: allEventIds.value.length,
         accessibleCount: allAccessibleIds.value.length,
+        etag: etag.value,
       })
     } catch (err: any) {
       error.value = err.message || 'Failed to load week'
@@ -264,45 +291,94 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     }
   }
   
-  async function createEvent(payload: CreateEventPayload) {
+  async function createEvent(payload: CreateEventPayload & {
+    notifyStudent?: boolean
+    autoGenerateZoom?: boolean
+  }) {
+    const tempId = -Date.now()
+    
+    // Optimistic update
+    const optimisticEvent = {
+      id: tempId,
+      type: 'class' as const,
+      start: payload.start,
+      end: new Date(new Date(payload.start).getTime() + payload.durationMin * 60000).toISOString(),
+      durationMin: payload.durationMin,
+      orderId: payload.orderId,
+      clientName: 'Завантаження...',
+      clientPhone: null,
+      paidStatus: 'unpaid' as const,
+      doneStatus: 'not_done' as const,
+      regularity: payload.regularity,
+      tutorComment: payload.tutorComment || null,
+    }
+    
+    optimisticUpdates.value.set(tempId, optimisticEvent)
+    
     try {
-      const eventId = await calendarWeekApi.createEvent(payload)
+      const response = await calendarWeekApi.createEvent(payload)
       
-      console.log('[calendarWeekStore] Event created, refetching week...')
+      console.log('[calendarWeekStore] Event created:', response.id)
       
-      // ОБОВ'ЯЗКОВО refetch
-      await fetchWeek(weekMeta.value?.page ?? 0, weekMeta.value?.timezone)
+      // Remove optimistic update
+      optimisticUpdates.value.delete(tempId)
       
-      return eventId
+      // Refetch to get real data
+      await fetchWeek(currentPage.value, currentTimezone.value)
+      
+      return response.id
     } catch (err: any) {
+      optimisticUpdates.value.delete(tempId)
       console.error('[calendarWeekStore] Create error:', err)
       throw err
     }
   }
   
   async function deleteEvent(id: number) {
+    const originalEvent = eventsById.value[id]
+    
+    // Optimistic update (mark as deleted)
+    if (originalEvent) {
+      optimisticUpdates.value.set(id, { ...originalEvent, _deleted: true })
+    }
+    
     try {
       await calendarWeekApi.deleteEvent({ id })
       
-      console.log('[calendarWeekStore] Event deleted, refetching week...')
+      console.log('[calendarWeekStore] Event deleted:', id)
       
-      // ОБОВ'ЯЗКОВО refetch
-      await fetchWeek(weekMeta.value?.page ?? 0, weekMeta.value?.timezone)
+      optimisticUpdates.value.delete(id)
+      
+      await fetchWeek(currentPage.value, currentTimezone.value)
     } catch (err: any) {
+      optimisticUpdates.value.delete(id)
       console.error('[calendarWeekStore] Delete error:', err)
       throw err
     }
   }
   
-  async function updateEvent(payload: UpdateEventPayload) {
+  async function updateEvent(payload: UpdateEventPayload & {
+    paidStatus?: 'paid' | 'unpaid'
+    doneStatus?: 'done' | 'not_done' | 'not_done_client_missed' | 'done_client_missed'
+    notifyStudent?: boolean
+  }) {
+    const originalEvent = eventsById.value[payload.id]
+    
+    // Optimistic update
+    if (originalEvent) {
+      optimisticUpdates.value.set(payload.id, { ...originalEvent, ...payload })
+    }
+    
     try {
       await calendarWeekApi.updateEvent(payload)
       
-      console.log('[calendarWeekStore] Event updated, refetching week...')
+      console.log('[calendarWeekStore] Event updated:', payload.id)
       
-      // ОБОВ'ЯЗКОВО refetch
-      await fetchWeek(weekMeta.value?.page ?? 0, weekMeta.value?.timezone)
+      optimisticUpdates.value.delete(payload.id)
+      
+      await fetchWeek(currentPage.value, currentTimezone.value)
     } catch (err: any) {
+      optimisticUpdates.value.delete(payload.id)
       console.error('[calendarWeekStore] Update error:', err)
       throw err
     }
@@ -321,6 +397,45 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     selectedEventId.value = id
   }
   
+  // v0.49.3: Bulk update events
+  async function bulkUpdateEvents(eventIds: number[], updates: any) {
+    try {
+      const result = await calendarWeekApi.bulkUpdateEvents({ eventIds, updates })
+      
+      console.log('[calendarWeekStore] Bulk update completed:', result)
+      
+      await fetchWeek(currentPage.value, currentTimezone.value)
+      
+      return result
+    } catch (err: any) {
+      console.error('[calendarWeekStore] Bulk update error:', err)
+      throw err
+    }
+  }
+  
+  // v0.49.3: WebSocket handlers
+  function handleEventCreated(data: any) {
+    console.log('[calendarWeekStore] WS: Event created', data)
+    // Refetch to get updated data
+    fetchWeek(currentPage.value, currentTimezone.value)
+  }
+  
+  function handleEventUpdated(data: any) {
+    console.log('[calendarWeekStore] WS: Event updated', data)
+    
+    const event = eventsById.value[data.eventId]
+    if (event && data.changes) {
+      // Apply changes immediately
+      Object.assign(event, data.changes)
+    }
+  }
+  
+  function handleEventDeleted(data: any) {
+    console.log('[calendarWeekStore] WS: Event deleted', data)
+    // Refetch to get updated data
+    fetchWeek(currentPage.value, currentTimezone.value)
+  }
+  
   function $reset() {
     weekMeta.value = null
     days.value = []
@@ -337,6 +452,10 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     error.value = null
     selectedEventId.value = null
     lastFetchedAt.value = null
+    etag.value = ''
+    optimisticUpdates.value.clear()
+    currentPage.value = 0
+    currentTimezone.value = 'Europe/Kiev'
   }
   
   return {
@@ -353,6 +472,8 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     error,
     selectedEventId,
     lastFetchedAt,
+    etag,
+    optimisticUpdates,
     
     // Getters
     daysOrdered,
@@ -370,6 +491,10 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     updateEvent,
     getEventDetails,
     selectEvent,
+    bulkUpdateEvents,
+    handleEventCreated,
+    handleEventUpdated,
+    handleEventDeleted,
     $reset,
   }
 })

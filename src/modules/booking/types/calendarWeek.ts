@@ -135,3 +135,47 @@ export interface EventLayout {
   left: number            // px (0 для single column)
   width: string           // "100%" або px
 }
+
+// Bulk update payload (v0.49.3)
+export interface BulkUpdatePayload {
+  eventIds: number[]
+  updates: {
+    paidStatus?: 'paid' | 'unpaid'
+    doneStatus?: 'done' | 'not_done' | 'not_done_client_missed' | 'done_client_missed'
+    tutorComment?: string
+  }
+}
+
+// Calendar statistics (v0.49.3)
+export interface CalendarStats {
+  period: {
+    start: string
+    end: string
+  }
+  totals: {
+    lessons: number
+    hours: number
+    earnings: number
+    students: number
+  }
+  byWeek: Array<{
+    weekStart: string
+    lessons: number
+    hours: number
+    earnings: number
+  }>
+  topStudents: Array<{
+    studentId: number
+    studentName: string
+    lessonsCount: number
+    totalHours: number
+  }>
+}
+
+// Availability sync result (v0.49.3)
+export interface AvailabilitySyncResult {
+  slotsGenerated: number
+  weeksProcessed: number
+  conflicts: any[]
+  jobId: string
+}

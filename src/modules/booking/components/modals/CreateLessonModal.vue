@@ -144,6 +144,7 @@ import { X as XIcon, Calendar as CalendarIcon, Loader as LoaderIcon, AlertCircle
 import { useCalendarWeekStore } from '@/modules/booking/stores/calendarWeekStore'
 import { useToast } from '@/composables/useToast'
 import { useFocusTrap } from '@/composables/useFocusTrap'
+import { useErrorHandler } from '@/modules/booking/composables/useErrorHandler'
 import { sanitizeComment } from '@/utils/sanitize'
 import type { CalendarCell, CreateEventPayload } from '@/modules/booking/types/calendarWeek'
 import { storeToRefs } from 'pinia'
@@ -162,6 +163,7 @@ const { t } = useI18n()
 const store = useCalendarWeekStore()
 const { ordersArray } = storeToRefs(store)
 const toast = useToast()
+const { handleError } = useErrorHandler()
 
 const modalRef = ref<HTMLElement | null>(null)
 useFocusTrap(modalRef, {
@@ -265,27 +267,23 @@ async function handleSubmit() {
     const isoString = localDate.toISOString()
     
     const payload = {
-      ...formData.value,
+      orderId: formData.value.orderId,
       start: isoString,
+      durationMin: formData.value.durationMin,
+      regularity: formData.value.regularity,
       tutorComment: sanitizeComment(formData.value.tutorComment || ''),
+      notifyStudent: true,
+      autoGenerateZoom: false,
     }
     
     const eventId = await store.createEvent(payload)
     
     console.info('[CreateLessonModal] Lesson created:', eventId)
-    toast.success(t('calendar.success.created'))
     emit('success', eventId)
     emit('close')
   } catch (err: any) {
     console.error('[CreateLessonModal] Submit error:', err)
-    
-    if (err.response?.data?.error?.code === 'TIME_OVERLAP') {
-      error.value = t('calendar.errors.timeOverlap')
-    } else if (err.response?.data?.error?.code === 'VALIDATION_ERROR') {
-      error.value = err.response.data.error.message || t('calendar.errors.validationError')
-    } else {
-      error.value = t('calendar.errors.createFailed')
-    }
+    handleError(err, t('calendar.errors.createFailed'))
   } finally {
     isSubmitting.value = false
   }
