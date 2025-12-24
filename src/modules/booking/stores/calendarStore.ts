@@ -149,7 +149,70 @@ export const useCalendarStore = defineStore('calendar', () => {
     return byDay
   })
 
-  // Actions
+  const EXPECTED_WEEK_CELL_COUNT = 48 * 7
+
+class WeekViewValidationError extends Error {
+  details?: Record<string, unknown>
+  constructor(message: string, details?: Record<string, unknown>) {
+    super(message)
+    this.name = 'WeekViewValidationError'
+    this.details = details
+  }
+}
+
+function validateWeekCells(response: WeekViewResponse): CalendarCell[] {
+  if (!response || typeof response !== 'object') {
+    throw new WeekViewValidationError('Порожня відповідь календаря')
+  }
+
+  if (!Array.isArray(response.cells)) {
+    throw new WeekViewValidationError('API не повернуло масив cells')
+  }
+
+  if (response.cells.length === 0) {
+    throw new WeekViewValidationError('Отримано 0 клітинок календаря')
+  }
+
+  if (response.cells.length !== EXPECTED_WEEK_CELL_COUNT) {
+    throw new WeekViewValidationError(
+      `Очікувалось ${EXPECTED_WEEK_CELL_COUNT} клітинок, отримано ${response.cells.length}`,
+    )
+  }
+
+  const hasInvalidCell = response.cells.some((cell) => {
+    return (
+      !cell ||
+      typeof cell.startAtUTC !== 'string' ||
+      typeof cell.durationMin !== 'number' ||
+      !cell.status
+    )
+  })
+
+  if (hasInvalidCell) {
+    throw new WeekViewValidationError('API містить некоректні клітинки')
+  }
+
+  return response.cells
+}
+
+function logWeekDiagnostics(response: WeekViewResponse): void {
+  if (!import.meta.env.DEV) return
+
+  console.log('[calendarStore] API response:', response)
+  console.log('[calendarStore] Cells received:', response.cells?.length || 0)
+
+  if (response.cells && response.cells.length > 0) {
+    const statusBreakdown = {
+      empty: response.cells.filter((c) => c.status === 'empty').length,
+      available: response.cells.filter((c) => c.status === 'available').length,
+      blocked: response.cells.filter((c) => c.status === 'blocked').length,
+      booked: response.cells.filter((c) => c.status === 'booked').length,
+    }
+    console.log('[calendarStore] Status breakdown:', statusBreakdown)
+  }
+}
+
+// Actions
   async function loadSettings(): Promise<void> {
     try {
       settings.value = await bookingApi.getSettings()
@@ -495,14 +558,22 @@ export const useCalendarStore = defineStore('calendar', () => {
         weekStart: normalizedStart,
       })
       
-      console.log('[calendarStore] API response:', response)
-      console.log('[calendarStore] Cells received:', response.cells?.length || 0)
-      weekCells.value = response.cells
+      logWeekDiagnostics(response)
+      const validatedCells = validateWeekCells(response)
+      weekCells.value = validatedCells
       console.log('[calendarStore] weekCells updated:', weekCells.value.length)
     } catch (err: any) {
-      weekViewError.value = err.message || 'Failed to load week view'
+      const message =
+        err instanceof WeekViewValidationError
+          ? err.message
+          : err?.message || 'Failed to load week view'
+      weekViewError.value = message
       console.error('[calendarStore] Failed to load week view:', err)
-      console.error('[calendarStore] Error details:', err.response?.data || err)
+      if (err instanceof WeekViewValidationError) {
+        console.error('[calendarStore] Validation details:', err.details)
+      } else {
+        console.error('[calendarStore] Error details:', err.response?.data || err)
+      }
     } finally {
       weekViewLoading.value = false
     }

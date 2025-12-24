@@ -16,6 +16,20 @@ vi.mock('@/composables/useToast', () => ({
   useToast: () => toastMock,
 }))
 
+vi.mock('@/modules/booking/api/availabilityApi', () => ({
+  availabilityApi: {
+    getGenerationJobStatus: vi.fn().mockResolvedValue({
+      job_id: 'test-job-123',
+      status: 'completed',
+      progress: 100,
+      result: {
+        slots_created: 336,
+        slots_deleted: 0,
+      },
+    }),
+  },
+}))
+
 describe('DraftToolbar', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -312,7 +326,7 @@ describe('DraftToolbar', () => {
 
       const templateButton = wrapper.find('.btn-template')
       expect(templateButton.exists()).toBe(true)
-      expect(templateButton.text()).toContain('saveAsTemplate')
+      expect(templateButton.text()).toContain('шаблон')
     })
 
     it('shows three action buttons in correct order', () => {

@@ -32,6 +32,23 @@
         <div class="weekday-header">
           <CalendarIcon class="w-5 h-5" />
           <h3>{{ $t(`common.weekdays.${weekday}`) }}</h3>
+          
+          <!-- Copy from dropdown -->
+          <select
+            v-if="weeklySlots[index].length === 0"
+            @change="copyFromDay($event, index)"
+            class="copy-select"
+          >
+            <option value="">{{ $t('booking.template.copyFrom') }}</option>
+            <option
+              v-for="(day, i) in weekdays"
+              :key="i"
+              :value="i"
+              :disabled="weeklySlots[i].length === 0"
+            >
+              {{ $t(`common.weekdays.${day}`) }}
+            </option>
+          </select>
         </div>
 
         <div class="time-slots">
@@ -85,6 +102,14 @@
     </div>
 
     <div class="editor-actions">
+      <button
+        v-if="hasAnySlots"
+        @click="applyToAllDays"
+        class="btn-secondary"
+      >
+        {{ $t('booking.template.applyToAll') }}
+      </button>
+      
       <button
         @click="handleCancel"
         class="btn-secondary"
@@ -145,6 +170,10 @@ const generationJobId = ref<string | null>(null)
 const weeklySlots = ref<Array<Array<{start: string, end: string, error: string | null}>>>(
   Array.from({ length: 7 }, () => [])
 )
+
+const hasAnySlots = computed(() => {
+  return weeklySlots.value.some(day => day.length > 0)
+})
 
 const isValid = computed(() => {
   // Check if at least one slot exists
@@ -275,6 +304,37 @@ function handleGenerationComplete() {
   router.push('/booking/calendar')
 }
 
+function copyFromDay(event: Event, targetDayIndex: number) {
+  const sourceDayIndex = parseInt((event.target as HTMLSelectElement).value)
+  
+  if (sourceDayIndex >= 0 && sourceDayIndex < 7) {
+    weeklySlots.value[targetDayIndex] = weeklySlots.value[sourceDayIndex].map(slot => ({
+      start: slot.start,
+      end: slot.end,
+      error: null,
+    }))
+  }
+  
+  // Reset select
+  (event.target as HTMLSelectElement).value = ''
+}
+
+function applyToAllDays() {
+  const firstDayWithSlots = weeklySlots.value.find(day => day.length > 0)
+  
+  if (!firstDayWithSlots) return
+  
+  if (confirm('Застосувати розклад першого дня до всіх інших днів?')) {
+    for (let i = 0; i < 7; i++) {
+      weeklySlots.value[i] = firstDayWithSlots.map(slot => ({
+        start: slot.start,
+        end: slot.end,
+        error: null,
+      }))
+    }
+  }
+}
+
 function handleCancel() {
   router.back()
 }
@@ -335,6 +395,27 @@ function handleCancel() {
 .weekday-header h3 {
   font-size: 16px;
   font-weight: 600;
+  flex: 1;
+}
+
+.copy-select {
+  padding: 6px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.copy-select:hover {
+  border-color: #3b82f6;
+}
+
+.copy-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .time-slots {

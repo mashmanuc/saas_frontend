@@ -20,8 +20,11 @@ import WeeklyAvailabilityWidget from '../components/trial/WeeklyAvailabilityWidg
 import TrialRequestModal from '../components/trial/TrialRequestModal.vue'
 import TutorAvailabilityWidget from '../components/TutorAvailabilityWidget.vue'
 import StudentAvailabilityCalendar from '../../booking/components/calendar/StudentAvailabilityCalendar.vue'
-import type { WeeklyAvailabilitySlot } from '../api/marketplace'
+import TutorAvailabilityCalendar from '../components/TutorAvailabilityCalendar.vue'
+import BookingRequestModal from '../../booking/components/requests/BookingRequestModal.vue'
+import type { WeeklyAvailabilitySlot, AvailableSlot } from '../api/marketplace'
 import type { TimeSlot } from '../../booking/api/availabilityApi'
+import { useToast } from '@/composables/useToast'
 
 const route = useRoute()
 const router = useRouter()
@@ -33,9 +36,12 @@ const slug = computed(() => route.params.slug as string)
 const selectedSlot = ref<WeeklyAvailabilitySlot | null>(null)
 const showFullCalendar = ref(false)
 const selectedBookingSlot = ref<TimeSlot | null>(null)
+const showBookingModal = ref(false)
+const selectedAvailableSlot = ref<AvailableSlot | null>(null)
 
 const isCreateReviewOpen = ref(false)
 const reviewsRef = ref<InstanceType<typeof ProfileReviews> | null>(null)
+const toast = useToast()
 
 const canWriteReview = computed(() => auth.isAuthenticated && auth.userRole === 'student')
 
@@ -77,6 +83,17 @@ function closeCreateReview() {
 function handleReviewCreated() {
   reviewsRef.value?.reload?.()
 }
+
+function handleSlotClick(slot: AvailableSlot) {
+  selectedAvailableSlot.value = slot
+  showBookingModal.value = true
+}
+
+function handleBookingSuccess(requestId: number) {
+  toast.success('Запит надіслано! Очікуйте підтвердження від тьютора.')
+  showBookingModal.value = false
+  selectedAvailableSlot.value = null
+}
 </script>
 
 <template>
@@ -105,21 +122,14 @@ function handleReviewCreated() {
             @select-slot="(slot) => (selectedSlot = slot)"
           />
 
-          <!-- New Availability Section for v0.43 -->
-          <section class="profile-section availability-section">
-            <h2>{{ $t('marketplace.profile.availability') }}</h2>
+          <!-- New Availability Section for v0.43 + v0.49.1 -->
+          <section v-if="currentProfile.has_availability" class="profile-section availability-section">
+            <h2>{{ $t('marketplace.availableSlots') }}</h2>
             
-            <TutorAvailabilityWidget
-              :tutor-slug="slug"
-              @view-calendar="showFullCalendar = true"
-              @book-lesson="showFullCalendar = true"
-            />
-            
-            <StudentAvailabilityCalendar
-              v-if="showFullCalendar"
-              :tutor-slug="slug"
-              @slot-selected="(slot) => (selectedBookingSlot = slot)"
-              class="mt-4"
+            <TutorAvailabilityCalendar
+              :tutor-id="currentProfile.id"
+              :timezone="currentProfile.timezone || 'Europe/Kiev'"
+              @slot-click="handleSlotClick"
             />
           </section>
 
@@ -184,6 +194,15 @@ function handleReviewCreated() {
       :slug="slug"
       @close="closeCreateReview"
       @created="handleReviewCreated"
+    />
+    
+    <BookingRequestModal
+      v-if="showBookingModal && selectedAvailableSlot && currentProfile"
+      :visible="showBookingModal"
+      :tutor-id="currentProfile.id"
+      :slot="selectedAvailableSlot"
+      @close="showBookingModal = false"
+      @success="handleBookingSuccess"
     />
   </div>
 </template>

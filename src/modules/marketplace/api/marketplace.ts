@@ -228,6 +228,7 @@ export interface TutorProfile {
   status: ProfileStatus
   created_at: string
   updated_at: string
+  has_availability?: boolean
 }
 
 export interface SubjectWriteRef {
