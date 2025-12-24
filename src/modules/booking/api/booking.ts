@@ -21,6 +21,7 @@ export interface TutorSettings {
   cancellation_policy: 'flexible' | 'moderate' | 'strict'
   email_notifications: boolean
   push_notifications: boolean
+  week_starts_on?: number  // 0=Sunday, 1=Monday, 6=Saturday (for i18n)
 }
 
 export interface TimeSlot {

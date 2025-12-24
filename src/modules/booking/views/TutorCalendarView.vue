@@ -18,6 +18,7 @@ import MonthCalendar from '../components/calendar/MonthCalendar.vue'
 import CalendarHeader from '../components/calendar/CalendarHeader.vue'
 import BookingCard from '../components/booking/BookingCard.vue'
 import AvailabilityEditor from '../components/availability/AvailabilityEditor.vue'
+import AvailabilityTemplateEditor from '../components/availability/AvailabilityTemplateEditor.vue'
 import BookingSettings from '../components/settings/BookingSettings.vue'
 import ManualBookingModal from '../components/modals/ManualBookingModal.vue'
 
@@ -39,7 +40,7 @@ const {
 
 const { pendingBookings, isLoading: isLoadingBookings } = storeToRefs(bookingStore)
 
-type SidebarTab = 'pending' | 'availability' | 'settings'
+type SidebarTab = 'pending' | 'availability' | 'settings' | 'template'
 const sidebarTab = ref<SidebarTab>('pending')
 
 const tutorId = computed(() => authStore.user?.id || 0)
@@ -258,6 +259,14 @@ function handleBookingSuccess(lessonId: number) {
         </button>
         <button
           class="sidebar-tab"
+          :class="{ active: sidebarTab === 'template' }"
+          @click="sidebarTab = 'template'"
+        >
+          <Edit3 :size="18" />
+          Template
+        </button>
+        <button
+          class="sidebar-tab"
           :class="{ active: sidebarTab === 'settings' }"
           @click="sidebarTab = 'settings'"
         >
@@ -290,6 +299,11 @@ function handleBookingSuccess(lessonId: number) {
         <!-- Availability Editor -->
         <div v-if="sidebarTab === 'availability'" class="availability-section">
           <AvailabilityEditor />
+        </div>
+
+        <!-- Template Editor (v0.48) -->
+        <div v-if="sidebarTab === 'template'" class="template-section">
+          <AvailabilityTemplateEditor />
         </div>
 
         <!-- Settings -->

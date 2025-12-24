@@ -35,10 +35,17 @@ function getCellsForDay(dayOffset: number): CalendarCellType[] {
   targetDate.setDate(targetDate.getDate() + dayOffset)
   const dateStr = targetDate.toISOString().split('T')[0]
   
-  return props.cells.filter(cell => {
+  const filtered = props.cells.filter(cell => {
     const cellDate = new Date(cell.startAtUTC).toISOString().split('T')[0]
     return cellDate === dateStr
   })
+  
+  console.log(`[CellGrid] Day ${dayOffset} (${dateStr}): ${filtered.length} cells`)
+  if (dayOffset === 0 && filtered.length > 0) {
+    console.log(`[CellGrid] First 3 cells of day 0:`, filtered.slice(0, 3))
+  }
+  
+  return filtered
 }
 </script>
 

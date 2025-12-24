@@ -32,7 +32,8 @@ import { buildV1Url } from '../config/apiPrefixes'
 
 export const RELATION_ENDPOINTS = Object.freeze({
   STUDENT_RELATIONS: buildV1Url('/student/relations/'),
-  TUTOR_RELATIONS: buildV1Url('/tutor/relations/'),
+  // Legacy endpoint (not in v1 namespace yet)
+  TUTOR_RELATIONS: '/api/tutor/relations/',
   TUTOR_RELATIONS_BULK_ACCEPT: buildV1Url('/tutor/relations/batch/accept/'),
   TUTOR_RELATIONS_BULK_ARCHIVE: buildV1Url('/tutor/relations/batch/archive/'),
   // Student accepts/declines tutor invitation

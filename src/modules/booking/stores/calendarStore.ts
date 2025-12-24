@@ -37,6 +37,24 @@ function formatDateISO(date: Date): string {
   return date.toISOString().split('T')[0]
 }
 
+/**
+ * Normalize date to the start of the week based on locale preference.
+ * @param dateStr - ISO date string
+ * @param weekStartsOn - First day of week (0=Sunday, 1=Monday, 6=Saturday)
+ * @returns ISO date string of week start
+ */
+function normalizeToWeekStart(dateStr: string, weekStartsOn: number = 1): string {
+  const date = new Date(dateStr)
+  const currentDay = date.getDay()
+  
+  // Calculate difference to target week start
+  let diff = currentDay - weekStartsOn
+  if (diff < 0) diff += 7
+  
+  date.setDate(date.getDate() - diff)
+  return date.toISOString().split('T')[0]
+}
+
 export const useCalendarStore = defineStore('calendar', () => {
   // State
   const slots = ref<TimeSlot[]>([])
@@ -461,8 +479,22 @@ export const useCalendarStore = defineStore('calendar', () => {
     weekViewError.value = null
     
     try {
-      console.log('[calendarStore] Loading week view with params:', params)
-      const response = await calendarApi.getWeekView(params)
+      // Normalize weekStart to user's preferred week start day
+      // TODO: Get weekStartsOn from user settings when i18n is implemented
+      const weekStartsOn = settings.value?.week_starts_on ?? 1  // Default to Monday (ISO 8601)
+      const normalizedStart = normalizeToWeekStart(params.weekStart, weekStartsOn)
+      
+      console.log('[calendarStore] Loading week view with params:', {
+        ...params,
+        weekStart: normalizedStart,
+        weekStartsOn,
+      })
+      
+      const response = await calendarApi.getWeekView({
+        ...params,
+        weekStart: normalizedStart,
+      })
+      
       console.log('[calendarStore] API response:', response)
       console.log('[calendarStore] Cells received:', response.cells?.length || 0)
       weekCells.value = response.cells

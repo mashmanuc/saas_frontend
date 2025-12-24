@@ -76,6 +76,19 @@ function isHttp404(err: unknown): boolean {
   return status === 404
 }
 
+export interface AvailableSlot {
+  startAtUTC: string
+  status: 'available'
+  duration: number
+}
+
+export interface TutorCalendarResponse {
+  tutor_id: number
+  week_start: string
+  timezone: string
+  cells: AvailableSlot[]
+}
+
 export interface ProfileDraft {
   payload: any
   server_rev: number
@@ -851,14 +864,14 @@ export const marketplaceApi = {
   },
 
   /**
-   * Get tutor calendar (v0.47 - public availability)
+   * Get tutor calendar (v0.48 - public availability)
    */
   async getTutorCalendar(params: {
     tutorId: number
     weekStart: string
     timezone: string
-  }): Promise<any> {
-    const response = await apiClient.get(`/marketplace/tutors/${params.tutorId}/calendar`, {
+  }): Promise<TutorCalendarResponse> {
+    const response = await apiClient.get(`/api/v1/marketplace/tutors/${params.tutorId}/calendar/`, {
       params: {
         start: params.weekStart,
         tz: params.timezone,

@@ -95,7 +95,15 @@ export const calendarApi = {
       },
     }) as WeekViewResponse
     
-    console.log('[calendarApi] Response data:', data)
+    // Detailed logging for debugging
+    console.log('[calendarApi] Response cells count:', data.cells?.length || 0)
+    console.log('[calendarApi] First 5 cells:', data.cells?.slice(0, 5))
+    console.log('[calendarApi] Status breakdown:', {
+      empty: data.cells?.filter(c => c.status === 'empty').length || 0,
+      available: data.cells?.filter(c => c.status === 'available').length || 0,
+      blocked: data.cells?.filter(c => c.status === 'blocked').length || 0,
+      booked: data.cells?.filter(c => c.status === 'booked').length || 0,
+    })
     
     return data
   },

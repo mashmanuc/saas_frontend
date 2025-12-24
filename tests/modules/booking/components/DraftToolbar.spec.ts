@@ -302,4 +302,140 @@ describe('DraftToolbar', () => {
       // Note: This requires proper store integration
     })
   })
+
+  describe('Template Integration (v0.48)', () => {
+    it('renders "Save as Template" button', () => {
+      const draftStore = useDraftStore()
+      draftStore.addPatch(mockCell, 'set_available')
+
+      const wrapper = mount(DraftToolbar)
+
+      const templateButton = wrapper.find('.btn-template')
+      expect(templateButton.exists()).toBe(true)
+      expect(templateButton.text()).toContain('saveAsTemplate')
+    })
+
+    it('shows three action buttons in correct order', () => {
+      const draftStore = useDraftStore()
+      draftStore.addPatch(mockCell, 'set_available')
+
+      const wrapper = mount(DraftToolbar)
+
+      const buttons = wrapper.findAll('.draft-actions button')
+      expect(buttons.length).toBe(3)
+      expect(buttons[0].classes()).toContain('btn-secondary') // Reset
+      expect(buttons[1].classes()).toContain('btn-template') // Save as Template
+      expect(buttons[2].classes()).toContain('btn-primary') // Apply Once
+    })
+
+    it('opens TemplateConfirmModal when "Save as Template" clicked', async () => {
+      const draftStore = useDraftStore()
+      draftStore.addPatch(mockCell, 'set_available')
+
+      const wrapper = mount(DraftToolbar)
+
+      const templateButton = wrapper.find('.btn-template')
+      await templateButton.trigger('click')
+      await wrapper.vm.$nextTick()
+
+      // Modal should be visible
+      expect(wrapper.vm.showTemplateModal).toBe(true)
+    })
+
+    it('disables template button during submission', async () => {
+      const draftStore = useDraftStore()
+      draftStore.addPatch(mockCell, 'set_available')
+
+      const saveAsTemplateSpy = vi.spyOn(draftStore, 'saveAsTemplate')
+      saveAsTemplateSpy.mockImplementation(
+        () => new Promise(resolve => setTimeout(resolve, 100))
+      )
+
+      const wrapper = mount(DraftToolbar)
+
+      wrapper.vm.applying = true
+      await wrapper.vm.$nextTick()
+
+      const templateButton = wrapper.find('.btn-template')
+      expect(templateButton.attributes('disabled')).toBeDefined()
+    })
+
+    it('passes correct patches to TemplateConfirmModal', () => {
+      const draftStore = useDraftStore()
+      draftStore.addPatch(mockCell, 'set_available')
+      draftStore.addPatch(
+        { ...mockCell, startAtUTC: '2024-12-23T11:00:00Z' },
+        'set_blocked'
+      )
+
+      const wrapper = mount(DraftToolbar)
+
+      const patchesForModal = wrapper.vm.patchesForModal
+      expect(patchesForModal).toHaveLength(2)
+      expect(patchesForModal[0].newStatus).toBe('available')
+      expect(patchesForModal[1].newStatus).toBe('blocked')
+    })
+
+    it('calls saveAsTemplate on confirm', async () => {
+      const draftStore = useDraftStore()
+      draftStore.addPatch(mockCell, 'set_available')
+
+      const saveAsTemplateSpy = vi.spyOn(draftStore, 'saveAsTemplate')
+      saveAsTemplateSpy.mockResolvedValue({
+        id: 1,
+        tutor_id: 79,
+        weekly_slots: [],
+        timezone: 'Europe/Kiev',
+        version: 1,
+        last_generation_job_id: 'test-job-123',
+        updated_at: '2024-12-23T20:00:00Z',
+      })
+
+      const wrapper = mount(DraftToolbar)
+
+      await wrapper.vm.handleTemplateConfirm()
+
+      expect(saveAsTemplateSpy).toHaveBeenCalled()
+      expect(toastMock.success).toHaveBeenCalledWith('Шаблон збережено!')
+    })
+
+    it('shows GenerationProgressModal after template save', async () => {
+      const draftStore = useDraftStore()
+      draftStore.addPatch(mockCell, 'set_available')
+
+      const saveAsTemplateSpy = vi.spyOn(draftStore, 'saveAsTemplate')
+      saveAsTemplateSpy.mockResolvedValue({
+        id: 1,
+        tutor_id: 79,
+        weekly_slots: [],
+        timezone: 'Europe/Kiev',
+        version: 1,
+        last_generation_job_id: 'test-job-123',
+        updated_at: '2024-12-23T20:00:00Z',
+      })
+
+      const wrapper = mount(DraftToolbar)
+
+      await wrapper.vm.handleTemplateConfirm()
+      await wrapper.vm.$nextTick()
+
+      expect(wrapper.vm.showProgressModal).toBe(true)
+      expect(wrapper.vm.generationJobId).toBe('test-job-123')
+    })
+
+    it('handles template save error', async () => {
+      const draftStore = useDraftStore()
+      draftStore.addPatch(mockCell, 'set_available')
+
+      const saveAsTemplateSpy = vi.spyOn(draftStore, 'saveAsTemplate')
+      saveAsTemplateSpy.mockRejectedValue(new Error('Template save failed'))
+
+      const wrapper = mount(DraftToolbar)
+
+      await wrapper.vm.handleTemplateConfirm()
+      await wrapper.vm.$nextTick()
+
+      expect(toastMock.error).toHaveBeenCalledWith('Помилка при збереженні шаблону')
+    })
+  })
 })

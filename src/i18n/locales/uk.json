@@ -448,6 +448,8 @@
     "tutorCalendar": "Календар тьютора"
   },
   "marketplace": {
+    "noAvailableSlots": "Немає доступних слотів на цей тиждень",
+    "availableHours": "Доступні години",
     "subjects": {
       "english": "Англійська",
       "spanish": "Іспанська",
@@ -2126,12 +2128,45 @@
   },
   "booking": {
     "actions": {
-      "bookLesson": "Забронювати урок",
+      "bookLesson": "Запланувати урок",
       "blockTime": "Заблокувати час",
       "clearAvailability": "Очистити доступність",
       "makeAvailable": "Зробити доступним",
       "viewDetails": "Переглянути деталі",
       "cancelLesson": "Скасувати урок"
+    },
+    "template": {
+      "title": "Налаштування тижневого розкладу",
+      "subtitle": "Створіть шаблон доступності для автоматичної генерації слотів",
+      "timezone": "Часовий пояс",
+      "noSlots": "Немає доступних годин",
+      "addTime": "Додати час",
+      "saveAndGenerate": "Зберегти та згенерувати слоти",
+      "generatingSlots": "Генерація слотів",
+      "jobQueued": "Завдання в черзі...",
+      "jobRunning": "Генеруємо слоти...",
+      "jobComplete": "Слоти успішно згенеровано!",
+      "jobFailed": "Помилка генерації",
+      "slotsCreated": "Створено слотів",
+      "slotsDeleted": "Видалено слотів",
+      "saveAsTemplate": "Зберегти як шаблон",
+      "confirmMessage": "Ці зміни будуть збережені як ваш тижневий шаблон і автоматично застосовуватимуться щотижня.",
+      "changesPreview": "Зміни для збереження",
+      "warningMessage": "Увага: це замінить ваш поточний шаблон, якщо він існує.",
+      "confirmSave": "Підтвердити збереження"
+    },
+    "draft": {
+      "pendingChanges": "незбережених змін",
+      "applyOnce": "Застосувати разово",
+      "saveAsTemplate": "Зберегти як шаблон",
+      "changesCount": "{count} змін"
+    },
+    "request": {
+      "title": "Запит на бронювання",
+      "duration": "Тривалість",
+      "message": "Повідомлення тьютору",
+      "messagePlaceholder": "Розкажіть, що ви хочете вивчити...",
+      "send": "Надіслати запит"
     },
     "manualBooking": {
       "title": "Створити урок вручну",
@@ -2144,9 +2179,6 @@
       "notes": "Примітки",
       "notesPlaceholder": "Додаткова інформація про урок...",
       "createLesson": "Створити урок"
-    },
-    "draft": {
-      "changesCount": "{count} змін"
     },
     "dst": {
       "transitionWarning": "Увага: перехід на літній/зимовий час {date}"

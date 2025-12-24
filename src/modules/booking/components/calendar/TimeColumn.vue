@@ -1,7 +1,7 @@
 <template>
   <div class="time-column">
-    <div v-for="hour in hours" :key="hour" class="time-label">
-      {{ formatHour(hour) }}
+    <div v-for="slot in timeSlots" :key="slot" class="time-label">
+      {{ formatTime(slot) }}
     </div>
   </div>
 </template>
@@ -13,16 +13,19 @@ const props = defineProps<{
   timezone: string
 }>()
 
-const hours = computed(() => {
+// Generate 30-minute time slots (48 per day: 00:00, 00:30, 01:00, ...)
+const timeSlots = computed(() => {
   const result = []
   for (let h = 0; h < 24; h++) {
-    result.push(h)
+    for (let m = 0; m < 60; m += 30) {
+      result.push({ hour: h, minute: m })
+    }
   }
   return result
 })
 
-function formatHour(hour: number): string {
-  return `${hour.toString().padStart(2, '0')}:00`
+function formatTime(slot: { hour: number; minute: number }): string {
+  return `${slot.hour.toString().padStart(2, '0')}:${slot.minute.toString().padStart(2, '0')}`
 }
 </script>
 
@@ -35,7 +38,7 @@ function formatHour(hour: number): string {
 }
 
 .time-label {
-  height: 80px;
+  height: 40px;
   display: flex;
   align-items: flex-start;
   justify-content: flex-end;

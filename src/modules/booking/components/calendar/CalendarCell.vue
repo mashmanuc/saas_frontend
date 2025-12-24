@@ -18,12 +18,16 @@
       <span class="student-name">{{ cell.booking.student.name }}</span>
     </div>
     
-    <div v-else-if="cell.status === 'available'" class="cell-available">
+    <div v-else-if="cell.status === 'available'" class="cell-content">
       <span class="time-label">{{ formatTime(cell.startAtUTC) }}</span>
     </div>
     
-    <div v-else-if="cell.status === 'blocked'" class="cell-blocked">
+    <div v-else-if="cell.status === 'blocked'" class="cell-content">
       <LockIcon class="w-3 h-3" />
+    </div>
+    
+    <div v-else class="cell-content">
+      <span class="time-label">{{ formatTime(cell.startAtUTC) }}</span>
     </div>
   </div>
 </template>
@@ -88,12 +92,17 @@ function handleClick(event: MouseEvent | KeyboardEvent) {
 <style scoped>
 .calendar-cell {
   height: 40px;
+  min-height: 40px;
   border-bottom: 1px solid #e5e7eb;
-  padding: 4px;
+  border-right: 1px solid #f3f4f6;
+  padding: 4px 8px;
   cursor: default;
   transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   outline: none;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
 }
 
 .cell-clickable {
@@ -110,6 +119,15 @@ function handleClick(event: MouseEvent | KeyboardEvent) {
 
 .cell-empty {
   background-color: #fafafa;
+  border: 1px solid #e5e7eb;
+}
+
+.cell-content {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  height: 100%;
 }
 
 .cell-available {

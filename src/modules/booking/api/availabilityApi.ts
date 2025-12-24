@@ -66,6 +66,24 @@ export interface JobStatus {
   result?: any
 }
 
+export interface AvailabilityTemplate {
+  id: number
+  tutor_id: number
+  weekly_slots: Array<{weekday: number, start: string, end: string}>
+  timezone: string
+  version: number
+  last_generation_job_id: string | null
+  updated_at: string
+}
+
+export interface GenerationJob {
+  job_id: string
+  status: 'queued' | 'running' | 'done' | 'failed'
+  slots_created: number
+  slots_deleted: number
+  error_message: string | null
+}
+
 export const availabilityApi = {
   async getTutorAvailability(
     slug: string,
@@ -148,6 +166,44 @@ export const availabilityApi = {
 
   async bulkApply(data: { changes: any[] }): Promise<any> {
     const response = await apiClient.post('/booking/availability/bulk', data)
+    return response.data
+  },
+
+  async getTemplate(): Promise<AvailabilityTemplate | null> {
+    try {
+      const response = await apiClient.get('/api/v1/booking/availability/template/')
+      return response.data
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        return null
+      }
+      throw error
+    }
+  },
+
+  async saveTemplate(data: {
+    weekly_slots: Array<{weekday: number, start: string, end: string}>
+    timezone: string
+    auto_generate: boolean
+  }): Promise<AvailabilityTemplate> {
+    try {
+      const response = await apiClient.put('/api/v1/booking/availability/template/', data)
+      return response.data
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        const response = await apiClient.post('/api/v1/booking/availability/template/', data)
+        return response.data
+      }
+      throw error
+    }
+  },
+
+  async deleteTemplate(): Promise<void> {
+    await apiClient.delete('/api/v1/booking/availability/template/')
+  },
+
+  async getGenerationJobStatus(jobId: string): Promise<GenerationJob> {
+    const response = await apiClient.get(`/api/v1/booking/availability/jobs/${jobId}/`)
     return response.data
   },
 }
