@@ -268,24 +268,6 @@
       "noAccount": "Немає акаунта?",
       "registerLink": "Зареєструватися"
     },
-    "register": {
-      "title": "Реєстрація",
-      "description": "Самостійна реєстрація (self-learning).",
-      "accountType": "Тип акаунта",
-      "accountTypeStudent": "Студент",
-      "accountTypeStudentHint": "Самонавчання та бронювання уроків.",
-      "accountTypeTutor": "Тьютор",
-      "accountTypeTutorHint": "Створіть профіль тьютора та приймайте студентів.",
-      "firstName": "Ім'я",
-      "lastName": "Прізвище",
-      "username": "Username",
-      "email": "Email",
-      "password": "Пароль",
-      "submit": "Зареєструватися",
-      "loading": "Створюємо акаунт...",
-      "haveAccount": "Вже маєте акаунт?",
-      "loginLink": "Увійти"
-    },
     "checkEmail": {
       "title": "Перевірте пошту",
       "description": "Ми надіслали лист із підтвердженням email.",
@@ -446,6 +428,22 @@
     "sandbox": "Пісочниця",
     "soloWorkspace": "Робочий простір",
     "tutorCalendar": "Календар тьютора"
+  },
+  "calendar": {
+    "weekNavigation": {
+      "prevWeek": "Попередній тиждень",
+      "nextWeek": "Наступний тиждень",
+      "today": "Сьогодні"
+    },
+    "loading": "Завантаження...",
+    "retry": "Спробувати ще раз",
+    "cellStatus": {
+      "empty": "Порожній слот",
+      "available": "Доступний слот",
+      "booked": "Зайнятий урок",
+      "blocked": "Заблокований",
+      "notAllow": "Недоступний"
+    }
   },
   "marketplace": {
     "noAvailableSlots": "Немає доступних слотів на цей тиждень",
@@ -876,6 +874,7 @@
     "hoursAgo": "{count} год тому",
     "daysAgo": "{count} дн тому",
     "loading": "Завантаження...",
+    "minutes": "хв",
     "offline": {
       "title": "Ви офлайн",
       "message": "Продовжуємо роботу в режимі чернетки. Зміни будуть синхронізовані після відновлення зʼєднання.",
@@ -900,7 +899,6 @@
     "showing": "Показано",
     "of": "з",
     "other": "Інше",
-    "minutes": "хв",
     "searching": "Пошук...",
     "reset": "Скинути",
     "apply": "Застосувати",
@@ -2188,7 +2186,66 @@
     "calendar": {
       "noSchedule": "Розклад не налаштовано",
       "noScheduleDesc": "Створіть шаблон доступності, щоб студенти могли бронювати уроки",
-      "setupSchedule": "Налаштувати розклад"
+      "setupSchedule": "Налаштувати розклад",
+      "createLesson": {
+        "title": "Створити урок",
+        "selectedTime": "Обраний час",
+        "student": "Студент",
+        "selectStudent": "Оберіть студента",
+        "duration": "Тривалість",
+        "regularity": "Регулярність",
+        "comment": "Коментар",
+        "commentPlaceholder": "Додайте коментар до уроку...",
+        "create": "Створити",
+        "timeHint": "Оберіть дату та час початку уроку"
+      },
+      "eventModal": {
+        "title": "Деталі уроку",
+        "delete": "Видалити урок",
+        "edit": "Редагувати",
+        "editTime": "Час уроку",
+        "confirmDelete": "Підтвердження видалення",
+        "confirmDeleteMessage": "Ви впевнені, що хочете видалити урок з {student}? Цю дію не можна буде скасувати."
+      },
+      "eventDetails": {
+        "time": "Час",
+        "student": "Студент",
+        "duration": "Тривалість",
+        "comment": "Коментар"
+      },
+      "paidStatus": {
+        "paid": "Оплачено",
+        "unpaid": "Не оплачено"
+      },
+      "doneStatus": {
+        "done": "Проведено",
+        "not_done": "Не проведено",
+        "not_done_client_missed": "Студент не прийшов",
+        "done_client_missed": "Проведено (студент пропустив)"
+      },
+      "regularity": {
+        "single": "Разовий",
+        "once_a_week": "Раз на тиждень",
+        "twice_a_week": "Двічі на тиждень"
+      },
+      "errors": {
+        "timeOverlap": "Цей час вже зайнятий іншим уроком",
+        "validationError": "Помилка валідації даних",
+        "invalidTime": "Час має бути в майбутньому та не пізніше ніж через 6 місяців",
+        "cannotDelete": "Не можна видалити цей урок",
+        "cannotDeletePaid": "Не можна видалити оплачений урок",
+        "cannotDeletePast": "Не можна видалити урок у минулому",
+        "createFailed": "Не вдалося створити урок. Спробуйте ще раз.",
+        "updateFailed": "Не вдалося оновити урок. Спробуйте ще раз.",
+        "deleteFailed": "Не вдалося видалити урок. Спробуйте ще раз.",
+        "loadFailed": "Не вдалося завантажити деталі уроку",
+        "networkError": "Помилка мережі. Перевірте підключення."
+      },
+      "success": {
+        "created": "Урок успішно створено!",
+        "updated": "Урок успішно оновлено!",
+        "deleted": "Урок успішно видалено!"
+      }
     },
     "conflict": {
       "title": "Слот вже зайнятий",
