@@ -52,6 +52,9 @@
         :day-key="day.dayKey"
         :layouts="availabilityLayouts"
         :slots-by-id="slotsById"
+        @slot-clicked="handleSlotClick"
+        @slot-edit="handleSlotEdit"
+        @slot-delete="handleSlotDelete"
       />
     </div>
 
@@ -89,6 +92,9 @@ const emit = defineEmits<{
   cellClick: [cell: CalendarCell]
   eventClick: [eventId: number]
   cellsSelected: [utcKeys: string[]]
+  slotClick: [slotId: number]
+  slotEdit: [slotId: number]
+  slotDelete: [slotId: number]
 }>()
 
 const store = useCalendarWeekStore()
@@ -189,5 +195,17 @@ function handleCellsSelected(utcKeys: string[]) {
     }
   }
   emit('cellsSelected', utcKeys)
+}
+
+function handleSlotClick(slotId: number) {
+  emit('slotClick', slotId)
+}
+
+function handleSlotEdit(slotId: number) {
+  emit('slotEdit', slotId)
+}
+
+function handleSlotDelete(slotId: number) {
+  emit('slotDelete', slotId)
 }
 </script>

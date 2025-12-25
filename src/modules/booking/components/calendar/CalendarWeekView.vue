@@ -28,14 +28,26 @@
       @open-availability="handleSetupAvailability"
     />
     
-    <div class="calendar-legend">
-      <div class="legend-item">
-        <span class="legend-dot legend-dot--lesson"></span>
-        <span>{{ t('calendar.legend.lesson') }}</span>
-      </div>
-      <div class="legend-item">
-        <span class="legend-dot legend-dot--availability"></span>
-        <span>{{ t('calendar.legend.availability') }}</span>
+    <div class="calendar-controls">
+      <div class="calendar-legend">
+        <label class="legend-item legend-item--interactive">
+          <input
+            v-model="showEvents"
+            type="checkbox"
+            class="legend-checkbox"
+          />
+          <span class="legend-dot legend-dot--lesson"></span>
+          <span>{{ t('calendar.legend.lesson') }}</span>
+        </label>
+        <label class="legend-item legend-item--interactive">
+          <input
+            v-model="showAvailability"
+            type="checkbox"
+            class="legend-checkbox"
+          />
+          <span class="legend-dot legend-dot--availability"></span>
+          <span>{{ t('calendar.legend.availability') }}</span>
+        </label>
       </div>
     </div>
 
@@ -57,19 +69,29 @@
     <!-- Empty availability state - show only if user hasn't set up availability at all -->
     <EmptyAvailabilityState v-else-if="!hasSetupAvailability" />
 
-    <!-- Calendar Board -->
-    <CalendarBoard
-      v-else
-      :days="daysOrdered"
-      :cells="computedCells336"
-      :event-layouts="eventLayouts"
-      :timezone="weekMeta?.timezone ?? 'Europe/Kiev'"
-      :day-availability="availableMinutesByDay"
-      :availability-layouts="availabilityLayouts"
-      :slots-by-id="accessibleById"
-      @cell-click="handleCellClick"
-      @event-click="handleEventClick"
-    />
+    <!-- Calendar Board with Sidebar -->
+    <div v-else class="calendar-layout">
+      <CalendarBoard
+        class="calendar-layout__board"
+        :days="daysOrdered"
+        :cells="computedCells336"
+        :event-layouts="showEvents ? eventLayouts : []"
+        :timezone="weekMeta?.timezone ?? 'Europe/Kiev'"
+        :day-availability="availableMinutesByDay"
+        :availability-layouts="showAvailability ? availabilityLayouts : []"
+        :slots-by-id="accessibleById"
+        @cell-click="handleCellClick"
+        @event-click="handleEventClick"
+        @slot-click="handleSlotClick"
+        @slot-edit="handleSlotEdit"
+        @slot-delete="handleSlotDeleteInline"
+      />
+      <CalendarSidebar
+        :events="allEvents"
+        :selected-event-id="selectedEventId"
+        @event-click="handleEventClick"
+      />
+    </div>
 
     <!-- Modals -->
     <CreateLessonModal
@@ -87,6 +109,15 @@
       @close="showEventModal = false"
       @deleted="handleEventDeleted"
     />
+
+    <SlotEditorModal
+      v-if="showSlotModal && selectedSlot"
+      :visible="showSlotModal"
+      :slot="selectedSlot"
+      @close="showSlotModal = false"
+      @saved="handleSlotSaved"
+      @deleted="handleSlotDeleted"
+    />
   </div>
 </template>
 
@@ -100,11 +131,13 @@ import { useCalendarWebSocket } from '@/modules/booking/composables/useCalendarW
 import { useErrorHandler } from '@/modules/booking/composables/useErrorHandler'
 import { useRouter } from 'vue-router'
 import CalendarBoard from './CalendarBoard.vue'
+import CalendarSidebar from './CalendarSidebar.vue'
 import WeekNavigation from './WeekNavigation.vue'
 import EmptyAvailabilityState from './EmptyAvailabilityState.vue'
 import CreateLessonModal from '../modals/CreateLessonModal.vue'
 import EventModal from '../modals/EventModal.vue'
-import type { CalendarCell } from '@/modules/booking/types/calendarWeek'
+import SlotEditorModal from '../modals/SlotEditorModal.vue'
+import type { CalendarCell, AccessibleSlot } from '@/modules/booking/types/calendarWeek'
 import '@/modules/booking/styles/calendar-theme.css'
 import '@/modules/booking/styles/calendar-layout.css'
 import '@/modules/booking/styles/calendar-animations.css'
@@ -124,6 +157,7 @@ const {
   eventLayouts,
   availabilityLayouts,
   accessibleById,
+  eventsById,
   isLoading,
   error,
   totalAvailableHours,
@@ -132,6 +166,10 @@ const {
   allAccessibleIds,
   allEventIds,
 } = storeToRefs(store)
+
+const allEvents = computed(() => {
+  return Object.values(eventsById.value)
+})
 
 const hasAvailability = computed(() => {
   const minutes = totalAvailableMinutes.value || 0
@@ -169,8 +207,14 @@ const emit = defineEmits<{
 
 const showCreateModal = ref(false)
 const showEventModal = ref(false)
+const showSlotModal = ref(false)
 const selectedCell = ref<CalendarCell | null>(null)
 const selectedEventId = ref<number | null>(null)
+const selectedSlot = ref<AccessibleSlot | null>(null)
+
+// View filters
+const showEvents = ref(true)
+const showAvailability = ref(true)
 
 onMounted(async () => {
   try {
@@ -233,6 +277,41 @@ function handleEventDeleted() {
   console.info('[CalendarWeekView] Event deleted')
   showEventModal.value = false
 }
+
+function handleSlotClick(slotId: number) {
+  const slot = accessibleById.value[slotId]
+  if (slot) {
+    selectedSlot.value = slot
+    showSlotModal.value = true
+  }
+}
+
+function handleSlotSaved() {
+  console.info('[CalendarWeekView] Slot saved')
+  showSlotModal.value = false
+  store.fetchWeek(weekMeta.value?.page ?? 0)
+}
+
+function handleSlotDeleted() {
+  console.info('[CalendarWeekView] Slot deleted')
+  showSlotModal.value = false
+  store.fetchWeek(weekMeta.value?.page ?? 0)
+}
+
+function handleSlotEdit(slotId: number) {
+  handleSlotClick(slotId)
+}
+
+async function handleSlotDeleteInline(slotId: number) {
+  try {
+    const { useSlotEditor } = await import('@/modules/booking/composables/useSlotEditor')
+    const { deleteSlot } = useSlotEditor()
+    await deleteSlot(slotId)
+    store.fetchWeek(weekMeta.value?.page ?? 0)
+  } catch (error) {
+    console.error('[CalendarWeekView] Failed to delete slot:', error)
+  }
+}
 </script>
 
 <style scoped>
@@ -245,11 +324,28 @@ function handleEventDeleted() {
   min-height: 600px;
 }
 
+.calendar-layout {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.calendar-layout__board {
+  flex: 1;
+  min-width: 0;
+}
+
+.calendar-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 8px;
+}
+
 .calendar-legend {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 0 8px;
   color: #475569;
   font-size: 13px;
 }
@@ -258,6 +354,24 @@ function handleEventDeleted() {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+}
+
+.legend-item--interactive {
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.legend-item--interactive:hover {
+  background-color: #f1f5f9;
+}
+
+.legend-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #3b82f6;
 }
 
 .legend-dot {

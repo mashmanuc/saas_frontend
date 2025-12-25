@@ -843,6 +843,16 @@
       "setupAvailability": "Налаштувати години для бронювання",
       "backToCalendar": "Повернутися до календаря"
     },
+    "sidebar": {
+      "upcomingLessons": "Найближчі уроки",
+      "noUpcoming": "Немає найближчих уроків",
+      "today": "Сьогодні",
+      "tomorrow": "Завтра",
+      "status": {
+        "paid": "Оплачено",
+        "unpaid": "Не оплачено"
+      }
+    },
     "legend": {
       "lesson": "Заняття",
       "availability": "Доступність"
@@ -2811,7 +2821,11 @@
       "overrideReasonPlaceholder": "Вкажіть причину зміни цього слоту...",
       "saving": "Збереження...",
       "saveSuccess": "Слот успішно збережено",
-      "saveError": "Не вдалося зберегти слот"
+      "saveError": "Не вдалося зберегти слот",
+      "delete": "Видалити",
+      "deleteConfirm": "Ви впевнені, що хочете видалити цей слот?",
+      "deleteSuccess": "Слот успішно видалено",
+      "deleteError": "Не вдалося видалити слот"
     },
     "status": {
       "available": "Доступний",

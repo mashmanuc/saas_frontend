@@ -2329,6 +2329,16 @@
       "today": "Today",
       "backToCalendar": "Back to calendar"
     },
+    "sidebar": {
+      "upcomingLessons": "Upcoming lessons",
+      "noUpcoming": "No upcoming lessons",
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "status": {
+        "paid": "Paid",
+        "unpaid": "Unpaid"
+      }
+    },
     "emptyState": {
       "noAvailability": {
         "title": "No availability set",
@@ -2423,6 +2433,8 @@
         "saveSuccess": "Slot saved successfully",
         "saveError": "Failed to save slot",
         "conflictError": "Conflicts detected while saving",
+        "delete": "Delete",
+        "deleteConfirm": "Are you sure you want to delete this slot?",
         "deleteSuccess": "Slot deleted successfully",
         "deleteError": "Failed to delete slot",
         "batchSuccess": "All slots updated successfully",
