@@ -2,6 +2,7 @@
 // F18: Availability Editor Component
 import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import { Loader as LoaderIcon, CheckCircle as CheckCircleIcon, AlertCircle as AlertCircleIcon, Save } from 'lucide-vue-next'
 import { bookingApi } from '../../api/booking'
 import { calendarWeekApi } from '../../api/calendarWeekApi'
@@ -16,6 +17,7 @@ import type { Slot } from '@/modules/booking/types/slot'
 import { useSlotStore } from '@/stores/slotStore'
 
 const { t } = useI18n()
+const router = useRouter()
 const { currentJob, isPolling, startTracking } = useAvailabilityJob()
 const toast = useToast()
 const slotStore = useSlotStore()
@@ -297,10 +299,24 @@ async function handleRedo() {
     toast.error(t('availability.editor.actions.redoError'))
   }
 }
+
+function handleBackToCalendar() {
+  try {
+    router.back()
+  } catch (error) {
+    console.warn('[AvailabilityEditor] Failed to navigate back:', error)
+    router.push({ name: 'booking-calendar' }).catch(() => {})
+  }
+}
 </script>
 
 <template>
   <div class="availability-editor">
+    <div class="editor-top-bar">
+      <button class="back-button" @click="handleBackToCalendar">
+        ← {{ t('calendar.weekNavigation.backToCalendar', 'Повернутися до календаря') }}
+      </button>
+    </div>
     <div class="editor-header">
       <h3>{{ t('availability.editor.weeklyScheduleTitle') }}</h3>
       <p class="hint">

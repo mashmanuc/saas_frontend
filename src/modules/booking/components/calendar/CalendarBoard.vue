@@ -48,6 +48,11 @@
         :timezone="timezone"
         @click="() => handleCellClick(cell)"
       />
+      <AvailabilityOverlay
+        :day-key="day.dayKey"
+        :layouts="availabilityLayouts"
+        :slots-by-id="slotsById"
+      />
     </div>
 
     <EventsOverlay
@@ -64,8 +69,9 @@
 import { computed, ref, watch } from 'vue'
 import Cell from './Cell.vue'
 import EventsOverlay from './EventsOverlay.vue'
+import AvailabilityOverlay from './AvailabilityOverlay.vue'
 import DragSelectOverlay from './DragSelectOverlay.vue'
-import type { Day, CalendarCell, EventLayout } from '@/modules/booking/types/calendarWeek'
+import type { Day, CalendarCell, EventLayout, AvailabilityLayout, AccessibleSlot } from '@/modules/booking/types/calendarWeek'
 import { useCalendarWeekStore } from '@/modules/booking/stores/calendarWeekStore'
 import { storeToRefs } from 'pinia'
 
@@ -75,6 +81,8 @@ const props = defineProps<{
   eventLayouts: EventLayout[]
   timezone: string
   dayAvailability?: Record<string, number>
+  availabilityLayouts?: AvailabilityLayout[]
+  slotsById?: Record<number, AccessibleSlot>
 }>()
 
 const emit = defineEmits<{

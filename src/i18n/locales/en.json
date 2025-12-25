@@ -2282,6 +2282,10 @@
     "weekOf": "Week of {date}",
     "analyticsTitle": "Availability analytics",
     "analyticsDescription": "Track how your open slots change week over week.",
+    "legend": {
+      "lesson": "Lesson",
+      "availability": "Availability"
+    },
     "draftNotice": "Draft mode. Don't forget to apply your changes.",
     "pendingJobs": "Calendar sync in progress…",
     "lastSyncLabel": "Last sync: {datetime}",
@@ -2319,10 +2323,11 @@
       "availableHours": "{hours} hours available",
       "noAvailability": "No availability set for this week yet",
       "goToFirstAvailable": "Go to first available slot",
-      "setupAvailability": "Edit availability",
+      "setupAvailability": "Set up booking hours",
       "prevWeek": "Previous week",
       "nextWeek": "Next week",
-      "today": "Current week"
+      "today": "Today",
+      "backToCalendar": "Back to calendar"
     },
     "emptyState": {
       "noAvailability": {

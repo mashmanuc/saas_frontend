@@ -25,6 +25,14 @@
         >
           {{ t('common.cancel') }}
         </button>
+        <button
+          class="btn btn-danger"
+          :disabled="isLoading"
+          @click="handleDelete"
+          data-testid="delete-slot"
+        >
+          {{ t('availability.slotEditor.delete') }}
+        </button>
       </div>
     </div>
 
@@ -135,6 +143,7 @@ import { useI18n } from 'vue-i18n'
 import { Save as SaveIcon, Calendar as CalendarIcon, Loader as LoaderIcon } from 'lucide-vue-next'
 import { Clock, AlertCircle } from 'lucide-vue-next'
 import { useSlotEditor } from '../../composables/useSlotEditor'
+import { useSlotStore } from '@/stores/slotStore'
 import ConflictResolver from './ConflictResolver.vue'
 import TimeRangeInput from './TimeRangeInput.vue'
 import type { Slot, SlotEditStrategy, Conflict } from '../../types/slot'
@@ -147,13 +156,15 @@ interface Emits {
   saved: [slot: Slot]
   cancelled: []
   error: [error: any]
+  deleted: [slotId: string]
 }
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const { t } = useI18n()
-const { isLoading, editSlot, detectConflicts } = useSlotEditor()
+const slotStore = useSlotStore()
+const { isLoading, editSlot, detectConflicts, deleteSlot: deleteSlotApi } = useSlotEditor()
 
 // Local state
 const localStart = ref(props.slot.start)
@@ -220,6 +231,18 @@ async function handleSave() {
 
 function handleCancel() {
   emit('cancelled')
+}
+
+async function handleDelete() {
+  const confirmed = window.confirm(t('availability.slotEditor.deleteConfirm'))
+  if (!confirmed) return
+  try {
+    await deleteSlotApi(Number(props.slot.id))
+    slotStore.removeSlotFromState(Number(props.slot.id))
+    emit('deleted', props.slot.id)
+  } catch (error) {
+    emit('error', error)
+  }
 }
 
 function handleResolveConflicts() {

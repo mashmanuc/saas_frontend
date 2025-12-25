@@ -27,6 +27,17 @@
       @scroll-first-available="handleScrollToFirstAvailable"
       @open-availability="handleSetupAvailability"
     />
+    
+    <div class="calendar-legend">
+      <div class="legend-item">
+        <span class="legend-dot legend-dot--lesson"></span>
+        <span>{{ t('calendar.legend.lesson') }}</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-dot legend-dot--availability"></span>
+        <span>{{ t('calendar.legend.availability') }}</span>
+      </div>
+    </div>
 
     <!-- Loading State -->
     <div v-if="isLoading" class="loading-state">
@@ -54,6 +65,8 @@
       :event-layouts="eventLayouts"
       :timezone="weekMeta?.timezone ?? 'Europe/Kiev'"
       :day-availability="availableMinutesByDay"
+      :availability-layouts="availabilityLayouts"
+      :slots-by-id="accessibleById"
       @cell-click="handleCellClick"
       @event-click="handleEventClick"
     />
@@ -109,6 +122,8 @@ const {
   daysOrdered,
   computedCells336,
   eventLayouts,
+  availabilityLayouts,
+  accessibleById,
   isLoading,
   error,
   totalAvailableHours,
@@ -228,6 +243,39 @@ function handleEventDeleted() {
   padding: 16px;
   background: var(--surface-calendar, #fafafa);
   min-height: 600px;
+}
+
+.calendar-legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 8px;
+  color: #475569;
+  font-size: 13px;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+  border: 2px solid transparent;
+}
+
+.legend-dot--lesson {
+  background: #22c55e;
+  border-color: #16a34a;
+}
+
+.legend-dot--availability {
+  background: #fbbf24;
+  border-color: #d97706;
 }
 
 .loading-state,

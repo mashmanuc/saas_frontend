@@ -18,6 +18,7 @@ import type {
   UpdateEventPayload,
   DeleteEventPayload,
   EventLayout,
+  AvailabilityLayout,
 } from '../types/calendarWeek'
 
 // Constants
@@ -166,6 +167,30 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
           height: event.durationMin * PX_PER_MINUTE,
           left: 0,
           width: '100%',
+        })
+      }
+    }
+    
+    return layouts
+  })
+  
+  const availabilityLayouts = computed((): AvailabilityLayout[] => {
+    const layouts: AvailabilityLayout[] = []
+    
+    for (const dayKey of Object.keys(accessibleIdsByDay.value)) {
+      const daySlots = accessibleForDay.value(dayKey)
+      
+      for (const slot of daySlots) {
+        const startDate = new Date(slot.start)
+        const endDate = new Date(slot.end)
+        const startMin = startDate.getHours() * 60 + startDate.getMinutes()
+        const heightMinutes = Math.max(0, (endDate.getTime() - startDate.getTime()) / 60000)
+        
+        layouts.push({
+          slotId: slot.id,
+          dayKey,
+          top: (startMin - DAY_START_MINUTES) * PX_PER_MINUTE,
+          height: heightMinutes * PX_PER_MINUTE,
         })
       }
     }
@@ -543,6 +568,7 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     totalAvailableHours,
     computedCells336,
     eventLayouts,
+    availabilityLayouts,
     allAccessibleIds,
     allEventIds,
     

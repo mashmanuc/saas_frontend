@@ -136,6 +136,13 @@ export interface EventLayout {
   width: string           // "100%" або px
 }
 
+export interface AvailabilityLayout {
+  slotId: number
+  dayKey: string
+  top: number             // px
+  height: number          // px
+}
+
 // Bulk update payload (v0.49.3)
 export interface BulkUpdatePayload {
   eventIds: number[]
