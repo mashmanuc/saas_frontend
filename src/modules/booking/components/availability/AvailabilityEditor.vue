@@ -1,23 +1,24 @@
 <script setup lang="ts">
 // F18: Availability Editor Component
-import { ref, computed, onMounted } from 'vue'
-import { storeToRefs } from 'pinia'
-import { Plus, Save } from 'lucide-vue-next'
-import { useCalendarStore } from '../../stores/calendarStore'
+import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { bookingApi } from '../../api/booking'
 import type { AvailabilityInput } from '../../api/booking'
 import DaySchedule from './DaySchedule.vue'
 
-const store = useCalendarStore()
-const { availability, isLoading } = storeToRefs(store)
+const { t } = useI18n()
+
+const availability = ref<any[]>([])
+const isLoading = ref(false)
 
 const days = [
-  { value: 1, label: 'Monday' },
-  { value: 2, label: 'Tuesday' },
-  { value: 3, label: 'Wednesday' },
-  { value: 4, label: 'Thursday' },
-  { value: 5, label: 'Friday' },
-  { value: 6, label: 'Saturday' },
-  { value: 0, label: 'Sunday' },
+  { value: 1, label: 'common.weekdays.short.mon' },
+  { value: 2, label: 'common.weekdays.short.tue' },
+  { value: 3, label: 'common.weekdays.short.wed' },
+  { value: 4, label: 'common.weekdays.short.thu' },
+  { value: 5, label: 'common.weekdays.short.fri' },
+  { value: 6, label: 'common.weekdays.short.sat' },
+  { value: 0, label: 'common.weekdays.short.sun' },
 ]
 
 // Local state for editing
@@ -25,10 +26,18 @@ const localSchedule = ref<Record<number, { start: string; end: string }[]>>({})
 const isSaving = ref(false)
 const hasChanges = ref(false)
 
-// Initialize local schedule from store
+// Initialize local schedule from API
 onMounted(async () => {
-  await store.loadAvailability()
-  initializeLocalSchedule()
+  isLoading.value = true
+  try {
+    const response = await bookingApi.getAvailability()
+    availability.value = response || []
+    initializeLocalSchedule()
+  } catch (e) {
+    console.error('Failed to load availability:', e)
+  } finally {
+    isLoading.value = false
+  }
 })
 
 function initializeLocalSchedule() {
@@ -91,7 +100,7 @@ async function saveAvailability() {
       }
     }
 
-    await store.setAvailability(schedule)
+    await bookingApi.setAvailability(schedule)
     hasChanges.value = false
   } catch (e) {
     console.error('Failed to save availability:', e)
@@ -108,8 +117,10 @@ function resetChanges() {
 <template>
   <div class="availability-editor">
     <div class="editor-header">
-      <h3>Weekly Schedule</h3>
-      <p class="hint">Set your regular available hours for each day</p>
+      <h3>{{ t('availability.editor.weeklyScheduleTitle') }}</h3>
+      <p class="hint">
+        {{ t('availability.editor.weeklyScheduleSubtitle') }}
+      </p>
     </div>
 
     <div v-if="isLoading" class="loading">
@@ -118,7 +129,7 @@ function resetChanges() {
 
     <div v-else class="days-list">
       <div v-for="day in days" :key="day.value" class="day-row">
-        <div class="day-label">{{ day.label }}</div>
+        <div class="day-label">{{ t(day.label) }}</div>
         <DaySchedule
           :windows="getWindowsForDay(day.value)"
           @add="addWindow(day.value)"
@@ -130,7 +141,7 @@ function resetChanges() {
 
     <div v-if="hasChanges" class="editor-actions">
       <button class="btn btn-secondary" @click="resetChanges">
-        Reset
+        {{ t('availability.editor.actions.reset') }}
       </button>
       <button
         class="btn btn-primary"
@@ -138,7 +149,11 @@ function resetChanges() {
         @click="saveAvailability"
       >
         <Save :size="16" />
-        {{ isSaving ? 'Saving...' : 'Save Schedule' }}
+        {{
+          isSaving
+            ? t('availability.editor.actions.saving')
+            : t('availability.editor.actions.save')
+        }}
       </button>
     </div>
   </div>

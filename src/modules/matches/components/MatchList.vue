@@ -64,7 +64,7 @@ onMounted(() => {
         v-for="tab in tabs"
         :key="tab.key"
         :class="['tab', { active: activeTab === tab.key }]"
-        @click="activeTab = tab.key; loadMatches()"
+        @click="activeTab = tab.key as 'invited' | 'active' | 'archived'; loadMatches()"
       >
         <component :is="tab.icon" :size="18" />
         {{ tab.label }}

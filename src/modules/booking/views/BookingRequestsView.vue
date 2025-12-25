@@ -51,7 +51,6 @@ import { Inbox as InboxIcon } from 'lucide-vue-next'
 import BookingRequestCard from '@/modules/booking/components/BookingRequestCard.vue'
 import { bookingApi } from '@/modules/booking/api/booking'
 import { useToast } from '@/composables/useToast'
-import { useCalendarStore } from '@/modules/booking/stores/calendarStore'
 
 const statuses = ['pending', 'accepted', 'rejected', 'all']
 const selectedStatus = ref('pending')
@@ -60,7 +59,6 @@ const loading = ref(true)
 const page = ref(1)
 const hasMore = ref(false)
 const { success, error: showError } = useToast()
-const calendarStore = useCalendarStore()
 
 const pendingCount = computed(() => {
   if (selectedStatus.value === 'pending') {
@@ -111,11 +109,7 @@ async function handleAccept(requestId: number) {
 
     success('Request accepted')
     await loadRequests()
-    await calendarStore.loadWeekView({
-      tutorId: undefined,
-      weekStart: new Date().toISOString().split('T')[0],
-      timezone: 'Europe/Kiev',
-    })
+    // Calendar will be refreshed via WebSocket event automatically
   } catch (err: any) {
     if (err.code === 'slot_not_available') {
       showError('This time slot is no longer available')

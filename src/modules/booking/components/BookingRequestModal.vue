@@ -14,11 +14,11 @@
             <div class="booking-details">
               <div class="detail-row">
                 <CalendarIcon class="w-4 h-4 text-gray-500" />
-                <span>{{ formatDate(cell.startAtUTC) }}</span>
+                <span>{{ formatDate(cell.start) }}</span>
               </div>
               <div class="detail-row">
                 <ClockIcon class="w-4 h-4 text-gray-500" />
-                <span>{{ formatTime(cell.startAtUTC) }}</span>
+                <span>{{ formatTime(cell.start) }}</span>
               </div>
               <div class="detail-row">
                 <UserIcon class="w-4 h-4 text-gray-500" />
@@ -68,7 +68,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { X as XIcon, Calendar as CalendarIcon, Clock as ClockIcon, User as UserIcon, Loader2 as Loader2Icon } from 'lucide-vue-next'
-import type { CalendarCell } from '@/modules/booking/types/calendar'
+import type { CalendarEvent } from '@/modules/booking/types/calendarWeek'
 import { bookingApi } from '@/modules/booking/api/booking'
 import { useToast } from '@/composables/useToast'
 import { useAuthStore } from '@/modules/auth/store/authStore'
@@ -76,7 +76,7 @@ import { useRouter } from 'vue-router'
 
 const props = defineProps<{
   show: boolean
-  cell: CalendarCell
+  cell: CalendarEvent
   tutor: {
     id: number
     full_name: string
@@ -127,7 +127,7 @@ async function submit() {
   try {
     const result = await bookingApi.createBookingRequest({
       tutor_id: props.tutor.id,
-      start_datetime: props.cell.startAtUTC,
+      start_datetime: props.cell.start,
       duration_minutes: duration.value,
       student_message: message.value.trim() || undefined,
     })

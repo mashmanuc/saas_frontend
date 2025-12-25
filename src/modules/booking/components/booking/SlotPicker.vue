@@ -1,37 +1,45 @@
 <script setup lang="ts">
 // F13: Slot Picker Component
-import { computed, watch } from 'vue'
-import { storeToRefs } from 'pinia'
-import { useCalendarStore } from '../../stores/calendarStore'
+import { ref, computed, watch } from 'vue'
 import type { TimeSlot } from '../../api/booking'
 
 import CalendarHeader from '../calendar/CalendarHeader.vue'
 import WeekCalendar from '../calendar/WeekCalendar.vue'
+import SkeletonCard from '@/components/ui/SkeletonCard.vue'
 
 const props = defineProps<{
-  tutorId: number
+  tutorId?: number
   loading?: boolean
 }>()
 
-const store = useCalendarStore()
-const { slotsByDate, selectedDate, selectedSlot, weekDays, viewMode } =
-  storeToRefs(store)
-
-// Load slots when tutor or date changes
-watch(
-  [() => props.tutorId, selectedDate],
-  async () => {
-    if (props.tutorId) {
-      await store.loadWeekSlots(props.tutorId)
-    }
-  },
-  { immediate: true }
-)
+const slotsByDate = ref<Record<string, TimeSlot[]>>({})
+const selectedDate = ref(new Date())
+const selectedSlot = ref<TimeSlot | null>(null)
+const weekDays = ref<any[]>([])
+const viewMode = ref<'week' | 'month'>('week')
 
 function handleSlotSelect(slot: TimeSlot) {
   if (slot.status === 'available') {
-    store.setSelectedSlot(slot)
+    selectedSlot.value = slot
   }
+}
+
+function navigateWeek(direction: number) {
+  const newDate = new Date(selectedDate.value)
+  newDate.setDate(newDate.getDate() + (direction * 7))
+  selectedDate.value = newDate
+}
+
+function goToToday() {
+  selectedDate.value = new Date()
+}
+
+function setViewMode(mode: 'week' | 'month') {
+  viewMode.value = mode
+}
+
+function clearSelection() {
+  selectedSlot.value = null
 }
 
 function formatSelectedTime(slot: TimeSlot): string {
@@ -51,13 +59,19 @@ function formatSelectedTime(slot: TimeSlot): string {
     <CalendarHeader
       :date="selectedDate"
       :view-mode="viewMode"
-      @prev="store.navigateWeek(-1)"
-      @next="store.navigateWeek(1)"
-      @today="store.goToToday()"
-      @view-change="store.setViewMode"
+      @prev="navigateWeek(-1)"
+      @next="navigateWeek(1)"
+      @today="goToToday()"
+      @view-change="setViewMode"
     />
 
+    <!-- Loading skeletons -->
+    <div v-if="loading" class="skeleton-grid">
+      <SkeletonCard v-for="i in 7" :key="i" variant="slot" :lines="2" />
+    </div>
+
     <WeekCalendar
+      v-else
       :slots-by-date="slotsByDate"
       :week-days="weekDays"
       :loading="loading"
@@ -65,16 +79,18 @@ function formatSelectedTime(slot: TimeSlot): string {
     />
 
     <!-- Selected Slot Info -->
-    <div v-if="selectedSlot" class="selected-slot-info">
+    <Transition name="slide-up">
+      <div v-if="selectedSlot" class="selected-slot-info">
       <h4>Selected Time</h4>
       <p class="selected-time">{{ formatSelectedTime(selectedSlot) }}</p>
       <p class="selected-duration">
         Duration: {{ selectedSlot.duration_minutes }} minutes
       </p>
-      <button class="clear-btn" @click="store.setSelectedSlot(null)">
+      <button class="clear-btn" @click="clearSelection()">
         Clear Selection
       </button>
-    </div>
+      </div>
+    </Transition>
 
     <!-- No Slots Message -->
     <div v-if="!loading && Object.keys(slotsByDate).length === 0" class="no-slots">
@@ -90,6 +106,13 @@ function formatSelectedTime(slot: TimeSlot): string {
   border-radius: 12px;
   border: 1px solid var(--color-border, #e5e7eb);
   overflow: hidden;
+}
+
+.skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+  padding: 16px;
 }
 
 .selected-slot-info {
@@ -147,5 +170,21 @@ function formatSelectedTime(slot: TimeSlot): string {
 .no-slots .hint {
   font-size: 14px;
   margin-top: 8px;
+}
+
+/* Transitions */
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-up-enter-from {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.slide-up-leave-to {
+  opacity: 0;
+  transform: translateY(-20px);
 }
 </style>

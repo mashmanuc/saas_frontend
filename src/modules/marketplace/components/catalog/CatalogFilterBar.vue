@@ -30,7 +30,7 @@ const selectedSubject = computed({
     const raw = props.filters.subject
     return Array.isArray(raw) ? raw[0] : raw || ''
   },
-  set: (v) => emit('update', { subject: v || null })
+  set: (v) => emit('update', { subject: v ? [v] : null })
 })
 
 const selectedLanguage = computed({
@@ -38,7 +38,7 @@ const selectedLanguage = computed({
     const raw = props.filters.language
     return Array.isArray(raw) ? raw[0] : raw || ''
   },
-  set: (v) => emit('update', { language: v || null })
+  set: (v) => emit('update', { language: v ? [v] : null })
 })
 
 const selectedCountry = computed({

@@ -8,11 +8,11 @@ export { default as BookingDetailView } from './views/BookingDetailView.vue'
 
 // Stores
 export { useBookingStore } from './stores/bookingStore'
-export { useCalendarStore } from './stores/calendarStore'
+export { useAvailabilityStore } from './stores/availabilityStore'
+export { useCalendarWeekStore } from './stores/calendarWeekStore'
 
 // Composables
 export { useBooking } from './composables/useBooking'
-export { useCalendar } from './composables/useCalendar'
 
 // API
 export { bookingApi } from './api/booking'

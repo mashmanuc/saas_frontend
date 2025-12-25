@@ -4,7 +4,6 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { ArrowLeft, Clock, DollarSign, CheckCircle } from 'lucide-vue-next'
-import { useCalendarStore } from '../stores/calendarStore'
 import { useBookingStore } from '../stores/bookingStore'
 import { marketplaceApi } from '@/modules/marketplace/api/marketplace'
 import type { TutorProfile } from '@/modules/marketplace/api/marketplace'
@@ -16,14 +15,13 @@ import BookingForm from '../components/booking/BookingForm.vue'
 
 const route = useRoute()
 const router = useRouter()
-const calendarStore = useCalendarStore()
 const bookingStore = useBookingStore()
 
 const tutorSlug = computed(() => route.params.slug as string)
 const tutor = ref<TutorProfile | null>(null)
 const isLoadingTutor = ref(false)
-
-const { selectedSlot, isLoading: isLoadingSlots } = storeToRefs(calendarStore)
+const selectedSlot = ref<any>(null)
+const isLoadingSlots = ref(false)
 
 // Booking form state
 const subject = ref('')
@@ -52,8 +50,22 @@ onMounted(async () => {
   try {
     tutor.value = await marketplaceApi.getTutorProfile(tutorSlug.value)
     if (tutor.value) {
-      // Load slots for this tutor
-      await calendarStore.loadWeekSlots(tutor.value.id)
+      // Load public availability for this tutor
+      isLoadingSlots.value = true
+      try {
+        const availability = await marketplaceApi.getTutorCalendar({
+          tutorId: tutor.value.id,
+          weekStart: new Date().toISOString().split('T')[0],
+          timezone: 'Europe/Kiev'
+        })
+        // Store available slots locally
+        console.log('Loaded tutor availability:', availability)
+      } catch (e) {
+        console.error('Failed to load availability:', e)
+      } finally {
+        isLoadingSlots.value = false
+      }
+      
       // Set default subject if tutor has subjects
       if (tutor.value.subjects?.length) {
         subject.value = tutor.value.subjects[0].name
@@ -65,16 +77,6 @@ onMounted(async () => {
     isLoadingTutor.value = false
   }
 })
-
-// Reload slots when week changes
-watch(
-  () => calendarStore.selectedDate,
-  async () => {
-    if (tutor.value) {
-      await calendarStore.loadWeekSlots(tutor.value.id)
-    }
-  }
-)
 
 // Submit booking
 async function handleSubmit() {

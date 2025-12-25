@@ -29,12 +29,35 @@
       <ChevronRightIcon class="w-5 h-5" />
     </button>
   </div>
+
+  <div class="availability-status">
+    <div class="status-text" :class="{ 'status-text--empty': !hasAvailability }">
+      <span v-if="hasAvailability">
+        {{ t('calendar.weekNavigation.availableHours', { hours: formattedHours }) }}
+      </span>
+      <span v-else>
+        {{ t('calendar.weekNavigation.noAvailability') }}
+      </span>
+    </div>
+    <button
+      class="scroll-available-btn"
+      :disabled="!hasAvailability || isLoading"
+      @click="handleScrollToAvailable"
+    >
+      <NavigationIcon class="w-4 h-4" />
+      <span>{{ t('calendar.weekNavigation.goToFirstAvailable') }}</span>
+    </button>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon } from 'lucide-vue-next'
+import {
+  ChevronLeft as ChevronLeftIcon,
+  ChevronRight as ChevronRightIcon,
+  Navigation as NavigationIcon,
+} from 'lucide-vue-next'
 
 const { t } = useI18n()
 
@@ -43,20 +66,29 @@ const props = defineProps<{
   weekEnd?: string
   currentPage: number
   isLoading: boolean
+  totalAvailableHours?: number | null
+  hasAvailability?: boolean
 }>()
 
 const emit = defineEmits<{
   navigate: [direction: -1 | 1]
   today: []
+  scrollFirstAvailable: []
 }>()
 
 const weekRangeFormatted = computed(() => {
   if (!props.weekStart || !props.weekEnd) return ''
-  
+
   const start = new Date(props.weekStart)
   const end = new Date(props.weekEnd)
-  
+
   return `${start.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })} - ${end.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short', year: 'numeric' })}`
+})
+
+const formattedHours = computed(() => {
+  if (typeof props.totalAvailableHours !== 'number') return '0'
+  const rounded = Math.round(props.totalAvailableHours * 10) / 10
+  return Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(1)
 })
 
 function handleNavigate(direction: -1 | 1) {
@@ -66,33 +98,43 @@ function handleNavigate(direction: -1 | 1) {
 function handleToday() {
   emit('today')
 }
+
+function handleScrollToAvailable() {
+  if (!props.hasAvailability) return
+  emit('scrollFirstAvailable')
+}
+
+const hasAvailability = computed(() => Boolean(props.hasAvailability))
 </script>
 
 <style scoped>
 .week-navigation {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  gap: 12px;
   padding: 12px 16px;
   background: white;
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .nav-btn {
-  padding: 8px;
-  border-radius: 6px;
-  transition: background-color 0.2s;
-  border: none;
-  background: transparent;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #f3f4f6;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s;
 }
 
 .nav-btn:hover:not(:disabled) {
-  background-color: #f3f4f6;
+  background: #e5e7eb;
+  transform: translateY(-1px);
 }
 
 .nav-btn:disabled {
@@ -102,8 +144,9 @@ function handleToday() {
 
 .week-info {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 6px;
 }
 
 .week-range {
@@ -113,18 +156,63 @@ function handleToday() {
 }
 
 .today-btn {
-  padding: 6px 12px;
-  background: #3b82f6;
-  color: white;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  transition: background-color 0.2s;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  background: #e0f2fe;
+  color: #0369a1;
   border: none;
+  font-size: 12px;
+  font-weight: 600;
   cursor: pointer;
+  transition: background-color 0.2s;
 }
 
 .today-btn:hover {
-  background: #2563eb;
+  background: #bae6fd;
+}
+
+.availability-status {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: white;
+  border-radius: 12px;
+  padding: 10px 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  gap: 12px;
+}
+
+.status-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #065f46;
+}
+
+.status-text--empty {
+  color: #b45309;
+}
+
+.scroll-available-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: none;
+  background: #e0f2fe;
+  color: #0369a1;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.scroll-available-btn:hover:not(:disabled) {
+  background: #bae6fd;
+}
+
+.scroll-available-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

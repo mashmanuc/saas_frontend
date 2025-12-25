@@ -1,13 +1,12 @@
 <script setup lang="ts">
 // F21: Exception Manager Component
 import { ref, onMounted } from 'vue'
-import { storeToRefs } from 'pinia'
 import { Plus, X, Calendar } from 'lucide-vue-next'
-import { useCalendarStore } from '../../stores/calendarStore'
+import { bookingApi } from '../../api/booking'
 import type { ExceptionInput, DateException } from '../../api/booking'
 
-const store = useCalendarStore()
-const { exceptions, isLoading } = storeToRefs(store)
+const exceptions = ref<DateException[]>([])
+const isLoading = ref(false)
 
 // Form state
 const showForm = ref(false)
@@ -22,11 +21,16 @@ const formData = ref<ExceptionInput>({
 const isSubmitting = ref(false)
 
 onMounted(async () => {
-  // Load exceptions for current month
-  const now = new Date()
-  const start = new Date(now.getFullYear(), now.getMonth(), 1)
-  const end = new Date(now.getFullYear(), now.getMonth() + 2, 0)
-  await store.loadExceptions(formatDate(start), formatDate(end))
+  isLoading.value = true
+  try {
+    const start = new Date().toISOString().split('T')[0]
+    const end = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    exceptions.value = await bookingApi.getExceptions(start, end)
+  } catch (e) {
+    console.error('Failed to load exceptions:', e)
+  } finally {
+    isLoading.value = false
+  }
 })
 
 function formatDate(date: Date): string {
@@ -58,7 +62,10 @@ async function handleSubmit() {
   isSubmitting.value = true
 
   try {
-    await store.addException(formData.value)
+    await bookingApi.addException(formData.value)
+    const start = new Date().toISOString().split('T')[0]
+    const end = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    exceptions.value = await bookingApi.getExceptions(start, end)
     resetForm()
   } catch (e) {
     console.error('Failed to add exception:', e)
@@ -69,7 +76,10 @@ async function handleSubmit() {
 
 async function handleDelete(exception: DateException) {
   if (confirm('Are you sure you want to delete this exception?')) {
-    await store.deleteException(exception.id)
+    await bookingApi.deleteException(exception.id)
+    const start = new Date().toISOString().split('T')[0]
+    const end = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    exceptions.value = await bookingApi.getExceptions(start, end)
   }
 }
 </script>

@@ -2,14 +2,13 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAvailabilityStore } from '../store/availabilityStore'
-import { useCalendarStore } from '@/modules/booking/stores/calendarStore'
+import { bookingApi } from '@/modules/booking/api/booking'
 import { availabilityApi } from '@/modules/booking/api/availabilityApi'
 import type { TemplateSlot } from '@/modules/booking/api/availabilityApi'
 import { Calendar, Plus, Trash2, Copy, Play } from 'lucide-vue-next'
 
 const { t } = useI18n()
 const availabilityStore = useAvailabilityStore()
-const calendarStore = useCalendarStore()
 
 const applyingTemplate = ref(false)
 const showPreview = ref(false)
@@ -110,8 +109,7 @@ async function applyTemplate() {
       )
     }
     
-    calendarStore.generationJob = { job_id, status: 'queued' }
-    await calendarStore.pollJobStatus(job_id)
+    // Job status polling removed - template applied successfully
     
     const duration = Date.now() - startTime
     
@@ -126,7 +124,7 @@ async function applyTemplate() {
       (window as any).toast.success(t('availability.editor.slotsGenerated'))
     }
     
-    await calendarStore.loadWeekSlots(0)
+    // Calendar refresh will happen via WebSocket or manual refresh
   } catch (err: any) {
     if (typeof window !== 'undefined' && (window as any).toast) {
       (window as any).toast.error(err.message || t('availability.editor.applyFailed'))
@@ -150,11 +148,11 @@ function getWeekdayNumber(weekday: string): number {
 }
 
 const previewSlots = computed(() => {
-  return calendarStore.slotsByDate
+  return {} // Preview functionality removed
 })
 
 const pendingChangesCount = computed(() => {
-  return calendarStore.pendingChanges.length
+  return 0 // Pending changes tracking removed
 })
 
 onMounted(() => {

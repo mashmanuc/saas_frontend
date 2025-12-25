@@ -47,6 +47,7 @@ const cellClasses = computed(() => [
   `calendar-cell--${props.cell.status}`,
   {
     'calendar-cell--interactive': isInteractive.value,
+    'calendar-cell--has-availability': props.cell.status === 'available',
   },
 ])
 

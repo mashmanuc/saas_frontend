@@ -70,13 +70,12 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { storeToRefs } from 'pinia'
 import SlotPicker from './booking/SlotPicker.vue'
 import { bookingApi } from '../api/booking'
-import { useCalendarStore } from '../stores/calendarStore'
 
 interface Props {
   tutorId: number
+  open: boolean
 }
 
 const props = defineProps<Props>()
@@ -86,8 +85,7 @@ const emit = defineEmits<{
   (e: 'booked', booking: unknown): void
 }>()
 
-const calendarStore = useCalendarStore()
-const { selectedSlot } = storeToRefs(calendarStore)
+const selectedSlot = ref<any>(null)
 
 // State
 const step = ref(1)

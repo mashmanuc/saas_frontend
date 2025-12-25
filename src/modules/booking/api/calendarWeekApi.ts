@@ -75,16 +75,47 @@ export const calendarWeekApi = {
       })
       
       const etag = (response as any).headers?.['etag'] || ''
-      const data = response as unknown as WeekSnapshotResponse
+      const payload = (response as any)?.data ?? response
+      const rawData = (payload?.data ?? payload) as WeekSnapshotResponse
+      const normalizedData: WeekSnapshotResponse = {
+        ...rawData,
+        week: rawData?.week ?? {
+          weekStart: '',
+          weekEnd: '',
+          timezone: 'Europe/Kiev',
+          currentTime: '',
+          page: params.page ?? 0,
+        },
+        days: Array.isArray(rawData?.days) ? rawData.days : [],
+        events: rawData?.events && typeof rawData.events === 'object' ? rawData.events : {},
+        accessible: rawData?.accessible && typeof rawData.accessible === 'object' ? rawData.accessible : {},
+        orders: Array.isArray(rawData?.orders) ? rawData.orders : [],
+        meta: rawData?.meta ?? {
+          countHoursOnWeek: 0,
+          tutorReachedFullLoad: false,
+          zoomLink: '',
+          salary: {
+            amount: 0,
+            commonClassesCount: 0,
+          },
+          billingPeriodWages: {
+            periodStart: '',
+            periodEnd: '',
+            totalAmount: 0,
+          },
+          classMissedReasons: {},
+          classDeletedReasons: {},
+        },
+      }
       
       console.log('[calendarWeekApi] Snapshot received:', {
-        daysCount: data.days.length,
-        eventsCount: Object.values(data.events).flat().length,
+        daysCount: normalizedData.days.length,
+        eventsCount: Object.values(normalizedData.events).flat().length,
         etag,
       })
       
       return {
-        data,
+        data: normalizedData,
         etag,
         cached: false
       }

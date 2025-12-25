@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // F20: Day Schedule Component
 import { Plus, X } from 'lucide-vue-next'
+import { useI18n } from 'vue-i18n'
 import TimeRangeInput from './TimeRangeInput.vue'
 
 interface TimeWindow {
@@ -17,6 +18,8 @@ const emit = defineEmits<{
   remove: [index: number]
   update: [index: number, field: 'start' | 'end', value: string]
 }>()
+
+const { t } = useI18n()
 </script>
 
 <template>
@@ -38,13 +41,13 @@ const emit = defineEmits<{
 
     <!-- Empty state -->
     <div v-else class="empty-state">
-      <span>Not available</span>
+      <span>{{ t('availability.editor.daySchedule.empty') }}</span>
     </div>
 
     <!-- Add button -->
     <button class="add-btn" @click="emit('add')">
       <Plus :size="16" />
-      Add Time
+      {{ t('availability.editor.daySchedule.add') }}
     </button>
   </div>
 </template>

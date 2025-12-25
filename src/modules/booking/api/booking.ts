@@ -86,6 +86,11 @@ export interface AvailabilityInput {
   end_time: string
 }
 
+export interface WeeklyScheduleResponse {
+  schedule: Record<number, Availability[]>
+  windows: Availability[]
+}
+
 export interface DateException {
   id: number
   date: string
@@ -161,13 +166,25 @@ export const bookingApi = {
   },
 
   // Availability
-  async getAvailability(): Promise<Availability[]> {
-    const response = await apiClient.get('/booking/availability/')
-    return response as unknown as Availability[]
+  async getAvailability(): Promise<WeeklyScheduleResponse> {
+    const response = (await apiClient.get('/booking/availability/')) as {
+      schedule?: Record<string, Availability[]>
+      windows?: Availability[]
+    }
+
+    const normalizedSchedule: Record<number, Availability[]> = {}
+    Object.entries(response?.schedule || {}).forEach(([day, windows]) => {
+      normalizedSchedule[Number(day)] = windows
+    })
+
+    return {
+      schedule: normalizedSchedule,
+      windows: response?.windows || [],
+    }
   },
 
   async setAvailability(schedule: AvailabilityInput[]): Promise<void> {
-    await apiClient.post('/booking/availability/', { schedule })
+    await apiClient.post('/booking/availability/bulk/', { schedule })
   },
 
   async deleteAvailability(id: number): Promise<void> {

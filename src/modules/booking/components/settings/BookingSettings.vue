@@ -2,14 +2,12 @@
 // F22: Booking Settings Component
 import { ref, watch } from 'vue'
 import { Save, Clock, Bell, Shield } from 'lucide-vue-next'
-import { useCalendarStore } from '../../stores/calendarStore'
+import { bookingApi } from '../../api/booking'
 import type { TutorSettings } from '../../api/booking'
 
 const props = defineProps<{
   settings: TutorSettings | null
 }>()
-
-const store = useCalendarStore()
 
 // Local state for editing
 const localSettings = ref<Partial<TutorSettings>>({})
@@ -36,7 +34,7 @@ async function saveSettings() {
   isSaving.value = true
 
   try {
-    await store.updateSettings(localSettings.value)
+    await bookingApi.updateSettings(localSettings.value)
     hasChanges.value = false
   } catch (e) {
     console.error('Failed to save settings:', e)

@@ -3,7 +3,6 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { bookingApi } from '../api/booking'
 import type { Booking, BookingInput, BookingListParams } from '../api/booking'
-import { useCalendarStore } from './calendarStore'
 
 function generateUUID(): string {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -165,13 +164,8 @@ export const useBookingStore = defineStore('booking', () => {
       notes: params.notes,
     }, idempotencyKey)
     
-    const calendarStore = useCalendarStore()
-    const weekRange = calendarStore.currentWeekRange
-    await calendarStore.loadWeekView({
-      tutorId: undefined,
-      weekStart: weekRange.start.toISOString().split('T')[0],
-      timezone: 'Europe/Kiev',
-    })
+    // Calendar will be refreshed via WebSocket event or manual refresh
+    // No need to reload calendar here - separation of concerns
     
     return lesson
   }

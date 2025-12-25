@@ -86,7 +86,31 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
   const selectedEvent = computed(() => {
     return selectedEventId.value ? eventsById.value[selectedEventId.value] : null
   })
-  
+
+  const availableMinutesByDay = computed<Record<string, number>>(() => {
+    const result: Record<string, number> = {}
+    for (const [dayKey, slotIds] of Object.entries(accessibleIdsByDay.value)) {
+      const totalMinutes = slotIds.reduce((sum, slotId) => {
+        const slot = accessibleById.value[slotId]
+        if (!slot) {
+          return sum
+        }
+        const start = new Date(slot.start)
+        const end = new Date(slot.end)
+        const durationMinutes = Math.max(0, (end.getTime() - start.getTime()) / 60000)
+        return sum + durationMinutes
+      }, 0)
+      result[dayKey] = totalMinutes
+    }
+    return result
+  })
+
+  const totalAvailableMinutes = computed(() => {
+    return Object.values(availableMinutesByDay.value).reduce((sum, minutes) => sum + minutes, 0)
+  })
+
+  const totalAvailableHours = computed(() => Number((totalAvailableMinutes.value / 60).toFixed(1)))
+
   /**
    * Побудувати 336 клітинок із snapshot (для сумісності з v0.49.1)
    */
@@ -481,6 +505,9 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     accessibleForDay,
     ordersArray,
     selectedEvent,
+    availableMinutesByDay,
+    totalAvailableMinutes,
+    totalAvailableHours,
     computedCells336,
     eventLayouts,
     

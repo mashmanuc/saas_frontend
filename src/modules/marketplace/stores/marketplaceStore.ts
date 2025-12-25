@@ -110,7 +110,7 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
         tutors.value = [...tutors.value, ...response.results]
       }
       totalCount.value = response.count
-      totalPages.value = response.total_pages || 0
+      totalPages.value = response.totalPages || 0
     } catch (err) {
       error.value = mapApiError(err, t('marketplace.errors.loadTutors'))
       console.error('[MarketplaceStore] loadTutors error:', err)

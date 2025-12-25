@@ -35,11 +35,11 @@
         <div v-for="day in 7" :key="day" class="day-column">
           <button
             v-for="cell in getCellsForDay(day - 1)"
-            :key="cell.startAtUTC"
+            :key="cell.start"
             @click="handleCellClick(cell)"
             class="time-slot"
           >
-            {{ formatTime(cell.startAtUTC) }}
+            {{ formatTime(cell.start) }}
           </button>
         </div>
       </div>
@@ -51,7 +51,8 @@
 import { ref, onMounted, computed } from 'vue'
 import { Calendar as CalendarIcon, AlertCircle as AlertCircleIcon, RefreshCw as RefreshCwIcon } from 'lucide-vue-next'
 import { marketplaceApi } from '@/modules/marketplace/api/marketplace'
-import type { CalendarCell } from '@/modules/booking/types/calendar'
+import type { AvailableSlot } from '@/modules/marketplace/api/marketplace'
+import type { AccessibleSlot } from '@/modules/booking/types/calendarWeek'
 
 const props = defineProps<{
   tutorId: number
@@ -59,16 +60,16 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  bookingRequest: [cell: CalendarCell]
+  bookingRequest: [cell: AccessibleSlot]
 }>()
 
-const cells = ref<CalendarCell[]>([])
+const cells = ref<AccessibleSlot[]>([])
 const loading = ref(true)
 const error = ref(false)
 const weekStart = ref('')
 
 const availableCells = computed(() => {
-  return cells.value.filter(cell => cell.status === 'available')
+  return cells.value
 })
 
 const weekDays = computed(() => {
@@ -98,23 +99,37 @@ function getWeekStart(): string {
   return monday.toISOString().split('T')[0]
 }
 
-function getCellsForDay(dayOffset: number): CalendarCell[] {
+function getCellsForDay(dayOffset: number): AccessibleSlot[] {
   const targetDate = new Date(weekStart.value)
   targetDate.setDate(targetDate.getDate() + dayOffset)
   const dateStr = targetDate.toISOString().split('T')[0]
   
   return availableCells.value.filter(cell => {
-    const cellDate = new Date(cell.startAtUTC).toISOString().split('T')[0]
+    const cellDate = new Date(cell.start).toISOString().split('T')[0]
     return cellDate === dateStr
   })
 }
 
-function formatTime(utcTime: string): string {
-  const date = new Date(utcTime)
+function formatTime(isoTime: string): string {
+  const date = new Date(isoTime)
   return date.toLocaleTimeString('uk-UA', {
     hour: '2-digit',
     minute: '2-digit',
   })
+}
+
+// Adapter function to convert AvailableSlot to AccessibleSlot
+function adaptAvailableSlotToAccessible(slot: AvailableSlot, index: number): AccessibleSlot {
+  const startDate = new Date(slot.startAtUTC)
+  const endDate = new Date(startDate.getTime() + slot.duration * 60000)
+  
+  return {
+    id: index, // Use index as temporary ID since AvailableSlot doesn't have id
+    type: 'available_slot',
+    start: startDate.toISOString(),
+    end: endDate.toISOString(),
+    regularity: 'single'
+  }
 }
 
 async function loadCalendar() {
@@ -130,7 +145,8 @@ async function loadCalendar() {
       timezone: props.timezone,
     })
     
-    cells.value = data.cells || []
+    // Convert AvailableSlot[] to AccessibleSlot[]
+    cells.value = (data.cells || []).map((slot, index) => adaptAvailableSlotToAccessible(slot, index))
   } catch (err) {
     error.value = true
     console.error('Failed to load tutor calendar:', err)
@@ -139,7 +155,7 @@ async function loadCalendar() {
   }
 }
 
-function handleCellClick(cell: CalendarCell) {
+function handleCellClick(cell: AccessibleSlot) {
   emit('bookingRequest', cell)
 }
 

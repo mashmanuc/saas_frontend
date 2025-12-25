@@ -28,6 +28,7 @@ const MarketplaceMyProfileView = () => import('../modules/marketplace/views/MyPr
 const MarketplaceSearchResultsView = () => import('../modules/marketplace/views/SearchResultsView.vue')
 const MarketplaceCategoryView = () => import('../modules/marketplace/views/CategoryView.vue')
 const BookingRequestsView = () => import('../modules/booking/views/BookingRequestsView.vue')
+const TutorAvailabilityView = () => import('../modules/booking/views/TutorAvailabilityView.vue')
 const ProfileEditView = () => import('../modules/profile/views/ProfileEditView.vue')
 const ProfileSettingsView = () => import('../modules/profile/views/ProfileSettingsView.vue')
 const ProfileActivityView = () => import('../modules/profile/views/ProfileActivityView.vue')
@@ -298,6 +299,12 @@ const routes = [
         path: 'booking/tutor',
         name: 'tutor-calendar',
         component: () => import('../modules/booking/views/TutorCalendarView.vue'),
+        meta: { roles: [USER_ROLES.TUTOR] },
+      },
+      {
+        path: 'booking/availability',
+        name: 'booking-availability',
+        component: TutorAvailabilityView,
         meta: { roles: [USER_ROLES.TUTOR] },
       },
       {

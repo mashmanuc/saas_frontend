@@ -10,11 +10,17 @@
         :class="{
           'day-header--today': day.dayKey === todayKey,
           'day-header--active': day.dayKey === activeDayKey,
+          'day-header--empty': !hasAvailability(day.dayKey),
         }"
         @click="setActiveDay(day.dayKey)"
       >
-        <span class="day-header__dow">{{ day.label }}</span>
-        <span class="day-header__date">{{ day.day }}</span>
+        <div class="day-header__meta">
+          <span class="day-header__dow">{{ day.label }}</span>
+          <span class="day-header__date">{{ day.day }}</span>
+        </div>
+        <span class="day-header__badge">
+          {{ availabilityLabel(day.dayKey) }}
+        </span>
       </button>
     </div>
 
@@ -68,6 +74,7 @@ const props = defineProps<{
   cells: CalendarCell[]
   eventLayouts: EventLayout[]
   timezone: string
+  dayAvailability?: Record<string, number>
 }>()
 
 const emit = defineEmits<{
@@ -122,6 +129,22 @@ const timeScaleSlots = computed(() => {
 
 const todayKey = new Date().toISOString().split('T')[0]
 const activeDayKey = ref<string>('')
+
+const hasAvailability = (dayKey: string) => {
+  const minutes = props.dayAvailability?.[dayKey] ?? 0
+  return minutes > 0
+}
+
+const formatHours = (minutes: number) => {
+  const hours = minutes / 60
+  return hours % 1 === 0 ? hours.toString() : hours.toFixed(1)
+}
+
+const availabilityLabel = (dayKey: string) => {
+  const minutes = props.dayAvailability?.[dayKey] ?? 0
+  if (minutes <= 0) return '0 год'
+  return `${formatHours(minutes)} год`
+}
 
 watch(
   () => props.days.map(day => day.dayKey),

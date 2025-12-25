@@ -12,8 +12,11 @@
       :week-end="weekMeta?.weekEnd"
       :current-page="weekMeta?.page ?? 0"
       :is-loading="isLoading"
+      :total-available-hours="totalAvailableHours"
+      :has-availability="hasAvailability"
       @navigate="handleNavigate"
       @today="handleToday"
+      @scroll-first-available="handleScrollToFirstAvailable"
     />
 
     <!-- Loading State -->
@@ -31,6 +34,20 @@
       </button>
     </div>
 
+    <!-- Empty availability state -->
+    <div v-else-if="!hasAvailability" class="availability-empty-state">
+      <div class="empty-state-card">
+        <div class="empty-state-icon">
+          <AlertCircleIcon class="w-8 h-8" />
+        </div>
+        <h3>{{ t('calendar.availabilityEmpty.title') }}</h3>
+        <p>{{ t('calendar.availabilityEmpty.description') }}</p>
+        <button class="btn-primary" @click="handleSetupAvailability">
+          {{ t('calendar.availabilityEmpty.cta') }}
+        </button>
+      </div>
+    </div>
+
     <!-- Calendar Board -->
     <CalendarBoard
       v-else
@@ -38,6 +55,7 @@
       :cells="computedCells336"
       :event-layouts="eventLayouts"
       :timezone="weekMeta?.timezone ?? 'Europe/Kiev'"
+      :day-availability="availableMinutesByDay"
       @cell-click="handleCellClick"
       @event-click="handleEventClick"
     />
@@ -62,13 +80,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { Loader as LoaderIcon, AlertCircle as AlertCircleIcon } from 'lucide-vue-next'
 import { useCalendarWeekStore } from '@/modules/booking/stores/calendarWeekStore'
 import { useCalendarWebSocket } from '@/modules/booking/composables/useCalendarWebSocket'
 import { useErrorHandler } from '@/modules/booking/composables/useErrorHandler'
+import { useRouter } from 'vue-router'
 import CalendarBoard from './CalendarBoard.vue'
 import WeekNavigation from './WeekNavigation.vue'
 import CreateLessonModal from '../modals/CreateLessonModal.vue'
@@ -80,6 +99,7 @@ import '@/modules/booking/styles/calendar-animations.css'
 import '@/modules/booking/styles/calendar-responsive.css'
 
 const { t } = useI18n()
+const router = useRouter()
 
 const store = useCalendarWeekStore()
 const { connected } = useCalendarWebSocket()
@@ -92,7 +112,12 @@ const {
   eventLayouts,
   isLoading,
   error,
+  totalAvailableHours,
+  totalAvailableMinutes,
+  availableMinutesByDay,
 } = storeToRefs(store)
+
+const hasAvailability = computed(() => (totalAvailableMinutes.value || 0) > 0)
 
 const emit = defineEmits<{
   cellClick: [cell: CalendarCell]
@@ -123,6 +148,19 @@ function handleToday() {
 
 function handleRetry() {
   store.fetchWeek(weekMeta.value?.page ?? 0)
+}
+
+function handleScrollToFirstAvailable() {
+  const el = document.querySelector('.calendar-cell--available')
+  if (el instanceof HTMLElement) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    el.classList.add('calendar-cell--scrolled')
+    setTimeout(() => el.classList.remove('calendar-cell--scrolled'), 1200)
+  }
+}
+
+function handleSetupAvailability() {
+  router.push({ name: 'booking-availability' }).catch(() => {})
 }
 
 function handleCellClick(cell: CalendarCell) {
@@ -197,5 +235,67 @@ function handleEventDeleted() {
   color: #92400e;
   font-size: 14px;
   font-weight: 500;
+}
+
+.availability-empty-state {
+  display: flex;
+  justify-content: center;
+  padding: 48px 0;
+}
+
+.empty-state-card {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 480px;
+  text-align: center;
+  box-shadow: 0 6px 24px rgba(15, 118, 110, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.empty-state-card h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.empty-state-card p {
+  color: #475569;
+  font-size: 14px;
+}
+
+.empty-state-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #ecfeff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0e7490;
+}
+
+.btn-primary {
+  padding: 10px 24px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #0ea5e9, #14b8a6);
+  color: white;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.calendar-cell--scrolled {
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.4);
+  transition: box-shadow 0.3s ease;
 }
 </style>

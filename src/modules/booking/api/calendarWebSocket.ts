@@ -28,11 +28,12 @@ export class CalendarWebSocket {
     return new Promise((resolve, reject) => {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
       const host = window.location.host
-      const url = `${protocol}//${host}/ws/v1/calendar/?token=${encodeURIComponent(this.token)}`
+      const url = `${protocol}//${host}/ws/calendar/`
 
       console.log('[CalendarWebSocket] Connecting to:', url)
 
-      this.ws = new WebSocket(url)
+      const protocols: string[] = ['access_token', this.token]
+      this.ws = new WebSocket(url, protocols)
 
       this.ws.onopen = () => {
         console.log('[CalendarWebSocket] Connected')

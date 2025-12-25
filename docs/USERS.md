@@ -22,6 +22,7 @@ Marketplace tutor ready: demo_market_v034_tutor_04@example.com
 Marketplace tutor ready: demo_market_v034_tutor_05@example.com
 Marketplace tutor ready: demo_market_v034_tutor_no_photo@example.
 Тьютори:
+ tutor11@example.com
 
 v036_stem_pro@example.com
 v036_ielts_mentor@example.com
