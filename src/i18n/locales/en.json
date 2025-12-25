@@ -2217,7 +2217,10 @@
       "subtitle": "Configure your base schedule and exceptions",
       "weeklyScheduleTitle": "Weekly schedule",
       "weeklyScheduleSubtitle": "Set your regular available hours for each day",
+      "saveSuccess": "Schedule saved successfully",
+      "saveError": "Failed to save schedule",
       "actions": {
+        "cancel": "Cancel",
         "reset": "Reset",
         "save": "Save schedule",
         "saving": "Saving..."
@@ -2242,6 +2245,26 @@
       "addOverride": "Add override",
       "blackoutDates": "Blackout dates",
       "addBlackout": "Add date"
+    },
+    "jobStatus": {
+      "pending": {
+        "title": "Preparing availability...",
+        "details": "Your schedule is being processed"
+      },
+      "running": {
+        "title": "Generating available slots...",
+        "details": "This may take up to 30 seconds"
+      },
+      "success": {
+        "title": "Availability updated!",
+        "details": "Created {created} slots, removed {deleted} old slots"
+      },
+      "failed": {
+        "title": "Generation failed",
+        "details": "Please try again or contact support"
+      },
+      "retry": "Retry",
+      "retryError": "Failed to retry generation"
     },
     "calendar": {
       "weekOf": "Week of {date}",
@@ -2283,6 +2306,13 @@
     "errors": {
       "blockFailed": "Failed to block slot",
       "loadFailed": "Failed to load calendar"
+    },
+    "emptyState": {
+      "noAvailability": {
+        "title": "No availability set",
+        "description": "Configure your schedule to start accepting bookings from students",
+        "action": "Set up availability"
+      }
     }
   }
 }

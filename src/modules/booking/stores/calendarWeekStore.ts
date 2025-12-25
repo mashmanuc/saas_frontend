@@ -460,17 +460,32 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     fetchWeek(currentPage.value, currentTimezone.value)
   }
   
+  /**
+   * Subscribe to availability.slots_generated WebSocket event
+   * Refetches calendar when slots are generated
+   */
+  function subscribeToAvailabilityUpdates(userId: number, onUpdate?: () => void) {
+    // Note: WebSocket subscription should be handled by useCalendarWebSocket composable
+    // This method is a placeholder for future WebSocket integration
+    // When availability.slots_generated event is received:
+    // 1. Check if tutorId matches current user
+    // 2. Refetch current week: fetchWeek(currentPage.value)
+    // 3. Show success notification
+    // 4. Call optional onUpdate callback
+    console.log('[calendarWeekStore] Availability updates subscription ready for user:', userId)
+  }
+  
   function $reset() {
     weekMeta.value = null
     days.value = []
     meta.value = null
     eventsById.value = {}
     eventIdsByDay.value = {}
-    allEventIds.value = []
     accessibleById.value = {}
     accessibleIdsByDay.value = {}
-    allAccessibleIds.value = []
     ordersById.value = {}
+    allEventIds.value = []
+    allAccessibleIds.value = []
     allOrderIds.value = []
     isLoading.value = false
     error.value = null
@@ -522,6 +537,7 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     handleEventCreated,
     handleEventUpdated,
     handleEventDeleted,
+    subscribeToAvailabilityUpdates,
     $reset,
   }
 })

@@ -35,18 +35,7 @@
     </div>
 
     <!-- Empty availability state -->
-    <div v-else-if="!hasAvailability" class="availability-empty-state">
-      <div class="empty-state-card">
-        <div class="empty-state-icon">
-          <AlertCircleIcon class="w-8 h-8" />
-        </div>
-        <h3>{{ t('calendar.availabilityEmpty.title') }}</h3>
-        <p>{{ t('calendar.availabilityEmpty.description') }}</p>
-        <button class="btn-primary" @click="handleSetupAvailability">
-          {{ t('calendar.availabilityEmpty.cta') }}
-        </button>
-      </div>
-    </div>
+    <EmptyAvailabilityState v-else-if="!hasAvailability" />
 
     <!-- Calendar Board -->
     <CalendarBoard
@@ -90,6 +79,7 @@ import { useErrorHandler } from '@/modules/booking/composables/useErrorHandler'
 import { useRouter } from 'vue-router'
 import CalendarBoard from './CalendarBoard.vue'
 import WeekNavigation from './WeekNavigation.vue'
+import EmptyAvailabilityState from './EmptyAvailabilityState.vue'
 import CreateLessonModal from '../modals/CreateLessonModal.vue'
 import EventModal from '../modals/EventModal.vue'
 import type { CalendarCell } from '@/modules/booking/types/calendarWeek'

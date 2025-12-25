@@ -75,7 +75,7 @@ export function useAvailability(tutorId?: number) {
     try {
       // Schema for validation
       const responseSchema = z.object({
-        tutor_slug: z.string(),
+        tutor_id: z.number(),
         week_start: z.string(),
         timezone: z.string(),
         cells: z.array(z.object({

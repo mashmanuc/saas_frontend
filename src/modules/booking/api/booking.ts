@@ -1,5 +1,12 @@
 // F1: Booking API Client
 import apiClient from '@/utils/apiClient'
+import type {
+  AvailabilitySyncJob,
+  BulkAvailabilityResponse,
+  GenerateAvailabilityPayload,
+  GenerateAvailabilityResponse,
+  WeeklySchedulePayload,
+} from '../types/availability'
 
 // Types
 export interface User {
@@ -183,8 +190,27 @@ export const bookingApi = {
     }
   },
 
-  async setAvailability(schedule: AvailabilityInput[]): Promise<void> {
-    await apiClient.post('/booking/availability/bulk/', { schedule })
+  async setAvailability(schedule: WeeklySchedulePayload): Promise<BulkAvailabilityResponse> {
+    const response = await apiClient.post('/booking/availability/bulk/', schedule)
+    return response as unknown as BulkAvailabilityResponse
+  },
+
+  /**
+   * Отримати статус job генерації слотів
+   */
+  async getAvailabilityJobStatus(jobId: number): Promise<AvailabilitySyncJob> {
+    const response = await apiClient.get(`/booking/availability/jobs/${jobId}/`)
+    return response as unknown as AvailabilitySyncJob
+  },
+
+  /**
+   * Вручну запустити генерацію слотів
+   */
+  async generateAvailabilitySlots(
+    payload: GenerateAvailabilityPayload = {}
+  ): Promise<GenerateAvailabilityResponse> {
+    const response = await apiClient.post('/booking/availability/generate/', payload)
+    return response as unknown as GenerateAvailabilityResponse
   },
 
   async deleteAvailability(id: number): Promise<void> {

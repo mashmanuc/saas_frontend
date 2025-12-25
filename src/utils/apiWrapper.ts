@@ -51,7 +51,7 @@ export async function apiCall<T>(
       if (!validated.success) {
         console.error('[apiWrapper] Validation failed:', {
           context: errorContext,
-          errors: validated.error.errors,
+          errors: validated.error.issues,
           response
         })
         
@@ -59,7 +59,7 @@ export async function apiCall<T>(
           `Invalid response format: ${errorContext}`,
           'VALIDATION_ERROR',
           undefined,
-          validated.error.errors
+          validated.error.issues
         )
       }
 

@@ -1,0 +1,78 @@
+/**
+ * Calendar Design Tokens v0.49.5
+ * Global CSS variables for calendar components
+ * Supports light/dark mode, high contrast, and accessibility
+ */
+
+:root {
+  /* Calendar cell states */
+  --calendar-cell-empty: #ffffff;
+  --calendar-cell-available: #e8f5e9;
+  --calendar-cell-available-hover: #c8e6c9;
+  --calendar-cell-booked: #fff3e0;
+  --calendar-cell-blocked: #f5f5f5;
+  --calendar-cell-not-allow: #ffebee;
+  
+  /* Calendar borders */
+  --calendar-border-color: #e0e0e0;
+  --calendar-border-radius: 4px;
+  
+  /* Event blocks */
+  --calendar-event-bg: #1976d2;
+  --calendar-event-text: #ffffff;
+  --calendar-event-border: #1565c0;
+  --calendar-event-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  
+  /* Accessibility states */
+  --calendar-focus-ring: 2px solid #2196f3;
+  --calendar-focus-offset: 2px;
+  
+  /* Spacing */
+  --calendar-cell-padding: 8px;
+  --calendar-cell-gap: 1px;
+  
+  /* Typography */
+  --calendar-font-size-small: 0.75rem;
+  --calendar-font-size-base: 0.875rem;
+  --calendar-font-size-large: 1rem;
+  
+  /* Transitions */
+  --calendar-transition-fast: 0.15s ease;
+  --calendar-transition-base: 0.2s ease;
+  --calendar-transition-slow: 0.3s ease;
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  :root {
+    --calendar-cell-available: #4caf50;
+    --calendar-cell-available-hover: #388e3c;
+    --calendar-cell-booked: #ff9800;
+    --calendar-border-color: #000000;
+    --calendar-focus-ring: 3px solid #000000;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --calendar-cell-empty: #1e1e1e;
+    --calendar-cell-available: #1b5e20;
+    --calendar-cell-available-hover: #2e7d32;
+    --calendar-cell-booked: #e65100;
+    --calendar-cell-blocked: #424242;
+    --calendar-cell-not-allow: #b71c1c;
+    --calendar-border-color: #616161;
+    --calendar-event-bg: #42a5f5;
+    --calendar-event-border: #1e88e5;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --calendar-transition-fast: 0s;
+    --calendar-transition-base: 0s;
+    --calendar-transition-slow: 0s;
+  }
+}

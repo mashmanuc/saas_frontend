@@ -26,6 +26,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { CalendarCell } from '@/modules/booking/types/calendarWeek'
+import '@/styles/calendar-tokens.css'
 
 const { t } = useI18n()
 
@@ -84,6 +85,51 @@ function handleClick() {
 </script>
 
 <style scoped>
+.calendar-cell {
+  border: 1px solid var(--calendar-border-color);
+  border-radius: var(--calendar-border-radius);
+  padding: var(--calendar-cell-padding);
+  transition: background-color var(--calendar-transition-base), 
+              transform var(--calendar-transition-fast);
+  position: relative;
+  min-height: 44px; /* iOS touch target minimum */
+}
+
+.calendar-cell.calendar-cell--empty {
+  background: var(--calendar-cell-empty);
+}
+
+.calendar-cell.calendar-cell--available {
+  background: var(--calendar-cell-available);
+  cursor: pointer;
+}
+
+.calendar-cell.calendar-cell--available:hover {
+  background: var(--calendar-cell-available-hover);
+  transform: scale(1.02);
+}
+
+.calendar-cell.calendar-cell--booked {
+  background: var(--calendar-cell-booked);
+}
+
+.calendar-cell.calendar-cell--blocked {
+  background: var(--calendar-cell-blocked);
+  cursor: not-allowed;
+}
+
+.calendar-cell.calendar-cell--not-allow {
+  background: var(--calendar-cell-not-allow);
+  cursor: not-allowed;
+}
+
+/* Accessibility: focus state */
+.calendar-cell:focus-visible {
+  outline: var(--calendar-focus-ring);
+  outline-offset: var(--calendar-focus-offset);
+  z-index: 10;
+}
+
 .cell-status-indicator {
   position: absolute;
   top: 4px;
@@ -96,12 +142,12 @@ function handleClick() {
 }
 
 .calendar-cell--available .cell-status-indicator {
-  background: var(--calendar-status-available);
+  background: #4caf50;
   opacity: 1;
 }
 
 .calendar-cell--blocked .cell-status-indicator {
-  background: var(--calendar-status-blocked);
+  background: #9e9e9e;
   opacity: 1;
 }
 
@@ -110,19 +156,28 @@ function handleClick() {
   bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
-  padding: var(--space-xs) var(--space-sm);
-  background: var(--text-primary);
-  color: var(--bg-primary);
-  border-radius: var(--radius-sm);
-  font-size: 0.75rem;
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  border-radius: 4px;
+  font-size: var(--calendar-font-size-small);
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease;
+  transition: opacity var(--calendar-transition-base);
   z-index: 100;
+  margin-bottom: 4px;
 }
 
 .calendar-cell:hover .cell-tooltip {
   opacity: 1;
+}
+
+/* Responsive: mobile touch targets */
+@media (max-width: 768px) {
+  .calendar-cell {
+    min-height: 44px;
+    padding: 6px;
+  }
 }
 </style>

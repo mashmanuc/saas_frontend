@@ -78,7 +78,7 @@ function isHttp404(err: unknown): boolean {
 
 export interface AvailableSlot {
   startAtUTC: string
-  status: 'available'
+  status: 'available' | 'booked' | 'blocked'
   duration: number
 }
 
