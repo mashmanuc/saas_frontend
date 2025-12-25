@@ -39,14 +39,22 @@
         {{ t('calendar.weekNavigation.noAvailability') }}
       </span>
     </div>
-    <button
-      class="scroll-available-btn"
-      :disabled="!hasAvailability || isLoading"
-      @click="handleScrollToAvailable"
-    >
-      <NavigationIcon class="w-4 h-4" />
-      <span>{{ t('calendar.weekNavigation.goToFirstAvailable') }}</span>
-    </button>
+    <div class="actions">
+      <button
+        class="scroll-available-btn"
+        :disabled="!hasAvailability || isLoading"
+        @click="handleScrollToAvailable"
+      >
+        <NavigationIcon class="w-4 h-4" />
+        <span>{{ t('calendar.weekNavigation.goToFirstAvailable') }}</span>
+      </button>
+      <button
+        class="edit-availability-btn"
+        @click="handleOpenAvailability"
+      >
+        {{ t('calendar.weekNavigation.setupAvailability') }}
+      </button>
+    </div>
   </div>
 </template>
 
@@ -74,6 +82,7 @@ const emit = defineEmits<{
   navigate: [direction: -1 | 1]
   today: []
   scrollFirstAvailable: []
+  openAvailability: []
 }>()
 
 const weekRangeFormatted = computed(() => {
@@ -102,6 +111,10 @@ function handleToday() {
 function handleScrollToAvailable() {
   if (!props.hasAvailability) return
   emit('scrollFirstAvailable')
+}
+
+function handleOpenAvailability() {
+  emit('openAvailability')
 }
 
 const hasAvailability = computed(() => Boolean(props.hasAvailability))
@@ -193,6 +206,12 @@ const hasAvailability = computed(() => Boolean(props.hasAvailability))
   color: #b45309;
 }
 
+.actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 .scroll-available-btn {
   display: inline-flex;
   align-items: center;
@@ -214,5 +233,21 @@ const hasAvailability = computed(() => Boolean(props.hasAvailability))
 .scroll-available-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.edit-availability-btn {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid #10b981;
+  background: #ecfdf5;
+  color: #047857;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.edit-availability-btn:hover {
+  background: #d1fae5;
+  border-color: #059669;
 }
 </style>

@@ -27,6 +27,14 @@ export interface AvailabilityUpdatedEvent {
   timestamp: string
 }
 
+export interface AvailabilitySlotsGeneratedEvent {
+  tutorId: number
+  jobId: number
+  slotsCreated: number
+  slotsDeleted: number
+  timestamp: string
+}
+
 export interface BookingEvent {
   booking_id: string
   status: string
@@ -103,6 +111,25 @@ class WebSocketService {
     })
 
     this.initialized = true
+  }
+
+  subscribeTutorAvailabilityGeneration(
+    tutorId: number,
+    handler: (event: WebSocketEvent & { data: AvailabilitySlotsGeneratedEvent }) => void
+  ) {
+    const channel = `tutor:${tutorId}`
+    return this.subscribe(channel, (data) => {
+      const eventName = data?.event || data?.type
+
+      if (eventName === 'availability.slots_generated') {
+        handler({
+          channel,
+          event: eventName,
+          data: (data.data || data.payload || data) as AvailabilitySlotsGeneratedEvent,
+          timestamp: data?.timestamp,
+        })
+      }
+    })
   }
 
   connect() {

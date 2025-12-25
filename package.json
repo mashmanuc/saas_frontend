@@ -11,6 +11,8 @@
     "i18n:check": "node scripts/i18n-check.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "vitest run --config vitest.e2e.config.js",
+    "bootstrap-auth": "node scripts/bootstrap-auth.js",
     "e2e": "playwright test",
     "e2e:smoke": "playwright test --project=ui-smoke",
     "security:check": "node scripts/security-manifest-check.mjs",

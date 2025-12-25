@@ -13,11 +13,32 @@ export function useAvailabilityJob() {
   const error = ref<string | null>(null)
   
   let pollInterval: number | null = null
+  let lastJobStartTime = 0
+  const MIN_JOB_INTERVAL_MS = 30000 // 30 секунд між job згідно з API rate limit
   
   /**
    * Почати відстеження job з polling кожні 2 секунди
+   * Debounce: не дозволяє запускати новий job якщо попередній ще активний
+   * або якщо не минуло 30 секунд з останнього запуску
    */
   async function startTracking(jobId: number) {
+    // Debounce: перевірити чи не активний вже job
+    if (currentJob.value && ['pending', 'running'].includes(currentJob.value.status)) {
+      console.warn('[useAvailabilityJob] Job already in progress, skipping')
+      return
+    }
+    
+    // Rate limit: перевірити чи минуло 30 секунд з останнього запуску
+    const now = Date.now()
+    const timeSinceLastJob = now - lastJobStartTime
+    if (timeSinceLastJob < MIN_JOB_INTERVAL_MS && lastJobStartTime > 0) {
+      const remainingTime = Math.ceil((MIN_JOB_INTERVAL_MS - timeSinceLastJob) / 1000)
+      console.warn(`[useAvailabilityJob] Rate limit: wait ${remainingTime}s before starting new job`)
+      error.value = `Please wait ${remainingTime} seconds before retrying`
+      return
+    }
+    
+    lastJobStartTime = now
     isPolling.value = true
     error.value = null
     

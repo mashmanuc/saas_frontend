@@ -218,6 +218,14 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
   }
   
   function normalizeSnapshot(snapshot: WeekSnapshot) {
+    console.log('[calendarWeekStore] Normalizing snapshot:', {
+      snapshotKeys: Object.keys(snapshot),
+      daysCount: snapshot.days?.length || 0,
+      eventsKeys: Object.keys(snapshot.events || {}),
+      accessibleKeys: Object.keys(snapshot.accessible || {}),
+      ordersCount: snapshot.orders?.length || 0,
+    })
+    
     // Normalize events
     const newEventsById: Record<number, CalendarEvent> = {}
     const newEventIdsByDay: Record<string, number[]> = {}
@@ -241,6 +249,12 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     const newAccessibleById: Record<number, AccessibleSlot> = {}
     const newAccessibleIdsByDay: Record<string, number[]> = {}
     const newAllAccessibleIds: number[] = []
+    
+    console.log('[calendarWeekStore] Processing accessible slots:', {
+      accessibleData: snapshot.accessible,
+      accessibleType: typeof snapshot.accessible,
+      accessibleKeys: Object.keys(snapshot.accessible || {}),
+    })
     
     for (const [dayKey, daySlots] of Object.entries(snapshot.accessible)) {
       newAccessibleIdsByDay[dayKey] = []
@@ -305,6 +319,10 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
         weekStart: weekMeta.value?.weekStart,
         eventsCount: allEventIds.value.length,
         accessibleCount: allAccessibleIds.value.length,
+        accessibleById: Object.keys(accessibleById.value).length,
+        accessibleIdsByDay: Object.keys(accessibleIdsByDay.value).length,
+        availableMinutesByDay: availableMinutesByDay.value,
+        totalAvailableMinutes: totalAvailableMinutes.value,
         etag: etag.value,
       })
     } catch (err: any) {
@@ -525,6 +543,8 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     totalAvailableHours,
     computedCells336,
     eventLayouts,
+    allAccessibleIds,
+    allEventIds,
     
     // Actions
     fetchWeek,

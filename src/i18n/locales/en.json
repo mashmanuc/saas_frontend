@@ -425,7 +425,8 @@
     "marketplaceMyProfile": "My tutor profile",
     "tutorProfile": "Tutor profile",
     "sandbox": "Sandbox",
-    "soloWorkspace": "Solo Workspace"
+    "soloWorkspace": "Solo Workspace",
+    "tutorCalendar": "Tutor calendar"
   },
   "marketplace": {
     "subjects": {
@@ -2219,6 +2220,7 @@
       "weeklyScheduleSubtitle": "Set your regular available hours for each day",
       "saveSuccess": "Schedule saved successfully",
       "saveError": "Failed to save schedule",
+      "conflictWithSlots": "This time conflicts with existing slots",
       "actions": {
         "cancel": "Cancel",
         "reset": "Reset",
@@ -2227,7 +2229,8 @@
       },
       "daySchedule": {
         "empty": "Not available",
-        "add": "Add time"
+        "add": "Add time",
+        "booked": "Booked"
       },
       "showPreview": "Show preview",
       "hidePreview": "Hide preview",
@@ -2246,6 +2249,10 @@
       "blackoutDates": "Blackout dates",
       "addBlackout": "Add date"
     },
+    "editor": {
+      "saveSuccess": "Availability saved successfully!",
+      "saveError": "Failed to save availability. Please try again."
+    },
     "jobStatus": {
       "pending": {
         "title": "Preparing availability...",
@@ -2263,8 +2270,8 @@
         "title": "Generation failed",
         "details": "Please try again or contact support"
       },
-      "retry": "Retry",
-      "retryError": "Failed to retry generation"
+      "retry": "Retrying slot generation...",
+      "retryError": "Failed to retry generation. Please try again later."
     },
     "calendar": {
       "weekOf": "Week of {date}",
@@ -2274,11 +2281,11 @@
   },
   "calendar": {
     "weekOf": "Week of {date}",
-    "noSlots": "No available slots",
-    "noSlotsDescription": "Try selecting a different week",
-    "noSlotsThisDay": "No slots",
-    "selected": "Selected",
-    "slots": "slots",
+    "analyticsTitle": "Availability analytics",
+    "analyticsDescription": "Track how your open slots change week over week.",
+    "draftNotice": "Draft mode. Don't forget to apply your changes.",
+    "pendingJobs": "Calendar sync in progress…",
+    "lastSyncLabel": "Last sync: {datetime}",
     "realtime": {
       "status": {
         "connected": "Connected to real-time",
@@ -2293,7 +2300,6 @@
     "justNow": "just now",
     "oneMinuteAgo": "a minute ago",
     "minutesAgo": "{count} min ago",
-    "lastSync": "Last sync",
     "syncStatus": {
       "syncing": "Syncing...",
       "synced": "Synced",
@@ -2303,15 +2309,39 @@
       "slotBooked": "{student} booked a slot at {time}",
       "availabilityUpdated": "Schedule updated"
     },
+    "warnings": {
+      "disconnected": "No connection. Please check your network or refresh."
+    },
     "errors": {
       "blockFailed": "Failed to block slot",
       "loadFailed": "Failed to load calendar"
+    },
+    "weekNavigation": {
+      "availableHours": "{hours} hours available",
+      "noAvailability": "No availability set for this week yet",
+      "goToFirstAvailable": "Go to first available slot",
+      "setupAvailability": "Edit availability",
+      "prevWeek": "Previous week",
+      "nextWeek": "Next week",
+      "today": "Current week"
     },
     "emptyState": {
       "noAvailability": {
         "title": "No availability set",
         "description": "Configure your schedule to start accepting bookings from students",
         "action": "Set up availability"
+      }
+    },
+    "marketplace": {
+      "availability": {
+        "title": "Available slots",
+        "weekRange": "{start} – {end}",
+        "prevWeek": "Previous week",
+        "nextWeek": "Next week",
+        "empty": "No open slots right now",
+        "cta": "Book a lesson",
+        "error": "Failed to load availability",
+        "retry": "Retry"
       }
     }
   }

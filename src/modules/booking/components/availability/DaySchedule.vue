@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // F20: Day Schedule Component
-import { Plus, X } from 'lucide-vue-next'
+import { Plus, X, Clock } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import TimeRangeInput from './TimeRangeInput.vue'
 
@@ -9,8 +9,15 @@ interface TimeWindow {
   end: string
 }
 
-defineProps<{
+interface BlockedSlot {
+  id: number
+  start: string
+  end: string
+}
+
+const props = defineProps<{
   windows: TimeWindow[]
+  blockedSlots?: BlockedSlot[]
 }>()
 
 const emit = defineEmits<{
@@ -20,10 +27,24 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+// Format time from datetime string
+const formatTime = (datetime: string) => {
+  return datetime.substring(11, 16) // Extract HH:MM from datetime
+}
 </script>
 
 <template>
   <div class="day-schedule">
+    <!-- Existing slots (blocked) -->
+    <div v-if="props.blockedSlots && props.blockedSlots.length > 0" class="blocked-slots-list">
+      <div v-for="slot in props.blockedSlots" :key="slot.id" class="blocked-slot">
+        <Clock :size="16" class="blocked-icon" />
+        <span class="blocked-time">{{ formatTime(slot.start) }} - {{ formatTime(slot.end) }}</span>
+        <span class="blocked-label">{{ t('availability.editor.daySchedule.booked') }}</span>
+      </div>
+    </div>
+
     <!-- Time windows -->
     <div v-if="windows.length > 0" class="windows-list">
       <div v-for="(window, index) in windows" :key="index" class="window-item">
@@ -39,8 +60,8 @@ const { t } = useI18n()
       </div>
     </div>
 
-    <!-- Empty state -->
-    <div v-else class="empty-state">
+    <!-- Empty state (only if no blocked slots) -->
+    <div v-else-if="!props.blockedSlots || props.blockedSlots.length === 0" class="empty-state">
       <span>{{ t('availability.editor.daySchedule.empty') }}</span>
     </div>
 
@@ -58,6 +79,41 @@ const { t } = useI18n()
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.blocked-slots-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.blocked-slot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--color-warning-light, #fef3c7);
+  border: 1px solid var(--color-warning, #d97706);
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.blocked-icon {
+  color: var(--color-warning, #d97706);
+  flex-shrink: 0;
+}
+
+.blocked-time {
+  font-weight: 500;
+  color: var(--color-text-primary, #0f172a);
+}
+
+.blocked-label {
+  margin-left: auto;
+  color: var(--color-warning, #d97706);
+  font-size: 11px;
+  font-weight: 500;
 }
 
 .windows-list {

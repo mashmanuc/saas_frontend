@@ -17,7 +17,11 @@
       <p v-if="lastRequestId" class="mt-1 text-xs opacity-80">Request ID: {{ lastRequestId }}</p>
     </div>
 
-    <div v-if="success" class="rounded-lg border border-green-300 bg-green-50 p-4 text-sm text-green-800">
+    <div
+      v-if="success"
+      class="rounded-lg border border-green-300 bg-green-50 p-4 text-sm text-green-800"
+      data-testid="sessions-success"
+    >
       <p>{{ success }}</p>
       <p v-if="lastRequestId" class="mt-1 text-xs opacity-80">Request ID: {{ lastRequestId }}</p>
     </div>

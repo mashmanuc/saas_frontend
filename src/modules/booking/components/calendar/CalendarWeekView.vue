@@ -1,10 +1,18 @@
 <template>
   <div class="calendar-week-view">
     <!-- Connection status -->
-    <div v-if="!connected" class="connection-warning">
-      <AlertCircleIcon class="w-4 h-4" />
-      <span>{{ t('calendar.warnings.disconnected') }}</span>
-    </div>
+    <transition name="fade">
+      <div
+        v-if="!connected && connectionAttempted"
+        class="connection-warning"
+      >
+        <AlertCircleIcon class="w-4 h-4" />
+        <span>{{ t('calendar.warnings.disconnected') }}</span>
+        <button class="retry-btn" @click="handleReconnect">
+          {{ t('calendar.realtime.status.retrying') }}
+        </button>
+      </div>
+    </transition>
 
     <!-- Week Navigation -->
     <WeekNavigation
@@ -17,6 +25,7 @@
       @navigate="handleNavigate"
       @today="handleToday"
       @scroll-first-available="handleScrollToFirstAvailable"
+      @open-availability="handleSetupAvailability"
     />
 
     <!-- Loading State -->
@@ -34,8 +43,8 @@
       </button>
     </div>
 
-    <!-- Empty availability state -->
-    <EmptyAvailabilityState v-else-if="!hasAvailability" />
+    <!-- Empty availability state - show only if user hasn't set up availability at all -->
+    <EmptyAvailabilityState v-else-if="!hasSetupAvailability" />
 
     <!-- Calendar Board -->
     <CalendarBoard
@@ -92,7 +101,7 @@ const { t } = useI18n()
 const router = useRouter()
 
 const store = useCalendarWeekStore()
-const { connected } = useCalendarWebSocket()
+const { connected, connectionAttempted, connect } = useCalendarWebSocket()
 const { handleError } = useErrorHandler()
 
 const {
@@ -105,9 +114,38 @@ const {
   totalAvailableHours,
   totalAvailableMinutes,
   availableMinutesByDay,
+  allAccessibleIds,
+  allEventIds,
 } = storeToRefs(store)
 
-const hasAvailability = computed(() => (totalAvailableMinutes.value || 0) > 0)
+const hasAvailability = computed(() => {
+  const minutes = totalAvailableMinutes.value || 0
+  const hasSlots = allAccessibleIds.value.length > 0
+  
+  // Show calendar if there are any slots or if there are minutes available
+  // This indicates user has set up availability template and slots are generated
+  return hasSlots || minutes > 0
+})
+
+const hasSetupAvailability = computed(() => {
+  // Check if user has set up availability template
+  // This is a proxy check - if there are any events or slots, user has been active
+  const hasEvents = allEventIds.value.length > 0
+  const hasSlots = allAccessibleIds.value.length > 0
+  const hasMinutes = totalAvailableMinutes.value > 0
+  
+  console.log('[CalendarWeekView] hasSetupAvailability check:', {
+    hasEvents,
+    hasSlots,
+    hasMinutes,
+    allEventIds: allEventIds.value.length,
+    weekMeta: weekMeta.value
+  })
+  
+  // If user has any events or slots, they've set up availability
+  // Even if no slots this week, show calendar (it will be empty)
+  return hasEvents || hasSlots || hasMinutes
+})
 
 const emit = defineEmits<{
   cellClick: [cell: CalendarCell]
@@ -151,6 +189,10 @@ function handleScrollToFirstAvailable() {
 
 function handleSetupAvailability() {
   router.push({ name: 'booking-availability' }).catch(() => {})
+}
+
+function handleReconnect() {
+  connect()
 }
 
 function handleCellClick(cell: CalendarCell) {

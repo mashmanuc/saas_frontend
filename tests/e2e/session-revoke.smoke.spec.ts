@@ -1,42 +1,55 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, Page, Route } from '@playwright/test'
+
+const mockUser = {
+  id: 1,
+  email: 'test@example.com',
+  first_name: 'Test',
+  last_name: 'User',
+  role: 'tutor',
+}
+
+async function setupSecurityBaseRoutes(page: Page) {
+  await page.route('**/api/v1/realtime/health', async (route: Route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ws_host: null }),
+    })
+  })
+
+  await page.route('**/api/me/profile/**', async (route: Route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        user: mockUser,
+        profile: {},
+        settings: { timezone: 'UTC' },
+        avatar_url: null,
+      }),
+    })
+  })
+
+  await page.route('**/api/v1/auth/csrf', async (route: Route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ csrf_token: 'test-csrf' }),
+    })
+  })
+
+  await page.route('**/api/v1/me', async (route: Route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ user: mockUser }),
+    })
+  })
+}
 
 test.describe('Session Revoke Smoke Tests', () => {
   test.beforeEach(async ({ page }) => {
-    // Mock successful login
-    await page.route('**/v1/auth/login', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          access: 'mock_access_token',
-          user: { id: 1, email: 'test@example.com', role: 'tutor' },
-        }),
-      })
-    })
-
-    await page.route('**/v1/auth/csrf', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ csrf: 'mock_csrf_token' }),
-      })
-    })
-
-    await page.route('**/v1/me', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          user: { id: 1, email: 'test@example.com', role: 'tutor' },
-        }),
-      })
-    })
-
-    await page.goto('/auth/login')
-    await page.fill('input[type="email"]', 'test@example.com')
-    await page.fill('input[type="password"]', 'password123')
-    await page.click('button[type="submit"]')
-    await page.waitForURL('**/dashboard/**', { timeout: 5000 })
+    await setupSecurityBaseRoutes(page)
   })
 
   test('should load active sessions list', async ({ page }) => {
@@ -151,18 +164,6 @@ test.describe('Session Revoke Smoke Tests', () => {
     })
 
     await page.goto('/dashboard/profile/security')
-
-    // Try to revoke current session (button should be disabled, but test the API error handling)
-    await page.route('**/v1/me/sessions/session_1/revoke', async (route) => {
-      await route.fulfill({
-        status: 403,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          code: 'session_current_forbidden',
-          message: 'Cannot revoke current session',
-        }),
-      })
-    })
 
     // Verify current session button is disabled
     const revokeButton = page.locator('[data-testid="session-revoke-session_1"]')

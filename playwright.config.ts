@@ -14,8 +14,10 @@ export default defineConfig({
   expect: {
     timeout: 5_000,
   },
+  globalSetup: './tests/e2e/global-setup.ts',
   use: {
     baseURL: DEFAULT_BASE_URL,
+    storageState: './tests/e2e/.auth/user.json',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',

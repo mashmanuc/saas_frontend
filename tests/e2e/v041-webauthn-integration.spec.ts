@@ -1,6 +1,12 @@
 import { test, expect } from '@playwright/test'
+import { setupWebAuthnMocks } from './fixtures/webauthn-mocks'
 
 test.describe('v0.41 WebAuthn Integration', () => {
+  test.beforeEach(async ({ page }) => {
+    // Setup WebAuthn backend mocks
+    await setupWebAuthnMocks(page)
+  })
+
   test('should complete full WebAuthn login flow with challenge', async ({ page }) => {
     await page.goto('/auth/login')
     

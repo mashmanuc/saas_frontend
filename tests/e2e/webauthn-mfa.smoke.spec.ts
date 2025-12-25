@@ -1,7 +1,11 @@
 import { test, expect } from '@playwright/test'
+import { setupWebAuthnMocks } from './fixtures/webauthn-mocks'
 
 test.describe('WebAuthn & MFA Smoke Tests', () => {
   test.beforeEach(async ({ page }) => {
+    // Setup WebAuthn mocks
+    await setupWebAuthnMocks(page)
+    
     // Navigate to login page
     await page.goto('/auth/login')
   })
@@ -98,6 +102,19 @@ test.describe('WebAuthn & MFA Smoke Tests', () => {
       })
     })
 
+    // Force refresh endpoint to return session_revoked
+    await page.route('**/v1/auth/refresh', async (route) => {
+      await route.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 'session_revoked',
+          message: 'Сесію відкликано.',
+          request_id: 'req_refresh_revoked',
+        }),
+      })
+    })
+
     // Mock /me endpoint
     await page.route('**/v1/me', async (route) => {
       await route.fulfill({
@@ -113,8 +130,8 @@ test.describe('WebAuthn & MFA Smoke Tests', () => {
     await page.fill('input[type="password"]', 'password123')
     await page.click('button[type="submit"]')
 
-    // Wait for redirect after login
-    await page.waitForURL('**/dashboard/**', { timeout: 5000 })
+    // Wait for redirect after login (student role -> /student)
+    await page.waitForURL(/\/student(\/|$)/, { timeout: 5000 })
 
     // Now mock a session_revoked error on next API call
     await page.route('**/v1/**', async (route) => {

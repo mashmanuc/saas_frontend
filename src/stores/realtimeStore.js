@@ -130,6 +130,13 @@ export const useRealtimeStore = defineStore('realtime', {
     },
 
     async refreshHealth() {
+      // Не викликати health check без access token
+      const auth = useAuthStore()
+      if (!auth.access) {
+        console.log('[realtimeStore] Skipping health check - no access token')
+        return
+      }
+
       try {
         const res = await api.get('/v1/realtime/health')
         const wsHost = res?.ws_host
@@ -143,7 +150,12 @@ export const useRealtimeStore = defineStore('realtime', {
     },
 
     async connect() {
-      if (!useAuthStore().access) return
+      const auth = useAuthStore()
+      if (!auth.access) {
+        console.log('[realtimeStore] Cannot connect - no access token')
+        return
+      }
+      
       if (this.healthPromise) {
         try {
           await this.healthPromise

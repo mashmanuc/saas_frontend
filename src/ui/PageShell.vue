@@ -27,6 +27,8 @@
 </template>
 
 <script setup>
+import { watch } from 'vue'
+import { useRouter } from 'vue-router'
 import SideNav from './SideNav.vue'
 import TopNav from './TopNav.vue'
 import ToastContainer from './ToastContainer.vue'
@@ -34,5 +36,15 @@ import GlobalLoader from './GlobalLoader.vue'
 import SessionRevokedBanner from '../components/SessionRevokedBanner.vue'
 import { useAuthStore } from '../modules/auth/store/authStore'
 
+const router = useRouter()
 const authStore = useAuthStore()
+
+watch(
+  () => authStore.showSessionRevokedBanner,
+  (show) => {
+    if (show) {
+      router.push('/auth/login')
+    }
+  }
+)
 </script>

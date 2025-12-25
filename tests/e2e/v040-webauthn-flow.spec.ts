@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { setupWebAuthnMocks } from './fixtures/webauthn-mocks'
 
 /**
  * v0.40.0 - WebAuthn Flow Tests
@@ -7,6 +8,9 @@ import { test, expect } from '@playwright/test'
 
 test.describe('WebAuthn Flow', () => {
   test.beforeEach(async ({ page }) => {
+    // Setup WebAuthn backend mocks
+    await setupWebAuthnMocks(page)
+    
     // Mock WebAuthn API
     await page.addInitScript(() => {
       // @ts-ignore

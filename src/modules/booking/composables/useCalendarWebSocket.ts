@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/authStore'
 export function useCalendarWebSocket() {
   const ws = ref<CalendarWebSocket | null>(null)
   const connected = ref(false)
+  const connectionAttempted = ref(false)
   const store = useCalendarWeekStore()
   const authStore = useAuthStore()
 
@@ -38,11 +39,23 @@ export function useCalendarWebSocket() {
       store.fetchWeek()
     })
 
+    // v0.49.5: Availability slots generated event
+    ws.value.on('availability.slots_generated', (data) => {
+      console.log('[useCalendarWebSocket] Availability slots generated:', data)
+      // Refetch calendar to show new slots
+      store.fetchWeek()
+      // Optionally show toast notification
+      if (data.tutorId === authStore.user?.id) {
+        console.log(`[useCalendarWebSocket] Slots generated: ${data.slotsCreated} created, ${data.slotsDeleted} deleted`)
+      }
+    })
+
     ws.value.on('pong', () => {
       console.log('[useCalendarWebSocket] Pong received')
     })
 
     try {
+      connectionAttempted.value = true
       await ws.value.connect()
       connected.value = true
     } catch (error) {
@@ -69,6 +82,7 @@ export function useCalendarWebSocket() {
 
   return {
     connected,
+    connectionAttempted,
     connect,
     disconnect,
   }

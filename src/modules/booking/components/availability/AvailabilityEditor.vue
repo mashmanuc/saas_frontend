@@ -1,17 +1,21 @@
 <script setup lang="ts">
 // F18: Availability Editor Component
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Loader as LoaderIcon, CheckCircle as CheckCircleIcon, AlertCircle as AlertCircleIcon, Save } from 'lucide-vue-next'
 import { bookingApi } from '../../api/booking'
+import { calendarWeekApi } from '../../api/calendarWeekApi'
 import type { AvailabilityInput } from '../../api/booking'
 import { useAvailabilityJob } from '../../composables/useAvailabilityJob'
+import { useToast } from '@/composables/useToast'
 import DaySchedule from './DaySchedule.vue'
 
 const { t } = useI18n()
 const { currentJob, isPolling, startTracking } = useAvailabilityJob()
+const toast = useToast()
 
 const availability = ref<Record<number, any[]>>({})
+const existingSlots = ref<Record<string, any[]>>({}) // Existing slots from calendar
 const isLoading = ref(false)
 
 const days = [
@@ -29,12 +33,65 @@ const localSchedule = ref<Record<number, { start: string; end: string }[]>>({})
 const isSaving = ref(false)
 const hasChanges = ref(false)
 
+// Compute existing slots for each day to show as blocked
+const getBlockedSlotsForDay = (dayValue: number) => {
+  // Convert dayValue (0=Sunday, 1=Monday) to day of week (1=Monday, 7=Sunday)
+  const dayOfWeek = dayValue === 0 ? 7 : dayValue
+  
+  // Find all slots that match this day of week (regardless of date)
+  const blockedSlots: any[] = []
+  
+  Object.entries(existingSlots.value).forEach(([dateKey, slots]) => {
+    const date = new Date(dateKey)
+    const dateDayOfWeek = date.getDay() === 0 ? 7 : date.getDay() // Convert Sunday from 0 to 7
+    
+    if (dateDayOfWeek === dayOfWeek) {
+      blockedSlots.push(...slots)
+    }
+  })
+  
+  return blockedSlots
+}
+
+// Check if a time window conflicts with existing slots
+const hasConflictWithSlots = (dayValue: number, start: string, end: string) => {
+  const blockedSlots = getBlockedSlotsForDay(dayValue)
+  const newStart = timeToMinutes(start)
+  const newEnd = timeToMinutes(end)
+  
+  return blockedSlots.some(slot => {
+    // Extract time from datetime string (format: "2024-12-25T09:00:00Z")
+    const slotStart = timeToMinutes(slot.start.substring(11, 16))
+    const slotEnd = timeToMinutes(slot.end.substring(11, 16))
+    
+    return (newStart < slotEnd && newEnd > slotStart) // Overlap check
+  })
+}
+
+// Helper function to convert time string to minutes
+const timeToMinutes = (time: string) => {
+  const [hours, minutes] = time.split(':').map(Number)
+  return hours * 60 + minutes
+}
+
 // Initialize local schedule from API
 onMounted(async () => {
   isLoading.value = true
   try {
+    // Load availability template
     const response = await bookingApi.getAvailability()
     availability.value = response?.schedule || {}
+    
+    // Load existing slots from calendar
+    try {
+      const calendarResponse = await calendarWeekApi.getWeekSnapshot({ page: 0 })
+      existingSlots.value = calendarResponse.data.accessible || {}
+      console.log('[AvailabilityEditor] Loaded existing slots:', existingSlots.value)
+    } catch (calendarError) {
+      console.warn('[AvailabilityEditor] Could not load calendar data:', calendarError)
+      existingSlots.value = {}
+    }
+    
     initializeLocalSchedule()
   } catch (e) {
     console.error('Failed to load availability:', e)
@@ -70,7 +127,16 @@ function addWindow(dayValue: number) {
   if (!localSchedule.value[dayValue]) {
     localSchedule.value[dayValue] = []
   }
-  localSchedule.value[dayValue].push({ start: '09:00', end: '17:00' })
+  
+  const newWindow = { start: '09:00', end: '17:00' }
+  
+  // Check for conflicts with existing slots
+  if (hasConflictWithSlots(dayValue, newWindow.start, newWindow.end)) {
+    toast.warning(t('availability.editor.conflictWithSlots'))
+    return
+  }
+  
+  localSchedule.value[dayValue].push(newWindow)
   hasChanges.value = true
 }
 
@@ -85,7 +151,17 @@ function updateWindow(
   field: 'start' | 'end',
   value: string
 ) {
-  localSchedule.value[dayValue][index][field] = value
+  const window = localSchedule.value[dayValue][index]
+  const updatedWindow = { ...window, [field]: value }
+  
+  // Check for conflicts with existing slots
+  if (hasConflictWithSlots(dayValue, updatedWindow.start, updatedWindow.end)) {
+    toast.warning(t('availability.editor.conflictWithSlots'))
+    // Don't update the window if there's a conflict
+    return
+  }
+  
+  localSchedule.value[dayValue][index] = updatedWindow
   hasChanges.value = true
 }
 
@@ -93,6 +169,16 @@ async function saveAvailability() {
   isSaving.value = true
 
   try {
+    // Check for conflicts before saving
+    for (const [day, windows] of Object.entries(localSchedule.value)) {
+      for (const window of windows) {
+        if (hasConflictWithSlots(Number(day), window.start, window.end)) {
+          toast.error(t('availability.editor.conflictWithSlots'))
+          return
+        }
+      }
+    }
+
     const schedulePayload: Record<string, Array<{ start_time: string; end_time: string }>> = {}
 
     for (const [day, windows] of Object.entries(localSchedule.value)) {
@@ -105,12 +191,16 @@ async function saveAvailability() {
     const response = await bookingApi.setAvailability({ schedule: schedulePayload })
     hasChanges.value = false
 
+    // Success toast
+    toast.success(t('availability.editor.saveSuccess'))
+
     // Почати відстеження job
     if (response.jobId) {
       await startTracking(response.jobId)
     }
   } catch (e) {
     console.error('Failed to save availability:', e)
+    toast.error(t('availability.editor.saveError'))
   } finally {
     isSaving.value = false
   }
@@ -120,8 +210,10 @@ async function handleRetry() {
   try {
     const response = await bookingApi.generateAvailabilitySlots()
     await startTracking(response.jobId)
+    toast.info(t('availability.jobStatus.retry'))
   } catch (error) {
     console.error('Failed to retry generation:', error)
+    toast.error(t('availability.jobStatus.retryError'))
   }
 }
 
@@ -190,6 +282,7 @@ function resetChanges() {
         <div class="day-label">{{ t(day.label) }}</div>
         <DaySchedule
           :windows="getWindowsForDay(day.value)"
+          :blocked-slots="getBlockedSlotsForDay(day.value)"
           @add="addWindow(day.value)"
           @remove="(index) => removeWindow(day.value, index)"
           @update="(index, field, value) => updateWindow(day.value, index, field, value)"
