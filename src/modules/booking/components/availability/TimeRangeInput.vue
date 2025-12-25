@@ -37,6 +37,8 @@ const isValid = computed(() => {
       :value="start"
       class="time-select"
       @change="emit('update:start', ($event.target as HTMLSelectElement).value)"
+      data-testid="time-start"
+      aria-label="Start time"
     >
       <option v-for="time in timeOptions" :key="time" :value="time">
         {{ time }}
@@ -49,13 +51,15 @@ const isValid = computed(() => {
       :value="end"
       class="time-select"
       @change="emit('update:end', ($event.target as HTMLSelectElement).value)"
+      data-testid="time-end"
+      aria-label="End time"
     >
       <option v-for="time in timeOptions" :key="time" :value="time">
         {{ time }}
       </option>
     </select>
 
-    <span v-if="!isValid" class="error-hint">End must be after start</span>
+    <span v-if="!isValid" class="error-hint" data-testid="time-error">End must be after start</span>
   </div>
 </template>
 

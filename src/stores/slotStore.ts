@@ -1,0 +1,411 @@
+import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+import { bookingApi } from '@/modules/booking/api/booking'
+import { calendarWeekApi } from '@/modules/booking/api/calendarWeekApi'
+import type { Slot, SlotEditStrategy, Conflict } from '@/modules/booking/types/slot'
+import { useUndoRedo } from '@/composables/useUndoRedo'
+import { EditSlotCommand, BatchEditSlotsCommand } from '@/modules/booking/commands/SlotEditCommand'
+import type { SlotData } from '@/modules/booking/commands/SlotEditCommand'
+import { 
+  logSlotEditStart, 
+  logSlotEditSuccess, 
+  logSlotEditError,
+  logSlotBatchEditStart,
+  logSlotBatchEditSuccess,
+  logSlotBatchEditError,
+  logSlotDelete,
+  logSlotUndo,
+  logSlotRedo
+} from '@/services/telemetry'
+
+export interface CalendarSlot {
+  id: number
+  date: string
+  start: string
+  end: string
+  status: 'available' | 'booked' | 'blocked'
+  source?: 'template' | 'manual' | 'override'
+  template_id?: number
+  override_reason?: string
+  created_at: string
+  updated_at: string
+}
+
+export const useSlotStore = defineStore('slots', () => {
+  // State
+  const slots = ref<Record<string, CalendarSlot[]>>({})
+  const editingSlot = ref<Slot | null>(null)
+  const isLoading = ref(false)
+  const error = ref<string | null>(null)
+  
+  // Undo/Redo
+  const undoRedo = useUndoRedo()
+
+  // Computed
+  const allSlots = computed(() => {
+    const allSlotsArray: CalendarSlot[] = []
+    Object.values(slots.value).forEach(dateSlots => {
+      allSlotsArray.push(...dateSlots)
+    })
+    return allSlotsArray
+  })
+
+  const availableSlots = computed(() => {
+    return allSlots.value.filter(slot => slot.status === 'available')
+  })
+
+  const bookedSlots = computed(() => {
+    return allSlots.value.filter(slot => slot.status === 'booked')
+  })
+
+  // Actions
+  async function loadSlots(params: { page: number } = { page: 0 }) {
+    isLoading.value = true
+    error.value = null
+    
+    try {
+      const response = await calendarWeekApi.getWeekSnapshot(params)
+      const accessibleSlots = response.data.accessible || {}
+      
+      // Normalize AccessibleSlot to CalendarSlot
+      const normalizedSlots: Record<string, CalendarSlot[]> = {}
+      Object.entries(accessibleSlots).forEach(([date, dateSlots]) => {
+        normalizedSlots[date] = dateSlots.map((slot: any) => ({
+          id: slot.id,
+          date: date,
+          start: slot.start,
+          end: slot.end,
+          status: slot.status || 'available',
+          source: slot.source,
+          template_id: slot.template_id,
+          override_reason: slot.override_reason,
+          created_at: slot.created_at || new Date().toISOString(),
+          updated_at: slot.updated_at || new Date().toISOString()
+        }))
+      })
+      
+      slots.value = normalizedSlots
+      return slots.value
+    } catch (err: any) {
+      error.value = err.message || 'Failed to load slots'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function updateSlot(
+    slotId: string,
+    data: {
+      start_time: string
+      end_time: string
+      strategy: SlotEditStrategy
+      override_reason?: string
+    },
+    options: { enableUndo?: boolean } = { enableUndo: true }
+  ): Promise<Slot> {
+    const startTime = Date.now()
+    isLoading.value = true
+    error.value = null
+    
+    logSlotEditStart(slotId, data.strategy)
+
+    try {
+      // Get old data for undo
+      const oldSlot = findSlotById(parseInt(slotId))
+      
+      if (options.enableUndo && oldSlot) {
+        const oldData: SlotData = {
+          start_time: oldSlot.start,
+          end_time: oldSlot.end,
+          strategy: 'override',
+          override_reason: oldSlot.override_reason
+        }
+        
+        const command = new EditSlotCommand(slotId, oldData, data)
+        const updatedSlot = await undoRedo.executeCommand(command)
+        
+        // Update local state
+        refreshSlot(updatedSlot)
+        
+        const duration = Date.now() - startTime
+        logSlotEditSuccess(slotId, data.strategy, duration, false)
+        
+        return updatedSlot
+      } else {
+        // Execute without undo support
+        const response = await bookingApi.editSlot(slotId, data)
+        const updatedSlot = response.slot || response
+        refreshSlot(updatedSlot)
+        
+        const duration = Date.now() - startTime
+        logSlotEditSuccess(slotId, data.strategy, duration, false)
+        
+        return updatedSlot
+      }
+    } catch (err: any) {
+      const duration = Date.now() - startTime
+      logSlotEditError(slotId, data.strategy, duration, err.message)
+      
+      error.value = err.message || 'Failed to update slot'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function deleteSlot(slotId: number): Promise<void> {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      await bookingApi.deleteSlot(slotId)
+      
+      // Remove from local state
+      removeSlotFromState(slotId)
+      
+      logSlotDelete(slotId)
+    } catch (err: any) {
+      error.value = err.message || 'Failed to delete slot'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function batchUpdateSlots(
+    slotIds: number[],
+    data: {
+      start_time?: string
+      end_time?: string
+      strategy: SlotEditStrategy
+      override_reason?: string
+    },
+    options: { enableUndo?: boolean } = { enableUndo: true }
+  ) {
+    const startTime = Date.now()
+    isLoading.value = true
+    error.value = null
+    
+    logSlotBatchEditStart(slotIds.length, data.strategy)
+
+    try {
+      if (options.enableUndo) {
+        // Collect old data for undo
+        const oldDataMap = new Map<number, SlotData>()
+        slotIds.forEach(id => {
+          const oldSlot = findSlotById(id)
+          if (oldSlot) {
+            oldDataMap.set(id, {
+              start_time: oldSlot.start,
+              end_time: oldSlot.end,
+              strategy: 'override',
+              override_reason: oldSlot.override_reason
+            })
+          }
+        })
+        
+        const command = new BatchEditSlotsCommand(slotIds, oldDataMap, data)
+        const response = await undoRedo.executeCommand(command)
+        
+        // Update local state
+        response.updated_slots.forEach((slot: any) => {
+          refreshSlot(slot)
+        })
+        
+        const duration = Date.now() - startTime
+        logSlotBatchEditSuccess(
+          slotIds.length, 
+          data.strategy, 
+          duration, 
+          response.updated_count,
+          response.conflicts?.length || 0
+        )
+        
+        return response
+      } else {
+        // Execute without undo support
+        const response = await bookingApi.batchEditSlots({
+          slots: slotIds,
+          ...data
+        })
+        
+        response.updated_slots.forEach((slot: any) => {
+          refreshSlot(slot)
+        })
+        
+        const duration = Date.now() - startTime
+        logSlotBatchEditSuccess(
+          slotIds.length, 
+          data.strategy, 
+          duration, 
+          response.updated_count,
+          response.conflicts?.length || 0
+        )
+        
+        return response
+      }
+    } catch (err: any) {
+      const duration = Date.now() - startTime
+      logSlotBatchEditError(slotIds.length, data.strategy, duration, err.message)
+      
+      error.value = err.message || 'Failed to batch update slots'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  function refreshSlot(updatedSlot: any) {
+    const slotDate = updatedSlot.date || updatedSlot.start?.substring(0, 10)
+    
+    if (!slotDate) return
+
+    if (!slots.value[slotDate]) {
+      slots.value[slotDate] = []
+    }
+
+    const slotIndex = slots.value[slotDate].findIndex(
+      s => s.id === parseInt(updatedSlot.id)
+    )
+
+    const normalizedSlot: CalendarSlot = {
+      id: parseInt(updatedSlot.id),
+      date: slotDate,
+      start: updatedSlot.start_time || updatedSlot.start,
+      end: updatedSlot.end_time || updatedSlot.end,
+      status: updatedSlot.status || 'available',
+      source: updatedSlot.source,
+      template_id: updatedSlot.template_id,
+      override_reason: updatedSlot.override_reason,
+      created_at: updatedSlot.created_at || new Date().toISOString(),
+      updated_at: updatedSlot.updated_at || new Date().toISOString()
+    }
+
+    if (slotIndex >= 0) {
+      slots.value[slotDate][slotIndex] = normalizedSlot
+    } else {
+      slots.value[slotDate].push(normalizedSlot)
+    }
+  }
+
+  function removeSlotFromState(slotId: number) {
+    Object.keys(slots.value).forEach(date => {
+      slots.value[date] = slots.value[date].filter(s => s.id !== slotId)
+      
+      // Clean up empty date entries
+      if (slots.value[date].length === 0) {
+        delete slots.value[date]
+      }
+    })
+  }
+
+  function getSlotsForDate(date: string): CalendarSlot[] {
+    return slots.value[date] || []
+  }
+
+  function getSlotsForDay(dayOfWeek: number): CalendarSlot[] {
+    const daySlots: CalendarSlot[] = []
+    
+    Object.entries(slots.value).forEach(([dateStr, dateSlots]) => {
+      const date = new Date(dateStr)
+      const slotDay = date.getDay() === 0 ? 7 : date.getDay() // ISO 8601
+      
+      if (slotDay === dayOfWeek) {
+        daySlots.push(...dateSlots)
+      }
+    })
+    
+    return daySlots
+  }
+  
+  function findSlotById(slotId: number): CalendarSlot | undefined {
+    for (const dateSlots of Object.values(slots.value)) {
+      const slot = dateSlots.find(s => s.id === slotId)
+      if (slot) return slot
+    }
+    return undefined
+  }
+  
+  async function undoLastAction() {
+    if (!undoRedo.canUndo.value) {
+      throw new Error('Nothing to undo')
+    }
+    
+    isLoading.value = true
+    try {
+      await undoRedo.undo()
+      logSlotUndo()
+      // Reload slots to reflect changes
+      await loadSlots({ page: 0 })
+    } finally {
+      isLoading.value = false
+    }
+  }
+  
+  async function redoLastAction() {
+    if (!undoRedo.canRedo.value) {
+      throw new Error('Nothing to redo')
+    }
+    
+    isLoading.value = true
+    try {
+      await undoRedo.redo()
+      logSlotRedo()
+      // Reload slots to reflect changes
+      await loadSlots({ page: 0 })
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  function setEditingSlot(slot: Slot | null) {
+    editingSlot.value = slot
+  }
+
+  function clearError() {
+    error.value = null
+  }
+
+  function $reset() {
+    slots.value = {}
+    editingSlot.value = null
+    isLoading.value = false
+    error.value = null
+    undoRedo.clear()
+  }
+
+  return {
+    // State
+    slots,
+    editingSlot,
+    isLoading,
+    error,
+    
+    // Computed
+    allSlots,
+    availableSlots,
+    bookedSlots,
+    
+    // Undo/Redo
+    canUndo: undoRedo.canUndo,
+    canRedo: undoRedo.canRedo,
+    lastCommand: undoRedo.lastCommand,
+    
+    // Actions
+    loadSlots,
+    updateSlot,
+    deleteSlot,
+    batchUpdateSlots,
+    refreshSlot,
+    removeSlotFromState,
+    getSlotsForDate,
+    getSlotsForDay,
+    findSlotById,
+    setEditingSlot,
+    clearError,
+    undoLastAction,
+    redoLastAction,
+    $reset
+  }
+})

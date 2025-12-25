@@ -893,7 +893,6 @@
     "close": "Close",
     "back": "Back",
     "next": "Next",
-    "save": "Save",
     "clear": "Clear",
     "retry": "Retry",
     "exit": "Exit",
@@ -915,7 +914,6 @@
     "moveUp": "Move up",
     "moveDown": "Move down",
     "confirmDelete": "Are you sure you want to delete?",
-    "saving": "Saving...",
     "search": "Search",
     "refresh": "Refresh",
     "remove": "Remove",
@@ -972,8 +970,6 @@
     "certificationsRateLimited": "Too many requests. Try again later",
     "certificationsUnsupportedType": "Unsupported file type",
     "certificationsTooLarge": "File is too large",
-    "saving": "Saving…",
-    "save": "Save changes",
     "validation": {
       "headline": "Headline is required (min 3 characters).",
       "bio": "Bio is required (min 10 characters).",
@@ -1454,6 +1450,13 @@
       "save": "Save",
       "saving": "Saving...",
       "cancel": "Cancel",
+      "reset": "Reset",
+      "undo": "Undo",
+      "redo": "Redo",
+      "undoSuccess": "Action undone",
+      "redoSuccess": "Action redone",
+      "undoError": "Failed to undo action",
+      "redoError": "Failed to redo action",
       "revert": "Revert"
     },
     "autosave": {
@@ -2249,10 +2252,6 @@
       "blackoutDates": "Blackout dates",
       "addBlackout": "Add date"
     },
-    "editor": {
-      "saveSuccess": "Availability saved successfully!",
-      "saveError": "Failed to save availability. Please try again."
-    },
     "jobStatus": {
       "pending": {
         "title": "Preparing availability...",
@@ -2342,6 +2341,164 @@
         "cta": "Book a lesson",
         "error": "Failed to load availability",
         "retry": "Retry"
+      },
+      "timeRange": {
+        "start": "Start",
+        "end": "End",
+        "errors": {
+          "endBeforeStart": "End time cannot be before start time",
+          "tooShort": "Minimum duration is {min} minutes",
+          "tooLong": "Maximum duration is {max} minutes"
+        },
+        "options": {
+          "000": "00:00",
+          "030": "00:30",
+          "100": "01:00",
+          "130": "01:30",
+          "200": "02:00",
+          "230": "02:30",
+          "300": "03:00",
+          "330": "03:30",
+          "400": "04:00",
+          "430": "04:30",
+          "500": "05:00",
+          "530": "05:30",
+          "600": "06:00",
+          "630": "06:30",
+          "700": "07:00",
+          "730": "07:30",
+          "800": "08:00",
+          "830": "08:30",
+          "900": "09:00",
+          "930": "09:30",
+          "1000": "10:00",
+          "1030": "10:30",
+          "1100": "11:00",
+          "1130": "11:30",
+          "1200": "12:00",
+          "1230": "12:30",
+          "1300": "13:00",
+          "1330": "13:30",
+          "1400": "14:00",
+          "1430": "14:30",
+          "1500": "15:00",
+          "1530": "15:30",
+          "1600": "16:00",
+          "1630": "16:30",
+          "1700": "17:00",
+          "1730": "17:30",
+          "1800": "18:00",
+          "1830": "18:30",
+          "1900": "19:00",
+          "1930": "19:30",
+          "2000": "20:00",
+          "2030": "20:30",
+          "2100": "21:00",
+          "2130": "21:30",
+          "2200": "22:00",
+          "2230": "22:30",
+          "2300": "23:00",
+          "2330": "23:30"
+        }
+      },
+      "conflict": {
+        "errorTitle": "Time conflicts",
+        "warningTitle": "Warning",
+        "student": "Student",
+        "lesson": "Lesson",
+        "resolveAnyway": "Resolve anyway"
+      },
+      "slotEditor": {
+        "title": "Edit slot",
+        "timeRange": "Time range",
+        "strategy": "Edit strategy",
+        "overrideReason": "Override reason",
+        "overrideReasonPlaceholder": "Enter reason for changing this slot...",
+        "saving": "Saving...",
+        "saveSuccess": "Slot saved successfully",
+        "saveError": "Failed to save slot",
+        "conflictError": "Conflicts detected while saving",
+        "deleteSuccess": "Slot deleted successfully",
+        "deleteError": "Failed to delete slot",
+        "batchSuccess": "All slots updated successfully",
+        "batchPartialSuccess": "Updated {success} slots, {error} errors",
+        "batchError": "Batch update error",
+        "strategies": {
+          "override": {
+            "title": "Override",
+            "description": "Change this slot despite conflicts"
+          },
+          "templateUpdate": {
+            "title": "Update template",
+            "description": "Change availability template for future slots"
+          },
+          "userChoice": {
+            "title": "User choice",
+            "description": "Ask how to resolve conflicts"
+          }
+        }
+      },
+      "status": {
+        "available": "Available",
+        "booked": "Booked",
+        "blocked": "Blocked"
+      }
+    },
+    "conflict": {
+      "errorTitle": "Time conflicts",
+      "warningTitle": "Warning",
+      "student": "Student",
+      "lesson": "Lesson",
+      "resolveAnyway": "Resolve anyway",
+      "types": {
+        "bookedOverlap": "Overlaps with lesson",
+        "slotOverlap": "Overlaps with slot",
+        "templateOverlap": "Conflicts with template"
+      },
+      "resolution": {
+        "skip": "Skip this slot",
+        "override": "Override despite conflict",
+        "updateTemplate": "Update template",
+        "apply": "Apply resolutions"
+      }
+    },
+    "analytics": {
+      "title": "Slot Analytics",
+      "loading": "Loading analytics...",
+      "period": {
+        "today": "Today",
+        "week": "Week",
+        "month": "Month",
+        "custom": "Custom period"
+      },
+      "totalSlots": "Total slots",
+      "availableSlots": "Available slots",
+      "bookedSlots": "Booked slots",
+      "blockedSlots": "Blocked slots",
+      "editOperations": "Edit operations",
+      "totalEdits": "Total edits",
+      "successfulEdits": "Successful edits",
+      "failedEdits": "Failed edits",
+      "avgDuration": "Avg duration",
+      "strategyDistribution": "Strategy distribution",
+      "conflictAnalysis": "Conflict analysis",
+      "totalConflicts": "Total conflicts",
+      "recentActivity": "Recent activity",
+      "status": {
+        "success": "Success",
+        "error": "Error",
+        "warning": "Warning"
+      },
+      "activity": {
+        "slotEdited": "Slot #{id} edited",
+        "batchEdit": "Batch edit of {count} slots",
+        "conflictDetected": "Conflict detected"
+      },
+      "time": {
+        "justNow": "Just now",
+        "minutesAgo": "{count} min ago",
+        "hoursAgo": "{count} hrs ago",
+        "daysAgo": "{count} days ago"
       }
     }
   }

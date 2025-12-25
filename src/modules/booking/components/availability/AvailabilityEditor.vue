@@ -9,14 +9,24 @@ import type { AvailabilityInput } from '../../api/booking'
 import { useAvailabilityJob } from '../../composables/useAvailabilityJob'
 import { useToast } from '@/composables/useToast'
 import DaySchedule from './DaySchedule.vue'
+import SlotEditor from './SlotEditor.vue'
+import ErrorBoundary from '@/components/ErrorBoundary.vue'
+import { getISODayOfWeek } from '@/utils/dateUtils'
+import type { Slot } from '@/modules/booking/types/slot'
+import { useSlotStore } from '@/stores/slotStore'
 
 const { t } = useI18n()
 const { currentJob, isPolling, startTracking } = useAvailabilityJob()
 const toast = useToast()
+const slotStore = useSlotStore()
 
 const availability = ref<Record<number, any[]>>({})
-const existingSlots = ref<Record<string, any[]>>({}) // Existing slots from calendar
 const isLoading = ref(false)
+const showSlotEditor = ref(false)
+
+// Use store for slots management
+const existingSlots = computed(() => slotStore.slots)
+const editingSlot = computed(() => slotStore.editingSlot)
 
 const days = [
   { value: 1, label: 'common.weekdays.short.mon' },
@@ -25,7 +35,7 @@ const days = [
   { value: 4, label: 'common.weekdays.short.thu' },
   { value: 5, label: 'common.weekdays.short.fri' },
   { value: 6, label: 'common.weekdays.short.sat' },
-  { value: 0, label: 'common.weekdays.short.sun' },
+  { value: 7, label: 'common.weekdays.short.sun' },
 ]
 
 // Local state for editing
@@ -35,17 +45,14 @@ const hasChanges = ref(false)
 
 // Compute existing slots for each day to show as blocked
 const getBlockedSlotsForDay = (dayValue: number) => {
-  // Convert dayValue (0=Sunday, 1=Monday) to day of week (1=Monday, 7=Sunday)
-  const dayOfWeek = dayValue === 0 ? 7 : dayValue
-  
-  // Find all slots that match this day of week (regardless of date)
+  // dayValue вже 1-7 (ISO 8601)
   const blockedSlots: any[] = []
   
   Object.entries(existingSlots.value).forEach(([dateKey, slots]) => {
     const date = new Date(dateKey)
-    const dateDayOfWeek = date.getDay() === 0 ? 7 : date.getDay() // Convert Sunday from 0 to 7
+    const dateDayOfWeek = getISODayOfWeek(date)
     
-    if (dateDayOfWeek === dayOfWeek) {
+    if (dateDayOfWeek === dayValue) {
       blockedSlots.push(...slots)
     }
   })
@@ -82,14 +89,12 @@ onMounted(async () => {
     const response = await bookingApi.getAvailability()
     availability.value = response?.schedule || {}
     
-    // Load existing slots from calendar
+    // Load existing slots from store
     try {
-      const calendarResponse = await calendarWeekApi.getWeekSnapshot({ page: 0 })
-      existingSlots.value = calendarResponse.data.accessible || {}
-      console.log('[AvailabilityEditor] Loaded existing slots:', existingSlots.value)
+      await slotStore.loadSlots({ page: 0 })
+      console.log('[AvailabilityEditor] Loaded existing slots:', slotStore.slots)
     } catch (calendarError) {
       console.warn('[AvailabilityEditor] Could not load calendar data:', calendarError)
-      existingSlots.value = {}
     }
     
     initializeLocalSchedule()
@@ -102,7 +107,7 @@ onMounted(async () => {
 
 function initializeLocalSchedule() {
   const schedule: Record<number, { start: string; end: string }[]> = {}
-  for (let i = 0; i < 7; i++) {
+  for (let i = 1; i <= 7; i++) {
     schedule[i] = []
   }
 
@@ -220,6 +225,78 @@ async function handleRetry() {
 function resetChanges() {
   initializeLocalSchedule()
 }
+
+// Slot editing handlers
+function handleSlotClick(slot: any) {
+  // Convert calendar slot to Slot type for editor
+  const slotData: Slot = {
+    id: slot.id.toString(),
+    date: slot.date || slot.start.substring(0, 10),
+    start: slot.start.substring(11, 16),
+    end: slot.end.substring(11, 16),
+    status: slot.status || 'available',
+    source: slot.source || 'template',
+    templateId: slot.template_id?.toString(),
+    overrideReason: slot.override_reason,
+    createdAt: slot.created_at,
+    updatedAt: slot.updated_at
+  }
+  slotStore.setEditingSlot(slotData)
+  showSlotEditor.value = true
+}
+
+async function handleSlotSaved(updatedSlot: Slot) {
+  showSlotEditor.value = false
+  slotStore.setEditingSlot(null)
+  toast.success(t('availability.slotEditor.saveSuccess'))
+  
+  // Optimistic update already done in store
+  // Background sync to ensure consistency
+  try {
+    await slotStore.loadSlots({ page: 0 })
+  } catch (error) {
+    console.warn('[AvailabilityEditor] Background sync failed:', error)
+    // Optimistic update remains, user can retry if needed
+  }
+}
+
+function handleSlotEditCancelled() {
+  showSlotEditor.value = false
+  slotStore.setEditingSlot(null)
+}
+
+function handleSlotEditError(error: any) {
+  console.error('Slot edit error:', error)
+  toast.error(t('availability.slotEditor.saveError'))
+}
+
+async function loadExistingSlots() {
+  try {
+    await slotStore.loadSlots({ page: 0 })
+  } catch (error) {
+    console.warn('[AvailabilityEditor] Could not reload calendar data:', error)
+  }
+}
+
+async function handleUndo() {
+  try {
+    await slotStore.undoLastAction()
+    toast.success(t('availability.editor.actions.undoSuccess'))
+  } catch (error: any) {
+    console.error('[AvailabilityEditor] Undo failed:', error)
+    toast.error(t('availability.editor.actions.undoError'))
+  }
+}
+
+async function handleRedo() {
+  try {
+    await slotStore.redoLastAction()
+    toast.success(t('availability.editor.actions.redoSuccess'))
+  } catch (error: any) {
+    console.error('[AvailabilityEditor] Redo failed:', error)
+    toast.error(t('availability.editor.actions.redoError'))
+  }
+}
 </script>
 
 <template>
@@ -286,12 +363,46 @@ function resetChanges() {
           @add="addWindow(day.value)"
           @remove="(index) => removeWindow(day.value, index)"
           @update="(index, field, value) => updateWindow(day.value, index, field, value)"
+          @slot-click="handleSlotClick"
         />
       </div>
     </div>
 
     <div v-if="hasChanges" class="editor-actions">
-      <button class="btn btn-secondary" @click="resetChanges" :disabled="isSaving">
+      <!-- Undo/Redo Controls -->
+      <div class="undo-redo-controls">
+        <button
+          class="btn-icon"
+          @click="handleUndo"
+          :disabled="!slotStore.canUndo || isLoading"
+          :title="t('availability.editor.actions.undo')"
+          data-testid="undo-button"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 7v6h6"/>
+            <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
+          </svg>
+        </button>
+        <button
+          class="btn-icon"
+          @click="handleRedo"
+          :disabled="!slotStore.canRedo || isLoading"
+          :title="t('availability.editor.actions.redo')"
+          data-testid="redo-button"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 7v6h-6"/>
+            <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/>
+          </svg>
+        </button>
+      </div>
+      
+      <button
+        class="btn btn-secondary" 
+        @click="resetChanges" 
+        :disabled="!hasChanges || isLoading"
+        data-testid="reset-changes"
+      >
         {{ t('availability.editor.actions.reset') }}
       </button>
       <button
@@ -308,6 +419,22 @@ function resetChanges() {
         }}
       </button>
     </div>
+
+    <!-- Slot Editor Modal -->
+    <Teleport to="body">
+      <div v-if="showSlotEditor && editingSlot" class="modal-overlay" @click.self="handleSlotEditCancelled">
+        <div class="modal-content">
+          <ErrorBoundary>
+            <SlotEditor
+              :slot="editingSlot"
+              @saved="handleSlotSaved"
+              @cancelled="handleSlotEditCancelled"
+              @error="handleSlotEditError"
+            />
+          </ErrorBoundary>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -315,71 +442,102 @@ function resetChanges() {
 .availability-editor {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
+  padding: 24px;
+  background: var(--color-bg-primary, white);
+  border-radius: 12px;
 }
 
 .editor-header h3 {
-  margin: 0 0 4px;
-  font-size: 16px;
+  margin: 0 0 8px;
+  font-size: 20px;
   font-weight: 600;
+  color: var(--color-text-primary, #111827);
 }
 
 .hint {
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-text-secondary, #6b7280);
 }
 
 .loading {
   display: flex;
   justify-content: center;
-  padding: 32px;
+  padding: 48px;
 }
 
 .spinner {
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   border: 3px solid var(--color-border, #e5e7eb);
   border-top-color: var(--color-primary, #3b82f6);
   border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }
 
 .days-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
 .day-row {
   display: flex;
   gap: 16px;
   align-items: flex-start;
-  padding: 12px;
-  background: var(--color-bg-secondary, #f5f5f5);
-  border-radius: 8px;
 }
 
 .day-label {
-  width: 80px;
-  flex-shrink: 0;
-  font-size: 14px;
-  font-weight: 500;
+  min-width: 80px;
   padding-top: 8px;
+  font-weight: 500;
+  color: var(--color-text-primary, #111827);
 }
 
 .editor-actions {
   display: flex;
   gap: 12px;
   justify-content: flex-end;
-  padding-top: 16px;
+  align-items: center;
+  padding: 16px 0;
   border-top: 1px solid var(--color-border, #e5e7eb);
+}
+
+.undo-redo-controls {
+  display: flex;
+  gap: 4px;
+  margin-right: auto;
+}
+
+.btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-icon:hover:not(:disabled) {
+  background: var(--color-bg-tertiary);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.btn-icon:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .btn {
@@ -534,5 +692,30 @@ function resetChanges() {
 
 .spinner-small {
   animation: spin 1s linear infinite;
+}
+
+/* Modal styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--color-bg-primary, white);
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 </style>

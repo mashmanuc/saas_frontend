@@ -24,6 +24,7 @@ const emit = defineEmits<{
   add: []
   remove: [index: number]
   update: [index: number, field: 'start' | 'end', value: string]
+  slotClick: [slot: BlockedSlot]
 }>()
 
 const { t } = useI18n()
@@ -38,7 +39,15 @@ const formatTime = (datetime: string) => {
   <div class="day-schedule">
     <!-- Existing slots (blocked) -->
     <div v-if="props.blockedSlots && props.blockedSlots.length > 0" class="blocked-slots-list">
-      <div v-for="slot in props.blockedSlots" :key="slot.id" class="blocked-slot">
+      <div 
+        v-for="slot in props.blockedSlots" 
+        :key="slot.id" 
+        class="blocked-slot clickable"
+        @click="emit('slotClick', slot)"
+        role="button"
+        tabindex="0"
+        :aria-label="`Edit slot ${formatTime(slot.start)} - ${formatTime(slot.end)}`"
+      >
         <Clock :size="16" class="blocked-icon" />
         <span class="blocked-time">{{ formatTime(slot.start) }} - {{ formatTime(slot.end) }}</span>
         <span class="blocked-label">{{ t('availability.editor.daySchedule.booked') }}</span>
@@ -97,6 +106,22 @@ const formatTime = (datetime: string) => {
   border: 1px solid var(--color-warning, #d97706);
   border-radius: 6px;
   font-size: 12px;
+}
+
+.blocked-slot.clickable {
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.blocked-slot.clickable:hover {
+  background: var(--color-warning, #fde68a);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.blocked-slot.clickable:focus {
+  outline: 2px solid var(--color-primary, #3b82f6);
+  outline-offset: 2px;
 }
 
 .blocked-icon {

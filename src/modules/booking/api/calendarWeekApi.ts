@@ -54,10 +54,7 @@ export const calendarWeekApi = {
     etag?: string
   }): Promise<{ data: WeekSnapshot; etag: string; cached: boolean }> {
     console.log('[calendarWeekApi] Fetching week snapshot:', params)
-    
-    const headers: Record<string, string> = {
-      'Accept-Encoding': 'gzip, br'
-    }
+    const headers: Record<string, string> = {}
     
     if (params.etag) {
       headers['If-None-Match'] = params.etag
