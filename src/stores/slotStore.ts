@@ -37,6 +37,8 @@ export const useSlotStore = defineStore('slots', () => {
   const editingSlot = ref<Slot | null>(null)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+  const draftSchedule = ref<Record<number, { start: string; end: string }[]> | null>(null)
+  const hasTemplateChanges = ref(false)
   
   // Undo/Redo
   const undoRedo = useUndoRedo()
@@ -102,7 +104,7 @@ export const useSlotStore = defineStore('slots', () => {
       strategy: SlotEditStrategy
       override_reason?: string
     },
-    options: { enableUndo?: boolean } = { enableUndo: true }
+    options: { enableUndo?: boolean; optimistic?: boolean } = { enableUndo: true, optimistic: true }
   ): Promise<Slot> {
     const startTime = Date.now()
     isLoading.value = true
@@ -111,8 +113,21 @@ export const useSlotStore = defineStore('slots', () => {
     logSlotEditStart(slotId, data.strategy)
 
     try {
-      // Get old data for undo
+      // Get old data for undo and optimistic update
       const oldSlot = findSlotById(parseInt(slotId))
+      
+      // Optimistic update: apply changes immediately to local state
+      if (options.optimistic && oldSlot) {
+        const optimisticSlot: CalendarSlot = {
+          ...oldSlot,
+          start: data.start_time,
+          end: data.end_time,
+          override_reason: data.override_reason,
+          updated_at: new Date().toISOString()
+        }
+        refreshSlot(optimisticSlot)
+        console.info('[SlotStore] Optimistic update applied for slot', slotId)
+      }
       
       if (options.enableUndo && oldSlot) {
         const oldData: SlotData = {
@@ -125,11 +140,11 @@ export const useSlotStore = defineStore('slots', () => {
         const command = new EditSlotCommand(slotId, oldData, data)
         const updatedSlot = await undoRedo.executeCommand(command)
         
-        // Update local state
+        // Update local state with server response (replaces optimistic update)
         refreshSlot(updatedSlot)
         
         const duration = Date.now() - startTime
-        logSlotEditSuccess(slotId, data.strategy, duration, false)
+        logSlotEditSuccess(slotId, data.strategy, duration, true)
         
         return updatedSlot
       } else {
@@ -139,13 +154,22 @@ export const useSlotStore = defineStore('slots', () => {
         refreshSlot(updatedSlot)
         
         const duration = Date.now() - startTime
-        logSlotEditSuccess(slotId, data.strategy, duration, false)
+        logSlotEditSuccess(slotId, data.strategy, duration, options.optimistic || false)
         
         return updatedSlot
       }
     } catch (err: any) {
       const duration = Date.now() - startTime
       logSlotEditError(slotId, data.strategy, duration, err.message)
+      
+      // Revert optimistic update on error
+      if (options.optimistic) {
+        const oldSlot = findSlotById(parseInt(slotId))
+        if (oldSlot) {
+          refreshSlot(oldSlot)
+          console.warn('[SlotStore] Optimistic update reverted due to error')
+        }
+      }
       
       error.value = err.message || 'Failed to update slot'
       throw err
@@ -257,9 +281,22 @@ export const useSlotStore = defineStore('slots', () => {
   }
 
   function refreshSlot(updatedSlot: any) {
-    const slotDate = updatedSlot.date || updatedSlot.start?.substring(0, 10)
+    let slotDate: string
     
-    if (!slotDate) return
+    if (updatedSlot.date) {
+      slotDate = updatedSlot.date
+    } else if (updatedSlot.start_time || updatedSlot.start) {
+      const dateStr = updatedSlot.start_time || updatedSlot.start
+      try {
+        slotDate = new Date(dateStr).toISOString().slice(0, 10)
+      } catch (e) {
+        console.error('[SlotStore] Invalid date format:', dateStr)
+        return
+      }
+    } else {
+      console.error('[SlotStore] No date information in updatedSlot:', updatedSlot)
+      return
+    }
 
     if (!slots.value[slotDate]) {
       slots.value[slotDate] = []
@@ -334,10 +371,20 @@ export const useSlotStore = defineStore('slots', () => {
     
     isLoading.value = true
     try {
-      await undoRedo.undo()
+      const result = await undoRedo.undo()
       logSlotUndo()
-      // Reload slots to reflect changes
-      await loadSlots({ page: 0 })
+      
+      // Apply local snapshot immediately without network call
+      if (result) {
+        if (Array.isArray(result)) {
+          result.forEach(slot => refreshSlot(slot))
+        } else {
+          refreshSlot(result)
+        }
+      }
+      
+      // No background network validation - trust local snapshots
+      console.info('[SlotStore] Undo applied from local snapshot')
     } finally {
       isLoading.value = false
     }
@@ -350,10 +397,20 @@ export const useSlotStore = defineStore('slots', () => {
     
     isLoading.value = true
     try {
-      await undoRedo.redo()
+      const result = await undoRedo.redo()
       logSlotRedo()
-      // Reload slots to reflect changes
-      await loadSlots({ page: 0 })
+      
+      // Apply local snapshot immediately without network call
+      if (result) {
+        if (Array.isArray(result)) {
+          result.forEach(slot => refreshSlot(slot))
+        } else {
+          refreshSlot(result)
+        }
+      }
+      
+      // No background network validation - trust local snapshots
+      console.info('[SlotStore] Redo applied from local snapshot')
     } finally {
       isLoading.value = false
     }
@@ -367,11 +424,23 @@ export const useSlotStore = defineStore('slots', () => {
     error.value = null
   }
 
+  function setDraftSchedule(schedule: Record<number, { start: string; end: string }[]> | null) {
+    draftSchedule.value = schedule
+    hasTemplateChanges.value = schedule !== null
+  }
+
+  function clearDraftSchedule() {
+    draftSchedule.value = null
+    hasTemplateChanges.value = false
+  }
+
   function $reset() {
     slots.value = {}
     editingSlot.value = null
     isLoading.value = false
     error.value = null
+    draftSchedule.value = null
+    hasTemplateChanges.value = false
     undoRedo.clear()
   }
 
@@ -381,6 +450,8 @@ export const useSlotStore = defineStore('slots', () => {
     editingSlot,
     isLoading,
     error,
+    draftSchedule,
+    hasTemplateChanges,
     
     // Computed
     allSlots,
@@ -406,6 +477,8 @@ export const useSlotStore = defineStore('slots', () => {
     clearError,
     undoLastAction,
     redoLastAction,
-    $reset
+    setDraftSchedule,
+    clearDraftSchedule,
+    $reset,
   }
 })

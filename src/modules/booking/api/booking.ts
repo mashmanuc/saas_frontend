@@ -264,7 +264,7 @@ export const bookingApi = {
   },
 
   async deleteSlot(slotId: number): Promise<void> {
-    await apiClient.delete(`/booking/slots/${slotId}/`)
+    await apiClient.delete(`/v1/booking/slots/${slotId}/`)
   },
 
   // Bookings
@@ -376,17 +376,17 @@ export const bookingApi = {
 
   // Slot Editing (v2.0)
   async editSlot(slotId: string, data: { start_time: string; end_time: string; strategy: string; override_reason?: string }): Promise<any> {
-    const response = await apiClient.put(`/api/v1/booking/slots/${slotId}/`, data)
+    const response = await apiClient.put(`/v1/booking/slots/${slotId}/`, data)
     return response.data
   },
 
   async checkSlotConflicts(data: { date: string; start_time: string; end_time: string; exclude_slot_id?: number }): Promise<{ has_conflicts: boolean; conflicts: any[] }> {
-    const response = await apiClient.post('/api/v1/booking/slots/check-conflicts/', data)
+    const response = await apiClient.post('/v1/booking/slots/check-conflicts/', data)
     return response.data
   },
 
   async batchEditSlots(data: { slots: number[]; start_time?: string; end_time?: string; strategy: string; override_reason?: string }): Promise<{ updated_count: number; updated_slots: any[]; warnings: string[]; conflicts: string[] }> {
-    const response = await apiClient.post('/api/v1/booking/slots/batch-edit/', data)
+    const response = await apiClient.post('/v1/booking/slots/batch-edit/', data)
     return response.data
   },
 }

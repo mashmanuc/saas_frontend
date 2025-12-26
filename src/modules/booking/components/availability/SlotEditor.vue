@@ -5,9 +5,8 @@
       <h3 class="slot-editor-title">{{ t('availability.slotEditor.title') }}</h3>
       <div class="slot-editor-actions">
         <button
-          v-if="hasChanges"
           class="btn btn-primary"
-          :disabled="isLoading || hasConflicts"
+          :disabled="isLoading || hasConflicts || !hasChanges"
           @click="handleSave"
           data-testid="save-slot"
           aria-label="Save slot changes"
@@ -90,13 +89,13 @@
           <input
             v-model="selectedStrategy"
             type="radio"
-            value="template_update"
+            value="update_template"
             :disabled="isLoading"
             data-testid="strategy-template-update"
           />
           <div class="strategy-content">
-            <div class="strategy-title">{{ t('availability.slotEditor.strategies.templateUpdate.title') }}</div>
-            <div class="strategy-description" data-testid="template-update-description">{{ t('availability.slotEditor.strategies.templateUpdate.description') }}</div>
+            <div class="strategy-title">{{ t('availability.slotEditor.strategies.update_template.title') }}</div>
+            <div class="strategy-description" data-testid="template-update-description">{{ t('availability.slotEditor.strategies.update_template.description') }}</div>
           </div>
         </label>
         
@@ -104,13 +103,13 @@
           <input
             v-model="selectedStrategy"
             type="radio"
-            value="user_choice"
+            value="update_slot"
             :disabled="isLoading"
-            data-testid="strategy-user-choice"
+            data-testid="strategy-update-slot"
           />
           <div class="strategy-content">
-            <div class="strategy-title">{{ t('availability.slotEditor.strategies.userChoice.title') }}</div>
-            <div class="strategy-description" data-testid="user-choice-description">{{ t('availability.slotEditor.strategies.userChoice.description') }}</div>
+            <div class="strategy-title">{{ t('availability.slotEditor.strategies.update_slot.title') }}</div>
+            <div class="strategy-description" data-testid="update-slot-description">{{ t('availability.slotEditor.strategies.update_slot.description') }}</div>
           </div>
         </label>
       </div>
@@ -169,7 +168,7 @@ const { isLoading, editSlot, detectConflicts, deleteSlot: deleteSlotApi } = useS
 // Local state
 const localStart = ref(props.slot.start)
 const localEnd = ref(props.slot.end)
-const selectedStrategy = ref<SlotEditStrategy>('user_choice')
+const selectedStrategy = ref<SlotEditStrategy>('override')
 const overrideReason = ref('')
 const conflicts = ref<Conflict[]>([])
 
@@ -214,6 +213,14 @@ async function handleTimeChange() {
 }
 
 async function handleSave() {
+  console.log('[SlotEditor] handleSave called:', {
+    slotId: props.slot.id,
+    localStart: localStart.value,
+    localEnd: localEnd.value,
+    strategy: selectedStrategy.value,
+    overrideReason: overrideReason.value
+  })
+  
   try {
     const updatedSlot = await editSlot(
       props.slot.id,
@@ -223,8 +230,65 @@ async function handleSave() {
       overrideReason.value
     )
     
+    console.log('[SlotEditor] Slot saved successfully:', updatedSlot)
     emit('saved', updatedSlot)
-  } catch (error) {
+  } catch (error: any) {
+    console.error('[SlotEditor] Save error:', error)
+    
+    // Handle 401 errors specifically - token might have been refreshed, retry once
+    if (error?.response?.status === 401 && !error.config?._retryAfter401) {
+      console.log('[SlotEditor] 401 detected, token should be refreshed, retrying...')
+      try {
+        // Mark this request as retried to avoid infinite loops
+        if (error.config) {
+          error.config._retryAfter401 = true
+        }
+        // Retry the save operation
+        const updatedSlot = await editSlot(
+          props.slot.id,
+          localStart.value,
+          localEnd.value,
+          selectedStrategy.value,
+          overrideReason.value
+        )
+        console.log('[SlotEditor] Retry successful:', updatedSlot)
+        emit('saved', updatedSlot)
+        return
+      } catch (retryError) {
+        console.error('[SlotEditor] Retry failed:', retryError)
+        emit('error', retryError)
+        return
+      }
+    }
+    
+    // Handle 409 conflict errors - reset to original values
+    if (error?.response?.status === 409) {
+      console.warn('[SlotEditor] Conflict detected, resetting to original values')
+      localStart.value = props.slot.start
+      localEnd.value = props.slot.end
+      // Conflicts should already be shown by useSlotEditor toast
+    }
+    
+    // Handle 422 validation errors
+    if (error?.response?.status === 422) {
+      const errorCode = error?.response?.data?.error?.code
+      console.warn('[SlotEditor] Validation error:', errorCode)
+      
+      if (errorCode === 'STALE_REVISION') {
+        // Slot was modified by another user/process
+        localStart.value = props.slot.start
+        localEnd.value = props.slot.end
+      } else if (errorCode === 'CANNOT_EDIT_BOOKED') {
+        // Cannot edit booked slots
+        localStart.value = props.slot.start
+        localEnd.value = props.slot.end
+      } else if (errorCode === 'CANNOT_EDIT_PAST') {
+        // Cannot edit past slots
+        localStart.value = props.slot.start
+        localEnd.value = props.slot.end
+      }
+    }
+    
     emit('error', error)
   }
 }

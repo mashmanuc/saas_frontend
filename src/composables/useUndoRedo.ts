@@ -38,19 +38,21 @@ export function useUndoRedo() {
     return result
   }
 
-  async function undo(): Promise<void> {
+  async function undo(): Promise<any> {
     if (!canUndo.value) {
       throw new Error('Nothing to undo')
     }
 
     const command = history.value.past.pop()!
-    await command.undo()
+    const result = await command.undo()
     
     // Add to future (redo stack)
     history.value.future.push(command)
+    
+    return result
   }
 
-  async function redo(): Promise<void> {
+  async function redo(): Promise<any> {
     if (!canRedo.value) {
       throw new Error('Nothing to redo')
     }
@@ -58,14 +60,17 @@ export function useUndoRedo() {
     const command = history.value.future.pop()!
     
     // Use redo method if available, otherwise use execute
+    let result
     if (command.redo) {
-      await command.redo()
+      result = await command.redo()
     } else {
-      await command.execute()
+      result = await command.execute()
     }
     
     // Add back to past
     history.value.past.push(command)
+    
+    return result
   }
 
   function clear() {

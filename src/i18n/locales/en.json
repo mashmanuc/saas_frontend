@@ -2217,40 +2217,222 @@
   },
   "availability": {
     "editor": {
+      "__comment": "notifications.* vs schedule.* are separate to avoid duplicate saveSuccess/saveError semantics. Do not merge them back.",
       "title": "Availability editor",
       "subtitle": "Configure your base schedule and exceptions",
       "weeklyScheduleTitle": "Weekly schedule",
       "weeklyScheduleSubtitle": "Set your regular available hours for each day",
-      "saveSuccess": "Schedule saved successfully",
-      "saveError": "Failed to save schedule",
+      "notifications": {
+        "saveSuccess": "Availability saved successfully!",
+        "saveError": "Failed to save availability. Please try again."
+      },
+      "schedule": {
+        "saveSuccess": "Schedule saved successfully",
+        "saveError": "Failed to save schedule"
+      },
       "conflictWithSlots": "This time conflicts with existing slots",
+      "conflictsDetected": "Conflicts detected on days: {days}",
+      "jobInProgress": "Please wait for the current operation to complete",
       "actions": {
         "cancel": "Cancel",
-        "reset": "Reset",
-        "save": "Save schedule",
-        "saving": "Saving..."
+        "reset": "Reset Changes",
+        "save": "Save Schedule",
+        "saving": "Saving…",
+        "checking": "Checking conflicts…",
+        "undo": "Undo last action",
+        "undoSuccess": "Action undone",
+        "undoError": "Failed to undo action",
+        "redo": "Redo action",
+        "redoSuccess": "Action redone",
+        "redoError": "Failed to redo action"
       },
       "daySchedule": {
-        "empty": "Not available",
-        "add": "Add time",
-        "booked": "Booked"
+        "empty": "No available slots",
+        "add": "Add Time",
+        "booked": "Booked",
+        "liveLesson": "Live Lesson",
+        "remove": "Remove time window"
       },
       "showPreview": "Show preview",
-      "hidePreview": "Hide preview",
-      "applyTemplate": "Apply template",
-      "applying": "Applying...",
-      "templateApplied": "Template applied. Slots will be generated in ~{eta} min",
-      "slotsGenerated": "Slots successfully generated",
-      "applyFailed": "Failed to apply template",
-      "pendingChanges": "{count} changes pending sync",
-      "preview": "Preview",
-      "weeklyTemplate": "Weekly template",
-      "copyWeek": "Copy week",
-      "addSlot": "Add slot",
-      "overrides": "Overrides",
-      "addOverride": "Add override",
-      "blackoutDates": "Blackout dates",
-      "addBlackout": "Add date"
+    "hidePreview": "Hide preview",
+    "applyTemplate": "Apply template",
+    "applying": "Applying...",
+    "templateApplied": "Template applied. Slots will be generated in ~{eta} min",
+    "slotsGenerated": "Slots successfully generated",
+    "applyFailed": "Failed to apply template",
+    "pendingChanges": "{count} changes pending sync",
+    "preview": "Preview",
+    "weeklyTemplate": "Weekly template",
+    "copyWeek": "Copy week",
+    "addSlot": "Add slot",
+    "overrides": "Overrides",
+    "addOverride": "Add override",
+    "blackoutDates": "Blackout dates",
+    "addBlackout": "Add date"
+  },
+  "jobStatus": {
+    "pending": {
+      "title": "Preparing availability...",
+      "details": "Your schedule is being processed"
+    },
+    "running": {
+      "title": "Generating available slots...",
+      "details": "This may take up to 30 seconds"
+    },
+    "success": {
+      "title": "Availability updated!",
+      "details": "Created {created} slots, removed {deleted} old slots"
+    },
+    "failed": {
+      "title": "Generation failed",
+      "details": "Please try again or contact support"
+    },
+    "retry": "Retrying slot generation...",
+    "retryError": "Failed to retry generation. Please try again later."
+  },
+  "calendar": {
+    "weekOf": "Week of {date}",
+    "noSlots": "No slots available",
+    "selected": "Selected"
+  }
+},
+"calendar": {
+  "weekOf": "Week of {date}",
+  "analyticsTitle": "Availability analytics",
+  "analyticsDescription": "Track how your open slots change week over week.",
+  "legend": {
+    "lesson": "Lesson",
+    "availability": "Availability"
+  },
+  "draftNotice": "Draft mode. Don't forget to apply your changes.",
+  "pendingJobs": "Calendar sync in progress…",
+  "lastSyncLabel": "Last sync: {datetime}",
+  "realtime": {
+    "status": {
+      "connected": "Connected to real-time",
+      "disconnected": "Connection lost. Attempting to reconnect...",
+      "retrying": "Reconnecting..."
+    }
+  },
+  "cache": {
+    "staleLabel": "Showing cached data. Click 'Retry' to refresh."
+  },
+  "slotBecameUnavailable": "Selected slot is no longer available",
+  "justNow": "just now",
+  "oneMinuteAgo": "a minute ago",
+  "minutesAgo": "{count} min ago",
+  "syncStatus": {
+    "syncing": "Syncing...",
+    "synced": "Synced",
+    "error": "Sync error"
+  },
+  "notifications": {
+    "slotBooked": "{student} booked a slot at {time}",
+    "availabilityUpdated": "Schedule updated"
+  },
+  "warnings": {
+    "disconnected": "No connection. Please check your network or refresh."
+  },
+  "errors": {
+    "blockFailed": "Failed to block slot",
+    "loadFailed": "Failed to load calendar"
+  },
+  "weekNavigation": {
+    "availableHours": "{hours} hours available",
+    "noAvailability": "No availability set for this week yet",
+    "goToFirstAvailable": "Go to first available slot",
+    "setupAvailability": "Set up booking hours",
+    "prevWeek": "Previous week",
+    "nextWeek": "Next week",
+    "today": "Today",
+    "backToCalendar": "Back to calendar"
+  },
+  "sidebar": {
+    "upcomingLessons": "Upcoming lessons",
+    "noUpcoming": "No upcoming lessons",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "status": {
+      "paid": "Paid",
+      "unpaid": "Unpaid"
+    }
+  },
+  "emptyState": {
+    "noAvailability": {
+      "title": "No availability set",
+      "description": "Configure your schedule to start accepting bookings from students",
+      "action": "Set up availability"
+    }
+  },
+  "marketplace": {
+    "availability": {
+      "title": "Available slots",
+      "weekRange": "{start} – {end}",
+      "prevWeek": "Previous week",
+      "nextWeek": "Next week",
+      "empty": "No open slots right now",
+      "cta": "Book a lesson",
+      "error": "Failed to load availability",
+      "retry": "Retry"
+    },
+    "timeRange": {
+      "start": "Start",
+      "end": "End",
+      "errors": {
+        "endBeforeStart": "End time cannot be before start time",
+        "tooShort": "Minimum duration is {min} minutes",
+        "tooLong": "Maximum duration is {max} minutes"
+      },
+      "options": {
+        "000": "00:00",
+        "030": "00:30",
+        "100": "01:00",
+        "130": "01:30",
+        "200": "02:00",
+        "230": "02:30",
+        "300": "03:00",
+        "330": "03:30",
+        "400": "04:00",
+        "430": "04:30",
+        "500": "05:00",
+        "530": "05:30",
+        "600": "06:00",
+        "630": "06:30",
+        "700": "07:00",
+        "730": "07:30",
+        "800": "08:00",
+        "830": "08:30",
+        "900": "09:00",
+        "930": "09:30",
+        "1000": "10:00",
+        "1030": "10:30",
+        "1100": "11:00",
+        "1130": "11:30",
+        "1200": "12:00",
+        "1230": "12:30",
+        "1300": "13:00",
+        "1330": "13:30",
+        "1400": "14:00",
+        "1430": "14:30",
+        "1500": "15:00",
+        "1530": "15:30",
+        "1600": "16:00",
+        "1630": "16:30",
+        "1700": "17:00",
+        "1730": "17:30",
+        "1800": "18:00",
+        "1830": "18:30",
+        "1900": "19:00",
+        "1930": "19:30",
+        "2000": "20:00",
+        "2030": "20:30",
+        "2100": "21:00",
+        "2130": "21:30",
+        "2200": "22:00",
+        "2230": "22:30",
+        "2300": "23:00",
+        "2330": "23:30"
+      }
     },
     "jobStatus": {
       "pending": {
@@ -2272,10 +2454,69 @@
       "retry": "Retrying slot generation...",
       "retryError": "Failed to retry generation. Please try again later."
     },
-    "calendar": {
-      "weekOf": "Week of {date}",
-      "noSlots": "No slots available",
-      "selected": "Selected"
+    "slotEditor": {
+      "title": "Edit slot",
+      "timeRange": "Time range",
+      "strategy": "Edit strategy",
+      "overrideReason": "Override reason",
+      "overrideReasonPlaceholder": "Specify the reason for changing this slot...",
+      "saving": "Saving...",
+      "saveSuccess": "Slot saved successfully",
+      "saveError": "Failed to save slot",
+      "conflictError": "Conflict detected. Please resolve conflicts before saving.",
+      "conflictPersists": "Conflict persists. Please reload the page and try again.",
+      "delete": "Delete",
+      "deleteConfirm": "Are you sure you want to delete this slot?",
+      "deleteSuccess": "Slot deleted successfully",
+      "deleteError": "Failed to delete slot",
+      "batchSuccess": "All slots updated successfully",
+      "batchPartialSuccess": "Updated {success} slots, {error} errors",
+      "batchError": "Batch update error",
+      "errors": {
+        "endBeforeStart": "End time must be after start time"
+      },
+      "strategies": {
+        "override": {
+          "title": "Override",
+          "description": "Change this slot despite conflicts"
+        },
+        "update_template": {
+          "title": "Update template",
+          "description": "Change availability template for future slots"
+        },
+        "update_slot": {
+          "title": "Update slot",
+          "description": "Update only this specific slot"
+        }
+      }
+    },
+    "createSlot": {
+      "title": "Create new slot",
+      "timeRange": "Time range",
+      "creating": "Creating slot...",
+      "create": "Create slot",
+      "success": "Slot created successfully",
+      "error": "Failed to create slot",
+      "conflictsDetected": "Conflicts detected"
+    },
+    "blockSlot": {
+      "title": "Block time slot",
+      "reason": "Reason for blocking",
+      "reasonPlaceholder": "Specify why you're blocking this time slot (optional)...",
+      "blocking": "Blocking slot...",
+      "block": "Block slot",
+      "success": "Slot blocked successfully",
+      "error": "Failed to block slot",
+      "warning": "This will make the time slot unavailable for booking. Students won't be able to schedule lessons during this time.",
+      "errors": {
+        "cannotBlockBooked": "Cannot block a slot that is already booked",
+        "cannotBlockPast": "Cannot block a slot in the past"
+      }
+    },
+    "status": {
+      "available": "Available",
+      "booked": "Booked",
+      "blocked": "Blocked"
     }
   },
   "calendar": {
@@ -2356,18 +2597,20 @@
         "cta": "Book a lesson",
         "error": "Failed to load availability",
         "retry": "Retry"
-      },
-      "timeRange": {
-        "start": "Start",
-        "end": "End",
-        "errors": {
-          "endBeforeStart": "End time cannot be before start time",
-          "tooShort": "Minimum duration is {min} minutes",
-          "tooLong": "Maximum duration is {max} minutes"
-        },
-        "options": {
-          "000": "00:00",
-          "030": "00:30",
+      }
+    }
+  },
+  "timeRange": {
+    "start": "Start",
+    "end": "End",
+    "errors": {
+      "endBeforeStart": "End time cannot be before start time",
+      "tooShort": "Minimum duration is {min} minutes",
+      "tooLong": "Maximum duration is {max} minutes"
+    },
+    "options": {
+      "000": "00:00",
+      "030": "00:30",
           "100": "01:00",
           "130": "01:30",
           "200": "02:00",
@@ -2414,45 +2657,6 @@
           "2230": "22:30",
           "2300": "23:00",
           "2330": "23:30"
-        }
-      },
-      "conflict": {
-        "errorTitle": "Time conflicts",
-        "warningTitle": "Warning",
-        "student": "Student",
-        "lesson": "Lesson",
-        "resolveAnyway": "Resolve anyway"
-      },
-      "slotEditor": {
-        "title": "Edit slot",
-        "timeRange": "Time range",
-        "strategy": "Edit strategy",
-        "overrideReason": "Override reason",
-        "overrideReasonPlaceholder": "Enter reason for changing this slot...",
-        "saving": "Saving...",
-        "saveSuccess": "Slot saved successfully",
-        "saveError": "Failed to save slot",
-        "conflictError": "Conflicts detected while saving",
-        "delete": "Delete",
-        "deleteConfirm": "Are you sure you want to delete this slot?",
-        "deleteSuccess": "Slot deleted successfully",
-        "deleteError": "Failed to delete slot",
-        "batchSuccess": "All slots updated successfully",
-        "batchPartialSuccess": "Updated {success} slots, {error} errors",
-        "batchError": "Batch update error",
-        "strategies": {
-          "override": {
-            "title": "Override",
-            "description": "Change this slot despite conflicts"
-          },
-          "templateUpdate": {
-            "title": "Update template",
-            "description": "Change availability template for future slots"
-          },
-          "userChoice": {
-            "title": "User choice",
-            "description": "Ask how to resolve conflicts"
-          }
         }
       },
       "status": {
@@ -2519,4 +2723,3 @@
       }
     }
   }
-}

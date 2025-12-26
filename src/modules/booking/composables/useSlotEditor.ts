@@ -18,10 +18,12 @@ export function useSlotEditor() {
     slotId: string,
     newStart: string,
     newEnd: string,
-    strategy: SlotEditStrategy = 'user_choice',
+    strategy: SlotEditStrategy = 'override',
     overrideReason?: string
   ): Promise<Slot> {
     isLoading.value = true
+    
+    console.log('[useSlotEditor] editSlot called:', { slotId, newStart, newEnd, strategy, overrideReason })
     
     try {
       const response = await bookingApi.editSlot(slotId, {
@@ -31,10 +33,13 @@ export function useSlotEditor() {
         override_reason: overrideReason
       })
       
+      console.log('[useSlotEditor] editSlot response:', response)
       toast.success(t('availability.slotEditor.saveSuccess'))
-      return response.slot || response
+      // Response is already unwrapped by axios interceptor
+      return response
       
     } catch (error: any) {
+      console.error('[useSlotEditor] editSlot error:', error)
       if (error.status === 409) {
         // Conflict error
         toast.error(t('availability.slotEditor.conflictError'))
@@ -65,7 +70,8 @@ export function useSlotEditor() {
         exclude_slot_id: parseInt(slotId)
       })
       
-      return response.conflicts || []
+      // Response is already unwrapped by axios interceptor
+      return Array.isArray(response) ? response : (response?.conflicts || [])
       
     } catch (error) {
       console.error('Failed to detect conflicts:', error)

@@ -23,6 +23,13 @@
             <EditIcon class="w-3 h-3" />
           </button>
           <button
+            class="action-btn action-btn--block"
+            :title="t('availability.blockSlot.title')"
+            @click.stop="handleBlockClick(layout.slotId)"
+          >
+            <BanIcon class="w-3 h-3" />
+          </button>
+          <button
             class="action-btn action-btn--delete"
             :title="t('availability.slotEditor.delete')"
             @click.stop="handleDeleteClick(layout.slotId)"
@@ -38,7 +45,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Edit as EditIcon, Trash2 as TrashIcon } from 'lucide-vue-next'
+import { Edit as EditIcon, Trash2 as TrashIcon, Ban as BanIcon } from 'lucide-vue-next'
 import type { AvailabilityLayout, AccessibleSlot } from '@/modules/booking/types/calendarWeek'
 
 const { t } = useI18n()
@@ -53,6 +60,7 @@ const emit = defineEmits<{
   slotClicked: [slotId: number]
   slotEdit: [slotId: number]
   slotDelete: [slotId: number]
+  slotBlock: [slotId: number]
 }>()
 
 const dayLayouts = computed(() => {
@@ -82,6 +90,10 @@ function handleDeleteClick(slotId: number) {
   if (window.confirm(t('availability.slotEditor.deleteConfirm'))) {
     emit('slotDelete', slotId)
   }
+}
+
+function handleBlockClick(slotId: number) {
+  emit('slotBlock', slotId)
 }
 </script>
 
@@ -169,6 +181,14 @@ function handleDeleteClick(slotId: number) {
 
 .action-btn--edit:hover {
   background: #dbeafe;
+}
+
+.action-btn--block {
+  color: #f59e0b;
+}
+
+.action-btn--block:hover {
+  background: #fef3c7;
 }
 
 .action-btn--delete {

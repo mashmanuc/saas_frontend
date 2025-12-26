@@ -80,7 +80,11 @@ describe('calendarWeekStore', () => {
   describe('fetchWeek', () => {
     it('normalizes snapshot into eventsById', async () => {
       const store = useCalendarWeekStore()
-      vi.mocked(calendarWeekApi.getWeekSnapshot).mockResolvedValue(mockSnapshot)
+      vi.mocked(calendarWeekApi.getWeekSnapshot).mockResolvedValue({
+        data: mockSnapshot,
+        etag: 'test-etag',
+        cached: false,
+      })
 
       await store.fetchWeek(0)
 
@@ -90,7 +94,11 @@ describe('calendarWeekStore', () => {
 
     it('normalizes accessible slots', async () => {
       const store = useCalendarWeekStore()
-      vi.mocked(calendarWeekApi.getWeekSnapshot).mockResolvedValue(mockSnapshot)
+      vi.mocked(calendarWeekApi.getWeekSnapshot).mockResolvedValue({
+        data: mockSnapshot,
+        etag: 'test-etag',
+        cached: false,
+      })
 
       await store.fetchWeek(0)
 
@@ -100,7 +108,11 @@ describe('calendarWeekStore', () => {
 
     it('normalizes orders', async () => {
       const store = useCalendarWeekStore()
-      vi.mocked(calendarWeekApi.getWeekSnapshot).mockResolvedValue(mockSnapshot)
+      vi.mocked(calendarWeekApi.getWeekSnapshot).mockResolvedValue({
+        data: mockSnapshot,
+        etag: 'test-etag',
+        cached: false,
+      })
 
       await store.fetchWeek(0)
 
@@ -109,7 +121,11 @@ describe('calendarWeekStore', () => {
 
     it('sets week metadata', async () => {
       const store = useCalendarWeekStore()
-      vi.mocked(calendarWeekApi.getWeekSnapshot).mockResolvedValue(mockSnapshot)
+      vi.mocked(calendarWeekApi.getWeekSnapshot).mockResolvedValue({
+        data: mockSnapshot,
+        etag: 'test-etag',
+        cached: false,
+      })
 
       await store.fetchWeek(0)
 
@@ -133,7 +149,11 @@ describe('calendarWeekStore', () => {
   describe('computedCells336', () => {
     it('builds 336 cells from snapshot', async () => {
       const store = useCalendarWeekStore()
-      vi.mocked(calendarWeekApi.getWeekSnapshot).mockResolvedValue(mockSnapshot)
+      vi.mocked(calendarWeekApi.getWeekSnapshot).mockResolvedValue({
+        data: mockSnapshot,
+        etag: 'test-etag',
+        cached: false,
+      })
 
       await store.fetchWeek(0)
 
@@ -144,7 +164,11 @@ describe('calendarWeekStore', () => {
 
     it('assigns correct status to cells', async () => {
       const store = useCalendarWeekStore()
-      vi.mocked(calendarWeekApi.getWeekSnapshot).mockResolvedValue(mockSnapshot)
+      vi.mocked(calendarWeekApi.getWeekSnapshot).mockResolvedValue({
+        data: mockSnapshot,
+        etag: 'test-etag',
+        cached: false,
+      })
 
       await store.fetchWeek(0)
 
@@ -157,7 +181,11 @@ describe('calendarWeekStore', () => {
   describe('eventLayouts', () => {
     it('calculates correct positions for events', async () => {
       const store = useCalendarWeekStore()
-      vi.mocked(calendarWeekApi.getWeekSnapshot).mockResolvedValue(mockSnapshot)
+      vi.mocked(calendarWeekApi.getWeekSnapshot).mockResolvedValue({
+        data: mockSnapshot,
+        etag: 'test-etag',
+        cached: false,
+      })
 
       await store.fetchWeek(0)
 
@@ -173,7 +201,11 @@ describe('calendarWeekStore', () => {
   describe('eventsForDay', () => {
     it('returns events for specific day', async () => {
       const store = useCalendarWeekStore()
-      vi.mocked(calendarWeekApi.getWeekSnapshot).mockResolvedValue(mockSnapshot)
+      vi.mocked(calendarWeekApi.getWeekSnapshot).mockResolvedValue({
+        data: mockSnapshot,
+        etag: 'test-etag',
+        cached: false,
+      })
 
       await store.fetchWeek(0)
 
@@ -184,7 +216,11 @@ describe('calendarWeekStore', () => {
 
     it('returns empty array for day without events', async () => {
       const store = useCalendarWeekStore()
-      vi.mocked(calendarWeekApi.getWeekSnapshot).mockResolvedValue(mockSnapshot)
+      vi.mocked(calendarWeekApi.getWeekSnapshot).mockResolvedValue({
+        data: mockSnapshot,
+        etag: 'test-etag',
+        cached: false,
+      })
 
       await store.fetchWeek(0)
 
@@ -196,8 +232,12 @@ describe('calendarWeekStore', () => {
   describe('createEvent', () => {
     it('creates event and refetches week', async () => {
       const store = useCalendarWeekStore()
-      vi.mocked(calendarWeekApi.getWeekSnapshot).mockResolvedValue(mockSnapshot)
-      vi.mocked(calendarWeekApi.createEvent).mockResolvedValue(123)
+      vi.mocked(calendarWeekApi.getWeekSnapshot).mockResolvedValue({
+        data: mockSnapshot,
+        etag: 'test-etag',
+        cached: false,
+      })
+      vi.mocked(calendarWeekApi.createEvent).mockResolvedValue({ id: 123, notificationSent: false })
 
       await store.fetchWeek(0)
 
@@ -229,7 +269,11 @@ describe('calendarWeekStore', () => {
   describe('deleteEvent', () => {
     it('deletes event and refetches week', async () => {
       const store = useCalendarWeekStore()
-      vi.mocked(calendarWeekApi.getWeekSnapshot).mockResolvedValue(mockSnapshot)
+      vi.mocked(calendarWeekApi.getWeekSnapshot).mockResolvedValue({
+        data: mockSnapshot,
+        etag: 'test-etag',
+        cached: false,
+      })
       vi.mocked(calendarWeekApi.deleteEvent).mockResolvedValue()
 
       await store.fetchWeek(0)

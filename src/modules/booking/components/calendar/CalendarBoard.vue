@@ -55,6 +55,7 @@
         @slot-clicked="handleSlotClick"
         @slot-edit="handleSlotEdit"
         @slot-delete="handleSlotDelete"
+        @slot-block="handleSlotBlock"
       />
     </div>
 
@@ -95,6 +96,8 @@ const emit = defineEmits<{
   slotClick: [slotId: number]
   slotEdit: [slotId: number]
   slotDelete: [slotId: number]
+  slotBlock: [slotId: number]
+  createSlot: [data: { date: string; start: string; end: string }]
 }>()
 
 const store = useCalendarWeekStore()
@@ -190,8 +193,26 @@ function handleEventClick(eventId: number) {
 function handleCellsSelected(utcKeys: string[]) {
   if (utcKeys.length) {
     const firstCell = cellsByUtcKey.value[utcKeys[0]]
+    const lastCell = cellsByUtcKey.value[utcKeys[utcKeys.length - 1]]
+    
     if (firstCell) {
       setActiveDay(firstCell.dayKey)
+      
+      // If multiple cells selected and they're on the same day, emit createSlot
+      if (lastCell && firstCell.dayKey === lastCell.dayKey && utcKeys.length > 1) {
+        const startDate = new Date(firstCell.startAtUTC)
+        const endDate = new Date(lastCell.endAtUTC)
+        
+        const startTime = `${startDate.getUTCHours().toString().padStart(2, '0')}:${startDate.getUTCMinutes().toString().padStart(2, '0')}`
+        const endTime = `${endDate.getUTCHours().toString().padStart(2, '0')}:${endDate.getUTCMinutes().toString().padStart(2, '0')}`
+        
+        emit('createSlot', {
+          date: firstCell.dayKey,
+          start: startTime,
+          end: endTime
+        })
+        return
+      }
     }
   }
   emit('cellsSelected', utcKeys)
@@ -207,5 +228,9 @@ function handleSlotEdit(slotId: number) {
 
 function handleSlotDelete(slotId: number) {
   emit('slotDelete', slotId)
+}
+
+function handleSlotBlock(slotId: number) {
+  emit('slotBlock', slotId)
 }
 </script>

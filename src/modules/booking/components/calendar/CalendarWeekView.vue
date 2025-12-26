@@ -85,6 +85,8 @@
         @slot-click="handleSlotClick"
         @slot-edit="handleSlotEdit"
         @slot-delete="handleSlotDeleteInline"
+        @slot-block="handleSlotBlock"
+        @create-slot="handleCreateSlot"
       />
       <CalendarSidebar
         :events="allEvents"
@@ -118,6 +120,24 @@
       @saved="handleSlotSaved"
       @deleted="handleSlotDeleted"
     />
+
+    <CreateSlotModal
+      v-if="showCreateSlotModal && createSlotData"
+      :date="createSlotData.date"
+      :start="createSlotData.start"
+      :end="createSlotData.end"
+      @created="handleSlotCreated"
+      @cancelled="showCreateSlotModal = false"
+      @error="handleSlotCreateError"
+    />
+
+    <BlockSlotModal
+      v-if="showBlockSlotModal && selectedSlotForBlock"
+      :slot="selectedSlotForBlock"
+      @blocked="handleSlotBlocked"
+      @cancelled="showBlockSlotModal = false"
+      @error="handleSlotBlockError"
+    />
   </div>
 </template>
 
@@ -137,11 +157,14 @@ import EmptyAvailabilityState from './EmptyAvailabilityState.vue'
 import CreateLessonModal from '../modals/CreateLessonModal.vue'
 import EventModal from '../modals/EventModal.vue'
 import SlotEditorModal from '../modals/SlotEditorModal.vue'
+import CreateSlotModal from '../availability/CreateSlotModal.vue'
+import BlockSlotModal from '../availability/BlockSlotModal.vue'
 import type { CalendarCell, AccessibleSlot } from '@/modules/booking/types/calendarWeek'
 import '@/modules/booking/styles/calendar-theme.css'
 import '@/modules/booking/styles/calendar-layout.css'
 import '@/modules/booking/styles/calendar-animations.css'
 import '@/modules/booking/styles/calendar-responsive.css'
+import { useSlotEditor } from '@/modules/booking/composables/useSlotEditor'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -205,12 +228,18 @@ const emit = defineEmits<{
   eventClick: [eventId: number]
 }>()
 
+const { deleteSlot } = useSlotEditor()
+
 const showCreateModal = ref(false)
 const showEventModal = ref(false)
 const showSlotModal = ref(false)
+const showCreateSlotModal = ref(false)
+const showBlockSlotModal = ref(false)
 const selectedCell = ref<CalendarCell | null>(null)
 const selectedEventId = ref<number | null>(null)
 const selectedSlot = ref<AccessibleSlot | null>(null)
+const selectedSlotForBlock = ref<AccessibleSlot | null>(null)
+const createSlotData = ref<{ date: string; start: string; end: string } | null>(null)
 
 // View filters
 const showEvents = ref(true)
@@ -304,13 +333,51 @@ function handleSlotEdit(slotId: number) {
 
 async function handleSlotDeleteInline(slotId: number) {
   try {
-    const { useSlotEditor } = await import('@/modules/booking/composables/useSlotEditor')
-    const { deleteSlot } = useSlotEditor()
     await deleteSlot(slotId)
     store.fetchWeek(weekMeta.value?.page ?? 0)
   } catch (error) {
     console.error('[CalendarWeekView] Failed to delete slot:', error)
   }
+}
+
+function handleSlotCreated(slot: any) {
+  console.info('[CalendarWeekView] Slot created:', slot)
+  showCreateSlotModal.value = false
+  createSlotData.value = null
+  store.fetchWeek(weekMeta.value?.page ?? 0)
+}
+
+function handleSlotCreateError(error: any) {
+  console.error('[CalendarWeekView] Failed to create slot:', error)
+  showCreateSlotModal.value = false
+  createSlotData.value = null
+}
+
+function handleCreateSlot(data: { date: string; start: string; end: string }) {
+  console.info('[CalendarWeekView] Create slot requested:', data)
+  createSlotData.value = data
+  showCreateSlotModal.value = true
+}
+
+function handleSlotBlock(slotId: number) {
+  const slot = accessibleById.value[slotId]
+  if (slot) {
+    selectedSlotForBlock.value = slot as any
+    showBlockSlotModal.value = true
+  }
+}
+
+function handleSlotBlocked(slotId: number) {
+  console.info('[CalendarWeekView] Slot blocked:', slotId)
+  showBlockSlotModal.value = false
+  selectedSlotForBlock.value = null
+  store.fetchWeek(weekMeta.value?.page ?? 0)
+}
+
+function handleSlotBlockError(error: any) {
+  console.error('[CalendarWeekView] Failed to block slot:', error)
+  showBlockSlotModal.value = false
+  selectedSlotForBlock.value = null
 }
 </script>
 

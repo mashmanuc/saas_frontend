@@ -12,7 +12,7 @@ export interface Slot {
   updatedAt: string
 }
 
-export type SlotEditStrategy = 'override' | 'template_update' | 'user_choice'
+export type SlotEditStrategy = 'override' | 'update_template' | 'update_slot'
 
 export interface Conflict {
   type: 'slot_overlap' | 'booked_overlap' | 'template_overlap'

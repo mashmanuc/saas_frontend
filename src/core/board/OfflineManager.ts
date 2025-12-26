@@ -106,6 +106,11 @@ export class OfflineManager {
   private async openIndexedDB(): Promise<IDBDatabase> {
     if (this.db) return this.db
 
+    // Guard for test environments where indexedDB is not available
+    if (typeof indexedDB === 'undefined') {
+      throw new Error('IndexedDB is not available in this environment')
+    }
+
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(OVERFLOW_DB_NAME, 1)
 

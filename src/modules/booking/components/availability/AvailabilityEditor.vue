@@ -25,6 +25,8 @@ const slotStore = useSlotStore()
 const availability = ref<Record<number, any[]>>({})
 const isLoading = ref(false)
 const showSlotEditor = ref(false)
+const isCheckingConflicts = ref(false)
+const isSavingTemplate = ref(false)
 
 // Use store for slots management
 const existingSlots = computed(() => slotStore.slots)
@@ -40,10 +42,12 @@ const days = [
   { value: 7, label: 'common.weekdays.short.sun' },
 ]
 
-// Local state for editing
 const localSchedule = ref<Record<number, { start: string; end: string }[]>>({})
 const isSaving = ref(false)
-const hasChanges = ref(false)
+
+const hasChanges = computed(() => {
+  return slotStore.hasTemplateChanges
+})
 
 // Compute existing slots for each day to show as blocked
 const getBlockedSlotsForDay = (dayValue: number) => {
@@ -62,19 +66,19 @@ const getBlockedSlotsForDay = (dayValue: number) => {
   return blockedSlots
 }
 
-// Check if a time window conflicts with existing slots
-const hasConflictWithSlots = (dayValue: number, start: string, end: string) => {
-  const blockedSlots = getBlockedSlotsForDay(dayValue)
-  const newStart = timeToMinutes(start)
-  const newEnd = timeToMinutes(end)
-  
-  return blockedSlots.some(slot => {
-    // Extract time from datetime string (format: "2024-12-25T09:00:00Z")
-    const slotStart = timeToMinutes(slot.start.substring(11, 16))
-    const slotEnd = timeToMinutes(slot.end.substring(11, 16))
-    
-    return (newStart < slotEnd && newEnd > slotStart) // Overlap check
-  })
+// Check if a time window conflicts with existing slots (backend validation)
+async function checkConflictWithBackend(date: string, start: string, end: string): Promise<boolean> {
+  try {
+    const result = await bookingApi.checkSlotConflicts({
+      date,
+      start_time: start,
+      end_time: end
+    })
+    return result.has_conflicts
+  } catch (error) {
+    console.error('[AvailabilityEditor] Conflict check failed:', error)
+    return false
+  }
 }
 
 // Helper function to convert time string to minutes
@@ -123,7 +127,7 @@ function initializeLocalSchedule() {
   }
 
   localSchedule.value = schedule
-  hasChanges.value = false
+  slotStore.clearDraftSchedule()
 }
 
 function getWindowsForDay(dayValue: number) {
@@ -136,20 +140,13 @@ function addWindow(dayValue: number) {
   }
   
   const newWindow = { start: '09:00', end: '17:00' }
-  
-  // Check for conflicts with existing slots
-  if (hasConflictWithSlots(dayValue, newWindow.start, newWindow.end)) {
-    toast.warning(t('availability.editor.conflictWithSlots'))
-    return
-  }
-  
   localSchedule.value[dayValue].push(newWindow)
-  hasChanges.value = true
+  slotStore.setDraftSchedule({ ...localSchedule.value })
 }
 
 function removeWindow(dayValue: number, index: number) {
   localSchedule.value[dayValue].splice(index, 1)
-  hasChanges.value = true
+  slotStore.setDraftSchedule({ ...localSchedule.value })
 }
 
 function updateWindow(
@@ -161,29 +158,47 @@ function updateWindow(
   const window = localSchedule.value[dayValue][index]
   const updatedWindow = { ...window, [field]: value }
   
-  // Check for conflicts with existing slots
-  if (hasConflictWithSlots(dayValue, updatedWindow.start, updatedWindow.end)) {
-    toast.warning(t('availability.editor.conflictWithSlots'))
-    // Don't update the window if there's a conflict
-    return
-  }
-  
   localSchedule.value[dayValue][index] = updatedWindow
-  hasChanges.value = true
+  slotStore.setDraftSchedule({ ...localSchedule.value })
 }
 
 async function saveAvailability() {
-  isSaving.value = true
+  if (isSavingTemplate.value || (currentJob.value && (currentJob.value.status === 'pending' || currentJob.value.status === 'running'))) {
+    toast.warning(t('availability.editor.jobInProgress'))
+    return
+  }
+
+  isSavingTemplate.value = true
+  isCheckingConflicts.value = true
 
   try {
-    // Check for conflicts before saving
+    const today = new Date()
+    const conflictingDays: number[] = []
+
     for (const [day, windows] of Object.entries(localSchedule.value)) {
+      if (windows.length === 0) continue
+      
+      const dayNum = Number(day)
+      const daysUntilTarget = (dayNum === 7 ? 0 : dayNum) - today.getDay()
+      const targetDate = new Date(today)
+      targetDate.setDate(today.getDate() + (daysUntilTarget >= 0 ? daysUntilTarget : daysUntilTarget + 7))
+      const dateStr = targetDate.toISOString().slice(0, 10)
+
       for (const window of windows) {
-        if (hasConflictWithSlots(Number(day), window.start, window.end)) {
-          toast.error(t('availability.editor.conflictWithSlots'))
-          return
+        const hasConflict = await checkConflictWithBackend(dateStr, window.start, window.end)
+        if (hasConflict) {
+          conflictingDays.push(dayNum)
+          break
         }
       }
+    }
+
+    isCheckingConflicts.value = false
+
+    if (conflictingDays.length > 0) {
+      const dayNames = conflictingDays.map(d => t(days.find(day => day.value === d)?.label || '')).join(', ')
+      toast.error(t('availability.editor.conflictsDetected', { days: dayNames }))
+      return
     }
 
     const schedulePayload: Record<string, Array<{ start_time: string; end_time: string }>> = {}
@@ -196,31 +211,54 @@ async function saveAvailability() {
     }
 
     const response = await bookingApi.setAvailability({ schedule: schedulePayload })
-    hasChanges.value = false
+    slotStore.clearDraftSchedule()
 
-    // Success toast
-    toast.success(t('availability.editor.saveSuccess'))
+    toast.success(t('availability.editor.notifications.saveSuccess'))
 
-    // Почати відстеження job
     if (response.jobId) {
       await startTracking(response.jobId)
     }
-  } catch (e) {
+  } catch (e: any) {
     console.error('Failed to save availability:', e)
-    toast.error(t('availability.editor.saveError'))
+    toast.error(e.message || t('availability.editor.notifications.saveError'))
   } finally {
-    isSaving.value = false
+    isSavingTemplate.value = false
+    isCheckingConflicts.value = false
   }
 }
 
 async function handleRetry() {
+  if (currentJob.value && (currentJob.value.status === 'pending' || currentJob.value.status === 'running')) {
+    toast.warning(t('availability.editor.jobInProgress'))
+    return
+  }
+
   try {
     const response = await bookingApi.generateAvailabilitySlots()
     await startTracking(response.jobId)
     toast.info(t('availability.jobStatus.retry'))
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to retry generation:', error)
-    toast.error(t('availability.jobStatus.retryError'))
+    
+    // Handle 401 errors - token might have been refreshed, retry once
+    if (error?.response?.status === 401 && !error.config?._retryAfter401) {
+      console.log('[AvailabilityEditor] 401 on retry, attempting again after token refresh...')
+      try {
+        if (error.config) {
+          error.config._retryAfter401 = true
+        }
+        const response = await bookingApi.generateAvailabilitySlots()
+        await startTracking(response.jobId)
+        toast.info(t('availability.jobStatus.retry'))
+        return
+      } catch (retryError: any) {
+        console.error('[AvailabilityEditor] Retry after 401 failed:', retryError)
+        toast.error(retryError.message || t('availability.jobStatus.retryError'))
+        return
+      }
+    }
+    
+    toast.error(error.message || t('availability.jobStatus.retryError'))
   }
 }
 
@@ -252,13 +290,10 @@ async function handleSlotSaved(updatedSlot: Slot) {
   slotStore.setEditingSlot(null)
   toast.success(t('availability.slotEditor.saveSuccess'))
   
-  // Optimistic update already done in store
-  // Background sync to ensure consistency
   try {
     await slotStore.loadSlots({ page: 0 })
   } catch (error) {
     console.warn('[AvailabilityEditor] Background sync failed:', error)
-    // Optimistic update remains, user can retry if needed
   }
 }
 
@@ -268,8 +303,22 @@ function handleSlotEditCancelled() {
 }
 
 function handleSlotEditError(error: any) {
-  console.error('Slot edit error:', error)
-  toast.error(t('availability.slotEditor.saveError'))
+  console.error('[AvailabilityEditor] Slot edit error:', error)
+  
+  if (error.response?.status === 409) {
+    toast.error(t('availability.slotEditor.conflictPersists'))
+  } else {
+    toast.error(error.message || t('availability.slotEditor.saveError'))
+  }
+  
+  showSlotEditor.value = false
+  slotStore.setEditingSlot(null)
+  
+  try {
+    slotStore.loadSlots({ page: 0 })
+  } catch (reloadError) {
+    console.warn('[AvailabilityEditor] Failed to reload slots after error:', reloadError)
+  }
 }
 
 async function loadExistingSlots() {
@@ -313,7 +362,12 @@ function handleBackToCalendar() {
 <template>
   <div class="availability-editor">
     <div class="editor-top-bar">
-      <button class="back-button" @click="handleBackToCalendar">
+      <button 
+        class="back-button" 
+        @click="handleBackToCalendar"
+        data-testid="back-to-calendar"
+        :aria-label="t('calendar.weekNavigation.backToCalendar', 'Повернутися до календаря')"
+      >
         ← {{ t('calendar.weekNavigation.backToCalendar', 'Повернутися до календаря') }}
       </button>
     </div>
@@ -355,6 +409,8 @@ function handleBackToCalendar() {
           v-if="currentJob.status === 'failed'"
           @click="handleRetry"
           class="btn-retry"
+          data-testid="retry-job"
+          :aria-label="t('availability.jobStatus.retry')"
         >
           {{ t('availability.jobStatus.retry') }}
         </button>
@@ -423,13 +479,17 @@ function handleBackToCalendar() {
       </button>
       <button
         class="btn btn-primary"
-        :disabled="isSaving || isPolling"
+        :disabled="isSavingTemplate || isCheckingConflicts || (currentJob && (currentJob.status === 'pending' || currentJob.status === 'running'))"
         @click="saveAvailability"
+        data-testid="save-availability"
+        :aria-label="t('availability.editor.actions.save')"
       >
-        <LoaderIcon v-if="isSaving" class="spinner-small" :size="16" />
+        <LoaderIcon v-if="isSavingTemplate || isCheckingConflicts" class="spinner-small" :size="16" />
         <Save v-else :size="16" />
         {{
-          isSaving
+          isCheckingConflicts
+            ? t('availability.editor.actions.checking')
+            : isSavingTemplate
             ? t('availability.editor.actions.saving')
             : t('availability.editor.actions.save')
         }}

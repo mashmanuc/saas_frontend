@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // F19: Time Range Input Component
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
   start: string
@@ -11,6 +12,8 @@ const emit = defineEmits<{
   'update:start': [value: string]
   'update:end': [value: string]
 }>()
+
+const { t } = useI18n()
 
 // Generate time options (every 30 minutes)
 const timeOptions = computed(() => {
@@ -59,7 +62,9 @@ const isValid = computed(() => {
       </option>
     </select>
 
-    <span v-if="!isValid" class="error-hint" data-testid="time-error">End must be after start</span>
+    <span v-if="!isValid" class="error-hint" data-testid="time-error">
+      {{ t('availability.slotEditor.errors.endBeforeStart') }}
+    </span>
   </div>
 </template>
 

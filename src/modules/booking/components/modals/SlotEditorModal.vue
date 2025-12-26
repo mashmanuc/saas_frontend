@@ -38,11 +38,20 @@ const transformedSlot = computed<Slot>(() => {
   const startDate = new Date(props.slot.start)
   const endDate = new Date(props.slot.end)
   
+  // Format time as HH:MM using locale time (as displayed to user)
+  const formatTime = (date: Date): string => {
+    return date.toLocaleTimeString('en-GB', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false 
+    })
+  }
+  
   return {
     id: String(props.slot.id),
     date: startDate.toISOString().split('T')[0],
-    start: startDate.toTimeString().slice(0, 5), // HH:MM
-    end: endDate.toTimeString().slice(0, 5), // HH:MM
+    start: formatTime(startDate),
+    end: formatTime(endDate),
     status: 'available',
     source: 'template',
     createdAt: props.slot.start,

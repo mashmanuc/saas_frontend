@@ -13,6 +13,8 @@ import { useRealtimeStore } from './stores/realtimeStore'
 import { useNotificationsStore } from './stores/notificationsStore'
 import { useAuthStore } from './modules/auth/store/authStore'
 import { createErrorCollector } from './modules/diagnostics/plugins/errorCollector'
+import { initTokenRefresh } from './core/auth/tokenRefresh'
+import { apiClient } from './utils/apiClient'
 import VueKonva from 'vue-konva'
 
 const app = createApp(App)
@@ -41,6 +43,23 @@ setupI18n(localStorage.getItem('locale') || 'uk').then(() => {
 
   const notifications = useNotificationsStore()
   notifications.init()
+
+  // Initialize token refresh system
+  const authStore = useAuthStore()
+  initTokenRefresh({
+    axiosInstance: apiClient,
+    initialToken: authStore.access,
+    onRefreshed: () => {
+      console.log('[TokenRefresh] Token refreshed successfully')
+    },
+    onExpired: () => {
+      console.warn('[TokenRefresh] Session expired')
+      authStore.forceLogout()
+    },
+    onError: (error) => {
+      console.error('[TokenRefresh] Refresh error:', error)
+    }
+  })
 
   if (import.meta.hot) {
     import.meta.hot.dispose(() => {
