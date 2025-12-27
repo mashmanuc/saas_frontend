@@ -2,11 +2,16 @@ import { ref } from 'vue'
 import { bookingApi } from '@/modules/booking/api/booking'
 import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
+import { storeToRefs } from 'pinia'
+import { useCalendarWeekStore } from '@/modules/booking/stores/calendarWeekStore'
 import type { Slot, SlotEditStrategy, Conflict } from '@/modules/booking/types/slot'
+import type { AccessibleSlot } from '@/modules/booking/types/calendarWeek'
 
 export function useSlotEditor() {
   const { t } = useI18n()
   const toast = useToast()
+  const calendarStore = useCalendarWeekStore()
+  const { accessibleById, weekMeta } = storeToRefs(calendarStore)
   
   const isLoading = ref(false)
   const currentSlot = ref<Slot | null>(null)
@@ -25,6 +30,26 @@ export function useSlotEditor() {
     
     console.log('[useSlotEditor] editSlot called:', { slotId, newStart, newEnd, strategy, overrideReason })
     
+    // Optimistic update: update slot immediately
+    const slotIdNum = parseInt(slotId)
+    const existingSlot = accessibleById.value?.[slotIdNum]
+    let previousSlot: AccessibleSlot | undefined
+    
+    if (existingSlot) {
+      previousSlot = { ...existingSlot }
+      const date = existingSlot.start.slice(0, 10)
+      const offset = existingSlot.start.length > 19 ? existingSlot.start.slice(19) : ''
+      
+      const updatedSlot: AccessibleSlot = {
+        ...existingSlot,
+        start: `${date}T${newStart}:00${offset}`,
+        end: `${date}T${newEnd}:00${offset}`
+      }
+      
+      calendarStore.removeOptimisticSlot(slotIdNum)
+      calendarStore.addOptimisticSlot(updatedSlot)
+    }
+    
     try {
       const response = await bookingApi.editSlot(slotId, {
         start_time: newStart,
@@ -35,13 +60,21 @@ export function useSlotEditor() {
       
       console.log('[useSlotEditor] editSlot response:', response)
       toast.success(t('availability.slotEditor.saveSuccess'))
-      // Response is already unwrapped by axios interceptor
       return response
       
     } catch (error: any) {
       console.error('[useSlotEditor] editSlot error:', error)
+      
+      // Revert optimistic update if we had one
+      if (previousSlot) {
+        calendarStore.removeOptimisticSlot(previousSlot.id)
+        calendarStore.addOptimisticSlot(previousSlot)
+      } else {
+        const currentPage = weekMeta.value?.page ?? 0
+        calendarStore.fetchWeek(currentPage)
+      }
+      
       if (error.status === 409) {
-        // Conflict error
         toast.error(t('availability.slotEditor.conflictError'))
         throw new ConflictError(error.data.conflicts)
       } else {

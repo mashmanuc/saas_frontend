@@ -92,7 +92,7 @@ function handleClick() {
   transition: background-color var(--calendar-transition-base), 
               transform var(--calendar-transition-fast);
   position: relative;
-  min-height: 44px; /* iOS touch target minimum */
+  min-height: var(--calendar-cell-height); /* Use CSS variable for consistent height */
 }
 
 .calendar-cell.calendar-cell--empty {
@@ -176,7 +176,7 @@ function handleClick() {
 /* Responsive: mobile touch targets */
 @media (max-width: 768px) {
   .calendar-cell {
-    min-height: 44px;
+    min-height: var(--calendar-cell-height);
     padding: 6px;
   }
 }

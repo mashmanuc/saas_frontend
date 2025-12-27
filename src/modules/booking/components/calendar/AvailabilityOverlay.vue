@@ -69,13 +69,18 @@ const dayLayouts = computed(() => {
 
 function formatSlotLabel(slot?: AccessibleSlot) {
   if (!slot) return ''
+  // Parse with timezone awareness to prevent incorrect time display
   const start = new Date(slot.start)
   const end = new Date(slot.end)
-  const formatter = new Intl.DateTimeFormat(undefined, {
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-  return `${formatter.format(start)} – ${formatter.format(end)}`
+  
+  // Format in local timezone
+  const formatTime = (date: Date) => {
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    return `${hours}:${minutes}`
+  }
+  
+  return `${formatTime(start)} – ${formatTime(end)}`
 }
 
 function handleSlotClick(slotId: number) {
@@ -114,7 +119,7 @@ function handleBlockClick(slotId: number) {
   background: rgba(251, 191, 36, 0.25);
   border: 1px solid rgba(217, 119, 6, 0.45);
   border-radius: 8px;
-  overflow: hidden;
+  overflow: visible;
   cursor: pointer;
   transition: all 0.2s ease;
 }

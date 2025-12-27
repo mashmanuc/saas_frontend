@@ -26,6 +26,8 @@
       @today="handleToday"
       @scroll-first-available="handleScrollToFirstAvailable"
       @open-availability="handleSetupAvailability"
+      @create-slot="handleCreateSlotFromToolbar"
+      @show-guide="showGuideModal = true"
     />
     
     <div class="calendar-controls">
@@ -138,6 +140,11 @@
       @cancelled="showBlockSlotModal = false"
       @error="handleSlotBlockError"
     />
+
+    <CalendarGuideModal
+      v-if="showGuideModal"
+      @close="showGuideModal = false"
+    />
   </div>
 </template>
 
@@ -156,6 +163,7 @@ import WeekNavigation from './WeekNavigation.vue'
 import EmptyAvailabilityState from './EmptyAvailabilityState.vue'
 import CreateLessonModal from '../modals/CreateLessonModal.vue'
 import EventModal from '../modals/EventModal.vue'
+import CalendarGuideModal from './CalendarGuideModal.vue'
 import SlotEditorModal from '../modals/SlotEditorModal.vue'
 import CreateSlotModal from '../availability/CreateSlotModal.vue'
 import BlockSlotModal from '../availability/BlockSlotModal.vue'
@@ -240,10 +248,24 @@ const selectedEventId = ref<number | null>(null)
 const selectedSlot = ref<AccessibleSlot | null>(null)
 const selectedSlotForBlock = ref<AccessibleSlot | null>(null)
 const createSlotData = ref<{ date: string; start: string; end: string } | null>(null)
+const showGuideModal = ref(false)
 
 // View filters
 const showEvents = ref(true)
 const showAvailability = ref(true)
+
+function formatDateString(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function parseIsoDate(dateStr: string | undefined) {
+  if (!dateStr) return null
+  const parsed = new Date(`${dateStr}T00:00:00Z`)
+  return Number.isNaN(parsed.valueOf()) ? null : parsed
+}
 
 onMounted(async () => {
   try {
@@ -318,13 +340,13 @@ function handleSlotClick(slotId: number) {
 function handleSlotSaved() {
   console.info('[CalendarWeekView] Slot saved')
   showSlotModal.value = false
-  store.fetchWeek(weekMeta.value?.page ?? 0)
+  // No need to fetch - optimistic update already handled it
 }
 
 function handleSlotDeleted() {
   console.info('[CalendarWeekView] Slot deleted')
   showSlotModal.value = false
-  store.fetchWeek(weekMeta.value?.page ?? 0)
+  // No need to fetch - optimistic update already handled it
 }
 
 function handleSlotEdit(slotId: number) {
@@ -333,10 +355,15 @@ function handleSlotEdit(slotId: number) {
 
 async function handleSlotDeleteInline(slotId: number) {
   try {
+    // Optimistic update: remove slot immediately
+    store.removeOptimisticSlot(slotId)
+    
     await deleteSlot(slotId)
-    store.fetchWeek(weekMeta.value?.page ?? 0)
+    // No need to fetch week since optimistic update already shows the deletion
   } catch (error) {
     console.error('[CalendarWeekView] Failed to delete slot:', error)
+    // If deletion failed, we need to refresh to restore the slot
+    store.fetchWeek(weekMeta.value?.page ?? 0)
   }
 }
 
@@ -344,7 +371,8 @@ function handleSlotCreated(slot: any) {
   console.info('[CalendarWeekView] Slot created:', slot)
   showCreateSlotModal.value = false
   createSlotData.value = null
-  store.fetchWeek(weekMeta.value?.page ?? 0)
+  
+  // No need to fetch week - optimistic update already handled it
 }
 
 function handleSlotCreateError(error: any) {
@@ -371,13 +399,40 @@ function handleSlotBlocked(slotId: number) {
   console.info('[CalendarWeekView] Slot blocked:', slotId)
   showBlockSlotModal.value = false
   selectedSlotForBlock.value = null
-  store.fetchWeek(weekMeta.value?.page ?? 0)
+  // No need to fetch - optimistic update should handle it
 }
 
 function handleSlotBlockError(error: any) {
   console.error('[CalendarWeekView] Failed to block slot:', error)
   showBlockSlotModal.value = false
   selectedSlotForBlock.value = null
+}
+
+function handleCreateSlotFromToolbar() {
+  const today = new Date()
+  let dateStr = formatDateString(today)
+
+  const weekStartDate = parseIsoDate(weekMeta.value?.weekStart)
+  const weekEndDate = parseIsoDate(weekMeta.value?.weekEnd)
+
+  if (weekStartDate && weekEndDate) {
+    const inCurrentVisibleWeek = today >= weekStartDate && today <= weekEndDate
+    if (!inCurrentVisibleWeek) {
+      dateStr = weekMeta.value!.weekStart
+    }
+  } else if (weekMeta.value?.weekStart) {
+    dateStr = weekMeta.value.weekStart
+  }
+
+  const currentHour = today.getHours()
+  const nextHour = currentHour + 1
+  
+  createSlotData.value = {
+    date: dateStr,
+    start: `${nextHour.toString().padStart(2, '0')}:00`,
+    end: `${(nextHour + 1).toString().padStart(2, '0')}:00`
+  }
+  showCreateSlotModal.value = true
 }
 </script>
 

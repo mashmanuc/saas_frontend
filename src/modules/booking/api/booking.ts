@@ -255,7 +255,8 @@ export const bookingApi = {
 
   async createCustomSlot(data: CustomSlotInput): Promise<TimeSlot> {
     const response = await apiClient.post('/booking/slots/custom/', data)
-    return response.data
+    // apiClient interceptor already unwraps response.data, so response is the actual data
+    return response as unknown as TimeSlot
   },
 
   async updateSlot(slotId: number, data: { start?: string; end?: string }): Promise<TimeSlot> {

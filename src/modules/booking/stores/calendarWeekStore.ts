@@ -1,5 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone'
 import { calendarWeekApi } from '../api/calendarWeekApi'
 import type {
   WeekSnapshot,
@@ -22,6 +25,9 @@ import type {
 } from '../types/calendarWeek'
 
 // Constants
+dayjs.extend(utc)
+dayjs.extend(timezone)
+
 const DAY_START_MINUTES = 6 * 60      // 06:00
 const DAY_END_MINUTES = 22 * 60       // 22:00
 const SLOT_MINUTES = 30
@@ -152,19 +158,22 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
    */
   const eventLayouts = computed((): EventLayout[] => {
     const layouts: EventLayout[] = []
+    const tz = weekMeta.value?.timezone ?? 'Europe/Kiev'
     
     for (const dayKey of Object.keys(eventIdsByDay.value)) {
       const dayEvents = eventsForDay.value(dayKey)
       
       for (const event of dayEvents) {
-        const startDate = new Date(event.start)
-        const startMin = startDate.getHours() * 60 + startDate.getMinutes()
+        const startDate = dayjs(event.start).tz(tz)
+        const endDate = dayjs(event.end).tz(tz)
+        const startMin = startDate.hour() * 60 + startDate.minute()
+        const durationMin = Math.max(0, endDate.diff(startDate, 'minute'))
         
         layouts.push({
           eventId: event.id,
           dayKey,
           top: (startMin - DAY_START_MINUTES) * PX_PER_MINUTE,
-          height: event.durationMin * PX_PER_MINUTE,
+          height: durationMin * PX_PER_MINUTE,
           left: 0,
           width: '100%',
         })
@@ -176,15 +185,16 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
   
   const availabilityLayouts = computed((): AvailabilityLayout[] => {
     const layouts: AvailabilityLayout[] = []
+    const tz = weekMeta.value?.timezone ?? 'Europe/Kiev'
     
     for (const dayKey of Object.keys(accessibleIdsByDay.value)) {
       const daySlots = accessibleForDay.value(dayKey)
       
       for (const slot of daySlots) {
-        const startDate = new Date(slot.start)
-        const endDate = new Date(slot.end)
-        const startMin = startDate.getHours() * 60 + startDate.getMinutes()
-        const heightMinutes = Math.max(0, (endDate.getTime() - startDate.getTime()) / 60000)
+        const startDate = dayjs(slot.start).tz(tz)
+        const endDate = dayjs(slot.end).tz(tz)
+        const startMin = startDate.hour() * 60 + startDate.minute()
+        const heightMinutes = Math.max(0, endDate.diff(startDate, 'minute'))
         
         layouts.push({
           slotId: slot.id,
@@ -358,6 +368,114 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     }
   }
   
+  function addOptimisticSlot(slot: AccessibleSlot) {
+    // Add slot to accessible state for immediate display
+    const dayKey = slot.start.slice(0, 10) // Extract date from ISO string
+    
+    console.log('[calendarWeekStore] Adding optimistic slot:', slot, 'dayKey:', dayKey)
+    
+    // Check if this day is in the current week
+    const dayExists = days.value.some(d => d.dayKey === dayKey)
+    if (!dayExists) {
+      console.warn('[calendarWeekStore] Day', dayKey, 'is not in current week. Available days:', days.value.map(d => d.dayKey))
+      // Still add it - it might be displayed if user navigates to that week
+    }
+    
+    // Force reactivity by creating new objects
+    accessibleById.value = {
+      ...accessibleById.value,
+      [slot.id]: slot
+    }
+    
+    const currentDaySlots = accessibleIdsByDay.value[dayKey] || []
+    if (!currentDaySlots.includes(slot.id)) {
+      accessibleIdsByDay.value = {
+        ...accessibleIdsByDay.value,
+        [dayKey]: [...currentDaySlots, slot.id]
+      }
+      allAccessibleIds.value = [...allAccessibleIds.value, slot.id]
+    }
+    
+    console.log('[calendarWeekStore] Optimistic slot added. Total slots:', Object.keys(accessibleById.value).length)
+    console.log('[calendarWeekStore] Slots for day', dayKey, ':', accessibleIdsByDay.value[dayKey])
+    console.log('[calendarWeekStore] Current week days:', days.value.map(d => d.dayKey))
+  }
+  
+  function removeOptimisticSlot(slotId: number) {
+    // Remove slot from all data structures
+    const slot = accessibleById.value[slotId]
+    if (slot) {
+      const dayKey = slot.start.slice(0, 10)
+      
+      console.log('[calendarWeekStore] Removing optimistic slot:', slotId)
+      
+      // Force reactivity by creating new objects
+      const { [slotId]: removed, ...restById } = accessibleById.value
+      accessibleById.value = restById
+      
+      if (accessibleIdsByDay.value[dayKey]) {
+        const filteredDaySlots = accessibleIdsByDay.value[dayKey].filter(id => id !== slotId)
+        accessibleIdsByDay.value = {
+          ...accessibleIdsByDay.value,
+          [dayKey]: filteredDaySlots
+        }
+      }
+      
+      allAccessibleIds.value = allAccessibleIds.value.filter(id => id !== slotId)
+      
+      console.log('[calendarWeekStore] Optimistic slot removed. Total slots:', Object.keys(accessibleById.value).length)
+    }
+  }
+  
+  function replaceOptimisticSlot(oldId: number, newSlot: AccessibleSlot) {
+    // Atomic operation: replace temp slot with real slot
+    // This prevents race conditions with WebSocket events
+    const oldSlot = accessibleById.value[oldId]
+    if (!oldSlot) {
+      console.warn('[calendarWeekStore] Cannot replace slot - old slot not found:', oldId)
+      addOptimisticSlot(newSlot)
+      return
+    }
+    
+    const oldDayKey = oldSlot.start.slice(0, 10)
+    const newDayKey = newSlot.start.slice(0, 10)
+    
+    console.log('[calendarWeekStore] Replacing optimistic slot:', { oldId, newId: newSlot.id, oldDayKey, newDayKey })
+    
+    // Remove old slot and add new slot atomically
+    const { [oldId]: removed, ...restById } = accessibleById.value
+    accessibleById.value = {
+      ...restById,
+      [newSlot.id]: newSlot
+    }
+    
+    // Update day mappings
+    if (oldDayKey === newDayKey) {
+      // Same day - just replace ID
+      const daySlots = accessibleIdsByDay.value[oldDayKey] || []
+      accessibleIdsByDay.value = {
+        ...accessibleIdsByDay.value,
+        [oldDayKey]: daySlots.map(id => id === oldId ? newSlot.id : id)
+      }
+    } else {
+      // Different days - remove from old, add to new
+      if (accessibleIdsByDay.value[oldDayKey]) {
+        const filteredOldDaySlots = accessibleIdsByDay.value[oldDayKey].filter(id => id !== oldId)
+        const newDaySlots = accessibleIdsByDay.value[newDayKey] || []
+        accessibleIdsByDay.value = {
+          ...accessibleIdsByDay.value,
+          [oldDayKey]: filteredOldDaySlots,
+          [newDayKey]: [...newDaySlots, newSlot.id]
+        }
+      }
+    }
+    
+    // Update all IDs list
+    allAccessibleIds.value = allAccessibleIds.value.map(id => id === oldId ? newSlot.id : id)
+    
+    console.log('[calendarWeekStore] Slot replaced. Total slots:', Object.keys(accessibleById.value).length)
+  }
+  
   async function createEvent(payload: CreateEventPayload & {
     notifyStudent?: boolean
     autoGenerateZoom?: boolean
@@ -483,8 +601,10 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
   // v0.49.3: WebSocket handlers
   function handleEventCreated(data: any) {
     console.log('[calendarWeekStore] WS: Event created', data)
-    // Refetch to get updated data
-    fetchWeek(currentPage.value, currentTimezone.value)
+    // Delay refetch to allow optimistic updates to complete
+    setTimeout(() => {
+      fetchWeek(currentPage.value, currentTimezone.value)
+    }, 1000)
   }
   
   function handleEventUpdated(data: any) {
@@ -499,8 +619,10 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
   
   function handleEventDeleted(data: any) {
     console.log('[calendarWeekStore] WS: Event deleted', data)
-    // Refetch to get updated data
-    fetchWeek(currentPage.value, currentTimezone.value)
+    // Delay refetch to allow optimistic updates to complete
+    setTimeout(() => {
+      fetchWeek(currentPage.value, currentTimezone.value)
+    }, 1000)
   }
   
   /**
@@ -574,6 +696,9 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     
     // Actions
     fetchWeek,
+    addOptimisticSlot,
+    removeOptimisticSlot,
+    replaceOptimisticSlot,
     createEvent,
     deleteEvent,
     updateEvent,

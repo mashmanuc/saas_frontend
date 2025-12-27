@@ -17,7 +17,16 @@
         <!-- Date Display -->
         <div class="date-section">
           <CalendarIcon :size="16" class="icon" />
-          <span class="date-text">{{ formatDate(date) }}</span>
+          <label class="date-input-wrapper">
+            <span class="sr-only">{{ t('availability.createSlot.dateLabel') }}</span>
+            <input
+              type="date"
+              v-model="localDate"
+              :min="todayStr"
+              class="date-input"
+              :disabled="isLoading"
+            />
+          </label>
         </div>
 
         <!-- Time Range Input -->
@@ -29,6 +38,12 @@
             :disabled="isLoading"
             @change="handleTimeChange"
           />
+        </div>
+
+        <!-- Validation Error -->
+        <div v-if="validationError" class="validation-error" role="alert" data-testid="validation-error">
+          <AlertCircleIcon :size="20" class="error-icon" />
+          <p class="error-text">{{ validationError }}</p>
         </div>
 
         <!-- Conflict Warning -->
@@ -63,7 +78,7 @@
         <button
           class="btn btn-primary"
           @click="handleCreate"
-          :disabled="isLoading || hasErrorConflicts || !isValid"
+          :disabled="isLoading || hasErrorConflicts || !isValid || validationError !== null"
           data-testid="confirm-create"
         >
           <PlusIcon v-if="!isLoading" :size="16" />
@@ -76,12 +91,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { X as XIcon, Calendar as CalendarIcon, AlertCircle as AlertCircleIcon, Loader as LoaderIcon, Plus as PlusIcon } from 'lucide-vue-next'
 import TimeRangeInput from './TimeRangeInput.vue'
 import { bookingApi } from '@/modules/booking/api/booking'
 import { useSlotStore } from '@/stores/slotStore'
+import { useCalendarWeekStore } from '@/modules/booking/stores/calendarWeekStore'
 import { useToast } from '@/composables/useToast'
 import type { Conflict } from '@/modules/booking/types/slot'
 
@@ -102,36 +118,68 @@ const emit = defineEmits<Emits>()
 
 const { t } = useI18n()
 const slotStore = useSlotStore()
+const calendarStore = useCalendarWeekStore()
 const toast = useToast()
 
+const localDate = ref(props.date)
 const localStart = ref(props.start)
 const localEnd = ref(props.end)
 const isLoading = ref(false)
 const error = ref<string | null>(null)
 const conflicts = ref<Conflict[]>([])
+const todayStr = new Date().toISOString().split('T')[0]
 
 const hasErrorConflicts = computed(() => 
   conflicts.value.some(c => c.severity === 'error')
 )
 
-const isValid = computed(() => {
-  if (!localStart.value || !localEnd.value) return false
+const durationMinutes = computed(() => {
+  if (!localStart.value || !localEnd.value) return 0
   const [startHour, startMin] = localStart.value.split(':').map(Number)
   const [endHour, endMin] = localEnd.value.split(':').map(Number)
   const startMinutes = startHour * 60 + startMin
   const endMinutes = endHour * 60 + endMin
-  return endMinutes > startMinutes
+  return endMinutes - startMinutes
 })
 
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr)
-  return date.toLocaleDateString(undefined, { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
-  })
-}
+const durationHours = computed(() => durationMinutes.value / 60)
+
+const validationError = computed(() => {
+  if (!localStart.value || !localEnd.value) return null
+  if (durationMinutes.value <= 0) return t('availability.validation.endAfterStart')
+  if (durationHours.value > 3) return t('availability.validation.maxDuration3Hours')
+  return null
+})
+
+const isValid = computed(() => {
+  return durationMinutes.value > 0 && durationHours.value <= 3
+})
+
+watch(
+  () => props.date,
+  (newDate) => {
+    localDate.value = newDate
+  }
+)
+
+watch(
+  () => props.start,
+  (value) => {
+    localStart.value = value
+  }
+)
+
+watch(
+  () => props.end,
+  (value) => {
+    localEnd.value = value
+  }
+)
+
+watch(localDate, () => {
+  conflicts.value = []
+  handleTimeChange()
+})
 
 async function handleTimeChange() {
   if (!isValid.value) {
@@ -141,7 +189,7 @@ async function handleTimeChange() {
   
   try {
     const response = await bookingApi.checkSlotConflicts({
-      date: props.date,
+      date: localDate.value,
       start_time: localStart.value,
       end_time: localEnd.value
     })
@@ -159,6 +207,9 @@ async function handleCreate() {
   isLoading.value = true
   error.value = null
   
+  // Store tempId for error handling (use negative to avoid conflicts with real IDs)
+  const tempId = -Date.now()
+  
   try {
     // Check for conflicts before creating
     await handleTimeChange()
@@ -169,37 +220,122 @@ async function handleCreate() {
     }
     
     const slotData = {
-      date: props.date,
+      date: localDate.value,
       start_time: localStart.value,
       end_time: localEnd.value
     }
     
     // Optimistic update: show slot immediately
-    const tempId = Date.now()
+    const timezone = calendarStore.weekMeta?.timezone || 'Europe/Kiev'
+    const tzOffset = new Date().toLocaleString('en-US', { timeZone: timezone, timeZoneName: 'short' }).split(' ').pop()
+    const offset = tzOffset === 'GMT+2' ? '+02:00' : '+03:00'
+    
     const optimisticSlot = {
       id: tempId,
-      date: props.date,
-      start: localStart.value,
-      end: localEnd.value,
-      status: 'available' as const,
-      source: 'manual' as const,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      type: 'available_slot' as const,
+      start: `${localDate.value}T${localStart.value}:00${offset}`,
+      end: `${localDate.value}T${localEnd.value}:00${offset}`,
+      regularity: 'single' as const
     }
     
     console.log('[CreateSlotModal] Optimistic slot created:', optimisticSlot)
     
+    // Add to calendar store for immediate display
+    calendarStore.addOptimisticSlot(optimisticSlot)
+    
+    // Wait a tick for Vue to update DOM
+    await new Promise(resolve => setTimeout(resolve, 0))
+    
     const createdSlot = await bookingApi.createCustomSlot(slotData)
     
     console.log('[CreateSlotModal] Slot created on server:', createdSlot)
+    console.log('[CreateSlotModal] Server response structure:', {
+      id: createdSlot?.id,
+      date: createdSlot?.date,
+      start_time: createdSlot?.start_time,
+      end_time: createdSlot?.end_time,
+      start_datetime: createdSlot?.start_datetime,
+      end_datetime: createdSlot?.end_datetime
+    })
+    
+    // Update optimistic slot with real data (same approach as editSlot)
+    // Don't remove and re-add - just update in place to avoid race conditions with WebSocket
+    if (createdSlot) {
+      const ensureSeconds = (time?: string) => {
+        if (!time) return '00:00:00'
+        return time.length === 5 ? `${time}:00` : time
+      }
+      
+      const buildLocalDateTime = (date?: string, time?: string) => {
+        const safeDate = date || localDate.value
+        const safeTime = ensureSeconds(time || localStart.value)
+        return `${safeDate}T${safeTime}${offset}`
+      }
+      
+      // Use date + local time to avoid double timezone conversion (API returns UTC timestamps)
+      const startTime = buildLocalDateTime(createdSlot.date, createdSlot.start_time)
+      const endTime = buildLocalDateTime(createdSlot.date, createdSlot.end_time)
+      
+      const realSlot = {
+        id: createdSlot.id,
+        type: 'available_slot' as const,
+        start: startTime,
+        end: endTime,
+        regularity: 'single' as const
+      }
+      console.log('[CreateSlotModal] Updating optimistic slot to real:', { tempId, realSlot })
+      
+      // Replace temp with real in one atomic operation (prevents WebSocket race conditions)
+      calendarStore.replaceOptimisticSlot(tempId, realSlot)
+    } else {
+      // If no real slot returned, just remove optimistic
+      calendarStore.removeOptimisticSlot(tempId)
+    }
     
     toast.success(t('availability.createSlot.success'))
     emit('created', createdSlot)
   } catch (err: any) {
     console.error('[CreateSlotModal] Failed to create slot:', err)
     
+    // Remove optimistic slot on error
+    calendarStore.removeOptimisticSlot(tempId)
+    
+    const status = err?.response?.status
+    const errorData = err?.response?.data?.error
+    
+    // Handle 409 Conflict (duplicate slot or overlap)
+    if (status === 409) {
+      const code = errorData?.code || ''
+      if (code === 'SLOT_ALREADY_EXISTS') {
+        toast.error(t('availability.validation.slotAlreadyExists'))
+      } else {
+        toast.error(t('availability.validation.slotOverlapsWithEvent'))
+      }
+      emit('error', err)
+      return
+    }
+    
+    // Handle 400 Bad Request (validation errors)
+    if (status === 400) {
+      const fields = errorData?.fields || {}
+      if (fields.duration) {
+        toast.error(t('availability.validation.maxDuration3Hours'))
+      } else {
+        toast.error(errorData?.message || t('availability.createSlot.error'))
+      }
+      emit('error', err)
+      return
+    }
+    
+    // Handle 422 Unprocessable Entity
+    if (status === 422) {
+      toast.error(t('availability.createSlot.validationError'))
+      emit('error', err)
+      return
+    }
+    
     // Handle 401 errors - retry after token refresh
-    if (err?.response?.status === 401 && !err.config?._retryAfter401) {
+    if (status === 401 && !err.config?._retryAfter401) {
       console.log('[CreateSlotModal] 401 detected, retrying after token refresh...')
       try {
         if (err.config) {
@@ -223,6 +359,7 @@ async function handleCreate() {
       }
     }
     
+    // Generic error
     toast.error(t('availability.createSlot.error'))
     emit('error', err)
   } finally {
@@ -233,10 +370,6 @@ async function handleCreate() {
 function handleCancel() {
   emit('cancelled')
 }
-
-onMounted(() => {
-  handleTimeChange()
-})
 </script>
 
 <style scoped>
@@ -316,12 +449,36 @@ onMounted(() => {
   color: var(--color-primary, #3b82f6);
 }
 
-.date-text {
+.date-input-wrapper {
+  flex: 1;
+}
+
+.date-input {
+  width: 100%;
+  background: transparent;
+  border: none;
   font-size: 14px;
   font-weight: 500;
   color: var(--color-text-primary, #111827);
 }
 
+.date-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-primary, #3b82f6);
+  border-radius: 6px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 .time-section {
   margin-bottom: 20px;
 }
@@ -331,6 +488,28 @@ onMounted(() => {
   font-weight: 600;
   color: var(--color-text-primary, #111827);
   margin-bottom: 12px;
+}
+
+.validation-error {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  background: var(--color-error-light, #fee2e2);
+  border: 1px solid var(--color-error, #ef4444);
+  border-radius: 8px;
+  margin-bottom: 20px;
+  align-items: center;
+}
+
+.validation-error .error-icon {
+  color: var(--color-error, #ef4444);
+  flex-shrink: 0;
+}
+
+.validation-error .error-text {
+  font-size: 14px;
+  color: var(--color-error-dark, #991b1b);
+  margin: 0;
 }
 
 .conflict-warning {

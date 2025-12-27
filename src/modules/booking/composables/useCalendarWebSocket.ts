@@ -42,8 +42,13 @@ export function useCalendarWebSocket() {
     // v0.49.5: Availability slots generated event
     ws.value.on('availability.slots_generated', (data) => {
       console.log('[useCalendarWebSocket] Availability slots generated:', data)
-      // Refetch calendar to show new slots
-      store.fetchWeek()
+      // Only refetch for bulk generation (multiple slots), not for single slot creation
+      // Single slot creation is handled by optimistic updates
+      if (data.slotsCreated > 1 || data.slotsDeleted > 0) {
+        setTimeout(() => {
+          store.fetchWeek()
+        }, 500)
+      }
       // Optionally show toast notification
       if (data.tutorId === authStore.user?.id) {
         console.log(`[useCalendarWebSocket] Slots generated: ${data.slotsCreated} created, ${data.slotsDeleted} deleted`)

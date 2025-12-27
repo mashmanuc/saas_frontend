@@ -49,10 +49,26 @@
         <span>{{ t('calendar.weekNavigation.goToFirstAvailable') }}</span>
       </button>
       <button
+        class="create-slot-btn"
+        @click="handleCreateSlot"
+        data-testid="create-slot-btn"
+      >
+        <PlusIcon class="w-4 h-4" />
+        <span>{{ t('calendar.weekNavigation.createSlot') }}</span>
+      </button>
+      <button
         class="edit-availability-btn"
         @click="handleOpenAvailability"
       >
         {{ t('calendar.weekNavigation.setupAvailability') }}
+      </button>
+      <button
+        class="help-btn"
+        @click="handleShowGuide"
+        :aria-label="t('calendar.weekNavigation.showGuide')"
+        title="Допомога"
+      >
+        <HelpCircleIcon class="w-5 h-5" />
       </button>
     </div>
   </div>
@@ -65,6 +81,8 @@ import {
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
   Navigation as NavigationIcon,
+  Plus as PlusIcon,
+  HelpCircle as HelpCircleIcon,
 } from 'lucide-vue-next'
 
 const { t } = useI18n()
@@ -83,6 +101,8 @@ const emit = defineEmits<{
   today: []
   scrollFirstAvailable: []
   openAvailability: []
+  createSlot: []
+  showGuide: []
 }>()
 
 const weekRangeFormatted = computed(() => {
@@ -115,6 +135,14 @@ function handleScrollToAvailable() {
 
 function handleOpenAvailability() {
   emit('openAvailability')
+}
+
+function handleCreateSlot() {
+  emit('createSlot')
+}
+
+function handleShowGuide() {
+  emit('showGuide')
 }
 
 const hasAvailability = computed(() => Boolean(props.hasAvailability))
@@ -235,19 +263,58 @@ const hasAvailability = computed(() => Boolean(props.hasAvailability))
   cursor: not-allowed;
 }
 
-.edit-availability-btn {
-  padding: 6px 14px;
+.create-slot-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #3b82f6;
+  color: white;
+  border: none;
   border-radius: 8px;
-  border: 1px solid #10b981;
-  background: #ecfdf5;
-  color: #047857;
-  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s, border-color 0.2s;
+  font-weight: 500;
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+.create-slot-btn:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.edit-availability-btn {
+  padding: 8px 16px;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s, transform 0.2s;
 }
 
 .edit-availability-btn:hover {
-  background: #d1fae5;
-  border-color: #059669;
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+.help-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #f3f4f6;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.help-btn:hover {
+  background: #e5e7eb;
+  color: #111827;
+  transform: scale(1.05);
 }
 </style>

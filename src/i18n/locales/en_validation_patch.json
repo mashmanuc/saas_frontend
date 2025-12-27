@@ -1,0 +1,10 @@
+{
+  "availability": {
+    "validation": {
+      "endAfterStart": "End time must be after start time",
+      "maxDuration3Hours": "Maximum slot duration is 3 hours",
+      "slotAlreadyExists": "A slot at this time already exists",
+      "slotOverlapsWithEvent": "Slot overlaps with an existing event"
+    }
+  }
+}

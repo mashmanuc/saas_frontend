@@ -38,7 +38,7 @@ function formatTime(slot: { hour: number; minute: number }): string {
 }
 
 .time-label {
-  height: 40px;
+  height: var(--calendar-cell-height);
   display: flex;
   align-items: flex-start;
   justify-content: flex-end;

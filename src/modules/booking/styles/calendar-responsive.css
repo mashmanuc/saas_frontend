@@ -101,7 +101,7 @@
   }
 
   .calendar-cell {
-    height: 56px;
+    height: var(--calendar-cell-height);
   }
 
   .event-block {

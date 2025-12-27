@@ -310,8 +310,8 @@ async function handleDelete() {
 }
 
 function handleResolveConflicts() {
-  // User chose to resolve conflicts anyway
-  handleSave()
+  // User chose to resolve conflicts anyway - clear conflicts and allow save
+  conflicts.value = []
 }
 
 function handleCancelConflicts() {
