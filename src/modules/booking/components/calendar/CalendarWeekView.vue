@@ -14,22 +14,6 @@
       </div>
     </transition>
 
-    <!-- Week Navigation -->
-    <WeekNavigation
-      :week-start="weekMeta?.weekStart"
-      :week-end="weekMeta?.weekEnd"
-      :current-page="weekMeta?.page ?? 0"
-      :is-loading="isLoading"
-      :total-available-hours="totalAvailableHours"
-      :has-availability="hasAvailability"
-      @navigate="handleNavigate"
-      @today="handleToday"
-      @scroll-first-available="handleScrollToFirstAvailable"
-      @open-availability="handleSetupAvailability"
-      @create-slot="handleCreateSlotFromToolbar"
-      @show-guide="showGuideModal = true"
-    />
-    
     <div class="calendar-controls">
       <div class="calendar-legend">
         <label class="legend-item legend-item--interactive">
@@ -71,34 +55,23 @@
     <!-- Empty availability state - show only if user hasn't set up availability at all -->
     <EmptyAvailabilityState v-else-if="!hasSetupAvailability" />
 
-    <!-- Toggle Button -->
-    <div v-else class="calendar-toggle">
-      <button 
-        class="toggle-btn" 
-        :class="{ active: !showV055 }"
-        @click="showV055 = false"
-      >
-        Старий календар
-      </button>
-      <button 
-        class="toggle-btn" 
-        :class="{ active: showV055 }"
-        @click="showV055 = true"
-      >
-        Новий календар v0.55
-      </button>
-    </div>
-
-    <!-- OLD Calendar Board with Sidebar - Disabled for v0.55 -->
-    <div v-if="!showV055" class="calendar-layout">
-      <div class="p-4 text-center text-gray-500">
-        Старий календар тимчасово недоступний. Використовуйте новий календар v0.55.
-      </div>
-    </div>
-
     <!-- NEW Calendar Board V2 -->
-    <div v-else class="calendar-v055-layout">
-      <CalendarHeaderV2 @open-quick-block="handleOpenQuickBlock" />
+    <div class="calendar-v055-layout">
+      <CalendarHeaderV2
+        :week-start="weekStartForNav"
+        :week-end="weekEndForNav"
+        :current-page="0"
+        :is-week-loading="isLoadingV055"
+        :total-available-hours="totalAvailableHours"
+        :has-availability="hasAvailability"
+        @open-quick-block="handleOpenQuickBlock"
+        @navigate="handleNavigate"
+        @today="handleToday"
+        @scroll-first-available="handleScrollToFirstAvailable"
+        @open-availability="handleSetupAvailability"
+        @create-slot="handleCreateSlotFromToolbar"
+        @show-guide="showGuideModal = true"
+      />
 
       <div v-if="isLoadingV055" class="loading-state">
         <LoaderIcon class="w-8 h-8 animate-spin text-blue-500" />
@@ -116,11 +89,13 @@
           :days="daysV055Computed"
           :events="eventsV055Computed"
           :accessible-slots="accessibleSlotsComputed"
+          :timezone="weekMeta?.timezone || 'UTC'"
           :blocked-ranges="blockedRangesV055Computed"
           :current-time="currentTimeV055"
-          :is-drag-enabled="true"
-          @event-click="handleEventClickV055"
+          :is-drag-enabled="dragEnabled"
+          @event-click="handleEventClick"
           @slot-click="handleSlotClick"
+          @cell-click="handleCellClick"
           @drag-complete="handleDragComplete"
         />
         <CalendarFooter lesson-link="https://zoom.us/j/example" />
@@ -191,19 +166,19 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { Loader as LoaderIcon, AlertCircle as AlertCircleIcon } from 'lucide-vue-next'
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone'
 import { useCalendarWeekStore } from '@/modules/booking/stores/calendarWeekStore'
 import { useCalendarWebSocket } from '@/modules/booking/composables/useCalendarWebSocket'
 import { useErrorHandler } from '@/modules/booking/composables/useErrorHandler'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/modules/auth/store/authStore'
-import CalendarBoard from './CalendarBoard.vue'
 import CalendarBoardV2 from './CalendarBoardV2.vue'
-import CalendarHeader from './CalendarHeader.vue'
 import CalendarHeaderV2 from './CalendarHeaderV2.vue'
 import CalendarFooter from './CalendarFooter.vue'
 import LessonCardDrawer from './LessonCardDrawer.vue'
 import CalendarSidebar from './CalendarSidebar.vue'
-import WeekNavigation from './WeekNavigation.vue'
 import EmptyAvailabilityState from './EmptyAvailabilityState.vue'
 import CreateLessonModal from '../modals/CreateLessonModal.vue'
 import EventModal from '../modals/EventModal.vue'
@@ -258,6 +233,9 @@ const eventsV055Computed = computed(() => eventsV055.value || [])
 const accessibleSlotsComputed = computed(() => accessibleV055.value || [])
 const blockedRangesV055Computed = computed(() => blockedRangesV055.value || [])
 const currentTimeV055 = computed(() => metaV055.value?.currentTime || new Date().toISOString())
+const dragEnabled = computed(() => true)
+const weekStartForNav = computed(() => metaV055.value?.weekStart || weekMeta.value?.weekStart || new Date().toISOString().slice(0, 10))
+const weekEndForNav = computed(() => metaV055.value?.weekEnd || weekMeta.value?.weekEnd || dayjs(weekStartForNav.value).add(6, 'day').format('YYYY-MM-DD'))
 
 const allEvents = computed(() => {
   return Object.values(eventsById.value)
@@ -359,7 +337,7 @@ const fetchV055Snapshot = async (weekStartOverride?: string) => {
   
   const weekStart =
     weekStartOverride ||
-    weekMeta.value?.weekStart ||
+    metaV055.value?.weekStart ||
     new Date().toISOString().slice(0, 10)
     
   console.log('[CalendarWeekView] Fetching v055 snapshot:', { tutorId: id, weekStart })
@@ -400,12 +378,14 @@ watch(
 )
 
 function handleNavigate(direction: -1 | 1) {
-  const currentPage = weekMeta.value?.page ?? 0
-  store.fetchWeek(currentPage + direction)
+  const base = weekStartForNav.value || new Date().toISOString().slice(0, 10)
+  const nextWeekStart = dayjs(base).add(direction, 'week').format('YYYY-MM-DD')
+  fetchV055Snapshot(nextWeekStart)
 }
 
 function handleToday() {
-  store.fetchWeek(0)
+  const todayWeekStart = dayjs().tz(metaV055.value?.timezone || weekMeta.value?.timezone || 'UTC').startOf('week').add(1, 'day').format('YYYY-MM-DD')
+  fetchV055Snapshot(todayWeekStart)
 }
 
 function handleRetry() {
@@ -429,18 +409,23 @@ function handleReconnect() {
   connect()
 }
 
-function handleCellClick(cell: CalendarCell) {
-  if (cell.status === 'available' || cell.status === 'empty') {
-    selectedCell.value = cell
-    showCreateModal.value = true
-  }
-  emit('cellClick', cell)
+function handleCellClick(data: { date: string; hour: number }) {
+  console.log('[CalendarWeekView] Cell clicked:', data)
+  // Open create lesson modal with pre-filled date and time
+  selectedCell.value = {
+    date: data.date,
+    hour: data.hour,
+    start: `${data.hour.toString().padStart(2, '0')}:00`,
+    end: `${(data.hour + 1).toString().padStart(2, '0')}:00`
+  } as any
+  showCreateModal.value = true
+  emit('cellClick', selectedCell.value)
 }
 
-function handleEventClick(eventId: number) {
-  selectedEventId.value = eventId
+function handleEventClick(event: CalendarEventV055) {
+  selectedEventId.value = event.id
   showEventModal.value = true
-  emit('eventClick', eventId)
+  emit('eventClick', event.id)
 }
 
 function handleLessonCreated(eventId: number) {
@@ -541,7 +526,12 @@ function handleDragComplete(eventId: number, newStart: string, newEnd: string) {
 
 function handleOpenQuickBlock() {
   console.log('[CalendarWeekView] Open quick block modal')
-  // TODO: Open quick block modal
+  showCreateSlotModal.value = true
+  createSlotData.value = {
+    date: weekMeta.value?.weekStart || new Date().toISOString().split('T')[0],
+    start: '09:00',
+    end: '10:00'
+  }
 }
 
 function handleMarkNoShow(eventId: number) {

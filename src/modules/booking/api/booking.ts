@@ -265,7 +265,7 @@ export const bookingApi = {
   },
 
   async deleteSlot(slotId: number): Promise<void> {
-    await apiClient.delete(`/v1/booking/slots/${slotId}/`)
+    await apiClient.delete(`/api/v1/availability/slots/${slotId}`)
   },
 
   // Bookings

@@ -21,6 +21,14 @@
       "changeEmail": "Change email",
       "changePassword": "Change password"
     },
+    "eventModal": {
+      "title": "Lesson details",
+      "delete": "Delete lesson",
+      "edit": "Edit",
+      "editTime": "Lesson time",
+      "confirmDelete": "Delete confirmation",
+      "confirmDeleteMessage": "Are you sure you want to delete the lesson with {student}? This action cannot be undone."
+    },
     "changeEmail": {
       "title": "Change email",
       "subtitle": "Enter your new email and current password.",
@@ -1756,6 +1764,18 @@
         "week": "Week",
         "day": "Day"
       },
+      "createLesson": {
+        "title": "Create lesson",
+        "selectedTime": "Lesson start time",
+        "timeHint": "Specify the exact time in your timezone",
+        "student": "Student / order",
+        "selectStudent": "Select student",
+        "duration": "Duration",
+        "regularity": "Regularity",
+        "comment": "Comment for yourself",
+        "commentPlaceholder": "What should be considered during the lesson?",
+        "create": "Create lesson"
+      },
       "actions": {
         "new": "New lesson",
         "markFreeTime": "Mark free time",
@@ -1770,7 +1790,6 @@
         "completed": "Completed",
         "cancelled": "Cancelled"
       },
-      "createTitle": "Create lesson",
       "cancelTitle": "Cancel lesson",
       "cancelDescription": "Are you sure you want to cancel this lesson?",
       "fields": {

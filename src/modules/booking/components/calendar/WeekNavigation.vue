@@ -99,10 +99,10 @@ const props = defineProps<{
 const emit = defineEmits<{
   navigate: [direction: -1 | 1]
   today: []
-  scrollFirstAvailable: []
-  openAvailability: []
-  createSlot: []
-  showGuide: []
+  'scroll-first-available': []
+  'open-availability': []
+  'create-slot': []
+  'show-guide': []
 }>()
 
 const weekRangeFormatted = computed(() => {
@@ -130,19 +130,19 @@ function handleToday() {
 
 function handleScrollToAvailable() {
   if (!props.hasAvailability) return
-  emit('scrollFirstAvailable')
+  emit('scroll-first-available')
 }
 
 function handleOpenAvailability() {
-  emit('openAvailability')
+  emit('open-availability')
 }
 
 function handleCreateSlot() {
-  emit('createSlot')
+  emit('create-slot')
 }
 
 function handleShowGuide() {
-  emit('showGuide')
+  emit('show-guide')
 }
 
 const hasAvailability = computed(() => Boolean(props.hasAvailability))

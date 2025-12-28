@@ -1,61 +1,70 @@
 /**
  * useCalendarGrid - Composable for calendar grid calculations
- * 
+ *
  * Provides utilities for absolute positioning of events on calendar grid.
  * Supports arbitrary time (not bound to 30-min slots).
- * 
+ *
  * @module useCalendarGrid
  */
 
 import { computed } from 'vue'
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone'
+
+dayjs.extend(utc)
+dayjs.extend(timezone)
 
 export interface GridConfig {
   pxPerMinute: number
   startHour: number
   endHour: number
+  timezone: string
 }
 
 export const useCalendarGrid = (config?: Partial<GridConfig>) => {
   const defaultConfig: GridConfig = {
-    pxPerMinute: 2, // 2px per minute = 120px per hour
+    pxPerMinute: 0.6, // ~36px per hour: більш щільна сітка
     startHour: 6,
-    endHour: 22
+    endHour: 22,
+    timezone: 'UTC',
   }
 
   const gridConfig = { ...defaultConfig, ...config }
 
   /**
-   * Check if datetime is in the past
+   * Check if datetime is in the past (in given timezone)
    */
   const isPast = (datetime: string): boolean => {
-    return new Date(datetime) < new Date()
+    const now = dayjs().tz(gridConfig.timezone)
+    return dayjs(datetime).tz(gridConfig.timezone).isBefore(now)
   }
 
   /**
-   * Calculate top position in pixels from day start
+   * Calculate top position in pixels from day start (timezone-aware)
    */
   const calculateTopPx = (datetime: string): number => {
-    const date = new Date(datetime)
-    const minutesFromDayStart = date.getHours() * 60 + date.getMinutes()
-    return minutesFromDayStart * gridConfig.pxPerMinute
+    const date = dayjs(datetime).tz(gridConfig.timezone)
+    const minutesFromDayStart = date.hour() * 60 + date.minute()
+    const minutesFromGridStart = Math.max(0, minutesFromDayStart - gridConfig.startHour * 60)
+    return minutesFromGridStart * gridConfig.pxPerMinute
   }
 
   /**
-   * Calculate height in pixels based on duration
+   * Calculate height in pixels based on duration (timezone-aware)
    */
   const calculateHeightPx = (start: string, end: string): number => {
-    const startDate = new Date(start)
-    const endDate = new Date(end)
-    const durationMinutes = (endDate.getTime() - startDate.getTime()) / 60000
+    const startDate = dayjs(start).tz(gridConfig.timezone)
+    const endDate = dayjs(end).tz(gridConfig.timezone)
+    const durationMinutes = endDate.diff(startDate, 'minute')
     return durationMinutes * gridConfig.pxPerMinute
   }
 
   /**
-   * Format time for display (HH:MM)
+   * Format time for display (HH:MM) in timezone
    */
   const formatTime = (datetime: string): string => {
-    const date = new Date(datetime)
-    return date.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })
+    return dayjs(datetime).tz(gridConfig.timezone).format('HH:mm')
   }
 
   /**
@@ -94,6 +103,6 @@ export const useCalendarGrid = (config?: Partial<GridConfig>) => {
     calculateTopPx,
     calculateHeightPx,
     formatTime,
-    formatHour
+    formatHour,
   }
 }

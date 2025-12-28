@@ -34,10 +34,12 @@
               :current-time="currentTime"
               :px-per-minute="pxPerMinute"
               :show-labels="false"
+              @cell-click="(hour) => handleCellClick(day.date, hour)"
             />
             <AccessibleSlotsLayer
               :accessible-slots="accessibleSlotsForDay(day.date)"
               :px-per-minute="pxPerMinute"
+              :timezone="timezone"
               @slot-click="handleSlotClick"
             />
             <AvailabilityLayer 
@@ -48,6 +50,7 @@
               :events="eventsForDay(day.date)"
               :px-per-minute="pxPerMinute"
               :is-past-fn="isPast"
+              :timezone="timezone"
               @event-click="handleEventClick"
               @drag-start="handleEventDragStart"
             />
@@ -105,18 +108,21 @@ const props = defineProps<{
   accessibleSlots?: AccessibleSlot[]
   currentTime?: string
   isDragEnabled?: boolean
+  timezone?: string
 }>()
 
 const emit = defineEmits<{
   'event-click': [event: CalendarEvent]
   'slot-click': [slot: AccessibleSlot]
+  'cell-click': [data: { date: string; hour: number }]
   'drag-complete': [eventId: number, newStart: string, newEnd: string]
   'open-quick-block': []
   'open-guide': []
 }>()
 
 const { t } = useI18n()
-const { pxPerMinute, hours, gridHeight, isPast } = useCalendarGrid()
+const timezone = computed(() => props.timezone || 'UTC')
+const { pxPerMinute, hours, gridHeight, isPast } = useCalendarGrid({ timezone: timezone.value })
 const dragDrop = useDragDrop()
 const interactionLayerRef = ref<InstanceType<typeof InteractionLayer> | null>(null)
 
@@ -180,6 +186,11 @@ const handleSlotClick = (slot: AccessibleSlot) => {
   console.log('[CalendarBoardV2] handleSlotClick called with:', slot)
   emit('slot-click', slot)
   console.log('[CalendarBoardV2] slot-click event emitted')
+}
+
+const handleCellClick = (date: string, hour: number) => {
+  console.log('[CalendarBoardV2] Cell clicked:', { date, hour })
+  emit('cell-click', { date, hour })
 }
 
 const handleEventDragStart = (event: CalendarEvent, mouseEvent: MouseEvent) => {

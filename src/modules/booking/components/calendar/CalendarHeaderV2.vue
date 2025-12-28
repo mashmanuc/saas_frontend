@@ -30,29 +30,71 @@
         </a>
       </div>
     </div>
+
+    <div class="week-navigation-wrapper">
+      <WeekNavigation
+        :week-start="weekStart"
+        :week-end="weekEnd"
+        :current-page="currentPage"
+        :is-loading="isWeekLoading"
+        :total-available-hours="totalAvailableHours"
+        :has-availability="hasAvailability"
+        @navigate="direction => emit('navigate', direction)"
+        @today="emit('today')"
+        @scroll-first-available="emit('scroll-first-available')"
+        @open-availability="emit('open-availability')"
+        @create-slot="emit('create-slot')"
+        @show-guide="emit('show-guide')"
+      />
+    </div>
     
     <ColorLegendModal v-model="showLegend" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, toRefs } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ColorLegendModal from './ColorLegendModal.vue'
+import WeekNavigation from './WeekNavigation.vue'
 
-defineEmits<{
+const props = defineProps<{
+  weekStart?: string
+  weekEnd?: string
+  currentPage: number
+  isWeekLoading: boolean
+  totalAvailableHours?: number | null
+  hasAvailability?: boolean
+}>()
+
+const emit = defineEmits<{
   'open-quick-block': []
+  navigate: [direction: -1 | 1]
+  today: []
+  'scroll-first-available': []
+  'open-availability': []
+  'create-slot': []
+  'show-guide': []
 }>()
 
 const { t } = useI18n()
 const showLegend = ref(false)
+
+const {
+  weekStart,
+  weekEnd,
+  currentPage,
+  isWeekLoading,
+  totalAvailableHours,
+  hasAvailability,
+} = toRefs(props)
 </script>
 
 <style scoped>
 .calendar-header-v2 {
   background: #f8f9fa;
   border-bottom: 1px solid #e0e0e0;
-  padding: 16px 24px;
+  padding: 16px 24px 24px;
 }
 
 .header-content {
@@ -62,6 +104,13 @@ const showLegend = ref(false)
   gap: 16px;
   max-width: 1400px;
   margin: 0 auto;
+}
+
+.week-navigation-wrapper {
+  margin-top: 16px;
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .info-message {

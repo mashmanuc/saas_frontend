@@ -17,6 +17,15 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone'
+import { useCalendarGrid } from '@/modules/booking/composables/useCalendarGrid'
+
+dayjs.extend(utc)
+dayjs.extend(timezone)
+
 interface AccessibleSlot {
   id: number
   start: string
@@ -27,37 +36,35 @@ interface AccessibleSlot {
 const props = defineProps<{
   accessibleSlots: AccessibleSlot[]
   pxPerMinute: number
+  timezone?: string
 }>()
 
 const emit = defineEmits<{
   'slot-click': [slot: AccessibleSlot]
 }>()
 
-console.log('[AccessibleSlotsLayer] Component setup, slots count:', props.accessibleSlots.length)
+const tz = computed(() => props.timezone || 'UTC')
+const { calculateTopPx, calculateHeightPx, formatTime } = useCalendarGrid({
+  timezone: tz.value,
+  pxPerMinute: props.pxPerMinute,
+})
 
 const handleSlotClick = (slot: AccessibleSlot) => {
-  console.log('[AccessibleSlotsLayer] Slot clicked:', slot)
   emit('slot-click', slot)
 }
 
 const getSlotStyle = (slot: AccessibleSlot) => {
-  const start = new Date(slot.start)
-  const end = new Date(slot.end)
-  const minutesFromDayStart = start.getHours() * 60 + start.getMinutes()
-  const durationMinutes = (end.getTime() - start.getTime()) / 60000
+  const topPx = calculateTopPx(slot.start)
+  const heightPx = calculateHeightPx(slot.start, slot.end)
 
   return {
-    top: `${minutesFromDayStart * props.pxPerMinute}px`,
-    height: `${durationMinutes * props.pxPerMinute}px`,
-    left: `4px`,
-    right: `4px`
+    top: `${topPx}px`,
+    height: `${heightPx}px`,
+    left: '4px',
+    right: '4px',
   }
 }
 
-const formatTime = (isoString: string) => {
-  const date = new Date(isoString)
-  return date.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })
-}
 </script>
 
 <style scoped>

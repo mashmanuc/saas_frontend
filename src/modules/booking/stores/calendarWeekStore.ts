@@ -275,6 +275,8 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
         },
       }
 
+      const orders = flattenValues<Order>((response as any).orders)
+
       console.log('[calendarWeekStore] Normalized snapshot:', {
         daysCount: normalizedSnapshot.days.length,
         eventsCount: normalizedSnapshot.events.length,
@@ -284,6 +286,8 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
       })
 
       snapshot.value = normalizedSnapshot
+      syncAccessibleIndexes(normalizedSnapshot.accessible)
+      syncOrders(orders)
       currentTutorId.value = tutorId
       currentWeekStart.value = weekStart
       
@@ -405,13 +409,134 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     accessibleIdsByDay.value = newAccessibleIdsByDay
     allAccessibleIds.value = newAllAccessibleIds
     
+    // Normalize orders
+    const legacyOrders = ensureArray<Order>(legacySnapshot.orders as any)
+    syncOrders(legacyOrders)
+    
     // Set legacy metadata
     weekMeta.value = legacySnapshot.week
     legacyDays.value = legacySnapshot.days
     legacyMeta.value = legacySnapshot.meta
     lastFetchedAt.value = new Date()
   }
-  
+
+  function syncAccessibleIndexes(slots: AccessibleSlotV055[] | undefined | null) {
+    const byId: Record<number, AccessibleSlotV055> = {}
+    const idsByDay: Record<string, number[]> = {}
+    const allIds: number[] = []
+
+    if (Array.isArray(slots)) {
+      for (const slot of slots) {
+        if (!slot || typeof slot.id !== 'number') {
+          continue
+        }
+        byId[slot.id] = slot
+        const dayKey = slot.start?.slice(0, 10) || slot.end?.slice(0, 10) || ''
+        if (dayKey) {
+          if (!idsByDay[dayKey]) {
+            idsByDay[dayKey] = []
+          }
+          idsByDay[dayKey].push(slot.id)
+        }
+        allIds.push(slot.id)
+      }
+    }
+
+    accessibleById.value = byId
+    accessibleIdsByDay.value = idsByDay
+    allAccessibleIds.value = allIds
+  }
+
+  function syncOrders(orders: Order[] | undefined | null) {
+    const byId: Record<number, Order> = {}
+    const ids: number[] = []
+
+    if (Array.isArray(orders)) {
+      for (const order of orders) {
+        if (!order || typeof order.id !== 'number') continue
+        byId[order.id] = order
+        ids.push(order.id)
+      }
+    }
+
+    ordersById.value = byId
+    allOrderIds.value = ids
+  }
+
+  function ensureSnapshot(): CalendarSnapshot {
+    if (!snapshot.value) {
+      snapshot.value = {
+        days: [],
+        events: [],
+        accessible: [],
+        blockedRanges: [],
+        dictionaries: {
+          noShowReasons: {},
+          cancelReasons: {},
+          blockReasons: {},
+        },
+        meta: null as unknown as SnapshotMeta,
+      }
+    }
+    return snapshot.value
+  }
+
+  function addOptimisticSlot(slot: AccessibleSlotV055) {
+    const currentSnapshot = ensureSnapshot()
+    const slots = [...(currentSnapshot.accessible || [])]
+    const existingIndex = slots.findIndex(existing => existing.id === slot.id)
+
+    if (existingIndex >= 0) {
+      slots[existingIndex] = slot
+    } else {
+      slots.push(slot)
+    }
+
+    snapshot.value = {
+      ...currentSnapshot,
+      accessible: slots,
+    }
+    syncAccessibleIndexes(slots)
+  }
+
+  function removeOptimisticSlot(slotId: number) {
+    if (!snapshot.value) {
+      return
+    }
+    const slots = (snapshot.value.accessible || []).filter(slot => slot.id !== slotId)
+    snapshot.value = {
+      ...snapshot.value,
+      accessible: slots,
+    }
+    syncAccessibleIndexes(slots)
+  }
+
+  function replaceOptimisticSlot(tempSlotId: number, newSlot: AccessibleSlotV055) {
+    if (!snapshot.value) {
+      addOptimisticSlot(newSlot)
+      return
+    }
+
+    let replaced = false
+    const slots = (snapshot.value.accessible || []).map(slot => {
+      if (slot.id === tempSlotId) {
+        replaced = true
+        return newSlot
+      }
+      return slot
+    })
+
+    if (!replaced) {
+      slots.push(newSlot)
+    }
+
+    snapshot.value = {
+      ...snapshot.value,
+      accessible: slots,
+    }
+    syncAccessibleIndexes(slots)
+  }
+
   // v0.55: Reschedule actions
   async function reschedulePreview(eventId: number, target: { new_start: string; new_end: string }) {
     return await calendarV055Api.reschedulePreview(eventId, target)

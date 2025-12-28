@@ -59,14 +59,28 @@
           </label>
           <div class="duration-buttons" role="group" aria-label="Тривалість уроку">
             <button
-              v-for="duration in availableDurations"
-              :key="duration"
               type="button"
-              :class="['duration-btn', { active: formData.durationMin === duration }]"
-              @click="formData.durationMin = duration"
-              :aria-pressed="formData.durationMin === duration"
+              :class="['duration-btn', { active: formData.durationMin === 30 }]"
+              @click="formData.durationMin = 30"
+              :aria-pressed="formData.durationMin === 30"
             >
-              {{ duration }} {{ $t('common.minutes') }}
+              30 {{ $t('common.minutes') }}
+            </button>
+            <button
+              type="button"
+              :class="['duration-btn', { active: formData.durationMin === 60 }]"
+              @click="formData.durationMin = 60"
+              :aria-pressed="formData.durationMin === 60"
+            >
+              60 {{ $t('common.minutes') }}
+            </button>
+            <button
+              type="button"
+              :class="['duration-btn', { active: formData.durationMin === 90 }]"
+              @click="formData.durationMin = 90"
+              :aria-pressed="formData.durationMin === 90"
+            >
+              90 {{ $t('common.minutes') }}
             </button>
           </div>
         </div>
@@ -262,9 +276,21 @@ async function handleSubmit() {
   error.value = null
   
   try {
-    // Конвертувати локальний datetime-local в ISO 8601 з timezone
+    // Конвертувати локальний datetime-local в ISO 8601 з локальним offset (не втрачати час)
     const localDate = new Date(formData.value.start)
-    const isoString = localDate.toISOString()
+    const formatWithOffset = (date: Date) => {
+      const y = date.getFullYear()
+      const m = String(date.getMonth() + 1).padStart(2, '0')
+      const d = String(date.getDate()).padStart(2, '0')
+      const hh = String(date.getHours()).padStart(2, '0')
+      const mm = String(date.getMinutes()).padStart(2, '0')
+      const tz = date.getTimezoneOffset()
+      const sign = tz <= 0 ? '+' : '-'
+      const tzHours = String(Math.floor(Math.abs(tz) / 60)).padStart(2, '0')
+      const tzMinutes = String(Math.abs(tz) % 60).padStart(2, '0')
+      return `${y}-${m}-${d}T${hh}:${mm}:00${sign}${tzHours}:${tzMinutes}`
+    }
+    const isoString = formatWithOffset(localDate)
     
     const payload = {
       orderId: formData.value.orderId,

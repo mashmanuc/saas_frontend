@@ -6,6 +6,7 @@
       class="grid-hour"
       :class="{ 'is-past': isPastHour(hour) }"
       :style="{ height: `${pxPerMinute * 60}px` }"
+      @click="handleCellClick(hour)"
     >
       <div v-if="showLabels" class="hour-label">{{ formatHour(hour) }}</div>
       <div class="grid-line" />
@@ -30,7 +31,16 @@ const props = defineProps<{
   showLabels?: boolean
 }>()
 
+const emit = defineEmits<{
+  'cell-click': [hour: number]
+}>()
+
 const showLabels = computed(() => props.showLabels !== false)
+
+const handleCellClick = (hour: number) => {
+  console.log('[GridLayer] Cell clicked:', hour)
+  emit('cell-click', hour)
+}
 
 const isPastHour = (hour: number): boolean => {
   if (!props.currentTime) return false
@@ -54,7 +64,7 @@ const formatHour = (hour: number): string => {
   right: 0;
   bottom: 0;
   z-index: 1;
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 .grid-hour {

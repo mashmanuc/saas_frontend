@@ -22,7 +22,14 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone'
 import { useCalendarGrid } from '@/modules/booking/composables/useCalendarGrid'
+
+dayjs.extend(utc)
+dayjs.extend(timezone)
 
 interface Student {
   id: number
@@ -42,6 +49,7 @@ const props = defineProps<{
   events: CalendarEvent[]
   pxPerMinute: number
   isPastFn: (datetime: string) => boolean
+  timezone?: string
 }>()
 
 const emit = defineEmits<{
@@ -49,7 +57,11 @@ const emit = defineEmits<{
   'drag-start': [event: CalendarEvent, mouseEvent: MouseEvent]
 }>()
 
-const { formatTime } = useCalendarGrid()
+const tz = computed(() => props.timezone || 'UTC')
+const { formatTime, calculateTopPx, calculateHeightPx } = useCalendarGrid({
+  timezone: tz.value,
+  pxPerMinute: props.pxPerMinute,
+})
 
 const handleEventMouseDown = (event: CalendarEvent, mouseEvent: MouseEvent) => {
   if (!props.isPastFn(event.start)) {
@@ -58,15 +70,9 @@ const handleEventMouseDown = (event: CalendarEvent, mouseEvent: MouseEvent) => {
 }
 
 const getEventStyle = (event: CalendarEvent) => {
-  const start = new Date(event.start)
-  const end = new Date(event.end)
-  
-  const minutesFromDayStart = start.getHours() * 60 + start.getMinutes()
-  const durationMinutes = (end.getTime() - start.getTime()) / 60000
-  
-  const topPx = minutesFromDayStart * props.pxPerMinute
-  const heightPx = durationMinutes * props.pxPerMinute
-  
+  const topPx = calculateTopPx(event.start)
+  const heightPx = calculateHeightPx(event.start, event.end)
+
   return {
     top: `${topPx}px`,
     height: `${heightPx}px`
@@ -89,18 +95,22 @@ const getEventStyle = (event: CalendarEvent) => {
   position: absolute;
   left: 8px;
   right: 8px;
-  background: #4CAF50;
-  color: white;
-  border-radius: 4px;
-  padding: 8px;
+  min-height: 32px;
+  background: #4caf50;
+  color: #0a2f16;
+  border-radius: 6px;
+  padding: 6px 8px;
   cursor: pointer;
   pointer-events: auto;
   transition: transform 0.2s, box-shadow 0.2s;
   overflow: hidden;
+  border: 1px solid #2e7d32;
 }
 
 .event-card.is-first {
-  background: #9C27B0;
+  background: #7c3aed;
+  border-color: #5b21b6;
+  color: #f5f3ff;
 }
 
 .event-card.is-past {
@@ -109,13 +119,15 @@ const getEventStyle = (event: CalendarEvent) => {
 }
 
 .event-card.is-no-show {
-  background: #757575;
-  text-decoration: line-through;
+  background: #9e9e9e;
+  border-color: #757575;
+  color: #f5f5f5;
 }
 
 .event-card.is-cancelled {
-  background: #f44336;
-  opacity: 0.7;
+  background: #f87171;
+  border-color: #ef4444;
+  color: #7f1d1d;
 }
 
 .event-card:not(.is-past):hover {
@@ -124,14 +136,14 @@ const getEventStyle = (event: CalendarEvent) => {
 }
 
 .event-time {
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 2px;
 }
 
 .event-student {
   font-size: 12px;
-  opacity: 0.9;
+  opacity: 0.95;
 }
 
 .first-badge {
