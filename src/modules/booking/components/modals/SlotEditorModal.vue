@@ -20,7 +20,7 @@
 import SlotEditor from '../availability/SlotEditor.vue'
 import type { AccessibleSlot } from '@/modules/booking/types/calendarWeek'
 import type { Slot } from '@/modules/booking/types/slot'
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 
 const props = defineProps<{
   visible: boolean
@@ -33,8 +33,15 @@ const emit = defineEmits<{
   deleted: []
 }>()
 
+console.log('[SlotEditorModal] Component setup, props:', props)
+
+watch(() => props.visible, (newVal) => {
+  console.log('[SlotEditorModal] visible changed to:', newVal, 'slot:', props.slot)
+})
+
 // Transform AccessibleSlot to Slot format expected by SlotEditor
 const transformedSlot = computed<Slot>(() => {
+  console.log('[SlotEditorModal] Computing transformedSlot from:', props.slot)
   const startDate = new Date(props.slot.start)
   const endDate = new Date(props.slot.end)
   

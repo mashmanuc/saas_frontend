@@ -177,7 +177,9 @@ const handleEventClick = (event: CalendarEvent) => {
 }
 
 const handleSlotClick = (slot: AccessibleSlot) => {
+  console.log('[CalendarBoardV2] handleSlotClick called with:', slot)
   emit('slot-click', slot)
+  console.log('[CalendarBoardV2] slot-click event emitted')
 }
 
 const handleEventDragStart = (event: CalendarEvent, mouseEvent: MouseEvent) => {

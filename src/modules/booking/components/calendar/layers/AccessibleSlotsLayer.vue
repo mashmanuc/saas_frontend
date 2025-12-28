@@ -6,7 +6,7 @@
       class="accessible-slot"
       :style="getSlotStyle(slot)"
       :title="`Доступно: ${formatTime(slot.start)} - ${formatTime(slot.end)}`"
-      @click="$emit('slot-click', slot)"
+      @click="handleSlotClick(slot)"
     >
       <div class="slot-label">
         <span class="slot-time">{{ formatTime(slot.start) }}</span>
@@ -32,6 +32,13 @@ const props = defineProps<{
 const emit = defineEmits<{
   'slot-click': [slot: AccessibleSlot]
 }>()
+
+console.log('[AccessibleSlotsLayer] Component setup, slots count:', props.accessibleSlots.length)
+
+const handleSlotClick = (slot: AccessibleSlot) => {
+  console.log('[AccessibleSlotsLayer] Slot clicked:', slot)
+  emit('slot-click', slot)
+}
 
 const getSlotStyle = (slot: AccessibleSlot) => {
   const start = new Date(slot.start)

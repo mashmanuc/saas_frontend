@@ -275,6 +275,14 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
         },
       }
 
+      console.log('[calendarWeekStore] Normalized snapshot:', {
+        daysCount: normalizedSnapshot.days.length,
+        eventsCount: normalizedSnapshot.events.length,
+        accessibleCount: normalizedSnapshot.accessible.length,
+        accessibleSample: normalizedSnapshot.accessible[0],
+        blockedRangesCount: normalizedSnapshot.blockedRanges.length
+      })
+
       snapshot.value = normalizedSnapshot
       currentTutorId.value = tutorId
       currentWeekStart.value = weekStart

@@ -454,8 +454,10 @@ function handleEventDeleted() {
 }
 
 function handleSlotClick(slot: any) {
+  console.log('[CalendarWeekView] handleSlotClick called with:', slot)
   selectedSlot.value = slot
   showSlotModal.value = true
+  console.log('[CalendarWeekView] showSlotModal set to:', showSlotModal.value, 'selectedSlot:', selectedSlot.value)
 }
 
 function handleSlotSaved() {

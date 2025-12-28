@@ -105,6 +105,11 @@ const getPreviewStyle = () => {
   bottom: 0;
   z-index: 4;
   cursor: grab;
+  pointer-events: none;
+}
+
+.interaction-layer:active {
+  pointer-events: auto;
 }
 
 .interaction-layer:active {
