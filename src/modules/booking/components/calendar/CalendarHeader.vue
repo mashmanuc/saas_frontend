@@ -1,219 +1,114 @@
-<script setup lang="ts">
-// F12: Calendar Header Component
-import { computed } from 'vue'
-import { ChevronLeft, ChevronRight, Calendar } from 'lucide-vue-next'
-
-const props = defineProps<{
-  date: Date
-  viewMode: 'week' | 'month'
-}>()
-
-const emit = defineEmits<{
-  prev: []
-  next: []
-  today: []
-  'view-change': [mode: 'week' | 'month']
-}>()
-
-const dateRange = computed(() => {
-  if (props.viewMode === 'month') {
-    return props.date.toLocaleDateString('en-US', {
-      month: 'long',
-      year: 'numeric',
-    })
-  }
-
-  // Week view - show week range
-  const start = new Date(props.date)
-  const day = start.getDay()
-  const diff = start.getDate() - day + (day === 0 ? -6 : 1)
-  start.setDate(diff)
-
-  const end = new Date(start)
-  end.setDate(end.getDate() + 6)
-
-  const startStr = start.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-  })
-  const endStr = end.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
-
-  return `${startStr} - ${endStr}`
-})
-
-const isToday = computed(() => {
-  const today = new Date()
-  return (
-    props.date.getDate() === today.getDate() &&
-    props.date.getMonth() === today.getMonth() &&
-    props.date.getFullYear() === today.getFullYear()
-  )
-})
-</script>
-
 <template>
-  <div class="calendar-header">
-    <div class="header-left">
-      <button class="nav-btn" @click="emit('prev')">
-        <ChevronLeft :size="20" />
-      </button>
-      <button class="nav-btn" @click="emit('next')">
-        <ChevronRight :size="20" />
-      </button>
-      <h2 class="date-range">{{ dateRange }}</h2>
+  <div class="calendar-header-v2">
+    <div class="header-message">
+      <svg class="info-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <path d="M10 0C4.48 0 0 4.48 0 10C0 15.52 4.48 20 10 20C15.52 20 20 15.52 20 10C20 4.48 15.52 0 10 0ZM11 15H9V9H11V15ZM11 7H9V5H11V7Z" fill="#1976D2"/>
+      </svg>
+      <span>{{ t('calendar.header.reminder') }}</span>
     </div>
-
-    <div class="header-right">
-      <button
-        class="today-btn"
-        :class="{ active: isToday }"
-        @click="emit('today')"
-      >
-        <Calendar :size="16" />
-        Today
+    <div class="header-actions">
+      <button class="btn-primary" @click="$emit('open-quick-block')">
+        {{ t('calendar.header.mark_free_time') }}
       </button>
-
-      <div class="view-toggle">
-        <button
-          class="toggle-btn"
-          :class="{ active: viewMode === 'week' }"
-          @click="emit('view-change', 'week')"
-        >
-          Week
-        </button>
-        <button
-          class="toggle-btn"
-          :class="{ active: viewMode === 'month' }"
-          @click="emit('view-change', 'month')"
-        >
-          Month
-        </button>
-      </div>
+      <button class="btn-link" @click="showLegend = true">
+        {{ t('calendar.header.color_legend') }}
+      </button>
+      <button class="btn-link" @click="openVideoGuide">
+        {{ t('calendar.header.video_guide') }}
+      </button>
     </div>
   </div>
+  
+  <ColorLegendModal v-model="showLegend" />
 </template>
 
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import ColorLegendModal from './ColorLegendModal.vue'
+
+const { t } = useI18n()
+const showLegend = ref(false)
+
+defineEmits<{
+  'open-quick-block': []
+}>()
+
+const openVideoGuide = () => {
+  window.open('https://www.youtube.com/watch?v=calendar-guide', '_blank')
+}
+</script>
+
 <style scoped>
-.calendar-header {
+.calendar-header-v2 {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
-  background: var(--color-bg-primary, white);
-  border-bottom: 1px solid var(--color-border, #e5e7eb);
+  padding: 16px 24px;
+  background: #f5f7fa;
+  border-radius: 8px 8px 0 0;
+  border-bottom: 1px solid #e0e0e0;
 }
 
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.nav-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  background: none;
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: 8px;
-  cursor: pointer;
-  color: var(--color-text-secondary, #6b7280);
-  transition: all 0.15s;
-}
-
-.nav-btn:hover {
-  background: var(--color-bg-secondary, #f5f5f5);
-  color: var(--color-text-primary, #111827);
-}
-
-.date-range {
-  margin: 0 0 0 8px;
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: var(--color-text-primary, #111827);
-}
-
-.header-right {
+.header-message {
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-.today-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  background: none;
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: 8px;
+  color: #1976D2;
   font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-secondary, #6b7280);
-  cursor: pointer;
-  transition: all 0.15s;
 }
 
-.today-btn:hover {
-  background: var(--color-bg-secondary, #f5f5f5);
-  color: var(--color-text-primary, #111827);
+.info-icon {
+  flex-shrink: 0;
 }
 
-.today-btn.active {
-  background: var(--color-primary-light, #eff6ff);
-  border-color: var(--color-primary, #3b82f6);
-  color: var(--color-primary, #3b82f6);
-}
-
-.view-toggle {
+.header-actions {
   display: flex;
-  background: var(--color-bg-secondary, #f5f5f5);
-  border-radius: 8px;
-  padding: 4px;
+  gap: 12px;
+  align-items: center;
 }
 
-.toggle-btn {
-  padding: 6px 12px;
-  background: none;
+.btn-primary {
+  padding: 10px 20px;
+  background: #1976D2;
+  color: white;
   border: none;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
-  color: var(--color-text-secondary, #6b7280);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background 0.2s;
 }
 
-.toggle-btn:hover {
-  color: var(--color-text-primary, #111827);
+.btn-primary:hover {
+  background: #1565C0;
 }
 
-.toggle-btn.active {
-  background: var(--color-bg-primary, white);
-  color: var(--color-text-primary, #111827);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+.btn-link {
+  padding: 8px 16px;
+  background: transparent;
+  color: #1976D2;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color 0.2s;
 }
 
-@media (max-width: 640px) {
-  .calendar-header {
+.btn-link:hover {
+  color: #1565C0;
+}
+
+@media (max-width: 768px) {
+  .calendar-header-v2 {
     flex-direction: column;
-    gap: 12px;
-    align-items: stretch;
+    gap: 16px;
+    align-items: flex-start;
   }
-
-  .header-left,
-  .header-right {
-    justify-content: center;
-  }
-
-  .date-range {
-    font-size: 1rem;
+  
+  .header-actions {
+    width: 100%;
+    flex-wrap: wrap;
   }
 }
 </style>

@@ -1,0 +1,65 @@
+{
+  "calendar": {
+    "guide": {
+      "title": "How to use the calendar",
+      "colors": "Color meanings",
+      "availableSlot": "Available slot for booking",
+      "bookedLesson": "Booked lesson",
+      "blockedSlot": "Blocked slot",
+      "howToCreate": "How to create a slot",
+      "createSlotDesc": "Click the '+ Add slot' button at the top of the calendar or select an empty cell on the calendar grid.",
+      "howToEdit": "How to edit a slot",
+      "editSlotDesc": "Hover over a yellow slot and click the pencil icon to edit or the trash icon to delete.",
+      "limits": "Limitations",
+      "maxDuration": "Maximum duration of one slot is 3 hours",
+      "noDuplicates": "Cannot create two slots at the same time",
+      "noOverlap": "Slots cannot overlap with existing lessons"
+    },
+    "header": {
+      "reminder": "Add your free hours to display on Marketplace",
+      "mark_free_time": "Mark free time",
+      "color_legend": "What do the colors mean?",
+      "video_guide": "Video guide"
+    },
+    "legend": {
+      "title": "Color legend",
+      "first_lesson": "First lesson with student",
+      "regular_lesson": "Regular lesson",
+      "no_show": "Student didn't show up",
+      "blocked_time": "Blocked time",
+      "past_time": "Past time"
+    },
+    "lesson_card": {
+      "title": "Lesson details",
+      "no_student": "Student not specified",
+      "join_lesson": "Join lesson",
+      "reschedule": "Reschedule lesson",
+      "go_to_lesson": "Go to lesson",
+      "mark_no_show": "Mark as No-show",
+      "confirm_no_show": "Are you sure the student didn't show up for the lesson?",
+      "first_lesson": "First lesson"
+    },
+    "reschedule": {
+      "title": "Reschedule lesson",
+      "current_time": "Current time",
+      "new_date": "New date",
+      "new_time": "New time",
+      "can_reschedule": "Lesson can be rescheduled to this time",
+      "checking": "Checking availability",
+      "confirm": "Confirm reschedule",
+      "error": "Error checking availability"
+    },
+    "footer": {
+      "your_lesson_link": "Your lesson link",
+      "copy": "Copy",
+      "copied": "Copied"
+    },
+    "drag": {
+      "preview": "Preview"
+    }
+  },
+  "common": {
+    "understood": "Understood",
+    "cancel": "Cancel"
+  }
+}

@@ -1,54 +1,65 @@
+/**
+ * Calendar Week Store v0.55 - Single Source of Truth
+ * 
+ * Unified store for both v0.55 and legacy calendar functionality
+ * Following contract: GET /v1/calendar/week/ with extended snapshot
+ */
+
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import dayjs from 'dayjs'
-import utc from 'dayjs/plugin/utc'
-import timezone from 'dayjs/plugin/timezone'
+import { calendarV055Api } from '../api/calendarV055Api'
 import { calendarWeekApi } from '../api/calendarWeekApi'
 import type {
+  CalendarSnapshot,
+  DaySnapshot,
+  CalendarEvent as CalendarEventV055,
+  AccessibleSlot as AccessibleSlotV055,
+  BlockedRange,
+  Dictionaries,
+  SnapshotMeta,
+  ReschedulePreviewRequest,
+  ReschedulePreviewResponse,
+  RescheduleConfirmRequest,
+  NoShowRequest,
+  BlockRangeRequest
+} from '../types/calendarV055'
+import type {
   WeekSnapshot,
+  CalendarEvent as LegacyEvent,
+  AccessibleSlot as LegacySlot,
+  Day as LegacyDay,
   WeekMeta,
-  Day,
-  CalendarEvent,
-  AccessibleSlot,
-  Order,
   MetaData,
-  NormalizedEvents,
-  NormalizedAccessible,
-  NormalizedOrders,
-  CalendarCell,
-  CellStatus,
+  Order,
   CreateEventPayload,
   UpdateEventPayload,
   DeleteEventPayload,
-  EventLayout,
-  AvailabilityLayout,
 } from '../types/calendarWeek'
-
-// Constants
-dayjs.extend(utc)
-dayjs.extend(timezone)
-
-const DAY_START_MINUTES = 6 * 60      // 06:00
-const DAY_END_MINUTES = 22 * 60       // 22:00
-const SLOT_MINUTES = 30
-const SLOTS_PER_DAY = 48
-const PX_PER_MINUTE = 1.2
 
 export const useCalendarWeekStore = defineStore('calendarWeek', () => {
   // ===== STATE =====
   
-  // Week metadata
-  const weekMeta = ref<WeekMeta | null>(null)
-  const days = ref<Day[]>([])
-  const meta = ref<MetaData | null>(null)
+  // v0.55: Single snapshot source of truth
+  const snapshot = ref<CalendarSnapshot | null>(null)
+  const isLoading = ref(false)
+  const error = ref<string | null>(null)
   
-  // Normalized events
-  const eventsById = ref<Record<number, CalendarEvent>>({})
+  // Current context for refetch
+  const currentTutorId = ref<number | null>(null)
+  const currentWeekStart = ref<string | null>(null)
+  
+  // Legacy state for backward compatibility
+  const weekMeta = ref<WeekMeta | null>(null)
+  const legacyDays = ref<LegacyDay[]>([])
+  const legacyMeta = ref<MetaData | null>(null)
+  
+  // Normalized events for legacy compatibility
+  const eventsById = ref<Record<number, CalendarEventV055>>({})
   const eventIdsByDay = ref<Record<string, number[]>>({})
   const allEventIds = ref<number[]>([])
   
-  // Normalized accessible slots
-  const accessibleById = ref<Record<number, AccessibleSlot>>({})
+  // Normalized accessible slots for legacy compatibility
+  const accessibleById = ref<Record<number, AccessibleSlotV055>>({})
   const accessibleIdsByDay = ref<Record<string, number[]>>({})
   const allAccessibleIds = ref<number[]>([])
   
@@ -57,31 +68,54 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
   const allOrderIds = ref<number[]>([])
   
   // UI state
-  const isLoading = ref(false)
-  const error = ref<string | null>(null)
   const selectedEventId = ref<number | null>(null)
   const lastFetchedAt = ref<Date | null>(null)
   
-  // v0.49.3: ETag caching
+  // Legacy ETag caching
   const etag = ref<string>('')
   
-  // v0.49.3: Optimistic updates
-  const optimisticUpdates = ref<Map<number, any>>(new Map())
-  
-  // v0.49.3: Current page/timezone for refetch
+  // Legacy page/timezone for refetch
   const currentPage = ref(0)
   const currentTimezone = ref('Europe/Kiev')
   
   // ===== GETTERS / SELECTORS =====
   
-  const daysOrdered = computed(() => days.value)
+  // v0.55: Computed properties from snapshot
+  const days = computed(() => snapshot.value?.days || [])
+  const events = computed(() => snapshot.value?.events || [])
+  const accessible = computed(() => snapshot.value?.accessible || [])
+  const blockedRanges = computed(() => snapshot.value?.blockedRanges || [])
+  const dictionaries = computed(() => snapshot.value?.dictionaries || {
+    noShowReasons: {},
+    cancelReasons: {},
+    blockReasons: {}
+  })
+  const meta = computed(() => snapshot.value?.meta || null)
   
-  const eventsForDay = computed(() => (dayKey: string): CalendarEvent[] => {
+  /**
+   * Day summaries with computed stats
+   */
+  const daySummaries = computed(() => {
+    return days.value.map(day => {
+      const dayEvents = events.value.filter(e => e.start.startsWith(day.date))
+      const isPast = new Date(day.date) < new Date()
+      return {
+        ...day,
+        isPast,
+        eventsCount: dayEvents.length
+      }
+    })
+  })
+  
+  // Legacy getters for backward compatibility
+  const daysOrdered = computed(() => legacyDays.value)
+  
+  const eventsForDay = computed(() => (dayKey: string): CalendarEventV055[] => {
     const ids = eventIdsByDay.value[dayKey] || []
     return ids.map(id => eventsById.value[id]).filter(Boolean)
   })
   
-  const accessibleForDay = computed(() => (dayKey: string): AccessibleSlot[] => {
+  const accessibleForDay = computed(() => (dayKey: string): AccessibleSlotV055[] => {
     const ids = accessibleIdsByDay.value[dayKey] || []
     return ids.map(id => accessibleById.value[id]).filter(Boolean)
   })
@@ -93,239 +127,176 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
   const selectedEvent = computed(() => {
     return selectedEventId.value ? eventsById.value[selectedEventId.value] : null
   })
-
-  const availableMinutesByDay = computed<Record<string, number>>(() => {
-    const result: Record<string, number> = {}
-    for (const [dayKey, slotIds] of Object.entries(accessibleIdsByDay.value)) {
-      const totalMinutes = slotIds.reduce((sum, slotId) => {
-        const slot = accessibleById.value[slotId]
-        if (!slot) {
-          return sum
-        }
-        const start = new Date(slot.start)
-        const end = new Date(slot.end)
-        const durationMinutes = Math.max(0, (end.getTime() - start.getTime()) / 60000)
-        return sum + durationMinutes
-      }, 0)
-      result[dayKey] = totalMinutes
-    }
-    return result
-  })
-
-  const totalAvailableMinutes = computed(() => {
-    return Object.values(availableMinutesByDay.value).reduce((sum, minutes) => sum + minutes, 0)
-  })
-
-  const totalAvailableHours = computed(() => Number((totalAvailableMinutes.value / 60).toFixed(1)))
-
-  /**
-   * Побудувати 336 клітинок із snapshot (для сумісності з v0.49.1)
-   */
-  const computedCells336 = computed((): CalendarCell[] => {
-    if (!weekMeta.value) return []
-    
-    const cells: CalendarCell[] = []
-    const now = new Date()
-    
-    for (const day of days.value) {
-      for (let slotIndex = 0; slotIndex < SLOTS_PER_DAY; slotIndex++) {
-        const startMin = DAY_START_MINUTES + slotIndex * SLOT_MINUTES
-        const endMin = startMin + SLOT_MINUTES
-        
-        const startDate = new Date(day.dayKey)
-        startDate.setHours(Math.floor(startMin / 60), startMin % 60, 0, 0)
-        
-        const endDate = new Date(day.dayKey)
-        endDate.setHours(Math.floor(endMin / 60), endMin % 60, 0, 0)
-        
-        const cell: CalendarCell = {
-          dayKey: day.dayKey,
-          slotIndex,
-          startAtUTC: startDate.toISOString(),
-          endAtUTC: endDate.toISOString(),
-          status: getCellStatus(startDate, endDate, day.dayKey, now),
-        }
-        
-        cells.push(cell)
-      }
-    }
-    
-    return cells
-  })
-  
-  /**
-   * Layout для overlay events
-   */
-  const eventLayouts = computed((): EventLayout[] => {
-    const layouts: EventLayout[] = []
-    const tz = weekMeta.value?.timezone ?? 'Europe/Kiev'
-    
-    for (const dayKey of Object.keys(eventIdsByDay.value)) {
-      const dayEvents = eventsForDay.value(dayKey)
-      
-      for (const event of dayEvents) {
-        const startDate = dayjs(event.start).tz(tz)
-        const endDate = dayjs(event.end).tz(tz)
-        const startMin = startDate.hour() * 60 + startDate.minute()
-        const durationMin = Math.max(0, endDate.diff(startDate, 'minute'))
-        
-        layouts.push({
-          eventId: event.id,
-          dayKey,
-          top: (startMin - DAY_START_MINUTES) * PX_PER_MINUTE,
-          height: durationMin * PX_PER_MINUTE,
-          left: 0,
-          width: '100%',
-        })
-      }
-    }
-    
-    return layouts
-  })
-  
-  const availabilityLayouts = computed((): AvailabilityLayout[] => {
-    const layouts: AvailabilityLayout[] = []
-    const tz = weekMeta.value?.timezone ?? 'Europe/Kiev'
-    
-    for (const dayKey of Object.keys(accessibleIdsByDay.value)) {
-      const daySlots = accessibleForDay.value(dayKey)
-      
-      for (const slot of daySlots) {
-        const startDate = dayjs(slot.start).tz(tz)
-        const endDate = dayjs(slot.end).tz(tz)
-        const startMin = startDate.hour() * 60 + startDate.minute()
-        const heightMinutes = Math.max(0, endDate.diff(startDate, 'minute'))
-        
-        layouts.push({
-          slotId: slot.id,
-          dayKey,
-          top: (startMin - DAY_START_MINUTES) * PX_PER_MINUTE,
-          height: heightMinutes * PX_PER_MINUTE,
-        })
-      }
-    }
-    
-    return layouts
-  })
-  
-  // ===== HELPERS =====
-  
-  function getCellStatus(
-    startDate: Date,
-    endDate: Date,
-    dayKey: string,
-    now: Date
-  ): CellStatus {
-    // 1. Минуле
-    if (endDate < now) return 'notAllow'
-    
-    // 2. Поза робочим часом
-    const hour = startDate.getHours()
-    if (hour < 6 || hour >= 22) return 'blocked'
-    
-    // 3. Overlap з уроком
-    const dayEvents = eventsForDay.value(dayKey)
-    for (const event of dayEvents) {
-      const eventStart = new Date(event.start)
-      const eventEnd = new Date(event.end)
-      
-      if (
-        (startDate >= eventStart && startDate < eventEnd) ||
-        (endDate > eventStart && endDate <= eventEnd) ||
-        (startDate <= eventStart && endDate >= eventEnd)
-      ) {
-        return 'booked'
-      }
-    }
-    
-    // 4. Доступність
-    const dayAccessible = accessibleForDay.value(dayKey)
-    for (const slot of dayAccessible) {
-      const slotStart = new Date(slot.start)
-      const slotEnd = new Date(slot.end)
-      
-      if (startDate >= slotStart && endDate <= slotEnd) {
-        return 'available'
-      }
-    }
-    
-    return 'empty'
-  }
-  
-  function normalizeSnapshot(snapshot: WeekSnapshot) {
-    console.log('[calendarWeekStore] Normalizing snapshot:', {
-      snapshotKeys: Object.keys(snapshot),
-      daysCount: snapshot.days?.length || 0,
-      eventsKeys: Object.keys(snapshot.events || {}),
-      accessibleKeys: Object.keys(snapshot.accessible || {}),
-      ordersCount: snapshot.orders?.length || 0,
-    })
-    
-    // Normalize events
-    const newEventsById: Record<number, CalendarEvent> = {}
-    const newEventIdsByDay: Record<string, number[]> = {}
-    const newAllEventIds: number[] = []
-    
-    for (const [dayKey, dayEvents] of Object.entries(snapshot.events)) {
-      newEventIdsByDay[dayKey] = []
-      
-      for (const event of dayEvents) {
-        newEventsById[event.id] = event
-        newEventIdsByDay[dayKey].push(event.id)
-        newAllEventIds.push(event.id)
-      }
-    }
-    
-    eventsById.value = newEventsById
-    eventIdsByDay.value = newEventIdsByDay
-    allEventIds.value = newAllEventIds
-    
-    // Normalize accessible
-    const newAccessibleById: Record<number, AccessibleSlot> = {}
-    const newAccessibleIdsByDay: Record<string, number[]> = {}
-    const newAllAccessibleIds: number[] = []
-    
-    console.log('[calendarWeekStore] Processing accessible slots:', {
-      accessibleData: snapshot.accessible,
-      accessibleType: typeof snapshot.accessible,
-      accessibleKeys: Object.keys(snapshot.accessible || {}),
-    })
-    
-    for (const [dayKey, daySlots] of Object.entries(snapshot.accessible)) {
-      newAccessibleIdsByDay[dayKey] = []
-      
-      for (const slot of daySlots) {
-        newAccessibleById[slot.id] = slot
-        newAccessibleIdsByDay[dayKey].push(slot.id)
-        newAllAccessibleIds.push(slot.id)
-      }
-    }
-    
-    accessibleById.value = newAccessibleById
-    accessibleIdsByDay.value = newAccessibleIdsByDay
-    allAccessibleIds.value = newAllAccessibleIds
-    
-    // Normalize orders
-    const newOrdersById: Record<number, Order> = {}
-    const newAllOrderIds: number[] = []
-    
-    for (const order of snapshot.orders) {
-      newOrdersById[order.id] = order
-      newAllOrderIds.push(order.id)
-    }
-    
-    ordersById.value = newOrdersById
-    allOrderIds.value = newAllOrderIds
-    
-    // Set metadata
-    weekMeta.value = snapshot.week
-    days.value = snapshot.days
-    meta.value = snapshot.meta
-    lastFetchedAt.value = new Date()
-  }
   
   // ===== ACTIONS =====
   
+  function ensureArray<T>(value: T[] | Record<string, T> | null | undefined): T[] {
+    if (Array.isArray(value)) {
+      return value
+    }
+    if (value && typeof value === 'object') {
+      return Object.values(value)
+    }
+    return []
+  }
+
+  function extractDatePart(raw?: string): string {
+    if (!raw) return ''
+    const match = raw.match(/\d{4}-\d{2}-\d{2}/)
+    return match ? match[0] : raw
+  }
+
+  function toNumber(value: unknown, fallback = 0): number {
+    const num = Number(value)
+    return Number.isFinite(num) ? num : fallback
+  }
+
+  function normalizeDaySnapshot(day: any, metaFromResponse?: SnapshotMeta | null): DaySnapshot {
+    const dateRaw = day?.date ?? day?.dayKey ?? day?.day_key ?? day?.day ?? ''
+    const date = extractDatePart(dateRaw)
+    const availableMinutesRaw =
+      day?.availableMinutes ?? day?.available_minutes ?? day?.available ?? 0
+    const eventsCountRaw =
+      day?.eventsCount ??
+      day?.events_count ??
+      (Array.isArray(day?.events) ? day.events.length : 0)
+    const status = day?.dayStatus ?? day?.status ?? 'working'
+    const referenceTime = metaFromResponse?.currentTime ?? new Date().toISOString()
+    const isPast =
+      typeof day?.isPast === 'boolean'
+        ? day.isPast
+        : !!date && new Date(date) < new Date(referenceTime)
+
+    return {
+      date,
+      dayStatus: status,
+      availableMinutes: toNumber(availableMinutesRaw),
+      eventsCount: toNumber(eventsCountRaw),
+      isPast,
+    }
+  }
+
+  function normalizeDays(
+    rawDays: DaySnapshot[] | Record<string, any> | null | undefined,
+    metaFromResponse?: SnapshotMeta | null
+  ): DaySnapshot[] {
+    if (Array.isArray(rawDays)) {
+      return rawDays.map(day => normalizeDaySnapshot(day, metaFromResponse))
+    }
+    if (rawDays && typeof rawDays === 'object') {
+      return Object.entries(rawDays).map(([dayKey, value]) =>
+        normalizeDaySnapshot({ date: dayKey, ...value }, metaFromResponse)
+      )
+    }
+    return []
+  }
+
+  function normalizeMeta(metaRaw?: SnapshotMeta | Record<string, any> | null): SnapshotMeta | null {
+    if (!metaRaw) {
+      return null
+    }
+    const camelized = metaRaw as Record<string, any>
+    return {
+      tutorId: toNumber(camelized.tutorId ?? camelized.tutor_id),
+      weekStart: extractDatePart(camelized.weekStart ?? camelized.week_start),
+      weekEnd: extractDatePart(camelized.weekEnd ?? camelized.week_end),
+      timezone: camelized.timezone ?? camelized.time_zone ?? 'Europe/Kiev',
+      currentTime: camelized.currentTime ?? camelized.current_time ?? new Date().toISOString(),
+      etag: camelized.etag ?? '',
+    }
+  }
+
+  function normalizeMetaFromWeek(tutorId: number, weekRaw?: Record<string, any> | null): SnapshotMeta {
+    const week = (weekRaw || {}) as Record<string, any>
+    return {
+      tutorId,
+      weekStart: extractDatePart(week.weekStart ?? week.week_start ?? ''),
+      weekEnd: extractDatePart(week.weekEnd ?? week.week_end ?? ''),
+      timezone: week.timezone ?? week.time_zone ?? 'Europe/Kiev',
+      currentTime: week.currentTime ?? week.current_time ?? new Date().toISOString(),
+      etag: week.etag ?? '',
+    }
+  }
+
+  function flattenValues<T>(value: unknown): T[] {
+    if (Array.isArray(value)) {
+      // value can be T[] or T[][]
+      if (value.length > 0 && Array.isArray(value[0])) {
+        return (value as unknown[]).flat() as T[]
+      }
+      return value as T[]
+    }
+    if (value && typeof value === 'object') {
+      const vals = Object.values(value as Record<string, unknown>)
+      if (vals.length > 0 && Array.isArray(vals[0])) {
+        return (vals as unknown[]).flat() as T[]
+      }
+      return vals as T[]
+    }
+    return []
+  }
+
+  /**
+   * Fetch week snapshot (v0.55)
+   */
+  async function fetchWeekSnapshot(tutorId: number, weekStart: string) {
+    isLoading.value = true
+    error.value = null
+    
+    try {
+      console.log('[calendarWeekStore] Starting fetch for:', { tutorId, weekStart })
+      const etagValue = meta.value?.etag
+      const response = await calendarV055Api.getCalendarWeek(tutorId, weekStart, etagValue)
+      
+      console.log('[calendarWeekStore] API response received:', {
+        hasResponse: !!response,
+        responseType: typeof response,
+        responseKeys: response ? Object.keys(response) : [],
+        hasDays: !!response?.days,
+        daysType: typeof response?.days,
+        daysLength: Array.isArray(response?.days) ? response.days.length : 'not array'
+      })
+      
+      // Backend may return legacy-like envelope with `week` + per-day dictionaries.
+      // Guarantee arrays for layers and guarantee SnapshotMeta for currentTime/weekStart.
+      const metaFromWeek = normalizeMetaFromWeek(tutorId, (response as any).week)
+
+      const normalizedSnapshot: CalendarSnapshot = {
+        ...(response as any),
+        meta: metaFromWeek,
+        days: normalizeDays((response as any).days, metaFromWeek),
+        events: flattenValues<CalendarEventV055>((response as any).events),
+        accessible: flattenValues<AccessibleSlotV055>((response as any).accessible),
+        blockedRanges: flattenValues<BlockedRange>((response as any).blockedRanges),
+        dictionaries: (response as any).dictionaries || {
+          noShowReasons: {},
+          cancelReasons: {},
+          blockReasons: {},
+        },
+      }
+
+      snapshot.value = normalizedSnapshot
+      currentTutorId.value = tutorId
+      currentWeekStart.value = weekStart
+      
+      console.log('[calendarWeekStore] Snapshot fetched:', {
+        days: normalizedSnapshot.days.length,
+        events: normalizedSnapshot.events.length,
+        accessible: normalizedSnapshot.accessible.length,
+        blockedRanges: normalizedSnapshot.blockedRanges.length
+      })
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to fetch snapshot'
+      console.error('[calendarWeekStore] Fetch error:', err)
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+  
+  /**
+   * Legacy fetch week for backward compatibility
+   */
   async function fetchWeek(page: number = 0, timezone: string = 'Europe/Kiev') {
     isLoading.value = true
     error.value = null
@@ -348,18 +319,9 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
       }
       
       etag.value = result.etag
-      normalizeSnapshot(result.data)
+      normalizeLegacySnapshot(result.data)
       
-      console.log('[calendarWeekStore] Week loaded:', {
-        weekStart: weekMeta.value?.weekStart,
-        eventsCount: allEventIds.value.length,
-        accessibleCount: allAccessibleIds.value.length,
-        accessibleById: Object.keys(accessibleById.value).length,
-        accessibleIdsByDay: Object.keys(accessibleIdsByDay.value).length,
-        availableMinutesByDay: availableMinutesByDay.value,
-        totalAvailableMinutes: totalAvailableMinutes.value,
-        etag: etag.value,
-      })
+      console.log('[calendarWeekStore] Legacy week loaded')
     } catch (err: any) {
       error.value = err.message || 'Failed to load week'
       console.error('[calendarWeekStore] Load error:', err)
@@ -368,347 +330,215 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     }
   }
   
-  function addOptimisticSlot(slot: AccessibleSlot) {
-    // Add slot to accessible state for immediate display
-    const dayKey = slot.start.slice(0, 10) // Extract date from ISO string
+  /**
+   * Normalize legacy snapshot for backward compatibility
+   */
+  function normalizeLegacySnapshot(legacySnapshot: WeekSnapshot) {
+    // Convert legacy events to v0.55 format
+    const newEventsById: Record<number, CalendarEventV055> = {}
+    const newEventIdsByDay: Record<string, number[]> = {}
+    const newAllEventIds: number[] = []
     
-    console.log('[calendarWeekStore] Adding optimistic slot:', slot, 'dayKey:', dayKey)
-    
-    // Check if this day is in the current week
-    const dayExists = days.value.some(d => d.dayKey === dayKey)
-    if (!dayExists) {
-      console.warn('[calendarWeekStore] Day', dayKey, 'is not in current week. Available days:', days.value.map(d => d.dayKey))
-      // Still add it - it might be displayed if user navigates to that week
-    }
-    
-    // Force reactivity by creating new objects
-    accessibleById.value = {
-      ...accessibleById.value,
-      [slot.id]: slot
-    }
-    
-    const currentDaySlots = accessibleIdsByDay.value[dayKey] || []
-    if (!currentDaySlots.includes(slot.id)) {
-      accessibleIdsByDay.value = {
-        ...accessibleIdsByDay.value,
-        [dayKey]: [...currentDaySlots, slot.id]
-      }
-      allAccessibleIds.value = [...allAccessibleIds.value, slot.id]
-    }
-    
-    console.log('[calendarWeekStore] Optimistic slot added. Total slots:', Object.keys(accessibleById.value).length)
-    console.log('[calendarWeekStore] Slots for day', dayKey, ':', accessibleIdsByDay.value[dayKey])
-    console.log('[calendarWeekStore] Current week days:', days.value.map(d => d.dayKey))
-  }
-  
-  function removeOptimisticSlot(slotId: number) {
-    // Remove slot from all data structures
-    const slot = accessibleById.value[slotId]
-    if (slot) {
-      const dayKey = slot.start.slice(0, 10)
+    for (const [dayKey, dayEvents] of Object.entries(legacySnapshot.events || {})) {
+      newEventIdsByDay[dayKey] = []
       
-      console.log('[calendarWeekStore] Removing optimistic slot:', slotId)
-      
-      // Force reactivity by creating new objects
-      const { [slotId]: removed, ...restById } = accessibleById.value
-      accessibleById.value = restById
-      
-      if (accessibleIdsByDay.value[dayKey]) {
-        const filteredDaySlots = accessibleIdsByDay.value[dayKey].filter(id => id !== slotId)
-        accessibleIdsByDay.value = {
-          ...accessibleIdsByDay.value,
-          [dayKey]: filteredDaySlots
+      for (const event of dayEvents as LegacyEvent[]) {
+        const v055Event: CalendarEventV055 = {
+          id: event.id,
+          start: event.start,
+          end: event.end,
+          status: event.doneStatus === 'done' ? 'completed' : 
+                  event.doneStatus === 'not_done_client_missed' ? 'no_show' :
+                  event.doneStatus === 'done_client_missed' ? 'no_show' :
+                  event.doneStatus === 'not_done' ? 'scheduled' : 'scheduled',
+          is_first: false,
+          student: {
+            id: event.orderId ?? 0,
+            name: event.clientName || 'Студент',
+          },
+          lesson_link: legacySnapshot.meta?.zoomLink || '',
+          can_reschedule: true,
+          can_mark_no_show: true,
         }
+        
+        newEventsById[event.id] = v055Event
+        newEventIdsByDay[dayKey].push(event.id)
+        newAllEventIds.push(event.id)
       }
+    }
+    
+    eventsById.value = newEventsById
+    eventIdsByDay.value = newEventIdsByDay
+    allEventIds.value = newAllEventIds
+    
+    // Convert legacy accessible slots
+    const newAccessibleById: Record<number, AccessibleSlotV055> = {}
+    const newAccessibleIdsByDay: Record<string, number[]> = {}
+    const newAllAccessibleIds: number[] = []
+    
+    for (const [dayKey, daySlots] of Object.entries(legacySnapshot.accessible || {})) {
+      newAccessibleIdsByDay[dayKey] = []
       
-      allAccessibleIds.value = allAccessibleIds.value.filter(id => id !== slotId)
-      
-      console.log('[calendarWeekStore] Optimistic slot removed. Total slots:', Object.keys(accessibleById.value).length)
-    }
-  }
-  
-  function replaceOptimisticSlot(oldId: number, newSlot: AccessibleSlot) {
-    // Atomic operation: replace temp slot with real slot
-    // This prevents race conditions with WebSocket events
-    const oldSlot = accessibleById.value[oldId]
-    if (!oldSlot) {
-      console.warn('[calendarWeekStore] Cannot replace slot - old slot not found:', oldId)
-      addOptimisticSlot(newSlot)
-      return
-    }
-    
-    const oldDayKey = oldSlot.start.slice(0, 10)
-    const newDayKey = newSlot.start.slice(0, 10)
-    
-    console.log('[calendarWeekStore] Replacing optimistic slot:', { oldId, newId: newSlot.id, oldDayKey, newDayKey })
-    
-    // Remove old slot and add new slot atomically
-    const { [oldId]: removed, ...restById } = accessibleById.value
-    accessibleById.value = {
-      ...restById,
-      [newSlot.id]: newSlot
-    }
-    
-    // Update day mappings
-    if (oldDayKey === newDayKey) {
-      // Same day - just replace ID
-      const daySlots = accessibleIdsByDay.value[oldDayKey] || []
-      accessibleIdsByDay.value = {
-        ...accessibleIdsByDay.value,
-        [oldDayKey]: daySlots.map(id => id === oldId ? newSlot.id : id)
-      }
-    } else {
-      // Different days - remove from old, add to new
-      if (accessibleIdsByDay.value[oldDayKey]) {
-        const filteredOldDaySlots = accessibleIdsByDay.value[oldDayKey].filter(id => id !== oldId)
-        const newDaySlots = accessibleIdsByDay.value[newDayKey] || []
-        accessibleIdsByDay.value = {
-          ...accessibleIdsByDay.value,
-          [oldDayKey]: filteredOldDaySlots,
-          [newDayKey]: [...newDaySlots, newSlot.id]
+      for (const slot of daySlots as LegacySlot[]) {
+        const v055Slot: AccessibleSlotV055 = {
+          id: slot.id,
+          start: slot.start,
+          end: slot.end,
+          is_recurring: (slot.regularity ?? '') === 'once_a_week',
         }
+        
+        newAccessibleById[slot.id] = v055Slot
+        newAccessibleIdsByDay[dayKey].push(slot.id)
+        newAllAccessibleIds.push(slot.id)
       }
     }
     
-    // Update all IDs list
-    allAccessibleIds.value = allAccessibleIds.value.map(id => id === oldId ? newSlot.id : id)
+    accessibleById.value = newAccessibleById
+    accessibleIdsByDay.value = newAccessibleIdsByDay
+    allAccessibleIds.value = newAllAccessibleIds
     
-    console.log('[calendarWeekStore] Slot replaced. Total slots:', Object.keys(accessibleById.value).length)
+    // Set legacy metadata
+    weekMeta.value = legacySnapshot.week
+    legacyDays.value = legacySnapshot.days
+    legacyMeta.value = legacySnapshot.meta
+    lastFetchedAt.value = new Date()
   }
   
-  async function createEvent(payload: CreateEventPayload & {
-    notifyStudent?: boolean
-    autoGenerateZoom?: boolean
-  }) {
-    const tempId = -Date.now()
-    
-    // Optimistic update
-    const optimisticEvent = {
-      id: tempId,
-      type: 'class' as const,
-      start: payload.start,
-      end: new Date(new Date(payload.start).getTime() + payload.durationMin * 60000).toISOString(),
-      durationMin: payload.durationMin,
-      orderId: payload.orderId,
-      clientName: 'Завантаження...',
-      clientPhone: null,
-      paidStatus: 'unpaid' as const,
-      doneStatus: 'not_done' as const,
-      regularity: payload.regularity,
-      tutorComment: payload.tutorComment || null,
+  // v0.55: Reschedule actions
+  async function reschedulePreview(eventId: number, target: { new_start: string; new_end: string }) {
+    return await calendarV055Api.reschedulePreview(eventId, target)
+  }
+  
+  async function rescheduleConfirm(eventId: number, target: { new_start: string; new_end: string }) {
+    const result = await calendarV055Api.rescheduleConfirm(eventId, target)
+    // ОБОВ'ЯЗКОВИЙ refetch після мутації
+    if (currentTutorId.value && currentWeekStart.value) {
+      await fetchWeekSnapshot(currentTutorId.value, currentWeekStart.value)
     }
-    
-    optimisticUpdates.value.set(tempId, optimisticEvent)
-    
-    try {
-      const response = await calendarWeekApi.createEvent(payload)
-      
-      console.log('[calendarWeekStore] Event created:', response.id)
-      
-      // Remove optimistic update
-      optimisticUpdates.value.delete(tempId)
-      
-      // Refetch to get real data
-      await fetchWeek(currentPage.value, currentTimezone.value)
-      
-      return response.id
-    } catch (err: any) {
-      optimisticUpdates.value.delete(tempId)
-      console.error('[calendarWeekStore] Create error:', err)
-      throw err
+    return result
+  }
+  
+  async function markNoShow(eventId: number, payload: NoShowRequest) {
+    await calendarV055Api.markNoShow(eventId, payload)
+    // ОБОВ'ЯЗКОВИЙ refetch
+    if (currentTutorId.value && currentWeekStart.value) {
+      await fetchWeekSnapshot(currentTutorId.value, currentWeekStart.value)
     }
+  }
+  
+  async function blockDayRange(dayKey: string, payload: BlockRangeRequest) {
+    await calendarV055Api.blockDayRange(dayKey, payload)
+    // ОБОВ'ЯЗКОВИЙ refetch
+    if (currentTutorId.value && currentWeekStart.value) {
+      await fetchWeekSnapshot(currentTutorId.value, currentWeekStart.value)
+    }
+  }
+  
+  async function unblockRange(rangeId: number) {
+    await calendarV055Api.unblockRange(rangeId)
+    // ОБОВ'ЯЗКОВИЙ refetch
+    if (currentTutorId.value && currentWeekStart.value) {
+      await fetchWeekSnapshot(currentTutorId.value, currentWeekStart.value)
+    }
+  }
+  
+  // Legacy actions
+  async function createEvent(payload: CreateEventPayload) {
+    const response = await calendarWeekApi.createEvent(payload)
+    await fetchWeek(currentPage.value, currentTimezone.value)
+    return response
   }
   
   async function deleteEvent(id: number) {
-    const originalEvent = eventsById.value[id]
-    
-    // Optimistic update (mark as deleted)
-    if (originalEvent) {
-      optimisticUpdates.value.set(id, { ...originalEvent, _deleted: true })
-    }
-    
-    try {
-      await calendarWeekApi.deleteEvent({ id })
-      
-      console.log('[calendarWeekStore] Event deleted:', id)
-      
-      optimisticUpdates.value.delete(id)
-      
-      await fetchWeek(currentPage.value, currentTimezone.value)
-    } catch (err: any) {
-      optimisticUpdates.value.delete(id)
-      console.error('[calendarWeekStore] Delete error:', err)
-      throw err
-    }
+    await calendarWeekApi.deleteEvent({ id })
+    await fetchWeek(currentPage.value, currentTimezone.value)
   }
   
-  async function updateEvent(payload: UpdateEventPayload & {
-    paidStatus?: 'paid' | 'unpaid'
-    doneStatus?: 'done' | 'not_done' | 'not_done_client_missed' | 'done_client_missed'
-    notifyStudent?: boolean
-  }) {
-    const originalEvent = eventsById.value[payload.id]
-    
-    // Optimistic update
-    if (originalEvent) {
-      optimisticUpdates.value.set(payload.id, { ...originalEvent, ...payload })
-    }
-    
-    try {
-      await calendarWeekApi.updateEvent(payload)
-      
-      console.log('[calendarWeekStore] Event updated:', payload.id)
-      
-      optimisticUpdates.value.delete(payload.id)
-      
-      await fetchWeek(currentPage.value, currentTimezone.value)
-    } catch (err: any) {
-      optimisticUpdates.value.delete(payload.id)
-      console.error('[calendarWeekStore] Update error:', err)
-      throw err
-    }
-  }
-  
-  async function getEventDetails(id: number) {
-    try {
-      return await calendarWeekApi.getEventDetails(id)
-    } catch (err: any) {
-      console.error('[calendarWeekStore] Get details error:', err)
-      throw err
-    }
+  async function updateEvent(payload: UpdateEventPayload) {
+    await calendarWeekApi.updateEvent(payload)
+    await fetchWeek(currentPage.value, currentTimezone.value)
   }
   
   function selectEvent(id: number | null) {
     selectedEventId.value = id
   }
   
-  // v0.49.3: Bulk update events
-  async function bulkUpdateEvents(eventIds: number[], updates: any) {
-    try {
-      const result = await calendarWeekApi.bulkUpdateEvents({ eventIds, updates })
-      
-      console.log('[calendarWeekStore] Bulk update completed:', result)
-      
-      await fetchWeek(currentPage.value, currentTimezone.value)
-      
-      return result
-    } catch (err: any) {
-      console.error('[calendarWeekStore] Bulk update error:', err)
-      throw err
-    }
-  }
-  
-  // v0.49.3: WebSocket handlers
-  function handleEventCreated(data: any) {
-    console.log('[calendarWeekStore] WS: Event created', data)
-    // Delay refetch to allow optimistic updates to complete
-    setTimeout(() => {
-      fetchWeek(currentPage.value, currentTimezone.value)
-    }, 1000)
-  }
-  
-  function handleEventUpdated(data: any) {
-    console.log('[calendarWeekStore] WS: Event updated', data)
-    
-    const event = eventsById.value[data.eventId]
-    if (event && data.changes) {
-      // Apply changes immediately
-      Object.assign(event, data.changes)
-    }
-  }
-  
-  function handleEventDeleted(data: any) {
-    console.log('[calendarWeekStore] WS: Event deleted', data)
-    // Delay refetch to allow optimistic updates to complete
-    setTimeout(() => {
-      fetchWeek(currentPage.value, currentTimezone.value)
-    }, 1000)
-  }
-  
-  /**
-   * Subscribe to availability.slots_generated WebSocket event
-   * Refetches calendar when slots are generated
-   */
-  function subscribeToAvailabilityUpdates(userId: number, onUpdate?: () => void) {
-    // Note: WebSocket subscription should be handled by useCalendarWebSocket composable
-    // This method is a placeholder for future WebSocket integration
-    // When availability.slots_generated event is received:
-    // 1. Check if tutorId matches current user
-    // 2. Refetch current week: fetchWeek(currentPage.value)
-    // 3. Show success notification
-    // 4. Call optional onUpdate callback
-    console.log('[calendarWeekStore] Availability updates subscription ready for user:', userId)
-  }
-  
   function $reset() {
-    weekMeta.value = null
-    days.value = []
-    meta.value = null
-    eventsById.value = {}
-    eventIdsByDay.value = {}
-    accessibleById.value = {}
-    accessibleIdsByDay.value = {}
-    ordersById.value = {}
-    allEventIds.value = []
-    allAccessibleIds.value = []
-    allOrderIds.value = []
+    snapshot.value = null
     isLoading.value = false
     error.value = null
+    currentTutorId.value = null
+    currentWeekStart.value = null
+    weekMeta.value = null
+    legacyDays.value = []
+    legacyMeta.value = null
+    eventsById.value = {}
+    eventIdsByDay.value = {}
+    allEventIds.value = []
+    accessibleById.value = {}
+    accessibleIdsByDay.value = {}
+    allAccessibleIds.value = []
+    ordersById.value = {}
+    allOrderIds.value = []
     selectedEventId.value = null
     lastFetchedAt.value = null
     etag.value = ''
-    optimisticUpdates.value.clear()
     currentPage.value = 0
     currentTimezone.value = 'Europe/Kiev'
   }
   
   return {
     // State
-    weekMeta,
-    days,
-    meta,
-    eventsById,
-    eventIdsByDay,
-    accessibleById,
-    accessibleIdsByDay,
-    ordersById,
+    snapshot,
     isLoading,
     error,
+    currentTutorId,
+    currentWeekStart,
+    weekMeta,
+    legacyDays,
+    legacyMeta,
+    eventsById,
+    eventIdsByDay,
+    allEventIds,
+    accessibleById,
+    accessibleIdsByDay,
+    allAccessibleIds,
+    ordersById,
+    allOrderIds,
     selectedEventId,
     lastFetchedAt,
     etag,
-    optimisticUpdates,
+    currentPage,
+    currentTimezone,
     
-    // Getters
+    // v0.55 computed
+    days,
+    events,
+    accessible,
+    blockedRanges,
+    dictionaries,
+    meta,
+    daySummaries,
+    
+    // Legacy computed
     daysOrdered,
     eventsForDay,
     accessibleForDay,
     ordersArray,
     selectedEvent,
-    availableMinutesByDay,
-    totalAvailableMinutes,
-    totalAvailableHours,
-    computedCells336,
-    eventLayouts,
-    availabilityLayouts,
-    allAccessibleIds,
-    allEventIds,
     
     // Actions
+    fetchWeekSnapshot,
     fetchWeek,
-    addOptimisticSlot,
-    removeOptimisticSlot,
-    replaceOptimisticSlot,
+    reschedulePreview,
+    rescheduleConfirm,
+    markNoShow,
+    blockDayRange,
+    unblockRange,
     createEvent,
     deleteEvent,
     updateEvent,
-    getEventDetails,
     selectEvent,
-    bulkUpdateEvents,
-    handleEventCreated,
-    handleEventUpdated,
-    handleEventDeleted,
-    subscribeToAvailabilityUpdates,
     $reset,
   }
 })

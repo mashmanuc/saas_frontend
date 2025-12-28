@@ -71,30 +71,60 @@
     <!-- Empty availability state - show only if user hasn't set up availability at all -->
     <EmptyAvailabilityState v-else-if="!hasSetupAvailability" />
 
-    <!-- Calendar Board with Sidebar -->
-    <div v-else class="calendar-layout">
-      <CalendarBoard
-        class="calendar-layout__board"
-        :days="daysOrdered"
-        :cells="computedCells336"
-        :event-layouts="showEvents ? eventLayouts : []"
-        :timezone="weekMeta?.timezone ?? 'Europe/Kiev'"
-        :day-availability="availableMinutesByDay"
-        :availability-layouts="showAvailability ? availabilityLayouts : []"
-        :slots-by-id="accessibleById"
-        @cell-click="handleCellClick"
-        @event-click="handleEventClick"
-        @slot-click="handleSlotClick"
-        @slot-edit="handleSlotEdit"
-        @slot-delete="handleSlotDeleteInline"
-        @slot-block="handleSlotBlock"
-        @create-slot="handleCreateSlot"
-      />
-      <CalendarSidebar
-        :events="allEvents"
-        :selected-event-id="selectedEventId"
-        @event-click="handleEventClick"
-      />
+    <!-- Toggle Button -->
+    <div v-else class="calendar-toggle">
+      <button 
+        class="toggle-btn" 
+        :class="{ active: !showV055 }"
+        @click="showV055 = false"
+      >
+        Старий календар
+      </button>
+      <button 
+        class="toggle-btn" 
+        :class="{ active: showV055 }"
+        @click="showV055 = true"
+      >
+        Новий календар v0.55
+      </button>
+    </div>
+
+    <!-- OLD Calendar Board with Sidebar - Disabled for v0.55 -->
+    <div v-if="!showV055" class="calendar-layout">
+      <div class="p-4 text-center text-gray-500">
+        Старий календар тимчасово недоступний. Використовуйте новий календар v0.55.
+      </div>
+    </div>
+
+    <!-- NEW Calendar Board V2 -->
+    <div v-else class="calendar-v055-layout">
+      <CalendarHeaderV2 @open-quick-block="handleOpenQuickBlock" />
+
+      <div v-if="isLoadingV055" class="loading-state">
+        <LoaderIcon class="w-8 h-8 animate-spin text-blue-500" />
+        <p>{{ t('calendar.loading') }}</p>
+      </div>
+      <div v-else-if="errorV055" class="error-state">
+        <AlertCircleIcon class="w-8 h-8 text-red-500" />
+        <p>{{ errorV055 }}</p>
+        <button class="btn-secondary" @click="fetchV055Snapshot()">
+          {{ t('calendar.retry') }}
+        </button>
+      </div>
+      <template v-else>
+        <CalendarBoardV2 
+          :days="daysV055Computed"
+          :events="eventsV055Computed"
+          :accessible-slots="accessibleSlotsComputed"
+          :blocked-ranges="blockedRangesV055Computed"
+          :current-time="currentTimeV055"
+          :is-drag-enabled="true"
+          @event-click="handleEventClickV055"
+          @slot-click="handleSlotClick"
+          @drag-complete="handleDragComplete"
+        />
+        <CalendarFooter lesson-link="https://zoom.us/j/example" />
+      </template>
     </div>
 
     <!-- Modals -->
@@ -141,6 +171,14 @@
       @error="handleSlotBlockError"
     />
 
+    <LessonCardDrawer
+      v-if="selectedLessonV055"
+      v-model="showLessonDrawer"
+      :lesson="selectedLessonV055"
+      @mark-no-show="handleMarkNoShow"
+      @reschedule-confirmed="handleRescheduleConfirmed"
+    />
+
     <CalendarGuideModal
       v-if="showGuideModal"
       @close="showGuideModal = false"
@@ -149,7 +187,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { Loader as LoaderIcon, AlertCircle as AlertCircleIcon } from 'lucide-vue-next'
@@ -157,7 +195,13 @@ import { useCalendarWeekStore } from '@/modules/booking/stores/calendarWeekStore
 import { useCalendarWebSocket } from '@/modules/booking/composables/useCalendarWebSocket'
 import { useErrorHandler } from '@/modules/booking/composables/useErrorHandler'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/modules/auth/store/authStore'
 import CalendarBoard from './CalendarBoard.vue'
+import CalendarBoardV2 from './CalendarBoardV2.vue'
+import CalendarHeader from './CalendarHeader.vue'
+import CalendarHeaderV2 from './CalendarHeaderV2.vue'
+import CalendarFooter from './CalendarFooter.vue'
+import LessonCardDrawer from './LessonCardDrawer.vue'
 import CalendarSidebar from './CalendarSidebar.vue'
 import WeekNavigation from './WeekNavigation.vue'
 import EmptyAvailabilityState from './EmptyAvailabilityState.vue'
@@ -168,6 +212,7 @@ import SlotEditorModal from '../modals/SlotEditorModal.vue'
 import CreateSlotModal from '../availability/CreateSlotModal.vue'
 import BlockSlotModal from '../availability/BlockSlotModal.vue'
 import type { CalendarCell, AccessibleSlot } from '@/modules/booking/types/calendarWeek'
+import type { CalendarEvent as CalendarEventV055 } from '@/modules/booking/types/calendarV055'
 import '@/modules/booking/styles/calendar-theme.css'
 import '@/modules/booking/styles/calendar-layout.css'
 import '@/modules/booking/styles/calendar-animations.css'
@@ -177,30 +222,57 @@ import { useSlotEditor } from '@/modules/booking/composables/useSlotEditor'
 const { t } = useI18n()
 const router = useRouter()
 
+console.log('[CalendarWeekView] Script setup executing')
+
 const store = useCalendarWeekStore()
+const authStore = useAuthStore()
 const { connected, connectionAttempted, connect } = useCalendarWebSocket()
 const { handleError } = useErrorHandler()
+const showV055 = ref(true) // Toggle для показу нового календаря
+
+console.log('[CalendarWeekView] Stores initialized, authStore.user:', authStore.user)
 
 const {
   weekMeta,
   daysOrdered,
-  computedCells336,
-  eventLayouts,
-  availabilityLayouts,
   accessibleById,
   eventsById,
   isLoading,
   error,
-  totalAvailableHours,
-  totalAvailableMinutes,
-  availableMinutesByDay,
   allAccessibleIds,
   allEventIds,
+  // v0.55 data
+  days: daysV055,
+  events: eventsV055,
+  accessible: accessibleV055,
+  blockedRanges: blockedRangesV055,
+  daySummaries: daySummariesV055,
+  meta: metaV055,
 } = storeToRefs(store)
+
+const isLoadingV055 = isLoading
+const errorV055 = error
+
+const daysV055Computed = computed(() => daySummariesV055.value || [])
+const eventsV055Computed = computed(() => eventsV055.value || [])
+const accessibleSlotsComputed = computed(() => accessibleV055.value || [])
+const blockedRangesV055Computed = computed(() => blockedRangesV055.value || [])
+const currentTimeV055 = computed(() => metaV055.value?.currentTime || new Date().toISOString())
 
 const allEvents = computed(() => {
   return Object.values(eventsById.value)
 })
+
+const totalAvailableMinutes = computed(() => {
+  return accessible.value.reduce((sum, slot) => {
+    const start = new Date(slot.start)
+    const end = new Date(slot.end)
+    const duration = (end.getTime() - start.getTime()) / 60000
+    return sum + duration
+  }, 0)
+})
+
+const totalAvailableHours = computed(() => totalAvailableMinutes.value / 60)
 
 const hasAvailability = computed(() => {
   const minutes = totalAvailableMinutes.value || 0
@@ -212,8 +284,12 @@ const hasAvailability = computed(() => {
 })
 
 const hasSetupAvailability = computed(() => {
-  // Check if user has set up availability template
-  // This is a proxy check - if there are any events or slots, user has been active
+  // Always show calendar for v0.55 - let the backend determine if there's data
+  // For legacy, check if user has any activity
+  if (showV055.value) {
+    return true
+  }
+  
   const hasEvents = allEventIds.value.length > 0
   const hasSlots = allAccessibleIds.value.length > 0
   const hasMinutes = totalAvailableMinutes.value > 0
@@ -227,9 +303,10 @@ const hasSetupAvailability = computed(() => {
   })
   
   // If user has any events or slots, they've set up availability
-  // Even if no slots this week, show calendar (it will be empty)
-  return hasEvents || hasSlots || hasMinutes
+  return hasEvents || hasSlots || hasMinutes || true // Always show calendar
 })
+
+const accessible = computed(() => store.accessible)
 
 const emit = defineEmits<{
   cellClick: [cell: CalendarCell]
@@ -249,6 +326,8 @@ const selectedSlot = ref<AccessibleSlot | null>(null)
 const selectedSlotForBlock = ref<AccessibleSlot | null>(null)
 const createSlotData = ref<{ date: string; start: string; end: string } | null>(null)
 const showGuideModal = ref(false)
+const showLessonDrawer = ref(false)
+const selectedLessonV055 = ref<CalendarEventV055 | null>(null)
 
 // View filters
 const showEvents = ref(true)
@@ -267,13 +346,58 @@ function parseIsoDate(dateStr: string | undefined) {
   return Number.isNaN(parsed.valueOf()) ? null : parsed
 }
 
+const tutorId = computed(() => authStore.user?.id || null)
+
+const fetchV055Snapshot = async (weekStartOverride?: string) => {
+  if (!showV055.value) return
+  
+  const id = tutorId.value
+  if (!id) {
+    console.warn('[CalendarWeekView] No tutorId, skipping v055 fetch')
+    return
+  }
+  
+  const weekStart =
+    weekStartOverride ||
+    weekMeta.value?.weekStart ||
+    new Date().toISOString().slice(0, 10)
+    
+  console.log('[CalendarWeekView] Fetching v055 snapshot:', { tutorId: id, weekStart })
+  
+  try {
+    await store.fetchWeekSnapshot(id, weekStart)
+    console.log('[CalendarWeekView] v055 snapshot fetched successfully')
+  } catch (err: any) {
+    console.error('[CalendarWeekView] v055 fetch error:', err)
+    handleError(err)
+  }
+}
+
 onMounted(async () => {
   try {
     await store.fetchWeek(0)
+    
+    // Прямий виклик v055 snapshot після завантаження legacy
+    if (showV055.value && authStore.user?.id) {
+      const weekStart = weekMeta.value?.weekStart || new Date().toISOString().slice(0, 10)
+      console.log('[CalendarWeekView] Direct v055 fetch on mount:', authStore.user.id, weekStart)
+      await fetchV055Snapshot(weekStart)
+    }
   } catch (err: any) {
     handleError(err)
   }
 })
+
+// Watch для автоматичного fetch при зміні
+watch(
+  () => [tutorId.value, weekMeta.value?.weekStart, showV055.value] as const,
+  ([id, weekStart, show]) => {
+    if (show && id && weekStart) {
+      console.log('[CalendarWeekView] Watch triggered v055 fetch:', { id, weekStart })
+      fetchV055Snapshot(weekStart)
+    }
+  }
+)
 
 function handleNavigate(direction: -1 | 1) {
   const currentPage = weekMeta.value?.page ?? 0
@@ -329,12 +453,9 @@ function handleEventDeleted() {
   showEventModal.value = false
 }
 
-function handleSlotClick(slotId: number) {
-  const slot = accessibleById.value[slotId]
-  if (slot) {
-    selectedSlot.value = slot
-    showSlotModal.value = true
-  }
+function handleSlotClick(slot: any) {
+  selectedSlot.value = slot
+  showSlotModal.value = true
 }
 
 function handleSlotSaved() {
@@ -355,11 +476,9 @@ function handleSlotEdit(slotId: number) {
 
 async function handleSlotDeleteInline(slotId: number) {
   try {
-    // Optimistic update: remove slot immediately
-    store.removeOptimisticSlot(slotId)
-    
     await deleteSlot(slotId)
-    // No need to fetch week since optimistic update already shows the deletion
+    // Refetch to update the calendar
+    store.fetchWeek(weekMeta.value?.page ?? 0)
   } catch (error) {
     console.error('[CalendarWeekView] Failed to delete slot:', error)
     // If deletion failed, we need to refresh to restore the slot
@@ -406,6 +525,43 @@ function handleSlotBlockError(error: any) {
   console.error('[CalendarWeekView] Failed to block slot:', error)
   showBlockSlotModal.value = false
   selectedSlotForBlock.value = null
+}
+
+function handleEventClickV055(event: any) {
+  selectedLessonV055.value = event
+  showLessonDrawer.value = true
+}
+
+function handleDragComplete(eventId: number, newStart: string, newEnd: string) {
+  console.log('[CalendarWeekView] Drag complete:', { eventId, newStart, newEnd })
+  // TODO: Call reschedule API
+}
+
+function handleOpenQuickBlock() {
+  console.log('[CalendarWeekView] Open quick block modal')
+  // TODO: Open quick block modal
+}
+
+function handleMarkNoShow(eventId: number) {
+  console.log('[CalendarWeekView] Mark no-show:', eventId)
+  showLessonDrawer.value = false
+  // Refetch to update UI
+  if (showV055.value) {
+    fetchV055Snapshot()
+  } else {
+    store.fetchWeek(weekMeta.value?.page ?? 0)
+  }
+}
+
+function handleRescheduleConfirmed() {
+  console.log('[CalendarWeekView] Reschedule confirmed')
+  showLessonDrawer.value = false
+  // Refetch to update UI
+  if (showV055.value) {
+    fetchV055Snapshot()
+  } else {
+    store.fetchWeek(weekMeta.value?.page ?? 0)
+  }
 }
 
 function handleCreateSlotFromToolbar() {
@@ -613,5 +769,47 @@ function handleCreateSlotFromToolbar() {
 .calendar-cell--scrolled {
   box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.4);
   transition: box-shadow 0.3s ease;
+}
+
+.calendar-toggle {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  padding: 16px;
+  background: white;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.toggle-btn {
+  padding: 10px 20px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  background: white;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.toggle-btn:hover {
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+
+.toggle-btn.active {
+  border-color: #3b82f6;
+  background: #3b82f6;
+  color: white;
+}
+
+.calendar-v055-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
 }
 </style>

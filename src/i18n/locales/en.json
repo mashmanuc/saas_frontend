@@ -889,6 +889,7 @@
     "accept": "Accept",
     "decline": "Decline",
     "cancel": "Cancel",
+    "loading": "Loading...",
     "resend": "Resend",
     "close": "Close",
     "back": "Back",
@@ -903,7 +904,6 @@
     "minutesAgo": "{count} min ago",
     "hoursAgo": "{count}h ago",
     "daysAgo": "{count}d ago",
-    "loading": "Loading...",
     "open": "Open",
     "showing": "Showing",
     "of": "of",
@@ -2556,6 +2556,41 @@
     "warnings": {
       "disconnected": "No connection. Please check your network or refresh."
     },
+    "footer": {
+      "your_lesson_link": "Your lesson link",
+      "copy": "Copy",
+      "copied": "Copied!"
+    },
+    "no_show": {
+      "select_reason": "Select no-show reason",
+      "description": "Please specify why the student didn't show up for the lesson",
+      "comment_optional": "Comment (optional)",
+      "comment_placeholder": "Add additional information...",
+      "confirm": "Confirm",
+      "reasons": {
+        "student_absent": "Student didn't show up",
+        "student_late": "Student was more than 15 min late",
+        "technical_issues": "Technical issues",
+        "other": "Other reason"
+      }
+    },
+    "legend": {
+      "title": "Color legend",
+      "lesson": "Lessons",
+      "availability": "Availability",
+      "first_lesson": "First lesson",
+      "regular_lesson": "Regular lesson",
+      "no_show": "No-show",
+      "blocked_time": "Blocked time",
+      "past_time": "Past time"
+    },
+    "warnings": {
+      "disconnected": "Connection lost. Please check your network or refresh.",
+      "offline": "You are offline. Try again."
+    },
+    "errors": {
+      "unknown": "Something went wrong. Please try again later."
+    },
     "errors": {
       "blockFailed": "Failed to block slot",
       "loadFailed": "Failed to load calendar"
@@ -2571,6 +2606,12 @@
       "today": "Today",
       "showGuide": "Show guide",
       "backToCalendar": "Back to calendar"
+    },
+    "header": {
+      "reminder": "Keep your calendar up to date so students can book lessons.",
+      "mark_free_time": "Mark free time",
+      "color_legend": "Color legend",
+      "video_guide": "Video guide"
     },
     "guide": {
       "title": "Calendar guide",
