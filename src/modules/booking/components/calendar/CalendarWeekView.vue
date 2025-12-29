@@ -57,12 +57,20 @@
 
     <!-- NEW Calendar Board V2 -->
     <div class="calendar-v055-layout">
-      <!-- Week Switcher -->
-      <WeekSwitcher
+      <!-- Week Navigation -->
+      <WeekNavigation
         :week-start="weekStartForNav"
         :week-end="weekEndForNav"
-        :loading="isLoadingV055"
-        @change="handleWeekChange"
+        :current-page="currentPageForNav"
+        :is-loading="isLoadingV055"
+        :total-available-hours="totalAvailableHours"
+        :has-availability="hasAvailability"
+        @navigate="handleNavigate"
+        @today="handleToday"
+        @scroll-first-available="handleScrollToFirstAvailable"
+        @open-availability="handleSetupAvailability"
+        @create-slot="handleCreateSlotFromToolbar"
+        @show-guide="showGuideModal = true"
       />
 
       <div v-if="isLoadingV055" class="loading-state">
@@ -78,6 +86,7 @@
       </div>
       <template v-else>
         <CalendarBoardV2 
+          :key="weekStartForNav"
           :days="daysV055Computed"
           :events="eventsV055Computed"
           :accessible-slots="accessibleSlotsComputed"
@@ -172,7 +181,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import CalendarBoardV2 from './CalendarBoardV2.vue'
 import CalendarFooter from './CalendarFooter.vue'
-import WeekSwitcher from './WeekSwitcher.vue'
+import WeekNavigation from './WeekNavigation.vue'
 import LessonCardDrawer from './LessonCardDrawer.vue'
 import CalendarSidebar from './CalendarSidebar.vue'
 import EmptyAvailabilityState from './EmptyAvailabilityState.vue'
@@ -193,15 +202,11 @@ import { useSlotEditor } from '@/modules/booking/composables/useSlotEditor'
 const { t } = useI18n()
 const router = useRouter()
 
-console.log('[CalendarWeekView] Script setup executing')
-
 const store = useCalendarWeekStore()
 const authStore = useAuthStore()
 const { connected, connectionAttempted, connect } = useCalendarWebSocket()
 const { handleError } = useErrorHandler()
-const showV055 = ref(true) // Toggle для показу нового календаря
-
-console.log('[CalendarWeekView] Stores initialized, authStore.user:', authStore.user)
+const showV055 = ref(true)
 
 const {
   weekMeta,
@@ -296,16 +301,7 @@ const hasSetupAvailability = computed(() => {
   const hasSlots = allAccessibleIds.value.length > 0
   const hasMinutes = totalAvailableMinutes.value > 0
   
-  console.log('[CalendarWeekView] hasSetupAvailability check:', {
-    hasEvents,
-    hasSlots,
-    hasMinutes,
-    allEventIds: allEventIds.value.length,
-    weekMeta: weekMeta.value
-  })
-  
-  // If user has any events or slots, they've set up availability
-  return hasEvents || hasSlots || hasMinutes || true // Always show calendar
+  return hasEvents || hasSlots || hasMinutes
 })
 
 const accessible = computed(() => store.accessible)
@@ -351,47 +347,28 @@ function parseIsoDate(dateStr: string | undefined) {
 const tutorId = computed(() => authStore.user?.id || null)
 
 const fetchV055Snapshot = async (weekStartOverride?: string) => {
-  console.log('[CalendarWeekView] fetchV055Snapshot called', {
-    weekStartOverride,
-    showV055: showV055.value,
-    tutorId: tutorId.value
-  })
-  
-  if (!showV055.value) {
-    console.warn('[CalendarWeekView] showV055 is false, skipping fetch')
-    return
-  }
+  if (!showV055.value) return
   
   const id = tutorId.value
-  if (!id) {
-    console.warn('[CalendarWeekView] No tutorId, skipping v055 fetch')
-    return
-  }
+  if (!id) return
   
   const weekStart =
     weekStartOverride ||
     metaV055.value?.weekStart ||
     new Date().toISOString().slice(0, 10)
-    
-  console.log('[CalendarWeekView] Fetching v055 snapshot:', { tutorId: id, weekStart })
   
   try {
     await store.fetchWeekSnapshot(id, weekStart)
-    console.log('[CalendarWeekView] v055 snapshot fetched successfully')
   } catch (err: any) {
-    console.error('[CalendarWeekView] v055 fetch error:', err)
     handleError(err)
   }
 }
 
 onMounted(async () => {
   try {
-    await store.fetchWeek(0)
-    
-    // Прямий виклик v055 snapshot після завантаження legacy
+    // Use v055 API only
     if (showV055.value && authStore.user?.id) {
-      const weekStart = weekMeta.value?.weekStart || new Date().toISOString().slice(0, 10)
-      console.log('[CalendarWeekView] Direct v055 fetch on mount:', authStore.user.id, weekStart)
+      const weekStart = new Date().toISOString().slice(0, 10)
       await fetchV055Snapshot(weekStart)
     }
   } catch (err: any) {
@@ -399,20 +376,24 @@ onMounted(async () => {
   }
 })
 
-// Watch для автоматичного fetch при зміні
-watch(
-  () => [tutorId.value, weekMeta.value?.weekStart, showV055.value] as const,
-  ([id, weekStart, show]) => {
-    if (show && id && weekStart) {
-      console.log('[CalendarWeekView] Watch triggered v055 fetch:', { id, weekStart })
-      fetchV055Snapshot(weekStart)
-    }
-  }
-)
+function handleNavigate(direction: -1 | 1) {
+  if (isLoadingV055.value) return
+  const base = weekStartForNav.value || new Date().toISOString().slice(0, 10)
+  const nextWeekStart = dayjs(base).add(direction, 'week').format('YYYY-MM-DD')
+  fetchV055Snapshot(nextWeekStart)
+}
 
-function handleWeekChange(newWeekStart: string) {
-  console.log('[CalendarWeekView] handleWeekChange called', { newWeekStart })
-  fetchV055Snapshot(newWeekStart)
+function handleToday() {
+  if (isLoadingV055.value) return
+  const todayStart = todayWeekStartComputed.value
+  const currentWeek = weekStartForNav.value
+  
+  // Only fetch if we're not already on today's week
+  if (currentWeek === todayStart) {
+    return
+  }
+  
+  fetchV055Snapshot(todayStart)
 }
 
 function handleRetry() {
@@ -437,7 +418,6 @@ function handleReconnect() {
 }
 
 function handleCellClick(data: { date: string; hour: number }) {
-  console.log('[CalendarWeekView] Cell clicked:', data)
   // Open create lesson modal with pre-filled date and time
   selectedCell.value = {
     date: data.date,
@@ -466,10 +446,8 @@ function handleEventDeleted() {
 }
 
 function handleSlotClick(slot: any) {
-  console.log('[CalendarWeekView] handleSlotClick called with:', slot)
   selectedSlot.value = slot
   showSlotModal.value = true
-  console.log('[CalendarWeekView] showSlotModal set to:', showSlotModal.value, 'selectedSlot:', selectedSlot.value)
 }
 
 function handleSlotSaved() {
@@ -547,12 +525,10 @@ function handleEventClickV055(event: any) {
 }
 
 function handleDragComplete(eventId: number, newStart: string, newEnd: string) {
-  console.log('[CalendarWeekView] Drag complete:', { eventId, newStart, newEnd })
   // TODO: Call reschedule API
 }
 
 function handleOpenQuickBlock() {
-  console.log('[CalendarWeekView] Open quick block modal')
   showCreateSlotModal.value = true
   createSlotData.value = {
     date: weekMeta.value?.weekStart || new Date().toISOString().split('T')[0],
@@ -562,7 +538,6 @@ function handleOpenQuickBlock() {
 }
 
 function handleMarkNoShow(eventId: number) {
-  console.log('[CalendarWeekView] Mark no-show:', eventId)
   showLessonDrawer.value = false
   // Refetch to update UI
   if (showV055.value) {
@@ -573,7 +548,6 @@ function handleMarkNoShow(eventId: number) {
 }
 
 function handleRescheduleConfirmed() {
-  console.log('[CalendarWeekView] Reschedule confirmed')
   showLessonDrawer.value = false
   // Refetch to update UI
   if (showV055.value) {

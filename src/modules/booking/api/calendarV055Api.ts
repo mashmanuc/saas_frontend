@@ -28,7 +28,7 @@ import type {
 export const calendarV055Api = {
   /**
    * Get calendar week snapshot (v0.55 format)
-   * CONTRACT: GET /v1/calendar/week/ with tutor_id, week_start
+   * CONTRACT: GET /v1/calendar/week/v055/ with tutor_id, week_start
    */
   async getCalendarWeek(
     tutorId: number,
@@ -42,22 +42,22 @@ export const calendarV055Api = {
 
     try {
       const response = await api.get('/v1/calendar/week/', {
-        params: { tutor_id: tutorId, week_start: weekStart },
+        params: { 
+          tutorId,
+          weekStart
+        },
         headers,
-      })
-      return response.data
+      }) as CalendarSnapshot
+      
+      if (!response) {
+        throw new Error('API returned empty response')
+      }
+      
+      return response
     } catch (error) {
-      console.warn('[calendarV055Api] Falling back to legacy snapshot:', error)
-      const legacy = await calendarWeekApi.getWeekSnapshot({
-        page: 0,
-        timezone: 'Europe/Kiev',
-        includePayments: true,
-        includeStats: true,
-      })
-      return transformLegacySnapshot(legacy.data, tutorId)
+      throw error
     }
   },
-
   /**
    * Preview reschedule (check conflicts)
    */

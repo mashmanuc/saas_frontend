@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Debug Tool</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1e1e1e; color: #d4d4d4; }
+        button { padding: 10px 20px; margin: 5px; font-size: 16px; cursor: pointer; }
+        pre { background: #252526; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        .error { color: #f48771; }
+        .success { color: #4ec9b0; }
+        input { padding: 8px; width: 300px; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Calendar API Debug Tool</h1>
+    
+    <div>
+        <label>Tutor ID: <input type="number" id="tutorId" value="79"></label><br>
+        <label>Week Start: <input type="date" id="weekStart" value="2026-01-12"></label><br>
+        <button onclick="testAPI()">Test API Call</button>
+        <button onclick="clearResults()">Clear</button>
+    </div>
+    
+    <h2>Results:</h2>
+    <div id="results"></div>
+    
+    <script>
+        async function testAPI() {
+            const tutorId = document.getElementById('tutorId').value;
+            const weekStart = document.getElementById('weekStart').value;
+            const resultsDiv = document.getElementById('results');
+            
+            resultsDiv.innerHTML = '<p>Loading...</p>';
+            
+            try {
+                const url = `http://127.0.0.1:8000/api/v1/calendar/week/?tutorId=${tutorId}&weekStart=${weekStart}`;
+                
+                resultsDiv.innerHTML += `<p class="success">📡 Calling: ${url}</p>`;
+                
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('access_token')
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                resultsDiv.innerHTML += `<h3 class="success">✅ Response received</h3>`;
+                
+                // Show meta
+                resultsDiv.innerHTML += `<h4>Meta:</h4>`;
+                resultsDiv.innerHTML += `<pre>${JSON.stringify(data.meta, null, 2)}</pre>`;
+                
+                // Show days with details
+                resultsDiv.innerHTML += `<h4>Days (${data.days?.length || 0}):</h4>`;
+                if (data.days && data.days.length > 0) {
+                    data.days.forEach((day, i) => {
+                        resultsDiv.innerHTML += `<pre>Day ${i}: ${JSON.stringify(day, null, 2)}</pre>`;
+                    });
+                } else {
+                    resultsDiv.innerHTML += `<p class="error">❌ No days in response!</p>`;
+                }
+                
+                // Show full response
+                resultsDiv.innerHTML += `<h4>Full Response:</h4>`;
+                resultsDiv.innerHTML += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                
+            } catch (error) {
+                resultsDiv.innerHTML += `<p class="error">❌ Error: ${error.message}</p>`;
+                console.error('API Error:', error);
+            }
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+        
+        // Auto-load token from main app if available
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'AUTH_TOKEN') {
+                localStorage.setItem('access_token', event.data.token);
+            }
+        });
+    </script>
+</body>
+</html>

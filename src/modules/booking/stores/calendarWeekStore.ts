@@ -6,7 +6,7 @@
  */
 
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, triggerRef } from 'vue'
 import dayjs from 'dayjs'
 
 import { calendarV055Api } from '../api/calendarV055Api'
@@ -259,34 +259,28 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     error.value = null
     
     try {
-      const previousMeta = meta.value
-      const etagValue =
-        previousMeta && previousMeta.weekStart === weekStart ? previousMeta.etag : undefined
-
-      console.log('[calendarWeekStore] Starting fetch for:', {
-        tutorId,
-        weekStart,
-        hasEtag: Boolean(etagValue),
-      })
-      const response = await calendarV055Api.getCalendarWeek(tutorId, weekStart, etagValue)
+      const response = await calendarV055Api.getCalendarWeek(tutorId, weekStart)
       
-      console.log('[calendarWeekStore] API response received:', {
-        hasResponse: !!response,
-        responseType: typeof response,
-        responseKeys: response ? Object.keys(response) : [],
-        hasDays: !!response?.days,
-        daysType: typeof response?.days,
-        daysLength: Array.isArray(response?.days) ? response.days.length : 'not array'
-      })
+      if (!response) {
+        throw new Error('Backend returned null/undefined response')
+      }
       
-      // Backend may return legacy-like envelope with `week` + per-day dictionaries.
-      // Guarantee arrays for layers and guarantee SnapshotMeta for currentTime/weekStart.
-      const metaFromWeek = normalizeMetaFromWeek(tutorId, (response as any).week, weekStart)
+      // Backend returns v0.55 format with direct meta object
+      // Normalize meta from response.meta (not response.week)
+      const metaFromResponse = (response as any).meta || {}
+      const normalizedMeta: SnapshotMeta = {
+        tutorId: metaFromResponse.tutorId || tutorId,
+        weekStart: metaFromResponse.weekStart || weekStart,
+        weekEnd: metaFromResponse.weekEnd || dayjs(weekStart).add(6, 'day').format('YYYY-MM-DD'),
+        timezone: metaFromResponse.timezone || 'Europe/Kiev',
+        currentTime: metaFromResponse.generatedAt || metaFromResponse.currentTime || new Date().toISOString(),
+        etag: metaFromResponse.etag || ''
+      }
 
       const normalizedSnapshot: CalendarSnapshot = {
         ...(response as any),
-        meta: metaFromWeek,
-        days: normalizeDays((response as any).days, metaFromWeek),
+        meta: normalizedMeta,
+        days: normalizeDays((response as any).days, normalizedMeta),
         events: flattenValues<CalendarEventV055>((response as any).events),
         accessible: flattenValues<AccessibleSlotV055>((response as any).accessible),
         blockedRanges: flattenValues<BlockedRange>((response as any).blockedRanges),
@@ -299,29 +293,14 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
 
       const orders = flattenValues<Order>((response as any).orders)
 
-      console.log('[calendarWeekStore] Normalized snapshot:', {
-        daysCount: normalizedSnapshot.days.length,
-        eventsCount: normalizedSnapshot.events.length,
-        accessibleCount: normalizedSnapshot.accessible.length,
-        accessibleSample: normalizedSnapshot.accessible[0],
-        blockedRangesCount: normalizedSnapshot.blockedRanges.length
-      })
-
       snapshot.value = normalizedSnapshot
+      
       syncAccessibleIndexes(normalizedSnapshot.accessible)
       syncOrders(orders)
       currentTutorId.value = tutorId
-      currentWeekStart.value = metaFromWeek.weekStart || weekStart
-      
-      console.log('[calendarWeekStore] Snapshot fetched:', {
-        days: normalizedSnapshot.days.length,
-        events: normalizedSnapshot.events.length,
-        accessible: normalizedSnapshot.accessible.length,
-        blockedRanges: normalizedSnapshot.blockedRanges.length
-      })
+      currentWeekStart.value = normalizedMeta.weekStart || weekStart
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to fetch snapshot'
-      console.error('[calendarWeekStore] Fetch error:', err)
       throw err
     } finally {
       isLoading.value = false
@@ -347,15 +326,12 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
       })
       
       if (result.cached) {
-        console.log('[calendarWeekStore] Using cached snapshot (304)')
         isLoading.value = false
         return
       }
       
       etag.value = result.etag
       normalizeLegacySnapshot(result.data)
-      
-      console.log('[calendarWeekStore] Legacy week loaded')
     } catch (err: any) {
       error.value = err.message || 'Failed to load week'
       console.error('[calendarWeekStore] Load error:', err)
