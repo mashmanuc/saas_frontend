@@ -9,8 +9,16 @@ export function useCalendarWebSocket() {
   const connectionAttempted = ref(false)
   const store = useCalendarWeekStore()
   const authStore = useAuthStore()
+  const realtimeEnabled = import.meta.env.VITE_CALENDAR_REALTIME_ENABLED !== 'false'
 
   const connect = async () => {
+    if (!realtimeEnabled) {
+      // Realtime для календаря вимкнено конфігом — не показуємо банер і не стартуємо WS
+      connected.value = true
+      connectionAttempted.value = false
+      return
+    }
+
     if (!authStore.access) {
       console.warn('[useCalendarWebSocket] No auth token')
       return

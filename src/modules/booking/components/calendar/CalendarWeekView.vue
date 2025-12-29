@@ -57,20 +57,12 @@
 
     <!-- NEW Calendar Board V2 -->
     <div class="calendar-v055-layout">
-      <CalendarHeaderV2
+      <!-- Week Switcher -->
+      <WeekSwitcher
         :week-start="weekStartForNav"
         :week-end="weekEndForNav"
-        :current-page="0"
-        :is-week-loading="isLoadingV055"
-        :total-available-hours="totalAvailableHours"
-        :has-availability="hasAvailability"
-        @open-quick-block="handleOpenQuickBlock"
-        @navigate="handleNavigate"
-        @today="handleToday"
-        @scroll-first-available="handleScrollToFirstAvailable"
-        @open-availability="handleSetupAvailability"
-        @create-slot="handleCreateSlotFromToolbar"
-        @show-guide="showGuideModal = true"
+        :loading="isLoadingV055"
+        @change="handleWeekChange"
       />
 
       <div v-if="isLoadingV055" class="loading-state">
@@ -89,7 +81,7 @@
           :days="daysV055Computed"
           :events="eventsV055Computed"
           :accessible-slots="accessibleSlotsComputed"
-          :timezone="weekMeta?.timezone || 'UTC'"
+          :timezone="metaV055?.timezone || 'UTC'"
           :blocked-ranges="blockedRangesV055Computed"
           :current-time="currentTimeV055"
           :is-drag-enabled="dragEnabled"
@@ -165,18 +157,22 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
-import { Loader as LoaderIcon, AlertCircle as AlertCircleIcon } from 'lucide-vue-next'
+import { Loader as LoaderIcon, AlertCircle as AlertCircleIcon, ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon } from 'lucide-vue-next'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
+
+dayjs.extend(utc)
+dayjs.extend(timezone)
+
 import { useCalendarWeekStore } from '@/modules/booking/stores/calendarWeekStore'
 import { useCalendarWebSocket } from '@/modules/booking/composables/useCalendarWebSocket'
 import { useErrorHandler } from '@/modules/booking/composables/useErrorHandler'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import CalendarBoardV2 from './CalendarBoardV2.vue'
-import CalendarHeaderV2 from './CalendarHeaderV2.vue'
 import CalendarFooter from './CalendarFooter.vue'
+import WeekSwitcher from './WeekSwitcher.vue'
 import LessonCardDrawer from './LessonCardDrawer.vue'
 import CalendarSidebar from './CalendarSidebar.vue'
 import EmptyAvailabilityState from './EmptyAvailabilityState.vue'
@@ -234,8 +230,36 @@ const accessibleSlotsComputed = computed(() => accessibleV055.value || [])
 const blockedRangesV055Computed = computed(() => blockedRangesV055.value || [])
 const currentTimeV055 = computed(() => metaV055.value?.currentTime || new Date().toISOString())
 const dragEnabled = computed(() => true)
-const weekStartForNav = computed(() => metaV055.value?.weekStart || weekMeta.value?.weekStart || new Date().toISOString().slice(0, 10))
-const weekEndForNav = computed(() => metaV055.value?.weekEnd || weekMeta.value?.weekEnd || dayjs(weekStartForNav.value).add(6, 'day').format('YYYY-MM-DD'))
+const timezoneForNav = computed(() => metaV055.value?.timezone || weekMeta.value?.timezone || 'Europe/Kiev')
+const weekStartForNav = computed(
+  () => metaV055.value?.weekStart || weekMeta.value?.weekStart || new Date().toISOString().slice(0, 10)
+)
+const weekEndForNav = computed(
+  () => metaV055.value?.weekEnd || weekMeta.value?.weekEnd || ''
+)
+
+const todayWeekStartComputed = computed(() => {
+  const tz = timezoneForNav.value
+  return dayjs().tz(tz).startOf('week').format('YYYY-MM-DD')
+})
+
+const currentPageForNav = computed(() => {
+  const currentWeek = weekStartForNav.value
+  const todayWeek = todayWeekStartComputed.value
+  if (!currentWeek || !todayWeek) return 0
+  return dayjs(currentWeek).diff(dayjs(todayWeek), 'week')
+})
+
+const weekRangeDisplay = computed(() => {
+  const start = weekStartForNav.value
+  const end = weekEndForNav.value
+  if (!start || !end) return ''
+  
+  const startDate = new Date(start)
+  const endDate = new Date(end)
+  
+  return `${startDate.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })} - ${endDate.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short', year: 'numeric' })}`
+})
 
 const allEvents = computed(() => {
   return Object.values(eventsById.value)
@@ -327,7 +351,16 @@ function parseIsoDate(dateStr: string | undefined) {
 const tutorId = computed(() => authStore.user?.id || null)
 
 const fetchV055Snapshot = async (weekStartOverride?: string) => {
-  if (!showV055.value) return
+  console.log('[CalendarWeekView] fetchV055Snapshot called', {
+    weekStartOverride,
+    showV055: showV055.value,
+    tutorId: tutorId.value
+  })
+  
+  if (!showV055.value) {
+    console.warn('[CalendarWeekView] showV055 is false, skipping fetch')
+    return
+  }
   
   const id = tutorId.value
   if (!id) {
@@ -377,15 +410,9 @@ watch(
   }
 )
 
-function handleNavigate(direction: -1 | 1) {
-  const base = weekStartForNav.value || new Date().toISOString().slice(0, 10)
-  const nextWeekStart = dayjs(base).add(direction, 'week').format('YYYY-MM-DD')
-  fetchV055Snapshot(nextWeekStart)
-}
-
-function handleToday() {
-  const todayWeekStart = dayjs().tz(metaV055.value?.timezone || weekMeta.value?.timezone || 'UTC').startOf('week').add(1, 'day').format('YYYY-MM-DD')
-  fetchV055Snapshot(todayWeekStart)
+function handleWeekChange(newWeekStart: string) {
+  console.log('[CalendarWeekView] handleWeekChange called', { newWeekStart })
+  fetchV055Snapshot(newWeekStart)
 }
 
 function handleRetry() {
@@ -671,6 +698,73 @@ function handleCreateSlotFromToolbar() {
   gap: 16px;
   padding: 48px;
   text-align: center;
+}
+
+.calendar-header-inline {
+  background: white;
+  padding: 16px 24px;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 16px;
+}
+
+.week-nav-inline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.nav-btn-inline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #f3f4f6;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.nav-btn-inline:hover:not(:disabled) {
+  background: #e5e7eb;
+  transform: scale(1.05);
+}
+
+.nav-btn-inline:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.week-info-inline {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 200px;
+}
+
+.week-range-inline {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.today-btn-inline {
+  padding: 4px 12px;
+  border-radius: 9999px;
+  background: #dbeafe;
+  color: #1e40af;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.today-btn-inline:hover {
+  background: #bfdbfe;
 }
 
 .btn-secondary {

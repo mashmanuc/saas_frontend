@@ -7,6 +7,8 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import dayjs from 'dayjs'
+
 import { calendarV055Api } from '../api/calendarV055Api'
 import { calendarWeekApi } from '../api/calendarWeekApi'
 import type {
@@ -206,12 +208,25 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     }
   }
 
-  function normalizeMetaFromWeek(tutorId: number, weekRaw?: Record<string, any> | null): SnapshotMeta {
+  function normalizeMetaFromWeek(
+    tutorId: number,
+    weekRaw?: Record<string, any> | null,
+    requestedWeekStart?: string
+  ): SnapshotMeta {
     const week = (weekRaw || {}) as Record<string, any>
+    const resolvedWeekStart = extractDatePart(
+      week.weekStart ?? week.week_start ?? requestedWeekStart ?? ''
+    )
+
+    let resolvedWeekEnd = extractDatePart(week.weekEnd ?? week.week_end ?? '')
+    if (!resolvedWeekEnd && resolvedWeekStart) {
+      resolvedWeekEnd = dayjs(resolvedWeekStart).add(6, 'day').format('YYYY-MM-DD')
+    }
+
     return {
       tutorId,
-      weekStart: extractDatePart(week.weekStart ?? week.week_start ?? ''),
-      weekEnd: extractDatePart(week.weekEnd ?? week.week_end ?? ''),
+      weekStart: resolvedWeekStart,
+      weekEnd: resolvedWeekEnd,
       timezone: week.timezone ?? week.time_zone ?? 'Europe/Kiev',
       currentTime: week.currentTime ?? week.current_time ?? new Date().toISOString(),
       etag: week.etag ?? '',
@@ -244,8 +259,15 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     error.value = null
     
     try {
-      console.log('[calendarWeekStore] Starting fetch for:', { tutorId, weekStart })
-      const etagValue = meta.value?.etag
+      const previousMeta = meta.value
+      const etagValue =
+        previousMeta && previousMeta.weekStart === weekStart ? previousMeta.etag : undefined
+
+      console.log('[calendarWeekStore] Starting fetch for:', {
+        tutorId,
+        weekStart,
+        hasEtag: Boolean(etagValue),
+      })
       const response = await calendarV055Api.getCalendarWeek(tutorId, weekStart, etagValue)
       
       console.log('[calendarWeekStore] API response received:', {
@@ -259,7 +281,7 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
       
       // Backend may return legacy-like envelope with `week` + per-day dictionaries.
       // Guarantee arrays for layers and guarantee SnapshotMeta for currentTime/weekStart.
-      const metaFromWeek = normalizeMetaFromWeek(tutorId, (response as any).week)
+      const metaFromWeek = normalizeMetaFromWeek(tutorId, (response as any).week, weekStart)
 
       const normalizedSnapshot: CalendarSnapshot = {
         ...(response as any),
@@ -289,7 +311,7 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
       syncAccessibleIndexes(normalizedSnapshot.accessible)
       syncOrders(orders)
       currentTutorId.value = tutorId
-      currentWeekStart.value = weekStart
+      currentWeekStart.value = metaFromWeek.weekStart || weekStart
       
       console.log('[calendarWeekStore] Snapshot fetched:', {
         days: normalizedSnapshot.days.length,

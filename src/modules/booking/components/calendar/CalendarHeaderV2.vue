@@ -32,19 +32,13 @@
     </div>
 
     <div class="week-navigation-wrapper">
-      <WeekNavigation
+      <WeekNavigationSimple
         :week-start="weekStart"
         :week-end="weekEnd"
         :current-page="currentPage"
         :is-loading="isWeekLoading"
-        :total-available-hours="totalAvailableHours"
-        :has-availability="hasAvailability"
-        @navigate="direction => emit('navigate', direction)"
-        @today="emit('today')"
-        @scroll-first-available="emit('scroll-first-available')"
-        @open-availability="emit('open-availability')"
-        @create-slot="emit('create-slot')"
-        @show-guide="emit('show-guide')"
+        @navigate="handleNavigate"
+        @today="handleToday"
       />
     </div>
     
@@ -53,41 +47,38 @@
 </template>
 
 <script setup lang="ts">
-import { ref, toRefs } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ColorLegendModal from './ColorLegendModal.vue'
-import WeekNavigation from './WeekNavigation.vue'
+import WeekNavigationSimple from './WeekNavigationSimple.vue'
 
 const props = defineProps<{
   weekStart?: string
   weekEnd?: string
   currentPage: number
   isWeekLoading: boolean
-  totalAvailableHours?: number | null
-  hasAvailability?: boolean
 }>()
 
 const emit = defineEmits<{
   'open-quick-block': []
   navigate: [direction: -1 | 1]
   today: []
-  'scroll-first-available': []
-  'open-availability': []
-  'create-slot': []
-  'show-guide': []
 }>()
 
 const { t } = useI18n()
 const showLegend = ref(false)
 
-const {
-  weekStart,
-  weekEnd,
-  currentPage,
-  isWeekLoading,
-  totalAvailableHours,
-  hasAvailability,
-} = toRefs(props)
+function handleNavigate(direction: -1 | 1) {
+  console.log('[CalendarHeaderV2] handleNavigate called', { direction })
+  emit('navigate', direction)
+  console.log('[CalendarHeaderV2] navigate event emitted')
+}
+
+function handleToday() {
+  console.log('[CalendarHeaderV2] handleToday called')
+  emit('today')
+  console.log('[CalendarHeaderV2] today event emitted')
+}
 </script>
 
 <style scoped>
