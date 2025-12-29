@@ -590,6 +590,10 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     await fetchWeek(currentPage.value, currentTimezone.value)
   }
   
+  async function getEventDetails(id: number) {
+    return await calendarWeekApi.getEventDetails(id)
+  }
+  
   function selectEvent(id: number | null) {
     selectedEventId.value = id
   }
@@ -669,6 +673,7 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     createEvent,
     deleteEvent,
     updateEvent,
+    getEventDetails,
     selectEvent,
     $reset,
   }

@@ -191,9 +191,14 @@ export const calendarWeekApi = {
   async getEventDetails(id: number): Promise<EventDetailsResponse> {
     console.log('[calendarWeekApi] Fetching event details:', id)
     
-    const response = await api.get<EventDetailsResponse>(`/v1/calendar/event/${id}/`) as unknown as EventDetailsResponse
+    const response = await api.get<any>(`/v1/calendar/event/${id}/`)
     
-    return response
+    // Backend повертає { status: 'success', data: { event, dictionaries } }
+    if (response.data) {
+      return response.data as EventDetailsResponse
+    }
+    
+    return response as unknown as EventDetailsResponse
   },
 
   /**

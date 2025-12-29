@@ -96,8 +96,8 @@
             class="field-select"
           >
             <option value="single">{{ $t('calendar.regularity.single') }}</option>
-            <option value="once_a_week">{{ $t('calendar.regularity.onceAWeek') }}</option>
-            <option value="twice_a_week">{{ $t('calendar.regularity.twiceAWeek') }}</option>
+            <option value="once_a_week">{{ $t('calendar.regularity.once_a_week') }}</option>
+            <option value="twice_a_week">{{ $t('calendar.regularity.twice_a_week') }}</option>
           </select>
         </div>
 

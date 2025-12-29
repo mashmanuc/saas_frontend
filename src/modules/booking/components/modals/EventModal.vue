@@ -26,39 +26,83 @@
 
         <!-- Edit Mode -->
         <div v-else class="edit-form">
+          <!-- Учень (readonly) -->
           <div class="form-field">
-            <label for="edit-start" class="field-label">
-              {{ $t('calendar.eventModal.editTime') }}
-            </label>
+            <label class="field-label">{{ $t('calendar.createLesson.student') }}</label>
+            <div class="field-readonly">{{ eventDetails.event.clientName }}</div>
+          </div>
+
+          <!-- Заявка (readonly) -->
+          <div class="form-field">
+            <label class="field-label">{{ $t('calendar.eventModal.order') }}</label>
+            <div class="field-readonly">№ {{ eventDetails.event.orderId }}</div>
+          </div>
+
+          <!-- Дата -->
+          <div class="form-field">
+            <label for="edit-date" class="field-label">{{ $t('calendar.eventModal.date') }}</label>
             <input
-              id="edit-start"
-              v-model="editForm.start"
-              type="datetime-local"
+              id="edit-date"
+              v-model="editForm.date"
+              type="date"
               class="field-input"
             />
           </div>
 
+          <!-- Початок (час з dropdown) -->
           <div class="form-field">
-            <label class="field-label">
-              {{ $t('calendar.createLesson.duration') }}
-            </label>
-            <div class="duration-buttons">
-              <button
-                v-for="duration in availableDurations"
-                :key="duration"
-                type="button"
-                :class="['duration-btn', { active: editForm.durationMin === duration }]"
-                @click="editForm.durationMin = duration"
-              >
-                {{ duration }} {{ $t('common.minutes') }}
-              </button>
+            <label for="edit-time" class="field-label">{{ $t('calendar.eventModal.startTime') }}</label>
+            <div class="time-picker">
+              <select v-model="editForm.hours" class="field-select time-select">
+                <option v-for="h in 24" :key="h-1" :value="String(h-1).padStart(2, '0')">
+                  {{ String(h-1).padStart(2, '0') }}
+                </option>
+              </select>
+              <span class="time-separator">:</span>
+              <select v-model="editForm.minutes" class="field-select time-select">
+                <option value="00">00</option>
+                <option value="05">05</option>
+                <option value="10">10</option>
+                <option value="15">15</option>
+                <option value="20">20</option>
+                <option value="25">25</option>
+                <option value="30">30</option>
+                <option value="35">35</option>
+                <option value="40">40</option>
+                <option value="45">45</option>
+                <option value="50">50</option>
+                <option value="55">55</option>
+              </select>
             </div>
           </div>
 
+          <!-- Тривалість -->
           <div class="form-field">
-            <label for="edit-comment" class="field-label">
-              {{ $t('calendar.createLesson.comment') }}
-            </label>
+            <label class="field-label">{{ $t('calendar.createLesson.duration') }}</label>
+            <select v-model="editForm.durationMin" class="field-select">
+              <option :value="30">30 {{ $t('common.minutes') }}</option>
+              <option :value="60">60 {{ $t('common.minutes') }}</option>
+              <option :value="90">90 {{ $t('common.minutes') }}</option>
+            </select>
+          </div>
+
+          <!-- Повторюваність -->
+          <div class="form-field">
+            <label for="edit-regularity" class="field-label">{{ $t('calendar.createLesson.regularity') }}</label>
+            <select
+              id="edit-regularity"
+              v-model="editForm.regularity"
+              class="field-select"
+            >
+              <option value="single">{{ $t('calendar.regularity.single') }}</option>
+              <option value="once_a_week">{{ $t('calendar.regularity.once_a_week') }}</option>
+              <option value="twice_a_week">{{ $t('calendar.regularity.twice_a_week') }}</option>
+            </select>
+          </div>
+
+          <!-- Коментар -->
+          <div class="form-field">
+            <label for="edit-comment" class="field-label">{{ $t('calendar.createLesson.comment') }}</label>
             <textarea
               id="edit-comment"
               v-model="editForm.tutorComment"
@@ -185,12 +229,18 @@ const error = ref<string | null>(null)
 const showConfirmDelete = ref(false)
 
 const editForm = ref<{
-  start: string
+  date: string
+  hours: string
+  minutes: string
   durationMin: number
+  regularity: string
   tutorComment: string
 }>({
-  start: '',
+  date: '',
+  hours: '19',
+  minutes: '00',
   durationMin: 60,
+  regularity: 'single',
   tutorComment: '',
 })
 
@@ -225,6 +275,7 @@ const availableDurations = computed(() => {
 })
 
 watch(() => props.visible, async (visible) => {
+  console.log('[EventModal] Visibility changed:', visible, 'eventId:', props.eventId)
   if (visible) {
     await loadEventDetails()
   } else {
@@ -234,24 +285,35 @@ watch(() => props.visible, async (visible) => {
 })
 
 async function loadEventDetails() {
+  console.log('[EventModal] loadEventDetails START, eventId:', props.eventId)
   isLoading.value = true
   error.value = null
   
   try {
-    eventDetails.value = await store.getEventDetails(props.eventId)
-    console.info('[EventModal] Event details loaded:', props.eventId)
+    console.log('[EventModal] Calling store.getEventDetails...')
+    const details = await store.getEventDetails(props.eventId)
+    console.log('[EventModal] Received details:', details)
+    
+    eventDetails.value = details
+    console.info('[EventModal] Event details loaded:', props.eventId, eventDetails.value)
     
     // Ініціалізувати форму редагування
+    const startDate = new Date(eventDetails.value.event.start)
     editForm.value = {
-      start: eventDetails.value.event.start,
+      date: startDate.toISOString().split('T')[0],
+      hours: String(startDate.getHours()).padStart(2, '0'),
+      minutes: String(startDate.getMinutes()).padStart(2, '0'),
       durationMin: eventDetails.value.event.durationMin,
+      regularity: eventDetails.value.event.regularity || 'single',
       tutorComment: eventDetails.value.event.tutorComment || '',
     }
+    console.log('[EventModal] Form initialized:', editForm.value)
   } catch (err: any) {
     console.error('[EventModal] Load error:', err)
     handleError(err, t('calendar.errors.loadFailed'))
   } finally {
     isLoading.value = false
+    console.log('[EventModal] loadEventDetails END, isLoading:', isLoading.value, 'eventDetails:', !!eventDetails.value)
   }
 }
 
@@ -295,9 +357,13 @@ function handleCancelEdit() {
   error.value = null
   // Скинути форму до оригінальних значень
   if (eventDetails.value) {
+    const startDate = new Date(eventDetails.value.event.start)
     editForm.value = {
-      start: eventDetails.value.event.start,
+      date: startDate.toISOString().split('T')[0],
+      hours: String(startDate.getHours()).padStart(2, '0'),
+      minutes: String(startDate.getMinutes()).padStart(2, '0'),
       durationMin: eventDetails.value.event.durationMin,
+      regularity: eventDetails.value.event.regularity || 'single',
       tutorComment: eventDetails.value.event.tutorComment || '',
     }
   }
@@ -308,12 +374,14 @@ async function handleSaveEdit() {
   error.value = null
   
   try {
+    // Скласти datetime з окремих полів
+    const startDateTime = `${editForm.value.date}T${editForm.value.hours}:${editForm.value.minutes}:00`
+    
     await store.updateEvent({
       id: props.eventId,
-      start: editForm.value.start,
+      start: startDateTime,
       durationMin: editForm.value.durationMin,
       tutorComment: sanitizeComment(editForm.value.tutorComment || ''),
-      notifyStudent: true,
     })
     
     console.info('[EventModal] Event updated:', props.eventId)
@@ -543,5 +611,48 @@ function cancelDelete() {
   border-color: #3b82f6;
   background: #3b82f6;
   color: white;
+}
+
+.field-readonly {
+  padding: 10px 12px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.field-select {
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  color: #374151;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.field-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.time-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.time-select {
+  flex: 1;
+  min-width: 70px;
+}
+
+.time-separator {
+  font-size: 18px;
+  font-weight: 600;
+  color: #6b7280;
 }
 </style>

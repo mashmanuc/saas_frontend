@@ -1,6 +1,7 @@
 // F1: i18n Setup
 import { createI18n } from 'vue-i18n'
 import { LANGUAGES, LANGUAGE_CODES } from '@/config/languages'
+import ukMessages from './locales/uk.json'
 
 // Lazy load translations
 const loadLocaleMessages = async (locale: string) => {
@@ -65,7 +66,9 @@ export const i18n = createI18n({
   legacy: false, // Composition API
   locale: 'uk', // Default locale
   fallbackLocale: 'en',
-  messages: {},
+  messages: {
+    uk: ukMessages
+  },
   datetimeFormats,
   numberFormats,
   missingWarn: false,

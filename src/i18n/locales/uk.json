@@ -952,11 +952,6 @@
       "commentPlaceholder": "Що потрібно врахувати під час уроку?",
       "create": "Створити урок"
     },
-    "regularity": {
-      "single": "Разовий",
-      "onceAWeek": "1 раз на тиждень",
-      "twiceAWeek": "2 рази на тиждень"
-    },
     "hoursLabel": "{hours} год",
     "availabilityEmpty": {
       "title": "Налаштуйте доступність",
@@ -2736,10 +2731,13 @@
         "create": "Створити урок"
       },
       "eventModal": {
-        "title": "Деталі уроку",
+        "title": "Редагувати подію",
         "delete": "Видалити урок",
         "edit": "Редагувати",
         "editTime": "Час уроку",
+        "order": "Заявка",
+        "date": "Оберіть дату",
+        "startTime": "Початок",
         "confirmDelete": "Підтвердження видалення",
         "confirmDeleteMessage": "Ви впевнені, що хочете видалити урок з {student}? Цю дію не можна буде скасувати."
       },
