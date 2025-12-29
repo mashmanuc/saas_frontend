@@ -120,6 +120,8 @@ export interface UpdateEventPayload {
   start?: string
   durationMin?: number
   tutorComment?: string
+  paidStatus?: 'paid' | 'unpaid'
+  doneStatus?: 'done' | 'not_done' | 'not_done_client_missed' | 'done_client_missed'
 }
 
 export interface DeleteEventPayload {

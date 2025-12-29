@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { bookingApi } from '@/modules/booking/api/booking'
+import { bookingApi } from '@/modules/booking/api/bookingApi'
 import { calendarWeekApi } from '@/modules/booking/api/calendarWeekApi'
+import { useCalendarWeekStore } from '@/modules/booking/stores/calendarWeekStore'
 import type { Slot, SlotEditStrategy, Conflict } from '@/modules/booking/types/slot'
 import { useUndoRedo } from '@/composables/useUndoRedo'
 import { EditSlotCommand, BatchEditSlotsCommand } from '@/modules/booking/commands/SlotEditCommand'
@@ -66,25 +67,38 @@ export const useSlotStore = defineStore('slots', () => {
     error.value = null
     
     try {
-      const response = await calendarWeekApi.getWeekSnapshot(params)
-      const accessibleSlots = response.data.accessible || {}
+      // Використовуємо calendarWeekStore замість прямого виклику API
+      const calendarStore = useCalendarWeekStore()
       
-      // Normalize AccessibleSlot to CalendarSlot
+      // Якщо snapshot ще не завантажений, завантажуємо його
+      if (!calendarStore.snapshot && calendarStore.currentTutorId && calendarStore.currentWeekStart) {
+        await calendarStore.fetchWeekSnapshot(calendarStore.currentTutorId, calendarStore.currentWeekStart)
+      }
+      
+      // Читаємо accessible слоти зі store (вже синхронізовані через адаптери)
+      const accessibleById = calendarStore.accessibleById
+      const accessibleIdsByDay = calendarStore.accessibleIdsByDay
+      
+      // Конвертуємо у формат slotStore
       const normalizedSlots: Record<string, CalendarSlot[]> = {}
-      Object.entries(accessibleSlots).forEach(([date, dateSlots]) => {
-        normalizedSlots[date] = dateSlots.map((slot: any) => ({
-          id: slot.id,
-          date: date,
-          start: slot.start,
-          end: slot.end,
-          status: slot.status || 'available',
-          source: slot.source,
-          template_id: slot.template_id,
-          override_reason: slot.override_reason,
-          created_at: slot.created_at || new Date().toISOString(),
-          updated_at: slot.updated_at || new Date().toISOString()
-        }))
-      })
+      
+      for (const [dayKey, slotIds] of Object.entries(accessibleIdsByDay)) {
+        normalizedSlots[dayKey] = (slotIds as number[]).map(id => {
+          const slot = accessibleById[id]
+          return {
+            id: slot.id,
+            date: dayKey,
+            start: slot.start,
+            end: slot.end,
+            status: 'available' as const,
+            source: 'template' as const,
+            template_id: null,
+            override_reason: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }
+        }).filter(Boolean) as CalendarSlot[]
+      }
       
       slots.value = normalizedSlots
       return slots.value

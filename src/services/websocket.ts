@@ -185,7 +185,9 @@ class WebSocketService {
         handler({ channel, event: data.event, data: data.data })
       } else if (data.event === 'slot.released') {
         // Released slots trigger week refresh by refetching
-        calendarWeekStore.fetchWeek(0)
+        if (calendarWeekStore.currentTutorId && calendarWeekStore.currentWeekStart) {
+          calendarWeekStore.fetchWeekSnapshot(calendarWeekStore.currentTutorId, calendarWeekStore.currentWeekStart)
+        }
         handler({ channel, event: data.event, data: data.data })
       } else if (data.event === 'slot.created') {
         handler({ channel, event: data.event, data: data.data })

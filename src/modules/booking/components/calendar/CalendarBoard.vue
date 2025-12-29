@@ -101,10 +101,17 @@ const emit = defineEmits<{
 }>()
 
 const store = useCalendarWeekStore()
-const { eventsById, optimisticUpdates } = storeToRefs(store)
+const { events } = storeToRefs(store)
 
-const eventsByIdComputed = computed(() => eventsById.value)
-const optimisticEventIds = computed(() => Array.from(optimisticUpdates.value.keys()))
+// Конвертуємо events array у eventsById для сумісності з EventsOverlay
+const eventsByIdComputed = computed(() => {
+  const byId: Record<number, any> = {}
+  for (const event of events.value || []) {
+    byId[event.id] = event
+  }
+  return byId
+})
+const optimisticEventIds = computed(() => [] as number[])
 
 const cellsByDay = computed<Record<string, CalendarCell[]>>(() => {
   const map: Record<string, CalendarCell[]> = {}

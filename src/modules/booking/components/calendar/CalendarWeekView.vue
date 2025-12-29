@@ -1,5 +1,8 @@
 <template>
   <div class="calendar-week-view">
+    <!-- Debug Panel (only in debug mode) -->
+    <CalendarDebugPanel v-if="isDebugMode" />
+    
     <!-- Connection status -->
     <transition name="fade">
       <div
@@ -35,6 +38,7 @@
           <span>{{ t('calendar.legend.availability') }}</span>
         </label>
       </div>
+      <DebugToggleButton v-if="isDebugMode" />
     </div>
 
     <!-- Loading State -->
@@ -163,7 +167,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed, watch, defineAsyncComponent } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { Loader as LoaderIcon, AlertCircle as AlertCircleIcon, ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon } from 'lucide-vue-next'
@@ -199,6 +203,11 @@ import '@/modules/booking/styles/calendar-animations.css'
 import '@/modules/booking/styles/calendar-responsive.css'
 import { useSlotEditor } from '@/modules/booking/composables/useSlotEditor'
 
+// Debug module (dynamic import)
+const isDebugMode = import.meta.env.VITE_CALENDAR_DEBUG === 'true'
+const CalendarDebugPanel = isDebugMode ? defineAsyncComponent(() => import('@/modules/booking/debug').then(m => m.CalendarDebugPanel)) : null
+const DebugToggleButton = isDebugMode ? defineAsyncComponent(() => import('@/modules/booking/debug').then(m => m.DebugToggleButton)) : null
+
 const { t } = useI18n()
 const router = useRouter()
 
@@ -209,15 +218,8 @@ const { handleError } = useErrorHandler()
 const showV055 = ref(true)
 
 const {
-  weekMeta,
-  daysOrdered,
-  accessibleById,
-  eventsById,
   isLoading,
   error,
-  allAccessibleIds,
-  allEventIds,
-  // v0.55 data
   days: daysV055,
   events: eventsV055,
   accessible: accessibleV055,
@@ -235,12 +237,12 @@ const accessibleSlotsComputed = computed(() => accessibleV055.value || [])
 const blockedRangesV055Computed = computed(() => blockedRangesV055.value || [])
 const currentTimeV055 = computed(() => metaV055.value?.currentTime || new Date().toISOString())
 const dragEnabled = computed(() => true)
-const timezoneForNav = computed(() => metaV055.value?.timezone || weekMeta.value?.timezone || 'Europe/Kiev')
+const timezoneForNav = computed(() => metaV055.value?.timezone || 'Europe/Kiev')
 const weekStartForNav = computed(
-  () => metaV055.value?.weekStart || weekMeta.value?.weekStart || new Date().toISOString().slice(0, 10)
+  () => metaV055.value?.weekStart || new Date().toISOString().slice(0, 10)
 )
 const weekEndForNav = computed(
-  () => metaV055.value?.weekEnd || weekMeta.value?.weekEnd || ''
+  () => metaV055.value?.weekEnd || ''
 )
 
 const todayWeekStartComputed = computed(() => {
@@ -267,11 +269,11 @@ const weekRangeDisplay = computed(() => {
 })
 
 const allEvents = computed(() => {
-  return Object.values(eventsById.value)
+  return eventsV055.value || []
 })
 
 const totalAvailableMinutes = computed(() => {
-  return accessible.value.reduce((sum, slot) => {
+  return (accessibleV055.value || []).reduce((sum, slot) => {
     const start = new Date(slot.start)
     const end = new Date(slot.end)
     const duration = (end.getTime() - start.getTime()) / 60000
@@ -283,7 +285,7 @@ const totalAvailableHours = computed(() => totalAvailableMinutes.value / 60)
 
 const hasAvailability = computed(() => {
   const minutes = totalAvailableMinutes.value || 0
-  const hasSlots = allAccessibleIds.value.length > 0
+  const hasSlots = (accessibleV055.value || []).length > 0
   
   // Show calendar if there are any slots or if there are minutes available
   // This indicates user has set up availability template and slots are generated
@@ -292,13 +294,8 @@ const hasAvailability = computed(() => {
 
 const hasSetupAvailability = computed(() => {
   // Always show calendar for v0.55 - let the backend determine if there's data
-  // For legacy, check if user has any activity
-  if (showV055.value) {
-    return true
-  }
-  
-  const hasEvents = allEventIds.value.length > 0
-  const hasSlots = allAccessibleIds.value.length > 0
+  const hasEvents = (eventsV055.value || []).length > 0
+  const hasSlots = (accessibleV055.value || []).length > 0
   const hasMinutes = totalAvailableMinutes.value > 0
   
   return hasEvents || hasSlots || hasMinutes
@@ -397,7 +394,9 @@ function handleToday() {
 }
 
 function handleRetry() {
-  store.fetchWeek(weekMeta.value?.page ?? 0)
+  if (store.currentTutorId && store.currentWeekStart) {
+    store.fetchWeekSnapshot(store.currentTutorId, store.currentWeekStart)
+  }
 }
 
 function handleScrollToFirstAvailable() {
@@ -470,11 +469,15 @@ async function handleSlotDeleteInline(slotId: number) {
   try {
     await deleteSlot(slotId)
     // Refetch to update the calendar
-    store.fetchWeek(weekMeta.value?.page ?? 0)
+    if (store.currentTutorId && store.currentWeekStart) {
+      store.fetchWeekSnapshot(store.currentTutorId, store.currentWeekStart)
+    }
   } catch (error) {
     console.error('[CalendarWeekView] Failed to delete slot:', error)
     // If deletion failed, we need to refresh to restore the slot
-    store.fetchWeek(weekMeta.value?.page ?? 0)
+    if (store.currentTutorId && store.currentWeekStart) {
+      store.fetchWeekSnapshot(store.currentTutorId, store.currentWeekStart)
+    }
   }
 }
 
@@ -499,7 +502,7 @@ function handleCreateSlot(data: { date: string; start: string; end: string }) {
 }
 
 function handleSlotBlock(slotId: number) {
-  const slot = accessibleById.value[slotId]
+  const slot = (accessibleV055.value || []).find(s => s.id === slotId)
   if (slot) {
     selectedSlotForBlock.value = slot as any
     showBlockSlotModal.value = true
@@ -531,7 +534,7 @@ function handleDragComplete(eventId: number, newStart: string, newEnd: string) {
 function handleOpenQuickBlock() {
   showCreateSlotModal.value = true
   createSlotData.value = {
-    date: weekMeta.value?.weekStart || new Date().toISOString().split('T')[0],
+    date: metaV055.value?.weekStart || new Date().toISOString().split('T')[0],
     start: '09:00',
     end: '10:00'
   }
@@ -540,37 +543,29 @@ function handleOpenQuickBlock() {
 function handleMarkNoShow(eventId: number) {
   showLessonDrawer.value = false
   // Refetch to update UI
-  if (showV055.value) {
-    fetchV055Snapshot()
-  } else {
-    store.fetchWeek(weekMeta.value?.page ?? 0)
-  }
+  fetchV055Snapshot()
 }
 
 function handleRescheduleConfirmed() {
   showLessonDrawer.value = false
   // Refetch to update UI
-  if (showV055.value) {
-    fetchV055Snapshot()
-  } else {
-    store.fetchWeek(weekMeta.value?.page ?? 0)
-  }
+  fetchV055Snapshot()
 }
 
 function handleCreateSlotFromToolbar() {
   const today = new Date()
   let dateStr = formatDateString(today)
 
-  const weekStartDate = parseIsoDate(weekMeta.value?.weekStart)
-  const weekEndDate = parseIsoDate(weekMeta.value?.weekEnd)
+  const weekStartDate = parseIsoDate(metaV055.value?.weekStart)
+  const weekEndDate = parseIsoDate(metaV055.value?.weekEnd)
 
   if (weekStartDate && weekEndDate) {
     const inCurrentVisibleWeek = today >= weekStartDate && today <= weekEndDate
     if (!inCurrentVisibleWeek) {
-      dateStr = weekMeta.value!.weekStart
+      dateStr = metaV055.value!.weekStart
     }
-  } else if (weekMeta.value?.weekStart) {
-    dateStr = weekMeta.value.weekStart
+  } else if (metaV055.value?.weekStart) {
+    dateStr = metaV055.value.weekStart
   }
 
   const currentHour = today.getHours()

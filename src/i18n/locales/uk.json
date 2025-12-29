@@ -495,7 +495,9 @@
       "error": "Не вдалося створити запит."
     },
     "common": {
-      "perHour": "/ год"
+      "perHour": "/ год",
+      "minutes": "хвилин",
+      "cancel": "Скасувати"
     },
     "tutorCard": {
       "experience": "Досвід",
@@ -930,7 +932,7 @@
       "disconnected": "Немає з'єднання. Перевірте мережу або спробуйте оновити.",
       "offline": "З’єднання втрачено. Спробуйте повторити."
     },
-    "errors": {
+    "errorsNew": {
       "unknown": "Сталася невідома помилка. Спробуйте пізніше."
     },
     "realtime": {
@@ -2656,6 +2658,9 @@
     }
   },
   "booking": {
+    "common": {
+      "minutes": "хвилин"
+    },
     "actions": {
       "bookLesson": "Запланувати урок",
       "blockTime": "Заблокувати час",
@@ -3059,10 +3064,19 @@
     "nextSlots": "Наступні слоти",
     "upcomingSlots": "Надхідні слоти",
     "calendar": {
-      "weekOf": "Тиждень {date}",
+      "weekOf": "Тиждень від {date}",
       "analyticsTitle": "Аналітика доступності",
-      "analyticsDescription": "Відстежуйте як змінюються слоти по тижнях.",
-      "draftNotice": "Це чернетка. Не забудьте застосувати зміни.",
+      "analyticsDescription": "Відстежуйте, як змінюються ваші відкриті слоти щотижня.",
+      "legend": {
+        "lesson": "Урок",
+        "availability": "Доступність"
+      },
+      "regularity": {
+        "single": "Одиничний",
+        "once_a_week": "Раз на тиждень",
+        "twice_a_week": "Двічі на тиждень"
+      },
+      "draftNotice": "Чернетковий режим. Не забудьте застосувати зміни.",
       "pendingJobs": "Йде синхронізація календаря…",
       "lastSyncLabel": "Остання синхронізація: {datetime}",
       "realtime": {

@@ -21,10 +21,17 @@ export interface ActiveLesson {
 export interface AssignedTutor {
   id: number
   full_name: string
+  email?: string
   avatar_url: string | null
+  timezone?: string
   headline: string | null
   subjects: string[]
   average_rating: number | null
+  // Collaboration stats (Platform Expansion Law)
+  collaboration_status?: 'active' | 'invited' | 'paused' | 'archived'
+  lesson_count?: number
+  last_activity_at?: string | null
+  next_available_slot?: string | null
 }
 
 export interface StudentStats {
@@ -44,10 +51,9 @@ export interface TutorStats {
 export interface StudentDashboardData {
   upcoming_lessons: ActiveLesson[]
   assigned_tutor: AssignedTutor | null
-  stats: {
-    total_lessons: number
-    upcoming_count: number
-  }
+  stats: StudentStats
+  // Platform Expansion: support for multiple tutors
+  active_tutors?: AssignedTutor[]
 }
 
 export interface TutorDashboardData {

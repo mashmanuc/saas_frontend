@@ -1,0 +1,155 @@
+<template>
+  <div class="week-nav">
+    <button 
+      type="button"
+      class="week-nav__btn"
+      @click="prevWeek"
+      :disabled="loading"
+    >
+      ←
+    </button>
+    
+    <div class="week-nav__info">
+      <span class="week-nav__range">{{ weekRange }}</span>
+      <button 
+        v-if="!isCurrentWeek"
+        type="button"
+        class="week-nav__today"
+        @click="goToToday"
+        :disabled="loading"
+      >
+        Сьогодні
+      </button>
+    </div>
+    
+    <button 
+      type="button"
+      class="week-nav__btn"
+      @click="nextWeek"
+      :disabled="loading"
+    >
+      →
+    </button>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+import dayjs from 'dayjs'
+
+const props = defineProps<{
+  weekStart: string
+  weekEnd: string
+  loading?: boolean
+}>()
+
+const emit = defineEmits<{
+  'change': [weekStart: string]
+}>()
+
+const weekRange = computed(() => {
+  if (!props.weekStart) return ''
+  const start = dayjs(props.weekStart)
+  const end = props.weekEnd ? dayjs(props.weekEnd) : start.add(6, 'day')
+  return `${start.format('DD.MM')} - ${end.format('DD.MM.YYYY')}`
+})
+
+const todayWeekStart = computed(() => {
+  return dayjs().startOf('week').format('YYYY-MM-DD')
+})
+
+const isCurrentWeek = computed(() => {
+  return props.weekStart === todayWeekStart.value
+})
+
+function prevWeek() {
+  const newStart = dayjs(props.weekStart).subtract(1, 'week').format('YYYY-MM-DD')
+  console.log('[CalendarWeekNav] prevWeek', { from: props.weekStart, to: newStart })
+  emit('change', newStart)
+}
+
+function nextWeek() {
+  const newStart = dayjs(props.weekStart).add(1, 'week').format('YYYY-MM-DD')
+  console.log('[CalendarWeekNav] nextWeek', { from: props.weekStart, to: newStart })
+  emit('change', newStart)
+}
+
+function goToToday() {
+  console.log('[CalendarWeekNav] goToToday', { today: todayWeekStart.value })
+  emit('change', todayWeekStart.value)
+}
+</script>
+
+<style scoped>
+.week-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 16px 24px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+.week-nav__btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: #f3f4f6;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.week-nav__btn:hover:not(:disabled) {
+  background: #e5e7eb;
+  transform: scale(1.05);
+}
+
+.week-nav__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.week-nav__info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 180px;
+}
+
+.week-nav__range {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.week-nav__today {
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: none;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.week-nav__today:hover:not(:disabled) {
+  background: #bfdbfe;
+}
+
+.week-nav__today:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+</style>

@@ -64,7 +64,7 @@
               @click="formData.durationMin = 30"
               :aria-pressed="formData.durationMin === 30"
             >
-              30 {{ $t('common.minutes') }}
+              30 {{ $t('booking.common.minutes') }}
             </button>
             <button
               type="button"
@@ -72,7 +72,7 @@
               @click="formData.durationMin = 60"
               :aria-pressed="formData.durationMin === 60"
             >
-              60 {{ $t('common.minutes') }}
+              60 {{ $t('booking.common.minutes') }}
             </button>
             <button
               type="button"
@@ -80,7 +80,7 @@
               @click="formData.durationMin = 90"
               :aria-pressed="formData.durationMin === 90"
             >
-              90 {{ $t('common.minutes') }}
+              90 {{ $t('booking.common.minutes') }}
             </button>
           </div>
         </div>
@@ -95,9 +95,9 @@
             v-model="formData.regularity"
             class="field-select"
           >
-            <option value="single">{{ $t('calendar.regularity.single') }}</option>
-            <option value="once_a_week">{{ $t('calendar.regularity.once_a_week') }}</option>
-            <option value="twice_a_week">{{ $t('calendar.regularity.twice_a_week') }}</option>
+            <option value="single">{{ $t('booking.calendar.regularity.single') }}</option>
+            <option value="once_a_week">{{ $t('booking.calendar.regularity.once_a_week') }}</option>
+            <option value="twice_a_week">{{ $t('booking.calendar.regularity.twice_a_week') }}</option>
           </select>
         </div>
 

@@ -5,7 +5,7 @@
       <div class="detail-row">
         <ClockIcon class="w-5 h-5 text-gray-500" />
         <div>
-          <p class="detail-label">{{ $t('calendar.eventDetails.time') }}</p>
+          <p class="detail-label">{{ $t('booking.calendar.eventDetails.time') }}</p>
           <p class="detail-value">{{ formatTime(event.start) }} - {{ formatTime(event.end) }}</p>
         </div>
       </div>
@@ -13,7 +13,7 @@
       <div class="detail-row">
         <UserIcon class="w-5 h-5 text-gray-500" />
         <div>
-          <p class="detail-label">{{ $t('calendar.eventDetails.student') }}</p>
+          <p class="detail-label">{{ $t('booking.calendar.eventDetails.student') }}</p>
           <p class="detail-value">{{ event.clientName }}</p>
           <p v-if="event.clientPhone" class="detail-subvalue">{{ event.clientPhone }}</p>
         </div>
@@ -22,7 +22,7 @@
       <div class="detail-row">
         <TimerIcon class="w-5 h-5 text-gray-500" />
         <div>
-          <p class="detail-label">{{ $t('calendar.eventDetails.duration') }}</p>
+          <p class="detail-label">{{ $t('booking.calendar.eventDetails.duration') }}</p>
           <p class="detail-value">{{ event.durationMin }} {{ $t('common.minutes') }}</p>
         </div>
       </div>
@@ -32,20 +32,20 @@
     <div class="detail-section">
       <div class="badges">
         <span :class="['badge', `badge-${event.paidStatus}`]">
-          {{ $t(`calendar.paidStatus.${event.paidStatus}`) }}
+          {{ $t(`booking.calendar.paidStatus.${event.paidStatus}`) }}
         </span>
         <span :class="['badge', `badge-${event.doneStatus}`]">
-          {{ $t(`calendar.doneStatus.${event.doneStatus}`) }}
+          {{ $t(`booking.calendar.doneStatus.${event.doneStatus}`) }}
         </span>
         <span class="badge badge-regularity">
-          {{ $t(`calendar.regularity.${event.regularity}`) }}
+          {{ $t(`booking.calendar.regularity.${event.regularity}`) }}
         </span>
       </div>
     </div>
 
     <!-- Comment -->
     <div v-if="event.tutorComment" class="detail-section">
-      <p class="detail-label">{{ $t('calendar.eventDetails.comment') }}</p>
+      <p class="detail-label">{{ $t('booking.calendar.eventDetails.comment') }}</p>
       <p class="comment-text">{{ event.tutorComment }}</p>
     </div>
   </div>

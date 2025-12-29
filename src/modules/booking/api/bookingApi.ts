@@ -58,6 +58,27 @@ export interface BookingCancelRequest {
   reason: string
 }
 
+export interface SlotEditRequest {
+  start_time: string
+  end_time: string
+  strategy: 'override' | 'template' | 'series'
+  override_reason?: string
+}
+
+export interface SlotBatchEditRequest {
+  slot_ids: number[]
+  start_time: string
+  end_time: string
+  strategy: 'override' | 'template'
+  override_reason?: string
+}
+
+export interface BlockSlotRequest {
+  start: string
+  end: string
+  reason?: string
+}
+
 export const bookingApi = {
   async createTrialBooking(
     matchId: string,
@@ -112,6 +133,53 @@ export const bookingApi = {
       data
     )
     return response
+  },
+
+  /**
+   * Edit single slot
+   */
+  async editSlot(slotId: string, data: SlotEditRequest): Promise<any> {
+    const { data: response } = await apiClient.patch(
+      `/booking/slots/${slotId}/`,
+      data
+    )
+    return response
+  },
+
+  /**
+   * Delete slot
+   */
+  async deleteSlot(slotId: number): Promise<void> {
+    await apiClient.delete(`/booking/slots/${slotId}/`)
+  },
+
+  /**
+   * Batch edit multiple slots
+   */
+  async batchEditSlots(data: SlotBatchEditRequest): Promise<any> {
+    const { data: response } = await apiClient.post(
+      `/booking/slots/batch-edit/`,
+      data
+    )
+    return response
+  },
+
+  /**
+   * Block time range
+   */
+  async blockSlot(data: BlockSlotRequest): Promise<any> {
+    const { data: response } = await apiClient.post(
+      `/booking/slots/block/`,
+      data
+    )
+    return response
+  },
+
+  /**
+   * Unblock time range
+   */
+  async unblockSlot(slotId: number): Promise<void> {
+    await apiClient.delete(`/booking/slots/block/${slotId}/`)
   }
 }
 

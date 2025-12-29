@@ -518,7 +518,9 @@
       "error": "Failed to create trial request."
     },
     "common": {
-      "perHour": "/ hour"
+      "perHour": "/ hour",
+      "minutes": "minutes",
+      "cancel": "Cancel"
     },
     "tutorCard": {
       "experience": "Experience",
@@ -2176,10 +2178,70 @@
     }
   },
   "booking": {
+    "common": {
+      "minutes": "minutes"
+    },
     "selectStudent": "Select a student",
     "noStudentsFound": "No students found",
     "inviteStudent": "Invite a new student",
     "typeToSearch": "Type at least 2 characters to search",
+    "calendar": {
+      "regularity": {
+        "single": "One-time",
+        "once_a_week": "Once per week",
+        "twice_a_week": "Twice per week"
+      },
+      "createLesson": {
+        "title": "Create lesson",
+        "selectedTime": "Lesson start",
+        "timeHint": "Specify the exact time in your timezone",
+        "student": "Student / order",
+        "selectStudent": "Select a student",
+        "duration": "Duration",
+        "regularity": "Regularity",
+        "comment": "Private comment",
+        "commentPlaceholder": "Anything to keep in mind for this lesson?",
+        "create": "Create lesson"
+      },
+      "eventModal": {
+        "title": "Edit lesson",
+        "delete": "Delete lesson",
+        "edit": "Edit",
+        "editTime": "Lesson time",
+        "order": "Order",
+        "date": "Pick a date",
+        "startTime": "Start time",
+        "confirmDelete": "Delete confirmation",
+        "confirmDeleteMessage": "Are you sure you want to delete the lesson with {student}? This action cannot be undone."
+      },
+      "eventDetails": {
+        "time": "Time",
+        "student": "Student",
+        "duration": "Duration",
+        "comment": "Tutor comment"
+      },
+      "paidStatus": {
+        "paid": "Paid",
+        "unpaid": "Unpaid"
+      },
+      "doneStatus": {
+        "done": "Completed",
+        "not_done": "Not completed",
+        "not_done_client_missed": "Student missed",
+        "done_client_missed": "Conducted (student missed)"
+      },
+      "regularity": {
+        "single": "One-time",
+        "once_a_week": "Once per week",
+        "twice_a_week": "Twice per week"
+      },
+      "errors": {
+        "loadFailed": "Failed to load lesson details",
+        "cannotDelete": "This lesson cannot be deleted",
+        "deleteFailed": "Failed to delete lesson",
+        "updateFailed": "Failed to update lesson"
+      }
+    },
     "modal": {
       "title": "Book a Lesson",
       "selectedSlot": "Selected slot",
@@ -2545,6 +2607,11 @@
     "legend": {
       "lesson": "Lesson",
       "availability": "Availability"
+    },
+    "regularity": {
+      "single": "One-time",
+      "once_a_week": "Once per week",
+      "twice_a_week": "Twice per week"
     },
     "draftNotice": "Draft mode. Don't forget to apply your changes.",
     "pendingJobs": "Calendar sync in progress…",

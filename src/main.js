@@ -17,6 +17,13 @@ import { initTokenRefresh } from './core/auth/tokenRefresh'
 import { apiClient } from './utils/apiClient'
 import VueKonva from 'vue-konva'
 
+// Initialize calendar debug module (only in debug mode)
+if (import.meta.env.VITE_CALENDAR_DEBUG === 'true') {
+  import('./modules/booking/debug').then(module => {
+    module.initCalendarDebug()
+  })
+}
+
 const app = createApp(App)
 app.use(pinia)
 app.use(i18n)

@@ -2,7 +2,7 @@
   <div v-if="visible" class="modal-overlay" @click.self="handleClose">
     <div ref="modalRef" class="modal-container" role="dialog" aria-labelledby="event-modal-title" aria-modal="true">
       <div class="modal-header">
-        <h2 id="event-modal-title">{{ $t('calendar.eventModal.title') }}</h2>
+        <h2 id="event-modal-title">{{ $t('booking.calendar.eventModal.title') }}</h2>
         <button @click="handleClose" class="close-btn" aria-label="Закрити">
           <XIcon class="w-5 h-5" />
         </button>
@@ -28,19 +28,19 @@
         <div v-else class="edit-form">
           <!-- Учень (readonly) -->
           <div class="form-field">
-            <label class="field-label">{{ $t('calendar.createLesson.student') }}</label>
+            <label class="field-label">{{ $t('booking.calendar.createLesson.student') }}</label>
             <div class="field-readonly">{{ eventDetails.event.clientName }}</div>
           </div>
 
           <!-- Заявка (readonly) -->
           <div class="form-field">
-            <label class="field-label">{{ $t('calendar.eventModal.order') }}</label>
+            <label class="field-label">{{ $t('booking.calendar.eventModal.order') }}</label>
             <div class="field-readonly">№ {{ eventDetails.event.orderId }}</div>
           </div>
 
           <!-- Дата -->
           <div class="form-field">
-            <label for="edit-date" class="field-label">{{ $t('calendar.eventModal.date') }}</label>
+            <label for="edit-date" class="field-label">{{ $t('booking.calendar.eventModal.date') }}</label>
             <input
               id="edit-date"
               v-model="editForm.date"
@@ -51,7 +51,7 @@
 
           <!-- Початок (час з dropdown) -->
           <div class="form-field">
-            <label for="edit-time" class="field-label">{{ $t('calendar.eventModal.startTime') }}</label>
+            <label for="edit-time" class="field-label">{{ $t('booking.calendar.eventModal.startTime') }}</label>
             <div class="time-picker">
               <select v-model="editForm.hours" class="field-select time-select">
                 <option v-for="h in 24" :key="h-1" :value="String(h-1).padStart(2, '0')">
@@ -78,7 +78,7 @@
 
           <!-- Тривалість -->
           <div class="form-field">
-            <label class="field-label">{{ $t('calendar.createLesson.duration') }}</label>
+            <label class="field-label">{{ $t('booking.calendar.createLesson.duration') }}</label>
             <select v-model="editForm.durationMin" class="field-select">
               <option :value="30">30 {{ $t('common.minutes') }}</option>
               <option :value="60">60 {{ $t('common.minutes') }}</option>
@@ -88,27 +88,27 @@
 
           <!-- Повторюваність -->
           <div class="form-field">
-            <label for="edit-regularity" class="field-label">{{ $t('calendar.createLesson.regularity') }}</label>
+            <label for="edit-regularity" class="field-label">{{ $t('booking.calendar.createLesson.regularity') }}</label>
             <select
               id="edit-regularity"
               v-model="editForm.regularity"
               class="field-select"
             >
-              <option value="single">{{ $t('calendar.regularity.single') }}</option>
-              <option value="once_a_week">{{ $t('calendar.regularity.once_a_week') }}</option>
-              <option value="twice_a_week">{{ $t('calendar.regularity.twice_a_week') }}</option>
+              <option value="single">{{ $t('booking.calendar.regularity.single') }}</option>
+              <option value="once_a_week">{{ $t('booking.calendar.regularity.once_a_week') }}</option>
+              <option value="twice_a_week">{{ $t('booking.calendar.regularity.twice_a_week') }}</option>
             </select>
           </div>
 
           <!-- Коментар -->
           <div class="form-field">
-            <label for="edit-comment" class="field-label">{{ $t('calendar.createLesson.comment') }}</label>
+            <label for="edit-comment" class="field-label">{{ $t('booking.calendar.createLesson.comment') }}</label>
             <textarea
               id="edit-comment"
               v-model="editForm.tutorComment"
               class="field-textarea"
               rows="3"
-              :placeholder="$t('calendar.createLesson.commentPlaceholder')"
+              :placeholder="$t('booking.calendar.createLesson.commentPlaceholder')"
             />
           </div>
         </div>
@@ -136,7 +136,7 @@
               class="btn-secondary"
               :disabled="isDeleting"
             >
-              {{ $t('calendar.eventModal.edit') }}
+              {{ $t('booking.calendar.eventModal.edit') }}
             </button>
             
             <button
@@ -147,7 +147,7 @@
             >
               <LoaderIcon v-if="isDeleting" class="w-4 h-4 animate-spin" />
               <TrashIcon v-else class="w-4 h-4" />
-              {{ $t('calendar.eventModal.delete') }}
+              {{ $t('booking.calendar.eventModal.delete') }}
             </button>
           </template>
 
@@ -176,9 +176,9 @@
     <!-- Confirm Delete Dialog -->
     <ConfirmDialog
       :visible="showConfirmDelete"
-      :title="t('calendar.eventModal.confirmDelete')"
-      :message="t('calendar.eventModal.confirmDeleteMessage', { student: eventDetails?.event?.clientName || '' })"
-      :confirm-text="t('calendar.eventModal.delete')"
+      :title="t('booking.calendar.eventModal.confirmDelete')"
+      :message="t('booking.calendar.eventModal.confirmDeleteMessage', { student: eventDetails?.event?.clientName || '' })"
+      :confirm-text="t('booking.calendar.eventModal.delete')"
       :cancel-text="t('common.cancel')"
       variant="danger"
       @confirm="confirmDelete"
@@ -310,7 +310,7 @@ async function loadEventDetails() {
     console.log('[EventModal] Form initialized:', editForm.value)
   } catch (err: any) {
     console.error('[EventModal] Load error:', err)
-    handleError(err, t('calendar.errors.loadFailed'))
+    handleError(err, t('booking.calendar.errors.loadFailed'))
   } finally {
     isLoading.value = false
     console.log('[EventModal] loadEventDetails END, isLoading:', isLoading.value, 'eventDetails:', !!eventDetails.value)
@@ -338,9 +338,9 @@ async function confirmDelete() {
     console.error('[EventModal] Delete error:', err)
     
     if (err.response?.data?.error?.code === 'CANNOT_DELETE') {
-      error.value = err.response.data.error.message || t('calendar.errors.cannotDelete')
+      error.value = err.response.data.error.message || t('booking.calendar.errors.cannotDelete')
     } else {
-      error.value = t('calendar.errors.deleteFailed')
+      error.value = t('booking.calendar.errors.deleteFailed')
     }
   } finally {
     isDeleting.value = false
@@ -390,7 +390,7 @@ async function handleSaveEdit() {
     await loadEventDetails()
     isEditing.value = false
   } catch (err: any) {
-    handleError(err, t('calendar.errors.updateFailed'))
+    handleError(err, t('booking.calendar.errors.updateFailed'))
   } finally {
     isSaving.value = false
   }

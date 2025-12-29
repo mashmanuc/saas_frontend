@@ -20,6 +20,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
   const upcomingLessons = ref<ActiveLesson[]>([])
   const assignedTutor = ref<AssignedTutor | null>(null)
   const studentStats = ref<StudentStats | null>(null)
+  const activeTutors = ref<AssignedTutor[]>([])
 
   // Tutor state
   const todaysLessons = ref<ActiveLesson[]>([])
@@ -33,6 +34,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
   // Computed
   const hasUpcomingLessons = computed(() => upcomingLessons.value.length > 0)
   const hasTutor = computed(() => assignedTutor.value !== null)
+  const hasActiveTutors = computed(() => activeTutors.value.length > 0)
   const nextLesson = computed(() => upcomingLessons.value[0] || null)
 
   // Actions
@@ -44,10 +46,16 @@ export const useDashboardStore = defineStore('dashboard', () => {
       const data = await dashboardApi.getStudentDashboard()
       upcomingLessons.value = data.upcoming_lessons
       assignedTutor.value = data.assigned_tutor
+      
+      // Populate activeTutors from assigned_tutor if present
+      if (data.assigned_tutor) {
+        activeTutors.value = [data.assigned_tutor]
+      }
+      
       studentStats.value = {
         total_lessons: data.stats.total_lessons,
         upcoming_lessons: data.stats.upcoming_count,
-        total_hours: data.stats.total_lessons, // Simplified
+        total_hours: data.stats.total_lessons,
         this_month_lessons: 0,
       }
     } catch (err: unknown) {
@@ -106,6 +114,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
   function reset() {
     upcomingLessons.value = []
     assignedTutor.value = null
+    activeTutors.value = []
     studentStats.value = null
     todaysLessons.value = []
     pendingBookingsCount.value = 0
@@ -121,6 +130,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
     error,
     upcomingLessons,
     assignedTutor,
+    activeTutors,
     studentStats,
     todaysLessons,
     pendingBookingsCount,
@@ -131,6 +141,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
     // Computed
     hasUpcomingLessons,
     hasTutor,
+    hasActiveTutors,
     nextLesson,
 
     // Actions

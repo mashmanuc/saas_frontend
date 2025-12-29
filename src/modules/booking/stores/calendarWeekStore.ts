@@ -10,7 +10,6 @@ import { ref, computed, triggerRef } from 'vue'
 import dayjs from 'dayjs'
 
 import { calendarV055Api } from '../api/calendarV055Api'
-import { calendarWeekApi } from '../api/calendarWeekApi'
 import type {
   CalendarSnapshot,
   DaySnapshot,
@@ -26,12 +25,7 @@ import type {
   BlockRangeRequest
 } from '../types/calendarV055'
 import type {
-  WeekSnapshot,
-  CalendarEvent as LegacyEvent,
   AccessibleSlot as LegacySlot,
-  Day as LegacyDay,
-  WeekMeta,
-  MetaData,
   Order,
   CreateEventPayload,
   UpdateEventPayload,
@@ -50,22 +44,7 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
   const currentTutorId = ref<number | null>(null)
   const currentWeekStart = ref<string | null>(null)
   
-  // Legacy state for backward compatibility
-  const weekMeta = ref<WeekMeta | null>(null)
-  const legacyDays = ref<LegacyDay[]>([])
-  const legacyMeta = ref<MetaData | null>(null)
-  
-  // Normalized events for legacy compatibility
-  const eventsById = ref<Record<number, CalendarEventV055>>({})
-  const eventIdsByDay = ref<Record<string, number[]>>({})
-  const allEventIds = ref<number[]>([])
-  
-  // Normalized accessible slots for legacy compatibility
-  const accessibleById = ref<Record<number, AccessibleSlotV055>>({})
-  const accessibleIdsByDay = ref<Record<string, number[]>>({})
-  const allAccessibleIds = ref<number[]>([])
-  
-  // Normalized orders
+  // Normalized orders (залишаємо, бо використовується в CreateLessonModal)
   const ordersById = ref<Record<number, Order>>({})
   const allOrderIds = ref<number[]>([])
   
@@ -109,25 +88,8 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     })
   })
   
-  // Legacy getters for backward compatibility
-  const daysOrdered = computed(() => legacyDays.value)
-  
-  const eventsForDay = computed(() => (dayKey: string): CalendarEventV055[] => {
-    const ids = eventIdsByDay.value[dayKey] || []
-    return ids.map(id => eventsById.value[id]).filter(Boolean)
-  })
-  
-  const accessibleForDay = computed(() => (dayKey: string): AccessibleSlotV055[] => {
-    const ids = accessibleIdsByDay.value[dayKey] || []
-    return ids.map(id => accessibleById.value[id]).filter(Boolean)
-  })
-  
   const ordersArray = computed(() => {
     return allOrderIds.value.map(id => ordersById.value[id]).filter(Boolean)
-  })
-  
-  const selectedEvent = computed(() => {
-    return selectedEventId.value ? eventsById.value[selectedEventId.value] : null
   })
   
   // ===== ACTIONS =====
@@ -295,7 +257,6 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
 
       snapshot.value = normalizedSnapshot
       
-      syncAccessibleIndexes(normalizedSnapshot.accessible)
       syncOrders(orders)
       currentTutorId.value = tutorId
       currentWeekStart.value = normalizedMeta.weekStart || weekStart
@@ -307,143 +268,8 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     }
   }
   
-  /**
-   * Legacy fetch week for backward compatibility
-   */
-  async function fetchWeek(page: number = 0, timezone: string = 'Europe/Kiev') {
-    isLoading.value = true
-    error.value = null
-    currentPage.value = page
-    currentTimezone.value = timezone
-    
-    try {
-      const result = await calendarWeekApi.getWeekSnapshot({
-        page,
-        timezone,
-        includePayments: true,
-        includeStats: true,
-        etag: etag.value,
-      })
-      
-      if (result.cached) {
-        isLoading.value = false
-        return
-      }
-      
-      etag.value = result.etag
-      normalizeLegacySnapshot(result.data)
-    } catch (err: any) {
-      error.value = err.message || 'Failed to load week'
-      console.error('[calendarWeekStore] Load error:', err)
-    } finally {
-      isLoading.value = false
-    }
-  }
-  
-  /**
-   * Normalize legacy snapshot for backward compatibility
-   */
-  function normalizeLegacySnapshot(legacySnapshot: WeekSnapshot) {
-    // Convert legacy events to v0.55 format
-    const newEventsById: Record<number, CalendarEventV055> = {}
-    const newEventIdsByDay: Record<string, number[]> = {}
-    const newAllEventIds: number[] = []
-    
-    for (const [dayKey, dayEvents] of Object.entries(legacySnapshot.events || {})) {
-      newEventIdsByDay[dayKey] = []
-      
-      for (const event of dayEvents as LegacyEvent[]) {
-        const v055Event: CalendarEventV055 = {
-          id: event.id,
-          start: event.start,
-          end: event.end,
-          status: event.doneStatus === 'done' ? 'completed' : 
-                  event.doneStatus === 'not_done_client_missed' ? 'no_show' :
-                  event.doneStatus === 'done_client_missed' ? 'no_show' :
-                  event.doneStatus === 'not_done' ? 'scheduled' : 'scheduled',
-          is_first: false,
-          student: {
-            id: event.orderId ?? 0,
-            name: event.clientName || 'Студент',
-          },
-          lesson_link: legacySnapshot.meta?.zoomLink || '',
-          can_reschedule: true,
-          can_mark_no_show: true,
-        }
-        
-        newEventsById[event.id] = v055Event
-        newEventIdsByDay[dayKey].push(event.id)
-        newAllEventIds.push(event.id)
-      }
-    }
-    
-    eventsById.value = newEventsById
-    eventIdsByDay.value = newEventIdsByDay
-    allEventIds.value = newAllEventIds
-    
-    // Convert legacy accessible slots
-    const newAccessibleById: Record<number, AccessibleSlotV055> = {}
-    const newAccessibleIdsByDay: Record<string, number[]> = {}
-    const newAllAccessibleIds: number[] = []
-    
-    for (const [dayKey, daySlots] of Object.entries(legacySnapshot.accessible || {})) {
-      newAccessibleIdsByDay[dayKey] = []
-      
-      for (const slot of daySlots as LegacySlot[]) {
-        const v055Slot: AccessibleSlotV055 = {
-          id: slot.id,
-          start: slot.start,
-          end: slot.end,
-          is_recurring: (slot.regularity ?? '') === 'once_a_week',
-        }
-        
-        newAccessibleById[slot.id] = v055Slot
-        newAccessibleIdsByDay[dayKey].push(slot.id)
-        newAllAccessibleIds.push(slot.id)
-      }
-    }
-    
-    accessibleById.value = newAccessibleById
-    accessibleIdsByDay.value = newAccessibleIdsByDay
-    allAccessibleIds.value = newAllAccessibleIds
-    
-    // Normalize orders
-    const legacyOrders = ensureArray<Order>(legacySnapshot.orders as any)
-    syncOrders(legacyOrders)
-    
-    // Set legacy metadata
-    weekMeta.value = legacySnapshot.week
-    legacyDays.value = legacySnapshot.days
-    legacyMeta.value = legacySnapshot.meta
-    lastFetchedAt.value = new Date()
-  }
+  // fetchWeek() та normalizeLegacySnapshot() видалені - всі компоненти тепер використовують fetchWeekSnapshot() + адаптери
 
-  function syncAccessibleIndexes(slots: AccessibleSlotV055[] | undefined | null) {
-    const byId: Record<number, AccessibleSlotV055> = {}
-    const idsByDay: Record<string, number[]> = {}
-    const allIds: number[] = []
-
-    if (Array.isArray(slots)) {
-      for (const slot of slots) {
-        if (!slot || typeof slot.id !== 'number') {
-          continue
-        }
-        byId[slot.id] = slot
-        const dayKey = slot.start?.slice(0, 10) || slot.end?.slice(0, 10) || ''
-        if (dayKey) {
-          if (!idsByDay[dayKey]) {
-            idsByDay[dayKey] = []
-          }
-          idsByDay[dayKey].push(slot.id)
-        }
-        allIds.push(slot.id)
-      }
-    }
-
-    accessibleById.value = byId
-    accessibleIdsByDay.value = idsByDay
-    allAccessibleIds.value = allIds
-  }
 
   function syncOrders(orders: Order[] | undefined | null) {
     const byId: Record<number, Order> = {}
@@ -479,60 +305,39 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     return snapshot.value
   }
 
-  function addOptimisticSlot(slot: AccessibleSlotV055) {
-    const currentSnapshot = ensureSnapshot()
-    const slots = [...(currentSnapshot.accessible || [])]
-    const existingIndex = slots.findIndex(existing => existing.id === slot.id)
+  // Старі методи addOptimisticSlot/removeOptimisticSlot видалені - нові версії нижче
 
-    if (existingIndex >= 0) {
-      slots[existingIndex] = slot
-    } else {
-      slots.push(slot)
-    }
-
-    snapshot.value = {
-      ...currentSnapshot,
-      accessible: slots,
-    }
-    syncAccessibleIndexes(slots)
-  }
-
-  function removeOptimisticSlot(slotId: number) {
-    if (!snapshot.value) {
-      return
-    }
-    const slots = (snapshot.value.accessible || []).filter(slot => slot.id !== slotId)
-    snapshot.value = {
-      ...snapshot.value,
-      accessible: slots,
-    }
-    syncAccessibleIndexes(slots)
-  }
-
-  function replaceOptimisticSlot(tempSlotId: number, newSlot: AccessibleSlotV055) {
+  function replaceOptimisticSlot(tempSlotId: number, newSlot: AccessibleSlotV055 | LegacySlot) {
     if (!snapshot.value) {
       addOptimisticSlot(newSlot)
       return
+    }
+
+    // Конвертуємо до v0.55 формату якщо потрібно
+    const v055NewSlot: AccessibleSlotV055 = 'is_recurring' in newSlot ? newSlot : {
+      id: newSlot.id,
+      start: newSlot.start,
+      end: newSlot.end,
+      is_recurring: false,
     }
 
     let replaced = false
     const slots = (snapshot.value.accessible || []).map(slot => {
       if (slot.id === tempSlotId) {
         replaced = true
-        return newSlot
+        return v055NewSlot
       }
       return slot
     })
 
     if (!replaced) {
-      slots.push(newSlot)
+      slots.push(v055NewSlot)
     }
 
     snapshot.value = {
       ...snapshot.value,
       accessible: slots,
     }
-    syncAccessibleIndexes(slots)
   }
 
   // v0.55: Reschedule actions
@@ -573,29 +378,135 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     }
   }
   
-  // Legacy actions
+  // v0.55 CRUD actions (замінили legacy)
   async function createEvent(payload: CreateEventPayload) {
-    const response = await calendarWeekApi.createEvent(payload)
-    await fetchWeek(currentPage.value, currentTimezone.value)
+    const response = await calendarV055Api.createEvent({
+      orderId: payload.orderId,
+      start: payload.start,
+      durationMin: payload.durationMin,
+      regularity: payload.regularity,
+      tutorComment: payload.tutorComment,
+    })
+    
+    // Refetch snapshot після створення
+    if (currentTutorId.value && currentWeekStart.value) {
+      await fetchWeekSnapshot(currentTutorId.value, currentWeekStart.value)
+    }
+    
     return response
   }
   
   async function deleteEvent(id: number) {
-    await calendarWeekApi.deleteEvent({ id })
-    await fetchWeek(currentPage.value, currentTimezone.value)
+    await calendarV055Api.deleteEvent({ id })
+    
+    // Refetch snapshot після видалення
+    if (currentTutorId.value && currentWeekStart.value) {
+      await fetchWeekSnapshot(currentTutorId.value, currentWeekStart.value)
+    }
   }
   
   async function updateEvent(payload: UpdateEventPayload) {
-    await calendarWeekApi.updateEvent(payload)
-    await fetchWeek(currentPage.value, currentTimezone.value)
+    await calendarV055Api.updateEvent({
+      id: payload.id,
+      start: payload.start,
+      durationMin: payload.durationMin,
+      tutorComment: payload.tutorComment,
+      paidStatus: payload.paidStatus,
+      doneStatus: payload.doneStatus,
+    })
+    
+    // Refetch snapshot після оновлення
+    if (currentTutorId.value && currentWeekStart.value) {
+      await fetchWeekSnapshot(currentTutorId.value, currentWeekStart.value)
+    }
   }
   
   async function getEventDetails(id: number) {
-    return await calendarWeekApi.getEventDetails(id)
+    return await calendarV055Api.getEventDetails(id)
   }
+  
   
   function selectEvent(id: number | null) {
     selectedEventId.value = id
+  }
+
+  /**
+   * WebSocket handlers for real-time updates
+   */
+  function handleEventCreated(eventData: any) {
+    if (!snapshot.value) return
+    
+    // Додаємо нову подію до snapshot (v0.55 CalendarEvent format)
+    const newEvent: CalendarEventV055 = {
+      id: eventData.id,
+      start: eventData.start,
+      end: eventData.end || eventData.start, // fallback
+      status: eventData.status || 'scheduled',
+      is_first: eventData.is_first ?? false,
+      student: eventData.student || { id: 0, name: 'Unknown' },
+      lesson_link: eventData.lesson_link || '',
+      can_reschedule: eventData.can_reschedule ?? true,
+      can_mark_no_show: eventData.can_mark_no_show ?? true,
+    }
+    
+    snapshot.value.events.push(newEvent)
+    console.info('[calendarWeekStore] Event created via WebSocket:', eventData.id)
+  }
+
+  function handleEventUpdated(eventData: any) {
+    if (!snapshot.value) return
+    
+    const index = snapshot.value.events.findIndex(e => e.id === eventData.id)
+    if (index !== -1) {
+      snapshot.value.events[index] = {
+        ...snapshot.value.events[index],
+        start: eventData.start ?? snapshot.value.events[index].start,
+        end: eventData.end ?? snapshot.value.events[index].end,
+        status: eventData.status ?? snapshot.value.events[index].status,
+        lesson_link: eventData.lesson_link ?? snapshot.value.events[index].lesson_link,
+        can_reschedule: eventData.can_reschedule ?? snapshot.value.events[index].can_reschedule,
+        can_mark_no_show: eventData.can_mark_no_show ?? snapshot.value.events[index].can_mark_no_show,
+      }
+      console.info('[calendarWeekStore] Event updated via WebSocket:', eventData.id)
+    }
+  }
+
+  function handleEventDeleted(eventData: any) {
+    if (!snapshot.value) return
+    
+    const index = snapshot.value.events.findIndex(e => e.id === eventData.id)
+    if (index !== -1) {
+      snapshot.value.events.splice(index, 1)
+      console.info('[calendarWeekStore] Event deleted via WebSocket:', eventData.id)
+    }
+  }
+
+  /**
+   * Optimistic slot updates
+   */
+  function addOptimisticSlot(slot: AccessibleSlotV055 | LegacySlot) {
+    if (!snapshot.value) return
+    
+    // Конвертуємо до v0.55 формату якщо потрібно
+    const v055Slot: AccessibleSlotV055 = 'is_recurring' in slot ? slot : {
+      id: slot.id,
+      start: slot.start,
+      end: slot.end,
+      is_recurring: false,
+    }
+    
+    snapshot.value.accessible.push(v055Slot)
+    console.info('[calendarWeekStore] Optimistic slot added:', slot.id)
+  }
+
+  function removeOptimisticSlot(slotId: number) {
+    if (!snapshot.value) return
+    
+    const index = snapshot.value.accessible.findIndex(s => s.id === slotId)
+    if (index !== -1) {
+      snapshot.value.accessible.splice(index, 1)
+    }
+    console.info('[calendarWeekStore] Optimistic slot removed:', slotId)
   }
   
   function $reset() {
@@ -604,22 +515,10 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     error.value = null
     currentTutorId.value = null
     currentWeekStart.value = null
-    weekMeta.value = null
-    legacyDays.value = []
-    legacyMeta.value = null
-    eventsById.value = {}
-    eventIdsByDay.value = {}
-    allEventIds.value = []
-    accessibleById.value = {}
-    accessibleIdsByDay.value = {}
-    allAccessibleIds.value = []
     ordersById.value = {}
     allOrderIds.value = []
     selectedEventId.value = null
     lastFetchedAt.value = null
-    etag.value = ''
-    currentPage.value = 0
-    currentTimezone.value = 'Europe/Kiev'
   }
   
   return {
@@ -629,22 +528,10 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     error,
     currentTutorId,
     currentWeekStart,
-    weekMeta,
-    legacyDays,
-    legacyMeta,
-    eventsById,
-    eventIdsByDay,
-    allEventIds,
-    accessibleById,
-    accessibleIdsByDay,
-    allAccessibleIds,
     ordersById,
     allOrderIds,
     selectedEventId,
     lastFetchedAt,
-    etag,
-    currentPage,
-    currentTimezone,
     
     // v0.55 computed
     days,
@@ -655,16 +542,11 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     meta,
     daySummaries,
     
-    // Legacy computed
-    daysOrdered,
-    eventsForDay,
-    accessibleForDay,
+    // Computed
     ordersArray,
-    selectedEvent,
     
     // Actions
     fetchWeekSnapshot,
-    fetchWeek,
     reschedulePreview,
     rescheduleConfirm,
     markNoShow,
@@ -675,6 +557,11 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     updateEvent,
     getEventDetails,
     selectEvent,
+    handleEventCreated,
+    handleEventUpdated,
+    handleEventDeleted,
+    addOptimisticSlot,
+    removeOptimisticSlot,
     $reset,
   }
 })

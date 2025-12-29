@@ -3,6 +3,17 @@ import { useAuthStore } from '../modules/auth/store/authStore'
 import { useLoaderStore } from '../stores/loaderStore'
 import { notifyError, notifyWarning } from './notify'
 
+// Debug recorder (only in debug mode)
+let debugRecorder = null
+if (import.meta.env.VITE_CALENDAR_DEBUG === 'true') {
+  import('../modules/booking/debug/services/calendarDebugRecorder').then(module => {
+    debugRecorder = module.calendarDebugRecorder
+    if (debugRecorder && api) {
+      debugRecorder.attachAxiosInterceptors(api)
+    }
+  })
+}
+
 axios.defaults.withCredentials = false
 
 const api = axios.create({
@@ -49,6 +60,7 @@ api.interceptors.response.use(
   (res) => {
     const loader = useLoaderStore()
     loader.stop()
+    
     if (res?.config?.meta?.fullResponse) {
       return res
     }

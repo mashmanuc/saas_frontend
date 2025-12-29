@@ -11,7 +11,7 @@ export function useSlotEditor() {
   const { t } = useI18n()
   const toast = useToast()
   const calendarStore = useCalendarWeekStore()
-  const { accessibleById, weekMeta } = storeToRefs(calendarStore)
+  const { accessible } = storeToRefs(calendarStore)
   
   const isLoading = ref(false)
   const currentSlot = ref<Slot | null>(null)
@@ -32,18 +32,28 @@ export function useSlotEditor() {
     
     // Optimistic update: update slot immediately
     const slotIdNum = parseInt(slotId)
-    const existingSlot = accessibleById.value?.[slotIdNum]
+    const existingSlot = (accessible.value || []).find(s => s.id === slotIdNum)
     let previousSlot: AccessibleSlot | undefined
     
     if (existingSlot) {
-      previousSlot = { ...existingSlot }
+      // Convert v0.55 slot to legacy format for optimistic update
+      previousSlot = {
+        id: existingSlot.id,
+        type: 'available_slot',
+        start: existingSlot.start,
+        end: existingSlot.end,
+        regularity: existingSlot.is_recurring ? 'once_a_week' : 'single'
+      }
+      
       const date = existingSlot.start.slice(0, 10)
       const offset = existingSlot.start.length > 19 ? existingSlot.start.slice(19) : ''
       
       const updatedSlot: AccessibleSlot = {
-        ...existingSlot,
+        id: existingSlot.id,
+        type: 'available_slot',
         start: `${date}T${newStart}:00${offset}`,
-        end: `${date}T${newEnd}:00${offset}`
+        end: `${date}T${newEnd}:00${offset}`,
+        regularity: 'single'
       }
       
       calendarStore.removeOptimisticSlot(slotIdNum)
@@ -70,8 +80,9 @@ export function useSlotEditor() {
         calendarStore.removeOptimisticSlot(previousSlot.id)
         calendarStore.addOptimisticSlot(previousSlot)
       } else {
-        const currentPage = weekMeta.value?.page ?? 0
-        calendarStore.fetchWeek(currentPage)
+        if (calendarStore.currentTutorId && calendarStore.currentWeekStart) {
+          calendarStore.fetchWeekSnapshot(calendarStore.currentTutorId, calendarStore.currentWeekStart)
+        }
       }
       
       if (error.status === 409) {

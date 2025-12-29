@@ -117,6 +117,61 @@ export const calendarV055Api = {
   async unblockRange(rangeId: number): Promise<{ success: boolean }> {
     const response = await api.delete(`/v1/calendar/blocked-ranges/${rangeId}/`)
     return response.data
+  },
+
+  /**
+   * Create event (v0.55)
+   */
+  async createEvent(payload: {
+    orderId: number
+    start: string
+    durationMin: number
+    regularity: 'single' | 'once_a_week' | 'twice_a_week'
+    tutorComment?: string
+    timezone?: string
+  }): Promise<{ id: number; zoomLink?: string; notificationSent: boolean }> {
+    const response = await api.post('/v1/calendar/event/create', payload)
+    return response.data || response
+  },
+
+  /**
+   * Update event (v0.55)
+   */
+  async updateEvent(payload: {
+    id: number
+    start?: string
+    durationMin?: number
+    tutorComment?: string
+    paidStatus?: 'paid' | 'unpaid'
+    doneStatus?: 'done' | 'not_done' | 'not_done_client_missed' | 'done_client_missed'
+  }): Promise<{ success: boolean }> {
+    const response = await api.post('/v1/calendar/event/update', payload)
+    return response.data || response
+  },
+
+  /**
+   * Delete event (v0.55)
+   */
+  async deleteEvent(payload: { id: number }): Promise<{ success: boolean }> {
+    const response = await api.post('/v1/calendar/event/delete', payload)
+    return response.data || response
+  },
+
+  /**
+   * Get event details (v0.55)
+   */
+  async getEventDetails(id: number): Promise<{
+    event: CalendarEventV055
+    dictionaries: {
+      durations: number[]
+      regularities: string[]
+      classTypes: string[]
+      paidStatuses: string[]
+      doneStatuses: string[]
+    }
+  }> {
+    const response = await api.get(`/v1/calendar/event/${id}/`)
+    return response.data || response
   }
 }
 

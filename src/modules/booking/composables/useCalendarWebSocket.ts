@@ -44,7 +44,9 @@ export function useCalendarWebSocket() {
 
     ws.value.on('week.refresh', (data) => {
       console.log('[useCalendarWebSocket] Week refresh:', data)
-      store.fetchWeek()
+      if (store.currentTutorId && store.currentWeekStart) {
+        store.fetchWeekSnapshot(store.currentTutorId, store.currentWeekStart)
+      }
     })
 
     // v0.49.5: Availability slots generated event
@@ -54,7 +56,9 @@ export function useCalendarWebSocket() {
       // Single slot creation is handled by optimistic updates
       if (data.slotsCreated > 1 || data.slotsDeleted > 0) {
         setTimeout(() => {
-          store.fetchWeek()
+          if (store.currentTutorId && store.currentWeekStart) {
+            store.fetchWeekSnapshot(store.currentTutorId, store.currentWeekStart)
+          }
         }, 500)
       }
       // Optionally show toast notification
