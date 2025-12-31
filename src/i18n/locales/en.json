@@ -376,6 +376,11 @@
       "loading": "Saving...",
       "backToLogin": "Back to login"
     },
+    "sessionRevoked": {
+      "title": "Session revoked",
+      "message": "Your session was revoked on another device or by an administrator. Please sign in again to continue.",
+      "relogin": "Sign in again"
+    },
     "invite": {
       "title": "Invite student",
       "description": "Enter the student's email to send an invite to this classroom.",

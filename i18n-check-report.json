@@ -2,9 +2,12 @@
   "locales": {
     "en": {
       "status": "ok",
-      "totalKeys": 2887,
+      "totalKeys": 2890,
       "missing": [],
       "extra": [
+        "auth.sessionRevoked.message",
+        "auth.sessionRevoked.relogin",
+        "auth.sessionRevoked.title",
         "marketplace.profile.editor.offline.lastSync",
         "marketplace.profile.editor.offline.message",
         "marketplace.profile.editor.offline.retry",
