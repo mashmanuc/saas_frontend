@@ -33,21 +33,44 @@ export const calendarV055Api = {
   async getCalendarWeek(
     tutorId: number,
     weekStart: string,
-    etag?: string
+    etag?: string,
+    timezone?: string
   ): Promise<CalendarSnapshot> {
     const headers: Record<string, string> = {}
     if (etag) {
       headers['If-None-Match'] = etag
     }
 
+    const params: Record<string, string> = {
+      tutorId: String(tutorId),
+      weekStart,
+    }
+
+    if (timezone) {
+      params.timezone = timezone
+    }
+
+    console.log('[calendarV055Api] getCalendarWeek request', {
+      tutorId,
+      weekStart,
+      etag: etag || null,
+      timezone: timezone || null,
+      headers,
+    })
+
     try {
-      const response = await api.get('/v1/calendar/week/', {
-        params: { 
-          tutorId,
-          weekStart
-        },
+      const response = await api.get('/v1/calendar/week/v055/', {
+        params,
         headers,
       }) as CalendarSnapshot
+      console.log('[calendarV055Api] getCalendarWeek response', {
+        hasResponse: !!response,
+        days: (response as any)?.days?.length ?? 0,
+        events: Array.isArray((response as any)?.events)
+          ? (response as any).events.length
+          : Object.values((response as any)?.events || {}).flat().length,
+        metaEtag: (response as any)?.meta?.etag || null,
+      })
       
       if (!response) {
         throw new Error('API returned empty response')
@@ -120,18 +143,56 @@ export const calendarV055Api = {
   },
 
   /**
-   * Create event (v0.55)
+   * Create a new calendar event (lesson)
+   * CONTRACT: POST /api/v1/calendar/event/create/
    */
   async createEvent(payload: {
     orderId: number
     start: string
     durationMin: number
-    regularity: 'single' | 'once_a_week' | 'twice_a_week'
+    regularity?: string
     tutorComment?: string
+    studentComment?: string
+    lessonType?: string
+    slotId?: number
+    notifyStudent?: boolean
+    autoGenerateZoom?: boolean
     timezone?: string
-  }): Promise<{ id: number; zoomLink?: string; notificationSent: boolean }> {
-    const response = await api.post('/v1/calendar/event/create', payload)
-    return response.data || response
+  }): Promise<{ id: number; zoomLink?: string; optimisticHash?: string }> {
+    const response = await api.post('/v1/calendar/event/create/', payload)
+    return response.data
+  },
+
+  /**
+   * Create a series of recurring calendar events
+   * CONTRACT: POST /api/v1/calendar/event/series/create/
+   */
+  async createEventSeries(payload: {
+    orderId: number
+    start: string
+    durationMin: number
+    regularity?: string
+    tutorComment?: string
+    studentComment?: string
+    lessonType?: string
+    slotId?: number
+    notifyStudent?: boolean
+    autoGenerateZoom?: boolean
+    timezone?: string
+    repeatMode: 'weekly' | 'biweekly'
+    repeatCount?: number
+    repeatUntil?: string
+    skipConflicts?: boolean
+  }): Promise<{
+    seriesId: number
+    createdCount: number
+    skippedCount: number
+    createdEvents: Array<{ id: number; start: string; end: string }>
+    skipped: Array<{ start: string; code: string; message: string; details?: any }>
+    warnings: string[]
+  }> {
+    const response = await api.post('/v1/calendar/event/series/create/', payload)
+    return response.data
   },
 
   /**
@@ -145,7 +206,7 @@ export const calendarV055Api = {
     paidStatus?: 'paid' | 'unpaid'
     doneStatus?: 'done' | 'not_done' | 'not_done_client_missed' | 'done_client_missed'
   }): Promise<{ success: boolean }> {
-    const response = await api.post('/v1/calendar/event/update', payload)
+    const response = await api.post('/v1/calendar/event/update/', payload)
     return response.data || response
   },
 
@@ -153,7 +214,8 @@ export const calendarV055Api = {
    * Delete event (v0.55)
    */
   async deleteEvent(payload: { id: number }): Promise<{ success: boolean }> {
-    const response = await api.post('/v1/calendar/event/delete', payload)
+    const response = await api.post('/v1/calendar/event/delete/', payload)
+
     return response.data || response
   },
 
@@ -170,8 +232,24 @@ export const calendarV055Api = {
       doneStatuses: string[]
     }
   }> {
-    const response = await api.get(`/v1/calendar/event/${id}/`)
-    return response.data || response
+    console.log('[calendarV055Api] getEventDetails called for id:', id)
+    const payload = await api.get(`/v1/calendar/event/${id}/`)
+    console.log('[calendarV055Api] getEventDetails raw payload:', payload)
+    
+    // Backend returns { status: "success", data: { event, dictionaries } }
+    if (payload?.data?.event && payload?.data?.dictionaries) {
+      console.log('[calendarV055Api] getEventDetails returning data:', payload.data)
+      return payload.data
+    }
+    
+    if (payload?.event && payload?.dictionaries) {
+      // Already unwrapped
+      return payload
+    }
+    
+    // Fallback if response structure is different
+    console.warn('[calendarV055Api] getEventDetails unexpected payload structure:', payload)
+    throw new Error('Invalid response structure from getEventDetails')
   }
 }
 
@@ -294,4 +372,22 @@ function transformLegacySnapshot(snapshot: WeekSnapshot, tutorId: number): Calen
     dictionaries,
     meta
   }
+}
+
+export interface CreateEventSeriesPayload {
+  orderId: number
+  start: string
+  durationMin: number
+  regularity?: string
+  tutorComment?: string
+  studentComment?: string
+  lessonType?: string
+  slotId?: number
+  notifyStudent?: boolean
+  autoGenerateZoom?: boolean
+  timezone?: string
+  repeatMode: 'weekly' | 'biweekly'
+  repeatCount?: number
+  repeatUntil?: string
+  skipConflicts?: boolean
 }

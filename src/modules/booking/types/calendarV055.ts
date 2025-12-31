@@ -33,6 +33,13 @@ export interface CalendarEvent {
   lesson_link: string       // Zoom link
   can_reschedule: boolean
   can_mark_no_show: boolean
+  durationMin?: number      // Тривалість уроку в хвилинах
+  tutorComment?: string     // Коментар тьютора
+  studentComment?: string   // Коментар студента
+  clientName?: string       // Ім'я студента (альтернатива student.name)
+  orderId?: number          // ID замовлення
+  paidStatus?: 'paid' | 'unpaid'
+  lessonType?: string       // Тип уроку
 }
 
 export interface AccessibleSlot {
@@ -54,6 +61,8 @@ export interface Dictionaries {
   noShowReasons: Record<number, string>
   cancelReasons: Record<number, string>
   blockReasons: Record<number, string>
+  lessonTypes?: Record<string, string>  // F3: Типи уроків
+  durations?: number[]                   // Доступні тривалості
 }
 
 export interface SnapshotMeta {
@@ -68,25 +77,38 @@ export interface SnapshotMeta {
 // API Request/Response types
 
 export interface ReschedulePreviewRequest {
-  new_start: string
-  new_end: string
+  target_slot_id?: number
+  target_start?: string
+  target_end?: string
 }
 
 export interface ReschedulePreviewResponse {
   allowed: boolean
   conflicts: Conflict[]
   warnings: string[]
+  suggested_alternatives?: Array<{
+    slotId: number
+    start: string
+    end: string
+    reason: string
+  }>
 }
 
 export interface Conflict {
-  type: 'booking_exists' | 'blocked_time' | 'outside_availability'
+  type: 'booking_exists' | 'blocked_time' | 'outside_availability' | 'overlapping_lesson' | 'slot_not_found' | 'event_not_found' | 'missing_target'
   reason: string
   conflicting_event_id?: number
+  event_id?: number
+  slot_id?: number
+  start?: string
+  end?: string
+  range_id?: number
 }
 
 export interface RescheduleConfirmRequest {
-  new_start: string
-  new_end: string
+  target_slot_id?: number
+  target_start?: string
+  target_end?: string
 }
 
 export interface NoShowRequest {

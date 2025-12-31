@@ -1770,13 +1770,52 @@
         "title": "Create lesson",
         "selectedTime": "Lesson start time",
         "timeHint": "Specify the exact time in your timezone",
+        "hourLabel": "Hour",
+        "minuteLabel": "Minute",
         "student": "Student / order",
         "selectStudent": "Select student",
+        "searchStudent": "Search student or order",
+        "lessonsLeft": "lessons left",
+        "lessonType": "Lesson type",
+        "selectType": "Choose type",
         "duration": "Duration",
         "regularity": "Regularity",
+        "tutorComment": "Internal note",
+        "tutorCommentPlaceholder": "Only visible to you",
+        "studentComment": "Student note",
+        "studentCommentPlaceholder": "Visible to the student in reminders",
         "comment": "Comment for yourself",
         "commentPlaceholder": "What should be considered during the lesson?",
-        "create": "Create lesson"
+        "conflictDetected": "Time conflict detected",
+        "createAnyway": "Create anyway",
+        "create": "Create lesson",
+        "repeatMode": "Repeat mode",
+        "repeatCount": "Number of occurrences",
+        "repeatUntil": "Repeat until",
+        "skipConflicts": "Skip conflicts",
+        "seriesSuccess": "Created {count} lessons in series",
+        "seriesPartialSuccess": "Created {created} lessons, skipped {skipped} due to conflicts"
+      },
+      "errors": {
+        "invalidTime": "Select a future time within 6 months",
+        "invalidDuration": "Choose one of the allowed durations",
+        "invalidOrder": "Select a valid student or order",
+        "invalidLessonType": "Select a valid lesson type",
+        "invalidDatetime": "Provided time slot is invalid",
+        "timeOverlap": "This time overlaps with another lesson",
+        "studentNotFound": "We could not find this student",
+        "orderInactive": "This order is inactive",
+        "validationError": "Please check the highlighted fields",
+        "unknown": "Something went wrong. Try again later.",
+        "serverError": "Server error. Please try again later.",
+        "notFound": "Resource not found",
+        "permissionDenied": "You don’t have access to perform this action",
+        "rateLimitExceeded": "Too many requests. Please wait and try again.",
+        "cannotDelete": "This lesson cannot be deleted",
+        "createFailed": "We couldn’t create the lesson. Try again later.",
+        "loadFailed": "Failed to load lesson data",
+        "updateFailed": "Failed to update lesson",
+        "deleteFailed": "Failed to delete lesson"
       },
       "actions": {
         "new": "New lesson",
@@ -2195,13 +2234,46 @@
         "title": "Create lesson",
         "selectedTime": "Lesson start",
         "timeHint": "Specify the exact time in your timezone",
+        "hourLabel": "Hour",
+        "minuteLabel": "Minute",
         "student": "Student / order",
         "selectStudent": "Select a student",
         "duration": "Duration",
         "regularity": "Regularity",
         "comment": "Private comment",
         "commentPlaceholder": "Anything to keep in mind for this lesson?",
-        "create": "Create lesson"
+        "create": "Create lesson",
+        "repeatMode": "Repeat mode",
+        "repeatCount": "Number of occurrences",
+        "repeatUntil": "Repeat until",
+        "skipConflicts": "Skip conflicts",
+        "seriesSuccess": "Created {count} lessons in series",
+        "seriesPartialSuccess": "Created {created} lessons, skipped {skipped} due to conflicts"
+      },
+      "editLesson": {
+        "title": "Edit lesson",
+        "tabs": {
+          "update": "Edit",
+          "delete": "Delete",
+          "reschedule": "Reschedule"
+        },
+        "edit": "Edit",
+        "delete": "Delete lesson",
+        "dateTime": "Date & time",
+        "newTime": "New time",
+        "currentTime": "Current time",
+        "checkConflicts": "Check conflicts",
+        "noConflicts": "No conflicts found! Ready to reschedule.",
+        "conflictsFound": "Conflicts found",
+        "suggestedTimes": "Suggested times",
+        "changeTime": "Change time",
+        "confirmReschedule": "Confirm reschedule",
+        "deleteWarning": "Delete lesson",
+        "deleteWarningDetails": "This action is irreversible. The lesson will be permanently deleted.",
+        "cannotDelete": "Cannot delete paid or completed lesson",
+        "confirmDelete": "Delete confirmation",
+        "confirmDeleteMessage": "Are you sure you want to delete the lesson with {student}? This action cannot be undone.",
+        "rescheduleInfo": "Choose a new time for the lesson. The system will check for conflicts and suggest alternatives."
       },
       "eventModal": {
         "title": "Edit lesson",
@@ -2231,15 +2303,29 @@
         "done_client_missed": "Conducted (student missed)"
       },
       "regularity": {
-        "single": "One-time",
-        "once_a_week": "Once per week",
+        "single": "One time",
+        "once_a_week": "Repeat weekly",
         "twice_a_week": "Twice per week"
+      },
+      "repeatMode": {
+        "weekly": "Weekly",
+        "biweekly": "Every two weeks"
       },
       "errors": {
         "loadFailed": "Failed to load lesson details",
         "cannotDelete": "This lesson cannot be deleted",
         "deleteFailed": "Failed to delete lesson",
-        "updateFailed": "Failed to update lesson"
+        "updateFailed": "Failed to update lesson",
+        "createFailed": "Failed to create lesson. Please try again.",
+        "previewFailed": "Failed to check conflicts",
+        "rescheduleFailed": "Failed to reschedule lesson",
+        "slotNoLongerAvailable": "This time is no longer available. Please choose another time."
+      },
+      "success": {
+        "created": "Lesson created successfully!",
+        "updated": "Lesson updated successfully!",
+        "deleted": "Lesson deleted successfully!",
+        "rescheduled": "Lesson rescheduled successfully!"
       }
     },
     "modal": {

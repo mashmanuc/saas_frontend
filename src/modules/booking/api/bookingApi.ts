@@ -79,6 +79,27 @@ export interface BlockSlotRequest {
   reason?: string
 }
 
+export interface ConflictCheckRequest {
+  start: string
+  durationMin: number
+  slotId?: number
+  strict?: boolean
+}
+
+export interface ConflictItem {
+  eventId: number
+  start: string
+  end: string
+  studentId: number | null
+  studentName: string
+  reason: string
+}
+
+export interface ConflictCheckResponse {
+  conflicts: ConflictItem[]
+  slotId?: number
+}
+
 export const bookingApi = {
   async createTrialBooking(
     matchId: string,
@@ -180,6 +201,14 @@ export const bookingApi = {
    */
   async unblockSlot(slotId: number): Promise<void> {
     await apiClient.delete(`/booking/slots/block/${slotId}/`)
+  },
+
+  async checkSlotConflicts(data: ConflictCheckRequest): Promise<ConflictCheckResponse> {
+    const response = await apiClient.post<ConflictCheckResponse>(
+      `/v1/calendar/event/conflicts/`,
+      data
+    )
+    return response
   }
 }
 

@@ -57,6 +57,10 @@ export interface Order {
   clientName: string
   status: number          // 6 = active
   durations: number[]     // [30, 60, 90]
+  studentId?: number      // ID студента для пошуку
+  lessonsBalance?: number // Баланс уроків студента
+  studentPhone?: string   // Телефон для відображення
+  studentEmail?: string   // Email для відображення
 }
 
 export interface MetaData {
@@ -104,6 +108,7 @@ export interface CalendarCell {
   endAtUTC: string
   status: CellStatus
   eventId?: number        // якщо booked
+  slotId?: number         // ID доступного слота (якщо є)
 }
 
 // Command payloads
@@ -113,6 +118,12 @@ export interface CreateEventPayload {
   durationMin: number     // 30, 60, 90, 120
   regularity: 'single' | 'once_a_week' | 'twice_a_week'
   tutorComment?: string
+  studentComment?: string // Коментар для студента
+  lessonType?: string     // Тип уроку (з dictionaries)
+  slotId?: number         // ID слота для контексту
+  notifyStudent?: boolean
+  autoGenerateZoom?: boolean
+  timezone?: string
 }
 
 export interface UpdateEventPayload {

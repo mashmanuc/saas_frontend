@@ -1,6 +1,7 @@
 <template>
-  <div v-if="visible" class="modal-overlay" @click.self="handleClose">
-    <div ref="modalRef" class="modal-container" role="dialog" aria-labelledby="modal-title" aria-modal="true">
+  <Teleport to="body">
+    <div v-if="visible" class="modal-overlay" @click.self="handleClose">
+      <div ref="modalRef" class="modal-container" role="dialog" aria-labelledby="modal-title" aria-modal="true">
       <div class="modal-header">
         <h2 id="modal-title">{{ $t('calendar.createLesson.title') }}</h2>
         <button @click="handleClose" class="close-btn" aria-label="Закрити">
@@ -8,47 +9,77 @@
         </button>
       </div>
 
-      <form @submit.prevent="handleSubmit" class="modal-form">
+      <form @submit.prevent="submitForm" class="modal-form">
         <!-- Time Selection -->
         <div class="form-field">
-          <label for="lesson-time" class="field-label">
-            {{ $t('calendar.createLesson.selectedTime') }}
-            <span class="required">*</span>
-          </label>
-          <input
-            id="lesson-time"
+          <DateTimePicker
             v-model="formData.start"
-            type="datetime-local"
-            class="field-input"
-            required
             :min="minDateTime"
+            :label="$t('calendar.createLesson.selectedTime')"
+            :hint="$t('calendar.createLesson.timeHint')"
+            :hour-label="$t('calendar.createLesson.hourLabel')"
+            :minute-label="$t('calendar.createLesson.minuteLabel')"
+            required
           />
-          <p class="field-hint">{{ $t('calendar.createLesson.timeHint') }}</p>
         </div>
 
-        <!-- Order Selection -->
+        <!-- Student Search Combobox -->
         <div class="form-field">
-          <label for="order" class="field-label">
+          <label for="student-search" class="field-label">
             {{ $t('calendar.createLesson.student') }}
             <span class="required">*</span>
           </label>
+          <div class="combobox-wrapper">
+            <input
+              id="student-search"
+              v-model="searchQuery"
+              type="text"
+              class="field-input"
+              :placeholder="$t('calendar.createLesson.searchStudent')"
+              @focus="showDropdown = true"
+              @blur="handleBlur"
+              autocomplete="off"
+            />
+            <div v-if="showDropdown && filteredOrders.length" class="dropdown-list">
+              <button
+                v-for="order in filteredOrders"
+                :key="order.id"
+                type="button"
+                class="dropdown-item"
+                @mousedown.prevent="selectStudent(order)"
+              >
+                <div class="student-info">
+                  <span class="student-name">{{ order.clientName }}</span>
+                  <span v-if="order.lessonsBalance !== undefined" class="balance-badge">
+                    {{ order.lessonsBalance }} {{ $t('calendar.createLesson.lessonsLeft') }}
+                  </span>
+                </div>
+              </button>
+            </div>
+          </div>
+          <p v-if="fieldErrors.orderId" class="field-error">{{ fieldErrors.orderId }}</p>
+        </div>
+
+        <!-- Lesson Type -->
+        <div v-if="lessonTypes.length" class="form-field">
+          <label for="lesson-type" class="field-label">
+            {{ $t('calendar.createLesson.lessonType') }}
+          </label>
           <select
-            id="order"
-            v-model="formData.orderId"
+            id="lesson-type"
+            v-model="formData.lessonType"
             class="field-select"
-            required
-            @change="handleOrderChange"
-            aria-required="true"
           >
-            <option value="">{{ $t('calendar.createLesson.selectStudent') }}</option>
+            <option value="">{{ $t('calendar.createLesson.selectType') }}</option>
             <option
-              v-for="order in availableOrders"
-              :key="order.id"
-              :value="order.id"
+              v-for="(label, value) in lessonTypesDict"
+              :key="value"
+              :value="value"
             >
-              {{ order.clientName }}
+              {{ label }}
             </option>
           </select>
+          <p v-if="fieldErrors.lessonType" class="field-error">{{ fieldErrors.lessonType }}</p>
         </div>
 
         <!-- Duration Selection -->
@@ -97,21 +128,107 @@
           >
             <option value="single">{{ $t('booking.calendar.regularity.single') }}</option>
             <option value="once_a_week">{{ $t('booking.calendar.regularity.once_a_week') }}</option>
-            <option value="twice_a_week">{{ $t('booking.calendar.regularity.twice_a_week') }}</option>
           </select>
         </div>
 
-        <!-- Comment -->
+        <!-- Repeat Mode (Series) -->
         <div class="form-field">
-          <label for="comment" class="field-label">
-            {{ $t('calendar.createLesson.comment') }}
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              v-model="enableRepeat"
+              class="w-4 h-4 rounded border-gray-300"
+            />
+            <span class="field-label mb-0">{{ $t('calendar.createLesson.repeatMode') }}</span>
+          </label>
+        </div>
+
+        <div v-if="enableRepeat" class="space-y-4 pl-6 border-l-2 border-primary/20">
+          <!-- Repeat Mode Select -->
+          <div class="form-field">
+            <label for="repeat-mode" class="field-label">
+              {{ $t('calendar.createLesson.repeatMode') }}
+            </label>
+            <select
+              id="repeat-mode"
+              v-model="repeatMode"
+              class="field-select"
+            >
+              <option value="weekly">{{ $t('booking.calendar.repeatMode.weekly') }}</option>
+              <option value="biweekly">{{ $t('booking.calendar.repeatMode.biweekly') }}</option>
+            </select>
+          </div>
+
+          <!-- Repeat Count or Until -->
+          <div class="form-field">
+            <label class="field-label">
+              {{ repeatByCount ? $t('calendar.createLesson.repeatCount') : $t('calendar.createLesson.repeatUntil') }}
+            </label>
+            <div class="flex items-center gap-2">
+              <input
+                v-if="repeatByCount"
+                type="number"
+                v-model.number="repeatCount"
+                min="1"
+                max="8"
+                class="field-input"
+                :placeholder="$t('calendar.createLesson.repeatCount')"
+              />
+              <input
+                v-else
+                type="date"
+                v-model="repeatUntil"
+                class="field-input"
+                :placeholder="$t('calendar.createLesson.repeatUntil')"
+              />
+              <button
+                type="button"
+                @click="repeatByCount = !repeatByCount"
+                class="px-3 py-2 text-sm border border-border-subtle rounded-md hover:bg-background-subtle"
+              >
+                {{ repeatByCount ? '📅' : '#' }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Skip Conflicts -->
+          <div class="form-field">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                v-model="skipConflicts"
+                class="w-4 h-4 rounded border-gray-300"
+              />
+              <span class="text-sm text-muted">{{ $t('calendar.createLesson.skipConflicts') }}</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Tutor Comment -->
+        <div class="form-field">
+          <label for="tutor-comment" class="field-label">
+            {{ $t('calendar.createLesson.tutorComment') }}
           </label>
           <textarea
-            id="comment"
+            id="tutor-comment"
             v-model="formData.tutorComment"
             class="field-textarea"
-            rows="3"
-            :placeholder="$t('calendar.createLesson.commentPlaceholder')"
+            rows="2"
+            :placeholder="$t('calendar.createLesson.tutorCommentPlaceholder')"
+          />
+        </div>
+
+        <!-- Student Comment -->
+        <div class="form-field">
+          <label for="student-comment" class="field-label">
+            {{ $t('calendar.createLesson.studentComment') }}
+          </label>
+          <textarea
+            id="student-comment"
+            v-model="formData.studentComment"
+            class="field-textarea"
+            rows="2"
+            :placeholder="$t('calendar.createLesson.studentCommentPlaceholder')"
           />
         </div>
 
@@ -119,6 +236,31 @@
         <div v-if="formData.start && !isTimeValid" class="warning-message" role="alert">
           <AlertCircleIcon class="w-5 h-5" />
           <p>{{ t('calendar.errors.invalidTime') }}</p>
+        </div>
+        <p v-if="fieldErrors.start" class="field-error">{{ fieldErrors.start }}</p>
+        <p v-if="fieldErrors.durationMin" class="field-error">{{ fieldErrors.durationMin }}</p>
+
+        <!-- F7: Conflict Warning Block -->
+        <div v-if="showConflictWarning && conflicts.length" class="conflict-warning" role="alert">
+          <div class="conflict-header">
+            <AlertCircleIcon class="w-5 h-5" />
+            <h4>{{ $t('calendar.createLesson.conflictDetected') }}</h4>
+          </div>
+          <div class="conflict-list">
+            <div v-for="conflict in conflicts" :key="conflict.eventId" class="conflict-item">
+              <p class="conflict-student">{{ conflict.studentName }}</p>
+              <p class="conflict-time">{{ conflict.start }} - {{ conflict.end }}</p>
+              <p class="conflict-reason">{{ conflict.reason }}</p>
+            </div>
+          </div>
+          <div class="conflict-actions">
+            <button type="button" @click="handleCancelConflict" class="btn-secondary">
+              {{ $t('common.cancel') }}
+            </button>
+            <button type="button" @click="handleForceCreate" class="btn-warning">
+              {{ $t('calendar.createLesson.createAnyway') }}
+            </button>
+          </div>
         </div>
 
         <!-- Error Display -->
@@ -149,6 +291,7 @@
       </form>
     </div>
   </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -158,10 +301,13 @@ import { X as XIcon, Calendar as CalendarIcon, Loader as LoaderIcon, AlertCircle
 import { useCalendarWeekStore } from '@/modules/booking/stores/calendarWeekStore'
 import { useToast } from '@/composables/useToast'
 import { useFocusTrap } from '@/composables/useFocusTrap'
-import { useErrorHandler } from '@/modules/booking/composables/useErrorHandler'
+import { useErrorHandler, type ErrorHandlerResult } from '@/modules/booking/composables/useErrorHandler'
 import { sanitizeComment } from '@/utils/sanitize'
 import type { CalendarCell, CreateEventPayload } from '@/modules/booking/types/calendarWeek'
 import { storeToRefs } from 'pinia'
+import { bookingApi } from '@/modules/booking/api/bookingApi'
+import type { ConflictItem } from '@/modules/booking/api/bookingApi'
+import DateTimePicker from '@/components/ui/DateTimePicker.vue'
 
 const props = defineProps<{
   visible: boolean
@@ -175,9 +321,9 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const store = useCalendarWeekStore()
-const { ordersArray } = storeToRefs(store)
+const { ordersArray, meta } = storeToRefs(store)
 const toast = useToast()
-const { handleError } = useErrorHandler()
+const { handleError, handleErrorWithFields } = useErrorHandler()
 
 const modalRef = ref<HTMLElement | null>(null)
 useFocusTrap(modalRef, {
@@ -191,10 +337,43 @@ const formData = ref<CreateEventPayload>({
   durationMin: 60,
   regularity: 'single',
   tutorComment: '',
+  studentComment: '',
+  lessonType: '',
+  slotId: undefined,
+  notifyStudent: true,
+  autoGenerateZoom: false,
 })
+
+const enableRepeat = ref(false)
+const repeatMode = ref<'weekly' | 'biweekly'>('weekly')
+const repeatByCount = ref(true)
+const repeatCount = ref(4)
+const repeatUntil = ref('')
+const skipConflicts = ref(false)
 
 const isSubmitting = ref(false)
 const error = ref<string | null>(null)
+const fieldErrors = ref<Record<string, string>>({})
+const conflicts = ref<ConflictItem[]>([])
+const showConflictWarning = ref(false)
+
+// F2: Student search state
+const searchQuery = ref('')
+const showDropdown = ref(false)
+const filteredOrders = computed(() => {
+  if (!searchQuery.value) return ordersArray.value
+  const query = searchQuery.value.toLowerCase()
+  return ordersArray.value.filter(order => 
+    order.clientName.toLowerCase().includes(query) ||
+    order.studentPhone?.toLowerCase().includes(query) ||
+    order.studentEmail?.toLowerCase().includes(query)
+  )
+})
+
+// F3: Lesson types from dictionaries
+const { dictionaries } = storeToRefs(store)
+const lessonTypesDict = computed(() => dictionaries.value?.lessonTypes || {})
+const lessonTypes = computed(() => Object.keys(lessonTypesDict.value))
 
 const availableOrders = computed(() => ordersArray.value)
 
@@ -223,8 +402,20 @@ const isTimeValid = computed(() => {
   return true
 })
 
+// F6: Enhanced validation
+const isDurationValid = computed(() => {
+  if (!selectedOrder.value) return true
+  return selectedOrder.value.durations.includes(formData.value.durationMin)
+})
+
 const isFormValid = computed(() => {
-  return formData.value.orderId > 0 && formData.value.durationMin > 0 && formData.value.start !== '' && isTimeValid.value
+  return (
+    formData.value.orderId > 0 && 
+    formData.value.durationMin > 0 && 
+    formData.value.start !== '' && 
+    isTimeValid.value &&
+    isDurationValid.value
+  )
 })
 
 const minDateTime = computed(() => {
@@ -233,7 +424,12 @@ const minDateTime = computed(() => {
   const month = String(now.getMonth() + 1).padStart(2, '0')
   const day = String(now.getDate()).padStart(2, '0')
   const hours = String(now.getHours()).padStart(2, '0')
-  const minutes = String(now.getMinutes()).padStart(2, '0')
+  
+  // Округлюю хвилини до найближчого кратного 5
+  const currentMinutes = now.getMinutes()
+  const roundedMinutes = Math.ceil(currentMinutes / 5) * 5
+  const minutes = String(roundedMinutes).padStart(2, '0')
+  
   return `${year}-${month}-${day}T${hours}:${minutes}`
 })
 
@@ -242,6 +438,10 @@ watch(() => props.visible, (visible) => {
     resetForm()
   }
 })
+
+function submitForm() {
+  handleSubmit()
+}
 
 function resetForm() {
   // Конвертувати UTC час клітинки в локальний datetime-local формат
@@ -259,60 +459,207 @@ function resetForm() {
     durationMin: 60,
     regularity: 'single',
     tutorComment: '',
+    studentComment: '',
+    lessonType: '',
+    slotId: props.selectedCell.slotId,
+    notifyStudent: true,
+    autoGenerateZoom: false,
   }
   error.value = null
+  fieldErrors.value = {}
+  searchQuery.value = ''
+  showDropdown.value = false
 }
 
-function handleOrderChange() {
-  if (selectedOrder.value && !selectedOrder.value.durations.includes(formData.value.durationMin)) {
-    formData.value.durationMin = selectedOrder.value.durations[0] || 60
+function selectStudent(order: any) {
+  formData.value.orderId = order.id
+  searchQuery.value = order.clientName
+  showDropdown.value = false
+  fieldErrors.value.orderId = ''
+  
+  // Adjust duration if needed
+  if (!order.durations.includes(formData.value.durationMin)) {
+    formData.value.durationMin = order.durations[0] || 60
   }
 }
 
-async function handleSubmit() {
+function handleBlur() {
+  setTimeout(() => {
+    showDropdown.value = false
+  }, 200)
+}
+
+const formatWithOffset = (date: Date) => {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  const hh = String(date.getHours()).padStart(2, '0')
+  const mm = String(date.getMinutes()).padStart(2, '0')
+  const tz = date.getTimezoneOffset()
+  const sign = tz <= 0 ? '+' : '-'
+  const tzHours = String(Math.floor(Math.abs(tz) / 60)).padStart(2, '0')
+  const tzMinutes = String(Math.abs(tz) % 60).padStart(2, '0')
+  return `${y}-${m}-${d}T${hh}:${mm}:00${sign}${tzHours}:${tzMinutes}`
+}
+
+// F7: Check conflicts before submit
+async function checkConflicts(options: { strict?: boolean } = {}) {
+  conflicts.value = []
+  if (!isFormValid.value) return false
+  
+  try {
+    const localDate = new Date(formData.value.start)
+    
+    const response = await bookingApi.checkSlotConflicts({
+      start: formatWithOffset(localDate),
+      durationMin: formData.value.durationMin,
+      slotId: formData.value.slotId,
+      strict: options.strict ?? false,
+    })
+    
+    conflicts.value = response.conflicts || []
+    
+    if (conflicts.value.length && !options.strict) {
+      showConflictWarning.value = true
+      return false
+    }
+    
+    return true
+  } catch (err: any) {
+    if (options.strict && err.response?.status === 409) {
+      conflicts.value = err.response?.data?.conflicts || []
+      showConflictWarning.value = true
+      toast.error(t('calendar.errors.timeOverlap'))
+      return false
+    }
+    
+    console.error('[CreateLessonModal] Conflict check error:', err)
+    return true // Proceed if conflict check fails
+  }
+}
+
+async function handleSubmit(options: { skipConflictCheck?: boolean } = {}) {
   if (!isFormValid.value) return
+  
+  if (!options.skipConflictCheck) {
+    const canProceed = await checkConflicts()
+    if (!canProceed) return
+  }
   
   isSubmitting.value = true
   error.value = null
+  fieldErrors.value = {}
+  
+  const tempId = `temp-${Date.now()}`
   
   try {
-    // Конвертувати локальний datetime-local в ISO 8601 з локальним offset (не втрачати час)
     const localDate = new Date(formData.value.start)
-    const formatWithOffset = (date: Date) => {
-      const y = date.getFullYear()
-      const m = String(date.getMonth() + 1).padStart(2, '0')
-      const d = String(date.getDate()).padStart(2, '0')
-      const hh = String(date.getHours()).padStart(2, '0')
-      const mm = String(date.getMinutes()).padStart(2, '0')
-      const tz = date.getTimezoneOffset()
-      const sign = tz <= 0 ? '+' : '-'
-      const tzHours = String(Math.floor(Math.abs(tz) / 60)).padStart(2, '0')
-      const tzMinutes = String(Math.abs(tz) % 60).padStart(2, '0')
-      return `${y}-${m}-${d}T${hh}:${mm}:00${sign}${tzHours}:${tzMinutes}`
-    }
     const isoString = formatWithOffset(localDate)
+    const endDate = new Date(localDate.getTime() + formData.value.durationMin * 60000)
+    const endIsoString = formatWithOffset(endDate)
     
-    const payload = {
+    const timezone = meta.value?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Kiev'
+    
+    const basePayload = {
       orderId: formData.value.orderId,
       start: isoString,
       durationMin: formData.value.durationMin,
       regularity: formData.value.regularity,
       tutorComment: sanitizeComment(formData.value.tutorComment || ''),
-      notifyStudent: true,
-      autoGenerateZoom: false,
+      studentComment: sanitizeComment(formData.value.studentComment || ''),
+      lessonType: formData.value.lessonType || undefined,
+      slotId: formData.value.slotId,
+      notifyStudent: formData.value.notifyStudent,
+      autoGenerateZoom: formData.value.autoGenerateZoom,
+      timezone,
     }
     
-    const eventId = await store.createEvent(payload)
-    
-    console.info('[CreateLessonModal] Lesson created:', eventId)
-    emit('success', eventId)
-    emit('close')
+    if (enableRepeat.value) {
+      const seriesPayload = {
+        ...basePayload,
+        repeatMode: repeatMode.value,
+        repeatCount: repeatByCount.value ? repeatCount.value : undefined,
+        repeatUntil: !repeatByCount.value ? repeatUntil.value : undefined,
+        skipConflicts: skipConflicts.value,
+      }
+      
+      const response = await store.createEventSeries(seriesPayload)
+      
+      console.info('[CreateLessonModal] Series created:', response)
+      
+      if (response.warnings?.length) {
+        response.warnings.forEach(warning => toast.warning(warning))
+      }
+      
+      if (response.skippedCount > 0) {
+        toast.warning(
+          t('calendar.createLesson.seriesPartialSuccess', {
+            created: response.createdCount,
+            skipped: response.skippedCount,
+          })
+        )
+      } else {
+        toast.success(
+          t('calendar.createLesson.seriesSuccess', { count: response.createdCount })
+        )
+      }
+      
+      emit('success', response.seriesId)
+      emit('close')
+    } else {
+      const studentName = selectedOrder.value?.clientName || 'Unknown'
+      store.addOptimisticEvent({
+        tempId,
+        start: isoString,
+        end: endIsoString,
+        status: 'scheduled',
+        is_first: false,
+        student: {
+          id: formData.value.orderId,
+          name: studentName,
+        },
+        lesson_link: '',
+        can_reschedule: true,
+        can_mark_no_show: true,
+      })
+      
+      const eventId = await store.createEvent({
+        ...basePayload,
+        tempId,
+      })
+      
+      console.info('[CreateLessonModal] Lesson created:', eventId)
+      emit('success', eventId)
+      emit('close')
+    }
   } catch (err: any) {
     console.error('[CreateLessonModal] Submit error:', err)
-    handleError(err, t('calendar.errors.createFailed'))
+    
+    if (!enableRepeat.value) {
+      store.removeOptimisticEvent(tempId)
+    }
+    
+    const result = handleErrorWithFields(err, t('calendar.errors.createFailed'))
+    
+    fieldErrors.value = result.fieldErrors
+    
+    if (result.shouldShowToast) {
+      error.value = result.message
+    }
   } finally {
     isSubmitting.value = false
   }
+}
+
+async function handleForceCreate() {
+  const canProceed = await checkConflicts({ strict: true })
+  if (!canProceed) return
+  showConflictWarning.value = false
+  await handleSubmit({ skipConflictCheck: true })
+}
+
+function handleCancelConflict() {
+  showConflictWarning.value = false
 }
 
 function handleClose() {
@@ -546,5 +893,145 @@ function handleClose() {
 .btn-secondary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* F2-F5: New styles for combobox, dropdown, errors */
+.combobox-wrapper {
+  position: relative;
+}
+
+.dropdown-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  margin-top: 4px;
+}
+
+.dropdown-item {
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  background: white;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.dropdown-item:hover {
+  background: #f3f4f6;
+}
+
+.student-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.student-name {
+  font-size: 14px;
+  color: #111827;
+}
+
+.balance-badge {
+  padding: 2px 8px;
+  background: #dbeafe;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #1e40af;
+  white-space: nowrap;
+}
+
+.field-error {
+  font-size: 12px;
+  color: #dc2626;
+  margin-top: 4px;
+}
+
+/* F7: Conflict warning styles */
+.conflict-warning {
+  padding: 16px;
+  background: #fef3c7;
+  border: 2px solid #fbbf24;
+  border-radius: 8px;
+  margin-top: 12px;
+}
+
+.conflict-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.conflict-header h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #92400e;
+}
+
+.conflict-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.conflict-item {
+  padding: 8px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #fde68a;
+}
+
+.conflict-student {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 4px 0;
+}
+
+.conflict-time {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0 0 4px 0;
+}
+
+.conflict-reason {
+  font-size: 12px;
+  color: #92400e;
+  margin: 0;
+}
+
+.conflict-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.btn-warning {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  background: #f59e0b;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-warning:hover {
+  background: #d97706;
 }
 </style>

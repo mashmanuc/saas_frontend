@@ -231,20 +231,22 @@
 
           <div class="grid gap-4 md:grid-cols-2">
             <div class="space-y-1">
-              <label class="text-xs font-medium text-muted">{{ t('lessons.calendar.fields.start') }}</label>
-              <input
+              <DateTimePicker
                 v-model="createForm.start"
-                type="datetime-local"
-                class="w-full rounded-md border border-border-subtle bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                :label="t('lessons.calendar.fields.start')"
+                :hour-label="t('calendar.createLesson.hourLabel')"
+                :minute-label="t('calendar.createLesson.minuteLabel')"
+                required
               />
             </div>
 
             <div class="space-y-1">
-              <label class="text-xs font-medium text-muted">{{ t('lessons.calendar.fields.end') }}</label>
-              <input
+              <DateTimePicker
                 v-model="createForm.end"
-                type="datetime-local"
-                class="w-full rounded-md border border-border-subtle bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                :label="t('lessons.calendar.fields.end')"
+                :hour-label="t('calendar.createLesson.hourLabel')"
+                :minute-label="t('calendar.createLesson.minuteLabel')"
+                required
               />
             </div>
           </div>
@@ -319,14 +321,15 @@ import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
 // FullCalendar CSS imported in src/assets/fullcalendar.css
 
-import Button from '../../../ui/Button.vue'
-import Card from '../../../ui/Card.vue'
-import StudentAutocomplete from '../../booking/components/StudentAutocomplete.vue'
-import { notifyError, notifySuccess } from '../../../utils/notify'
-import { useLessonStore, LESSON_STATUSES } from '../store/lessonStore'
-import { useSettingsStore } from '../../../stores/settingsStore'
-import { getLocaleCalendarRules, normalizeLocale } from '../utils/calendarLocaleRules'
-import { studentsApi } from '../../booking/api/studentsApi'
+import Button from '@/ui/Button.vue'
+import Card from '@/ui/Card.vue'
+import StudentAutocomplete from '@/modules/booking/components/StudentAutocomplete.vue'
+import DateTimePicker from '@/components/ui/DateTimePicker.vue'
+import { notifyError, notifySuccess } from '@/utils/notify'
+import { useLessonStore, LESSON_STATUSES } from '@/modules/lessons/store/lessonStore'
+import { useSettingsStore } from '@/stores/settingsStore'
+import { getLocaleCalendarRules, normalizeLocale } from '@/modules/lessons/utils/calendarLocaleRules'
+import { studentsApi } from '@/modules/booking/api/studentsApi'
 
 const router = useRouter()
 const { t } = useI18n()

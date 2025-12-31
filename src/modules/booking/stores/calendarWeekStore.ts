@@ -32,6 +32,8 @@ import type {
   DeleteEventPayload,
 } from '../types/calendarWeek'
 
+type OptimisticCalendarEvent = CalendarEventV055 & { tempId?: string }
+
 export const useCalendarWeekStore = defineStore('calendarWeek', () => {
   // ===== STATE =====
   
@@ -39,6 +41,7 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
   const snapshot = ref<CalendarSnapshot | null>(null)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+  const optimisticEventMap = new Map<string, OptimisticCalendarEvent>()
   
   // Current context for refetch
   const currentTutorId = ref<number | null>(null)
@@ -55,7 +58,7 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
   // Legacy ETag caching
   const etag = ref<string>('')
   
-  // Legacy page/timezone for refetch
+  // Legacy page/timezone for refetch (timezone still needed for API cache key)
   const currentPage = ref(0)
   const currentTimezone = ref('Europe/Kiev')
   
@@ -214,14 +217,39 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
   }
 
   /**
+   * Clear ETag to force fresh fetch (used after mutations)
+   */
+  function clearETag() {
+    if (snapshot.value?.meta) {
+      snapshot.value.meta.etag = ''
+    }
+    etag.value = ''
+  }
+
+  /**
    * Fetch week snapshot (v0.55)
    */
-  async function fetchWeekSnapshot(tutorId: number, weekStart: string) {
+  async function fetchWeekSnapshot(tutorId: number, weekStart: string, forceRefresh = false) {
     isLoading.value = true
     error.value = null
     
     try {
-      const response = await calendarV055Api.getCalendarWeek(tutorId, weekStart)
+      const currentETag = forceRefresh ? undefined : snapshot.value?.meta?.etag
+      const effectiveTimezone =
+        snapshot.value?.meta?.timezone || currentTimezone.value || 'Europe/Kiev'
+      console.info('[calendarWeekStore] fetchWeekSnapshot', {
+        tutorId,
+        weekStart,
+        forceRefresh,
+        usingETag: currentETag || null,
+        timezone: effectiveTimezone,
+      })
+      const response = await calendarV055Api.getCalendarWeek(
+        tutorId,
+        weekStart,
+        currentETag,
+        effectiveTimezone,
+      )
       
       if (!response) {
         throw new Error('Backend returned null/undefined response')
@@ -256,10 +284,18 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
       const orders = flattenValues<Order>((response as any).orders)
 
       snapshot.value = normalizedSnapshot
+      console.info('[calendarWeekStore] snapshot updated', {
+        tutorId: normalizedMeta.tutorId,
+        weekStart: normalizedMeta.weekStart,
+        timezone: normalizedMeta.timezone,
+        etag: normalizedMeta.etag || null,
+        eventsCount: normalizedSnapshot.events.length,
+      })
       
       syncOrders(orders)
       currentTutorId.value = tutorId
       currentWeekStart.value = normalizedMeta.weekStart || weekStart
+      currentTimezone.value = normalizedMeta.timezone || effectiveTimezone
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to fetch snapshot'
       throw err
@@ -340,20 +376,6 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     }
   }
 
-  // v0.55: Reschedule actions
-  async function reschedulePreview(eventId: number, target: { new_start: string; new_end: string }) {
-    return await calendarV055Api.reschedulePreview(eventId, target)
-  }
-  
-  async function rescheduleConfirm(eventId: number, target: { new_start: string; new_end: string }) {
-    const result = await calendarV055Api.rescheduleConfirm(eventId, target)
-    // ОБОВ'ЯЗКОВИЙ refetch після мутації
-    if (currentTutorId.value && currentWeekStart.value) {
-      await fetchWeekSnapshot(currentTutorId.value, currentWeekStart.value)
-    }
-    return result
-  }
-  
   async function markNoShow(eventId: number, payload: NoShowRequest) {
     await calendarV055Api.markNoShow(eventId, payload)
     // ОБОВ'ЯЗКОВИЙ refetch
@@ -379,50 +401,51 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
   }
   
   // v0.55 CRUD actions (замінили legacy)
-  async function createEvent(payload: CreateEventPayload) {
+  async function createEvent(payload: CreateEventPayload & { tempId?: string }) {
+    const { tempId, ...apiPayload } = payload
+    
     const response = await calendarV055Api.createEvent({
-      orderId: payload.orderId,
-      start: payload.start,
-      durationMin: payload.durationMin,
-      regularity: payload.regularity,
-      tutorComment: payload.tutorComment,
+      orderId: apiPayload.orderId,
+      start: apiPayload.start,
+      durationMin: apiPayload.durationMin,
+      regularity: apiPayload.regularity,
+      tutorComment: apiPayload.tutorComment,
+      studentComment: apiPayload.studentComment,
+      lessonType: apiPayload.lessonType,
+      slotId: apiPayload.slotId,
+      notifyStudent: apiPayload.notifyStudent,
+      autoGenerateZoom: apiPayload.autoGenerateZoom,
+      timezone: apiPayload.timezone,
     })
     
-    // Refetch snapshot після створення
-    if (currentTutorId.value && currentWeekStart.value) {
-      await fetchWeekSnapshot(currentTutorId.value, currentWeekStart.value)
+    if (tempId) {
+      const optimisticEvent = optimisticEventMap.get(tempId)
+      replaceOptimisticEvent(tempId, {
+        id: response.id,
+        lesson_link: response.zoomLink || '',
+        status: 'scheduled',
+        can_reschedule: true,
+        can_mark_no_show: true,
+        start: optimisticEvent?.start || apiPayload.start,
+        end:
+          optimisticEvent?.end ||
+          (apiPayload.start
+            ? dayjs(apiPayload.start).add(apiPayload.durationMin, 'minute').toISOString()
+            : apiPayload.start),
+        student: optimisticEvent?.student || {
+          id: apiPayload.orderId,
+          name: optimisticEvent?.student?.name || 'Unknown',
+        },
+        is_first: optimisticEvent?.is_first ?? false,
+      })
     }
     
-    return response
-  }
-  
-  async function deleteEvent(id: number) {
-    await calendarV055Api.deleteEvent({ id })
-    
-    // Refetch snapshot після видалення
+    // Refetch snapshot після створення (force refresh to bypass 304)
     if (currentTutorId.value && currentWeekStart.value) {
-      await fetchWeekSnapshot(currentTutorId.value, currentWeekStart.value)
+      await fetchWeekSnapshot(currentTutorId.value, currentWeekStart.value, true)
     }
-  }
-  
-  async function updateEvent(payload: UpdateEventPayload) {
-    await calendarV055Api.updateEvent({
-      id: payload.id,
-      start: payload.start,
-      durationMin: payload.durationMin,
-      tutorComment: payload.tutorComment,
-      paidStatus: payload.paidStatus,
-      doneStatus: payload.doneStatus,
-    })
     
-    // Refetch snapshot після оновлення
-    if (currentTutorId.value && currentWeekStart.value) {
-      await fetchWeekSnapshot(currentTutorId.value, currentWeekStart.value)
-    }
-  }
-  
-  async function getEventDetails(id: number) {
-    return await calendarV055Api.getEventDetails(id)
+    return response.id
   }
   
   
@@ -487,7 +510,7 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
   function addOptimisticSlot(slot: AccessibleSlotV055 | LegacySlot) {
     if (!snapshot.value) return
     
-    // Конвертуємо до v0.55 формату якщо потрібно
+    // Convert legacy slot to v0.55 format if needed
     const v055Slot: AccessibleSlotV055 = 'is_recurring' in slot ? slot : {
       id: slot.id,
       start: slot.start,
@@ -497,6 +520,91 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     
     snapshot.value.accessible.push(v055Slot)
     console.info('[calendarWeekStore] Optimistic slot added:', slot.id)
+  }
+
+  // Optimistic event management
+  function addOptimisticEvent(event: Partial<CalendarEventV055> & { tempId: string }) {
+    if (!snapshot.value) return
+    
+    const optimisticId = -Math.floor(Math.random() * 1_000_000) || -1
+    const optimisticEvent: OptimisticCalendarEvent = {
+      id: optimisticId,
+      start: event.start || '',
+      end: event.end || '',
+      status: event.status || 'scheduled',
+      is_first: event.is_first || false,
+      student: event.student || { id: 0, name: 'Unknown' },
+      lesson_link: event.lesson_link || '',
+      can_reschedule: event.can_reschedule ?? false,
+      can_mark_no_show: event.can_mark_no_show ?? false,
+      ...event,
+    }
+    
+    optimisticEvent.tempId = event.tempId
+    
+    snapshot.value.events.push(optimisticEvent)
+    optimisticEventMap.set(event.tempId, optimisticEvent)
+    console.info('[calendarWeekStore] Optimistic event added:', event.tempId)
+    
+    return event.tempId
+  }
+
+  function removeOptimisticEvent(tempId: string) {
+    if (!snapshot.value) return
+    
+    const index = findOptimisticEventIndex(tempId)
+    if (index !== -1) {
+      snapshot.value.events.splice(index, 1)
+      console.info('[calendarWeekStore] Optimistic event removed:', tempId)
+    }
+    optimisticEventMap.delete(tempId)
+  }
+
+  function replaceOptimisticEvent(
+    tempId: string,
+    realEventPatch: Partial<CalendarEventV055> & { id: number }
+  ) {
+    if (!snapshot.value) return
+    
+    const index = findOptimisticEventIndex(tempId)
+    const optimisticEvent = optimisticEventMap.get(tempId)
+    
+    const merged: CalendarEventV055 = {
+      id: realEventPatch.id,
+      start: realEventPatch.start || optimisticEvent?.start || '',
+      end:
+        realEventPatch.end ||
+        optimisticEvent?.end ||
+        realEventPatch.start ||
+        optimisticEvent?.start ||
+        '',
+      status: realEventPatch.status || optimisticEvent?.status || 'scheduled',
+      is_first: realEventPatch.is_first ?? optimisticEvent?.is_first ?? false,
+      student: realEventPatch.student || optimisticEvent?.student || { id: 0, name: 'Unknown' },
+      lesson_link: realEventPatch.lesson_link || optimisticEvent?.lesson_link || '',
+      can_reschedule: realEventPatch.can_reschedule ?? optimisticEvent?.can_reschedule ?? true,
+      can_mark_no_show: realEventPatch.can_mark_no_show ?? optimisticEvent?.can_mark_no_show ?? true,
+    }
+    
+    if (index !== -1) {
+      snapshot.value.events[index] = merged
+      console.info('[calendarWeekStore] Optimistic event replaced with real:', realEventPatch.id)
+    } else {
+      snapshot.value.events.push(merged)
+    }
+    
+    optimisticEventMap.delete(tempId)
+  }
+
+  function findOptimisticEventIndex(tempId: string) {
+    if (!snapshot.value) return -1
+    return snapshot.value.events.findIndex(event => {
+      const optimistic = event as OptimisticCalendarEvent
+      if (optimistic.tempId) {
+        return optimistic.tempId === tempId
+      }
+      return event.id < 0
+    })
   }
 
   function removeOptimisticSlot(slotId: number) {
@@ -509,6 +617,84 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     console.info('[calendarWeekStore] Optimistic slot removed:', slotId)
   }
   
+  async function updateEvent(payload: {
+    id: number
+    start?: string
+    durationMin?: number
+    tutorComment?: string
+  }) {
+    await calendarV055Api.updateEvent(payload)
+    
+    if (currentTutorId.value && currentWeekStart.value) {
+      await fetchWeekSnapshot(currentTutorId.value, currentWeekStart.value, true)
+    }
+  }
+
+  async function deleteEvent(eventId: number) {
+    await calendarV055Api.deleteEvent({ id: eventId })
+    
+    if (currentTutorId.value && currentWeekStart.value) {
+      await fetchWeekSnapshot(currentTutorId.value, currentWeekStart.value, true)
+    }
+  }
+
+  async function getEventDetails(eventId: number) {
+    return await calendarV055Api.getEventDetails(eventId)
+  }
+
+  async function reschedulePreview(eventId: number, payload: {
+    target_slot_id?: number
+    target_start?: string
+    target_end?: string
+  }) {
+    return await calendarV055Api.reschedulePreview(eventId, payload)
+  }
+
+  async function rescheduleConfirm(eventId: number, payload: {
+    target_slot_id?: number
+    target_start?: string
+    target_end?: string
+  }) {
+    const response = await calendarV055Api.rescheduleConfirm(eventId, payload)
+    
+    if (currentTutorId.value && currentWeekStart.value) {
+      await fetchWeekSnapshot(currentTutorId.value, currentWeekStart.value, true)
+    }
+    
+    return response
+  }
+
+  async function createEventSeries(payload: CreateEventPayload & {
+    repeatMode: 'weekly' | 'biweekly'
+    repeatCount?: number
+    repeatUntil?: string
+    skipConflicts?: boolean
+  }) {
+    const response = await calendarV055Api.createEventSeries({
+      orderId: payload.orderId,
+      start: payload.start,
+      durationMin: payload.durationMin,
+      regularity: payload.regularity,
+      tutorComment: payload.tutorComment,
+      studentComment: payload.studentComment,
+      lessonType: payload.lessonType,
+      slotId: payload.slotId,
+      notifyStudent: payload.notifyStudent,
+      autoGenerateZoom: payload.autoGenerateZoom,
+      timezone: payload.timezone,
+      repeatMode: payload.repeatMode,
+      repeatCount: payload.repeatCount,
+      repeatUntil: payload.repeatUntil,
+      skipConflicts: payload.skipConflicts,
+    })
+
+    if (currentTutorId.value && currentWeekStart.value) {
+      await fetchWeekSnapshot(currentTutorId.value, currentWeekStart.value)
+    }
+
+    return response
+  }
+
   function $reset() {
     snapshot.value = null
     isLoading.value = false
@@ -526,14 +712,6 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     snapshot,
     isLoading,
     error,
-    currentTutorId,
-    currentWeekStart,
-    ordersById,
-    allOrderIds,
-    selectedEventId,
-    lastFetchedAt,
-    
-    // v0.55 computed
     days,
     events,
     accessible,
@@ -541,26 +719,26 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     dictionaries,
     meta,
     daySummaries,
-    
-    // Computed
+    ordersById,
+    allOrderIds,
     ordersArray,
+    selectedEventId,
+    lastFetchedAt,
+    currentTutorId,
+    currentWeekStart,
     
-    // Actions
+    // Methods
     fetchWeekSnapshot,
+    createEvent,
+    createEventSeries,
+    updateEvent,
+    deleteEvent,
+    getEventDetails,
     reschedulePreview,
     rescheduleConfirm,
-    markNoShow,
-    blockDayRange,
-    unblockRange,
-    createEvent,
-    deleteEvent,
-    updateEvent,
-    getEventDetails,
-    selectEvent,
-    handleEventCreated,
-    handleEventUpdated,
-    handleEventDeleted,
-    addOptimisticSlot,
+    addOptimisticEvent,
+    removeOptimisticEvent,
+    replaceOptimisticEvent,
     removeOptimisticSlot,
     $reset,
   }

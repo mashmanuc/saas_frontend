@@ -193,13 +193,24 @@ describe('LessonList.vue', () => {
     // StudentAutocomplete is mocked - find input inside it
     const studentAutocompleteInput = wrapper.find('[data-test="student-autocomplete"] input')
     const seriesInput = wrapper.find('[data-test="series-id-input"]')
-    const datetimeInputs = wrapper.findAll('input[type="datetime-local"]')
+    // DateTimePicker uses separate date and time inputs
+    const dateInputs = wrapper.findAll('input[type="date"]')
+    const hourSelects = wrapper.findAll('select').filter(s => s.attributes('aria-label')?.includes('Hour') || s.classes().includes('hour-select'))
+    const minuteSelects = wrapper.findAll('select').filter(s => s.attributes('aria-label')?.includes('Minute') || s.classes().includes('minute-select'))
 
     // Set student ID via mocked autocomplete input
     await studentAutocompleteInput.setValue('student-1')
     await seriesInput.setValue('SERIES-10')
-    await datetimeInputs[0].setValue('2024-01-01T10:00')
-    await datetimeInputs[1].setValue('2024-01-01T11:00')
+    
+    // Set start date/time
+    if (dateInputs[0]) await dateInputs[0].setValue('2024-01-01')
+    if (hourSelects[0]) await hourSelects[0].setValue('10')
+    if (minuteSelects[0]) await minuteSelects[0].setValue('00')
+    
+    // Set end date/time
+    if (dateInputs[1]) await dateInputs[1].setValue('2024-01-01')
+    if (hourSelects[1]) await hourSelects[1].setValue('11')
+    if (minuteSelects[1]) await minuteSelects[1].setValue('00')
 
     const saveButton = wrapper.find('[data-test="submit-create-lesson"]')
     await saveButton.trigger('click')
@@ -240,10 +251,17 @@ describe('LessonList.vue', () => {
     await flushPromises()
 
     const studentAutocompleteInput = wrapper.find('[data-test="student-autocomplete"] input')
-    const datetimeInputs = wrapper.findAll('input[type="datetime-local"]')
+    const dateInputs = wrapper.findAll('input[type="date"]')
+    const hourSelects = wrapper.findAll('select').filter(s => s.attributes('aria-label')?.includes('Hour') || s.classes().includes('hour-select'))
+    const minuteSelects = wrapper.findAll('select').filter(s => s.attributes('aria-label')?.includes('Minute') || s.classes().includes('minute-select'))
+    
     await studentAutocompleteInput.setValue('student-1')
-    await datetimeInputs[0].setValue('2024-01-01T10:00')
-    await datetimeInputs[1].setValue('2024-01-01T11:00')
+    if (dateInputs[0]) await dateInputs[0].setValue('2024-01-01')
+    if (hourSelects[0]) await hourSelects[0].setValue('10')
+    if (minuteSelects[0]) await minuteSelects[0].setValue('00')
+    if (dateInputs[1]) await dateInputs[1].setValue('2024-01-01')
+    if (hourSelects[1]) await hourSelects[1].setValue('11')
+    if (minuteSelects[1]) await minuteSelects[1].setValue('00')
 
     const saveButton = wrapper.find('[data-test="submit-create-lesson"]')
     await saveButton.trigger('click')

@@ -116,11 +116,12 @@
       @success="handleLessonCreated"
     />
 
-    <EventModal
+    <EditLessonModal
       v-if="showEventModal && selectedEventId"
       :visible="showEventModal"
       :event-id="selectedEventId"
       @close="showEventModal = false"
+      @updated="handleEventUpdated"
       @deleted="handleEventDeleted"
     />
 
@@ -190,7 +191,7 @@ import LessonCardDrawer from './LessonCardDrawer.vue'
 import CalendarSidebar from './CalendarSidebar.vue'
 import EmptyAvailabilityState from './EmptyAvailabilityState.vue'
 import CreateLessonModal from '../modals/CreateLessonModal.vue'
-import EventModal from '../modals/EventModal.vue'
+import EditLessonModal from '../modals/EditLessonModal.vue'
 import CalendarGuideModal from './CalendarGuideModal.vue'
 import SlotEditorModal from '../modals/SlotEditorModal.vue'
 import CreateSlotModal from '../availability/CreateSlotModal.vue'
@@ -232,7 +233,11 @@ const isLoadingV055 = isLoading
 const errorV055 = error
 
 const daysV055Computed = computed(() => daySummariesV055.value || [])
-const eventsV055Computed = computed(() => eventsV055.value || [])
+const hiddenEventStatuses: Array<CalendarEventV055['status']> = ['cancelled']
+const eventsV055Computed = computed(() => {
+  const rawEvents = eventsV055.value || []
+  return rawEvents.filter(event => !hiddenEventStatuses.includes(event.status))
+})
 const accessibleSlotsComputed = computed(() => accessibleV055.value || [])
 const blockedRangesV055Computed = computed(() => blockedRangesV055.value || [])
 const currentTimeV055 = computed(() => metaV055.value?.currentTime || new Date().toISOString())
@@ -268,9 +273,7 @@ const weekRangeDisplay = computed(() => {
   return `${startDate.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })} - ${endDate.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short', year: 'numeric' })}`
 })
 
-const allEvents = computed(() => {
-  return eventsV055.value || []
-})
+const allEvents = computed(() => eventsV055Computed.value)
 
 const totalAvailableMinutes = computed(() => {
   return (accessibleV055.value || []).reduce((sum, slot) => {
@@ -294,7 +297,7 @@ const hasAvailability = computed(() => {
 
 const hasSetupAvailability = computed(() => {
   // Always show calendar for v0.55 - let the backend determine if there's data
-  const hasEvents = (eventsV055.value || []).length > 0
+  const hasEvents = eventsV055Computed.value.length > 0
   const hasSlots = (accessibleV055.value || []).length > 0
   const hasMinutes = totalAvailableMinutes.value > 0
   
@@ -434,14 +437,29 @@ function handleEventClick(event: CalendarEventV055) {
   emit('eventClick', event.id)
 }
 
-function handleLessonCreated(eventId: number) {
+async function handleLessonCreated(eventId: number) {
   console.info('[CalendarWeekView] Lesson created:', eventId)
   showCreateModal.value = false
+  if (store.currentTutorId && store.currentWeekStart) {
+    await store.fetchWeekSnapshot(store.currentTutorId, store.currentWeekStart, true)
+  }
 }
 
-function handleEventDeleted() {
+async function handleEventUpdated() {
+  console.info('[CalendarWeekView] Event updated')
+  showEventModal.value = false
+  // Refetch snapshot to get updated data
+  if (store.currentTutorId && store.currentWeekStart) {
+    await store.fetchWeekSnapshot(store.currentTutorId, store.currentWeekStart, true)
+  }
+}
+
+async function handleEventDeleted() {
   console.info('[CalendarWeekView] Event deleted')
   showEventModal.value = false
+  if (store.currentTutorId && store.currentWeekStart) {
+    await store.fetchWeekSnapshot(store.currentTutorId, store.currentWeekStart, true)
+  }
 }
 
 function handleSlotClick(slot: any) {
