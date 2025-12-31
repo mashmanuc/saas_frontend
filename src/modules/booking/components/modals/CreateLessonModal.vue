@@ -344,10 +344,12 @@ const formData = ref<CreateEventPayload>({
   autoGenerateZoom: false,
 })
 
+const DEFAULT_REPEAT_COUNT = 4
+
 const enableRepeat = ref(false)
 const repeatMode = ref<'weekly' | 'biweekly'>('weekly')
 const repeatByCount = ref(true)
-const repeatCount = ref(4)
+const repeatCount = ref(DEFAULT_REPEAT_COUNT)
 const repeatUntil = ref('')
 const skipConflicts = ref(false)
 
@@ -438,6 +440,41 @@ watch(() => props.visible, (visible) => {
     resetForm()
   }
 })
+
+watch(
+  () => formData.value.regularity,
+  (regularity) => {
+    if (regularity === 'single') {
+      enableRepeat.value = false
+      return
+    }
+
+    enableRepeat.value = true
+
+    if (regularity === 'once_a_week') {
+      repeatMode.value = 'weekly'
+    } else if (regularity === 'twice_a_week') {
+      repeatMode.value = 'biweekly'
+    }
+
+    repeatByCount.value = true
+    if (!repeatCount.value || repeatCount.value < 1) {
+      repeatCount.value = DEFAULT_REPEAT_COUNT
+    }
+  },
+)
+
+watch(
+  () => enableRepeat.value,
+  (isEnabled) => {
+    if (isEnabled && formData.value.regularity === 'single') {
+      formData.value.regularity = 'once_a_week'
+    }
+    if (!isEnabled && formData.value.regularity !== 'single') {
+      formData.value.regularity = 'single'
+    }
+  },
+)
 
 function submitForm() {
   handleSubmit()
@@ -575,11 +612,17 @@ async function handleSubmit(options: { skipConflictCheck?: boolean } = {}) {
     }
     
     if (enableRepeat.value) {
+      const resolvedRepeatCount = repeatByCount.value
+        ? Math.max(repeatCount.value || DEFAULT_REPEAT_COUNT, 1)
+        : undefined
+      const resolvedRepeatUntil =
+        !repeatByCount.value && repeatUntil.value ? repeatUntil.value : undefined
+
       const seriesPayload = {
         ...basePayload,
         repeatMode: repeatMode.value,
-        repeatCount: repeatByCount.value ? repeatCount.value : undefined,
-        repeatUntil: !repeatByCount.value ? repeatUntil.value : undefined,
+        repeatCount: resolvedRepeatCount,
+        repeatUntil: resolvedRepeatUntil,
         skipConflicts: skipConflicts.value,
       }
       

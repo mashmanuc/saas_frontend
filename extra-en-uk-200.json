@@ -1,0 +1,402 @@
+[
+  {
+    "key": "calendar.calendar.legend.title",
+    "value": "Color legend"
+  },
+  {
+    "key": "calendar.calendar.marketplace.availability.cta",
+    "value": "Book a lesson"
+  },
+  {
+    "key": "calendar.calendar.marketplace.availability.empty",
+    "value": "No open slots right now"
+  },
+  {
+    "key": "calendar.calendar.marketplace.availability.error",
+    "value": "Failed to load availability"
+  },
+  {
+    "key": "calendar.calendar.marketplace.availability.nextWeek",
+    "value": "Next week"
+  },
+  {
+    "key": "calendar.calendar.marketplace.availability.prevWeek",
+    "value": "Previous week"
+  },
+  {
+    "key": "calendar.calendar.marketplace.availability.retry",
+    "value": "Retry"
+  },
+  {
+    "key": "calendar.calendar.marketplace.availability.title",
+    "value": "Available slots"
+  },
+  {
+    "key": "calendar.calendar.marketplace.availability.weekRange",
+    "value": "{start} – {end}"
+  },
+  {
+    "key": "calendar.calendar.minutesAgo",
+    "value": "{count} min ago"
+  },
+  {
+    "key": "calendar.calendar.no_show.comment_optional",
+    "value": "Comment (optional)"
+  },
+  {
+    "key": "calendar.calendar.no_show.comment_placeholder",
+    "value": "Add additional information..."
+  },
+  {
+    "key": "calendar.calendar.no_show.confirm",
+    "value": "Confirm"
+  },
+  {
+    "key": "calendar.calendar.no_show.description",
+    "value": "Please specify why the student didn't show up for the lesson"
+  },
+  {
+    "key": "calendar.calendar.no_show.reasons.other",
+    "value": "Other reason"
+  },
+  {
+    "key": "calendar.calendar.no_show.reasons.student_absent",
+    "value": "Student didn't show up"
+  },
+  {
+    "key": "calendar.calendar.no_show.reasons.student_late",
+    "value": "Student was more than 15 min late"
+  },
+  {
+    "key": "calendar.calendar.no_show.reasons.technical_issues",
+    "value": "Technical issues"
+  },
+  {
+    "key": "calendar.calendar.no_show.select_reason",
+    "value": "Select no-show reason"
+  },
+  {
+    "key": "calendar.calendar.notifications.availabilityUpdated",
+    "value": "Schedule updated"
+  },
+  {
+    "key": "calendar.calendar.notifications.slotBooked",
+    "value": "{student} booked a slot at {time}"
+  },
+  {
+    "key": "calendar.calendar.oneMinuteAgo",
+    "value": "a minute ago"
+  },
+  {
+    "key": "calendar.calendar.pendingJobs",
+    "value": "Calendar sync in progress…"
+  },
+  {
+    "key": "calendar.calendar.realtime.status.connected",
+    "value": "Connected to real-time"
+  },
+  {
+    "key": "calendar.calendar.realtime.status.disconnected",
+    "value": "Connection lost. Attempting to reconnect..."
+  },
+  {
+    "key": "calendar.calendar.realtime.status.retrying",
+    "value": "Reconnecting..."
+  },
+  {
+    "key": "calendar.calendar.regularity.once_a_week",
+    "value": "Once per week"
+  },
+  {
+    "key": "calendar.calendar.regularity.single",
+    "value": "One-time"
+  },
+  {
+    "key": "calendar.calendar.regularity.twice_a_week",
+    "value": "Twice per week"
+  },
+  {
+    "key": "calendar.calendar.sidebar.noUpcoming",
+    "value": "No upcoming lessons"
+  },
+  {
+    "key": "calendar.calendar.sidebar.status.paid",
+    "value": "Paid"
+  },
+  {
+    "key": "calendar.calendar.sidebar.status.unpaid",
+    "value": "Unpaid"
+  },
+  {
+    "key": "calendar.calendar.sidebar.today",
+    "value": "Today"
+  },
+  {
+    "key": "calendar.calendar.sidebar.tomorrow",
+    "value": "Tomorrow"
+  },
+  {
+    "key": "calendar.calendar.sidebar.upcomingLessons",
+    "value": "Upcoming lessons"
+  },
+  {
+    "key": "calendar.calendar.slotBecameUnavailable",
+    "value": "Selected slot is no longer available"
+  },
+  {
+    "key": "calendar.calendar.syncStatus.error",
+    "value": "Sync error"
+  },
+  {
+    "key": "calendar.calendar.syncStatus.synced",
+    "value": "Synced"
+  },
+  {
+    "key": "calendar.calendar.syncStatus.syncing",
+    "value": "Syncing..."
+  },
+  {
+    "key": "calendar.calendar.warnings.disconnected",
+    "value": "Connection lost. Please check your network or refresh."
+  },
+  {
+    "key": "calendar.calendar.warnings.offline",
+    "value": "You are offline. Try again."
+  },
+  {
+    "key": "calendar.calendar.weekNavigation.availableHours",
+    "value": "{hours} hours available"
+  },
+  {
+    "key": "calendar.calendar.weekNavigation.backToCalendar",
+    "value": "Back to calendar"
+  },
+  {
+    "key": "calendar.calendar.weekNavigation.createSlot",
+    "value": "Add slot"
+  },
+  {
+    "key": "calendar.calendar.weekNavigation.goToFirstAvailable",
+    "value": "Go to first available slot"
+  },
+  {
+    "key": "calendar.calendar.weekNavigation.nextWeek",
+    "value": "Next week"
+  },
+  {
+    "key": "calendar.calendar.weekNavigation.noAvailability",
+    "value": "No availability set for this week yet"
+  },
+  {
+    "key": "calendar.calendar.weekNavigation.prevWeek",
+    "value": "Previous week"
+  },
+  {
+    "key": "calendar.calendar.weekNavigation.setupAvailability",
+    "value": "Set booking hours"
+  },
+  {
+    "key": "calendar.calendar.weekNavigation.showGuide",
+    "value": "Show guide"
+  },
+  {
+    "key": "calendar.calendar.weekNavigation.today",
+    "value": "Today"
+  },
+  {
+    "key": "calendar.calendar.weekOf",
+    "value": "Week of {date}"
+  },
+  {
+    "key": "calendar.draftNotice",
+    "value": "Draft mode. Don't forget to apply your changes."
+  },
+  {
+    "key": "calendar.errors.blockFailed",
+    "value": "Failed to block slot"
+  },
+  {
+    "key": "calendar.errors.loadFailed",
+    "value": "Failed to load calendar"
+  },
+  {
+    "key": "calendar.justNow",
+    "value": "just now"
+  },
+  {
+    "key": "calendar.lastSyncLabel",
+    "value": "Last sync: {datetime}"
+  },
+  {
+    "key": "calendar.marketplace.availability.cta",
+    "value": "Book a lesson"
+  },
+  {
+    "key": "calendar.marketplace.availability.empty",
+    "value": "No open slots right now"
+  },
+  {
+    "key": "calendar.marketplace.availability.error",
+    "value": "Failed to load availability"
+  },
+  {
+    "key": "calendar.marketplace.availability.nextWeek",
+    "value": "Next week"
+  },
+  {
+    "key": "calendar.marketplace.availability.prevWeek",
+    "value": "Previous week"
+  },
+  {
+    "key": "calendar.marketplace.availability.retry",
+    "value": "Retry"
+  },
+  {
+    "key": "calendar.marketplace.availability.title",
+    "value": "Available slots"
+  },
+  {
+    "key": "calendar.marketplace.availability.weekRange",
+    "value": "{start} – {end}"
+  },
+  {
+    "key": "calendar.marketplace.blockSlot.block",
+    "value": "Block slot"
+  },
+  {
+    "key": "calendar.marketplace.blockSlot.blocking",
+    "value": "Blocking slot..."
+  },
+  {
+    "key": "calendar.marketplace.blockSlot.error",
+    "value": "Failed to block slot"
+  },
+  {
+    "key": "calendar.marketplace.blockSlot.errors.cannotBlockBooked",
+    "value": "Cannot block a slot that is already booked"
+  },
+  {
+    "key": "calendar.marketplace.blockSlot.errors.cannotBlockPast",
+    "value": "Cannot block a slot in the past"
+  },
+  {
+    "key": "calendar.marketplace.blockSlot.reason",
+    "value": "Reason for blocking"
+  },
+  {
+    "key": "calendar.marketplace.blockSlot.reasonPlaceholder",
+    "value": "Specify why you're blocking this time slot (optional)..."
+  },
+  {
+    "key": "calendar.marketplace.blockSlot.success",
+    "value": "Slot blocked successfully"
+  },
+  {
+    "key": "calendar.marketplace.blockSlot.title",
+    "value": "Block time slot"
+  },
+  {
+    "key": "calendar.marketplace.blockSlot.warning",
+    "value": "This will make the time slot unavailable for booking. Students won't be able to schedule lessons during this time."
+  },
+  {
+    "key": "calendar.marketplace.createSlot.conflictsDetected",
+    "value": "Conflicts detected"
+  },
+  {
+    "key": "calendar.marketplace.createSlot.create",
+    "value": "Create slot"
+  },
+  {
+    "key": "calendar.marketplace.createSlot.creating",
+    "value": "Creating slot..."
+  },
+  {
+    "key": "calendar.marketplace.createSlot.error",
+    "value": "Failed to create slot"
+  },
+  {
+    "key": "calendar.marketplace.createSlot.success",
+    "value": "Slot created successfully"
+  },
+  {
+    "key": "calendar.marketplace.createSlot.timeRange",
+    "value": "Time range"
+  },
+  {
+    "key": "calendar.marketplace.createSlot.title",
+    "value": "Create new slot"
+  },
+  {
+    "key": "calendar.marketplace.jobStatus.failed.details",
+    "value": "Please try again or contact support"
+  },
+  {
+    "key": "calendar.marketplace.jobStatus.failed.title",
+    "value": "Generation failed"
+  },
+  {
+    "key": "calendar.marketplace.jobStatus.pending.details",
+    "value": "Your schedule is being processed"
+  },
+  {
+    "key": "calendar.marketplace.jobStatus.pending.title",
+    "value": "Preparing availability..."
+  },
+  {
+    "key": "calendar.marketplace.jobStatus.retry",
+    "value": "Retrying slot generation..."
+  },
+  {
+    "key": "calendar.marketplace.jobStatus.retryError",
+    "value": "Failed to retry generation. Please try again later."
+  },
+  {
+    "key": "calendar.marketplace.jobStatus.running.details",
+    "value": "This may take up to 30 seconds"
+  },
+  {
+    "key": "calendar.marketplace.jobStatus.running.title",
+    "value": "Generating available slots..."
+  },
+  {
+    "key": "calendar.marketplace.jobStatus.success.details",
+    "value": "Created {created} slots, removed {deleted} old slots"
+  },
+  {
+    "key": "calendar.marketplace.jobStatus.success.title",
+    "value": "Availability updated!"
+  },
+  {
+    "key": "calendar.marketplace.slotEditor.batchError",
+    "value": "Batch update error"
+  },
+  {
+    "key": "calendar.marketplace.slotEditor.batchPartialSuccess",
+    "value": "Updated {success} slots, {error} errors"
+  },
+  {
+    "key": "calendar.marketplace.slotEditor.batchSuccess",
+    "value": "All slots updated successfully"
+  },
+  {
+    "key": "calendar.marketplace.slotEditor.conflictError",
+    "value": "Conflict detected. Please resolve conflicts before saving."
+  },
+  {
+    "key": "calendar.marketplace.slotEditor.conflictPersists",
+    "value": "Conflict persists. Please reload the page and try again."
+  },
+  {
+    "key": "calendar.marketplace.slotEditor.delete",
+    "value": "Delete"
+  },
+  {
+    "key": "calendar.marketplace.slotEditor.deleteConfirm",
+    "value": "Are you sure you want to delete this slot?"
+  },
+  {
+    "key": "calendar.marketplace.slotEditor.deleteError",
+    "value": "Failed to delete slot"
+  }
+]

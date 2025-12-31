@@ -4,7 +4,10 @@
       v-for="hour in hours" 
       :key="hour"
       class="grid-hour"
-      :class="{ 'is-past': isPastHour(hour) }"
+      :class="{
+        'is-past': isPastHour(hour),
+        'is-disabled': isDisabledDay
+      }"
       :style="{ height: `${pxPerMinute * 60}px` }"
       @click="handleCellClick(hour)"
     >
@@ -42,13 +45,34 @@ const handleCellClick = (hour: number) => {
   emit('cell-click', hour)
 }
 
+const currentDate = computed(() => {
+  if (!props.currentTime) return null
+  return props.currentTime.slice(0, 10)
+})
+
+const dayDate = computed(() => {
+  return props.days[0]?.date || null
+})
+
+const isDisabledDay = computed(() => {
+  if (!dayDate.value || !currentDate.value) return false
+  return dayDate.value < currentDate.value
+})
+
 const isPastHour = (hour: number): boolean => {
-  if (!props.currentTime) return false
-  
+  if (!props.currentTime || !dayDate.value || !currentDate.value) return false
+  if (dayDate.value < currentDate.value) return true
+  if (dayDate.value > currentDate.value) return false
+
   const now = new Date(props.currentTime)
   const currentHour = now.getHours()
-  
-  return hour < currentHour
+
+  if (hour < currentHour) return true
+  if (hour === currentHour) {
+    const currentMinutes = now.getMinutes()
+    return currentMinutes >= 55
+  }
+  return false
 }
 
 const formatHour = (hour: number): string => {
@@ -76,6 +100,21 @@ const formatHour = (hour: number): string => {
 .grid-hour.is-past {
   background: #f5f5f5;
   opacity: 0.4;
+  position: relative;
+}
+
+.grid-hour.is-disabled {
+  pointer-events: none;
+}
+
+.grid-hour.is-disabled::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(229,231,235,0.8) 100%);
 }
 
 .hour-label {

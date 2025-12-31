@@ -1,0 +1,134 @@
+name: i18n Weekly Report
+
+on:
+  schedule:
+    # Run every Monday at 9:00 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  i18n-report:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+      
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: Generate i18n report
+        run: pnpm i18n:check --report
+      
+      - name: Read report
+        id: report
+        run: |
+          if [ -f i18n-check-report.json ]; then
+            echo "report_exists=true" >> $GITHUB_OUTPUT
+            SUMMARY=$(node -e "
+              const fs = require('fs');
+              const report = JSON.parse(fs.readFileSync('i18n-check-report.json', 'utf-8'));
+              const summary = {
+                totalKeys: report.summary.totalKeys,
+                locales: report.summary.locales,
+                errors: report.summary.errors,
+                warnings: report.summary.warnings,
+                details: Object.entries(report.locales).map(([locale, data]) => ({
+                  locale,
+                  missing: data.missing?.length || 0,
+                  empty: data.empty?.length || 0,
+                  extra: data.extra?.length || 0
+                }))
+              };
+              console.log(JSON.stringify(summary, null, 2));
+            ")
+            echo "summary<<EOF" >> $GITHUB_OUTPUT
+            echo "$SUMMARY" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "report_exists=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Send Slack notification
+        if: steps.report.outputs.report_exists == 'true'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_L10N_WEBHOOK }}
+        run: |
+          SUMMARY='${{ steps.report.outputs.summary }}'
+          ERRORS=$(echo "$SUMMARY" | jq -r '.errors')
+          WARNINGS=$(echo "$SUMMARY" | jq -r '.warnings')
+          TOTAL_KEYS=$(echo "$SUMMARY" | jq -r '.totalKeys')
+          
+          STATUS_EMOJI="✅"
+          STATUS_TEXT="All locales are in sync"
+          COLOR="good"
+          
+          if [ "$ERRORS" -gt 0 ]; then
+            STATUS_EMOJI="❌"
+            STATUS_TEXT="Translation errors detected"
+            COLOR="danger"
+          elif [ "$WARNINGS" -gt 0 ]; then
+            STATUS_EMOJI="⚠️"
+            STATUS_TEXT="Translation warnings detected"
+            COLOR="warning"
+          fi
+          
+          DETAILS=$(echo "$SUMMARY" | jq -r '.details[] | "• *\(.locale)*: \(.missing) missing, \(.empty) empty, \(.extra) extra"' | paste -sd '\n' -)
+          
+          PAYLOAD=$(cat <<EOF
+          {
+            "channel": "#l10n-status",
+            "username": "i18n Bot",
+            "icon_emoji": ":globe_with_meridians:",
+            "attachments": [
+              {
+                "color": "$COLOR",
+                "title": "$STATUS_EMOJI Weekly i18n Report",
+                "text": "$STATUS_TEXT",
+                "fields": [
+                  {
+                    "title": "Total Keys",
+                    "value": "$TOTAL_KEYS",
+                    "short": true
+                  },
+                  {
+                    "title": "Errors/Warnings",
+                    "value": "$ERRORS / $WARNINGS",
+                    "short": true
+                  },
+                  {
+                    "title": "Locale Status",
+                    "value": "$DETAILS",
+                    "short": false
+                  }
+                ],
+                "footer": "M4SH Platform i18n",
+                "ts": $(date +%s)
+              }
+            ]
+          }
+          EOF
+          )
+          
+          curl -X POST -H 'Content-type: application/json' \
+            --data "$PAYLOAD" \
+            "$SLACK_WEBHOOK_URL"
+      
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: i18n-weekly-report
+          path: i18n-check-report.json
+          retention-days: 90

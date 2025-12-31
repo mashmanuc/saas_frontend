@@ -1,0 +1,18 @@
+{
+  "admin": {
+    "i18n": {
+      "missingTranslations": {
+        "title": "Відсутні переклади",
+        "subtitle": "Перегляд та експорт ключів без перекладу для вибраної мови",
+        "locale": "Мова",
+        "searchPlaceholder": "Пошук за ключем, namespace або описом...",
+        "exportCSV": "Експортувати CSV",
+        "noMissing": "Всі ключі перекладені для цієї мови",
+        "key": "Ключ",
+        "namespace": "Namespace",
+        "defaultValue": "Значення за замовчуванням",
+        "description": "Опис"
+      }
+    }
+  }
+}

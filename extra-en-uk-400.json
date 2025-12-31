@@ -1,0 +1,402 @@
+[
+  {
+    "key": "calendar.timeRange.start",
+    "value": "Start"
+  },
+  {
+    "key": "calendar.weekOf",
+    "value": "Week of {date}"
+  },
+  {
+    "key": "common.accept",
+    "value": "Accept"
+  },
+  {
+    "key": "common.addCertification",
+    "value": "Add diploma"
+  },
+  {
+    "key": "common.back",
+    "value": "Back"
+  },
+  {
+    "key": "common.birthYearLabel",
+    "value": "Birth year"
+  },
+  {
+    "key": "common.birthYearPlaceholder",
+    "value": "e.g. 1995"
+  },
+  {
+    "key": "common.certificationIssuerPlaceholder",
+    "value": "Issued by (optional)"
+  },
+  {
+    "key": "common.certificationNamePlaceholder",
+    "value": "Diploma title"
+  },
+  {
+    "key": "common.certificationPublic",
+    "value": "Show on public profile"
+  },
+  {
+    "key": "common.certificationsAdd",
+    "value": "Add diploma"
+  },
+  {
+    "key": "common.certificationsCreateSuccess",
+    "value": "Diploma added"
+  },
+  {
+    "key": "common.certificationsDeleteError",
+    "value": "Failed to delete diploma"
+  },
+  {
+    "key": "common.certificationsDeleteSuccess",
+    "value": "Diploma deleted"
+  },
+  {
+    "key": "common.certificationsEmpty",
+    "value": "No diplomas yet"
+  },
+  {
+    "key": "common.certificationsFileLabel",
+    "value": "File"
+  },
+  {
+    "key": "common.certificationsIssuedYearLabel",
+    "value": "Issued year (optional)"
+  },
+  {
+    "key": "common.certificationsIssuerLabel",
+    "value": "Issuer (optional)"
+  },
+  {
+    "key": "common.certificationsLoadError",
+    "value": "Failed to load diplomas"
+  },
+  {
+    "key": "common.certificationsNoFile",
+    "value": "No file selected"
+  },
+  {
+    "key": "common.certificationsRateLimited",
+    "value": "Too many requests. Try again later"
+  },
+  {
+    "key": "common.certificationsSelectedFile",
+    "value": "Selected: {name}"
+  },
+  {
+    "key": "common.certificationsStatusApproved",
+    "value": "Approved"
+  },
+  {
+    "key": "common.certificationsStatusPending",
+    "value": "Pending review"
+  },
+  {
+    "key": "common.certificationsStatusRejected",
+    "value": "Rejected"
+  },
+  {
+    "key": "common.certificationsTitle",
+    "value": "Diplomas (certificates)"
+  },
+  {
+    "key": "common.certificationsTitleLabel",
+    "value": "Title"
+  },
+  {
+    "key": "common.certificationsTooLarge",
+    "value": "File is too large"
+  },
+  {
+    "key": "common.certificationsUnsupportedType",
+    "value": "Unsupported file type"
+  },
+  {
+    "key": "common.certificationsUpdateError",
+    "value": "Failed to update diploma"
+  },
+  {
+    "key": "common.certificationsUploadButton",
+    "value": "Choose file"
+  },
+  {
+    "key": "common.certificationsUploadError",
+    "value": "Failed to upload diploma"
+  },
+  {
+    "key": "common.certificationsUploading",
+    "value": "Uploading…"
+  },
+  {
+    "key": "common.certificationsValidationError",
+    "value": "Please check diploma details"
+  },
+  {
+    "key": "common.clear",
+    "value": "Clear"
+  },
+  {
+    "key": "common.confirmDelete",
+    "value": "Are you sure you want to delete?"
+  },
+  {
+    "key": "common.copy",
+    "value": "Copy"
+  },
+  {
+    "key": "common.daysAgo",
+    "value": "{count}d ago"
+  },
+  {
+    "key": "common.decline",
+    "value": "Decline"
+  },
+  {
+    "key": "common.exit",
+    "value": "Exit"
+  },
+  {
+    "key": "common.genderLabel",
+    "value": "Gender"
+  },
+  {
+    "key": "common.genderOptions.female",
+    "value": "Female"
+  },
+  {
+    "key": "common.genderOptions.male",
+    "value": "Male"
+  },
+  {
+    "key": "common.genderOptions.other",
+    "value": "Other"
+  },
+  {
+    "key": "common.genderOptions.unspecified",
+    "value": "Not specified"
+  },
+  {
+    "key": "common.genderPlaceholder",
+    "value": "e.g. Female / Male / Other"
+  },
+  {
+    "key": "common.hourlyRateLabel",
+    "value": "Hourly rate"
+  },
+  {
+    "key": "common.hoursAgo",
+    "value": "{count}h ago"
+  },
+  {
+    "key": "common.justNow",
+    "value": "Just now"
+  },
+  {
+    "key": "common.later",
+    "value": "Later"
+  },
+  {
+    "key": "common.loading",
+    "value": "Loading..."
+  },
+  {
+    "key": "common.lock",
+    "value": "Lock"
+  },
+  {
+    "key": "common.minutesAgo",
+    "value": "{count} min ago"
+  },
+  {
+    "key": "common.moveDown",
+    "value": "Move down"
+  },
+  {
+    "key": "common.moveUp",
+    "value": "Move up"
+  },
+  {
+    "key": "common.next",
+    "value": "Next"
+  },
+  {
+    "key": "common.notSpecified",
+    "value": "Not specified"
+  },
+  {
+    "key": "common.of",
+    "value": "of"
+  },
+  {
+    "key": "common.open",
+    "value": "Open"
+  },
+  {
+    "key": "common.other",
+    "value": "Other"
+  },
+  {
+    "key": "common.pricingTitle",
+    "value": "Pricing"
+  },
+  {
+    "key": "common.privacyTitle",
+    "value": "Privacy"
+  },
+  {
+    "key": "common.rateLimit.features.auth",
+    "value": "Too many login attempts. Wait before retrying."
+  },
+  {
+    "key": "common.rateLimit.features.drafts",
+    "value": "Too many draft updates. Wait before next save."
+  },
+  {
+    "key": "common.rateLimit.features.operator",
+    "value": "Too many operator actions. Wait before next command."
+  },
+  {
+    "key": "common.rateLimit.features.telemetry",
+    "value": "Too many telemetry requests. Wait before refreshing."
+  },
+  {
+    "key": "common.rateLimit.message",
+    "value": "You've sent too many requests. Please wait before trying again."
+  },
+  {
+    "key": "common.rateLimit.seconds",
+    "value": "seconds"
+  },
+  {
+    "key": "common.rateLimit.title",
+    "value": "Rate limit exceeded"
+  },
+  {
+    "key": "common.rateLimit.tryNow",
+    "value": "Try now"
+  },
+  {
+    "key": "common.rateLimit.waiting",
+    "value": "Waiting..."
+  },
+  {
+    "key": "common.refresh",
+    "value": "Refresh"
+  },
+  {
+    "key": "common.remove",
+    "value": "Remove"
+  },
+  {
+    "key": "common.resend",
+    "value": "Resend"
+  },
+  {
+    "key": "common.retry",
+    "value": "Retry"
+  },
+  {
+    "key": "common.search",
+    "value": "Search"
+  },
+  {
+    "key": "common.showAge",
+    "value": "Show age on public profile"
+  },
+  {
+    "key": "common.showGender",
+    "value": "Show gender on public profile"
+  },
+  {
+    "key": "common.showTelegram",
+    "value": "Show Telegram on public profile"
+  },
+  {
+    "key": "common.showing",
+    "value": "Showing"
+  },
+  {
+    "key": "common.telegramLabel",
+    "value": "Telegram"
+  },
+  {
+    "key": "common.telegramPlaceholder",
+    "value": "username without @"
+  },
+  {
+    "key": "common.there",
+    "value": "there"
+  },
+  {
+    "key": "common.trialPriceHint",
+    "value": "Optional discounted price for first lesson"
+  },
+  {
+    "key": "common.trialPriceLabel",
+    "value": "Trial lesson price"
+  },
+  {
+    "key": "common.trialPricePlaceholder",
+    "value": "Leave empty for no trial"
+  },
+  {
+    "key": "common.unlock",
+    "value": "Unlock"
+  },
+  {
+    "key": "common.validation.bio",
+    "value": "Bio is required (min 10 characters)."
+  },
+  {
+    "key": "common.validation.headline",
+    "value": "Headline is required (min 3 characters)."
+  },
+  {
+    "key": "common.validation.hourlyRate",
+    "value": "Hourly rate must be greater than 0."
+  },
+  {
+    "key": "common.validation.languages",
+    "value": "Select at least one language."
+  },
+  {
+    "key": "common.validation.retrying",
+    "value": "Connecting..."
+  },
+  {
+    "key": "common.validation.subjects",
+    "value": "Select at least one subject."
+  },
+  {
+    "key": "common.videoHint",
+    "value": "YouTube or Vimeo link to your introduction video"
+  },
+  {
+    "key": "common.videoTitle",
+    "value": "Video introduction"
+  },
+  {
+    "key": "common.videoUrlLabel",
+    "value": "Video URL"
+  },
+  {
+    "key": "common.videoUrlPlaceholder",
+    "value": "https://youtube.com/watch?v=…"
+  },
+  {
+    "key": "conflict.errorTitle",
+    "value": "Time conflicts"
+  },
+  {
+    "key": "conflict.lesson",
+    "value": "Lesson"
+  },
+  {
+    "key": "conflict.resolution.apply",
+    "value": "Apply resolutions"
+  }
+]
