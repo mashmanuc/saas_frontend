@@ -155,6 +155,7 @@
       v-if="showSlotModal && selectedSlot"
       :visible="showSlotModal"
       :slot="selectedSlot"
+      :timezone="calendarTimezone"
       @close="showSlotModal = false"
       @saved="handleSlotSaved"
       @deleted="handleSlotDeleted"
@@ -248,8 +249,8 @@ import CalendarGuideModal from './CalendarGuideModal.vue'
 import SlotEditorModal from '../modals/SlotEditorModal.vue'
 import CreateSlotModal from '../availability/CreateSlotModal.vue'
 import BlockSlotModal from '../availability/BlockSlotModal.vue'
-import type { CalendarCell, AccessibleSlot } from '@/modules/booking/types/calendarWeek'
-import type { CalendarEvent as CalendarEventV055 } from '@/modules/booking/types/calendarV055'
+import type { CalendarCell, AccessibleSlot as AccessibleSlotLegacy } from '@/modules/booking/types/calendarWeek'
+import type { CalendarEvent as CalendarEventV055, AccessibleSlot as AccessibleSlotV055 } from '@/modules/booking/types/calendarV055'
 import '@/modules/booking/styles/calendar-theme.css'
 import '@/modules/booking/styles/calendar-layout.css'
 import '@/modules/booking/styles/calendar-animations.css'
@@ -373,8 +374,8 @@ const showCreateSlotModal = ref(false)
 const showBlockSlotModal = ref(false)
 const selectedCell = ref<CalendarCell | null>(null)
 const selectedEventId = ref<number | null>(null)
-const selectedSlot = ref<AccessibleSlot | null>(null)
-const selectedSlotForBlock = ref<AccessibleSlot | null>(null)
+const selectedSlot = ref<AccessibleSlotV055 | null>(null)
+const selectedSlotForBlock = ref<AccessibleSlotLegacy | null>(null)
 const createSlotData = ref<{ date: string; start: string; end: string } | null>(null)
 const showGuideModal = ref(false)
 const showLessonDrawer = ref(false)
@@ -546,10 +547,33 @@ async function handleEventDeleted() {
   }
 }
 
-function handleSlotClick(slot: any) {
-  selectedSlot.value = slot
+function handleSlotClick(slot: AccessibleSlotV055 & { slotId?: number }) {
+  const resolvedId =
+    typeof slot.id === 'number' && !Number.isNaN(slot.id)
+      ? slot.id
+      : typeof slot.slotId === 'number'
+        ? slot.slotId
+        : null
+
+  if (!resolvedId) {
+    console.warn('[CalendarWeekView] Slot without id clicked:', slot)
+    return
+  }
+
+  const normalizedSlot: AccessibleSlotV055 = {
+    id: resolvedId,
+    start: slot.start,
+    end: slot.end,
+    is_recurring: Boolean(slot.is_recurring),
+  }
+
+  selectedSlot.value = normalizedSlot
   showSlotModal.value = true
 }
+
+const calendarTimezone = computed(() => {
+  return store.meta?.timezone || 'Europe/Kiev'
+})
 
 function handleSlotSaved() {
   console.info('[CalendarWeekView] Slot saved')
@@ -564,7 +588,12 @@ function handleSlotDeleted() {
 }
 
 function handleSlotEdit(slotId: number) {
-  handleSlotClick(slotId)
+  const slot = (accessibleV055.value || []).find(s => s.id === slotId)
+  if (!slot) {
+    console.warn('[CalendarWeekView] handleSlotEdit: slot not found for id', slotId)
+    return
+  }
+  handleSlotClick(slot)
 }
 
 async function handleSlotDeleteInline(slotId: number) {

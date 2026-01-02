@@ -17,21 +17,21 @@
         <div class="availability-block__actions">
           <button
             class="action-btn action-btn--edit"
-            :title="t('availability.slotEditor.title')"
+            :title="t('calendar.slotEditor.title')"
             @click.stop="handleEditClick(layout.slotId)"
           >
             <EditIcon class="w-3 h-3" />
           </button>
           <button
             class="action-btn action-btn--block"
-            :title="t('availability.blockSlot.title')"
+            :title="t('calendar.blockSlot.title')"
             @click.stop="handleBlockClick(layout.slotId)"
           >
             <BanIcon class="w-3 h-3" />
           </button>
           <button
             class="action-btn action-btn--delete"
-            :title="t('availability.slotEditor.delete')"
+            :title="t('calendar.slotEditor.delete')"
             @click.stop="handleDeleteClick(layout.slotId)"
           >
             <TrashIcon class="w-3 h-3" />
@@ -92,7 +92,7 @@ function handleEditClick(slotId: number) {
 }
 
 function handleDeleteClick(slotId: number) {
-  if (window.confirm(t('availability.slotEditor.deleteConfirm'))) {
+  if (window.confirm(t('calendar.slotEditor.deleteConfirm'))) {
     emit('slotDelete', slotId)
   }
 }

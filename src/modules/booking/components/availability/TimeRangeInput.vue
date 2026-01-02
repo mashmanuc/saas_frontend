@@ -63,7 +63,7 @@ const isValid = computed(() => {
     </select>
 
     <span v-if="!isValid" class="error-hint" data-testid="time-error">
-      {{ t('availability.slotEditor.errors.endBeforeStart') }}
+      {{ t('calendar.slotEditor.errors.endBeforeStart') }}
     </span>
   </div>
 </template>

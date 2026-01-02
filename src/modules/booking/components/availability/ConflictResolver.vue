@@ -2,7 +2,7 @@
   <div class="conflict-resolver" data-testid="conflict-resolver">
     <div class="conflict-header">
       <AlertCircle class="conflict-icon" :size="24" />
-      <h4 class="conflict-title">{{ t('availability.conflict.errorTitle') }}</h4>
+      <h4 class="conflict-title">{{ t('calendar.conflicts.errorTitle') }}</h4>
     </div>
 
     <div class="conflicts-list">
@@ -23,11 +23,11 @@
           <!-- Additional details based on conflict type -->
           <div v-if="conflict.studentName" class="conflict-details">
             <User :size="14" />
-            <span>{{ t('availability.conflict.student') }}: {{ conflict.studentName }}</span>
+            <span>{{ t('calendar.conflicts.student') }}: {{ conflict.studentName }}</span>
           </div>
           <div v-if="conflict.lessonId" class="conflict-details">
             <BookOpen :size="14" />
-            <span>{{ t('availability.conflict.lesson') }}: #{{ conflict.lessonId }}</span>
+            <span>{{ t('calendar.conflicts.lesson') }}: #{{ conflict.lessonId }}</span>
           </div>
         </div>
 
@@ -41,7 +41,7 @@
               v-model="resolutions[index]"
               :data-testid="`resolution-skip-${index}`"
             />
-            <span>{{ t('availability.conflict.resolution.skip') }}</span>
+            <span>{{ t('calendar.conflicts.resolution.skip') }}</span>
           </label>
           <label class="resolution-option">
             <input
@@ -51,7 +51,7 @@
               v-model="resolutions[index]"
               :data-testid="`resolution-override-${index}`"
             />
-            <span>{{ t('availability.conflict.resolution.override') }}</span>
+            <span>{{ t('calendar.conflicts.resolution.override') }}</span>
           </label>
           <label v-if="conflict.type === 'template_overlap'" class="resolution-option">
             <input
@@ -61,7 +61,7 @@
               v-model="resolutions[index]"
               :data-testid="`resolution-template-${index}`"
             />
-            <span>{{ t('availability.conflict.resolution.updateTemplate') }}</span>
+            <span>{{ t('calendar.conflicts.resolution.updateTemplate') }}</span>
           </label>
         </div>
       </div>
@@ -85,7 +85,7 @@
         :disabled="isResolving || hasErrorConflicts"
         data-testid="resolve-anyway"
       >
-        {{ t('availability.conflict.resolveAnyway') }}
+        {{ t('calendar.conflicts.resolveAnyway') }}
       </button>
       
       <button
@@ -96,7 +96,7 @@
         data-testid="apply-resolutions"
       >
         <Loader v-if="isResolving" class="spinner" :size="16" />
-        {{ t('availability.conflict.resolution.apply') }}
+        {{ t('calendar.conflicts.resolution.apply') }}
       </button>
     </div>
   </div>
@@ -164,9 +164,9 @@ function getConflictIcon(type: string) {
 
 function getConflictTypeLabel(type: string): string {
   const labels: Record<string, string> = {
-    'booked_overlap': t('availability.conflict.types.bookedOverlap'),
-    'slot_overlap': t('availability.conflict.types.slotOverlap'),
-    'template_overlap': t('availability.conflict.types.templateOverlap')
+    'booked_overlap': t('calendar.conflicts.types.bookedOverlap'),
+    'slot_overlap': t('calendar.conflicts.types.slotOverlap'),
+    'template_overlap': t('calendar.conflicts.types.templateOverlap')
   }
   return labels[type] || type
 }

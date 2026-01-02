@@ -78,7 +78,7 @@ onMounted(() => {
       <button class="nav-btn" @click="previousWeek">
         <ChevronLeft :size="20" />
       </button>
-      <h3>{{ t('availability.calendar.weekOf', { date: currentWeekStart }) }}</h3>
+      <h3>{{ t('calendar.weekOf', { date: currentWeekStart }) }}</h3>
       <button class="nav-btn" @click="nextWeek">
         <ChevronRight :size="20" />
       </button>
@@ -104,7 +104,7 @@ onMounted(() => {
           </div>
 
           <div v-if="getSlotsForDay(day).length === 0" class="no-slots">
-            {{ t('availability.calendar.noSlots') }}
+            {{ t('calendar.noSlots') }}
           </div>
         </div>
       </div>
@@ -112,7 +112,7 @@ onMounted(() => {
 
     <div v-if="selectedSlot" class="selected-info">
       <Calendar :size="18" />
-      <span>{{ t('availability.calendar.selected') }}: {{ selectedSlot.start }} - {{ selectedSlot.end }}</span>
+      <span>{{ t('calendar.selected') }}: {{ selectedSlot.start }} - {{ selectedSlot.end }}</span>
     </div>
   </div>
 </template>

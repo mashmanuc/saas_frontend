@@ -251,8 +251,9 @@ const getCellInfoFromEvent = (event: MouseEvent): HoveredCell | null => {
   const minutesFromTop = Math.max(0, Math.floor(mouseY / props.pxPerMinute))
   const gridStartMinutes = (props.gridStartHour ?? 0) * 60
   const totalMinutesFromDayStart = minutesFromTop + gridStartMinutes
-  const hour = Math.floor(totalMinutesFromDayStart / 60)
-  const minute = totalMinutesFromDayStart % 60
+  const snappedMinutesFromDayStart = Math.floor(totalMinutesFromDayStart / 60) * 60
+  const hour = Math.floor(snappedMinutesFromDayStart / 60)
+  const minute = snappedMinutesFromDayStart % 60
 
   const columnWidth = rect.width / dayCount
   const rawIndex = Math.floor(mouseX / columnWidth)

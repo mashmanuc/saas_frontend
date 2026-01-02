@@ -2,7 +2,7 @@
   <div class="modal-overlay" @click.self="handleCancel" data-testid="block-slot-modal-overlay">
     <div class="modal-content" role="dialog" aria-labelledby="block-slot-title" aria-modal="true">
       <div class="modal-header">
-        <h3 id="block-slot-title" class="modal-title">{{ t('availability.blockSlot.title') }}</h3>
+        <h3 id="block-slot-title" class="modal-title">{{ t('calendar.blockSlot.title') }}</h3>
         <button
           class="close-button"
           @click="handleCancel"
@@ -29,14 +29,14 @@
         <!-- Reason Input -->
         <div class="reason-section">
           <label for="block-reason" class="reason-label">
-            {{ t('availability.blockSlot.reason') }}
+            {{ t('calendar.blockSlot.reason') }}
             <span class="optional-text">({{ t('common.optional') }})</span>
           </label>
           <textarea
             id="block-reason"
             v-model="blockReason"
             class="reason-textarea"
-            :placeholder="t('availability.blockSlot.reasonPlaceholder')"
+            :placeholder="t('calendar.blockSlot.reasonPlaceholder')"
             :disabled="isLoading"
             rows="4"
             data-testid="block-reason-textarea"
@@ -46,13 +46,13 @@
         <!-- Warning Message -->
         <div class="warning-message" role="alert">
           <AlertCircleIcon :size="20" class="warning-icon" />
-          <p class="warning-text">{{ t('availability.blockSlot.warning') }}</p>
+          <p class="warning-text">{{ t('calendar.blockSlot.warning') }}</p>
         </div>
 
         <!-- Loading State -->
         <div v-if="isLoading" class="loading-state" role="status" aria-live="polite">
           <LoaderIcon :size="20" class="spinner" />
-          <span>{{ t('availability.blockSlot.blocking') }}</span>
+          <span>{{ t('calendar.blockSlot.blocking') }}</span>
         </div>
       </div>
 
@@ -73,7 +73,7 @@
         >
           <BanIcon v-if="!isLoading" :size="16" />
           <LoaderIcon v-else :size="16" class="spinner" />
-          {{ t('availability.blockSlot.block') }}
+          {{ t('calendar.blockSlot.block') }}
         </button>
       </div>
     </div>
@@ -147,7 +147,7 @@ async function handleBlock() {
     
     console.log('[BlockSlotModal] Slot blocked:', props.slot.id)
     
-    toast.success(t('availability.blockSlot.success'))
+    toast.success(t('calendar.blockSlot.success'))
     emit('blocked', props.slot.id)
   } catch (error: any) {
     console.error('[BlockSlotModal] Failed to block slot:', error)
@@ -161,12 +161,12 @@ async function handleBlock() {
         }
         await bookingApi.blockSlot(Number(props.slot.id), blockReason.value || undefined)
         
-        toast.success(t('availability.blockSlot.success'))
+        toast.success(t('calendar.blockSlot.success'))
         emit('blocked', props.slot.id)
         return
       } catch (retryError) {
         console.error('[BlockSlotModal] Retry failed:', retryError)
-        toast.error(t('availability.blockSlot.error'))
+        toast.error(t('calendar.blockSlot.error'))
         emit('error', retryError)
         return
       }
@@ -178,14 +178,14 @@ async function handleBlock() {
       console.warn('[BlockSlotModal] Validation error:', errorCode)
       
       if (errorCode === 'CANNOT_BLOCK_BOOKED') {
-        toast.error(t('availability.blockSlot.errors.cannotBlockBooked'))
+        toast.error(t('calendar.blockSlot.errors.cannotBlockBooked'))
       } else if (errorCode === 'CANNOT_BLOCK_PAST') {
-        toast.error(t('availability.blockSlot.errors.cannotBlockPast'))
+        toast.error(t('calendar.blockSlot.errors.cannotBlockPast'))
       } else {
-        toast.error(t('availability.blockSlot.error'))
+        toast.error(t('calendar.blockSlot.error'))
       }
     } else {
-      toast.error(t('availability.blockSlot.error'))
+      toast.error(t('calendar.blockSlot.error'))
     }
     
     emit('error', error)

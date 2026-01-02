@@ -5,6 +5,7 @@
         <div class="modal-container" role="dialog" aria-modal="true">
           <SlotEditor
             :slot="transformedSlot"
+            :timezone="timezone"
             @saved="handleSaved"
             @cancelled="handleClose"
             @deleted="handleDeleted"
@@ -18,13 +19,15 @@
 
 <script setup lang="ts">
 import SlotEditor from '../availability/SlotEditor.vue'
-import type { AccessibleSlot } from '@/modules/booking/types/calendarWeek'
+import type { AccessibleSlot } from '@/modules/booking/types/calendarV055'
 import type { Slot } from '@/modules/booking/types/slot'
 import { computed, watch } from 'vue'
+import { formatTimeInCalendarTz, formatShortDateInCalendarTz } from '@/modules/booking/utils/time'
 
 const props = defineProps<{
   visible: boolean
   slot: AccessibleSlot
+  timezone: string
 }>()
 
 const emit = defineEmits<{
@@ -41,24 +44,18 @@ watch(() => props.visible, (newVal) => {
 
 // Transform AccessibleSlot to Slot format expected by SlotEditor
 const transformedSlot = computed<Slot>(() => {
-  console.log('[SlotEditorModal] Computing transformedSlot from:', props.slot)
-  const startDate = new Date(props.slot.start)
-  const endDate = new Date(props.slot.end)
+  console.log('[SlotEditorModal] Computing transformedSlot from:', props.slot, 'timezone:', props.timezone)
   
-  // Format time as HH:MM using locale time (as displayed to user)
-  const formatTime = (date: Date): string => {
-    return date.toLocaleTimeString('en-GB', { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      hour12: false 
-    })
-  }
+  // Format times in calendar timezone (not browser locale)
+  const startTime = formatTimeInCalendarTz(props.slot.start, props.timezone)
+  const endTime = formatTimeInCalendarTz(props.slot.end, props.timezone)
+  const date = formatShortDateInCalendarTz(props.slot.start, props.timezone)
   
   return {
     id: String(props.slot.id),
-    date: startDate.toISOString().split('T')[0],
-    start: formatTime(startDate),
-    end: formatTime(endDate),
+    date,
+    start: startTime,
+    end: endTime,
     status: 'available',
     source: 'template',
     createdAt: props.slot.start,

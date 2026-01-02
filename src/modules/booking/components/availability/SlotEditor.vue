@@ -2,7 +2,7 @@
   <div class="slot-editor" :class="{ 'is-loading': isLoading }" data-testid="slot-editor">
     <!-- Header -->
     <div class="slot-editor-header">
-      <h3 class="slot-editor-title">{{ t('availability.slotEditor.title') }}</h3>
+      <h3 class="slot-editor-title">{{ t('calendar.slotEditor.title') }}</h3>
       <div class="slot-editor-actions">
         <button
           class="btn btn-primary"
@@ -30,7 +30,7 @@
           @click="handleDelete"
           data-testid="delete-slot"
         >
-          {{ t('availability.slotEditor.delete') }}
+          {{ t('calendar.slotEditor.delete') }}
         </button>
       </div>
     </div>
@@ -49,7 +49,7 @@
 
     <!-- Time Range Input -->
     <div class="time-range-section">
-      <h4 class="section-title">{{ t('availability.slotEditor.timeRange') }}</h4>
+      <h4 class="section-title">{{ t('calendar.slotEditor.timeRange') }}</h4>
       <TimeRangeInput
         v-model:start="localStart"
         v-model:end="localEnd"
@@ -69,7 +69,7 @@
 
     <!-- Edit Strategy -->
     <div v-if="conflicts.length > 0" class="strategy-section" data-testid="edit-strategy">
-      <h4 class="section-title">{{ t('availability.slotEditor.strategy') }}</h4>
+      <h4 class="section-title">{{ t('calendar.slotEditor.strategy') }}</h4>
       <div class="strategy-options">
         <label class="strategy-option">
           <input
@@ -80,8 +80,8 @@
             data-testid="strategy-override"
           />
           <div class="strategy-content">
-            <div class="strategy-title">{{ t('availability.slotEditor.strategies.override.title') }}</div>
-            <div class="strategy-description" data-testid="override-description">{{ t('availability.slotEditor.strategies.override.description') }}</div>
+            <div class="strategy-title">{{ t('calendar.slotEditor.strategies.override.title') }}</div>
+            <div class="strategy-description" data-testid="override-description">{{ t('calendar.slotEditor.strategies.override.description') }}</div>
           </div>
         </label>
         
@@ -94,8 +94,8 @@
             data-testid="strategy-template-update"
           />
           <div class="strategy-content">
-            <div class="strategy-title">{{ t('availability.slotEditor.strategies.update_template.title') }}</div>
-            <div class="strategy-description" data-testid="template-update-description">{{ t('availability.slotEditor.strategies.update_template.description') }}</div>
+            <div class="strategy-title">{{ t('calendar.slotEditor.strategies.update_template.title') }}</div>
+            <div class="strategy-description" data-testid="template-update-description">{{ t('calendar.slotEditor.strategies.update_template.description') }}</div>
           </div>
         </label>
         
@@ -108,8 +108,8 @@
             data-testid="strategy-update-slot"
           />
           <div class="strategy-content">
-            <div class="strategy-title">{{ t('availability.slotEditor.strategies.update_slot.title') }}</div>
-            <div class="strategy-description" data-testid="update-slot-description">{{ t('availability.slotEditor.strategies.update_slot.description') }}</div>
+            <div class="strategy-title">{{ t('calendar.slotEditor.strategies.update_slot.title') }}</div>
+            <div class="strategy-description" data-testid="update-slot-description">{{ t('calendar.slotEditor.strategies.update_slot.description') }}</div>
           </div>
         </label>
       </div>
@@ -117,11 +117,11 @@
 
     <!-- Override Reason -->
     <div v-if="selectedStrategy === 'override'" class="override-section" data-testid="override-reason">
-      <h4 class="section-title">{{ t('availability.slotEditor.overrideReason') }}</h4>
+      <h4 class="section-title">{{ t('calendar.slotEditor.overrideReason') }}</h4>
       <textarea
         v-model="overrideReason"
         class="override-textarea"
-        :placeholder="t('availability.slotEditor.overrideReasonPlaceholder')"
+        :placeholder="t('calendar.slotEditor.overrideReasonPlaceholder')"
         :disabled="isLoading"
         rows="3"
         data-testid="override-reason-textarea"
@@ -131,7 +131,7 @@
     <!-- Loading Overlay -->
     <div v-if="isLoading" class="loading-overlay" data-testid="loading-overlay">
       <LoaderIcon class="w-6 h-6 animate-spin" />
-      <span data-testid="loading-text">{{ t('availability.slotEditor.saving') }}</span>
+      <span data-testid="loading-text">{{ t('calendar.slotEditor.saving') }}</span>
     </div>
   </div>
 </template>
@@ -146,9 +146,11 @@ import { useSlotStore } from '@/stores/slotStore'
 import ConflictResolver from './ConflictResolver.vue'
 import TimeRangeInput from './TimeRangeInput.vue'
 import type { Slot, SlotEditStrategy, Conflict } from '../../types/slot'
+import { formatDateInCalendarTz } from '@/modules/booking/utils/time'
 
 interface Props {
   slot: Slot
+  timezone?: string
 }
 
 interface Emits {
@@ -184,6 +186,11 @@ const hasConflicts = computed(() =>
 
 // Methods
 function formatDate(dateStr: string): string {
+  if (props.timezone) {
+    // Use calendar timezone if provided
+    return formatDateInCalendarTz(dateStr, props.timezone)
+  }
+  // Fallback to browser locale
   const date = new Date(dateStr)
   return date.toLocaleDateString(undefined, { 
     weekday: 'long', 
@@ -231,7 +238,20 @@ async function handleSave() {
     )
     
     console.log('[SlotEditor] Slot saved successfully:', updatedSlot)
-    emit('saved', updatedSlot)
+    
+    // Convert AccessibleSlotV055 to Slot format for emit
+    const slotForEmit: Slot = {
+      id: String(updatedSlot.id),
+      date: updatedSlot.start.slice(0, 10),
+      start: updatedSlot.start,
+      end: updatedSlot.end,
+      status: 'available',
+      source: 'manual',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+    
+    emit('saved', slotForEmit)
   } catch (error: any) {
     console.error('[SlotEditor] Save error:', error)
     
@@ -252,7 +272,19 @@ async function handleSave() {
           overrideReason.value
         )
         console.log('[SlotEditor] Retry successful:', updatedSlot)
-        emit('saved', updatedSlot)
+        
+        const slotForEmit: Slot = {
+          id: String(updatedSlot.id),
+          date: updatedSlot.start.slice(0, 10),
+          start: updatedSlot.start,
+          end: updatedSlot.end,
+          status: 'available',
+          source: 'manual',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+        
+        emit('saved', slotForEmit)
         return
       } catch (retryError) {
         console.error('[SlotEditor] Retry failed:', retryError)
@@ -298,7 +330,7 @@ function handleCancel() {
 }
 
 async function handleDelete() {
-  const confirmed = window.confirm(t('availability.slotEditor.deleteConfirm'))
+  const confirmed = window.confirm(t('calendar.slotEditor.deleteConfirm'))
   if (!confirmed) return
   try {
     await deleteSlotApi(Number(props.slot.id))

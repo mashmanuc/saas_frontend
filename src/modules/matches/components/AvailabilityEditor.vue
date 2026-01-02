@@ -105,7 +105,7 @@ async function applyTemplate() {
     
     if (typeof window !== 'undefined' && (window as any).toast) {
       (window as any).toast.success(
-        t('availability.editor.templateApplied', { eta: Math.round(eta_seconds / 60) })
+        t('calendar.editor.templateApplied', { eta: Math.round(eta_seconds / 60) })
       )
     }
     
@@ -121,13 +121,13 @@ async function applyTemplate() {
     }
     
     if (typeof window !== 'undefined' && (window as any).toast) {
-      (window as any).toast.success(t('availability.editor.slotsGenerated'))
+      (window as any).toast.success(t('calendar.editor.slotsGenerated'))
     }
     
     // Calendar refresh will happen via WebSocket or manual refresh
   } catch (err: any) {
     if (typeof window !== 'undefined' && (window as any).toast) {
-      (window as any).toast.error(err.message || t('availability.editor.applyFailed'))
+      (window as any).toast.error(err.message || t('calendar.editor.applyFailed'))
     }
   } finally {
     applyingTemplate.value = false
@@ -167,7 +167,7 @@ onMounted(() => {
 <template>
   <div class="availability-editor">
     <div class="header">
-      <h2>{{ t('availability.editor.title') }}</h2>
+      <h2>{{ t('calendar.editor.title') }}</h2>
       <button class="btn btn-primary" :disabled="saving" @click="saveAvailability">
         {{ saving ? t('common.saving') : t('common.save') }}
       </button>
@@ -175,19 +175,19 @@ onMounted(() => {
 
     <div class="section">
       <div class="section-header">
-        <h3>{{ t('availability.editor.weeklyTemplate') }}</h3>
+        <h3>{{ t('calendar.editor.weeklyTemplate') }}</h3>
         <div class="actions">
           <button class="btn btn-secondary btn-sm" @click="showPreview = !showPreview">
             <Calendar :size="16" />
-            {{ showPreview ? t('availability.editor.hidePreview') : t('availability.editor.showPreview') }}
+            {{ showPreview ? t('calendar.editor.hidePreview') : t('calendar.editor.showPreview') }}
           </button>
           <button class="btn btn-secondary btn-sm" @click="copyWeek">
             <Copy :size="16" />
-            {{ t('availability.editor.copyWeek') }}
+            {{ t('calendar.editor.copyWeek') }}
           </button>
           <button class="btn btn-secondary btn-sm" @click="addWeeklySlot">
             <Plus :size="16" />
-            {{ t('availability.editor.addSlot') }}
+            {{ t('calendar.editor.addSlot') }}
           </button>
           <button 
             class="btn btn-primary btn-sm" 
@@ -195,17 +195,17 @@ onMounted(() => {
             @click="applyTemplate"
           >
             <Play :size="16" />
-            {{ applyingTemplate ? t('availability.editor.applying') : t('availability.editor.applyTemplate') }}
+            {{ applyingTemplate ? t('calendar.editor.applying') : t('calendar.editor.applyTemplate') }}
           </button>
         </div>
       </div>
 
       <div v-if="pendingChangesCount > 0" class="pending-changes">
-        {{ t('availability.editor.pendingChanges', { count: pendingChangesCount }) }}
+        {{ t('calendar.editor.pendingChanges', { count: pendingChangesCount }) }}
       </div>
 
       <div v-if="showPreview" class="preview-grid">
-        <div class="preview-header">{{ t('availability.editor.preview') }}</div>
+        <div class="preview-header">{{ t('calendar.editor.preview') }}</div>
         <div class="preview-days">
           <div v-for="day in weekdays" :key="day" class="preview-day">
             <div class="preview-day-name">{{ t(`common.weekdays.${day}`) }}</div>
@@ -241,10 +241,10 @@ onMounted(() => {
 
     <div class="section">
       <div class="section-header">
-        <h3>{{ t('availability.editor.overrides') }}</h3>
+        <h3>{{ t('calendar.editor.overrides') }}</h3>
         <button class="btn btn-secondary btn-sm" @click="addOverride">
           <Plus :size="16" />
-          {{ t('availability.editor.addOverride') }}
+          {{ t('calendar.editor.addOverride') }}
         </button>
       </div>
 
@@ -260,10 +260,10 @@ onMounted(() => {
 
     <div class="section">
       <div class="section-header">
-        <h3>{{ t('availability.editor.blackoutDates') }}</h3>
+        <h3>{{ t('calendar.editor.blackoutDates') }}</h3>
         <button class="btn btn-secondary btn-sm" @click="addBlackoutDate">
           <Plus :size="16" />
-          {{ t('availability.editor.addBlackout') }}
+          {{ t('calendar.editor.addBlackout') }}
         </button>
       </div>
 

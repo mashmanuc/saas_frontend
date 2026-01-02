@@ -1,11 +1,13 @@
 import { ref } from 'vue'
-import { bookingApi } from '@/modules/booking/api/booking'
+import api from '@/utils/apiClient'
 import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 import { useCalendarWeekStore } from '@/modules/booking/stores/calendarWeekStore'
 import type { Slot, SlotEditStrategy, Conflict } from '@/modules/booking/types/slot'
 import type { AccessibleSlot } from '@/modules/booking/types/calendarWeek'
+import { calendarAccessibleSlotsApi } from '@/modules/booking/api/calendarAccessibleSlotsApi'
+import type { AccessibleSlot as AccessibleSlotV055 } from '@/modules/booking/types/calendarV055'
 
 export function useSlotEditor() {
   const { t } = useI18n()
@@ -25,71 +27,66 @@ export function useSlotEditor() {
     newEnd: string,
     strategy: SlotEditStrategy = 'override',
     overrideReason?: string
-  ): Promise<Slot> {
+  ): Promise<AccessibleSlotV055> {
     isLoading.value = true
     
     console.log('[useSlotEditor] editSlot called:', { slotId, newStart, newEnd, strategy, overrideReason })
     
-    // Optimistic update: update slot immediately
+    // Optimistic update: remove slot temporarily
     const slotIdNum = parseInt(slotId)
-    const existingSlot = (accessible.value || []).find(s => s.id === slotIdNum)
-    let previousSlot: AccessibleSlot | undefined
-    
-    if (existingSlot) {
-      // Convert v0.55 slot to legacy format for optimistic update
-      previousSlot = {
-        id: existingSlot.id,
-        type: 'available_slot',
-        start: existingSlot.start,
-        end: existingSlot.end,
-        regularity: existingSlot.is_recurring ? 'once_a_week' : 'single'
-      }
-      
-      const date = existingSlot.start.slice(0, 10)
-      const offset = existingSlot.start.length > 19 ? existingSlot.start.slice(19) : ''
-      
-      const updatedSlot: AccessibleSlot = {
-        id: existingSlot.id,
-        type: 'available_slot',
-        start: `${date}T${newStart}:00${offset}`,
-        end: `${date}T${newEnd}:00${offset}`,
-        regularity: 'single'
-      }
-      
-      calendarStore.removeOptimisticSlot(slotIdNum)
-      calendarStore.addOptimisticSlot(updatedSlot)
-    }
+    calendarStore.removeOptimisticSlot(slotIdNum)
     
     try {
-      const response = await bookingApi.editSlot(slotId, {
-        start_time: newStart,
-        end_time: newEnd,
-        strategy,
-        override_reason: overrideReason
-      })
+      // Call v0.55.7 CalendarAccessibleSlot API
+      const updatedSlot = await calendarAccessibleSlotsApi.updateSlot(
+        slotIdNum,
+        {
+          start: newStart,
+          end: newEnd
+        }
+      )
       
-      console.log('[useSlotEditor] editSlot response:', response)
-      toast.success(t('availability.slotEditor.saveSuccess'))
-      return response
+      console.log('[useSlotEditor] editSlot response:', updatedSlot)
+      
+      // Refresh snapshot to get updated data
+      if (calendarStore.currentTutorId && calendarStore.currentWeekStart) {
+        await calendarStore.fetchWeekSnapshot(
+          calendarStore.currentTutorId,
+          calendarStore.currentWeekStart,
+          true // force refresh
+        )
+      }
+      
+      toast.success(t('calendar.slotEditor.saveSuccess'))
+      
+      // Convert to AccessibleSlotV055 format
+      return {
+        id: updatedSlot.id,
+        start: updatedSlot.start,
+        end: updatedSlot.end,
+        is_recurring: updatedSlot.is_recurring
+      }
       
     } catch (error: any) {
       console.error('[useSlotEditor] editSlot error:', error)
       
-      // Revert optimistic update if we had one
-      if (previousSlot) {
-        calendarStore.removeOptimisticSlot(previousSlot.id)
-        calendarStore.addOptimisticSlot(previousSlot)
-      } else {
-        if (calendarStore.currentTutorId && calendarStore.currentWeekStart) {
-          calendarStore.fetchWeekSnapshot(calendarStore.currentTutorId, calendarStore.currentWeekStart)
-        }
+      // Revert optimistic update - refresh snapshot
+      if (calendarStore.currentTutorId && calendarStore.currentWeekStart) {
+        await calendarStore.fetchWeekSnapshot(
+          calendarStore.currentTutorId,
+          calendarStore.currentWeekStart,
+          true
+        )
       }
       
-      if (error.status === 409) {
-        toast.error(t('availability.slotEditor.conflictError'))
-        throw new ConflictError(error.data.conflicts)
+      if (error.status === 409 || error.response?.status === 409) {
+        toast.error(t('calendar.slotEditor.conflictError'))
+        throw new ConflictError(error.data?.conflicts || [])
+      } else if (error.status === 400 || error.response?.status === 400) {
+        toast.error(t('calendar.slotEditor.validationError'))
+        throw error
       } else {
-        toast.error(t('availability.slotEditor.saveError'))
+        toast.error(t('calendar.slotEditor.saveError'))
         throw error
       }
     } finally {
@@ -107,7 +104,8 @@ export function useSlotEditor() {
     newEnd: string
   ): Promise<Conflict[]> {
     try {
-      const response = await bookingApi.checkSlotConflicts({
+      // Call v0.55 API endpoint for conflict detection
+      const response = await api.post('/v1/booking/slots/check-conflicts/', {
         date: slotDate,
         start_time: newStart,
         end_time: newEnd,
@@ -115,7 +113,8 @@ export function useSlotEditor() {
       })
       
       // Response is already unwrapped by axios interceptor
-      return Array.isArray(response) ? response : (response?.conflicts || [])
+      const data = response as any
+      return Array.isArray(data) ? data : (data?.conflicts || [])
       
     } catch (error) {
       console.error('Failed to detect conflicts:', error)
@@ -129,12 +128,45 @@ export function useSlotEditor() {
   async function deleteSlot(slotId: number): Promise<void> {
     isLoading.value = true
     
+    console.log('[useSlotEditor] deleteSlot called:', slotId)
+    
+    // Optimistic update: remove slot immediately
+    calendarStore.removeOptimisticSlot(slotId)
+    
     try {
-      await bookingApi.deleteSlot(slotId)
-      toast.success(t('availability.slotEditor.deleteSuccess'))
+      // Call v0.55.7 CalendarAccessibleSlot API
+      await calendarAccessibleSlotsApi.deleteSlot(slotId)
       
-    } catch (error) {
-      toast.error(t('availability.slotEditor.deleteError'))
+      console.log('[useSlotEditor] deleteSlot success')
+      
+      // Refresh snapshot to get updated data
+      if (calendarStore.currentTutorId && calendarStore.currentWeekStart) {
+        await calendarStore.fetchWeekSnapshot(
+          calendarStore.currentTutorId,
+          calendarStore.currentWeekStart,
+          true // force refresh
+        )
+      }
+      
+      toast.success(t('calendar.slotEditor.deleteSuccess'))
+      
+    } catch (error: any) {
+      console.error('[useSlotEditor] deleteSlot error:', error)
+      
+      // Revert optimistic update on error
+      if (calendarStore.currentTutorId && calendarStore.currentWeekStart) {
+        await calendarStore.fetchWeekSnapshot(
+          calendarStore.currentTutorId,
+          calendarStore.currentWeekStart,
+          true
+        )
+      }
+      
+      if (error.status === 409 || error.response?.status === 409) {
+        toast.error(t('calendar.slotEditor.deleteConflictError'))
+      } else {
+        toast.error(t('calendar.slotEditor.deleteError'))
+      }
       throw error
     } finally {
       isLoading.value = false
@@ -154,7 +186,8 @@ export function useSlotEditor() {
     isLoading.value = true
     
     try {
-      const response = await bookingApi.batchEditSlots({
+      // Call v0.55 API endpoint for batch editing
+      const response = await api.post('/v1/booking/slots/batch-edit/', {
         slots: slotIds,
         start_time: startTime,
         end_time: endTime,
@@ -162,21 +195,33 @@ export function useSlotEditor() {
         override_reason: overrideReason
       })
       
-      if (response.conflicts.length > 0) {
+      // Refresh snapshot to get updated data
+      if (calendarStore.currentTutorId && calendarStore.currentWeekStart) {
+        await calendarStore.fetchWeekSnapshot(calendarStore.currentTutorId, calendarStore.currentWeekStart)
+      }
+      
+      const data = response as any
+      
+      if (data.conflicts && data.conflicts.length > 0) {
         toast.warning(
-          t('availability.slotEditor.batchPartialSuccess', {
-            success: response.updated_count,
-            error: response.conflicts.length
+          t('calendar.slotEditor.batchPartialSuccess', {
+            success: data.updated_count,
+            error: data.conflicts.length
           })
         )
       } else {
-        toast.success(t('availability.slotEditor.batchSuccess'))
+        toast.success(t('calendar.slotEditor.batchSuccess'))
       }
       
-      return response
+      return {
+        updated_count: data.updated_count || 0,
+        updated_slots: data.updated_slots || [],
+        warnings: data.warnings || [],
+        conflicts: data.conflicts || []
+      }
       
     } catch (error) {
-      toast.error(t('availability.slotEditor.batchError'))
+      toast.error(t('calendar.slotEditor.batchError'))
       throw error
     } finally {
       isLoading.value = false

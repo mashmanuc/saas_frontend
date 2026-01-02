@@ -144,7 +144,7 @@
           <div class="conflict-stat">
             <BookOpen :size="20" />
             <div class="conflict-content">
-              <div class="conflict-label">{{ t('availability.conflict.types.bookedOverlap') }}</div>
+              <div class="conflict-label">{{ t('calendar.conflicts.types.bookedOverlap') }}</div>
               <div class="conflict-value">{{ analytics.conflicts.bookedOverlap }}</div>
             </div>
           </div>
@@ -152,7 +152,7 @@
           <div class="conflict-stat">
             <Clock :size="20" />
             <div class="conflict-content">
-              <div class="conflict-label">{{ t('availability.conflict.types.slotOverlap') }}</div>
+              <div class="conflict-label">{{ t('calendar.conflicts.types.slotOverlap') }}</div>
               <div class="conflict-value">{{ analytics.conflicts.slotOverlap }}</div>
             </div>
           </div>
@@ -160,7 +160,7 @@
           <div class="conflict-stat">
             <Calendar :size="20" />
             <div class="conflict-content">
-              <div class="conflict-label">{{ t('availability.conflict.types.templateOverlap') }}</div>
+              <div class="conflict-label">{{ t('calendar.conflicts.types.templateOverlap') }}</div>
               <div class="conflict-value">{{ analytics.conflicts.templateOverlap }}</div>
             </div>
           </div>

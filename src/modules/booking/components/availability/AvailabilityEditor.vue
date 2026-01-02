@@ -164,7 +164,7 @@ function updateWindow(
 
 async function saveAvailability() {
   if (isSavingTemplate.value || (currentJob.value && (currentJob.value.status === 'pending' || currentJob.value.status === 'running'))) {
-    toast.warning(t('availability.editor.jobInProgress'))
+    toast.warning(t('calendar.availability.jobInProgress'))
     return
   }
 
@@ -197,7 +197,7 @@ async function saveAvailability() {
 
     if (conflictingDays.length > 0) {
       const dayNames = conflictingDays.map(d => t(days.find(day => day.value === d)?.label || '')).join(', ')
-      toast.error(t('availability.editor.conflictsDetected', { days: dayNames }))
+      toast.error(t('calendar.availability.conflictsDetected', { days: dayNames }))
       return
     }
 
@@ -213,14 +213,14 @@ async function saveAvailability() {
     const response = await bookingApi.setAvailability({ schedule: schedulePayload })
     slotStore.clearDraftSchedule()
 
-    toast.success(t('availability.editor.notifications.saveSuccess'))
+    toast.success(t('calendar.availability.notifications.saveSuccess'))
 
     if (response.jobId) {
       await startTracking(response.jobId)
     }
   } catch (e: any) {
     console.error('Failed to save availability:', e)
-    toast.error(e.message || t('availability.editor.notifications.saveError'))
+    toast.error(e.message || t('calendar.availability.notifications.saveError'))
   } finally {
     isSavingTemplate.value = false
     isCheckingConflicts.value = false
@@ -229,14 +229,14 @@ async function saveAvailability() {
 
 async function handleRetry() {
   if (currentJob.value && (currentJob.value.status === 'pending' || currentJob.value.status === 'running')) {
-    toast.warning(t('availability.editor.jobInProgress'))
+    toast.warning(t('calendar.availability.jobInProgress'))
     return
   }
 
   try {
     const response = await bookingApi.generateAvailabilitySlots()
     await startTracking(response.jobId)
-    toast.info(t('availability.jobStatus.retry'))
+    toast.info(t('calendar.jobStatus.retry'))
   } catch (error: any) {
     console.error('Failed to retry generation:', error)
     
@@ -249,16 +249,16 @@ async function handleRetry() {
         }
         const response = await bookingApi.generateAvailabilitySlots()
         await startTracking(response.jobId)
-        toast.info(t('availability.jobStatus.retry'))
+        toast.info(t('calendar.jobStatus.retry'))
         return
       } catch (retryError: any) {
         console.error('[AvailabilityEditor] Retry after 401 failed:', retryError)
-        toast.error(retryError.message || t('availability.jobStatus.retryError'))
+        toast.error(retryError.message || t('calendar.jobStatus.retryError'))
         return
       }
     }
     
-    toast.error(error.message || t('availability.jobStatus.retryError'))
+    toast.error(error.message || t('calendar.jobStatus.retryError'))
   }
 }
 
@@ -288,7 +288,7 @@ function handleSlotClick(slot: any) {
 async function handleSlotSaved(updatedSlot: Slot) {
   showSlotEditor.value = false
   slotStore.setEditingSlot(null)
-  toast.success(t('availability.slotEditor.saveSuccess'))
+  toast.success(t('calendar.slotEditor.saveSuccess'))
   
   try {
     await slotStore.loadSlots({ page: 0 })
@@ -306,9 +306,9 @@ function handleSlotEditError(error: any) {
   console.error('[AvailabilityEditor] Slot edit error:', error)
   
   if (error.response?.status === 409) {
-    toast.error(t('availability.slotEditor.conflictPersists'))
+    toast.error(t('calendar.slotEditor.conflictPersists'))
   } else {
-    toast.error(error.message || t('availability.slotEditor.saveError'))
+    toast.error(error.message || t('calendar.slotEditor.saveError'))
   }
   
   showSlotEditor.value = false
@@ -332,20 +332,20 @@ async function loadExistingSlots() {
 async function handleUndo() {
   try {
     await slotStore.undoLastAction()
-    toast.success(t('availability.editor.actions.undoSuccess'))
+    toast.success(t('calendar.availability.actions.undoSuccess'))
   } catch (error: any) {
     console.error('[AvailabilityEditor] Undo failed:', error)
-    toast.error(t('availability.editor.actions.undoError'))
+    toast.error(t('calendar.availability.actions.undoError'))
   }
 }
 
 async function handleRedo() {
   try {
     await slotStore.redoLastAction()
-    toast.success(t('availability.editor.actions.redoSuccess'))
+    toast.success(t('calendar.availability.actions.redoSuccess'))
   } catch (error: any) {
     console.error('[AvailabilityEditor] Redo failed:', error)
-    toast.error(t('availability.editor.actions.redoError'))
+    toast.error(t('calendar.availability.actions.redoError'))
   }
 }
 
@@ -372,9 +372,9 @@ function handleBackToCalendar() {
       </button>
     </div>
     <div class="editor-header">
-      <h3>{{ t('availability.editor.weeklyScheduleTitle') }}</h3>
+      <h3>{{ t('calendar.availability.weeklyScheduleTitle') }}</h3>
       <p class="hint">
-        {{ t('availability.editor.weeklyScheduleSubtitle') }}
+        {{ t('calendar.availability.weeklyScheduleSubtitle') }}
       </p>
     </div>
 
@@ -389,19 +389,19 @@ function handleBackToCalendar() {
         
         <div class="status-text">
           <p class="status-title">
-            {{ t(`availability.jobStatus.${currentJob.status}.title`) }}
+            {{ t(`calendar.jobStatus.${currentJob.status}.title`) }}
           </p>
           <p v-if="currentJob.status === 'success'" class="status-details">
-            {{ t('availability.jobStatus.success.details', { 
+            {{ t('calendar.jobStatus.success.details', { 
               created: currentJob.slotsCreated,
               deleted: currentJob.slotsDeleted 
             }) }}
           </p>
           <p v-else-if="currentJob.status === 'failed'" class="status-details error">
-            {{ currentJob.errorMessage || t('availability.jobStatus.failed.details') }}
+            {{ currentJob.errorMessage || t('calendar.jobStatus.failed.details') }}
           </p>
           <p v-else class="status-details">
-            {{ t(`availability.jobStatus.${currentJob.status}.details`) }}
+            {{ t(`calendar.jobStatus.${currentJob.status}.details`) }}
           </p>
         </div>
         
@@ -410,9 +410,9 @@ function handleBackToCalendar() {
           @click="handleRetry"
           class="btn-retry"
           data-testid="retry-job"
-          :aria-label="t('availability.jobStatus.retry')"
+          :aria-label="t('calendar.jobStatus.retry')"
         >
-          {{ t('availability.jobStatus.retry') }}
+          {{ t('calendar.jobStatus.retry') }}
         </button>
       </div>
       
@@ -447,7 +447,7 @@ function handleBackToCalendar() {
           class="btn-icon"
           @click="handleUndo"
           :disabled="!slotStore.canUndo || isLoading"
-          :title="t('availability.editor.actions.undo')"
+          :title="t('calendar.availability.actions.undo')"
           data-testid="undo-button"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -459,7 +459,7 @@ function handleBackToCalendar() {
           class="btn-icon"
           @click="handleRedo"
           :disabled="!slotStore.canRedo || isLoading"
-          :title="t('availability.editor.actions.redo')"
+          :title="t('calendar.availability.actions.redo')"
           data-testid="redo-button"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -475,23 +475,23 @@ function handleBackToCalendar() {
         :disabled="!hasChanges || isLoading"
         data-testid="reset-changes"
       >
-        {{ t('availability.editor.actions.reset') }}
+        {{ t('calendar.availability.actions.reset') }}
       </button>
       <button
         class="btn btn-primary"
         :disabled="isSavingTemplate || isCheckingConflicts || (currentJob && (currentJob.status === 'pending' || currentJob.status === 'running'))"
         @click="saveAvailability"
         data-testid="save-availability"
-        :aria-label="t('availability.editor.actions.save')"
+        :aria-label="t('calendar.availability.actions.save')"
       >
         <LoaderIcon v-if="isSavingTemplate || isCheckingConflicts" class="spinner-small" :size="16" />
         <Save v-else :size="16" />
         {{
           isCheckingConflicts
-            ? t('availability.editor.actions.checking')
+            ? t('calendar.availability.actions.checking')
             : isSavingTemplate
-            ? t('availability.editor.actions.saving')
-            : t('availability.editor.actions.save')
+            ? t('calendar.availability.actions.saving')
+            : t('calendar.availability.actions.save')
         }}
       </button>
     </div>

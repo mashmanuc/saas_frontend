@@ -7,17 +7,17 @@
     
     <div class="conflict-content">
       <h4 class="conflict-title" data-testid="conflict-title">
-        {{ severity === 'error' ? t('availability.conflict.errorTitle') : t('availability.conflict.warningTitle') }}
+        {{ severity === 'error' ? t('calendar.conflicts.errorTitle') : t('calendar.conflicts.warningTitle') }}
       </h4>
       
       <div class="conflict-list">
         <div v-for="conflict in conflicts" :key="conflict.slotId || conflict.lessonId" class="conflict-item">
           <div class="conflict-message" data-testid="conflict-message">{{ conflict.message }}</div>
           <div v-if="conflict.studentName" class="conflict-student" data-testid="conflict-student">
-            {{ t('availability.conflict.student') }}: {{ conflict.studentName }}
+            {{ t('calendar.conflicts.student') }}: {{ conflict.studentName }}
           </div>
           <div v-if="conflict.lessonId" class="conflict-lesson" data-testid="conflict-lesson">
-            {{ t('availability.conflict.lesson') }}: #{{ conflict.lessonId }}
+            {{ t('calendar.conflicts.lesson') }}: #{{ conflict.lessonId }}
           </div>
         </div>
       </div>
@@ -29,7 +29,7 @@
           @click="$emit('resolve')"
           data-testid="resolve-conflicts"
         >
-          {{ t('availability.conflict.resolveAnyway') }}
+          {{ t('calendar.conflicts.resolveAnyway') }}
         </button>
         
         <button

@@ -45,9 +45,9 @@ const formatTime = (datetime: string) => {
 
 const getSlotBadge = (slot: BlockedSlot) => {
   if (slot.status === 'booked') {
-    return t('availability.editor.daySchedule.liveLesson')
+    return t('calendar.availability.daySchedule.liveLesson')
   }
-  return t('availability.editor.daySchedule.booked')
+  return t('calendar.availability.daySchedule.booked')
 }
 
 const getSlotClass = (slot: BlockedSlot) => {
@@ -93,7 +93,7 @@ const getSlotClass = (slot: BlockedSlot) => {
           @click="emit('remove', index)"
           :disabled="props.disabled"
           :data-testid="`remove-window-${index}`"
-          :aria-label="t('availability.editor.daySchedule.remove')"
+          :aria-label="t('calendar.availability.daySchedule.remove')"
         >
           <X :size="16" />
         </button>
@@ -102,7 +102,7 @@ const getSlotClass = (slot: BlockedSlot) => {
 
     <!-- Empty state (only if no blocked slots) -->
     <div v-else-if="!props.blockedSlots || props.blockedSlots.length === 0" class="empty-state">
-      <span>{{ t('availability.editor.daySchedule.empty') }}</span>
+      <span>{{ t('calendar.availability.daySchedule.empty') }}</span>
     </div>
 
     <button 
@@ -110,10 +110,10 @@ const getSlotClass = (slot: BlockedSlot) => {
       @click="emit('add')"
       :disabled="props.disabled"
       data-testid="add-window"
-      :aria-label="t('availability.editor.daySchedule.add')"
+      :aria-label="t('calendar.availability.daySchedule.add')"
     >
       <Plus :size="16" />
-      {{ t('availability.editor.daySchedule.add') }}
+      {{ t('calendar.availability.daySchedule.add') }}
     </button>
   </div>
 </template>

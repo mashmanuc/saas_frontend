@@ -2,7 +2,7 @@
   <div class="modal-overlay" @click.self="handleCancel" data-testid="create-slot-modal-overlay">
     <div class="modal-content" role="dialog" aria-labelledby="create-slot-title" aria-modal="true">
       <div class="modal-header">
-        <h3 id="create-slot-title" class="modal-title">{{ t('availability.createSlot.title') }}</h3>
+        <h3 id="create-slot-title" class="modal-title">{{ t('calendar.createSlot.title') }}</h3>
         <button
           class="close-button"
           @click="handleCancel"
@@ -18,7 +18,7 @@
         <div class="date-section">
           <CalendarIcon :size="16" class="icon" />
           <label class="date-input-wrapper">
-            <span class="sr-only">{{ t('availability.createSlot.dateLabel') }}</span>
+            <span class="sr-only">{{ t('calendar.createSlot.dateLabel') }}</span>
             <input
               type="date"
               v-model="localDate"
@@ -31,7 +31,7 @@
 
         <!-- Time Range Input -->
         <div class="time-section">
-          <h4 class="section-title">{{ t('availability.createSlot.timeRange') }}</h4>
+          <h4 class="section-title">{{ t('calendar.createSlot.timeRange') }}</h4>
           <TimeRangeInput
             v-model:start="localStart"
             v-model:end="localEnd"
@@ -50,7 +50,7 @@
         <div v-if="conflicts.length > 0" class="conflict-warning" role="alert" data-testid="conflict-warning">
           <AlertCircleIcon :size="20" class="warning-icon" />
           <div class="warning-content">
-            <p class="warning-title">{{ t('availability.createSlot.conflictsDetected') }}</p>
+            <p class="warning-title">{{ t('calendar.createSlot.conflictsDetected') }}</p>
             <ul class="conflict-list">
               <li v-for="(conflict, index) in conflicts" :key="index" class="conflict-item">
                 {{ conflict.message }}
@@ -62,7 +62,7 @@
         <!-- Loading State -->
         <div v-if="isLoading" class="loading-state" role="status" aria-live="polite">
           <LoaderIcon :size="20" class="spinner" />
-          <span>{{ t('availability.createSlot.creating') }}</span>
+          <span>{{ t('calendar.createSlot.creating') }}</span>
         </div>
       </div>
 
@@ -83,7 +83,7 @@
         >
           <PlusIcon v-if="!isLoading" :size="16" />
           <LoaderIcon v-else :size="16" class="spinner" />
-          {{ t('availability.createSlot.create') }}
+          {{ t('calendar.createSlot.create') }}
         </button>
       </div>
     </div>
@@ -146,8 +146,8 @@ const durationHours = computed(() => durationMinutes.value / 60)
 
 const validationError = computed(() => {
   if (!localStart.value || !localEnd.value) return null
-  if (durationMinutes.value <= 0) return t('availability.validation.endAfterStart')
-  if (durationHours.value > 3) return t('availability.validation.maxDuration3Hours')
+  if (durationMinutes.value <= 0) return t('calendar.validation.endAfterStart')
+  if (durationHours.value > 3) return t('calendar.validation.maxDuration3Hours')
   return null
 })
 
@@ -215,7 +215,7 @@ async function handleCreate() {
     await handleTimeChange()
     
     if (hasErrorConflicts.value) {
-      error.value = t('availability.createSlot.conflictsDetected')
+      error.value = t('calendar.createSlot.conflictsDetected')
       return
     }
     
@@ -292,7 +292,7 @@ async function handleCreate() {
       calendarStore.removeOptimisticSlot(tempId)
     }
     
-    toast.success(t('availability.createSlot.success'))
+    toast.success(t('calendar.createSlot.success'))
     emit('created', createdSlot)
   } catch (err: any) {
     console.error('[CreateSlotModal] Failed to create slot:', err)
@@ -307,9 +307,9 @@ async function handleCreate() {
     if (status === 409) {
       const code = errorData?.code || ''
       if (code === 'SLOT_ALREADY_EXISTS') {
-        toast.error(t('availability.validation.slotAlreadyExists'))
+        toast.error(t('calendar.validation.slotAlreadyExists'))
       } else {
-        toast.error(t('availability.validation.slotOverlapsWithEvent'))
+        toast.error(t('calendar.validation.slotOverlapsWithEvent'))
       }
       emit('error', err)
       return
@@ -319,9 +319,9 @@ async function handleCreate() {
     if (status === 400) {
       const fields = errorData?.fields || {}
       if (fields.duration) {
-        toast.error(t('availability.validation.maxDuration3Hours'))
+        toast.error(t('calendar.validation.maxDuration3Hours'))
       } else {
-        toast.error(errorData?.message || t('availability.createSlot.error'))
+        toast.error(errorData?.message || t('calendar.createSlot.error'))
       }
       emit('error', err)
       return
@@ -329,7 +329,7 @@ async function handleCreate() {
     
     // Handle 422 Unprocessable Entity
     if (status === 422) {
-      toast.error(t('availability.createSlot.validationError'))
+      toast.error(t('calendar.createSlot.validationError'))
       emit('error', err)
       return
     }
@@ -348,19 +348,19 @@ async function handleCreate() {
         })
         
         slotStore.refreshSlot(newSlot)
-        toast.success(t('availability.createSlot.success'))
+        toast.success(t('calendar.createSlot.success'))
         emit('created', newSlot)
         return
       } catch (retryError) {
         console.error('[CreateSlotModal] Retry failed:', retryError)
-        toast.error(t('availability.createSlot.error'))
+        toast.error(t('calendar.createSlot.error'))
         emit('error', retryError)
         return
       }
     }
     
     // Generic error
-    toast.error(t('availability.createSlot.error'))
+    toast.error(t('calendar.createSlot.error'))
     emit('error', err)
   } finally {
     isLoading.value = false

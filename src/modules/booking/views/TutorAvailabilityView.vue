@@ -3,9 +3,9 @@
     <div class="availability-view__header">
       <div>
         <p class="availability-view__eyebrow">{{ t('calendar.weekNavigation.availableHours') }}</p>
-        <h1>{{ t('availability.editor.title') }}</h1>
+        <h1>{{ t('calendar.editor.title') }}</h1>
         <p class="availability-view__subtitle">
-          {{ t('availability.editor.subtitle', 'Налаштуйте базовий розклад та винятки') }}
+          {{ t('calendar.editor.subtitle', 'Налаштуйте базовий розклад та винятки') }}
         </p>
       </div>
     </div>
