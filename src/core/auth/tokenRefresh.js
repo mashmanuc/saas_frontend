@@ -125,9 +125,11 @@ async function performRefresh() {
         withCredentials: true, // Send httpOnly refresh cookie
         skipAuthRefresh: true, // Prevent infinite loop
       })
-      
-      const { access_token, expires_in } = response.data
-      
+
+      const data = response?.data ?? {}
+      const access_token = data?.access_token
+      const expires_in = data?.expires_in
+
       if (access_token) {
         // Update token expiry
         tokenExpiresAt = parseJwtExpiry(access_token) || (Date.now() + (expires_in || 3600) * 1000)
@@ -141,13 +143,15 @@ async function performRefresh() {
         return { success: true, token: access_token }
       }
       
-      throw new Error('No access token in response')
+      throw new Error('No access token in refresh response')
     } catch (error) {
       refreshRetryCount++
+      const status = error?.response?.status
       
-      if (error.response?.status === 401 || error.response?.status === 403) {
-        // Refresh token is invalid - session expired
+      if ([401, 403, 422].includes(status)) {
+        // Refresh token is invalid or request cannot be processed - expire session immediately
         handleSessionExpired()
+        onRefreshError?.(error)
         return { success: false, error: 'session_expired' }
       }
       

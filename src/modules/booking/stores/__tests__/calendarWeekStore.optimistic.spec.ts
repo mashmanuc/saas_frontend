@@ -50,7 +50,7 @@ describe('calendarWeekStore - Optimistic Events', () => {
 
       expect(tempId).toBe('temp-123')
       expect(store.snapshot.events).toHaveLength(1)
-      expect(store.snapshot.events[0].id).toBe(-1)
+      expect(store.snapshot.events[0].id).toBeLessThan(0)
       expect(store.snapshot.events[0].student.name).toBe('Test Student')
     })
 
@@ -305,7 +305,7 @@ describe('calendarWeekStore - Optimistic Events', () => {
       })
 
       expect(store.snapshot.events).toHaveLength(1)
-      expect(store.snapshot.events[0].id).toBe(-1)
+      expect(store.snapshot.events[0].id).toBeLessThan(0)
 
       // Step 2: Replace with real
       const realEvent: CalendarEvent = {

@@ -1,20 +1,20 @@
 <template>
   <div class="analytics-dashboard" data-testid="analytics-dashboard">
     <div class="dashboard-header">
-      <h3 class="dashboard-title">{{ t('availability.analytics.title') }}</h3>
+      <h3 class="dashboard-title">{{ t('calendar.analytics.title') }}</h3>
       <div class="date-range-selector">
         <select v-model="selectedPeriod" @change="handlePeriodChange" class="period-select">
-          <option value="today">{{ t('availability.analytics.period.today') }}</option>
-          <option value="week">{{ t('availability.analytics.period.week') }}</option>
-          <option value="month">{{ t('availability.analytics.period.month') }}</option>
-          <option value="custom">{{ t('availability.analytics.period.custom') }}</option>
+          <option value="today">{{ t('calendar.analytics.period.today') }}</option>
+          <option value="week">{{ t('calendar.analytics.period.week') }}</option>
+          <option value="month">{{ t('calendar.analytics.period.month') }}</option>
+          <option value="custom">{{ t('calendar.analytics.period.custom') }}</option>
         </select>
       </div>
     </div>
 
     <div v-if="isLoading" class="loading-state">
       <Loader class="spinner" :size="32" />
-      <p>{{ t('availability.analytics.loading') }}</p>
+      <p>{{ t('calendar.analytics.loading') }}</p>
     </div>
 
     <div v-else-if="error" class="error-state">
@@ -31,7 +31,7 @@
             <Calendar :size="24" />
           </div>
           <div class="stat-content">
-            <div class="stat-label">{{ t('availability.analytics.totalSlots') }}</div>
+            <div class="stat-label">{{ t('calendar.analytics.totalSlots') }}</div>
             <div class="stat-value">{{ analytics.totalSlots }}</div>
           </div>
         </div>
@@ -41,7 +41,7 @@
             <CheckCircle :size="24" />
           </div>
           <div class="stat-content">
-            <div class="stat-label">{{ t('availability.analytics.availableSlots') }}</div>
+            <div class="stat-label">{{ t('calendar.analytics.availableSlots') }}</div>
             <div class="stat-value">{{ analytics.availableSlots }}</div>
             <div class="stat-change positive">{{ analytics.availablePercentage }}%</div>
           </div>
@@ -52,7 +52,7 @@
             <BookOpen :size="24" />
           </div>
           <div class="stat-content">
-            <div class="stat-label">{{ t('availability.analytics.bookedSlots') }}</div>
+            <div class="stat-label">{{ t('calendar.analytics.bookedSlots') }}</div>
             <div class="stat-value">{{ analytics.bookedSlots }}</div>
             <div class="stat-change">{{ analytics.bookedPercentage }}%</div>
           </div>
@@ -63,7 +63,7 @@
             <XCircle :size="24" />
           </div>
           <div class="stat-content">
-            <div class="stat-label">{{ t('availability.analytics.blockedSlots') }}</div>
+            <div class="stat-label">{{ t('calendar.analytics.blockedSlots') }}</div>
             <div class="stat-value">{{ analytics.blockedSlots }}</div>
             <div class="stat-change">{{ analytics.blockedPercentage }}%</div>
           </div>
@@ -72,12 +72,12 @@
 
       <!-- Edit Operations Stats -->
       <div class="operations-section">
-        <h4 class="section-title">{{ t('availability.analytics.editOperations') }}</h4>
+        <h4 class="section-title">{{ t('calendar.analytics.editOperations') }}</h4>
         <div class="operations-grid">
           <div class="operation-stat">
             <Edit :size="20" />
             <div class="operation-content">
-              <div class="operation-label">{{ t('availability.analytics.totalEdits') }}</div>
+              <div class="operation-label">{{ t('calendar.analytics.totalEdits') }}</div>
               <div class="operation-value">{{ analytics.operations.totalEdits }}</div>
             </div>
           </div>
@@ -85,7 +85,7 @@
           <div class="operation-stat">
             <CheckCircle :size="20" />
             <div class="operation-content">
-              <div class="operation-label">{{ t('availability.analytics.successfulEdits') }}</div>
+              <div class="operation-label">{{ t('calendar.analytics.successfulEdits') }}</div>
               <div class="operation-value">{{ analytics.operations.successfulEdits }}</div>
             </div>
           </div>
@@ -93,7 +93,7 @@
           <div class="operation-stat">
             <AlertTriangle :size="20" />
             <div class="operation-content">
-              <div class="operation-label">{{ t('availability.analytics.failedEdits') }}</div>
+              <div class="operation-label">{{ t('calendar.analytics.failedEdits') }}</div>
               <div class="operation-value">{{ analytics.operations.failedEdits }}</div>
             </div>
           </div>
@@ -101,7 +101,7 @@
           <div class="operation-stat">
             <Clock :size="20" />
             <div class="operation-content">
-              <div class="operation-label">{{ t('availability.analytics.avgDuration') }}</div>
+              <div class="operation-label">{{ t('calendar.analytics.avgDuration') }}</div>
               <div class="operation-value">{{ analytics.operations.avgDuration }}ms</div>
             </div>
           </div>
@@ -110,7 +110,7 @@
 
       <!-- Strategy Distribution -->
       <div class="strategy-section">
-        <h4 class="section-title">{{ t('availability.analytics.strategyDistribution') }}</h4>
+        <h4 class="section-title">{{ t('calendar.analytics.strategyDistribution') }}</h4>
         <div class="strategy-bars">
           <div 
             v-for="(strategy, index) in analytics.strategies" 
@@ -131,12 +131,12 @@
 
       <!-- Conflict Analysis -->
       <div class="conflicts-section">
-        <h4 class="section-title">{{ t('availability.analytics.conflictAnalysis') }}</h4>
+        <h4 class="section-title">{{ t('calendar.analytics.conflictAnalysis') }}</h4>
         <div class="conflicts-grid">
           <div class="conflict-stat">
             <AlertCircle :size="20" />
             <div class="conflict-content">
-              <div class="conflict-label">{{ t('availability.analytics.totalConflicts') }}</div>
+              <div class="conflict-label">{{ t('calendar.analytics.totalConflicts') }}</div>
               <div class="conflict-value">{{ analytics.conflicts.total }}</div>
             </div>
           </div>
@@ -169,7 +169,7 @@
 
       <!-- Recent Activity -->
       <div class="activity-section">
-        <h4 class="section-title">{{ t('availability.analytics.recentActivity') }}</h4>
+        <h4 class="section-title">{{ t('calendar.analytics.recentActivity') }}</h4>
         <div class="activity-list">
           <div 
             v-for="(activity, index) in analytics.recentActivity" 
@@ -184,7 +184,7 @@
               <div class="activity-time">{{ formatTime(activity.timestamp) }}</div>
             </div>
             <div class="activity-status" :class="activity.status">
-              {{ t(`availability.analytics.status.${activity.status}`) }}
+              {{ t(`calendar.analytics.status.${activity.status}`) }}
             </div>
           </div>
         </div>
@@ -327,19 +327,19 @@ async function loadAnalytics() {
     analytics.value.recentActivity = [
       {
         type: 'edit',
-        description: t('availability.analytics.activity.slotEdited', { id: '123' }),
+        description: t('calendar.analytics.activity.slotEdited', { id: '123' }),
         timestamp: Date.now() - 300000,
         status: 'success'
       },
       {
         type: 'batch',
-        description: t('availability.analytics.activity.batchEdit', { count: 5 }),
+        description: t('calendar.analytics.activity.batchEdit', { count: 5 }),
         timestamp: Date.now() - 600000,
         status: 'success'
       },
       {
         type: 'conflict',
-        description: t('availability.analytics.activity.conflictDetected'),
+        description: t('calendar.analytics.activity.conflictDetected'),
         timestamp: Date.now() - 900000,
         status: 'warning'
       }
@@ -374,14 +374,14 @@ function formatTime(timestamp: number): string {
   const diff = now - timestamp
   const minutes = Math.floor(diff / 60000)
   
-  if (minutes < 1) return t('availability.analytics.time.justNow')
-  if (minutes < 60) return t('availability.analytics.time.minutesAgo', { count: minutes })
+  if (minutes < 1) return t('calendar.analytics.time.justNow')
+  if (minutes < 60) return t('calendar.analytics.time.minutesAgo', { count: minutes })
   
   const hours = Math.floor(minutes / 60)
-  if (hours < 24) return t('availability.analytics.time.hoursAgo', { count: hours })
+  if (hours < 24) return t('calendar.analytics.time.hoursAgo', { count: hours })
   
   const days = Math.floor(hours / 24)
-  return t('availability.analytics.time.daysAgo', { count: days })
+  return t('calendar.analytics.time.daysAgo', { count: days })
 }
 </script>
 

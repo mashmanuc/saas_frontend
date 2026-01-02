@@ -1,0 +1,83 @@
+{
+  "calendar": {
+    "availability": {
+      "header": {
+        "title": "Add available hours"
+      },
+      "toolbar": {
+        "label": "Availability editing toolbar"
+      },
+      "grid": {
+        "label": "Calendar grid for availability editing"
+      },
+      "workload": {
+        "label": "Workload"
+      },
+      "hours": "hours",
+      "hours.short": "h",
+      "progress": {
+        "needs_more": "Mark at least {hours} more hours",
+        "ok": "Great! You've reached your target workload",
+        "exceeded": "You've exceeded your target workload"
+      },
+      "slots": {
+        "added": "slots added",
+        "removed": "slots removed"
+      },
+      "hours.delta": "Hours change",
+      "save": "Save",
+      "saving": "Saving...",
+      "cancel": "Cancel",
+      "exit": "Exit mode",
+      "exitConfirm": "You have unsaved changes. Are you sure you want to exit?",
+      "retry": "Retry",
+      "undo": "Undo",
+      "redo": "Redo",
+      "legend": {
+        "show": "Show legend",
+        "label": "Calendar colors legend",
+        "title": "What do the colors mean?",
+        "available": "Available slot",
+        "available.desc": "Time when you can accept students",
+        "draft.add": "New slot (draft)",
+        "draft.add.desc": "Slot that will be added after saving",
+        "draft.remove": "Removal (draft)",
+        "draft.remove.desc": "Slot that will be removed after saving",
+        "event": "Scheduled lessons",
+        "event.desc": "Time when you already have a lesson",
+        "blocked": "Blocked time",
+        "blocked.desc": "Time when you are unavailable",
+        "action": {
+          "add": "Hover and click to add a slot",
+          "remove": "Click on existing slot to remove"
+        },
+        "tips": {
+          "title": "Tips:",
+          "hover": "Hover over a cell to see the action",
+          "click": "Click to add or remove a slot",
+          "keyboard": "Use Enter/Space to confirm, Esc to cancel",
+          "undo": "Ctrl+Z to undo, Ctrl+Shift+Z to redo"
+        }
+      },
+      "drag": {
+        "grid": {
+          "label": "Drag area for adjusting availability"
+        }
+      },
+      "conflicts": {
+        "title": "Conflicts detected",
+        "description": "Some of your slots overlap with existing lessons or blocked time. Please review the conflicts below.",
+        "event_overlap": "Overlaps with {student}'s lesson",
+        "blocked_overlap": "Overlaps with blocked time ({reason})",
+        "slot_overlap": "Slots overlap with each other",
+        "slot": "New slot",
+        "event": "Lesson",
+        "blocked": "Blocked",
+        "note": "Fix conflicts before saving or force apply changes",
+        "cancel": "Cancel",
+        "edit": "Fix",
+        "force": "Force apply"
+      }
+    }
+  }
+}

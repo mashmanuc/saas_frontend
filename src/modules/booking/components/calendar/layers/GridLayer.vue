@@ -1,5 +1,5 @@
 <template>
-  <div class="grid-layer">
+  <div class="grid-layer" :class="{ 'availability-mode': availabilityMode }">
     <div 
       v-for="hour in hours" 
       :key="hour"
@@ -32,6 +32,7 @@ const props = defineProps<{
   currentTime: string
   pxPerMinute: number
   showLabels?: boolean
+  availabilityMode?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -41,7 +42,10 @@ const emit = defineEmits<{
 const showLabels = computed(() => props.showLabels !== false)
 
 const handleCellClick = (hour: number) => {
-  console.log('[GridLayer] Cell clicked:', hour)
+  const date = dayDate.value
+  if (!date) return
+  
+  console.log('[GridLayer] Cell clicked:', { date, hour })
   emit('cell-click', hour)
 }
 
@@ -89,6 +93,10 @@ const formatHour = (hour: number): string => {
   bottom: 0;
   z-index: 1;
   pointer-events: auto;
+}
+
+.grid-layer.availability-mode {
+  pointer-events: none;
 }
 
 .grid-hour {

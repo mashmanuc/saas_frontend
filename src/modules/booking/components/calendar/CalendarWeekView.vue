@@ -61,8 +61,31 @@
 
     <!-- NEW Calendar Board V2 -->
     <div class="calendar-v055-layout">
+      <!-- Availability Toolbar (shown in availability mode) -->
+      <AvailabilityToolbar
+        v-if="isAvailabilityMode"
+        :workload-progress="draftStore.workloadProgress"
+        :has-changes="draftStore.hasChanges"
+        :added-count="draftStore.addedSlots.length"
+        :removed-count="draftStore.removedSlots.length"
+        :hours-delta="draftStore.hoursDelta"
+        :is-saving="draftStore.isSaving"
+        :has-conflicts="draftStore.hasConflicts"
+        :error="draftStore.error"
+        :can-undo="draftStore.canUndo"
+        :can-redo="draftStore.canRedo"
+        @save="handleSaveAvailability"
+        @cancel="handleCancelAvailability"
+        @exit="handleExitAvailabilityMode"
+        @retry="handleRetryAvailability"
+        @show-legend="handleShowLegend"
+        @undo="handleUndoAvailability"
+        @redo="handleRedoAvailability"
+      />
+
       <!-- Week Navigation -->
       <WeekNavigation
+        v-if="!isAvailabilityMode"
         :week-start="weekStartForNav"
         :week-end="weekEndForNav"
         :current-page="currentPageForNav"
@@ -75,6 +98,7 @@
         @open-availability="handleSetupAvailability"
         @create-slot="handleCreateSlotFromToolbar"
         @show-guide="showGuideModal = true"
+        @mark-free-time="handleEnterAvailabilityMode"
       />
 
       <div v-if="isLoadingV055" class="loading-state">
@@ -97,13 +121,15 @@
           :timezone="metaV055?.timezone || 'UTC'"
           :blocked-ranges="blockedRangesV055Computed"
           :current-time="currentTimeV055"
-          :is-drag-enabled="dragEnabled"
+          :is-drag-enabled="dragEnabled && !isAvailabilityMode"
+          :availability-mode="isAvailabilityMode"
+          :draft-slots="draftStore.slots"
           @event-click="handleEventClick"
           @slot-click="handleSlotClick"
-          @cell-click="handleCellClick"
+          @cell-click="handleCellClickRouter"
           @drag-complete="handleDragComplete"
         />
-        <CalendarFooter lesson-link="https://zoom.us/j/example" />
+        <CalendarFooter v-if="!isAvailabilityMode" lesson-link="https://zoom.us/j/example" />
       </template>
     </div>
 
@@ -164,6 +190,28 @@
       v-if="showGuideModal"
       @close="showGuideModal = false"
     />
+
+    <!-- Availability Legend Modal -->
+    <Teleport to="body">
+      <div v-if="showAvailabilityLegend" class="modal-overlay" @click="showAvailabilityLegend = false">
+        <div class="modal-content" @click.stop>
+          <AvailabilityLegend />
+          <button class="btn-close-modal" @click="showAvailabilityLegend = false">
+            {{ t('common.close', 'Закрити') }}
+          </button>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Availability Conflicts Drawer -->
+    <AvailabilityConflictsDrawer
+      :is-open="showConflictsDrawer"
+      :conflicts="draftStore.conflicts"
+      :allow-force="true"
+      @close="showConflictsDrawer = false"
+      @edit="handleEditConflicts"
+      @force-apply="handleForceApplyDraft"
+    />
   </div>
 </template>
 
@@ -180,6 +228,7 @@ dayjs.extend(utc)
 dayjs.extend(timezone)
 
 import { useCalendarWeekStore } from '@/modules/booking/stores/calendarWeekStore'
+import { useAvailabilityDraftStore } from '@/modules/booking/stores/availabilityDraftStore'
 import { useCalendarWebSocket } from '@/modules/booking/composables/useCalendarWebSocket'
 import { useErrorHandler } from '@/modules/booking/composables/useErrorHandler'
 import { useRouter } from 'vue-router'
@@ -190,6 +239,9 @@ import WeekNavigation from './WeekNavigation.vue'
 import LessonCardDrawer from './LessonCardDrawer.vue'
 import CalendarSidebar from './CalendarSidebar.vue'
 import EmptyAvailabilityState from './EmptyAvailabilityState.vue'
+import AvailabilityToolbar from './AvailabilityToolbar.vue'
+import AvailabilityLegend from './AvailabilityLegend.vue'
+import AvailabilityConflictsDrawer from './AvailabilityConflictsDrawer.vue'
 import CreateLessonModal from '../modals/CreateLessonModal.vue'
 import EditLessonModal from '../modals/EditLessonModal.vue'
 import CalendarGuideModal from './CalendarGuideModal.vue'
@@ -213,6 +265,7 @@ const { t } = useI18n()
 const router = useRouter()
 
 const store = useCalendarWeekStore()
+const draftStore = useAvailabilityDraftStore()
 const authStore = useAuthStore()
 const { connected, connectionAttempted, connect } = useCalendarWebSocket()
 const { handleError } = useErrorHandler()
@@ -326,10 +379,15 @@ const createSlotData = ref<{ date: string; start: string; end: string } | null>(
 const showGuideModal = ref(false)
 const showLessonDrawer = ref(false)
 const selectedLessonV055 = ref<CalendarEventV055 | null>(null)
+const showAvailabilityLegend = ref(false)
+const showConflictsDrawer = ref(false)
 
 // View filters
 const showEvents = ref(true)
 const showAvailability = ref(true)
+
+// Availability mode computed
+const isAvailabilityMode = computed(() => draftStore.isEditMode)
 
 function formatDateString(date: Date) {
   const year = date.getFullYear()
@@ -419,14 +477,40 @@ function handleReconnect() {
   connect()
 }
 
+function handleCellClickRouter(data: any) {
+  console.log('[CalendarWeekView] handleCellClickRouter called with:', data)
+  console.log('[CalendarWeekView] isAvailabilityMode.value:', isAvailabilityMode.value)
+  console.log('[CalendarWeekView] draftStore.mode:', draftStore.mode)
+  
+  // Check if this is an availability cell click (has start/end/canAdd/canRemove)
+  if (data && typeof data === 'object' && 'start' in data && 'end' in data) {
+    console.log('[CalendarWeekView] Routing to handleAvailabilityCellClick')
+    handleAvailabilityCellClick(data)
+  } else if (data && typeof data === 'object' && 'date' in data && 'hour' in data) {
+    console.log('[CalendarWeekView] Routing to handleCellClick')
+    handleCellClick(data)
+  } else {
+    console.warn('[CalendarWeekView] Unknown cell click data format:', data)
+  }
+}
+
 function handleCellClick(data: { date: string; hour: number }) {
-  // Open create lesson modal with pre-filled date and time
+  const timezoneName = metaV055.value?.timezone || 'Europe/Kiev'
+  const hourString = data.hour.toString().padStart(2, '0')
+  const baseLocal = dayjs.tz(`${data.date}T${hourString}:00`, timezoneName)
+
+  const startAtUTC = baseLocal.clone().utc().toISOString()
+  const endAtUTC = baseLocal.clone().add(1, 'hour').utc().toISOString()
+
   selectedCell.value = {
-    date: data.date,
-    hour: data.hour,
-    start: `${data.hour.toString().padStart(2, '0')}:00`,
-    end: `${(data.hour + 1).toString().padStart(2, '0')}:00`
-  } as any
+    dayKey: data.date,
+    slotIndex: data.hour * 2,
+    startAtUTC,
+    endAtUTC,
+    status: 'available',
+    slotId: undefined,
+  }
+
   showCreateModal.value = true
   emit('cellClick', selectedCell.value)
 }
@@ -595,6 +679,96 @@ function handleCreateSlotFromToolbar() {
     end: `${(nextHour + 1).toString().padStart(2, '0')}:00`
   }
   showCreateSlotModal.value = true
+}
+
+// Availability mode handlers
+async function handleEnterAvailabilityMode() {
+  draftStore.enterMode()
+  await draftStore.loadWorkloadProgress()
+}
+
+function handleExitAvailabilityMode() {
+  if (draftStore.hasChanges) {
+    const confirmed = window.confirm(t('calendar.availability.exitConfirm', 'У вас є незбережені зміни. Ви впевнені, що хочете вийти?'))
+    if (!confirmed) return
+  }
+  draftStore.exitMode()
+}
+
+async function handleSaveAvailability() {
+  try {
+    const weekStart = metaV055.value?.weekStart || new Date().toISOString().slice(0, 10)
+    const response = await draftStore.createDraft(weekStart)
+    
+    if (response.conflicts.length > 0) {
+      showConflictsDrawer.value = true
+      return
+    }
+    
+    const applyResponse = await draftStore.applyDraft()
+    if (applyResponse.status === 'applied') {
+      // Refetch calendar
+      if (store.currentTutorId && store.currentWeekStart) {
+        await store.fetchWeekSnapshot(store.currentTutorId, store.currentWeekStart, true)
+      }
+    }
+  } catch (error: any) {
+    handleError(error)
+  }
+}
+
+function handleCancelAvailability() {
+  handleExitAvailabilityMode()
+}
+
+function handleShowLegend() {
+  showAvailabilityLegend.value = true
+}
+
+function handleUndoAvailability() {
+  draftStore.undo()
+}
+
+function handleRedoAvailability() {
+  draftStore.redo()
+}
+
+function handleRetryAvailability() {
+  handleSaveAvailability()
+}
+
+async function handleForceApplyDraft() {
+  try {
+    const applyResponse = await draftStore.applyDraft(true)
+    if (applyResponse.status === 'applied') {
+      showConflictsDrawer.value = false
+      if (store.currentTutorId && store.currentWeekStart) {
+        await store.fetchWeekSnapshot(store.currentTutorId, store.currentWeekStart, true)
+      }
+    }
+  } catch (error: any) {
+    handleError(error)
+  }
+}
+
+function handleEditConflicts() {
+  showConflictsDrawer.value = false
+}
+
+function handleAvailabilityCellClick(cellInfo: { start: string; end: string; canAdd: boolean; canRemove: boolean; slotId?: number }) {
+  console.log('[CalendarWeekView] handleAvailabilityCellClick called:', cellInfo)
+  console.log('[CalendarWeekView] isAvailabilityMode:', isAvailabilityMode.value)
+  console.log('[CalendarWeekView] draftStore.slots before:', JSON.parse(JSON.stringify(draftStore.slots)))
+  
+  if (cellInfo.canAdd) {
+    const newSlot = draftStore.addSlot(cellInfo.start, cellInfo.end)
+    console.log('[CalendarWeekView] Added slot:', newSlot)
+    console.log('[CalendarWeekView] draftStore.slots after add:', JSON.parse(JSON.stringify(draftStore.slots)))
+  } else if (cellInfo.canRemove && cellInfo.slotId) {
+    draftStore.toggleSlot(cellInfo.slotId, cellInfo.start, cellInfo.end)
+    console.log('[CalendarWeekView] Toggled slot:', cellInfo.slotId)
+    console.log('[CalendarWeekView] draftStore.slots after toggle:', JSON.parse(JSON.stringify(draftStore.slots)))
+  }
 }
 </script>
 
@@ -884,5 +1058,63 @@ function handleCreateSlotFromToolbar() {
   background: white;
   border-radius: 8px;
   padding: 16px;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.btn-close-modal {
+  margin-top: 20px;
+  width: 100%;
+  padding: 12px;
+  background: #f5f5f5;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #666;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.btn-close-modal:hover {
+  background: #e0e0e0;
 }
 </style>

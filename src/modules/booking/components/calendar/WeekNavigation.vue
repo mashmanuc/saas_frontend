@@ -57,6 +57,13 @@
         <span>{{ t('calendar.weekNavigation.createSlot') }}</span>
       </button>
       <button
+        class="mark-free-time-btn"
+        @click="handleMarkFreeTime"
+        data-testid="mark-free-time-btn"
+      >
+        {{ t('calendar.header.mark_free_time') }}
+      </button>
+      <button
         class="edit-availability-btn"
         @click="handleOpenAvailability"
       >
@@ -103,6 +110,7 @@ const emit = defineEmits<{
   'open-availability': []
   'create-slot': []
   'show-guide': []
+  'mark-free-time': []
 }>()
 
 const weekRangeFormatted = computed(() => {
@@ -143,6 +151,10 @@ function handleCreateSlot() {
 
 function handleShowGuide() {
   emit('show-guide')
+}
+
+function handleMarkFreeTime() {
+  emit('mark-free-time')
 }
 
 const hasAvailability = computed(() => Boolean(props.hasAvailability))
@@ -280,6 +292,25 @@ const hasAvailability = computed(() => Boolean(props.hasAvailability))
 .create-slot-btn:hover {
   background: #2563eb;
   transform: translateY(-1px);
+}
+
+.mark-free-time-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  background: #4caf50;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+.mark-free-time-btn:hover {
+  background: #45a049;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
 }
 
 .edit-availability-btn {

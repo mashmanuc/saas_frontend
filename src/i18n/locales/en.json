@@ -836,13 +836,13 @@
         "certificationsFileLabel": "File",
         "certificationsUploadButton": "Choose file",
         "certificationsSelectedFile": "Selected: {name}",
-    "offline": {
-      "title": "Offline mode",
-      "message": "Connection lost – you are working from cached data.",
-      "lastSync": "Last sync",
-      "retrying": "Reconnecting…",
-      "retry": "Retry connection"
-    },
+        "offline": {
+          "title": "Offline mode",
+          "message": "Connection lost – you are working from cached data.",
+          "lastSync": "Last sync",
+          "retrying": "Reconnecting…",
+          "retry": "Retry connection"
+        },
         "certificationsNoFile": "No file selected",
         "certificationsAdd": "Add diploma",
         "certificationsUploading": "Uploading…",
@@ -2845,15 +2845,54 @@
     "weekOf": "Week of {date}",
     "analyticsTitle": "Availability analytics",
     "analyticsDescription": "Track how your open slots change week over week.",
+    "analytics": {
+      "title": "Slot Analytics",
+      "loading": "Loading analytics...",
+      "period": {
+        "today": "Today",
+        "week": "Week",
+        "month": "Month",
+        "custom": "Custom period"
+      },
+      "totalSlots": "Total slots",
+      "availableSlots": "Available slots",
+      "bookedSlots": "Booked slots",
+      "blockedSlots": "Blocked slots",
+      "editOperations": "Edit operations",
+      "totalEdits": "Total edits",
+      "successfulEdits": "Successful edits",
+      "failedEdits": "Failed edits",
+      "avgDuration": "Avg duration",
+      "strategyDistribution": "Strategy distribution",
+      "conflictAnalysis": "Conflict analysis",
+      "totalConflicts": "Total conflicts",
+      "recentActivity": "Recent activity",
+      "status": {
+        "success": "Success",
+        "error": "Error",
+        "warning": "Warning"
+      },
+      "activity": {
+        "slotEdited": "Slot #{id} edited",
+        "batchEdit": "Batch edit of {count} slots",
+        "conflictDetected": "Conflict detected"
+      },
+      "time": {
+        "justNow": "Just now",
+        "minutesAgo": "{count} min ago",
+        "hoursAgo": "{count} hrs ago",
+        "daysAgo": "{count} days ago"
+      }
+    },
     "legend": {
-      "lesson": "Lesson",
+      "lesson": "Lessons",
       "availability": "Availability",
       "blocked_time": "Blocked time",
       "first_lesson": "First lesson",
       "no_show": "No-show",
       "past_time": "Past time",
       "regular_lesson": "Regular lesson",
-      "title": "Legend"
+      "title": "Color legend"
     },
     "draftNotice": "Draft mode. Don't forget to apply your changes.",
     "pendingJobs": "Calendar sync in progress…",
@@ -2882,8 +2921,8 @@
       "availabilityUpdated": "Schedule updated"
     },
     "warnings": {
-      "disconnected": "No connection. Please check your network or refresh.",
-      "offline": "Connection lost. Please try again."
+      "disconnected": "Connection lost. Please check your network or refresh.",
+      "offline": "You are offline. Try again."
     },
     "errors": {
       "blockFailed": "Failed to block slot",
@@ -2906,7 +2945,7 @@
       "availableHours": "{hours} hours available",
       "noAvailability": "No availability set for this week yet",
       "goToFirstAvailable": "Go to first available slot",
-      "setupAvailability": "Set up booking hours",
+      "setupAvailability": "Set booking hours",
       "prevWeek": "Previous week",
       "nextWeek": "Next week",
       "today": "Today",
@@ -3086,150 +3125,6 @@
         "blocked": "Blocked"
       }
     },
-    "calendar": {
-      "weekOf": "Week of {date}",
-      "analyticsTitle": "Availability analytics",
-      "analyticsDescription": "Track how your open slots change week over week.",
-      "legend": {
-        "title": "Color legend",
-        "lesson": "Lessons",
-        "availability": "Availability",
-        "first_lesson": "First lesson",
-        "regular_lesson": "Regular lesson",
-        "no_show": "No-show",
-        "blocked_time": "Blocked time",
-        "past_time": "Past time"
-      },
-      "regularity": {
-        "single": "One-time",
-        "once_a_week": "Once per week",
-        "twice_a_week": "Twice per week"
-      },
-      "draftNotice": "Draft mode. Don't forget to apply your changes.",
-      "pendingJobs": "Calendar sync in progress…",
-      "lastSyncLabel": "Last sync: {datetime}",
-      "realtime": {
-        "status": {
-          "connected": "Connected to real-time",
-          "disconnected": "Connection lost. Attempting to reconnect...",
-          "retrying": "Reconnecting..."
-        }
-      },
-      "cache": {
-        "staleLabel": "Showing cached data. Click 'Retry' to refresh."
-      },
-      "slotBecameUnavailable": "Selected slot is no longer available",
-      "justNow": "just now",
-      "oneMinuteAgo": "a minute ago",
-      "minutesAgo": "{count} min ago",
-      "syncStatus": {
-        "syncing": "Syncing...",
-        "synced": "Synced",
-        "error": "Sync error"
-      },
-      "notifications": {
-        "slotBooked": "{student} booked a slot at {time}",
-        "availabilityUpdated": "Schedule updated"
-      },
-      "warnings": {
-        "disconnected": "Connection lost. Please check your network or refresh.",
-        "offline": "You are offline. Try again."
-      },
-      "footer": {
-        "your_lesson_link": "Your lesson link",
-        "copy": "Copy",
-        "copied": "Copied!"
-      },
-      "no_show": {
-        "select_reason": "Select no-show reason",
-        "description": "Please specify why the student didn't show up for the lesson",
-        "comment_optional": "Comment (optional)",
-        "comment_placeholder": "Add additional information...",
-        "confirm": "Confirm",
-        "reasons": {
-          "student_absent": "Student didn't show up",
-          "student_late": "Student was more than 15 min late",
-          "technical_issues": "Technical issues",
-          "other": "Other reason"
-        }
-      },
-      "errors": {
-        "blockFailed": "Failed to block slot",
-        "loadFailed": "Failed to load calendar"
-      },
-      "weekNavigation": {
-        "availableHours": "{hours} hours available",
-        "noAvailability": "No availability set for this week yet",
-        "goToFirstAvailable": "Go to first available slot",
-        "createSlot": "Add slot",
-        "setupAvailability": "Set booking hours",
-        "prevWeek": "Previous week",
-        "nextWeek": "Next week",
-        "today": "Today",
-        "showGuide": "Show guide",
-        "backToCalendar": "Back to calendar"
-      },
-      "header": {
-        "reminder": "Keep your calendar up to date so students can book lessons.",
-        "mark_free_time": "Mark free time",
-        "color_legend": "Color legend",
-        "video_guide": "Video guide"
-      },
-      "guide": {
-        "title": "Calendar guide",
-        "intro": "Everything you need to know to manage availability and lessons in one place.",
-        "colors": "Color legend",
-        "availableSlot": "Available slot",
-        "bookedLesson": "Booked lesson",
-        "blockedSlot": "Blocked slot",
-        "howToCreate": "How to create slots",
-        "createSlotDesc": "Click \"Add slot\" or drag on the grid to create availability for students.",
-        "howToEdit": "How to edit slots",
-        "editSlotDesc": "Select any slot to adjust time or duration. Use the toolbar to apply bulk changes.",
-        "checkboxes": "Checkbox filters",
-        "checkboxLessons": "Show or hide booked lessons",
-        "checkboxAvailability": "Show or hide availability slots",
-        "navigation": "Navigation",
-        "navigationDesc": "Use arrows or keyboard shortcuts to move between weeks. \"Today\" jumps back to the current week.",
-        "setupButton": "Setup button",
-        "setupButtonDesc": "\"Set booking hours\" opens the availability editor for full schedule control.",
-        "limits": "Limits & best practices",
-        "maxDuration": "Slots longer than 3 hours may be split for better visibility.",
-        "noDuplicates": "Avoid duplicate overlapping slots to keep booking simple.",
-        "noOverlap": "Overlapping lessons and availability are blocked automatically.",
-        "helpIcon": "Need more help?",
-        "helpIconDesc": "Use the \"?\" icon in the top bar to open docs or ping support."
-      },
-      "sidebar": {
-        "upcomingLessons": "Upcoming lessons",
-        "noUpcoming": "No upcoming lessons",
-        "today": "Today",
-        "tomorrow": "Tomorrow",
-        "status": {
-          "paid": "Paid",
-          "unpaid": "Unpaid"
-        }
-      },
-      "emptyState": {
-        "noAvailability": {
-          "title": "No availability set",
-          "description": "Configure your schedule to start accepting bookings from students",
-          "action": "Set up availability"
-        }
-      },
-      "marketplace": {
-        "availability": {
-          "title": "Available slots",
-          "weekRange": "{start} – {end}",
-          "prevWeek": "Previous week",
-          "nextWeek": "Next week",
-          "empty": "No open slots right now",
-          "cta": "Book a lesson",
-          "error": "Failed to load availability",
-          "retry": "Retry"
-        }
-      }
-    },
     "timeRange": {
       "start": "Start",
       "end": "End",
@@ -3398,16 +3293,16 @@
     },
     "no_show": {
       "comment_optional": "Comment (optional)",
-      "comment_placeholder": "Add extra context...",
+      "comment_placeholder": "Add additional information...",
       "confirm": "Confirm",
-      "description": "Please explain why the student missed the lesson",
+      "description": "Please specify why the student didn't show up for the lesson",
       "reasons": {
         "other": "Other reason",
         "student_absent": "Student didn't show up",
-        "student_late": "Student was more than 15 minutes late",
+        "student_late": "Student was more than 15 min late",
         "technical_issues": "Technical issues"
       },
-      "select_reason": "Select a no-show reason"
+      "select_reason": "Select no-show reason"
     },
     "profile": {
       "availability": "Availability",
@@ -3734,27 +3629,27 @@
       "checkboxLessons": "Show or hide booked lessons",
       "checkboxes": "Checkbox filters",
       "colors": "Color legend",
-      "createSlotDesc": "Click “Add slot” or drag on the grid to make time available for students.",
-      "editSlotDesc": "Select any slot to adjust its time or duration. Use the control panel for batch edits.",
-      "helpIcon": "Need help?",
-      "helpIconDesc": "Click the “?” icon in the top bar to open the guide or contact support.",
-      "howToCreate": "How to create a slot",
-      "howToEdit": "How to edit a slot",
-      "intro": "Everything you need to manage availability and lessons in one place.",
-      "limits": "Limits & tips",
-      "maxDuration": "Slots longer than 3 hours may be split for readability.",
+      "createSlotDesc": "Click \"Add slot\" or drag on the grid to create availability for students.",
+      "editSlotDesc": "Select any slot to adjust time or duration. Use the toolbar to apply bulk changes.",
+      "helpIcon": "Need more help?",
+      "helpIconDesc": "Use the \"?\" icon in the top bar to open docs or ping support.",
+      "howToCreate": "How to create slots",
+      "howToEdit": "How to edit slots",
+      "intro": "Everything you need to know to manage availability and lessons in one place.",
+      "limits": "Limits & best practices",
+      "maxDuration": "Slots longer than 3 hours may be split for better visibility.",
       "navigation": "Navigation",
-      "navigationDesc": "Use arrows or hotkeys to switch weeks. “Today” jumps to the current week.",
-      "noDuplicates": "Avoid overlapping slots to keep the calendar clear.",
-      "noOverlap": "Lesson and availability overlaps are blocked automatically.",
+      "navigationDesc": "Use arrows or keyboard shortcuts to move between weeks. \"Today\" jumps back to the current week.",
+      "noDuplicates": "Avoid duplicate overlapping slots to keep booking simple.",
+      "noOverlap": "Overlapping lessons and availability are blocked automatically.",
       "setupButton": "Setup button",
-      "setupButtonDesc": "“Set hours” opens the availability editor with full schedule control.",
+      "setupButtonDesc": "\"Set booking hours\" opens the availability editor for full schedule control.",
       "title": "Calendar guide"
     },
     "header": {
       "color_legend": "Color legend",
       "mark_free_time": "Mark free time",
-      "reminder": "Keep your calendar updated so students can book lessons.",
+      "reminder": "Keep your calendar up to date so students can book lessons.",
       "video_guide": "Video guide"
     },
     "hoursLabel": "{hours} hours",
@@ -3776,6 +3671,11 @@
       "popular": "Popular tutors",
       "recommended": "Recommended for you",
       "viewAll": "View all"
+    },
+    "regularity": {
+      "single": "One-time",
+      "once_a_week": "Once per week",
+      "twice_a_week": "Twice per week"
     }
   },
   "conflict": {
@@ -3794,45 +3694,6 @@
       "override": "Override despite conflict",
       "updateTemplate": "Update template",
       "apply": "Apply resolutions"
-    }
-  },
-  "analytics": {
-    "title": "Slot Analytics",
-    "loading": "Loading analytics...",
-    "period": {
-      "today": "Today",
-      "week": "Week",
-      "month": "Month",
-      "custom": "Custom period"
-    },
-    "totalSlots": "Total slots",
-    "availableSlots": "Available slots",
-    "bookedSlots": "Booked slots",
-    "blockedSlots": "Blocked slots",
-    "editOperations": "Edit operations",
-    "totalEdits": "Total edits",
-    "successfulEdits": "Successful edits",
-    "failedEdits": "Failed edits",
-    "avgDuration": "Avg duration",
-    "strategyDistribution": "Strategy distribution",
-    "conflictAnalysis": "Conflict analysis",
-    "totalConflicts": "Total conflicts",
-    "recentActivity": "Recent activity",
-    "status": {
-      "success": "Success",
-      "error": "Error",
-      "warning": "Warning"
-    },
-    "activity": {
-      "slotEdited": "Slot #{id} edited",
-      "batchEdit": "Batch edit of {count} slots",
-      "conflictDetected": "Conflict detected"
-    },
-    "time": {
-      "justNow": "Just now",
-      "minutesAgo": "{count} min ago",
-      "hoursAgo": "{count} hrs ago",
-      "daysAgo": "{count} days ago"
     }
   },
   "oldBooking": {

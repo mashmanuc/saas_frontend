@@ -8,6 +8,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed, triggerRef } from 'vue'
 import dayjs from 'dayjs'
+import axios from 'axios'
 
 import { calendarV055Api } from '../api/calendarV055Api'
 import type {
@@ -296,7 +297,24 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
       currentTutorId.value = tutorId
       currentWeekStart.value = normalizedMeta.weekStart || weekStart
       currentTimezone.value = normalizedMeta.timezone || effectiveTimezone
-    } catch (err) {
+    } catch (err: any) {
+      const status = err?.response?.status
+      if (status === 304) {
+        console.info('[calendarWeekStore] snapshot not modified (304)', {
+          tutorId,
+          weekStart,
+          hasSnapshot: Boolean(snapshot.value),
+          forceRefresh,
+        })
+        if (!snapshot.value && !forceRefresh) {
+          // We don't have cached data yet, refetch without ETag
+          return await fetchWeekSnapshot(tutorId, weekStart, true)
+        }
+        // We already have snapshot, treat as cache hit
+        error.value = null
+        return
+      }
+      
       error.value = err instanceof Error ? err.message : 'Failed to fetch snapshot'
       throw err
     } finally {
@@ -740,6 +758,7 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     removeOptimisticEvent,
     replaceOptimisticEvent,
     removeOptimisticSlot,
+    selectEvent,
     $reset,
   }
 })

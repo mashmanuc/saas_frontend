@@ -1,6 +1,14 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
+
+const mockTranslate = vi.fn((key: string) => key)
+
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({
+    t: mockTranslate,
+  }),
+}))
+
 import { useErrorHandler } from '../useErrorHandler'
-import { createI18n } from 'vue-i18n'
 
 // Mock useToast
 vi.mock('@/composables/useToast', () => ({
@@ -10,32 +18,9 @@ vi.mock('@/composables/useToast', () => ({
   }),
 }))
 
-// Setup i18n
-const i18n = createI18n({
-  legacy: false,
-  locale: 'uk',
-  messages: {
-    uk: {
-      calendar: {
-        errors: {
-          invalidTime: 'Невірний час',
-          invalidDuration: 'Невірна тривалість',
-          timeOverlap: 'Час перетинається',
-          invalidLessonType: 'Невірний тип уроку',
-          unknown: 'Невідома помилка',
-          createFailed: 'Не вдалося створити урок',
-        },
-      },
-    },
-  },
-})
-
 describe('useErrorHandler', () => {
   beforeEach(() => {
-    // Install i18n globally for tests
-    global.app = {
-      use: vi.fn(),
-    }
+    mockTranslate.mockClear()
   })
 
   describe('handleErrorWithFields', () => {
@@ -194,6 +179,7 @@ describe('useErrorHandler', () => {
           data: {
             error: {
               code: 'VALIDATION_ERROR',
+              message: 'Validation failed',
             },
           },
         },

@@ -34,6 +34,7 @@
               :current-time="currentTime"
               :px-per-minute="pxPerMinute"
               :show-labels="false"
+              :availability-mode="availabilityMode"
               @cell-click="(hour) => handleCellClick(day.date, hour)"
             />
             <AccessibleSlotsLayer
@@ -54,15 +55,29 @@
               @event-click="handleEventClick"
               @drag-start="handleEventDragStart"
             />
+            <DraftSlotsLayer
+              v-if="availabilityMode && draftSlots"
+              :draft-slots="draftSlotsForDay(day.date)"
+              :px-per-minute="pxPerMinute"
+              :timezone="timezone"
+              :grid-start-hour="startHour"
+            />
           </div>
           <InteractionLayer 
-            v-if="isDragEnabled"
+            v-if="isDragEnabled || availabilityMode"
             ref="interactionLayerRef"
             :px-per-minute="pxPerMinute"
             :is-drag-enabled="isDragEnabled"
+            :availability-mode="availabilityMode"
+            :existing-slots="accessibleSlots"
+            :events="events"
+            :day-dates="dayDateStrings"
+            :grid-start-hour="startHour"
+            :timezone="timezone"
             @drag-start="handleDragStart"
             @drag-move="handleDragMove"
             @drag-end="handleDragEnd"
+            @cell-click="handleAvailabilityCellClick"
           />
         </div>
       </div>
@@ -92,6 +107,7 @@ import AccessibleSlotsLayer from './layers/AccessibleSlotsLayer.vue'
 import AvailabilityLayer from './layers/AvailabilityLayer.vue'
 import EventsLayer from './layers/EventsLayer.vue'
 import InteractionLayer from './layers/InteractionLayer.vue'
+import DraftSlotsLayer from './layers/DraftSlotsLayer.vue'
 import type { CalendarEvent, DaySnapshot, BlockedRange } from '@/modules/booking/types/calendarV055'
 
 interface AccessibleSlot {
@@ -99,6 +115,15 @@ interface AccessibleSlot {
   start: string
   end: string
   is_recurring: boolean
+}
+
+interface DraftSlot {
+  tempId?: string
+  slotId?: number | null
+  start: string
+  end: string
+  status?: 'available' | 'blocked'
+  action?: 'remove'
 }
 
 const props = defineProps<{
@@ -109,12 +134,14 @@ const props = defineProps<{
   currentTime?: string
   isDragEnabled?: boolean
   timezone?: string
+  availabilityMode?: boolean
+  draftSlots?: DraftSlot[]
 }>()
 
 const emit = defineEmits<{
   'event-click': [event: CalendarEvent]
   'slot-click': [slot: AccessibleSlot]
-  'cell-click': [data: { date: string; hour: number }]
+  'cell-click': [data: { date: string; hour: number } | { start: string; end: string; canAdd: boolean; canRemove: boolean; slotId?: number }]
   'drag-complete': [eventId: number, newStart: string, newEnd: string]
   'open-quick-block': []
   'open-guide': []
@@ -122,11 +149,12 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const timezone = computed(() => props.timezone || 'UTC')
-const { pxPerMinute, hours, gridHeight, isPast } = useCalendarGrid({ timezone: timezone.value })
+const { pxPerMinute, hours, gridHeight, isPast, startHour } = useCalendarGrid({ timezone: timezone.value })
 const dragDrop = useDragDrop()
 const interactionLayerRef = ref<InstanceType<typeof InteractionLayer> | null>(null)
 
 const days = computed(() => (props.days || []).filter((d) => typeof (d as any)?.date === 'string' && (d as any).date.length >= 10))
+const dayDateStrings = computed(() => days.value.map(day => day.date))
 const events = computed(() => props.events || [])
 const blockedRanges = computed(() => props.blockedRanges || [])
 const accessibleSlots = computed(() => props.accessibleSlots || [])
@@ -174,6 +202,20 @@ const blockedRangesForDay = (dateStr: string): BlockedRange[] => {
   return blockedRanges.value.filter(r => r.start.startsWith(dateStr))
 }
 
+const draftSlotsForDay = (dateStr: string): DraftSlot[] => {
+  console.log('[CalendarBoardV2] draftSlotsForDay called for:', dateStr)
+  console.log('[CalendarBoardV2] props.draftSlots:', props.draftSlots)
+  
+  if (!props.draftSlots) {
+    console.log('[CalendarBoardV2] No draftSlots prop, returning []')
+    return []
+  }
+  
+  const filtered = props.draftSlots.filter(s => s.start.startsWith(dateStr))
+  console.log('[CalendarBoardV2] Filtered draft slots for', dateStr, ':', filtered)
+  return filtered
+}
+
 const boardStyles = computed(() => ({
   height: `${gridHeight.value}px`
 }))
@@ -191,6 +233,13 @@ const handleSlotClick = (slot: AccessibleSlot) => {
 const handleCellClick = (date: string, hour: number) => {
   console.log('[CalendarBoardV2] Cell clicked:', { date, hour })
   emit('cell-click', { date, hour })
+}
+
+const handleAvailabilityCellClick = (cellInfo: { start: string; end: string; canAdd: boolean; canRemove: boolean; slotId?: number }) => {
+  console.log('[CalendarBoardV2] Availability cell clicked:', cellInfo)
+  console.log('[CalendarBoardV2] Emitting cell-click event with:', cellInfo)
+  emit('cell-click', cellInfo)
+  console.log('[CalendarBoardV2] cell-click event emitted successfully')
 }
 
 const handleEventDragStart = (event: CalendarEvent, mouseEvent: MouseEvent) => {

@@ -44,8 +44,23 @@ function createCalendarDebugState() {
     dictionaries: dictionaries.value,
   }))
 
-  const apiLogs = computed(() => calendarDebugRecorder.getApiLogs())
-  const wsLogs = computed(() => calendarDebugRecorder.getWsLogs())
+  const apiLogs = computed(() => {
+    try {
+      return calendarDebugRecorder.getApiLogs() || []
+    } catch (err) {
+      console.error('[useCalendarDebugSnapshot] Failed to get API logs:', err)
+      return []
+    }
+  })
+  
+  const wsLogs = computed(() => {
+    try {
+      return calendarDebugRecorder.getWsLogs() || []
+    } catch (err) {
+      console.error('[useCalendarDebugSnapshot] Failed to get WS logs:', err)
+      return []
+    }
+  })
 
   const stats = computed(() => ({
     eventsCount: events.value?.length || 0,

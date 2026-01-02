@@ -435,11 +435,15 @@ const minDateTime = computed(() => {
   return `${year}-${month}-${day}T${hours}:${minutes}`
 })
 
-watch(() => props.visible, (visible) => {
-  if (visible) {
-    resetForm()
-  }
-})
+watch(
+  () => props.visible,
+  (visible) => {
+    if (visible) {
+      resetForm()
+    }
+  },
+  { immediate: true },
+)
 
 watch(
   () => formData.value.regularity,
