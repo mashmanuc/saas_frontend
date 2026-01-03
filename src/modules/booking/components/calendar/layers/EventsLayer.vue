@@ -14,8 +14,8 @@
       @click="$emit('event-click', event)"
       @mousedown="handleEventMouseDown(event, $event)"
     >
-      <div class="event-time">{{ formatTime(event.start) }}</div>
-      <div class="event-student">{{ event.student?.name || 'Студент' }}</div>
+      <div class="event-student">{{ getStudentName(event) }}</div>
+      <div class="event-time">{{ formatTimeRange(event) }}</div>
       <div v-if="event.is_first" class="first-badge">FIRST</div>
     </div>
   </div>
@@ -43,6 +43,7 @@ interface CalendarEvent {
   status: string
   is_first?: boolean
   student?: Student
+  clientName?: string
 }
 
 const props = defineProps<{
@@ -77,6 +78,22 @@ const getEventStyle = (event: CalendarEvent) => {
     top: `${topPx}px`,
     height: `${heightPx}px`
   }
+}
+
+const getStudentName = (event: CalendarEvent): string => {
+  if (event.student?.name && event.student.name.trim()) {
+    return event.student.name.trim()
+  }
+  if (event.clientName && event.clientName.trim()) {
+    return event.clientName.trim()
+  }
+  return ''
+}
+
+const formatTimeRange = (event: CalendarEvent): string => {
+  const from = formatTime(event.start)
+  const to = formatTime(event.end)
+  return `${from} – ${to}`
 }
 </script>
 
@@ -135,13 +152,17 @@ const getEventStyle = (event: CalendarEvent) => {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-.event-time {
+.event-student {
   font-size: 13px;
   font-weight: 700;
   margin-bottom: 2px;
+  color: #041b0c;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
-.event-student {
+.event-time {
   font-size: 12px;
   opacity: 0.95;
 }

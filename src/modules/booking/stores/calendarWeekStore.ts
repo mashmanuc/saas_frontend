@@ -119,6 +119,88 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     return Number.isFinite(num) ? num : fallback
   }
 
+  function resolveStudentId(event: Record<string, any>): number {
+    if (event?.student && typeof event.student === 'object' && 'id' in event.student) {
+      return toNumber((event.student as Record<string, any>).id, 0)
+    }
+    if (event?.studentId !== undefined) {
+      return toNumber(event.studentId, 0)
+    }
+    if (event?.student_id !== undefined) {
+      return toNumber(event.student_id, 0)
+    }
+    return 0
+  }
+
+  function resolveStudentName(event: Record<string, any>): string {
+    const candidates = [
+      event?.student?.name,
+      event?.student?.fullName,
+      event?.student?.full_name,
+      event?.studentName,
+      event?.clientName,
+      event?.student_name,
+      event?.client_name,
+    ]
+
+    for (const candidate of candidates) {
+      if (typeof candidate === 'string') {
+        const trimmed = candidate.trim()
+        if (trimmed && trimmed.toLowerCase() !== 'unknown') {
+          return trimmed
+        }
+      }
+    }
+
+    const fallback = candidates.find(value => typeof value === 'string')
+    return typeof fallback === 'string' ? fallback.trim() : ''
+  }
+
+  function normalizeStudent(event: Record<string, any>): { id: number; name: string } {
+    const resolvedId = resolveStudentId(event)
+    const resolvedName = resolveStudentName(event)
+
+    if (event?.student && typeof event.student === 'object') {
+      const studentObj = event.student as Record<string, any>
+      const id = toNumber(studentObj.id, resolvedId)
+      const rawName =
+        typeof studentObj.name === 'string'
+          ? studentObj.name
+          : typeof studentObj.fullName === 'string'
+            ? studentObj.fullName
+            : typeof studentObj.full_name === 'string'
+              ? studentObj.full_name
+              : resolvedName
+
+      return {
+        id,
+        name: (rawName || '').trim(),
+      }
+    }
+
+    return {
+      id: resolvedId,
+      name: resolvedName,
+    }
+  }
+
+  function normalizeEvents(rawEvents: unknown): CalendarEventV055[] {
+    const events = flattenValues<Record<string, any>>(rawEvents)
+    return events.map(event => {
+      const student = normalizeStudent(event)
+      const normalizedClientName =
+        typeof event?.clientName === 'string' && event.clientName.trim()
+          ? event.clientName.trim()
+          : student.name
+
+      return {
+        ...event,
+        student,
+        clientName: normalizedClientName || undefined,
+      } as CalendarEventV055
+    })
+  }
+
   function normalizeDaySnapshot(day: any, metaFromResponse?: SnapshotMeta | null): DaySnapshot {
     const dateRaw = day?.date ?? day?.dayKey ?? day?.day_key ?? day?.day ?? ''
     const date = extractDatePart(dateRaw)
@@ -272,7 +354,7 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
         ...(response as any),
         meta: normalizedMeta,
         days: normalizeDays((response as any).days, normalizedMeta),
-        events: flattenValues<CalendarEventV055>((response as any).events),
+        events: normalizeEvents((response as any).events),
         accessible: flattenValues<AccessibleSlotV055>((response as any).accessible),
         blockedRanges: flattenValues<BlockedRange>((response as any).blockedRanges),
         dictionaries: (response as any).dictionaries || {

@@ -7,10 +7,14 @@
           v-for="day in days" 
           :key="day.date" 
           class="day-header-cell"
-          :class="{ 'is-today': isToday(day.date) }"
         >
-          <div class="day-name">{{ formatDayName(day.date) }}</div>
-          <div class="day-date">{{ formatDayDate(day.date) }}</div>
+          <div 
+            class="day-header-chip"
+            :class="{ 'is-today': isToday(day.date) }"
+          >
+            <div class="day-name">{{ formatDayName(day.date) }}</div>
+            <div class="day-date">{{ formatDayDate(day.date) }}</div>
+          </div>
         </div>
       </div>
       
@@ -278,40 +282,58 @@ const handleDragEnd = async () => {
 .calendar-header-row {
   display: grid;
   grid-template-columns: 64px repeat(7, 1fr);
-  border-bottom: 1px solid #e0e0e0;
-  background: #fafafa;
+  padding: 12px 16px 18px;
+  gap: 12px;
+  background: transparent;
+  border-bottom: none;
+  position: relative;
+  z-index: 2;
 }
 
 .time-column-header {
-  border-right: 1px solid #e0e0e0;
-}
-
-.day-header-cell {
-  padding: 10px 8px;
-  text-align: center;
-  border-right: 1px solid #f0f0f0;
-}
-
-.day-header-cell:last-child {
   border-right: none;
 }
 
-.day-header-cell.is-today {
-  background: rgba(59, 130, 246, 0.08);
+.day-header-cell {
+  display: flex;
+  justify-content: center;
+}
+.day-header-chip {
+  min-width: 78px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.day-header-chip.is-today {
+  background: rgba(74, 222, 128, 0.18);
+  border-color: rgba(22, 163, 74, 0.35);
+  box-shadow: 0 6px 14px rgba(34, 197, 94, 0.25);
+}
+
+.day-header-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.16);
 }
 
 .day-name {
   font-size: 12px;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  margin-bottom: 2px;
+  color: #475467;
+  text-transform: lowercase;
+  font-weight: 600;
 }
 
 .day-date {
   font-size: 14px;
-  font-weight: 600;
-  color: #111827;
+  font-weight: 700;
+  color: #0f172a;
 }
 
 /* Grid container */

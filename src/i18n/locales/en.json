@@ -41,14 +41,7 @@
       "changeEmail": "Change email",
       "changePassword": "Change password"
     },
-    "eventModal": {
-      "title": "Event",
-      "delete": "Delete",
-      "edit": "Edit",
-      "editTime": "Edit Time",
-      "confirmDelete": "Confirm Delete",
-      "confirmDeleteMessage": "Are you sure you want to delete this event?"
-    },
+    "eventModal": {},
     "changeEmail": {
       "title": "Change email",
       "subtitle": "Enter your new email and current password.",
@@ -74,11 +67,7 @@
     "uk": "Ukrainian",
     "en": "English"
   },
-  "userProg": {
-    "label": "Interface Language",
-    "uk": "Ukrainian",
-    "en": "English"
-  },
+  "userProg": {},
   "nav": {
     "logout": "Logout",
     "side": "Side navigation",
@@ -136,18 +125,9 @@
       "active": "Active:"
     },
     "themeOptions": {
-      "light": {
-        "label": "Light",
-        "description": "Emerald accent, airy surfaces"
-      },
-      "dark": {
-        "label": "Dark",
-        "description": "Deep cyan palette, glassmorphism"
-      },
-      "classic": {
-        "label": "Classic",
-        "description": "Legacy purple gradients"
-      }
+      "light": {},
+      "dark": {},
+      "classic": {}
     },
     "themeMeta": {
       "light": {
@@ -311,24 +291,7 @@
       "resendVerifyCta": "Resend verification email",
       "noAccount": "Don't have an account?",
       "registerLink": "Register",
-      "webauthn": {
-        "betaLabel": "Beta",
-        "enrollTitle": "Set up WebAuthn",
-        "enrollDescription": "Add biometric authentication or a hardware key for fast and secure sign-in.",
-        "enrollInfo": "WebAuthn is a modern authentication standard. You can sign in using your fingerprint, Face ID, or a hardware key.",
-        "enrollCta": "Set up",
-        "enrolling": "Setting up…",
-        "enrollError": "Failed to set up WebAuthn",
-        "step1": "Click 'Set up' below",
-        "step2": "Allow your browser to access your device",
-        "step3": "Confirm using biometrics or your key",
-        "promptTitle": "WebAuthn Authentication",
-        "promptDescription": "Use your fingerprint, Face ID, or hardware key to sign in.",
-        "authenticate": "Authenticate",
-        "authenticating": "Authenticating…",
-        "authError": "Failed to authenticate",
-        "useOtpInstead": "Use OTP instead"
-      }
+      "webauthn": {}
     },
     "register": {
       "title": "Register",
@@ -354,7 +317,6 @@
       "description": "We sent you a verification email.",
       "sentTo": "Sent to:",
       "success": "Email sent.",
-      "error": "Failed to send email. Please try again later.",
       "resend": "Resend email",
       "resendLoading": "Sending...",
       "backToLogin": "Back to login"
@@ -371,7 +333,6 @@
       "description": "Enter your email and we will send a reset link.",
       "email": "Email",
       "success": "If this email exists, we sent a reset link.",
-      "error": "Failed to send email. Please try again later.",
       "submit": "Send reset email",
       "loading": "Sending...",
       "backToLogin": "Back to login"
@@ -382,11 +343,9 @@
       "newPassword": "New password",
       "confirmPassword": "Confirm password",
       "success": "Password updated. You can sign in.",
-      "error": "Failed to reset password. Please check the form.",
       "submit": "Change password",
       "loading": "Saving...",
-      "backToLogin": "Back to login",
-      "password": "Password"
+      "backToLogin": "Back to login"
     },
     "sessionRevoked": {
       "title": "Session revoked",
@@ -394,15 +353,7 @@
       "relogin": "Sign in again"
     },
     "invite": {
-      "title": "Invite student",
-      "description": "Enter the student's email to send an invite to this classroom.",
-      "emailLabel": "Student email",
-      "emailPlaceholder": "student@example.com",
-      "errors": {
-        "required": "Email is required.",
-        "invalid": "Invalid email address.",
-        "generic": "Failed to send invite."
-      },
+      "errors": {},
       "validation": {
         "title": "Invite validation",
         "description": "Checking your link...",
@@ -460,87 +411,21 @@
     }
   },
   "menu": {
-    "dashboard": "Dashboard",
-    "users": "Users",
-    "classrooms": "Classrooms",
-    "lessons": "Lessons",
-    "students": "Students",
-    "analytics": "Analytics",
-    "tutorDashboard": "Tutor dashboard",
     "studentDashboard": "Student dashboard",
-    "marketplace": "Marketplace",
+    "dashboard": "Dashboard",
+    "classrooms": "Classrooms",
+    "students": "Students",
+    "lessons": "Lessons",
+    "tutorCalendar": "Tutor calendar",
+    "soloWorkspace": "Solo workspace",
     "profile": "Profile",
-    "marketplaceMyProfile": "My tutor profile",
-    "tutorProfile": "Tutor profile",
-    "sandbox": "Sandbox",
-    "soloWorkspace": "Solo Workspace",
-    "tutorCalendar": "Tutor calendar"
+    "tutorProfile": "Tutor profile"
   },
   "marketplace": {
-    "subjects": {
-      "english": "English",
-      "spanish": "Spanish",
-      "french": "French",
-      "german": "German",
-      "ukrainian": "Ukrainian",
-      "polish": "Polish",
-      "chinese": "Chinese",
-      "japanese": "Japanese",
-      "mathematics": "Mathematics",
-      "physics": "Physics",
-      "chemistry": "Chemistry",
-      "biology": "Biology",
-      "computer-science": "Computer Science",
-      "business-english": "Business English",
-      "marketing": "Marketing",
-      "finance": "Finance",
-      "management": "Management",
-      "piano": "Piano",
-      "guitar": "Guitar",
-      "drawing": "Drawing",
-      "photography": "Photography",
-      "ielts": "IELTS preparation",
-      "toefl": "TOEFL preparation",
-      "sat": "SAT preparation",
-      "gre": "GRE preparation"
-    },
-    "countries": {
-      "ukraine": "Ukraine",
-      "poland": "Poland",
-      "germany": "Germany",
-      "spain": "Spain",
-      "france": "France",
-      "italy": "Italy",
-      "unitedKingdom": "United Kingdom",
-      "unitedStates": "United States",
-      "canada": "Canada",
-      "australia": "Australia",
-      "turkey": "Turkey",
-      "india": "India",
-      "china": "China",
-      "brazil": "Brazil",
-      "czechia": "Czechia",
-      "slovakia": "Slovakia",
-      "romania": "Romania",
-      "hungary": "Hungary"
-    },
+    "subjects": {},
+    "countries": {},
     "weekdays": {
-      "monday": "Monday",
-      "tuesday": "Tuesday",
-      "wednesday": "Wednesday",
-      "thursday": "Thursday",
-      "friday": "Friday",
-      "saturday": "Saturday",
-      "sunday": "Sunday",
-      "short": {
-        "mon": "Mon",
-        "tue": "Tue",
-        "wed": "Wed",
-        "thu": "Thu",
-        "fri": "Fri",
-        "sat": "Sat",
-        "sun": "Sun"
-      }
+      "short": {}
     },
     "availability": {
       "title": "Tutor availability",
@@ -558,9 +443,7 @@
       "error": "Failed to create trial request."
     },
     "common": {
-      "perHour": "/ hour",
-      "minutes": "minutes",
-      "cancel": "Cancel"
+      "perHour": "/ hour"
     },
     "tutorCard": {
       "experience": "Experience",
@@ -588,14 +471,12 @@
       "errorTitle": "Something went wrong",
       "errorDescription": "Please retry or clear filters",
       "clearFilters": "Clear filters",
-      "loading": "Loading…",
       "loadMore": "Load more",
       "emptyTitle": "No tutors found",
       "emptyDescription": "Try adjusting your filters or search criteria"
     },
     "categories": {
       "title": "Categories",
-      "featured": "Featured",
       "featuredBadge": "Recommended",
       "all": "All",
       "tutorsAvailable": "{count} tutors available",
@@ -629,10 +510,6 @@
       "subjects": "Subjects"
     },
     "sections": {
-      "popular": "Popular tutors",
-      "new": "New tutors",
-      "recommended": "Recommended for you",
-      "featured": "Featured tutors",
       "viewAll": "View all",
       "loadError": "Failed to load tutors"
     },
@@ -712,12 +589,7 @@
         "backCta": "Back to catalog"
       },
       "subjectsTitle": "Subjects",
-      "subjectLevel": {
-        "beginner": "Beginner",
-        "intermediate": "Intermediate",
-        "advanced": "Advanced",
-        "expert": "Expert"
-      },
+      "subjectLevel": {},
       "badgesTitle": "Badges & achievements",
       "badgesHistory": {
         "title": "Badges history",
@@ -726,7 +598,6 @@
         "unknownBadge": "Badge",
         "loadError": "Failed to load badge history."
       },
-      "availability": "Availability",
       "viewFullCalendar": "View full calendar",
       "viewCalendar": "View calendar",
       "nextAvailable": "Next available",
@@ -785,15 +656,7 @@
           "success": "Review submitted",
           "validation": "Please check your input.",
           "sendError": "Failed to submit review."
-        },
-        "rating": "Rating",
-        "ratingLabel": "Rating",
-        "review": "Review",
-        "reviewsLabel": "Reviews",
-        "reviewsCount": "{count} reviews",
-        "reviewsEmpty": "No reviews yet",
-        "reviewsLoadMore": "Load more reviews",
-        "reviewsLoadError": "Failed to load reviews"
+        }
       },
       "create": {
         "title": "Create your tutor profile",
@@ -809,7 +672,6 @@
       "editor": {
         "photoTitle": "Photo",
         "noPhoto": "No photo",
-        "uploadPhoto": "Upload photo",
         "basicTitle": "Basic information",
         "headlineLabel": "Headline",
         "headlinePlaceholder": "e.g. Experienced Math Tutor",
@@ -853,9 +715,6 @@
         "telegramPlaceholder": "username without @",
         "showTelegram": "Show Telegram on public profile",
         "certificationsTitle": "Diplomas (certificates)",
-        "addCertification": "Add diploma",
-        "certificationNamePlaceholder": "Diploma title",
-        "certificationIssuerPlaceholder": "Issued by (optional)",
         "certificationPublic": "Show on public profile",
         "certificationsTitleLabel": "Title",
         "certificationsIssuerLabel": "Issuer (optional)",
@@ -863,13 +722,7 @@
         "certificationsFileLabel": "File",
         "certificationsUploadButton": "Choose file",
         "certificationsSelectedFile": "Selected: {name}",
-        "offline": {
-          "title": "Offline mode",
-          "message": "Connection lost – you are working from cached data.",
-          "lastSync": "Last sync",
-          "retrying": "Reconnecting…",
-          "retry": "Retry connection"
-        },
+        "offline": {},
         "certificationsNoFile": "No file selected",
         "certificationsAdd": "Add diploma",
         "certificationsUploading": "Uploading…",
@@ -904,11 +757,7 @@
         }
       },
       "status": {
-        "draft": "Draft",
-        "pending_review": "Pending review",
-        "approved": "Approved",
-        "rejected": "Rejected",
-        "suspended": "Suspended"
+        "pending_review": "Pending review"
       }
     },
     "draft": {
@@ -997,7 +846,6 @@
     "decline": "Decline",
     "cancel": "Cancel",
     "loading": "Loading...",
-    "resend": "Resend",
     "close": "Close",
     "back": "Back",
     "next": "Next",
@@ -1024,59 +872,7 @@
     "search": "Search",
     "refresh": "Refresh",
     "remove": "Remove",
-    "pricingTitle": "Pricing",
-    "hourlyRateLabel": "Hourly rate",
-    "trialPriceLabel": "Trial lesson price",
-    "trialPricePlaceholder": "Leave empty for no trial",
-    "trialPriceHint": "Optional discounted price for first lesson",
-    "videoTitle": "Video introduction",
-    "videoUrlLabel": "Video URL",
-    "videoUrlPlaceholder": "https://youtube.com/watch?v=…",
-    "videoHint": "YouTube or Vimeo link to your introduction video",
-    "privacyTitle": "Privacy",
-    "genderLabel": "Gender",
-    "genderPlaceholder": "e.g. Female / Male / Other",
-    "genderOptions": {
-      "female": "Female",
-      "male": "Male",
-      "other": "Other",
-      "unspecified": "Not specified"
-    },
-    "showGender": "Show gender on public profile",
-    "birthYearLabel": "Birth year",
-    "birthYearPlaceholder": "e.g. 1995",
-    "showAge": "Show age on public profile",
-    "telegramLabel": "Telegram",
-    "telegramPlaceholder": "username without @",
-    "showTelegram": "Show Telegram on public profile",
-    "certificationsTitle": "Diplomas (certificates)",
-    "addCertification": "Add diploma",
-    "certificationNamePlaceholder": "Diploma title",
-    "certificationIssuerPlaceholder": "Issued by (optional)",
-    "certificationPublic": "Show on public profile",
-    "certificationsTitleLabel": "Title",
-    "certificationsIssuerLabel": "Issuer (optional)",
-    "certificationsIssuedYearLabel": "Issued year (optional)",
-    "certificationsFileLabel": "File",
-    "certificationsUploadButton": "Choose file",
-    "certificationsSelectedFile": "Selected: {name}",
-    "certificationsNoFile": "No file selected",
-    "certificationsAdd": "Add diploma",
-    "certificationsUploading": "Uploading…",
-    "certificationsEmpty": "No diplomas yet",
-    "certificationsStatusPending": "Pending review",
-    "certificationsStatusApproved": "Approved",
-    "certificationsStatusRejected": "Rejected",
-    "certificationsLoadError": "Failed to load diplomas",
-    "certificationsUploadError": "Failed to upload diploma",
-    "certificationsCreateSuccess": "Diploma added",
-    "certificationsUpdateError": "Failed to update diploma",
-    "certificationsDeleteSuccess": "Diploma deleted",
-    "certificationsDeleteError": "Failed to delete diploma",
-    "certificationsValidationError": "Please check diploma details",
-    "certificationsRateLimited": "Too many requests. Try again later",
-    "certificationsUnsupportedType": "Unsupported file type",
-    "certificationsTooLarge": "File is too large",
+    "genderOptions": {},
     "offline": {
       "title": "Offline mode",
       "message": "Connection lost – you are working from cached data.",
@@ -1084,49 +880,28 @@
       "retrying": "Reconnecting…",
       "retry": "Retry connection"
     },
-    "validation": {
-      "headline": "Headline is required (min 3 characters).",
-      "bio": "Bio is required (min 10 characters).",
-      "hourlyRate": "Hourly rate must be greater than 0.",
-      "subjects": "Select at least one subject.",
-      "languages": "Select at least one language.",
-      "retrying": "Connecting..."
-    },
+    "validation": {},
     "rateLimit": {
       "title": "Rate limit exceeded",
       "message": "You've sent too many requests. Please wait before trying again.",
       "seconds": "seconds",
       "waiting": "Waiting...",
       "tryNow": "Try now",
-      "features": {
-        "drafts": "Too many draft updates. Wait before next save.",
-        "auth": "Too many login attempts. Wait before retrying.",
-        "telemetry": "Too many telemetry requests. Wait before refreshing.",
-        "operator": "Too many operator actions. Wait before next command."
-      }
+      "features": {}
     },
     "delete": "Delete",
-    "edit": "Edit",
     "save": "Save",
     "understood": "Got it",
     "weekdays": {
-      "full": {
-        "fri": "Friday",
-        "mon": "Monday",
-        "sat": "Saturday",
-        "sun": "Sunday",
-        "thu": "Thursday",
-        "tue": "Tuesday",
-        "wed": "Wednesday"
-      },
+      "full": {},
       "short": {
-        "fri": "Fri",
         "mon": "Mon",
-        "sat": "Sat",
-        "sun": "Sun",
-        "thu": "Thu",
         "tue": "Tue",
-        "wed": "Wed"
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat",
+        "sun": "Sun"
       },
       "monday": "Monday",
       "tuesday": "Tuesday",
@@ -1141,31 +916,23 @@
     "all": "All",
     "apply": "Apply",
     "continue": "Continue",
-    "creating": "Creating...",
+    "creating": "Creating",
     "currency": "Currency",
-    "executing": "Executing...",
-    "hour": "hour",
-    "loadMore": "Load More",
+    "executing": "Running",
+    "hour": "hr",
+    "loadMore": "Load more",
     "min": "min",
-    "minutes": "minutes",
-    "previous": "Previous",
+    "minutes": "Minutes",
+    "previous": "Back",
     "reject": "Reject",
-    "saving": "Saving...",
-    "searching": "Searching...",
+    "saving": "Saving",
+    "searching": "Searching",
     "today": "Today"
   },
-  "role": {
-    "superadmin": "Super admin",
-    "admin": "Admin",
-    "tutor": "Tutor",
-    "student": "Student"
-  },
+  "role": {},
   "notify": {
     "types": {
-      "success": "Success",
-      "error": "Error",
-      "warning": "Warning",
-      "info": "Info"
+      "error": "Error"
     }
   },
   "loader": {
@@ -1184,36 +951,17 @@
       "timezoneUnknown": "not set",
       "loadMore": "Load more",
       "status": {
-        "label": "Status",
-        "all": "All",
-        "scheduled": "Scheduled",
-        "completed": "Completed",
-        "cancelled": "Cancelled",
         "pending": "Pending",
         "active": "Active",
         "inactive": "Inactive",
         "invited": "Invited",
         "archived": "Archived"
       },
-      "actions": {
-        "new": "New",
-        "markFreeTime": "Mark free time",
-        "refresh": "Refresh",
-        "saveLesson": "Save lesson",
-        "confirmCancel": "Cancel lesson"
-      },
-      "createTitle": "Create lesson",
-      "cancelTitle": "Cancel lesson",
-      "cancelDescription": "Are you sure you want to cancel this lesson?",
+      "actions": {},
       "todaysLessons": "Today's lessons",
       "viewBookings": "View bookings",
       "viewLessons": "View lessons",
-      "tabs": {
-        "all": "All",
-        "invited": "Invited",
-        "active": "Active",
-        "archived": "Archived"
-      },
+      "tabs": {},
       "tabHints": {
         "invited": {
           "title": "Pending invitations",
@@ -1223,10 +971,7 @@
           "title": "Active students",
           "description": "Manage schedules, notes and keep track of student activity here."
         },
-        "archived": {
-          "title": "Archived relations",
-          "description": "Past students and archived connections stay here for reference."
-        }
+        "archived": {}
       },
       "emptyStates": {
         "all": {
@@ -1241,10 +986,7 @@
           "title": "No active students",
           "description": "Once invitations are accepted, students will appear in this tab."
         },
-        "archived": {
-          "title": "No archived relations",
-          "description": "Archived students will stay here for your records."
-        }
+        "archived": {}
       },
       "cta": {
         "createLesson": "Create lesson",
@@ -1258,31 +1000,14 @@
         "acceptSelected": "Accept selected",
         "archiveSelected": "Archive selected"
       },
-      "notifications": {
-        "loadError": "Failed to load tutor relations",
-        "emptySelection": "Select at least one relation to proceed.",
-        "noInvited": "Only invited students can be accepted in bulk.",
-        "genericError": "Something went wrong. Try again later.",
-        "acceptSuccess": "{count} relation(s) accepted",
-        "archiveSuccess": "{count} relation(s) archived",
-        "partialFailure": "{failed} relation(s) failed. See details in logs.",
-        "noChanges": "Nothing changed."
-      }
+      "notifications": {}
     }
   },
   "relations": {
     "errors": {
       "offline": "We could not connect to the server. Please check your internet connection.",
       "rateLimit": "Too many requests. Please wait a moment and try again.",
-      "loadTutor": "Failed to load tutor relations.",
-      "backend": "Unexpected server error. Try again later.",
-      "offlineTitle": "You are offline",
-      "offlineDescription": "We cannot reach the API right now. Check your internet connection and try again.",
-      "backendTitle": "Something went wrong",
-      "backendDescription": "The server responded with an error. Please retry.",
-      "rateLimitTitle": "Rate limit reached",
-      "rateLimitDescription": "Too many operations were sent in a short time. Wait a few seconds and try again.",
-      "retry": "Retry"
+      "loadTutor": "Failed to load tutor relations."
     },
     "actions": {
       "acceptSuccess": "Invitation accepted",
@@ -1296,42 +1021,18 @@
       "noInvited": "Select at least one invited student to accept in bulk.",
       "emptySelection": "Select at least one relation to proceed.",
       "genericError": "Unable to process bulk action.",
-      "acceptSuccess": "{count} relation(s) accepted",
-      "archiveSuccess": "{count} relation(s) archived",
       "partialFailure": "{failed} relation(s) failed. Check logs.",
       "noChanges": "Nothing changed."
     },
     "meta": {
-      "lessonCount": "Lessons",
-      "recentActivity": "Last activity",
-      "invitedAt": "Invite sent",
-      "acceptedAt": "Invite accepted",
       "never": "Never"
     }
   },
   "tutor": {
     "relations": {
-      "info": {
-        "partial": "Partial Info"
-      },
-      "actions": {
-        "acceptSuccess": "Successfully Accepted",
-        "acceptError": "Accept Error",
-        "declineSuccess": "Successfully Declined",
-        "declineError": "Decline Error",
-        "resendSuccess": "Successfully Resent",
-        "resendError": "Resend Error"
-      },
-      "notifications": {
-        "created": "Created",
-        "createError": "Create Error",
-        "cancelled": "Cancelled",
-        "cancelError": "Cancel Error",
-        "rescheduled": "Rescheduled",
-        "rescheduleError": "Reschedule Error",
-        "resized": "Resized",
-        "validation": "Validation"
-      }
+      "info": {},
+      "actions": {},
+      "notifications": {}
     },
     "search": {
       "title": "Find a tutor",
@@ -1340,11 +1041,8 @@
     "request": {
       "button": "Send request",
       "success": "Request sent to tutor",
-      "error": "Failed to send request",
-      "accepted": "Request Accepted",
-      "acceptError": "Request Accept Error"
+      "error": "Failed to send request"
     },
-    "requests": "Requests",
     "actions": {
       "resend": "Resend"
     },
@@ -1364,21 +1062,13 @@
     "withoutTutor": "You are learning on your own. Choose a tutor to start lessons.",
     "withTutor": "You already have a tutor.",
     "noTutor": {
-      "description": "Browse tutors in the marketplace and send collaboration requests."
+      "description": "Browse tutors in the marketplace and send collaboration requests.",
+      "title": "No Tutor"
     },
-    "invited": {
-      "header": "Tutor invitation",
-      "title": "You were invited by tutor: {name}"
-    },
+    "invited": {},
     "stateHints": {
-      "active": {
-        "title": "Active",
-        "description": "Student is active"
-      },
-      "invited": {
-        "title": "Invited",
-        "description": "Student is invited"
-      }
+      "active": {},
+      "invited": {}
     },
     "actions": {
       "chooseTutor": "Choose a tutor",
@@ -1388,14 +1078,13 @@
       "viewAllLessons": "View all lessons"
     },
     "upcomingLessons": {
-      "title": "Upcoming lessons"
+      "title": "Upcoming lessons",
+      "empty": {
+        "title": "No Upcoming Lessons",
+        "description": "You have no scheduled lessons yet"
+      }
     },
-    "notifications": {
-      "acceptSuccess": "Successfully Accepted",
-      "acceptError": "Accept Error",
-      "declineSuccess": "Successfully Declined",
-      "declineError": "Decline Error"
-    },
+    "notifications": {},
     "myTutor": {
       "title": "My Tutor",
       "noTutor": "You don't have a tutor yet",
@@ -1447,9 +1136,7 @@
     "readMany": "saw this",
     "editing": "Editing message",
     "messageStatus": {
-      "sending": "Sending…",
-      "delivered": "Delivered",
-      "error": "Failed"
+      "delivered": "Delivered"
     },
     "errors": {
       "failedToSend": "Message failed to send. Please retry."
@@ -1464,31 +1151,31 @@
     "label": "Presence"
   },
   "board": {
-    "title": "Collaborative whiteboard",
-    "participantsLabel": "{count} in this session",
-    "empty": "Start drawing to share ideas with everyone in the lesson.",
     "toolbar": {
-      "tools": "Tools",
+      "clear": "Clear board",
       "colors": "Colors",
-      "thickness": "Brush size",
-      "undo": "Undo",
       "redo": "Redo",
-      "clear": "Clear board"
+      "thickness": "Brush size",
+      "tools": "Tools",
+      "undo": "Undo"
     },
     "tools": {
-      "pencil": "Pencil",
-      "eraser": "Eraser"
+      "eraser": "Eraser",
+      "pencil": "Pencil"
     },
     "status": {
-      "saving": "Saving...",
       "saved": "Saved",
-      "savedAt": "Saved at {time}"
+      "savedAt": "Saved at {time}",
+      "saving": "Saving..."
     },
     "participantsList": {
-      "title": "Participants",
+      "cursorActive": "{name} is drawing now",
       "subtitle": "Live presence & cursors",
-      "cursorActive": "{name} is drawing now"
-    }
+      "title": "Participants"
+    },
+    "empty": "Start drawing to share ideas with everyone in the lesson.",
+    "participantsLabel": "{count} in this session",
+    "title": "Collaborative whiteboard"
   },
   "profile": {
     "title": "Profile",
@@ -1516,7 +1203,6 @@
       "mfa": {
         "title": "Two-factor authentication (MFA)",
         "subtitle": "Add an extra layer of security to your account.",
-        "setupTitle": "MFA setup",
         "start": "Enable MFA",
         "qrTitle": "Scan QR code",
         "qrSubtitle": "Scan with your authenticator app to link MFA.",
@@ -1541,11 +1227,7 @@
         "downloadCodes": "Download codes",
         "regenerateCodes": "Generate new codes",
         "regenerateConfirm": "This will invalidate previous codes. Continue?",
-        "viewBackupCodes": "View backup codes",
-        "copyManualCode": "Copy setup code",
-        "manualCodeCopied": "Setup code copied",
-        "manualCodeLabel": "Manual setup code",
-        "viewManualCode": "View manual code"
+        "viewBackupCodes": "View backup codes"
       },
       "sessions": {
         "title": "Active sessions",
@@ -1618,25 +1300,12 @@
       "bioPlaceholder": "Tell us about your teaching style, experience, or goals…",
       "headline": "Headline",
       "headlineHint": "A short tagline that students will see.",
-      "timezonePlaceholder": "Select timezone",
-      "foundDescription": "Unsaved changes from {time} detected. Restore them or start over?",
-      "foundDescriptionNoTime": "Unsaved changes detected. Restore them or start over?",
-      "restore": "Restore draft",
-      "discard": "Discard draft",
-      "error": "Failed to load draft",
-      "discardError": "Failed to delete draft"
+      "timezonePlaceholder": "Select timezone"
     },
     "actions": {
       "save": "Save",
       "saving": "Saving...",
       "cancel": "Cancel",
-      "reset": "Reset",
-      "undo": "Undo",
-      "redo": "Redo",
-      "undoSuccess": "Action undone",
-      "redoSuccess": "Action redone",
-      "undoError": "Failed to undo action",
-      "redoError": "Failed to redo action",
       "revert": "Revert"
     },
     "autosave": {
@@ -1752,95 +1421,48 @@
       "rateLimitedRetry": "Retry now"
     },
     "soloWorkspace": {
-      "title": "Solo Workspace",
       "untitled": "Untitled",
-      "save": "Save",
-      "exportPng": "Export PNG",
-      "exportJson": "Export JSON",
-      "exit": "Exit",
-      "saved": "Saved",
-      "clearConfirm": "Clear this page? This cannot be undone.",
-      "enterText": "Enter text:",
-      "pageName": "Page name:",
-      "addPage": "Add page",
-      "zoomIn": "Zoom in",
-      "zoomOut": "Zoom out",
-      "resetZoom": "Reset zoom",
-      "fullscreen": "Fullscreen",
-      "exitFullscreen": "Exit fullscreen"
+      "clearConfirm": "Clear this page? This cannot be undone."
     },
     "solo": {
-      "title": "Sandbox",
-      "pages": "pages",
-      "shared": "Shared",
-      "share": "Share",
-      "duplicate": "Duplicate",
-      "delete": "Delete",
-      "mySessions": {
-        "title": "My Boards",
-        "createNew": "Create new board",
-        "search": "Search boards...",
-        "sortUpdated": "Sort by last updated",
-        "sortCreated": "Sort by creation date",
-        "sortName": "Sort by name",
-        "empty": "You don't have any saved boards yet.",
-        "createFirst": "Create your first board"
-      },
+      "mySessions": {},
       "sharing": {
-        "title": "Share board",
-        "createLink": "Create link",
-        "expiresIn": "Expires in",
-        "expiresAt": "Expires at",
-        "day": "day",
-        "days": "days",
-        "never": "Never",
-        "allowDownload": "Allow downloads",
-        "maxViews": "Max views",
-        "unlimited": "Unlimited",
-        "views": "Views",
-        "revoke": "Revoke access",
-        "education": {
-          "title": "Education",
-          "present": "Present",
-          "in": "in"
-        }
+        "education": {}
       },
-      "export": {
-        "title": "Export",
-        "format": "Format",
-        "pageSize": "Page size",
-        "orientation": "Orientation",
-        "landscape": "Landscape",
-        "portrait": "Portrait",
-        "export": "Export",
-        "exporting": "Exporting..."
-      },
-      "assets": {
-        "upload": "Upload file",
-        "addToBoard": "Add to board",
-        "empty": "No files uploaded yet"
-      },
-      "public": {
-        "notFound": "Board not found",
-        "download": "Download"
-      }
+      "export": {},
+      "assets": {},
+      "public": {}
     },
     "board": {
-      "placeholder": "Start drawing on the board",
       "layers": "Layers"
     },
     "tools": {
+      "actions": "Actions",
+      "clear": "Clear board",
+      "colorPalette": "Color palette",
+      "drawingTools": "Drawing tools",
+      "redo": "Redo",
+      "strokeSize": "Stroke size",
+      "toolbar": "Drawing toolbar",
+      "undo": "Undo",
       "color": "Color",
-      "eraserSize": "Eraser Size",
+      "eraserSize": "Eraser size",
       "options": "Options",
       "thickness": "Thickness"
     },
     "reconnect": {
       "attempt": "Attempt {current} of {max}",
       "leave": "Leave lesson",
-      "connecting": "Connecting...",
-      "connectionLost": "Connection Lost",
-      "retryIn": "Retry in"
+      "tips": {
+        "checkConnection": "Check your internet connection",
+        "contactSupport": "Contact support if the problem persists",
+        "refreshPage": "Try refreshing the page",
+        "title": "Tips:"
+      },
+      "title": "ReconnectingтАж",
+      "connecting": "Reconnecting",
+      "connectionLost": "Connection lost",
+      "retryIn": "Retry in {seconds}s"
     },
     "roles": {
       "host": "Host"
@@ -1854,8 +1476,8 @@
       "reconnecting": "reconnecting"
     },
     "loader": {
-      "connecting": "Connecting to lesson...",
-      "ready": "Ready"
+      "ready": "Ready",
+      "connecting": "Connecting to lesson..."
     },
     "toolbar": {
       "leave": "Leave"
@@ -1887,9 +1509,6 @@
     "detail": {
       "title": "Classroom",
       "studentsTitle": "Class students",
-      "studentName": "Student name",
-      "studentEmail": "Email",
-      "studentStatus": "Status",
       "empty": "This classroom has no students yet.",
       "loadError": "Failed to load classroom data",
       "notFound": "Classroom not found",
@@ -1950,59 +1569,9 @@
         "week": "Week",
         "day": "Day"
       },
-      "createLesson": {
-        "title": "Create lesson",
-        "selectedTime": "Lesson start time",
-        "timeHint": "Specify the exact time in your timezone",
-        "hourLabel": "Hour",
-        "minuteLabel": "Minute",
-        "student": "Student / order",
-        "selectStudent": "Select student",
-        "searchStudent": "Search student or order",
-        "lessonsLeft": "lessons left",
-        "lessonType": "Lesson type",
-        "selectType": "Choose type",
-        "duration": "Duration",
-        "regularity": "Regularity",
-        "tutorComment": "Internal note",
-        "tutorCommentPlaceholder": "Only visible to you",
-        "studentComment": "Student note",
-        "studentCommentPlaceholder": "Visible to the student in reminders",
-        "comment": "Comment for yourself",
-        "commentPlaceholder": "What should be considered during the lesson?",
-        "conflictDetected": "Time conflict detected",
-        "createAnyway": "Create anyway",
-        "create": "Create lesson",
-        "repeatMode": "Repeat mode",
-        "repeatCount": "Number of occurrences",
-        "repeatUntil": "Repeat until",
-        "skipConflicts": "Skip conflicts",
-        "seriesSuccess": "Created {count} lessons in series",
-        "seriesPartialSuccess": "Created {created} lessons, skipped {skipped} due to conflicts"
-      },
-      "errors": {
-        "invalidTime": "Select a future time within 6 months",
-        "invalidDuration": "Choose one of the allowed durations",
-        "invalidOrder": "Select a valid student or order",
-        "invalidLessonType": "Select a valid lesson type",
-        "invalidDatetime": "Provided time slot is invalid",
-        "timeOverlap": "This time overlaps with another lesson",
-        "studentNotFound": "We could not find this student",
-        "orderInactive": "This order is inactive",
-        "validationError": "Please check the highlighted fields",
-        "unknown": "Something went wrong. Try again later.",
-        "serverError": "Server error. Please try again later.",
-        "notFound": "Resource not found",
-        "permissionDenied": "You don’t have access to perform this action",
-        "rateLimitExceeded": "Too many requests. Please wait and try again.",
-        "cannotDelete": "This lesson cannot be deleted",
-        "createFailed": "We couldn’t create the lesson. Try again later.",
-        "loadFailed": "Failed to load lesson data",
-        "updateFailed": "Failed to update lesson",
-        "deleteFailed": "Failed to delete lesson"
-      },
+      "createLesson": {},
+      "errors": {},
       "actions": {
-        "new": "New lesson",
         "markFreeTime": "Mark free time",
         "refresh": "Refresh",
         "saveLesson": "Save lesson",
@@ -2022,9 +1591,7 @@
         "start": "Start time",
         "end": "End time"
       },
-      "placeholders": {
-        "studentId": "ID or email"
-      },
+      "placeholders": {},
       "series": {
         "label": "Series ID",
         "placeholder": "Optional series identifier",
@@ -2092,10 +1659,7 @@
         "duration": "Duration"
       },
       "participants": "Participants",
-      "roles": {
-        "tutor": "Tutor",
-        "student": "Student"
-      },
+      "roles": {},
       "notes": "Notes",
       "error": "Failed to load lesson data.",
       "actions": {
@@ -2230,7 +1794,6 @@
       "unknown": "Connection error occurred.",
       "syncing": "Reconnected — syncing data..."
     },
-    "networkError": "Network error",
     "somethingWentWrong": "Something went wrong"
   },
   "network": {
@@ -2254,11 +1817,7 @@
       "highLatency": "High latency detected"
     }
   },
-  "session": {
-    "refreshed": "Your session has been refreshed",
-    "expired": "Your session has expired. Please log in again.",
-    "refreshing": "Refreshing session..."
-  },
+  "session": {},
   "realtime": {
     "offline": "Disconnected from realtime services"
   },
@@ -2281,8 +1840,6 @@
       "description": "Help others get to know you better",
       "displayName": "Display name",
       "namePlaceholder": "How should we call you?",
-      "bio": "Bio",
-      "submit": "Continue",
       "uploadPhoto": "Upload photo"
     },
     "preferences": {
@@ -2346,8 +1903,6 @@
     },
     "tutor": {
       "welcome": {
-        "title": "Welcome, Tutor!",
-        "description": "Let's set up your teaching profile",
         "greeting": "Ready to start teaching?",
         "intro": "Complete your profile to attract students.",
         "benefit1": "Reach thousands of potential students",
@@ -2355,8 +1910,6 @@
         "benefit3": "Get paid securely through our platform"
       },
       "profile": {
-        "title": "Professional profile",
-        "description": "Make a great first impression",
         "headline": "Professional headline",
         "headlinePlaceholder": "e.g., Experienced Math Tutor",
         "bio": "About you",
@@ -2364,25 +1917,20 @@
         "photo": "Profile photo"
       },
       "subjects": {
-        "title": "Subjects & pricing",
         "description": "What will you teach?",
         "select": "Select a subject",
         "price": "Price/hour",
         "addMore": "Add another subject"
       },
       "availability": {
-        "title": "Set your availability",
         "description": "Let students know when you're free",
         "setup": "Set up schedule"
       },
       "verification": {
-        "title": "Verify your identity",
         "description": "Build trust with students by verifying your profile",
         "start": "Start verification"
       },
       "completion": {
-        "title": "Profile complete!",
-        "description": "You're ready to accept students",
         "congrats": "Congratulations!",
         "message": "Your tutor profile is live. Students can now find you!"
       }
@@ -2413,60 +1961,24 @@
     "typeToSearch": "Type at least 2 characters to search",
     "calendar": {
       "regularity": {
-        "single": "One time",
-        "once_a_week": "Repeat weekly",
+        "single": "One-time lesson",
+        "once_a_week": "Weekly",
         "twice_a_week": "Twice per week"
       },
       "createLesson": {
-        "title": "Create lesson",
-        "selectedTime": "Lesson start",
-        "timeHint": "Specify the exact time in your timezone",
-        "hourLabel": "Hour",
-        "minuteLabel": "Minute",
         "student": "Student / order",
-        "selectStudent": "Select a student",
         "duration": "Duration",
         "regularity": "Regularity",
         "comment": "Private comment",
-        "commentPlaceholder": "Anything to keep in mind for this lesson?",
-        "create": "Create lesson",
-        "repeatMode": "Repeat mode",
-        "repeatCount": "Number of occurrences",
-        "repeatUntil": "Repeat until",
-        "skipConflicts": "Skip conflicts",
-        "seriesSuccess": "Created {count} lessons in series",
-        "seriesPartialSuccess": "Created {created} lessons, skipped {skipped} due to conflicts"
+        "commentPlaceholder": "Anything to keep in mind for this lesson?"
       },
       "editLesson": {
-        "title": "Edit lesson",
-        "tabs": {
-          "update": "Edit",
-          "delete": "Delete",
-          "reschedule": "Reschedule"
-        },
-        "edit": "Edit",
-        "delete": "Delete lesson",
-        "dateTime": "Date & time",
-        "newTime": "New time",
-        "currentTime": "Current time",
-        "checkConflicts": "Check conflicts",
-        "noConflicts": "No conflicts found! Ready to reschedule.",
-        "conflictsFound": "Conflicts found",
-        "suggestedTimes": "Suggested times",
-        "changeTime": "Change time",
-        "confirmReschedule": "Confirm reschedule",
-        "deleteWarning": "Delete lesson",
-        "deleteWarningDetails": "This action is irreversible. The lesson will be permanently deleted.",
-        "cannotDelete": "Cannot delete paid or completed lesson",
-        "confirmDelete": "Delete confirmation",
-        "confirmDeleteMessage": "Are you sure you want to delete the lesson with {student}? This action cannot be undone.",
-        "rescheduleInfo": "Choose a new time for the lesson. The system will check for conflicts and suggest alternatives."
+        "tabs": {}
       },
       "eventModal": {
         "title": "Edit lesson",
         "delete": "Delete lesson",
         "edit": "Edit",
-        "editTime": "Lesson time",
         "order": "Order",
         "date": "Pick a date",
         "startTime": "Start time",
@@ -2484,10 +1996,10 @@
         "unpaid": "Unpaid"
       },
       "doneStatus": {
-        "done": "Completed",
+        "done": "Lesson completed",
         "not_done": "Not completed",
-        "not_done_client_missed": "Student missed",
-        "done_client_missed": "Conducted (student missed)"
+        "not_done_client_missed": "Student missed the lesson",
+        "done_client_missed": "Tutor missed the lesson"
       },
       "repeatMode": {
         "weekly": "Weekly",
@@ -2497,40 +2009,20 @@
         "loadFailed": "Failed to load lesson details",
         "cannotDelete": "This lesson cannot be deleted",
         "deleteFailed": "Failed to delete lesson",
-        "updateFailed": "Failed to update lesson",
-        "createFailed": "Failed to create lesson. Please try again.",
-        "previewFailed": "Failed to check conflicts",
-        "rescheduleFailed": "Failed to reschedule lesson",
-        "slotNoLongerAvailable": "This time is no longer available. Please choose another time.",
-        "cannotDeletePaid": "Paid lessons cannot be deleted",
-        "cannotDeletePast": "Past lessons cannot be deleted",
-        "invalidDuration": "Invalid lesson duration",
-        "invalidOrder": "Invalid order",
-        "invalidTime": "Time must be in the future (max 6 months ahead)",
-        "notFound": "Lesson not found",
-        "permissionDenied": "You do not have permission for this action",
-        "rateLimitExceeded": "Too many requests. Try again later",
-        "serverError": "Server error. Please try again",
-        "timeOverlap": "This time overlaps with another lesson",
-        "unknown": "Unknown error",
-        "validationError": "Validation error"
+        "updateFailed": "Failed to update lesson"
       },
-      "success": {
-        "created": "Lesson created successfully!",
-        "updated": "Lesson updated successfully!",
-        "deleted": "Lesson deleted successfully!",
-        "rescheduled": "Lesson rescheduled successfully!",
-        "bulkUpdateCompleted": "{count} lessons updated",
-        "eventCreated": "Lesson created",
-        "eventDeleted": "Lesson deleted",
-        "eventUpdated": "Lesson updated"
-      },
-      "noSchedule": "Schedule not configured",
-      "noScheduleDesc": "Create an availability template so students can book lessons",
-      "setupSchedule": "Set up schedule",
-      "warnings": {
-        "bulkUpdatePartial": "{failed} lessons failed to update",
-        "disconnected": "Connection lost. Reconnecting..."
+      "success": {},
+      "warnings": {},
+      "status": {
+        "available": "Slot available",
+        "booked": "Slot booked",
+        "blocked": "Slot blocked",
+        "unavailable": "Slot unavailable",
+        "pending": "Pending confirmation",
+        "confirmed": "Confirmed",
+        "completed": "Completed",
+        "cancelled": "Cancelled",
+        "failed": "Failed"
       }
     },
     "modal": {
@@ -2557,9 +2049,18 @@
       "by": "By: {actor}",
       "requestId": "Request ID",
       "events": {
-        "created": "Created",
-        "confirmed": "Confirmed",
-        "canceled": "Canceled"
+        "request_created": "Request created",
+        "request_pending": "Request pending",
+        "request_accepted": "Request accepted",
+        "request_rejected": "Request rejected",
+        "request_cancelled": "Request cancelled",
+        "lesson_scheduled": "Lesson scheduled",
+        "lesson_completed": "Lesson completed",
+        "lesson_cancelled": "Lesson cancelled",
+        "payment_received": "Payment received",
+        "payment_pending": "Payment pending",
+        "template_applied": "Template applied",
+        "template_failed": "Template application failed"
       }
     },
     "request": {
@@ -2591,26 +2092,14 @@
       "title": "Weekly schedule setup",
       "warningMessage": "Warning: this will replace your current template if it exists."
     },
-    "actions": {
-      "blockTime": "Block time",
-      "bookLesson": "Schedule lesson",
-      "cancelLesson": "Cancel lesson",
-      "clearAvailability": "Clear availability",
-      "makeAvailable": "Make available",
-      "viewDetails": "View details"
-    },
+    "actions": {},
     "bookLesson": "Book a lesson",
     "conflict": {
       "body": "This time was just booked by another student. Please choose another slot.",
       "selectAnother": "Select another time",
       "title": "Slot already booked"
     },
-    "draft": {
-      "applyOnce": "Apply once",
-      "changesCount": "{count} changes",
-      "pendingChanges": "unsaved changes",
-      "saveAsTemplate": "Save as template"
-    },
+    "draft": {},
     "dst": {
       "transitionWarning": "Heads up: daylight saving shift on {date}"
     },
@@ -2621,11 +2110,9 @@
       "validationFailed": "Validation Failed"
     },
     "manualBooking": {
-      "createLesson": "Create Lesson",
       "duration": "Duration",
       "noStudentsFound": "No students found",
       "notes": "Notes",
-      "notesPlaceholder": "Add notes...",
       "recentStudents": "Recent Students",
       "searchStudent": "Search Student",
       "startTime": "Start Time",
@@ -2643,9 +2130,58 @@
     },
     "yourResponse": "Your Response",
     "requests": {
-      "noRequests": "No Requests",
-      "title": "Booking Requests"
-    }
+      "noRequests": "No requests",
+      "title": "Booking requests",
+      "pending": "Pending",
+      "accepted": "Accepted",
+      "rejected": "Rejected",
+      "all": "All",
+      "byStatus": {
+        "pending": "Pending",
+        "accepted": "Accepted",
+        "rejected": "Rejected",
+        "cancelled": "Cancelled"
+      },
+      "status": {
+        "pending": "Pending",
+        "accepted": "Accepted",
+        "rejected": "Rejected",
+        "cancelled": "Cancelled",
+        "all": "All"
+      },
+      "empty": {
+        "pending": "No pending requests",
+        "accepted": "No accepted requests",
+        "rejected": "No rejected requests",
+        "all": "No requests to show"
+      },
+      "noRequestsDescription": "No booking requests",
+      "statusLabel": {
+        "pending": "Pending",
+        "accepted": "Accepted",
+        "rejected": "Rejected",
+        "all": "All statuses"
+      },
+      "statusFilter": "Status filter"
+    },
+    "requestStatus": {
+      "pending": "Pending",
+      "accepted": "Accepted",
+      "rejected": "Rejected",
+      "cancelled": "Cancelled"
+    },
+    "status": {
+      "available": "Available",
+      "booked": "Booked",
+      "blocked": "Blocked",
+      "pending": "Pending",
+      "cancelled": "Cancelled",
+      "rejected": "Rejected",
+      "accepted": "Accepted",
+      "rescheduled": "Rescheduled",
+      "failed": "Failed"
+    },
+    "calenderPlaceholder": "Booking calendar"
   },
   "matches": {
     "title": "My Connections",
@@ -2718,12 +2254,10 @@
           "description": "Update only this specific slot"
         }
       },
-      "deleteConflictError": "Delete Conflict Error",
-      "validationError": "Validation Error"
+      "deleteConflictError": "Cannot delete: conflicts found",
+      "validationError": "Fill in all required fields"
     },
     "weekOf": "Week of {date}",
-    "analyticsTitle": "Availability analytics",
-    "analyticsDescription": "Track how your open slots change week over week.",
     "analytics": {
       "title": "Slot Analytics",
       "loading": "Loading analytics...",
@@ -2748,8 +2282,8 @@
       "recentActivity": "Recent activity",
       "status": {
         "success": "Success",
-        "error": "Error",
-        "warning": "Warning"
+        "warning": "Warning",
+        "error": "Error"
       },
       "activity": {
         "slotEdited": "Slot #{id} edited",
@@ -2773,12 +2307,8 @@
       "regular_lesson": "Regular lesson",
       "title": "Color legend"
     },
-    "draftNotice": "Draft mode. Don't forget to apply your changes.",
-    "pendingJobs": "Calendar sync in progress…",
-    "lastSyncLabel": "Last sync: {datetime}",
     "realtime": {
       "status": {
-        "connected": "Connected to real-time",
         "disconnected": "Connection lost. Attempting to reconnect...",
         "retrying": "Reconnecting..."
       }
@@ -2790,35 +2320,14 @@
     "justNow": "just now",
     "oneMinuteAgo": "a minute ago",
     "minutesAgo": "{count} min ago",
-    "syncStatus": {
-      "syncing": "Syncing...",
-      "synced": "Synced",
-      "error": "Sync error"
-    },
-    "notifications": {
-      "slotBooked": "{student} booked a slot at {time}",
-      "availabilityUpdated": "Schedule updated"
-    },
+    "syncStatus": {},
+    "notifications": {},
     "warnings": {
-      "disconnected": "Connection lost. Please check your network or refresh.",
-      "offline": "You are offline. Try again."
+      "disconnected": "Connection lost. Please check your network or refresh."
     },
     "errors": {
-      "blockFailed": "Failed to block slot",
       "loadFailed": "Failed to load calendar",
-      "createProfile": "Failed to create profile.",
-      "forbidden": "Access forbidden.",
-      "loadProfile": "Unable to load tutor profile.",
-      "loadTutors": "Unable to load tutors.",
-      "payloadTooLarge": "Payload is too large. Reduce the size and try again.",
-      "publishProfile": "Failed to publish profile.",
-      "rateLimited": "Too many requests. Please try again later.",
       "serverError": "Server error. Please try again.",
-      "slotConflict": "Slot already taken. Pick another time.",
-      "submitForReview": "Failed to submit profile for review.",
-      "unpublishProfile": "Failed to unpublish profile.",
-      "updateProfile": "Failed to save profile.",
-      "validation": "Check the entered data.",
       "cannotDelete": "Cannot Delete",
       "createFailed": "Failed to Create",
       "deleteFailed": "Failed to Delete",
@@ -2836,13 +2345,11 @@
     "weekNavigation": {
       "availableHours": "{hours} hours available",
       "noAvailability": "No availability set for this week yet",
-      "goToFirstAvailable": "Go to first available slot",
       "setupAvailability": "Set booking hours",
       "prevWeek": "Previous week",
       "nextWeek": "Next week",
       "today": "Today",
       "backToCalendar": "Back to calendar",
-      "createSlot": "Add slot",
       "showGuide": "Show guide"
     },
     "sidebar": {
@@ -2864,69 +2371,10 @@
     },
     "marketplace": {},
     "timeRange": {
-      "start": "Start",
-      "end": "End",
-      "errors": {
-        "endBeforeStart": "End time cannot be before start time",
-        "tooShort": "Minimum duration is {min} minutes",
-        "tooLong": "Maximum duration is {max} minutes"
-      },
-      "options": {
-        "100": "01:00",
-        "130": "01:30",
-        "200": "02:00",
-        "230": "02:30",
-        "300": "03:00",
-        "330": "03:30",
-        "400": "04:00",
-        "430": "04:30",
-        "500": "05:00",
-        "530": "05:30",
-        "600": "06:00",
-        "630": "06:30",
-        "700": "07:00",
-        "730": "07:30",
-        "800": "08:00",
-        "830": "08:30",
-        "900": "09:00",
-        "930": "09:30",
-        "1000": "10:00",
-        "1030": "10:30",
-        "1100": "11:00",
-        "1130": "11:30",
-        "1200": "12:00",
-        "1230": "12:30",
-        "1300": "13:00",
-        "1330": "13:30",
-        "1400": "14:00",
-        "1430": "14:30",
-        "1500": "15:00",
-        "1530": "15:30",
-        "1600": "16:00",
-        "1630": "16:30",
-        "1700": "17:00",
-        "1730": "17:30",
-        "1800": "18:00",
-        "1830": "18:30",
-        "1900": "19:00",
-        "1930": "19:30",
-        "2000": "20:00",
-        "2030": "20:30",
-        "2100": "21:00",
-        "2130": "21:30",
-        "2200": "22:00",
-        "2230": "22:30",
-        "2300": "23:00",
-        "2330": "23:30",
-        "000": "00:00",
-        "030": "00:30"
-      }
+      "errors": {},
+      "options": {}
     },
-    "status": {
-      "available": "Available",
-      "booked": "Booked",
-      "blocked": "Blocked"
-    },
+    "status": {},
     "availability": {
       "jobInProgress": "Please wait for the current operation to complete",
       "conflictsDetected": "Conflicts detected on days: {days}",
@@ -2935,7 +2383,6 @@
         "saveError": "Failed to save availability. Please try again."
       },
       "actions": {
-        "cancel": "Cancel",
         "reset": "Reset Changes",
         "save": "Save Schedule",
         "saving": "Saving…",
@@ -2956,13 +2403,6 @@
         "liveLesson": "Live Lesson",
         "remove": "Remove time window"
       },
-      "title": "Available slots",
-      "weekRange": "{start} – {end}",
-      "prevWeek": "Previous week",
-      "nextWeek": "Next week",
-      "empty": "No open slots right now",
-      "cta": "Book a lesson",
-      "error": "Failed to load availability",
       "retry": "Retry",
       "cancel": "Cancel",
       "exit": "Exit",
@@ -3038,72 +2478,21 @@
         }
       }
     },
-    "availabilityEmpty": {
-      "cta": "Open availability",
-      "description": "This week is empty. Add at least one availability slot so students can book lessons.",
-      "title": "Set up availability"
-    },
+    "availabilityEmpty": {},
     "catalog": {
-      "clearFilters": "Clear filters",
-      "emptyDescription": "Try changing filters or search criteria",
-      "emptyTitle": "No tutors found",
-      "errorDescription": "Try again or clear filters",
-      "errorTitle": "Something went wrong",
-      "loadMore": "Show more",
-      "loading": "Loading…",
-      "resultsCount": "Found: {count}",
-      "subtitle": "{count} tutors available",
-      "tabs": {
-        "about": "About",
-        "calendar": "Calendar",
-        "summary": "Summary"
-      },
-      "title": "Find your tutor"
+      "tabs": {}
     },
-    "categories": {
-      "all": "All",
-      "allTutorsTitle": "All tutors",
-      "emptyDescription": "Try another category or come back later",
-      "emptyTitle": "No tutors in this category yet",
-      "featured": "Featured",
-      "featuredBadge": "Recommended",
-      "subjectTutorsTitle": "Tutors for: {subject}",
-      "title": "Categories",
-      "tutorsAvailable": "{count} tutors available"
-    },
+    "categories": {},
     "cellStatus": {
-      "available": "Available slot",
+      "empty": "Empty",
+      "available": "Available",
+      "booked": "Booked",
       "blocked": "Blocked",
-      "booked": "Booked lesson",
-      "empty": "Empty slot",
-      "notAllow": "Unavailable"
+      "notAllow": "Not allowed"
     },
-    "common": {
-      "perHour": "/ hour"
-    },
-    "countries": {
-      "australia": "Australia",
-      "brazil": "Brazil",
-      "canada": "Canada",
-      "china": "China",
-      "czechia": "Czechia",
-      "france": "France",
-      "germany": "Germany",
-      "hungary": "Hungary",
-      "india": "India",
-      "italy": "Italy",
-      "poland": "Poland",
-      "romania": "Romania",
-      "slovakia": "Slovakia",
-      "spain": "Spain",
-      "turkey": "Turkey",
-      "ukraine": "Ukraine",
-      "unitedKingdom": "United Kingdom",
-      "unitedStates": "United States"
-    },
+    "common": {},
+    "countries": {},
     "createLesson": {
-      "comment": "Comment",
-      "commentPlaceholder": "Add a comment...",
       "conflictDetected": "Conflict Detected",
       "create": "Create Lesson",
       "createAnyway": "Create Anyway",
@@ -3112,7 +2501,6 @@
       "lessonsLeft": "lessons left",
       "regularity": "Regularity",
       "searchStudent": "Search Student",
-      "selectStudent": "Select Student",
       "selectType": "Select Type",
       "selectedTime": "Lesson Start",
       "student": "Student",
@@ -3131,18 +2519,7 @@
       "seriesSuccess": "Lesson series created successfully",
       "skipConflicts": "Skip Conflicts"
     },
-    "draft": {
-      "conflictDescription": "Your local changes conflict with the server version. Choose how to resolve them.",
-      "conflictFields": "Fields with conflicts",
-      "conflictTitle": "Change conflict",
-      "resolveError": "Failed to resolve conflict.",
-      "useClient": "Use local version",
-      "useClientDescription": "Overwrite the server version with your local changes.",
-      "useMerge": "Merge changes",
-      "useMergeDescription": "Try to merge both versions automatically.",
-      "useServer": "Use server version",
-      "useServerDescription": "Discard local changes and load the server version."
-    },
+    "draft": {},
     "no_show": {
       "comment_optional": "Comment (optional)",
       "comment_placeholder": "Add additional information...",
@@ -3157,317 +2534,33 @@
       "select_reason": "Select no-show reason"
     },
     "profile": {
-      "availability": "Availability",
-      "availabilityThisWeek": "Availability this week",
-      "backToCatalog": "Back to catalog",
-      "badgesHistory": {
-        "empty": "Badge history is empty.",
-        "loadError": "Failed to load badge history.",
-        "loading": "Loading history…",
-        "title": "Badge history",
-        "unknownBadge": "Badge"
-      },
-      "badgesTitle": "Badges & achievements",
-      "calendarPlaceholder": "Calendar is loading...",
-      "contact": {
-        "bookLesson": "Book a lesson",
-        "respondsInHours": "Typically replies within {hours}h",
-        "sendMessage": "Send message",
-        "trialLesson": "Trial lesson"
-      },
-      "create": {
-        "benefit1": "Access to thousands of students",
-        "benefit2": "Flexible schedule and rates",
-        "benefit3": "Grow your rating through reviews",
-        "benefit4": "Secure payouts",
-        "creating": "Creating…",
-        "cta": "Get started",
-        "headlinePlaceholder": "Add a headline, e.g. “Experienced math tutor”",
-        "subtitle": "Fill in details about yourself so students can find you.",
-        "title": "Create your tutor profile"
-      },
+      "badgesHistory": {},
+      "contact": {},
+      "create": {},
       "editor": {
-        "add": "Add",
-        "addCertification": "Add certificate",
-        "basicTitle": "Basic info",
-        "bioLabel": "About me",
-        "bioPlaceholder": "Tell students about your experience and teaching style…",
-        "birthYearLabel": "Year of birth",
-        "birthYearPlaceholder": "e.g. 1995",
-        "certificationIssuerPlaceholder": "Issued by (optional)",
-        "certificationNamePlaceholder": "Certificate name",
-        "certificationPublic": "Show in public profile",
-        "certificationsAdd": "Add certificate",
-        "certificationsCreateSuccess": "Certificate added",
-        "certificationsDeleteError": "Failed to delete certificate",
-        "certificationsDeleteSuccess": "Certificate deleted",
-        "certificationsEmpty": "No certificates yet",
-        "certificationsFileLabel": "File",
-        "certificationsIssuedYearLabel": "Issued year (optional)",
-        "certificationsIssuerLabel": "Organization (optional)",
-        "certificationsLoadError": "Failed to load certificates",
-        "certificationsNoFile": "No file selected",
-        "certificationsRateLimited": "Too many requests. Try later",
-        "certificationsSelectedFile": "Selected: {name}",
-        "certificationsStatusApproved": "Approved",
-        "certificationsStatusPending": "Pending review",
-        "certificationsStatusRejected": "Rejected",
-        "certificationsTitle": "Certificates",
-        "certificationsTitleLabel": "Title",
-        "certificationsTooLarge": "File is too large",
-        "certificationsUnsupportedType": "Unsupported file type",
-        "certificationsUpdateError": "Failed to update certificate",
-        "certificationsUploadButton": "Choose file",
-        "certificationsUploadError": "Failed to upload certificate",
-        "certificationsUploading": "Uploading…",
-        "certificationsValidationError": "Check certificate data",
-        "countryLabel": "Country",
-        "countryPlaceholder": "e.g. Ukraine",
-        "genderLabel": "Gender",
-        "genderOptions": {
-          "female": "Female",
-          "male": "Male",
-          "other": "Other",
-          "unspecified": "Not specified"
-        },
-        "genderPlaceholder": "e.g. Female / Male / Other",
-        "headlineHint": "A short description that best represents you",
-        "headlineLabel": "Headline",
-        "headlinePlaceholder": "e.g. Experienced math tutor",
-        "hourlyRateLabel": "Hourly rate",
-        "languageLevels": {
-          "basic": "Beginner",
-          "conversational": "Conversational",
-          "fluent": "Fluent",
-          "native": "Native"
-        },
-        "languagesLabel": "Languages",
-        "noPhoto": "No photo",
-        "photoTitle": "Photo",
-        "pricingTitle": "Pricing",
-        "privacyTitle": "Privacy",
-        "remove": "Remove",
-        "save": "Save changes",
-        "saving": "Saving…",
-        "selectLanguage": "Select language…",
-        "selectSubject": "Select subject…",
-        "showAge": "Show age on public profile",
-        "showGender": "Show gender on public profile",
-        "showTelegram": "Show Telegram on public profile",
-        "subjectsLabel": "Subjects",
-        "subjectsLanguagesTitle": "Subjects & languages",
-        "telegramLabel": "Telegram",
-        "telegramPlaceholder": "username without @",
-        "timezoneLabel": "Timezone",
-        "timezonePlaceholder": "e.g. Europe/Kyiv",
-        "trialPriceHint": "Optional discounted price for the first lesson",
-        "trialPriceLabel": "Trial lesson price",
-        "trialPricePlaceholder": "Leave blank if not needed",
-        "uploadPhoto": "Upload photo",
-        "validation": {
-          "bio": "Bio is required (min 10 characters).",
-          "headline": "Headline is required (min 3 characters).",
-          "hourlyRate": "Hourly rate must be greater than 0.",
-          "languages": "Select at least one language.",
-          "subjects": "Select at least one subject."
-        },
-        "videoHint": "Link to YouTube or Vimeo",
-        "videoTitle": "Intro video",
-        "videoUrlLabel": "Video link",
-        "videoUrlPlaceholder": "https://youtube.com/watch?v=..."
+        "genderOptions": {},
+        "languageLevels": {},
+        "validation": {}
       },
-      "education": {
-        "in": "in",
-        "present": "Present",
-        "title": "Education"
-      },
-      "fullCalendar": "Full calendar",
-      "inDays": "in {count} days",
-      "inHours": "in {count} hours",
-      "inMinutes": "in {count} minutes",
-      "incompleteDescription": "Fill avatar, bio, subjects, languages, and rate.",
-      "incompleteTitle": "Profile not ready yet",
-      "loadError": "Failed to load availability",
-      "nextAvailable": "Next available time",
-      "nextSlots": "Next slots",
-      "noAvailability": "No availability",
-      "noSlotsAvailable": "No slots available",
-      "noUpcomingSlots": "No upcoming slots",
-      "notFound": {
-        "backCta": "Back to catalog",
-        "description": "Tutor profile does not exist or was removed.",
-        "title": "Tutor not found"
-      },
-      "publish": "Publish",
-      "publishError": "Failed to publish profile.",
-      "publishSuccess": "Profile published.",
-      "publishing": "Publishing...",
+      "education": {},
+      "notFound": {},
       "reviews": {
-        "empty": "No reviews yet",
-        "loadError": "Failed to load reviews",
-        "loadMore": "Load more",
-        "rating": "Rating",
-        "ratingLabel": "Rating",
-        "review": "Review",
-        "reviewsCount": "{count} reviews",
-        "reviewsEmpty": "No reviews yet",
-        "reviewsLabel": "Reviews",
-        "reviewsLoadError": "Failed to load reviews",
-        "reviewsLoadMore": "Load more",
-        "title": "Reviews",
-        "write": {
-          "ratingLabel": "Rating",
-          "sendError": "Failed to submit review.",
-          "submit": "Submit",
-          "success": "Review submitted",
-          "textLabel": "Review",
-          "textPlaceholder": "Describe your learning experience...",
-          "title": "Leave a review",
-          "validation": "Please check the entered data."
-        }
+        "write": {}
       },
-      "stats": {
-        "lessons": "lessons",
-        "students": "students"
-      },
-      "status": {
-        "approved": "Approved",
-        "draft": "Draft",
-        "pending_review": "Under review",
-        "rejected": "Rejected",
-        "suspended": "Suspended"
-      },
-      "subjectLevel": {
-        "advanced": "Advanced",
-        "beginner": "Beginner",
-        "expert": "Expert",
-        "intermediate": "Intermediate"
-      },
-      "subjectsTitle": "Subjects",
-      "submit": "Submit for review",
-      "submitError": "Failed to submit profile for review.",
-      "submitSuccess": "Profile sent for review.",
-      "submitting": "Submitting for review...",
-      "title": "Tutor profile",
-      "today": "Today",
-      "tomorrow": "Tomorrow",
-      "unpublish": "Unpublish",
-      "unpublishError": "Failed to unpublish profile.",
-      "unpublishSuccess": "Profile unpublished.",
-      "unpublishing": "Unpublishing...",
-      "upcomingSlots": "Upcoming slots",
-      "validationTitle": "Needs attention:",
-      "viewCalendar": "View calendar",
-      "viewFullCalendar": "View full calendar",
-      "viewPublic": "View public profile",
-      "watchIntro": "Watch intro",
-      "weeklyHours": "Hours per week"
+      "stats": {},
+      "status": {},
+      "subjectLevel": {}
     },
-    "sort": {
-      "default": "Default",
-      "experience_desc": "Most experienced",
-      "label": "Sort",
-      "price_asc": "Price: low to high",
-      "price_desc": "Price: high to low",
-      "rating": "Highest rating"
-    },
-    "subjects": {
-      "biology": "Biology",
-      "business-english": "Business English",
-      "chemistry": "Chemistry",
-      "chinese": "Chinese",
-      "computer-science": "Computer science",
-      "drawing": "Drawing",
-      "finance": "Finance",
-      "french": "French",
-      "german": "German",
-      "gre": "GRE prep",
-      "guitar": "Guitar",
-      "ielts": "IELTS prep",
-      "japanese": "Japanese",
-      "management": "Management",
-      "marketing": "Marketing",
-      "mathematics": "Mathematics",
-      "photography": "Photography",
-      "physics": "Physics",
-      "piano": "Piano",
-      "polish": "Polish",
-      "sat": "SAT prep",
-      "spanish": "Spanish",
-      "toefl": "TOEFL prep",
-      "ukrainian": "Ukrainian",
-      "available": "{count} tutors available"
-    },
+    "sort": {},
+    "subjects": {},
     "tooltips": {
       "clickToBook": "Click to book",
       "clickToCreate": "Click to create a lesson"
     },
-    "trialRequest": {
-      "durationLabel": "Duration",
-      "error": "Could not submit request.",
-      "minutesShort": "min",
-      "submit": "Book a free lesson",
-      "submitting": "Sending…",
-      "success": "Trial lesson request sent (pending).",
-      "timeLabel": "Time",
-      "title": "Confirm trial lesson"
-    },
-    "tutorCard": {
-      "experience": "Experience",
-      "experienceYears": "{years} years",
-      "language": "Language",
-      "rate": "Rate"
-    },
-    "errorsNew": {
-      "unknown": "An unknown error occurred. Try again later."
-    },
-    "filters": {
-      "allCountries": "All countries",
-      "any": "Any",
-      "cacheExpiredDays": "Updated {count} days ago",
-      "cacheExpiredHours": "Updated {count} hours ago",
-      "cacheExpiredJustNow": "Just updated",
-      "cacheExpiredMinutes": "Updated {count} minutes ago",
-      "cacheExpiredTitle": "Filter data is outdated",
-      "category": "Category",
-      "clear": "Clear",
-      "clearAll": "Clear all",
-      "country": "Country",
-      "direction": "Track",
-      "directionDpa": "DPA prep",
-      "directionNmt": "NMT prep",
-      "experience": "Experience (years)",
-      "experienceMax": "Experience up to (years)",
-      "experienceMaxPlaceholder": "e.g. 10",
-      "experiencePlaceholder": "e.g. 3",
-      "format": "Format",
-      "formatHybrid": "Hybrid",
-      "formatOffline": "Offline",
-      "formatOnline": "Online",
-      "hasCertifications": "Has certifications",
-      "hasVideo": "Has intro video",
-      "language": "Language",
-      "languages": "Languages",
-      "max": "Max",
-      "min": "Min",
-      "price": "Price",
-      "priceRange": "{min} – {max}",
-      "priceRangeLabel": "Price range",
-      "rating": "Rating",
-      "ratingMin": "from {rating}+",
-      "refresh": "Refresh",
-      "search": "Search",
-      "searchPlaceholder": "Type at least 2 characters",
-      "subject": "Subject",
-      "subjects": "Subjects",
-      "timezone": "Timezone",
-      "timezonePlaceholder": "e.g. Europe/Kyiv",
-      "title": "Filters",
-      "today": "Today",
-      "verified": "Verified",
-      "verifiedOnly": "Verified only",
-      "video": "Video"
-    },
+    "trialRequest": {},
+    "tutorCard": {},
+    "errorsNew": {},
+    "filters": {},
     "footer": {
       "copied": "Copied!",
       "copy": "Copy",
@@ -3504,31 +2597,11 @@
       "reminder": "Keep your calendar up to date so students can book lessons.",
       "video_guide": "Video guide"
     },
-    "hoursLabel": "{hours} hours",
     "loading": "Loading...",
     "retry": "Retry",
-    "search": {
-      "placeholder": "Search tutors, subjects...",
-      "pressEnter": "Press Enter to search for \"{query}\"",
-      "recentTitle": "Recent searches",
-      "resultsCount": "{count} found",
-      "showResults": "Show results ({count})",
-      "suggestionsTitle": "Suggestions",
-      "tutorsPlural": "tutors"
-    },
-    "sections": {
-      "featured": "Featured tutors",
-      "loadError": "Failed to load tutors",
-      "new": "New tutors",
-      "popular": "Popular tutors",
-      "recommended": "Recommended for you",
-      "viewAll": "View all"
-    },
-    "regularity": {
-      "single": "One-time",
-      "once_a_week": "Once per week",
-      "twice_a_week": "Twice per week"
-    },
+    "search": {},
+    "sections": {},
+    "regularity": {},
     "blockSlot": {
       "title": "Block time slot",
       "reason": "Reason for blocking",
@@ -3580,20 +2653,20 @@
     },
     "jobStatus": {
       "pending": {
-        "title": "Preparing availability...",
-        "details": "Your schedule is being processed"
+        "title": "Waiting to start",
+        "details": "Job queued, starting shortly."
       },
       "running": {
-        "title": "Generating available slots...",
-        "details": "This may take up to 30 seconds"
+        "title": "Generating slots",
+        "details": "Hang tight while we create your availability."
       },
       "success": {
-        "title": "Availability updated!",
-        "details": "Created {created} slots, removed {deleted} old slots"
+        "details": "Created {created} slots, removed {deleted} old slots",
+        "title": "Generation complete"
       },
       "failed": {
-        "title": "Generation failed",
-        "details": "Please try again or contact support"
+        "details": "Please try again or contact support",
+        "title": "Generation failed"
       },
       "retry": "Retrying slot generation...",
       "retryError": "Failed to retry generation. Please try again later."
@@ -3646,10 +2719,7 @@
       "title": "Edit Lesson"
     },
     "doneStatus": {
-      "done": "Done",
-      "done_client_missed": "Done (student missed)",
-      "not_done": "Not Done",
-      "not_done_client_missed": "Not Done (student missed)"
+      "done": "Done"
     },
     "drag": {
       "grid": {
@@ -3675,67 +2745,31 @@
       "paid": "Paid"
     },
     "reschedule": {
-      "can_reschedule": "Can Reschedule",
-      "checking": "Checking...",
-      "confirm": "Confirm",
-      "current_time": "Current Time",
-      "error": "Reschedule Error",
-      "new_date": "New Date",
-      "new_time": "New Time",
-      "success": "Successfully Rescheduled",
-      "title": "Reschedule Lesson"
+      "can_reschedule": "Reschedule available",
+      "checking": "Checking",
+      "confirm": "Confirm reschedule",
+      "current_time": "Current time",
+      "error": "Unable to reschedule lesson",
+      "new_date": "New date",
+      "new_time": "New time",
+      "success": "Lesson rescheduled successfully",
+      "title": "Reschedule lesson"
     },
     "success": {
-      "deleted": "Deleted",
-      "rescheduled": "Rescheduled",
-      "updated": "Updated"
+      "deleted": "Slot deleted",
+      "rescheduled": "Lesson rescheduled",
+      "updated": "Slot updated"
     }
   },
   "conflict": {
-    "errorTitle": "Time conflicts",
-    "warningTitle": "Warning",
-    "student": "Student",
-    "lesson": "Lesson",
-    "resolveAnyway": "Resolve anyway",
-    "types": {
-      "bookedOverlap": "Overlaps with lesson",
-      "slotOverlap": "Overlaps with slot",
-      "templateOverlap": "Conflicts with template"
-    },
-    "resolution": {
-      "skip": "Skip this slot",
-      "override": "Override despite conflict",
-      "updateTemplate": "Update template",
-      "apply": "Apply resolutions"
-    }
+    "types": {},
+    "resolution": {}
   },
   "oldBooking": {
-    "inviteStudent": "Invite a new student",
-    "modal": {
-      "confirm": "Confirm booking",
-      "confirming": "Confirming...",
-      "noteLabel": "Note",
-      "notePlaceholder": "Add a note to the request...",
-      "selectedSlot": "Selected slot",
-      "successMessage": "The tutor received your booking request",
-      "successTitle": "Request sent!",
-      "title": "Book a lesson",
-      "tutorResponseTime": "Tutor usually replies within 24 hours"
-    },
-    "noStudentsFound": "No students found",
-    "selectStudent": "Select student",
+    "modal": {},
     "timeline": {
-      "by": "By {actor}",
-      "empty": "Timeline is empty",
-      "events": {
-        "canceled": "Canceled",
-        "confirmed": "Confirmed",
-        "created": "Created"
-      },
-      "requestId": "Request ID",
-      "title": "Booking history"
-    },
-    "typeToSearch": "Type at least 2 characters to search"
+      "events": {}
+    }
   },
   "admin": {
     "i18n": {
@@ -3758,8 +2792,15 @@
   },
   "collaboration": {
     "stats": {
-      "lastActivity": "Last Activity",
-      "lessonsCompleted": "Lessons Completed"
+      "lastActivity": "Last activity",
+      "lessonsCompleted": "Lessons completed"
+    }
+  },
+  "availability": {
+    "status": {
+      "available": "Available",
+      "booked": "Booked",
+      "blocked": "Blocked"
     }
   }
 }

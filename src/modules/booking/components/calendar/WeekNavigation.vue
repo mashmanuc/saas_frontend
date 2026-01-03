@@ -1,4 +1,38 @@
 <template>
+  <div class="availability-status">
+    <div class="status-text" :class="{ 'status-text--empty': !hasAvailability }">
+      <span v-if="hasAvailability">
+        {{ t('calendar.weekNavigation.availableHours', { hours: formattedHours }) }}
+      </span>
+      <span v-else>
+        {{ t('calendar.weekNavigation.noAvailability') }}
+      </span>
+    </div>
+    <div class="actions">
+      <button
+        class="mark-free-time-btn"
+        @click="handleMarkFreeTime"
+        data-testid="mark-free-time-btn"
+      >
+        {{ t('calendar.header.mark_free_time') }}
+      </button>
+      <button
+        class="edit-availability-btn"
+        @click="handleOpenAvailability"
+      >
+        {{ t('calendar.weekNavigation.setupAvailability') }}
+      </button>
+      <button
+        class="help-btn"
+        @click="handleShowGuide"
+        :aria-label="t('calendar.weekNavigation.showGuide')"
+        title="Допомога"
+      >
+        <HelpCircleIcon class="w-5 h-5" />
+      </button>
+    </div>
+  </div>
+
   <div class="week-navigation">
     <button
       @click="handleNavigate(-1)"
@@ -29,56 +63,6 @@
       <ChevronRightIcon class="w-5 h-5" />
     </button>
   </div>
-
-  <div class="availability-status">
-    <div class="status-text" :class="{ 'status-text--empty': !hasAvailability }">
-      <span v-if="hasAvailability">
-        {{ t('calendar.weekNavigation.availableHours', { hours: formattedHours }) }}
-      </span>
-      <span v-else>
-        {{ t('calendar.weekNavigation.noAvailability') }}
-      </span>
-    </div>
-    <div class="actions">
-      <button
-        class="scroll-available-btn"
-        :disabled="!hasAvailability || isLoading"
-        @click="handleScrollToAvailable"
-      >
-        <NavigationIcon class="w-4 h-4" />
-        <span>{{ t('calendar.weekNavigation.goToFirstAvailable') }}</span>
-      </button>
-      <button
-        class="create-slot-btn"
-        @click="handleCreateSlot"
-        data-testid="create-slot-btn"
-      >
-        <PlusIcon class="w-4 h-4" />
-        <span>{{ t('calendar.weekNavigation.createSlot') }}</span>
-      </button>
-      <button
-        class="mark-free-time-btn"
-        @click="handleMarkFreeTime"
-        data-testid="mark-free-time-btn"
-      >
-        {{ t('calendar.header.mark_free_time') }}
-      </button>
-      <button
-        class="edit-availability-btn"
-        @click="handleOpenAvailability"
-      >
-        {{ t('calendar.weekNavigation.setupAvailability') }}
-      </button>
-      <button
-        class="help-btn"
-        @click="handleShowGuide"
-        :aria-label="t('calendar.weekNavigation.showGuide')"
-        title="Допомога"
-      >
-        <HelpCircleIcon class="w-5 h-5" />
-      </button>
-    </div>
-  </div>
 </template>
 
 <script setup lang="ts">
@@ -87,8 +71,6 @@ import { useI18n } from 'vue-i18n'
 import {
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
-  Navigation as NavigationIcon,
-  Plus as PlusIcon,
   HelpCircle as HelpCircleIcon,
 } from 'lucide-vue-next'
 
@@ -106,9 +88,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   navigate: [direction: -1 | 1]
   today: []
-  'scroll-first-available': []
   'open-availability': []
-  'create-slot': []
   'show-guide': []
   'mark-free-time': []
 }>()
@@ -136,17 +116,8 @@ function handleToday() {
   emit('today')
 }
 
-function handleScrollToAvailable() {
-  if (!props.hasAvailability) return
-  emit('scroll-first-available')
-}
-
 function handleOpenAvailability() {
   emit('open-availability')
-}
-
-function handleCreateSlot() {
-  emit('create-slot')
 }
 
 function handleShowGuide() {

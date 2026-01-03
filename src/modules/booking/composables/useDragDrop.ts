@@ -66,7 +66,10 @@ export const useDragDrop = () => {
       // Call preview API
       const response = await store.reschedulePreview(
         state.value.draggedEvent.id,
-        state.value.previewSlot
+        {
+          target_start: state.value.previewSlot.start,
+          target_end: state.value.previewSlot.end
+        }
       )
 
       state.value.previewResult = response
@@ -105,7 +108,10 @@ export const useDragDrop = () => {
       // Call confirm API and trigger refetch
       await store.rescheduleConfirm(
         state.value.draggedEvent.id,
-        state.value.previewSlot
+        {
+          target_start: state.value.previewSlot.start,
+          target_end: state.value.previewSlot.end
+        }
       )
 
       toast.success('Урок успішно перенесено')

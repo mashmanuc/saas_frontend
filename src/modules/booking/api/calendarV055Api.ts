@@ -242,9 +242,9 @@ export const calendarV055Api = {
       return payload.data
     }
     
-    if (payload?.event && payload?.dictionaries) {
+    if ((payload as any)?.event && (payload as any)?.dictionaries) {
       // Already unwrapped
-      return payload
+      return payload as unknown as { event: CalendarEventV055; dictionaries: { durations: number[]; regularities: string[]; classTypes: string[]; paidStatuses: string[]; doneStatuses: string[]; }; }
     }
     
     // Fallback if response structure is different

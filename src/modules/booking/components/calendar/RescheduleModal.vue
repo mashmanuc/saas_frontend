@@ -142,8 +142,8 @@ const checkPreview = async () => {
     
     // Call real API preview
     previewResult.value = await store.reschedulePreview(props.event.id, {
-      start: newStart,
-      end: newEnd
+      target_start: newStart,
+      target_end: newEnd
     })
   } catch (error) {
     console.error('Preview error:', error)
@@ -168,8 +168,8 @@ const confirmReschedule = async () => {
     
     // Call real API confirm and trigger refetch
     await store.rescheduleConfirm(props.event.id, {
-      start: newStart,
-      end: newEnd
+      target_start: newStart,
+      target_end: newEnd
     })
     
     toast.success(t('calendar.reschedule.success'))
