@@ -422,8 +422,53 @@
     "tutorProfile": "Tutor profile"
   },
   "marketplace": {
-    "subjects": {},
-    "countries": {},
+    "subjects": {
+      "english": "English",
+      "spanish": "Spanish",
+      "french": "French",
+      "german": "German",
+      "ukrainian": "Ukrainian",
+      "polish": "Polish",
+      "chinese": "Chinese",
+      "japanese": "Japanese",
+      "mathematics": "Mathematics",
+      "physics": "Physics",
+      "chemistry": "Chemistry",
+      "biology": "Biology",
+      "computer-science": "Computer Science",
+      "business-english": "Business English",
+      "marketing": "Marketing",
+      "finance": "Finance",
+      "management": "Management",
+      "piano": "Piano",
+      "guitar": "Guitar",
+      "drawing": "Drawing",
+      "photography": "Photography",
+      "ielts": "IELTS",
+      "toefl": "TOEFL",
+      "sat": "SAT",
+      "gre": "GRE"
+    },
+    "countries": {
+      "ukraine": "Ukraine",
+      "poland": "Poland",
+      "germany": "Germany",
+      "spain": "Spain",
+      "france": "France",
+      "italy": "Italy",
+      "unitedKingdom": "Unite Ingdom",
+      "unitedStates": "Unite Tates",
+      "canada": "Canada",
+      "australia": "Australia",
+      "turkey": "Turkey",
+      "india": "India",
+      "china": "China",
+      "brazil": "Brazil",
+      "czechia": "Czechia",
+      "slovakia": "Slovakia",
+      "romania": "Romania",
+      "hungary": "Hungary"
+    },
     "weekdays": {
       "short": {}
     },
@@ -483,7 +528,8 @@
       "allTutorsTitle": "All tutors",
       "subjectTutorsTitle": "Tutors for: {subject}",
       "emptyTitle": "No tutors in this category yet",
-      "emptyDescription": "Try another category or come back later"
+      "emptyDescription": "Try another category or come back later",
+      "featured": "Featured"
     },
     "search": {
       "placeholder": "Search tutors, subjects…",
@@ -589,7 +635,12 @@
         "backCta": "Back to catalog"
       },
       "subjectsTitle": "Subjects",
-      "subjectLevel": {},
+      "subjectLevel": {
+        "beginner": "Beginner",
+        "intermediate": "Intermediate",
+        "advanced": "Advanced",
+        "expert": "Expert"
+      },
       "badgesTitle": "Badges & achievements",
       "badgesHistory": {
         "title": "Badges history",
@@ -817,7 +868,25 @@
       "confirmRisks": "Confirm Risks",
       "execute": "Execute",
       "executeSuccess": "Successfully Executed",
-      "risks": "Risks"
+      "risks": "Risks",
+      "disableTutor": {
+        "title": "Suspend tutor",
+        "description": "Blocks tutor from lessons and bookings.",
+        "warning": "All active lessons will be paused.",
+        "risks": "Student trust impact|Refund processing required|Potential complaints"
+      },
+      "reenableTutor": {
+        "title": "Unsuspend tutor",
+        "description": "Restores tutor access to the platform.",
+        "warning": "Ensure the suspension reason is resolved.",
+        "risks": "Potential repeated policy violations"
+      },
+      "resetAvailability": {
+        "title": "Reset availability",
+        "description": "Deletes all upcoming tutor slots.",
+        "warning": "This action cannot be undone.",
+        "risks": "Students lose scheduled lessons|Manual rescheduling required"
+      }
     },
     "matches": {
       "title": "Matches Console",
@@ -929,10 +998,18 @@
     "searching": "Searching",
     "today": "Today"
   },
-  "role": {},
+  "role": {
+    "superadmin": "Superadmin",
+    "admin": "Admin",
+    "tutor": "Tutor",
+    "student": "Student"
+  },
   "notify": {
     "types": {
-      "error": "Error"
+      "error": "Error",
+      "success": "Success",
+      "warning": "Warning",
+      "info": "Info"
     }
   },
   "loader": {
@@ -1022,7 +1099,9 @@
       "emptySelection": "Select at least one relation to proceed.",
       "genericError": "Unable to process bulk action.",
       "partialFailure": "{failed} relation(s) failed. Check logs.",
-      "noChanges": "Nothing changed."
+      "noChanges": "Nothing changed.",
+      "acceptSuccess": "Accep Uccess",
+      "archiveSuccess": "Archiv Uccess"
     },
     "meta": {
       "never": "Never"
@@ -1443,12 +1522,20 @@
       "drawingTools": "Drawing tools",
       "redo": "Redo",
       "strokeSize": "Stroke size",
-      "toolbar": "Drawing toolbar",
+      "toolbar": "Toolbar",
       "undo": "Undo",
       "color": "Color",
       "eraserSize": "Eraser size",
-      "options": "Options",
-      "thickness": "Thickness"
+      "options": "Tool options",
+      "thickness": "Thickness",
+      "pen": "Pen",
+      "highlighter": "Highlighter",
+      "eraser": "Eraser",
+      "line": "Line",
+      "rectangle": "Rectangle",
+      "circle": "Circle",
+      "text": "Text",
+      "select": "Selection"
     },
     "reconnect": {
       "attempt": "Attempt {current} of {max}",
@@ -1472,12 +1559,24 @@
       "more": "more"
     },
     "status": {
-      "participants": "participants",
-      "reconnecting": "reconnecting"
+      "participants": "Participants",
+      "reconnecting": "Reconnecting",
+      "connecting": "Connecting",
+      "connected": "Connected",
+      "disconnected": "Disconnected",
+      "waiting": "Waiting",
+      "terminated": "Session ended"
     },
     "loader": {
-      "ready": "Ready",
-      "connecting": "Connecting to lesson..."
+      "ready": "Ready to start",
+      "connecting": "Connecting to the room",
+      "authenticating": "Authenticating access",
+      "loadingBoard": "Loading whiteboard",
+      "joiningRoom": "Joining the room",
+      "connectingStatus": "Checking the network",
+      "authenticatingStatus": "Verifying your permissions",
+      "loadingBoardStatus": "Preparing board tools",
+      "joiningRoomStatus": "Syncing all participants"
     },
     "toolbar": {
       "leave": "Leave"
@@ -1538,6 +1637,18 @@
         "invalid": "Invalid email address.",
         "generic": "Failed to send invitation."
       }
+    },
+    "layouts": {
+      "side-by-side": "Side by side",
+      "pip": "Picture in picture",
+      "board-focus": "Board focus",
+      "video-focus": "Video focus"
+    },
+    "quality": {
+      "excellent": "Excellent connection",
+      "good": "Good connection",
+      "fair": "Average connection",
+      "poor": "Unstable connection"
     }
   },
   "lessons": {
@@ -1582,7 +1693,9 @@
         "all": "All",
         "scheduled": "Scheduled",
         "completed": "Completed",
-        "cancelled": "Cancelled"
+        "cancelled": "Cancelled",
+        "draft": "Draft",
+        "in_progress": "In progress"
       },
       "cancelTitle": "Cancel lesson",
       "cancelDescription": "Are you sure you want to cancel this lesson?",
@@ -1659,7 +1772,14 @@
         "duration": "Duration"
       },
       "participants": "Participants",
-      "roles": {},
+      "roles": {
+        "tutor": "Tutor",
+        "student": "Student",
+        "assistant": "Assistant",
+        "host": "Host",
+        "viewer": "Viewer",
+        "solo": "Solo session"
+      },
       "notes": "Notes",
       "error": "Failed to load lesson data.",
       "actions": {
@@ -2564,7 +2684,26 @@
     "footer": {
       "copied": "Copied!",
       "copy": "Copy",
-      "your_lesson_link": "Your lesson link"
+      "your_lesson_link": "Your lesson link",
+      "join_lesson": "Join lesson",
+      "edit_link": "Edit",
+      "backup": "Backup",
+      "backup_copied": "Backup link copied",
+      "edit_lesson_links": "Lesson link settings",
+      "primary_link": "Primary link",
+      "backup_link": "Backup link",
+      "add_backup_link": "Add backup link",
+      "platform_auto": "Generated automatically",
+      "url_required": "URL is required for this provider",
+      "https_required": "URL must start with https://",
+      "settings_saved": "Settings saved",
+      "save_failed": "Failed to save settings",
+      "invalid_link": "Unsafe link. Only https:// links are allowed",
+      "provider": {
+        "platform": "Platform",
+        "custom": "Custom"
+      },
+      "load_failed": "Failed to load lesson links"
     },
     "guide": {
       "availableSlot": "Available slot",
@@ -2654,19 +2793,19 @@
     "jobStatus": {
       "pending": {
         "title": "Waiting to start",
-        "details": "Job queued, starting shortly."
+        "details": "Job is queued, preparing infrastructure"
       },
       "running": {
-        "title": "Generating slots",
-        "details": "Hang tight while we create your availability."
+        "title": "Generating availability",
+        "details": "Keeping template in sync and creating new slots."
       },
       "success": {
         "details": "Created {created} slots, removed {deleted} old slots",
-        "title": "Generation complete"
+        "title": "Slots generated"
       },
       "failed": {
-        "details": "Please try again or contact support",
-        "title": "Generation failed"
+        "details": "Check your network or try again later.",
+        "title": "Slot generation failed"
       },
       "retry": "Retrying slot generation...",
       "retryError": "Failed to retry generation. Please try again later."
@@ -2794,13 +2933,30 @@
     "stats": {
       "lastActivity": "Last activity",
       "lessonsCompleted": "Lessons completed"
-    }
+    },
+    "status": {}
   },
   "availability": {
     "status": {
       "available": "Available",
       "booked": "Booked",
       "blocked": "Blocked"
+    },
+    "slotEditor": {
+      "strategies": {
+        "override": {
+          "title": "Override slot",
+          "description": "Apply changes even when conflicts exist"
+        },
+        "templateUpdate": {
+          "title": "Update template",
+          "description": "Adjust the base availability template for future slots"
+        },
+        "userChoice": {
+          "title": "Manual choice",
+          "description": "Pick a custom strategy for this scenario"
+        }
+      }
     }
   }
 }

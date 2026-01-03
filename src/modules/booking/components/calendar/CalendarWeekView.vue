@@ -230,6 +230,7 @@ dayjs.extend(timezone)
 
 import { useCalendarWeekStore } from '@/modules/booking/stores/calendarWeekStore'
 import { useAvailabilityDraftStore } from '@/modules/booking/stores/availabilityDraftStore'
+import { useTutorLessonLinksStore } from '@/modules/booking/stores/tutorLessonLinksStore'
 import { useCalendarWebSocket } from '@/modules/booking/composables/useCalendarWebSocket'
 import { useErrorHandler } from '@/modules/booking/composables/useErrorHandler'
 import { useRouter } from 'vue-router'
@@ -267,6 +268,7 @@ const router = useRouter()
 
 const store = useCalendarWeekStore()
 const draftStore = useAvailabilityDraftStore()
+const lessonLinksStore = useTutorLessonLinksStore()
 const authStore = useAuthStore()
 const { connected, connectionAttempted, connect } = useCalendarWebSocket()
 const { handleError } = useErrorHandler()
@@ -429,6 +431,16 @@ onMounted(async () => {
     if (showV055.value && authStore.user?.id) {
       const weekStart = new Date().toISOString().slice(0, 10)
       await fetchV055Snapshot(weekStart)
+      
+      // Fetch lesson links for tutor
+      if (authStore.user.role === 'tutor') {
+        try {
+          await lessonLinksStore.fetchLessonLinks()
+        } catch (err: any) {
+          console.warn('[CalendarWeekView] Failed to fetch lesson links:', err)
+          // Non-critical, don't block calendar load
+        }
+      }
     }
   } catch (err: any) {
     handleError(err)

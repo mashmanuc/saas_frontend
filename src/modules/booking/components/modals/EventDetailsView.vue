@@ -28,21 +28,6 @@
       </div>
     </div>
 
-    <!-- Status Badges -->
-    <div class="detail-section">
-      <div class="badges">
-        <span :class="['badge', `badge-${event.paidStatus}`]">
-          {{ $t(`booking.calendar.paidStatus.${event.paidStatus}`) }}
-        </span>
-        <span :class="['badge', `badge-${event.doneStatus}`]">
-          {{ $t(`booking.calendar.doneStatus.${event.doneStatus}`) }}
-        </span>
-        <span class="badge badge-regularity">
-          {{ $t(`booking.calendar.regularity.${event.regularity}`) }}
-        </span>
-      </div>
-    </div>
-
     <!-- Comment -->
     <div v-if="event.tutorComment" class="detail-section">
       <p class="detail-label">{{ $t('booking.calendar.eventDetails.comment') }}</p>
@@ -103,46 +88,6 @@ function formatTime(utcTime: string): string {
 .detail-subvalue {
   font-size: 13px;
   color: #6b7280;
-}
-
-.badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.badge {
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.badge-paid {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.badge-unpaid {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.badge-done {
-  background: #dbeafe;
-  color: #1e40af;
-}
-
-.badge-not_done,
-.badge-not_done_client_missed,
-.badge-done_client_missed {
-  background: #f3f4f6;
-  color: #374151;
-}
-
-.badge-regularity {
-  background: #fef3c7;
-  color: #92400e;
 }
 
 .comment-text {

@@ -479,3 +479,24 @@ calendar/
 **Примітка:** Missing keys в uk.json збільшилися до 112, оскільки під час очищення були видалені ключі board.* та інші, які використовуються в коді. Більшість з них — динамічні шаблони (`${variable}`).
 
 **Проєкт готовий до продовження робіт** з додавання відсутніх ключів та виправлення TypeScript помилок.
+
+### Етап 6: Відновлення динамічних словників (3 січня 2026, сесія 5)
+
+#### Виконані роботи
+1. **calendar/jobStatus, analytics, sidebar:** додано повний словник для всіх статусів (`pending`, `running`, `success`, `failed`, `paid`, `unpaid`).  
+2. **lessons.detail.roles / lessons.calendar.status:** відновлено ролі (`tutor`, `student`, `host`, `viewer`, `solo`, `assistant`) та статуси уроків (включно з `draft`, `in_progress`).  
+3. **classroom.*:** додано словники для layout'ів, loader'а, quality, status, tools.  
+4. **calendar.footer.*:** перенесено всі нові ключі лінків на уроки (join/edit/backup тощо).  
+5. **operator.actions.*:** відновлено базові кнопки та три критичні дії (`disableTutor`, `reenableTutor`, `resetAvailability`) з ризиками/попередженнями.  
+6. **marketplace.* (subjects, countries, categories, profile.subjectLevel):** повністю відновлено словники за архівом `uk-prev.json` + синхронізовано з `en.json`. Для нових кодів використано осмислені назви (наприклад, `business-english`, `computer-science`, `ielts`, `poland`, `hungary`).  
+7. **role.*, notify.types.*, collaboration.status.*, matches.status.*, relations.bulk.*, devPlayground.themeOptions.*:** повернено повні словники для всіх динамічних ключів, синхронно в `uk/en`.  
+
+#### Результати
+- **Всього ключів (uk.json):** 1772 → **2070** (+298) — динамічні словники повернуті.  
+- **Unused keys (uk.json):** 0 → **209** — очікувано через шаблонні ключі; будуть задокументовані як runtime-виключення після повного покриття.  
+- **Missing keys (uk.json):** 40 → **37** (закрили `marketplace.*`, `role.*`, `notify.types.*`, `collaboration.status.*`, `matches.status.*`, `relations.bulk.*`, `devPlayground.themeOptions.*`; далі в роботі — `notify.actions`, `notify.channels`, `relations.status`, `matches.filters`, `schedule.templates`, `catalog.sections.*`).  
+
+#### Наступні дії
+1. Обробити решту динамічних ключів (`role.*`, `notify.types.*`, `collaboration.status.*`, `matches.status.*`, `relations.bulk.*`, `devPlayground.themeOptions.*`).  
+2. Після кожного блоку запускати `pnpm i18n:check --report` і доповнювати документ.  
+3. Коли `missing=0`, зафіксувати, які `unused` лишаються як винятки для runtime.

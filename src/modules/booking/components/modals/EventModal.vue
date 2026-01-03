@@ -1,6 +1,12 @@
 <template>
   <div v-if="visible" class="modal-overlay" @click.self="handleClose">
-    <div ref="modalRef" class="modal-container" role="dialog" aria-labelledby="event-modal-title" aria-modal="true">
+    <div
+      ref="modalRef"
+      :class="['modal-container', modalContainerClasses]"
+      role="dialog"
+      aria-labelledby="event-modal-title"
+      aria-modal="true"
+    >
       <div class="modal-header">
         <h2 id="event-modal-title">{{ $t('booking.calendar.eventModal.title') }}</h2>
         <button @click="handleClose" class="close-btn" aria-label="Закрити">
@@ -15,7 +21,10 @@
       </div>
 
       <!-- Event Details -->
-      <div v-else-if="eventDetails" class="modal-content">
+      <div
+        v-else-if="eventDetails"
+        :class="['modal-content', { 'view-mode': !isEditing }]"
+      >
         <!-- View Mode -->
         <div v-if="!isEditing">
           <EventDetailsView
@@ -120,7 +129,7 @@
         </div>
 
         <!-- Actions -->
-        <div class="modal-actions">
+        <div :class="['modal-actions', { 'view-mode': !isEditing }]">
           <template v-if="!isEditing">
             <button
               @click="handleClose"
@@ -243,6 +252,11 @@ const editForm = ref<{
   regularity: 'single',
   tutorComment: '',
 })
+
+const modalContainerClasses = computed(() => ({
+  'modal-container--compact': !isEditing.value,
+  'modal-container--expanded': isEditing.value,
+}))
 
 const canDelete = computed(() => {
   if (!eventDetails.value) return false
