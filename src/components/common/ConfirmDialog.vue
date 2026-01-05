@@ -1,12 +1,12 @@
 <template>
-  <div v-if="visible" class="confirm-overlay" @click.self="handleCancel">
+  <div v-if="visible" class="confirm-overlay" @click.self="handleCancel" data-testid="delete-confirmation-dialog">
     <div ref="dialogRef" class="confirm-dialog" role="alertdialog" aria-labelledby="confirm-title" aria-modal="true">
       <div class="confirm-header">
         <h3 id="confirm-title">{{ title }}</h3>
       </div>
       
       <div class="confirm-body">
-        <p>{{ message }}</p>
+        <p data-testid="delete-confirmation-text">{{ message }}</p>
       </div>
       
       <div class="confirm-actions">
@@ -14,6 +14,7 @@
           @click="handleCancel"
           class="btn-secondary"
           :disabled="isProcessing"
+          data-testid="delete-cancel-button"
         >
           {{ cancelText }}
         </button>
@@ -21,6 +22,7 @@
           @click="handleConfirm"
           :class="['btn-primary', variantClass]"
           :disabled="isProcessing"
+          data-testid="delete-confirm-button"
         >
           <LoaderIcon v-if="isProcessing" class="w-4 h-4 animate-spin" />
           {{ confirmText }}

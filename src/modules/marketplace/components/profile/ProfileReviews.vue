@@ -2,7 +2,7 @@
 import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Rating from '../shared/Rating.vue'
-import { marketplaceApi, type Review } from '../../api/marketplace'
+import marketplaceApi, { type Review } from '../../api/marketplace'
 import { notifyError } from '@/utils/notify'
 import { mapMarketplaceErrorToMessage, parseMarketplaceApiError } from '../../utils/apiErrors'
 

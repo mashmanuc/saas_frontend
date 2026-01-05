@@ -4,6 +4,8 @@
       v-for="event in events"
       :key="event.id"
       class="event-card"
+      data-testid="lesson-card"
+      :data-lesson-id="event.id"
       :class="{
         'is-first': event.is_first,
         'is-past': isPastFn(event.start),
@@ -15,7 +17,7 @@
       @mousedown="handleEventMouseDown(event, $event)"
     >
       <div class="event-student">{{ getStudentName(event) }}</div>
-      <div class="event-time">{{ formatTimeRange(event) }}</div>
+      <div class="event-time" data-testid="lesson-time">{{ formatTimeRange(event) }}</div>
       <div v-if="event.is_first" class="first-badge">FIRST</div>
     </div>
   </div>

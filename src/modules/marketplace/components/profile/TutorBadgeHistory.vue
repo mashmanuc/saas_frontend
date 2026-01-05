@@ -2,7 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Clock } from 'lucide-vue-next'
-import { marketplaceApi, type BadgeHistoryItem } from '../../api/marketplace'
+import marketplaceApi, { type BadgeHistoryItem } from '../../api/marketplace'
 
 const { t } = useI18n()
 

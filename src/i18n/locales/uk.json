@@ -30,7 +30,10 @@
     "logout": "Вийти",
     "side": "Бічна навігація",
     "theme": {
-      "label": "Тема інтерфейсу"
+      "label": "Тема",
+      "light": "Світла",
+      "dark": "Темна",
+      "classic": "Класична"
     }
   },
   "notifications": {
@@ -475,6 +478,11 @@
       "empty": "Немає доступних слотів",
       "loadError": "Не вдалося завантажити доступність."
     },
+    "calendar": {
+      "errorHorizon": "Неможливо завантажити календар за межами 4 тижнів",
+      "errorLoad": "Не вдалося завантажити доступність",
+      "bookSlotAria": "Забронювати слот на {time}"
+    },
     "trialRequest": {
       "title": "Підтвердження пробного уроку",
       "timeLabel": "Час",
@@ -543,6 +551,10 @@
       "subjects": "Предмети"
     },
     "sections": {
+      "popular": "Популярні тьютори",
+      "new": "Нові тьютори",
+      "recommended": "Рекомендовано для вас",
+      "featured": "Обрані тьютори",
       "viewAll": "Переглянути всі",
       "loadError": "Не вдалося завантажити тьюторів"
     },
@@ -747,6 +759,7 @@
         "videoUrlLabel": "Посилання на відео",
         "videoUrlPlaceholder": "https://youtube.com/watch?v=…",
         "videoHint": "Посилання на YouTube або Vimeo",
+        "lessonLinksTitle": "Посилання",
         "privacyTitle": "Приватність",
         "genderLabel": "Стать",
         "genderPlaceholder": "Напр. Жінка / Чоловік / Інше",
@@ -761,7 +774,7 @@
         "birthYearPlaceholder": "Напр. 1995",
         "showAge": "Показувати вік у публічному профілі",
         "telegramLabel": "Telegram",
-        "telegramPlaceholder": "username без @@",
+        "telegramPlaceholder": "username без @",
         "showTelegram": "Показувати Telegram у публічному профілі",
         "certificationsTitle": "Дипломи (сертифікати)",
         "certificationPublic": "Показувати у публічному профілі",
@@ -806,7 +819,11 @@
         "offline": {}
       },
       "status": {
-        "pending_review": "На модерації"
+        "draft": "Чернетка",
+        "pending_review": "На модерації",
+        "approved": "Опубліковано",
+        "rejected": "Відхилено",
+        "suspended": "Призупинено"
       }
     },
     "draft": {
@@ -1161,8 +1178,21 @@
         }
       }
     },
-    "trialRequest": {},
-    "common": {},
+    "trialRequest": {
+      "title": "Запит на пробний урок",
+      "timeLabel": "Час",
+      "durationLabel": "Тривалість",
+      "minutesShort": "хв",
+      "submit": "Надіслати запит",
+      "submitting": "Надсилаємо...",
+      "success": "Запит надіслано успішно!",
+      "error": "Не вдалося надіслати запит",
+      "slotUnavailable": "Цей слот більше недоступний",
+      "refreshCalendar": "Оновити календар"
+    },
+    "common": {
+      "perHour": "/ год"
+    },
     "tutorCard": {},
     "sort": {},
     "catalog": {
@@ -1195,7 +1225,7 @@
       "staleLabel": "Показуємо кешовані дані. Натисніть 'Повторити', щоб оновити."
     },
     "justNow": "щойно",
-    "marketplace": {},
+    "marketplace": "Маркетплейс",
     "minutesAgo": "{count} хв тому",
     "notifications": {},
     "oneMinuteAgo": "хвилину тому",
@@ -1411,6 +1441,9 @@
     "save": "Зберегти",
     "cancel": "Скасувати",
     "delete": "Видалити",
+    "retry": "Повторити",
+    "previousWeek": "Попередній тиждень",
+    "nextWeek": "Наступний тиждень",
     "weekdays": {
       "short": {
         "mon": "Пн",
@@ -1434,6 +1467,7 @@
     "back": "Назад",
     "clear": "Очистити",
     "confirmDelete": "Видалити запис?",
+    "confirmDiscard": "Скасувати незбережені зміни?",
     "copy": "Копіювати",
     "daysAgo": "{count} дн. тому",
     "decline": "Відхилити",
@@ -1462,7 +1496,6 @@
     },
     "refresh": "Оновити",
     "remove": "Видалити",
-    "retry": "Повторити",
     "search": "Пошук",
     "showing": "Показано",
     "there": "там",
@@ -1505,6 +1538,18 @@
       "success": "Успіх",
       "warning": "Попередження",
       "info": "Інформація"
+    },
+    "channels": {
+      "email": "Email",
+      "sms": "SMS",
+      "push": "Push-сповіщення",
+      "inApp": "У додатку"
+    },
+    "actions": {
+      "viewAll": "Переглянути всі",
+      "markRead": "Позначити прочитаним",
+      "dismiss": "Закрити",
+      "retry": "Повторити"
     }
   },
   "loader": {
@@ -1527,10 +1572,18 @@
         "active": "Активний",
         "inactive": "Неактивний",
         "invited": "Запрошений",
-        "archived": "В архіві"
+        "archived": "Архівний"
       },
       "actions": {},
-      "tabs": {},
+      "todaysLessons": "Сьогоднішні уроки",
+      "viewBookings": "Переглянути бронювання",
+      "viewLessons": "Переглянути уроки",
+      "tabs": {
+        "all": "Усі",
+        "invited": "Запрошені",
+        "active": "Активні",
+        "archived": "Архівні"
+      },
       "tabHints": {
         "invited": {
           "title": "Запрошення очікують відповіді",
@@ -1561,9 +1614,6 @@
         "createLesson": "Створити урок",
         "openChat": "Відкрити чат"
       },
-      "viewBookings": "Переглянути бронювання",
-      "viewLessons": "Мої уроки",
-      "todaysLessons": "Уроки сьогодні",
       "bulk": {
         "selectHint": "Обирайте учнів для групових дій.",
         "selected": "Вибрано: {count}",
@@ -1590,16 +1640,23 @@
       "resendError": "Не вдалося повторно надіслати запрошення"
     },
     "bulk": {
-      "noInvited": "╨Ю╨▒╨╡╤А╤Ц╤В╤М ╤Й╨╛╨╜╨░╨╣╨╝╨╡╨╜╤И╨╡ ╨╛╨┤╨╜╨╛╨│╨╛ ╨╖╨░╨┐╤А╨╛╤И╨╡╨╜╨╛╨│╨╛ ╤Б╤В╤Г╨┤╨╡╨╜╤В╨░ ╨┤╨╗╤П ╨┐╨░╨║╨╡╤В╨╜╨╛╨│╨╛ ╨┐╤А╨╕╨╣╨╜╤П╤В╤В╤П.",
-      "emptySelection": "╨Ю╨▒╨╡╤А╤Ц╤В╤М ╤Й╨╛╨╜╨░╨╣╨╝╨╡╨╜╤И╨╡ ╨╛╨┤╨╕╨╜ ╨╖╨▓'╤П╨╖╨╛╨║ ╨┤╨╗╤П ╨┐╤А╨╛╨┤╨╛╨▓╨╢╨╡╨╜╨╜╤П.",
-      "genericError": "╨Э╨╡ ╨▓╨┤╨░╨╗╨╛╤Б╤П ╨▓╨╕╨║╨╛╨╜╨░╤В╨╕ ╨┐╨░╨║╨╡╤В╨╜╤Г ╨┤╤Ц╤О.",
-      "partialFailure": "╨Э╨╡ ╨▓╨┤╨░╨╗╨╛╤Б╤П ╨╛╨▒╤А╨╛╨▒╨╕╤В╨╕: {failed}. ╨Я╨╡╤А╨╡╨▓╤Ц╤А╤В╨╡ ╨╗╨╛╨│╨╕.",
-      "noChanges": "╨Э╤Ц╤З╨╛╨│╨╛ ╨╜╨╡ ╨╖╨╝╤Ц╨╜╨╕╨╗╨╛╤Б╤П.",
-      "acceptSuccess": "╨Я╤А╨╕╨╣╨╜╤П╤В╨╛: {count}",
-      "archiveSuccess": "╨Р╤А╤Е╤Ц╨▓╨╛╨▓╨░╨╜╨╛: {count}"
+      "noInvited": "Оберіть принаймні один запрошений зв'язок, щоб продовжити.",
+      "emptySelection": "Спочатку оберіть хоч один зв'язок.",
+      "genericError": "Не вдалося виконати пакетну дію.",
+      "partialFailure": "{failed} зв'язків не вдалося обробити. Перевірте журнал.",
+      "noChanges": "Зміни не застосовано.",
+      "acceptSuccess": "{count} зв'язків прийнято",
+      "archiveSuccess": "{count} зв'язків заархівовано"
     },
     "meta": {
       "never": "Ще не було"
+    },
+    "status": {
+      "pending": "Очікує",
+      "inactive": "Неактивний",
+      "invited": "Запрошений",
+      "active": "Активний",
+      "archived": "Архівний"
     }
   },
   "tutor": {
@@ -1627,6 +1684,47 @@
       "declineError": "Не вдалося скасувати запрошення",
       "resendSuccess": "Запрошення повторно надіслано",
       "resendError": "Не вдалося повторно надіслати запрошення"
+    },
+    "lessonLinks": {
+      "title": "Посилання на уроки",
+      "subtitle": "Налаштуйте основне та резервне посилання для проведення уроків",
+      "provider": "Платформа",
+      "url": "Посилання",
+      "providers": {
+        "platform": "Платформа M4SH",
+        "zoom": "Zoom",
+        "meet": "Google Meet",
+        "custom": "Власне посилання"
+      },
+      "primary": {
+        "title": "Основне посилання",
+        "description": "Це посилання буде використовуватися для всіх уроків за замовчуванням"
+      },
+      "backup": {
+        "title": "Резервне посилання",
+        "description": "Буде використовуватися, якщо основне посилання недоступне"
+      },
+      "preview": {
+        "title": "Поточне посилання",
+        "current": "Активне посилання"
+      },
+      "platformInfo": "Платформа автоматично генерує унікальні посилання для кожного уроку",
+      "platformGenerated": "Генерується автоматично",
+      "notSet": "Не встановлено",
+      "validation": {
+        "required": "Поле обов'язкове",
+        "invalidUrl": "Невірний формат посилання",
+        "invalidProtocol": "Посилання має починатися з https://",
+        "fixErrors": "Виправте помилки перед збереженням"
+      },
+      "success": {
+        "saved": "Посилання успішно збережено"
+      },
+      "errors": {
+        "loadFailed": "Не вдалося завантажити посилання",
+        "saveFailed": "Не вдалося зберегти посилання",
+        "conflict": "Налаштування були змінені в іншій сесії. Оновіть сторінку."
+      }
     }
   },
   "student": {
@@ -2855,9 +2953,10 @@
       "details": "Деталі"
     },
     "status": {
-      "invited": "╨Ч╨░╨┐╤А╨╛╤И╨╡╨╜╨╛",
-      "active": "╨Р╨║╤В╨╕╨▓╨╜╨╕╨╣",
-      "archived": "╨Р╤А╤Е╤Ц╨▓╨╛╨▓╨░╨╜╨╛"
+      "pending": "Очікує",
+      "invited": "Запрошення",
+      "active": "Активні",
+      "archived": "Архів"
     },
     "lastActivity": "Остання активність: {time}",
     "detail": {
@@ -2939,7 +3038,12 @@
     "status": {
       "available": "Доступно",
       "booked": "Заброньовано",
-      "blocked": "Заблоковано"
+      "blocked": "Заблоковано",
+      "pending": "Очікує підтвердження",
+      "confirmed": "Підтверджено",
+      "completed": "Завершено",
+      "cancelled": "Скасовано",
+      "unavailable": "Недоступно"
     },
     "slotEditor": {
       "strategies": {

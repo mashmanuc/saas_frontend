@@ -20,6 +20,7 @@
             :hour-label="$t('calendar.createLesson.hourLabel')"
             :minute-label="$t('calendar.createLesson.minuteLabel')"
             required
+            data-testid="start-time-picker"
           />
         </div>
 
@@ -32,6 +33,7 @@
           <div class="combobox-wrapper">
             <input
               id="student-search"
+              data-testid="student-search"
               v-model="searchQuery"
               type="text"
               class="field-input"
@@ -46,6 +48,8 @@
                 :key="order.id"
                 type="button"
                 class="dropdown-item"
+                data-testid="order-option"
+                :data-order-id="order.id"
                 @mousedown.prevent="selectStudent(order)"
               >
                 <div class="student-info">
@@ -92,6 +96,7 @@
             <button
               type="button"
               :class="['duration-btn', { active: formData.durationMin === 30 }]"
+              data-testid="duration-30"
               @click="formData.durationMin = 30"
               :aria-pressed="formData.durationMin === 30"
             >
@@ -100,6 +105,7 @@
             <button
               type="button"
               :class="['duration-btn', { active: formData.durationMin === 60 }]"
+              data-testid="duration-60"
               @click="formData.durationMin = 60"
               :aria-pressed="formData.durationMin === 60"
             >
@@ -108,6 +114,7 @@
             <button
               type="button"
               :class="['duration-btn', { active: formData.durationMin === 90 }]"
+              data-testid="duration-90"
               @click="formData.durationMin = 90"
               :aria-pressed="formData.durationMin === 90"
             >
@@ -282,6 +289,7 @@
           <button
             type="submit"
             class="btn-primary"
+            data-testid="create-lesson-submit"
             :disabled="!isFormValid || isSubmitting"
           >
             <LoaderIcon v-if="isSubmitting" class="w-4 h-4 animate-spin" />
@@ -527,7 +535,7 @@ function selectStudent(order: any) {
 function handleBlur() {
   setTimeout(() => {
     showDropdown.value = false
-  }, 200)
+  }, 500)
 }
 
 const formatWithOffset = (date: Date) => {

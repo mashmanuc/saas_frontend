@@ -2,7 +2,7 @@
   <div class="calendar-footer">
     <div class="footer-content">
       <!-- View Mode -->
-      <div v-if="!isEditMode" class="view-mode">
+      <div class="view-mode">
         <div class="footer-header">
           <div class="footer-label">
             <svg class="icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
@@ -33,8 +33,9 @@
           </button>
           <button
             class="btn-tertiary"
-            @click="toggleEditMode"
-            :disabled="loading || !hasInitialData || isSaving"
+            @click="navigateToProfile"
+            :disabled="loading"
+            data-testid="edit-lesson-links-button"
           >
             <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -66,93 +67,21 @@
         </div>
       </div>
       
-      <!-- Edit Mode -->
-      <div v-else class="edit-mode">
-        <div class="edit-header">
-          <h3 class="edit-title">{{ t('calendar.footer.edit_lesson_links') }}</h3>
-          <button class="btn-close" @click="cancelEdit">
-            <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-        </div>
-        
-        <!-- Primary Link -->
-        <div class="form-section">
-          <label class="form-label">{{ t('calendar.footer.primary_link') }}</label>
-          <div class="form-row">
-            <select v-model="editPrimaryProvider" class="form-select">
-              <option value="platform">{{ t('calendar.footer.provider.platform') }}</option>
-              <option value="zoom">Zoom</option>
-              <option value="meet">Google Meet</option>
-              <option value="custom">{{ t('calendar.footer.provider.custom') }}</option>
-            </select>
-            <input 
-              v-model="editPrimaryUrl"
-              type="url"
-              class="form-input"
-              :placeholder="editPrimaryProvider === 'platform' ? t('calendar.footer.platform_auto') : 'https://...'"
-              :disabled="editPrimaryProvider === 'platform'"
-            />
-          </div>
-          <p v-if="primaryError" class="error-text">{{ primaryError }}</p>
-        </div>
-        
-        <!-- Backup Link Toggle -->
-        <div class="form-section">
-          <label class="form-checkbox-label">
-            <input v-model="enableBackup" type="checkbox" class="form-checkbox" />
-            {{ t('calendar.footer.add_backup_link') }}
-          </label>
-        </div>
-        
-        <!-- Backup Link Fields -->
-        <div v-if="enableBackup" class="form-section">
-          <label class="form-label">{{ t('calendar.footer.backup_link') }}</label>
-          <div class="form-row">
-            <select v-model="editBackupProvider" class="form-select">
-              <option value="platform">{{ t('calendar.footer.provider.platform') }}</option>
-              <option value="zoom">Zoom</option>
-              <option value="meet">Google Meet</option>
-              <option value="custom">{{ t('calendar.footer.provider.custom') }}</option>
-            </select>
-            <input 
-              v-model="editBackupUrl"
-              type="url"
-              class="form-input"
-              :placeholder="editBackupProvider === 'platform' ? t('calendar.footer.platform_auto') : 'https://...'"
-              :disabled="editBackupProvider === 'platform'"
-            />
-          </div>
-          <p v-if="backupError" class="error-text">{{ backupError }}</p>
-        </div>
-        
-        <!-- Action Buttons -->
-        <div class="form-actions">
-          <button class="btn-primary" @click="saveChanges" :disabled="!isFormValid || isSaving">
-            <span v-if="isSaving">{{ t('common.saving') }}...</span>
-            <span v-else>{{ t('common.save') }}</span>
-          </button>
-          <button class="btn-secondary" @click="cancelEdit" :disabled="isSaving">
-            {{ t('common.cancel') }}
-          </button>
-        </div>
-        
-        <p v-if="saveError" class="error-text">{{ saveError }}</p>
-      </div>
+      <!-- Edit mode removed - editing now happens in profile -->
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useTutorLessonLinksStore } from '@/modules/booking/stores/tutorLessonLinksStore'
 import { useToast } from '@/composables/useToast'
 
 const { t } = useI18n()
+const router = useRouter()
 const lessonLinksStore = useTutorLessonLinksStore()
 const toast = useToast()
 
@@ -160,18 +89,6 @@ const { effectivePrimary, primary, backup, loading } = storeToRefs(lessonLinksSt
 
 const copied = ref(false)
 const linkInput = ref<HTMLInputElement | null>(null)
-const isEditMode = ref(false)
-const isSaving = ref(false)
-
-// Edit form state
-const editPrimaryProvider = ref<string>('platform')
-const editPrimaryUrl = ref<string>('')
-const enableBackup = ref(false)
-const editBackupProvider = ref<string>('zoom')
-const editBackupUrl = ref<string>('')
-const primaryError = ref<string>('')
-const backupError = ref<string>('')
-const saveError = ref<string>('')
 
 // Computed
 const displayLink = computed(() => effectivePrimary.value?.url || '')
@@ -181,38 +98,6 @@ const backupProvider = computed(() => backup.value?.provider || '')
 const backupUrl = computed(() => backup.value?.url || '')
 
 const hasInitialData = computed(() => Boolean(primary.value) || Boolean(effectivePrimary.value))
-
-const isFormValid = computed(() => {
-  // Clear errors
-  primaryError.value = ''
-  backupError.value = ''
-  
-  // Validate primary
-  if (editPrimaryProvider.value !== 'platform') {
-    if (!editPrimaryUrl.value || !editPrimaryUrl.value.trim()) {
-      primaryError.value = t('calendar.footer.url_required')
-      return false
-    }
-    if (!editPrimaryUrl.value.startsWith('https://')) {
-      primaryError.value = t('calendar.footer.https_required')
-      return false
-    }
-  }
-  
-  // Validate backup if enabled
-  if (enableBackup.value && editBackupProvider.value !== 'platform') {
-    if (!editBackupUrl.value || !editBackupUrl.value.trim()) {
-      backupError.value = t('calendar.footer.url_required')
-      return false
-    }
-    if (!editBackupUrl.value.startsWith('https://')) {
-      backupError.value = t('calendar.footer.https_required')
-      return false
-    }
-  }
-  
-  return true
-})
 
 function getProviderLabel(provider: string): string {
   const labels: Record<string, string> = {
@@ -224,71 +109,10 @@ function getProviderLabel(provider: string): string {
   return labels[provider] || provider
 }
 
-function toggleEditMode() {
-  if (loading.value) return
-  if (!hasInitialData.value) {
-    toast.error(t('calendar.footer.load_failed'))
-    return
-  }
-
-  const primarySource = primary.value ?? effectivePrimary.value ?? null
-
-  editPrimaryProvider.value = primarySource?.provider || 'platform'
-  editPrimaryUrl.value = primarySource?.url || ''
-
-  const backupSource = backup.value ?? null
-  enableBackup.value = Boolean(backupSource)
-  if (backupSource) {
-    editBackupProvider.value = backupSource.provider || 'zoom'
-    editBackupUrl.value = backupSource.url || ''
-  } else {
-    editBackupProvider.value = 'zoom'
-    editBackupUrl.value = ''
-  }
-
-  isEditMode.value = true
-}
-
-function cancelEdit() {
-  isEditMode.value = false
-  saveError.value = ''
-  primaryError.value = ''
-  backupError.value = ''
-}
-
-async function saveChanges() {
-  if (!isFormValid.value) return
-  
-  isSaving.value = true
-  saveError.value = ''
-  
-  try {
-    const payload: any = {
-      primary: {
-        provider: editPrimaryProvider.value,
-        url: editPrimaryProvider.value === 'platform' ? null : editPrimaryUrl.value
-      }
-    }
-    
-    if (enableBackup.value) {
-      payload.backup = {
-        provider: editBackupProvider.value,
-        url: editBackupProvider.value === 'platform' ? null : editBackupUrl.value
-      }
-    } else {
-      payload.backup = null
-    }
-    
-    await lessonLinksStore.patchLessonLinks(payload)
-    
-    toast.success(t('calendar.footer.settings_saved'))
-    isEditMode.value = false
-  } catch (error: any) {
-    console.error('[CalendarFooter] Save error:', error)
-    saveError.value = error?.response?.data?.error || t('calendar.footer.save_failed')
-  } finally {
-    isSaving.value = false
-  }
+function navigateToProfile() {
+  // Navigate to tutor lesson links page
+  router.push({ name: 'tutor-lesson-links' })
+  console.info('[CalendarFooter] Navigating to lesson links editing page')
 }
 
 function openLink() {

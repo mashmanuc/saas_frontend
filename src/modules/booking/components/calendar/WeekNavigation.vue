@@ -39,6 +39,7 @@
       :disabled="isLoading"
       class="nav-btn"
       :aria-label="t('calendar.weekNavigation.prevWeek')"
+      data-testid="calendar-prev-week"
     >
       <ChevronLeftIcon class="w-5 h-5" />
     </button>
@@ -59,6 +60,7 @@
       :disabled="isLoading"
       class="nav-btn"
       :aria-label="t('calendar.weekNavigation.nextWeek')"
+      data-testid="calendar-next-week"
     >
       <ChevronRightIcon class="w-5 h-5" />
     </button>

@@ -77,16 +77,26 @@ function isHttp404(err: unknown): boolean {
 }
 
 export interface AvailableSlot {
-  startAtUTC: string
+  slot_id: string
+  start_at: string
+  duration_min: number
   status: 'available' | 'booked' | 'blocked'
-  duration: number
+}
+
+export interface CalendarDayCell {
+  date: string
+  day_status: string
+  slots: AvailableSlot[]
 }
 
 export interface TutorCalendarResponse {
   tutor_id: number
-  week_start: string
   timezone: string
-  cells: AvailableSlot[]
+  week_start: string
+  week_end: string
+  horizon_weeks: number
+  generated_at: string
+  cells: CalendarDayCell[]
 }
 
 export interface ProfileDraft {
@@ -264,6 +274,7 @@ export type WeeklyAvailabilityResponse = {
 }
 
 export type TrialRequestPayload = {
+  slot_id: string
   starts_at: string
   duration_min: number
   message?: string
@@ -489,10 +500,6 @@ export const marketplaceApi = {
     return response as unknown as TutorProfile
   },
 
-  async getWeeklyAvailability(slug: string, params?: { week_start?: string; tz?: string }): Promise<WeeklyAvailabilityResponse> {
-    const response = await apiClient.get(`/v1/marketplace/tutors/${slug}/availability/weekly/`, { params })
-    return response as unknown as WeeklyAvailabilityResponse
-  },
 
   async createTrialRequest(slug: string, payload: TrialRequestPayload): Promise<any> {
     const response = await apiClient.post(`/v1/marketplace/tutors/${slug}/trial-request/`, payload)
@@ -873,14 +880,18 @@ export const marketplaceApi = {
     weekStart: string
     timezone: string
   }): Promise<TutorCalendarResponse> {
-    const response = await apiClient.get(`/api/v1/marketplace/tutors/${params.tutorId}/calendar/`, {
+    const response = await apiClient.get(`/v1/marketplace/tutors/${params.tutorId}/calendar/`, {
       params: {
         start: params.weekStart,
         tz: params.timezone,
       },
     })
-    return response.data
+    return response as unknown as TutorCalendarResponse
   },
 }
+
+// DEBUG: Log keys to verify getTutorCalendar is present
+console.log('[marketplace.ts] marketplaceApi keys:', Object.keys(marketplaceApi))
+console.log('[marketplace.ts] getTutorCalendar type:', typeof marketplaceApi.getTutorCalendar)
 
 export default marketplaceApi

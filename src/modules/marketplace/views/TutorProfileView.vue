@@ -16,13 +16,18 @@ import CreateReviewModal from '../components/profile/CreateReviewModal.vue'
 import ProfileContact from '../components/profile/ProfileContact.vue'
 import LoadingSpinner from '@/ui/LoadingSpinner.vue'
 import NotFound from '@/ui/NotFound.vue'
-import WeeklyAvailabilityWidget from '../components/trial/WeeklyAvailabilityWidget.vue'
 import TrialRequestModal from '../components/trial/TrialRequestModal.vue'
-import TutorAvailabilityWidget from '../components/TutorAvailabilityWidget.vue'
-import StudentAvailabilityCalendar from '../../booking/components/calendar/StudentAvailabilityCalendar.vue'
 import TutorAvailabilityCalendar from '../components/TutorAvailabilityCalendar.vue'
+import StudentAvailabilityCalendar from '../../booking/components/calendar/StudentAvailabilityCalendar.vue'
 import BookingRequestModal from '../../booking/components/requests/BookingRequestModal.vue'
-import type { WeeklyAvailabilitySlot, AvailableSlot } from '../api/marketplace'
+import type { AvailableSlot } from '../api/marketplace'
+
+interface CalendarSlot {
+  slot_id: string
+  start_at: string
+  duration: number
+  status: string
+}
 import type { TimeSlot } from '../../booking/api/availabilityApi'
 import { useToast } from '@/composables/useToast'
 
@@ -33,7 +38,7 @@ const auth = useAuthStore()
 const { currentProfile, isLoadingProfile, error } = storeToRefs(store)
 
 const slug = computed(() => route.params.slug as string)
-const selectedSlot = ref<WeeklyAvailabilitySlot | null>(null)
+const selectedSlot = ref<CalendarSlot | null>(null)
 const showFullCalendar = ref(false)
 const selectedBookingSlot = ref<TimeSlot | null>(null)
 const showBookingModal = ref(false)
@@ -84,9 +89,15 @@ function handleReviewCreated() {
   reviewsRef.value?.reload?.()
 }
 
-function handleSlotClick(slot: AvailableSlot) {
-  selectedAvailableSlot.value = slot
-  showBookingModal.value = true
+function handleSlotClick(slot: CalendarSlot) {
+  selectedSlot.value = slot
+}
+
+function handleRefreshCalendar() {
+  // Reload calendar by re-fetching profile or triggering calendar refresh
+  if (currentProfile.value) {
+    store.loadProfile(slug.value)
+  }
 }
 
 function handleBookingSuccess(requestId: number) {
@@ -117,18 +128,14 @@ function handleBookingSuccess(requestId: number) {
             :subjects="currentProfile.subjects"
           />
 
-          <WeeklyAvailabilityWidget
-            :slug="slug"
-            @select-slot="(slot) => (selectedSlot = slot)"
-          />
-
-          <!-- New Availability Section for v0.43 + v0.49.1 -->
+          <!-- Availability Section v0.59 - Real Calendar -->
           <section v-if="currentProfile.has_availability" class="profile-section availability-section">
             <h2>{{ $t('marketplace.availableSlots') }}</h2>
             
             <TutorAvailabilityCalendar
+              ref="calendarRef"
               :tutor-id="currentProfile.id"
-              :timezone="currentProfile.timezone || 'Europe/Kiev'"
+              :timezone="currentProfile.timezone || 'Europe/Kyiv'"
               @slot-click="handleSlotClick"
             />
           </section>
@@ -186,7 +193,8 @@ function handleBookingSuccess(requestId: number) {
       :slug="slug"
       :slot="selectedSlot"
       @close="selectedSlot = null"
-      @created="() => {}"
+      @created="() => { selectedSlot = null }"
+      @refresh="handleRefreshCalendar"
     />
 
     <CreateReviewModal

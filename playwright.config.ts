@@ -1,19 +1,19 @@
 /// <reference types="node" />
 import { defineConfig, devices } from '@playwright/test'
 
-const DEFAULT_BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:4173'
+const DEFAULT_BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:5173'
 
 export default defineConfig({
   testDir: './tests/e2e',
-  fullyParallel: true,
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  workers: process.env.CI ? 2 : undefined,
-  reporter: process.env.CI ? [['list'], ['html']] : [['list']],
-  timeout: 30_000,
+  workers: 1,
+  timeout: 60000,
   expect: {
-    timeout: 5_000,
+    timeout: 10000
   },
+  reporter: process.env.CI ? [['list'], ['html']] : [['list']],
   globalSetup: './tests/e2e/global-setup.ts',
   use: {
     baseURL: DEFAULT_BASE_URL,
@@ -41,7 +41,34 @@ export default defineConfig({
     {
       name: 'full-e2e',
       testMatch: /.*\.spec\.ts/,
-      testIgnore: /.*\.smoke\.spec\.ts/,
+      testIgnore: [
+        /.*\.smoke\.spec\.ts/,
+        'tests/e2e/calendar/**/*.spec.ts',
+        'tests/e2e/calendar-suite/**/*.spec.ts',
+        'tests/e2e/prod-smoke/**/*.spec.ts',
+      ],
+      use: {
+        ...devices['Desktop Chrome'],
+      },
+    },
+    {
+      name: 'calendar-e2e',
+      testMatch: [
+        'tests/e2e/calendar/**/*.spec.ts',
+        'tests/e2e/calendar-suite/**/*.spec.ts',
+      ],
+      fullyParallel: false,
+      retries: process.env.CI ? 1 : 0,
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: process.env.E2E_BASE_URL || DEFAULT_BASE_URL,
+        storageState: './tests/e2e/.auth/user.json',
+      },
+    },
+    {
+      name: 'prod-smoke',
+      testMatch: ['tests/e2e/prod-smoke/**/*.spec.ts'],
+      retries: 0,
       use: {
         ...devices['Desktop Chrome'],
       },
@@ -51,7 +78,7 @@ export default defineConfig({
     process.env.PLAYWRIGHT_WEB_SERVER === 'none'
       ? undefined
       : {
-          command: 'npm run dev -- --host 127.0.0.1 --port 4173',
+          command: 'npm run dev -- --host 127.0.0.1 --port 5173',
           url: DEFAULT_BASE_URL,
           timeout: 120_000,
           reuseExistingServer: !process.env.CI,

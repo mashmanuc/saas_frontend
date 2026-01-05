@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { X } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
-import { marketplaceApi, type CreateReviewPayload } from '../../api/marketplace'
+import marketplaceApi, { type CreateReviewPayload } from '../../api/marketplace'
 import { notifyError, notifySuccess } from '@/utils/notify'
 import { mapMarketplaceErrorToMessage, parseMarketplaceApiError } from '../../utils/apiErrors'
 

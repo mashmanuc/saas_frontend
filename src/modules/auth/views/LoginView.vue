@@ -46,7 +46,12 @@
         {{ $t('auth.login.resendVerifyCta') }}
       </button>
 
-      <Button class="w-full" type="submit" :disabled="auth.loading">
+      <Button
+        class="w-full"
+        type="submit"
+        :disabled="auth.loading"
+        data-testid="login-submit-button"
+      >
         <span v-if="auth.loading">{{ $t('auth.login.loading') }}</span>
         <span v-else>{{ $t('auth.login.submit') }}</span>
       </Button>

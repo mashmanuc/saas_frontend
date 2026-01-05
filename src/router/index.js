@@ -308,6 +308,12 @@ const routes = [
         meta: { roles: [USER_ROLES.TUTOR] },
       },
       {
+        path: 'tutor/lesson-links',
+        name: 'tutor-lesson-links',
+        component: () => import('../modules/booking/views/TutorLessonLinksView.vue'),
+        meta: { roles: [USER_ROLES.TUTOR] },
+      },
+      {
         path: 'book/:slug',
         name: 'book-lesson',
         component: () => import('../modules/booking/views/BookLessonView.vue'),

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { marketplaceApi } from '../api/marketplace'
+import marketplaceApi from '../api/marketplace'
 import { i18n } from '../../../i18n'
 
 const SORT_TO_ORDERING = {

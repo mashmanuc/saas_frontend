@@ -5,8 +5,7 @@ import { ref, computed } from 'vue'
 import { debounce } from '@/utils/debounce'
 import { mapMarketplaceErrorToMessage, parseMarketplaceApiError } from '../utils/apiErrors'
 import { i18n } from '@/i18n'
-import {
-  marketplaceApi,
+import marketplaceApi, {
   type TutorListItem,
   type TutorProfile,
   type CatalogFilters,

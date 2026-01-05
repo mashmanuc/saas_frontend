@@ -1,5 +1,5 @@
 <template>
-  <div class="calendar-week-view">
+  <div class="calendar-week-view" data-testid="calendar-week-view">
     <!-- Debug Panel (only in debug mode) -->
     <CalendarDebugPanel v-if="isDebugMode" />
     
@@ -18,26 +18,6 @@
     </transition>
 
     <div class="calendar-controls">
-      <div class="calendar-legend">
-        <label class="legend-item legend-item--interactive">
-          <input
-            v-model="showEvents"
-            type="checkbox"
-            class="legend-checkbox"
-          />
-          <span class="legend-dot legend-dot--lesson"></span>
-          <span>{{ t('calendar.legend.lesson') }}</span>
-        </label>
-        <label class="legend-item legend-item--interactive">
-          <input
-            v-model="showAvailability"
-            type="checkbox"
-            class="legend-checkbox"
-          />
-          <span class="legend-dot legend-dot--availability"></span>
-          <span>{{ t('calendar.legend.availability') }}</span>
-        </label>
-      </div>
       <DebugToggleButton v-if="isDebugMode" />
     </div>
 
@@ -264,6 +244,18 @@ const CalendarDebugPanel = isDebugMode ? defineAsyncComponent(() => import('@/mo
 const DebugToggleButton = isDebugMode ? defineAsyncComponent(() => import('@/modules/booking/debug').then(m => m.DebugToggleButton)) : null
 
 const { t } = useI18n()
+const isDebugLoggingEnabled =
+  import.meta.env.DEV || import.meta.env.VITE_CALENDAR_DEBUG === 'true'
+const logDebug = (...args: unknown[]) => {
+  if (isDebugLoggingEnabled) {
+    console.log(...args)
+  }
+}
+const warnDebug = (...args: unknown[]) => {
+  if (isDebugLoggingEnabled) {
+    console.warn(...args)
+  }
+}
 const router = useRouter()
 
 const store = useCalendarWeekStore()
@@ -385,10 +377,6 @@ const selectedLessonV055 = ref<CalendarEventV055 | null>(null)
 const showAvailabilityLegend = ref(false)
 const showConflictsDrawer = ref(false)
 
-// View filters
-const showEvents = ref(true)
-const showAvailability = ref(true)
-
 // Availability mode computed
 const isAvailabilityMode = computed(() => draftStore.isEditMode)
 
@@ -437,7 +425,7 @@ onMounted(async () => {
         try {
           await lessonLinksStore.fetchLessonLinks()
         } catch (err: any) {
-          console.warn('[CalendarWeekView] Failed to fetch lesson links:', err)
+          warnDebug('[CalendarWeekView] Failed to fetch lesson links:', err)
           // Non-critical, don't block calendar load
         }
       }
@@ -448,9 +436,20 @@ onMounted(async () => {
 })
 
 function handleNavigate(direction: -1 | 1) {
-  if (isLoadingV055.value) return
+  if (isLoadingV055.value) {
+    warnDebug('[CalendarWeekView] handleNavigate: ignored because isLoadingV055 is true', {
+      direction,
+      currentWeekStart: weekStartForNav.value,
+    })
+    return
+  }
   const base = weekStartForNav.value || new Date().toISOString().slice(0, 10)
   const nextWeekStart = dayjs(base).add(direction, 'week').format('YYYY-MM-DD')
+  logDebug('[CalendarWeekView] handleNavigate -> fetchV055Snapshot', {
+    direction,
+    base,
+    nextWeekStart,
+  })
   fetchV055Snapshot(nextWeekStart)
 }
 
@@ -491,19 +490,19 @@ function handleReconnect() {
 }
 
 function handleCellClickRouter(data: any) {
-  console.log('[CalendarWeekView] handleCellClickRouter called with:', data)
-  console.log('[CalendarWeekView] isAvailabilityMode.value:', isAvailabilityMode.value)
-  console.log('[CalendarWeekView] draftStore.mode:', draftStore.mode)
+  logDebug('[CalendarWeekView] handleCellClickRouter called with:', data)
+  logDebug('[CalendarWeekView] isAvailabilityMode.value:', isAvailabilityMode.value)
+  logDebug('[CalendarWeekView] draftStore.mode:', draftStore.mode)
   
   // Check if this is an availability cell click (has start/end/canAdd/canRemove)
   if (data && typeof data === 'object' && 'start' in data && 'end' in data) {
-    console.log('[CalendarWeekView] Routing to handleAvailabilityCellClick')
+    logDebug('[CalendarWeekView] Routing to handleAvailabilityCellClick')
     handleAvailabilityCellClick(data)
   } else if (data && typeof data === 'object' && 'date' in data && 'hour' in data) {
-    console.log('[CalendarWeekView] Routing to handleCellClick')
+    logDebug('[CalendarWeekView] Routing to handleCellClick')
     handleCellClick(data)
   } else {
-    console.warn('[CalendarWeekView] Unknown cell click data format:', data)
+    warnDebug('[CalendarWeekView] Unknown cell click data format:', data)
   }
 }
 
@@ -535,7 +534,7 @@ function handleEventClick(event: CalendarEventV055) {
 }
 
 async function handleLessonCreated(eventId: number) {
-  console.info('[CalendarWeekView] Lesson created:', eventId)
+  logDebug('[CalendarWeekView] Lesson created:', eventId)
   showCreateModal.value = false
   if (store.currentTutorId && store.currentWeekStart) {
     await store.fetchWeekSnapshot(store.currentTutorId, store.currentWeekStart, true)
@@ -543,7 +542,7 @@ async function handleLessonCreated(eventId: number) {
 }
 
 async function handleEventUpdated() {
-  console.info('[CalendarWeekView] Event updated')
+  logDebug('[CalendarWeekView] Event updated')
   showEventModal.value = false
   // Refetch snapshot to get updated data
   if (store.currentTutorId && store.currentWeekStart) {
@@ -552,7 +551,7 @@ async function handleEventUpdated() {
 }
 
 async function handleEventDeleted() {
-  console.info('[CalendarWeekView] Event deleted')
+  logDebug('[CalendarWeekView] Event deleted')
   showEventModal.value = false
   if (store.currentTutorId && store.currentWeekStart) {
     await store.fetchWeekSnapshot(store.currentTutorId, store.currentWeekStart, true)
@@ -568,7 +567,7 @@ function handleSlotClick(slot: AccessibleSlotV055 & { slotId?: number }) {
         : null
 
   if (!resolvedId) {
-    console.warn('[CalendarWeekView] Slot without id clicked:', slot)
+    warnDebug('[CalendarWeekView] Slot without id clicked:', slot)
     return
   }
 
@@ -588,13 +587,13 @@ const calendarTimezone = computed(() => {
 })
 
 function handleSlotSaved() {
-  console.info('[CalendarWeekView] Slot saved')
+  logDebug('[CalendarWeekView] Slot saved')
   showSlotModal.value = false
   // No need to fetch - optimistic update already handled it
 }
 
 function handleSlotDeleted() {
-  console.info('[CalendarWeekView] Slot deleted')
+  logDebug('[CalendarWeekView] Slot deleted')
   showSlotModal.value = false
   // No need to fetch - optimistic update already handled it
 }
@@ -602,7 +601,7 @@ function handleSlotDeleted() {
 function handleSlotEdit(slotId: number) {
   const slot = (accessibleV055.value || []).find(s => s.id === slotId)
   if (!slot) {
-    console.warn('[CalendarWeekView] handleSlotEdit: slot not found for id', slotId)
+    warnDebug('[CalendarWeekView] handleSlotEdit: slot not found for id', slotId)
     return
   }
   handleSlotClick(slot)
@@ -616,7 +615,7 @@ async function handleSlotDeleteInline(slotId: number) {
       store.fetchWeekSnapshot(store.currentTutorId, store.currentWeekStart)
     }
   } catch (error) {
-    console.error('[CalendarWeekView] Failed to delete slot:', error)
+    warnDebug('[CalendarWeekView] Failed to delete slot:', error)
     // If deletion failed, we need to refresh to restore the slot
     if (store.currentTutorId && store.currentWeekStart) {
       store.fetchWeekSnapshot(store.currentTutorId, store.currentWeekStart)
@@ -625,7 +624,7 @@ async function handleSlotDeleteInline(slotId: number) {
 }
 
 function handleSlotCreated(slot: any) {
-  console.info('[CalendarWeekView] Slot created:', slot)
+  logDebug('[CalendarWeekView] Slot created:', slot)
   showCreateSlotModal.value = false
   createSlotData.value = null
   
@@ -633,13 +632,13 @@ function handleSlotCreated(slot: any) {
 }
 
 function handleSlotCreateError(error: any) {
-  console.error('[CalendarWeekView] Failed to create slot:', error)
+  warnDebug('[CalendarWeekView] Failed to create slot:', error)
   showCreateSlotModal.value = false
   createSlotData.value = null
 }
 
 function handleCreateSlot(data: { date: string; start: string; end: string }) {
-  console.info('[CalendarWeekView] Create slot requested:', data)
+  logDebug('[CalendarWeekView] Create slot requested:', data)
   createSlotData.value = data
   showCreateSlotModal.value = true
 }
@@ -653,14 +652,14 @@ function handleSlotBlock(slotId: number) {
 }
 
 function handleSlotBlocked(slotId: number) {
-  console.info('[CalendarWeekView] Slot blocked:', slotId)
+  logDebug('[CalendarWeekView] Slot blocked:', slotId)
   showBlockSlotModal.value = false
   selectedSlotForBlock.value = null
   // No need to fetch - optimistic update should handle it
 }
 
 function handleSlotBlockError(error: any) {
-  console.error('[CalendarWeekView] Failed to block slot:', error)
+  warnDebug('[CalendarWeekView] Failed to block slot:', error)
   showBlockSlotModal.value = false
   selectedSlotForBlock.value = null
 }
@@ -671,7 +670,8 @@ function handleEventClickV055(event: any) {
 }
 
 function handleDragComplete(eventId: number, newStart: string, newEnd: string) {
-  // TODO: Call reschedule API
+  logDebug('[CalendarWeekView] Drag complete:', { eventId, newStart, newEnd })
+  // Reschedule API integration handled by drag-drop composable
 }
 
 function handleOpenQuickBlock() {
@@ -797,18 +797,18 @@ function handleEditConflicts() {
 }
 
 function handleAvailabilityCellClick(cellInfo: { start: string; end: string; canAdd: boolean; canRemove: boolean; slotId?: number }) {
-  console.log('[CalendarWeekView] handleAvailabilityCellClick called:', cellInfo)
-  console.log('[CalendarWeekView] isAvailabilityMode:', isAvailabilityMode.value)
-  console.log('[CalendarWeekView] draftStore.slots before:', JSON.parse(JSON.stringify(draftStore.slots)))
+  logDebug('[CalendarWeekView] handleAvailabilityCellClick called:', cellInfo)
+  logDebug('[CalendarWeekView] isAvailabilityMode:', isAvailabilityMode.value)
+  logDebug('[CalendarWeekView] draftStore.slots before:', JSON.parse(JSON.stringify(draftStore.slots)))
   
   if (cellInfo.canAdd) {
     const newSlot = draftStore.addSlot(cellInfo.start, cellInfo.end)
-    console.log('[CalendarWeekView] Added slot:', newSlot)
-    console.log('[CalendarWeekView] draftStore.slots after add:', JSON.parse(JSON.stringify(draftStore.slots)))
+    logDebug('[CalendarWeekView] Added slot:', newSlot)
+    logDebug('[CalendarWeekView] draftStore.slots after add:', JSON.parse(JSON.stringify(draftStore.slots)))
   } else if (cellInfo.canRemove && cellInfo.slotId) {
     draftStore.toggleSlot(cellInfo.slotId, cellInfo.start, cellInfo.end)
-    console.log('[CalendarWeekView] Toggled slot:', cellInfo.slotId)
-    console.log('[CalendarWeekView] draftStore.slots after toggle:', JSON.parse(JSON.stringify(draftStore.slots)))
+    logDebug('[CalendarWeekView] Toggled slot:', cellInfo.slotId)
+    logDebug('[CalendarWeekView] draftStore.slots after toggle:', JSON.parse(JSON.stringify(draftStore.slots)))
   }
 }
 </script>
@@ -836,9 +836,8 @@ function handleAvailabilityCellClick(cellInfo: { start: string; end: string; can
 
 .calendar-controls {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 8px;
+  justify-content: flex-end;
+  margin-bottom: 16px;
 }
 
 .calendar-legend {

@@ -1,5 +1,5 @@
 import { ref, computed, watch } from 'vue'
-import { marketplaceApi } from '@/modules/marketplace/api/marketplace'
+import marketplaceApi from '@/modules/marketplace/api/marketplace'
 import type { AvailableSlot } from '@/modules/marketplace/api/marketplace'
 import { apiCall, commonSchemas, getErrorMessage } from '@/utils/apiWrapper'
 import { z } from 'zod'

@@ -4,6 +4,7 @@
       v-for="hour in hours" 
       :key="hour"
       class="grid-hour"
+      :data-testid="'grid-hour-' + hour"
       :class="{
         'is-past': isPastHour(hour),
         'is-disabled': isDisabledDay

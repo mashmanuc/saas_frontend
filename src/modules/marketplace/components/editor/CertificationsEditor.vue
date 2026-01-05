@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { marketplaceApi, type Certification, type CertificationStatus } from '../../api/marketplace'
+import marketplaceApi, { type Certification, type CertificationStatus } from '../../api/marketplace'
 import { notifyError, notifySuccess } from '@/utils/notify'
 
 const { t } = useI18n()

@@ -72,7 +72,10 @@
     "logout": "Logout",
     "side": "Side navigation",
     "theme": {
-      "label": "Theme"
+      "label": "Theme",
+      "light": "Light",
+      "dark": "Dark",
+      "classic": "Classic"
     }
   },
   "notifications": {
@@ -477,15 +480,22 @@
       "empty": "No available slots",
       "loadError": "Failed to load availability slots."
     },
+    "calendar": {
+      "errorHorizon": "Cannot load calendar beyond 4 weeks",
+      "errorLoad": "Failed to load availability",
+      "bookSlotAria": "Book slot at {time}"
+    },
     "trialRequest": {
-      "title": "Confirm trial lesson",
+      "title": "Trial Lesson Request",
       "timeLabel": "Time",
       "durationLabel": "Duration",
       "minutesShort": "min",
-      "submit": "Book a free trial lesson",
-      "submitting": "Submitting…",
-      "success": "Trial lesson request sent (pending).",
-      "error": "Failed to create trial request."
+      "submit": "Send Request",
+      "submitting": "Sending...",
+      "success": "Request sent successfully!",
+      "error": "Failed to send request",
+      "slotUnavailable": "This slot is no longer available",
+      "refreshCalendar": "Refresh Calendar"
     },
     "common": {
       "perHour": "/ hour"
@@ -556,6 +566,10 @@
       "subjects": "Subjects"
     },
     "sections": {
+      "popular": "Trending tutors",
+      "new": "New tutors",
+      "recommended": "Recommended for you",
+      "featured": "Featured tutors",
       "viewAll": "View all",
       "loadError": "Failed to load tutors"
     },
@@ -920,6 +934,8 @@
     "next": "Next",
     "clear": "Clear",
     "retry": "Retry",
+    "previousWeek": "Previous week",
+    "nextWeek": "Next week",
     "exit": "Exit",
     "later": "Later",
     "there": "there",
@@ -1010,6 +1026,18 @@
       "success": "Success",
       "warning": "Warning",
       "info": "Info"
+    },
+    "channels": {
+      "email": "Email",
+      "sms": "SMS",
+      "push": "Push notification",
+      "inApp": "In-app"
+    },
+    "actions": {
+      "viewAll": "View all",
+      "markRead": "Mark as read",
+      "dismiss": "Dismiss",
+      "retry": "Retry"
     }
   },
   "loader": {
@@ -1038,7 +1066,12 @@
       "todaysLessons": "Today's lessons",
       "viewBookings": "View bookings",
       "viewLessons": "View lessons",
-      "tabs": {},
+      "tabs": {
+        "all": "All",
+        "invited": "Invited",
+        "active": "Active",
+        "archived": "Archived"
+      },
       "tabHints": {
         "invited": {
           "title": "Pending invitations",
@@ -1095,16 +1128,23 @@
       "resendError": "Failed to resend invitation"
     },
     "bulk": {
-      "noInvited": "Select at least one invited student to accept in bulk.",
+      "noInvited": "Select at least one invited relation to continue.",
       "emptySelection": "Select at least one relation to proceed.",
       "genericError": "Unable to process bulk action.",
       "partialFailure": "{failed} relation(s) failed. Check logs.",
-      "noChanges": "Nothing changed.",
-      "acceptSuccess": "Accep Uccess",
-      "archiveSuccess": "Archiv Uccess"
+      "noChanges": "No changes applied.",
+      "acceptSuccess": "{count} relation(s) accepted",
+      "archiveSuccess": "{count} relation(s) archived"
     },
     "meta": {
       "never": "Never"
+    },
+    "status": {
+      "pending": "Pending",
+      "inactive": "Inactive",
+      "invited": "Invited",
+      "active": "Active",
+      "archived": "Archived"
     }
   },
   "tutor": {
@@ -2317,6 +2357,7 @@
       "bookings": "Bookings"
     },
     "status": {
+      "pending": "Pending",
       "invited": "Invited",
       "active": "Active",
       "archived": "Archived"
@@ -2489,7 +2530,7 @@
         "action": "Set up availability"
       }
     },
-    "marketplace": {},
+    "marketplace": "Marketplace",
     "timeRange": {
       "errors": {},
       "options": {}
@@ -2940,7 +2981,12 @@
     "status": {
       "available": "Available",
       "booked": "Booked",
-      "blocked": "Blocked"
+      "blocked": "Blocked",
+      "pending": "Pending confirmation",
+      "confirmed": "Confirmed",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "unavailable": "Unavailable"
     },
     "slotEditor": {
       "strategies": {

@@ -1,5 +1,5 @@
 <template>
-  <div class="calendar-board-v2">
+  <div class="calendar-board-v2" data-testid="calendar-board">
     <template v-if="hasDays">
       <div class="calendar-header-row">
         <div class="time-column-header"></div>

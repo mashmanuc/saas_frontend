@@ -15,16 +15,16 @@ describe('TutorAvailabilityCalendar', () => {
   })
 
   const mockSlots = [
-    { startAtUTC: '2024-12-23T09:00:00Z', status: 'available' as const, duration: 30 },
-    { startAtUTC: '2024-12-23T09:30:00Z', status: 'available' as const, duration: 30 },
-    { startAtUTC: '2024-12-24T10:00:00Z', status: 'available' as const, duration: 30 },
-  ]
+    { slot_id: 'slot-1', start_at: '2024-12-23T09:00:00Z', startAtUTC: '2024-12-23T09:00:00Z', status: 'available' as const, duration: 30 },
+    { slot_id: 'slot-2', start_at: '2024-12-23T09:30:00Z', startAtUTC: '2024-12-23T09:30:00Z', status: 'available' as const, duration: 30 },
+    { slot_id: 'slot-3', start_at: '2024-12-24T10:00:00Z', startAtUTC: '2024-12-24T10:00:00Z', status: 'available' as const, duration: 30 },
+  ] as any[]
 
   it('renders calendar header with week navigation', () => {
     const wrapper = mount(TutorAvailabilityCalendar, {
       props: {
         tutorId: 79,
-        timezone: 'Europe/Kiev',
+        timezone: 'Europe/Kyiv',
       },
     })
 
@@ -37,9 +37,9 @@ describe('TutorAvailabilityCalendar', () => {
     vi.mocked(marketplaceApi.getTutorCalendar).mockResolvedValue({
       tutor_id: 79,
       week_start: '2024-12-23',
-      timezone: 'Europe/Kiev',
+      timezone: 'Europe/Kyiv',
       cells: mockSlots,
-    })
+    } as any)
 
     mount(TutorAvailabilityCalendar, {
       props: {
@@ -115,7 +115,12 @@ describe('TutorAvailabilityCalendar', () => {
       await slotButton.trigger('click')
       
       expect(wrapper.emitted('slotClick')).toBeTruthy()
-      expect(wrapper.emitted('slotClick')?.[0]).toEqual([mockSlots[0]])
+      expect(wrapper.emitted('slotClick')?.[0]?.[0]).toMatchObject({
+        slot_id: mockSlots[0].slot_id,
+        start_at: mockSlots[0].start_at,
+        duration: mockSlots[0].duration,
+        status: mockSlots[0].status,
+      })
     }
   })
 
@@ -123,9 +128,9 @@ describe('TutorAvailabilityCalendar', () => {
     vi.mocked(marketplaceApi.getTutorCalendar).mockResolvedValue({
       tutor_id: 79,
       week_start: '2024-12-23',
-      timezone: 'Europe/Kiev',
+      timezone: 'Europe/Kyiv',
       cells: [],
-    })
+    } as any)
 
     const wrapper = mount(TutorAvailabilityCalendar, {
       props: {
@@ -218,7 +223,7 @@ describe('TutorAvailabilityCalendar', () => {
 
     expect(marketplaceApi.getTutorCalendar).toHaveBeenCalledWith(
       expect.objectContaining({
-        timezone: 'Europe/Kiev',
+        timezone: 'Europe/Kyiv',
       })
     )
   })

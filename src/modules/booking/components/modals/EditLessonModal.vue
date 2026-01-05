@@ -1,10 +1,10 @@
 <template>
   <Teleport to="body">
-    <div v-if="visible" class="modal-overlay" @click.self="handleClose">
+    <div v-if="visible" class="modal-overlay" @click.self="handleClose" data-testid="event-modal">
       <div ref="modalRef" class="modal-container modal-large" role="dialog" aria-labelledby="edit-modal-title" aria-modal="true">
         <div class="modal-header">
-          <h2 id="edit-modal-title">{{ $t('calendar.editLesson.title') }}</h2>
-          <button @click="handleClose" class="close-btn" aria-label="Закрити">
+          <h2 id="edit-modal-title" data-testid="event-modal-title">{{ $t('calendar.editLesson.title') }}</h2>
+          <button @click="handleClose" class="close-btn" aria-label="Закрити" data-testid="event-modal-close">
             <XIcon class="w-5 h-5" />
           </button>
         </div>
@@ -23,6 +23,7 @@
               v-for="tab in tabs"
               :key="tab.id"
               :class="['tab-btn', { active: activeTab === tab.id, disabled: tab.disabled }]"
+              :data-testid="`event-tab-${tab.id}`"
               @click="!tab.disabled && (activeTab = tab.id)"
               :disabled="tab.disabled"
             >
@@ -45,7 +46,7 @@
                 <!-- Student (readonly) -->
                 <div class="form-field">
                   <label class="field-label">{{ $t('calendar.createLesson.student') }}</label>
-                  <div class="field-readonly">{{ eventDetails.event.clientName }}</div>
+                  <div class="field-readonly" data-testid="event-student-name">{{ eventDetails.event.clientName }}</div>
                 </div>
 
                 <!-- Date & Time -->
@@ -54,6 +55,7 @@
                     v-model="editForm.start"
                     :min="minDateTime"
                     :label="$t('calendar.editLesson.dateTime')"
+                    data-testid="event-time-input"
                     required
                   />
                 </div>
@@ -61,12 +63,13 @@
                 <!-- Duration -->
                 <div class="form-field">
                   <label class="field-label">{{ $t('calendar.createLesson.duration') }}</label>
-                  <div class="duration-buttons">
+                  <div class="duration-buttons" data-testid="event-duration-select">
                     <button
                       v-for="dur in availableDurations"
                       :key="dur"
                       type="button"
                       :class="['duration-btn', { active: editForm.durationMin === dur }]"
+                      :data-testid="`duration-${dur}`"
                       @click="editForm.durationMin = dur"
                     >
                       {{ dur }} {{ $t('common.minutes') }}
@@ -100,6 +103,7 @@
                   v-if="!isEditing && canEdit"
                   @click="isEditing = true"
                   class="btn-primary"
+                  data-testid="event-edit-button"
                 >
                   <EditIcon class="w-4 h-4" />
                   {{ $t('calendar.editLesson.edit') }}
@@ -117,6 +121,7 @@
                     @click="handleSaveEdit"
                     class="btn-primary"
                     :disabled="isSaving"
+                    data-testid="event-save-button"
                   >
                     <LoaderIcon v-if="isSaving" class="w-4 h-4 animate-spin" />
                     {{ $t('common.save') }}
@@ -153,6 +158,7 @@
                   @click="handleDelete"
                   class="btn-danger"
                   :disabled="!canDelete || isDeleting"
+                  data-testid="event-delete-button"
                 >
                   <LoaderIcon v-if="isDeleting" class="w-4 h-4 animate-spin" />
                   <TrashIcon v-else class="w-4 h-4" />

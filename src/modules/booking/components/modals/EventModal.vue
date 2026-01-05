@@ -1,5 +1,5 @@
 <template>
-  <div v-if="visible" class="modal-overlay" @click.self="handleClose">
+  <div v-if="visible" class="modal-overlay" @click.self="handleClose" data-testid="event-modal">
     <div
       ref="modalRef"
       :class="['modal-container', modalContainerClasses]"
@@ -8,8 +8,8 @@
       aria-modal="true"
     >
       <div class="modal-header">
-        <h2 id="event-modal-title">{{ $t('booking.calendar.eventModal.title') }}</h2>
-        <button @click="handleClose" class="close-btn" aria-label="Закрити">
+        <h2 id="event-modal-title" data-testid="event-modal-title">{{ $t('booking.calendar.eventModal.title') }}</h2>
+        <button @click="handleClose" class="close-btn" aria-label="Закрити" data-testid="event-modal-close">
           <XIcon class="w-5 h-5" />
         </button>
       </div>
@@ -30,6 +30,7 @@
           <EventDetailsView
             :event="eventDetails.event"
             :dictionaries="eventDetails.dictionaries"
+            data-testid="event-details-view"
           />
         </div>
 
@@ -38,7 +39,7 @@
           <!-- Учень (readonly) -->
           <div class="form-field">
             <label class="field-label">{{ $t('booking.calendar.createLesson.student') }}</label>
-            <div class="field-readonly">{{ eventDetails.event.clientName }}</div>
+            <div class="field-readonly" data-testid="event-student-name">{{ eventDetails.event.clientName }}</div>
           </div>
 
           <!-- Заявка (readonly) -->
@@ -61,7 +62,7 @@
           <!-- Початок (час з dropdown) -->
           <div class="form-field">
             <label for="edit-time" class="field-label">{{ $t('booking.calendar.eventModal.startTime') }}</label>
-            <div class="time-picker">
+            <div class="time-picker" data-testid="event-time-input">
               <select v-model="editForm.hours" class="field-select time-select">
                 <option v-for="h in 24" :key="h-1" :value="String(h-1).padStart(2, '0')">
                   {{ String(h-1).padStart(2, '0') }}
@@ -88,7 +89,7 @@
           <!-- Тривалість -->
           <div class="form-field">
             <label class="field-label">{{ $t('booking.calendar.createLesson.duration') }}</label>
-            <select v-model="editForm.durationMin" class="field-select">
+            <select v-model="editForm.durationMin" class="field-select" data-testid="event-duration-select">
               <option :value="30">30 {{ $t('common.minutes') }}</option>
               <option :value="60">60 {{ $t('common.minutes') }}</option>
               <option :value="90">90 {{ $t('common.minutes') }}</option>
@@ -118,6 +119,7 @@
               class="field-textarea"
               rows="3"
               :placeholder="$t('booking.calendar.createLesson.commentPlaceholder')"
+              data-testid="event-comment-input"
             />
           </div>
         </div>
@@ -144,6 +146,7 @@
               @click="handleEdit"
               class="btn-secondary"
               :disabled="isDeleting"
+              data-testid="event-edit-button"
             >
               {{ $t('booking.calendar.eventModal.edit') }}
             </button>
@@ -153,6 +156,7 @@
               @click="handleDelete"
               class="btn-danger"
               :disabled="isDeleting"
+              data-testid="event-delete-button"
             >
               <LoaderIcon v-if="isDeleting" class="w-4 h-4 animate-spin" />
               <TrashIcon v-else class="w-4 h-4" />
@@ -173,6 +177,7 @@
               @click="handleSaveEdit"
               class="btn-primary"
               :disabled="isSaving"
+              data-testid="event-save-button"
             >
               <LoaderIcon v-if="isSaving" class="w-4 h-4 animate-spin" />
               {{ $t('common.save') }}
@@ -192,6 +197,7 @@
       variant="danger"
       @confirm="confirmDelete"
       @cancel="cancelDelete"
+      data-testid="delete-confirmation-dialog"
     />
   </div>
 </template>
@@ -273,13 +279,28 @@ const canDelete = computed(() => {
 })
 
 const canEdit = computed(() => {
-  if (!eventDetails.value) return false
+  if (!eventDetails.value) {
+    console.log('[EventModal] canEdit: no eventDetails')
+    return false
+  }
   const event = eventDetails.value.event
   
   // Не можна редагувати урок у минулому
   const eventStart = new Date(event.start)
-  if (eventStart < new Date()) return false
+  const now = new Date()
+  console.log('[EventModal] canEdit check:', {
+    eventStart: eventStart.toISOString(),
+    now: now.toISOString(),
+    isPast: eventStart < now,
+    eventData: event
+  })
   
+  if (eventStart < now) {
+    console.log('[EventModal] canEdit: false (event in past)')
+    return false
+  }
+  
+  console.log('[EventModal] canEdit: true')
   return true
 })
 
@@ -444,6 +465,17 @@ function cancelDelete() {
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  transition: max-width 0.3s ease;
+}
+
+/* Compact mode for view-only */
+.modal-container--compact {
+  max-width: 520px;
+}
+
+/* Expanded mode for editing */
+.modal-container--expanded {
+  max-width: 640px;
 }
 
 .modal-header {

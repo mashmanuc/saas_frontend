@@ -4,6 +4,8 @@
       v-for="slot in accessibleSlots"
       :key="slot.id"
       class="accessible-slot"
+      data-testid="accessible-slot"
+      :data-slot-hour="getSlotHour(slot.start)"
       :style="getSlotStyle(slot)"
       :title="`Доступно: ${formatTime(slot.start)} - ${formatTime(slot.end)}`"
       @click="handleSlotClick(slot)"
@@ -51,6 +53,10 @@ const { calculateTopPx, calculateHeightPx, formatTime } = useCalendarGrid({
 
 const handleSlotClick = (slot: AccessibleSlot) => {
   emit('slot-click', slot)
+}
+
+const getSlotHour = (startTime: string): number => {
+  return dayjs(startTime).tz(tz.value).hour()
 }
 
 const getSlotStyle = (slot: AccessibleSlot) => {

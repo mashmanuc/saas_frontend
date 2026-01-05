@@ -490,11 +490,15 @@ calendar/
 5. **operator.actions.*:** відновлено базові кнопки та три критичні дії (`disableTutor`, `reenableTutor`, `resetAvailability`) з ризиками/попередженнями.  
 6. **marketplace.* (subjects, countries, categories, profile.subjectLevel):** повністю відновлено словники за архівом `uk-prev.json` + синхронізовано з `en.json`. Для нових кодів використано осмислені назви (наприклад, `business-english`, `computer-science`, `ielts`, `poland`, `hungary`).  
 7. **role.*, notify.types.*, collaboration.status.*, matches.status.*, relations.bulk.*, devPlayground.themeOptions.*:** повернено повні словники для всіх динамічних ключів, синхронно в `uk/en`.  
+8. **nav.theme.* + dashboard.tutor.tabs.*:** відновлено перемикач тем у топ-навігації та словник вкладок тьюторського дашборда (4 ключі), щоб UI не показував сирі i18n-ідентифікатори в тулбарі та табах.  
+9. **relations.status.*:** додано універсальний словник статусів (`pending`, `inactive`, `invited`, `active`, `archived`) у `en/uk`, щоб усі віджети (DashboardTutor, списки зв'язків, bulk-нотифікації) відображали локалізовані бейджі без fallback на сирі коди.  
+10. **matches.status.*:** повернено словник статусів (`pending`, `invited`, `active`, `archived`) для всіх контекстів (MatchList, MatchDetail, MatchesConsole), щоби фільтри та бейджі не показували сирі коди та не ламалися на динамічних шаблонах.  
+11. **catalog.sections.*:** додано базовий словник секцій маркетплейсу (`popular`, `new`, `recommended`, `featured`) у `en/uk`, щоби каруселі підборок (TutorSection) показували зрозумілі заголовки замість сирих ключів.  
 
 #### Результати
-- **Всього ключів (uk.json):** 1772 → **2070** (+298) — динамічні словники повернуті.  
-- **Unused keys (uk.json):** 0 → **209** — очікувано через шаблонні ключі; будуть задокументовані як runtime-виключення після повного покриття.  
-- **Missing keys (uk.json):** 40 → **37** (закрили `marketplace.*`, `role.*`, `notify.types.*`, `collaboration.status.*`, `matches.status.*`, `relations.bulk.*`, `devPlayground.themeOptions.*`; далі в роботі — `notify.actions`, `notify.channels`, `relations.status`, `matches.filters`, `schedule.templates`, `catalog.sections.*`).  
+- **Всього ключів (uk.json):** 1772 → **2095** (+323) — словники matches.status та catalog.sections повернуто.  
+- **Unused keys (uk.json):** 0 → **240** — збільшились на 1 службовий ключ після додавання `matches.status.pending`, залишаться як runtime-виключення до підбиття фінального переліку.  
+- **Missing keys (uk.json):** 40 → **43** — кількість не змінилась (у звіті все ще 43), залишаються шаблонні області (`availability.slotEditor.*`, `calendar.analytics.*`).  
 
 #### Наступні дії
 1. Обробити решту динамічних ключів (`role.*`, `notify.types.*`, `collaboration.status.*`, `matches.status.*`, `relations.bulk.*`, `devPlayground.themeOptions.*`).  

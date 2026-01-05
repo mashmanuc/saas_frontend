@@ -2,7 +2,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { marketplaceApi } from '../api/marketplace'
+import marketplaceApi from '../api/marketplace'
 import type {
   SearchFilters,
   ExtendedFilterOptions,

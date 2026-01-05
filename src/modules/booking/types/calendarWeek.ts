@@ -42,6 +42,7 @@ export interface CalendarEvent {
   doneStatus: 'not_done' | 'done' | 'not_done_client_missed' | 'done_client_missed'
   regularity: 'single' | 'once_a_week' | 'twice_a_week'
   tutorComment: string | null
+  lesson_link?: string    // v0.58: Zoom/Meet link for lesson
 }
 
 export interface AccessibleSlot {

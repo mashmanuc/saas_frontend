@@ -17,7 +17,7 @@ export { useSearch } from './composables/useSearch'
 export { useFilters } from './composables/useFilters'
 
 // API
-export { marketplaceApi } from './api/marketplace'
+export { default as marketplaceApi } from './api/marketplace'
 export type {
   TutorProfile,
   TutorListItem,

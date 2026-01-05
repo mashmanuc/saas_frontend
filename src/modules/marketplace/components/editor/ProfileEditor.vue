@@ -127,6 +127,7 @@ import { fromApi, toApi, type TutorProfileFormModel } from '../../tutorProfileFo
 import { updateAvatar } from '@/api/profile'
 import { notifyError, notifySuccess } from '@/utils/notify'
 import CertificationsEditor from './CertificationsEditor.vue'
+import { useRouter, useRoute } from 'vue-router'
 import type {
   FilterOptions,
   TutorProfile,
@@ -177,6 +178,8 @@ function removeLanguage(code: string) {
 const props = defineProps<Props>()
 
 const { t, te, locale } = useI18n()
+const router = useRouter()
+const route = useRoute()
 const useNativeLanguageNames = computed(() => locale.value === 'uk')
 
 function tr(key: string, fallback: string) {
@@ -234,6 +237,18 @@ function handlePublishToggle(event: Event) {
   }
 }
 
+function navigateToLessonLinks() {
+  router.push({ name: 'tutor-lesson-links' })
+}
+
+function syncStepFromRoute(stepParam: unknown) {
+  if (typeof stepParam !== 'string') return
+  const idx = steps.value.findIndex((s) => s.id === stepParam)
+  if (idx >= 0) {
+    stepIndex.value = idx
+  }
+}
+
 const formData = ref<FormState>({
   ...fromApi(props.profile),
   newSubject: '',
@@ -273,6 +288,29 @@ const stepIndex = ref(0)
 const currentStep = computed<EditorStepId>(() => steps.value[Math.min(stepIndex.value, steps.value.length - 1)]?.id || 'basic')
 const isFirstStep = computed(() => stepIndex.value <= 0)
 const isLastStep = computed(() => stepIndex.value >= steps.value.length - 1)
+
+watch(
+  () => route.query.step,
+  (stepParam) => {
+    syncStepFromRoute(stepParam)
+  },
+  { immediate: true }
+)
+
+watch(
+  stepIndex,
+  (idx) => {
+    const stepId = steps.value[idx]?.id
+    if (!stepId) return
+    if (route.query.step === stepId) return
+    router.replace({
+      query: {
+        ...route.query,
+        step: stepId
+      }
+    })
+  }
+)
 
 const stepErrors = computed(() => {
   const e = errors.value
@@ -639,6 +677,13 @@ const publishMissingItems = computed(() => {
         @click="() => { if (idx <= stepIndex || canGoNext) stepIndex = idx }"
       >
         <span class="step-pill-title">{{ s.title }}</span>
+      </button>
+      <button
+        type="button"
+        class="step-pill step-pill--link"
+        @click="navigateToLessonLinks"
+      >
+        <span class="step-pill-title">{{ t('marketplace.profile.editor.lessonLinksTitle') }}</span>
       </button>
     </nav>
 
@@ -1037,6 +1082,14 @@ const publishMissingItems = computed(() => {
 
 .step-pill.has-errors {
   border-color: color-mix(in srgb, var(--danger) 70%, var(--border-color));
+}
+
+.step-pill--link {
+  border-style: dashed;
+}
+
+.step-pill--link:hover {
+  background: color-mix(in srgb, var(--accent-primary) 6%, transparent);
 }
 
 .photo-row {

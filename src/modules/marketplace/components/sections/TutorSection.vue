@@ -3,8 +3,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { TrendingUp, Sparkles, ThumbsUp, Star, ArrowRight } from 'lucide-vue-next'
-import { marketplaceApi } from '../../api/marketplace'
-import type { TutorListItem } from '../../api/marketplace'
+import marketplaceApi, { type TutorListItem } from '../../api/marketplace'
 import TutorCard from '../catalog/TutorCard.vue'
 import { useI18n } from 'vue-i18n'
 

@@ -22,3 +22,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+# Playwright auth storage (local)
+tests/e2e/.auth/

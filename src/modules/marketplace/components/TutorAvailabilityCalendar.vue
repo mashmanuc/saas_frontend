@@ -1,21 +1,35 @@
 <template>
-  <div class="tutor-availability-calendar">
-    <div class="calendar-header">
-      <button @click="previousWeek" class="btn-icon" aria-label="Previous week">
+  <div 
+    class="tutor-availability-calendar" 
+    data-testid="tutor-availability-calendar"
+    :class="{ 'compact-view': view === 'compact' }"
+  >
+    <div v-if="showHeader" class="calendar-header">
+      <button 
+        @click="previousWeek" 
+        class="btn-icon" 
+        :disabled="!canGoPrevious"
+        :aria-label="$t('common.previousWeek')"
+      >
         <ChevronLeftIcon class="w-5 h-5" />
       </button>
       <span class="week-label">{{ formatWeekRange(weekStart) }}</span>
-      <button @click="nextWeek" class="btn-icon" aria-label="Next week">
+      <button 
+        @click="nextWeek" 
+        class="btn-icon" 
+        :disabled="!canGoNext"
+        :aria-label="$t('common.nextWeek')"
+      >
         <ChevronRightIcon class="w-5 h-5" />
       </button>
     </div>
 
-    <div v-if="loading" class="loading-state">
+    <div v-if="loading" class="loading-state" data-testid="availability-loading-state">
       <LoaderIcon class="w-8 h-8 animate-spin text-blue-500" />
       <p>{{ $t('common.loading') }}</p>
     </div>
 
-    <div v-else-if="error" class="error-state">
+    <div v-else-if="error" class="error-state" data-testid="availability-error-state">
       <AlertCircleIcon class="w-8 h-8 text-red-500" />
       <p>{{ error }}</p>
       <button @click="loadAvailability" class="btn-secondary">
@@ -23,14 +37,14 @@
       </button>
     </div>
 
-    <div v-else-if="groupedSlots.length === 0" class="empty-state">
+    <div v-else-if="!hasAnySlots" class="empty-state" data-testid="availability-empty-state">
       <CalendarIcon class="w-12 h-12 text-gray-400" />
-      <p>{{ $t('marketplace.noAvailableSlots') }}</p>
+      <p>{{ emptyState || $t('marketplace.noAvailableSlots') }}</p>
     </div>
 
     <div v-else class="slots-grid">
       <div
-        v-for="day in groupedSlots"
+        v-for="day in dayCells"
         :key="day.date"
         class="day-column"
       >
@@ -40,11 +54,17 @@
         <div class="day-slots">
           <button
             v-for="slot in day.slots"
-            :key="slot.startAtUTC"
+            :key="slot.slot_id"
             @click="handleSlotClick(slot)"
+            @keydown.enter="handleSlotClick(slot)"
+            @keydown.space.prevent="handleSlotClick(slot)"
             class="time-slot-btn"
+            data-testid="marketplace-slot"
+            :data-slot-id="slot.slot_id"
+            tabindex="0"
+            :aria-label="getSlotAriaLabel(slot)"
           >
-            {{ formatTime(slot.startAtUTC) }}
+            {{ formatTime(slot.start_at) }}
           </button>
         </div>
       </div>
@@ -54,6 +74,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
@@ -61,40 +82,62 @@ import {
   AlertCircle as AlertCircleIcon,
   Calendar as CalendarIcon,
 } from 'lucide-vue-next'
-import { marketplaceApi, type AvailableSlot } from '@/modules/marketplace/api/marketplace'
+import marketplaceApi from '@/modules/marketplace/api/marketplace'
 
-const props = defineProps<{
-  tutorId: number
-  timezone?: string
-}>()
+const { t } = useI18n()
+
+interface CalendarSlot {
+  slot_id: string
+  start_at: string
+  duration_min: number
+  status: string
+}
+
+interface DayCell {
+  date: string
+  day_status: string
+  slots: CalendarSlot[]
+}
+
+declare global {
+  interface Window {
+    gtag?: (...args: any[]) => void
+  }
+}
+
+const props = withDefaults(
+  defineProps<{
+    tutorId: number
+    timezone?: string
+    view?: 'full' | 'compact'
+    maxWeeks?: number
+    showHeader?: boolean
+    emptyState?: string
+  }>(),
+  {
+    timezone: 'Europe/Kyiv',
+    view: 'full',
+    maxWeeks: 4,
+    showHeader: true,
+  }
+)
 
 const emit = defineEmits<{
-  slotClick: [slot: AvailableSlot]
+  slotClick: [slot: CalendarSlot]
 }>()
 
-const weekStart = ref(getNextMonday())
-const loading = ref(false)
+const weekStart = ref(getCurrentMonday())
+const loading = ref(true)
 const error = ref<string | null>(null)
-const slots = ref<AvailableSlot[]>([])
+const dayCells = ref<DayCell[]>([])
+const currentWeekOffset = ref(0)
 
-const groupedSlots = computed(() => {
-  const groups = new Map<string, AvailableSlot[]>()
-  
-  for (const slot of slots.value) {
-    const date = slot.startAtUTC.split('T')[0]
-    if (!groups.has(date)) {
-      groups.set(date, [])
-    }
-    groups.get(date)!.push(slot)
-  }
-  
-  return Array.from(groups.entries())
-    .map(([date, slots]) => ({
-      date,
-      slots: slots.sort((a, b) => a.startAtUTC.localeCompare(b.startAtUTC)),
-    }))
-    .sort((a, b) => a.date.localeCompare(b.date))
+const hasAnySlots = computed(() => {
+  return dayCells.value.some(day => day.slots.length > 0)
 })
+
+const canGoPrevious = computed(() => true) // Allow going back to previous weeks
+const canGoNext = computed(() => currentWeekOffset.value < props.maxWeeks - 1)
 
 onMounted(() => {
   loadAvailability()
@@ -104,40 +147,75 @@ async function loadAvailability() {
   loading.value = true
   error.value = null
   
+  // DEBUG: Check if method exists
+  console.log('[TutorAvailabilityCalendar] marketplaceApi:', marketplaceApi)
+  console.log('[TutorAvailabilityCalendar] getTutorCalendar exists:', typeof marketplaceApi.getTutorCalendar)
+  console.log('[TutorAvailabilityCalendar] marketplaceApi keys:', Object.keys(marketplaceApi))
+  
   try {
     const response = await marketplaceApi.getTutorCalendar({
       tutorId: props.tutorId,
       weekStart: weekStart.value.toISOString().split('T')[0],
-      timezone: props.timezone || 'Europe/Kiev',
+      timezone: props.timezone,
     })
     
-    slots.value = response.cells || []
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Failed to load availability'
+    // Синхронізуємо weekStart з відповіддю бекенду
+    if (response.week_start) {
+      weekStart.value = new Date(response.week_start + 'T00:00:00')
+    }
+    
+    dayCells.value = response.cells || []
+    
+    // Telemetry: availability_viewed
+    if (window.gtag) {
+      const totalSlots = dayCells.value.reduce((sum, day) => sum + day.slots.length, 0)
+      window.gtag('event', 'availability_viewed', {
+        tutor_id: props.tutorId,
+        week_start: response.week_start,
+        slot_count: totalSlots,
+      })
+    }
+  } catch (err: any) {
+    if (err.response?.status === 422) {
+      error.value = t('marketplace.calendar.errorHorizon')
+    } else {
+      error.value = err instanceof Error ? err.message : t('marketplace.calendar.errorLoad')
+    }
   } finally {
     loading.value = false
   }
 }
 
 function previousWeek() {
+  currentWeekOffset.value--
   weekStart.value = new Date(weekStart.value.getTime() - 7 * 24 * 60 * 60 * 1000)
   loadAvailability()
 }
 
 function nextWeek() {
+  if (!canGoNext.value) return
+  currentWeekOffset.value++
   weekStart.value = new Date(weekStart.value.getTime() + 7 * 24 * 60 * 60 * 1000)
   loadAvailability()
 }
 
-function handleSlotClick(slot: AvailableSlot) {
+function handleSlotClick(slot: CalendarSlot) {
+  // Telemetry: availability_slot_clicked
+  if (window.gtag) {
+    window.gtag('event', 'availability_slot_clicked', {
+      tutor_id: props.tutorId,
+      slot_id: slot.slot_id,
+    })
+  }
   emit('slotClick', slot)
 }
 
-function getNextMonday(): Date {
+function getCurrentMonday(): Date {
   const today = new Date()
   const dayOfWeek = today.getDay()
-  const daysUntilMonday = dayOfWeek === 0 ? 1 : 8 - dayOfWeek
-  return new Date(today.getTime() + daysUntilMonday * 24 * 60 * 60 * 1000)
+  // If Sunday (0), go back 6 days; otherwise go back (dayOfWeek - 1) days
+  const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+  return new Date(today.getTime() - daysToMonday * 24 * 60 * 60 * 1000)
 }
 
 function formatWeekRange(start: Date): string {
@@ -152,13 +230,20 @@ function formatDate(dateStr: string): string {
 
 function formatTime(utcTime: string): string {
   const date = new Date(utcTime)
-  const tz = props.timezone || 'Europe/Kiev'
   return date.toLocaleTimeString('uk-UA', {
     hour: '2-digit',
     minute: '2-digit',
-    timeZone: tz,
+    timeZone: props.timezone,
   })
 }
+
+function getSlotAriaLabel(slot: CalendarSlot): string {
+  const time = formatTime(slot.start_at)
+  return t('marketplace.calendar.bookSlotAria', { time })
+}
+
+// Нормалізація більше не потрібна - бекенд повертає правильний контракт
+// Залишаємо тільки для backward compatibility, якщо щось прийде в старому форматі
 </script>
 
 <style scoped>

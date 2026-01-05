@@ -1,7 +1,7 @@
 // TASK F19: useSearch composable
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { marketplaceApi } from '../api/marketplace'
+import marketplaceApi from '../api/marketplace'
 import type { SearchFilters, TutorListItem, Suggestion } from '../api/marketplace'
 
 const SEARCH_HISTORY_KEY = 'marketplace_search_history'

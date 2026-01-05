@@ -5,7 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { ArrowLeft, Clock, DollarSign, CheckCircle } from 'lucide-vue-next'
 import { useBookingStore } from '../stores/bookingStore'
-import { marketplaceApi } from '@/modules/marketplace/api/marketplace'
+import marketplaceApi from '@/modules/marketplace/api/marketplace'
 import type { TutorProfile } from '@/modules/marketplace/api/marketplace'
 import type { BookingInput } from '../api/booking'
 

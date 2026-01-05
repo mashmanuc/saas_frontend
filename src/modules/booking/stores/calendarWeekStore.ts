@@ -327,6 +327,17 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
         usingETag: currentETag || null,
         timezone: effectiveTimezone,
       })
+      if (typeof window !== 'undefined') {
+        ;(window as any).__calendarLastFetchRequest = {
+          tutorId,
+          weekStart,
+          forceRefresh,
+          usingETag: currentETag || null,
+          timezone: effectiveTimezone,
+          startedAt: Date.now(),
+        }
+      }
+
       const response = await calendarV055Api.getCalendarWeek(
         tutorId,
         weekStart,
@@ -367,6 +378,26 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
       const orders = flattenValues<Order>((response as any).orders)
 
       snapshot.value = normalizedSnapshot
+      if (typeof window !== 'undefined') {
+        ;(window as any).__calendarLastSnapshot = {
+          tutorId: normalizedMeta.tutorId,
+          weekStart: normalizedMeta.weekStart,
+          weekEnd: normalizedMeta.weekEnd,
+          timezone: normalizedMeta.timezone,
+          etag: normalizedMeta.etag || null,
+          fetchedAt: Date.now(),
+          eventsCount: normalizedSnapshot.events.length,
+        }
+        const history = Array.isArray((window as any).__calendarSnapshotHistory)
+          ? ((window as any).__calendarSnapshotHistory as any[])
+          : []
+        history.push({
+          weekStart: normalizedMeta.weekStart,
+          fetchedAt: Date.now(),
+          forceRefresh,
+        })
+        ;(window as any).__calendarSnapshotHistory = history.slice(-10)
+      }
       console.info('[calendarWeekStore] snapshot updated', {
         tutorId: normalizedMeta.tutorId,
         weekStart: normalizedMeta.weekStart,

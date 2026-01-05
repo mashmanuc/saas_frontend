@@ -3,7 +3,7 @@ import apiClient from '../utils/apiClient'
 const lessonsApi = {
   listMyLessons(params = {}) {
     return apiClient
-      .get('/api/lessons/', { params })
+      .get('/lessons/', { params })
       .catch((err) => {
         const status = err?.response?.status
         if (status === 404) {
@@ -14,7 +14,7 @@ const lessonsApi = {
   },
   getLesson(id) {
     return apiClient
-      .get(`/api/lessons/${id}/`)
+      .get(`/lessons/${id}/`)
       .catch((err) => {
         const status = err?.response?.status
         if (status === 404) {
@@ -24,11 +24,11 @@ const lessonsApi = {
       })
   },
   getLessonRoom(id) {
-    return apiClient.get(`/api/lessons/${id}/room/`)
+    return apiClient.get(`/lessons/${id}/room/`)
   },
   createLesson(payload) {
     return apiClient
-      .post('/api/lessons/', payload)
+      .post('/lessons/', payload)
       .catch((err) => {
         const status = err?.response?.status
         if (status === 404) {
@@ -39,7 +39,7 @@ const lessonsApi = {
   },
   rescheduleLesson(id, payload) {
     return apiClient
-      .patch(`/api/lessons/${id}/reschedule/`, payload)
+      .patch(`/lessons/${id}/reschedule/`, payload)
       .catch((err) => {
         const status = err?.response?.status
         if (status === 404) {
@@ -50,7 +50,7 @@ const lessonsApi = {
   },
   cancelLesson(id, payload = {}) {
     return apiClient
-      .post(`/api/lessons/${id}/cancel/`, payload)
+      .post(`/lessons/${id}/cancel/`, payload)
       .catch((err) => {
         const status = err?.response?.status
         if (status === 404) {
@@ -60,11 +60,11 @@ const lessonsApi = {
       })
   },
   createInvite(id) {
-    return apiClient.post(`/api/lessons/${id}/invite/`)
+    return apiClient.post(`/lessons/${id}/invite/`)
   },
   resolveInvite(token) {
     return apiClient
-      .get(`/api/lesson-invites/${token}/resolve/`)
+      .get(`/lesson-invites/${token}/resolve/`)
       .then((res) => res?.data ?? res)
   },
 }

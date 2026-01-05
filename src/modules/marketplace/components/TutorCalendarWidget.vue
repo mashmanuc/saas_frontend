@@ -50,7 +50,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { Calendar as CalendarIcon, AlertCircle as AlertCircleIcon, RefreshCw as RefreshCwIcon } from 'lucide-vue-next'
-import { marketplaceApi } from '@/modules/marketplace/api/marketplace'
+import marketplaceApi from '@/modules/marketplace/api/marketplace'
 import type { AvailableSlot } from '@/modules/marketplace/api/marketplace'
 import type { AccessibleSlot } from '@/modules/booking/types/calendarWeek'
 

@@ -1,12 +1,19 @@
 <template>
   <div class="event-details">
+    <!-- Join Lesson CTA -->
+    <JoinLessonPicker
+      v-if="event.lesson_link"
+      :event-id="event.id"
+      :lesson-link="event.lesson_link"
+    />
+
     <!-- Time & Client -->
     <div class="detail-section">
       <div class="detail-row">
         <ClockIcon class="w-5 h-5 text-gray-500" />
         <div>
           <p class="detail-label">{{ $t('booking.calendar.eventDetails.time') }}</p>
-          <p class="detail-value">{{ formatTime(event.start) }} - {{ formatTime(event.end) }}</p>
+          <p class="detail-value" data-testid="event-time">{{ formatTime(event.start) }} - {{ formatTime(event.end) }}</p>
         </div>
       </div>
 
@@ -14,7 +21,7 @@
         <UserIcon class="w-5 h-5 text-gray-500" />
         <div>
           <p class="detail-label">{{ $t('booking.calendar.eventDetails.student') }}</p>
-          <p class="detail-value">{{ event.clientName }}</p>
+          <p class="detail-value" data-testid="event-student-name">{{ event.clientName }}</p>
           <p v-if="event.clientPhone" class="detail-subvalue">{{ event.clientPhone }}</p>
         </div>
       </div>
@@ -39,6 +46,7 @@
 <script setup lang="ts">
 import { Clock as ClockIcon, User as UserIcon, Timer as TimerIcon } from 'lucide-vue-next'
 import type { CalendarEvent } from '@/modules/booking/types/calendarWeek'
+import JoinLessonPicker from './JoinLessonPicker.vue'
 
 const props = defineProps<{
   event: CalendarEvent
