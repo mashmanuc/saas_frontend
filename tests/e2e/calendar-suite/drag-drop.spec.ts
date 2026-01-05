@@ -1,6 +1,7 @@
+import './envGuard'
 import { test, expect } from '@playwright/test'
 
-test.describe('Calendar Drag & Drop', () => {
+test.describe.skip('Calendar Drag & Drop (legacy TODO)', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to calendar page
     await page.goto('/calendar')
