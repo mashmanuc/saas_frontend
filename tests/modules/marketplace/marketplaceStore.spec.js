@@ -3,7 +3,7 @@ import { setActivePinia, createPinia } from 'pinia'
 
 // Mock API
 vi.mock('../../../src/modules/marketplace/api/marketplace', () => ({
-  marketplaceApi: {
+  default: {
     getTutors: vi.fn(),
     getTutorProfile: vi.fn(),
     getMyProfile: vi.fn(),
@@ -44,9 +44,7 @@ describe('MarketplaceStore', () => {
     })
 
     it('loads tutors', async () => {
-      const { marketplaceApi } = await import(
-        '../../../src/modules/marketplace/api/marketplace'
-      )
+      const marketplaceApi = (await import('../../../src/modules/marketplace/api/marketplace')).default
       const { useMarketplaceStore } = await import(
         '../../../src/modules/marketplace/stores/marketplaceStore'
       )
@@ -68,9 +66,7 @@ describe('MarketplaceStore', () => {
     })
 
     it('applies filters', async () => {
-      const { marketplaceApi } = await import(
-        '../../../src/modules/marketplace/api/marketplace'
-      )
+      const marketplaceApi = (await import('../../../src/modules/marketplace/api/marketplace')).default
       const { useMarketplaceStore } = await import(
         '../../../src/modules/marketplace/stores/marketplaceStore'
       )
@@ -92,9 +88,7 @@ describe('MarketplaceStore', () => {
     })
 
     it('changes sort order', async () => {
-      const { marketplaceApi } = await import(
-        '../../../src/modules/marketplace/api/marketplace'
-      )
+      const marketplaceApi = (await import('../../../src/modules/marketplace/api/marketplace')).default
       const { useMarketplaceStore } = await import(
         '../../../src/modules/marketplace/stores/marketplaceStore'
       )
@@ -108,9 +102,7 @@ describe('MarketplaceStore', () => {
     })
 
     it('loads more tutors', async () => {
-      const { marketplaceApi } = await import(
-        '../../../src/modules/marketplace/api/marketplace'
-      )
+      const marketplaceApi = (await import('../../../src/modules/marketplace/api/marketplace')).default
       const { useMarketplaceStore } = await import(
         '../../../src/modules/marketplace/stores/marketplaceStore'
       )
@@ -135,9 +127,7 @@ describe('MarketplaceStore', () => {
     })
 
     it('computes hasMore correctly', async () => {
-      const { marketplaceApi } = await import(
-        '../../../src/modules/marketplace/api/marketplace'
-      )
+      const marketplaceApi = (await import('../../../src/modules/marketplace/api/marketplace')).default
       const { useMarketplaceStore } = await import(
         '../../../src/modules/marketplace/stores/marketplaceStore'
       )
@@ -156,9 +146,7 @@ describe('MarketplaceStore', () => {
 
   describe('Profile State', () => {
     it('loads tutor profile', async () => {
-      const { marketplaceApi } = await import(
-        '../../../src/modules/marketplace/api/marketplace'
-      )
+      const marketplaceApi = (await import('../../../src/modules/marketplace/api/marketplace')).default
       const { useMarketplaceStore } = await import(
         '../../../src/modules/marketplace/stores/marketplaceStore'
       )
@@ -183,9 +171,7 @@ describe('MarketplaceStore', () => {
     })
 
     it('handles profile not found', async () => {
-      const { marketplaceApi } = await import(
-        '../../../src/modules/marketplace/api/marketplace'
-      )
+      const marketplaceApi = (await import('../../../src/modules/marketplace/api/marketplace')).default
       const { useMarketplaceStore } = await import(
         '../../../src/modules/marketplace/stores/marketplaceStore'
       )
@@ -202,9 +188,7 @@ describe('MarketplaceStore', () => {
 
   describe('My Profile State', () => {
     it('loads own profile', async () => {
-      const { marketplaceApi } = await import(
-        '../../../src/modules/marketplace/api/marketplace'
-      )
+      const marketplaceApi = (await import('../../../src/modules/marketplace/api/marketplace')).default
       const { useMarketplaceStore } = await import(
         '../../../src/modules/marketplace/stores/marketplaceStore'
       )
@@ -228,9 +212,7 @@ describe('MarketplaceStore', () => {
     })
 
     it('computes isProfileComplete', async () => {
-      const { marketplaceApi } = await import(
-        '../../../src/modules/marketplace/api/marketplace'
-      )
+      const marketplaceApi = (await import('../../../src/modules/marketplace/api/marketplace')).default
       const { useMarketplaceStore } = await import(
         '../../../src/modules/marketplace/stores/marketplaceStore'
       )
@@ -250,9 +232,7 @@ describe('MarketplaceStore', () => {
     })
 
     it('computes isProfileComplete as false when incomplete', async () => {
-      const { marketplaceApi } = await import(
-        '../../../src/modules/marketplace/api/marketplace'
-      )
+      const marketplaceApi = (await import('../../../src/modules/marketplace/api/marketplace')).default
       const { useMarketplaceStore } = await import(
         '../../../src/modules/marketplace/stores/marketplaceStore'
       )
@@ -271,9 +251,7 @@ describe('MarketplaceStore', () => {
     })
 
     it('updates profile', async () => {
-      const { marketplaceApi } = await import(
-        '../../../src/modules/marketplace/api/marketplace'
-      )
+      const marketplaceApi = (await import('../../../src/modules/marketplace/api/marketplace')).default
       const { useMarketplaceStore } = await import(
         '../../../src/modules/marketplace/stores/marketplaceStore'
       )
@@ -294,9 +272,7 @@ describe('MarketplaceStore', () => {
     })
 
     it('submits profile for review', async () => {
-      const { marketplaceApi } = await import(
-        '../../../src/modules/marketplace/api/marketplace'
-      )
+      const marketplaceApi = (await import('../../../src/modules/marketplace/api/marketplace')).default
       const { useMarketplaceStore } = await import(
         '../../../src/modules/marketplace/stores/marketplaceStore'
       )
@@ -312,9 +288,7 @@ describe('MarketplaceStore', () => {
     })
 
     it('publishes profile', async () => {
-      const { marketplaceApi } = await import(
-        '../../../src/modules/marketplace/api/marketplace'
-      )
+      const marketplaceApi = (await import('../../../src/modules/marketplace/api/marketplace')).default
       const { useMarketplaceStore } = await import(
         '../../../src/modules/marketplace/stores/marketplaceStore'
       )
@@ -332,9 +306,7 @@ describe('MarketplaceStore', () => {
 
   describe('Reset', () => {
     it('resets store state', async () => {
-      const { marketplaceApi } = await import(
-        '../../../src/modules/marketplace/api/marketplace'
-      )
+      const marketplaceApi = (await import('../../../src/modules/marketplace/api/marketplace')).default
       const { useMarketplaceStore } = await import(
         '../../../src/modules/marketplace/stores/marketplaceStore'
       )

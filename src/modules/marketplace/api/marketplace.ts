@@ -882,16 +882,15 @@ export const marketplaceApi = {
   }): Promise<TutorCalendarResponse> {
     const response = await apiClient.get(`/v1/marketplace/tutors/${params.tutorId}/calendar/`, {
       params: {
+        // v0.59 compatibility: backend may expect either start or week_start (or both)
         start: params.weekStart,
+        week_start: params.weekStart,
         tz: params.timezone,
+        timezone: params.timezone,
       },
     })
     return response as unknown as TutorCalendarResponse
   },
 }
-
-// DEBUG: Log keys to verify getTutorCalendar is present
-console.log('[marketplace.ts] marketplaceApi keys:', Object.keys(marketplaceApi))
-console.log('[marketplace.ts] getTutorCalendar type:', typeof marketplaceApi.getTutorCalendar)
 
 export default marketplaceApi

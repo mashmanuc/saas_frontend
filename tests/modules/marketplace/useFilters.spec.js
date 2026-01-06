@@ -17,13 +17,13 @@ vi.mock('vue-router', () => ({
 
 // Mock marketplace API
 vi.mock('@/modules/marketplace/api/marketplace', () => ({
-  marketplaceApi: {
+  default: {
     getExtendedFilterOptions: vi.fn(),
   },
 }))
 
 import { useFilters } from '@/modules/marketplace/composables/useFilters'
-import { marketplaceApi } from '@/modules/marketplace/api/marketplace'
+import marketplaceApi from '@/modules/marketplace/api/marketplace'
 
 describe('useFilters composable', () => {
   beforeEach(() => {

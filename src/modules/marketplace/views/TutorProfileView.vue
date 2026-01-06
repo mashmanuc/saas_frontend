@@ -18,18 +18,7 @@ import LoadingSpinner from '@/ui/LoadingSpinner.vue'
 import NotFound from '@/ui/NotFound.vue'
 import TrialRequestModal from '../components/trial/TrialRequestModal.vue'
 import TutorAvailabilityCalendar from '../components/TutorAvailabilityCalendar.vue'
-import StudentAvailabilityCalendar from '../../booking/components/calendar/StudentAvailabilityCalendar.vue'
-import BookingRequestModal from '../../booking/components/requests/BookingRequestModal.vue'
 import type { AvailableSlot } from '../api/marketplace'
-
-interface CalendarSlot {
-  slot_id: string
-  start_at: string
-  duration: number
-  status: string
-}
-import type { TimeSlot } from '../../booking/api/availabilityApi'
-import { useToast } from '@/composables/useToast'
 
 const route = useRoute()
 const router = useRouter()
@@ -38,15 +27,10 @@ const auth = useAuthStore()
 const { currentProfile, isLoadingProfile, error } = storeToRefs(store)
 
 const slug = computed(() => route.params.slug as string)
-const selectedSlot = ref<CalendarSlot | null>(null)
-const showFullCalendar = ref(false)
-const selectedBookingSlot = ref<TimeSlot | null>(null)
-const showBookingModal = ref(false)
-const selectedAvailableSlot = ref<AvailableSlot | null>(null)
+const selectedSlot = ref<AvailableSlot | null>(null)
 
 const isCreateReviewOpen = ref(false)
 const reviewsRef = ref<InstanceType<typeof ProfileReviews> | null>(null)
-const toast = useToast()
 
 const canWriteReview = computed(() => auth.isAuthenticated && auth.userRole === 'student')
 
@@ -89,7 +73,7 @@ function handleReviewCreated() {
   reviewsRef.value?.reload?.()
 }
 
-function handleSlotClick(slot: CalendarSlot) {
+function handleSlotClick(slot: AvailableSlot) {
   selectedSlot.value = slot
 }
 
@@ -98,12 +82,6 @@ function handleRefreshCalendar() {
   if (currentProfile.value) {
     store.loadProfile(slug.value)
   }
-}
-
-function handleBookingSuccess(requestId: number) {
-  toast.success('Запит надіслано! Очікуйте підтвердження від тьютора.')
-  showBookingModal.value = false
-  selectedAvailableSlot.value = null
 }
 </script>
 
@@ -175,7 +153,7 @@ function handleBookingSuccess(requestId: number) {
             :badges="currentProfile.badges"
           />
 
-          <TutorBadgeHistory />
+          <TutorBadgeHistory v-if="auth.userRole === 'tutor' || auth.userRole === 'admin'" />
         </aside>
       </div>
     </template>
@@ -202,15 +180,6 @@ function handleBookingSuccess(requestId: number) {
       :slug="slug"
       @close="closeCreateReview"
       @created="handleReviewCreated"
-    />
-    
-    <BookingRequestModal
-      v-if="showBookingModal && selectedAvailableSlot && currentProfile"
-      :visible="showBookingModal"
-      :tutor-id="currentProfile.id"
-      :slot="selectedAvailableSlot"
-      @close="showBookingModal = false"
-      @success="handleBookingSuccess"
     />
   </div>
 </template>

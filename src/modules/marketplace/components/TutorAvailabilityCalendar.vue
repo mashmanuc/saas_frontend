@@ -136,7 +136,13 @@ const hasAnySlots = computed(() => {
   return dayCells.value.some(day => day.slots.length > 0)
 })
 
-const canGoPrevious = computed(() => true) // Allow going back to previous weeks
+// FE-1: Past navigation clamp - cannot go before current week
+const canGoPrevious = computed(() => {
+  const today = getCurrentMonday()
+  return weekStart.value.getTime() > today.getTime()
+})
+
+// FE-2: Horizon limit - cannot go beyond maxWeeks (default 4)
 const canGoNext = computed(() => currentWeekOffset.value < props.maxWeeks - 1)
 
 onMounted(() => {
@@ -146,11 +152,6 @@ onMounted(() => {
 async function loadAvailability() {
   loading.value = true
   error.value = null
-  
-  // DEBUG: Check if method exists
-  console.log('[TutorAvailabilityCalendar] marketplaceApi:', marketplaceApi)
-  console.log('[TutorAvailabilityCalendar] getTutorCalendar exists:', typeof marketplaceApi.getTutorCalendar)
-  console.log('[TutorAvailabilityCalendar] marketplaceApi keys:', Object.keys(marketplaceApi))
   
   try {
     const response = await marketplaceApi.getTutorCalendar({
@@ -187,13 +188,26 @@ async function loadAvailability() {
 }
 
 function previousWeek() {
+  if (!canGoPrevious.value) return // FE-1: Guard against past navigation
+  
   currentWeekOffset.value--
-  weekStart.value = new Date(weekStart.value.getTime() - 7 * 24 * 60 * 60 * 1000)
+  const newWeekStart = new Date(weekStart.value.getTime() - 7 * 24 * 60 * 60 * 1000)
+  
+  // FE-1: Clamp to current Monday (never allow past)
+  const today = getCurrentMonday()
+  if (newWeekStart.getTime() < today.getTime()) {
+    weekStart.value = today
+    currentWeekOffset.value = 0
+  } else {
+    weekStart.value = newWeekStart
+  }
+  
   loadAvailability()
 }
 
 function nextWeek() {
-  if (!canGoNext.value) return
+  if (!canGoNext.value) return // FE-2: Guard against horizon overflow
+  
   currentWeekOffset.value++
   weekStart.value = new Date(weekStart.value.getTime() + 7 * 24 * 60 * 60 * 1000)
   loadAvailability()

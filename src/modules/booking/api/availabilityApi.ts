@@ -95,7 +95,7 @@ export const availabilityApi = {
     })
     
     return executeWithRetry(async () => {
-      const { data } = await apiClient.get(`/api/v1/tutors/${slug}/availability`, {
+      const { data } = await apiClient.get(`/v1/tutors/${slug}/availability`, {
         params
       })
       return data
@@ -110,7 +110,7 @@ export const availabilityApi = {
     
     return executeWithRetry(async () => {
       const { data } = await apiClient.get(
-        `/api/v1/marketplace/tutors/${slug}/availability-summary`
+        `/v1/marketplace/tutors/${slug}/availability-summary`
       )
       return data
     }, 'getTutorAvailabilitySummary')
@@ -132,36 +132,36 @@ export const availabilityApi = {
   },
 
   async getTutorAvailabilityFull(slug: string, params?: { week_start?: string; timezone?: string }): Promise<TutorAvailabilityFull> {
-    const { data } = await apiClient.get(`/api/v1/availability/tutors/${slug}`, { params })
+    const { data } = await apiClient.get(`/v1/availability/tutors/${slug}`, { params })
     return data
   },
 
   async createTemplate(slots: TemplateSlot[]): Promise<{ template_id: number; version: number }> {
-    const { data } = await apiClient.post('/api/v1/availability/templates', slots)
+    const { data } = await apiClient.post('/v1/availability/templates', slots)
     return data
   },
 
   async applyTemplate(): Promise<ApplyTemplateResponse> {
-    const { data } = await apiClient.post('/api/v1/availability/templates/apply')
+    const { data } = await apiClient.post('/v1/availability/templates/apply')
     return data
   },
 
   async getJobStatus(jobId: string): Promise<JobStatus> {
-    const { data } = await apiClient.get(`/api/v1/availability/jobs/${jobId}`)
+    const { data } = await apiClient.get(`/v1/availability/jobs/${jobId}`)
     return data
   },
 
   async createSlot(slotData: { date: string; start_time: string; end_time: string }): Promise<TimeSlot> {
-    const { data } = await apiClient.post('/api/v1/availability/slots', slotData)
+    const { data } = await apiClient.post('/v1/availability/slots', slotData)
     return data
   },
 
   async deleteSlot(slotId: number): Promise<void> {
-    await apiClient.delete(`/api/v1/availability/slots/${slotId}`)
+    await apiClient.delete(`/v1/availability/slots/${slotId}`)
   },
 
   async blockSlotV2(slotId: number, reason?: string): Promise<void> {
-    await apiClient.post(`/api/v1/availability/slots/${slotId}/block`, { reason })
+    await apiClient.post(`/v1/availability/slots/${slotId}/block`, { reason })
   },
 
   async bulkApply(data: { changes: any[] }): Promise<any> {
@@ -171,7 +171,7 @@ export const availabilityApi = {
 
   async getTemplate(): Promise<AvailabilityTemplate | null> {
     try {
-      const response = await apiClient.get('/api/v1/booking/availability/template/')
+      const response = await apiClient.get('/v1/booking/availability/template/')
       return response.data
     } catch (error: any) {
       if (error.response?.status === 404) {
@@ -187,11 +187,11 @@ export const availabilityApi = {
     auto_generate: boolean
   }): Promise<AvailabilityTemplate> {
     try {
-      const response = await apiClient.put('/api/v1/booking/availability/template/', data)
+      const response = await apiClient.put('/v1/booking/availability/template/', data)
       return response.data
     } catch (error: any) {
       if (error.response?.status === 404) {
-        const response = await apiClient.post('/api/v1/booking/availability/template/', data)
+        const response = await apiClient.post('/v1/booking/availability/template/', data)
         return response.data
       }
       throw error
@@ -199,11 +199,11 @@ export const availabilityApi = {
   },
 
   async deleteTemplate(): Promise<void> {
-    await apiClient.delete('/api/v1/booking/availability/template/')
+    await apiClient.delete('/v1/booking/availability/template/')
   },
 
   async getGenerationJobStatus(jobId: string): Promise<GenerationJob> {
-    const response = await apiClient.get(`/api/v1/booking/availability/jobs/${jobId}/`)
+    const response = await apiClient.get(`/v1/booking/availability/jobs/${jobId}/`)
     return response.data
   },
 }

@@ -14,7 +14,7 @@ vi.mock('vue-router', () => ({
 
 // Mock marketplace API
 vi.mock('@/modules/marketplace/api/marketplace', () => ({
-  marketplaceApi: {
+  default: {
     search: vi.fn(),
     getSearchSuggestions: vi.fn(),
     getExtendedFilterOptions: vi.fn(),
@@ -22,7 +22,7 @@ vi.mock('@/modules/marketplace/api/marketplace', () => ({
 }))
 
 import { useSearchStore } from '@/modules/marketplace/stores/searchStore'
-import { marketplaceApi } from '@/modules/marketplace/api/marketplace'
+import marketplaceApi from '@/modules/marketplace/api/marketplace'
 
 describe('searchStore', () => {
   beforeEach(() => {

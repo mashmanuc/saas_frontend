@@ -2,7 +2,7 @@ import apiClient from '@/utils/apiClient'
 
 export default {
   async createMatch(tutorId, message = null) {
-    const response = await apiClient.post('/api/v1/matches/', {
+    const response = await apiClient.post('/v1/matches/', {
       tutor_id: tutorId,
       message
     })
@@ -10,22 +10,22 @@ export default {
   },
 
   async getMatches(params = {}) {
-    const response = await apiClient.get('/api/v1/matches/', { params })
+    const response = await apiClient.get('/v1/matches/', { params })
     return response.data
   },
 
   async acceptMatch(matchId) {
-    const response = await apiClient.post(`/api/v1/matches/${matchId}/accept`)
+    const response = await apiClient.post(`/v1/matches/${matchId}/accept`)
     return response.data
   },
 
   async declineMatch(matchId) {
-    const response = await apiClient.post(`/api/v1/matches/${matchId}/decline`)
+    const response = await apiClient.post(`/v1/matches/${matchId}/decline`)
     return response.data
   },
 
   async archiveMatch(matchId) {
-    const response = await apiClient.post(`/api/v1/matches/${matchId}/archive`)
+    const response = await apiClient.post(`/v1/matches/${matchId}/archive`)
     return response.data
   }
 }

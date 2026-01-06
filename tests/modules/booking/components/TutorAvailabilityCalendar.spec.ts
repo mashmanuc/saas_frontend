@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import TutorAvailabilityCalendar from '@/modules/marketplace/components/TutorAvailabilityCalendar.vue'
-import { marketplaceApi } from '@/modules/marketplace/api/marketplace'
+import marketplaceApi from '@/modules/marketplace/api/marketplace'
 
 vi.mock('@/modules/marketplace/api/marketplace', () => ({
-  marketplaceApi: {
+  default: {
     getTutorCalendar: vi.fn(),
   },
 }))
@@ -14,11 +14,33 @@ describe('TutorAvailabilityCalendar', () => {
     vi.clearAllMocks()
   })
 
-  const mockSlots = [
-    { slot_id: 'slot-1', start_at: '2024-12-23T09:00:00Z', startAtUTC: '2024-12-23T09:00:00Z', status: 'available' as const, duration: 30 },
-    { slot_id: 'slot-2', start_at: '2024-12-23T09:30:00Z', startAtUTC: '2024-12-23T09:30:00Z', status: 'available' as const, duration: 30 },
-    { slot_id: 'slot-3', start_at: '2024-12-24T10:00:00Z', startAtUTC: '2024-12-24T10:00:00Z', status: 'available' as const, duration: 30 },
-  ] as any[]
+  const createMockResponse = (cells: any[] = []) => ({
+    tutor_id: 79,
+    week_start: '2024-12-23',
+    week_end: '2024-12-29',
+    timezone: 'Europe/Kyiv',
+    horizon_weeks: 4,
+    generated_at: new Date().toISOString(),
+    cells,
+  })
+
+  const mockCells = [
+    {
+      date: '2024-12-23',
+      day_status: 'working' as const,
+      slots: [
+        { slot_id: 'slot-1', start_at: '2024-12-23T09:00:00Z', duration_min: 30, status: 'available' as const },
+        { slot_id: 'slot-2', start_at: '2024-12-23T09:30:00Z', duration_min: 30, status: 'available' as const },
+      ],
+    },
+    {
+      date: '2024-12-24',
+      day_status: 'working' as const,
+      slots: [
+        { slot_id: 'slot-3', start_at: '2024-12-24T10:00:00Z', duration_min: 30, status: 'available' as const },
+      ],
+    },
+  ]
 
   it('renders calendar header with week navigation', () => {
     const wrapper = mount(TutorAvailabilityCalendar, {
@@ -34,17 +56,12 @@ describe('TutorAvailabilityCalendar', () => {
   })
 
   it('loads availability on mount', async () => {
-    vi.mocked(marketplaceApi.getTutorCalendar).mockResolvedValue({
-      tutor_id: 79,
-      week_start: '2024-12-23',
-      timezone: 'Europe/Kyiv',
-      cells: mockSlots,
-    } as any)
+    vi.mocked(marketplaceApi.getTutorCalendar).mockResolvedValue(createMockResponse(mockCells) as any)
 
     mount(TutorAvailabilityCalendar, {
       props: {
         tutorId: 79,
-        timezone: 'Europe/Kiev',
+        timezone: 'Europe/Kyiv',
       },
     })
 
@@ -53,7 +70,7 @@ describe('TutorAvailabilityCalendar', () => {
     expect(marketplaceApi.getTutorCalendar).toHaveBeenCalledWith({
       tutorId: 79,
       weekStart: expect.any(String),
-      timezone: 'Europe/Kiev',
+      timezone: 'Europe/Kyiv',
     })
   })
 
@@ -75,12 +92,7 @@ describe('TutorAvailabilityCalendar', () => {
   })
 
   it('displays available slots grouped by day', async () => {
-    vi.mocked(marketplaceApi.getTutorCalendar).mockResolvedValue({
-      tutor_id: 79,
-      week_start: '2024-12-23',
-      timezone: 'Europe/Kiev',
-      cells: mockSlots,
-    })
+    vi.mocked(marketplaceApi.getTutorCalendar).mockResolvedValue(createMockResponse(mockCells) as any)
 
     const wrapper = mount(TutorAvailabilityCalendar, {
       props: {
@@ -91,16 +103,11 @@ describe('TutorAvailabilityCalendar', () => {
     await flushPromises()
 
     const dayColumns = wrapper.findAll('.day-column')
-    expect(dayColumns.length).toBeGreaterThan(0)
+    expect(dayColumns.length).toBe(2)
   })
 
   it('emits slotClick event when slot is clicked', async () => {
-    vi.mocked(marketplaceApi.getTutorCalendar).mockResolvedValue({
-      tutor_id: 79,
-      week_start: '2024-12-23',
-      timezone: 'Europe/Kiev',
-      cells: mockSlots,
-    })
+    vi.mocked(marketplaceApi.getTutorCalendar).mockResolvedValue(createMockResponse(mockCells) as any)
 
     const wrapper = mount(TutorAvailabilityCalendar, {
       props: {
@@ -111,26 +118,20 @@ describe('TutorAvailabilityCalendar', () => {
     await flushPromises()
 
     const slotButton = wrapper.find('.time-slot-btn')
-    if (slotButton.exists()) {
-      await slotButton.trigger('click')
-      
-      expect(wrapper.emitted('slotClick')).toBeTruthy()
-      expect(wrapper.emitted('slotClick')?.[0]?.[0]).toMatchObject({
-        slot_id: mockSlots[0].slot_id,
-        start_at: mockSlots[0].start_at,
-        duration: mockSlots[0].duration,
-        status: mockSlots[0].status,
-      })
-    }
+    expect(slotButton.exists()).toBe(true)
+    await slotButton.trigger('click')
+    
+    expect(wrapper.emitted('slotClick')).toBeTruthy()
+    expect(wrapper.emitted('slotClick')?.[0]?.[0]).toMatchObject({
+      slot_id: 'slot-1',
+      start_at: '2024-12-23T09:00:00Z',
+      duration_min: 30,
+      status: 'available',
+    })
   })
 
   it('navigates to previous week', async () => {
-    vi.mocked(marketplaceApi.getTutorCalendar).mockResolvedValue({
-      tutor_id: 79,
-      week_start: '2024-12-23',
-      timezone: 'Europe/Kyiv',
-      cells: [],
-    } as any)
+    vi.mocked(marketplaceApi.getTutorCalendar).mockResolvedValue(createMockResponse([]) as any)
 
     const wrapper = mount(TutorAvailabilityCalendar, {
       props: {
@@ -148,12 +149,7 @@ describe('TutorAvailabilityCalendar', () => {
   })
 
   it('navigates to next week', async () => {
-    vi.mocked(marketplaceApi.getTutorCalendar).mockResolvedValue({
-      tutor_id: 79,
-      week_start: '2024-12-23',
-      timezone: 'Europe/Kiev',
-      cells: [],
-    })
+    vi.mocked(marketplaceApi.getTutorCalendar).mockResolvedValue(createMockResponse([]) as any)
 
     const wrapper = mount(TutorAvailabilityCalendar, {
       props: {
@@ -187,12 +183,7 @@ describe('TutorAvailabilityCalendar', () => {
   })
 
   it('shows empty state when no slots available', async () => {
-    vi.mocked(marketplaceApi.getTutorCalendar).mockResolvedValue({
-      tutor_id: 79,
-      week_start: '2024-12-23',
-      timezone: 'Europe/Kiev',
-      cells: [],
-    })
+    vi.mocked(marketplaceApi.getTutorCalendar).mockResolvedValue(createMockResponse([{ date: '2024-12-23', day_status: 'working', slots: [] }]) as any)
 
     const wrapper = mount(TutorAvailabilityCalendar, {
       props: {
@@ -206,12 +197,7 @@ describe('TutorAvailabilityCalendar', () => {
   })
 
   it('uses default timezone if not provided', async () => {
-    vi.mocked(marketplaceApi.getTutorCalendar).mockResolvedValue({
-      tutor_id: 79,
-      week_start: '2024-12-23',
-      timezone: 'Europe/Kiev',
-      cells: [],
-    })
+    vi.mocked(marketplaceApi.getTutorCalendar).mockResolvedValue(createMockResponse([]) as any)
 
     mount(TutorAvailabilityCalendar, {
       props: {
@@ -229,23 +215,18 @@ describe('TutorAvailabilityCalendar', () => {
   })
 
   it('formats time correctly for display', async () => {
-    vi.mocked(marketplaceApi.getTutorCalendar).mockResolvedValue({
-      tutor_id: 79,
-      week_start: '2024-12-23',
-      timezone: 'Europe/Kiev',
-      cells: mockSlots,
-    })
+    vi.mocked(marketplaceApi.getTutorCalendar).mockResolvedValue(createMockResponse(mockCells) as any)
 
     const wrapper = mount(TutorAvailabilityCalendar, {
       props: {
         tutorId: 79,
-        timezone: 'Europe/Kiev',
+        timezone: 'Europe/Kyiv',
       },
     })
 
     await flushPromises()
 
     const slotButtons = wrapper.findAll('.time-slot-btn')
-    expect(slotButtons.length).toBeGreaterThan(0)
+    expect(slotButtons.length).toBe(3)
   })
 })

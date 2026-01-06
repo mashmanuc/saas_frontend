@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import tutorApi from '../api/tutorApi'
+import marketplaceApi from '../api/marketplace'
 import { Search, Filter, X } from 'lucide-vue-next'
 
 const { t } = useI18n()
@@ -40,7 +40,7 @@ async function search() {
       availability_hour: filters.value.availability.hour || undefined
     }
 
-    const data = await tutorApi.searchTutors(params)
+    const data = await marketplaceApi.search(params)
     results.value = data.results || []
     totalCount.value = data.count || 0
   } finally {

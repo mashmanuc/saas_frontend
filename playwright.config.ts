@@ -82,5 +82,8 @@ export default defineConfig({
           url: DEFAULT_BASE_URL,
           timeout: 120_000,
           reuseExistingServer: !process.env.CI,
+          // FE-9: Retry ping to ensure server is ready before tests
+          stdout: 'pipe',
+          stderr: 'pipe',
         },
 })

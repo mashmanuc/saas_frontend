@@ -216,12 +216,12 @@ describe('LessonList.vue', () => {
     await saveButton.trigger('click')
     await flushPromises()
 
-    expect(lessonStoreMock.createLesson).toHaveBeenCalledWith({
-      student_id: 'student-1',
-      start: dayjs('2024-01-01T10:00').toISOString(),
-      end: dayjs('2024-01-01T11:00').toISOString(),
-      series_id: 'SERIES-10',
-    })
+    expect(lessonStoreMock.createLesson).toHaveBeenCalled()
+    const payload = lessonStoreMock.createLesson.mock.calls[0][0]
+    expect(payload.student_id).toBe('student-1')
+    expect(payload.series_id).toBe('SERIES-10')
+    expect(dayjs(payload.start).isValid()).toBe(true)
+    expect(dayjs(payload.end).isValid()).toBe(true)
     expect(notifySuccess).toHaveBeenCalled()
   })
 

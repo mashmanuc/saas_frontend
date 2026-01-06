@@ -47,6 +47,12 @@ api.interceptors.request.use(
       config.headers['X-CSRF-Token'] = store.csrfToken
     }
 
+    // Guard: prevent double /api/api prefix (v0.59 fix)
+    if (config.url && config.url.startsWith('/api/')) {
+      console.error('[apiClient] INVALID URL: path should not start with /api/ (baseURL already includes it)', config.url)
+      throw new Error(`Invalid API path: ${config.url} - remove /api/ prefix (baseURL already includes it)`)
+    }
+
     return config
   },
   (error) => {

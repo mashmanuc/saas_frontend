@@ -9,7 +9,7 @@ import { useI18n } from 'vue-i18n'
 interface CalendarSlot {
   slot_id: string
   start_at: string
-  duration: number
+  duration_min: number
   status: string
 }
 
@@ -46,7 +46,7 @@ async function submit() {
   const payload: TrialRequestPayload = {
     slot_id: props.slot.slot_id,
     starts_at: props.slot.start_at,
-    duration_min: props.slot.duration,
+    duration_min: props.slot.duration_min,
   }
 
   try {
@@ -117,7 +117,7 @@ declare global {
         </div>
         <div class="row">
           <div class="label">{{ t('marketplace.trialRequest.durationLabel') }}</div>
-          <div class="value">{{ slot.duration }} {{ t('marketplace.trialRequest.minutesShort') }}</div>
+          <div class="value">{{ slot.duration_min }} {{ t('marketplace.trialRequest.minutesShort') }}</div>
         </div>
 
         <div v-if="isSlotConflict" class="conflict-banner">
