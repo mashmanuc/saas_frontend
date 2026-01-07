@@ -165,7 +165,7 @@ const emit = defineEmits<Emits>()
 
 const { t } = useI18n()
 const slotStore = useSlotStore()
-const { isLoading, editSlot, detectConflicts, deleteSlot: deleteSlotApi } = useSlotEditor()
+const { isLoading, editSlot, detectConflicts, markSlotForDeletion } = useSlotEditor()
 
 // Local state
 const localStart = ref(props.slot.start)
@@ -329,16 +329,12 @@ function handleCancel() {
   emit('cancelled')
 }
 
-async function handleDelete() {
+function handleDelete() {
   const confirmed = window.confirm(t('calendar.slotEditor.deleteConfirm'))
   if (!confirmed) return
-  try {
-    await deleteSlotApi(Number(props.slot.id))
-    slotStore.removeSlotFromState(Number(props.slot.id))
-    emit('deleted', props.slot.id)
-  } catch (error) {
-    emit('error', error)
-  }
+  
+  markSlotForDeletion(Number(props.slot.id))
+  emit('deleted', props.slot.id)
 }
 
 function handleResolveConflicts() {

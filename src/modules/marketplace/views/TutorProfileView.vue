@@ -112,7 +112,7 @@ function handleRefreshCalendar() {
             
             <TutorAvailabilityCalendar
               ref="calendarRef"
-              :tutor-id="currentProfile.id"
+              :tutor-id="currentProfile.user?.id || currentProfile.id"
               :timezone="currentProfile.timezone || 'Europe/Kyiv'"
               @slot-click="handleSlotClick"
             />
@@ -153,7 +153,10 @@ function handleRefreshCalendar() {
             :badges="currentProfile.badges"
           />
 
-          <TutorBadgeHistory v-if="auth.userRole === 'tutor' || auth.userRole === 'admin'" />
+          <TutorBadgeHistory 
+            v-if="auth.userRole === 'tutor' || auth.userRole === 'admin'"
+            :history="currentProfile.badges_history"
+          />
         </aside>
       </div>
     </template>

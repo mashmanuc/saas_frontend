@@ -17,6 +17,10 @@
       </div>
     </transition>
 
+    <div class="draft-changes-wrapper">
+      <DraftChangesBar />
+    </div>
+
     <div class="calendar-controls">
       <DebugToggleButton v-if="isDebugMode" />
     </div>
@@ -41,28 +45,6 @@
 
     <!-- NEW Calendar Board V2 -->
     <div class="calendar-v055-layout">
-      <!-- Availability Toolbar (shown in availability mode) -->
-      <AvailabilityToolbar
-        v-if="isAvailabilityMode"
-        :workload-progress="draftStore.workloadProgress"
-        :has-changes="draftStore.hasChanges"
-        :added-count="draftStore.addedSlots.length"
-        :removed-count="draftStore.removedSlots.length"
-        :hours-delta="draftStore.hoursDelta"
-        :is-saving="draftStore.isSaving"
-        :has-conflicts="draftStore.hasConflicts"
-        :error="draftStore.error"
-        :can-undo="draftStore.canUndo"
-        :can-redo="draftStore.canRedo"
-        @save="handleSaveAvailability"
-        @cancel="handleCancelAvailability"
-        @exit="handleExitAvailabilityMode"
-        @retry="handleRetryAvailability"
-        @show-legend="handleShowLegend"
-        @undo="handleUndoAvailability"
-        @redo="handleRedoAvailability"
-      />
-
       <!-- Week Navigation -->
       <WeekNavigation
         v-if="!isAvailabilityMode"
@@ -112,7 +94,7 @@
         <CalendarFooter v-if="!isAvailabilityMode" lesson-link="https://zoom.us/j/example" />
       </template>
     </div>
-
+    
     <!-- Modals -->
     <CreateLessonModal
       v-if="showCreateModal && selectedCell"
@@ -197,7 +179,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch, defineAsyncComponent } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch, defineAsyncComponent } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { Loader as LoaderIcon, AlertCircle as AlertCircleIcon, ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon } from 'lucide-vue-next'
@@ -209,7 +191,7 @@ dayjs.extend(utc)
 dayjs.extend(timezone)
 
 import { useCalendarWeekStore } from '@/modules/booking/stores/calendarWeekStore'
-import { useAvailabilityDraftStore } from '@/modules/booking/stores/availabilityDraftStore'
+import { useAvailabilityDraftUnifiedStore } from '@/modules/booking/stores/availabilityDraftUnifiedStore'
 import { useTutorLessonLinksStore } from '@/modules/booking/stores/tutorLessonLinksStore'
 import { useCalendarWebSocket } from '@/modules/booking/composables/useCalendarWebSocket'
 import { useErrorHandler } from '@/modules/booking/composables/useErrorHandler'
@@ -221,7 +203,6 @@ import WeekNavigation from './WeekNavigation.vue'
 import LessonCardDrawer from './LessonCardDrawer.vue'
 import CalendarSidebar from './CalendarSidebar.vue'
 import EmptyAvailabilityState from './EmptyAvailabilityState.vue'
-import AvailabilityToolbar from './AvailabilityToolbar.vue'
 import AvailabilityLegend from './AvailabilityLegend.vue'
 import AvailabilityConflictsDrawer from './AvailabilityConflictsDrawer.vue'
 import CreateLessonModal from '../modals/CreateLessonModal.vue'
@@ -230,6 +211,7 @@ import CalendarGuideModal from './CalendarGuideModal.vue'
 import SlotEditorModal from '../modals/SlotEditorModal.vue'
 import CreateSlotModal from '../availability/CreateSlotModal.vue'
 import BlockSlotModal from '../availability/BlockSlotModal.vue'
+import DraftChangesBar from '../availability/DraftChangesBar.vue'
 import type { CalendarCell, AccessibleSlot as AccessibleSlotLegacy } from '@/modules/booking/types/calendarWeek'
 import type { CalendarEvent as CalendarEventV055, AccessibleSlot as AccessibleSlotV055 } from '@/modules/booking/types/calendarV055'
 import '@/modules/booking/styles/calendar-theme.css'
@@ -259,7 +241,7 @@ const warnDebug = (...args: unknown[]) => {
 const router = useRouter()
 
 const store = useCalendarWeekStore()
-const draftStore = useAvailabilityDraftStore()
+const draftStore = useAvailabilityDraftUnifiedStore()
 const lessonLinksStore = useTutorLessonLinksStore()
 const authStore = useAuthStore()
 const { connected, connectionAttempted, connect } = useCalendarWebSocket()
@@ -359,7 +341,7 @@ const emit = defineEmits<{
   eventClick: [eventId: number]
 }>()
 
-const { deleteSlot } = useSlotEditor()
+const { markSlotForDeletion, hasUnsavedChanges, applyDraft, clearDraft } = useSlotEditor()
 
 const showCreateModal = ref(false)
 const showEventModal = ref(false)
@@ -413,6 +395,15 @@ const fetchV055Snapshot = async (weekStartOverride?: string) => {
   }
 }
 
+// Add beforeunload warning for unsaved changes
+const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+  if (hasUnsavedChanges.value) {
+    e.preventDefault()
+    e.returnValue = ''
+    return ''
+  }
+}
+
 onMounted(async () => {
   try {
     // Use v055 API only
@@ -433,6 +424,13 @@ onMounted(async () => {
   } catch (err: any) {
     handleError(err)
   }
+  
+  // Add beforeunload listener
+  window.addEventListener('beforeunload', handleBeforeUnload)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('beforeunload', handleBeforeUnload)
 })
 
 function handleNavigate(direction: -1 | 1) {
@@ -607,20 +605,11 @@ function handleSlotEdit(slotId: number) {
   handleSlotClick(slot)
 }
 
-async function handleSlotDeleteInline(slotId: number) {
-  try {
-    await deleteSlot(slotId)
-    // Refetch to update the calendar
-    if (store.currentTutorId && store.currentWeekStart) {
-      store.fetchWeekSnapshot(store.currentTutorId, store.currentWeekStart)
-    }
-  } catch (error) {
-    warnDebug('[CalendarWeekView] Failed to delete slot:', error)
-    // If deletion failed, we need to refresh to restore the slot
-    if (store.currentTutorId && store.currentWeekStart) {
-      store.fetchWeekSnapshot(store.currentTutorId, store.currentWeekStart)
-    }
-  }
+function handleSlotDeleteInline(slotId: number) {
+  const confirmed = window.confirm(t('calendar.slotEditor.deleteConfirm'))
+  if (!confirmed) return
+  
+  markSlotForDeletion(slotId)
 }
 
 function handleSlotCreated(slot: any) {
@@ -724,7 +713,8 @@ function handleCreateSlotFromToolbar() {
 
 // Availability mode handlers
 async function handleEnterAvailabilityMode() {
-  draftStore.enterMode()
+  const weekStart = metaV055.value?.weekStart || new Date().toISOString().slice(0, 10)
+  draftStore.enterEditMode(weekStart)
   await draftStore.loadWorkloadProgress()
 }
 
@@ -739,16 +729,14 @@ function handleExitAvailabilityMode() {
 async function handleSaveAvailability() {
   try {
     const weekStart = metaV055.value?.weekStart || new Date().toISOString().slice(0, 10)
-    const response = await draftStore.createDraft(weekStart)
+    const applyResponse = await draftStore.applyDraft(false, weekStart)
     
-    if (response.conflicts.length > 0) {
+    if (applyResponse.status === 'conflicts') {
       showConflictsDrawer.value = true
       return
     }
     
-    const applyResponse = await draftStore.applyDraft()
     if (applyResponse.status === 'applied') {
-      // Refetch calendar
       if (store.currentTutorId && store.currentWeekStart) {
         await store.fetchWeekSnapshot(store.currentTutorId, store.currentWeekStart, true)
       }
@@ -758,24 +746,8 @@ async function handleSaveAvailability() {
   }
 }
 
-function handleCancelAvailability() {
-  handleExitAvailabilityMode()
-}
-
 function handleShowLegend() {
   showAvailabilityLegend.value = true
-}
-
-function handleUndoAvailability() {
-  draftStore.undo()
-}
-
-function handleRedoAvailability() {
-  draftStore.redo()
-}
-
-function handleRetryAvailability() {
-  handleSaveAvailability()
 }
 
 async function handleForceApplyDraft() {

@@ -32,7 +32,7 @@ export function useAvailability(tutorId?: number) {
     const grouped: Record<string, AvailableSlot[]> = {}
     
     slots.value.forEach(slot => {
-      const date = slot.startAtUTC.split('T')[0]
+      const date = slot.start_at.split('T')[0]
       if (!grouped[date]) {
         grouped[date] = []
       }
@@ -73,15 +73,20 @@ export function useAvailability(tutorId?: number) {
     error.value = null
 
     try {
-      // Schema for validation
+      // Schema for validation (v0.59 contract: cells = array of dayCells)
       const responseSchema = z.object({
         tutor_id: z.number(),
         week_start: z.string(),
         timezone: z.string(),
         cells: z.array(z.object({
-          startAtUTC: z.string(),
-          status: z.enum(['available', 'booked', 'blocked']),
-          duration: z.number(),
+          date: z.string(),
+          day_status: z.string(),
+          slots: z.array(z.object({
+            slot_id: z.string(),
+            start_at: z.string(),
+            duration_min: z.number(),
+            status: z.string(),
+          })),
         })),
       })
 
@@ -99,7 +104,21 @@ export function useAvailability(tutorId?: number) {
         }
       )
 
-      slots.value = response.cells || []
+      // Flatten dayCells into a single array of slots for backward compatibility
+      const flattenedSlots: AvailableSlot[] = []
+      if (response.cells) {
+        for (const dayCell of response.cells) {
+          for (const slot of dayCell.slots) {
+            flattenedSlots.push({
+              slot_id: slot.slot_id,
+              start_at: slot.start_at,
+              duration_min: slot.duration_min,
+              status: slot.status as 'available' | 'booked' | 'blocked',
+            })
+          }
+        }
+      }
+      slots.value = flattenedSlots
 
       // Update cache
       availabilityCache.set(cacheKey, {

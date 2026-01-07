@@ -173,6 +173,25 @@ export type CreateReviewPayload = {
   source_lesson_id?: number
 }
 
+// v0.60: TagGroup enum (must match backend)
+export type TagGroup = 'grades' | 'exams' | 'levels' | 'goals' | 'formats' | 'audience'
+
+// v0.60: Tag in profile context
+export interface TagPublic {
+  code: string
+  label: string
+  group: TagGroup
+}
+
+// v0.60: Subject in profile context
+export interface SubjectPublic {
+  code: string
+  title: string
+  tags: TagPublic[]
+  custom_direction_text?: string
+}
+
+// Legacy Subject type (deprecated, use SubjectPublic)
 export interface Subject {
   id: number
   name: string
@@ -221,7 +240,7 @@ export interface TutorProfile {
   education: Education[]
   experience_years: number
   certifications: Certification[]
-  subjects: Subject[]
+  subjects: SubjectPublic[]  // v0.60: updated to new format
   languages: Language[]
   country: string
   timezone: string
@@ -234,6 +253,7 @@ export interface TutorProfile {
   total_reviews: number
   response_time_hours: number
   badges: Badge[]
+  badges_history?: BadgeHistoryItem[]  // v0.60: badge history from profile payload
   is_public: boolean
   status: ProfileStatus
   created_at: string
@@ -241,6 +261,14 @@ export interface TutorProfile {
   has_availability?: boolean
 }
 
+// v0.60: Write payload for subjects
+export interface SubjectWritePayload {
+  code: string
+  tags: string[]  // array of tag codes
+  custom_direction_text?: string
+}
+
+// Legacy SubjectWriteRef (deprecated)
 export interface SubjectWriteRef {
   code: string
   level?: Subject['level']
@@ -260,7 +288,7 @@ export interface TutorProfileUpsertPayload {
   video_intro_url?: string
   country?: string
   timezone?: string
-  subjects?: SubjectWriteRef[]
+  subjects?: SubjectWritePayload[]  // v0.60: updated to new format
   languages?: LanguageWriteRef[]
 }
 
@@ -380,6 +408,24 @@ export interface SearchResponse {
   count: number
   results: TutorListItem[]
   search_time_ms?: number
+}
+
+// v0.60: Catalog types
+export interface CatalogSubject {
+  code: string
+  title: string
+  category: string
+  category_name: string
+  tutor_count: number
+}
+
+export interface CatalogTag {
+  code: string
+  label: string
+  short_label?: string
+  group: TagGroup
+  is_global: boolean
+  subject_code?: string | null
 }
 
 export interface FilterOptions {
@@ -509,11 +555,6 @@ export const marketplaceApi = {
   async presignCertificationUpload(payload: PresignCertificationRequest): Promise<PresignCertificationResponse> {
     const response = await apiClient.post('/v1/uploads/presign/certification/', payload)
     return response as unknown as PresignCertificationResponse
-  },
-
-  async getBadgeHistory(): Promise<BadgeHistoryItem[]> {
-    const response = await apiClient.get('/v1/marketplace/badges/history/')
-    return (Array.isArray(response) ? response : ((response as any)?.results || [])) as BadgeHistoryItem[]
   },
 
   async getMyCertifications(): Promise<Certification[]> {
@@ -873,24 +914,104 @@ export const marketplaceApi = {
   },
 
   /**
-   * Get tutor calendar (v0.48 - public availability)
+   * Get catalog subjects with localized titles.
+   * GET /api/v1/catalog/subjects?locale=uk
+   */
+  async getCatalogSubjects(locale: string = 'uk'): Promise<CatalogSubject[]> {
+    const response = await apiClient.get('/v1/catalog/subjects', {
+      params: { locale },
+    })
+    return response as unknown as CatalogSubject[]
+  },
+
+  /**
+   * Get catalog tags with localized labels.
+   * GET /api/v1/catalog/tags?locale=uk&group=levels
+   */
+  async getCatalogTags(
+    locale: string = 'uk',
+    group?: TagGroup
+  ): Promise<CatalogTag[]> {
+    const params: Record<string, string> = { locale }
+    if (group) {
+      params.group = group
+    }
+    
+    const response = await apiClient.get('/v1/catalog/tags', { params })
+    return response as unknown as CatalogTag[]
+  },
+
+  /**
+   * Get tutor calendar (v0.59 public availability contract).
+   * Frontend helper guarantees required params even if caller forgets to pass them.
    */
   async getTutorCalendar(params: {
     tutorId: number
-    weekStart: string
-    timezone: string
+    weekStart?: string
+    timezone?: string
   }): Promise<TutorCalendarResponse> {
+    const safeWeekStart = normalizeWeekStart(params.weekStart)
+    const safeTimezone = params.timezone || getBrowserTimezone()
+    
+    console.log('[marketplaceApi.getTutorCalendar] Request:', {
+      tutorId: params.tutorId,
+      weekStart: safeWeekStart,
+      timezone: safeTimezone,
+      url: `/v1/marketplace/tutors/${params.tutorId}/calendar/`
+    })
+    
     const response = await apiClient.get(`/v1/marketplace/tutors/${params.tutorId}/calendar/`, {
       params: {
         // v0.59 compatibility: backend may expect either start or week_start (or both)
-        start: params.weekStart,
-        week_start: params.weekStart,
-        tz: params.timezone,
-        timezone: params.timezone,
+        start: safeWeekStart,
+        week_start: safeWeekStart,
+        tz: safeTimezone,
+        timezone: safeTimezone,
       },
     })
+    
+    console.log('[marketplaceApi.getTutorCalendar] Response:', {
+      status: 'success',
+      data: response
+    })
+    
     return response as unknown as TutorCalendarResponse
   },
 }
 
 export default marketplaceApi
+
+function normalizeWeekStart(raw?: string): string {
+  const fallback = getCurrentMondayISO()
+  if (!raw) {
+    return fallback
+  }
+  
+  const parsed = new Date(raw)
+  if (Number.isNaN(parsed.getTime())) {
+    return fallback
+  }
+  
+  const day = parsed.getDay() // 0-6, Sunday=0
+  const diff = day === 0 ? -6 : 1 - day
+  parsed.setDate(parsed.getDate() + diff)
+  return parsed.toISOString().split('T')[0]
+}
+
+function getCurrentMondayISO(): string {
+  const today = new Date()
+  const day = today.getDay()
+  const diff = day === 0 ? -6 : 1 - day
+  today.setDate(today.getDate() + diff)
+  return today.toISOString().split('T')[0]
+}
+
+function getBrowserTimezone(): string {
+  if (typeof Intl !== 'undefined' && Intl.DateTimeFormat) {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
+    if (tz) {
+      return tz
+    }
+  }
+  return 'Europe/Kyiv'
+}

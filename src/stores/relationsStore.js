@@ -3,6 +3,40 @@ import relationsApi from '../api/relations'
 import { notifyError, notifySuccess, notifyWarning, notifyInfo } from '../utils/notify'
 import { i18n } from '../i18n'
 
+function normalizeTutorRelationsResponse(response) {
+  // legacy: { results, cursor, has_more, summary }
+  // new:    { relations: { results, cursor, has_more }, counters, recent_actions, filters }
+
+  const relationsBlock = response?.relations ?? response ?? {}
+
+  const isArrayPayload = Array.isArray(relationsBlock)
+  const hasResultsArray = Array.isArray(relationsBlock?.results)
+
+  if (!isArrayPayload && !hasResultsArray && import.meta.env?.DEV) {
+    console.warn('[relationsStore] Unexpected tutor relations payload shape', response)
+  }
+
+  const results = isArrayPayload ? relationsBlock : hasResultsArray ? relationsBlock.results : []
+
+  const cursor =
+    typeof relationsBlock.cursor === 'string' || relationsBlock.cursor === null
+      ? relationsBlock.cursor
+      : null
+
+  const hasMore = typeof relationsBlock.has_more === 'boolean' ? relationsBlock.has_more : false
+
+  const summary = response?.counters ?? relationsBlock?.summary ?? null
+
+  return {
+    results,
+    cursor,
+    hasMore,
+    summary,
+    recentActions: response?.recent_actions ?? null,
+    filters: response?.filters ?? null,
+  }
+}
+
 const translate = (key, params) => {
   try {
     return i18n.global?.t?.(key, params) ?? key
@@ -123,16 +157,17 @@ export const useRelationsStore = defineStore('relations', {
           params.cursor = cursor
         }
         const response = await relationsApi.getTutorRelations(params)
-        const results = Array.isArray(response) ? response : response?.results || []
+        const normalized = normalizeTutorRelationsResponse(response)
+        const results = normalized.results
         if (append) {
           this.tutorRelations = [...this.tutorRelations, ...results]
         } else {
           this.tutorRelations = results
         }
 
-        this.tutorCursor = response?.cursor || null
-        this.tutorHasMore = Boolean(response?.has_more)
-        this.tutorSummary = response?.summary || null
+        this.tutorCursor = normalized.cursor
+        this.tutorHasMore = normalized.hasMore
+        this.tutorSummary = normalized.summary
         this.pruneTutorSelection()
       } catch (error) {
         const status = error?.response?.status

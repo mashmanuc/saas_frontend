@@ -101,14 +101,6 @@ const emit = defineEmits<{
               :count="profile.total_reviews"
               size="lg"
             />
-            <div class="stat">
-              <span class="stat-value">{{ profile.total_lessons }}</span>
-              <span class="stat-label">{{ t('marketplace.profile.stats.lessons') }}</span>
-            </div>
-            <div class="stat">
-              <span class="stat-value">{{ profile.total_students }}</span>
-              <span class="stat-label">{{ t('marketplace.profile.stats.students') }}</span>
-            </div>
           </div>
 
           <div v-if="Array.isArray(profile.badges) && profile.badges.length > 0" class="badges">
@@ -268,24 +260,7 @@ const emit = defineEmits<{
 .stats {
   display: flex;
   align-items: center;
-  gap: 2rem;
   margin-bottom: 1rem;
-}
-
-.stat {
-  display: flex;
-  flex-direction: column;
-}
-
-.stat-value {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.stat-label {
-  font-size: 0.8125rem;
-  color: var(--text-muted);
 }
 
 .badges {

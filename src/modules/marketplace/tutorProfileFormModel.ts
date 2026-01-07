@@ -2,6 +2,13 @@ import type { LanguageLevel, TutorProfile, TutorProfilePatchPayload } from './ap
 
 type FormLanguageItem = { code: string; level: LanguageLevel }
 
+// v0.60: Subject form item
+type FormSubjectItem = {
+  code: string
+  tags: string[]
+  custom_direction_text: string
+}
+
 export type TutorProfileFormModel = {
   headline: string
   bio: string
@@ -12,7 +19,7 @@ export type TutorProfileFormModel = {
   country: string
   timezone: string
   format: 'online' | 'offline' | 'hybrid' | ''
-  subjects: string[]
+  subjects: FormSubjectItem[]  // v0.60: updated to new format
   languages: FormLanguageItem[]
 
   // Privacy
@@ -61,8 +68,26 @@ function uniqueStrings(items: unknown[]): string[] {
 }
 
 export function fromApi(profile: TutorProfile): TutorProfileFormModel {
+  // v0.60: Parse subjects with new normalized format
   const subjects = Array.isArray(profile?.subjects)
-    ? uniqueStrings(profile.subjects.map((s: any) => s?.code ?? s?.slug ?? s?.name ?? s))
+    ? profile.subjects.map((s: any) => {
+        // Handle new normalized format (SubjectPublic)
+        if (s && typeof s === 'object' && s.code) {
+          return {
+            code: s.code,
+            tags: Array.isArray(s.tags) ? s.tags.map((t: any) => t.code || t) : [],
+            custom_direction_text: s.custom_direction_text || '',
+          }
+        }
+        
+        // Fallback for old string format or legacy Subject type
+        const code = typeof s === 'string' ? s : (s?.slug || s?.name || '')
+        return {
+          code,
+          tags: [],
+          custom_direction_text: '',
+        }
+      })
     : []
 
   const languages = Array.isArray(profile?.languages)
@@ -109,7 +134,12 @@ export function toApi(model: TutorProfileFormModel): TutorProfilePatchPayload & 
     country: model.country || undefined,
     timezone: model.timezone || undefined,
     format: model.format || undefined,
-    subjects: (model.subjects || []).map((code) => ({ code })),
+    // v0.60: Updated subjects format (SubjectWritePayload)
+    subjects: (model.subjects || []).map((s) => ({
+      code: s.code,
+      tags: s.tags || [],
+      custom_direction_text: s.custom_direction_text || undefined,
+    })),
     languages: (model.languages || []).map((l) => ({ code: l.code, level: l.level })),
 
     gender: model.gender || undefined,

@@ -22,6 +22,20 @@
     "error": "Push notification error"
   },
   "app": {},
+  "common": {
+    "close": "Close",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success"
+  },
   "userProfile": {
     "account": {
       "title": "Account",
@@ -419,12 +433,21 @@
     "classrooms": "Classrooms",
     "students": "Students",
     "lessons": "Lessons",
+    "marketplace": "Marketplace",
     "tutorCalendar": "Tutor calendar",
     "soloWorkspace": "Solo workspace",
     "profile": "Profile",
     "tutorProfile": "Tutor profile"
   },
   "marketplace": {
+    "tagGroups": {
+      "grades": "Grades",
+      "exams": "Exams",
+      "levels": "Levels",
+      "goals": "Goals",
+      "formats": "Formats",
+      "audience": "Audience"
+    },
     "subjects": {
       "english": "English",
       "spanish": "Spanish",
@@ -493,9 +516,7 @@
       "submit": "Send Request",
       "submitting": "Sending...",
       "success": "Request sent successfully!",
-      "error": "Failed to send request",
-      "slotUnavailable": "This slot is no longer available",
-      "refreshCalendar": "Refresh Calendar"
+      "error": "Failed to send request"
     },
     "common": {
       "perHour": "/ hour"
@@ -648,7 +669,8 @@
         "description": "The tutor profile you're looking for doesn't exist or has been removed.",
         "backCta": "Back to catalog"
       },
-      "subjectsTitle": "Subjects",
+      "subjectsTitle": "Subjects & Specializations",
+      "aboutApproach": "About Approach",
       "subjectLevel": {
         "beginner": "Beginner",
         "intermediate": "Intermediate",
@@ -750,8 +772,16 @@
         "subjectsLanguagesTitle": "Subjects & languages",
         "subjectsLabel": "Subjects",
         "selectSubject": "Select subject…",
+        "selectTags": "Select specializations",
+        "customDirectionText": "Describe your teaching approach",
+        "customDirectionTextPlaceholder": "For example: I prepare students for exams in 8 weeks: individual plan + homework + tests. I explain complex topics in simple words. I help overcome exam anxiety.",
+        "customTextTooShort": "Minimum 300 characters",
+        "customTextTooLong": "Maximum 800 characters",
+        "noSubjectsSelected": "You haven't selected any subjects yet",
+        "dragToReorder": "Drag to reorder",
         "languagesLabel": "Languages",
         "selectLanguage": "Select language…",
+        "lessonLinksTitle": "Lesson links",
         "add": "Add",
         "remove": "Remove",
         "pricingTitle": "Pricing",
@@ -777,9 +807,9 @@
         "birthYearPlaceholder": "e.g. 1995",
         "showAge": "Show age on public profile",
         "telegramLabel": "Telegram",
-        "telegramPlaceholder": "username without @",
+        "telegramPlaceholder": "Enter username (no symbols)",
         "showTelegram": "Show Telegram on public profile",
-        "certificationsTitle": "Diplomas (certificates)",
+        "certificationsTitle": "Certificates",
         "certificationPublic": "Show on public profile",
         "certificationsTitleLabel": "Title",
         "certificationsIssuerLabel": "Issuer (optional)",
@@ -1172,6 +1202,47 @@
       "declineError": "Failed to decline invite",
       "resendSuccess": "Invite resent",
       "resendError": "Failed to resend invite"
+    },
+    "lessonLinks": {
+      "title": "Lesson links",
+      "subtitle": "Configure the primary and backup links you use for lessons",
+      "provider": "Platform",
+      "url": "Link",
+      "providers": {
+        "platform": "M4SH Platform",
+        "zoom": "Zoom",
+        "meet": "Google Meet",
+        "custom": "Custom link"
+      },
+      "primary": {
+        "title": "Primary link",
+        "description": "This link will be used for all lessons by default"
+      },
+      "backup": {
+        "title": "Backup link",
+        "description": "Will be used when the primary link is unavailable"
+      },
+      "preview": {
+        "title": "Current link",
+        "current": "Active link"
+      },
+      "platformInfo": "The platform automatically generates unique links for every lesson",
+      "platformGenerated": "Generated automatically",
+      "notSet": "Not set",
+      "validation": {
+        "required": "This field is required",
+        "invalidUrl": "Invalid link format",
+        "invalidProtocol": "Link must start with https://",
+        "fixErrors": "Fix the errors before saving"
+      },
+      "success": {
+        "saved": "Lesson links saved successfully"
+      },
+      "errors": {
+        "loadFailed": "Failed to load lesson links",
+        "saveFailed": "Failed to save lesson links",
+        "conflict": "Settings were changed in another session. Refresh the page."
+      }
     }
   },
   "student": {
@@ -2149,7 +2220,14 @@
         "time": "Time",
         "student": "Student",
         "duration": "Duration",
-        "comment": "Tutor comment"
+        "comment": "Comment"
+      },
+      "joinPicker": {
+        "title": "Choose how to join",
+        "primary": "Primary link",
+        "backup": "Backup link",
+        "platform": "Platform room",
+        "hint": "Links open in a new tab. Save your progress before joining."
       },
       "paidStatus": {
         "paid": "Paid",
@@ -2416,7 +2494,18 @@
         }
       },
       "deleteConflictError": "Cannot delete: conflicts found",
-      "validationError": "Fill in all required fields"
+      "validationError": "Fill in all required fields",
+      "noWeekStart": "Week start not specified",
+      "applySuccess": "Changes applied successfully",
+      "applyError": "Failed to apply changes"
+    },
+    "draftChanges": {
+      "unsavedChanges": "You have unsaved changes",
+      "changesCount": "{count} changes",
+      "apply": "Apply Changes",
+      "discardConfirm": "Are you sure you want to discard all unsaved changes?",
+      "discarded": "Changes discarded",
+      "conflictsDetected": "Conflicts detected. Please review and resolve them."
     },
     "weekOf": "Week of {date}",
     "analytics": {

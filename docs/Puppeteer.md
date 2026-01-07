@@ -95,3 +95,22 @@ Login with provided credentials.
 After login, open Calendar → enable v0.55.
 Capture console errors and network requests to /ws/v1/calendar/week/v055.
 Take a screenshot of the calendar.
+
+### !!!!!
+
+логін і пароль
+m3@gmail.com
+demo1234
+сервери запещені
+
+PS D:\m4sh_v1\frontend> npm run dev -- --host 127.0.0.1 --port 5173
+
+> frontend@0.0.0 dev
+> vite --host 127.0.0.1 --port 5173
+
+
+  VITE v7.2.6  ready in 367 ms
+
+  ➜  Local:   http://127.0.0.1:5173/
+  ➜  press h + enter to show help
+товоя задача незупиняючись тестувати 

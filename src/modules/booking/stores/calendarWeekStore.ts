@@ -56,6 +56,9 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
   const selectedEventId = ref<number | null>(null)
   const lastFetchedAt = ref<Date | null>(null)
   
+  // Draft state for deleted slots (optimistic UI)
+  const deletedSlotIds = ref<Set<number>>(new Set())
+  
   // Legacy ETag caching
   const etag = ref<string>('')
   
@@ -68,7 +71,10 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
   // v0.55: Computed properties from snapshot
   const days = computed(() => snapshot.value?.days || [])
   const events = computed(() => snapshot.value?.events || [])
-  const accessible = computed(() => snapshot.value?.accessible || [])
+  const accessible = computed(() => {
+    const slots = snapshot.value?.accessible || []
+    return slots.filter(slot => !deletedSlotIds.value.has(slot.id))
+  })
   const blockedRanges = computed(() => snapshot.value?.blockedRanges || [])
   const dictionaries = computed(() => snapshot.value?.dictionaries || {
     noShowReasons: {},
@@ -531,6 +537,22 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     }
   }
   
+  /**
+   * Mark slot as deleted (optimistic UI for draft flow)
+   */
+  function markSlotAsDeleted(slotId: number): void {
+    deletedSlotIds.value.add(slotId)
+    triggerRef(snapshot)
+  }
+  
+  /**
+   * Clear all deleted slots (after draft apply or cancel)
+   */
+  function clearDeletedSlots(): void {
+    deletedSlotIds.value.clear()
+    triggerRef(snapshot)
+  }
+  
   // v0.55 CRUD actions (замінили legacy)
   async function createEvent(payload: CreateEventPayload & { tempId?: string }) {
     const { tempId, ...apiPayload } = payload
@@ -871,6 +893,8 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     removeOptimisticEvent,
     replaceOptimisticEvent,
     removeOptimisticSlot,
+    markSlotAsDeleted,
+    clearDeletedSlots,
     selectEvent,
     $reset,
   }

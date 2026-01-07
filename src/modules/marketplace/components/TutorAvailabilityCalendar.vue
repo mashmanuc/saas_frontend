@@ -160,12 +160,26 @@ async function loadAvailability() {
       timezone: props.timezone,
     })
     
+    console.log('[TutorAvailabilityCalendar] API response:', {
+      tutor_id: response.tutor_id,
+      week_start: response.week_start,
+      cells_count: response.cells?.length,
+      cells: response.cells,
+      total_slots: response.cells?.reduce((sum, day) => sum + day.slots.length, 0)
+    })
+    
     // Синхронізуємо weekStart з відповіддю бекенду
     if (response.week_start) {
       weekStart.value = new Date(response.week_start + 'T00:00:00')
     }
     
     dayCells.value = response.cells || []
+    
+    console.log('[TutorAvailabilityCalendar] dayCells after assignment:', {
+      length: dayCells.value.length,
+      hasAnySlots: dayCells.value.some(day => day.slots.length > 0),
+      dayCells: dayCells.value
+    })
     
     // Telemetry: availability_viewed
     if (window.gtag) {
@@ -177,6 +191,7 @@ async function loadAvailability() {
       })
     }
   } catch (err: any) {
+    console.error('[TutorAvailabilityCalendar] API error:', err)
     if (err.response?.status === 422) {
       error.value = t('marketplace.calendar.errorHorizon')
     } else {

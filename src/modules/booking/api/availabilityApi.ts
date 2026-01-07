@@ -84,6 +84,42 @@ export interface GenerationJob {
   error_message: string | null
 }
 
+export interface DraftSlot {
+  slotId?: number | null
+  start?: string
+  end?: string
+  status?: 'available' | 'blocked'
+  action?: 'remove'
+}
+
+export interface CreateDraftRequest {
+  weekStart: string
+  slots: DraftSlot[]
+  timezone?: string
+}
+
+export interface CreateDraftResponse {
+  token: string
+  expiresAt: string
+  conflicts: any[]
+  summary: {
+    addedSlots: number
+    removedSlots: number
+    hoursDelta: number
+  }
+}
+
+export interface ApplyDraftRequest {
+  force?: boolean
+}
+
+export interface ApplyDraftResponse {
+  status: 'applied' | 'conflicts'
+  appliedAt?: string
+  workloadProgress?: any
+  conflicts?: any[]
+}
+
 export const availabilityApi = {
   async getTutorAvailability(
     slug: string,
@@ -205,6 +241,20 @@ export const availabilityApi = {
   async getGenerationJobStatus(jobId: string): Promise<GenerationJob> {
     const response = await apiClient.get(`/v1/booking/availability/jobs/${jobId}/`)
     return response.data
+  },
+
+  async createDraft(request: CreateDraftRequest): Promise<CreateDraftResponse> {
+    const response = await apiClient.post('/v1/calendar/availability/draft/', request)
+    return response.data || response
+  },
+
+  async applyDraft(token: string, request?: ApplyDraftRequest): Promise<ApplyDraftResponse> {
+    const response = await apiClient.post(`/v1/calendar/availability/draft/${token}/apply`, request || {})
+    return response.data || response
+  },
+
+  async deleteDraft(token: string): Promise<void> {
+    await apiClient.delete(`/v1/calendar/availability/draft/${token}`)
   },
 }
 

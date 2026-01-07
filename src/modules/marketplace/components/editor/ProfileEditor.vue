@@ -127,7 +127,9 @@ import { fromApi, toApi, type TutorProfileFormModel } from '../../tutorProfileFo
 import { updateAvatar } from '@/api/profile'
 import { notifyError, notifySuccess } from '@/utils/notify'
 import CertificationsEditor from './CertificationsEditor.vue'
+import SubjectTagsSelector from './SubjectTagsSelector.vue'
 import { useRouter, useRoute } from 'vue-router'
+import LessonLinksEditor from '@/modules/booking/components/lessonLinks/LessonLinksEditor.vue'
 import type {
   FilterOptions,
   TutorProfile,
@@ -137,7 +139,6 @@ import type {
 import type { MarketplaceValidationErrors } from '../../utils/apiErrors'
 
 type FormState = TutorProfileFormModel & {
-  newSubject: string
   newLanguageCode: string
   newLanguageLevel: LanguageLevel
 }
@@ -149,18 +150,7 @@ interface Props {
   apiErrors?: MarketplaceValidationErrors | null
 }
 
-function addSubject() {
-  const code = (formData.value.newSubject || '').trim()
-  if (!code) return
-  if (!formData.value.subjects.includes(code)) {
-    formData.value.subjects = [...formData.value.subjects, code]
-  }
-  formData.value.newSubject = ''
-}
-
-function removeSubject(code: string) {
-  formData.value.subjects = formData.value.subjects.filter((x) => x !== code)
-}
+// v0.60: Subject management moved to SubjectTagsSelector component
 
 function addLanguage() {
   const code = (formData.value.newLanguageCode || '').trim()
@@ -237,10 +227,6 @@ function handlePublishToggle(event: Event) {
   }
 }
 
-function navigateToLessonLinks() {
-  router.push({ name: 'tutor-lesson-links' })
-}
-
 function syncStepFromRoute(stepParam: unknown) {
   if (typeof stepParam !== 'string') return
   const idx = steps.value.findIndex((s) => s.id === stepParam)
@@ -251,7 +237,6 @@ function syncStepFromRoute(stepParam: unknown) {
 
 const formData = ref<FormState>({
   ...fromApi(props.profile),
-  newSubject: '',
   newLanguageCode: '',
   newLanguageLevel: 'fluent' as LanguageLevel,
 })
@@ -272,7 +257,7 @@ const lastAutosavedAt = ref<number | null>(null)
 const hasLocalDraft = ref(false)
 const showDraftBanner = ref(false)
 
-type EditorStepId = 'photo' | 'basic' | 'subjects' | 'pricing' | 'video' | 'privacy' | 'publish'
+type EditorStepId = 'photo' | 'basic' | 'subjects' | 'pricing' | 'video' | 'privacy' | 'lesson-links' | 'publish'
 
 const steps = computed<Array<{ id: EditorStepId; title: string }>>(() => [
   { id: 'photo', title: t('marketplace.profile.editor.photoTitle') },
@@ -281,6 +266,7 @@ const steps = computed<Array<{ id: EditorStepId; title: string }>>(() => [
   { id: 'pricing', title: t('marketplace.profile.editor.pricingTitle') },
   { id: 'video', title: t('marketplace.profile.editor.videoTitle') },
   { id: 'privacy', title: t('marketplace.profile.editor.privacyTitle') },
+  { id: 'lesson-links', title: t('marketplace.profile.editor.lessonLinksTitle') },
   { id: 'publish', title: t('marketplace.profile.publish') },
 ])
 
@@ -321,6 +307,7 @@ const stepErrors = computed(() => {
     pricing: ['hourly_rate'],
     video: [],
     privacy: [],
+    'lesson-links': [],
     publish: [],
   }
 
@@ -331,6 +318,7 @@ const stepErrors = computed(() => {
     pricing: 0,
     video: 0,
     privacy: 0,
+    'lesson-links': 0,
     publish: 0,
   }
 
@@ -358,7 +346,7 @@ function goNext() {
 }
 
 function buildPayloadFromForm(): TutorProfilePatchPayload {
-  const { newSubject, newLanguageCode, newLanguageLevel, ...model } = formData.value
+  const { newLanguageCode, newLanguageLevel, ...model } = formData.value
   return toApi(model)
 }
 
@@ -405,7 +393,6 @@ function restoreLocalDraft(): void {
   const model = fromApi({ ...(props.profile as any), ...(draft.data as any) })
   formData.value = {
     ...(model as any),
-    newSubject: '',
     newLanguageCode: '',
     newLanguageLevel: 'fluent' as LanguageLevel,
   }
@@ -435,7 +422,6 @@ watch(
   (newProfile) => {
     formData.value = {
       ...fromApi(newProfile),
-      newSubject: '',
       newLanguageCode: '',
       newLanguageLevel: 'fluent' as LanguageLevel,
     }
@@ -474,7 +460,7 @@ watch(
 
 function handleSubmit() {
   if (!canSubmit.value) return
-  const { newSubject, newLanguageCode, newLanguageLevel, ...model } = formData.value
+  const { newLanguageCode, newLanguageLevel, ...model } = formData.value
   emit('save', toApi(model))
 }
 
@@ -678,13 +664,6 @@ const publishMissingItems = computed(() => {
       >
         <span class="step-pill-title">{{ s.title }}</span>
       </button>
-      <button
-        type="button"
-        class="step-pill step-pill--link"
-        @click="navigateToLessonLinks"
-      >
-        <span class="step-pill-title">{{ t('marketplace.profile.editor.lessonLinksTitle') }}</span>
-      </button>
     </nav>
 
     <section v-show="currentStep === 'publish'" class="editor-section">
@@ -713,6 +692,13 @@ const publishMissingItems = computed(() => {
           {{ t('marketplace.profile.status.pending_review') }}
         </p>
       </div>
+    </section>
+
+    <section v-show="currentStep === 'lesson-links'" class="editor-section">
+      <LessonLinksEditor
+        :show-header="false"
+        :show-cancel-button="false"
+      />
     </section>
 
     <section v-show="currentStep === 'photo'" class="editor-section">
@@ -874,31 +860,12 @@ const publishMissingItems = computed(() => {
       <div class="form-row">
         <div class="form-group">
           <label>{{ t('marketplace.profile.editor.subjectsLabel') }}</label>
-
-          <div class="list-editor" data-test="marketplace-editor-subjects">
-            <div class="list-editor-row">
-              <select v-model="formData.newSubject" data-test="marketplace-editor-subject-add">
-                <option value="">{{ t('marketplace.profile.editor.selectSubject') }}</option>
-                <option v-for="o in subjectOptions" :key="o.value" :value="o.value">
-                  {{ o.label }}
-                </option>
-              </select>
-              <button type="button" class="btn btn-secondary" :disabled="!formData.newSubject" @click="addSubject">
-                {{ t('marketplace.profile.editor.add') }}
-              </button>
-            </div>
-
-            <div v-if="formData.subjects.length" class="list-items">
-              <div v-for="code in formData.subjects" :key="code" class="list-item" data-test="marketplace-editor-subject-item">
-                <span class="item-label">{{ getSubjectLabel(code) }}</span>
-                <button type="button" class="btn btn-ghost" @click="removeSubject(code)">{{ t('marketplace.profile.editor.remove') }}</button>
-              </div>
-            </div>
-          </div>
-
-          <div v-if="errors.subjects" class="field-error" data-test="marketplace-editor-error-subjects">
-            {{ errors.subjects }}
-          </div>
+          
+          <SubjectTagsSelector
+            v-model="formData.subjects"
+            :errors="errors"
+            data-test="marketplace-editor-subjects"
+          />
         </div>
 
         <div class="form-group">

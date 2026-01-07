@@ -118,13 +118,13 @@ function formatTime(isoTime: string): string {
   })
 }
 
-// Adapter function to convert AvailableSlot to AccessibleSlot
-function adaptAvailableSlotToAccessible(slot: AvailableSlot, index: number): AccessibleSlot {
-  const startDate = new Date(slot.startAtUTC)
-  const endDate = new Date(startDate.getTime() + slot.duration * 60000)
+// Adapter function to convert slot from new contract to AccessibleSlot
+function adaptSlotToAccessible(slot: { slot_id: string; start_at: string; duration_min: number; status: string }, index: number): AccessibleSlot {
+  const startDate = new Date(slot.start_at)
+  const endDate = new Date(startDate.getTime() + slot.duration_min * 60000)
   
   return {
-    id: index, // Use index as temporary ID since AvailableSlot doesn't have id
+    id: index,
     type: 'available_slot',
     start: startDate.toISOString(),
     end: endDate.toISOString(),
@@ -145,8 +145,17 @@ async function loadCalendar() {
       timezone: props.timezone,
     })
     
-    // Convert AvailableSlot[] to AccessibleSlot[]
-    cells.value = (data.cells || []).map((slot, index) => adaptAvailableSlotToAccessible(slot, index))
+    // Flatten dayCells into AccessibleSlot[] (v0.59 contract)
+    const flattenedSlots: AccessibleSlot[] = []
+    if (data.cells) {
+      let slotIndex = 0
+      for (const dayCell of data.cells) {
+        for (const slot of dayCell.slots) {
+          flattenedSlots.push(adaptSlotToAccessible(slot, slotIndex++))
+        }
+      }
+    }
+    cells.value = flattenedSlots
   } catch (err) {
     error.value = true
     console.error('Failed to load tutor calendar:', err)

@@ -17,12 +17,6 @@
         {{ t('calendar.header.mark_free_time') }}
       </button>
       <button
-        class="edit-availability-btn"
-        @click="handleOpenAvailability"
-      >
-        {{ t('calendar.weekNavigation.setupAvailability') }}
-      </button>
-      <button
         class="help-btn"
         @click="handleShowGuide"
         :aria-label="t('calendar.weekNavigation.showGuide')"
@@ -90,7 +84,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   navigate: [direction: -1 | 1]
   today: []
-  'open-availability': []
   'show-guide': []
   'mark-free-time': []
 }>()
@@ -116,10 +109,6 @@ function handleNavigate(direction: -1 | 1) {
 
 function handleToday() {
   emit('today')
-}
-
-function handleOpenAvailability() {
-  emit('open-availability')
 }
 
 function handleShowGuide() {

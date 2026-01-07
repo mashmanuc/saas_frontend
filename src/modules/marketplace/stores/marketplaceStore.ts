@@ -12,6 +12,9 @@ import marketplaceApi, {
   type FilterOptions,
   type TutorProfileUpsertPayload,
   type TutorProfilePatchPayload,
+  type CatalogSubject,
+  type CatalogTag,
+  type TagGroup,
 } from '../api/marketplace'
 
 export const useMarketplaceStore = defineStore('marketplace', () => {
@@ -40,6 +43,12 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
   // Error state
   const error = ref<string | null>(null)
   const validationErrors = ref<Record<string, string[]> | null>(null)
+
+  // v0.60 Catalog state
+  const catalogSubjects = ref<CatalogSubject[]>([])
+  const catalogTags = ref<CatalogTag[]>([])
+  const catalogLoading = ref(false)
+  const catalogError = ref<string | null>(null)
 
   const t = (key: string): string => {
     try {
@@ -276,6 +285,44 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     }
   }
 
+  // v0.60 Catalog methods
+  async function loadCatalogSubjects(locale: string = 'uk'): Promise<void> {
+    try {
+      catalogLoading.value = true
+      catalogError.value = null
+      catalogSubjects.value = await marketplaceApi.getCatalogSubjects(locale)
+    } catch (err) {
+      console.error('[MarketplaceStore] loadCatalogSubjects error:', err)
+      catalogError.value = mapApiError(err, 'Failed to load subjects')
+    } finally {
+      catalogLoading.value = false
+    }
+  }
+
+  async function loadCatalogTags(
+    locale: string = 'uk',
+    group?: TagGroup
+  ): Promise<void> {
+    try {
+      catalogLoading.value = true
+      catalogError.value = null
+      catalogTags.value = await marketplaceApi.getCatalogTags(locale, group)
+    } catch (err) {
+      console.error('[MarketplaceStore] loadCatalogTags error:', err)
+      catalogError.value = mapApiError(err, 'Failed to load tags')
+    } finally {
+      catalogLoading.value = false
+    }
+  }
+
+  function getTagsByGroup(group: TagGroup): CatalogTag[] {
+    return catalogTags.value.filter((t) => t.group === group)
+  }
+
+  function getSubjectByCode(code: string): CatalogSubject | undefined {
+    return catalogSubjects.value.find((s) => s.code === code)
+  }
+
   function $reset(): void {
     tutors.value = []
     totalCount.value = 0
@@ -290,6 +337,10 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     isLoadingProfile.value = false
     isLoadingMyProfile.value = false
     isSaving.value = false
+    catalogSubjects.value = []
+    catalogTags.value = []
+    catalogLoading.value = false
+    catalogError.value = null
   }
 
   return {
@@ -310,6 +361,12 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     filterOptions,
     error,
     validationErrors,
+
+    // v0.60 Catalog
+    catalogSubjects,
+    catalogTags,
+    catalogLoading,
+    catalogError,
 
     // Getters
     hasMore,
@@ -333,6 +390,13 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     publishProfile,
     unpublishProfile,
     loadFilterOptions,
+
+    // v0.60 Catalog actions
+    loadCatalogSubjects,
+    loadCatalogTags,
+    getTagsByGroup,
+    getSubjectByCode,
+
     $reset,
   }
 })

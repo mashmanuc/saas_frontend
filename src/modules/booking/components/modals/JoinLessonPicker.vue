@@ -19,7 +19,11 @@
     >
       <div class="picker-header">
         <p class="picker-title">{{ $t('booking.calendar.joinPicker.title') }}</p>
-        <button @click="closePicker" class="close-btn" aria-label="Закрити">
+        <button
+          @click="closePicker"
+          class="close-btn"
+          :aria-label="$t('common.close')"
+        >
           <XIcon class="w-4 h-4" />
         </button>
       </div>
