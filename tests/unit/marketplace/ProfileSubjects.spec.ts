@@ -11,7 +11,7 @@ const i18n = createI18n({
       marketplace: {
         profile: {
           subjectsTitle: 'Предмети та напрями',
-          aboutApproach: 'Про підхід',
+          aboutApproach: 'Резюме',
         },
         tagGroups: {
           grades: 'Класи',
@@ -96,7 +96,7 @@ describe('ProfileSubjects', () => {
     })
 
     expect(wrapper.text()).toContain(customText)
-    expect(wrapper.text()).toContain('Про підхід')
+    expect(wrapper.text()).toContain('Резюме')
   })
 
   it('does not render custom text section when empty', () => {

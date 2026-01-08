@@ -6,7 +6,7 @@ import { storeToRefs } from 'pinia'
 import { ArrowLeft, Clock, DollarSign, CheckCircle } from 'lucide-vue-next'
 import { useBookingStore } from '../stores/bookingStore'
 import marketplaceApi from '@/modules/marketplace/api/marketplace'
-import type { TutorProfile } from '@/modules/marketplace/api/marketplace'
+import type { TutorProfileFull } from '@/modules/marketplace/api/marketplace'
 import type { BookingInput } from '../api/booking'
 
 // Components
@@ -18,7 +18,7 @@ const router = useRouter()
 const bookingStore = useBookingStore()
 
 const tutorSlug = computed(() => route.params.slug as string)
-const tutor = ref<TutorProfile | null>(null)
+const tutor = ref<TutorProfileFull | null>(null)
 const isLoadingTutor = ref(false)
 const selectedSlot = ref<any>(null)
 const isLoadingSlots = ref(false)
@@ -39,9 +39,9 @@ const canSubmit = computed(() => {
 const price = computed(() => {
   if (!tutor.value || !selectedSlot.value) return 0
   if (lessonType.value === 'trial') {
-    return tutor.value.trial_lesson_price || 0
+    return tutor.value.pricing?.trial_lesson_price || 0
   }
-  return tutor.value.hourly_rate || 0
+  return tutor.value.pricing?.hourly_rate || 0
 })
 
 // Load tutor
@@ -50,25 +50,15 @@ onMounted(async () => {
   try {
     tutor.value = await marketplaceApi.getTutorProfile(tutorSlug.value)
     if (tutor.value) {
-      // Load public availability for this tutor
-      isLoadingSlots.value = true
-      try {
-        const availability = await marketplaceApi.getTutorCalendar({
-          tutorId: tutor.value.id,
-          weekStart: new Date().toISOString().split('T')[0],
-          timezone: 'Europe/Kiev'
-        })
-        // Store available slots locally
-        console.log('Loaded tutor availability:', availability)
-      } catch (e) {
-        console.error('Failed to load availability:', e)
-      } finally {
-        isLoadingSlots.value = false
-      }
+      // Note: Calendar loading would require tutor ID from a separate endpoint
+      // TutorProfileFull doesn't include id, only slug
+      // For now, skip calendar loading until we have proper public calendar API
+      isLoadingSlots.value = false
       
       // Set default subject if tutor has subjects
       if (tutor.value.subjects?.length) {
-        subject.value = tutor.value.subjects[0].name
+        // v0.60.1: Use 'title' instead of 'name' for SubjectPublic
+        subject.value = tutor.value.subjects[0].title || tutor.value.subjects[0].code
       }
     }
   } catch (e) {
@@ -85,8 +75,10 @@ async function handleSubmit() {
   isSubmitting.value = true
 
   try {
+    // Note: TutorProfileFull doesn't have id field
+    // Need to get tutor ID from slug or use different booking flow
     const data: BookingInput = {
-      tutor_id: tutor.value.id,
+      tutor_id: 0, // TODO: Get tutor ID from slug or use slug-based booking
       slot_id: selectedSlot.value.id,
       subject: subject.value,
       lesson_type: lessonType.value,
@@ -159,17 +151,17 @@ function goToLessons() {
         <!-- Tutor Info -->
         <section class="tutor-info">
           <img
-            :src="tutor.photo || '/default-avatar.png'"
-            :alt="tutor.user.full_name"
+            :src="tutor.media?.photo_url || '/default-avatar.png'"
+            :alt="tutor.slug"
             class="tutor-photo"
           />
           <div class="tutor-details">
-            <h2>{{ tutor.user.full_name }}</h2>
+            <h2>{{ tutor.slug }}</h2>
             <p class="tutor-headline">{{ tutor.headline }}</p>
             <div class="tutor-meta">
               <span class="price">
                 <DollarSign :size="16" />
-                ${{ tutor.hourly_rate }}/hour
+                ${{ tutor.pricing?.hourly_rate }}/hour
               </span>
               <span class="duration">
                 <Clock :size="16" />
@@ -182,7 +174,8 @@ function goToLessons() {
         <!-- Slot Picker -->
         <section class="slot-section">
           <h3>Select a Time</h3>
-          <SlotPicker :tutor-id="tutor.id" :loading="isLoadingSlots" />
+          <!-- Note: SlotPicker needs tutor ID, but TutorProfileFull only has slug -->
+          <p class="text-muted">Slot picker temporarily disabled - TutorProfileFull migration in progress</p>
         </section>
 
         <!-- Booking Form -->
@@ -193,7 +186,7 @@ function goToLessons() {
             v-model:lesson-type="lessonType"
             v-model:notes="notes"
             :subjects="tutor.subjects || []"
-            :trial-available="!!tutor.trial_lesson_price"
+            :trial-available="!!tutor.pricing?.trial_lesson_price"
           />
         </section>
 

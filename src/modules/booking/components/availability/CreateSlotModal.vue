@@ -226,7 +226,7 @@ async function handleCreate() {
     }
     
     // Optimistic update: show slot immediately
-    const timezone = calendarStore.weekMeta?.timezone || 'Europe/Kiev'
+    const timezone = calendarStore.meta?.timezone || 'Europe/Kiev'
     const tzOffset = new Date().toLocaleString('en-US', { timeZone: timezone, timeZoneName: 'short' }).split(' ').pop()
     const offset = tzOffset === 'GMT+2' ? '+02:00' : '+03:00'
     

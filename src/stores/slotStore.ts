@@ -19,6 +19,30 @@ import {
   logSlotRedo
 } from '@/services/telemetry'
 
+/**
+ * Map frontend SlotEditStrategy to backend API format
+ * Frontend: 'override' | 'update_template' | 'update_slot'
+ * Backend (single): 'override' | 'template' | 'series'
+ * Backend (batch): 'override' | 'template'
+ */
+function mapStrategyToApi(strategy: SlotEditStrategy): 'override' | 'template' | 'series' {
+  if (strategy === 'update_template') {
+    return 'template'
+  }
+  if (strategy === 'update_slot') {
+    return 'override'
+  }
+  return strategy as 'override' | 'template' | 'series'
+}
+
+function mapStrategyToBatchApi(strategy: SlotEditStrategy): 'override' | 'template' {
+  if (strategy === 'update_template') {
+    return 'template'
+  }
+  // Batch API doesn't support 'series', fallback to 'override'
+  return 'override'
+}
+
 export interface CalendarSlot {
   id: number
   date: string
@@ -163,7 +187,13 @@ export const useSlotStore = defineStore('slots', () => {
         return updatedSlot
       } else {
         // Execute without undo support
-        const response = await bookingApi.editSlot(slotId, data)
+        const apiPayload = {
+          start_time: data.start_time,
+          end_time: data.end_time,
+          strategy: mapStrategyToApi(data.strategy),
+          override_reason: data.override_reason
+        }
+        const response = await bookingApi.editSlot(slotId, apiPayload)
         const updatedSlot = response.slot || response
         refreshSlot(updatedSlot)
         
@@ -263,10 +293,14 @@ export const useSlotStore = defineStore('slots', () => {
         return response
       } else {
         // Execute without undo support
-        const response = await bookingApi.batchEditSlots({
-          slots: slotIds,
-          ...data
-        })
+        const apiPayload = {
+          slot_ids: slotIds,
+          start_time: data.start_time || '',
+          end_time: data.end_time || '',
+          strategy: mapStrategyToBatchApi(data.strategy),
+          override_reason: data.override_reason
+        }
+        const response = await bookingApi.batchEditSlots(apiPayload)
         
         response.updated_slots.forEach((slot: any) => {
           refreshSlot(slot)

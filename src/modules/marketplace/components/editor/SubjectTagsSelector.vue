@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Plus, X, GripVertical, ChevronDown, ChevronUp } from 'lucide-vue-next'
 import { useCatalog } from '../../composables/useCatalog'
 import type { TagGroup } from '../../api/marketplace'
+import { getErrorForField, formatErrorMessages, type NestedError } from '../../utils/nestedErrorMapper'
 
 interface SubjectItem {
   code: string
@@ -14,6 +15,7 @@ interface SubjectItem {
 interface Props {
   modelValue: SubjectItem[]
   errors?: Record<string, string>
+  nestedErrorMap?: Map<string, NestedError[]>
 }
 
 interface Emits {
@@ -29,6 +31,7 @@ const { subjects, tags, loading, loadSubjects, loadTags, getTagsByGroup } = useC
 const localSubjects = ref<SubjectItem[]>([...props.modelValue])
 const expandedSubjects = ref<Set<string>>(new Set())
 const newSubjectCode = ref('')
+const isUpdatingFromProps = ref(false)
 
 const TAG_GROUPS: TagGroup[] = ['grades', 'exams', 'levels', 'goals', 'formats', 'audience']
 
@@ -36,17 +39,29 @@ onMounted(async () => {
   await Promise.all([loadSubjects(), loadTags()])
 })
 
+// Watch props to sync external changes
 watch(
   () => props.modelValue,
   (newVal) => {
-    localSubjects.value = [...newVal]
-  }
+    // Only update if actually different to avoid loops
+    if (JSON.stringify(newVal) !== JSON.stringify(localSubjects.value)) {
+      isUpdatingFromProps.value = true
+      localSubjects.value = [...newVal]
+      nextTick(() => {
+        isUpdatingFromProps.value = false
+      })
+    }
+  },
+  { deep: true }
 )
 
+// Emit changes to parent
 watch(
   localSubjects,
   (newVal) => {
-    emit('update:modelValue', newVal)
+    if (!isUpdatingFromProps.value) {
+      emit('update:modelValue', [...newVal])
+    }
   },
   { deep: true }
 )
@@ -119,7 +134,7 @@ function moveSubject(fromIndex: number, toIndex: number) {
 
 function validateCustomText(text: string): string | null {
   if (!text) return null
-  if (text.length < 300) return t('marketplace.profile.editor.customTextTooShort')
+  if (text.length < 50) return t('marketplace.profile.editor.customTextTooShort')
   if (text.length > 800) return t('marketplace.profile.editor.customTextTooLong')
   return null
 }
@@ -232,12 +247,22 @@ function validateCustomText(text: string): string | null {
               rows="4"
               maxlength="800"
               :data-test="`custom-text-${subject.code}`"
+              :class="{ 'has-error': validateCustomText(subject.custom_direction_text) || getErrorForField(props.nestedErrorMap || new Map(), 'subjects', index, 'custom_direction_text') }"
             />
+            <!-- Client-side validation error -->
             <div
               v-if="validateCustomText(subject.custom_direction_text)"
               class="field-error"
             >
               {{ validateCustomText(subject.custom_direction_text) }}
+            </div>
+            <!-- Backend validation error -->
+            <div
+              v-else-if="props.nestedErrorMap && getErrorForField(props.nestedErrorMap, 'subjects', index, 'custom_direction_text')"
+              class="field-error"
+              :data-test="`custom-text-error-${subject.code}`"
+            >
+              {{ formatErrorMessages(getErrorForField(props.nestedErrorMap, 'subjects', index, 'custom_direction_text')!.messages) }}
             </div>
           </div>
         </div>
@@ -442,6 +467,10 @@ function validateCustomText(text: string): string | null {
   font-family: inherit;
   font-size: 0.875rem;
   resize: vertical;
+}
+
+.custom-text-section textarea.has-error {
+  border-color: var(--color-error, #dc2626);
 }
 
 .empty-state {

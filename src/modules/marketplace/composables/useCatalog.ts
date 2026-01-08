@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useMarketplaceStore } from '../stores/marketplaceStore'
-import type { TagGroup, CatalogTag, CatalogSubject } from '../api/marketplace'
+import type { TagGroup, SpecialtyTagCatalog, SubjectCatalog } from '../api/marketplace'
 
 export function useCatalog() {
   const store = useMarketplaceStore()
@@ -20,11 +20,11 @@ export function useCatalog() {
     await store.loadCatalogTags(locale.value, group)
   }
   
-  function getTagsByGroup(group: TagGroup): CatalogTag[] {
+  function getTagsByGroup(group: TagGroup): SpecialtyTagCatalog[] {
     return store.getTagsByGroup(group)
   }
   
-  function getSubjectByCode(code: string): CatalogSubject | undefined {
+  function getSubjectByCode(code: string): SubjectCatalog | undefined {
     return store.getSubjectByCode(code)
   }
   

@@ -1,4 +1,4 @@
-import type { LanguageLevel, TutorProfile, TutorProfilePatchPayload } from './api/marketplace'
+import type { LanguageLevel, TutorProfileFull, TutorProfilePatchPayload } from './api/marketplace'
 
 type FormLanguageItem = { code: string; level: LanguageLevel }
 
@@ -19,16 +19,17 @@ export type TutorProfileFormModel = {
   country: string
   timezone: string
   format: 'online' | 'offline' | 'hybrid' | ''
+  experience_years: number  // v0.60.1: required by TutorProfileUpdate
   subjects: FormSubjectItem[]  // v0.60: updated to new format
   languages: FormLanguageItem[]
+  is_published: boolean  // v0.60.1: profile publication status
 
   // Privacy
   gender: string
   show_gender: boolean
   birth_year: number | null
   show_age: boolean
-  telegram_username: string
-  show_telegram: boolean
+  telegram_username: string  // Private field, not shown to students
 }
 
 function asString(v: unknown): string {
@@ -67,27 +68,23 @@ function uniqueStrings(items: unknown[]): string[] {
   return out
 }
 
-export function fromApi(profile: TutorProfile): TutorProfileFormModel {
-  // v0.60: Parse subjects with new normalized format
+export function fromApi(profile: TutorProfileFull): TutorProfileFormModel {
+  // v0.60.1: Parse subjects - ONLY normalized format (SubjectPublic)
   const subjects = Array.isArray(profile?.subjects)
-    ? profile.subjects.map((s: any) => {
-        // Handle new normalized format (SubjectPublic)
-        if (s && typeof s === 'object' && s.code) {
-          return {
-            code: s.code,
-            tags: Array.isArray(s.tags) ? s.tags.map((t: any) => t.code || t) : [],
-            custom_direction_text: s.custom_direction_text || '',
+    ? profile.subjects
+        .map((s: any) => {
+          // Only accept normalized format (SubjectPublic)
+          if (s && typeof s === 'object' && s.code) {
+            return {
+              code: s.code,
+              tags: Array.isArray(s.tags) ? s.tags.map((t: any) => t.code || t) : [],
+              custom_direction_text: s.custom_direction_text || '',
+            }
           }
-        }
-        
-        // Fallback for old string format or legacy Subject type
-        const code = typeof s === 'string' ? s : (s?.slug || s?.name || '')
-        return {
-          code,
-          tags: [],
-          custom_direction_text: '',
-        }
-      })
+          // Invalid format - skip
+          return null
+        })
+        .filter((s): s is FormSubjectItem => s !== null)
     : []
 
   const languages = Array.isArray(profile?.languages)
@@ -104,22 +101,23 @@ export function fromApi(profile: TutorProfile): TutorProfileFormModel {
   return {
     headline: asString(profile?.headline).trim(),
     bio: asString(profile?.bio).trim(),
-    hourly_rate: asNumber((profile as any)?.hourly_rate, 0),
-    currency: asString((profile as any)?.currency || 'USD').trim() || 'USD',
-    trial_lesson_price: asNullableNumber((profile as any)?.trial_lesson_price),
-    video_intro_url: asString((profile as any)?.video_intro_url).trim(),
+    hourly_rate: asNumber(profile?.pricing?.hourly_rate, 0),
+    currency: asString(profile?.pricing?.currency || 'USD').trim() || 'USD',
+    trial_lesson_price: asNullableNumber(profile?.pricing?.trial_lesson_price),
+    video_intro_url: asString(profile?.media?.video_intro_url).trim(),
     country: asString((profile as any)?.country).trim(),
-    timezone: asString((profile as any)?.timezone).trim(),
+    timezone: asString(profile?.availability_summary?.timezone).trim(),
     format: (asString((profile as any)?.format).trim() as any) || '',
+    experience_years: asNumber(profile?.experience_years, 0),
     subjects,
     languages,
+    is_published: asBool((profile as any)?.is_published, false),
 
     gender: asString((profile as any)?.gender).trim(),
     show_gender: asBool((profile as any)?.show_gender, false),
     birth_year: asNullableNumber((profile as any)?.birth_year),
     show_age: asBool((profile as any)?.show_age, false),
     telegram_username: asString((profile as any)?.telegram_username).trim(),
-    show_telegram: asBool((profile as any)?.show_telegram, false),
   }
 }
 
@@ -147,7 +145,6 @@ export function toApi(model: TutorProfileFormModel): TutorProfilePatchPayload & 
     birth_year: model.birth_year,
     show_age: model.show_age,
     telegram_username: model.telegram_username || undefined,
-    show_telegram: model.show_telegram,
   }
 
   // Explicitly ensure marketplace write payload does NOT include `photo`.

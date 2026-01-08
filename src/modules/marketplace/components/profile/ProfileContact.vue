@@ -2,11 +2,11 @@
 import { Calendar, MessageCircle, Clock } from 'lucide-vue-next'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { TutorProfile } from '../../api/marketplace'
+import type { TutorProfileFull } from '../../api/marketplace'
 import PriceTag from '../shared/PriceTag.vue'
 
 interface Props {
-  profile: TutorProfile
+  profile: TutorProfileFull
 }
 
 const props = defineProps<Props>()
@@ -14,7 +14,7 @@ const props = defineProps<Props>()
 const { t } = useI18n()
 
 const responseTimeText = computed(() => {
-  const hours = (props.profile as any)?.response_time_hours
+  const hours = props.profile?.stats?.response_time_hours
   return typeof hours === 'number' ? t('marketplace.profile.contact.respondsInHours', { hours }) : t('common.notSpecified')
 })
 
@@ -29,18 +29,18 @@ const emit = defineEmits<{
     <div class="price-section">
       <div class="price-main">
         <PriceTag
-          :amount="profile.hourly_rate"
-          :currency="profile.currency"
+          :amount="profile.pricing?.hourly_rate || 0"
+          :currency="profile.pricing?.currency || 'USD'"
           size="lg"
         />
         <span class="per-hour">{{ t('marketplace.common.perHour') }}</span>
       </div>
 
-      <div v-if="profile.trial_lesson_price !== null" class="trial-price">
+      <div v-if="profile.pricing?.trial_lesson_price !== null" class="trial-price">
         {{ t('marketplace.profile.contact.trialLesson') }}:
         <PriceTag
-          :amount="profile.trial_lesson_price"
-          :currency="profile.currency"
+          :amount="profile.pricing?.trial_lesson_price || 0"
+          :currency="profile.pricing?.currency || 'USD'"
         />
       </div>
     </div>

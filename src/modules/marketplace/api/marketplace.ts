@@ -176,26 +176,55 @@ export type CreateReviewPayload = {
 // v0.60: TagGroup enum (must match backend)
 export type TagGroup = 'grades' | 'exams' | 'levels' | 'goals' | 'formats' | 'audience'
 
-// v0.60: Tag in profile context
+// v0.60.1: Tag in profile context (read)
 export interface TagPublic {
   code: string
   label: string
   group: TagGroup
 }
 
-// v0.60: Subject in profile context
-export interface SubjectPublic {
+// v0.60.1: Specialty tag (read) - alias for compatibility
+export interface SpecialtyTagPublic {
   code: string
-  title: string
-  tags: TagPublic[]
-  custom_direction_text?: string
+  label: string
+  short_label: string
+  group: 'exams' | 'grades' | 'formats' | 'goals'
+  sort_order?: number
+  is_global?: boolean
+}
+
+// v0.60.1: Subject in profile context (read)
+export interface SubjectPublic {
+  code: string              // Slug предмета
+  title: string             // Локалізована назва
+  tags: SpecialtyTagPublic[] // Масив тегів
+  custom_direction_text: string | null // Опис напрямку (300-800 chars)
+}
+
+// v0.60.1: Subject format for write operations
+export interface SubjectWrite {
+  code: string              // Slug предмета
+  tags: string[]            // Масив кодів тегів
+  custom_direction_text?: string | null // Опис (300-800 chars або null)
 }
 
 // Legacy Subject type (deprecated, use SubjectPublic)
+/**
+ * @deprecated Use SubjectPublic instead. Legacy format removed in v0.60.1.
+ */
 export interface Subject {
   id: number
   name: string
   level: 'beginner' | 'intermediate' | 'advanced' | 'expert'
+  description?: string
+}
+
+/**
+ * @deprecated Use SubjectPublic instead. Legacy format removed in v0.60.1.
+ */
+export interface SubjectLegacy {
+  name: string
+  levels: string[]
   description?: string
 }
 
@@ -225,6 +254,84 @@ export type BadgeHistoryItem = {
 
 export type ProfileStatus = 'draft' | 'pending_review' | 'approved' | 'rejected' | 'suspended'
 
+// v0.60.1: Full tutor profile (read)
+export interface TutorProfileFull {
+  profile_version: number
+  published_at: string
+  slug: string
+  user_id: number  // v0.60.1: tutor user ID for calendar
+  bio: string
+  headline: string
+  education: Education[]
+  certifications: Certification[]
+  languages: Language[]
+  subjects: SubjectPublic[]  // v0.60.1: normalized format
+  experience_years: number
+  is_published?: boolean  // v0.60.1: publication status
+  pricing: {
+    hourly_rate: number
+    currency: string
+    trial_lesson_price: number | null
+  }
+  media: {
+    photo_url: string | null
+    video_intro_url: string
+  }
+  availability_summary: {
+    weekly_hours: number
+    timezone: string
+  }
+  stats: {
+    total_lessons: number
+    total_students: number
+    average_rating: number
+    total_reviews: number
+    response_time_hours: number
+  }
+}
+
+// v0.60.1: Profile update payload (write)
+export interface TutorProfileUpdate {
+  bio: string
+  headline: string
+  education: Education[]
+  certifications: Certification[]
+  languages: Language[]
+  subjects: SubjectWrite[]  // v0.60.1: write format
+  experience_years: number
+  is_published?: boolean  // v0.60.1: profile publication status
+  // Optional profile fields supported by the editor (may not exist in TutorProfileFull typing yet)
+  country?: string
+  timezone?: string
+  format?: 'online' | 'offline' | 'hybrid' | ''
+
+  // Privacy
+  gender?: string
+  show_gender?: boolean
+  birth_year?: number | null
+  show_age?: boolean
+  telegram_username?: string
+  pricing: {
+    hourly_rate: number
+    currency: string
+    trial_lesson_price?: number | null
+  }
+  media: {
+    photo_url?: string | null
+    video_intro_url?: string
+  }
+}
+
+// v0.60.1: Profile update response
+export interface ProfileUpdateResponse {
+  profile_version: number
+  draft_state: string
+}
+
+// Legacy TutorProfile (deprecated, use TutorProfileFull)
+/**
+ * @deprecated Use TutorProfileFull instead. Legacy format.
+ */
 export interface TutorProfile {
   id: number
   slug: string
@@ -261,7 +368,13 @@ export interface TutorProfile {
   has_availability?: boolean
 }
 
-// v0.60: Write payload for subjects
+// Alias for backward compatibility
+export interface TutorProfileOwn extends TutorProfile {}
+
+// v0.60: Write payload for subjects (deprecated, use SubjectWrite)
+/**
+ * @deprecated Use SubjectWrite instead
+ */
 export interface SubjectWritePayload {
   code: string
   tags: string[]  // array of tag codes
@@ -410,7 +523,27 @@ export interface SearchResponse {
   search_time_ms?: number
 }
 
-// v0.60: Catalog types
+// v0.60.1: Catalog types
+export interface SubjectCatalog {
+  code: string
+  title: string
+  category: string
+  is_active: boolean
+}
+
+export interface SpecialtyTagCatalog {
+  code: string
+  label: string
+  short_label: string
+  group: string
+  sort_order: number
+  is_global: boolean
+}
+
+// Legacy catalog types (deprecated)
+/**
+ * @deprecated Use SubjectCatalog instead
+ */
 export interface CatalogSubject {
   code: string
   title: string
@@ -419,6 +552,9 @@ export interface CatalogSubject {
   tutor_count: number
 }
 
+/**
+ * @deprecated Use SpecialtyTagCatalog instead
+ */
 export interface CatalogTag {
   code: string
   label: string
@@ -489,37 +625,40 @@ export const marketplaceApi = {
   },
 
   /**
-   * Get tutor profile by slug.
+   * Get public tutor profile by slug (v0.60.1 normalized format).
+   * GET /api/v1/marketplace/tutors/<slug>/profile/
    */
-  async getTutorProfile(slug: string): Promise<TutorProfile> {
-    const response = await apiClient.get(`/v1/marketplace/tutors/${slug}/`)
-    return response as unknown as TutorProfile
+  async getTutorProfile(slug: string): Promise<TutorProfileFull> {
+    const response = await apiClient.get(`/v1/marketplace/tutors/${slug}/profile/`)
+    return response as unknown as TutorProfileFull
   },
 
   /**
-   * Get own profile.
+   * Get own profile (v0.60.1 normalized format).
+   * GET /api/v1/tutors/me/profile/
    */
-  async getMyProfile(): Promise<TutorProfile> {
-    const response = await apiClient.get('/v1/marketplace/tutors/me/')
-    return response as unknown as TutorProfile
+  async getTutorMeProfile(): Promise<TutorProfileFull> {
+    const response = await apiClient.get('/v1/tutors/me/profile/')
+    return response as unknown as TutorProfileFull
   },
 
   /**
-   * Create profile.
+   * Get own profile snapshot (last published version).
+   * GET /api/v1/tutors/me/profile/snapshot/
    */
-  async createProfile(data: TutorProfileUpsertPayload): Promise<TutorProfile> {
-    // v0.35: canonical owner endpoint
-    // (backend may upsert on PATCH; keep this method for UI compatibility)
-    const response = await apiClient.patch('/v1/marketplace/tutors/me/', data)
-    return response as unknown as TutorProfile
+  async getTutorMeSnapshot(): Promise<TutorProfileFull> {
+    const response = await apiClient.get('/v1/tutors/me/profile/snapshot/')
+    return response as unknown as TutorProfileFull
   },
 
   /**
-   * Update profile.
+   * Update tutor profile (v0.60.1 normalized format).
+   * PUT /api/v1/tutors/me/profile/
+   * @returns Profile update response with version
    */
-  async updateProfile(data: TutorProfilePatchPayload): Promise<TutorProfile> {
-    const response = await apiClient.patch('/v1/marketplace/tutors/me/', data)
-    return response as unknown as TutorProfile
+  async updateTutorMeProfile(data: TutorProfileUpdate): Promise<ProfileUpdateResponse> {
+    const response = await apiClient.put('/v1/tutors/me/profile/', data)
+    return response as unknown as ProfileUpdateResponse
   },
 
   /**
@@ -914,31 +1053,31 @@ export const marketplaceApi = {
   },
 
   /**
-   * Get catalog subjects with localized titles.
+   * Get catalog subjects with localized titles (v0.60.1).
    * GET /api/v1/catalog/subjects?locale=uk
    */
-  async getCatalogSubjects(locale: string = 'uk'): Promise<CatalogSubject[]> {
+  async getCatalogSubjects(locale: string = 'uk'): Promise<SubjectCatalog[]> {
     const response = await apiClient.get('/v1/catalog/subjects', {
       params: { locale },
     })
-    return response as unknown as CatalogSubject[]
+    return response as unknown as SubjectCatalog[]
   },
 
   /**
-   * Get catalog tags with localized labels.
-   * GET /api/v1/catalog/tags?locale=uk&group=levels
+   * Get catalog tags with localized labels (v0.60.1).
+   * GET /api/v1/catalog/tags?locale=uk&group=exams
    */
   async getCatalogTags(
     locale: string = 'uk',
-    group?: TagGroup
-  ): Promise<CatalogTag[]> {
+    group?: string
+  ): Promise<SpecialtyTagCatalog[]> {
     const params: Record<string, string> = { locale }
     if (group) {
       params.group = group
     }
     
     const response = await apiClient.get('/v1/catalog/tags', { params })
-    return response as unknown as CatalogTag[]
+    return response as unknown as SpecialtyTagCatalog[]
   },
 
   /**

@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { BookOpen } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
-import type { SubjectPublic, TagPublic, TagGroup } from '../../api/marketplace'
+import type { SubjectPublic, SpecialtyTagPublic, TagGroup } from '../../api/marketplace'
 
 interface Props {
   subjects: SubjectPublic[]
@@ -12,8 +12,8 @@ const props = defineProps<Props>()
 
 const { t } = useI18n()
 
-function groupTagsByGroup(tags: TagPublic[]): Record<TagGroup, TagPublic[]> {
-  const grouped: Record<string, TagPublic[]> = {}
+function groupTagsByGroup(tags: SpecialtyTagPublic[]): Record<TagGroup, SpecialtyTagPublic[]> {
+  const grouped: Record<string, SpecialtyTagPublic[]> = {}
   
   for (const tag of tags) {
     if (!grouped[tag.group]) {
@@ -22,7 +22,7 @@ function groupTagsByGroup(tags: TagPublic[]): Record<TagGroup, TagPublic[]> {
     grouped[tag.group].push(tag)
   }
   
-  return grouped as Record<TagGroup, TagPublic[]>
+  return grouped as Record<TagGroup, SpecialtyTagPublic[]>
 }
 
 const normalizedSubjects = computed(() => {

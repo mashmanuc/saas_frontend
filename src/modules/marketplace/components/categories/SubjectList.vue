@@ -1,10 +1,10 @@
 <script setup lang="ts">
 // TASK F14: SubjectList component
 import { useI18n } from 'vue-i18n'
-import type { SubjectOption } from '../../api/marketplace'
+import type { SubjectCatalog } from '../../api/marketplace'
 
 defineProps<{
-  subjects: SubjectOption[]
+  subjects: SubjectCatalog[]
   selected: string | null
 }>()
 
@@ -30,13 +30,12 @@ const handleSelect = (subject: string | null) => {
     </button>
     <button
       v-for="subject in subjects"
-      :key="subject.slug"
+      :key="subject.code"
       class="subject-chip"
-      :class="{ 'is-selected': selected === subject.name }"
-      @click="handleSelect(subject.name)"
+      :class="{ 'is-selected': selected === subject.title }"
+      @click="handleSelect(subject.title)"
     >
-      {{ t(`marketplace.categories.${subject.name}`) }}
-      <span class="count">({{ subject.tutor_count }})</span>
+      {{ subject.title }}
     </button>
   </div>
 </template>

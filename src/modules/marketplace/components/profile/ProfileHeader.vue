@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // TASK MF8: ProfileHeader component
 import { ArrowLeft, MapPin, Clock, Star, Play } from 'lucide-vue-next'
-import type { TutorProfile } from '../../api/marketplace'
+import type { TutorProfileFull } from '../../api/marketplace'
 import { resolveMediaUrl } from '@/utils/media'
 import Rating from '../shared/Rating.vue'
 import BadgeIcon from '../shared/Badge.vue'
@@ -10,7 +10,7 @@ import { useI18n } from 'vue-i18n'
 import { toDisplayText } from '../../utils/formatters'
 
 interface Props {
-  profile: TutorProfile
+  profile: TutorProfileFull
 }
 
 const props = defineProps<Props>()
@@ -18,20 +18,19 @@ const props = defineProps<Props>()
 const { t } = useI18n()
 
 const avatarUrl = computed(() => {
-  const value = props.profile?.user?.avatar_url || ''
+  const value = props.profile?.media?.photo_url || ''
   return value ? resolveMediaUrl(value) : ''
 })
 
 const fullName = computed(() => {
-  const raw = props.profile?.user?.full_name
-  if (typeof raw === 'string' && raw.trim().length > 0) return raw
-  return t('common.notSpecified')
+  // TutorProfileFull doesn't have user.full_name, use slug as fallback
+  return props.profile?.slug || t('common.notSpecified')
 })
 
 const avatarInitial = computed(() => {
-  const name = props.profile?.user?.full_name
-  if (typeof name === 'string' && name.trim().length > 0) {
-    return name.trim().charAt(0)
+  const slug = props.profile?.slug
+  if (typeof slug === 'string' && slug.trim().length > 0) {
+    return slug.trim().charAt(0).toUpperCase()
   }
   return 'T'
 })
@@ -41,8 +40,13 @@ const headlineText = computed(() => {
   return typeof raw === 'string' && raw.trim().length > 0 ? raw : t('common.notSpecified')
 })
 
-const countryText = computed(() => toDisplayText((props.profile as any)?.country, t('common.notSpecified')))
-const timezoneText = computed(() => toDisplayText((props.profile as any)?.timezone, t('common.notSpecified')))
+const countryText = computed(() => t('common.notSpecified'))
+const timezoneText = computed(() => props.profile?.availability_summary?.timezone || t('common.notSpecified'))
+
+const experienceYears = computed(() => {
+  const n = Number((props.profile as any)?.experience_years)
+  return Number.isFinite(n) ? n : 0
+})
 
 const emit = defineEmits<{
   (e: 'back'): void
@@ -72,7 +76,7 @@ const emit = defineEmits<{
           </div>
 
           <button
-            v-if="profile.video_intro_url"
+            v-if="profile.media?.video_intro_url"
             class="video-btn"
             :title="t('marketplace.profile.watchIntro')"
           >
@@ -93,21 +97,21 @@ const emit = defineEmits<{
               <Clock :size="16" />
               {{ timezoneText }}
             </div>
+            <div class="meta-item">
+              <Star :size="16" />
+              {{
+                experienceYears > 0
+                  ? t('marketplace.profile.experienceYears', { n: experienceYears })
+                  : t('marketplace.profile.experienceYearsNotSpecified')
+              }}
+            </div>
           </div>
 
           <div class="stats">
             <Rating
-              :value="profile.average_rating"
-              :count="profile.total_reviews"
+              :value="profile.stats?.average_rating || 0"
+              :count="profile.stats?.total_reviews || 0"
               size="lg"
-            />
-          </div>
-
-          <div v-if="Array.isArray(profile.badges) && profile.badges.length > 0" class="badges">
-            <BadgeIcon
-              v-for="badge in profile.badges"
-              :key="badge.type"
-              :badge="badge"
             />
           </div>
         </div>

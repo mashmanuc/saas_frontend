@@ -101,6 +101,29 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
   const ordersArray = computed(() => {
     return allOrderIds.value.map(id => ordersById.value[id]).filter(Boolean)
   })
+
+  /**
+   * Computed getters for slotStore compatibility
+   */
+  const accessibleById = computed(() => {
+    const byId: Record<number, AccessibleSlotV055> = {}
+    accessible.value.forEach(slot => {
+      byId[slot.id] = slot
+    })
+    return byId
+  })
+
+  const accessibleIdsByDay = computed(() => {
+    const byDay: Record<string, number[]> = {}
+    accessible.value.forEach(slot => {
+      const date = slot.start.split('T')[0]
+      if (!byDay[date]) {
+        byDay[date] = []
+      }
+      byDay[date].push(slot.id)
+    })
+    return byDay
+  })
   
   // ===== ACTIONS =====
   
@@ -868,6 +891,8 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     days,
     events,
     accessible,
+    accessibleById,
+    accessibleIdsByDay,
     blockedRanges,
     dictionaries,
     meta,
@@ -889,10 +914,18 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     getEventDetails,
     reschedulePreview,
     rescheduleConfirm,
+    markNoShow,
+    blockDayRange,
+    unblockRange,
     addOptimisticEvent,
     removeOptimisticEvent,
     replaceOptimisticEvent,
+    addOptimisticSlot,
     removeOptimisticSlot,
+    replaceOptimisticSlot,
+    handleEventCreated,
+    handleEventUpdated,
+    handleEventDeleted,
     markSlotAsDeleted,
     clearDeletedSlots,
     selectEvent,

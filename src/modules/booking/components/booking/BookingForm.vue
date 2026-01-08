@@ -1,17 +1,13 @@
 <script setup lang="ts">
 // F14: Booking Form Component
 import { computed } from 'vue'
-
-interface Subject {
-  name: string
-  id?: number
-}
+import type { SubjectPublic } from '@/modules/marketplace/api/marketplace'
 
 const props = defineProps<{
   subject: string
   lessonType: 'trial' | 'regular'
   notes: string
-  subjects: Subject[]
+  subjects: SubjectPublic[]
   trialAvailable?: boolean
 }>()
 
@@ -35,6 +31,14 @@ const notesModel = computed({
   get: () => props.notes,
   set: (v) => emit('update:notes', v),
 })
+
+function getSubjectName(subject: SubjectPublic): string {
+  return subject.title
+}
+
+function getSubjectKey(subject: SubjectPublic): string {
+  return subject.code
+}
 </script>
 
 <template>
@@ -44,8 +48,8 @@ const notesModel = computed({
       <label for="subject">Subject</label>
       <select id="subject" v-model="subjectModel" required>
         <option value="" disabled>Select a subject</option>
-        <option v-for="s in subjects" :key="s.name" :value="s.name">
-          {{ s.name }}
+        <option v-for="s in subjects" :key="getSubjectKey(s)" :value="getSubjectName(s)">
+          {{ getSubjectName(s) }}
         </option>
       </select>
     </div>

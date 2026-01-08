@@ -23,10 +23,16 @@ const category = computed(() =>
   store.filterOptions?.categories.find((c) => c.slug === categorySlug.value)
 )
 
-const subjects = computed(
-  () =>
-    store.filterOptions?.subjects.filter((s) => s.category === categorySlug.value) || []
-)
+const subjects = computed(() => {
+  const filtered = store.filterOptions?.subjects.filter((s) => s.category === categorySlug.value) || []
+  // Adapt SubjectOption to SubjectCatalog format
+  return filtered.map((s) => ({
+    code: s.slug,
+    title: s.name,
+    category: s.category,
+    is_active: true,
+  }))
+})
 
 const selectedSubject = ref<string | null>(null)
 const { results: tutors, isLoading, hasMore, sortBy } = storeToRefs(store)

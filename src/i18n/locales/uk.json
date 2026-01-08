@@ -28,6 +28,7 @@
     "cancel": "Скасувати",
     "save": "Зберегти",
     "delete": "Видалити",
+    "confirmDelete": "Ви впевнені, що хочете видалити?",
     "edit": "Редагувати",
     "back": "Назад",
     "next": "Далі",
@@ -656,6 +657,20 @@
       "viewPublic": "Переглянути публічний профіль",
       "backToCatalog": "Назад до каталогу",
       "watchIntro": "Дивитись інтро",
+      "experienceYears": "Стаж: {n} років",
+      "experienceYearsNotSpecified": "Стаж: не вказано",
+      "errors": {
+        "headlineRequired": "Вкажіть заголовок.",
+        "bioRequired": "Вкажіть опис про себе.",
+        "hourlyRatePositive": "Ставка за годину має бути більшою за 0.",
+        "currencyRequired": "Оберіть валюту.",
+        "experienceNonNegative": "Стаж має бути невід'ємним числом.",
+        "birthYearInvalid": "Рік народження має бути в діапазоні 1900–2100.",
+        "subjectsRequired": "Оберіть хоча б один предмет.",
+        "subjectCodeRequired": "Оберіть предмет.",
+        "customDirectionLength": "Опис підходу має бути від 50 до 800 символів.",
+        "languagesRequired": "Оберіть хоча б одну мову."
+      },
       "stats": {
         "lessons": "уроків",
         "students": "студентів"
@@ -666,7 +681,7 @@
         "backCta": "До каталогу"
       },
       "subjectsTitle": "Предмети та напрями",
-      "aboutApproach": "Про підхід",
+      "aboutApproach": "Резюме",
       "subjectLevel": {
         "beginner": "╨Я╨╛╤З╨░╤В╨║╨╛╨▓╨╕╨╣",
         "intermediate": "╨б╨╡╤А╨╡╨┤╨╜╤Ц╨╣",
@@ -725,6 +740,8 @@
       "validationTitle": "Потрібно виправити:",
       "incompleteTitle": "Профіль ще не готовий",
       "incompleteDescription": "Заповніть фото, опис, предмети, мови та ставку.",
+      "publishedTitle": "Профіль налаштований",
+      "publishedDescription": "Ваш профіль опубліковано та доступний студентам.",
       "reviews": {
         "title": "Відгуки",
         "empty": "Відгуків ще немає",
@@ -802,9 +819,8 @@
         "birthYearLabel": "Рік народження",
         "birthYearPlaceholder": "Напр. 1995",
         "showAge": "Показувати вік у публічному профілі",
-        "telegramLabel": "Telegram",
-        "telegramPlaceholder": "Введіть username (без символів)",
-        "showTelegram": "Показувати Telegram у публічному профілі",
+        "telegramLabel": "Telegram (приватно)",
+        "telegramHelper": "Студентам не показується. Для зв'язку використовуйте чат платформи.",
         "certificationsTitle": "Дипломи (сертифікати)",
         "certificationPublic": "Показувати у публічному профілі",
         "certificationsTitleLabel": "Назва",
@@ -832,6 +848,10 @@
         "certificationsTooLarge": "Файл завеликий",
         "saving": "Збереження…",
         "save": "Зберегти зміни",
+        "publishHint": "Після публікації профіль стане доступним студентам у каталозі.",
+        "experienceYearsLabel": "Досвід викладання (років)",
+        "experienceYearsPlaceholder": "Напр. 5",
+        "experienceYearsHint": "Скільки років ви викладаєте",
         "validation": {
           "headline": "Заголовок обовʼязковий (мін. 3 символи).",
           "bio": "Опис обовʼязковий (мін. 10 символів).",

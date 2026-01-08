@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // TASK MF5: My Profile View
-import { onMounted, computed } from 'vue'
+import { onMounted, computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useMarketplaceStore } from '../stores/marketplaceStore'
 import ProfileEditor from '../components/editor/ProfileEditor.vue'
@@ -19,12 +19,15 @@ const {
   isLoadingMyProfile,
   isSaving,
   isProfileComplete,
+  missingProfileSections,
   canSubmitForReview,
   canPublish,
   error,
   validationErrors,
   filterOptions,
 } = storeToRefs(store)
+
+const editorRef = ref<InstanceType<typeof ProfileEditor> | null>(null)
 
 const hasValidationErrors = computed(() => {
   return validationErrors.value && Object.keys(validationErrors.value).length > 0
@@ -41,7 +44,7 @@ onMounted(() => {
 })
 
 async function handleSave(data: TutorProfilePatchPayload) {
-  telemetry.trigger('marketplace_profile_save', { has_id: typeof myProfile.value?.id === 'number' })
+  telemetry.trigger('marketplace_profile_save', { has_slug: !!myProfile.value?.slug })
   await store.updateProfile(data)
 }
 
@@ -61,8 +64,11 @@ async function handleSubmit() {
 }
 
 async function handlePublish() {
-  telemetry.trigger('marketplace_profile_publish', { status: myProfile.value?.status || null })
+  telemetry.trigger('marketplace_profile_publish', {})
   try {
+    const payload = editorRef.value?.getSubmitPayload?.()
+    if (!payload) return
+    await store.updateProfile(payload)
     await store.publishProfile()
     notifySuccess(t('marketplace.profile.publishSuccess'))
   } catch (err) {
@@ -87,10 +93,8 @@ async function handleUnpublish() {
       <div class="header-content">
         <h1>{{ t('marketplace.profile.title') }}</h1>
         <div class="header-actions">
-          <ProfileStatusBadge v-if="myProfile" :status="myProfile.status" />
-
           <a
-            v-if="myProfile?.is_public && profileUrl"
+            v-if="myProfile && profileUrl"
             :href="profileUrl"
             target="_blank"
             class="btn btn-ghost"
@@ -99,7 +103,7 @@ async function handleUnpublish() {
           </a>
 
           <button
-            v-if="canPublish && !myProfile?.is_public"
+            v-if="canPublish"
             class="btn btn-primary"
             :disabled="isSaving"
             data-test="marketplace-publish"
@@ -109,7 +113,7 @@ async function handleUnpublish() {
           </button>
 
           <button
-            v-if="myProfile?.is_public"
+            v-if="myProfile"
             class="btn btn-secondary"
             :disabled="isSaving"
             data-test="marketplace-unpublish"
@@ -148,13 +152,22 @@ async function handleUnpublish() {
           </ul>
         </div>
 
-        <div v-if="!isProfileComplete && myProfile" class="incomplete-banner" data-test="marketplace-profile-incomplete">
+        <div v-if="myProfile && myProfile.is_published && isProfileComplete" class="success-banner" data-test="marketplace-profile-published">
+          <strong>{{ t('marketplace.profile.publishedTitle') }}</strong>
+          {{ t('marketplace.profile.publishedDescription') }}
+        </div>
+
+        <div v-else-if="missingProfileSections.length > 0 && myProfile" class="incomplete-banner" data-test="marketplace-profile-incomplete">
           <strong>{{ t('marketplace.profile.incompleteTitle') }}</strong>
-          {{ t('marketplace.profile.incompleteDescription') }}
+          <p class="hint">{{ t('marketplace.profile.incompleteDescription') }}</p>
+          <ul class="incomplete-list">
+            <li v-for="section in missingProfileSections" :key="section">{{ section }}</li>
+          </ul>
         </div>
 
         <ProfileEditor
           v-if="myProfile"
+          ref="editorRef"
           :profile="myProfile"
           :saving="isSaving"
           :api-errors="validationErrors"
@@ -243,6 +256,26 @@ async function handleUnpublish() {
 .validation-banner ul {
   margin: 0.5rem 0 0;
   padding-left: 1.25rem;
+}
+
+.incomplete-list {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+}
+
+.incomplete-banner .hint {
+  margin: 0.25rem 0 0;
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+
+.success-banner {
+  background: color-mix(in srgb, var(--success-bg) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--success-bg) 32%, transparent);
+  color: var(--text-primary);
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
 }
 
 </style>

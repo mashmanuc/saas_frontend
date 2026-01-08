@@ -107,13 +107,15 @@ function handleRefreshCalendar() {
           />
 
           <!-- Availability Section v0.59 - Real Calendar -->
-          <section v-if="currentProfile.has_availability" class="profile-section availability-section">
-            <h2>{{ $t('marketplace.availableSlots') }}</h2>
-            
+          <section 
+            v-if="currentProfile.user_id && currentProfile.availability_summary?.timezone" 
+            class="profile-section" 
+            data-test="marketplace-availability"
+          >
+            <h2 class="section-title">{{ $t('marketplace.calendar.title') }}</h2>
             <TutorAvailabilityCalendar
-              ref="calendarRef"
-              :tutor-id="currentProfile.user?.id || currentProfile.id"
-              :timezone="currentProfile.timezone || 'Europe/Kyiv'"
+              :tutor-id="currentProfile.user_id"
+              :timezone="currentProfile.availability_summary.timezone"
               @slot-click="handleSlotClick"
             />
           </section>
@@ -135,8 +137,8 @@ function handleRefreshCalendar() {
             <ProfileReviews
               ref="reviewsRef"
               :slug="slug"
-              :average-rating="currentProfile.average_rating"
-              :total-reviews="currentProfile.total_reviews"
+              :average-rating="currentProfile.stats?.average_rating || 0"
+              :total-reviews="currentProfile.stats?.total_reviews || 0"
             />
           </section>
         </main>
@@ -148,15 +150,7 @@ function handleRefreshCalendar() {
             @message="handleMessage"
           />
 
-          <ProfileBadges
-            v-if="Array.isArray(currentProfile.badges) && currentProfile.badges.length > 0"
-            :badges="currentProfile.badges"
-          />
-
-          <TutorBadgeHistory 
-            v-if="auth.userRole === 'tutor' || auth.userRole === 'admin'"
-            :history="currentProfile.badges_history"
-          />
+          <!-- Note: TutorProfileFull doesn't have badges or badges_history fields -->
         </aside>
       </div>
     </template>

@@ -8,14 +8,19 @@ import { i18n } from '@/i18n'
 import marketplaceApi, {
   type TutorListItem,
   type TutorProfile,
+  type TutorProfileFull,
+  type TutorProfileUpdate,
+  type ProfileUpdateResponse,
   type CatalogFilters,
   type FilterOptions,
   type TutorProfileUpsertPayload,
   type TutorProfilePatchPayload,
-  type CatalogSubject,
-  type CatalogTag,
+  type SubjectCatalog,
+  type SpecialtyTagCatalog,
   type TagGroup,
 } from '../api/marketplace'
+import { debugPayload } from '../adapters/profileAdapter'
+import { notifyError } from '@/utils/notify'
 
 export const useMarketplaceStore = defineStore('marketplace', () => {
   // Catalog state
@@ -29,11 +34,11 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
   const sortBy = ref('recommended')
 
   // Current profile state (viewing)
-  const currentProfile = ref<TutorProfile | null>(null)
+  const currentProfile = ref<TutorProfileFull | null>(null)
   const isLoadingProfile = ref(false)
 
   // My profile state (editing)
-  const myProfile = ref<TutorProfile | null>(null)
+  const myProfile = ref<TutorProfileFull | null>(null)
   const isLoadingMyProfile = ref(false)
   const isSaving = ref(false)
 
@@ -44,9 +49,9 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
   const error = ref<string | null>(null)
   const validationErrors = ref<Record<string, string[]> | null>(null)
 
-  // v0.60 Catalog state
-  const catalogSubjects = ref<CatalogSubject[]>([])
-  const catalogTags = ref<CatalogTag[]>([])
+  // v0.60.1 Catalog state
+  const catalogSubjects = ref<SubjectCatalog[]>([])
+  const catalogTags = ref<SpecialtyTagCatalog[]>([])
   const catalogLoading = ref(false)
   const catalogError = ref<string | null>(null)
 
@@ -70,24 +75,50 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
   // Getters
   const hasMore = computed(() => tutors.value.length < totalCount.value)
 
+  const missingProfileSections = computed(() => {
+    const missing: string[] = []
+    const profile = myProfile.value
+
+    if (!profile) return missing
+
+    if (!profile.media?.photo_url) {
+      missing.push(t('marketplace.profile.editor.photoTitle'))
+    }
+
+    if (!profile.headline?.trim()) {
+      missing.push(t('marketplace.profile.editor.headlineLabel'))
+    }
+
+    if (!profile.bio?.trim()) {
+      missing.push(t('marketplace.profile.editor.bioLabel'))
+    }
+
+    if (!Array.isArray(profile.subjects) || profile.subjects.length === 0) {
+      missing.push(t('marketplace.profile.editor.subjectsLabel'))
+    }
+
+    if (!Array.isArray(profile.languages) || profile.languages.length === 0) {
+      missing.push(t('marketplace.profile.editor.languagesLabel'))
+    }
+
+    if (!profile.pricing || !profile.pricing.hourly_rate || profile.pricing.hourly_rate <= 0) {
+      missing.push(t('marketplace.profile.editor.hourlyRateLabel'))
+    }
+
+    return missing
+  })
+
   const isProfileComplete = computed(() => {
     if (!myProfile.value) return false
-    const avatarUrl = (myProfile.value as any).avatar_url || myProfile.value.user?.avatar_url
-    return !!(
-      avatarUrl &&
-      myProfile.value.bio &&
-      myProfile.value.subjects.length > 0 &&
-      myProfile.value.languages.length > 0 &&
-      myProfile.value.hourly_rate > 0
-    )
+    return missingProfileSections.value.length === 0
   })
 
   const canSubmitForReview = computed(() => {
-    return myProfile.value?.status === 'draft' && isProfileComplete.value
+    return isProfileComplete.value
   })
 
   const canPublish = computed(() => {
-    return myProfile.value?.status === 'approved'
+    return isProfileComplete.value
   })
 
   // Actions
@@ -188,7 +219,10 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     error.value = null
 
     try {
-      myProfile.value = await marketplaceApi.getMyProfile()
+      // v0.60.1: Use new endpoint getTutorMeProfile
+      const profile = await marketplaceApi.getTutorMeProfile()
+      // Convert TutorProfileFull to legacy TutorProfile format for compatibility
+      myProfile.value = profile as any
     } catch (err) {
       // Profile doesn't exist yet - this is OK
       myProfile.value = null
@@ -203,10 +237,25 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     validationErrors.value = null
 
     try {
-      myProfile.value = await marketplaceApi.createProfile(data)
+      // v0.60.1: Debug payload before sending
+      if (import.meta.env.DEV) {
+        debugPayload(data as TutorProfileUpdate, 'marketplaceStore.createProfile')
+      }
+      await marketplaceApi.updateTutorMeProfile(data as TutorProfileUpdate)
+      myProfile.value = await marketplaceApi.getTutorMeProfile()
     } catch (err) {
       setValidationErrorsFromApi(err)
       error.value = mapApiError(err, t('marketplace.errors.createProfile'))
+      
+      // Show toast with first validation error
+      if (validationErrors.value) {
+        const firstField = Object.keys(validationErrors.value)[0]
+        const firstMessages = validationErrors.value[firstField]
+        if (firstMessages && firstMessages.length > 0) {
+          notifyError(`${firstField}: ${firstMessages[0]}`)
+        }
+      }
+      
       throw err
     } finally {
       isSaving.value = false
@@ -219,10 +268,25 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     validationErrors.value = null
 
     try {
-      myProfile.value = await marketplaceApi.updateProfile(data)
+      // v0.60.1: Debug payload before sending
+      if (import.meta.env.DEV) {
+        debugPayload(data as TutorProfileUpdate, 'marketplaceStore.updateProfile')
+      }
+      await marketplaceApi.updateTutorMeProfile(data as TutorProfileUpdate)
+      myProfile.value = await marketplaceApi.getTutorMeProfile()
     } catch (err) {
       setValidationErrorsFromApi(err)
       error.value = mapApiError(err, t('marketplace.errors.updateProfile'))
+      
+      // Show toast with first validation error
+      if (validationErrors.value) {
+        const firstField = Object.keys(validationErrors.value)[0]
+        const firstMessages = validationErrors.value[firstField]
+        if (firstMessages && firstMessages.length > 0) {
+          notifyError(`${firstField}: ${firstMessages[0]}`)
+        }
+      }
+      
       throw err
     } finally {
       isSaving.value = false
@@ -235,7 +299,8 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     validationErrors.value = null
 
     try {
-      myProfile.value = await marketplaceApi.submitForReview()
+      await marketplaceApi.submitForReview()
+      myProfile.value = await marketplaceApi.getTutorMeProfile()
     } catch (err) {
       setValidationErrorsFromApi(err)
       error.value = mapApiError(err, t('marketplace.errors.submitForReview'))
@@ -251,7 +316,8 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     validationErrors.value = null
 
     try {
-      myProfile.value = await marketplaceApi.publishProfile()
+      await marketplaceApi.publishProfile()
+      myProfile.value = await marketplaceApi.getTutorMeProfile()
     } catch (err) {
       setValidationErrorsFromApi(err)
       error.value = mapApiError(err, t('marketplace.errors.publishProfile'))
@@ -267,7 +333,8 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     validationErrors.value = null
 
     try {
-      myProfile.value = await marketplaceApi.unpublishProfile()
+      await marketplaceApi.unpublishProfile()
+      myProfile.value = await marketplaceApi.getTutorMeProfile()
     } catch (err) {
       setValidationErrorsFromApi(err)
       error.value = mapApiError(err, t('marketplace.errors.unpublishProfile'))
@@ -315,11 +382,11 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     }
   }
 
-  function getTagsByGroup(group: TagGroup): CatalogTag[] {
+  function getTagsByGroup(group: TagGroup): SpecialtyTagCatalog[] {
     return catalogTags.value.filter((t) => t.group === group)
   }
 
-  function getSubjectByCode(code: string): CatalogSubject | undefined {
+  function getSubjectByCode(code: string): SubjectCatalog | undefined {
     return catalogSubjects.value.find((s) => s.code === code)
   }
 
@@ -371,6 +438,7 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     // Getters
     hasMore,
     isProfileComplete,
+    missingProfileSections,
     canSubmitForReview,
     canPublish,
 

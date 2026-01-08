@@ -54,7 +54,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
       
       studentStats.value = {
         total_lessons: data.stats.total_lessons,
-        upcoming_lessons: data.stats.upcoming_count,
+        upcoming_lessons: data.stats.upcoming_lessons,
         total_hours: data.stats.total_lessons,
         this_month_lessons: 0,
       }

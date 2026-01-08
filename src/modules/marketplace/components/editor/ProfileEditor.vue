@@ -124,6 +124,7 @@ import { resolveMediaUrl } from '@/utils/media'
 import { TIMEZONES } from '@/utils/timezones'
 import { debounce } from '@/utils/debounce'
 import { fromApi, toApi, type TutorProfileFormModel } from '../../tutorProfileFormModel'
+import { buildTutorProfileUpdate, validateProfileBeforeSubmit, debugPayload } from '../../adapters/profileAdapter'
 import { updateAvatar } from '@/api/profile'
 import { notifyError, notifySuccess } from '@/utils/notify'
 import CertificationsEditor from './CertificationsEditor.vue'
@@ -132,11 +133,12 @@ import { useRouter, useRoute } from 'vue-router'
 import LessonLinksEditor from '@/modules/booking/components/lessonLinks/LessonLinksEditor.vue'
 import type {
   FilterOptions,
-  TutorProfile,
+  TutorProfileFull,
   TutorProfilePatchPayload,
   LanguageLevel,
 } from '../../api/marketplace'
 import type { MarketplaceValidationErrors } from '../../utils/apiErrors'
+import { mapValidationErrors, type NestedError } from '../../utils/nestedErrorMapper'
 
 type FormState = TutorProfileFormModel & {
   newLanguageCode: string
@@ -144,7 +146,7 @@ type FormState = TutorProfileFormModel & {
 }
 
 interface Props {
-  profile: TutorProfile
+  profile: TutorProfileFull
   saving: boolean
   filterOptions?: FilterOptions | null
   apiErrors?: MarketplaceValidationErrors | null
@@ -181,7 +183,7 @@ const auth = useAuthStore()
 const isAvatarUploading = ref(false)
 
 const avatarUrl = computed(() => {
-  const value = auth.user?.avatar_url || props.profile?.user?.avatar_url || ''
+  const value = auth.user?.avatar_url || props.profile?.media?.photo_url || ''
   return value ? resolveMediaUrl(value) : ''
 })
 
@@ -242,9 +244,8 @@ const formData = ref<FormState>({
 })
 
 const draftKey = computed(() => {
-  const id = props.profile?.id
-  const suffix = typeof id === 'number' ? String(id) : 'new'
-  return `marketplace:profile:draft:${suffix}`
+  const slug = props.profile?.slug || 'new'
+  return `marketplace:profile:draft:${slug}`
 })
 
 type LocalDraft = {
@@ -347,7 +348,12 @@ function goNext() {
 
 function buildPayloadFromForm(): TutorProfilePatchPayload {
   const { newLanguageCode, newLanguageLevel, ...model } = formData.value
-  return toApi(model)
+  // v0.60.1: Use adapter to build strict API contract payload
+  const apiPayload = buildTutorProfileUpdate(model)
+  if (import.meta.env.DEV) {
+    debugPayload(apiPayload, 'ProfileEditor.buildPayloadFromForm')
+  }
+  return apiPayload as any // Cast for compatibility with legacy TutorProfilePatchPayload type
 }
 
 function readLocalDraft(): LocalDraft | null {
@@ -405,12 +411,19 @@ function discardLocalDraft(): void {
   autosaveStatus.value = 'idle'
 }
 
+const isUpdatingFromProps = ref(false)
+
 const debouncedAutosave = debounce(() => {
-  if (props.saving) return
+  if (props.saving || isUpdatingFromProps.value) return
   autosaveStatus.value = 'saving'
-  const payload = buildPayloadFromForm()
-  writeLocalDraft(payload)
-  autosaveStatus.value = 'saved'
+  try {
+    const payload = buildPayloadFromForm()
+    writeLocalDraft(payload)
+    autosaveStatus.value = 'saved'
+  } catch (err) {
+    console.error('[ProfileEditor] Autosave error:', err)
+    autosaveStatus.value = 'idle'
+  }
 }, 800) as ((...args: any[]) => void) & { cancel?: () => void }
 
 onBeforeUnmount(() => {
@@ -420,6 +433,7 @@ onBeforeUnmount(() => {
 watch(
   () => props.profile,
   (newProfile) => {
+    isUpdatingFromProps.value = true
     formData.value = {
       ...fromApi(newProfile),
       newLanguageCode: '',
@@ -436,13 +450,20 @@ watch(
       showDraftBanner.value = false
       lastAutosavedAt.value = null
     }
+    
+    // Reset flag after Vue's reactivity updates
+    setTimeout(() => {
+      isUpdatingFromProps.value = false
+    }, 0)
   }
 )
 
 watch(
   formData,
   () => {
-    debouncedAutosave()
+    if (!isUpdatingFromProps.value) {
+      debouncedAutosave()
+    }
   },
   { deep: true }
 )
@@ -460,9 +481,35 @@ watch(
 
 function handleSubmit() {
   if (!canSubmit.value) return
-  const { newLanguageCode, newLanguageLevel, ...model } = formData.value
-  emit('save', toApi(model))
+  const apiPayload = getSubmitPayload()
+  if (!apiPayload) return
+  emit('save', apiPayload as any)
 }
+
+function getSubmitPayload() {
+  const { newLanguageCode, newLanguageLevel, ...model } = formData.value
+
+  // v0.60.1: Preflight validation before API call
+  const validationErrors = validateProfileBeforeSubmit(model)
+  if (validationErrors.length > 0) {
+    console.error('[ProfileEditor] Validation errors:', validationErrors)
+    const firstError = validationErrors[0]
+    const errorMsg = `${t('marketplace.errors.validationFailed')}: ${t(firstError.message)}`
+    notifyError(errorMsg)
+    return null
+  }
+
+  // Build strict API contract payload
+  const apiPayload = buildTutorProfileUpdate(model)
+  if (import.meta.env.DEV) {
+    debugPayload(apiPayload, 'ProfileEditor.getSubmitPayload')
+  }
+  return apiPayload
+}
+
+defineExpose({
+  getSubmitPayload,
+})
 
 const currencies = ['USD', 'EUR', 'GBP', 'UAH', 'PLN']
 
@@ -476,6 +523,11 @@ const localErrors = computed(() => {
   }
   if (typeof formData.value.hourly_rate !== 'number' || formData.value.hourly_rate <= 0) {
     next.hourly_rate = t('marketplace.profile.editor.validation.hourlyRate')
+  }
+  if (typeof formData.value.birth_year === 'number') {
+    if (formData.value.birth_year < 1900 || formData.value.birth_year > 2100) {
+      next.birth_year = t('marketplace.profile.errors.birthYearInvalid')
+    }
   }
   if (!Array.isArray(formData.value.subjects) || formData.value.subjects.length === 0) {
     next.subjects = t('marketplace.profile.editor.validation.subjects')
@@ -497,6 +549,12 @@ const errors = computed(() => {
     }
   }
   return next
+})
+
+// Map nested field errors (subjects[0].custom_direction_text, languages[1].level)
+const nestedErrorMap = computed(() => {
+  if (!props.apiErrors) return new Map<string, NestedError[]>()
+  return mapValidationErrors(props.apiErrors)
 })
 
 const canSubmit = computed(() => Object.keys(errors.value).length === 0)
@@ -680,16 +738,15 @@ const publishMissingItems = computed(() => {
       <div class="form-group">
         <label class="inline-toggle">
           <input
+            v-model="formData.is_published"
             type="checkbox"
-            :checked="Boolean(profile.is_public)"
-            :disabled="saving || profile.status !== 'approved'"
+            :disabled="saving"
             data-test="marketplace-editor-publish-toggle"
-            @change="handlePublishToggle"
           />
-          {{ profile.is_public ? t('marketplace.profile.unpublish') : t('marketplace.profile.publish') }}
+          {{ t('marketplace.profile.publish') }}
         </label>
-        <p v-if="profile.status !== 'approved'" class="hint">
-          {{ t('marketplace.profile.status.pending_review') }}
+        <p class="hint">
+          {{ t('marketplace.profile.editor.publishHint') }}
         </p>
       </div>
     </section>
@@ -769,6 +826,9 @@ const publishMissingItems = computed(() => {
             :placeholder="t('marketplace.profile.editor.birthYearPlaceholder')"
             data-test="marketplace-editor-birth-year"
           />
+          <div v-if="errors.birth_year" class="field-error" data-test="marketplace-editor-error-birth-year">
+            {{ errors.birth_year }}
+          </div>
           <label class="inline-toggle">
             <input v-model="formData.show_age" type="checkbox" data-test="marketplace-editor-show-age" />
             {{ t('marketplace.profile.editor.showAge') }}
@@ -778,19 +838,15 @@ const publishMissingItems = computed(() => {
         <div class="privacy-card">
           <div class="privacy-card-header">
             <span class="privacy-card-title">{{ t('marketplace.profile.editor.telegramLabel') }}</span>
-            <p class="privacy-card-hint">{{ t('marketplace.profile.editor.telegramPlaceholder') }}</p>
+            <p class="privacy-card-hint">{{ t('marketplace.profile.editor.telegramHelper') }}</p>
           </div>
           <input
             id="telegram"
             v-model="formData.telegram_username"
             type="text"
-            :placeholder="t('marketplace.profile.editor.telegramPlaceholder')"
+            placeholder="@username"
             data-test="marketplace-editor-telegram"
           />
-          <label class="inline-toggle">
-            <input v-model="formData.show_telegram" type="checkbox" data-test="marketplace-editor-show-telegram" />
-            {{ t('marketplace.profile.editor.showTelegram') }}
-          </label>
         </div>
 
         <div class="privacy-card span-2">
@@ -835,6 +891,20 @@ const publishMissingItems = computed(() => {
         </div>
       </div>
 
+      <div class="form-group">
+        <label for="experience_years">{{ t('marketplace.profile.editor.experienceYearsLabel') }}</label>
+        <input
+          id="experience_years"
+          v-model.number="formData.experience_years"
+          type="number"
+          min="0"
+          max="50"
+          :placeholder="t('marketplace.profile.editor.experienceYearsPlaceholder')"
+          data-test="marketplace-editor-experience-years"
+        />
+        <span class="hint">{{ t('marketplace.profile.editor.experienceYearsHint') }}</span>
+      </div>
+
       <div class="form-row">
         <div class="form-group">
           <label for="country">{{ t('marketplace.profile.editor.countryLabel') }}</label>
@@ -864,6 +934,7 @@ const publishMissingItems = computed(() => {
           <SubjectTagsSelector
             v-model="formData.subjects"
             :errors="errors"
+            :nested-error-map="nestedErrorMap"
             data-test="marketplace-editor-subjects"
           />
         </div>
