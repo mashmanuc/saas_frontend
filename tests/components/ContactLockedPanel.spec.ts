@@ -9,6 +9,12 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
+vi.mock('vue-router', () => ({
+  useRouter: () => ({
+    push: vi.fn()
+  })
+}))
+
 describe('ContactLockedPanel', () => {
   beforeEach(() => {
     setActivePinia(createPinia())

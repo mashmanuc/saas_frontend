@@ -59,6 +59,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import type { ContactLockedReason } from '@/types/inquiries'
 
 interface Props {
@@ -75,6 +76,7 @@ const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const { t } = useI18n()
+const router = useRouter()
 
 /**
  * Отримати текст причини блокування з i18n
@@ -97,6 +99,8 @@ function handleBookLesson() {
 }
 
 function handleUpgrade() {
+  // Navigate to billing page for upgrade
+  router.push('/billing')
   emit('upgrade')
 }
 </script>

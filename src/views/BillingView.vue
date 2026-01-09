@@ -17,20 +17,56 @@
           <div class="plan-badge" :class="`plan-${plan.toLowerCase()}`">
             {{ plan }}
           </div>
-          <p v-if="expiresAt" class="expiry-info">
-            {{ $t('billing.expiresAt', { date: formatDate(expiresAt) }) }}
-          </p>
+          
+          <div v-if="isPro" class="subscription-details">
+            <div class="detail-row">
+              <span class="detail-label">{{ $t('billing.status') }}:</span>
+              <span class="detail-value" :class="`status-${subscriptionStatus}`">
+                {{ $t(`billing.statuses.${subscriptionStatus}`) }}
+              </span>
+            </div>
+            
+            <div v-if="currentPeriodEnd" class="detail-row">
+              <span class="detail-label">{{ $t('billing.periodEnd') }}:</span>
+              <span class="detail-value">{{ formatDate(currentPeriodEnd) }}</span>
+            </div>
+            
+            <div v-if="cancelAtPeriodEnd" class="detail-row">
+              <span class="detail-label warning">{{ $t('billing.willCancelAt') }}</span>
+            </div>
+          </div>
         </div>
 
-        <div class="coming-soon-card">
-          <div class="coming-soon-icon">🚀</div>
-          <h2>{{ $t('billing.comingSoon.title') }}</h2>
-          <p>{{ $t('billing.comingSoon.description') }}</p>
-          <ul class="features-list">
-            <li>{{ $t('billing.comingSoon.feature1') }}</li>
-            <li>{{ $t('billing.comingSoon.feature2') }}</li>
-            <li>{{ $t('billing.comingSoon.feature3') }}</li>
-          </ul>
+        <div class="action-card">
+          <h2>{{ $t('billing.manageSubscription') }}</h2>
+          
+          <div v-if="isFree" class="upgrade-section">
+            <p>{{ $t('billing.upgradeDescription') }}</p>
+            <button 
+              class="btn btn-primary btn-large"
+              @click="handleUpgrade"
+              :disabled="billingStore.isLoading"
+              data-testid="upgrade-button"
+            >
+              {{ billingStore.isLoading ? $t('billing.processing') : $t('billing.upgradeToPro') }}
+            </button>
+          </div>
+          
+          <div v-else-if="isPro && subscriptionStatus === 'active' && !cancelAtPeriodEnd" class="cancel-section">
+            <p>{{ $t('billing.cancelDescription') }}</p>
+            <button 
+              class="btn btn-secondary"
+              @click="handleCancel"
+              :disabled="billingStore.isLoading"
+              data-testid="cancel-button"
+            >
+              {{ billingStore.isLoading ? $t('billing.processing') : $t('billing.cancelAtPeriodEnd') }}
+            </button>
+          </div>
+          
+          <div v-else-if="cancelAtPeriodEnd" class="reactivate-section">
+            <p>{{ $t('billing.reactivateDescription') }}</p>
+          </div>
         </div>
 
         <div class="info-card">
@@ -45,25 +81,55 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useEntitlementsStore } from '@/stores/entitlementsStore'
+import { useBillingStore } from '@/stores/billingStore'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 const entitlementsStore = useEntitlementsStore()
+const billingStore = useBillingStore()
 
 const isLoading = ref(true)
 
 const plan = computed(() => entitlementsStore.plan)
 const expiresAt = computed(() => entitlementsStore.expiresAt)
+const subscriptionStatus = computed(() => billingStore.subscriptionStatus)
+const currentPeriodEnd = computed(() => billingStore.currentPeriodEnd)
+const cancelAtPeriodEnd = computed(() => billingStore.cancelAtPeriodEnd)
+const isFree = computed(() => entitlementsStore.isFree)
+const isPro = computed(() => entitlementsStore.isPro)
 
 onMounted(async () => {
   try {
-    await entitlementsStore.loadEntitlements()
+    await Promise.all([
+      entitlementsStore.loadEntitlements(),
+      billingStore.loadBillingMe()
+    ])
   } catch (err) {
-    console.error('Failed to load entitlements:', err)
+    console.error('Failed to load billing data:', err)
   } finally {
     isLoading.value = false
   }
 })
+
+async function handleUpgrade() {
+  try {
+    await billingStore.startCheckout('PRO')
+  } catch (err) {
+    console.error('Failed to start checkout:', err)
+  }
+}
+
+async function handleCancel() {
+  if (!confirm(t('billing.cancelConfirm'))) {
+    return
+  }
+  
+  try {
+    await billingStore.cancelSubscription(true)
+  } catch (err) {
+    console.error('Failed to cancel subscription:', err)
+  }
+}
 
 function formatDate(date: Date): string {
   return new Intl.DateTimeFormat('uk-UA', {
@@ -233,5 +299,118 @@ function formatDate(date: Date): string {
 .info-card p {
   color: #6b7280;
   margin: 0;
+}
+
+.action-card {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.action-card h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 1rem 0;
+}
+
+.upgrade-section,
+.cancel-section,
+.reactivate-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.upgrade-section p,
+.cancel-section p,
+.reactivate-section p {
+  color: #6b7280;
+  margin: 0;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #2563eb;
+}
+
+.btn-large {
+  padding: 1rem 2rem;
+  font-size: 1.125rem;
+}
+
+.btn-secondary {
+  background-color: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: #e5e7eb;
+}
+
+.subscription-details {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+}
+
+.detail-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.detail-label.warning {
+  color: #f59e0b;
+}
+
+.detail-value {
+  font-size: 0.875rem;
+  color: #111827;
+  font-weight: 600;
+}
+
+.status-active {
+  color: #10b981;
+}
+
+.status-canceled {
+  color: #ef4444;
+}
+
+.status-past_due {
+  color: #f59e0b;
+}
+
+.status-trialing {
+  color: #3b82f6;
 }
 </style>

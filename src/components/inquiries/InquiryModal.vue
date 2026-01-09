@@ -32,6 +32,15 @@
 
           <div v-if="errorMessage" class="error-banner" data-testid="inquiry-error-banner">
             {{ errorMessage }}
+            <button
+              v-if="isSubscriptionError"
+              type="button"
+              class="btn btn-upgrade"
+              @click="handleUpgrade"
+              data-testid="inquiry-upgrade-button"
+            >
+              {{ $t('inquiry.modal.upgradeNow') }}
+            </button>
           </div>
 
           <div class="inquiry-modal-actions">
@@ -62,6 +71,7 @@
 import { ref, watch } from 'vue'
 import { useInquiriesStore } from '@/stores/inquiriesStore'
 import { useRelationsStore } from '@/stores/relationsStore'
+import { useRouter } from 'vue-router'
 import { 
   InquiryAlreadyExistsError, 
   InquiryNotAllowedError,
@@ -86,11 +96,13 @@ const emit = defineEmits<Emits>()
 const { t } = useI18n()
 const inquiriesStore = useInquiriesStore()
 const relationsStore = useRelationsStore()
+const router = useRouter()
 
 const message = ref('')
 const showValidation = ref(false)
 const errorMessage = ref<string | null>(null)
 const isLoading = ref(false)
+const isSubscriptionError = ref(false)
 
 // Reset form when modal opens
 watch(() => props.isOpen, (newValue) => {
@@ -98,6 +110,7 @@ watch(() => props.isOpen, (newValue) => {
     message.value = ''
     showValidation.value = false
     errorMessage.value = null
+    isSubscriptionError.value = false
   }
 })
 
@@ -123,18 +136,28 @@ async function handleSubmit() {
     // Map domain errors to user-friendly messages
     if (err instanceof InquiryAlreadyExistsError) {
       errorMessage.value = t('inquiry.errors.already_exists')
+      isSubscriptionError.value = false
     } else if (err instanceof InquiryNotAllowedError) {
       errorMessage.value = t('inquiry.errors.not_allowed')
+      isSubscriptionError.value = false
     } else if (err instanceof InquiryInvalidStateError) {
       errorMessage.value = t('inquiry.errors.invalid_state')
+      isSubscriptionError.value = false
     } else if (err instanceof SubscriptionRequiredError) {
       errorMessage.value = t('inquiry.errors.subscription_required')
+      isSubscriptionError.value = true
     } else {
       errorMessage.value = t('inquiry.modal.error')
+      isSubscriptionError.value = false
     }
   } finally {
     isLoading.value = false
   }
+}
+
+function handleUpgrade() {
+  router.push('/billing')
+  emit('close')
 }
 
 function handleClose() {
@@ -248,6 +271,26 @@ function handleClose() {
   border-radius: 4px;
   margin-bottom: 1rem;
   font-size: 0.875rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.btn-upgrade {
+  background-color: #3b82f6;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  align-self: flex-start;
+}
+
+.btn-upgrade:hover {
+  background-color: #2563eb;
 }
 
 .inquiry-modal-actions {
