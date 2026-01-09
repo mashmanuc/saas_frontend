@@ -14,7 +14,8 @@ import {
   InquiryAlreadyExistsError,
   InquiryNotAllowedError,
   InquiryInvalidStateError,
-  ContactLockedError
+  ContactLockedError,
+  SubscriptionRequiredError
 } from './errors'
 import type { LimitExceededResponse } from '@/types/relations'
 
@@ -49,6 +50,11 @@ export function rethrowAsDomainError(err: unknown): never {
     
     if (data?.code === 'contact_locked') {
       throw new ContactLockedError(data.meta || {})
+    }
+    
+    // v0.63: subscription/paywall errors
+    if (data?.code === 'subscription_required') {
+      throw new SubscriptionRequiredError(data.meta || {})
     }
   }
   throw err

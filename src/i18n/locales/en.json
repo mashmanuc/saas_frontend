@@ -3193,7 +3193,8 @@
     "errors": {
       "already_exists": "Request already exists for this relation",
       "not_allowed": "Request not allowed",
-      "invalid_state": "Invalid operation for current request state"
+      "invalid_state": "Invalid operation for current request state",
+      "subscription_required": "PRO subscription required to create requests. Upgrade your subscription to continue."
     }
   },
   "contact": {
@@ -3222,5 +3223,21 @@
     "requestContact": "Request Contacts",
     "bookLesson": "Book Lesson",
     "whyLocked": "Why Locked?"
+  },
+  "billing": {
+    "title": "Subscription & Billing",
+    "subtitle": "Manage your subscription and payment settings",
+    "loading": "Loading...",
+    "currentPlan": "Current Plan",
+    "expiresAt": "Valid until {date}",
+    "needHelp": "Need Help?",
+    "contactSupport": "Contact our support team for more information",
+    "comingSoon": {
+      "title": "Payments Coming Soon",
+      "description": "We're working on payment system integration. Soon you'll be able to upgrade your subscription right here.",
+      "feature1": "Secure payments via Stripe",
+      "feature2": "Flexible subscription plans",
+      "feature3": "Automatic renewal"
+    }
   }
 }

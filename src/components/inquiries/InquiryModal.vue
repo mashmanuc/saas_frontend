@@ -61,11 +61,12 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useInquiriesStore } from '@/stores/inquiriesStore'
-import { useRelationsStore } from '@/stores/relationsStore.ts'
+import { useRelationsStore } from '@/stores/relationsStore'
 import { 
   InquiryAlreadyExistsError, 
   InquiryNotAllowedError,
-  InquiryInvalidStateError 
+  InquiryInvalidStateError,
+  SubscriptionRequiredError
 } from '@/utils/errors'
 import { useI18n } from 'vue-i18n'
 
@@ -126,6 +127,8 @@ async function handleSubmit() {
       errorMessage.value = t('inquiry.errors.not_allowed')
     } else if (err instanceof InquiryInvalidStateError) {
       errorMessage.value = t('inquiry.errors.invalid_state')
+    } else if (err instanceof SubscriptionRequiredError) {
+      errorMessage.value = t('inquiry.errors.subscription_required')
     } else {
       errorMessage.value = t('inquiry.modal.error')
     }

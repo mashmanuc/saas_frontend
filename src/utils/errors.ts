@@ -51,3 +51,13 @@ export class ContactLockedError extends Error {
     this.name = 'ContactLockedError'
   }
 }
+
+/**
+ * v0.63: Subscription/Paywall errors
+ */
+export class SubscriptionRequiredError extends Error {
+  constructor(public meta: { feature?: string; required_plan?: string; [key: string]: unknown }) {
+    super('Subscription required for this feature')
+    this.name = 'SubscriptionRequiredError'
+  }
+}
