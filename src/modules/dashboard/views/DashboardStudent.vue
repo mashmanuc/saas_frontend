@@ -5,7 +5,7 @@
         {{ $t('menu.studentDashboard') }}
       </Heading>
       <p class="text-muted text-sm">
-        {{ $t('student.dashboard.subtitle') }}
+        {{ $t('studentDashboard.subtitle') }}
       </p>
     </Card>
 
@@ -23,7 +23,7 @@
 
     <Card v-if="!hasActiveTutors" class="space-y-4">
       <Heading :level="2">
-        {{ $t('student.findTutor.title') }}
+        {{ $t('studentDashboard.findTutor.title') }}
       </Heading>
       <TutorSearchView />
     </Card>

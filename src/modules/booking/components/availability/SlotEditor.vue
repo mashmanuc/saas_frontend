@@ -43,7 +43,7 @@
       </div>
       <div class="slot-status" :class="slot.status" data-testid="slot-status">
         <span class="status-dot w-2 h-2" />
-        {{ t(`availability.status.${slot.status}`) }}
+        {{ t(`board.availability.status.${slot.status}`) }}
       </div>
     </div>
 

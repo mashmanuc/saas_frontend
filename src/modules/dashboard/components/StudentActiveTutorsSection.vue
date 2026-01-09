@@ -1,7 +1,7 @@
 <template>
   <Card class="space-y-4">
     <Heading :level="2">
-      {{ $t('student.activeTutors.title') }}
+      {{ $t('studentDashboard.activeTutors.title') }}
     </Heading>
 
     <!-- Loading State -->
@@ -20,18 +20,18 @@
         class="rounded-2xl border border-dashed border-default bg-surface-soft p-4 space-y-1"
       >
         <p class="text-sm font-semibold text-body">
-          {{ $t('student.noTutor.title') }}
+          {{ $t('studentDashboard.noTutor.title') }}
         </p>
         <p class="text-sm text-muted">
-          {{ $t('student.noTutor.description') }}
+          {{ $t('studentDashboard.noTutor.description') }}
         </p>
       </div>
       <div class="flex flex-wrap gap-3">
         <Button variant="primary" size="sm" @click="goToMarketplace">
-          {{ $t('student.actions.chooseTutor') }}
+          {{ $t('studentDashboard.actions.chooseTutor') }}
         </Button>
         <Button variant="ghost" size="sm" @click="goToMarketplace">
-          {{ $t('student.actions.exploreMarketplace') }}
+          {{ $t('studentDashboard.actions.exploreMarketplace') }}
         </Button>
       </div>
     </template>
@@ -59,7 +59,7 @@
                 class="px-2 py-0.5 text-xs rounded-full font-medium"
                 :class="getStatusBadgeClass(tutor.collaboration_status)"
               >
-                {{ $t(`collaboration.status.${tutor.collaboration_status}`) }}
+                {{ getCollaborationStatusLabel(tutor.collaboration_status) }}
               </span>
             </div>
             <p class="text-sm text-muted" v-if="tutor.email">
@@ -77,10 +77,10 @@
             </p>
             <div v-if="tutor.lesson_count !== undefined" class="flex items-center gap-4 text-xs text-muted mt-2">
               <span v-if="tutor.lesson_count > 0">
-                {{ $t('collaboration.stats.lessonsCompleted', { count: tutor.lesson_count }) }}
+                {{ $t('board.collaboration.stats.lessonsCompleted', { count: tutor.lesson_count }) }}
               </span>
               <span v-if="tutor.last_activity_at">
-                {{ $t('collaboration.stats.lastActivity') }}: {{ formatDate(tutor.last_activity_at) }}
+                {{ $t('board.collaboration.stats.lastActivity') }}: {{ formatDate(tutor.last_activity_at) }}
               </span>
             </div>
           </div>
@@ -88,10 +88,10 @@
 
         <div class="flex flex-wrap gap-3 w-full md:w-auto">
           <Button variant="secondary" size="sm" class="flex-1 md:flex-none" @click="goToChat">
-            {{ $t('student.actions.messageTutor') }}
+            {{ $t('studentDashboard.actions.messageTutor') }}
           </Button>
           <Button variant="primary" size="sm" class="flex-1 md:flex-none" @click="goToLessons">
-            {{ $t('student.actions.bookLesson') }}
+            {{ $t('studentDashboard.actions.bookLesson') }}
           </Button>
         </div>
       </div>
@@ -123,6 +123,23 @@ const router = useRouter()
 const { t } = useI18n()
 
 const hasActiveTutors = computed(() => props.activeTutors.length > 0)
+
+function getCollaborationStatusLabel(status: string): string {
+  switch (status) {
+    case 'pending':
+      return t('dashboard.tutor.status.pending')
+    case 'active':
+      return t('dashboard.tutor.status.active')
+    case 'inactive':
+      return t('dashboard.tutor.status.inactive')
+    case 'invited':
+      return t('dashboard.tutor.status.invited')
+    case 'archived':
+      return t('dashboard.tutor.status.archived')
+    default:
+      return status
+  }
+}
 
 function getTutorInitials(tutor: AssignedTutor): string {
   if (!tutor.full_name) return 'T'

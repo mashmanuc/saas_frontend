@@ -208,7 +208,7 @@
                 :loading="resendLoadingId === getRelationId(relation)"
                 @click="handleResend(getRelationId(relation))"
               >
-                {{ $t('tutor.actions.resend') }}
+                {{ $t('tutorSearch.actions.resend') }}
               </Button>
             </div>
           </li>
@@ -436,9 +436,9 @@ async function handleAccept(relationId) {
   actionLoadingId.value = relationId
   try {
     await relationsStore.acceptRelation(relationId)
-    notifySuccess(t('tutor.notifications.acceptSuccess'))
+    notifySuccess(t('tutorSearch.notifications.acceptSuccess'))
   } catch (error) {
-    notifyError(error?.response?.data?.detail || t('tutor.notifications.acceptError'))
+    notifyError(error?.response?.data?.detail || t('tutorSearch.notifications.acceptError'))
   } finally {
     actionLoadingId.value = null
   }
@@ -448,9 +448,9 @@ async function handleDecline(relationId) {
   actionLoadingId.value = relationId
   try {
     await relationsStore.declineRelation(relationId)
-    notifySuccess(t('tutor.notifications.declineSuccess'))
+    notifySuccess(t('tutorSearch.notifications.declineSuccess'))
   } catch (error) {
-    notifyError(error?.response?.data?.detail || t('tutor.notifications.declineError'))
+    notifyError(error?.response?.data?.detail || t('tutorSearch.notifications.declineError'))
   } finally {
     actionLoadingId.value = null
   }
@@ -460,9 +460,9 @@ async function handleResend(relationId) {
   resendLoadingId.value = relationId
   try {
     await relationsStore.resendRelation(relationId)
-    notifySuccess(t('tutor.notifications.resendSuccess'))
+    notifySuccess(t('tutorSearch.notifications.resendSuccess'))
   } catch (error) {
-    notifyError(error?.response?.data?.detail || t('tutor.notifications.resendError'))
+    notifyError(error?.response?.data?.detail || t('tutorSearch.notifications.resendError'))
   } finally {
     resendLoadingId.value = null
   }

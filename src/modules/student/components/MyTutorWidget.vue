@@ -40,7 +40,7 @@ onMounted(() => {
 
 <template>
   <div class="my-tutor-widget">
-    <h3>{{ t('student.myTutor.title') }}</h3>
+    <h3>{{ t('studentDashboard.myTutor.title') }}</h3>
 
     <div v-if="loading" class="loading">
       {{ t('common.loading') }}
@@ -48,9 +48,9 @@ onMounted(() => {
 
     <div v-else-if="!activeMatch" class="empty">
       <User :size="48" />
-      <p>{{ t('student.myTutor.noTutor') }}</p>
+      <p>{{ t('studentDashboard.myTutor.noTutor') }}</p>
       <button class="btn btn-primary" @click="router.push('/marketplace')">
-        {{ t('student.myTutor.findTutor') }}
+        {{ t('studentDashboard.myTutor.findTutor') }}
       </button>
     </div>
 
@@ -68,11 +68,11 @@ onMounted(() => {
       <div class="actions">
         <button class="btn btn-secondary" @click="openChat">
           <MessageCircle :size="18" />
-          {{ t('student.myTutor.message') }}
+          {{ t('studentDashboard.myTutor.message') }}
         </button>
         <button class="btn btn-primary" @click="bookLesson">
           <Calendar :size="18" />
-          {{ t('student.myTutor.bookLesson') }}
+          {{ t('studentDashboard.myTutor.bookLesson') }}
         </button>
       </div>
     </div>

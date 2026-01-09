@@ -29,7 +29,7 @@
           <span class="step__icon">
             {{ index < currentStep ? '✓' : step.icon }}
           </span>
-          <span class="step__label">{{ $t(`classroom.loader.${step.id}`) }}</span>
+          <span class="step__label">{{ getStepLabel(step.id) }}</span>
         </div>
       </div>
     </div>
@@ -55,10 +55,40 @@ const currentStep = ref(0)
 // Computed
 const currentStatus = computed(() => {
   if (currentStep.value < steps.length) {
-    return t(`classroom.loader.${steps[currentStep.value].id}Status`)
+    return getStepStatus(steps[currentStep.value].id)
   }
   return t('classroom.loader.ready')
 })
+
+function getStepLabel(stepId: string): string {
+  switch (stepId) {
+    case 'connecting':
+      return t('classroom.loader.connecting')
+    case 'authenticating':
+      return t('classroom.loader.authenticating')
+    case 'loadingBoard':
+      return t('classroom.loader.loadingBoard')
+    case 'joiningRoom':
+      return t('classroom.loader.joiningRoom')
+    default:
+      return stepId
+  }
+}
+
+function getStepStatus(stepId: string): string {
+  switch (stepId) {
+    case 'connecting':
+      return t('classroom.loader.connectingStatus')
+    case 'authenticating':
+      return t('classroom.loader.authenticatingStatus')
+    case 'loadingBoard':
+      return t('classroom.loader.loadingBoardStatus')
+    case 'joiningRoom':
+      return t('classroom.loader.joiningRoomStatus')
+    default:
+      return stepId
+  }
+}
 
 // Simulate progress
 onMounted(() => {

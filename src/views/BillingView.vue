@@ -22,7 +22,7 @@
             <div class="detail-row">
               <span class="detail-label">{{ $t('billing.status') }}:</span>
               <span class="detail-value" :class="`status-${subscriptionStatus}`">
-                {{ $t(`billing.statuses.${subscriptionStatus}`) }}
+                {{ getSubscriptionStatusLabel(subscriptionStatus) }}
               </span>
             </div>
             
@@ -73,6 +73,8 @@
           <h3>{{ $t('billing.needHelp') }}</h3>
           <p>{{ $t('billing.contactSupport') }}</p>
         </div>
+
+        <NotificationPreferences />
       </div>
     </div>
   </div>
@@ -83,6 +85,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useEntitlementsStore } from '@/stores/entitlementsStore'
 import { useBillingStore } from '@/stores/billingStore'
 import { useI18n } from 'vue-i18n'
+import NotificationPreferences from '@/components/Notifications/NotificationPreferences.vue'
 
 const { t } = useI18n()
 const entitlementsStore = useEntitlementsStore()
@@ -97,6 +100,21 @@ const currentPeriodEnd = computed(() => billingStore.currentPeriodEnd)
 const cancelAtPeriodEnd = computed(() => billingStore.cancelAtPeriodEnd)
 const isFree = computed(() => entitlementsStore.isFree)
 const isPro = computed(() => entitlementsStore.isPro)
+
+function getSubscriptionStatusLabel(status: string | null | undefined): string {
+  switch (status) {
+    case 'active':
+      return t('billing.statuses.active')
+    case 'canceled':
+      return t('billing.statuses.canceled')
+    case 'past_due':
+      return t('billing.statuses.past_due')
+    case 'trialing':
+      return t('billing.statuses.trialing')
+    default:
+      return status ? status : ''
+  }
+}
 
 onMounted(async () => {
   try {

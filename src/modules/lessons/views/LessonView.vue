@@ -74,7 +74,7 @@
                 </PresenceDot>
               </div>
               <p class="text-xs text-muted">
-                {{ $t(`lessons.detail.roles.${participant.role}`) }}
+                {{ getParticipantRoleLabel(participant.role) }}
               </p>
             </li>
           </ul>
@@ -222,8 +222,44 @@ const timezoneLabel = computed(
 
 const statusLabel = computed(() => {
   if (!lesson.value?.status) return '—'
-  return t(`lessons.calendar.status.${lesson.value.status}`) ?? lesson.value.status
+  return getLessonStatusLabel(lesson.value.status)
 })
+
+function getLessonStatusLabel(status) {
+  switch (status) {
+    case 'scheduled':
+      return t('lessons.calendar.status.scheduled')
+    case 'completed':
+      return t('lessons.calendar.status.completed')
+    case 'cancelled':
+      return t('lessons.calendar.status.cancelled')
+    case 'in_progress':
+      return t('lessons.calendar.status.in_progress')
+    case 'draft':
+      return t('lessons.calendar.status.draft')
+    default:
+      return status ? status : '—'
+  }
+}
+
+function getParticipantRoleLabel(role) {
+  switch (role) {
+    case 'assistant':
+      return t('lessons.detail.roles.assistant')
+    case 'host':
+      return t('lessons.detail.roles.host')
+    case 'solo':
+      return t('lessons.detail.roles.solo')
+    case 'student':
+      return t('lessons.detail.roles.student')
+    case 'tutor':
+      return t('lessons.detail.roles.tutor')
+    case 'viewer':
+      return t('lessons.detail.roles.viewer')
+    default:
+      return role ? role : '—'
+  }
+}
 
 const durationLabel = computed(() => {
   const start = lesson.value?.start || lesson.value?.start_at

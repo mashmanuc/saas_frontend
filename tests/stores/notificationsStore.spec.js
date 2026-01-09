@@ -10,8 +10,8 @@ const notifyInfoMock = vi.fn()
 
 vi.mock('../../src/api/notifications', () => ({
   notificationsApi: {
-    list: (...args) => listMock(...args),
-    markRead: (...args) => markReadMock(...args),
+    getNotifications: (...args) => listMock(...args),
+    markAsRead: (...args) => markReadMock(...args),
   },
 }))
 
@@ -50,17 +50,22 @@ describe('notifications store', () => {
       results: [
         {
           id: 'ntf-1',
+          type: 'test',
+          title: 'Title',
+          body: 'Body',
+          data: {},
           created_at: '2024-01-01T00:00:00.000Z',
           read_at: null,
         },
       ],
-      cursor: null,
-      has_more: false,
+      count: 1,
+      next: null,
+      previous: null,
     })
 
     await store.fetchNotifications({ replace: true })
 
-    expect(listMock).toHaveBeenCalledWith(null)
+    expect(listMock).toHaveBeenCalledWith({ limit: 10 })
     expect(store.items).toHaveLength(1)
     expect(store.loading).toBe(false)
   })
@@ -71,6 +76,10 @@ describe('notifications store', () => {
     store.items = [
       {
         id: 'ntf-1',
+        type: 'test',
+        title: 'Title',
+        body: 'Body',
+        data: {},
         created_at: '2024-01-01T00:00:00.000Z',
         read_at: null,
       },
@@ -101,13 +110,17 @@ describe('notifications store', () => {
     store.items = [
       {
         id: 'ntf-1',
+        type: 'test',
+        title: 'Title',
+        body: 'Body',
+        data: {},
         created_at: '2024-01-01T00:00:00.000Z',
         read_at: null,
       },
     ]
     markReadMock.mockRejectedValueOnce(new Error('500'))
 
-    await store.markAsRead('ntf-1')
+    await expect(store.markAsRead('ntf-1')).rejects.toThrow()
 
     expect(markReadMock).toHaveBeenCalled()
     expect(store.items[0].read_at).toBeNull()

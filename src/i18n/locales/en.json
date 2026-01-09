@@ -31,16 +31,6 @@
       "lessonsCount": "Lessons"
     }
   },
-  "tutor": {
-    "invitedStudents": {
-      "title": "Student Invitations",
-      "empty": "You have no invited students",
-      "requestedAt": "Request sent",
-      "status": "Pending confirmation",
-      "accept": "Accept",
-      "message": "Message"
-    }
-  },
   "limits": {
     "studentRequests": "Tutor Requests",
     "tutorAccepts": "Request Accepts",
@@ -55,29 +45,6 @@
   },
   "loader": {
     "loading": "Loading..."
-  },
-  "common": {
-    "close": "Close",
-    "confirm": "Confirm",
-    "cancel": "Cancel",
-    "save": "Save",
-    "delete": "Delete",
-    "confirmDelete": "Are you sure you want to delete?",
-    "edit": "Edit",
-    "back": "Back",
-    "next": "Next",
-    "submit": "Submit",
-    "loading": "Loading...",
-    "error": "Error",
-    "success": "Success",
-    "perHour": "/ hour",
-    "retry": "Retry",
-    "bookLesson": "Book lesson",
-    "joinCurrentLesson": "Join current lesson",
-    "openLessonChat": "Open lesson chat",
-    "bookLessonToChat": "Book lesson to chat",
-    "never": "Never",
-    "loadMore": "Load more"
   },
   "userProfile": {
     "account": {
@@ -137,6 +104,43 @@
   },
   "notifications": {
     "title": "Notifications",
+    "bell": {
+      "ariaLabel": "Notifications",
+      "title": "Notifications",
+      "markAllRead": "Mark all as read",
+      "viewAll": "View all",
+      "emptyTitle": "No notifications",
+      "emptyDesc": "New notifications will appear here",
+      "errorTitle": "Loading error",
+      "errorDesc": "Failed to load notifications",
+      "retry": "Try again"
+    },
+    "view": {
+      "title": "Notifications",
+      "filterAll": "All",
+      "filterUnread": "Unread",
+      "markAllRead": "Mark all as read",
+      "markRead": "Mark as read",
+      "errorTitle": "Loading error",
+      "errorDesc": "Failed to load notifications. Please try again.",
+      "retry": "Try again",
+      "emptyAllTitle": "No notifications",
+      "emptyAllDesc": "You don't have any notifications yet",
+      "emptyUnreadTitle": "All notifications read",
+      "emptyUnreadDesc": "You have no unread notifications"
+    },
+    "preferences": {
+      "title": "Notification Settings",
+      "description": "Manage how you receive notifications",
+      "emailLabel": "Email notifications",
+      "emailHint": "Receive notifications via email",
+      "inAppLabel": "In-app notifications",
+      "inAppHint": "Show notifications in the platform interface",
+      "loading": "Loading settings...",
+      "errorLoading": "Failed to load settings",
+      "saveError": "Failed to save settings",
+      "retry": "Try again"
+    },
     "dropdown": {
       "ariaLabel": "Notifications",
       "open": "Open notification menu",
@@ -489,7 +493,7 @@
     "filters": {
       "subjects": "Subjects",
       "selectSubjects": "Select subjects",
-      "priceRange": "Price per hour",
+      "priceRangeLabel": "Price range",
       "min": "From",
       "max": "To",
       "minRating": "Minimum rating",
@@ -500,7 +504,46 @@
       "priceDesc": "Price (descending)",
       "newest": "Newest first",
       "apply": "Apply",
-      "reset": "Reset"
+      "reset": "Reset",
+      "title": "Filters",
+      "clear": "Clear",
+      "refresh": "Refresh",
+      "cacheExpiredTitle": "Filter data is outdated",
+      "cacheExpiredDays": "Updated {count} days ago",
+      "cacheExpiredHours": "Updated {count} hours ago",
+      "cacheExpiredMinutes": "Updated {count} minutes ago",
+      "cacheExpiredJustNow": "Just updated",
+      "search": "Search",
+      "searchPlaceholder": "Type at least 2 characters",
+      "language": "Language",
+      "languages": "Languages",
+      "subject": "Subject",
+      "category": "Category",
+      "country": "Country",
+      "allCountries": "All countries",
+      "price": "Price",
+      "priceRange": "{min} – {max}",
+      "rating": "Rating",
+      "ratingMin": "{rating}+",
+      "experience": "Experience (years)",
+      "experiencePlaceholder": "e.g. 3",
+      "experienceMax": "Experience up to (years)",
+      "experienceMaxPlaceholder": "e.g. 10",
+      "direction": "Direction",
+      "directionNmt": "NMT exam prep",
+      "directionDpa": "DPA exam prep",
+      "format": "Format",
+      "formatOnline": "Online",
+      "formatOffline": "Offline",
+      "formatHybrid": "Hybrid",
+      "timezone": "Timezone",
+      "timezonePlaceholder": "e.g. Europe/Kyiv",
+      "video": "Video",
+      "hasVideo": "Has video intro",
+      "hasCertifications": "Has certifications",
+      "verified": "Verification",
+      "verifiedOnly": "Verified only",
+      "clearAll": "Clear all"
     },
     "tagGroups": {
       "grades": "Grades",
@@ -655,52 +698,6 @@
       "featured": "Featured tutors",
       "viewAll": "View all",
       "loadError": "Failed to load tutors"
-    },
-    "filters": {
-      "title": "Filters",
-      "clear": "Clear",
-      "refresh": "Refresh",
-      "cacheExpiredTitle": "Filter data is outdated",
-      "cacheExpiredDays": "Updated {count} days ago",
-      "cacheExpiredHours": "Updated {count} hours ago",
-      "cacheExpiredMinutes": "Updated {count} minutes ago",
-      "cacheExpiredJustNow": "Just updated",
-      "search": "Search",
-      "searchPlaceholder": "Type at least 2 characters",
-      "language": "Language",
-      "languages": "Languages",
-      "subject": "Subject",
-      "subjects": "Subjects",
-      "category": "Category",
-      "country": "Country",
-      "allCountries": "All countries",
-      "price": "Price",
-      "priceRangeLabel": "Price range",
-      "min": "Min",
-      "max": "Max",
-      "priceRange": "${min} – ${max}",
-      "rating": "Rating",
-      "ratingMin": "{rating}+",
-      "experience": "Experience (years)",
-      "experiencePlaceholder": "e.g. 3",
-      "experienceMax": "Experience up to (years)",
-      "experienceMaxPlaceholder": "e.g. 10",
-      "direction": "Direction",
-      "directionNmt": "NMT exam prep",
-      "directionDpa": "DPA exam prep",
-      "format": "Format",
-      "any": "Any",
-      "formatOnline": "Online",
-      "formatOffline": "Offline",
-      "formatHybrid": "Hybrid",
-      "timezone": "Timezone",
-      "timezonePlaceholder": "e.g. Europe/Kyiv",
-      "video": "Video",
-      "hasVideo": "Has video intro",
-      "hasCertifications": "Has certifications",
-      "verified": "Verification",
-      "verifiedOnly": "Verified only",
-      "clearAll": "Clear all"
     },
     "errors": {
       "validation": "Please check your input.",
@@ -1068,6 +1065,7 @@
     "moveUp": "Move up",
     "moveDown": "Move down",
     "confirmDelete": "Are you sure you want to delete?",
+    "confirm": "Confirm",
     "search": "Search",
     "refresh": "Refresh",
     "remove": "Remove",
@@ -1090,7 +1088,18 @@
     },
     "delete": "Delete",
     "save": "Save",
+    "edit": "Edit",
     "understood": "Got it",
+    "submit": "Submit",
+    "success": "Success",
+    "error": "Error",
+    "perHour": "/ hour",
+    "bookLesson": "Book lesson",
+    "joinCurrentLesson": "Join current lesson",
+    "openLessonChat": "Open lesson chat",
+    "bookLessonToChat": "Book lesson to chat",
+    "never": "Never",
+    "loadMore": "Load more",
     "weekdays": {
       "full": {},
       "short": {
@@ -1119,7 +1128,6 @@
     "currency": "Currency",
     "executing": "Running",
     "hour": "hr",
-    "loadMore": "Load more",
     "min": "min",
     "minutes": "Minutes",
     "previous": "Back",
@@ -1263,6 +1271,14 @@
       "info": {},
       "actions": {},
       "notifications": {}
+    },
+    "invitedStudents": {
+      "title": "Student Invitations",
+      "empty": "You have no invited students",
+      "requestedAt": "Request sent",
+      "status": "Pending confirmation",
+      "accept": "Accept",
+      "message": "Message"
     },
     "search": {
       "title": "Find a tutor",
@@ -2296,10 +2312,12 @@
         "confirmDeleteMessage": "Are you sure you want to delete the lesson with {student}? This action cannot be undone."
       },
       "eventDetails": {
+        "title": "Lesson details",
         "time": "Time",
         "student": "Student",
         "duration": "Duration",
-        "comment": "Comment"
+        "comment": "Comment",
+        "joinLesson": "Join lesson"
       },
       "joinPicker": {
         "title": "Choose how to join",
@@ -3182,7 +3200,8 @@
       "cancelButton": "Cancel",
       "sending": "Sending...",
       "success": "Request sent successfully",
-      "error": "Error sending request"
+      "error": "Error sending request",
+      "upgradeNow": "Upgrade Now"
     },
     "status": {
       "open": "Awaiting response",
@@ -3195,9 +3214,6 @@
       "not_allowed": "Request not allowed",
       "invalid_state": "Invalid operation for current request state",
       "subscription_required": "PRO subscription required to create requests. Upgrade your subscription to continue."
-    },
-    "modal": {
-      "upgradeNow": "Upgrade Now"
     }
   },
   "contact": {

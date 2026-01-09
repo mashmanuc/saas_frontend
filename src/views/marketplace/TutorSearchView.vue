@@ -17,7 +17,7 @@
         
         <!-- Price Range -->
         <div>
-          <label class="block text-sm font-medium mb-2">{{ t('marketplace.filters.priceRange') }}</label>
+          <label class="block text-sm font-medium mb-2">{{ t('marketplace.filters.priceRangeLabel') }}</label>
           <div class="flex gap-2">
             <Input
               v-model.number="filters.min_rate"

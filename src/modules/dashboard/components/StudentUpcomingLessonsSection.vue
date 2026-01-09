@@ -1,7 +1,7 @@
 <template>
   <Card class="space-y-4">
     <Heading :level="2">
-      {{ $t('student.upcomingLessons.title') }}
+      {{ $t('studentDashboard.upcomingLessons.title') }}
     </Heading>
 
     <!-- Loading State -->
@@ -20,15 +20,15 @@
         class="rounded-2xl border border-dashed border-default bg-surface-soft p-4 space-y-1"
       >
         <p class="text-sm font-semibold text-body">
-          {{ $t('student.upcomingLessons.empty.title') }}
+          {{ $t('studentDashboard.upcomingLessons.empty.title') }}
         </p>
         <p class="text-sm text-muted">
-          {{ $t('student.upcomingLessons.empty.description') }}
+          {{ $t('studentDashboard.upcomingLessons.empty.description') }}
         </p>
       </div>
       <div class="flex flex-wrap gap-3">
         <Button variant="primary" size="sm" @click="goToBookLesson">
-          {{ $t('student.actions.bookLesson') }}
+          {{ $t('studentDashboard.actions.bookLesson') }}
         </Button>
       </div>
     </template>
@@ -48,7 +48,7 @@
         to="/bookings" 
         class="inline-flex items-center text-sm text-accent hover:underline"
       >
-        {{ $t('student.actions.viewAllLessons') }}
+        {{ $t('studentDashboard.actions.viewAllLessons') }}
         <svg 
           class="ml-1 w-4 h-4" 
           fill="none" 

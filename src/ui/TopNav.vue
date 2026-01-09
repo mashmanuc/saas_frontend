@@ -50,7 +50,7 @@
           <span class="dot" aria-hidden="true" />
           <span class="label">{{ $t('realtime.offline') }}</span>
         </span>
-        <NotificationDropdown class="hidden sm:block" />
+        <NotificationBell class="hidden sm:block" />
       </div>
 
       <!-- User avatar -->
@@ -114,7 +114,7 @@ import { useAuthStore } from '../modules/auth/store/authStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useThemeStore } from '../stores/themeStore'
 import { useI18n } from 'vue-i18n'
-import NotificationDropdown from './NotificationDropdown.vue'
+import NotificationBell from '../components/Notifications/NotificationBell.vue'
 import { useRealtimeStore } from '../stores/realtimeStore'
 
 const router = useRouter()

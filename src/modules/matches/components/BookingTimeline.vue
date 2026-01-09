@@ -20,6 +20,37 @@ const statusIcon = {
   canceled: XCircle
 }
 
+function getTimelineEventLabel(eventType: string | null | undefined): string {
+  switch (eventType) {
+    case 'lesson_cancelled':
+      return t('booking.timeline.events.lesson_cancelled')
+    case 'lesson_completed':
+      return t('booking.timeline.events.lesson_completed')
+    case 'lesson_scheduled':
+      return t('booking.timeline.events.lesson_scheduled')
+    case 'payment_pending':
+      return t('booking.timeline.events.payment_pending')
+    case 'payment_received':
+      return t('booking.timeline.events.payment_received')
+    case 'request_accepted':
+      return t('booking.timeline.events.request_accepted')
+    case 'request_cancelled':
+      return t('booking.timeline.events.request_cancelled')
+    case 'request_created':
+      return t('booking.timeline.events.request_created')
+    case 'request_pending':
+      return t('booking.timeline.events.request_pending')
+    case 'request_rejected':
+      return t('booking.timeline.events.request_rejected')
+    case 'template_applied':
+      return t('booking.timeline.events.template_applied')
+    case 'template_failed':
+      return t('booking.timeline.events.template_failed')
+    default:
+      return eventType ? eventType : ''
+  }
+}
+
 async function loadBooking() {
   await bookingStore.fetchBooking(props.bookingId)
 }
@@ -47,7 +78,7 @@ onMounted(() => {
           <component :is="statusIcon[event.event] || Clock" :size="20" />
         </div>
         <div class="content">
-          <h4>{{ t(`booking.timeline.events.${event.event}`) }}</h4>
+          <h4>{{ getTimelineEventLabel(event.event) }}</h4>
           <p class="actor">{{ t('booking.timeline.by', { actor: event.actor }) }}</p>
           <p class="timestamp">{{ event.timestamp }}</p>
           <p v-if="event.request_id" class="request-id">

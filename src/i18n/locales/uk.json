@@ -39,6 +39,47 @@
       "status": "Очікує підтвердження",
       "accept": "Прийняти",
       "message": "Повідомлення"
+    },
+    "lessonLinks": {
+      "title": "Посилання на уроки",
+      "subtitle": "Налаштуйте основне та резервне посилання для проведення уроків",
+      "provider": "Платформа",
+      "url": "Посилання",
+      "providers": {
+        "platform": "Платформа M4SH",
+        "zoom": "Zoom",
+        "meet": "Google Meet",
+        "custom": "Власне посилання"
+      },
+      "primary": {
+        "title": "Основне посилання",
+        "description": "Це посилання буде використовуватися для всіх уроків за замовчуванням"
+      },
+      "backup": {
+        "title": "Резервне посилання",
+        "description": "Буде використовуватися, якщо основне посилання недоступне"
+      },
+      "preview": {
+        "title": "Поточне посилання",
+        "current": "Активне посилання"
+      },
+      "platformInfo": "Платформа автоматично генерує унікальні посилання для кожного уроку",
+      "platformGenerated": "Генерується автоматично",
+      "notSet": "Не встановлено",
+      "validation": {
+        "required": "Поле обов'язкове",
+        "invalidUrl": "Невірний формат посилання",
+        "invalidProtocol": "Посилання має починатися з https://",
+        "fixErrors": "Виправте помилки перед збереженням"
+      },
+      "success": {
+        "saved": "Посилання успішно збережено"
+      },
+      "errors": {
+        "loadFailed": "Не вдалося завантажити посилання",
+        "saveFailed": "Не вдалося зберегти посилання",
+        "conflict": "Налаштування були змінені в іншій сесії. Оновіть сторінку."
+      }
     }
   },
   "limits": {
@@ -50,7 +91,8 @@
     "limitReached": "Ліміт вичерпано. Оновлення {resetDate}",
     "types": {
       "student_request": "запити до тьюторів",
-      "tutor_accept": "прийняття запитів"
+      "tutor_accept": "прийняття запитів",
+      "${limit_type}": "{limit_type}"
     }
   },
   "common": {
@@ -60,6 +102,7 @@
     "save": "Зберегти",
     "delete": "Видалити",
     "confirmDelete": "Ви впевнені, що хочете видалити?",
+    "confirmDiscard": "Скасувати незбережені зміни?",
     "edit": "Редагувати",
     "back": "Назад",
     "next": "Далі",
@@ -69,6 +112,84 @@
     "success": "Успішно",
     "perHour": "/ год",
     "retry": "Спробувати знову",
+    "accept": "Прийняти",
+    "all": "Усі",
+    "apply": "Застосувати",
+    "clear": "Очистити",
+    "continue": "Продовжити",
+    "copy": "Копіювати",
+    "creating": "Створюємо",
+    "currency": "Валюта",
+    "daysAgo": "{count} дн. тому",
+    "decline": "Відхилити",
+    "executing": "Виконуємо",
+    "exit": "Вийти",
+    "hour": "год",
+    "hoursAgo": "{count} год тому",
+    "justNow": "Щойно",
+    "later": "Пізніше",
+    "lock": "Заблокувати",
+    "min": "хв",
+    "minutes": "Хвилини",
+    "minutesAgo": "{count} хв тому",
+    "moveDown": "Перемістити вниз",
+    "moveUp": "Перемістити вгору",
+    "nextWeek": "Наступний тиждень",
+    "notSpecified": "Не вказано",
+    "of": "з",
+    "offline": {
+      "title": "Офлайн",
+      "message": "Ви не в мережі",
+      "lastSync": "Остання синхронізація",
+      "retrying": "Повторна спроба",
+      "retry": "Повторити"
+    },
+    "open": "Відкрити",
+    "optional": "необов'язково",
+    "other": "Інше",
+    "previous": "Назад",
+    "previousWeek": "Попередній тиждень",
+    "rateLimit": {
+      "features": {},
+      "message": "Забагато запитів. Зачекайте перед повтором.",
+      "seconds": "секунд",
+      "title": "Ліміт запитів перевищено",
+      "tryNow": "Спробувати зараз",
+      "waiting": "Очікування..."
+    },
+    "refresh": "Оновити",
+    "reject": "Відхилити",
+    "remove": "Видалити",
+    "saving": "Зберігаємо",
+    "search": "Пошук",
+    "searching": "Пошук",
+    "showing": "Показано",
+    "there": "там",
+    "today": "Сьогодні",
+    "understood": "Зрозуміло",
+    "unlock": "Розблокувати",
+    "weekdays": {
+      "full": {},
+      "short": {
+        "mon": "Пн",
+        "tue": "Вт",
+        "wed": "Ср",
+        "thu": "Чт",
+        "fri": "Пт",
+        "sat": "Сб",
+        "sun": "Нд"
+      },
+      "monday": "Понеділок",
+      "tuesday": "Вівторок",
+      "wednesday": "Середа",
+      "thursday": "Четвер",
+      "friday": "Пʼятниця",
+      "saturday": "Субота",
+      "sunday": "Неділя",
+      "${weekday}": "{weekday}",
+      "${day}": "{day}"
+    },
+    "years": "років",
     "bookLesson": "Забронювати урок",
     "joinCurrentLesson": "Приєднатися до уроку",
     "openLessonChat": "Відкрити чат уроку",
@@ -92,6 +213,43 @@
   },
   "notifications": {
     "title": "Сповіщення",
+    "bell": {
+      "ariaLabel": "Сповіщення",
+      "title": "Сповіщення",
+      "markAllRead": "Позначити всі прочитаними",
+      "viewAll": "Переглянути всі",
+      "emptyTitle": "Немає сповіщень",
+      "emptyDesc": "Нові сповіщення з'являться тут",
+      "errorTitle": "Помилка завантаження",
+      "errorDesc": "Не вдалося завантажити сповіщення",
+      "retry": "Спробувати ще раз"
+    },
+    "view": {
+      "title": "Сповіщення",
+      "filterAll": "Всі",
+      "filterUnread": "Непрочитані",
+      "markAllRead": "Позначити всі прочитаними",
+      "markRead": "Позначити прочитаним",
+      "errorTitle": "Помилка завантаження",
+      "errorDesc": "Не вдалося завантажити сповіщення. Спробуйте ще раз.",
+      "retry": "Спробувати ще раз",
+      "emptyAllTitle": "Немає сповіщень",
+      "emptyAllDesc": "У вас поки що немає жодних сповіщень",
+      "emptyUnreadTitle": "Всі сповіщення прочитані",
+      "emptyUnreadDesc": "У вас немає непрочитаних сповіщень"
+    },
+    "preferences": {
+      "title": "Налаштування сповіщень",
+      "description": "Керуйте способами отримання сповіщень",
+      "emailLabel": "Email сповіщення",
+      "emailHint": "Отримувати сповіщення на електронну пошту",
+      "inAppLabel": "Сповіщення в додатку",
+      "inAppHint": "Показувати сповіщення в інтерфейсі платформи",
+      "loading": "Завантаження налаштувань...",
+      "errorLoading": "Не вдалося завантажити налаштування",
+      "saveError": "Не вдалося зберегти налаштування",
+      "retry": "Спробувати ще раз"
+    },
     "dropdown": {
       "ariaLabel": "Сповіщення",
       "open": "Відкрити меню сповіщень",
@@ -105,7 +263,7 @@
       "loadingSubtitle": "Синхронізуємо активність…",
       "emptySubtitle": "Нових сповіщень немає",
       "emptyTitle": "Тут поки тихо",
-      "emptyDescription": "Реальні оновлення з’являтимуться тут.",
+      "emptyDescription": "Реальні оновлення з'являтимуться тут.",
       "errorTitle": "Не вдалось завантажити",
       "errorDescription": "Спробуйте повторити за хвилину.",
       "retry": "Повторити",
@@ -142,7 +300,11 @@
     "themeOptions": {
       "light": {},
       "dark": {},
-      "classic": {}
+      "classic": {},
+      "${value}": {
+        "label": "{value}",
+        "description": ""
+      }
     },
     "themeMeta": {
       "light": {
@@ -488,7 +650,7 @@
     "filters": {
       "subjects": "Предмети",
       "selectSubjects": "Оберіть предмети",
-      "priceRange": "Ціна за годину",
+      "priceRangeLabel": "Діапазон цін",
       "min": "Від",
       "max": "До",
       "minRating": "Мінімальний рейтинг",
@@ -499,7 +661,46 @@
       "priceDesc": "За ціною (спадання)",
       "newest": "Нові спочатку",
       "apply": "Застосувати",
-      "reset": "Скинути"
+      "reset": "Скинути",
+      "title": "Фільтри",
+      "clear": "Очистити",
+      "refresh": "Оновити",
+      "cacheExpiredTitle": "Дані фільтрів застаріли",
+      "cacheExpiredDays": "Оновлено {count} дн. тому",
+      "cacheExpiredHours": "Оновлено {count} год. тому",
+      "cacheExpiredMinutes": "Оновлено {count} хв. тому",
+      "cacheExpiredJustNow": "Щойно оновлено",
+      "search": "Пошук",
+      "searchPlaceholder": "Введіть щонайменше 2 символи",
+      "language": "Мова",
+      "languages": "Мови",
+      "subject": "Предмет",
+      "category": "Категорія",
+      "country": "Країна",
+      "allCountries": "Усі країни",
+      "price": "Ціна",
+      "priceRange": "{min} – {max}",
+      "rating": "Рейтинг",
+      "ratingMin": "від {rating}+",
+      "experience": "Досвід (роки)",
+      "experiencePlaceholder": "Напр. 3",
+      "experienceMax": "Досвід до (роки)",
+      "experienceMaxPlaceholder": "Напр. 10",
+      "direction": "Напрям",
+      "directionNmt": "Підготовка до НМТ",
+      "directionDpa": "Підготовка до ДПА",
+      "format": "Формат",
+      "formatOnline": "Онлайн",
+      "formatOffline": "Офлайн",
+      "formatHybrid": "Гібрид",
+      "timezone": "Часовий пояс",
+      "timezonePlaceholder": "Напр. Europe/Kyiv",
+      "video": "Відео",
+      "hasVideo": "Є відео-інтро",
+      "hasCertifications": "Є сертифікати",
+      "verified": "Верифікація",
+      "verifiedOnly": "Лише верифіковані",
+      "clearAll": "Очистити все"
     },
     "availableSlots": "Доступні слоти",
     "noAvailableSlots": "Немає доступних слотів",
@@ -509,7 +710,9 @@
       "levels": "Рівні",
       "goals": "Цілі",
       "formats": "Формати",
-      "audience": "Аудиторія"
+      "audience": "Аудиторія",
+      "${groupName}": "{groupName}",
+      "${group}": "{group}"
     },
     "subjects": {
       "english": "╨Р╨╜╨│╨╗╤Ц╨╣╤Б╤М╨║╨░",
@@ -536,7 +739,8 @@
       "ielts": "╨Я╤Ц╨┤╨│╨╛╤В╨╛╨▓╨║╨░ ╨┤╨╛ IELTS",
       "toefl": "╨Я╤Ц╨┤╨│╨╛╤В╨╛╨▓╨║╨░ ╨┤╨╛ TOEFL",
       "sat": "╨Я╤Ц╨┤╨│╨╛╤В╨╛╨▓╨║╨░ ╨┤╨╛ SAT",
-      "gre": "╨Я╤Ц╨┤╨│╨╛╤В╨╛╨▓╨║╨░ ╨┤╨╛ GRE"
+      "gre": "╨Я╤Ц╨┤╨│╨╛╤В╨╛╨▓╨║╨░ ╨┤╨╛ GRE",
+      "${code}": "{code}"
     },
     "countries": {
       "ukraine": "╨г╨║╤А╨░╤Ч╨╜╨░",
@@ -547,16 +751,17 @@
       "italy": "╨Ж╤В╨░╨╗╤Ц╤П",
       "unitedKingdom": "╨Т╨╡╨╗╨╕╨║╨░ ╨С╤А╨╕╤В╨░╨╜╤Ц╤П",
       "unitedStates": "╨б╨и╨Р",
-      "canada": "╨Ъ╨░╨╜╨░╨┤╨░",
+      "canada": "╨Ъ╨░╨┤╨░╨┤╨░",
       "australia": "╨Р╨▓╤Б╤В╤А╨░╨╗╤Ц╤П",
       "turkey": "╨в╤Г╤А╨╡╤З╤З╨╕╨╜╨░",
-      "india": "╨Ж╨╜╨┤╤Ц╤П",
+      "india": "╨Ж╨┤╨┤╤Ц╤П",
       "china": "╨Ъ╨╕╤В╨░╨╣",
       "brazil": "╨С╤А╨░╨╖╨╕╨╗╤Ц╤П",
       "czechia": "╨з╨╡╤Е╤Ц╤П",
       "slovakia": "╨б╨╗╨╛╨▓╨░╤З╤З╨╕╨╜╨░",
-      "romania": "╨а╤Г╨╝╤Г╨╜╤Ц╤П",
-      "hungary": "╨г╨│╨╛╤А╤Й╨╕╨╜╨░"
+      "romania": "╨а╤Г╨╝╤Г╨┐╤Ц╤П",
+      "hungary": "╨г╨│╨╛╤А╤Й╨╕╨╜╨░",
+      "${country.labelKey}": "{country.labelKey}"
     },
     "availability": {
       "title": "Доступність тьютора",
@@ -564,6 +769,7 @@
       "loadError": "Не вдалося завантажити доступність."
     },
     "calendar": {
+      "title": "Календар",
       "errorHorizon": "Неможливо завантажити календар за межами 4 тижнів",
       "errorLoad": "Не вдалося завантажити доступність",
       "bookSlotAria": "Забронювати слот на {time}"
@@ -576,7 +782,31 @@
       "submit": "Забронювати пробний урок",
       "submitting": "Надсилаємо…",
       "success": "Запит на пробний урок надіслано (pending).",
-      "error": "Не вдалося створити запит."
+      "error": "Не вдалося створити запит.",
+      "refreshCalendar": "Оновити календар",
+      "slotUnavailable": "Слот недоступний"
+    },
+    "common": {
+      "perHour": "/ год"
+    },
+    "errors": {
+      "validationFailed": "Помилка валідації",
+      "validation": "Перевірте коректність даних.",
+      "slotConflict": "Слот вже зайнятий. Оберіть інший час.",
+      "rateLimited": "Забагато запитів. Спробуйте пізніше.",
+      "payloadTooLarge": "Дані завеликі. Зменшіть обсяг і спробуйте ще раз.",
+      "forbidden": "Доступ заборонено.",
+      "serverError": "Помилка сервера. Спробуйте пізніше.",
+      "loadTutors": "Не вдалося завантажити тьюторів.",
+      "loadProfile": "Не вдалося завантажити профіль тьютора.",
+      "createProfile": "Не вдалося створити профіль.",
+      "updateProfile": "Не вдалося зберегти профіль.",
+      "submitForReview": "Не вдалося надіслати профіль на модерацію.",
+      "publishProfile": "Не вдалося опублікувати профіль.",
+      "unpublishProfile": "Не вдалося зняти профіль з публікації.",
+      "limitExceeded": "Ліміт {type} вичерпано ({used}/{max}). Оновлення {resetDate}",
+      "notFound": "Не знайдено",
+      "unknown": "Невідома помилка"
     },
     "tutorCard": {
       "experience": "Досвід",
@@ -642,78 +872,14 @@
     },
     "categories": {
       "title": "╨Ъ╨░╤В╨╡╨│╨╛╤А╤Ц╤Ч",
-      "featuredBadge": "╨а╨╡╨║╨╛╨╝╨╡╨╜╨┤╨╛╨▓╨░╨╜╨╛",
+      "featuredBadge": "╨а╨╡╨║╨╛╨╝╨╡╨┤╨╛╨▓╨░╨┤╨╛",
       "all": "╨г╤Б╤Ц",
       "tutorsAvailable": "╨Ф╨╛╤Б╤В╤Г╨┐╨╜╨╛ {count} ╤В╤М╤О╤В╨╛╤А╤Ц╨▓",
       "allTutorsTitle": "╨г╤Б╤Ц ╤В╤М╤О╤В╨╛╤А╨╕",
-      "subjectTutorsTitle": "╨в╤М╤О╤В╨╛╤А╨╕ ╨╖ ╨┐╤А╨╡╨┤╨╝╨╡╤В╤Г: {subject}",
-      "emptyTitle": "╨Я╨╛╨║╨╕ ╨╜╨╡╨╝╨░╤Ф ╤В╤М╤О╤В╨╛╤А╤Ц╨▓ ╤Г ╤Ж╤Ц╨╣ ╨║╨░╤В╨╡╨│╨╛╤А╤Ц╤Ч",
-      "emptyDescription": "╨б╨┐╤А╨╛╨▒╤Г╨╣╤В╨╡ ╤Ц╨╜╤И╤Г ╨║╨░╤В╨╡╨│╨╛╤А╤Ц╤О ╨░╨▒╨╛ ╨┐╨╛╨▓╨╡╤А╨╜╤Ц╤В╤М╤Б╤П ╨┐╤Ц╨╖╨╜╤Ц╤И╨╡",
-      "featured": "╨а╨╡╨║╨╛╨╝╨╡╨╜╨┤╨╛╨▓╨░╨╜╤Ц"
-    },
-    "filters": {
-      "title": "Фільтри",
-      "clear": "Очистити",
-      "refresh": "Оновити",
-      "cacheExpiredTitle": "Дані фільтрів застаріли",
-      "cacheExpiredDays": "Оновлено {count} дн. тому",
-      "cacheExpiredHours": "Оновлено {count} год. тому",
-      "cacheExpiredMinutes": "Оновлено {count} хв. тому",
-      "cacheExpiredJustNow": "Щойно оновлено",
-      "search": "Пошук",
-      "searchPlaceholder": "Введіть щонайменше 2 символи",
-      "language": "Мова",
-      "languages": "Мови",
-      "subject": "Предмет",
-      "subjects": "Предмети",
-      "category": "Категорія",
-      "country": "Країна",
-      "allCountries": "Усі країни",
-      "price": "Ціна",
-      "priceRangeLabel": "Діапазон ціни",
-      "min": "Мін.",
-      "max": "Макс.",
-      "priceRange": "{min} – {max}",
-      "rating": "Рейтинг",
-      "ratingMin": "від {rating}+",
-      "experience": "Досвід (роки)",
-      "experiencePlaceholder": "Напр. 3",
-      "experienceMax": "Досвід до (роки)",
-      "experienceMaxPlaceholder": "Напр. 10",
-      "direction": "Напрям",
-      "directionNmt": "Підготовка до НМТ",
-      "directionDpa": "Підготовка до ДПА",
-      "format": "Формат",
-      "any": "Будь-який",
-      "formatOnline": "Онлайн",
-      "formatOffline": "Офлайн",
-      "formatHybrid": "Гібрид",
-      "timezone": "Часовий пояс",
-      "timezonePlaceholder": "Напр. Europe/Kyiv",
-      "video": "Відео",
-      "hasVideo": "Є відео-інтро",
-      "hasCertifications": "Є сертифікати",
-      "verified": "Верифікація",
-      "verifiedOnly": "Лише верифіковані",
-      "clearAll": "Очистити все"
-    },
-    "errors": {
-      "validation": "Перевірте коректність даних.",
-      "slotConflict": "Слот вже зайнятий. Оберіть інший час.",
-      "rateLimited": "Забагато запитів. Спробуйте пізніше.",
-      "payloadTooLarge": "Дані завеликі. Зменшіть обсяг і спробуйте ще раз.",
-      "forbidden": "Доступ заборонено.",
-      "serverError": "Помилка сервера. Спробуйте пізніше.",
-      "loadTutors": "Не вдалося завантажити тьюторів.",
-      "loadProfile": "Не вдалося завантажити профіль тьютора.",
-      "createProfile": "Не вдалося створити профіль.",
-      "updateProfile": "Не вдалося зберегти профіль.",
-      "submitForReview": "Не вдалося надіслати профіль на модерацію.",
-      "publishProfile": "Не вдалося опублікувати профіль.",
-      "unpublishProfile": "Не вдалося зняти профіль з публікації.",
-      "limitExceeded": "Ліміт {type} вичерпано ({used}/{max}). Оновлення {resetDate}",
-      "notFound": "Не знайдено",
-      "unknown": "Невідома помилка"
+      "subjectTutorsTitle": "╨в╤М╤О╤В╨╛╤А╨╕ ╨┐ ╨┐╤А╨╡╨┤╨╝╨╡╤В╤Г: {subject}",
+      "emptyTitle": "╨Я╨╛╨║╨╕ ╨┐╨╡╨╝╨░╤Ф ╤В╤М╤О╤В╨╛╤А╤Ц╨▓ ╤Г ╤Ж╤Ц╨╣ ╨║╨░╤В╨╡╨│╨╛╤А╤Ц╤Ч",
+      "emptyDescription": "╨б╨┐╤А╨╛╨▒╤Г╨╣╤В╨╡ ╤Ц╨┐╤И╤Г ╨║╨░╤В╨╡╨│╨╛╤А╤Ц╤О ╨░╨▒╨╛ ╨┐╨╛╨▓╨╡╤А╨┐╤Ц╤В╤М╤Б╤П ╨┐╤Ц╨╖╨┐╤Ц╤И╨╡",
+      "featured": "╨а╨╡╨║╨╛╨╝╨╡╨┤╨╛╨▓╨░╨┤╤Ц"
     },
     "profile": {
       "title": "Профіль тьютора",
@@ -976,6 +1142,15 @@
   "calendar": {
     "analytics": {
       "title": "Аналітика доступності",
+      "editOperations": "Операції редагування",
+      "totalEdits": "Всього правок",
+      "successfulEdits": "Успішні правки",
+      "failedEdits": "Невдалі правки",
+      "avgDuration": "Середня тривалість",
+      "strategyDistribution": "Розподіл стратегій",
+      "conflictAnalysis": "Аналіз конфліктів",
+      "totalConflicts": "Всього конфліктів",
+      "recentActivity": "Остання активність",
       "period": {
         "today": "Сьогодні",
         "week": "Тиждень",
@@ -986,7 +1161,24 @@
       "totalSlots": "Всього слотів",
       "availableSlots": "Доступні слоти",
       "bookedSlots": "Заброньовані слоти",
-      "blockedSlots": "Заблоковані слоти"
+      "blockedSlots": "Заблоковані слоти",
+      "status": {
+        "error": "Помилка",
+        "success": "Успіх",
+        "warning": "Попередження",
+        "${activity.status}": "{activity.status}"
+      },
+      "activity": {
+        "batchEdit": "Пакетне редагування",
+        "conflictDetected": "Виявлено конфлікт",
+        "slotEdited": "Слот відредаговано"
+      },
+      "time": {
+        "justNow": "Щойно",
+        "minutesAgo": "{count} хв тому",
+        "hoursAgo": "{count} год тому",
+        "daysAgo": "{count} дн тому"
+      }
     },
     "slotEditor": {
       "title": "Редагування слоту",
@@ -1204,7 +1396,8 @@
       "available": "Доступно",
       "booked": "Заброньовано",
       "blocked": "Заблоковано",
-      "notAllow": "Недоступно"
+      "notAllow": "Не дозволено",
+      "${props.cell.status}": "{props.cell.status}"
     },
     "tooltips": {
       "clickToBook": "Натисніть, щоб забронювати",
@@ -1477,6 +1670,10 @@
       "failed": {
         "details": "Перевірте мережу або спробуйте ще раз пізніше.",
         "title": "Помилка генерації слотів"
+      },
+      "${currentJob.status}": {
+        "title": "{currentJob.status}",
+        "details": ""
       }
     },
     "editor": {
@@ -1664,14 +1861,16 @@
     "superadmin": "Суперадмін",
     "admin": "Адмін",
     "tutor": "Тьютор",
-    "student": "Студент"
+    "student": "Студент",
+    "${role}": "{role}"
   },
   "notify": {
     "types": {
       "error": "Помилка",
       "success": "Успіх",
       "warning": "Попередження",
-      "info": "Інформація"
+      "info": "Інформація",
+      "${item.meta.labelKey}": "{item.meta.labelKey}"
     },
     "channels": {
       "email": "Email",
@@ -1777,7 +1976,8 @@
       "partialFailure": "{failed} зв'язків не вдалося обробити. Перевірте журнал.",
       "noChanges": "Зміни не застосовано.",
       "acceptSuccess": "{count} зв'язків прийнято",
-      "archiveSuccess": "{count} зв'язків заархівовано"
+      "archiveSuccess": "{count} зв'язків заархівовано",
+      "${type}Success": "{count}"
     },
     "meta": {
       "never": "Ще не було"
@@ -2165,10 +2365,14 @@
         "risks": "Можливі повторні порушення"
       },
       "resetAvailability": {
-        "title": "Очистити календар",
-        "description": "Видаляє всі майбутні слоти тьютора.",
-        "warning": "Цю операцію неможливо скасувати.",
-        "risks": "Учні втратять заплановані уроки|Потрібно вручну відновити розклад"
+        "title": "Скинути доступність",
+        "description": "Скинути доступність тьютора до стану за замовчуванням",
+        "warning": "Цю дію неможливо скасувати"
+      },
+      "${action}": {
+        "title": "{action}",
+        "description": "",
+        "warning": ""
       }
     },
     "matches": {
@@ -2220,7 +2424,12 @@
       "public": {}
     },
     "board": {
-      "layers": "Шари"
+      "title": "Дошка",
+      "participantsLabel": "{count} у сесії",
+      "empty": "Порожньо",
+      "layers": "Шари",
+      "${step.id}": "{step.id}",
+      "${steps[currentStep.value].id}Status": ""
     },
     "tools": {
       "actions": "Дії",
@@ -2242,7 +2451,8 @@
       "rectangle": "Прямокутник",
       "circle": "Коло",
       "text": "Текст",
-      "select": "Виділення"
+      "select": "Вибір",
+      "${tool.id}": "{tool.id}"
     },
     "reconnect": {
       "tips": {
@@ -2252,7 +2462,7 @@
         "title": "╨Я╨╛╤А╨░╨┤╨╕:"
       },
       "attempt": "╨б╨┐╤А╨╛╨▒╨░ {current} ╨╖ {max}",
-      "leave": "╨Т╨╕╨╣╤В╨╕ ╨╝╨░╨╗╤О╤З╨╡╨╜╨╜╤П...",
+      "leave": "╨Т╨╕╨╣╤В╨╕ ╨╝╨░╤В╨╡╨│╨╛╤А╤Ц╤Ч...",
       "title": "╨Я╨╡╤А╨╡╨┐╤Ц╨┤╨║╨╗╤О╤З╨╡╨╜╨╜╤П...",
       "connecting": "Відновлюємо зєднання",
       "connectionLost": "Звязок втрачено",
@@ -2271,8 +2481,9 @@
       "connecting": "Підключення",
       "connected": "Підключено",
       "disconnected": "Відключено",
+      "terminated": "Сесію завершено",
       "waiting": "Очікування",
-      "terminated": "Сесію завершено"
+      "${connectionStatus}": "{connectionStatus}"
     },
     "loader": {
       "ready": "Усе готово!",
@@ -2302,7 +2513,8 @@
     },
     "tabs": {
       "video": "Відео",
-      "board": "Дошка"
+      "board": "Дошка",
+      "${layout.id}": "{layout.id}"
     },
     "list": {
       "title": "Мої класи",
@@ -2349,13 +2561,16 @@
       "side-by-side": "Два вікна",
       "pip": "Картинка в картинці",
       "board-focus": "Лише дошка",
-      "video-focus": "Лише відео"
+      "video-focus": "Лише відео",
+      "${layout.id}": "{layout.id}"
     },
     "quality": {
-      "excellent": "Відмінний звʼязок",
-      "good": "Хороший звʼязок",
-      "fair": "Середній звʼязок",
-      "poor": "Нестабільний звʼязок"
+      "excellent": "Відмінна",
+      "good": "Добра",
+      "fair": "Середня",
+      "poor": "Нестабільний звʼязок",
+      "${overallQuality}": "{overallQuality}",
+      "${participant.connection_quality}": "{participant.connection_quality}"
     }
   },
   "chat": {
@@ -2398,7 +2613,8 @@
     "readMany": "переглянули",
     "editing": "Редагування повідомлення",
     "messageStatus": {
-      "delivered": "Доставлено"
+      "delivered": "Доставлено",
+      "${status}": "{status}"
     },
     "confirm": {
       "delete": "Видалити це повідомлення?"
@@ -2536,7 +2752,8 @@
         "assistant": "Асистент",
         "host": "Ведучий",
         "viewer": "Глядач",
-        "solo": "Соло-сеанс"
+        "solo": "Соло-сеанс",
+        "${participant.role}": "{participant.role}"
       },
       "notes": "Нотатки",
       "error": "Не вдалося завантажити дані уроку.",
@@ -2615,6 +2832,10 @@
   },
   "errors": {
     "somethingWentWrong": "Щось пішло не так",
+    "limitExceeded": "Ліміт {type} вичерпано ({used}/{max}). Оновлення {resetDate}",
+    "forbidden": "Доступ заборонено.",
+    "notFound": "Не знайдено.",
+    "unknown": "Невідома помилка.",
     "http": {
       "badRequest": "Невірний запит. Перевірте введені дані.",
       "unauthorized": "Сесія закінчилась. Увійдіть знову.",
@@ -2833,6 +3054,9 @@
     "bookingCommon": {
       "minutes": "хвилин"
     },
+    "common": {
+      "minutes": "хвилин"
+    },
     "template": {
       "title": "Налаштування тижневого розкладу",
       "subtitle": "Створіть шаблон доступності для автоматичної генерації слотів",
@@ -2903,7 +3127,8 @@
         "time": "Час",
         "student": "Студент",
         "duration": "Тривалість",
-        "comment": "Коментар"
+        "comment": "Коментар",
+        "joinLesson": "Приєднатись до уроку"
       },
       "joinPicker": {
         "title": "Оберіть спосіб підключення",
@@ -3045,14 +3270,16 @@
         "rejected": "Відхилені",
         "all": "Усі статуси"
       },
-      "statusFilter": "Фільтр за статусом"
+      "statusFilter": "Фільтр за статусом",
+      "${status}": "{status}"
     },
     "actions": {},
     "requestStatus": {
       "pending": "Очікує відповіді",
       "accepted": "Погоджено",
       "rejected": "Відхилено",
-      "cancelled": "Скасовано"
+      "cancelled": "Скасовано",
+      "${request.status}": "{request.status}"
     },
     "calenderPlaceholder": "Календар бронювань",
     "status": {
@@ -3064,7 +3291,8 @@
       "rejected": "Відхилено",
       "accepted": "Прийнято",
       "rescheduled": "Перенесено",
-      "failed": "Не вдалося"
+      "failed": "Не вдалося",
+      "${patch.newStatus}": "{patch.newStatus}"
     }
   },
   "oldBooking": {
@@ -3089,7 +3317,8 @@
       "pending": "Очікує",
       "invited": "Запрошення",
       "active": "Активні",
-      "archived": "Архів"
+      "archived": "Архів",
+      "${match.status}": "{match.status}"
     },
     "lastActivity": "Остання активність: {time}",
     "detail": {
@@ -3134,10 +3363,13 @@
     "noAccess": "Доступ заборонено"
   },
   "board": {
+    "title": "Дошка",
+    "participantsLabel": "{count} у сесії",
+    "empty": "Порожньо",
     "participantsList": {
       "cursorActive": "{name} ╨╖╨░╤А╨░╨╖ ╨╝╨░╨╗╤О╤Ф",
-      "subtitle": "╨Я╤А╨╕╤Б╤Г╤В╨╜╤Ц╤Б╤В╤М ╤В╨░ ╨║╤Г╤А╤Б╨╛╤А╨╕",
-      "title": "╨г╤З╨░╤Б╨╜╨╕╨║╨╕"
+      "subtitle": "╨Я╤А╨╕╤Б╤Г╤В╨┐╤Ц╤Б╤В╤М ╤В╨░ ╨║╤Г╤А╤Б╨╛╤А╨╕",
+      "title": "╨г╤З╨░╤Б╨┐╨╕╨║╨╕"
     },
     "status": {
       "saved": "╨Ч╨▒╨╡╤А╨╡╨╢╨╡╨╜╨╛",
@@ -3177,7 +3409,8 @@
         "confirmed": "Підтверджено",
         "completed": "Завершено",
         "cancelled": "Скасовано",
-        "unavailable": "Недоступно"
+        "unavailable": "Недоступно",
+        "${slot.status}": "{slot.status}"
       },
       "slotEditor": {
         "strategies": {
@@ -3192,6 +3425,9 @@
           "userChoice": {
             "title": "Ручний вибір",
             "description": "Вибрати іншу кастомну стратегію для цього кейсу"
+          },
+          "${strategy.name}": {
+            "title": ""
           }
         }
       }
@@ -3200,15 +3436,6 @@
       "detail": {
         "roles": {
           "${participant.role}": ""
-        }
-      }
-    },
-    "availability": {
-      "slotEditor": {
-        "strategies": {
-          "${strategy.name}": {
-            "title": ""
-          }
         }
       }
     },
@@ -3235,7 +3462,8 @@
       "cancelButton": "Скасувати",
       "sending": "Надсилання...",
       "success": "Запит успішно надіслано",
-      "error": "Помилка при надсиланні запиту"
+      "error": "Помилка при надсиланні запиту",
+      "upgradeNow": "Оновити зараз"
     },
     "status": {
       "open": "Очікує відповіді",
@@ -3248,9 +3476,6 @@
       "not_allowed": "Запит не дозволено",
       "invalid_state": "Неможлива операція для поточного стану запиту",
       "subscription_required": "Для створення запиту потрібна підписка PRO. Оновіть підписку для продовження."
-    },
-    "modal": {
-      "upgradeNow": "Оновити зараз"
     }
   },
   "contact": {

@@ -1,0 +1,261 @@
+import { defineStore } from 'pinia'
+import { ref, computed, toRaw } from 'vue'
+import { notificationsApi } from '@/api/notifications'
+import type { InAppNotification, NotificationPreferences } from '@/types/notifications'
+import { rethrowAsDomainError } from '@/utils/rethrowAsDomainError'
+
+function deepClone<T>(value: T): T {
+  const raw = toRaw(value) as T
+  if (typeof structuredClone === 'function') {
+    try {
+      return structuredClone(raw)
+    } catch {
+      // ignore and fallback to JSON clone
+    }
+  }
+  return JSON.parse(JSON.stringify(raw)) as T
+}
+
+export const useNotificationsStore = defineStore('notifications', () => {
+  const items = ref<InAppNotification[]>([])
+  const unreadCount = ref<number>(0)
+  const isLoading = ref<boolean>(false)
+  const error = ref<string | null>(null)
+  const preferences = ref<NotificationPreferences | null>(null)
+  const isLoadingPreferences = ref<boolean>(false)
+  const preferencesError = ref<string | null>(null)
+
+  // Dev / playground compatibility (existing project expectations)
+  const mockOffline = ref(false)
+  const debugEvents = ref<any[]>([])
+
+  let pollInterval: ReturnType<typeof setInterval> | null = null
+
+  const unreadItems = computed(() => items.value.filter(n => !n.read_at))
+
+  const latestItems = computed(() => items.value.slice(0, 10))
+
+  const sortedItems = computed(() => {
+    return [...items.value].sort((a, b) => {
+      const at = a.created_at ? Date.parse(a.created_at) : 0
+      const bt = b.created_at ? Date.parse(b.created_at) : 0
+      return bt - at
+    })
+  })
+
+  async function loadNotifications(params?: { unreadOnly?: boolean; limit?: number }) {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const response = await notificationsApi.getNotifications(params)
+      const results = deepClone(response.results)
+      items.value = results
+      unreadCount.value = results.filter(n => !n.read_at).length
+    } catch (err) {
+      error.value = String(err)
+      try {
+        rethrowAsDomainError(err)
+      } catch {
+        // keep UI-driven error handling
+      }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Backward compatibility: legacy test suite + old UI pieces
+  async function fetchNotifications(options?: { replace?: boolean; cursor?: string | null }) {
+    // Old API supported cursor pagination; current v0.65 MVP uses limit.
+    // Keep behavior minimal for tests.
+    await loadNotifications({ limit: 10 })
+  }
+
+  async function markAsRead(id: string) {
+    const notification = items.value.find(n => n.id === id)
+    if (!notification) return
+
+    const wasUnread = !notification.read_at
+
+    notification.read_at = new Date().toISOString()
+    if (wasUnread) {
+      unreadCount.value = Math.max(0, unreadCount.value - 1)
+    }
+
+    try {
+      const updated = await notificationsApi.markAsRead(id)
+      const index = items.value.findIndex(n => n.id === id)
+      if (index !== -1) {
+        const current = items.value[index]
+        const patch = deepClone(updated)
+        items.value[index] = {
+          ...current,
+          ...patch,
+          // keep optimistic timestamp if API returned partial payload
+          read_at: patch.read_at ?? current.read_at,
+        }
+      }
+    } catch (err) {
+      if (wasUnread) {
+        unreadCount.value += 1
+      }
+      notification.read_at = null
+      error.value = String(err)
+      rethrowAsDomainError(err)
+    }
+  }
+
+  async function markAllAsRead() {
+    const previousItems = deepClone(items.value)
+    const previousUnreadCount = unreadCount.value
+
+    items.value.forEach(n => {
+      if (!n.read_at) {
+        n.read_at = new Date().toISOString()
+      }
+    })
+    unreadCount.value = 0
+
+    try {
+      await notificationsApi.markAllAsRead()
+    } catch (err) {
+      items.value = previousItems
+      unreadCount.value = previousUnreadCount
+      error.value = String(err)
+      rethrowAsDomainError(err)
+    }
+  }
+
+  async function pollUnreadCount() {
+    try {
+      const response = await notificationsApi.getNotifications({ unreadOnly: true, limit: 1 })
+      unreadCount.value = response.count
+    } catch (err) {
+      console.error('[notificationsStore] Failed to poll unread count:', err)
+    }
+  }
+
+  function startPolling(intervalMs: number = 60000) {
+    if (pollInterval) {
+      stopPolling()
+    }
+    pollInterval = setInterval(() => {
+      pollUnreadCount()
+    }, intervalMs)
+    pollUnreadCount()
+  }
+
+  function stopPolling() {
+    if (pollInterval) {
+      clearInterval(pollInterval)
+      pollInterval = null
+    }
+  }
+
+  async function loadPreferences() {
+    isLoadingPreferences.value = true
+    preferencesError.value = null
+
+    try {
+      preferences.value = deepClone(await notificationsApi.getPreferences())
+    } catch (err) {
+      preferencesError.value = String(err)
+      rethrowAsDomainError(err)
+    } finally {
+      isLoadingPreferences.value = false
+    }
+  }
+
+  async function updatePreferences(updates: Partial<NotificationPreferences>) {
+    isLoadingPreferences.value = true
+    preferencesError.value = null
+
+    const previous = preferences.value ? deepClone(preferences.value) : null
+
+    if (preferences.value) {
+      Object.assign(preferences.value, updates)
+    }
+
+    try {
+      preferences.value = deepClone(await notificationsApi.updatePreferences(updates))
+    } catch (err) {
+      if (previous) {
+        preferences.value = previous
+      }
+      preferencesError.value = String(err)
+      rethrowAsDomainError(err)
+    } finally {
+      isLoadingPreferences.value = false
+    }
+  }
+
+  function addMockNotification(input: any) {
+    // Used by DevThemePlayground and legacy tests
+    const now = new Date().toISOString()
+    const normalized: InAppNotification = {
+      id: String(input?.id ?? `mock-${Date.now()}`),
+      type: String(input?.type ?? 'mock'),
+      title: String(input?.title ?? ''),
+      body: String(input?.body ?? input?.payload?.body ?? ''),
+      data: (input?.data && typeof input.data === 'object') ? input.data : {},
+      created_at: String(input?.created_at ?? now),
+      read_at: input?.read_at ?? null,
+      // tolerate extra fields in runtime
+      ...(input?.payload ? { payload: { ...input.payload, title: input.title } } : {}),
+    } as any
+
+    items.value = [normalized, ...items.value]
+    if (!normalized.read_at) {
+      unreadCount.value += 1
+    }
+    debugEvents.value = [{ type: 'mock_notification', at: now, id: normalized.id }, ...debugEvents.value]
+  }
+
+  function toggleOfflineSimulation() {
+    mockOffline.value = !mockOffline.value
+  }
+
+  function $reset() {
+    items.value = []
+    unreadCount.value = 0
+    isLoading.value = false
+    error.value = null
+    preferences.value = null
+    isLoadingPreferences.value = false
+    preferencesError.value = null
+    mockOffline.value = false
+    debugEvents.value = []
+    stopPolling()
+  }
+
+  return {
+    items,
+    unreadCount,
+    isLoading,
+    error,
+    preferences,
+    isLoadingPreferences,
+    preferencesError,
+    unreadItems,
+    latestItems,
+    sortedItems,
+    loadNotifications,
+    fetchNotifications,
+    markAsRead,
+    markAllAsRead,
+    pollUnreadCount,
+    startPolling,
+    stopPolling,
+    loadPreferences,
+    updatePreferences,
+    addMockNotification,
+    toggleOfflineSimulation,
+    mockOffline,
+    debugEvents,
+
+    // Legacy aliases for older tests/UI
+    loading: isLoading,
+    lastError: error,
+    $reset,
+  }
+})

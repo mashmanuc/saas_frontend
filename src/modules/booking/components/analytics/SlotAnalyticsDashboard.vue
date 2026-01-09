@@ -117,7 +117,7 @@
             :key="index"
             class="strategy-bar"
           >
-            <div class="strategy-label">{{ t(`availability.slotEditor.strategies.${strategy.name}.title`) }}</div>
+            <div class="strategy-label">{{ t(`board.availability.slotEditor.strategies.${strategy.name}.title`) }}</div>
             <div class="strategy-progress">
               <div 
                 class="strategy-fill" 

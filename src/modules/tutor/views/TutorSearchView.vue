@@ -1,16 +1,16 @@
 <template>
   <div class="space-y-4">
-    <h1 class="text-2xl font-semibold">{{ $t('tutor.search.title') }}</h1>
+    <h1 class="text-2xl font-semibold">{{ $t('tutorSearch.title') }}</h1>
 
     <div v-if="!isSelfLearning" class="rounded-lg border border-border-subtle bg-surface-muted/30 p-4">
       <p class="text-sm text-gray-600 dark:text-gray-300">
-        {{ $t('student.withTutor') }}
+        {{ $t('studentDashboard.withTutor') }}
       </p>
     </div>
 
     <div v-else class="space-y-4">
       <p class="text-sm text-gray-600 dark:text-gray-300">
-        {{ $t('student.withoutTutor') }}
+        {{ $t('studentDashboard.withoutTutor') }}
       </p>
 
       <div v-if="isLoading" class="text-sm text-gray-500 dark:text-gray-400">
@@ -54,7 +54,7 @@
                 :loading="requestLoadingId === tutor.id"
                 @click="requestTutor(tutor.id)"
               >
-                {{ requestLoadingId === tutor.id ? $t('loader.loading') : $t('tutor.request.button') }}
+                {{ requestLoadingId === tutor.id ? $t('loader.loading') : $t('tutorSearch.request.button') }}
               </Button>
 
               <span v-if="requestSuccessId === tutor.id" class="text-xs text-emerald-600 dark:text-emerald-400">
@@ -106,7 +106,7 @@ async function loadTutors() {
     const data = await apiClient.get('/tutors/public-list/')
     tutors.value = data
   } catch (e) {
-    error.value = e?.response?.data?.detail || t('tutor.search.loadError')
+    error.value = e?.response?.data?.detail || t('tutorSearch.loadError')
   } finally {
     isLoading.value = false
   }
@@ -121,10 +121,10 @@ async function requestTutor(tutorId) {
     await apiClient.post('/student/request_tutor/', { tutor_id: tutorId })
     await authStore.reloadUser()
     requestSuccessId.value = tutorId
-    notifySuccess(t('tutor.request.success'))
+    notifySuccess(t('tutorSearch.request.success'))
   } catch (e) {
     requestErrorId.value = tutorId
-    notifyError(t('tutor.request.error'))
+    notifyError(t('tutorSearch.request.error'))
   } finally {
     requestLoadingId.value = null
   }

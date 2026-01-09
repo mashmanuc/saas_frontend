@@ -21,7 +21,7 @@
         <div class="sidebar-item__header">
           <span class="sidebar-item__student">{{ event.clientName }}</span>
           <span class="sidebar-item__status" :class="`status--${event.paidStatus}`">
-            {{ t(`calendar.sidebar.status.${event.paidStatus}`) }}
+            {{ getPaidStatusLabel(event.paidStatus) }}
           </span>
         </div>
         <div class="sidebar-item__time">
@@ -90,6 +90,17 @@ function formatEventDate(event: CalendarEvent): string {
       month: 'short',
       day: 'numeric'
     }).format(date)
+  }
+}
+
+function getPaidStatusLabel(paidStatus: string | null | undefined): string {
+  switch (paidStatus) {
+    case 'paid':
+      return t('calendar.sidebar.status.paid')
+    case 'unpaid':
+      return t('calendar.sidebar.status.unpaid')
+    default:
+      return ''
   }
 }
 

@@ -134,6 +134,12 @@ const routes = [
         meta: { roles: [USER_ROLES.STUDENT] },
       },
       {
+        path: 'notifications',
+        name: 'notifications',
+        component: () => import('../views/NotificationsView.vue'),
+        meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
+      },
+      {
         path: 'dashboard/account',
         name: 'user-account',
         component: UserAccountView,
