@@ -7,6 +7,8 @@ vi.mock('../../../src/modules/marketplace/api/marketplace', () => ({
     getTutors: vi.fn(),
     getTutorProfile: vi.fn(),
     getMyProfile: vi.fn(),
+    getTutorMeProfile: vi.fn(),
+    updateTutorMeProfile: vi.fn(),
     createProfile: vi.fn(),
     updateProfile: vi.fn(),
     submitForReview: vi.fn(),
@@ -203,7 +205,7 @@ describe('MarketplaceStore', () => {
         hourly_rate: 0,
       }
 
-      marketplaceApi.getMyProfile.mockResolvedValue(mockProfile)
+      marketplaceApi.getTutorMeProfile.mockResolvedValue(mockProfile)
 
       const store = useMarketplaceStore()
       await store.loadMyProfile()
@@ -217,12 +219,13 @@ describe('MarketplaceStore', () => {
         '../../../src/modules/marketplace/stores/marketplaceStore'
       )
 
-      marketplaceApi.getMyProfile.mockResolvedValue({
-        avatar_url: 'photo.jpg',
+      marketplaceApi.getTutorMeProfile.mockResolvedValue({
+        media: { photo_url: 'photo.jpg' },
+        headline: 'Top tutor',
         bio: 'Bio text',
         subjects: ['math'],
         languages: [{ code: 'en', level: 'native' }],
-        hourly_rate: 50,
+        pricing: { hourly_rate: 50 }
       })
 
       const store = useMarketplaceStore()
@@ -237,11 +240,13 @@ describe('MarketplaceStore', () => {
         '../../../src/modules/marketplace/stores/marketplaceStore'
       )
 
-      marketplaceApi.getMyProfile.mockResolvedValue({
-        photo: '',
+      marketplaceApi.getTutorMeProfile.mockResolvedValue({
+        media: { photo_url: '' },
+        headline: '',
         bio: '',
         subjects: [],
-        hourly_rate: 0,
+        languages: [],
+        pricing: { hourly_rate: 0 }
       })
 
       const store = useMarketplaceStore()
@@ -259,10 +264,10 @@ describe('MarketplaceStore', () => {
       const updatedProfile = {
         id: 1,
         headline: 'Updated Headline',
-        bio: 'Updated bio',
+        is_public: false
       }
-
-      marketplaceApi.updateProfile.mockResolvedValue(updatedProfile)
+      marketplaceApi.updateTutorMeProfile.mockResolvedValue(updatedProfile)
+      marketplaceApi.getTutorMeProfile.mockResolvedValue(updatedProfile)
 
       const store = useMarketplaceStore()
       await store.updateProfile({ headline: 'Updated Headline' })
@@ -277,9 +282,9 @@ describe('MarketplaceStore', () => {
         '../../../src/modules/marketplace/stores/marketplaceStore'
       )
 
-      marketplaceApi.submitForReview.mockResolvedValue({
-        status: 'pending_review',
-      })
+      const pendingProfile = { status: 'pending_review' }
+      marketplaceApi.submitForReview.mockResolvedValue({})
+      marketplaceApi.getTutorMeProfile.mockResolvedValue(pendingProfile)
 
       const store = useMarketplaceStore()
       await store.submitForReview()
@@ -293,9 +298,9 @@ describe('MarketplaceStore', () => {
         '../../../src/modules/marketplace/stores/marketplaceStore'
       )
 
-      marketplaceApi.publishProfile.mockResolvedValue({
-        is_public: true,
-      })
+      const publishedProfile = { is_public: true }
+      marketplaceApi.publishProfile.mockResolvedValue({})
+      marketplaceApi.getTutorMeProfile.mockResolvedValue(publishedProfile)
 
       const store = useMarketplaceStore()
       await store.publishProfile()

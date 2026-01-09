@@ -22,6 +22,40 @@
     "error": "Push notification error"
   },
   "app": {},
+  "student": {
+    "myTutors": {
+      "title": "My Tutors",
+      "empty": "You don't have any active tutors yet",
+      "findTutor": "Find a tutor",
+      "lastActivity": "Last activity",
+      "lessonsCount": "Lessons"
+    }
+  },
+  "tutor": {
+    "invitedStudents": {
+      "title": "Student Invitations",
+      "empty": "You have no invited students",
+      "requestedAt": "Request sent",
+      "status": "Pending confirmation",
+      "accept": "Accept",
+      "message": "Message"
+    }
+  },
+  "limits": {
+    "studentRequests": "Tutor Requests",
+    "tutorAccepts": "Request Accepts",
+    "remaining": "remaining",
+    "resetsAt": "Resets",
+    "nearLimit": "Warning! Only {remaining} requests remaining",
+    "limitReached": "Limit reached. Resets {resetDate}",
+    "types": {
+      "student_request": "tutor requests",
+      "tutor_accept": "request accepts"
+    }
+  },
+  "loader": {
+    "loading": "Loading..."
+  },
   "common": {
     "close": "Close",
     "confirm": "Confirm",
@@ -36,7 +70,14 @@
     "loading": "Loading...",
     "error": "Error",
     "success": "Success",
-    "perHour": "/ hour"
+    "perHour": "/ hour",
+    "retry": "Retry",
+    "bookLesson": "Book lesson",
+    "joinCurrentLesson": "Join current lesson",
+    "openLessonChat": "Open lesson chat",
+    "bookLessonToChat": "Book lesson to chat",
+    "never": "Never",
+    "loadMore": "Load more"
   },
   "userProfile": {
     "account": {
@@ -442,6 +483,25 @@
     "tutorProfile": "Tutor profile"
   },
   "marketplace": {
+    "title": "Find a Tutor",
+    "noResults": "No tutors found",
+    "loadMore": "Load more",
+    "filters": {
+      "subjects": "Subjects",
+      "selectSubjects": "Select subjects",
+      "priceRange": "Price per hour",
+      "min": "From",
+      "max": "To",
+      "minRating": "Minimum rating",
+      "any": "Any",
+      "sortBy": "Sort by",
+      "ratingDesc": "Rating (descending)",
+      "priceAsc": "Price (ascending)",
+      "priceDesc": "Price (descending)",
+      "newest": "Newest first",
+      "apply": "Apply",
+      "reset": "Reset"
+    },
     "tagGroups": {
       "grades": "Grades",
       "exams": "Exams",
@@ -655,7 +715,10 @@
       "updateProfile": "Failed to save profile.",
       "submitForReview": "Failed to submit profile for review.",
       "publishProfile": "Failed to publish profile.",
-      "unpublishProfile": "Failed to unpublish profile."
+      "unpublishProfile": "Failed to unpublish profile.",
+      "limitExceeded": "Limit {type} exceeded ({used}/{max}). Resets {resetDate}",
+      "notFound": "Not found",
+      "unknown": "Unknown error"
     },
     "profile": {
       "title": "Tutor profile",
@@ -1091,9 +1154,6 @@
       "retry": "Retry"
     }
   },
-  "loader": {
-    "loading": "Loading..."
-  },
   "dashboard": {
     "nextLessonAt": "Next lesson",
     "tutor": {
@@ -1266,10 +1326,8 @@
       }
     }
   },
-  "student": {
-    "dashboard": {
-      "subtitle": "Track your lessons, tutors, and invitations."
-    },
+  "studentDashboard": {
+    "subtitle": "Track your lessons, tutors, and invitations.",
     "withoutTutor": "You are learning on your own. Choose a tutor to start lessons.",
     "withTutor": "You already have a tutor.",
     "noTutor": {
@@ -3114,5 +3172,55 @@
         }
       }
     }
+  },
+  "inquiry": {
+    "modal": {
+      "title": "Request Contact Access",
+      "messagePlaceholder": "Write a message to the tutor/student...",
+      "messageRequired": "Message is required",
+      "sendButton": "Send Request",
+      "cancelButton": "Cancel",
+      "sending": "Sending...",
+      "success": "Request sent successfully",
+      "error": "Error sending request"
+    },
+    "status": {
+      "open": "Awaiting response",
+      "accepted": "Accepted",
+      "rejected": "Rejected",
+      "expired": "Expired"
+    },
+    "errors": {
+      "already_exists": "Request already exists for this relation",
+      "not_allowed": "Request not allowed",
+      "invalid_state": "Invalid operation for current request state"
+    }
+  },
+  "contact": {
+    "locked": {
+      "title": "Contacts Locked",
+      "reasons": {
+        "no_relation": "No relation with this user",
+        "inquiry_required": "Contact access request required",
+        "inquiry_pending": "Awaiting response to your request",
+        "inquiry_rejected": "Contact request was rejected",
+        "inquiry_expired": "Contact request expired",
+        "no_active_lesson": "Active lesson required for contact access",
+        "subscription_required": "Subscription required for contact access",
+        "forbidden": "Access forbidden"
+      },
+      "actions": {
+        "requestContact": "Request Contacts",
+        "bookLesson": "Book Lesson",
+        "upgrade": "Upgrade Subscription",
+        "waiting": "Awaiting response..."
+      }
+    }
+  },
+  "relationAction": {
+    "message": "Message",
+    "requestContact": "Request Contacts",
+    "bookLesson": "Book Lesson",
+    "whyLocked": "Why Locked?"
   }
 }

@@ -1,0 +1,53 @@
+/**
+ * Domain errors for Relations API v2.1 + v0.62
+ * Based on FRONTEND_TASKS_v2.1.md and v0.62 specification
+ */
+
+export class LimitExceededError extends Error {
+  constructor(
+    public meta: {
+      limit_type: string
+      used: number
+      max: number
+      reset_at: string
+    }
+  ) {
+    super('Limit exceeded')
+    this.name = 'LimitExceededError'
+  }
+}
+
+export function isLimitExceededError(error: any): error is LimitExceededError {
+  return error instanceof LimitExceededError
+}
+
+/**
+ * v0.62: Inquiry domain errors
+ */
+export class InquiryAlreadyExistsError extends Error {
+  constructor(public meta: { relation_id?: string; [key: string]: unknown }) {
+    super('Inquiry already exists for this relation')
+    this.name = 'InquiryAlreadyExistsError'
+  }
+}
+
+export class InquiryNotAllowedError extends Error {
+  constructor(public meta: { reason?: string; [key: string]: unknown }) {
+    super('Inquiry not allowed')
+    this.name = 'InquiryNotAllowedError'
+  }
+}
+
+export class InquiryInvalidStateError extends Error {
+  constructor(public meta: { inquiry_id?: string; current_state?: string; [key: string]: unknown }) {
+    super('Invalid inquiry state for this operation')
+    this.name = 'InquiryInvalidStateError'
+  }
+}
+
+export class ContactLockedError extends Error {
+  constructor(public meta: { locked_reason?: string; [key: string]: unknown }) {
+    super('Contact access is locked')
+    this.name = 'ContactLockedError'
+  }
+}

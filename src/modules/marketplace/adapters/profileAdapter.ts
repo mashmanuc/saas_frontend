@@ -164,14 +164,14 @@ export function debugPayload(payload: TutorProfileUpdate, label = 'TutorProfileU
     console.group(`[ProfileAdapter] ${label}`)
     console.log('bio:', payload.bio?.substring(0, 50) + '...')
     console.log('headline:', payload.headline)
-    console.log('subjects:', payload.subjects.length, payload.subjects)
-    console.log('languages:', payload.languages.length, payload.languages)
+    console.log('subjects:', payload.subjects?.length ?? 0, payload.subjects ?? [])
+    console.log('languages:', payload.languages?.length ?? 0, payload.languages ?? [])
     console.log('experience_years:', payload.experience_years)
     console.log('is_published:', payload.is_published)
     console.log('pricing:', payload.pricing)
     console.log('media:', payload.media)
-    console.log('education:', payload.education.length)
-    console.log('certifications:', payload.certifications.length)
+    console.log('education:', payload.education?.length ?? 0)
+    console.log('certifications:', payload.certifications?.length ?? 0)
     console.groupEnd()
   }
 }
