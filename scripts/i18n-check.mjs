@@ -98,14 +98,20 @@ function collectUsageKeys(rootDir) {
     while ((match = simpleCallRegex.exec(content)) !== null) {
       const fn = match[1]
       if (TRANSLATION_FUNCTIONS.has(fn)) {
-        usageKeys.add(match[3])
+        const key = match[3]
+        if (!key.includes('${')) {
+          usageKeys.add(key)
+        }
       }
     }
     for (const pattern of complexPatterns) {
       pattern.lastIndex = 0
       let complexMatch
       while ((complexMatch = pattern.exec(content)) !== null) {
-        usageKeys.add(complexMatch[2])
+        const key = complexMatch[2]
+        if (!key.includes('${')) {
+          usageKeys.add(key)
+        }
       }
     }
   }

@@ -396,6 +396,39 @@ const routes = [
         component: LessonHistory,
         meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
       },
+      // v0.67: Staff Console routes
+      {
+        path: 'staff',
+        name: 'staff',
+        redirect: '/staff/reports',
+        meta: { 
+          requiresAuth: true,
+          roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN],
+          requiresStaff: true
+        },
+        children: [
+          {
+            path: 'reports',
+            name: 'staff-reports',
+            component: () => import('../modules/staff/views/StaffReportsView.vue'),
+            meta: { 
+              requiresAuth: true,
+              roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN],
+              requiresStaff: true
+            },
+          },
+          {
+            path: 'users/:id',
+            name: 'staff-user-overview',
+            component: () => import('../modules/staff/views/StaffUserOverviewView.vue'),
+            meta: { 
+              requiresAuth: true,
+              roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN],
+              requiresStaff: true
+            },
+          },
+        ],
+      },
     ],
   },
   { path: '/:pathMatch(.*)*', redirect: '/auth/login' },
@@ -438,6 +471,15 @@ router.beforeEach(async (to, from, next) => {
 
   if (requiresAuth && !isAuthenticated) {
     return next({ path: '/auth/login', query: { redirect: to.fullPath } })
+  }
+
+  // v0.67: Staff guard - check if route requires staff access
+  const requiresStaff = to.matched.some((record) => record.meta?.requiresStaff)
+  if (requiresStaff) {
+    const isStaff = user?.role === USER_ROLES.ADMIN || user?.role === USER_ROLES.SUPERADMIN
+    if (!isStaff) {
+      return next(homeRoute)
+    }
   }
 
   if (!hasRoleAccess) {

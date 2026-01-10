@@ -195,7 +195,10 @@
     "openLessonChat": "Відкрити чат уроку",
     "bookLessonToChat": "Забронюйте урок для чату",
     "never": "Ніколи",
-    "loadMore": "Завантажити ще"
+    "loadMore": "Завантажити ще",
+    "moreActions": "Більше дій",
+    "yes": "Так",
+    "no": "Ні"
   },
   "lang": {
     "uk": "Українська",
@@ -3172,7 +3175,8 @@
         "confirmed": "Підтверджено",
         "completed": "Завершено",
         "cancelled": "Скасовано",
-        "failed": "Не вдалося"
+        "failed": "Не вдалося",
+        "${patch.newStatus}": "{patch.newStatus}"
       }
     },
     "conflict": {
@@ -3511,6 +3515,81 @@
       "action": "Заблокувати користувача",
       "confirmMessage": "Ви впевнені, що хочете заблокувати цього користувача? Ви більше не зможете взаємодіяти один з одним.",
       "error": "Помилка при блокуванні користувача"
+    }
+  },
+  "staff": {
+    "reports": {
+      "title": "Скарги",
+      "filterByStatus": "Фільтрувати за статусом",
+      "allStatuses": "Всі статуси",
+      "statusOpen": "Відкриті",
+      "statusDismissed": "Відхилені",
+      "statusActioned": "Опрацьовані",
+      "noReports": "Скарг не знайдено",
+      "reporter": "Скаржник",
+      "target": "Ціль",
+      "categoryLabel": "Категорія",
+      "created": "Створено",
+      "status": "Статус",
+      "actions": "Дії",
+      "view": "Переглянути",
+      "viewDetails": "Переглянути деталі",
+      "detailsTitle": "Деталі скарги",
+      "details": "Деталі",
+      "resolveTitle": "Вирішити скаргу",
+      "resolutionNotePlaceholder": "Додайте примітку (необов'язково)",
+      "dismiss": "Відхилити",
+      "actioned": "Опрацьовано",
+      "resolutionInfo": "Інформація про вирішення",
+      "resolvedAt": "Вирішено",
+      "resolvedBy": "Вирішив",
+      "note": "Примітка",
+      "category": {
+        "${report.category}": "{report.category}",
+        "SPAM": "Спам",
+        "HARASSMENT": "Переслідування",
+        "INAPPROPRIATE": "Неприйнятний контент",
+        "FRAUD": "Шахрайство",
+        "OTHER": "Інше"
+      },
+      "status${report.status}": "{report.status}",
+      "statusOPEN": "Відкрита",
+      "statusDISMISSED": "Відхилена",
+      "statusACTIONED": "Опрацьована"
+    },
+    "userOverview": {
+      "title": "Огляд користувача",
+      "backToReports": "Назад до скарг",
+      "userInfo": "Інформація про користувача",
+      "userId": "ID користувача",
+      "email": "Email",
+      "role": "Роль",
+      "createdAt": "Створено",
+      "trustInfo": "Trust & Safety",
+      "blocksCount": "Блокувань",
+      "reportsOpenCount": "Відкритих скарг",
+      "bans": "Бани",
+      "noBans": "Банів немає",
+      "reason": "Причина",
+      "endsAt": "Закінчується",
+      "permanent": "Постійно",
+      "liftBan": "Зняти бан",
+      "createBan": "Створити бан",
+      "scope": "Область",
+      "optional": "необов'язково",
+      "createBanButton": "Створити бан",
+      "billingInfo": "Платіжна інформація",
+      "plan": "План",
+      "noPlan": "Немає плану",
+      "subscriptionStatus": "Статус підписки",
+      "noSubscription": "Немає підписки",
+      "currentPeriodEnd": "Кінець поточного періоду",
+      "cancelAtPeriodEnd": "Скасувати в кінці періоду",
+      "billingActions": "Дії з платежами",
+      "cancelImmediate": "Скасувати негайно",
+      "activityInfo": "Активність",
+      "inquiries30d": "Запитів за 30 днів",
+      "contactsUnlocked30d": "Контактів розблоковано за 30 днів"
     }
   },
   "contact": {
