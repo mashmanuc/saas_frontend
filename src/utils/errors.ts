@@ -61,3 +61,42 @@ export class SubscriptionRequiredError extends Error {
     this.name = 'SubscriptionRequiredError'
   }
 }
+
+/**
+ * v0.66: Trust & Safety errors
+ */
+export class UserBannedError extends Error {
+  constructor(
+    public meta: {
+      scope: string
+      ends_at: string | null
+      reason?: string
+    }
+  ) {
+    super(`User is banned from ${meta.scope}`)
+    this.name = 'UserBannedError'
+  }
+}
+
+export class UserBlockedError extends Error {
+  constructor(
+    public meta: {
+      blocked_user_id?: number
+      blocker_user_id?: number
+    }
+  ) {
+    super('User is blocked')
+    this.name = 'UserBlockedError'
+  }
+}
+
+export class RateLimitedError extends Error {
+  constructor(
+    public meta: {
+      retry_after_seconds: number
+    }
+  ) {
+    super(`Rate limited. Retry after ${meta.retry_after_seconds} seconds`)
+    this.name = 'RateLimitedError'
+  }
+}

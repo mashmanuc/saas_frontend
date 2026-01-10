@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useMarketplaceStore } from '../stores/marketplaceStore'
 import { useAuthStore } from '@/modules/auth/store/authStore'
+import { useTrustStore } from '@/stores/trustStore'
 import ProfileHeader from '../components/profile/ProfileHeader.vue'
 import ProfileAbout from '../components/profile/ProfileAbout.vue'
 import ProfileEducation from '../components/profile/ProfileEducation.vue'
@@ -19,11 +20,16 @@ import NotFound from '@/ui/NotFound.vue'
 import TrialRequestModal from '../components/trial/TrialRequestModal.vue'
 import TutorAvailabilityCalendar from '../components/TutorAvailabilityCalendar.vue'
 import type { AvailableSlot } from '../api/marketplace'
+import ReportModal from '@/components/trust/ReportModal.vue'
+import { ReportTargetType } from '@/types/trust'
+import { useI18n } from 'vue-i18n'
 
 const route = useRoute()
 const router = useRouter()
 const store = useMarketplaceStore()
 const auth = useAuthStore()
+const trustStore = useTrustStore()
+const { t } = useI18n()
 const { currentProfile, isLoadingProfile, error } = storeToRefs(store)
 
 const slug = computed(() => route.params.slug as string)
@@ -31,8 +37,15 @@ const selectedSlot = ref<AvailableSlot | null>(null)
 
 const isCreateReviewOpen = ref(false)
 const reviewsRef = ref<InstanceType<typeof ProfileReviews> | null>(null)
+const isReportModalOpen = ref(false)
+const showActionsMenu = ref(false)
 
 const canWriteReview = computed(() => auth.isAuthenticated && auth.userRole === 'student')
+
+const tutorUserId = computed(() => {
+  if (!currentProfile.value?.user_id) return null
+  return parseInt(currentProfile.value.user_id.toString())
+})
 
 onMounted(() => {
   if (slug.value) {
@@ -83,14 +96,130 @@ function handleRefreshCalendar() {
     store.loadProfile(slug.value)
   }
 }
+
+function handleOpenActionsMenu() {
+  showActionsMenu.value = !showActionsMenu.value
+}
+
+function handleReport() {
+  showActionsMenu.value = false
+  isReportModalOpen.value = true
+}
+
+async function handleBlock() {
+  if (!tutorUserId.value) return
+  
+  showActionsMenu.value = false
+  
+  if (confirm(t('trust.block.confirmMessage'))) {
+    try {
+      await trustStore.blockUser({
+        user_id: tutorUserId.value,
+        reason: 'Blocked from tutor profile'
+      })
+      router.push('/marketplace')
+    } catch (err) {
+      console.error('Block error:', err)
+    }
+  }
+}
+
+function handleReportSuccess() {
+  isReportModalOpen.value = false
+}
 </script>
+
+<style scoped>
+.profile-header-wrapper {
+  position: relative;
+}
+
+.profile-actions-menu {
+  position: absolute;
+  top: 1rem;
+  right: 1.5rem;
+  z-index: 10;
+}
+
+.actions-menu-btn {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: #374151;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.actions-menu-btn:hover {
+  background: white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.actions-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  min-width: 180px;
+  overflow: hidden;
+}
+
+.menu-item {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #374151;
+  transition: background-color 0.2s;
+}
+
+.menu-item:hover {
+  background-color: #f3f4f6;
+}
+
+.menu-item:not(:last-child) {
+  border-bottom: 1px solid #f3f4f6;
+}
+</style>
 
 <template>
   <div class="profile-view">
     <LoadingSpinner v-if="isLoadingProfile" class="loading" />
 
     <template v-else-if="currentProfile">
-      <ProfileHeader :profile="currentProfile" @back="goBack" />
+      <div class="profile-header-wrapper">
+        <ProfileHeader :profile="currentProfile" @back="goBack" />
+        
+        <div v-if="auth.isAuthenticated" class="profile-actions-menu">
+          <button 
+            class="actions-menu-btn"
+            @click="handleOpenActionsMenu"
+            :aria-label="t('common.moreActions')"
+          >
+            ⋮
+          </button>
+          <div v-if="showActionsMenu" class="actions-dropdown">
+            <button class="menu-item" @click="handleReport">
+              {{ t('trust.report.action') }}
+            </button>
+            <button class="menu-item" @click="handleBlock">
+              {{ t('trust.block.action') }}
+            </button>
+          </div>
+        </div>
+      </div>
 
       <div class="profile-layout">
         <main class="profile-main">
@@ -177,6 +306,14 @@ function handleRefreshCalendar() {
       :slug="slug"
       @close="closeCreateReview"
       @created="handleReviewCreated"
+    />
+
+    <ReportModal
+      :is-open="isReportModalOpen"
+      :target-type="ReportTargetType.PROFILE"
+      :target-id="currentProfile?.user_id?.toString()"
+      @close="isReportModalOpen = false"
+      @success="handleReportSuccess"
     />
   </div>
 </template>

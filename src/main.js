@@ -6,6 +6,7 @@ import i18n, { setupI18n } from './i18n'
 import './assets/main.css'
 import './assets/fullcalendar.css'
 import './styles/m4sh.css'
+import { notifications as notificationBus } from './utils/notify'
 import { useNotifyStore } from './stores/notifyStore'
 import { useSettingsStore } from './stores/settingsStore'
 import { useThemeStore } from './stores/themeStore'
@@ -44,15 +45,30 @@ setupI18n(localStorage.getItem('locale') || 'uk').then(() => {
 
   const notify = useNotifyStore()
   notify.init()
+  try {
+    notificationBus.init({
+      exposeDebug: import.meta.env.DEV,
+      debugNamespace: '__M4_DEBUG__',
+    })
+  } catch (error) {
+    console.error('[main] Failed to initialize notification bus:', error)
+  }
 
   const realtime = useRealtimeStore()
   realtime.init()
 
-  const notifications = useNotificationsStore()
-  notifications.init()
+  const notificationsStore = useNotificationsStore()
+  if (!notificationsStore.items.length) {
+    notificationsStore
+      .loadNotifications({ limit: 10 })
+      .catch((error) => console.error('[main] Failed to preload notifications:', error))
+  }
 
   // Initialize token refresh system
   const authStore = useAuthStore()
+  if (!authStore.access) {
+    console.info('[main] Auth store has no access token yet — realtime health check will wait.')
+  }
   initTokenRefresh({
     axiosInstance: apiClient,
     initialToken: authStore.access,

@@ -44,41 +44,76 @@
           </div>
 
           <div class="inquiry-modal-actions">
-            <button
-              type="button"
-              class="btn btn-secondary"
-              @click="handleClose"
-              :disabled="isLoading"
-            >
-              {{ $t('inquiry.modal.cancelButton') }}
-            </button>
-            <button
-              type="submit"
-              class="btn btn-primary"
-              :disabled="isLoading || !message.trim()"
-              data-testid="inquiry-submit-button"
-            >
-              {{ isLoading ? $t('inquiry.modal.sending') : $t('inquiry.modal.sendButton') }}
-            </button>
+            <div class="actions-left">
+              <div class="actions-menu-wrapper">
+                <button
+                  type="button"
+                  class="btn btn-text"
+                  @click="showActionsMenu = !showActionsMenu"
+                  :disabled="isLoading"
+                  data-testid="inquiry-actions-menu-button"
+                >
+                  ⋮
+                </button>
+                <div v-if="showActionsMenu" class="actions-menu" data-testid="inquiry-actions-menu">
+                  <button type="button" class="menu-item" @click="handleReport" data-testid="inquiry-report-button">
+                    {{ $t('trust.report.action') }}
+                  </button>
+                  <button type="button" class="menu-item" @click="handleBlock" data-testid="inquiry-block-button">
+                    {{ $t('trust.block.action') }}
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="actions-right">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                @click="handleClose"
+                :disabled="isLoading"
+              >
+                {{ $t('inquiry.modal.cancelButton') }}
+              </button>
+              <button
+                type="submit"
+                class="btn btn-primary"
+                :disabled="isLoading || !message.trim()"
+                data-testid="inquiry-submit-button"
+              >
+                {{ isLoading ? $t('inquiry.modal.sending') : $t('inquiry.modal.sendButton') }}
+              </button>
+            </div>
           </div>
         </form>
       </div>
     </div>
+
+    <ReportModal
+      :is-open="isReportModalOpen"
+      :target-type="ReportTargetType.INQUIRY"
+      :target-id="relationId"
+      @close="isReportModalOpen = false"
+      @success="handleReportSuccess"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useInquiriesStore } from '@/stores/inquiriesStore'
 import { useRelationsStore } from '@/stores/relationsStore'
+import { useTrustStore } from '@/stores/trustStore'
 import { useRouter } from 'vue-router'
 import { 
   InquiryAlreadyExistsError, 
   InquiryNotAllowedError,
   InquiryInvalidStateError,
-  SubscriptionRequiredError
+  SubscriptionRequiredError,
+  UserBlockedError
 } from '@/utils/errors'
 import { useI18n } from 'vue-i18n'
+import ReportModal from '@/components/trust/ReportModal.vue'
+import { ReportTargetType } from '@/types/trust'
 
 interface Props {
   isOpen: boolean
@@ -96,6 +131,7 @@ const emit = defineEmits<Emits>()
 const { t } = useI18n()
 const inquiriesStore = useInquiriesStore()
 const relationsStore = useRelationsStore()
+const trustStore = useTrustStore()
 const router = useRouter()
 
 const message = ref('')
@@ -103,6 +139,17 @@ const showValidation = ref(false)
 const errorMessage = ref<string | null>(null)
 const isLoading = ref(false)
 const isSubscriptionError = ref(false)
+const isReportModalOpen = ref(false)
+const showActionsMenu = ref(false)
+
+const relation = computed(() => {
+  return relationsStore.relations.find(r => r.id === props.relationId)
+})
+
+const otherUserId = computed((): number | null => {
+  if (!relation.value) return null
+  return parseInt(relation.value.tutor.id)
+})
 
 // Reset form when modal opens
 watch(() => props.isOpen, (newValue) => {
@@ -146,6 +193,9 @@ async function handleSubmit() {
     } else if (err instanceof SubscriptionRequiredError) {
       errorMessage.value = t('inquiry.errors.subscription_required')
       isSubscriptionError.value = true
+    } else if (err instanceof UserBlockedError) {
+      errorMessage.value = t('inquiry.errors.user_blocked')
+      isSubscriptionError.value = false
     } else {
       errorMessage.value = t('inquiry.modal.error')
       isSubscriptionError.value = false
@@ -164,6 +214,33 @@ function handleClose() {
   if (!isLoading.value) {
     emit('close')
   }
+}
+
+function handleReport() {
+  showActionsMenu.value = false
+  isReportModalOpen.value = true
+}
+
+async function handleBlock() {
+  if (!otherUserId.value) return
+  
+  showActionsMenu.value = false
+  
+  if (confirm(t('trust.block.confirmMessage'))) {
+    try {
+      await trustStore.blockUser({
+        user_id: otherUserId.value,
+        reason: 'Blocked from inquiry modal'
+      })
+      emit('close')
+    } catch (err) {
+      errorMessage.value = t('trust.block.error')
+    }
+  }
+}
+
+function handleReportSuccess() {
+  isReportModalOpen.value = false
 }
 </script>
 
@@ -330,5 +407,70 @@ function handleClose() {
 
 .btn-primary:hover:not(:disabled) {
   background-color: #2563eb;
+}
+
+.btn-text {
+  background: none;
+  color: #6b7280;
+  padding: 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.btn-text:hover:not(:disabled) {
+  color: #374151;
+  background-color: #f3f4f6;
+}
+
+.actions-left {
+  flex: 1;
+}
+
+.actions-right {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.actions-menu-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.actions-menu {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 0.5rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  min-width: 150px;
+  z-index: 10;
+}
+
+.menu-item {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #374151;
+  transition: background-color 0.2s;
+}
+
+.menu-item:hover {
+  background-color: #f3f4f6;
+}
+
+.menu-item:first-child {
+  border-radius: 6px 6px 0 0;
+}
+
+.menu-item:last-child {
+  border-radius: 0 0 6px 6px;
 }
 </style>

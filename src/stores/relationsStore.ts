@@ -18,9 +18,22 @@ import type {
   AcceptRequestResponse,
   LimitExceededResponse
 } from '@/types/relations'
-import { LimitExceededError, isLimitExceededError } from '@/utils/errors'
-import { rethrowAsDomainError } from '@/utils/rethrowAsDomainError'
+import { LimitExceededError } from '@/utils/errors'
 import { useLimitsStore } from './limitsStore'
+
+/**
+ * P0.1: Єдиний стандарт error handling - rethrowAsDomainError
+ * Уникаємо ручного парсингу err.response
+ */
+function rethrowAsDomainError(err: unknown): never {
+  if (axios.isAxiosError(err)) {
+    const data = err.response?.data as LimitExceededResponse | any
+    if (data?.code === 'limit_exceeded') {
+      throw new LimitExceededError(data.meta)
+    }
+  }
+  throw err
+}
 
 export const useRelationsStore = defineStore('relations', () => {
   const relations = ref<Relation[]>([])

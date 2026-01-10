@@ -54,6 +54,7 @@ export interface InquiriesListResponse {
 /**
  * Причини блокування контактів (locked_reason)
  * Стабільний контракт для FE згідно специфікації
+ * v0.66: додано user_blocked, blocked_by_user, user_banned
  */
 export type ContactLockedReason =
   | 'no_relation'
@@ -64,6 +65,9 @@ export type ContactLockedReason =
   | 'no_active_lesson'
   | 'subscription_required'
   | 'forbidden'
+  | 'user_blocked'
+  | 'blocked_by_user'
+  | 'user_banned'
   | null
 
 /**

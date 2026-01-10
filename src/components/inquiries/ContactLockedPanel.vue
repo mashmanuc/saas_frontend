@@ -52,6 +52,60 @@
       >
         {{ $t('contact.locked.actions.upgrade') }}
       </button>
+
+      <!-- inquiry_rejected: Show text -->
+      <p
+        v-else-if="lockedReason === 'inquiry_rejected'"
+        class="locked-reason"
+        data-testid="inquiry-rejected-text"
+      >
+        {{ $t('contact.locked.reasons.inquiry_rejected') }}
+      </p>
+
+      <!-- inquiry_expired: Show text -->
+      <p
+        v-else-if="lockedReason === 'inquiry_expired'"
+        class="locked-reason"
+        data-testid="inquiry-expired-text"
+      >
+        {{ $t('contact.locked.reasons.inquiry_expired') }}
+      </p>
+
+      <!-- forbidden: Show text -->
+      <p
+        v-else-if="lockedReason === 'forbidden'"
+        class="locked-reason"
+        data-testid="forbidden-text"
+      >
+        {{ $t('contact.locked.reasons.forbidden') }}
+      </p>
+
+      <!-- user_blocked: Show text -->
+      <p
+        v-else-if="lockedReason === 'user_blocked'"
+        class="locked-reason"
+        data-testid="user-blocked-text"
+      >
+        {{ $t('contact.locked.reasons.user_blocked') }}
+      </p>
+
+      <!-- blocked_by_user: Show text -->
+      <p
+        v-else-if="lockedReason === 'blocked_by_user'"
+        class="locked-reason"
+        data-testid="blocked-by-user-text"
+      >
+        {{ $t('contact.locked.reasons.blocked_by_user') }}
+      </p>
+
+      <!-- user_banned: Show text -->
+      <p
+        v-else-if="lockedReason === 'user_banned'"
+        class="locked-reason"
+        data-testid="user-banned-text"
+      >
+        {{ $t('contact.locked.reasons.user_banned') }}
+      </p>
     </div>
   </div>
 </template>

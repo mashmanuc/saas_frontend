@@ -3213,7 +3213,42 @@
       "already_exists": "Request already exists for this relation",
       "not_allowed": "Request not allowed",
       "invalid_state": "Invalid operation for current request state",
-      "subscription_required": "PRO subscription required to create requests. Upgrade your subscription to continue."
+      "subscription_required": "PRO subscription required to create requests. Upgrade your subscription to continue.",
+      "user_blocked": "You cannot interact with this user"
+    }
+  },
+  "trust": {
+    "report": {
+      "title": "Report",
+      "action": "Report",
+      "category": {
+        "label": "Report Category",
+        "placeholder": "Select category",
+        "spam": "Spam",
+        "harassment": "Harassment",
+        "fraud": "Fraud",
+        "inappropriate": "Inappropriate Content",
+        "other": "Other"
+      },
+      "details": {
+        "label": "Problem Description",
+        "placeholder": "Describe in detail what happened..."
+      },
+      "submit": "Submit Report",
+      "submitting": "Submitting...",
+      "success": {
+        "title": "Report Submitted",
+        "message": "Thank you for your report. Our team will review it shortly."
+      },
+      "error": {
+        "generic": "Error submitting report. Please try again later.",
+        "rateLimited": "You have already reported this target. Please try again in {hours} hours."
+      }
+    },
+    "block": {
+      "action": "Block User",
+      "confirmMessage": "Are you sure you want to block this user? You will no longer be able to interact with each other.",
+      "error": "Error blocking user"
     }
   },
   "contact": {
@@ -3227,7 +3262,10 @@
         "inquiry_expired": "Contact request expired",
         "no_active_lesson": "Active lesson required for contact access",
         "subscription_required": "Subscription required for contact access",
-        "forbidden": "Access forbidden"
+        "forbidden": "Access forbidden",
+        "user_blocked": "You have blocked this user",
+        "blocked_by_user": "This user has blocked you",
+        "user_banned": "Your account is temporarily restricted"
       },
       "actions": {
         "requestContact": "Request Contacts",
