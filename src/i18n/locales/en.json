@@ -29,6 +29,14 @@
       "findTutor": "Find a tutor",
       "lastActivity": "Last activity",
       "lessonsCount": "Lessons"
+    },
+    "calendar": {
+      "title": "My Calendar",
+      "allTutors": "All tutors",
+      "noEvents": "No scheduled lessons",
+      "eventDetails": "Lesson Details",
+      "messageTutor": "Message Tutor",
+      "joinRoom": "Join Lesson"
     }
   },
   "limits": {
@@ -485,6 +493,7 @@
     "classrooms": "Classrooms",
     "students": "Students",
     "lessons": "Lessons",
+    "calendar": "Calendar",
     "marketplace": "Marketplace",
     "tutorCalendar": "Tutor calendar",
     "soloWorkspace": "Solo workspace",
@@ -2372,7 +2381,7 @@
     }
   },
   "booking": {
-    "common": {
+    "bookingCommon": {
       "minutes": "minutes"
     },
     "selectStudent": "Select a student",
@@ -2493,9 +2502,12 @@
     },
     "request": {
       "title": "Booking request",
+      "form": {
+        "title": "Request form"
+      },
       "duration": "Duration",
       "message": "Message to tutor",
-      "messagePlaceholder": "Describe what you want to learn...",
+      "messagePlaceholder": "Tell the tutor what you want to learn...",
       "send": "Send request"
     },
     "template": {

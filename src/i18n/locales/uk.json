@@ -29,6 +29,14 @@
       "findTutor": "Знайти тьютора",
       "lastActivity": "Остання активність",
       "lessonsCount": "Уроків"
+    },
+    "calendar": {
+      "title": "Мій календар",
+      "allTutors": "Всі тьютори",
+      "noEvents": "Немає запланованих уроків",
+      "eventDetails": "Деталі уроку",
+      "messageTutor": "Написати тьютору",
+      "joinRoom": "Приєднатися до уроку"
     }
   },
   "tutor": {
@@ -637,6 +645,7 @@
     "classrooms": "Класи",
     "students": "Студенти",
     "lessons": "Уроки",
+    "calendar": "Календар",
     "marketplace": "Маркетплейс",
     "tutorCalendar": "Календар тьютора",
     "soloWorkspace": "Робочий простір",
@@ -3085,6 +3094,9 @@
     "draft": {},
     "request": {
       "title": "Запит на бронювання",
+      "form": {
+        "title": "Форма запиту"
+      },
       "duration": "Тривалість",
       "message": "Повідомлення тьютору",
       "messagePlaceholder": "Розкажіть, що ви хочете вивчити...",

@@ -27,6 +27,41 @@ import type {
 
 export const calendarV055Api = {
   /**
+   * Get my calendar (unified for tutor/student) - v0.69.1
+   * CONTRACT: GET /v1/calendar/my/ with from, to, tz
+   */
+  async getMyCalendar(params: {
+    from: string
+    to: string
+    tz?: string
+  }): Promise<{
+    results: Array<{
+      id: number
+      start: string
+      end: string
+      status: string
+      tutor: { id: number; name: string } | null
+      student: { id: number; name: string } | null
+      subject: any | null
+      tags: string[]
+      permissions: {
+        can_message: boolean
+        can_join_room: boolean
+      }
+      room: any | null
+    }>
+  }> {
+    const response = await api.get('/v1/calendar/my/', {
+      params: {
+        from: params.from,
+        to: params.to,
+        tz: params.tz || 'Europe/Kiev'
+      }
+    })
+    return response.data || response
+  },
+
+  /**
    * Get calendar week snapshot (v0.55 format)
    * CONTRACT: GET /v1/calendar/week/v055/ with tutor_id, week_start
    */

@@ -311,6 +311,12 @@ const routes = [
         meta: { roles: [USER_ROLES.TUTOR] },
       },
       {
+        path: 'calendar',
+        name: 'calendar',
+        component: () => import('../modules/booking/views/StudentCalendarView.vue'),
+        meta: { roles: [USER_ROLES.STUDENT] },
+      },
+      {
         path: 'booking/availability',
         name: 'booking-availability',
         component: TutorAvailabilityView,

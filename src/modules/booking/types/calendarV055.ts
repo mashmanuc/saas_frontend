@@ -49,6 +49,32 @@ export interface AccessibleSlot {
   is_recurring: boolean     // true = from template, false = manual
 }
 
+/**
+ * My Calendar Event (v0.69.1) - unified for tutor/student
+ */
+export interface MyCalendarEvent {
+  id: number
+  start: string
+  end: string
+  status: string
+  tutor: { id: number; name: string } | null
+  student: { id: number; name: string } | null
+  subject: any | null
+  tags: string[]
+  permissions: {
+    can_message: boolean
+    can_join_room: boolean
+  }
+  room: any | null
+}
+
+/**
+ * My Calendar Response (v0.69.1)
+ */
+export interface MyCalendarResponse {
+  results: MyCalendarEvent[]
+}
+
 export interface BlockedRange {
   id: number
   start: string
