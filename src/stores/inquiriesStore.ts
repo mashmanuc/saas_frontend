@@ -1,247 +1,214 @@
 /**
- * Inquiries Store v0.62
- * Based on FRONTEND — Технічне завдання v0.62.0.md
+ * Inquiries Store v0.69
+ * Based on FRONTEND_IMPLEMENTATION_PLAN_v069.md
  * 
- * Управління inquiry (переговори між tutor і student) та контактами
+ * Управління inquiry (встановлення контакту між tutor і student)
  * 
- * Інваріанти:
- * - Всі domain errors через rethrowAsDomainError
- * - Ніякого inline parsing err.response.data
+ * Принципи v0.69:
+ * - Single Source of Truth: refetch після мутацій
+ * - Idempotency: clientRequestId для всіх write операцій
  * - State-driven UI: FE не вгадує логіку
+ * - Всі domain errors через rethrowAsDomainError
  */
 
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import type { InquiryDTO, ContactPayload } from '@/types/inquiries'
-import { createInquiry, listInquiries, acceptInquiry, rejectInquiry } from '@/api/inquiries'
-import { getContact } from '@/api/users'
+import { ref, computed } from 'vue'
+import type { InquiryDTO, InquiryFilters, InquiryStatus } from '@/types/inquiries'
+import {
+  createInquiry as apiCreateInquiry,
+  fetchInquiries as apiFetchInquiries,
+  cancelInquiry as apiCancelInquiry,
+  acceptInquiry as apiAcceptInquiry,
+  declineInquiry as apiDeclineInquiry
+} from '@/api/inquiries'
 import { rethrowAsDomainError } from '@/utils/rethrowAsDomainError'
 
 export const useInquiriesStore = defineStore('inquiries', () => {
-  // State: inquiries по relation_id
-  const inquiriesByRelationId = ref<Record<string, InquiryDTO[]>>({})
-  
-  // State: contacts по user_id
-  const contactByUserId = ref<Record<string, ContactPayload>>({})
+  // State v0.69
+  const items = ref<InquiryDTO[]>([])
+  const statusFilter = ref<InquiryStatus | null>(null)
+  const pendingRequestIds = ref<Set<string>>(new Set())
   
   // Loading states
-  const isCreatingInquiry = ref(false)
-  const isLoadingInquiries = ref(false)
-  const isAcceptingInquiry = ref(false)
-  const isRejectingInquiry = ref(false)
-  const isLoadingContact = ref(false)
-  
-  // Error states
-  const createInquiryError = ref<string | null>(null)
-  const loadInquiriesError = ref<string | null>(null)
-  const acceptInquiryError = ref<string | null>(null)
-  const rejectInquiryError = ref<string | null>(null)
-  const loadContactError = ref<string | null>(null)
+  const isLoading = ref(false)
+  const error = ref<string | null>(null)
   
   /**
-   * Створити inquiry (запит на доступ до контактів)
+   * Створити inquiry v0.69
    * 
-   * @param relationId - ID relation
-   * @param message - повідомлення від ініціатора
+   * @param tutorId - ID тьютора
+   * @param message - повідомлення від студента
    * @returns створений inquiry
    */
-  async function requestContact(relationId: string, message: string): Promise<InquiryDTO> {
-    isCreatingInquiry.value = true
-    createInquiryError.value = null
+  async function createInquiry(tutorId: string, message: string): Promise<InquiryDTO> {
+    const clientRequestId = generateRequestId()
+    
+    if (pendingRequestIds.value.has(clientRequestId)) {
+      throw new Error('Duplicate request')
+    }
+    
+    isLoading.value = true
+    error.value = null
+    pendingRequestIds.value.add(clientRequestId)
     
     try {
-      const inquiry = await createInquiry({ relation_id: relationId, message })
+      const inquiry = await apiCreateInquiry({ tutorId, message, clientRequestId })
       
-      // Оновити локальний стан
-      if (!inquiriesByRelationId.value[relationId]) {
-        inquiriesByRelationId.value[relationId] = []
-      }
-      inquiriesByRelationId.value[relationId].push(inquiry)
+      // Refetch після створення
+      await refetch()
       
       return inquiry
     } catch (err) {
-      // Інваріант: всі domain errors через helper
-      try {
-        rethrowAsDomainError(err)
-      } catch (domainErr) {
-        const errorMessage = domainErr instanceof Error ? domainErr.message : 'Unknown error'
-        createInquiryError.value = errorMessage
-        throw domainErr
-      }
+      rethrowAsDomainError(err)
+      throw err
     } finally {
-      isCreatingInquiry.value = false
+      isLoading.value = false
+      pendingRequestIds.value.delete(clientRequestId)
     }
   }
   
   /**
-   * Завантажити список inquiries для relation
+   * Завантажити inquiries з фільтрами v0.69
    * 
-   * @param relationId - ID relation
+   * @param filters - role, status, page
    * @returns список inquiries
    */
-  async function loadInquiries(relationId: string): Promise<InquiryDTO[]> {
-    isLoadingInquiries.value = true
-    loadInquiriesError.value = null
+  async function fetchInquiries(filters: InquiryFilters = {}): Promise<InquiryDTO[]> {
+    isLoading.value = true
+    error.value = null
     
     try {
-      const inquiries = await listInquiries(relationId)
-      inquiriesByRelationId.value[relationId] = inquiries
+      const inquiries = await apiFetchInquiries(filters)
+      items.value = inquiries
       return inquiries
     } catch (err) {
-      try {
-        rethrowAsDomainError(err)
-      } catch (domainErr) {
-        const errorMessage = domainErr instanceof Error ? domainErr.message : 'Unknown error'
-        loadInquiriesError.value = errorMessage
-        throw domainErr
-      }
+      rethrowAsDomainError(err)
+      throw err
     } finally {
-      isLoadingInquiries.value = false
+      isLoading.value = false
     }
   }
   
   /**
-   * Прийняти inquiry
+   * Скасувати inquiry v0.69 (student only)
    * 
    * @param inquiryId - ID inquiry
    * @returns оновлений inquiry
    */
-  async function acceptInquiryAction(inquiryId: string): Promise<InquiryDTO> {
-    isAcceptingInquiry.value = true
-    acceptInquiryError.value = null
+  async function cancelInquiry(inquiryId: string): Promise<InquiryDTO> {
+    const clientRequestId = generateRequestId()
+    isLoading.value = true
+    error.value = null
     
     try {
-      const inquiry = await acceptInquiry(inquiryId)
+      const inquiry = await apiCancelInquiry(inquiryId, { clientRequestId })
       
-      // Оновити локальний стан
-      const relationId = inquiry.relation_id
-      if (inquiriesByRelationId.value[relationId]) {
-        const index = inquiriesByRelationId.value[relationId].findIndex(i => i.id === inquiryId)
-        if (index !== -1) {
-          inquiriesByRelationId.value[relationId][index] = inquiry
-        }
-      }
+      // Refetch після cancel
+      await refetch()
       
       return inquiry
     } catch (err) {
-      try {
-        rethrowAsDomainError(err)
-      } catch (domainErr) {
-        const errorMessage = domainErr instanceof Error ? domainErr.message : 'Unknown error'
-        acceptInquiryError.value = errorMessage
-        throw domainErr
-      }
+      rethrowAsDomainError(err)
+      throw err
     } finally {
-      isAcceptingInquiry.value = false
+      isLoading.value = false
     }
   }
   
   /**
-   * Відхилити inquiry
+   * Прийняти inquiry v0.69 (tutor only)
    * 
    * @param inquiryId - ID inquiry
    * @returns оновлений inquiry
    */
-  async function rejectInquiryAction(inquiryId: string): Promise<InquiryDTO> {
-    isRejectingInquiry.value = true
-    rejectInquiryError.value = null
+  async function acceptInquiry(inquiryId: string): Promise<InquiryDTO> {
+    const clientRequestId = generateRequestId()
+    isLoading.value = true
+    error.value = null
     
     try {
-      const inquiry = await rejectInquiry(inquiryId)
+      const inquiry = await apiAcceptInquiry(inquiryId, { clientRequestId })
       
-      // Оновити локальний стан
-      const relationId = inquiry.relation_id
-      if (inquiriesByRelationId.value[relationId]) {
-        const index = inquiriesByRelationId.value[relationId].findIndex(i => i.id === inquiryId)
-        if (index !== -1) {
-          inquiriesByRelationId.value[relationId][index] = inquiry
-        }
-      }
+      // Refetch після accept + trigger relationsStore refetch
+      await refetch()
       
       return inquiry
     } catch (err) {
-      try {
-        rethrowAsDomainError(err)
-      } catch (domainErr) {
-        const errorMessage = domainErr instanceof Error ? domainErr.message : 'Unknown error'
-        rejectInquiryError.value = errorMessage
-        throw domainErr
-      }
+      rethrowAsDomainError(err)
+      throw err
     } finally {
-      isRejectingInquiry.value = false
+      isLoading.value = false
     }
   }
   
   /**
-   * Завантажити контактні дані користувача
-   * Завжди повертає структуру з null + locked_reason якщо доступ заборонено
+   * Відхилити inquiry v0.69 (tutor only)
    * 
-   * @param userId - ID користувача
-   * @returns контактні дані або locked payload
+   * @param inquiryId - ID inquiry
+   * @returns оновлений inquiry
    */
-  async function loadContact(userId: string): Promise<ContactPayload> {
-    isLoadingContact.value = true
-    loadContactError.value = null
+  async function declineInquiry(inquiryId: string): Promise<InquiryDTO> {
+    const clientRequestId = generateRequestId()
+    isLoading.value = true
+    error.value = null
     
     try {
-      const contact = await getContact(userId)
-      contactByUserId.value[userId] = contact
-      return contact
+      const inquiry = await apiDeclineInquiry(inquiryId, { clientRequestId })
+      
+      // Refetch після decline
+      await refetch()
+      
+      return inquiry
     } catch (err) {
-      try {
-        rethrowAsDomainError(err)
-      } catch (domainErr) {
-        const errorMessage = domainErr instanceof Error ? domainErr.message : 'Unknown error'
-        loadContactError.value = errorMessage
-        throw domainErr
-      }
+      rethrowAsDomainError(err)
+      throw err
     } finally {
-      isLoadingContact.value = false
+      isLoading.value = false
     }
   }
   
   /**
-   * Отримати inquiries для конкретного relation (з кешу)
+   * Refetch inquiries (викликається після мутацій) v0.69
    */
-  function getInquiriesForRelation(relationId: string): InquiryDTO[] {
-    return inquiriesByRelationId.value[relationId] || []
+  async function refetch(): Promise<void> {
+    const filters: InquiryFilters = {}
+    if (statusFilter.value) {
+      filters.status = statusFilter.value
+    }
+    await fetchInquiries(filters)
   }
   
   /**
-   * Отримати контакт для користувача (з кешу)
+   * Генерувати clientRequestId для idempotency
    */
-  function getContactForUser(userId: string): ContactPayload | null {
-    return contactByUserId.value[userId] || null
+  function generateRequestId(): string {
+    return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
   }
+  
+  /**
+   * Computed: pending count для badge (sent inquiries)
+   */
+  const pendingCount = computed(() => {
+    return items.value.filter(i => i.status === 'sent').length
+  })
   
   return {
     // State
-    inquiriesByRelationId,
-    contactByUserId,
+    items,
+    statusFilter,
+    pendingRequestIds,
+    isLoading,
+    error,
     
-    // Loading states
-    isCreatingInquiry,
-    isLoadingInquiries,
-    isAcceptingInquiry,
-    isRejectingInquiry,
-    isLoadingContact,
-    
-    // Error states
-    createInquiryError,
-    loadInquiriesError,
-    acceptInquiryError,
-    rejectInquiryError,
-    loadContactError,
+    // Computed
+    pendingCount,
     
     // Actions
-    requestContact,
-    loadInquiries,
-    acceptInquiry: acceptInquiryAction,
-    rejectInquiry: rejectInquiryAction,
-    loadContact,
-    
-    // Getters
-    getInquiriesForRelation,
-    getContactForUser
+    createInquiry,
+    fetchInquiries,
+    cancelInquiry,
+    acceptInquiry,
+    declineInquiry,
+    refetch
   }
 })

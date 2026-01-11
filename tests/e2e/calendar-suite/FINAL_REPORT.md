@@ -191,7 +191,6 @@ Status: ⚠ Unknown calendar state (no day columns, no empty state message)
 ```
 
 ---
-
 ## 🔧 Технічні зміни
 
 ### Продакшен код

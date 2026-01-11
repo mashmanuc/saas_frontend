@@ -1,238 +1,172 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useInquiriesStore } from '@/stores/inquiriesStore'
-import type { InquiryDTO, ContactPayload } from '@/types/inquiries'
-import {
-  InquiryAlreadyExistsError,
-  InquiryNotAllowedError,
-  ContactLockedError
-} from '@/utils/errors'
+import type { InquiryDTO } from '@/types/inquiries'
 
 const createInquiryMock = vi.fn()
-const listInquiriesMock = vi.fn()
+const fetchInquiriesMock = vi.fn()
+const cancelInquiryMock = vi.fn()
 const acceptInquiryMock = vi.fn()
-const rejectInquiryMock = vi.fn()
-const getContactMock = vi.fn()
-const rethrowMock = vi.fn((err: unknown) => {
-  throw err
-})
+const declineInquiryMock = vi.fn()
 
 vi.mock('@/api/inquiries', () => ({
   createInquiry: (...args: unknown[]) => createInquiryMock(...args),
-  listInquiries: (...args: unknown[]) => listInquiriesMock(...args),
+  fetchInquiries: (...args: unknown[]) => fetchInquiriesMock(...args),
+  cancelInquiry: (...args: unknown[]) => cancelInquiryMock(...args),
   acceptInquiry: (...args: unknown[]) => acceptInquiryMock(...args),
-  rejectInquiry: (...args: unknown[]) => rejectInquiryMock(...args)
+  declineInquiry: (...args: unknown[]) => declineInquiryMock(...args)
 }))
 
-vi.mock('@/api/users', () => ({
-  getContact: (...args: unknown[]) => getContactMock(...args)
-}))
+const rethrowMock = vi.fn((err: unknown) => {
+  throw err
+})
 
 vi.mock('@/utils/rethrowAsDomainError', () => ({
   rethrowAsDomainError: (err: unknown) => rethrowMock(err)
 }))
 
-function createMockInquiry(overrides: Partial<InquiryDTO> = {}): InquiryDTO {
+function createInquiry(overrides: Partial<InquiryDTO> = {}): InquiryDTO {
   return {
-    id: 'inq-1',
-    relation_id: 'rel-1',
-    initiator_role: 'student',
-    status: 'OPEN',
-    message: 'Test message',
-    created_at: '2025-01-01T00:00:00Z',
-    resolved_at: null,
-    expires_at: null,
+    id: 'inq_1',
+    student: { id: 'student_1', firstName: 'John', lastName: 'Doe', role: 'student' },
+    tutor: { id: 'tutor_1', firstName: 'Jane', lastName: 'Smith', role: 'tutor' },
+    message: 'Hello',
+    status: 'sent',
+    createdAt: '2024-01-01T10:00:00Z',
+    updatedAt: '2024-01-01T10:00:00Z',
     ...overrides
   }
 }
 
-describe('inquiriesStore', () => {
+describe('inquiriesStore (legacy tests updated for v0.69)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    fetchInquiriesMock.mockResolvedValue([])
     rethrowMock.mockImplementation((err: unknown) => {
       throw err
     })
   })
 
-  describe('requestContact', () => {
-    it('creates inquiry and updates local state', async () => {
-      const inquiry = createMockInquiry()
+  describe('createInquiry', () => {
+    it('calls API with idempotency payload and refetches', async () => {
+      const store = useInquiriesStore()
+      const inquiry = createInquiry()
       createInquiryMock.mockResolvedValueOnce(inquiry)
+      fetchInquiriesMock.mockResolvedValueOnce([inquiry])
 
-      const store = useInquiriesStore()
-      const result = await store.requestContact('rel-1', 'Test message')
+      const result = await store.createInquiry('tutor_1', 'Hi')
 
-      expect(createInquiryMock).toHaveBeenCalledWith({
-        relation_id: 'rel-1',
-        message: 'Test message'
-      })
+      expect(createInquiryMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tutorId: 'tutor_1',
+          message: 'Hi',
+          clientRequestId: expect.stringMatching(/^req_/)
+        })
+      )
       expect(result).toEqual(inquiry)
-      expect(store.inquiriesByRelationId['rel-1']).toHaveLength(1)
-      expect(store.inquiriesByRelationId['rel-1'][0]).toEqual(inquiry)
+      expect(fetchInquiriesMock).toHaveBeenCalled()
     })
 
-    it('handles InquiryAlreadyExistsError through rethrowAsDomainError', async () => {
-      const error = new InquiryAlreadyExistsError({ relation_id: 'rel-1' })
-      createInquiryMock.mockRejectedValueOnce(new Error('test'))
-      rethrowMock.mockImplementationOnce(() => {
-        throw error
-      })
-
+    it('rethrows domain errors via helper', async () => {
       const store = useInquiriesStore()
+      const error = new Error('domain')
+      createInquiryMock.mockRejectedValueOnce(error)
 
-      await expect(store.requestContact('rel-1', 'Test')).rejects.toBe(error)
-      expect(store.createInquiryError).toBeTruthy()
-    })
-
-    it('sets error state on failure', async () => {
-      createInquiryMock.mockRejectedValueOnce(new Error('Network error'))
-
-      const store = useInquiriesStore()
-
-      await expect(store.requestContact('rel-1', 'Test')).rejects.toThrow()
-      expect(store.createInquiryError).toBe('Network error')
-      expect(store.isCreatingInquiry).toBe(false)
+      await expect(store.createInquiry('tutor_1', 'Hello')).rejects.toThrow('domain')
     })
   })
 
-  describe('loadInquiries', () => {
-    it('loads inquiries for relation', async () => {
-      const inquiries = [
-        createMockInquiry({ id: 'inq-1' }),
-        createMockInquiry({ id: 'inq-2' })
-      ]
-      listInquiriesMock.mockResolvedValueOnce(inquiries)
-
+  describe('fetchInquiries', () => {
+    it('loads inquiries with filters', async () => {
       const store = useInquiriesStore()
-      const result = await store.loadInquiries('rel-1')
+      const inquiry = createInquiry()
+      fetchInquiriesMock.mockResolvedValueOnce([inquiry])
 
-      expect(listInquiriesMock).toHaveBeenCalledWith('rel-1')
-      expect(result).toEqual(inquiries)
-      expect(store.inquiriesByRelationId['rel-1']).toEqual(inquiries)
+      const result = await store.fetchInquiries({ role: 'student', status: 'sent' })
+
+      expect(fetchInquiriesMock).toHaveBeenCalledWith({ role: 'student', status: 'sent' })
+      expect(result).toEqual([inquiry])
+      expect(store.items).toEqual([inquiry])
     })
+  })
 
-    it('handles errors gracefully', async () => {
-      listInquiriesMock.mockRejectedValueOnce(new Error('Load failed'))
-
+  describe('cancelInquiry', () => {
+    it('calls API and refetches', async () => {
       const store = useInquiriesStore()
+      const inquiry = createInquiry({ status: 'cancelled' })
+      cancelInquiryMock.mockResolvedValueOnce(inquiry)
+      fetchInquiriesMock.mockResolvedValueOnce([inquiry])
 
-      await expect(store.loadInquiries('rel-1')).rejects.toThrow()
-      expect(store.loadInquiriesError).toBe('Load failed')
+      await store.cancelInquiry('inq_1')
+
+      expect(cancelInquiryMock).toHaveBeenCalledWith(
+        'inq_1',
+        expect.objectContaining({ clientRequestId: expect.any(String) })
+      )
+      expect(fetchInquiriesMock).toHaveBeenCalled()
     })
   })
 
   describe('acceptInquiry', () => {
-    it('accepts inquiry and updates local state', async () => {
-      const inquiry = createMockInquiry({ status: 'ACCEPTED', resolved_at: '2025-01-02T00:00:00Z' })
+    it('accepts inquiry and refetches', async () => {
+      const store = useInquiriesStore()
+      const inquiry = createInquiry({ status: 'accepted' })
       acceptInquiryMock.mockResolvedValueOnce(inquiry)
+      fetchInquiriesMock.mockResolvedValueOnce([inquiry])
 
-      const store = useInquiriesStore()
-      store.inquiriesByRelationId['rel-1'] = [createMockInquiry()]
+      await store.acceptInquiry('inq_1')
 
-      const result = await store.acceptInquiry('inq-1')
-
-      expect(acceptInquiryMock).toHaveBeenCalledWith('inq-1')
-      expect(result).toEqual(inquiry)
-      expect(store.inquiriesByRelationId['rel-1'][0]).toEqual(inquiry)
-    })
-
-    it('handles errors through rethrowAsDomainError', async () => {
-      acceptInquiryMock.mockRejectedValueOnce(new Error('test'))
-
-      const store = useInquiriesStore()
-
-      await expect(store.acceptInquiry('inq-1')).rejects.toThrow()
-      expect(store.acceptInquiryError).toBeTruthy()
+      expect(acceptInquiryMock).toHaveBeenCalledWith(
+        'inq_1',
+        expect.objectContaining({ clientRequestId: expect.any(String) })
+      )
+      expect(fetchInquiriesMock).toHaveBeenCalled()
     })
   })
 
-  describe('rejectInquiry', () => {
-    it('rejects inquiry and updates local state', async () => {
-      const inquiry = createMockInquiry({ status: 'REJECTED', resolved_at: '2025-01-02T00:00:00Z' })
-      rejectInquiryMock.mockResolvedValueOnce(inquiry)
-
+  describe('declineInquiry', () => {
+    it('declines inquiry and refetches', async () => {
       const store = useInquiriesStore()
-      store.inquiriesByRelationId['rel-1'] = [createMockInquiry()]
+      const inquiry = createInquiry({ status: 'declined' })
+      declineInquiryMock.mockResolvedValueOnce(inquiry)
+      fetchInquiriesMock.mockResolvedValueOnce([inquiry])
 
-      const result = await store.rejectInquiry('inq-1')
+      await store.declineInquiry('inq_1')
 
-      expect(rejectInquiryMock).toHaveBeenCalledWith('inq-1')
-      expect(result).toEqual(inquiry)
-      expect(store.inquiriesByRelationId['rel-1'][0]).toEqual(inquiry)
+      expect(declineInquiryMock).toHaveBeenCalledWith(
+        'inq_1',
+        expect.objectContaining({ clientRequestId: expect.any(String) })
+      )
+      expect(fetchInquiriesMock).toHaveBeenCalled()
     })
   })
 
-  describe('loadContact', () => {
-    it('loads contact and stores in cache', async () => {
-      const contact: ContactPayload = {
-        email: 'test@example.com',
-        phone: '+380123456789',
-        telegram: '@test',
-        locked_reason: null
-      }
-      getContactMock.mockResolvedValueOnce(contact)
-
+  describe('pendingCount', () => {
+    it('counts inquiries with sent status', async () => {
       const store = useInquiriesStore()
-      const result = await store.loadContact('user-1')
+      const items = [
+        createInquiry({ id: '1', status: 'sent' }),
+        createInquiry({ id: '2', status: 'accepted' }),
+        createInquiry({ id: '3', status: 'sent' })
+      ]
+      fetchInquiriesMock.mockResolvedValueOnce(items)
 
-      expect(getContactMock).toHaveBeenCalledWith('user-1')
-      expect(result).toEqual(contact)
-      expect(store.contactByUserId['user-1']).toEqual(contact)
-    })
+      await store.fetchInquiries()
 
-    it('loads locked contact with reason', async () => {
-      const contact: ContactPayload = {
-        email: null,
-        phone: null,
-        telegram: null,
-        locked_reason: 'inquiry_required'
-      }
-      getContactMock.mockResolvedValueOnce(contact)
-
-      const store = useInquiriesStore()
-      const result = await store.loadContact('user-1')
-
-      expect(result.locked_reason).toBe('inquiry_required')
-      expect(result.email).toBeNull()
-    })
-
-    it('handles ContactLockedError through rethrowAsDomainError', async () => {
-      const error = new ContactLockedError({ locked_reason: 'forbidden' })
-      getContactMock.mockRejectedValueOnce(new Error('test'))
-      rethrowMock.mockImplementationOnce(() => {
-        throw error
-      })
-
-      const store = useInquiriesStore()
-
-      await expect(store.loadContact('user-1')).rejects.toBe(error)
-      expect(store.loadContactError).toBeTruthy()
+      expect(store.pendingCount).toBe(2)
     })
   })
 
-  describe('getters', () => {
-    it('getInquiriesForRelation returns cached inquiries', () => {
+  describe('refetch', () => {
+    it('uses current status filter', async () => {
       const store = useInquiriesStore()
-      const inquiries = [createMockInquiry()]
-      store.inquiriesByRelationId['rel-1'] = inquiries
+      store.statusFilter = 'sent'
+      fetchInquiriesMock.mockResolvedValueOnce([])
 
-      expect(store.getInquiriesForRelation('rel-1')).toEqual(inquiries)
-      expect(store.getInquiriesForRelation('rel-2')).toEqual([])
-    })
+      await store.refetch()
 
-    it('getContactForUser returns cached contact', () => {
-      const store = useInquiriesStore()
-      const contact: ContactPayload = {
-        email: 'test@example.com',
-        phone: null,
-        telegram: null,
-        locked_reason: null
-      }
-      store.contactByUserId['user-1'] = contact
-
-      expect(store.getContactForUser('user-1')).toEqual(contact)
-      expect(store.getContactForUser('user-2')).toBeNull()
+      expect(fetchInquiriesMock).toHaveBeenCalledWith({ status: 'sent' })
     })
   })
 })

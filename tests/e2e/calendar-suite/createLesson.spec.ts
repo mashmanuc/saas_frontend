@@ -8,6 +8,7 @@
 
 import './envGuard'
 import { test, expect, type Response } from '@playwright/test'
+import { loginViaApi } from '../helpers/auth'
 
 const EVENT_CREATE_ENDPOINT = '/api/v1/calendar/event/create'
 
@@ -18,31 +19,60 @@ async function waitForCalendarReady(page: any) {
 
 /**
  * Відкрити CreateLessonModal через клік по grid cell
- * Використовує data-testid="grid-hour-10" для детермінованого кліку
+ * Використовує data-testid="grid-hour-9" - порожню клітинку БЕЗ accessible slot
+ * (години 10,11,14,15,16 мають accessible slots і відкривають SlotEditorModal)
  */
 async function openCreateLessonModal(page: any) {
-  // Чекаємо на появу доступних слотів (seed створює слоти на години 10, 11, 14)
-  const accessibleSlot = page.locator('[data-testid="accessible-slot"]').first()
-  await expect(accessibleSlot).toBeVisible({ timeout: 15000 })
+  // Чекаємо на появу календаря
+  const calendarBoard = page.locator('[data-testid="calendar-board"]')
+  await expect(calendarBoard).toBeVisible({ timeout: 15000 })
   
-  // Клікаємо по grid cell годину 10 (перший доступний слот)
-  // Деякі накладні елементи (header, grid-layer) можуть перекривати pointer events,
-  // тому примусово скролимо до елемента і диспатчимо клік через evaluate.
-  const gridHour10 = page.locator('[data-testid="grid-hour-10"]').first()
-  await expect(gridHour10).toBeVisible({ timeout: 5000 })
-  await gridHour10.scrollIntoViewIfNeeded()
-  await gridHour10.evaluate((node: HTMLElement) => {
-    node.dispatchEvent(
-      new MouseEvent('click', {
-        bubbles: true,
-        cancelable: true,
-        view: window,
-      })
-    )
-  })
+  // Debug: перевіряємо які grid hours доступні
+  const allGridHours = await page.locator('[data-testid^="grid-hour-"]').all()
+  const hourIds = await Promise.all(allGridHours.map((el: any) => el.getAttribute('data-testid')))
+  console.log('[E2E Debug] Available grid hours:', hourIds.slice(0, 10))
+  
+  // Debug: перевіряємо grid-hour-9
+  const gridHour9 = page.locator('[data-testid="grid-hour-9"]').first()
+  const count = await gridHour9.count()
+  console.log('[E2E Debug] grid-hour-9 count:', count)
+  
+  if (count === 0) {
+    throw new Error('grid-hour-9 not found! Available hours: ' + hourIds.join(', '))
+  }
+  
+  await expect(gridHour9).toBeVisible({ timeout: 5000 })
+  
+  // Debug: перевіряємо стан елемента
+  const classes = await gridHour9.getAttribute('class')
+  console.log('[E2E Debug] grid-hour-9 classes:', classes)
+  
+  const isDisabled = classes?.includes('is-disabled') || false
+  console.log('[E2E Debug] grid-hour-9 is-disabled:', isDisabled)
+  
+  // Клікаємо
+  await gridHour9.scrollIntoViewIfNeeded()
+  console.log('[E2E Debug] Clicking grid-hour-9...')
+  await gridHour9.click({ force: true })
+  console.log('[E2E Debug] Click executed')
+  
+  // Чекаємо трохи для обробки події
+  await page.waitForTimeout(1000)
   
   // Перевіряємо, що модалка відкрилася
   const modal = page.locator('.modal-overlay')
+  const modalVisible = await modal.isVisible().catch(() => false)
+  console.log('[E2E Debug] Modal visible:', modalVisible)
+  
+  if (!modalVisible) {
+    // Debug: перевіряємо чи є SlotEditorModal замість CreateLessonModal
+    const slotEditor = await page.locator('text=Редагувати доступність').isVisible().catch(() => false)
+    console.log('[E2E Debug] SlotEditorModal visible:', slotEditor)
+    
+    // Скріншот для діагностики
+    await page.screenshot({ path: 'test-results/debug-modal-not-opened.png' })
+  }
+  
   await expect(modal).toBeVisible({ timeout: 5000 })
 }
 
@@ -157,6 +187,8 @@ test.describe('Create Lesson Modal v0.55', () => {
       }
     })
     
+    // Використовуємо loginViaApi для гарантованої свіжої авторизації
+    await loginViaApi(page)
     await page.goto('/booking/tutor', { waitUntil: 'domcontentloaded', timeout: 30000 })
     
     // Чекаємо на завантаження або показ помилки

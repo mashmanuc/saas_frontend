@@ -7,6 +7,8 @@
           v-for="day in days" 
           :key="day.date" 
           class="day-header-cell"
+          :data-testid="`day-header-${day.date}`"
+          :aria-label="`${formatDayName(day.date)} ${formatDayDate(day.date)}`"
         >
           <div 
             class="day-header-chip"

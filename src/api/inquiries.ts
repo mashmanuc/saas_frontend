@@ -1,8 +1,8 @@
 /**
- * Inquiries API Client v0.62
- * Based on FRONTEND — Технічне завдання v0.62.0.md
+ * Inquiries API Client v0.69
+ * Based on FRONTEND_IMPLEMENTATION_PLAN_v069.md
  * 
- * API методи для роботи з inquiry (переговори між tutor і student)
+ * API методи для роботи з inquiry (встановлення контакту між tutor і student)
  */
 
 import axios from 'axios'
@@ -10,15 +10,18 @@ import type {
   InquiryDTO,
   CreateInquiryPayload,
   CreateInquiryResponse,
-  InquiriesListResponse
+  InquiriesListResponse,
+  InquiryFilters,
+  InquiryActionPayload,
+  CancelInquiryPayload
 } from '@/types/inquiries'
 
-const BASE_URL = '/api/v1/inquiries'
+const BASE_URL = '/api/v1/people/inquiries'
 
 /**
- * Створити inquiry (запит на доступ до контактів)
+ * Створити inquiry v0.69
  * 
- * @param payload - relation_id та message
+ * @param payload - tutorId, message, clientRequestId (idempotency)
  * @returns створений inquiry
  */
 export async function createInquiry(payload: CreateInquiryPayload): Promise<InquiryDTO> {
@@ -27,43 +30,76 @@ export async function createInquiry(payload: CreateInquiryPayload): Promise<Inqu
 }
 
 /**
- * Отримати список inquiries для конкретного relation
+ * Отримати список inquiries з фільтрами v0.69
  * 
- * @param relationId - ID relation
+ * @param filters - role, status, page, pageSize
  * @returns список inquiries
  */
-export async function listInquiries(relationId: string): Promise<InquiryDTO[]> {
+export async function fetchInquiries(filters: InquiryFilters = {}): Promise<InquiryDTO[]> {
   const response = await axios.get<InquiriesListResponse>(`${BASE_URL}/`, {
-    params: { relation_id: relationId }
+    params: filters
   })
   return response.data.inquiries
 }
 
 /**
- * Прийняти inquiry (accept)
+ * Скасувати inquiry (cancel) - тільки student v0.69
  * 
  * @param inquiryId - ID inquiry
+ * @param payload - clientRequestId (idempotency)
  * @returns оновлений inquiry
  */
-export async function acceptInquiry(inquiryId: string): Promise<InquiryDTO> {
-  const response = await axios.post<CreateInquiryResponse>(`${BASE_URL}/${inquiryId}/accept/`)
+export async function cancelInquiry(
+  inquiryId: string,
+  payload: CancelInquiryPayload
+): Promise<InquiryDTO> {
+  const response = await axios.post<CreateInquiryResponse>(
+    `${BASE_URL}/${inquiryId}/cancel/`,
+    payload
+  )
   return response.data.inquiry
 }
 
 /**
- * Відхилити inquiry (reject)
+ * Прийняти inquiry (accept) - тільки tutor v0.69
  * 
  * @param inquiryId - ID inquiry
+ * @param payload - clientRequestId (idempotency)
  * @returns оновлений inquiry
  */
-export async function rejectInquiry(inquiryId: string): Promise<InquiryDTO> {
-  const response = await axios.post<CreateInquiryResponse>(`${BASE_URL}/${inquiryId}/reject/`)
+export async function acceptInquiry(
+  inquiryId: string,
+  payload: InquiryActionPayload
+): Promise<InquiryDTO> {
+  const response = await axios.post<CreateInquiryResponse>(
+    `${BASE_URL}/${inquiryId}/accept/`,
+    payload
+  )
+  return response.data.inquiry
+}
+
+/**
+ * Відхилити inquiry (decline) - тільки tutor v0.69
+ * 
+ * @param inquiryId - ID inquiry
+ * @param payload - clientRequestId (idempotency)
+ * @returns оновлений inquiry
+ */
+export async function declineInquiry(
+  inquiryId: string,
+  payload: InquiryActionPayload
+): Promise<InquiryDTO> {
+  const response = await axios.post<CreateInquiryResponse>(
+    `${BASE_URL}/${inquiryId}/decline/`,
+    payload
+  )
   return response.data.inquiry
 }
 
 export default {
   createInquiry,
-  listInquiries,
+  fetchInquiries,
+  cancelInquiry,
   acceptInquiry,
-  rejectInquiry
+  declineInquiry
 }

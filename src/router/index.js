@@ -399,6 +399,34 @@ const routes = [
         component: LessonHistory,
         meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
       },
+      // v0.69: People & Negotiation Chat routes
+      {
+        path: 'beta/people',
+        name: 'people-inquiries-student',
+        component: () => import('../modules/people/views/StudentInquiriesView.vue'),
+        meta: { 
+          requiresAuth: true,
+          roles: [USER_ROLES.STUDENT]
+        },
+      },
+      {
+        path: 'beta/people/inbox',
+        name: 'people-inquiries-tutor',
+        component: () => import('../modules/people/views/TutorInquiriesInbox.vue'),
+        meta: { 
+          requiresAuth: true,
+          roles: [USER_ROLES.TUTOR]
+        },
+      },
+      {
+        path: 'chat/thread/:threadId',
+        name: 'chat-thread',
+        component: () => import('../modules/people/views/ChatThreadView.vue'),
+        meta: { 
+          requiresAuth: true,
+          roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR]
+        },
+      },
       // v0.67: Staff Console routes
       {
         path: 'staff',
