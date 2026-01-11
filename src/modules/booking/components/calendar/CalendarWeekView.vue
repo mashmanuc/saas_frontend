@@ -47,7 +47,7 @@
     <div class="calendar-v055-layout">
       <!-- Week Navigation -->
       <WeekNavigation
-        v-if="!isAvailabilityMode"
+        v-if="!isAvailabilityMode && props.mode === 'tutor'"
         :week-start="weekStartForNav"
         :week-end="weekEndForNav"
         :current-page="currentPageForNav"
@@ -83,7 +83,7 @@
           :timezone="metaV055?.timezone || 'UTC'"
           :blocked-ranges="blockedRangesV055Computed"
           :current-time="currentTimeV055"
-          :is-drag-enabled="dragEnabled && !isAvailabilityMode"
+          :is-drag-enabled="dragEnabled && !isAvailabilityMode && props.mode === 'tutor'"
           :availability-mode="isAvailabilityMode"
           :draft-slots="draftStore.slots"
           @event-click="handleEventClick"
@@ -91,13 +91,13 @@
           @cell-click="handleCellClickRouter"
           @drag-complete="handleDragComplete"
         />
-        <CalendarFooter v-if="!isAvailabilityMode" lesson-link="https://zoom.us/j/example" />
+        <CalendarFooter v-if="!isAvailabilityMode && props.mode === 'tutor'" lesson-link="https://zoom.us/j/example" />
       </template>
     </div>
     
-    <!-- Modals -->
+    <!-- Modals (tutor only) -->
     <CreateLessonModal
-      v-if="showCreateModal && selectedCell"
+      v-if="showCreateModal && selectedCell && props.mode === 'tutor'"
       :visible="showCreateModal"
       :selected-cell="selectedCell"
       @close="showCreateModal = false"
@@ -105,7 +105,7 @@
     />
 
     <EditLessonModal
-      v-if="showEventModal && selectedEventId"
+      v-if="showEventModal && selectedEventId && props.mode === 'tutor'"
       :visible="showEventModal"
       :event-id="selectedEventId"
       @close="showEventModal = false"
@@ -114,7 +114,7 @@
     />
 
     <SlotEditorModal
-      v-if="showSlotModal && selectedSlot"
+      v-if="showSlotModal && selectedSlot && props.mode === 'tutor'"
       :visible="showSlotModal"
       :slot="selectedSlot"
       :timezone="calendarTimezone"
@@ -124,7 +124,7 @@
     />
 
     <CreateSlotModal
-      v-if="showCreateSlotModal && createSlotData"
+      v-if="showCreateSlotModal && createSlotData && props.mode === 'tutor'"
       :date="createSlotData.date"
       :start="createSlotData.start"
       :end="createSlotData.end"
@@ -134,7 +134,7 @@
     />
 
     <BlockSlotModal
-      v-if="showBlockSlotModal && selectedSlotForBlock"
+      v-if="showBlockSlotModal && selectedSlotForBlock && props.mode === 'tutor'"
       :slot="selectedSlotForBlock"
       @blocked="handleSlotBlocked"
       @cancelled="showBlockSlotModal = false"
@@ -182,6 +182,13 @@
 import { ref, onMounted, onUnmounted, computed, watch, defineAsyncComponent } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
+
+// Props
+const props = withDefaults(defineProps<{
+  mode?: 'tutor' | 'student'
+}>(), {
+  mode: 'tutor'
+})
 import { Loader as LoaderIcon, AlertCircle as AlertCircleIcon, ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon } from 'lucide-vue-next'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
@@ -271,7 +278,7 @@ const eventsV055Computed = computed(() => {
 const accessibleSlotsComputed = computed(() => accessibleV055.value || [])
 const blockedRangesV055Computed = computed(() => blockedRangesV055.value || [])
 const currentTimeV055 = computed(() => metaV055.value?.currentTime || new Date().toISOString())
-const dragEnabled = computed(() => true)
+const dragEnabled = computed(() => props.mode === 'tutor')
 const timezoneForNav = computed(() => metaV055.value?.timezone || 'Europe/Kiev')
 const weekStartForNav = computed(
   () => metaV055.value?.weekStart || new Date().toISOString().slice(0, 10)

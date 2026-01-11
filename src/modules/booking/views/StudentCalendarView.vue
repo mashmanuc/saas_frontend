@@ -1,220 +1,180 @@
 <template>
-  <div class="student-calendar-wrapper">
+  <div class="student-calendar-view">
+    <!-- Header with Tutor Filter -->
+    <div class="calendar-header">
+      <h1>{{ $t('student.calendar.title') }}</h1>
+      <div class="calendar-controls">
+        <select v-model="selectedTutorId" class="tutor-filter">
+          <option :value="null">{{ $t('student.calendar.allTutors') }}</option>
+          <option v-for="tutor in uniqueTutors" :key="tutor.id" :value="tutor.id">
+            {{ tutor.name }}
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Loading/Error States -->
     <div v-if="loading" class="loading-state">
       <div class="spinner"></div>
       <p>{{ $t('calendar.loading') }}</p>
     </div>
-
+    
     <div v-else-if="error" class="error-state">
-      <p class="error-message">{{ error }}</p>
-      <button @click="fetchCalendar" class="btn-retry">
-        {{ $t('common.retry') }}
-      </button>
+      <p>{{ error }}</p>
+      <button @click="fetchMyCalendar" class="btn-retry">{{ $t('common.retry') }}</button>
     </div>
+    
+    <!-- Unified Calendar Grid (student mode) -->
+    <CalendarWeekView v-else mode="student" />
 
-    <div v-else class="calendar-container">
-      <div class="calendar-header">
-        <h1>{{ $t('student.calendar.title') }}</h1>
-        <div class="calendar-controls">
-          <select v-model="selectedTutorId" class="tutor-filter">
-            <option :value="null">{{ $t('student.calendar.allTutors') }}</option>
-            <option v-for="tutor in uniqueTutors" :key="tutor.id" :value="tutor.id">
-              {{ tutor.name }}
-            </option>
-          </select>
-        </div>
-      </div>
-
-      <div class="calendar-grid">
-        <div class="week-navigation">
-          <button @click="previousWeek" class="btn-nav">
-            <span>←</span>
-          </button>
-          <div class="week-label">
-            {{ weekLabel }}
-          </div>
-          <button @click="nextWeek" class="btn-nav">
-            <span>→</span>
-          </button>
-        </div>
-
-        <div class="events-list">
-          <div
-            v-for="event in filteredEvents"
-            :key="event.id"
-            class="event-card"
-            @click="openEventDrawer(event)"
-          >
-            <div class="event-time">
-              {{ formatTime(event.start) }} - {{ formatTime(event.end) }}
-            </div>
-            <div class="event-tutor">
-              {{ event.tutor?.name || $t('common.unknown') }}
-            </div>
-            <div class="event-status" :class="`status-${event.status}`">
-              {{ $t(`calendar.status.${event.status}`) }}
-            </div>
+    <!-- Student Event Drawer -->
+    <Teleport to="body">
+      <div v-if="selectedEvent" class="student-event-drawer-overlay" @click.self="closeEventDrawer">
+        <div class="student-event-drawer">
+          <div class="drawer-header">
+            <h2>{{ $t('student.calendar.eventDetails') }}</h2>
+            <button @click="closeEventDrawer" class="btn-close">×</button>
           </div>
 
-          <div v-if="filteredEvents.length === 0" class="empty-state">
-            <p>{{ $t('student.calendar.noEvents') }}</p>
+          <div class="drawer-body">
+            <div class="event-detail">
+              <label>{{ $t('calendar.time') }}</label>
+              <p>{{ formatDateTime(selectedEvent.start) }} - {{ formatTime(selectedEvent.end) }}</p>
+            </div>
+
+            <div class="event-detail">
+              <label>{{ $t('calendar.tutor') }}</label>
+              <p>{{ selectedEvent.tutor?.name || $t('common.unknown') }}</p>
+            </div>
+
+            <div class="event-detail">
+              <label>{{ $t('calendar.status') }}</label>
+              <p>{{ $t(`calendar.status.${selectedEvent.status}`) }}</p>
+            </div>
+
+            <div class="drawer-actions">
+              <button
+                v-if="selectedEvent.permissions?.can_message"
+                @click="handleMessageTutor"
+                class="btn-primary"
+              >
+                {{ $t('student.calendar.messageTutor') }}
+              </button>
+
+              <button
+                v-if="selectedEvent.permissions?.can_join_room"
+                @click="handleJoinLesson"
+                class="btn-secondary"
+                :disabled="joiningRoom"
+              >
+                {{ joiningRoom ? $t('common.loading') : $t('student.calendar.joinLesson') }}
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- Event Drawer -->
-    <div v-if="selectedEvent" class="event-drawer" @click.self="closeEventDrawer">
-      <div class="drawer-content">
-        <div class="drawer-header">
-          <h2>{{ $t('student.calendar.eventDetails') }}</h2>
-          <button @click="closeEventDrawer" class="btn-close">×</button>
-        </div>
-
-        <div class="drawer-body">
-          <div class="event-detail">
-            <label>{{ $t('calendar.time') }}</label>
-            <p>{{ formatDateTime(selectedEvent.start) }} - {{ formatTime(selectedEvent.end) }}</p>
-          </div>
-
-          <div class="event-detail">
-            <label>{{ $t('calendar.tutor') }}</label>
-            <p>{{ selectedEvent.tutor?.name || $t('common.unknown') }}</p>
-          </div>
-
-          <div class="event-detail">
-            <label>{{ $t('calendar.status') }}</label>
-            <p>{{ $t(`calendar.status.${selectedEvent.status}`) }}</p>
-          </div>
-
-          <div class="drawer-actions">
-            <button
-              v-if="selectedEvent.permissions?.can_message"
-              @click="openChat"
-              class="btn-primary"
-            >
-              {{ $t('student.calendar.messageTutor') }}
-            </button>
-
-            <button
-              v-if="selectedEvent.permissions?.can_join_room"
-              @click="joinRoom"
-              class="btn-secondary"
-            >
-              {{ $t('student.calendar.joinRoom') }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
+import { useCalendarWeekStore } from '@/modules/booking/stores/calendarWeekStore'
 import { calendarV055Api } from '@/modules/booking/api/calendarV055Api'
+import { useAuthStore } from '@/modules/auth/store/authStore'
+import { useI18n } from 'vue-i18n'
+import CalendarWeekView from '@/modules/booking/components/calendar/CalendarWeekView.vue'
 import type { MyCalendarEvent } from '@/modules/booking/types/calendarV055'
 
+const { t } = useI18n()
 const router = useRouter()
+const authStore = useAuthStore()
 
-const loading = ref(false)
-const error = ref<string | null>(null)
-const events = ref<MyCalendarEvent[]>([])
 const selectedEvent = ref<MyCalendarEvent | null>(null)
 const selectedTutorId = ref<number | null>(null)
-const currentWeekStart = ref(new Date())
+const joiningRoom = ref(false)
+const myEvents = ref<MyCalendarEvent[]>([])
+const loading = ref(false)
+const error = ref<string | null>(null)
 
+// Extract unique tutors from my calendar events
 const uniqueTutors = computed(() => {
   const tutorMap = new Map<number, { id: number; name: string }>()
-  events.value.forEach(event => {
+  
+  myEvents.value.forEach(event => {
     if (event.tutor) {
-      tutorMap.set(event.tutor.id, event.tutor)
+      tutorMap.set(event.tutor.id, { id: event.tutor.id, name: event.tutor.name || 'Unknown' })
     }
   })
+  
   return Array.from(tutorMap.values()).sort((a, b) => a.name.localeCompare(b.name))
 })
 
+// Filter events by selected tutor (local filter)
 const filteredEvents = computed(() => {
   if (selectedTutorId.value === null) {
-    return events.value
+    return myEvents.value
   }
-  return events.value.filter(event => event.tutor?.id === selectedTutorId.value)
+  return myEvents.value.filter(event => event.tutor?.id === selectedTutorId.value)
 })
-
-const weekLabel = computed(() => {
-  const start = new Date(currentWeekStart.value)
-  const end = new Date(start)
-  end.setDate(end.getDate() + 6)
-  
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })
-  }
-  
-  return `${formatDate(start)} - ${formatDate(end)}`
-})
-
-async function fetchCalendar() {
-  loading.value = true
-  error.value = null
-
-  try {
-    const start = new Date(currentWeekStart.value)
-    const end = new Date(start)
-    end.setDate(end.getDate() + 7)
-
-    const response = await calendarV055Api.getMyCalendar({
-      from: start.toISOString(),
-      to: end.toISOString(),
-      tz: 'Europe/Kiev'
-    })
-
-    events.value = response.results
-  } catch (err: any) {
-    error.value = err.message || 'Failed to load calendar'
-    console.error('[StudentCalendarView] Error fetching calendar:', err)
-  } finally {
-    loading.value = false
-  }
-}
-
-function previousWeek() {
-  const newStart = new Date(currentWeekStart.value)
-  newStart.setDate(newStart.getDate() - 7)
-  currentWeekStart.value = newStart
-  fetchCalendar()
-}
-
-function nextWeek() {
-  const newStart = new Date(currentWeekStart.value)
-  newStart.setDate(newStart.getDate() + 7)
-  currentWeekStart.value = newStart
-  fetchCalendar()
-}
-
-function openEventDrawer(event: MyCalendarEvent) {
-  selectedEvent.value = event
-}
 
 function closeEventDrawer() {
   selectedEvent.value = null
 }
 
-function openChat() {
+async function handleMessageTutor() {
   if (!selectedEvent.value?.tutor) return
   
-  // Navigate to chat with tutor
+  // Navigate to existing chat/relations flow (v0.69 People Contacts)
+  // Use negotiation chat or relations depending on what exists
   router.push({
-    name: 'chat',
-    params: { userId: selectedEvent.value.tutor.id }
+    path: `/chat/tutor/${selectedEvent.value.tutor.id}`
+  }).catch(() => {
+    // Fallback to beta people if route doesn't exist
+    router.push('/beta/people')
   })
+  
+  closeEventDrawer()
 }
 
-function joinRoom() {
-  if (!selectedEvent.value?.room) return
+async function handleJoinLesson() {
+  if (!selectedEvent.value) return
   
-  // Open room (future implementation)
-  console.log('[StudentCalendarView] Join room:', selectedEvent.value.room)
+  joiningRoom.value = true
+  
+  try {
+    // Call backend join endpoint (v0.70)
+    const response = await calendarV055Api.joinEventRoom(selectedEvent.value.id)
+    
+    // Navigate to classroom using backend-provided URL
+    if (response.room?.url) {
+      router.push(response.room.url)
+      closeEventDrawer()
+    } else {
+      console.error('[StudentCalendarView] No room URL in response:', response)
+      alert(t('student.calendar.joinError'))
+    }
+  } catch (err: any) {
+    console.error('[StudentCalendarView] Error joining room:', err)
+    
+    // Handle specific error codes from backend
+    const errorCode = err?.response?.data?.code
+    let errorMessage = t('student.calendar.joinError')
+    
+    if (errorCode === 'room_not_available_yet') {
+      errorMessage = t('student.calendar.roomNotAvailableYet')
+    } else if (errorCode === 'room_expired') {
+      errorMessage = t('student.calendar.roomExpired')
+    } else if (errorCode === 'not_event_participant') {
+      errorMessage = t('student.calendar.notParticipant')
+    }
+    
+    alert(errorMessage)
+  } finally {
+    joiningRoom.value = false
+  }
 }
 
 function formatTime(isoString: string): string {
@@ -232,18 +192,196 @@ function formatDateTime(isoString: string): string {
   })
 }
 
-function getMonday(date: Date): Date {
-  const d = new Date(date)
-  const day = d.getDay()
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
-  return new Date(d.setDate(diff))
+async function fetchMyCalendar() {
+  loading.value = true
+  error.value = null
+  
+  try {
+    const now = new Date()
+    const weekStart = new Date(now)
+    weekStart.setDate(now.getDate() - now.getDay() + 1) // Monday
+    const weekEnd = new Date(weekStart)
+    weekEnd.setDate(weekStart.getDate() + 6) // Sunday
+    
+    const response = await calendarV055Api.getMyCalendar({
+      from: weekStart.toISOString(),
+      to: weekEnd.toISOString(),
+      tz: 'Europe/Kiev'
+    })
+    
+    myEvents.value = response.results
+    console.log('[StudentCalendarView] Fetched events:', response.results.length)
+  } catch (err: any) {
+    error.value = err.message || 'Failed to load calendar'
+    console.error('[StudentCalendarView] Error fetching calendar:', err)
+  } finally {
+    loading.value = false
+  }
 }
 
 onMounted(() => {
-  currentWeekStart.value = getMonday(new Date())
-  fetchCalendar()
+  fetchMyCalendar()
+  console.log('[StudentCalendarView] Mounted in student mode')
 })
 </script>
+
+<style scoped>
+.student-calendar-view {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  background: var(--bg-primary, #ffffff);
+}
+
+.calendar-header h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.calendar-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.tutor-filter {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 0.375rem;
+  background: var(--bg-primary, #ffffff);
+  font-size: 0.875rem;
+  cursor: pointer;
+  min-width: 200px;
+}
+
+.tutor-filter:focus {
+  outline: 2px solid var(--accent-color, #3b82f6);
+  outline-offset: 2px;
+}
+
+/* Student Event Drawer */
+.student-event-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.student-event-drawer {
+  background: var(--bg-primary, #ffffff);
+  border-radius: 0.5rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+.drawer-header h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  color: var(--text-secondary, #6b7280);
+  transition: color 0.2s;
+}
+
+.btn-close:hover {
+  color: var(--text-primary, #111827);
+}
+
+.drawer-body {
+  padding: 1.5rem;
+}
+
+.event-detail {
+  margin-bottom: 1.5rem;
+}
+
+.event-detail label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary, #6b7280);
+  margin-bottom: 0.5rem;
+}
+
+.event-detail p {
+  font-size: 1rem;
+  color: var(--text-primary, #111827);
+  margin: 0;
+}
+
+.drawer-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+
+.btn-primary,
+.btn-secondary {
+  flex: 1;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.btn-primary {
+  background: var(--accent-color, #3b82f6);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover, #2563eb);
+}
+
+.btn-secondary {
+  background: var(--bg-secondary, #f3f4f6);
+  color: var(--text-primary, #111827);
+  border: 1px solid var(--border-color, #e5e7eb);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--bg-tertiary, #e5e7eb);
+}
+
+.btn-primary:disabled,
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
 <style scoped>
 .student-calendar-wrapper {

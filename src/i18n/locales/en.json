@@ -36,7 +36,12 @@
       "noEvents": "No scheduled lessons",
       "eventDetails": "Lesson Details",
       "messageTutor": "Message Tutor",
-      "joinRoom": "Join Lesson"
+      "joinLesson": "Join Lesson",
+      "joinRoom": "Join Lesson",
+      "joinError": "Failed to join the lesson",
+      "roomNotAvailableYet": "The lesson hasn't started yet. Try again 15 minutes before the start",
+      "roomExpired": "The lesson has ended. Cannot join",
+      "notParticipant": "You are not a participant of this lesson"
     }
   },
   "limits": {

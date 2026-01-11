@@ -62,6 +62,16 @@ export const calendarV055Api = {
   },
 
   /**
+   * Join event room (v0.70)
+   * CONTRACT: POST /v1/calendar/events/<id>/room/join/
+   * Returns room URL for joining the lesson
+   */
+  async joinEventRoom(eventId: number): Promise<{ room: { url: string } }> {
+    const response = await api.post(`/v1/calendar/events/${eventId}/room/join/`)
+    return response.data || response
+  },
+
+  /**
    * Get calendar week snapshot (v0.55 format)
    * CONTRACT: GET /v1/calendar/week/v055/ with tutor_id, week_start
    */

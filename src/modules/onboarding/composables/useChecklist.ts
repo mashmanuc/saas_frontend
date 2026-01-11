@@ -43,9 +43,9 @@ export function useChecklist() {
       'verify-email': '/settings/email',
       'add-payment-method': '/settings/payments',
       'first-booking': '/tutors',
-      'first-lesson': '/lessons',
+      'first-lesson': '/calendar',
       'leave-review': '/reviews',
-      'complete-lesson': '/lessons',
+      'complete-lesson': '/calendar',
     }
 
     const route = routes[item.slug]
