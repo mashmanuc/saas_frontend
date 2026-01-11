@@ -1,0 +1,99 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e4]:
+  - navigation "Бічна навігація" [ref=e5]:
+    - navigation [ref=e6]:
+      - link "Панель керування" [ref=e7] [cursor=pointer]:
+        - /url: /tutor
+        - generic [ref=e8]:
+          - generic [ref=e9]: 🏠
+          - generic [ref=e10]: Панель керування
+      - link "Класи" [ref=e11] [cursor=pointer]:
+        - /url: /dashboard/classrooms
+        - generic [ref=e12]:
+          - generic [ref=e13]: 🏫
+          - generic [ref=e14]: Класи
+      - link "Студенти" [ref=e15] [cursor=pointer]:
+        - /url: /tutor/students
+        - generic [ref=e16]:
+          - generic [ref=e17]: 👥
+          - generic [ref=e18]: Студенти
+      - link "Уроки" [ref=e19] [cursor=pointer]:
+        - /url: /lessons
+        - generic [ref=e20]:
+          - generic [ref=e21]: 📘
+          - generic [ref=e22]: Уроки
+      - link "Календар тьютора" [ref=e23] [cursor=pointer]:
+        - /url: /booking/tutor
+        - generic [ref=e24]:
+          - generic [ref=e25]: 📘
+          - generic [ref=e26]: Календар тьютора
+      - link "Робочий простір" [ref=e27] [cursor=pointer]:
+        - /url: /solo
+        - generic [ref=e28]:
+          - generic [ref=e29]: •
+          - generic [ref=e30]: Робочий простір
+      - link "Профіль" [ref=e31] [cursor=pointer]:
+        - /url: /dashboard/profile
+        - generic [ref=e32]:
+          - generic [ref=e33]: •
+          - generic [ref=e34]: Профіль
+      - link "Профіль тьютора" [ref=e35] [cursor=pointer]:
+        - /url: /marketplace/my-profile
+        - generic [ref=e36]:
+          - generic [ref=e37]: 👥
+          - generic [ref=e38]: Профіль тьютора
+  - generic [ref=e39]:
+    - banner [ref=e40]:
+      - heading "M4SH Platform" [level=1] [ref=e42]
+      - generic [ref=e43]:
+        - generic "Тема" [ref=e44]:
+          - button "Світла" [pressed] [ref=e45] [cursor=pointer]:
+            - generic [ref=e46]: 🌿
+            - generic [ref=e47]: Світла
+          - button "Темна" [ref=e48] [cursor=pointer]:
+            - generic [ref=e49]: 🌙
+            - generic [ref=e50]: Темна
+          - button "Класична" [ref=e51] [cursor=pointer]:
+            - generic [ref=e52]: 🎓
+            - generic [ref=e53]: Класична
+        - generic [ref=e54]:
+          - status [ref=e55]: Немає з'єднання з сервісами реального часу
+          - button "Сповіщення" [ref=e57] [cursor=pointer]:
+            - generic [ref=e58]: 🔔
+        - generic [ref=e59]:
+          - generic [ref=e60]: ОМ
+          - generic [ref=e61]: Олександр
+        - button "Вийти" [ref=e62] [cursor=pointer]
+        - generic [ref=e63]: Тьютор
+        - generic [ref=e64]:
+          - button "UK" [ref=e65] [cursor=pointer]
+          - button "EN" [ref=e66] [cursor=pointer]
+    - main [ref=e67]:
+      - generic [ref=e69]:
+        - button "Debug" [ref=e71] [cursor=pointer]:
+          - img [ref=e72]
+          - generic [ref=e81]: Debug
+        - generic [ref=e82]:
+          - img [ref=e83]
+          - paragraph [ref=e85]: Request failed with status code 429
+          - button "Спробувати ще раз" [ref=e86] [cursor=pointer]
+        - generic [ref=e87]:
+          - generic [ref=e88]:
+            - generic [ref=e89]: 4 год доступні
+            - generic [ref=e90]:
+              - button "Позначити вільний час" [ref=e91] [cursor=pointer]
+              - button "Показати гайд" [ref=e92] [cursor=pointer]:
+                - img [ref=e93]
+          - generic [ref=e96]:
+            - button "Попередній тиждень" [ref=e97] [cursor=pointer]:
+              - img [ref=e98]
+            - generic [ref=e101]: 5 січ. - 11 січ. 2026 р.
+            - button "Наступний тиждень" [ref=e102] [cursor=pointer]:
+              - img [ref=e103]
+          - generic [ref=e105]:
+            - img [ref=e106]
+            - paragraph [ref=e108]: Request failed with status code 429
+            - button "Спробувати ще раз" [ref=e109] [cursor=pointer]
+```

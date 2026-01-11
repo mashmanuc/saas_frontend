@@ -11,6 +11,7 @@ import dayjs from 'dayjs'
 import axios from 'axios'
 
 import { calendarV055Api } from '../api/calendarV055Api'
+import { logCalendarEvent, logCalendarError, measureCalendarOperation } from '../utils/calendarTelemetry'
 import type {
   CalendarSnapshot,
   DaySnapshot,
@@ -339,6 +340,34 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
   }
 
   /**
+   * Helper wrapper: виконує action, потім refetch snapshot
+   * Використовується для всіх мутацій (create/delete/update)
+   */
+  async function withWeekRefetch<T>(
+    operation: string,
+    action: () => Promise<T>,
+    meta?: Record<string, any>
+  ): Promise<T> {
+    return measureCalendarOperation(
+      operation,
+      async () => {
+        const result = await action()
+        
+        if (currentTutorId.value && currentWeekStart.value) {
+          await fetchWeekSnapshot(currentTutorId.value, currentWeekStart.value, true)
+        }
+        
+        return result
+      },
+      {
+        tutorId: currentTutorId.value ?? undefined,
+        weekStart: currentWeekStart.value ?? undefined,
+        ...meta,
+      }
+    )
+  }
+
+  /**
    * Fetch week snapshot (v0.55)
    */
   async function fetchWeekSnapshot(tutorId: number, weekStart: string, forceRefresh = false) {
@@ -537,11 +566,11 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
   }
 
   async function markNoShow(eventId: number, payload: NoShowRequest) {
-    await calendarV055Api.markNoShow(eventId, payload)
-    // ОБОВ'ЯЗКОВИЙ refetch
-    if (currentTutorId.value && currentWeekStart.value) {
-      await fetchWeekSnapshot(currentTutorId.value, currentWeekStart.value)
-    }
+    return withWeekRefetch(
+      'event_mark_no_show',
+      () => calendarV055Api.markNoShow(eventId, payload),
+      { eventId }
+    )
   }
   
   async function blockDayRange(dayKey: string, payload: BlockRangeRequest) {
@@ -580,48 +609,49 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
   async function createEvent(payload: CreateEventPayload & { tempId?: string }) {
     const { tempId, ...apiPayload } = payload
     
-    const response = await calendarV055Api.createEvent({
-      orderId: apiPayload.orderId,
-      start: apiPayload.start,
-      durationMin: apiPayload.durationMin,
-      regularity: apiPayload.regularity,
-      tutorComment: apiPayload.tutorComment,
-      studentComment: apiPayload.studentComment,
-      lessonType: apiPayload.lessonType,
-      slotId: apiPayload.slotId,
-      notifyStudent: apiPayload.notifyStudent,
-      autoGenerateZoom: apiPayload.autoGenerateZoom,
-      timezone: apiPayload.timezone,
-    })
-    
-    if (tempId) {
-      const optimisticEvent = optimisticEventMap.get(tempId)
-      replaceOptimisticEvent(tempId, {
-        id: response.id,
-        lesson_link: response.zoomLink || '',
-        status: 'scheduled',
-        can_reschedule: true,
-        can_mark_no_show: true,
-        start: optimisticEvent?.start || apiPayload.start,
-        end:
-          optimisticEvent?.end ||
-          (apiPayload.start
-            ? dayjs(apiPayload.start).add(apiPayload.durationMin, 'minute').toISOString()
-            : apiPayload.start),
-        student: optimisticEvent?.student || {
-          id: apiPayload.orderId,
-          name: optimisticEvent?.student?.name || 'Unknown',
-        },
-        is_first: optimisticEvent?.is_first ?? false,
-      })
-    }
-    
-    // Refetch snapshot після створення (force refresh to bypass 304)
-    if (currentTutorId.value && currentWeekStart.value) {
-      await fetchWeekSnapshot(currentTutorId.value, currentWeekStart.value, true)
-    }
-    
-    return response.id
+    return withWeekRefetch(
+      'event_create',
+      async () => {
+        const response = await calendarV055Api.createEvent({
+          orderId: apiPayload.orderId,
+          start: apiPayload.start,
+          durationMin: apiPayload.durationMin,
+          regularity: apiPayload.regularity,
+          tutorComment: apiPayload.tutorComment,
+          studentComment: apiPayload.studentComment,
+          lessonType: apiPayload.lessonType,
+          slotId: apiPayload.slotId,
+          notifyStudent: apiPayload.notifyStudent,
+          autoGenerateZoom: apiPayload.autoGenerateZoom,
+          timezone: apiPayload.timezone,
+        })
+        
+        if (tempId) {
+          const optimisticEvent = optimisticEventMap.get(tempId)
+          replaceOptimisticEvent(tempId, {
+            id: response.id,
+            lesson_link: response.zoomLink || '',
+            status: 'scheduled',
+            can_reschedule: true,
+            can_mark_no_show: true,
+            start: optimisticEvent?.start || apiPayload.start,
+            end:
+              optimisticEvent?.end ||
+              (apiPayload.start
+                ? dayjs(apiPayload.start).add(apiPayload.durationMin, 'minute').toISOString()
+                : apiPayload.start),
+            student: optimisticEvent?.student || {
+              id: apiPayload.orderId,
+              name: optimisticEvent?.student?.name || 'Unknown',
+            },
+            is_first: optimisticEvent?.is_first ?? false,
+          })
+        }
+        
+        return response.id
+      },
+      { eventId: tempId, orderId: apiPayload.orderId }
+    )
   }
   
   
@@ -799,19 +829,19 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     durationMin?: number
     tutorComment?: string
   }) {
-    await calendarV055Api.updateEvent(payload)
-    
-    if (currentTutorId.value && currentWeekStart.value) {
-      await fetchWeekSnapshot(currentTutorId.value, currentWeekStart.value, true)
-    }
+    return withWeekRefetch(
+      'event_update',
+      () => calendarV055Api.updateEvent(payload),
+      { eventId: payload.id }
+    )
   }
 
   async function deleteEvent(eventId: number) {
-    await calendarV055Api.deleteEvent({ id: eventId })
-    
-    if (currentTutorId.value && currentWeekStart.value) {
-      await fetchWeekSnapshot(currentTutorId.value, currentWeekStart.value, true)
-    }
+    return withWeekRefetch(
+      'event_delete',
+      () => calendarV055Api.deleteEvent({ id: eventId }),
+      { eventId }
+    )
   }
 
   async function getEventDetails(eventId: number) {
@@ -831,13 +861,11 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     target_start?: string
     target_end?: string
   }) {
-    const response = await calendarV055Api.rescheduleConfirm(eventId, payload)
-    
-    if (currentTutorId.value && currentWeekStart.value) {
-      await fetchWeekSnapshot(currentTutorId.value, currentWeekStart.value, true)
-    }
-    
-    return response
+    return withWeekRefetch(
+      'event_reschedule',
+      () => calendarV055Api.rescheduleConfirm(eventId, payload),
+      { eventId, targetSlotId: payload.target_slot_id }
+    )
   }
 
   async function createEventSeries(payload: CreateEventPayload & {
@@ -846,29 +874,27 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     repeatUntil?: string
     skipConflicts?: boolean
   }) {
-    const response = await calendarV055Api.createEventSeries({
-      orderId: payload.orderId,
-      start: payload.start,
-      durationMin: payload.durationMin,
-      regularity: payload.regularity,
-      tutorComment: payload.tutorComment,
-      studentComment: payload.studentComment,
-      lessonType: payload.lessonType,
-      slotId: payload.slotId,
-      notifyStudent: payload.notifyStudent,
-      autoGenerateZoom: payload.autoGenerateZoom,
-      timezone: payload.timezone,
-      repeatMode: payload.repeatMode,
-      repeatCount: payload.repeatCount,
-      repeatUntil: payload.repeatUntil,
-      skipConflicts: payload.skipConflicts,
-    })
-
-    if (currentTutorId.value && currentWeekStart.value) {
-      await fetchWeekSnapshot(currentTutorId.value, currentWeekStart.value)
-    }
-
-    return response
+    return withWeekRefetch(
+      'event_series_create',
+      () => calendarV055Api.createEventSeries({
+        orderId: payload.orderId,
+        start: payload.start,
+        durationMin: payload.durationMin,
+        regularity: payload.regularity,
+        tutorComment: payload.tutorComment,
+        studentComment: payload.studentComment,
+        lessonType: payload.lessonType,
+        slotId: payload.slotId,
+        notifyStudent: payload.notifyStudent,
+        autoGenerateZoom: payload.autoGenerateZoom,
+        timezone: payload.timezone,
+        repeatMode: payload.repeatMode,
+        repeatCount: payload.repeatCount,
+        repeatUntil: payload.repeatUntil,
+        skipConflicts: payload.skipConflicts,
+      }),
+      { orderId: payload.orderId, repeatMode: payload.repeatMode }
+    )
   }
 
   function $reset() {

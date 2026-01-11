@@ -311,6 +311,7 @@ import { useToast } from '@/composables/useToast'
 import { useFocusTrap } from '@/composables/useFocusTrap'
 import { useErrorHandler, type ErrorHandlerResult } from '@/modules/booking/composables/useErrorHandler'
 import { sanitizeComment } from '@/utils/sanitize'
+import { logCalendarEvent } from '@/modules/booking/utils/calendarTelemetry'
 import type { CalendarCell, CreateEventPayload } from '@/modules/booking/types/calendarWeek'
 import { storeToRefs } from 'pinia'
 import { bookingApi } from '@/modules/booking/api/bookingApi'
@@ -566,7 +567,7 @@ async function checkConflicts(options: { strict?: boolean } = {}) {
       strict: options.strict ?? false,
     })
     
-    conflicts.value = response.conflicts || []
+    conflicts.value = response?.conflicts || []
     
     if (conflicts.value.length && !options.strict) {
       showConflictWarning.value = true
@@ -640,6 +641,14 @@ async function handleSubmit(options: { skipConflictCheck?: boolean } = {}) {
       
       const response = await store.createEventSeries(seriesPayload)
       
+      logCalendarEvent('lesson_series_created', {
+        seriesId: response.seriesId,
+        orderId: formData.value.orderId,
+        repeatMode: repeatMode.value,
+        createdCount: response.createdCount,
+        skippedCount: response.skippedCount,
+      })
+      
       console.info('[CreateLessonModal] Series created:', response)
       
       if (response.warnings?.length) {
@@ -683,6 +692,14 @@ async function handleSubmit(options: { skipConflictCheck?: boolean } = {}) {
         tempId,
       })
       
+      logCalendarEvent('lesson_created', {
+        eventId,
+        orderId: formData.value.orderId,
+        durationMin: formData.value.durationMin,
+        regularity: formData.value.regularity,
+      })
+      
+      toast.success(t('calendar.createLesson.success'))
       console.info('[CreateLessonModal] Lesson created:', eventId)
       emit('success', eventId)
       emit('close')

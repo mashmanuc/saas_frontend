@@ -1,5 +1,11 @@
 <template>
-  <DragSelectOverlay class="calendar-board" @select="handleCellsSelected">
+  <DragSelectOverlay 
+    class="calendar-board" 
+    role="grid"
+    aria-label="Calendar Week"
+    data-testid="calendar-board"
+    @select="handleCellsSelected"
+  >
     <div class="calendar-board__headers">
       <div class="time-scale time-scale--header" aria-hidden="true"></div>
       <button
@@ -12,6 +18,9 @@
           'day-header--active': day.dayKey === activeDayKey,
           'day-header--empty': !hasAvailability(day.dayKey),
         }"
+        :aria-label="`${day.label} ${day.day}, ${availabilityLabel(day.dayKey)} available`"
+        :aria-current="day.dayKey === todayKey ? 'date' : undefined"
+        :data-testid="`day-header-${day.dayKey}`"
         @click="setActiveDay(day.dayKey)"
       >
         <div class="day-header__meta">
@@ -40,6 +49,9 @@
       :key="day.dayKey"
       class="day-column"
       :class="{ 'day-column--active': day.dayKey === activeDayKey }"
+      role="row"
+      :aria-label="`${day.label} ${day.day} time slots`"
+      :data-testid="`day-column-${day.dayKey}`"
     >
       <Cell
         v-for="cell in getCellsForDay(day.dayKey)"

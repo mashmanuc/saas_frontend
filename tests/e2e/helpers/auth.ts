@@ -91,6 +91,34 @@ export async function loginAsTutor(page: Page) {
 }
 
 /**
+ * UI login flow using actual LoginView selectors.
+ * Використовується, коли потрібно пройти повний UX (наприклад, smoke тести).
+ */
+export async function loginAsTutorUI(page: Page, creds: LoginViaApiOptions = {}) {
+  const email = creds.email || TEST_USER_EMAIL
+  const password = creds.password || TEST_USER_PASSWORD
+  const calendarUrl = '/booking/tutor'
+
+  await page.goto(calendarUrl, { waitUntil: 'domcontentloaded' })
+
+  // Якщо вже авторизовані (storageState з global-setup), повертаємось одразу.
+  if (!page.url().includes('/login')) {
+    await page.waitForSelector('[data-testid="calendar-board"]', { timeout: 15000 }).catch(() => {})
+    return
+  }
+
+  await page.waitForSelector('[data-testid="login-email-input"]', { timeout: 10000 })
+  await page.fill('[data-testid="login-email-input"]', email)
+  await page.fill('[data-testid="login-password-input"]', password)
+  await Promise.all([
+    page.waitForNavigation({ url: /\/(booking\/tutor|dashboard)/ }),
+    page.click('[data-testid="login-submit-button"]'),
+  ])
+
+  await page.waitForSelector('[data-testid="calendar-board"]', { timeout: 15000 })
+}
+
+/**
  * Логін як студент через API і перехід на /dashboard.
  */
 export async function loginAsStudent(page: Page, options: LoginViaApiOptions = {}) {

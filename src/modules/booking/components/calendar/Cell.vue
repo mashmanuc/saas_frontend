@@ -4,6 +4,8 @@
     :data-day-key="cell.dayKey"
     :data-slot-index="cell.slotIndex"
     :data-utc-key="cell.startAtUTC"
+    :data-cell-status="cell.status"
+    :data-testid="`calendar-cell-${cell.dayKey}-${cell.slotIndex}`"
     role="gridcell"
     :tabindex="isInteractive ? 0 : -1"
     :aria-disabled="!isInteractive"

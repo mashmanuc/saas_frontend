@@ -2,12 +2,15 @@
   <div
     :class="eventClasses"
     :style="eventStyle"
+    :data-testid="`event-block-${event.id}`"
+    :data-event-id="event.id"
     role="button"
     tabindex="0"
     :aria-label="ariaLabel"
     @click="handleClick"
     @keydown.enter.prevent="handleClick"
     @keydown.space.prevent="handleClick"
+    @keydown.delete.prevent="$emit('delete')"
   >
     <div class="event-block__header">
       <span class="event-block__time">{{ formatTime(event.start) }}</span>
@@ -51,6 +54,7 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
   click: []
+  delete: []
 }>()
 
 const eventClasses = computed(() => [

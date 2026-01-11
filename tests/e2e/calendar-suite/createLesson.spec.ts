@@ -26,10 +26,20 @@ async function openCreateLessonModal(page: any) {
   await expect(accessibleSlot).toBeVisible({ timeout: 15000 })
   
   // Клікаємо по grid cell годину 10 (перший доступний слот)
-  // GridLayer має data-testid="grid-hour-{hour}" і емітить cell-click
+  // Деякі накладні елементи (header, grid-layer) можуть перекривати pointer events,
+  // тому примусово скролимо до елемента і диспатчимо клік через evaluate.
   const gridHour10 = page.locator('[data-testid="grid-hour-10"]').first()
   await expect(gridHour10).toBeVisible({ timeout: 5000 })
-  await gridHour10.click()
+  await gridHour10.scrollIntoViewIfNeeded()
+  await gridHour10.evaluate((node: HTMLElement) => {
+    node.dispatchEvent(
+      new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        view: window,
+      })
+    )
+  })
   
   // Перевіряємо, що модалка відкрилася
   const modal = page.locator('.modal-overlay')

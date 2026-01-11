@@ -1,0 +1,146 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e4]:
+  - navigation "Бічна навігація" [ref=e5]:
+    - navigation [ref=e6]:
+      - link "Панель керування" [active] [ref=e7] [cursor=pointer]:
+        - /url: /tutor
+        - generic [ref=e8]:
+          - generic [ref=e9]: 🏠
+          - generic [ref=e10]: Панель керування
+      - link "Класи" [ref=e11] [cursor=pointer]:
+        - /url: /dashboard/classrooms
+        - generic [ref=e12]:
+          - generic [ref=e13]: 🏫
+          - generic [ref=e14]: Класи
+      - link "Студенти" [ref=e15] [cursor=pointer]:
+        - /url: /tutor/students
+        - generic [ref=e16]:
+          - generic [ref=e17]: 👥
+          - generic [ref=e18]: Студенти
+      - link "Уроки" [ref=e19] [cursor=pointer]:
+        - /url: /lessons
+        - generic [ref=e20]:
+          - generic [ref=e21]: 📘
+          - generic [ref=e22]: Уроки
+      - link "Календар тьютора" [ref=e23] [cursor=pointer]:
+        - /url: /booking/tutor
+        - generic [ref=e24]:
+          - generic [ref=e25]: 📘
+          - generic [ref=e26]: Календар тьютора
+      - link "Робочий простір" [ref=e27] [cursor=pointer]:
+        - /url: /solo
+        - generic [ref=e28]:
+          - generic [ref=e29]: •
+          - generic [ref=e30]: Робочий простір
+      - link "Профіль" [ref=e31] [cursor=pointer]:
+        - /url: /dashboard/profile
+        - generic [ref=e32]:
+          - generic [ref=e33]: •
+          - generic [ref=e34]: Профіль
+      - link "Профіль тьютора" [ref=e35] [cursor=pointer]:
+        - /url: /marketplace/my-profile
+        - generic [ref=e36]:
+          - generic [ref=e37]: 👥
+          - generic [ref=e38]: Профіль тьютора
+  - generic [ref=e39]:
+    - banner [ref=e40]:
+      - heading "M4SH Platform" [level=1] [ref=e42]
+      - generic [ref=e43]:
+        - generic "Тема" [ref=e44]:
+          - button "Світла" [pressed] [ref=e45] [cursor=pointer]:
+            - generic [ref=e46]: 🌿
+            - generic [ref=e47]: Світла
+          - button "Темна" [ref=e48] [cursor=pointer]:
+            - generic [ref=e49]: 🌙
+            - generic [ref=e50]: Темна
+          - button "Класична" [ref=e51] [cursor=pointer]:
+            - generic [ref=e52]: 🎓
+            - generic [ref=e53]: Класична
+        - generic [ref=e54]:
+          - status [ref=e55]: Немає з'єднання з сервісами реального часу
+          - button "Сповіщення" [ref=e57] [cursor=pointer]:
+            - generic [ref=e58]: 🔔
+        - generic [ref=e59]:
+          - generic [ref=e60]: ОМ
+          - generic [ref=e61]: Олександр
+        - button "Вийти" [ref=e62] [cursor=pointer]
+        - generic [ref=e63]: Тьютор
+        - generic [ref=e64]:
+          - button "UK" [ref=e65] [cursor=pointer]
+          - button "EN" [ref=e66] [cursor=pointer]
+    - main [ref=e67]:
+      - generic [ref=e68]:
+        - generic [ref=e69]:
+          - generic [ref=e70]:
+            - heading "Кабінет тьютора" [level=1] [ref=e71]
+            - paragraph [ref=e72]: Слідкуйте за учнями, уроками та інвайтами.
+          - paragraph [ref=e74]: "Наступний урок: Немає запланованих уроків"
+          - generic [ref=e75]:
+            - link "Переглянути бронювання" [ref=e76] [cursor=pointer]:
+              - /url: /bookings
+            - link "Переглянути уроки" [ref=e77] [cursor=pointer]:
+              - /url: /lessons
+        - generic [ref=e78]:
+          - generic [ref=e79]:
+            - generic [ref=e80]:
+              - heading "Учні" [level=2] [ref=e81]
+              - paragraph [ref=e82]: Останні прив'язані учні та їх статус.
+            - generic [ref=e83]:
+              - button "Усі 2" [ref=e84] [cursor=pointer]:
+                - generic [ref=e85]: Усі
+                - generic [ref=e86]: "2"
+              - button "Запрошені 0" [ref=e87] [cursor=pointer]:
+                - generic [ref=e88]: Запрошені
+                - generic [ref=e89]: "0"
+              - button "Активні 0" [ref=e90] [cursor=pointer]:
+                - generic [ref=e91]: Активні
+                - generic [ref=e92]: "0"
+              - button "Архівні 0" [ref=e93] [cursor=pointer]:
+                - generic [ref=e94]: Архівні
+                - generic [ref=e95]: "0"
+          - generic [ref=e96]:
+            - generic [ref=e97]:
+              - generic [ref=e98]: Обирайте учнів для групових дій.
+              - button "Обрати сторінку" [ref=e99] [cursor=pointer]
+              - button "Очистити" [disabled] [ref=e100]
+            - generic [ref=e101]:
+              - button "Прийняти вибраних" [disabled] [ref=e102]:
+                - generic [ref=e103]: Прийняти вибраних
+              - button "Архівувати вибраних" [disabled] [ref=e104]:
+                - generic [ref=e105]: Архівувати вибраних
+          - list [ref=e106]:
+            - listitem [ref=e107]:
+              - generic [ref=e108]:
+                - checkbox [ref=e109] [cursor=pointer]
+                - generic [ref=e110]:
+                  - paragraph [ref=e111]: E2E Student
+                  - paragraph [ref=e112]: e2e-student@example.com
+                  - paragraph [ref=e113]: "Таймзона: Europe/Kyiv"
+              - generic [ref=e114]:
+                - generic [ref=e115]: Активний
+                - generic [ref=e116]:
+                  - button "Створити урок" [ref=e117] [cursor=pointer]:
+                    - generic [ref=e118]: Створити урок
+                  - button "Відкрити чат" [ref=e119] [cursor=pointer]:
+                    - generic [ref=e120]: Відкрити чат
+            - listitem [ref=e121]:
+              - generic [ref=e122]:
+                - checkbox [ref=e123] [cursor=pointer]
+                - generic [ref=e124]:
+                  - paragraph [ref=e125]: s3sssssss s3sssssssss
+                  - paragraph [ref=e126]: s3@gmail.com
+                  - paragraph [ref=e127]: "Таймзона: Europe/Kyiv"
+                  - paragraph [ref=e128]: Тестове призначення
+              - generic [ref=e129]:
+                - generic [ref=e130]: Активний
+                - generic [ref=e131]:
+                  - button "Створити урок" [ref=e132] [cursor=pointer]:
+                    - generic [ref=e133]: Створити урок
+                  - button "Відкрити чат" [ref=e134] [cursor=pointer]:
+                    - generic [ref=e135]: Відкрити чат
+          - generic [ref=e136]:
+            - paragraph [ref=e137]: Поки немає учнів
+            - paragraph [ref=e138]: Запрошуйте студентів або приймайте запити, щоб заповнити список.
+```

@@ -1,0 +1,208 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e4]:
+    - navigation "Бічна навігація" [ref=e5]:
+      - navigation [ref=e6]:
+        - link "Панель керування" [ref=e7] [cursor=pointer]:
+          - /url: /tutor
+          - generic [ref=e8]:
+            - generic [ref=e9]: 🏠
+            - generic [ref=e10]: Панель керування
+        - link "Класи" [ref=e11] [cursor=pointer]:
+          - /url: /dashboard/classrooms
+          - generic [ref=e12]:
+            - generic [ref=e13]: 🏫
+            - generic [ref=e14]: Класи
+        - link "Студенти" [ref=e15] [cursor=pointer]:
+          - /url: /tutor/students
+          - generic [ref=e16]:
+            - generic [ref=e17]: 👥
+            - generic [ref=e18]: Студенти
+        - link "Уроки" [ref=e19] [cursor=pointer]:
+          - /url: /lessons
+          - generic [ref=e20]:
+            - generic [ref=e21]: 📘
+            - generic [ref=e22]: Уроки
+        - link "Календар тьютора" [ref=e23] [cursor=pointer]:
+          - /url: /booking/tutor
+          - generic [ref=e24]:
+            - generic [ref=e25]: 📘
+            - generic [ref=e26]: Календар тьютора
+        - link "Робочий простір" [ref=e27] [cursor=pointer]:
+          - /url: /solo
+          - generic [ref=e28]:
+            - generic [ref=e29]: •
+            - generic [ref=e30]: Робочий простір
+        - link "Профіль" [ref=e31] [cursor=pointer]:
+          - /url: /dashboard/profile
+          - generic [ref=e32]:
+            - generic [ref=e33]: •
+            - generic [ref=e34]: Профіль
+        - link "Профіль тьютора" [ref=e35] [cursor=pointer]:
+          - /url: /marketplace/my-profile
+          - generic [ref=e36]:
+            - generic [ref=e37]: 👥
+            - generic [ref=e38]: Профіль тьютора
+    - generic [ref=e39]:
+      - banner [ref=e40]:
+        - heading "M4SH Platform" [level=1] [ref=e42]
+        - generic [ref=e43]:
+          - generic "Тема" [ref=e44]:
+            - button "Світла" [pressed] [ref=e45] [cursor=pointer]:
+              - generic [ref=e46]: 🌿
+              - generic [ref=e47]: Світла
+            - button "Темна" [ref=e48] [cursor=pointer]:
+              - generic [ref=e49]: 🌙
+              - generic [ref=e50]: Темна
+            - button "Класична" [ref=e51] [cursor=pointer]:
+              - generic [ref=e52]: 🎓
+              - generic [ref=e53]: Класична
+          - generic [ref=e54]:
+            - status [ref=e55]: Немає з'єднання з сервісами реального часу
+            - button "Сповіщення" [ref=e57] [cursor=pointer]:
+              - generic [ref=e58]: 🔔
+          - generic [ref=e59]:
+            - generic [ref=e60]: ОМ
+            - generic [ref=e61]: Олександр
+          - button "Вийти" [ref=e62] [cursor=pointer]
+          - generic [ref=e63]: Тьютор
+          - generic [ref=e64]:
+            - button "UK" [ref=e65] [cursor=pointer]
+            - button "EN" [ref=e66] [cursor=pointer]
+      - main [ref=e67]:
+        - generic [ref=e69]:
+          - button "Debug" [ref=e71] [cursor=pointer]:
+            - img [ref=e72]
+            - generic [ref=e81]: Debug
+          - generic [ref=e82]:
+            - generic [ref=e83]:
+              - generic [ref=e84]: 4 год доступні
+              - generic [ref=e85]:
+                - button "Позначити вільний час" [ref=e86] [cursor=pointer]
+                - button "Показати гайд" [ref=e87] [cursor=pointer]:
+                  - img [ref=e88]
+            - generic [ref=e91]:
+              - button "Попередній тиждень" [ref=e92] [cursor=pointer]:
+                - img [ref=e93]
+              - generic [ref=e96]: 5 січ. - 11 січ. 2026 р.
+              - button "Наступний тиждень" [ref=e97] [cursor=pointer]:
+                - img [ref=e98]
+            - generic [ref=e100]:
+              - generic [ref=e101]:
+                - generic [ref=e104]:
+                  - generic [ref=e105]: пн
+                  - generic [ref=e106]: "05.01"
+                - generic [ref=e108]:
+                  - generic [ref=e109]: вт
+                  - generic [ref=e110]: "06.01"
+                - generic [ref=e112]:
+                  - generic [ref=e113]: ср
+                  - generic [ref=e114]: "07.01"
+                - generic [ref=e116]:
+                  - generic [ref=e117]: чт
+                  - generic [ref=e118]: "08.01"
+                - generic [ref=e120]:
+                  - generic [ref=e121]: пт
+                  - generic [ref=e122]: "09.01"
+                - generic [ref=e124]:
+                  - generic [ref=e125]: сб
+                  - generic [ref=e126]: "10.01"
+                - generic [ref=e128]:
+                  - generic [ref=e129]: нд
+                  - generic [ref=e130]: "11.01"
+              - generic [ref=e131]:
+                - generic [ref=e132]:
+                  - generic [ref=e133]: 06:00
+                  - generic [ref=e134]: 07:00
+                  - generic [ref=e135]: 08:00
+                  - generic [ref=e136]: 09:00
+                  - generic [ref=e137]: 10:00
+                  - generic [ref=e138]: 11:00
+                  - generic [ref=e139]: 12:00
+                  - generic [ref=e140]: 13:00
+                  - generic [ref=e141]: 14:00
+                  - generic [ref=e142]: 15:00
+                  - generic [ref=e143]: 16:00
+                  - generic [ref=e144]: 17:00
+                  - generic [ref=e145]: 18:00
+                  - generic [ref=e146]: 19:00
+                  - generic [ref=e147]: 20:00
+                  - generic [ref=e148]: 21:00
+                  - generic [ref=e149]: 22:00
+                - generic [ref=e150]:
+                  - generic [ref=e151]:
+                    - generic:
+                      - generic [ref=e153]:
+                        - generic [ref=e154]: s3sssssss s3sssssssss
+                        - generic [ref=e155]: 11:00 – 12:00
+                      - generic [ref=e156]:
+                        - generic [ref=e157]: s3sssssss s3sssssssss
+                        - generic [ref=e158]: 12:10 – 13:10
+                      - generic [ref=e159]:
+                        - generic [ref=e160]: s3sssssss s3sssssssss
+                        - generic [ref=e161]: 14:00 – 15:00
+                      - generic [ref=e162]:
+                        - generic [ref=e163]: s3sssssss s3sssssssss
+                        - generic [ref=e164]: 17:00 – 18:00
+                  - generic [ref=e167]:
+                    - generic [ref=e168]: s3sssssss s3sssssssss
+                    - generic [ref=e169]: 14:30 – 15:30
+                  - generic [ref=e172]:
+                    - generic [ref=e173]: s3sssssss s3sssssssss
+                    - generic [ref=e174]: 14:30 – 15:30
+                  - generic [ref=e175]:
+                    - generic:
+                      - generic [ref=e177]:
+                        - generic [ref=e178]: s3sssssss s3sssssssss
+                        - generic [ref=e179]: 15:00 – 16:00
+                      - generic [ref=e180]:
+                        - generic [ref=e181]: s3sssssss s3sssssssss
+                        - generic [ref=e182]: 16:30 – 18:00
+                  - generic [ref=e183]:
+                    - 'generic "Доступно: 08:00 - 09:00" [ref=e185] [cursor=pointer]':
+                      - generic [ref=e187]: 08:00
+                    - generic [ref=e188]:
+                      - generic [ref=e189]: s3sssssss s3sssssssss
+                      - generic [ref=e190]: 15:00 – 16:00
+                  - generic [ref=e193]:
+                    - generic:
+                      - 'generic "Доступно: 12:00 - 13:00" [ref=e246] [cursor=pointer]':
+                        - generic [ref=e248]: 12:00
+                      - 'generic "Доступно: 13:00 - 14:00" [ref=e249] [cursor=pointer]':
+                        - generic [ref=e251]: 13:00
+                      - 'generic "Доступно: 16:00 - 17:00" [ref=e252] [cursor=pointer]':
+                        - generic [ref=e254]: 16:00
+                    - generic:
+                      - generic [ref=e255]:
+                        - generic [ref=e256]: s3sssssss s3sssssssss
+                        - generic [ref=e257]: 08:00 – 09:00
+                      - generic [ref=e258]:
+                        - generic [ref=e259]: E2E Student
+                        - generic [ref=e260]: 12:00 – 13:00
+                        - generic [ref=e261]: FIRST
+                  - grid "Сітка перетягування"
+            - generic [ref=e264]:
+              - generic [ref=e265]:
+                - generic [ref=e266]:
+                  - img [ref=e267]
+                  - text: Ваш лінк на урок
+                - generic [ref=e269]: Платформа
+              - generic [ref=e270]:
+                - textbox [ref=e271]
+                - button "Приєднатися до уроку" [disabled] [ref=e272]:
+                  - img [ref=e273]
+                  - text: Приєднатися до уроку
+                - button "Редагувати" [ref=e277] [cursor=pointer]:
+                  - img [ref=e278]
+                  - text: Редагувати
+                - button "Скопіювати" [ref=e281] [cursor=pointer]:
+                  - img [ref=e282]
+                  - text: Скопіювати
+  - dialog "Редагувати урок" [ref=e285]:
+    - generic [ref=e286]:
+      - heading "Редагувати урок" [level=2] [ref=e287]
+      - button "Закрити" [active] [ref=e288] [cursor=pointer]:
+        - img [ref=e289]
+```

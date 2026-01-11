@@ -53,7 +53,10 @@ const mockSnapshot: CalendarSnapshot = {
   },
 }
 
-describe('calendarWeekStore (v0.55.7)', () => {
+const createSnapshot = (): CalendarSnapshot =>
+  JSON.parse(JSON.stringify(mockSnapshot)) as CalendarSnapshot
+
+describe('calendarWeekStore (v0.68)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
@@ -165,6 +168,229 @@ describe('calendarWeekStore (v0.55.7)', () => {
       store.selectEvent(null)
 
       expect(store.selectedEventId).toBeNull()
+    })
+  })
+
+  describe('updateEvent', () => {
+    it('updates event and refetches snapshot', async () => {
+      const store = useCalendarWeekStore()
+      vi.mocked(calendarV055Api.getCalendarWeek).mockResolvedValue(mockSnapshot)
+      vi.mocked(calendarV055Api.updateEvent).mockResolvedValue({ success: true })
+
+      await store.fetchWeekSnapshot(1, '2025-12-23')
+
+      await store.updateEvent({
+        id: 1,
+        start: '2025-12-24T11:00:00+02:00',
+        durationMin: 90,
+      })
+
+      expect(calendarV055Api.updateEvent).toHaveBeenCalledWith({
+        id: 1,
+        start: '2025-12-24T11:00:00+02:00',
+        durationMin: 90,
+      })
+      expect(calendarV055Api.getCalendarWeek).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('rescheduleConfirm', () => {
+    it('reschedules event and refetches snapshot', async () => {
+      const store = useCalendarWeekStore()
+      vi.mocked(calendarV055Api.getCalendarWeek).mockResolvedValue(mockSnapshot)
+      vi.mocked(calendarV055Api.rescheduleConfirm).mockResolvedValue({ success: true, event_id: 1 })
+
+      await store.fetchWeekSnapshot(1, '2025-12-23')
+
+      await store.rescheduleConfirm(1, {
+        target_slot_id: 10,
+      })
+
+      expect(calendarV055Api.rescheduleConfirm).toHaveBeenCalledWith(1, {
+        target_slot_id: 10,
+      })
+      expect(calendarV055Api.getCalendarWeek).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('selectors', () => {
+    it('days selector returns normalized days', async () => {
+      const store = useCalendarWeekStore()
+      vi.mocked(calendarV055Api.getCalendarWeek).mockResolvedValue(mockSnapshot)
+
+      await store.fetchWeekSnapshot(1, '2025-12-23')
+
+      expect(store.days).toHaveLength(1)
+      expect(store.days[0].date).toBe('2025-12-24')
+      expect(store.days[0].dayStatus).toBe('working')
+    })
+
+    it('events selector returns all events', async () => {
+      const store = useCalendarWeekStore()
+      vi.mocked(calendarV055Api.getCalendarWeek).mockResolvedValue(mockSnapshot)
+
+      await store.fetchWeekSnapshot(1, '2025-12-23')
+
+      expect(store.events).toHaveLength(1)
+      expect(store.events[0].id).toBe(1)
+      expect(store.events[0].student.name).toBe('Test Student')
+    })
+
+    it('accessible selector returns available slots', async () => {
+      const store = useCalendarWeekStore()
+      vi.mocked(calendarV055Api.getCalendarWeek).mockResolvedValue(mockSnapshot)
+
+      await store.fetchWeekSnapshot(1, '2025-12-23')
+
+      expect(store.accessible).toHaveLength(1)
+      expect(store.accessible[0].id).toBe(10)
+    })
+
+    it('accessibleById selector creates id map', async () => {
+      const store = useCalendarWeekStore()
+      vi.mocked(calendarV055Api.getCalendarWeek).mockResolvedValue(mockSnapshot)
+
+      await store.fetchWeekSnapshot(1, '2025-12-23')
+
+      expect(store.accessibleById[10]).toBeDefined()
+      expect(store.accessibleById[10].start).toBe('2025-12-24T14:00:00+02:00')
+    })
+
+    it('meta selector returns snapshot metadata', async () => {
+      const store = useCalendarWeekStore()
+      vi.mocked(calendarV055Api.getCalendarWeek).mockResolvedValue(mockSnapshot)
+
+      await store.fetchWeekSnapshot(1, '2025-12-23')
+
+      expect(store.meta?.tutorId).toBe(1)
+      expect(store.meta?.weekStart).toBe('2025-12-23')
+      expect(store.meta?.timezone).toBe('Europe/Kiev')
+    })
+  })
+
+  describe('optimistic updates', () => {
+    it('adds optimistic event', () => {
+      const store = useCalendarWeekStore()
+      store.snapshot = createSnapshot()
+
+      const tempId = store.addOptimisticEvent({
+        tempId: 'temp-123',
+        start: '2025-12-24T16:00:00+02:00',
+        end: '2025-12-24T17:00:00+02:00',
+        status: 'scheduled',
+        is_first: false,
+        student: { id: 200, name: 'New Student' },
+        lesson_link: '',
+        can_reschedule: true,
+        can_mark_no_show: true,
+      })
+
+      expect(tempId).toBe('temp-123')
+      expect(store.events).toHaveLength(2)
+    })
+
+    it('removes optimistic event', () => {
+      const store = useCalendarWeekStore()
+      store.snapshot = createSnapshot()
+
+      store.addOptimisticEvent({
+        tempId: 'temp-456',
+        start: '2025-12-24T16:00:00+02:00',
+        end: '2025-12-24T17:00:00+02:00',
+        status: 'scheduled',
+        is_first: false,
+        student: { id: 200, name: 'New Student' },
+        lesson_link: '',
+        can_reschedule: true,
+        can_mark_no_show: true,
+      })
+
+      store.removeOptimisticEvent('temp-456')
+
+      expect(store.events).toHaveLength(1)
+    })
+
+    it('replaces optimistic event with real event', () => {
+      const store = useCalendarWeekStore()
+      store.snapshot = createSnapshot()
+
+      store.addOptimisticEvent({
+        tempId: 'temp-789',
+        start: '2025-12-24T16:00:00+02:00',
+        end: '2025-12-24T17:00:00+02:00',
+        status: 'scheduled',
+        is_first: false,
+        student: { id: 200, name: 'New Student' },
+        lesson_link: '',
+        can_reschedule: true,
+        can_mark_no_show: true,
+      })
+
+      store.replaceOptimisticEvent('temp-789', {
+        id: 300,
+        start: '2025-12-24T16:00:00+02:00',
+        end: '2025-12-24T17:00:00+02:00',
+        status: 'scheduled',
+        is_first: false,
+        student: { id: 200, name: 'New Student' },
+        lesson_link: 'https://zoom.us/j/456',
+        can_reschedule: true,
+        can_mark_no_show: true,
+      })
+
+      expect(store.events).toHaveLength(2)
+      expect(store.events[1].id).toBe(300)
+      expect(store.events[1].lesson_link).toBe('https://zoom.us/j/456')
+    })
+  })
+
+  describe('error handling', () => {
+    it('handles 304 Not Modified gracefully', async () => {
+      const store = useCalendarWeekStore()
+      vi.mocked(calendarV055Api.getCalendarWeek).mockResolvedValue(mockSnapshot)
+
+      await store.fetchWeekSnapshot(1, '2025-12-23')
+
+      const error304 = new Error('Not Modified')
+      ;(error304 as any).response = { status: 304 }
+      vi.mocked(calendarV055Api.getCalendarWeek).mockRejectedValue(error304)
+
+      await store.fetchWeekSnapshot(1, '2025-12-23')
+
+      expect(store.snapshot).not.toBeNull()
+      expect(store.error).toBeNull()
+    })
+
+    it('retries on 304 if no cached snapshot exists', async () => {
+      const store = useCalendarWeekStore()
+      const error304 = new Error('Not Modified')
+      ;(error304 as any).response = { status: 304 }
+      vi.mocked(calendarV055Api.getCalendarWeek)
+        .mockRejectedValueOnce(error304)
+        .mockResolvedValueOnce(mockSnapshot)
+
+      await store.fetchWeekSnapshot(1, '2025-12-23')
+
+      expect(calendarV055Api.getCalendarWeek).toHaveBeenCalledTimes(2)
+      expect(store.snapshot).not.toBeNull()
+    })
+
+    it('handles network errors during create', async () => {
+      const store = useCalendarWeekStore()
+      vi.mocked(calendarV055Api.getCalendarWeek).mockResolvedValue(mockSnapshot)
+      await store.fetchWeekSnapshot(1, '2025-12-23')
+
+      const networkError = new Error('Network timeout')
+      vi.mocked(calendarV055Api.createEvent).mockRejectedValue(networkError)
+
+      await expect(
+        store.createEvent({
+          orderId: 100,
+          start: '2025-12-24T10:00:00+02:00',
+          durationMin: 60,
+          regularity: 'single',
+        })
+      ).rejects.toThrow('Network timeout')
     })
   })
 

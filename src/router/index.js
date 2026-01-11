@@ -51,6 +51,9 @@ import { getDefaultRouteForRole, hasAccess } from '../config/routes'
 import { classroomGuard } from './guards/classroomGuard'
 import { setCurrentRoute } from '@/modules/diagnostics/plugins/errorCollector'
 
+// P0.3: Lighthouse route без auth для стабільного audit
+const LighthouseCalendarView = () => import('../views/__lighthouse__/LighthouseCalendarView.vue')
+
 // Classroom views (v0.24.2)
 const LessonRoom = () => import('../modules/classroom/views/LessonRoom.vue')
 const SoloRoom = () => import('../modules/classroom/views/SoloRoom.vue')
@@ -430,6 +433,13 @@ const routes = [
         ],
       },
     ],
+  },
+  // P0.3: Lighthouse route без auth для performance testing
+  {
+    path: '/__lighthouse__/calendar',
+    name: 'lighthouse-calendar',
+    component: LighthouseCalendarView,
+    meta: { requiresAuth: false },
   },
   { path: '/:pathMatch(.*)*', redirect: '/auth/login' },
 ]

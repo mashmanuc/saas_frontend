@@ -1,5 +1,5 @@
 <template>
-  <div class="calendar-board-v2" data-testid="calendar-board">
+  <div class="calendar-board-v2" data-testid="calendar-board" role="grid" aria-label="Calendar week view">
     <template v-if="hasDays">
       <div class="calendar-header-row">
         <div class="time-column-header"></div>
