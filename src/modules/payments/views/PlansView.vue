@@ -65,16 +65,16 @@ async function handleUpgrade(planSlug: string) {
   upgradeError.value = null
 
   try {
-    // Get checkout URL from backend
-    const response = await billingStore.checkout(planSlug)
+    // Initiate checkout - store will submit POST form to payment provider
+    // This causes navigation to payment provider's checkout page
+    await billingStore.checkout(planSlug)
     
-    // Redirect to checkout URL
-    // Backend decides which payment provider to use
-    window.location.href = response.checkout_url
+    // Note: After checkout() submits form, browser navigates away.
+    // When user returns from payment provider, route guard or component
+    // should call billingStore.fetchMe() to refresh billing status.
   } catch (err: any) {
     console.error('Upgrade failed:', err)
     upgradeError.value = err.response?.data?.error?.message || t('billing.upgradeError')
-  } finally {
     isUpgrading.value = false
   }
 }

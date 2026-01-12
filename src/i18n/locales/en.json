@@ -3519,6 +3519,7 @@
     "currentPlan": "Current Plan",
     "expiresAt": "Valid until {date}",
     "status": "Status",
+    "provider": "Payment Provider",
     "periodEnd": "Period End",
     "willCancelAt": "Subscription will be canceled at period end",
     "manageSubscription": "Manage Subscription",
@@ -3531,11 +3532,74 @@
     "cancelConfirm": "Are you sure you want to cancel your subscription?",
     "needHelp": "Need Help?",
     "contactSupport": "Contact our support team for more information",
+    "viewPlans": "View Plans",
+    "renewsOn": "Renews on",
+    "cancelScheduled": "Subscription will be canceled at period end",
+    "noActiveSubscription": "No active subscription",
+    "yourFeatures": "Your Features",
+    "basicFeaturesOnly": "Basic features only",
+    "cancelSubscription": "Cancel Subscription",
+    "canceling": "Canceling...",
+    "resumeSubscription": "Resume Subscription",
+    "resuming": "Resuming...",
+    "resumeDescription": "Resume your subscription to continue using all features",
+    "cancelSuccess": "Subscription canceled successfully",
+    "cancelError": "Failed to cancel subscription",
+    "resumeSuccess": "Subscription resumed successfully",
+    "resumeError": "Failed to resume subscription",
+    "upgradeError": "Failed to process checkout",
+    "plans": {
+      "title": "Choose Your Plan",
+      "subtitle": "Select the plan that fits your needs"
+    },
+    "popular": "Popular",
+    "perMonth": "per month",
+    "perYear": "per year",
+    "upgrade": "Upgrade",
+    "yourCurrentPlan": "Your current plan",
+    "manageBilling": "Manage Billing",
+    "basicFeatures": "Basic features",
+    "features": {
+      "CONTACT_UNLOCK": "Contact Unlock",
+      "UNLIMITED_INQUIRIES": "Unlimited Inquiries",
+      "PRIORITY_SUPPORT": "Priority Support",
+      "ADVANCED_ANALYTICS": "Advanced Analytics",
+      "CONTACT_UNLOCK_LIMITED": "Limited Contact Unlock"
+    },
+    "faq": {
+      "title": "Frequently Asked Questions",
+      "cancel": {
+        "question": "How do I cancel my subscription?",
+        "answer": "You can cancel your subscription at any time from the subscription management page. Access to paid features will remain until the end of the paid period."
+      },
+      "change": {
+        "question": "Can I change my plan?",
+        "answer": "Yes, you can upgrade or downgrade your plan at any time. Changes will take effect immediately or in the next billing cycle."
+      },
+      "refund": {
+        "question": "Are refunds available?",
+        "answer": "We offer refunds within 14 days of purchase. Contact support for more information."
+      }
+    },
+    "error": {
+      "subscriptionRequired": "Subscription required to continue",
+      "limitExceeded": "You have reached the limit for your plan",
+      "checkoutFailed": "Checkout failed",
+      "invalidPlan": "Invalid plan",
+      "alreadySubscribed": "You already have an active subscription"
+    },
+    "cta": {
+      "upgradeToContinue": "Upgrade to continue",
+      "upgradeNow": "Upgrade Now",
+      "learnMore": "Learn More"
+    },
     "statuses": {
       "active": "Active",
       "canceled": "Canceled",
       "past_due": "Past Due",
       "trialing": "Trial",
+      "unpaid": "Unpaid",
+      "incomplete": "Incomplete",
       "none": "No Subscription"
     }
   },
