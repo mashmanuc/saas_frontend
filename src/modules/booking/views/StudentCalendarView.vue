@@ -2,7 +2,21 @@
   <div class="student-calendar-view">
     <!-- Header with Tutor Filter -->
     <div class="calendar-header">
-      <h1>{{ $t('student.calendar.title') }}</h1>
+      <div class="calendar-header-left">
+        <h1>{{ $t('student.calendar.title') }}</h1>
+        <div class="week-nav">
+          <button class="nav-btn" @click="goToPreviousWeek" :disabled="loading">
+            ‹
+          </button>
+          <span class="week-range">{{ weekRangeLabel }}</span>
+          <button class="nav-btn" @click="goToNextWeek" :disabled="loading">
+            ›
+          </button>
+          <button class="today-btn" @click="goToCurrentWeek" :disabled="isCurrentWeek || loading">
+            {{ $t('calendar.today') }}
+          </button>
+        </div>
+      </div>
       <div class="calendar-controls">
         <select v-model="selectedTutorId" class="tutor-filter">
           <option :value="null">{{ $t('student.calendar.allTutors') }}</option>
@@ -83,7 +97,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useCalendarWeekStore } from '@/modules/booking/stores/calendarWeekStore'
@@ -109,6 +123,29 @@ const joiningRoom = ref(false)
 const myEvents = ref<MyCalendarEvent[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
+const STUDENT_TIMEZONE = 'Europe/Kiev'
+
+function getMondayStart(date: dayjs.Dayjs) {
+  const tzDate = date.tz(STUDENT_TIMEZONE)
+  const dayOfWeek = tzDate.day() // 0 = Sunday, 1 = Monday
+  const daysFromMonday = (dayOfWeek + 6) % 7
+  return tzDate.subtract(daysFromMonday, 'day').startOf('day')
+}
+
+const currentWeekStart = ref(getMondayStart(dayjs()))
+const currentWeekEnd = computed(() => currentWeekStart.value.add(6, 'day'))
+const weekRangeLabel = computed(() => {
+  const start = currentWeekStart.value
+  const end = currentWeekEnd.value
+  const sameMonth = start.month() === end.month()
+  const startFormat = start.format('DD MMM')
+  const endFormat = end.format(sameMonth ? 'DD MMM YYYY' : 'DD MMM YYYY')
+  return `${startFormat} — ${endFormat}`
+})
+const isCurrentWeek = computed(() => {
+  const todayMonday = getMondayStart(dayjs())
+  return todayMonday.isSame(currentWeekStart.value, 'day')
+})
 
 // Extract unique tutors from my calendar events
 const uniqueTutors = computed(() => {
@@ -133,37 +170,26 @@ const filteredEvents = computed(() => {
 
 // Step 3.2: Build studentDays (7 days: Monday → Sunday)
 const studentDays = computed<DaySnapshot[]>(() => {
-  const now = new Date()
-  const currentDay = now.getDay() // 0 = Sunday, 1 = Monday, ...
-  const mondayOffset = currentDay === 0 ? -6 : 1 - currentDay
-  const monday = new Date(now)
-  monday.setDate(now.getDate() + mondayOffset)
-  monday.setHours(0, 0, 0, 0)
-  
+  const start = currentWeekStart.value
   const days: DaySnapshot[] = []
   for (let i = 0; i < 7; i++) {
-    const day = new Date(monday)
-    day.setDate(monday.getDate() + i)
-    const dateStr = day.toISOString().slice(0, 10)
-    
-    // Count events for this day
-    const eventsCount = myEvents.value.filter(e => e.start.startsWith(dateStr)).length
-    
+    const day = start.add(i, 'day')
+    const dateStr = day.format('YYYY-MM-DD')
+    const eventsCount = filteredEvents.value.filter(e => e.start.startsWith(dateStr)).length
     days.push({
       date: dateStr,
       dayStatus: 'working',
       eventsCount,
       availableMinutes: 0,
-      isPast: day < new Date(new Date().setHours(0, 0, 0, 0))
+      isPast: day.endOf('day').isBefore(dayjs())
     })
   }
-  
   return days
 })
 
 // Step 3.3: Build studentEvents (map MyCalendarEvent → CalendarEventV055)
 const studentEvents = computed<CalendarEventV055[]>(() => {
-  return myEvents.value.map(event => ({
+  return filteredEvents.value.map(event => ({
     id: event.id,
     start: event.start,
     end: event.end,
@@ -260,16 +286,15 @@ async function fetchMyCalendar() {
   error.value = null
   
   try {
-    const now = new Date()
-    const weekStart = new Date(now)
-    weekStart.setDate(now.getDate() - now.getDay() + 1) // Monday
-    const weekEnd = new Date(weekStart)
-    weekEnd.setDate(weekStart.getDate() + 6) // Sunday
-    
+    const weekStart = currentWeekStart.value
+    const weekEnd = currentWeekEnd.value
+    const from = weekStart.toDate().toISOString()
+    const to = weekEnd.endOf('day').toDate().toISOString()
+
     const response = await calendarV055Api.getMyCalendar({
-      from: weekStart.toISOString(),
-      to: weekEnd.toISOString(),
-      tz: 'Europe/Kiev'
+      from,
+      to,
+      tz: STUDENT_TIMEZONE
     })
     
     myEvents.value = response.results
@@ -282,10 +307,22 @@ async function fetchMyCalendar() {
   }
 }
 
-onMounted(() => {
+watch(currentWeekStart, () => {
   fetchMyCalendar()
-  console.log('[StudentCalendarView] Mounted in student mode')
-})
+  console.log('[StudentCalendarView] Fetching week starting', currentWeekStart.value.format('YYYY-MM-DD'))
+}, { immediate: true })
+
+function goToPreviousWeek() {
+  currentWeekStart.value = currentWeekStart.value.subtract(1, 'week')
+}
+
+function goToNextWeek() {
+  currentWeekStart.value = currentWeekStart.value.add(1, 'week')
+}
+
+function goToCurrentWeek() {
+  currentWeekStart.value = getMondayStart(dayjs())
+}
 </script>
 
 <style scoped>
