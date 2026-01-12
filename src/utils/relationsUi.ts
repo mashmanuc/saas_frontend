@@ -37,11 +37,12 @@ export function getMessageAction(relation: Relation): MessageAction {
     }
   }
   
+  const tutorId = relation.tutor?.id
   return {
-    to: `/booking?tutor=${relation.tutor.id}`,
+    to: tutorId ? `/booking?tutor=${tutorId}` : '/booking',
     mode: 'booking' as const,
     text: t('common.bookLessonToChat'),
-    disabled: false
+    disabled: !tutorId
   }
 }
 

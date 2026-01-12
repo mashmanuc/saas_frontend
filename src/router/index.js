@@ -430,6 +430,16 @@ const routes = [
           roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR]
         },
       },
+      // v0.71: Chat with tutor route
+      {
+        path: 'chat/tutor/:tutorId',
+        name: 'chat_with_tutor',
+        component: () => import('../modules/chat/views/ChatWithTutorView.vue'),
+        meta: { 
+          requiresAuth: true,
+          roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR]
+        },
+      },
       // v0.67: Staff Console routes
       {
         path: 'staff',

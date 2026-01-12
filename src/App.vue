@@ -11,6 +11,7 @@ import { PageThemeProvider } from './modules/ui/theme'
 import { DiagnosticsPanel } from './modules/diagnostics'
 import { useEntitlementsStore } from '@/stores/entitlementsStore'
 import { useBillingStore } from '@/stores/billingStore'
+import { useAuthStore } from '@/modules/auth/store/authStore'
 
 const isDev = import.meta.env.DEV
 
@@ -19,6 +20,12 @@ const isDev = import.meta.env.DEV
 onMounted(async () => {
   const entitlementsStore = useEntitlementsStore()
   const billingStore = useBillingStore()
+  const authStore = useAuthStore()
+
+  await authStore.bootstrap()
+  if (!authStore.isAuthenticated) {
+    return
+  }
   
   try {
     await Promise.all([

@@ -165,12 +165,8 @@ function goToLessons() {
 
 function goToChat(tutor: AssignedTutor) {
   if (tutor?.id) {
-    router.push(`/chat/tutor/${tutor.id}`).catch(() => {
-      router.push('/chat').catch(() => {})
-    })
-    return
+    router.push({ name: 'chat_with_tutor', params: { tutorId: tutor.id } }).catch(() => {})
   }
-  router.push('/chat').catch(() => {})
 }
 
 function getStatusBadgeClass(status: string): string {

@@ -1,4 +1,4 @@
-import { createApp } from 'vue'
+import { createApp, watch } from 'vue'
 import App from './App.vue'
 import router from './router'
 import pinia from './stores'
@@ -36,7 +36,7 @@ const errorCollector = createErrorCollector({
 })
 app.use(errorCollector)
 
-setupI18n(localStorage.getItem('locale') || 'uk').then(() => {
+setupI18n(localStorage.getItem('locale') || 'uk').then(async () => {
   const settings = useSettingsStore()
   settings.init()
 
@@ -57,15 +57,34 @@ setupI18n(localStorage.getItem('locale') || 'uk').then(() => {
   const realtime = useRealtimeStore()
   realtime.init()
 
+  const authStore = useAuthStore()
   const notificationsStore = useNotificationsStore()
-  if (!notificationsStore.items.length) {
-    notificationsStore
-      .loadNotifications({ limit: 10 })
-      .catch((error) => console.error('[main] Failed to preload notifications:', error))
+
+  await authStore.bootstrap()
+
+  const preloadNotifications = () => {
+    if (!notificationsStore.items.length) {
+      notificationsStore
+        .loadNotifications({ limit: 10 })
+        .catch((error) => console.error('[main] Failed to preload notifications:', error))
+    }
+  }
+
+  if (authStore.isAuthenticated) {
+    preloadNotifications()
+  } else {
+    const stopWatch = watch(
+      () => authStore.isAuthenticated,
+      (isAuth) => {
+        if (isAuth) {
+          preloadNotifications()
+          stopWatch()
+        }
+      }
+    )
   }
 
   // Initialize token refresh system
-  const authStore = useAuthStore()
   if (!authStore.access) {
     console.info('[main] Auth store has no access token yet — realtime health check will wait.')
   }
