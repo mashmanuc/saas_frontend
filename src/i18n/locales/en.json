@@ -39,6 +39,10 @@
       "joinLesson": "Join Lesson",
       "joinRoom": "Join Lesson",
       "joinError": "Failed to join the lesson",
+      "tooEarly": "Too early to join. Try again 15 minutes before the start",
+      "expired": "The time to join has passed. The lesson has ended",
+      "noAccess": "You don't have access to this lesson",
+      "notFound": "Lesson not found",
       "roomNotAvailableYet": "The lesson hasn't started yet. Try again 15 minutes before the start",
       "roomExpired": "The lesson has ended. Cannot join",
       "notParticipant": "You are not a participant of this lesson"

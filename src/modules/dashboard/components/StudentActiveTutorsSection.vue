@@ -87,7 +87,12 @@
         </div>
 
         <div class="flex flex-wrap gap-3 w-full md:w-auto">
-          <Button variant="secondary" size="sm" class="flex-1 md:flex-none" @click="goToChat">
+          <Button
+            variant="secondary"
+            size="sm"
+            class="flex-1 md:flex-none"
+            @click="goToChat(tutor)"
+          >
             {{ $t('studentDashboard.actions.messageTutor') }}
           </Button>
           <Button variant="primary" size="sm" class="flex-1 md:flex-none" @click="goToLessons">
@@ -155,10 +160,16 @@ function goToMarketplace() {
 }
 
 function goToLessons() {
-  router.push('/lessons').catch(() => {})
+  router.push('/calendar').catch(() => {})
 }
 
-function goToChat() {
+function goToChat(tutor: AssignedTutor) {
+  if (tutor?.id) {
+    router.push(`/chat/tutor/${tutor.id}`).catch(() => {
+      router.push('/chat').catch(() => {})
+    })
+    return
+  }
   router.push('/chat').catch(() => {})
 }
 

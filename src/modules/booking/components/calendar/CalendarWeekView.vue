@@ -77,8 +77,8 @@
       <template v-else>
         <CalendarBoardV2 
           :key="weekStartForNav"
-          :days="daysV055Computed"
-          :events="eventsV055Computed"
+          :days="daysToRender"
+          :events="eventsToRender"
           :accessible-slots="accessibleSlotsComputed"
           :timezone="metaV055?.timezone || 'UTC'"
           :blocked-ranges="blockedRangesV055Computed"
@@ -186,8 +186,12 @@ import { useI18n } from 'vue-i18n'
 // Props
 const props = withDefaults(defineProps<{
   mode?: 'tutor' | 'student'
+  externalDays?: DaySnapshot[]
+  externalEvents?: CalendarEventV055[]
 }>(), {
-  mode: 'tutor'
+  mode: 'tutor',
+  externalDays: () => [],
+  externalEvents: () => [],
 })
 import { Loader as LoaderIcon, AlertCircle as AlertCircleIcon, ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon } from 'lucide-vue-next'
 import dayjs from 'dayjs'
@@ -220,7 +224,7 @@ import CreateSlotModal from '../availability/CreateSlotModal.vue'
 import BlockSlotModal from '../availability/BlockSlotModal.vue'
 import DraftChangesBar from '../availability/DraftChangesBar.vue'
 import type { CalendarCell, AccessibleSlot as AccessibleSlotLegacy } from '@/modules/booking/types/calendarWeek'
-import type { CalendarEvent as CalendarEventV055, AccessibleSlot as AccessibleSlotV055 } from '@/modules/booking/types/calendarV055'
+import type { CalendarEvent as CalendarEventV055, AccessibleSlot as AccessibleSlotV055, MyCalendarEvent, DaySnapshot } from '@/modules/booking/types/calendarV055'
 import '@/modules/booking/styles/calendar-theme.css'
 import '@/modules/booking/styles/calendar-layout.css'
 import '@/modules/booking/styles/calendar-animations.css'
@@ -253,7 +257,7 @@ const lessonLinksStore = useTutorLessonLinksStore()
 const authStore = useAuthStore()
 const { connected, connectionAttempted, connect } = useCalendarWebSocket()
 const { handleError } = useErrorHandler()
-const showV055 = ref(true)
+const showV055 = computed(() => props.mode === 'tutor')
 
 const {
   isLoading,
@@ -274,6 +278,21 @@ const hiddenEventStatuses: Array<CalendarEventV055['status']> = ['cancelled']
 const eventsV055Computed = computed(() => {
   const rawEvents = eventsV055.value || []
   return rawEvents.filter(event => !hiddenEventStatuses.includes(event.status))
+})
+
+// Step 1.2: Computed sources for rendering (student vs tutor mode)
+const daysToRender = computed(() => {
+  if (props.mode === 'student') {
+    return props.externalDays || []
+  }
+  return daysV055Computed.value
+})
+
+const eventsToRender = computed(() => {
+  if (props.mode === 'student') {
+    return props.externalEvents || []
+  }
+  return eventsV055Computed.value
 })
 const accessibleSlotsComputed = computed(() => accessibleV055.value || [])
 const blockedRangesV055Computed = computed(() => blockedRangesV055.value || [])
@@ -333,7 +352,12 @@ const hasAvailability = computed(() => {
 })
 
 const hasSetupAvailability = computed(() => {
-  // Always show calendar for v0.55 - let the backend determine if there's data
+  // Step 2: Student mode always shows calendar (no availability empty-state)
+  if (props.mode === 'student') {
+    return true
+  }
+  
+  // Tutor mode: show calendar if there's any data
   const hasEvents = eventsV055Computed.value.length > 0
   const hasSlots = (accessibleV055.value || []).length > 0
   const hasMinutes = totalAvailableMinutes.value > 0

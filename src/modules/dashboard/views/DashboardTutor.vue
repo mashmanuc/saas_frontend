@@ -178,7 +178,7 @@
                   {{ $t('dashboard.tutor.cta.createLesson') }}
                 </Button>
                 <Button variant="ghost" size="sm" @click="handleOpenChat(relation)">
-                  {{ $t('dashboard.tutor.cta.openChat') }}
+                  {{ getChatButtonText(relation) }}
                 </Button>
               </div>
             </div>
@@ -254,7 +254,8 @@ import { useAuthStore } from '../../auth/store/authStore'
 import { useDashboardStore } from '../store/dashboardStore'
 import { useRelationsStore } from '../../../stores/relationsStore'
 import { usePresenceStore } from '../../../stores/presenceStore'
-import { notifySuccess, notifyError } from '../../../utils/notify'
+import { notifySuccess, notifyError, notifyWarning } from '../../../utils/notify'
+import { getMessageAction } from '@/utils/relationsUi'
 
 const auth = useAuthStore()
 const dashboard = useDashboardStore()
@@ -470,11 +471,24 @@ async function handleResend(relationId) {
 
 function handleCreateLesson(relation) {
   const studentId = relation.student?.id
-  router.push({ name: 'lessons', query: studentId ? { student: studentId } : undefined }).catch(() => {})
+  const targetRoute = {
+    name: 'tutor-calendar',
+    query: studentId ? { student: studentId } : undefined,
+  }
+  router.push(targetRoute).catch(() => {})
 }
 
-function handleOpenChat() {
-  router.push('/chat').catch(() => {})
+function getChatButtonText(relation) {
+  return getMessageAction(relation).text
+}
+
+function handleOpenChat(relation) {
+  const action = getMessageAction(relation)
+  if (action.disabled) {
+    notifyWarning(t('relations.actions.acceptError') || t('common.unavailable'))
+    return
+  }
+  router.push(action.to).catch(() => {})
 }
 
 function handleLoadMore() {

@@ -217,7 +217,7 @@ test.describe('Student Calendar v0.70', () => {
     await page.waitForURL('**/classroom/session-abc-123')
   })
 
-  test('should handle 409 room_not_available_yet error', async ({ page }) => {
+  test('should handle 409 room_not_available_yet error (v0.71)', async ({ page }) => {
     await page.route('**/api/v1/calendar/my/', async (route) => {
       await route.fulfill({
         status: 200,
@@ -254,9 +254,162 @@ test.describe('Student Calendar v0.70', () => {
       })
     })
 
-    // Listen for alert
+    // Listen for alert with new i18n key
     page.on('dialog', async (dialog) => {
-      expect(dialog.message()).toContain('Урок ще не почався')
+      expect(dialog.message()).toContain('Занадто рано для входу')
+      await dialog.accept()
+    })
+
+    await page.goto('/calendar')
+    await page.waitForSelector('[data-testid="calendar-week-view"]')
+    
+    await page.locator('.calendar-event').first().click()
+    await page.locator('button:has-text("Зайти на урок")').click()
+    
+    await page.waitForTimeout(500)
+  })
+
+  test('should handle 410 room_expired error (v0.71)', async ({ page }) => {
+    await page.route('**/api/v1/calendar/my/', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          results: [
+            {
+              id: 789,
+              start: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
+              end: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
+              status: 'scheduled',
+              tutor: { id: 10, name: 'John Tutor' },
+              student: { id: 5, name: 'Student Test' },
+              subject: null,
+              tags: [],
+              permissions: {
+                can_message: true,
+                can_join_room: true
+              },
+              room: null
+            }
+          ]
+        })
+      })
+    })
+
+    await page.route('**/api/v1/calendar/events/789/room/join/', async (route) => {
+      await route.fulfill({
+        status: 410,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 'room_expired'
+        })
+      })
+    })
+
+    page.on('dialog', async (dialog) => {
+      expect(dialog.message()).toContain('Час входу минув')
+      await dialog.accept()
+    })
+
+    await page.goto('/calendar')
+    await page.waitForSelector('[data-testid="calendar-week-view"]')
+    
+    await page.locator('.calendar-event').first().click()
+    await page.locator('button:has-text("Зайти на урок")').click()
+    
+    await page.waitForTimeout(500)
+  })
+
+  test('should handle 403 not_event_participant error (v0.71)', async ({ page }) => {
+    await page.route('**/api/v1/calendar/my/', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          results: [
+            {
+              id: 999,
+              start: new Date(Date.now() + 600000).toISOString(),
+              end: new Date(Date.now() + 4200000).toISOString(),
+              status: 'scheduled',
+              tutor: { id: 10, name: 'John Tutor' },
+              student: { id: 5, name: 'Student Test' },
+              subject: null,
+              tags: [],
+              permissions: {
+                can_message: true,
+                can_join_room: true
+              },
+              room: null
+            }
+          ]
+        })
+      })
+    })
+
+    await page.route('**/api/v1/calendar/events/999/room/join/', async (route) => {
+      await route.fulfill({
+        status: 403,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 'not_event_participant'
+        })
+      })
+    })
+
+    page.on('dialog', async (dialog) => {
+      expect(dialog.message()).toContain('Немає доступу')
+      await dialog.accept()
+    })
+
+    await page.goto('/calendar')
+    await page.waitForSelector('[data-testid="calendar-week-view"]')
+    
+    await page.locator('.calendar-event').first().click()
+    await page.locator('button:has-text("Зайти на урок")').click()
+    
+    await page.waitForTimeout(500)
+  })
+
+  test('should handle 404 event_not_found error (v0.71)', async ({ page }) => {
+    await page.route('**/api/v1/calendar/my/', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          results: [
+            {
+              id: 888,
+              start: new Date(Date.now() + 600000).toISOString(),
+              end: new Date(Date.now() + 4200000).toISOString(),
+              status: 'scheduled',
+              tutor: { id: 10, name: 'John Tutor' },
+              student: { id: 5, name: 'Student Test' },
+              subject: null,
+              tags: [],
+              permissions: {
+                can_message: true,
+                can_join_room: true
+              },
+              room: null
+            }
+          ]
+        })
+      })
+    })
+
+    await page.route('**/api/v1/calendar/events/888/room/join/', async (route) => {
+      await route.fulfill({
+        status: 404,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 'event_not_found'
+        })
+      })
+    })
+
+    page.on('dialog', async (dialog) => {
+      expect(dialog.message()).toContain('Урок не знайдено')
       await dialog.accept()
     })
 

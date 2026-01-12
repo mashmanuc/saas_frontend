@@ -94,6 +94,6 @@ const { t } = useI18n()
 const hasLessons = computed(() => props.upcomingLessons.length > 0)
 
 function goToBookLesson() {
-  router.push('/lessons').catch(() => {})
+  router.push('/calendar').catch(() => {})
 }
 </script>

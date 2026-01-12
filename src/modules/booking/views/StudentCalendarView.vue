@@ -25,7 +25,12 @@
     </div>
     
     <!-- Unified Calendar Grid (student mode) -->
-    <CalendarWeekView v-else mode="student" />
+    <CalendarWeekView 
+      v-else 
+      mode="student" 
+      :external-days="studentDays"
+      :external-events="studentEvents"
+    />
 
     <!-- Student Event Drawer -->
     <Teleport to="body">
@@ -85,8 +90,14 @@ import { useCalendarWeekStore } from '@/modules/booking/stores/calendarWeekStore
 import { calendarV055Api } from '@/modules/booking/api/calendarV055Api'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { useI18n } from 'vue-i18n'
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone'
 import CalendarWeekView from '@/modules/booking/components/calendar/CalendarWeekView.vue'
-import type { MyCalendarEvent } from '@/modules/booking/types/calendarV055'
+import type { MyCalendarEvent, DaySnapshot, CalendarEvent as CalendarEventV055 } from '@/modules/booking/types/calendarV055'
+
+dayjs.extend(utc)
+dayjs.extend(timezone)
 
 const { t } = useI18n()
 const router = useRouter()
@@ -118,6 +129,54 @@ const filteredEvents = computed(() => {
     return myEvents.value
   }
   return myEvents.value.filter(event => event.tutor?.id === selectedTutorId.value)
+})
+
+// Step 3.2: Build studentDays (7 days: Monday → Sunday)
+const studentDays = computed<DaySnapshot[]>(() => {
+  const now = new Date()
+  const currentDay = now.getDay() // 0 = Sunday, 1 = Monday, ...
+  const mondayOffset = currentDay === 0 ? -6 : 1 - currentDay
+  const monday = new Date(now)
+  monday.setDate(now.getDate() + mondayOffset)
+  monday.setHours(0, 0, 0, 0)
+  
+  const days: DaySnapshot[] = []
+  for (let i = 0; i < 7; i++) {
+    const day = new Date(monday)
+    day.setDate(monday.getDate() + i)
+    const dateStr = day.toISOString().slice(0, 10)
+    
+    // Count events for this day
+    const eventsCount = myEvents.value.filter(e => e.start.startsWith(dateStr)).length
+    
+    days.push({
+      date: dateStr,
+      dayStatus: 'working',
+      eventsCount,
+      availableMinutes: 0,
+      isPast: day < new Date(new Date().setHours(0, 0, 0, 0))
+    })
+  }
+  
+  return days
+})
+
+// Step 3.3: Build studentEvents (map MyCalendarEvent → CalendarEventV055)
+const studentEvents = computed<CalendarEventV055[]>(() => {
+  return myEvents.value.map(event => ({
+    id: event.id,
+    start: event.start,
+    end: event.end,
+    status: event.status as CalendarEventV055['status'],
+    is_first: false,
+    student: event.student || { id: 0, name: 'Unknown' },
+    lesson_link: '',
+    can_reschedule: false,
+    can_mark_no_show: false,
+    clientName: event.tutor?.name || 'Tutor',
+    // Store tutor info in student field for rendering (will show in grid)
+    // Note: CalendarEventV055 expects 'student' field, but for student view we show tutor name
+  }))
 })
 
 function closeEventDrawer() {
@@ -159,16 +218,20 @@ async function handleJoinLesson() {
   } catch (err: any) {
     console.error('[StudentCalendarView] Error joining room:', err)
     
-    // Handle specific error codes from backend
+    // Handle specific error codes from backend (v0.71 spec)
     const errorCode = err?.response?.data?.code
+    const statusCode = err?.response?.status
     let errorMessage = t('student.calendar.joinError')
     
-    if (errorCode === 'room_not_available_yet') {
-      errorMessage = t('student.calendar.roomNotAvailableYet')
-    } else if (errorCode === 'room_expired') {
-      errorMessage = t('student.calendar.roomExpired')
-    } else if (errorCode === 'not_event_participant') {
-      errorMessage = t('student.calendar.notParticipant')
+    // Map backend error codes to i18n keys
+    if (statusCode === 409 || errorCode === 'room_not_available_yet') {
+      errorMessage = t('student.calendar.tooEarly')
+    } else if (statusCode === 410 || errorCode === 'room_expired') {
+      errorMessage = t('student.calendar.expired')
+    } else if (statusCode === 403 || errorCode === 'not_event_participant') {
+      errorMessage = t('student.calendar.noAccess')
+    } else if (statusCode === 404 || errorCode === 'event_not_found') {
+      errorMessage = t('student.calendar.notFound')
     }
     
     alert(errorMessage)
@@ -383,7 +446,6 @@ onMounted(() => {
   cursor: not-allowed;
 }
 
-<style scoped>
 .student-calendar-wrapper {
   padding: 24px;
   min-height: calc(100vh - 64px);
