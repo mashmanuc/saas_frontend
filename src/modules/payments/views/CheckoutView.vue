@@ -93,7 +93,7 @@ function handleComplete() {
   if (redirectTo) {
     router.push(redirectTo)
   } else {
-    router.push('/lessons')
+    router.push('/calendar')
   }
 }
 

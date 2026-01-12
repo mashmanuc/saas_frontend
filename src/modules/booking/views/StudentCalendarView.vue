@@ -1,23 +1,30 @@
 <template>
   <div class="student-calendar-view">
-    <!-- Header with Tutor Filter -->
+    <!-- Header with navigation & filters -->
     <div class="calendar-header">
-      <div class="calendar-header-left">
-        <h1>{{ $t('student.calendar.title') }}</h1>
-        <div class="week-nav">
-          <button class="nav-btn" @click="goToPreviousWeek" :disabled="loading">
-            ‹
-          </button>
-          <span class="week-range">{{ weekRangeLabel }}</span>
-          <button class="nav-btn" @click="goToNextWeek" :disabled="loading">
-            ›
-          </button>
-          <button class="today-btn" @click="goToCurrentWeek" :disabled="isCurrentWeek || loading">
-            {{ $t('calendar.today') }}
-          </button>
-        </div>
+      <div class="week-navigation">
+        <button
+          class="nav-btn"
+          @click="goToPreviousWeek"
+          :disabled="loading"
+          :title="$t('calendar.weekNavigation.prevWeek')"
+        >
+          <ChevronLeftIcon class="icon" />
+        </button>
+        <span class="week-range">{{ weekRangeLabel }}</span>
+        <button
+          class="nav-btn"
+          @click="goToNextWeek"
+          :disabled="loading"
+          :title="$t('calendar.weekNavigation.nextWeek')"
+        >
+          <ChevronRightIcon class="icon" />
+        </button>
       </div>
-      <div class="calendar-controls">
+      <div class="header-toolbar">
+        <button class="today-btn" @click="goToCurrentWeek" :disabled="isCurrentWeek || loading">
+          {{ $t('calendar.weekNavigation.today') }}
+        </button>
         <select v-model="selectedTutorId" class="tutor-filter">
           <option :value="null">{{ $t('student.calendar.allTutors') }}</option>
           <option v-for="tutor in uniqueTutors" :key="tutor.id" :value="tutor.id">
@@ -107,11 +114,14 @@ import { useI18n } from 'vue-i18n'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
+import 'dayjs/locale/uk'
+import { ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon } from 'lucide-vue-next'
 import CalendarWeekView from '@/modules/booking/components/calendar/CalendarWeekView.vue'
 import type { MyCalendarEvent, DaySnapshot, CalendarEvent as CalendarEventV055 } from '@/modules/booking/types/calendarV055'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
+dayjs.locale('uk')
 
 const { t } = useI18n()
 const router = useRouter()

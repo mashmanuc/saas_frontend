@@ -18,7 +18,6 @@ import ClassroomView from '../modules/classrooms/views/ClassroomView.vue'
 import ClassroomListView from '../modules/classrooms/views/ClassroomListView.vue'
 import ClassroomDetailView from '../modules/classrooms/views/ClassroomDetailView.vue'
 import DashboardClassroomsView from '../modules/classrooms/views/DashboardClassroomsView.vue'
-import LessonList from '../modules/lessons/views/LessonList.vue'
 import LessonView from '../modules/lessons/views/LessonView.vue'
 import ProfileOverviewView from '../modules/profile/views/ProfileOverviewView.vue'
 import LessonInviteResolveView from '../modules/lessons/views/LessonInviteResolveView.vue'
@@ -171,9 +170,7 @@ const routes = [
       },
       {
         path: 'lessons',
-        name: 'lessons',
-        component: LessonList,
-        meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
+        redirect: '/calendar',
       },
       {
         path: 'lessons/:id',

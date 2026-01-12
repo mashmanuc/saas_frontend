@@ -36,7 +36,7 @@
         <router-link to="/bookings" class="text-sm text-accent hover:underline">
           {{ $t('dashboard.tutor.viewBookings') }}
         </router-link>
-        <router-link to="/lessons" class="text-sm text-accent hover:underline">
+        <router-link to="/calendar" class="text-sm text-accent hover:underline">
           {{ $t('dashboard.tutor.viewLessons') }}
         </router-link>
       </div>
