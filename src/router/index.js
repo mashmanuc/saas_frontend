@@ -440,6 +440,25 @@ const routes = [
           roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR]
         },
       },
+      // v0.72: Billing routes
+      {
+        path: 'billing',
+        name: 'billing',
+        component: () => import('../modules/billing/views/BillingView.vue'),
+        meta: { 
+          requiresAuth: true,
+          roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR]
+        },
+      },
+      {
+        path: 'billing/plans',
+        name: 'billing-plans',
+        component: () => import('../modules/payments/views/PlansView.vue'),
+        meta: { 
+          requiresAuth: true,
+          roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR]
+        },
+      },
       // v0.67: Staff Console routes
       {
         path: 'staff',

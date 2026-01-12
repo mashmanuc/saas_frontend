@@ -1,324 +1,224 @@
 <script setup lang="ts">
-// F10: Plans View
+/**
+ * Plans View (v0.72.0)
+ * 
+ * Shows available billing plans from backend.
+ * User can upgrade to a plan via checkout_url.
+ * 
+ * INVARIANTS:
+ * - Plans come from backend, NOT hardcoded
+ * - FE does NOT know payment provider
+ * - FE redirects to checkout_url from backend
+ * - After checkout, user returns and billing/me is refetched
+ */
+
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { storeToRefs } from 'pinia'
-import { Check, Sparkles } from 'lucide-vue-next'
-import { useSubscriptionStore } from '../stores/subscriptionStore'
-import { usePaymentStore } from '../stores/paymentStore'
-import type { Plan } from '../api/payments'
-import PlanCard from '../components/subscription/PlanCard.vue'
-import PlanComparison from '../components/subscription/PlanComparison.vue'
+import { useI18n } from 'vue-i18n'
+import { Sparkles, Check } from 'lucide-vue-next'
+import { useBillingStore } from '@/modules/billing/stores/billingStore'
+import Card from '@/ui/Card.vue'
+import Button from '@/ui/Button.vue'
+import Heading from '@/ui/Heading.vue'
 
 const router = useRouter()
-const subscriptionStore = useSubscriptionStore()
-const paymentStore = usePaymentStore()
+const { t } = useI18n()
+const billingStore = useBillingStore()
 
-const {
-  plans,
-  sortedPlans,
-  currentSubscription,
-  currentPlan,
-  hasActiveSubscription,
-  isLoading,
-  error,
-} = storeToRefs(subscriptionStore)
-
-const showComparison = ref(false)
-const selectedPlan = ref<Plan | null>(null)
-const isProcessing = ref(false)
+const isUpgrading = ref(false)
+const upgradeError = ref<string | null>(null)
 
 onMounted(async () => {
-  await Promise.all([
-    subscriptionStore.loadPlans(),
-    subscriptionStore.loadCurrentSubscription(),
-    paymentStore.loadPaymentMethods(),
-  ])
+  try {
+    await Promise.all([
+      billingStore.fetchPlans(),
+      billingStore.fetchMe(),
+    ])
+  } catch (err) {
+    console.error('Failed to load billing data:', err)
+  }
 })
 
-const canChangePlan = computed(() => {
-  if (!hasActiveSubscription.value) return true
-  return currentSubscription.value?.status !== 'past_due'
-})
+const currentPlanSlug = computed(() => billingStore.currentPlan?.toLowerCase())
 
-async function handleSelectPlan(plan: Plan) {
-  if (!canChangePlan.value) return
+function isPlanActive(planSlug: string): boolean {
+  return currentPlanSlug.value === planSlug.toLowerCase()
+}
 
-  selectedPlan.value = plan
+function formatPrice(priceDecimal: string): string {
+  const price = parseFloat(priceDecimal)
+  return new Intl.NumberFormat('uk-UA', {
+    style: 'currency',
+    currency: 'UAH',
+  }).format(price)
+}
 
-  if (hasActiveSubscription.value) {
-    // Change plan
-    if (confirm(`Change to ${plan.name} plan?`)) {
-      isProcessing.value = true
-      try {
-        await subscriptionStore.changePlan(plan.id)
-        router.push('/subscription')
-      } catch (e) {
-        console.error('Plan change failed:', e)
-      } finally {
-        isProcessing.value = false
-      }
-    }
-  } else {
-    // New subscription - go to checkout
-    router.push({
-      path: '/checkout',
-      query: {
-        type: 'subscription',
-        plan: plan.id.toString(),
-        amount: plan.price.toString(),
-        currency: plan.currency,
-      },
-    })
+function formatInterval(interval: string): string {
+  if (!interval) return ''
+  return interval === 'monthly' ? t('billing.perMonth') : t('billing.perYear')
+}
+
+async function handleUpgrade(planSlug: string) {
+  if (isPlanActive(planSlug)) return
+
+  isUpgrading.value = true
+  upgradeError.value = null
+
+  try {
+    // Get checkout URL from backend
+    const response = await billingStore.checkout(planSlug)
+    
+    // Redirect to checkout URL
+    // Backend decides which payment provider to use
+    window.location.href = response.checkout_url
+  } catch (err: any) {
+    console.error('Upgrade failed:', err)
+    upgradeError.value = err.response?.data?.error?.message || t('billing.upgradeError')
+  } finally {
+    isUpgrading.value = false
   }
 }
 
-function formatCurrency(amount: number, currency: string): string {
-  return new Intl.NumberFormat('uk-UA', {
-    style: 'currency',
-    currency,
-  }).format(amount / 100)
+function goToBilling() {
+  router.push('/billing')
 }
 </script>
 
 <template>
-  <div class="plans-view">
-    <header class="view-header">
-      <div class="header-content">
-        <Sparkles :size="32" class="header-icon" />
-        <h1>Choose Your Plan</h1>
-        <p class="subtitle">
-          Unlock premium features and save on your lessons
-        </p>
-      </div>
-    </header>
-
-    <!-- Loading -->
-    <div v-if="isLoading && plans.length === 0" class="loading-state">
-      <div class="spinner" />
+  <div class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="text-center mb-12">
+      <Sparkles :size="48" class="mx-auto mb-4 text-accent" />
+      <Heading :level="1" class="mb-2">
+        {{ $t('billing.plans.title') }}
+      </Heading>
+      <p class="text-muted text-lg">
+        {{ $t('billing.plans.subtitle') }}
+      </p>
     </div>
+
+    <!-- Loading State -->
+    <div v-if="billingStore.isLoading && billingStore.plans.length === 0" class="flex justify-center py-12">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
+    </div>
+
+    <!-- Error State -->
+    <Card v-else-if="billingStore.error" class="p-6 text-center">
+      <p class="text-danger mb-4">{{ billingStore.error }}</p>
+      <Button variant="secondary" @click="billingStore.fetchPlans()">
+        {{ $t('common.retry') }}
+      </Button>
+    </Card>
 
     <!-- Plans Grid -->
-    <div v-else class="plans-grid">
-      <PlanCard
-        v-for="plan in sortedPlans"
-        :key="plan.id"
-        :plan="plan"
-        :is-current="currentPlan?.id === plan.id"
-        :has-subscription="hasActiveSubscription"
-        :disabled="isProcessing"
-        @select="handleSelectPlan"
-      />
+    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+      <Card
+        v-for="plan in billingStore.plans"
+        :key="plan.slug"
+        class="relative p-6 flex flex-col"
+        :class="{ 'ring-2 ring-accent': isPlanActive(plan.slug) }"
+      >
+        <!-- Popular Badge -->
+        <div v-if="plan.is_featured" class="absolute top-0 right-0 bg-accent text-white px-3 py-1 text-xs font-semibold rounded-bl-lg rounded-tr-lg">
+          {{ $t('billing.popular') }}
+        </div>
+
+        <!-- Plan Header -->
+        <div class="mb-4">
+          <h3 class="text-2xl font-bold mb-2">{{ plan.name }}</h3>
+          <div class="flex items-baseline gap-1">
+            <span class="text-4xl font-bold">{{ formatPrice(plan.price_decimal) }}</span>
+            <span v-if="plan.interval" class="text-muted">{{ formatInterval(plan.interval) }}</span>
+          </div>
+        </div>
+
+        <!-- Plan Description -->
+        <p v-if="plan.description" class="text-sm text-muted mb-4">
+          {{ plan.description }}
+        </p>
+
+        <!-- Features List -->
+        <ul class="space-y-2 mb-6 flex-1">
+          <li v-for="feature in plan.features" :key="feature" class="flex items-start gap-2">
+            <Check :size="20" class="text-accent flex-shrink-0 mt-0.5" />
+            <span class="text-sm">{{ $t(`billing.features.${feature}`) }}</span>
+          </li>
+          <li v-if="plan.features.length === 0" class="text-sm text-muted">
+            {{ $t('billing.basicFeatures') }}
+          </li>
+        </ul>
+
+        <!-- Action Button -->
+        <Button
+          v-if="isPlanActive(plan.slug)"
+          variant="secondary"
+          class="w-full"
+          disabled
+        >
+          {{ $t('billing.currentPlan') }}
+        </Button>
+        <Button
+          v-else
+          variant="primary"
+          class="w-full"
+          :disabled="isUpgrading"
+          @click="handleUpgrade(plan.slug)"
+        >
+          {{ isUpgrading ? $t('billing.processing') : $t('billing.upgrade') }}
+        </Button>
+      </Card>
     </div>
 
-    <!-- Comparison Toggle -->
-    <div class="comparison-toggle">
-      <button @click="showComparison = !showComparison">
-        {{ showComparison ? 'Hide' : 'Show' }} detailed comparison
-      </button>
-    </div>
+    <!-- Upgrade Error -->
+    <Card v-if="upgradeError" class="p-4 bg-danger-light border-danger">
+      <p class="text-danger text-sm">{{ upgradeError }}</p>
+    </Card>
 
-    <!-- Plan Comparison -->
-    <PlanComparison
-      v-if="showComparison"
-      :plans="sortedPlans"
-      :current-plan-id="currentPlan?.id"
-    />
+    <!-- Current Plan Info -->
+    <Card v-if="billingStore.currentPlan" class="p-6 mt-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-muted mb-1">{{ $t('billing.yourCurrentPlan') }}</p>
+          <p class="text-xl font-semibold">{{ billingStore.currentPlan }}</p>
+        </div>
+        <Button variant="ghost" @click="goToBilling">
+          {{ $t('billing.manageBilling') }}
+        </Button>
+      </div>
+    </Card>
 
     <!-- FAQ Section -->
-    <section class="faq-section">
-      <h2>Frequently Asked Questions</h2>
-
-      <div class="faq-list">
-        <details class="faq-item">
-          <summary>Can I cancel anytime?</summary>
-          <p>
-            Yes, you can cancel your subscription at any time. You'll continue
-            to have access until the end of your billing period.
+    <div class="mt-12">
+      <Heading :level="2" class="text-center mb-6">
+        {{ $t('billing.faq.title') }}
+      </Heading>
+      <div class="max-w-3xl mx-auto space-y-4">
+        <details class="bg-card border border-default rounded-lg p-4">
+          <summary class="font-semibold cursor-pointer">
+            {{ $t('billing.faq.cancel.question') }}
+          </summary>
+          <p class="mt-2 text-sm text-muted">
+            {{ $t('billing.faq.cancel.answer') }}
           </p>
         </details>
-
-        <details class="faq-item">
-          <summary>What happens to unused lessons?</summary>
-          <p>
-            Unused lessons don't roll over to the next month. We recommend
-            choosing a plan that matches your learning schedule.
+        <details class="bg-card border border-default rounded-lg p-4">
+          <summary class="font-semibold cursor-pointer">
+            {{ $t('billing.faq.change.question') }}
+          </summary>
+          <p class="mt-2 text-sm text-muted">
+            {{ $t('billing.faq.change.answer') }}
           </p>
         </details>
-
-        <details class="faq-item">
-          <summary>Can I change my plan?</summary>
-          <p>
-            Yes, you can upgrade or downgrade your plan at any time. Changes
-            take effect at the start of your next billing period.
-          </p>
-        </details>
-
-        <details class="faq-item">
-          <summary>Is there a free trial?</summary>
-          <p>
-            New users get a 7-day free trial on any plan. You won't be charged
-            until the trial ends.
+        <details class="bg-card border border-default rounded-lg p-4">
+          <summary class="font-semibold cursor-pointer">
+            {{ $t('billing.faq.refund.question') }}
+          </summary>
+          <p class="mt-2 text-sm text-muted">
+            {{ $t('billing.faq.refund.answer') }}
           </p>
         </details>
       </div>
-    </section>
-
-    <!-- Error -->
-    <div v-if="error" class="error-message">
-      {{ error }}
     </div>
   </div>
 </template>
 
-<style scoped>
-.plans-view {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 24px 16px 64px;
-}
-
-.view-header {
-  text-align: center;
-  margin-bottom: 48px;
-}
-
-.header-content {
-  max-width: 600px;
-  margin: 0 auto;
-}
-
-.header-icon {
-  color: var(--color-primary, #3b82f6);
-  margin-bottom: 16px;
-}
-
-.view-header h1 {
-  margin: 0 0 8px;
-  font-size: 36px;
-  font-weight: 700;
-}
-
-.subtitle {
-  margin: 0;
-  font-size: 18px;
-  color: var(--color-text-secondary, #6b7280);
-}
-
-/* Loading */
-.loading-state {
-  display: flex;
-  justify-content: center;
-  padding: 64px 0;
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid var(--color-border, #e5e7eb);
-  border-top-color: var(--color-primary, #3b82f6);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* Plans Grid */
-.plans-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 24px;
-  max-width: 900px;
-  margin: 0 auto;
-}
-
-/* Comparison Toggle */
-.comparison-toggle {
-  text-align: center;
-  margin-top: 32px;
-}
-
-.comparison-toggle button {
-  padding: 0;
-  background: none;
-  border: none;
-  font-size: 14px;
-  color: var(--color-primary, #3b82f6);
-  cursor: pointer;
-}
-
-.comparison-toggle button:hover {
-  text-decoration: underline;
-}
-
-/* FAQ Section */
-.faq-section {
-  margin-top: 64px;
-  max-width: 700px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.faq-section h2 {
-  margin: 0 0 24px;
-  font-size: 24px;
-  font-weight: 600;
-  text-align: center;
-}
-
-.faq-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.faq-item {
-  padding: 16px 20px;
-  background: var(--color-bg-primary, white);
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: 8px;
-}
-
-.faq-item summary {
-  font-weight: 500;
-  cursor: pointer;
-  list-style: none;
-}
-
-.faq-item summary::-webkit-details-marker {
-  display: none;
-}
-
-.faq-item summary::before {
-  content: '+';
-  margin-right: 12px;
-  font-weight: 400;
-}
-
-.faq-item[open] summary::before {
-  content: '−';
-}
-
-.faq-item p {
-  margin: 12px 0 0;
-  padding-left: 24px;
-  font-size: 14px;
-  color: var(--color-text-secondary, #6b7280);
-  line-height: 1.6;
-}
-
-/* Error */
-.error-message {
-  margin-top: 16px;
-  padding: 12px;
-  background: var(--color-danger-light, #fee2e2);
-  color: var(--color-danger, #ef4444);
-  border-radius: 8px;
-  font-size: 14px;
-  text-align: center;
-}
-</style>
