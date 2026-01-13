@@ -26,7 +26,7 @@
         <h3 class="text-xl font-bold text-foreground">{{ plan.title }}</h3>
         <div class="mt-2 flex items-baseline gap-1">
           <span class="text-3xl font-bold text-foreground">
-            {{ formatPrice(plan.price.amount, plan.price.currency) }}
+            {{ formatMoney(plan.price.amount, plan.price.currency) }}
           </span>
           <span v-if="plan.interval" class="text-sm text-muted-foreground">
             / {{ plan.interval === 'monthly' ? $t('billing.planCard.intervalMonthly') : $t('billing.planCard.intervalYearly') }}
@@ -60,6 +60,14 @@
         {{ $t('billing.planCard.current') }}
       </Button>
       <Button
+        v-else-if="isInactive"
+        variant="outline"
+        class="w-full"
+        disabled
+      >
+        {{ $t('billing.planCard.unavailable') }}
+      </Button>
+      <Button
         v-else-if="isFree"
         variant="outline"
         class="w-full"
@@ -87,7 +95,7 @@
 import { computed } from 'vue'
 import Card from '@/ui/Card.vue'
 import Button from '@/ui/Button.vue'
-import { formatPrice } from '../utils/priceFormatter'
+import { formatMoney } from '../utils/priceFormatter'
 
 const props = defineProps({
   plan: {
@@ -108,6 +116,10 @@ defineEmits(['select'])
 
 const isCurrentPlan = computed(() => {
   return props.plan.code === props.currentPlanCode
+})
+
+const isInactive = computed(() => {
+  return props.plan.is_active === false
 })
 
 const isFree = computed(() => {

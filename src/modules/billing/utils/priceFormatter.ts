@@ -76,3 +76,36 @@ export function minorToMajor(amountMinor: number, currency: string = 'UAH'): num
   const config = CURRENCY_CONFIG[currency.toUpperCase()] || CURRENCY_CONFIG.DEFAULT
   return amountMinor / config.factor
 }
+
+/**
+ * Format money from major units (v0.76.0)
+ * 
+ * Source of truth for price formatting.
+ * API returns amount in MAJOR units (e.g., 999 UAH, not 99900 kopiykas).
+ * 
+ * @param amount - Price in major units (UAH, USD)
+ * @param currency - Currency code (UAH, USD, EUR)
+ * @returns Formatted price string with currency symbol
+ * 
+ * @example
+ * formatMoney(999, 'UAH') // "999 ₴"
+ * formatMoney(999.50, 'UAH') // "999.50 ₴"
+ * formatMoney(0, 'UAH') // "0 ₴"
+ * formatMoney(50, 'USD') // "$50"
+ */
+export function formatMoney(amount: number, currency: string = 'UAH'): string {
+  const config = CURRENCY_CONFIG[currency.toUpperCase()] || CURRENCY_CONFIG.DEFAULT
+  
+  // Format without decimals if .00, otherwise show 2 decimals
+  const hasDecimals = amount % 1 !== 0
+  const formattedAmount = hasDecimals 
+    ? amount.toFixed(2)
+    : amount.toString()
+  
+  // Add currency symbol
+  if (config.position === 'before') {
+    return `${config.symbol}${formattedAmount}`
+  } else {
+    return `${formattedAmount} ${config.symbol || currency.toUpperCase()}`
+  }
+}

@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { formatPrice, getCurrencySymbol, minorToMajor } from '../priceFormatter'
+import { formatPrice, formatMoney, getCurrencySymbol, minorToMajor } from '../priceFormatter'
 
 describe('priceFormatter', () => {
   describe('formatPrice', () => {
@@ -61,6 +61,68 @@ describe('priceFormatter', () => {
     it('handles zero amount', () => {
       expect(formatPrice(0, 'UAH')).toBe('0 ₴')
       expect(formatPrice(0, 'USD')).toBe('$0')
+    })
+  })
+
+  describe('formatMoney (v0.76.0 - major units)', () => {
+    it('formats UAH prices from major units correctly', () => {
+      expect(formatMoney(999, 'UAH')).toBe('999 ₴')
+      expect(formatMoney(0, 'UAH')).toBe('0 ₴')
+      expect(formatMoney(1, 'UAH')).toBe('1 ₴')
+    })
+
+    it('formats UAH prices with decimals when needed', () => {
+      expect(formatMoney(999.50, 'UAH')).toBe('999.50 ₴')
+      expect(formatMoney(999.99, 'UAH')).toBe('999.99 ₴')
+      expect(formatMoney(1.50, 'UAH')).toBe('1.50 ₴')
+    })
+
+    it('formats USD prices from major units correctly', () => {
+      expect(formatMoney(50, 'USD')).toBe('$50')
+      expect(formatMoney(0, 'USD')).toBe('$0')
+      expect(formatMoney(1, 'USD')).toBe('$1')
+    })
+
+    it('formats USD prices with decimals when needed', () => {
+      expect(formatMoney(50.50, 'USD')).toBe('$50.50')
+      expect(formatMoney(50.99, 'USD')).toBe('$50.99')
+      expect(formatMoney(1.50, 'USD')).toBe('$1.50')
+    })
+
+    it('formats EUR prices correctly', () => {
+      expect(formatMoney(50, 'EUR')).toBe('€50')
+      expect(formatMoney(50.50, 'EUR')).toBe('€50.50')
+    })
+
+    it('handles unknown currencies with fallback', () => {
+      expect(formatMoney(50, 'GBP')).toBe('50 GBP')
+      expect(formatMoney(50.50, 'GBP')).toBe('50.50 GBP')
+    })
+
+    it('handles case-insensitive currency codes', () => {
+      expect(formatMoney(50, 'uah')).toBe('50 ₴')
+      expect(formatMoney(50, 'usd')).toBe('$50')
+      expect(formatMoney(50, 'eur')).toBe('€50')
+    })
+
+    it('defaults to UAH when currency not specified', () => {
+      expect(formatMoney(50)).toBe('50 ₴')
+    })
+
+    it('handles large amounts correctly', () => {
+      expect(formatMoney(1000000, 'UAH')).toBe('1000000 ₴')
+      expect(formatMoney(9999.99, 'UAH')).toBe('9999.99 ₴')
+    })
+
+    it('handles zero amount', () => {
+      expect(formatMoney(0, 'UAH')).toBe('0 ₴')
+      expect(formatMoney(0, 'USD')).toBe('$0')
+    })
+
+    it('does not show decimals for whole numbers', () => {
+      expect(formatMoney(299, 'UAH')).toBe('299 ₴')
+      expect(formatMoney(999, 'UAH')).toBe('999 ₴')
+      expect(formatMoney(50, 'USD')).toBe('$50')
     })
   })
 

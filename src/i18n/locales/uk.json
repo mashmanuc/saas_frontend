@@ -624,7 +624,8 @@
       "avatarDeleted": "Аватар видалено.",
       "avatarDeleteError": "Не вдалося видалити аватар.",
       "changeEmail": "Змінити email",
-      "changePassword": "Змінити пароль"
+      "changePassword": "Змінити пароль",
+      "yourPlan": "Ваш план"
     },
     "changeEmail": {
       "title": "Зміна email",
@@ -3786,18 +3787,30 @@
       "current": "Поточний",
       "select": "Обрати",
       "pay": "Оплатити",
+      "unavailable": "Недоступно",
       "intervalMonthly": "місяць",
       "intervalYearly": "рік"
+    },
+    "success": {
+      "title": "Оплата успішна!",
+      "processing": "Ваша оплата обробляється. Це може зайняти кілька хвилин.",
+      "activated": "Ваш план успішно активовано!",
+      "checkStatus": "Перевірте статус вашої підписки нижче.",
+      "status": "Статус",
+      "viewBilling": "Переглянути підписку",
+      "backToDashboard": "Повернутися на головну"
+    },
+    "cancel": {
+      "title": "Оплату скасовано",
+      "subtitle": "Ви скасували процес оплати",
+      "message": "Ваша оплата не була завершена. Ви можете спробувати ще раз або обрати інший план.",
+      "viewPlans": "Переглянути плани",
+      "backToDashboard": "Повернутися на головну"
     },
     "errors": {
       "loadFailed": "Не вдалося завантажити дані білінгу",
       "plansLoadFailed": "Не вдалося завантажити плани"
     },
     "retryButton": "Спробувати ще раз"
-  },
-  "userProfile": {
-    "account": {
-      "yourPlan": "Ваш план"
-    }
   }
 }

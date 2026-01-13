@@ -466,6 +466,24 @@ const routes = [
           roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR]
         },
       },
+      {
+        path: 'billing/success',
+        name: 'billing-success',
+        component: () => import('../modules/billing/views/BillingSuccessView.vue'),
+        meta: { 
+          requiresAuth: true,
+          roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN]
+        },
+      },
+      {
+        path: 'billing/cancel',
+        name: 'billing-cancel',
+        component: () => import('../modules/billing/views/BillingCancelView.vue'),
+        meta: { 
+          requiresAuth: true,
+          roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN]
+        },
+      },
       // v0.67: Staff Console routes
       {
         path: 'staff',

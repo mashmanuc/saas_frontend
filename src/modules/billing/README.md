@@ -4,7 +4,7 @@
 
 Модуль білінгу відповідає за управління підписками, планами та платежами в M4SH Platform.
 
-**Source of Truth:** Backend API (`/api/v1/billing/*`)
+**Source of Truth:** Backend API (`/v1/billing/*`)
 
 ---
 
@@ -27,10 +27,12 @@
 **Location:** `src/modules/billing/api/billingApi.ts`
 
 **Endpoints:**
-- `GET /api/v1/billing/me/` — поточний стан підписки користувача
-- `GET /api/v1/billing/plans/` — список доступних планів
-- `POST /api/v1/billing/checkout/` — ініціація checkout сесії
-- `POST /api/v1/billing/cancel/` — скасування підписки
+- `GET /v1/billing/me/` — поточний стан підписки користувача
+- `GET /v1/billing/plans/` — список доступних планів
+- `POST /v1/billing/checkout/` — ініціація checkout сесії
+- `POST /v1/billing/cancel/` — скасування підписки
+
+**Note:** API paths do NOT include `/api` prefix. The `apiClient` has `baseURL: '/api'`, so paths are relative to that.
 
 **Contract:** Backend v0.74.0
 
@@ -242,10 +244,12 @@ const status = store.subscription?.status
 
 ### API Errors
 
-Якщо бачите `INVALID URL: path should not start with /api/`:
+**Console spam "Adjusting API path":**
 
-- API client автоматично виправляє це (див. `src/utils/apiClient.js`)
-- Переконайтесь, що `baseURL` налаштований правильно
+- Це означає, що хтось передає `/api/v1/...` замість `/v1/...`
+- API client має guard, який автоматично видаляє `/api` префікс
+- Всі billing API виклики вже нормалізовані (v0.76.0)
+- Guard залишається як страховка, але не має постійно спрацьовувати
 
 ### Checkout Not Working
 
