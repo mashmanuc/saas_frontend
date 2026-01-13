@@ -3704,11 +3704,16 @@
     "manageBilling": "Керувати підпискою",
     "basicFeatures": "Базові можливості",
     "features": {
-      "CONTACT_UNLOCK": "Розблокування контактів",
+      "CONTACT_UNLOCK_LIMITED": "Обмежене розблокування контактів",
+      "CONTACT_UNLOCK": "Необмежене розблокування контактів",
       "UNLIMITED_INQUIRIES": "Необмежені запити",
       "PRIORITY_SUPPORT": "Пріоритетна підтримка",
+      "ANALYTICS": "Аналітика та статистика",
       "ADVANCED_ANALYTICS": "Розширена аналітика",
-      "CONTACT_UNLOCK_LIMITED": "Обмежене розблокування контактів"
+      "API_ACCESS": "Доступ до API",
+      "ADVANCED_MATCHING": "Розширений підбір",
+      "TEAM_MANAGEMENT": "Управління командою",
+      "CUSTOM_BRANDING": "Власний брендинг"
     },
     "faq": {
       "title": "Часті питання",
@@ -3729,6 +3734,7 @@
       "subscriptionRequired": "Для продовження потрібна підписка",
       "limitExceeded": "Ви досягли ліміту для вашого плану",
       "checkoutFailed": "Помилка оформлення оплати",
+      "checkoutNotAllowed": "Оформлення підписки недоступне",
       "invalidPlan": "Невірний план",
       "alreadySubscribed": "Ви вже маєте активну підписку"
     },
@@ -3738,13 +3744,60 @@
       "learnMore": "Дізнатися більше"
     },
     "statuses": {
+      "none": "Немає підписки",
       "active": "Активна",
-      "canceled": "Скасована",
       "past_due": "Прострочена",
-      "trialing": "Пробний період",
-      "unpaid": "Не оплачена",
+      "canceled": "Скасована",
+      "expired": "Закінчилась",
       "incomplete": "Неповна",
-      "none": "Немає підписки"
+      "trialing": "Пробний період",
+      "unpaid": "Не оплачена"
+    },
+    "page": {
+      "title": "Ваш план",
+      "subtitle": "Перегляньте поточний план та керуйте підпискою"
+    },
+    "currentPlanCard": {
+      "title": "Поточний план",
+      "subtitle": "Інформація про вашу підписку",
+      "planName": "План",
+      "renewsAt": "Продовжується",
+      "expiresAtLabel": "Закінчується",
+      "providerLabel": "Платіжна система",
+      "featuresTitle": "Можливості",
+      "cancelScheduledWarning": "Підписка буде скасована в кінці періоду",
+      "cancelButton": "Скасувати підписку"
+    },
+    "noPlanState": {
+      "title": "Без підписки",
+      "subtitle": "Оберіть план для доступу до додаткових можливостей"
+    },
+    "plansList": {
+      "title": "Доступні плани",
+      "subtitle": "Оберіть план, який підходить вам",
+      "empty": "Немає доступних планів"
+    },
+    "plan": {
+      "current": "Поточний",
+      "recommended": "Рекомендовано",
+      "bestForTeams": "Найкраще для команд"
+    },
+    "planCard": {
+      "current": "Поточний",
+      "select": "Обрати",
+      "pay": "Оплатити",
+      "intervalMonthly": "місяць",
+      "intervalYearly": "рік"
+    },
+    "errors": {
+      "loadFailed": "Не вдалося завантажити дані білінгу",
+      "plansLoadFailed": "Не вдалося завантажити плани"
+    },
+    "retryButton": "Спробувати ще раз"
+  },
+  "userProfile": {
+    "account": {
+      "yourPlan": "Ваш план"
     }
   }
 }

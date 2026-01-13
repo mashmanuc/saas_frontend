@@ -35,6 +35,7 @@ const UserAccountView = () => import('../modules/profile/views/UserAccountView.v
 const SettingsSecurityView = () => import('../modules/profile/views/SettingsSecurityView.vue')
 const ChangeEmailView = () => import('../modules/profile/views/ChangeEmailView.vue')
 const ChangePasswordView = () => import('../modules/profile/views/ChangePasswordView.vue')
+const AccountBillingView = () => import('../modules/billing/views/AccountBillingView.vue')
 const DevThemePlaygroundView = () => import('../modules/dev/views/DevThemePlayground.vue')
 
 // Onboarding views
@@ -145,6 +146,12 @@ const routes = [
         path: 'dashboard/account',
         name: 'user-account',
         component: UserAccountView,
+      },
+      {
+        path: 'dashboard/account/billing',
+        name: 'account-billing',
+        component: AccountBillingView,
+        meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
       },
       {
         path: 'dashboard/account/change-email',

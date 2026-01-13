@@ -1,15 +1,19 @@
 <script setup lang="ts">
 /**
- * Plans View (v0.72.0)
+ * Plans View (v0.74.0)
  * 
  * Shows available billing plans from backend.
- * User can upgrade to a plan via checkout_url.
+ * User can upgrade to a plan via checkout.
  * 
  * INVARIANTS:
  * - Plans come from backend, NOT hardcoded
  * - FE does NOT know payment provider
- * - FE redirects to checkout_url from backend
+ * - FE submits checkout form (LiqPay) or redirects (Stripe)
  * - After checkout, user returns and billing/me is refetched
+ * 
+ * CONTRACT v0.74:
+ * - Plans: { plans: PlanDto[] } where PlanDto has code, title, price, features
+ * - Current plan from entitlement.plan_code
  */
 
 import { ref, onMounted, computed } from 'vue'
@@ -39,18 +43,17 @@ onMounted(async () => {
   }
 })
 
-const currentPlanSlug = computed(() => billingStore.currentPlan?.toLowerCase())
+const currentPlanCode = computed(() => billingStore.currentPlanCode)
 
-function isPlanActive(planSlug: string): boolean {
-  return currentPlanSlug.value === planSlug.toLowerCase()
+function isPlanActive(planCode: string): boolean {
+  return currentPlanCode.value === planCode
 }
 
-function formatPrice(priceDecimal: string): string {
-  const price = parseFloat(priceDecimal)
+function formatPrice(amount: number, currency: string): string {
   return new Intl.NumberFormat('uk-UA', {
     style: 'currency',
-    currency: 'UAH',
-  }).format(price)
+    currency: currency,
+  }).format(amount)
 }
 
 function formatInterval(interval: string): string {
@@ -58,23 +61,23 @@ function formatInterval(interval: string): string {
   return interval === 'monthly' ? t('billing.perMonth') : t('billing.perYear')
 }
 
-async function handleUpgrade(planSlug: string) {
-  if (isPlanActive(planSlug)) return
+async function handleUpgrade(planCode: string) {
+  if (isPlanActive(planCode)) return
 
   isUpgrading.value = true
   upgradeError.value = null
 
   try {
-    // Initiate checkout - store will submit POST form to payment provider
+    // Initiate checkout - store will submit POST form (LiqPay) or redirect (Stripe)
     // This causes navigation to payment provider's checkout page
-    await billingStore.checkout(planSlug)
+    await billingStore.startCheckout(planCode)
     
-    // Note: After checkout() submits form, browser navigates away.
+    // Note: After startCheckout() submits form or redirects, browser navigates away.
     // When user returns from payment provider, route guard or component
     // should call billingStore.fetchMe() to refresh billing status.
   } catch (err: any) {
     console.error('Upgrade failed:', err)
-    upgradeError.value = err.response?.data?.error?.message || t('billing.upgradeError')
+    upgradeError.value = err.message || t('billing.upgradeError')
     isUpgrading.value = false
   }
 }
@@ -98,13 +101,13 @@ function goToBilling() {
     </div>
 
     <!-- Loading State -->
-    <div v-if="billingStore.isLoading && billingStore.plans.length === 0" class="flex justify-center py-12">
+    <div v-if="billingStore.isLoadingPlans && billingStore.plans.length === 0" class="flex justify-center py-12">
       <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
     </div>
 
     <!-- Error State -->
-    <Card v-else-if="billingStore.error" class="p-6 text-center">
-      <p class="text-danger mb-4">{{ billingStore.error }}</p>
+    <Card v-else-if="billingStore.lastError" class="p-6 text-center">
+      <p class="text-danger mb-4">{{ billingStore.lastError.message }}</p>
       <Button variant="secondary" @click="billingStore.fetchPlans()">
         {{ $t('common.retry') }}
       </Button>
@@ -114,28 +117,18 @@ function goToBilling() {
     <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
       <Card
         v-for="plan in billingStore.plans"
-        :key="plan.slug"
+        :key="plan.code"
         class="relative p-6 flex flex-col"
-        :class="{ 'ring-2 ring-accent': isPlanActive(plan.slug) }"
+        :class="{ 'ring-2 ring-accent': isPlanActive(plan.code) }"
       >
-        <!-- Popular Badge -->
-        <div v-if="plan.is_featured" class="absolute top-0 right-0 bg-accent text-white px-3 py-1 text-xs font-semibold rounded-bl-lg rounded-tr-lg">
-          {{ $t('billing.popular') }}
-        </div>
-
         <!-- Plan Header -->
         <div class="mb-4">
-          <h3 class="text-2xl font-bold mb-2">{{ plan.name }}</h3>
+          <h3 class="text-2xl font-bold mb-2">{{ plan.title }}</h3>
           <div class="flex items-baseline gap-1">
-            <span class="text-4xl font-bold">{{ formatPrice(plan.price_decimal) }}</span>
+            <span class="text-4xl font-bold">{{ formatPrice(plan.price.amount, plan.price.currency) }}</span>
             <span v-if="plan.interval" class="text-muted">{{ formatInterval(plan.interval) }}</span>
           </div>
         </div>
-
-        <!-- Plan Description -->
-        <p v-if="plan.description" class="text-sm text-muted mb-4">
-          {{ plan.description }}
-        </p>
 
         <!-- Features List -->
         <ul class="space-y-2 mb-6 flex-1">
@@ -150,7 +143,7 @@ function goToBilling() {
 
         <!-- Action Button -->
         <Button
-          v-if="isPlanActive(plan.slug)"
+          v-if="isPlanActive(plan.code)"
           variant="secondary"
           class="w-full"
           disabled
@@ -158,13 +151,13 @@ function goToBilling() {
           {{ $t('billing.currentPlan') }}
         </Button>
         <Button
-          v-else
+          v-else-if="plan.is_active"
           variant="primary"
           class="w-full"
-          :disabled="isUpgrading"
-          @click="handleUpgrade(plan.slug)"
+          :disabled="isUpgrading || billingStore.isLoadingAction"
+          @click="handleUpgrade(plan.code)"
         >
-          {{ isUpgrading ? $t('billing.processing') : $t('billing.upgrade') }}
+          {{ isUpgrading || billingStore.isLoadingAction ? $t('billing.processing') : $t('billing.upgrade') }}
         </Button>
       </Card>
     </div>
@@ -175,11 +168,11 @@ function goToBilling() {
     </Card>
 
     <!-- Current Plan Info -->
-    <Card v-if="billingStore.currentPlan" class="p-6 mt-8">
+    <Card v-if="billingStore.currentPlanCode" class="p-6 mt-8">
       <div class="flex items-center justify-between">
         <div>
           <p class="text-sm text-muted mb-1">{{ $t('billing.yourCurrentPlan') }}</p>
-          <p class="text-xl font-semibold">{{ billingStore.currentPlan }}</p>
+          <p class="text-xl font-semibold">{{ billingStore.currentPlanCode }}</p>
         </div>
         <Button variant="ghost" @click="goToBilling">
           {{ $t('billing.manageBilling') }}

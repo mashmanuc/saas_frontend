@@ -11,6 +11,9 @@
           </p>
         </div>
         <div class="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" @click="goToPlan">
+            {{ $t('userProfile.account.yourPlan') }}
+          </Button>
           <Button variant="outline" size="sm" @click="goToSettings">
             {{ $t('profile.settingsButton') }}
           </Button>
@@ -175,6 +178,10 @@ function goToSettings() {
 
 function goToSecurity() {
   router.push('/dashboard/profile/security')
+}
+
+function goToPlan() {
+  router.push('/dashboard/account/billing')
 }
 
 onMounted(() => {

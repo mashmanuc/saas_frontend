@@ -7,6 +7,9 @@
           <p class="text-sm text-muted-foreground">{{ $t('userProfile.account.subtitle') }}</p>
         </div>
         <div class="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" @click="goToBilling">
+            {{ $t('userProfile.account.yourPlan') }}
+          </Button>
           <Button variant="outline" size="sm" @click="goToSecurity">
             {{ $t('profile.security.navLabel') }}
           </Button>
@@ -94,6 +97,10 @@ async function save() {
     username: form.username,
     timezone: form.timezone,
   })
+}
+
+function goToBilling() {
+  router.push({ name: 'account-billing' })
 }
 
 function goToChangeEmail() {

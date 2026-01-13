@@ -1,8 +1,8 @@
 /**
- * Unit tests for billingStore (v0.73.0)
+ * Unit tests for billingStore (v0.74.0)
  * 
  * Tests for billing state management and API integration.
- * Includes LiqPay checkout flow with POST form submission.
+ * Includes LiqPay POST form and Stripe redirect checkout flows.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
@@ -20,15 +20,17 @@ describe('billingStore', () => {
 
   describe('fetchMe', () => {
     it('should fetch billing status successfully', async () => {
-      const mockData: billingApi.BillingMe = {
-        plan: 'PRO',
+      const mockData: billingApi.BillingMeDto = {
         subscription: {
           status: 'active' as const,
+          provider: 'liqpay',
           current_period_end: '2026-02-01T00:00:00Z',
-          cancel_at_period_end: false
+          cancel_at_period_end: false,
+          canceled_at: null
         },
-        entitlements: {
-          features: ['CONTACT_UNLOCK', 'UNLIMITED_INQUIRIES'] as any,
+        entitlement: {
+          plan_code: 'PRO',
+          features: ['CONTACT_UNLOCK', 'UNLIMITED_INQUIRIES'],
           expires_at: '2026-02-01T00:00:00Z'
         }
       }
@@ -39,19 +41,25 @@ describe('billingStore', () => {
       await store.fetchMe()
 
       expect(store.me).toEqual(mockData)
-      expect(store.currentPlan).toBe('PRO')
+      expect(store.currentPlanCode).toBe('PRO')
       expect(store.isSubscribed).toBe(true)
       expect(store.isPro).toBe(true)
       expect(store.isFree).toBe(false)
-      expect(store.error).toBeNull()
+      expect(store.lastError).toBeNull()
     })
 
     it('should handle FREE user correctly', async () => {
-      const mockData: billingApi.BillingMe = {
-        plan: 'FREE',
-        subscription: null,
-        entitlements: {
-          features: [] as any,
+      const mockData: billingApi.BillingMeDto = {
+        subscription: {
+          status: 'none' as const,
+          provider: null,
+          current_period_end: null,
+          cancel_at_period_end: false,
+          canceled_at: null
+        },
+        entitlement: {
+          plan_code: 'FREE',
+          features: [],
           expires_at: null
         }
       }
@@ -61,8 +69,8 @@ describe('billingStore', () => {
       const store = useBillingStore()
       await store.fetchMe()
 
-      expect(store.currentPlan).toBe('FREE')
-      expect(store.subscription).toBeNull()
+      expect(store.currentPlanCode).toBe('FREE')
+      expect(store.subscription?.status).toBe('none')
       expect(store.isSubscribed).toBe(false)
       expect(store.isFree).toBe(true)
       expect(store.isPro).toBe(false)
@@ -75,57 +83,47 @@ describe('billingStore', () => {
       const store = useBillingStore()
       
       await expect(store.fetchMe()).rejects.toThrow()
-      expect(store.error).toBeTruthy()
+      expect(store.lastError).toBeTruthy()
     })
   })
 
   describe('fetchPlans', () => {
     it('should fetch plans successfully', async () => {
-      const mockPlans = [
+      const mockPlans: billingApi.PlanDto[] = [
         {
-          id: 1,
-          name: 'Free',
-          slug: 'free',
-          description: 'Free plan',
-          price: 0,
-          price_decimal: '0.00',
-          currency: 'UAH',
+          code: 'FREE',
+          title: 'Free',
+          price: { amount: 0, currency: 'UAH' },
           interval: 'monthly',
-          lessons_per_month: 0,
           features: [],
           is_active: true,
-          is_featured: false,
-          display_order: 0
+          sort_order: 0
         },
         {
-          id: 2,
-          name: 'Pro',
-          slug: 'pro',
-          description: 'Pro plan',
-          price: 29900,
-          price_decimal: '299.00',
-          currency: 'UAH',
+          code: 'PRO',
+          title: 'Pro',
+          price: { amount: 299, currency: 'UAH' },
           interval: 'monthly',
-          lessons_per_month: 0,
           features: ['CONTACT_UNLOCK', 'UNLIMITED_INQUIRIES'],
           is_active: true,
-          is_featured: true,
-          display_order: 1
+          sort_order: 1
         }
       ]
 
-      vi.mocked(billingApi.getPlans).mockResolvedValue(mockPlans)
+      const mockResponse: billingApi.PlansResponse = { plans: mockPlans }
+      vi.mocked(billingApi.getPlans).mockResolvedValue(mockResponse)
 
       const store = useBillingStore()
       await store.fetchPlans()
 
       expect(store.plans).toEqual(mockPlans)
       expect(store.plans).toHaveLength(2)
-      expect(store.error).toBeNull()
+      expect(store.lastError).toBeNull()
     })
 
     it('should handle empty plans list', async () => {
-      vi.mocked(billingApi.getPlans).mockResolvedValue([])
+      const mockResponse: billingApi.PlansResponse = { plans: [] }
+      vi.mocked(billingApi.getPlans).mockResolvedValue(mockResponse)
 
       const store = useBillingStore()
       await store.fetchPlans()
@@ -135,7 +133,7 @@ describe('billingStore', () => {
     })
   })
 
-  describe('checkout', () => {
+  describe('startCheckout', () => {
     it('should initiate checkout successfully with LiqPay', async () => {
       const mockResponse: billingApi.CheckoutResponse = {
         provider: 'liqpay',
@@ -150,22 +148,38 @@ describe('billingStore', () => {
         }
       }
 
-      vi.mocked(billingApi.checkout).mockResolvedValue(mockResponse)
+      vi.mocked(billingApi.startCheckout).mockResolvedValue(mockResponse)
 
       const store = useBillingStore()
-      const result = await store.checkout('PRO')
+      const result = await store.startCheckout('PRO')
 
       expect(result).toEqual(mockResponse)
-      expect(billingApi.checkout).toHaveBeenCalledWith('PRO')
+      expect(billingApi.startCheckout).toHaveBeenCalledWith('PRO')
+    })
+
+    it('should handle Stripe checkout with redirect', async () => {
+      const mockResponse: billingApi.CheckoutResponse = {
+        provider: 'stripe',
+        session_id: 'cs_test_123',
+        checkout_url: 'https://checkout.stripe.com/session/cs_test_123'
+      }
+
+      vi.mocked(billingApi.startCheckout).mockResolvedValue(mockResponse)
+      const windowLocationSpy = vi.spyOn(window.location, 'href', 'set')
+
+      const store = useBillingStore()
+      await store.startCheckout('PRO')
+
+      expect(windowLocationSpy).toHaveBeenCalledWith(mockResponse.checkout_url)
     })
 
     it('should handle checkout error', async () => {
-      vi.mocked(billingApi.checkout).mockRejectedValue(new Error('Checkout failed'))
+      vi.mocked(billingApi.startCheckout).mockRejectedValue(new Error('Checkout failed'))
 
       const store = useBillingStore()
 
-      await expect(store.checkout('pro')).rejects.toThrow()
-      expect(store.error).toBeTruthy()
+      await expect(store.startCheckout('PRO')).rejects.toThrow()
+      expect(store.lastError).toBeTruthy()
     })
   })
 
@@ -176,27 +190,29 @@ describe('billingStore', () => {
         message: 'Subscription cancelled'
       }
 
-      const mockMeData: billingApi.BillingMe = {
-        plan: 'PRO',
+      const mockMeData: billingApi.BillingMeDto = {
         subscription: {
           status: 'active' as const,
+          provider: 'liqpay',
           current_period_end: '2026-02-01T00:00:00Z',
-          cancel_at_period_end: true
+          cancel_at_period_end: true,
+          canceled_at: null
         },
-        entitlements: {
-          features: ['CONTACT_UNLOCK'] as any,
+        entitlement: {
+          plan_code: 'PRO',
+          features: ['CONTACT_UNLOCK'],
           expires_at: '2026-02-01T00:00:00Z'
         }
       }
 
-      vi.mocked(billingApi.cancel).mockResolvedValue(mockCancelResponse)
+      vi.mocked(billingApi.cancelSubscription).mockResolvedValue(mockCancelResponse)
       vi.mocked(billingApi.getMe).mockResolvedValue(mockMeData)
 
       const store = useBillingStore()
       const result = await store.cancel(true)
 
       expect(result).toEqual(mockCancelResponse)
-      expect(billingApi.cancel).toHaveBeenCalledWith(true)
+      expect(billingApi.cancelSubscription).toHaveBeenCalledWith(true)
       expect(billingApi.getMe).toHaveBeenCalled()
       expect(store.me).toEqual(mockMeData)
     })
@@ -204,15 +220,17 @@ describe('billingStore', () => {
 
   describe('hasFeature', () => {
     it('should check if user has feature', async () => {
-      const mockData: billingApi.BillingMe = {
-        plan: 'PRO',
+      const mockData: billingApi.BillingMeDto = {
         subscription: {
           status: 'active' as const,
+          provider: 'liqpay',
           current_period_end: '2026-02-01T00:00:00Z',
-          cancel_at_period_end: false
+          cancel_at_period_end: false,
+          canceled_at: null
         },
-        entitlements: {
-          features: ['CONTACT_UNLOCK', 'UNLIMITED_INQUIRIES'] as any,
+        entitlement: {
+          plan_code: 'PRO',
+          features: ['CONTACT_UNLOCK', 'UNLIMITED_INQUIRIES'],
           expires_at: '2026-02-01T00:00:00Z'
         }
       }
@@ -228,10 +246,16 @@ describe('billingStore', () => {
     })
 
     it('should return false for FREE user', async () => {
-      const mockData = {
-        plan: 'FREE',
-        subscription: null,
-        entitlements: {
+      const mockData: billingApi.BillingMeDto = {
+        subscription: {
+          status: 'none' as const,
+          provider: null,
+          current_period_end: null,
+          cancel_at_period_end: false,
+          canceled_at: null
+        },
+        entitlement: {
+          plan_code: 'FREE',
           features: [],
           expires_at: null
         }
@@ -249,15 +273,17 @@ describe('billingStore', () => {
 
   describe('$reset', () => {
     it('should reset store state', async () => {
-      const mockData: billingApi.BillingMe = {
-        plan: 'PRO',
+      const mockData: billingApi.BillingMeDto = {
         subscription: {
           status: 'active' as const,
+          provider: 'liqpay',
           current_period_end: '2026-02-01T00:00:00Z',
-          cancel_at_period_end: false
+          cancel_at_period_end: false,
+          canceled_at: null
         },
-        entitlements: {
-          features: ['CONTACT_UNLOCK'] as any,
+        entitlement: {
+          plan_code: 'PRO',
+          features: ['CONTACT_UNLOCK'],
           expires_at: '2026-02-01T00:00:00Z'
         }
       }
@@ -273,7 +299,7 @@ describe('billingStore', () => {
 
       expect(store.me).toBeNull()
       expect(store.plans).toEqual([])
-      expect(store.error).toBeNull()
+      expect(store.lastError).toBeNull()
       expect(store.isLoading).toBe(false)
     })
   })

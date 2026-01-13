@@ -23,6 +23,7 @@
     "e2e": "playwright test",
     "e2e:smoke": "playwright test --project=ui-smoke",
     "lint:api-duplicates": "node tools/check-no-js-shadowing.mjs",
+    "lint:store-duplicates": "node scripts/check-store-duplicates.cjs",
     "security:check": "node scripts/security-manifest-check.mjs",
     "board:bench": "npx tsx scripts/board-bench.ts",
     "board:bench:ci": "npx tsx scripts/board-bench.ts"

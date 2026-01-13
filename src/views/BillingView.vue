@@ -83,7 +83,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useEntitlementsStore } from '@/stores/entitlementsStore'
-import { useBillingStore } from '@/stores/billingStore'
+import { useBillingStore } from '@/modules/billing/stores/billingStore'
 import { useI18n } from 'vue-i18n'
 import NotificationPreferences from '@/components/Notifications/NotificationPreferences.vue'
 
@@ -95,9 +95,9 @@ const isLoading = ref(true)
 
 const plan = computed(() => entitlementsStore.plan)
 const expiresAt = computed(() => entitlementsStore.expiresAt)
-const subscriptionStatus = computed(() => billingStore.subscriptionStatus)
-const currentPeriodEnd = computed(() => billingStore.currentPeriodEnd)
-const cancelAtPeriodEnd = computed(() => billingStore.cancelAtPeriodEnd)
+const subscriptionStatus = computed(() => billingStore.subscription?.status || 'none')
+const currentPeriodEnd = computed(() => billingStore.subscription?.current_period_end || null)
+const cancelAtPeriodEnd = computed(() => billingStore.subscription?.cancel_at_period_end || false)
 const isFree = computed(() => entitlementsStore.isFree)
 const isPro = computed(() => entitlementsStore.isPro)
 
@@ -120,7 +120,7 @@ onMounted(async () => {
   try {
     await Promise.all([
       entitlementsStore.loadEntitlements(),
-      billingStore.loadBillingMe()
+      billingStore.fetchMe()
     ])
   } catch (err) {
     console.error('Failed to load billing data:', err)

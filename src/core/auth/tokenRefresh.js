@@ -9,7 +9,7 @@ import { apiClient } from '../../utils/apiClient'
  * Configuration
  */
 const CONFIG = {
-  refreshEndpoint: '/v1/auth/refresh/',
+  refreshEndpoint: '/api/v1/auth/refresh/',
   tokenRefreshThresholdMs: 5 * 60 * 1000, // 5 minutes before expiry
   maxRefreshRetries: 3,
   refreshRetryDelayMs: 1000,
@@ -127,12 +127,12 @@ async function performRefresh() {
       })
 
       const data = response?.data ?? {}
-      const access_token = data?.access_token
-      const expires_in = data?.expires_in
+      const accessToken = data?.access || data?.access_token || data?.token
+      const expiresIn = data?.expires_in
 
-      if (access_token) {
+      if (accessToken) {
         // Update token expiry
-        tokenExpiresAt = parseJwtExpiry(access_token) || (Date.now() + (expires_in || 3600) * 1000)
+        tokenExpiresAt = parseJwtExpiry(accessToken) || (Date.now() + (expiresIn || 3600) * 1000)
         
         // Schedule next refresh
         scheduleRefresh()
@@ -140,7 +140,7 @@ async function performRefresh() {
         // Notify success
         onSessionRefreshed?.()
         
-        return { success: true, token: access_token }
+        return { success: true, token: accessToken }
       }
       
       throw new Error('No access token in refresh response')

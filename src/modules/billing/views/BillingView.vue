@@ -16,8 +16,8 @@
     </div>
 
     <!-- Error State -->
-    <Card v-else-if="billingStore.error" class="p-6 text-center">
-      <p class="text-danger mb-4">{{ billingStore.error }}</p>
+    <Card v-else-if="billingStore.lastError" class="p-6 text-center">
+      <p class="text-danger mb-4">{{ billingStore.lastError.message }}</p>
       <Button variant="secondary" @click="billingStore.fetchMe()">
         {{ $t('common.retry') }}
       </Button>
@@ -30,7 +30,7 @@
         <div class="flex items-start justify-between mb-4">
           <div>
             <p class="text-sm text-muted mb-1">{{ $t('billing.currentPlan') }}</p>
-            <h2 class="text-3xl font-bold">{{ billingStore.currentPlan }}</h2>
+            <h2 class="text-3xl font-bold">{{ billingStore.currentPlanCode }}</h2>
           </div>
           <Button variant="primary" @click="goToPlans">
             {{ $t('billing.viewPlans') }}
@@ -75,8 +75,8 @@
       <!-- Features Card -->
       <Card class="p-6">
         <h3 class="text-lg font-semibold mb-4">{{ $t('billing.yourFeatures') }}</h3>
-        <ul v-if="billingStore.entitlements?.features.length" class="space-y-2">
-          <li v-for="feature in billingStore.entitlements.features" :key="feature" class="flex items-start gap-2">
+        <ul v-if="billingStore.entitlement?.features.length" class="space-y-2">
+          <li v-for="feature in billingStore.entitlement.features" :key="feature" class="flex items-start gap-2">
             <Check :size="20" class="text-accent flex-shrink-0 mt-0.5" />
             <span class="text-sm">{{ $t(`billing.features.${feature}`) }}</span>
           </li>
@@ -98,25 +98,18 @@
             </p>
             <Button
               variant="danger"
-              :disabled="isCanceling"
+              :disabled="isCanceling || billingStore.isLoadingAction"
               @click="handleCancel"
             >
-              {{ isCanceling ? $t('billing.canceling') : $t('billing.cancelSubscription') }}
+              {{ isCanceling || billingStore.isLoadingAction ? $t('billing.canceling') : $t('billing.cancelSubscription') }}
             </Button>
           </div>
 
-          <!-- Resume Subscription -->
+          <!-- Canceled Info -->
           <div v-else>
-            <p class="text-sm text-muted mb-3">
-              {{ $t('billing.resumeDescription') }}
+            <p class="text-sm text-muted">
+              {{ $t('billing.cancelScheduled') }}
             </p>
-            <Button
-              variant="primary"
-              :disabled="isResuming"
-              @click="handleResume"
-            >
-              {{ isResuming ? $t('billing.resuming') : $t('billing.resumeSubscription') }}
-            </Button>
           </div>
         </div>
 
@@ -188,12 +181,14 @@ onMounted(async () => {
 
 function getStatusClass(status: SubscriptionStatus): string {
   const classes: Record<SubscriptionStatus, string> = {
+    none: 'bg-gray-100 text-gray-800',
     active: 'bg-success-light text-success-dark',
     canceled: 'bg-warning-light text-warning-dark',
     past_due: 'bg-danger-light text-danger',
     unpaid: 'bg-danger-light text-danger',
     incomplete: 'bg-warning-light text-warning-dark',
     trialing: 'bg-blue-100 text-blue-800',
+    expired: 'bg-gray-100 text-gray-800',
   }
   return classes[status] || 'bg-gray-100 text-gray-800'
 }
@@ -216,7 +211,7 @@ function goToPlans() {
 }
 
 async function handleCancel() {
-  if (!confirm(t('billing.confirmCancel'))) return
+  if (!confirm(t('billing.cancelConfirm'))) return
 
   isCanceling.value = true
   actionError.value = null
@@ -232,30 +227,9 @@ async function handleCancel() {
     }, 5000)
   } catch (err: any) {
     console.error('Cancel failed:', err)
-    actionError.value = err.response?.data?.error?.message || t('billing.cancelError')
+    actionError.value = err.message || t('billing.cancelError')
   } finally {
     isCanceling.value = false
-  }
-}
-
-async function handleResume() {
-  isResuming.value = true
-  actionError.value = null
-  actionSuccess.value = null
-
-  try {
-    await billingStore.resume()
-    actionSuccess.value = t('billing.resumeSuccess')
-    
-    // Success message will auto-hide after 5 seconds
-    setTimeout(() => {
-      actionSuccess.value = null
-    }, 5000)
-  } catch (err: any) {
-    console.error('Resume failed:', err)
-    actionError.value = err.response?.data?.error?.message || t('billing.resumeError')
-  } finally {
-    isResuming.value = false
   }
 }
 </script>

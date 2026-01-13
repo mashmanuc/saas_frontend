@@ -3560,11 +3560,16 @@
     "manageBilling": "Manage Billing",
     "basicFeatures": "Basic features",
     "features": {
-      "CONTACT_UNLOCK": "Contact Unlock",
+      "CONTACT_UNLOCK_LIMITED": "Limited Contact Unlock",
+      "CONTACT_UNLOCK": "Unlimited Contact Unlock",
       "UNLIMITED_INQUIRIES": "Unlimited Inquiries",
       "PRIORITY_SUPPORT": "Priority Support",
+      "ANALYTICS": "Analytics and Statistics",
       "ADVANCED_ANALYTICS": "Advanced Analytics",
-      "CONTACT_UNLOCK_LIMITED": "Limited Contact Unlock"
+      "API_ACCESS": "API Access",
+      "ADVANCED_MATCHING": "Advanced Matching",
+      "TEAM_MANAGEMENT": "Team Management",
+      "CUSTOM_BRANDING": "Custom Branding"
     },
     "faq": {
       "title": "Frequently Asked Questions",
@@ -3585,6 +3590,7 @@
       "subscriptionRequired": "Subscription required to continue",
       "limitExceeded": "You have reached the limit for your plan",
       "checkoutFailed": "Checkout failed",
+      "checkoutNotAllowed": "Checkout not allowed",
       "invalidPlan": "Invalid plan",
       "alreadySubscribed": "You already have an active subscription"
     },
@@ -3594,13 +3600,60 @@
       "learnMore": "Learn More"
     },
     "statuses": {
+      "none": "No Subscription",
       "active": "Active",
-      "canceled": "Canceled",
       "past_due": "Past Due",
-      "trialing": "Trial",
-      "unpaid": "Unpaid",
+      "canceled": "Canceled",
+      "expired": "Expired",
       "incomplete": "Incomplete",
-      "none": "No Subscription"
+      "trialing": "Trial",
+      "unpaid": "Unpaid"
+    },
+    "page": {
+      "title": "Your Plan",
+      "subtitle": "View your current plan and manage subscription"
+    },
+    "currentPlanCard": {
+      "title": "Current Plan",
+      "subtitle": "Your subscription information",
+      "planName": "Plan",
+      "renewsAt": "Renews on",
+      "expiresAtLabel": "Expires on",
+      "providerLabel": "Payment Provider",
+      "featuresTitle": "Features",
+      "cancelScheduledWarning": "Subscription will be canceled at period end",
+      "cancelButton": "Cancel Subscription"
+    },
+    "noPlanState": {
+      "title": "No Subscription",
+      "subtitle": "Choose a plan to access additional features"
+    },
+    "plansList": {
+      "title": "Available Plans",
+      "subtitle": "Choose the plan that fits your needs",
+      "empty": "No plans available"
+    },
+    "plan": {
+      "current": "Current",
+      "recommended": "Recommended",
+      "bestForTeams": "Best for Teams"
+    },
+    "planCard": {
+      "current": "Current",
+      "select": "Select",
+      "pay": "Pay",
+      "intervalMonthly": "month",
+      "intervalYearly": "year"
+    },
+    "errors": {
+      "loadFailed": "Failed to load billing data",
+      "plansLoadFailed": "Failed to load plans"
+    },
+    "retryButton": "Try Again"
+  },
+  "userProfile": {
+    "account": {
+      "yourPlan": "Your Plan"
     }
   },
   "commonExtended": {

@@ -14,28 +14,31 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { 
-  BillingMe, 
-  BillingPlan, 
+  BillingMeDto, 
+  PlanDto, 
   CheckoutResponse,
   CancelResponse 
 } from '../api/billingApi'
 import * as billingApi from '../api/billingApi'
 import { submitCheckoutForm, validateCheckoutResponse } from '../utils/checkoutHelper'
 
-export const useBillingStore = defineStore('billing', () => {
+export const useBillingStore = defineStore('billing-v074', () => {
   // State
-  const me = ref<BillingMe | null>(null)
-  const plans = ref<BillingPlan[]>([])
+  const me = ref<BillingMeDto | null>(null)
+  const plans = ref<PlanDto[]>([])
   const isLoading = ref(false)
-  const error = ref<string | null>(null)
+  const isLoadingPlans = ref(false)
+  const isLoadingAction = ref(false)
+  const lastError = ref<any>(null)
 
   // Computed
-  const currentPlan = computed(() => me.value?.plan || 'FREE')
+  const currentPlanCode = computed(() => me.value?.entitlement?.plan_code || 'FREE')
+  const currentPlan = computed(() => me.value?.entitlement?.plan_code || 'FREE')
   const subscription = computed(() => me.value?.subscription || null)
-  const entitlements = computed(() => me.value?.entitlements || null)
+  const entitlement = computed(() => me.value?.entitlement || null)
   const isSubscribed = computed(() => subscription.value?.status === 'active')
   const hasFeature = computed(() => (feature: string) => {
-    return entitlements.value?.features.includes(feature as any) || false
+    return entitlement.value?.features?.includes(feature) || false
   })
   const isPro = computed(() => currentPlan.value === 'PRO')
   const isBusiness = computed(() => currentPlan.value === 'BUSINESS')
@@ -51,13 +54,13 @@ export const useBillingStore = defineStore('billing', () => {
    */
   async function fetchMe() {
     isLoading.value = true
-    error.value = null
+    lastError.value = null
 
     try {
       me.value = await billingApi.getMe()
     } catch (err: any) {
       console.error('Failed to fetch billing status:', err)
-      error.value = err.response?.data?.error?.message || 'Failed to load billing status'
+      lastError.value = err
       throw err
     } finally {
       isLoading.value = false
@@ -70,17 +73,45 @@ export const useBillingStore = defineStore('billing', () => {
    * Plans come from backend, NOT hardcoded in FE.
    */
   async function fetchPlans() {
-    isLoading.value = true
-    error.value = null
+    isLoadingPlans.value = true
+    lastError.value = null
 
     try {
-      plans.value = await billingApi.getPlans()
+      const response = await billingApi.getPlans()
+      
+      if (import.meta.env.DEV) {
+        console.debug('[billingStore] Raw API response:', response)
+        console.debug('[billingStore] Plans array:', response?.plans)
+      }
+      
+      const normalizedPlans = (response?.plans ?? [])
+        .filter(plan => plan && plan.is_active !== false)
+        .map((plan, index) => {
+          const safeSort = typeof plan.sort_order === 'number' ? plan.sort_order : index * 10
+          return {
+            ...plan,
+            sort_order: safeSort,
+            interval: plan?.interval || 'monthly',
+            price: {
+              amount: plan?.price?.amount ?? 0,
+              currency: plan?.price?.currency || 'UAH'
+            }
+          }
+        })
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+
+      plans.value = normalizedPlans
+      
+      if (import.meta.env.DEV) {
+        console.debug('[billingStore] Normalized plans:', normalizedPlans)
+        console.debug('[billingStore] Plans count:', normalizedPlans.length)
+      }
     } catch (err: any) {
       console.error('Failed to fetch plans:', err)
-      error.value = err.response?.data?.error?.message || 'Failed to load plans'
+      lastError.value = err
       throw err
     } finally {
-      isLoading.value = false
+      isLoadingPlans.value = false
     }
   }
 
@@ -94,29 +125,32 @@ export const useBillingStore = defineStore('billing', () => {
    * @param planCode - Plan identifier (e.g., 'PRO', 'FREE')
    * @returns Checkout response with session info
    */
-  async function checkout(planCode: string): Promise<CheckoutResponse> {
-    isLoading.value = true
-    error.value = null
+  async function startCheckout(planCode: string): Promise<CheckoutResponse> {
+    isLoadingAction.value = true
+    lastError.value = null
 
     try {
-      const response = await billingApi.checkout(planCode)
+      const response = await billingApi.startCheckout(planCode)
       
-      // Validate response before submission
-      validateCheckoutResponse(response.provider, response.session_id, response.checkout)
-      
-      // Submit form to payment provider (causes navigation)
-      submitCheckoutForm(response.checkout)
-      
-      // Note: After form submission, browser navigates away.
-      // When user returns, route guard or component should call fetchMe().
+      // Handle different providers
+      if (response.provider === 'liqpay' && response.checkout) {
+        // LiqPay: POST form submission
+        validateCheckoutResponse(response.provider, response.session_id, response.checkout)
+        submitCheckoutForm(response.checkout)
+      } else if (response.provider === 'stripe' && response.checkout_url) {
+        // Stripe: Redirect to checkout URL
+        window.location.href = response.checkout_url
+      } else {
+        throw new Error(`Unsupported provider: ${response.provider}`)
+      }
       
       return response
     } catch (err: any) {
       console.error('Checkout failed:', err)
-      error.value = err.response?.data?.error?.message || 'Checkout failed'
+      lastError.value = err
       throw err
     } finally {
-      isLoading.value = false
+      isLoadingAction.value = false
     }
   }
 
@@ -128,11 +162,11 @@ export const useBillingStore = defineStore('billing', () => {
    * @param atPeriodEnd - If true, cancel at end of billing period
    */
   async function cancel(atPeriodEnd: boolean = true): Promise<CancelResponse> {
-    isLoading.value = true
-    error.value = null
+    isLoadingAction.value = true
+    lastError.value = null
 
     try {
-      const response = await billingApi.cancel(atPeriodEnd)
+      const response = await billingApi.cancelSubscription(atPeriodEnd)
       
       // CRITICAL: Refetch billing status after cancel
       await fetchMe()
@@ -140,43 +174,19 @@ export const useBillingStore = defineStore('billing', () => {
       return response
     } catch (err: any) {
       console.error('Cancel failed:', err)
-      error.value = err.response?.data?.error?.message || 'Failed to cancel subscription'
+      lastError.value = err
       throw err
     } finally {
-      isLoading.value = false
+      isLoadingAction.value = false
     }
   }
 
-  /**
-   * Resume a canceled subscription
-   * 
-   * After resume, automatically refetch billing status.
-   */
-  async function resume(): Promise<CancelResponse> {
-    isLoading.value = true
-    error.value = null
-
-    try {
-      const response = await billingApi.resume()
-      
-      // CRITICAL: Refetch billing status after resume
-      await fetchMe()
-      
-      return response
-    } catch (err: any) {
-      console.error('Resume failed:', err)
-      error.value = err.response?.data?.error?.message || 'Failed to resume subscription'
-      throw err
-    } finally {
-      isLoading.value = false
-    }
-  }
 
   /**
    * Clear error state
    */
   function clearError() {
-    error.value = null
+    lastError.value = null
   }
 
   /**
@@ -186,7 +196,9 @@ export const useBillingStore = defineStore('billing', () => {
     me.value = null
     plans.value = []
     isLoading.value = false
-    error.value = null
+    isLoadingPlans.value = false
+    isLoadingAction.value = false
+    lastError.value = null
   }
 
   return {
@@ -194,12 +206,15 @@ export const useBillingStore = defineStore('billing', () => {
     me,
     plans,
     isLoading,
-    error,
+    isLoadingPlans,
+    isLoadingAction,
+    lastError,
     
     // Computed
+    currentPlanCode,
     currentPlan,
     subscription,
-    entitlements,
+    entitlement,
     isSubscribed,
     hasFeature,
     isPro,
@@ -209,9 +224,8 @@ export const useBillingStore = defineStore('billing', () => {
     // Actions
     fetchMe,
     fetchPlans,
-    checkout,
+    startCheckout,
     cancel,
-    resume,
     clearError,
     $reset,
   }

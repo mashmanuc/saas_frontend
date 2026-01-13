@@ -14,13 +14,19 @@ if (import.meta.env.VITE_CALENDAR_DEBUG === 'true') {
   })
 }
 
-axios.defaults.withCredentials = false
+// NOTE: do not set global axios defaults; the API instance below controls credentials
 
 const api = axios.create({
   baseURL: import.meta.env.DEV ? '/api' : (import.meta.env.VITE_API_BASE_URL || '/api'),
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
 })
+
+const getCookie = (name) => {
+  if (typeof document === 'undefined') return null
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`))
+  return match ? decodeURIComponent(match[1]) : null
+}
 
 const createRequestId = () =>
   (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`)
@@ -32,6 +38,7 @@ api.interceptors.request.use(
     loader.start()
 
     config.headers = config.headers || {}
+    config.withCredentials = true
 
     if (store.access) {
       config.headers.Authorization = `Bearer ${store.access}`
@@ -43,14 +50,19 @@ api.interceptors.request.use(
 
     const method = String(config.method || 'get').toUpperCase()
     const isStateChanging = method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE'
-    if (isStateChanging && store.csrfToken && !config.headers['X-CSRF-Token']) {
-      config.headers['X-CSRF-Token'] = store.csrfToken
+    if (isStateChanging && !config.headers['X-CSRF-Token']) {
+      const csrfToken = store.csrfToken || getCookie('csrf') || getCookie('csrftoken')
+      if (csrfToken) {
+        config.headers['X-CSRF-Token'] = csrfToken
+      }
     }
 
     // Guard: prevent double /api/api prefix (v0.59 fix)
     if (config.url && config.url.startsWith('/api/')) {
-      console.error('[apiClient] INVALID URL: path should not start with /api/ (baseURL already includes it)', config.url)
-      throw new Error(`Invalid API path: ${config.url} - remove /api/ prefix (baseURL already includes it)`)
+      if (import.meta.env.DEV) {
+        console.debug('[apiClient] Adjusting API path (removed /api prefix):', config.url)
+      }
+      config.url = config.url.replace(/^\/api/, '')
     }
 
     return config
@@ -98,8 +110,8 @@ api.interceptors.response.use(
     }
 
     const url = original.url || ''
-    const isAuthRefresh = url.includes('/v1/auth/refresh')
-    const isAuthLogout = url.includes('/v1/auth/logout')
+    const isAuthRefresh = url.includes('/auth/refresh')
+    const isAuthLogout = url.includes('/auth/logout')
 
     const notifySessionExpired = () => {
       if (!store.sessionExpiredNotified) {
