@@ -2,13 +2,8 @@
   "locales": {
     "en": {
       "status": "ok",
-      "totalKeys": 2787,
-      "missing": [
-        "billing.pendingPlan.description",
-        "billing.pendingPlan.title",
-        "billing.success.pendingActivation",
-        "billing.success.pendingMessage"
-      ],
+      "totalKeys": 2791,
+      "missing": [],
       "extra": [],
       "empty": [
         "board.availability.slotEditor.strategies.${strategy.name}.title",
@@ -28,7 +23,7 @@
   "summary": {
     "totalKeys": 2791,
     "locales": 2,
-    "errors": 1,
+    "errors": 0,
     "warnings": 2
   },
   "usage": {

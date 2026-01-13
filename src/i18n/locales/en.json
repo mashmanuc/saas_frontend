@@ -3645,11 +3645,19 @@
       "backToDashboard": "Back to dashboard",
       "sessionExpired": "Session refreshing",
       "pleaseLogin": "Please log in again to view your subscription",
-      "loginAgain": "Log in again"
+      "loginAgain": "Log in again",
+      "pendingActivation": "Plan is activating. This can take a couple of minutes.",
+      "pendingMessage": "We’re confirming the payment. As soon as LiqPay finishes verification, your subscription will activate automatically."
     },
     "pendingPlan": {
-      "title": "Plan is activating",
-      "description": "Your new plan is waiting for payment confirmation. Access will update right after finalization."
+      "title": "Plan {plan} is activating",
+      "description": "Your new plan is waiting for payment confirmation. Access will update right after finalization.",
+      "manualRefreshHint": "Auto-refresh stopped. Click 'Refresh Status' to check.",
+      "expiredTitle": "Waiting time expired",
+      "expiredDescription": "Payment confirmation took longer than expected. Click 'Refresh Status' or contact support."
+    },
+    "actions": {
+      "refreshStatus": "Refresh Status"
     },
     "page": {
       "title": "Your Plan",

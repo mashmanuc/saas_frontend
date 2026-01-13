@@ -25,7 +25,36 @@
 
     <!-- Billing Content -->
     <div v-else class="space-y-6">
-      <!-- v0.76.3: Pending Plan Banner -->
+      <!-- v0.78.0: TTL Expired Warning -->
+      <Card v-if="showExpiredWarning" class="p-4 bg-yellow-50 border-yellow-200">
+        <div class="flex items-start gap-3">
+          <div class="flex-shrink-0 mt-0.5">
+            <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <div class="flex-1">
+            <p class="text-sm font-medium text-yellow-900">
+              {{ $t('billing.pendingPlan.expiredTitle') }}
+            </p>
+            <p class="text-xs text-yellow-700 mt-1">
+              {{ $t('billing.pendingPlan.expiredDescription') }}
+            </p>
+          </div>
+          <div class="flex-shrink-0">
+            <Button 
+              variant="secondary" 
+              size="sm"
+              :disabled="isRefreshing"
+              @click="handleManualRefresh"
+            >
+              {{ isRefreshing ? $t('billing.loading') : $t('billing.actions.refreshStatus') }}
+            </Button>
+          </div>
+        </div>
+      </Card>
+
+      <!-- v0.78.0: Pending Plan Banner with Auto-refresh -->
       <Card v-if="billingStore.hasPendingPlan" class="p-4 bg-blue-50 border-blue-200">
         <div class="flex items-start gap-3">
           <div class="flex-shrink-0 mt-0.5">
@@ -40,6 +69,20 @@
             <p class="text-xs text-blue-700 mt-1">
               {{ $t('billing.pendingPlan.description') }}
             </p>
+            <!-- v0.78.0: Manual refresh hint after auto-refresh stops -->
+            <p v-if="autoRefreshStopped" class="text-xs text-blue-600 mt-2 font-medium">
+              {{ $t('billing.pendingPlan.manualRefreshHint') }}
+            </p>
+          </div>
+          <div class="flex-shrink-0">
+            <Button 
+              variant="secondary" 
+              size="sm"
+              :disabled="isRefreshing"
+              @click="handleManualRefresh"
+            >
+              {{ isRefreshing ? $t('billing.loading') : $t('billing.actions.refreshStatus') }}
+            </Button>
           </div>
         </div>
       </Card>
@@ -171,7 +214,7 @@
  * - No hardcoded feature logic
  */
 
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Check } from 'lucide-vue-next'
@@ -190,13 +233,102 @@ const isResuming = ref(false)
 const actionError = ref<string | null>(null)
 const actionSuccess = ref<string | null>(null)
 
+// v0.78.0: Auto-refresh state
+const isRefreshing = ref(false)
+const autoRefreshStopped = ref(false)
+let autoRefreshTimer: ReturnType<typeof setInterval> | null = null
+let autoRefreshStartTime: number | null = null
+const AUTO_REFRESH_INTERVAL = 30000 // 30 seconds
+const AUTO_REFRESH_MAX_DURATION = 600000 // 10 minutes
+
+// v0.78.0: TTL expired state
+const hadPendingPlan = ref(false)
+const showExpiredWarning = ref(false)
+const expiredWarningDismissed = ref(false)
+
 onMounted(async () => {
   try {
     await billingStore.fetchMe()
+    // Start auto-refresh if pending plan exists
+    if (billingStore.hasPendingPlan) {
+      startAutoRefresh()
+    }
   } catch (err) {
     console.error('Failed to load billing data:', err)
   }
 })
+
+onUnmounted(() => {
+  stopAutoRefresh()
+})
+
+// Watch for pending plan changes to start/stop auto-refresh
+watch(() => billingStore.hasPendingPlan, (hasPending, hadPending) => {
+  if (hasPending && !autoRefreshTimer) {
+    startAutoRefresh()
+    hadPendingPlan.value = true
+  } else if (!hasPending) {
+    stopAutoRefresh()
+    
+    // v0.78.0: Check if TTL expired (pending disappeared but entitlement still FREE)
+    if (hadPendingPlan.value && billingStore.currentPlanCode === 'FREE' && !expiredWarningDismissed.value) {
+      showExpiredWarning.value = true
+      // Auto-hide after 30 seconds
+      setTimeout(() => {
+        showExpiredWarning.value = false
+      }, 30000)
+    }
+  }
+})
+
+// Track initial pending state
+watch(() => billingStore.hasPendingPlan, (hasPending) => {
+  if (hasPending) {
+    hadPendingPlan.value = true
+  }
+}, { immediate: true })
+
+function startAutoRefresh() {
+  if (autoRefreshTimer) return // Already running
+  
+  autoRefreshStartTime = Date.now()
+  autoRefreshStopped.value = false
+  
+  autoRefreshTimer = setInterval(async () => {
+    // Check if max duration exceeded
+    if (autoRefreshStartTime && Date.now() - autoRefreshStartTime >= AUTO_REFRESH_MAX_DURATION) {
+      stopAutoRefresh()
+      autoRefreshStopped.value = true
+      return
+    }
+    
+    // Auto-refresh
+    try {
+      await billingStore.fetchMe()
+    } catch (err) {
+      console.error('Auto-refresh failed:', err)
+    }
+  }, AUTO_REFRESH_INTERVAL)
+}
+
+function stopAutoRefresh() {
+  if (autoRefreshTimer) {
+    clearInterval(autoRefreshTimer)
+    autoRefreshTimer = null
+    autoRefreshStartTime = null
+  }
+}
+
+async function handleManualRefresh() {
+  isRefreshing.value = true
+  try {
+    await billingStore.fetchMe()
+  } catch (err) {
+    console.error('Manual refresh failed:', err)
+  } finally {
+    isRefreshing.value = false
+  }
+}
 
 function getStatusClass(status: SubscriptionStatus): string {
   const classes: Record<SubscriptionStatus, string> = {

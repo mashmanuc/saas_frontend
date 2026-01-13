@@ -32,7 +32,11 @@ describe('billingStore', () => {
           plan_code: 'PRO',
           features: ['CONTACT_UNLOCK', 'UNLIMITED_INQUIRIES'],
           expires_at: '2026-02-01T00:00:00Z'
-        }
+        },
+        pending_plan_code: null,
+        pending_since: null,
+        display_plan_code: 'PRO',
+        subscription_status: 'active'
       }
 
       vi.mocked(billingApi.getMe).mockResolvedValue(mockData)
@@ -61,7 +65,11 @@ describe('billingStore', () => {
           plan_code: 'FREE',
           features: [],
           expires_at: null
-        }
+        },
+        pending_plan_code: null,
+        pending_since: null,
+        display_plan_code: 'FREE',
+        subscription_status: 'none'
       }
 
       vi.mocked(billingApi.getMe).mockResolvedValue(mockData)
@@ -202,7 +210,11 @@ describe('billingStore', () => {
           plan_code: 'PRO',
           features: ['CONTACT_UNLOCK'],
           expires_at: '2026-02-01T00:00:00Z'
-        }
+        },
+        pending_plan_code: null,
+        pending_since: null,
+        display_plan_code: 'PRO',
+        subscription_status: 'active'
       }
 
       vi.mocked(billingApi.cancelSubscription).mockResolvedValue(mockCancelResponse)
@@ -232,7 +244,11 @@ describe('billingStore', () => {
           plan_code: 'PRO',
           features: ['CONTACT_UNLOCK', 'UNLIMITED_INQUIRIES'],
           expires_at: '2026-02-01T00:00:00Z'
-        }
+        },
+        pending_plan_code: null,
+        pending_since: null,
+        display_plan_code: 'PRO',
+        subscription_status: 'active'
       }
 
       vi.mocked(billingApi.getMe).mockResolvedValue(mockData)
@@ -258,7 +274,11 @@ describe('billingStore', () => {
           plan_code: 'FREE',
           features: [],
           expires_at: null
-        }
+        },
+        pending_plan_code: null,
+        pending_since: null,
+        display_plan_code: 'FREE',
+        subscription_status: 'none'
       }
 
       vi.mocked(billingApi.getMe).mockResolvedValue(mockData)
@@ -285,7 +305,11 @@ describe('billingStore', () => {
           plan_code: 'PRO',
           features: ['CONTACT_UNLOCK'],
           expires_at: '2026-02-01T00:00:00Z'
-        }
+        },
+        pending_plan_code: null,
+        pending_since: null,
+        display_plan_code: 'PRO',
+        subscription_status: 'active'
       }
 
       vi.mocked(billingApi.getMe).mockResolvedValue(mockData)
@@ -301,6 +325,102 @@ describe('billingStore', () => {
       expect(store.plans).toEqual([])
       expect(store.lastError).toBeNull()
       expect(store.isLoading).toBe(false)
+    })
+  })
+
+  // v0.78.0: Pending plan tests
+  describe('pending plan (v0.78.0)', () => {
+    it('should expose pending plan data when present', async () => {
+      const mockData: billingApi.BillingMeDto = {
+        subscription: {
+          status: 'none' as const,
+          provider: null,
+          current_period_end: null,
+          cancel_at_period_end: false,
+          canceled_at: null
+        },
+        entitlement: {
+          plan_code: 'FREE',
+          features: [],
+          expires_at: null
+        },
+        pending_plan_code: 'PRO',
+        pending_since: '2026-01-13T20:00:00Z',
+        display_plan_code: 'PRO',
+        subscription_status: 'none'
+      }
+
+      vi.mocked(billingApi.getMe).mockResolvedValue(mockData)
+
+      const store = useBillingStore()
+      await store.fetchMe()
+
+      expect(store.pendingPlanCode).toBe('PRO')
+      expect(store.pendingSince).toBe('2026-01-13T20:00:00Z')
+      expect(store.displayPlanCode).toBe('PRO')
+      expect(store.hasPendingPlan).toBe(true)
+      expect(store.subscriptionStatus).toBe('none')
+    })
+
+    it('should not have pending plan when null', async () => {
+      const mockData: billingApi.BillingMeDto = {
+        subscription: {
+          status: 'active' as const,
+          provider: 'liqpay',
+          current_period_end: '2026-02-01T00:00:00Z',
+          cancel_at_period_end: false,
+          canceled_at: null
+        },
+        entitlement: {
+          plan_code: 'PRO',
+          features: ['CONTACT_UNLOCK'],
+          expires_at: '2026-02-01T00:00:00Z'
+        },
+        pending_plan_code: null,
+        pending_since: null,
+        display_plan_code: 'PRO',
+        subscription_status: 'active'
+      }
+
+      vi.mocked(billingApi.getMe).mockResolvedValue(mockData)
+
+      const store = useBillingStore()
+      await store.fetchMe()
+
+      expect(store.pendingPlanCode).toBeNull()
+      expect(store.pendingSince).toBeNull()
+      expect(store.hasPendingPlan).toBe(false)
+      expect(store.displayPlanCode).toBe('PRO')
+    })
+
+    it('should use displayPlanCode over currentPlanCode when pending', async () => {
+      const mockData: billingApi.BillingMeDto = {
+        subscription: {
+          status: 'none' as const,
+          provider: null,
+          current_period_end: null,
+          cancel_at_period_end: false,
+          canceled_at: null
+        },
+        entitlement: {
+          plan_code: 'FREE',
+          features: [],
+          expires_at: null
+        },
+        pending_plan_code: 'BUSINESS',
+        pending_since: '2026-01-13T20:00:00Z',
+        display_plan_code: 'BUSINESS',
+        subscription_status: 'none'
+      }
+
+      vi.mocked(billingApi.getMe).mockResolvedValue(mockData)
+
+      const store = useBillingStore()
+      await store.fetchMe()
+
+      expect(store.currentPlanCode).toBe('FREE')
+      expect(store.displayPlanCode).toBe('BUSINESS')
+      expect(store.hasPendingPlan).toBe(true)
     })
   })
 })
