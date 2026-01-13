@@ -92,9 +92,9 @@ MCP Puppeteer сервер впав/не підключився
 Open http://127.0.0.1:5173.
 Wait for page load.
 Login with provided credentials.
-After login, open Calendar → enable v0.55.
-Capture console errors and network requests to /ws/v1/calendar/week/v055.
-Take a screenshot of the calendar.
+After login,
+перейди з мобільної версії на десктопну
+Зайди на "Ваш план"
 
 ### !!!!!
 
