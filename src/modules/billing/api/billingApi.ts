@@ -123,8 +123,10 @@ export async function startCheckout(planCode: string): Promise<CheckoutResponse>
     if (!planCode) {
       throw new Error('Plan code is required for checkout')
     }
-    
-    const payload: CheckoutRequest = { plan: planCode }
+
+    const normalizedPlan = planCode.trim().toUpperCase()
+
+    const payload: CheckoutRequest = { plan: normalizedPlan }
     return await apiClient.post<CheckoutResponse>(
       '/v1/billing/checkout/',
       payload
