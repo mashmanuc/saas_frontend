@@ -12,10 +12,37 @@ export function getInitialLocale() {
   if (typeof window === 'undefined') {
     return DEFAULT_LOCALE
   }
+  
+  // Check if user has manually selected a language
   const stored = localStorage.getItem(STORAGE_KEY)
   if (stored && SUPPORTED_LOCALES.includes(stored)) {
     return stored
   }
+  
+  // Auto-detect Ukrainian for UA users (LiqPay compliance #8)
+  // Method 1: Check browser language
+  const browserLang = navigator.language || navigator.userLanguage
+  if (browserLang && browserLang.toLowerCase().startsWith('uk')) {
+    return 'uk'
+  }
+  
+  // Method 2: Check timezone (fallback for Ukraine)
+  try {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    const ukraineTimezones = [
+      'Europe/Kiev',
+      'Europe/Kyiv',
+      'Europe/Uzhgorod',
+      'Europe/Zaporozhye',
+      'Europe/Simferopol'
+    ]
+    if (ukraineTimezones.includes(timezone)) {
+      return 'uk'
+    }
+  } catch (e) {
+    // Timezone detection failed, continue
+  }
+  
   return DEFAULT_LOCALE
 }
 

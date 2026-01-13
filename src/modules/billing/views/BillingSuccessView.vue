@@ -24,8 +24,13 @@
               {{ $t('billing.currentPlanCard.planName') }}
             </span>
             <span class="text-lg font-bold text-foreground">
-              {{ billingStore.currentPlanCode }}
+              {{ billingStore.displayPlanCode }}
             </span>
+          </div>
+          
+          <!-- v0.76.3: Show pending indicator if plan is pending -->
+          <div v-if="billingStore.hasPendingPlan" class="mb-2 text-xs text-blue-600">
+            {{ $t('billing.success.pendingActivation') }}
           </div>
           
           <div class="flex items-center justify-between text-sm">
@@ -65,6 +70,26 @@
         <div class="h-10 animate-pulse rounded bg-muted"></div>
         <div class="h-10 animate-pulse rounded bg-muted"></div>
       </div>
+
+      <!-- FE-75.1: Recovery UI for auth errors -->
+      <div v-else-if="authError" class="space-y-4">
+        <div class="rounded-lg border border-warning bg-warning-light/20 p-4 text-sm">
+          <p class="font-medium text-warning-dark">
+            {{ $t('billing.success.sessionExpired') }}
+          </p>
+          <p class="mt-1 text-muted-foreground">
+            {{ $t('billing.success.pleaseLogin') }}
+          </p>
+        </div>
+        
+        <Button
+          variant="primary"
+          class="w-full"
+          @click="handleRecovery"
+        >
+          {{ $t('billing.success.loginAgain') }}
+        </Button>
+      </div>
     </Card>
   </div>
 </template>
@@ -85,6 +110,18 @@ const isLoading = ref(true)
 
 const statusMessage = computed(() => {
   const status = billingStore.subscription?.status
+  const planCode = billingStore.currentPlanCode
+  const hasPending = billingStore.hasPendingPlan
+  
+  // v0.76.3: Show pending message if plan is pending
+  if (hasPending) {
+    return t('billing.success.pendingMessage')
+  }
+  
+  // FE-76.2.1: Check plan_code, not just subscription status
+  if (planCode && planCode !== 'FREE') {
+    return t('billing.success.activated')
+  }
   
   if (!status || status === 'none') {
     return t('billing.success.processing')
@@ -123,16 +160,112 @@ function goToDashboard() {
   router.push('/')
 }
 
+const authError = ref(false)
+const pollingAttempts = ref(0)
+const maxPollingAttempts = 10
+const pollingTimeoutId = ref<number | null>(null)
+
+async function handleRecovery() {
+  // FE-75.1: Recovery scenario - logout and redirect to login
+  const { useAuthStore } = await import('@/modules/auth/store/authStore')
+  const authStore = useAuthStore()
+  await authStore.logout()
+  router.push({ 
+    name: 'login', 
+    query: { redirect: '/billing', message: 'session_expired' } 
+  })
+}
+
+// FE-76.2.1: Poll /billing/me with status-aware logic (check plan_code)
+async function pollStatus() {
+  if (pollingAttempts.value >= maxPollingAttempts) {
+    console.log('Polling stopped: max attempts reached')
+    return
+  }
+  
+  try {
+    await billingStore.fetchMe()
+    
+    const planCode = billingStore.currentPlanCode
+    const status = billingStore.subscription?.status
+    
+    // FE-76.2.1: Stop polling if plan_code changed to PRO/BUSINESS
+    if (planCode && planCode !== 'FREE') {
+      console.log('Plan activated, stopping poll:', planCode)
+      const { notifySuccess } = await import('@/utils/notify')
+      notifySuccess('План активовано!')
+      return
+    }
+    
+    // If subscription is active but plan still FREE, continue polling
+    // (edge case: entitlement sync might be delayed)
+    if (status === 'active' && planCode === 'FREE') {
+      console.log('Subscription active but plan still FREE, continue polling')
+      pollingAttempts.value++
+      const delay = Math.min(pollingAttempts.value * 1000, 3000)
+      
+      pollingTimeoutId.value = window.setTimeout(() => {
+        pollStatus()
+      }, delay)
+      return
+    }
+    
+    // If still pending/incomplete, continue polling
+    if (!status || status === 'incomplete' || status === 'trialing' || status === 'none') {
+      pollingAttempts.value++
+      const delay = Math.min(pollingAttempts.value * 1000, 3000) // 1s, 2s, 3s (max)
+      
+      pollingTimeoutId.value = window.setTimeout(() => {
+        pollStatus()
+      }, delay)
+    }
+  } catch (error) {
+    console.error('Polling error:', error)
+    // Stop polling on error
+  }
+}
+
 onMounted(async () => {
   try {
-    await Promise.all([
-      billingStore.fetchMe(),
-      billingStore.fetchPlans()
-    ])
-  } catch (error) {
+    // FE-76.2.1: Single attempt to fetch billing data, no parallel spam
+    await billingStore.fetchMe()
+    
+    const planCode = billingStore.currentPlanCode
+    const status = billingStore.subscription?.status
+    
+    // FE-76.2.1: Start polling if plan_code is still FREE (waiting for activation)
+    // This handles the case where user returned from LiqPay but backend hasn't finalized yet
+    if (planCode === 'FREE' || !planCode) {
+      console.log('Plan still FREE, starting polling for activation')
+      // Start polling after 1 second
+      pollingTimeoutId.value = window.setTimeout(() => {
+        pollStatus()
+      }, 1000)
+    } else {
+      // Plan already activated, show success immediately
+      console.log('Plan already activated:', planCode)
+      const { notifySuccess } = await import('@/utils/notify')
+      notifySuccess('План активовано!')
+    }
+  } catch (error: any) {
     console.error('Failed to fetch billing data:', error)
+    
+    // FE-76.2.2: Handle 401 errors gracefully (no parallel refresh cycles)
+    if (error?.response?.status === 401 || error?.code === 'auth_refresh_missing') {
+      authError.value = true
+      const { notifyWarning } = await import('@/utils/notify')
+      notifyWarning('Сесія оновлюється. Будь ласка, увійдіть ще раз.')
+    }
   } finally {
     isLoading.value = false
+  }
+})
+
+// Cleanup polling on unmount
+import { onUnmounted } from 'vue'
+onUnmounted(() => {
+  if (pollingTimeoutId.value) {
+    clearTimeout(pollingTimeoutId.value)
   }
 })
 </script>

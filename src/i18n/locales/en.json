@@ -31,21 +31,15 @@
       "lessonsCount": "Lessons"
     },
     "calendar": {
-      "title": "My Calendar",
       "allTutors": "All tutors",
-      "noEvents": "No scheduled lessons",
       "eventDetails": "Lesson Details",
       "messageTutor": "Message Tutor",
       "joinLesson": "Join Lesson",
-      "joinRoom": "Join Lesson",
       "joinError": "Failed to join the lesson",
       "tooEarly": "Too early to join. Try again 15 minutes before the start",
       "expired": "The time to join has passed. The lesson has ended",
       "noAccess": "You don't have access to this lesson",
-      "notFound": "Lesson not found",
-      "roomNotAvailableYet": "The lesson hasn't started yet. Try again 15 minutes before the start",
-      "roomExpired": "The lesson has ended. Cannot join",
-      "notParticipant": "You are not a participant of this lesson"
+      "notFound": "Lesson not found"
     }
   },
   "limits": {
@@ -56,8 +50,6 @@
     "nearLimit": "Warning! Only {remaining} requests remaining",
     "limitReached": "Limit reached. Resets {resetDate}",
     "types": {
-      "student_request": "tutor requests",
-      "tutor_accept": "request accepts",
       "${limit_type}": "{limit_type}"
     }
   },
@@ -66,43 +58,43 @@
   },
   "userProfile": {
     "account": {
-      "title": "Account",
-      "subtitle": "Your basic user details.",
-      "firstName": "First name",
-      "lastName": "Last name",
-      "username": "Username",
-      "timezone": "Timezone",
-      "save": "Save",
-      "loadError": "Failed to load account.",
-      "saveSuccess": "Saved.",
-      "saveError": "Failed to save.",
-      "avatarUpdated": "Avatar updated.",
-      "avatarUpdateError": "Failed to update avatar.",
-      "avatarDeleted": "Avatar deleted.",
-      "avatarDeleteError": "Failed to delete avatar.",
-      "changeEmail": "Change email",
-      "changePassword": "Change password"
+      "yourPlan": "Your Plan",
+      "avatarDeleteError": "Не вдалося видалити аватар.",
+      "avatarDeleted": "Аватар видалено.",
+      "avatarUpdateError": "Не вдалося оновити аватар.",
+      "avatarUpdated": "Аватар оновлено.",
+      "changeEmail": "Змінити email",
+      "changePassword": "Змінити пароль",
+      "firstName": "Ім’я",
+      "lastName": "Прізвище",
+      "loadError": "Не вдалося завантажити акаунт.",
+      "save": "Зберегти",
+      "saveError": "Не вдалося зберегти.",
+      "saveSuccess": "Збережено.",
+      "subtitle": "Основні дані користувача.",
+      "timezone": "Таймзона",
+      "title": "Акаунт",
+      "username": "Username"
     },
-    "eventModal": {},
     "changeEmail": {
-      "title": "Change email",
-      "subtitle": "Enter your new email and current password.",
-      "newEmail": "New email",
-      "password": "Current password",
-      "submit": "Change email",
-      "success": "Verification email sent to new address.",
-      "error": "Failed to change email."
+      "error": "Не вдалося змінити email.",
+      "newEmail": "Новий email",
+      "password": "Поточний пароль",
+      "submit": "Змінити email",
+      "subtitle": "Введіть новий email та поточний пароль.",
+      "success": "Лист підтвердження надіслано на нову адресу.",
+      "title": "Зміна email"
     },
     "changePassword": {
-      "title": "Change password",
-      "subtitle": "Enter your current and new password.",
-      "currentPassword": "Current password",
-      "newPassword": "New password",
-      "confirmPassword": "Confirm new password",
-      "submit": "Change password",
-      "success": "Password changed successfully.",
-      "error": "Failed to change password.",
-      "mismatch": "Passwords do not match."
+      "confirmPassword": "Повторіть новий пароль",
+      "currentPassword": "Поточний пароль",
+      "error": "Не вдалося змінити пароль.",
+      "mismatch": "Паролі не збігаються.",
+      "newPassword": "Новий пароль",
+      "submit": "Змінити пароль",
+      "subtitle": "Введіть поточний та новий пароль.",
+      "success": "Пароль успішно змінено.",
+      "title": "Зміна пароля"
     }
   },
   "lang": {
@@ -1179,7 +1171,9 @@
     "confirmDiscard": "Скасувати незбережені зміни?",
     "moreActions": "Більше дій",
     "no": "Ні",
-    "yes": "Так"
+    "yes": "Так",
+    "unavailable": "Недоступно",
+    "unknown": "Невідомо"
   },
   "role": {
     "superadmin": "Superadmin",
@@ -1325,8 +1319,7 @@
       "empty": "You have no invited students",
       "requestedAt": "Request sent",
       "status": "Pending confirmation",
-      "accept": "Accept",
-      "message": "Message"
+      "accept": "Accept"
     },
     "search": {},
     "request": {},
@@ -1461,7 +1454,19 @@
     },
     "confirm": {
       "delete": "Delete this message?"
-    }
+    },
+    "loadError": "Не вдалося завантажити чат",
+    "loadMessagesError": "Не вдалося завантажити повідомлення",
+    "messagePlaceholder": "Напишіть повідомлення...",
+    "noMessages": "Повідомлень ще немає. Напишіть першим!",
+    "noThreadFound": "Чат не знайдено. Спочатку створіть запит до тьютора.",
+    "pressEnterToSend": "Enter — надіслати",
+    "readOnly": "Цей чат тільки для читання",
+    "send": "Надіслати",
+    "sendError": "Не вдалося надіслати повідомлення",
+    "sending": "Надсилаємо...",
+    "threadInfo": "Тип чату: {kind}",
+    "title": "Чат з тьютором"
   },
   "presence": {
     "online": "Online",
@@ -2391,7 +2396,7 @@
   },
   "booking": {
     "bookingCommon": {
-      "minutes": "minutes"
+      "minutes": "хвилин"
     },
     "selectStudent": "Select a student",
     "noStudentsFound": "No students found",
@@ -2634,7 +2639,7 @@
       "${patch.newStatus}": "{patch.newStatus}"
     },
     "calenderPlaceholder": "Booking calendar",
-    "bookingCommon": {
+    "common": {
       "minutes": "хвилин"
     }
   },
@@ -2843,7 +2848,7 @@
       "errors": {},
       "options": {}
     },
-    "status": {},
+    "status": "Статус",
     "availability": {
       "jobInProgress": "Please wait for the current operation to complete",
       "conflictsDetected": "Conflicts detected on days: {days}",
@@ -2987,7 +2992,8 @@
       "repeatUntil": "Repeat Until",
       "seriesPartialSuccess": "Lesson series partially created",
       "seriesSuccess": "Lesson series created successfully",
-      "skipConflicts": "Skip Conflicts"
+      "skipConflicts": "Skip Conflicts",
+      "success": "Урок успішно створено"
     },
     "draft": {},
     "no_show": {
@@ -3302,7 +3308,10 @@
       "totalConflicts": "Усього конфліктів",
       "totalEdits": "Всього змін",
       "totalSlots": "Усього слотів"
-    }
+    },
+    "time": "Час",
+    "today": "Сьогодні",
+    "tutor": "Тьютор"
   },
   "conflict": {
     "types": {},
@@ -3569,7 +3578,20 @@
       "API_ACCESS": "API Access",
       "ADVANCED_MATCHING": "Advanced Matching",
       "TEAM_MANAGEMENT": "Team Management",
-      "CUSTOM_BRANDING": "Custom Branding"
+      "CUSTOM_BRANDING": "Custom Branding",
+      "ADVANCED_SCHEDULING": "Розширене планування",
+      "CALENDAR_INTEGRATION": "Інтеграція з календарем",
+      "CUSTOM_DOMAIN": "Власний домен",
+      "DEDICATED_SUPPORT": "Виділена підтримка",
+      "EMAIL_NOTIFICATIONS": "Email сповіщення",
+      "HOMEWORK_TRACKING": "Відстеження домашніх завдань",
+      "ONBOARDING_ASSISTANCE": "Допомога при впровадженні",
+      "PROGRESS_REPORTS": "Звіти про прогрес",
+      "SCREEN_SHARING": "Демонстрація екрану",
+      "SMS_NOTIFICATIONS": "SMS сповіщення",
+      "UNLIMITED_STUDENTS": "Необмежена кількість студентів",
+      "VIDEO_CALLS": "Відеодзвінки",
+      "WHITE_LABEL": "White-label рішення"
     },
     "faq": {
       "title": "Frequently Asked Questions",
@@ -3592,7 +3614,10 @@
       "checkoutFailed": "Checkout failed",
       "checkoutNotAllowed": "Checkout not allowed",
       "invalidPlan": "Invalid plan",
-      "alreadySubscribed": "You already have an active subscription"
+      "alreadySubscribed": "You already have an active subscription",
+      "checkout_not_allowed": "Оформлення підписки зараз недоступне",
+      "limit_exceeded": "Досягнуто ліміт використання для вашого плану",
+      "subscription_required": "Для використання цієї функції потрібна підписка"
     },
     "cta": {
       "upgradeToContinue": "Upgrade to continue",
@@ -3608,6 +3633,23 @@
       "incomplete": "Incomplete",
       "trialing": "Trial",
       "unpaid": "Unpaid"
+    },
+    "success": {
+      "title": "Payment successful!",
+      "subtitle": "Checking your subscription status",
+      "status": "Status",
+      "processing": "Processing payment...",
+      "activated": "Subscription activated!",
+      "checkStatus": "Check subscription status",
+      "viewBilling": "View subscription",
+      "backToDashboard": "Back to dashboard",
+      "sessionExpired": "Session refreshing",
+      "pleaseLogin": "Please log in again to view your subscription",
+      "loginAgain": "Log in again"
+    },
+    "pendingPlan": {
+      "title": "Plan is activating",
+      "description": "Your new plan is waiting for payment confirmation. Access will update right after finalization."
     },
     "page": {
       "title": "Your Plan",
@@ -3643,17 +3685,36 @@
       "select": "Select",
       "pay": "Pay",
       "intervalMonthly": "month",
-      "intervalYearly": "year"
+      "intervalYearly": "year",
+      "unavailable": "Недоступно"
     },
     "errors": {
       "loadFailed": "Failed to load billing data",
       "plansLoadFailed": "Failed to load plans"
     },
-    "retryButton": "Try Again"
-  },
-  "userProfile": {
-    "account": {
-      "yourPlan": "Your Plan"
+    "retryButton": "Try Again",
+    "cancel": {
+      "backToDashboard": "Повернутися на головну",
+      "message": "Ваша оплата не була завершена. Ви можете спробувати ще раз або обрати інший план.",
+      "subtitle": "Ви скасували процес оплати",
+      "title": "Оплату скасовано",
+      "viewPlans": "Переглянути плани"
+    },
+    "checkout": {
+      "agreement": "Натискаючи кнопку оплати, ви погоджуєтесь з:"
+    },
+    "history": "Історія платежів",
+    "historyComingSoon": "Історія платежів скоро буде доступна",
+    "planDescriptions": {
+      "BUSINESS": "Повний функціонал для команд та шкіл",
+      "FREE": "Базові можливості для початку роботи",
+      "PRO": "Розширені функції для професійних репетиторів"
+    },
+    "subscriptionRequired": {
+      "defaultMessage": "Оновіть свій план, щоб отримати доступ до розширених можливостей",
+      "message": "Для доступу до цієї функції необхідна активна підписка",
+      "title": "Потрібна підписка",
+      "unlockFeatures": "Розблокуйте можливості:"
     }
   },
   "commonExtended": {
@@ -3803,5 +3864,54 @@
       "success": "Запит надіслано тьютору"
     },
     "title": "Знайти тьютора"
+  },
+  "contacts": {
+    "address": "Адреса",
+    "email": "Email",
+    "phone": "Телефон",
+    "sellerInfo": "Інформація про продавця",
+    "subtitle": "Зв'яжіться з нами",
+    "title": "Контакти"
+  },
+  "footer": {
+    "contact": {
+      "link": "Зв'язатися з нами",
+      "title": "Контакти"
+    },
+    "copyright": "Всі права захищені.",
+    "legal": {
+      "payment": "Умови оплати",
+      "privacy": "Політика конфіденційності",
+      "refund": "Повернення коштів",
+      "terms": "Угода користувача",
+      "title": "Юридична інформація"
+    },
+    "payment": {
+      "secure": "Безпечні платежі",
+      "title": "Способи оплати"
+    },
+    "tagline": "Платформа для репетиторів та студентів"
+  },
+  "legal": {
+    "payment": {
+      "content": "Правила та умови оплати послуг",
+      "lastUpdated": "Останнє оновлення: {date}",
+      "title": "Умови оплати"
+    },
+    "privacy": {
+      "content": "Політика обробки персональних даних",
+      "lastUpdated": "Останнє оновлення: {date}",
+      "title": "Політика конфіденційності"
+    },
+    "refund": {
+      "content": "Політика повернення коштів",
+      "lastUpdated": "Останнє оновлення: {date}",
+      "title": "Повернення коштів"
+    },
+    "terms": {
+      "content": "Умови використання платформи M4SH",
+      "lastUpdated": "Останнє оновлення: {date}",
+      "title": "Угода користувача"
+    }
   }
 }

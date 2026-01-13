@@ -43,6 +43,13 @@ export const useBillingStore = defineStore('billing-v074', () => {
   const isPro = computed(() => currentPlan.value === 'PRO')
   const isBusiness = computed(() => currentPlan.value === 'BUSINESS')
   const isFree = computed(() => currentPlan.value === 'FREE')
+  
+  // v0.76.3: Pending plan support
+  const pendingPlanCode = computed(() => me.value?.pending_plan_code || null)
+  const pendingSince = computed(() => me.value?.pending_since || null)
+  const displayPlanCode = computed(() => me.value?.display_plan_code || currentPlan.value)
+  const subscriptionStatus = computed(() => me.value?.subscription_status || 'none')
+  const hasPendingPlan = computed(() => !!pendingPlanCode.value)
 
   /**
    * Fetch current user's billing status
@@ -220,6 +227,13 @@ export const useBillingStore = defineStore('billing-v074', () => {
     isPro,
     isBusiness,
     isFree,
+    
+    // v0.76.3: Pending plan computed
+    pendingPlanCode,
+    pendingSince,
+    displayPlanCode,
+    subscriptionStatus,
+    hasPendingPlan,
     
     // Actions
     fetchMe,

@@ -90,10 +90,41 @@ const routes = [
     ],
   },
   {
-    path: '/lesson-invites/:token',
+    path: '/lesson-invite/:token',
     name: 'lesson-invite-resolve',
     component: LessonInviteResolveView,
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: false }
+  },
+  // v0.77: Legal and Contact pages
+  {
+    path: '/legal/terms',
+    name: 'legal-terms',
+    component: () => import('../views/legal/TermsView.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/legal/privacy',
+    name: 'legal-privacy',
+    component: () => import('../views/legal/PrivacyView.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/legal/payment',
+    name: 'legal-payment',
+    component: () => import('../views/legal/PaymentView.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/legal/refund',
+    name: 'legal-refund',
+    component: () => import('../views/legal/RefundView.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/contacts',
+    name: 'contacts',
+    component: () => import('../views/ContactsView.vue'),
+    meta: { requiresAuth: false }
   },
   {
     path: '/',

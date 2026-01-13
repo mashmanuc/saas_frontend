@@ -72,11 +72,15 @@ export interface EntitlementDto {
 }
 
 /**
- * Billing Me response (unified snapshot)
+ * Billing Me response (unified snapshot v0.76.3)
  */
 export interface BillingMeDto {
   subscription: SubscriptionDto
   entitlement: EntitlementDto
+  pending_plan_code: string | null
+  pending_since: string | null
+  display_plan_code: string
+  subscription_status: string
 }
 
 /**

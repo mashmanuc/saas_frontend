@@ -24,6 +24,9 @@
     <div class="flex-1 space-y-4 p-6">
       <div>
         <h3 class="text-xl font-bold text-foreground">{{ plan.title }}</h3>
+        <p class="mt-1 text-sm text-muted-foreground">
+          {{ getDescription(plan.code) }}
+        </p>
         <div class="mt-2 flex items-baseline gap-1">
           <span class="text-3xl font-bold text-foreground">
             {{ formatMoney(plan.price.amount, plan.price.currency) }}
@@ -44,58 +47,100 @@
             <svg class="mt-0.5 h-4 w-4 flex-shrink-0 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
             </svg>
-            <span>{{ $t(`billing.features.${feature}`) }}</span>
+            <span>{{ getFeatureLabel(feature) }}</span>
           </li>
         </ul>
       </div>
     </div>
 
     <div class="border-t border-border p-6 pt-4">
-      <Button
-        v-if="isCurrentPlan"
-        variant="outline"
-        class="w-full"
-        disabled
-      >
-        {{ $t('billing.planCard.current') }}
-      </Button>
-      <Button
-        v-else-if="isInactive"
-        variant="outline"
-        class="w-full"
-        disabled
-      >
-        {{ $t('billing.planCard.unavailable') }}
-      </Button>
-      <Button
-        v-else-if="isFree"
-        variant="outline"
-        class="w-full"
-        :loading="loading"
-        :disabled="loading"
-        @click="$emit('select', plan.code)"
-      >
-        {{ $t('billing.planCard.select') }}
-      </Button>
-      <Button
-        v-else
-        variant="primary"
-        class="w-full"
-        :loading="loading"
-        :disabled="loading"
-        @click="$emit('select', plan.code)"
-      >
-        {{ $t('billing.planCard.pay') }}
-      </Button>
+      <div class="space-y-3">
+        <Button
+          v-if="isCurrentPlan"
+          variant="outline"
+          class="w-full"
+          disabled
+        >
+          {{ $t('billing.planCard.current') }}
+        </Button>
+        <Button
+          v-else-if="isInactive"
+          variant="outline"
+          class="w-full"
+          disabled
+        >
+          {{ $t('billing.planCard.unavailable') }}
+        </Button>
+        <Button
+          v-else-if="isFree"
+          variant="outline"
+          class="w-full"
+          :loading="loading"
+          :disabled="loading"
+          @click="$emit('select', plan.code)"
+        >
+          {{ $t('billing.planCard.select') }}
+        </Button>
+        <Button
+          v-else
+          variant="primary"
+          class="w-full"
+          :loading="loading"
+          :disabled="loading"
+          @click="$emit('select', plan.code)"
+        >
+          {{ $t('billing.planCard.pay') }}
+        </Button>
+
+        <!-- Legal links for paid plans (LiqPay compliance #3) -->
+        <div v-if="!isFree && !isCurrentPlan && !isInactive" class="space-y-2 text-center">
+          <p class="text-xs text-muted-foreground">
+            {{ $t('billing.checkout.agreement') }}
+          </p>
+          <div class="flex flex-wrap justify-center gap-2 text-xs">
+            <router-link
+              to="/legal/terms"
+              class="text-primary hover:underline"
+            >
+              {{ $t('footer.legal.terms') }}
+            </router-link>
+            <span class="text-muted-foreground">•</span>
+            <router-link
+              to="/legal/payment"
+              class="text-primary hover:underline"
+            >
+              {{ $t('footer.legal.payment') }}
+            </router-link>
+            <span class="text-muted-foreground">•</span>
+            <router-link
+              to="/legal/refund"
+              class="text-primary hover:underline"
+            >
+              {{ $t('footer.legal.refund') }}
+            </router-link>
+            <span class="text-muted-foreground">•</span>
+            <router-link
+              to="/legal/privacy"
+              class="text-primary hover:underline"
+            >
+              {{ $t('footer.legal.privacy') }}
+            </router-link>
+          </div>
+        </div>
+      </div>
     </div>
   </Card>
 </template>
 
 <script setup>
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Card from '@/ui/Card.vue'
 import Button from '@/ui/Button.vue'
 import { formatMoney } from '../utils/priceFormatter'
+import { getFeatureName } from '../utils/featureMapper'
+
+const { t } = useI18n()
 
 const props = defineProps({
   plan: {
@@ -119,7 +164,7 @@ const isCurrentPlan = computed(() => {
 })
 
 const isInactive = computed(() => {
-  return props.plan.is_active === false
+  return props.plan.is_active === false || (props.plan.price?.amount === 0 && !isFree.value)
 })
 
 const isFree = computed(() => {
@@ -133,4 +178,13 @@ const isPro = computed(() => {
 const isBusiness = computed(() => {
   return props.plan.code?.toUpperCase() === 'BUSINESS'
 })
+
+function getDescription(planCode) {
+  const code = planCode?.toUpperCase()
+  return t(`billing.planDescriptions.${code}`)
+}
+
+function getFeatureLabel(featureCode) {
+  return getFeatureName(featureCode, t)
+}
 </script>

@@ -267,6 +267,9 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async refreshAccess() {
+      // FE-76.2.2: Prevent parallel refresh cycles
+      // If refresh is already in-flight, return the same promise
+      // This ensures only one refresh request at a time
       if (this.refreshPromise) {
         return this.refreshPromise
       }
