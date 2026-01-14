@@ -92,7 +92,10 @@
         <div class="flex items-start justify-between mb-4">
           <div>
             <p class="text-sm text-muted mb-1">{{ $t('billing.currentPlan') }}</p>
-            <h2 class="text-3xl font-bold">{{ billingStore.currentPlanCode }}</h2>
+            <h2 class="text-3xl font-bold">{{ billingStore.displayPlanCode }}</h2>
+            <p v-if="billingStore.hasPendingPlan" class="text-xs text-muted mt-1">
+              {{ $t('billing.currentlyActive') }}: {{ billingStore.currentPlanCode }}
+            </p>
           </div>
           <Button variant="primary" @click="goToPlans">
             {{ $t('billing.viewPlans') }}

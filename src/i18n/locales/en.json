@@ -2816,6 +2816,8 @@
       "unknown": "Unknown Error",
       "updateFailed": "Failed to Update"
     },
+    "loading": "Loading...",
+    "retry": "Try again",
     "weekNavigation": {
       "availableHours": "{hours} hours available",
       "noAvailability": "No availability set for this week yet",
@@ -3103,8 +3105,6 @@
       "reminder": "Keep your calendar up to date so students can book lessons.",
       "video_guide": "Video guide"
     },
-    "loading": "Loading...",
-    "retry": "Retry",
     "search": {},
     "sections": {},
     "regularity": {},
@@ -3311,7 +3311,24 @@
     },
     "time": "Час",
     "today": "Сьогодні",
-    "tutor": "Тьютор"
+    "tutor": "Тьютор",
+    "statusLabels": {
+      "active": "Активна",
+      "canceled": "Скасована",
+      "past_due": "Прострочена",
+      "pending": "Очікує активації"
+    },
+    "statuses": {
+      "active": "Активна",
+      "canceled": "Скасована",
+      "incomplete": "Неповна",
+      "incomplete_expired": "Прострочена оплата",
+      "none": "Без підписки",
+      "past_due": "Прострочена",
+      "pending": "Очікує активації",
+      "trialing": "Пробний період",
+      "unpaid": "Не оплачена"
+    }
   },
   "conflict": {
     "types": {},
@@ -3526,7 +3543,7 @@
     "subtitle": "Manage your subscription and payment settings",
     "loading": "Loading...",
     "currentPlan": "Current Plan",
-    "expiresAt": "Valid until {date}",
+    "currentlyActive": "Currently Active",
     "status": "Status",
     "provider": "Payment Provider",
     "periodEnd": "Period End",
@@ -3549,19 +3566,13 @@
     "basicFeaturesOnly": "Basic features only",
     "cancelSubscription": "Cancel Subscription",
     "canceling": "Canceling...",
-    "resumeSubscription": "Resume Subscription",
-    "resuming": "Resuming...",
-    "resumeDescription": "Resume your subscription to continue using all features",
     "cancelSuccess": "Subscription canceled successfully",
     "cancelError": "Failed to cancel subscription",
-    "resumeSuccess": "Subscription resumed successfully",
-    "resumeError": "Failed to resume subscription",
     "upgradeError": "Failed to process checkout",
     "plans": {
       "title": "Choose Your Plan",
       "subtitle": "Select the plan that fits your needs"
     },
-    "popular": "Popular",
     "perMonth": "per month",
     "perYear": "per year",
     "upgrade": "Upgrade",
@@ -3627,6 +3638,7 @@
     "statuses": {
       "none": "No Subscription",
       "active": "Active",
+      "pending": "Pending Activation",
       "past_due": "Past Due",
       "canceled": "Canceled",
       "expired": "Expired",
@@ -3636,7 +3648,6 @@
     },
     "success": {
       "title": "Payment successful!",
-      "subtitle": "Checking your subscription status",
       "status": "Status",
       "processing": "Processing payment...",
       "activated": "Subscription activated!",

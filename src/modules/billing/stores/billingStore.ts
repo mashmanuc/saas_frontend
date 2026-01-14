@@ -21,6 +21,7 @@ import type {
 } from '../api/billingApi'
 import * as billingApi from '../api/billingApi'
 import { submitCheckoutForm, validateCheckoutResponse } from '../utils/checkoutHelper'
+import { minorToMajor } from '../utils/priceFormatter'
 
 export const useBillingStore = defineStore('billing-v074', () => {
   // State
@@ -95,13 +96,15 @@ export const useBillingStore = defineStore('billing-v074', () => {
         .filter(plan => plan && plan.is_active !== false)
         .map((plan, index) => {
           const safeSort = typeof plan.sort_order === 'number' ? plan.sort_order : index * 10
+          const currency = plan?.price?.currency || 'UAH'
+          const amountMinor = typeof plan?.price?.amount === 'number' ? plan.price.amount : 0
           return {
             ...plan,
             sort_order: safeSort,
             interval: plan?.interval || 'monthly',
             price: {
-              amount: plan?.price?.amount ?? 0,
-              currency: plan?.price?.currency || 'UAH'
+              amount: minorToMajor(amountMinor, currency),
+              currency
             }
           }
         })

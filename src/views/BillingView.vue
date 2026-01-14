@@ -14,11 +14,17 @@
       <div v-else class="billing-content">
         <div class="current-plan-card">
           <h2>{{ $t('billing.currentPlan') }}</h2>
-          <div class="plan-badge" :class="`plan-${plan.toLowerCase()}`">
-            {{ plan }}
+          <div class="plan-badge" :class="`plan-${displayPlanCode.toLowerCase()}`">
+            {{ displayPlanCode }}
+            <span v-if="hasPendingPlan" class="pending-chip">
+              {{ $t('billing.statuses.pending') }}
+            </span>
           </div>
+          <p v-if="hasPendingPlan" class="pending-subtitle">
+            {{ $t('billing.currentlyActive') }}: {{ billingStore.currentPlanCode }}
+          </p>
           
-          <div v-if="isPro" class="subscription-details">
+          <div class="subscription-details">
             <div class="detail-row">
               <span class="detail-label">{{ $t('billing.status') }}:</span>
               <span class="detail-value" :class="`status-${subscriptionStatus}`">
@@ -40,7 +46,7 @@
         <div class="action-card">
           <h2>{{ $t('billing.manageSubscription') }}</h2>
           
-          <div v-if="isFree" class="upgrade-section">
+          <div v-if="showUpgradeCta" class="upgrade-section">
             <p>{{ $t('billing.upgradeDescription') }}</p>
             <button 
               class="btn btn-primary btn-large"
@@ -52,7 +58,7 @@
             </button>
           </div>
           
-          <div v-else-if="isPro && subscriptionStatus === 'active' && !cancelAtPeriodEnd" class="cancel-section">
+          <div v-else-if="showCancelCta" class="cancel-section">
             <p>{{ $t('billing.cancelDescription') }}</p>
             <button 
               class="btn btn-secondary"
@@ -64,7 +70,7 @@
             </button>
           </div>
           
-          <div v-else-if="cancelAtPeriodEnd" class="reactivate-section">
+          <div v-else-if="showReactivateCta" class="reactivate-section">
             <p>{{ $t('billing.reactivateDescription') }}</p>
           </div>
         </div>
@@ -82,24 +88,27 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { useEntitlementsStore } from '@/stores/entitlementsStore'
 import { useBillingStore } from '@/modules/billing/stores/billingStore'
 import { useI18n } from 'vue-i18n'
 import NotificationPreferences from '@/components/Notifications/NotificationPreferences.vue'
 
 const { t } = useI18n()
-const entitlementsStore = useEntitlementsStore()
 const billingStore = useBillingStore()
 
 const isLoading = ref(true)
 
-const plan = computed(() => entitlementsStore.plan)
-const expiresAt = computed(() => entitlementsStore.expiresAt)
+const displayPlanCode = computed(() => billingStore.displayPlanCode ?? 'FREE')
+const activePlanCode = computed(() => billingStore.currentPlanCode ?? 'FREE')
 const subscriptionStatus = computed(() => billingStore.subscription?.status || 'none')
 const currentPeriodEnd = computed(() => billingStore.subscription?.current_period_end || null)
 const cancelAtPeriodEnd = computed(() => billingStore.subscription?.cancel_at_period_end || false)
-const isFree = computed(() => entitlementsStore.isFree)
-const isPro = computed(() => entitlementsStore.isPro)
+const hasPendingPlan = computed(() => billingStore.hasPendingPlan)
+const hasActivatedPaidPlan = computed(() => !hasPendingPlan.value && activePlanCode.value !== 'FREE')
+const showUpgradeCta = computed(() => !hasPendingPlan.value && activePlanCode.value === 'FREE')
+const showCancelCta = computed(
+  () => hasActivatedPaidPlan.value && subscriptionStatus.value === 'active' && !cancelAtPeriodEnd.value
+)
+const showReactivateCta = computed(() => cancelAtPeriodEnd.value)
 
 function getSubscriptionStatusLabel(status: string | null | undefined): string {
   switch (status) {
@@ -118,10 +127,7 @@ function getSubscriptionStatusLabel(status: string | null | undefined): string {
 
 onMounted(async () => {
   try {
-    await Promise.all([
-      entitlementsStore.loadEntitlements(),
-      billingStore.fetchMe()
-    ])
+    await billingStore.fetchMe()
   } catch (err) {
     console.error('Failed to load billing data:', err)
   } finally {
@@ -143,18 +149,27 @@ async function handleCancel() {
   }
   
   try {
-    await billingStore.cancelSubscription(true)
+    await billingStore.cancel(true)
   } catch (err) {
     console.error('Failed to cancel subscription:', err)
   }
 }
 
-function formatDate(date: Date): string {
+function formatDate(date: string | Date | null | undefined): string {
+  if (!date) {
+    return ''
+  }
+
+  const dateObj = typeof date === 'string' ? new Date(date) : date
+  if (Number.isNaN(dateObj.getTime())) {
+    return ''
+  }
+
   return new Intl.DateTimeFormat('uk-UA', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
-  }).format(date)
+  }).format(dateObj)
 }
 </script>
 

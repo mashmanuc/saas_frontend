@@ -14,7 +14,7 @@
         class="rounded-full px-3 py-1 text-xs font-medium"
         :class="getStatusClass(subscription.status)"
       >
-        {{ $t(`billing.status.${subscription.status}`) }}
+        {{ $t(`billing.statuses.${subscription.status || 'none'}`) }}
       </div>
     </div>
 
@@ -42,6 +42,12 @@
             {{ planCode }}
           </span>
         </div>
+        <p
+          v-if="hasPending"
+          class="text-xs text-muted-foreground"
+        >
+          {{ $t('billing.currentlyActive') }}: {{ activePlanCode }}
+        </p>
         
         <div v-if="subscription.current_period_end" class="flex items-center justify-between text-sm">
           <span class="text-muted-foreground">
@@ -111,6 +117,14 @@ const props = defineProps({
   planCode: {
     type: String,
     required: true
+  },
+  activePlanCode: {
+    type: String,
+    default: 'FREE'
+  },
+  hasPending: {
+    type: Boolean,
+    default: false
   },
   subscription: {
     type: Object,

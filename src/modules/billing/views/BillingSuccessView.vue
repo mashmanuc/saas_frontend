@@ -109,32 +109,29 @@ const billingStore = useBillingStore()
 const isLoading = ref(true)
 
 const statusMessage = computed(() => {
-  const status = billingStore.subscription?.status
-  const planCode = billingStore.currentPlanCode
   const hasPending = billingStore.hasPendingPlan
-  
-  // v0.76.3: Show pending message if plan is pending
   if (hasPending) {
     return t('billing.success.pendingMessage')
   }
-  
-  // FE-76.2.1: Check plan_code, not just subscription status
+
+  const planCode = billingStore.currentPlanCode
   if (planCode && planCode !== 'FREE') {
     return t('billing.success.activated')
   }
-  
+
+  const status = billingStore.subscription?.status
   if (!status || status === 'none') {
     return t('billing.success.processing')
   }
-  
+
   if (status === 'active') {
     return t('billing.success.activated')
   }
-  
+
   if (status === 'incomplete' || status === 'trialing') {
     return t('billing.success.processing')
   }
-  
+
   return t('billing.success.checkStatus')
 })
 
@@ -185,40 +182,17 @@ async function pollStatus() {
   
   try {
     await billingStore.fetchMe()
-    
-    const planCode = billingStore.currentPlanCode
-    const status = billingStore.subscription?.status
-    
-    // FE-76.2.1: Stop polling if plan_code changed to PRO/BUSINESS
-    if (planCode && planCode !== 'FREE') {
-      console.log('Plan activated, stopping poll:', planCode)
+
+    if (!billingStore.hasPendingPlan) {
+      console.log('Pending cleared, stopping poll')
       const { notifySuccess } = await import('@/utils/notify')
-      notifySuccess('План активовано!')
+      notifySuccess('Підписку активовано!')
       return
     }
-    
-    // If subscription is active but plan still FREE, continue polling
-    // (edge case: entitlement sync might be delayed)
-    if (status === 'active' && planCode === 'FREE') {
-      console.log('Subscription active but plan still FREE, continue polling')
-      pollingAttempts.value++
-      const delay = Math.min(pollingAttempts.value * 1000, 3000)
-      
-      pollingTimeoutId.value = window.setTimeout(() => {
-        pollStatus()
-      }, delay)
-      return
-    }
-    
-    // If still pending/incomplete, continue polling
-    if (!status || status === 'incomplete' || status === 'trialing' || status === 'none') {
-      pollingAttempts.value++
-      const delay = Math.min(pollingAttempts.value * 1000, 3000) // 1s, 2s, 3s (max)
-      
-      pollingTimeoutId.value = window.setTimeout(() => {
-        pollStatus()
-      }, delay)
-    }
+
+    pollingAttempts.value++
+    const delay = Math.min(pollingAttempts.value * 1000, 3000)
+    pollingTimeoutId.value = window.setTimeout(pollStatus, delay)
   } catch (error) {
     console.error('Polling error:', error)
     // Stop polling on error
@@ -230,22 +204,11 @@ onMounted(async () => {
     // FE-76.2.1: Single attempt to fetch billing data, no parallel spam
     await billingStore.fetchMe()
     
-    const planCode = billingStore.currentPlanCode
-    const status = billingStore.subscription?.status
-    
-    // FE-76.2.1: Start polling if plan_code is still FREE (waiting for activation)
-    // This handles the case where user returned from LiqPay but backend hasn't finalized yet
-    if (planCode === 'FREE' || !planCode) {
-      console.log('Plan still FREE, starting polling for activation')
-      // Start polling after 1 second
-      pollingTimeoutId.value = window.setTimeout(() => {
-        pollStatus()
-      }, 1000)
+    if (billingStore.hasPendingPlan) {
+      console.log('Pending exists, start polling for activation')
+      pollingTimeoutId.value = window.setTimeout(pollStatus, 1000)
     } else {
-      // Plan already activated, show success immediately
-      console.log('Plan already activated:', planCode)
-      const { notifySuccess } = await import('@/utils/notify')
-      notifySuccess('План активовано!')
+      console.log('No pending, no polling needed')
     }
   } catch (error: any) {
     console.error('Failed to fetch billing data:', error)

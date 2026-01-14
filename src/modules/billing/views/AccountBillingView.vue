@@ -40,7 +40,9 @@
 
     <div v-else class="space-y-6">
       <CurrentPlanCard
-        :plan-code="billingStore.currentPlanCode"
+        :plan-code="billingStore.displayPlanCode"
+        :active-plan-code="billingStore.currentPlanCode"
+        :has-pending="billingStore.hasPendingPlan"
         :subscription="billingStore.subscription"
         :entitlement="billingStore.entitlement"
         :loading="billingStore.isLoadingAction"
