@@ -97,7 +97,7 @@ describe('billingStore', () => {
 
   describe('fetchPlans', () => {
     it('should fetch plans successfully', async () => {
-      const mockPlans: billingApi.PlanDto[] = [
+      const backendPlans: billingApi.PlanDto[] = [
         {
           code: 'FREE',
           title: 'Free',
@@ -110,7 +110,7 @@ describe('billingStore', () => {
         {
           code: 'PRO',
           title: 'Pro',
-          price: { amount: 299, currency: 'UAH' },
+          price: { amount: 29900, currency: 'UAH' },
           interval: 'monthly',
           features: ['CONTACT_UNLOCK', 'UNLIMITED_INQUIRIES'],
           is_active: true,
@@ -118,13 +118,21 @@ describe('billingStore', () => {
         }
       ]
 
-      const mockResponse: billingApi.PlansResponse = { plans: mockPlans }
+      const expectedPlans = [
+        backendPlans[0],
+        {
+          ...backendPlans[1],
+          price: { amount: 299, currency: 'UAH' }
+        }
+      ]
+
+      const mockResponse: billingApi.PlansResponse = { plans: backendPlans }
       vi.mocked(billingApi.getPlans).mockResolvedValue(mockResponse)
 
       const store = useBillingStore()
       await store.fetchPlans()
 
-      expect(store.plans).toEqual(mockPlans)
+      expect(store.plans).toEqual(expectedPlans)
       expect(store.plans).toHaveLength(2)
       expect(store.lastError).toBeNull()
     })

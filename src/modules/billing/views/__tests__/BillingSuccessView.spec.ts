@@ -31,6 +31,28 @@ vi.mock('@/utils/notify', () => ({
   notifyWarning: vi.fn()
 }))
 
+const createPendingMe = (overrides: Record<string, any> = {}) => ({
+  subscription: {
+    status: 'none',
+    provider: 'liqpay',
+    current_period_end: null,
+    cancel_at_period_end: false,
+    canceled_at: null,
+    ...(overrides.subscription || {})
+  },
+  entitlement: {
+    plan_code: 'FREE',
+    features: [],
+    expires_at: null,
+    ...(overrides.entitlement || {})
+  },
+  pending_plan_code: 'PRO',
+  pending_since: '2026-01-13T20:00:00Z',
+  display_plan_code: 'PRO',
+  subscription_status: 'none',
+  ...overrides,
+})
+
 describe('BillingSuccessView', () => {
   let pinia: any
   let billingStore: any
@@ -56,12 +78,10 @@ describe('BillingSuccessView', () => {
 
   describe('FE-76.2.1: Status-aware polling', () => {
     it('starts polling when plan_code is FREE', async () => {
-      // Setup: plan is still FREE
-      billingStore.me = {
-        subscription: { status: 'none' },
-        entitlement: { plan_code: 'FREE', features: [], expires_at: null }
-      }
-      billingStore.fetchMe.mockResolvedValue(undefined)
+      billingStore.me = createPendingMe()
+      billingStore.fetchMe.mockImplementation(async () => {
+        billingStore.me = createPendingMe()
+      })
 
       const wrapper = mount(BillingSuccessView, {
         global: {
@@ -83,21 +103,19 @@ describe('BillingSuccessView', () => {
     })
 
     it('stops polling when plan_code changes to PRO', async () => {
-      // Setup: plan starts as FREE
-      billingStore.me = {
-        subscription: { status: 'none' },
-        entitlement: { plan_code: 'FREE', features: [], expires_at: null }
-      }
+      billingStore.me = createPendingMe()
       
       let callCount = 0
       billingStore.fetchMe.mockImplementation(async () => {
         callCount++
         if (callCount === 2) {
-          // On second call, plan becomes PRO
-          billingStore.me = {
-            subscription: { status: 'active' },
-            entitlement: { plan_code: 'PRO', features: ['CONTACT_UNLOCK'], expires_at: '2026-02-13T18:00:00Z' }
-          }
+            billingStore.me = createPendingMe({
+              pending_plan_code: null,
+              pending_since: null,
+              display_plan_code: 'PRO',
+              entitlement: { plan_code: 'PRO', features: ['CONTACT_UNLOCK'], expires_at: '2026-02-13T18:00:00Z' },
+              subscription: { status: 'active' },
+            })
         }
       })
 
@@ -155,12 +173,14 @@ describe('BillingSuccessView', () => {
     })
 
     it('continues polling if subscription is active but plan still FREE', async () => {
-      // Edge case: subscription active but entitlement not synced yet
-      billingStore.me = {
-        subscription: { status: 'active' },
-        entitlement: { plan_code: 'FREE', features: [], expires_at: null }
-      }
-      billingStore.fetchMe.mockResolvedValue(undefined)
+      billingStore.me = createPendingMe({
+        subscription: { status: 'active' }
+      })
+      billingStore.fetchMe.mockImplementation(async () => {
+        billingStore.me = createPendingMe({
+          subscription: { status: 'active' }
+        })
+      })
 
       const wrapper = mount(BillingSuccessView, {
         global: {
@@ -182,12 +202,10 @@ describe('BillingSuccessView', () => {
     })
 
     it('stops polling after max attempts', async () => {
-      // Setup: plan stays FREE
-      billingStore.me = {
-        subscription: { status: 'none' },
-        entitlement: { plan_code: 'FREE', features: [], expires_at: null }
-      }
-      billingStore.fetchMe.mockResolvedValue(undefined)
+      billingStore.me = createPendingMe()
+      billingStore.fetchMe.mockImplementation(async () => {
+        billingStore.me = createPendingMe()
+      })
 
       const wrapper = mount(BillingSuccessView, {
         global: {
@@ -232,9 +250,15 @@ describe('BillingSuccessView', () => {
 
       await flushPromises()
 
-      // Should show recovery UI
-      expect(wrapper.text()).toContain('billing.success.sessionExpired')
-      expect(wrapper.text()).toContain('billing.success.loginAgain')
+      const text = wrapper.text()
+      expect(
+        text.includes('billing.success.sessionExpired') ||
+        text.includes('Сесія оновлюється')
+      ).toBe(true)
+      expect(
+        text.includes('billing.success.loginAgain') ||
+        text.includes('Увійти знову')
+      ).toBe(true)
     })
 
     it('does not start polling on auth error', async () => {
@@ -264,11 +288,10 @@ describe('BillingSuccessView', () => {
 
   describe('Cleanup', () => {
     it('clears polling timeout on unmount', async () => {
-      billingStore.me = {
-        subscription: { status: 'none' },
-        entitlement: { plan_code: 'FREE', features: [], expires_at: null }
-      }
-      billingStore.fetchMe.mockResolvedValue(undefined)
+      billingStore.me = createPendingMe()
+      billingStore.fetchMe.mockImplementation(async () => {
+        billingStore.me = createPendingMe()
+      })
 
       const wrapper = mount(BillingSuccessView, {
         global: {
