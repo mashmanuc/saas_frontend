@@ -158,6 +158,13 @@ export const useBillingStore = defineStore('billing-v074', () => {
     } catch (err: any) {
       console.error('Checkout failed:', err)
       lastError.value = err
+      
+      // FE-80.2: Handle 409 checkout_already_pending
+      if (err.code === 'checkout_already_pending' && err.existing) {
+        console.warn('[BillingStore] Checkout already pending:', err.existing)
+        // Error will be handled by UI component
+      }
+      
       throw err
     } finally {
       isLoadingAction.value = false

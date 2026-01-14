@@ -73,6 +73,8 @@ export interface EntitlementDto {
 
 /**
  * Billing Me response (unified snapshot v0.76.3)
+ * 
+ * v0.80.0: Extended with pending_age_seconds, last_checkout info
  */
 export interface BillingMeDto {
   subscription: SubscriptionDto
@@ -81,6 +83,13 @@ export interface BillingMeDto {
   pending_since: string | null
   display_plan_code: string
   subscription_status: string
+  // v0.80.0 BE-80.1 additions
+  plan: string
+  expires_at: string | null
+  is_active: boolean
+  pending_age_seconds: number | null
+  last_checkout_order_id: string | null
+  last_checkout_created_at: string | null
 }
 
 /**
