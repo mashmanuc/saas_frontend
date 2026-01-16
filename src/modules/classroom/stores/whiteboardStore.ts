@@ -54,6 +54,16 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
   const pendingOps = ref<Map<string, WhiteboardOperation>>(new Map())
   const isRecovering = ref<boolean>(false)
 
+  // Role & Moderation state (v0.86.0)
+  const myRole = ref<'viewer' | 'editor' | 'moderator'>('viewer')
+  const isBoardFrozen = ref<boolean>(false)
+  const presenterUserId = ref<string | null>(null)
+  const followPresenterEnabled = ref<boolean>(false)
+
+  // v0.87.0: SafeMode state
+  const safeMode = ref<boolean>(false)
+  const MAX_PENDING_OPS = 300
+
   // Computed
   const activePage = computed(() => pages.value.find(p => p.id === activePageId.value) || null)
   const pageCount = computed(() => pages.value.length)
@@ -61,6 +71,15 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
     if (limits.value.maxPages === null) return true
     return pageCount.value < limits.value.maxPages
   })
+  
+  // v0.86.0: Computed permissions
+  const canEdit = computed(() => {
+    if (isBoardFrozen.value) return false
+    if (safeMode.value) return false  // v0.87.0: SafeMode blocks editing
+    return myRole.value === 'editor' || myRole.value === 'moderator'
+  })
+  
+  const canModerate = computed(() => myRole.value === 'moderator')
 
   /**
    * Bootstrap whiteboard for workspace
@@ -71,6 +90,9 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
     error.value = null
 
     try {
+      // v0.86.0: Load workspace state (role, frozen, presenter)
+      await loadWorkspaceState()
+
       // Load limits
       const fetchedLimits = await policyAdapter.value.getLimits(wsId)
       limits.value = fetchedLimits
@@ -333,6 +355,20 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
         })
       }
 
+      // v0.86.0: Subscribe to moderation events
+      const adapter = realtimeAdapter.value as any
+      if (adapter.onBoardFrozen) {
+        adapter.onBoardFrozen((frozen: boolean) => {
+          handleBoardFrozen(frozen)
+        })
+      }
+
+      if (adapter.onPresenterChanged) {
+        adapter.onPresenterChanged((userId: string | null) => {
+          handlePresenterChanged(userId)
+        })
+      }
+
       // Listen for version conflicts
       window.addEventListener('whiteboard:version-conflict', handleVersionConflict as EventListener)
     } catch (err: any) {
@@ -485,8 +521,154 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
   }
 
   /**
+   * Handle board frozen/unfrozen (v0.86.0)
+   */
+  function handleBoardFrozen(frozen: boolean): void {
+    isBoardFrozen.value = frozen
+    console.log(`[WhiteboardStore] Board ${frozen ? 'frozen' : 'unfrozen'}`)
+  }
+
+  /**
+   * Handle presenter changed (v0.86.0)
+   */
+  function handlePresenterChanged(userId: string | null): void {
+    presenterUserId.value = userId
+    console.log(`[WhiteboardStore] Presenter changed to ${userId}`)
+  }
+
+  /**
+   * Toggle follow presenter mode (v0.86.0)
+   */
+  function toggleFollowPresenter(): void {
+    followPresenterEnabled.value = !followPresenterEnabled.value
+    console.log(`[WhiteboardStore] Follow presenter ${followPresenterEnabled.value ? 'enabled' : 'disabled'}`)
+  }
+
+  /**
+   * Send freeze/unfreeze command (v0.86.0)
+   */
+  async function sendFreeze(frozen: boolean): Promise<void> {
+    if (!canModerate.value) {
+      console.warn('[WhiteboardStore] Cannot freeze: not a moderator')
+      return
+    }
+
+    const adapter = realtimeAdapter.value as any
+    if (adapter.sendFreeze) {
+      await adapter.sendFreeze(frozen)
+    }
+  }
+
+  /**
+   * Send clear page command (v0.86.0)
+   */
+  async function sendClearPage(pageId: string): Promise<void> {
+    if (!canModerate.value) {
+      console.warn('[WhiteboardStore] Cannot clear page: not a moderator')
+      return
+    }
+
+    const adapter = realtimeAdapter.value as any
+    if (adapter.sendClearPage) {
+      await adapter.sendClearPage(pageId)
+    }
+  }
+
+  /**
+   * Send set presenter command (v0.86.0)
+   */
+  async function sendSetPresenter(userId: string | null): Promise<void> {
+    if (!canModerate.value) {
+      console.warn('[WhiteboardStore] Cannot set presenter: not a moderator')
+      return
+    }
+
+    const adapter = realtimeAdapter.value as any
+    if (adapter.sendSetPresenter) {
+      await adapter.sendSetPresenter(userId)
+    }
+  }
+
+  /**
+   * Load workspace state from API (v0.86.0)
+   */
+  async function loadWorkspaceState(): Promise<void> {
+    if (!workspaceId.value) return
+
+    try {
+      const response = await fetch(`/api/v1/whiteboard/workspaces/${workspaceId.value}/state/`, {
+        credentials: 'include'
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to load workspace state: ${response.status}`)
+      }
+
+      const data = await response.json()
+      
+      myRole.value = data.myRole || 'viewer'
+      isBoardFrozen.value = data.isFrozen || false
+      presenterUserId.value = data.presenterUserId || null
+
+      console.log('[WhiteboardStore] Loaded workspace state', { 
+        role: myRole.value, 
+        frozen: isBoardFrozen.value,
+        presenter: presenterUserId.value
+      })
+    } catch (err) {
+      console.error('[WhiteboardStore] Failed to load workspace state:', err)
+    }
+  }
+
+  /**
+   * v0.87.0: Check and enter SafeMode if queue overflow
+   */
+  function checkSafeMode(): void {
+    if (pendingOps.value.size > MAX_PENDING_OPS && !safeMode.value) {
+      enterSafeMode()
+    }
+  }
+
+  /**
+   * v0.87.0: Enter SafeMode (queue overflow)
+   */
+  async function enterSafeMode(): Promise<void> {
+    safeMode.value = true
+    console.warn('[WhiteboardStore] Entering SafeMode: queue overflow', {
+      pendingOps: pendingOps.value.size,
+      maxAllowed: MAX_PENDING_OPS
+    })
+
+    // Request resync immediately
+    if (activePageId.value && realtimeAdapter.value.requestResync) {
+      await realtimeAdapter.value.requestResync({
+        pageId: activePageId.value,
+        lastKnownVersion: lastAckedVersion.value
+      })
+    }
+  }
+
+  /**
+   * v0.87.0: Exit SafeMode after successful resync
+   */
+  function exitSafeMode(): void {
+    if (safeMode.value) {
+      safeMode.value = false
+      console.log('[WhiteboardStore] Exited SafeMode: state recovered')
+    }
+  }
+
+  /**
    * Reset store
    */
+  function setStorageAdapter(adapter: StorageAdapter): void {
+    storageAdapter.value = adapter
+  }
+
+  function setPolicyAdapter(adapter: PolicyAdapter): void {
+    policyAdapter.value = adapter
+  }
+
   function reset(): void {
     disconnectRealtime()
     workspaceId.value = null
@@ -500,6 +682,15 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
     lastAckedVersion.value = 1
     pendingOps.value.clear()
     isRecovering.value = false
+    
+    // v0.86.0: Reset role & moderation state
+    myRole.value = 'viewer'
+    isBoardFrozen.value = false
+    presenterUserId.value = null
+    followPresenterEnabled.value = false
+    
+    // v0.87.0: Reset SafeMode
+    safeMode.value = false
   }
 
   return {
@@ -520,11 +711,22 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
     lastAckedVersion,
     pendingOps,
     isRecovering,
+    
+    // v0.86.0: Role & Moderation
+    myRole,
+    isBoardFrozen,
+    presenterUserId,
+    followPresenterEnabled,
+    
+    // v0.87.0: SafeMode
+    safeMode,
 
     // Computed
     activePage,
     pageCount,
     canCreatePage,
+    canEdit,
+    canModerate,
 
     // Actions
     bootstrap,
@@ -551,5 +753,23 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
     markOpsAcked,
     applySnapshot,
     applyReplayOperations,
+    
+    // v0.86.0: Role & Moderation
+    handleBoardFrozen,
+    handlePresenterChanged,
+    toggleFollowPresenter,
+    sendFreeze,
+    sendClearPage,
+    sendSetPresenter,
+    loadWorkspaceState,
+    
+    // v0.87.0: SafeMode
+    checkSafeMode,
+    enterSafeMode,
+    exitSafeMode,
+
+    // Dependency injection helpers
+    setStorageAdapter,
+    setPolicyAdapter,
   }
 })

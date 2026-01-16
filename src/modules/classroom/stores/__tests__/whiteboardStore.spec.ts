@@ -3,7 +3,7 @@
  * v0.82.0
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, afterAll, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useWhiteboardStore } from '../whiteboardStore'
 import type { StorageAdapter, PolicyAdapter, PageData } from '@/core/whiteboard/adapters'
@@ -20,10 +20,44 @@ const mockPolicyAdapter: PolicyAdapter = {
   getLimits: vi.fn(),
 }
 
+const defaultWorkspaceState = {
+  myRole: 'editor',
+  isFrozen: false,
+  presenterUserId: null,
+}
+
+const originalFetch = globalThis.fetch
+const mockFetch = vi.fn()
+const mockedFetch = mockFetch as unknown as typeof fetch
+(globalThis as any).fetch = mockedFetch
+
+function mockWorkspaceState(state = defaultWorkspaceState) {
+  mockFetch.mockResolvedValue({
+    ok: true,
+    json: async () => state,
+  })
+}
+
+function createStore() {
+  const store = useWhiteboardStore()
+  store.setStorageAdapter(mockStorageAdapter as StorageAdapter)
+  store.setPolicyAdapter(mockPolicyAdapter as PolicyAdapter)
+  return store
+}
+
 describe('WhiteboardStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    mockWorkspaceState()
+  })
+
+  afterEach(() => {
+    mockFetch.mockReset()
+  })
+
+  afterAll(() => {
+    (globalThis as any).fetch = originalFetch
   })
 
   describe('bootstrap', () => {
@@ -42,11 +76,7 @@ describe('WhiteboardStore', () => {
       vi.mocked(mockStorageAdapter.listPages).mockResolvedValue(mockPages)
       vi.mocked(mockStorageAdapter.loadPage).mockResolvedValue(mockPageData)
 
-      const store = useWhiteboardStore()
-      store.$patch({
-        storageAdapter: mockStorageAdapter,
-        policyAdapter: mockPolicyAdapter,
-      })
+      const store = createStore()
 
       await store.bootstrap('workspace-123')
 
@@ -73,11 +103,9 @@ describe('WhiteboardStore', () => {
       vi.mocked(mockStorageAdapter.createPage).mockResolvedValue(mockNewPage)
       vi.mocked(mockStorageAdapter.loadPage).mockResolvedValue(mockNewPage)
 
-      const store = useWhiteboardStore()
-      store.$patch({
-        storageAdapter: mockStorageAdapter,
-        policyAdapter: mockPolicyAdapter,
-      })
+      const store = createStore()
+
+      store.workspaceId = 'workspace-123'
 
       await store.bootstrap('workspace-123')
 
@@ -89,11 +117,7 @@ describe('WhiteboardStore', () => {
     it('sets error status on failure', async () => {
       vi.mocked(mockPolicyAdapter.getLimits).mockRejectedValue(new Error('Network error'))
 
-      const store = useWhiteboardStore()
-      store.$patch({
-        storageAdapter: mockStorageAdapter,
-        policyAdapter: mockPolicyAdapter,
-      })
+      const store = createStore()
 
       await expect(store.bootstrap('workspace-123')).rejects.toThrow('Network error')
       expect(store.status).toBe('error')
@@ -115,13 +139,11 @@ describe('WhiteboardStore', () => {
       vi.mocked(mockStorageAdapter.createPage).mockResolvedValue(mockNewPage)
       vi.mocked(mockStorageAdapter.loadPage).mockResolvedValue(mockNewPage)
 
-      const store = useWhiteboardStore()
-      store.$patch({
-        workspaceId: 'workspace-123',
-        pages: [{ id: 'page-1', title: 'Page 1', index: 0, version: 1, updatedAt: '2024-01-01' }],
-        activePageId: 'page-1',
-        storageAdapter: mockStorageAdapter,
-        policyAdapter: mockPolicyAdapter,
+      const store = createStore()
+      store.$patch(state => {
+        state.workspaceId = 'workspace-123'
+        state.pages = [{ id: 'page-1', title: 'Page 1', index: 0, version: 1, updatedAt: '2024-01-01' }]
+        state.activePageId = 'page-1'
       })
 
       const result = await store.createPage('New Page')
@@ -133,16 +155,14 @@ describe('WhiteboardStore', () => {
     })
 
     it('throws error when limit is exceeded', async () => {
-      const store = useWhiteboardStore()
-      store.$patch({
-        workspaceId: 'workspace-123',
-        pages: [
+      const store = createStore()
+      store.$patch(state => {
+        state.workspaceId = 'workspace-123'
+        state.pages = [
           { id: 'page-1', title: 'Page 1', index: 0, version: 1, updatedAt: '2024-01-01' },
           { id: 'page-2', title: 'Page 2', index: 1, version: 1, updatedAt: '2024-01-02' },
-        ],
-        limits: { maxPages: 2 },
-        storageAdapter: mockStorageAdapter,
-        policyAdapter: mockPolicyAdapter,
+        ]
+        state.limits = { maxPages: 2 }
       })
 
       await expect(store.createPage()).rejects.toThrow('PAGE_LIMIT_EXCEEDED')
@@ -162,16 +182,14 @@ describe('WhiteboardStore', () => {
       vi.mocked(mockStorageAdapter.createPage).mockResolvedValue(mockNewPage)
       vi.mocked(mockStorageAdapter.loadPage).mockResolvedValue(mockNewPage)
 
-      const store = useWhiteboardStore()
-      store.$patch({
-        workspaceId: 'workspace-123',
-        pages: [
+      const store = createStore()
+      store.$patch(state => {
+        state.workspaceId = 'workspace-123'
+        state.pages = [
           { id: 'page-1', title: 'Page 1', index: 0, version: 1, updatedAt: '2024-01-01' },
           { id: 'page-2', title: 'Page 2', index: 1, version: 1, updatedAt: '2024-01-02' },
-        ],
-        limits: { maxPages: null },
-        storageAdapter: mockStorageAdapter,
-        policyAdapter: mockPolicyAdapter,
+        ]
+        state.limits = { maxPages: null }
       })
 
       await store.createPage()
@@ -194,15 +212,13 @@ describe('WhiteboardStore', () => {
 
       vi.mocked(mockStorageAdapter.loadPage).mockResolvedValue(mockPageData)
 
-      const store = useWhiteboardStore()
-      store.$patch({
-        pages: [
+      const store = createStore()
+      store.$patch(state => {
+        state.pages = [
           { id: 'page-1', title: 'Page 1', index: 0, version: 1, updatedAt: '2024-01-01' },
           { id: 'page-2', title: 'Page 2', index: 1, version: 1, updatedAt: '2024-01-02' },
-        ],
-        activePageId: 'page-1',
-        storageAdapter: mockStorageAdapter,
-        policyAdapter: mockPolicyAdapter,
+        ]
+        state.activePageId = 'page-1'
       })
 
       await store.switchToPage('page-2')
@@ -213,12 +229,10 @@ describe('WhiteboardStore', () => {
     })
 
     it('does nothing when switching to same page', async () => {
-      const store = useWhiteboardStore()
-      store.$patch({
-        pages: [{ id: 'page-1', title: 'Page 1', index: 0, version: 1, updatedAt: '2024-01-01' }],
-        activePageId: 'page-1',
-        storageAdapter: mockStorageAdapter,
-        policyAdapter: mockPolicyAdapter,
+      const store = createStore()
+      store.$patch(state => {
+        state.pages = [{ id: 'page-1', title: 'Page 1', index: 0, version: 1, updatedAt: '2024-01-01' }]
+        state.activePageId = 'page-1'
       })
 
       await store.switchToPage('page-1')
@@ -233,20 +247,18 @@ describe('WhiteboardStore', () => {
 
       vi.mocked(mockStorageAdapter.savePage).mockResolvedValue({ version: 2 })
 
-      const store = useWhiteboardStore()
-      store.$patch({
-        activePageId: 'page-1',
-        currentPageData: {
+      const store = createStore()
+      store.$patch(state => {
+        state.activePageId = 'page-1'
+        state.currentPageData = {
           id: 'page-1',
           title: 'Page 1',
           index: 0,
           version: 1,
           updatedAt: '2024-01-01',
           state: { strokes: [], assets: [] },
-        },
-        pages: [{ id: 'page-1', title: 'Page 1', index: 0, version: 1, updatedAt: '2024-01-01' }],
-        storageAdapter: mockStorageAdapter,
-        policyAdapter: mockPolicyAdapter,
+        }
+        state.pages = [{ id: 'page-1', title: 'Page 1', index: 0, version: 1, updatedAt: '2024-01-01' }]
       })
 
       await store.savePage(newState)
@@ -260,12 +272,10 @@ describe('WhiteboardStore', () => {
     })
 
     it('throws error when no active page', async () => {
-      const store = useWhiteboardStore()
-      store.$patch({
-        activePageId: null,
-        currentPageData: null,
-        storageAdapter: mockStorageAdapter,
-        policyAdapter: mockPolicyAdapter,
+      const store = createStore()
+      store.$patch(state => {
+        state.activePageId = null
+        state.currentPageData = null
       })
 
       await expect(store.savePage({ strokes: [], assets: [] })).rejects.toThrow('No active page to save')
@@ -274,16 +284,12 @@ describe('WhiteboardStore', () => {
 
   describe('deletePage', () => {
     it('deletes page and switches to another', async () => {
-      const store = useWhiteboardStore()
-      store.$patch({
-        pages: [
-          { id: 'page-1', title: 'Page 1', index: 0, version: 1, updatedAt: '2024-01-01' },
-          { id: 'page-2', title: 'Page 2', index: 1, version: 1, updatedAt: '2024-01-02' },
-        ],
-        activePageId: 'page-1',
-        storageAdapter: mockStorageAdapter,
-        policyAdapter: mockPolicyAdapter,
-      })
+      const store = createStore()
+      store.pages = [
+        { id: 'page-1', title: 'Page 1', index: 0, version: 1, updatedAt: '2024-01-01' },
+        { id: 'page-2', title: 'Page 2', index: 1, version: 1, updatedAt: '2024-01-02' },
+      ]
+      store.activePageId = 'page-1'
 
       vi.mocked(mockStorageAdapter.loadPage).mockResolvedValue({
         id: 'page-2',
@@ -302,12 +308,10 @@ describe('WhiteboardStore', () => {
     })
 
     it('throws error when trying to delete last page', async () => {
-      const store = useWhiteboardStore()
-      store.$patch({
-        pages: [{ id: 'page-1', title: 'Page 1', index: 0, version: 1, updatedAt: '2024-01-01' }],
-        activePageId: 'page-1',
-        storageAdapter: mockStorageAdapter,
-        policyAdapter: mockPolicyAdapter,
+      const store = createStore()
+      store.$patch(state => {
+        state.pages = [{ id: 'page-1', title: 'Page 1', index: 0, version: 1, updatedAt: '2024-01-01' }]
+        state.activePageId = 'page-1'
       })
 
       await expect(store.deletePage('page-1')).rejects.toThrow('Cannot delete last page')
@@ -317,9 +321,9 @@ describe('WhiteboardStore', () => {
   describe('computed properties', () => {
     it('canCreatePage returns true when maxPages is null', () => {
       const store = useWhiteboardStore()
-      store.$patch({
-        pages: [{ id: 'page-1', title: 'Page 1', index: 0, version: 1, updatedAt: '2024-01-01' }],
-        limits: { maxPages: null },
+      store.$patch(state => {
+        state.pages = [{ id: 'page-1', title: 'Page 1', index: 0, version: 1, updatedAt: '2024-01-01' }]
+        state.limits = { maxPages: null }
       })
 
       expect(store.canCreatePage).toBe(true)
@@ -327,12 +331,12 @@ describe('WhiteboardStore', () => {
 
     it('canCreatePage returns false when limit reached', () => {
       const store = useWhiteboardStore()
-      store.$patch({
-        pages: [
+      store.$patch(state => {
+        state.pages = [
           { id: 'page-1', title: 'Page 1', index: 0, version: 1, updatedAt: '2024-01-01' },
           { id: 'page-2', title: 'Page 2', index: 1, version: 1, updatedAt: '2024-01-02' },
-        ],
-        limits: { maxPages: 2 },
+        ]
+        state.limits = { maxPages: 2 }
       })
 
       expect(store.canCreatePage).toBe(false)
@@ -340,12 +344,12 @@ describe('WhiteboardStore', () => {
 
     it('activePage returns current active page', () => {
       const store = useWhiteboardStore()
-      store.$patch({
-        pages: [
+      store.$patch(state => {
+        state.pages = [
           { id: 'page-1', title: 'Page 1', index: 0, version: 1, updatedAt: '2024-01-01' },
           { id: 'page-2', title: 'Page 2', index: 1, version: 1, updatedAt: '2024-01-02' },
-        ],
-        activePageId: 'page-2',
+        ]
+        state.activePageId = 'page-2'
       })
 
       expect(store.activePage?.id).toBe('page-2')

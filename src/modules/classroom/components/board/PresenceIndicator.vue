@@ -26,7 +26,12 @@
             {{ getUserInitials(user.userName) }}
           </div>
           <div class="user-info">
-            <div class="user-name">{{ user.userName }}</div>
+            <div class="user-name">
+              {{ user.userName }}
+              <span v-if="getUserRole(user.userId)" class="role-badge" :class="`role-badge--${getUserRole(user.userId)}`">
+                {{ getRoleBadge(getUserRole(user.userId)) }}
+              </span>
+            </div>
             <div class="user-status">
               <span class="status-dot"></span>
               {{ $t('whiteboard.presence.active') }}
@@ -54,12 +59,15 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { PresenceUser } from '@/core/whiteboard/adapters/RealtimeAdapter'
+import { useWhiteboardStore } from '@/modules/classroom/stores/whiteboardStore'
 
 interface Props {
   users: PresenceUser[]
+  participantsRoles?: Record<string, 'viewer' | 'editor' | 'moderator'>
 }
 
 const props = defineProps<Props>()
+const whiteboardStore = useWhiteboardStore()
 
 const activeUsers = computed(() => {
   return props.users.filter(u => u.isActive)
@@ -71,6 +79,22 @@ function getUserInitials(name: string): string {
     return (parts[0][0] + parts[1][0]).toUpperCase()
   }
   return name.substring(0, 2).toUpperCase()
+}
+
+function getUserRole(userId: string): 'viewer' | 'editor' | 'moderator' | null {
+  return props.participantsRoles?.[userId] || null
+}
+
+function getRoleBadge(role: 'viewer' | 'editor' | 'moderator' | null): string {
+  if (!role) return ''
+  
+  const badges: Record<string, string> = {
+    'viewer': 'VIEW',
+    'editor': 'EDIT',
+    'moderator': 'MOD'
+  }
+  
+  return badges[role] || ''
 }
 </script>
 
@@ -175,10 +199,38 @@ function getUserInitials(name: string): string {
 }
 
 .user-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 13px;
   font-weight: 500;
   color: var(--color-text-primary);
   margin-bottom: 2px;
+}
+
+.role-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.role-badge--viewer {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.role-badge--editor {
+  background: #e8f5e9;
+  color: #388e3c;
+}
+
+.role-badge--moderator {
+  background: #f3e5f5;
+  color: #7b1fa2;
 }
 
 .user-status {

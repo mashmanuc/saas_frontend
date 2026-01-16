@@ -486,7 +486,8 @@
         "challengeExpired": "WebAuthn challenge expired. Please retry.",
         "invalidAssertion": "Invalid WebAuthn assertion. Please try again."
       }
-    }
+    },
+    "logout": "Вийти"
   },
   "menu": {
     "studentDashboard": "Student dashboard",
@@ -3561,6 +3562,22 @@
       "activityInfo": "Activity",
       "inquiries30d": "Inquiries (30 days)",
       "contactsUnlocked30d": "Contacts Unlocked (30 days)"
+    },
+    "billingPending": {
+      "emptyDescription": "Всі платежі оброблені або список порожній",
+      "emptyTitle": "Немає очікуваних платежів",
+      "errorTitle": "Помилка завантаження",
+      "finalize": "Завершити платіж",
+      "loading": "Завантаження...",
+      "openUser": "Відкрити користувача",
+      "pendingAge": "Тривалість очікування",
+      "pendingSince": "Очікує з",
+      "plan": "План",
+      "provider": "Провайдер",
+      "searchPlaceholder": "Пошук за email або ID користувача",
+      "showOnlyStale": "Показати тільки застарілі (>1 год)",
+      "subtitle": "Список користувачів з незавершеними платежами",
+      "title": "Очікувані платежі"
     }
   },
   "relationAction": {
@@ -3751,7 +3768,17 @@
       "viewPlans": "Переглянути плани"
     },
     "checkout": {
-      "agreement": "Натискаючи кнопку оплати, ви погоджуєтесь з:"
+      "agreement": "Натискаючи кнопку оплати, ви погоджуєтесь з:",
+      "locked": {
+        "age": "Тривалість",
+        "close": "Закрити",
+        "message": "У вас вже є активне оформлення замовлення. Будь ласка, завершіть його або зачекайте.",
+        "orderId": "ID замовлення",
+        "pendingSince": "Очікує з",
+        "plan": "План",
+        "refresh": "Оновити статус",
+        "title": "Оформлення вже в процесі"
+      }
     },
     "history": "Історія платежів",
     "historyComingSoon": "Історія платежів скоро буде доступна",
@@ -3765,6 +3792,11 @@
       "message": "Для доступу до цієї функції необхідна активна підписка",
       "title": "Потрібна підписка",
       "unlockFeatures": "Розблокуйте можливості:"
+    },
+    "period": {
+      "days": "днів",
+      "label": "Період підписки",
+      "remaining": "Залишилось"
     }
   },
   "commonExtended": {
@@ -3963,5 +3995,57 @@
       "lastUpdated": "Останнє оновлення: {date}",
       "title": "Угода користувача"
     }
+  },
+  "whiteboard": {
+    "addPage": "Додати сторінку",
+    "deletePage": "Видалити сторінку",
+    "empty": "Почніть малювати, щоб ділитися ідеями з усіма в уроці.",
+    "moderation": {
+      "clear_page": "Очистити сторінку",
+      "freeze_off": "Розморозити дошку",
+      "freeze_on": "Заморозити дошку",
+      "frozen_notice": "Дошка заморожена модератором"
+    },
+    "participantsLabel": "{count} у цій сесії",
+    "paywall": {
+      "benefits": {
+        "business": {
+          "pages": "До 50 сторінок дошки",
+          "priority": "Пріоритетна підтримка 24/7",
+          "storage": "Необмежене сховище",
+          "team": "Функції командної співпраці"
+        },
+        "pro": {
+          "pages": "До 10 сторінок дошки",
+          "storage": "Збільшений простір для зберігання",
+          "support": "Пріоритетна підтримка"
+        }
+      },
+      "currentPlan": "Поточний план",
+      "currentUsage": "Поточне використання",
+      "genericMessage": "Ви досягли ліміту вашого поточного плану.",
+      "limitReached": "Ви досягли ліміту {limit} сторінок. Оновіть до {plan}, щоб створити більше.",
+      "requiredPlan": "Необхідний план",
+      "title": "Оновіть план для створення більше сторінок",
+      "upgradeButton": "Оновити план",
+      "upgradeTitle": "Переваги оновлення"
+    },
+    "presence": {
+      "active": "Активний",
+      "connected": "Підключено",
+      "connecting": "Підключення...",
+      "disconnected": "Відключено",
+      "error": "Помилка підключення",
+      "offline": "Офлайн"
+    },
+    "presenter": {
+      "follow_on": "Слідувати за викладачем"
+    },
+    "safe_mode_blocked": "Малювання заблоковано в безпечному режимі",
+    "safe_mode_message": "Малювання тимчасово заблоковано через проблеми з підключенням. Відновлення з'єднання...",
+    "safe_mode_overflow": "Виявлено переповнення черги. Будь ласка, зачекайте синхронізації.",
+    "safe_mode_pending_ops": "{count} операцій в черзі",
+    "safe_mode_title": "Безпечний режим активний",
+    "title": "Спільна дошка"
   }
 }

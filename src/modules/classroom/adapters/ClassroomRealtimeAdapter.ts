@@ -36,6 +36,12 @@ export class ClassroomRealtimeAdapter implements RealtimeAdapter {
   private pageSwitchCallbacks: Array<(pageId: string, userId: string) => void> = []
   private opsAckCallbacks: Array<(payload: OpsAckPayload) => void> = []
   private resyncCallbacks: Array<(payload: ResyncResponse) => void> = []
+  
+  // v0.86.0: Moderation callbacks
+  private boardFrozenCallbacks: Array<(frozen: boolean, byUserId: string) => void> = []
+  private presenterChangedCallbacks: Array<(presenterUserId: string | null, byUserId: string) => void> = []
+  private pageClearedCallbacks: Array<(pageId: string, byUserId: string) => void> = []
+  
   private reconnectAttempts = 0
   private maxReconnectAttempts = 5
   private reconnectDelay = 1000
@@ -265,6 +271,18 @@ export class ClassroomRealtimeAdapter implements RealtimeAdapter {
           this.handleResyncResponse(message as unknown as ResyncResponse)
           break
         
+        case 'board_frozen':
+          this.handleBoardFrozen(message.isFrozen as boolean, message.byUserId as string)
+          break
+        
+        case 'presenter_changed':
+          this.handlePresenterChanged(message.presenterUserId as string | null, message.byUserId as string)
+          break
+        
+        case 'page_cleared':
+          this.handlePageCleared(message.pageId as string, message.byUserId as string)
+          break
+        
         case 'error':
           console.error('[ClassroomRealtimeAdapter] Server error:', message)
           break
@@ -349,6 +367,56 @@ export class ClassroomRealtimeAdapter implements RealtimeAdapter {
     
     // Notify callbacks
     this.resyncCallbacks.forEach(callback => callback(payload))
+  }
+  
+  // v0.86.0: Moderation handlers
+  private handleBoardFrozen(frozen: boolean, byUserId: string): void {
+    console.log(`[ClassroomRealtimeAdapter] Board ${frozen ? 'frozen' : 'unfrozen'} by ${byUserId}`)
+    this.boardFrozenCallbacks.forEach(callback => callback(frozen, byUserId))
+  }
+  
+  private handlePresenterChanged(presenterUserId: string | null, byUserId: string): void {
+    console.log(`[ClassroomRealtimeAdapter] Presenter changed to ${presenterUserId} by ${byUserId}`)
+    this.presenterChangedCallbacks.forEach(callback => callback(presenterUserId, byUserId))
+  }
+  
+  private handlePageCleared(pageId: string, byUserId: string): void {
+    console.log(`[ClassroomRealtimeAdapter] Page ${pageId} cleared by ${byUserId}`)
+    this.pageClearedCallbacks.forEach(callback => callback(pageId, byUserId))
+  }
+  
+  // v0.86.0: Public moderation methods
+  onBoardFrozen(callback: (frozen: boolean, byUserId: string) => void): void {
+    this.boardFrozenCallbacks.push(callback)
+  }
+  
+  onPresenterChanged(callback: (presenterUserId: string | null, byUserId: string) => void): void {
+    this.presenterChangedCallbacks.push(callback)
+  }
+  
+  onPageCleared(callback: (pageId: string, byUserId: string) => void): void {
+    this.pageClearedCallbacks.push(callback)
+  }
+  
+  async sendFreeze(frozen: boolean): Promise<void> {
+    this.sendMessage({
+      type: 'board_freeze',
+      isFrozen: frozen
+    })
+  }
+  
+  async sendClearPage(pageId: string): Promise<void> {
+    this.sendMessage({
+      type: 'board_clear_page',
+      pageId
+    })
+  }
+  
+  async sendSetPresenter(userId: string | null): Promise<void> {
+    this.sendMessage({
+      type: 'board_set_presenter',
+      userId
+    })
   }
   
   private handleDisconnect(): void {

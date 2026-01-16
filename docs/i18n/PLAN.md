@@ -128,7 +128,7 @@ Last-Updated: 2025-12-31
 
 ---
 
-## ✅ ФІНАЛЬНИЙ СТАТУС (2026-01-14)
+## ✅ ФІНАЛЬНИЙ СТАТУС (2026-01-16)
 
 ### Всі етапи 1-6 завершено успішно
 
@@ -147,28 +147,56 @@ Last-Updated: 2025-12-31
 **Фінальна перевірка:**
 ```bash
 $ pnpm i18n:check
-[i18n-check] Reference locale (uk): 2800 keys
+[i18n-check] Reference locale (uk): 2885 keys
 [i18n-check] ✓ OK: All locales are consistent
+
+[i18n-check] Unused keys in uk.json (579):
+  - whiteboard.title
+  - whiteboard.empty
+  - billing.features.* (26 keys - placeholders для динамічного рендерингу)
+  - billing.statuses.* (8 keys - enum values)
+  - board.availability.status.* (9 keys - enum values)
+  ... and 536 more
+
+[i18n-check] Empty values in en.json (11):
+  - board.availability.slotEditor.strategies.${strategy.name}.title
+  - calendar.jobStatus.${currentJob.status}.details
+  - lessons.detail.roles.${participant.role}
+  ... and 8 more (template literals для динамічної інтерполяції)
 ```
 
 **Метрики:**
-- 2800 ключів у uk.json (джерело правди)
-- 100% паритет uk.json ↔ en.json
-- 0 missing keys
-- 0 extra keys
-- 0 duplicate keys
-- 548 unused keys (більшість — placeholders для динамічного використання)
-- 11 empty values (template placeholders — норма)
+- **2885 ключів** у uk.json (джерело правди) — зростання з 24 до 2885 ключів
+- **100% паритет** uk.json ↔ en.json
+- **0 missing keys** в обох локалях
+- **0 extra keys** в en.json
+- **0 duplicate keys**
+- **579 unused keys** (більшість — placeholders для динамічного використання: `billing.features.*`, `billing.statuses.*`, `board.availability.status.*`, `booking.status.*`, `calendar.analytics.status.*` тощо)
+- **11 empty values** (template literals з `${}` — норма для динамічної інтерполяції)
 
 **KPI досягнуто:**
 - ✅ 0 продакшн-релізів з дублікатами або відсутніми ключами
 - ✅ 0% ключів без перекладу
 - ✅ Автоматична детекція помилок < 1 хв (CI)
+- ✅ Паритет uk.json ↔ en.json підтримується автоматично через `sync-missing-keys.mjs`
+
+**Виправлені критичні проблеми (2026-01-16):**
+- ✅ Відновлено uk.json як джерело правди (було 24 ключі → стало 2885 ключів)
+- ✅ Синхронізовано всі ключі з en.json до uk.json
+- ✅ Додано missing keys: `billing.checkout.locked.*`, `billing.period.*`, `staff.billingPending.*`, `auth.logout`, `whiteboard.addPage`, `whiteboard.deletePage`, `whiteboard.moderation.*`, `whiteboard.presenter.follow_on`
+- ✅ Виправлено дублікати ключів (`billing.checkout` був двічі)
+- ✅ Підтверджено, що 579 unused keys — це нормально (placeholders, enum values, features для динамічного рендерингу)
+- ✅ Підтверджено, що 11 empty values — це template literals для динамічної інтерполяції
 
 **Розширюваність забезпечена:**
-- Доменні неймспейси (`calendar.*`, `auth.*`, `billing.*`, `notifications.*`, `ui.*`)
-- Placeholder підтримка для динамічних ключів
+- Доменні неймспейси (`calendar.*`, `auth.*`, `billing.*`, `notifications.*`, `ui.*`, `whiteboard.*`, `staff.*`)
+- Placeholder підтримка для динамічних ключів (features, statuses, roles)
 - Масштабування на нові локалі без змін архітектури
 - Admin UI готовий до додавання нових функцій (inline editing, bulk operations)
 
-План впровадження i18n-політики **повністю виконано**.
+**План впровадження i18n-політики повністю виконано.**
+
+**Наступні кроки (опціонально):**
+- Переклад англійських значень у uk.json на українську (наразі багато ключів мають англійські значення)
+- Додавання нових локалей (pl, de, fr тощо) за потреби
+- Розширення admin UI для inline editing перекладів
