@@ -1,12 +1,21 @@
 /**
  * Whiteboard Store for Classroom
  * v0.83.0 - Pages management with adapters and paywall support
+ * v0.85.0 - Recovery state with snapshot and pending operations
  */
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { StorageAdapter, PolicyAdapter, PageMetadata, PageData } from '@/core/whiteboard/adapters'
-import type { RealtimeAdapter, PresenceUser, RemoteCursor, BoardOperation } from '@/core/whiteboard/adapters/RealtimeAdapter'
+import type { 
+  RealtimeAdapter, 
+  PresenceUser, 
+  RemoteCursor, 
+  BoardOperation,
+  WhiteboardOperation,
+  OpsAckPayload,
+  ResyncResponse
+} from '@/core/whiteboard/adapters/RealtimeAdapter'
 import { M4shStorageAdapter, M4shPolicyAdapter } from '../adapters'
 import { NoopRealtimeAdapter } from '@/core/whiteboard/adapters/NoopRealtimeAdapter'
 
@@ -38,6 +47,12 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
   const connectionStatus = ref<ConnectionStatus>('disconnected')
   const presenceUsers = ref<PresenceUser[]>([])
   const remoteCursors = ref<Map<string, RemoteCursor>>(new Map())
+
+  // Recovery state (v0.85.0)
+  const currentVersion = ref<number>(1)
+  const lastAckedVersion = ref<number>(1)
+  const pendingOps = ref<Map<string, WhiteboardOperation>>(new Map())
+  const isRecovering = ref<boolean>(false)
 
   // Computed
   const activePage = computed(() => pages.value.find(p => p.id === activePageId.value) || null)
@@ -305,6 +320,19 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
         console.log(`[WhiteboardStore] User ${userId} switched to page ${pageId}`)
       })
 
+      // v0.85.0: Subscribe to ops_ack and resync
+      if (realtimeAdapter.value.onOpsAck) {
+        realtimeAdapter.value.onOpsAck((payload) => {
+          markOpsAcked(payload.opIds, payload.appliedVersion)
+        })
+      }
+
+      if (realtimeAdapter.value.onResync) {
+        realtimeAdapter.value.onResync((payload) => {
+          handleResyncResponse(payload)
+        })
+      }
+
       // Listen for version conflicts
       window.addEventListener('whiteboard:version-conflict', handleVersionConflict as EventListener)
     } catch (err: any) {
@@ -353,14 +381,106 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
   }
 
   /**
+   * Queue operation for sending (v0.85.0)
+   */
+  function queueOperation(op: BoardOperation): void {
+    if (!activePageId.value) return
+
+    const opId = crypto.randomUUID()
+    const whiteboardOp: WhiteboardOperation = {
+      op_id: opId,
+      pageId: activePageId.value,
+      baseVersion: currentVersion.value,
+      payload: op
+    }
+
+    pendingOps.value.set(opId, whiteboardOp)
+    currentVersion.value++
+
+    // Send via adapter if available
+    if (realtimeAdapter.value.sendOperations) {
+      realtimeAdapter.value.sendOperations([whiteboardOp])
+    }
+  }
+
+  /**
+   * Mark operations as acknowledged (v0.85.0)
+   */
+  function markOpsAcked(opIds: string[], appliedVersion: number): void {
+    opIds.forEach(opId => {
+      pendingOps.value.delete(opId)
+    })
+
+    lastAckedVersion.value = appliedVersion
+    console.log(`[WhiteboardStore] Acknowledged ${opIds.length} operations, version ${appliedVersion}`)
+  }
+
+  /**
+   * Apply snapshot from resync (v0.85.0)
+   */
+  function applySnapshot(snapshot: { version: number; state: unknown }): void {
+    if (!currentPageData.value) return
+
+    currentPageData.value.state = snapshot.state as any
+    currentPageData.value.version = snapshot.version
+    currentVersion.value = snapshot.version
+    lastAckedVersion.value = snapshot.version
+
+    console.log(`[WhiteboardStore] Applied snapshot at version ${snapshot.version}`)
+  }
+
+  /**
+   * Apply replay operations after snapshot (v0.85.0)
+   */
+  function applyReplayOperations(ops: Array<{ op_id: string; payload: BoardOperation; appliedVersion: number }>): void {
+    ops.forEach(op => {
+      handleRemoteOperation(op.payload)
+      currentVersion.value = op.appliedVersion
+    })
+
+    console.log(`[WhiteboardStore] Replayed ${ops.length} operations`)
+  }
+
+  /**
+   * Handle resync response (v0.85.0)
+   */
+  async function handleResyncResponse(payload: ResyncResponse): Promise<void> {
+    if (payload.pageId !== activePageId.value) return
+
+    isRecovering.value = true
+
+    try {
+      // Apply snapshot
+      applySnapshot(payload.snapshot)
+
+      // Apply operations since snapshot
+      applyReplayOperations(payload.operations)
+
+      // Clear pending ops for this page
+      pendingOps.value.forEach((op, opId) => {
+        if (op.pageId === payload.pageId) {
+          pendingOps.value.delete(opId)
+        }
+      })
+
+      console.log(`[WhiteboardStore] Resync completed for page ${payload.pageId}`)
+    } finally {
+      isRecovering.value = false
+    }
+  }
+
+  /**
    * Handle version conflict
    */
   async function handleVersionConflict(event: CustomEvent): Promise<void> {
-    const { pageId, currentVersion } = event.detail
-    console.warn('[WhiteboardStore] Version conflict, reloading page', { pageId, currentVersion })
+    const { pageId, currentVersion: serverVersion } = event.detail
+    console.warn('[WhiteboardStore] Version conflict, requesting resync', { pageId, serverVersion })
     
-    if (pageId === activePageId.value) {
-      await loadActivePage()
+    if (pageId === activePageId.value && realtimeAdapter.value.requestResync) {
+      await realtimeAdapter.value.requestResync({
+        pageId,
+        lastKnownVersion: lastAckedVersion.value
+      })
     }
   }
 
@@ -376,6 +496,10 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
     status.value = 'idle'
     error.value = null
     limits.value = { maxPages: null }
+    currentVersion.value = 1
+    lastAckedVersion.value = 1
+    pendingOps.value.clear()
+    isRecovering.value = false
   }
 
   return {
@@ -392,6 +516,10 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
     connectionStatus,
     presenceUsers,
     remoteCursors,
+    currentVersion,
+    lastAckedVersion,
+    pendingOps,
+    isRecovering,
 
     // Computed
     activePage,
@@ -417,5 +545,11 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
     sendCursorMove,
     sendOperation,
     handleRemoteOperation,
+    
+    // Recovery (v0.85.0)
+    queueOperation,
+    markOpsAcked,
+    applySnapshot,
+    applyReplayOperations,
   }
 })

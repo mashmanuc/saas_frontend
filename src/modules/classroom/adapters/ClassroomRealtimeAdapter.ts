@@ -1,14 +1,20 @@
 /**
  * ClassroomRealtimeAdapter - WebSocket implementation for classroom mode
  * v0.84.0 - Full realtime sync with presence, cursors, and operations
+ * v0.85.0 - Added offline queue, ops_batch, ops_ack, and resync support
  */
 
 import type {
   RealtimeAdapter,
   RemoteCursor,
   PresenceUser,
-  BoardOperation
+  BoardOperation,
+  WhiteboardOperation,
+  OpsAckPayload,
+  ResyncRequest,
+  ResyncResponse
 } from '@/core/whiteboard/adapters/RealtimeAdapter'
+import type { PendingOperation } from '@/core/whiteboard/adapters/OfflineQueue.types'
 
 interface WebSocketMessage {
   type: string
@@ -28,9 +34,18 @@ export class ClassroomRealtimeAdapter implements RealtimeAdapter {
   private cursorCallbacks: Array<(cursor: RemoteCursor) => void> = []
   private operationCallbacks: Array<(op: BoardOperation) => void> = []
   private pageSwitchCallbacks: Array<(pageId: string, userId: string) => void> = []
+  private opsAckCallbacks: Array<(payload: OpsAckPayload) => void> = []
+  private resyncCallbacks: Array<(payload: ResyncResponse) => void> = []
   private reconnectAttempts = 0
   private maxReconnectAttempts = 5
   private reconnectDelay = 1000
+  
+  // Offline queue (v0.85.0)
+  private pendingOps: Map<string, PendingOperation> = new Map()
+  private retryTimer: number | null = null
+  private readonly maxRetries = 5
+  private readonly retryDelay = 5000
+  private readonly batchSize = 10
   
   async connect(workspaceId: string, userId: string): Promise<void> {
     this.workspaceId = workspaceId
@@ -129,6 +144,86 @@ export class ClassroomRealtimeAdapter implements RealtimeAdapter {
     this.pageSwitchCallbacks.push(callback)
   }
   
+  // v0.85.0 methods
+  async sendOperations(operations: WhiteboardOperation[]): Promise<void> {
+    // Add to pending queue
+    operations.forEach(op => {
+      this.pendingOps.set(op.op_id, {
+        operation: op,
+        attempts: 0,
+        lastAttemptAt: Date.now(),
+        createdAt: Date.now()
+      })
+    })
+    
+    // Try to send immediately
+    await this.flushPendingOps()
+  }
+  
+  onOpsAck(callback: (payload: OpsAckPayload) => void): void {
+    this.opsAckCallbacks.push(callback)
+  }
+  
+  async requestResync(request: ResyncRequest): Promise<void> {
+    this.sendMessage({
+      type: 'resync_request',
+      pageId: request.pageId,
+      lastKnownVersion: request.lastKnownVersion
+    })
+  }
+  
+  onResync(callback: (payload: ResyncResponse) => void): void {
+    this.resyncCallbacks.push(callback)
+  }
+  
+  private async flushPendingOps(): Promise<void> {
+    if (!this.isConnected() || this.pendingOps.size === 0) {
+      return
+    }
+    
+    // Get batch of operations to send
+    const batch: WhiteboardOperation[] = []
+    const now = Date.now()
+    
+    for (const [opId, pending] of this.pendingOps.entries()) {
+      if (pending.attempts >= this.maxRetries) {
+        console.error(`[ClassroomRealtimeAdapter] Max retries reached for operation ${opId}`)
+        this.pendingOps.delete(opId)
+        continue
+      }
+      
+      // Check if enough time passed since last attempt
+      if (now - pending.lastAttemptAt < this.retryDelay && pending.attempts > 0) {
+        continue
+      }
+      
+      batch.push(pending.operation)
+      pending.attempts++
+      pending.lastAttemptAt = now
+      
+      if (batch.length >= this.batchSize) {
+        break
+      }
+    }
+    
+    if (batch.length > 0) {
+      this.sendMessage({
+        type: 'ops_batch',
+        operations: batch
+      })
+      
+      console.log(`[ClassroomRealtimeAdapter] Sent batch of ${batch.length} operations`)
+    }
+    
+    // Schedule retry if there are still pending ops
+    if (this.pendingOps.size > 0 && !this.retryTimer) {
+      this.retryTimer = window.setTimeout(() => {
+        this.retryTimer = null
+        this.flushPendingOps()
+      }, this.retryDelay)
+    }
+  }
+  
   private sendMessage(message: WebSocketMessage): void {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(message))
@@ -160,6 +255,14 @@ export class ClassroomRealtimeAdapter implements RealtimeAdapter {
         
         case 'version_conflict':
           this.handleVersionConflict(message.pageId as string, message.currentVersion as number)
+          break
+        
+        case 'ops_ack':
+          this.handleOpsAck(message as unknown as OpsAckPayload)
+          break
+        
+        case 'resync_response':
+          this.handleResyncResponse(message as unknown as ResyncResponse)
           break
         
         case 'error':
@@ -217,6 +320,35 @@ export class ClassroomRealtimeAdapter implements RealtimeAdapter {
     window.dispatchEvent(new CustomEvent('whiteboard:version-conflict', {
       detail: { pageId, currentVersion }
     }))
+  }
+  
+  private handleOpsAck(payload: OpsAckPayload): void {
+    // Remove acknowledged operations from pending queue
+    payload.opIds.forEach(opId => {
+      this.pendingOps.delete(opId)
+    })
+    
+    console.log(`[ClassroomRealtimeAdapter] Acknowledged ${payload.opIds.length} operations, applied version: ${payload.appliedVersion}`)
+    
+    // Notify callbacks
+    this.opsAckCallbacks.forEach(callback => callback(payload))
+    
+    // Try to flush remaining pending ops
+    this.flushPendingOps()
+  }
+  
+  private handleResyncResponse(payload: ResyncResponse): void {
+    console.log(`[ClassroomRealtimeAdapter] Received resync response for page ${payload.pageId}`)
+    
+    // Clear pending ops for this page (they're now stale)
+    for (const [opId, pending] of this.pendingOps.entries()) {
+      if (pending.operation.pageId === payload.pageId) {
+        this.pendingOps.delete(opId)
+      }
+    }
+    
+    // Notify callbacks
+    this.resyncCallbacks.forEach(callback => callback(payload))
   }
   
   private handleDisconnect(): void {

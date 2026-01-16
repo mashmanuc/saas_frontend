@@ -1,6 +1,7 @@
 /**
  * RealtimeAdapter interface for whiteboard realtime sync
  * v0.82.0 - Interface only, no implementation yet
+ * v0.85.0 - Extended with ops_batch, ops_ack, and resync support
  */
 
 export interface RemoteCursor {
@@ -27,6 +28,38 @@ export interface BoardOperation {
   userId: string
   timestamp: number
   version: number
+}
+
+export interface WhiteboardOperation {
+  op_id: string
+  pageId: string
+  baseVersion: number
+  payload: BoardOperation
+}
+
+export interface OpsAckPayload {
+  pageId: string
+  appliedVersion: number
+  opIds: string[]
+}
+
+export interface ResyncRequest {
+  pageId: string
+  lastKnownVersion: number
+}
+
+export interface ResyncResponse {
+  pageId: string
+  snapshot: {
+    version: number
+    state: unknown
+  }
+  operations: Array<{
+    op_id: string
+    payload: BoardOperation
+    appliedVersion: number
+    authorId: string
+  }>
 }
 
 /**
@@ -88,4 +121,24 @@ export interface RealtimeAdapter {
    * Subscribe to page switches
    */
   onPageSwitch(callback: (pageId: string, userId: string) => void): void
+
+  /**
+   * Send batch of operations (v0.85.0)
+   */
+  sendOperations?(operations: WhiteboardOperation[]): Promise<void>
+
+  /**
+   * Subscribe to operations acknowledgment (v0.85.0)
+   */
+  onOpsAck?(callback: (payload: OpsAckPayload) => void): void
+
+  /**
+   * Request resync with snapshot (v0.85.0)
+   */
+  requestResync?(request: ResyncRequest): Promise<void>
+
+  /**
+   * Subscribe to resync response (v0.85.0)
+   */
+  onResync?(callback: (payload: ResyncResponse) => void): void
 }
