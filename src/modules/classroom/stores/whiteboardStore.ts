@@ -1,6 +1,6 @@
 /**
  * Whiteboard Store for Classroom
- * v0.82.0 - Pages management with adapters
+ * v0.83.0 - Pages management with adapters and paywall support
  */
 
 import { defineStore } from 'pinia'
@@ -25,6 +25,10 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
 
   // Limits
   const limits = ref<{ maxPages: number | null }>({ maxPages: null })
+  
+  // Paywall
+  const showPaywallModal = ref(false)
+  const paywallData = ref<any>(null)
 
   // Computed
   const activePage = computed(() => pages.value.find(p => p.id === activePageId.value) || null)
@@ -70,13 +74,21 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
 
   /**
    * Create new page
+   * v0.83.0: Handle 409 limit_exceeded with paywall
    */
   async function createPage(title?: string): Promise<PageData> {
     if (!workspaceId.value) {
       throw new Error('Workspace not initialized')
     }
 
+    // Soft check for UX optimization
     if (!canCreatePage.value) {
+      showPaywall({ 
+        limit_type: 'whiteboard_pages_per_workspace',
+        limit: limits.value.maxPages,
+        current: pageCount.value,
+        required_plan: 'pro'
+      })
       throw new Error('PAGE_LIMIT_EXCEEDED')
     }
 
@@ -104,11 +116,32 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
       status.value = 'idle'
       return newPage
     } catch (err: any) {
+      // Handle 409 limit_exceeded from backend
+      if (err.message === 'PAGE_LIMIT_EXCEEDED' && err.limitData) {
+        showPaywall(err.limitData)
+      }
+      
       console.error('[WhiteboardStore] Create page failed:', err)
       error.value = err.message || 'Failed to create page'
       status.value = 'error'
       throw err
     }
+  }
+
+  /**
+   * Show paywall modal
+   */
+  function showPaywall(limitData: any): void {
+    paywallData.value = limitData
+    showPaywallModal.value = true
+  }
+
+  /**
+   * Close paywall modal
+   */
+  function closePaywall(): void {
+    showPaywallModal.value = false
+    paywallData.value = null
   }
 
   /**
@@ -234,6 +267,8 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
     // State
     workspaceId,
     pages,
+    showPaywallModal,
+    paywallData,
     activePageId,
     currentPageData,
     status,
@@ -254,5 +289,7 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
     deletePage,
     renamePage,
     reset,
+    showPaywall,
+    closePaywall,
   }
 })

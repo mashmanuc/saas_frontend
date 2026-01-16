@@ -1499,6 +1499,29 @@
     "empty": "Start drawing to share ideas with everyone in the lesson.",
     "participantsLabel": "{count} in this session",
     "title": "Collaborative whiteboard",
+    "paywall": {
+      "title": "Upgrade to Create More Pages",
+      "genericMessage": "You've reached the limit for your current plan.",
+      "limitReached": "You've reached the limit of {limit} pages. Upgrade to {plan} to create more.",
+      "currentPlan": "Current plan",
+      "currentUsage": "Current usage",
+      "requiredPlan": "Required plan",
+      "upgradeTitle": "Upgrade benefits",
+      "upgradeButton": "Upgrade Plan",
+      "benefits": {
+        "pro": {
+          "pages": "Up to 10 whiteboard pages",
+          "storage": "Increased storage space",
+          "support": "Priority support"
+        },
+        "business": {
+          "pages": "Up to 50 whiteboard pages",
+          "storage": "Unlimited storage",
+          "priority": "Priority support 24/7",
+          "team": "Team collaboration features"
+        }
+      }
+    },
     "availability": {
       "slotEditor": {
         "strategies": {
