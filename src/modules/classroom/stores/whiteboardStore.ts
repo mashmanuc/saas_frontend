@@ -6,14 +6,18 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { StorageAdapter, PolicyAdapter, PageMetadata, PageData } from '@/core/whiteboard/adapters'
+import type { RealtimeAdapter, PresenceUser, RemoteCursor, BoardOperation } from '@/core/whiteboard/adapters/RealtimeAdapter'
 import { M4shStorageAdapter, M4shPolicyAdapter } from '../adapters'
+import { NoopRealtimeAdapter } from '@/core/whiteboard/adapters/NoopRealtimeAdapter'
 
 export type WhiteboardStatus = 'idle' | 'loading' | 'saving' | 'error'
+export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error'
 
 export const useWhiteboardStore = defineStore('whiteboard', () => {
   // Adapters
   const storageAdapter = ref<StorageAdapter>(new M4shStorageAdapter())
   const policyAdapter = ref<PolicyAdapter>(new M4shPolicyAdapter())
+  const realtimeAdapter = ref<RealtimeAdapter>(new NoopRealtimeAdapter())
 
   // State
   const workspaceId = ref<string | null>(null)
@@ -29,6 +33,11 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
   // Paywall
   const showPaywallModal = ref(false)
   const paywallData = ref<any>(null)
+
+  // Realtime
+  const connectionStatus = ref<ConnectionStatus>('disconnected')
+  const presenceUsers = ref<PresenceUser[]>([])
+  const remoteCursors = ref<Map<string, RemoteCursor>>(new Map())
 
   // Computed
   const activePage = computed(() => pages.value.find(p => p.id === activePageId.value) || null)
@@ -251,9 +260,115 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
   }
 
   /**
+   * Set realtime adapter
+   */
+  function setRealtimeAdapter(adapter: RealtimeAdapter): void {
+    realtimeAdapter.value = adapter
+  }
+
+  /**
+   * Connect to realtime session
+   */
+  async function connectRealtime(userId: string): Promise<void> {
+    if (!workspaceId.value) {
+      throw new Error('Workspace not initialized')
+    }
+
+    connectionStatus.value = 'connecting'
+
+    try {
+      await realtimeAdapter.value.connect(workspaceId.value, userId)
+      connectionStatus.value = 'connected'
+
+      // Subscribe to events
+      realtimeAdapter.value.onPresenceChange((users) => {
+        presenceUsers.value = users
+      })
+
+      realtimeAdapter.value.onCursorMove((cursor) => {
+        remoteCursors.value.set(cursor.userId, cursor)
+        
+        // Clean up old cursors (>5 seconds)
+        const now = Date.now()
+        remoteCursors.value.forEach((c, userId) => {
+          if (now - c.timestamp > 5000) {
+            remoteCursors.value.delete(userId)
+          }
+        })
+      })
+
+      realtimeAdapter.value.onOperation((op) => {
+        handleRemoteOperation(op)
+      })
+
+      realtimeAdapter.value.onPageSwitch((pageId, userId) => {
+        console.log(`[WhiteboardStore] User ${userId} switched to page ${pageId}`)
+      })
+
+      // Listen for version conflicts
+      window.addEventListener('whiteboard:version-conflict', handleVersionConflict as EventListener)
+    } catch (err: any) {
+      console.error('[WhiteboardStore] Realtime connection failed:', err)
+      connectionStatus.value = 'error'
+      throw err
+    }
+  }
+
+  /**
+   * Disconnect from realtime session
+   */
+  function disconnectRealtime(): void {
+    realtimeAdapter.value.disconnect()
+    connectionStatus.value = 'disconnected'
+    presenceUsers.value = []
+    remoteCursors.value.clear()
+    window.removeEventListener('whiteboard:version-conflict', handleVersionConflict as EventListener)
+  }
+
+  /**
+   * Send cursor position
+   */
+  function sendCursorMove(x: number, y: number, tool: string, color: string): void {
+    realtimeAdapter.value.sendCursorMove(x, y, tool, color)
+  }
+
+  /**
+   * Send board operation
+   */
+  async function sendOperation(op: BoardOperation): Promise<void> {
+    await realtimeAdapter.value.sendOperation(op)
+  }
+
+  /**
+   * Handle remote operation
+   */
+  function handleRemoteOperation(op: BoardOperation): void {
+    console.log('[WhiteboardStore] Remote operation received:', op)
+    // Update current page data if operation is for active page
+    if (op.pageId === activePageId.value && currentPageData.value) {
+      // Apply operation to local state (implementation depends on whiteboard engine)
+      // For now, just update version
+      currentPageData.value.version = op.version
+    }
+  }
+
+  /**
+   * Handle version conflict
+   */
+  async function handleVersionConflict(event: CustomEvent): Promise<void> {
+    const { pageId, currentVersion } = event.detail
+    console.warn('[WhiteboardStore] Version conflict, reloading page', { pageId, currentVersion })
+    
+    if (pageId === activePageId.value) {
+      await loadActivePage()
+    }
+  }
+
+  /**
    * Reset store
    */
   function reset(): void {
+    disconnectRealtime()
     workspaceId.value = null
     pages.value = []
     activePageId.value = null
@@ -274,6 +389,9 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
     status,
     error,
     limits,
+    connectionStatus,
+    presenceUsers,
+    remoteCursors,
 
     // Computed
     activePage,
@@ -291,5 +409,13 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
     reset,
     showPaywall,
     closePaywall,
+    
+    // Realtime
+    setRealtimeAdapter,
+    connectRealtime,
+    disconnectRealtime,
+    sendCursorMove,
+    sendOperation,
+    handleRemoteOperation,
   }
 })

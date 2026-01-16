@@ -1522,6 +1522,14 @@
         }
       }
     },
+    "presence": {
+      "active": "Active",
+      "offline": "Offline",
+      "connecting": "Connecting...",
+      "connected": "Connected",
+      "disconnected": "Disconnected",
+      "error": "Connection error"
+    },
     "availability": {
       "slotEditor": {
         "strategies": {
