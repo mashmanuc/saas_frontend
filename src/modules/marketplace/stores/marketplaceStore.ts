@@ -22,7 +22,7 @@ import marketplaceApi, {
 import { debugPayload } from '../adapters/profileAdapter'
 import { notifyError } from '@/utils/notify'
 
-export const useMarketplaceStore = defineStore('marketplace', () => {
+export const useMarketplaceStore = defineStore('marketplace-v2', () => {
   // Catalog state
   const tutors = ref<TutorListItem[]>([])
   const totalCount = ref(0)

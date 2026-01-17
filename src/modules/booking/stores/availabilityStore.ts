@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { availabilityApi, type AvailabilityTemplate } from '@/modules/booking/api/availabilityApi'
 
-export const useAvailabilityStore = defineStore('availability', () => {
+export const useAvailabilityStore = defineStore('booking-availability', () => {
   const template = ref<AvailabilityTemplate | null>(null)
   const loading = ref(false)
   

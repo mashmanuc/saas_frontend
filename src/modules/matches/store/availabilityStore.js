@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import availabilityApi from '../api/availabilityApi'
 import { trackEvent } from '@/utils/telemetry'
 
-export const useAvailabilityStore = defineStore('availability', {
+export const useAvailabilityStore = defineStore('matches-availability', {
   state: () => ({
     myAvailability: null,
     tutorAvailability: {},

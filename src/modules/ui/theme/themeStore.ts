@@ -6,7 +6,7 @@ interface ThemeState {
   currentThemeId: ThemeId
 }
 
-export const useThemeStore = defineStore('theme', {
+export const useThemeStore = defineStore('ui-theme', {
   state: (): ThemeState => ({
     currentThemeId: defaultThemeId,
   }),

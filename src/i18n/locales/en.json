@@ -4,7 +4,7 @@
     "stopSharing": "Stop sharing",
     "teacherSharing": "Teacher is sharing the screen",
     "screenShareNotSupported": "Screen sharing is not supported in this browser",
-    "loading": "Loading…",
+    "loading": "LoadingтАж",
     "errors": {
       "unknown": "An error occurred while sharing the screen",
       "permissionDenied": "Screen sharing permission was denied",
@@ -59,42 +59,42 @@
   "userProfile": {
     "account": {
       "yourPlan": "Your Plan",
-      "avatarDeleteError": "Не вдалося видалити аватар.",
-      "avatarDeleted": "Аватар видалено.",
-      "avatarUpdateError": "Не вдалося оновити аватар.",
-      "avatarUpdated": "Аватар оновлено.",
-      "changeEmail": "Змінити email",
-      "changePassword": "Змінити пароль",
-      "firstName": "Ім’я",
-      "lastName": "Прізвище",
-      "loadError": "Не вдалося завантажити акаунт.",
-      "save": "Зберегти",
-      "saveError": "Не вдалося зберегти.",
-      "saveSuccess": "Збережено.",
-      "subtitle": "Основні дані користувача.",
-      "timezone": "Таймзона",
-      "title": "Акаунт",
+      "avatarDeleteError": "╨Э╨╡ ╨▓╨┤╨░╨╗╨╛╤Б╤П ╨▓╨╕╨┤╨░╨╗╨╕╤В╨╕ ╨░╨▓╨░╤В╨░╤А.",
+      "avatarDeleted": "╨Р╨▓╨░╤В╨░╤А ╨▓╨╕╨┤╨░╨╗╨╡╨╜╨╛.",
+      "avatarUpdateError": "╨Э╨╡ ╨▓╨┤╨░╨╗╨╛╤Б╤П ╨╛╨╜╨╛╨▓╨╕╤В╨╕ ╨░╨▓╨░╤В╨░╤А.",
+      "avatarUpdated": "╨Р╨▓╨░╤В╨░╤А ╨╛╨╜╨╛╨▓╨╗╨╡╨╜╨╛.",
+      "changeEmail": "╨Ч╨╝╤Ц╨╜╨╕╤В╨╕ email",
+      "changePassword": "╨Ч╨╝╤Ц╨╜╨╕╤В╨╕ ╨┐╨░╤А╨╛╨╗╤М",
+      "firstName": "╨Ж╨╝тАЩ╤П",
+      "lastName": "╨Я╤А╤Ц╨╖╨▓╨╕╤Й╨╡",
+      "loadError": "╨Э╨╡ ╨▓╨┤╨░╨╗╨╛╤Б╤П ╨╖╨░╨▓╨░╨╜╤В╨░╨╢╨╕╤В╨╕ ╨░╨║╨░╤Г╨╜╤В.",
+      "save": "╨Ч╨▒╨╡╤А╨╡╨│╤В╨╕",
+      "saveError": "╨Э╨╡ ╨▓╨┤╨░╨╗╨╛╤Б╤П ╨╖╨▒╨╡╤А╨╡╨│╤В╨╕.",
+      "saveSuccess": "╨Ч╨▒╨╡╤А╨╡╨╢╨╡╨╜╨╛.",
+      "subtitle": "╨Ю╤Б╨╜╨╛╨▓╨╜╤Ц ╨┤╨░╨╜╤Ц ╨║╨╛╤А╨╕╤Б╤В╤Г╨▓╨░╤З╨░.",
+      "timezone": "╨в╨░╨╣╨╝╨╖╨╛╨╜╨░",
+      "title": "╨Р╨║╨░╤Г╨╜╤В",
       "username": "Username"
     },
     "changeEmail": {
-      "error": "Не вдалося змінити email.",
-      "newEmail": "Новий email",
-      "password": "Поточний пароль",
-      "submit": "Змінити email",
-      "subtitle": "Введіть новий email та поточний пароль.",
-      "success": "Лист підтвердження надіслано на нову адресу.",
-      "title": "Зміна email"
+      "error": "╨Э╨╡ ╨▓╨┤╨░╨╗╨╛╤Б╤П ╨╖╨╝╤Ц╨╜╨╕╤В╨╕ email.",
+      "newEmail": "╨Э╨╛╨▓╨╕╨╣ email",
+      "password": "╨Я╨╛╤В╨╛╤З╨╜╨╕╨╣ ╨┐╨░╤А╨╛╨╗╤М",
+      "submit": "╨Ч╨╝╤Ц╨╜╨╕╤В╨╕ email",
+      "subtitle": "╨Т╨▓╨╡╨┤╤Ц╤В╤М ╨╜╨╛╨▓╨╕╨╣ email ╤В╨░ ╨┐╨╛╤В╨╛╤З╨╜╨╕╨╣ ╨┐╨░╤А╨╛╨╗╤М.",
+      "success": "╨Ы╨╕╤Б╤В ╨┐╤Ц╨┤╤В╨▓╨╡╤А╨┤╨╢╨╡╨╜╨╜╤П ╨╜╨░╨┤╤Ц╤Б╨╗╨░╨╜╨╛ ╨╜╨░ ╨╜╨╛╨▓╤Г ╨░╨┤╤А╨╡╤Б╤Г.",
+      "title": "╨Ч╨╝╤Ц╨╜╨░ email"
     },
     "changePassword": {
-      "confirmPassword": "Повторіть новий пароль",
-      "currentPassword": "Поточний пароль",
-      "error": "Не вдалося змінити пароль.",
-      "mismatch": "Паролі не збігаються.",
-      "newPassword": "Новий пароль",
-      "submit": "Змінити пароль",
-      "subtitle": "Введіть поточний та новий пароль.",
-      "success": "Пароль успішно змінено.",
-      "title": "Зміна пароля"
+      "confirmPassword": "╨Я╨╛╨▓╤В╨╛╤А╤Ц╤В╤М ╨╜╨╛╨▓╨╕╨╣ ╨┐╨░╤А╨╛╨╗╤М",
+      "currentPassword": "╨Я╨╛╤В╨╛╤З╨╜╨╕╨╣ ╨┐╨░╤А╨╛╨╗╤М",
+      "error": "╨Э╨╡ ╨▓╨┤╨░╨╗╨╛╤Б╤П ╨╖╨╝╤Ц╨╜╨╕╤В╨╕ ╨┐╨░╤А╨╛╨╗╤М.",
+      "mismatch": "╨Я╨░╤А╨╛╨╗╤Ц ╨╜╨╡ ╨╖╨▒╤Ц╨│╨░╤О╤В╤М╤Б╤П.",
+      "newPassword": "╨Э╨╛╨▓╨╕╨╣ ╨┐╨░╤А╨╛╨╗╤М",
+      "submit": "╨Ч╨╝╤Ц╨╜╨╕╤В╨╕ ╨┐╨░╤А╨╛╨╗╤М",
+      "subtitle": "╨Т╨▓╨╡╨┤╤Ц╤В╤М ╨┐╨╛╤В╨╛╤З╨╜╨╕╨╣ ╤В╨░ ╨╜╨╛╨▓╨╕╨╣ ╨┐╨░╤А╨╛╨╗╤М.",
+      "success": "╨Я╨░╤А╨╛╨╗╤М ╤Г╤Б╨┐╤Ц╤И╨╜╨╛ ╨╖╨╝╤Ц╨╜╨╡╨╜╨╛.",
+      "title": "╨Ч╨╝╤Ц╨╜╨░ ╨┐╨░╤А╨╛╨╗╤П"
     }
   },
   "lang": {
@@ -157,11 +157,11 @@
       "title": "Notifications",
       "markAll": "Mark all read",
       "loadMore": "Load more",
-      "loadingMore": "Loading…",
+      "loadingMore": "LoadingтАж",
       "refresh": "Refresh",
       "noUnread": "Everything is up to date",
       "unread": "Unread: {count}",
-      "loadingSubtitle": "Syncing activity…",
+      "loadingSubtitle": "Syncing activityтАж",
       "emptySubtitle": "No new notifications",
       "emptyTitle": "All clear",
       "emptyDescription": "You will see realtime alerts here.",
@@ -240,7 +240,7 @@
     },
     "inputs": {
       "normalLabel": "Default input",
-      "normalPlaceholder": "Type something…",
+      "normalPlaceholder": "Type somethingтАж",
       "errorLabel": "Error state",
       "errorMessage": "Please fix validation issues.",
       "successLabel": "Success state",
@@ -362,7 +362,7 @@
       "loading": "Signing in...",
       "otpLabel": "Verification code",
       "otpSubmit": "Verify",
-      "otpLoading": "Verifying…",
+      "otpLoading": "VerifyingтАж",
       "otpBack": "Back",
       "otpResend": "Resend code",
       "forgotPassword": "Forgot password?",
@@ -469,7 +469,7 @@
       "enrollDescription": "Add biometric authentication or a hardware key for fast and secure sign-in.",
       "enrollInfo": "WebAuthn is a modern authentication standard. You can sign in using your fingerprint, Face ID, or a hardware key.",
       "enrollCta": "Set up",
-      "enrolling": "Setting up…",
+      "enrolling": "Setting upтАж",
       "enrollError": "Failed to set up WebAuthn",
       "step1": "Click \"Set up\" below",
       "step2": "Allow your browser to access your device",
@@ -477,7 +477,7 @@
       "promptTitle": "WebAuthn Authentication",
       "promptDescription": "Use your fingerprint, Face ID, or hardware key to sign in.",
       "authenticate": "Authenticate",
-      "authenticating": "Authenticating…",
+      "authenticating": "AuthenticatingтАж",
       "authError": "Failed to authenticate",
       "useOtpInstead": "Use OTP instead",
       "errors": {
@@ -499,6 +499,9 @@
     "marketplace": "Marketplace",
     "tutorCalendar": "Tutor calendar",
     "soloWorkspace": "Solo workspace",
+    "billing": "Subscription",
+    "staff": "Staff panel",
+    "users": "Users",
     "profile": "Profile",
     "tutorProfile": "Tutor profile"
   },
@@ -538,7 +541,7 @@
       "country": "Country",
       "allCountries": "All countries",
       "price": "Price",
-      "priceRange": "{min} – {max}",
+      "priceRange": "{min} тАУ {max}",
       "rating": "Rating",
       "ratingMin": "{rating}+",
       "experience": "Experience (years)",
@@ -632,7 +635,7 @@
       "errorHorizon": "Cannot load calendar beyond 4 weeks",
       "errorLoad": "Failed to load availability",
       "bookSlotAria": "Book slot at {time}",
-      "title": "Календар"
+      "title": "╨Ъ╨░╨╗╨╡╨╜╨┤╨░╤А"
     },
     "trialRequest": {
       "title": "Trial Lesson Request",
@@ -643,8 +646,8 @@
       "submitting": "Sending...",
       "success": "Request sent successfully!",
       "error": "Failed to send request",
-      "refreshCalendar": "Оновити календар",
-      "slotUnavailable": "Слот недоступний"
+      "refreshCalendar": "╨Ю╨╜╨╛╨▓╨╕╤В╨╕ ╨║╨░╨╗╨╡╨╜╨┤╨░╤А",
+      "slotUnavailable": "╨б╨╗╨╛╤В ╨╜╨╡╨┤╨╛╤Б╤В╤Г╨┐╨╜╨╕╨╣"
     },
     "common": {
       "perHour": "/ hour"
@@ -691,7 +694,7 @@
       "featured": "Featured"
     },
     "search": {
-      "placeholder": "Search tutors, subjects…",
+      "placeholder": "Search tutors, subjectsтАж",
       "recentTitle": "Recent searches",
       "suggestionsTitle": "Suggestions",
       "pressEnter": "Press Enter to search for \"{query}\"",
@@ -739,7 +742,7 @@
       "limitExceeded": "Limit {type} exceeded ({used}/{max}). Resets {resetDate}",
       "notFound": "Not found",
       "unknown": "Unknown error",
-      "validationFailed": "Помилка валідації"
+      "validationFailed": "╨Я╨╛╨╝╨╕╨╗╨║╨░ ╨▓╨░╨╗╤Ц╨┤╨░╤Ж╤Ц╤Ч"
     },
     "profile": {
       "title": "Tutor profile",
@@ -754,10 +757,10 @@
         "hourlyRatePositive": "Hourly rate must be greater than 0.",
         "currencyRequired": "Please choose a currency.",
         "experienceNonNegative": "Experience must be a non-negative number.",
-        "birthYearInvalid": "Birth year must be within 1900–2100.",
+        "birthYearInvalid": "Birth year must be within 1900тАУ2100.",
         "subjectsRequired": "Please select at least one subject.",
         "subjectCodeRequired": "Please select a subject.",
-        "customDirectionLength": "Teaching approach must be 50–800 characters.",
+        "customDirectionLength": "Teaching approach must be 50тАУ800 characters.",
         "languagesRequired": "Please select at least one language."
       },
       "stats": {
@@ -780,7 +783,7 @@
       "badgesTitle": "Badges & achievements",
       "badgesHistory": {
         "title": "Badges history",
-        "loading": "Loading history…",
+        "loading": "Loading historyтАж",
         "empty": "No badge history yet.",
         "unknownBadge": "Badge",
         "loadError": "Failed to load badge history."
@@ -815,15 +818,15 @@
         "in": "in"
       },
       "publish": "Publish",
-      "publishing": "Publishing…",
+      "publishing": "PublishingтАж",
       "publishSuccess": "Profile published.",
       "publishError": "Unable to publish profile.",
       "unpublish": "Unpublish",
-      "unpublishing": "Unpublishing…",
+      "unpublishing": "UnpublishingтАж",
       "unpublishSuccess": "Profile unpublished.",
       "unpublishError": "Unable to unpublish profile.",
       "submit": "Submit for review",
-      "submitting": "Submitting for review…",
+      "submitting": "Submitting for reviewтАж",
       "submitSuccess": "Profile submitted for review.",
       "submitError": "Unable to submit profile for review.",
       "validationTitle": "Please fix:",
@@ -840,7 +843,7 @@
           "title": "Write a review",
           "ratingLabel": "Rating",
           "textLabel": "Review",
-          "textPlaceholder": "Describe your lesson experience…",
+          "textPlaceholder": "Describe your lesson experienceтАж",
           "submit": "Submit",
           "success": "Review submitted",
           "validation": "Please check your input.",
@@ -851,7 +854,7 @@
         "title": "Create your tutor profile",
         "subtitle": "Start sharing your expertise with students around the world.",
         "headlinePlaceholder": "Enter a headline, e.g. 'Experienced Math Tutor'",
-        "creating": "Creating…",
+        "creating": "CreatingтАж",
         "cta": "Get started",
         "benefit1": "Reach thousands of students",
         "benefit2": "Set your own schedule and rates",
@@ -866,14 +869,14 @@
         "headlinePlaceholder": "e.g. Experienced Math Tutor",
         "headlineHint": "A short tagline that describes you",
         "bioLabel": "About me",
-        "bioPlaceholder": "Tell students about yourself, your teaching style, and experience…",
+        "bioPlaceholder": "Tell students about yourself, your teaching style, and experienceтАж",
         "countryLabel": "Country",
         "countryPlaceholder": "e.g. Ukraine",
         "timezoneLabel": "Timezone",
         "timezonePlaceholder": "e.g. Europe/Kyiv",
         "subjectsLanguagesTitle": "Subjects & languages",
         "subjectsLabel": "Subjects",
-        "selectSubject": "Select subject…",
+        "selectSubject": "Select subjectтАж",
         "selectTags": "Select specializations",
         "customDirectionText": "Describe your teaching approach",
         "customDirectionTextPlaceholder": "For example: I prepare students for exams in 8 weeks: individual plan + homework + tests. I explain complex topics in simple words. I help overcome exam anxiety.",
@@ -882,7 +885,7 @@
         "noSubjectsSelected": "You haven't selected any subjects yet",
         "dragToReorder": "Drag to reorder",
         "languagesLabel": "Languages",
-        "selectLanguage": "Select language…",
+        "selectLanguage": "Select languageтАж",
         "lessonLinksTitle": "Lesson links",
         "add": "Add",
         "remove": "Remove",
@@ -893,7 +896,7 @@
         "trialPriceHint": "Optional discounted price for first lesson",
         "videoTitle": "Video introduction",
         "videoUrlLabel": "Video URL",
-        "videoUrlPlaceholder": "https://youtube.com/watch?v=…",
+        "videoUrlPlaceholder": "https://youtube.com/watch?v=тАж",
         "videoHint": "YouTube or Vimeo link to your introduction video",
         "privacyTitle": "Privacy",
         "genderLabel": "Gender",
@@ -921,7 +924,7 @@
         "offline": {},
         "certificationsNoFile": "No file selected",
         "certificationsAdd": "Add diploma",
-        "certificationsUploading": "Uploading…",
+        "certificationsUploading": "UploadingтАж",
         "certificationsEmpty": "No diplomas yet",
         "certificationsStatusPending": "Pending review",
         "certificationsStatusApproved": "Approved",
@@ -936,7 +939,7 @@
         "certificationsRateLimited": "Too many requests. Try again later",
         "certificationsUnsupportedType": "Unsupported file type",
         "certificationsTooLarge": "File is too large",
-        "saving": "Saving…",
+        "saving": "SavingтАж",
         "save": "Save changes",
         "publishHint": "Once published, your profile will be visible to students in the catalog.",
         "experienceYearsLabel": "Teaching experience (years)",
@@ -958,10 +961,10 @@
       },
       "status": {
         "pending_review": "Pending review",
-        "approved": "Опубліковано",
-        "draft": "Чернетка",
-        "rejected": "Відхилено",
-        "suspended": "Призупинено"
+        "approved": "╨Ю╨┐╤Г╨▒╨╗╤Ц╨║╨╛╨▓╨░╨╜╨╛",
+        "draft": "╨з╨╡╤А╨╜╨╡╤В╨║╨░",
+        "rejected": "╨Т╤Ц╨┤╤Е╨╕╨╗╨╡╨╜╨╛",
+        "suspended": "╨Я╤А╨╕╨╖╤Г╨┐╨╕╨╜╨╡╨╜╨╛"
       }
     },
     "draft": {
@@ -1010,7 +1013,7 @@
       "allSeverities": "All severities"
     },
     "feed": {
-      "loading": "Loading events…",
+      "loading": "Loading eventsтАж",
       "empty": "No events to display.",
       "loadError": "Failed to load feed."
     },
@@ -1104,9 +1107,9 @@
     "genderOptions": {},
     "offline": {
       "title": "Offline mode",
-      "message": "Connection lost – you are working from cached data.",
+      "message": "Connection lost тАУ you are working from cached data.",
       "lastSync": "Last sync",
-      "retrying": "Reconnecting…",
+      "retrying": "ReconnectingтАж",
       "retry": "Retry connection"
     },
     "validation": {},
@@ -1169,12 +1172,12 @@
     "saving": "Saving",
     "searching": "Searching",
     "today": "Today",
-    "confirmDiscard": "Скасувати незбережені зміни?",
-    "moreActions": "Більше дій",
-    "no": "Ні",
-    "yes": "Так",
-    "unavailable": "Недоступно",
-    "unknown": "Невідомо"
+    "confirmDiscard": "╨б╨║╨░╤Б╤Г╨▓╨░╤В╨╕ ╨╜╨╡╨╖╨▒╨╡╤А╨╡╨╢╨╡╨╜╤Ц ╨╖╨╝╤Ц╨╜╨╕?",
+    "moreActions": "╨С╤Ц╨╗╤М╤И╨╡ ╨┤╤Ц╨╣",
+    "no": "╨Э╤Ц",
+    "yes": "╨в╨░╨║",
+    "unavailable": "╨Э╨╡╨┤╨╛╤Б╤В╤Г╨┐╨╜╨╛",
+    "unknown": "╨Э╨╡╨▓╤Ц╨┤╨╛╨╝╨╛"
   },
   "role": {
     "superadmin": "Superadmin",
@@ -1420,13 +1423,13 @@
       "connected": "Connected"
     },
     "typing": {
-      "single": "{name} is typing…",
-      "many": "{count} people are typing…",
+      "single": "{name} is typingтАж",
+      "many": "{count} people are typingтАж",
       "unknown": "Someone"
     },
     "loader": {
       "loadMore": "Load earlier messages",
-      "loadingHistory": "Loading…"
+      "loadingHistory": "LoadingтАж"
     },
     "empty": "No messages yet. Say hi!",
     "edited": "edited",
@@ -1437,11 +1440,11 @@
       "retry": "Retry"
     },
     "input": {
-      "placeholder": "Write a message… Markdown and MathJax are supported.",
+      "placeholder": "Write a messageтАж Markdown and MathJax are supported.",
       "hint": "Press Enter to send, Shift+Enter for newline.",
       "send": "Send",
-      "sending": "Sending…",
-      "rateLimited": "Please wait…"
+      "sending": "SendingтАж",
+      "rateLimited": "Please waitтАж"
     },
     "readSingle": "saw this",
     "readMany": "saw this",
@@ -1456,18 +1459,18 @@
     "confirm": {
       "delete": "Delete this message?"
     },
-    "loadError": "Не вдалося завантажити чат",
-    "loadMessagesError": "Не вдалося завантажити повідомлення",
-    "messagePlaceholder": "Напишіть повідомлення...",
-    "noMessages": "Повідомлень ще немає. Напишіть першим!",
-    "noThreadFound": "Чат не знайдено. Спочатку створіть запит до тьютора.",
-    "pressEnterToSend": "Enter — надіслати",
-    "readOnly": "Цей чат тільки для читання",
-    "send": "Надіслати",
-    "sendError": "Не вдалося надіслати повідомлення",
-    "sending": "Надсилаємо...",
-    "threadInfo": "Тип чату: {kind}",
-    "title": "Чат з тьютором"
+    "loadError": "╨Э╨╡ ╨▓╨┤╨░╨╗╨╛╤Б╤П ╨╖╨░╨▓╨░╨╜╤В╨░╨╢╨╕╤В╨╕ ╤З╨░╤В",
+    "loadMessagesError": "╨Э╨╡ ╨▓╨┤╨░╨╗╨╛╤Б╤П ╨╖╨░╨▓╨░╨╜╤В╨░╨╢╨╕╤В╨╕ ╨┐╨╛╨▓╤Ц╨┤╨╛╨╝╨╗╨╡╨╜╨╜╤П",
+    "messagePlaceholder": "╨Э╨░╨┐╨╕╤И╤Ц╤В╤М ╨┐╨╛╨▓╤Ц╨┤╨╛╨╝╨╗╨╡╨╜╨╜╤П...",
+    "noMessages": "╨Я╨╛╨▓╤Ц╨┤╨╛╨╝╨╗╨╡╨╜╤М ╤Й╨╡ ╨╜╨╡╨╝╨░╤Ф. ╨Э╨░╨┐╨╕╤И╤Ц╤В╤М ╨┐╨╡╤А╤И╨╕╨╝!",
+    "noThreadFound": "╨з╨░╤В ╨╜╨╡ ╨╖╨╜╨░╨╣╨┤╨╡╨╜╨╛. ╨б╨┐╨╛╤З╨░╤В╨║╤Г ╤Б╤В╨▓╨╛╤А╤Ц╤В╤М ╨╖╨░╨┐╨╕╤В ╨┤╨╛ ╤В╤М╤О╤В╨╛╤А╨░.",
+    "pressEnterToSend": "Enter тАФ ╨╜╨░╨┤╤Ц╤Б╨╗╨░╤В╨╕",
+    "readOnly": "╨ж╨╡╨╣ ╤З╨░╤В ╤В╤Ц╨╗╤М╨║╨╕ ╨┤╨╗╤П ╤З╨╕╤В╨░╨╜╨╜╤П",
+    "send": "╨Э╨░╨┤╤Ц╤Б╨╗╨░╤В╨╕",
+    "sendError": "╨Э╨╡ ╨▓╨┤╨░╨╗╨╛╤Б╤П ╨╜╨░╨┤╤Ц╤Б╨╗╨░╤В╨╕ ╨┐╨╛╨▓╤Ц╨┤╨╛╨╝╨╗╨╡╨╜╨╜╤П",
+    "sending": "╨Э╨░╨┤╤Б╨╕╨╗╨░╤Ф╨╝╨╛...",
+    "threadInfo": "╨в╨╕╨┐ ╤З╨░╤В╤Г: {kind}",
+    "title": "╨з╨░╤В ╨╖ ╤В╤М╤О╤В╨╛╤А╨╛╨╝"
   },
   "presence": {
     "online": "Online",
@@ -1500,51 +1503,20 @@
     "empty": "Start drawing to share ideas with everyone in the lesson.",
     "participantsLabel": "{count} in this session",
     "title": "Collaborative whiteboard",
-    "paywall": {
-      "title": "Upgrade to Create More Pages",
-      "genericMessage": "You've reached the limit for your current plan.",
-      "limitReached": "You've reached the limit of {limit} pages. Upgrade to {plan} to create more.",
-      "currentPlan": "Current plan",
-      "currentUsage": "Current usage",
-      "requiredPlan": "Required plan",
-      "upgradeTitle": "Upgrade benefits",
-      "upgradeButton": "Upgrade Plan",
-      "benefits": {
-        "pro": {
-          "pages": "Up to 10 whiteboard pages",
-          "storage": "Increased storage space",
-          "support": "Priority support"
-        },
-        "business": {
-          "pages": "Up to 50 whiteboard pages",
-          "storage": "Unlimited storage",
-          "priority": "Priority support 24/7",
-          "team": "Team collaboration features"
-        }
-      }
-    },
-    "presence": {
-      "active": "Active",
-      "offline": "Offline",
-      "connecting": "Connecting...",
-      "connected": "Connected",
-      "disconnected": "Disconnected",
-      "error": "Connection error"
-    },
     "availability": {
       "slotEditor": {
         "strategies": {
           "override": {
-            "description": "Застосувати зміни навіть якщо є конфлікти",
-            "title": "Перевизначити слот"
+            "description": "╨Ч╨░╤Б╤В╨╛╤Б╤Г╨▓╨░╤В╨╕ ╨╖╨╝╤Ц╨╜╨╕ ╨╜╨░╨▓╤Ц╤В╤М ╤П╨║╤Й╨╛ ╤Ф ╨║╨╛╨╜╤Д╨╗╤Ц╨║╤В╨╕",
+            "title": "╨Я╨╡╤А╨╡╨▓╨╕╨╖╨╜╨░╤З╨╕╤В╨╕ ╤Б╨╗╨╛╤В"
           },
           "templateUpdate": {
-            "description": "Внести правки в базовий шаблон та майбутні слоти",
-            "title": "Оновити шаблон"
+            "description": "╨Т╨╜╨╡╤Б╤В╨╕ ╨┐╤А╨░╨▓╨║╨╕ ╨▓ ╨▒╨░╨╖╨╛╨▓╨╕╨╣ ╤И╨░╨▒╨╗╨╛╨╜ ╤В╨░ ╨╝╨░╨╣╨▒╤Г╤В╨╜╤Ц ╤Б╨╗╨╛╤В╨╕",
+            "title": "╨Ю╨╜╨╛╨▓╨╕╤В╨╕ ╤И╨░╨▒╨╗╨╛╨╜"
           },
           "userChoice": {
-            "description": "Вибрати іншу кастомну стратегію для цього кейсу",
-            "title": "Ручний вибір"
+            "description": "╨Т╨╕╨▒╤А╨░╤В╨╕ ╤Ц╨╜╤И╤Г ╨║╨░╤Б╤В╨╛╨╝╨╜╤Г ╤Б╤В╤А╨░╤В╨╡╨│╤Ц╤О ╨┤╨╗╤П ╤Ж╤М╨╛╨│╨╛ ╨║╨╡╨╣╤Б╤Г",
+            "title": "╨а╤Г╤З╨╜╨╕╨╣ ╨▓╨╕╨▒╤Ц╤А"
           },
           "${strategy.name}": {
             "title": ""
@@ -1552,14 +1524,14 @@
         }
       },
       "status": {
-        "available": "Доступно",
-        "blocked": "Заблоковано",
-        "booked": "Заброньовано",
-        "cancelled": "Скасовано",
-        "completed": "Завершено",
-        "confirmed": "Підтверджено",
-        "pending": "Очікує підтвердження",
-        "unavailable": "Недоступно",
+        "available": "╨Ф╨╛╤Б╤В╤Г╨┐╨╜╨╛",
+        "blocked": "╨Ч╨░╨▒╨╗╨╛╨║╨╛╨▓╨░╨╜╨╛",
+        "booked": "╨Ч╨░╨▒╤А╨╛╨╜╤М╨╛╨▓╨░╨╜╨╛",
+        "cancelled": "╨б╨║╨░╤Б╨╛╨▓╨░╨╜╨╛",
+        "completed": "╨Ч╨░╨▓╨╡╤А╤И╨╡╨╜╨╛",
+        "confirmed": "╨Я╤Ц╨┤╤В╨▓╨╡╤А╨┤╨╢╨╡╨╜╨╛",
+        "pending": "╨Ю╤З╤Ц╨║╤Г╤Ф ╨┐╤Ц╨┤╤В╨▓╨╡╤А╨┤╨╢╨╡╨╜╨╜╤П",
+        "unavailable": "╨Э╨╡╨┤╨╛╤Б╤В╤Г╨┐╨╜╨╛",
         "${slot.status}": "{slot.status}"
       }
     },
@@ -1585,14 +1557,14 @@
     },
     "collaboration": {
       "stats": {
-        "lastActivity": "Остання активність",
-        "lessonsCompleted": "Завершено уроків"
+        "lastActivity": "╨Ю╤Б╤В╨░╨╜╨╜╤П ╨░╨║╤В╨╕╨▓╨╜╤Ц╤Б╤В╤М",
+        "lessonsCompleted": "╨Ч╨░╨▓╨╡╤А╤И╨╡╨╜╨╛ ╤Г╤А╨╛╨║╤Ц╨▓"
       }
     },
     "emptyBoard": {
-      "message": "Почніть малювати, щоб поділитися пізніше",
-      "participantsLabel": "{count} у сесії",
-      "title": "Спільна дошка"
+      "message": "╨Я╨╛╤З╨╜╤Ц╤В╤М ╨╝╨░╨╗╤О╨▓╨░╤В╨╕, ╤Й╨╛╨▒ ╨┐╨╛╨┤╤Ц╨╗╨╕╤В╨╕╤Б╤П ╨┐╤Ц╨╖╨╜╤Ц╤И╨╡",
+      "participantsLabel": "{count} ╤Г ╤Б╨╡╤Б╤Ц╤Ч",
+      "title": "╨б╨┐╤Ц╨╗╤М╨╜╨░ ╨┤╨╛╤И╨║╨░"
     }
   },
   "profile": {
@@ -1650,7 +1622,7 @@
       "sessions": {
         "title": "Active sessions",
         "subtitle": "Review devices signed in to your account.",
-        "loading": "Loading sessions…",
+        "loading": "Loading sessionsтАж",
         "empty": "No active sessions.",
         "current": "Current",
         "unknownDevice": "Unknown device",
@@ -1715,7 +1687,7 @@
       "lastName": "Last name",
       "timezone": "Timezone",
       "bio": "About",
-      "bioPlaceholder": "Tell us about your teaching style, experience, or goals…",
+      "bioPlaceholder": "Tell us about your teaching style, experience, or goalsтАж",
       "headline": "Headline",
       "headlineHint": "A short tagline that students will see.",
       "timezonePlaceholder": "Select timezone"
@@ -1727,7 +1699,7 @@
       "revert": "Revert"
     },
     "autosave": {
-      "saving": "Autosaving…",
+      "saving": "AutosavingтАж",
       "error": "Failed to save draft",
       "clean": "No changes",
       "unsaved": "Unsaved changes",
@@ -1736,7 +1708,7 @@
       "rateLimited": "Too many requests. Please try later."
     },
     "draft": {
-      "loading": "Checking for a draft…",
+      "loading": "Checking for a draftтАж",
       "foundTitle": "Draft found",
       "foundDescription": "Unsaved changes from {time} detected. Restore them or start over?",
       "foundDescriptionNoTime": "Unsaved changes detected. Restore them or start over?",
@@ -1760,7 +1732,7 @@
       "upload": "Upload",
       "change": "Change",
       "drop": "Drop here",
-      "uploading": "Updating…",
+      "uploading": "UpdatingтАж",
       "update": "Update photo",
       "remove": "Remove photo",
       "hint": "Drag & drop or pick a file. Up to 5MB, JPG/PNG/WebP."
@@ -1828,7 +1800,7 @@
   "classroom": {
     "realtime": {
       "statusConnected": "Connected",
-      "statusConnecting": "Connecting…",
+      "statusConnecting": "ConnectingтАж",
       "statusDisconnected": "Disconnected",
       "statusError": "Connection error",
       "statusOffline": "No internet",
@@ -1891,7 +1863,7 @@
         "refreshPage": "Try refreshing the page",
         "title": "Tips:"
       },
-      "title": "ReconnectingтАж",
+      "title": "Reconnecting╤В╨Р╨╢",
       "connecting": "Reconnecting",
       "connectionLost": "Connection lost",
       "retryIn": "Retry in {seconds}s"
@@ -2078,9 +2050,9 @@
     },
     "inviteResolve": {
       "title": "Lesson invite",
-      "loading": "Checking invite…",
+      "loading": "Checking inviteтАж",
       "loadingDescription": "We are validating the invite link and preparing your session.",
-      "redirecting": "Redirecting to lesson…",
+      "redirecting": "Redirecting to lessonтАж",
       "redirectingDescription": "You will be redirected automatically.",
       "failed": "Invite link cannot be used",
       "failedDescription": "This link may be invalid, expired, or you may not have access.",
@@ -2263,13 +2235,13 @@
       "malformedJson": "Invalid message format.",
       "serverError": "Server error. Retrying...",
       "unknown": "Connection error occurred.",
-      "syncing": "Reconnected — syncing data..."
+      "syncing": "Reconnected тАФ syncing data..."
     },
     "somethingWentWrong": "Something went wrong",
-    "forbidden": "Доступ заборонено.",
-    "limitExceeded": "Ліміт {type} вичерпано ({used}/{max}). Оновлення {resetDate}",
-    "notFound": "Не знайдено.",
-    "unknown": "Невідома помилка."
+    "forbidden": "╨Ф╨╛╤Б╤В╤Г╨┐ ╨╖╨░╨▒╨╛╤А╨╛╨╜╨╡╨╜╨╛.",
+    "limitExceeded": "╨Ы╤Ц╨╝╤Ц╤В {type} ╨▓╨╕╤З╨╡╤А╨┐╨░╨╜╨╛ ({used}/{max}). ╨Ю╨╜╨╛╨▓╨╗╨╡╨╜╨╜╤П {resetDate}",
+    "notFound": "╨Э╨╡ ╨╖╨╜╨░╨╣╨┤╨╡╨╜╨╛.",
+    "unknown": "╨Э╨╡╨▓╤Ц╨┤╨╛╨╝╨░ ╨┐╨╛╨╝╨╕╨╗╨║╨░."
   },
   "network": {
     "title": "Network status",
@@ -2428,7 +2400,7 @@
   },
   "booking": {
     "bookingCommon": {
-      "minutes": "хвилин"
+      "minutes": "╤Е╨▓╨╕╨╗╨╕╨╜"
     },
     "selectStudent": "Select a student",
     "noStudentsFound": "No students found",
@@ -2672,7 +2644,7 @@
     },
     "calenderPlaceholder": "Booking calendar",
     "common": {
-      "minutes": "хвилин"
+      "minutes": "╤Е╨▓╨╕╨╗╨╕╨╜"
     }
   },
   "matches": {
@@ -2882,7 +2854,7 @@
       "errors": {},
       "options": {}
     },
-    "status": "Статус",
+    "status": "╨б╤В╨░╤В╤Г╤Б",
     "availability": {
       "jobInProgress": "Please wait for the current operation to complete",
       "conflictsDetected": "Conflicts detected on days: {days}",
@@ -2893,8 +2865,8 @@
       "actions": {
         "reset": "Reset Changes",
         "save": "Save Schedule",
-        "saving": "Saving…",
-        "checking": "Checking conflicts…",
+        "saving": "SavingтАж",
+        "checking": "Checking conflictsтАж",
         "undo": "Undo last action",
         "undoSuccess": "Action undone",
         "undoError": "Failed to undo action",
@@ -3027,7 +2999,7 @@
       "seriesPartialSuccess": "Lesson series partially created",
       "seriesSuccess": "Lesson series created successfully",
       "skipConflicts": "Skip Conflicts",
-      "success": "Урок успішно створено"
+      "success": "╨г╤А╨╛╨║ ╤Г╤Б╨┐╤Ц╤И╨╜╨╛ ╤Б╤В╨▓╨╛╤А╨╡╨╜╨╛"
     },
     "draft": {},
     "no_show": {
@@ -3068,16 +3040,16 @@
       "clickToCreate": "Click to create a lesson"
     },
     "trialRequest": {
-      "durationLabel": "Тривалість",
-      "error": "Не вдалося надіслати запит",
-      "minutesShort": "хв",
-      "refreshCalendar": "Оновити календар",
-      "slotUnavailable": "Цей слот більше недоступний",
-      "submit": "Надіслати запит",
-      "submitting": "Надсилаємо...",
-      "success": "Запит надіслано успішно!",
-      "timeLabel": "Час",
-      "title": "Запит на пробний урок"
+      "durationLabel": "╨в╤А╨╕╨▓╨░╨╗╤Ц╤Б╤В╤М",
+      "error": "╨Э╨╡ ╨▓╨┤╨░╨╗╨╛╤Б╤П ╨╜╨░╨┤╤Ц╤Б╨╗╨░╤В╨╕ ╨╖╨░╨┐╨╕╤В",
+      "minutesShort": "╤Е╨▓",
+      "refreshCalendar": "╨Ю╨╜╨╛╨▓╨╕╤В╨╕ ╨║╨░╨╗╨╡╨╜╨┤╨░╤А",
+      "slotUnavailable": "╨ж╨╡╨╣ ╤Б╨╗╨╛╤В ╨▒╤Ц╨╗╤М╤И╨╡ ╨╜╨╡╨┤╨╛╤Б╤В╤Г╨┐╨╜╨╕╨╣",
+      "submit": "╨Э╨░╨┤╤Ц╤Б╨╗╨░╤В╨╕ ╨╖╨░╨┐╨╕╤В",
+      "submitting": "╨Э╨░╨┤╤Б╨╕╨╗╨░╤Ф╨╝╨╛...",
+      "success": "╨Ч╨░╨┐╨╕╤В ╨╜╨░╨┤╤Ц╤Б╨╗╨░╨╜╨╛ ╤Г╤Б╨┐╤Ц╤И╨╜╨╛!",
+      "timeLabel": "╨з╨░╤Б",
+      "title": "╨Ч╨░╨┐╨╕╤В ╨╜╨░ ╨┐╤А╨╛╨▒╨╜╨╕╨╣ ╤Г╤А╨╛╨║"
     },
     "tutorCard": {},
     "errorsNew": {},
@@ -3304,62 +3276,62 @@
     },
     "weekAnalytics": {
       "activity": {
-        "batchEdit": "{count} слотів оновлено пакетом",
-        "conflictDetected": "Виявлено конфлікт під час оновлення слоту",
-        "slotEdited": "Слот {id} відредаговано"
+        "batchEdit": "{count} ╤Б╨╗╨╛╤В╤Ц╨▓ ╨╛╨╜╨╛╨▓╨╗╨╡╨╜╨╛ ╨┐╨░╨║╨╡╤В╨╛╨╝",
+        "conflictDetected": "╨Т╨╕╤П╨▓╨╗╨╡╨╜╨╛ ╨║╨╛╨╜╤Д╨╗╤Ц╨║╤В ╨┐╤Ц╨┤ ╤З╨░╤Б ╨╛╨╜╨╛╨▓╨╗╨╡╨╜╨╜╤П ╤Б╨╗╨╛╤В╤Г",
+        "slotEdited": "╨б╨╗╨╛╤В {id} ╨▓╤Ц╨┤╤А╨╡╨┤╨░╨│╨╛╨▓╨░╨╜╨╛"
       },
-      "availableSlots": "Доступні слоти",
-      "avgDuration": "Середня тривалість",
-      "blockedSlots": "Заблоковані слоти",
-      "bookedSlots": "Заброньовані слоти",
-      "conflictAnalysis": "Аналіз конфліктів",
-      "editOperations": "Операції редагування",
-      "failedEdits": "Невдалі зміни",
-      "loading": "Завантажуємо аналітику…",
+      "availableSlots": "╨Ф╨╛╤Б╤В╤Г╨┐╨╜╤Ц ╤Б╨╗╨╛╤В╨╕",
+      "avgDuration": "╨б╨╡╤А╨╡╨┤╨╜╤П ╤В╤А╨╕╨▓╨░╨╗╤Ц╤Б╤В╤М",
+      "blockedSlots": "╨Ч╨░╨▒╨╗╨╛╨║╨╛╨▓╨░╨╜╤Ц ╤Б╨╗╨╛╤В╨╕",
+      "bookedSlots": "╨Ч╨░╨▒╤А╨╛╨╜╤М╨╛╨▓╨░╨╜╤Ц ╤Б╨╗╨╛╤В╨╕",
+      "conflictAnalysis": "╨Р╨╜╨░╨╗╤Ц╨╖ ╨║╨╛╨╜╤Д╨╗╤Ц╨║╤В╤Ц╨▓",
+      "editOperations": "╨Ю╨┐╨╡╤А╨░╤Ж╤Ц╤Ч ╤А╨╡╨┤╨░╨│╤Г╨▓╨░╨╜╨╜╤П",
+      "failedEdits": "╨Э╨╡╨▓╨┤╨░╨╗╤Ц ╨╖╨╝╤Ц╨╜╨╕",
+      "loading": "╨Ч╨░╨▓╨░╨╜╤В╨░╨╢╤Г╤Ф╨╝╨╛ ╨░╨╜╨░╨╗╤Ц╤В╨╕╨║╤ГтАж",
       "period": {
-        "custom": "Власний період",
-        "month": "Цей місяць",
-        "today": "Сьогодні",
-        "week": "Цей тиждень"
+        "custom": "╨Т╨╗╨░╤Б╨╜╨╕╨╣ ╨┐╨╡╤А╤Ц╨╛╨┤",
+        "month": "╨ж╨╡╨╣ ╨╝╤Ц╤Б╤П╤Ж╤М",
+        "today": "╨б╤М╨╛╨│╨╛╨┤╨╜╤Ц",
+        "week": "╨ж╨╡╨╣ ╤В╨╕╨╢╨┤╨╡╨╜╤М"
       },
-      "recentActivity": "Нещодавня активність",
+      "recentActivity": "╨Э╨╡╤Й╨╛╨┤╨░╨▓╨╜╤П ╨░╨║╤В╨╕╨▓╨╜╤Ц╤Б╤В╤М",
       "status": {
-        "error": "Помилка",
-        "success": "Успішно",
-        "warning": "Попередження"
+        "error": "╨Я╨╛╨╝╨╕╨╗╨║╨░",
+        "success": "╨г╤Б╨┐╤Ц╤И╨╜╨╛",
+        "warning": "╨Я╨╛╨┐╨╡╤А╨╡╨┤╨╢╨╡╨╜╨╜╤П"
       },
-      "strategyDistribution": "Розподіл стратегій",
-      "successfulEdits": "Успішні зміни",
+      "strategyDistribution": "╨а╨╛╨╖╨┐╨╛╨┤╤Ц╨╗ ╤Б╤В╤А╨░╤В╨╡╨│╤Ц╨╣",
+      "successfulEdits": "╨г╤Б╨┐╤Ц╤И╨╜╤Ц ╨╖╨╝╤Ц╨╜╨╕",
       "time": {
-        "daysAgo": "{count} днів тому",
-        "hoursAgo": "{count} год тому",
-        "justNow": "щойно",
-        "minutesAgo": "{count} хв тому"
+        "daysAgo": "{count} ╨┤╨╜╤Ц╨▓ ╤В╨╛╨╝╤Г",
+        "hoursAgo": "{count} ╨│╨╛╨┤ ╤В╨╛╨╝╤Г",
+        "justNow": "╤Й╨╛╨╣╨╜╨╛",
+        "minutesAgo": "{count} ╤Е╨▓ ╤В╨╛╨╝╤Г"
       },
-      "title": "Аналітика доступності",
-      "totalConflicts": "Усього конфліктів",
-      "totalEdits": "Всього змін",
-      "totalSlots": "Усього слотів"
+      "title": "╨Р╨╜╨░╨╗╤Ц╤В╨╕╨║╨░ ╨┤╨╛╤Б╤В╤Г╨┐╨╜╨╛╤Б╤В╤Ц",
+      "totalConflicts": "╨г╤Б╤М╨╛╨│╨╛ ╨║╨╛╨╜╤Д╨╗╤Ц╨║╤В╤Ц╨▓",
+      "totalEdits": "╨Т╤Б╤М╨╛╨│╨╛ ╨╖╨╝╤Ц╨╜",
+      "totalSlots": "╨г╤Б╤М╨╛╨│╨╛ ╤Б╨╗╨╛╤В╤Ц╨▓"
     },
-    "time": "Час",
-    "today": "Сьогодні",
-    "tutor": "Тьютор",
+    "time": "╨з╨░╤Б",
+    "today": "╨б╤М╨╛╨│╨╛╨┤╨╜╤Ц",
+    "tutor": "╨в╤М╤О╤В╨╛╤А",
     "statusLabels": {
-      "active": "Активна",
-      "canceled": "Скасована",
-      "past_due": "Прострочена",
-      "pending": "Очікує активації"
+      "active": "╨Р╨║╤В╨╕╨▓╨╜╨░",
+      "canceled": "╨б╨║╨░╤Б╨╛╨▓╨░╨╜╨░",
+      "past_due": "╨Я╤А╨╛╤Б╤В╤А╨╛╤З╨╡╨╜╨░",
+      "pending": "╨Ю╤З╤Ц╨║╤Г╤Ф ╨░╨║╤В╨╕╨▓╨░╤Ж╤Ц╤Ч"
     },
     "statuses": {
-      "active": "Активна",
-      "canceled": "Скасована",
-      "incomplete": "Неповна",
-      "incomplete_expired": "Прострочена оплата",
-      "none": "Без підписки",
-      "past_due": "Прострочена",
-      "pending": "Очікує активації",
-      "trialing": "Пробний період",
-      "unpaid": "Не оплачена"
+      "active": "╨Р╨║╤В╨╕╨▓╨╜╨░",
+      "canceled": "╨б╨║╨░╤Б╨╛╨▓╨░╨╜╨░",
+      "incomplete": "╨Э╨╡╨┐╨╛╨▓╨╜╨░",
+      "incomplete_expired": "╨Я╤А╨╛╤Б╤В╤А╨╛╤З╨╡╨╜╨░ ╨╛╨┐╨╗╨░╤В╨░",
+      "none": "╨С╨╡╨╖ ╨┐╤Ц╨┤╨┐╨╕╤Б╨║╨╕",
+      "past_due": "╨Я╤А╨╛╤Б╤В╤А╨╛╤З╨╡╨╜╨░",
+      "pending": "╨Ю╤З╤Ц╨║╤Г╤Ф ╨░╨║╤В╨╕╨▓╨░╤Ж╤Ц╤Ч",
+      "trialing": "╨Я╤А╨╛╨▒╨╜╨╕╨╣ ╨┐╨╡╤А╤Ц╨╛╨┤",
+      "unpaid": "╨Э╨╡ ╨╛╨┐╨╗╨░╤З╨╡╨╜╨░"
     }
   },
   "conflict": {
@@ -3525,9 +3497,9 @@
         "SPAM": "Spam"
       },
       "status${report.status}": "{report.status}",
-      "statusACTIONED": "Опрацьована",
-      "statusDISMISSED": "Відхилена",
-      "statusOPEN": "Відкрита"
+      "statusACTIONED": "╨Ю╨┐╤А╨░╤Ж╤М╨╛╨▓╨░╨╜╨░",
+      "statusDISMISSED": "╨Т╤Ц╨┤╤Е╨╕╨╗╨╡╨╜╨░",
+      "statusOPEN": "╨Т╤Ц╨┤╨║╤А╨╕╤В╨░"
     },
     "userOverview": {
       "title": "User Overview",
@@ -3564,19 +3536,19 @@
       "contactsUnlocked30d": "Contacts Unlocked (30 days)"
     },
     "billingPending": {
-      "emptyDescription": "Всі платежі оброблені або список порожній",
+      "emptyDescription": "Всі платежі оброблені",
       "emptyTitle": "Немає очікуваних платежів",
       "errorTitle": "Помилка завантаження",
-      "finalize": "Завершити платіж",
+      "finalize": "Завершити",
       "loading": "Завантаження...",
       "openUser": "Відкрити користувача",
-      "pendingAge": "Тривалість очікування",
+      "pendingAge": "Вік",
       "pendingSince": "Очікує з",
       "plan": "План",
       "provider": "Провайдер",
-      "searchPlaceholder": "Пошук за email або ID користувача",
-      "showOnlyStale": "Показати тільки застарілі (>1 год)",
-      "subtitle": "Список користувачів з незавершеними платежами",
+      "searchPlaceholder": "Пошук за email або ID...",
+      "showOnlyStale": "Показати тільки застарілі",
+      "subtitle": "Платежі, що очікують підтвердження",
       "title": "Очікувані платежі"
     }
   },
@@ -3638,19 +3610,19 @@
       "ADVANCED_MATCHING": "Advanced Matching",
       "TEAM_MANAGEMENT": "Team Management",
       "CUSTOM_BRANDING": "Custom Branding",
-      "ADVANCED_SCHEDULING": "Розширене планування",
-      "CALENDAR_INTEGRATION": "Інтеграція з календарем",
-      "CUSTOM_DOMAIN": "Власний домен",
-      "DEDICATED_SUPPORT": "Виділена підтримка",
-      "EMAIL_NOTIFICATIONS": "Email сповіщення",
-      "HOMEWORK_TRACKING": "Відстеження домашніх завдань",
-      "ONBOARDING_ASSISTANCE": "Допомога при впровадженні",
-      "PROGRESS_REPORTS": "Звіти про прогрес",
-      "SCREEN_SHARING": "Демонстрація екрану",
-      "SMS_NOTIFICATIONS": "SMS сповіщення",
-      "UNLIMITED_STUDENTS": "Необмежена кількість студентів",
-      "VIDEO_CALLS": "Відеодзвінки",
-      "WHITE_LABEL": "White-label рішення"
+      "ADVANCED_SCHEDULING": "╨а╨╛╨╖╤И╨╕╤А╨╡╨╜╨╡ ╨┐╨╗╨░╨╜╤Г╨▓╨░╨╜╨╜╤П",
+      "CALENDAR_INTEGRATION": "╨Ж╨╜╤В╨╡╨│╤А╨░╤Ж╤Ц╤П ╨╖ ╨║╨░╨╗╨╡╨╜╨┤╨░╤А╨╡╨╝",
+      "CUSTOM_DOMAIN": "╨Т╨╗╨░╤Б╨╜╨╕╨╣ ╨┤╨╛╨╝╨╡╨╜",
+      "DEDICATED_SUPPORT": "╨Т╨╕╨┤╤Ц╨╗╨╡╨╜╨░ ╨┐╤Ц╨┤╤В╤А╨╕╨╝╨║╨░",
+      "EMAIL_NOTIFICATIONS": "Email ╤Б╨┐╨╛╨▓╤Ц╤Й╨╡╨╜╨╜╤П",
+      "HOMEWORK_TRACKING": "╨Т╤Ц╨┤╤Б╤В╨╡╨╢╨╡╨╜╨╜╤П ╨┤╨╛╨╝╨░╤И╨╜╤Ц╤Е ╨╖╨░╨▓╨┤╨░╨╜╤М",
+      "ONBOARDING_ASSISTANCE": "╨Ф╨╛╨┐╨╛╨╝╨╛╨│╨░ ╨┐╤А╨╕ ╨▓╨┐╤А╨╛╨▓╨░╨┤╨╢╨╡╨╜╨╜╤Ц",
+      "PROGRESS_REPORTS": "╨Ч╨▓╤Ц╤В╨╕ ╨┐╤А╨╛ ╨┐╤А╨╛╨│╤А╨╡╤Б",
+      "SCREEN_SHARING": "╨Ф╨╡╨╝╨╛╨╜╤Б╤В╤А╨░╤Ж╤Ц╤П ╨╡╨║╤А╨░╨╜╤Г",
+      "SMS_NOTIFICATIONS": "SMS ╤Б╨┐╨╛╨▓╤Ц╤Й╨╡╨╜╨╜╤П",
+      "UNLIMITED_STUDENTS": "╨Э╨╡╨╛╨▒╨╝╨╡╨╢╨╡╨╜╨░ ╨║╤Ц╨╗╤М╨║╤Ц╤Б╤В╤М ╤Б╤В╤Г╨┤╨╡╨╜╤В╤Ц╨▓",
+      "VIDEO_CALLS": "╨Т╤Ц╨┤╨╡╨╛╨┤╨╖╨▓╤Ц╨╜╨║╨╕",
+      "WHITE_LABEL": "White-label ╤А╤Ц╤И╨╡╨╜╨╜╤П"
     },
     "faq": {
       "title": "Frequently Asked Questions",
@@ -3674,9 +3646,9 @@
       "checkoutNotAllowed": "Checkout not allowed",
       "invalidPlan": "Invalid plan",
       "alreadySubscribed": "You already have an active subscription",
-      "checkout_not_allowed": "Оформлення підписки зараз недоступне",
-      "limit_exceeded": "Досягнуто ліміт використання для вашого плану",
-      "subscription_required": "Для використання цієї функції потрібна підписка"
+      "checkout_not_allowed": "╨Ю╤Д╨╛╤А╨╝╨╗╨╡╨╜╨╜╤П ╨┐╤Ц╨┤╨┐╨╕╤Б╨║╨╕ ╨╖╨░╤А╨░╨╖ ╨╜╨╡╨┤╨╛╤Б╤В╤Г╨┐╨╜╨╡",
+      "limit_exceeded": "╨Ф╨╛╤Б╤П╨│╨╜╤Г╤В╨╛ ╨╗╤Ц╨╝╤Ц╤В ╨▓╨╕╨║╨╛╤А╨╕╤Б╤В╨░╨╜╨╜╤П ╨┤╨╗╤П ╨▓╨░╤И╨╛╨│╨╛ ╨┐╨╗╨░╨╜╤Г",
+      "subscription_required": "╨Ф╨╗╤П ╨▓╨╕╨║╨╛╤А╨╕╤Б╤В╨░╨╜╨╜╤П ╤Ж╤Ц╤Ф╤Ч ╤Д╤Г╨╜╨║╤Ж╤Ц╤Ч ╨┐╨╛╤В╤А╤Ц╨▒╨╜╨░ ╨┐╤Ц╨┤╨┐╨╕╤Б╨║╨░"
     },
     "cta": {
       "upgradeToContinue": "Upgrade to continue",
@@ -3706,7 +3678,7 @@
       "pleaseLogin": "Please log in again to view your subscription",
       "loginAgain": "Log in again",
       "pendingActivation": "Plan is activating. This can take a couple of minutes.",
-      "pendingMessage": "We’re confirming the payment. As soon as LiqPay finishes verification, your subscription will activate automatically."
+      "pendingMessage": "WeтАЩre confirming the payment. As soon as LiqPay finishes verification, your subscription will activate automatically."
     },
     "pendingPlan": {
       "title": "Plan {plan} is activating",
@@ -3753,7 +3725,7 @@
       "pay": "Pay",
       "intervalMonthly": "month",
       "intervalYearly": "year",
-      "unavailable": "Недоступно"
+      "unavailable": "╨Э╨╡╨┤╨╛╤Б╤В╤Г╨┐╨╜╨╛"
     },
     "errors": {
       "loadFailed": "Failed to load billing data",
@@ -3761,291 +3733,288 @@
     },
     "retryButton": "Try Again",
     "cancel": {
-      "backToDashboard": "Повернутися на головну",
-      "message": "Ваша оплата не була завершена. Ви можете спробувати ще раз або обрати інший план.",
-      "subtitle": "Ви скасували процес оплати",
-      "title": "Оплату скасовано",
-      "viewPlans": "Переглянути плани"
+      "backToDashboard": "╨Я╨╛╨▓╨╡╤А╨╜╤Г╤В╨╕╤Б╤П ╨╜╨░ ╨│╨╛╨╗╨╛╨▓╨╜╤Г",
+      "message": "╨Т╨░╤И╨░ ╨╛╨┐╨╗╨░╤В╨░ ╨╜╨╡ ╨▒╤Г╨╗╨░ ╨╖╨░╨▓╨╡╤А╤И╨╡╨╜╨░. ╨Т╨╕ ╨╝╨╛╨╢╨╡╤В╨╡ ╤Б╨┐╤А╨╛╨▒╤Г╨▓╨░╤В╨╕ ╤Й╨╡ ╤А╨░╨╖ ╨░╨▒╨╛ ╨╛╨▒╤А╨░╤В╨╕ ╤Ц╨╜╤И╨╕╨╣ ╨┐╨╗╨░╨╜.",
+      "subtitle": "╨Т╨╕ ╤Б╨║╨░╤Б╤Г╨▓╨░╨╗╨╕ ╨┐╤А╨╛╤Ж╨╡╤Б ╨╛╨┐╨╗╨░╤В╨╕",
+      "title": "╨Ю╨┐╨╗╨░╤В╤Г ╤Б╨║╨░╤Б╨╛╨▓╨░╨╜╨╛",
+      "viewPlans": "╨Я╨╡╤А╨╡╨│╨╗╤П╨╜╤Г╤В╨╕ ╨┐╨╗╨░╨╜╨╕"
     },
     "checkout": {
-      "agreement": "Натискаючи кнопку оплати, ви погоджуєтесь з:",
+      "agreement": "╨Э╨░╤В╨╕╤Б╨║╨░╤О╤З╨╕ ╨║╨╜╨╛╨┐╨║╤Г ╨╛╨┐╨╗╨░╤В╨╕, ╨▓╨╕ ╨┐╨╛╨│╨╛╨┤╨╢╤Г╤Ф╤В╨╡╤Б╤М ╨╖:",
       "locked": {
-        "age": "Тривалість",
+        "age": "Вік",
         "close": "Закрити",
-        "message": "У вас вже є активне оформлення замовлення. Будь ласка, завершіть його або зачекайте.",
+        "message": "Ваше попереднє замовлення ще обробляється. Будь ласка, зачекайте.",
         "orderId": "ID замовлення",
         "pendingSince": "Очікує з",
         "plan": "План",
         "refresh": "Оновити статус",
-        "title": "Оформлення вже в процесі"
+        "title": "Оформлення заблоковано"
       }
     },
-    "history": "Історія платежів",
-    "historyComingSoon": "Історія платежів скоро буде доступна",
+    "history": "╨Ж╤Б╤В╨╛╤А╤Ц╤П ╨┐╨╗╨░╤В╨╡╨╢╤Ц╨▓",
+    "historyComingSoon": "╨Ж╤Б╤В╨╛╤А╤Ц╤П ╨┐╨╗╨░╤В╨╡╨╢╤Ц╨▓ ╤Б╨║╨╛╤А╨╛ ╨▒╤Г╨┤╨╡ ╨┤╨╛╤Б╤В╤Г╨┐╨╜╨░",
     "planDescriptions": {
-      "BUSINESS": "Повний функціонал для команд та шкіл",
-      "FREE": "Базові можливості для початку роботи",
-      "PRO": "Розширені функції для професійних репетиторів"
+      "BUSINESS": "╨Я╨╛╨▓╨╜╨╕╨╣ ╤Д╤Г╨╜╨║╤Ж╤Ц╨╛╨╜╨░╨╗ ╨┤╨╗╤П ╨║╨╛╨╝╨░╨╜╨┤ ╤В╨░ ╤И╨║╤Ц╨╗",
+      "FREE": "╨С╨░╨╖╨╛╨▓╤Ц ╨╝╨╛╨╢╨╗╨╕╨▓╨╛╤Б╤В╤Ц ╨┤╨╗╤П ╨┐╨╛╤З╨░╤В╨║╤Г ╤А╨╛╨▒╨╛╤В╨╕",
+      "PRO": "╨а╨╛╨╖╤И╨╕╤А╨╡╨╜╤Ц ╤Д╤Г╨╜╨║╤Ж╤Ц╤Ч ╨┤╨╗╤П ╨┐╤А╨╛╤Д╨╡╤Б╤Ц╨╣╨╜╨╕╤Е ╤А╨╡╨┐╨╡╤В╨╕╤В╨╛╤А╤Ц╨▓"
     },
     "subscriptionRequired": {
-      "defaultMessage": "Оновіть свій план, щоб отримати доступ до розширених можливостей",
-      "message": "Для доступу до цієї функції необхідна активна підписка",
-      "title": "Потрібна підписка",
-      "unlockFeatures": "Розблокуйте можливості:"
+      "defaultMessage": "╨Ю╨╜╨╛╨▓╤Ц╤В╤М ╤Б╨▓╤Ц╨╣ ╨┐╨╗╨░╨╜, ╤Й╨╛╨▒ ╨╛╤В╤А╨╕╨╝╨░╤В╨╕ ╨┤╨╛╤Б╤В╤Г╨┐ ╨┤╨╛ ╤А╨╛╨╖╤И╨╕╤А╨╡╨╜╨╕╤Е ╨╝╨╛╨╢╨╗╨╕╨▓╨╛╤Б╤В╨╡╨╣",
+      "message": "╨Ф╨╗╤П ╨┤╨╛╤Б╤В╤Г╨┐╤Г ╨┤╨╛ ╤Ж╤Ц╤Ф╤Ч ╤Д╤Г╨╜╨║╤Ж╤Ц╤Ч ╨╜╨╡╨╛╨▒╤Е╤Ц╨┤╨╜╨░ ╨░╨║╤В╨╕╨▓╨╜╨░ ╨┐╤Ц╨┤╨┐╨╕╤Б╨║╨░",
+      "title": "╨Я╨╛╤В╤А╤Ц╨▒╨╜╨░ ╨┐╤Ц╨┤╨┐╨╕╤Б╨║╨░",
+      "unlockFeatures": "╨а╨╛╨╖╨▒╨╗╨╛╨║╤Г╨╣╤В╨╡ ╨╝╨╛╨╢╨╗╨╕╨▓╨╛╤Б╤В╤Ц:"
     },
     "period": {
       "days": "днів",
-      "label": "Період підписки",
+      "label": "Період",
       "remaining": "Залишилось"
     }
   },
   "commonExtended": {
-    "accept": "Прийняти",
-    "all": "Усі",
-    "apply": "Застосувати",
-    "back": "Назад",
-    "cancel": "Скасувати",
-    "clear": "Очистити",
-    "close": "Закрити",
-    "confirmDelete": "Видалити запис?",
-    "confirmDiscard": "Скасувати незбережені зміни?",
-    "continue": "Продовжити",
-    "copy": "Копіювати",
-    "creating": "Створюємо",
-    "currency": "Валюта",
-    "daysAgo": "{count} дн. тому",
-    "decline": "Відхилити",
-    "delete": "Видалити",
-    "executing": "Виконуємо",
-    "exit": "Вийти",
-    "hour": "год",
-    "hoursAgo": "TODO: годин тому",
-    "justNow": "TODO: Щойно",
-    "later": "TODO: Пізніше",
-    "loadMore": "Завантажити ще",
-    "loading": "Завантаження...",
-    "lock": "Заблокувати",
-    "minutesAgo": "TODO: хвилин тому",
-    "moveDown": "Перемістити вниз",
-    "moveUp": "Перемістити вгору",
-    "next": "Далі",
-    "nextWeek": "Наступний тиждень",
-    "notSpecified": "Не вказано",
-    "of": "з",
+    "accept": "╨Я╤А╨╕╨╣╨╜╤П╤В╨╕",
+    "all": "╨г╤Б╤Ц",
+    "apply": "╨Ч╨░╤Б╤В╨╛╤Б╤Г╨▓╨░╤В╨╕",
+    "back": "╨Э╨░╨╖╨░╨┤",
+    "cancel": "╨б╨║╨░╤Б╤Г╨▓╨░╤В╨╕",
+    "clear": "╨Ю╤З╨╕╤Б╤В╨╕╤В╨╕",
+    "close": "╨Ч╨░╨║╤А╨╕╤В╨╕",
+    "confirmDelete": "╨Т╨╕╨┤╨░╨╗╨╕╤В╨╕ ╨╖╨░╨┐╨╕╤Б?",
+    "confirmDiscard": "╨б╨║╨░╤Б╤Г╨▓╨░╤В╨╕ ╨╜╨╡╨╖╨▒╨╡╤А╨╡╨╢╨╡╨╜╤Ц ╨╖╨╝╤Ц╨╜╨╕?",
+    "continue": "╨Я╤А╨╛╨┤╨╛╨▓╨╢╨╕╤В╨╕",
+    "copy": "╨Ъ╨╛╨┐╤Ц╤О╨▓╨░╤В╨╕",
+    "creating": "╨б╤В╨▓╨╛╤А╤О╤Ф╨╝╨╛",
+    "currency": "╨Т╨░╨╗╤О╤В╨░",
+    "daysAgo": "{count} ╨┤╨╜. ╤В╨╛╨╝╤Г",
+    "decline": "╨Т╤Ц╨┤╤Е╨╕╨╗╨╕╤В╨╕",
+    "delete": "╨Т╨╕╨┤╨░╨╗╨╕╤В╨╕",
+    "executing": "╨Т╨╕╨║╨╛╨╜╤Г╤Ф╨╝╨╛",
+    "exit": "╨Т╨╕╨╣╤В╨╕",
+    "hour": "╨│╨╛╨┤",
+    "hoursAgo": "TODO: ╨│╨╛╨┤╨╕╨╜ ╤В╨╛╨╝╤Г",
+    "justNow": "TODO: ╨й╨╛╨╣╨╜╨╛",
+    "later": "TODO: ╨Я╤Ц╨╖╨╜╤Ц╤И╨╡",
+    "loadMore": "╨Ч╨░╨▓╨░╨╜╤В╨░╨╢╨╕╤В╨╕ ╤Й╨╡",
+    "loading": "╨Ч╨░╨▓╨░╨╜╤В╨░╨╢╨╡╨╜╨╜╤П...",
+    "lock": "╨Ч╨░╨▒╨╗╨╛╨║╤Г╨▓╨░╤В╨╕",
+    "minutesAgo": "TODO: ╤Е╨▓╨╕╨╗╨╕╨╜ ╤В╨╛╨╝╤Г",
+    "moveDown": "╨Я╨╡╤А╨╡╨╝╤Ц╤Б╤В╨╕╤В╨╕ ╨▓╨╜╨╕╨╖",
+    "moveUp": "╨Я╨╡╤А╨╡╨╝╤Ц╤Б╤В╨╕╤В╨╕ ╨▓╨│╨╛╤А╤Г",
+    "next": "╨Ф╨░╨╗╤Ц",
+    "nextWeek": "╨Э╨░╤Б╤В╤Г╨┐╨╜╨╕╨╣ ╤В╨╕╨╢╨┤╨╡╨╜╤М",
+    "notSpecified": "╨Э╨╡ ╨▓╨║╨░╨╖╨░╨╜╨╛",
+    "of": "╨╖",
     "offline": {
-      "lastSync": "TODO: Остання синхронізація",
-      "message": "TODO: Ви не в мережі",
-      "retry": "TODO: Повторити",
-      "retrying": "TODO: Повторна спроба",
-      "title": "TODO: Офлайн"
+      "lastSync": "TODO: ╨Ю╤Б╤В╨░╨╜╨╜╤П ╤Б╨╕╨╜╤Е╤А╨╛╨╜╤Ц╨╖╨░╤Ж╤Ц╤П",
+      "message": "TODO: ╨Т╨╕ ╨╜╨╡ ╨▓ ╨╝╨╡╤А╨╡╨╢╤Ц",
+      "retry": "TODO: ╨Я╨╛╨▓╤В╨╛╤А╨╕╤В╨╕",
+      "retrying": "TODO: ╨Я╨╛╨▓╤В╨╛╤А╨╜╨░ ╤Б╨┐╤А╨╛╨▒╨░",
+      "title": "TODO: ╨Ю╤Д╨╗╨░╨╣╨╜"
     },
-    "open": "Відкрити",
-    "optional": "необов'язково",
-    "other": "Інше",
-    "previous": "Назад",
-    "previousWeek": "Попередній тиждень",
+    "open": "╨Т╤Ц╨┤╨║╤А╨╕╤В╨╕",
+    "optional": "╨╜╨╡╨╛╨▒╨╛╨▓'╤П╨╖╨║╨╛╨▓╨╛",
+    "other": "╨Ж╨╜╤И╨╡",
+    "previous": "╨Э╨░╨╖╨░╨┤",
+    "previousWeek": "╨Я╨╛╨┐╨╡╤А╨╡╨┤╨╜╤Ц╨╣ ╤В╨╕╨╢╨┤╨╡╨╜╤М",
     "rateLimit": {
-      "message": "Забагато запитів. Зачекайте перед повтором.",
-      "seconds": "секунд",
-      "title": "Ліміт запитів перевищено",
-      "tryNow": "Спробувати зараз",
-      "waiting": "Очікування..."
+      "message": "╨Ч╨░╨▒╨░╨│╨░╤В╨╛ ╨╖╨░╨┐╨╕╤В╤Ц╨▓. ╨Ч╨░╤З╨╡╨║╨░╨╣╤В╨╡ ╨┐╨╡╤А╨╡╨┤ ╨┐╨╛╨▓╤В╨╛╤А╨╛╨╝.",
+      "seconds": "╤Б╨╡╨║╤Г╨╜╨┤",
+      "title": "╨Ы╤Ц╨╝╤Ц╤В ╨╖╨░╨┐╨╕╤В╤Ц╨▓ ╨┐╨╡╤А╨╡╨▓╨╕╤Й╨╡╨╜╨╛",
+      "tryNow": "╨б╨┐╤А╨╛╨▒╤Г╨▓╨░╤В╨╕ ╨╖╨░╤А╨░╨╖",
+      "waiting": "╨Ю╤З╤Ц╨║╤Г╨▓╨░╨╜╨╜╤П..."
     },
-    "refresh": "Оновити",
-    "reject": "Відхилити",
-    "remove": "Видалити",
-    "retry": "TODO: Повторити",
-    "save": "Зберегти",
-    "saving": "Зберігаємо",
-    "search": "Пошук",
-    "searching": "Пошук",
-    "showing": "Показано",
-    "there": "там",
-    "today": "Сьогодні",
-    "understood": "Зрозуміло",
-    "unlock": "Розблокувати",
+    "refresh": "╨Ю╨╜╨╛╨▓╨╕╤В╨╕",
+    "reject": "╨Т╤Ц╨┤╤Е╨╕╨╗╨╕╤В╨╕",
+    "remove": "╨Т╨╕╨┤╨░╨╗╨╕╤В╨╕",
+    "retry": "TODO: ╨Я╨╛╨▓╤В╨╛╤А╨╕╤В╨╕",
+    "save": "╨Ч╨▒╨╡╤А╨╡╨│╤В╨╕",
+    "saving": "╨Ч╨▒╨╡╤А╤Ц╨│╨░╤Ф╨╝╨╛",
+    "search": "╨Я╨╛╤И╤Г╨║",
+    "searching": "╨Я╨╛╤И╤Г╨║",
+    "showing": "╨Я╨╛╨║╨░╨╖╨░╨╜╨╛",
+    "there": "╤В╨░╨╝",
+    "today": "╨б╤М╨╛╨│╨╛╨┤╨╜╤Ц",
+    "understood": "╨Ч╤А╨╛╨╖╤Г╨╝╤Ц╨╗╨╛",
+    "unlock": "╨а╨╛╨╖╨▒╨╗╨╛╨║╤Г╨▓╨░╤В╨╕",
     "weekdays": {
       "${day}": "{day}",
       "${weekday}": "{weekday}",
-      "friday": "Пʼятниця",
-      "monday": "Понеділок",
-      "saturday": "Субота",
+      "friday": "╨Я╩╝╤П╤В╨╜╨╕╤Ж╤П",
+      "monday": "╨Я╨╛╨╜╨╡╨┤╤Ц╨╗╨╛╨║",
+      "saturday": "╨б╤Г╨▒╨╛╤В╨░",
       "short": {
-        "fri": "Пт",
-        "mon": "Пн",
-        "sat": "Сб",
-        "sun": "Нд",
-        "thu": "Чт",
-        "tue": "Вт",
-        "wed": "Ср"
+        "fri": "╨Я╤В",
+        "mon": "╨Я╨╜",
+        "sat": "╨б╨▒",
+        "sun": "╨Э╨┤",
+        "thu": "╨з╤В",
+        "tue": "╨Т╤В",
+        "wed": "╨б╤А"
       },
-      "sunday": "Неділя",
-      "thursday": "Четвер",
-      "tuesday": "Вівторок",
-      "wednesday": "Середа"
+      "sunday": "╨Э╨╡╨┤╤Ц╨╗╤П",
+      "thursday": "╨з╨╡╤В╨▓╨╡╤А",
+      "tuesday": "╨Т╤Ц╨▓╤В╨╛╤А╨╛╨║",
+      "wednesday": "╨б╨╡╤А╨╡╨┤╨░"
     },
-    "years": "років"
+    "years": "╤А╨╛╨║╤Ц╨▓"
   },
   "tutorSearch": {
     "actions": {
-      "resend": "Надіслати ще раз"
+      "resend": "╨Э╨░╨┤╤Ц╤Б╨╗╨░╤В╨╕ ╤Й╨╡ ╤А╨░╨╖"
     },
     "lessonLinks": {
       "backup": {
-        "description": "Буде використовуватися, якщо основне посилання недоступне",
-        "title": "Резервне посилання"
+        "description": "╨С╤Г╨┤╨╡ ╨▓╨╕╨║╨╛╤А╨╕╤Б╤В╨╛╨▓╤Г╨▓╨░╤В╨╕╤Б╤П, ╤П╨║╤Й╨╛ ╨╛╤Б╨╜╨╛╨▓╨╜╨╡ ╨┐╨╛╤Б╨╕╨╗╨░╨╜╨╜╤П ╨╜╨╡╨┤╨╛╤Б╤В╤Г╨┐╨╜╨╡",
+        "title": "╨а╨╡╨╖╨╡╤А╨▓╨╜╨╡ ╨┐╨╛╤Б╨╕╨╗╨░╨╜╨╜╤П"
       },
       "errors": {
-        "conflict": "Налаштування були змінені в іншій сесії. Оновіть сторінку.",
-        "loadFailed": "Не вдалося завантажити посилання",
-        "saveFailed": "Не вдалося зберегти посилання"
+        "conflict": "╨Э╨░╨╗╨░╤И╤В╤Г╨▓╨░╨╜╨╜╤П ╨▒╤Г╨╗╨╕ ╨╖╨╝╤Ц╨╜╨╡╨╜╤Ц ╨▓ ╤Ц╨╜╤И╤Ц╨╣ ╤Б╨╡╤Б╤Ц╤Ч. ╨Ю╨╜╨╛╨▓╤Ц╤В╤М ╤Б╤В╨╛╤А╤Ц╨╜╨║╤Г.",
+        "loadFailed": "╨Э╨╡ ╨▓╨┤╨░╨╗╨╛╤Б╤П ╨╖╨░╨▓╨░╨╜╤В╨░╨╢╨╕╤В╨╕ ╨┐╨╛╤Б╨╕╨╗╨░╨╜╨╜╤П",
+        "saveFailed": "╨Э╨╡ ╨▓╨┤╨░╨╗╨╛╤Б╤П ╨╖╨▒╨╡╤А╨╡╨│╤В╨╕ ╨┐╨╛╤Б╨╕╨╗╨░╨╜╨╜╤П"
       },
-      "notSet": "Не встановлено",
-      "platformGenerated": "Генерується автоматично",
-      "platformInfo": "Платформа автоматично генерує унікальні посилання для кожного уроку",
+      "notSet": "╨Э╨╡ ╨▓╤Б╤В╨░╨╜╨╛╨▓╨╗╨╡╨╜╨╛",
+      "platformGenerated": "╨У╨╡╨╜╨╡╤А╤Г╤Ф╤В╤М╤Б╤П ╨░╨▓╤В╨╛╨╝╨░╤В╨╕╤З╨╜╨╛",
+      "platformInfo": "╨Я╨╗╨░╤В╤Д╨╛╤А╨╝╨░ ╨░╨▓╤В╨╛╨╝╨░╤В╨╕╤З╨╜╨╛ ╨│╨╡╨╜╨╡╤А╤Г╤Ф ╤Г╨╜╤Ц╨║╨░╨╗╤М╨╜╤Ц ╨┐╨╛╤Б╨╕╨╗╨░╨╜╨╜╤П ╨┤╨╗╤П ╨║╨╛╨╢╨╜╨╛╨│╨╛ ╤Г╤А╨╛╨║╤Г",
       "preview": {
-        "current": "Активне посилання",
-        "title": "Поточне посилання"
+        "current": "╨Р╨║╤В╨╕╨▓╨╜╨╡ ╨┐╨╛╤Б╨╕╨╗╨░╨╜╨╜╤П",
+        "title": "╨Я╨╛╤В╨╛╤З╨╜╨╡ ╨┐╨╛╤Б╨╕╨╗╨░╨╜╨╜╤П"
       },
       "primary": {
-        "description": "Це посилання буде використовуватися для всіх уроків за замовчуванням",
-        "title": "Основне посилання"
+        "description": "╨ж╨╡ ╨┐╨╛╤Б╨╕╨╗╨░╨╜╨╜╤П ╨▒╤Г╨┤╨╡ ╨▓╨╕╨║╨╛╤А╨╕╤Б╤В╨╛╨▓╤Г╨▓╨░╤В╨╕╤Б╤П ╨┤╨╗╤П ╨▓╤Б╤Ц╤Е ╤Г╤А╨╛╨║╤Ц╨▓ ╨╖╨░ ╨╖╨░╨╝╨╛╨▓╤З╤Г╨▓╨░╨╜╨╜╤П╨╝",
+        "title": "╨Ю╤Б╨╜╨╛╨▓╨╜╨╡ ╨┐╨╛╤Б╨╕╨╗╨░╨╜╨╜╤П"
       },
-      "provider": "Платформа",
+      "provider": "╨Я╨╗╨░╤В╤Д╨╛╤А╨╝╨░",
       "providers": {
-        "custom": "Власне посилання",
+        "custom": "╨Т╨╗╨░╤Б╨╜╨╡ ╨┐╨╛╤Б╨╕╨╗╨░╨╜╨╜╤П",
         "meet": "Google Meet",
-        "platform": "Платформа M4SH",
+        "platform": "╨Я╨╗╨░╤В╤Д╨╛╤А╨╝╨░ M4SH",
         "zoom": "Zoom"
       },
-      "subtitle": "Налаштуйте основне та резервне посилання для проведення уроків",
+      "subtitle": "╨Э╨░╨╗╨░╤И╤В╤Г╨╣╤В╨╡ ╨╛╤Б╨╜╨╛╨▓╨╜╨╡ ╤В╨░ ╤А╨╡╨╖╨╡╤А╨▓╨╜╨╡ ╨┐╨╛╤Б╨╕╨╗╨░╨╜╨╜╤П ╨┤╨╗╤П ╨┐╤А╨╛╨▓╨╡╨┤╨╡╨╜╨╜╤П ╤Г╤А╨╛╨║╤Ц╨▓",
       "success": {
-        "saved": "Посилання успішно збережено"
+        "saved": "╨Я╨╛╤Б╨╕╨╗╨░╨╜╨╜╤П ╤Г╤Б╨┐╤Ц╤И╨╜╨╛ ╨╖╨▒╨╡╤А╨╡╨╢╨╡╨╜╨╛"
       },
-      "title": "Посилання на уроки",
-      "url": "Посилання",
+      "title": "╨Я╨╛╤Б╨╕╨╗╨░╨╜╨╜╤П ╨╜╨░ ╤Г╤А╨╛╨║╨╕",
+      "url": "╨Я╨╛╤Б╨╕╨╗╨░╨╜╨╜╤П",
       "validation": {
-        "fixErrors": "Виправте помилки перед збереженням",
-        "invalidProtocol": "Посилання має починатися з https://",
-        "invalidUrl": "Невірний формат посилання",
-        "required": "Поле обов'язкове"
+        "fixErrors": "╨Т╨╕╨┐╤А╨░╨▓╤В╨╡ ╨┐╨╛╨╝╨╕╨╗╨║╨╕ ╨┐╨╡╤А╨╡╨┤ ╨╖╨▒╨╡╤А╨╡╨╢╨╡╨╜╨╜╤П╨╝",
+        "invalidProtocol": "╨Я╨╛╤Б╨╕╨╗╨░╨╜╨╜╤П ╨╝╨░╤Ф ╨┐╨╛╤З╨╕╨╜╨░╤В╨╕╤Б╤П ╨╖ https://",
+        "invalidUrl": "╨Э╨╡╨▓╤Ц╤А╨╜╨╕╨╣ ╤Д╨╛╤А╨╝╨░╤В ╨┐╨╛╤Б╨╕╨╗╨░╨╜╨╜╤П",
+        "required": "╨Я╨╛╨╗╨╡ ╨╛╨▒╨╛╨▓'╤П╨╖╨║╨╛╨▓╨╡"
       }
     },
-    "loadError": "Не вдалося завантажити список тьюторів",
+    "loadError": "╨Э╨╡ ╨▓╨┤╨░╨╗╨╛╤Б╤П ╨╖╨░╨▓╨░╨╜╤В╨░╨╢╨╕╤В╨╕ ╤Б╨┐╨╕╤Б╨╛╨║ ╤В╤М╤О╤В╨╛╤А╤Ц╨▓",
     "notifications": {
-      "acceptError": "Не вдалося підтвердити запрошення",
-      "acceptSuccess": "Запрос підтверджено",
-      "declineError": "Не вдалося скасувати запрошення",
-      "declineSuccess": "Запрос скасовано",
-      "resendError": "Не вдалося повторно надіслати запрошення",
-      "resendSuccess": "Запрошення повторно надіслано"
+      "acceptError": "╨Э╨╡ ╨▓╨┤╨░╨╗╨╛╤Б╤П ╨┐╤Ц╨┤╤В╨▓╨╡╤А╨┤╨╕╤В╨╕ ╨╖╨░╨┐╤А╨╛╤И╨╡╨╜╨╜╤П",
+      "acceptSuccess": "╨Ч╨░╨┐╤А╨╛╤Б ╨┐╤Ц╨┤╤В╨▓╨╡╤А╨┤╨╢╨╡╨╜╨╛",
+      "declineError": "╨Э╨╡ ╨▓╨┤╨░╨╗╨╛╤Б╤П ╤Б╨║╨░╤Б╤Г╨▓╨░╤В╨╕ ╨╖╨░╨┐╤А╨╛╤И╨╡╨╜╨╜╤П",
+      "declineSuccess": "╨Ч╨░╨┐╤А╨╛╤Б ╤Б╨║╨░╤Б╨╛╨▓╨░╨╜╨╛",
+      "resendError": "╨Э╨╡ ╨▓╨┤╨░╨╗╨╛╤Б╤П ╨┐╨╛╨▓╤В╨╛╤А╨╜╨╛ ╨╜╨░╨┤╤Ц╤Б╨╗╨░╤В╨╕ ╨╖╨░╨┐╤А╨╛╤И╨╡╨╜╨╜╤П",
+      "resendSuccess": "╨Ч╨░╨┐╤А╨╛╤И╨╡╨╜╨╜╤П ╨┐╨╛╨▓╤В╨╛╤А╨╜╨╛ ╨╜╨░╨┤╤Ц╤Б╨╗╨░╨╜╨╛"
     },
     "request": {
-      "button": "Подати запит",
-      "error": "Не вдалося надіслати запит",
-      "success": "Запит надіслано тьютору"
+      "button": "╨Я╨╛╨┤╨░╤В╨╕ ╨╖╨░╨┐╨╕╤В",
+      "error": "╨Э╨╡ ╨▓╨┤╨░╨╗╨╛╤Б╤П ╨╜╨░╨┤╤Ц╤Б╨╗╨░╤В╨╕ ╨╖╨░╨┐╨╕╤В",
+      "success": "╨Ч╨░╨┐╨╕╤В ╨╜╨░╨┤╤Ц╤Б╨╗╨░╨╜╨╛ ╤В╤М╤О╤В╨╛╤А╤Г"
     },
-    "title": "Знайти тьютора"
-  },
-  "contacts": {
-    "address": "Адреса",
-    "email": "Email",
-    "phone": "Телефон",
-    "sellerInfo": "Інформація про продавця",
-    "subtitle": "Зв'яжіться з нами",
-    "title": "Контакти"
+    "title": "Find a Tutor"
   },
   "footer": {
     "contact": {
-      "link": "Зв'язатися з нами",
-      "title": "Контакти"
+      "link": "╨Ч╨▓'╤П╨╖╨░╤В╨╕╤Б╤П ╨╖ ╨╜╨░╨╝╨╕",
+      "title": "╨Ъ╨╛╨╜╤В╨░╨║╤В╨╕"
     },
-    "copyright": "Всі права захищені.",
+    "copyright": "╨Т╤Б╤Ц ╨┐╤А╨░╨▓╨░ ╨╖╨░╤Е╨╕╤Й╨╡╨╜╤Ц.",
     "legal": {
-      "payment": "Умови оплати",
-      "privacy": "Політика конфіденційності",
-      "refund": "Повернення коштів",
-      "terms": "Угода користувача",
-      "title": "Юридична інформація"
+      "payment": "╨г╨╝╨╛╨▓╨╕ ╨╛╨┐╨╗╨░╤В╨╕",
+      "privacy": "╨Я╨╛╨╗╤Ц╤В╨╕╨║╨░ ╨║╨╛╨╜╤Д╤Ц╨┤╨╡╨╜╤Ж╤Ц╨╣╨╜╨╛╤Б╤В╤Ц",
+      "refund": "╨Я╨╛╨▓╨╡╤А╨╜╨╡╨╜╨╜╤П ╨║╨╛╤И╤В╤Ц╨▓",
+      "terms": "╨г╨│╨╛╨┤╨░ ╨║╨╛╤А╨╕╤Б╤В╤Г╨▓╨░╤З╨░",
+      "title": "╨о╤А╨╕╨┤╨╕╤З╨╜╨░ ╤Ц╨╜╤Д╨╛╤А╨╝╨░╤Ж╤Ц╤П"
     },
     "payment": {
-      "secure": "Безпечні платежі",
-      "title": "Способи оплати"
+      "secure": "╨С╨╡╨╖╨┐╨╡╤З╨╜╤Ц ╨┐╨╗╨░╤В╨╡╨╢╤Ц",
+      "title": "╨б╨┐╨╛╤Б╨╛╨▒╨╕ ╨╛╨┐╨╗╨░╤В╨╕"
     },
-    "tagline": "Платформа для репетиторів та студентів"
+    "tagline": "╨Я╨╗╨░╤В╤Д╨╛╤А╨╝╨░ ╨┤╨╗╤П ╤А╨╡╨┐╨╡╤В╨╕╤В╨╛╤А╤Ц╨▓ ╤В╨░ ╤Б╤В╤Г╨┤╨╡╨╜╤В╤Ц╨▓"
   },
   "legal": {
     "payment": {
-      "content": "Правила та умови оплати послуг",
-      "lastUpdated": "Останнє оновлення: {date}",
-      "title": "Умови оплати"
+      "content": "╨Я╤А╨░╨▓╨╕╨╗╨░ ╤В╨░ ╤Г╨╝╨╛╨▓╨╕ ╨╛╨┐╨╗╨░╤В╨╕ ╨┐╨╛╤Б╨╗╤Г╨│",
+      "lastUpdated": "╨Ю╤Б╤В╨░╨╜╨╜╤Ф ╨╛╨╜╨╛╨▓╨╗╨╡╨╜╨╜╤П: {date}",
+      "title": "╨г╨╝╨╛╨▓╨╕ ╨╛╨┐╨╗╨░╤В╨╕"
     },
     "privacy": {
-      "content": "Політика обробки персональних даних",
-      "lastUpdated": "Останнє оновлення: {date}",
-      "title": "Політика конфіденційності"
+      "content": "╨Я╨╛╨╗╤Ц╤В╨╕╨║╨░ ╨╛╨▒╤А╨╛╨▒╨║╨╕ ╨┐╨╡╤А╤Б╨╛╨╜╨░╨╗╤М╨╜╨╕╤Е ╨┤╨░╨╜╨╕╤Е",
+      "lastUpdated": "╨Ю╤Б╤В╨░╨╜╨╜╤Ф ╨╛╨╜╨╛╨▓╨╗╨╡╨╜╨╜╤П: {date}",
+      "title": "╨Я╨╛╨╗╤Ц╤В╨╕╨║╨░ ╨║╨╛╨╜╤Д╤Ц╨┤╨╡╨╜╤Ж╤Ц╨╣╨╜╨╛╤Б╤В╤Ц"
     },
     "refund": {
-      "content": "Політика повернення коштів",
-      "lastUpdated": "Останнє оновлення: {date}",
-      "title": "Повернення коштів"
+      "content": "╨Я╨╛╨╗╤Ц╤В╨╕╨║╨░ ╨┐╨╛╨▓╨╡╤А╨╜╨╡╨╜╨╜╤П ╨║╨╛╤И╤В╤Ц╨▓",
+      "lastUpdated": "╨Ю╤Б╤В╨░╨╜╨╜╤Ф ╨╛╨╜╨╛╨▓╨╗╨╡╨╜╨╜╤П: {date}",
+      "title": "╨Я╨╛╨▓╨╡╤А╨╜╨╡╨╜╨╜╤П ╨║╨╛╤И╤В╤Ц╨▓"
     },
     "terms": {
-      "content": "Умови використання платформи M4SH",
-      "lastUpdated": "Останнє оновлення: {date}",
-      "title": "Угода користувача"
+      "content": "Terms of use for M4SH platform",
+      "lastUpdated": "Last updated: {date}",
+      "title": "Terms of Service"
     }
   },
+  "contacts": {
+    "title": "Contacts",
+    "subtitle": "Get in touch",
+    "email": "Email",
+    "phone": "Phone",
+    "address": "Address",
+    "sellerInfo": "Seller information"
+  },
   "whiteboard": {
+    "paywall": {
+      "title": "Оновіть план для створення більше сторінок",
+      "genericMessage": "Ви досягли ліміту для вашого поточного плану.",
+      "limitReached": "Ви досягли ліміту {limit} сторінок. Оновіть до {plan} для створення більше.",
+      "currentPlan": "Поточний план",
+      "currentUsage": "Поточне використання",
+      "requiredPlan": "Необхідний план",
+      "upgradeTitle": "Переваги оновлення",
+      "upgradeButton": "Оновити план",
+      "benefits": {
+        "pro": {
+          "pages": "До 10 сторінок дошки",
+          "storage": "Збільшене сховище",
+          "support": "Пріоритетна підтримка"
+        },
+        "business": {
+          "pages": "До 50 сторінок дошки",
+          "storage": "Необмежене сховище",
+          "priority": "Пріоритетна підтримка 24/7",
+          "team": "Функції командної співпраці"
+        }
+      }
+    },
     "addPage": "Додати сторінку",
     "deletePage": "Видалити сторінку",
-    "empty": "Почніть малювати, щоб ділитися ідеями з усіма в уроці.",
+    "followMode": {
+      "follow": "Слідувати",
+      "following": "Слідкуєте",
+      "following_presenter": "Слідкуєте за викладачем",
+      "start_following": "Почати слідкувати",
+      "stop_following": "Припинити слідкувати"
+    },
     "moderation": {
       "clear_page": "Очистити сторінку",
       "freeze_off": "Розморозити дошку",
       "freeze_on": "Заморозити дошку",
       "frozen_notice": "Дошка заморожена модератором"
     },
-    "participantsLabel": "{count} у цій сесії",
-    "paywall": {
-      "benefits": {
-        "business": {
-          "pages": "До 50 сторінок дошки",
-          "priority": "Пріоритетна підтримка 24/7",
-          "storage": "Необмежене сховище",
-          "team": "Функції командної співпраці"
-        },
-        "pro": {
-          "pages": "До 10 сторінок дошки",
-          "storage": "Збільшений простір для зберігання",
-          "support": "Пріоритетна підтримка"
-        }
-      },
-      "currentPlan": "Поточний план",
-      "currentUsage": "Поточне використання",
-      "genericMessage": "Ви досягли ліміту вашого поточного плану.",
-      "limitReached": "Ви досягли ліміту {limit} сторінок. Оновіть до {plan}, щоб створити більше.",
-      "requiredPlan": "Необхідний план",
-      "title": "Оновіть план для створення більше сторінок",
-      "upgradeButton": "Оновити план",
-      "upgradeTitle": "Переваги оновлення"
-    },
     "presence": {
-      "active": "Активний",
-      "connected": "Підключено",
-      "connecting": "Підключення...",
-      "disconnected": "Відключено",
-      "error": "Помилка підключення",
-      "offline": "Офлайн"
+      "active": "Активний"
     },
     "presenter": {
       "follow_on": "Слідувати за викладачем"
     },
-    "safe_mode_blocked": "Малювання заблоковано в безпечному режимі",
     "safe_mode_message": "Малювання тимчасово заблоковано через проблеми з підключенням. Відновлення з'єднання...",
-    "safe_mode_overflow": "Виявлено переповнення черги. Будь ласка, зачекайте синхронізації.",
     "safe_mode_pending_ops": "{count} операцій в черзі",
-    "safe_mode_title": "Безпечний режим активний",
-    "title": "Спільна дошка"
+    "safe_mode_title": "Безпечний режим активний"
   }
 }

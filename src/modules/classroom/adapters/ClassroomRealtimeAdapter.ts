@@ -2,6 +2,7 @@
  * ClassroomRealtimeAdapter - WebSocket implementation for classroom mode
  * v0.84.0 - Full realtime sync with presence, cursors, and operations
  * v0.85.0 - Added offline queue, ops_batch, ops_ack, and resync support
+ * v0.88.0 - Added follow-mode support (presenter_page_switch)
  */
 
 import type {
@@ -12,7 +13,8 @@ import type {
   WhiteboardOperation,
   OpsAckPayload,
   ResyncRequest,
-  ResyncResponse
+  ResyncResponse,
+  PresenterPageChangedPayload
 } from '@/core/whiteboard/adapters/RealtimeAdapter'
 import type { PendingOperation } from '@/core/whiteboard/adapters/OfflineQueue.types'
 
@@ -41,6 +43,9 @@ export class ClassroomRealtimeAdapter implements RealtimeAdapter {
   private boardFrozenCallbacks: Array<(frozen: boolean, byUserId: string) => void> = []
   private presenterChangedCallbacks: Array<(presenterUserId: string | null, byUserId: string) => void> = []
   private pageClearedCallbacks: Array<(pageId: string, byUserId: string) => void> = []
+  
+  // v0.88.0: Follow-mode callbacks
+  private presenterPageChangedCallbacks: Array<(payload: PresenterPageChangedPayload) => void> = []
   
   private reconnectAttempts = 0
   private maxReconnectAttempts = 5
@@ -283,6 +288,10 @@ export class ClassroomRealtimeAdapter implements RealtimeAdapter {
           this.handlePageCleared(message.pageId as string, message.byUserId as string)
           break
         
+        case 'presenter_page_changed':
+          this.handlePresenterPageChanged(message as unknown as PresenterPageChangedPayload)
+          break
+        
         case 'error':
           console.error('[ClassroomRealtimeAdapter] Server error:', message)
           break
@@ -417,6 +426,23 @@ export class ClassroomRealtimeAdapter implements RealtimeAdapter {
       type: 'board_set_presenter',
       userId
     })
+  }
+  
+  // v0.88.0: Follow-mode methods
+  async sendPresenterPageSwitch(pageId: string): Promise<void> {
+    this.sendMessage({
+      type: 'presenter_page_switch',
+      pageId
+    })
+  }
+  
+  onPresenterPageChanged(callback: (payload: PresenterPageChangedPayload) => void): void {
+    this.presenterPageChangedCallbacks.push(callback)
+  }
+  
+  private handlePresenterPageChanged(payload: PresenterPageChangedPayload): void {
+    console.log(`[ClassroomRealtimeAdapter] Presenter page changed to ${payload.pageId} by ${payload.presenterUserId}`)
+    this.presenterPageChangedCallbacks.forEach(callback => callback(payload))
   }
   
   private handleDisconnect(): void {

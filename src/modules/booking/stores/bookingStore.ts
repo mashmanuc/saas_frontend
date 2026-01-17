@@ -12,7 +12,7 @@ function generateUUID(): string {
   })
 }
 
-export const useBookingStore = defineStore('booking', () => {
+export const useBookingStore = defineStore('booking-calendar', () => {
   // State
   const bookings = ref<Booking[]>([])
   const currentBooking = ref<Booking | null>(null)

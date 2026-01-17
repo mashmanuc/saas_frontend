@@ -37,6 +37,7 @@ const ChangeEmailView = () => import('../modules/profile/views/ChangeEmailView.v
 const ChangePasswordView = () => import('../modules/profile/views/ChangePasswordView.vue')
 const AccountBillingView = () => import('../modules/billing/views/AccountBillingView.vue')
 const DevThemePlaygroundView = () => import('../modules/dev/views/DevThemePlayground.vue')
+const DevClassroomLauncher = () => import('../modules/classroom/views/dev/DevClassroomLauncher.vue')
 
 // Onboarding views
 const OnboardingView = () => import('../modules/onboarding/views/OnboardingView.vue')
@@ -549,6 +550,33 @@ const routes = [
         ],
       },
     ],
+  },
+  // v0.91: Dev Classroom Launcher (DEV only)
+  {
+    path: '/dev/classroom',
+    name: 'dev-classroom-launcher',
+    component: DevClassroomLauncher,
+    beforeEnter: async (to, from, next) => {
+      const isDevLauncherEnabled = import.meta.env.DEV && import.meta.env.VITE_DEV_CLASSROOM_LAUNCHER === 'true'
+      if (!isDevLauncherEnabled) {
+        return next('/dashboard')
+      }
+
+      const auth = useAuthStore()
+      if (!auth.isBootstrapped) {
+        await auth.bootstrap()
+      }
+
+      if (auth.user?.is_staff) {
+        return next()
+      }
+
+      return next('/dashboard')
+    },
+    meta: { 
+      requiresAuth: true,
+      roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR]
+    },
   },
   // P0.3: Lighthouse route без auth для performance testing
   {

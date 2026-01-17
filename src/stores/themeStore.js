@@ -11,7 +11,7 @@ const getStoredTheme = () => {
   return localStorage.getItem(STORAGE_KEY) || DEFAULT_THEME
 }
 
-export const useThemeStore = defineStore('theme', {
+export const useThemeStore = defineStore('legacy-theme', {
   state: () => ({
     theme: getStoredTheme(),
     _mediaQuery: null,

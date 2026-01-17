@@ -23,4 +23,12 @@ dist-ssr
 *.sln
 *.sw?
 # Playwright auth storage (local)
+tests/e2e/.auth/# Playwright / test artifacts
+test-results/
+playwright-report/
+**/test-results/
+# Local artifacts / secrets
 tests/e2e/.auth/
+tmp/
+uk_*.json
+uk_v0.84.0.json

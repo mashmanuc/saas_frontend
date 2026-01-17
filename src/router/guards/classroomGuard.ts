@@ -19,6 +19,17 @@ export async function classroomGuard(
   let token = to.query.token as string | undefined
 
   if (!token) {
+    // Check for dev launcher token in sessionStorage
+    const devToken = sessionStorage.getItem(`devLauncherClassroomToken:${sessionId}`)
+    
+    if (devToken) {
+      // Use dev launcher token
+      return next({
+        ...to,
+        query: { ...to.query, token: devToken },
+      })
+    }
+
     try {
       // Fetch JWT from backend
       const response = await classroomApi.getJwt(sessionId)

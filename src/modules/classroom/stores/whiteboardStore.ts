@@ -2,6 +2,7 @@
  * Whiteboard Store for Classroom
  * v0.83.0 - Pages management with adapters and paywall support
  * v0.85.0 - Recovery state with snapshot and pending operations
+ * v0.88.0 - Follow-mode support (presenter page tracking)
  */
 
 import { defineStore } from 'pinia'
@@ -14,7 +15,8 @@ import type {
   BoardOperation,
   WhiteboardOperation,
   OpsAckPayload,
-  ResyncResponse
+  ResyncResponse,
+  PresenterPageChangedPayload
 } from '@/core/whiteboard/adapters/RealtimeAdapter'
 import { M4shStorageAdapter, M4shPolicyAdapter } from '../adapters'
 import { NoopRealtimeAdapter } from '@/core/whiteboard/adapters/NoopRealtimeAdapter'
@@ -59,6 +61,10 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
   const isBoardFrozen = ref<boolean>(false)
   const presenterUserId = ref<string | null>(null)
   const followPresenterEnabled = ref<boolean>(false)
+  
+  // v0.88.0: Follow-mode state
+  const presenterPageId = ref<string | null>(null)
+  const isFollowModeActive = ref<boolean>(false)
 
   // v0.87.0: SafeMode state
   const safeMode = ref<boolean>(false)
@@ -83,6 +89,7 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
 
   /**
    * Bootstrap whiteboard for workspace
+   * v0.92.0: Dev workspace support with placeholder pages
    */
   async function bootstrap(wsId: string): Promise<void> {
     workspaceId.value = wsId
@@ -90,6 +97,66 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
     error.value = null
 
     try {
+      // v0.92.0: Dev workspace branch (no persistence, placeholder pages)
+      if (wsId.startsWith('dev-workspace-')) {
+        console.log('[WhiteboardStore] Bootstrapping dev workspace:', wsId)
+        
+        // Create 3-4 placeholder pages for dev vertical layout
+        const placeholderPages: PageMetadata[] = [
+          {
+            id: `${wsId}-page-1`,
+            title: 'Page 1',
+            index: 0,
+            version: 1,
+            updatedAt: new Date().toISOString(),
+          },
+          {
+            id: `${wsId}-page-2`,
+            title: 'Page 2',
+            index: 1,
+            version: 1,
+            updatedAt: new Date().toISOString(),
+          },
+          {
+            id: `${wsId}-page-3`,
+            title: 'Page 3',
+            index: 2,
+            version: 1,
+            updatedAt: new Date().toISOString(),
+          },
+          {
+            id: `${wsId}-page-4`,
+            title: 'Page 4',
+            index: 3,
+            version: 1,
+            updatedAt: new Date().toISOString(),
+          },
+        ]
+        
+        pages.value = placeholderPages
+        activePageId.value = placeholderPages[0].id
+        
+        // Set placeholder page data
+        currentPageData.value = {
+          id: placeholderPages[0].id,
+          title: placeholderPages[0].title,
+          index: placeholderPages[0].index,
+          version: 1,
+          state: { strokes: [], assets: [] },
+          updatedAt: new Date().toISOString(),
+        }
+        
+        // Dev mode: no limits, full permissions
+        limits.value = { maxPages: null }
+        myRole.value = 'moderator'
+        isBoardFrozen.value = false
+        
+        status.value = 'idle'
+        console.log('[WhiteboardStore] Dev workspace ready with', placeholderPages.length, 'pages')
+        return
+      }
+
+      // Production branch: normal flow
       // v0.86.0: Load workspace state (role, frozen, presenter)
       await loadWorkspaceState()
 
@@ -368,6 +435,13 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
           handlePresenterChanged(userId)
         })
       }
+      
+      // v0.88.0: Subscribe to presenter page changed
+      if (adapter.onPresenterPageChanged) {
+        adapter.onPresenterPageChanged((payload: PresenterPageChangedPayload) => {
+          handlePresenterPageChanged(payload)
+        })
+      }
 
       // Listen for version conflicts
       window.addEventListener('whiteboard:version-conflict', handleVersionConflict as EventListener)
@@ -590,7 +664,7 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
   }
 
   /**
-   * Load workspace state from API (v0.86.0)
+   * Load workspace state from API (v0.86.0, extended v0.88.0)
    */
   async function loadWorkspaceState(): Promise<void> {
     if (!workspaceId.value) return
@@ -609,14 +683,54 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
       myRole.value = data.myRole || 'viewer'
       isBoardFrozen.value = data.isFrozen || false
       presenterUserId.value = data.presenterUserId || null
+      presenterPageId.value = data.presenterPageId || null  // v0.88.0
 
       console.log('[WhiteboardStore] Loaded workspace state', { 
         role: myRole.value, 
         frozen: isBoardFrozen.value,
-        presenter: presenterUserId.value
+        presenter: presenterUserId.value,
+        presenterPage: presenterPageId.value
       })
     } catch (err) {
       console.error('[WhiteboardStore] Failed to load workspace state:', err)
+    }
+  }
+  
+  /**
+   * Handle presenter page changed (v0.88.0)
+   */
+  function handlePresenterPageChanged(payload: PresenterPageChangedPayload): void {
+    console.log('[WhiteboardStore] Presenter page changed', payload)
+    
+    presenterPageId.value = payload.pageId
+    
+    // Auto-switch if follow mode is active
+    if (isFollowModeActive.value && payload.pageId !== activePageId.value) {
+      console.log('[WhiteboardStore] Auto-switching to presenter page', payload.pageId)
+      switchToPage(payload.pageId)
+    }
+  }
+  
+  /**
+   * Send presenter page switch (v0.88.0)
+   */
+  async function sendPresenterPageSwitch(pageId: string): Promise<void> {
+    const adapter = realtimeAdapter.value as any
+    if (adapter.sendPresenterPageSwitch) {
+      await adapter.sendPresenterPageSwitch(pageId)
+    }
+  }
+  
+  /**
+   * Toggle follow mode (v0.88.0)
+   */
+  function toggleFollowMode(): void {
+    isFollowModeActive.value = !isFollowModeActive.value
+    console.log(`[WhiteboardStore] Follow mode ${isFollowModeActive.value ? 'enabled' : 'disabled'}`)
+    
+    // Auto-switch to presenter page when enabling
+    if (isFollowModeActive.value && presenterPageId.value && presenterPageId.value !== activePageId.value) {
+      switchToPage(presenterPageId.value)
     }
   }
 
@@ -689,6 +803,10 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
     presenterUserId.value = null
     followPresenterEnabled.value = false
     
+    // v0.88.0: Reset follow-mode
+    presenterPageId.value = null
+    isFollowModeActive.value = false
+    
     // v0.87.0: Reset SafeMode
     safeMode.value = false
   }
@@ -717,6 +835,10 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
     isBoardFrozen,
     presenterUserId,
     followPresenterEnabled,
+    
+    // v0.88.0: Follow-mode
+    presenterPageId,
+    isFollowModeActive,
     
     // v0.87.0: SafeMode
     safeMode,
@@ -762,6 +884,11 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
     sendClearPage,
     sendSetPresenter,
     loadWorkspaceState,
+    
+    // v0.88.0: Follow-mode
+    handlePresenterPageChanged,
+    sendPresenterPageSwitch,
+    toggleFollowMode,
     
     // v0.87.0: SafeMode
     checkSafeMode,

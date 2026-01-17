@@ -61,12 +61,54 @@ export const useRoomStore = defineStore('room', () => {
   })
 
   // Actions
-  async function joinRoom(sessionId: string, accessCode?: string): Promise<void> {
+  async function joinRoom(sessionId: string, existingToken?: string): Promise<void> {
     connectionStatus.value = 'connecting'
     error.value = null
 
     try {
-      const response = await classroomApi.joinSession(sessionId, accessCode)
+      let response: any
+
+      // If token provided (e.g., from dev launcher), use it directly
+      if (existingToken) {
+        // v0.92.0: Dev workspace ID for vertical layout pilot
+        const devWorkspaceId = `dev-workspace-${sessionId}`
+        
+        // Use minimal session data for dev sessions
+        response = {
+          session: {
+            uuid: sessionId,
+            session_type: 'lesson',
+            status: 'active',
+            host: { id: currentUserId.value || 0 },
+            participants: [],
+            board_version: 0,
+            workspace_id: devWorkspaceId,
+          },
+          token: existingToken,
+          permissions: {
+            can_draw: true,
+            can_erase: true,
+            can_add_layers: true,
+            can_delete_layers: true,
+            can_reorder_layers: true,
+            can_upload_images: true,
+            can_export: true,
+            can_clear_board: true,
+            can_toggle_video: true,
+            can_toggle_audio: true,
+            can_share_screen: true,
+            can_invite: true,
+            can_kick: true,
+            can_terminate: true,
+            can_pause: true,
+          },
+          board_state: {},
+          participant: { user_id: currentUserId.value || 0, role: 'host' },
+        }
+      } else {
+        // Normal join flow
+        response = await classroomApi.joinSession(sessionId)
+      }
 
       session.value = response.session
       token.value = response.token
@@ -87,10 +129,17 @@ export const useRoomStore = defineStore('room', () => {
       // Setup event handlers
       setupEngineListeners()
 
-      await roomEngine.value.connect()
-      connectionStatus.value = 'connected'
-
-      startTimer()
+      // For dev sessions with existing token, skip WebSocket connect
+      if (existingToken) {
+        // Dev mode: skip WebSocket, go straight to connected
+        connectionStatus.value = 'connected'
+        startTimer()
+      } else {
+        // Normal mode: connect WebSocket
+        await roomEngine.value.connect()
+        connectionStatus.value = 'connected'
+        startTimer()
+      }
     } catch (err) {
       connectionStatus.value = 'disconnected'
       error.value = err instanceof Error ? err.message : 'Failed to join room'

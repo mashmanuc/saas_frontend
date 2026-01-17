@@ -297,7 +297,7 @@ export interface BoardState {
   redoStack: unknown[]
 }
 
-export const useBoardStore = defineStore('board', {
+export const useBoardStore = defineStore('classroom-board', {
   state: (): BoardState => ({
     // Session
     sessionId: null,

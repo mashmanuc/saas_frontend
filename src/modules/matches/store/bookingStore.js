@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import bookingsApi from '../api/bookingsApi'
 import { trackEvent } from '@/utils/telemetry'
 
-export const useBookingStore = defineStore('booking', {
+export const useBookingStore = defineStore('matches-booking', {
   state: () => ({
     bookings: {},
     currentBooking: null,

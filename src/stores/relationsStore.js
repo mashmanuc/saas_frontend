@@ -48,7 +48,7 @@ const translate = (key, params) => {
   }
 }
 
-export const useRelationsStore = defineStore('relations', {
+export const useRelationsStore = defineStore('relations-legacy', {
   state: () => ({
     studentRelations: [],
     studentLoading: false,

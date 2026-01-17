@@ -35,7 +35,7 @@ function rethrowAsDomainError(err: unknown): never {
   throw err
 }
 
-export const useRelationsStore = defineStore('relations', () => {
+export const useRelationsStore = defineStore('relations-v2', () => {
   const relations = ref<Relation[]>([])
   
   // P0.2: Рознесені стани для різних дій

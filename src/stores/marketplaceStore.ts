@@ -10,7 +10,7 @@ import { ref, computed } from 'vue'
 import axios from 'axios'
 import type { TutorPublic, TutorPublicListResponse, TutorSearchParams } from '@/types/relations'
 
-export const useMarketplaceStore = defineStore('marketplace', () => {
+export const useMarketplaceStore = defineStore('marketplace-core', () => {
   const tutors = ref<TutorPublic[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)

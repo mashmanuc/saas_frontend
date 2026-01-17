@@ -2,6 +2,7 @@
  * RealtimeAdapter interface for whiteboard realtime sync
  * v0.82.0 - Interface only, no implementation yet
  * v0.85.0 - Extended with ops_batch, ops_ack, and resync support
+ * v0.88.0 - Extended with follow-mode support (presenter_page_switch)
  */
 
 export interface RemoteCursor {
@@ -60,6 +61,16 @@ export interface ResyncResponse {
     appliedVersion: number
     authorId: string
   }>
+}
+
+/**
+ * v0.88.0: Presenter page changed payload
+ */
+export interface PresenterPageChangedPayload {
+  workspaceId: string
+  presenterUserId: string | null
+  pageId: string
+  ts: number
 }
 
 /**
@@ -141,4 +152,14 @@ export interface RealtimeAdapter {
    * Subscribe to resync response (v0.85.0)
    */
   onResync?(callback: (payload: ResyncResponse) => void): void
+
+  /**
+   * Send presenter page switch (v0.88.0)
+   */
+  sendPresenterPageSwitch?(pageId: string): Promise<void>
+
+  /**
+   * Subscribe to presenter page changed (v0.88.0)
+   */
+  onPresenterPageChanged?(callback: (payload: PresenterPageChangedPayload) => void): void
 }

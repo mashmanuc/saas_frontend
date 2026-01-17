@@ -33,6 +33,7 @@
       <LayoutManager :mode="layoutMode" class="lesson-room__content">
         <template #video>
           <VideoDock
+            v-if="!isDevVerticalLayout"
             :participants="participants"
             :local-stream="localStream"
             @toggle-video="handleToggleVideo"
@@ -41,7 +42,20 @@
         </template>
 
         <template #board>
+          <ClassroomWhiteboardHost
+            v-if="session?.workspace_id && session.workspace_id.startsWith('dev-workspace-')"
+            :workspace-id="session.workspace_id"
+            :permissions="permissions"
+            :readonly="!canDraw"
+            :teacher-user-id="teacherUserId"
+            :follow-teacher-enabled="followTeacherEnabled"
+            :remote-cursors="cursorsList"
+            @event="handleBoardEvent"
+            @ready="handleWhiteboardReady"
+            @error="handleWhiteboardError"
+          />
           <BoardDock
+            v-else
             ref="boardDockRef"
             :board-state="boardState"
             :permissions="permissions"
@@ -135,6 +149,7 @@ import SessionEnded from '../components/room/SessionEnded.vue'
 import LayoutManager from '../components/layout/LayoutManager.vue'
 import VideoDock from '../components/video/VideoDock.vue'
 import BoardDock from '../components/board/BoardDock.vue'
+import ClassroomWhiteboardHost from '../components/whiteboard/ClassroomWhiteboardHost.vue'
 import HistoryModal from '../components/modals/HistoryModal.vue'
 
 const route = useRoute()
@@ -206,6 +221,11 @@ const boardDockRef = ref<InstanceType<typeof BoardDock> | null>(null)
 
 // Computed
 const isReconnecting = computed(() => connectionStatus.value === 'reconnecting')
+const isDevVerticalLayout = computed(() => {
+  const isDevWorkspace = session.value?.workspace_id?.startsWith('dev-workspace-')
+  const featureFlagEnabled = import.meta.env.VITE_VERTICAL_LAYOUT === 'true'
+  return Boolean(isDevWorkspace && featureFlagEnabled)
+})
 
 // Lifecycle
 onMounted(async () => {
@@ -402,6 +422,14 @@ async function handleRestoreSnapshot(version: number): Promise<void> {
   } catch (error) {
     console.error('Failed to restore snapshot:', error)
   }
+}
+
+function handleWhiteboardReady(): void {
+  console.log('[LessonRoom] Whiteboard ready')
+}
+
+function handleWhiteboardError(error: Error): void {
+  console.error('[LessonRoom] Whiteboard error:', error)
 }
 </script>
 

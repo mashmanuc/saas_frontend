@@ -53,7 +53,7 @@ function extractNextParams(payload) {
   return null
 }
 
-export const useMarketplaceStore = defineStore('marketplace', {
+export const useMarketplaceStore = defineStore('marketplace-legacy', {
   state: () => ({
     tutors: [],
     cursor: null,

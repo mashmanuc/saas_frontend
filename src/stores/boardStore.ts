@@ -16,7 +16,7 @@ import type {
 } from '@/core/board/types'
 import { DEFAULT_TOOL_CONFIG, DEFAULT_VIEWPORT } from '@/core/board/constants'
 
-export const useBoardStore = defineStore('board', () => {
+export const useBoardStore = defineStore('core-board', () => {
   // Engine reference
   const engine = shallowRef<BoardEngine | null>(null)
 
