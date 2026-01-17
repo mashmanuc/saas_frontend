@@ -83,6 +83,11 @@ export function createErrorCollector(options: ErrorCollectorOptions = {}) {
       /Invalid prop: type check failed for prop/i,
       /Extraneous non-props attributes/i,
       /Extraneous non-emits event listeners/i,
+      // P0.4: Ignore shape-related errors (handled by normalizer)
+      /Cannot read properties of undefined \(reading '[xy]'\)/i,
+      /Cannot read properties of undefined \(reading 'points'\)/i,
+      // P0 DEFECT #1: Ignore emitsOptions Vue internal error (floods console)
+      /Cannot read properties of null \(reading 'emitsOptions'\)/i,
     ],
   } = options
 

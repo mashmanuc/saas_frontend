@@ -1,7 +1,29 @@
 /// <reference types="node" />
 import { defineConfig, devices } from '@playwright/test'
+import * as fs from 'fs'
+import * as path from 'path'
+import { fileURLToPath } from 'url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 const DEFAULT_BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:5173'
+
+// Load .env.e2e for E2E tests
+function loadEnvFile(envPath: string): Record<string, string> {
+  if (!fs.existsSync(envPath)) return {}
+  const content = fs.readFileSync(envPath, 'utf-8')
+  const env: Record<string, string> = {}
+  for (const line of content.split('\n')) {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith('#')) continue
+    const [key, ...valueParts] = trimmed.split('=')
+    if (key) env[key] = valueParts.join('=')
+  }
+  return env
+}
+
+const e2eEnv = loadEnvFile(path.join(__dirname, '.env.e2e'))
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -73,6 +95,15 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
       },
     },
+    {
+      name: 'dev-vertical',
+      testMatch: ['tests/e2e/dev/dev-vertical-layout.spec.ts'],
+      retries: 0,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: './tests/e2e/.auth/user.json',
+      },
+    },
   ],
   webServer:
     process.env.PLAYWRIGHT_WEB_SERVER === 'none'
@@ -85,5 +116,9 @@ export default defineConfig({
           // FE-9: Retry ping to ensure server is ready before tests
           stdout: 'pipe',
           stderr: 'pipe',
+          // v0.92.1: передаємо env з .env.e2e для dev vertical layout тестів
+          env: Object.fromEntries(
+            Object.entries({ ...process.env, ...e2eEnv }).filter(([_, v]) => v !== undefined)
+          ) as Record<string, string>,
         },
 })

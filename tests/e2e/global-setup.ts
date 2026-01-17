@@ -86,6 +86,9 @@ async function verifySeedData(apiURL: string, accessToken: string, tutorId: numb
   const context = await browser.newContext()
   const page = await context.newPage()
   
+  const MAX_RETRIES = 5
+  let retryCount = 0
+  
   try {
     const weekStart = asYmd(startOfWeekMonday(new Date()))
     const base = `${apiURL}/v1/calendar/week/v055/`
@@ -114,6 +117,78 @@ async function verifySeedData(apiURL: string, accessToken: string, tutorId: numb
         
         const body = await response.text()
         attempts.push({ url, status: response.status(), body })
+        
+        // v0.92.1: Handle 429 Rate Limited with retry/backoff
+        if (response.status() === 429) {
+          retryCount++
+          if (retryCount > MAX_RETRIES) {
+            throw new Error(
+              `[global-setup] Rate limited (429) after ${MAX_RETRIES} retries.\n` +
+              `URL: ${url}\nBody: ${body.slice(0, 400)}`
+            )
+          }
+          
+          // Parse Retry-After header or extract from body
+          let retryAfter = parseInt(response.headers()['retry-after'] || '0', 10)
+          if (!retryAfter) {
+            try {
+              const data = JSON.parse(body)
+              retryAfter = data.retry_after_seconds || data.retryAfter || 5
+            } catch {
+              retryAfter = 5 // default backoff
+            }
+          }
+          
+          console.log(`[global-setup] ⚠️  Rate limited (429), retry ${retryCount}/${MAX_RETRIES} after ${retryAfter}s`)
+          await new Promise(resolve => setTimeout(resolve, retryAfter * 1000))
+          
+          // Retry this variant
+          const retryResponse = await page.request.get(url, {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              Accept: 'application/json'
+            }
+          })
+          const retryBody = await retryResponse.text()
+          attempts.push({ url: `${url} (retry)`, status: retryResponse.status(), body: retryBody })
+          
+          if (retryResponse.status() === 200) {
+            let data: any = null
+            try {
+              data = JSON.parse(retryBody)
+            } catch {
+              console.log('[global-setup] Warning: 200 response but not valid JSON')
+            }
+            
+            const accessible =
+              data?.accessibleSlots ??
+              data?.accessible ??
+              data?.data?.accessibleSlots ??
+              data?.result?.accessibleSlots
+            
+            const count = Array.isArray(accessible) ? accessible.length : null
+            
+            console.log(`[global-setup] ✅ Sanity-check OK via: ${url} (after retry)`)
+            
+            if (count === null) {
+              console.log('[global-setup] (note) Could not locate accessible slots array in response, but endpoint is 200.')
+              return
+            }
+            
+            if (count > 0) {
+              console.log(`[global-setup] ✓ Seed data verified: ${count} accessible slots`)
+              return
+            }
+            
+            throw new Error(
+              `[global-setup] Endpoint 200 but accessible slots empty. This usually means backend not in E2E_MODE=1 or seed data not visible.\n` +
+              `URL: ${url}`
+            )
+          }
+          
+          // If retry also failed with non-200, continue to next variant
+          continue
+        }
         
         if (response.status() === 200) {
           let data: any = null
@@ -181,8 +256,18 @@ async function verifySeedData(apiURL: string, accessToken: string, tutorId: numb
 async function globalSetup(config: FullConfig) {
   console.log('[global-setup] Starting...')
 
-  // Step 1: Run seed command
-  await runE2ESeed()
+  // v0.92.1: Check E2E_SCOPE to conditionally skip calendar seed/sanity-check
+  const e2eScope = process.env.E2E_SCOPE || 'default'
+  console.log(`[global-setup] E2E_SCOPE=${e2eScope}`)
+
+  const skipCalendarSeed = e2eScope === 'dev-vertical'
+  
+  if (!skipCalendarSeed) {
+    // Step 1: Run seed command (only for non-dev-vertical scopes)
+    await runE2ESeed()
+  } else {
+    console.log('[global-setup] ✓ Skipping calendar seed for dev-vertical scope')
+  }
 
   const authStateFile = path.join(__dirname, '.auth/user.json')
   const credentialsFile = path.join(__dirname, '.auth/credentials.json')
@@ -200,7 +285,11 @@ async function globalSetup(config: FullConfig) {
       if (hoursSinceAuth < 1) {
         if (credentials.access && credentials.user?.id) {
           console.log('[global-setup] ✓ Using existing auth state')
-          await verifySeedData(apiURL, credentials.access, credentials.user.id)
+          if (!skipCalendarSeed) {
+            await verifySeedData(apiURL, credentials.access, credentials.user.id)
+          } else {
+            console.log('[global-setup] ✓ Skipping calendar sanity-check for dev-vertical')
+          }
           return
         }
         console.log('[global-setup] Auth state missing credentials, re-authenticating...')
@@ -258,25 +347,29 @@ async function globalSetup(config: FullConfig) {
     const csrfData = await csrfResponse.json().catch(() => ({}))
     const csrfToken = csrfData.csrf_token || null
 
-    // Прив'язати localStorage токени до baseURL, щоб фронт бачив авторизацію
-    await page.goto(baseURL)
-    await page.evaluate(
-      ([token, serializedUser]) => {
-        window.localStorage.setItem('access', token)
-        window.localStorage.setItem('user', serializedUser)
-      },
-      [access, JSON.stringify(user)]
-    )
-
     // Зберегти auth state
     const authStateDir = path.join(__dirname, '.auth')
     if (!fs.existsSync(authStateDir)) {
       fs.mkdirSync(authStateDir, { recursive: true })
     }
 
-    // Зберегти storage state для Playwright
-    await context.storageState({ path: authStateFile })
-    console.log(`[global-setup] ✓ Auth state saved to ${authStateFile}`)
+    // v0.92.1: Генеруємо storageState з origins[].localStorage для гарантованого localStorage.access
+    // Це забезпечує що Playwright тести матимуть access token перед першим API запитом
+    const storageState = {
+      cookies: [],
+      origins: [
+        {
+          origin: baseURL,
+          localStorage: [
+            { name: 'access', value: access },
+            { name: 'user', value: JSON.stringify(user) }
+          ]
+        }
+      ]
+    }
+
+    fs.writeFileSync(authStateFile, JSON.stringify(storageState, null, 2), 'utf-8')
+    console.log(`[global-setup] ✓ Auth state saved to ${authStateFile} with localStorage.access`)
 
     // Зберегти credentials для швидкого доступу
     fs.writeFileSync(
@@ -294,8 +387,12 @@ async function globalSetup(config: FullConfig) {
     )
     console.log(`[global-setup] ✓ Credentials saved`)
 
-    // Step 2: Verify seed data via API
-    await verifySeedData(apiURL, access, user.id)
+    // Step 2: Verify seed data via API (skip for dev-vertical)
+    if (!skipCalendarSeed) {
+      await verifySeedData(apiURL, access, user.id)
+    } else {
+      console.log('[global-setup] ✓ Skipping calendar sanity-check for dev-vertical')
+    }
 
     console.log('[global-setup] ✅ Setup completed successfully')
   } catch (error) {

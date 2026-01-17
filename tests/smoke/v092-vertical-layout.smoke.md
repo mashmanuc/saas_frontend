@@ -1,9 +1,20 @@
-# Smoke Test Plan v0.92.0 — Dev Vertical Layout
+# Smoke Test Plan v0.92.1 — Dev Vertical Layout (Hardening)
 
-**Version:** v0.92.0  
-**Date:** 2026-01-17  
-**Tester:** _____________  
+**Version:** v0.92.1
+**Date:** 2026-01-17
+**Tester:** _____________
 **Environment:** Dev / Staging
+
+---
+
+## Changes from v0.92.0
+
+v0.92.1 вносить такі зміни для hardening dev-only режиму:
+
+1. **FE-92.1.1**: `useVerticalLayout` тепер жорстко перевіряє `isDevWorkspace && verticalFlagEnabled`
+2. **FE-92.1.2**: `layoutStore.verticalLayoutEnabled` більше не може вмикати vertical для prod
+3. **FE-92.1.3**: Додано tripwire watchEffect для логування порушень dev-only invariant
+4. **QA-92.1.1**: E2E тести використовують `.env.e2e` замість localStorage hack
 
 ---
 
@@ -16,24 +27,27 @@
 
 ---
 
-## Test Case 1: Dev Session with Vertical Layout
+## Test Case 1: Dev Session with Vertical Layout (VITE_VERTICAL_LAYOUT=true)
 
 **Objective:** Verify dev session creates vertical whiteboard stack
 
 ### Steps:
-1. Navigate to `/dev/classroom`
-2. Click "Create & Join"
-3. Wait for redirect to `/classroom/{sessionId}`
-4. Observe whiteboard area
+1. Set `VITE_VERTICAL_LAYOUT=true` in `.env.local`
+2. Restart dev server (`npm run dev`)
+3. Navigate to `/dev/classroom`
+4. Click "Create & Join"
+5. Wait for redirect to `/classroom/{sessionId}`
+6. Observe whiteboard area
 
 ### Expected Results:
 - [ ] URL contains session ID
 - [ ] PageVerticalStack component is visible
-- [ ] 4 placeholder pages are rendered (Page 1, Page 2, Page 3, Page 4)
+- [ ] ≥3 placeholder pages are rendered (Page 1, Page 2, Page 3, ...)
 - [ ] First page (Page 1) has active highlight (blue border)
-- [ ] Each page shows index number (1, 2, 3, 4)
+- [ ] Each page shows index number
 - [ ] VideoDock is NOT visible
 - [ ] No errors in browser console
+- [ ] No `[WINTERBOARD] ILLEGAL_VERTICAL_LAYOUT_NON_DEV_WORKSPACE` error in console
 
 ### Actual Results:
 ```
@@ -45,12 +59,70 @@ Notes:
 
 ---
 
-## Test Case 2: Vertical Stack Scrolling
+## Test Case 2: Dev Session WITHOUT Vertical Layout (VITE_VERTICAL_LAYOUT=false)
+
+**Objective:** Verify vertical layout disabled when VITE_VERTICAL_LAYOUT=false
+
+### Steps:
+1. Set `VITE_VERTICAL_LAYOUT=false` in `.env.local`
+2. Restart dev server (`npm run dev`)
+3. Navigate to `/dev/classroom`
+4. Click "Create & Join"
+5. Wait for redirect to `/classroom/{sessionId}`
+
+### Expected Results:
+- [ ] BoardDock is rendered (not PageVerticalStack)
+- [ ] VideoDock is visible (legacy layout)
+- [ ] Dev session still works normally
+- [ ] No vertical layout elements
+- [ ] No JavaScript errors
+
+### Actual Results:
+```
+Status: ☐ Pass ☐ Fail
+Notes:
+
+
+```
+
+---
+
+## Test Case 3: Production Session (CRITICAL - Dev-Only Invariant)
+
+**Objective:** Verify production sessions NEVER use vertical layout, regardless of feature flag
+
+### Steps:
+1. Set `VITE_VERTICAL_LAYOUT=true` in `.env.local`
+2. Restart dev server
+3. Create a production classroom session (via normal booking flow)
+4. Join the session (workspace_id does NOT start with `dev-workspace-`)
+5. Observe whiteboard area
+6. Check browser console for tripwire warnings
+
+### Expected Results (CRITICAL):
+- [ ] BoardDock component is visible (not PageVerticalStack)
+- [ ] `whiteboard-host--vertical` class is NOT present
+- [ ] VideoDock IS visible (legacy layout)
+- [ ] No vertical stack elements present
+- [ ] workspace_id does NOT start with `dev-workspace-`
+- [ ] Console shows NO `[WINTERBOARD] ILLEGAL_VERTICAL_LAYOUT_NON_DEV_WORKSPACE` error
+
+### Actual Results:
+```
+Status: ☐ Pass ☐ Fail
+Notes:
+
+
+```
+
+---
+
+## Test Case 4: Vertical Stack Scrolling
 
 **Objective:** Verify vertical stack is scrollable and pages load on scroll
 
 ### Steps:
-1. Continue from Test Case 1
+1. Continue from Test Case 1 (dev session with vertical layout)
 2. Scroll down in the vertical stack
 3. Observe page 2, 3, 4 coming into view
 
@@ -71,21 +143,24 @@ Notes:
 
 ---
 
-## Test Case 3: Production Session (No Vertical Layout)
+## Test Case 5: layoutStore.verticalLayoutEnabled Deprecation
 
-**Objective:** Verify production sessions use legacy BoardDock
+**Objective:** Verify deprecated store method shows warning and doesn't affect prod
 
 ### Steps:
-1. Create a production classroom session (via normal booking flow)
-2. Join the session
-3. Observe whiteboard area
+1. Open DevTools console
+2. In dev session, execute:
+   ```js
+   // Отримати store
+   const store = window.__pinia__.state.value['classroom-layout']
+   console.log('verticalLayoutEnabled:', store.verticalLayoutEnabled)
+   ```
+3. Verify deprecation warning appears if enableVerticalLayout() is called
 
 ### Expected Results:
-- [ ] BoardDock component is visible (not PageVerticalStack)
-- [ ] VideoDock IS visible
-- [ ] No vertical stack elements present
-- [ ] Normal side-by-side layout active
-- [ ] No dev-workspace- prefix in workspace_id
+- [ ] Console shows deprecation warning when calling enableVerticalLayout()
+- [ ] `verticalLayoutEnabled` state exists but doesn't affect prod layout
+- [ ] No UI element to toggle vertical layout in prod
 
 ### Actual Results:
 ```
@@ -97,52 +172,20 @@ Notes:
 
 ---
 
-## Test Case 4: Feature Flag Disabled
-
-**Objective:** Verify vertical layout disabled when VITE_VERTICAL_LAYOUT=false
-
-### Steps:
-1. Set `VITE_VERTICAL_LAYOUT=false` in `.env.local`
-2. Rebuild frontend (`npm run dev`)
-3. Navigate to `/dev/classroom`
-4. Create & join session
-
-### Expected Results:
-- [ ] BoardDock is rendered (not PageVerticalStack)
-- [ ] VideoDock is visible
-- [ ] Dev session still works normally
-- [ ] No vertical layout elements
-
-### Actual Results:
-```
-Status: ☐ Pass ☐ Fail
-Notes:
-
-
-```
-
----
-
-## Test Case 5: Dev Workspace Permissions
+## Test Case 6: Dev Workspace Permissions
 
 **Objective:** Verify dev workspace has full permissions
 
 ### Steps:
 1. Set `VITE_VERTICAL_LAYOUT=true`
 2. Create dev session via launcher
-3. Check whiteboard permissions in DevTools console:
-   ```js
-   window.$nuxt.$store.state.whiteboard.myRole
-   window.$nuxt.$store.state.whiteboard.canEdit
-   window.$nuxt.$store.state.whiteboard.canModerate
-   ```
+3. Check whiteboard is not readonly
 
 ### Expected Results:
-- [ ] `myRole` is `'moderator'`
-- [ ] `canEdit` is `true`
-- [ ] `canModerate` is `true`
-- [ ] `isBoardFrozen` is `false`
-- [ ] `limits.maxPages` is `null`
+- [ ] Whiteboard is NOT in readonly mode
+- [ ] No `whiteboard-host--readonly` class
+- [ ] No `whiteboard-host--frozen` class
+- [ ] Can interact with whiteboard
 
 ### Actual Results:
 ```
@@ -154,33 +197,7 @@ Notes:
 
 ---
 
-## Test Case 6: No Backend Calls for Dev Workspace
-
-**Objective:** Verify dev workspace doesn't call storage/policy APIs
-
-### Steps:
-1. Open DevTools Network tab
-2. Filter for `/api/v1/whiteboard/`
-3. Create dev session via launcher
-4. Observe network requests
-
-### Expected Results:
-- [ ] No calls to `/api/v1/whiteboard/workspaces/{id}/pages/`
-- [ ] No calls to `/api/v1/whiteboard/workspaces/{id}/limits/`
-- [ ] Whiteboard loads instantly (no API delay)
-- [ ] 4 pages appear immediately
-
-### Actual Results:
-```
-Status: ☐ Pass ☐ Fail
-Notes:
-
-
-```
-
----
-
-## Test Case 7: Regression - Existing Features
+## Test Case 7: Regression - Legacy Features
 
 **Objective:** Verify existing classroom features still work
 
@@ -190,7 +207,7 @@ Notes:
    - Timer starts
    - Connection status shows "connected"
    - Room toolbar visible
-   - Session controls (pause/resume/terminate) accessible
+   - Session controls accessible
 
 ### Expected Results:
 - [ ] Timer counts up
@@ -209,14 +226,47 @@ Notes:
 
 ---
 
+## Test Case 8: E2E Test Run Validation
+
+**Objective:** Verify E2E tests pass with correct env configuration
+
+### Steps:
+1. Run E2E tests:
+   ```bash
+   cd frontend
+   npm run test:e2e:dev-vertical
+   ```
+2. Verify all tests pass
+
+### Expected Results:
+- [ ] All E2E tests pass
+- [ ] No localStorage hacks used (check spec file)
+- [ ] Tests use `.env.e2e` for env flags
+
+### Actual Results:
+```
+Status: ☐ Pass ☐ Fail
+E2E Output:
+
+
+```
+
+---
+
 ## Summary
 
-**Total Tests:** 7  
-**Passed:** ___  
-**Failed:** ___  
+**Total Tests:** 8
+**Passed:** ___
+**Failed:** ___
 **Blocked:** ___
 
 **Overall Status:** ☐ Pass ☐ Fail ☐ Blocked
+
+**v0.92.1 Invariants Verified:**
+- [ ] Vertical layout works ONLY for `dev-workspace-*` + `VITE_VERTICAL_LAYOUT=true`
+- [ ] Production workspace NEVER gets vertical layout
+- [ ] `layoutStore.verticalLayoutEnabled` cannot enable vertical for prod
+- [ ] E2E tests don't use fake localStorage for env flags
 
 **Critical Issues:**
 ```

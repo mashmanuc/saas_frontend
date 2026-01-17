@@ -200,8 +200,21 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 // F29-STEALTH: Stable references - use props directly, fallback to empty array only once
-const strokes = computed(() => props.strokes ?? [])
-const assets = computed(() => props.assets ?? [])
+// P0.2: Final guard - normalize state before render to prevent undefined.y crashes
+import { normalizePageState } from '@/core/whiteboard/utils/normalizePageState'
+
+const safeState = computed(() => {
+  const rawState = {
+    strokes: props.strokes ?? [],
+    assets: props.assets ?? [],
+  }
+  const { state } = normalizePageState(rawState)
+  return state
+})
+
+// Cast to local types for compatibility with existing BoardCanvas logic
+const strokes = computed(() => safeState.value.strokes as any as Stroke[])
+const assets = computed(() => safeState.value.assets as any as Asset[])
 
 const remoteCursors = computed(() => props.remoteCursors ?? [])
 const teacherUserId = computed(() => props.teacherUserId ?? null)
@@ -735,7 +748,8 @@ function handleMouseMove(e: Konva.KonvaEventObject<MouseEvent | TouchEvent>): vo
   recordPointerEvent(performance.now())
 
   const cursorPos = getPointerPosition()
-  if (cursorPos) {
+  // v0.92.2: Normalize cursor position - prevent undefined.x crash
+  if (cursorPos && typeof cursorPos.x === 'number' && typeof cursorPos.y === 'number') {
     emit('cursor-move', {
       x: cursorPos.x,
       y: cursorPos.y,
@@ -1084,19 +1098,27 @@ function handleAssetClick(asset: Asset, e: Konva.KonvaEventObject<MouseEvent>): 
 
 // Stroke configs
 function getStrokeConfig(stroke: Stroke): Record<string, unknown> {
-  if (stroke.points.length < 2) return { visible: false }
+  // v0.92.2: Normalize points - filter invalid points to prevent undefined.y crash
+  const validPoints = stroke.points.filter(p => 
+    p && typeof p.x === 'number' && typeof p.y === 'number'
+  )
+  
+  if (validPoints.length < 2) {
+    console.warn('[BoardCanvas] Stroke has invalid points, skipping render:', stroke.id)
+    return { visible: false }
+  }
 
   const selectable = currentTool.value === 'select'
-  const last = stroke.points[stroke.points.length - 1]
-  const first = stroke.points[0]
-  const sig = `${stroke.tool}|${stroke.color}|${stroke.size}|${stroke.opacity}|${selectable ? 1 : 0}|${stroke.points.length}|${first?.x ?? 0},${first?.y ?? 0}|${last?.x ?? 0},${last?.y ?? 0}`
+  const last = validPoints[validPoints.length - 1]
+  const first = validPoints[0]
+  const sig = `${stroke.tool}|${stroke.color}|${stroke.size}|${stroke.opacity}|${selectable ? 1 : 0}|${validPoints.length}|${first.x},${first.y}|${last.x},${last.y}`
   const cached = strokeConfigCache.get(stroke.id)
   if (cached && cached.sig === sig) {
     return cached.config
   }
   
   const strokePath = getSvgPathFromStroke(
-    getStroke(stroke.points.map(p => [p.x, p.y]), {
+    getStroke(validPoints.map(p => [p.x, p.y]), {
       size: stroke.size,
       thinning: 0.5,
       smoothing: 0.5,
@@ -1121,9 +1143,11 @@ function getStrokeConfig(stroke: Stroke): Record<string, unknown> {
 }
 
 function getLineConfig(stroke: Stroke): Record<string, unknown> {
-  if (stroke.points.length < 2) return { visible: false }
-  const start = stroke.points[0]
-  const end = stroke.points[stroke.points.length - 1]
+  // v0.92.2: Normalize points
+  const validPoints = stroke.points.filter(p => p && typeof p.x === 'number' && typeof p.y === 'number')
+  if (validPoints.length < 2) return { visible: false }
+  const start = validPoints[0]
+  const end = validPoints[validPoints.length - 1]
   return {
     id: stroke.id,
     name: `stroke-${stroke.id}`,
@@ -1140,12 +1164,14 @@ function getLineConfig(stroke: Stroke): Record<string, unknown> {
 }
 
 function getRectConfig(stroke: Stroke): Record<string, unknown> {
-  if (!stroke.points[0]) return { visible: false }
+  // v0.92.2: Normalize points
+  const point = stroke.points[0]
+  if (!point || typeof point.x !== 'number' || typeof point.y !== 'number') return { visible: false }
   return {
     id: stroke.id,
     name: `stroke-${stroke.id}`,
-    x: stroke.points[0].x,
-    y: stroke.points[0].y,
+    x: point.x,
+    y: point.y,
     width: stroke.width || 0,
     height: stroke.height || 0,
     stroke: stroke.color,
@@ -1159,13 +1185,15 @@ function getRectConfig(stroke: Stroke): Record<string, unknown> {
 }
 
 function getCircleConfig(stroke: Stroke): Record<string, unknown> {
-  if (!stroke.points[0]) return { visible: false }
+  // v0.92.2: Normalize points
+  const point = stroke.points[0]
+  if (!point || typeof point.x !== 'number' || typeof point.y !== 'number') return { visible: false }
   // Center point is stored, width/height are diameters
   return {
     id: stroke.id,
     name: `stroke-${stroke.id}`,
-    x: stroke.points[0].x + (stroke.width || 0) / 2,
-    y: stroke.points[0].y + (stroke.height || 0) / 2,
+    x: point.x + (stroke.width || 0) / 2,
+    y: point.y + (stroke.height || 0) / 2,
     radiusX: (stroke.width || 0) / 2,
     radiusY: (stroke.height || 0) / 2,
     stroke: stroke.color,
@@ -1179,12 +1207,14 @@ function getCircleConfig(stroke: Stroke): Record<string, unknown> {
 }
 
 function getTextConfig(stroke: Stroke): Record<string, unknown> {
-  if (!stroke.points[0]) return { visible: false }
+  // v0.92.2: Normalize points
+  const point = stroke.points[0]
+  if (!point || typeof point.x !== 'number' || typeof point.y !== 'number') return { visible: false }
   return {
     id: stroke.id,
     name: `stroke-${stroke.id}`,
-    x: stroke.points[0].x,
-    y: stroke.points[0].y,
+    x: point.x,
+    y: point.y,
     text: stroke.text || '',
     fontSize: stroke.size || 16,
     fill: stroke.color,

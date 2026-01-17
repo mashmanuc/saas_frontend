@@ -23,7 +23,9 @@
 
     <!-- Main Content -->
     <template v-else-if="connectionStatus === 'connected' || connectionStatus === 'reconnecting'">
+      <!-- FE-93.X.4: Hide RoomHeader in dev-vertical (clean workspace) -->
       <RoomHeader
+        v-if="!isDevVerticalLayout"
         :session="session"
         :elapsed="formattedTime"
         :connection-status="connectionStatus"
@@ -69,7 +71,9 @@
         </template>
       </LayoutManager>
 
+      <!-- FE-93.X.4: Hide RoomToolbar in dev-vertical (clean workspace) -->
       <RoomToolbar
+        v-if="!isDevVerticalLayout"
         :is-host="isHost"
         :layout-mode="layoutMode"
         :can-terminate="canTerminate"
@@ -88,7 +92,9 @@
         @show-history="showHistoryModal = true"
       />
 
+      <!-- FE-93.X.4: Hide RoomStatusBar in dev-vertical (clean workspace) -->
       <RoomStatusBar
+        v-if="!isDevVerticalLayout"
         :participants="participants"
         :connection-status="connectionStatus"
         :session-status="session?.status"
@@ -230,11 +236,25 @@ const isDevVerticalLayout = computed(() => {
 // Lifecycle
 onMounted(async () => {
   const sessionId = route.params.sessionId as string
-  const token = route.query.token as string
+  let token = route.query.token as string
 
   if (!sessionId) {
     router.push('/dashboard')
     return
+  }
+
+  // v0.92.2: If token in URL - save to sessionStorage and remove from URL immediately
+  if (token) {
+    sessionStorage.setItem(`devLauncherClassroomToken:${sessionId}`, token)
+    // Remove token from URL (security: no tokens in address bar)
+    const cleanPath = window.location.pathname
+    window.history.replaceState({}, '', cleanPath)
+  } else {
+    // Check sessionStorage for dev launcher token
+    const devToken = sessionStorage.getItem(`devLauncherClassroomToken:${sessionId}`)
+    if (devToken) {
+      token = devToken
+    }
   }
 
   try {

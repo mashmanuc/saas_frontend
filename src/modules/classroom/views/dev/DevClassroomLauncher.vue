@@ -131,7 +131,13 @@ async function handleCreateAndJoin() {
     const sessionId = await createAndJoinSession()
     if (sessionId) {
       toast.success(t('dev.classroom.launcher.sessionCreated'))
-      await router.push({ name: 'lesson-room', params: { sessionId } })
+      
+      // v0.92.2: Navigate WITHOUT token in URL (token stored in sessionStorage)
+      // classroomGuard will read from sessionStorage
+      await router.push({ 
+        name: 'lesson-room', 
+        params: { sessionId }
+      })
     }
   } catch (err) {
     toast.error(t('dev.classroom.launcher.createError'))
@@ -142,7 +148,12 @@ async function handleJoin(sessionId: string) {
   try {
     const success = await joinSession(sessionId)
     if (success) {
-      await router.push({ name: 'lesson-room', params: { sessionId } })
+      // v0.92.2: Navigate WITHOUT token in URL (token stored in sessionStorage)
+      // classroomGuard will read from sessionStorage
+      await router.push({ 
+        name: 'lesson-room', 
+        params: { sessionId }
+      })
     }
   } catch (err) {
     toast.error(t('dev.classroom.launcher.joinError'))

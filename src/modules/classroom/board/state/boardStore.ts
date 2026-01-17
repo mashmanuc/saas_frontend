@@ -265,7 +265,8 @@ export function setIsPointerInputActive(isActive: boolean): void {
   scheduleStableIdleSave()
 }
 
-const AUTOSAVE_DEBUG_ENABLED = IS_DEV_ENV && !IS_TEST_ENV
+// P0 FIX #3: Disable autosave debug to prevent console flood
+const AUTOSAVE_DEBUG_ENABLED = false
 
 function logAutosaveDebug(event: string, payload: Record<string, unknown> = {}): void {
   if (!AUTOSAVE_DEBUG_ENABLED) return

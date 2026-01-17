@@ -71,7 +71,16 @@ export const useSubscriptionStore = defineStore('subscription', () => {
     try {
       currentSubscription.value = await paymentsApi.getCurrentSubscription()
     } catch (e: any) {
-      error.value = e.message || 'Failed to load subscription'
+      const status = e?.response?.status
+      
+      // v0.92.2: Graceful fallback for 404 - no subscription is valid state
+      if (status === 404) {
+        console.warn('[SubscriptionStore] No active subscription (404), using null')
+        currentSubscription.value = null
+        error.value = null // Don't show error to user
+      } else {
+        error.value = e.message || 'Failed to load subscription'
+      }
     } finally {
       isLoading.value = false
     }

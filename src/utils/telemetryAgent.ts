@@ -31,14 +31,16 @@ interface TelemetryBatch {
 }
 
 const MAX_BUFFER_SIZE = 50
-const MAX_PAYLOAD_SIZE = 100 * 1024 // 100KB
+const MAX_PAYLOAD_SIZE = 100_000 // 100KB
 const FLUSH_INTERVAL_MS = 10000 // 10 seconds
 const RATE_LIMIT_PER_MIN = 10
+const DISABLE_DURATION_MS = 600000 // 10 min disable on 400
 
 let eventBuffer: TelemetryEvent[] = []
 let flushTimer: ReturnType<typeof setTimeout> | null = null
 let requestCount = 0
 let requestResetTimer: ReturnType<typeof setTimeout> | null = null
+let isDisabled = false // circuit breaker for 400 errors
 
 function generateRequestId(): string {
   return `req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
@@ -68,6 +70,11 @@ function estimatePayloadSize(batch: TelemetryBatch): number {
 
 async function sendBatch(batch: TelemetryBatch): Promise<void> {
   try {
+    // v0.92.2: Skip if disabled
+    if (isDisabled) {
+      return
+    }
+
     // Check rate limit
     if (requestCount >= RATE_LIMIT_PER_MIN) {
       console.warn('[Telemetry] Rate limit reached, dropping batch')
@@ -85,6 +92,22 @@ async function sendBatch(batch: TelemetryBatch): Promise<void> {
     await apiClient.post('/v1/telemetry/events', batch)
   } catch (err: any) {
     const status = err?.response?.status
+    
+    // v0.92.2: Circuit breaker for 400 Bad Request
+    if (status === 400) {
+      if (!isDisabled) {
+        isDisabled = true
+        console.warn('[Telemetry] 400 Bad Request - disabling telemetry for 10 minutes')
+        
+        // Re-enable after 10 minutes
+        setTimeout(() => {
+          isDisabled = false
+          console.log('[Telemetry] Re-enabled after cooldown')
+        }, DISABLE_DURATION_MS)
+      }
+      return
+    }
+    
     if (status === 413) {
       console.error('[Telemetry] Payload too large')
     } else if (status === 429) {
@@ -105,6 +128,11 @@ function scheduleFlush(): void {
 }
 
 export function track(event: Omit<TelemetryEvent, 'timestamp'>): void {
+  // v0.92.2: Circuit breaker - skip if disabled due to 400 errors
+  if (isDisabled) {
+    return
+  }
+
   const fullEvent: TelemetryEvent = {
     ...event,
     timestamp: Date.now(),

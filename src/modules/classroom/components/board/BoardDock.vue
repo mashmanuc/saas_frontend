@@ -179,6 +179,11 @@ function handleSelect(id: string | null): void {
 }
 
 function handleCursorMove(payload: { x: number; y: number; tool: string; color: string }): void {
+  // v0.92.2: Normalize cursor position - prevent undefined.x crash
+  if (typeof payload?.x !== 'number' || typeof payload?.y !== 'number') {
+    console.warn('[BoardDock] Invalid cursor position, skipping:', payload)
+    return
+  }
   emit('event', 'cursor_move', payload)
 }
 

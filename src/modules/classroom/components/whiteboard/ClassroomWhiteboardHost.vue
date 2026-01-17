@@ -13,16 +13,36 @@
     </div>
 
     <template v-else>
-      <PageVerticalStack
-        v-if="useVerticalLayout"
-        :pages="pages"
-        :active-page-id="activePageId"
-        :follow-mode="followMode"
-        :presenter-page-id="presenterPageId"
-        @page-visible="handlePageVisible"
-        @scroll-to-page="handleScrollToPage"
-      />
+      <!-- v0.93.1: Vertical layout with split mode support -->
+      <div v-if="useVerticalLayout" class="whiteboard-host__split-container">
+        <!-- FE-93.X.1: Board area ЗЛІВА (перша в DOM) -->
+        <div class="whiteboard-host__board-area">
+          <PageVerticalStack
+            :pages="pages"
+            :active-page-id="activePageId"
+            :follow-mode="followMode"
+            :presenter-page-id="presenterPageId"
+            :workspace-id="workspaceId"
+            :tool="currentTool"
+            :color="currentColor"
+            :size="currentSize"
+            :readonly="readonly"
+            @page-visible="handlePageVisible"
+            @scroll-to-page="handleScrollToPage"
+          />
+        </div>
 
+        <!-- FE-93.X.1: Tasks panel СПРАВА (друга в DOM) -->
+        <TaskDock
+          v-if="taskDockVisible"
+          :state="taskDockState"
+          :tasks="tasks"
+          @toggle="handleTaskDockToggle"
+          @task-drop="handleTaskDrop"
+        />
+      </div>
+
+      <!-- Legacy BoardDock (non-vertical) -->
       <BoardDock
         v-else
         ref="boardDockRef"
@@ -35,20 +55,12 @@
         :follow-teacher-enabled="followTeacherEnabled"
         @event="handleBoardEvent"
       />
-
-      <TaskDock
-        v-if="useVerticalLayout && taskDockVisible"
-        :state="taskDockState"
-        :tasks="tasks"
-        @toggle="handleTaskDockToggle"
-        @task-drop="handleTaskDrop"
-      />
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watchEffect } from 'vue'
 import { useWhiteboardStore } from '../../stores/whiteboardStore'
 import { useClassroomLayoutStore } from '../../stores/classroomLayoutStore'
 import { useRoomStore } from '../../stores/roomStore'
@@ -87,10 +99,16 @@ const boardDockRef = ref<InstanceType<typeof BoardDock> | null>(null)
 const isLoading = ref(true)
 const error = ref<string | null>(null)
 
+// v0.92.1: dev-only invariant - vertical layout тільки для dev workspace + feature flag
+const isDevWorkspace = computed(() => props.workspaceId.startsWith('dev-workspace-'))
+const verticalFlagEnabled = computed(() => import.meta.env.VITE_VERTICAL_LAYOUT === 'true')
+
 const useVerticalLayout = computed(() => {
-  const isDevWorkspace = props.workspaceId.startsWith('dev-workspace-')
-  const featureFlagEnabled = import.meta.env.VITE_VERTICAL_LAYOUT === 'true'
-  return featureFlagEnabled && (isDevWorkspace || layoutStore.verticalLayoutEnabled)
+  // LAW-11 + LAW-13: vertical layout тільки якщо:
+  // 1) VITE_VERTICAL_LAYOUT === 'true'
+  // 2) workspaceId.startsWith('dev-workspace-')
+  // layoutStore.verticalLayoutEnabled НЕ може вмикати vertical для prod
+  return verticalFlagEnabled.value && isDevWorkspace.value
 })
 
 const pages = computed(() => whiteboardStore.pages)
@@ -103,6 +121,11 @@ const isSyncing = computed(() => whiteboardStore.status === 'saving')
 const taskDockVisible = computed(() => layoutStore.taskDockState !== 'hidden')
 const taskDockState = computed(() => layoutStore.taskDockState)
 const tasks = computed(() => [])
+
+// v0.93.0: Current tool state (можна розширити для реального tool picker)
+const currentTool = ref('pen')
+const currentColor = ref('#111111')
+const currentSize = ref(4)
 
 const legacyBoardState = computed(() => ({
   strokes: whiteboardStore.currentPageData?.state?.strokes || [],
@@ -157,6 +180,17 @@ function handleTaskDrop(taskId: string, pageId: string) {
   console.log('Task dropped:', taskId, 'on page:', pageId)
 }
 
+// FE-92.1.3: Tripwire - сигнал тривоги якщо vertical увімкнувся для non-dev workspace
+watchEffect(() => {
+  if (useVerticalLayout.value && !isDevWorkspace.value) {
+    console.error('[WINTERBOARD] ILLEGAL_VERTICAL_LAYOUT_NON_DEV_WORKSPACE', {
+      workspaceId: props.workspaceId,
+      verticalFlagEnabled: verticalFlagEnabled.value,
+      isDevWorkspace: isDevWorkspace.value,
+    })
+  }
+})
+
 onMounted(() => {
   bootstrap()
 })
@@ -171,19 +205,35 @@ onUnmounted(() => {
   position: relative;
   width: 100%;
   height: 100%;
-  display: grid;
+  display: flex;
   overflow: hidden;
   background: var(--color-bg-primary, #ffffff);
 }
 
+/* v0.93.1: Split container for Board + Tasks layout */
+.whiteboard-host__split-container {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 100%;
+  gap: 0;
+}
+
+/* v0.93.1: Board area - ЗЛІВА, перша в DOM */
+.whiteboard-host__board-area {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--color-bg-secondary, #f9fafb);
+}
+
 .whiteboard-host--vertical {
-  grid-template-columns: 1fr auto;
-  grid-template-rows: 1fr;
+  /* Vertical layout uses split-container */
 }
 
 .whiteboard-host--legacy {
-  grid-template-columns: 1fr;
-  grid-template-rows: 1fr;
+  /* Legacy layout uses single column */
 }
 
 .whiteboard-host__loader,

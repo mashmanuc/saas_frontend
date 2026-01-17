@@ -288,7 +288,36 @@
   },
   "dev": {
     "playground": "Пісочниця компонентів",
-    "theme": "Теми"
+    "theme": "Теми",
+    "classroom": {
+      "launcher": {
+        "title": "Dev Classroom Launcher",
+        "description": "Швидкий запуск тестової classroom-сесії для розробки",
+        "createAndJoin": "Створити і приєднатися",
+        "creating": "Створюємо...",
+        "recentSessions": "Останні dev-сесії",
+        "loadingSessions": "Завантаження сесій...",
+        "join": "Приєднатися",
+        "copyId": "Копіювати ID",
+        "archive": "Архівувати",
+        "retry": "Спробувати знову",
+        "sessionCreated": "Сесію створено успішно",
+        "createError": "Помилка створення сесії",
+        "joinError": "Помилка приєднання до сесії",
+        "archived": "Сесію заархівовано",
+        "archiveError": "Помилка архівування",
+        "copiedToClipboard": "ID скопійовано",
+        "justNow": "Щойно",
+        "minutesAgo": "{count} хв тому",
+        "hoursAgo": "{count} год тому",
+        "daysAgo": "{count} дн тому",
+        "status": {
+          "ready": "Готова",
+          "archived": "Архівована",
+          "error": "Помилка"
+        }
+      }
+    }
   },
   "devPlayground": {
     "sidebar": {
@@ -2472,44 +2501,6 @@
       "loading": "Завантаження дошки...",
       "error": "Помилка завантаження дошки"
     },
-    "tasks": {
-      "title": "Завдання",
-      "toggle": "Перемкнути панель завдань",
-      "empty": "Немає завдань"
-    }
-  },
-  "dev": {
-    "classroom": {
-      "launcher": {
-        "title": "Dev Classroom Launcher",
-        "description": "Швидкий запуск тестової classroom-сесії для розробки",
-        "createAndJoin": "Створити і приєднатися",
-        "creating": "Створюємо...",
-        "recentSessions": "Останні dev-сесії",
-        "loadingSessions": "Завантаження сесій...",
-        "join": "Приєднатися",
-        "copyId": "Копіювати ID",
-        "archive": "Архівувати",
-        "retry": "Спробувати знову",
-        "sessionCreated": "Сесію створено успішно",
-        "createError": "Помилка створення сесії",
-        "joinError": "Помилка приєднання до сесії",
-        "archived": "Сесію заархівовано",
-        "archiveError": "Помилка архівування",
-        "copiedToClipboard": "ID скопійовано",
-        "justNow": "Щойно",
-        "minutesAgo": "{count} хв тому",
-        "hoursAgo": "{count} год тому",
-        "daysAgo": "{count} дн тому",
-        "status": {
-          "ready": "Готова",
-          "archived": "Архівована",
-          "error": "Помилка"
-        }
-      }
-    }
-  },
-  "classroom": {
     "tools": {
       "actions": "Дії",
       "clear": "Очистити дошку",
@@ -2532,6 +2523,12 @@
       "text": "Текст",
       "select": "Вибір",
       "${tool.id}": "{tool.id}"
+    },
+    "types": {
+      "lesson": "Урок",
+      "solo": "Соло-сесія",
+      "group": "Групова сесія",
+      "demo": "Демо"
     },
     "reconnect": {
       "tips": {
@@ -2602,6 +2599,15 @@
       "open": "Відкрити",
       "empty": "У вас ще немає класів.",
       "loadError": "Не вдалося завантажити список класів"
+    },
+    "layout": {
+      "boardOnly": "Тільки дошка",
+      "boardWithTasks": "Дошка + Завдання"
+    },
+    "tasks": {
+      "toggle": "Перемкнути панель завдань",
+      "title": "Завдання / Матеріали",
+      "empty": "Немає завдань"
     },
     "detail": {
       "title": "Клас",

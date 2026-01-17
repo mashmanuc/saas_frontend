@@ -20,6 +20,8 @@ import type {
 } from '@/core/whiteboard/adapters/RealtimeAdapter'
 import { M4shStorageAdapter, M4shPolicyAdapter } from '../adapters'
 import { NoopRealtimeAdapter } from '@/core/whiteboard/adapters/NoopRealtimeAdapter'
+import { DevWhiteboardStorageAdapter } from '@/core/whiteboard/adapters/DevWhiteboardStorageAdapter'
+import { normalizePageState } from '@/core/whiteboard/utils/normalizePageState'
 
 export type WhiteboardStatus = 'idle' | 'loading' | 'saving' | 'error'
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error'
@@ -70,6 +72,9 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
   const safeMode = ref<boolean>(false)
   const MAX_PENDING_OPS = 300
 
+  // v0.93.0: Dev workspace - page states map (per-page strokes/assets)
+  const pageStates = ref<Map<string, PageData['state']>>(new Map())
+
   // Computed
   const activePage = computed(() => pages.value.find(p => p.id === activePageId.value) || null)
   const pageCount = computed(() => pages.value.length)
@@ -97,52 +102,53 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
     error.value = null
 
     try {
-      // v0.92.0: Dev workspace branch (no persistence, placeholder pages)
+      // v0.93.0: Dev workspace branch (localStorage persistence, 10 pages)
       if (wsId.startsWith('dev-workspace-')) {
         console.log('[WhiteboardStore] Bootstrapping dev workspace:', wsId)
         
-        // Create 3-4 placeholder pages for dev vertical layout
-        const placeholderPages: PageMetadata[] = [
-          {
-            id: `${wsId}-page-1`,
-            title: 'Page 1',
-            index: 0,
+        // v0.93.0: Use DevWhiteboardStorageAdapter for dev workspaces
+        storageAdapter.value = new DevWhiteboardStorageAdapter()
+        
+        // Create 10 pages for dev vertical layout (LAW-03: Pages = Ordered Stack)
+        const placeholderPages: PageMetadata[] = []
+        for (let i = 0; i < 10; i++) {
+          placeholderPages.push({
+            id: `${wsId}-page-${i + 1}`,
+            title: `Page ${i + 1}`,
+            index: i,
             version: 1,
             updatedAt: new Date().toISOString(),
-          },
-          {
-            id: `${wsId}-page-2`,
-            title: 'Page 2',
-            index: 1,
-            version: 1,
-            updatedAt: new Date().toISOString(),
-          },
-          {
-            id: `${wsId}-page-3`,
-            title: 'Page 3',
-            index: 2,
-            version: 1,
-            updatedAt: new Date().toISOString(),
-          },
-          {
-            id: `${wsId}-page-4`,
-            title: 'Page 4',
-            index: 3,
-            version: 1,
-            updatedAt: new Date().toISOString(),
-          },
-        ]
+          })
+        }
         
         pages.value = placeholderPages
         activePageId.value = placeholderPages[0].id
         
-        // Set placeholder page data
+        // v0.93.0: Load page states from localStorage (LAW-02: Persistency)
+        // Initialize pageStates map for all pages
+        for (const page of placeholderPages) {
+          try {
+            const pageData = await storageAdapter.value.loadPage(page.id)
+            // P0.1: Normalize state after load to ensure invariants
+            const { state: normalizedState, stats } = normalizePageState(pageData.state, { warnOnce: true })
+            pageStates.value.set(page.id, normalizedState)
+            if (stats.droppedStrokes > 0 || stats.fixedStrokes > 0) {
+              console.log('[WhiteboardStore] Normalized page state on load', { pageId: page.id, stats })
+            }
+          } catch (err) {
+            console.warn('[WhiteboardStore] Failed to load page state, using empty', { pageId: page.id, err })
+            pageStates.value.set(page.id, { strokes: [], assets: [] })
+          }
+        }
+        
+        // Set current page data from loaded state
+        const firstPageState = pageStates.value.get(placeholderPages[0].id) || { strokes: [], assets: [] }
         currentPageData.value = {
           id: placeholderPages[0].id,
           title: placeholderPages[0].title,
           index: placeholderPages[0].index,
           version: 1,
-          state: { strokes: [], assets: [] },
+          state: firstPageState,
           updatedAt: new Date().toISOString(),
         }
         
@@ -279,14 +285,71 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
   }
 
   /**
+   * v0.93.0: Set active page by scroll (LAW-04)
+   * Called from PageVerticalStack IntersectionObserver
+   * v0.93.1: Додано debounce для зменшення flood логів
+   */
+  let activePageDebounceTimer: ReturnType<typeof setTimeout> | null = null
+  const ACTIVE_PAGE_DEBOUNCE_MS = 300
+
+  function setActivePageByScroll(pageId: string): void {
+    if (activePageId.value === pageId) return
+
+    // v0.93.1: Debounce logging to prevent flood
+    if (activePageDebounceTimer) {
+      clearTimeout(activePageDebounceTimer)
+    }
+    
+    activePageDebounceTimer = setTimeout(() => {
+      if (import.meta.env.DEV) {
+        console.info('[WhiteboardStore] Active page changed by scroll', { pageId })
+      }
+    }, ACTIVE_PAGE_DEBOUNCE_MS)
+
+    activePageId.value = pageId
+
+    // Load page data for dev workspace
+    if (workspaceId.value?.startsWith('dev-workspace-')) {
+      const page = pages.value.find(p => p.id === pageId)
+      if (page) {
+        const pageState = pageStates.value.get(pageId) || { strokes: [], assets: [] }
+        currentPageData.value = {
+          id: page.id,
+          title: page.title,
+          index: page.index,
+          version: 1,
+          state: pageState,
+          updatedAt: new Date().toISOString(),
+        }
+      }
+    }
+  }
+
+  /**
    * Load active page data
    */
   async function loadActivePage(): Promise<void> {
     if (!activePageId.value) return
 
     try {
-      const pageData = await storageAdapter.value.loadPage(activePageId.value)
-      currentPageData.value = pageData
+      // v0.93.0: For dev workspace, use pageStates map
+      if (workspaceId.value?.startsWith('dev-workspace-')) {
+        const pageState = pageStates.value.get(activePageId.value) || { strokes: [], assets: [] }
+        const page = pages.value.find(p => p.id === activePageId.value)
+        if (page) {
+          currentPageData.value = {
+            id: page.id,
+            title: page.title,
+            index: page.index,
+            version: 1,
+            state: pageState,
+            updatedAt: new Date().toISOString(),
+          }
+        }
+      } else {
+        const pageData = await storageAdapter.value.loadPage(activePageId.value)
+        currentPageData.value = pageData
+      }
     } catch (err: any) {
       console.error('[WhiteboardStore] Load page failed:', err)
       throw err
@@ -314,6 +377,11 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
       currentPageData.value.version = result.version
       currentPageData.value.state = state
 
+      // v0.93.0: Update pageStates map for dev workspace
+      if (workspaceId.value?.startsWith('dev-workspace-')) {
+        pageStates.value.set(activePageId.value, state)
+      }
+
       // Update metadata in pages list
       const pageIndex = pages.value.findIndex(p => p.id === activePageId.value)
       if (pageIndex !== -1) {
@@ -328,6 +396,79 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
       status.value = 'error'
       throw err
     }
+  }
+
+  /**
+   * v0.93.0: Update page state (for autosave)
+   * Used by PageVerticalStack to save individual page changes
+   */
+  async function updatePageState(pageId: string, state: PageData['state']): Promise<void> {
+    if (!workspaceId.value) {
+      throw new Error('Workspace not initialized')
+    }
+
+    try {
+      // P0.1: Normalize state before save to ensure invariants
+      const { state: normalizedState, stats } = normalizePageState(state)
+      
+      if (stats.droppedStrokes > 0 || stats.fixedStrokes > 0) {
+        console.warn('[WhiteboardStore] State normalized before save', { pageId, stats })
+      }
+
+      // Save to localStorage via adapter
+      await storageAdapter.value.savePage(pageId, { state: normalizedState, version: 1 })
+
+      // Update pageStates map
+      pageStates.value.set(pageId, normalizedState)
+
+      // If this is active page, update currentPageData
+      if (activePageId.value === pageId && currentPageData.value) {
+        currentPageData.value.state = normalizedState
+        currentPageData.value.updatedAt = new Date().toISOString()
+      }
+
+      console.info('[WhiteboardStore] Page state updated', { pageId, strokesCount: normalizedState.strokes.length })
+    } catch (err: any) {
+      console.error('[WhiteboardStore] Update page state failed:', err)
+      throw err
+    }
+  }
+
+  /**
+   * v0.93.0: Add dev page (LAW-03, 2.7)
+   * Dev-only method to add new page
+   */
+  function addDevPage(): void {
+    if (!workspaceId.value?.startsWith('dev-workspace-')) {
+      console.error('[WhiteboardStore] addDevPage called for non-dev workspace')
+      return
+    }
+
+    // Check limits
+    if (!canCreatePage.value) {
+      console.warn('[WhiteboardStore] Cannot add page: limit reached', { 
+        current: pageCount.value, 
+        max: limits.value.maxPages 
+      })
+      // Emit event or show toast (handled by UI)
+      return
+    }
+
+    const newIndex = pages.value.length
+    const newPageId = `${workspaceId.value}-page-${newIndex + 1}`
+
+    const newPage: PageMetadata = {
+      id: newPageId,
+      title: `Page ${newIndex + 1}`,
+      index: newIndex,
+      version: 1,
+      updatedAt: new Date().toISOString(),
+    }
+
+    pages.value.push(newPage)
+    pageStates.value.set(newPageId, { strokes: [], assets: [] })
+
+    console.info('[WhiteboardStore] Dev page added', { pageId: newPageId, totalPages: pages.value.length })
   }
 
   /**
@@ -809,6 +950,9 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
     
     // v0.87.0: Reset SafeMode
     safeMode.value = false
+    
+    // v0.93.0: Reset pageStates
+    pageStates.value.clear()
   }
 
   return {
@@ -861,6 +1005,12 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
     reset,
     showPaywall,
     closePaywall,
+    
+    // v0.93.0: Dev workspace methods
+    setActivePageByScroll,
+    addDevPage,
+    updatePageState,
+    pageStates,
     
     // Realtime
     setRealtimeAdapter,
