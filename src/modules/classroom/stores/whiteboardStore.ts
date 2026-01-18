@@ -26,6 +26,8 @@ import { normalizePageState } from '@/core/whiteboard/utils/normalizePageState'
 export type WhiteboardStatus = 'idle' | 'loading' | 'saving' | 'error'
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error'
 
+type ToolId = 'select' | 'pen' | 'highlighter' | 'line' | 'rectangle' | 'circle' | 'text' | 'eraser'
+
 export const useWhiteboardStore = defineStore('whiteboard', () => {
   // Adapters
   const storageAdapter = ref<StorageAdapter>(new M4shStorageAdapter())
@@ -75,6 +77,14 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
   // v0.93.0: Dev workspace - page states map (per-page strokes/assets)
   const pageStates = ref<Map<string, PageData['state']>>(new Map())
 
+  // P0.1: Tool state (Solo parity)
+  const currentTool = ref<ToolId>('pen')
+  const currentColor = ref<string>('#111111')
+  const currentSize = ref<number>(4)
+
+  // P0.2: Persistency guard state
+  const saveBlockedReason = ref<string | null>(null)
+
   // Computed
   const activePage = computed(() => pages.value.find(p => p.id === activePageId.value) || null)
   const pageCount = computed(() => pages.value.length)
@@ -100,16 +110,17 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
     workspaceId.value = wsId
     status.value = 'loading'
     error.value = null
+    saveBlockedReason.value = null
 
     try {
-      // v0.93.0: Dev workspace branch (localStorage persistence, 10 pages)
+      // v0.94.0.1: Dev workspace branch (localStorage fallback ONLY)
       if (wsId.startsWith('dev-workspace-')) {
-        console.log('[WhiteboardStore] Bootstrapping dev workspace:', wsId)
+        console.log('[WhiteboardStore] Bootstrapping dev workspace with localStorage fallback:', wsId)
         
-        // v0.93.0: Use DevWhiteboardStorageAdapter for dev workspaces
+        // Dev-only: Use DevWhiteboardStorageAdapter for localStorage persistence
         storageAdapter.value = new DevWhiteboardStorageAdapter()
         
-        // Create 10 pages for dev vertical layout (LAW-03: Pages = Ordered Stack)
+        // Create 10 pages for dev vertical layout
         const placeholderPages: PageMetadata[] = []
         for (let i = 0; i < 10; i++) {
           placeholderPages.push({
@@ -124,12 +135,10 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
         pages.value = placeholderPages
         activePageId.value = placeholderPages[0].id
         
-        // v0.93.0: Load page states from localStorage (LAW-02: Persistency)
-        // Initialize pageStates map for all pages
+        // Load page states from localStorage
         for (const page of placeholderPages) {
           try {
             const pageData = await storageAdapter.value.loadPage(page.id)
-            // P0.1: Normalize state after load to ensure invariants
             const { state: normalizedState, stats } = normalizePageState(pageData.state, { warnOnce: true })
             pageStates.value.set(page.id, normalizedState)
             if (stats.droppedStrokes > 0 || stats.fixedStrokes > 0) {
@@ -162,7 +171,9 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
         return
       }
 
-      // Production branch: normal flow
+      // P0.3: Production branch - використовуємо M4shStorageAdapter (backend persistence)
+      console.log('[WhiteboardStore] Bootstrapping production workspace:', wsId)
+      
       // v0.86.0: Load workspace state (role, frozen, presenter)
       await loadWorkspaceState()
 
@@ -170,19 +181,55 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
       const fetchedLimits = await policyAdapter.value.getLimits(wsId)
       limits.value = fetchedLimits
 
-      // Load pages
+      // P0.2: Load pages from backend (M4shStorageAdapter)
       const fetchedPages = await storageAdapter.value.listPages(wsId)
       pages.value = fetchedPages.sort((a, b) => a.index - b.index)
 
-      // Set active page to first or create one if empty
+      // P0.2: Safe bootstrap — create pages up to SAFE_TARGET, respecting backend limits
       if (pages.value.length === 0) {
-        await createPage()
-      } else {
-        activePageId.value = pages.value[0].id
-        await loadActivePage()
+        console.log('[WhiteboardStore] No pages found, creating pages safely (respecting backend limits)')
+        const SAFE_TARGET = 10
+        let createdCount = 0
+        let limitReached = false
+
+        for (let i = 0; i < SAFE_TARGET; i++) {
+          try {
+            const newPage = await createPage(`Page ${i + 1}`)
+            createdCount++
+            console.log('[WhiteboardStore] Created page:', newPage.id)
+          } catch (err: any) {
+            if (err.message === 'PAGE_LIMIT_EXCEEDED') {
+              console.warn('[WhiteboardStore] Page limit reached after creating', createdCount, 'pages')
+              limitReached = true
+              break
+            }
+            // Fatal error — stop bootstrap
+            throw err
+          }
+        }
+
+        // Reload pages after creation
+        const reloadedPages = await storageAdapter.value.listPages(wsId)
+        pages.value = reloadedPages.sort((a, b) => a.index - b.index)
+
+        if (limitReached && pages.value.length > 0) {
+          // Non-blocking warning: user has pages but hit limit
+          console.warn('[WhiteboardStore] Bootstrap completed with', pages.value.length, 'pages (limit reached)')
+        }
       }
 
+      if (pages.value.length === 0) {
+        error.value = 'no_pages_available'
+        status.value = 'error'
+        throw new Error('NO_PAGES_AVAILABLE')
+      }
+
+      // Set active page to first
+      activePageId.value = pages.value[0].id
+      await loadActivePage()
+
       status.value = 'idle'
+      console.log('[WhiteboardStore] Production workspace ready with', pages.value.length, 'pages')
     } catch (err: any) {
       console.error('[WhiteboardStore] Bootstrap failed:', err)
       error.value = err.message || 'Failed to initialize whiteboard'
@@ -358,10 +405,17 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
 
   /**
    * Save current page
+   * P0.2: Handle 409 VERSION_CONFLICT (retry once) and 413 PAYLOAD_TOO_LARGE (block)
    */
   async function savePage(state: PageData['state']): Promise<void> {
     if (!activePageId.value || !currentPageData.value) {
       throw new Error('No active page to save')
+    }
+
+    // P0.2: Check if save is blocked
+    if (saveBlockedReason.value === 'payload_too_large') {
+      console.error('[WhiteboardStore] Save blocked due to payload too large')
+      throw new Error('SAVE_BLOCKED_PAYLOAD_TOO_LARGE')
     }
 
     status.value = 'saving'
@@ -392,19 +446,64 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
       status.value = 'idle'
     } catch (err: any) {
       console.error('[WhiteboardStore] Save page failed:', err)
-      error.value = err.message || 'Failed to save page'
-      status.value = 'error'
+      
+      // P0.2: Handle specific error cases
+      if (err.message === 'VERSION_CONFLICT') {
+        // Resync: reload page from backend, then retry save ONCE
+        console.warn('[WhiteboardStore] Version conflict detected, resyncing and retrying save')
+        try {
+          await loadActivePage()
+          // Retry save once with new version
+          console.log('[WhiteboardStore] Retrying save after resync')
+          const retryResult = await storageAdapter.value.savePage(activePageId.value, {
+            state,
+            version: currentPageData.value!.version,
+          })
+          currentPageData.value!.version = retryResult.version
+          currentPageData.value!.state = state
+          const pageIndex = pages.value.findIndex(p => p.id === activePageId.value)
+          if (pageIndex !== -1) {
+            pages.value[pageIndex].version = retryResult.version
+            pages.value[pageIndex].updatedAt = new Date().toISOString()
+          }
+          status.value = 'idle'
+          console.log('[WhiteboardStore] Save retry succeeded')
+          return
+        } catch (retryErr: any) {
+          console.error('[WhiteboardStore] Save retry failed:', retryErr)
+          error.value = 'version_conflict_retry_failed'
+          status.value = 'error'
+          throw retryErr
+        }
+      } else if (err.message === 'PAYLOAD_TOO_LARGE') {
+        // P0.2: Block further saves until manual intervention
+        saveBlockedReason.value = 'payload_too_large'
+        error.value = 'payload_too_large'
+        status.value = 'error'
+        console.error('[WhiteboardStore] Payload too large, blocking further saves')
+      } else {
+        error.value = err.message || 'Failed to save page'
+        status.value = 'error'
+      }
+      
       throw err
     }
   }
 
   /**
    * v0.93.0: Update page state (for autosave)
+   * P0.2: Handle 409 conflict gracefully, block on 413
    * Used by PageVerticalStack to save individual page changes
    */
   async function updatePageState(pageId: string, state: PageData['state']): Promise<void> {
     if (!workspaceId.value) {
       throw new Error('Workspace not initialized')
+    }
+
+    // P0.2: Check if save is blocked
+    if (saveBlockedReason.value === 'payload_too_large') {
+      console.warn('[WhiteboardStore] Autosave blocked due to payload too large')
+      return
     }
 
     try {
@@ -415,22 +514,55 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
         console.warn('[WhiteboardStore] State normalized before save', { pageId, stats })
       }
 
-      // Save to localStorage via adapter
-      await storageAdapter.value.savePage(pageId, { state: normalizedState, version: 1 })
+      // P0.3: Get current version for this page
+      const page = pages.value.find(p => p.id === pageId)
+      const currentVersion = page?.version || 1
 
-      // Update pageStates map
-      pageStates.value.set(pageId, normalizedState)
+      // Save via adapter (with version for production)
+      const result = await storageAdapter.value.savePage(pageId, { 
+        state: normalizedState, 
+        version: currentVersion 
+      })
+
+      // Update pageStates map (for dev workspace)
+      if (workspaceId.value?.startsWith('dev-workspace-')) {
+        pageStates.value.set(pageId, normalizedState)
+      }
+
+      // Update version in pages list
+      if (page) {
+        page.version = result.version
+        page.updatedAt = new Date().toISOString()
+      }
 
       // If this is active page, update currentPageData
       if (activePageId.value === pageId && currentPageData.value) {
         currentPageData.value.state = normalizedState
+        currentPageData.value.version = result.version
         currentPageData.value.updatedAt = new Date().toISOString()
       }
 
-      console.info('[WhiteboardStore] Page state updated', { pageId, strokesCount: normalizedState.strokes.length })
+      console.info('[WhiteboardStore] Page state updated', { pageId, strokesCount: normalizedState.strokes.length, version: result.version })
     } catch (err: any) {
       console.error('[WhiteboardStore] Update page state failed:', err)
-      throw err
+      
+      // P0.2: Handle version conflict in autosave (graceful skip)
+      if (err.message === 'VERSION_CONFLICT') {
+        console.warn('[WhiteboardStore] Version conflict in autosave, skipping this save')
+        // Don't throw — allow user to continue editing
+        return
+      }
+      
+      // P0.2: Handle payload too large (block autosave)
+      if (err.message === 'PAYLOAD_TOO_LARGE') {
+        saveBlockedReason.value = 'payload_too_large'
+        error.value = 'payload_too_large'
+        console.error('[WhiteboardStore] Payload too large in autosave, blocking further saves')
+        return
+      }
+      
+      // Other errors: log but don't block
+      console.error('[WhiteboardStore] Autosave error:', err)
     }
   }
 
@@ -914,6 +1046,21 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
   }
 
   /**
+   * P0.1: Tool state management
+   */
+  function setTool(tool: ToolId): void {
+    currentTool.value = tool
+  }
+
+  function setColor(color: string): void {
+    currentColor.value = color
+  }
+
+  function setSize(size: number): void {
+    currentSize.value = size
+  }
+
+  /**
    * Reset store
    */
   function setStorageAdapter(adapter: StorageAdapter): void {
@@ -953,6 +1100,12 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
     
     // v0.93.0: Reset pageStates
     pageStates.value.clear()
+    
+    // P0.1: Reset tool state
+    currentTool.value = 'pen'
+    currentColor.value = '#111111'
+    currentSize.value = 4
+    saveBlockedReason.value = null
   }
 
   return {
@@ -1011,6 +1164,17 @@ export const useWhiteboardStore = defineStore('whiteboard', () => {
     addDevPage,
     updatePageState,
     pageStates,
+    
+    // P0.1: Tool state
+    currentTool,
+    currentColor,
+    currentSize,
+    setTool,
+    setColor,
+    setSize,
+    
+    // P0.2: Persistency guard
+    saveBlockedReason,
     
     // Realtime
     setRealtimeAdapter,

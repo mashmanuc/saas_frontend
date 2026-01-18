@@ -1080,6 +1080,7 @@
     "next": "Next",
     "clear": "Clear",
     "retry": "Retry",
+    "reload": "Reload",
     "previousWeek": "Previous week",
     "nextWeek": "Next week",
     "exit": "Exit",
@@ -1830,6 +1831,25 @@
       "title": "Board",
       "${step.id}": "{step.id}",
       "${steps[currentStep.value].id}Status": ""
+    },
+    "whiteboard": {
+      "loading": "Loading whiteboard...",
+      "error": "Failed to load whiteboard"
+    },
+    "types": {
+      "lesson": "Lesson",
+      "solo": "Solo session",
+      "group": "Group session",
+      "demo": "Demo"
+    },
+    "layout": {
+      "boardOnly": "Board only",
+      "boardWithTasks": "Board with tasks"
+    },
+    "tasks": {
+      "title": "Tasks",
+      "empty": "No tasks yet",
+      "toggle": "Toggle tasks"
     },
     "tools": {
       "actions": "Actions",

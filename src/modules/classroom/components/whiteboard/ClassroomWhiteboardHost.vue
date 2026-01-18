@@ -6,16 +6,30 @@
     </div>
 
     <div v-else-if="error" class="whiteboard-host__error">
-      <p>{{ error }}</p>
-      <button @click="handleRetry" class="btn btn-secondary">
-        {{ $t('common.retry') }}
-      </button>
+      <WhiteboardErrorState
+        :error="error"
+        @retry="handleRetry"
+      />
     </div>
 
     <template v-else>
-      <!-- v0.93.1: Vertical layout with split mode support -->
-      <div v-if="useVerticalLayout" class="whiteboard-host__split-container">
-        <!-- FE-93.X.1: Board area ЗЛІВА (перша в DOM) -->
+      <!-- v0.94.0.1: Vertical layout з BoardToolbarVertical -->
+      <div v-if="useVerticalLayout" class="whiteboard-host__vertical-container">
+        <!-- P0.2: Toolbar зліва як у Solo -->
+        <BoardToolbarVertical
+          :current-tool="currentTool"
+          :current-color="currentColor"
+          :current-size="currentSize"
+          :can-undo="canUndo"
+          :can-redo="canRedo"
+          @tool-change="handleToolChange"
+          @color-change="handleColorChange"
+          @size-change="handleSizeChange"
+          @undo="handleUndo"
+          @redo="handleRedo"
+        />
+
+        <!-- Board area з pages stack -->
         <div class="whiteboard-host__board-area">
           <PageVerticalStack
             :pages="pages"
@@ -31,15 +45,6 @@
             @scroll-to-page="handleScrollToPage"
           />
         </div>
-
-        <!-- FE-93.X.1: Tasks panel СПРАВА (друга в DOM) -->
-        <TaskDock
-          v-if="taskDockVisible"
-          :state="taskDockState"
-          :tasks="tasks"
-          @toggle="handleTaskDockToggle"
-          @task-drop="handleTaskDrop"
-        />
       </div>
 
       <!-- Legacy BoardDock (non-vertical) -->
@@ -65,8 +70,9 @@ import { useWhiteboardStore } from '../../stores/whiteboardStore'
 import { useClassroomLayoutStore } from '../../stores/classroomLayoutStore'
 import { useRoomStore } from '../../stores/roomStore'
 import BoardDock from '../board/BoardDock.vue'
+import BoardToolbarVertical from '../board/BoardToolbarVertical.vue'
 import PageVerticalStack from './PageVerticalStack.vue'
-import TaskDock from './TaskDock.vue'
+import WhiteboardErrorState from './WhiteboardErrorState.vue'
 import type { WhiteboardPage } from '../../types/whiteboard'
 import type { RoomPermissions } from '../../api/classroom'
 
@@ -99,16 +105,14 @@ const boardDockRef = ref<InstanceType<typeof BoardDock> | null>(null)
 const isLoading = ref(true)
 const error = ref<string | null>(null)
 
-// v0.92.1: dev-only invariant - vertical layout тільки для dev workspace + feature flag
+// v0.94.0.1: vertical layout доступний для всіх workspace через feature flag
 const isDevWorkspace = computed(() => props.workspaceId.startsWith('dev-workspace-'))
 const verticalFlagEnabled = computed(() => import.meta.env.VITE_VERTICAL_LAYOUT === 'true')
 
 const useVerticalLayout = computed(() => {
-  // LAW-11 + LAW-13: vertical layout тільки якщо:
-  // 1) VITE_VERTICAL_LAYOUT === 'true'
-  // 2) workspaceId.startsWith('dev-workspace-')
-  // layoutStore.verticalLayoutEnabled НЕ може вмикати vertical для prod
-  return verticalFlagEnabled.value && isDevWorkspace.value
+  // P0.1: vertical layout контролюється тільки через VITE_VERTICAL_LAYOUT
+  // dev-workspace-* обмеження знято для productization
+  return verticalFlagEnabled.value
 })
 
 const pages = computed(() => whiteboardStore.pages)
@@ -118,14 +122,12 @@ const presenterPageId = computed(() => whiteboardStore.presenterPageId)
 const canDraw = computed(() => !props.readonly && props.permissions?.can_draw)
 const isSyncing = computed(() => whiteboardStore.status === 'saving')
 
-const taskDockVisible = computed(() => layoutStore.taskDockState !== 'hidden')
-const taskDockState = computed(() => layoutStore.taskDockState)
-const tasks = computed(() => [])
-
-// v0.93.0: Current tool state (можна розширити для реального tool picker)
-const currentTool = ref('pen')
-const currentColor = ref('#111111')
-const currentSize = ref(4)
+// P0.1: Tool state з whiteboardStore (store authority)
+const currentTool = computed(() => whiteboardStore.currentTool)
+const currentColor = computed(() => whiteboardStore.currentColor)
+const currentSize = computed(() => whiteboardStore.currentSize)
+const canUndo = computed(() => false) // TODO: implement undo/redo
+const canRedo = computed(() => false)
 
 const legacyBoardState = computed(() => ({
   strokes: whiteboardStore.currentPageData?.state?.strokes || [],
@@ -172,24 +174,28 @@ function handleBoardEvent(payload: any) {
   emit('event', payload)
 }
 
-function handleTaskDockToggle() {
-  layoutStore.toggleTaskDock()
+// P0.1: Tool event handlers (write to store)
+function handleToolChange(tool: string) {
+  whiteboardStore.setTool(tool as any)
 }
 
-function handleTaskDrop(taskId: string, pageId: string) {
-  console.log('Task dropped:', taskId, 'on page:', pageId)
+function handleColorChange(color: string) {
+  whiteboardStore.setColor(color)
 }
 
-// FE-92.1.3: Tripwire - сигнал тривоги якщо vertical увімкнувся для non-dev workspace
-watchEffect(() => {
-  if (useVerticalLayout.value && !isDevWorkspace.value) {
-    console.error('[WINTERBOARD] ILLEGAL_VERTICAL_LAYOUT_NON_DEV_WORKSPACE', {
-      workspaceId: props.workspaceId,
-      verticalFlagEnabled: verticalFlagEnabled.value,
-      isDevWorkspace: isDevWorkspace.value,
-    })
-  }
-})
+function handleSizeChange(size: number) {
+  whiteboardStore.setSize(size)
+}
+
+function handleUndo() {
+  // TODO: implement undo
+  console.log('[ClassroomWhiteboardHost] Undo not implemented')
+}
+
+function handleRedo() {
+  // TODO: implement redo
+  console.log('[ClassroomWhiteboardHost] Redo not implemented')
+}
 
 onMounted(() => {
   bootstrap()
@@ -210,8 +216,8 @@ onUnmounted(() => {
   background: var(--color-bg-primary, #ffffff);
 }
 
-/* v0.93.1: Split container for Board + Tasks layout */
-.whiteboard-host__split-container {
+/* v0.94.0.1: Vertical container for Toolbar + Board */
+.whiteboard-host__vertical-container {
   display: flex;
   flex-direction: row;
   width: 100%;

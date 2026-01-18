@@ -1,6 +1,6 @@
 <template>
   <div class="page-vertical-stack-container">
-    <!-- v0.93.1: Toolbar with Add Page button + Layout Mode Switcher (dev-only) -->
+    <!-- v0.93.1: Toolbar with Add Page button (dev-only) -->
     <div v-if="isDevWorkspace" class="page-stack-toolbar">
       <div class="toolbar-left">
         <button 
@@ -14,9 +14,6 @@
         </button>
         <span class="page-count">{{ pages.length }} pages</span>
       </div>
-      
-      <!-- FE-93.X.2: Layout Mode Switcher -->
-      <LayoutModeSwitcher />
     </div>
     
     <div class="page-vertical-stack" ref="stackRef">
@@ -67,7 +64,6 @@
 import { ref, computed, onMounted, onUnmounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useWhiteboardStore } from '../../stores/whiteboardStore'
 import BoardCanvas from '../board/BoardCanvas.vue'
-import LayoutModeSwitcher from './LayoutModeSwitcher.vue'
 import type { PageMetadata } from '@/core/whiteboard/adapters'
 
 // v0.93.0: Simple debounce implementation
@@ -115,10 +111,22 @@ const emit = defineEmits<{
 
 const whiteboardStore = useWhiteboardStore()
 
+// P0.1: Tool state з store (замість props)
+const tool = computed(() => whiteboardStore.currentTool)
+const color = computed(() => whiteboardStore.currentColor)
+const size = computed(() => whiteboardStore.currentSize)
+
 const stackRef = ref<HTMLElement | null>(null)
 const pageRefs = new Map<string, HTMLElement>()
 const visiblePages = ref<Set<string>>(new Set())
 let observer: IntersectionObserver | null = null
+
+// P0.3: Programmatic scroll guard для стабілізації IntersectionObserver
+const isProgrammaticScroll = ref(false)
+
+// P0.3: Scroll determinism - track last observed page for stabilization
+const lastObservedPageId = ref<string | null>(null)
+const observationConfirmTimer = ref<ReturnType<typeof setTimeout> | null>(null)
 
 // v0.93.0: Track which pages should render canvas (visible + neighbors)
 const canvasPages = computed(() => {
@@ -283,10 +291,30 @@ function setupIntersectionObserver() {
 
         if (entry.isIntersecting) {
           visiblePages.value.add(pageId)
-          // v0.93.0: LAW-04 - Active page визначається скролом
-          // Emit to store to set active page
-          whiteboardStore.setActivePageByScroll(pageId)
-          emit('pageVisible', pageId)
+          
+          // P0.3: Skip IntersectionObserver updates during programmatic scroll
+          if (isProgrammaticScroll.value) {
+            return
+          }
+          
+          // P0.3: Debounced stabilization - confirm page after 200ms
+          if (lastObservedPageId.value === pageId) {
+            // Same page observed twice - confirm immediately
+            whiteboardStore.setActivePageByScroll(pageId)
+            emit('pageVisible', pageId)
+          } else {
+            // New page - wait for confirmation
+            lastObservedPageId.value = pageId
+            if (observationConfirmTimer.value) {
+              clearTimeout(observationConfirmTimer.value)
+            }
+            observationConfirmTimer.value = setTimeout(() => {
+              if (lastObservedPageId.value === pageId) {
+                whiteboardStore.setActivePageByScroll(pageId)
+                emit('pageVisible', pageId)
+              }
+            }, 200)
+          }
         } else {
           visiblePages.value.delete(pageId)
         }
@@ -310,6 +338,9 @@ async function scrollToPage(pageId: string) {
 
   const t0 = performance.now()
   
+  // P0.4: Set programmatic scroll guard
+  isProgrammaticScroll.value = true
+  
   el.scrollIntoView({
     behavior: 'smooth',
     block: 'start'
@@ -319,6 +350,12 @@ async function scrollToPage(pageId: string) {
   await nextTick()
   const t1 = performance.now()
   const latency = t1 - t0
+  
+  // P0.3: Clear programmatic scroll guard after scroll settles
+  setTimeout(() => {
+    isProgrammaticScroll.value = false
+    lastObservedPageId.value = null
+  }, 600)
   
   // Check desync after 300ms
   setTimeout(() => {
@@ -353,9 +390,40 @@ watch(() => props.pages.length, () => {
   })
 })
 
+// P0.7: Debug counters for lazy rendering (LAW-07)
+declare global {
+  interface Window {
+    __WINTERBOARD_DEBUG__?: {
+      mountedCanvasesCount: number
+      activeObserversCount: number
+    }
+  }
+}
+
+if (typeof window !== 'undefined' && import.meta.env.DEV) {
+  if (!window.__WINTERBOARD_DEBUG__) {
+    window.__WINTERBOARD_DEBUG__ = {
+      mountedCanvasesCount: 0,
+      activeObserversCount: 0,
+    }
+  }
+}
+
+function updateDebugCounters() {
+  if (typeof window !== 'undefined' && import.meta.env.DEV && window.__WINTERBOARD_DEBUG__) {
+    window.__WINTERBOARD_DEBUG__.mountedCanvasesCount = canvasPages.value.size
+    window.__WINTERBOARD_DEBUG__.activeObserversCount = observer ? 1 : 0
+  }
+}
+
+watch(canvasPages, () => {
+  updateDebugCounters()
+})
+
 onMounted(() => {
   nextTick(() => {
     setupIntersectionObserver()
+    updateDebugCounters()
   })
 })
 
@@ -375,16 +443,27 @@ onBeforeUnmount(() => {
 })
 
 onUnmounted(() => {
+  // P0.7: Cleanup observers and listeners (LAW-07)
   if (observer) {
     observer.disconnect()
     observer = null
   }
   pageRefs.clear()
   
+  // P0.0.3: Cleanup observation confirmation timer
+  if (observationConfirmTimer.value) {
+    clearTimeout(observationConfirmTimer.value)
+    observationConfirmTimer.value = null
+  }
+  lastObservedPageId.value = null
+  
   // Cleanup event listeners
   if (typeof window !== 'undefined') {
     window.removeEventListener('beforeunload', forceFlushAutosave)
   }
+  
+  // Update debug counters
+  updateDebugCounters()
 })
 </script>
 
