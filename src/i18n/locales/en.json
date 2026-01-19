@@ -3720,7 +3720,22 @@
       "viewPlans": "Переглянути плани"
     },
     "checkout": {
-      "agreement": "Натискаючи кнопку оплати, ви погоджуєтесь з:"
+      "agreement": "Натискаючи кнопку оплати, ви погоджуєтесь з:",
+      "locked": {
+        "title": "Checkout locked",
+        "message": "We are already processing your previous request. Please wait for it to finish or refresh the status.",
+        "plan": "Plan",
+        "orderId": "Order ID",
+        "pendingSince": "Pending since",
+        "age": "Duration",
+        "refresh": "Refresh status",
+        "close": "Close"
+      }
+    },
+    "period": {
+      "label": "Billing period",
+      "remaining": "Remaining",
+      "days": "days"
     },
     "history": "Історія платежів",
     "historyComingSoon": "Історія платежів скоро буде доступна",
