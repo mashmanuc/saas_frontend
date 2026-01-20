@@ -5,12 +5,19 @@ import { ref, nextTick } from 'vue'
 const patchesRef = ref<any[]>([])
 const mockApplyPatches = vi.fn()
 const mockClearAllPatches = vi.fn()
+const mockConfirm = vi.fn()
 
 vi.mock('@/modules/booking/stores/draftStore', () => ({
   useDraftStore: () => ({
     getAllPatches: () => patchesRef.value,
     applyPatches: mockApplyPatches,
     clearAllPatches: mockClearAllPatches,
+  })
+}))
+
+vi.mock('@/composables/useConfirm', () => ({
+  useConfirm: () => ({
+    confirm: mockConfirm,
   })
 }))
 
@@ -21,6 +28,7 @@ describe('DraftToolbar', () => {
     patchesRef.value = []
     mockApplyPatches.mockReset()
     mockClearAllPatches.mockReset()
+    mockConfirm.mockReset()
   })
 
   afterEach(() => {
@@ -51,13 +59,14 @@ describe('DraftToolbar', () => {
 
   it('resets patches when reset confirmed', async () => {
     patchesRef.value = [{ id: 1 }]
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    mockConfirm.mockResolvedValue(true)
     const wrapper = mount(DraftToolbar)
 
     const resetButton = wrapper.get('button.btn.btn-secondary')
     await resetButton.trigger('click')
+    await nextTick()
 
-    expect(confirmSpy).toHaveBeenCalled()
+    expect(mockConfirm).toHaveBeenCalledWith('Clear all changes?')
     expect(mockClearAllPatches).toHaveBeenCalled()
   })
 })

@@ -61,7 +61,7 @@ const wsUrl = `${protocol}//${host}/ws/calendar/?token=${encodeURIComponent(toke
 
 **Потенційні причини:**
 1. Trial request API не створює booking record
-2. Booking не потрапляє у pending list для тьютора
+2. Booking не потрапляє у pending list длЯ репетитора
 3. Відсутня нотифікація/WebSocket event
 
 **Виправлення:** Перевірити повний flow:

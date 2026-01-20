@@ -43,7 +43,7 @@
 
 ### FE-7 до FE-10: Booking Requests Flow (Дні 13-20)
 - ✅ StudentRequestModal для студентів
-- ✅ TutorRequestActions для тьюторів
+- ✅ TutorRequestActions длЯ репетиторів
 - ✅ RequestNotifications з real-time updates
 - ✅ Повний flow: створення → прийняття → урок
 

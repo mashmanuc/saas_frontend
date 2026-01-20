@@ -369,7 +369,14 @@
       "resendVerifyCta": "Resend verification email",
       "noAccount": "Don't have an account?",
       "registerLink": "Register",
-      "webauthn": {}
+      "webauthn": {},
+      "errors": {
+        "invalidCredentials": "Invalid email or password.",
+        "rateLimited": "Too many attempts. Please try again later.",
+        "requiredEmail": "Email is required.",
+        "requiredPassword": "Password is required.",
+        "unknown": "Unable to sign in. Please try again."
+      }
     },
     "register": {
       "title": "Register",
@@ -3720,7 +3727,22 @@
       "viewPlans": "Переглянути плани"
     },
     "checkout": {
-      "agreement": "Натискаючи кнопку оплати, ви погоджуєтесь з:"
+      "agreement": "Натискаючи кнопку оплати, ви погоджуєтесь з:",
+      "locked": {
+        "title": "Checkout locked",
+        "message": "We are already processing your previous request. Please wait for it to finish or refresh the status.",
+        "plan": "Plan",
+        "orderId": "Order ID",
+        "pendingSince": "Pending since",
+        "age": "Duration",
+        "refresh": "Refresh status",
+        "close": "Close"
+      }
+    },
+    "period": {
+      "label": "Billing period",
+      "remaining": "Remaining",
+      "days": "days"
     },
     "history": "Історія платежів",
     "historyComingSoon": "Історія платежів скоро буде доступна",

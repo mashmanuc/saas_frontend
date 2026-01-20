@@ -81,7 +81,7 @@
 
 **Реалізовано:**
 - Popover з вибором посилань:
-  - **Primary link** (основне посилання тьютора)
+  - **Primary link** (основне посиланнЯ репетитора)
   - **Backup link** (резервне посилання)
   - **Platform room** (кімната платформи)
 - Безпечне відкриття посилань: `window.open(url, '_blank', 'noopener,noreferrer')`

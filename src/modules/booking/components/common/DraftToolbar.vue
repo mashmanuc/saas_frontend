@@ -35,8 +35,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useDraftStore } from '@/modules/booking/stores/draftStore'
+import { useConfirm } from '@/composables/useConfirm'
 
 const draftStore = useDraftStore()
+const confirmService = useConfirm()
 const isApplying = ref(false)
 
 const patchCount = computed(() => {
@@ -67,8 +69,9 @@ async function handleApply() {
   }
 }
 
-function handleReset() {
-  if (confirm('Clear all changes?')) {
+async function handleReset() {
+  const confirmed = await confirmService.confirm('Clear all changes?')
+  if (confirmed) {
     draftStore.clearAllPatches()
     // Info notification would go here
     console.log('Changes cleared')

@@ -55,6 +55,15 @@
         <span v-if="auth.loading">{{ $t('auth.login.loading') }}</span>
         <span v-else>{{ $t('auth.login.submit') }}</span>
       </Button>
+
+      <p
+        v-if="inlineErrorMessage"
+        class="text-sm"
+        style="color: var(--danger, #d92d20);"
+        data-testid="login-inline-error"
+      >
+        {{ inlineErrorMessage }}
+      </p>
     </form>
 
     <form v-else class="space-y-4" @submit.prevent="onSubmitOtp">
@@ -119,6 +128,7 @@
 <script setup>
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../store/authStore'
 import Button from '../../../ui/Button.vue'
 import Card from '../../../ui/Card.vue'
@@ -130,6 +140,7 @@ import WebAuthnPrompt from '../components/WebAuthnPrompt.vue'
 const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
+const { t } = useI18n()
 
 const form = reactive({
   email: '',
@@ -140,18 +151,50 @@ const step = ref('password')
 const otp = ref('')
 const showWebAuthnPrompt = ref(false)
 
+// v0.82.0: Локальна валідація перед запитом
+const validationErrors = reactive({
+  email: '',
+  password: '',
+})
+
 const showResendVerify = computed(() => auth.lastErrorCode === 'email_not_verified' && Boolean(form.email))
+
+const modalSuppressedErrors = new Set([
+  'invalid_credentials',
+  'email_not_verified',
+  'rate_limited',
+])
+
+const inlineErrorMessage = computed(() => {
+  switch (auth.lastErrorCode) {
+    case 'invalid_credentials':
+      return t('auth.login.errors.invalidCredentials')
+    case 'rate_limited':
+      return t('auth.login.errors.rateLimited')
+    case 'email_not_verified':
+      return t('auth.login.errors.invalidCredentials')
+    default:
+      return auth.lastErrorCode ? t('auth.login.errors.unknown') : ''
+  }
+})
 
 const showErrorModal = ref(false)
 
 watch(
   () => [auth.error, auth.lastErrorCode],
   ([value, code]) => {
-    showErrorModal.value = Boolean(value) && code !== 'validation_failed' && code !== 'mfa_invalid_code' && code !== 'session_expired'
+    const suppressed = modalSuppressedErrors.has(code)
+    showErrorModal.value = Boolean(value) && code !== 'validation_failed' && code !== 'mfa_invalid_code' && code !== 'session_expired' && !suppressed
   }
 )
 
 function fieldError(field) {
+  // v0.82.0: Пріоритет локальної валідації над серверною
+  if (validationErrors[field]) {
+    return validationErrors[field]
+  }
+  
+  // Серверні помилки (якщо є)
   const map = auth.lastFieldMessages
   if (!map || typeof map !== 'object') return ''
   const list = map[field]
@@ -159,11 +202,40 @@ function fieldError(field) {
   return String(list[0])
 }
 
+function validateForm() {
+  // v0.82.0: Валідація перед запитом згідно з ТЗ
+  let isValid = true
+  
+  validationErrors.email = ''
+  validationErrors.password = ''
+  
+  if (!form.email || !form.email.trim()) {
+    validationErrors.email = t('auth.login.errors.requiredEmail')
+    isValid = false
+  }
+  
+  if (!form.password || !form.password.trim()) {
+    validationErrors.password = t('auth.login.errors.requiredPassword')
+    isValid = false
+  }
+  
+  return isValid
+}
+
 function goToCheckEmail() {
   router.push({ name: 'auth-check-email', query: { email: form.email } })
 }
 
 async function onSubmit() {
+  // v0.82.0: Валідація перед запитом
+  if (!validateForm()) {
+    return
+  }
+  
+  // Очищаємо локальні помилки валідації перед запитом
+  validationErrors.email = ''
+  validationErrors.password = ''
+  
   try {
     const res = await auth.login(form)
     if (res && typeof res === 'object' && res.webauthn_required) {
@@ -182,7 +254,8 @@ async function onSubmit() {
     const target = typeof redirect === 'string' && redirect ? redirect : getDefaultRouteForRole(user?.role)
     router.push(target)
   } catch (error) {
-    // помилка вже відображається через auth.error
+    // v0.82.0: Помилка вже відображається через auth.error
+    // auth.loading автоматично скидається в finally блоці authStore.login
   }
 }
 

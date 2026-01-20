@@ -198,7 +198,7 @@ async_to_sync(channel_layer.group_send)(
 
 3. **Нотифікації:**
    - Чи відправляється WebSocket event при новому trial request?
-   - Чи створюється notification для тьютора?
+   - Чи створюється notification длЯ репетитора?
 
 **Рекомендація:** Додати логування у trial request flow:
 ```python

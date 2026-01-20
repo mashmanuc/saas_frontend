@@ -110,7 +110,7 @@
 **Props**:
 - `isOpen: boolean` - стан відкриття модалу
 - `tutorId: string` - ID тьютора
-- `tutorName: string` - ім'я тьютора для відображення
+- `tutorName: string` - ім'Я репетитора для відображення
 
 **Events**:
 - `close` - закриття модалу

@@ -380,12 +380,13 @@ export const useAuthStore = defineStore('auth', {
       const status = error?.response?.status
       const data = error?.response?.data
 
-      const code = data && typeof data === 'object' ? data.code : null
+      // v0.82.0: Пріоритет data.error над data.code для login контракту
+      const errorCode = data && typeof data === 'object' ? (data.error || data.code) : null
 
       const requestId = data && typeof data === 'object' ? data.request_id : null
       this.lastRequestId = typeof requestId === 'string' ? requestId : null
 
-      const withRequestId = (msg) => (this.lastRequestId ? `${msg} (request_id: ${this.lastRequestId})` : msg)
+      const userMessage = (msg) => (typeof msg === 'string' ? msg : '')
 
       this.lastErrorCode = null
       this.lastFieldMessages = null
@@ -395,9 +396,9 @@ export const useAuthStore = defineStore('auth', {
         this.lastErrorCode = 'rate_limited'
         const retryAfter = error?.response?.headers?.['retry-after']
         if (retryAfter) {
-          this.error = withRequestId(`Забагато запитів. Спробуйте через ${retryAfter}с.`)
+          this.error = userMessage(`Забагато запитів. Спробуйте через ${retryAfter}с.`)
         } else {
-          this.error = withRequestId('Забагато запитів. Спробуйте пізніше.')
+          this.error = userMessage('Забагато запитів. Спробуйте пізніше.')
         }
         return
       }
@@ -405,7 +406,7 @@ export const useAuthStore = defineStore('auth', {
       if (status === 423) {
         this.lastErrorCode = 'account_locked'
         const message = data && typeof data === 'object' ? data.message : null
-        this.error = withRequestId(typeof message === 'string' && message.trim().length > 0 ? message : 'Акаунт тимчасово заблоковано.')
+        this.error = userMessage(typeof message === 'string' && message.trim().length > 0 ? message : 'Акаунт тимчасово заблоковано.')
         return
       }
 
@@ -415,41 +416,55 @@ export const useAuthStore = defineStore('auth', {
         const finalMessage = typeof message === 'string' && message.trim().length > 0
           ? message
           : 'Сесія підтвердження завершилась. Спробуйте увійти ще раз.'
-        this.lastFieldMessages = { otp: [withRequestId(finalMessage)] }
-        this.error = withRequestId(finalMessage)
+        this.lastFieldMessages = { otp: [userMessage(finalMessage)] }
+        this.error = userMessage(finalMessage)
         return
       }
 
       if (status === 401) {
+        // v0.82.0: Розпізнаємо конкретний код помилки з backend
+        if (errorCode === 'invalid_credentials') {
+          this.lastErrorCode = 'invalid_credentials'
+          const message = data && typeof data === 'object' ? data.message : null
+          this.error = userMessage(typeof message === 'string' && message.trim().length > 0 ? message : 'Невірні дані для входу.')
+          return
+        }
+        if (errorCode === 'email_not_verified') {
+          this.lastErrorCode = 'email_not_verified'
+          const message = data && typeof data === 'object' ? data.message : null
+          this.error = userMessage(typeof message === 'string' && message.trim().length > 0 ? message : 'Підтвердіть email для входу.')
+          return
+        }
+        // Fallback для інших 401
         this.lastErrorCode = 'invalid_credentials'
         const message = data && typeof data === 'object' ? data.message : null
-        this.error = withRequestId(typeof message === 'string' && message.trim().length > 0 ? message : 'Невірні дані для входу.')
+        this.error = userMessage(typeof message === 'string' && message.trim().length > 0 ? message : 'Невірні дані для входу.')
         return
       }
 
-      if (status === 422 && data && typeof data === 'object' && code === 'mfa_invalid_code') {
+      if (status === 422 && data && typeof data === 'object' && errorCode === 'mfa_invalid_code') {
         this.lastErrorCode = 'mfa_invalid_code'
         const message = typeof data.message === 'string' && data.message.trim().length > 0 ? data.message : 'Невірний код підтвердження.'
-        this.lastFieldMessages = { otp: [withRequestId(message)] }
-        this.error = withRequestId(message)
+        this.lastFieldMessages = { otp: [userMessage(message)] }
+        this.error = userMessage(message)
         return
       }
 
-      if (status === 422 && data && typeof data === 'object' && code === 'webauthn_invalid_assertion') {
+      if (status === 422 && data && typeof data === 'object' && errorCode === 'webauthn_invalid_assertion') {
         this.lastErrorCode = 'webauthn_invalid_assertion'
         const message = typeof data.message === 'string' && data.message.trim().length > 0 ? data.message : 'Невірний WebAuthn assertion.'
         this.error = withRequestId(message)
         return
       }
 
-      if (status === 410 && data && typeof data === 'object' && code === 'webauthn_challenge_expired') {
+      if (status === 410 && data && typeof data === 'object' && errorCode === 'webauthn_challenge_expired') {
         this.lastErrorCode = 'webauthn_challenge_expired'
         const message = typeof data.message === 'string' && data.message.trim().length > 0 ? data.message : 'WebAuthn challenge завершився.'
         this.error = withRequestId(message)
         return
       }
 
-      if (status === 401 && data && typeof data === 'object' && code === 'session_revoked') {
+      if (status === 401 && data && typeof data === 'object' && errorCode === 'session_revoked') {
         this.lastErrorCode = 'session_revoked'
         this.sessionRevokedRequestId = data.request_id || ''
         const message = typeof data.message === 'string' && data.message.trim().length > 0 ? data.message : 'Сесію відкликано.'
@@ -472,13 +487,13 @@ export const useAuthStore = defineStore('auth', {
           const firstKey = Object.keys(fieldMessages)[0]
           const firstVal = firstKey ? fieldMessages[firstKey] : null
           if (Array.isArray(firstVal) && firstVal.length) {
-            this.error = withRequestId(String(firstVal[0]))
+            this.error = userMessage(String(firstVal[0]))
             return
           }
         }
 
         if (summary && summary.length > 0) {
-          this.error = withRequestId(String(summary[0]))
+          this.error = userMessage(String(summary[0]))
           return
         }
 

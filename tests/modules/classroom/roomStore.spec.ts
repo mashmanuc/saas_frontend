@@ -15,16 +15,24 @@ vi.mock('@/modules/classroom/api/classroom', () => ({
 }))
 
 // Mock RoomEngine
-vi.mock('@/modules/classroom/engine/roomEngine', () => ({
-  RoomEngine: vi.fn().mockImplementation(() => ({
-    connect: vi.fn().mockResolvedValue(undefined),
-    disconnect: vi.fn().mockResolvedValue(undefined),
-    on: vi.fn(),
-    off: vi.fn(),
-    sendBoardEvent: vi.fn().mockReturnValue(true),
-    terminate: vi.fn().mockResolvedValue(undefined),
-  })),
-}))
+vi.mock('@/modules/classroom/engine/roomEngine', () => {
+  class MockRoomEngine {
+    connect = vi.fn().mockResolvedValue(undefined)
+    disconnect = vi.fn().mockResolvedValue(undefined)
+    on = vi.fn()
+    off = vi.fn()
+    sendBoardEvent = vi.fn().mockReturnValue(true)
+    terminate = vi.fn().mockResolvedValue(undefined)
+    
+    constructor(config: any) {
+      // Mock constructor
+    }
+  }
+  
+  return {
+    RoomEngine: MockRoomEngine,
+  }
+})
 
 describe('roomStore', () => {
   beforeEach(() => {
