@@ -139,7 +139,8 @@ async function handleUnpublish() {
       <LoadingSpinner v-if="isLoadingMyProfile" />
 
       <template v-else>
-        <div v-if="error" class="error-banner" data-test="marketplace-profile-error">
+        <!-- v0.83.0: Don't show error banner for profile_missing - show CreateProfilePrompt instead -->
+        <div v-if="error && error.trim()" class="error-banner" data-test="marketplace-profile-error">
           {{ error }}
         </div>
 
@@ -176,6 +177,7 @@ async function handleUnpublish() {
           @save="handleSave"
           @publish="handlePublish"
           @unpublish="handleUnpublish"
+          @reload="store.loadMyProfile"
         />
 
         <CreateProfilePrompt v-else @create="handleCreate" />

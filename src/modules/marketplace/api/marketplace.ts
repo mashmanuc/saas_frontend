@@ -652,6 +652,15 @@ export const marketplaceApi = {
   },
 
   /**
+   * Create tutor profile (v0.83.0).
+   * POST /api/marketplace/profile/
+   */
+  async createTutorProfile(data: TutorProfileUpdate): Promise<TutorProfileFull> {
+    const response = await apiClient.post('/marketplace/profile/', data)
+    return response as unknown as TutorProfileFull
+  },
+
+  /**
    * Update tutor profile (v0.60.1 normalized format).
    * PUT /api/v1/tutors/me/profile/
    * @returns Profile update response with version

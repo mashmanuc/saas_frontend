@@ -742,10 +742,14 @@
       "submitForReview": "Failed to submit profile for review.",
       "publishProfile": "Failed to publish profile.",
       "unpublishProfile": "Failed to unpublish profile.",
+      "profileIncomplete": "Profile is incomplete. Please fill all required fields.",
+      "pendingReview": "Profile is pending review (usually within 24 hours).",
+      "profileSuspended": "Profile is suspended. Please contact administrator.",
+      "profileNotCreated": "Profile not created yet.",
       "limitExceeded": "Limit {type} exceeded ({used}/{max}). Resets {resetDate}",
       "notFound": "Not found",
       "unknown": "Unknown error",
-      "validationFailed": "Помилка валідації"
+      "validationFailed": "Validation error"
     },
     "profile": {
       "title": "Tutor profile",

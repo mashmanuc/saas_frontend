@@ -110,6 +110,12 @@ Last-Updated: 2025-12-31
 - ⚠️ 11 порожніх значень (template placeholders — це норма, використовуються динамічно)
 - ⚠️ 548 unused keys в uk.json (більшість — placeholders, features, statuses для динамічного використання)
 
+**Оновлення стану (2026-01-20)**
+- 🔄 Відновлено критичні білінгові ключі `billing.checkout.locked.*`, `billing.period.*` після відкату гілки (uk/en синхронізовано згідно MANIFEST)
+- 🔄 Додано відсутні `auth.login.errors.*` в `en.json` (invalidCredentials, rateLimited, requiredEmail, requiredPassword, unknown)
+- ✅ `pnpm i18n:check --report` зелений (2818 keys, 0 missing/extra, 11 очікуваних empty placeholders, 548 класифікованих unused)
+- 📝 План наступних кроків: аудит unused keys (calendar/booking/classroom), документування empty placeholders, ревʼю CI/cron прапорів
+
 **Етап 4: Інструмент «Missing translations»**
 - [x] Backend endpoint `/v1/i18n/translations/missing/{locale}/` (вже реалізовано в `apps/i18n/api/views.py`)
 - [x] Frontend admin UI `I18nMissingTranslations.vue` (вже реалізовано з фільтрами, пагінацією, експортом CSV)

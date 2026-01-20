@@ -103,7 +103,9 @@ m3@gmail.com
 demo1234
 сервери запещені
 
-PS D:\m4sh_v1\frontend> npm run dev -- --host 127.0.0.1 --port 5173
+PS D:\m4sh_v1\frontend> 
+
+python -m celery -A config worker --pool=solo --loglevel=info
 
 > frontend@0.0.0 dev
 > vite --host 127.0.0.1 --port 5173

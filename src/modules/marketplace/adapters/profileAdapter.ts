@@ -162,8 +162,8 @@ export function buildTutorProfileUpdate(model: TutorProfileFormModel): TutorProf
 export function debugPayload(payload: TutorProfileUpdate, label = 'TutorProfileUpdate'): void {
   if (import.meta.env.DEV) {
     console.group(`[ProfileAdapter] ${label}`)
-    console.log('bio:', payload.bio?.substring(0, 50) + '...')
-    console.log('headline:', payload.headline)
+    console.log('bio:', payload.bio ? payload.bio.substring(0, 50) + '...' : '(empty)')
+    console.log('headline:', payload.headline || '(empty)')
     console.log('subjects:', payload.subjects?.length ?? 0, payload.subjects ?? [])
     console.log('languages:', payload.languages?.length ?? 0, payload.languages ?? [])
     console.log('experience_years:', payload.experience_years)

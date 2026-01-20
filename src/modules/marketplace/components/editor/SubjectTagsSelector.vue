@@ -35,6 +35,38 @@ const isUpdatingFromProps = ref(false)
 
 const TAG_GROUPS: TagGroup[] = ['grades', 'exams', 'levels', 'goals', 'formats', 'audience']
 
+// v0.83.0: Fallback subjects when API doesn't return data
+const FALLBACK_SUBJECTS = [
+  { code: 'mathematics', title: '' },
+  { code: 'physics', title: '' },
+  { code: 'chemistry', title: '' },
+  { code: 'biology', title: '' },
+  { code: 'english', title: '' },
+  { code: 'ukrainian', title: '' },
+  { code: 'german', title: '' },
+  { code: 'french', title: '' },
+  { code: 'spanish', title: '' },
+  { code: 'polish', title: '' },
+  { code: 'chinese', title: '' },
+  { code: 'japanese', title: '' },
+  { code: 'computer-science', title: '' },
+  { code: 'business-english', title: '' },
+  { code: 'marketing', title: '' },
+  { code: 'finance', title: '' },
+  { code: 'management', title: '' },
+  { code: 'piano', title: '' },
+  { code: 'guitar', title: '' },
+  { code: 'drawing', title: '' },
+  { code: 'photography', title: '' },
+  { code: 'ielts', title: '' },
+  { code: 'toefl', title: '' },
+  { code: 'sat', title: '' },
+  { code: 'gre', title: '' },
+].map(s => ({
+  code: s.code,
+  title: t(`marketplace.subjects.${s.code}`, s.code),
+}))
+
 onMounted(async () => {
   await Promise.all([loadSubjects(), loadTags()])
 })
@@ -66,9 +98,18 @@ watch(
   { deep: true }
 )
 
+// v0.83.1: Merge API subjects with fallback for complete list
 const availableSubjects = computed(() => {
   const selectedCodes = new Set(localSubjects.value.map((s) => s.code))
-  return subjects.value.filter((s) => !selectedCodes.has(s.code))
+  
+  // Merge API subjects with fallback, API takes precedence
+  const apiCodes = new Set(subjects.value.map(s => s.code))
+  const merged = [
+    ...subjects.value,
+    ...FALLBACK_SUBJECTS.filter(f => !apiCodes.has(f.code))
+  ]
+  
+  return merged.filter((s) => !selectedCodes.has(s.code))
 })
 
 function addSubject() {
@@ -104,7 +145,10 @@ function isExpanded(code: string): boolean {
 
 function getSubjectTitle(code: string): string {
   const subject = subjects.value.find((s) => s.code === code)
-  return subject?.title || code
+  if (subject?.title) return subject.title
+  // v0.83.0: Try i18n fallback
+  const i18nTitle = t(`marketplace.subjects.${code}`, code)
+  return i18nTitle !== code ? i18nTitle : code
 }
 
 function getTagLabel(code: string): string {

@@ -21,8 +21,11 @@ import marketplaceApi, {
 } from '../api/marketplace'
 import { debugPayload } from '../adapters/profileAdapter'
 import { notifyError } from '@/utils/notify'
+import { useAuthStore } from '@/stores/authStore'
 
 export const useMarketplaceStore = defineStore('marketplace', () => {
+  const authStore = useAuthStore()
+  
   // Catalog state
   const tutors = ref<TutorListItem[]>([])
   const totalCount = ref(0)
@@ -81,7 +84,9 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
 
     if (!profile) return missing
 
-    if (!profile.media?.photo_url) {
+    // v0.83.0: Check both profile photo and user avatar
+    const hasPhoto = profile.media?.photo_url || authStore.user?.avatar_url
+    if (!hasPhoto) {
       missing.push(t('marketplace.profile.editor.photoTitle'))
     }
 
@@ -217,15 +222,38 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
   async function loadMyProfile(): Promise<void> {
     isLoadingMyProfile.value = true
     error.value = null
+    validationErrors.value = null
 
     try {
       // v0.60.1: Use new endpoint getTutorMeProfile
-      const profile = await marketplaceApi.getTutorMeProfile()
+      const response = await marketplaceApi.getTutorMeProfile()
+      
+      // v0.83.0: Handle explicit "missing" status from backend
+      if (response && typeof response === 'object' && 'status' in response) {
+        if (response.status === 'missing') {
+          // Profile not created yet - this is expected for new tutors
+          myProfile.value = null
+          // Don't set error - this is a valid onboarding state
+          return
+        }
+      }
+      
       // Convert TutorProfileFull to legacy TutorProfile format for compatibility
-      myProfile.value = profile as any
+      myProfile.value = response as any
     } catch (err) {
-      // Profile doesn't exist yet - this is OK
+      const apiError = parseMarketplaceApiError(err)
+      
+      // v0.83.0: Profile missing is not an error during onboarding
+      if (apiError.code === 'profile_missing' || apiError.code === 'not_found') {
+        myProfile.value = null
+        // Don't set error - show create prompt instead
+        return
+      }
+      
+      // Real errors (403 forbidden, 500 server error, etc.)
+      error.value = mapApiError(err, t('marketplace.errors.loadProfile'))
       myProfile.value = null
+      console.error('[MarketplaceStore] loadMyProfile error:', err)
     } finally {
       isLoadingMyProfile.value = false
     }
@@ -241,8 +269,8 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
       if (import.meta.env.DEV) {
         debugPayload(data as TutorProfileUpdate, 'marketplaceStore.createProfile')
       }
-      await marketplaceApi.updateTutorMeProfile(data as TutorProfileUpdate)
-      myProfile.value = await marketplaceApi.getTutorMeProfile()
+      // v0.83.0: Use POST /marketplace/profile/ for creating new profile
+      myProfile.value = await marketplaceApi.createTutorProfile(data as TutorProfileUpdate)
     } catch (err) {
       setValidationErrorsFromApi(err)
       error.value = mapApiError(err, t('marketplace.errors.createProfile'))

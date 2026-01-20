@@ -205,6 +205,9 @@ async function handleAvatarSelected(e: Event) {
     }
 
     notifySuccess(t('profile.messages.avatarUpdateSuccess'))
+    
+    // v0.83.0: Reload profile to update validation banner and UI
+    emit('reload')
   } catch (error) {
     notifyError(t('profile.messages.avatarUpdateError'))
     throw error
@@ -217,6 +220,7 @@ const emit = defineEmits<{
   (e: 'save', data: TutorProfilePatchPayload): void
   (e: 'publish'): void
   (e: 'unpublish'): void
+  (e: 'reload'): void
 }>()
 
 function handlePublishToggle(event: Event) {
@@ -413,18 +417,26 @@ function discardLocalDraft(): void {
 
 const isUpdatingFromProps = ref(false)
 
-const debouncedAutosave = debounce(() => {
+const debouncedAutosave = debounce(async () => {
   if (props.saving || isUpdatingFromProps.value) return
   autosaveStatus.value = 'saving'
   try {
     const payload = buildPayloadFromForm()
     writeLocalDraft(payload)
+    
+    // v0.83.2: Auto-save to server, not just localStorage
+    const apiPayload = getSubmitPayload()
+    if (apiPayload) {
+      emit('save', apiPayload as any)
+      lastAutosavedAt.value = Date.now()
+    }
+    
     autosaveStatus.value = 'saved'
   } catch (err) {
     console.error('[ProfileEditor] Autosave error:', err)
     autosaveStatus.value = 'idle'
   }
-}, 800) as ((...args: any[]) => void) & { cancel?: () => void }
+}, 2000) as ((...args: any[]) => void) & { cancel?: () => void }
 
 onBeforeUnmount(() => {
   debouncedAutosave.cancel?.()
@@ -455,7 +467,8 @@ watch(
     setTimeout(() => {
       isUpdatingFromProps.value = false
     }, 0)
-  }
+  },
+  { deep: true, immediate: true }
 )
 
 watch(
@@ -886,6 +899,12 @@ const publishMissingItems = computed(() => {
           :placeholder="t('marketplace.profile.editor.bioPlaceholder')"
           data-test="marketplace-editor-bio"
         />
+        <span class="hint">
+          {{ t('marketplace.profile.editor.bioHint') }}
+          <span v-if="formData.bio" :class="{ 'text-success': formData.bio.length >= 10, 'text-muted': formData.bio.length < 10 }">
+            ({{ formData.bio.length }}/10 мін.)
+          </span>
+        </span>
         <div v-if="errors.bio" class="field-error" data-test="marketplace-editor-error-bio">
           {{ errors.bio }}
         </div>
@@ -929,7 +948,7 @@ const publishMissingItems = computed(() => {
 
       <div class="form-row">
         <div class="form-group">
-          <label>{{ t('marketplace.profile.editor.subjectsLabel') }}</label>
+          <label>{{ t('marketplace.profile.editor.subjectsLabel') }} <span class="required-mark">*</span></label>
           
           <SubjectTagsSelector
             v-model="formData.subjects"
@@ -940,7 +959,7 @@ const publishMissingItems = computed(() => {
         </div>
 
         <div class="form-group">
-          <label>{{ t('marketplace.profile.editor.languagesLabel') }}</label>
+          <label>{{ t('marketplace.profile.editor.languagesLabel') }} <span class="required-mark">*</span></label>
 
           <div class="list-editor" data-test="marketplace-editor-languages">
             <div class="list-editor-row">
@@ -986,7 +1005,7 @@ const publishMissingItems = computed(() => {
 
       <div class="form-row">
         <div class="form-group">
-          <label for="hourly_rate">{{ t('marketplace.profile.editor.hourlyRateLabel') }}</label>
+          <label for="hourly_rate">{{ t('marketplace.profile.editor.hourlyRateLabel') }} <span class="required-mark">*</span></label>
           <div class="input-with-addon">
             <input
               id="hourly_rate"
@@ -994,12 +1013,14 @@ const publishMissingItems = computed(() => {
               type="number"
               min="0"
               step="1"
+              :placeholder="t('marketplace.profile.editor.hourlyRatePlaceholder')"
               data-test="marketplace-editor-hourly-rate"
             />
             <select v-model="formData.currency" data-test="marketplace-editor-currency">
               <option v-for="c in currencies" :key="c" :value="c">{{ c }}</option>
             </select>
           </div>
+          <span class="hint">{{ t('marketplace.profile.editor.hourlyRateHint') }}</span>
           <div v-if="errors.hourly_rate" class="field-error" data-test="marketplace-editor-error-hourly-rate">
             {{ errors.hourly_rate }}
           </div>
@@ -1247,6 +1268,19 @@ const publishMissingItems = computed(() => {
   font-size: 0.75rem;
   color: var(--text-muted);
   margin-top: 0.25rem;
+}
+
+.required-mark {
+  color: var(--danger);
+  font-weight: bold;
+}
+
+.text-success {
+  color: var(--success);
+}
+
+.text-muted {
+  color: var(--text-muted);
 }
 
 .field-error {

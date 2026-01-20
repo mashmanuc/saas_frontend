@@ -44,6 +44,22 @@ export function mapMarketplaceErrorToMessage(info: MarketplaceApiErrorInfo, fall
     }
   }
 
+  // v0.83.0: Onboarding-specific error codes
+  if (info.code === 'profile_missing' || info.code === 'profile_not_created') {
+    // Don't show error banner - show create prompt instead
+    return ''
+  }
+  if (info.code === 'profile_incomplete') {
+    return t('marketplace.errors.profileIncomplete')
+  }
+  if (info.code === 'pending_review') {
+    return t('marketplace.errors.pendingReview')
+  }
+  if (info.code === 'profile_suspended') {
+    return t('marketplace.errors.profileSuspended')
+  }
+
+  // Existing error codes
   if (info.status === 422 || info.code === 'validation_failed') {
     return t('marketplace.errors.validation')
   }
