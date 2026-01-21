@@ -183,17 +183,17 @@
       "label": "Sections",
       "ariaLabel": "Component playground navigation",
       "controls": "Controls",
-      "controlsHint": "Buttons, inputs, selectors",
+      "controlsHint": "Buttons, inputs, selects",
       "feedback": "Feedback",
       "feedbackHint": "Alerts, badges, empty states",
       "tables": "Tables",
-      "tablesHint": "Layouts & contrast",
+      "tablesHint": "Layouts and contrast",
       "tokens": "Tokens",
       "tokensHint": "Live CSS variables",
       "notifications": "Notifications",
-      "notificationsHint": "Notifications Hint"
+      "notificationsHint": "Notification tooltip"
     },
-    "subtitle": "Visually QA every theme variant, state, and token before promoting a release.",
+    "subtitle": "Review every theme, state and token before release.",
     "themeSwitcher": {
       "label": "Theme presets",
       "active": "Active:"
@@ -203,22 +203,22 @@
       "dark": {},
       "classic": {},
       "${value}": {
-        "description": "",
-        "label": "{value}"
+        "label": "{value}",
+        "description": "{value}"
       }
     },
     "themeMeta": {
       "light": {
         "title": "Light",
-        "subtitle": "Primary production theme"
+        "subtitle": "Production default theme"
       },
       "dark": {
         "title": "Dark",
-        "subtitle": "High-contrast immersive mode"
+        "subtitle": "High contrast immersive mode"
       },
       "classic": {
         "title": "Classic",
-        "subtitle": "Purple heritage kit"
+        "subtitle": "Legacy purple kit"
       }
     },
     "sections": {
@@ -226,8 +226,8 @@
       "inputs": "Inputs & selects",
       "badges": "Badges & alerts",
       "modal": "Modal",
-      "modalDescription": "Dialog layout, focus trap, and form preview.",
-      "table": "Table sample"
+      "modalDescription": "Dialog, focus and forms evaluation.",
+      "table": "Table example"
     },
     "buttons": {
       "primary": "Primary",
@@ -239,14 +239,14 @@
       "disabled": "Disabled"
     },
     "inputs": {
-      "normalLabel": "Default input",
-      "normalPlaceholder": "Type something…",
-      "errorLabel": "Error state",
-      "errorMessage": "Please fix validation issues.",
+      "normalLabel": "Standard input",
+      "normalPlaceholder": "Type text…",
+      "errorLabel": "Validation error",
+      "errorMessage": "Fix errors before submitting.",
       "successLabel": "Success state",
       "successHelp": "Synced value: {value}",
-      "selectLabel": "Select variant",
-      "selectPlaceholder": "Pick a colorway",
+      "selectLabel": "Select option",
+      "selectPlaceholder": "Pick palette",
       "selectOptions": {
         "emerald": "Emerald",
         "cyan": "Cyan",
@@ -262,16 +262,16 @@
     },
     "alerts": {
       "success": {
-        "title": "Tokens synced",
-        "body": "Design tokens match specs across all modes."
+        "title": "Tokens synchronized",
+        "body": "Current values match design spec."
       },
       "warning": {
-        "title": "API delay detected",
-        "body": "Latency is above threshold. Re-run checks."
+        "title": "API delay",
+        "body": "Delay exceeds threshold — refresh data."
       },
       "danger": {
         "title": "Critical regression",
-        "body": "Current theme differs from release baseline."
+        "body": "Theme differs from release baseline."
       }
     },
     "actions": {
@@ -280,7 +280,7 @@
       "save": "Save draft"
     },
     "modal": {
-      "title": "Create showcase card",
+      "title": "Create demo card",
       "fields": {
         "title": "Title",
         "subtitle": "Subtitle"
@@ -298,45 +298,45 @@
           "component": "Button / Primary",
           "state": "Hover",
           "contrast": "AA+",
-          "notes": "Verify glow intensity in dark mode."
+          "notes": "Check glow in dark-mode."
         },
         "inputs": {
           "component": "Input / Outline",
           "state": "Error",
           "contrast": "AA",
-          "notes": "Finalize danger tint for WCAG."
+          "notes": "Align red shade per WCAG."
         },
         "badges": {
           "component": "Badge",
           "state": "Muted",
           "contrast": "AA-",
-          "notes": "Increase text opacity for readability."
+          "notes": "Increase text opacity."
         }
       }
     },
     "liveTokens": {
       "title": "Live CSS tokens",
-      "subtitle": "Snapshot of values applied to :root."
+      "subtitle": "Values applied to :root."
     },
     "designTokens": {
       "title": "Design tokens",
-      "subtitle": "Reference list for QA & Percy diffs."
+      "subtitle": "Reference for QA and Percy screenshots."
     },
     "notifications": {
       "invalidJson": "Invalid JSON",
-      "jsonHint": "JSON Hint",
-      "jsonLabel": "JSON Label",
-      "logEmpty": "Log Empty",
-      "logPing": "Log Ping",
-      "logSubtitle": "Log Subtitle",
-      "logTitle": "Log Title",
-      "previewFallbackBody": "Preview Fallback Body",
-      "previewFallbackTitle": "Preview Fallback Title",
-      "previewTag": "Preview Tag",
-      "previewTone": "Preview Tone",
-      "pushButton": "Push",
-      "simulateOfflineOff": "Offline Simulation Off",
-      "simulateOfflineOn": "Offline Simulation On",
+      "jsonHint": "JSON hint",
+      "jsonLabel": "JSON label",
+      "logEmpty": "Log is empty",
+      "logPing": "Log ping",
+      "logSubtitle": "Log subtitle",
+      "logTitle": "Log title",
+      "previewFallbackBody": "Preview fallback body",
+      "previewFallbackTitle": "Preview fallback title",
+      "previewTag": "Preview tag",
+      "previewTone": "Preview tone",
+      "pushButton": "Send",
+      "simulateOfflineOff": "Offline simulation off",
+      "simulateOfflineOn": "Offline simulation on",
       "subtitle": "Subtitle",
       "title": "Notifications"
     }
@@ -567,6 +567,9 @@
       "verifiedOnly": "Verified only",
       "clearAll": "Clear all"
     },
+    "editor": {
+      "noTagsAvailable": "No tags available for this category"
+    },
     "tagGroups": {
       "grades": "Grades",
       "exams": "Exams",
@@ -578,6 +581,7 @@
       "${group}": "{group}"
     },
     "subjects": {
+      "title": "Subjects",
       "english": "English",
       "spanish": "Spanish",
       "french": "French",
@@ -603,7 +607,43 @@
       "toefl": "TOEFL",
       "sat": "SAT",
       "gre": "GRE",
-      "${code}": "{code}"
+      "${code}": "{code}",
+      "basicTitle": "Core subjects",
+      "basicSubjectsTitle": "Core subjects",
+      "basicSubjectsHint": "Select subjects you teach",
+      "languagesAsSubjectsTitle": "Languages for study",
+      "languagesAsSubjectsHint": "Select languages you teach as subjects for study (not teaching languages)",
+      "popularLanguagesTitle": "Popular languages",
+      "popularLanguagesHint": "Select languages to study",
+      "otherLanguagesTitle": "Other languages",
+      "selectedTitle": "Selected subjects",
+      "selectedHint": "Configure tags and description for each subject",
+      "emptyState": "Pick subjects from the list above",
+      "descriptionPlaceholder": "Describe how you teach this subject (0-800 characters)",
+      "tabs": {
+        "classes": "Classes",
+        "exams": "Exams",
+        "goals": "Goals",
+        "format": "Format",
+        "audience": "Audience",
+        "description": "Description"
+      }
+    },
+    "languages": {
+      "popularTitle": "Popular languages for study",
+      "otherTitle": "Other languages",
+      "searchPlaceholder": "Search language...",
+      "selectedTitle": "Selected languages",
+      "emptyState": "Pick languages from the list above",
+      "levelNotSet": "level not set",
+      "descriptionPlaceholder": "Describe how you teach this language (0-800 characters)",
+      "tabs": {
+        "level": "Level",
+        "format": "Format",
+        "goals": "Goals",
+        "audience": "Audience",
+        "description": "Description"
+      }
     },
     "countries": {
       "ukraine": "Ukraine",
@@ -768,7 +808,8 @@
         "subjectsRequired": "Please select at least one subject.",
         "subjectCodeRequired": "Please select a subject.",
         "customDirectionLength": "Teaching approach must be 50–800 characters.",
-        "languagesRequired": "Please select at least one language."
+        "languagesRequired": "Please select at least one language.",
+        "teachingLanguagesRequired": "Select at least one teaching language."
       },
       "stats": {
         "lessons": "lessons",
@@ -875,6 +916,7 @@
         "headlineLabel": "Headline",
         "headlinePlaceholder": "e.g. Experienced Math Tutor",
         "headlineHint": "A short tagline that describes you",
+        "bioHint": "A short preview shown to students before they open your profile",
         "bioLabel": "About me",
         "bioPlaceholder": "Tell students about yourself, your teaching style, and experience…",
         "countryLabel": "Country",
@@ -898,6 +940,8 @@
         "remove": "Remove",
         "pricingTitle": "Pricing",
         "hourlyRateLabel": "Hourly rate",
+        "hourlyRatePlaceholder": "e.g. 25",
+        "hourlyRateHint": "Students will see this rate. You can adjust it any time.",
         "trialPriceLabel": "Trial lesson price",
         "trialPricePlaceholder": "Leave empty for no trial",
         "trialPriceHint": "Optional discounted price for first lesson",
@@ -957,8 +1001,21 @@
           "bio": "Bio is required (min 10 characters).",
           "hourlyRate": "Hourly rate must be greater than 0.",
           "subjects": "Select at least one subject.",
-          "languages": "Select at least one language."
+          "languages": "Select at least one language.",
+          "teachingLanguages": "Select at least one teaching language."
         },
+        "teachingLanguagesLabel": "Teaching languages",
+        "addTeachingLanguage": "Add teaching language",
+        "yourTeachingLanguages": "Your teaching languages",
+        "noTeachingLanguages": "You haven't added any teaching languages",
+        "noTeachingLanguagesHint": "Add at least one language you teach in",
+        "teachingLanguagesAddHint": "Select languages you teach in and your proficiency level",
+        "levelFor": "Level for",
+        "selectLevel": "Select level",
+        "subjectsTitle": "Subjects",
+        "subjectsHint": "Select subjects you teach",
+        "teachingLanguagesTitle": "Teaching languages",
+        "teachingLanguagesHint": "Select languages you teach in",
         "languageLevels": {
           "basic": "Basic",
           "conversational": "Conversational",
@@ -1050,9 +1107,9 @@
         "warning": "This action cannot be undone."
       },
       "${action}": {
-        "description": "",
+        "description": "{action}",
         "title": "{action}",
-        "warning": ""
+        "warning": "{action}"
       }
     },
     "matches": {
@@ -1083,6 +1140,7 @@
     "cancel": "Cancel",
     "loading": "Loading...",
     "close": "Close",
+    "noResults": "No results",
     "back": "Back",
     "next": "Next",
     "clear": "Clear",
@@ -1106,6 +1164,7 @@
     "unlock": "Unlock",
     "moveUp": "Move up",
     "moveDown": "Move down",
+    "selected": "selected",
     "confirmDelete": "Are you sure you want to delete?",
     "confirm": "Confirm",
     "search": "Search",
@@ -1526,7 +1585,7 @@
             "title": "Ручний вибір"
           },
           "${strategy.name}": {
-            "title": ""
+            "title": "{strategy.name}"
           }
         }
       },
@@ -1545,298 +1604,43 @@
     "calendar": {
       "analytics": {
         "status": {
-          "${activity.status}": ""
+          "${activity.status}": "{activity.status}"
         }
       },
       "jobStatus": {
         "${currentJob.status}": {
-          "title": "",
-          "details": ""
+          "title": "{currentJob.status}",
+          "details": "{currentJob.status}"
         }
       }
     },
     "lessons": {
       "detail": {
         "roles": {
-          "${participant.role}": ""
+          "${participant.role}": "{participant.role}"
         }
       }
     },
     "collaboration": {
       "stats": {
-        "lastActivity": "Остання активність",
-        "lessonsCompleted": "Завершено уроків"
+        "lastActivity": "Last activity",
+        "lessonsCompleted": "Lessons completed"
       }
     },
     "emptyBoard": {
-      "message": "Почніть малювати, щоб поділитися пізніше",
-      "participantsLabel": "{count} у сесії",
-      "title": "Спільна дошка"
-    }
-  },
-  "profile": {
-    "title": "Profile",
-    "subtitle": "Keep your personal information up to date.",
-    "editButton": "Edit profile",
-    "settingsButton": "Account settings",
-    "security": {
-      "navLabel": "Security",
-      "title": "Security",
-      "subtitle": "Manage login protection and active sessions.",
-      "webauthn": {
-        "title": "WebAuthn / Security Keys",
-        "subtitle": "Use biometrics or hardware keys for login.",
-        "enrollCta": "Add security key",
-        "enrollSuccess": "Security key successfully added.",
-        "enrollError": "Failed to add security key.",
-        "credentialsList": "Registered keys",
-        "unknownDevice": "Unknown device",
-        "lastUsed": "Last used",
-        "remove": "Remove",
-        "removeConfirm": "Confirm Remove",
-        "removeError": "Remove Error",
-        "removeSuccess": "Successfully Removed"
-      },
-      "mfa": {
-        "title": "Two-factor authentication (MFA)",
-        "subtitle": "Add an extra layer of security to your account.",
-        "start": "Enable MFA",
-        "qrTitle": "Scan QR code",
-        "qrSubtitle": "Scan with your authenticator app to link MFA.",
-        "secretHintLabel": "Secret hint",
-        "backupCodesTitle": "Backup codes",
-        "backupCodesSubtitle": "Store these codes somewhere safe. Each code can be used once.",
-        "otpLabel": "Verification code",
-        "confirm": "Confirm",
-        "cancel": "Cancel",
-        "reset": "Start over",
-        "success": {
-          "enabled": "MFA has been enabled."
-        },
-        "errors": {
-          "setupFailed": "Failed to start MFA setup.",
-          "confirmFailed": "Failed to confirm MFA.",
-          "loadCodesFailed": "Failed to Load Codes",
-          "regenerateFailed": "Failed to Regenerate Codes"
-        },
-        "codesCopied": "Codes copied to clipboard",
-        "copyCodes": "Copy codes",
-        "downloadCodes": "Download codes",
-        "regenerateCodes": "Generate new codes",
-        "regenerateConfirm": "This will invalidate previous codes. Continue?",
-        "viewBackupCodes": "View backup codes"
-      },
-      "sessions": {
-        "title": "Active sessions",
-        "subtitle": "Review devices signed in to your account.",
-        "loading": "Loading sessions…",
-        "empty": "No active sessions.",
-        "current": "Current",
-        "unknownDevice": "Unknown device",
-        "ip": "IP",
-        "lastActive": "Last active",
-        "revoke": "Sign out",
-        "success": {
-          "revoked": "Session revoked."
-        },
-        "errors": {
-          "loadFailed": "Failed to load sessions.",
-          "revokeFailed": "Failed to revoke session.",
-          "currentForbidden": "You cannot revoke the current session.",
-          "notFound": "Session not found."
-        }
-      }
-    },
-    "editTitle": "Edit profile",
-    "editDescription": "Update your personal data and how students see you.",
-    "email": "Email",
-    "role": "Role",
-    "timezone": "Timezone",
-    "bio": "About",
-    "bioEmpty": "Add a short description about yourself.",
-    "headline": "Headline",
-    "subjectsTitle": "Subjects",
-    "subjectsEmpty": "Add the subjects you teach to highlight your expertise.",
-    "subjectsAddPlaceholder": "New subject",
-    "subjectsAddButton": "Add",
-    "accountSettingsTitle": "Account & preferences",
-    "accountSettingsDescription": "Language, privacy and notifications.",
-    "settingsPage": {
-      "title": "Profile settings",
-      "description": "Control timezone, interface language and privacy.",
-      "timezone": {
-        "title": "Timezone",
-        "subtitle": "Choose where your calendar is anchored."
-      },
-      "language": {
-        "label": "Interface language",
-        "subtitle": "Applies instantly across the app."
-      },
-      "preferences": {
-        "title": "Preferences",
-        "subtitle": "Notifications and public profile visibility."
-      },
-      "actions": {
-        "saveTimezone": "Save timezone",
-        "saving": "Saving..."
-      },
-      "notifications": {
-        "label": "Email notifications",
-        "subtitle": "Receive updates about lessons and invites."
-      },
-      "privacy": {
-        "label": "Public profile",
-        "subtitle": "Show your profile in tutor marketplace."
-      }
-    },
-    "form": {
-      "firstName": "First name",
-      "lastName": "Last name",
-      "timezone": "Timezone",
-      "bio": "About",
-      "bioPlaceholder": "Tell us about your teaching style, experience, or goals…",
-      "headline": "Headline",
-      "headlineHint": "A short tagline that students will see.",
-      "timezonePlaceholder": "Select timezone"
-    },
-    "actions": {
-      "save": "Save",
-      "saving": "Saving...",
-      "cancel": "Cancel",
-      "revert": "Revert"
-    },
-    "autosave": {
-      "saving": "Autosaving…",
-      "error": "Failed to save draft",
-      "clean": "No changes",
-      "unsaved": "Unsaved changes",
-      "savedAt": "Draft saved at {time}",
-      "restored": "Draft restored",
-      "rateLimited": "Too many requests. Please try later."
-    },
-    "draft": {
-      "loading": "Checking for a draft…",
-      "foundTitle": "Draft found",
-      "foundDescription": "Unsaved changes from {time} detected. Restore them or start over?",
-      "foundDescriptionNoTime": "Unsaved changes detected. Restore them or start over?",
-      "restore": "Restore",
-      "discard": "Discard draft",
-      "error": "Failed to fetch draft",
-      "discardError": "Failed to delete draft"
-    },
-    "messages": {
-      "loadError": "Failed to load profile",
-      "saveSuccess": "Profile saved",
-      "saveError": "Failed to save changes",
-      "avatarUpdateSuccess": "Photo updated.",
-      "avatarUpdateError": "Failed to update photo.",
-      "validationName": "Please enter at least 2 characters.",
-      "validationTimezone": "Select timezone.",
-      "avatarDeleteError": "Avatar Delete Error",
-      "avatarDeleteSuccess": "Avatar Successfully Deleted"
-    },
-    "avatar": {
-      "upload": "Upload",
-      "change": "Change",
-      "drop": "Drop here",
-      "uploading": "Updating…",
-      "update": "Update photo",
-      "remove": "Remove photo",
-      "hint": "Drag & drop or pick a file. Up to 5MB, JPG/PNG/WebP."
-    },
-    "editor": {
-      "education": {
-        "title": "Education",
-        "add": "Add Education",
-        "institution": "Institution",
-        "degree": "Degree",
-        "field": "Field",
-        "startYear": "Start Year",
-        "endYear": "End Year"
-      },
-      "languages": {
-        "title": "Languages",
-        "add": "Add Language",
-        "language": "Language",
-        "level": "Level"
-      },
-      "certifications": {
-        "title": "Certifications",
-        "add": "Add Certification",
-        "name": "Name",
-        "issuer": "Issuer",
-        "year": "Year"
-      },
-      "pricing": {
-        "title": "Pricing",
-        "hourlyRate": "Hourly Rate",
-        "trialRate": "Trial Lesson",
-        "packages": "Packages",
-        "lessons": "Lessons",
-        "price": "Price",
-        "discount": "Discount %"
-      }
-    },
-    "activity": {
-      "columns": {
-        "action": "Action",
-        "metadata": "Metadata",
-        "timestamp": "Time"
-      },
-      "empty": "Empty",
-      "endOfLog": "End of Log",
-      "eventsTitle": "Events",
-      "filters": {
-        "action": "Action",
-        "apply": "Apply",
-        "dateFrom": "Date From",
-        "dateTo": "Date To",
-        "entity": "Entity",
-        "reset": "Reset"
-      },
-      "hideMetadata": "Hide Metadata",
-      "loadMore": "Load More",
-      "loading": "Loading...",
-      "refresh": "Refresh",
-      "refreshing": "Refreshing...",
-      "showMetadata": "Show Metadata",
-      "subtitle": "Subtitle",
-      "title": "Activity"
+      "message": "Start drawing to share later",
+      "participantsLabel": "{count} in this session",
+      "title": "Shared board"
     }
   },
   "classroom": {
-    "realtime": {
-      "statusConnected": "Connected",
-      "statusConnecting": "Connecting…",
-      "statusDisconnected": "Disconnected",
-      "statusError": "Connection error",
-      "statusOffline": "No internet",
-      "gatewayUrl": "Gateway",
-      "rateLimitedTitle": "Too many requests",
-      "rateLimitedDescription": "Please wait before trying again.",
-      "rateLimitedRetryIn": "Retry in {time}",
-      "rateLimitedRetry": "Retry now"
-    },
-    "soloWorkspace": {
-      "untitled": "Untitled",
-      "clearConfirm": "Clear this page? This cannot be undone."
-    },
-    "solo": {
-      "mySessions": {},
-      "sharing": {
-        "education": {}
-      },
-      "export": {},
-      "assets": {},
-      "public": {}
-    },
     "board": {
-      "layers": "Layers",
-      "empty": "Empty",
-      "participantsLabel": "{count} in session",
-      "title": "Board",
       "${step.id}": "{step.id}",
-      "${steps[currentStep.value].id}Status": ""
+      "${steps[currentStep.value].id}Status": "{steps[currentStep.value].id}",
+      "title": "Board",
+      "participantsLabel": "{count} in session",
+      "empty": "Empty",
+      "layers": "Layers"
     },
     "tools": {
       "actions": "Actions",
@@ -1978,6 +1782,22 @@
       "poor": "Unstable connection",
       "${overallQuality}": "{overallQuality}",
       "${participant.connection_quality}": "{participant.connection_quality}"
+    },
+    "realtime": {
+      "gatewayUrl": "Gateway",
+      "rateLimitedDescription": "Please wait before trying again.",
+      "rateLimitedRetry": "Try again",
+      "rateLimitedRetryIn": "Try in {time}",
+      "rateLimitedTitle": "Too many requests",
+      "statusConnected": "Connected",
+      "statusConnecting": "Connecting…",
+      "statusDisconnected": "Disconnected",
+      "statusError": "Connection error",
+      "statusOffline": "No internet"
+    },
+    "soloWorkspace": {
+      "clearConfirm": "Clear page? This action cannot be undone.",
+      "untitled": "Untitled"
     }
   },
   "lessons": {
@@ -3189,7 +3009,7 @@
       "retryError": "Failed to retry generation. Please try again later.",
       "${currentJob.status}": {
         "title": "{currentJob.status}",
-        "details": ""
+        "details": "{currentJob.status}"
       }
     },
     "editor": {
@@ -3958,5 +3778,235 @@
       "lastUpdated": "Останнє оновлення: {date}",
       "title": "Угода користувача"
     }
+  },
+  "profile": {
+    "accountSettingsDescription": "Мова, приватність та сповіщення.",
+    "accountSettingsTitle": "Акаунт та вподобання",
+    "actions": {
+      "cancel": "Скасувати",
+      "revert": "Відкотити зміни",
+      "save": "Зберегти зміни",
+      "saving": "Зберігаємо..."
+    },
+    "activity": {
+      "columns": {
+        "action": "Дія",
+        "metadata": "Метадані",
+        "timestamp": "Час"
+      },
+      "empty": "Порожньо",
+      "endOfLog": "Кінець журналу",
+      "eventsTitle": "Події",
+      "filters": {
+        "action": "Дія",
+        "apply": "Застосувати",
+        "dateFrom": "Дата від",
+        "dateTo": "Дата до",
+        "entity": "Сутність",
+        "reset": "Скинути"
+      },
+      "hideMetadata": "Приховати метадані",
+      "loadMore": "Завантажити більше",
+      "loading": "Завантаження...",
+      "refresh": "Оновити",
+      "refreshing": "Оновлення...",
+      "showMetadata": "Показати метадані",
+      "subtitle": "Підзаголовок",
+      "title": "Активність"
+    },
+    "autosave": {
+      "clean": "Зміни відсутні",
+      "error": "Не вдалося зберегти чернетку",
+      "rateLimited": "Занадто багато запитів. Спробуйте пізніше.",
+      "restored": "Чернетку відновлено",
+      "savedAt": "Чернетку збережено о {time}",
+      "saving": "Автозбереження…",
+      "unsaved": "Є незбережені зміни"
+    },
+    "avatar": {
+      "change": "Змінити",
+      "drop": "Відпустіть",
+      "hint": "Перетягніть або оберіть файл. До 5 МБ, JPG/PNG/WebP.",
+      "remove": "Видалити фото",
+      "update": "Оновити фото",
+      "upload": "Завантажити",
+      "uploading": "Оновлюємо…"
+    },
+    "bio": "Про себе",
+    "bioEmpty": "Додайте короткий опис про себе.",
+    "draft": {
+      "discard": "Скасувати чернетку",
+      "discardError": "Не вдалося видалити чернетку",
+      "error": "Не вдалося отримати чернетку",
+      "foundDescription": "Є незбережені зміни від {time}. Відновити їх чи почати заново?",
+      "foundDescriptionNoTime": "Є незбережені зміни. Відновити їх чи почати заново?",
+      "foundTitle": "Виявлено чернетку",
+      "loading": "Перевіряємо наявність чернетки…",
+      "restore": "Відновити"
+    },
+    "editButton": "Редагувати профіль",
+    "editDescription": "Оновіть персональні дані та те, як вас бачать студенти.",
+    "editTitle": "Редагування профілю",
+    "editor": {
+      "certifications": {
+        "add": "Додати сертифікат",
+        "issuer": "Видавець",
+        "name": "Назва",
+        "title": "Сертифікати",
+        "year": "Рік"
+      },
+      "education": {
+        "add": "Додати освіту",
+        "degree": "Ступінь",
+        "endYear": "Рік закінчення",
+        "field": "Напрямок",
+        "institution": "Заклад",
+        "startYear": "Рік початку",
+        "title": "Освіта"
+      },
+      "languages": {
+        "add": "Додати мову",
+        "language": "Мова",
+        "level": "Рівень",
+        "title": "Мови"
+      },
+      "pricing": {
+        "discount": "Знижка %",
+        "hourlyRate": "Погодинна ставка",
+        "lessons": "Занять",
+        "packages": "Пакети",
+        "price": "Ціна",
+        "title": "Ціни",
+        "trialRate": "Пробне заняття"
+      }
+    },
+    "email": "Email",
+    "form": {
+      "bio": "Про себе",
+      "bioPlaceholder": "Розкажіть про свій підхід, досвід чи цілі.",
+      "firstName": "Ім’я",
+      "headline": "Заголовок",
+      "headlineHint": "Короткий слоган, який бачать студенти.",
+      "lastName": "Прізвище",
+      "timezone": "Таймзона",
+      "timezonePlaceholder": "Оберіть таймзону"
+    },
+    "headline": "Заголовок",
+    "messages": {
+      "avatarDeleteError": "Помилка видалення аватара",
+      "avatarDeleteSuccess": "Аватар успішно видалено",
+      "avatarUpdateError": "Не вдалося оновити фото.",
+      "avatarUpdateSuccess": "Фото оновлено.",
+      "loadError": "Не вдалося завантажити профіль",
+      "saveError": "Не вдалося зберегти зміни",
+      "saveSuccess": "Зміни збережено",
+      "validationName": "Введіть щонайменше 2 символи.",
+      "validationTimezone": "Оберіть таймзону."
+    },
+    "role": "Роль",
+    "security": {
+      "mfa": {
+        "backupCodesSubtitle": "Збережіть їх у безпечному місці. Кожен код можна використати один раз.",
+        "backupCodesTitle": "Резервні коди відновлення",
+        "cancel": "Скасувати",
+        "codesCopied": "Коди скопійовано в буфер обміну",
+        "confirm": "Підтвердити",
+        "copyCodes": "Копіювати коди",
+        "downloadCodes": "Завантажити коди",
+        "errors": {
+          "confirmFailed": "Не вдалося підтвердити MFA.",
+          "loadCodesFailed": "Не вдалося завантажити коди",
+          "regenerateFailed": "Не вдалося згенерувати коди",
+          "setupFailed": "Не вдалося розпочати налаштування MFA."
+        },
+        "otpLabel": "Код підтвердження",
+        "qrSubtitle": "Скануйте в застосунку-автентифікаторі, щоб підʼєднати MFA.",
+        "qrTitle": "Скануйте QR-код",
+        "regenerateCodes": "Згенерувати нові коди",
+        "regenerateConfirm": "Це призведе до скасування всіх попередніх кодів. Продовжити?",
+        "reset": "Почати заново",
+        "secretHintLabel": "Підказка секрету",
+        "start": "Увімкнути MFA",
+        "subtitle": "Додайте додатковий рівень захисту до акаунта.",
+        "success": {
+          "enabled": "MFA увімкнено."
+        },
+        "title": "Двофакторна автентифікація (MFA)",
+        "viewBackupCodes": "Переглянути резервні коди"
+      },
+      "navLabel": "Безпека",
+      "sessions": {
+        "current": "Поточна",
+        "empty": "Немає активних сесій.",
+        "errors": {
+          "currentForbidden": "Неможливо завершити поточну сесію.",
+          "loadFailed": "Не вдалося завантажити сесії.",
+          "notFound": "Сесію не знайдено.",
+          "revokeFailed": "Не вдалося завершити сесію."
+        },
+        "ip": "IP",
+        "lastActive": "Остання активність",
+        "loading": "Завантажуємо сесії…",
+        "revoke": "Вийти",
+        "subtitle": "Перевірте пристрої, з яких виконано вхід.",
+        "success": {
+          "revoked": "Сесію завершено."
+        },
+        "title": "Активні сесії",
+        "unknownDevice": "Невідомий пристрій"
+      },
+      "subtitle": "Керуйте захистом входу та активними сесіями.",
+      "title": "Безпека",
+      "webauthn": {
+        "credentialsList": "Зареєстровані ключі",
+        "enrollCta": "Додати ключ безпеки",
+        "enrollError": "Не вдалося додати ключ безпеки.",
+        "enrollSuccess": "Ключ безпеки успішно додано.",
+        "lastUsed": "Останнє використання",
+        "remove": "Видалити",
+        "removeConfirm": "Підтвердити видалення",
+        "removeError": "Помилка видалення",
+        "removeSuccess": "Успішно видалено",
+        "subtitle": "Використовуйте біометрію або апаратні ключі для входу.",
+        "title": "WebAuthn / Ключі безпеки",
+        "unknownDevice": "Невідомий пристрій"
+      }
+    },
+    "settingsButton": "Налаштування акаунта",
+    "settingsPage": {
+      "actions": {
+        "saveTimezone": "Зберегти таймзону",
+        "saving": "Зберігаємо..."
+      },
+      "description": "Керуйте таймзоною, мовою інтерфейсу та приватністю.",
+      "language": {
+        "label": "Мова інтерфейсу",
+        "subtitle": "Застосовується одразу у всіх розділах."
+      },
+      "notifications": {
+        "label": "Email-сповіщення",
+        "subtitle": "Отримуйте новини про уроки та запрошення."
+      },
+      "preferences": {
+        "subtitle": "Сповіщення та публічність профілю.",
+        "title": "Уподобання"
+      },
+      "privacy": {
+        "label": "Публічний профіль",
+        "subtitle": "Показувати профіль у маркетплейсі."
+      },
+      "timezone": {
+        "subtitle": "Вкажіть, де прив’язаний ваш календар.",
+        "title": "Таймзона"
+      },
+      "title": "Налаштування профілю"
+    },
+    "subjectsAddButton": "Додати",
+    "subjectsAddPlaceholder": "Новий предмет",
+    "subjectsEmpty": "Додайте предмети, які викладаєте, щоб виділити експертизу.",
+    "subjectsTitle": "Предмети",
+    "subtitle": "Актуалізуйте свою особисту інформацію.",
+    "timezone": "Таймзона",
+    "title": "Профіль"
   }
 }

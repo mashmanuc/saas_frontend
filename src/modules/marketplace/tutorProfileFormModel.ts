@@ -20,8 +20,9 @@ export type TutorProfileFormModel = {
   timezone: string
   format: 'online' | 'offline' | 'hybrid' | ''
   experience_years: number  // v0.60.1: required by TutorProfileUpdate
-  subjects: FormSubjectItem[]  // v0.60: updated to new format
-  languages: FormLanguageItem[]
+  subjects: FormSubjectItem[]  // v0.60: updated to new format, includes language_* codes
+  languages: FormLanguageItem[]  // v0.84.0: DEPRECATED - use teaching_languages
+  teaching_languages: FormLanguageItem[]  // v0.84.0: languages tutor teaches IN (not subjects)
   is_published: boolean  // v0.60.1: profile publication status
 
   // Privacy
@@ -98,6 +99,18 @@ export function fromApi(profile: TutorProfileFull): TutorProfileFormModel {
         .filter(Boolean) as FormLanguageItem[])
     : []
 
+  // v0.84.0: teaching_languages (movi vykladannya) - fallback to languages for backward compatibility
+  const teaching_languages = Array.isArray((profile as any)?.teaching_languages)
+    ? ((profile as any).teaching_languages
+        .map((l: any) => {
+          const code = asString(l?.code).trim()
+          const level = (l?.level || 'fluent') as LanguageLevel
+          if (!code) return null
+          return { code, level }
+        })
+        .filter(Boolean) as FormLanguageItem[])
+    : languages  // Fallback to languages for old profiles
+
   return {
     headline: asString(profile?.headline).trim(),
     bio: asString(profile?.bio).trim(),
@@ -111,6 +124,7 @@ export function fromApi(profile: TutorProfileFull): TutorProfileFormModel {
     experience_years: asNumber(profile?.experience_years, 0),
     subjects,
     languages,
+    teaching_languages,
     is_published: asBool((profile as any)?.is_published, false),
 
     gender: asString((profile as any)?.gender).trim(),
@@ -139,6 +153,8 @@ export function toApi(model: TutorProfileFormModel): TutorProfilePatchPayload & 
       custom_direction_text: s.custom_direction_text || undefined,
     })),
     languages: (model.languages || []).map((l) => ({ code: l.code, level: l.level })),
+    // v0.84.0: teaching_languages (movi vykladannya)
+    teaching_languages: (model.teaching_languages || []).map((l) => ({ code: l.code, level: l.level })),
 
     gender: model.gender || undefined,
     show_gender: model.show_gender,

@@ -129,8 +129,15 @@ import { updateAvatar } from '@/api/profile'
 import { notifyError, notifySuccess } from '@/utils/notify'
 import CertificationsEditor from './CertificationsEditor.vue'
 import SubjectTagsSelector from './SubjectTagsSelector.vue'
+import SubjectsTab from './SubjectsTab.vue'
+import TeachingLanguagesTab from './TeachingLanguagesTab.vue'
 import { useRouter, useRoute } from 'vue-router'
 import LessonLinksEditor from '@/modules/booking/components/lessonLinks/LessonLinksEditor.vue'
+import { useLanguagesCatalog } from '../../composables/useLanguagesCatalog'
+import { useCatalog } from '../../composables/useCatalog'
+import type { SpecialtyTagCatalog } from '../../api/marketplace'
+import type { LanguageTag } from '../../api/languages'
+import { onMounted } from 'vue'
 import type {
   FilterOptions,
   TutorProfileFull,
@@ -143,6 +150,12 @@ import { mapValidationErrors, type NestedError } from '../../utils/nestedErrorMa
 type FormState = TutorProfileFormModel & {
   newLanguageCode: string
   newLanguageLevel: LanguageLevel
+  languages: Array<{
+    code: string
+    level: LanguageLevel
+    tags?: string[]
+    description?: string
+  }>
 }
 
 interface Props {
@@ -167,6 +180,23 @@ function removeLanguage(code: string) {
   formData.value.languages = formData.value.languages.filter((l) => l.code !== code)
 }
 
+// v0.84.0: Teaching languages management
+const newTeachingLanguageCode = ref('')
+const newTeachingLanguageLevel = ref<LanguageLevel>('fluent')
+
+function addTeachingLanguage() {
+  const code = newTeachingLanguageCode.value.trim()
+  const level = newTeachingLanguageLevel.value
+  if (!code) return
+  if (formData.value.teaching_languages.some((l) => l.code === code)) return
+  formData.value.teaching_languages = [...formData.value.teaching_languages, { code, level }]
+  newTeachingLanguageCode.value = ''
+}
+
+function removeTeachingLanguage(code: string) {
+  formData.value.teaching_languages = formData.value.teaching_languages.filter((l) => l.code !== code)
+}
+
 const props = defineProps<Props>()
 
 const { t, te, locale } = useI18n()
@@ -179,6 +209,21 @@ function tr(key: string, fallback: string) {
 }
 
 const auth = useAuthStore()
+
+// v0.84.0: Languages catalog for new UX
+const languagesCatalog = useLanguagesCatalog()
+const catalog = useCatalog()
+
+onMounted(() => {
+  languagesCatalog.loadCatalog()
+  catalog.loadSubjects()
+  catalog.loadTags()
+})
+
+watch(locale, () => {
+  catalog.loadSubjects()
+  catalog.loadTags()
+})
 
 const isAvatarUploading = ref(false)
 
@@ -262,12 +307,13 @@ const lastAutosavedAt = ref<number | null>(null)
 const hasLocalDraft = ref(false)
 const showDraftBanner = ref(false)
 
-type EditorStepId = 'photo' | 'basic' | 'subjects' | 'pricing' | 'video' | 'privacy' | 'lesson-links' | 'publish'
+type EditorStepId = 'photo' | 'basic' | 'subjects' | 'teaching-languages' | 'pricing' | 'video' | 'privacy' | 'lesson-links' | 'publish'
 
 const steps = computed<Array<{ id: EditorStepId; title: string }>>(() => [
   { id: 'photo', title: t('marketplace.profile.editor.photoTitle') },
   { id: 'basic', title: t('marketplace.profile.editor.basicTitle') },
-  { id: 'subjects', title: t('marketplace.profile.editor.subjectsLanguagesTitle') },
+  { id: 'subjects', title: t('marketplace.profile.editor.subjectsTitle') },
+  { id: 'teaching-languages', title: t('marketplace.profile.editor.teachingLanguagesTitle') },
   { id: 'pricing', title: t('marketplace.profile.editor.pricingTitle') },
   { id: 'video', title: t('marketplace.profile.editor.videoTitle') },
   { id: 'privacy', title: t('marketplace.profile.editor.privacyTitle') },
@@ -308,7 +354,8 @@ const stepErrors = computed(() => {
   const next: Record<EditorStepId, string[]> = {
     photo: [],
     basic: ['headline', 'bio'],
-    subjects: ['subjects', 'languages'],
+    subjects: ['subjects'],
+    'teaching-languages': ['teaching_languages'],
     pricing: ['hourly_rate'],
     video: [],
     privacy: [],
@@ -320,6 +367,7 @@ const stepErrors = computed(() => {
     photo: 0,
     basic: 0,
     subjects: 0,
+    'teaching-languages': 0,
     pricing: 0,
     video: 0,
     privacy: 0,
@@ -537,6 +585,12 @@ const localErrors = computed(() => {
   if (typeof formData.value.hourly_rate !== 'number' || formData.value.hourly_rate <= 0) {
     next.hourly_rate = t('marketplace.profile.editor.validation.hourlyRate')
   }
+  const expYears = formData.value.experience_years
+  if (typeof expYears !== 'number' || Number.isNaN(expYears)) {
+    next.experience_years = t('marketplace.profile.errors.experienceNonNegative')
+  } else if (expYears < 0) {
+    next.experience_years = t('marketplace.profile.errors.experienceNonNegative')
+  }
   if (typeof formData.value.birth_year === 'number') {
     if (formData.value.birth_year < 1900 || formData.value.birth_year > 2100) {
       next.birth_year = t('marketplace.profile.errors.birthYearInvalid')
@@ -545,8 +599,9 @@ const localErrors = computed(() => {
   if (!Array.isArray(formData.value.subjects) || formData.value.subjects.length === 0) {
     next.subjects = t('marketplace.profile.editor.validation.subjects')
   }
-  if (!Array.isArray(formData.value.languages) || formData.value.languages.length === 0) {
-    next.languages = t('marketplace.profile.editor.validation.languages')
+  // v0.84.0: Validate teaching_languages instead of deprecated languages
+  if (!Array.isArray(formData.value.teaching_languages) || formData.value.teaching_languages.length === 0) {
+    next.teaching_languages = t('marketplace.profile.editor.validation.teachingLanguages')
   }
   return next
 })
@@ -615,6 +670,39 @@ const subjectOptions = computed(() => {
   return fallbackSubjectOptions.value
 })
 
+const SUBJECT_GROUP_TO_CATEGORY: Record<string, LanguageTag['category']> = {
+  grades: 'level',
+  exams: 'format',
+  goals: 'goal',
+  formats: 'format',
+  audience: 'audience',
+}
+
+const subjectTagChips = computed<LanguageTag[]>(() =>
+  catalog.tags.value.map((tag) => ({
+    code: tag.code,
+    title: tag.label,
+    category: SUBJECT_GROUP_TO_CATEGORY[tag.group] ?? tag.group,
+    order: tag.sort_order ?? 0,
+  }))
+)
+
+const languageTagOptions = computed(() => [
+  ...languagesCatalog.levelTags.value,
+  ...languagesCatalog.formatTags.value,
+  ...languagesCatalog.goalTags.value,
+  ...languagesCatalog.audienceTags.value,
+])
+
+const fallbackLanguageSubjects = computed(() =>
+  languageOptions.value.map((option, idx) => ({
+    code: option.value,
+    title: option.label,
+    is_popular: idx < 10,
+    order: idx,
+  }))
+)
+
 const FALLBACK_COUNTRIES = [
   { value: 'UA', labelKey: 'ukraine' },
   { value: 'PL', labelKey: 'poland' },
@@ -654,6 +742,12 @@ const countryOptions = computed(() => {
 const timezoneOptions = TIMEZONES
 
 function getSubjectLabel(code: string): string {
+  // v0.84.0: Handle language_* codes (languages as subjects)
+  if (code.startsWith('language_')) {
+    const langCode = code.replace('language_', '')
+    return languagesCatalog.getLanguageTitle(langCode)
+  }
+  
   const found = subjectOptions.value.find((o) => o.value === code)
   return found?.label || code
 }
@@ -695,8 +789,9 @@ const publishMissingItems = computed(() => {
     items.push(t('marketplace.profile.editor.subjectsLabel'))
   }
 
-  if (localErrors.value.languages) {
-    items.push(t('marketplace.profile.editor.languagesLabel'))
+  // v0.84.0: Check teaching_languages instead of deprecated languages
+  if (localErrors.value.teaching_languages) {
+    items.push(t('marketplace.profile.editor.teachingLanguagesLabel'))
   }
 
   if (localErrors.value.hourly_rate) {
@@ -705,6 +800,51 @@ const publishMissingItems = computed(() => {
 
   return items
 })
+
+// v0.84.0: Handlers for new UX components
+function handleSelectSubject(code: string) {
+  const exists = formData.value.subjects.find(s => s.code === code)
+  if (exists) {
+    formData.value.subjects = formData.value.subjects.filter(s => s.code !== code)
+  } else {
+    formData.value.subjects.push({
+      code,
+      tags: [],
+      custom_direction_text: ''
+    })
+  }
+}
+
+function handleSelectLanguage(code: string) {
+  const exists = formData.value.languages.find(l => l.code === code)
+  if (exists) {
+    formData.value.languages = formData.value.languages.filter(l => l.code !== code)
+  } else {
+    formData.value.languages.push({
+      code,
+      level: 'fluent' as LanguageLevel,
+      tags: [],
+      description: ''
+    })
+  }
+}
+
+function handleUpdateSubjects(updated: Array<{ code: string; title: string; tags: string[]; custom_direction_text: string }>) {
+  formData.value.subjects = updated.map(s => ({
+    code: s.code,
+    tags: s.tags,
+    custom_direction_text: s.custom_direction_text
+  }))
+}
+
+function handleUpdateLanguages(updated: Array<{ code: string; title: string; level: string; tags: string[]; description: string }>) {
+  formData.value.languages = updated.map(l => ({
+    code: l.code,
+    level: l.level as LanguageLevel,
+    tags: l.tags,
+    description: l.description
+  }))
+}
 </script>
 
 <template>
@@ -730,8 +870,7 @@ const publishMissingItems = computed(() => {
         type="button"
         class="step-pill"
         :class="{ 'is-active': idx === stepIndex, 'has-errors': (stepErrors[s.id] || 0) > 0 }"
-        :disabled="idx > stepIndex && !canGoNext"
-        @click="() => { if (idx <= stepIndex || canGoNext) stepIndex = idx }"
+        @click="stepIndex = idx"
       >
         <span class="step-pill-title">{{ s.title }}</span>
       </button>
@@ -943,61 +1082,42 @@ const publishMissingItems = computed(() => {
       </div>
     </section>
 
+    <!-- Вкладка: Предмети (основні предмети + мови для вивчення) -->
     <section v-show="currentStep === 'subjects'" class="editor-section">
-      <h2>{{ t('marketplace.profile.editor.subjectsLanguagesTitle') }}</h2>
+      <h2>{{ t('marketplace.profile.editor.subjectsTitle') }}</h2>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label>{{ t('marketplace.profile.editor.subjectsLabel') }} <span class="required-mark">*</span></label>
-          
-          <SubjectTagsSelector
-            v-model="formData.subjects"
-            :errors="errors"
-            :nested-error-map="nestedErrorMap"
-            data-test="marketplace-editor-subjects"
-          />
-        </div>
+      <SubjectsTab
+        :subject-options="subjectOptions"
+        :languages="languagesCatalog.languages.value.length ? languagesCatalog.languages.value : fallbackLanguageSubjects"
+        :subjects="formData.subjects"
+        :subject-tags="subjectTagChips"
+        :subject-tag-catalog="catalog.tags.value"
+        :language-tags="languageTagOptions"
+        :get-subject-label="getSubjectLabel"
+        @select-subject="handleSelectSubject"
+        @update:subjects="handleUpdateSubjects"
+      />
+    </section>
 
-        <div class="form-group">
-          <label>{{ t('marketplace.profile.editor.languagesLabel') }} <span class="required-mark">*</span></label>
-
-          <div class="list-editor" data-test="marketplace-editor-languages">
-            <div class="list-editor-row">
-              <select v-model="formData.newLanguageCode" data-test="marketplace-editor-language-code">
-                <option value="">{{ t('marketplace.profile.editor.selectLanguage') }}</option>
-                <option v-for="o in languageOptions" :key="o.value" :value="o.value">
-                  {{ o.label }}
-                </option>
-              </select>
-              <select v-model="formData.newLanguageLevel" data-test="marketplace-editor-language-level">
-                <option v-for="l in languageLevels" :key="l.value" :value="l.value">{{ l.label }}</option>
-              </select>
-              <button
-                type="button"
-                class="btn btn-secondary"
-                :disabled="!formData.newLanguageCode"
-                @click="addLanguage"
-              >
-                {{ t('marketplace.profile.editor.add') }}
-              </button>
-            </div>
-
-            <div v-if="formData.languages.length" class="list-items">
-              <div v-for="l in formData.languages" :key="l.code" class="list-item" data-test="marketplace-editor-language-item">
-                <span class="item-label">{{ getLanguageName(l.code, useNativeLanguageNames) }}</span>
-                <select v-model="l.level" data-test="marketplace-editor-language-item-level">
-                  <option v-for="x in languageLevels" :key="x.value" :value="x.value">{{ x.label }}</option>
-                </select>
-                <button type="button" class="btn btn-ghost" @click="removeLanguage(l.code)">{{ t('marketplace.profile.editor.remove') }}</button>
-              </div>
-            </div>
-          </div>
-
-          <div v-if="errors.languages" class="field-error" data-test="marketplace-editor-error-languages">
-            {{ errors.languages }}
-          </div>
-        </div>
-      </div>
+    <!-- Вкладка: Мова викладання -->
+    <section v-show="currentStep === 'teaching-languages'" class="editor-section">
+      <h2>{{ t('marketplace.profile.editor.teachingLanguagesTitle') }}</h2>
+      <p class="section-hint">{{ t('marketplace.profile.editor.teachingLanguagesHint') }}</p>
+      
+      <TeachingLanguagesTab
+        :languages="languagesCatalog.languages.value.length > 0 ? languagesCatalog.languages.value : languageOptions.map((o, idx) => ({ code: o.value, title: o.label, is_popular: idx < 10, order: idx }))"
+        :teaching-languages="formData.teaching_languages"
+        :language-levels="languageLevels"
+        :new-language-code="newTeachingLanguageCode"
+        :new-language-level="newTeachingLanguageLevel"
+        :get-language-title="languagesCatalog.languages.value.length > 0 ? languagesCatalog.getLanguageTitle : (code) => getLanguageName(code, useNativeLanguageNames)"
+        :errors="errors"
+        @update:new-language-code="newTeachingLanguageCode = $event"
+        @update:new-language-level="newTeachingLanguageLevel = $event"
+        @add-language="addTeachingLanguage"
+        @remove-language="removeTeachingLanguage"
+        @update-language-level="(code, level) => { const tl = formData.teaching_languages.find(l => l.code === code); if (tl) tl.level = level; }"
+      />
     </section>
 
     <section v-show="currentStep === 'pricing'" class="editor-section">
@@ -1353,5 +1473,102 @@ const publishMissingItems = computed(() => {
   display: flex;
   justify-content: flex-end;
   padding-top: 1rem;
+}
+
+/* v0.84.0 FINAL: Subject Selection and Display Areas */
+.subject-selection-area {
+  margin-bottom: var(--space-xl);
+}
+
+.subject-selection-area h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: var(--space-sm);
+  color: var(--text-primary);
+}
+
+.subject-selection-area .section-hint {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-bottom: var(--space-md);
+}
+
+.selected-subjects-area {
+  margin-top: var(--space-xl);
+  padding-top: var(--space-xl);
+  border-top: 2px solid var(--border-color);
+}
+
+.selected-subjects-area h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: var(--space-md);
+  color: var(--text-primary);
+}
+
+/* v0.84.0: Teaching Languages Section */
+.teaching-languages-section {
+  margin-top: var(--space-xl);
+  padding: var(--space-lg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+}
+
+.teaching-languages-section h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: var(--space-sm);
+  color: var(--text-primary);
+}
+
+.teaching-languages-section .section-hint {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-bottom: var(--space-md);
+}
+
+.teaching-language-selector {
+  display: flex;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.teaching-language-selector select {
+  flex: 1;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 0.9375rem;
+}
+
+.teaching-languages-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.teaching-language-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--surface-base);
+}
+
+.teaching-language-item .language-name {
+  flex: 1;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.teaching-language-item select {
+  width: auto;
+  min-width: 150px;
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
 }
 </style>

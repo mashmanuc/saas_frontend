@@ -383,30 +383,45 @@ export const useAuthStore = defineStore('auth', {
       // v0.82.0: Пріоритет data.error над data.code для login контракту
       const errorCode = data && typeof data === 'object' ? (data.error || data.code) : null
 
-      const requestId = data && typeof data === 'object' ? data.request_id : null
-      this.lastRequestId = typeof requestId === 'string' ? requestId : null
+      const requestIdFromResponse = data && typeof data === 'object' ? data.request_id : null
+      const requestIdFromHeaders = error?.response?.headers?.['x-request-id']
+      const normalizedRequestId = typeof requestIdFromResponse === 'string' && requestIdFromResponse.trim().length > 0
+        ? requestIdFromResponse
+        : typeof requestIdFromHeaders === 'string' && requestIdFromHeaders.trim().length > 0
+          ? requestIdFromHeaders
+          : null
+
+      this.lastRequestId = normalizedRequestId
 
       const userMessage = (msg) => (typeof msg === 'string' ? msg : '')
+      const withRequestId = (msg) => {
+        const text = typeof msg === 'string' && msg.trim().length > 0 ? msg : ''
+        return this.lastRequestId ? `${text} (request_id: ${this.lastRequestId})` : text
+      }
 
       this.lastErrorCode = null
       this.lastFieldMessages = null
       this.lastSummary = null
 
+      if (!error?.response) {
+        this.error = withRequestId('Немає зʼєднання з сервером. Перевірте мережу і спробуйте ще раз.')
+        return
+      }
+
       if (status === 429) {
         this.lastErrorCode = 'rate_limited'
         const retryAfter = error?.response?.headers?.['retry-after']
-        if (retryAfter) {
-          this.error = userMessage(`Забагато запитів. Спробуйте через ${retryAfter}с.`)
-        } else {
-          this.error = userMessage('Забагато запитів. Спробуйте пізніше.')
-        }
+        const msg = retryAfter
+          ? `Забагато запитів. Спробуйте через ${retryAfter}с.`
+          : 'Забагато запитів. Спробуйте пізніше.'
+        this.error = withRequestId(userMessage(msg))
         return
       }
 
       if (status === 423) {
         this.lastErrorCode = 'account_locked'
         const message = data && typeof data === 'object' ? data.message : null
-        this.error = userMessage(typeof message === 'string' && message.trim().length > 0 ? message : 'Акаунт тимчасово заблоковано.')
+        this.error = withRequestId(userMessage(typeof message === 'string' && message.trim().length > 0 ? message : 'Акаунт тимчасово заблоковано.'))
         return
       }
 
@@ -417,7 +432,7 @@ export const useAuthStore = defineStore('auth', {
           ? message
           : 'Сесія підтвердження завершилась. Спробуйте увійти ще раз.'
         this.lastFieldMessages = { otp: [userMessage(finalMessage)] }
-        this.error = userMessage(finalMessage)
+        this.error = withRequestId(userMessage(finalMessage))
         return
       }
 
@@ -426,19 +441,19 @@ export const useAuthStore = defineStore('auth', {
         if (errorCode === 'invalid_credentials') {
           this.lastErrorCode = 'invalid_credentials'
           const message = data && typeof data === 'object' ? data.message : null
-          this.error = userMessage(typeof message === 'string' && message.trim().length > 0 ? message : 'Невірні дані для входу.')
+          this.error = withRequestId(userMessage(typeof message === 'string' && message.trim().length > 0 ? message : 'Невірні дані для входу.'))
           return
         }
         if (errorCode === 'email_not_verified') {
           this.lastErrorCode = 'email_not_verified'
           const message = data && typeof data === 'object' ? data.message : null
-          this.error = userMessage(typeof message === 'string' && message.trim().length > 0 ? message : 'Підтвердіть email для входу.')
+          this.error = withRequestId(userMessage(typeof message === 'string' && message.trim().length > 0 ? message : 'Підтвердіть email для входу.'))
           return
         }
         // Fallback для інших 401
         this.lastErrorCode = 'invalid_credentials'
         const message = data && typeof data === 'object' ? data.message : null
-        this.error = userMessage(typeof message === 'string' && message.trim().length > 0 ? message : 'Невірні дані для входу.')
+        this.error = withRequestId(userMessage(typeof message === 'string' && message.trim().length > 0 ? message : 'Невірні дані для входу.'))
         return
       }
 
@@ -446,7 +461,7 @@ export const useAuthStore = defineStore('auth', {
         this.lastErrorCode = 'mfa_invalid_code'
         const message = typeof data.message === 'string' && data.message.trim().length > 0 ? data.message : 'Невірний код підтвердження.'
         this.lastFieldMessages = { otp: [userMessage(message)] }
-        this.error = userMessage(message)
+        this.error = withRequestId(userMessage(message))
         return
       }
 
@@ -487,13 +502,13 @@ export const useAuthStore = defineStore('auth', {
           const firstKey = Object.keys(fieldMessages)[0]
           const firstVal = firstKey ? fieldMessages[firstKey] : null
           if (Array.isArray(firstVal) && firstVal.length) {
-            this.error = userMessage(String(firstVal[0]))
+            this.error = withRequestId(userMessage(String(firstVal[0])))
             return
           }
         }
 
         if (summary && summary.length > 0) {
-          this.error = userMessage(String(summary[0]))
+          this.error = withRequestId(userMessage(String(summary[0])))
           return
         }
 

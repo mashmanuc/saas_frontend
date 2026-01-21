@@ -118,6 +118,7 @@
     "next": "Далі",
     "submit": "Надіслати",
     "loading": "Завантаження...",
+    "noResults": "Немає результатів",
     "error": "Помилка",
     "success": "Успішно",
     "perHour": "/ год",
@@ -132,6 +133,7 @@
     "currency": "Валюта",
     "daysAgo": "{count} дн. тому",
     "decline": "Відхилити",
+    "selected": "обрано",
     "executing": "Виконуємо",
     "exit": "Вийти",
     "hour": "год",
@@ -737,6 +739,17 @@
       "${group}": "{group}"
     },
     "subjects": {
+      "title": "Предмети",
+      "basicSubjectsTitle": "Основні предмети",
+      "basicSubjectsHint": "Оберіть предмети, які ви викладаєте",
+      "basicTitle": "Основні предмети",
+      "languagesAsSubjectsTitle": "Мови для вивчення",
+      "languagesAsSubjectsHint": "Оберіть мови, які ви викладаєте як предмети для вивчення (не мови викладання)",
+      "popularLanguagesTitle": "Популярні мови",
+      "popularLanguagesHint": "Оберіть мови для вивчення",
+      "otherLanguagesTitle": "Інші мови",
+      "selectedTitle": "Обрані предмети",
+      "selectedHint": "Налаштуйте теги та опис для кожного предмету",
       "english": "Англійська",
       "spanish": "Іспанська",
       "french": "Французька",
@@ -762,7 +775,36 @@
       "toefl": "Підготовка до TOEFL",
       "sat": "Підготовка до SAT",
       "gre": "Підготовка до GRE",
-      "${code}": "{code}"
+      "${code}": "{code}",
+      "emptyState": "Оберіть предмети зі списку вище",
+      "descriptionPlaceholder": "Опишіть ваш підхід до викладання цього предмету (0-800 символів)",
+      "tabs": {
+        "classes": "Класи",
+        "exams": "Іспити",
+        "goals": "Цілі",
+        "format": "Формат",
+        "audience": "Аудиторія",
+        "description": "Опис"
+      }
+    },
+    "languages": {
+      "popularTitle": "Мова як предмет для вивчення",
+      "otherTitle": "Інші мови",
+      "searchPlaceholder": "Пошук мови...",
+      "selectedTitle": "Обрані мови",
+      "emptyState": "Оберіть мови зі списку вище",
+      "levelNotSet": "рівень не вказано",
+      "descriptionPlaceholder": "Опишіть ваш підхід до викладання цієї мови (0-800 символів)",
+      "tabs": {
+        "level": "Рівень",
+        "format": "Формат",
+        "goals": "Цілі",
+        "audience": "Аудиторія",
+        "description": "Опис"
+      }
+    },
+    "editor": {
+      "noTagsAvailable": "Немає доступних тегів для цієї категорії"
     },
     "countries": {
       "ukraine": "Україна",
@@ -924,7 +966,8 @@
         "subjectsRequired": "Оберіть хоча б один предмет.",
         "subjectCodeRequired": "Оберіть предмет.",
         "customDirectionLength": "Опис підходу має бути від 50 до 800 символів.",
-        "languagesRequired": "Оберіть хоча б одну мову."
+        "languagesRequired": "Оберіть хоча б одну мову.",
+        "teachingLanguagesRequired": "Оберіть хоча б одну мову викладання."
       },
       "stats": {
         "lessons": "уроків",
@@ -1031,6 +1074,7 @@
         "headlineLabel": "Заголовок",
         "headlinePlaceholder": "Напр. Досвідчений тьютор математики",
         "headlineHint": "Короткий опис, що найкраще вас характеризує",
+        "bioHint": "Короткий опис, який бачать студенти у прев'ю",
         "bioLabel": "Про мене",
         "bioPlaceholder": "Розкажіть студентам про себе, стиль викладання та досвід…",
         "countryLabel": "Країна",
@@ -1038,7 +1082,12 @@
         "timezoneLabel": "Часовий пояс",
         "timezonePlaceholder": "Напр. Europe/Kyiv",
         "subjectsLanguagesTitle": "Предмети та мови",
+        "subjectsTitle": "Предмети",
+        "subjectsHint": "Оберіть предмети, які ви викладаєте",
         "subjectsLabel": "Предмети",
+        "languagesLabel": "Мови",
+        "teachingLanguagesTitle": "Мова викладання",
+        "teachingLanguagesHint": "Оберіть мови, якими ви проводите уроки",
         "selectSubject": "Оберіть предмет…",
         "selectTags": "Оберіть напрями",
         "customDirectionText": "Опишіть ваш підхід до викладання",
@@ -1047,12 +1096,13 @@
         "customTextTooLong": "Максимум 800 символів",
         "noSubjectsSelected": "Ви ще не обрали жодного предмета",
         "dragToReorder": "Перетягніть для зміни порядку",
-        "languagesLabel": "Мови",
         "selectLanguage": "Оберіть мову…",
         "add": "Додати",
         "remove": "Видалити",
         "pricingTitle": "Ціни",
         "hourlyRateLabel": "Ціна за годину",
+        "hourlyRatePlaceholder": "Напр. 500",
+        "hourlyRateHint": "Це ставка, яку бачать студенти. Ви завжди можете змінити її.",
         "trialPriceLabel": "Ціна пробного уроку",
         "trialPricePlaceholder": "Опційно",
         "trialPriceHint": "Знижена ціна для першого уроку",
@@ -1112,8 +1162,17 @@
           "bio": "Опис обовʼязковий (мін. 10 символів).",
           "hourlyRate": "Ціна за годину має бути > 0.",
           "subjects": "Оберіть хоча б один предмет.",
-          "languages": "Оберіть хоча б одну мову."
+          "languages": "Оберіть хоча б одну мову.",
+          "teachingLanguages": "Оберіть хоча б одну мову викладання."
         },
+        "teachingLanguagesLabel": "Мови викладання",
+        "addTeachingLanguage": "Додати мову викладання",
+        "yourTeachingLanguages": "Ваші мови викладання",
+        "noTeachingLanguages": "Ви ще не додали мови викладання",
+        "noTeachingLanguagesHint": "Додайте хоча б одну мову, якою ви проводите уроки",
+        "teachingLanguagesAddHint": "Оберіть мови, якими ви проводите уроки, та ваш рівень володіння",
+        "levelFor": "Рівень для",
+        "selectLevel": "Оберіть рівень",
         "languageLevels": {
           "basic": "Початковий",
           "conversational": "Розмовний",

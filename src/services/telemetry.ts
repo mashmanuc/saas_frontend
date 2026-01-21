@@ -84,13 +84,16 @@ class TelemetryService {
           body: JSON.stringify({ events })
         })
       } else {
-        // Log to console in development
-        console.log('[Telemetry]', events)
+        // Log to console in development (only first 5 events to avoid spam)
+        if (events.length <= 5) {
+          console.log('[Telemetry]', events)
+        } else {
+          console.log('[Telemetry]', `${events.length} events (showing first 5):`, events.slice(0, 5))
+        }
       }
     } catch (error) {
       console.error('[Telemetry] Failed to send events:', error)
-      // Re-queue events on failure
-      this.eventQueue.unshift(...events)
+      // Do NOT re-queue events to avoid infinite loops
     }
   }
 

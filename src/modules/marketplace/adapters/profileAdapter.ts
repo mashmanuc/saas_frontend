@@ -40,8 +40,14 @@ export function validateProfileBeforeSubmit(model: TutorProfileFormModel): Profi
     errors.push({ field: 'currency', message: 'marketplace.profile.errors.currencyRequired' })
   }
 
-  if (typeof model.experience_years !== 'number' || model.experience_years < 0) {
+  const experienceYears = Number(model.experience_years)
+  if (!Number.isFinite(experienceYears)) {
     errors.push({ field: 'experience_years', message: 'marketplace.profile.errors.experienceNonNegative' })
+  } else if (experienceYears < 0) {
+    errors.push({ field: 'experience_years', message: 'marketplace.profile.errors.experienceNonNegative' })
+  } else {
+    // Normalize back to numeric to avoid string values leaking further
+    model.experience_years = experienceYears
   }
 
   const birthYear = model.birth_year
@@ -71,9 +77,14 @@ export function validateProfileBeforeSubmit(model: TutorProfileFormModel): Profi
     })
   }
 
-  // Languages validation
+  // Languages validation (DEPRECATED in v0.84.0 - use teaching_languages)
   if (!Array.isArray(model.languages) || model.languages.length === 0) {
     errors.push({ field: 'languages', message: 'marketplace.profile.errors.languagesRequired' })
+  }
+
+  // v0.84.0: Teaching languages validation (NEW)
+  if (!Array.isArray(model.teaching_languages) || model.teaching_languages.length === 0) {
+    errors.push({ field: 'teaching_languages', message: 'marketplace.profile.errors.teachingLanguagesRequired' })
   }
 
   return errors
@@ -110,6 +121,8 @@ export function buildTutorProfileUpdate(model: TutorProfileFormModel): TutorProf
     }))
 
   // Build COMPLETE TutorProfileUpdate payload
+  const experienceYears = Number(model.experience_years)
+
   const payload: TutorProfileUpdate = {
     // Required text fields
     bio: model.bio?.trim() || '',
@@ -122,7 +135,7 @@ export function buildTutorProfileUpdate(model: TutorProfileFormModel): TutorProf
     subjects,
 
     // Required number
-    experience_years: typeof model.experience_years === 'number' ? model.experience_years : 0,
+    experience_years: Number.isFinite(experienceYears) ? experienceYears : 0,
 
     // Publication status
     is_published: model.is_published || false,

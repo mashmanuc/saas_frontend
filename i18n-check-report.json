@@ -2,33 +2,23 @@
   "locales": {
     "en": {
       "status": "ok",
-      "totalKeys": 2818,
+      "totalKeys": 2873,
       "missing": [],
       "extra": [],
       "empty": [
-        "board.availability.slotEditor.strategies.${strategy.name}.title",
-        "board.calendar.analytics.status.${activity.status}",
-        "board.calendar.jobStatus.${currentJob.status}.details",
-        "board.calendar.jobStatus.${currentJob.status}.title",
-        "board.lessons.detail.roles.${participant.role}",
-        "calendar.jobStatus.${currentJob.status}.details",
-        "classroom.board.${steps[currentStep.value].id}Status",
-        "devPlayground.themeOptions.${value}.description",
-        "lessons.detail.roles.${participant.role}",
-        "operator.actions.${action}.description",
-        "operator.actions.${action}.warning"
+        "lessons.detail.roles.${participant.role}"
       ]
     }
   },
   "summary": {
-    "totalKeys": 2818,
+    "totalKeys": 2873,
     "locales": 2,
     "errors": 0,
     "warnings": 2
   },
   "usage": {
-    "scannedFiles": 879,
-    "detectedKeys": 2270,
+    "scannedFiles": 888,
+    "detectedKeys": 2318,
     "unusedKeys": [
       "billing.cta.learnMore",
       "billing.error.alreadySubscribed",
@@ -428,18 +418,24 @@
       "marketplace.countries.unitedStates",
       "marketplace.errors.limitExceeded",
       "marketplace.errors.notFound",
+      "marketplace.errors.profileNotCreated",
       "marketplace.errors.unknown",
+      "marketplace.languages.otherTitle",
+      "marketplace.languages.popularTitle",
       "marketplace.profile.badgesHistory.loadError",
       "marketplace.profile.badgesHistory.loading",
+      "marketplace.profile.editor.subjectsHint",
+      "marketplace.profile.editor.subjectsLanguagesTitle",
+      "marketplace.profile.editor.validation.languages",
       "marketplace.profile.errors.bioRequired",
       "marketplace.profile.errors.currencyRequired",
       "marketplace.profile.errors.customDirectionLength",
-      "marketplace.profile.errors.experienceNonNegative",
       "marketplace.profile.errors.headlineRequired",
       "marketplace.profile.errors.hourlyRatePositive",
       "marketplace.profile.errors.languagesRequired",
       "marketplace.profile.errors.subjectCodeRequired",
       "marketplace.profile.errors.subjectsRequired",
+      "marketplace.profile.errors.teachingLanguagesRequired",
       "marketplace.profile.stats.lessons",
       "marketplace.profile.stats.students",
       "marketplace.profile.status.approved",
@@ -479,6 +475,7 @@
       "marketplace.subjects.polish",
       "marketplace.subjects.sat",
       "marketplace.subjects.spanish",
+      "marketplace.subjects.title",
       "marketplace.subjects.toefl",
       "marketplace.subjects.ukrainian",
       "marketplace.tagGroups.${groupName}",

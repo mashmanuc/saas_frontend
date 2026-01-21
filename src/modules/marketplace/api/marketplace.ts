@@ -771,7 +771,7 @@ export const marketplaceApi = {
     try {
       // Try modern endpoint first to support ETag/expires_in contract
       if (cached.etag) {
-        const full = await apiGetFull<any>('/v1/marketplace/filters/', {
+        const full = await apiGetFull<any>('/v1/marketplace/marketplace/filters/', {
           headers: { 'If-None-Match': cached.etag },
           validateStatus: (s: number) => (s >= 200 && s < 300) || s === 304,
         })
@@ -785,7 +785,7 @@ export const marketplaceApi = {
         response = data as RawFilterOptionsResponse
         saveCachedFilters(FILTERS_CACHE_KEY, { etag: etag ? String(etag) : null, expiresIn, data: response })
       } else {
-        const full = await apiGetFull<any>('/v1/marketplace/filters/', {
+        const full = await apiGetFull<any>('/v1/marketplace/marketplace/filters/', {
           validateStatus: (s: number) => s >= 200 && s < 300,
         })
         const payload = full.data
@@ -935,7 +935,7 @@ export const marketplaceApi = {
     try {
       // Prefer contract endpoint with ETag
       if (cached.etag) {
-        const full = await apiGetFull<any>('/v1/marketplace/filters/', {
+        const full = await apiGetFull<any>('/v1/marketplace/marketplace/filters/', {
           headers: { 'If-None-Match': cached.etag },
           validateStatus: (s: number) => (s >= 200 && s < 300) || s === 304,
         })
@@ -950,7 +950,7 @@ export const marketplaceApi = {
         return data as ExtendedFilterOptions
       }
 
-      const full = await apiGetFull<any>('/v1/marketplace/filters/', {
+      const full = await apiGetFull<any>('/v1/marketplace/marketplace/filters/', {
         validateStatus: (s: number) => s >= 200 && s < 300,
       })
       const payload = full.data

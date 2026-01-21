@@ -116,6 +116,15 @@ Last-Updated: 2025-12-31
 - ✅ `pnpm i18n:check --report` зелений (2818 keys, 0 missing/extra, 11 очікуваних empty placeholders, 548 класифікованих unused)
 - 📝 План наступних кроків: аудит unused keys (calendar/booking/classroom), документування empty placeholders, ревʼю CI/cron прапорів
 
+**Фінальне оновлення (2026-01-21)**
+- ✅ Синхронізовано всі відсутні ключі між uk.json та en.json (використано `sync-missing-keys.mjs`)
+- ✅ Додано 53 missing keys: `devPlayground.*` (alerts, actions, modal, table, liveTokens, designTokens, notifications), `marketplace.profile.errors.teachingLanguagesRequired`, `marketplace.subjects.title`, `common.noResults`
+- ✅ Видалено 18 extra keys (дублікати classroom.board.* → classroom.tools.*)
+- ✅ Заповнено всі порожні placeholder значення для динамічних ключів
+- ✅ Виправлено структурні помилки JSON (дублікати об'єктів, відсутні коми)
+- ✅ `pnpm i18n:check --report` проходить успішно: **2873 keys, 0 missing, 0 extra, 1 empty placeholder (норма), 555 unused (класифіковані)**
+- 📊 Фінальні метрики: 100% паритет uk ↔ en, всі критичні домени синхронізовані
+
 **Етап 4: Інструмент «Missing translations»**
 - [x] Backend endpoint `/v1/i18n/translations/missing/{locale}/` (вже реалізовано в `apps/i18n/api/views.py`)
 - [x] Frontend admin UI `I18nMissingTranslations.vue` (вже реалізовано з фільтрами, пагінацією, експортом CSV)
