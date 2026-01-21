@@ -29,14 +29,13 @@
           <div class="form-field">
             <label class="form-label">{{ t('tutor.lessonLinks.provider') }}</label>
             <select v-model="formData.primaryProvider" class="form-select" @change="handlePrimaryProviderChange">
-              <option value="platform">{{ t('tutor.lessonLinks.providers.platform') }}</option>
               <option value="zoom">{{ t('tutor.lessonLinks.providers.zoom') }}</option>
               <option value="meet">{{ t('tutor.lessonLinks.providers.meet') }}</option>
               <option value="custom">{{ t('tutor.lessonLinks.providers.custom') }}</option>
             </select>
           </div>
 
-          <div v-if="formData.primaryProvider !== 'platform'" class="form-field">
+          <div class="form-field">
             <label class="form-label">{{ t('tutor.lessonLinks.url') }}</label>
             <input
               v-model="formData.primaryUrl"
@@ -46,11 +45,6 @@
               @blur="validateUrl('primary')"
             />
             <p v-if="validationErrors.primaryUrl" class="form-error">{{ validationErrors.primaryUrl }}</p>
-          </div>
-
-          <div v-if="formData.primaryProvider === 'platform'" class="platform-info">
-            <InfoIcon class="icon" />
-            <p>{{ t('tutor.lessonLinks.platformInfo') }}</p>
           </div>
         </div>
 
@@ -134,7 +128,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Loader as LoaderIcon, AlertCircle as AlertCircleIcon, Info as InfoIcon, Link as LinkIcon } from 'lucide-vue-next'
+import { Loader as LoaderIcon, AlertCircle as AlertCircleIcon, Link as LinkIcon } from 'lucide-vue-next'
 import { useTutorLessonLinksStore } from '@/modules/booking/stores/tutorLessonLinksStore'
 import { useToast } from '@/composables/useToast'
 import type { LessonLinkProvider } from '@/modules/booking/api/tutorSettingsApi'
@@ -166,7 +160,7 @@ const saving = ref(false)
 const error = ref<string | null>(null)
 
 const formData = ref({
-  primaryProvider: 'platform' as LessonLinkProvider['provider'],
+  primaryProvider: 'zoom' as LessonLinkProvider['provider'],
   primaryUrl: '',
   hasBackup: false,
   backupProvider: 'zoom' as LessonLinkProvider['provider'],
@@ -187,16 +181,10 @@ const hasChanges = computed(() => {
 
 const effectivePreviewProvider = computed(() => formData.value.primaryProvider)
 
-const effectivePreviewUrl = computed(() => {
-  if (formData.value.primaryProvider === 'platform') {
-    return t('tutor.lessonLinks.platformGenerated')
-  }
-  return formData.value.primaryUrl || t('tutor.lessonLinks.notSet')
-})
+const effectivePreviewUrl = computed(() => formData.value.primaryUrl || t('tutor.lessonLinks.notSet'))
 
 function getProviderLabel(provider: string): string {
   const labels: Record<string, string> = {
-    platform: t('tutor.lessonLinks.providers.platform'),
     zoom: t('tutor.lessonLinks.providers.zoom'),
     meet: t('tutor.lessonLinks.providers.meet'),
     custom: t('tutor.lessonLinks.providers.custom')
@@ -237,10 +225,8 @@ function validateUrl(field: 'primary' | 'backup'): boolean {
 }
 
 function handlePrimaryProviderChange() {
-  if (formData.value.primaryProvider === 'platform') {
-    formData.value.primaryUrl = ''
-    validationErrors.value.primaryUrl = ''
-  }
+  formData.value.primaryUrl = ''
+  validationErrors.value.primaryUrl = ''
 }
 
 function handleBackupProviderChange() {
@@ -265,9 +251,16 @@ async function loadLinks() {
     const primary = store.primary
     const backup = store.backup
 
+    const normalizedPrimaryProvider = primary?.provider === 'platform'
+      ? 'custom'
+      : (primary?.provider || 'zoom')
+    const normalizedPrimaryUrl = primary?.provider === 'platform'
+      ? ''
+      : (primary?.url || '')
+
     formData.value = {
-      primaryProvider: primary?.provider || 'platform',
-      primaryUrl: primary?.url || '',
+      primaryProvider: normalizedPrimaryProvider,
+      primaryUrl: normalizedPrimaryUrl,
       hasBackup: backup !== null,
       backupProvider: backup?.provider || 'zoom',
       backupUrl: backup?.url || ''
@@ -283,11 +276,7 @@ async function loadLinks() {
 }
 
 async function handleSave() {
-  let isValid = true
-
-  if (formData.value.primaryProvider !== 'platform') {
-    isValid = validateUrl('primary') && isValid
-  }
+  let isValid = validateUrl('primary')
 
   if (formData.value.hasBackup) {
     isValid = validateUrl('backup') && isValid
@@ -308,7 +297,7 @@ async function handleSave() {
 
     payload.primary = {
       provider: formData.value.primaryProvider,
-      url: formData.value.primaryProvider === 'platform' ? null : formData.value.primaryUrl
+      url: formData.value.primaryUrl
     }
 
     if (formData.value.hasBackup) {
@@ -507,31 +496,12 @@ onMounted(() => {
   margin: 0;
 }
 
-.platform-info {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 12px;
-  background: #eff6ff;
-  border: 1px solid #dbeafe;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  color: #1e40af;
-}
-
-.platform-info .icon {
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-
 .toggle-switch {
   position: relative;
   display: inline-block;
   width: 48px;
   height: 24px;
-  flex-shrink: 0;
+{{ ... }
 }
 
 .toggle-switch input {

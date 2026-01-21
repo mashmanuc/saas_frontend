@@ -43,9 +43,9 @@ onMounted(() => {
   store.loadFilterOptions()
 })
 
-async function handleSave(data: TutorProfilePatchPayload) {
-  telemetry.trigger('marketplace_profile_save', { has_slug: !!myProfile.value?.slug })
-  await store.updateProfile(data)
+async function handleSave(data: TutorProfilePatchPayload, options?: { silent?: boolean }) {
+  telemetry.trigger('marketplace_profile_save', { has_slug: !!myProfile.value?.slug, silent: !!options?.silent })
+  await store.updateProfile(data, options)
 }
 
 async function handleCreate(data: TutorProfileUpsertPayload) {

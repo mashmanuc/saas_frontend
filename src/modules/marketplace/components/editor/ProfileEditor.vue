@@ -221,6 +221,7 @@ onMounted(() => {
 })
 
 watch(locale, () => {
+  languagesCatalog.loadCatalog()
   catalog.loadSubjects()
   catalog.loadTags()
 })
@@ -262,7 +263,7 @@ async function handleAvatarSelected(e: Event) {
 }
 
 const emit = defineEmits<{
-  (e: 'save', data: TutorProfilePatchPayload): void
+  (e: 'save', data: TutorProfilePatchPayload, options?: { silent?: boolean }): void
   (e: 'publish'): void
   (e: 'unpublish'): void
   (e: 'reload'): void
@@ -472,10 +473,10 @@ const debouncedAutosave = debounce(async () => {
     const payload = buildPayloadFromForm()
     writeLocalDraft(payload)
     
-    // v0.83.2: Auto-save to server, not just localStorage
+    // v0.84.1: Auto-save to server in silent mode (no UI blocking)
     const apiPayload = getSubmitPayload()
     if (apiPayload) {
-      emit('save', apiPayload as any)
+      emit('save', apiPayload as any, { silent: true })
       lastAutosavedAt.value = Date.now()
     }
     
@@ -663,11 +664,21 @@ const fallbackSubjectOptions = computed(() =>
 )
 
 const subjectOptions = computed(() => {
+  const translateSubject = (code: string, fallback?: string) => {
+    return (
+      catalog.getSubjectTitle(code) ||
+      t(`marketplace.subjects.${code}`, fallback || code)
+    )
+  }
+
   const opts = props.filterOptions?.subjects
   if (Array.isArray(opts) && opts.length > 0) {
-    return opts.map((o) => ({ value: o.value, label: o.label }))
+    return opts.map((o) => ({ value: o.value, label: translateSubject(o.value, o.label) }))
   }
-  return fallbackSubjectOptions.value
+  return fallbackSubjectOptions.value.map((option) => ({
+    value: option.value,
+    label: translateSubject(option.value, option.label),
+  }))
 })
 
 const SUBJECT_GROUP_TO_CATEGORY: Record<string, LanguageTag['category']> = {
@@ -1198,8 +1209,10 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
         {{ saving ? t('marketplace.profile.editor.saving') : t('marketplace.profile.editor.save') }}
       </button>
 
-      <span v-if="lastAutosavedAt" class="autosave-status" data-test="marketplace-editor-autosave-status">
-        {{ t('profile.autosave.savedAt', { time: new Date(lastAutosavedAt).toLocaleTimeString() }) }}
+      <span v-if="autosaveStatus !== 'idle'" class="autosave-status" :class="`autosave-${autosaveStatus}`" data-test="marketplace-editor-autosave-status">
+        <span v-if="autosaveStatus === 'saving'" class="autosave-indicator">●</span>
+        <span v-if="autosaveStatus === 'saved'">{{ t('profile.autosave.saved') }}</span>
+        <span v-if="autosaveStatus === 'restored'">{{ t('profile.autosave.restored') }}</span>
       </span>
     </div>
   </form>
@@ -1233,6 +1246,30 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
   margin-left: auto;
   font-size: 0.85rem;
   color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: opacity 0.2s ease;
+}
+
+.autosave-indicator {
+  display: inline-block;
+  font-size: 0.6rem;
+  animation: pulse 1.5s ease-in-out infinite;
+  color: var(--accent-primary);
+}
+
+.autosave-saved {
+  color: var(--success-text, #10b981);
+}
+
+.autosave-restored {
+  color: var(--warning-text, #f59e0b);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
 }
 
 .editor-steps {

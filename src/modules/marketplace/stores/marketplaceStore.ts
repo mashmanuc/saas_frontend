@@ -290,8 +290,11 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     }
   }
 
-  async function updateProfile(data: TutorProfilePatchPayload): Promise<void> {
-    isSaving.value = true
+  async function updateProfile(data: TutorProfilePatchPayload, options?: { silent?: boolean }): Promise<void> {
+    // v0.84.1: Silent mode for autosave - don't block UI
+    if (!options?.silent) {
+      isSaving.value = true
+    }
     error.value = null
     validationErrors.value = null
 
@@ -306,8 +309,8 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
       setValidationErrorsFromApi(err)
       error.value = mapApiError(err, t('marketplace.errors.updateProfile'))
       
-      // Show toast with first validation error
-      if (validationErrors.value) {
+      // Show toast with first validation error (only for non-silent saves)
+      if (!options?.silent && validationErrors.value) {
         const firstField = Object.keys(validationErrors.value)[0]
         const firstMessages = validationErrors.value[firstField]
         if (firstMessages && firstMessages.length > 0) {
@@ -317,7 +320,9 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
       
       throw err
     } finally {
-      isSaving.value = false
+      if (!options?.silent) {
+        isSaving.value = false
+      }
     }
   }
 

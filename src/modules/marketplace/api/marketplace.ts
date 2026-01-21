@@ -17,37 +17,73 @@ async function apiGetFull<T>(path: string, config: any = {}): Promise<ApiClientF
   }
 }
 
-const FILTERS_CACHE_KEY = 'marketplace_filters_cache_v38'
-const EXT_FILTERS_CACHE_KEY = 'marketplace_ext_filters_cache_v38'
+const FILTERS_CACHE_KEY = 'marketplace_filters_cache_v39'
+const EXT_FILTERS_CACHE_KEY = 'marketplace_ext_filters_cache_v39'
+const CACHE_VERSION = 1
+const DEFAULT_TTL_MS = 15 * 60 * 1000 // 15 minutes
 
-function loadCachedFilters(key: string): { etag: string | null; expiresAt: number | null; data: any | null } {
+interface FiltersCache {
+  v: number
+  savedAt: number
+  ttlMs: number
+  etag: string | null
+  expiresAt: number | null
+  data: any | null
+}
+
+function isCacheValid(cache: FiltersCache | null): boolean {
+  if (!cache) return false
+  if (cache.v !== CACHE_VERSION) return false
+  if (Date.now() - cache.savedAt > cache.ttlMs) return false
+  if (!cache.data) return false
+  
+  // Critical: validate that subjects array exists and is not empty
+  // This prevents the "eternal empty cache" bug
+  if (Array.isArray(cache.data.subjects)) {
+    if (cache.data.subjects.length === 0) return false
+  } else if (cache.data.data?.subjects) {
+    if (Array.isArray(cache.data.data.subjects) && cache.data.data.subjects.length === 0) return false
+  }
+  
+  return true
+}
+
+function loadCachedFilters(key: string): { etag: string | null; expiresAt: number | null; data: any | null; isValid: boolean } {
   try {
     const raw = localStorage.getItem(key)
-    if (!raw) return { etag: null, expiresAt: null, data: null }
-    const parsed = JSON.parse(raw)
+    if (!raw) return { etag: null, expiresAt: null, data: null, isValid: false }
+    
+    const parsed = JSON.parse(raw) as FiltersCache
+    const valid = isCacheValid(parsed)
+    
     return {
       etag: typeof parsed?.etag === 'string' ? parsed.etag : null,
       expiresAt: typeof parsed?.expiresAt === 'number' ? parsed.expiresAt : null,
       data: parsed?.data ?? null,
+      isValid: valid,
     }
   } catch {
-    return { etag: null, expiresAt: null, data: null }
+    return { etag: null, expiresAt: null, data: null, isValid: false }
   }
 }
 
 function saveCachedFilters(key: string, payload: { etag: string | null; expiresIn: number | null; data: any }): void {
   try {
+    const now = Date.now()
     const expiresAt = typeof payload.expiresIn === 'number' && payload.expiresIn > 0
-      ? Date.now() + payload.expiresIn * 1000
+      ? now + payload.expiresIn * 1000
       : null
-    localStorage.setItem(
-      key,
-      JSON.stringify({
-        etag: payload.etag,
-        expiresAt,
-        data: payload.data,
-      })
-    )
+    
+    const cache: FiltersCache = {
+      v: CACHE_VERSION,
+      savedAt: now,
+      ttlMs: DEFAULT_TTL_MS,
+      etag: payload.etag,
+      expiresAt,
+      data: payload.data,
+    }
+    
+    localStorage.setItem(key, JSON.stringify(cache))
   } catch {
     // ignore
   }
@@ -763,20 +799,28 @@ export const marketplaceApi = {
    */
   async getFilterOptions(): Promise<FilterOptions> {
     const cached = loadCachedFilters(FILTERS_CACHE_KEY)
-    if (cached.data && cached.expiresAt && cached.expiresAt > Date.now()) {
+    
+    // P0 fix: only use cache if it's valid (TTL + non-empty subjects)
+    if (cached.isValid && cached.data) {
       return cached.data as FilterOptions
     }
 
     let response: RawFilterOptionsResponse
     try {
-      // Try modern endpoint first to support ETag/expires_in contract
-      if (cached.etag) {
+      // P0 fix: only send ETag if cache is valid, otherwise force fresh fetch
+      if (cached.isValid && cached.etag) {
         const full = await apiGetFull<any>('/v1/marketplace/marketplace/filters/', {
           headers: { 'If-None-Match': cached.etag },
           validateStatus: (s: number) => (s >= 200 && s < 300) || s === 304,
         })
-        if (full.status === 304 && cached.data) {
-          return cached.data as FilterOptions
+        // P0 fix: on 304, re-validate cache before returning
+        if (full.status === 304) {
+          if (cached.isValid && cached.data) {
+            return cached.data as FilterOptions
+          }
+          // Cache invalid despite 304 → clear ETag and retry
+          localStorage.removeItem(FILTERS_CACHE_KEY)
+          return this.getFilterOptions()
         }
         const payload = full.data
         const data = payload?.data ?? payload
@@ -928,19 +972,27 @@ export const marketplaceApi = {
    */
   async getExtendedFilterOptions(): Promise<ExtendedFilterOptions> {
     const cached = loadCachedFilters(EXT_FILTERS_CACHE_KEY)
-    if (cached.data && cached.expiresAt && cached.expiresAt > Date.now()) {
+    
+    // P0 fix: only use cache if it's valid (TTL + non-empty subjects)
+    if (cached.isValid && cached.data) {
       return cached.data as ExtendedFilterOptions
     }
 
     try {
-      // Prefer contract endpoint with ETag
-      if (cached.etag) {
+      // P0 fix: only send ETag if cache is valid, otherwise force fresh fetch
+      if (cached.isValid && cached.etag) {
         const full = await apiGetFull<any>('/v1/marketplace/marketplace/filters/', {
           headers: { 'If-None-Match': cached.etag },
           validateStatus: (s: number) => (s >= 200 && s < 300) || s === 304,
         })
-        if (full.status === 304 && cached.data) {
-          return cached.data as ExtendedFilterOptions
+        // P0 fix: on 304, re-validate cache before returning
+        if (full.status === 304) {
+          if (cached.isValid && cached.data) {
+            return cached.data as ExtendedFilterOptions
+          }
+          // Cache invalid despite 304 → clear ETag and retry
+          localStorage.removeItem(EXT_FILTERS_CACHE_KEY)
+          return this.getExtendedFilterOptions()
         }
         const payload = full.data
         const data = payload?.data ?? payload
