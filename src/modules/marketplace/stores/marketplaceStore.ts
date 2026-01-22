@@ -19,6 +19,7 @@ import marketplaceApi, {
   type SpecialtyTagCatalog,
   type TagGroup,
 } from '../api/marketplace'
+import type { SubjectTagMap } from '../types/subjectTagMap'
 import { debugPayload } from '../adapters/profileAdapter'
 import { notifyError } from '@/utils/notify'
 import { useAuthStore } from '@/stores/authStore'
@@ -47,6 +48,12 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
 
   // Filter options
   const filterOptions = ref<FilterOptions | null>(null)
+  const isFilterOptionsLoading = ref(false)
+  const filterOptionsError = ref<string | null>(null)
+  
+  // v0.85: Catalog versioning and subject tag map
+  const catalogVersion = ref<string | null>(null)
+  const subjectTagMap = ref<any | null>(null)
 
   // Error state
   const error = ref<string | null>(null)
@@ -378,10 +385,36 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
   }
 
   async function loadFilterOptions(): Promise<void> {
+    // Prevent concurrent loading
+    if (isFilterOptionsLoading.value) {
+      return
+    }
+    
+    // Skip if already loaded (idempotent)
+    if (subjectTagMap.value && catalogVersion.value) {
+      return
+    }
+    
+    isFilterOptionsLoading.value = true
+    filterOptionsError.value = null
+    
     try {
-      filterOptions.value = await marketplaceApi.getFilterOptions()
+      const options = await marketplaceApi.getFilterOptions()
+      filterOptions.value = options
+      
+      // v0.85: Store catalog version and subject tag map
+      if (options.catalogVersion) {
+        catalogVersion.value = options.catalogVersion
+      }
+      if (options.subjectTagMap) {
+        subjectTagMap.value = options.subjectTagMap as SubjectTagMap
+      }
     } catch (err) {
       console.error('[MarketplaceStore] loadFilterOptions error:', err)
+      filterOptionsError.value = mapApiError(err, 'Failed to load filter options')
+      throw err
+    } finally {
+      isFilterOptionsLoading.value = false
     }
   }
 
@@ -432,6 +465,8 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     currentProfile.value = null
     myProfile.value = null
     filterOptions.value = null
+    isFilterOptionsLoading.value = false
+    filterOptionsError.value = null
     error.value = null
     isLoading.value = false
     isLoadingProfile.value = false
@@ -441,6 +476,9 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     catalogTags.value = []
     catalogLoading.value = false
     catalogError.value = null
+    // v0.85
+    catalogVersion.value = null
+    subjectTagMap.value = null
   }
 
   return {
@@ -459,6 +497,8 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     isLoadingMyProfile,
     isSaving,
     filterOptions,
+    isFilterOptionsLoading,
+    filterOptionsError,
     error,
     validationErrors,
 
@@ -467,6 +507,10 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     catalogTags,
     catalogLoading,
     catalogError,
+    
+    // v0.85 Catalog versioning
+    catalogVersion,
+    subjectTagMap,
 
     // Getters
     hasMore,

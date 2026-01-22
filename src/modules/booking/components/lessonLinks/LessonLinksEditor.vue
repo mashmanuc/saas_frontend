@@ -501,7 +501,6 @@ onMounted(() => {
   display: inline-block;
   width: 48px;
   height: 24px;
-{{ ... }
 }
 
 .toggle-switch input {

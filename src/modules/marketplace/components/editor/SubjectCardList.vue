@@ -10,6 +10,7 @@ interface SubjectCard {
   title: string
   tags: string[]
   custom_direction_text: string
+  availableTags?: SpecialtyTagCatalog[]
 }
 
 interface LanguageCard {
@@ -139,6 +140,7 @@ function handleRemoveLanguage(languageCode: string) {
         :title="subject.title"
         :tabs="subjectTabs"
         :tags="subjectTags"
+        :available-tags="subject.availableTags"
         :selected-tags="subject.tags"
         :description="subject.custom_direction_text"
         type="subject"

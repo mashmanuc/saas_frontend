@@ -671,7 +671,8 @@ const subjectOptions = computed(() => {
     )
   }
 
-  const opts = props.filterOptions?.subjects
+  // v0.88: Use default_subjects for chips (whitelist 10)
+  const opts = props.filterOptions?.default_subjects || props.filterOptions?.subjects
   if (Array.isArray(opts) && opts.length > 0) {
     return opts.map((o) => ({ value: o.value, label: translateSubject(o.value, o.label) }))
   }
@@ -679,6 +680,29 @@ const subjectOptions = computed(() => {
     value: option.value,
     label: translateSubject(option.value, option.label),
   }))
+})
+
+// v0.88: All subjects for dropdown (excluding defaults and already selected)
+const allSubjectOptions = computed(() => {
+  const translateSubject = (code: string, fallback?: string) => {
+    return (
+      catalog.getSubjectTitle(code) ||
+      t(`marketplace.subjects.${code}`, fallback || code)
+    )
+  }
+
+  const allSubjects = props.filterOptions?.subjects || []
+  const defaultCodes = new Set((props.filterOptions?.default_subjects || []).map((s) => s.value))
+  const selectedCodes = new Set(formData.value.subjects?.map((s: any) => s.code) || [])
+
+  return allSubjects
+    .filter((s) => {
+      return !defaultCodes.has(s.value) && !selectedCodes.has(s.value)
+    })
+    .map((o) => ({
+      value: o.value,
+      label: translateSubject(o.value, o.label),
+    }))
 })
 
 const SUBJECT_GROUP_TO_CATEGORY: Record<string, LanguageTag['category']> = {
@@ -1099,6 +1123,7 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
 
       <SubjectsTab
         :subject-options="subjectOptions"
+        :all-subject-options="allSubjectOptions"
         :languages="languagesCatalog.languages.value.length ? languagesCatalog.languages.value : fallbackLanguageSubjects"
         :subjects="formData.subjects"
         :subject-tags="subjectTagChips"

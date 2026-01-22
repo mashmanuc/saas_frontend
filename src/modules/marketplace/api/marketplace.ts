@@ -17,9 +17,9 @@ async function apiGetFull<T>(path: string, config: any = {}): Promise<ApiClientF
   }
 }
 
-const FILTERS_CACHE_KEY = 'marketplace_filters_cache_v39'
-const EXT_FILTERS_CACHE_KEY = 'marketplace_ext_filters_cache_v39'
-const CACHE_VERSION = 1
+const FILTERS_CACHE_KEY_PREFIX = 'marketplace_filters_cache'
+const EXT_FILTERS_CACHE_KEY_PREFIX = 'marketplace_ext_filters_cache'
+const CACHE_VERSION = 2 // v0.85: bumped for catalog_version support
 const DEFAULT_TTL_MS = 15 * 60 * 1000 // 15 minutes
 
 interface FiltersCache {
@@ -28,14 +28,20 @@ interface FiltersCache {
   ttlMs: number
   etag: string | null
   expiresAt: number | null
+  catalogVersion: string | null // v0.85: catalog version for self-healing
   data: any | null
 }
 
-function isCacheValid(cache: FiltersCache | null): boolean {
+function isCacheValid(cache: FiltersCache | null, currentCatalogVersion?: string | null): boolean {
   if (!cache) return false
   if (cache.v !== CACHE_VERSION) return false
   if (Date.now() - cache.savedAt > cache.ttlMs) return false
   if (!cache.data) return false
+  
+  // v0.85: Invalidate cache if catalog version changed (self-healing)
+  if (currentCatalogVersion && cache.catalogVersion && cache.catalogVersion !== currentCatalogVersion) {
+    return false
+  }
   
   // Critical: validate that subjects array exists and is not empty
   // This prevents the "eternal empty cache" bug
@@ -48,26 +54,27 @@ function isCacheValid(cache: FiltersCache | null): boolean {
   return true
 }
 
-function loadCachedFilters(key: string): { etag: string | null; expiresAt: number | null; data: any | null; isValid: boolean } {
+function loadCachedFilters(key: string, currentCatalogVersion?: string | null): { etag: string | null; expiresAt: number | null; catalogVersion: string | null; data: any | null; isValid: boolean } {
   try {
     const raw = localStorage.getItem(key)
-    if (!raw) return { etag: null, expiresAt: null, data: null, isValid: false }
+    if (!raw) return { etag: null, expiresAt: null, catalogVersion: null, data: null, isValid: false }
     
     const parsed = JSON.parse(raw) as FiltersCache
-    const valid = isCacheValid(parsed)
+    const valid = isCacheValid(parsed, currentCatalogVersion)
     
     return {
       etag: typeof parsed?.etag === 'string' ? parsed.etag : null,
       expiresAt: typeof parsed?.expiresAt === 'number' ? parsed.expiresAt : null,
+      catalogVersion: typeof parsed?.catalogVersion === 'string' ? parsed.catalogVersion : null,
       data: parsed?.data ?? null,
       isValid: valid,
     }
   } catch {
-    return { etag: null, expiresAt: null, data: null, isValid: false }
+    return { etag: null, expiresAt: null, catalogVersion: null, data: null, isValid: false }
   }
 }
 
-function saveCachedFilters(key: string, payload: { etag: string | null; expiresIn: number | null; data: any }): void {
+function saveCachedFilters(key: string, payload: { etag: string | null; expiresIn: number | null; catalogVersion: string | null; data: any }): void {
   try {
     const now = Date.now()
     const expiresAt = typeof payload.expiresIn === 'number' && payload.expiresIn > 0
@@ -80,6 +87,7 @@ function saveCachedFilters(key: string, payload: { etag: string | null; expiresI
       ttlMs: DEFAULT_TTL_MS,
       etag: payload.etag,
       expiresAt,
+      catalogVersion: payload.catalogVersion,
       data: payload.data,
     }
     
@@ -602,17 +610,25 @@ export interface CatalogTag {
 
 export interface FilterOptions {
   subjects: Array<{ value: string; label: string; count: number }>
+  default_subjects?: Array<{ value: string; label: string; count: number }> // v0.88: whitelist for chips
   countries: Array<{ value: string; label: string; count: number }>
   languages: Array<{ value: string; label: string; count: number }>
   priceRange: { min: number; max: number }
+  catalogVersion?: string // v0.85: catalog version for self-healing cache
+  subjectTagMap?: any // v0.85: subject tag map (use SubjectTagMap type from types/subjectTagMap.ts)
 }
 
 type RawFilterOptionsResponse = {
   subjects?: Array<{ slug?: string; name?: string; tutor_count?: number }>
+  default_subjects?: Array<{ slug?: string; name?: string; tutor_count?: number }> // v0.88: whitelist
   countries?: Array<{ code?: string; name?: string; count?: number }>
   languages?: Array<{ code?: string; name?: string; count?: number }>
   priceRange?: { min?: number; max?: number }
   price_range?: { min?: number; max?: number }
+  catalog_version?: string // v0.85: snake_case from backend
+  catalogVersion?: string // v0.85: camelCase variant
+  subject_tag_map?: any // v0.85: snake_case from backend
+  subjectTagMap?: any // v0.85: camelCase variant
 }
 
 export interface PaginatedResponse<T> {
@@ -798,7 +814,18 @@ export const marketplaceApi = {
    * Get filter options (subjects, countries, languages).
    */
   async getFilterOptions(): Promise<FilterOptions> {
-    const cached = loadCachedFilters(FILTERS_CACHE_KEY)
+    // v0.85: Build versioned cache key
+    let cacheKey = FILTERS_CACHE_KEY_PREFIX
+    
+    // First, try to get catalog version from a quick peek at cache
+    const quickPeek = loadCachedFilters(cacheKey)
+    const catalogVersion = quickPeek.catalogVersion
+    
+    if (catalogVersion) {
+      cacheKey = `${FILTERS_CACHE_KEY_PREFIX}:${catalogVersion}`
+    }
+    
+    const cached = loadCachedFilters(cacheKey, catalogVersion)
     
     // P0 fix: only use cache if it's valid (TTL + non-empty subjects)
     if (cached.isValid && cached.data) {
@@ -819,15 +846,24 @@ export const marketplaceApi = {
             return cached.data as FilterOptions
           }
           // Cache invalid despite 304 → clear ETag and retry
-          localStorage.removeItem(FILTERS_CACHE_KEY)
+          localStorage.removeItem(cacheKey)
           return this.getFilterOptions()
         }
         const payload = full.data
         const data = payload?.data ?? payload
         const etag = (payload?.etag ?? full.headers?.etag ?? cached.etag) || null
         const expiresIn = typeof payload?.expires_in === 'number' ? payload.expires_in : null
+        const newCatalogVersion = data?.catalog_version || data?.catalogVersion || null
         response = data as RawFilterOptionsResponse
-        saveCachedFilters(FILTERS_CACHE_KEY, { etag: etag ? String(etag) : null, expiresIn, data: response })
+        
+        // v0.85: Save with catalog version
+        const versionedKey = newCatalogVersion ? `${FILTERS_CACHE_KEY_PREFIX}:${newCatalogVersion}` : cacheKey
+        saveCachedFilters(versionedKey, { 
+          etag: etag ? String(etag) : null, 
+          expiresIn, 
+          catalogVersion: newCatalogVersion, 
+          data: response 
+        })
       } else {
         const full = await apiGetFull<any>('/v1/marketplace/marketplace/filters/', {
           validateStatus: (s: number) => s >= 200 && s < 300,
@@ -836,8 +872,17 @@ export const marketplaceApi = {
         const data = payload?.data ?? payload
         const etag = (payload?.etag ?? full.headers?.etag ?? null)
         const expiresIn = typeof payload?.expires_in === 'number' ? payload.expires_in : null
+        const newCatalogVersion = data?.catalog_version || data?.catalogVersion || null
         response = data as RawFilterOptionsResponse
-        saveCachedFilters(FILTERS_CACHE_KEY, { etag: etag ? String(etag) : null, expiresIn, data: response })
+        
+        // v0.85: Save with catalog version
+        const versionedKey = newCatalogVersion ? `${FILTERS_CACHE_KEY_PREFIX}:${newCatalogVersion}` : cacheKey
+        saveCachedFilters(versionedKey, { 
+          etag: etag ? String(etag) : null, 
+          expiresIn, 
+          catalogVersion: newCatalogVersion, 
+          data: response 
+        })
       }
     } catch (err) {
       if (isHttp404(err)) {
@@ -891,6 +936,18 @@ export const marketplaceApi = {
             .filter(Boolean)
             .map((x) => x as { value: string; label: string; count: number })
         : [],
+      default_subjects: Array.isArray(response.default_subjects)
+        ? response.default_subjects
+            .map((s) =>
+              normalizeOption(s, {
+                value: ['value', 'slug', 'code'],
+                label: ['label', 'name'],
+                count: ['count', 'tutor_count'],
+              })
+            )
+            .filter(Boolean)
+            .map((x) => x as { value: string; label: string; count: number })
+        : undefined,
       countries: Array.isArray(response.countries)
         ? response.countries
             .map((c) =>
@@ -919,6 +976,8 @@ export const marketplaceApi = {
         min: Number(rawPrice.min ?? 0),
         max: Number(rawPrice.max ?? 0),
       },
+      catalogVersion: response.catalog_version || response.catalogVersion,
+      subjectTagMap: response.subject_tag_map || response.subjectTagMap,
     }
   },
 
@@ -971,7 +1030,18 @@ export const marketplaceApi = {
    * Get extended filter options.
    */
   async getExtendedFilterOptions(): Promise<ExtendedFilterOptions> {
-    const cached = loadCachedFilters(EXT_FILTERS_CACHE_KEY)
+    // v0.85: Build versioned cache key
+    let cacheKey = EXT_FILTERS_CACHE_KEY_PREFIX
+    
+    // First, try to get catalog version from a quick peek at cache
+    const quickPeek = loadCachedFilters(cacheKey)
+    const catalogVersion = quickPeek.catalogVersion
+    
+    if (catalogVersion) {
+      cacheKey = `${EXT_FILTERS_CACHE_KEY_PREFIX}:${catalogVersion}`
+    }
+    
+    const cached = loadCachedFilters(cacheKey, catalogVersion)
     
     // P0 fix: only use cache if it's valid (TTL + non-empty subjects)
     if (cached.isValid && cached.data) {
@@ -991,14 +1061,23 @@ export const marketplaceApi = {
             return cached.data as ExtendedFilterOptions
           }
           // Cache invalid despite 304 → clear ETag and retry
-          localStorage.removeItem(EXT_FILTERS_CACHE_KEY)
+          localStorage.removeItem(cacheKey)
           return this.getExtendedFilterOptions()
         }
         const payload = full.data
         const data = payload?.data ?? payload
         const etag = (payload?.etag ?? full.headers?.etag ?? cached.etag) || null
         const expiresIn = typeof payload?.expires_in === 'number' ? payload.expires_in : null
-        saveCachedFilters(EXT_FILTERS_CACHE_KEY, { etag: etag ? String(etag) : null, expiresIn, data })
+        const newCatalogVersion = data?.catalog_version || data?.catalogVersion || null
+        
+        // v0.85: Save with catalog version
+        const versionedKey = newCatalogVersion ? `${EXT_FILTERS_CACHE_KEY_PREFIX}:${newCatalogVersion}` : cacheKey
+        saveCachedFilters(versionedKey, { 
+          etag: etag ? String(etag) : null, 
+          expiresIn, 
+          catalogVersion: newCatalogVersion, 
+          data 
+        })
         return data as ExtendedFilterOptions
       }
 
@@ -1009,7 +1088,16 @@ export const marketplaceApi = {
       const data = payload?.data ?? payload
       const etag = (payload?.etag ?? full.headers?.etag ?? null)
       const expiresIn = typeof payload?.expires_in === 'number' ? payload.expires_in : null
-      saveCachedFilters(EXT_FILTERS_CACHE_KEY, { etag: etag ? String(etag) : null, expiresIn, data })
+      const newCatalogVersion = data?.catalog_version || data?.catalogVersion || null
+      
+      // v0.85: Save with catalog version
+      const versionedKey = newCatalogVersion ? `${EXT_FILTERS_CACHE_KEY_PREFIX}:${newCatalogVersion}` : cacheKey
+      saveCachedFilters(versionedKey, { 
+        etag: etag ? String(etag) : null, 
+        expiresIn, 
+        catalogVersion: newCatalogVersion, 
+        data 
+      })
       return data as ExtendedFilterOptions
     } catch (err) {
       if (isHttp404(err)) {

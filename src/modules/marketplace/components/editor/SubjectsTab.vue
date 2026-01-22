@@ -9,12 +9,18 @@
  *
  * Source of truth: formData.subjects
  */
-import { computed, ref } from 'vue'
+import { computed, ref, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import SubjectSelectionPanel from './SubjectSelectionPanel.vue'
 import SubjectCardList from './SubjectCardList.vue'
 import type { Language, LanguageTag } from '../../api/languages'
 import type { SpecialtyTagCatalog } from '../../api/marketplace'
+import { useMarketplaceStore } from '../../stores/marketplaceStore'
+import { filterTagsForSubjectSafe } from '../../utils/subjectTagResolver'
+
+// v0.86: Subject tab mode (subjects vs languages as subjects)
+type SubjectTabMode = 'subjects' | 'languages'
+const STORAGE_KEY = 'marketplace_subject_tab_mode_v1'
 
 interface SubjectOption {
   value: string
@@ -29,6 +35,7 @@ interface SelectedSubject {
 
 const props = defineProps<{
   subjectOptions: SubjectOption[]
+  allSubjectOptions?: SubjectOption[] // v0.88: dropdown with all other subjects
   languages: Language[]
   subjects: SelectedSubject[]
   subjectTags: LanguageTag[]
@@ -37,6 +44,9 @@ const props = defineProps<{
   getSubjectLabel: (code: string) => string
 }>()
 
+// v0.85: Access store for subject tag map
+const marketplaceStore = useMarketplaceStore()
+
 const emit = defineEmits<{
   (e: 'select-subject', code: string): void
   (e: 'update:subjects', subjects: SelectedSubject[]): void
@@ -44,10 +54,39 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
+// v0.86: Mode selection state with localStorage persistence
+const selectedMode = ref<SubjectTabMode>('subjects')
 const selectedSubjectCode = ref('')
 const selectedLanguageCode = ref('')
 const isOtherLanguagesExpanded = ref(false)
 const languageSearchQuery = ref('')
+
+// v0.86: Load mode from localStorage on mount
+// v0.87: Ensure subject tag map is loaded before rendering tags
+onMounted(async () => {
+  // Load subject tag map (idempotent, won't reload if already loaded)
+  await marketplaceStore.loadFilterOptions()
+  
+  const stored = localStorage.getItem(STORAGE_KEY)
+  if (stored === 'subjects' || stored === 'languages') {
+    selectedMode.value = stored
+  } else {
+    // Smart default: if user has language subjects but no basic subjects, default to languages
+    if (languageSubjectCodes.value.length > 0 && basicSubjectCodes.value.length === 0) {
+      selectedMode.value = 'languages'
+    }
+  }
+})
+
+// v0.86: Persist mode to localStorage on change
+watch(selectedMode, (newMode) => {
+  localStorage.setItem(STORAGE_KEY, newMode)
+})
+
+// v0.86: Mode switch handler
+function handleModeSwitch(mode: SubjectTabMode) {
+  selectedMode.value = mode
+}
 
 // v0.84.0: Popular learning languages (ISO codes)
 // Фіксований список популярних мов для швидкого вибору
@@ -91,6 +130,20 @@ const otherLanguages = computed(() => {
   return others
 })
 
+// v0.87: FAIL-CLOSED - Get available tags for a specific subject
+// Returns empty array if map not loaded or subject not configured
+// This prevents showing incorrect tags (e.g., language tags for STEM)
+function getAvailableTagsForSubject(subjectCode: string): SpecialtyTagCatalog[] {
+  const tagMap = marketplaceStore.subjectTagMap
+  
+  // FAIL-CLOSED: Use safe filter that returns [] if map not ready
+  return filterTagsForSubjectSafe(
+    subjectCode,
+    props.subjectTagCatalog,
+    tagMap
+  )
+}
+
 // v0.84.0: Розділяємо основні предмети та мови для SubjectCardList
 const basicSubjects = computed(() =>
   props.subjects
@@ -100,6 +153,8 @@ const basicSubjects = computed(() =>
       title: props.getSubjectLabel(s.code),
       tags: s.tags || [],
       custom_direction_text: s.custom_direction_text || '',
+      // v0.87: Pass available tags (FAIL-CLOSED - returns [] if map not ready)
+      availableTags: getAvailableTagsForSubject(s.code),
     }))
 )
 
@@ -168,24 +223,56 @@ function handleTogglePopularLanguage(langCode: string) {
 
 <template>
   <div class="subjects-tab" data-test="subjects-tab">
-    <!-- Секція 1: Основні предмети -->
-    <section class="subject-selection-area" aria-labelledby="basic-subjects-title">
+    <!-- v0.86: Mode selector -->
+    <section class="mode-selector-section" aria-labelledby="mode-selector-title">
+      <h3 id="mode-selector-title">{{ t('marketplace.subjects.modeSelector.title') }}</h3>
+      
+      <div class="mode-selector" role="radiogroup" :aria-label="t('marketplace.subjects.modeSelector.title')">
+        <button
+          type="button"
+          class="mode-option"
+          :class="{ 'is-active': selectedMode === 'subjects' }"
+          role="radio"
+          :aria-checked="selectedMode === 'subjects'"
+          @click="handleModeSwitch('subjects')"
+        >
+          {{ t('marketplace.subjects.modeSelector.subjects') }}
+        </button>
+        <button
+          type="button"
+          class="mode-option"
+          :class="{ 'is-active': selectedMode === 'languages' }"
+          role="radio"
+          :aria-checked="selectedMode === 'languages'"
+          @click="handleModeSwitch('languages')"
+        >
+          {{ t('marketplace.subjects.modeSelector.languagesAsSubjects') }}
+        </button>
+      </div>
+      
+      <p class="mode-hint">
+        {{ t('marketplace.subjects.modeSelector.teachingLanguageHint') }}
+      </p>
+    </section>
+
+    <!-- Секція 1: Основні предмети (показується тільки в режимі 'subjects') -->
+    <section v-if="selectedMode === 'subjects'" class="subject-selection-area" aria-labelledby="basic-subjects-title">
       <h3 id="basic-subjects-title">{{ t('marketplace.subjects.basicSubjectsTitle') }}</h3>
       <p class="section-hint">{{ t('marketplace.subjects.basicSubjectsHint') }}</p>
 
       <div class="subject-picker-row">
         <select
           v-model="selectedSubjectCode"
-          :aria-label="t('marketplace.profile.editor.selectSubject')"
+          class="subject-select"
         >
           <option value="">{{ t('marketplace.profile.editor.selectSubject') }}</option>
           <option
-            v-for="option in subjectOptions"
+            v-for="option in (allSubjectOptions && allSubjectOptions.length > 0 ? allSubjectOptions : subjectOptions)"
             :key="option.value"
             :value="option.value"
             :disabled="basicSubjectCodes.includes(option.value)"
           >
-            {{ option.label }}{{ basicSubjectCodes.includes(option.value) ? ' ✓' : '' }}
+            {{ option.label }}
           </option>
         </select>
         <button
@@ -208,8 +295,8 @@ function handleTogglePopularLanguage(langCode: string) {
       />
     </section>
 
-    <!-- Секція 2: Мови для вивчення (language_<iso>) -->
-    <section class="subject-selection-area language-subjects-area" aria-labelledby="language-subjects-title">
+    <!-- Секція 2: Мови для вивчення (показується тільки в режимі 'languages') -->
+    <section v-if="selectedMode === 'languages'" class="subject-selection-area language-subjects-area" aria-labelledby="language-subjects-title">
       <h3 id="language-subjects-title">{{ t('marketplace.subjects.languagesAsSubjectsTitle') }}</h3>
       <p class="section-hint">{{ t('marketplace.subjects.languagesAsSubjectsHint') }}</p>
 
@@ -300,10 +387,82 @@ function handleTogglePopularLanguage(langCode: string) {
 
 <style scoped>
 /* v0.84.0: SubjectsTab - redesigned UX */
+/* v0.86: Added mode selector */
 .subjects-tab {
   display: flex;
   flex-direction: column;
   gap: var(--space-xl);
+}
+
+/* v0.86: Mode selector section */
+.mode-selector-section {
+  margin-bottom: var(--space-lg);
+}
+
+.mode-selector-section h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: var(--space-md);
+  color: var(--text-primary);
+}
+
+.mode-selector {
+  display: inline-flex;
+  gap: 0;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--surface-card);
+  margin-bottom: var(--space-sm);
+}
+
+.mode-option {
+  padding: 0.625rem 1.5rem;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.mode-option:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 25%;
+  height: 50%;
+  width: 1px;
+  background: var(--border-color);
+}
+
+.mode-option:hover {
+  background: var(--surface-card-muted);
+}
+
+.mode-option:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: -2px;
+  z-index: 1;
+}
+
+.mode-option.is-active {
+  background: var(--accent-primary);
+  color: white;
+  font-weight: 600;
+}
+
+.mode-option.is-active::after {
+  display: none;
+}
+
+.mode-hint {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-top: var(--space-sm);
 }
 
 .subject-selection-area {

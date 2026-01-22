@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { LanguageTag } from '../../api/languages'
+import type { SpecialtyTagCatalog } from '../../api/marketplace'
 
 interface Tab {
   id: string
@@ -12,6 +13,7 @@ interface Props {
   title: string
   tabs: Tab[]
   tags: LanguageTag[]
+  availableTags?: SpecialtyTagCatalog[]
   selectedTags: string[]
   description: string
   type: 'subject' | 'language'
@@ -31,7 +33,29 @@ const isExpanded = ref(true)
 
 const tagsForCurrentTab = computed(() => {
   if (activeTab.value === 'description') return []
+  
+  // If availableTags is provided (for subjects with tag map), use it
+  if (props.availableTags !== undefined) {
+    const availableCodes = new Set(props.availableTags.map(t => t.code))
+    return props.tags.filter(tag => 
+      tag.category === activeTab.value && availableCodes.has(tag.code)
+    )
+  }
+  
+  // Otherwise use all tags (for languages or backward compatibility)
   return props.tags.filter(tag => tag.category === activeTab.value)
+})
+
+const hasTagMapConfiguration = computed(() => {
+  // If availableTags is explicitly provided and is empty array, subject has no tag map config
+  return props.availableTags === undefined || props.availableTags.length > 0
+})
+
+const showTagMapWarning = computed(() => {
+  return props.type === 'subject' && 
+         props.availableTags !== undefined && 
+         props.availableTags.length === 0 &&
+         activeTab.value !== 'description'
 })
 
 function handleToggleTag(code: string) {
@@ -79,19 +103,31 @@ function handleDescriptionChange(event: Event) {
       </div>
 
       <div v-if="activeTab !== 'description'" class="tag-grid">
-        <button
-          v-for="tag in tagsForCurrentTab"
-          :key="tag.code"
-          type="button"
-          class="tag-chip"
-          :class="{ 'is-active': selectedTags.includes(tag.code) }"
-          @click="handleToggleTag(tag.code)"
-        >
-          {{ tag.title }}
-        </button>
-        <p v-if="tagsForCurrentTab.length === 0" class="empty-state">
-          {{ t('marketplace.editor.noTagsAvailable') }}
-        </p>
+        <!-- Warning: Subject has no tag map configuration -->
+        <div v-if="showTagMapWarning" class="tag-map-warning" role="alert">
+          <span class="warning-icon">⚠️</span>
+          <div class="warning-content">
+            <strong>{{ t('marketplace.editor.tagMapNotConfigured') || 'Теги не налаштовані' }}</strong>
+            <p>{{ t('marketplace.editor.tagMapNotConfiguredHint') || 'Для цього предмета ще не налаштовано список доступних тегів. Ви можете заповнити опис у вкладці "Опис".' }}</p>
+          </div>
+        </div>
+        
+        <!-- Tags grid (only if tags available) -->
+        <template v-else>
+          <button
+            v-for="tag in tagsForCurrentTab"
+            :key="tag.code"
+            type="button"
+            class="tag-chip"
+            :class="{ 'is-active': selectedTags.includes(tag.code) }"
+            @click="handleToggleTag(tag.code)"
+          >
+            {{ tag.title }}
+          </button>
+          <p v-if="tagsForCurrentTab.length === 0" class="empty-state">
+            {{ t('marketplace.editor.noTagsAvailable') }}
+          </p>
+        </template>
       </div>
 
       <div v-else class="description-section">
@@ -225,6 +261,40 @@ function handleDescriptionChange(event: Event) {
   border-color: var(--accent-primary);
   background: var(--accent-primary);
   color: white;
+}
+
+.tag-map-warning {
+  display: flex;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background: color-mix(in srgb, var(--warning, #f59e0b) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warning, #f59e0b) 30%, transparent);
+  border-radius: var(--radius-md);
+  width: 100%;
+}
+
+.warning-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.warning-content {
+  flex: 1;
+}
+
+.warning-content strong {
+  display: block;
+  color: var(--text-primary);
+  font-size: 0.9375rem;
+  margin-bottom: 0.25rem;
+}
+
+.warning-content p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.5;
 }
 
 .empty-state {

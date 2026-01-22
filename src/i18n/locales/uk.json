@@ -740,6 +740,12 @@
     },
     "subjects": {
       "title": "Предмети",
+      "modeSelector": {
+        "title": "Що ви викладаєте?",
+        "subjects": "Предмети",
+        "languagesAsSubjects": "Мови як предмет",
+        "teachingLanguageHint": "Мова викладання налаштовується у вкладці 'Мова викладання'."
+      },
       "basicSubjectsTitle": "Основні предмети",
       "basicSubjectsHint": "Оберіть предмети, які ви викладаєте",
       "basicTitle": "Основні предмети",
@@ -804,7 +810,9 @@
       }
     },
     "editor": {
-      "noTagsAvailable": "Немає доступних тегів для цієї категорії"
+      "noTagsAvailable": "Немає доступних тегів для цієї категорії",
+      "tagMapNotConfigured": "Теги не налаштовані",
+      "tagMapNotConfiguredHint": "Для цього предмета ще не налаштовано список доступних тегів. Ви можете заповнити опис у вкладці \"Опис\"."
     },
     "countries": {
       "ukraine": "Україна",
