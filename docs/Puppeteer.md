@@ -94,9 +94,7 @@ Wait for page load.
 Login with provided credentials.
 After login,
 перейди з мобільної версії на десктопну
-Зайди на "Ваш план"
 
-### !!!!!
 
 логін і пароль
 m3@gmail.com

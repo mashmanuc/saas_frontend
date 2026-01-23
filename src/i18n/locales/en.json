@@ -568,6 +568,8 @@
       "clearAll": "Clear all"
     },
     "editor": {
+      "tagMapNotConfigured": "Tags not configured",
+      "tagMapNotConfiguredHint": "This subject doesn't have configured tags yet. Fill in the description tab for now.",
       "noTagsAvailable": "No tags available for this category"
     },
     "tagGroups": {
@@ -1025,6 +1027,7 @@
         "languageLevels": {
           "basic": "Basic",
           "conversational": "Conversational",
+          "intermediate": "Intermediate",
           "fluent": "Fluent",
           "native": "Native"
         }

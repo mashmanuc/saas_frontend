@@ -2,7 +2,7 @@
   "locales": {
     "en": {
       "status": "ok",
-      "totalKeys": 2873,
+      "totalKeys": 2881,
       "missing": [],
       "extra": [],
       "empty": [
@@ -11,14 +11,14 @@
     }
   },
   "summary": {
-    "totalKeys": 2873,
+    "totalKeys": 2881,
     "locales": 2,
     "errors": 0,
     "warnings": 2
   },
   "usage": {
-    "scannedFiles": 888,
-    "detectedKeys": 2318,
+    "scannedFiles": 894,
+    "detectedKeys": 2322,
     "unusedKeys": [
       "billing.cta.learnMore",
       "billing.error.alreadySubscribed",
@@ -424,6 +424,7 @@
       "marketplace.languages.popularTitle",
       "marketplace.profile.badgesHistory.loadError",
       "marketplace.profile.badgesHistory.loading",
+      "marketplace.profile.editor.languageLevels.conversational",
       "marketplace.profile.editor.subjectsHint",
       "marketplace.profile.editor.subjectsLanguagesTitle",
       "marketplace.profile.editor.validation.languages",
@@ -550,6 +551,9 @@
       "staff.reports.statusACTIONED",
       "staff.reports.statusDISMISSED",
       "staff.reports.statusOPEN",
+      "tutor.lessonLinks.platformGenerated",
+      "tutor.lessonLinks.platformInfo",
+      "tutor.lessonLinks.providers.platform",
       "tutorSearch.lessonLinks.backup.description",
       "tutorSearch.lessonLinks.backup.title",
       "tutorSearch.lessonLinks.errors.conflict",

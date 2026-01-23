@@ -1184,6 +1184,7 @@
         "languageLevels": {
           "basic": "Початковий",
           "conversational": "Розмовний",
+          "intermediate": "Середній",
           "fluent": "Вільно",
           "native": "Рідна"
         },
@@ -3563,7 +3564,7 @@
     "lessons": {
       "detail": {
         "roles": {
-          "${participant.role}": ""
+          "${participant.role}": "{participant.role}"
         }
       }
     },
