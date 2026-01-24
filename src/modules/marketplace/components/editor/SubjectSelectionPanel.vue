@@ -29,8 +29,8 @@ const { t } = useI18n()
 const searchQuery = ref('')
 const isOtherLanguagesExpanded = ref(false)
 
-// Основні предмети (не мови)
-const basicSubjects = computed(() => 
+// Популярні предмети (не мови)
+const popularSubjects = computed(() => 
   props.subjects.filter(s => s.is_popular && s.category !== 'languages').slice(0, 12)
 )
 
@@ -64,12 +64,16 @@ function handleSelectLanguageSubject(code: string) {
 
 <template>
   <div class="subject-selection-panel" data-test="subject-selection-panel">
-    <!-- Основні предмети (математика, фізика тощо) -->
+    <!-- Предмети -->
     <section class="selection-section">
-      <h3>{{ t('marketplace.subjects.basicTitle') }}</h3>
+      <h3>{{ t('marketplace.subjects.title') }}</h3>
+      <p class="section-hint">{{ t('marketplace.subjects.basicSubjectsHint') }}</p>
+      
+      <!-- Популярні предмети (чіпси) -->
+      <h4 class="subsection-title">{{ t('marketplace.subjects.popularSubjectsTitle') }}</h4>
       <div class="subject-grid">
         <button
-          v-for="subject in basicSubjects"
+          v-for="subject in popularSubjects"
           :key="subject.code"
           type="button"
           class="subject-chip"
@@ -79,12 +83,16 @@ function handleSelectLanguageSubject(code: string) {
           {{ subject.title }}
         </button>
       </div>
+      
     </section>
 
-    <!-- Популярні європейські мови (як предмети викладання) -->
-    <section class="selection-section">
-      <h3>{{ t('marketplace.subjects.popularLanguagesTitle') }}</h3>
+    <!-- Мови для вивчення -->
+    <section v-if="languages.length > 0" class="selection-section">
+      <h3>{{ t('marketplace.subjects.languagesAsSubjectsTitle') }}</h3>
       <p class="section-hint">{{ t('marketplace.subjects.popularLanguagesHint') }}</p>
+      
+      <!-- Популярні мови (чіпси) -->
+      <h4 class="subsection-title">{{ t('marketplace.subjects.popularLanguagesTitle') }}</h4>
       <div class="language-chips">
         <button
           v-for="lang in popularLanguageSubjects"
@@ -97,37 +105,37 @@ function handleSelectLanguageSubject(code: string) {
           {{ lang.title }}
         </button>
       </div>
-    </section>
-
-    <!-- Інші мови (collapsible) -->
-    <section class="selection-section">
-      <button
-        type="button"
-        class="category-toggle"
-        @click="isOtherLanguagesExpanded = !isOtherLanguagesExpanded"
-      >
-        <span class="toggle-icon">{{ isOtherLanguagesExpanded ? '▼' : '▶' }}</span>
-        <h3>{{ t('marketplace.subjects.otherLanguagesTitle') }}</h3>
-      </button>
       
-      <div v-show="isOtherLanguagesExpanded" class="collapsible-content">
-        <input
-          v-model="searchQuery"
-          type="text"
-          :placeholder="t('marketplace.languages.searchPlaceholder')"
-          class="language-search"
-        />
-        <div class="language-list">
-          <button
-            v-for="lang in otherLanguageSubjects"
-            :key="lang.code"
-            type="button"
-            class="language-item"
-            :class="{ 'is-selected': selectedSubjects.includes(`language_${lang.code}`) }"
-            @click="handleSelectLanguageSubject(lang.code)"
-          >
-            {{ lang.title }}
-          </button>
+      <!-- Інші мови (collapsible) -->
+      <div class="other-items-section">
+        <button
+          type="button"
+          class="category-toggle"
+          @click="isOtherLanguagesExpanded = !isOtherLanguagesExpanded"
+        >
+          <span class="toggle-icon">{{ isOtherLanguagesExpanded ? '▼' : '▶' }}</span>
+          <span class="toggle-text">{{ t('marketplace.subjects.otherLanguagesTitle') }}</span>
+        </button>
+        
+        <div v-show="isOtherLanguagesExpanded" class="collapsible-content">
+          <input
+            v-model="searchQuery"
+            type="text"
+            :placeholder="t('marketplace.languages.searchPlaceholder')"
+            class="search-input"
+          />
+          <div class="items-list">
+            <button
+              v-for="lang in otherLanguageSubjects"
+              :key="lang.code"
+              type="button"
+              class="list-item"
+              :class="{ 'is-selected': selectedSubjects.includes(`language_${lang.code}`) }"
+              @click="handleSelectLanguageSubject(lang.code)"
+            >
+              {{ lang.title }}
+            </button>
+          </div>
         </div>
       </div>
     </section>
@@ -185,45 +193,6 @@ function handleSelectLanguageSubject(code: string) {
   gap: var(--space-sm);
 }
 
-.language-search {
-  width: 100%;
-  padding: 0.625rem 0.875rem;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  font-size: 0.9375rem;
-  margin-bottom: var(--space-md);
-}
-
-.language-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.language-item {
-  padding: 0.5rem 1rem;
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-  text-align: left;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.language-item:hover {
-  background: var(--surface-card-muted);
-}
-
-.language-item.is-selected {
-  background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
-  color: var(--accent-primary);
-  border-color: var(--accent-primary);
-}
-
 .category-toggle {
   display: flex;
   align-items: center;
@@ -236,8 +205,10 @@ function handleSelectLanguageSubject(code: string) {
   text-align: left;
 }
 
-.category-toggle h3 {
-  margin: 0;
+.toggle-text {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--text-secondary);
 }
 
 .toggle-icon {
@@ -253,5 +224,13 @@ function handleSelectLanguageSubject(code: string) {
   font-size: 0.875rem;
   color: var(--text-muted);
   margin-bottom: var(--space-sm);
+}
+
+.subsection-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-sm);
+  margin-top: var(--space-md);
 }
 </style>
