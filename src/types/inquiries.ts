@@ -17,31 +17,59 @@ export interface UserSummary {
 }
 
 /**
- * Статус inquiry між tutor і student (v0.69)
+ * Статус inquiry між tutor і student (Phase 1 v0.86)
  */
-export type InquiryStatus = 'sent' | 'accepted' | 'declined' | 'cancelled' | 'expired'
+export type InquiryStatus = 'OPEN' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED' | 'EXPIRED'
 
 /**
- * Inquiry DTO v0.69 - запит на встановлення контакту
+ * Rejection reason enum (Phase 1 v0.86)
+ */
+export type RejectionReason = 'BUSY' | 'BUDGET_LOW' | 'LEVEL_MISMATCH' | 'SUBJECT_MISMATCH' | 'OTHER'
+
+/**
+ * Match quality enum (Phase 1 v0.86)
+ */
+export type MatchQuality = 'RECOMMENDED' | 'NEUTRAL' | 'NOT_SUITABLE'
+
+/**
+ * Inquiry DTO (Phase 1 v0.86) - запит на встановлення контакту
  */
 export interface InquiryDTO {
-  id: string
+  id: number
   student: UserSummary
   tutor: UserSummary
   message: string
   status: InquiryStatus
-  createdAt: string
-  updatedAt: string
+  subjects?: string[]
+  budget?: number
+  student_level?: string
+  match_quality?: MatchQuality
+  rejection_reason?: RejectionReason
+  rejection_comment?: string
+  created_at: string
+  accepted_at?: string
+  rejected_at?: string
+  cancelled_at?: string
+  expired_at?: string
 }
 
 /**
- * Relation DTO v0.69
+ * Relation DTO (Phase 1 v0.86)
  */
 export interface RelationDTO {
-  id: string
-  student: UserSummary
-  tutor: UserSummary
-  status: string // v0.69 не стандартизує значення
+  id: number
+  chat_unlocked: boolean
+  contact_unlocked: boolean
+  contact_unlocked_at?: string
+}
+
+/**
+ * Contacts DTO (Phase 1 v0.86)
+ */
+export interface ContactsDTO {
+  phone: string
+  telegram: string
+  email: string
 }
 
 /**
@@ -84,10 +112,18 @@ export interface CancelInquiryPayload {
 }
 
 /**
- * Payload для accept/decline inquiry v0.69
+ * Payload для accept inquiry (Phase 1 v0.86)
  */
-export interface InquiryActionPayload {
-  clientRequestId: string
+export interface AcceptInquiryPayload {
+  // Empty body
+}
+
+/**
+ * Payload для reject inquiry (Phase 1 v0.86)
+ */
+export interface RejectInquiryPayload {
+  reason: RejectionReason
+  comment?: string
 }
 
 /**
@@ -103,6 +139,34 @@ export interface SendMessagePayload {
  */
 export interface CreateInquiryResponse {
   inquiry: InquiryDTO
+}
+
+/**
+ * Response при accept inquiry (Phase 1 v0.86)
+ */
+export interface AcceptInquiryResponse {
+  inquiry: InquiryDTO
+  relation: RelationDTO
+  thread_id: number
+  contacts: ContactsDTO
+  was_already_unlocked: boolean
+  message: string
+}
+
+/**
+ * Response при reject inquiry (Phase 1 v0.86)
+ */
+export interface RejectInquiryResponse {
+  inquiry: InquiryDTO
+  message: string
+}
+
+/**
+ * Response при cancel inquiry (Phase 1 v0.86)
+ */
+export interface CancelInquiryResponse {
+  inquiry: InquiryDTO
+  message: string
 }
 
 /**
@@ -139,9 +203,14 @@ export interface InquiryFilters {
 }
 
 /**
- * Error codes для inquiry операцій v0.69
+ * Error codes для inquiry операцій (Phase 1 v0.86)
  */
 export type InquiryErrorCode =
+  | 'INQUIRY_NOT_FOUND'
+  | 'PERMISSION_DENIED'
+  | 'INQUIRY_ALREADY_PROCESSED'
+  | 'VALIDATION_ERROR'
+  | 'CANNOT_CANCEL_PROCESSED'
   | 'inquiry_already_exists'
   | 'inquiry_not_allowed'
   | 'invalid_transition'

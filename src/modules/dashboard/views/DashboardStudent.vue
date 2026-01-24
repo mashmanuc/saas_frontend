@@ -21,6 +21,20 @@
       :error="dashboardStore.error"
     />
 
+    <Card class="space-y-4">
+      <div class="flex justify-between items-center">
+        <Heading :level="2">
+          {{ $t('inquiries.student.title') }}
+        </Heading>
+        <router-link to="/student/inquiries" class="text-sm text-accent hover:underline">
+          {{ $t('common.all') }}
+        </router-link>
+      </div>
+      <p class="text-sm text-muted">
+        {{ $t('inquiries.student.description') }}
+      </p>
+    </Card>
+
     <Card v-if="!hasActiveTutors" class="space-y-4">
       <Heading :level="2">
         {{ $t('studentDashboard.findTutor.title') }}

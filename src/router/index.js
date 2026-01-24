@@ -326,6 +326,19 @@ const routes = [
         component: ChecklistView,
         meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
       },
+      // Phase 1 v0.86: Inquiry routes
+      {
+        path: 'student/inquiries',
+        name: 'student-inquiries',
+        component: () => import('../modules/inquiries/views/StudentInquiriesView.vue'),
+        meta: { roles: [USER_ROLES.STUDENT] },
+      },
+      {
+        path: 'tutor/inquiries',
+        name: 'tutor-inquiries',
+        component: () => import('../modules/inquiries/views/TutorInquiriesView.vue'),
+        meta: { roles: [USER_ROLES.TUTOR] },
+      },
       // v0.25-FIX: Booking routes
       {
         path: 'bookings',

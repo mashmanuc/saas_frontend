@@ -23,6 +23,7 @@ import type { AvailableSlot } from '../api/marketplace'
 import ReportModal from '@/components/trust/ReportModal.vue'
 import { ReportTargetType } from '@/types/trust'
 import { useI18n } from 'vue-i18n'
+import InquiryFormModal from '@/components/inquiries/InquiryFormModal.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -39,6 +40,7 @@ const isCreateReviewOpen = ref(false)
 const reviewsRef = ref<InstanceType<typeof ProfileReviews> | null>(null)
 const isReportModalOpen = ref(false)
 const showActionsMenu = ref(false)
+const isInquiryModalOpen = ref(false)
 
 const canWriteReview = computed(() => auth.isAuthenticated && auth.userRole === 'student')
 
@@ -126,6 +128,19 @@ async function handleBlock() {
 
 function handleReportSuccess() {
   isReportModalOpen.value = false
+}
+
+function openInquiryModal() {
+  isInquiryModalOpen.value = true
+}
+
+function closeInquiryModal() {
+  isInquiryModalOpen.value = false
+}
+
+function handleInquirySuccess() {
+  isInquiryModalOpen.value = false
+  // Можна додати notification про успішне створення inquiry
 }
 </script>
 
@@ -277,6 +292,7 @@ function handleReportSuccess() {
             :profile="currentProfile"
             @book="handleBook"
             @message="handleMessage"
+            @inquiry="openInquiryModal"
           />
 
           <!-- Note: TutorProfileFull doesn't have badges or badges_history fields -->
@@ -314,6 +330,20 @@ function handleReportSuccess() {
       :target-id="currentProfile?.user_id?.toString()"
       @close="isReportModalOpen = false"
       @success="handleReportSuccess"
+    />
+
+    <InquiryFormModal
+      v-if="currentProfile"
+      :show="isInquiryModalOpen"
+      :tutor="{
+        id: currentProfile.user_id,
+        full_name: currentProfile.slug,
+        avatar: currentProfile.media?.photo_url || '',
+        subjects: currentProfile.subjects?.map(s => s.title) || [],
+        min_hourly_rate: currentProfile.pricing?.hourly_rate
+      }"
+      @close="closeInquiryModal"
+      @success="handleInquirySuccess"
     />
   </div>
 </template>

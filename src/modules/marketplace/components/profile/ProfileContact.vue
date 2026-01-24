@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { Calendar, MessageCircle, Clock } from 'lucide-vue-next'
+import { Calendar, MessageCircle, Clock, Send } from 'lucide-vue-next'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useAuthStore } from '@/modules/auth/store/authStore'
 import type { TutorProfileFull } from '../../api/marketplace'
 import PriceTag from '../shared/PriceTag.vue'
 
@@ -12,6 +13,9 @@ interface Props {
 const props = defineProps<Props>()
 
 const { t } = useI18n()
+const auth = useAuthStore()
+
+const isStudent = computed(() => auth.userRole === 'student')
 
 const responseTimeText = computed(() => {
   const hours = props.profile?.stats?.response_time_hours
@@ -21,6 +25,7 @@ const responseTimeText = computed(() => {
 const emit = defineEmits<{
   (e: 'book'): void
   (e: 'message'): void
+  (e: 'inquiry'): void
 }>()
 </script>
 
@@ -51,7 +56,11 @@ const emit = defineEmits<{
     </div>
 
     <div class="actions">
-      <button class="btn btn-primary" @click="emit('book')">
+      <button v-if="isStudent" class="btn btn-primary" @click="emit('inquiry')" data-test="inquiry-cta">
+        <Send :size="18" />
+        {{ t('inquiries.form.title') }}
+      </button>
+      <button class="btn btn-secondary" @click="emit('book')">
         <Calendar :size="18" />
         {{ t('marketplace.profile.contact.bookLesson') }}
       </button>

@@ -103,6 +103,72 @@
       "${limit_type}": "{limit_type}"
     }
   },
+  "inquiries": {
+    "loading": "Завантаження запитів...",
+    "form": {
+      "title": "Надіслати запит тьютору",
+      "studentLevel": "Ваш рівень",
+      "studentLevelPlaceholder": "Оберіть рівень",
+      "levels": {
+        "beginner": "Початківець",
+        "intermediate": "Середній",
+        "advanced": "Професіонал"
+      },
+      "budget": "Бюджет (грн/год)",
+      "budgetHint": "Мінімальна ставка тьютора: {rate} грн/год",
+      "budgetTooLow": "Ваш бюджет нижче мінімальної ставки тьютора",
+      "startPreference": "Коли хочете почати?",
+      "startOptions": {
+        "asap": "Якнайшвидше",
+        "week": "Через тиждень",
+        "month": "Через місяць"
+      },
+      "message": "Що хочете вивчити?",
+      "messagePlaceholder": "Розкажіть про свої цілі та очікування...",
+      "submit": "Надіслати запит",
+      "submitting": "Надсилаємо...",
+      "cancel": "Скасувати"
+    },
+    "reject": {
+      "title": "Відхилити запит",
+      "reason": "Причина відхилення",
+      "reasonPlaceholder": "Оберіть причину",
+      "reasons": {
+        "BUSY": "Зайнятий зараз",
+        "BUDGET_LOW": "Бюджет не підходить",
+        "LEVEL_MISMATCH": "Рівень студента не підходить",
+        "SUBJECT_MISMATCH": "Тема не моя спеціалізація",
+        "OTHER": "Інше"
+      },
+      "comment": "Коментар",
+      "commentPlaceholder": "Додайте коментар...",
+      "submit": "Відхилити запит",
+      "submitting": "Відхиляємо..."
+    },
+    "student": {
+      "title": "Мої запити",
+      "description": "Переглядайте статус ваших запитів до тьюторів",
+      "empty": {
+        "title": "У вас ще немає запитів",
+        "description": "Знайдіть тьютора в каталозі та надішліть запит"
+      },
+      "cancel": "Скасувати запит"
+    },
+    "tutor": {
+      "title": "Запити від студентів",
+      "description": "Переглядайте та відповідайте на запити від студентів",
+      "empty": {
+        "title": "Немає нових запитів",
+        "description": "Коли студенти надішлють вам запити, вони з'являться тут"
+      },
+      "accept": "Прийняти",
+      "reject": "Відхилити",
+      "contactsUnlocked": "Контакти студента"
+    },
+    "errors": {
+      "retryAfter": "Спробуйте через {seconds} секунд"
+    }
+  },
   "common": {
     "unknown": "Невідомо",
     "unavailable": "Недоступно",
@@ -2877,8 +2943,7 @@
         "assistant": "Асистент",
         "host": "Ведучий",
         "viewer": "Глядач",
-        "solo": "Соло-сеанс",
-        "${participant.role}": "{participant.role}"
+        "solo": "Соло-сеанс"
       },
       "notes": "Нотатки",
       "error": "Не вдалося завантажити дані уроку.",
@@ -3564,7 +3629,12 @@
     "lessons": {
       "detail": {
         "roles": {
-          "${participant.role}": "{participant.role}"
+          "tutor": "Тьютор",
+          "student": "Студент",
+          "assistant": "Асистент",
+          "host": "Ведучий",
+          "viewer": "Глядач",
+          "solo": "Соло-сеанс"
         }
       }
     },

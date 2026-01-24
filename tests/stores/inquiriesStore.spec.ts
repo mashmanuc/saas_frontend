@@ -7,14 +7,14 @@ const createInquiryMock = vi.fn()
 const fetchInquiriesMock = vi.fn()
 const cancelInquiryMock = vi.fn()
 const acceptInquiryMock = vi.fn()
-const declineInquiryMock = vi.fn()
+const rejectInquiryMock = vi.fn()
 
 vi.mock('@/api/inquiries', () => ({
   createInquiry: (...args: unknown[]) => createInquiryMock(...args),
   fetchInquiries: (...args: unknown[]) => fetchInquiriesMock(...args),
   cancelInquiry: (...args: unknown[]) => cancelInquiryMock(...args),
   acceptInquiry: (...args: unknown[]) => acceptInquiryMock(...args),
-  declineInquiry: (...args: unknown[]) => declineInquiryMock(...args)
+  rejectInquiry: (...args: unknown[]) => rejectInquiryMock(...args)
 }))
 
 const rethrowMock = vi.fn((err: unknown) => {
@@ -27,15 +27,14 @@ vi.mock('@/utils/rethrowAsDomainError', () => ({
 
 function createInquiry(overrides: Partial<InquiryDTO> = {}): InquiryDTO {
   return {
-    id: 'inq_1',
-    student: { id: 'student_1', firstName: 'John', lastName: 'Doe', role: 'student' },
-    tutor: { id: 'tutor_1', firstName: 'Jane', lastName: 'Smith', role: 'tutor' },
+    id: 1,
+    student: { id: '1', full_name: 'John Doe', avatar: null },
+    tutor: { id: '2', full_name: 'Jane Smith', avatar: null },
     message: 'Hello',
-    status: 'sent',
-    createdAt: '2024-01-01T10:00:00Z',
-    updatedAt: '2024-01-01T10:00:00Z',
+    status: 'OPEN',
+    created_at: '2024-01-01T10:00:00Z',
     ...overrides
-  }
+  } as InquiryDTO
 }
 
 describe('inquiriesStore (legacy tests updated for v0.69)', () => {
@@ -83,9 +82,9 @@ describe('inquiriesStore (legacy tests updated for v0.69)', () => {
       const inquiry = createInquiry()
       fetchInquiriesMock.mockResolvedValueOnce([inquiry])
 
-      const result = await store.fetchInquiries({ role: 'student', status: 'sent' })
+      const result = await store.fetchInquiries({ role: 'student', status: 'OPEN' })
 
-      expect(fetchInquiriesMock).toHaveBeenCalledWith({ role: 'student', status: 'sent' })
+      expect(fetchInquiriesMock).toHaveBeenCalledWith({ role: 'student', status: 'OPEN' })
       expect(result).toEqual([inquiry])
       expect(store.items).toEqual([inquiry])
     })
@@ -94,16 +93,13 @@ describe('inquiriesStore (legacy tests updated for v0.69)', () => {
   describe('cancelInquiry', () => {
     it('calls API and refetches', async () => {
       const store = useInquiriesStore()
-      const inquiry = createInquiry({ status: 'cancelled' })
+      const inquiry = createInquiry({ status: 'CANCELLED' })
       cancelInquiryMock.mockResolvedValueOnce(inquiry)
       fetchInquiriesMock.mockResolvedValueOnce([inquiry])
 
-      await store.cancelInquiry('inq_1')
+      await store.cancelInquiry(1)
 
-      expect(cancelInquiryMock).toHaveBeenCalledWith(
-        'inq_1',
-        expect.objectContaining({ clientRequestId: expect.any(String) })
-      )
+      expect(cancelInquiryMock).toHaveBeenCalledWith(1)
       expect(fetchInquiriesMock).toHaveBeenCalled()
     })
   })
@@ -111,44 +107,39 @@ describe('inquiriesStore (legacy tests updated for v0.69)', () => {
   describe('acceptInquiry', () => {
     it('accepts inquiry and refetches', async () => {
       const store = useInquiriesStore()
-      const inquiry = createInquiry({ status: 'accepted' })
+      const inquiry = createInquiry({ status: 'ACCEPTED' })
       acceptInquiryMock.mockResolvedValueOnce(inquiry)
       fetchInquiriesMock.mockResolvedValueOnce([inquiry])
 
-      await store.acceptInquiry('inq_1')
+      await store.acceptInquiry(1)
 
-      expect(acceptInquiryMock).toHaveBeenCalledWith(
-        'inq_1',
-        expect.objectContaining({ clientRequestId: expect.any(String) })
-      )
+      expect(acceptInquiryMock).toHaveBeenCalledWith(1)
       expect(fetchInquiriesMock).toHaveBeenCalled()
     })
   })
 
-  describe('declineInquiry', () => {
-    it('declines inquiry and refetches', async () => {
+  describe('rejectInquiry', () => {
+    it('rejects inquiry and refetches', async () => {
       const store = useInquiriesStore()
-      const inquiry = createInquiry({ status: 'declined' })
-      declineInquiryMock.mockResolvedValueOnce(inquiry)
+      const inquiry = createInquiry({ status: 'REJECTED' })
+      const payload = { reason: 'BUSY' as const, comment: '' }
+      rejectInquiryMock.mockResolvedValueOnce({ inquiry, message: 'Rejected' })
       fetchInquiriesMock.mockResolvedValueOnce([inquiry])
 
-      await store.declineInquiry('inq_1')
+      await store.rejectInquiry(1, payload)
 
-      expect(declineInquiryMock).toHaveBeenCalledWith(
-        'inq_1',
-        expect.objectContaining({ clientRequestId: expect.any(String) })
-      )
+      expect(rejectInquiryMock).toHaveBeenCalledWith(1, payload)
       expect(fetchInquiriesMock).toHaveBeenCalled()
     })
   })
 
   describe('pendingCount', () => {
-    it('counts inquiries with sent status', async () => {
+    it('counts inquiries with OPEN status', async () => {
       const store = useInquiriesStore()
       const items = [
-        createInquiry({ id: '1', status: 'sent' }),
-        createInquiry({ id: '2', status: 'accepted' }),
-        createInquiry({ id: '3', status: 'sent' })
+        createInquiry({ id: 1, status: 'OPEN' }),
+        createInquiry({ id: 2, status: 'ACCEPTED' }),
+        createInquiry({ id: 3, status: 'OPEN' })
       ]
       fetchInquiriesMock.mockResolvedValueOnce(items)
 
@@ -161,12 +152,12 @@ describe('inquiriesStore (legacy tests updated for v0.69)', () => {
   describe('refetch', () => {
     it('uses current status filter', async () => {
       const store = useInquiriesStore()
-      store.statusFilter = 'sent'
+      store.statusFilter = 'OPEN'
       fetchInquiriesMock.mockResolvedValueOnce([])
 
       await store.refetch()
 
-      expect(fetchInquiriesMock).toHaveBeenCalledWith({ status: 'sent' })
+      expect(fetchInquiriesMock).toHaveBeenCalledWith({ status: 'OPEN' })
     })
   })
 })

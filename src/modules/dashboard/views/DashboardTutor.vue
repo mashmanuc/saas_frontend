@@ -33,6 +33,9 @@
 
       <!-- Quick Actions -->
       <div class="flex flex-wrap gap-3">
+        <router-link to="/tutor/inquiries" class="text-sm text-accent hover:underline">
+          {{ $t('inquiries.tutor.title') }}
+        </router-link>
         <router-link to="/bookings" class="text-sm text-accent hover:underline">
           {{ $t('dashboard.tutor.viewBookings') }}
         </router-link>

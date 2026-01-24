@@ -73,7 +73,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   ChevronLeft as ChevronLeftIcon,
@@ -145,7 +145,41 @@ const canGoPrevious = computed(() => {
 // FE-2: Horizon limit - cannot go beyond maxWeeks (default 4)
 const canGoNext = computed(() => currentWeekOffset.value < props.maxWeeks - 1)
 
+const WEEK_IN_MS = 7 * 24 * 60 * 60 * 1000
+
+function clampWeekStartToAllowedRange() {
+  const minWeek = getCurrentMonday()
+  const maxWeek = new Date(minWeek.getTime() + (props.maxWeeks - 1) * WEEK_IN_MS)
+
+  if (weekStart.value.getTime() < minWeek.getTime()) {
+    weekStart.value = minWeek
+    currentWeekOffset.value = 0
+    return
+  }
+
+  if (weekStart.value.getTime() > maxWeek.getTime()) {
+    weekStart.value = maxWeek
+    currentWeekOffset.value = props.maxWeeks - 1
+    return
+  }
+
+  const diff = Math.round((weekStart.value.getTime() - minWeek.getTime()) / WEEK_IN_MS)
+  currentWeekOffset.value = Math.min(Math.max(diff, 0), props.maxWeeks - 1)
+}
+
+function resetToCurrentWeek() {
+  weekStart.value = getCurrentMonday()
+  currentWeekOffset.value = 0
+  clampWeekStartToAllowedRange()
+}
+
 onMounted(() => {
+  clampWeekStartToAllowedRange()
+  loadAvailability()
+})
+
+watch(() => props.tutorId, () => {
+  resetToCurrentWeek()
   loadAvailability()
 })
 
@@ -154,6 +188,7 @@ async function loadAvailability() {
   error.value = null
   
   try {
+    clampWeekStartToAllowedRange()
     const response = await marketplaceApi.getTutorCalendar({
       tutorId: props.tutorId,
       weekStart: weekStart.value.toISOString().split('T')[0],
@@ -171,6 +206,7 @@ async function loadAvailability() {
     // Синхронізуємо weekStart з відповіддю бекенду
     if (response.week_start) {
       weekStart.value = new Date(response.week_start + 'T00:00:00')
+      clampWeekStartToAllowedRange()
     }
     
     dayCells.value = response.cells || []

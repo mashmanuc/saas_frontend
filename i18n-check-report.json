@@ -2,23 +2,21 @@
   "locales": {
     "en": {
       "status": "ok",
-      "totalKeys": 2881,
+      "totalKeys": 2929,
       "missing": [],
       "extra": [],
-      "empty": [
-        "lessons.detail.roles.${participant.role}"
-      ]
+      "empty": []
     }
   },
   "summary": {
-    "totalKeys": 2881,
+    "totalKeys": 2929,
     "locales": 2,
     "errors": 0,
-    "warnings": 2
+    "warnings": 1
   },
   "usage": {
-    "scannedFiles": 894,
-    "detectedKeys": 2322,
+    "scannedFiles": 901,
+    "detectedKeys": 2366,
     "unusedKeys": [
       "billing.cta.learnMore",
       "billing.error.alreadySubscribed",
@@ -79,7 +77,12 @@
       "board.emptyBoard.message",
       "board.emptyBoard.participantsLabel",
       "board.emptyBoard.title",
-      "board.lessons.detail.roles.${participant.role}",
+      "board.lessons.detail.roles.assistant",
+      "board.lessons.detail.roles.host",
+      "board.lessons.detail.roles.solo",
+      "board.lessons.detail.roles.student",
+      "board.lessons.detail.roles.tutor",
+      "board.lessons.detail.roles.viewer",
       "booking.bookingCommon.minutes",
       "booking.calendar.doneStatus.done",
       "booking.calendar.doneStatus.done_client_missed",
@@ -390,7 +393,6 @@
       "legal.privacy.content",
       "legal.refund.content",
       "legal.terms.content",
-      "lessons.detail.roles.${participant.role}",
       "limits.types.${limit_type}",
       "marketplace.availability.empty",
       "marketplace.availability.loadError",
@@ -424,7 +426,7 @@
       "marketplace.languages.popularTitle",
       "marketplace.profile.badgesHistory.loadError",
       "marketplace.profile.badgesHistory.loading",
-      "marketplace.profile.editor.languageLevels.conversational",
+      "marketplace.profile.editor.languageLevels.intermediate",
       "marketplace.profile.editor.subjectsHint",
       "marketplace.profile.editor.subjectsLanguagesTitle",
       "marketplace.profile.editor.validation.languages",

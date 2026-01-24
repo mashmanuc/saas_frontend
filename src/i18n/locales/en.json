@@ -53,6 +53,72 @@
       "${limit_type}": "{limit_type}"
     }
   },
+  "inquiries": {
+    "loading": "Loading inquiries...",
+    "form": {
+      "title": "Send inquiry to tutor",
+      "studentLevel": "Your level",
+      "studentLevelPlaceholder": "Select level",
+      "levels": {
+        "beginner": "Beginner",
+        "intermediate": "Intermediate",
+        "advanced": "Advanced"
+      },
+      "budget": "Budget (UAH/hour)",
+      "budgetHint": "Tutor's minimum rate: {rate} UAH/hour",
+      "budgetTooLow": "Your budget is below the tutor's minimum rate",
+      "startPreference": "When would you like to start?",
+      "startOptions": {
+        "asap": "As soon as possible",
+        "week": "In a week",
+        "month": "In a month"
+      },
+      "message": "What would you like to learn?",
+      "messagePlaceholder": "Tell us about your goals and expectations...",
+      "submit": "Send inquiry",
+      "submitting": "Sending...",
+      "cancel": "Cancel"
+    },
+    "reject": {
+      "title": "Reject inquiry",
+      "reason": "Rejection reason",
+      "reasonPlaceholder": "Select reason",
+      "reasons": {
+        "BUSY": "Busy right now",
+        "BUDGET_LOW": "Budget doesn't fit",
+        "LEVEL_MISMATCH": "Student level doesn't fit",
+        "SUBJECT_MISMATCH": "Subject is not my specialization",
+        "OTHER": "Other"
+      },
+      "comment": "Comment",
+      "commentPlaceholder": "Add a comment...",
+      "submit": "Reject inquiry",
+      "submitting": "Rejecting..."
+    },
+    "student": {
+      "title": "My inquiries",
+      "description": "View the status of your inquiries to tutors",
+      "empty": {
+        "title": "You don't have any inquiries yet",
+        "description": "Find a tutor in the catalog and send an inquiry"
+      },
+      "cancel": "Cancel inquiry"
+    },
+    "tutor": {
+      "title": "Inquiries from students",
+      "description": "View and respond to inquiries from students",
+      "empty": {
+        "title": "No new inquiries",
+        "description": "When students send you inquiries, they will appear here"
+      },
+      "accept": "Accept",
+      "reject": "Reject",
+      "contactsUnlocked": "Student contacts"
+    },
+    "errors": {
+      "retryAfter": "Try again in {seconds} seconds"
+    }
+  },
   "loader": {
     "loading": "Loading..."
   },
@@ -1626,7 +1692,12 @@
     "lessons": {
       "detail": {
         "roles": {
-          "${participant.role}": "{participant.role}"
+          "tutor": "Tutor",
+          "student": "Student",
+          "assistant": "Assistant",
+          "host": "Host",
+          "viewer": "Viewer",
+          "solo": "Solo session"
         }
       }
     },
@@ -1936,8 +2007,7 @@
         "assistant": "Assistant",
         "host": "Host",
         "viewer": "Viewer",
-        "solo": "Solo session",
-        "${participant.role}": ""
+        "solo": "Solo session"
       },
       "notes": "Notes",
       "error": "Failed to load lesson data.",

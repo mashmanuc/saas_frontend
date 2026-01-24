@@ -13,13 +13,20 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { InquiryDTO, InquiryFilters, InquiryStatus } from '@/types/inquiries'
+import type {
+  InquiryDTO,
+  InquiryFilters,
+  InquiryStatus,
+  AcceptInquiryResponse,
+  RejectInquiryResponse,
+  RejectInquiryPayload
+} from '@/types/inquiries'
 import {
   createInquiry as apiCreateInquiry,
   fetchInquiries as apiFetchInquiries,
   cancelInquiry as apiCancelInquiry,
   acceptInquiry as apiAcceptInquiry,
-  declineInquiry as apiDeclineInquiry
+  rejectInquiry as apiRejectInquiry
 } from '@/api/inquiries'
 import { rethrowAsDomainError } from '@/utils/rethrowAsDomainError'
 
@@ -90,23 +97,22 @@ export const useInquiriesStore = defineStore('inquiries', () => {
   }
   
   /**
-   * Скасувати inquiry v0.69 (student only)
+   * Скасувати inquiry (student only) Phase 1 v0.86
    * 
    * @param inquiryId - ID inquiry
-   * @returns оновлений inquiry
+   * @returns response з inquiry
    */
-  async function cancelInquiry(inquiryId: string): Promise<InquiryDTO> {
-    const clientRequestId = generateRequestId()
+  async function cancelInquiry(inquiryId: number): Promise<InquiryDTO> {
     isLoading.value = true
     error.value = null
     
     try {
-      const inquiry = await apiCancelInquiry(inquiryId, { clientRequestId })
+      const response = await apiCancelInquiry(inquiryId)
       
       // Refetch після cancel
       await refetch()
       
-      return inquiry
+      return response.inquiry
     } catch (err) {
       rethrowAsDomainError(err)
       throw err
@@ -116,23 +122,22 @@ export const useInquiriesStore = defineStore('inquiries', () => {
   }
   
   /**
-   * Прийняти inquiry v0.69 (tutor only)
+   * Прийняти inquiry (tutor only) Phase 1 v0.86
    * 
    * @param inquiryId - ID inquiry
-   * @returns оновлений inquiry
+   * @returns response з inquiry, contacts, relation, thread_id
    */
-  async function acceptInquiry(inquiryId: string): Promise<InquiryDTO> {
-    const clientRequestId = generateRequestId()
+  async function acceptInquiry(inquiryId: number): Promise<AcceptInquiryResponse> {
     isLoading.value = true
     error.value = null
     
     try {
-      const inquiry = await apiAcceptInquiry(inquiryId, { clientRequestId })
+      const response = await apiAcceptInquiry(inquiryId)
       
       // Refetch після accept + trigger relationsStore refetch
       await refetch()
       
-      return inquiry
+      return response
     } catch (err) {
       rethrowAsDomainError(err)
       throw err
@@ -142,23 +147,26 @@ export const useInquiriesStore = defineStore('inquiries', () => {
   }
   
   /**
-   * Відхилити inquiry v0.69 (tutor only)
+   * Відхилити inquiry (tutor only) Phase 1 v0.86
    * 
    * @param inquiryId - ID inquiry
-   * @returns оновлений inquiry
+   * @param payload - reason та optional comment
+   * @returns response з inquiry
    */
-  async function declineInquiry(inquiryId: string): Promise<InquiryDTO> {
-    const clientRequestId = generateRequestId()
+  async function rejectInquiry(
+    inquiryId: number,
+    payload: RejectInquiryPayload
+  ): Promise<RejectInquiryResponse> {
     isLoading.value = true
     error.value = null
     
     try {
-      const inquiry = await apiDeclineInquiry(inquiryId, { clientRequestId })
+      const response = await apiRejectInquiry(inquiryId, payload)
       
-      // Refetch після decline
+      // Refetch після reject
       await refetch()
       
-      return inquiry
+      return response
     } catch (err) {
       rethrowAsDomainError(err)
       throw err
@@ -186,10 +194,10 @@ export const useInquiriesStore = defineStore('inquiries', () => {
   }
   
   /**
-   * Computed: pending count для badge (sent inquiries)
+   * Computed: pending count для badge (OPEN inquiries)
    */
   const pendingCount = computed(() => {
-    return items.value.filter(i => i.status === 'sent').length
+    return items.value.filter(i => i.status === 'OPEN').length
   })
   
   return {
@@ -208,7 +216,7 @@ export const useInquiriesStore = defineStore('inquiries', () => {
     fetchInquiries,
     cancelInquiry,
     acceptInquiry,
-    declineInquiry,
+    rejectInquiry,
     refetch
   }
 })

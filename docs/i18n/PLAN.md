@@ -131,6 +131,15 @@ Last-Updated: 2025-12-31
 - ✅ `pnpm i18n:check --report` зелений: 2881 keys, 0 missing, 0 extra, 0 unexpected empty значень (559 unused класифіковані)
 - 📝 MANIFEST та онбординг-правила залишаються актуальними (доменні неймспейси не змінювалися)
 
+**Оновлення стану (2026-01-24)**
+- ✅ Додано 44 missing `inquiries.*` keys в `en.json` (form, reject, student, tutor, errors)
+- ✅ Виправлено дублікати `lessons.detail.roles` та `board.lessons.detail.roles` - додано конкретні ролі замість placeholder
+- ✅ Видалено порожній placeholder `lessons.detail.roles.${participant.role}` з `en.json`
+- ✅ `pnpm i18n:check` зелений: **2929 keys, 0 missing, 0 extra, 0 empty values**
+- ⚠️ 563 unused keys залишаються (більшість — placeholders для динамічного використання: `${participant.role}`, `${slot.status}`, `billing.features.*`, `booking.requests.*`)
+- 📊 100% паритет uk ↔ en підтримується, всі критичні домени синхронізовані
+- 📝 MANIFEST залишається актуальним, доменні неймспейси не змінювалися
+
 ---
 **Етап 4: Інструмент «Missing translations»**
 - [x] Backend endpoint `/v1/i18n/translations/missing/{locale}/` (вже реалізовано в `apps/i18n/api/views.py`)

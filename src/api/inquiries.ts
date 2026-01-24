@@ -5,18 +5,22 @@
  * API методи для роботи з inquiry (встановлення контакту між tutor і student)
  */
 
-import axios from 'axios'
+import apiClient from '@/api/client'
 import type {
   InquiryDTO,
   CreateInquiryPayload,
   CreateInquiryResponse,
   InquiriesListResponse,
   InquiryFilters,
-  InquiryActionPayload,
-  CancelInquiryPayload
+  AcceptInquiryPayload,
+  AcceptInquiryResponse,
+  RejectInquiryPayload,
+  RejectInquiryResponse,
+  CancelInquiryPayload,
+  CancelInquiryResponse
 } from '@/types/inquiries'
 
-const BASE_URL = '/api/v1/people/inquiries'
+const BASE_URL = '/v1/inquiries'
 
 /**
  * Створити inquiry v0.69
@@ -25,8 +29,13 @@ const BASE_URL = '/api/v1/people/inquiries'
  * @returns створений inquiry
  */
 export async function createInquiry(payload: CreateInquiryPayload): Promise<InquiryDTO> {
-  const response = await axios.post<CreateInquiryResponse>(`${BASE_URL}/`, payload)
-  return response.data.inquiry
+  // Phase 1 v0.86: Send tutor_id as integer to backend
+  const backendPayload = {
+    tutor_id: parseInt(payload.tutorId),
+    message: payload.message
+  }
+  const response = await apiClient.post<CreateInquiryResponse>(`${BASE_URL}/`, backendPayload)
+  return response.inquiry
 }
 
 /**
@@ -36,64 +45,60 @@ export async function createInquiry(payload: CreateInquiryPayload): Promise<Inqu
  * @returns список inquiries
  */
 export async function fetchInquiries(filters: InquiryFilters = {}): Promise<InquiryDTO[]> {
-  const response = await axios.get<InquiriesListResponse>(`${BASE_URL}/`, {
+  const response = await apiClient.get<InquiriesListResponse>(`${BASE_URL}/`, {
     params: filters
   })
-  return response.data.inquiries
+  return response.inquiries
 }
 
 /**
- * Скасувати inquiry (cancel) - тільки student v0.69
+ * Скасувати inquiry (cancel) - тільки student (Phase 1 v0.86)
  * 
  * @param inquiryId - ID inquiry
- * @param payload - clientRequestId (idempotency)
- * @returns оновлений inquiry
+ * @returns response з inquiry та message
  */
 export async function cancelInquiry(
-  inquiryId: string,
-  payload: CancelInquiryPayload
-): Promise<InquiryDTO> {
-  const response = await axios.post<CreateInquiryResponse>(
+  inquiryId: number
+): Promise<CancelInquiryResponse> {
+  const response = await apiClient.post<CancelInquiryResponse>(
     `${BASE_URL}/${inquiryId}/cancel/`,
-    payload
+    {}
   )
-  return response.data.inquiry
+  return response
 }
 
 /**
- * Прийняти inquiry (accept) - тільки tutor v0.69
+ * Прийняти inquiry (accept) - тільки tutor (Phase 1 v0.86)
  * 
  * @param inquiryId - ID inquiry
- * @param payload - clientRequestId (idempotency)
- * @returns оновлений inquiry
+ * @returns response з inquiry, relation, contacts, thread_id
  */
 export async function acceptInquiry(
-  inquiryId: string,
-  payload: InquiryActionPayload
-): Promise<InquiryDTO> {
-  const response = await axios.post<CreateInquiryResponse>(
+  inquiryId: number
+): Promise<AcceptInquiryResponse> {
+  const response = await apiClient.post<AcceptInquiryResponse>(
     `${BASE_URL}/${inquiryId}/accept/`,
-    payload
+    {}
   )
-  return response.data.inquiry
+  return response
 }
 
 /**
- * Відхилити inquiry (decline) - тільки tutor v0.69
+ * Відхилити inquiry (reject) - тільки tutor (Phase 1 v0.86)
  * 
  * @param inquiryId - ID inquiry
- * @param payload - clientRequestId (idempotency)
- * @returns оновлений inquiry
+ * @param payload - reason та optional comment
+ * @returns response з inquiry та message
  */
-export async function declineInquiry(
-  inquiryId: string,
-  payload: InquiryActionPayload
-): Promise<InquiryDTO> {
-  const response = await axios.post<CreateInquiryResponse>(
-    `${BASE_URL}/${inquiryId}/decline/`,
+export async function rejectInquiry(
+  inquiryId: number,
+  payload: RejectInquiryPayload
+): Promise<RejectInquiryResponse> {
+  const response = await apiClient.post<RejectInquiryResponse>(
+    `${BASE_URL}/${inquiryId}/reject/`,
     payload
   )
-  return response.data.inquiry
+  return response
 }
 
 export default {
@@ -101,5 +106,5 @@ export default {
   fetchInquiries,
   cancelInquiry,
   acceptInquiry,
-  declineInquiry
+  rejectInquiry
 }

@@ -20,14 +20,15 @@ describe('inquiriesStore v0.69', () => {
     vi.clearAllMocks()
   })
 
-  const mockInquiry: InquiryDTO = {
-    id: 'inq_1',
-    student: { id: 'student_1', firstName: 'John', lastName: 'Doe', role: 'student' },
-    tutor: { id: 'tutor_1', firstName: 'Jane', lastName: 'Smith', role: 'tutor' },
+  const mockInquiry = {
+    id: 1,
+    student: { id: '1', full_name: 'John Doe', avatar: null },
+    tutor: { id: '2', full_name: 'Jane Smith', avatar: null },
     message: 'Hello, I would like to learn math',
-    status: 'sent',
-    createdAt: '2024-01-01T10:00:00Z',
-    updatedAt: '2024-01-01T10:00:00Z'
+    status: 'OPEN' as const,
+    created_at: '2024-01-01T10:00:00Z',
+    relation: 1,
+    initiator_role: 'student' as const
   }
 
   describe('fetchInquiries', () => {
@@ -35,9 +36,9 @@ describe('inquiriesStore v0.69', () => {
       const store = useInquiriesStore()
       vi.mocked(inquiriesApi.fetchInquiries).mockResolvedValue([mockInquiry])
 
-      await store.fetchInquiries({ role: 'student', status: 'sent' })
+      await store.fetchInquiries({ role: 'student', status: 'OPEN' })
 
-      expect(inquiriesApi.fetchInquiries).toHaveBeenCalledWith({ role: 'student', status: 'sent' })
+      expect(inquiriesApi.fetchInquiries).toHaveBeenCalledWith({ role: 'student', status: 'OPEN' })
       expect(store.items).toEqual([mockInquiry])
       expect(store.isLoading).toBe(false)
     })
@@ -92,17 +93,15 @@ describe('inquiriesStore v0.69', () => {
   describe('cancelInquiry', () => {
     it('should cancel inquiry and refetch', async () => {
       const store = useInquiriesStore()
-      const cancelledInquiry = { ...mockInquiry, status: 'cancelled' as const }
+      const cancelledInquiry = { ...mockInquiry, status: 'CANCELLED' as const }
+      const response = { inquiry: cancelledInquiry, message: 'Cancelled' }
       
-      vi.mocked(inquiriesApi.cancelInquiry).mockResolvedValue(cancelledInquiry)
+      vi.mocked(inquiriesApi.cancelInquiry).mockResolvedValue(response)
       vi.mocked(inquiriesApi.fetchInquiries).mockResolvedValue([cancelledInquiry])
 
-      await store.cancelInquiry('inq_1')
+      await store.cancelInquiry(1)
 
-      expect(inquiriesApi.cancelInquiry).toHaveBeenCalledWith(
-        'inq_1',
-        expect.objectContaining({ clientRequestId: expect.stringMatching(/^req_/) })
-      )
+      expect(inquiriesApi.cancelInquiry).toHaveBeenCalledWith(1)
       expect(inquiriesApi.fetchInquiries).toHaveBeenCalled()
     })
   })
@@ -110,35 +109,39 @@ describe('inquiriesStore v0.69', () => {
   describe('acceptInquiry', () => {
     it('should accept inquiry and refetch', async () => {
       const store = useInquiriesStore()
-      const acceptedInquiry = { ...mockInquiry, status: 'accepted' as const }
+      const acceptedInquiry = { ...mockInquiry, status: 'ACCEPTED' as const }
+      const response = {
+        inquiry: acceptedInquiry,
+        relation: { id: 1, chat_unlocked: true, contact_unlocked: true },
+        thread_id: 1,
+        contacts: { email: 'student@example.com', phone: '', telegram: '' },
+        was_already_unlocked: false,
+        message: 'Accepted'
+      }
       
-      vi.mocked(inquiriesApi.acceptInquiry).mockResolvedValue(acceptedInquiry)
+      vi.mocked(inquiriesApi.acceptInquiry).mockResolvedValue(response)
       vi.mocked(inquiriesApi.fetchInquiries).mockResolvedValue([acceptedInquiry])
 
-      await store.acceptInquiry('inq_1')
+      await store.acceptInquiry(1)
 
-      expect(inquiriesApi.acceptInquiry).toHaveBeenCalledWith(
-        'inq_1',
-        expect.objectContaining({ clientRequestId: expect.stringMatching(/^req_/) })
-      )
+      expect(inquiriesApi.acceptInquiry).toHaveBeenCalledWith(1)
       expect(inquiriesApi.fetchInquiries).toHaveBeenCalled()
     })
   })
 
-  describe('declineInquiry', () => {
-    it('should decline inquiry and refetch', async () => {
+  describe('rejectInquiry', () => {
+    it('should reject inquiry and refetch', async () => {
       const store = useInquiriesStore()
-      const declinedInquiry = { ...mockInquiry, status: 'declined' as const }
+      const rejectedInquiry = { ...mockInquiry, status: 'REJECTED' as const }
+      const payload = { reason: 'BUSY' as const, comment: '' }
+      const response = { inquiry: rejectedInquiry, message: 'Rejected' }
       
-      vi.mocked(inquiriesApi.declineInquiry).mockResolvedValue(declinedInquiry)
-      vi.mocked(inquiriesApi.fetchInquiries).mockResolvedValue([declinedInquiry])
+      vi.mocked(inquiriesApi.rejectInquiry).mockResolvedValue(response)
+      vi.mocked(inquiriesApi.fetchInquiries).mockResolvedValue([rejectedInquiry])
 
-      await store.declineInquiry('inq_1')
+      await store.rejectInquiry(1, payload)
 
-      expect(inquiriesApi.declineInquiry).toHaveBeenCalledWith(
-        'inq_1',
-        expect.objectContaining({ clientRequestId: expect.stringMatching(/^req_/) })
-      )
+      expect(inquiriesApi.rejectInquiry).toHaveBeenCalledWith(1, payload)
       expect(inquiriesApi.fetchInquiries).toHaveBeenCalled()
     })
   })
@@ -147,9 +150,9 @@ describe('inquiriesStore v0.69', () => {
     it('should compute pending count correctly', async () => {
       const store = useInquiriesStore()
       const inquiries = [
-        { ...mockInquiry, id: '1', status: 'sent' as const },
-        { ...mockInquiry, id: '2', status: 'sent' as const },
-        { ...mockInquiry, id: '3', status: 'accepted' as const }
+        { ...mockInquiry, id: 1, status: 'OPEN' as const },
+        { ...mockInquiry, id: 2, status: 'OPEN' as const },
+        { ...mockInquiry, id: 3, status: 'ACCEPTED' as const }
       ]
       
       vi.mocked(inquiriesApi.fetchInquiries).mockResolvedValue(inquiries)
@@ -162,13 +165,13 @@ describe('inquiriesStore v0.69', () => {
   describe('refetch', () => {
     it('should refetch with status filter', async () => {
       const store = useInquiriesStore()
-      store.statusFilter = 'sent'
+      store.statusFilter = 'OPEN'
       
       vi.mocked(inquiriesApi.fetchInquiries).mockResolvedValue([mockInquiry])
 
       await store.refetch()
 
-      expect(inquiriesApi.fetchInquiries).toHaveBeenCalledWith({ status: 'sent' })
+      expect(inquiriesApi.fetchInquiries).toHaveBeenCalledWith({ status: 'OPEN' })
     })
 
     it('should refetch without filter', async () => {

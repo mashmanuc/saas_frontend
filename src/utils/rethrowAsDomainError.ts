@@ -74,6 +74,17 @@ const DOMAIN_ERROR_FACTORIES: Record<string, DomainErrorFactory> = {
   user_banned: (payload) => new UserBannedError(toBanMeta(payload)),
   user_blocked: (payload) => new UserBlockedError(toBlockMeta(payload)),
   rate_limited: (payload) => new RateLimitedError(toRateLimitMeta(payload)),
+  // Phase 1 v0.86 error codes
+  INQUIRY_NOT_FOUND: (payload) =>
+    new InquiryInvalidStateError(extractMeta(payload)),
+  PERMISSION_DENIED: (payload) =>
+    new InquiryNotAllowedError(extractMeta(payload)),
+  INQUIRY_ALREADY_PROCESSED: (payload) =>
+    new InquiryInvalidStateError(extractMeta(payload)),
+  VALIDATION_ERROR: (payload) =>
+    new InquiryInvalidStateError(extractMeta(payload)),
+  CANNOT_CANCEL_PROCESSED: (payload) =>
+    new InquiryInvalidStateError(extractMeta(payload)),
 }
 
 const buildDefaultError = (
