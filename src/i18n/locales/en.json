@@ -3454,7 +3454,8 @@
       "cancelImmediate": "Cancel Immediately",
       "activityInfo": "Activity",
       "inquiries30d": "Inquiries (30 days)",
-      "contactsUnlocked30d": "Contacts Unlocked (30 days)"
+      "contactsUnlocked30d": "Contacts Unlocked (30 days)",
+      "billingOperations": "Billing Operations (Manual Finalize)"
     }
   },
   "relationAction": {

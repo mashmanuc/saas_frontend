@@ -184,6 +184,12 @@
         </div>
       </section>
 
+      <!-- Billing Operations Section (v0.79.0) -->
+      <section class="section billing-ops-section">
+        <h2>{{ $t('staff.userOverview.billingOperations') }}</h2>
+        <UserBillingOpsPanel :user-id="staffStore.userOverview.user.id" />
+      </section>
+
       <!-- Activity Section -->
       <section class="section activity-section">
         <h2>{{ $t('staff.userOverview.activityInfo') }}</h2>
@@ -207,6 +213,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useStaffStore } from '@/stores/staffStore'
 import { BanScope, BillingCancelMode } from '@/types/staff'
+import UserBillingOpsPanel from '@/modules/staff/components/UserBillingOpsPanel.vue'
 
 const route = useRoute()
 const staffStore = useStaffStore()

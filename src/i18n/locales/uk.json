@@ -3799,7 +3799,8 @@
       "cancelImmediate": "Скасувати негайно",
       "activityInfo": "Активність",
       "inquiries30d": "Запитів за 30 днів",
-      "contactsUnlocked30d": "Контактів розблоковано за 30 днів"
+      "contactsUnlocked30d": "Контактів розблоковано за 30 днів",
+      "billingOperations": "Операції білінгу (ручна фіналізація)"
     }
   },
   "contact": {
