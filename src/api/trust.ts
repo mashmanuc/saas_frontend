@@ -7,7 +7,7 @@
  * - Get trust status
  */
 
-import axios from 'axios'
+import apiClient from '@/utils/apiClient'
 import type {
   BlockUserRequest,
   UnblockUserRequest,
@@ -19,54 +19,48 @@ import type {
   BanStatusResponse,
 } from '@/types/trust'
 
-const BASE_URL = '/api/v1/trust'
+const BASE_URL = '/v1/trust'
 
 /**
  * Block a user
  */
 export async function blockUser(payload: BlockUserRequest): Promise<BlockResponse> {
-  const response = await axios.post<BlockResponse>(`${BASE_URL}/block/`, payload)
-  return response.data
+  return apiClient.post(`${BASE_URL}/block/`, payload)
 }
 
 /**
  * Unblock a user
  */
 export async function unblockUser(payload: UnblockUserRequest): Promise<BlockResponse> {
-  const response = await axios.post<BlockResponse>(`${BASE_URL}/unblock/`, payload)
-  return response.data
+  return apiClient.post(`${BASE_URL}/unblock/`, payload)
 }
 
 /**
  * Get list of user's blocks
  */
 export async function getBlocks(): Promise<BlocksListResponse> {
-  const response = await axios.get<BlocksListResponse>(`${BASE_URL}/blocks/me/`)
-  return response.data
+  return apiClient.get(`${BASE_URL}/blocks/me/`)
 }
 
 /**
  * Create a report
  */
 export async function createReport(payload: CreateReportRequest): Promise<CreateReportResponse> {
-  const response = await axios.post<CreateReportResponse>(`${BASE_URL}/report/`, payload)
-  return response.data
+  return apiClient.post(`${BASE_URL}/report/`, payload)
 }
 
 /**
  * Get list of user's reports
  */
 export async function getReports(): Promise<ReportsListResponse> {
-  const response = await axios.get<ReportsListResponse>(`${BASE_URL}/reports/me/`)
-  return response.data
+  return apiClient.get(`${BASE_URL}/reports/me/`)
 }
 
 /**
  * Get user's ban status
  */
 export async function getBanStatus(): Promise<BanStatusResponse> {
-  const response = await axios.get<BanStatusResponse>(`${BASE_URL}/me/status/`)
-  return response.data
+  return apiClient.get(`${BASE_URL}/me/status/`)
 }
 
 export const trustApi = {

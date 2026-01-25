@@ -5,10 +5,10 @@
  * API методи для роботи з користувачами та їх контактами
  */
 
-import axios from 'axios'
+import apiClient from '@/utils/apiClient'
 import type { ContactPayload } from '@/types/inquiries'
 
-const BASE_URL = '/api/v1/users'
+const BASE_URL = '/v1/users'
 
 /**
  * Отримати контактні дані користувача
@@ -18,8 +18,7 @@ const BASE_URL = '/api/v1/users'
  * @returns контактні дані або locked payload
  */
 export async function getContact(userId: string): Promise<ContactPayload> {
-  const response = await axios.get<ContactPayload>(`${BASE_URL}/${userId}/contact/`)
-  return response.data
+  return apiClient.get(`${BASE_URL}/${userId}/contact/`)
 }
 
 export default {

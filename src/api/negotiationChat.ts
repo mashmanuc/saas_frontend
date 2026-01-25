@@ -5,7 +5,7 @@
  * API методи для роботи з negotiation chat threads
  */
 
-import axios from 'axios'
+import apiClient from '@/utils/apiClient'
 import type {
   NegotiationThreadDTO,
   NegotiationThreadResponse,
@@ -14,7 +14,7 @@ import type {
   SendMessagePayload
 } from '@/types/inquiries'
 
-const BASE_URL = '/api/v1/chat'
+const BASE_URL = '/v1/chat'
 
 /**
  * Створити або отримати negotiation thread для inquiry v0.69
@@ -23,10 +23,10 @@ const BASE_URL = '/api/v1/chat'
  * @returns thread DTO з threadId
  */
 export async function ensureNegotiationThread(inquiryId: string): Promise<NegotiationThreadDTO> {
-  const response = await axios.post<NegotiationThreadResponse>(`${BASE_URL}/threads/negotiation/`, {
+  const response: NegotiationThreadResponse = await apiClient.post(`${BASE_URL}/threads/negotiation/`, {
     inquiryId
   })
-  return response.data.thread
+  return response.thread
 }
 
 /**
@@ -35,8 +35,8 @@ export async function ensureNegotiationThread(inquiryId: string): Promise<Negoti
  * @returns список threads
  */
 export async function fetchThreads(): Promise<NegotiationThreadDTO[]> {
-  const response = await axios.get<{ threads: NegotiationThreadDTO[] }>(`${BASE_URL}/threads/`)
-  return response.data.threads
+  const response: { threads: NegotiationThreadDTO[] } = await apiClient.get(`${BASE_URL}/threads/`)
+  return response.threads
 }
 
 /**
@@ -50,10 +50,9 @@ export async function fetchMessages(
   threadId: string,
   cursor?: string
 ): Promise<MessagesListResponse> {
-  const response = await axios.get<MessagesListResponse>(`${BASE_URL}/threads/${threadId}/messages/`, {
+  return apiClient.get(`${BASE_URL}/threads/${threadId}/messages/`, {
     params: cursor ? { cursor } : {}
   })
-  return response.data
 }
 
 /**
@@ -67,11 +66,11 @@ export async function sendMessage(
   threadId: string,
   payload: SendMessagePayload
 ): Promise<ChatMessageDTO> {
-  const response = await axios.post<{ message: ChatMessageDTO }>(
+  const response: { message: ChatMessageDTO } = await apiClient.post(
     `${BASE_URL}/threads/${threadId}/messages/`,
     payload
   )
-  return response.data.message
+  return response.message
 }
 
 export default {

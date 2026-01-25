@@ -8,7 +8,7 @@
  * - Billing cancellation
  */
 
-import axios from 'axios'
+import apiClient from '@/utils/apiClient'
 import type {
   StaffUserOverview,
   StaffReport,
@@ -21,60 +21,53 @@ import type {
   StaffBan,
 } from '@/types/staff'
 
-const BASE_URL = '/api/v1/staff'
+const BASE_URL = '/v1/staff'
 
 /**
  * Get user overview (trust, billing, activity)
  */
 export async function getUserOverview(userId: string): Promise<StaffUserOverview> {
-  const response = await axios.get<StaffUserOverview>(`${BASE_URL}/users/${userId}/overview/`)
-  return response.data
+  return apiClient.get(`${BASE_URL}/users/${userId}/overview/`)
 }
 
 /**
  * List reports with optional filters
  */
 export async function listReports(params?: StaffReportListParams): Promise<StaffReportListResponse> {
-  const response = await axios.get<StaffReportListResponse>(`${BASE_URL}/reports/`, { params })
-  return response.data
+  return apiClient.get(`${BASE_URL}/reports/`, { params })
 }
 
 /**
  * Get single report details
  */
 export async function getReport(id: string): Promise<StaffReport> {
-  const response = await axios.get<StaffReport>(`${BASE_URL}/reports/${id}/`)
-  return response.data
+  return apiClient.get(`${BASE_URL}/reports/${id}/`)
 }
 
 /**
  * Resolve a report (dismiss or actioned)
  */
 export async function resolveReport(id: string, payload: StaffReportResolvePayload): Promise<StaffReport> {
-  const response = await axios.post<StaffReport>(`${BASE_URL}/reports/${id}/resolve/`, payload)
-  return response.data
+  return apiClient.post(`${BASE_URL}/reports/${id}/resolve/`, payload)
 }
 
 /**
  * Create a ban
  */
 export async function createBan(payload: StaffCreateBanPayload): Promise<StaffBan> {
-  const response = await axios.post<StaffBan>(`${BASE_URL}/bans/`, payload)
-  return response.data
+  return apiClient.post(`${BASE_URL}/bans/`, payload)
 }
 
 /**
  * Lift a ban
  */
 export async function liftBan(id: string, payload?: StaffLiftBanPayload): Promise<StaffBan> {
-  const response = await axios.post<StaffBan>(`${BASE_URL}/bans/${id}/lift/`, payload || {})
-  return response.data
+  return apiClient.post(`${BASE_URL}/bans/${id}/lift/`, payload || {})
 }
 
 /**
  * Cancel user billing/subscription
  */
 export async function cancelBilling(userId: string, payload: StaffCancelBillingPayload): Promise<{ ok: boolean }> {
-  const response = await axios.post<{ ok: boolean }>(`${BASE_URL}/billing/${userId}/cancel/`, payload)
-  return response.data
+  return apiClient.post(`${BASE_URL}/billing/${userId}/cancel/`, payload)
 }

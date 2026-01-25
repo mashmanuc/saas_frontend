@@ -3,7 +3,7 @@
  * Handles subscription checkout, billing status, and cancellation
  */
 
-import axios from 'axios'
+import apiClient from '@/utils/apiClient'
 import type { 
   BillingMeDTO, 
   CheckoutResponseDTO,
@@ -12,7 +12,7 @@ import type {
   InquiryStatsDTO
 } from '@/types/billing'
 
-const BASE_URL = '/api/v1/billing'
+const BASE_URL = '/v1/billing'
 
 /**
  * Start checkout session for subscription upgrade
@@ -20,8 +20,7 @@ const BASE_URL = '/api/v1/billing'
  * @returns Checkout URL to redirect user to
  */
 export async function startCheckout(plan: string = 'PRO'): Promise<CheckoutResponseDTO> {
-  const response = await axios.post<CheckoutResponseDTO>(`${BASE_URL}/checkout/`, { plan })
-  return response.data
+  return apiClient.post(`${BASE_URL}/checkout/`, { plan })
 }
 
 /**
@@ -29,8 +28,7 @@ export async function startCheckout(plan: string = 'PRO'): Promise<CheckoutRespo
  * @returns Billing status including subscription state and period end
  */
 export async function getBillingMe(): Promise<BillingMeDTO> {
-  const response = await axios.get<BillingMeDTO>(`${BASE_URL}/me/`)
-  return response.data
+  return apiClient.get(`${BASE_URL}/me/`)
 }
 
 /**
@@ -38,7 +36,7 @@ export async function getBillingMe(): Promise<BillingMeDTO> {
  * @param atPeriodEnd - If true, cancel at period end; if false, cancel immediately
  */
 export async function cancelSubscription(atPeriodEnd: boolean = true): Promise<void> {
-  await axios.post(`${BASE_URL}/cancel/`, { at_period_end: atPeriodEnd })
+  await apiClient.post(`${BASE_URL}/cancel/`, { at_period_end: atPeriodEnd })
 }
 
 /**
@@ -46,8 +44,7 @@ export async function cancelSubscription(atPeriodEnd: boolean = true): Promise<v
  * @returns Current balance and user ID
  */
 export async function getContactBalance(): Promise<ContactBalanceDTO> {
-  const response = await axios.get<ContactBalanceDTO>(`${BASE_URL}/contacts/balance/`)
-  return response.data
+  return apiClient.get(`${BASE_URL}/contacts/balance/`)
 }
 
 /**
@@ -61,11 +58,7 @@ export async function getContactLedger(
   limit: number = 50,
   offset: number = 0
 ): Promise<ContactLedgerItemDTO[]> {
-  const response = await axios.get<ContactLedgerItemDTO[]>(
-    `${BASE_URL}/contacts/ledger/`,
-    { params: { limit, offset } }
-  )
-  return response.data
+  return apiClient.get(`${BASE_URL}/contacts/ledger/`, { params: { limit, offset } })
 }
 
 /**
@@ -73,8 +66,7 @@ export async function getContactLedger(
  * @returns Decline streak, blocking status, and open inquiries count
  */
 export async function getInquiryStats(): Promise<InquiryStatsDTO> {
-  const response = await axios.get<InquiryStatsDTO>('/api/v1/inquiries/stats/')
-  return response.data
+  return apiClient.get('/v1/inquiries/stats/')
 }
 
 export default {
