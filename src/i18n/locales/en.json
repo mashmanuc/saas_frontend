@@ -118,6 +118,16 @@
     },
     "errors": {
       "retryAfter": "Try again in {seconds} seconds"
+    },
+    "recommendedTutors": {
+      "title": "Recommended Tutors",
+      "description": "We've selected similar tutors for you",
+      "loading": "Loading recommendations...",
+      "loadError": "Failed to load recommendations",
+      "noResults": "No recommendations available"
+    },
+    "ws": {
+      "sessionExpired": "Session expired. Please log in again"
     }
   },
   "loader": {
@@ -4126,5 +4136,25 @@
     "subtitle": "Актуалізуйте свою особисту інформацію.",
     "timezone": "Таймзона",
     "title": "Профіль"
+  },
+  "tutors": {
+    "analytics": {
+      "title": "Inquiry Analytics",
+      "subtitle": "Detailed statistics of your student inquiries",
+      "loading": "Loading analytics...",
+      "loadError": "Failed to load statistics",
+      "period7days": "7 days",
+      "period30days": "30 days",
+      "period90days": "90 days",
+      "totalInquiries": "Total Inquiries",
+      "acceptanceRate": "Acceptance Rate",
+      "responseRate": "Response Rate",
+      "contactsSpent": "Contacts Spent",
+      "dailyBreakdown": "Daily Breakdown",
+      "subjectBreakdown": "By Subject",
+      "accepted": "Accepted",
+      "rejected": "Rejected",
+      "expired": "Expired"
+    }
   }
 }

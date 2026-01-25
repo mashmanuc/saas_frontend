@@ -101,10 +101,24 @@ export async function rejectInquiry(
   return response
 }
 
+/**
+ * Отримати рекомендованих тьюторів для відхиленого inquiry (Phase 3 F3.2)
+ * 
+ * @param inquiryId - UUID inquiry
+ * @returns список рекомендованих тьюторів
+ */
+export async function getRecommendedTutors(inquiryId: string): Promise<any[]> {
+  const response = await apiClient.get<{ inquiry_id: string; recommended_tutors: any[] }>(
+    `${BASE_URL}/${inquiryId}/recommended-tutors/`
+  )
+  return response.recommended_tutors
+}
+
 export default {
   createInquiry,
   fetchInquiries,
   cancelInquiry,
   acceptInquiry,
-  rejectInquiry
+  rejectInquiry,
+  getRecommendedTutors
 }
