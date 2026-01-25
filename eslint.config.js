@@ -19,6 +19,12 @@ export default [
     rules: {
       'vue/multi-word-component-names': 'off',
       'no-hardcoded-translations': 'error',
+      'no-restricted-imports': ['error', {
+        paths: [{
+          name: 'axios',
+          message: 'Import apiClient from @/utils/apiClient instead. Only apiClient.js and rethrowAsDomainError.ts can import axios directly.'
+        }]
+      }]
     },
   },
   {
@@ -32,7 +38,22 @@ export default [
     },
     rules: {
       'no-hardcoded-translations': 'error',
+      'no-restricted-imports': ['error', {
+        paths: [{
+          name: 'axios',
+          message: 'Import apiClient from @/utils/apiClient instead. Only apiClient.js and rethrowAsDomainError.ts can import axios directly.'
+        }]
+      }]
     },
+  },
+  {
+    files: [
+      '**/utils/apiClient.js',
+      '**/utils/rethrowAsDomainError.ts'
+    ],
+    rules: {
+      'no-restricted-imports': 'off'
+    }
   },
   {
     plugins: {

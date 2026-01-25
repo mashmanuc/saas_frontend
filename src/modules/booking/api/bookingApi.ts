@@ -208,7 +208,7 @@ export const bookingApi = {
       `/v1/calendar/event/conflicts/`,
       data
     )
-    return response.data
+    return response
   }
 }
 

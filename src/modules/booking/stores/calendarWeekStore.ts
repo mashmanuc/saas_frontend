@@ -8,7 +8,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed, triggerRef } from 'vue'
 import dayjs from 'dayjs'
-import axios from 'axios'
 
 import { calendarV055Api } from '../api/calendarV055Api'
 import { logCalendarEvent, logCalendarError, measureCalendarOperation } from '../utils/calendarTelemetry'

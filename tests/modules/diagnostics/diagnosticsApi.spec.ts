@@ -52,9 +52,7 @@ describe('DiagnosticsApi', () => {
 
   describe('logFrontendError', () => {
     it('should send error to backend', async () => {
-      vi.mocked(apiClient.post).mockResolvedValue({
-        data: { status: 'ok', id: 1 },
-      })
+      vi.mocked(apiClient.post).mockResolvedValue({ status: 'ok', id: 1 })
 
       const payload = {
         severity: 'error' as const,
@@ -87,9 +85,7 @@ describe('DiagnosticsApi', () => {
 
   describe('logBatch', () => {
     it('should send batch of errors', async () => {
-      vi.mocked(apiClient.post).mockResolvedValue({
-        data: { status: 'ok', count: 2 },
-      })
+      vi.mocked(apiClient.post).mockResolvedValue({ status: 'ok', count: 2 })
 
       const errors = [
         {

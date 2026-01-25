@@ -33,7 +33,7 @@ class DiagnosticsApi {
         `${this.baseUrl}/frontend/`,
         payload
       )
-      return response.data
+      return response
     } catch (error) {
       // Don't throw - we don't want logging to break the app
       console.error('[Diagnostics] Failed to send error:', error)
@@ -64,7 +64,7 @@ class DiagnosticsApi {
         `${this.baseUrl}/frontend/`,
         { errors }
       )
-      return response.data
+      return response
     } catch (error) {
       console.error('[Diagnostics] Failed to send batch:', error)
       return null

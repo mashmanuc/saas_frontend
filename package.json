@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "typecheck": "vue-tsc --noEmit",
     "i18n:check": "node scripts/i18n-check.mjs",
+    "check:no-raw-axios": "node scripts/check-no-raw-axios.mjs",
     "prepare": "husky || true",
     "test": "vitest run",
     "test:unit": "vitest",

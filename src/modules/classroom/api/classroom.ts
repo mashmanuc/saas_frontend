@@ -146,34 +146,34 @@ export const classroomApi = {
   // Session management
   createSession: async (data: CreateSessionInput): Promise<ClassroomSession> => {
     const response = await apiClient.post<ClassroomSession>('/classroom/session/create/', data)
-    return response.data
+    return response
   },
 
   getSession: async (uuid: string): Promise<ClassroomSession> => {
     const response = await apiClient.get<ClassroomSession>(`/classroom/session/${uuid}/`)
-    return response.data
+    return response
   },
 
   joinSession: async (uuid: string, accessCode?: string): Promise<JoinResponse> => {
     const response = await apiClient.post<JoinResponse>(`/classroom/session/${uuid}/join/`, {
       access_code: accessCode,
     })
-    return response.data
+    return response
   },
 
   startSession: async (uuid: string): Promise<ClassroomSession> => {
     const response = await apiClient.post<ClassroomSession>(`/classroom/session/${uuid}/start/`)
-    return response.data
+    return response
   },
 
   pauseSession: async (uuid: string): Promise<ClassroomSession> => {
     const response = await apiClient.post<ClassroomSession>(`/classroom/session/${uuid}/pause/`)
-    return response.data
+    return response
   },
 
   resumeSession: async (uuid: string): Promise<ClassroomSession> => {
     const response = await apiClient.post<ClassroomSession>(`/classroom/session/${uuid}/resume/`)
-    return response.data
+    return response
   },
 
   terminateSession: async (uuid: string, reason?: string): Promise<ClassroomSession> => {
@@ -181,7 +181,7 @@ export const classroomApi = {
       `/classroom/session/${uuid}/terminate/`,
       { reason }
     )
-    return response.data
+    return response
   },
 
   // Board operations
@@ -194,12 +194,12 @@ export const classroomApi = {
       board_state: boardState,
       version,
     })
-    return response.data
+    return response
   },
 
   getHistory: async (uuid: string): Promise<BoardSnapshot[]> => {
     const response = await apiClient.get<BoardSnapshot[]>(`/classroom/history/${uuid}/`)
-    return response.data
+    return response
   },
 
   restoreSnapshot: async (
@@ -209,7 +209,7 @@ export const classroomApi = {
     const response = await apiClient.post(
       `/classroom/history/${uuid}/restore/${version}/`
     )
-    return response.data as { board_state?: Record<string, unknown>; state?: Record<string, unknown>; version?: number }
+    return response as { board_state?: Record<string, unknown>; state?: Record<string, unknown>; version?: number }
   },
 
   exportBoard: async (uuid: string, format: 'json' | 'png' | 'svg'): Promise<Blob> => {
@@ -217,13 +217,13 @@ export const classroomApi = {
       params: { format },
       responseType: 'blob',
     })
-    return response.data
+    return response
   },
 
   // User sessions
   getMySessions: async (params?: { status?: string }): Promise<ClassroomSession[]> => {
     const response = await apiClient.get<ClassroomSession[]>('/classroom/my-sessions/', { params })
-    return response.data
+    return response
   },
 
   // Participant management
@@ -242,14 +242,14 @@ export const classroomApi = {
   // v0.24.2 Methods
   getJwt: async (sessionId: string): Promise<JWTResponse> => {
     const response = await apiClient.post<JWTResponse>(`/classroom/session/${sessionId}/jwt/`)
-    return response.data
+    return response
   },
 
   getPermissions: async (sessionId: string): Promise<RoomPermissions> => {
     const response = await apiClient.get<RoomPermissions>(
       `/classroom/session/${sessionId}/permissions/`
     )
-    return response.data
+    return response
   },
 
   updateMediaState: async (sessionId: string, state: MediaStateInput): Promise<void> => {
@@ -278,7 +278,7 @@ export const classroomApi = {
     const response = await apiClient.get(`/classroom/session/${sessionId}/timeline/`, {
       params,
     })
-    return response.data
+    return response
   },
 
   // v0.24.3 Methods - Snapshots
@@ -289,7 +289,7 @@ export const classroomApi = {
     const response = await apiClient.get(`/classroom/session/${sessionId}/snapshots/`, {
       params: { type },
     })
-    return response.data
+    return response
   },
 
   getSnapshot: async (
@@ -299,7 +299,7 @@ export const classroomApi = {
     const response = await apiClient.get(
       `/classroom/session/${sessionId}/snapshots/${version}/`
     )
-    return response.data
+    return response
   },
 
   exportSnapshot: async (
@@ -314,23 +314,23 @@ export const classroomApi = {
         responseType: 'blob',
       }
     )
-    return response.data
+    return response
   },
 
   // v0.24.3 Methods - Replay
   getReplayStream: async (sessionId: string): Promise<ReplayManifestResponse> => {
     const response = await apiClient.get(`/classroom/session/${sessionId}/replay/stream/`)
-    return response.data
+    return response
   },
 
   getReplayManifest: async (sessionId: string): Promise<ReplayManifestResponse> => {
     const response = await apiClient.get(`/classroom/session/${sessionId}/replay/manifest/`)
-    return response.data
+    return response
   },
 
   // v0.24.3 Methods - Summary
   getSummary: async (sessionId: string): Promise<SessionSummaryResponse> => {
     const response = await apiClient.get(`/classroom/session/${sessionId}/summary/`)
-    return response.data
+    return response
   },
 }

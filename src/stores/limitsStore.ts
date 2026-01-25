@@ -7,7 +7,7 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import axios from 'axios'
+import apiClient from '@/utils/apiClient'
 import type { ContactLimit, LimitsResponse } from '@/types/relations'
 
 export const useLimitsStore = defineStore('limits', () => {
@@ -20,8 +20,8 @@ export const useLimitsStore = defineStore('limits', () => {
     error.value = null
     
     try {
-      const response = await axios.get<LimitsResponse>('/api/v1/users/me/limits/')
-      limits.value = response.data.limits
+      const response = await apiClient.get<LimitsResponse>('/v1/users/me/limits/')
+      limits.value = response.limits
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error'
       error.value = errorMessage

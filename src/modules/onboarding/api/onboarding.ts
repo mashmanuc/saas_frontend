@@ -47,56 +47,56 @@ export const onboardingApi = {
   // Onboarding
   getProgress: async (): Promise<OnboardingProgress> => {
     const response = await apiClient.get<OnboardingProgress>('/onboarding/progress/')
-    return response.data
+    return response
   },
 
   getSteps: async (): Promise<OnboardingStep[]> => {
     const response = await apiClient.get<OnboardingStep[]>('/onboarding/steps/')
-    return response.data
+    return response
   },
 
   completeStep: async (slug: string): Promise<OnboardingProgress> => {
     const response = await apiClient.post<OnboardingProgress>(
       `/onboarding/steps/${slug}/complete/`
     )
-    return response.data
+    return response
   },
 
   skipStep: async (slug: string): Promise<OnboardingProgress> => {
     const response = await apiClient.post<OnboardingProgress>(
       `/onboarding/steps/${slug}/skip/`
     )
-    return response.data
+    return response
   },
 
   dismissOnboarding: async (): Promise<OnboardingProgress> => {
     const response = await apiClient.post<OnboardingProgress>('/onboarding/dismiss/')
-    return response.data
+    return response
   },
 
   resetOnboarding: async (): Promise<OnboardingProgress> => {
     const response = await apiClient.post<OnboardingProgress>('/onboarding/reset/')
-    return response.data
+    return response
   },
 
   // Checklist
   getChecklist: async (): Promise<ChecklistItem[]> => {
     const response = await apiClient.get<ChecklistItem[]>('/checklist/')
-    return response.data
+    return response
   },
 
   getChecklistByCategory: async (category: string): Promise<ChecklistItem[]> => {
     const response = await apiClient.get<ChecklistItem[]>(`/checklist/${category}/`)
-    return response.data
+    return response
   },
 
   syncChecklist: async (): Promise<ChecklistSummary> => {
     const response = await apiClient.post<ChecklistSummary>('/checklist/sync/')
-    return response.data
+    return response
   },
 
   getCompletionPercentage: async (): Promise<{ percentage: number }> => {
     const response = await apiClient.get<{ percentage: number }>('/checklist/percentage/')
-    return response.data
+    return response
   },
 }

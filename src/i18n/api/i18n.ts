@@ -19,7 +19,7 @@ export const i18nApi = {
   // Get supported locales
   getLocales: async (): Promise<SupportedLocale[]> => {
     const response = await apiClient.get<SupportedLocale[]>('/i18n/locales/')
-    return response.data
+    return response
   },
 
   // Get translations for locale
@@ -31,7 +31,7 @@ export const i18nApi = {
       `/i18n/translations/${locale}/`,
       { params: { namespace } }
     )
-    return response.data
+    return response
   },
 
   // Set user locale preference
@@ -44,6 +44,6 @@ export const i18nApi = {
     const response = await apiClient.get<string[]>(
       `/i18n/translations/missing/${locale}/`
     )
-    return response.data
+    return response
   },
 }

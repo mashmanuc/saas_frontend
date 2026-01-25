@@ -3,11 +3,11 @@ import { setActivePinia, createPinia } from 'pinia'
 import type { TutorPublicListResponse } from '@/types/relations'
 import { useMarketplaceStore } from '@/stores/marketplaceStore'
 
-const axiosGetMock = vi.fn()
+const apiClientGetMock = vi.fn()
 
-vi.mock('axios', () => ({
+vi.mock('@/utils/apiClient', () => ({
   default: {
-    get: (...args: unknown[]) => axiosGetMock(...args)
+    get: (...args: unknown[]) => apiClientGetMock(...args)
   }
 }))
 
@@ -38,21 +38,21 @@ describe('marketplaceStore', () => {
       previous: null,
       filters_applied: {}
     }
-    axiosGetMock.mockResolvedValueOnce({ data: response })
+    apiClientGetMock.mockResolvedValueOnce(response)
 
     const store = useMarketplaceStore()
     await store.searchTutors({ subjects: 'Math' })
 
-    expect(axiosGetMock).toHaveBeenCalledWith('/api/v1/tutors/public-list/', {
+    expect(apiClientGetMock).toHaveBeenCalledWith('/v1/tutors/public-list/', {
       params: { subjects: 'Math' }
     })
     expect(store.tutors).toHaveLength(1)
-    expect(store.nextCursor).toBe('abc')
+    expect(store.nextCursor).toBe('https://api.test/tutors?cursor=abc')
     expect(store.error).toBeNull()
   })
 
   it('searchTutors captures errors and sets message', async () => {
-    axiosGetMock.mockRejectedValueOnce(new Error('offline'))
+    apiClientGetMock.mockRejectedValueOnce(new Error('offline'))
 
     const store = useMarketplaceStore()
     await store.searchTutors({})
@@ -104,16 +104,16 @@ describe('marketplaceStore', () => {
       filters_applied: {}
     }
 
-    axiosGetMock
-      .mockResolvedValueOnce({ data: firstPage })
-      .mockResolvedValueOnce({ data: secondPage })
+    apiClientGetMock
+      .mockResolvedValueOnce(firstPage)
+      .mockResolvedValueOnce(secondPage)
 
     const store = useMarketplaceStore()
     await store.searchTutors({ subjects: 'Math' })
     await store.loadMore()
 
-    expect(axiosGetMock).toHaveBeenLastCalledWith('/api/v1/tutors/public-list/', {
-      params: { subjects: 'Math', cursor: 'abc' }
+    expect(apiClientGetMock).toHaveBeenLastCalledWith('/v1/tutors/public-list/', {
+      params: { subjects: 'Math', cursor: 'https://api.test/tutors?cursor=abc' }
     })
     expect(store.tutors).toHaveLength(2)
     expect(store.nextCursor).toBeNull()
@@ -162,6 +162,6 @@ describe('marketplaceStore', () => {
 
     await store.loadMore()
 
-    expect(axiosGetMock).not.toHaveBeenCalled()
+    expect(apiClientGetMock).not.toHaveBeenCalled()
   })
 })

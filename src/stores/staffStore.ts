@@ -5,8 +5,8 @@
  */
 
 import { defineStore } from 'pinia'
-import axios from 'axios'
 import * as staffApi from '@/api/staff'
+import { rethrowAsDomainError } from '@/utils/rethrowAsDomainError'
 import type {
   StaffUserOverview,
   StaffReport,
@@ -17,23 +17,6 @@ import type {
   StaffCancelBillingPayload,
   StaffBan,
 } from '@/types/staff'
-
-/**
- * Standard error handling - rethrow as domain error
- * Avoids manual parsing of err.response
- */
-function rethrowAsDomainError(err: unknown): never {
-  if (axios.isAxiosError(err)) {
-    const data = err.response?.data as any
-    if (data?.code) {
-      const error = new Error(data.message || data.code)
-      ;(error as any).code = data.code
-      ;(error as any).meta = data.meta
-      throw error
-    }
-  }
-  throw err
-}
 
 interface StaffStoreState {
   userOverview: StaffUserOverview | null

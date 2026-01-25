@@ -3,11 +3,11 @@ import { setActivePinia, createPinia } from 'pinia'
 import { useLimitsStore } from '@/stores/limitsStore'
 import type { LimitsResponse } from '@/types/relations'
 
-const axiosGetMock = vi.fn()
+const apiClientGetMock = vi.fn()
 
-vi.mock('axios', () => ({
+vi.mock('@/utils/apiClient', () => ({
   default: {
-    get: (...args: unknown[]) => axiosGetMock(...args)
+    get: (...args: unknown[]) => apiClientGetMock(...args)
   }
 }))
 
@@ -38,12 +38,12 @@ describe('limitsStore', () => {
         }
       ]
     }
-    axiosGetMock.mockResolvedValueOnce({ data: payload })
+    apiClientGetMock.mockResolvedValueOnce(payload)
 
     const store = useLimitsStore()
     await store.fetchLimits()
 
-    expect(axiosGetMock).toHaveBeenCalledWith('/api/v1/users/me/limits/')
+    expect(apiClientGetMock).toHaveBeenCalledWith('/v1/users/me/limits/')
     expect(store.limits).toHaveLength(2)
     expect(store.studentRequestLimit?.remaining).toBe(3)
     expect(store.tutorAcceptLimit?.remaining).toBe(0)
@@ -52,7 +52,7 @@ describe('limitsStore', () => {
   })
 
   it('handles fetch errors gracefully', async () => {
-    axiosGetMock.mockRejectedValueOnce(new Error('offline'))
+    apiClientGetMock.mockRejectedValueOnce(new Error('offline'))
 
     const store = useLimitsStore()
     await store.fetchLimits()

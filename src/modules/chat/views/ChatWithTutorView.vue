@@ -110,7 +110,7 @@ import Heading from '@/ui/Heading.vue'
 import Button from '@/ui/Button.vue'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import {
-  listThreads,
+  getThreads,
   getThreadMessages,
   sendMessage,
   type ChatThread,
@@ -163,7 +163,7 @@ async function loadThread() {
   try {
     // Get all threads and find one for this tutor
     // In MVP, we assume one thread per tutor relation
-    const { threads } = await listThreads()
+    const { threads } = await getThreads()
     
     if (threads.length === 0) {
       error.value = t('chat.noThreadFound')

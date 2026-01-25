@@ -7,7 +7,7 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import axios from 'axios'
+import apiClient from '@/utils/apiClient'
 import type { TutorPublic, TutorPublicListResponse, TutorSearchParams } from '@/types/relations'
 
 export const useMarketplaceStore = defineStore('marketplace', () => {
@@ -75,14 +75,12 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     filters.value = params
     
     try {
-      const response = await axios.get<TutorPublicListResponse>(
-        '/api/v1/tutors/public-list/',
+      const response = await apiClient.get<TutorPublicListResponse>(
+        '/v1/tutors/public-list/',
         { params: serializeFilters(params) }
       )
-      
-      tutors.value = response.data.results
-      // P1.1: next це URL, не cursor
-      nextCursor.value = response.data.next ? new URL(response.data.next).searchParams.get('cursor') : null
+      tutors.value = response.results
+      nextCursor.value = response.next
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error'
       error.value = errorMessage
@@ -97,14 +95,12 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
     isLoading.value = true
     
     try {
-      const response = await axios.get<TutorPublicListResponse>(
-        '/api/v1/tutors/public-list/',
+      const response = await apiClient.get<TutorPublicListResponse>(
+        '/v1/tutors/public-list/',
         { params: { ...serializeFilters(filters.value), cursor: nextCursor.value } }
       )
-      
-      tutors.value.push(...response.data.results)
-      // P1.1: next це URL, не cursor
-      nextCursor.value = response.data.next ? new URL(response.data.next).searchParams.get('cursor') : null
+      tutors.value.push(...response.results)
+      nextCursor.value = response.next
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error'
       error.value = errorMessage

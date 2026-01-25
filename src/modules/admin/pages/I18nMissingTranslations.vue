@@ -124,7 +124,7 @@ const paginatedMissing = computed(() => {
 async function fetchLocales() {
   try {
     const response = await i18nApi.getLocales()
-    locales.value = response.data
+    locales.value = response
   } catch (err) {
     console.error('Failed to fetch locales:', err)
   }
@@ -137,7 +137,7 @@ async function fetchMissing() {
 
   try {
     const response = await i18nApi.getMissingTranslations(selectedLocale.value)
-    missing.value = response.data.items || []
+    missing.value = response.items || []
   } catch (err: any) {
     error.value = err.response?.data?.error || 'Failed to fetch missing translations'
   } finally {

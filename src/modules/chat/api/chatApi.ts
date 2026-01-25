@@ -48,17 +48,17 @@ export interface ThreadMessagesResponse {
  */
 export async function createThread(payload: CreateThreadPayload): Promise<ChatThread> {
   const response = await apiClient.post<ChatThread>('/api/v1/chat/threads/create/', payload)
-  return response.data
+  return response
 }
 
 /**
  * List all threads for current user
  */
-export async function listThreads(): Promise<{ threads: ChatThread[]; count: number }> {
+export async function getThreads(): Promise<{ threads: ChatThread[]; count: number }> {
   const response = await apiClient.get<{ threads: ChatThread[]; count: number }>(
     '/api/v1/chat/threads/'
   )
-  return response.data
+  return response
 }
 
 /**
@@ -68,7 +68,7 @@ export async function getThreadMessages(threadId: string): Promise<ThreadMessage
   const response = await apiClient.get<ThreadMessagesResponse>(
     `/api/v1/chat/threads/${threadId}/messages/`
   )
-  return response.data
+  return response
 }
 
 /**
@@ -82,7 +82,7 @@ export async function sendMessage(
     `/api/v1/chat/threads/${threadId}/messages/`,
     payload
   )
-  return response.data
+  return response
 }
 
 /**
@@ -99,7 +99,7 @@ export async function getOrCreateThreadByTutorId(tutorId: number): Promise<ChatT
   // For MVP, we need to get the inquiry ID first
   // This would typically come from the relations API or be passed from the component
   // For now, we'll use the threads list to find existing thread
-  const { threads } = await listThreads()
+  const { threads } = await getThreads()
   
   // Try to find existing thread for this tutor
   // Note: This is a simplified approach for MVP

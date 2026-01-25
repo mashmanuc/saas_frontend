@@ -8,32 +8,18 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import axios from 'axios'
+import apiClient from '@/utils/apiClient'
 import type {
   Relation,
   RelationsResponse,
   RequestTutorPayload,
   RequestTutorResponse,
   AcceptRequestPayload,
-  AcceptRequestResponse,
-  LimitExceededResponse
+  AcceptRequestResponse
 } from '@/types/relations'
 import { LimitExceededError } from '@/utils/errors'
+import { rethrowAsDomainError } from '@/utils/rethrowAsDomainError'
 import { useLimitsStore } from './limitsStore'
-
-/**
- * P0.1: Єдиний стандарт error handling - rethrowAsDomainError
- * Уникаємо ручного парсингу err.response
- */
-function rethrowAsDomainError(err: unknown): never {
-  if (axios.isAxiosError(err)) {
-    const data = err.response?.data as LimitExceededResponse | any
-    if (data?.code === 'limit_exceeded') {
-      throw new LimitExceededError(data.meta)
-    }
-  }
-  throw err
-}
 
 export const useRelationsStore = defineStore('relations', () => {
   const relations = ref<Relation[]>([])
@@ -60,8 +46,8 @@ export const useRelationsStore = defineStore('relations', () => {
     fetchError.value = null
     
     try {
-      const response = await axios.get<RelationsResponse>('/api/v1/users/me/relations/')
-      mergeRelations(response.data.relations)
+      const response = await apiClient.get<RelationsResponse>('/v1/users/me/relations/')
+      mergeRelations(response.relations)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error'
       fetchError.value = errorMessage
@@ -82,18 +68,18 @@ export const useRelationsStore = defineStore('relations', () => {
     requestTutorError.value = null
     
     try {
-      const response = await axios.post<RequestTutorResponse>(
-        '/api/v1/users/relations/request-tutor/',
+      const response = await apiClient.post<RequestTutorResponse>(
+        '/v1/users/relations/request-tutor/',
         { tutor_id: tutorId, message } as RequestTutorPayload
       )
       
-      upsertRelation(response.data.relation)
+      upsertRelation(response.relation)
       
       // Оновити ліміти
       const limitsStore = useLimitsStore()
       await limitsStore.fetchLimits()
       
-      return response.data.relation
+      return response.relation
     } catch (err) {
       // P0.1: Використовуємо rethrowAsDomainError замість ручного парсингу
       try {
@@ -118,18 +104,18 @@ export const useRelationsStore = defineStore('relations', () => {
     acceptRequestError.value = null
     
     try {
-      const response = await axios.post<AcceptRequestResponse>(
-        '/api/v1/users/relations/accept-request/',
+      const response = await apiClient.post<AcceptRequestResponse>(
+        '/v1/users/relations/accept-request/',
         { relation_id: relationId } as AcceptRequestPayload
       )
       
-      upsertRelation(response.data.relation)
+      upsertRelation(response.relation)
       
       // Оновити ліміти
       const limitsStore = useLimitsStore()
       await limitsStore.fetchLimits()
       
-      return response.data.relation
+      return response.relation
     } catch (err) {
       // P0.1: Використовуємо rethrowAsDomainError замість ручного парсингу
       try {
