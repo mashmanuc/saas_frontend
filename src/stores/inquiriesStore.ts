@@ -200,6 +200,20 @@ export const useInquiriesStore = defineStore('inquiries', () => {
     return items.value.filter(i => i.status === 'OPEN').length
   })
   
+  /**
+   * Alias: requestContact → createInquiry (backward compatibility)
+   */
+  async function requestContact(relationId: string, message: string): Promise<InquiryDTO> {
+    return createInquiry(relationId, message)
+  }
+  
+  /**
+   * Alias: declineInquiry → rejectInquiry (backward compatibility)
+   */
+  async function declineInquiry(inquiryId: number, payload: RejectInquiryPayload): Promise<RejectInquiryResponse> {
+    return rejectInquiry(inquiryId, payload)
+  }
+  
   return {
     // State
     items,
@@ -217,6 +231,10 @@ export const useInquiriesStore = defineStore('inquiries', () => {
     cancelInquiry,
     acceptInquiry,
     rejectInquiry,
-    refetch
+    refetch,
+    
+    // Aliases (backward compatibility)
+    requestContact,
+    declineInquiry
   }
 })

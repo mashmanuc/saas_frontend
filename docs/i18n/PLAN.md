@@ -140,6 +140,26 @@ Last-Updated: 2025-12-31
 - 📊 100% паритет uk ↔ en підтримується, всі критичні домени синхронізовані
 - 📝 MANIFEST залишається актуальним, доменні неймспейси не змінювалися
 
+**Фінальне оновлення (2026-01-25)**
+- ✅ Виправлено missing key `errors.api.rateLimitedWithRetry` в `en.json`
+- ✅ `pnpm i18n:check --report` зелений: **2953 keys, 0 missing, 0 extra, 0 empty values**
+- ✅ Підтверджено коректність 571 unused keys: всі використовуються динамічно через template literals
+  - `classroom.tools.${tool.id}`, `classroom.layouts.${layout.id}` — динамічні інструменти та макети
+  - `marketplace.subjects.${code}` — динамічні предмети (verified у 8+ компонентах)
+  - `booking.requestStatus.${request.status}`, `booking.calendar.status.${patch.newStatus}` — динамічні статуси
+  - `limits.types.${limit_type}` — використовується в `useErrorHandler.ts`
+  - `common.weekdays.${day}`, `commonExtended.weekdays.${weekday}` — динамічні дні тижня
+- ✅ Перевірено всі deliverables PLAN.md:
+  - CI workflows (i18n-check.yml, i18n-weekly-report.yml) ✅
+  - Scripts (i18n-check.mjs, sync-missing-keys.mjs, cleanup-unused-keys.mjs) ✅
+  - Pre-commit hook ✅
+  - ESLint правило `no-hardcoded-translations` ✅
+  - Backend API `MissingTranslationsView` ✅
+  - Frontend admin UI `I18nMissingTranslations.vue` ✅
+  - Документація ONBOARDING.md ✅
+- 📊 Фінальні метрики: 2953 keys, 100% паритет uk ↔ en, 0 критичних помилок
+- 📝 Usage-сканер працює коректно: навмисно ігнорує динамічні ключі з `${}` (це норма згідно MANIFEST)
+
 ---
 **Етап 4: Інструмент «Missing translations»**
 - [x] Backend endpoint `/v1/i18n/translations/missing/{locale}/` (вже реалізовано в `apps/i18n/api/views.py`)

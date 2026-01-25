@@ -5,6 +5,12 @@
       <p class="view-description">{{ $t('inquiries.tutor.description') }}</p>
     </div>
     
+    <!-- Phase 2.3: Decline Streak Warning -->
+    <DeclineStreakWarning
+      :decline-streak="declineStreak"
+      :is-blocked="isBlocked"
+    />
+    
     <!-- Loading State -->
     <LoadingState v-if="isLoading && !items.length" :message="$t('inquiries.loading')" />
     
@@ -102,6 +108,7 @@
 
 import { ref, onMounted } from 'vue'
 import { useInquiriesStore } from '@/stores/inquiriesStore'
+import { useContactsStore } from '@/stores/contactsStore'
 import { useInquiryErrorHandler } from '@/composables/useInquiryErrorHandler'
 import { storeToRefs } from 'pinia'
 import type { ContactsDTO } from '@/types/inquiries'
@@ -110,9 +117,12 @@ import ErrorState from '@/components/inquiries/ErrorState.vue'
 import EmptyInquiriesState from '@/components/inquiries/EmptyInquiriesState.vue'
 import InquiryCard from '@/components/inquiries/InquiryCard.vue'
 import RejectInquiryModal from '@/components/inquiries/RejectInquiryModal.vue'
+import DeclineStreakWarning from '@/components/contacts/DeclineStreakWarning.vue'
 
 const inquiriesStore = useInquiriesStore()
+const contactsStore = useContactsStore()
 const { items, isLoading } = storeToRefs(inquiriesStore)
+const { declineStreak, isBlocked } = storeToRefs(contactsStore)
 const { errorState, handleError, clearError } = useInquiryErrorHandler()
 
 const showRejectModal = ref(false)
@@ -121,7 +131,10 @@ const showContactsModal = ref(false)
 const unlockedContacts = ref<ContactsDTO | null>(null)
 
 onMounted(async () => {
-  await loadInquiries()
+  await Promise.all([
+    loadInquiries(),
+    contactsStore.fetchStats()
+  ])
 })
 
 async function loadInquiries() {
@@ -137,6 +150,9 @@ async function handleAccept(inquiryId: number) {
   clearError()
   try {
     const response = await inquiriesStore.acceptInquiry(inquiryId)
+    
+    // Phase 2.3 INV-3: Refetch balance + ledger after accept
+    await contactsStore.afterAcceptRefresh()
     
     // Показати контакти студента
     unlockedContacts.value = response.contacts

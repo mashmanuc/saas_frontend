@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import SubjectSelectionPanel from './SubjectSelectionPanel.vue'
 import SubjectCardList from './SubjectCardList.vue'
 import type { Language } from '../../api/languages'
-import type { LanguageTag } from '../../api/languages'
+import type { SpecialtyTagCatalog } from '../../api/marketplace'
 
 interface SubjectOption {
   value: string
@@ -21,7 +21,7 @@ const props = defineProps<{
   subjectOptions: SubjectOption[]
   languages: Language[]
   subjects: SelectedSubjectEntry[]
-  subjectTags: LanguageTag[]
+  subjectTags: SpecialtyTagCatalog[]
   getSubjectLabel: (code: string) => string
 }>()
 
@@ -96,7 +96,7 @@ const mappedSubjects = computed(() =>
       <SubjectCardList
         :subjects="mappedSubjects"
         :languages="[]"
-        :subject-tags="subjectTags"
+        :subject-tag-catalog="subjectTags"
         :language-tags="[]"
         @update:subjects="handleUpdateSubjects"
         @update:languages="() => {}"

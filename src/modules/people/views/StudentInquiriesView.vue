@@ -50,7 +50,7 @@
       >
         <template #actions="{ inquiry: inq }">
           <button
-            v-if="inq.status === 'sent'"
+            v-if="inq.status === 'OPEN'"
             @click="handleCancel(inq.id)"
             :disabled="isLoading"
             class="text-xs text-red-600 hover:text-red-800 font-medium disabled:opacity-50"
@@ -58,7 +58,7 @@
             Cancel
           </button>
           <button
-            v-if="inq.status === 'accepted'"
+            v-if="inq.status === 'ACCEPTED'"
             @click="handleOpenChat(inq.id)"
             class="text-xs text-blue-600 hover:text-blue-800 font-medium"
           >
@@ -97,7 +97,7 @@ async function loadInquiries() {
   }
 }
 
-async function handleCancel(inquiryId: string) {
+async function handleCancel(inquiryId: number) {
   if (!confirm('Are you sure you want to cancel this request?')) {
     return
   }
@@ -109,9 +109,9 @@ async function handleCancel(inquiryId: string) {
   }
 }
 
-async function handleOpenChat(inquiryId: string) {
+async function handleOpenChat(inquiryId: number) {
   try {
-    const thread = await chatStore.ensureThread(inquiryId)
+    const thread = await chatStore.ensureThread(String(inquiryId))
     router.push(`/chat/thread/${thread.id}`)
   } catch (err) {
     console.error('Failed to open chat:', err)

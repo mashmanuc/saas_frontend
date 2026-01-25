@@ -50,6 +50,7 @@
           <span class="dot" aria-hidden="true" />
           <span class="label">{{ $t('realtime.offline') }}</span>
         </span>
+        <ContactsBalanceWidget v-if="auth.user?.role === 'tutor'" class="hidden sm:block" />
         <NotificationBell class="hidden sm:block" />
       </div>
 
@@ -115,6 +116,7 @@ import { useSettingsStore } from '../stores/settingsStore'
 import { useThemeStore } from '../stores/themeStore'
 import { useI18n } from 'vue-i18n'
 import NotificationBell from '../components/Notifications/NotificationBell.vue'
+import ContactsBalanceWidget from '../components/contacts/ContactsBalanceWidget.vue'
 import { useRealtimeStore } from '../stores/realtimeStore'
 
 const router = useRouter()

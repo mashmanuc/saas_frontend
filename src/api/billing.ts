@@ -4,7 +4,13 @@
  */
 
 import axios from 'axios'
-import type { BillingMeDTO, CheckoutResponseDTO } from '@/types/billing'
+import type { 
+  BillingMeDTO, 
+  CheckoutResponseDTO,
+  ContactBalanceDTO,
+  ContactLedgerItemDTO,
+  InquiryStatsDTO
+} from '@/types/billing'
 
 const BASE_URL = '/api/v1/billing'
 
@@ -35,8 +41,47 @@ export async function cancelSubscription(atPeriodEnd: boolean = true): Promise<v
   await axios.post(`${BASE_URL}/cancel/`, { at_period_end: atPeriodEnd })
 }
 
+/**
+ * Phase 2.3: Get contact token balance for authenticated tutor
+ * @returns Current balance and user ID
+ */
+export async function getContactBalance(): Promise<ContactBalanceDTO> {
+  const response = await axios.get<ContactBalanceDTO>(`${BASE_URL}/contacts/balance/`)
+  return response.data
+}
+
+/**
+ * Phase 2.3: Get contact ledger history with pagination
+ * SSOT: limit+offset pagination (no cursor/infinite-scroll)
+ * @param limit - Number of records (1-200, default 50)
+ * @param offset - Number of records to skip (default 0)
+ * @returns List of ledger transactions, newest first
+ */
+export async function getContactLedger(
+  limit: number = 50,
+  offset: number = 0
+): Promise<ContactLedgerItemDTO[]> {
+  const response = await axios.get<ContactLedgerItemDTO[]>(
+    `${BASE_URL}/contacts/ledger/`,
+    { params: { limit, offset } }
+  )
+  return response.data
+}
+
+/**
+ * Phase 2.3: Get inquiry stats for authenticated tutor
+ * @returns Decline streak, blocking status, and open inquiries count
+ */
+export async function getInquiryStats(): Promise<InquiryStatsDTO> {
+  const response = await axios.get<InquiryStatsDTO>('/api/v1/inquiries/stats/')
+  return response.data
+}
+
 export default {
   startCheckout,
   getBillingMe,
-  cancelSubscription
+  cancelSubscription,
+  getContactBalance,
+  getContactLedger,
+  getInquiryStats
 }

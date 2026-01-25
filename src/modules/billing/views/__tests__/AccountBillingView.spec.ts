@@ -8,7 +8,33 @@ import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import AccountBillingView from '../AccountBillingView.vue'
 import { useBillingStore } from '../../stores/billingStore'
-import type { BillingMeDto, PlanDto } from '../../api/billingApi'
+import type { BillingMeDto, PlanDto } from '../../api/dto'
+
+const makeBillingMeDto = (overrides: Partial<BillingMeDto> = {}): BillingMeDto => ({
+  subscription: {
+    status: 'active',
+    provider: 'liqpay',
+    current_period_end: '2026-02-01T00:00:00Z',
+    cancel_at_period_end: false,
+    canceled_at: null
+  },
+  entitlement: {
+    plan_code: 'PRO',
+    features: ['CONTACT_UNLOCK', 'UNLIMITED_INQUIRIES'],
+    expires_at: '2026-02-01T00:00:00Z'
+  },
+  pending_plan_code: null,
+  pending_since: null,
+  display_plan_code: 'PRO',
+  subscription_status: 'active',
+  plan: 'PRO',
+  expires_at: '2026-02-01T00:00:00Z',
+  is_active: true,
+  pending_age_seconds: null,
+  last_checkout_order_id: null,
+  last_checkout_created_at: null,
+  ...overrides
+})
 
 // Mock router
 const mockPush = vi.fn()
@@ -99,20 +125,7 @@ describe('AccountBillingView', () => {
 
     const billingStore = useBillingStore()
     
-    const mockMe: BillingMeDto = {
-      subscription: {
-        status: 'active',
-        provider: 'liqpay',
-        current_period_end: '2026-02-01T00:00:00Z',
-        cancel_at_period_end: false,
-        canceled_at: null
-      },
-      entitlement: {
-        plan_code: 'PRO',
-        features: ['CONTACT_UNLOCK', 'UNLIMITED_INQUIRIES'],
-        expires_at: '2026-02-01T00:00:00Z'
-      }
-    }
+    const mockMe = makeBillingMeDto()
 
     const mockPlans: PlanDto[] = [
       {
@@ -160,7 +173,7 @@ describe('AccountBillingView', () => {
 
     const billingStore = useBillingStore()
     
-    const mockMe: BillingMeDto = {
+    const mockMe = makeBillingMeDto({
       subscription: {
         status: 'none',
         provider: null,
@@ -172,8 +185,13 @@ describe('AccountBillingView', () => {
         plan_code: 'FREE',
         features: [],
         expires_at: null
-      }
-    }
+      },
+      display_plan_code: 'FREE',
+      subscription_status: 'none',
+      plan: 'FREE',
+      expires_at: null,
+      is_active: false
+    })
 
     billingStore.me = mockMe
     billingStore.plans = []
@@ -211,7 +229,7 @@ describe('AccountBillingView', () => {
       }
     })
 
-    billingStore.me = {
+    billingStore.me = makeBillingMeDto({
       subscription: {
         status: 'none',
         provider: null,
@@ -223,8 +241,13 @@ describe('AccountBillingView', () => {
         plan_code: 'FREE',
         features: [],
         expires_at: null
-      }
-    }
+      },
+      display_plan_code: 'FREE',
+      subscription_status: 'none',
+      plan: 'FREE',
+      expires_at: null,
+      is_active: false
+    })
     billingStore.plans = [
       {
         code: 'PRO',
@@ -257,20 +280,13 @@ describe('AccountBillingView', () => {
     // Mock window.confirm
     global.confirm = vi.fn(() => true)
 
-    billingStore.me = {
-      subscription: {
-        status: 'active',
-        provider: 'liqpay',
-        current_period_end: '2026-02-01T00:00:00Z',
-        cancel_at_period_end: false,
-        canceled_at: null
-      },
+    billingStore.me = makeBillingMeDto({
       entitlement: {
         plan_code: 'PRO',
         features: ['CONTACT_UNLOCK'],
         expires_at: '2026-02-01T00:00:00Z'
       }
-    }
+    })
     billingStore.isLoading = false
 
     const wrapper = mount(AccountBillingView, {
@@ -331,7 +347,7 @@ describe('AccountBillingView', () => {
 
   it('navigates back to user account when goBack is called', async () => {
     const billingStore = useBillingStore()
-    billingStore.me = {
+    billingStore.me = makeBillingMeDto({
       subscription: {
         status: 'none',
         provider: null,
@@ -343,8 +359,13 @@ describe('AccountBillingView', () => {
         plan_code: 'FREE',
         features: [],
         expires_at: null
-      }
-    }
+      },
+      display_plan_code: 'FREE',
+      subscription_status: 'none',
+      plan: 'FREE',
+      expires_at: null,
+      is_active: false
+    })
     billingStore.isLoading = false
 
     const wrapper = mount(AccountBillingView, {

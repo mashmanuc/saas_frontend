@@ -7,12 +7,21 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useInquiriesStore } from '../inquiriesStore'
 import * as inquiriesApi from '@/api/inquiries'
-import type { InquiryDTO } from '@/types/inquiries'
+import type { InquiryDTO, UserSummary } from '@/types/inquiries'
 
 vi.mock('@/api/inquiries')
 vi.mock('@/utils/rethrowAsDomainError', () => ({
   rethrowAsDomainError: (err: any) => { throw err }
 }))
+
+const makeUserSummary = (overrides: Partial<UserSummary> = {}): UserSummary => ({
+  id: 'u1',
+  firstName: 'Test',
+  lastName: 'User',
+  role: 'student',
+  avatar: null,
+  ...overrides
+})
 
 describe('inquiriesStore v0.69', () => {
   beforeEach(() => {
@@ -20,15 +29,13 @@ describe('inquiriesStore v0.69', () => {
     vi.clearAllMocks()
   })
 
-  const mockInquiry = {
+  const mockInquiry: InquiryDTO = {
     id: 1,
-    student: { id: '1', full_name: 'John Doe', avatar: null },
-    tutor: { id: '2', full_name: 'Jane Smith', avatar: null },
+    student: makeUserSummary({ id: '1', firstName: 'John', lastName: 'Doe', role: 'student' }),
+    tutor: makeUserSummary({ id: '2', firstName: 'Jane', lastName: 'Smith', role: 'tutor' }),
     message: 'Hello, I would like to learn math',
-    status: 'OPEN' as const,
-    created_at: '2024-01-01T10:00:00Z',
-    relation: 1,
-    initiator_role: 'student' as const
+    status: 'OPEN',
+    created_at: '2024-01-01T10:00:00Z'
   }
 
   describe('fetchInquiries', () => {

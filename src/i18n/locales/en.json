@@ -77,7 +77,8 @@
       "messagePlaceholder": "Tell us about your goals and expectations...",
       "submit": "Send inquiry",
       "submitting": "Sending...",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "retryIn": "Try again in {seconds}s"
     },
     "reject": {
       "title": "Reject inquiry",
@@ -2122,6 +2123,7 @@
       "notFound": "Not found.",
       "permissionDenied": "Permission denied.",
       "rateLimited": "Too many requests. Please wait.",
+      "rateLimitedWithRetry": "Too many requests. Try again in {seconds}s.",
       "serverError": "Server error. Try again later."
     },
     "network": {
@@ -3813,12 +3815,45 @@
     "title": "Знайти тьютора"
   },
   "contacts": {
-    "address": "Адреса",
+    "address": "Address",
     "email": "Email",
-    "phone": "Телефон",
-    "sellerInfo": "Інформація про продавця",
-    "subtitle": "Зв'яжіться з нами",
-    "title": "Контакти"
+    "phone": "Phone",
+    "sellerInfo": "Seller Information",
+    "subtitle": "Contact Us",
+    "title": "Contacts",
+    "balance": {
+      "label": "Contacts",
+      "ariaLabel": "Contact balance",
+      "error": "Failed to load balance"
+    },
+    "ledger": {
+      "title": "Contact History",
+      "loading": "Loading...",
+      "error": "Failed to load history",
+      "empty": "No transactions yet",
+      "loadMore": "Load more",
+      "endOfList": "End of list",
+      "balanceAfter": "Balance after",
+      "type": {
+        "purchase": "Purchase",
+        "deduction": "Deduction",
+        "refund": "Refund"
+      }
+    }
+  },
+  "warnings": {
+    "declineStreak": {
+      "title": "Warning: Decline streak",
+      "message": "You have {count} consecutive declines. At 5 declines, access to new inquiries will be limited."
+    },
+    "blocked": {
+      "title": "Access limited",
+      "message": "You've reached the decline limit. Accept pending inquiries to unlock access."
+    },
+    "accessDenied": {
+      "title": "Access denied",
+      "message": "This feature is available for tutors only"
+    }
   },
   "footer": {
     "contact": {

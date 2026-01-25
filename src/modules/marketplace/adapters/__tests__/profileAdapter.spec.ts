@@ -17,6 +17,7 @@ describe('profileAdapter', () => {
       experience_years: 5,
       subjects: [{ code: 'math', tags: [], custom_direction_text: '' }],
       languages: [{ code: 'en', level: 'fluent' }],
+      teaching_languages: [],
       is_published: false,
       gender: '',
       show_gender: false,

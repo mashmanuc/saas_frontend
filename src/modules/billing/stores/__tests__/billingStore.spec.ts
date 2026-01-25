@@ -12,6 +12,32 @@ import * as billingApi from '../../api/billingApi'
 // Mock billingApi
 vi.mock('../../api/billingApi')
 
+const makeBillingMeDto = (overrides: Partial<billingApi.BillingMeDto> = {}): billingApi.BillingMeDto => ({
+  subscription: {
+    status: 'active',
+    provider: 'liqpay',
+    current_period_end: '2026-02-01T00:00:00Z',
+    cancel_at_period_end: false,
+    canceled_at: null
+  },
+  entitlement: {
+    plan_code: 'PRO',
+    features: ['CONTACT_UNLOCK', 'UNLIMITED_INQUIRIES'],
+    expires_at: '2026-02-01T00:00:00Z'
+  },
+  pending_plan_code: null,
+  pending_since: null,
+  display_plan_code: 'PRO',
+  subscription_status: 'active',
+  plan: 'PRO',
+  expires_at: '2026-02-01T00:00:00Z',
+  is_active: true,
+  pending_age_seconds: null,
+  last_checkout_order_id: null,
+  last_checkout_created_at: null,
+  ...overrides
+})
+
 describe('billingStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -20,24 +46,7 @@ describe('billingStore', () => {
 
   describe('fetchMe', () => {
     it('should fetch billing status successfully', async () => {
-      const mockData: billingApi.BillingMeDto = {
-        subscription: {
-          status: 'active' as const,
-          provider: 'liqpay',
-          current_period_end: '2026-02-01T00:00:00Z',
-          cancel_at_period_end: false,
-          canceled_at: null
-        },
-        entitlement: {
-          plan_code: 'PRO',
-          features: ['CONTACT_UNLOCK', 'UNLIMITED_INQUIRIES'],
-          expires_at: '2026-02-01T00:00:00Z'
-        },
-        pending_plan_code: null,
-        pending_since: null,
-        display_plan_code: 'PRO',
-        subscription_status: 'active'
-      }
+      const mockData = makeBillingMeDto()
 
       vi.mocked(billingApi.getMe).mockResolvedValue(mockData)
 
@@ -53,9 +62,9 @@ describe('billingStore', () => {
     })
 
     it('should handle FREE user correctly', async () => {
-      const mockData: billingApi.BillingMeDto = {
+      const mockData = makeBillingMeDto({
         subscription: {
-          status: 'none' as const,
+          status: 'none',
           provider: null,
           current_period_end: null,
           cancel_at_period_end: false,
@@ -66,11 +75,12 @@ describe('billingStore', () => {
           features: [],
           expires_at: null
         },
-        pending_plan_code: null,
-        pending_since: null,
         display_plan_code: 'FREE',
-        subscription_status: 'none'
-      }
+        subscription_status: 'none',
+        plan: 'FREE',
+        expires_at: null,
+        is_active: false
+      })
 
       vi.mocked(billingApi.getMe).mockResolvedValue(mockData)
 
@@ -206,9 +216,9 @@ describe('billingStore', () => {
         message: 'Subscription cancelled'
       }
 
-      const mockMeData: billingApi.BillingMeDto = {
+      const mockMeData = makeBillingMeDto({
         subscription: {
-          status: 'active' as const,
+          status: 'active',
           provider: 'liqpay',
           current_period_end: '2026-02-01T00:00:00Z',
           cancel_at_period_end: true,
@@ -218,12 +228,8 @@ describe('billingStore', () => {
           plan_code: 'PRO',
           features: ['CONTACT_UNLOCK'],
           expires_at: '2026-02-01T00:00:00Z'
-        },
-        pending_plan_code: null,
-        pending_since: null,
-        display_plan_code: 'PRO',
-        subscription_status: 'active'
-      }
+        }
+      })
 
       vi.mocked(billingApi.cancelSubscription).mockResolvedValue(mockCancelResponse)
       vi.mocked(billingApi.getMe).mockResolvedValue(mockMeData)
@@ -240,24 +246,7 @@ describe('billingStore', () => {
 
   describe('hasFeature', () => {
     it('should check if user has feature', async () => {
-      const mockData: billingApi.BillingMeDto = {
-        subscription: {
-          status: 'active' as const,
-          provider: 'liqpay',
-          current_period_end: '2026-02-01T00:00:00Z',
-          cancel_at_period_end: false,
-          canceled_at: null
-        },
-        entitlement: {
-          plan_code: 'PRO',
-          features: ['CONTACT_UNLOCK', 'UNLIMITED_INQUIRIES'],
-          expires_at: '2026-02-01T00:00:00Z'
-        },
-        pending_plan_code: null,
-        pending_since: null,
-        display_plan_code: 'PRO',
-        subscription_status: 'active'
-      }
+      const mockData = makeBillingMeDto()
 
       vi.mocked(billingApi.getMe).mockResolvedValue(mockData)
 
@@ -270,9 +259,9 @@ describe('billingStore', () => {
     })
 
     it('should return false for FREE user', async () => {
-      const mockData: billingApi.BillingMeDto = {
+      const mockData = makeBillingMeDto({
         subscription: {
-          status: 'none' as const,
+          status: 'none',
           provider: null,
           current_period_end: null,
           cancel_at_period_end: false,
@@ -283,11 +272,12 @@ describe('billingStore', () => {
           features: [],
           expires_at: null
         },
-        pending_plan_code: null,
-        pending_since: null,
         display_plan_code: 'FREE',
-        subscription_status: 'none'
-      }
+        subscription_status: 'none',
+        plan: 'FREE',
+        expires_at: null,
+        is_active: false
+      })
 
       vi.mocked(billingApi.getMe).mockResolvedValue(mockData)
 
@@ -301,24 +291,13 @@ describe('billingStore', () => {
 
   describe('$reset', () => {
     it('should reset store state', async () => {
-      const mockData: billingApi.BillingMeDto = {
-        subscription: {
-          status: 'active' as const,
-          provider: 'liqpay',
-          current_period_end: '2026-02-01T00:00:00Z',
-          cancel_at_period_end: false,
-          canceled_at: null
-        },
+      const mockData = makeBillingMeDto({
         entitlement: {
           plan_code: 'PRO',
           features: ['CONTACT_UNLOCK'],
           expires_at: '2026-02-01T00:00:00Z'
-        },
-        pending_plan_code: null,
-        pending_since: null,
-        display_plan_code: 'PRO',
-        subscription_status: 'active'
-      }
+        }
+      })
 
       vi.mocked(billingApi.getMe).mockResolvedValue(mockData)
 
@@ -339,9 +318,9 @@ describe('billingStore', () => {
   // v0.78.0: Pending plan tests
   describe('pending plan (v0.78.0)', () => {
     it('should expose pending plan data when present', async () => {
-      const mockData: billingApi.BillingMeDto = {
+      const mockData = makeBillingMeDto({
         subscription: {
-          status: 'none' as const,
+          status: 'none',
           provider: null,
           current_period_end: null,
           cancel_at_period_end: false,
@@ -355,8 +334,11 @@ describe('billingStore', () => {
         pending_plan_code: 'PRO',
         pending_since: '2026-01-13T20:00:00Z',
         display_plan_code: 'PRO',
-        subscription_status: 'none'
-      }
+        subscription_status: 'none',
+        plan: 'FREE',
+        expires_at: null,
+        is_active: false
+      })
 
       vi.mocked(billingApi.getMe).mockResolvedValue(mockData)
 
@@ -371,24 +353,13 @@ describe('billingStore', () => {
     })
 
     it('should not have pending plan when null', async () => {
-      const mockData: billingApi.BillingMeDto = {
-        subscription: {
-          status: 'active' as const,
-          provider: 'liqpay',
-          current_period_end: '2026-02-01T00:00:00Z',
-          cancel_at_period_end: false,
-          canceled_at: null
-        },
+      const mockData = makeBillingMeDto({
         entitlement: {
           plan_code: 'PRO',
           features: ['CONTACT_UNLOCK'],
           expires_at: '2026-02-01T00:00:00Z'
-        },
-        pending_plan_code: null,
-        pending_since: null,
-        display_plan_code: 'PRO',
-        subscription_status: 'active'
-      }
+        }
+      })
 
       vi.mocked(billingApi.getMe).mockResolvedValue(mockData)
 
@@ -402,9 +373,9 @@ describe('billingStore', () => {
     })
 
     it('should use displayPlanCode over currentPlanCode when pending', async () => {
-      const mockData: billingApi.BillingMeDto = {
+      const mockData = makeBillingMeDto({
         subscription: {
-          status: 'none' as const,
+          status: 'none',
           provider: null,
           current_period_end: null,
           cancel_at_period_end: false,
@@ -418,8 +389,11 @@ describe('billingStore', () => {
         pending_plan_code: 'BUSINESS',
         pending_since: '2026-01-13T20:00:00Z',
         display_plan_code: 'BUSINESS',
-        subscription_status: 'none'
-      }
+        subscription_status: 'none',
+        plan: 'FREE',
+        expires_at: null,
+        is_active: false
+      })
 
       vi.mocked(billingApi.getMe).mockResolvedValue(mockData)
 

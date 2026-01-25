@@ -48,7 +48,7 @@ const userInitials = computed(() => {
 })
 
 const formattedDate = computed(() => {
-  const date = new Date(props.inquiry.createdAt)
+  const date = new Date(props.inquiry.created_at)
   return date.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',

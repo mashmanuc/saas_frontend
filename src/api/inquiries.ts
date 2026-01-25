@@ -35,7 +35,7 @@ export async function createInquiry(payload: CreateInquiryPayload): Promise<Inqu
     message: payload.message
   }
   const response = await apiClient.post<CreateInquiryResponse>(`${BASE_URL}/`, backendPayload)
-  return response.inquiry
+  return response.data.inquiry
 }
 
 /**
@@ -48,7 +48,7 @@ export async function fetchInquiries(filters: InquiryFilters = {}): Promise<Inqu
   const response = await apiClient.get<InquiriesListResponse>(`${BASE_URL}/`, {
     params: filters
   })
-  return response.inquiries
+  return response.data.inquiries
 }
 
 /**
@@ -64,7 +64,7 @@ export async function cancelInquiry(
     `${BASE_URL}/${inquiryId}/cancel/`,
     {}
   )
-  return response
+  return response.data
 }
 
 /**
@@ -80,7 +80,7 @@ export async function acceptInquiry(
     `${BASE_URL}/${inquiryId}/accept/`,
     {}
   )
-  return response
+  return response.data
 }
 
 /**
@@ -98,7 +98,7 @@ export async function rejectInquiry(
     `${BASE_URL}/${inquiryId}/reject/`,
     payload
   )
-  return response
+  return response.data
 }
 
 export default {

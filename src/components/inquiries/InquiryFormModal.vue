@@ -105,9 +105,10 @@
             <button 
               type="submit" 
               class="btn btn-primary" 
-              :disabled="isSubmitting || !isFormValid"
+              :disabled="isSubmitting || !isFormValid || isRateLimited"
             >
-              <span v-if="!isSubmitting">{{ $t('inquiries.form.submit') }}</span>
+              <span v-if="isRateLimited">{{ $t('inquiries.form.retryIn', { seconds: remainingSeconds }) }}</span>
+              <span v-else-if="!isSubmitting">{{ $t('inquiries.form.submit') }}</span>
               <span v-else>{{ $t('inquiries.form.submitting') }}</span>
             </button>
           </div>
@@ -127,6 +128,7 @@
 import { ref, reactive, computed } from 'vue'
 import { useInquiriesStore } from '@/stores/inquiriesStore'
 import { useInquiryErrorHandler } from '@/composables/useInquiryErrorHandler'
+import { useRateLimitCountdown } from '@/composables/useRateLimitCountdown'
 import ErrorState from './ErrorState.vue'
 
 interface Tutor {
@@ -149,6 +151,7 @@ const emit = defineEmits<{
 
 const inquiriesStore = useInquiriesStore()
 const { errorState, handleError, clearError } = useInquiryErrorHandler()
+const { isRateLimited, remainingSeconds, startCountdown } = useRateLimitCountdown()
 
 const isSubmitting = ref(false)
 
@@ -195,8 +198,15 @@ async function handleSubmit() {
     await inquiriesStore.createInquiry(String(props.tutor.id), form.message)
     console.log('[InquiryFormModal] Success!')
     emit('success')
-  } catch (err) {
+  } catch (err: any) {
     console.error('[InquiryFormModal] Error:', err)
+    
+    // Phase 2.3: Handle 429 rate limit - ONLY countdown, NO error modal
+    if (err.response?.status === 429) {
+      startCountdown(err)
+      return
+    }
+    
     handleError(err)
   } finally {
     isSubmitting.value = false

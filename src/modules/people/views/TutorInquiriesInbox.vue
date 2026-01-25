@@ -78,7 +78,7 @@
       >
         <template #actions="{ inquiry: inq }">
           <button
-            v-if="inq.status === 'sent'"
+            v-if="inq.status === 'OPEN'"
             @click="handleAccept(inq.id)"
             :disabled="isLoading"
             class="text-xs text-green-600 hover:text-green-800 font-medium disabled:opacity-50"
@@ -86,7 +86,7 @@
             Accept
           </button>
           <button
-            v-if="inq.status === 'sent'"
+            v-if="inq.status === 'OPEN'"
             @click="handleDecline(inq.id)"
             :disabled="isLoading"
             class="text-xs text-red-600 hover:text-red-800 font-medium disabled:opacity-50"
@@ -94,7 +94,7 @@
             Decline
           </button>
           <button
-            v-if="inq.status === 'accepted'"
+            v-if="inq.status === 'ACCEPTED'"
             @click="handleOpenChat(inq.id)"
             class="text-xs text-blue-600 hover:text-blue-800 font-medium"
           >
@@ -132,7 +132,7 @@ const pendingCount = computed(() => inquiriesStore.pendingCount)
 
 const filteredInquiries = computed(() => {
   if (activeTab.value === 'pending') {
-    return inquiries.value.filter(i => i.status === 'sent')
+    return inquiries.value.filter(i => i.status === 'OPEN')
   }
   return inquiries.value
 })
@@ -152,7 +152,7 @@ async function loadInquiries() {
   try {
     const filters: { role: 'tutor'; status?: InquiryStatus } = { role: 'tutor' }
     if (activeTab.value === 'pending') {
-      filters.status = 'sent'
+      filters.status = 'OPEN'
     }
     await inquiriesStore.fetchInquiries(filters)
   } catch (err) {
@@ -160,7 +160,7 @@ async function loadInquiries() {
   }
 }
 
-async function handleAccept(inquiryId: string) {
+async function handleAccept(inquiryId: number) {
   try {
     await inquiriesStore.acceptInquiry(inquiryId)
   } catch (err) {
@@ -168,21 +168,21 @@ async function handleAccept(inquiryId: string) {
   }
 }
 
-async function handleDecline(inquiryId: string) {
+async function handleDecline(inquiryId: number) {
   if (!confirm('Are you sure you want to decline this request?')) {
     return
   }
 
   try {
-    await inquiriesStore.declineInquiry(inquiryId)
+    await inquiriesStore.declineInquiry(inquiryId, { reason: 'OTHER' })
   } catch (err) {
     console.error('Failed to decline inquiry:', err)
   }
 }
 
-async function handleOpenChat(inquiryId: string) {
+async function handleOpenChat(inquiryId: number) {
   try {
-    const thread = await chatStore.ensureThread(inquiryId)
+    const thread = await chatStore.ensureThread(String(inquiryId))
     router.push(`/chat/thread/${thread.id}`)
   } catch (err) {
     console.error('Failed to open chat:', err)

@@ -2,21 +2,21 @@
   "locales": {
     "en": {
       "status": "ok",
-      "totalKeys": 2929,
+      "totalKeys": 2953,
       "missing": [],
       "extra": [],
       "empty": []
     }
   },
   "summary": {
-    "totalKeys": 2929,
+    "totalKeys": 2953,
     "locales": 2,
     "errors": 0,
     "warnings": 1
   },
   "usage": {
-    "scannedFiles": 901,
-    "detectedKeys": 2366,
+    "scannedFiles": 908,
+    "detectedKeys": 2382,
     "unusedKeys": [
       "billing.cta.learnMore",
       "billing.error.alreadySubscribed",
@@ -377,6 +377,9 @@
       "contact.locked.reasons.no_active_lesson",
       "contact.locked.reasons.no_relation",
       "contact.locked.reasons.subscription_required",
+      "contacts.ledger.type.deduction",
+      "contacts.ledger.type.purchase",
+      "contacts.ledger.type.refund",
       "dashboard.tutor.cta.openChat",
       "dashboard.tutor.tabs.active",
       "dashboard.tutor.tabs.all",
@@ -384,6 +387,7 @@
       "dashboard.tutor.tabs.invited",
       "devPlayground.themeOptions.${value}.description",
       "devPlayground.themeOptions.${value}.label",
+      "errors.api.rateLimitedWithRetry",
       "inquiry.modal.success",
       "inquiry.status.accepted",
       "inquiry.status.expired",
@@ -455,6 +459,7 @@
       "marketplace.sections.popular",
       "marketplace.sections.recommended",
       "marketplace.subjects.${code}",
+      "marketplace.subjects.basicTitle",
       "marketplace.subjects.biology",
       "marketplace.subjects.business-english",
       "marketplace.subjects.chemistry",
@@ -472,13 +477,14 @@
       "marketplace.subjects.management",
       "marketplace.subjects.marketing",
       "marketplace.subjects.mathematics",
+      "marketplace.subjects.otherSubjectsTitle",
       "marketplace.subjects.photography",
       "marketplace.subjects.physics",
       "marketplace.subjects.piano",
       "marketplace.subjects.polish",
       "marketplace.subjects.sat",
+      "marketplace.subjects.searchPlaceholder",
       "marketplace.subjects.spanish",
-      "marketplace.subjects.title",
       "marketplace.subjects.toefl",
       "marketplace.subjects.ukrainian",
       "marketplace.tagGroups.${groupName}",
@@ -580,7 +586,9 @@
       "tutorSearch.lessonLinks.validation.fixErrors",
       "tutorSearch.lessonLinks.validation.invalidProtocol",
       "tutorSearch.lessonLinks.validation.invalidUrl",
-      "tutorSearch.lessonLinks.validation.required"
+      "tutorSearch.lessonLinks.validation.required",
+      "warnings.accessDenied.message",
+      "warnings.accessDenied.title"
     ],
     "undefinedUsages": []
   }

@@ -226,3 +226,26 @@ export interface LimitExceededError {
   resetAt: string
   limitType: string
 }
+
+/**
+ * Contact payload (Phase 2.3)
+ */
+export type ContactPayload = ContactsDTO
+
+/**
+ * Contact locked reason (Phase 2.3)
+ */
+export type ContactLockedReason = 
+  | 'NO_RELATION' 
+  | 'CHAT_ONLY' 
+  | 'PENDING_UNLOCK'
+  | 'inquiry_required'
+  | 'inquiry_pending'
+  | 'no_active_lesson'
+  | 'subscription_required'
+  | 'inquiry_rejected'
+  | 'inquiry_expired'
+  | 'forbidden'
+  | 'user_blocked'
+  | 'blocked_by_user'
+  | 'user_banned'
