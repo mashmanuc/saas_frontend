@@ -25,6 +25,12 @@
       <button @click="loadSnapshot" class="btn-retry">Retry</button>
     </div>
 
+    <!-- P0.2: Guard - перевірити user перед відображенням -->
+    <div v-else-if="!user" class="error-state">
+      <p class="error-message">Snapshot user missing</p>
+      <button @click="loadSnapshot" class="btn-retry">Retry</button>
+    </div>
+
     <div v-else-if="snapshot" class="snapshot-content">
       <!-- User Info -->
       <section class="section user-info">
@@ -32,63 +38,63 @@
         <div class="info-grid">
           <div class="info-item">
             <span class="label">Email:</span>
-            <span class="value">{{ snapshot.user.email }}</span>
+            <span class="value">{{ user.email }}</span>
           </div>
           <div class="info-item">
             <span class="label">Role:</span>
-            <span class="value">{{ snapshot.user.role }}</span>
+            <span class="value">{{ user.role }}</span>
           </div>
         </div>
       </section>
 
       <!-- Entitlement -->
-      <section class="section entitlement-info">
+      <section v-if="entitlement" class="section entitlement-info">
         <h4>Entitlement</h4>
         <div class="info-grid">
           <div class="info-item">
             <span class="label">Plan:</span>
-            <span class="value plan-badge" :class="`plan-${snapshot.entitlement.plan_code.toLowerCase()}`">
-              {{ snapshot.entitlement.plan_code }}
+            <span class="value plan-badge" :class="`plan-${entitlement.plan_code.toLowerCase()}`">
+              {{ entitlement.plan_code }}
             </span>
           </div>
           <div class="info-item">
             <span class="label">Expires:</span>
-            <span class="value">{{ formatDate(snapshot.entitlement.expires_at) }}</span>
+            <span class="value">{{ formatDate(entitlement.expires_at) }}</span>
           </div>
           <div class="info-item">
             <span class="label">Features:</span>
-            <span class="value">{{ snapshot.entitlement.features.length }} features</span>
+            <span class="value">{{ entitlement.features.length }} features</span>
           </div>
         </div>
       </section>
 
       <!-- Subscription -->
-      <section class="section subscription-info">
+      <section v-if="subscription" class="section subscription-info">
         <h4>Subscription</h4>
         <div class="info-grid">
           <div class="info-item">
             <span class="label">Status:</span>
-            <span class="value status-badge" :class="`status-${snapshot.subscription.status}`">
-              {{ snapshot.subscription.status || 'none' }}
+            <span class="value status-badge" :class="`status-${subscription.status}`">
+              {{ subscription.status || 'none' }}
             </span>
           </div>
-          <div class="info-item" v-if="snapshot.subscription.plan_code">
+          <div class="info-item" v-if="subscription.plan_code">
             <span class="label">Plan:</span>
-            <span class="value">{{ snapshot.subscription.plan_code }}</span>
+            <span class="value">{{ subscription.plan_code }}</span>
           </div>
-          <div class="info-item" v-if="snapshot.subscription.provider">
+          <div class="info-item" v-if="subscription.provider">
             <span class="label">Provider:</span>
-            <span class="value">{{ snapshot.subscription.provider }}</span>
+            <span class="value">{{ subscription.provider }}</span>
           </div>
-          <div class="info-item" v-if="snapshot.subscription.current_period_start">
+          <div class="info-item" v-if="subscription.current_period_start">
             <span class="label">Period Start:</span>
-            <span class="value">{{ formatDate(snapshot.subscription.current_period_start) }}</span>
+            <span class="value">{{ formatDate(subscription.current_period_start) }}</span>
           </div>
-          <div class="info-item" v-if="snapshot.subscription.current_period_end">
+          <div class="info-item" v-if="subscription.current_period_end">
             <span class="label">Period End:</span>
-            <span class="value">{{ formatDate(snapshot.subscription.current_period_end) }}</span>
+            <span class="value">{{ formatDate(subscription.current_period_end) }}</span>
           </div>
-          <div class="info-item" v-if="snapshot.subscription.cancel_at_period_end">
+          <div class="info-item" v-if="subscription.cancel_at_period_end">
             <span class="label">Cancel at period end:</span>
             <span class="value">Yes</span>
           </div>
@@ -98,7 +104,7 @@
       <!-- Checkout Sessions -->
       <section class="section checkout-sessions">
         <h4>Checkout Sessions (Last 10)</h4>
-        <div v-if="snapshot.checkout_sessions.length === 0" class="empty-state">
+        <div v-if="sessions.length === 0" class="empty-state">
           No checkout sessions found
         </div>
         <div v-else class="sessions-table-wrapper">
@@ -117,7 +123,7 @@
             </thead>
             <tbody>
               <tr 
-                v-for="session in snapshot.checkout_sessions" 
+                v-for="session in sessions" 
                 :key="session.id"
                 :class="{ 'highlighted-row': highlightedSessionId === session.id }"
               >
@@ -183,8 +189,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { getUserBillingSnapshot, type UserBillingSnapshotDto } from '../api/billingOpsApi'
+import { ref, computed, onMounted } from 'vue'
+import { getUserBillingSnapshot, type UserBillingSnapshotDto, type CheckoutSessionDto } from '../api/billingOpsApi'
 import FinalizeModal from './FinalizeModal.vue'
 import DevModeBadge from './DevModeBadge.vue'
 
@@ -192,33 +198,57 @@ const props = defineProps<{
   userId: string | number
 }>()
 
+// SSOT: Single Source of Truth for state
 const snapshot = ref<UserBillingSnapshotDto | null>(null)
-const loading = ref(false)
-const refreshing = ref(false)
+const loading = ref<boolean>(false)
+const refreshing = ref<boolean>(false)
 const error = ref<string | null>(null)
 const showModal = ref(false)
 const selectedOrderId = ref<string>('')
 const highlightedSessionId = ref<string | null>(null)
 
+// P0.1 + P0.2: SSOT computed - заборонити прямі звернення до snapshot полів у template
+const sessions = computed<CheckoutSessionDto[]>(() => snapshot.value?.checkout_sessions ?? [])
+const user = computed(() => snapshot.value?.user ?? null)
+const entitlement = computed(() => snapshot.value?.entitlement ?? null)
+const subscription = computed(() => snapshot.value?.subscription ?? null)
+
+// P0.1 + P1.1: Нормалізація відповіді + timeout
 async function loadSnapshot() {
   loading.value = true
   error.value = null
   
   console.log('[BillingOps:Telemetry] snapshot_load_started', { user_id: props.userId })
   
+  // P1.1: Timeout 10s для запобігання вічного спінера
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error('Request timeout (10s)')), 10000)
+  })
+  
   try {
-    snapshot.value = await getUserBillingSnapshot(props.userId)
+    // P0.3: getUserBillingSnapshot вже повертає нормалізований snapshot (normalizeSnapshot)
+    snapshot.value = await Promise.race([
+      getUserBillingSnapshot(props.userId),
+      timeoutPromise
+    ])
+    
     console.log('[BillingOps:Telemetry] snapshot_loaded', { 
       user_id: props.userId,
-      checkout_sessions_count: snapshot.value.checkout_sessions.length,
-      entitlement_plan: snapshot.value.entitlement.plan_code,
-      subscription_status: snapshot.value.subscription.status
+      checkout_sessions_count: sessions.value.length,
+      entitlement_plan: entitlement.value?.plan_code,
+      subscription_status: subscription.value?.status
     })
   } catch (err: any) {
-    error.value = err.message || 'Failed to load billing snapshot'
+    const errorMessage = err.message || 'Failed to load billing snapshot'
+    error.value = errorMessage
+    
+    // P0.2: Детальне логування помилки
     console.error('[BillingOps:Telemetry] snapshot_load_error', { 
       user_id: props.userId,
-      error: err.message 
+      error: errorMessage,
+      error_type: err.name,
+      status: err.response?.status,
+      response_data: err.response?.data
     })
   } finally {
     loading.value = false
@@ -231,17 +261,31 @@ async function refreshSnapshot() {
   
   console.log('[BillingOps:Telemetry] snapshot_refresh_started', { user_id: props.userId })
   
+  // P1.1: Timeout для refresh
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error('Refresh timeout (10s)')), 10000)
+  })
+  
   try {
-    snapshot.value = await getUserBillingSnapshot(props.userId)
+    // P0.3: getUserBillingSnapshot вже повертає нормалізований snapshot
+    snapshot.value = await Promise.race([
+      getUserBillingSnapshot(props.userId),
+      timeoutPromise
+    ])
+    
     console.log('[BillingOps:Telemetry] snapshot_refreshed', { 
       user_id: props.userId,
-      checkout_sessions_count: snapshot.value.checkout_sessions.length
+      checkout_sessions_count: sessions.value.length
     })
   } catch (err: any) {
-    error.value = err.message || 'Failed to refresh billing snapshot'
+    const errorMessage = err.message || 'Failed to refresh billing snapshot'
+    error.value = errorMessage
+    
     console.error('[BillingOps:Telemetry] snapshot_refresh_error', { 
       user_id: props.userId,
-      error: err.message 
+      error: errorMessage,
+      error_type: err.name,
+      status: err.response?.status
     })
   } finally {
     refreshing.value = false

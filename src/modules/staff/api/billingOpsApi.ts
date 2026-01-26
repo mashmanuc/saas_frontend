@@ -29,12 +29,12 @@ export interface UserBillingSnapshotDto {
     id: string
     email: string
     role: string
-  }
+  } | null
   entitlement: {
     plan_code: string
     features: string[]
     expires_at: string | null
-  }
+  } | null
   subscription: {
     status: string
     plan_code: string | null
@@ -42,7 +42,7 @@ export interface UserBillingSnapshotDto {
     current_period_start: string | null
     current_period_end: string | null
     cancel_at_period_end: boolean
-  }
+  } | null
   checkout_sessions: CheckoutSessionDto[]
 }
 
@@ -80,7 +80,7 @@ export interface PreviewFinalizeDto {
   entitlement_before: {
     plan_code: string
     features: string[]
-  }
+  } | null
   plan_to_activate: string | null
   pending_age_seconds: number | null
   blocked_reason: string | null
@@ -148,12 +148,46 @@ function parseDomainError(error: any): DomainError {
  * @returns User billing snapshot
  * @throws DomainError if user not found or permission denied
  */
+/**
+ * Normalize raw snapshot response to ensure all fields are present
+ * P0.1: ІНВАРІАНТ - завжди повертає ВСІ поля (user, entitlement, subscription, checkout_sessions)
+ */
+function normalizeSnapshot(raw: any): UserBillingSnapshotDto {
+  return {
+    user: raw?.user ?? null,
+    entitlement: raw?.entitlement ?? null,
+    subscription: raw?.subscription ?? null,
+    checkout_sessions: Array.isArray(raw?.checkout_sessions) ? raw.checkout_sessions : []
+  }
+}
+
 export async function getUserBillingSnapshot(userId: string | number): Promise<UserBillingSnapshotDto> {
   try {
-    const response = await api.get(`/v1/staff/billing/users/${userId}/snapshot/`)
-    return response.data
+    // P0.4: apiClient.get повертає res.data автоматично (interceptor line 85)
+    const data = await api.get(`/v1/staff/billing/users/${userId}/snapshot/`)
+    
+    // P0.1: Нормалізація - гарантувати ВСІ поля присутні
+    return normalizeSnapshot(data)
   } catch (error) {
     throw parseDomainError(error)
+  }
+}
+
+/**
+ * Normalize preview finalize response to ensure all fields are present
+ * P0.6: ІНВАРІАНТ - can_finalize завжди boolean, всі поля присутні
+ */
+function normalizePreviewFinalize(raw: any): PreviewFinalizeDto {
+  return {
+    order_id: raw?.order_id ?? '',
+    can_finalize: !!raw?.can_finalize,
+    reason_required: !!raw?.reason_required,
+    checkout_session: raw?.checkout_session ?? null,
+    subscription_before: raw?.subscription_before ?? null,
+    entitlement_before: raw?.entitlement_before ?? null,
+    plan_to_activate: raw?.plan_to_activate ?? null,
+    pending_age_seconds: raw?.pending_age_seconds ?? null,
+    blocked_reason: raw?.blocked_reason ?? null
   }
 }
 
@@ -177,10 +211,13 @@ export async function getUserBillingSnapshot(userId: string | number): Promise<U
  */
 export async function previewFinalize(orderId: string): Promise<PreviewFinalizeDto> {
   try {
-    const response = await api.post('/v1/staff/billing/liqpay/finalize/preview/', {
+    // P0.7: apiClient.post повертає res.data автоматично (interceptor line 85)
+    const data = await api.post('/v1/staff/billing/liqpay/finalize/preview/', {
       order_id: orderId
     })
-    return response.data
+    
+    // P0.6: Нормалізація - гарантувати can_finalize завжди є boolean
+    return normalizePreviewFinalize(data)
   } catch (error) {
     throw parseDomainError(error)
   }
@@ -218,11 +255,12 @@ export async function confirmFinalize(orderId: string, reason: string): Promise<
       }
     }
 
-    const response = await api.post('/v1/staff/billing/liqpay/finalize/', {
+    // P0.7: apiClient.post повертає res.data автоматично
+    const data = await api.post('/v1/staff/billing/liqpay/finalize/', {
       order_id: orderId,
       reason: reason.trim()
     })
-    return response.data
+    return data
   } catch (error) {
     throw parseDomainError(error)
   }

@@ -19,10 +19,10 @@
         </div>
 
         <!-- Preview Content -->
-        <div v-else-if="preview" class="preview-content">
+        <div v-else-if="hasPreview" class="preview-content">
           <!-- Blocked Reason -->
-          <div v-if="!preview.can_finalize" class="alert alert-warning">
-            <strong>Cannot finalize:</strong> {{ getBlockedReasonText(preview.blocked_reason) }}
+          <div v-if="!canFinalize" class="alert alert-warning">
+            <strong>Cannot finalize:</strong> {{ getBlockedReasonText(preview?.blocked_reason) }}
           </div>
 
           <!-- Preview Info -->
@@ -32,10 +32,10 @@
             <div class="info-grid">
               <div class="info-item">
                 <span class="label">Order ID:</span>
-                <code class="value">{{ preview.order_id }}</code>
+                <code class="value">{{ preview?.order_id }}</code>
               </div>
               
-              <div class="info-item" v-if="preview.checkout_session">
+              <div class="info-item" v-if="preview?.checkout_session">
                 <span class="label">Session Status:</span>
                 <span class="value">
                   <span class="status-badge" :class="`status-${preview.checkout_session.status}`">
@@ -44,12 +44,12 @@
                 </span>
               </div>
               
-              <div class="info-item" v-if="preview.pending_age_seconds !== null">
+              <div class="info-item" v-if="preview?.pending_age_seconds !== null">
                 <span class="label">Pending Age:</span>
                 <span class="value pending-age">{{ formatPendingAge(preview.pending_age_seconds) }}</span>
               </div>
               
-              <div class="info-item" v-if="preview.plan_to_activate">
+              <div class="info-item" v-if="preview?.plan_to_activate">
                 <span class="label">Plan to Activate:</span>
                 <span class="value plan-badge" :class="`plan-${preview.plan_to_activate.toLowerCase()}`">
                   {{ preview.plan_to_activate }}
@@ -63,7 +63,7 @@
             <h4>Current State (Before Finalize)</h4>
             
             <div class="state-grid">
-              <div class="state-column">
+              <div class="state-column" v-if="preview?.entitlement_before">
                 <h5>Entitlement</h5>
                 <div class="info-item">
                   <span class="label">Plan:</span>
@@ -74,8 +74,12 @@
                   <span class="value">{{ preview.entitlement_before.features.length }} features</span>
                 </div>
               </div>
+              <div class="state-column" v-else>
+                <h5>Entitlement</h5>
+                <p class="text-muted">No entitlement data</p>
+              </div>
               
-              <div class="state-column" v-if="preview.subscription_before">
+              <div class="state-column" v-if="preview?.subscription_before">
                 <h5>Subscription</h5>
                 <div class="info-item">
                   <span class="label">Status:</span>
@@ -104,7 +108,7 @@
               v-model="reason"
               placeholder="Enter reason for manual finalize (minimum 5 characters)..."
               class="reason-input"
-              :disabled="!preview.can_finalize || confirming"
+              :disabled="!canFinalize || confirming"
               rows="3"
             ></textarea>
             <div v-if="reasonError" class="field-error">{{ reasonError }}</div>
@@ -186,8 +190,12 @@ const reasonError = ref<string | null>(null)
 const confirming = ref(false)
 const confirmResult = ref<ConfirmFinalizeDto | null>(null)
 
+// P0.6: SSOT computed - заборонити прямі звернення до preview.can_finalize у template
+const canFinalize = computed(() => preview.value?.can_finalize ?? false)
+const hasPreview = computed(() => !!preview.value)
+
 const canConfirm = computed(() => {
-  if (!preview.value || !preview.value.can_finalize) return false
+  if (!hasPreview.value || !canFinalize.value) return false
   if (confirming.value) return false
   if (confirmResult.value) return false
   
