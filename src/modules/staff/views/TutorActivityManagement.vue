@@ -1,5 +1,5 @@
 <template>
-  <div class="container mx-auto max-w-7xl p-6">
+  <div class="container mx-auto max-w-7xl p-6" data-test="tutor-activity-page">
     <h1 class="mb-6 text-2xl font-bold text-body">
       {{ $t('staff.tutorActivity.title') }}
     </h1>
@@ -18,7 +18,7 @@
       </button>
     </div>
 
-    <div v-else-if="tutors.length" class="overflow-x-auto rounded-lg border border-default">
+    <div v-else-if="tutors.length" class="overflow-x-auto rounded-lg border border-default" data-test="tutors-table-container">
       <table class="w-full" data-test="tutors-table">
         <thead class="bg-muted">
           <tr>
@@ -95,7 +95,7 @@
       </div>
     </div>
 
-    <div v-else class="py-12 text-center" data-test="empty-state">
+    <div v-else class="py-12 text-center" data-test="tutors-empty">
       <p class="text-muted">{{ $t('staff.tutorActivity.empty') }}</p>
     </div>
 

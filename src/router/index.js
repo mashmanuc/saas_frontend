@@ -130,6 +130,7 @@ const routes = [
     path: '/',
     component: PageShell,
     meta: { requiresAuth: true },
+    // v0.88.4: Root path will redirect staff to /staff via beforeEach guard
     children: [
       {
         path: 'tutor',
@@ -528,17 +529,25 @@ const routes = [
           roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN]
         },
       },
-      // v0.67: Staff Console routes
+      // v0.88.4: Staff Console with dedicated layout
       {
         path: 'staff',
-        name: 'staff',
-        redirect: '/staff/reports',
+        component: () => import('../modules/staff/layouts/StaffLayout.vue'),
         meta: { 
           requiresAuth: true,
-          roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN],
           requiresStaff: true
         },
         children: [
+          {
+            path: '',
+            name: 'staff-dashboard',
+            component: () => import('../modules/staff/views/StaffDashboard.vue'),
+            meta: { 
+              requiresAuth: true,
+              roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN],
+              requiresStaff: true
+            },
+          },
           {
             path: 'reports',
             name: 'staff-reports',
@@ -598,7 +607,8 @@ router.beforeEach(async (to, from, next) => {
 
   const isAuthenticated = auth.isAuthenticated
   const user = auth.user
-  const homeRoute = user?.role ? getDefaultRouteForRole(user.role) : '/auth/login'
+  // v0.88.4: Staff users have /staff as home
+  const homeRoute = user?.is_staff ? '/staff' : (user?.role ? getDefaultRouteForRole(user.role) : '/auth/login')
   const isAuthRoute = to.path.startsWith('/auth')
   const isInviteRoute = to.path.startsWith('/invite')
   const requiresAuth = to.matched.some((record) => record.meta?.requiresAuth)
@@ -618,14 +628,20 @@ router.beforeEach(async (to, from, next) => {
     return next()
   }
 
+  // v0.88.4: Redirect staff users from root to /staff
+  if (to.path === '/' && user?.is_staff) {
+    return next('/staff')
+  }
+
   if (requiresAuth && !isAuthenticated) {
     return next({ path: '/auth/login', query: { redirect: to.fullPath } })
   }
 
-  // v0.67: Staff guard - check if route requires staff access
+  // v0.88.4: Staff guard - check if route requires staff access
   const requiresStaff = to.matched.some((record) => record.meta?.requiresStaff)
   if (requiresStaff) {
-    const isStaff = user?.role === USER_ROLES.ADMIN || user?.role === USER_ROLES.SUPERADMIN
+    // Use is_staff flag from backend (v0.88.4) or fallback to role check
+    const isStaff = user?.is_staff || user?.role === USER_ROLES.ADMIN || user?.role === USER_ROLES.SUPERADMIN
     if (!isStaff) {
       return next(homeRoute)
     }

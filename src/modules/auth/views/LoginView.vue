@@ -251,7 +251,15 @@ async function onSubmit() {
 
     const user = res
     const redirect = route.query?.redirect
-    const target = typeof redirect === 'string' && redirect ? redirect : getDefaultRouteForRole(user?.role)
+    // v0.88.4: Staff users go to /staff dashboard
+    let target
+    if (redirect && typeof redirect === 'string') {
+      target = redirect
+    } else if (user?.is_staff) {
+      target = '/staff'
+    } else {
+      target = getDefaultRouteForRole(user?.role)
+    }
     router.push(target)
   } catch (error) {
     // v0.82.0: Помилка вже відображається через auth.error
@@ -263,7 +271,15 @@ async function onSubmitOtp() {
   try {
     const user = await auth.verifyMfa(otp.value)
     const redirect = route.query?.redirect
-    const target = typeof redirect === 'string' && redirect ? redirect : getDefaultRouteForRole(user?.role)
+    // v0.88.4: Staff users go to /staff dashboard
+    let target
+    if (redirect && typeof redirect === 'string') {
+      target = redirect
+    } else if (user?.is_staff) {
+      target = '/staff'
+    } else {
+      target = getDefaultRouteForRole(user?.role)
+    }
     router.push(target)
   } catch (error) {
     // помилка вже відображається через auth.error
@@ -293,7 +309,15 @@ async function handleWebAuthnSuccess(credential) {
     const user = await auth.verifyWebAuthn(credential)
     showWebAuthnPrompt.value = false
     const redirect = route.query?.redirect
-    const target = typeof redirect === 'string' && redirect ? redirect : getDefaultRouteForRole(user?.role)
+    // v0.88.4: Staff users go to /staff dashboard
+    let target
+    if (redirect && typeof redirect === 'string') {
+      target = redirect
+    } else if (user?.is_staff) {
+      target = '/staff'
+    } else {
+      target = getDefaultRouteForRole(user?.role)
+    }
     router.push(target)
   } catch (error) {
     throw error

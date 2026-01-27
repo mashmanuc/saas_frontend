@@ -3406,6 +3406,18 @@
     }
   },
   "staff": {
+    "dashboard": {
+      "title": "Staff Dashboard",
+      "tiles": {
+        "tutorActivity": "Tutor Activity",
+        "tutorActivityDesc": "View and manage tutor activity"
+      }
+    },
+    "nav": {
+      "dashboard": "Dashboard",
+      "tutorActivity": "Tutor Activity",
+      "logout": "Logout"
+    },
     "tutorActivity": {
       "title": "Tutor Activity Management",
       "loading": "Loading...",

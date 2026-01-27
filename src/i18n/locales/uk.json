@@ -3751,6 +3751,18 @@
     }
   },
   "staff": {
+    "dashboard": {
+      "title": "Панель управління Staff",
+      "tiles": {
+        "tutorActivity": "Активність тьюторів",
+        "tutorActivityDesc": "Перегляд та управління активністю тьюторів"
+      }
+    },
+    "nav": {
+      "dashboard": "Головна",
+      "tutorActivity": "Активність тьюторів",
+      "logout": "Вийти"
+    },
     "tutorActivity": {
       "title": "Управління активністю тьюторів",
       "loading": "Завантаження...",

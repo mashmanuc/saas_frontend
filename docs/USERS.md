@@ -13,7 +13,7 @@ tutor10@example.com
 Email + пароль із цього списку можна використовувати для ручного тестування.
 Updated passwords for 10 tutors to 'TutorTest123!'
 
-
+e2e-staff@example.com
 
 
 admin 
