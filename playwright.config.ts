@@ -46,9 +46,23 @@ export default defineConfig({
         'tests/e2e/calendar/**/*.spec.ts',
         'tests/e2e/calendar-suite/**/*.spec.ts',
         'tests/e2e/prod-smoke/**/*.spec.ts',
+        'tests/e2e/staff/**/*.spec.ts',
       ],
       use: {
         ...devices['Desktop Chrome'],
+      },
+    },
+    {
+      name: 'staff-e2e',
+      testMatch: ['tests/e2e/staff/**/*.spec.ts'],
+      fullyParallel: false,
+      retries: 0,
+      use: {
+        ...devices['Desktop Chrome'],
+        // CRITICAL: Staff tests MUST use dedicated staff.json auth state.
+        // DO NOT change to user.json or remove storageState.
+        // This prevents ENOENT errors and login-form regressions.
+        storageState: './tests/e2e/.auth/staff.json',
       },
     },
     {

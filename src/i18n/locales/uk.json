@@ -3751,6 +3751,43 @@
     }
   },
   "staff": {
+    "tutorActivity": {
+      "title": "Управління активністю тьюторів",
+      "loading": "Завантаження...",
+      "empty": "Тьюторів не знайдено",
+      "table": {
+        "tutorId": "ID",
+        "email": "Email",
+        "plan": "План",
+        "activityRequired": "Потрібна активність",
+        "activityCount": "Кількість",
+        "meetsRequirement": "Виконано",
+        "hasExemption": "Звільнення",
+        "actions": "Дії",
+        "grantExemption": "Надати звільнення"
+      },
+      "pagination": {
+        "showing": "Показано {count} з {total}"
+      },
+      "grantExemption": {
+        "title": "Надати звільнення від вимоги активності",
+        "tutorEmail": "Email тьютора",
+        "month": "Місяць",
+        "reason": "Причина",
+        "reasonPlaceholder": "Наприклад: лікарняний, відпустка",
+        "submit": "Надати звільнення",
+        "submitting": "Надання...",
+        "success": "Звільнення успішно надано"
+      },
+      "errors": {
+        "unauthorized": "Необхідна авторизація",
+        "forbidden": "Недостатньо прав доступу",
+        "tutorNotFound": "Тьютора не знайдено",
+        "tooManyRequests": "Забагато запитів, спробуйте пізніше",
+        "generic": "Сталася помилка, спробуйте ще раз",
+        "loadFailed": "Не вдалося завантажити список тьюторів"
+      }
+    },
     "reports": {
       "title": "Скарги",
       "filterByStatus": "Фільтрувати за статусом",

@@ -3,6 +3,37 @@
  * Виконується один раз перед усіма тестами
  */
 
+/**
+ * E2E Global Setup - Authentication State Management
+ * 
+ * CRITICAL INVARIANTS (DO NOT BREAK):
+ * 
+ * 1. TWO SEPARATE AUTH STATES:
+ *    - tests/e2e/.auth/user.json (tutor: m3@gmail.com)
+ *    - tests/e2e/.auth/staff.json (staff: e2e-staff@example.com)
+ * 
+ * 2. VALIDATION BEFORE REUSE:
+ *    "Using existing auth state" is allowed ONLY if:
+ *    - Both files exist
+ *    - Both have valid credentials (access + user)
+ *    - Both storageState files contain localStorage with 'access' and 'user' keys
+ *    - Auth is fresh (< 1 hour)
+ * 
+ * 3. LOCALSTORAGE PERSISTENCE:
+ *    - Must call page.goto(baseURL) BEFORE page.evaluate(localStorage.setItem)
+ *    - Must verify localStorage.getItem('access') exists BEFORE context.storageState()
+ *    - Must NOT close context before saving storageState
+ * 
+ * 4. STAFF AUTH VERIFICATION:
+ *    - Must verify staff access via /api/v1/staff/tutors/activity-list endpoint
+ *    - Must NOT rely on /api/v1/users/me/ (returns 404)
+ * 
+ * Breaking these invariants will cause:
+ * - ENOENT errors (missing staff.json)
+ * - Login form instead of staff UI (empty localStorage)
+ * - waitForResponse timeouts (no API call triggered)
+ * - Flaky tests with race conditions
+ */
 import { chromium, FullConfig } from '@playwright/test'
 import { execFileSync } from 'child_process'
 import fs from 'fs'
@@ -38,7 +69,14 @@ async function runE2ESeed() {
       cwd: backendDir,
       stdio: 'inherit'
     })
-    console.log('[global-setup] ✓ Seed completed')
+    console.log('[global-setup] ✓ Calendar seed completed')
+    
+    // Seed staff user for staff tests
+    execFileSync(pythonExec, ['manage.py', 'e2e_seed_staff'], {
+      cwd: backendDir,
+      stdio: 'inherit'
+    })
+    console.log('[global-setup] ✓ Staff seed completed')
   } catch (error: any) {
     console.error('[global-setup] ❌ Seed failed:', error.message)
     throw new Error('E2E seed command failed. Ensure backend/.venv exists and Django is configured.')
@@ -186,123 +224,263 @@ async function globalSetup(config: FullConfig) {
 
   const authStateFile = path.join(__dirname, '.auth/user.json')
   const credentialsFile = path.join(__dirname, '.auth/credentials.json')
+  const staffAuthStateFile = path.join(__dirname, '.auth/staff.json')
+  const staffCredentialsFile = path.join(__dirname, '.auth/staff-credentials.json')
   const baseURL = config.projects[0].use.baseURL || 'http://127.0.0.1:4173'
   const apiURL = process.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api'
 
-  // Перевірити чи є збережений auth state
-  if (fs.existsSync(authStateFile) && fs.existsSync(credentialsFile)) {
+  /**
+   * E2E Stability Invariant:
+   * Both user.json and staff.json must exist and contain valid localStorage.
+   * "Using existing auth state" is allowed ONLY if:
+   * 1. Both files exist
+   * 2. Both have valid credentials (access + user)
+   * 3. Both storageState files contain localStorage with 'access' and 'user' keys
+   * 4. Auth is fresh (< 1 hour)
+   * 
+   * This prevents ENOENT errors and login-form regressions.
+   */
+  const canReuseAuthState = () => {
+    // Check all 4 files exist
+    if (!fs.existsSync(authStateFile) || !fs.existsSync(credentialsFile) ||
+        !fs.existsSync(staffAuthStateFile) || !fs.existsSync(staffCredentialsFile)) {
+      console.log('[global-setup] Missing auth files, re-authenticating...')
+      return false
+    }
+
     try {
+      // Validate tutor credentials
       const credentials = JSON.parse(fs.readFileSync(credentialsFile, 'utf-8'))
       const timestamp = new Date(credentials.timestamp)
       const hoursSinceAuth = (Date.now() - timestamp.getTime()) / (1000 * 60 * 60)
 
-      // Якщо auth state свіжий (менше 1 години), використовуємо його
-      if (hoursSinceAuth < 1) {
-        if (credentials.access && credentials.user?.id) {
-          console.log('[global-setup] ✓ Using existing auth state')
-          await verifySeedData(apiURL, credentials.access, credentials.user.id)
-          return
-        }
-        console.log('[global-setup] Auth state missing credentials, re-authenticating...')
+      if (hoursSinceAuth >= 1) {
+        console.log('[global-setup] Auth state is stale, re-authenticating...')
+        return false
       }
-      console.log('[global-setup] Auth state is stale, re-authenticating...')
+
+      if (!credentials.access || !credentials.user?.id) {
+        console.log('[global-setup] Tutor credentials incomplete, re-authenticating...')
+        return false
+      }
+
+      // Validate staff credentials
+      const staffCredentials = JSON.parse(fs.readFileSync(staffCredentialsFile, 'utf-8'))
+      if (!staffCredentials.access || !staffCredentials.user?.id) {
+        console.log('[global-setup] Staff credentials incomplete, re-authenticating...')
+        return false
+      }
+
+      // Validate tutor storageState contains localStorage
+      const tutorState = JSON.parse(fs.readFileSync(authStateFile, 'utf-8'))
+      const tutorHasLocalStorage = tutorState.origins?.some((origin: any) => 
+        origin.localStorage?.some((item: any) => item.name === 'access' || item.name === 'user')
+      )
+      
+      if (!tutorHasLocalStorage) {
+        console.log('[global-setup] Tutor storageState missing localStorage, re-authenticating...')
+        return false
+      }
+
+      // Validate staff storageState contains localStorage
+      const staffState = JSON.parse(fs.readFileSync(staffAuthStateFile, 'utf-8'))
+      const staffHasLocalStorage = staffState.origins?.some((origin: any) => 
+        origin.localStorage?.some((item: any) => item.name === 'access' || item.name === 'user')
+      )
+      
+      if (!staffHasLocalStorage) {
+        console.log('[global-setup] Staff storageState missing localStorage, re-authenticating...')
+        return false
+      }
+
+      return true
     } catch (error) {
-      console.log('[global-setup] Failed to read auth state, re-authenticating...')
+      console.log('[global-setup] Failed to validate auth state, re-authenticating...')
+      return false
     }
   }
 
+  // Перевірити чи можна використати існуючий auth state
+  if (canReuseAuthState()) {
+    const credentials = JSON.parse(fs.readFileSync(credentialsFile, 'utf-8'))
+    console.log('[global-setup] ✓ Using existing auth state (validated: tutor + staff)')
+    await verifySeedData(apiURL, credentials.access, credentials.user.id)
+    return
+  }
+
   // Якщо немає auth state або він застарів, виконуємо логін
-  console.log('[global-setup] Authenticating test user...')
+  console.log('[global-setup] Authenticating test users...')
 
   const browser = await chromium.launch()
-  const context = await browser.newContext()
-  const page = await context.newPage()
-
+  
   try {
     // Перевірка health backend
-    const healthResponse = await page.request.get(`${apiURL}/health/`)
+    const healthContext = await browser.newContext()
+    const healthPage = await healthContext.newPage()
+    const healthResponse = await healthPage.request.get(`${apiURL}/health/`)
+    await healthContext.close()
+    
     if (!healthResponse.ok()) {
       throw new Error(`Backend health check failed: ${healthResponse.status()}`)
     }
     console.log('[global-setup] ✓ Backend is healthy')
 
-    // Логін через API
-    const loginResponse = await page.request.post(`${apiURL}/v1/auth/login`, {
+    const authStateDir = path.join(__dirname, '.auth')
+    if (!fs.existsSync(authStateDir)) {
+      fs.mkdirSync(authStateDir, { recursive: true })
+    }
+
+    // ========== 1. Authenticate TUTOR user (m3@gmail.com) ==========
+    console.log('[global-setup] Authenticating tutor user...')
+    const tutorContext = await browser.newContext()
+    const tutorPage = await tutorContext.newPage()
+
+    const tutorLoginResponse = await tutorPage.request.post(`${apiURL}/v1/auth/login`, {
       data: {
         email: process.env.TEST_USER_EMAIL || 'm3@gmail.com',
         password: process.env.TEST_USER_PASSWORD || 'demo1234'
       }
     })
 
-    if (!loginResponse.ok()) {
-      const errorData = await loginResponse.json().catch(() => ({}))
-      throw new Error(`Login failed: ${loginResponse.status()} - ${JSON.stringify(errorData)}`)
+    if (!tutorLoginResponse.ok()) {
+      const errorData = await tutorLoginResponse.json().catch(() => ({}))
+      throw new Error(`Tutor login failed: ${tutorLoginResponse.status()} - ${JSON.stringify(errorData)}`)
     }
 
-    const loginData = await loginResponse.json()
-    const { access, user } = loginData
+    const tutorLoginData = await tutorLoginResponse.json()
+    const { access: tutorAccess, user: tutorUser } = tutorLoginData
 
-    if (!access || !user) {
-      throw new Error('Login response missing access token or user data')
+    if (!tutorAccess || !tutorUser) {
+      throw new Error('Tutor login response missing access token or user data')
     }
 
-    console.log(`[global-setup] ✓ Logged in as ${user.email} (${user.role})`)
+    console.log(`[global-setup] ✓ Logged in as ${tutorUser.email} (tutor)`)
 
-    // Отримати CSRF token
-    const csrfResponse = await page.request.post(`${apiURL}/v1/auth/csrf`, {
-      headers: {
-        Authorization: `Bearer ${access}`
-      }
-    })
-
-    const csrfData = await csrfResponse.json().catch(() => ({}))
-    const csrfToken = csrfData.csrf_token || null
-
-    // Прив'язати localStorage токени до baseURL, щоб фронт бачив авторизацію
-    await page.goto(baseURL)
-    await page.evaluate(
+    // Прив'язати localStorage токени до baseURL
+    await tutorPage.goto(baseURL)
+    await tutorPage.evaluate(
       ([token, serializedUser]) => {
         window.localStorage.setItem('access', token)
         window.localStorage.setItem('user', serializedUser)
       },
-      [access, JSON.stringify(user)]
+      [tutorAccess, JSON.stringify(tutorUser)]
     )
 
-    // Зберегти auth state
-    const authStateDir = path.join(__dirname, '.auth')
-    if (!fs.existsSync(authStateDir)) {
-      fs.mkdirSync(authStateDir, { recursive: true })
-    }
+    // Зберегти tutor auth state
+    await tutorContext.storageState({ path: authStateFile })
+    console.log(`[global-setup] ✓ Tutor auth state saved to ${authStateFile}`)
 
-    // Зберегти storage state для Playwright
-    await context.storageState({ path: authStateFile })
-    console.log(`[global-setup] ✓ Auth state saved to ${authStateFile}`)
-
-    // Зберегти credentials для швидкого доступу
+    // Зберегти tutor credentials
     fs.writeFileSync(
       credentialsFile,
       JSON.stringify(
         {
-          access,
-          user,
-          csrfToken,
+          access: tutorAccess,
+          user: tutorUser,
           timestamp: new Date().toISOString()
         },
         null,
         2
       )
     )
-    console.log(`[global-setup] ✓ Credentials saved`)
+    console.log(`[global-setup] ✓ Tutor credentials saved`)
 
-    // Step 2: Verify seed data via API
-    await verifySeedData(apiURL, access, user.id)
+    await tutorContext.close()
+
+    // Verify seed data via tutor API
+    await verifySeedData(apiURL, tutorAccess, tutorUser.id)
+
+    // ========== 2. Authenticate STAFF user (e2e-staff@example.com) ==========
+    console.log('[global-setup] Authenticating staff user...')
+    const staffContext = await browser.newContext()
+    const staffPage = await staffContext.newPage()
+
+    const staffLoginResponse = await staffPage.request.post(`${apiURL}/v1/auth/login`, {
+      data: {
+        email: 'e2e-staff@example.com',
+        password: 'demo1234'
+      }
+    })
+
+    if (!staffLoginResponse.ok()) {
+      const errorData = await staffLoginResponse.json().catch(() => ({}))
+      throw new Error(`Staff login failed: ${staffLoginResponse.status()} - ${JSON.stringify(errorData)}`)
+    }
+
+    const staffLoginData = await staffLoginResponse.json()
+    const { access: staffAccess, user: staffUser } = staffLoginData
+
+    if (!staffAccess || !staffUser) {
+      throw new Error('Staff login response missing access token or user data')
+    }
+
+    // Verify staff user has access to staff endpoint
+    const staffCheckResponse = await staffPage.request.get(`${apiURL}/v1/staff/tutors/activity-list?limit=1`, {
+      headers: { Authorization: `Bearer ${staffAccess}` }
+    })
+
+    if (!staffCheckResponse.ok()) {
+      const status = staffCheckResponse.status()
+      if (status === 403 || status === 401) {
+        throw new Error(
+          `User e2e-staff@example.com does not have staff access! Status: ${status}. ` +
+          `Run: python manage.py e2e_seed_staff`
+        )
+      }
+      throw new Error(`Failed to verify staff access: ${status}`)
+    }
+
+    console.log(`[global-setup] ✓ Logged in as ${staffUser.email} (staff, verified via activity-list endpoint)`)
+
+    // Прив'язати localStorage токени до baseURL
+    await staffPage.goto(baseURL)
+    await staffPage.evaluate(
+      ([token, serializedUser]) => {
+        window.localStorage.setItem('access', token)
+        window.localStorage.setItem('user', serializedUser)
+      },
+      [staffAccess, JSON.stringify(staffUser)]
+    )
+
+    // Verify localStorage was set
+    const storedAccess = await staffPage.evaluate(() => window.localStorage.getItem('access'))
+    const storedUser = await staffPage.evaluate(() => window.localStorage.getItem('user'))
+    
+    if (!storedAccess || !storedUser) {
+      throw new Error(
+        `Failed to store staff auth tokens in localStorage. Stored access: ${!!storedAccess}, stored user: ${!!storedUser}`
+      )
+    }
+
+    // Зберегти staff auth state (AFTER localStorage is set)
+    const staffAuthStateFile = path.join(__dirname, '.auth/staff.json')
+    const staffCredentialsFile = path.join(__dirname, '.auth/staff-credentials.json')
+    
+    await staffContext.storageState({ path: staffAuthStateFile })
+    console.log(`[global-setup] ✓ Staff auth state saved to ${staffAuthStateFile}`)
+
+    // Зберегти staff credentials
+    fs.writeFileSync(
+      staffCredentialsFile,
+      JSON.stringify(
+        {
+          access: staffAccess,
+          user: staffUser,
+          timestamp: new Date().toISOString()
+        },
+        null,
+        2
+      )
+    )
+    console.log(`[global-setup] ✓ Staff credentials saved`)
+
+    await staffContext.close()
 
     console.log('[global-setup] ✅ Setup completed successfully')
   } catch (error) {
     console.error('[global-setup] ❌ Setup failed:', error)
     throw error
   } finally {
-    await context.close()
     await browser.close()
   }
 }

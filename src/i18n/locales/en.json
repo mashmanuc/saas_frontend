@@ -3406,6 +3406,43 @@
     }
   },
   "staff": {
+    "tutorActivity": {
+      "title": "Tutor Activity Management",
+      "loading": "Loading...",
+      "empty": "No tutors found",
+      "table": {
+        "tutorId": "ID",
+        "email": "Email",
+        "plan": "Plan",
+        "activityRequired": "Activity Required",
+        "activityCount": "Count",
+        "meetsRequirement": "Meets Req.",
+        "hasExemption": "Exemption",
+        "actions": "Actions",
+        "grantExemption": "Grant Exemption"
+      },
+      "pagination": {
+        "showing": "Showing {count} of {total}"
+      },
+      "grantExemption": {
+        "title": "Grant Activity Exemption",
+        "tutorEmail": "Tutor Email",
+        "month": "Month",
+        "reason": "Reason",
+        "reasonPlaceholder": "E.g., medical leave, vacation",
+        "submit": "Grant Exemption",
+        "submitting": "Granting...",
+        "success": "Exemption granted successfully"
+      },
+      "errors": {
+        "unauthorized": "Authorization required",
+        "forbidden": "Insufficient permissions",
+        "tutorNotFound": "Tutor not found",
+        "tooManyRequests": "Too many requests, try again later",
+        "generic": "An error occurred, please try again",
+        "loadFailed": "Failed to load tutors list"
+      }
+    },
     "reports": {
       "title": "Reports",
       "filterByStatus": "Filter by status",

@@ -56,7 +56,7 @@ export async function loginViaApi(
   }
 
   // 3. Перейти на baseURL, щоб прив'язати localStorage до правильного origin
-  const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:4173'
+  const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:5173'
   await page.goto(baseURL)
 
   // 4. Записати токени у localStorage (ключі 'access' та 'user', як у authStore)

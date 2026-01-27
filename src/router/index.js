@@ -559,6 +559,16 @@ const routes = [
               requiresStaff: true
             },
           },
+          {
+            path: 'tutor-activity',
+            name: 'staff-tutor-activity',
+            component: () => import('../modules/staff/views/TutorActivityManagement.vue'),
+            meta: { 
+              requiresAuth: true,
+              roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN],
+              requiresStaff: true
+            },
+          },
         ],
       },
     ],
