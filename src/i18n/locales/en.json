@@ -1469,6 +1469,24 @@
   },
   "tutor": {
     "activity": {
+      "banner": {
+        "active": {
+          "title": "You're active",
+          "message": "You have {count} responses this month. Keep it up!"
+        },
+        "inactive": {
+          "title": "You're inactive",
+          "message": "You have no responses to inquiries this month. Your profile is hidden from students."
+        },
+        "exempted": {
+          "title": "Activity rules waived",
+          "message": "You have a temporary exemption. Activity rules do not apply."
+        },
+        "atRisk": {
+          "title": "Activity required",
+          "message": "You have no responses to inquiries this month. Respond to stay visible in the Marketplace."
+        }
+      },
       "currentMonth": "Current month",
       "notRequired": {
         "title": "Activity not required this month",
@@ -1489,6 +1507,11 @@
       "exempt": {
         "title": "Exempt from requirement this month",
         "description": "Administration has granted you an exemption"
+      },
+      "exemption": {
+        "active": "Active exemption",
+        "info": "Until {until}. Reason: {reason}",
+        "noReason": "not specified"
       }
     },
     "relations": {
@@ -3456,6 +3479,19 @@
         "tooManyRequests": "Too many requests, try again later",
         "generic": "An error occurred, please try again",
         "loadFailed": "Failed to load tutors list"
+      },
+      "reasons": {
+        "noReactions": "No reactions to requests this month",
+        "trialActive": "Tutor is on trial period",
+        "exempted": "Activity rules are waived",
+        "notApplicable": "Activity rules do not apply",
+        "active": "Tutor has activity this month"
+      },
+      "states": {
+        "active": "Active",
+        "inactive": "Inactive",
+        "exempted": "Exempted",
+        "atRisk": "At Risk"
       }
     },
     "reports": {

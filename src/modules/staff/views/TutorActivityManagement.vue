@@ -87,14 +87,14 @@
               <div class="flex items-center gap-2">
                 <span 
                   class="rounded-full px-2 py-1 text-xs" 
-                  :class="getStatusClass(tutor.activity_status)"
+                  :class="getUserFriendlyStatusClass(getUserFriendlyStatus(tutor.activity_status, tutor.activity_reason))"
                   :title="getActivityReasonTooltip(tutor.activity_reason)"
                 >
-                  {{ getStatusLabel(tutor.activity_status) }}
+                  {{ getUserFriendlyStatusLabel(getUserFriendlyStatus(tutor.activity_status, tutor.activity_reason)) }}
                 </span>
                 <span 
                   v-if="tutor.activity_reason" 
-                  class="text-xs text-muted"
+                  class="text-xs text-muted cursor-help"
                   :title="getActivityReasonTooltip(tutor.activity_reason)"
                 >
                   ℹ️
@@ -259,6 +259,31 @@ function getStatusLabel(status: string): string {
   if (status === 'ACTIVE') return '🟢 ACTIVE'
   if (status === 'INACTIVE_SOFT') return '🟡 INACTIVE'
   return status
+}
+
+function getUserFriendlyStatus(activityStatus: string, activityReason: string): string {
+  // v0.93: Map backend status + reason to user-friendly states
+  if (activityReason === 'EXEMPTED') return 'EXEMPTED'
+  if (activityReason === 'NO_REACTIONS_THIS_MONTH') return 'AT_RISK'
+  if (activityStatus === 'INACTIVE_SOFT') return 'INACTIVE'
+  if (activityStatus === 'ACTIVE') return 'ACTIVE'
+  return 'ACTIVE'
+}
+
+function getUserFriendlyStatusClass(friendlyStatus: string): string {
+  if (friendlyStatus === 'ACTIVE') return 'bg-green-100 text-green-800'
+  if (friendlyStatus === 'INACTIVE') return 'bg-yellow-100 text-yellow-800'
+  if (friendlyStatus === 'EXEMPTED') return 'bg-purple-100 text-purple-800'
+  if (friendlyStatus === 'AT_RISK') return 'bg-orange-100 text-orange-800'
+  return 'bg-gray-100 text-gray-800'
+}
+
+function getUserFriendlyStatusLabel(friendlyStatus: string): string {
+  if (friendlyStatus === 'ACTIVE') return '🟢 ACTIVE'
+  if (friendlyStatus === 'INACTIVE') return '🟡 INACTIVE'
+  if (friendlyStatus === 'EXEMPTED') return '🟣 EXEMPTED'
+  if (friendlyStatus === 'AT_RISK') return '🟠 AT RISK'
+  return friendlyStatus
 }
 
 function getActivityReasonTooltip(reason: string): string {

@@ -7,13 +7,17 @@ import ProfileEditor from '../components/editor/ProfileEditor.vue'
 import ProfileStatusBadge from '../components/shared/ProfileStatusBadge.vue'
 import CreateProfilePrompt from '../components/editor/CreateProfilePrompt.vue'
 import LoadingSpinner from '@/ui/LoadingSpinner.vue'
+import ActivityStatusBanner from '@/modules/tutor/components/ActivityStatusBanner.vue'
 import type { TutorProfileUpsertPayload, TutorProfilePatchPayload } from '../api/marketplace'
+import type { TutorActivityStatus } from '../api/tutorActivity'
+import tutorActivityApi from '../api/tutorActivity'
 import { telemetry } from '@/services/telemetry'
 import { useI18n } from 'vue-i18n'
 import { notifyError, notifySuccess } from '@/utils/notify'
 
 const store = useMarketplaceStore()
 const { t } = useI18n()
+const activityStatus = ref<TutorActivityStatus | null>(null)
 const {
   myProfile,
   isLoadingMyProfile,
