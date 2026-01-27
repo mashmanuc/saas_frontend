@@ -1512,6 +1512,10 @@
         "active": "Active exemption",
         "info": "Until {until}. Reason: {reason}",
         "noReason": "not specified"
+      },
+      "cta": {
+        "title": "What do you need to do?",
+        "message": "Respond to at least one student inquiry (accept or reject). This is the only way to restore your profile visibility."
       }
     },
     "relations": {
@@ -2824,6 +2828,7 @@
     "status": "Статус",
     "availability": {
       "jobInProgress": "Please wait for the current operation to complete",
+      "enforcementBlocked": "Publishing availability is unavailable due to activity status. Respond to student inquiries to restore access.",
       "conflictsDetected": "Conflicts detected on days: {days}",
       "notifications": {
         "saveSuccess": "Availability saved successfully!",

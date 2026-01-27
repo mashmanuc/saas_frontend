@@ -5,6 +5,13 @@
       <div class="flex-1">
         <h3 class="font-semibold text-sm mb-1">{{ statusTitle }}</h3>
         <p class="text-sm text-muted">{{ statusMessage }}</p>
+        
+        <!-- v0.94.0: Actionable CTA для AT_RISK (інформаційний, НЕ кнопка) -->
+        <div v-if="userFriendlyStatus === 'AT_RISK'" class="mt-3 p-3 bg-orange-50 border border-orange-200 rounded">
+          <p class="text-sm font-medium text-orange-900">{{ $t('tutor.activity.cta.title') }}</p>
+          <p class="text-xs text-orange-800 mt-1">{{ $t('tutor.activity.cta.message') }}</p>
+        </div>
+        
         <div v-if="exemptionInfo" class="mt-2 text-xs text-muted">
           <span class="font-medium">{{ $t('tutor.activity.exemption.active') }}:</span>
           {{ exemptionInfo }}

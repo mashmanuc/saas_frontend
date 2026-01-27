@@ -2,21 +2,21 @@
   "locales": {
     "en": {
       "status": "ok",
-      "totalKeys": 2953,
+      "totalKeys": 3043,
       "missing": [],
       "extra": [],
       "empty": []
     }
   },
   "summary": {
-    "totalKeys": 2953,
+    "totalKeys": 3043,
     "locales": 2,
     "errors": 0,
     "warnings": 1
   },
   "usage": {
-    "scannedFiles": 908,
-    "detectedKeys": 2382,
+    "scannedFiles": 924,
+    "detectedKeys": 2467,
     "unusedKeys": [
       "billing.cta.learnMore",
       "billing.error.alreadySubscribed",
@@ -559,6 +559,11 @@
       "staff.reports.statusACTIONED",
       "staff.reports.statusDISMISSED",
       "staff.reports.statusOPEN",
+      "staff.tutorActivity.states.active",
+      "staff.tutorActivity.states.atRisk",
+      "staff.tutorActivity.states.exempted",
+      "staff.tutorActivity.states.inactive",
+      "staff.tutorActivity.success",
       "tutor.lessonLinks.platformGenerated",
       "tutor.lessonLinks.platformInfo",
       "tutor.lessonLinks.providers.platform",

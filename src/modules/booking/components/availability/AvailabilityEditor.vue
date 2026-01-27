@@ -22,6 +22,10 @@ const { currentJob, isPolling, startTracking } = useAvailabilityJob()
 const toast = useToast()
 const slotStore = useSlotStore()
 
+// v0.94.0: Enforcement guard
+const isEnforcementBlocked = ref(false)
+const enforcementMessage = ref<string | null>(null)
+
 const availability = ref<Record<number, any[]>>({})
 const isLoading = ref(false)
 const showSlotEditor = ref(false)
@@ -91,6 +95,20 @@ const timeToMinutes = (time: string) => {
 onMounted(async () => {
   isLoading.value = true
   try {
+    // v0.94.0: Check activity enforcement
+    try {
+      const activityResponse = await fetch('/api/v1/tutor/activity-status/')
+      if (activityResponse.ok) {
+        const activityData = await activityResponse.json()
+        if (activityData.activity_status === 'INACTIVE_SOFT') {
+          isEnforcementBlocked.value = true
+          enforcementMessage.value = t('calendar.availability.enforcementBlocked')
+        }
+      }
+    } catch (activityError) {
+      console.warn('[AvailabilityEditor] Could not check activity status:', activityError)
+    }
+
     // Load availability template
     const response = await bookingApi.getAvailability()
     availability.value = response?.schedule || {}
@@ -163,6 +181,12 @@ function updateWindow(
 }
 
 async function saveAvailability() {
+  // v0.94.0: Enforcement check
+  if (isEnforcementBlocked.value) {
+    toast.error(enforcementMessage.value || t('calendar.availability.enforcementBlocked'))
+    return
+  }
+
   if (isSavingTemplate.value || (currentJob.value && (currentJob.value.status === 'pending' || currentJob.value.status === 'running'))) {
     toast.warning(t('calendar.availability.jobInProgress'))
     return
