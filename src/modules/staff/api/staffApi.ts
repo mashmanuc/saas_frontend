@@ -13,10 +13,11 @@ export interface TutorActivityListItem {
   user_id: number
   email: string
   full_name: string
-  activity_status: 'OK' | 'WARNING' | 'RESTRICTED' | 'EXEMPTED'
+  activity_status: 'ACTIVE' | 'INACTIVE_SOFT'
+  activity_reason: 'NO_REACTIONS_THIS_MONTH' | 'TRIAL_ACTIVE' | 'EXEMPTED' | 'NOT_APPLICABLE' | 'ACTIVE'
   eligible: boolean
-  responses_this_month: number
-  last_response_at: string | null
+  reactions_count_current_month: number
+  last_activity_at: string | null
   exemption_until: string | null
   exemption_reason: string | null
   updated_at: string
@@ -47,7 +48,7 @@ const staffApi = {
     limit?: number
     offset?: number
     query?: string
-    status?: 'OK' | 'WARNING' | 'RESTRICTED' | 'EXEMPTED'
+    status?: 'ACTIVE' | 'INACTIVE_SOFT'
   }): Promise<TutorActivityListResponse> {
     const response = await apiClient.get('/v1/staff/tutors/activity-list/', {
       params,

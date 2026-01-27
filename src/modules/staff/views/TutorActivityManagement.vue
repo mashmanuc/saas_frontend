@@ -24,10 +24,8 @@
           @change="loadTutors"
         >
           <option value="">{{ $t('staff.tutorActivity.filters.allStatuses') }}</option>
-          <option value="OK">OK</option>
-          <option value="WARNING">WARNING</option>
-          <option value="RESTRICTED">RESTRICTED</option>
-          <option value="EXEMPTED">EXEMPTED</option>
+          <option value="ACTIVE">ACTIVE</option>
+          <option value="INACTIVE_SOFT">INACTIVE</option>
         </select>
       </div>
     </div>
@@ -86,16 +84,29 @@
               <div class="text-xs text-muted">{{ tutor.email }}</div>
             </td>
             <td class="px-4 py-3 text-sm text-body">
-              <span class="rounded-full px-2 py-1 text-xs" :class="getStatusClass(tutor.activity_status)">
-                {{ tutor.activity_status }}
-              </span>
+              <div class="flex items-center gap-2">
+                <span 
+                  class="rounded-full px-2 py-1 text-xs" 
+                  :class="getStatusClass(tutor.activity_status)"
+                  :title="getActivityReasonTooltip(tutor.activity_reason)"
+                >
+                  {{ getStatusLabel(tutor.activity_status) }}
+                </span>
+                <span 
+                  v-if="tutor.activity_reason" 
+                  class="text-xs text-muted"
+                  :title="getActivityReasonTooltip(tutor.activity_reason)"
+                >
+                  ℹ️
+                </span>
+              </div>
             </td>
             <td class="px-4 py-3 text-center text-sm">
               <span v-if="tutor.eligible" class="text-yellow-600">✓</span>
               <span v-else class="text-muted">—</span>
             </td>
             <td class="px-4 py-3 text-center text-sm text-body">
-              {{ tutor.responses_this_month }}
+              {{ tutor.reactions_count_current_month }}
             </td>
             <td class="px-4 py-3 text-sm text-body">
               <span v-if="tutor.exemption_reason" class="text-purple-600">{{ tutor.exemption_reason }}</span>
@@ -239,11 +250,26 @@ function nextPage() {
 }
 
 function getStatusClass(status: string): string {
-  if (status === 'OK') return 'bg-green-100 text-green-800'
-  if (status === 'WARNING') return 'bg-yellow-100 text-yellow-800'
-  if (status === 'RESTRICTED') return 'bg-red-100 text-red-800'
-  if (status === 'EXEMPTED') return 'bg-purple-100 text-purple-800'
+  if (status === 'ACTIVE') return 'bg-green-100 text-green-800'
+  if (status === 'INACTIVE_SOFT') return 'bg-yellow-100 text-yellow-800'
   return 'bg-gray-100 text-gray-800'
+}
+
+function getStatusLabel(status: string): string {
+  if (status === 'ACTIVE') return '🟢 ACTIVE'
+  if (status === 'INACTIVE_SOFT') return '🟡 INACTIVE'
+  return status
+}
+
+function getActivityReasonTooltip(reason: string): string {
+  const tooltips: Record<string, string> = {
+    'NO_REACTIONS_THIS_MONTH': t('staff.tutorActivity.reasons.noReactions'),
+    'TRIAL_ACTIVE': t('staff.tutorActivity.reasons.trialActive'),
+    'EXEMPTED': t('staff.tutorActivity.reasons.exempted'),
+    'NOT_APPLICABLE': t('staff.tutorActivity.reasons.notApplicable'),
+    'ACTIVE': t('staff.tutorActivity.reasons.active'),
+  }
+  return tooltips[reason] || reason
 }
 
 function openGrantModal(tutor: TutorActivityListItem) {
