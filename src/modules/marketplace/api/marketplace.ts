@@ -1,6 +1,7 @@
 // TASK MF1: Marketplace API
 
 import apiClient from '@/utils/apiClient'
+import type { TutorActivityStatus } from '../types/activityStatus'
 
 type ApiClientFullResponse<T> = {
   status: number
@@ -1264,6 +1265,15 @@ export const marketplaceApi = {
     })
     
     return response as unknown as TutorCalendarResponse
+  },
+
+  /**
+   * Get tutor activity status (v0.88.2).
+   * GET /api/v1/marketplace/tutors/me/activity-status
+   */
+  async getTutorActivityStatus(): Promise<TutorActivityStatus> {
+    const response = await apiClient.get('/v1/marketplace/tutors/me/activity-status')
+    return response as unknown as TutorActivityStatus
   },
 }
 

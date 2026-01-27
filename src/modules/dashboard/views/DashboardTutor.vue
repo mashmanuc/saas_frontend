@@ -18,6 +18,9 @@
         </p>
       </div>
 
+      <!-- Activity Status (v0.88.2) -->
+      <ActivityStatusBlock v-if="activityStatus" :status="activityStatus" />
+
       <!-- Today's Lessons -->
       <div v-if="dashboard.todaysLessons?.length > 0" class="space-y-3">
         <h3 class="text-base font-medium text-body">{{ $t('dashboard.tutor.todaysLessons') }}</h3>
@@ -252,6 +255,7 @@ import Card from '../../../ui/Card.vue'
 import Avatar from '../../../ui/Avatar.vue'
 import PresenceDot from '../../../ui/PresenceDot.vue'
 import UpcomingLessonCard from '../components/UpcomingLessonCard.vue'
+import ActivityStatusBlock from '../../marketplace/components/ActivityStatusBlock.vue'
 import { formatDateTime } from '../../../utils/datetime'
 import { useAuthStore } from '../../auth/store/authStore'
 import { useDashboardStore } from '../store/dashboardStore'
@@ -259,6 +263,7 @@ import { useRelationsStore } from '../../../stores/relationsStore'
 import { usePresenceStore } from '../../../stores/presenceStore'
 import { notifySuccess, notifyError, notifyWarning } from '../../../utils/notify'
 import { getMessageAction } from '@/utils/relationsUi'
+import marketplaceApi from '../../marketplace/api/marketplace'
 
 const auth = useAuthStore()
 const dashboard = useDashboardStore()
@@ -302,6 +307,7 @@ watch(
 const actionLoadingId = ref(null)
 const resendLoadingId = ref(null)
 const retryLoading = ref(false)
+const activityStatus = ref(null)
 
 const tabs = computed(() => [
   {
@@ -512,7 +518,7 @@ function isOnline(userId) {
   return presenceStore.isOnline?.(String(userId)) || false
 }
 
-onMounted(() => {
+onMounted(async () => {
   // Use new method if available, fallback to old
   if (dashboard.fetchTutorDashboard) {
     dashboard.fetchTutorDashboard().catch(() => {})
@@ -520,5 +526,13 @@ onMounted(() => {
     dashboard.fetchTutorStudents().catch(() => {})
   }
   relationsStore.fetchTutorRelations().catch(() => {})
+  
+  // Load activity status (v0.88.2)
+  try {
+    activityStatus.value = await marketplaceApi.getTutorActivityStatus()
+  } catch (error) {
+    // Silent fail - activity status is not critical
+    console.warn('[DashboardTutor] Failed to load activity status:', error)
+  }
 })
 </script>

@@ -1468,6 +1468,29 @@
     }
   },
   "tutor": {
+    "activity": {
+      "currentMonth": "Current month",
+      "notRequired": {
+        "title": "Activity not required this month",
+        "trial": "You are on trial period",
+        "paidPlan": "You have a paid plan",
+        "notPublished": "Profile not published"
+      },
+      "met": {
+        "title": "Requirement met",
+        "count": "{current} / {required} responses this month"
+      },
+      "notMet": {
+        "title": "Activity required this month",
+        "description": "You need to respond to at least 1 student inquiry (accept or reject)",
+        "count": "{current} / {required} completed",
+        "hint": "Go to student inquiries"
+      },
+      "exempt": {
+        "title": "Exempt from requirement this month",
+        "description": "Administration has granted you an exemption"
+      }
+    },
     "relations": {
       "info": {},
       "actions": {},
