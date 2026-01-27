@@ -314,15 +314,54 @@ async function globalSetup(config: FullConfig) {
   const browser = await chromium.launch()
   
   try {
-    // Перевірка health backend
+    // Перевірка health backend з retry/backoff для 429 та 5xx
     const healthContext = await browser.newContext()
     const healthPage = await healthContext.newPage()
-    const healthResponse = await healthPage.request.get(`${apiURL}/health/`)
-    await healthContext.close()
+    
+    const maxAttempts = 8
+    let healthResponse = await healthPage.request.get(`${apiURL}/health/`)
+    
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      if (attempt > 1) {
+        healthResponse = await healthPage.request.get(`${apiURL}/health/`)
+      }
+      
+      if (healthResponse.ok()) {
+        break
+      }
+      
+      const status = healthResponse.status()
+      const headers = healthResponse.headers()
+      const retryAfter = Number(headers['retry-after'] ?? '0')
+      
+      if (status === 429) {
+        const sleepMs = retryAfter > 0 ? retryAfter * 1000 : 2000 + attempt * 500
+        console.log(`[global-setup] Health rate-limited (429), retry in ${sleepMs}ms (attempt ${attempt}/${maxAttempts})`)
+        await new Promise(r => setTimeout(r, sleepMs))
+        continue
+      }
+      
+      // Transient 5xx errors
+      if ([500, 502, 503].includes(status)) {
+        const sleepMs = 1000 + attempt * 500
+        console.log(`[global-setup] Health transient ${status}, retry in ${sleepMs}ms (attempt ${attempt}/${maxAttempts})`)
+        await new Promise(r => setTimeout(r, sleepMs))
+        continue
+      }
+      
+      // Other errors (401, 403, 404, etc.) - fail immediately
+      const body = (await healthResponse.text()).slice(0, 800)
+      await healthContext.close()
+      throw new Error(`Backend health check failed: ${status}\n${body}`)
+    }
     
     if (!healthResponse.ok()) {
-      throw new Error(`Backend health check failed: ${healthResponse.status()}`)
+      const body = (await healthResponse.text()).slice(0, 800)
+      await healthContext.close()
+      throw new Error(`Backend health check failed: ${healthResponse.status()} (exhausted retries)\n${body}`)
     }
+    
+    await healthContext.close()
     console.log('[global-setup] ✓ Backend is healthy')
 
     const authStateDir = path.join(__dirname, '.auth')
@@ -431,6 +470,17 @@ async function globalSetup(config: FullConfig) {
     }
 
     console.log(`[global-setup] ✓ Logged in as ${staffUser.email} (staff, verified via activity-list endpoint)`)
+
+    // Sanity-check: verify activity-list returns ≥1 tutor (seed guarantee)
+    const activityListData = await staffCheckResponse.json()
+    if (!activityListData.results || activityListData.results.length === 0) {
+      throw new Error(
+        `Staff activity-list returned empty results! ` +
+        `Seed must guarantee ≥1 tutor in activity-list. ` +
+        `Run: python manage.py e2e_seed_calendar && python manage.py e2e_seed_staff`
+      )
+    }
+    console.log(`[global-setup] ✓ Activity-list has ${activityListData.results.length} tutor(s)`)
 
     // Прив'язати localStorage токени до baseURL
     await staffPage.goto(baseURL)

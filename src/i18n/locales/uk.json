@@ -3766,15 +3766,18 @@
     "tutorActivity": {
       "title": "Управління активністю тьюторів",
       "loading": "Завантаження...",
+      "filters": {
+        "searchPlaceholder": "Пошук за email або ім'ям...",
+        "allStatuses": "Всі статуси"
+      },
       "empty": "Тьюторів не знайдено",
       "table": {
         "tutorId": "ID",
-        "email": "Email",
-        "plan": "План",
-        "activityRequired": "Потрібна активність",
-        "activityCount": "Кількість",
-        "meetsRequirement": "Виконано",
-        "hasExemption": "Звільнення",
+        "tutor": "Тьютор",
+        "status": "Статус",
+        "eligible": "Підпадає",
+        "responses": "Відповіді",
+        "exemptionReason": "Причина звільнення",
         "actions": "Дії",
         "grantExemption": "Надати звільнення"
       },
@@ -3782,15 +3785,15 @@
         "showing": "Показано {count} з {total}"
       },
       "grantExemption": {
-        "title": "Надати звільнення від вимоги активності",
+        "title": "Надати звільнення від активності",
         "tutorEmail": "Email тьютора",
-        "month": "Місяць",
+        "until": "До дати",
         "reason": "Причина",
-        "reasonPlaceholder": "Наприклад: лікарняний, відпустка",
+        "reasonPlaceholder": "Наприклад: відпустка, медичні причини...",
         "submit": "Надати звільнення",
-        "submitting": "Надання...",
-        "success": "Звільнення успішно надано"
+        "submitting": "Збереження..."
       },
+      "success": "Звільнення успішно надано",
       "errors": {
         "unauthorized": "Необхідна авторизація",
         "forbidden": "Недостатньо прав доступу",

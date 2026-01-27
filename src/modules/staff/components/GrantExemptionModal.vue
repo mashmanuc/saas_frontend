@@ -17,13 +17,13 @@
 
         <div>
           <label class="mb-1 block text-sm font-medium text-body">
-            {{ $t('staff.tutorActivity.grantExemption.month') }}
+            {{ $t('staff.tutorActivity.grantExemption.until') }}
           </label>
           <input
-            v-model="form.month"
-            type="month"
+            v-model="form.until"
+            type="datetime-local"
             class="w-full rounded-lg border border-default bg-surface px-3 py-2 text-body focus:border-primary focus:outline-none"
-            data-test="exemption-month-input"
+            data-test="exemption-until-input"
           />
         </div>
 
@@ -87,24 +87,26 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const form = ref({
-  month: getCurrentMonth(),
+  until: getDefaultUntil(),
   reason: '',
 })
 
 const loading = ref(false)
 const error = ref('')
 
-function getCurrentMonth(): string {
+function getDefaultUntil(): string {
   const now = new Date()
-  const year = now.getFullYear()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  return `${year}-${month}`
+  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+  const year = nextMonth.getFullYear()
+  const month = String(nextMonth.getMonth() + 1).padStart(2, '0')
+  const day = String(nextMonth.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}T00:00`
 }
 
 watch(() => props.isOpen, (isOpen) => {
   if (isOpen) {
     form.value = {
-      month: getCurrentMonth(),
+      until: getDefaultUntil(),
       reason: '',
     }
     error.value = ''
@@ -123,8 +125,12 @@ async function submit() {
   error.value = ''
 
   try {
-    await staffApi.grantActivityExemption(props.tutor.tutor_id, {
-      month: form.value.month,
+    // Convert datetime-local to ISO string
+    const untilDate = new Date(form.value.until)
+    const untilISO = untilDate.toISOString()
+    
+    await staffApi.grantExemption(props.tutor.tutor_id, {
+      until: untilISO,
       reason: form.value.reason.trim(),
     })
     

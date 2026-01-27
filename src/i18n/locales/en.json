@@ -3421,15 +3421,18 @@
     "tutorActivity": {
       "title": "Tutor Activity Management",
       "loading": "Loading...",
+      "filters": {
+        "searchPlaceholder": "Search by email or name...",
+        "allStatuses": "All statuses"
+      },
       "empty": "No tutors found",
       "table": {
         "tutorId": "ID",
-        "email": "Email",
-        "plan": "Plan",
-        "activityRequired": "Activity Required",
-        "activityCount": "Count",
-        "meetsRequirement": "Meets Req.",
-        "hasExemption": "Exemption",
+        "tutor": "Tutor",
+        "status": "Status",
+        "eligible": "Eligible",
+        "responses": "Responses",
+        "exemptionReason": "Exemption Reason",
         "actions": "Actions",
         "grantExemption": "Grant Exemption"
       },
@@ -3439,13 +3442,13 @@
       "grantExemption": {
         "title": "Grant Activity Exemption",
         "tutorEmail": "Tutor Email",
-        "month": "Month",
+        "until": "Until Date",
         "reason": "Reason",
-        "reasonPlaceholder": "E.g., medical leave, vacation",
+        "reasonPlaceholder": "E.g., vacation, medical reasons...",
         "submit": "Grant Exemption",
-        "submitting": "Granting...",
-        "success": "Exemption granted successfully"
+        "submitting": "Saving..."
       },
+      "success": "Exemption granted successfully",
       "errors": {
         "unauthorized": "Authorization required",
         "forbidden": "Insufficient permissions",
