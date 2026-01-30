@@ -74,6 +74,8 @@ export const useProfileStore = defineStore('profile', {
     draftError: null,
     isRateLimited: false,
     rateLimitUntil: null,
+    completenessScore: 0,
+    emailVerified: false,
   }),
   getters: {
     fullName: (state) => {
@@ -82,8 +84,19 @@ export const useProfileStore = defineStore('profile', {
       return [user.first_name, user.last_name].filter(Boolean).join(' ').trim()
     },
     role: (state) => state.user?.role || null,
+    isTutor: (state) => state.user?.role === 'TUTOR',
+    isStudent: (state) => state.user?.role === 'STUDENT',
     timezone: (state) => state.user?.timezone || state.settings?.timezone || 'UTC',
     profileDescription: (state) => state.profile?.bio || '',
+    profileComplete: (state) => state.completenessScore >= 100,
+    missingFields: (state) => {
+      const fields = []
+      if (!state.profile?.bio) fields.push('bio')
+      if (!state.profile?.headline) fields.push('headline')
+      if (!state.profile?.hourly_rate) fields.push('hourly_rate')
+      if (!state.avatarUrl) fields.push('avatar')
+      return fields
+    },
   },
   actions: {
     setProfileState(data) {
@@ -92,10 +105,12 @@ export const useProfileStore = defineStore('profile', {
       this.profile = normalized.profile
       this.settings = normalized.settings
       this.avatarUrl = normalized.avatarUrl
+      this.emailVerified = normalized.user?.email_verified || false
       this.initialized = true
       this.hasUnsavedChanges = false
       this.hasDraft = false
       this.draftData = null
+      this.calculateCompleteness()
       return normalized.raw || normalized
     },
     async loadProfile() {
@@ -123,6 +138,16 @@ export const useProfileStore = defineStore('profile', {
         this.lastSavedAt = new Date()
         this.lastAutosavedAt = this.lastSavedAt
         this.hasUnsavedChanges = false
+        
+        // Telemetry: profile updated
+        if (typeof window !== 'undefined' && window.telemetry) {
+          window.telemetry.trackEvent('profile_updated', { 
+            userId: this.user?.id,
+            role: this.user?.role,
+            completeness: this.completenessScore
+          })
+        }
+        
         notifySuccess(translate('profile.messages.saveSuccess'))
         return data
       } catch (error) {
@@ -142,6 +167,15 @@ export const useProfileStore = defineStore('profile', {
       if (!file) return
       const formData = new FormData()
       formData.append('avatar', file)
+      
+      // Telemetry: avatar upload started
+      if (typeof window !== 'undefined' && window.telemetry) {
+        window.telemetry.trackEvent('avatar_upload_started', { 
+          userId: this.user?.id,
+          fileSize: file.size 
+        })
+      }
+      
       try {
         const data = await updateAvatar(formData)
         const avatarUrl = normalizeAvatarUrl(data?.avatar_url)
@@ -154,9 +188,26 @@ export const useProfileStore = defineStore('profile', {
         if (auth.user) {
           auth.setAuth({ user: { ...auth.user, avatar_url: avatarUrl } })
         }
+        
+        // Telemetry: avatar upload success
+        if (typeof window !== 'undefined' && window.telemetry) {
+          window.telemetry.trackEvent('avatar_upload_success', { 
+            userId: this.user?.id,
+            fileSize: file.size 
+          })
+        }
+        
         notifySuccess(translate('profile.messages.avatarUpdateSuccess'))
         return data
       } catch (error) {
+        // Telemetry: avatar upload failed
+        if (typeof window !== 'undefined' && window.telemetry) {
+          window.telemetry.trackEvent('avatar_upload_failed', { 
+            userId: this.user?.id,
+            error: error?.message 
+          })
+        }
+        
         notifyError(translate('profile.messages.avatarUpdateError'))
         throw error
       }
@@ -249,6 +300,68 @@ export const useProfileStore = defineStore('profile', {
       } finally {
         this.draftData = null
         this.hasDraft = false
+      }
+    },
+    calculateCompleteness() {
+      if (!this.profile || this.user?.role !== 'TUTOR') {
+        this.completenessScore = 0
+        return
+      }
+      let score = 0
+      if (this.profile.bio?.trim()) score += 20
+      if (this.profile.headline?.trim()) score += 15
+      if (this.profile.experience > 0) score += 10
+      if (this.profile.hourly_rate > 0) score += 15
+      if (this.profile.subjects?.length > 0) score += 20
+      if (this.profile.certifications?.length > 0) score += 10
+      if (this.avatarUrl) score += 10
+      this.completenessScore = score
+    },
+    async updateSettings(settingsPayload) {
+      if (!settingsPayload || typeof settingsPayload !== 'object') return
+      this.saving = true
+      try {
+        const { updateUserSettings } = await import('../../../api/users')
+        const data = await updateUserSettings(settingsPayload)
+        if (this.settings) {
+          this.settings = { ...this.settings, ...data }
+        } else {
+          this.settings = data
+        }
+        
+        // Telemetry: settings updated
+        if (typeof window !== 'undefined' && window.telemetry) {
+          window.telemetry.trackEvent('settings_updated', { 
+            userId: this.user?.id,
+            changedFields: Object.keys(settingsPayload)
+          })
+        }
+        
+        notifySuccess(translate('users.settings.saveSuccess'))
+        return data
+      } catch (error) {
+        notifyError(translate('users.settings.saveError'))
+        throw error
+      } finally {
+        this.saving = false
+      }
+    },
+    async resendVerification() {
+      try {
+        const { resendVerificationEmail } = await import('../../../api/users')
+        await resendVerificationEmail()
+        
+        // Telemetry: email verification resent
+        if (typeof window !== 'undefined' && window.telemetry) {
+          window.telemetry.trackEvent('email_verification_resent', { 
+            userId: this.user?.id
+          })
+        }
+        
+        notifySuccess(translate('users.verification.emailSent'))
+      } catch (error) {
+        notifyError(translate('users.verification.emailSendError'))
+        throw error
       }
     },
   },

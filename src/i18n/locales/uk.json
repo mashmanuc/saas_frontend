@@ -4368,5 +4368,136 @@
       "rejected": "Відхилено",
       "expired": "Прострочено"
     }
+  },
+  "users": {
+    "profile": {
+      "headline": "Заголовок",
+      "headlinePlaceholder": "Наприклад: Досвідчений викладач математики",
+      "bio": "Про себе",
+      "bioPlaceholder": "Розкажіть про свій досвід, підхід до навчання...",
+      "experience": "Досвід (років)",
+      "experiencePlaceholder": "0",
+      "experienceYears": "{years} років досвіду",
+      "hourlyRate": "Ставка за годину",
+      "hourlyRatePlaceholder": "0",
+      "hour": "год",
+      "publishStatus": "Статус публікації",
+      "published": "Опубліковано",
+      "draft": "Чернетка",
+      "publish": "Опублікувати",
+      "unpublish": "Зняти з публікації",
+      "learningGoals": "Цілі навчання",
+      "learningGoalsPlaceholder": "Що ви хочете вивчити?",
+      "preferredSubjects": "Бажані предмети",
+      "addSubjectPlaceholder": "Додати предмет",
+      "budgetRange": "Бюджет",
+      "budgetMin": "Мінімум (грн/год)",
+      "budgetMax": "Максимум (грн/год)",
+      "budgetHint": "Вкажіть ваш бюджет на навчання",
+      "contactTutor": "Зв'язатися з тьютором",
+      "share": "Поділитися",
+      "about": "Про тьютора",
+      "subjects": "Предмети",
+      "certifications": "Сертифікати",
+      "completeness": {
+        "title": "Повнота профілю",
+        "description": "Заповніть профіль для кращої видимості",
+        "progress": "{filled} з {total} полів заповнено",
+        "missingFields": "Незаповнені поля:",
+        "completeNow": "Заповнити зараз",
+        "complete": "Профіль заповнено повністю"
+      }
+    },
+    "avatar": {
+      "upload": "Завантажити фото",
+      "change": "Змінити фото",
+      "update": "Оновити",
+      "remove": "Видалити",
+      "drop": "Відпустіть файл",
+      "hint": "Завантажте своє фото",
+      "formats": "Формати",
+      "maxSize": "Максимальний розмір",
+      "invalidFormat": "Невірний формат файлу. Використовуйте JPG, PNG або WebP",
+      "tooLarge": "Файл занадто великий. Максимум 5MB",
+      "tooSmall": "Зображення занадто мале. Мінімум 200x200 пікселів",
+      "tooBig": "Зображення занадто велике. Максимум 2000x2000 пікселів",
+      "invalidImage": "Не вдалося завантажити зображення"
+    },
+    "verification": {
+      "emailNotVerified": "Email не підтверджено",
+      "emailNotVerifiedDescription": "Підтвердіть свій email для повного доступу до платформи",
+      "resendEmail": "Надіслати лист повторно",
+      "resendIn": "Повторити через {seconds}с",
+      "emailSent": "Лист надіслано. Перевірте вашу пошту",
+      "emailSendError": "Не вдалося надіслати лист"
+    },
+    "settings": {
+      "title": "Налаштування",
+      "description": "Керуйте налаштуваннями вашого акаунту",
+      "saveSuccess": "Налаштування збережено",
+      "saveError": "Не вдалося зберегти налаштування",
+      "tabs": {
+        "general": "Загальні",
+        "notifications": "Сповіщення",
+        "privacy": "Конфіденційність"
+      },
+      "general": {
+        "title": "Загальні налаштування",
+        "description": "Мова, часовий пояс та інші параметри",
+        "language": "Мова",
+        "timezone": "Часовий пояс",
+        "darkMode": "Темна тема",
+        "darkModeDescription": "Використовувати темну тему інтерфейсу"
+      },
+      "notifications": {
+        "title": "Налаштування сповіщень",
+        "description": "Керуйте способами отримання сповіщень",
+        "email": "Email сповіщення",
+        "emailDescription": "Отримувати сповіщення на email",
+        "sms": "SMS сповіщення",
+        "smsDescription": "Отримувати сповіщення через SMS"
+      },
+      "privacy": {
+        "title": "Конфіденційність",
+        "description": "Керуйте вашими даними та конфіденційністю",
+        "dataExport": "Експорт даних",
+        "dataExportDescription": "Завантажте копію ваших даних",
+        "exportButton": "Експортувати дані",
+        "exportSuccess": "Дані успішно експортовано",
+        "exportError": "Не вдалося експортувати дані",
+        "dangerZone": "Небезпечна зона",
+        "dangerZoneDescription": "Незворотні дії з вашим акаунтом",
+        "deleteAccount": "Видалити акаунт"
+      }
+    },
+    "account": {
+      "deleteTitle": "Видалення акаунту",
+      "deleteWarning": "Ця дія незворотна",
+      "deleteConsequences": "Що станеться:",
+      "deleteConsequence1": "Всі ваші дані будуть видалені",
+      "deleteConsequence2": "Ваш профіль буде деактивовано",
+      "deleteConsequence3": "Ви втратите доступ до всіх уроків",
+      "exportData": "Експортувати мої дані",
+      "confirmPassword": "Підтвердіть пароль",
+      "enterPassword": "Введіть ваш пароль",
+      "deleteConfirmation": "Я розумію, що мої дані будуть видалені",
+      "deleteAccount": "Видалити акаунт",
+      "deleteSuccess": "Акаунт успішно видалено",
+      "deleteError": "Не вдалося видалити акаунт",
+      "exportSuccess": "Дані успішно експортовано",
+      "exportError": "Не вдалося експортувати дані"
+    },
+    "roleHistory": {
+      "title": "Історія змін ролей",
+      "description": "Історія змін ролей користувача {userName}",
+      "empty": "Історія змін ролей порожня",
+      "date": "Дата",
+      "oldRole": "Стара роль",
+      "newRole": "Нова роль",
+      "changedBy": "Змінив",
+      "reason": "Причина",
+      "loadError": "Не вдалося завантажити історію",
+      "showing": "Показано {from}-{to} з {total}"
+    }
   }
 }

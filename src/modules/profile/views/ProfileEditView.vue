@@ -53,7 +53,7 @@
     <Card class="space-y-6">
       <div class="flex flex-col gap-6 lg:flex-row">
         <div class="flex flex-1 flex-col items-center justify-center gap-4">
-          <AvatarUpload
+          <AvatarUploadWidget
             :image-url="profileStore.avatarUrl"
             :fallback-name="profileStore.fullName || profileStore.user?.email || '?'"
             :disabled="isSaving"
@@ -63,7 +63,31 @@
         </div>
 
         <div class="flex-[2]">
+          <TutorProfileForm
+            v-if="isTutor"
+            v-model="tutorFormData"
+            :disabled="isSaving"
+            :saving="isSaving"
+            :show-publish-toggle="true"
+            :error-message="errorMessage"
+            @submit="handleSubmit"
+            @cancel="goBack"
+            @change="handleFormChange"
+            @publish="handlePublish"
+            @unpublish="handleUnpublish"
+          />
+          <StudentProfileForm
+            v-else-if="isStudent"
+            v-model="studentFormData"
+            :disabled="isSaving"
+            :saving="isSaving"
+            :error-message="errorMessage"
+            @submit="handleSubmit"
+            @cancel="goBack"
+            @change="handleFormChange"
+          />
           <ProfileForm
+            v-else
             v-model="form"
             :errors="formErrors"
             :timezone-options="timezoneOptions"
@@ -152,7 +176,10 @@ import Button from '../../../ui/Button.vue'
 import Card from '../../../ui/Card.vue'
 import Heading from '../../../ui/Heading.vue'
 import AvatarUpload from '../components/AvatarUpload.vue'
+import AvatarUploadWidget from '../components/AvatarUploadWidget.vue'
 import ProfileForm from '../components/ProfileForm.vue'
+import TutorProfileForm from '../components/TutorProfileForm.vue'
+import StudentProfileForm from '../components/StudentProfileForm.vue'
 import { useProfileStore } from '../store/profileStore'
 import { USER_ROLES } from '../../../types/user'
 import { TIMEZONES } from '../../../utils/timezones'
@@ -187,8 +214,25 @@ const isDraftRestoring = ref(false)
 let statusResetTimer = null
 
 const isTutor = computed(() => profileStore.user?.role === USER_ROLES.TUTOR)
+const isStudent = computed(() => profileStore.user?.role === USER_ROLES.STUDENT)
 const isSaving = computed(() => profileStore.saving)
 const errorMessage = computed(() => profileStore.error)
+
+const tutorFormData = reactive({
+  headline: '',
+  bio: '',
+  experience: 0,
+  hourly_rate: 0,
+  currency: 'UAH',
+  is_published: false
+})
+
+const studentFormData = reactive({
+  learning_goals: '',
+  preferred_subjects: [],
+  budget_min: 0,
+  budget_max: 0
+})
 const formattedAutosaveTime = computed(() => formatTime(profileStore.lastAutosavedAt))
 const autosaveBadgeMessage = computed(() => {
   if (autosaveStatus.value === 'saving') return t('profile.autosave.saving')
@@ -352,12 +396,47 @@ function goBack() {
   router.back()
 }
 
-function handleAvatarUpload(file) {
-  profileStore.uploadAvatar(file).catch(() => {})
+async function handleAvatarUpload(file) {
+  try {
+    await profileStore.uploadAvatar(file)
+    captureSnapshot()
+  } catch (err) {
+    console.error('Avatar upload failed', err)
+  }
 }
 
-function handleAvatarDelete() {
-  profileStore.removeAvatar().catch(() => {})
+async function handleAvatarDelete() {
+  try {
+    await profileStore.removeAvatar()
+    captureSnapshot()
+  } catch (err) {
+    console.error('Avatar delete failed', err)
+  }
+}
+
+function handleFormChange() {
+  profileStore.hasUnsavedChanges = true
+}
+
+async function handlePublish() {
+  try {
+    const { publishTutorProfile } = await import('../../../api/users')
+    await publishTutorProfile()
+    tutorFormData.is_published = true
+    notifySuccess(t('users.profile.publishSuccess'))
+  } catch (err) {
+    console.error('Publish failed', err)
+  }
+}
+
+async function handleUnpublish() {
+  try {
+    tutorFormData.is_published = false
+    await profileStore.saveProfile({ is_published: false })
+    notifySuccess(t('users.profile.unpublishSuccess'))
+  } catch (err) {
+    console.error('Unpublish failed', err)
+  }
 }
 
 function addSubject() {

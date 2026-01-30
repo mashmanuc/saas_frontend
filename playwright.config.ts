@@ -53,6 +53,7 @@ export default defineConfig({
       ],
       use: {
         ...devices['Desktop Chrome'],
+        storageState: './tests/e2e/.auth/user.json',
       },
     },
     {

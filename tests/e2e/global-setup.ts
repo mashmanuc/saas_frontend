@@ -387,9 +387,13 @@ async function globalSetup(config: FullConfig) {
     }
 
     const tutorLoginData = await tutorLoginResponse.json()
+    console.log('[global-setup] DEBUG: Login response structure:', JSON.stringify(tutorLoginData, null, 2))
+    
     const { access: tutorAccess, user: tutorUser } = tutorLoginData
 
     if (!tutorAccess || !tutorUser) {
+      console.log('[global-setup] DEBUG: tutorAccess:', tutorAccess)
+      console.log('[global-setup] DEBUG: tutorUser:', tutorUser)
       throw new Error('Tutor login response missing access token or user data')
     }
 

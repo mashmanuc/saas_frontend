@@ -4378,5 +4378,136 @@
       "rejected": "Rejected",
       "expired": "Expired"
     }
+  },
+  "users": {
+    "profile": {
+      "headline": "Headline",
+      "headlinePlaceholder": "E.g.: Experienced Math Teacher",
+      "bio": "About",
+      "bioPlaceholder": "Tell about your experience, teaching approach...",
+      "experience": "Experience (years)",
+      "experiencePlaceholder": "0",
+      "experienceYears": "{years} years of experience",
+      "hourlyRate": "Hourly Rate",
+      "hourlyRatePlaceholder": "0",
+      "hour": "hr",
+      "publishStatus": "Publication Status",
+      "published": "Published",
+      "draft": "Draft",
+      "publish": "Publish",
+      "unpublish": "Unpublish",
+      "learningGoals": "Learning Goals",
+      "learningGoalsPlaceholder": "What would you like to learn?",
+      "preferredSubjects": "Preferred Subjects",
+      "addSubjectPlaceholder": "Add subject",
+      "budgetRange": "Budget",
+      "budgetMin": "Minimum (UAH/hr)",
+      "budgetMax": "Maximum (UAH/hr)",
+      "budgetHint": "Specify your learning budget",
+      "contactTutor": "Contact Tutor",
+      "share": "Share",
+      "about": "About Tutor",
+      "subjects": "Subjects",
+      "certifications": "Certifications",
+      "completeness": {
+        "title": "Profile Completeness",
+        "description": "Complete your profile for better visibility",
+        "progress": "{filled} of {total} fields completed",
+        "missingFields": "Missing fields:",
+        "completeNow": "Complete Now",
+        "complete": "Profile is complete"
+      }
+    },
+    "avatar": {
+      "upload": "Upload photo",
+      "change": "Change photo",
+      "update": "Update",
+      "remove": "Remove",
+      "drop": "Drop file",
+      "hint": "Upload your photo",
+      "formats": "Formats",
+      "maxSize": "Maximum size",
+      "invalidFormat": "Invalid file format. Use JPG, PNG or WebP",
+      "tooLarge": "File is too large. Maximum 5MB",
+      "tooSmall": "Image is too small. Minimum 200x200 pixels",
+      "tooBig": "Image is too large. Maximum 2000x2000 pixels",
+      "invalidImage": "Failed to load image"
+    },
+    "verification": {
+      "emailNotVerified": "Email not verified",
+      "emailNotVerifiedDescription": "Verify your email for full platform access",
+      "resendEmail": "Resend email",
+      "resendIn": "Retry in {seconds}s",
+      "emailSent": "Email sent. Check your inbox",
+      "emailSendError": "Failed to send email"
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "Manage your account settings",
+      "saveSuccess": "Settings saved",
+      "saveError": "Failed to save settings",
+      "tabs": {
+        "general": "General",
+        "notifications": "Notifications",
+        "privacy": "Privacy"
+      },
+      "general": {
+        "title": "General Settings",
+        "description": "Language, timezone and other preferences",
+        "language": "Language",
+        "timezone": "Timezone",
+        "darkMode": "Dark Mode",
+        "darkModeDescription": "Use dark theme for interface"
+      },
+      "notifications": {
+        "title": "Notification Settings",
+        "description": "Manage how you receive notifications",
+        "email": "Email Notifications",
+        "emailDescription": "Receive notifications via email",
+        "sms": "SMS Notifications",
+        "smsDescription": "Receive notifications via SMS"
+      },
+      "privacy": {
+        "title": "Privacy",
+        "description": "Manage your data and privacy",
+        "dataExport": "Data Export",
+        "dataExportDescription": "Download a copy of your data",
+        "exportButton": "Export Data",
+        "exportSuccess": "Data exported successfully",
+        "exportError": "Failed to export data",
+        "dangerZone": "Danger Zone",
+        "dangerZoneDescription": "Irreversible actions with your account",
+        "deleteAccount": "Delete Account"
+      }
+    },
+    "account": {
+      "deleteTitle": "Delete Account",
+      "deleteWarning": "This action is irreversible",
+      "deleteConsequences": "What will happen:",
+      "deleteConsequence1": "All your data will be deleted",
+      "deleteConsequence2": "Your profile will be deactivated",
+      "deleteConsequence3": "You will lose access to all lessons",
+      "exportData": "Export My Data",
+      "confirmPassword": "Confirm Password",
+      "enterPassword": "Enter your password",
+      "deleteConfirmation": "I understand that my data will be deleted",
+      "deleteAccount": "Delete Account",
+      "deleteSuccess": "Account deleted successfully",
+      "deleteError": "Failed to delete account",
+      "exportSuccess": "Data exported successfully",
+      "exportError": "Failed to export data"
+    },
+    "roleHistory": {
+      "title": "Role Change History",
+      "description": "Role change history for user {userName}",
+      "empty": "Role change history is empty",
+      "date": "Date",
+      "oldRole": "Old Role",
+      "newRole": "New Role",
+      "changedBy": "Changed By",
+      "reason": "Reason",
+      "loadError": "Failed to load history",
+      "showing": "Showing {from}-{to} of {total}"
+    }
   }
 }

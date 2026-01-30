@@ -1,0 +1,85 @@
+<template>
+  <div class="space-y-6">
+    <Card>
+      <Heading :level="1">
+        {{ $t('users.settings.title') }}
+      </Heading>
+      <p class="mt-1 text-sm text-muted-foreground">
+        {{ $t('users.settings.description') }}
+      </p>
+    </Card>
+
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-4">
+      <nav class="space-y-1">
+        <button
+          v-for="tab in tabs"
+          :key="tab.id"
+          type="button"
+          class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition"
+          :class="activeTab === tab.id 
+            ? 'bg-primary text-primary-foreground' 
+            : 'text-muted-foreground hover:bg-surface-muted hover:text-foreground'"
+          @click="activeTab = tab.id"
+        >
+          <component :is="tab.icon" class="h-4 w-4" />
+          {{ $t(tab.label) }}
+        </button>
+      </nav>
+
+      <div class="lg:col-span-3">
+        <Card class="space-y-6">
+          <component :is="activeTabComponent" />
+        </Card>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, h } from 'vue'
+import Card from '@/ui/Card.vue'
+import Heading from '@/ui/Heading.vue'
+import GeneralSettingsTab from '../components/settings/GeneralSettingsTab.vue'
+import NotificationsSettingsTab from '../components/settings/NotificationsSettingsTab.vue'
+import PrivacySettingsTab from '../components/settings/PrivacySettingsTab.vue'
+
+const activeTab = ref('general')
+
+const tabs = [
+  { 
+    id: 'general', 
+    label: 'users.settings.tabs.general',
+    icon: () => h('svg', { class: 'h-4 w-4', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor' }, [
+      h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z' }),
+      h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M15 12a3 3 0 11-6 0 3 3 0 016 0z' })
+    ])
+  },
+  { 
+    id: 'notifications', 
+    label: 'users.settings.tabs.notifications',
+    icon: () => h('svg', { class: 'h-4 w-4', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor' }, [
+      h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9' })
+    ])
+  },
+  { 
+    id: 'privacy', 
+    label: 'users.settings.tabs.privacy',
+    icon: () => h('svg', { class: 'h-4 w-4', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor' }, [
+      h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z' })
+    ])
+  }
+]
+
+const activeTabComponent = computed(() => {
+  switch (activeTab.value) {
+    case 'general':
+      return GeneralSettingsTab
+    case 'notifications':
+      return NotificationsSettingsTab
+    case 'privacy':
+      return PrivacySettingsTab
+    default:
+      return GeneralSettingsTab
+  }
+})
+</script>

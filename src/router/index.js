@@ -49,6 +49,7 @@ import { useProfileStore } from '../modules/profile/store/profileStore'
 import { USER_ROLES } from '../types/user'
 import { getDefaultRouteForRole, hasAccess } from '../config/routes'
 import { classroomGuard } from './guards/classroomGuard'
+import { requiresAdminOrOperator } from './guards/adminGuard'
 import { setCurrentRoute } from '@/modules/diagnostics/plugins/errorCollector'
 
 // P0.3: Lighthouse route без auth для стабільного audit
@@ -248,6 +249,29 @@ const routes = [
         name: 'profile-activity',
         component: ProfileActivityView,
         meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
+      },
+      // USERS domain routes
+      {
+        path: 'settings',
+        name: 'user-settings',
+        component: () => import('../modules/profile/views/UserSettingsView.vue'),
+        meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
+      },
+      {
+        path: 'profile/:userId',
+        name: 'tutor-public-profile',
+        component: () => import('../modules/profile/views/TutorProfilePublicView.vue'),
+        meta: { requiresAuth: false },
+      },
+      {
+        path: 'admin/users/:userId/role-history',
+        name: 'admin-role-history',
+        component: () => import('../modules/profile/views/RoleHistoryView.vue'),
+        meta: { 
+          requiresAuth: true,
+          roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN],
+          requiresAdminOrOperator: true
+        },
       },
       {
         path: 'marketplace',
@@ -651,6 +675,16 @@ router.beforeEach(async (to, from, next) => {
     // Use is_staff flag from backend (v0.88.4) or fallback to role check
     const isStaff = user?.is_staff || user?.role === USER_ROLES.ADMIN || user?.role === USER_ROLES.SUPERADMIN
     if (!isStaff) {
+      return next(homeRoute)
+    }
+  }
+
+  // USERS domain: Admin/Operator guard
+  const needsAdminOrOperator = to.matched.some((record) => record.meta?.requiresAdminOrOperator)
+  if (needsAdminOrOperator) {
+    const allowedRoles = [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, 'OPERATOR']
+    const hasAdminAccess = allowedRoles.includes(user?.role)
+    if (!hasAdminAccess) {
       return next(homeRoute)
     }
   }
