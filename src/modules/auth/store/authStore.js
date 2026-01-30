@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import authApi from '../api/authApi'
 import { storage } from '../../../utils/storage'
+import { logAuthEvent, AUTH_EVENTS } from '../../../utils/telemetry/authEvents'
 
 const hasDocument = typeof document !== 'undefined'
 const REFRESH_INTERVAL_MS = 25 * 60 * 1000
@@ -25,12 +26,18 @@ export const useAuthStore = defineStore('auth', {
     sessionExpiredNotified: false,
     showSessionRevokedBanner: false,
     sessionRevokedRequestId: null,
+    lockedUntil: null,
+    trialStatus: null,
   }),
 
   getters: {
     isAuthenticated: (state) => Boolean(state.access && state.user),
     userRole: (state) => state.user?.role || null,
     isBootstrapped: (state) => state.initialized,
+    isAccountLocked: (state) => state.lastErrorCode === 'account_locked',
+    canRequestUnlock: (state) => state.lastErrorCode === 'account_locked',
+    hasTrial: (state) => Boolean(state.trialStatus?.active),
+    trialDaysLeft: (state) => state.trialStatus?.days_left || 0,
   },
 
   actions: {
@@ -85,6 +92,10 @@ export const useAuthStore = defineStore('auth', {
         if (mfaRequired) {
           this.pendingMfaSessionId = typeof sessionId === 'string' && sessionId.trim().length > 0 ? sessionId : null
           this.lastErrorCode = 'mfa_required'
+          logAuthEvent({
+            event: AUTH_EVENTS.MFA_REQUIRED,
+            email: form.email,
+          })
           return { mfa_required: true, session_id: this.pendingMfaSessionId }
         }
 
@@ -95,8 +106,20 @@ export const useAuthStore = defineStore('auth', {
         if (!this.user) {
           await this.reloadUser()
         }
+        logAuthEvent({
+          event: AUTH_EVENTS.LOGIN_SUCCESS,
+          userId: this.user?.id,
+          email: form.email,
+        })
         return this.user
       } catch (error) {
+        logAuthEvent({
+          event: AUTH_EVENTS.LOGIN_FAILED,
+          email: form.email,
+          errorCode: error?.response?.data?.code || error?.response?.data?.error,
+          errorMessage: error?.response?.data?.message,
+          requestId: error?.response?.data?.request_id,
+        })
         this.handleError(error)
         throw error
       } finally {
@@ -121,8 +144,17 @@ export const useAuthStore = defineStore('auth', {
         this.startProactiveRefresh()
         await this.reloadUser()
         this.pendingMfaSessionId = null
+        logAuthEvent({
+          event: AUTH_EVENTS.MFA_VERIFY_SUCCESS,
+          userId: this.user?.id,
+        })
         return this.user
       } catch (error) {
+        logAuthEvent({
+          event: AUTH_EVENTS.MFA_VERIFY_FAILED,
+          errorCode: error?.response?.data?.code,
+          errorMessage: error?.response?.data?.message,
+        })
         this.handleError(error)
         throw error
       } finally {
@@ -371,6 +403,71 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    async requestAccountUnlock(email) {
+      this.loading = true
+      this.error = null
+      this.lastErrorCode = null
+      this.lastRequestId = null
+
+      try {
+        await authApi.requestAccountUnlock({ email })
+        logAuthEvent({
+          event: AUTH_EVENTS.UNLOCK_REQUESTED,
+          email,
+        })
+        return { success: true }
+      } catch (error) {
+        logAuthEvent({
+          event: AUTH_EVENTS.UNLOCK_FAILED,
+          email,
+          errorCode: error?.response?.data?.code,
+          errorMessage: error?.response?.data?.message,
+        })
+        this.handleError(error)
+        throw error
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async confirmAccountUnlock(token) {
+      this.loading = true
+      this.error = null
+      this.lastErrorCode = null
+      this.lastRequestId = null
+
+      try {
+        await authApi.confirmAccountUnlock({ token })
+        this.lockedUntil = null
+        this.lastErrorCode = null
+        logAuthEvent({
+          event: AUTH_EVENTS.UNLOCK_CONFIRMED,
+        })
+        return { success: true }
+      } catch (error) {
+        logAuthEvent({
+          event: AUTH_EVENTS.UNLOCK_FAILED,
+          errorCode: error?.response?.data?.code,
+          errorMessage: error?.response?.data?.message,
+        })
+        this.handleError(error)
+        throw error
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async fetchTrialStatus() {
+      try {
+        const res = await authApi.getCurrentUser()
+        if (res?.trial_status) {
+          this.trialStatus = res.trial_status
+        }
+      } catch (error) {
+        console.error('Failed to fetch trial status', error)
+      }
+    },
+
     dispose() {
       this.stopProactiveRefresh()
       this.refreshPromise = null
@@ -421,6 +518,10 @@ export const useAuthStore = defineStore('auth', {
       if (status === 423) {
         this.lastErrorCode = 'account_locked'
         const message = data && typeof data === 'object' ? data.message : null
+        const details = data && typeof data === 'object' ? data.details : null
+        if (details && details.locked_until) {
+          this.lockedUntil = details.locked_until
+        }
         this.error = withRequestId(userMessage(typeof message === 'string' && message.trim().length > 0 ? message : 'Акаунт тимчасово заблоковано.'))
         return
       }

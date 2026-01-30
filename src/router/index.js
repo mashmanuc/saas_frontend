@@ -72,21 +72,23 @@ const routes = [
   {
     path: '/auth',
     component: AuthLayout,
+    meta: { requiresAuth: false },
     children: [
-      { path: 'login', name: 'login', component: LoginView },
-      { path: 'register', name: 'register', component: RegisterView },
-      { path: 'check-email', name: 'auth-check-email', component: CheckEmailView },
-      { path: 'verify-email', name: 'auth-verify-email', component: VerifyEmailView },
-      { path: 'forgot-password', name: 'auth-forgot-password', component: ForgotPasswordView },
-      { path: 'reset-password', name: 'auth-reset-password', component: ResetPasswordView },
+      { path: 'login', name: 'login', component: LoginView, meta: { requiresAuth: false } },
+      { path: 'register', name: 'register', component: RegisterView, meta: { requiresAuth: false } },
+      { path: 'check-email', name: 'auth-check-email', component: CheckEmailView, meta: { requiresAuth: false } },
+      { path: 'verify-email', name: 'auth-verify-email', component: VerifyEmailView, meta: { requiresAuth: false } },
+      { path: 'forgot-password', name: 'auth-forgot-password', component: ForgotPasswordView, meta: { requiresAuth: false } },
+      { path: 'reset-password', name: 'auth-reset-password', component: ResetPasswordView, meta: { requiresAuth: false } },
     ],
   },
   {
     path: '/invite',
     component: AuthLayout,
+    meta: { requiresAuth: false },
     children: [
-      { path: 'validation/:token', name: 'invite-validation', component: InviteValidationView },
-      { path: 'accept/:token', name: 'invite-accept', component: InviteAcceptView },
+      { path: 'validation/:token', name: 'invite-validation', component: InviteValidationView, meta: { requiresAuth: false } },
+      { path: 'accept/:token', name: 'invite-accept', component: InviteAcceptView, meta: { requiresAuth: false } },
     ],
   },
   {
@@ -611,8 +613,14 @@ router.beforeEach(async (to, from, next) => {
   const homeRoute = user?.is_staff ? '/staff' : (user?.role ? getDefaultRouteForRole(user.role) : '/auth/login')
   const isAuthRoute = to.path.startsWith('/auth')
   const isInviteRoute = to.path.startsWith('/invite')
-  const requiresAuth = to.matched.some((record) => record.meta?.requiresAuth)
+  const requiresAuth = to.matched.some((record) => record.meta?.requiresAuth !== false && record.meta?.requiresAuth !== undefined ? record.meta.requiresAuth : true)
+  const isPublicRoute = to.matched.some((record) => record.meta?.requiresAuth === false)
   const hasRoleAccess = hasAccess(user, to)
+
+  // Public routes (requiresAuth: false) - завжди пропускаємо
+  if (isPublicRoute) {
+    return next()
+  }
 
   if (!isAuthenticated) {
     if (isAuthRoute || isInviteRoute) {

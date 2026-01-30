@@ -14,7 +14,7 @@ export default defineConfig({
     timeout: 10000
   },
   reporter: process.env.CI ? [['list'], ['html']] : [['list']],
-  globalSetup: './tests/e2e/global-setup.ts',
+  globalSetup: process.env.PLAYWRIGHT_PROJECT === 'ui-smoke' ? undefined : './tests/e2e/global-setup.ts',
   use: {
     baseURL: DEFAULT_BASE_URL,
     storageState: './tests/e2e/.auth/user.json',
@@ -33,9 +33,12 @@ export default defineConfig({
   projects: [
     {
       name: 'ui-smoke',
-      testMatch: /.*\.smoke\.spec\.ts/,
+      testDir: './tests/ui',
+      testMatch: /.*\.spec\.ts/,
       use: {
         ...devices['Desktop Chrome'],
+        baseURL: DEFAULT_BASE_URL,
+        storageState: { cookies: [], origins: [] },
       },
     },
     {

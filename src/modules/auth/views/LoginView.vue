@@ -1,5 +1,13 @@
 <template>
   <Card class="space-y-6">
+    <div v-if="auth.isAccountLocked && auth.lockedUntil" class="rounded-lg border border-red-300 bg-red-50 p-4">
+      <p class="text-sm font-semibold text-red-800">{{ $t('auth.login.accountLocked') }}</p>
+      <p class="text-sm text-red-700 mt-1">{{ $t('auth.login.lockedUntil', { until: formatLockedUntil(auth.lockedUntil) }) }}</p>
+      <Button variant="outline" size="sm" class="mt-3" @click="showUnlockModal = true">
+        {{ $t('auth.login.requestUnlock') }}
+      </Button>
+    </div>
+
     <header class="space-y-1">
       <h1 class="text-xl font-semibold">{{ step === 'otp' ? $t('auth.login.otpTitle') : $t('auth.login.title') }}</h1>
       <p class="text-sm" style="color: var(--text-secondary);">
@@ -116,6 +124,12 @@
     </template>
   </OnboardingModal>
 
+  <UnlockConfirmModal
+    :show="showUnlockModal"
+    @close="showUnlockModal = false"
+    @success="handleUnlockSuccess"
+  />
+
   <WebAuthnPrompt
     :show="showWebAuthnPrompt"
     :challenge="auth.webAuthnChallenge"
@@ -136,6 +150,7 @@ import Input from '../../../ui/Input.vue'
 import { getDefaultRouteForRole } from '../../../config/routes'
 import OnboardingModal from '../../onboarding/components/widgets/OnboardingModal.vue'
 import WebAuthnPrompt from '../components/WebAuthnPrompt.vue'
+import UnlockConfirmModal from '../components/UnlockConfirmModal.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -150,6 +165,7 @@ const form = reactive({
 const step = ref('password')
 const otp = ref('')
 const showWebAuthnPrompt = ref(false)
+const showUnlockModal = ref(false)
 
 // v0.82.0: Локальна валідація перед запитом
 const validationErrors = reactive({
@@ -333,5 +349,21 @@ function handleWebAuthnFallback() {
 function handleWebAuthnCancel() {
   showWebAuthnPrompt.value = false
   auth.pendingWebAuthnSessionId = null
+}
+
+function handleUnlockSuccess() {
+  showUnlockModal.value = false
+  auth.lockedUntil = null
+  auth.lastErrorCode = null
+}
+
+function formatLockedUntil(dateString) {
+  if (!dateString) return ''
+  try {
+    const date = new Date(dateString)
+    return date.toLocaleString()
+  } catch {
+    return dateString
+  }
 }
 </script>

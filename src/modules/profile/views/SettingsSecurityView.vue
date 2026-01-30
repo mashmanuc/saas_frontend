@@ -26,69 +26,7 @@
       <p v-if="lastRequestId" class="mt-1 text-xs opacity-80">Request ID: {{ lastRequestId }}</p>
     </div>
 
-    <Card class="space-y-6">
-      <div class="space-y-2">
-        <p class="text-sm font-semibold text-foreground">{{ $t('profile.security.mfa.title') }}</p>
-        <p class="text-sm text-muted-foreground">{{ $t('profile.security.mfa.subtitle') }}</p>
-      </div>
-
-      <div v-if="step === 'idle'" class="space-y-4">
-        <Button variant="primary" :disabled="loading" :loading="loading" @click="startSetup">
-          {{ $t('profile.security.mfa.start') }}
-        </Button>
-        <Button variant="outline" :disabled="loading" @click="showBackupCodes = true">
-          {{ $t('profile.security.mfa.viewBackupCodes') }}
-        </Button>
-      </div>
-
-      <div v-else-if="step === 'setup'" class="space-y-6">
-        <div class="space-y-2">
-          <p class="text-sm font-semibold text-foreground">{{ $t('profile.security.mfa.qrTitle') }}</p>
-          <p class="text-sm text-muted-foreground">{{ $t('profile.security.mfa.qrSubtitle') }}</p>
-        </div>
-
-        <div v-if="qrSvg" class="rounded-lg border bg-white p-4 text-center" v-html="qrSvg" />
-
-        <div v-if="secretHint" class="text-sm text-muted-foreground">
-          {{ $t('profile.security.mfa.secretHintLabel') }}: <span class="font-medium text-foreground">{{ secretHint }}</span>
-        </div>
-
-        <div v-if="backupCodes.length" class="space-y-2">
-          <p class="text-sm font-semibold text-foreground">{{ $t('profile.security.mfa.backupCodesTitle') }}</p>
-          <p class="text-sm text-muted-foreground">{{ $t('profile.security.mfa.backupCodesSubtitle') }}</p>
-          <div class="grid gap-2 sm:grid-cols-2">
-            <code v-for="code in backupCodes" :key="code" class="rounded border bg-muted px-3 py-2 text-sm">
-              {{ code }}
-            </code>
-          </div>
-        </div>
-
-        <form class="space-y-4" @submit.prevent="confirmSetup">
-          <Input
-            :label="$t('profile.security.mfa.otpLabel')"
-            v-model="otp"
-            :disabled="loading"
-            required
-            inputmode="numeric"
-            autocomplete="one-time-code"
-          />
-          <div class="flex flex-wrap gap-2">
-            <Button variant="primary" type="submit" :disabled="loading" :loading="loading">
-              {{ $t('profile.security.mfa.confirm') }}
-            </Button>
-            <Button variant="outline" type="button" :disabled="loading" @click="reset">
-              {{ $t('profile.security.mfa.cancel') }}
-            </Button>
-          </div>
-        </form>
-      </div>
-
-      <div v-else class="space-y-4">
-        <Button variant="outline" type="button" @click="reset">
-          {{ $t('profile.security.mfa.reset') }}
-        </Button>
-      </div>
-    </Card>
+    <MFAStatusWidget />
 
     <Card class="space-y-6">
       <div class="space-y-2">
@@ -204,6 +142,7 @@ import Input from '../../../ui/Input.vue'
 import authApi from '../../auth/api/authApi'
 import WebAuthnEnrollModal from '../../auth/components/WebAuthnEnrollModal.vue'
 import BackupCodesModal from '../../auth/components/BackupCodesModal.vue'
+import MFAStatusWidget from '../../auth/components/MFAStatusWidget.vue'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -211,12 +150,6 @@ const { t } = useI18n()
 const loading = ref(false)
 const error = ref('')
 const success = ref('')
-
-const step = ref('idle')
-const qrSvg = ref('')
-const secretHint = ref('')
-const backupCodes = ref([])
-const otp = ref('')
 
 const sessionsLoading = ref(false)
 const sessions = ref([])
@@ -259,49 +192,6 @@ async function revokeCredential(credentialId) {
     lastRequestId.value = err?.response?.data?.request_id || ''
   } finally {
     credentialRevokeId.value = null
-  }
-}
-
-function reset() {
-  loading.value = false
-  error.value = ''
-  success.value = ''
-  step.value = 'idle'
-  qrSvg.value = ''
-  secretHint.value = ''
-  backupCodes.value = []
-  otp.value = ''
-}
-
-async function startSetup() {
-  error.value = ''
-  success.value = ''
-  loading.value = true
-  try {
-    const res = await authApi.mfaSetup({ method: 'totp' })
-    qrSvg.value = res?.qr_svg || ''
-    secretHint.value = res?.secret_hint || ''
-    backupCodes.value = Array.isArray(res?.backup_codes) ? res.backup_codes : []
-    step.value = 'setup'
-  } catch (err) {
-    error.value = err?.response?.data?.message || err?.response?.data?.detail || t('profile.security.mfa.errors.setupFailed')
-  } finally {
-    loading.value = false
-  }
-}
-
-async function confirmSetup() {
-  error.value = ''
-  success.value = ''
-  loading.value = true
-  try {
-    await authApi.mfaConfirm({ otp: otp.value })
-    success.value = t('profile.security.mfa.success.enabled')
-    step.value = 'done'
-  } catch (err) {
-    error.value = err?.response?.data?.message || err?.response?.data?.detail || t('profile.security.mfa.errors.confirmFailed')
-  } finally {
-    loading.value = false
   }
 }
 

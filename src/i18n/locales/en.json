@@ -446,6 +446,9 @@
       "resendVerifyCta": "Resend verification email",
       "noAccount": "Don't have an account?",
       "registerLink": "Register",
+      "accountLocked": "Account locked",
+      "lockedUntil": "Locked until {until}",
+      "requestUnlock": "Request unlock",
       "webauthn": {},
       "errors": {
         "invalidCredentials": "Invalid email or password.",
@@ -569,6 +572,108 @@
         "attestationInvalid": "Invalid WebAuthn attestation. Please try again.",
         "challengeExpired": "WebAuthn challenge expired. Please retry.",
         "invalidAssertion": "Invalid WebAuthn assertion. Please try again."
+      }
+    },
+    "mfa": {
+      "setup": {
+        "title": "Set up two-factor authentication",
+        "description": "Scan the QR code with your authenticator app (Google Authenticator, Authy, etc.)",
+        "secretLabel": "Or enter the code manually",
+        "backupCodesTitle": "Backup codes",
+        "backupCodesDescription": "Save these codes in a safe place. Each code can only be used once.",
+        "downloadCodes": "Download codes",
+        "otpLabel": "Verification code",
+        "confirm": "Confirm",
+        "cancel": "Cancel",
+        "successMessage": "Two-factor authentication successfully set up",
+        "close": "Close",
+        "errors": {
+          "initFailed": "Failed to initialize MFA setup",
+          "invalidCode": "Invalid verification code",
+          "confirmFailed": "Failed to confirm MFA setup"
+        }
+      },
+      "verify": {
+        "title": "Verify login",
+        "description": "Enter the code from your authenticator app",
+        "otpLabel": "Verification code",
+        "submit": "Verify",
+        "cancel": "Cancel",
+        "useBackupCode": "Use backup code",
+        "errors": {
+          "invalidCode": "Invalid verification code",
+          "verifyFailed": "Failed to verify code"
+        }
+      },
+      "status": {
+        "title": "Two-factor authentication",
+        "subtitle": "Additional security layer for your account",
+        "enabled": "Two-factor authentication is enabled",
+        "disabled": "Two-factor authentication is disabled",
+        "enable": "Enable MFA",
+        "disable": "Disable MFA",
+        "regenerateCodes": "Regenerate backup codes",
+        "viewCodes": "View backup codes",
+        "disableConfirm": "Are you sure you want to disable two-factor authentication?",
+        "passwordPrompt": "Enter your password to confirm",
+        "disableSuccess": "Two-factor authentication disabled",
+        "regenerateConfirm": "Are you sure you want to regenerate backup codes? Old codes will stop working.",
+        "regenerateSuccess": "Backup codes successfully regenerated",
+        "enableSuccess": "Two-factor authentication successfully enabled",
+        "errors": {
+          "disableFailed": "Failed to disable MFA",
+          "regenerateFailed": "Failed to regenerate backup codes"
+        }
+      }
+    },
+    "unlock": {
+      "request": {
+        "title": "Request account unlock",
+        "description": "Enter your email and we'll send unlock instructions",
+        "emailLabel": "Email",
+        "submit": "Send request",
+        "loading": "Sending...",
+        "successMessage": "Instructions sent to your email",
+        "backToLogin": "Back to login",
+        "errors": {
+          "requiredEmail": "Enter email",
+          "requestFailed": "Failed to send request"
+        }
+      },
+      "confirm": {
+        "title": "Confirm unlock",
+        "description": "Enter the code from email to unlock your account",
+        "tokenLabel": "Unlock code",
+        "submit": "Unlock",
+        "cancel": "Cancel",
+        "successMessage": "Account successfully unlocked. You can now log in.",
+        "errors": {
+          "requiredToken": "Enter unlock code",
+          "invalidToken": "Invalid or expired code",
+          "confirmFailed": "Failed to unlock account"
+        }
+      }
+    },
+    "trial": {
+      "banner": {
+        "title": "You have {days} days left in your trial",
+        "lastDay": "Last day of trial period",
+        "description": "Enjoy all platform features",
+        "expiringSoonDescription": "Upgrade your plan to continue using all features",
+        "upgradeButton": "Upgrade plan"
+      },
+      "status": {
+        "title": "Trial period",
+        "subtitle": "Your trial period status",
+        "daysRemaining": "Days remaining",
+        "active": "Trial period active",
+        "expiringSoon": "Trial period expiring soon",
+        "lastDay": "Last day of trial period",
+        "notActive": "Trial period not active",
+        "activeDescription": "You have {days} days to test the platform",
+        "expiringSoonDescription": "{days} days left. Upgrade your plan in time.",
+        "lastDayDescription": "This is the last day of your trial period",
+        "upgradeButton": "Upgrade plan"
       }
     }
   },

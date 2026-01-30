@@ -1,5 +1,12 @@
 <template>
   <div class="space-y-6">
+    <TrialBanner
+      v-if="auth.hasTrial"
+      :days-left="auth.trialDaysLeft"
+      :trial-active="auth.hasTrial"
+      :dismissible="true"
+    />
+    
     <Card class="space-y-2">
       <Heading :level="1">
         {{ $t('menu.studentDashboard') }}
@@ -51,13 +58,16 @@ import { useI18n } from 'vue-i18n'
 import Card from '../../../ui/Card.vue'
 import Heading from '../../../ui/Heading.vue'
 import { useDashboardStore } from '../store/dashboardStore'
+import { useAuthStore } from '../../auth/store/authStore'
 import StudentActiveTutorsSection from '../components/StudentActiveTutorsSection.vue'
 import StudentUpcomingLessonsSection from '../components/StudentUpcomingLessonsSection.vue'
 import TutorSearchView from '../../tutor/views/TutorSearchView.vue'
+import TrialBanner from '../../auth/components/TrialBanner.vue'
 
 const router = useRouter()
 const { t } = useI18n()
 const dashboardStore = useDashboardStore()
+const auth = useAuthStore()
 
 const hasActiveTutors = computed(() => dashboardStore.hasActiveTutors)
 

@@ -1,5 +1,12 @@
 <template>
   <div class="space-y-6">
+    <TrialBanner
+      v-if="auth.hasTrial"
+      :days-left="auth.trialDaysLeft"
+      :trial-active="auth.hasTrial"
+      :dismissible="true"
+    />
+    
     <Card class="space-y-4">
       <header class="space-y-1">
         <h1 class="text-2xl font-semibold text-body">{{ $t('dashboard.tutor.title') }}</h1>
@@ -261,6 +268,7 @@ import { useAuthStore } from '../../auth/store/authStore'
 import { useDashboardStore } from '../store/dashboardStore'
 import { useRelationsStore } from '../../../stores/relationsStore'
 import { usePresenceStore } from '../../../stores/presenceStore'
+import TrialBanner from '../../auth/components/TrialBanner.vue'
 import { notifySuccess, notifyError, notifyWarning } from '../../../utils/notify'
 import { getMessageAction } from '@/utils/relationsUi'
 import marketplaceApi from '../../marketplace/api/marketplace'
