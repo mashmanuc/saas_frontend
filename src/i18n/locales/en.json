@@ -40,6 +40,11 @@
       "expired": "The time to join has passed. The lesson has ended",
       "noAccess": "You don't have access to this lesson",
       "notFound": "Lesson not found"
+    },
+    "profile": {
+      "editTitle": "Edit student profile",
+      "editDescription": "Update your information",
+      "saveSuccess": "Profile saved successfully"
     }
   },
   "limits": {
@@ -419,9 +424,21 @@
     }
   },
   "ui": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving...",
+    "add": "Add",
+    "dismiss": "Dismiss",
+    "reset": "Reset",
+    "back": "Back",
+    "loading": "Loading...",
+    "previous": "Previous",
+    "next": "Next",
+    "copied": "Copied",
+    "error": "Error",
     "emptyState": {
       "defaultTitle": "Nothing here yet",
-      "defaultDescription": "There is no data to show right now."
+      "defaultDescription": "No data to display."
     }
   },
   "auth": {
@@ -581,6 +598,7 @@
         "secretLabel": "Or enter the code manually",
         "backupCodesTitle": "Backup codes",
         "backupCodesDescription": "Save these codes in a safe place. Each code can only be used once.",
+        "backupCodesNotAvailable": "Backup codes not available",
         "downloadCodes": "Download codes",
         "otpLabel": "Verification code",
         "confirm": "Confirm",
@@ -608,21 +626,27 @@
       "status": {
         "title": "Two-factor authentication",
         "subtitle": "Additional security layer for your account",
-        "enabled": "Two-factor authentication is enabled",
-        "disabled": "Two-factor authentication is disabled",
+        "enabled": "Two-factor authentication enabled",
+        "disabled": "Two-factor authentication disabled",
         "enable": "Enable MFA",
         "disable": "Disable MFA",
         "regenerateCodes": "Regenerate backup codes",
         "viewCodes": "View backup codes",
+        "backupCodesInfoTitle": "Backup codes for account recovery",
+        "backupCodesInfoDescription": "Backup codes are shown only once during MFA setup. Save them in a secure location. If you lost your codes, disable and re-enable MFA.",
         "disableConfirm": "Are you sure you want to disable two-factor authentication?",
         "passwordPrompt": "Enter your password to confirm",
+        "otpPrompt": "Enter verification code from authenticator app",
         "disableSuccess": "Two-factor authentication disabled",
         "regenerateConfirm": "Are you sure you want to regenerate backup codes? Old codes will stop working.",
         "regenerateSuccess": "Backup codes successfully regenerated",
         "enableSuccess": "Two-factor authentication successfully enabled",
         "errors": {
           "disableFailed": "Failed to disable MFA",
-          "regenerateFailed": "Failed to regenerate backup codes"
+          "regenerateFailed": "Failed to regenerate backup codes",
+          "invalidOtpFormat": "Code must contain 6 digits",
+          "invalidOtpCode": "Invalid verification code. Check the code in your authenticator app",
+          "mfaNotEnabled": "Two-factor authentication is not enabled"
         }
       }
     },
@@ -688,7 +712,9 @@
     "tutorCalendar": "Tutor calendar",
     "soloWorkspace": "Solo workspace",
     "profile": "Profile",
-    "tutorProfile": "Tutor profile"
+    "tutorProfile": "Tutor profile",
+    "account": "Account",
+    "settings": "Settings"
   },
   "marketplace": {
     "title": "Find a Tutor",
@@ -862,11 +888,6 @@
     "weekdays": {
       "short": {}
     },
-    "availability": {
-      "title": "Tutor availability",
-      "empty": "No available slots",
-      "loadError": "Failed to load availability slots."
-    },
     "calendar": {
       "errorHorizon": "Cannot load calendar beyond 4 weeks",
       "errorLoad": "Failed to load availability",
@@ -985,6 +1006,7 @@
       "validationFailed": "Validation error"
     },
     "profile": {
+      "completenessScore": "Completed",
       "title": "Tutor profile",
       "viewPublic": "View public profile",
       "backToCatalog": "Back to catalog",
@@ -1257,7 +1279,12 @@
     "noAvailableSlots": "No slots available",
     "availableTimes": "Available Times",
     "failedToLoadCalendar": "Failed to Load Calendar",
-    "noAvailableTimes": "No Available Times"
+    "noAvailableTimes": "No Available Times",
+    "availability": {
+      "title": "Tutor availability",
+      "empty": "No available slots",
+      "loadError": "Failed to load availability."
+    }
   },
   "operator": {
     "console": {
@@ -1573,6 +1600,41 @@
     }
   },
   "tutor": {
+    "profile": {
+      "title": "Tutor Profile",
+      "subtitle": "Manage your public profile",
+      "editTitle": "Edit Tutor Profile",
+      "editDescription": "Update your information for students",
+      "editButton": "Edit",
+      "previewButton": "Preview",
+      "saveSuccess": "Profile saved successfully",
+      "publishSuccess": "Profile published",
+      "unpublishSuccess": "Profile unpublished",
+      "publishStatus": "Publication Status",
+      "published": "Published",
+      "draft": "Draft",
+      "live": "Live",
+      "notPublished": "Not Published",
+      "publish": "Publish",
+      "unpublish": "Unpublish",
+      "headline": "Headline",
+      "headlinePlaceholder": "e.g. Experienced Math Teacher",
+      "bio": "Biography",
+      "bioPlaceholder": "Tell about your experience and teaching approach...",
+      "bioEmpty": "Biography not filled",
+      "experience": "Experience (years)",
+      "experiencePlaceholder": "Years of teaching",
+      "hourlyRate": "Hourly Rate",
+      "hourlyRatePlaceholder": "Your rate",
+      "currency": "Currency",
+      "subjects": "Subjects",
+      "subjectsEmpty": "No subjects added",
+      "completeness": {
+        "title": "Profile Completeness",
+        "score": "Completed",
+        "missing": "Missing fields"
+      }
+    },
     "activity": {
       "banner": {
         "active": {
@@ -2933,11 +2995,11 @@
     "status": "Статус",
     "availability": {
       "jobInProgress": "Please wait for the current operation to complete",
-      "enforcementBlocked": "Publishing availability is unavailable due to activity status. Respond to student inquiries to restore access.",
       "conflictsDetected": "Conflicts detected on days: {days}",
       "notifications": {
         "saveSuccess": "Availability saved successfully!",
-        "saveError": "Failed to save availability. Please try again."
+        "saveError": "Failed to save availability. Please try again.",
+        "enforcementBlocked": "Availability editing is blocked due to inactivity. Respond to student inquiries to unlock."
       },
       "actions": {
         "reset": "Reset Changes",
@@ -4383,6 +4445,7 @@
     "profile": {
       "headline": "Headline",
       "headlinePlaceholder": "E.g.: Experienced Math Teacher",
+      "notFound": "Profile not found",
       "bio": "About",
       "bioPlaceholder": "Tell about your experience, teaching approach...",
       "experience": "Experience (years)",

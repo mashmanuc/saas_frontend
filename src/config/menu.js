@@ -14,18 +14,19 @@ export const MENU_BY_ROLE = {
   tutor: [
     { label: 'menu.dashboard', icon: 'home', to: '/tutor' },
     { label: 'menu.classrooms', icon: 'class', to: '/dashboard/classrooms' },
-    { label: 'menu.students', icon: 'users', to: '/tutor/students' },
     { label: 'menu.tutorCalendar', icon: 'book', to: '/booking/tutor' },
     { label: 'menu.soloWorkspace', icon: 'edit', to: '/solo' },
-    { label: 'menu.profile', icon: 'user', to: '/dashboard/profile' },
-    { label: 'menu.tutorProfile', icon: 'users', to: '/marketplace/my-profile' },
+    { label: 'menu.tutorProfile', icon: 'briefcase', to: '/tutor/profile' },
+    { label: 'menu.account', icon: 'user', to: '/dashboard/profile' },
+    { label: 'menu.settings', icon: 'settings', to: '/settings' },
   ],
   student: [
     { label: 'menu.dashboard', icon: 'home', to: '/student' },
     { label: 'menu.marketplace', icon: 'users', to: '/marketplace' },
     { label: 'menu.calendar', icon: 'calendar', to: '/calendar' },
     { label: 'menu.soloWorkspace', icon: 'edit', to: '/solo' },
-    { label: 'menu.profile', icon: 'user', to: '/dashboard/profile' },
+    { label: 'menu.account', icon: 'user', to: '/dashboard/profile' },
+    { label: 'menu.settings', icon: 'settings', to: '/settings' },
   ],
 }
 

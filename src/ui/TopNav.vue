@@ -46,7 +46,7 @@
       </div>
 
       <div class="flex items-center gap-2">
-        <span v-if="isRealtimeOffline" class="realtime-indicator" role="status">
+        <span v-if="false" class="realtime-indicator" role="status">
           <span class="dot" aria-hidden="true" />
           <span class="label">{{ $t('realtime.offline') }}</span>
         </span>

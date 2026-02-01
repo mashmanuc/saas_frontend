@@ -109,7 +109,7 @@ function handleQuickAddLanguage(langCode: string) {
             :value="newLanguageCode"
             class="language-select"
             :aria-label="t('marketplace.profile.editor.selectLanguage')"
-            @input="emit('update:newLanguageCode', ($event.target as HTMLSelectElement).value)"
+            @change="emit('update:newLanguageCode', ($event.target as HTMLSelectElement).value)"
           >
             <option value="">{{ t('marketplace.profile.editor.selectLanguage') }}</option>
             <option
@@ -126,7 +126,7 @@ function handleQuickAddLanguage(langCode: string) {
           :value="newLanguageLevel"
           class="level-select"
           :aria-label="t('marketplace.profile.editor.selectLevel') || 'Оберіть рівень'"
-          @input="emit('update:newLanguageLevel', ($event.target as HTMLSelectElement).value as LanguageLevel)"
+          @change="emit('update:newLanguageLevel', ($event.target as HTMLSelectElement).value as LanguageLevel)"
         >
           <option v-for="level in languageLevels" :key="level.value" :value="level.value">
             {{ level.label }}
@@ -169,7 +169,7 @@ function handleQuickAddLanguage(langCode: string) {
             :value="tl.level"
             class="level-select-inline"
             :aria-label="`${t('marketplace.profile.editor.levelFor') || 'Рівень для'} ${getLanguageTitle(tl.code)}`"
-            @input="handleUpdateLevel(tl.code, ($event.target as HTMLSelectElement).value as LanguageLevel)"
+            @change="handleUpdateLevel(tl.code, ($event.target as HTMLSelectElement).value as LanguageLevel)"
           >
             <option v-for="level in languageLevels" :key="level.value" :value="level.value">
               {{ level.label }}

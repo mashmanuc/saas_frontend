@@ -17,6 +17,15 @@
             <p>{{ $t('common.loading') }}</p>
           </div>
 
+          <div v-else-if="infoMessage" class="info-box">
+            <AlertCircle :size="18" />
+            <div>
+              <p class="info-title">{{ $t('profile.security.mfa.backupCodesNotAvailable') }}</p>
+              <p class="info-text">{{ infoMessage }}</p>
+              <p v-if="requestId" class="request-id">Request ID: {{ requestId }}</p>
+            </div>
+          </div>
+
           <div v-else-if="error" class="error-box">
             <AlertCircle :size="18" />
             <div>
@@ -84,6 +93,7 @@ const { t } = useI18n()
 
 const loading = ref(false)
 const error = ref('')
+const infoMessage = ref('')
 const requestId = ref('')
 const codes = ref([])
 const copied = ref(false)
@@ -97,13 +107,14 @@ watch(() => props.show, async (newVal) => {
 async function loadCodes() {
   loading.value = true
   error.value = ''
+  infoMessage.value = ''
   requestId.value = ''
   copied.value = false
   
   try {
     // Request token first
     const tokenRes = await authApi.requestBackupCodesToken()
-    const token = tokenRes?.token
+    const token = tokenRes?.download_token
     
     if (!token) {
       throw new Error('No token received')
@@ -111,9 +122,17 @@ async function loadCodes() {
     
     // Get codes with token
     const res = await authApi.getBackupCodesWithToken(token)
-    codes.value = Array.isArray(res?.codes) ? res.codes : []
+    
+    // Backend повертає тільки повідомлення, що коди були показані при setup
+    // Показуємо це повідомлення як інформаційне, а не помилку
+    if (res?.message) {
+      infoMessage.value = res.message
+      codes.value = []
+    } else {
+      codes.value = Array.isArray(res?.codes) ? res.codes : []
+    }
   } catch (err) {
-    error.value = err?.response?.data?.message || t('profile.security.mfa.errors.loadCodesFailed')
+    error.value = err?.response?.data?.detail || err?.response?.data?.message || t('profile.security.mfa.errors.loadCodesFailed')
     requestId.value = err?.response?.data?.request_id || ''
   } finally {
     loading.value = false
@@ -272,6 +291,33 @@ function handleClose() {
 .error-box p {
   margin: 0;
   flex: 1;
+}
+
+.info-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: var(--radius-md, 8px);
+  font-size: 0.875rem;
+  background: var(--info-bg, #dbeafe);
+  color: var(--info, #1e40af);
+  border: 1px solid var(--info-border, #93c5fd);
+}
+
+.info-box > div {
+  flex: 1;
+}
+
+.info-title {
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9375rem;
+}
+
+.info-text {
+  margin: 0;
+  line-height: 1.5;
 }
 
 .request-id {

@@ -14,12 +14,15 @@
         <Button variant="outline" :disabled="loading" @click="handleDisable">
           {{ $t('auth.mfa.status.disable') }}
         </Button>
-        <Button variant="outline" :disabled="loading" @click="handleRegenerateCodes">
-          {{ $t('auth.mfa.status.regenerateCodes') }}
-        </Button>
-        <Button variant="outline" :disabled="loading" @click="handleViewCodes">
-          {{ $t('auth.mfa.status.viewCodes') }}
-        </Button>
+      </div>
+
+      <div class="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+        <p class="font-semibold">
+          {{ $t('auth.mfa.status.backupCodesInfoTitle') }}
+        </p>
+        <p class="mt-1">
+          {{ $t('auth.mfa.status.backupCodesInfoDescription') }}
+        </p>
       </div>
     </div>
 
@@ -47,10 +50,6 @@
       @success="handleSetupSuccess"
     />
 
-    <BackupCodesModal
-      :show="showBackupCodesModal"
-      @close="showBackupCodesModal = false"
-    />
   </Card>
 </template>
 
@@ -60,8 +59,8 @@ import { useI18n } from 'vue-i18n'
 import Card from '@/ui/Card.vue'
 import Button from '@/ui/Button.vue'
 import MFASetupModal from './MFASetupModal.vue'
-import BackupCodesModal from './BackupCodesModal.vue'
 import mfaApi from '@/api/mfa'
+import authApi from '../api/authApi'
 import { logAuthEvent, AUTH_EVENTS } from '@/utils/telemetry/authEvents'
 
 const { t } = useI18n()
@@ -71,7 +70,6 @@ const error = ref('')
 const success = ref('')
 const mfaEnabled = ref(false)
 const showSetupModal = ref(false)
-const showBackupCodesModal = ref(false)
 
 onMounted(() => {
   checkMfaStatus()
@@ -79,8 +77,8 @@ onMounted(() => {
 
 async function checkMfaStatus() {
   try {
-    const res = await mfaApi.getBackupCodes()
-    mfaEnabled.value = Array.isArray(res.codes) && res.codes.length > 0
+    const res = await authApi.getMfaStatus()
+    mfaEnabled.value = res?.enabled || false
   } catch (err: any) {
     if (err?.response?.status === 404) {
       mfaEnabled.value = false
@@ -95,50 +93,37 @@ function handleEnable() {
 async function handleDisable() {
   if (!confirm(t('auth.mfa.status.disableConfirm'))) return
   
+  const otp = prompt(t('auth.mfa.status.otpPrompt'))
+  if (!otp) return
+  
+  if (!/^\d{6}$/.test(otp)) {
+    error.value = t('auth.mfa.status.errors.invalidOtpFormat')
+    return
+  }
+  
   loading.value = true
   error.value = ''
   success.value = ''
   
   try {
-    const password = prompt(t('auth.mfa.status.passwordPrompt'))
-    if (!password) return
-    
-    await mfaApi.disable({ password })
+    await authApi.disableMfa({ otp })
     mfaEnabled.value = false
     success.value = t('auth.mfa.status.disableSuccess')
     logAuthEvent({
       event: AUTH_EVENTS.MFA_DISABLED,
     })
   } catch (err: any) {
-    error.value = err?.response?.data?.message || t('auth.mfa.status.errors.disableFailed')
+    const errorCode = err?.response?.data?.error
+    if (errorCode === 'mfa_invalid_code') {
+      error.value = t('auth.mfa.status.errors.invalidOtpCode')
+    } else if (errorCode === 'not_found') {
+      error.value = t('auth.mfa.status.errors.mfaNotEnabled')
+    } else {
+      error.value = err?.response?.data?.detail || t('auth.mfa.status.errors.disableFailed')
+    }
   } finally {
     loading.value = false
   }
-}
-
-async function handleRegenerateCodes() {
-  if (!confirm(t('auth.mfa.status.regenerateConfirm'))) return
-  
-  loading.value = true
-  error.value = ''
-  success.value = ''
-  
-  try {
-    await mfaApi.regenerateBackupCodes()
-    success.value = t('auth.mfa.status.regenerateSuccess')
-    showBackupCodesModal.value = true
-    logAuthEvent({
-      event: AUTH_EVENTS.MFA_BACKUP_CODES_REGENERATED,
-    })
-  } catch (err: any) {
-    error.value = err?.response?.data?.message || t('auth.mfa.status.errors.regenerateFailed')
-  } finally {
-    loading.value = false
-  }
-}
-
-function handleViewCodes() {
-  showBackupCodesModal.value = true
 }
 
 function handleSetupSuccess() {

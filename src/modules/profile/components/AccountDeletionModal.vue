@@ -114,7 +114,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import Button from '@/ui/Button.vue'
-import { deleteAccount, exportUserData } from '@/api/users'
+import { archiveAccount, exportUserData } from '@/api/users'
 import { notifySuccess, notifyError } from '@/utils/notify'
 import { i18n } from '@/i18n'
 
@@ -143,12 +143,12 @@ async function handleDelete() {
   errorMessage.value = ''
 
   try {
-    await deleteAccount(password.value)
+    await archiveAccount(password.value, 'user_request')
     notifySuccess(i18n.global.t('users.account.deleteSuccess'))
     emit('deleted')
     handleClose()
   } catch (error: any) {
-    errorMessage.value = error?.response?.data?.detail || i18n.global.t('users.account.deleteError')
+    errorMessage.value = error?.response?.data?.message || error?.response?.data?.detail || i18n.global.t('users.account.deleteError')
   } finally {
     loading.value = false
   }

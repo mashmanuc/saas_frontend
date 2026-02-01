@@ -128,9 +128,15 @@ async function initSetup() {
 }
 
 async function handleConfirm() {
-  loading.value = true
   error.value = ''
   otpError.value = ''
+  
+  if (!otp.value || !/^\d{6}$/.test(otp.value)) {
+    otpError.value = t('auth.mfa.status.errors.invalidOtpFormat')
+    return
+  }
+  
+  loading.value = true
   
   try {
     await mfaApi.confirm({ otp: otp.value })
@@ -140,16 +146,16 @@ async function handleConfirm() {
     })
     emit('success')
   } catch (err: any) {
-    const code = err?.response?.data?.code
+    const errorCode = err?.response?.data?.error || err?.response?.data?.code
     logAuthEvent({
       event: AUTH_EVENTS.MFA_CHALLENGE_FAILED,
-      errorCode: code,
-      errorMessage: err?.response?.data?.message,
+      errorCode: errorCode,
+      errorMessage: err?.response?.data?.message || err?.response?.data?.detail,
     })
-    if (code === 'mfa_invalid_code') {
+    if (errorCode === 'mfa_invalid_code') {
       otpError.value = t('auth.mfa.setup.errors.invalidCode')
     } else {
-      error.value = err?.response?.data?.message || t('auth.mfa.setup.errors.confirmFailed')
+      error.value = err?.response?.data?.detail || err?.response?.data?.message || t('auth.mfa.setup.errors.confirmFailed')
     }
   } finally {
     loading.value = false

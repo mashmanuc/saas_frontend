@@ -42,6 +42,16 @@ const profileUrl = computed(() => {
   return `/marketplace/tutors/${myProfile.value.slug}`
 })
 
+const completenessPercent = computed(() => {
+  if (!myProfile.value || typeof myProfile.value.completeness_score !== 'number') {
+    return null
+  }
+  const normalized = Math.min(Math.max(myProfile.value.completeness_score, 0), 1)
+  return Math.round(normalized * 100)
+})
+
+const shouldShowCompletenessWidget = computed(() => completenessPercent.value !== null)
+
 onMounted(() => {
   store.loadMyProfile()
   store.loadFilterOptions()
@@ -168,6 +178,20 @@ async function handleUnpublish() {
           <ul class="incomplete-list">
             <li v-for="section in missingProfileSections" :key="section">{{ section }}</li>
           </ul>
+          
+        </div>
+
+        <div v-if="shouldShowCompletenessWidget" class="completeness-widget" data-test="marketplace-profile-completeness">
+          <div class="completeness-header">
+            <span class="completeness-label">{{ t('marketplace.profile.completenessScore') || 'Заповнено' }}</span>
+            <span class="completeness-value">{{ completenessPercent }}%</span>
+          </div>
+          <div class="completeness-bar">
+            <div
+              class="completeness-fill"
+              :style="{ width: `${completenessPercent}%` }"
+            />
+          </div>
         </div>
 
         <ProfileEditor
@@ -282,6 +306,46 @@ async function handleUnpublish() {
   padding: 1rem;
   border-radius: 8px;
   margin-bottom: 1.5rem;
+}
+
+.completeness-widget {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid color-mix(in srgb, var(--warning-bg) 20%, transparent);
+}
+
+.completeness-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.completeness-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.completeness-value {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.completeness-bar {
+  height: 8px;
+  width: 100%;
+  background: color-mix(in srgb, var(--warning-bg) 20%, transparent);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.completeness-fill {
+  height: 100%;
+  background: var(--accent-primary);
+  transition: width 0.3s ease;
+  border-radius: 999px;
 }
 
 </style>

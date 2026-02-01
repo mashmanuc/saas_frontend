@@ -299,6 +299,16 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async refreshAccess() {
+      if (!this.access) return null
+
+      if (this.lockedUntil) {
+        const until = Date.parse(this.lockedUntil)
+        if (Number.isFinite(until) && Date.now() < until) {
+          return null
+        }
+        this.lockedUntil = null
+      }
+
       // FE-76.2.2: Prevent parallel refresh cycles
       // If refresh is already in-flight, return the same promise
       // This ensures only one refresh request at a time
@@ -323,6 +333,14 @@ export const useAuthStore = defineStore('auth', {
 
       try {
         return await this.refreshPromise
+      } catch (error) {
+        const status = error?.response?.status
+        if (status === 429) {
+          // Cooldown to avoid hammering refresh endpoint
+          this.lockedUntil = new Date(Date.now() + 60_000).toISOString()
+          return null
+        }
+        throw error
       } finally {
         this.refreshPromise = null
       }
@@ -353,6 +371,14 @@ export const useAuthStore = defineStore('auth', {
         try {
           await this.refreshAccess()
         } catch (error) {
+          // Якщо 429 (rate limit) - не робимо logout, просто пропускаємо цей refresh
+          const status = error?.response?.status
+          if (status === 429) {
+            console.warn('Refresh rate limited, skipping this cycle')
+            return
+          }
+          
+          // Для інших помилок - logout
           await this.forceLogout()
         }
       }, REFRESH_INTERVAL_MS)

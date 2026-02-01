@@ -28,44 +28,6 @@
 
     <MFAStatusWidget />
 
-    <Card class="space-y-6">
-      <div class="space-y-2">
-        <p class="text-sm font-semibold text-foreground">{{ $t('profile.security.webauthn.title') }}</p>
-        <p class="text-sm text-muted-foreground">{{ $t('profile.security.webauthn.subtitle') }}</p>
-      </div>
-
-      <div class="space-y-4">
-        <Button variant="primary" :disabled="loading" @click="showWebAuthnEnroll = true">
-          {{ $t('profile.security.webauthn.enrollCta') }}
-        </Button>
-
-        <div v-if="webauthnCredentials.length" class="space-y-3">
-          <p class="text-sm font-medium text-foreground">{{ $t('profile.security.webauthn.credentialsList') }}</p>
-          <div
-            v-for="cred in webauthnCredentials"
-            :key="cred.id"
-            class="flex flex-wrap items-start justify-between gap-3 rounded-lg border p-4"
-          >
-            <div class="space-y-1">
-              <p class="text-sm font-medium text-foreground">{{ cred.device_label || $t('profile.security.webauthn.unknownDevice') }}</p>
-              <p class="text-sm text-muted-foreground">{{ $t('profile.security.webauthn.lastUsed') }}: {{ formatDateTime(cred.last_used_at) }}</p>
-              <p class="text-xs text-muted-foreground">Created: {{ formatDateTime(cred.created_at) }}</p>
-            </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              type="button" 
-              :disabled="loading || credentialRevokeId === cred.id"
-              :data-testid="`webauthn-revoke-${cred.id}`"
-              @click="revokeCredential(cred.id)"
-            >
-              {{ $t('profile.security.webauthn.remove') }}
-            </Button>
-          </div>
-        </div>
-      </div>
-    </Card>
-
     <Card class="space-y-4">
       <div class="space-y-1">
         <p class="text-sm font-semibold text-foreground">{{ $t('profile.security.sessions.title') }}</p>
@@ -117,17 +79,6 @@
         </div>
       </div>
     </Card>
-
-    <WebAuthnEnrollModal
-      :show="showWebAuthnEnroll"
-      :on-close="() => showWebAuthnEnroll = false"
-      :on-enroll="handleWebAuthnEnroll"
-    />
-
-    <BackupCodesModal
-      :show="showBackupCodes"
-      :on-close="() => showBackupCodes = false"
-    />
   </div>
 </template>
 
@@ -138,61 +89,22 @@ import { useI18n } from 'vue-i18n'
 import Button from '../../../ui/Button.vue'
 import Card from '../../../ui/Card.vue'
 import Heading from '../../../ui/Heading.vue'
-import Input from '../../../ui/Input.vue'
 import authApi from '../../auth/api/authApi'
-import WebAuthnEnrollModal from '../../auth/components/WebAuthnEnrollModal.vue'
-import BackupCodesModal from '../../auth/components/BackupCodesModal.vue'
 import MFAStatusWidget from '../../auth/components/MFAStatusWidget.vue'
 
 const router = useRouter()
 const { t } = useI18n()
 
-const loading = ref(false)
 const error = ref('')
 const success = ref('')
 
 const sessionsLoading = ref(false)
 const sessions = ref([])
 const revokeLoadingId = ref(null)
-
-const showWebAuthnEnroll = ref(false)
-const webauthnCredentials = ref([])
-const credentialRevokeId = ref(null)
-const showBackupCodes = ref(false)
 const lastRequestId = ref('')
 
 function goBack() {
   router.push('/dashboard/profile')
-}
-
-async function loadWebAuthnCredentials() {
-  try {
-    const res = await authApi.getWebAuthnCredentials()
-    webauthnCredentials.value = Array.isArray(res) ? res : []
-  } catch (err) {
-    console.error('Failed to load WebAuthn credentials', err)
-  }
-}
-
-async function revokeCredential(credentialId) {
-  if (!confirm(t('profile.security.webauthn.removeConfirm'))) return
-  
-  credentialRevokeId.value = credentialId
-  error.value = ''
-  success.value = ''
-  lastRequestId.value = ''
-  
-  try {
-    const res = await authApi.revokeWebAuthnCredential(credentialId)
-    await loadWebAuthnCredentials()
-    success.value = t('profile.security.webauthn.removeSuccess')
-    lastRequestId.value = res?.request_id || ''
-  } catch (err) {
-    error.value = err?.response?.data?.message || t('profile.security.webauthn.removeError')
-    lastRequestId.value = err?.response?.data?.request_id || ''
-  } finally {
-    credentialRevokeId.value = null
-  }
 }
 
 function formatDateTime(value) {
@@ -241,24 +153,7 @@ async function revoke(id) {
   }
 }
 
-async function handleWebAuthnEnroll(registration) {
-  error.value = ''
-  success.value = ''
-  loading.value = true
-  try {
-    await authApi.webauthnRegister(registration)
-    await loadWebAuthnCredentials()
-    showWebAuthnEnroll.value = false
-    success.value = t('profile.security.webauthn.enrollSuccess')
-  } catch (err) {
-    error.value = err?.response?.data?.message || t('profile.security.webauthn.enrollError')
-  } finally {
-    loading.value = false
-  }
-}
-
 onMounted(() => {
   loadSessions()
-  loadWebAuthnCredentials()
 })
 </script>

@@ -310,6 +310,7 @@ export interface TutorProfileFull {
   education: Education[]
   certifications: Certification[]
   languages: Language[]
+  teaching_languages?: Array<{ code: string; level: LanguageLevel }>  // v0.84: languages tutor teaches in
   subjects: SubjectPublic[]  // v0.60.1: normalized format
   experience_years: number
   is_published?: boolean  // v0.60.1: publication status
@@ -333,6 +334,7 @@ export interface TutorProfileFull {
     total_reviews: number
     response_time_hours: number
   }
+  completeness_score?: number  // v0.95.1: profile completeness (0.0 - 1.0)
 }
 
 // v0.60.1: Profile update payload (write)
@@ -342,6 +344,7 @@ export interface TutorProfileUpdate {
   education: Education[]
   certifications: Certification[]
   languages: Language[]
+  teaching_languages?: Array<{ code: string; level: LanguageLevel }>  // v0.84: languages tutor teaches in
   subjects: SubjectWrite[]  // v0.60.1: write format
   experience_years: number
   is_published?: boolean  // v0.60.1: profile publication status
@@ -837,7 +840,7 @@ export const marketplaceApi = {
     try {
       // P0 fix: only send ETag if cache is valid, otherwise force fresh fetch
       if (cached.isValid && cached.etag) {
-        const full = await apiGetFull<any>('/v1/marketplace/marketplace/filters/', {
+        const full = await apiGetFull<any>('/v1/marketplace/filters/', {
           headers: { 'If-None-Match': cached.etag },
           validateStatus: (s: number) => (s >= 200 && s < 300) || s === 304,
         })
@@ -866,7 +869,7 @@ export const marketplaceApi = {
           data: response 
         })
       } else {
-        const full = await apiGetFull<any>('/v1/marketplace/marketplace/filters/', {
+        const full = await apiGetFull<any>('/v1/marketplace/filters/', {
           validateStatus: (s: number) => s >= 200 && s < 300,
         })
         const payload = full.data
@@ -1052,7 +1055,7 @@ export const marketplaceApi = {
     try {
       // P0 fix: only send ETag if cache is valid, otherwise force fresh fetch
       if (cached.isValid && cached.etag) {
-        const full = await apiGetFull<any>('/v1/marketplace/marketplace/filters/', {
+        const full = await apiGetFull<any>('/v1/marketplace/filters/', {
           headers: { 'If-None-Match': cached.etag },
           validateStatus: (s: number) => (s >= 200 && s < 300) || s === 304,
         })
@@ -1082,7 +1085,7 @@ export const marketplaceApi = {
         return data as ExtendedFilterOptions
       }
 
-      const full = await apiGetFull<any>('/v1/marketplace/marketplace/filters/', {
+      const full = await apiGetFull<any>('/v1/marketplace/filters/', {
         validateStatus: (s: number) => s >= 200 && s < 300,
       })
       const payload = full.data

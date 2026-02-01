@@ -29,8 +29,11 @@ const MarketplaceCategoryView = () => import('../modules/marketplace/views/Categ
 const BookingRequestsView = () => import('../modules/booking/views/BookingRequestsView.vue')
 const TutorAvailabilityView = () => import('../modules/booking/views/TutorAvailabilityView.vue')
 const ProfileEditView = () => import('../modules/profile/views/ProfileEditView.vue')
-const ProfileSettingsView = () => import('../modules/profile/views/ProfileSettingsView.vue')
 const ProfileActivityView = () => import('../modules/profile/views/ProfileActivityView.vue')
+// TEMPORARILY DISABLED - using marketplace/my-profile instead
+// const TutorProfileOverviewView = () => import('../modules/profile/views/TutorProfileOverviewView_NEW.vue')
+// const TutorProfileEditView = () => import('../modules/profile/views/TutorProfileEditView_NEW.vue')
+// const StudentProfileEditView = () => import('../modules/profile/views/StudentProfileEditView_NEW.vue')
 const UserAccountView = () => import('../modules/profile/views/UserAccountView.vue')
 const SettingsSecurityView = () => import('../modules/profile/views/SettingsSecurityView.vue')
 const ChangeEmailView = () => import('../modules/profile/views/ChangeEmailView.vue')
@@ -233,12 +236,6 @@ const routes = [
         meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
       },
       {
-        path: 'dashboard/profile/settings',
-        name: 'profile-settings',
-        component: ProfileSettingsView,
-        meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
-      },
-      {
         path: 'dashboard/profile/security',
         name: 'profile-security',
         component: SettingsSecurityView,
@@ -257,6 +254,22 @@ const routes = [
         component: () => import('../modules/profile/views/UserSettingsView.vue'),
         meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
       },
+      // Tutor Profile routes - REDIRECTED TO MARKETPLACE
+      {
+        path: 'tutor/profile',
+        redirect: '/marketplace/my-profile',
+      },
+      {
+        path: 'tutor/profile/edit',
+        redirect: '/marketplace/my-profile',
+      },
+      // Student Profile routes - TEMPORARILY DISABLED (using _NEW version)
+      // {
+      //   path: 'student/profile/edit',
+      //   name: 'student-profile-edit',
+      //   component: StudentProfileEditView,
+      //   meta: { roles: [USER_ROLES.STUDENT] },
+      // },
       {
         path: 'profile/:userId',
         name: 'tutor-public-profile',
@@ -305,8 +318,21 @@ const routes = [
           requiresAuth: true,
           roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN],
         },
-        beforeEnter: (to, from, next) => {
+        beforeEnter: async (to, from, next) => {
           const auth = useAuthStore()
+
+          if (!auth.isBootstrapped) {
+            await auth.bootstrap()
+          }
+
+          if (!auth.user && auth.access) {
+            try {
+              await auth.reloadUser()
+            } catch (error) {
+              console.warn('[router] Failed to load user for marketplace/my-profile', error)
+            }
+          }
+
           if (auth.user?.role !== USER_ROLES.TUTOR) {
             return next('/marketplace')
           }
@@ -631,7 +657,8 @@ router.beforeEach(async (to, from, next) => {
     await auth.bootstrap()
   }
 
-  const isAuthenticated = auth.isAuthenticated
+  const hasAccessToken = Boolean(auth.access)
+  let isAuthenticated = auth.isAuthenticated
   const user = auth.user
   // v0.88.4: Staff users have /staff as home
   const homeRoute = user?.is_staff ? '/staff' : (user?.role ? getDefaultRouteForRole(user.role) : '/auth/login')
@@ -644,6 +671,15 @@ router.beforeEach(async (to, from, next) => {
   // Public routes (requiresAuth: false) - завжди пропускаємо
   if (isPublicRoute) {
     return next()
+  }
+
+  if (!isAuthenticated && hasAccessToken) {
+    try {
+      await auth.reloadUser()
+      isAuthenticated = auth.isAuthenticated
+    } catch (error) {
+      console.warn('[router] Failed to restore user session', error)
+    }
   }
 
   if (!isAuthenticated) {

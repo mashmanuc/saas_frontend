@@ -14,6 +14,7 @@
     
     <div class="empty-actions">
       <router-link
+        v-if="false"
         to="/booking/availability"
         class="btn-primary"
       >

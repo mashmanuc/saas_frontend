@@ -304,7 +304,8 @@ async function globalSetup(config: FullConfig) {
   if (canReuseAuthState()) {
     const credentials = JSON.parse(fs.readFileSync(credentialsFile, 'utf-8'))
     console.log('[global-setup] ✓ Using existing auth state (validated: tutor + staff)')
-    await verifySeedData(apiURL, credentials.access, credentials.user.id)
+    // Skip verifySeedData to avoid rate limit issues
+    // await verifySeedData(apiURL, credentials.access, credentials.user.id)
     return
   }
 

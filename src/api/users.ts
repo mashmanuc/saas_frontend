@@ -139,10 +139,39 @@ export async function resendVerificationEmail(): Promise<{ message: string }> {
 }
 
 /**
- * Видалити акаунт (soft delete)
+ * Архівувати акаунт користувача (soft delete)
+ * @param password - пароль для підтвердження
+ * @param reason - причина архівування (опціонально)
+ */
+export async function archiveAccount(password: string, reason: string = 'user_request'): Promise<{
+  status: string
+  message: string
+  archived_at: string
+  email_suffix: string
+}> {
+  return apiClient.post(`${BASE_URL}/me/archive`, { password, reason })
+}
+
+/**
+ * Архівувати акаунт користувача (admin endpoint)
+ * @param userId - ID користувача для архівування
+ * @param reason - причина архівування
+ * @param notes - додаткові нотатки
+ */
+export async function adminArchiveUser(userId: number, reason: string = 'admin_action', notes?: string): Promise<{
+  status: string
+  message: string
+  user_id: number
+  archived_at: string
+}> {
+  return apiClient.post(`${BASE_URL}/admin/users/${userId}/archive`, { reason, notes })
+}
+
+/**
+ * @deprecated Використовуйте archiveAccount замість цього
  */
 export async function deleteAccount(password: string): Promise<void> {
-  return apiClient.delete(`${BASE_URL}/me/delete/`, { data: { password } })
+  return archiveAccount(password).then(() => undefined)
 }
 
 /**
@@ -181,6 +210,8 @@ export default {
   uploadAvatar,
   deleteAvatar,
   resendVerificationEmail,
+  archiveAccount,
+  adminArchiveUser,
   deleteAccount,
   exportUserData,
   getRoleHistory,

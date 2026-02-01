@@ -77,11 +77,6 @@ export function validateProfileBeforeSubmit(model: TutorProfileFormModel): Profi
     })
   }
 
-  // Languages validation (DEPRECATED in v0.84.0 - use teaching_languages)
-  if (!Array.isArray(model.languages) || model.languages.length === 0) {
-    errors.push({ field: 'languages', message: 'marketplace.profile.errors.languagesRequired' })
-  }
-
   // v0.84.0: Teaching languages validation (NEW)
   if (!Array.isArray(model.teaching_languages) || model.teaching_languages.length === 0) {
     errors.push({ field: 'teaching_languages', message: 'marketplace.profile.errors.teachingLanguagesRequired' })
@@ -120,6 +115,14 @@ export function buildTutorProfileUpdate(model: TutorProfileFormModel): TutorProf
       level: l.level || 'fluent',
     }))
 
+  // v0.84.0: Teaching languages (languages tutor teaches IN)
+  const teaching_languages = (model.teaching_languages || [])
+    .filter((l) => l.code?.trim())
+    .map((l) => ({
+      code: l.code.trim(),
+      level: l.level || 'fluent',
+    }))
+
   // Build COMPLETE TutorProfileUpdate payload
   const experienceYears = Number(model.experience_years)
 
@@ -132,6 +135,7 @@ export function buildTutorProfileUpdate(model: TutorProfileFormModel): TutorProf
     education: [], // TODO: Add education form fields
     certifications: [], // TODO: Add certifications form fields
     languages,
+    teaching_languages,
     subjects,
 
     // Required number
@@ -179,6 +183,7 @@ export function debugPayload(payload: TutorProfileUpdate, label = 'TutorProfileU
     console.log('headline:', payload.headline || '(empty)')
     console.log('subjects:', payload.subjects?.length ?? 0, payload.subjects ?? [])
     console.log('languages:', payload.languages?.length ?? 0, payload.languages ?? [])
+    console.log('teaching_languages:', (payload as any).teaching_languages?.length ?? 0, (payload as any).teaching_languages ?? [])
     console.log('experience_years:', payload.experience_years)
     console.log('is_published:', payload.is_published)
     console.log('pricing:', payload.pricing)

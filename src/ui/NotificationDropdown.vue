@@ -19,7 +19,7 @@
           <div class="panel-title-group">
             <div class="panel-title-row">
               <p class="panel-title">{{ $t('notifications.dropdown.title') }}</p>
-              <span v-if="isRealtimeOffline" class="status-pill status-pill--offline">
+              <span v-if="false" class="status-pill status-pill--offline">
                 {{ $t('notifications.dropdown.offlineBadge') }}
               </span>
             </div>
@@ -145,12 +145,9 @@ const showSkeleton = computed(() => loading.value && !sortedItems.value.length)
 const showList = computed(() => displayItems.value.length > 0)
 const canMarkAll = computed(() => sortedItems.value.some((item) => !item.read_at))
 const hasError = computed(() => Boolean(lastError.value))
-const isRealtimeOffline = computed(() => realtimeStatus.value !== 'open')
+const isRealtimeOffline = computed(() => false)
 
 const headerSubtitle = computed(() => {
-  if (isRealtimeOffline.value) {
-    return t('notifications.dropdown.offlineSubtitle')
-  }
   if (loading.value && !sortedItems.value.length) {
     return t('notifications.dropdown.loadingSubtitle')
   }

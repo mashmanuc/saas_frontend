@@ -109,8 +109,9 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
       missing.push(t('marketplace.profile.editor.subjectsLabel'))
     }
 
-    if (!Array.isArray(profile.languages) || profile.languages.length === 0) {
-      missing.push(t('marketplace.profile.editor.languagesLabel'))
+    // v0.86 FIX: Check teaching_languages instead of deprecated languages
+    if (!Array.isArray(profile.teaching_languages) || profile.teaching_languages.length === 0) {
+      missing.push(t('marketplace.profile.editor.teachingLanguagesLabel'))
     }
 
     if (!profile.pricing || !profile.pricing.hourly_rate || profile.pricing.hourly_rate <= 0) {

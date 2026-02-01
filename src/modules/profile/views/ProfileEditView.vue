@@ -63,76 +63,13 @@
         </div>
 
         <div class="flex-[2]">
-          <TutorProfileForm
-            v-if="isTutor"
-            v-model="tutorFormData"
-            :disabled="isSaving"
-            :saving="isSaving"
-            :show-publish-toggle="true"
-            :error-message="errorMessage"
-            @submit="handleSubmit"
-            @cancel="goBack"
-            @change="handleFormChange"
-            @publish="handlePublish"
-            @unpublish="handleUnpublish"
-          />
-          <StudentProfileForm
-            v-else-if="isStudent"
-            v-model="studentFormData"
-            :disabled="isSaving"
-            :saving="isSaving"
-            :error-message="errorMessage"
-            @submit="handleSubmit"
-            @cancel="goBack"
-            @change="handleFormChange"
-          />
           <ProfileForm
-            v-else
             v-model="form"
             :errors="formErrors"
             :timezone-options="timezoneOptions"
             :disabled="isSaving"
             @submit="handleSubmit"
-          >
-            <div v-if="isTutor" class="space-y-3">
-              <label class="block text-sm font-medium text-primary">
-                {{ $t('profile.subjectsTitle') }}
-              </label>
-              <div class="flex flex-wrap gap-2">
-                <span
-                  v-for="subject in subjects"
-                  :key="subject"
-                  class="inline-flex items-center gap-1 rounded-full bg-surface-muted px-3 py-1 text-xs font-medium text-muted-foreground"
-                >
-                  {{ subject }}
-                  <button
-                    type="button"
-                    class="text-muted-foreground hover:text-foreground"
-                    :disabled="isSaving"
-                    @click="removeSubject(subject)"
-                  >
-                    ×
-                  </button>
-                </span>
-                <form class="flex items-center gap-2" @submit.prevent="addSubject">
-                  <input
-                    v-model="newSubject"
-                    type="text"
-                    class="input h-8 w-36 text-xs"
-                    :placeholder="$t('profile.subjectsAddPlaceholder')"
-                    :disabled="isSaving"
-                  />
-                  <button
-                    type="submit"
-                    class="text-xs font-medium text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-60"
-                    :disabled="isSaving || !newSubject.trim()"
-                  >
-                    {{ $t('profile.subjectsAddButton') }}
-                  </button>
-                </form>
-              </div>
-            </div>
-          </ProfileForm>
+          />
         </div>
       </div>
     </Card>
@@ -178,8 +115,6 @@ import Heading from '../../../ui/Heading.vue'
 import AvatarUpload from '../components/AvatarUpload.vue'
 import AvatarUploadWidget from '../components/AvatarUploadWidget.vue'
 import ProfileForm from '../components/ProfileForm.vue'
-import TutorProfileForm from '../components/TutorProfileForm.vue'
-import StudentProfileForm from '../components/StudentProfileForm.vue'
 import { useProfileStore } from '../store/profileStore'
 import { USER_ROLES } from '../../../types/user'
 import { TIMEZONES } from '../../../utils/timezones'
@@ -204,8 +139,6 @@ const formErrors = reactive({
   last_name: '',
   timezone: '',
 })
-const subjects = ref([])
-const newSubject = ref('')
 const autosaveStatus = ref('idle')
 const isHydrating = ref(true)
 const lastServerSnapshot = ref({ user: null, profile: null, subjects: [] })
@@ -213,26 +146,9 @@ const draftDialogOpen = ref(false)
 const isDraftRestoring = ref(false)
 let statusResetTimer = null
 
-const isTutor = computed(() => profileStore.user?.role === USER_ROLES.TUTOR)
-const isStudent = computed(() => profileStore.user?.role === USER_ROLES.STUDENT)
 const isSaving = computed(() => profileStore.saving)
 const errorMessage = computed(() => profileStore.error)
 
-const tutorFormData = reactive({
-  headline: '',
-  bio: '',
-  experience: 0,
-  hourly_rate: 0,
-  currency: 'UAH',
-  is_published: false
-})
-
-const studentFormData = reactive({
-  learning_goals: '',
-  preferred_subjects: [],
-  budget_min: 0,
-  budget_max: 0
-})
 const formattedAutosaveTime = computed(() => formatTime(profileStore.lastAutosavedAt))
 const autosaveBadgeMessage = computed(() => {
   if (autosaveStatus.value === 'saving') return t('profile.autosave.saving')
@@ -349,27 +265,13 @@ watch(
 )
 
 function buildPayload() {
-  const payload = {
+  return {
     user: {
       first_name: form.first_name?.trim(),
       last_name: form.last_name?.trim(),
       timezone: form.timezone,
-    },
-    profile: {
-      headline: form.headline?.trim() || '',
-      bio: form.bio || '',
-      subjects: isTutor.value ? subjects.value : undefined,
-    },
+    }
   }
-
-  if (profileStore.user?.role === USER_ROLES.TUTOR) {
-    payload.tutor_profile = payload.profile
-  } else if (profileStore.user?.role === USER_ROLES.STUDENT) {
-    payload.student_profile = payload.profile
-  }
-  delete payload.profile
-
-  return payload
 }
 
 function validateForm() {
@@ -418,42 +320,6 @@ function handleFormChange() {
   profileStore.hasUnsavedChanges = true
 }
 
-async function handlePublish() {
-  try {
-    const { publishTutorProfile } = await import('../../../api/users')
-    await publishTutorProfile()
-    tutorFormData.is_published = true
-    notifySuccess(t('users.profile.publishSuccess'))
-  } catch (err) {
-    console.error('Publish failed', err)
-  }
-}
-
-async function handleUnpublish() {
-  try {
-    tutorFormData.is_published = false
-    await profileStore.saveProfile({ is_published: false })
-    notifySuccess(t('users.profile.unpublishSuccess'))
-  } catch (err) {
-    console.error('Unpublish failed', err)
-  }
-}
-
-function addSubject() {
-  const normalized = newSubject.value.trim()
-  if (!normalized) return
-  const lower = normalized.toLowerCase()
-  if (subjects.value.some((subj) => subj.toLowerCase() === lower)) {
-    newSubject.value = ''
-    return
-  }
-  subjects.value.push(normalized)
-  newSubject.value = ''
-}
-
-function removeSubject(subject) {
-  subjects.value = subjects.value.filter((item) => item !== subject)
-}
 
 function canAutosave() {
   return form.first_name.trim().length >= 2 && form.last_name.trim().length >= 2 && Boolean(form.timezone)

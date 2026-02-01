@@ -463,6 +463,10 @@ telemetry.track('settings_updated', { userId, changedFields })
 3. **Telemetry не підключена** - Events оголошені але не викликаються
 4. **E2E тести відсутні** - Потрібно написати 4 сценарії
 
+### API Contract Fix Log (2026-01-30)
+- **MFA / WebAuthn:** фронтові клієнти синхронізовані з бекендом. `authApi` тепер використовує `/v1/auth/mfa/status/`, `/v1/auth/mfa/disable`, `/v1/auth/mfa/backup-codes/regenerate` (з `otp_code`), а WebAuthn запити лишаються на `/v1/auth/webauthn/*`. Детальний опис: `docs/reports/API_CONTRACT_FIX_REPORT.md`.
+- **Marketplace Lesson Links:** всі звернення переведено на `/api/marketplace/v1/tutors/me/lesson-links/` (див. `src/modules/booking/api/tutorSettingsApi.ts`). Це усуває 404 у консольних логах при відкритті Tutor Lesson Links Editor.
+
 ---
 
 ## 11. Files Changed/Created

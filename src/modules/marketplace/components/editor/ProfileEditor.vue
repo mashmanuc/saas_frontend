@@ -191,10 +191,21 @@ function addTeachingLanguage() {
   if (formData.value.teaching_languages.some((l) => l.code === code)) return
   formData.value.teaching_languages = [...formData.value.teaching_languages, { code, level }]
   newTeachingLanguageCode.value = ''
+  if (import.meta.env.DEV) {
+    console.debug('[ProfileEditor] teaching_languages.add', {
+      added: { code, level },
+      total: formData.value.teaching_languages.length,
+      teaching_languages: formData.value.teaching_languages,
+    })
+  }
+  // Mark field as touched so validation can show if needed
+  markFieldAsTouched('teaching_languages')
 }
 
 function removeTeachingLanguage(code: string) {
   formData.value.teaching_languages = formData.value.teaching_languages.filter((l) => l.code !== code)
+  // Mark field as touched so validation can show if needed
+  markFieldAsTouched('teaching_languages')
 }
 
 const props = defineProps<Props>()
@@ -292,6 +303,13 @@ const formData = ref<FormState>({
   newLanguageCode: '',
   newLanguageLevel: 'fluent' as LanguageLevel,
 })
+
+// v0.95.1: Touched fields tracking to prevent premature validation
+const touchedFields = ref<Set<string>>(new Set())
+
+function markFieldAsTouched(fieldName: string) {
+  touchedFields.value.add(fieldName)
+}
 
 const draftKey = computed(() => {
   const slug = props.profile?.slug || 'new'
@@ -472,14 +490,10 @@ const debouncedAutosave = debounce(async () => {
   try {
     const payload = buildPayloadFromForm()
     writeLocalDraft(payload)
-    
-    // v0.84.1: Auto-save to server in silent mode (no UI blocking)
-    const apiPayload = getSubmitPayload()
-    if (apiPayload) {
-      emit('save', apiPayload as any, { silent: true })
-      lastAutosavedAt.value = Date.now()
-    }
-    
+
+    // Keep autosave local-only to avoid spamming API (rate-limited).
+    lastAutosavedAt.value = Date.now()
+
     autosaveStatus.value = 'saved'
   } catch (err) {
     console.error('[ProfileEditor] Autosave error:', err)
@@ -542,22 +556,40 @@ watch(
 )
 
 function handleSubmit() {
+  // Mark all fields as touched so validation errors will show
+  markAllFieldsAsTouched()
+  
   if (!canSubmit.value) return
-  const apiPayload = getSubmitPayload()
+  const apiPayload = getSubmitPayload({ silent: false })
   if (!apiPayload) return
   emit('save', apiPayload as any)
 }
 
-function getSubmitPayload() {
+function markAllFieldsAsTouched() {
+  const allFields = [
+    'headline', 'bio', 'subjects', 'teaching_languages', 'hourly_rate',
+    'experience_years', 'birth_year', 'country', 'timezone', 'format',
+    'gender', 'show_gender', 'show_age', 'telegram_username', 'show_telegram'
+  ]
+  allFields.forEach(field => touchedFields.value.add(field))
+}
+
+function getSubmitPayload(opts?: { silent?: boolean }) {
   const { newLanguageCode, newLanguageLevel, ...model } = formData.value
+
+  const silent = !!opts?.silent
 
   // v0.60.1: Preflight validation before API call
   const validationErrors = validateProfileBeforeSubmit(model)
   if (validationErrors.length > 0) {
-    console.error('[ProfileEditor] Validation errors:', validationErrors)
-    const firstError = validationErrors[0]
-    const errorMsg = `${t('marketplace.errors.validationFailed')}: ${t(firstError.message)}`
-    notifyError(errorMsg)
+    // IMPORTANT UX: during autosave we must not show validation toasts.
+    // Validation feedback should be shown only on explicit Save.
+    if (!silent) {
+      console.error('[ProfileEditor] Validation errors:', validationErrors)
+      const firstError = validationErrors[0]
+      const errorMsg = `${t('marketplace.errors.validationFailed')}: ${t(firstError.message)}`
+      notifyError(errorMsg)
+    }
     return null
   }
 
@@ -565,6 +597,10 @@ function getSubmitPayload() {
   const apiPayload = buildTutorProfileUpdate(model)
   if (import.meta.env.DEV) {
     debugPayload(apiPayload, 'ProfileEditor.getSubmitPayload')
+    console.debug('[ProfileEditor] submit.payload.teaching_languages', {
+      formTeachingLanguages: (model as any).teaching_languages,
+      payloadTeachingLanguages: (apiPayload as any).teaching_languages,
+    })
   }
   return apiPayload
 }
@@ -607,7 +643,7 @@ const localErrors = computed(() => {
   return next
 })
 
-const errors = computed(() => {
+const allErrors = computed(() => {
   const next: Record<string, string> = { ...localErrors.value }
   const api = props.apiErrors
   if (api && typeof api === 'object') {
@@ -615,6 +651,18 @@ const errors = computed(() => {
       if (!field) continue
       const text = Array.isArray(messages) ? messages.filter(Boolean).join(', ') : String(messages)
       if (text.trim().length > 0) next[field] = text
+    }
+  }
+  return next
+})
+
+// v0.95.1: Only show errors for touched fields to prevent premature validation
+const errors = computed(() => {
+  const next: Record<string, string> = {}
+  for (const [field, error] of Object.entries(allErrors.value)) {
+    // Show error only if field was touched OR if there are API errors (from server validation)
+    if (touchedFields.value.has(field) || props.apiErrors?.[field]) {
+      next[field] = error
     }
   }
   return next
@@ -1012,6 +1060,7 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
             max="2100"
             :placeholder="t('marketplace.profile.editor.birthYearPlaceholder')"
             data-test="marketplace-editor-birth-year"
+            @blur="markFieldAsTouched('birth_year')"
           />
           <div v-if="errors.birth_year" class="field-error" data-test="marketplace-editor-error-birth-year">
             {{ errors.birth_year }}
@@ -1057,6 +1106,7 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
           :placeholder="t('marketplace.profile.editor.headlinePlaceholder')"
           maxlength="100"
           data-test="marketplace-editor-headline"
+          @blur="markFieldAsTouched('headline')"
         />
         <span class="hint">{{ t('marketplace.profile.editor.headlineHint') }}</span>
         <div v-if="errors.headline" class="field-error" data-test="marketplace-editor-error-headline">
@@ -1072,6 +1122,7 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
           rows="6"
           :placeholder="t('marketplace.profile.editor.bioPlaceholder')"
           data-test="marketplace-editor-bio"
+          @blur="markFieldAsTouched('bio')"
         />
         <span class="hint">
           {{ t('marketplace.profile.editor.bioHint') }}
@@ -1171,6 +1222,7 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
               step="1"
               :placeholder="t('marketplace.profile.editor.hourlyRatePlaceholder')"
               data-test="marketplace-editor-hourly-rate"
+              @blur="markFieldAsTouched('hourly_rate')"
             />
             <select v-model="formData.currency" data-test="marketplace-editor-currency">
               <option v-for="c in currencies" :key="c" :value="c">{{ c }}</option>

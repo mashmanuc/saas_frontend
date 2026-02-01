@@ -15,9 +15,12 @@ interface Props {
   languages: Language[]
   selectedSubjects: string[]
   selectedLanguages: string[]
+  showLanguages?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  showLanguages: true
+})
 
 const emit = defineEmits<{
   (e: 'select-subject', code: string): void
@@ -87,7 +90,7 @@ function handleSelectLanguageSubject(code: string) {
     </section>
 
     <!-- Мови для вивчення -->
-    <section v-if="languages.length > 0" class="selection-section">
+    <section v-if="showLanguages && languages.length > 0" class="selection-section">
       <h3>{{ t('marketplace.subjects.languagesAsSubjectsTitle') }}</h3>
       <p class="section-hint">{{ t('marketplace.subjects.popularLanguagesHint') }}</p>
       

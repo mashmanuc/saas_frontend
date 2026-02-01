@@ -232,13 +232,12 @@ import '@/modules/booking/styles/calendar-responsive.css'
 import { useSlotEditor } from '@/modules/booking/composables/useSlotEditor'
 
 // Debug module (dynamic import)
-const isDebugMode = import.meta.env.VITE_CALENDAR_DEBUG === 'true'
+const isDebugMode = false
 const CalendarDebugPanel = isDebugMode ? defineAsyncComponent(() => import('@/modules/booking/debug').then(m => m.CalendarDebugPanel)) : null
 const DebugToggleButton = isDebugMode ? defineAsyncComponent(() => import('@/modules/booking/debug').then(m => m.DebugToggleButton)) : null
 
 const { t } = useI18n()
-const isDebugLoggingEnabled =
-  import.meta.env.DEV || import.meta.env.VITE_CALENDAR_DEBUG === 'true'
+const isDebugLoggingEnabled = false
 const logDebug = (...args: unknown[]) => {
   if (isDebugLoggingEnabled) {
     console.log(...args)

@@ -86,6 +86,8 @@ import { storeToRefs } from 'pinia'
 import { useNotificationsStore } from '@/stores/notificationsStore'
 import type { InAppNotification } from '@/types/notifications'
 import dayjs from 'dayjs'
+import { watch } from 'vue'
+import { useAuthStore } from '@/modules/auth/store/authStore'
 import relativeTime from 'dayjs/plugin/relativeTime'
 
 dayjs.extend(relativeTime)
@@ -96,6 +98,7 @@ const rootRef = ref<HTMLElement | null>(null)
 const isOpen = ref(false)
 
 const notificationsStore = useNotificationsStore()
+const authStore = useAuthStore()
 const { items, unreadCount, latestItems, isLoading, error } = storeToRefs(notificationsStore)
 
 const canMarkAll = computed(() => unreadCount.value > 0)
@@ -152,12 +155,26 @@ function formatTime(timestamp: string): string {
 
 onMounted(() => {
   document.addEventListener('click', handleOutsideClick)
-  notificationsStore.startPolling(60000)
+  if (authStore.isAuthenticated) {
+    notificationsStore.startPolling(60000)
+  }
 })
+
+const stopAuthWatch = watch(
+  () => authStore.isAuthenticated,
+  (isAuth) => {
+    if (isAuth) {
+      notificationsStore.startPolling(60000)
+    } else {
+      notificationsStore.stopPolling()
+    }
+  }
+)
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleOutsideClick)
   notificationsStore.stopPolling()
+  stopAuthWatch()
 })
 </script>
 

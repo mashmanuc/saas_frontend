@@ -22,6 +22,20 @@ const api = axios.create({
   withCredentials: true,
 })
 
+let isRefreshingToken = false
+const refreshQueue = []
+
+const enqueueRequestWhileRefreshing = (callback) => {
+  refreshQueue.push(callback)
+}
+
+const flushRefreshQueue = (error, token) => {
+  while (refreshQueue.length) {
+    const queued = refreshQueue.shift()
+    queued?.(error, token)
+  }
+}
+
 const getCookie = (name) => {
   if (typeof document === 'undefined') return null
   const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`))
@@ -51,7 +65,8 @@ api.interceptors.request.use(
     const method = String(config.method || 'get').toUpperCase()
     const isStateChanging = method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE'
     if (isStateChanging && !config.headers['X-CSRF-Token']) {
-      const csrfToken = store.csrfToken || getCookie('csrf') || getCookie('csrftoken')
+      // Спочатку беремо з cookies, потім з store (cookies - більш надійне джерело)
+      const csrfToken = getCookie('csrf') || getCookie('csrftoken') || store.csrfToken
       if (csrfToken) {
         config.headers['X-CSRF-Token'] = csrfToken
       }
@@ -120,23 +135,56 @@ api.interceptors.response.use(
       }
     }
 
-    if (status === 401 && !isAuthRefresh && !original._retry) {
+    if (status === 401 && !isAuthRefresh && !isAuthLogout) {
+      if (!store.access) {
+        return Promise.reject(error)
+      }
+
+      if (isRefreshingToken) {
+        original._retry = true
+        return new Promise((resolve, reject) => {
+          enqueueRequestWhileRefreshing((queueError, newToken) => {
+            if (queueError || !newToken) {
+              reject(queueError || new Error('refresh_failed'))
+              return
+            }
+            original.headers = original.headers || {}
+            original.headers.Authorization = `Bearer ${newToken}`
+            resolve(api(original))
+          })
+        })
+      }
+
       original._retry = true
+      isRefreshingToken = true
 
       try {
         const newAccess = await store.refreshAccess()
-        if (!newAccess) throw new Error('refresh_failed')
+        if (!newAccess) {
+          throw new Error('refresh_failed')
+        }
 
+        flushRefreshQueue(null, newAccess)
         original.headers = original.headers || {}
         original.headers.Authorization = `Bearer ${newAccess}`
         return api(original)
       } catch (refreshError) {
+        flushRefreshQueue(refreshError, null)
+        const refreshStatus = refreshError?.response?.status
+        // If refresh is rate-limited, do not destroy session state.
+        // Let the original request fail; next user action can retry.
+        if (refreshStatus === 429) {
+          return Promise.reject(error)
+        }
+
         const hadSession = Boolean(store.access)
         await store.forceLogout()
         if (hadSession) {
           notifySessionExpired()
         }
         return Promise.reject(refreshError)
+      } finally {
+        isRefreshingToken = false
       }
     }
 

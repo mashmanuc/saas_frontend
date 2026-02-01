@@ -290,6 +290,7 @@ function handleTogglePopularLanguage(langCode: string) {
         :languages="[]"
         :selected-subjects="basicSubjectCodes"
         :selected-languages="[]"
+        :show-languages="false"
         @select-subject="handleSelect"
         @select-language="() => {}"
       />

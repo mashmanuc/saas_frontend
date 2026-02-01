@@ -102,7 +102,7 @@ onMounted(async () => {
         const activityData = await activityResponse.json()
         if (activityData.activity_status === 'INACTIVE_SOFT') {
           isEnforcementBlocked.value = true
-          enforcementMessage.value = t('calendar.availability.enforcementBlocked')
+          enforcementMessage.value = t('calendar.availability.notifications.enforcementBlocked')
         }
       }
     } catch (activityError) {
@@ -183,7 +183,7 @@ function updateWindow(
 async function saveAvailability() {
   // v0.94.0: Enforcement check
   if (isEnforcementBlocked.value) {
-    toast.error(enforcementMessage.value || t('calendar.availability.enforcementBlocked'))
+    toast.error(enforcementMessage.value || t('calendar.availability.notifications.enforcementBlocked'))
     return
   }
 

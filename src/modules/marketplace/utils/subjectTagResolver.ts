@@ -88,6 +88,19 @@ export function isTagAllowedForSubject(
 }
 
 /**
+ * Normalize tag group names for compatibility between API and subject_tag_map.json
+ * API uses: grades, formats
+ * subject_tag_map.json uses: classes, format
+ */
+function normalizeTagGroup(group: string): string {
+  const normalizationMap: Record<string, string> = {
+    'grades': 'classes',
+    'formats': 'format',
+  }
+  return normalizationMap[group] ?? group
+}
+
+/**
  * Filter tags by subject configuration
  * 
  * @param tags - Array of tags with code and group
@@ -98,9 +111,10 @@ export function filterTagsForSubject<T extends { code: string; group: string }>(
   tags: T[],
   config: ResolvedSubjectTagConfig
 ): T[] {
-  return tags.filter(tag => 
-    isTagAllowedForSubject(tag.code, tag.group, config)
-  )
+  return tags.filter(tag => {
+    const normalizedGroup = normalizeTagGroup(tag.group)
+    return isTagAllowedForSubject(tag.code, normalizedGroup, config)
+  })
 }
 
 /**
@@ -125,12 +139,27 @@ export function filterTagsForSubjectSafe<T extends { code: string; group: string
 ): T[] {
   // FAIL-CLOSED: No map loaded → return empty array
   if (!tagMap) {
+    console.warn(`[subjectTagResolver] No tagMap loaded for ${subjectCode}`)
     return []
   }
   
-  // FAIL-CLOSED: Subject not in map → return empty array
+  // v0.86 FIX: If subject not in map, use defaults with allowAllTags=true
+  // This allows all subjects to show tags even without explicit configuration
   if (!tagMap.subjects || !tagMap.subjects[subjectCode]) {
-    return []
+    try {
+      // Use defaults: show all tags from enabled groups
+      const config: ResolvedSubjectTagConfig = {
+        subjectCode,
+        enabledGroups: tagMap.defaults.enabled_groups,
+        groupsOrder: tagMap.defaults.groups_order ?? tagMap.defaults.enabled_groups,
+        allowAllTags: true, // Show all tags from enabled groups
+        allowedTags: {},
+      }
+      return filterTagsForSubject(allTags, config)
+    } catch (err) {
+      console.error(`[subjectTagResolver] Error using defaults for ${subjectCode}:`, err)
+      return []
+    }
   }
   
   try {

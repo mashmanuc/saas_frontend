@@ -48,15 +48,11 @@ const mfaApi = {
     return apiClient.post('/v1/auth/mfa/disable', payload)
   },
 
-  regenerateBackupCodes(): Promise<BackupCodesResponse> {
-    return apiClient.post('/v1/auth/mfa/backup-codes/regenerate')
+  regenerateBackupCodes(payload: { otp_code: string }): Promise<BackupCodesResponse> {
+    return apiClient.post('/v1/auth/mfa/backup-codes/regenerate', payload)
   },
 
-  getBackupCodes(): Promise<BackupCodesResponse> {
-    return apiClient.get('/v1/auth/mfa/backup-codes/')
-  },
-
-  requestBackupCodesToken(): Promise<{ token: string }> {
+  requestBackupCodesToken(): Promise<{ download_token: string; expires_in: number }> {
     return apiClient.post('/v1/auth/mfa/backup-codes/request/')
   },
 

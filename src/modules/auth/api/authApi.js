@@ -45,12 +45,16 @@ const authApi = {
     return api.post(`/v1/auth/webauthn/credentials/${id}/revoke/`)
   },
 
-  getBackupCodes() {
-    return api.get('/v1/auth/mfa/backup-codes/')
+  regenerateBackupCodes(payload) {
+    return api.post('/v1/auth/mfa/backup-codes/regenerate/', payload)
   },
 
-  regenerateBackupCodes() {
-    return api.post('/v1/auth/mfa/backup-codes/regenerate')
+  getMfaStatus() {
+    return api.get('/v1/auth/mfa/status/')
+  },
+
+  disableMfa(payload) {
+    return api.post('/v1/auth/mfa/disable/', payload)
   },
 
   getSessions() {
@@ -66,7 +70,7 @@ const authApi = {
   },
 
   refresh() {
-    return api.post('/v1/auth/refresh')
+    return api.post('/v1/auth/refresh/')
   },
 
   csrf() {

@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-1">
-    <p class="text-xs uppercase tracking-wide text-muted-foreground">
+    <p class="text-xs font-medium text-muted-foreground">
       {{ label }}
     </p>
     <p class="text-base text-foreground font-medium">
