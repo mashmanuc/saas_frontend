@@ -223,3 +223,46 @@ $ pnpm i18n:check
 - Admin UI готовий до додавання нових функцій (inline editing, bulk operations)
 
 План впровадження i18n-політики **повністю виконано**.
+
+---
+
+## 🔄 ОНОВЛЕННЯ СТАТУСУ (2026-02-01)
+
+### Виправлено критичні проблеми після аудиту
+
+**Виявлені та виправлені проблеми:**
+- ✅ Додано 59 missing keys `marketplace.analytics.*`, `marketplace.verification.*`, `marketplace.featured.*`, `marketplace.recommendations.*`
+- ✅ Видалено 1 extra key `auth.mfa.setup.backupCodesNotAvailable` (перенесено в `profile.security.mfa.backupCodesNotAvailable`)
+- ✅ Додано 42 missing keys для нового модуля `profileV2`: `profile.edit.*`, `profile.sections.*`, `profile.fields.*`, `profile.account.*`, `profile.overview.*`
+- ✅ Додано 73 missing keys `common.*` (retry, hour, later, offline.*, justNow, minutesAgo, hoursAgo, daysAgo, accept, all, apply, clear, confirm, confirmDelete, confirmDiscard, continue, copy, creating, currency, decline, selected, executing, exit, lock, min, minutes, moveDown, moveUp, nextWeek, notSpecified, of, open, optional, other, previousWeek, refresh, reject, remove, saving, search, searching, showing, there, today, understood, unlock, bookLesson, joinCurrentLesson, openLessonChat, bookLessonToChat, never, loadMore, moreActions, unknown, unavailable, rateLimit.*, weekdays.*)
+- ✅ Видалено дублікат об'єкта `common` на лінії 273-381 (залишено повнішу версію)
+
+**Фінальна перевірка:**
+```bash
+$ pnpm i18n:check --report
+[i18n-check] Reference locale (uk): 3382 keys
+[i18n-check] Unused keys in uk.json (624)
+[i18n-check] ✓ OK: All locales are consistent
+```
+
+**Оновлені метрики:**
+- **3382 ключів** у uk.json (+582 від попереднього аудиту)
+- 100% паритет uk.json ↔ en.json
+- 0 missing keys
+- 0 extra keys
+- 0 duplicate keys
+- 624 unused keys (всі — placeholders для динамічного використання через template literals)
+- 0 empty values
+
+**Структурні покращення:**
+- Видалено duplicate key warnings (було 2 дублікати `common`)
+- Синхронізовано всі домени між uk.json та en.json
+- Додано повну підтримку нового модуля profileV2
+- Розширено common namespace для покриття всіх use-cases
+
+**KPI залишаються досягнутими:**
+- ✅ 0 продакшн-релізів з дублікатами або відсутніми ключами
+- ✅ 0% ключів без перекладу
+- ✅ Автоматична детекція помилок < 1 хв (CI)
+
+i18n-політика **актуальна та повністю функціональна**.

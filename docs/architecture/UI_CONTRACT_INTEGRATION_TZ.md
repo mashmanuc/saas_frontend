@@ -77,5 +77,41 @@
 - QA sign-off після кожної хвилі.
 - Оновлення релізних нотаток із переліком екранів, які мігрували.
 
+## 9. UI Migration Policy (Mandatory)
+1. **Загальний принцип**: міграція виконується лише через версіонування доменів. Змішування Legacy UI та UI Contract у межах одного екрану/домену заборонено.
+2. **Legacy UI (read-only)**: існуючі екрани до впровадження `ui-contract` вважаються Legacy та не підлягають рефакторингу. Дозволено лише критичні bugfix та security/accessibility виправлення. Будь-які візуальні покращення чи часткові заміни компонентів заборонені.
+3. **UI Contract UI (V2 Domain Rule)**: кожна міграція створює V2-домен (наприклад, `tutorProfileV2`) із виключним використанням компонентів `assets2/ui-contract`. Заборонено імпортувати legacy-стилі або старі компоненти.
+4. **Заборона часткової міграції**: не допускається заміна окремих контролів у legacy-файлах. Дозволено лише повністю новий V2-екран із можливістю порівняння та перемикання через feature-flag/route/env.
+5. **Контроль версій та відкат**: перед стартом міграції ставимо git-tag `frontend-freeze-pre-ui-contract`. Legacy і V2 співіснують паралельно, видалення Legacy відбувається лише після стабілізації V2.
+6. **UI Contract як SSOT**: після запуску V2 `assets2/ui-contract` стає єдиним джерелом UI. Усі нові контролі додаються тільки в бібліотеку.
+7. **Архітектурний інваріант**: якщо є сумнів, чи можна змінювати UI в конкретному місці — відповідь "ні" для Legacy і "так" для V2 через `ui-contract`. Порушення правил прирівнюється до архітектурної помилки.
+
+## 10. Доменний план міграції (Legacy → V2)
+
+| Домен | Legacy джерело (read-only) | Що переносимо без змін (копія) | Що переписуємо у V2 | Коментар / V2 локація |
+|-------|---------------------------|---------------------------------|----------------------|------------------------|
+| **Auth** | `src/modules/auth` (views, layouts, MFA flows) | API клієнт `auth/api/authApi.js`, Pinia-стор `auth/store/authStore.js`, утиліти (storage, telemetry) — копіюються у V2 без правок | Усі `views/*`, `components/*` (форм-фактори, layout) переписати на ui-contract; нові шаблони авторизації, MFA, WebAuthn | Новий каталог `src/modules/authV2` з власним роутером та ui-contract компонентами |
+| **Profile (user/tutor)** | `src/modules/profile` (views + widgets) | Stores `profile/store/*.js`, API-проксі, utils — переносяться без змін (до V2/services) | `views/ProfileEditView.vue`, `ProfileOverviewView.vue`, `UserAccountView.vue`, `Settings*`, NEW-файли — переписати з нуля у `profileV2/views` використовуючи ui-contract; компоненти у `profile/components` реімплементувати | V2: `src/modules/profileV2` із підпапками `views`, `components`, `forms` |
+| **Marketplace (catalog + tutor profile)** | `src/modules/marketplace` | Domain services: `stores/catalogStore.ts`, `api/*`, search utils — копіюємо 1:1 | Всі `views` (TutorCatalog, TutorProfile, SearchResults, Category, MyProfile), UI-компоненти `components/*` — переписати під новий дизайн | Створити `marketplaceV2` з окремими entry routes; legacy storefront лишається недоторканою |
+| **Booking / Availability** | `src/modules/booking` (грид календаря, availability editor) | Pinia stores (`stores/availabilityStore.ts`, `requestsStore.ts`), API клієнти, domain mappers | `views/TutorAvailabilityView.vue`, календарні компоненти в `components/availability/*` — нова реалізація з ui-contract формами, таймлайн-компонентами; legacy CSS не чіпаємо | Каталог `bookingV2` із розбиттям на `calendar`, `requests`, `components` |
+| **Billing** | `src/modules/billing` | `billing/api`, `billing/stores/billingStore.ts`, пагінація utils — копія без змін | `views/AccountBillingView.vue`, `components/*` (платіжні карти, статуси, модалки) переписати на ui-contract; форми checkout/cancel оформити новими контролами | Новий каталог `billingV2` + ізольований маршрут в роутері |
+| **Onboarding / Dashboard shell** | `src/modules/onboarding`, `src/modules/dashboard` | Бекенд контракти (API, stores) переносимо як є | Усі мультікрокові екрани (`OnboardingView.vue`, `ChecklistView.vue`, `DashboardTutor.vue`, `DashboardStudent.vue`) будуються з ui-contract layout-ами; card-компоненти переписати | `onboardingV2`, `dashboardV2` з модульною структурою (layout, widgets, steps) |
+| **Shared UI** | `src/ui`, `src/components` | Бізнес-логіка в composables (`src/composables/*`), сервісні плагіни (router guards) — без змін | Усі візуальні shared-компоненти (кнопки, модалки, форми) не використовуються у V2; натомість створюємо фічеві обгортки над `assets2/ui-contract` | Додати `src/componentsV2/` для адаптерів (наприклад, `FormSection`, `Toolbar`) |
+
+### Порядок дій для кожного домену
+1. **Freeze legacy**: після створення V2-каталогу ставимо прапор read-only в README домену, додаємо посилання на цю політику.
+2. **Копія сервісів**: переносимо API/Store/Utils у V2 `/services` без змін. Код підписуємо як `Legacy-compatible` до повної заміни.
+3. **Роутинг**: у `src/router/index.js` додаємо паралельні маршрути `*-v2` з feature-flag (env/remote config). Старі маршрути не правимо.
+4. **UI-реалізація**: створюємо нові `views` з ui-contract компонентами, layout/sections/controls отримують токени через CSS vars, без імпорту legacy стилів.
+5. **Перевірка контрактів**: звіряємо API-виклики й state machines між Legacy та V2, документуємо відмінності в `docs/plan/...` та в новому README домену.
+6. **Відкат**: поки V2 не стабілізований, маршрути легко вимикаються feature-flagʼом; після стабілізації — план деcommission Legacy.
+
+## 11. Політика доменних термінів та текстів
+1. **Ніяких нових термінів без потреби**: якщо домен уже має назву поля/секції/стану — повторно використовуємо існуючий термін. Заборонено вигадувати альтернативні “креативні” назви.
+2. **Семантика незмінна**: локалізаційні ключі відображають доменну структуру. Зміна тексту не може змінювати значення поля (наприклад, не перетворюємо “Hourly rate” на “Marketing tagline”).
+3. **Helper-тексти**: дозволені лише для пояснення вже визначених полів. Заборонено дробити один сенс на кілька вигаданих підказок.
+4. **Нові терміни**: якщо домену реально бракує поняття, спершу погоджуємо його з архітектором/доменним лідами, документуємо у відповідному README/архітектурному файлі, лише потім додаємо ключ.
+5. **Рев’ю**: кожен PR з новими i18n-ключами має містити посилання на доменну специфікацію або пояснення, чому з’явився новий термін.
+
 ---
 **Відповідальний за виконання:** команда фронтенду (агентні моделі).  Керівний документ — цей ТЗ + Manifest платформи.

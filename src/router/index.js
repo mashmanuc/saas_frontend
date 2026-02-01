@@ -41,6 +41,11 @@ const ChangePasswordView = () => import('../modules/profile/views/ChangePassword
 const AccountBillingView = () => import('../modules/billing/views/AccountBillingView.vue')
 const DevThemePlaygroundView = () => import('../modules/dev/views/DevThemePlayground.vue')
 
+// UI Contract V2 views (feature-flagged)
+const ProfileEditViewV2 = () => import('../modules/profileV2/views/ProfileEditView.vue')
+const ProfileOverviewViewV2 = () => import('../modules/profileV2/views/ProfileOverviewView.vue')
+const UserAccountViewV2 = () => import('../modules/profileV2/views/UserAccountView.vue')
+
 // Onboarding views
 const OnboardingView = () => import('../modules/onboarding/views/OnboardingView.vue')
 const StudentOnboardingView = () => import('../modules/onboarding/views/StudentOnboardingView.vue')
@@ -247,6 +252,27 @@ const routes = [
         component: ProfileActivityView,
         meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
       },
+      // UI Contract V2 routes (feature-flagged)
+      ...(import.meta.env.VITE_ENABLE_UI_CONTRACT_V2 === 'true' ? [
+        {
+          path: 'profile-v2/overview',
+          name: 'profile-overview-v2',
+          component: ProfileOverviewViewV2,
+          meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
+        },
+        {
+          path: 'profile-v2/edit',
+          name: 'profile-edit-v2',
+          component: ProfileEditViewV2,
+          meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
+        },
+        {
+          path: 'profile-v2/account',
+          name: 'profile-account-v2',
+          component: UserAccountViewV2,
+          meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
+        },
+      ] : []),
       // USERS domain routes
       {
         path: 'settings',
