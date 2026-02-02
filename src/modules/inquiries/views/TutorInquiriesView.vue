@@ -11,6 +11,16 @@
       :is-blocked="isBlocked"
     />
     
+    <!-- Accept Limit Info Block (ЗАВЖДИ ВИДИМИЙ) -->
+    <div class="accept-limit-info">
+      <div v-if="acceptanceStore.remainingAccepts > 0" class="limit-text">
+        Ваш ліміт прийомів: <strong>{{ acceptanceStore.remainingAccepts }} / 10</strong> доступно за останні 30 днів
+      </div>
+      <div v-else class="limit-text limit-exhausted">
+        Ліміт прийомів вичерпано: <strong>0 / 10</strong> (оновиться автоматично)
+      </div>
+    </div>
+    
     <!-- Loading State -->
     <LoadingState v-if="isLoading && !items.length" :message="$t('inquiries.loading')" />
     
@@ -25,12 +35,11 @@
       @retry="handleRetry"
     />
     
-    <!-- Empty State -->
-    <EmptyInquiriesState
-      v-else-if="!items.length"
-      :title="$t('inquiries.tutor.empty.title')"
-      :description="$t('inquiries.tutor.empty.description')"
-    />
+    <!-- Empty State (новий текст) -->
+    <div v-else-if="!items.length" class="empty-state">
+      <p class="empty-title">Наразі у вас немає запитів від студентів.</p>
+      <p class="empty-description">Коли з'являться — ви зможете прийняти їх одразу.</p>
+    </div>
     
     <!-- Inquiries List -->
     <div v-else class="inquiries-list">
@@ -45,9 +54,9 @@
           <button 
             @click="handleAccept(inquiry.id)"
             class="btn btn-primary btn-sm"
-            :disabled="isLoading"
+            :disabled="isLoading || isAccepting || !acceptanceStore.canAccept"
           >
-            {{ $t('inquiries.tutor.accept') }}
+            {{ isAccepting ? $t('inquiries.tutor.accepting') : $t('inquiries.tutor.accept') }}
           </button>
           <button 
             @click="openRejectModal(inquiry.id)"
@@ -109,6 +118,8 @@
 import { ref, onMounted } from 'vue'
 import { useInquiriesStore } from '@/stores/inquiriesStore'
 import { useContactsStore } from '@/stores/contactsStore'
+import { useAcceptanceStore } from '@/stores/acceptanceStore'
+import { useInquiryAccept } from '@/composables/useInquiryAccept'
 import { useInquiryErrorHandler } from '@/composables/useInquiryErrorHandler'
 import { storeToRefs } from 'pinia'
 import type { ContactsDTO } from '@/types/inquiries'
@@ -121,9 +132,11 @@ import DeclineStreakWarning from '@/components/contacts/DeclineStreakWarning.vue
 
 const inquiriesStore = useInquiriesStore()
 const contactsStore = useContactsStore()
+const acceptanceStore = useAcceptanceStore()
 const { items, isLoading } = storeToRefs(inquiriesStore)
 const { declineStreak, isBlocked } = storeToRefs(contactsStore)
 const { errorState, handleError, clearError } = useInquiryErrorHandler()
+const { isAccepting, handleAccept: handleAcceptWithGrace } = useInquiryAccept()
 
 const showRejectModal = ref(false)
 const selectedInquiryId = ref<number | null>(null)
@@ -133,7 +146,8 @@ const unlockedContacts = ref<ContactsDTO | null>(null)
 onMounted(async () => {
   await Promise.all([
     loadInquiries(),
-    contactsStore.fetchStats()
+    contactsStore.fetchStats(),
+    acceptanceStore.fetchAvailability()
   ])
 })
 
@@ -149,14 +163,15 @@ async function loadInquiries() {
 async function handleAccept(inquiryId: number) {
   clearError()
   try {
-    const response = await inquiriesStore.acceptInquiry(inquiryId)
+    // SSOT-compliant accept with grace token retry
+    await handleAcceptWithGrace(String(inquiryId))
     
     // Phase 2.3 INV-3: Refetch balance + ledger after accept
     await contactsStore.afterAcceptRefresh()
     
-    // Показати контакти студента
-    unlockedContacts.value = response.contacts
-    showContactsModal.value = true
+    // Note: contacts are shown via InquiryService response
+    // For now, we keep the old modal logic for backward compatibility
+    // TODO: Migrate to new accept response structure
   } catch (err) {
     handleError(err)
   }
@@ -195,6 +210,9 @@ function handleRetry() {
 
 .view-header {
   margin-bottom: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .view-header h1 {
@@ -208,6 +226,61 @@ function handleRetry() {
   margin: 0;
   font-size: 16px;
   color: #6B7280;
+}
+
+/* Accept Limit Info Block */
+.accept-limit-info {
+  margin: 24px 0;
+  padding: 16px 20px;
+  background: #F0F9FF;
+  border: 2px solid #3B82F6;
+  border-radius: 8px;
+}
+
+.limit-text {
+  font-size: 15px;
+  color: #1E40AF;
+  line-height: 1.5;
+}
+
+.limit-text strong {
+  font-weight: 700;
+  color: #1E3A8A;
+}
+
+.limit-exhausted {
+  background: #FEF2F2;
+  border-color: #EF4444;
+  color: #991B1B;
+  padding: 16px 20px;
+  border-radius: 8px;
+  margin: -16px -20px;
+}
+
+.limit-exhausted strong {
+  color: #7F1D1D;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  background: #F9FAFB;
+  border-radius: 12px;
+  margin-top: 24px;
+}
+
+.empty-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 8px 0;
+}
+
+.empty-description {
+  font-size: 15px;
+  color: #6B7280;
+  margin: 0;
 }
 
 .inquiries-list {

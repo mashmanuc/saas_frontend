@@ -19,6 +19,8 @@ import type {
 // Current route info (updated by router)
 let currentRouteInfo: RouteInfo = {}
 
+const RESOURCE_ERROR_TAGS = new Set(['IMG', 'SCRIPT', 'LINK', 'VIDEO', 'AUDIO', 'SOURCE'])
+
 export function setCurrentRoute(info: RouteInfo): void {
   currentRouteInfo = info
 }
@@ -47,6 +49,32 @@ function getPlatform(): string {
 
 function shouldIgnore(message: string, patterns: RegExp[]): boolean {
   return patterns.some((pattern) => pattern.test(message))
+}
+
+type ResourceErrorContext = {
+  tag: string
+  url?: string
+}
+
+function getResourceErrorContext(event: Event): ResourceErrorContext | null {
+  const target = event?.target as (EventTarget & {
+    tagName?: string
+    src?: string
+    currentSrc?: string
+    href?: string
+  }) | null
+
+  if (!target || !target.tagName) {
+    return null
+  }
+
+  const tag = target.tagName.toUpperCase()
+  if (!RESOURCE_ERROR_TAGS.has(tag)) {
+    return null
+  }
+
+  const url = target.currentSrc || target.src || target.href
+  return { tag, url }
 }
 
 function createPayload(
@@ -161,18 +189,29 @@ export function createErrorCollector(options: ErrorCollectorOptions = {}) {
       window.addEventListener(
         'error',
         (event: Event) => {
-          const e = event as ErrorEvent
-          const msg = String(e.message || e.error?.message || e.error || 'Unknown error')
-          if (shouldIgnore(msg, ignorePatterns)) {
-            e.preventDefault?.()
-            e.stopImmediatePropagation?.()
+          if (event instanceof ErrorEvent) {
+            const msg = String(event.message || event.error?.message || event.error || 'Unknown error')
+            if (shouldIgnore(msg, ignorePatterns)) {
+              event.preventDefault?.()
+              event.stopImmediatePropagation?.()
+              return
+            }
+            handleError('error', msg, event.error?.stack || undefined, {
+              source: event.filename,
+              lineno: event.lineno,
+              colno: event.colno,
+            })
             return
           }
-          handleError('error', msg, e.error?.stack || undefined, {
-            source: e.filename,
-            lineno: e.lineno,
-            colno: e.colno,
-          })
+
+          // Handle resource loading errors (img/script/link/etc.) separately to avoid noisy "Unknown error" logs
+          const resourceContext = getResourceErrorContext(event)
+          if (resourceContext) {
+            handleError('warning', `Resource load error (${resourceContext.tag})`, undefined, {
+              resource_tag: resourceContext.tag,
+              resource_url: resourceContext.url,
+            })
+          }
         },
         true
       )

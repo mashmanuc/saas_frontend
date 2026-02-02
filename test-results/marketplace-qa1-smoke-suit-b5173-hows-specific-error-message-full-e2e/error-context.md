@@ -1,0 +1,133 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e4]:
+  - navigation "Бічна навігація" [ref=e5]:
+    - navigation [ref=e6]:
+      - link "Панель керування" [ref=e7] [cursor=pointer]:
+        - /url: /tutor
+        - generic [ref=e8]:
+          - generic [ref=e9]: 🏠
+          - generic [ref=e10]: Панель керування
+      - link "Класи" [ref=e11] [cursor=pointer]:
+        - /url: /dashboard/classrooms
+        - generic [ref=e12]:
+          - generic [ref=e13]: 🏫
+          - generic [ref=e14]: Класи
+      - link "Календар тьютора" [ref=e15] [cursor=pointer]:
+        - /url: /booking/tutor
+        - generic [ref=e16]:
+          - generic [ref=e17]: 📘
+          - generic [ref=e18]: Календар тьютора
+      - link "Робочий простір" [ref=e19] [cursor=pointer]:
+        - /url: /solo
+        - generic [ref=e20]:
+          - generic [ref=e21]: •
+          - generic [ref=e22]: Робочий простір
+      - link "Профіль тьютора" [ref=e23] [cursor=pointer]:
+        - /url: /tutor/profile
+        - generic [ref=e24]:
+          - generic [ref=e25]: •
+          - generic [ref=e26]: Профіль тьютора
+      - link "Акаунт" [ref=e27] [cursor=pointer]:
+        - /url: /dashboard/profile
+        - generic [ref=e28]:
+          - generic [ref=e29]: •
+          - generic [ref=e30]: Акаунт
+      - link "Налаштування" [ref=e31] [cursor=pointer]:
+        - /url: /settings
+        - generic [ref=e32]:
+          - generic [ref=e33]: •
+          - generic [ref=e34]: Налаштування
+  - generic [ref=e35]:
+    - banner [ref=e36]:
+      - heading "M4SH Platform" [level=1] [ref=e38]
+      - generic [ref=e39]:
+        - generic "Тема" [ref=e40]:
+          - button "Світла" [pressed] [ref=e41] [cursor=pointer]:
+            - generic [ref=e42]: 🌿
+            - generic [ref=e43]: Світла
+          - button "Темна" [ref=e44] [cursor=pointer]:
+            - generic [ref=e45]: 🌙
+            - generic [ref=e46]: Темна
+          - button "Класична" [ref=e47] [cursor=pointer]:
+            - generic [ref=e48]: 🎓
+            - generic [ref=e49]: Класична
+        - generic [ref=e50]:
+          - button "Баланс контактів" [ref=e52] [cursor=pointer]:
+            - generic [ref=e53]: "Контакти:"
+            - generic [ref=e54]: "0"
+          - button "Сповіщення" [ref=e56] [cursor=pointer]:
+            - generic [ref=e57]: 🔔
+        - generic [ref=e58]:
+          - generic [ref=e59]: TT
+          - generic [ref=e60]: Test
+        - button "Вийти" [ref=e61] [cursor=pointer]
+        - generic [ref=e62]: Тьютор
+        - generic [ref=e63]:
+          - button "UK" [ref=e64] [cursor=pointer]
+          - button "EN" [ref=e65] [cursor=pointer]
+    - main [ref=e66]:
+      - generic [ref=e67]:
+        - generic [ref=e68]:
+          - generic [ref=e71]:
+            - button "Назад до каталогу" [ref=e72] [cursor=pointer]:
+              - img [ref=e73]
+              - text: Назад до каталогу
+            - generic [ref=e75]:
+              - generic [ref=e77]: T
+              - generic [ref=e78]:
+                - heading "tutor-79" [level=1] [ref=e79]
+                - paragraph [ref=e80]: Professional Math Tutor
+                - generic [ref=e81]:
+                  - generic [ref=e82]:
+                    - img [ref=e83]
+                    - text: Не вказано
+                  - generic [ref=e86]:
+                    - img [ref=e87]
+                    - text: Не вказано
+                  - generic [ref=e90]:
+                    - img [ref=e91]
+                    - text: "Стаж: не вказано"
+                - generic [ref=e94]:
+                  - img [ref=e95]
+                  - generic [ref=e97]: "0.0"
+          - button "Більше дій" [ref=e99] [cursor=pointer]: ⋮
+        - generic [ref=e100]:
+          - main [ref=e101]:
+            - generic [ref=e102]:
+              - heading "Про себе" [level=2] [ref=e103]
+              - generic [ref=e104]: Experienced tutor with 10+ years
+            - generic [ref=e105]:
+              - heading "Предмети та напрями" [level=2] [ref=e106]:
+                - img [ref=e107]
+                - text: Предмети та напрями
+              - generic [ref=e111]:
+                - heading [level=3]
+            - generic [ref=e113]:
+              - generic [ref=e114]:
+                - heading "Відгуки" [level=2] [ref=e115]
+                - generic [ref=e116]:
+                  - img [ref=e117]
+                  - generic [ref=e119]: "0.0"
+              - generic [ref=e120]: Відгуків ще немає
+          - complementary [ref=e121]:
+            - generic [ref=e122]:
+              - generic [ref=e123]:
+                - generic [ref=e124]:
+                  - generic [ref=e125]: $0
+                  - generic [ref=e126]: / год
+                - generic [ref=e127]:
+                  - text: "Пробний урок:"
+                  - generic [ref=e128]: $0
+              - generic [ref=e129]:
+                - img [ref=e130]
+                - text: Не вказано
+              - generic [ref=e133]:
+                - button "Запланувати урок" [ref=e134] [cursor=pointer]:
+                  - img [ref=e135]
+                  - text: Запланувати урок
+                - button "Надіслати повідомлення" [ref=e137] [cursor=pointer]:
+                  - img [ref=e138]
+                  - text: Надіслати повідомлення
+```

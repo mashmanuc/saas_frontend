@@ -60,21 +60,51 @@ export async function loginViaApi(
   await page.goto(baseURL)
 
   // 4. Записати токени у localStorage (ключі 'access' та 'user', як у authStore)
-  await page.evaluate(
-    ([token, serializedUser]) => {
-      window.localStorage.setItem('access', token)
-      window.localStorage.setItem('user', serializedUser)
-    },
-    [access, JSON.stringify(user)]
-  )
+  // Retry logic для надійності
+  let retries = 3
+  let storedAccess: string | null = null
+  let storedUser: string | null = null
+  
+  while (retries > 0) {
+    await page.evaluate(
+      ([token, serializedUser]) => {
+        window.localStorage.setItem('access', token)
+        window.localStorage.setItem('user', serializedUser)
+      },
+      [access, JSON.stringify(user)]
+    )
 
-  // 5. Перевірити, що токени збереглися
-  const storedAccess = await page.evaluate(() => window.localStorage.getItem('access'))
-  const storedUser = await page.evaluate(() => window.localStorage.getItem('user'))
+    // Перевірити, що токени збереглися
+    storedAccess = await page.evaluate(() => window.localStorage.getItem('access'))
+    storedUser = await page.evaluate(() => window.localStorage.getItem('user'))
+    
+    if (storedAccess && storedUser) {
+      break // Success
+    }
+    
+    retries--
+    if (retries > 0) {
+      await page.waitForTimeout(100) // Wait 100ms before retry
+    }
+  }
   
   if (!storedAccess || !storedUser) {
+    // Діагностика: перевірити що взагалі є в localStorage
+    const allKeys = await page.evaluate(() => Object.keys(window.localStorage))
+    const allValues = await page.evaluate(() => {
+      const result: Record<string, string> = {}
+      for (let i = 0; i < window.localStorage.length; i++) {
+        const key = window.localStorage.key(i)
+        if (key) result[key] = window.localStorage.getItem(key) || ''
+      }
+      return result
+    })
+    
     throw new Error(
-      `Failed to store auth tokens in localStorage. Stored access: ${!!storedAccess}, stored user: ${!!storedUser}`
+      `Failed to store auth tokens in localStorage after 3 retries.\n` +
+      `Stored access: ${!!storedAccess}, stored user: ${!!storedUser}\n` +
+      `All localStorage keys: ${JSON.stringify(allKeys)}\n` +
+      `All localStorage values: ${JSON.stringify(allValues, null, 2)}`
     )
   }
 
@@ -88,6 +118,10 @@ export async function loginAsTutor(page: Page) {
   await loginViaApi(page)
   await page.goto('/booking/tutor')
   await page.waitForLoadState('networkidle')
+  
+  // Чекаємо на завантаження календаря (використовуємо helper)
+  const { waitForCalendarReady } = await import('./waitForCalendar')
+  await waitForCalendarReady(page, { timeout: 30000 })
 }
 
 /**

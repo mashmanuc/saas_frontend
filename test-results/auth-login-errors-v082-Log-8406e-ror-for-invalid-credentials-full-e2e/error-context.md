@@ -1,0 +1,24 @@
+# Page snapshot
+
+```yaml
+- main "Секція авторизації" [ref=e4]:
+  - generic [ref=e6]:
+    - generic [ref=e7]:
+      - heading "Вхід" [level=1] [ref=e8]
+      - paragraph [ref=e9]: Введіть email і пароль, щоб продовжити.
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - generic [ref=e12]: Email *
+        - textbox "Email *" [ref=e14]: wrong@example.com
+      - generic [ref=e15]:
+        - generic [ref=e16]: Пароль *
+        - textbox "Пароль *" [ref=e18]: wrongpassword
+      - link "Забули пароль?" [ref=e19] [cursor=pointer]:
+        - /url: /auth/forgot-password
+      - button "Входимо..." [disabled] [ref=e20]:
+        - generic [ref=e21]: Входимо...
+    - paragraph [ref=e22]:
+      - text: Немає акаунта?
+      - link "Зареєструватися" [ref=e23] [cursor=pointer]:
+        - /url: /auth/register
+```

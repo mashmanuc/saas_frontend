@@ -47,6 +47,12 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      // Ensure media files (avatars, uploads) are served from backend in dev mode
+      '/media': {
+        target: process.env.VITE_DEV_API_TARGET || 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
   test: {
