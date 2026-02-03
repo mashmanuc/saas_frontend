@@ -63,6 +63,8 @@
             :data-slot-id="slot.slot_id"
             tabindex="0"
             :aria-label="getSlotAriaLabel(slot)"
+            :disabled="!props.interactive"
+            :aria-disabled="!props.interactive"
           >
             {{ formatTime(slot.start_at) }}
           </button>
@@ -113,12 +115,14 @@ const props = withDefaults(
     maxWeeks?: number
     showHeader?: boolean
     emptyState?: string
+    interactive?: boolean
   }>(),
   {
     timezone: 'Europe/Kyiv',
     view: 'full',
     maxWeeks: 4,
     showHeader: true,
+    interactive: true,
   }
 )
 
@@ -265,6 +269,8 @@ function nextWeek() {
 }
 
 function handleSlotClick(slot: CalendarSlot) {
+  if (!props.interactive) return
+
   // Telemetry: availability_slot_clicked
   if (window.gtag) {
     window.gtag('event', 'availability_slot_clicked', {

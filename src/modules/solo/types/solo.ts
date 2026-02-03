@@ -3,11 +3,23 @@ export type Tool =
   | 'highlighter'
   | 'eraser'
   | 'line'
+  | 'arrow'
   | 'rectangle'
   | 'circle'
   | 'text'
   | 'note'
   | 'select'
+
+export type ArrowStyle = 'arrow-end' | 'arrow-start' | 'arrow-both'
+
+export type BackgroundType = 'white' | 'grid' | 'dots' | 'ruled' | 'graph' | 'color'
+
+export interface PageBackground {
+  type: BackgroundType
+  color?: string       // for 'color' type, or tint for patterns
+  gridSize?: number    // spacing for grid/dots/graph (default: 20)
+  lineColor?: string   // color of grid lines/dots (default: #e5e7eb)
+}
 
 export interface Point {
   x: number
@@ -27,7 +39,7 @@ export interface Stroke {
 
 export interface Shape {
   id: string
-  type: 'line' | 'rectangle' | 'circle'
+  type: 'line' | 'arrow' | 'rectangle' | 'circle'
   color: string
   size: number
   startX?: number
@@ -38,6 +50,11 @@ export interface Shape {
   y?: number
   width?: number
   height?: number
+  radius?: number      // for circle tool
+  // Arrow properties (optional - backward compatible)
+  arrowStart?: boolean
+  arrowEnd?: boolean
+  arrowSize?: number
   points?: Point[]
 }
 
@@ -59,6 +76,7 @@ export interface PageState {
   strokes: Stroke[]
   shapes: Shape[]
   texts: TextElement[]
+  background?: PageBackground  // optional for backward compatibility (default: white)
 }
 
 export interface HistoryAction {

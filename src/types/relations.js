@@ -35,9 +35,17 @@ export const RELATION_ENDPOINTS = Object.freeze({
   TUTOR_RELATIONS: buildV1Url('/tutor/relations/'),
   TUTOR_RELATIONS_BULK_ACCEPT: buildV1Url('/tutor/relations/batch/accept/'),
   TUTOR_RELATIONS_BULK_ARCHIVE: buildV1Url('/tutor/relations/batch/archive/'),
-  // Student accepts/declines tutor invitation
+  
+  // Student endpoints (Flow: Tutor invites Student → Student accepts/declines)
+  STUDENT_ACCEPT: (id) => buildV1Url(`/student/relations/${id}/accept/`),
+  STUDENT_DECLINE: (id) => buildV1Url(`/student/relations/${id}/decline/`),
+  
+  // Tutor endpoints (Flow: Student requests Tutor → Tutor accepts)
+  TUTOR_ACCEPT: (id) => buildV1Url(`/tutor/relations/${id}/accept/`),
+  TUTOR_RESEND: (id) => buildV1Url(`/tutor/relations/${id}/resend/`),
+  
+  // Legacy aliases (deprecated, use role-specific endpoints)
   ACCEPT: (id) => buildV1Url(`/student/relations/${id}/accept/`),
   DECLINE: (id) => buildV1Url(`/student/relations/${id}/decline/`),
-  // Tutor resends invitation
   RESEND: (id) => buildV1Url(`/tutor/relations/${id}/resend/`),
 })

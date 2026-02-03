@@ -10,16 +10,20 @@ const props = defineProps<Props>()
 
 const { t } = useI18n()
 
-const bioHtml = computed(() => {
-  const v = typeof props.bio === 'string' ? props.bio.trim() : ''
-  return v.length > 0 ? v : `<p>${t('common.notSpecified')}</p>`
+const bioText = computed(() => {
+  if (props.bio && props.bio.trim().length > 0) {
+    return props.bio
+  }
+  return t('marketplace.profile.about.notProvided')
 })
+
+const isEmpty = computed(() => !props.bio || props.bio.trim().length === 0)
 </script>
 
 <template>
   <section class="profile-about">
     <h2>{{ t('marketplace.catalog.tabs.about') }}</h2>
-    <div class="bio" v-html="bioHtml" />
+    <p class="bio" :class="{ 'bio-empty': isEmpty }" v-html="bioText" />
   </section>
 </template>
 
@@ -41,6 +45,9 @@ h2 {
   font-size: 0.9375rem;
   line-height: 1.7;
   color: var(--text-secondary);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
 }
 
 .bio :deep(p) {
@@ -49,5 +56,10 @@ h2 {
 
 .bio :deep(p:last-child) {
   margin-bottom: 0;
+}
+
+.bio-empty {
+  color: var(--text-muted);
+  font-style: italic;
 }
 </style>

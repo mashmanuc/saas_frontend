@@ -24,7 +24,13 @@
       v-else-if="!items.length"
       :title="$t('inquiries.student.empty.title')"
       :description="$t('inquiries.student.empty.description')"
-    />
+    >
+      <template #action>
+        <router-link to="/marketplace" class="btn btn-primary">
+          Знайти тьютора
+        </router-link>
+      </template>
+    </EmptyInquiriesState>
     
     <!-- Inquiries List -->
     <div v-else class="inquiries-list">
@@ -56,9 +62,10 @@
  * Дашборд студента для перегляду та управління своїми inquiries
  */
 
-import { onMounted } from 'vue'
+import { onMounted, onUnmounted, watch } from 'vue'
 import { useInquiriesStore } from '@/stores/inquiriesStore'
 import { useInquiryErrorHandler } from '@/composables/useInquiryErrorHandler'
+import { usePageVisibility } from '@/composables/usePageVisibility'
 import { storeToRefs } from 'pinia'
 import LoadingState from '@/components/inquiries/LoadingState.vue'
 import ErrorState from '@/components/inquiries/ErrorState.vue'
@@ -68,9 +75,34 @@ import InquiryCard from '@/components/inquiries/InquiryCard.vue'
 const inquiriesStore = useInquiriesStore()
 const { items, isLoading } = storeToRefs(inquiriesStore)
 const { errorState, handleError, clearError } = useInquiryErrorHandler()
+const { isVisible } = usePageVisibility()
+
+let refreshInterval: number | null = null
 
 onMounted(async () => {
   await loadInquiries()
+  
+  // Auto-refresh every 2 minutes (120s) - only when tab is active
+  refreshInterval = window.setInterval(() => {
+    if (isVisible.value && !isLoading.value) {
+      loadInquiries()
+    }
+  }, 120000) // 120 seconds = 2 minutes
+})
+
+onUnmounted(() => {
+  // Cleanup interval on component unmount
+  if (refreshInterval !== null) {
+    clearInterval(refreshInterval)
+    refreshInterval = null
+  }
+})
+
+// Refetch when tab becomes visible again (immediate, not waiting for interval)
+watch(isVisible, (visible) => {
+  if (visible && !isLoading.value) {
+    loadInquiries()
+  }
 })
 
 async function loadInquiries() {

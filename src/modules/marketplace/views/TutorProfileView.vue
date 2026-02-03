@@ -17,9 +17,7 @@ import CreateReviewModal from '../components/profile/CreateReviewModal.vue'
 import ProfileContact from '../components/profile/ProfileContact.vue'
 import LoadingSpinner from '@/ui/LoadingSpinner.vue'
 import NotFound from '@/ui/NotFound.vue'
-import TrialRequestModal from '../components/trial/TrialRequestModal.vue'
 import TutorAvailabilityCalendar from '../components/TutorAvailabilityCalendar.vue'
-import type { AvailableSlot } from '../api/marketplace'
 import ReportModal from '@/components/trust/ReportModal.vue'
 import { ReportTargetType } from '@/types/trust'
 import { useI18n } from 'vue-i18n'
@@ -34,8 +32,6 @@ const { t } = useI18n()
 const { currentProfile, isLoadingProfile, error } = storeToRefs(store)
 
 const slug = computed(() => route.params.slug as string)
-const selectedSlot = ref<AvailableSlot | null>(null)
-
 const isCreateReviewOpen = ref(false)
 const reviewsRef = ref<InstanceType<typeof ProfileReviews> | null>(null)
 const isReportModalOpen = ref(false)
@@ -43,6 +39,7 @@ const showActionsMenu = ref(false)
 const isInquiryModalOpen = ref(false)
 
 const canWriteReview = computed(() => auth.isAuthenticated && auth.userRole === 'student')
+const canAccessProfileActions = computed(() => auth.isAuthenticated && auth.userRole === 'student')
 
 const tutorUserId = computed(() => {
   if (!currentProfile.value?.user_id) return null
@@ -61,15 +58,15 @@ watch(slug, (newSlug) => {
   }
 })
 
-function handleBook() {
-  // Booking is now handled via trial-request flow (weekly availability).
-  // Keep CTA wired, but require slot selection.
-  const el = document.querySelector('[data-test="marketplace-availability"]') as HTMLElement | null
-  el?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
+function handleMessage() {
+  // TODO: Implement messaging functionality
+  return
 }
 
-function handleMessage() {
-  return
+function handleLoginRequired() {
+  // Redirect to login with return URL
+  const returnUrl = encodeURIComponent(route.fullPath)
+  router.push(`/auth/login?redirect=${returnUrl}`)
 }
 
 function goBack() {
@@ -86,17 +83,6 @@ function closeCreateReview() {
 
 function handleReviewCreated() {
   reviewsRef.value?.reload?.()
-}
-
-function handleSlotClick(slot: AvailableSlot) {
-  selectedSlot.value = slot
-}
-
-function handleRefreshCalendar() {
-  // Reload calendar by re-fetching profile or triggering calendar refresh
-  if (currentProfile.value) {
-    store.loadProfile(slug.value)
-  }
 }
 
 function handleOpenActionsMenu() {
@@ -217,7 +203,7 @@ function handleInquirySuccess() {
       <div class="profile-header-wrapper">
         <ProfileHeader :profile="currentProfile" @back="goBack" />
         
-        <div v-if="auth.isAuthenticated" class="profile-actions-menu">
+        <div v-if="canAccessProfileActions" class="profile-actions-menu">
           <button 
             class="actions-menu-btn"
             @click="handleOpenActionsMenu"
@@ -251,17 +237,18 @@ function handleInquirySuccess() {
           />
 
           <!-- Availability Section v0.59 - Real Calendar -->
-          <section 
-            v-if="currentProfile.user_id && currentProfile.availability_summary?.timezone" 
-            class="profile-section" 
-            data-test="marketplace-availability"
-          >
+          <section class="profile-section" data-test="marketplace-availability">
             <h2 class="section-title">{{ $t('marketplace.calendar.title') }}</h2>
+            <p class="section-note">{{ $t('marketplace.calendar.infoNote') }}</p>
             <TutorAvailabilityCalendar
+              v-if="currentProfile.user_id && currentProfile.availability_summary?.timezone"
               :tutor-id="currentProfile.user_id"
               :timezone="currentProfile.availability_summary.timezone"
-              @slot-click="handleSlotClick"
+              :interactive="false"
             />
+            <div v-else class="calendar-empty">
+              <p>{{ $t('marketplace.profile.calendar.notConfigured') }}</p>
+            </div>
           </section>
 
           <!-- Reviews section placeholder -->
@@ -290,9 +277,9 @@ function handleInquirySuccess() {
         <aside class="profile-sidebar">
           <ProfileContact
             :profile="currentProfile"
-            @book="handleBook"
             @message="handleMessage"
             @inquiry="openInquiryModal"
+            @login-required="handleLoginRequired"
           />
 
           <!-- Note: TutorProfileFull doesn't have badges or badges_history fields -->
@@ -307,15 +294,6 @@ function handleInquirySuccess() {
     >
       <button class="btn btn-primary" @click="goBack">{{ $t('marketplace.profile.notFound.backCta') }}</button>
     </NotFound>
-
-    <TrialRequestModal
-      v-if="selectedSlot"
-      :slug="slug"
-      :slot="selectedSlot"
-      @close="selectedSlot = null"
-      @created="() => { selectedSlot = null }"
-      @refresh="handleRefreshCalendar"
-    />
 
     <CreateReviewModal
       v-if="isCreateReviewOpen"
@@ -363,10 +341,10 @@ function handleInquirySuccess() {
 .profile-layout {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 1.5rem;
+  padding: 1rem;
   display: grid;
-  grid-template-columns: 1fr 360px;
-  gap: 1.5rem;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 1rem;
 }
 
 @media (max-width: 968px) {
@@ -394,14 +372,19 @@ function handleInquirySuccess() {
 .profile-section {
   background: var(--surface-card);
   border-radius: var(--radius-lg);
-  padding: var(--space-xl);
+  padding: 1rem;
   box-shadow: var(--shadow-sm);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  overflow: hidden;
 }
 
 .profile-section h2 {
   font: var(--font-headline);
-  margin: 0 0 1rem;
+  margin: 0 0 0.75rem;
   color: var(--text-primary);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .reviews-header {
@@ -419,6 +402,13 @@ function handleInquirySuccess() {
 
 .mt-4 {
   margin-top: 1.5rem;
+}
+
+.calendar-empty {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-style: italic;
 }
 
 </style>

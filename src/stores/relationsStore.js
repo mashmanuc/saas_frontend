@@ -193,9 +193,26 @@ export const useRelationsStore = defineStore('relations', {
       await this.fetchTutorRelations({ cursor: this.tutorCursor, append: true })
     },
 
+    /**
+     * Accept relation (role-aware)
+     * - If user is TUTOR: accepts student request (POST /tutor/relations/{id}/accept/)
+     * - If user is STUDENT: accepts tutor invitation (POST /student/relations/{id}/accept/)
+     */
     async acceptRelation(id) {
       try {
-        await relationsApi.acceptRelation(id)
+        const { useAuthStore } = await import('../modules/auth/store/authStore')
+        const authStore = useAuthStore()
+        const userRole = authStore.user?.role?.toUpperCase()
+        
+        if (userRole === 'TUTOR') {
+          await relationsApi.tutorAcceptRelation(id)
+        } else if (userRole === 'STUDENT') {
+          await relationsApi.studentAcceptRelation(id)
+        } else {
+          // Fallback to legacy endpoint (will likely fail with 403)
+          await relationsApi.acceptRelation(id)
+        }
+        
         notifySuccess(translate('relations.actions.acceptSuccess'))
       } catch (error) {
         notifyError(error?.response?.data?.detail || translate('relations.actions.acceptError'))
@@ -206,9 +223,13 @@ export const useRelationsStore = defineStore('relations', {
       }
     },
 
+    /**
+     * Decline relation (student only)
+     * Student declines tutor invitation (POST /student/relations/{id}/decline/)
+     */
     async declineRelation(id) {
       try {
-        await relationsApi.declineRelation(id)
+        await relationsApi.studentDeclineRelation(id)
         notifySuccess(translate('relations.actions.declineSuccess'))
       } catch (error) {
         notifyError(error?.response?.data?.detail || translate('relations.actions.declineError'))

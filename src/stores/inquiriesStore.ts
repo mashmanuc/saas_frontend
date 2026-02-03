@@ -194,7 +194,28 @@ export const useInquiriesStore = defineStore('inquiries', () => {
   }
   
   /**
-   * Computed: pending count для badge (OPEN inquiries)
+   * Computed: student inquiries (Phase 2.2)
+   */
+  const studentItems = computed(() => {
+    return items.value.filter(i => i.student)
+  })
+  
+  /**
+   * Computed: tutor inquiries (Phase 2.2)
+   */
+  const tutorItems = computed(() => {
+    return items.value.filter(i => i.tutor)
+  })
+  
+  /**
+   * Computed: student open count (Phase 2.2)
+   */
+  const studentOpenCount = computed(() => {
+    return items.value.filter(i => i.status === 'OPEN').length
+  })
+  
+  /**
+   * Computed: pending count для badge (OPEN inquiries) - backward compat
    */
   const pendingCount = computed(() => {
     return items.value.filter(i => i.status === 'OPEN').length
@@ -223,6 +244,9 @@ export const useInquiriesStore = defineStore('inquiries', () => {
     error,
     
     // Computed
+    studentItems,
+    tutorItems,
+    studentOpenCount,
     pendingCount,
     
     // Actions

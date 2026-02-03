@@ -122,7 +122,25 @@
       "contactsUnlocked": "Student contacts"
     },
     "errors": {
-      "retryAfter": "Try again in {seconds} seconds"
+      "retryAfter": "Try again in {seconds} seconds",
+      "cooldownActive": "You can send a new inquiry to this tutor in {days} days",
+      "maxOpenReached": "Active inquiry limit reached ({limit})",
+      "maxOpenReachedUpgrade": "Upgrade to PRO for unlimited inquiries",
+      "rateLimitExceeded": "Rate limit exceeded: {limit_display}",
+      "alreadyExists": "You already have an active inquiry with this tutor"
+    },
+    "success": {
+      "created": "Inquiry sent successfully!",
+      "description": "The tutor will receive your inquiry and can respond soon.",
+      "viewMyInquiries": "View my inquiries",
+      "findMoreTutors": "Find more tutors"
+    },
+    "countdown": {
+      "expiresIn": "Expires in",
+      "expired": "Expired",
+      "days": "{count}d",
+      "hours": "{count}h",
+      "minutes": "{count}m"
     },
     "recommendedTutors": {
       "title": "Recommended Tutors",
@@ -422,6 +440,26 @@
       "subtitle": "Subtitle",
       "title": "Notifications"
     }
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "clear": "Clear",
+    "apply": "Apply",
+    "reset": "Reset",
+    "retry": "Retry"
   },
   "ui": {
     "cancel": "Cancel",
@@ -2193,7 +2231,8 @@
   },
   "lessons": {
     "calendar": {
-      "title": "Lessons calendar",
+      "title": "Hours when the tutor teaches",
+      "infoNote": "This schedule is informative only. Send an inquiry to book a lesson",
       "subtitle": "Create, reschedule and manage lessons across timezones.",
       "hint": "Drag events to reschedule, resize to adjust duration. Use the buttons above to create or refresh.",
       "myStudents": {
@@ -3116,8 +3155,9 @@
       "grid": {
         "label": "Availability Grid"
       },
-      "header": {
-        "title": "Availability Settings"
+      "calendar": {
+        "title": "Availability",
+        "notConfigured": "Tutor hasn't configured availability schedule yet"
       },
       "toolbar": {
         "label": "Availability Toolbar"

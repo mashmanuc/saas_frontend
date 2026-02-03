@@ -2,12 +2,27 @@
   <div v-if="show" class="modal-overlay" @click="handleOverlayClick">
     <div class="modal-container" @click.stop>
       <div class="modal-header">
-        <h2>{{ $t('inquiries.form.title') }}</h2>
+        <h2>{{ showSuccess ? $t('inquiries.success.created') : $t('inquiries.form.title') }}</h2>
         <button @click="$emit('close')" class="close-btn">✕</button>
       </div>
       
       <div class="modal-body">
-        <form @submit.prevent="handleSubmit" class="inquiry-form">
+        <!-- Success State -->
+        <div v-if="showSuccess" class="success-state">
+          <div class="success-icon">✓</div>
+          <p class="success-description">{{ $t('inquiries.success.description') }}</p>
+          <div class="success-actions">
+            <router-link to="/student/inquiries" class="btn btn-primary" @click="$emit('close')">
+              {{ $t('inquiries.success.viewMyInquiries') }}
+            </router-link>
+            <router-link to="/marketplace" class="btn btn-secondary" @click="$emit('close')">
+              {{ $t('inquiries.success.findMoreTutors') }}
+            </router-link>
+          </div>
+        </div>
+        
+        <!-- Form -->
+        <form v-else @submit.prevent="handleSubmit" class="inquiry-form">
           <!-- Tutor Preview -->
           <div class="tutor-preview">
             <img :src="tutor.avatar || '/default-avatar.png'" class="avatar-sm" alt="" />
@@ -90,7 +105,13 @@
             :retry-after="errorState.retryAfter"
             :show-retry="errorState.showRetry"
             @retry="clearError"
-          />
+          >
+            <template v-if="errorState.showUpgrade" #actions>
+              <router-link to="/billing/plans" class="btn btn-primary">
+                {{ $t('inquiries.errors.maxOpenReachedUpgrade') }}
+              </router-link>
+            </template>
+          </ErrorState>
           
           <!-- Actions -->
           <div class="form-actions">
@@ -154,6 +175,7 @@ const { errorState, handleError, clearError } = useInquiryErrorHandler()
 const { isRateLimited, remainingSeconds, startCountdown } = useRateLimitCountdown()
 
 const isSubmitting = ref(false)
+const showSuccess = ref(false)
 
 const form = reactive({
   student_level: '',
@@ -186,7 +208,6 @@ async function handleSubmit() {
   })
   
   if (!isFormValid.value) {
-    console.warn('[InquiryFormModal] Form invalid, aborting')
     return
   }
   
@@ -194,12 +215,9 @@ async function handleSubmit() {
   clearError()
   
   try {
-    console.log('[InquiryFormModal] Calling createInquiry...')
     await inquiriesStore.createInquiry(String(props.tutor.id), form.message)
-    console.log('[InquiryFormModal] Success!')
-    emit('success')
+    showSuccess.value = true
   } catch (err: any) {
-    console.error('[InquiryFormModal] Error:', err)
     
     // Phase 2.3: Handle 429 rate limit - ONLY countdown, NO error modal
     if (err.response?.status === 429) {
@@ -396,5 +414,41 @@ function handleOverlayClick() {
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.success-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 24px;
+  text-align: center;
+}
+
+.success-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #10B981;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  font-weight: bold;
+  margin-bottom: 16px;
+}
+
+.success-description {
+  margin: 0 0 24px 0;
+  font-size: 14px;
+  color: #6B7280;
+  max-width: 400px;
+}
+
+.success-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 </style>

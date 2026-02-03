@@ -28,6 +28,38 @@ const relationsApi = {
     return apiClient.post(RELATION_ENDPOINTS.TUTOR_RELATIONS_BULK_ARCHIVE, { ids })
   },
 
+  /**
+   * Student accepts tutor invitation
+   * Flow: Tutor invites Student → Student accepts
+   */
+  studentAcceptRelation(relationId) {
+    return apiClient.post(RELATION_ENDPOINTS.STUDENT_ACCEPT(relationId))
+  },
+
+  /**
+   * Student declines tutor invitation
+   * Flow: Tutor invites Student → Student declines
+   */
+  studentDeclineRelation(relationId) {
+    return apiClient.post(RELATION_ENDPOINTS.STUDENT_DECLINE(relationId))
+  },
+
+  /**
+   * Tutor accepts student request
+   * Flow: Student requests Tutor → Tutor accepts
+   */
+  tutorAcceptRelation(relationId) {
+    return apiClient.post(RELATION_ENDPOINTS.TUTOR_ACCEPT(relationId))
+  },
+
+  /**
+   * Tutor resends invitation
+   */
+  tutorResendRelation(relationId) {
+    return apiClient.post(RELATION_ENDPOINTS.TUTOR_RESEND(relationId))
+  },
+
+  // Legacy methods (deprecated, use role-specific methods)
   acceptRelation(relationId) {
     return apiClient.post(RELATION_ENDPOINTS.ACCEPT(relationId))
   },

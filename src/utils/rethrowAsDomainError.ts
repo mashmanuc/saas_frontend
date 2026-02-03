@@ -45,6 +45,7 @@ const toRateLimitMeta = (payload: ApiErrorPayload) => ({
     payload.meta?.retry_after ??
     payload.retry_after ??
     0,
+  limit_display: payload.meta?.limit_display ?? payload.limit_display,
 })
 
 const toBanMeta = (payload: ApiErrorPayload) => ({
@@ -85,6 +86,11 @@ const DOMAIN_ERROR_FACTORIES: Record<string, DomainErrorFactory> = {
     new InquiryInvalidStateError(extractMeta(payload)),
   CANNOT_CANCEL_PROCESSED: (payload) =>
     new InquiryInvalidStateError(extractMeta(payload)),
+  // Phase 2.2 error codes
+  INQUIRY_COOLDOWN_ACTIVE: (payload) =>
+    new InquiryNotAllowedError(extractMeta(payload)),
+  STUDENT_ACTIVE_LIMIT_REACHED: (payload) =>
+    new InquiryNotAllowedError(extractMeta(payload)),
 }
 
 const buildDefaultError = (
@@ -96,7 +102,11 @@ const buildDefaultError = (
       Number(err.response.headers?.['retry-after']) ||
       payload.meta?.retry_after_seconds ||
       0
-    return new RateLimitedError({ retry_after_seconds: retryAfter })
+    const limitDisplay = payload.meta?.limit_display || payload.limit_display
+    return new RateLimitedError({ 
+      retry_after_seconds: retryAfter,
+      limit_display: limitDisplay
+    })
   }
 
   const message =

@@ -25,6 +25,11 @@
         <span class="meta-label">Бюджет:</span>
         <span class="meta-value">{{ inquiry.budget }} грн/год</span>
       </div>
+      
+      <CountdownTimer
+        v-if="inquiry.status === 'OPEN' && inquiry.expires_at"
+        :expires-at="inquiry.expires_at"
+      />
     </div>
     
     <div v-if="showActions" class="inquiry-actions">
@@ -42,6 +47,7 @@
 
 import { computed } from 'vue'
 import type { InquiryDTO } from '@/types/inquiries'
+import CountdownTimer from './CountdownTimer.vue'
 
 interface UserSummary {
   id: string

@@ -51,6 +51,7 @@ export interface InquiryDTO {
   rejected_at?: string
   cancelled_at?: string
   expired_at?: string
+  expires_at?: string
 }
 
 /**

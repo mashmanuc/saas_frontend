@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Calendar, MessageCircle, Clock, Send } from 'lucide-vue-next'
+import { MessageCircle, Clock, Send } from 'lucide-vue-next'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/modules/auth/store/authStore'
@@ -16,6 +16,8 @@ const { t } = useI18n()
 const auth = useAuthStore()
 
 const isStudent = computed(() => auth.userRole === 'student')
+const canSendInquiry = computed(() => auth.isAuthenticated && auth.userRole === 'student')
+const needsLogin = computed(() => !auth.isAuthenticated)
 
 const responseTimeText = computed(() => {
   const hours = props.profile?.stats?.response_time_hours
@@ -23,9 +25,9 @@ const responseTimeText = computed(() => {
 })
 
 const emit = defineEmits<{
-  (e: 'book'): void
   (e: 'message'): void
   (e: 'inquiry'): void
+  (e: 'login-required'): void
 }>()
 </script>
 
@@ -56,18 +58,23 @@ const emit = defineEmits<{
     </div>
 
     <div class="actions">
-      <button v-if="isStudent" class="btn btn-primary" @click="emit('inquiry')" data-test="inquiry-cta">
+      <!-- Inquiry CTA - показується для всіх авторизованих студентів -->
+      <button v-if="canSendInquiry" class="btn btn-primary" @click="emit('inquiry')" data-test="inquiry-cta">
         <Send :size="18" />
         {{ t('inquiries.form.title') }}
       </button>
-      <button class="btn btn-secondary" @click="emit('book')">
-        <Calendar :size="18" />
-        {{ t('marketplace.profile.contact.bookLesson') }}
+      
+      <!-- Login required для неавторизованих -->
+      <button v-else-if="needsLogin" class="btn btn-primary" @click="emit('login-required')" data-test="inquiry-login-cta">
+        <Send :size="18" />
+        {{ t('inquiries.form.title') }}
       </button>
-      <button class="btn btn-secondary" @click="emit('message')">
+      
+      <!-- Message button - тимчасово прихований до реалізації чату -->
+      <!-- <button class="btn btn-secondary" @click="emit('message')">
         <MessageCircle :size="18" />
         {{ t('marketplace.profile.contact.sendMessage') }}
-      </button>
+      </button> -->
     </div>
   </div>
 </template>
@@ -76,8 +83,10 @@ const emit = defineEmits<{
 .profile-contact {
   background: var(--surface-card);
   border-radius: var(--radius-lg);
-  padding: var(--space-xl);
+  padding: 1rem;
   box-shadow: var(--shadow-sm);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .price-section {

@@ -131,7 +131,7 @@ const emit = defineEmits<{
   top: 0;
   left: 0;
   right: 0;
-  height: 200px;
+  height: 150px;
   background: radial-gradient(1200px circle at 20% 0%, color-mix(in srgb, var(--accent-primary) 28%, transparent), transparent 55%),
     linear-gradient(
       135deg,
@@ -168,8 +168,8 @@ const emit = defineEmits<{
 
 .profile-info {
   display: flex;
-  gap: 2rem;
-  padding-top: 60px;
+  gap: 1.5rem;
+  padding-top: 40px;
 }
 
 @media (max-width: 768px) {
@@ -187,10 +187,10 @@ const emit = defineEmits<{
 
 .photo,
 .photo-placeholder {
-  width: 180px;
-  height: 180px;
+  width: 140px;
+  height: 140px;
   border-radius: var(--radius-xl);
-  border: 4px solid var(--surface-card);
+  border: 3px solid var(--surface-card);
   box-shadow: var(--shadow-lg);
 }
 
@@ -235,22 +235,29 @@ const emit = defineEmits<{
 }
 
 .info h1 {
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   font-weight: 700;
-  margin: 0 0 0.5rem;
+  margin: 0 0 0.375rem;
   color: var(--text-primary);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
 }
 
 .headline {
-  font-size: 1.125rem;
+  font-size: 1rem;
   color: var(--text-muted);
-  margin: 0 0 1rem;
+  margin: 0 0 0.75rem;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
 }
 
 .meta {
   display: flex;
-  gap: 1.5rem;
-  margin-bottom: 1rem;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .meta-item {
@@ -259,6 +266,8 @@ const emit = defineEmits<{
   gap: 0.375rem;
   font-size: 0.9375rem;
   color: var(--text-muted);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .stats {

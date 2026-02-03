@@ -94,6 +94,7 @@ export class RateLimitedError extends Error {
   constructor(
     public meta: {
       retry_after_seconds: number
+      limit_display?: string
     }
   ) {
     super(`Rate limited. Retry after ${meta.retry_after_seconds} seconds`)

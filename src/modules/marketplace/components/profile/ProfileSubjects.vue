@@ -88,9 +88,11 @@ const normalizedSubjects = computed(() => {
 
 <style scoped>
 .profile-subjects {
-  padding: 2rem;
+  padding: 1rem;
   background: var(--bg-primary, #fff);
   border-radius: 12px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .profile-subjects h2 {
@@ -104,11 +106,11 @@ const normalizedSubjects = computed(() => {
 .subjects-list {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1rem;
 }
 
 .subject-item {
-  padding-bottom: 2rem;
+  padding-bottom: 1rem;
   border-bottom: 1px solid var(--border-color, #e5e7eb);
 }
 
@@ -120,6 +122,9 @@ const normalizedSubjects = computed(() => {
 .subject-title {
   font-size: 1.25rem;
   margin-bottom: 1rem;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
 }
 
 .tags-groups {
@@ -173,5 +178,8 @@ const normalizedSubjects = computed(() => {
 .custom-text p {
   line-height: 1.6;
   white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
 }
 </style>
