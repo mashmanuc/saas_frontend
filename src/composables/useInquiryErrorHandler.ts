@@ -37,11 +37,10 @@ export function useInquiryErrorHandler() {
     
     // Rate limit (429)
     if (error instanceof RateLimitedError) {
-      const limitDisplay = error.meta.limit_display || 'невідомий ліміт'
       errorState.value = {
         variant: 'rate-limit',
         title: 'Забагато запитів',
-        message: `Перевищено ліміт: ${limitDisplay}`,
+        message: 'Ви надіслали забагато запитів. Будь ласка, зачекайте.',
         retryAfter: error.meta.retry_after_seconds,
         showRetry: false
       }
