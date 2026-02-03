@@ -118,7 +118,7 @@ describe('marketplaceStore', () => {
         headline: 'Math tutor',
         bio: 'Experienced teacher',
         subjects: [{ code: 'math', title: 'Mathematics' }],
-        languages: [{ code: 'en', name: 'English', level: 'native' }],
+        teaching_languages: [{ code: 'en', name: 'English', level: 'native' }],
         pricing: { hourly_rate: 500, currency: 'UAH' },
         media: { photo_url: 'https://example.com/photo.jpg' }
       } as any

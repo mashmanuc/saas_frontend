@@ -83,15 +83,17 @@ describe('InquiryFormModal', () => {
       created_at: new Date().toISOString()
     } as any)
 
+    const pinia = createPinia()
     const wrapper = mount(InquiryFormModal, {
       props: {
         show: true,
         tutor
       },
       global: {
-        plugins: [i18n, createPinia()],
+        plugins: [i18n, pinia],
         stubs: {
-          'router-link': true
+          'router-link': true,
+          ErrorState: true
         }
       }
     })
@@ -103,6 +105,7 @@ describe('InquiryFormModal', () => {
 
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
+    await wrapper.vm.$nextTick()
 
     // Verify success state is shown
     expect(wrapper.text()).toContain('Запит успішно надіслано!')

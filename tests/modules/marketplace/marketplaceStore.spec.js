@@ -224,7 +224,7 @@ describe('MarketplaceStore', () => {
         headline: 'Top tutor',
         bio: 'Bio text',
         subjects: ['math'],
-        languages: [{ code: 'en', level: 'native' }],
+        teaching_languages: [{ code: 'en', level: 'native' }],
         pricing: { hourly_rate: 50 }
       })
 
@@ -245,7 +245,7 @@ describe('MarketplaceStore', () => {
         headline: '',
         bio: '',
         subjects: [],
-        languages: [],
+        teaching_languages: [],
         pricing: { hourly_rate: 0 }
       })
 

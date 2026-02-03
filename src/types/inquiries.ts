@@ -85,15 +85,27 @@ export interface NegotiationThreadDTO {
 }
 
 /**
- * Chat Message DTO v0.69
+ * Chat Message DTO v0.70 - Smart Polling
+ * Supports both new (snake_case from API) and legacy (camelCase) formats
  */
 export interface ChatMessageDTO {
-  id: string
-  threadId: string
-  sender: UserSummary
-  body: string
-  createdAt: string
+  // New API format (snake_case)
+  message_id?: string
+  thread_id?: string
+  sender_id?: number
+  sender_name?: string
+  is_read?: boolean
+  created_at?: string
+
+  // Legacy format (camelCase) - still used by store
+  id?: string
+  threadId?: string
+  sender?: UserSummary
+  createdAt?: string
   clientMessageId?: string
+
+  // Common field
+  body: string
 }
 
 /**

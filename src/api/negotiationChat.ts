@@ -1,8 +1,8 @@
 /**
- * Negotiation Chat API Client v0.69
- * Based on FRONTEND_IMPLEMENTATION_PLAN_v069.md
- * 
+ * Negotiation Chat API Client v0.70 - Smart Polling Edition
+ *
  * API методи для роботи з negotiation chat threads
+ * Підтримує інкрементальне завантаження (smart polling)
  */
 
 import apiClient from '@/utils/apiClient'
@@ -17,22 +17,17 @@ import type {
 const BASE_URL = '/v1/chat'
 
 /**
- * Створити або отримати negotiation thread для inquiry v0.69
- * 
- * @param inquiryId - ID inquiry
- * @returns thread DTO з threadId
+ * Створити або отримати negotiation thread для inquiry
  */
 export async function ensureNegotiationThread(inquiryId: string): Promise<NegotiationThreadDTO> {
   const response: NegotiationThreadResponse = await apiClient.post(`${BASE_URL}/threads/negotiation/`, {
-    inquiryId
+    inquiry_id: inquiryId
   })
   return response.thread
 }
 
 /**
- * Отримати список negotiation threads користувача v0.69
- * 
- * @returns список threads
+ * Отримати список negotiation threads користувача
  */
 export async function fetchThreads(): Promise<NegotiationThreadDTO[]> {
   const response: { threads: NegotiationThreadDTO[] } = await apiClient.get(`${BASE_URL}/threads/`)
@@ -40,42 +35,80 @@ export async function fetchThreads(): Promise<NegotiationThreadDTO[]> {
 }
 
 /**
- * Отримати повідомлення thread з пагінацією v0.69
- * 
- * @param threadId - ID thread
- * @param cursor - опціональний cursor для пагінації
- * @returns список повідомлень
+ * Response для smart polling
  */
-export async function fetchMessages(
-  threadId: string,
-  cursor?: string
-): Promise<MessagesListResponse> {
-  return apiClient.get(`${BASE_URL}/threads/${threadId}/messages/`, {
-    params: cursor ? { cursor } : {}
-  })
+export interface SmartPollingResponse {
+  messages: ChatMessageDTO[]
+  count: number
+  is_writable: boolean
+  latest_ts: string | null
 }
 
 /**
- * Відправити повідомлення у thread v0.69
- * 
+ * ✅ SMART POLLING: Отримати повідомлення thread
+ *
  * @param threadId - ID thread
- * @param payload - body та clientMessageId (idempotency)
- * @returns створене повідомлення
+ * @param afterTs - ISO timestamp для інкрементального завантаження (тільки нові)
+ * @param limit - максимум повідомлень (default 50, max 100)
+ * @returns список повідомлень + latest_ts для наступного запиту
+ */
+export async function fetchMessages(
+  threadId: string,
+  afterTs?: string,
+  limit?: number
+): Promise<SmartPollingResponse> {
+  const params: Record<string, string | number> = {}
+  if (afterTs) params.after_ts = afterTs
+  if (limit) params.limit = limit
+
+  return apiClient.get(`${BASE_URL}/threads/${threadId}/messages/`, { params })
+}
+
+/**
+ * @deprecated Use fetchMessages with afterTs for smart polling
+ * Legacy function for backward compatibility with old cursor-based pagination
+ */
+export async function fetchMessagesLegacy(
+  threadId: string,
+  cursor?: string
+): Promise<{ messages: ChatMessageDTO[]; hasMore: boolean; cursor?: string }> {
+  const response = await fetchMessages(threadId, cursor)
+  return {
+    messages: response.messages,
+    hasMore: response.count >= 50,
+    cursor: response.latest_ts || undefined
+  }
+}
+
+/**
+ * Відправити повідомлення у thread
  */
 export async function sendMessage(
   threadId: string,
   payload: SendMessagePayload
 ): Promise<ChatMessageDTO> {
-  const response: { message: ChatMessageDTO } = await apiClient.post(
-    `${BASE_URL}/threads/${threadId}/messages/`,
-    payload
-  )
-  return response.message
+  return apiClient.post(`${BASE_URL}/threads/${threadId}/messages/`, payload)
+}
+
+/**
+ * ✅ MARK AS READ: Позначити повідомлення прочитаними
+ *
+ * @param threadId - ID thread
+ * @param messageIds - опціонально: конкретні ID повідомлень. Без цього - всі непрочитані.
+ */
+export async function markAsRead(
+  threadId: string,
+  messageIds?: string[]
+): Promise<{ status: string; marked_count: number }> {
+  const payload = messageIds?.length ? { message_ids: messageIds } : {}
+  return apiClient.post(`${BASE_URL}/threads/${threadId}/mark-read/`, payload)
 }
 
 export default {
   ensureNegotiationThread,
   fetchThreads,
   fetchMessages,
-  sendMessage
+  fetchMessagesLegacy,
+  sendMessage,
+  markAsRead
 }

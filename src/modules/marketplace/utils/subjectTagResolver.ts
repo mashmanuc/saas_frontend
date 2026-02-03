@@ -143,23 +143,10 @@ export function filterTagsForSubjectSafe<T extends { code: string; group: string
     return []
   }
   
-  // v0.86 FIX: If subject not in map, use defaults with allowAllTags=true
-  // This allows all subjects to show tags even without explicit configuration
+  // FAIL-CLOSED: Subject not in map → return empty array
   if (!tagMap.subjects || !tagMap.subjects[subjectCode]) {
-    try {
-      // Use defaults: show all tags from enabled groups
-      const config: ResolvedSubjectTagConfig = {
-        subjectCode,
-        enabledGroups: tagMap.defaults.enabled_groups,
-        groupsOrder: tagMap.defaults.groups_order ?? tagMap.defaults.enabled_groups,
-        allowAllTags: true, // Show all tags from enabled groups
-        allowedTags: {},
-      }
-      return filterTagsForSubject(allTags, config)
-    } catch (err) {
-      console.error(`[subjectTagResolver] Error using defaults for ${subjectCode}:`, err)
-      return []
-    }
+    console.warn(`[subjectTagResolver] Subject ${subjectCode} not in tagMap`)
+    return []
   }
   
   try {

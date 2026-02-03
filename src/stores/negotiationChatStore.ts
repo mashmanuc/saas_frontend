@@ -21,7 +21,7 @@ import type {
 import {
   ensureNegotiationThread,
   fetchThreads as apiFetchThreads,
-  fetchMessages as apiFetchMessages,
+  fetchMessagesLegacy as apiFetchMessages,
   sendMessage as apiSendMessage
 } from '@/api/negotiationChat'
 import { rethrowAsDomainError } from '@/utils/rethrowAsDomainError'

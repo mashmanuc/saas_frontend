@@ -84,11 +84,11 @@ describe('negotiationChatStore v0.69', () => {
         messages: [mockMessage],
         hasMore: false
       }
-      vi.mocked(chatApi.fetchMessages).mockResolvedValue(response)
+      vi.mocked(chatApi.fetchMessagesLegacy).mockResolvedValue(response)
 
       const result = await store.fetchMessages('thread_1')
 
-      expect(chatApi.fetchMessages).toHaveBeenCalledWith('thread_1', undefined)
+      expect(chatApi.fetchMessagesLegacy).toHaveBeenCalledWith('thread_1', undefined)
       expect(result).toEqual(response)
       expect(store.messagesByThread['thread_1']).toEqual([mockMessage])
     })
@@ -96,17 +96,17 @@ describe('negotiationChatStore v0.69', () => {
     it('should append messages with cursor', async () => {
       const store = useNegotiationChatStore()
       store.messagesByThread = { thread_1: [mockMessage] }
-      
+
       const newMessage = { ...mockMessage, id: 'msg_2', body: 'Second message' }
       const response = {
         messages: [newMessage],
         hasMore: false
       }
-      vi.mocked(chatApi.fetchMessages).mockResolvedValue(response)
+      vi.mocked(chatApi.fetchMessagesLegacy).mockResolvedValue(response)
 
       await store.fetchMessages('thread_1', 'cursor_1')
 
-      expect(chatApi.fetchMessages).toHaveBeenCalledWith('thread_1', 'cursor_1')
+      expect(chatApi.fetchMessagesLegacy).toHaveBeenCalledWith('thread_1', 'cursor_1')
       expect(store.messagesByThread['thread_1']).toHaveLength(2)
       expect(store.messagesByThread['thread_1']).toContainEqual(newMessage)
     })
