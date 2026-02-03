@@ -69,6 +69,7 @@ const SoloRoom = () => import('../modules/classroom/views/SoloRoom.vue')
 
 // Solo Workspace (v0.26, v0.27)
 const SoloWorkspace = () => import('../modules/solo/views/SoloWorkspace.vue')
+const SoloWorkspaceV2 = () => import('../modules/solo/views/SoloWorkspaceV2.vue')
 const SoloSessionList = () => import('../modules/solo/views/SoloSessionList.vue')
 const SoloPublicView = () => import('../modules/solo/views/SoloPublicView.vue')
 
@@ -505,6 +506,19 @@ const routes = [
         path: 'solo/:id',
         name: 'solo-workspace-edit',
         component: SoloWorkspace,
+        meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR] },
+      },
+      // Solo V2 (NEW) - parallel to old version
+      {
+        path: 'solo-v2/new',
+        name: 'solo-workspace-v2',
+        component: SoloWorkspaceV2,
+        meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR] },
+      },
+      {
+        path: 'solo-v2/:id',
+        name: 'solo-workspace-v2-edit',
+        component: SoloWorkspaceV2,
         meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR] },
       },
       {

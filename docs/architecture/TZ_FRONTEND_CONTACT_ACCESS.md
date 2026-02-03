@@ -73,6 +73,36 @@ export function useContactAccessPolicy(studentId) {
 
 ---
 
+## UI STYLING RULE (Process Guard)
+
+**Dynamic UI styles, variants, themes — БЕЗ логіки доступу.**
+
+> Усі рішення "кому що показувати" ухвалюються ДО рендера (в composables / guards). Стилі лише відображають уже прийняті рішення.
+
+❌ **НЕПРАВИЛЬНО:**
+```vue
+<button :class="relation.status === 'active' ? 'primary' : 'ghost'">
+  <!-- ❌ вирішує доступ у стилях -->
+</button>
+```
+
+✅ **ПРАВИЛЬНО:**
+```vue
+<button
+  :class="buttonVariant"
+  :disabled="!canSeeContacts"
+>
+  {{ $t('contacts.unlockButton') }}
+</button>
+
+// buttonVariant визначено ПОЗА шаблоном:
+const buttonVariant = computed(() => (canSeeContacts.value ? 'ghost' : 'primary'))
+```
+
+**Правило:** якщо дизайнер хоче новий варіант, він отримує лише сигнал `canSeeContacts` / `sharedContactsPrecondition`, а не впроваджує власну перевірку доступу в CSS/класах/темах.
+
+---
+
 ## ЗАВДАННЯ 1: Створити Contact Access API Client
 
 ### Файл
