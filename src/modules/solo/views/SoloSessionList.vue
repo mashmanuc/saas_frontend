@@ -4,9 +4,13 @@
     <header class="solo-sessions__header">
       <h1>{{ $t('solo.mySessions.title') }}</h1>
       <div class="solo-sessions__actions">
-        <button class="btn btn-primary" @click="createNew">
+        <button class="btn btn-secondary" @click="createNew">
           <span class="icon">➕</span>
           {{ $t('solo.mySessions.createNew') }}
+        </button>
+        <button class="btn btn-primary" @click="createNewV2">
+          <span class="icon">✨</span>
+          {{ $t('solo.mySessions.createNewV2') }}
         </button>
       </div>
     </header>
@@ -112,8 +116,18 @@ async function createNew(): Promise<void> {
   router.push({ name: 'solo-workspace-edit', params: { id: session.id } })
 }
 
+async function createNewV2(): Promise<void> {
+  const session = await soloStore.createSession({ name: 'Untitled', version: 'v2' })
+  router.push({ name: 'solo-workspace-v2-edit', params: { id: session.id } })
+}
+
 function openSession(session: SoloSession): void {
-  router.push({ name: 'solo-workspace-edit', params: { id: session.id } })
+  // Check if it's V2 session and route accordingly
+  if (session.version === 'v2') {
+    router.push({ name: 'solo-workspace-v2-edit', params: { id: session.id } })
+  } else {
+    router.push({ name: 'solo-workspace-edit', params: { id: session.id } })
+  }
 }
 
 async function deleteSession(session: SoloSession): Promise<void> {
@@ -230,5 +244,19 @@ onMounted(() => {
 
 .btn-primary:hover {
   opacity: 0.9;
+}
+
+.btn-secondary {
+  background: var(--secondary-color, #6b7280);
+  color: white;
+}
+
+.btn-secondary:hover {
+  opacity: 0.9;
+}
+
+.solo-sessions__actions {
+  display: flex;
+  gap: 0.75rem;
 }
 </style>

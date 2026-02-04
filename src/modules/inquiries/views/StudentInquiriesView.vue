@@ -114,7 +114,7 @@ async function loadInquiries() {
   }
 }
 
-async function handleCancel(inquiryId: number) {
+async function handleCancel(inquiryId: string) {
   clearError()
   try {
     await inquiriesStore.cancelInquiry(inquiryId)

@@ -7,11 +7,16 @@
       'solo-canvas-wrapper--selecting': tool === 'select',
       'solo-canvas-wrapper--moving': selection.mode.value === 'move',
       'solo-canvas-wrapper--resizing': selection.mode.value === 'resize',
+      'solo-canvas-wrapper--dragover': isDragOver,
     }"
     :style="{ cursor: cursorStyle }"
     tabindex="0"
     @paste="handlePaste"
     @keydown="handleKeydown"
+    @dragover.prevent
+    @dragenter.prevent="handleDragEnter"
+    @dragleave="handleDragLeave"
+    @drop.prevent="handleDrop"
   >
     <v-stage
       ref="stageRef"
@@ -63,6 +68,15 @@
             :config="line.config"
           />
         </template>
+      </v-layer>
+
+      <!-- Assets layer -->
+      <v-layer ref="assetsLayerRef">
+        <v-image
+          v-for="asset in sortedAssets"
+          :key="asset.id"
+          :config="getAssetConfig(asset)"
+        />
       </v-layer>
 
       <!-- Strokes layer -->
@@ -204,8 +218,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
-import type { PageState, Stroke, Shape, TextElement, Tool, Point as TypePoint, PageBackground } from '../../types/solo'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick, reactive } from 'vue'
+import type { PageState, Stroke, Shape, TextElement, Tool, Point as TypePoint, PageBackground, AssetLayer } from '../../types/solo'
 import { getStroke } from 'perfect-freehand'
 import { useKeyboardShortcuts } from '../../composables/useKeyboardShortcuts'
 import { useSelection, type ResizeHandle } from '../../composables/useSelection'
@@ -251,6 +265,7 @@ const emit = defineEmits<{
   'text-create': [text: TextElement]
   'zoom-change': [zoom: number]
   'pan-change': [x: number, y: number]
+  'asset-add': [asset: AssetLayer, file?: File]
   'tool-change': [tool: Tool]
   'undo': []
   'redo': []
@@ -268,6 +283,7 @@ const containerRef = ref<HTMLElement | null>(null)
 const stageRef = ref<any>(null)
 const backgroundLayerRef = ref<any>(null)
 const strokesLayerRef = ref<any>(null)
+const assetsLayerRef = ref<any>(null)
 const uiLayerRef = ref<any>(null)
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 
@@ -281,8 +297,19 @@ const circlePreview = ref<{ x: number; y: number; radius: number } | null>(null)
 const editingText = ref<StrokeData | null>(null)
 const editingTextValue = ref('')
 
+const isDragOver = ref(false)
+const dragCounter = ref(0)
+
 // Selection state
 const selectionStartPoint = ref<Point | null>(null)
+
+// Pan state
+const isPanDragging = ref(false)
+const panStartPos = ref<{ x: number; y: number } | null>(null)
+const panStartOffset = ref<{ x: number; y: number }>({ x: 0, y: 0 })
+
+// Asset images cache
+const assetImages = reactive(new Map<string, HTMLImageElement>())
 
 // Selection composable
 const selection = useSelection(
@@ -358,6 +385,14 @@ const pageShapes = computed(() => {
   return props.page?.shapes || []
 })
 
+const pageAssets = computed(() => {
+  return props.page?.assets || []
+})
+
+const sortedAssets = computed(() => {
+  return [...pageAssets.value].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
+})
+
 const pageBackground = computed<PageBackground | undefined>(() => {
   return props.page?.background
 })
@@ -387,6 +422,19 @@ const backgroundConfig = computed(() => ({
   height: canvasHeight.value,
   fill: backgroundFill.value,
 }))
+
+watch(pageAssets, (assets) => {
+  for (const asset of assets) {
+    if (!assetImages.has(asset.id) && asset.src) {
+      loadAssetImage(asset)
+    }
+  }
+  for (const id of Array.from(assetImages.keys())) {
+    if (!assets.find((asset) => asset.id === id)) {
+      assetImages.delete(id)
+    }
+  }
+}, { immediate: true })
 
 // Grid lines (for 'grid' type)
 const gridLines = computed(() => {
@@ -892,6 +940,20 @@ function handleMouseDown(e: any): void {
   const pos = getPointerPosition(e)
   const ctrlKey = e.evt?.ctrlKey || e.evt?.metaKey || false
   const shiftKey = e.evt?.shiftKey || false
+  const button = e.evt?.button // 0=left, 1=middle, 2=right
+
+  // Pan mode handling (Space key held OR middle-click)
+  if (isPanning.value || button === 1) {
+    e.evt?.preventDefault() // Prevent browser default middle-click behavior
+    isPanDragging.value = true
+    const stage = stageRef.value?.getStage()
+    if (stage) {
+      const pointer = stage.getPointerPosition()
+      panStartPos.value = { x: pointer.x, y: pointer.y }
+      panStartOffset.value = { x: props.panX, y: props.panY }
+    }
+    return
+  }
 
   // Selection tool handling
   if (props.tool === 'select') {
@@ -961,6 +1023,20 @@ function handleMouseMove(e: any): void {
   const shiftKey = e.evt?.shiftKey || false
   const altKey = e.evt?.altKey || false
 
+  // Pan mode dragging
+  if (isPanDragging.value && panStartPos.value) {
+    const stage = stageRef.value?.getStage()
+    if (stage) {
+      const pointer = stage.getPointerPosition()
+      const dx = (pointer.x - panStartPos.value.x) / props.zoom
+      const dy = (pointer.y - panStartPos.value.y) / props.zoom
+      const newPanX = panStartOffset.value.x + dx
+      const newPanY = panStartOffset.value.y + dy
+      emit('pan-change', newPanX, newPanY)
+    }
+    return
+  }
+
   // Selection tool handling
   if (props.tool === 'select') {
     if (selection.mode.value === 'lasso') {
@@ -1010,6 +1086,13 @@ function handleMouseUp(e: any): void {
   const ctrlKey = e.evt?.ctrlKey || e.evt?.metaKey || false
   const shiftKey = e.evt?.shiftKey || false
   const altKey = e.evt?.altKey || false
+
+  // Pan mode end
+  if (isPanDragging.value) {
+    isPanDragging.value = false
+    panStartPos.value = null
+    return
+  }
 
   // Selection tool handling
   if (props.tool === 'select') {
@@ -1159,6 +1242,156 @@ function handleKeydown(e: KeyboardEvent): void {
   // This handler is kept for component-specific key handling if needed
 }
 
+function handleDragEnter(): void {
+  dragCounter.value += 1
+  isDragOver.value = true
+}
+
+function handleDragLeave(): void {
+  dragCounter.value = Math.max(0, dragCounter.value - 1)
+  if (dragCounter.value === 0) {
+    isDragOver.value = false
+  }
+}
+
+async function handleDrop(event: DragEvent): Promise<void> {
+  dragCounter.value = 0
+  isDragOver.value = false
+
+  const file = await extractImageFile(event)
+  if (!file) {
+    console.warn('[SoloCanvas] Dropped content is not an image')
+    return
+  }
+
+  const dropPosition = getDropCanvasPosition(event)
+  if (!dropPosition) return
+
+  await addAssetFromFile(file, dropPosition)
+}
+
+async function extractImageFile(event: DragEvent): Promise<File | null> {
+  const dt = event.dataTransfer
+  if (!dt) return null
+
+  const file = Array.from(dt.files || []).find((f) => f.type.startsWith('image/'))
+  if (file) return file
+
+  const url = await getDroppedUrl(dt)
+  if (!url) return null
+
+  try {
+    const response = await fetch(url)
+    const blob = await response.blob()
+    if (!blob.type.startsWith('image/')) return null
+    const extension = blob.type.split('/')[1] || 'png'
+    return new File([blob], `dropped-image.${extension}`, { type: blob.type })
+  } catch (error) {
+    console.error('[SoloCanvas] Failed to fetch dropped URL', error)
+    return null
+  }
+}
+
+function getDroppedUrl(dt: DataTransfer): Promise<string | null> {
+  const item = Array.from(dt.items || []).find((i) => i.type === 'text/uri-list' || i.type === 'text/plain')
+  if (!item) return Promise.resolve(null)
+
+  return new Promise((resolve) => {
+    item.getAsString((value) => {
+      const url = value?.trim()
+      resolve(url && url.startsWith('http') ? url : null)
+    })
+  })
+}
+
+function getDropCanvasPosition(event: DragEvent): { x: number; y: number } | null {
+  const container = containerRef.value
+  if (!container) return null
+
+  const rect = container.getBoundingClientRect()
+  const relativeX = event.clientX - rect.left
+  const relativeY = event.clientY - rect.top
+
+  const x = (relativeX / props.zoom) - props.panX
+  const y = (relativeY / props.zoom) - props.panY
+
+  return { x, y }
+}
+
+async function addAssetFromFile(file: File, dropPosition: { x: number; y: number }): Promise<void> {
+  const dataUrl = await readFileAsDataUrl(file)
+  const img = await loadImageFromDataUrl(dataUrl)
+
+  const maxSize = Math.min(canvasWidth.value * 0.8, 4096)
+  let width = img.width
+  let height = img.height
+  if (width > maxSize || height > maxSize) {
+    const scale = maxSize / Math.max(width, height)
+    width = Math.round(width * scale)
+    height = Math.round(height * scale)
+  }
+
+  const id = crypto.randomUUID ? crypto.randomUUID() : `asset-${Date.now()}`
+  const asset: AssetLayer = {
+    id,
+    type: 'image',
+    src: dataUrl,
+    x: dropPosition.x - width / 2,
+    y: dropPosition.y - height / 2,
+    width,
+    height,
+    rotation: 0,
+    locked: false,
+    zIndex: (props.page?.assets?.length || 0) + 1,
+  }
+
+  emit('asset-add', asset, file)
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = (error) => reject(error)
+    reader.readAsDataURL(file)
+  })
+}
+
+function loadImageFromDataUrl(dataUrl: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = reject
+    img.src = dataUrl
+  })
+}
+
+function loadAssetImage(asset: AssetLayer): void {
+  if (!asset.src) return
+  const img = new Image()
+  img.crossOrigin = 'anonymous'
+  img.onload = () => {
+    assetImages.set(asset.id, img)
+  }
+  img.onerror = () => {
+    console.warn('[SoloCanvas] Failed to load asset image', asset.id)
+  }
+  img.src = asset.src
+}
+
+function getAssetConfig(asset: AssetLayer) {
+  const image = assetImages.get(asset.id)
+  return {
+    x: asset.x,
+    y: asset.y,
+    width: asset.width,
+    height: asset.height,
+    rotation: asset.rotation,
+    image,
+    listening: false,
+  }
+}
+
 // Resize handler
 function handleResize(): void {
   if (containerRef.value) {
@@ -1195,6 +1428,21 @@ onUnmounted(() => {
   cursor: grabbing !important;
 }
 
+.solo-canvas-wrapper--dragover::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(37, 99, 235, 0.08);
+  border: 2px dashed rgba(37, 99, 235, 0.6);
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+/* Pan dragging state */
+.solo-canvas-wrapper:active {
+  cursor: grabbing;
+}
+
 .solo-canvas-wrapper--selecting {
   cursor: default;
 }
@@ -1205,6 +1453,7 @@ onUnmounted(() => {
 
 .solo-canvas-wrapper--resizing {
   /* Cursor is set dynamically based on handle */
+  cursor: default;
 }
 
 .text-edit-overlay {

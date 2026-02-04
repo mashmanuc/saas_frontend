@@ -2,11 +2,11 @@
   <aside class="solo-toolbar" :class="{ 'solo-toolbar--horizontal': isMobile }">
     <!-- Drawing tools group -->
     <div class="solo-toolbar__group">
-      <span class="solo-toolbar__group-label">Draw</span>
+      <span class="solo-toolbar__group-label">{{ $t('soloWorkspace.toolbar.sections.draw') }}</span>
       <div class="solo-toolbar__section">
         <ToolButton
-          tooltip="Pen"
-          shortcut="P"
+          :tooltip="$t('soloWorkspace.toolbar.tools.pen')"
+          :shortcut="$t('soloWorkspace.toolbar.shortcuts.pen')"
           :active="currentTool === 'pen'"
           @click="$emit('tool-change', 'pen')"
         >
@@ -21,8 +21,8 @@
         </ToolButton>
 
         <ToolButton
-          tooltip="Highlighter"
-          shortcut="H"
+          :tooltip="$t('soloWorkspace.toolbar.tools.highlighter')"
+          :shortcut="$t('soloWorkspace.toolbar.shortcuts.highlighter')"
           :active="currentTool === 'highlighter'"
           @click="$emit('tool-change', 'highlighter')"
         >
@@ -35,8 +35,8 @@
         </ToolButton>
 
         <ToolButton
-          tooltip="Eraser"
-          shortcut="E"
+          :tooltip="$t('soloWorkspace.toolbar.tools.eraser')"
+          :shortcut="$t('soloWorkspace.toolbar.shortcuts.eraser')"
           :active="currentTool === 'eraser'"
           @click="$emit('tool-change', 'eraser')"
         >
@@ -54,11 +54,11 @@
 
     <!-- Shapes group -->
     <div class="solo-toolbar__group">
-      <span class="solo-toolbar__group-label">Shapes</span>
+      <span class="solo-toolbar__group-label">{{ $t('soloWorkspace.toolbar.sections.shapes') }}</span>
       <div class="solo-toolbar__section">
         <ToolButton
-          tooltip="Line"
-          shortcut="L"
+          :tooltip="$t('soloWorkspace.toolbar.tools.line')"
+          :shortcut="$t('soloWorkspace.toolbar.shortcuts.line')"
           :active="currentTool === 'line'"
           @click="$emit('tool-change', 'line')"
         >
@@ -72,8 +72,8 @@
         <!-- Arrow with dropdown -->
         <div class="arrow-tool-wrapper">
           <ToolButton
-            tooltip="Arrow"
-            shortcut="A"
+            :tooltip="$t('soloWorkspace.toolbar.tools.arrow')"
+            :shortcut="$t('soloWorkspace.toolbar.shortcuts.arrow')"
             :active="currentTool === 'arrow'"
             @click="$emit('tool-change', 'arrow')"
           >
@@ -103,7 +103,7 @@
                   <line x1="5" y1="12" x2="19" y2="12"/>
                   <polyline points="12 5 19 12 12 19"/>
                 </svg>
-                <span>Arrow End</span>
+                <span>{{ $t('soloWorkspace.toolbar.arrow.styles.end') }}</span>
               </button>
               <button
                 :class="{ selected: currentArrowStyle === 'arrow-start' }"
@@ -113,7 +113,7 @@
                   <line x1="5" y1="12" x2="19" y2="12"/>
                   <polyline points="12 5 5 12 12 19"/>
                 </svg>
-                <span>Arrow Start</span>
+                <span>{{ $t('soloWorkspace.toolbar.arrow.styles.start') }}</span>
               </button>
               <button
                 :class="{ selected: currentArrowStyle === 'arrow-both' }"
@@ -124,10 +124,10 @@
                   <polyline points="8 5 5 12 8 19"/>
                   <polyline points="16 5 19 12 16 19"/>
                 </svg>
-                <span>Both Ends</span>
+                <span>{{ $t('soloWorkspace.toolbar.arrow.styles.both') }}</span>
               </button>
               <div class="arrow-size-control">
-                <label>Head Size: {{ currentArrowSize || 15 }}px</label>
+                <label>{{ $t('soloWorkspace.toolbar.arrow.headSize') }}: {{ currentArrowSize || 15 }}px</label>
                 <input
                   type="range"
                   min="8"
@@ -141,8 +141,8 @@
         </div>
 
         <ToolButton
-          tooltip="Rectangle"
-          shortcut="R"
+          :tooltip="$t('soloWorkspace.toolbar.tools.rectangle')"
+          :shortcut="$t('soloWorkspace.toolbar.shortcuts.rectangle')"
           :active="currentTool === 'rectangle'"
           @click="$emit('tool-change', 'rectangle')"
         >
@@ -154,8 +154,8 @@
         </ToolButton>
 
         <ToolButton
-          tooltip="Circle"
-          shortcut="C"
+          :tooltip="$t('soloWorkspace.toolbar.tools.circle')"
+          :shortcut="$t('soloWorkspace.toolbar.shortcuts.circle')"
           :active="currentTool === 'circle'"
           @click="$emit('tool-change', 'circle')"
         >
@@ -172,11 +172,11 @@
 
     <!-- Text & Selection group -->
     <div class="solo-toolbar__group">
-      <span class="solo-toolbar__group-label">Text</span>
+      <span class="solo-toolbar__group-label">{{ $t('soloWorkspace.toolbar.sections.text') }}</span>
       <div class="solo-toolbar__section">
         <ToolButton
-          tooltip="Text"
-          shortcut="T"
+          :tooltip="$t('soloWorkspace.toolbar.tools.text')"
+          :shortcut="$t('soloWorkspace.toolbar.shortcuts.text')"
           :active="currentTool === 'text'"
           @click="$emit('tool-change', 'text')"
         >
@@ -190,8 +190,8 @@
         </ToolButton>
 
         <ToolButton
-          tooltip="Sticky Note"
-          shortcut="N"
+          :tooltip="$t('soloWorkspace.toolbar.tools.note')"
+          :shortcut="$t('soloWorkspace.toolbar.shortcuts.note')"
           :active="currentTool === 'note'"
           @click="$emit('tool-change', 'note')"
         >
@@ -204,8 +204,8 @@
         </ToolButton>
 
         <ToolButton
-          tooltip="Select"
-          shortcut="V"
+          :tooltip="$t('soloWorkspace.toolbar.tools.select')"
+          :shortcut="$t('soloWorkspace.toolbar.shortcuts.select')"
           :active="currentTool === 'select'"
           @click="$emit('tool-change', 'select')"
         >
@@ -223,7 +223,7 @@
 
     <!-- Color & Size -->
     <div class="solo-toolbar__group">
-      <span class="solo-toolbar__group-label">Style</span>
+      <span class="solo-toolbar__group-label">{{ $t('soloWorkspace.toolbar.sections.style') }}</span>
       <div class="solo-toolbar__section solo-toolbar__section--style">
         <ColorPicker
           :model-value="currentColor"
@@ -242,10 +242,10 @@
 
     <!-- Actions group -->
     <div class="solo-toolbar__group">
-      <span class="solo-toolbar__group-label">Actions</span>
+      <span class="solo-toolbar__group-label">{{ $t('soloWorkspace.toolbar.sections.actions') }}</span>
       <div class="solo-toolbar__section">
         <ToolButton
-          tooltip="Undo"
+          :tooltip="$t('soloWorkspace.toolbar.actions.undo')"
           shortcut="Ctrl+Z"
           @click="$emit('undo')"
         >
@@ -258,7 +258,7 @@
         </ToolButton>
 
         <ToolButton
-          tooltip="Redo"
+          :tooltip="$t('soloWorkspace.toolbar.actions.redo')"
           shortcut="Ctrl+Y"
           @click="$emit('redo')"
         >
@@ -271,7 +271,7 @@
         </ToolButton>
 
         <ToolButton
-          tooltip="Clear Page"
+          :tooltip="$t('soloWorkspace.toolbar.actions.clear')"
           @click="$emit('clear')"
         >
           <template #icon>
@@ -382,12 +382,14 @@ onUnmounted(() => {
 }
 
 .solo-toolbar__group-label {
-  font-size: 10px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--color-text-tertiary, #94a3b8);
+  letter-spacing: 0.8px;
+  color: var(--color-text-secondary, #475569);
+  margin-bottom: 8px;
   padding: 0 4px;
+  user-select: none;
 }
 
 .solo-toolbar--horizontal .solo-toolbar__group-label {

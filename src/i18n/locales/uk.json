@@ -253,6 +253,7 @@
         "description": "Коли студенти надішлють вам запити, вони з'являться тут"
       },
       "accept": "Прийняти",
+      "accepting": "Приймаємо...",
       "reject": "Відхилити",
       "contactsUnlocked": "Контакти студента"
     },
@@ -550,6 +551,8 @@
     "apply": "Застосувати",
     "reset": "Скинути",
     "retry": "Спробувати ще раз",
+    "yes": "Так",
+    "no": "Ні",
     "notSpecified": "Не вказано",
     "years": "років",
     "hour": "год",
@@ -587,14 +590,17 @@
     "open": "Відкрити",
     "optional": "необов'язково",
     "other": "Інше",
+    "previous": "Попередня",
     "previousWeek": "Попередній тиждень",
     "refresh": "Оновити",
     "reject": "Відхилити",
     "remove": "Видалити",
     "saving": "Зберігаємо",
-    "search": "Пошук",
+    "submitting": "Надсилаємо...",
     "searching": "Пошук",
     "showing": "Показано",
+    "noResults": "Нічого не знайдено",
+    "notSet": "Не вказано",
     "there": "там",
     "today": "Сьогодні",
     "understood": "Зрозуміло",
@@ -1418,6 +1424,12 @@
         "respondsInHours": "Зазвичай відповідає за {hours} год",
         "bookLesson": "Запланувати урок",
         "sendMessage": "Надіслати повідомлення"
+      },
+      "about": {
+        "notProvided": "Інформація не надана"
+      },
+      "calendar": {
+        "notConfigured": "Календар ще не налаштовано"
       },
       "education": {
         "title": "Освіта",
@@ -2448,7 +2460,8 @@
       },
       "cta": {
         "createLesson": "Створити урок",
-        "openChat": "Відкрити чат"
+        "openChat": "Відкрити чат",
+        "chatWithStudent": "Чат зі студентом"
       },
       "bulk": {
         "selectHint": "Обирайте учнів для групових дій.",
@@ -3168,7 +3181,14 @@
       "retry": "Повторити"
     },
     "errors": {
-      "failedToSend": "Не вдалося надіслати повідомлення. Спробуйте ще раз."
+      "threadCreationFailed": "Не вдалося створити чат. Спробуйте ще раз.",
+      "failedToSend": "Не вдалося надіслати повідомлення. Спробуйте ще раз.",
+      "relationNotFound": "Зв'язок зі студентом не знайдено.",
+      "contactAccessRequired": "Для відкриття чату потрібно розблокувати контакти студента."
+    },
+    "notifications": {
+      "title": "Повідомлення",
+      "empty": "Немає нових повідомлень"
     },
     "input": {
       "placeholder": "Напишіть повідомлення… Підтримується Markdown і MathJax.",
@@ -3341,6 +3361,7 @@
     "mySessions": {
       "title": "Мої дошки",
       "createNew": "Створити нову дошку",
+      "createNewV2": "Створити Solo v2",
       "search": "Пошук дошок…",
       "sortUpdated": "Сортувати за оновленням",
       "sortCreated": "Сортувати за датою створення",
@@ -4522,6 +4543,12 @@
     "phone": "Телефон",
     "address": "Адреса",
     "sellerInfo": "Інформація про продавця",
+    "unlockPrompt": "Щоб бачити контакти студента та спілкуватися в чаті, відкрийте доступ",
+    "unlockButton": "Відкрити контакти",
+    "studentContacts": "Контакти студента",
+    "revokeButton": "Відкликати доступ",
+    "loadContacts": "Завантажити контакти",
+    "noContactsAvailable": "Контактна інформація відсутня",
     "balance": {
       "label": "Контакти",
       "ariaLabel": "Баланс контактів",
@@ -4706,6 +4733,87 @@
       "reason": "Причина",
       "loadError": "Не вдалося завантажити історію",
       "showing": "Показано {from}-{to} з {total}"
+    }
+  },
+  "soloWorkspace": {
+    "toolbar": {
+      "sections": {
+        "draw": "Малювання",
+        "shapes": "Фігури",
+        "text": "Текст",
+        "style": "Стиль",
+        "actions": "Дії"
+      },
+      "tools": {
+        "pen": "Перо",
+        "highlighter": "Маркер",
+        "eraser": "Гумка",
+        "line": "Лінія",
+        "arrow": "Стрілка",
+        "rectangle": "Прямокутник",
+        "circle": "Коло",
+        "text": "Текст",
+        "note": "Нотатка",
+        "select": "Вибір"
+      },
+      "shortcuts": {
+        "pen": "P",
+        "highlighter": "H",
+        "eraser": "E",
+        "line": "L",
+        "arrow": "A",
+        "rectangle": "R",
+        "circle": "C",
+        "text": "T",
+        "note": "N",
+        "select": "V"
+      },
+      "arrow": {
+        "styles": {
+          "end": "Стрілка в кінці",
+          "start": "Стрілка на початку",
+          "both": "Стрілки з обох боків"
+        },
+        "headSize": "Розмір голівки"
+      },
+      "actions": {
+        "undo": "Скасувати",
+        "redo": "Повторити",
+        "clear": "Очистити"
+      }
+    },
+    "header": {
+      "save": "Зберегти",
+      "exit": "Вийти",
+      "backToList": "Назад до списку",
+      "undo": "Скасувати (Ctrl+Z)",
+      "redo": "Повторити (Ctrl+Y)",
+      "clear": "Очистити сторінку",
+      "exportPDF": "Експорт в PDF",
+      "importPDF": "Імпорт PDF"
+    },
+    "status": {
+      "saving": "Збереження...",
+      "saved": "Збережено {time}",
+      "unsavedChanges": "Незбережені зміни",
+      "justNow": "щойно"
+    },
+    "footer": {
+      "previousPage": "Попередня сторінка",
+      "nextPage": "Наступна сторінка",
+      "addPage": "Додати сторінку",
+      "currentPage": "Поточна сторінка",
+      "zoomOut": "Зменшити (-)",
+      "zoomIn": "Збільшити (+)",
+      "zoomLevel": "Рівень масштабу",
+      "fullscreen": "Повноекранний режим (F11)"
+    },
+    "alerts": {
+      "pdfExportSuccess": "PDF успішно експортовано",
+      "pdfExportError": "Не вдалося експортувати PDF. Спробуйте ще раз.",
+      "pdfImportSuccess": "PDF успішно імпортовано! Додано {count} сторінок.",
+      "pdfImportError": "Не вдалося імпортувати PDF. Спробуйте ще раз.",
+      "invalidFileType": "Невірний тип файлу. Виберіть PDF файл."
     }
   }
 }

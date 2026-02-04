@@ -30,7 +30,7 @@ describe('inquiriesStore v0.69', () => {
   })
 
   const mockInquiry: InquiryDTO = {
-    id: 1,
+    id: 'test-inquiry-uuid-1',
     student: makeUserSummary({ id: '1', firstName: 'John', lastName: 'Doe', role: 'student' }),
     tutor: makeUserSummary({ id: '2', firstName: 'Jane', lastName: 'Smith', role: 'tutor' }),
     message: 'Hello, I would like to learn math',
@@ -106,9 +106,9 @@ describe('inquiriesStore v0.69', () => {
       vi.mocked(inquiriesApi.cancelInquiry).mockResolvedValue(response)
       vi.mocked(inquiriesApi.fetchInquiries).mockResolvedValue([cancelledInquiry])
 
-      await store.cancelInquiry(1)
+      await store.cancelInquiry('test-uuid-1')
 
-      expect(inquiriesApi.cancelInquiry).toHaveBeenCalledWith(1)
+      expect(inquiriesApi.cancelInquiry).toHaveBeenCalledWith('test-uuid-1')
       expect(inquiriesApi.fetchInquiries).toHaveBeenCalled()
     })
   })
@@ -119,7 +119,7 @@ describe('inquiriesStore v0.69', () => {
       const acceptedInquiry = { ...mockInquiry, status: 'ACCEPTED' as const }
       const response = {
         inquiry: acceptedInquiry,
-        relation: { id: 1, chat_unlocked: true, contact_unlocked: true },
+        relation: { id: 'test-relation-uuid-1', chat_unlocked: true, contact_unlocked: true },
         thread_id: 1,
         contacts: { email: 'student@example.com', phone: '', telegram: '' },
         was_already_unlocked: false,
@@ -129,9 +129,9 @@ describe('inquiriesStore v0.69', () => {
       vi.mocked(inquiriesApi.acceptInquiry).mockResolvedValue(response)
       vi.mocked(inquiriesApi.fetchInquiries).mockResolvedValue([acceptedInquiry])
 
-      await store.acceptInquiry(1)
+      await store.acceptInquiry('test-uuid-1')
 
-      expect(inquiriesApi.acceptInquiry).toHaveBeenCalledWith(1)
+      expect(inquiriesApi.acceptInquiry).toHaveBeenCalledWith('test-uuid-1')
       expect(inquiriesApi.fetchInquiries).toHaveBeenCalled()
     })
   })
@@ -146,9 +146,9 @@ describe('inquiriesStore v0.69', () => {
       vi.mocked(inquiriesApi.rejectInquiry).mockResolvedValue(response)
       vi.mocked(inquiriesApi.fetchInquiries).mockResolvedValue([rejectedInquiry])
 
-      await store.rejectInquiry(1, payload)
+      await store.rejectInquiry('test-uuid-1', payload)
 
-      expect(inquiriesApi.rejectInquiry).toHaveBeenCalledWith(1, payload)
+      expect(inquiriesApi.rejectInquiry).toHaveBeenCalledWith('test-uuid-1', payload)
       expect(inquiriesApi.fetchInquiries).toHaveBeenCalled()
     })
   })
@@ -157,9 +157,9 @@ describe('inquiriesStore v0.69', () => {
     it('should compute pending count correctly', async () => {
       const store = useInquiriesStore()
       const inquiries = [
-        { ...mockInquiry, id: 1, status: 'OPEN' as const },
-        { ...mockInquiry, id: 2, status: 'OPEN' as const },
-        { ...mockInquiry, id: 3, status: 'ACCEPTED' as const }
+        { ...mockInquiry, id: 'uuid-1', status: 'OPEN' as const },
+        { ...mockInquiry, id: 'uuid-2', status: 'OPEN' as const },
+        { ...mockInquiry, id: 'uuid-3', status: 'ACCEPTED' as const }
       ]
       
       vi.mocked(inquiriesApi.fetchInquiries).mockResolvedValue(inquiries)

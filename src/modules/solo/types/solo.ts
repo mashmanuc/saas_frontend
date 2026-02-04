@@ -19,6 +19,7 @@ export interface PageBackground {
   color?: string       // for 'color' type, or tint for patterns
   gridSize?: number    // spacing for grid/dots/graph (default: 20)
   lineColor?: string   // color of grid lines/dots (default: #e5e7eb)
+  image?: string       // data URL for background image (e.g., from PDF import)
 }
 
 export interface Point {
@@ -70,12 +71,26 @@ export interface TextElement {
   height?: number
 }
 
+export interface AssetLayer {
+  id: string
+  type: 'image' | 'svg' | 'pdf'
+  src: string
+  x: number
+  y: number
+  width: number
+  height: number
+  rotation: number
+  locked: boolean
+  zIndex: number
+}
+
 export interface PageState {
   id: string
   name: string
   strokes: Stroke[]
   shapes: Shape[]
   texts: TextElement[]
+  assets: AssetLayer[]
   background?: PageBackground  // optional for backward compatibility (default: white)
 }
 
@@ -105,6 +120,7 @@ export interface SoloSession {
   page_count: number
   thumbnail_url?: string
   is_shared: boolean
+  version?: 'v1' | 'v2'  // Session version (default: v1)
   created_at: string
   updated_at: string
 }
@@ -128,15 +144,3 @@ export interface ExportRequest {
   created_at: string
 }
 
-export interface AssetLayer {
-  id: string
-  type: 'image' | 'svg' | 'pdf'
-  src: string
-  x: number
-  y: number
-  width: number
-  height: number
-  rotation: number
-  locked: boolean
-  zIndex: number
-}

@@ -21,7 +21,6 @@
     "deniedDescription": "Allow notifications in your browser settings.",
     "error": "Push notification error"
   },
-  "app": {},
   "student": {
     "myTutors": {
       "title": "My Tutors",
@@ -119,7 +118,8 @@
       },
       "accept": "Accept",
       "reject": "Reject",
-      "contactsUnlocked": "Student contacts"
+      "contactsUnlocked": "Student contacts",
+      "accepting": "Приймаємо..."
     },
     "errors": {
       "retryAfter": "Try again in {seconds} seconds",
@@ -201,7 +201,6 @@
     "uk": "Ukrainian",
     "en": "English"
   },
-  "userProg": {},
   "nav": {
     "logout": "Logout",
     "side": "Side navigation",
@@ -299,9 +298,6 @@
       "active": "Active:"
     },
     "themeOptions": {
-      "light": {},
-      "dark": {},
-      "classic": {},
       "${value}": {
         "label": "{value}",
         "description": "{value}"
@@ -442,24 +438,118 @@
     }
   },
   "common": {
-    "loading": "Loading...",
-    "error": "Error",
-    "save": "Save",
     "cancel": "Cancel",
-    "delete": "Delete",
-    "edit": "Edit",
+    "loading": "Loading...",
     "close": "Close",
-    "confirm": "Confirm",
+    "noResults": "No results",
     "back": "Back",
     "next": "Next",
+    "offline": {
+      "lastSync": "Остання синхронізація",
+      "message": "Ви не в мережі",
+      "retry": "Повторити",
+      "retrying": "Повторна спроба",
+      "title": "Офлайн"
+    },
+    "rateLimit": {
+      "message": "Забагато запитів. Зачекайте перед повтором.",
+      "seconds": "секунд",
+      "title": "Ліміт запитів перевищено",
+      "tryNow": "Спробувати зараз",
+      "waiting": "Очікування..."
+    },
+    "delete": "Delete",
+    "save": "Save",
     "submit": "Submit",
-    "search": "Search",
-    "filter": "Filter",
-    "sort": "Sort",
-    "clear": "Clear",
-    "apply": "Apply",
-    "reset": "Reset",
-    "retry": "Retry"
+    "weekdays": {
+      "short": {
+        "fri": "Пт",
+        "mon": "Пн",
+        "sat": "Сб",
+        "sun": "Нд",
+        "thu": "Чт",
+        "tue": "Вт",
+        "wed": "Ср"
+      },
+      "${day}": "{day}",
+      "${weekday}": "{weekday}",
+      "friday": "Пʼятниця",
+      "monday": "Понеділок",
+      "saturday": "Субота",
+      "sunday": "Неділя",
+      "thursday": "Четвер",
+      "tuesday": "Вівторок",
+      "wednesday": "Середа"
+    },
+    "years": "years",
+    "previous": "Back",
+    "no": "Ні",
+    "yes": "Так",
+    "emptyState": {
+      "defaultDescription": "Немає даних для відображення.",
+      "defaultTitle": "Поки порожньо"
+    },
+    "notSet": "Не вказано",
+    "submitting": "Надсилання...",
+    "accept": "Прийняти",
+    "all": "Усі",
+    "apply": "Застосувати",
+    "bookLesson": "Забронювати урок",
+    "bookLessonToChat": "Забронюйте урок для чату",
+    "clear": "Очистити",
+    "confirm": "Підтвердити",
+    "confirmDelete": "Ви впевнені, що хочете видалити?",
+    "confirmDiscard": "Скасувати незбережені зміни?",
+    "continue": "Продовжити",
+    "copy": "Копіювати",
+    "creating": "Створюємо",
+    "currency": "Валюта",
+    "daysAgo": "{count} дн. тому",
+    "decline": "Відхилити",
+    "executing": "Виконуємо",
+    "exit": "Вийти",
+    "hour": "год",
+    "hoursAgo": "{count} год тому",
+    "joinCurrentLesson": "Приєднатися до уроку",
+    "justNow": "Щойно",
+    "later": "Пізніше",
+    "loadMore": "Завантажити ще",
+    "lock": "Заблокувати",
+    "min": "хв",
+    "minutes": "Хвилини",
+    "minutesAgo": "{count} хв тому",
+    "moreActions": "Більше дій",
+    "moveDown": "Перемістити вниз",
+    "moveUp": "Перемістити вгору",
+    "never": "Ніколи",
+    "nextWeek": "Наступний тиждень",
+    "notSpecified": "Не вказано",
+    "of": "з",
+    "open": "Відкрити",
+    "openLessonChat": "Відкрити чат уроку",
+    "optional": "необов'язково",
+    "other": "Інше",
+    "previousWeek": "Попередній тиждень",
+    "refresh": "Оновити",
+    "reject": "Відхилити",
+    "remove": "Видалити",
+    "retry": "Спробувати знову",
+    "saving": "Зберігаємо",
+    "search": "Пошук",
+    "searching": "Пошук",
+    "selected": "обрано",
+    "showing": "Показано",
+    "there": "там",
+    "today": "Сьогодні",
+    "understood": "Зрозуміло",
+    "unlock": "Розблокувати",
+    "unavailable": "Недоступно",
+    "unknown": "Невідомо",
+    "error": "Помилка",
+    "edit": "Редагувати",
+    "filter": "Фільтр",
+    "sort": "Сортування",
+    "reset": "Скинути"
   },
   "ui": {
     "cancel": "Cancel",
@@ -504,7 +594,6 @@
       "accountLocked": "Account locked",
       "lockedUntil": "Locked until {until}",
       "requestUnlock": "Request unlock",
-      "webauthn": {},
       "errors": {
         "invalidCredentials": "Invalid email or password.",
         "rateLimited": "Too many attempts. Please try again later.",
@@ -573,7 +662,6 @@
       "relogin": "Sign in again"
     },
     "invite": {
-      "errors": {},
       "validation": {
         "title": "Invite validation",
         "description": "Checking your link...",
@@ -922,14 +1010,12 @@
       "hungary": "Hungary",
       "${country.labelKey}": "{country.labelKey}"
     },
-    "weekdays": {
-      "short": {}
-    },
     "calendar": {
       "errorHorizon": "Cannot load calendar beyond 4 weeks",
       "errorLoad": "Failed to load availability",
       "bookSlotAria": "Book slot at {time}",
-      "title": "Календар"
+      "title": "Календар",
+      "infoNote": "Це інформаційний розклад. Забронювати урок можна через запит"
     },
     "trialRequest": {
       "title": "Trial Lesson Request",
@@ -1224,7 +1310,6 @@
         "certificationsFileLabel": "File",
         "certificationsUploadButton": "Choose file",
         "certificationsSelectedFile": "Selected: {name}",
-        "offline": {},
         "certificationsNoFile": "No file selected",
         "certificationsAdd": "Add diploma",
         "certificationsUploading": "Uploading…",
@@ -1282,6 +1367,12 @@
         "draft": "Чернетка",
         "rejected": "Відхилено",
         "suspended": "Призупинено"
+      },
+      "about": {
+        "notProvided": "Інформація не надана"
+      },
+      "calendar": {
+        "notConfigured": "Календар ще не налаштовано"
       }
     },
     "draft": {
@@ -1470,120 +1561,6 @@
       "p95": "P95"
     }
   },
-  "common": {
-    "cancel": "Cancel",
-    "loading": "Loading...",
-    "close": "Close",
-    "noResults": "No results",
-    "back": "Back",
-    "next": "Next",
-    "genderOptions": {},
-    "offline": {
-      "lastSync": "Остання синхронізація",
-      "message": "Ви не в мережі",
-      "retry": "Повторити",
-      "retrying": "Повторна спроба",
-      "title": "Офлайн"
-    },
-    "validation": {},
-    "rateLimit": {
-      "features": {},
-      "message": "Забагато запитів. Зачекайте перед повтором.",
-      "seconds": "секунд",
-      "title": "Ліміт запитів перевищено",
-      "tryNow": "Спробувати зараз",
-      "waiting": "Очікування..."
-    },
-    "delete": "Delete",
-    "save": "Save",
-    "submit": "Submit",
-    "weekdays": {
-      "full": {},
-      "short": {
-        "fri": "Пт",
-        "mon": "Пн",
-        "sat": "Сб",
-        "sun": "Нд",
-        "thu": "Чт",
-        "tue": "Вт",
-        "wed": "Ср"
-      },
-      "${day}": "{day}",
-      "${weekday}": "{weekday}",
-      "friday": "Пʼятниця",
-      "monday": "Понеділок",
-      "saturday": "Субота",
-      "sunday": "Неділя",
-      "thursday": "Четвер",
-      "tuesday": "Вівторок",
-      "wednesday": "Середа"
-    },
-    "years": "years",
-    "previous": "Back",
-    "no": "Ні",
-    "yes": "Так",
-    "emptyState": {
-      "defaultDescription": "Немає даних для відображення.",
-      "defaultTitle": "Поки порожньо"
-    },
-    "notSet": "Не вказано",
-    "ok": "OK",
-    "submitting": "Надсилання...",
-    "accept": "Прийняти",
-    "all": "Усі",
-    "apply": "Застосувати",
-    "bookLesson": "Забронювати урок",
-    "bookLessonToChat": "Забронюйте урок для чату",
-    "clear": "Очистити",
-    "confirm": "Підтвердити",
-    "confirmDelete": "Ви впевнені, що хочете видалити?",
-    "confirmDiscard": "Скасувати незбережені зміни?",
-    "continue": "Продовжити",
-    "copy": "Копіювати",
-    "creating": "Створюємо",
-    "currency": "Валюта",
-    "daysAgo": "{count} дн. тому",
-    "decline": "Відхилити",
-    "executing": "Виконуємо",
-    "exit": "Вийти",
-    "hour": "год",
-    "hoursAgo": "{count} год тому",
-    "joinCurrentLesson": "Приєднатися до уроку",
-    "justNow": "Щойно",
-    "later": "Пізніше",
-    "loadMore": "Завантажити ще",
-    "lock": "Заблокувати",
-    "min": "хв",
-    "minutes": "Хвилини",
-    "minutesAgo": "{count} хв тому",
-    "moreActions": "Більше дій",
-    "moveDown": "Перемістити вниз",
-    "moveUp": "Перемістити вгору",
-    "never": "Ніколи",
-    "nextWeek": "Наступний тиждень",
-    "notSpecified": "Не вказано",
-    "of": "з",
-    "open": "Відкрити",
-    "openLessonChat": "Відкрити чат уроку",
-    "optional": "необов'язково",
-    "other": "Інше",
-    "previousWeek": "Попередній тиждень",
-    "refresh": "Оновити",
-    "reject": "Відхилити",
-    "remove": "Видалити",
-    "retry": "Спробувати знову",
-    "saving": "Зберігаємо",
-    "search": "Пошук",
-    "searching": "Пошук",
-    "selected": "обрано",
-    "showing": "Показано",
-    "there": "там",
-    "today": "Сьогодні",
-    "understood": "Зрозуміло",
-    "unlock": "Розблокувати",
-    "unavailable": "Недоступно",
-    "unknown": "Невідомо"
-  },
   "role": {
     "superadmin": "Superadmin",
     "admin": "Admin",
@@ -1631,7 +1608,6 @@
         "invited": "Invited",
         "archived": "Archived"
       },
-      "actions": {},
       "todaysLessons": "Today's lessons",
       "viewBookings": "View bookings",
       "viewLessons": "View lessons",
@@ -1649,8 +1625,7 @@
         "active": {
           "title": "Active students",
           "description": "Manage schedules, notes and keep track of student activity here."
-        },
-        "archived": {}
+        }
       },
       "emptyStates": {
         "all": {
@@ -1664,12 +1639,12 @@
         "active": {
           "title": "No active students",
           "description": "Once invitations are accepted, students will appear in this tab."
-        },
-        "archived": {}
+        }
       },
       "cta": {
         "createLesson": "Create lesson",
-        "openChat": "Open chat"
+        "openChat": "Open chat",
+        "chatWithStudent": "Чат зі студентом"
       },
       "bulk": {
         "selectHint": "Select students to perform bulk actions.",
@@ -1678,8 +1653,7 @@
         "clearSelection": "Clear",
         "acceptSelected": "Accept selected",
         "archiveSelected": "Archive selected"
-      },
-      "notifications": {}
+      }
     }
   },
   "relations": {
@@ -1803,11 +1777,6 @@
         "message": "Respond to at least one student inquiry (accept or reject). This is the only way to restore your profile visibility."
       }
     },
-    "relations": {
-      "info": {},
-      "actions": {},
-      "notifications": {}
-    },
     "invitedStudents": {
       "title": "Student Invitations",
       "empty": "You have no invited students",
@@ -1815,10 +1784,6 @@
       "status": "Pending confirmation",
       "accept": "Accept"
     },
-    "search": {},
-    "request": {},
-    "actions": {},
-    "notifications": {},
     "lessonLinks": {
       "title": "Lesson links",
       "subtitle": "Configure the primary and backup links you use for lessons",
@@ -1869,11 +1834,6 @@
       "description": "Browse tutors in the marketplace and send collaboration requests.",
       "title": "No Tutor"
     },
-    "invited": {},
-    "stateHints": {
-      "active": {},
-      "invited": {}
-    },
     "actions": {
       "chooseTutor": "Choose a tutor",
       "exploreMarketplace": "Explore marketplace",
@@ -1888,7 +1848,6 @@
         "description": "You have no scheduled lessons yet"
       }
     },
-    "notifications": {},
     "myTutor": {
       "title": "My Tutor",
       "noTutor": "You don't have a tutor yet",
@@ -1944,7 +1903,10 @@
       "${status}": "{status}"
     },
     "errors": {
-      "failedToSend": "Message failed to send. Please retry."
+      "failedToSend": "Message failed to send. Please retry.",
+      "threadCreationFailed": "Не вдалося створити чат. Спробуйте ще раз.",
+      "relationNotFound": "Зв'язок зі студентом не знайдено.",
+      "contactAccessRequired": "Для відкриття чату потрібно розблокувати контакти студента."
     },
     "confirm": {
       "delete": "Delete this message?"
@@ -1960,7 +1922,11 @@
     "sendError": "Не вдалося надіслати повідомлення",
     "sending": "Надсилаємо...",
     "threadInfo": "Тип чату: {kind}",
-    "title": "Чат з тьютором"
+    "title": "Чат з тьютором",
+    "notifications": {
+      "title": "Повідомлення",
+      "empty": "Немає нових повідомлень"
+    }
   },
   "presence": {
     "online": "Online",
@@ -2232,7 +2198,6 @@
   "lessons": {
     "calendar": {
       "title": "Hours when the tutor teaches",
-      "infoNote": "This schedule is informative only. Send an inquiry to book a lesson",
       "subtitle": "Create, reschedule and manage lessons across timezones.",
       "hint": "Drag events to reschedule, resize to adjust duration. Use the buttons above to create or refresh.",
       "myStudents": {
@@ -2259,8 +2224,6 @@
         "week": "Week",
         "day": "Day"
       },
-      "createLesson": {},
-      "errors": {},
       "actions": {
         "markFreeTime": "Mark free time",
         "refresh": "Refresh",
@@ -2283,7 +2246,6 @@
         "start": "Start time",
         "end": "End time"
       },
-      "placeholders": {},
       "series": {
         "label": "Series ID",
         "placeholder": "Optional series identifier",
@@ -2383,7 +2345,8 @@
       "sortCreated": "Sort by creation date",
       "sortName": "Sort by name",
       "empty": "You don't have any saved boards yet.",
-      "createFirst": "Create your first board to see it here."
+      "createFirst": "Create your first board to see it here.",
+      "createNewV2": "Створити Solo v2"
     },
     "sharing": {
       "title": "Share board",
@@ -2521,7 +2484,6 @@
       "highLatency": "High latency detected"
     }
   },
-  "session": {},
   "realtime": {
     "offline": "Disconnected from realtime services"
   },
@@ -2676,9 +2638,6 @@
         "comment": "Private comment",
         "commentPlaceholder": "Anything to keep in mind for this lesson?"
       },
-      "editLesson": {
-        "tabs": {}
-      },
       "eventModal": {
         "title": "Edit lesson",
         "delete": "Delete lesson",
@@ -2723,8 +2682,6 @@
         "deleteFailed": "Failed to delete lesson",
         "updateFailed": "Failed to update lesson"
       },
-      "success": {},
-      "warnings": {},
       "status": {
         "available": "Slot available",
         "booked": "Slot booked",
@@ -2807,14 +2764,12 @@
       "title": "Weekly schedule setup",
       "warningMessage": "Warning: this will replace your current template if it exists."
     },
-    "actions": {},
     "bookLesson": "Book a lesson",
     "conflict": {
       "body": "This time was just booked by another student. Please choose another slot.",
       "selectAnother": "Select another time",
       "title": "Slot already booked"
     },
-    "draft": {},
     "dst": {
       "transitionWarning": "Heads up: daylight saving shift on {date}"
     },
@@ -3055,8 +3010,6 @@
     "justNow": "just now",
     "oneMinuteAgo": "a minute ago",
     "minutesAgo": "{count} min ago",
-    "syncStatus": {},
-    "notifications": {},
     "warnings": {
       "disconnected": "Connection lost. Please check your network or refresh."
     },
@@ -3107,10 +3060,6 @@
       }
     },
     "marketplace": "Marketplace",
-    "timeRange": {
-      "errors": {},
-      "options": {}
-    },
     "status": "Статус",
     "availability": {
       "jobInProgress": "Please wait for the current operation to complete",
@@ -3154,10 +3103,6 @@
       "hours.short": "h",
       "grid": {
         "label": "Availability Grid"
-      },
-      "calendar": {
-        "title": "Availability",
-        "notConfigured": "Tutor hasn't configured availability schedule yet"
       },
       "toolbar": {
         "label": "Availability Toolbar"
@@ -3215,13 +3160,11 @@
           "keyboard": "Use keyboard for navigation",
           "undo": "Ctrl+Z to undo, Ctrl+Y to redo"
         }
+      },
+      "header": {
+        "title": "Налаштування доступності"
       }
     },
-    "availabilityEmpty": {},
-    "catalog": {
-      "tabs": {}
-    },
-    "categories": {},
     "cellStatus": {
       "empty": "Empty",
       "available": "Available",
@@ -3230,8 +3173,6 @@
       "notAllow": "Not allowed",
       "${props.cell.status}": "{props.cell.status}"
     },
-    "common": {},
-    "countries": {},
     "createLesson": {
       "conflictDetected": "Conflict Detected",
       "create": "Create Lesson",
@@ -3260,7 +3201,6 @@
       "skipConflicts": "Skip Conflicts",
       "success": "Урок успішно створено"
     },
-    "draft": {},
     "no_show": {
       "comment_optional": "Comment (optional)",
       "comment_placeholder": "Add additional information...",
@@ -3274,26 +3214,6 @@
       },
       "select_reason": "Select no-show reason"
     },
-    "profile": {
-      "badgesHistory": {},
-      "contact": {},
-      "create": {},
-      "editor": {
-        "genderOptions": {},
-        "languageLevels": {},
-        "validation": {}
-      },
-      "education": {},
-      "notFound": {},
-      "reviews": {
-        "write": {}
-      },
-      "stats": {},
-      "status": {},
-      "subjectLevel": {}
-    },
-    "sort": {},
-    "subjects": {},
     "tooltips": {
       "clickToBook": "Click to book",
       "clickToCreate": "Click to create a lesson"
@@ -3310,9 +3230,6 @@
       "timeLabel": "Час",
       "title": "Запит на пробний урок"
     },
-    "tutorCard": {},
-    "errorsNew": {},
-    "filters": {},
     "footer": {
       "copied": "Copied!",
       "copy": "Copy",
@@ -3368,9 +3285,6 @@
       "reminder": "Keep your calendar up to date so students can book lessons.",
       "video_guide": "Video guide"
     },
-    "search": {},
-    "sections": {},
-    "regularity": {},
     "blockSlot": {
       "title": "Block time slot",
       "reason": "Reason for blocking",
@@ -3593,16 +3507,6 @@
       "unpaid": "Не оплачена"
     }
   },
-  "conflict": {
-    "types": {},
-    "resolution": {}
-  },
-  "oldBooking": {
-    "modal": {},
-    "timeline": {
-      "events": {}
-    }
-  },
   "admin": {
     "i18n": {
       "missingTranslations": {
@@ -3621,20 +3525,6 @@
   },
   "permissions": {
     "noAccess": "Access Denied"
-  },
-  "collaboration": {
-    "stats": {},
-    "status": {}
-  },
-  "availability": {
-    "status": {},
-    "slotEditor": {
-      "strategies": {
-        "override": {},
-        "templateUpdate": {},
-        "userChoice": {}
-      }
-    }
   },
   "inquiry": {
     "modal": {
@@ -4253,7 +4143,11 @@
         "deduction": "Deduction",
         "refund": "Refund"
       }
-    }
+    },
+    "unlockPrompt": "Щоб бачити контакти студента та спілкуватися в чаті, відкрийте доступ",
+    "unlockButton": "Відкрити контакти",
+    "studentContacts": "Контакти студента",
+    "revokeButton": "Відкликати доступ"
   },
   "warnings": {
     "declineStreak": {
@@ -4740,6 +4634,87 @@
       "reason": "Reason",
       "loadError": "Failed to load history",
       "showing": "Showing {from}-{to} of {total}"
+    }
+  },
+  "soloWorkspace": {
+    "toolbar": {
+      "sections": {
+        "draw": "Малювання",
+        "shapes": "Фігури",
+        "text": "Текст",
+        "style": "Стиль",
+        "actions": "Дії"
+      },
+      "tools": {
+        "pen": "Перо",
+        "highlighter": "Маркер",
+        "eraser": "Гумка",
+        "line": "Лінія",
+        "arrow": "Стрілка",
+        "rectangle": "Прямокутник",
+        "circle": "Коло",
+        "text": "Текст",
+        "note": "Нотатка",
+        "select": "Вибір"
+      },
+      "shortcuts": {
+        "pen": "P",
+        "highlighter": "H",
+        "eraser": "E",
+        "line": "L",
+        "arrow": "A",
+        "rectangle": "R",
+        "circle": "C",
+        "text": "T",
+        "note": "N",
+        "select": "V"
+      },
+      "arrow": {
+        "styles": {
+          "end": "Стрілка в кінці",
+          "start": "Стрілка на початку",
+          "both": "Стрілки з обох боків"
+        },
+        "headSize": "Розмір голівки"
+      },
+      "actions": {
+        "undo": "Скасувати",
+        "redo": "Повторити",
+        "clear": "Очистити"
+      }
+    },
+    "header": {
+      "save": "Зберегти",
+      "exit": "Вийти",
+      "backToList": "Назад до списку",
+      "undo": "Скасувати (Ctrl+Z)",
+      "redo": "Повторити (Ctrl+Y)",
+      "clear": "Очистити сторінку",
+      "exportPDF": "Експорт в PDF",
+      "importPDF": "Імпорт PDF"
+    },
+    "status": {
+      "saving": "Збереження...",
+      "saved": "Збережено {time}",
+      "unsavedChanges": "Незбережені зміни",
+      "justNow": "щойно"
+    },
+    "footer": {
+      "previousPage": "Попередня сторінка",
+      "nextPage": "Наступна сторінка",
+      "addPage": "Додати сторінку",
+      "currentPage": "Поточна сторінка",
+      "zoomOut": "Зменшити (-)",
+      "zoomIn": "Збільшити (+)",
+      "zoomLevel": "Рівень масштабу",
+      "fullscreen": "Повноекранний режим (F11)"
+    },
+    "alerts": {
+      "pdfExportSuccess": "PDF успішно експортовано",
+      "pdfExportError": "Не вдалося експортувати PDF. Спробуйте ще раз.",
+      "pdfImportSuccess": "PDF успішно імпортовано! Додано {count} сторінок.",
+      "pdfImportError": "Не вдалося імпортувати PDF. Спробуйте ще раз.",
+      "invalidFileType": "Невірний тип файлу. Виберіть PDF файл."
     }
   }
 }

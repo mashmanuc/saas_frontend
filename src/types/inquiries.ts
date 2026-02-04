@@ -35,7 +35,7 @@ export type MatchQuality = 'RECOMMENDED' | 'NEUTRAL' | 'NOT_SUITABLE'
  * Inquiry DTO (Phase 1 v0.86) - запит на встановлення контакту
  */
 export interface InquiryDTO {
-  id: number
+  id: string  // UUID from backend
   student: UserSummary
   tutor: UserSummary
   message: string
@@ -58,7 +58,7 @@ export interface InquiryDTO {
  * Relation DTO (Phase 1 v0.86)
  */
 export interface RelationDTO {
-  id: number
+  id: string  // UUID from backend
   chat_unlocked: boolean
   contact_unlocked: boolean
   contact_unlocked_at?: string

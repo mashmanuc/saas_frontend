@@ -443,11 +443,20 @@ function readLocalDraft(): LocalDraft | null {
 function writeLocalDraft(payload: TutorProfilePatchPayload): void {
   try {
     const draft: LocalDraft = { savedAt: Date.now(), data: payload }
-    localStorage.setItem(draftKey.value, JSON.stringify(draft))
+    const key = draftKey.value
+    const serialized = JSON.stringify(draft)
+    if (import.meta.env.DEV) {
+      console.log('[ProfileEditor] writeLocalDraft key:', key, 'size:', serialized.length)
+    }
+    localStorage.setItem(key, serialized)
     hasLocalDraft.value = true
     lastAutosavedAt.value = draft.savedAt
-  } catch (_err) {
-    // ignore localStorage errors
+    if (import.meta.env.DEV) {
+      const verify = localStorage.getItem(key)
+      console.log('[ProfileEditor] writeLocalDraft verify:', !!verify, 'length:', verify?.length || 0)
+    }
+  } catch (err) {
+    console.error('[ProfileEditor] writeLocalDraft error:', err)
   }
 }
 
@@ -485,16 +494,28 @@ function discardLocalDraft(): void {
 const isUpdatingFromProps = ref(false)
 
 const debouncedAutosave = debounce(async () => {
+  if (import.meta.env.DEV) {
+    console.log('[ProfileEditor] debouncedAutosave called, saving:', props.saving, 'isUpdatingFromProps:', isUpdatingFromProps.value)
+  }
   if (props.saving || isUpdatingFromProps.value) return
   autosaveStatus.value = 'saving'
   try {
-    const payload = buildPayloadFromForm()
-    writeLocalDraft(payload)
+    const { newLanguageCode, newLanguageLevel, ...model } = formData.value
+    // v0.60.1: Build payload WITHOUT debugPayload to avoid infinite loop
+    const apiPayload = buildTutorProfileUpdate(model)
+    // Skip debugPayload during autosave to prevent console.log spam
+    if (import.meta.env.DEV) {
+      console.log('[ProfileEditor] Writing draft to localStorage, bio length:', apiPayload.bio?.length || 0)
+    }
+    writeLocalDraft(apiPayload as any)
 
     // Keep autosave local-only to avoid spamming API (rate-limited).
     lastAutosavedAt.value = Date.now()
 
     autosaveStatus.value = 'saved'
+    if (import.meta.env.DEV) {
+      console.log('[ProfileEditor] Autosave completed successfully')
+    }
   } catch (err) {
     console.error('[ProfileEditor] Autosave error:', err)
     autosaveStatus.value = 'idle'
@@ -537,6 +558,9 @@ watch(
 watch(
   formData,
   () => {
+    if (import.meta.env.DEV) {
+      console.log('[ProfileEditor] formData changed, isUpdatingFromProps:', isUpdatingFromProps.value)
+    }
     if (!isUpdatingFromProps.value) {
       debouncedAutosave()
     }
@@ -595,8 +619,8 @@ function getSubmitPayload(opts?: { silent?: boolean }) {
 
   // Build strict API contract payload
   const apiPayload = buildTutorProfileUpdate(model)
+  // Skip debugPayload to avoid infinite loop during publish
   if (import.meta.env.DEV) {
-    debugPayload(apiPayload, 'ProfileEditor.getSubmitPayload')
     console.debug('[ProfileEditor] submit.payload.teaching_languages', {
       formTeachingLanguages: (model as any).teaching_languages,
       payloadTeachingLanguages: (apiPayload as any).teaching_languages,

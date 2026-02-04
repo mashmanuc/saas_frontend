@@ -475,6 +475,19 @@ const routes = [
         component: () => import('../modules/matches/views/MatchDetailView.vue'),
         meta: { roles: [USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
       },
+      // v0.70: Chat routes (Smart Polling)
+      {
+        path: 'chat',
+        name: 'chat-list',
+        component: () => import('../modules/negotiation/views/ChatListView.vue'),
+        meta: { roles: [USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
+      },
+      {
+        path: 'chat/:threadId',
+        name: 'chat-thread',
+        component: () => import('../modules/negotiation/views/ChatView.vue'),
+        meta: { roles: [USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
+      },
       // v0.24.2: Classroom routes
       {
         path: 'classroom/:sessionId',
@@ -582,6 +595,16 @@ const routes = [
         meta: { 
           requiresAuth: true,
           roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR]
+        },
+      },
+      // v0.70: Contact→Chat integration - Chat with student route
+      {
+        path: 'chat/student/:studentId',
+        name: 'chat-student',
+        component: () => import('../modules/chat/views/ChatWithStudentView.vue'),
+        meta: { 
+          requiresAuth: true,
+          roles: [USER_ROLES.TUTOR]
         },
       },
       // v0.72: Billing routes

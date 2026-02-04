@@ -269,7 +269,9 @@ async function onSubmit() {
     const redirect = route.query?.redirect
     // v0.88.4: Staff users go to /staff dashboard
     let target
-    if (redirect && typeof redirect === 'string') {
+    // Ignore Solo v2 redirects - always go to dashboard first
+    const isSoloV2Redirect = redirect && typeof redirect === 'string' && redirect.includes('/solo-v2')
+    if (redirect && typeof redirect === 'string' && !isSoloV2Redirect) {
       target = redirect
     } else if (user?.is_staff) {
       target = '/staff'
@@ -289,7 +291,9 @@ async function onSubmitOtp() {
     const redirect = route.query?.redirect
     // v0.88.4: Staff users go to /staff dashboard
     let target
-    if (redirect && typeof redirect === 'string') {
+    // Ignore Solo v2 redirects - always go to dashboard first
+    const isSoloV2Redirect = redirect && typeof redirect === 'string' && redirect.includes('/solo-v2')
+    if (redirect && typeof redirect === 'string' && !isSoloV2Redirect) {
       target = redirect
     } else if (user?.is_staff) {
       target = '/staff'
@@ -327,7 +331,9 @@ async function handleWebAuthnSuccess(credential) {
     const redirect = route.query?.redirect
     // v0.88.4: Staff users go to /staff dashboard
     let target
-    if (redirect && typeof redirect === 'string') {
+    // Ignore Solo v2 redirects - always go to dashboard first
+    const isSoloV2Redirect = redirect && typeof redirect === 'string' && redirect.includes('/solo-v2')
+    if (redirect && typeof redirect === 'string' && !isSoloV2Redirect) {
       target = redirect
     } else if (user?.is_staff) {
       target = '/staff'

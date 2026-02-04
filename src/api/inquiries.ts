@@ -54,11 +54,11 @@ export async function fetchInquiries(filters: InquiryFilters = {}): Promise<Inqu
 /**
  * Скасувати inquiry (cancel) - тільки student (Phase 1 v0.86)
  * 
- * @param inquiryId - ID inquiry
+ * @param inquiryId - UUID inquiry
  * @returns response з inquiry та message
  */
 export async function cancelInquiry(
-  inquiryId: number
+  inquiryId: string
 ): Promise<CancelInquiryResponse> {
   const response = await apiClient.post<CancelInquiryResponse>(
     `${BASE_URL}/${inquiryId}/cancel/`,
@@ -70,11 +70,11 @@ export async function cancelInquiry(
 /**
  * Прийняти inquiry (accept) - тільки tutor (Phase 1 v0.86)
  * 
- * @param inquiryId - ID inquiry
+ * @param inquiryId - UUID inquiry
  * @returns response з inquiry, relation, contacts, thread_id
  */
 export async function acceptInquiry(
-  inquiryId: number
+  inquiryId: string
 ): Promise<AcceptInquiryResponse> {
   const response = await apiClient.post<AcceptInquiryResponse>(
     `${BASE_URL}/${inquiryId}/accept/`,
@@ -86,12 +86,12 @@ export async function acceptInquiry(
 /**
  * Відхилити inquiry (reject) - тільки tutor (Phase 1 v0.86)
  * 
- * @param inquiryId - ID inquiry
+ * @param inquiryId - UUID inquiry
  * @param payload - reason та optional comment
  * @returns response з inquiry та message
  */
 export async function rejectInquiry(
-  inquiryId: number,
+  inquiryId: string,
   payload: RejectInquiryPayload
 ): Promise<RejectInquiryResponse> {
   const response = await apiClient.post<RejectInquiryResponse>(

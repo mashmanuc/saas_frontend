@@ -139,7 +139,7 @@ const { errorState, handleError, clearError } = useInquiryErrorHandler()
 const { isAccepting, handleAccept: handleAcceptWithGrace } = useInquiryAccept()
 
 const showRejectModal = ref(false)
-const selectedInquiryId = ref<number | null>(null)
+const selectedInquiryId = ref<string | null>(null)
 const showContactsModal = ref(false)
 const unlockedContacts = ref<ContactsDTO | null>(null)
 
@@ -160,7 +160,7 @@ async function loadInquiries() {
   }
 }
 
-async function handleAccept(inquiryId: number) {
+async function handleAccept(inquiryId: string) {
   clearError()
   try {
     // SSOT-compliant accept with grace token retry
@@ -177,7 +177,7 @@ async function handleAccept(inquiryId: number) {
   }
 }
 
-function openRejectModal(inquiryId: number) {
+function openRejectModal(inquiryId: string) {
   selectedInquiryId.value = inquiryId
   showRejectModal.value = true
 }

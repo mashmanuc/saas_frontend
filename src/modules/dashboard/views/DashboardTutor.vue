@@ -179,6 +179,12 @@
               </div>
             </div>
 
+            <!-- Contact Access Component -->
+            <StudentContactUnlock
+              :relation="relation"
+              :show-revoke-button="true"
+            />
+
             <div class="flex flex-wrap items-center gap-2">
               <span
                 class="rounded-full border border-default px-3 py-1 text-xs font-semibold text-muted"
@@ -190,8 +196,20 @@
                 <Button variant="outline" size="sm" @click="handleCreateLesson(relation)">
                   {{ $t('dashboard.tutor.cta.createLesson') }}
                 </Button>
-                <Button variant="ghost" size="sm" @click="handleOpenChat(relation)">
-                  {{ getChatButtonText(relation) }}
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  :disabled="!canOpenChatWithStudent(relation)"
+                  @click="handleOpenChatWithStudent(relation)"
+                  class="relative"
+                >
+                  {{ $t('dashboard.tutor.cta.chatWithStudent') }}
+                  <span 
+                    v-if="getUnreadCountForStudent(relation) > 0"
+                    class="absolute -top-1 -right-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white"
+                  >
+                    {{ getUnreadCountForStudent(relation) }}
+                  </span>
                 </Button>
               </div>
             </div>
@@ -263,11 +281,14 @@ import Avatar from '../../../ui/Avatar.vue'
 import PresenceDot from '../../../ui/PresenceDot.vue'
 import UpcomingLessonCard from '../components/UpcomingLessonCard.vue'
 import ActivityStatusBlock from '../../marketplace/components/ActivityStatusBlock.vue'
+import StudentContactUnlock from '../components/StudentContactUnlock.vue'
 import { formatDateTime } from '../../../utils/datetime'
 import { useAuthStore } from '../../auth/store/authStore'
 import { useDashboardStore } from '../store/dashboardStore'
 import { useRelationsStore } from '../../../stores/relationsStore'
 import { usePresenceStore } from '../../../stores/presenceStore'
+import { useChatThreadsStore } from '../../../stores/chatThreadsStore'
+import { useContactAccessStore } from '../../../stores/contactAccessStore'
 import TrialBanner from '../../auth/components/TrialBanner.vue'
 import { notifySuccess, notifyError, notifyWarning } from '../../../utils/notify'
 import { getMessageAction } from '@/utils/relationsUi'
@@ -277,6 +298,8 @@ const auth = useAuthStore()
 const dashboard = useDashboardStore()
 const relationsStore = useRelationsStore()
 const presenceStore = usePresenceStore()
+const chatThreadsStore = useChatThreadsStore()
+const contactAccessStore = useContactAccessStore()
 presenceStore.init()
 const router = useRouter()
 const { t } = useI18n()
@@ -506,6 +529,47 @@ function handleOpenChat(relation) {
     return
   }
   router.push(action.to).catch(() => {})
+}
+
+function canOpenChatWithStudent(relation) {
+  const studentId = relation.student?.id
+  if (!studentId) return false
+  
+  // Check if relation is ACTIVE
+  if (relation.status !== 'active') return false
+  
+  // Check ContactAccess
+  return contactAccessStore.canOpenChat(studentId)
+}
+
+function getUnreadCountForStudent(relation) {
+  const studentId = relation.student?.id
+  if (!studentId) return 0
+  return chatThreadsStore.getUnreadCount(studentId)
+}
+
+async function handleOpenChatWithStudent(relation) {
+  const studentId = relation.student?.id
+  const relationId = getRelationId(relation)
+  
+  if (!studentId || !relationId) {
+    notifyError(t('common.error'))
+    return
+  }
+  
+  try {
+    // Ensure thread exists
+    const threadId = await chatThreadsStore.ensureThread(studentId, relationId)
+    
+    // Navigate to chat
+    router.push({
+      name: 'chat-student',
+      params: { studentId }
+    }).catch(() => {})
+  } catch (error) {
+    const errorMessage = error.response?.data?.error?.message || t('chat.errors.threadCreationFailed')
+    notifyError(errorMessage)
+  }
 }
 
 function handleLoadMore() {

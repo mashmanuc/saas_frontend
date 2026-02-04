@@ -89,7 +89,7 @@ import ErrorState from './ErrorState.vue'
 
 const props = defineProps<{
   show: boolean
-  inquiryId: number
+  inquiryId: string
 }>()
 
 const emit = defineEmits<{

@@ -197,13 +197,14 @@ export const useRelationsStore = defineStore('relations', {
      * Accept relation (role-aware)
      * - If user is TUTOR: accepts student request (POST /tutor/relations/{id}/accept/)
      * - If user is STUDENT: accepts tutor invitation (POST /student/relations/{id}/accept/)
+     * v0.88: Fixed infinite loop - only fetch relations for current user role
      */
     async acceptRelation(id) {
+      const { useAuthStore } = await import('../modules/auth/store/authStore')
+      const authStore = useAuthStore()
+      const userRole = authStore.user?.role?.toUpperCase()
+      
       try {
-        const { useAuthStore } = await import('../modules/auth/store/authStore')
-        const authStore = useAuthStore()
-        const userRole = authStore.user?.role?.toUpperCase()
-        
         if (userRole === 'TUTOR') {
           await relationsApi.tutorAcceptRelation(id)
         } else if (userRole === 'STUDENT') {
@@ -218,8 +219,12 @@ export const useRelationsStore = defineStore('relations', {
         notifyError(error?.response?.data?.detail || translate('relations.actions.acceptError'))
         throw error
       } finally {
-        await this.fetchStudentRelations().catch(() => {})
-        await this.fetchTutorRelations().catch(() => {})
+        // v0.88: Role-aware fetch - avoid 404 and unnecessary requests
+        if (userRole === 'TUTOR') {
+          await this.fetchTutorRelations().catch(() => {})
+        } else if (userRole === 'STUDENT') {
+          await this.fetchStudentRelations().catch(() => {})
+        }
       }
     },
 
@@ -228,6 +233,10 @@ export const useRelationsStore = defineStore('relations', {
      * Student declines tutor invitation (POST /student/relations/{id}/decline/)
      */
     async declineRelation(id) {
+      const { useAuthStore } = await import('../modules/auth/store/authStore')
+      const authStore = useAuthStore()
+      const userRole = authStore.user?.role?.toUpperCase()
+      
       try {
         await relationsApi.studentDeclineRelation(id)
         notifySuccess(translate('relations.actions.declineSuccess'))
@@ -235,8 +244,10 @@ export const useRelationsStore = defineStore('relations', {
         notifyError(error?.response?.data?.detail || translate('relations.actions.declineError'))
         throw error
       } finally {
-        await this.fetchStudentRelations().catch(() => {})
-        await this.fetchTutorRelations().catch(() => {})
+        // v0.88: Role-aware fetch - avoid 404 and unnecessary requests
+        if (userRole === 'STUDENT') {
+          await this.fetchStudentRelations().catch(() => {})
+        }
       }
     },
 
@@ -318,6 +329,23 @@ export const useRelationsStore = defineStore('relations', {
       if (!processedCount && !failedCount) {
         notifyInfo(translate('relations.bulk.noChanges'))
       }
+    },
+
+    $reset() {
+      this.studentRelations = []
+      this.studentLoading = false
+      this.studentError = null
+      this.tutorRelations = []
+      this.tutorSummary = null
+      this.tutorCursor = null
+      this.tutorHasMore = false
+      this.tutorLoading = false
+      this.tutorLoadingMore = false
+      this.tutorBulkLoading = false
+      this.tutorError = null
+      this.tutorErrorCode = null
+      this.tutorFilter = 'all'
+      this.tutorSelectedIds = []
     },
   },
 })

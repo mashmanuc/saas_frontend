@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solo Canvas Pan Test</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+    }
+    .instructions {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .instructions h2 {
+      margin-top: 0;
+    }
+    .instructions ul {
+      margin: 10px 0;
+      padding-left: 20px;
+    }
+    .canvas-container {
+      width: 100%;
+      height: 600px;
+      background: #e5e7eb;
+      border: 2px solid #9ca3af;
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+      cursor: crosshair;
+    }
+    .canvas-container.panning {
+      cursor: grab;
+    }
+    .canvas-container.panning:active {
+      cursor: grabbing;
+    }
+    canvas {
+      display: block;
+      background: white;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .info {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(255,255,255,0.9);
+      padding: 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: monospace;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="instructions">
+    <h2>🎨 Solo Canvas Pan Test</h2>
+    <p><strong>Тестування перетягування полотна (pan/drag):</strong></p>
+    <ul>
+      <li><strong>Space + drag</strong> - утримуйте Space і перетягуйте мишею</li>
+      <li><strong>Middle-click + drag</strong> - натисніть колесо миші і перетягуйте</li>
+      <li><strong>Scroll wheel</strong> - масштабування (Ctrl + wheel)</li>
+    </ul>
+    <p>Полотно має плавно переміщуватись без дьоргання.</p>
+  </div>
+
+  <div class="canvas-container" id="container">
+    <canvas id="canvas"></canvas>
+    <div class="info" id="info">
+      Pan: (0, 0)<br>
+      Zoom: 100%<br>
+      Mode: Draw
+    </div>
+  </div>
+
+  <script>
+    const container = document.getElementById('container');
+    const canvas = document.getElementById('canvas');
+    const info = document.getElementById('info');
+    const ctx = canvas.getContext('2d');
+
+    // Canvas state
+    let canvasWidth = 920;
+    let canvasHeight = 1200;
+    let panX = 0;
+    let panY = 0;
+    let zoom = 1;
+
+    // Pan state
+    let isPanning = false;
+    let isPanDragging = false;
+    let panStartPos = null;
+    let panStartOffset = { x: 0, y: 0 };
+
+    // Initialize canvas
+    function initCanvas() {
+      canvas.width = canvasWidth;
+      canvas.height = canvasHeight;
+      drawCanvas();
+    }
+
+    // Draw canvas content
+    function drawCanvas() {
+      ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+      
+      // Background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+      
+      // Grid
+      ctx.strokeStyle = '#e5e7eb';
+      ctx.lineWidth = 1;
+      const gridSize = 20;
+      
+      for (let x = 0; x < canvasWidth; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvasHeight);
+        ctx.stroke();
+      }
+      
+      for (let y = 0; y < canvasHeight; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvasWidth, y);
+        ctx.stroke();
+      }
+      
+      // Center marker
+      ctx.fillStyle = '#2563eb';
+      ctx.beginPath();
+      ctx.arc(canvasWidth / 2, canvasHeight / 2, 10, 0, Math.PI * 2);
+      ctx.fill();
+      
+      ctx.fillStyle = '#000';
+      ctx.font = '16px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('Canvas Center', canvasWidth / 2, canvasHeight / 2 - 20);
+    }
+
+    // Update canvas transform
+    function updateTransform() {
+      canvas.style.transform = `translate(${panX * zoom}px, ${panY * zoom}px) scale(${zoom})`;
+      canvas.style.transformOrigin = '0 0';
+      
+      // Update info
+      info.innerHTML = `
+        Pan: (${Math.round(panX)}, ${Math.round(panY)})<br>
+        Zoom: ${Math.round(zoom * 100)}%<br>
+        Mode: ${isPanning ? 'Pan' : 'Draw'}
+      `;
+    }
+
+    // Keyboard handlers
+    document.addEventListener('keydown', (e) => {
+      if (e.key === ' ' && !isPanning) {
+        e.preventDefault();
+        isPanning = true;
+        container.classList.add('panning');
+        updateTransform();
+      }
+    });
+
+    document.addEventListener('keyup', (e) => {
+      if (e.key === ' ' && isPanning) {
+        isPanning = false;
+        container.classList.remove('panning');
+        updateTransform();
+      }
+    });
+
+    // Mouse handlers
+    container.addEventListener('mousedown', (e) => {
+      const button = e.button; // 0=left, 1=middle, 2=right
+      
+      // Pan mode (Space OR middle-click)
+      if (isPanning || button === 1) {
+        e.preventDefault();
+        isPanDragging = true;
+        panStartPos = { x: e.clientX, y: e.clientY };
+        panStartOffset = { x: panX, y: panY };
+        
+        if (button === 1) {
+          container.classList.add('panning');
+        }
+      }
+    });
+
+    container.addEventListener('mousemove', (e) => {
+      if (isPanDragging && panStartPos) {
+        const dx = (e.clientX - panStartPos.x) / zoom;
+        const dy = (e.clientY - panStartPos.y) / zoom;
+        panX = panStartOffset.x + dx;
+        panY = panStartOffset.y + dy;
+        updateTransform();
+      }
+    });
+
+    container.addEventListener('mouseup', (e) => {
+      if (isPanDragging) {
+        isPanDragging = false;
+        panStartPos = null;
+        
+        if (e.button === 1) {
+          container.classList.remove('panning');
+        }
+      }
+    });
+
+    // Prevent context menu on middle-click
+    container.addEventListener('contextmenu', (e) => {
+      if (e.button === 1) {
+        e.preventDefault();
+      }
+    });
+
+    // Zoom with Ctrl + wheel
+    container.addEventListener('wheel', (e) => {
+      if (e.ctrlKey) {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? 0.9 : 1.1;
+        zoom = Math.max(0.1, Math.min(5, zoom * delta));
+        updateTransform();
+      }
+    });
+
+    // Initialize
+    initCanvas();
+    updateTransform();
+  </script>
+</body>
+</html>

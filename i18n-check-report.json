@@ -2,21 +2,26 @@
   "locales": {
     "en": {
       "status": "ok",
-      "totalKeys": 3382,
+      "totalKeys": 3476,
       "missing": [],
-      "extra": [],
+      "extra": [
+        "calendar.availability.calendar.notConfigured",
+        "calendar.availability.calendar.title",
+        "common.ok",
+        "lessons.calendar.infoNote"
+      ],
       "empty": []
     }
   },
   "summary": {
-    "totalKeys": 3382,
+    "totalKeys": 3472,
     "locales": 2,
     "errors": 0,
-    "warnings": 1
+    "warnings": 2
   },
   "usage": {
-    "scannedFiles": 982,
-    "detectedKeys": 2758,
+    "scannedFiles": 1016,
+    "detectedKeys": 2836,
     "unusedKeys": [
       "auth.mfa.status.errors.regenerateFailed",
       "auth.mfa.status.passwordPrompt",
@@ -287,9 +292,12 @@
       "classroom.tools.select",
       "classroom.tools.text",
       "common.confirm",
+      "common.edit",
       "common.emptyState.defaultDescription",
       "common.emptyState.defaultTitle",
-      "common.ok",
+      "common.filter",
+      "common.reset",
+      "common.sort",
       "common.weekdays.${day}",
       "common.weekdays.${weekday}",
       "common.weekdays.short.fri",
@@ -392,6 +400,12 @@
       "devPlayground.themeOptions.${value}.description",
       "devPlayground.themeOptions.${value}.label",
       "errors.api.rateLimitedWithRetry",
+      "inquiries.errors.alreadyExists",
+      "inquiries.errors.cooldownActive",
+      "inquiries.errors.maxOpenReached",
+      "inquiries.errors.rateLimitExceeded",
+      "inquiries.tutor.empty.description",
+      "inquiries.tutor.empty.title",
       "inquiry.modal.success",
       "inquiry.status.accepted",
       "inquiry.status.expired",
@@ -437,6 +451,7 @@
       "marketplace.languages.popularTitle",
       "marketplace.profile.badgesHistory.loadError",
       "marketplace.profile.badgesHistory.loading",
+      "marketplace.profile.contact.bookLesson",
       "marketplace.profile.editor.languageLevels.intermediate",
       "marketplace.profile.editor.languagesLabel",
       "marketplace.profile.editor.subjectsHint",
@@ -588,6 +603,8 @@
       "role.student",
       "role.superadmin",
       "role.tutor",
+      "soloWorkspace.alerts.invalidFileType",
+      "soloWorkspace.alerts.pdfExportSuccess",
       "staff.reports.category.${report.category}",
       "staff.reports.category.FRAUD",
       "staff.reports.category.HARASSMENT",

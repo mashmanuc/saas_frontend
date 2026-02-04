@@ -99,10 +99,10 @@ export const useInquiriesStore = defineStore('inquiries', () => {
   /**
    * Скасувати inquiry (student only) Phase 1 v0.86
    * 
-   * @param inquiryId - ID inquiry
+   * @param inquiryId - UUID inquiry
    * @returns response з inquiry
    */
-  async function cancelInquiry(inquiryId: number): Promise<InquiryDTO> {
+  async function cancelInquiry(inquiryId: string): Promise<InquiryDTO> {
     isLoading.value = true
     error.value = null
     
@@ -124,10 +124,10 @@ export const useInquiriesStore = defineStore('inquiries', () => {
   /**
    * Прийняти inquiry (tutor only) Phase 1 v0.86
    * 
-   * @param inquiryId - ID inquiry
+   * @param inquiryId - UUID inquiry
    * @returns response з inquiry, contacts, relation, thread_id
    */
-  async function acceptInquiry(inquiryId: number): Promise<AcceptInquiryResponse> {
+  async function acceptInquiry(inquiryId: string): Promise<AcceptInquiryResponse> {
     isLoading.value = true
     error.value = null
     
@@ -149,12 +149,12 @@ export const useInquiriesStore = defineStore('inquiries', () => {
   /**
    * Відхилити inquiry (tutor only) Phase 1 v0.86
    * 
-   * @param inquiryId - ID inquiry
+   * @param inquiryId - UUID inquiry
    * @param payload - reason та optional comment
    * @returns response з inquiry
    */
   async function rejectInquiry(
-    inquiryId: number,
+    inquiryId: string,
     payload: RejectInquiryPayload
   ): Promise<RejectInquiryResponse> {
     isLoading.value = true
@@ -231,7 +231,7 @@ export const useInquiriesStore = defineStore('inquiries', () => {
   /**
    * Alias: declineInquiry → rejectInquiry (backward compatibility)
    */
-  async function declineInquiry(inquiryId: number, payload: RejectInquiryPayload): Promise<RejectInquiryResponse> {
+  async function declineInquiry(inquiryId: string, payload: RejectInquiryPayload): Promise<RejectInquiryResponse> {
     return rejectInquiry(inquiryId, payload)
   }
   

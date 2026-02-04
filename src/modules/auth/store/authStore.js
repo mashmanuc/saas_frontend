@@ -101,6 +101,7 @@ export const useAuthStore = defineStore('auth', {
 
         const { access, user } = res || {}
         this.setAuth({ access, user })
+        await this.postAuthInit()
         await this.ensureCsrfToken()
         this.startProactiveRefresh()
         if (!this.user) {
@@ -140,6 +141,7 @@ export const useAuthStore = defineStore('auth', {
         const res = await authApi.mfaVerify({ otp, session_id: sessionId })
         const access = res?.access
         this.setAuth({ access })
+        await this.postAuthInit()
         await this.ensureCsrfToken()
         this.startProactiveRefresh()
         await this.reloadUser()
@@ -190,6 +192,7 @@ export const useAuthStore = defineStore('auth', {
         const res = await authApi.webauthnVerify({ session_id: sessionId, ...assertion })
         const access = res?.access
         this.setAuth({ access })
+        await this.postAuthInit()
         await this.ensureCsrfToken()
         this.startProactiveRefresh()
         await this.reloadUser()
@@ -252,6 +255,7 @@ export const useAuthStore = defineStore('auth', {
       try {
         const { access } = await authApi.acceptInvite(payload)
         this.setAuth({ access })
+        await this.postAuthInit()
         await this.ensureCsrfToken()
         this.startProactiveRefresh()
         await this.reloadUser()
@@ -296,6 +300,25 @@ export const useAuthStore = defineStore('auth', {
       this.lastRequestId = null
       this.lastFieldMessages = null
       this.lastSummary = null
+    },
+
+    async postAuthInit() {
+      // v0.87.0: КРИТИЧНО - reset всіх stores після зміни користувача/ролі
+      // Це запобігає role context leak (tutor UI + student API)
+      // Детермінований порядок: reset → init
+      try {
+        const { useRelationsStore } = await import('../../../stores/relationsStore')
+        const relationsStore = useRelationsStore()
+        relationsStore.$reset()
+
+        const { useContactAccessStore } = await import('../../../stores/contactAccessStore')
+        const contactAccessStore = useContactAccessStore()
+        contactAccessStore.$reset()
+
+        console.log('[AuthStore] All stores reset on user change')
+      } catch (error) {
+        console.warn('[AuthStore] Failed to reset stores:', error)
+      }
     },
 
     async refreshAccess() {

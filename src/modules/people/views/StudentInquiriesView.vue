@@ -97,7 +97,7 @@ async function loadInquiries() {
   }
 }
 
-async function handleCancel(inquiryId: number) {
+async function handleCancel(inquiryId: string) {
   if (!confirm('Are you sure you want to cancel this request?')) {
     return
   }
@@ -109,7 +109,7 @@ async function handleCancel(inquiryId: number) {
   }
 }
 
-async function handleOpenChat(inquiryId: number) {
+async function handleOpenChat(inquiryId: string) {
   try {
     const thread = await chatStore.ensureThread(String(inquiryId))
     router.push(`/chat/thread/${thread.id}`)

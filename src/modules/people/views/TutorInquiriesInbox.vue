@@ -160,7 +160,7 @@ async function loadInquiries() {
   }
 }
 
-async function handleAccept(inquiryId: number) {
+async function handleAccept(inquiryId: string) {
   try {
     await inquiriesStore.acceptInquiry(inquiryId)
   } catch (err) {
@@ -168,7 +168,7 @@ async function handleAccept(inquiryId: number) {
   }
 }
 
-async function handleDecline(inquiryId: number) {
+async function handleDecline(inquiryId: string) {
   if (!confirm('Are you sure you want to decline this request?')) {
     return
   }
@@ -180,7 +180,7 @@ async function handleDecline(inquiryId: number) {
   }
 }
 
-async function handleOpenChat(inquiryId: number) {
+async function handleOpenChat(inquiryId: string) {
   try {
     const thread = await chatStore.ensureThread(String(inquiryId))
     router.push(`/chat/thread/${thread.id}`)
