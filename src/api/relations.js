@@ -45,11 +45,21 @@ const relationsApi = {
   },
 
   /**
+   * Get accept availability for tutor (SSOT F.2)
+   * Returns grace_token required for onboarding accepts
+   */
+  async getTutorAcceptAvailability() {
+    return apiClient.get('/api/tutor/accept-availability/')
+  },
+
+  /**
    * Tutor accepts student request
    * Flow: Student requests Tutor → Tutor accepts
+   * SSOT F.2: Requires grace_token for onboarding accepts
    */
-  tutorAcceptRelation(relationId) {
-    return apiClient.post(RELATION_ENDPOINTS.TUTOR_ACCEPT(relationId))
+  async tutorAcceptRelation(relationId, graceToken = null) {
+    const payload = graceToken ? { grace_token: graceToken } : {}
+    return apiClient.post(RELATION_ENDPOINTS.TUTOR_ACCEPT(relationId), payload)
   },
 
   /**

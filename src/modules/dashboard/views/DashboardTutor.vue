@@ -268,6 +268,14 @@
         </div>
       </template>
     </Card>
+
+    <!-- Chat Modal -->
+    <ChatModal
+      :is-open="chatModalOpen"
+      :student-id="chatModalStudentId"
+      :relation-id="chatModalRelationId"
+      @close="closeChatModal"
+    />
   </div>
 </template>
 
@@ -282,6 +290,7 @@ import PresenceDot from '../../../ui/PresenceDot.vue'
 import UpcomingLessonCard from '../components/UpcomingLessonCard.vue'
 import ActivityStatusBlock from '../../marketplace/components/ActivityStatusBlock.vue'
 import StudentContactUnlock from '../components/StudentContactUnlock.vue'
+import ChatModal from '../../chat/components/ChatModal.vue'
 import { formatDateTime } from '../../../utils/datetime'
 import { useAuthStore } from '../../auth/store/authStore'
 import { useDashboardStore } from '../store/dashboardStore'
@@ -339,6 +348,11 @@ const actionLoadingId = ref(null)
 const resendLoadingId = ref(null)
 const retryLoading = ref(false)
 const activityStatus = ref(null)
+
+// Chat modal state
+const chatModalOpen = ref(false)
+const chatModalStudentId = ref(null)
+const chatModalRelationId = ref(null)
 
 const tabs = computed(() => [
   {
@@ -477,6 +491,16 @@ async function handleAccept(relationId) {
   actionLoadingId.value = relationId
   try {
     await relationsStore.acceptRelation(relationId)
+    
+    // Phase 1 v0.87: Fetch contact access after accept
+    try {
+      await contactAccessStore.fetchContactAccessByRelation(relationId)
+      console.log('[DashboardTutor] Contact access fetched after accept')
+    } catch (contactError) {
+      console.warn('[DashboardTutor] Failed to fetch contact access:', contactError)
+      // Non-critical error, continue with success notification
+    }
+    
     notifySuccess(t('tutorSearch.notifications.acceptSuccess'))
   } catch (error) {
     notifyError(error?.response?.data?.detail || t('tutorSearch.notifications.acceptError'))
@@ -548,28 +572,24 @@ function getUnreadCountForStudent(relation) {
   return chatThreadsStore.getUnreadCount(studentId)
 }
 
-async function handleOpenChatWithStudent(relation) {
+function handleOpenChatWithStudent(relation) {
   const studentId = relation.student?.id
   const relationId = getRelationId(relation)
-  
+
   if (!studentId || !relationId) {
     notifyError(t('common.error'))
     return
   }
-  
-  try {
-    // Ensure thread exists
-    const threadId = await chatThreadsStore.ensureThread(studentId, relationId)
-    
-    // Navigate to chat
-    router.push({
-      name: 'chat-student',
-      params: { studentId }
-    }).catch(() => {})
-  } catch (error) {
-    const errorMessage = error.response?.data?.error?.message || t('chat.errors.threadCreationFailed')
-    notifyError(errorMessage)
-  }
+
+  chatModalStudentId.value = studentId
+  chatModalRelationId.value = relationId
+  chatModalOpen.value = true
+}
+
+function closeChatModal() {
+  chatModalOpen.value = false
+  chatModalStudentId.value = null
+  chatModalRelationId.value = null
 }
 
 function handleLoadMore() {

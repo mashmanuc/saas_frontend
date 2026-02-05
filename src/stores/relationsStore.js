@@ -200,13 +200,22 @@ export const useRelationsStore = defineStore('relations', {
      * v0.88: Fixed infinite loop - only fetch relations for current user role
      */
     async acceptRelation(id) {
-      const { useAuthStore } = await import('../modules/auth/store/authStore')
-      const authStore = useAuthStore()
-      const userRole = authStore.user?.role?.toUpperCase()
-      
+        const { useAuthStore } = await import('../modules/auth/store/authStore')
+        const authStore = useAuthStore()
+        const userRole = authStore.user?.role?.toUpperCase()
+        
       try {
         if (userRole === 'TUTOR') {
-          await relationsApi.tutorAcceptRelation(id)
+          // SSOT F.2: Get grace token before accepting (onboarding allowance)
+          let graceToken = null
+          try {
+            const availability = await relationsApi.getTutorAcceptAvailability()
+            graceToken = availability.grace_token || null
+          } catch (err) {
+            console.warn('[relationsStore] Failed to get accept availability, proceeding without grace_token:', err)
+          }
+          
+          await relationsApi.tutorAcceptRelation(id, graceToken)
         } else if (userRole === 'STUDENT') {
           await relationsApi.studentAcceptRelation(id)
         } else {
@@ -223,7 +232,7 @@ export const useRelationsStore = defineStore('relations', {
         if (userRole === 'TUTOR') {
           await this.fetchTutorRelations().catch(() => {})
         } else if (userRole === 'STUDENT') {
-          await this.fetchStudentRelations().catch(() => {})
+        await this.fetchStudentRelations().catch(() => {})
         }
       }
     },
@@ -246,7 +255,7 @@ export const useRelationsStore = defineStore('relations', {
       } finally {
         // v0.88: Role-aware fetch - avoid 404 and unnecessary requests
         if (userRole === 'STUDENT') {
-          await this.fetchStudentRelations().catch(() => {})
+        await this.fetchStudentRelations().catch(() => {})
         }
       }
     },
@@ -329,6 +338,23 @@ export const useRelationsStore = defineStore('relations', {
       if (!processedCount && !failedCount) {
         notifyInfo(translate('relations.bulk.noChanges'))
       }
+    },
+
+    $reset() {
+      this.studentRelations = []
+      this.studentLoading = false
+      this.studentError = null
+      this.tutorRelations = []
+      this.tutorSummary = null
+      this.tutorCursor = null
+      this.tutorHasMore = false
+      this.tutorLoading = false
+      this.tutorLoadingMore = false
+      this.tutorBulkLoading = false
+      this.tutorError = null
+      this.tutorErrorCode = null
+      this.tutorFilter = 'all'
+      this.tutorSelectedIds = []
     },
 
     $reset() {

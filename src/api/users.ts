@@ -37,6 +37,8 @@ export interface StudentProfile {
   preferred_subjects?: string[]
   budget_min?: number
   budget_max?: number
+  phone: string  // Phase 1: Обов'язкове поле для контакту після Accept
+  telegram_username?: string  // Phase 1: Опціональне поле для контакту
 }
 
 export interface UserSettings {
@@ -68,14 +70,14 @@ export interface RoleHistoryEntry {
  * Отримати повний профіль поточного користувача
  */
 export async function getMyProfile(): Promise<ProfileResponse> {
-  return apiClient.get(`${BASE_URL}/me/`)
+  return apiClient.get('/v1/me')
 }
 
 /**
  * Оновити профіль поточного користувача
  */
 export async function updateMyProfile(payload: Partial<TutorProfile | StudentProfile>): Promise<ProfileResponse> {
-  return apiClient.patch(`${BASE_URL}/me/`, payload)
+  return apiClient.patch('/v1/me', payload)
 }
 
 /**

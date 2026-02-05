@@ -263,7 +263,11 @@
       "maxOpenReached": "Досягнуто ліміт активних запитів ({limit})",
       "maxOpenReachedUpgrade": "Оновіть до PRO для необмежених запитів",
       "rateLimitExceeded": "Перевищено ліміт: {limit_display}",
-      "alreadyExists": "У вас вже є активний запит до цього тьютора"
+      "alreadyExists": "У вас вже є активний запит до цього тьютора",
+      "contactRequired": "Необхідна контактна інформація",
+      "contactRequiredMessage": "Будь ласка, додайте номер телефону або Telegram у налаштуваннях профілю перед створенням запиту.",
+      "invalidPhoneFormat": "Невірний формат телефону",
+      "invalidPhoneFormatMessage": "Використовуйте міжнародний формат: +[код країни][номер]"
     },
     "success": {
       "created": "Запит успішно надіслано!",
@@ -588,7 +592,7 @@
     "nextWeek": "Наступний тиждень",
     "of": "з",
     "open": "Відкрити",
-    "optional": "необов'язково",
+    "optional": "Необов'язково",
     "other": "Інше",
     "previous": "Попередня",
     "previousWeek": "Попередній тиждень",
@@ -662,7 +666,8 @@
     "emptyState": {
       "defaultTitle": "Поки порожньо",
       "defaultDescription": "Немає даних для відображення."
-    }
+    },
+    "optional": "Необов'язково"
   },
   "auth": {
     "layout": {
@@ -975,6 +980,7 @@
     "marketplace": "Маркетплейс",
     "tutorCalendar": "Календар тьютора",
     "soloWorkspace": "Робочий простір",
+    "soloWorkspaceV2": "Solo v2",
     "profile": "Профіль",
     "tutorProfile": "Профіль тьютора",
     "account": "Акаунт",
@@ -2463,6 +2469,13 @@
         "openChat": "Відкрити чат",
         "chatWithStudent": "Чат зі студентом"
       },
+      "accepts": {
+        "title": "Доступні прийняття",
+        "loading": "Завантаження...",
+        "suffixOne": "запит",
+        "suffix": "запитів",
+        "expires": "Оновлення {time}"
+      },
       "bulk": {
         "selectHint": "Обирайте учнів для групових дій.",
         "selected": "Вибрано: {count}",
@@ -2618,6 +2631,10 @@
     }
   },
   "profile": {
+    "phone": "Номер телефону",
+    "phoneHint": "Міжнародний формат: +380501234567",
+    "telegram": "Telegram",
+    "telegramHint": "Ваш Telegram username (наприклад: @username)",
     "title": "Профіль",
     "subtitle": "Актуалізуйте свою особисту інформацію.",
     "editButton": "Редагувати профіль",
@@ -4052,6 +4069,15 @@
     }
   },
   "inquiry": {
+    "contactInfo": {
+      "title": "Контактні дані для зв'язку",
+      "description": "Вкажіть ваш номер телефону або Telegram, щоб тьютор міг зв'язатися з вами після прийняття запиту."
+    },
+    "contactRequired": {
+      "title": "Необхідна контактна інформація",
+      "description": "Будь ласка, додайте номер телефону або Telegram у налаштуваннях профілю перед створенням запиту.",
+      "goToProfile": "Перейти до профілю"
+    },
     "modal": {
       "title": "Запит на контакти",
       "messagePlaceholder": "Напишіть повідомленнЯ репетитору/студенту...",
@@ -4548,7 +4574,7 @@
     "studentContacts": "Контакти студента",
     "revokeButton": "Відкликати доступ",
     "loadContacts": "Завантажити контакти",
-    "noContactsAvailable": "Контактна інформація відсутня",
+    "noContactsAvailable": "Контакти недоступні",
     "balance": {
       "label": "Контакти",
       "ariaLabel": "Баланс контактів",
@@ -4629,6 +4655,14 @@
       "budgetMin": "Мінімум (грн/год)",
       "budgetMax": "Максимум (грн/год)",
       "budgetHint": "Вкажіть ваш бюджет на навчання",
+      "contactInformation": "Контактна інформація",
+      "contactInformationHint": "Ваші контакти будуть видимі тьютору тільки після прийняття запиту на навчання",
+      "phone": "Номер телефону",
+      "phoneHint": "Міжнародний формат: +380501234567",
+      "phonePlaceholder": "+380501234567",
+      "telegram": "Telegram",
+      "telegramHint": "Ваш Telegram username (наприклад: @username)",
+      "telegramPlaceholder": "@username",
       "contactTutor": "Зв'язатися з тьютором",
       "share": "Поділитися",
       "about": "Про тьютора",
@@ -4814,6 +4848,33 @@
       "pdfImportSuccess": "PDF успішно імпортовано! Додано {count} сторінок.",
       "pdfImportError": "Не вдалося імпортувати PDF. Спробуйте ще раз.",
       "invalidFileType": "Невірний тип файлу. Виберіть PDF файл."
+    }
+  },
+  "phone_verification": {
+    "title": "Підтвердження телефону",
+    "description": "Підтвердіть ваш номер телефону для верифікації акаунту",
+    "send_code": "Надіслати код",
+    "verify_code": "Підтвердити код",
+    "resend_code": "Надіслати код повторно",
+    "code_sent": "Код надіслано на номер {phone}",
+    "enter_code": "Введіть 6-значний код з SMS",
+    "code_placeholder": "000000",
+    "code_valid_for": "Код дійсний {time}",
+    "expired": "прострочено",
+    "success_title": "Телефон підтверджено!",
+    "success_message": "Ваш номер телефону успішно верифіковано",
+    "errors": {
+      "no_phone": "Будь ласка, додайте номер телефону до вашого профілю",
+      "invalid_phone": "Невірний формат телефону. Використовуйте міжнародний формат: +[код країни][номер]",
+      "rate_limited": "Забагато спроб верифікації. Спробуйте пізніше",
+      "send_failed": "Не вдалося надіслати код. Спробуйте ще раз",
+      "session_not_found": "Сесія верифікації не знайдена",
+      "session_expired": "Сесія верифікації прострочена. Запитайте новий код",
+      "invalid_code": "Невірний код верифікації",
+      "too_many_attempts": "Забагато спроб. Запитайте новий код",
+      "phone_already_verified": "Цей номер вже верифіковано іншим тьютором",
+      "no_session": "Немає активної сесії верифікації",
+      "unknown": "Сталася невідома помилка. Спробуйте ще раз"
     }
   }
 }

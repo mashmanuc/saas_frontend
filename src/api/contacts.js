@@ -5,6 +5,9 @@ const CONTACTS_ENDPOINTS = Object.freeze({
   CHECK: '/api/v1/contact-unlock/check/',
   REVOKE: '/api/v1/contacts/revoke/',
   DETAIL: (studentId) => `/api/v1/contacts/${studentId}/`,
+  // Phase 1 v0.87: New contact-access endpoints
+  ACCESS_BY_RELATION: (relationId) => `/api/v1/contact-access/by-relation/${relationId}/`,
+  ACCESS_CHECK: (studentId) => `/api/v1/contact-access/check/${studentId}/`,
 })
 
 export const contactsApi = {
@@ -51,6 +54,24 @@ export const contactsApi = {
    */
   getContacts(studentId) {
     return apiClient.get(CONTACTS_ENDPOINTS.DETAIL(studentId))
+  },
+
+  /**
+   * Phase 1 v0.87: Отримати контакти студента через relation ID
+   * @param {number} relationId - ID relation (TutorStudentRelation)
+   * @returns {Promise<{relation_id: number, student_id: number, status: string, contacts: object, unlocked_at: string, can_open_chat: boolean}>}
+   */
+  getContactsByRelation(relationId) {
+    return apiClient.get(CONTACTS_ENDPOINTS.ACCESS_BY_RELATION(relationId))
+  },
+
+  /**
+   * Phase 1 v0.87: Перевірити доступ до контактів студента (lightweight check)
+   * @param {number} studentId - ID студента
+   * @returns {Promise<{has_access: boolean, relation_id: number|null, unlocked_at: string|null}>}
+   */
+  checkContactAccess(studentId) {
+    return apiClient.get(CONTACTS_ENDPOINTS.ACCESS_CHECK(studentId))
   },
 }
 

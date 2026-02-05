@@ -32,6 +32,49 @@
             </div>
           </div>
           
+          <!-- Phase 1 v0.87: Contact Info Fields (якщо немає в профілі) -->
+          <div v-if="!hasContactInfo" class="contact-info-section mb-4">
+            <div class="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950/30 mb-4">
+              <h4 class="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-1">
+                {{ $t('inquiry.contactInfo.title') }}
+              </h4>
+              <p class="text-sm text-blue-800 dark:text-blue-300">
+                {{ $t('inquiry.contactInfo.description') }}
+              </p>
+            </div>
+            
+            <div class="form-group">
+              <label for="contact_phone">{{ $t('profile.phone') }} *</label>
+              <input 
+                id="contact_phone"
+                v-model="contactForm.phone"
+                type="tel"
+                placeholder="+380501234567"
+                class="form-control"
+              />
+              <span v-if="phoneError" class="error-text">
+                {{ phoneError }}
+              </span>
+              <span class="hint">
+                {{ $t('profile.phoneHint') }}
+              </span>
+            </div>
+            
+            <div class="form-group">
+              <label for="contact_telegram">{{ $t('profile.telegram') }}</label>
+              <input 
+                id="contact_telegram"
+                v-model="contactForm.telegram_username"
+                type="text"
+                placeholder="@username"
+                class="form-control"
+              />
+              <span class="hint">
+                {{ $t('profile.telegramHint') }}
+              </span>
+            </div>
+          </div>
+          
           <!-- Form Fields -->
           <div class="form-group">
             <label for="student_level">{{ $t('inquiries.form.studentLevel') }} *</label>
@@ -146,10 +189,14 @@
  * Форма для створення inquiry від студента до тьютора
  */
 
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, toRef } from 'vue'
+import { useRouter } from 'vue-router'
 import { useInquiriesStore } from '@/stores/inquiriesStore'
+import { useAuthStore } from '@/modules/auth/store/authStore'
 import { useInquiryErrorHandler } from '@/composables/useInquiryErrorHandler'
 import { useRateLimitCountdown } from '@/composables/useRateLimitCountdown'
+import { usePhoneValidation } from '@/composables/usePhoneValidation'
+import { updateMyProfile } from '@/api/users'
 import ErrorState from './ErrorState.vue'
 
 interface Tutor {
@@ -170,12 +217,31 @@ const emit = defineEmits<{
   success: []
 }>()
 
+const router = useRouter()
 const inquiriesStore = useInquiriesStore()
+const authStore = useAuthStore()
 const { errorState, handleError, clearError } = useInquiryErrorHandler()
 const { isRateLimited, remainingSeconds, startCountdown } = useRateLimitCountdown()
 
 const isSubmitting = ref(false)
 const showSuccess = ref(false)
+
+// Phase 1 v0.87: Check if student has contact info
+const hasContactInfo = computed(() => {
+  const user = authStore.user
+  if (!user) return false
+  return Boolean(user.phone || user.telegram_username)
+})
+
+// Contact form for students without phone
+const contactForm = reactive({
+  phone: '',
+  telegram_username: ''
+})
+
+// Phone validation
+const phoneRef = toRef(contactForm, 'phone')
+const { isValidFormat, errorMessage: phoneError } = usePhoneValidation(phoneRef)
 
 const form = reactive({
   student_level: '',
@@ -189,22 +255,25 @@ const budgetTooLow = computed(() => {
 })
 
 const isFormValid = computed(() => {
-  return form.student_level && 
-         form.budget > 0 && 
-         form.start_preference && 
-         form.message.trim().length >= 10
+  const baseValid = form.student_level && 
+                    form.budget > 0 && 
+                    form.start_preference && 
+                    form.message.trim().length >= 10
+  
+  // Якщо студент почав заповнювати phone - перевіряємо формат
+  if (contactForm.phone.trim().length > 0) {
+    return baseValid && isValidFormat.value
+  }
+  
+  return baseValid
 })
 
 async function handleSubmit() {
   console.log('[InquiryFormModal] handleSubmit called', {
     isFormValid: isFormValid.value,
     tutorId: props.tutor.id,
-    messageLength: form.message.length,
-    formData: {
-      student_level: form.student_level,
-      budget: form.budget,
-      start_preference: form.start_preference
-    }
+    hasContactInfo: hasContactInfo.value,
+    contactForm: contactForm
   })
   
   if (!isFormValid.value) {
@@ -215,6 +284,19 @@ async function handleSubmit() {
   clearError()
   
   try {
+    // Phase 1 v0.87: Якщо немає контактів І студент заповнив поля - оновлюємо профіль
+    if (!hasContactInfo.value && contactForm.phone.trim()) {
+      console.log('[InquiryFormModal] Updating profile with contact info...')
+      const updatedUser = await updateMyProfile({
+        phone: contactForm.phone,
+        telegram_username: contactForm.telegram_username || undefined
+      })
+      // Оновлюємо user в authStore
+      authStore.user = updatedUser
+      console.log('[InquiryFormModal] Profile updated successfully')
+    }
+    
+    // Створюємо inquiry
     await inquiriesStore.createInquiry(String(props.tutor.id), form.message)
     showSuccess.value = true
   } catch (err: any) {

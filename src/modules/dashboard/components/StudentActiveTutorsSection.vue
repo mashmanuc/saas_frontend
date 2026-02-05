@@ -91,7 +91,7 @@
             variant="secondary"
             size="sm"
             class="flex-1 md:flex-none"
-            @click="goToChat(tutor)"
+            @click="openChatModal(tutor)"
           >
             {{ $t('studentDashboard.actions.messageTutor') }}
           </Button>
@@ -101,16 +101,26 @@
         </div>
       </div>
     </section>
+    
+    <!-- Phase 1 v0.87: Chat Modal for Student -->
+    <ChatModal
+      :is-open="chatModalOpen"
+      :student-id="null"
+      :tutor-id="selectedTutorId"
+      :relation-id="selectedRelationId"
+      @close="closeChatModal"
+    />
   </Card>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import Button from '@/ui/Button.vue'
 import Card from '@/ui/Card.vue'
 import Heading from '@/ui/Heading.vue'
+import ChatModal from '@/modules/chat/components/ChatModal.vue'
 import type { AssignedTutor } from '../api/dashboard'
 
 interface Props {
@@ -128,6 +138,24 @@ const router = useRouter()
 const { t } = useI18n()
 
 const hasActiveTutors = computed(() => props.activeTutors.length > 0)
+
+// Phase 1 v0.87: Chat modal state
+const chatModalOpen = ref(false)
+const selectedTutorId = ref<number | null>(null)
+const selectedRelationId = ref<number | null>(null)
+
+function openChatModal(tutor: AssignedTutor) {
+  selectedTutorId.value = tutor.id
+  // relation_id буде знайдено через API в ChatModal
+  selectedRelationId.value = null
+  chatModalOpen.value = true
+}
+
+function closeChatModal() {
+  chatModalOpen.value = false
+  selectedTutorId.value = null
+  selectedRelationId.value = null
+}
 
 function getCollaborationStatusLabel(status: string): string {
   switch (status) {

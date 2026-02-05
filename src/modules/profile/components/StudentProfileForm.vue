@@ -107,6 +107,63 @@
           </p>
         </div>
       </div>
+
+      <!-- Phase 1: Contact Information -->
+      <div class="space-y-4 border-t border-border pt-6">
+        <div>
+          <h4 class="text-md font-semibold text-foreground">
+            {{ $t('users.profile.contactInformation') }}
+          </h4>
+          <p class="text-sm text-muted-foreground">
+            {{ $t('users.profile.contactInformationHint') }}
+          </p>
+        </div>
+        
+        <!-- Phone -->
+        <div>
+          <label for="phone" class="block text-sm font-medium text-foreground">
+            {{ $t('users.profile.phone') }}
+            <span class="text-red-500">*</span>
+          </label>
+          <input
+            id="phone"
+            v-model="formData.phone"
+            type="tel"
+            :placeholder="$t('users.profile.phonePlaceholder')"
+            :disabled="disabled"
+            class="input mt-1"
+            required
+            pattern="^\+[1-9]\d{1,14}$"
+            @input="handleChange"
+          />
+          <p class="mt-1 text-xs text-muted-foreground">
+            {{ $t('users.profile.phoneHint') }}
+          </p>
+          <p v-if="phoneErrorMessage" class="mt-1 text-xs text-red-500">
+            {{ phoneErrorMessage }}
+          </p>
+        </div>
+        
+        <!-- Telegram (optional) -->
+        <div>
+          <label for="telegram" class="block text-sm font-medium text-foreground">
+            {{ $t('users.profile.telegram') }}
+            <span class="text-muted-foreground text-xs">({{ $t('ui.optional') }})</span>
+          </label>
+          <input
+            id="telegram"
+            v-model="formData.telegram_username"
+            type="text"
+            :placeholder="$t('users.profile.telegramPlaceholder')"
+            :disabled="disabled"
+            class="input mt-1"
+            @input="handleChange"
+          />
+          <p class="mt-1 text-xs text-muted-foreground">
+            {{ $t('users.profile.telegramHint') }}
+          </p>
+        </div>
+      </div>
     </div>
 
     <div v-if="errorMessage" class="rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-200">
@@ -138,6 +195,7 @@
 import { ref, computed, watch } from 'vue'
 import Button from '@/ui/Button.vue'
 import type { StudentProfile } from '@/api/users'
+import { usePhoneValidation } from '@/composables/usePhoneValidation'
 
 const props = defineProps<{
   modelValue: Partial<StudentProfile>
@@ -155,6 +213,8 @@ const emit = defineEmits<{
 
 const formData = ref<Partial<StudentProfile>>({ 
   preferred_subjects: [],
+  phone: '',
+  telegram_username: '',
   ...props.modelValue 
 })
 const newSubject = ref('')
@@ -162,14 +222,23 @@ const newSubject = ref('')
 watch(() => props.modelValue, (newValue) => {
   formData.value = { 
     preferred_subjects: [],
+    phone: '',
+    telegram_username: '',
     ...newValue 
   }
 }, { deep: true })
 
+// Phase 1: Phone validation
+const { errorMessage: phoneErrorMessage } = usePhoneValidation(
+  computed(() => formData.value.phone || '')
+)
+
 const isValid = computed(() => {
   return Boolean(
     formData.value.preferred_subjects &&
-    formData.value.preferred_subjects.length > 0
+    formData.value.preferred_subjects.length > 0 &&
+    formData.value.phone &&
+    formData.value.phone.trim().length > 0
   )
 })
 

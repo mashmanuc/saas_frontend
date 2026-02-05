@@ -2,26 +2,21 @@
   "locales": {
     "en": {
       "status": "ok",
-      "totalKeys": 3476,
+      "totalKeys": 3518,
       "missing": [],
-      "extra": [
-        "calendar.availability.calendar.notConfigured",
-        "calendar.availability.calendar.title",
-        "common.ok",
-        "lessons.calendar.infoNote"
-      ],
+      "extra": [],
       "empty": []
     }
   },
   "summary": {
-    "totalKeys": 3472,
+    "totalKeys": 3518,
     "locales": 2,
-    "errors": 0,
-    "warnings": 2
+    "errors": 1,
+    "warnings": 1
   },
   "usage": {
-    "scannedFiles": 1016,
-    "detectedKeys": 2836,
+    "scannedFiles": 1024,
+    "detectedKeys": 2864,
     "unusedKeys": [
       "auth.mfa.status.errors.regenerateFailed",
       "auth.mfa.status.passwordPrompt",
@@ -401,7 +396,11 @@
       "devPlayground.themeOptions.${value}.label",
       "errors.api.rateLimitedWithRetry",
       "inquiries.errors.alreadyExists",
+      "inquiries.errors.contactRequired",
+      "inquiries.errors.contactRequiredMessage",
       "inquiries.errors.cooldownActive",
+      "inquiries.errors.invalidPhoneFormat",
+      "inquiries.errors.invalidPhoneFormatMessage",
       "inquiries.errors.maxOpenReached",
       "inquiries.errors.rateLimitExceeded",
       "inquiries.tutor.empty.description",
@@ -529,6 +528,7 @@
       "menu.profile",
       "menu.settings",
       "menu.soloWorkspace",
+      "menu.soloWorkspaceV2",
       "menu.students",
       "menu.tutorCalendar",
       "menu.tutorProfile",
@@ -562,6 +562,26 @@
       "operator.actions.resetAvailability.description",
       "operator.actions.resetAvailability.title",
       "operator.actions.resetAvailability.warning",
+      "phone_verification.code_placeholder",
+      "phone_verification.code_sent",
+      "phone_verification.code_valid_for",
+      "phone_verification.description",
+      "phone_verification.enter_code",
+      "phone_verification.errors.invalid_code",
+      "phone_verification.errors.invalid_phone",
+      "phone_verification.errors.no_phone",
+      "phone_verification.errors.phone_already_verified",
+      "phone_verification.errors.rate_limited",
+      "phone_verification.errors.send_failed",
+      "phone_verification.errors.session_expired",
+      "phone_verification.errors.session_not_found",
+      "phone_verification.errors.too_many_attempts",
+      "phone_verification.resend_code",
+      "phone_verification.send_code",
+      "phone_verification.success_message",
+      "phone_verification.success_title",
+      "phone_verification.title",
+      "phone_verification.verify_code",
       "profile.security.mfa.cancel",
       "profile.security.mfa.confirm",
       "profile.security.mfa.errors.confirmFailed",
@@ -660,6 +680,14 @@
       "warnings.accessDenied.message",
       "warnings.accessDenied.title"
     ],
-    "undefinedUsages": []
+    "undefinedUsages": [
+      "inquiry.contactRequired.description",
+      "inquiry.contactRequired.goToProfile",
+      "inquiry.contactRequired.title",
+      "profile.phone",
+      "profile.phoneHint",
+      "profile.telegram",
+      "profile.telegramHint"
+    ]
   }
 }

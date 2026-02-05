@@ -25,22 +25,22 @@
         {{ $t('common.loading') }}...
       </div>
       
-      <div v-else-if="contacts">
-        <div class="contact-item" v-if="contacts.phone">
+      <div v-else-if="studentContacts">
+        <div class="contact-item" v-if="studentContacts.phone">
           <span class="contact-icon">📱</span>
-          <span class="contact-value">{{ contacts.phone }}</span>
+          <span class="contact-value">{{ studentContacts.phone }}</span>
         </div>
-        <div class="contact-item" v-if="contacts.telegram">
+        <div class="contact-item" v-if="studentContacts.telegram">
           <span class="contact-icon">💬</span>
-          <span class="contact-value">@{{ contacts.telegram }}</span>
+          <span class="contact-value">@{{ studentContacts.telegram }}</span>
         </div>
-        <div class="contact-item" v-if="contacts.email">
+        <div class="contact-item" v-if="studentContacts.email">
           <span class="contact-icon">📧</span>
-          <span class="contact-value">{{ contacts.email }}</span>
+          <span class="contact-value">{{ studentContacts.email }}</span>
         </div>
         
         <!-- Якщо жодного контакту немає -->
-        <div v-if="!contacts.phone && !contacts.telegram && !contacts.email" class="no-contacts">
+        <div v-if="!studentContacts.phone && !studentContacts.telegram && !studentContacts.email" class="no-contacts">
           {{ $t('contacts.noContactsAvailable') }}
         </div>
       </div>
@@ -53,7 +53,7 @@
 
       <!-- Кнопка revoke (опціонально) -->
       <button
-        v-if="showRevokeButton && contacts"
+        v-if="showRevokeButton && studentContacts"
         class="btn btn-danger btn-sm"
         @click="handleRevoke"
       >
@@ -80,19 +80,21 @@ const props = defineProps({
 
 const contactAccessStore = useContactAccessStore()
 
+const studentId = computed(() => props.relation.student?.id || props.relation.student_id)
+
 const loading = computed(() => contactAccessStore.loading)
 const hasAccess = computed(() => 
-  contactAccessStore.hasContactAccess(props.relation.student_id)
+  contactAccessStore.hasContactAccess(studentId.value)
 )
-const contacts = computed(() => 
-  contactAccessStore.getStudentContacts(props.relation.student_id)
+const studentContacts = computed(() => 
+  contactAccessStore.getStudentContacts(studentId.value)
 )
 
 // v0.87.0: ІНВАРІАНТ - якщо relation.status === 'active', автоматично завантажуємо контакти
 // v0.88: Guard - не викликати якщо контакти вже є або вже завантажуються
 let isLoadingContacts = false
 onMounted(() => {
-  if (props.relation.status === 'active' && !hasAccess.value && !isLoadingContacts && !loading.value) {
+  if (props.relation.status === 'active' && !studentContacts.value && !isLoadingContacts && !loading.value) {
     console.log('[StudentContactUnlock] Auto-loading contacts for active relation')
     isLoadingContacts = true
     loadContacts().finally(() => {
@@ -114,7 +116,7 @@ async function handleUnlock() {
     
     await contactAccessStore.unlockContacts({
       inquiryId,
-      studentId: props.relation.student.id
+      studentId: studentId.value
     })
     
     // Контакти вже завантажені в store після unlockContacts
@@ -135,7 +137,7 @@ async function loadContacts() {
     
     await contactAccessStore.unlockContacts({
       inquiryId,
-      studentId: props.relation.student.id
+      studentId: studentId.value
     })
   } catch (error) {
     console.error('Load contacts failed:', error)
@@ -148,7 +150,7 @@ async function handleRevoke() {
   }
 
   try {
-    await contactAccessStore.revokeContacts(props.relation.student_id)
+    await contactAccessStore.revokeContacts(studentId.value)
   } catch (error) {
     console.error('Revoke failed:', error)
   }

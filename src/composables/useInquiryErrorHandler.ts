@@ -88,6 +88,33 @@ export function useInquiryErrorHandler() {
       return
     }
 
+    // Phase 1: Contact required (400)
+    if ((error as AxiosError)?.response?.status === 400) {
+      const data = (error as AxiosError)?.response?.data as any
+      
+      // Contact information required
+      if (data?.contact_required || data?.code === 'contact_required') {
+        errorState.value = {
+          variant: 'error',
+          title: 'Необхідна контактна інформація',
+          message: 'Будь ласка, додайте номер телефону або Telegram у налаштуваннях профілю перед створенням запиту.',
+          showRetry: false
+        }
+        return
+      }
+      
+      // Invalid phone format
+      if (data?.invalid_phone_format || data?.code === 'invalid_phone_format') {
+        errorState.value = {
+          variant: 'error',
+          title: 'Невірний формат телефону',
+          message: 'Використовуйте міжнародний формат: +[код країни][номер]',
+          showRetry: false
+        }
+        return
+      }
+    }
+
     // Invalid state (400)
     if (error instanceof InquiryInvalidStateError) {
       errorState.value = {

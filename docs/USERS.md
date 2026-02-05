@@ -1,15 +1,11 @@
 Ось створені тьютори (усі з паролем TutorTest123!):
+DELETED:
+.venv\Scripts\python.exe manage.py shell -c "from apps.users.models import User; emails=['m9@gmail.com','m8@gmail.com','m7@gmail.com','m6@gmail.com','m5@gmail.com','test@example.com','mfa-user@example.com','locked@example.com','e2e-staff@example.com','e2e-student@example.com','m3@gmail.com']; qs=User.objects.filter(email__in=emails); deleted=list(qs.values_list('email', flat=True)); count=qs.count(); qs.delete(); print('Deleted', count, 'users:'); [print(email) for email in deleted]"
 
-tutor01@example.com
-tutor02@example.com
-tutor03@example.com
-tutor04@example.com
-tutor05@example.com
-tutor06@example.com
-tutor07@example.com
-tutor08@example.com
-tutor09@example.com
-tutor10@example.com
+
+
+
+
 Email + пароль із цього списку можна використовувати для ручного тестування.
 Updated passwords for 10 tutors to 'TutorTest123!'
 

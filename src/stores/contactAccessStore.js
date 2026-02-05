@@ -131,6 +131,66 @@ export const useContactAccessStore = defineStore('contactAccess', () => {
     }
   }
 
+  /**
+   * Phase 1 v0.87: Fetch contact access by relation ID
+   * Використовується після accept для отримання контактів студента
+   */
+  async function fetchContactAccessByRelation(relationId) {
+    loading.value = true
+    try {
+      const response = await contactsApi.getContactsByRelation(relationId)
+      
+      console.log('[ContactAccessStore] Fetched contacts by relation:', response)
+      
+      const studentId = response.student_id
+      contactsCache.value.set(studentId, {
+        contacts: response.contacts,
+        access_level: response.can_open_chat ? 'CHAT_ENABLED' : 'CONTACTS_SHARED',
+        unlocked_at: response.unlocked_at,
+        relation_id: response.relation_id,
+      })
+
+      return response
+    } catch (error) {
+      console.error('[ContactAccessStore] Failed to fetch contacts by relation:', error)
+      if (error?.response?.status === 403 || error?.response?.status === 404) {
+        // Контакти не розблоковані або relation не знайдено
+        console.warn('[ContactAccessStore] Contacts not unlocked or relation not found')
+      }
+      throw error
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * Phase 1 v0.87: Check contact access (lightweight)
+   * Використовується для guards перед відкриттям чату
+   */
+  async function checkContactAccessAPI(studentId) {
+    try {
+      const response = await contactsApi.checkContactAccess(studentId)
+      
+      if (response.has_access) {
+        // Оновлюємо кеш з мінімальною інформацією
+        contactsCache.value.set(studentId, {
+          contacts: null, // Контакти не завантажені, тільки перевірка доступу
+          access_level: 'CHAT_ENABLED',
+          unlocked_at: response.unlocked_at,
+          relation_id: response.relation_id,
+        })
+      } else {
+        // Видаляємо з кешу якщо немає доступу
+        contactsCache.value.delete(studentId)
+      }
+
+      return response.has_access
+    } catch (error) {
+      console.error('[ContactAccessStore] Failed to check contact access:', error)
+      return false
+    }
+  }
+
   function clearCache() {
     contactsCache.value.clear()
   }
@@ -156,6 +216,8 @@ export const useContactAccessStore = defineStore('contactAccess', () => {
     unlockContacts,
     revokeContacts,
     fetchContacts,
+    fetchContactAccessByRelation, // Phase 1 v0.87
+    checkContactAccessAPI, // Phase 1 v0.87
     clearCache,
     $reset,
   }
