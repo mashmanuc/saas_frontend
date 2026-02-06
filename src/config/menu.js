@@ -19,7 +19,6 @@ export const MENU_BY_ROLE = {
     { label: 'menu.soloWorkspaceV2', icon: 'sparkles', to: '/solo' },
     { label: 'menu.tutorProfile', icon: 'briefcase', to: '/tutor/profile' },
     { label: 'menu.account', icon: 'user', to: '/dashboard/profile' },
-    { label: 'menu.settings', icon: 'settings', to: '/settings' },
   ],
   student: [
     { label: 'menu.dashboard', icon: 'home', to: '/student' },
@@ -28,7 +27,6 @@ export const MENU_BY_ROLE = {
     { label: 'menu.soloWorkspace', icon: 'edit', to: '/solo' },
     { label: 'menu.soloWorkspaceV2', icon: 'sparkles', to: '/solo' },
     { label: 'menu.account', icon: 'user', to: '/dashboard/profile' },
-    { label: 'menu.settings', icon: 'settings', to: '/settings' },
   ],
 }
 

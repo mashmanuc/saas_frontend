@@ -33,7 +33,7 @@ export const useContactAccessStore = defineStore('contactAccess', () => {
   })
 
   // Actions
-  async function unlockContacts({ inquiryId, studentId }) {
+  async function unlockContacts({ inquiryId, studentId }, options = {}) {
     if (!inquiryId) {
       throw new Error('inquiryId is required for unlockContacts')
     }
@@ -59,7 +59,10 @@ export const useContactAccessStore = defineStore('contactAccess', () => {
       })
 
       if (response?.was_already_unlocked) {
-        notifyInfo?.('Контакти вже були відкриті') ?? notifySuccess('Контакти вже відкриті')
+        // v0.88.1: НЕ показуємо сповіщення при автоматичному завантаженні (silent = true)
+        if (!options.silent) {
+          notifyInfo?.('Контакти вже були відкриті') ?? notifySuccess('Контакти вже відкриті')
+        }
         // v0.88: НЕ викликати refetch якщо контакти вже були відкриті - уникаємо infinite loop
       } else {
         notifySuccess('Контакти успішно відкрито')

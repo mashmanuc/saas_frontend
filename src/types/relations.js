@@ -31,7 +31,7 @@ import { buildV1Url } from '../config/apiPrefixes'
  */
 
 export const RELATION_ENDPOINTS = Object.freeze({
-  STUDENT_RELATIONS: buildV1Url('/student/relations/'),
+  STUDENT_RELATIONS: buildV1Url('/users/me/relations/'),
   TUTOR_RELATIONS: buildV1Url('/tutor/relations/'),
   TUTOR_RELATIONS_BULK_ACCEPT: buildV1Url('/tutor/relations/batch/accept/'),
   TUTOR_RELATIONS_BULK_ARCHIVE: buildV1Url('/tutor/relations/batch/archive/'),

@@ -135,10 +135,11 @@ async function loadContacts() {
       return
     }
     
+    // v0.88.1: Автоматичне завантаження - без сповіщень (silent = true)
     await contactAccessStore.unlockContacts({
       inquiryId,
       studentId: studentId.value
-    })
+    }, { silent: true })
   } catch (error) {
     console.error('Load contacts failed:', error)
   }

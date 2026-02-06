@@ -87,13 +87,22 @@
         </div>
 
         <div class="flex flex-wrap gap-3 w-full md:w-auto">
+          <!-- Phase 1 v0.87.1: Кнопка чату для студента -->
           <Button
+            v-if="canChatWithTutor(tutor)"
             variant="secondary"
             size="sm"
-            class="flex-1 md:flex-none"
-            @click="openChatModal(tutor)"
+            class="flex-1 md:flex-none relative"
+            @click="handleOpenChat(tutor)"
           >
-            {{ $t('studentDashboard.actions.messageTutor') }}
+            Написати тьютору
+            <!-- Unread badge -->
+            <span
+              v-if="getUnreadCountForTutor(tutor) > 0"
+              class="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 text-xs font-semibold text-white bg-red-500 rounded-full"
+            >
+              {{ getUnreadCountForTutor(tutor) }}
+            </span>
           </Button>
           <Button variant="primary" size="sm" class="flex-1 md:flex-none" @click="goToLessons">
             {{ $t('studentDashboard.actions.bookLesson') }}
@@ -114,13 +123,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import Button from '@/ui/Button.vue'
 import Card from '@/ui/Card.vue'
 import Heading from '@/ui/Heading.vue'
 import ChatModal from '@/modules/chat/components/ChatModal.vue'
+import { useChatThreadsStore } from '@/stores/chatThreadsStore'
+import { useRelationsStore } from '@/stores/relationsStore'
+import { notifyError, notifyWarning } from '@/utils/notify'
 import type { AssignedTutor } from '../api/dashboard'
 
 interface Props {
@@ -136,19 +148,54 @@ const props = withDefaults(defineProps<Props>(), {
 
 const router = useRouter()
 const { t } = useI18n()
+const chatThreadsStore = useChatThreadsStore()
+const relationsStore = useRelationsStore()
 
 const hasActiveTutors = computed(() => props.activeTutors.length > 0)
 
-// Phase 1 v0.87: Chat modal state
+// Phase 1 v0.87.1: Chat modal state
 const chatModalOpen = ref(false)
 const selectedTutorId = ref<number | null>(null)
 const selectedRelationId = ref<number | null>(null)
 
-function openChatModal(tutor: AssignedTutor) {
-  selectedTutorId.value = tutor.id
-  // relation_id буде знайдено через API в ChatModal
-  selectedRelationId.value = null
-  chatModalOpen.value = true
+// Phase 1 v0.87.1: ТЗ від користувача - handler для чату студента
+async function handleOpenChat(tutor: AssignedTutor) {
+  // ⚠️ ЄДИНА умова доступу: collaboration_status === 'active'
+  if (tutor.collaboration_status !== 'active') {
+    notifyWarning('Контакт ще не активований')
+    return
+  }
+
+  // Шукаємо relation_id - AssignedTutor може мати relation_id
+  let relationId: number | null = null
+  
+  // Спробуємо знайти через studentRelations якщо є
+  if (relationsStore.studentRelations && relationsStore.studentRelations.length > 0) {
+    const relation = (relationsStore as any).studentRelations.find(
+      (rel: any) => rel.tutor?.id === tutor.id
+    )
+    relationId = relation?.id || null
+  }
+
+  // Якщо не знайшли relation_id, використовуємо tutor.id як fallback
+  // Backend має створити relation через negotiation endpoint
+  if (!relationId) {
+    console.warn('[StudentActiveTutorsSection] No relation_id found, using tutor.id')
+  }
+
+  try {
+    // Створюємо або отримуємо thread
+    // ensureThread сам створить relation якщо потрібно
+    await chatThreadsStore.ensureThread(tutor.id, relationId)
+
+    // Відкриваємо модалку
+    selectedTutorId.value = tutor.id
+    selectedRelationId.value = relationId
+    chatModalOpen.value = true
+  } catch (error) {
+    console.error('[StudentActiveTutorsSection] Failed to open chat:', error)
+    notifyError(t('common.error'))
+  }
 }
 
 function closeChatModal() {
@@ -219,4 +266,50 @@ function formatDate(dateStr: string): string {
     return dateStr
   }
 }
+
+// Phase 1 v0.87.1: ТЗ-1.4 - Get unread count for tutor
+function getUnreadCountForTutor(tutor: AssignedTutor): number {
+  if (!tutor?.id) return 0
+  return chatThreadsStore.getUnreadCount(tutor.id)
+}
+
+// Phase 1 v0.87.1: Перевірка чи можна відкрити чат
+// ⚠️ ЄДИНА умова: collaboration_status === 'active'
+// AssignedTutor вже має collaboration_status з backend
+function canChatWithTutor(tutor: AssignedTutor): boolean {
+  return tutor.collaboration_status === 'active'
+}
+
+// Phase 1 v0.87.1: ТЗ-1.2 - Unread Summary Polling з lifecycle контролем
+// ⚠️ R-P0-2 КРИТИЧНО: Polling має onUnmounted(clearInterval) обов'язково
+let unreadPollingInterval: ReturnType<typeof setInterval> | null = null
+
+function stopUnreadPolling() {
+  if (unreadPollingInterval) {
+    clearInterval(unreadPollingInterval)
+    unreadPollingInterval = null
+  }
+}
+
+function startUnreadPolling() {
+  stopUnreadPolling()
+  
+  chatThreadsStore.fetchUnreadSummary().catch((error) => {
+    console.warn('[StudentActiveTutorsSection] Failed to fetch unread summary:', error)
+  })
+  
+  unreadPollingInterval = setInterval(() => {
+    chatThreadsStore.fetchUnreadSummary().catch((error) => {
+      console.warn('[StudentActiveTutorsSection] Polling failed:', error)
+    })
+  }, 30000)
+}
+
+onMounted(async () => {
+  startUnreadPolling()
+})
+
+onUnmounted(() => {
+  stopUnreadPolling()
+})
 </script>

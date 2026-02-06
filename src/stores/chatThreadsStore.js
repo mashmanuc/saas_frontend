@@ -62,12 +62,16 @@ export const useChatThreadsStore = defineStore('chatThreads', () => {
         relation_id: relationId
       })
 
-      const threadId = response.data.thread_id
+      // apiClient повертає data напряму, тому response = { thread_id, kind, ... }
+      const threadId = response?.thread_id
+      if (!threadId) {
+        throw new Error('THREAD_ID_NOT_RETURNED')
+      }
 
       // Оновлюємо кеш
       threadsByStudent.value.set(studentId, {
         threadId,
-        kind: response.data.kind,
+        kind: response.kind,
         lastSync: new Date().toISOString()
       })
 
@@ -88,22 +92,33 @@ export const useChatThreadsStore = defineStore('chatThreads', () => {
      */
     try {
       const response = await apiClient.get('/api/v1/chat/unread-summary/')
-      unreadSummary.value = response.data
+      
+      // Phase 1 v0.87.1: Перевірка на undefined після 401 Unauthorized
+      if (!response) {
+        // Пустий response - нормально для нового користувача без чату
+        return
+      }
+      
+      unreadSummary.value = response
 
       // Оновлюємо кеш threadsByStudent з unread summary (якщо потрібно)
-      response.data.threads.forEach(thread => {
-        const existing = threadsByStudent.value.get(thread.other_user_id)
-        if (!existing || existing.threadId !== thread.thread_id) {
-          threadsByStudent.value.set(thread.other_user_id, {
-            threadId: thread.thread_id,
-            kind: thread.kind,
-            lastSync: new Date().toISOString()
-          })
-        }
-      })
+      if (response.threads && Array.isArray(response.threads)) {
+        response.threads.forEach(thread => {
+          const existing = threadsByStudent.value.get(thread.other_user_id)
+          if (!existing || existing.threadId !== thread.thread_id) {
+            threadsByStudent.value.set(thread.other_user_id, {
+              threadId: thread.thread_id,
+              kind: thread.kind,
+              lastSync: new Date().toISOString()
+            })
+          }
+        })
+      }
     } catch (err) {
-      console.error('[chatThreadsStore] Failed to fetch unread summary:', err)
-      // Не показуємо error notification для background polling
+      // Не логуємо для 401 - це нормально при logout
+      if (err?.response?.status !== 401) {
+        console.error('[chatThreadsStore] Failed to fetch unread summary:', err)
+      }
     }
   }
 

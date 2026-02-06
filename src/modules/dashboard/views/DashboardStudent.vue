@@ -59,6 +59,7 @@ import Card from '../../../ui/Card.vue'
 import Heading from '../../../ui/Heading.vue'
 import { useDashboardStore } from '../store/dashboardStore'
 import { useAuthStore } from '../../auth/store/authStore'
+import { useRelationsStore } from '../../../stores/relationsStore'
 import StudentActiveTutorsSection from '../components/StudentActiveTutorsSection.vue'
 import StudentUpcomingLessonsSection from '../components/StudentUpcomingLessonsSection.vue'
 import TutorSearchView from '../../tutor/views/TutorSearchView.vue'
@@ -68,6 +69,7 @@ const router = useRouter()
 const { t } = useI18n()
 const dashboardStore = useDashboardStore()
 const auth = useAuthStore()
+const relationsStore = useRelationsStore()
 
 const hasActiveTutors = computed(() => dashboardStore.hasActiveTutors)
 
@@ -77,5 +79,7 @@ function goToMarketplace() {
 
 onMounted(() => {
   dashboardStore.fetchStudentDashboard().catch(() => {})
+  // Phase 1 v0.87.1: Завантажуємо relations для чату
+  relationsStore.fetchStudentRelations().catch(() => {})
 })
 </script>

@@ -422,6 +422,11 @@ export const useAuthStore = defineStore('auth', {
       }
 
       await this.forceLogout()
+      
+      // 🔥 CRITICAL FIX v0.87.1: Перезавантажуємо сторінку для повного очищення стану
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login'
+      }
     },
 
     async forceLogout() {
@@ -438,6 +443,22 @@ export const useAuthStore = defineStore('auth', {
       this.lastSummary = null
 
       storage.clearAll()
+      
+      // 🔥 CRITICAL FIX v0.87.1: Очищення всіх Pinia stores при logout
+      // Запобігає витоку даних між користувачами
+      try {
+        const pinia = this.$pinia
+        if (pinia) {
+          // Очищуємо всі stores крім auth
+          pinia._s.forEach((store, key) => {
+            if (key !== 'auth' && typeof store.$reset === 'function') {
+              store.$reset()
+            }
+          })
+        }
+      } catch (error) {
+        console.warn('[authStore] Failed to reset stores on logout:', error)
+      }
     },
 
     async ensureCsrfToken() {

@@ -154,13 +154,13 @@
             id="telegram"
             v-model="formData.telegram_username"
             type="text"
-            :placeholder="$t('users.profile.telegramPlaceholder')"
+            :placeholder="profileTelegramPlaceholder"
             :disabled="disabled"
             class="input mt-1"
             @input="handleChange"
           />
           <p class="mt-1 text-xs text-muted-foreground">
-            {{ $t('users.profile.telegramHint') }}
+            {{ profileTelegramHint }}
           </p>
         </div>
       </div>
@@ -193,6 +193,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Button from '@/ui/Button.vue'
 import type { StudentFullProfile } from '@/api/students'
 import { usePhoneValidation } from '@/composables/usePhoneValidation'
@@ -210,6 +211,8 @@ const emit = defineEmits<{
   'cancel': []
   'change': []
 }>()
+
+const { t } = useI18n()
 
 const formData = ref<Partial<StudentFullProfile>>({ 
   preferred_subjects: [],
@@ -241,6 +244,14 @@ const isValid = computed(() => {
     formData.value.phone.trim().length > 0
   )
 })
+
+const profileTelegramPlaceholder = computed(() => decodeHtmlEntities(t('users.profile.telegramPlaceholder')))
+const profileTelegramHint = computed(() => decodeHtmlEntities(t('users.profile.telegramHint')))
+
+function decodeHtmlEntities(value: string): string {
+  if (!value) return value
+  return value.split('&commat;').join('@')
+}
 
 function handleChange() {
   emit('update:modelValue', formData.value)

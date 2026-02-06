@@ -1,6 +1,8 @@
 import { ref } from 'vue'
 import { useAcceptanceStore } from '@/stores/acceptanceStore'
 import { useInquiriesStore } from '@/stores/inquiriesStore'
+import { useContactAccessStore } from '@/stores/contactAccessStore'
+import { useRelationsStore } from '@/stores/relationsStore'
 import { acceptInquiry } from '@/api/acceptance'
 import { useToast } from '@/composables/useToast'
 
@@ -12,6 +14,8 @@ import { useToast } from '@/composables/useToast'
 export function useInquiryAccept() {
   const acceptanceStore = useAcceptanceStore()
   const inquiriesStore = useInquiriesStore()
+  const contactAccessStore = useContactAccessStore()
+  const relationsStore = useRelationsStore()
   const toast = useToast()
   
   const isAccepting = ref(false)
@@ -45,10 +49,10 @@ export function useInquiryAccept() {
       const graceToken = acceptanceStore.data?.grace_token
       
       try {
-        await acceptInquiry(inquiryId, graceToken)
+        const result = await acceptInquiry(inquiryId, graceToken)
         
         // Success
-        await handleAcceptSuccess(inquiryId)
+        await handleAcceptSuccess(inquiryId, result)
         
       } catch (error: any) {
         // Step 3: Grace token expired? Retry once
@@ -84,18 +88,40 @@ export function useInquiryAccept() {
     }
     
     // Retry accept with fresh token
-    await acceptInquiry(inquiryId, freshToken)
+    const result = await acceptInquiry(inquiryId, freshToken)
     
     // Success
-    await handleAcceptSuccess(inquiryId)
+    await handleAcceptSuccess(inquiryId, result)
   }
   
   /**
    * Handle successful accept.
+   * 
+   * Phase 1 v0.87.1: ТЗ-1.1 Синхронізація ContactAccess
+   * ⚠️ R-P0-1: ContactAccess синхронізується для відображення контактів,
+   * але НЕ використовується як gate для чату
    */
-  async function handleAcceptSuccess(inquiryId: string): Promise<void> {
+  async function handleAcceptSuccess(inquiryId: string, result: any): Promise<void> {
     // Invalidate acceptance cache
     acceptanceStore.invalidate()
+    
+    // Phase 1 v0.87.1: ТЗ-1.1 - Синхронізація ContactAccess після accept
+    if (result?.relation?.id) {
+      try {
+        // ⚠️ R-P0-1: ContactAccess синхронізується для відображення контактів
+        await contactAccessStore.fetchContactAccessByRelation(result.relation.id)
+      } catch (error) {
+        console.warn('[useInquiryAccept] Failed to fetch contact access:', error)
+        // Не блокуємо flow якщо не вдалося отримати контакти
+      }
+    }
+    
+    // Оновлюємо relations - relation.status стане 'active'
+    try {
+      await relationsStore.fetchRelations()
+    } catch (error) {
+      console.warn('[useInquiryAccept] Failed to fetch relations:', error)
+    }
     
     // Refresh inquiries list
     await inquiriesStore.refetch()

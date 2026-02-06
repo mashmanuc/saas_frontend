@@ -2637,7 +2637,7 @@
     "phone": "Номер телефону",
     "phoneHint": "Міжнародний формат: +380501234567",
     "telegram": "Telegram",
-    "telegramHint": "Ваш Telegram username (наприклад: @username)",
+    "telegramHint": "Ваш Telegram username (наприклад: &commat;username)",
     "title": "Профіль",
     "subtitle": "Актуалізуйте свою особисту інформацію.",
     "editButton": "Редагувати профіль",
@@ -4664,8 +4664,8 @@
       "phoneHint": "Міжнародний формат: +380501234567",
       "phonePlaceholder": "+380501234567",
       "telegram": "Telegram",
-      "telegramHint": "Ваш Telegram username (наприклад: @username)",
-      "telegramPlaceholder": "@username",
+      "telegramHint": "Ваш Telegram username (наприклад: &commat;username)",
+      "telegramPlaceholder": "&commat;username",
       "contactTutor": "Зв'язатися з тьютором",
       "share": "Поділитися",
       "about": "Про тьютора",
@@ -4710,8 +4710,11 @@
       "saveError": "Не вдалося зберегти налаштування",
       "tabs": {
         "general": "Загальні",
+        "profile": "Профіль",
+        "contacts": "Контакти",
         "notifications": "Сповіщення",
-        "privacy": "Конфіденційність"
+        "privacy": "Конфіденційність",
+        "security": "Безпека"
       },
       "general": {
         "title": "Загальні налаштування",
@@ -4748,8 +4751,8 @@
         "phonePlaceholder": "+380501234567",
         "phoneHint": "Міжнародний формат: +[код країни][номер]",
         "telegram": "Telegram",
-        "telegramPlaceholder": "@username",
-        "telegramHint": "Ваш Telegram username (наприклад: @username)",
+        "telegramPlaceholder": "&commat;username",
+        "telegramHint": "Ваш Telegram username (наприклад: &commat;username)",
         "timezone": "Часовий пояс",
         "loadError": "Не вдалося завантажити контактні дані",
         "saveSuccess": "Контактні дані успішно збережено",

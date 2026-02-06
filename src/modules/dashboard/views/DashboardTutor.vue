@@ -166,7 +166,7 @@
               />
               <div class="flex-1 space-y-1">
                 <p class="text-base font-semibold text-body">{{ getStudentName(relation.student) }}</p>
-                <p class="text-sm text-muted">{{ relation.student?.email }}</p>
+                <p class="text-sm text-muted" v-if="relation.status === 'active'">{{ relation.student?.email }}</p>
                 <p class="text-xs text-muted">
                   {{ $t('dashboard.tutor.timezoneLabel') }}
                   <span class="font-medium">
@@ -280,7 +280,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import Button from '../../../ui/Button.vue'
@@ -440,9 +440,9 @@ const errorState = computed(() => {
 
 function getStudentName(student) {
   if (!student) return '—'
-  const { first_name: firstName, last_name: lastName, email } = student
+  const { first_name: firstName, last_name: lastName } = student
   const fullName = [firstName, lastName].filter(Boolean).join(' ').trim()
-  return fullName || email || '—'
+  return fullName || '—'
 }
 
 function formatLessonCount(value) {
@@ -556,14 +556,10 @@ function handleOpenChat(relation) {
 }
 
 function canOpenChatWithStudent(relation) {
-  const studentId = relation.student?.id
-  if (!studentId) return false
-  
-  // Check if relation is ACTIVE
-  if (relation.status !== 'active') return false
-  
-  // Check ContactAccess
-  return contactAccessStore.canOpenChat(studentId)
+  // Phase 1 v0.87.1: ТЗ-1.3 - Активація кнопки чату
+  // ⚠️ R-P0-1 КРИТИЧНО: Єдиний gate - relation.status
+  // contactAccessStore НЕ використовується як умова доступу
+  return relation.status === 'active'
 }
 
 function getUnreadCountForStudent(relation) {
@@ -572,11 +568,26 @@ function getUnreadCountForStudent(relation) {
   return chatThreadsStore.getUnreadCount(studentId)
 }
 
-function handleOpenChatWithStudent(relation) {
+async function handleOpenChatWithStudent(relation) {
   const studentId = relation.student?.id
   const relationId = getRelationId(relation)
 
   if (!studentId || !relationId) {
+    notifyError(t('common.error'))
+    return
+  }
+
+  // Phase 1 v0.87.1: ТЗ-1.3 - Перевірка SSOT
+  if (!canOpenChatWithStudent(relation)) {
+    notifyWarning(t('relations.actions.acceptError') || 'Контакт ще не активований')
+    return
+  }
+
+  // Створюємо thread (lazy)
+  try {
+    await chatThreadsStore.ensureThread(studentId, relationId)
+  } catch (error) {
+    console.error('[DashboardTutor] Failed to ensure thread:', error)
     notifyError(t('common.error'))
     return
   }
@@ -610,6 +621,43 @@ function isOnline(userId) {
   return presenceStore.isOnline?.(String(userId)) || false
 }
 
+// Phase 1 v0.87.1: ТЗ-1.2 - Unread Summary Polling з lifecycle контролем
+// ⚠️ R-P0-2 КРИТИЧНО: Polling має onUnmounted(clearInterval) обов'язково
+let unreadPollingInterval = null
+
+function stopUnreadPolling() {
+  if (unreadPollingInterval) {
+    clearInterval(unreadPollingInterval)
+    unreadPollingInterval = null
+  }
+}
+
+function startUnreadPolling() {
+  // Зупиняємо попередній polling якщо є
+  stopUnreadPolling()
+  
+  // Початкове завантаження
+  chatThreadsStore.fetchUnreadSummary().catch((error) => {
+    console.warn('[DashboardTutor] Failed to fetch unread summary:', error)
+  })
+  
+  // ⚠️ R-P0-2 КРИТИЧНО: Polling з lifecycle контролем
+  unreadPollingInterval = setInterval(() => {
+    chatThreadsStore.fetchUnreadSummary().catch((error) => {
+      console.warn('[DashboardTutor] Polling failed:', error)
+    })
+  }, 30000) // 30 секунд
+}
+
+// Watch auth state - зупиняємо polling при logout
+watch(() => auth.isAuthenticated, (isAuth) => {
+  if (!isAuth) {
+    stopUnreadPolling()
+  } else if (isAuth && !unreadPollingInterval) {
+    startUnreadPolling()
+  }
+})
+
 onMounted(async () => {
   // Use new method if available, fallback to old
   if (dashboard.fetchTutorDashboard) {
@@ -626,5 +674,15 @@ onMounted(async () => {
     // Silent fail - activity status is not critical
     console.warn('[DashboardTutor] Failed to load activity status:', error)
   }
+
+  // Phase 1 v0.87.1: ТЗ-1.2 - Unread Summary Polling
+  if (auth.isAuthenticated) {
+    startUnreadPolling()
+  }
+})
+
+onUnmounted(() => {
+  // ⚠️ R-P0-2 ОБОВ'ЯЗКОВО: Очищення polling при unmount
+  stopUnreadPolling()
 })
 </script>

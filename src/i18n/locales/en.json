@@ -4574,18 +4574,6 @@
         "completeNow": "Complete Now",
         "complete": "Profile is complete"
       },
-      "contactInformation": "Контактна інформація",
-      "contactInformationHint": "Ваші контакти будуть видимі тьютору тільки після прийняття запиту на навчання",
-      "phone": "Номер телефону",
-      "phoneHint": "Міжнародний формат: +380501234567",
-      "phonePlaceholder": "+380501234567",
-      "telegram": "Telegram",
-      "telegramHint": "Ваш Telegram username (наприклад: @username)",
-      "telegramPlaceholder": "@username"
-    },
-    "avatar": {
-      "upload": "Upload photo",
-      "change": "Change photo",
       "update": "Update",
       "remove": "Remove",
       "drop": "Drop file",
@@ -4614,7 +4602,9 @@
       "tabs": {
         "general": "General",
         "notifications": "Notifications",
-        "privacy": "Privacy"
+        "privacy": "Privacy",
+        "profile": "Профіль",
+        "contacts": "Контакти"
       },
       "general": {
         "title": "General Settings",
@@ -4651,8 +4641,8 @@
         "phonePlaceholder": "+380501234567",
         "phoneHint": "Міжнародний формат: +[код країни][номер]",
         "telegram": "Telegram",
-        "telegramPlaceholder": "@username",
-        "telegramHint": "Ваш Telegram username (наприклад: @username)",
+        "telegramPlaceholder": "@.literal @username",
+        "telegramHint": "Ваш Telegram username (наприклад: @.literal @username)",
         "timezone": "Часовий пояс",
         "loadError": "Не вдалося завантажити контактні дані",
         "saveSuccess": "Контактні дані успішно збережено",

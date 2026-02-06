@@ -40,11 +40,11 @@
           v-model="formData.telegram_username"
           type="text"
           class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-          :placeholder="$t('users.settings.contacts.telegramPlaceholder')"
+          :placeholder="telegramPlaceholder"
           :disabled="saving"
         />
         <p class="mt-1 text-xs text-muted-foreground">
-          {{ $t('users.settings.contacts.telegramHint') }}
+          {{ telegramHint }}
         </p>
       </div>
 
@@ -115,6 +115,14 @@ const formData = ref({
 })
 
 const userRole = computed(() => authStore.user?.role)
+
+const telegramPlaceholder = computed(() => decodeHtmlEntities(t('users.settings.contacts.telegramPlaceholder')))
+const telegramHint = computed(() => decodeHtmlEntities(t('users.settings.contacts.telegramHint')))
+
+function decodeHtmlEntities(value: string): string {
+  if (!value) return value
+  return value.split('&commat;').join('@')
+}
 
 async function loadContacts() {
   loading.value = true

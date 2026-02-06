@@ -37,6 +37,7 @@
 
 <script setup lang="ts">
 import { ref, computed, h } from 'vue'
+import { useAuthStore } from '@/stores/authStore'
 import Card from '@/ui/Card.vue'
 import Heading from '@/ui/Heading.vue'
 import GeneralSettingsTab from '../components/settings/GeneralSettingsTab.vue'
@@ -44,10 +45,13 @@ import ProfileSettingsTab from '../components/settings/ProfileSettingsTab.vue'
 import ContactsSettingsTab from '../components/settings/ContactsSettingsTab.vue'
 import NotificationsSettingsTab from '../components/settings/NotificationsSettingsTab.vue'
 import PrivacySettingsTab from '../components/settings/PrivacySettingsTab.vue'
+import SecuritySettingsTab from '../components/settings/SecuritySettingsTab.vue'
 
 const activeTab = ref('general')
+const authStore = useAuthStore()
+const userRole = computed(() => authStore.user?.role)
 
-const tabs = [
+const allTabs = [
   { 
     id: 'general', 
     label: 'users.settings.tabs.general',
@@ -83,8 +87,23 @@ const tabs = [
     icon: () => h('svg', { class: 'h-4 w-4', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor' }, [
       h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z' })
     ])
+  },
+  { 
+    id: 'security', 
+    label: 'users.settings.tabs.security',
+    icon: () => h('svg', { class: 'h-4 w-4', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor' }, [
+      h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.37A7.5 7.5 0 0012 17.5a7.5 7.5 0 008.618-11.186z' })
+    ])
   }
 ]
+
+const tabs = computed(() => {
+  // Tutor має окремий профіль в marketplace, тому прибираємо вкладку Profile
+  if (userRole.value === 'tutor') {
+    return allTabs.filter(tab => tab.id !== 'profile')
+  }
+  return allTabs
+})
 
 const activeTabComponent = computed(() => {
   switch (activeTab.value) {
@@ -98,6 +117,8 @@ const activeTabComponent = computed(() => {
       return NotificationsSettingsTab
     case 'privacy':
       return PrivacySettingsTab
+    case 'security':
+      return SecuritySettingsTab
     default:
       return GeneralSettingsTab
   }
