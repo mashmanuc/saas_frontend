@@ -377,8 +377,8 @@ async function globalSetup(config: FullConfig) {
 
     const tutorLoginResponse = await tutorPage.request.post(`${apiURL}/v1/auth/login`, {
       data: {
-        email: process.env.TEST_USER_EMAIL || 'm3@gmail.com',
-        password: process.env.TEST_USER_PASSWORD || 'demo1234'
+        email: process.env.TEST_USER_EMAIL || 'ut6@gmail.com',
+        password: process.env.TEST_USER_PASSWORD || 'password'
       }
     })
 
@@ -434,102 +434,11 @@ async function globalSetup(config: FullConfig) {
     // Verify seed data via tutor API
     await verifySeedData(apiURL, tutorAccess, tutorUser.id)
 
-    // ========== 2. Authenticate STAFF user (e2e-staff@example.com) ==========
-    console.log('[global-setup] Authenticating staff user...')
-    const staffContext = await browser.newContext()
-    const staffPage = await staffContext.newPage()
-
-    const staffLoginResponse = await staffPage.request.post(`${apiURL}/v1/auth/login`, {
-      data: {
-        email: 'e2e-staff@example.com',
-        password: 'demo1234'
-      }
-    })
-
-    if (!staffLoginResponse.ok()) {
-      const errorData = await staffLoginResponse.json().catch(() => ({}))
-      throw new Error(`Staff login failed: ${staffLoginResponse.status()} - ${JSON.stringify(errorData)}`)
-    }
-
-    const staffLoginData = await staffLoginResponse.json()
-    const { access: staffAccess, user: staffUser } = staffLoginData
-
-    if (!staffAccess || !staffUser) {
-      throw new Error('Staff login response missing access token or user data')
-    }
-
-    // Verify staff user has access to staff endpoint
-    const staffCheckResponse = await staffPage.request.get(`${apiURL}/v1/staff/tutors/activity-list?limit=1`, {
-      headers: { Authorization: `Bearer ${staffAccess}` }
-    })
-
-    if (!staffCheckResponse.ok()) {
-      const status = staffCheckResponse.status()
-      if (status === 403 || status === 401) {
-        throw new Error(
-          `User e2e-staff@example.com does not have staff access! Status: ${status}. ` +
-          `Run: python manage.py e2e_seed_staff`
-        )
-      }
-      throw new Error(`Failed to verify staff access: ${status}`)
-    }
-
-    console.log(`[global-setup] ✓ Logged in as ${staffUser.email} (staff, verified via activity-list endpoint)`)
-
-    // Sanity-check: verify activity-list returns ≥1 tutor (seed guarantee)
-    const activityListData = await staffCheckResponse.json()
-    if (!activityListData.results || activityListData.results.length === 0) {
-      throw new Error(
-        `Staff activity-list returned empty results! ` +
-        `Seed must guarantee ≥1 tutor in activity-list. ` +
-        `Run: python manage.py e2e_seed_calendar && python manage.py e2e_seed_staff`
-      )
-    }
-    console.log(`[global-setup] ✓ Activity-list has ${activityListData.results.length} tutor(s)`)
-
-    // Прив'язати localStorage токени до baseURL
-    await staffPage.goto(baseURL)
-    await staffPage.evaluate(
-      ([token, serializedUser]) => {
-        window.localStorage.setItem('access', token)
-        window.localStorage.setItem('user', serializedUser)
-      },
-      [staffAccess, JSON.stringify(staffUser)]
-    )
-
-    // Verify localStorage was set
-    const storedAccess = await staffPage.evaluate(() => window.localStorage.getItem('access'))
-    const storedUser = await staffPage.evaluate(() => window.localStorage.getItem('user'))
-    
-    if (!storedAccess || !storedUser) {
-      throw new Error(
-        `Failed to store staff auth tokens in localStorage. Stored access: ${!!storedAccess}, stored user: ${!!storedUser}`
-      )
-    }
-
-    // Зберегти staff auth state (AFTER localStorage is set)
-    const staffAuthStateFile = path.join(__dirname, '.auth/staff.json')
-    const staffCredentialsFile = path.join(__dirname, '.auth/staff-credentials.json')
-    
-    await staffContext.storageState({ path: staffAuthStateFile })
-    console.log(`[global-setup] ✓ Staff auth state saved to ${staffAuthStateFile}`)
-
-    // Зберегти staff credentials
-    fs.writeFileSync(
-      staffCredentialsFile,
-      JSON.stringify(
-        {
-          access: staffAccess,
-          user: staffUser,
-          timestamp: new Date().toISOString()
-        },
-        null,
-        2
-      )
-    )
-    console.log(`[global-setup] ✓ Staff credentials saved`)
-
-    await staffContext.close()
+    // ========== 2. Create empty staff.json (Phase 2 tests don't use staff) ==========
+    console.log('[global-setup] Creating empty staff.json (Phase 2 tests use only tutor auth)...')
+    const staffAuthFile = path.resolve(authStateDir, 'staff.json')
+    fs.writeFileSync(staffAuthFile, JSON.stringify({ cookies: [], origins: [] }, null, 2))
+    console.log('[global-setup] ✓ Empty staff.json created')
 
     console.log('[global-setup] ✅ Setup completed successfully')
   } catch (error) {

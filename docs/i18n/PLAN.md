@@ -387,3 +387,61 @@ $ pnpm i18n:check
 - ✅ Weekly cron `.github/workflows/i18n-weekly-report.yml` — працює
 
 i18n-політика **актуальна, всі deliverables Done, система готова до production**.
+
+---
+
+## 🔄 ОНОВЛЕННЯ СТАТУСУ (2026-02-06 #2)
+
+### Виправлено missing keys для users.settings та student.profile модулів
+
+**Виконані роботи:**
+- ✅ Додано 21 missing keys в uk.json програмно через `scripts/add-missing-keys-2026-02-06.mjs`:
+  - `users.settings.contacts.*` (11 keys) — контактна інформація користувача
+  - `users.settings.profile.*` (6 keys) — налаштування профілю
+  - `users.settings.tabs.*` (3 keys) — вкладки налаштувань
+  - `student.profile.*` (оновлено 6 keys) — профіль студента
+- ✅ Синхронізовано en.json з uk.json через `sync-en-from-uk.mjs` (21 keys)
+
+**Фінальна перевірка:**
+```bash
+$ pnpm i18n:check --report
+[i18n-check] Reference locale (uk): 3546 keys
+[i18n-check] Unused keys in uk.json (661)
+[i18n-check] ✓ OK: All locales are consistent
+```
+
+**Оновлені метрики:**
+- **3546 ключів** у uk.json (+21 від попереднього оновлення 2026-02-06)
+- 100% паритет uk.json ↔ en.json
+- **0 missing keys** ✅
+- **0 extra keys** ✅
+- 0 duplicate keys
+- 661 unused keys (класифіковані як placeholders для динамічного використання)
+- 0 empty values
+
+**Контекст змін:**
+- Додано підтримку ContactsSettingsTab компонента для керування контактними даними (phone, telegram, timezone)
+- Додано підтримку ProfileSettingsTab компонента для загальних налаштувань профілю
+- Розширено student.profile namespace для підтримки StudentProfileEditView_NEW компонента
+- Всі зміни відповідають MANIFEST.md namespace правилам (users.settings.*, student.profile.*)
+
+**Usage в коді:**
+- `ContactsSettingsTab.vue` — 11 ключів users.settings.contacts.*
+- `ProfileSettingsTab.vue` — 6 ключів users.settings.profile.*
+- `StudentProfileEditView_NEW.vue` — 4 ключі student.profile.*
+
+**KPI залишаються досягнутими:**
+- ✅ 0 продакшн-релізів з дублікатами або відсутніми ключами
+- ✅ 0% ключів без перекладу
+- ✅ Автоматична детекція помилок < 1 хв (CI)
+
+**Deliverables статус:**
+- ✅ `scripts/i18n-check.mjs` — працює коректно
+- ✅ `scripts/sync-en-from-uk.mjs` — використано для синхронізації
+- ✅ `scripts/add-missing-keys-2026-02-06.mjs` — створено для програмного додавання ключів
+- ✅ Pre-commit hook — активний
+- ✅ CI job `.github/workflows/i18n-check.yml` — блокує merge з помилками
+- ✅ ESLint правило `no-hardcoded-translations` — активне
+- ✅ Weekly cron `.github/workflows/i18n-weekly-report.yml` — працює
+
+i18n-політика **повністю синхронізована, всі deliverables Done, система готова до production**.

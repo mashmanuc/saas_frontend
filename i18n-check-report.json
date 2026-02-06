@@ -2,21 +2,21 @@
   "locales": {
     "en": {
       "status": "ok",
-      "totalKeys": 3518,
+      "totalKeys": 3546,
       "missing": [],
       "extra": [],
       "empty": []
     }
   },
   "summary": {
-    "totalKeys": 3518,
+    "totalKeys": 3546,
     "locales": 2,
-    "errors": 1,
+    "errors": 0,
     "warnings": 1
   },
   "usage": {
-    "scannedFiles": 1024,
-    "detectedKeys": 2864,
+    "scannedFiles": 1029,
+    "detectedKeys": 2885,
     "unusedKeys": [
       "auth.mfa.status.errors.regenerateFailed",
       "auth.mfa.status.passwordPrompt",
@@ -680,14 +680,6 @@
       "warnings.accessDenied.message",
       "warnings.accessDenied.title"
     ],
-    "undefinedUsages": [
-      "inquiry.contactRequired.description",
-      "inquiry.contactRequired.goToProfile",
-      "inquiry.contactRequired.title",
-      "profile.phone",
-      "profile.phoneHint",
-      "profile.telegram",
-      "profile.telegramHint"
-    ]
+    "undefinedUsages": []
   }
 }

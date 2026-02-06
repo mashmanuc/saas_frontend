@@ -194,24 +194,24 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import Button from '@/ui/Button.vue'
-import type { StudentProfile } from '@/api/users'
+import type { StudentFullProfile } from '@/api/students'
 import { usePhoneValidation } from '@/composables/usePhoneValidation'
 
 const props = defineProps<{
-  modelValue: Partial<StudentProfile>
+  modelValue: Partial<StudentFullProfile>
   disabled?: boolean
   saving?: boolean
   errorMessage?: string
 }>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: Partial<StudentProfile>]
+  'update:modelValue': [value: Partial<StudentFullProfile>]
   'submit': []
   'cancel': []
   'change': []
 }>()
 
-const formData = ref<Partial<StudentProfile>>({ 
+const formData = ref<Partial<StudentFullProfile>>({ 
   preferred_subjects: [],
   phone: '',
   telegram_username: '',

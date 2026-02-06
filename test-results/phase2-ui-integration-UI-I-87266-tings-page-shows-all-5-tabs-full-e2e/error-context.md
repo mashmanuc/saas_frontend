@@ -1,0 +1,127 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e4]:
+  - navigation "Бічна навігація" [ref=e5]:
+    - navigation [ref=e6]:
+      - link "Панель керування" [ref=e7] [cursor=pointer]:
+        - /url: /tutor
+        - generic [ref=e8]:
+          - generic [ref=e9]: 🏠
+          - generic [ref=e10]: Панель керування
+      - link "Класи" [ref=e11] [cursor=pointer]:
+        - /url: /dashboard/classrooms
+        - generic [ref=e12]:
+          - generic [ref=e13]: 🏫
+          - generic [ref=e14]: Класи
+      - link "Календар тьютора" [ref=e15] [cursor=pointer]:
+        - /url: /booking/tutor
+        - generic [ref=e16]:
+          - generic [ref=e17]: 📘
+          - generic [ref=e18]: Календар тьютора
+      - link "Робочий простір" [ref=e19] [cursor=pointer]:
+        - /url: /solo
+        - generic [ref=e20]:
+          - generic [ref=e21]: •
+          - generic [ref=e22]: Робочий простір
+      - link "Solo v2" [ref=e23] [cursor=pointer]:
+        - /url: /solo
+        - generic [ref=e24]:
+          - generic [ref=e25]: •
+          - generic [ref=e26]: Solo v2
+      - link "Профіль тьютора" [ref=e27] [cursor=pointer]:
+        - /url: /tutor/profile
+        - generic [ref=e28]:
+          - generic [ref=e29]: •
+          - generic [ref=e30]: Профіль тьютора
+      - link "Акаунт" [ref=e31] [cursor=pointer]:
+        - /url: /dashboard/profile
+        - generic [ref=e32]:
+          - generic [ref=e33]: •
+          - generic [ref=e34]: Акаунт
+      - link "Налаштування" [ref=e35] [cursor=pointer]:
+        - /url: /settings
+        - generic [ref=e36]:
+          - generic [ref=e37]: •
+          - generic [ref=e38]: Налаштування
+  - generic [ref=e39]:
+    - banner [ref=e40]:
+      - heading "M4SH Platform" [level=1] [ref=e42]
+      - generic [ref=e43]:
+        - generic "Тема" [ref=e44]:
+          - button "Світла" [pressed] [ref=e45] [cursor=pointer]:
+            - generic [ref=e46]: 🌿
+            - generic [ref=e47]: Світла
+          - button "Темна" [ref=e48] [cursor=pointer]:
+            - generic [ref=e49]: 🌙
+            - generic [ref=e50]: Темна
+          - button "Класична" [ref=e51] [cursor=pointer]:
+            - generic [ref=e52]: 🎓
+            - generic [ref=e53]: Класична
+        - generic [ref=e54]:
+          - button "Баланс контактів" [ref=e56] [cursor=pointer]:
+            - generic [ref=e57]: "Контакти:"
+            - generic [ref=e58]: "0"
+          - button "Сповіщення" [ref=e60] [cursor=pointer]:
+            - generic [ref=e61]: 🔔
+        - generic [ref=e62]:
+          - generic [ref=e63]: UЛ
+          - generic [ref=e64]: Updated
+        - button "Вийти" [ref=e65] [cursor=pointer]
+        - generic [ref=e66]: Тьютор
+        - generic [ref=e67]:
+          - button "UK" [ref=e68] [cursor=pointer]
+          - button "EN" [ref=e69] [cursor=pointer]
+    - main [ref=e70]:
+      - generic [ref=e71]:
+        - generic [ref=e72]:
+          - heading "Налаштування" [level=1] [ref=e73]
+          - paragraph [ref=e74]: Керуйте налаштуваннями вашого акаунту
+        - generic [ref=e75]:
+          - navigation [ref=e76]:
+            - button "Загальні" [ref=e77] [cursor=pointer]:
+              - img [ref=e78]
+              - text: Загальні
+            - button "users.settings.tabs.profile" [ref=e81] [cursor=pointer]:
+              - img [ref=e82]
+              - text: users.settings.tabs.profile
+            - button "users.settings.tabs.contacts" [ref=e84] [cursor=pointer]:
+              - img [ref=e85]
+              - text: users.settings.tabs.contacts
+            - button "Сповіщення" [ref=e87] [cursor=pointer]:
+              - img [ref=e88]
+              - text: Сповіщення
+            - button "Конфіденційність" [ref=e90] [cursor=pointer]:
+              - img [ref=e91]
+              - text: Конфіденційність
+          - generic [ref=e95]:
+            - generic [ref=e96]:
+              - heading "Загальні налаштування" [level=3] [ref=e97]
+              - paragraph [ref=e98]: Мова, часовий пояс та інші параметри
+            - generic [ref=e99]:
+              - generic [ref=e100]:
+                - generic [ref=e101]: Мова
+                - combobox "Мова" [ref=e102]:
+                  - option "Українська" [selected]
+                  - option "English"
+              - generic [ref=e103]:
+                - generic [ref=e104]: Часовий пояс
+                - combobox "Часовий пояс" [ref=e105]:
+                  - option "UTC" [selected]
+                  - option "Europe/Kiev"
+                  - option "Europe/London"
+                  - option "America/New_York"
+                  - option "America/Los_Angeles"
+              - generic [ref=e106]:
+                - generic [ref=e107]:
+                  - paragraph [ref=e108]: Темна тема
+                  - paragraph [ref=e109]: Використовувати темну тему інтерфейсу
+                - switch [ref=e110] [cursor=pointer]
+            - generic [ref=e111]:
+              - button "Скинути" [disabled] [ref=e112]:
+                - generic [ref=e113]: Скинути
+              - button "Зберегти" [disabled] [ref=e114]:
+                - generic [ref=e115]: Зберегти
+  - status [ref=e117]:
+    - paragraph [ref=e119]: Завантаження...
+```

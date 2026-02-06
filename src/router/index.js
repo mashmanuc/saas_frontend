@@ -229,29 +229,22 @@ const routes = [
         component: LessonView,
         meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
       },
+      // Phase 2: Redirect old profile routes to new settings
       {
         path: 'dashboard/profile',
-        name: 'profile-overview',
-        component: ProfileOverviewView,
-        meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
+        redirect: '/settings',
       },
       {
         path: 'dashboard/profile/edit',
-        name: 'profile-edit',
-        component: ProfileEditView,
-        meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
+        redirect: '/settings',
       },
       {
         path: 'dashboard/profile/security',
-        name: 'profile-security',
-        component: SettingsSecurityView,
-        meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
+        redirect: '/settings',
       },
       {
         path: 'dashboard/profile/activity',
-        name: 'profile-activity',
-        component: ProfileActivityView,
-        meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
+        redirect: '/settings',
       },
       // UI Contract V2 routes (feature-flagged)
       ...(import.meta.env.VITE_ENABLE_UI_CONTRACT_V2 === 'true' ? [
