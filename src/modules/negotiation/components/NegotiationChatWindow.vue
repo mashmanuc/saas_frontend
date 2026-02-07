@@ -36,20 +36,19 @@
         description="Почніть розмову першим!"
       />
 
-      <!-- Messages -->
-      <TransitionGroup
+      <!-- Messages - без TransitionGroup для уникнення "дьоргання" -->
+      <div
         v-else
-        name="message-fade"
-        tag="div"
         class="space-y-4"
       >
         <NegotiationChatMessage
           v-for="message in messages"
           :key="message.message_id || message.id"
+          v-memo="[message.message_id, message.is_read, message.body]"
           :message="message"
           :current-user-id="currentUserId"
         />
-      </TransitionGroup>
+      </div>
     </div>
 
     <!-- Error -->
@@ -141,11 +140,15 @@ async function handleSend(text: string): Promise<void> {
   }
 }
 
-// Watch for new messages -> scroll
+// Watch for new messages -> scroll (тільки якщо кількість змінилася)
+const previousLength = ref(0)
 watch(
   () => messages.value.length,
-  () => {
-    scrollToBottomIfNeeded()
+  (newLength) => {
+    if (newLength !== previousLength.value && newLength > previousLength.value) {
+      previousLength.value = newLength
+      scrollToBottomIfNeeded()
+    }
   }
 )
 
@@ -190,19 +193,5 @@ onMounted(() => {
   background-size: 28px 28px;
 }
 
-/* ✅ Плавна анімація появи повідомлень */
-.message-fade-enter-active {
-  transition: all 0.2s ease-out;
-}
-.message-fade-leave-active {
-  transition: all 0.15s ease-in;
-}
-.message-fade-enter-from {
-  opacity: 0;
-  transform: translateY(10px);
-}
-.message-fade-leave-to {
-  opacity: 0;
-  transform: translateY(-5px);
-}
+/* ⚠️ CSS transitions видалено для уникнення "дьоргання" */
 </style>

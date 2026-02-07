@@ -642,7 +642,7 @@ async function fetchAndCacheUnreadCounts() {
       }
     })
   } catch (error) {
-    console.warn('[DashboardTutor] Failed to fetch unread summary:', error)
+    // Silent fail
   }
 }
 
@@ -692,7 +692,6 @@ onMounted(async () => {
     activityStatus.value = await marketplaceApi.getTutorActivityStatus()
   } catch (error) {
     // Silent fail - activity status is not critical
-    console.warn('[DashboardTutor] Failed to load activity status:', error)
   }
 
   // Phase 1 v0.87.1: ТЗ-1.2 - Unread Summary Polling

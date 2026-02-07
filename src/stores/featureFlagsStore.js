@@ -138,7 +138,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', {
           this.lastFetched = timestamp
         }
       } catch (error) {
-        console.warn('[featureFlags] cache load failed:', error.message)
+        // Silent fail
       }
     },
 

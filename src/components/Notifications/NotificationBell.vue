@@ -141,7 +141,7 @@ async function handleMarkAllAsRead() {
   try {
     await notificationsStore.markAllAsRead()
   } catch (err) {
-    console.error('[NotificationBell] Failed to mark all as read:', err)
+    // Silent fail
   }
 }
 
@@ -392,6 +392,7 @@ onBeforeUnmount(() => {
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
 }
 

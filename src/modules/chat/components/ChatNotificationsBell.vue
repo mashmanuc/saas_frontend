@@ -128,12 +128,13 @@ function closeDropdown() {
   isOpen.value = false
 }
 
+// ⚠️ Оптимізація: silent polling без loading state
 async function fetchUnreadSummary() {
-  loading.value = true
+  // Не встановлюємо loading при polling щоб уникнути "дьоргання"
   try {
     await chatThreadsStore.fetchUnreadSummary()
-  } finally {
-    loading.value = false
+  } catch (err) {
+    // Silent fail
   }
 }
 
@@ -177,9 +178,9 @@ function formatRelativeTime(isoString) {
 }
 
 function startPolling() {
-  // Smart polling: 3s when visible, 15s when hidden
+  // ⚠️ Оптимізація: 30s when visible, 2min when hidden (було 3s/15s)
   const updateInterval = () => {
-    const interval = document.hidden ? 15000 : 3000
+    const interval = document.hidden ? 120000 : 30000
     if (pollingInterval) {
       clearInterval(pollingInterval)
     }

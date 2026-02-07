@@ -42,18 +42,18 @@
               @blur="handleBlur"
               autocomplete="off"
             />
-            <div v-if="showDropdown && filteredStudents.length" class="dropdown-list">>
+            <div v-if="showDropdown && filteredOrders.length" class="dropdown-list">
               <button
-                v-for="student in filteredStudents"
-                :key="student.id"
+                v-for="order in filteredOrders"
+                :key="order.id"
                 type="button"
                 class="dropdown-item"
                 data-testid="order-option"
-                :data-order-id="student.id"
-                @mousedown.prevent="selectStudent(student)"
+                :data-order-id="order.id"
+                @mousedown.prevent="selectOrder(order)"
               >
                 <div class="student-info">
-                  <span class="student-name">{{ student.name }}</span>
+                  <span class="student-name">{{ order.student.firstName }} {{ order.student.lastName }}</span>
                 </div>
               </button>
             </div>
@@ -314,7 +314,8 @@ import { storeToRefs } from 'pinia'
 import { bookingApi } from '@/modules/booking/api/bookingApi'
 import type { ConflictItem } from '@/modules/booking/api/bookingApi'
 import DateTimePicker from '@/components/ui/DateTimePicker.vue'
-import { studentsApi } from '@/modules/booking/api/studentsApi'
+import { ordersApi } from '@/modules/booking/api/ordersApi'
+import type { Order } from '@/modules/booking/api/ordersApi'
 
 const props = defineProps<{
   visible: boolean
@@ -366,19 +367,19 @@ const fieldErrors = ref<Record<string, string>>({})
 const conflicts = ref<ConflictItem[]>([])
 const showConflictWarning = ref(false)
 
-// F2: Student search state
+// F2: Orders search state (using Order Domain API)
 const searchQuery = ref('')
 const showDropdown = ref(false)
-const students = ref<Array<{id: number, name: string, email?: string}>>([])
-const studentsLoading = ref(false)
+const orders = ref<Order[]>([])
+const ordersLoading = ref(false)
 
-const filteredStudents = computed(() => {
-  if (!searchQuery.value) return students.value
+const filteredOrders = computed(() => {
+  if (!searchQuery.value) return orders.value
   const query = searchQuery.value.toLowerCase()
-  return students.value.filter(s => 
-    s.name.toLowerCase().includes(query) ||
-    s.email?.toLowerCase().includes(query)
-  )
+  return orders.value.filter(o => {
+    const fullName = `${o.student.firstName} ${o.student.lastName}`.toLowerCase()
+    return fullName.includes(query) || o.student.email.toLowerCase().includes(query)
+  })
 })
 
 // F3: Lesson types from dictionaries
@@ -388,13 +389,13 @@ const lessonTypes = computed(() => Object.keys(lessonTypesDict.value))
 
 const availableOrders = computed(() => ordersArray.value)
 
-const selectedStudent = computed(() => {
-  return students.value.find(s => s.id === formData.value.orderId)
+const selectedOrder = computed(() => {
+  return orders.value.find(o => o.id === formData.value.orderId)
 })
 
 const availableDurations = computed(() => {
-  if (!selectedStudent.value) return [30, 60, 90]
-  return [30, 60, 90] // Default durations since students API doesn't return this
+  if (!selectedOrder.value) return [30, 60, 90]
+  return selectedOrder.value.allowedDurations || [30, 60, 90]
 })
 
 const isTimeValid = computed(() => {
@@ -443,20 +444,16 @@ const minDateTime = computed(() => {
   return `${year}-${month}-${day}T${hours}:${minutes}`
 })
 
-async function loadStudents() {
-  studentsLoading.value = true
+async function loadOrders() {
+  ordersLoading.value = true
   try {
-    const response = await studentsApi.listStudents(undefined, 100)
-    students.value = (response.results || []).map(s => ({
-      id: s.student_id,
-      name: [s.first_name, s.last_name].filter(Boolean).join(' ') || s.email || `ID: ${s.student_id}`,
-      email: s.email,
-    }))
+    const response = await ordersApi.listOrders()
+    orders.value = response.results || []
   } catch (error) {
-    console.error('[CreateLessonModal] Failed to load students:', error)
-    students.value = []
+    console.error('[CreateLessonModal] Failed to load orders:', error)
+    orders.value = []
   } finally {
-    studentsLoading.value = false
+    ordersLoading.value = false
   }
 }
 
@@ -465,7 +462,7 @@ watch(
   (visible) => {
     if (visible) {
       resetForm()
-      void loadStudents()
+      void loadOrders()
     }
   },
   { immediate: true },
@@ -538,9 +535,9 @@ function resetForm() {
   showDropdown.value = false
 }
 
-function selectStudent(student: any) {
-  formData.value.orderId = student.id
-  searchQuery.value = student.name
+function selectOrder(order: Order) {
+  formData.value.orderId = order.id
+  searchQuery.value = `${order.student.firstName} ${order.student.lastName}`
   showDropdown.value = false
   fieldErrors.value.orderId = ''
 }
@@ -683,7 +680,7 @@ async function handleSubmit(options: { skipConflictCheck?: boolean } = {}) {
       emit('success', response.seriesId)
       emit('close')
     } else {
-      const studentName = selectedStudent.value?.name || 'Unknown'
+      const studentName = selectedOrder.value ? `${selectedOrder.value.student.firstName} ${selectedOrder.value.student.lastName}` : 'Unknown'
       store.addOptimisticEvent({
         tempId,
         start: isoString,
@@ -691,7 +688,7 @@ async function handleSubmit(options: { skipConflictCheck?: boolean } = {}) {
         status: 'scheduled',
         is_first: false,
         student: {
-          id: formData.value.orderId,
+          id: selectedOrder.value?.student.id || formData.value.orderId,
           name: studentName,
         },
         lesson_link: '',

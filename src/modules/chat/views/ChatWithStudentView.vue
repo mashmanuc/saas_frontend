@@ -112,7 +112,7 @@ async function loadThread() {
     const relationId = relation.id || relation.relation_id
     threadId.value = await chatThreadsStore.ensureThread(studentId.value, relationId)
   } catch (err) {
-    console.error('[ChatWithStudentView] Failed to load thread:', err)
+    // Silent fail
     error.value = err.response?.data?.error?.message || t('chat.errors.threadCreationFailed')
     notifyError(error.value)
   } finally {

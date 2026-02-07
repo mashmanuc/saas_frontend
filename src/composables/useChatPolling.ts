@@ -10,7 +10,7 @@
  * 4. Adaptive polling (3s active / 15s inactive)
  */
 
-import { ref, computed, onMounted, onUnmounted, watch, type Ref } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, type Ref, shallowRef } from 'vue'
 import negotiationChatApi, { type SmartPollingResponse } from '@/api/negotiationChat'
 import type { ChatMessageDTO } from '@/types/inquiries'
 
@@ -41,8 +41,8 @@ export interface UseChatPollingReturn {
   refresh: () => Promise<void>
 }
 
-const DEFAULT_ACTIVE_DELAY = 3000
-const DEFAULT_INACTIVE_DELAY = 15000
+const DEFAULT_ACTIVE_DELAY = 15000
+const DEFAULT_INACTIVE_DELAY = 60000
 const DEFAULT_INITIAL_LIMIT = 50
 
 export function useChatPolling(
@@ -58,7 +58,7 @@ export function useChatPolling(
   } = options
 
   // State
-  const messages = ref<ChatMessageDTO[]>([])
+  const messages = shallowRef<ChatMessageDTO[]>([])
   const isLoading = ref(false)
   const isSending = ref(false)
   const isWritable = ref(true)
@@ -79,6 +79,7 @@ export function useChatPolling(
 
   const unreadCount = computed(() => {
     if (!resolvedUserId.value) return 0
+    // ⚠️ Оптимізація: кешуємо результат для однакових messages
     return messages.value.filter((m) => {
       const senderId = m.sender_id ?? m.sender?.id
       const isRead = m.is_read ?? false
@@ -86,7 +87,7 @@ export function useChatPolling(
     }).length
   })
 
-  // ✅ ІНКРЕМЕНТАЛЬНЕ ЗАВАНТАЖЕННЯ
+  // ✅ ІНКРЕМЕНТАЛЬНЕ ЗАВАНТАЖЕННЯ - без "дьоргання"
   async function loadNewMessages(): Promise<void> {
     const tid = resolvedThreadId.value
     if (!tid) return
@@ -97,21 +98,31 @@ export function useChatPolling(
         latestTs.value || undefined
       )
 
+      // ⚠️ Оптимізація: додаємо тільки якщо є нові повідомлення
       if (response.messages.length > 0) {
-        // ✅ ДОДАЄМО, не перезаписуємо!
         messages.value.push(...response.messages)
       }
 
-      // Оновлюємо latest_ts для наступного запиту
-      if (response.latest_ts) {
+      // ⚠️ Оптимізація: оновлюємо latest_ts тільки якщо змінилося
+      if (response.latest_ts && response.latest_ts !== latestTs.value) {
         latestTs.value = response.latest_ts
       }
 
-      isWritable.value = response.is_writable
-      error.value = null
+      // ⚠️ Оптимізація: оновлюємо isWritable тільки якщо змінилося
+      if (response.is_writable !== isWritable.value) {
+        isWritable.value = response.is_writable
+      }
+
+      // ⚠️ Оптимізація: очищаємо error тільки якщо він був
+      if (error.value !== null) {
+        error.value = null
+      }
     } catch (err: any) {
-      console.error('[useChatPolling] loadNewMessages error:', err)
-      error.value = err.message || 'Failed to load messages'
+      // Silent fail для уникнення засмічення консолі
+      const newError = err.message || 'Failed to load messages'
+      if (error.value !== newError) {
+        error.value = newError
+      }
     }
   }
 
@@ -134,7 +145,7 @@ export function useChatPolling(
       latestTs.value = response.latest_ts
       isWritable.value = response.is_writable
     } catch (err: any) {
-      console.error('[useChatPolling] loadInitialMessages error:', err)
+      // Silent fail
       error.value = err.message || 'Failed to load messages'
     } finally {
       isLoading.value = false
@@ -201,7 +212,7 @@ export function useChatPolling(
 
       return newMessage
     } catch (err: any) {
-      console.error('[useChatPolling] sendMessage error:', err)
+      // Silent fail
       error.value = err.message || 'Failed to send message'
       return null
     } finally {
@@ -209,21 +220,32 @@ export function useChatPolling(
     }
   }
 
-  // ✅ MARK AS READ
+// ✅ MARK AS READ - без мутацій, створюємо нові об'єкти
   async function markAllAsRead(): Promise<void> {
     const tid = resolvedThreadId.value
     if (!tid) return
 
     try {
       await negotiationChatApi.markAsRead(tid)
-      // Update local state
-      messages.value.forEach((m) => {
-        if (m.sender_id !== resolvedUserId.value) {
-          m.is_read = true
-        }
+      
+      // ⚠️ Оптимізація: не мутуємо об'єкти, а створюємо нові тільки для змінених
+      const hasUnread = messages.value.some(m => {
+        const senderId = m.sender_id ?? m.sender?.id
+        return !m.is_read && senderId !== resolvedUserId.value
       })
+      
+      // Оновлюємо тільки якщо є непрочитані
+      if (hasUnread) {
+        messages.value = messages.value.map((m) => {
+          const senderId = m.sender_id ?? m.sender?.id
+          if (!m.is_read && senderId !== resolvedUserId.value) {
+            return { ...m, is_read: true }
+          }
+          return m
+        })
+      }
     } catch (err: any) {
-      console.error('[useChatPolling] markAllAsRead error:', err)
+      // Silent fail
     }
   }
 

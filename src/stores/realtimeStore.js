@@ -133,7 +133,7 @@ export const useRealtimeStore = defineStore('realtime', {
       // Не викликати health check без access token
       const auth = useAuthStore()
       if (!auth.access) {
-        console.log('[realtimeStore] Skipping health check - no access token')
+        // Silent skip
         return
       }
 
@@ -152,7 +152,6 @@ export const useRealtimeStore = defineStore('realtime', {
     async connect() {
       const auth = useAuthStore()
       if (!auth.access) {
-        console.log('[realtimeStore] Cannot connect - no access token')
         return
       }
       

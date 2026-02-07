@@ -140,8 +140,9 @@ export const useChatThreadsStore = defineStore('chatThreads', () => {
       }
     } catch (err) {
       // Не логуємо для 401 - це нормально при logout
+      // Логування вимкнено для уникнення засмічення консолі
       if (err?.response?.status !== 401) {
-        console.error('[chatThreadsStore] Failed to fetch unread summary:', err)
+        // Silent fail
       }
     }
   }
@@ -162,7 +163,7 @@ export const useChatThreadsStore = defineStore('chatThreads', () => {
         0
       )
     } catch (err) {
-      console.error('[chatThreadsStore] Failed to mark thread as read:', err)
+      // Removed console.error
     }
   }
 

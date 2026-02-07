@@ -140,7 +140,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
         unreadCount.value = newCount
       }
     } catch (err) {
-      console.error('[notificationsStore] Failed to poll unread count:', err)
+      // Silent fail
     }
   }
 

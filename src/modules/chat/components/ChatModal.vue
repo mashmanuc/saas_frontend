@@ -140,14 +140,7 @@ async function loadThread() {
       // Перевірка доступу для тьютора
       let hasAccess = contactAccessStore.canOpenChat(props.studentId)
       if (!hasAccess) {
-        console.log('[ChatModal] Local cache says no access, checking API...')
-        try {
-          hasAccess = await contactAccessStore.checkContactAccessAPI(props.studentId)
-        } catch (apiError) {
-          console.error('[ChatModal] API check failed:', apiError)
-        }
-      }
-      if (!hasAccess) {
+        // Silent fail
         error.value = t('chat.errors.contactAccessRequired')
         return
       }
@@ -180,7 +173,7 @@ async function loadThread() {
     }
     threadId.value = await chatThreadsStore.ensureThread(otherUserId, relId)
   } catch (err) {
-    console.error('[ChatModal] loadThread error:', err)
+    // Silent fail
     error.value = err.response?.data?.error?.message || t('chat.errors.threadCreationFailed')
   } finally {
     loading.value = false

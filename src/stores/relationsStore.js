@@ -212,7 +212,7 @@ export const useRelationsStore = defineStore('relations', {
             const availability = await relationsApi.getTutorAcceptAvailability()
             graceToken = availability.grace_token || null
           } catch (err) {
-            console.warn('[relationsStore] Failed to get accept availability, proceeding without grace_token:', err)
+            // Silent fail
           }
           
           await relationsApi.tutorAcceptRelation(id, graceToken)

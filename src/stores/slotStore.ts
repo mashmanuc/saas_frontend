@@ -125,9 +125,10 @@ export const useSlotStore = defineStore('slots', () => {
       }
       
       slots.value = normalizedSlots
-      return slots.value
+      return normalizedSlots
     } catch (err: any) {
-      error.value = err.message || 'Failed to load slots'
+      // Silent fail
+      error.value = err.response?.data?.detail || err.message || 'Failed to fetch slots'
       throw err
     } finally {
       isLoading.value = false
@@ -164,7 +165,7 @@ export const useSlotStore = defineStore('slots', () => {
           updated_at: new Date().toISOString()
         }
         refreshSlot(optimisticSlot)
-        console.info('[SlotStore] Optimistic update applied for slot', slotId)
+        // Silent update
       }
       
       if (options.enableUndo && oldSlot) {
@@ -211,7 +212,7 @@ export const useSlotStore = defineStore('slots', () => {
         const oldSlot = findSlotById(parseInt(slotId))
         if (oldSlot) {
           refreshSlot(oldSlot)
-          console.warn('[SlotStore] Optimistic update reverted due to error')
+          // Silent revert
         }
       }
       
@@ -338,11 +339,11 @@ export const useSlotStore = defineStore('slots', () => {
       try {
         slotDate = new Date(dateStr).toISOString().slice(0, 10)
       } catch (e) {
-        console.error('[SlotStore] Invalid date format:', dateStr)
+        // Silent fail
         return
       }
     } else {
-      console.error('[SlotStore] No date information in updatedSlot:', updatedSlot)
+      // Silent fail
       return
     }
 
@@ -432,7 +433,7 @@ export const useSlotStore = defineStore('slots', () => {
       }
       
       // No background network validation - trust local snapshots
-      console.info('[SlotStore] Undo applied from local snapshot')
+      // Silent operation
     } finally {
       isLoading.value = false
     }
@@ -458,7 +459,7 @@ export const useSlotStore = defineStore('slots', () => {
       }
       
       // No background network validation - trust local snapshots
-      console.info('[SlotStore] Redo applied from local snapshot')
+      // Silent operation
     } finally {
       isLoading.value = false
     }

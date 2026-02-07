@@ -165,7 +165,7 @@ async function handleOpenChat(tutor: AssignedTutor) {
   const relationId = tutor.relation_id
 
   if (!relationId) {
-    console.error('[StudentActiveTutorsSection] No relation_id in tutor data')
+    // Silent fail
     notifyError('Помилка: не вдалося знайти зв\'язок з тьютором')
     return
   }
@@ -180,7 +180,7 @@ async function handleOpenChat(tutor: AssignedTutor) {
     selectedRelationId.value = relationId
     chatModalOpen.value = true
   } catch (error) {
-    console.error('[StudentActiveTutorsSection] Failed to open chat:', error)
+    // Silent fail
     notifyError(t('common.error'))
   }
 }
@@ -307,7 +307,7 @@ async function fetchAndCacheUnreadCounts() {
       }
     })
   } catch (error) {
-    console.warn('[StudentActiveTutorsSection] Failed to fetch unread summary:', error)
+    // Silent fail
   }
 }
 

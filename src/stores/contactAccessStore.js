@@ -41,17 +41,17 @@ export const useContactAccessStore = defineStore('contactAccess', () => {
       throw new Error('studentId is required for unlockContacts cache update')
     }
 
-    console.log('[ContactAccessStore] Unlocking contacts:', { inquiryId, studentId })
+    // Silent operation
     loading.value = true
     try {
       // Production: force_unlock НЕ використовується (тільки для staff через admin panel)
       const response = await contactsApi.unlockContacts(inquiryId, false)
-      console.log('[ContactAccessStore] Unlock response:', response)
+      // Response received
       
       const contactsPayload = response?.contacts || {}
       const accessLevel = response?.access_level || 'CONTACTS_SHARED'
 
-      console.log('[ContactAccessStore] Caching contacts:', { studentId, contactsPayload, accessLevel })
+      // Caching contacts
       contactsCache.value.set(studentId, {
         contacts: contactsPayload,
         access_level: accessLevel,
@@ -74,15 +74,13 @@ export const useContactAccessStore = defineStore('contactAccess', () => {
           const relationsStore = useRelationsStore()
           await relationsStore.fetchTutorRelations()
         } catch (refetchError) {
-          console.warn('[ContactAccessStore] Failed to refetch relations:', refetchError)
+          // Silent fail
         }
       }
 
       return response
     } catch (error) {
-      console.error('[ContactAccessStore] Unlock error:', error)
-      console.error('[ContactAccessStore] Error response:', error?.response)
-      console.error('[ContactAccessStore] Error data:', error?.response?.data)
+      // Silent fail
       notifyError(
         error?.response?.data?.detail || error?.response?.data?.message || 'Помилка при відкритті контактів'
       )
@@ -143,7 +141,7 @@ export const useContactAccessStore = defineStore('contactAccess', () => {
     try {
       const response = await contactsApi.getContactsByRelation(relationId)
       
-      console.log('[ContactAccessStore] Fetched contacts by relation:', response)
+      // Silent operation
       
       const studentId = response.student_id
       contactsCache.value.set(studentId, {
@@ -155,10 +153,10 @@ export const useContactAccessStore = defineStore('contactAccess', () => {
 
       return response
     } catch (error) {
-      console.error('[ContactAccessStore] Failed to fetch contacts by relation:', error)
+      // Silent fail
       if (error?.response?.status === 403 || error?.response?.status === 404) {
         // Контакти не розблоковані або relation не знайдено
-        console.warn('[ContactAccessStore] Contacts not unlocked or relation not found')
+        // Silent fail
       }
       throw error
     } finally {
@@ -189,7 +187,7 @@ export const useContactAccessStore = defineStore('contactAccess', () => {
 
       return response.has_access
     } catch (error) {
-      console.error('[ContactAccessStore] Failed to check contact access:', error)
+      // Silent fail
       return false
     }
   }

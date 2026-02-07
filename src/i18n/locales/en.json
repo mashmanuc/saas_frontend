@@ -1910,6 +1910,7 @@
       "retry": "Retry"
     },
     "clearHistory": "Clear history",
+    "openChatPage": "Open chat page",
     "editMessage": "Edit message",
     "deleteMessage": "Delete message",
     "editMessagePlaceholder": "Edit your message...",
@@ -4416,6 +4417,8 @@
         "lastActive": "Остання активність",
         "loading": "Завантажуємо сесії…",
         "revoke": "Вийти",
+        "show": "Показати активні сесії",
+        "hide": "Сховати активні сесії",
         "subtitle": "Перевірте пристрої, з яких виконано вхід.",
         "success": {
           "revoked": "Сесію завершено."
