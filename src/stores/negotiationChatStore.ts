@@ -159,27 +159,37 @@ export const useNegotiationChatStore = defineStore('negotiationChat', () => {
     if (!messagesByThread.value[threadId]) {
       messagesByThread.value[threadId] = []
     }
-    messagesByThread.value[threadId].push(optimisticMessage)
+    // Create new array for reactivity instead of mutation
+    messagesByThread.value[threadId] = [...messagesByThread.value[threadId], optimisticMessage]
     
     try {
       const message = await apiSendMessage(threadId, { body, clientMessageId })
       
-      // Замінити optimistic на реальне
-      const index = messagesByThread.value[threadId].findIndex(
+      // Замінити optimistic на реальне через новий масив (реактивність)
+      const currentMessages = messagesByThread.value[threadId] || []
+      const index = currentMessages.findIndex(
         m => m.clientMessageId === clientMessageId
       )
       if (index !== -1) {
-        messagesByThread.value[threadId][index] = message
+        messagesByThread.value[threadId] = [
+          ...currentMessages.slice(0, index),
+          message,
+          ...currentMessages.slice(index + 1)
+        ]
       }
       
       return message
     } catch (err) {
-      // Видалити optimistic при помилці
-      const index = messagesByThread.value[threadId].findIndex(
+      // Видалити optimistic при помилці через новий масив (реактивність)
+      const currentMessages = messagesByThread.value[threadId] || []
+      const index = currentMessages.findIndex(
         m => m.clientMessageId === clientMessageId
       )
       if (index !== -1) {
-        messagesByThread.value[threadId].splice(index, 1)
+        messagesByThread.value[threadId] = [
+          ...currentMessages.slice(0, index),
+          ...currentMessages.slice(index + 1)
+        ]
       }
       
       rethrowAsDomainError(err)

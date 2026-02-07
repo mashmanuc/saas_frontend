@@ -113,13 +113,28 @@ export const useRealtimeStore = defineStore('realtime', {
     bindAuthWatcher(auth) {
       if (this.authUnsubscribe) return
 
+      // Guard: track last access to debounce rapid changes
+      let lastAccess = auth.access
+      let connectDebounceTimer = null
+
       this.authUnsubscribe = auth.$subscribe(
         (_mutation, state) => {
-          if (state.access) {
-            this.connect()
-          } else {
-            this.disconnect()
+          const hasAccess = Boolean(state.access)
+          
+          // Debounce rapid auth changes
+          if (connectDebounceTimer) {
+            clearTimeout(connectDebounceTimer)
           }
+          
+          connectDebounceTimer = setTimeout(() => {
+            // Only act if access actually changed
+            if (hasAccess && !lastAccess) {
+              this.connect()
+            } else if (!hasAccess && lastAccess) {
+              this.disconnect()
+            }
+            lastAccess = state.access
+          }, 100)
         },
         { detached: true }
       )

@@ -98,9 +98,10 @@ export function useChatPolling(
         latestTs.value || undefined
       )
 
-      // ⚠️ Оптимізація: додаємо тільки якщо є нові повідомлення
+      // ✅ Оптимізація: додаємо тільки якщо є нові повідомлення
+      // Використовуємо повне присвоєння для shallowRef реактивності
       if (response.messages.length > 0) {
-        messages.value.push(...response.messages)
+        messages.value = [...messages.value, ...response.messages]
       }
 
       // ⚠️ Оптимізація: оновлюємо latest_ts тільки якщо змінилося
@@ -202,8 +203,8 @@ export function useChatPolling(
         clientMessageId
       })
 
-      // ✅ Optimistic update - додаємо одразу
-      messages.value.push(newMessage)
+      // ✅ Optimistic update - додаємо одразу через повне присвоєння
+      messages.value = [...messages.value, newMessage]
 
       // Оновлюємо latest_ts
       if (newMessage.created_at) {

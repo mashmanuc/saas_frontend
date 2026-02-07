@@ -90,10 +90,17 @@ export const useContactAccessStore = defineStore('contactAccess', () => {
     }
   }
 
-  async function revokeContacts(studentId, reason = '') {
+  async function revokeContacts({ inquiryId, studentId }, reason = '') {
+    if (!inquiryId) {
+      throw new Error('inquiryId is required for revokeContacts')
+    }
+    if (!studentId) {
+      throw new Error('studentId is required for revokeContacts cache update')
+    }
+    
     loading.value = true
     try {
-      await contactsApi.revokeContacts(studentId, reason)
+      await contactsApi.revokeContacts(inquiryId, reason)
 
       // Видаляємо з кешу
       contactsCache.value.delete(studentId)

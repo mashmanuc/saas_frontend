@@ -4,9 +4,16 @@
  * Phase 1: Student Contact Data
  * Docs: docs/FIRST_CONTACT/TZ_STUDENT_CONTACT_DATA_FIX_2026-02-04.md
  */
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ref } from 'vue'
 import { usePhoneValidation } from '../usePhoneValidation'
+
+// Mock vue-i18n to avoid 'setup function' error
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({
+    t: (key: string) => key === 'users.profile.phoneHint' ? 'Enter phone in +380... format' : key
+  })
+}))
 
 describe('usePhoneValidation', () => {
   describe('isValidFormat', () => {

@@ -43,6 +43,9 @@ export const useChatStore = defineStore('chat', {
     statusUnsubscribe: null,
     currentChannel: null,
     syncing: false,
+    // Batch messages for efficient updates (prevent excessive array creation)
+    pendingMessages: [],
+    batchTimer: null,
   }),
 
   getters: {
@@ -160,14 +163,40 @@ export const useChatStore = defineStore('chat', {
     upsertMessage(message) {
       if (!message) return
       const normalized = normalizeMessage(message)
-      const index = this.messages.findIndex(
+      const existingIndex = this.messages.findIndex(
         (item) => item.id === normalized.id || (normalized.clientId && item.clientId === normalized.clientId),
       )
-      if (index === -1) {
-        this.messages = [...this.messages, normalized]
-      } else {
-        this.messages = this.messages.map((item, idx) => (idx === index ? { ...item, ...normalized } : item))
-      }
+      // Add to pending batch instead of immediate update
+      this.pendingMessages.push({ normalized, existingIndex })
+      this.flushMessageBatch()
+    },
+
+    flushMessageBatch() {
+      if (this.batchTimer) return
+      this.batchTimer = setTimeout(() => {
+        if (this.pendingMessages.length === 0) {
+          this.batchTimer = null
+          return
+        }
+        // Apply all pending updates in single array operation
+        let newMessages = [...this.messages]
+        this.pendingMessages.forEach(({ normalized, existingIndex }) => {
+          if (existingIndex === -1) {
+            // Check if already added by clientId in this batch
+            const alreadyInBatch = newMessages.findIndex(
+              (m) => (normalized.id && m.id === normalized.id) || (normalized.clientId && m.clientId === normalized.clientId)
+            )
+            if (alreadyInBatch === -1) {
+              newMessages.push(normalized)
+            }
+          } else {
+            newMessages = newMessages.map((item, idx) => (idx === existingIndex ? { ...item, ...normalized } : item))
+          }
+        })
+        this.messages = newMessages
+        this.pendingMessages = []
+        this.batchTimer = null
+      }, 16) // Single frame delay for batching
     },
 
     subscribeToRealtime() {
@@ -216,10 +245,11 @@ export const useChatStore = defineStore('chat', {
     },
 
     async syncAfterReconnect() {
-      if (!this.activeLessonId) return
+      if (!this.activeLessonId || this.syncing) return
       this.syncing = true
       try {
-        await this.fetchHistory({ replace: true })
+        // Incremental sync: fetch only new messages since last cursor
+        await this.fetchHistory({ replace: false })
       } finally {
         this.syncing = false
       }
@@ -309,6 +339,11 @@ export const useChatStore = defineStore('chat', {
       this.activeLessonId = null
       this.typingUsers = {}
       this.readPointers = {}
+      this.pendingMessages = []
+      if (this.batchTimer) {
+        clearTimeout(this.batchTimer)
+        this.batchTimer = null
+      }
       if (this.subscriptionCleanup) {
         this.subscriptionCleanup()
         this.subscriptionCleanup = null

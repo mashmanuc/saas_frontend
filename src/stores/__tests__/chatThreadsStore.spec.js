@@ -20,13 +20,11 @@ describe('chatThreadsStore', () => {
       const mockThreadId = '550e8400-e29b-41d4-a716-446655440000'
       
       apiClient.post.mockResolvedValueOnce({
-        data: {
-          thread_id: mockThreadId,
-          kind: 'contact',
-          relation_id: 42,
-          student_id: 123,
-          is_writable: true
-        }
+        thread_id: mockThreadId,
+        kind: 'contact',
+        relation_id: 42,
+        student_id: 123,
+        is_writable: true
       })
 
       const threadId = await store.ensureThread(123, 42)
@@ -54,7 +52,7 @@ describe('chatThreadsStore', () => {
       })
 
       // Mock verification call
-      apiClient.get.mockResolvedValueOnce({ data: { messages: [] } })
+      apiClient.get.mockResolvedValueOnce({ messages: [] })
 
       const threadId = await store.ensureThread(123, 42)
 
@@ -78,13 +76,11 @@ describe('chatThreadsStore', () => {
       // Mock verification failure and new thread creation
       apiClient.get.mockRejectedValueOnce(new Error('Thread not found'))
       apiClient.post.mockResolvedValueOnce({
-        data: {
-          thread_id: newThreadId,
-          kind: 'contact',
-          relation_id: 42,
-          student_id: 123,
-          is_writable: true
-        }
+        thread_id: newThreadId,
+        kind: 'contact',
+        relation_id: 42,
+        student_id: 123,
+        is_writable: true
       })
 
       const threadId = await store.ensureThread(123, 42)
@@ -129,7 +125,7 @@ describe('chatThreadsStore', () => {
         total: 3
       }
 
-      apiClient.get.mockResolvedValueOnce({ data: mockSummary })
+      apiClient.get.mockResolvedValueOnce(mockSummary)
 
       await store.fetchUnreadSummary()
 
@@ -145,12 +141,7 @@ describe('chatThreadsStore', () => {
     it('should handle empty unread summary', async () => {
       const store = useChatThreadsStore()
       
-      apiClient.get.mockResolvedValueOnce({
-        data: {
-          threads: [],
-          total: 0
-        }
-      })
+      apiClient.get.mockResolvedValueOnce({ threads: [], total: 0 })
 
       await store.fetchUnreadSummary()
 
@@ -188,7 +179,7 @@ describe('chatThreadsStore', () => {
         total: 5
       }
 
-      apiClient.post.mockResolvedValueOnce({ data: {} })
+      apiClient.post.mockResolvedValueOnce({})
 
       await store.markThreadRead(threadId)
 

@@ -34,10 +34,10 @@ describe('ContactAccessStore', () => {
       contactsApi.getContacts.mockResolvedValue(mockContactsResponse)
 
       const store = useContactAccessStore()
-      await store.unlockContacts(123)
+      await store.unlockContacts({ inquiryId: 456, studentId: 123 })
 
-      expect(contactsApi.unlockContacts).toHaveBeenCalledWith(123)
-      expect(contactsApi.getContacts).toHaveBeenCalledWith(123)
+      expect(contactsApi.unlockContacts).toHaveBeenCalledWith(456, false)
+      expect(contactsApi.getContacts).not.toHaveBeenCalled()
       expect(store.hasContactAccess(123)).toBe(true)
       expect(store.getStudentContacts(123)).toEqual(mockContactsResponse.contacts)
       expect(store.getAccessLevel(123)).toBe('CONTACTS_SHARED')
@@ -54,7 +54,7 @@ describe('ContactAccessStore', () => {
       contactsApi.unlockContacts.mockRejectedValue(error)
 
       const store = useContactAccessStore()
-      await expect(store.unlockContacts(123)).rejects.toThrow()
+      await expect(store.unlockContacts({ inquiryId: 456, studentId: 123 })).rejects.toThrow()
       expect(store.hasContactAccess(123)).toBe(false)
     })
   })
@@ -81,13 +81,13 @@ describe('ContactAccessStore', () => {
       const store = useContactAccessStore()
       
       // First unlock
-      await store.unlockContacts(123)
+      await store.unlockContacts({ inquiryId: 456, studentId: 123 })
       expect(store.hasContactAccess(123)).toBe(true)
 
       // Then revoke
-      await store.revokeContacts(123, 'test reason')
+      await store.revokeContacts({ inquiryId: 456, studentId: 123 }, 'test reason')
       
-      expect(contactsApi.revokeContacts).toHaveBeenCalledWith(123, 'test reason')
+      expect(contactsApi.revokeContacts).toHaveBeenCalledWith(456, 'test reason')
       expect(store.hasContactAccess(123)).toBe(false)
       expect(store.getStudentContacts(123)).toBeNull()
     })

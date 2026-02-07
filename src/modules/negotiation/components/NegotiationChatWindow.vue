@@ -108,7 +108,7 @@ const messagesContainerRef = ref<HTMLElement | null>(null)
 const inputRef = ref<InstanceType<typeof NegotiationChatInput> | null>(null)
 const isAtBottom = ref(true)
 
-// ✅ Auto-scroll тільки якщо user внизу
+// ✅ Auto-scroll тільки якщо user внизу (без анімації для уникнення "дьоргання")
 function scrollToBottomIfNeeded(): void {
   if (!isAtBottom.value) return
 
@@ -117,7 +117,7 @@ function scrollToBottomIfNeeded(): void {
     if (container) {
       container.scrollTo({
         top: container.scrollHeight,
-        behavior: 'smooth'
+        behavior: 'auto' // ⚠️ Змінено з 'smooth' на 'auto'
       })
     }
   })
@@ -185,12 +185,8 @@ onMounted(() => {
 
 .chat-messages {
   padding: 1.5rem;
-  background-image: radial-gradient(
-    circle at 1px 1px,
-    rgba(7, 15, 30, 0.04) 1px,
-    transparent 0
-  );
-  background-size: 28px 28px;
+  /* ⚠️ Видалено radial-gradient background для уникнення перерахунку */
+  background-color: var(--surface-soft, #f8fafc);
 }
 
 /* ⚠️ CSS transitions видалено для уникнення "дьоргання" */

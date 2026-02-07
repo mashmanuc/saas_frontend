@@ -1,16 +1,22 @@
 <template>
-  <section class="rounded-3xl border border-default bg-white shadow-theme flex flex-col h-full">
-    <header class="border-b border-border-subtle px-6 py-4 flex items-center justify-between">
-      <div>
-        <p class="text-xs uppercase tracking-wide text-muted">{{ $t('chat.header.subtitle') }}</p>
-        <h2 class="text-lg font-semibold text-body">{{ $t('chat.header.title') }}</h2>
-      </div>
-      <div class="text-xs text-muted flex flex-col items-end gap-1">
-        <span v-if="chatStatus === 'offline'" class="text-danger">{{ $t('chat.status.offline') }}</span>
-        <span v-else>{{ $t('chat.status.connected') }}</span>
-        <span v-if="typingDisplay" class="text-accent font-medium">{{ typingDisplay }}</span>
-      </div>
-    </header>
+  <ChatErrorBoundary @fallback="handleTransportFallback">
+    <section class="rounded-3xl border border-default bg-white shadow-theme flex flex-col h-full">
+      <header class="border-b border-border-subtle px-6 py-4 flex items-center justify-between">
+        <div>
+          <p class="text-xs uppercase tracking-wide text-muted">{{ $t('chat.header.subtitle') }}</p>
+          <h2 class="text-lg font-semibold text-body">{{ $t('chat.header.title') }}</h2>
+        </div>
+        <div class="text-xs text-muted flex flex-col items-end gap-1">
+          <ConnectionIndicator
+            :status="connectionStatus"
+            :transport="transport"
+            :queued-count="queuedCount"
+            :is-connecting="isReconnecting"
+            @retry="handleConnectionRetry"
+          />
+          <span v-if="typingDisplay" class="text-accent font-medium">{{ typingDisplay }}</span>
+        </div>
+      </header>
 
     <div class="flex-1 overflow-hidden flex flex-col">
       <div class="flex items-center justify-center border-b border-border-subtle bg-surface-soft py-2 text-xs">
@@ -80,6 +86,7 @@
       </div>
     </footer>
   </section>
+  </ChatErrorBoundary>
 </template>
 
 <script setup>
@@ -88,6 +95,11 @@ import { useI18n } from 'vue-i18n'
 import { useChatStore } from '../../../stores/chatStore'
 import { useAuthStore } from '../../auth/store/authStore'
 import ChatMessage from './ChatMessage.vue'
+import ChatErrorBoundary from './ChatErrorBoundary.vue'
+import ConnectionIndicator from './ConnectionIndicator.vue'
+import { useMessageRecovery } from '../utils/messageRecoveryQueue'
+import { useChatCircuitBreaker } from '../utils/chatCircuitBreaker'
+import { useChatTransport } from '../composables/useChatTransport'
 import { useRealtimeStore } from '../../../stores/realtimeStore'
 
 const props = defineProps({
@@ -102,15 +114,28 @@ const authStore = useAuthStore()
 const realtimeStore = useRealtimeStore()
 const { t } = useI18n()
 
+// Stability wrappers
+const { enqueue, getStatus: getRecoveryStatus, onChange: onRecoveryChange } = useMessageRecovery()
+const { execute: withCircuitBreaker } = useChatCircuitBreaker()
+const { 
+  transport, 
+  connectionStatus, 
+  messages, 
+  sendMessage: transportSend,
+  forcePolling 
+} = useChatTransport(computed(() => props.lessonId))
+
 const listRef = ref(null)
 const draft = ref('')
 const editingMessage = ref(null)
 const lastTypingSent = ref(0)
 
 const currentUserId = computed(() => authStore.user?.id)
-const sortedMessages = computed(() => chatStore.sortedMessages)
+const sortedMessages = computed(() => transport.value === 'websocket' ? chatStore.sortedMessages : messages.value)
 const hasMore = computed(() => chatStore.hasMore)
 const readPointers = computed(() => chatStore.readPointers)
+const queuedCount = ref(0)
+const isReconnecting = ref(false)
 const typingDisplay = computed(() => {
   const typing = chatStore.typingList.filter((entry) => String(entry.id) !== String(currentUserId.value))
   if (!typing.length) return ''
@@ -142,13 +167,28 @@ watch(
   { immediate: true },
 )
 
+const pendingScroll = ref(false)
+const pendingMarkRead = ref(false)
+
 watch(
   () => sortedMessages.value.length,
   async () => {
-    await nextTick()
-    autoScroll()
-    markLastAsRead()
+    // Batch multiple rapid updates into single scroll/mark cycle
+    if (!pendingScroll.value) {
+      pendingScroll.value = true
+      await nextTick()
+      autoScroll()
+      pendingScroll.value = false
+    }
+    // Defer markAsRead to avoid WebSocket storm
+    if (!pendingMarkRead.value) {
+      pendingMarkRead.value = true
+      await nextTick()
+      markLastAsRead()
+      pendingMarkRead.value = false
+    }
   },
+  { flush: 'post' },
 )
 
 function autoScroll() {
@@ -179,14 +219,48 @@ function handleTyping() {
 
 async function handleSend() {
   if (!draft.value.trim()) return
+  
+  const text = draft.value.trim()
+  draft.value = ''
+  
   if (isEditing.value) {
-    await chatStore.editMessage(editingMessage.value.id, draft.value)
-    editingMessage.value = null
+    try {
+      await withCircuitBreaker(
+        () => chatStore.editMessage(editingMessage.value.id, text),
+        { action: 'editMessage' }
+      )
+      editingMessage.value = null
+    } catch (error) {
+      // Circuit breaker or API error - restore draft
+      draft.value = text
+      console.error('[ChatPanel] Edit failed:', error)
+    }
   } else {
     if (sendLocked.value || sending.value) return
-    await chatStore.sendMessage({ text: draft.value })
+    
+    try {
+      // Try transport first, fallback to recovery queue
+      if (transport.value === 'websocket' && chatStore.chatStatus === 'offline') {
+        // Queue for later if offline
+        const msgId = enqueue({ text, lessonId: props.lessonId }, async (msg) => {
+          await chatStore.sendMessage({ text: msg.text })
+        })
+        console.log('[ChatPanel] Message queued for recovery:', msgId)
+      } else {
+        await withCircuitBreaker(
+          () => transportSend({ text }),
+          { action: 'sendMessage' }
+        )
+      }
+    } catch (error) {
+      // Failed even with circuit breaker - queue for retry
+      draft.value = text
+      enqueue({ text, lessonId: props.lessonId }, async (msg) => {
+        await chatStore.sendMessage({ text: msg.text })
+      })
+      console.error('[ChatPanel] Send failed, queued for retry:', error)
+    }
   }
-  draft.value = ''
 }
 
 function startEdit(message) {
@@ -206,11 +280,29 @@ function requestDelete(message) {
 }
 
 function handleRetry(message) {
-  chatStore.retryMessage(message?.id || message?.clientId)
+  withCircuitBreaker(
+    () => chatStore.retryMessage(message?.id || message?.clientId),
+    { action: 'retryMessage' }
+  ).catch(error => {
+    console.error('[ChatPanel] Retry failed:', error)
+  })
 }
 
-onBeforeUnmount(() => {
-  chatStore.dispose()
+function handleTransportFallback() {
+  forcePolling()
+}
+
+function handleConnectionRetry() {
+  isReconnecting.value = true
+  chatStore.subscribeToRealtime()
+  setTimeout(() => {
+    isReconnecting.value = false
+  }, 3000)
+}
+
+// Update queued count from recovery queue
+onRecoveryChange((status) => {
+  queuedCount.value = status.pending + status.sending
 })
 </script>
 

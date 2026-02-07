@@ -99,7 +99,7 @@ const otherUserName = ref('Співрозмовник')
 const threadId = computed(() => route.params.threadId as string)
 const currentUserId = computed(() => authStore.user?.id)
 
-// Load thread info
+// Load thread info (тільки метадані, без повідомлень!)
 async function loadThread(): Promise<void> {
   if (!threadId.value) {
     error.value = 'Thread ID не вказано'
@@ -111,18 +111,18 @@ async function loadThread(): Promise<void> {
   error.value = null
 
   try {
-    // Fetch thread info via messages endpoint (it returns thread metadata)
+    // ⚠️ Оптимізація: тільки перевіряємо доступ до thread, НЕ зберігаємо повідомлення!
+    // Повідомлення завантажує NegotiationChatWindow через useChatPolling
     const response = await negotiationChatApi.fetchMessages(threadId.value, undefined, 1)
 
-    // For now, create minimal thread object from response
     thread.value = {
       thread_id: threadId.value,
-      kind: 'negotiation', // Will be enhanced when we have thread details endpoint
+      kind: 'negotiation',
       is_writable: response.is_writable
     }
 
-    // Try to get other user name from first message
-    if (response.messages.length > 0) {
+    // ⚠️ Оптимізація: встановлюємо ім'я тільки якщо ще не встановлено (стабільність)
+    if (otherUserName.value === 'Співрозмовник' && response.messages.length > 0) {
       const firstMsg = response.messages[0]
       const senderName = firstMsg.sender_name || firstMsg.sender?.firstName
       if (senderName && firstMsg.sender_id !== currentUserId.value) {
@@ -130,7 +130,6 @@ async function loadThread(): Promise<void> {
       }
     }
   } catch (err: any) {
-    console.error('[ChatView] loadThread error:', err)
     error.value = err.message || 'Не вдалося завантажити чат'
     thread.value = null
   } finally {
