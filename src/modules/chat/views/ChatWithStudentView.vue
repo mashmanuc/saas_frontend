@@ -85,6 +85,11 @@ async function loadThread() {
   error.value = null
 
   try {
+    // Ensure tutor relations are loaded
+    if (!relationsStore.tutorRelations?.length) {
+      await relationsStore.fetchTutorRelations()
+    }
+
     // Get relation for this student
     const relations = relationsStore.tutorRelations || []
     const relation = relations.find(r => r.student?.id === studentId.value)

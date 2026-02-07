@@ -2,20 +2,20 @@
   "locales": {
     "en": {
       "status": "ok",
-      "totalKeys": 3546,
+      "totalKeys": 3555,
       "missing": [],
       "extra": [],
       "empty": []
     }
   },
   "summary": {
-    "totalKeys": 3546,
+    "totalKeys": 3555,
     "locales": 2,
     "errors": 0,
     "warnings": 1
   },
   "usage": {
-    "scannedFiles": 1029,
+    "scannedFiles": 1034,
     "detectedKeys": 2885,
     "unusedKeys": [
       "auth.mfa.status.errors.regenerateFailed",
@@ -582,6 +582,11 @@
       "phone_verification.success_title",
       "phone_verification.title",
       "phone_verification.verify_code",
+      "profile.account.chooseAvatar",
+      "profile.account.deleteAvatar",
+      "profile.account.deleteAvatarMessage",
+      "profile.account.deleteAvatarTitle",
+      "profile.account.uploadAvatar",
       "profile.security.mfa.cancel",
       "profile.security.mfa.confirm",
       "profile.security.mfa.errors.confirmFailed",
@@ -640,6 +645,7 @@
       "staff.tutorActivity.states.exempted",
       "staff.tutorActivity.states.inactive",
       "staff.tutorActivity.success",
+      "studentDashboard.actions.messageTutor",
       "tutor.lessonLinks.platformGenerated",
       "tutor.lessonLinks.platformInfo",
       "tutor.lessonLinks.providers.platform",
@@ -674,9 +680,12 @@
       "tutorSearch.lessonLinks.validation.invalidProtocol",
       "tutorSearch.lessonLinks.validation.invalidUrl",
       "tutorSearch.lessonLinks.validation.required",
+      "users.settings.tabs.contacts",
       "users.settings.tabs.general",
       "users.settings.tabs.notifications",
       "users.settings.tabs.privacy",
+      "users.settings.tabs.profile",
+      "users.settings.tabs.security",
       "warnings.accessDenied.message",
       "warnings.accessDenied.title"
     ],

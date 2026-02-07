@@ -1,9 +1,10 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Button, FormField, Modal } from '@/assets2/ui-contract'
+import { Button, FormField } from '@/assets2/ui-contract'
 import { useMeStore } from '../services/meStore'
 import { useI18n } from 'vue-i18n'
+import AvatarUpload from '../../profile/components/AvatarUpload.vue'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -16,14 +17,9 @@ const form = ref({
   timezone: '',
 })
 
-const avatarFile = ref(null)
-const avatarPreview = ref(null)
-const showDeleteAvatarModal = ref(false)
-
 const loading = computed(() => meStore.loading)
 const saving = computed(() => meStore.saving)
-const user = computed(() => meStore.user)
-const avatarUrl = computed(() => meStore.avatarUrl)
+const isStudent = computed(() => meStore.user?.role === 'student')
 
 onMounted(async () => {
   await meStore.load()
@@ -34,38 +30,6 @@ onMounted(async () => {
     form.value.timezone = meStore.user.timezone || 'UTC'
   }
 })
-
-const handleAvatarChange = (event) => {
-  const file = event.target.files?.[0]
-  if (file) {
-    avatarFile.value = file
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      avatarPreview.value = e.target.result
-    }
-    reader.readAsDataURL(file)
-  }
-}
-
-const handleUploadAvatar = async () => {
-  if (!avatarFile.value) return
-  try {
-    await meStore.uploadAvatar(avatarFile.value)
-    avatarFile.value = null
-    avatarPreview.value = null
-  } catch (error) {
-    console.error('Avatar upload failed:', error)
-  }
-}
-
-const handleDeleteAvatar = async () => {
-  try {
-    await meStore.deleteAvatar()
-    showDeleteAvatarModal.value = false
-  } catch (error) {
-    console.error('Avatar delete failed:', error)
-  }
-}
 
 const handleSave = async () => {
   try {
@@ -81,6 +45,14 @@ const handleSave = async () => {
 
 const handleBack = () => {
   router.push('/profile-v2/overview')
+}
+
+const handleAvatarUpload = async (file) => {
+  await meStore.uploadAvatar(file)
+}
+
+const handleAvatarDelete = async () => {
+  await meStore.deleteAvatar()
 }
 </script>
 
@@ -98,52 +70,17 @@ const handleBack = () => {
     </div>
 
     <div v-else class="account-content">
-      <section class="account-section">
+      <!-- Avatar section: only for students -->
+      <section v-if="isStudent" class="account-section">
         <h2>{{ t('profile.account.avatar') }}</h2>
-        
         <div class="avatar-section">
-          <div class="avatar-display">
-            <img
-              v-if="avatarPreview || avatarUrl"
-              :src="avatarPreview || avatarUrl"
-              :alt="meStore.fullName"
-              class="avatar"
-            />
-            <div v-else class="avatar-placeholder">
-              {{ meStore.fullName.charAt(0).toUpperCase() }}
-            </div>
-          </div>
-          
-          <div class="avatar-actions">
-            <input
-              id="avatar-upload"
-              type="file"
-              accept="image/*"
-              class="avatar-input"
-              @change="handleAvatarChange"
-            />
-            <label for="avatar-upload">
-              <Button variant="outline" as="span">
-                {{ t('profile.account.chooseAvatar') }}
-              </Button>
-            </label>
-            
-            <Button
-              v-if="avatarFile"
-              variant="primary"
-              @click="handleUploadAvatar"
-            >
-              {{ t('profile.account.uploadAvatar') }}
-            </Button>
-            
-            <Button
-              v-if="avatarUrl && !avatarFile"
-              variant="danger"
-              @click="showDeleteAvatarModal = true"
-            >
-              {{ t('profile.account.deleteAvatar') }}
-            </Button>
-          </div>
+          <AvatarUpload
+            :image-url="meStore.avatarUrl"
+            :fallback-name="meStore.fullName"
+            :disabled="saving"
+            @upload="handleAvatarUpload"
+            @delete="handleAvatarDelete"
+          />
         </div>
       </section>
 
@@ -202,30 +139,6 @@ const handleBack = () => {
         </Button>
       </section>
     </div>
-
-    <Modal
-      v-model="showDeleteAvatarModal"
-      :title="t('profile.account.deleteAvatarTitle')"
-      type="confirm"
-      size="sm"
-    >
-      <p>{{ t('profile.account.deleteAvatarMessage') }}</p>
-      
-      <template #footer>
-        <Button
-          variant="secondary"
-          @click="showDeleteAvatarModal = false"
-        >
-          {{ t('common.cancel') }}
-        </Button>
-        <Button
-          variant="danger"
-          @click="handleDeleteAvatar"
-        >
-          {{ t('common.delete') }}
-        </Button>
-      </template>
-    </Modal>
   </div>
 </template>
 
@@ -345,15 +258,6 @@ const handleBack = () => {
     flex-direction: column;
     align-items: flex-start;
     gap: var(--ui-space-md, 0.75rem);
-  }
-  
-  .avatar-section {
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .avatar-actions {
-    width: 100%;
   }
 }
 </style>

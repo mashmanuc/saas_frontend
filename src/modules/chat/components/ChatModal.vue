@@ -109,7 +109,10 @@ async function loadThread() {
   const isTutorMode = Boolean(props.studentId)
   
   if (!isStudentMode && !isTutorMode) {
-    error.value = t('chat.errors.relationNotFound')
+    const isStudent = !props.studentId && props.tutorId
+    error.value = isStudent 
+      ? t('chat.errors.tutorRelationNotFound') 
+      : t('chat.errors.studentRelationNotFound')
     return
   }
 
@@ -164,7 +167,10 @@ async function loadThread() {
     }
 
     if (!relation && !relId) {
-      error.value = t('chat.errors.relationNotFound')
+      const isStudent = !props.studentId && props.tutorId
+      error.value = isStudent 
+        ? t('chat.errors.tutorRelationNotFound') 
+        : t('chat.errors.studentRelationNotFound')
       return
     }
 

@@ -42,21 +42,18 @@
               @blur="handleBlur"
               autocomplete="off"
             />
-            <div v-if="showDropdown && filteredOrders.length" class="dropdown-list">
+            <div v-if="showDropdown && filteredStudents.length" class="dropdown-list">>
               <button
-                v-for="order in filteredOrders"
-                :key="order.id"
+                v-for="student in filteredStudents"
+                :key="student.id"
                 type="button"
                 class="dropdown-item"
                 data-testid="order-option"
-                :data-order-id="order.id"
-                @mousedown.prevent="selectStudent(order)"
+                :data-order-id="student.id"
+                @mousedown.prevent="selectStudent(student)"
               >
                 <div class="student-info">
-                  <span class="student-name">{{ order.clientName }}</span>
-                  <span v-if="order.lessonsBalance !== undefined" class="balance-badge">
-                    {{ order.lessonsBalance }} {{ $t('calendar.createLesson.lessonsLeft') }}
-                  </span>
+                  <span class="student-name">{{ student.name }}</span>
                 </div>
               </button>
             </div>
@@ -317,6 +314,7 @@ import { storeToRefs } from 'pinia'
 import { bookingApi } from '@/modules/booking/api/bookingApi'
 import type { ConflictItem } from '@/modules/booking/api/bookingApi'
 import DateTimePicker from '@/components/ui/DateTimePicker.vue'
+import { studentsApi } from '@/modules/booking/api/studentsApi'
 
 const props = defineProps<{
   visible: boolean
@@ -371,13 +369,15 @@ const showConflictWarning = ref(false)
 // F2: Student search state
 const searchQuery = ref('')
 const showDropdown = ref(false)
-const filteredOrders = computed(() => {
-  if (!searchQuery.value) return ordersArray.value
+const students = ref<Array<{id: number, name: string, email?: string}>>([])
+const studentsLoading = ref(false)
+
+const filteredStudents = computed(() => {
+  if (!searchQuery.value) return students.value
   const query = searchQuery.value.toLowerCase()
-  return ordersArray.value.filter(order => 
-    order.clientName.toLowerCase().includes(query) ||
-    order.studentPhone?.toLowerCase().includes(query) ||
-    order.studentEmail?.toLowerCase().includes(query)
+  return students.value.filter(s => 
+    s.name.toLowerCase().includes(query) ||
+    s.email?.toLowerCase().includes(query)
   )
 })
 
@@ -388,13 +388,13 @@ const lessonTypes = computed(() => Object.keys(lessonTypesDict.value))
 
 const availableOrders = computed(() => ordersArray.value)
 
-const selectedOrder = computed(() => {
-  return ordersArray.value.find(o => o.id === formData.value.orderId)
+const selectedStudent = computed(() => {
+  return students.value.find(s => s.id === formData.value.orderId)
 })
 
 const availableDurations = computed(() => {
-  if (!selectedOrder.value) return [30, 60, 90]
-  return selectedOrder.value.durations
+  if (!selectedStudent.value) return [30, 60, 90]
+  return [30, 60, 90] // Default durations since students API doesn't return this
 })
 
 const isTimeValid = computed(() => {
@@ -415,8 +415,7 @@ const isTimeValid = computed(() => {
 
 // F6: Enhanced validation
 const isDurationValid = computed(() => {
-  if (!selectedOrder.value) return true
-  return selectedOrder.value.durations.includes(formData.value.durationMin)
+  return true // Always valid since we use default durations
 })
 
 const isFormValid = computed(() => {
@@ -444,11 +443,29 @@ const minDateTime = computed(() => {
   return `${year}-${month}-${day}T${hours}:${minutes}`
 })
 
+async function loadStudents() {
+  studentsLoading.value = true
+  try {
+    const response = await studentsApi.listStudents(undefined, 100)
+    students.value = (response.results || []).map(s => ({
+      id: s.student_id,
+      name: [s.first_name, s.last_name].filter(Boolean).join(' ') || s.email || `ID: ${s.student_id}`,
+      email: s.email,
+    }))
+  } catch (error) {
+    console.error('[CreateLessonModal] Failed to load students:', error)
+    students.value = []
+  } finally {
+    studentsLoading.value = false
+  }
+}
+
 watch(
   () => props.visible,
   (visible) => {
     if (visible) {
       resetForm()
+      void loadStudents()
     }
   },
   { immediate: true },
@@ -521,16 +538,11 @@ function resetForm() {
   showDropdown.value = false
 }
 
-function selectStudent(order: any) {
-  formData.value.orderId = order.id
-  searchQuery.value = order.clientName
+function selectStudent(student: any) {
+  formData.value.orderId = student.id
+  searchQuery.value = student.name
   showDropdown.value = false
   fieldErrors.value.orderId = ''
-  
-  // Adjust duration if needed
-  if (!order.durations.includes(formData.value.durationMin)) {
-    formData.value.durationMin = order.durations[0] || 60
-  }
 }
 
 function handleBlur() {
@@ -671,7 +683,7 @@ async function handleSubmit(options: { skipConflictCheck?: boolean } = {}) {
       emit('success', response.seriesId)
       emit('close')
     } else {
-      const studentName = selectedOrder.value?.clientName || 'Unknown'
+      const studentName = selectedStudent.value?.name || 'Unknown'
       store.addOptimisticEvent({
         tempId,
         start: isoString,

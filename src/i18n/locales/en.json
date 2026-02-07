@@ -172,7 +172,12 @@
       "avatarUpdated": "Аватар оновлено.",
       "changeEmail": "Змінити email",
       "changePassword": "Змінити пароль",
-      "firstName": "Ім’я",
+      "personalInfo": "Personal Information",
+      "emailDescription": "Your email address for login and notifications",
+      "passwordDescription": "Change your login password",
+      "email": "Email",
+      "password": "Password",
+      "firstName": "Ім'я",
       "lastName": "Прізвище",
       "loadError": "Не вдалося завантажити акаунт.",
       "save": "Зберегти",
@@ -1904,6 +1909,12 @@
       "cancelEdit": "Cancel editing",
       "retry": "Retry"
     },
+    "clearHistory": "Clear history",
+    "editMessage": "Edit message",
+    "deleteMessage": "Delete message",
+    "editMessagePlaceholder": "Edit your message...",
+    "editTimeExpired": "Edit time expired",
+    "timeRemaining": "Time remaining: {time}",
     "input": {
       "placeholder": "Write a message… Markdown and MathJax are supported.",
       "hint": "Press Enter to send, Shift+Enter for newline.",
@@ -1921,7 +1932,9 @@
     "errors": {
       "failedToSend": "Message failed to send. Please retry.",
       "threadCreationFailed": "Не вдалося створити чат. Спробуйте ще раз.",
-      "relationNotFound": "Зв'язок зі студентом не знайдено.",
+      "relationNotFound": "Зв'язок не знайдено.",
+      "tutorRelationNotFound": "Зв'язок з тьютором не знайдено.",
+      "studentRelationNotFound": "Зв'язок зі студентом не знайдено.",
       "contactAccessRequired": "Для відкриття чату потрібно розблокувати контакти студента."
     },
     "confirm": {
@@ -4277,6 +4290,7 @@
       "unsaved": "Є незбережені зміни"
     },
     "avatar": {
+      "title": "Avatar",
       "change": "Змінити",
       "drop": "Відпустіть",
       "hint": "Перетягніть або оберіть файл. До 5 МБ, JPG/PNG/WebP.",
@@ -4574,6 +4588,18 @@
         "completeNow": "Complete Now",
         "complete": "Profile is complete"
       },
+      "contactInformation": "Contact Information",
+      "contactInformationHint": "Your contacts will be visible to tutor only after accepting the learning request",
+      "phone": "Phone Number",
+      "phoneHint": "International format: +380501234567",
+      "phonePlaceholder": "+380501234567",
+      "telegram": "Telegram",
+      "telegramHint": "Your Telegram username (e.g.: @username)",
+      "telegramPlaceholder": "@username"
+    },
+    "avatar": {
+      "upload": "Upload photo",
+      "change": "Change photo",
       "update": "Update",
       "remove": "Remove",
       "drop": "Drop file",
@@ -4584,7 +4610,8 @@
       "tooLarge": "File is too large. Maximum 5MB",
       "tooSmall": "Image is too small. Minimum 200x200 pixels",
       "tooBig": "Image is too large. Maximum 2000x2000 pixels",
-      "invalidImage": "Failed to load image"
+      "invalidImage": "Failed to load image",
+      "title": "Avatar"
     },
     "verification": {
       "emailNotVerified": "Email not verified",
@@ -4601,10 +4628,11 @@
       "saveError": "Failed to save settings",
       "tabs": {
         "general": "General",
+        "profile": "Profile",
+        "contacts": "Contacts",
         "notifications": "Notifications",
         "privacy": "Privacy",
-        "profile": "Профіль",
-        "contacts": "Контакти"
+        "security": "Security"
       },
       "general": {
         "title": "General Settings",
@@ -4634,6 +4662,11 @@
         "dangerZoneDescription": "Irreversible actions with your account",
         "deleteAccount": "Delete Account"
       },
+      "account": {
+        "personalInfo": "Personal Information",
+        "emailDescription": "Your email address for login and notifications",
+        "passwordDescription": "Change your login password"
+      },
       "contacts": {
         "title": "Контактна інформація",
         "description": "Керуйте вашими контактними даними для зв'язку з тьюторами та студентами",
@@ -4644,7 +4677,7 @@
         "telegramPlaceholder": "@.literal @username",
         "telegramHint": "Ваш Telegram username (наприклад: @.literal @username)",
         "timezone": "Часовий пояс",
-        "loadError": "Не вдалося завантажити контактні дані",
+        "loadError": "Failed to load contact data",
         "saveSuccess": "Контактні дані успішно збережено",
         "saveError": "Не вдалося зберегти контактні дані"
       },
@@ -4655,6 +4688,30 @@
         "saveSuccess": "Профіль успішно збережено",
         "saveError": "Не вдалося зберегти профіль",
         "noRole": "Роль користувача не визначена"
+      },
+      "security": {
+        "sessions": {
+          "title": "Active Sessions",
+          "subtitle": "View and manage active sessions on your devices",
+          "show": "Show active sessions",
+          "hide": "Hide active sessions",
+          "loading": "Loading sessions...",
+          "empty": "No active sessions",
+          "unknownDevice": "Unknown device",
+          "current": "Current",
+          "ip": "IP",
+          "lastActive": "Last active",
+          "revoke": "Sign out",
+          "errors": {
+            "loadFailed": "Failed to load sessions",
+            "revokeFailed": "Failed to terminate session",
+            "currentForbidden": "Cannot terminate current session",
+            "notFound": "Session not found"
+          },
+          "success": {
+            "revoked": "Session terminated successfully"
+          }
+        }
       }
     },
     "account": {

@@ -32,6 +32,8 @@ export interface AssignedTutor {
   lesson_count?: number
   last_activity_at?: string | null
   next_available_slot?: string | null
+  // Phase 1 v0.87.1: relation_id для відкриття чату
+  relation_id?: number | null
 }
 
 export interface StudentStats {

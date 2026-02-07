@@ -89,6 +89,7 @@ export const useChatThreadsStore = defineStore('chatThreads', () => {
     /**
      * Отримує unread summary з backend.
      * ВАЖЛИВО: це view-only endpoint, не використовується для створення threads.
+     * ⚠️ Оптимізація: оновлюємо state тільки якщо дані змінилися
      */
     try {
       const response = await apiClient.get('/api/v1/chat/unread-summary/')
@@ -99,6 +100,29 @@ export const useChatThreadsStore = defineStore('chatThreads', () => {
         return
       }
       
+      // ⚠️ Оптимізація: не оновлюємо state якщо дані не змінилися
+      const currentTotal = unreadSummary.value?.total || 0
+      const newTotal = response?.total || 0
+      const currentThreads = unreadSummary.value?.threads || []
+      const newThreads = response?.threads || []
+      
+      // Швидка перевірка: якщо total і кількість threads однакові - глибока перевірка
+      if (currentTotal === newTotal && currentThreads.length === newThreads.length) {
+        // Перевіряємо чи змінилися конкретні counts
+        const hasChanges = newThreads.some((newThread, index) => {
+          const currentThread = currentThreads[index]
+          return !currentThread || 
+                 currentThread.thread_id !== newThread.thread_id ||
+                 currentThread.unread_count !== newThread.unread_count
+        })
+        
+        if (!hasChanges && newThreads.length === currentThreads.length) {
+          // Немає змін - не оновлюємо state
+          return
+        }
+      }
+      
+      // Є зміни - оновлюємо state
       unreadSummary.value = response
 
       // Оновлюємо кеш threadsByStudent з unread summary (якщо потрібно)

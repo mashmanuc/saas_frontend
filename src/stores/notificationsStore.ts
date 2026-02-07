@@ -127,9 +127,18 @@ export const useNotificationsStore = defineStore('notifications', () => {
   }
 
   async function pollUnreadCount() {
+    /**
+     * ⚠️ Оптимізація: не оновлюємо state якщо count не змінився
+     */
     try {
       const response = await notificationsApi.getNotifications({ unreadOnly: true, limit: 1 })
-      unreadCount.value = response.count
+      const newCount = response.count
+      const currentCount = unreadCount.value
+      
+      // Оновлюємо тільки якщо значення змінилося
+      if (newCount !== currentCount) {
+        unreadCount.value = newCount
+      }
     } catch (err) {
       console.error('[notificationsStore] Failed to poll unread count:', err)
     }

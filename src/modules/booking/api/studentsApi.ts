@@ -1,10 +1,11 @@
 import apiClient from '@/utils/apiClient'
 
 export interface StudentListItem {
-  id: number
+  student_id: number
   email: string
   first_name: string
   last_name: string
+  membership_id?: number
   avatar?: string
   timezone?: string
 }

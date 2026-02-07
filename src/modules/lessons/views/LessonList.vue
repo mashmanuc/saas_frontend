@@ -192,8 +192,11 @@
               :label="t('lessons.calendar.fields.studentId')"
               :placeholder="t('booking.typeToSearch')"
               :show-invite-cta="false"
+              :recent-students="myStudentsGate.students"
+              :search-results="myStudentsGate.students"
               data-test="student-autocomplete"
               @invite="handleInviteStudent"
+              @search="handleSearchStudents"
             />
           </div>
 
@@ -347,6 +350,7 @@ const myStudentsGate = reactive({
   loading: false,
   count: null,
   error: null,
+  students: [],
   get isEmpty() {
     return typeof this.count === 'number' && this.count <= 0
   },
@@ -524,11 +528,36 @@ async function refreshMyStudents() {
   myStudentsGate.error = null
 
   try {
-    const data = await studentsApi.listStudents(undefined, 1)
-    myStudentsGate.count = Number.isFinite(data?.count) ? data.count : 0
+    const data = await studentsApi.listStudents(undefined, 100)
+    myStudentsGate.count = Number.isFinite(data?.count) ? data.count : (data?.results?.length || 0)
+    myStudentsGate.students = (data?.results || []).map(s => ({
+      id: s.student_id,
+      name: [s.first_name, s.last_name].filter(Boolean).join(' ') || s.email || `ID: ${s.student_id}`,
+    }))
   } catch (e) {
     myStudentsGate.error = e
     myStudentsGate.count = 0
+    myStudentsGate.students = []
+  } finally {
+    myStudentsGate.loading = false
+  }
+}
+
+async function handleSearchStudents(query) {
+  if (!query || query.length < 2) {
+    await refreshMyStudents()
+    return
+  }
+  
+  myStudentsGate.loading = true
+  try {
+    const data = await studentsApi.listStudents(query, 20)
+    myStudentsGate.students = (data?.results || []).map(s => ({
+      id: s.student_id,
+      name: [s.first_name, s.last_name].filter(Boolean).join(' ') || s.email || `ID: ${s.student_id}`,
+    }))
+  } catch (e) {
+    myStudentsGate.students = []
   } finally {
     myStudentsGate.loading = false
   }

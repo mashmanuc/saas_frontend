@@ -562,12 +562,6 @@ function canOpenChatWithStudent(relation) {
   return relation.status === 'active'
 }
 
-function getUnreadCountForStudent(relation) {
-  const studentId = relation.student?.id
-  if (!studentId) return 0
-  return chatThreadsStore.getUnreadCount(studentId)
-}
-
 async function handleOpenChatWithStudent(relation) {
   const studentId = relation.student?.id
   const relationId = getRelationId(relation)
@@ -621,9 +615,10 @@ function isOnline(userId) {
   return presenceStore.isOnline?.(String(userId)) || false
 }
 
-// Phase 1 v0.87.1: ТЗ-1.2 - Unread Summary Polling з lifecycle контролем
-// ⚠️ R-P0-2 КРИТИЧНО: Polling має onUnmounted(clearInterval) обов'язково
+// Phase 1 v0.87.1: ТЗ-1.2 - Lazy Unread Summary Polling з lifecycle контролем
+// ⚠️ Оптимізація: кешування + 2 хвилини інтервал замість 30 секунд
 let unreadPollingInterval = null
+const unreadCountsCache = ref(new Map())
 
 function stopUnreadPolling() {
   if (unreadPollingInterval) {
@@ -632,21 +627,46 @@ function stopUnreadPolling() {
   }
 }
 
+async function fetchAndCacheUnreadCounts() {
+  try {
+    await chatThreadsStore.fetchUnreadSummary()
+    // Оновлюємо тільки кеш, не весь reactive state
+    filteredRelations.value.forEach(relation => {
+      const studentId = relation.student?.id
+      if (studentId) {
+        const count = chatThreadsStore.getUnreadCount(studentId)
+        const current = unreadCountsCache.value.get(studentId)
+        if (current !== count) {
+          unreadCountsCache.value.set(studentId, count)
+        }
+      }
+    })
+  } catch (error) {
+    console.warn('[DashboardTutor] Failed to fetch unread summary:', error)
+  }
+}
+
+function getUnreadCountForStudent(relation) {
+  const studentId = relation.student?.id
+  if (!studentId) return 0
+  // Використовуємо кешоване значення
+  const cached = unreadCountsCache.value.get(studentId)
+  if (cached !== undefined) return cached
+  // Якщо немає в кеші - беремо з store
+  const count = chatThreadsStore.getUnreadCount(studentId)
+  unreadCountsCache.value.set(studentId, count)
+  return count
+}
+
 function startUnreadPolling() {
   // Зупиняємо попередній polling якщо є
   stopUnreadPolling()
   
   // Початкове завантаження
-  chatThreadsStore.fetchUnreadSummary().catch((error) => {
-    console.warn('[DashboardTutor] Failed to fetch unread summary:', error)
-  })
+  fetchAndCacheUnreadCounts()
   
-  // ⚠️ R-P0-2 КРИТИЧНО: Polling з lifecycle контролем
-  unreadPollingInterval = setInterval(() => {
-    chatThreadsStore.fetchUnreadSummary().catch((error) => {
-      console.warn('[DashboardTutor] Polling failed:', error)
-    })
-  }, 30000) // 30 секунд
+  // ⚠️ Оптимізація: Періодичний polling кожні 2 хвилини (замість 30 секунд)
+  unreadPollingInterval = setInterval(fetchAndCacheUnreadCounts, 120000)
 }
 
 // Watch auth state - зупиняємо polling при logout

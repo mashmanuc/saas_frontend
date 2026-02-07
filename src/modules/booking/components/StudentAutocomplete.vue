@@ -77,7 +77,7 @@
         <template v-else-if="students.length > 0">
           <button
             v-for="(student, index) in students"
-            :key="student.id"
+            :key="student.student_id"
             type="button"
             class="dropdown-item"
             :class="{ 'dropdown-item--focused': focusedIndex === index }"
@@ -229,8 +229,8 @@ function selectStudent(student: StudentListItem): void {
   selectedStudent.value = student
   searchQuery.value = ''
   isOpen.value = false
-  emit('update:modelValue', student.id)
-  console.log('[ui.student_selected]', { studentId: student.id })
+  emit('update:modelValue', student.student_id)
+  console.log('[ui.student_selected]', { studentId: student.student_id })
 }
 
 function clearSelection(): void {
@@ -243,6 +243,21 @@ function clearSelection(): void {
 
 function handleFocus(): void {
   isOpen.value = true
+  // Load students immediately on focus if none loaded
+  if (students.value.length === 0 && !isLoading.value) {
+    isLoading.value = true
+    studentsApi.listStudents(undefined, 50)
+      .then(response => {
+        students.value = response.results
+      })
+      .catch(error => {
+        console.error('[StudentAutocomplete] Failed to load students:', error)
+        students.value = []
+      })
+      .finally(() => {
+        isLoading.value = false
+      })
+  }
 }
 
 function handleBlur(): void {

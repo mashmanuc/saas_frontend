@@ -28,43 +28,53 @@
         {{ $t('profile.security.sessions.loading') }}
       </div>
 
-      <div v-else-if="sessions.length === 0" class="text-sm text-muted-foreground">
+      <div v-else-if="hasLoaded && sessions.length === 0" class="text-sm text-muted-foreground">
         {{ $t('profile.security.sessions.empty') }}
       </div>
 
-      <div v-else class="space-y-3">
-        <div
-          v-for="s in sessions"
-          :key="s.id"
-          class="flex flex-wrap items-start justify-between gap-3 rounded-lg border p-4"
+      <div v-if="!sessionsLoading && (!hasLoaded || sessions.length > 0)" class="space-y-3">
+        <Button
+          variant="outline"
+          type="button"
+          @click="toggleSessions"
         >
-          <div class="space-y-1">
-            <p class="text-sm font-medium text-foreground">
-              {{ s.device || $t('profile.security.sessions.unknownDevice') }}
-              <span v-if="s.current" class="ml-2 rounded bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
-                {{ $t('profile.security.sessions.current') }}
-              </span>
-            </p>
-            <p class="text-sm text-muted-foreground">
-              {{ $t('profile.security.sessions.ip') }}: {{ s.ip || '-' }}
-            </p>
-            <p class="text-sm text-muted-foreground">
-              {{ $t('profile.security.sessions.lastActive') }}: {{ formatDateTime(s.last_active_at) }}
-            </p>
-          </div>
+          {{ showSessions ? $t('profile.security.sessions.hide') : $t('profile.security.sessions.show') }}
+        </Button>
 
-          <div class="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              type="button"
-              :disabled="sessionsLoading || s.current"
-              :loading="revokeLoadingId === s.id"
-              :data-testid="`session-revoke-${s.id}`"
-              @click="revoke(s.id)"
-            >
-              {{ $t('profile.security.sessions.revoke') }}
-            </Button>
+        <div v-if="showSessions" class="space-y-3">
+          <div
+            v-for="s in sessions"
+            :key="s.id"
+            class="flex flex-wrap items-start justify-between gap-3 rounded-lg border p-4"
+          >
+            <div class="space-y-1">
+              <p class="text-sm font-medium text-foreground">
+                {{ s.device || $t('profile.security.sessions.unknownDevice') }}
+                <span v-if="s.current" class="ml-2 rounded bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                  {{ $t('profile.security.sessions.current') }}
+                </span>
+              </p>
+              <p class="text-sm text-muted-foreground">
+                {{ $t('profile.security.sessions.ip') }}: {{ s.ip || '-' }}
+              </p>
+              <p class="text-sm text-muted-foreground">
+                {{ $t('profile.security.sessions.lastActive') }}: {{ formatDateTime(s.last_active_at) }}
+              </p>
+            </div>
+
+            <div class="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                type="button"
+                :disabled="sessionsLoading || s.current"
+                :loading="revokeLoadingId === s.id"
+                :data-testid="`session-revoke-${s.id}`"
+                @click="revoke(s.id)"
+              >
+                {{ $t('profile.security.sessions.revoke') }}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -73,7 +83,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Card from '@/ui/Card.vue'
 import Button from '@/ui/Button.vue'
@@ -88,6 +98,7 @@ const sessionsLoading = ref(false)
 const sessions = ref([])
 const revokeLoadingId = ref(null)
 const lastRequestId = ref('')
+const showSessions = ref(false)
 
 function formatDateTime(value: string | null): string {
   if (!value) return '-'
@@ -100,11 +111,14 @@ function formatDateTime(value: string | null): string {
   }
 }
 
+const hasLoaded = ref(false)
+
 async function loadSessions() {
   sessionsLoading.value = true
   try {
     const res = await authApi.getSessions()
     sessions.value = Array.isArray(res) ? res : (Array.isArray(res?.results) ? res.results : [])
+    hasLoaded.value = true
   } catch (err: any) {
     error.value = err?.response?.data?.message || err?.response?.data?.detail || t('profile.security.sessions.errors.loadFailed')
   } finally {
@@ -135,7 +149,10 @@ async function revoke(id: string | number) {
   }
 }
 
-onMounted(() => {
-  loadSessions()
-})
+async function toggleSessions() {
+  if (!showSessions.value && sessions.value.length === 0) {
+    await loadSessions()
+  }
+  showSessions.value = !showSessions.value
+}
 </script>

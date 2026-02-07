@@ -46,6 +46,7 @@ import ContactsSettingsTab from '../components/settings/ContactsSettingsTab.vue'
 import NotificationsSettingsTab from '../components/settings/NotificationsSettingsTab.vue'
 import PrivacySettingsTab from '../components/settings/PrivacySettingsTab.vue'
 import SecuritySettingsTab from '../components/settings/SecuritySettingsTab.vue'
+import AccountSettingsTab from '../components/settings/AccountSettingsTab.vue'
 
 const activeTab = ref('general')
 const authStore = useAuthStore()
@@ -94,15 +95,23 @@ const allTabs = [
     icon: () => h('svg', { class: 'h-4 w-4', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor' }, [
       h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.37A7.5 7.5 0 0012 17.5a7.5 7.5 0 008.618-11.186z' })
     ])
+  },
+  { 
+    id: 'account', 
+    label: 'menu.account',
+    icon: () => h('svg', { class: 'h-4 w-4', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor' }, [
+      h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' })
+    ])
   }
 ]
 
 const tabs = computed(() => {
-  // Tutor має окремий профіль в marketplace, тому прибираємо вкладку Profile
+  // Для тьютора показуємо вкладку Account замість Profile
   if (userRole.value === 'tutor') {
     return allTabs.filter(tab => tab.id !== 'profile')
   }
-  return allTabs
+  // Для студента прибираємо вкладку Profile (він має окремий профіль)
+  return allTabs.filter(tab => tab.id !== 'profile')
 })
 
 const activeTabComponent = computed(() => {
@@ -119,6 +128,8 @@ const activeTabComponent = computed(() => {
       return PrivacySettingsTab
     case 'security':
       return SecuritySettingsTab
+    case 'account':
+      return AccountSettingsTab
     default:
       return GeneralSettingsTab
   }
