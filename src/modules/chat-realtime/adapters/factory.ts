@@ -26,7 +26,7 @@ import type {
 import { HttpPollingAdapter } from './http-polling.adapter'
 import { WebSocketAdapter } from './websocket.adapter'
 
-export { TransportType } from '../types'
+export type { TransportType } from '../types'
 
 /**
  * Factory for creating transport adapters
