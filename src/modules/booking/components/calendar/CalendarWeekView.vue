@@ -40,8 +40,7 @@
       </button>
     </div>
 
-    <!-- Empty availability state - show only if user hasn't set up availability at all -->
-    <EmptyAvailabilityState v-else-if="!hasSetupAvailability" />
+    <!-- Empty availability state - disabled: duplicate message exists elsewhere -->
 
     <!-- NEW Calendar Board V2 -->
     <div class="calendar-v055-layout">
@@ -213,7 +212,6 @@ import CalendarFooter from './CalendarFooter.vue'
 import WeekNavigation from './WeekNavigation.vue'
 import LessonCardDrawer from './LessonCardDrawer.vue'
 import CalendarSidebar from './CalendarSidebar.vue'
-import EmptyAvailabilityState from './EmptyAvailabilityState.vue'
 import AvailabilityLegend from './AvailabilityLegend.vue'
 import AvailabilityConflictsDrawer from './AvailabilityConflictsDrawer.vue'
 import CreateLessonModal from '../modals/CreateLessonModal.vue'

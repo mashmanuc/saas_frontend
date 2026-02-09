@@ -1,436 +1,278 @@
-<script setup lang="ts">
-// F5: Tutor Reviews View (Dashboard)
-import { ref, computed, onMounted, watch } from 'vue'
-import { storeToRefs } from 'pinia'
-import { MessageCircle, TrendingUp, Filter, ChevronDown } from 'lucide-vue-next'
-import { useReviewStore } from '../stores/reviewStore'
-import { useAuthStore } from '@/modules/auth/store/authStore'
-import RatingSummary from '../components/display/RatingSummary.vue'
-import RatingDistribution from '../components/display/RatingDistribution.vue'
-import ReviewCard from '../components/display/ReviewCard.vue'
-import ResponseForm from '../components/forms/ResponseForm.vue'
-
-const store = useReviewStore()
-const authStore = useAuthStore()
-
-const {
-  reviews,
-  tutorRating,
-  isLoading,
-  error,
-  hasMore,
-  sortBy,
-  filterRating,
-  averageRating,
-  totalReviews,
-} = storeToRefs(store)
-
-const tutorId = computed(() => authStore.user?.id || 0)
-const respondingTo = ref<number | null>(null)
-const showFilters = ref(false)
-
-const sortOptions = [
-  { value: 'recent', label: 'Most Recent' },
-  { value: 'rating_high', label: 'Highest Rating' },
-  { value: 'rating_low', label: 'Lowest Rating' },
-  { value: 'helpful', label: 'Most Helpful' },
-]
-
-const pendingResponses = computed(() =>
-  reviews.value.filter((r) => !r.response).length
-)
-
-onMounted(async () => {
-  if (tutorId.value) {
-    await Promise.all([
-      store.loadTutorRating(tutorId.value),
-      store.loadTutorReviews(tutorId.value, true),
-    ])
-  }
-})
-
-watch(sortBy, () => {
-  if (tutorId.value) {
-    store.loadTutorReviews(tutorId.value, true)
-  }
-})
-
-watch(filterRating, () => {
-  if (tutorId.value) {
-    store.loadTutorReviews(tutorId.value, true)
-  }
-})
-
-function handleSortChange(event: Event) {
-  const value = (event.target as HTMLSelectElement).value as typeof sortBy.value
-  store.setSortBy(value)
-}
-
-function handleFilterRating(rating: number | null) {
-  store.setFilterRating(rating)
-}
-
-function loadMore() {
-  if (tutorId.value) {
-    store.loadMoreReviews(tutorId.value)
-  }
-}
-
-function openResponseForm(reviewId: number) {
-  respondingTo.value = reviewId
-}
-
-function closeResponseForm() {
-  respondingTo.value = null
-}
-
-async function submitResponse(content: string) {
-  if (!respondingTo.value) return
-
-  try {
-    await store.respondToReview(respondingTo.value, content)
-    respondingTo.value = null
-  } catch (e) {
-    console.error('Failed to submit response:', e)
-  }
-}
-
-function toggleHelpful(reviewId: number) {
-  store.toggleHelpful(reviewId)
-}
-</script>
-
 <template>
   <div class="tutor-reviews-view">
-    <header class="view-header">
-      <h1>Reviews Dashboard</h1>
-      <p class="subtitle">Manage and respond to your reviews</p>
-    </header>
-
-    <!-- Stats Cards -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <RatingSummary
-          v-if="tutorRating"
-          :average="averageRating"
-          :total="totalReviews"
-          :detailed="tutorRating.detailed"
-        />
-      </div>
-
-      <div class="stat-card">
-        <RatingDistribution
-          v-if="tutorRating"
-          :distribution="tutorRating.distribution"
-          :total="totalReviews"
-          @filter="handleFilterRating"
-        />
-      </div>
-
-      <div class="stat-card mini">
-        <div class="mini-stat">
-          <MessageCircle :size="24" />
-          <div class="mini-stat-content">
-            <span class="mini-stat-value">{{ pendingResponses }}</span>
-            <span class="mini-stat-label">Pending Responses</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="stat-card mini">
-        <div class="mini-stat">
-          <TrendingUp :size="24" />
-          <div class="mini-stat-content">
-            <span class="mini-stat-value">
-              {{ tutorRating?.response_rate || 0 }}%
-            </span>
-            <span class="mini-stat-label">Response Rate</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Filters -->
-    <div class="filters-bar">
-      <div class="filter-group">
-        <label>Sort by:</label>
-        <select :value="sortBy" @change="handleSortChange">
-          <option v-for="opt in sortOptions" :key="opt.value" :value="opt.value">
-            {{ opt.label }}
-          </option>
-        </select>
-      </div>
-
-      <button
-        v-if="filterRating"
-        class="clear-filter"
-        @click="handleFilterRating(null)"
-      >
-        Clear filter ({{ filterRating }} stars)
+    <!-- Back Navigation -->
+    <div class="view-header">
+      <button class="btn-back" @click="goBack">
+        <i class="icon-arrow-left"></i>
+        {{ $t('common.back') }}
       </button>
+      <h1>{{ $t('reviews.allReviewsFor', { name: tutorName }) }}</h1>
     </div>
 
-    <!-- Loading -->
-    <div v-if="isLoading && reviews.length === 0" class="loading-state">
-      <div class="spinner" />
-    </div>
-
-    <!-- Reviews List -->
-    <div v-else class="reviews-list">
-      <div v-for="review in reviews" :key="review.id" class="review-wrapper">
-        <ReviewCard
-          :review="review"
-          show-response-action
-          @helpful="toggleHelpful(review.id)"
-          @respond="openResponseForm(review.id)"
-        />
-
-        <!-- Response Form -->
-        <ResponseForm
-          v-if="respondingTo === review.id"
-          :existing-response="review.response?.content"
-          @submit="submitResponse"
-          @cancel="closeResponseForm"
+    <!-- Main Content -->
+    <div class="reviews-layout">
+      <!-- Left: Reviews List -->
+      <div class="reviews-main">
+        <ReviewsList
+          :tutor-id="tutorId"
+          :reviews="store.tutorReviews"
+          :stats="store.tutorStats"
+          :tags="store.tutorTags"
+          :loading="store.loading"
+          :has-more="store.reviewsHasMore"
+          @load-more="loadMore"
+          @filter-change="onFilterChange"
+          @write-review="showReviewForm = true"
+          show-write-button
         />
       </div>
 
-      <!-- Load More -->
-      <button
-        v-if="hasMore"
-        class="load-more-btn"
-        :disabled="isLoading"
-        @click="loadMore"
-      >
-        {{ isLoading ? 'Loading...' : 'Load More Reviews' }}
-      </button>
+      <!-- Right: Sidebar -->
+      <aside class="reviews-sidebar">
+        <TutorRatingWidget
+          :rating="store.getAverageRating"
+          :total-reviews="store.getTotalReviews"
+          :stats="store.tutorStats"
+          :tutor-id="tutorId"
+          show-cta
+          large
+        />
 
-      <!-- Empty State -->
-      <div v-if="reviews.length === 0 && !isLoading" class="empty-state">
-        <MessageCircle :size="48" />
-        <h3>No Reviews Yet</h3>
-        <p>You haven't received any reviews yet.</p>
-      </div>
+        <!-- Write Review CTA -->
+        <div class="write-review-card">
+          <h3>{{ $t('reviews.writeAReview') }}</h3>
+          <p>{{ $t('reviews.writeReviewHint') }}</p>
+          <button 
+            class="btn-write-review"
+            @click="showReviewForm = true"
+            :disabled="!canWriteReview"
+          >
+            {{ $t('reviews.writeReview') }}
+          </button>
+          <p v-if="!canWriteReview && canReviewData" class="cannot-review-reason">
+            {{ getCannotReviewReason }}
+          </p>
+        </div>
+      </aside>
     </div>
 
-    <!-- Error -->
-    <div v-if="error" class="error-message">
-      {{ error }}
+    <!-- Review Form Modal -->
+    <div v-if="showReviewForm" class="modal-overlay" @click.self="showReviewForm = false">
+      <div class="modal-content">
+        <ReviewForm
+          :tutor-id="tutorId"
+          :tutor-name="tutorName"
+          @success="onReviewSubmitted"
+          @cancel="showReviewForm = false"
+        />
+      </div>
     </div>
   </div>
 </template>
 
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useReviewsStore } from '../stores/reviewsStore'
+import ReviewsList from '../components/ReviewsList.vue'
+import TutorRatingWidget from '../components/TutorRatingWidget.vue'
+import ReviewForm from '../components/ReviewForm.vue'
+
+const route = useRoute()
+const router = useRouter()
+const store = useReviewsStore()
+
+// State
+const showReviewForm = ref(false)
+const currentPage = ref(1)
+const currentFilters = ref({})
+
+// Computed
+const tutorId = computed(() => parseInt(route.params.tutorId))
+const tutorName = computed(() => route.query.name || $t('reviews.tutor'))
+
+const canReviewData = computed(() => store.canReviewTutor(tutorId.value))
+const canWriteReview = computed(() => canReviewData.value?.can_review)
+
+const getCannotReviewReason = computed(() => {
+  const reason = canReviewData.value?.reason
+  if (!reason) return ''
+  
+  const reasons = {
+    already_reviewed: $t('reviews.alreadyReviewed'),
+    no_completed_lessons: $t('reviews.noCompletedLessons'),
+    too_soon: $t('reviews.tooSoon'),
+    blocked: $t('reviews.reviewBlocked')
+  }
+  return reasons[reason] || ''
+})
+
+// Methods
+onMounted(async () => {
+  await fetchInitialData()
+})
+
+async function fetchInitialData() {
+  currentPage.value = 1
+  await Promise.all([
+    store.fetchTutorReviews(tutorId.value, currentFilters.value, currentPage.value),
+    store.fetchTutorStats(tutorId.value),
+    store.fetchTutorTags(tutorId.value),
+    store.checkCanReview(tutorId.value)
+  ])
+}
+
+async function loadMore() {
+  currentPage.value++
+  await store.fetchTutorReviews(tutorId.value, currentFilters.value, currentPage.value, true)
+}
+
+async function onFilterChange(filters) {
+  currentFilters.value = filters
+  currentPage.value = 1
+  await store.fetchTutorReviews(tutorId.value, filters, 1, false)
+}
+
+async function onReviewSubmitted(review) {
+  showReviewForm.value = false
+  // Refresh data
+  await fetchInitialData()
+}
+
+function goBack() {
+  router.back()
+}
+</script>
+
 <style scoped>
 .tutor-reviews-view {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 24px 16px;
+  padding: 24px;
 }
 
 .view-header {
-  margin-bottom: 32px;
-}
-
-.view-header h1 {
-  margin: 0 0 4px;
-  font-size: 28px;
-  font-weight: 700;
-}
-
-.subtitle {
-  margin: 0;
-  color: var(--color-text-secondary, #6b7280);
-}
-
-/* Stats Grid */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-bottom: 32px;
-}
-
-@media (max-width: 1024px) {
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 640px) {
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.stat-card {
-  padding: 24px;
-  background: var(--color-bg-primary, white);
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: 12px;
-}
-
-.stat-card.mini {
-  display: flex;
-  align-items: center;
-}
-
-.mini-stat {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.mini-stat svg {
-  color: var(--color-primary, #3b82f6);
-}
-
-.mini-stat-content {
-  display: flex;
-  flex-direction: column;
-}
-
-.mini-stat-value {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--color-text-primary, #111827);
-}
-
-.mini-stat-label {
-  font-size: 13px;
-  color: var(--color-text-secondary, #6b7280);
-}
-
-/* Filters */
-.filters-bar {
-  display: flex;
-  align-items: center;
-  gap: 16px;
   margin-bottom: 24px;
-  padding: 16px;
-  background: var(--color-bg-secondary, #f5f5f5);
-  border-radius: 8px;
 }
 
-.filter-group {
+.btn-back {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.filter-group label {
-  font-size: 14px;
-  color: var(--color-text-secondary, #6b7280);
-}
-
-.filter-group select {
-  padding: 8px 12px;
-  border: 1px solid var(--color-border, #d1d5db);
-  border-radius: 6px;
-  font-size: 14px;
-  background: var(--color-bg-primary, white);
-}
-
-.clear-filter {
-  padding: 6px 12px;
-  background: var(--color-primary-light, #dbeafe);
+  background: none;
   border: none;
-  border-radius: 20px;
-  font-size: 13px;
-  color: var(--color-primary, #3b82f6);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.clear-filter:hover {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-}
-
-/* Loading */
-.loading-state {
-  display: flex;
-  justify-content: center;
-  padding: 64px 0;
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid var(--color-border, #e5e7eb);
-  border-top-color: var(--color-primary, #3b82f6);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* Reviews List */
-.reviews-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.review-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.load-more-btn {
-  padding: 12px 24px;
-  background: var(--color-bg-primary, white);
-  border: 1px solid var(--color-border, #d1d5db);
-  border-radius: 8px;
+  color: #6b7280;
   font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-primary, #111827);
   cursor: pointer;
-  transition: all 0.15s;
-  align-self: center;
+  margin-bottom: 16px;
 }
 
-.load-more-btn:hover:not(:disabled) {
-  background: var(--color-bg-secondary, #f5f5f5);
+.btn-back:hover {
+  color: #374151;
 }
 
-.load-more-btn:disabled {
-  opacity: 0.6;
+.view-header h1 {
+  margin: 0;
+  font-size: 28px;
+  color: #111827;
+}
+
+.reviews-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 24px;
+}
+
+.reviews-main {
+  min-width: 0;
+}
+
+.reviews-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.write-review-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.write-review-card h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  color: #111827;
+}
+
+.write-review-card p {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.btn-write-review {
+  width: 100%;
+  padding: 14px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-write-review:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.btn-write-review:disabled {
+  background: #93c5fd;
   cursor: not-allowed;
 }
 
-/* Empty State */
-.empty-state {
-  text-align: center;
-  padding: 64px 0;
-  color: var(--color-text-secondary, #6b7280);
-}
-
-.empty-state svg {
-  margin-bottom: 16px;
-  opacity: 0.5;
-}
-
-.empty-state h3 {
-  margin: 0 0 8px;
-  font-size: 18px;
-  color: var(--color-text-primary, #111827);
-}
-
-.empty-state p {
-  margin: 0;
-}
-
-/* Error */
-.error-message {
-  margin-top: 16px;
+.cannot-review-reason {
+  margin-top: 12px;
   padding: 12px;
-  background: var(--color-danger-light, #fee2e2);
-  color: var(--color-danger, #ef4444);
+  background: #fef3c7;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 13px;
+  color: #92400e;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 24px;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+@media (max-width: 1024px) {
+  .reviews-layout {
+    grid-template-columns: 1fr;
+  }
+  
+  .reviews-sidebar {
+    order: -1;
+  }
 }
 </style>

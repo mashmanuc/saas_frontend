@@ -1,362 +1,430 @@
-<script setup lang="ts">
-// F4: My Reviews View
-import { onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { storeToRefs } from 'pinia'
-import { Star, Edit, Trash2, MessageCircle } from 'lucide-vue-next'
-import { useReviewStore } from '../stores/reviewStore'
-import type { Review } from '../api/reviews'
-import ReviewCard from '../components/display/ReviewCard.vue'
-import ReviewResponse from '../components/display/ReviewResponse.vue'
-
-const router = useRouter()
-const store = useReviewStore()
-const { myReviews, isLoading, error } = storeToRefs(store)
-
-onMounted(() => {
-  store.loadMyReviews()
-})
-
-function editReview(review: Review) {
-  router.push(`/reviews/${review.id}/edit`)
-}
-
-async function deleteReview(review: Review) {
-  if (confirm('Are you sure you want to delete this review?')) {
-    await store.deleteReview(review.id)
-  }
-}
-
-function canEdit(review: Review): boolean {
-  const created = new Date(review.created_at)
-  const now = new Date()
-  const hoursDiff = (now.getTime() - created.getTime()) / (1000 * 60 * 60)
-  return hoursDiff <= 24 && review.status !== 'rejected'
-}
-
-function getStatusClass(status: string): string {
-  switch (status) {
-    case 'approved':
-      return 'status-approved'
-    case 'pending':
-      return 'status-pending'
-    case 'rejected':
-      return 'status-rejected'
-    default:
-      return ''
-  }
-}
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
-}
-</script>
-
 <template>
   <div class="my-reviews-view">
-    <header class="view-header">
-      <h1>My Reviews</h1>
-      <p class="subtitle">Reviews you've written for tutors</p>
-    </header>
-
-    <!-- Loading -->
-    <div v-if="isLoading" class="loading-state">
-      <div class="spinner" />
+    <div class="view-header">
+      <h1>{{ $t('reviews.myReviews') }}</h1>
+      <p class="subtitle">{{ $t('reviews.myReviewsSubtitle') }}</p>
     </div>
 
-    <!-- Empty State -->
-    <div v-else-if="myReviews.length === 0" class="empty-state">
-      <Star :size="48" />
-      <h2>No Reviews Yet</h2>
-      <p>You haven't written any reviews yet. After completing a lesson, you can share your experience.</p>
+    <!-- Tabs -->
+    <div class="reviews-tabs">
+      <button
+        class="tab-btn"
+        :class="{ 'tab-btn--active': activeTab === 'written' }"
+        @click="activeTab = 'written'"
+      >
+        {{ $t('reviews.writtenByMe') }}
+        <span v-if="store.myReviewsCount" class="tab-count">{{ store.myReviewsCount }}</span>
+      </button>
+      <button
+        class="tab-btn"
+        :class="{ 'tab-btn--active': activeTab === 'pending' }"
+        @click="activeTab = 'pending'"
+      >
+        {{ $t('reviews.pendingReviews') }}
+        <span v-if="store.getPendingReviewCount" class="tab-count">{{ store.getPendingReviewCount }}</span>
+      </button>
     </div>
 
-    <!-- Reviews List -->
-    <div v-else class="reviews-list">
-      <div v-for="review in myReviews" :key="review.id" class="review-item">
-        <!-- Status Badge -->
-        <div class="review-status" :class="getStatusClass(review.status)">
-          {{ review.status }}
-        </div>
+    <!-- Loading State -->
+    <div v-if="store.loading" class="loading-state">
+      <div class="spinner"></div>
+      <p>{{ $t('common.loading') }}...</p>
+    </div>
 
-        <!-- Tutor Info -->
-        <div class="tutor-header">
-          <div class="tutor-avatar">
-            {{ review.tutor.first_name[0] }}
-          </div>
-          <div class="tutor-details">
-            <span class="tutor-name">
-              {{ review.tutor.first_name }} {{ review.tutor.last_name }}
-            </span>
-            <span class="review-date">{{ formatDate(review.created_at) }}</span>
-          </div>
-        </div>
+    <!-- Written Reviews Tab -->
+    <div v-else-if="activeTab === 'written'" class="tab-content">
+      <div v-if="store.myReviews.length === 0" class="empty-state">
+        <i class="icon-reviews-empty"></i>
+        <h3>{{ $t('reviews.noWrittenReviews') }}</h3>
+        <p>{{ $t('reviews.noWrittenReviewsSubtitle') }}</p>
+      </div>
 
-        <!-- Rating -->
-        <div class="rating-row">
-          <div class="stars">
-            <Star
-              v-for="i in 5"
-              :key="i"
-              :size="18"
-              :fill="i <= review.rating ? '#f59e0b' : 'none'"
-              :stroke="i <= review.rating ? '#f59e0b' : '#d1d5db'"
+      <div v-else class="reviews-list">
+        <ReviewCard
+          v-for="review in store.myReviews"
+          :key="review.id"
+          :review="review"
+          :show-report="false"
+          @update="refreshReviews"
+          @delete="refreshReviews"
+        />
+
+        <!-- Load More -->
+        <button
+          v-if="store.myReviewsHasMore"
+          class="btn-load-more"
+          @click="loadMoreMyReviews"
+        >
+          {{ $t('reviews.loadMore') }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Pending Reviews Tab -->
+    <div v-else-if="activeTab === 'pending'" class="tab-content">
+      <div v-if="store.pendingReviews.length === 0" class="empty-state">
+        <i class="icon-check-circle"></i>
+        <h3>{{ $t('reviews.noPendingReviews') }}</h3>
+        <p>{{ $t('reviews.noPendingReviewsSubtitle') }}</p>
+      </div>
+
+      <div v-else class="pending-list">
+        <div
+          v-for="pending in store.pendingReviews"
+          :key="pending.tutor_id"
+          class="pending-card"
+        >
+          <div class="pending-tutor">
+            <img
+              v-if="pending.tutor_avatar"
+              :src="pending.tutor_avatar"
+              :alt="pending.tutor_name"
+              class="tutor-avatar"
             />
+            <div v-else class="avatar-placeholder">
+              <i class="icon-user"></i>
+            </div>
+            <div class="tutor-info">
+              <span class="tutor-name">{{ pending.tutor_name }}</span>
+              <span class="lesson-date">
+                {{ $t('reviews.completedLesson') }}: {{ formatDate(pending.completed_lesson_date) }}
+              </span>
+            </div>
           </div>
-        </div>
 
-        <!-- Content -->
-        <h4 v-if="review.title" class="review-title">{{ review.title }}</h4>
-        <p class="review-content">{{ review.content }}</p>
+          <div class="pending-meta">
+            <span class="deadline">
+              {{ $t('reviews.canReviewUntil') }}: {{ formatDate(pending.can_review_until) }}
+            </span>
+          </div>
 
-        <!-- Tutor Response -->
-        <ReviewResponse v-if="review.response" :response="review.response" />
-
-        <!-- Actions -->
-        <div class="review-actions">
           <button
-            v-if="canEdit(review)"
-            class="action-btn"
-            @click="editReview(review)"
+            class="btn-write-review"
+            @click="openReviewForm(pending)"
           >
-            <Edit :size="16" />
-            Edit
-          </button>
-          <button
-            v-if="canEdit(review)"
-            class="action-btn danger"
-            @click="deleteReview(review)"
-          >
-            <Trash2 :size="16" />
-            Delete
+            {{ $t('reviews.writeReview') }}
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Error -->
-    <div v-if="error" class="error-message">
-      {{ error }}
+    <!-- Review Form Modal -->
+    <div v-if="selectedPending" class="modal-overlay" @click.self="closeReviewForm">
+      <div class="modal-content">
+        <ReviewForm
+          :tutor-id="selectedPending.tutor_id"
+          :tutor-name="selectedPending.tutor_name"
+          @success="onReviewSubmitted"
+          @cancel="closeReviewForm"
+        />
+      </div>
     </div>
   </div>
 </template>
 
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useReviewsStore } from '../stores/reviewsStore'
+import ReviewCard from '../components/ReviewCard.vue'
+import ReviewForm from '../components/ReviewForm.vue'
+
+const store = useReviewsStore()
+
+// State
+const activeTab = ref('written')
+const currentPage = ref(1)
+const selectedPending = ref(null)
+
+// Methods
+onMounted(async () => {
+  await Promise.all([
+    store.fetchMyReviews(),
+    store.fetchPendingReviews()
+  ])
+})
+
+async function refreshReviews() {
+  currentPage.value = 1
+  await store.fetchMyReviews(1, false)
+}
+
+async function loadMoreMyReviews() {
+  currentPage.value++
+  await store.fetchMyReviews(currentPage.value, true)
+}
+
+function openReviewForm(pending) {
+  selectedPending.value = pending
+}
+
+function closeReviewForm() {
+  selectedPending.value = null
+}
+
+async function onReviewSubmitted() {
+  closeReviewForm()
+  // Refresh both tabs
+  await Promise.all([
+    store.fetchMyReviews(1, false),
+    store.fetchPendingReviews()
+  ])
+}
+
+function formatDate(dateString) {
+  const date = new Date(dateString)
+  return date.toLocaleDateString('uk-UA', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })
+}
+</script>
+
 <style scoped>
 .my-reviews-view {
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
-  padding: 24px 16px;
+  padding: 24px;
 }
 
 .view-header {
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 
 .view-header h1 {
-  margin: 0 0 4px;
+  margin: 0 0 8px;
   font-size: 28px;
-  font-weight: 700;
+  color: #111827;
 }
 
 .subtitle {
+  color: #6b7280;
   margin: 0;
-  color: var(--color-text-secondary, #6b7280);
 }
 
-/* Loading */
-.loading-state {
+.reviews-tabs {
   display: flex;
-  justify-content: center;
-  padding: 64px 0;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 15px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: -1px;
+}
+
+.tab-btn:hover {
+  color: #374151;
+}
+
+.tab-btn--active {
+  color: #3b82f6;
+  border-bottom-color: #3b82f6;
+}
+
+.tab-count {
+  background: #dbeafe;
+  color: #1e40af;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.loading-state {
+  text-align: center;
+  padding: 60px 20px;
 }
 
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid var(--color-border, #e5e7eb);
-  border-top-color: var(--color-primary, #3b82f6);
+  border: 3px solid #e5e7eb;
+  border-top-color: #3b82f6;
   border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 16px;
 }
 
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }
 
-/* Empty State */
 .empty-state {
   text-align: center;
-  padding: 64px 0;
-  color: var(--color-text-secondary, #6b7280);
+  padding: 60px 20px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
-.empty-state svg {
+.empty-state i {
+  font-size: 48px;
+  color: #d1d5db;
   margin-bottom: 16px;
-  opacity: 0.5;
 }
 
-.empty-state h2 {
+.empty-state h3 {
   margin: 0 0 8px;
-  font-size: 20px;
-  color: var(--color-text-primary, #111827);
+  color: #374151;
 }
 
 .empty-state p {
   margin: 0;
-  max-width: 400px;
-  margin: 0 auto;
+  color: #6b7280;
 }
 
-/* Reviews List */
 .reviews-list {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
 }
 
-.review-item {
-  position: relative;
-  padding: 24px;
-  background: var(--color-bg-primary, white);
-  border: 1px solid var(--color-border, #e5e7eb);
+.btn-load-more {
+  width: 100%;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  color: #374151;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+
+.btn-load-more:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.pending-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pending-card {
+  background: #fff;
   border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
-/* Status Badge */
-.review-status {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 500;
-  text-transform: capitalize;
-}
-
-.status-approved {
-  background: var(--color-success-light, #d1fae5);
-  color: var(--color-success-dark, #065f46);
-}
-
-.status-pending {
-  background: var(--color-warning-light, #fef3c7);
-  color: var(--color-warning-dark, #92400e);
-}
-
-.status-rejected {
-  background: var(--color-danger-light, #fee2e2);
-  color: var(--color-danger-dark, #991b1b);
-}
-
-/* Tutor Header */
-.tutor-header {
+.pending-tutor {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 16px;
 }
 
-.tutor-avatar {
-  width: 44px;
-  height: 44px;
+.tutor-avatar,
+.avatar-placeholder {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #f3f4f6;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-primary, #3b82f6);
-  color: white;
-  font-size: 16px;
-  font-weight: 600;
-  border-radius: 50%;
 }
 
-.tutor-details {
+.tutor-avatar {
+  object-fit: cover;
+}
+
+.avatar-placeholder {
+  color: #9ca3af;
+}
+
+.tutor-info {
   display: flex;
   flex-direction: column;
-  gap: 2px;
 }
 
 .tutor-name {
-  font-weight: 600;
-  color: var(--color-text-primary, #111827);
+  font-weight: 500;
+  color: #111827;
 }
 
-.review-date {
+.lesson-date {
   font-size: 13px;
-  color: var(--color-text-secondary, #6b7280);
+  color: #6b7280;
 }
 
-/* Rating */
-.rating-row {
-  margin-bottom: 12px;
+.pending-meta {
+  flex: 1;
+  text-align: center;
 }
 
-.stars {
-  display: flex;
-  gap: 2px;
+.deadline {
+  font-size: 13px;
+  color: #92400e;
+  background: #fef3c7;
+  padding: 4px 12px;
+  border-radius: 12px;
 }
 
-/* Content */
-.review-title {
-  margin: 0 0 8px;
-  font-size: 16px;
-  font-weight: 600;
+.btn-write-review {
+  padding: 10px 20px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
 }
 
-.review-content {
-  margin: 0 0 16px;
-  color: var(--color-text-primary, #111827);
-  line-height: 1.6;
+.btn-write-review:hover {
+  background: #2563eb;
 }
 
-/* Actions */
-.review-actions {
-  display: flex;
-  gap: 12px;
-  padding-top: 16px;
-  border-top: 1px solid var(--color-border, #e5e7eb);
-}
-
-.action-btn {
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  background: none;
-  border: 1px solid var(--color-border, #d1d5db);
-  border-radius: 6px;
-  font-size: 13px;
-  color: var(--color-text-primary, #111827);
-  cursor: pointer;
-  transition: all 0.15s;
+  justify-content: center;
+  z-index: 100;
+  padding: 24px;
 }
 
-.action-btn:hover {
-  background: var(--color-bg-secondary, #f5f5f5);
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
-.action-btn.danger {
-  color: var(--color-danger, #ef4444);
-  border-color: var(--color-danger, #ef4444);
-}
+@media (max-width: 640px) {
+  .pending-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
 
-.action-btn.danger:hover {
-  background: var(--color-danger-light, #fee2e2);
-}
-
-/* Error */
-.error-message {
-  margin-top: 16px;
-  padding: 12px;
-  background: var(--color-danger-light, #fee2e2);
-  color: var(--color-danger, #ef4444);
-  border-radius: 8px;
-  font-size: 14px;
+  .pending-meta {
+    text-align: left;
+  }
 }
 </style>

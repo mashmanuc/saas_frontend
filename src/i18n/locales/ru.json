@@ -1,0 +1,3574 @@
+{
+  "call": {
+    "shareScreen": "Поделиться экраном",
+    "stopSharing": "Остановить показ экрана",
+    "teacherSharing": "Преподаватель делится экраном",
+    "screenShareNotSupported": "Демонстрация экрана не поддерживается в этом браузере",
+    "loading": "Загрузка…",
+    "errors": {
+      "unknown": "Произошла ошибка во время демонстрации экрана",
+      "permissionDenied": "Доступ к демонстрации экрана запрещен",
+      "notSupported": "Браузер не поддерживает демонстрацию экрана"
+    }
+  },
+  "push": {
+    "enableTitle": "Включите push-уведомления",
+    "enableDescription": "Получайте мгновенные обновления о занятиях и сообщениях.",
+    "enable": "Включить уведомления",
+    "enabled": "Push-уведомления включены",
+    "enabledDescription": "Теперь вы будете получать уведомления в реальном времени.",
+    "denied": "Доступ запрещен",
+    "deniedDescription": "Разрешите уведомления в настройках браузера.",
+    "error": "Ошибка push-уведомлений"
+  },
+  "app": {},
+  "lang": {
+    "uk": "Украинский",
+    "en": "Английский",
+    "ru": "Русский"
+  },
+  "auth": {
+    "layout": {
+      "ariaLabel": "Секция авторизации"
+    },
+    "register": {
+      "title": "Создайте аккаунт",
+      "description": "Заполните форму ниже, чтобы присоединиться к платформе",
+      "accountType": "Тип аккаунта",
+      "accountTypeStudent": "Я студент",
+      "accountTypeStudentHint": "Хочу найти репетитора и проходить занятия",
+      "accountTypeTutor": "Я репетитор",
+      "accountTypeTutorHint": "Хочу находить учеников и проводить занятия",
+      "firstName": "Имя",
+      "lastName": "Фамилия",
+      "username": "Никнейм (опционально)",
+      "email": "Email",
+      "password": "Пароль",
+      "passwordConfirm": "Подтвердите пароль",
+      "loading": "Регистрируем...",
+      "submit": "Зарегистрироваться",
+      "haveAccount": "Уже есть аккаунт?",
+      "loginLink": "Войти"
+    },
+    "login": {
+      "title": "Вход",
+      "description": "Введите email и пароль, чтобы продолжить.",
+      "otpTitle": "Подтвердите вход",
+      "otpDescription": "Введите одноразовый код из приложения-аутентификатора.",
+      "email": "Email",
+      "password": "Пароль",
+      "submit": "Войти",
+      "loading": "Входим...",
+      "otpLabel": "Код подтверждения",
+      "otpSubmit": "Подтвердить",
+      "otpLoading": "Проверяем...",
+      "otpBack": "Назад",
+      "otpResend": "Отправить код еще раз",
+      "forgotPassword": "Забыли пароль?",
+      "resendVerifyCta": "Отправить письмо подтверждения еще раз",
+      "noAccount": "Нет аккаунта?",
+      "registerLink": "Зарегистрироваться",
+      "accountLocked": "Аккаунт заблокирован",
+      "lockedUntil": "Заблокирован до {until}",
+      "requestUnlock": "Запросить разблокировку",
+      "webauthn": {},
+      "errors": {
+        "requiredEmail": "Введите email",
+        "requiredPassword": "Введите пароль",
+        "invalidCredentials": "Неверный email или пароль",
+        "rateLimited": "Слишком много неудачных попыток. Попробуйте позже",
+        "unknown": "Произошла ошибка. Попробуйте еще раз"
+      }
+    },
+    "verifyEmail": {
+      "title": "Подтверждение email",
+      "description": "Подождите, мы проверяем ваш токен.",
+      "loading": "Подтверждаем...",
+      "success": "Email подтвержден. Можете войти.",
+      "loginCta": "Войти"
+    },
+    "webauthn": {
+      "betaLabel": "Beta",
+      "enrollTitle": "Настроить WebAuthn",
+      "enrollDescription": "Добавьте биометрическую аутентификацию или аппаратный ключ для быстрого и безопасного входа.",
+      "enrollInfo": "WebAuthn — это современный стандарт аутентификации. Вы сможете входить с помощью отпечатка пальца, Face ID или аппаратного ключа.",
+      "enrollCta": "Настроить",
+      "enrolling": "Настраиваем...",
+      "enrollError": "Не удалось настроить WebAuthn",
+      "step1": "Нажмите 'Настроить' ниже",
+      "step2": "Разрешите браузеру доступ к вашему устройству",
+      "step3": "Подтвердите с помощью биометрии или ключа",
+      "promptTitle": "Аутентификация WebAuthn",
+      "promptDescription": "Используйте отпечаток пальца, Face ID или аппаратный ключ для входа.",
+      "authenticate": "Аутентифицировать",
+      "authenticating": "Аутентифицируем...",
+      "authError": "Не удалось аутентифицировать",
+      "useOtpInstead": "Использовать OTP вместо этого",
+      "errors": {
+        "replayDetected": "Обнаружена повторная атака. Попробуйте еще раз.",
+        "attestationInvalid": "Недействительное засвидетельствование WebAuthn. Попробуйте еще раз.",
+        "challengeExpired": "Срок действия WebAuthn вызова истек. Попробуйте еще раз.",
+        "invalidAssertion": "Недействительное утверждение WebAuthn. Попробуйте еще раз."
+      }
+    },
+    "sessionRevoked": {
+      "title": "Сессия отменена",
+      "message": "Ваша сессия была отменена. Пожалуйста, войдите снова.",
+      "relogin": "Войти снова"
+    },
+    "checkEmail": {
+      "title": "Проверьте email",
+      "description": "Мы отправили вам письмо со ссылкой для входа",
+      "sentTo": "Отправлено на",
+      "success": "Email успешно отправлен",
+      "resendLoading": "Отправка...",
+      "resend": "Отправить повторно",
+      "backToLogin": "Вернуться ко входу"
+    },
+    "forgot": {
+      "title": "Восстановление пароля",
+      "description": "Введите email для восстановления пароля",
+      "email": "Email",
+      "backToLogin": "Вернуться ко входу",
+      "submit": "Отправить",
+      "success": "Инструкции отправлены на email",
+      "loading": "Загрузка..."
+    },
+    "reset": {
+      "title": "Сброс пароля",
+      "description": "Введите новый пароль",
+      "confirmPassword": "Подтвердите пароль",
+      "submit": "Сбросить пароль",
+      "success": "Пароль успешно изменен",
+      "backToLogin": "Вернуться ко входу",
+      "loading": "Загрузка...",
+      "newPassword": "Новый пароль"
+    },
+    "invite": {
+      "accept": {
+        "title": "Принять приглашение",
+        "description": "Создайте учетную запись",
+        "password": "Пароль",
+        "confirmPassword": "Подтвердите пароль",
+        "firstName": "Имя",
+        "lastName": "Фамилия",
+        "loading": "Загрузка...",
+        "submit": "Создать учетную запись",
+        "passwordMismatch": "Пароли не совпадают",
+        "genericError": "Ошибка создания учетной записи"
+      },
+      "validation": {
+        "title": "Проверка приглашения",
+        "description": "Проверяем ваше приглашение...",
+        "loading": "Загрузка...",
+        "status": {
+          "valid": "Действительное",
+          "invalid": "Недействительное"
+        },
+        "statusLabel": "Статус",
+        "extraTitle": "Дополнительная информация",
+        "continue": "Продолжить",
+        "invalidStatusHint": "Приглашение недействительно или просрочено",
+        "emailLabel": "Email",
+        "error": "Ошибка проверки",
+        "expiresLabel": "Действует до",
+        "noteLabel": "Примечание",
+        "tutorLabel": "Репетитор"
+      },
+      "errors": {}
+    },
+    "mfa": {
+      "setup": {
+        "title": "Настройка двухфакторной аутентификации",
+        "description": "Сканируйте QR-код с помощью приложения-аутентификатора (Google Authenticator, Authy и т.д.)",
+        "secretLabel": "Или введите код вручную",
+        "backupCodesTitle": "Резервные коды",
+        "backupCodesDescription": "Сохраните эти коды в безопасном месте. Каждый код можно использовать только один раз.",
+        "downloadCodes": "Скачать коды",
+        "otpLabel": "Код подтверждения",
+        "confirm": "Подтвердить",
+        "cancel": "Отмена",
+        "successMessage": "Двухфакторная аутентификация успешно настроена",
+        "close": "Закрыть",
+        "errors": {
+          "initFailed": "Не удалось инициализировать настройку MFA",
+          "invalidCode": "Неверный код подтверждения",
+          "confirmFailed": "Не удалось подтвердить настройку MFA"
+        }
+      },
+      "verify": {
+        "title": "Подтверждение входа",
+        "description": "Введите код из приложения-аутентификатора",
+        "otpLabel": "Код подтверждения",
+        "submit": "Подтвердить",
+        "cancel": "Отмена",
+        "useBackupCode": "Использовать резервный код",
+        "errors": {
+          "invalidCode": "Неверный код подтверждения",
+          "verifyFailed": "Не удалось подтвердить код"
+        }
+      },
+      "status": {
+        "title": "Двухфакторная аутентификация",
+        "subtitle": "Дополнительный уровень безопасности для вашего аккаунта",
+        "enabled": "Двухфакторная аутентификация включена",
+        "disabled": "Двухфакторная аутентификация отключена",
+        "enable": "Включить MFA",
+        "disable": "Отключить MFA",
+        "regenerateCodes": "Перегенерировать резервные коды",
+        "viewCodes": "Просмотреть резервные коды",
+        "backupCodesInfoTitle": "Резервные коды для восстановления доступа",
+        "backupCodesInfoDescription": "Резервные коды показываются только один раз во время настройки двухфакторной аутентификации. Сохраните их в безопасном месте. Если вы потеряли коды, выключите и снова включите MFA.",
+        "disableConfirm": "Вы уверены, что хотите отключить двухфакторную аутентификацию?",
+        "passwordPrompt": "Введите ваш пароль для подтверждения",
+        "otpPrompt": "Введите код подтверждения из приложения-аутентификатора",
+        "disableSuccess": "Двухфакторная аутентификация отключена",
+        "regenerateConfirm": "Вы уверены, что хотите перегенерировать резервные коды? Старые коды перестанут работать.",
+        "regenerateSuccess": "Резервные коды успешно перегенерированы",
+        "enableSuccess": "Двухфакторная аутентификация успешно включена",
+        "errors": {
+          "disableFailed": "Не удалось отключить MFA",
+          "regenerateFailed": "Не удалось перегенерировать резервные коды",
+          "invalidOtpFormat": "Код должен содержать 6 цифр",
+          "invalidOtpCode": "Неверный код подтверждения. Проверьте код в приложении-аутентификаторе",
+          "mfaNotEnabled": "Двухфакторная аутентификация не включена"
+        }
+      }
+    },
+    "unlock": {
+      "request": {
+        "title": "Запрос на разблокировку аккаунта",
+        "description": "Введите ваш email, и мы отправим инструкции для разблокировки",
+        "emailLabel": "Email",
+        "submit": "Отправить запрос",
+        "loading": "Отправляем...",
+        "successMessage": "Инструкции отправлены на ваш email",
+        "backToLogin": "Вернуться ко входу",
+        "errors": {
+          "requiredEmail": "Введите email",
+          "requestFailed": "Не удалось отправить запрос"
+        }
+      },
+      "confirm": {
+        "title": "Подтверждение разблокировки",
+        "description": "Введите код из email для разблокировки аккаунта",
+        "tokenLabel": "Код разблокировки",
+        "submit": "Разблокировать",
+        "cancel": "Отмена",
+        "successMessage": "Аккаунт успешно разблокирован. Теперь вы можете войти.",
+        "errors": {
+          "requiredToken": "Введите код разблокировки",
+          "invalidToken": "Неверный или просроченный код",
+          "confirmFailed": "Не удалось разблокировать аккаунт"
+        }
+      }
+    },
+    "trial": {
+      "banner": {
+        "title": "У вас осталось {days} дней пробного периода",
+        "lastDay": "Последний день пробного периода",
+        "description": "Воспользуйтесь всеми возможностями платформы",
+        "expiringSoonDescription": "Обновите план, чтобы продолжить пользоваться всеми функциями",
+        "upgradeButton": "Обновить план"
+      },
+      "status": {
+        "title": "Пробный период",
+        "subtitle": "Статус вашего пробного периода",
+        "daysRemaining": "Дней осталось",
+        "active": "Пробный период активен",
+        "expiringSoon": "Пробный период заканчивается",
+        "lastDay": "Последний день пробного периода",
+        "notActive": "Пробный период не активен",
+        "activeDescription": "У вас есть {days} дней для тестирования платформы",
+        "expiringSoonDescription": "Осталось {days} дней. Обновите план вовремя.",
+        "lastDayDescription": "Это последний день вашего пробного периода",
+        "upgradeButton": "Обновить план"
+      }
+    }
+  },
+  "common": {
+    "loading": "Загрузка...",
+    "error": "Ошибка",
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "delete": "Удалить",
+    "edit": "Редактировать",
+    "close": "Закрыть",
+    "confirm": "Подтвердить",
+    "back": "Назад",
+    "next": "Далее",
+    "submit": "Отправить",
+    "search": "Поиск",
+    "filter": "Фильтр",
+    "sort": "Сортировка",
+    "clear": "Очистить",
+    "apply": "Применить",
+    "reset": "Сбросить",
+    "retry": "Попробовать еще раз",
+    "yes": "Да",
+    "no": "Нет",
+    "notSpecified": "Не указано",
+    "years": "лет",
+    "hour": "час",
+    "later": "Позже",
+    "offline": {
+      "title": "Офлайн",
+      "message": "Вы не в сети",
+      "lastSync": "Последняя синхронизация",
+      "retrying": "Повторная попытка",
+      "retry": "Повторить"
+    },
+    "justNow": "Только что",
+    "minutesAgo": "{count} мин назад",
+    "hoursAgo": "{count} час назад",
+    "daysAgo": "{count} дн. назад",
+    "accept": "Принять",
+    "all": "Все",
+    "confirmDelete": "Вы уверены, что хотите удалить?",
+    "confirmDiscard": "Отменить несохраненные изменения?",
+    "continue": "Продолжить",
+    "copy": "Копировать",
+    "creating": "Создаем",
+    "currency": "Валюта",
+    "decline": "Отклонить",
+    "selected": "выбрано",
+    "executing": "Выполняем",
+    "exit": "Выйти",
+    "lock": "Заблокировать",
+    "min": "мин",
+    "minutes": "Минуты",
+    "moveDown": "Переместить вниз",
+    "moveUp": "Переместить вверх",
+    "nextWeek": "Следующая неделя",
+    "of": "из",
+    "open": "Открыть",
+    "optional": "Необязательно",
+    "other": "Другое",
+    "previous": "Предыдущая",
+    "previousWeek": "Предыдущая неделя",
+    "refresh": "Обновить",
+    "reject": "Отклонить",
+    "remove": "Удалить",
+    "saving": "Сохраняем",
+    "submitting": "Отправляем...",
+    "searching": "Поиск",
+    "showing": "Показано",
+    "noResults": "Ничего не найдено",
+    "notSet": "Не указано",
+    "there": "там",
+    "today": "Сегодня",
+    "understood": "Понятно",
+    "unlock": "Разблокировать",
+    "bookLesson": "Забронировать занятие",
+    "joinCurrentLesson": "Присоединиться к занятию",
+    "openLessonChat": "Открыть чат занятия",
+    "bookLessonToChat": "Забронируйте занятие для чата",
+    "never": "Никогда",
+    "loadMore": "Загрузить еще",
+    "moreActions": "Больше действий",
+    "unknown": "Неизвестно",
+    "unavailable": "Недоступно",
+    "rateLimit": {
+      "title": "Лимит запросов превышен",
+      "message": "Слишком много запросов. Подождите перед повтором.",
+      "seconds": "секунд",
+      "tryNow": "Попробовать сейчас",
+      "waiting": "Ожидание..."
+    },
+    "weekdays": {
+      "monday": "Понедельник",
+      "tuesday": "Вторник",
+      "wednesday": "Среда",
+      "thursday": "Четверг",
+      "friday": "Пятница",
+      "saturday": "Суббота",
+      "sunday": "Воскресенье",
+      "short": {
+        "mon": "Пн",
+        "tue": "Вт",
+        "wed": "Ср",
+        "thu": "Чт",
+        "fri": "Пт",
+        "sat": "Сб",
+        "sun": "Вс"
+      },
+      "${weekday}": "{weekday}",
+      "${day}": "{day}"
+    },
+    "emptyState": {
+      "defaultTitle": "Пока пусто",
+      "defaultDescription": "Нет данных для отображения."
+    }
+  },
+  "ui": {
+    "cancel": "Отмена",
+    "save": "Сохранить",
+    "saving": "Сохранение...",
+    "add": "Добавить",
+    "dismiss": "Закрыть",
+    "reset": "Сбросить",
+    "back": "Назад",
+    "loading": "Загрузка...",
+    "previous": "Предыдущая",
+    "next": "Следующая",
+    "copied": "Скопировано",
+    "error": "Ошибка",
+    "emptyState": {
+      "defaultTitle": "Пока пусто",
+      "defaultDescription": "Нет данных для отображения."
+    },
+    "optional": "Необязательно"
+  },
+  "nav": {
+    "logout": "Выйти",
+    "side": "Боковая навигация",
+    "theme": {
+      "label": "Тема",
+      "light": "Светлая",
+      "dark": "Темная",
+      "classic": "Классическая"
+    }
+  },
+  "notifications": {
+    "title": "Уведомления",
+    "bell": {
+      "ariaLabel": "Уведомления",
+      "title": "Уведомления",
+      "markAllRead": "Отметить все прочитанными",
+      "viewAll": "Просмотреть все",
+      "emptyTitle": "Нет уведомлений",
+      "emptyDesc": "Новые уведомления появятся здесь",
+      "errorTitle": "Ошибка загрузки",
+      "errorDesc": "Не удалось загрузить уведомления",
+      "retry": "Попробовать еще раз"
+    },
+    "view": {
+      "title": "Уведомления",
+      "filterAll": "Все",
+      "filterUnread": "Непрочитанные",
+      "markAllRead": "Отметить все прочитанными",
+      "markRead": "Отметить прочитанным",
+      "errorTitle": "Ошибка загрузки",
+      "errorDesc": "Не удалось загрузить уведомления. Попробуйте еще раз.",
+      "retry": "Попробовать еще раз",
+      "emptyAllTitle": "Нет уведомлений",
+      "emptyAllDesc": "У вас пока нет никаких уведомлений",
+      "emptyUnreadTitle": "Все уведомления прочитаны",
+      "emptyUnreadDesc": "У вас нет непрочитанных уведомлений"
+    },
+    "preferences": {
+      "title": "Настройки уведомлений",
+      "description": "Управляйте способами получения уведомлений",
+      "emailLabel": "Email уведомления",
+      "emailHint": "Получать уведомления на электронную почту",
+      "inAppLabel": "Уведомления в приложении",
+      "inAppHint": "Показывать уведомления в интерфейсе платформы",
+      "loading": "Загрузка настроек...",
+      "errorLoading": "Не удалось загрузить настройки",
+      "saveError": "Не удалось сохранить настройки",
+      "retry": "Попробовать еще раз"
+    },
+    "dropdown": {
+      "ariaLabel": "Уведомления",
+      "open": "Открыть меню уведомлений",
+      "title": "Уведомления",
+      "markAll": "Отметить все прочитанными",
+      "loadMore": "Загрузить еще",
+      "loadingMore": "Загрузка...",
+      "refresh": "Обновить",
+      "noUnread": "Все уведомления просмотрены",
+      "unread": "Непрочитано: {count}",
+      "loadingSubtitle": "Синхронизируем активность...",
+      "emptySubtitle": "Новых уведомлений нет",
+      "emptyTitle": "Тут пока тихо",
+      "emptyDescription": "Реальные обновления будут появляться здесь.",
+      "errorTitle": "Не удалось загрузить",
+      "errorDescription": "Попробуйте повторить через минуту.",
+      "retry": "Повторить",
+      "genericDescription": "Новое обновление в вашем пространстве.",
+      "offlineBadge": "Офлайн",
+      "offlineSubtitle": "Нет подключения",
+      "titleTemplate": "Шаблон заголовка"
+    }
+  },
+  "dev": {
+    "playground": "Песочница компонентов",
+    "theme": "Темы"
+  },
+  "devPlayground": {
+    "sidebar": {
+      "label": "Разделы",
+      "ariaLabel": "Навигация по песочнице компонентов",
+      "controls": "Контролы",
+      "controlsHint": "Кнопки, инпуты, селекты",
+      "feedback": "Фидбек",
+      "feedbackHint": "Алерты, бейджи, пустые состояния",
+      "tables": "Таблицы",
+      "tablesHint": "Макеты и контраст",
+      "tokens": "Токены",
+      "tokensHint": "Живые CSS переменные",
+      "notifications": "Уведомления",
+      "notificationsHint": "Подсказка уведомлений"
+    },
+    "subtitle": "Проверяйте каждую тему, состояние и токен перед релизом.",
+    "themeSwitcher": {
+      "label": "Пресеты тем",
+      "active": "Активная:"
+    },
+    "themeOptions": {
+      "light": {},
+      "dark": {},
+      "classic": {},
+      "${value}": {
+        "label": "{value}",
+        "description": ""
+      }
+    },
+    "themeMeta": {
+      "light": {
+        "title": "Light",
+        "subtitle": "Основная production-тема"
+      },
+      "dark": {
+        "title": "Dark",
+        "subtitle": "Контрастная immersive-версия"
+      },
+      "classic": {
+        "title": "Classic",
+        "subtitle": "Фиолетовый legacy-комплект"
+      }
+    },
+    "sections": {
+      "buttons": "Кнопки",
+      "inputs": "Инпуты и селекты",
+      "badges": "Бейджи и алерты",
+      "modal": "Модальное окно",
+      "modalDescription": "Оценка диалога, фокуса и форм.",
+      "table": "Пример таблицы"
+    },
+    "buttons": {
+      "primary": "Primary",
+      "secondary": "Secondary",
+      "outline": "Outline",
+      "ghost": "Ghost",
+      "danger": "Danger",
+      "loading": "Loading",
+      "disabled": "Disabled"
+    },
+    "inputs": {
+      "normalLabel": "Стандартный инпут",
+      "normalPlaceholder": "Введите текст...",
+      "errorLabel": "Ошибка валидации",
+      "errorMessage": "Исправьте ошибки перед отправкой.",
+      "successLabel": "Успешное состояние",
+      "successHelp": "Синхронизированное значение: {value}",
+      "selectLabel": "Вариант селекта",
+      "selectPlaceholder": "Выберите палитру",
+      "selectOptions": {
+        "emerald": "Emerald",
+        "cyan": "Cyan",
+        "violet": "Violet"
+      }
+    },
+    "badges": {
+      "default": "Стандарт",
+      "success": "Успех",
+      "warning": "Предупреждение",
+      "danger": "Опасность",
+      "muted": "Приглушенный"
+    },
+    "alerts": {
+      "success": {
+        "title": "Токены синхронизированы",
+        "body": "Текущие значения совпадают с дизайн-спеком."
+      },
+      "warning": {
+        "title": "Задержка API",
+        "body": "Задержка превышает порог — обновите данные."
+      },
+      "danger": {
+        "title": "Критический регресс",
+        "body": "Тема отличается от релизной базы."
+      }
+    },
+    "actions": {
+      "refresh": "Обновить токены",
+      "openModal": "Открыть модалку",
+      "save": "Сохранить черновик"
+    },
+    "modal": {
+      "title": "Создать демо-карточку",
+      "fields": {
+        "title": "Заголовок",
+        "subtitle": "Подзаголовок"
+      }
+    },
+    "table": {
+      "headers": {
+        "component": "Компонент",
+        "state": "Состояние",
+        "contrast": "Контраст",
+        "notes": "Примечания"
+      },
+      "rows": {
+        "buttons": {
+          "component": "Button / Primary",
+          "state": "Hover",
+          "contrast": "AA+",
+          "notes": "Проверить свечение в dark-mode."
+        },
+        "inputs": {
+          "component": "Input / Outline",
+          "state": "Error",
+          "contrast": "AA",
+          "notes": "Согласовать оттенок красного по WCAG."
+        },
+        "badges": {
+          "component": "Badge",
+          "state": "Muted",
+          "contrast": "AA-",
+          "notes": "Усилить непрозрачность текста."
+        }
+      }
+    },
+    "liveTokens": {
+      "title": "Живые CSS токены",
+      "subtitle": "Значения, примененные к :root."
+    },
+    "designTokens": {
+      "title": "Design tokens",
+      "subtitle": "Референс для QA и Percy-скринов."
+    },
+    "notifications": {
+      "invalidJson": "Неверный JSON",
+      "jsonHint": "Подсказка JSON",
+      "jsonLabel": "Метка JSON",
+      "logEmpty": "Журнал пуст",
+      "logPing": "Пинг журнала",
+      "logSubtitle": "Подзаголовок журнала",
+      "logTitle": "Заголовок журнала",
+      "previewFallbackBody": "Тело предварительного просмотра",
+      "previewFallbackTitle": "Заголовок предварительного просмотра",
+      "previewTag": "Тег предварительного просмотра",
+      "previewTone": "Тон предварительного просмотра",
+      "pushButton": "Отправить",
+      "simulateOfflineOff": "Симуляция офлайн выключена",
+      "simulateOfflineOn": "Симуляция офлайн включена",
+      "subtitle": "Подзаголовок",
+      "title": "Уведомления"
+    }
+  },
+  "menu": {
+    "studentDashboard": "Кабинет студента",
+    "dashboard": "Панель управления",
+    "classrooms": "Классы",
+    "students": "Студенты",
+    "lessons": "Занятия",
+    "calendar": "Календарь",
+    "marketplace": "Маркетплейс",
+    "tutorCalendar": "Календарь репетитора",
+    "soloWorkspace": "Рабочее пространство",
+    "soloWorkspaceV2": "Solo v2",
+    "profile": "Профиль",
+    "tutorProfile": "Профиль репетитора",
+    "account": "Аккаунт",
+    "settings": "Настройки"
+  },
+  "userProfile": {
+    "account": {
+      "title": "Аккаунт",
+      "subtitle": "Основные данные пользователя.",
+      "personalInfo": "Личная информация",
+      "emailDescription": "Ваш электронный адрес для входа и уведомлений",
+      "passwordDescription": "Измените пароль для входа в систему",
+      "firstName": "Имя",
+      "lastName": "Фамилия",
+      "username": "Username",
+      "email": "Email",
+      "password": "Пароль",
+      "timezone": "Часовой пояс",
+      "save": "Сохранить",
+      "loadError": "Не удалось загрузить аккаунт.",
+      "saveSuccess": "Сохранено.",
+      "saveError": "Не удалось сохранить.",
+      "avatarUpdated": "Аватар обновлен.",
+      "avatarUpdateError": "Не удалось обновить аватар.",
+      "avatarDeleted": "Аватар удален.",
+      "avatarDeleteError": "Не удалось удалить аватар.",
+      "changeEmail": "Изменить email",
+      "changePassword": "Изменить пароль",
+      "yourPlan": "Ваш план"
+    },
+    "changeEmail": {
+      "title": "Изменение email",
+      "subtitle": "Введите новый email и текущий пароль.",
+      "newEmail": "Новый email",
+      "password": "Текущий пароль",
+      "submit": "Изменить email",
+      "success": "Письмо подтверждения отправлено на новый адрес.",
+      "error": "Не удалось изменить email."
+    },
+    "changePassword": {
+      "title": "Изменение пароля",
+      "subtitle": "Введите текущий и новый пароль.",
+      "currentPassword": "Текущий пароль",
+      "newPassword": "Новый пароль",
+      "confirmPassword": "Повторите новый пароль",
+      "submit": "Изменить пароль",
+      "success": "Пароль успешно изменен.",
+      "error": "Не удалось изменить пароль.",
+      "mismatch": "Пароли не совпадают."
+    },
+    "eventModal": {}
+  },
+  "loader": {
+    "loading": "Загрузка..."
+  },
+  "marketplace": {
+    "title": "Найти репетитора",
+    "noResults": "Репетиторов не найдено",
+    "loadMore": "Загрузить еще",
+    "filters": {
+      "subjects": "Предметы",
+      "selectSubjects": "Выберите предметы",
+      "priceRangeLabel": "Диапазон цен",
+      "min": "От",
+      "max": "До",
+      "minRating": "Минимальный рейтинг",
+      "any": "Любой",
+      "sortBy": "Сортировать",
+      "ratingDesc": "По рейтингу (убывание)",
+      "priceAsc": "По цене (возрастание)",
+      "priceDesc": "По цене (убывание)",
+      "newest": "Новые сначала",
+      "apply": "Применить",
+      "reset": "Сбросить",
+      "title": "Фильтры",
+      "clear": "Очистить",
+      "refresh": "Обновить",
+      "cacheExpiredTitle": "Данные фильтров устарели",
+      "cacheExpiredDays": "Обновлено {count} дн. назад",
+      "cacheExpiredHours": "Обновлено {count} час назад",
+      "cacheExpiredMinutes": "Обновлено {count} мин. назад",
+      "cacheExpiredJustNow": "Только что обновлено",
+      "search": "Поиск",
+      "searchPlaceholder": "Введите минимум 2 символа",
+      "language": "Язык",
+      "languages": "Языки",
+      "subject": "Предмет",
+      "category": "Категория",
+      "country": "Страна",
+      "allCountries": "Все страны",
+      "price": "Цена",
+      "priceRange": "{min} – {max}",
+      "rating": "Рейтинг",
+      "ratingMin": "от {rating}+",
+      "experience": "Опыт (лет)",
+      "experiencePlaceholder": "Напр. 3",
+      "experienceMax": "Опыт до (лет)",
+      "experienceMaxPlaceholder": "Напр. 10",
+      "direction": "Направление",
+      "directionNmt": "Подготовка к ЕГЭ",
+      "directionDpa": "Подготовка к ГИА",
+      "format": "Формат",
+      "formatOnline": "Онлайн",
+      "formatOffline": "Офлайн",
+      "formatHybrid": "Гибрид",
+      "timezone": "Часовой пояс",
+      "timezonePlaceholder": "Напр. Europe/Moscow",
+      "video": "Видео",
+      "hasVideo": "Есть видео-интро",
+      "hasCertifications": "Есть сертификаты",
+      "verified": "Верификация",
+      "verifiedOnly": "Только верифицированные",
+      "clearAll": "Очистить все"
+    },
+    "availableSlots": "Доступные слоты",
+    "noAvailableSlots": "Нет доступных слотов",
+    "tagGroups": {
+      "grades": "Классы",
+      "exams": "Экзамены",
+      "levels": "Уровни",
+      "goals": "Цели",
+      "formats": "Форматы",
+      "audience": "Аудитория",
+      "${groupName}": "{groupName}",
+      "${group}": "{group}"
+    },
+    "subjects": {
+      "title": "Предметы",
+      "modeSelector": {
+        "title": "Что вы преподаете?",
+        "subjects": "Предметы",
+        "languagesAsSubjects": "Языки как предмет",
+        "teachingLanguageHint": "Язык преподавания настраивается во вкладке 'Язык преподавания'."
+      },
+      "basicSubjectsTitle": "Популярные направления",
+      "basicSubjectsHint": "Выберите предметы, которые вы преподаете",
+      "basicTitle": "Популярные направления",
+      "popularSubjectsTitle": "Популярные предметы",
+      "otherSubjectsTitle": "Другие предметы",
+      "searchPlaceholder": "Поиск предметов...",
+      "languagesAsSubjectsTitle": "Языки для изучения",
+      "languagesAsSubjectsHint": "Выберите языки, которые вы преподаете как предметы для изучения (не языки преподавания)",
+      "popularLanguagesTitle": "Популярные языки",
+      "popularLanguagesHint": "Выберите языки для изучения",
+      "otherLanguagesTitle": "Другие языки",
+      "selectedTitle": "Выбранные предметы",
+      "selectedHint": "Настройте теги и описание для каждого предмета",
+      "english": "Английский",
+      "spanish": "Испанский",
+      "french": "Французский",
+      "german": "Немецкий",
+      "ukrainian": "Украинский",
+      "polish": "Польский",
+      "chinese": "Китайский",
+      "japanese": "Японский",
+      "mathematics": "Математика",
+      "physics": "Физика",
+      "chemistry": "Химия",
+      "biology": "Биология",
+      "computer-science": "Компьютерные науки",
+      "business-english": "Бизнес-английский",
+      "marketing": "Маркетинг",
+      "finance": "Финансы",
+      "management": "Менеджмент",
+      "piano": "Фортепиано",
+      "guitar": "Гитара",
+      "drawing": "Рисование",
+      "photography": "Фотография",
+      "ielts": "Подготовка к IELTS",
+      "toefl": "Подготовка к TOEFL",
+      "sat": "Подготовка к SAT",
+      "gre": "Подготовка к GRE",
+      "${code}": "{code}",
+      "emptyState": "Выберите предметы из списка выше",
+      "descriptionPlaceholder": "Опишите ваш подход к преподаванию этого предмета (0-800 символов)",
+      "tabs": {
+        "classes": "Классы",
+        "exams": "Экзамены",
+        "goals": "Цели",
+        "format": "Формат",
+        "audience": "Аудитория",
+        "description": "Описание"
+      }
+    },
+    "languages": {
+      "popularTitle": "Язык как предмет для изучения",
+      "otherTitle": "Другие языки",
+      "searchPlaceholder": "Поиск языка...",
+      "selectedTitle": "Выбранные языки",
+      "emptyState": "Выберите языки из списка выше",
+      "levelNotSet": "уровень не указан",
+      "descriptionPlaceholder": "Опишите ваш подход к преподаванию этого языка (0-800 символов)",
+      "tabs": {
+        "level": "Уровень",
+        "format": "Формат",
+        "goals": "Цели",
+        "audience": "Аудитория",
+        "description": "Описание"
+      }
+    },
+    "editor": {
+      "noTagsAvailable": "Нет доступных тегов для этой категории",
+      "tagMapNotConfigured": "Теги не настроены",
+      "tagMapNotConfiguredHint": "Для этого предмета еще не настроен список доступных тегов. Вы можете заполнить описание во вкладке \"Описание\"."
+    },
+    "countries": {
+      "ukraine": "Украина",
+      "poland": "Польша",
+      "germany": "Германия",
+      "spain": "Испания",
+      "france": "Франция",
+      "italy": "Италия",
+      "unitedKingdom": "Великобритания",
+      "unitedStates": "США",
+      "canada": "Канада",
+      "australia": "Австралия",
+      "turkey": "Турция",
+      "india": "Индия",
+      "china": "Китай",
+      "brazil": "Бразилия",
+      "czechia": "Чехия",
+      "slovakia": "Словакия",
+      "romania": "Румыния",
+      "hungary": "Венгрия",
+      "${country.labelKey}": "{country.labelKey}"
+    },
+    "availability": {
+      "title": "Доступность репетитора",
+      "empty": "Нет доступных слотов",
+      "loadError": "Не удалось загрузить доступность."
+    },
+    "calendar": {
+      "title": "Часы, когда репетитор проводит занятия",
+      "infoNote": "Это информационное расписание. Забронировать занятие можно через запрос",
+      "errorHorizon": "Невозможно загрузить календарь за пределами 4 недель",
+      "errorLoad": "Не удалось загрузить доступность",
+      "bookSlotAria": "Забронировать слот на {time}"
+    },
+    "trialRequest": {
+      "title": "Подтверждение пробного занятия",
+      "timeLabel": "Время",
+      "durationLabel": "Длительность",
+      "minutesShort": "мин",
+      "submit": "Забронировать пробное занятие",
+      "submitting": "Отправляем...",
+      "success": "Запрос на пробное занятие отправлен (pending).",
+      "error": "Не удалось создать запрос.",
+      "refreshCalendar": "Обновить календарь",
+      "slotUnavailable": "Слот недоступен"
+    },
+    "common": {
+      "perHour": "/ час"
+    },
+    "errors": {
+      "validationFailed": "Ошибка валидации",
+      "validation": "Проверьте корректность данных.",
+      "slotConflict": "Слот уже занят. Выберите другое время.",
+      "rateLimited": "Слишком много запросов. Попробуйте позже.",
+      "payloadTooLarge": "Данные слишком большие. Уменьшите объем и попробуйте еще раз.",
+      "forbidden": "Доступ запрещен.",
+      "serverError": "Ошибка сервера. Попробуйте позже.",
+      "loadTutors": "Не удалось загрузить репетиторов.",
+      "loadProfile": "Не удалось загрузить профиль репетитора.",
+      "createProfile": "Не удалось создать профиль.",
+      "updateProfile": "Не удалось сохранить профиль.",
+      "submitForReview": "Не удалось отправить профиль на модерацию.",
+      "publishProfile": "Не удалось опубликовать профиль.",
+      "unpublishProfile": "Не удалось снять профиль с публикации.",
+      "profileIncomplete": "Профиль неполный. Заполните все обязательные поля.",
+      "pendingReview": "Профиль на проверке (обычно до 24 часов).",
+      "profileSuspended": "Профиль приостановлен. Обратитесь к администратору.",
+      "profileNotCreated": "Профиль еще не создан.",
+      "limitExceeded": "Лимит {type} исчерпан ({used}/{max}). Обновление {resetDate}",
+      "notFound": "Не найдено",
+      "unknown": "Неизвестная ошибка"
+    },
+    "tutorCard": {
+      "experience": "Опыт",
+      "rate": "Ставка",
+      "language": "Язык",
+      "experienceYears": "{years} лет"
+    },
+    "sort": {
+      "label": "Сортировка",
+      "default": "По умолчанию",
+      "rating": "По рейтингу",
+      "price_asc": "Цена: от дешевых",
+      "price_desc": "Цена: от дорогих",
+      "experience_desc": "Наибольший опыт"
+    },
+    "catalog": {
+      "title": "Найдите своего репетитора",
+      "subtitle": "Доступно {count} репетиторов",
+      "resultsCount": "Найдено: {count}",
+      "tabs": {
+        "summary": "Резюме",
+        "about": "О себе",
+        "calendar": "Календарь"
+      },
+      "errorTitle": "Что-то пошло не так",
+      "errorDescription": "Попробуйте повторить или очистить фильтры",
+      "clearFilters": "Очистить фильтры",
+      "loadMore": "Показать еще",
+      "emptyTitle": "Репетиторов не найдено",
+      "emptyDescription": "Измените фильтры или критерии поиска"
+    },
+    "search": {
+      "placeholder": "Поиск репетиторов, предметов...",
+      "recentTitle": "Недавние поиски",
+      "suggestionsTitle": "Подсказки",
+      "pressEnter": "Нажмите Enter, чтобы искать \"{query}\"",
+      "resultsCount": "Найдено: {count}",
+      "showResults": "Показать результаты ({count})",
+      "tutorsPlural": "репетиторов",
+      "apply": "Применить",
+      "availableSlots": "Доступные слоты",
+      "clearFilters": "Очистить фильтры",
+      "experience": "Опыт",
+      "filters": "Фильтры",
+      "languages": "Языки",
+      "max": "Макс",
+      "min": "Мин",
+      "minRating": "Мин. рейтинг",
+      "minYears": "Мин. лет",
+      "noResults": "Нет результатов",
+      "priceRange": "Диапазон цен",
+      "rating": "Рейтинг",
+      "search": "Поиск",
+      "subjects": "Предметы"
+    },
+    "sections": {
+      "popular": "Популярные репетиторы",
+      "new": "Новые репетиторы",
+      "recommended": "Рекомендовано для вас",
+      "featured": "Избранные репетиторы",
+      "viewAll": "Просмотреть все",
+      "loadError": "Не удалось загрузить репетиторов"
+    },
+    "categories": {
+      "title": "Категории",
+      "featuredBadge": "Рекомендовано",
+      "all": "Все",
+      "tutorsAvailable": "Доступно {count} репетиторов",
+      "allTutorsTitle": "Все репетиторы",
+      "subjectTutorsTitle": "Репетиторы по предмету: {subject}",
+      "emptyTitle": "Пока нет репетиторов в этой категории",
+      "emptyDescription": "Попробуйте другую категорию или поверьтесь позже",
+      "featured": "Рекомендации"
+    },
+    "featured": {
+      "title": "Избранные репетиторы",
+      "subtitle": "Лучшие репетиторы нашей платформы",
+      "sponsored": "Спонсорировано",
+      "loadError": "Не удалось загрузить избранных репетиторов",
+      "empty": "Сейчас нет избранных репетиторов"
+    },
+    "recommendations": {
+      "title": "Рекомендовано для вас",
+      "subtitle": "На основе ваших интересов",
+      "reason": "Соответствует вашим предметам",
+      "loadError": "Не удалось загрузить рекомендации",
+      "empty": "Сейчас нет рекомендаций"
+    },
+    "verification": {
+      "badge": {
+        "basic": "Базовая",
+        "advanced": "Расширенная",
+        "premium": "Премиум",
+        "basicTooltip": "Базовая верификация: подтверждены документы",
+        "advancedTooltip": "Расширенная верификация: подтверждено образование и опыт",
+        "premiumTooltip": "Премиум верификация: полная проверка и рекомендации"
+      },
+      "widget": {
+        "title": "Верификация профиля",
+        "currentLevel": "Текущий уровень",
+        "expiresOn": "Действует до",
+        "pendingReview": "На рассмотрении",
+        "pendingTasks": "Необходимо выполнить",
+        "noVerification": "Вы еще не верифицированы",
+        "requestVerification": "Запросить верификацию",
+        "requestUpgrade": "Повысить до {level}"
+      },
+      "modal": {
+        "title": "Запрос на верификацию: {level}",
+        "step1": "Документы",
+        "step2": "Видео",
+        "step3": "Информация",
+        "documentsTitle": "Загрузите документы",
+        "documentsDescription": "Паспорт, диплом или сертификаты (PDF, JPG, PNG, до 10MB)",
+        "uploadDocuments": "Загрузить документы",
+        "uploadHint": "PDF, JPG, PNG до 10MB",
+        "invalidFiles": "Некоторые файлы не соответствуют требованиям",
+        "videoTitle": "Видео-презентация",
+        "videoDescription": "Ссылка на видео (YouTube, Vimeo)",
+        "videoLinkLabel": "Ссылка на видео",
+        "videoLinkPlaceholder": "https://youtube.com/...",
+        "backgroundTitle": "О вашем опыте",
+        "backgroundDescription": "Расскажите о вашем опыте преподавания (минимум 50 символов)",
+        "backgroundLabel": "Описание опыта",
+        "backgroundPlaceholder": "Я преподаю математику более 5 лет...",
+        "submitSuccess": "Запрос отправлен! Ожидайте рассмотрения в течение 24-48 часов",
+        "submitError": "Не удалось отправить запрос. Попробуйте позже"
+      }
+    },
+    "analytics": {
+      "title": "Аналитика профиля",
+      "loadError": "Не удалось загрузить аналитику",
+      "exportCSV": "Экспорт CSV",
+      "range": {
+        "7d": "7 дней",
+        "30d": "30 дней",
+        "90d": "90 дней"
+      },
+      "profileViews": {
+        "daily": "Просмотры за день",
+        "weekly": "Просмотры за неделю"
+      },
+      "inquiryConversion": "Конверсия запросов",
+      "responseRate": "Процент ответов",
+      "viewsOverTime": "Просмотры за период",
+      "topSubjects": "Топ предметов",
+      "zeroResults": {
+        "title": "Запросы без результатов",
+        "description": "Добавьте эти предметы, чтобы появляться в поиске",
+        "searches": "поисков"
+      }
+    },
+    "profile": {
+      "completenessScore": "Заполнено",
+      "title": "Профиль репетитора",
+      "viewPublic": "Просмотреть публичный профиль",
+      "backToCatalog": "Назад к каталогу",
+      "watchIntro": "Смотреть интро",
+      "experienceYears": "Стаж: {n} лет",
+      "experienceYearsNotSpecified": "Стаж: не указан",
+      "errors": {
+        "headlineRequired": "Укажите заголовок.",
+        "bioRequired": "Укажите описание о себе.",
+        "hourlyRatePositive": "Ставка за час должна быть больше 0.",
+        "currencyRequired": "Выберите валюту.",
+        "experienceNonNegative": "Стаж должен быть неотрицательным числом.",
+        "birthYearInvalid": "Год рождения должен быть в диапазоне 1900–2100.",
+        "subjectsRequired": "Выберите хотя бы один предмет.",
+        "subjectCodeRequired": "Выберите предмет.",
+        "customDirectionLength": "Описание подхода должно быть от 50 до 800 символов.",
+        "languagesRequired": "Выберите хотя бы один язык.",
+        "teachingLanguagesRequired": "Выберите хотя бы один язык преподавания."
+      },
+      "stats": {
+        "lessons": "занятий",
+        "students": "студентов"
+      },
+      "notFound": {
+        "title": "Репетитор не найден",
+        "description": "Профиль не существует или был удален.",
+        "backCta": "В каталог"
+      },
+      "subjectsTitle": "Предметы и направления",
+      "aboutApproach": "Резюме",
+      "subjectLevel": {
+        "beginner": "Начальный",
+        "intermediate": "Средний",
+        "advanced": "Продвинутый",
+        "expert": "Эксперт"
+      },
+      "badgesTitle": "Достижения",
+      "badgesHistory": {
+        "title": "История наград",
+        "loading": "Загружаем...",
+        "empty": "Наград пока нет",
+        "unknownBadge": "Награда",
+        "loadError": "Не удалось загрузить награды."
+      },
+      "viewFullCalendar": "Полный календарь",
+      "viewCalendar": "Просмотреть календарь",
+      "nextAvailable": "Следующее доступное время",
+      "availabilityThisWeek": "Доступность этой недели",
+      "noAvailability": "Нет доступных слотов",
+      "noSlotsAvailable": "Нет слотов",
+      "today": "Сегодня",
+      "tomorrow": "Завтра",
+      "inMinutes": "через {count} мин",
+      "inHours": "через {count} час",
+      "inDays": "через {count} дн",
+      "fullCalendar": "Полный календарь",
+      "calendarPlaceholder": "Календарь загружается...",
+      "weeklyHours": "Часов в неделю",
+      "nextSlots": "Следующие слоты",
+      "upcomingSlots": "Ближайшие слоты",
+      "noUpcomingSlots": "Нет ближайших слотов",
+      "loadError": "Не удалось загрузить доступность",
+      "contact": {
+        "trialLesson": "Пробное занятие",
+        "respondsInHours": "Обычно отвечает за {hours} час",
+        "bookLesson": "Запланировать занятие",
+        "sendMessage": "Отправить сообщение"
+      },
+      "about": {
+        "notProvided": "Информация не предоставлена"
+      },
+      "calendar": {
+        "notConfigured": "Календарь еще не настроен"
+      },
+      "education": {
+        "title": "Образование",
+        "present": "Сейчас",
+        "in": "в области"
+      },
+      "publish": "Опубликовать",
+      "publishing": "Публикуем...",
+      "publishSuccess": "Профиль опубликован.",
+      "publishError": "Не удалось опубликовать профиль.",
+      "unpublish": "Снять с публикации",
+      "unpublishing": "Снимаем...",
+      "unpublishSuccess": "Профиль снят.",
+      "unpublishError": "Не удалось снять профиль.",
+      "submit": "Отправить на модерацию",
+      "submitting": "Отправляем...",
+      "submitSuccess": "Профиль отправлен на модерацию.",
+      "submitError": "Не удалось отправить профиль.",
+      "validationTitle": "Нужно исправить:",
+      "incompleteTitle": "Профиль еще не готов",
+      "incompleteDescription": "Заполните фото, описание, предметы, языки и ставку.",
+      "publishedTitle": "Профиль настроен",
+      "publishedDescription": "Ваш профиль опубликован и доступен студентам.",
+      "reviews": {
+        "title": "Отзывы",
+        "empty": "Отзывов еще нет",
+        "loadMore": "Показать еще",
+        "loadError": "Не удалось загрузить отзывы",
+        "write": {
+          "title": "Оставить отзыв",
+          "ratingLabel": "Оценка",
+          "textLabel": "Отзыв",
+          "textPlaceholder": "Опишите ваш опыт занятий...",
+          "submit": "Отправить",
+          "success": "Отзыв отправлен",
+          "validation": "Проверьте корректность данных.",
+          "sendError": "Не удалось отправить отзыв."
+        }
+      },
+      "create": {
+        "title": "Создайте профиль репетитора",
+        "subtitle": "Добавьте информацию о себе — и студенты смогут вас найти.",
+        "headlinePlaceholder": "Напр. «Опытный репетитор математики»",
+        "creating": "Создаем...",
+        "cta": "Начать",
+        "benefit1": "Доступ к тысячам студентов",
+        "benefit2": "Гибкий график и ставки",
+        "benefit3": "Рост рейтинга через отзывы",
+        "benefit4": "Безопасные выплаты"
+      },
+      "editor": {
+        "photoTitle": "Фото",
+        "noPhoto": "Нет фото",
+        "basicTitle": "Основная информация",
+        "headlineLabel": "Заголовок",
+        "headlinePlaceholder": "Напр. Опытный репетитор математики",
+        "headlineHint": "Краткое описание, которое лучше всего вас характеризует",
+        "bioHint": "Краткое описание, которое видят студенты в превью",
+        "bioLabel": "О себе",
+        "bioPlaceholder": "Расскажите студентам о себе, стиле преподавания и опыте...",
+        "countryLabel": "Страна",
+        "countryPlaceholder": "Напр. Россия",
+        "timezoneLabel": "Часовой пояс",
+        "timezonePlaceholder": "Напр. Europe/Moscow",
+        "subjectsLanguagesTitle": "Предметы и языки",
+        "subjectsTitle": "Предметы",
+        "subjectsHint": "Выберите предметы, которые вы преподаете",
+        "subjectsLabel": "Предметы",
+        "languagesLabel": "Языки",
+        "teachingLanguagesTitle": "Язык преподавания",
+        "teachingLanguagesHint": "Выберите языки, на которых вы проводите занятия",
+        "selectSubject": "Выберите предмет...",
+        "selectTags": "Выберите направления",
+        "customDirectionText": "Опишите ваш подход к преподаванию",
+        "customDirectionTextPlaceholder": "Например: Готовлю к ЕГЭ за 8 недель: индивидуальный план + домашние задания + контрольные работы. Объясняю сложные темы простыми словами. Помогаю преодолеть страх перед экзаменом.",
+        "customTextTooShort": "Минимум 300 символов",
+        "customTextTooLong": "Максимум 800 символов",
+        "noSubjectsSelected": "Вы еще не выбрали ни одного предмета",
+        "dragToReorder": "Перетащите для изменения порядка",
+        "selectLanguage": "Выберите язык...",
+        "add": "Добавить",
+        "remove": "Удалить",
+        "pricingTitle": "Цены",
+        "hourlyRateLabel": "Цена за час",
+        "hourlyRatePlaceholder": "Напр. 500",
+        "hourlyRateHint": "Это ставка, которую видят студенты. Вы всегда можете изменить ее.",
+        "trialPriceLabel": "Цена пробного занятия",
+        "trialPricePlaceholder": "Опционально",
+        "trialPriceHint": "Сниженная цена для первого занятия",
+        "videoTitle": "Видео-интро",
+        "videoUrlLabel": "Ссылка на видео",
+        "videoUrlPlaceholder": "https://youtube.com/watch?v=...",
+        "videoHint": "Ссылка на YouTube или Vimeo",
+        "lessonLinksTitle": "Ссылки",
+        "privacyTitle": "Приватность",
+        "genderLabel": "Пол",
+        "genderPlaceholder": "Напр. Женщина / Мужчина / Другое",
+        "genderOptions": {
+          "female": "Женщина",
+          "male": "Мужчина",
+          "other": "Другое",
+          "unspecified": "Не указано"
+        },
+        "showGender": "Показывать пол в публичном профиле",
+        "birthYearLabel": "Год рождения",
+        "birthYearPlaceholder": "Напр. 1995",
+        "showAge": "Показывать возраст в публичном профиле",
+        "telegramLabel": "Telegram (приватно)",
+        "telegramHelper": "Студентам не показывается. Для связи используйте чат платформы.",
+        "certificationsTitle": "Дипломы (сертификаты)",
+        "certificationPublic": "Показывать в публичном профиле",
+        "certificationsTitleLabel": "Название",
+        "certificationsIssuerLabel": "Организация (опционально)",
+        "certificationsIssuedYearLabel": "Год выдачи (опционально)",
+        "certificationsFileLabel": "Файл",
+        "certificationsUploadButton": "Выбрать файл",
+        "certificationsSelectedFile": "Выбрано: {name}",
+        "certificationsNoFile": "Файл не выбран",
+        "certificationsAdd": "Добавить диплом",
+        "certificationsUploading": "Загрузка...",
+        "certificationsEmpty": "Дипломов еще нет",
+        "certificationsStatusPending": "На модерации",
+        "certificationsStatusApproved": "Подтверждено",
+        "certificationsStatusRejected": "Отклонено",
+        "certificationsLoadError": "Не удалось загрузить дипломы",
+        "certificationsUploadError": "Не удалось загрузить диплом",
+        "certificationsCreateSuccess": "Диплом добавлен",
+        "certificationsUpdateError": "Не удалось обновить диплом",
+        "certificationsDeleteSuccess": "Диплом удален",
+        "certificationsDeleteError": "Не удалось удалить диплом",
+        "certificationsValidationError": "Проверьте данные диплома",
+        "certificationsRateLimited": "Слишком много запросов. Попробуйте позже",
+        "certificationsUnsupportedType": "Неподдерживаемый тип файла",
+        "certificationsTooLarge": "Файл слишком большой",
+        "saving": "Сохранение...",
+        "save": "Сохранить изменения",
+        "publishHint": "После публикации профиль станет доступен студентам в каталоге.",
+        "experienceYearsLabel": "Опыт преподавания (лет)",
+        "experienceYearsPlaceholder": "Напр. 5",
+        "experienceYearsHint": "Сколько лет вы преподаете",
+        "validation": {
+          "headline": "Заголовок обязателен (мин. 3 символа).",
+          "bio": "Описание обязательно (мин. 10 символов).",
+          "hourlyRate": "Цена за час должна быть > 0.",
+          "subjects": "Выберите хотя бы один предмет.",
+          "languages": "Выберите хотя бы один язык.",
+          "teachingLanguages": "Выберите хотя бы один язык преподавания."
+        },
+        "teachingLanguagesLabel": "Языки преподавания",
+        "addTeachingLanguage": "Добавить язык преподавания",
+        "yourTeachingLanguages": "Ваши языки преподавания",
+        "noTeachingLanguages": "Вы еще не добавили языки преподавания",
+        "noTeachingLanguagesHint": "Добавьте хотя бы один язык, на котором вы проводите занятия",
+        "teachingLanguagesAddHint": "Выберите языки, на которых вы проводите занятия, и ваш уровень владения",
+        "levelFor": "Уровень для",
+        "selectLevel": "Выберите уровень",
+        "languageLevels": {
+          "basic": "Начальный",
+          "conversational": "Разговорный",
+          "intermediate": "Средний",
+          "fluent": "Свободно",
+          "native": "Родной"
+        },
+        "offline": {}
+      },
+      "status": {
+        "draft": "Черновик",
+        "pending_review": "На модерации",
+        "approved": "Опубликовано",
+        "rejected": "Отклонено",
+        "suspended": "Приостановлено"
+      }
+    },
+    "draft": {
+      "conflictTitle": "Конфликт изменений",
+      "conflictDescription": "Локальные изменения конфликтуют с серверной версией.",
+      "conflictFields": "Поля с конфликтами",
+      "useServer": "Взять серверную версию",
+      "useServerDescription": "Отклонить локальные изменения.",
+      "useLocal": "Взять локальную версию",
+      "useLocalDescription": "Перезаписать серверные изменения.",
+      "manualMerge": "Ручное слияние",
+      "manualMergeDescription": "Открыть редактор для ручного разрешения конфликтов."
+    }
+  },
+  "student": {
+    "myTutors": {
+      "title": "Мои репетиторы",
+      "empty": "У вас еще нет активных репетиторов",
+      "findTutor": "Найти репетитора",
+      "lastActivity": "Последняя активность",
+      "lessonsCount": "Занятий"
+    },
+    "calendar": {
+      "allTutors": "Все репетиторы",
+      "eventDetails": "Детали занятия",
+      "messageTutor": "Написать репетитору",
+      "joinLesson": "Войти на занятие",
+      "joinError": "Не удалось присоединиться к занятию",
+      "tooEarly": "Слишком рано для входа. Попробуйте за 15 минут до начала",
+      "expired": "Время входа прошло. Занятие завершилось",
+      "noAccess": "Нет доступа к этому занятию",
+      "notFound": "Занятие не найдено"
+    },
+    "profile": {
+      "editTitle": "Редактирование профиля студента",
+      "editDescription": "Обновите вашу личную информацию и учебные цели",
+      "saveSuccess": "Профиль студента успешно сохранен",
+      "loadError": "Не удалось загрузить профиль студента",
+      "notStudent": "У вас нет доступа к профилю студента",
+      "saveError": "Не удалось сохранить профиль студента"
+    }
+  },
+  "tutor": {
+    "profile": {
+      "title": "Профиль репетитора",
+      "subtitle": "Управляйте своим публичным профилем",
+      "editTitle": "Редактировать профиль репетитора",
+      "editDescription": "Обновите информацию о себе для студентов",
+      "editButton": "Редактировать",
+      "previewButton": "Просмотреть",
+      "saveSuccess": "Профиль успешно сохранен",
+      "publishSuccess": "Профиль опубликован",
+      "unpublishSuccess": "Профиль снят с публикации",
+      "publishStatus": "Статус публикации",
+      "published": "Опубликовано",
+      "draft": "Черновик",
+      "live": "Активный",
+      "notPublished": "Не опубликовано",
+      "publish": "Опубликовать",
+      "unpublish": "Снять с публикации",
+      "headline": "Заголовок",
+      "headlinePlaceholder": "Например: Опытный преподаватель математики",
+      "bio": "Биография",
+      "bioPlaceholder": "Расскажите о своем опыте и подходе к обучению...",
+      "bioEmpty": "Биография не заполнена",
+      "experience": "Опыт (лет)",
+      "experiencePlaceholder": "Количество лет преподавания",
+      "hourlyRate": "Ставка за час",
+      "hourlyRatePlaceholder": "Ваша ставка",
+      "currency": "Валюта",
+      "subjects": "Предметы",
+      "subjectsEmpty": "Предметы не добавлены",
+      "completeness": {
+        "title": "Полнота профиля",
+        "score": "Заполнено",
+        "missing": "Отсутствующие поля"
+      }
+    },
+    "activity": {
+      "currentMonth": "Текущий месяц",
+      "banner": {
+        "active": {
+          "title": "Вы активны",
+          "message": "У вас {count} ответов этого месяца. Продолжайте в том же духе!"
+        },
+        "inactive": {
+          "title": "Вы неактивны",
+          "message": "У вас нет ответов на запросы этого месяца. Ваш профиль скрыт от студентов."
+        },
+        "exempted": {
+          "title": "Освобождение от правил активности",
+          "message": "Вам предоставлено временное освобождение. Правила активности не применяются."
+        },
+        "atRisk": {
+          "title": "Требуется активность",
+          "message": "У вас нет ответов на запросы этого месяца. Отвечайте на запросы, чтобы оставаться видимым в Marketplace."
+        }
+      },
+      "exemption": {
+        "active": "Активное освобождение",
+        "info": "До {until}. Причина: {reason}",
+        "noReason": "не указано"
+      },
+      "cta": {
+        "title": "Что нужно сделать?",
+        "message": "Отвечайте хотя бы на один запрос от студента (принять или отклонить). Это единственный способ восстановить видимость профиля."
+      },
+      "notRequired": {
+        "title": "Активность не требуется в этом месяце",
+        "trial": "Вы на пробном периоде",
+        "paidPlan": "У вас платный план",
+        "notPublished": "Профиль не опубликован"
+      },
+      "met": {
+        "title": "Требование выполнено",
+        "count": "{current} / {required} ответов этого месяца"
+      },
+      "notMet": {
+        "title": "Требуется активность в этом месяце",
+        "description": "Нужно ответить хотя бы на 1 запрос студента (принять или отклонить)",
+        "count": "{current} / {required} выполнено",
+        "hint": "Перейдите к запросам студентов"
+      },
+      "exempt": {
+        "title": "Освобождены от требования в этом месяце",
+        "description": "Администрация предоставила вам освобождение"
+      }
+    },
+    "invitedStudents": {
+      "title": "Приглашения студентов",
+      "empty": "У вас нет приглашенных студентов",
+      "requestedAt": "Запрос отправлен",
+      "status": "Ожидает подтверждения",
+      "accept": "Принять"
+    },
+    "lessonLinks": {
+      "title": "Ссылки на занятия",
+      "subtitle": "Настройте основную и резервную ссылку для проведения занятий",
+      "provider": "Платформа",
+      "url": "Ссылка",
+      "providers": {
+        "platform": "Платформа M4SH",
+        "zoom": "Zoom",
+        "meet": "Google Meet",
+        "custom": "Собственная ссылка"
+      },
+      "primary": {
+        "title": "Основная ссылка",
+        "description": "Эта ссылка будет использоваться для всех занятий по умолчанию"
+      },
+      "backup": {
+        "title": "Резервная ссылка",
+        "description": "Будет использоваться, если основная ссылка недоступна"
+      },
+      "preview": {
+        "title": "Текущая ссылка",
+        "current": "Активная ссылка"
+      },
+      "platformInfo": "Платформа автоматически генерирует уникальные ссылки для каждого занятия",
+      "platformGenerated": "Генерируется автоматически",
+      "notSet": "Не установлено",
+      "validation": {
+        "required": "Поле обязательно",
+        "invalidUrl": "Неверный формат ссылки",
+        "invalidProtocol": "Ссылка должна начинаться с https://",
+        "fixErrors": "Исправьте ошибки перед сохранением"
+      },
+      "success": {
+        "saved": "Ссылка успешно сохранена"
+      },
+      "errors": {
+        "loadFailed": "Не удалось загрузить ссылку",
+        "saveFailed": "Не удалось сохранить ссылку",
+        "conflict": "Настройки были изменены в другой сессии. Обновите страницу."
+      }
+    }
+  },
+  "limits": {
+    "studentRequests": "Запросы к репетиторам",
+    "tutorAccepts": "Принятие запросов",
+    "remaining": "осталось",
+    "resetsAt": "Обновление",
+    "nearLimit": "Внимание! Осталось всего {remaining} запросов",
+    "limitReached": "Лимит исчерпан. Обновление {resetDate}",
+    "types": {
+      "${limit_type}": "{limit_type}"
+    }
+  },
+  "inquiries": {
+    "loading": "Загрузка запросов...",
+    "form": {
+      "title": "Отправить запрос репетитору",
+      "studentLevel": "Ваш уровень",
+      "studentLevelPlaceholder": "Выберите уровень",
+      "levels": {
+        "beginner": "Начинающий",
+        "intermediate": "Средний",
+        "advanced": "Профессионал"
+      },
+      "budget": "Бюджет (руб/час)",
+      "budgetHint": "Минимальная ставка репетитора: {rate} руб/час",
+      "budgetTooLow": "Ваш бюджет ниже минимальной ставки репетитора",
+      "startPreference": "Когда хотите начать?",
+      "startOptions": {
+        "asap": "Как можно скорее",
+        "week": "Через неделю",
+        "month": "Через месяц"
+      },
+      "message": "Что хотите изучить?",
+      "messagePlaceholder": "Расскажите о своих целях и ожиданиях...",
+      "submit": "Отправить запрос",
+      "submitting": "Отправляем...",
+      "cancel": "Отмена",
+      "retryIn": "Попробуйте через {seconds} с"
+    },
+    "reject": {
+      "title": "Отклонить запрос",
+      "reason": "Причина отклонения",
+      "reasonPlaceholder": "Выберите причину",
+      "reasons": {
+        "BUSY": "Занят сейчас",
+        "BUDGET_LOW": "Бюджет не подходит",
+        "LEVEL_MISMATCH": "Уровень студента не подходит",
+        "SUBJECT_MISMATCH": "Тема не моя специализация",
+        "OTHER": "Другое"
+      },
+      "comment": "Комментарий",
+      "commentPlaceholder": "Добавьте комментарий...",
+      "submit": "Отклонить запрос",
+      "submitting": "Отклоняем..."
+    },
+    "student": {
+      "title": "Мои запросы",
+      "description": "Просматривайте статус ваших запросов к репетиторам",
+      "empty": {
+        "title": "У вас еще нет запросов",
+        "description": "Найдите репетитора в каталоге и отправьте запрос"
+      },
+      "cancel": "Отменить запрос"
+    },
+    "tutor": {
+      "title": "Запросы от студентов",
+      "description": "Просматривайте и отвечайте на запросы от студентов",
+      "empty": {
+        "title": "Нет новых запросов",
+        "description": "Когда студенты отправят вам запросы, они появятся здесь"
+      },
+      "accept": "Принять",
+      "accepting": "Принимаем...",
+      "reject": "Отклонить",
+      "contactsUnlocked": "Контакты студента"
+    },
+    "errors": {
+      "retryAfter": "Попробуйте через {seconds} секунд",
+      "cooldownActive": "Вы можете отправить новый запрос этому репетитору через {days} дней",
+      "maxOpenReached": "Достигнут лимит активных запросов ({limit})",
+      "maxOpenReachedUpgrade": "Обновитесь до PRO для неограниченных запросов",
+      "rateLimitExceeded": "Превышен лимит: {limit_display}",
+      "alreadyExists": "У вас уже есть активный запрос к этому репетитору",
+      "contactRequired": "Требуется контактная информация",
+      "contactRequiredMessage": "Пожалуйста, добавьте номер телефона или Telegram в настройках профиля перед созданием запроса.",
+      "invalidPhoneFormat": "Неверный формат телефона",
+      "invalidPhoneFormatMessage": "Используйте международный формат: +[код страны][номер]"
+    },
+    "success": {
+      "created": "Запрос успешно отправлен!",
+      "description": "Репетитор получит ваш запрос и сможет ответить в ближайшее время.",
+      "viewMyInquiries": "Просмотреть мои запросы",
+      "findMoreTutors": "Найти других репетиторов"
+    },
+    "countdown": {
+      "expiresIn": "Заканчивается через",
+      "expired": "Время истекло",
+      "days": "{count} дн",
+      "hours": "{count} час",
+      "minutes": "{count} мин"
+    },
+    "recommendedTutors": {
+      "title": "Рекомендованные репетиторы",
+      "description": "Мы подобрали для вас похожих репетиторов",
+      "loading": "Загрузка рекомендаций...",
+      "loadError": "Не удалось загрузить рекомендации",
+      "noResults": "Нет рекомендаций"
+    },
+    "ws": {
+      "sessionExpired": "Сессия завершена. Пожалуйста, войдите снова"
+    }
+  },
+  "calendar": {
+    "today": "Сегодня",
+    "time": "Время",
+    "tutor": "Репетитор",
+    "status": "Статус",
+    "statuses": {
+      "none": "Без подписки",
+      "pending": "Ожидает активации",
+      "active": "Активна",
+      "trialing": "Пробный период",
+      "past_due": "Просрочена",
+      "canceled": "Отменена",
+      "incomplete": "Неполная",
+      "incomplete_expired": "Просрочена оплата",
+      "unpaid": "Не оплачена"
+    },
+    "statusLabels": {
+      "active": "Активна",
+      "pending": "Ожидает активации",
+      "past_due": "Просрочена",
+      "canceled": "Отменена"
+    },
+    "analytics": {
+      "title": "Аналитика доступности",
+      "editOperations": "Операции редактирования",
+      "totalEdits": "Всего правок",
+      "successfulEdits": "Успешные правки",
+      "failedEdits": "Неудачные правки",
+      "avgDuration": "Средняя длительность",
+      "strategyDistribution": "Распределение стратегий",
+      "conflictAnalysis": "Анализ конфликтов",
+      "totalConflicts": "Всего конфликтов",
+      "recentActivity": "Последняя активность",
+      "period": {
+        "today": "Сегодня",
+        "week": "Неделя",
+        "month": "Месяц",
+        "custom": "Выберите период"
+      },
+      "loading": "Загрузка данных...",
+      "totalSlots": "Всего слотов",
+      "availableSlots": "Доступные слоты",
+      "bookedSlots": "Забронированные слоты",
+      "blockedSlots": "Заблокированные слоты",
+      "status": {
+        "error": "Ошибка",
+        "success": "Успех",
+        "warning": "Предупреждение",
+        "${activity.status}": "{activity.status}"
+      },
+      "activity": {
+        "batchEdit": "Пакетное редактирование",
+        "conflictDetected": "Обнаружен конфликт",
+        "slotEdited": "Слот отредактирован"
+      },
+      "time": {
+        "justNow": "Только что",
+        "minutesAgo": "{count} мин назад",
+        "hoursAgo": "{count} час назад",
+        "daysAgo": "{count} дн назад"
+      }
+    },
+    "slotEditor": {
+      "title": "Редактирование слота",
+      "timeRange": "Временной диапазон",
+      "strategy": "Стратегия редактирования",
+      "overrideReason": "Причина переопределения",
+      "overrideReasonPlaceholder": "Укажите причину изменения этого слота...",
+      "saving": "Сохранение...",
+      "saveSuccess": "Слот успешно сохранен",
+      "saveError": "Не удалось сохранить слот",
+      "conflictError": "Обнаружен конфликт. Пожалуйста, решите конфликты перед сохранением.",
+      "conflictPersists": "Конфликт остается. Перезагрузите страницу и попробуйте еще раз.",
+      "delete": "Удалить",
+      "deleteConfirm": "Вы уверены, что хотите удалить этот слот?",
+      "deleteSuccess": "Слот успешно удален",
+      "deleteError": "Не удалось удалить слот",
+      "batchSuccess": "Все слоты успешно обновлены",
+      "batchPartialSuccess": "Обновлено {success} слотов, ошибок: {error}",
+      "batchError": "Ошибка пакетного обновления",
+      "errors": {
+        "endBeforeStart": "Время окончания должно быть после начала"
+      },
+      "strategies": {
+        "override": {
+          "title": "Переопределить",
+          "description": "Изменить этот слот несмотря на конфликты"
+        },
+        "update_template": {
+          "title": "Обновить шаблон",
+          "description": "Изменить шаблон доступности для будущих слотов"
+        },
+        "update_slot": {
+          "title": "Обновить слот",
+          "description": "Обновить только этот конкретный слот"
+        }
+      },
+      "deleteConflictError": "Не удалось удалить: есть конфликты",
+      "validationError": "Заполните все необходимые поля",
+      "noWeekStart": "Не указано начало недели",
+      "applySuccess": "Изменения успешно применены",
+      "applyError": "Не удалось применить изменения"
+    },
+    "draftChanges": {
+      "unsavedChanges": "Есть несохраненные изменения",
+      "changesCount": "{count} изменений",
+      "apply": "Применить",
+      "discardConfirm": "Вы уверены, что хотите отменить все несохраненные изменения?",
+      "discarded": "Изменения отменены",
+      "conflictsDetected": "Обнаружены конфликты. Просмотрите и решите их."
+    },
+    "weekNavigation": {
+      "prevWeek": "Предыдущая неделя",
+      "nextWeek": "Следующая неделя",
+      "today": "Сегодня",
+      "availableHours": "{hours} час доступен",
+      "noAvailability": "На эту неделю доступность еще не настроена",
+      "setupAvailability": "Установить часы",
+      "showGuide": "Показать гайд",
+      "backToCalendar": "Вернуться к календарю"
+    },
+    "header": {
+      "reminder": "Поддерживайте календарь актуальным, чтобы ученики могли бронировать.",
+      "mark_free_time": "Отметить свободное время",
+      "color_legend": "Легенда цветов",
+      "video_guide": "Видео-гайд"
+    },
+    "guide": {
+      "title": "Гайд по календарю",
+      "intro": "Все, что нужно для управления доступностью и уроками в одном месте.",
+      "colors": "Легенда цветов",
+      "availableSlot": "Доступный слот",
+      "bookedLesson": "Забронированный урок",
+      "blockedSlot": "Заблокированный слот",
+      "howToCreate": "Как создать слоты",
+      "createSlotDesc": "Нажмите «Добавить слот» или потяните по сетке, чтобы создать доступность.",
+      "howToEdit": "Как редактировать слоты",
+      "editSlotDesc": "Выберите любой слот, чтобы изменить время или длительность. Для пакетных изменений используйте панель.",
+      "checkboxes": "Фильтры-чекбоксы",
+      "checkboxLessons": "Показать или скрыть забронированные уроки",
+      "checkboxAvailability": "Показать или скрыть слоты доступности",
+      "navigation": "Навигация",
+      "navigationDesc": "Используйте стрелки или горячие клавиши для перехода между неделями. «Сегодня» возвращает текущую неделю.",
+      "setupButton": "Кнопка настройки",
+      "setupButtonDesc": "«Установить часы» открывает редактор доступности с полным контролем.",
+      "limits": "Лимиты и советы",
+      "maxDuration": "Слоты длиннее 3 часов могут разделяться для лучшей видимости.",
+      "noDuplicates": "Избегайте дублированных слотов, которые перекрываются.",
+      "noOverlap": "Перекрытие уроков и доступности блокируется автоматически.",
+      "helpIcon": "Нужна помощь?",
+      "helpIconDesc": "Нажмите иконку «?» в верхней панели, чтобы открыть справку или поддержку."
+    },
+    "emptyState": {
+      "noAvailability": {
+        "title": "Доступность не настроена",
+        "description": "Настройте расписание, чтобы принимать бронирования от учеников",
+        "action": "Настроить доступность"
+      }
+    },
+    "sidebar": {
+      "upcomingLessons": "Ближайшие уроки",
+      "noUpcoming": "Нет будущих уроков",
+      "today": "Сегодня",
+      "tomorrow": "Завтра",
+      "status": {
+        "paid": "Оплачено",
+        "unpaid": "Не оплачено"
+      }
+    },
+    "footer": {
+      "your_lesson_link": "Ваша ссылка на урок",
+      "copy": "Копировать",
+      "copied": "Скопировано!",
+      "join_lesson": "Присоединиться к уроку",
+      "edit_link": "Редактировать",
+      "backup": "Резервная",
+      "backup_copied": "Резервная ссылка скопирована",
+      "edit_lesson_links": "Настройки ссылок на уроки",
+      "primary_link": "Основная ссылка",
+      "backup_link": "Резервная ссылка",
+      "add_backup_link": "Добавить резервную ссылку",
+      "platform_auto": "Генерируется автоматически",
+      "url_required": "URL обязателен для этого провайдера",
+      "https_required": "URL должен начинаться с https://",
+      "settings_saved": "Настройки сохранены",
+      "save_failed": "Не удалось сохранить настройки",
+      "invalid_link": "Небезопасная ссылка. Разрешены только https:// ссылки",
+      "load_failed": "Не удалось загрузить настройки",
+      "provider": {
+        "platform": "Платформа",
+        "custom": "Собственная"
+      }
+    },
+    "no_show": {
+      "select_reason": "Выберите причину no-show",
+      "description": "Объясните, почему ученик не пришел на урок",
+      "comment_optional": "Комментарий (опционально)",
+      "comment_placeholder": "Добавьте дополнительную информацию...",
+      "confirm": "Подтвердить",
+      "reasons": {
+        "student_absent": "Ученик не появился",
+        "student_late": "Ученик опоздал больше чем на 15 мин",
+        "technical_issues": "Технические проблемы",
+        "other": "Другая причина"
+      }
+    },
+    "legend": {
+      "title": "Легенда цветов",
+      "lesson": "Уроки",
+      "availability": "Доступность",
+      "first_lesson": "Первое занятие",
+      "regular_lesson": "Обычное занятие",
+      "no_show": "No-show",
+      "blocked_time": "Заблокированное время",
+      "past_time": "Прошедшее время"
+    },
+    "warnings": {
+      "disconnected": "Соединение потеряно. Проверьте сеть или обновите страницу."
+    },
+    "realtime": {
+      "status": {
+        "disconnected": "Соединение потеряно. Восстанавливаем...",
+        "retrying": "Восстанавливаем соединение..."
+      }
+    },
+    "createLesson": {
+      "hourLabel": "Час",
+      "minuteLabel": "Минута",
+      "repeatCount": "Количество повторений",
+      "repeatMode": "Режим повторения",
+      "repeatUntil": "Повторять до",
+      "seriesPartialSuccess": "Частично создана серия уроков",
+      "seriesSuccess": "Серию уроков успешно создано",
+      "skipConflicts": "Пропустить конфликты",
+      "conflictDetected": "Обнаружен конфликт",
+      "create": "Создать урок",
+      "createAnyway": "Создать все равно",
+      "duration": "Длительность",
+      "lessonType": "Тип урока",
+      "lessonsLeft": "уроков осталось",
+      "regularity": "Регулярность",
+      "searchStudent": "Поиск студента",
+      "selectType": "Выберите тип",
+      "selectedTime": "Начало урока",
+      "student": "Студент",
+      "studentComment": "Сообщение студенту",
+      "studentCommentPlaceholder": "Текст, который студент увидит в напоминаниях",
+      "timeHint": "Укажите точное время в вашем часовом поясе",
+      "title": "Создать урок",
+      "tutorComment": "Заметка для себя",
+      "tutorCommentPlaceholder": "Что следует помнить?",
+      "success": "Урок успешно создан"
+    },
+    "errors": {
+      "serverError": "Ошибка сервера. Попробуйте позже.",
+      "loadFailed": "Не удалось загрузить календарь",
+      "cannotDelete": "Невозможно удалить",
+      "createFailed": "Не удалось создать",
+      "deleteFailed": "Не удалось удалить",
+      "invalidTime": "Неверное время",
+      "notFound": "Не найдено",
+      "permissionDenied": "Доступ запрещен",
+      "previewFailed": "Не удалось загрузить предпросмотр",
+      "rateLimitExceeded": "Превышен лимит запросов",
+      "rescheduleFailed": "Не удалось перенести",
+      "slotNoLongerAvailable": "Слот больше недоступен",
+      "timeOverlap": "Перекрытие времени",
+      "unknown": "Неизвестная ошибка",
+      "updateFailed": "Не удалось обновить"
+    },
+    "loading": "Загрузка...",
+    "retry": "Попробовать еще раз",
+    "cellStatus": {
+      "empty": "Пусто",
+      "available": "Доступно",
+      "booked": "Забронировано",
+      "blocked": "Заблокировано",
+      "notAllow": "Не разрешено",
+      "${props.cell.status}": "{props.cell.status}"
+    },
+    "tooltips": {
+      "clickToBook": "Нажмите, чтобы забронировать",
+      "clickToCreate": "Нажмите, чтобы создать урок"
+    },
+    "availability": {
+      "retry": "Повторить",
+      "actions": {
+        "checking": "Проверка конфликтов",
+        "redo": "Повторить действие",
+        "redoError": "Не удалось повторить действие",
+        "redoSuccess": "Действие повторено",
+        "reset": "Сбросить изменения",
+        "save": "Сохранить расписание",
+        "saving": "Сохранение",
+        "undo": "Отменить последнее действие",
+        "undoError": "Не удалось отменить действие",
+        "undoSuccess": "Действие отменено"
+      },
+      "daySchedule": {
+        "add": "Добавить время",
+        "booked": "Забронировано",
+        "empty": "Нет доступных слотов",
+        "liveLesson": "Живой урок",
+        "remove": "Удалить временное окно"
+      },
+      "notifications": {
+        "saveError": "Не удалось сохранить доступность. Попробуйте еще раз.",
+        "saveSuccess": "Доступность успешно сохранена!",
+        "enforcementBlocked": "Публикация availability недоступна из-за статуса активности. Отвечайте на запросы студентов, чтобы восстановить доступ."
+      },
+      "conflictsDetected": "Обнаружены конфликты на днях: {days}",
+      "jobInProgress": "Пожалуйста, дождитесь завершения текущей операции",
+      "weeklyScheduleSubtitle": "Установите ваши регулярные доступные часы для каждого дня",
+      "weeklyScheduleTitle": "Еженедельное расписание",
+      "cancel": "Отмена",
+      "exit": "Выйти",
+      "exitConfirm": "Есть несохраненные изменения. Вы уверены, что хотите выйти?",
+      "save": "Сохранить",
+      "saving": "Сохранение...",
+      "undo": "Отменить",
+      "redo": "Повторить",
+      "hours": "часов",
+      "hours.delta": "Изменение часов",
+      "hours.short": "час",
+      "grid": {
+        "label": "Сетка доступности"
+      },
+      "header": {
+        "title": "Настройки доступности"
+      },
+      "toolbar": {
+        "label": "Панель инструментов доступности"
+      },
+      "workload": {
+        "label": "Нагрузка"
+      },
+      "progress": {
+        "ok": "Достаточно часов",
+        "needs_more": "Нужно еще {hours} час",
+        "exceeded": "Превышен лимит"
+      },
+      "slots": {
+        "added": "добавлено",
+        "removed": "удалено"
+      }
+    },
+    "regularity": {},
+    "blockSlot": {
+      "block": "Заблокировать слот",
+      "blocking": "Блокируем слот...",
+      "error": "Не удалось заблокировать слот",
+      "errors": {
+        "cannotBlockBooked": "Невозможно заблокировать уже забронированный слот",
+        "cannotBlockPast": "Невозможно заблокировать слот в прошлом"
+      },
+      "reason": "Причина блокировки",
+      "reasonPlaceholder": "Опишите, почему блокируете это время (опционально)...",
+      "success": "Слот успешно заблокирован",
+      "title": "Заблокировать временной слот",
+      "warning": "Это сделает время недоступным для бронирования. Ученики не смогут записаться на этот период."
+    },
+    "createSlot": {
+      "conflictsDetected": "Обнаружены конфликты",
+      "create": "Создать слот",
+      "creating": "Создаем слот...",
+      "error": "Не удалось создать слот",
+      "success": "Слот создан",
+      "timeRange": "Временной диапазон",
+      "title": "Создать новый слот",
+      "dateLabel": "Дата",
+      "validationError": "Ошибка валидации. Пожалуйста, проверьте введенные данные."
+    },
+    "validation": {
+      "endAfterStart": "Время окончания должно быть позже времени начала",
+      "maxDuration3Hours": "Длительность слота ограничена 3 часами",
+      "slotAlreadyExists": "Слот для этого времени уже существует",
+      "slotOverlapsWithEvent": "Слот перекрывается с существующим событием"
+    },
+    "conflicts": {
+      "errorTitle": "Конфликты времени",
+      "warningTitle": "Предупреждение",
+      "student": "Студент",
+      "lesson": "Урок",
+      "resolveAnyway": "Разрешить все равно",
+      "types": {
+        "bookedOverlap": "Перекрывается с уроком",
+        "slotOverlap": "Перекрывается со слотом",
+        "templateOverlap": "Конфликт с шаблоном"
+      },
+      "resolution": {
+        "skip": "Пропустить этот слот",
+        "override": "Переопределить несмотря на конфликт",
+        "updateTemplate": "Обновить шаблон",
+        "apply": "Применить решение"
+      }
+    },
+    "jobStatus": {
+      "retry": "Повторная генерация слотов...",
+      "retryError": "Не удалось повторить генерацию. Попробуйте позже.",
+      "pending": {
+        "title": "Ожидаем старта генерации",
+        "details": "Задача в очереди, готовим инфраструктуру"
+      },
+      "running": {
+        "title": "Генерируем доступность",
+        "details": "Синхронизируем шаблон и создаем новые слоты."
+      },
+      "success": {
+        "details": "Создано {created} слотов, удалено {deleted}",
+        "title": "Слоты сгенерированы"
+      },
+      "failed": {
+        "details": "Проверьте сеть или попробуйте еще раз позже.",
+        "title": "Ошибка генерации слотов"
+      }
+    },
+    "editor": {
+      "title": "Редактор доступности",
+      "subtitle": "Настройте базовое расписание и исключения",
+      "templateApplied": "Шаблон применен. Слоты будут сгенерированы примерно через {eta} мин",
+      "slotsGenerated": "Слоты успешно сгенерированы",
+      "applyFailed": "Не удалось применить шаблон",
+      "weeklyTemplate": "Еженедельный шаблон",
+      "hidePreview": "Скрыть предпросмотр",
+      "showPreview": "Показать предпросмотр",
+      "copyWeek": "Копировать неделю",
+      "addSlot": "Добавить слот",
+      "applying": "Применение...",
+      "applyTemplate": "Применить шаблон",
+      "pendingChanges": "{count} изменений ожидают синхронизации",
+      "preview": "Предпросмотр",
+      "overrides": "Переопределения",
+      "addOverride": "Добавить переопределение",
+      "blackoutDates": "Даты блокировки",
+      "addBlackout": "Добавить дату"
+    },
+    "noSlots": "Нет доступных слотов",
+    "selected": "Выбрано",
+    "editLesson": {
+      "cannotDelete": "Невозможно удалить этот урок",
+      "changeTime": "Изменить время",
+      "checkConflicts": "Проверить конфликты",
+      "confirmDelete": "Подтвердить удаление",
+      "confirmDeleteMessage": "Вы уверены, что хотите удалить этот урок?",
+      "confirmReschedule": "Подтвердить перенос",
+      "conflictsFound": "Обнаружены конфликты",
+      "currentTime": "Текущее время",
+      "dateTime": "Дата и время",
+      "delete": "Удалить",
+      "deleteWarning": "Предупреждение об удалении",
+      "deleteWarningDetails": "Это действие нельзя отменить",
+      "edit": "Редактировать",
+      "newTime": "Новое время",
+      "noConflicts": "Конфликтов не обнаружено",
+      "rescheduleInfo": "Информация о переносе",
+      "suggestedTimes": "Предложенные времена",
+      "tabs": {
+        "delete": "Удалить",
+        "reschedule": "Перенести",
+        "update": "Обновить"
+      },
+      "title": "Редактировать урок"
+    },
+    "doneStatus": {
+      "done": "Выполнено"
+    },
+    "drag": {
+      "grid": {
+        "label": "Сетка перетаскивания"
+      },
+      "preview": "Предпросмотр"
+    },
+    "lesson_card": {
+      "first_lesson": "Первый урок",
+      "go_to_lesson": "Перейти к уроку",
+      "join_lesson": "Присоединиться к уроку",
+      "mark_no_show": "Отметить неявку",
+      "no_show_error": "Не удалось отметить неявку",
+      "no_show_marked": "Неявка отмечена",
+      "no_student": "Нет студента",
+      "reschedule": "Перенести",
+      "title": "Карточка урока"
+    },
+    "lastSync": "Последняя синхронизация",
+    "noSlotsDescription": "Нет доступных слотов",
+    "noSlotsThisDay": "Нет слотов на этот день",
+    "paidStatus": {
+      "paid": "Оплачено"
+    },
+    "reschedule": {
+      "can_reschedule": "Можно перенести",
+      "checking": "Проверяем",
+      "confirm": "Подтвердить перенос",
+      "current_time": "Текущее время",
+      "error": "Не удалось перенести урок",
+      "new_date": "Новая дата",
+      "new_time": "Новое время",
+      "success": "Урок успешно перенесен",
+      "title": "Перенести урок"
+    },
+    "success": {
+      "deleted": "Слот удален",
+      "rescheduled": "Урок перенесен",
+      "updated": "Слот обновлен"
+    },
+    "trialRequest": {
+      "title": "Запрос на пробный урок",
+      "description": "Оставьте заявку на пробный урок",
+      "button": "Запросить пробный урок"
+    },
+    "tutorCard": {
+      "title": "Карточка преподавателя",
+      "description": "Информация о преподавателе",
+      "button": "Подробнее"
+    },
+    "sort": {
+      "title": "Сортировка",
+      "options": {
+        "alphabetical": "Алфавитный порядок",
+        "date": "Дата"
+      }
+    },
+    "catalog": {
+      "title": "Каталог",
+      "description": "Список доступных курсов",
+      "button": "Перейти в каталог"
+    },
+    "search": {
+      "title": "Поиск",
+      "description": "Поиск по курсам и преподавателям",
+      "button": "Найти"
+    },
+    "sections": {
+      "title": "Разделы",
+      "description": "Список разделов курса",
+      "button": "Перейти к разделам"
+    },
+    "categories": {
+      "title": "Категории",
+      "description": "Список категорий курсов",
+      "button": "Перейти к категориям"
+    },
+    "profile": {
+      "title": "Профиль",
+      "description": "Информация о пользователе",
+      "button": "Перейти в профиль"
+    },
+    "draft": {
+      "title": "Черновик",
+      "description": "Сохраненный черновик",
+      "button": "Перейти к черновику"
+    },
+    "cache": {
+      "staleLabel": "Показываем кешированные данные. Нажмите 'Повторить', чтобы обновить."
+    }
+  },
+  "commonExtended": {
+    "retry": "Повторить",
+    "later": "Позже",
+    "offline": {
+      "title": "Офлайн",
+      "message": "Вы не в сети",
+      "lastSync": "Последняя синхронизация",
+      "retrying": "Повторная попытка",
+      "retry": "Повторить"
+    },
+    "justNow": "Только что",
+    "minutesAgo": "{count} минут назад",
+    "hoursAgo": "{count} часов назад",
+    "understood": "Понятно",
+    "close": "Закрыть",
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "delete": "Удалить",
+    "previousWeek": "Предыдущая неделя",
+    "nextWeek": "Следующая неделя",
+    "weekdays": {
+      "short": {
+        "mon": "Пн",
+        "tue": "Вт",
+        "wed": "Ср",
+        "thu": "Чт",
+        "fri": "Пт",
+        "sat": "Сб",
+        "sun": "Вс"
+      },
+      "full": {},
+      "monday": "Понедельник",
+      "tuesday": "Вторник",
+      "wednesday": "Среда",
+      "thursday": "Четверг",
+      "friday": "Пятница",
+      "saturday": "Суббота",
+      "sunday": "Воскресенье",
+      "${weekday}": "{weekday}",
+      "${day}": "{day}"
+    },
+    "accept": "Принять",
+    "back": "Назад",
+    "clear": "Очистить",
+    "confirmDelete": "Удалить запись?",
+    "confirmDiscard": "Отменить несохраненные изменения?",
+    "copy": "Копировать",
+    "daysAgo": "{count} дн. назад",
+    "decline": "Отклонить",
+    "exit": "Выйти",
+    "genderOptions": {},
+    "loadMore": "Загрузить еще",
+    "loading": "Загрузка...",
+    "lock": "Заблокировать",
+    "moveDown": "Переместить вниз",
+    "moveUp": "Переместить вверх",
+    "next": "Далее",
+    "notSpecified": "Не указано",
+    "of": "из",
+    "open": "Открыть",
+    "other": "Другое",
+    "rateLimit": {
+      "features": {},
+      "message": "Слишком много запросов. Подождите перед повтором.",
+      "seconds": "секунд",
+      "title": "Лимит запросов превышен",
+      "tryNow": "Попробовать сейчас",
+      "waiting": "Ожидание..."
+    },
+    "refresh": "Обновить",
+    "remove": "Удалить",
+    "search": "Поиск",
+    "showing": "Показано",
+    "there": "там",
+    "unlock": "Разблокировать",
+    "validation": {},
+    "years": "лет",
+    "optional": "необязательно",
+    "all": "Все",
+    "apply": "Применить",
+    "continue": "Продолжить",
+    "creating": "Создаем",
+    "currency": "Валюта",
+    "executing": "Выполняем",
+    "hour": "час",
+    "previous": "Назад",
+    "reject": "Отклонить",
+    "saving": "Сохраняем",
+    "searching": "Поиск",
+    "today": "Сегодня"
+  },
+  "role": {
+    "superadmin": "Суперадмин",
+    "admin": "Админ",
+    "tutor": "Репетитор",
+    "student": "Студент",
+    "${role}": "{role}"
+  },
+  "notify": {
+    "types": {
+      "error": "Ошибка",
+      "success": "Успех",
+      "warning": "Предупреждение",
+      "info": "Информация",
+      "${item.meta.labelKey}": "{item.meta.labelKey}"
+    },
+    "channels": {
+      "email": "Email",
+      "sms": "SMS",
+      "push": "Push-уведомления",
+      "inApp": "В приложении"
+    },
+    "actions": {
+      "viewAll": "Просмотреть все",
+      "markRead": "Отметить прочитанным",
+      "dismiss": "Закрыть",
+      "retry": "Повторить"
+    }
+  },
+  "dashboard": {
+    "nextLessonAt": "Следующий урок",
+    "tutor": {
+      "title": "Кабинет репетитора",
+      "description": "Следите за учениками, уроками и инвайтами.",
+      "empty": "Пока нет доступных репетиторов.",
+      "nextLessonFallback": "Нет запланированных уроков",
+      "studentsTitle": "Ученики",
+      "studentsDescription": "Последние привязанные ученики и их статус.",
+      "timezoneLabel": "Часовой пояс:",
+      "timezoneUnknown": "не указано",
+      "loadMore": "Загрузить еще",
+      "status": {
+        "pending": "Ожидает",
+        "active": "Активный",
+        "inactive": "Неактивный",
+        "invited": "Приглашен",
+        "archived": "В архиве"
+      },
+      "actions": {},
+      "todaysLessons": "Сегодняшние уроки",
+      "viewBookings": "Просмотреть бронирования",
+      "viewLessons": "Просмотреть уроки",
+      "tabs": {
+        "all": "Все",
+        "invited": "Приглашенные",
+        "active": "Активные",
+        "archived": "В архиве"
+      },
+      "tabHints": {
+        "invited": {
+          "title": "Приглашения ожидают ответа",
+          "description": "Напоминайте студентам о приглашениях или отменяйте их, если они больше не актуальны."
+        },
+        "active": {
+          "title": "Активные ученики",
+          "description": "Управляйте расписаниями, заметками и следите за активностью учеников в этом списке."
+        },
+        "archived": {}
+      },
+      "emptyStates": {
+        "all": {
+          "title": "Пока нет учеников",
+          "description": "Приглашайте студентов или принимайте запросы, чтобы заполнить список."
+        },
+        "invited": {
+          "title": "Нет ожидающих приглашений",
+          "description": "Отправьте новые инвайты студентам, с которыми хотите работать."
+        },
+        "active": {
+          "title": "Активных учеников не найдено",
+          "description": "После подтверждения приглашений ученики появятся в этом списке."
+        },
+        "archived": {}
+      },
+      "cta": {
+        "createLesson": "Создать урок",
+        "openChat": "Открыть чат",
+        "chatWithStudent": "Чат со студентом"
+      },
+      "accepts": {
+        "title": "Доступные принятия",
+        "loading": "Загрузка...",
+        "suffixOne": "запрос",
+        "suffix": "запросов",
+        "expires": "Обновление {time}"
+      },
+      "bulk": {
+        "selectHint": "Выбирайте учеников для групповых действий.",
+        "selected": "Выбрано: {count}",
+        "selectAllCurrent": "Выбрать страницу",
+        "clearSelection": "Очистить",
+        "acceptSelected": "Принять выбранных",
+        "archiveSelected": "Архивировать выбранных"
+      },
+      "notifications": {}
+    }
+  },
+  "relations": {
+    "errors": {
+      "offline": "Мы не смогли подключиться к серверу. Проверьте интернет-соединение.",
+      "rateLimit": "Слишком много запросов. Подождите немного и попробуйте еще раз.",
+      "loadTutor": "Не удалось загрузить список связей репетитора."
+    },
+    "actions": {
+      "acceptSuccess": "Приглашение принято",
+      "acceptError": "Не удалось принять приглашение",
+      "declineSuccess": "Приглашение отклонено",
+      "declineError": "Не удалось отклонить приглашение",
+      "resendSuccess": "Приглашение повторно отправлено",
+      "resendError": "Не удалось повторно отправить приглашение"
+    },
+    "bulk": {
+      "noInvited": "Выберите хотя бы одно приглашенное связь, чтобы продолжить.",
+      "emptySelection": "Сначала выберите хотя бы одну связь.",
+      "genericError": "Не удалось выполнить пакетное действие.",
+      "partialFailure": "{failed} связей не удалось обработать. Проверьте журнал.",
+      "noChanges": "Изменения не применены.",
+      "acceptSuccess": "{count} связей принято",
+      "archiveSuccess": "{count} связей заархивировано",
+      "${type}Success": "{count}"
+    },
+    "meta": {
+      "never": "Еще не было"
+    },
+    "status": {
+      "pending": "Ожидает",
+      "inactive": "Неактивный",
+      "invited": "Приглашен",
+      "active": "Активный",
+      "archived": "В архиве"
+    }
+  },
+  "tutorSearch": {
+    "title": "Найти репетитора",
+    "loadError": "Не удалось загрузить список репетиторов",
+    "request": {
+      "button": "Подать запрос",
+      "success": "Запрос отправлен репетитору",
+      "error": "Не удалось отправить запрос"
+    }
+  },
+  "studentDashboard": {
+    "subtitle": "Следите за своими уроками, репетиторами и приглашениями.",
+    "withoutTutor": "У вас пока нет закрепленного репетитора.",
+    "withTutor": "У вас уже есть активный репетитор.",
+    "noTutor": {
+      "description": "Вы еще не имеете репетитора",
+      "title": "Нет репетитора"
+    },
+    "actions": {
+      "chooseTutor": "Выбрать репетитора",
+      "exploreMarketplace": "Перейти к маркетплейсу",
+      "messageTutor": "Написать сообщение",
+      "bookLesson": "Записаться на урок",
+      "viewAllLessons": "Просмотреть все уроки"
+    },
+    "upcomingLessons": {
+      "title": "Будущие уроки",
+      "empty": {
+        "title": "Нет будущих уроков",
+        "description": "У вас пока что нет запланированных уроков"
+      }
+    },
+    "myTutor": {
+      "title": "Мой репетитор",
+      "noTutor": "У вас еще нет репетитора",
+      "findTutor": "Найти репетитора",
+      "message": "Написать",
+      "bookLesson": "Забронировать занятие"
+    },
+    "activeTutors": {
+      "title": "Активные репетиторы"
+    },
+    "findTutor": {
+      "title": "Найти репетитора"
+    }
+  },
+  "chat": {
+    "title": "Чат с репетитором",
+    "threadInfo": "Тип чата: {kind}",
+    "readOnly": "Этот чат только для чтения",
+    "noMessages": "Сообщений еще нет. Напишите первым!",
+    "messagePlaceholder": "Напишите сообщение...",
+    "pressEnterToSend": "Enter — отправить",
+    "send": "Отправить",
+    "sending": "Отправляем...",
+    "noThreadFound": "Чат не найден. Сначала создайте запрос к репетитору.",
+    "loadError": "Не удалось загрузить чат",
+    "loadMessagesError": "Не удалось загрузить сообщения",
+    "sendError": "Не удалось отправить сообщение",
+    "header": {
+      "subtitle": "Чат урока",
+      "title": "Реальное время"
+    },
+    "status": {
+      "offline": "Офлайн",
+      "connected": "Подключено"
+    },
+    "typing": {
+      "single": "{name} печатает…",
+      "many": "{count} участников печатают…",
+      "unknown": "Кто-то"
+    },
+    "loader": {
+      "loadMore": "Загрузить предыдущие сообщения",
+      "loadingHistory": "Загружаем…"
+    },
+    "empty": "Сообщений еще нет. Напишите первым!",
+    "edited": "отредактировано",
+    "actions": {
+      "edit": "Редактировать",
+      "delete": "Удалить",
+      "cancelEdit": "Отменить редактирование",
+      "retry": "Повторить"
+    },
+    "clearHistory": "Очистить историю",
+    "openChatPage": "Открыть страницу чата",
+    "editMessage": "Редактировать сообщение",
+    "deleteMessage": "Удалить сообщение",
+    "editMessagePlaceholder": "Редактируйте ваше сообщение...",
+    "editTimeExpired": "Время для редактирования истекло",
+    "timeRemaining": "Осталось времени: {time}",
+    "errors": {
+      "threadCreationFailed": "Не удалось создать чат. Попробуйте еще раз.",
+      "failedToSend": "Не удалось отправить сообщение. Попробуйте еще раз.",
+      "relationNotFound": "Связь со студентом не найдена.",
+      "tutorRelationNotFound": "Связь с репетитором не найдена.",
+      "studentRelationNotFound": "Связь со студентом не найдена.",
+      "contactAccessRequired": "Для открытия чата нужно разблокировать контакты студента."
+    },
+    "input": {
+      "placeholder": "Напишите сообщение… Поддерживается Markdown и MathJax.",
+      "hint": "Enter — отправить, Shift+Enter — новая строка.",
+      "send": "Отправить",
+      "sending": "Отправляем…",
+      "rateLimited": "Слишком много сообщений. Подождите немного."
+    },
+    "readSingle": "просмотрел(а)",
+    "readMany": "просмотрели",
+    "editing": "Редактирование сообщения",
+    "messageStatus": {
+      "delivered": "Доставлено",
+      "${status}": "{status}"
+    },
+    "confirm": {
+      "delete": "Удалить это сообщение?"
+    }
+  },
+  "presence": {
+    "online": "Онлайн",
+    "offline": "Офлайн",
+    "label": "Статус присутствия"
+  },
+  "errors": {
+    "somethingWentWrong": "Что-то пошло не так",
+    "limitExceeded": "Лимит {type} исчерпан ({used}/{max}). Обновление {resetDate}",
+    "forbidden": "Доступ запрещен.",
+    "notFound": "Не найдено.",
+    "unknown": "Неизвестная ошибка.",
+    "http": {
+      "badRequest": "Неверный запрос. Проверьте введенные данные.",
+      "unauthorized": "Сессия закончилась. Войдите снова.",
+      "forbidden": "Доступ запрещен. Обратитесь к администратору.",
+      "notFound": "Ресурс не найден.",
+      "timeout": "Время ожидания истекло. Попробуйте еще раз.",
+      "conflict": "Конфликт с существующими данными.",
+      "validation": "Ошибка валидации. Проверьте введенные данные.",
+      "rateLimit": "Слишком много запросов. Подождите.",
+      "serverError": "Ошибка сервера. Попробуйте позже.",
+      "badGateway": "Сервис временно недоступен.",
+      "serviceUnavailable": "Сервис на техническом обслуживании.",
+      "gatewayTimeout": "Сервер не отвечает.",
+      "unknown": "Произошла непредвиденная ошибка."
+    }
+  },
+  "network": {
+    "title": "Состояние сети",
+    "status": "Статус",
+    "latency": "Задержка",
+    "avg": "Средняя",
+    "jitter": "Джиттер",
+    "packetLoss": "Потеря пакетов",
+    "reconnects": "Переподключений",
+    "expand": "Развернуть монитор сети",
+    "collapse": "Свернуть монитор сети",
+    "wsStatus": {
+      "connected": "Подключено",
+      "connecting": "Подключение...",
+      "reconnecting": "Переподключение...",
+      "disconnected": "Отключено"
+    },
+    "warnings": {
+      "packetLoss": "Обнаружена высокая потеря пакетов",
+      "highLatency": "Обнаружена высокая задержка"
+    }
+  },
+  "lessons": {
+    "calendar": {
+      "title": "Календарь уроков",
+      "subtitle": "Создавайте, переносите и управляйте уроками в вашей таймзоне.",
+      "hint": "Перетаскивайте события, чтобы перенести, изменяйте размер для корректировки длительности. Используйте кнопки выше для создания или обновления.",
+      "myStudents": {
+        "emptyTitle": "Пока нет учеников",
+        "emptyDescription": "Чтобы создавать уроки, сначала нужен хотя бы один активный ученик в вашем классе (membership). Примите запрос или пригласите ученика.",
+        "actions": {
+          "refresh": "Обновить",
+          "cta": "Открыть запросы"
+        }
+      },
+      "syncIssue": {
+        "title": "Доступ еще синхронизируется",
+        "description": "Не удалось создать урок из-за временной проблемы синхронизации доступов. Обновите данные и повторите.",
+        "actions": {
+          "refresh": "Обновить данные"
+        }
+      },
+      "roles": {
+        "tutor": "Режим репетитора",
+        "student": "Режим студента"
+      },
+      "buttons": {
+        "today": "Сегодня",
+        "week": "Неделя",
+        "day": "День"
+      },
+      "actions": {
+        "markFreeTime": "Отметить свободное время",
+        "refresh": "Обновить",
+        "saveLesson": "Сохранить урок",
+        "confirmCancel": "Отменить урок"
+      },
+      "status": {
+        "label": "Статус",
+        "all": "Все",
+        "scheduled": "Запланированы",
+        "completed": "Завершены",
+        "cancelled": "Отменены",
+        "in_progress": "Идет",
+        "draft": "Черновик"
+      },
+      "createTitle": "Создать урок",
+      "cancelTitle": "Отменить урок",
+      "cancelDescription": "Вы уверены, что хотите отменить этот урок?",
+      "fields": {
+        "studentId": "Ученик",
+        "start": "Время начала",
+        "end": "Время окончания"
+      },
+      "series": {
+        "label": "ID серии",
+        "placeholder": "Необязательный идентификатор серии",
+        "none": "Не входит в серию"
+      },
+      "eventTitle": "Урок №{id}",
+      "notifications": {
+        "created": "Урок создан",
+        "createError": "Не удалось создать урок",
+        "rescheduled": "Урок перенесен",
+        "resized": "Длительность урока обновлена",
+        "rescheduleError": "Не удалось перенести урок",
+        "cancelled": "Урок отменен",
+        "cancelError": "Не удалось отменить урок",
+        "validation": "Заполните все обязательные поля перед сохранением."
+      },
+      "info": {
+        "partial": "Показываем первые {limit} событий. Сузьте диапазон или статус, чтобы загрузить больше."
+      }
+    },
+    "inviteResolve": {
+      "title": "Инвайт на урок",
+      "loading": "Проверяем инвайт…",
+      "loadingDescription": "Валидируем ссылку и готовим сессию урока.",
+      "redirecting": "Переходим к уроку…",
+      "redirectingDescription": "Сейчас вас будет перенаправлено автоматически.",
+      "failed": "Не удалось использовать инвайт",
+      "failedDescription": "Ссылка может быть недействительной, просроченной или у вас нет доступа.",
+      "actions": {
+        "backToLessons": "К урокам"
+      },
+      "errors": {
+        "expired": {
+          "title": "Инвайт просрочен",
+          "description": "Попросите репетитора сгенерировать новую ссылку."
+        },
+        "invalid": {
+          "title": "Недействительная ссылка",
+          "description": "Эта ссылка недействительна. Проверьте правильность URL."
+        },
+        "forbidden": {
+          "title": "Доступ запрещен",
+          "description": "У вас нет доступа к этому уроку."
+        },
+        "notFound": {
+          "title": "Урок не найден",
+          "description": "Урок, на который ведет ссылка, не существует."
+        },
+        "generic": {
+          "title": "Произошла ошибка",
+          "description": "Не удалось разрешить инвайт. Попробуйте позже."
+        }
+      }
+    },
+    "detail": {
+      "title": "Просмотр урока",
+      "subtitle": "Урок №{id}",
+      "fallbackTitle": "Урок №{id}",
+      "fields": {
+        "start": "Начало",
+        "end": "Окончание",
+        "timezone": "Таймзона",
+        "status": "Статус",
+        "duration": "Длительность"
+      },
+      "participants": "Участники",
+      "roles": {
+        "tutor": "Репетитор",
+        "student": "Студент",
+        "assistant": "Ассистент",
+        "host": "Ведущий",
+        "viewer": "Зритель",
+        "solo": "Соло-сессия"
+      },
+      "notes": "Заметки",
+      "error": "Не удалось загрузить данные урока.",
+      "actions": {
+        "retry": "Повторить",
+        "copyInvite": "Копировать инвайт",
+        "copyInviteSuccess": "Инвайт скопирован",
+        "copyInviteError": "Не удалось скопировать инвайт"
+      }
+    }
+  },
+  "solo": {
+    "pages": "страниц",
+    "shared": "Общий доступ",
+    "share": "Поделиться",
+    "duplicate": "Дублировать",
+    "delete": "Удалить",
+    "mySessions": {
+      "title": "Мои доски",
+      "createNew": "Создать новую доску",
+      "createNewV2": "Создать Solo v2",
+      "search": "Поиск досок…",
+      "sortUpdated": "Сортировать по обновлению",
+      "sortCreated": "Сортировать по дате создания",
+      "sortName": "Сортировать по названию",
+      "empty": "У вас еще нет сохраненных досок.",
+      "createFirst": "Создайте первую доску, чтобы увидеть ее здесь."
+    },
+    "sharing": {
+      "title": "Поделиться",
+      "createLink": "Создать ссылку",
+      "expiresIn": "Срок действия",
+      "expiresAt": "Действует до",
+      "day": "день",
+      "days": "дней",
+      "never": "Бессрочно",
+      "allowDownload": "Разрешить скачивание",
+      "maxViews": "Максимум просмотров",
+      "unlimited": "Неограничено",
+      "views": "Просмотров",
+      "revoke": "Отменить доступ"
+    },
+    "export": {
+      "title": "Экспорт",
+      "format": "Формат",
+      "pageSize": "Размер страницы",
+      "orientation": "Ориентация",
+      "landscape": "Альбомная",
+      "portrait": "Портретная",
+      "export": "Экспортировать",
+      "exporting": "Экспортируется...",
+      "success": "Экспорт завершен успешно",
+      "error": "Ошибка экспорта. Попробуйте еще раз.",
+      "statusPending": "Подготовка экспорта...",
+      "statusProcessing": "Обработка...",
+      "statusCompleted": "Готово к скачиванию",
+      "statusFailed": "Экспорт не удался"
+    },
+    "sync": {
+      "cloudStatus": "Статус облака",
+      "syncing": "Сохранение...",
+      "saved": "Сохранено",
+      "error": "Ошибка сохранения",
+      "loadError": "Не удалось загрузить сессию",
+      "createError": "Не удалось создать сессию",
+      "saveError": "Не удалось сохранить изменения"
+    },
+    "assets": {
+      "upload": "Загрузить файл",
+      "addToBoard": "Добавить на доску",
+      "empty": "Нет загруженных файлов"
+    },
+    "public": {
+      "notFound": "Доска не найдена",
+      "download": "Скачать"
+    }
+  },
+  "profile": {
+    "title": "Профиль",
+    "subtitle": "Актуализируйте свою личную информацию.",
+    "editButton": "Редактировать профиль",
+    "settingsButton": "Настройки аккаунта",
+    "edit": {
+      "title": "Редактирование профиля",
+      "subtitle": "Обновите свою личную информацию",
+      "discardTitle": "Отменить изменения?",
+      "discardMessage": "У вас есть несохраненные изменения. Вы уверены, что хотите их отменить?",
+      "discardConfirm": "Да, отменить"
+    },
+    "phone": "Номер телефона",
+    "phoneHint": "Международный формат: +380501234567",
+    "telegram": "Telegram",
+    "telegramHint": "Ваш Telegram username (например: @username)"
+  },
+  "booking": {
+    "template": {
+      "title": "Настройки еженедельного расписания",
+      "subtitle": "Создайте шаблон доступности для автоматической генерации слотов",
+      "timezone": "Часовой пояс",
+      "noSlots": "Нет доступных часов",
+      "addTime": "Добавить время",
+      "saveAndGenerate": "Сохранить и сгенерировать слоты",
+      "generatingSlots": "Генерация слотов",
+      "jobQueued": "Задача в очереди...",
+      "jobRunning": "Генерируем слоты...",
+      "jobComplete": "Слоты успешно сгенерированы!",
+      "jobFailed": "Ошибка генерации",
+      "slotsCreated": "Создано слотов",
+      "slotsDeleted": "Удалено слотов",
+      "saveAsTemplate": "Сохранить как шаблон",
+      "confirmMessage": "Эти изменения будут сохранены как ваш еженедельный шаблон и автоматически применяться каждую неделю.",
+      "changesPreview": "Изменения для сохранения",
+      "warningMessage": "Внимание: это заменит ваш текущий шаблон, если он существует.",
+      "confirmSave": "Подтвердить сохранение",
+      "copyFrom": "Копировать из...",
+      "applyToAll": "Применить ко всем дням"
+    },
+    "conflict": {
+      "title": "Слот уже занят",
+      "body": "К сожалению, это время уже забронировано другим студентом. Выберите другое время.",
+      "selectAnother": "Выбрать другое время"
+    },
+    "bookLesson": "Забронировать урок",
+    "modal": {
+      "title": "Забронировать урок",
+      "tutor": "Репетитор",
+      "date": "Дата",
+      "time": "Время",
+      "subject": "Предмет",
+      "selectSubject": "Выберите предмет",
+      "subjectRequired": "Предмет обязателен",
+      "noteLabel": "Примечание (необязательно)",
+      "notePlaceholder": "Добавьте примечание к запросу...",
+      "noteTooLong": "Примечание слишком длинное (максимум 500 символов)",
+      "tutorResponseTime": "Репетитор обычно отвечает в течение 24 часов",
+      "successTitle": "Запрос отправлен!",
+      "successMessage": "Репетитор получил ваш запрос на бронирование",
+      "confirming": "Подтверждаем...",
+      "confirm": "Подтвердить бронирование",
+      "selectedSlot": "Выбранный слот"
+    }
+  },
+  "matches": {
+    "title": "Мои связи",
+    "empty": "Связей пока нет",
+    "tabs": {
+      "invited": "Приглашения",
+      "active": "Активные",
+      "archived": "Архив",
+      "bookings": "Бронирования",
+      "calendar": "Календарь",
+      "chat": "Чат",
+      "details": "Детали"
+    },
+    "status": {
+      "pending": "Ожидает",
+      "invited": "Приглашение",
+      "active": "Активные",
+      "archived": "Архив",
+      "${match.status}": "{match.status}"
+    },
+    "lastActivity": "Последняя активность: {time}",
+    "detail": {
+      "title": "Детали связи",
+      "tutor": "Репетитор",
+      "student": "Студент",
+      "timeline": "Хронология"
+    },
+    "actions": {
+      "accept": "Принять",
+      "decline": "Отклонить",
+      "archive": "Архивировать"
+    },
+    "messaging": {
+      "banner": "Это чат для общения до первого занятия. Будьте вежливы и профессиональны.",
+      "placeholder": "Введите сообщение..."
+    },
+    "bookLesson": "Забронировать урок"
+  },
+  "users": {
+    "profile": {
+      "headline": "Заголовок",
+      "headlinePlaceholder": "Например: Опытный преподаватель математики",
+      "notFound": "Профиль не найден",
+      "bio": "О себе",
+      "bioPlaceholder": "Расскажите о своем опыте, подходе к обучению...",
+      "experience": "Опыт (лет)",
+      "experiencePlaceholder": "0",
+      "experienceYears": "{years} лет опыта",
+      "hourlyRate": "Ставка за час",
+      "hourlyRatePlaceholder": "0",
+      "hour": "час",
+      "publishStatus": "Статус публикации",
+      "published": "Опубликовано",
+      "draft": "Черновик",
+      "publish": "Опубликовать",
+      "unpublish": "Снять с публикации",
+      "completeness": {
+        "title": "Полнота профиля",
+        "description": "Заполните профиль для лучшей видимости",
+        "progress": "{filled} из {total} полей заполнено",
+        "missingFields": "Незаполненные поля:",
+        "completeNow": "Заполнить сейчас",
+        "complete": "Профиль заполнен полностью"
+      }
+    },
+    "verification": {
+      "emailNotVerified": "Email не подтвержден",
+      "emailNotVerifiedDescription": "Подтвердите свой email для полного доступа к платформе",
+      "resendEmail": "Отправить письмо повторно",
+      "resendIn": "Повторить через {seconds}с",
+      "emailSent": "Письмо отправлено. Проверьте вашу почту",
+      "emailSendError": "Не удалось отправить письмо"
+    }
+  },
+  "onboarding": {
+    "skip": "Пропустить",
+    "finish": "Завершить",
+    "dismissForNow": "Сделаю это позже",
+    "continue": "Продолжить настройку",
+    "welcomeBack": "С возвращением, {name}!",
+    "continueSetup": "Ваш профиль заполнен на {percentage}%",
+    "welcome": {
+      "title": "Добро пожаловать в M4SH!",
+      "subtitle": "Настроим все за несколько шагов",
+      "feature1": "Найдите идеального репетитора",
+      "feature2": "Планируйте уроки под свой график",
+      "feature3": "Отслеживайте прогресс и достижения"
+    },
+    "student": {
+      "welcome": {
+        "title": "Добро пожаловать, Студент!",
+        "description": "Персонализируем ваш путь обучения",
+        "greeting": "Готовы начать обучение?",
+        "intro": "Мы поможем найти идеального репетитора и настроить профиль."
+      },
+      "completion": {
+        "title": "Готово!",
+        "description": "Вы готовы начать обучение",
+        "congrats": "Поздравляем!",
+        "message": "Ваш профиль студента готов. Начинайте искать репетиторов!"
+      }
+    },
+    "tutor": {
+      "welcome": {
+        "greeting": "Готовы начать преподавать?",
+        "intro": "Заполните профиль, чтобы привлечь студентов.",
+        "benefit1": "Охватите тысячи потенциальных студентов",
+        "benefit2": "Устанавливайте свой график и ставки",
+        "benefit3": "Получайте оплату безопасно через платформу"
+      },
+      "completion": {
+        "congrats": "Поздравляем!",
+        "message": "Ваш профиль репетитора активен. Студенты теперь могут вас найти!"
+      }
+    }
+  },
+  "checklist": {
+    "title": "Чеклист профиля",
+    "subtitle": "Выполните эти шаги, чтобы получить максимум от M4SH",
+    "panelTitle": "Заполните профиль",
+    "nextStep": "Рекомендованный следующий шаг",
+    "viewAll": "Просмотреть все задачи",
+    "complete": "Выполнить",
+    "points": "баллов",
+    "categories": {
+      "profile": "Профиль",
+      "verification": "Верификация",
+      "settings": "Настройки",
+      "engagement": "Активность"
+    }
+  },
+  "classroom": {
+    "realtime": {
+      "statusConnected": "Подключено",
+      "statusConnecting": "Подключение…",
+      "statusDisconnected": "Отключено",
+      "statusError": "Ошибка подключения",
+      "statusOffline": "Нет интернета",
+      "gatewayUrl": "Шлюз",
+      "rateLimitedTitle": "Слишком много запросов",
+      "rateLimitedDescription": "Пожалуйста, подождите перед следующей попыткой.",
+      "rateLimitedRetryIn": "Попробовать через {time}",
+      "rateLimitedRetry": "Попробовать снова"
+    },
+    "soloWorkspace": {
+      "untitled": "Без названия",
+      "clearConfirm": "Очистить страницу? Это действие нельзя отменить."
+    },
+    "board": {
+      "title": "Доска",
+      "participantsLabel": "{count} в сессии",
+      "empty": "Пусто",
+      "layers": "Слои"
+    },
+    "tools": {
+      "actions": "Действия",
+      "clear": "Очистить доску",
+      "colorPalette": "Палитра цветов",
+      "drawingTools": "Инструменты рисования",
+      "redo": "Повторить",
+      "strokeSize": "Толщина линии",
+      "toolbar": "Панель инструментов",
+      "undo": "Отменить",
+      "color": "Цвет",
+      "eraserSize": "Размер ластика",
+      "options": "Параметры инструмента",
+      "thickness": "Толщина",
+      "pen": "Ручка",
+      "highlighter": "Маркер",
+      "eraser": "Ластик",
+      "line": "Линия",
+      "rectangle": "Прямоугольник",
+      "circle": "Круг",
+      "text": "Текст",
+      "select": "Выбор"
+    },
+    "list": {
+      "title": "Мои классы",
+      "name": "Название класса",
+      "studentsCount": "Количество учеников",
+      "open": "Открыть",
+      "empty": "У вас еще нет классов.",
+      "loadError": "Не удалось загрузить список классов"
+    },
+    "detail": {
+      "title": "Класс",
+      "studentsTitle": "Ученики класса",
+      "empty": "В этом классе еще нет учеников.",
+      "loadError": "Не удалось загрузить данные класса",
+      "notFound": "Класс не найден",
+      "forbidden": "Нет доступа к этому классу"
+    },
+    "dashboard": {
+      "title": "Мои классы",
+      "subtitle": "Организуйте учеников по группам и отслеживайте прогресс.",
+      "create": "Создать класс",
+      "empty": "У вас еще нет классов.",
+      "createSuccess": "Класс успешно создан.",
+      "createError": "Не удалось создать класс."
+    },
+    "invite": {
+      "title": "Пригласить студента",
+      "description": "Введите email студента, чтобы отправить приглашение в этот класс.",
+      "emailLabel": "Email студента",
+      "emailPlaceholder": "student@example.com",
+      "button": "Пригласить",
+      "submit": "Отправить приглашение",
+      "success": "Приглашение отправлено.",
+      "errors": {
+        "required": "Email обязателен.",
+        "invalid": "Некорректный email-адрес.",
+        "generic": "Не удалось отправить приглашение."
+      }
+    }
+  },
+  "operator": {
+    "console": {
+      "title": "Activity Console",
+      "subtitle": "Мониторинг событий и метрик системы."
+    },
+    "filters": {
+      "domain": "Домен",
+      "severity": "Уровень",
+      "allDomains": "Все домены",
+      "allSeverities": "Все уровни"
+    },
+    "feed": {
+      "loading": "Загружаем события…",
+      "empty": "Нет событий для отображения.",
+      "loadError": "Не удалось загрузить feed."
+    },
+    "actions": {
+      "refresh": "Обновить",
+      "view": "Просмотреть",
+      "executeError": "Не удалось выполнить действие.",
+      "confirmRisks": "Подтвердить риски",
+      "execute": "Выполнить",
+      "executeSuccess": "Успешно выполнено",
+      "risks": "Риски",
+      "disableTutor": {
+        "title": "Заморозить репетитора",
+        "description": "Перекрывает доступ репетитора к урокам и бронированиям.",
+        "warning": "Все активные уроки будут приостановлены.",
+        "risks": "Потеря доверия студентов|Возврат оплат|Возможные жалобы"
+      },
+      "reenableTutor": {
+        "title": "Разморозить репетитора",
+        "description": "Восстанавливает доступ к платформе.",
+        "warning": "Убедитесь, что причина блокировки устранена.",
+        "risks": "Возможные повторные нарушения"
+      }
+    }
+  },
+  "staff": {
+    "dashboard": {
+      "title": "Панель управления Staff",
+      "tiles": {
+        "tutorActivity": "Активность репетиторов",
+        "tutorActivityDesc": "Просмотр и управление активностью репетиторов"
+      }
+    },
+    "nav": {
+      "dashboard": "Главная",
+      "tutorActivity": "Активность репетиторов",
+      "logout": "Выйти"
+    },
+    "tutorActivity": {
+      "title": "Управление активностью репетиторов",
+      "loading": "Загрузка...",
+      "filters": {
+        "searchPlaceholder": "Поиск по email или имени...",
+        "allStatuses": "Все статусы"
+      },
+      "empty": "Репетиторов не найдено",
+      "table": {
+        "tutorId": "ID",
+        "tutor": "Репетитор",
+        "status": "Статус",
+        "eligible": "Подпадает",
+        "responses": "Ответы",
+        "exemptionReason": "Причина освобождения",
+        "actions": "Действия",
+        "grantExemption": "Предоставить освобождение"
+      },
+      "grantExemption": {
+        "title": "Предоставить освобождение от активности",
+        "tutorEmail": "Email репетитора",
+        "until": "До даты",
+        "reason": "Причина",
+        "reasonPlaceholder": "Например: отпуск, медицинские причины...",
+        "submit": "Предоставить освобождение",
+        "submitting": "Сохранение..."
+      },
+      "success": "Освобождение успешно предоставлено",
+      "errors": {
+        "unauthorized": "Необходима авторизация",
+        "forbidden": "Недостаточно прав доступа",
+        "tutorNotFound": "Репетитор не найден",
+        "tooManyRequests": "Слишком много запросов, попробуйте позже",
+        "generic": "Произошла ошибка, попробуйте еще раз",
+        "loadFailed": "Не удалось загрузить список репетиторов"
+      },
+      "reasons": {
+        "noReactions": "Нет ответов на запросы этого месяца",
+        "trialActive": "Репетитор на пробном периоде",
+        "exempted": "Предоставлено освобождение от правил активности",
+        "notApplicable": "Правила активности не применяются",
+        "active": "Есть активность этого месяца"
+      },
+      "states": {
+        "active": "Активный",
+        "inactive": "Неактивный",
+        "exempted": "Освобожден",
+        "atRisk": "Под риском"
+      }
+    }
+  },
+  "billing": {
+    "title": "Подписка и оплата",
+    "subtitle": "Управляйте вашей подпиской и платежными настройками",
+    "loading": "Загрузка...",
+    "currentPlan": "Текущий план",
+    "currentlyActive": "Активен сейчас",
+    "status": "Статус",
+    "provider": "Платежная система",
+    "periodEnd": "Заканчивается",
+    "willCancelAt": "Подписка будет отменена в конце периода",
+    "manageSubscription": "Управление подпиской",
+    "upgradeDescription": "Обновитесь до PRO для разблокировки всех возможностей платформы",
+    "upgradeToPro": "Обновить до PRO",
+    "cancelDescription": "Вы можете отменить подписку в любой момент. Доступ останется до конца оплаченного периода.",
+    "cancelAtPeriodEnd": "Отменить в конце периода",
+    "processing": "Обработка...",
+    "cancelConfirm": "Вы уверены, что хотите отменить подписку?",
+    "needHelp": "Нужна помощь?",
+    "contactSupport": "Свяжитесь с нашей службой поддержки для получения дополнительной информации",
+    "viewPlans": "Просмотреть планы",
+    "renewsOn": "Продлевается",
+    "cancelScheduled": "Подписка будет отменена в конце периода",
+    "noActiveSubscription": "Нет активной подписки",
+    "yourFeatures": "Ваши возможности",
+    "basicFeaturesOnly": "Базовые возможности",
+    "cancelSubscription": "Отменить подписку",
+    "canceling": "Отмена...",
+    "cancelSuccess": "Подписка успешно отменена",
+    "cancelError": "Ошибка отмены подписки",
+    "upgradeError": "Ошибка оформления подписки",
+    "perMonth": "в месяц",
+    "perYear": "в год",
+    "upgrade": "Обновить",
+    "yourCurrentPlan": "Ваш текущий план",
+    "basicFeatures": "Базовые возможности",
+    "planDescriptions": {
+      "FREE": "Базовые возможности для начала работы",
+      "PRO": "Расширенные функции для профессиональных репетиторов",
+      "BUSINESS": "Полный функционал для команд и школ"
+    },
+    "features": {
+      "CONTACT_UNLOCK_LIMITED": "Ограниченное разблокирование контактов",
+      "CONTACT_UNLOCK": "Неограниченное разблокирование контактов",
+      "UNLIMITED_INQUIRIES": "Неограниченные запросы",
+      "PRIORITY_SUPPORT": "Приоритетная поддержка",
+      "ANALYTICS": "Аналитика и статистика",
+      "ADVANCED_ANALYTICS": "Расширенная аналитика",
+      "API_ACCESS": "Доступ к API",
+      "VIDEO_CALLS": "Видеозвонки",
+      "SCREEN_SHARING": "Демонстрация экрана",
+      "CALENDAR_INTEGRATION": "Интеграция с календарем",
+      "EMAIL_NOTIFICATIONS": "Email уведомления"
+    },
+    "faq": {
+      "title": "Частые вопросы",
+      "cancel": {
+        "question": "Как отменить подписку?",
+        "answer": "Вы можете отменить подписку в любой момент на странице управления подпиской. Доступ к платным функциям останется до конца оплаченного периода."
+      },
+      "change": {
+        "question": "Могу ли я изменить план?",
+        "answer": "Да, вы можете обновить или понизить свой план в любой момент. Изменения вступят в силу немедленно или в следующем платежном цикле."
+      },
+      "refund": {
+        "question": "Возвращаются ли деньги?",
+        "answer": "Мы предлагаем возврат средств в течение 14 дней с момента покупки. Свяжитесь с поддержкой для получения дополнительной информации."
+      }
+    },
+    "statuses": {
+      "none": "Нет подписки",
+      "active": "Активна",
+      "pending": "Ожидает активации",
+      "past_due": "Просрочена",
+      "canceled": "Отменена",
+      "expired": "Закончилась",
+      "incomplete": "Неполная",
+      "trialing": "Пробный период",
+      "unpaid": "Не оплачена"
+    },
+    "success": {
+      "title": "Оплата успешна!",
+      "activated": "Подписка активирована!",
+      "viewBilling": "Просмотреть подписку",
+      "backToDashboard": "Вернуться на главную"
+    }
+  },
+  "footer": {
+    "tagline": "Платформа для репетиторов и студентов",
+    "legal": {
+      "title": "Юридическая информация",
+      "terms": "Пользовательское соглашение",
+      "privacy": "Политика конфиденциальности",
+      "payment": "Условия оплаты",
+      "refund": "Возврат средств"
+    },
+    "contact": {
+      "title": "Контакты",
+      "link": "Связаться с нами"
+    },
+    "payment": {
+      "title": "Способы оплаты",
+      "secure": "Безопасные платежи"
+    },
+    "copyright": "Все права защищены."
+  },
+  "legal": {
+    "terms": {
+      "title": "Пользовательское соглашение",
+      "lastUpdated": "Последнее обновление: {date}",
+      "content": "Условия использования платформы M4SH"
+    },
+    "privacy": {
+      "title": "Политика конфиденциальности",
+      "lastUpdated": "Последнее обновление: {date}",
+      "content": "Политика обработки персональных данных"
+    },
+    "payment": {
+      "title": "Условия оплаты",
+      "lastUpdated": "Последнее обновление: {date}",
+      "content": "Правила и условия оплаты услуг"
+    },
+    "refund": {
+      "title": "Возврат средств",
+      "lastUpdated": "Последнее обновление: {date}",
+      "content": "Политика возврата средств"
+    }
+  },
+  "contacts": {
+    "title": "Контакты",
+    "subtitle": "Свяжитесь с нами",
+    "email": "Email",
+    "phone": "Телефон",
+    "address": "Адрес",
+    "sellerInfo": "Информация о продавце",
+    "unlockPrompt": "Чтобы видеть контакты студента и общаться в чате, откройте доступ",
+    "unlockButton": "Открыть контакты",
+    "studentContacts": "Контакты студента",
+    "revokeButton": "Отозвать доступ",
+    "loadContacts": "Загрузить контакты",
+    "noContactsAvailable": "Контакты недоступны"
+  },
+  "tutors": {
+    "analytics": {
+      "title": "Аналитика запросов",
+      "subtitle": "Детальная статистика ваших запросов от студентов",
+      "loading": "Загрузка аналитики...",
+      "loadError": "Не удалось загрузить статистику",
+      "period7days": "7 дней",
+      "period30days": "30 дней",
+      "period90days": "90 дней",
+      "totalInquiries": "Всего запросов",
+      "acceptanceRate": "Уровень принятия",
+      "responseRate": "Скорость ответа",
+      "contactsSpent": "Потрачено контактов",
+      "dailyBreakdown": "Дневная статистика",
+      "subjectBreakdown": "По предметам",
+      "accepted": "Принято",
+      "rejected": "Отклонено",
+      "expired": "Просрочено"
+    }
+  },
+  "entitlements": {
+    "features": {
+      "title": "Возможности тарифа",
+      "subtitle": "Ваш текущий тариф: {plan}",
+      "included": "Включено",
+      "upgradeRequired": "Требуется обновление",
+      "limit": "Лимит: {value}",
+      "upgradePrompt": "Обновите тариф, чтобы получить больше возможностей",
+      "upgradeCta": "Обновить тариф",
+      "trialAlert": "Пробный период: осталось {days} дней"
+    },
+    "locked": {
+      "title": "Функция недоступна",
+      "upgrade": "Обновить тариф"
+    }
+  },
+  "trust": {
+    "report": {
+      "title": "Пожаловаться",
+      "action": "Пожаловаться",
+      "category": {
+        "label": "Категория жалобы",
+        "placeholder": "Выберите категорию",
+        "spam": "Спам",
+        "harassment": "Домогательства",
+        "fraud": "Мошенничество",
+        "inappropriate": "Неприемлемый контент",
+        "other": "Другое"
+      },
+      "details": {
+        "label": "Описание проблемы",
+        "placeholder": "Опишите подробно, что произошло..."
+      },
+      "submit": "Отправить жалобу",
+      "submitting": "Отправка...",
+      "success": {
+        "title": "Жалоба отправлена",
+        "message": "Спасибо за обращение. Наша команда рассмотрит вашу жалобу в ближайшее время."
+      },
+      "error": {
+        "generic": "Ошибка при отправке жалобы. Попробуйте позже."
+      }
+    },
+    "block": {
+      "action": "Заблокировать пользователя",
+      "confirmMessage": "Вы уверены, что хотите заблокировать этого пользователя? Вы больше не сможете взаимодействовать друг с другом.",
+      "error": "Ошибка при блокировке пользователя"
+    }
+  },
+  "reviews": {
+    "title": "Отзывы",
+    "myReviews": "Мои отзывы",
+    "writtenByMe": "Написанные мной",
+    "pendingReviews": "Ожидает написания",
+    "reviewsCount": "отзывов",
+    "stars": "звезд",
+    "star": "звезда",
+    "verified": "Проверено",
+    "anonymous": "Анонимно",
+    "tutorResponse": "Ответ репетитора",
+    "helpful": "Полезно",
+    "report": "Пожаловаться",
+    "edit": "Редактировать",
+    "delete": "Удалить",
+    "writeReview": "Написать отзыв",
+    "writeAReview": "Оставить отзыв",
+    "writeReviewHint": "Поделитесь вашим опытом с этим репетитором",
+    "yourRating": "Ваша оценка",
+    "yourReview": "Ваш отзыв",
+    "selectRating": "Выберите оценку",
+    "rating": {
+      "poor": "Плохо",
+      "fair": "Удовлетворительно",
+      "average": "Средне",
+      "good": "Хорошо",
+      "excellent": "Отлично"
+    },
+    "reviewPlaceholder": "Опишите ваш опыт работы с репетитором... Минимум 50 символов",
+    "anonymousLabel": "Анонимно",
+    "anonymousHint": "Ваше имя не будет отображаться",
+    "submitReview": "Отправить отзыв",
+    "alreadyReviewed": "Вы уже оставили отзыв этому репетитору",
+    "noCompletedLessons": "Нужно иметь хотя бы одно завершенное занятие",
+    "viewAllReviews": "Просмотреть все отзывы",
+    "filters": {
+      "all": "Все",
+      "verifiedOnly": "Только проверенные",
+      "withResponse": "С ответами"
+    },
+    "sort": {
+      "newest": "Сначала новые",
+      "oldest": "Сначала старые",
+      "highest": "Сначала высокая оценка",
+      "lowest": "Сначала низкая оценка"
+    },
+    "noReviews": "Нет отзывов"
+  },
+  "soloWorkspace": {
+    "toolbar": {
+      "sections": {
+        "draw": "Рисование",
+        "shapes": "Фигуры",
+        "text": "Текст",
+        "style": "Стиль",
+        "actions": "Действия"
+      },
+      "tools": {
+        "pen": "Ручка",
+        "highlighter": "Маркер",
+        "eraser": "Ластик",
+        "line": "Линия",
+        "arrow": "Стрелка",
+        "rectangle": "Прямоугольник",
+        "circle": "Круг",
+        "text": "Текст",
+        "note": "Заметка",
+        "select": "Выбор"
+      },
+      "shortcuts": {
+        "pen": "P",
+        "highlighter": "H",
+        "eraser": "E",
+        "line": "L",
+        "arrow": "A",
+        "rectangle": "R",
+        "circle": "C",
+        "text": "T",
+        "note": "N",
+        "select": "V"
+      },
+      "actions": {
+        "undo": "Отменить",
+        "redo": "Повторить",
+        "clear": "Очистить"
+      }
+    },
+    "header": {
+      "save": "Сохранить",
+      "exit": "Выйти",
+      "backToList": "Назад к списку",
+      "undo": "Отменить (Ctrl+Z)",
+      "redo": "Повторить (Ctrl+Y)",
+      "clear": "Очистить страницу",
+      "exportPDF": "Экспорт в PDF",
+      "importPDF": "Импорт PDF"
+    },
+    "status": {
+      "saving": "Сохранение...",
+      "saved": "Сохранено {time}",
+      "unsavedChanges": "Несохраненные изменения",
+      "justNow": "только что"
+    },
+    "footer": {
+      "previousPage": "Предыдущая страница",
+      "nextPage": "Следующая страница",
+      "addPage": "Добавить страницу",
+      "currentPage": "Текущая страница",
+      "zoomOut": "Уменьшить (-)",
+      "zoomIn": "Увеличить (+)",
+      "zoomLevel": "Уровень масштаба",
+      "fullscreen": "Полноэкранный режим (F11)"
+    },
+    "alerts": {
+      "pdfExportSuccess": "PDF успешно экспортирован",
+      "pdfExportError": "Не удалось экспортировать PDF. Попробуйте еще раз.",
+      "pdfImportSuccess": "PDF успешно импортирован! Добавлено {count} страниц.",
+      "pdfImportError": "Не удалось импортировать PDF. Попробуйте еще раз.",
+      "invalidFileType": "Неверный тип файла. Выберите PDF файл."
+    }
+  },
+  "phone_verification": {
+    "title": "Подтверждение телефона",
+    "description": "Подтвердите ваш номер телефона для верификации аккаунта",
+    "send_code": "Отправить код",
+    "verify_code": "Подтвердить код",
+    "resend_code": "Отправить код повторно",
+    "code_sent": "Код отправлен на номер {phone}",
+    "enter_code": "Введите 6-значный код из SMS",
+    "code_placeholder": "000000",
+    "code_valid_for": "Код действителен {time}",
+    "expired": "просрочен",
+    "success_title": "Телефон подтвержден!",
+    "success_message": "Ваш номер телефона успешно верифицирован",
+    "errors": {
+      "no_phone": "Пожалуйста, добавьте номер телефона к вашему профилю",
+      "invalid_phone": "Неверный формат телефона. Используйте международный формат: +[код страны][номер]",
+      "rate_limited": "Слишком много попыток верификации. Попробуйте позже",
+      "send_failed": "Не удалось отправить код. Попробуйте еще раз",
+      "session_not_found": "Сессия верификации не найдена",
+      "session_expired": "Сессия верификации просрочена. Запросите новый код",
+      "invalid_code": "Неверный код верификации",
+      "too_many_attempts": "Слишком много попыток. Запросите новый код",
+      "phone_already_verified": "Этот номер уже верифицирован другим репетитором",
+      "no_session": "Нет активной сессии верификации",
+      "unknown": "Произошла неизвестная ошибка. Попробуйте еще раз"
+    }
+  },
+  "warnings": {
+    "declineStreak": {
+      "title": "Внимание: серия отказов",
+      "message": "У вас {count} отказов подряд. При 5 отказах доступ к новым запросам будет ограничен."
+    },
+    "blocked": {
+      "title": "Доступ ограничен",
+      "message": "Вы достигли лимита отказов. Примите имеющиеся запросы, чтобы разблокировать доступ."
+    },
+    "accessDenied": {
+      "title": "Доступ запрещен",
+      "message": "Эта функция доступна только репетиторам"
+    }
+  },
+  "inquiry": {
+    "contactInfo": {
+      "title": "Контактные данные для связи",
+      "description": "Укажите ваш номер телефона или Telegram, чтобы репетитор мог связаться с вами после принятия запроса."
+    },
+    "contactRequired": {
+      "title": "Необходима контактная информация",
+      "description": "Пожалуйста, добавьте номер телефона или Telegram в настройках профиля перед созданием запроса.",
+      "goToProfile": "Перейти в профиль"
+    },
+    "modal": {
+      "title": "Запрос на контакты",
+      "messagePlaceholder": "Напишите сообщение репетитору/студенту...",
+      "messageRequired": "Сообщение обязательно",
+      "sendButton": "Отправить запрос",
+      "cancelButton": "Отмена",
+      "sending": "Отправка...",
+      "success": "Запрос успешно отправлен",
+      "error": "Ошибка при отправке запроса"
+    },
+    "status": {
+      "open": "Ожидает ответа",
+      "accepted": "Принято",
+      "rejected": "Отклонено",
+      "expired": "Просрочено"
+    },
+    "errors": {
+      "already_exists": "Запрос уже существует для этой связи",
+      "not_allowed": "Запрос не разрешен",
+      "invalid_state": "Невозможная операция для текущего состояния запроса",
+      "subscription_required": "Для создания запроса нужна подписка PRO. Обновите подписку для продолжения.",
+      "user_blocked": "Вы не можете взаимодействовать с этим пользователем"
+    }
+  }
+}

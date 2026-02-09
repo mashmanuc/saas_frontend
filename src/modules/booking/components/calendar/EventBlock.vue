@@ -91,6 +91,57 @@ function handleClick() {
 </script>
 
 <style scoped>
+.event-block {
+  position: absolute;
+  background: #4CAF50;
+  color: white;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.875rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.event-block__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+}
+
+.event-block__time {
+  font-size: 0.75rem;
+  opacity: 0.9;
+}
+
+.event-block__client {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.event-block__duration {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.event-block__status-badges {
+  display: flex;
+  gap: 4px;
+}
+
+.status-badge {
+  font-size: 0.625rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
 .event-block__drag-handle {
   position: absolute;
   top: 50%;
@@ -111,5 +162,9 @@ function handleClick() {
 
 .event-block--draggable:active {
   cursor: grabbing;
+}
+
+.optimistic-update {
+  opacity: 0.7;
 }
 </style>

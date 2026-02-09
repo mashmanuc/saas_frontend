@@ -21,6 +21,11 @@ describe('ContactAccessStore', () => {
         unlocked: true,
         access_level: 'CONTACTS_SHARED',
         was_already_unlocked: false,
+        contacts: {
+          phone: '+380501234567',
+          telegram: 'student_tg',
+          email: 'student@test.com',
+        },
       }
       const mockContactsResponse = {
         contacts: {

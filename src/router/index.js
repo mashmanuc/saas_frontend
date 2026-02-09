@@ -637,6 +637,95 @@ const routes = [
           roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN]
         },
       },
+      // DOMAIN-07: Contacts module routes
+      {
+        path: 'contacts',
+        name: 'contacts-dashboard',
+        component: () => import('../modules/contacts/views/ContactsView.vue'),
+        meta: { 
+          requiresAuth: true,
+          roles: [USER_ROLES.TUTOR]
+        },
+      },
+      {
+        path: 'contacts/purchase',
+        name: 'contacts-purchase',
+        component: () => import('../modules/contacts/views/ContactsView.vue'),
+        meta: { 
+          requiresAuth: true,
+          roles: [USER_ROLES.TUTOR]
+        },
+        beforeEnter: (to, from, next) => {
+          // Auto-open purchase modal via query param
+          to.query.openPurchase = 'true'
+          next()
+        }
+      },
+      {
+        path: 'contacts/purchase/success',
+        name: 'contacts-purchase-success',
+        component: () => import('../modules/contacts/views/ContactsView.vue'),
+        meta: { 
+          requiresAuth: true,
+          roles: [USER_ROLES.TUTOR]
+        },
+        beforeEnter: (to, from, next) => {
+          to.query.purchaseSuccess = 'true'
+          next()
+        }
+      },
+      {
+        path: 'contacts/purchase/cancel',
+        name: 'contacts-purchase-cancel',
+        component: () => import('../modules/contacts/views/ContactsView.vue'),
+        meta: { 
+          requiresAuth: true,
+          roles: [USER_ROLES.TUTOR]
+        },
+        beforeEnter: (to, from, next) => {
+          to.query.purchaseCancelled = 'true'
+          next()
+        }
+      },
+      // DOMAIN-06: Entitlements module routes
+      {
+        path: 'plan-features',
+        name: 'plan-features',
+        component: () => import('../modules/entitlements/views/PlanFeaturesView.vue'),
+        meta: { 
+          requiresAuth: true,
+          roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN]
+        },
+      },
+      // DOMAIN-12: Trust & Safety module routes
+      {
+        path: 'trust/blocked',
+        name: 'trust-blocked-users',
+        component: () => import('../modules/trust/views/BlockedUsersView.vue'),
+        meta: { 
+          requiresAuth: true,
+          roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN]
+        },
+      },
+      {
+        path: 'trust/appeals',
+        name: 'trust-appeals',
+        component: () => import('../modules/trust/views/AppealsView.vue'),
+        meta: { 
+          requiresAuth: true,
+          roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN]
+        },
+      },
+      // DOMAIN-09: Reviews module routes
+      {
+        path: 'reviews/my',
+        name: 'my-reviews',
+        component: () => import('../modules/reviews/views/MyReviewsView.vue'),
+        meta: { 
+          requiresAuth: true,
+          roles: [USER_ROLES.STUDENT]
+        },
+      },
       // v0.88.4: Staff Console with dedicated layout
       {
         path: 'staff',
@@ -695,6 +784,13 @@ const routes = [
     path: '/__lighthouse__/calendar',
     name: 'lighthouse-calendar',
     component: LighthouseCalendarView,
+    meta: { requiresAuth: false },
+  },
+  // DOMAIN-09: Public tutor reviews route
+  {
+    path: '/tutor/:tutorId/reviews',
+    name: 'tutor-reviews',
+    component: () => import('./modules/reviews/views/TutorReviewsView.vue'),
     meta: { requiresAuth: false },
   },
   { path: '/:pathMatch(.*)*', redirect: '/auth/login' },

@@ -1,25 +1,10 @@
 <template>
   <div class="empty-availability-state">
-    <div class="empty-icon">
-      <CalendarIcon :size="64" />
-    </div>
-    
-    <h3 class="empty-title">
-      {{ t('calendar.emptyState.noAvailability.title') }}
-    </h3>
-    
-    <p class="empty-description">
-      {{ t('calendar.emptyState.noAvailability.description') }}
-    </p>
-    
-    <div class="empty-actions">
-      <router-link
-        v-if="false"
-        to="/booking/availability"
-        class="btn-primary"
-      >
-        {{ t('calendar.emptyState.noAvailability.action') }}
-      </router-link>
+    <div class="empty-content">
+      <CalendarIcon :size="24" class="empty-icon" />
+      <span class="empty-text">
+        {{ t('calendar.emptyState.noAvailability.title') }}
+      </span>
     </div>
   </div>
 </template>
@@ -34,73 +19,39 @@ const { t } = useI18n()
 <style scoped>
 .empty-availability-state {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 4rem 2rem;
-  text-align: center;
-  min-height: 400px;
+  padding: 0.75rem 1rem;
+  margin: 0.5rem 0;
+  background: var(--color-surface-secondary, #f3f4f6);
+  border-radius: 8px;
+  border: 1px dashed var(--color-border, #d1d5db);
+}
+
+.empty-content {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .empty-icon {
-  width: 64px;
-  height: 64px;
-  margin-bottom: 1.5rem;
   color: var(--color-text-tertiary, #9ca3af);
+  flex-shrink: 0;
 }
 
-.empty-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin: 0 0 0.5rem;
-  color: var(--color-text-primary, #111827);
-}
-
-.empty-description {
+.empty-text {
   font-size: 0.875rem;
-  color: var(--color-text-secondary, #6b7280);
-  max-width: 400px;
-  margin: 0 0 1.5rem;
-  line-height: 1.5;
-}
-
-.empty-actions {
-  display: flex;
-  gap: 1rem;
-}
-
-.btn-primary {
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #0ea5e9, #14b8a6);
-  color: white;
-  text-decoration: none;
   font-weight: 500;
-  font-size: 0.875rem;
-  transition: opacity 0.2s, transform 0.2s;
-  display: inline-block;
-}
-
-.btn-primary:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
-}
-
-.btn-primary:active {
-  transform: translateY(0);
+  color: var(--color-text-secondary, #6b7280);
 }
 
 /* Responsive */
 @media (max-width: 768px) {
   .empty-availability-state {
-    padding: 3rem 1.5rem;
+    padding: 0.625rem 0.875rem;
   }
   
-  .empty-title {
-    font-size: 1.125rem;
-  }
-  
-  .empty-description {
+  .empty-text {
     font-size: 0.8125rem;
   }
 }
