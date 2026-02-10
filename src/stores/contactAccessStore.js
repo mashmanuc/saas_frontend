@@ -6,11 +6,16 @@ import { notifySuccess, notifyError, notifyInfo } from '@/utils/notify'
 export const useContactAccessStore = defineStore('contactAccess', () => {
   // State
   const contactsCache = ref(new Map()) // studentId -> {contacts, access_level, unlocked_at}
+  const accessExistsByStudentId = ref(new Map()) // studentId -> true (SSOT - факт існування access)
   const loading = ref(false)
 
   // Getters
   const hasContactAccess = computed(() => (studentId) => {
     return contactsCache.value.has(studentId)
+  })
+
+  const hasAccess = computed(() => (studentId) => {
+    return accessExistsByStudentId.value.get(studentId) === true
   })
 
   const getStudentContacts = computed(() => (studentId) => {
@@ -34,6 +39,11 @@ export const useContactAccessStore = defineStore('contactAccess', () => {
 
   // Actions
   async function unlockContacts({ inquiryId, studentId }, options = {}) {
+    // FIX 2: Guard - не створювати повторно якщо access вже існує
+    if (accessExistsByStudentId.value.get(studentId)) {
+      return { success: true, was_already_unlocked: true, cached: true }
+    }
+    
     if (!inquiryId) {
       throw new Error('inquiryId is required for unlockContacts')
     }
@@ -50,6 +60,11 @@ export const useContactAccessStore = defineStore('contactAccess', () => {
       
       const contactsPayload = response?.contacts || {}
       const accessLevel = response?.access_level || 'CONTACTS_SHARED'
+
+      // FIX 1: Зберігаємо факт існування access (SSOT)
+      if (response?.was_already_unlocked || response?.success) {
+        accessExistsByStudentId.value.set(studentId, true)
+      }
 
       // Caching contacts
       contactsCache.value.set(studentId, {
@@ -212,9 +227,11 @@ export const useContactAccessStore = defineStore('contactAccess', () => {
     // State
     loading,
     contactsCache,
+    accessExistsByStudentId,
 
     // Getters
     hasContactAccess,
+    hasAccess,
     getStudentContacts,
     getAccessLevel,
     canAccessChat,

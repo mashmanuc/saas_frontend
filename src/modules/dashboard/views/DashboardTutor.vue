@@ -179,13 +179,15 @@
               </div>
             </div>
 
-            <!-- Contact Access Component -->
+            <!-- Contact Access Component - тільки для active -->
             <StudentContactUnlock
+              v-if="relation.status === 'active'"
               :relation="relation"
               :show-revoke-button="true"
             />
 
-            <div class="flex flex-wrap items-center gap-2">
+            <!-- Кнопки дій тільки для не-invited студентів -->
+            <div v-if="relation.status !== 'invited'" class="flex flex-wrap items-center gap-2">
               <span
                 class="rounded-full border border-default px-3 py-1 text-xs font-semibold text-muted"
                 :data-test="`relation-status-${getRelationId(relation)}`"
@@ -231,15 +233,6 @@
                 @click="handleDecline(getRelationId(relation))"
               >
                 {{ $t('common.decline') }}
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                :disabled="resendLoadingId === getRelationId(relation)"
-                :loading="resendLoadingId === getRelationId(relation)"
-                @click="handleResend(getRelationId(relation))"
-              >
-                {{ $t('tutorSearch.actions.resend') }}
               </Button>
             </div>
           </li>

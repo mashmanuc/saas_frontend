@@ -21,10 +21,12 @@
     <div v-if="relation.status === 'active'" class="contacts-display">
       <h4>{{ $t('contacts.studentContacts') }}</h4>
       
+      <!-- Завантаження -->
       <div v-if="loading" class="loading-state">
         {{ $t('common.loading') }}...
       </div>
       
+      <!-- Контакти завантажені -->
       <div v-else-if="studentContacts">
         <div class="contact-item" v-if="studentContacts.phone">
           <span class="contact-icon">📱</span>
@@ -45,7 +47,8 @@
         </div>
       </div>
       
-      <div v-else class="load-contacts">
+      <!-- Контакти ще не завантажені - показуємо кнопку завантаження -->
+      <div v-if="relation.status === 'active' && !studentContacts && !loading" class="load-contacts">
         <button class="btn btn-secondary btn-sm" @click="loadContacts">
           {{ $t('contacts.loadContacts') }}
         </button>
@@ -84,7 +87,7 @@ const studentId = computed(() => props.relation.student?.id || props.relation.st
 
 const loading = computed(() => contactAccessStore.loading)
 const hasAccess = computed(() => 
-  contactAccessStore.hasContactAccess(studentId.value)
+  contactAccessStore.hasAccess(studentId.value)
 )
 const studentContacts = computed(() => 
   contactAccessStore.getStudentContacts(studentId.value)
