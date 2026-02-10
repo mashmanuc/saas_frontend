@@ -17,6 +17,19 @@
       <h1 class="font-semibold text-lg" style="color: var(--text-primary);">
         M4SH Platform
       </h1>
+
+      <!-- Primary Navigation -->
+      <nav v-if="auth.isAuthenticated" class="hidden md:flex items-center gap-1 ml-6">
+        <router-link
+          v-for="item in primaryNav"
+          :key="item.to"
+          :to="item.to"
+          class="nav-link"
+          :class="{ active: $route.path === item.to || $route.path.startsWith(item.to + '/') }"
+        >
+          {{ $t(item.label) }}
+        </router-link>
+      </nav>
     </div>
 
     <!-- RIGHT SIDE -->
@@ -128,6 +141,38 @@ const { t } = useI18n()
 
 const isRealtimeOffline = computed(() => realtime.status !== 'open')
 
+/* ------------------------- Primary Navigation ------------------------- */
+const PRIMARY_NAV_BY_ROLE = {
+  tutor: [
+    { label: 'nav.calendar', to: '/booking/tutor' },
+    { label: 'nav.inquiries', to: '/tutor/inquiries' },
+    { label: 'nav.bookings', to: '/bookings' },
+    { label: 'nav.chat', to: '/chat' },
+    { label: 'nav.contacts', to: '/contacts' },
+    { label: 'nav.billing', to: '/billing' },
+  ],
+  student: [
+    { label: 'nav.marketplace', to: '/marketplace' },
+    { label: 'nav.bookings', to: '/bookings' },
+    { label: 'nav.chat', to: '/chat' },
+    { label: 'nav.contacts', to: '/contacts' },
+    { label: 'nav.billing', to: '/billing' },
+  ],
+  admin: [
+    { label: 'nav.staff', to: '/staff' },
+    { label: 'nav.dashboard', to: '/tutor' },
+  ],
+  superadmin: [
+    { label: 'nav.staff', to: '/staff' },
+    { label: 'nav.dashboard', to: '/tutor' },
+  ],
+}
+
+const primaryNav = computed(() => {
+  const role = auth.user?.role
+  return PRIMARY_NAV_BY_ROLE[role] || []
+})
+
 /* ------------------------- Logout ------------------------- */
 async function logout() {
   try {
@@ -176,3 +221,26 @@ function changeLocale(locale) {
   settings.setLocale(locale)
 }
 </script>
+
+<style scoped>
+.nav-link {
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.nav-link:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.nav-link.active {
+  color: var(--accent);
+  background: rgba(79, 70, 229, 0.1);
+}
+</style>

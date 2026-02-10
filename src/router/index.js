@@ -190,6 +190,7 @@ const routes = [
         path: 'dashboard/account',
         name: 'user-account',
         component: UserAccountView,
+        meta: { requiresAuth: true, roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
       },
       {
         path: 'dashboard/account/billing',
@@ -201,11 +202,13 @@ const routes = [
         path: 'dashboard/account/change-email',
         name: 'change-email',
         component: ChangeEmailView,
+        meta: { requiresAuth: true, roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
       },
       {
         path: 'dashboard/account/change-password',
         name: 'change-password',
         component: ChangePasswordView,
+        meta: { requiresAuth: true, roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
       },
       {
         path: 'classrooms',
@@ -573,7 +576,7 @@ const routes = [
       },
       {
         path: 'chat/thread/:threadId',
-        name: 'chat-thread',
+        name: 'chat-thread-people',
         component: () => import('../modules/people/views/ChatThreadView.vue'),
         meta: { 
           requiresAuth: true,
@@ -790,7 +793,7 @@ const routes = [
   {
     path: '/tutor/:tutorId/reviews',
     name: 'tutor-reviews',
-    component: () => import('./modules/reviews/views/TutorReviewsView.vue'),
+    component: () => import('../modules/reviews/views/TutorReviewsView.vue'),
     meta: { requiresAuth: false },
   },
   { path: '/:pathMatch(.*)*', redirect: '/auth/login' },
