@@ -16,7 +16,7 @@
         </div>
         <div class="banner-actions">
           <button class="btn btn-primary" @click="onRenew">
-            {{ $t('entitlements.grance.renew') }}
+            {{ $t('entitlements.grace.renew') }}
           </button>
           <button class="btn btn-text" @click="onDismiss">
             {{ $t('common.dismiss') }}

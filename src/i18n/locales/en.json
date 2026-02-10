@@ -158,6 +158,23 @@
     },
     "ws": {
       "sessionExpired": "Session expired. Please log in again"
+    },
+    "spam": {
+      "title": "Скарга на спам",
+      "report": "Поскаржитися",
+      "reported": "Скаргу надіслано",
+      "warning": "Цю дію неможливо скасувати",
+      "reasonLabel": "Причина",
+      "reasonPlaceholder": "Вкажіть причину скарги",
+      "submit": "Відправити",
+      "alreadyReported": "Вже поскаржено",
+      "inquiryPreview": "Попередній перегляд"
+    },
+    "recommended": {
+      "title": "Рекомендації",
+      "description": "Рекомендовані запити",
+      "empty": "Немає рекомендацій",
+      "viewAll": "Переглянути всі"
     }
   },
   "loader": {
@@ -561,7 +578,9 @@
     "edit": "Редагувати",
     "filter": "Фільтр",
     "sort": "Сортування",
-    "reset": "Скинути"
+    "reset": "Скинути",
+    "dismiss": "Закрити",
+    "sending": "Відправляємо..."
   },
   "ui": {
     "cancel": "Cancel",
@@ -1689,7 +1708,9 @@
       "declineSuccess": "Invitation declined",
       "declineError": "Failed to decline invitation",
       "resendSuccess": "Invitation resent",
-      "resendError": "Failed to resend invitation"
+      "resendError": "Failed to resend invitation",
+      "requestSuccess": "Запит надіслано",
+      "requestError": "Не вдалося надіслати запит"
     },
     "bulk": {
       "noInvited": "Select at least one invited relation to continue.",
@@ -1890,7 +1911,11 @@
     },
     "status": {
       "offline": "Offline",
-      "connected": "Connected"
+      "connected": "Connected",
+      "connecting": "Підключення...",
+      "pollingMode": "Режим опитування",
+      "reconnecting": "Перепідключення...",
+      "unknown": "Невідомий статус"
     },
     "typing": {
       "single": "{name} is typing…",
@@ -1956,6 +1981,19 @@
     "notifications": {
       "title": "Повідомлення",
       "empty": "Немає нових повідомлень"
+    },
+    "connecting": "Підключення...",
+    "retry": "Повторити",
+    "error": {
+      "generic": "Помилка чату",
+      "maxRetries": "Досягнуто максимальну кількість спроб",
+      "networkFailed": "Помилка мережі",
+      "retry": "Повторити",
+      "retrying": "Повторна спроба...",
+      "timeout": "Час очікування вичерпано",
+      "title": "Помилка з'єднання",
+      "usePolling": "Використовуємо режим опитування",
+      "websocketFailed": "WebSocket не вдалося підключити"
     }
   },
   "presence": {
@@ -3617,12 +3655,63 @@
       "error": {
         "generic": "Error submitting report. Please try again later.",
         "rateLimited": "You have already reported this target. Please try again in {hours} hours."
-      }
+      },
+      "categoryLabel": "Категорія",
+      "commentLabel": "Коментар",
+      "commentPlaceholder": "Ваш коментар...",
+      "warning": "Увага",
+      "inquiryPreview": "Попередній перегляд скарги",
+      "comment": {
+        "label": "Коментар",
+        "placeholder": "Опишіть проблему..."
+      },
+      "cancel": "Скасувати"
     },
     "block": {
       "action": "Block User",
       "confirmMessage": "Are you sure you want to block this user? You will no longer be able to interact with each other.",
-      "error": "Error blocking user"
+      "error": "Error blocking user",
+      "title": "Заблокувати користувача",
+      "userHint": "Цей користувач не зможе з вами контактувати",
+      "reasonLabel": "Причина блокування",
+      "reasons": {
+        "select": "Оберіть причину",
+        "harassment": "Домагання",
+        "spam": "Спам",
+        "inappropriate": "Невідповідний контент",
+        "other": "Інше"
+      },
+      "noteLabel": "Примітка",
+      "notePlaceholder": "Додайте приватну нотатку...",
+      "warning": "Ви впевнені, що хочете заблокувати цього користувача?",
+      "submit": "Заблокувати",
+      "alreadyBlocked": "Цей користувач вже заблокований"
+    },
+    "blocked": {
+      "title": "Заблоковані користувачі",
+      "subtitle": "Користувачі, яких ви заблокували",
+      "reason": "Причина",
+      "since": "Заблоковано з",
+      "unblock": "Розблокувати",
+      "empty": "Немає заблокованих користувачів"
+    },
+    "appeals": {
+      "title": "Блокування та апеляції",
+      "subtitle": "Керуйте блокуваннями та подавайте апеляції",
+      "activeBans": "Активні блокування",
+      "permanent": "Назавжди",
+      "expires": "Закінчується",
+      "reason": "Причина блокування",
+      "fileAppeal": "Подати апеляцію",
+      "pending": "Очікує розгляду",
+      "history": "Історія апеляцій",
+      "response": "Відповідь модератора",
+      "modalTitle": "Апеляція на блокування",
+      "modalHint": "Опишіть чому ви вважаєте блокування помилковим",
+      "reasonPlaceholder": "Поясніть чому блокування є помилковим",
+      "submit": "Подати апеляцію",
+      "noActiveBans": "Немає активних блокувань",
+      "appealed": "Апеляцію подано"
     }
   },
   "contact": {
@@ -4167,7 +4256,16 @@
     "balance": {
       "label": "Contacts",
       "ariaLabel": "Contact balance",
-      "error": "Failed to load balance"
+      "error": "Failed to load balance",
+      "title": "Баланс",
+      "tokens": "токенів",
+      "lowBalance": "Низький баланс",
+      "zeroBalance": "Немає токенів",
+      "addTokens": "Додати токени",
+      "viewHistory": "Історія",
+      "low": "Низький баланс",
+      "zeroMessage": "У вас закінчилися токени. Придбайте нові.",
+      "lowMessage": "Мало токенів. Рекомендуємо поповнити."
     },
     "ledger": {
       "title": "Contact History",
@@ -4177,18 +4275,92 @@
       "loadMore": "Load more",
       "endOfList": "End of list",
       "balanceAfter": "Balance after",
-      "type": {
+      "change": "Зміна",
+      "balance": "Баланс",
+      "types": {
         "purchase": "Purchase",
         "deduction": "Deduction",
-        "refund": "Refund"
-      }
+        "refund": "Refund",
+        "grant": "Нарахування",
+        "bonus": "Бонус"
+      },
+      "filters": {
+        "all": "Всі",
+        "grant": "Нарахування",
+        "deduction": "Списання",
+        "purchase": "Покупка",
+        "expiry": "Термін дії",
+        "allTypes": "Всі типи"
+      },
+      "columns": {
+        "date": "Дата",
+        "type": "Тип",
+        "amount": "Сума",
+        "description": "Опис",
+        "balance": "Баланс"
+      },
+      "allTypes": "Всі типи",
+      "refresh": "Оновити",
+      "date": "Дата",
+      "type": "Тип"
     },
     "unlockPrompt": "Щоб бачити контакти студента та спілкуватися в чаті, відкрийте доступ",
     "unlockButton": "Відкрити контакти",
     "studentContacts": "Контакти студента",
     "revokeButton": "Відкликати доступ",
     "loadContacts": "Завантажити контакти",
-    "noContactsAvailable": "Контакти недоступні"
+    "noContactsAvailable": "Контакти недоступні",
+    "allowance": {
+      "nextGrant": "Наступне нарахування",
+      "received": "Отримано",
+      "notStarted": "Ще не розпочато",
+      "title": "Щомісячне нарахування",
+      "perMonth": "за місяць",
+      "nextRefill": "Наступне поповнення",
+      "history": "Історія нарахувань",
+      "monthly": "Щомісячне поповнення",
+      "nextIn": "Наступне поповнення через",
+      "month": "Місяць"
+    },
+    "grant": {
+      "reasonHelp": "Вкажіть причину нарахування",
+      "title": "Нарахувати токени",
+      "recipient": "Отримувач",
+      "amount": "Кількість",
+      "reason": "Причина",
+      "submit": "Нарахувати",
+      "success": "Токени нараховано",
+      "amountPlaceholder": "Введіть кількість",
+      "reasonPlaceholder": "Вкажіть причину",
+      "subscription": "Підписка",
+      "subscriptionPlaceholder": "Виберіть підписку"
+    },
+    "purchase": {
+      "title": "Придбати токени",
+      "selectPackage": "Оберіть пакет",
+      "tokens": "токенів",
+      "price": "Ціна",
+      "popular": "Популярне",
+      "bestValue": "Найкраща ціна",
+      "proceed": "Продовжити",
+      "cancel": "Скасувати",
+      "success": "Успішна покупка",
+      "cancelled": "Скасовано",
+      "currentBalance": "Поточний баланс",
+      "perToken": "за токен",
+      "noPackages": "Немає пакетів",
+      "submit": "Придбати"
+    },
+    "errors": {
+      "loadFailed": "Помилка завантаження",
+      "purchaseFailed": "Помилка покупки",
+      "grantFailed": "Помилка нарахування"
+    },
+    "actions": {
+      "history": "Історія",
+      "purchase": "Придбати"
+    },
+    "tokens": "токенів"
   },
   "warnings": {
     "declineStreak": {
@@ -4854,5 +5026,102 @@
       "no_session": "Немає активної сесії верифікації",
       "unknown": "Сталася невідома помилка. Спробуйте ще раз"
     }
+  },
+  "entitlements": {
+    "features": {
+      "title": "Можливості тарифу",
+      "subtitle": "Ваш тариф: {plan}",
+      "included": "Включено",
+      "upgradeRequired": "Потрібне оновлення",
+      "limit": "Ліміт: {value}",
+      "upgradePrompt": "Оновіть тариф для більших можливостей",
+      "upgradeCta": "Оновити тариф",
+      "graceAlert": "Grace period: {days} днів",
+      "trialAlert": "Пробний період: {days} днів"
+    },
+    "grace": {
+      "title": "Grace Period",
+      "message": "Підписка закінчилась. Залишилось {days} днів.",
+      "submessage": "Після grace period доступ буде обмежено.",
+      "renew": "Оновити підписку",
+      "dismiss": "Зрозуміло"
+    },
+    "locked": {
+      "title": "Функція недоступна",
+      "upgrade": "Оновити тариф"
+    }
+  },
+  "reviews": {
+    "title": "Відгуки",
+    "myReviews": "Мої відгуки",
+    "myReviewsSubtitle": "Відгуки, які ви написали",
+    "writtenByMe": "Написані мною",
+    "pendingReviews": "Очікує написання",
+    "reviewsCount": "відгуків",
+    "stars": "зірок",
+    "star": "зірка",
+    "verified": "Перевірено",
+    "verifiedReviews": "перевірених",
+    "anonymous": "Анонімно",
+    "tutorResponse": "Відповідь тьютора",
+    "helpful": "Корисно",
+    "report": "Поскаржитися",
+    "edit": "Редагувати",
+    "delete": "Видалити",
+    "writeReview": "Написати відгук",
+    "writeAReview": "Залишити відгук",
+    "writeReviewHint": "Поділіться досвідом",
+    "yourRating": "Ваша оцінка",
+    "yourReview": "Ваш відгук",
+    "selectRating": "Оберіть оцінку",
+    "rating": {
+      "poor": "Погано",
+      "fair": "Задовільно",
+      "average": "Середньо",
+      "good": "Добре",
+      "excellent": "Відмінно"
+    },
+    "reviewPlaceholder": "Напишіть відгук...",
+    "anonymousLabel": "Анонімно",
+    "anonymousHint": "Ваше ім'я не буде відображено",
+    "editWarning": "Редагування доступне 24 години",
+    "submitReview": "Надіслати",
+    "alreadyReviewed": "Вже залишено відгук",
+    "noCompletedLessons": "Немає завершених занять",
+    "tooSoon": "Занадто рано",
+    "reviewBlocked": "Відгук заблоковано",
+    "allReviewsFor": "Всі відгуки про",
+    "tutor": "тьютора",
+    "viewAllReviews": "Переглянути всі",
+    "strengths": "Сильні сторони",
+    "filters": {
+      "all": "Всі",
+      "verifiedOnly": "Тільки перевірені",
+      "withResponse": "З відповідями"
+    },
+    "sort": {
+      "newest": "Спочатку нові",
+      "oldest": "Спочатку старі",
+      "highest": "Спочатку висока оцінка",
+      "lowest": "Спочатку низька оцінка",
+      "helpful": "Найкорисніші"
+    },
+    "noReviews": "Немає відгуків",
+    "noReviewsSubtitle": "Будьте першим",
+    "writeFirst": "Написати перший",
+    "loadMore": "Завантажити ще",
+    "noWrittenReviews": "Немає написаних відгуків",
+    "noWrittenReviewsSubtitle": "Залиште відгук після заняття",
+    "noPendingReviews": "Немає очікуючих відгуків",
+    "noPendingReviewsSubtitle": "Всі відгуки залишено",
+    "completedLesson": "Завершене заняття",
+    "canReviewUntil": "Можна відгукнутися до",
+    "editPlaceholder": "Редагуйте відгук...",
+    "minLengthError": "Мінімум 50 символів",
+    "reportCommentPlaceholder": "Опишіть проблему...",
+    "reportSubtitle": "Скарга на відгук",
+    "reportTitle": "Поскаржитися",
+    "submitReport": "Відправити скаргу",
+    "writeReviewSubtitle": "Поділіться досвідом"
   }
 }

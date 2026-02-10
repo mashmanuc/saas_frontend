@@ -27,3 +27,8 @@ http://127.0.0.1:5173/marketplace/my-profile
 http://127.0.0.1:5173/marketplace
 Якщо треба швидко повернутись на загальний дашборд після тестів
 http://127.0.0.1:5173/tutor
+
+
+python manage.py runserver
+python -m celery -A config worker --pool=solo --loglevel=info
+npm run dev -- --host 0.0.0.0 --port 5173
