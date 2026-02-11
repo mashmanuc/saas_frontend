@@ -143,21 +143,8 @@ const isRealtimeOffline = computed(() => realtime.status !== 'open')
 
 /* ------------------------- Primary Navigation ------------------------- */
 const PRIMARY_NAV_BY_ROLE = {
-  tutor: [
-    { label: 'nav.calendar', to: '/booking/tutor' },
-    { label: 'nav.inquiries', to: '/tutor/inquiries' },
-    { label: 'nav.bookings', to: '/bookings' },
-    { label: 'nav.chat', to: '/chat' },
-    { label: 'nav.contacts', to: '/contacts' },
-    { label: 'nav.billing', to: '/billing' },
-  ],
-  student: [
-    { label: 'nav.marketplace', to: '/marketplace' },
-    { label: 'nav.bookings', to: '/bookings' },
-    { label: 'nav.chat', to: '/chat' },
-    { label: 'nav.contacts', to: '/contacts' },
-    { label: 'nav.billing', to: '/billing' },
-  ],
+  tutor: [],
+  student: [],
   admin: [
     { label: 'nav.staff', to: '/staff' },
     { label: 'nav.dashboard', to: '/tutor' },

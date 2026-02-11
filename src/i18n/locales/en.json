@@ -881,7 +881,10 @@
     "tutorProfile": "Tutor profile",
     "account": "Account",
     "settings": "Settings",
-    "soloWorkspaceV2": "Solo v2"
+    "soloWorkspaceV2": "Solo v2",
+    "billing": "Білінг",
+    "booking": "Бронювання",
+    "notifications": "Сповіщення"
   },
   "marketplace": {
     "title": "Find a Tutor",

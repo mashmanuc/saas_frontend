@@ -17,6 +17,10 @@ export const MENU_BY_ROLE = {
     { label: 'menu.soloWorkspace', icon: 'edit', to: '/solo' },
     { label: 'menu.tutorProfile', icon: 'briefcase', to: '/marketplace/my-profile' },
     { label: 'menu.account', icon: 'user', to: '/settings' },
+    { label: 'menu.billing', icon: 'credit-card', to: '/billing' },    
+    { label: 'menu.notifications', icon: 'bell', to: '/notifications' },
+   
+   
   ],
   student: [
     { label: 'menu.dashboard', icon: 'home', to: '/student' },

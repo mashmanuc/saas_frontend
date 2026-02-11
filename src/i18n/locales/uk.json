@@ -1020,7 +1020,10 @@
     "profile": "Профіль",
     "tutorProfile": "Профіль тьютора",
     "account": "Акаунт",
-    "settings": "Налаштування"
+    "settings": "Налаштування",
+    "billing": "Білінг",
+    "booking": "Бронювання",
+    "notifications": "Сповіщення"
   },
   "loader": {
     "loading": "Завантаження..."

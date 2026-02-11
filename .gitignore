@@ -24,3 +24,23 @@ dist-ssr
 *.sw?
 # Playwright auth storage (local)
 tests/e2e/.auth/
+
+# Documentation temp files
+docs/**/*.tmp
+docs/**/*.draft
+docs/**/.DS_Store
+docs/**/Thumbs.db
+
+# Test artifacts
+test-results/
+playwright-report/
+lighthouse-reports/
+
+# Temporary files
+*.pyc
+__pycache__/
+
+# i18n temp files
+i18n-check-report.json
+i18n-unused-keys-analysis.json
+unused-keys-by-domain.json
