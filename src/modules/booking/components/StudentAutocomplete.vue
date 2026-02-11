@@ -176,10 +176,8 @@ const hasError = computed(() => !!props.errorMessage)
 
 // Methods
 function displayName(student: StudentListItem): string {
-  if (student.first_name || student.last_name) {
-    return `${student.first_name || ''} ${student.last_name || ''}`.trim()
-  }
-  return student.email.split('@')[0]
+  // P0.1: Use display_name from API only - no local name construction
+  return student.display_name || student.email?.split('@')[0] || ''
 }
 
 function initials(student: StudentListItem): string {

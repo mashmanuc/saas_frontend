@@ -3,11 +3,11 @@
     <div class="card-header">
       <div class="student-info">
         <div class="avatar">
-          <img v-if="request.student.avatar_url" :src="request.student.avatar_url" :alt="request.student.full_name" />
+          <img v-if="request.student.avatar_url" :src="request.student.avatar_url" :alt="request.student.display_name || request.student.full_name || 'Student'" />
           <UserIcon v-else class="w-6 h-6 text-gray-400" />
         </div>
         <div class="student-details">
-          <h4>{{ request.student.full_name }}</h4>
+          <h4>{{ request.student.display_name || request.student.full_name }}</h4>
           <p class="time">{{ formatDateTime(request.start_datetime) }}</p>
         </div>
       </div>
@@ -54,7 +54,8 @@ const props = defineProps<{
     id: number
     student: {
       id: number
-      full_name: string
+      display_name?: string  // Privacy-safe: "Ivan P."
+      full_name?: string     // Only after accept
       avatar_url?: string
       rating?: number
     }

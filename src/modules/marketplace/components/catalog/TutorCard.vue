@@ -53,7 +53,20 @@ const availabilitySummary = ref<AvailabilitySummary | null>(null)
 const loadingAvailability = ref(false)
 
 const subjectsText = computed(() => {
-  return formatList(props.tutor?.subjects, t('common.notSpecified'))
+  // Handle API format: array of objects with title field
+  const subjects = props.tutor?.subjects
+  if (Array.isArray(subjects) && subjects.length > 0) {
+    // Extract titles from subject objects
+    const titles = subjects
+      .map(s => typeof s === 'object' && s !== null ? s.title : null)
+      .filter((t): t is string => typeof t === 'string' && t.trim().length > 0)
+    
+    if (titles.length > 0) {
+      return titles.join(', ')
+    }
+  }
+  
+  return t('common.notSpecified')
 })
 
 const languagesText = computed(() => {
@@ -115,11 +128,11 @@ function handleTabChange(tab: TabKey) {
         <img
           v-if="tutor.photo"
           :src="tutor.photo"
-          :alt="tutor.full_name || 'Tutor'"
+          :alt="(tutor.display_name || tutor.full_name) || 'Tutor'"
           class="photo"
         />
         <div v-else class="photo-placeholder">
-          {{ (tutor.full_name || 'T').charAt(0) }}
+          {{ ((tutor.display_name || tutor.full_name) || 'T').charAt(0) }}
         </div>
       </RouterLink>
     </div>
@@ -128,7 +141,7 @@ function handleTabChange(tab: TabKey) {
       <div class="top-row">
         <div class="name-row">
           <RouterLink :to="`/marketplace/tutors/${tutor.slug}`" class="name">
-            {{ tutor.full_name || t('common.notSpecified') }}
+            {{ (tutor.display_name || tutor.full_name) || t('common.notSpecified') }}
           </RouterLink>
 
           <div class="badges" v-if="displayBadges.length > 0">

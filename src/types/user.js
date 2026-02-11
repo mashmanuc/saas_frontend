@@ -6,6 +6,8 @@
  * @property {string} email
  * @property {string} [first_name]
  * @property {string} [last_name]
+ * @property {string} [display_name] - Privacy-safe name (format: "FirstName L.")
+ * @property {string} [full_name] - Full name when contact access granted
  * @property {UserRole} role
  * @property {string} [timezone]
  * @property {boolean} [is_self_learning]

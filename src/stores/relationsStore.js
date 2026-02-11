@@ -340,21 +340,32 @@ export const useRelationsStore = defineStore('relations', {
       }
     },
 
-    $reset() {
-      this.studentRelations = []
-      this.studentLoading = false
-      this.studentError = null
-      this.tutorRelations = []
-      this.tutorSummary = null
-      this.tutorCursor = null
-      this.tutorHasMore = false
-      this.tutorLoading = false
-      this.tutorLoadingMore = false
-      this.tutorBulkLoading = false
-      this.tutorError = null
-      this.tutorErrorCode = null
-      this.tutorFilter = 'all'
-      this.tutorSelectedIds = []
+    /**
+     * v0.88.3: Restore archived relation back to active
+     */
+    async restoreRelation(relationId) {
+      try {
+        await relationsApi.tutorRestoreRelation(relationId)
+        notifySuccess(translate('relations.actions.restoreSuccess'))
+        await this.fetchTutorRelations().catch(() => {})
+      } catch (error) {
+        notifyError(error?.response?.data?.detail || translate('relations.actions.restoreError'))
+        throw error
+      }
+    },
+
+    /**
+     * v0.88.3: Hide relation from tutor view (soft delete)
+     */
+    async hideRelation(relationId) {
+      try {
+        await relationsApi.tutorHideRelation(relationId)
+        notifySuccess(translate('relations.actions.hideSuccess'))
+        await this.fetchTutorRelations().catch(() => {})
+      } catch (error) {
+        notifyError(error?.response?.data?.detail || translate('relations.actions.hideError'))
+        throw error
+      }
     },
 
     $reset() {

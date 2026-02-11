@@ -23,8 +23,8 @@ const avatarUrl = computed(() => {
 })
 
 const fullName = computed(() => {
-  // TutorProfileFull doesn't have user.full_name, use slug as fallback
-  return props.profile?.slug || t('common.notSpecified')
+  // P0.1: Privacy - use user_name (display_name) from API instead of slug
+  return props.profile?.user_name || props.profile?.slug || t('common.notSpecified')
 })
 
 const avatarInitial = computed(() => {

@@ -122,7 +122,8 @@ const emit = defineEmits<{
 }>()
 
 const fullName = computed(() => {
-  return [props.user.first_name, props.user.last_name].filter(Boolean).join(' ').trim() || props.user.email
+  // P0.1: Use display_name from API - no local name construction
+  return props.user.display_name || props.user.full_name || props.user.email
 })
 
 const initials = computed(() => {

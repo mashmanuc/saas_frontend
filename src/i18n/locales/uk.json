@@ -325,7 +325,13 @@
       "light": "Світла",
       "dark": "Темна",
       "classic": "Класична"
-    }
+    },
+    "calendar": "Календар",
+    "inquiries": "Запити",
+    "bookings": "Бронювання",
+    "chat": "Чат",
+    "contacts": "Контакти",
+    "billing": "Оплата"
   },
   "notifications": {
     "title": "Сповіщення",
@@ -670,7 +676,10 @@
       "defaultDescription": "Немає даних для відображення."
     },
     "dismiss": "Закрити",
-    "sending": "Відправляємо..."
+    "sending": "Відправляємо...",
+    "restore": "Відновити",
+    "hide": "Приховати",
+    "unlocked": "Розблоковано"
   },
   "ui": {
     "cancel": "Скасувати",
@@ -2528,7 +2537,14 @@
       "resendSuccess": "Запрошення повторно надіслано",
       "resendError": "Не вдалося повторно надіслати запрошення",
       "requestSuccess": "Запит надіслано",
-      "requestError": "Не вдалося надіслати запит"
+      "requestError": "Не вдалося надіслати запит",
+      "deleteConfirm": "Видалити стосунки?",
+      "deleteError": "Не вдалося видалити",
+      "restoreError": "Не вдалося відновити",
+      "restoreSuccess": "Стосунки відновлено",
+      "hideConfirm": "Приховати стосунки?",
+      "hideSuccess": "Стосунки приховано",
+      "hideError": "Не вдалося приховати"
     },
     "bulk": {
       "noInvited": "Оберіть принаймні один запрошений зв'язок, щоб продовжити.",
@@ -5220,5 +5236,16 @@
     "reportTitle": "Поскаржитися",
     "submitReport": "Відправити скаргу",
     "writeReviewSubtitle": "Поділіться досвідом"
+  },
+  "contactModal": {
+    "title": "Контакти",
+    "inquiryPreview": "Попередній перегляд",
+    "unlockedContactsTitle": "Розблоковані контакти",
+    "contactTypeLabel": "Тип контакту",
+    "tokenCostLabel": "Вартість",
+    "noTokensMessage": "Недостатньо токенів",
+    "buyTokensButton": "Купити токени",
+    "cancelButton": "Скасувати",
+    "unlockButton": "Розблокувати"
   }
 }

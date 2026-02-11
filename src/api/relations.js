@@ -69,6 +69,22 @@ const relationsApi = {
     return apiClient.post(RELATION_ENDPOINTS.TUTOR_RESEND(relationId))
   },
 
+  /**
+   * Restore archived relation back to active
+   * v0.88.3: Archive management
+   */
+  tutorRestoreRelation(relationId) {
+    return apiClient.post(RELATION_ENDPOINTS.TUTOR_RESTORE(relationId))
+  },
+
+  /**
+   * Hide relation from tutor view (soft delete)
+   * v0.88.3: Archive management - hides without data loss
+   */
+  tutorHideRelation(relationId) {
+    return apiClient.post(RELATION_ENDPOINTS.TUTOR_HIDE(relationId))
+  },
+
   // Legacy methods (deprecated, use role-specific methods)
   acceptRelation(relationId) {
     return apiClient.post(RELATION_ENDPOINTS.ACCEPT(relationId))

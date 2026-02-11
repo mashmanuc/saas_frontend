@@ -15,6 +15,8 @@ export interface UserProfile {
   email: string
   first_name: string
   last_name: string
+  display_name?: string  // P0.1: Privacy-safe name (format: "FirstName L.")
+  full_name?: string     // P0.1: Full name when contact access granted
   role: string
   avatar_url?: string
   email_verified: boolean

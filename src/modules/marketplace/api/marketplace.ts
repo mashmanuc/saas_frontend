@@ -305,6 +305,7 @@ export interface TutorProfileFull {
   published_at: string
   slug: string
   user_id: number  // v0.60.1: tutor user ID for calendar
+  user_name?: string  // P0.1: Privacy-safe name from API (format: "FirstName L.")
   bio: string
   headline: string
   education: Education[]
@@ -474,7 +475,8 @@ export type TutorProfilePatchPayload = Partial<TutorProfileUpsertPayload>
 export interface TutorListItem {
   id: number
   slug: string
-  full_name?: string
+  full_name?: string  // Legacy field, prefer display_name
+  display_name?: string  // P0.1: Privacy-safe name (format: "FirstName L.")
   photo?: string
   headline: string
   country: string
@@ -484,7 +486,16 @@ export interface TutorListItem {
   total_reviews: number
   total_lessons: number
   badges: Badge[]
-  subjects: string[]
+  subjects: Array<{
+    code: string
+    title: string
+    tags?: Array<{
+      code: string
+      label: string
+      group: string
+    }>
+    custom_direction_text?: string | null
+  }>
   languages: string[]
 }
 

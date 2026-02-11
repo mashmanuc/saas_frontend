@@ -13,6 +13,8 @@ export interface Relation {
   tutor: {
     id: string
     name: string
+    display_name?: string  // P0.1: Privacy-safe name
+    full_name?: string     // P0.1: Full name
     avatar_url: string
     subjects: TutorSubjectLabel[]
     hourly_rate?: number
@@ -20,7 +22,9 @@ export interface Relation {
   }
   student: {
     id: string
-    name: string
+    name?: string           // Legacy field, prefer display_name
+    display_name?: string   // P0.1: Privacy-safe name (format: "FirstName L.")
+    full_name?: string      // P0.1: Full name when contact access granted
     avatar_url?: string
   }
   status: 'invited' | 'active' | 'paused' | 'archived'

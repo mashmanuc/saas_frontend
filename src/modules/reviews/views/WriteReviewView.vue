@@ -141,12 +141,11 @@ function formatDate(dateStr: string): string {
       <div class="booking-summary">
         <div class="tutor-info">
           <div class="avatar">
-            {{ selectedBooking.tutor.first_name[0] }}
+            {{ (selectedBooking.tutor.display_name || selectedBooking.tutor.full_name)?.charAt(0) || '?' }}
           </div>
           <div class="details">
             <span class="name">
-              {{ selectedBooking.tutor.first_name }}
-              {{ selectedBooking.tutor.last_name }}
+              {{ selectedBooking.tutor.display_name || selectedBooking.tutor.full_name }}
             </span>
             <span class="lesson">
               {{ selectedBooking.subject }} • {{ formatDate(selectedBooking.date) }}

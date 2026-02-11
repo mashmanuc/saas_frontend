@@ -25,14 +25,24 @@ const props = defineProps({
   student: {
     type: Object,
     required: true,
+    /**
+     * @typedef {'pending' | 'active' | 'inactive'} TutorStudentStatus
+     *
+     * @typedef {Object} StudentProfileDTO
+     * @property {number} id
+     * @property {string} email
+     * @property {string} [first_name]
+     * @property {string} [last_name]
+     * @property {string} [display_name] - Privacy-safe name (format: "FirstName L.")
+     * @property {string} [full_name] - Full name when contact access granted
+     * @property {import('./user').UserRole} role
+     * @property {string} [timezone]
+     * @property {boolean} [is_self_learning]
+     */
   },
 })
 
-const displayName = computed(() => {
-  const s = props.student || {}
-  const fullName = [s.first_name, s.last_name].filter(Boolean).join(' ').trim()
-  return fullName || s.email || '—'
-})
+const displayName = computed(() => props.student?.display_name || '—')
 
 const email = computed(() => props.student?.email || '—')
 

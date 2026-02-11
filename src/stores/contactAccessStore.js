@@ -7,7 +7,8 @@ export const useContactAccessStore = defineStore('contactAccess', () => {
   // State
   const contactsCache = ref(new Map()) // studentId -> {contacts, access_level, unlocked_at}
   const accessExistsByStudentId = ref(new Map()) // studentId -> true (SSOT - факт існування access)
-  const loading = ref(false)
+  const loadingStudentIds = ref(new Set()) // v0.89: per-student loading instead of global
+  const loading = computed(() => loadingStudentIds.value.size > 0)
 
   // Getters
   const hasContactAccess = computed(() => (studentId) => {
@@ -52,7 +53,7 @@ export const useContactAccessStore = defineStore('contactAccess', () => {
     }
 
     // Silent operation
-    loading.value = true
+    loadingStudentIds.value.add(studentId)
     try {
       // Production: force_unlock НЕ використовується (тільки для staff через admin panel)
       const response = await contactsApi.unlockContacts(inquiryId, false)
@@ -101,7 +102,7 @@ export const useContactAccessStore = defineStore('contactAccess', () => {
       )
       throw error
     } finally {
-      loading.value = false
+      loadingStudentIds.value.delete(studentId)
     }
   }
 
@@ -132,25 +133,24 @@ export const useContactAccessStore = defineStore('contactAccess', () => {
   }
 
   async function fetchContacts(studentId) {
-    loading.value = true
+    loadingStudentIds.value.add(studentId)
     try {
       const response = await contactsApi.getContacts(studentId)
 
       contactsCache.value.set(studentId, {
         contacts: response.contacts,
-        access_level: 'CONTACTS_SHARED', // Якщо API повернув контакти, значить є доступ
+        access_level: 'CONTACTS_SHARED',
         unlocked_at: new Date().toISOString(),
       })
 
       return response.contacts
     } catch (error) {
-      // 403 = немає доступу
       if (error?.response?.status === 403) {
         contactsCache.value.delete(studentId)
       }
       throw error
     } finally {
-      loading.value = false
+      loadingStudentIds.value.delete(studentId)
     }
   }
 
@@ -159,14 +159,13 @@ export const useContactAccessStore = defineStore('contactAccess', () => {
    * Використовується після accept для отримання контактів студента
    */
   async function fetchContactAccessByRelation(relationId) {
-    loading.value = true
+    const studentId = studentIdFromRelationId(relationId) // Will be determined from response
+    loadingStudentIds.value.add(relationId)
     try {
       const response = await contactsApi.getContactsByRelation(relationId)
       
-      // Silent operation
-      
-      const studentId = response.student_id
-      contactsCache.value.set(studentId, {
+      const actualStudentId = response.student_id
+      contactsCache.value.set(actualStudentId, {
         contacts: response.contacts,
         access_level: response.can_open_chat ? 'CHAT_ENABLED' : 'CONTACTS_SHARED',
         unlocked_at: response.unlocked_at,
@@ -175,14 +174,12 @@ export const useContactAccessStore = defineStore('contactAccess', () => {
 
       return response
     } catch (error) {
-      // Silent fail
       if (error?.response?.status === 403 || error?.response?.status === 404) {
-        // Контакти не розблоковані або relation не знайдено
         // Silent fail
       }
       throw error
     } finally {
-      loading.value = false
+      loadingStudentIds.value.delete(relationId)
     }
   }
 

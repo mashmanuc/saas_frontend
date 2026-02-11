@@ -186,8 +186,8 @@
               :show-revoke-button="true"
             />
 
-            <!-- Кнопки дій тільки для не-invited студентів -->
-            <div v-if="relation.status !== 'invited'" class="flex flex-wrap items-center gap-2">
+            <!-- Кнопки дій тільки для active студентів (не invited, не archived) -->
+            <div v-if="relation.status === 'active'" class="flex flex-wrap items-center gap-2">
               <span
                 class="rounded-full border border-default px-3 py-1 text-xs font-semibold text-muted"
                 :data-test="`relation-status-${getRelationId(relation)}`"
@@ -212,6 +212,36 @@
                   >
                     {{ getUnreadCountForStudent(relation) }}
                   </span>
+                </Button>
+              </div>
+            </div>
+
+            <!-- Архівні студенти - тільки 2 кнопки: Відновити та Видалити -->
+            <div v-if="relation.status === 'archived'" class="flex flex-wrap items-center gap-2">
+              <span
+                class="rounded-full border border-default px-3 py-1 text-xs font-semibold text-muted"
+                :data-test="`relation-status-${getRelationId(relation)}`"
+              >
+                {{ statusLabels[relation.status] || relation.status }}
+              </span>
+              <div class="flex flex-wrap gap-2">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  :disabled="actionLoadingId === getRelationId(relation)"
+                  :loading="actionLoadingId === getRelationId(relation)"
+                  @click="handleRestore(getRelationId(relation))"
+                >
+                  {{ $t('common.restore') }}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  class="text-danger border-danger hover:bg-danger/10"
+                  :disabled="actionLoadingId === getRelationId(relation)"
+                  @click="handleHide(getRelationId(relation))"
+                >
+                  {{ $t('common.hide') }}
                 </Button>
               </div>
             </div>
@@ -433,9 +463,9 @@ const errorState = computed(() => {
 
 function getStudentName(student) {
   if (!student) return '—'
-  const { first_name: firstName, last_name: lastName } = student
-  const fullName = [firstName, lastName].filter(Boolean).join(' ').trim()
-  return fullName || '—'
+  // Privacy-first: use display_name from backend (format: "FirstName L.")
+  // Backend is the single source of truth for privacy-safe names
+  return student.display_name || student.full_name || '—'
 }
 
 function formatLessonCount(value) {
@@ -453,7 +483,7 @@ function formatMetaDate(value) {
 function getRelationId(relation) {
   if (!relation) return ''
   const id = relation.id ?? relation.relation_id ?? relation.student_id ?? relation.student?.id
-  return id != null ? String(id) : ''
+  return id != null ? Number(id) : ''
 }
 
 function setFilter(value) {
@@ -509,6 +539,40 @@ async function handleDecline(relationId) {
     notifySuccess(t('tutorSearch.notifications.declineSuccess'))
   } catch (error) {
     notifyError(error?.response?.data?.detail || t('tutorSearch.notifications.declineError'))
+  } finally {
+    actionLoadingId.value = null
+  }
+}
+
+/**
+ * v0.88.3: Restore archived relation back to active
+ */
+async function handleRestore(relationId) {
+  actionLoadingId.value = relationId
+  try {
+    await relationsStore.restoreRelation(relationId)
+    notifySuccess(t('relations.actions.restoreSuccess'))
+  } catch (error) {
+    notifyError(error?.response?.data?.detail || t('relations.actions.restoreError'))
+  } finally {
+    actionLoadingId.value = null
+  }
+}
+
+/**
+ * v0.88.3: Hide relation from tutor view (soft delete)
+ */
+async function handleHide(relationId) {
+  if (!confirm(t('relations.actions.hideConfirm') || 'Ви впевнені, що хочете приховати цього студента? Він зникне зі списку, але дані будуть збережені.')) {
+    return
+  }
+  
+  actionLoadingId.value = relationId
+  try {
+    await relationsStore.hideRelation(relationId)
+    notifySuccess(t('relations.actions.hideSuccess'))
+  } catch (error) {
+    notifyError(error?.response?.data?.detail || t('relations.actions.hideError'))
   } finally {
     actionLoadingId.value = null
   }

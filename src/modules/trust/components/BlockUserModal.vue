@@ -12,7 +12,7 @@
             <span v-else class="avatar-placeholder">{{ initials }}</span>
           </div>
           <div class="user-info">
-            <h4 class="user-name">{{ user?.name || user?.first_name + ' ' + user?.last_name }}</h4>
+            <h4 class="user-name">{{ user?.display_name || user?.full_name || user?.name || 'User' }}</h4>
             <p class="user-hint">{{ $t('trust.block.userHint') }}</p>
           </div>
         </div>
@@ -105,8 +105,11 @@ const reason = ref('')
 const note = ref('')
 
 const initials = computed(() => {
-  const first = props.user?.first_name?.charAt(0) || ''
-  const last = props.user?.last_name?.charAt(0) || ''
+  // Use display_name or full_name for initials calculation
+  const name = props.user?.display_name || props.user?.full_name || props.user?.name || ''
+  const parts = name.split(' ').filter(Boolean)
+  const first = parts[0]?.charAt(0) || ''
+  const last = parts[1]?.charAt(0) || ''
   return (first + last).toUpperCase()
 })
 

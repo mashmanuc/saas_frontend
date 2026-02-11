@@ -27,14 +27,14 @@
           <img
             v-if="tutor.avatar"
             :src="tutor.avatar"
-            :alt="tutor.first_name"
+            :alt="tutor.display_name || tutor.full_name"
           />
           <span v-else class="avatar-placeholder">
-            {{ getInitials(tutor.first_name, tutor.last_name) }}
+            {{ getInitialsFromName(tutor.display_name || tutor.full_name) }}
           </span>
         </div>
         <div class="tutor-info">
-          <h5 class="tutor-name">{{ tutor.first_name }} {{ tutor.last_name }}</h5>
+          <h5 class="tutor-name">{{ tutor.display_name || tutor.full_name }}</h5>
           <p class="tutor-subjects">{{ formatSubjects(tutor.subjects) }}</p>
           <div class="tutor-meta">
             <span v-if="tutor.hourly_rate" class="tutor-rate">
@@ -107,8 +107,8 @@ const tutors = ref([])
 const mockTutors = [
   {
     id: 1,
-    first_name: 'Олена',
-    last_name: 'Петренко',
+    display_name: 'Олена П.',
+    full_name: 'Олена Петренко',
     subjects: ['Математика', 'Фізика'],
     hourly_rate: 350,
     currency: 'грн',
@@ -117,8 +117,8 @@ const mockTutors = [
   },
   {
     id: 2,
-    first_name: 'Іван',
-    last_name: 'Коваленко',
+    display_name: 'Іван К.',
+    full_name: 'Іван Коваленко',
     subjects: ['Англійська мова'],
     hourly_rate: 400,
     currency: 'грн',
@@ -127,8 +127,8 @@ const mockTutors = [
   },
   {
     id: 3,
-    first_name: 'Марія',
-    last_name: 'Шевченко',
+    display_name: 'Марія Ш.',
+    full_name: 'Марія Шевченко',
     subjects: ['Історія', 'Географія'],
     hourly_rate: 300,
     currency: 'грн',
@@ -166,10 +166,18 @@ async function loadRecommendedTutors() {
   }
 }
 
-function getInitials(firstName, lastName) {
-  const first = firstName?.charAt(0) || ''
-  const last = lastName?.charAt(0) || ''
-  return (first + last).toUpperCase()
+function getDisplayName(tutor) {
+  return tutor.display_name || tutor.email?.split('@')[0] || ''
+}
+
+function getInitialsFromName(name) {
+  if (!name) return ''
+  return name
+    .split(' ')
+    .map(part => part.charAt(0))
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
 }
 
 function formatSubjects(subjects) {

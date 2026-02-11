@@ -79,7 +79,7 @@ function viewDetails() {
       <!-- Other Party -->
       <div v-if="!compact" class="info-row">
         <User :size="16" />
-        <span>{{ otherParty.first_name }} {{ otherParty.last_name }}</span>
+        <span>{{ otherParty.display_name || otherParty.full_name }}</span>
       </div>
     </div>
 

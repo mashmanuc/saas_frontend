@@ -290,7 +290,7 @@
             {{ t('lessons.calendar.cancelDescription') }}
           </p>
           <ul class="rounded-md border border-border-subtle bg-background px-3 py-2 text-xs">
-            <li><strong>ID:</strong> {{ selectedLesson.id }}</li>
+            <span>{{ selectedLesson.student.display_name || selectedLesson.student.full_name }}</span>
             <li><strong>{{ t('lessons.calendar.fields.start') }}:</strong> {{ formatDisplay(selectedLesson.startLocal) }}</li>
             <li><strong>{{ t('lessons.calendar.fields.end') }}:</strong> {{ formatDisplay(selectedLesson.endLocal) }}</li>
             <li>
@@ -532,7 +532,8 @@ async function refreshMyStudents() {
     myStudentsGate.count = Number.isFinite(data?.count) ? data.count : (data?.results?.length || 0)
     myStudentsGate.students = (data?.results || []).map(s => ({
       id: s.student_id,
-      name: [s.first_name, s.last_name].filter(Boolean).join(' ') || s.email || `ID: ${s.student_id}`,
+      // P0.1: Use display_name from API only
+      name: s.display_name || s.email || `ID: ${s.student_id}`,
     }))
   } catch (e) {
     myStudentsGate.error = e
@@ -554,7 +555,8 @@ async function handleSearchStudents(query) {
     const data = await studentsApi.listStudents(query, 20)
     myStudentsGate.students = (data?.results || []).map(s => ({
       id: s.student_id,
-      name: [s.first_name, s.last_name].filter(Boolean).join(' ') || s.email || `ID: ${s.student_id}`,
+      // P0.1: Use display_name from API only
+      name: s.display_name || s.email || `ID: ${s.student_id}`,
     }))
   } catch (e) {
     myStudentsGate.students = []

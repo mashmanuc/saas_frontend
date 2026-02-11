@@ -47,11 +47,9 @@
         </div>
       </div>
       
-      <!-- Контакти ще не завантажені - показуємо кнопку завантаження -->
-      <div v-if="relation.status === 'active' && !studentContacts && !loading" class="load-contacts">
-        <button class="btn btn-secondary btn-sm" @click="loadContacts">
-          {{ $t('contacts.loadContacts') }}
-        </button>
+      <!-- Контакти ще не завантажені - показуємо стан завантаження, НЕ кнопку (SSOT: ACTIVE = контакти завжди доступні) -->
+      <div v-if="relation.status === 'active' && !studentContacts && !loading" class="loading-state">
+        {{ $t('common.loading') }}...
       </div>
 
       <!-- Кнопка revoke (опціонально) -->
@@ -85,35 +83,42 @@ const contactAccessStore = useContactAccessStore()
 
 const studentId = computed(() => props.relation.student?.id || props.relation.student_id)
 
+// v0.89.1: SSOT - спочатку перевіряємо контакти в relation (Dashboard API), потім в store
+const studentContacts = computed(() => {
+  // Пріоритет 1: контакти вже є в relation з Dashboard API
+  if (props.relation.contacts && (props.relation.contacts.phone || props.relation.contacts.email || props.relation.contacts.telegram)) {
+    return props.relation.contacts
+  }
+  // Пріоритет 2: контакти з store (якщо були завантажені раніше)
+  return contactAccessStore.getStudentContacts(studentId.value)
+})
+
 const loading = computed(() => contactAccessStore.loading)
 const hasAccess = computed(() => 
   contactAccessStore.hasAccess(studentId.value)
 )
-const studentContacts = computed(() => 
-  contactAccessStore.getStudentContacts(studentId.value)
-)
 
-// v0.87.0: ІНВАРІАНТ - якщо relation.status === 'active', автоматично завантажуємо контакти
-// v0.88: Guard - не викликати якщо контакти вже є або вже завантажуються
-let isLoadingContacts = false
+// v0.89.1: SSOT - ACTIVE relation = контакти завжди доступні
+// Якщо контакти вже є в relation - не потрібно додатково завантажувати
 onMounted(() => {
-  if (props.relation.status === 'active' && !studentContacts.value && !isLoadingContacts && !loading.value) {
-    console.log('[StudentContactUnlock] Auto-loading contacts for active relation')
-    isLoadingContacts = true
-    loadContacts().finally(() => {
-      isLoadingContacts = false
-    })
+  const hasContactsInRelation = props.relation.contacts && (props.relation.contacts.phone || props.relation.contacts.email)
+  const hasContactsInStore = !!contactAccessStore.getStudentContacts(studentId.value)
+  
+  if (props.relation.status === 'active' && !hasContactsInRelation && !hasContactsInStore) {
+    const relationId = props.relation.id || props.relation.relation_id
+    if (relationId) {
+      contactAccessStore.fetchContactAccessByRelation(relationId)
+    }
   }
 })
 
 async function handleUnlock() {
   try {
-    // v0.87.0: Використовуємо contact_unlock_inquiry_id з relation
+    // Тільки для не-ACTIVE статусів - використовуємо inquiry_id
     const inquiryId = props.relation.contact_unlock_inquiry_id
     
     if (!inquiryId) {
       console.error('No inquiry_id available for unlock')
-      console.error('Relation:', props.relation)
       return
     }
     
@@ -121,31 +126,15 @@ async function handleUnlock() {
       inquiryId,
       studentId: studentId.value
     })
-    
-    // Контакти вже завантажені в store після unlockContacts
   } catch (error) {
     console.error('Unlock failed:', error)
   }
 }
 
 async function loadContacts() {
-  try {
-    // v0.87.0: Якщо relation ACTIVE, але контактів немає в cache - завантажуємо через unlock
-    const inquiryId = props.relation.contact_unlock_inquiry_id
-    
-    if (!inquiryId) {
-      console.error('No inquiry_id available for loading contacts')
-      return
-    }
-    
-    // v0.88.1: Автоматичне завантаження - без сповіщень (silent = true)
-    await contactAccessStore.unlockContacts({
-      inquiryId,
-      studentId: studentId.value
-    }, { silent: true })
-  } catch (error) {
-    console.error('Load contacts failed:', error)
-  }
+  // v0.89: DEPRECATED - не використовується для ACTIVE студентів
+  // Для ACTIVE використовується fetchContactAccessByRelation напряму
+  console.warn('[StudentContactUnlock] loadContacts is deprecated for active relations')
 }
 
 async function handleRevoke() {

@@ -59,7 +59,8 @@ defineEmits(['click'])
 const { t } = useI18n()
 
 const tutorName = computed(() => {
-  const v = props.tutor?.full_name
+  // P0.1: Privacy - use display_name (format: "FirstName L.") instead of full_name
+  const v = props.tutor?.display_name || props.tutor?.full_name
   return typeof v === 'string' && v.trim().length ? v : t('common.notSpecified')
 })
 

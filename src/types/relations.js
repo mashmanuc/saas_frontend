@@ -36,6 +36,10 @@ export const RELATION_ENDPOINTS = Object.freeze({
   TUTOR_RELATIONS_BULK_ACCEPT: buildV1Url('/tutor/relations/batch/accept/'),
   TUTOR_RELATIONS_BULK_ARCHIVE: buildV1Url('/tutor/relations/batch/archive/'),
   
+  // Archive management (v0.88.3) - TutorStudentVisibility
+  TUTOR_RESTORE: (id) => buildV1Url(`/tutor/relations/${id}/restore/`),
+  TUTOR_HIDE: (id) => buildV1Url(`/tutor/relations/${id}/hide/`),
+  
   // Student endpoints (Flow: Tutor invites Student → Student accepts/declines)
   STUDENT_ACCEPT: (id) => buildV1Url(`/student/relations/${id}/accept/`),
   STUDENT_DECLINE: (id) => buildV1Url(`/student/relations/${id}/decline/`),

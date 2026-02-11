@@ -15,7 +15,7 @@
           <h4>{{ $t('inquiries.spam.inquiryPreview') }}</h4>
           <div class="preview-card">
             <div class="preview-header">
-              <strong>{{ inquiry?.student?.first_name }} {{ inquiry?.student?.last_name }}</strong>
+              <strong>{{ inquiry?.student?.display_name || inquiry?.student?.full_name }}</strong>
               <span class="preview-date">{{ formatDate(inquiry?.created_at) }}</span>
             </div>
             <p class="preview-message">{{ inquiry?.message }}</p>

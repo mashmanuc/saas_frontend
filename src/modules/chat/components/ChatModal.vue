@@ -133,8 +133,8 @@ async function loadThread() {
       
       if (relation?.student) {
         const s = relation.student
-        const fullName = [s.first_name, s.last_name].filter(Boolean).join(' ').trim()
-        studentName.value = fullName || s.email || t('common.unknown')
+        // Privacy-first: use display_name from backend (format: "FirstName L.")
+        studentName.value = s.display_name || s.full_name || s.email || t('common.unknown')
       }
       
       // Перевірка доступу для тьютора
@@ -152,8 +152,8 @@ async function loadThread() {
       
       if (relation?.tutor) {
         const tut = relation.tutor
-        const fullName = [tut.first_name, tut.last_name].filter(Boolean).join(' ').trim()
-        studentName.value = fullName || tut.email || t('common.unknown')
+        // Student sees tutor's full name (no privacy restriction needed)
+        studentName.value = tut.full_name || tut.display_name || tut.email || t('common.unknown')
       }
       
       // Студенту не потрібна перевірка contact access
