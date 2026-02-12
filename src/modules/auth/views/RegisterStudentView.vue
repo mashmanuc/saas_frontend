@@ -1,32 +1,11 @@
 <template>
   <Card class="space-y-6">
     <header class="space-y-1">
-      <h1 class="text-xl font-semibold">{{ formTitle }}</h1>
-      <p class="text-sm" style="color: var(--text-secondary);">{{ formDescription }}</p>
+      <h1 class="text-xl font-semibold">{{ $t('auth.register.titleStudent') || 'Створити акаунт студента' }}</h1>
+      <p class="text-sm" style="color: var(--text-secondary);">{{ $t('auth.register.descriptionStudent') || 'Заповніть форму нижче, щоб знайти репетитора та почати навчання' }}</p>
     </header>
 
     <form class="space-y-4" @submit.prevent="onSubmit">
-      <!-- Account Type Selector - only shown when role is not preselected -->
-      <div v-if="!isRolePreselected" class="space-y-2">
-        <p class="text-sm font-medium" style="color: var(--text-primary);">{{ $t('auth.register.accountType') }}</p>
-        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <label class="flex items-start gap-3 rounded-lg border p-3 cursor-pointer" :class="form.account_type === 'student' ? 'border-[var(--accent)]' : 'border-[var(--border)]'">
-            <input v-model="form.account_type" type="radio" value="student" name="account_type" />
-            <div>
-              <div class="text-sm font-medium">{{ $t('auth.register.accountTypeStudent') }}</div>
-              <div class="text-xs" style="color: var(--text-secondary);">{{ $t('auth.register.accountTypeStudentHint') }}</div>
-            </div>
-          </label>
-          <label class="flex items-start gap-3 rounded-lg border p-3 cursor-pointer" :class="form.account_type === 'tutor' ? 'border-[var(--accent)]' : 'border-[var(--border)]'">
-            <input v-model="form.account_type" type="radio" value="tutor" name="account_type" />
-            <div>
-              <div class="text-sm font-medium">{{ $t('auth.register.accountTypeTutor') }}</div>
-              <div class="text-xs" style="color: var(--text-secondary);">{{ $t('auth.register.accountTypeTutorHint') }}</div>
-            </div>
-          </label>
-        </div>
-      </div>
-
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Input
           :label="$t('auth.register.firstName')"
@@ -97,8 +76,15 @@
 
     <p class="text-center text-sm" style="color: var(--text-secondary);">
       {{ $t('auth.register.haveAccount') }}
-      <RouterLink to="/auth/login" class="hover:underline font-medium" style="color: var(--accent);">
+      <RouterLink to="/auth/login?role=student" class="hover:underline font-medium" style="color: var(--accent);">
         {{ $t('auth.register.loginLink') }}
+      </RouterLink>
+    </p>
+
+    <p class="text-center text-sm" style="color: var(--text-secondary);">
+      {{ $t('auth.register.wantToTeach') || 'Хочете викладати?' }}
+      <RouterLink to="/auth/register/tutor" class="hover:underline font-medium" style="color: var(--accent);">
+        {{ $t('auth.register.registerAsTutor') || 'Стати репетитором' }}
       </RouterLink>
     </p>
   </Card>
@@ -120,8 +106,9 @@
 </template>
 
 <script setup>
-import { reactive, ref, watch, onMounted, computed } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { reactive, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../store/authStore'
 import Button from '../../../ui/Button.vue'
 import Card from '../../../ui/Card.vue'
@@ -129,35 +116,10 @@ import Input from '../../../ui/Input.vue'
 import OnboardingModal from '../../onboarding/components/widgets/OnboardingModal.vue'
 
 const router = useRouter()
-const route = useRoute()
+const { t } = useI18n()
 const auth = useAuthStore()
 
 const showErrorModal = ref(false)
-
-// Determine if account type is pre-selected from URL
-const isRolePreselected = computed(() => {
-  const roleParam = route.query.role
-  return roleParam === 'student' || roleParam === 'tutor'
-})
-
-const roleFromUrl = computed(() => {
-  return route.query.role || 'student'
-})
-
-// Dynamic title based on role
-const formTitle = computed(() => {
-  if (form.account_type === 'student') {
-    return $t('auth.register.titleStudent') || 'Створити акаунт студента'
-  }
-  return $t('auth.register.titleTutor') || 'Створити акаунт репетитора'
-})
-
-const formDescription = computed(() => {
-  if (form.account_type === 'student') {
-    return $t('auth.register.descriptionStudent') || 'Заповніть форму нижче, щоб знайти репетитора та почати навчання'
-  }
-  return $t('auth.register.descriptionTutor') || 'Заповніть форму нижче, щоб почати викладати та заробляти'
-})
 
 watch(
   () => [auth.error, auth.lastErrorCode],
@@ -185,20 +147,10 @@ const form = reactive({
   privacy_policy_accepted: false,
 })
 
-// Set account type from URL parameter if present
-onMounted(() => {
-  const roleParam = route.query.role
-  if (roleParam === 'student' || roleParam === 'tutor') {
-    form.account_type = roleParam
-  }
-})
-
 async function onSubmit() {
   try {
     const origin = typeof window !== 'undefined' ? window.location.origin : ''
-    const redirect = form.account_type === 'tutor' ? '/marketplace/my-profile' : ''
-    const redirectQuery = redirect ? `&redirect=${encodeURIComponent(redirect)}` : ''
-    const verify_url = origin ? `${origin}/auth/verify-email?token={token}${redirectQuery}` : undefined
+    const verify_url = origin ? `${origin}/auth/verify-email?token={token}` : undefined
 
     await auth.register({ ...form, verify_url })
     router.push({

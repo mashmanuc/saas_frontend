@@ -103,7 +103,7 @@
 
     <p class="text-center text-sm" style="color: var(--text-secondary);">
       {{ $t('auth.login.noAccount') }}
-      <RouterLink to="/auth/register" class="hover:underline font-medium" style="color: var(--accent);">
+      <RouterLink :to="registerLink" class="hover:underline font-medium" style="color: var(--accent);">
         {{ $t('auth.login.registerLink') }}
       </RouterLink>
     </p>
@@ -174,6 +174,14 @@ const validationErrors = reactive({
 })
 
 const showResendVerify = computed(() => auth.lastErrorCode === 'email_not_verified' && Boolean(form.email))
+
+const registerLink = computed(() => {
+  const roleParam = route.query.role
+  if (roleParam === 'student' || roleParam === 'tutor') {
+    return `/auth/register?role=${roleParam}`
+  }
+  return '/auth/register'
+})
 
 const modalSuppressedErrors = new Set([
   'invalid_credentials',

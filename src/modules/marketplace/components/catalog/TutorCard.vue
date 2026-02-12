@@ -253,11 +253,11 @@ function handleTabChange(tab: TabKey) {
   grid-template-columns: 96px 1fr 340px;
   gap: 1.5rem;
   align-items: start;
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: var(--card-bg);
+  border: 1.5px solid var(--border-color);
   border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: box-shadow 0.2s, transform 0.2s;
 }
 
@@ -305,9 +305,9 @@ function handleTabChange(tab: TabKey) {
   justify-content: center;
   font-size: 2.25rem;
   font-weight: 600;
-  color: #9ca3af;
-  background: #f3f4f6;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .name-row {
@@ -326,13 +326,13 @@ function handleTabChange(tab: TabKey) {
 .name {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
   text-decoration: none;
   transition: color 0.2s;
 }
 
 .name:hover {
-  color: #3b82f6;
+  color: var(--accent);
   text-decoration: none;
 }
 
@@ -348,7 +348,7 @@ function handleTabChange(tab: TabKey) {
   display: flex;
   gap: 1rem;
   margin-top: 0.75rem;
-  color: #6b7280;
+  color: var(--text-secondary);
   font-size: 0.875rem;
 }
 
@@ -357,36 +357,41 @@ function handleTabChange(tab: TabKey) {
   align-items: center;
   gap: 0.375rem;
   padding: 0.25rem 0.5rem;
-  background: #f9fafb;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
 }
 
 .subjects {
   margin-top: 0.75rem;
-  padding: 0.5rem;
-  background: #fef3c7;
-  border-left: 3px solid #f59e0b;
-  border-radius: 4px;
-  color: #78350f;
+  padding: 0.5rem 0.75rem;
+  background: var(--subject-tag-bg);
+  border: 1.5px solid var(--subject-tag-bg);
+  border-radius: 6px;
+  color: var(--subject-tag-text);
   font-size: 0.875rem;
+  font-weight: 500;
 }
 
 .subjects strong {
-  color: #92400e;
+  color: var(--subject-tag-text);
+  font-weight: 600;
 }
 
 .languages {
   margin-top: 0.5rem;
-  padding: 0.5rem;
-  background: #dbeafe;
-  border-left: 3px solid #3b82f6;
-  border-radius: 4px;
-  color: #1e40af;
+  padding: 0.5rem 0.75rem;
+  background: var(--language-tag-bg);
+  border: 1.5px solid var(--language-tag-bg);
+  border-radius: 6px;
+  color: var(--language-tag-text);
   font-size: 0.875rem;
+  font-weight: 500;
 }
 
 .languages strong {
-  color: #1e3a8a;
+  color: var(--language-tag-text);
+  font-weight: 600;
 }
 
 .right {
@@ -401,15 +406,15 @@ function handleTabChange(tab: TabKey) {
   flex-direction: column;
   gap: 0.25rem;
   padding: 1rem;
-  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-  border: 1px solid #86efac;
+  background: var(--price-tag-bg);
+  border: 1.5px solid var(--price-tag-bg);
   border-radius: 8px;
 }
 
 .price-label {
   font-size: 0.75rem;
-  font-weight: 500;
-  color: #166534;
+  font-weight: 600;
+  color: var(--price-tag-text);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -417,7 +422,7 @@ function handleTabChange(tab: TabKey) {
 .price-value {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #15803d;
+  color: var(--price-tag-text);
 }
 
 .per-hour {
@@ -429,20 +434,20 @@ function handleTabChange(tab: TabKey) {
 .cta {
   width: 100%;
   padding: 0.75rem 1.5rem;
-  background: #3b82f6;
-  color: white;
-  border: none;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border: 1px solid transparent;
   border-radius: 8px;
   font-size: 0.9375rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 2px 8px var(--shadow);
 }
 
 .cta:hover {
-  background: #2563eb;
-  box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.4);
+  background: var(--accent-hover);
+  box-shadow: 0 4px 12px var(--shadow-strong);
   transform: translateY(-1px);
 }
 

@@ -4,6 +4,8 @@ import PageShell from '../ui/PageShell.vue'
 
 import LoginView from '../modules/auth/views/LoginView.vue'
 import RegisterView from '../modules/auth/views/RegisterView.vue'
+import RegisterStudentView from '../modules/auth/views/RegisterStudentView.vue'
+import RegisterTutorView from '../modules/auth/views/RegisterTutorView.vue'
 import CheckEmailView from '../modules/auth/views/CheckEmailView.vue'
 import VerifyEmailView from '../modules/auth/views/VerifyEmailView.vue'
 import ForgotPasswordView from '../modules/auth/views/ForgotPasswordView.vue'
@@ -63,6 +65,9 @@ import { setCurrentRoute } from '@/modules/diagnostics/plugins/errorCollector'
 // P0.3: Lighthouse route без auth для стабільного audit
 const LighthouseCalendarView = () => import('../views/__lighthouse__/LighthouseCalendarView.vue')
 
+// Role selection landing page
+const RoleSelectionView = () => import('../views/RoleSelectionView.vue')
+
 // Classroom views (v0.24.2)
 const LessonRoom = () => import('../modules/classroom/views/LessonRoom.vue')
 const SoloRoom = () => import('../modules/classroom/views/SoloRoom.vue')
@@ -79,6 +84,13 @@ const LessonReplay = () => import('../modules/classroom/views/LessonReplay.vue')
 const LessonHistory = () => import('../modules/classroom/views/LessonHistory.vue')
 
 const routes = [
+  // Role selection landing page (root redirect)
+  {
+    path: '/start',
+    name: 'role-selection',
+    component: RoleSelectionView,
+    meta: { requiresAuth: false }
+  },
   {
     path: '/auth',
     component: AuthLayout,
@@ -86,6 +98,8 @@ const routes = [
     children: [
       { path: 'login', name: 'login', component: LoginView, meta: { requiresAuth: false } },
       { path: 'register', name: 'register', component: RegisterView, meta: { requiresAuth: false } },
+      { path: 'register/student', name: 'register-student', component: RegisterStudentView, meta: { requiresAuth: false } },
+      { path: 'register/tutor', name: 'register-tutor', component: RegisterTutorView, meta: { requiresAuth: false } },
       { path: 'check-email', name: 'auth-check-email', component: CheckEmailView, meta: { requiresAuth: false } },
       { path: 'verify-email', name: 'auth-verify-email', component: VerifyEmailView, meta: { requiresAuth: false } },
       { path: 'forgot-password', name: 'auth-forgot-password', component: ForgotPasswordView, meta: { requiresAuth: false } },
@@ -796,7 +810,7 @@ const routes = [
     component: () => import('../modules/reviews/views/TutorReviewsView.vue'),
     meta: { requiresAuth: false },
   },
-  { path: '/:pathMatch(.*)*', redirect: '/auth/login' },
+  { path: '/:pathMatch(.*)*', redirect: '/start' },
 ]
 
 const router = createRouter({
@@ -816,9 +830,10 @@ router.beforeEach(async (to, from, next) => {
   let isAuthenticated = auth.isAuthenticated
   const user = auth.user
   // v0.88.4: Staff users have /staff as home
-  const homeRoute = user?.is_staff ? '/staff' : (user?.role ? getDefaultRouteForRole(user.role) : '/auth/login')
+  const homeRoute = user?.is_staff ? '/staff' : (user?.role ? getDefaultRouteForRole(user.role) : '/start')
   const isAuthRoute = to.path.startsWith('/auth')
   const isInviteRoute = to.path.startsWith('/invite')
+  const isStartRoute = to.path === '/start'
   const requiresAuth = to.matched.some((record) => record.meta?.requiresAuth !== false && record.meta?.requiresAuth !== undefined ? record.meta.requiresAuth : true)
   const isPublicRoute = to.matched.some((record) => record.meta?.requiresAuth === false)
   const hasRoleAccess = hasAccess(user, to)
@@ -838,10 +853,10 @@ router.beforeEach(async (to, from, next) => {
   }
 
   if (!isAuthenticated) {
-    if (isAuthRoute || isInviteRoute) {
+    if (isAuthRoute || isInviteRoute || isStartRoute) {
       return next()
     }
-    return next({ path: '/auth/login', query: { redirect: to.fullPath } })
+    return next({ path: '/start', query: { redirect: to.fullPath } })
   }
 
   if (isAuthRoute || (isInviteRoute && isAuthenticated)) {
@@ -851,9 +866,15 @@ router.beforeEach(async (to, from, next) => {
     return next()
   }
 
-  // v0.88.4: Redirect staff users from root to /staff
-  if (to.path === '/' && user?.is_staff) {
-    return next('/staff')
+  // Redirect from root path based on auth status
+  if (to.path === '/') {
+    if (user?.is_staff) {
+      return next('/staff')
+    } else if (isAuthenticated && user?.role) {
+      return next(getDefaultRouteForRole(user.role))
+    } else {
+      return next('/start')
+    }
   }
 
   if (requiresAuth && !isAuthenticated) {

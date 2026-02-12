@@ -1,0 +1,41 @@
+# M4SH robots.txt
+# Дозволяємо індексацію публічних сторінок
+
+User-agent: *
+Allow: /
+
+# Public pages - високий пріоритет для індексації
+Allow: /marketplace
+Allow: /marketplace/tutors/
+Allow: /marketplace/search
+Allow: /marketplace/categories/
+Allow: /profile/
+Allow: /legal/
+
+# Auth pages - дозволяємо але низький пріоритет
+Allow: /auth/
+
+# Disallow authenticated areas - НЕ індексувати
+Disallow: /dashboard
+Disallow: /student
+Disallow: /tutor
+Disallow: /admin
+Disallow: /staff
+Disallow: /settings
+Disallow: /bookings
+Disallow: /chat
+Disallow: /contacts
+Disallow: /billing
+Disallow: /notifications
+Disallow: /onboarding
+Disallow: /checklist
+Disallow: /solo
+Disallow: /classroom
+
+# Technical files - НЕ індексувати
+Disallow: /debug-api.html
+Disallow: /service-worker.js
+Disallow: /__lighthouse__
+
+# Sitemap
+Sitemap: https://m4sh.org/sitemap.xml

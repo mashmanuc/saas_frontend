@@ -70,6 +70,9 @@ export function setI18nLocale(locale) {
   localStorage.setItem(STORAGE_KEY, locale)
 }
 
+// Alias for compatibility with TypeScript version
+export const setLocale = setI18nLocale
+
 setI18nLocale(initialLocale)
 
 export async function setupI18n(locale = DEFAULT_LOCALE) {

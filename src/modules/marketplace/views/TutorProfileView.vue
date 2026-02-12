@@ -253,6 +253,7 @@ function handleInquirySuccess() {
 
           <!-- Reviews section placeholder -->
           <section class="profile-section">
+            <!-- TODO: Uncomment when review system is fully implemented (source_lesson_id, booking selection)
             <div class="reviews-header">
               <button
                 v-if="canWriteReview"
@@ -264,6 +265,7 @@ function handleInquirySuccess() {
                 {{ $t('marketplace.profile.reviews.write.title') }}
               </button>
             </div>
+            -->
 
             <ProfileReviews
               ref="reviewsRef"

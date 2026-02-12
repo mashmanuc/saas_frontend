@@ -482,6 +482,7 @@
     "noResults": "No results",
     "back": "Back",
     "next": "Next",
+    "changeLanguage": "Change Language",
     "offline": {
       "lastSync": "Остання синхронізація",
       "message": "Ви не в мережі",
@@ -649,6 +650,14 @@
     "register": {
       "title": "Register",
       "description": "Self-paced registration (self-learning).",
+      "titleStudent": "Student Registration",
+      "descriptionStudent": "Create a student account for learning",
+      "wantToTeach": "Want to teach?",
+      "registerAsTutor": "Register as Tutor",
+      "titleTutor": "Tutor Registration",
+      "descriptionTutor": "Create a tutor account for teaching",
+      "wantToLearn": "Want to learn?",
+      "registerAsStudent": "Register as Student",
       "accountType": "Account type",
       "accountTypeStudent": "Student",
       "accountTypeStudentHint": "Self-learning and booking lessons.",
@@ -5163,5 +5172,62 @@
     "buyTokensButton": "Купити токени",
     "cancelButton": "Скасувати",
     "unlockButton": "Розблокувати"
+  },
+  "roleSelection": {
+    "title": "Choose Your Role",
+    "subtitle": "Select how you want to use M4SH platform",
+    "nav": {
+      "howItWorks": "How It Works",
+      "benefits": "Benefits",
+      "login": "Login"
+    },
+    "student": {
+      "title": "Student",
+      "description": "Find tutors and learn new skills",
+      "feature1": "Access to verified tutors",
+      "feature2": "Flexible scheduling",
+      "feature3": "Interactive learning tools",
+      "cta": "Start Learning"
+    },
+    "tutor": {
+      "title": "Tutor",
+      "description": "Share your knowledge and earn",
+      "feature1": "Set your own rates",
+      "feature2": "Manage your schedule",
+      "feature3": "Built-in teaching tools",
+      "cta": "Start Teaching"
+    },
+    "howItWorks": {
+      "title": "How It Works",
+      "subtitle": "Get started in three simple steps",
+      "step1": {
+        "title": "Create Account",
+        "description": "Sign up as a student or tutor in minutes"
+      },
+      "step2": {
+        "title": "Find Match",
+        "description": "Browse profiles or receive inquiries"
+      },
+      "step3": {
+        "title": "Start Learning",
+        "description": "Connect and begin your educational journey"
+      }
+    },
+    "benefits": {
+      "title": "Why Choose M4SH",
+      "subtitle": "Direct connection between students and tutors",
+      "noMiddlemen": {
+        "title": "No Middlemen",
+        "description": "Direct communication between students and tutors"
+      },
+      "affordablePrices": {
+        "title": "Affordable Prices",
+        "description": "Fair rates without platform commissions"
+      },
+      "directConnection": {
+        "title": "Direct Connection",
+        "description": "Build lasting educational relationships"
+      }
+    }
   }
 }
