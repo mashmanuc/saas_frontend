@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed, toRaw } from 'vue'
 import { notificationsApi } from '@/api/notifications'
-import type { InAppNotification, NotificationPreferences } from '@/types/notifications'
+import type { InAppNotification, NotificationPreferences, RealtimeNotificationEvent } from '@/types/notifications'
 import { rethrowAsDomainError } from '@/utils/rethrowAsDomainError'
 
 function deepClone<T>(value: T): T {
@@ -31,6 +31,10 @@ export const useNotificationsStore = defineStore('notifications', () => {
 
   let pollInterval: ReturnType<typeof setInterval> | null = null
 
+  // WebSocket realtime state
+  const isRealtimeActive = ref(false)
+  let wsUnsubscribe: (() => void) | null = null
+
   const unreadItems = computed(() => items.value.filter(n => !n.read_at))
 
   const latestItems = computed(() => items.value.slice(0, 10))
@@ -43,22 +47,31 @@ export const useNotificationsStore = defineStore('notifications', () => {
     })
   })
 
-  async function loadNotifications(params?: { unreadOnly?: boolean; limit?: number }) {
+  async function loadNotifications(params?: { unreadOnly?: boolean; limit?: number; offset?: number }) {
     isLoading.value = true
     error.value = null
 
     try {
       const response = await notificationsApi.getNotifications(params)
-      const results = deepClone(response.results)
-      items.value = results
-      unreadCount.value = results.filter(n => !n.read_at).length
+      
+      // ⚠️ CONTRACT FIX: Backend returns { notifications: [...] }
+      const rawNotifications = response?.notifications ?? []
+      const notifications = Array.isArray(rawNotifications) ? deepClone(rawNotifications) : []
+      
+      items.value = notifications
+      unreadCount.value = notifications.filter(n => !n.read_at).length
+      
+      // Повертаємо response для пагінації
+      return response
     } catch (err) {
       error.value = String(err)
+      items.value = []
       try {
         rethrowAsDomainError(err)
       } catch {
         // keep UI-driven error handling
       }
+      return null
     } finally {
       isLoading.value = false
     }
@@ -129,10 +142,14 @@ export const useNotificationsStore = defineStore('notifications', () => {
   async function pollUnreadCount() {
     /**
      * ⚠️ Оптимізація: не оновлюємо state якщо count не змінився
+     * CONTRACT FIX: Backend returns { notifications: [...] }
      */
     try {
       const response = await notificationsApi.getNotifications({ unreadOnly: true, limit: 1 })
-      const newCount = response.count
+      // Backend returns { notifications: [...] } not { count: N }
+      // Compute count from notifications array length
+      const notifications = response?.notifications ?? []
+      const newCount = Array.isArray(notifications) ? notifications.length : 0
       const currentCount = unreadCount.value
       
       // Оновлюємо тільки якщо значення змінилося
@@ -199,6 +216,50 @@ export const useNotificationsStore = defineStore('notifications', () => {
     }
   }
 
+  /**
+   * Handle realtime notification from WebSocket
+   * Adds notification to list and updates unread count
+   */
+  function handleRealtimeNotification(event: RealtimeNotificationEvent) {
+    const { payload } = event
+
+    // Check if notification already exists (idempotency)
+    const existingIndex = items.value.findIndex(n => n.id === payload.id)
+    if (existingIndex !== -1) {
+      // Update existing if needed
+      return
+    }
+
+    // Convert to InAppNotification format
+    const newNotification: InAppNotification = {
+      id: payload.id,
+      type: payload.type,
+      title: payload.title,
+      body: payload.body,
+      data: payload.data,
+      created_at: payload.created_at,
+      read_at: null, // Realtime notifications are always unread initially
+    }
+
+    // Add to beginning of list (newest first)
+    items.value = [newNotification, ...items.value]
+    unreadCount.value += 1
+
+    // Log for debugging
+    debugEvents.value = [
+      { type: 'realtime_notification', at: new Date().toISOString(), id: payload.id },
+      ...debugEvents.value.slice(0, 99) // Keep last 100 events
+    ]
+  }
+
+  /**
+   * Mark store as having active realtime connection
+   * Used to adjust polling behavior
+   */
+  function setRealtimeActive(active: boolean) {
+    isRealtimeActive.value = active
+  }
+
   function addMockNotification(input: any) {
     // Used by DevThemePlayground and legacy tests
     const now = new Date().toISOString()
@@ -256,6 +317,9 @@ export const useNotificationsStore = defineStore('notifications', () => {
     pollUnreadCount,
     startPolling,
     stopPolling,
+    handleRealtimeNotification,
+    setRealtimeActive,
+    isRealtimeActive,
     loadPreferences,
     updatePreferences,
     addMockNotification,

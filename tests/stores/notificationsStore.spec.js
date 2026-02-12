@@ -47,7 +47,7 @@ describe('notifications store', () => {
     const store = useNotificationsStore()
     store.currentUserId = 'user-1'
     listMock.mockResolvedValueOnce({
-      results: [
+      notifications: [  // ⚠️ CONTRACT FIX: was 'results', now 'notifications'
         {
           id: 'ntf-1',
           type: 'test',
@@ -58,9 +58,6 @@ describe('notifications store', () => {
           read_at: null,
         },
       ],
-      count: 1,
-      next: null,
-      previous: null,
     })
 
     await store.fetchNotifications({ replace: true })
@@ -136,5 +133,161 @@ describe('notifications store', () => {
 
     expect(store.items[0].id).toBe('mock-1')
     expect(store.items[0].payload.title).toBe('Dev ping')
+  })
+
+  /**
+   * 🎯 CRITICAL TEST #5: Realtime notification → unreadCount +1
+   * 
+   * Catches: store logic failure
+   * If this fails → WS event arrives but UI doesn't update
+   */
+  it('increments unreadCount on realtime notification', () => {
+    const store = useNotificationsStore()
+    store.unreadCount = 0
+    store.items = []
+
+    // Act: Simulate WebSocket event
+    store.handleRealtimeNotification({
+      type: 'notification',
+      payload: {
+        id: 'ws-ntf-1',
+        type: 'INQUIRY_CREATED',
+        title: 'Новий запит',
+        body: 'Студент надіслав запит',
+        data: {},
+        created_at: '2024-01-15T10:30:00.000Z',
+      }
+    })
+
+    // Assert: unreadCount incremented
+    expect(store.unreadCount).toBe(1)
+    expect(store.items).toHaveLength(1)
+    expect(store.items[0].id).toBe('ws-ntf-1')
+    expect(store.items[0].read_at).toBeNull() // Realtime = always unread initially
+  })
+
+  /**
+   * 🎯 CRITICAL TEST #6: Polling → unreadCount = backend truth (SSOT)
+   * 
+   * Catches: unreadCount out of sync with DB
+   * 
+   * Architecture invariant:
+   *   Backend state (via polling) = source of truth
+   *   WS = acceleration only
+   */
+  it('sets unreadCount from polling results (backend is SSOT)', async () => {
+    const store = useNotificationsStore()
+    store.currentUserId = 'user-1'
+    
+    // Arrange: Backend returns 2 unread notifications
+    listMock.mockResolvedValueOnce({
+      notifications: [  // ⚠️ CONTRACT FIX: was 'results', now 'notifications'
+        {
+          id: 'ntf-1',
+          type: 'INQUIRY_CREATED',
+          title: 'Новий запит 1',
+          body: 'Body 1',
+          data: {},
+          created_at: '2024-01-15T10:00:00.000Z',
+          read_at: null, // ← unread
+        },
+        {
+          id: 'ntf-2',
+          type: 'INQUIRY_ACCEPTED',
+          title: 'Запит прийнято',
+          body: 'Body 2',
+          data: {},
+          created_at: '2024-01-15T09:00:00.000Z',
+          read_at: null, // ← unread
+        },
+        {
+          id: 'ntf-3',
+          type: 'SYSTEM',
+          title: 'System message',
+          body: 'Body 3',
+          data: {},
+          created_at: '2024-01-15T08:00:00.000Z',
+          read_at: '2024-01-15T08:05:00.000Z', // ← read
+        },
+      ],
+    })
+
+    // Act: Load via polling (simulating loadNotifications call)
+    await store.loadNotifications({ limit: 10 })
+
+    // Assert: unreadCount = count of items with read_at=null
+    expect(store.items).toHaveLength(3)
+    expect(store.unreadCount).toBe(2) // Only ntf-1 and ntf-2 are unread
+    
+    // Verify invariant: unreadCount matches filter logic
+    const expectedUnread = store.items.filter(n => !n.read_at).length
+    expect(store.unreadCount).toBe(expectedUnread)
+  })
+
+  /**
+   * 🧠 ARCHITECTURE INVARIANT (documented in test):
+   * 
+   * WebSocket ≠ source of truth
+   * Polling + DB = source of truth  
+   * WS only accelerates UI update
+   * 
+   * This means:
+   * - If WS works: +1 appears instantly, then polling confirms
+   * - If WS fails: +1 appears within 60s via polling
+   * - unreadCount always eventually consistent with backend
+   */
+  it('maintains invariant: WS acceleration + polling SSOT', async () => {
+    const store = useNotificationsStore()
+    store.currentUserId = 'user-1'
+    store.unreadCount = 0
+    store.items = []
+
+    // Step 1: WS event arrives (acceleration)
+    store.handleRealtimeNotification({
+      type: 'notification',
+      payload: {
+        id: 'realtime-ntf',
+        type: 'TEST',
+        title: 'Realtime',
+        body: 'From WS',
+        data: {},
+        created_at: '2024-01-15T10:00:00.000Z',
+      }
+    })
+    
+    // Immediately after WS: +1 (optimistic)
+    expect(store.unreadCount).toBe(1)
+    
+    // Step 2: Polling happens (SSOT sync)
+    listMock.mockResolvedValueOnce({
+      notifications: [  // ⚠️ CONTRACT FIX: was 'results', now 'notifications'
+        {
+          id: 'realtime-ntf',
+          type: 'TEST',
+          title: 'Realtime',
+          body: 'From WS',
+          data: {},
+          created_at: '2024-01-15T10:00:00.000Z',
+          read_at: null, // Confirmed unread in DB
+        }
+      ],
+    })
+    
+    await store.loadNotifications({ limit: 10 })
+    
+    // After polling: still +1 (confirmed by backend)
+    expect(store.unreadCount).toBe(1)
+    
+    // Step 3: Simulate "WS arrived but not saved" scenario
+    // (rare edge case due to transaction.atomic + signal timing)
+    listMock.mockResolvedValueOnce({
+      notifications: [], // Backend doesn't have it yet
+    })
+    
+    await store.loadNotifications({ limit: 10 })
+    
+    // After polling correction: 0 (backend is SSOT)
+    expect(store.unreadCount).toBe(0)
+    expect(store.items).toHaveLength(0)
   })
 })

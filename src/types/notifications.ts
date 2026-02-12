@@ -16,12 +16,30 @@ export interface NotificationPreferences {
 export interface NotificationsListParams {
   unreadOnly?: boolean
   limit?: number
-  cursor?: string | null
+  offset?: number
 }
 
 export interface NotificationsListResponse {
-  results: InAppNotification[]
-  count: number
-  next: string | null
-  previous: string | null
+  notifications: InAppNotification[]
+  total?: number
+  limit?: number
+  offset?: number
+  has_more?: boolean
+}
+
+/**
+ * Realtime WebSocket notification event payload
+ * Matches backend NotificationEvent format
+ */
+export interface RealtimeNotificationEvent {
+  type: 'notification'
+  payload: {
+    id: string
+    type: string
+    title: string
+    body: string
+    data: Record<string, any>
+    created_at: string
+    priority?: 'low' | 'normal' | 'high' | 'urgent'
+  }
 }

@@ -2,6 +2,7 @@ import { realtimeService } from './realtime'
 import { useCalendarWeekStore } from '@/modules/booking/stores/calendarWeekStore'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { WebSocketReconnectManager } from './websocketReconnect'
+import type { RealtimeNotificationEvent } from '@/types/notifications'
 
 export interface WebSocketEvent {
   channel: string
@@ -232,6 +233,39 @@ class WebSocketService {
       } else if (data.event === 'booking.cancelled') {
         const eventData = data.data as BookingEvent
         handler({ channel, event: data.event, data: eventData })
+      }
+    })
+  }
+
+  /**
+   * Subscribe to user notifications via WebSocket
+   * Channel: notifications:user:{userId}
+   * Events: notification (realtime notification delivery)
+   *
+   * @param userId - The user ID to subscribe to
+   * @param handler - Callback for notification events
+   * @returns Unsubscribe function
+   *
+   * @example
+   * const unsubscribe = websocketService.subscribeNotifications(
+   *   userId,
+   *   (event) => notificationsStore.handleRealtimeNotification(event.payload)
+   * )
+   */
+  subscribeNotifications(
+    userId: number,
+    handler: (event: RealtimeNotificationEvent) => void
+  ) {
+    // NOTE: Channel name format must match backend (alphanumerics, hyphens, underscores, periods only)
+    const channel = `notifications_user_${userId}`
+    return this.subscribe(channel, (data) => {
+      // Handle notification events from the notifications channel
+      if (data.type === 'notification' || data.event === 'notification') {
+        const payload = data.payload || data.data || data
+        handler({
+          type: 'notification',
+          payload: payload as RealtimeNotificationEvent['payload']
+        })
       }
     })
   }

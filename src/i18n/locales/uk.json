@@ -358,7 +358,10 @@
       "emptyAllTitle": "Немає сповіщень",
       "emptyAllDesc": "У вас поки що немає жодних сповіщень",
       "emptyUnreadTitle": "Всі сповіщення прочитані",
-      "emptyUnreadDesc": "У вас немає непрочитаних сповіщень"
+      "emptyUnreadDesc": "У вас немає непрочитаних сповіщень",
+      "previous": "Попередня",
+      "next": "Наступна",
+      "totalItems": "Всього: {count}"
     },
     "preferences": {
       "title": "Налаштування сповіщень",

@@ -86,8 +86,6 @@ import { storeToRefs } from 'pinia'
 import { useNotificationsStore } from '@/stores/notificationsStore'
 import type { InAppNotification } from '@/types/notifications'
 import dayjs from 'dayjs'
-import { watch } from 'vue'
-import { useAuthStore } from '@/modules/auth/store/authStore'
 import relativeTime from 'dayjs/plugin/relativeTime'
 
 dayjs.extend(relativeTime)
@@ -97,8 +95,8 @@ const { t } = useI18n()
 const rootRef = ref<HTMLElement | null>(null)
 const isOpen = ref(false)
 
+// SSOT: Bell ONLY reads from store. WS subscription is in App.vue
 const notificationsStore = useNotificationsStore()
-const authStore = useAuthStore()
 const { items, unreadCount, latestItems, isLoading, error } = storeToRefs(notificationsStore)
 
 const canMarkAll = computed(() => unreadCount.value > 0)
@@ -155,26 +153,11 @@ function formatTime(timestamp: string): string {
 
 onMounted(() => {
   document.addEventListener('click', handleOutsideClick)
-  if (authStore.isAuthenticated) {
-    notificationsStore.startPolling(60000)
-  }
+  // Polling is managed by App.vue, Bell just displays store state
 })
-
-const stopAuthWatch = watch(
-  () => authStore.isAuthenticated,
-  (isAuth) => {
-    if (isAuth) {
-      notificationsStore.startPolling(60000)
-    } else {
-      notificationsStore.stopPolling()
-    }
-  }
-)
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleOutsideClick)
-  notificationsStore.stopPolling()
-  stopAuthWatch()
 })
 </script>
 

@@ -22,15 +22,6 @@
             <span v-if="unreadCount > 0" class="count-badge">{{ unreadCount }}</span>
           </button>
         </div>
-        <button
-          v-if="canMarkAll"
-          type="button"
-          class="mark-all-btn"
-          :disabled="isLoading"
-          @click="handleMarkAllAsRead"
-        >
-          {{ $t('notifications.view.markAllRead') }}
-        </button>
       </div>
     </header>
 
@@ -67,7 +58,6 @@
           :key="item.id"
           class="notification-card"
           :class="{ 'unread': !item.read_at }"
-          @click="handleNotificationClick(item)"
         >
           <div class="card-indicator" />
           <div class="card-content">
@@ -76,20 +66,35 @@
               <span class="card-time">{{ formatTime(item.created_at) }}</span>
             </div>
             <p class="card-body">{{ item.body }}</p>
-            <div class="card-footer">
-              <span class="card-type">{{ item.type }}</span>
-              <button
-                v-if="!item.read_at"
-                type="button"
-                class="mark-read-btn"
-                @click.stop="handleMarkAsRead(item.id)"
-              >
-                {{ $t('notifications.view.markRead') }}
-              </button>
-            </div>
           </div>
         </li>
       </ul>
+
+      <!-- Pagination Controls -->
+      <div v-if="displayedItems.length > 0 && totalPages > 1" class="pagination">
+        <button
+          type="button"
+          class="pagination-btn"
+          :disabled="currentPage === 1"
+          @click="prevPage"
+        >
+          ← {{ $t('notifications.view.previous') }}
+        </button>
+        
+        <div class="pagination-info">
+          <span class="page-number">{{ currentPage }} / {{ totalPages }}</span>
+          <span class="total-count">{{ $t('notifications.view.totalItems', { count: totalItems }) }}</span>
+        </div>
+        
+        <button
+          type="button"
+          class="pagination-btn"
+          :disabled="!hasMore"
+          @click="nextPage"
+        >
+          {{ $t('notifications.view.next') }} →
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -109,15 +114,22 @@ dayjs.extend(relativeTime)
 const router = useRouter()
 const { t } = useI18n()
 const filter = ref<'all' | 'unread'>('all')
+const currentPage = ref(1)
+const pageSize = 20
 
 const notificationsStore = useNotificationsStore()
 const { items, unreadCount, isLoading, error } = storeToRefs(notificationsStore)
 
+const totalPages = ref(1)
+const totalItems = ref(0)
+const hasMore = ref(false)
+
 const displayedItems = computed(() => {
+  const currentItems = Array.isArray(items.value) ? items.value : []
   if (filter.value === 'unread') {
-    return items.value.filter(n => !n.read_at)
+    return currentItems.filter(n => !n.read_at)
   }
-  return items.value
+  return currentItems
 })
 
 const canMarkAll = computed(() => unreadCount.value > 0)
@@ -136,6 +148,42 @@ const emptyDesc = computed(() => {
 
 function setFilter(newFilter: 'all' | 'unread') {
   filter.value = newFilter
+  currentPage.value = 1
+  loadPage()
+}
+
+async function loadPage() {
+  const offset = (currentPage.value - 1) * pageSize
+  const response = await notificationsStore.loadNotifications({
+    unreadOnly: filter.value === 'unread',
+    limit: pageSize,
+    offset
+  })
+  
+  if (response) {
+    totalItems.value = response.total ?? 0
+    hasMore.value = response.has_more ?? false
+    totalPages.value = Math.ceil(totalItems.value / pageSize)
+  }
+}
+
+function goToPage(page: number) {
+  if (page < 1 || page > totalPages.value) return
+  currentPage.value = page
+  loadPage()
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+function nextPage() {
+  if (hasMore.value) {
+    goToPage(currentPage.value + 1)
+  }
+}
+
+function prevPage() {
+  if (currentPage.value > 1) {
+    goToPage(currentPage.value - 1)
+  }
 }
 
 async function handleNotificationClick(notification: InAppNotification) {
@@ -163,21 +211,23 @@ async function handleMarkAsRead(id: string) {
 async function handleMarkAllAsRead() {
   try {
     await notificationsStore.markAllAsRead()
+    await loadPage()
   } catch (err) {
     console.error('[NotificationsView] Failed to mark all as read:', err)
   }
 }
 
 function handleRetry() {
-  notificationsStore.loadNotifications()
+  loadPage()
 }
 
 function formatTime(timestamp: string): string {
-  return dayjs(timestamp).fromNow()
+  // Абсолютний час у форматі DD.MM.YYYY HH:mm
+  return dayjs(timestamp).format('DD.MM.YYYY HH:mm')
 }
 
 onMounted(() => {
-  notificationsStore.loadNotifications()
+  loadPage()
 })
 </script>
 
@@ -441,8 +491,60 @@ onMounted(() => {
 .card-body {
   font-size: 0.9rem;
   color: var(--text-secondary);
-  margin: 0 0 1rem;
+  margin: 0;
   line-height: 1.5;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.pagination-btn {
+  padding: 0.625rem 1.25rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: white;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 120px;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(79, 70, 229, 0.02);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.page-number {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.total-count {
+  font-size: 0.8rem;
+  color: var(--text-muted);
 }
 
 .card-footer {
@@ -512,6 +614,15 @@ onMounted(() => {
 
   .card-time {
     align-self: flex-start;
+  }
+
+  .pagination {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .pagination-btn {
+    width: 100%;
   }
 }
 </style>

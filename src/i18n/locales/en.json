@@ -271,7 +271,10 @@
       "emptyAllTitle": "No notifications",
       "emptyAllDesc": "You don't have any notifications yet",
       "emptyUnreadTitle": "All notifications read",
-      "emptyUnreadDesc": "You have no unread notifications"
+      "emptyUnreadDesc": "You have no unread notifications",
+      "next": "Next",
+      "previous": "Previous",
+      "totalItems": "{count} items"
     },
     "preferences": {
       "title": "Notification Settings",
