@@ -102,8 +102,10 @@ async function loadThread() {
     // Get student name
     studentName.value = relation.student?.full_name || relation.student?.email || t('common.unknown')
 
-    // Check ContactAccess
-    if (!contactAccessStore.canOpenChat(studentId.value)) {
+    // SSOT: Перевірка доступу через relation.status, НЕ через contactAccessStore
+    // Якщо relation.status === 'active' → чат доступний
+    // ContactAccess НЕ є gate для чату (див. CHAT_ACCESS_FIX_DOCUMENTATION.md)
+    if (relation.status !== 'active') {
       error.value = t('chat.errors.contactAccessRequired')
       return
     }

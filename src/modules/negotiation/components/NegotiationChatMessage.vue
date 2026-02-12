@@ -4,7 +4,12 @@
     :class="isOwn ? 'flex-row-reverse' : ''"
   >
     <!-- Avatar -->
-    <Avatar :text="senderName" size="sm" />
+    <div
+      class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold text-white"
+      :style="{ backgroundColor: avatarColor }"
+    >
+      {{ initials }}
+    </div>
 
     <!-- Message content -->
     <div class="flex-1 max-w-[75%]" :class="isOwn ? 'text-right' : 'text-left'">
@@ -33,7 +38,6 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import Avatar from '@/ui/Avatar.vue'
 import type { ChatMessageDTO } from '@/types/inquiries'
 
 const props = defineProps<{
@@ -51,6 +55,43 @@ const senderName = computed(() => {
     return `${props.message.sender.firstName} ${props.message.sender.lastName}`.trim() || 'User'
   }
   return 'User'
+})
+
+const initials = computed(() => {
+  const name = senderName.value || ''
+  const parts = name.split(' ').filter(Boolean)
+  if (!parts.length) return name.charAt(0).toUpperCase() || '?'
+  return parts
+    .slice(0, 2)
+    .map((chunk) => chunk[0]?.toUpperCase())
+    .join('')
+})
+
+// Google-style colors for avatars
+const AVATAR_COLORS = [
+  '#1A73E8', // Blue
+  '#D93025', // Red
+  '#188038', // Green
+  '#F9AB00', // Yellow
+  '#9334E6', // Purple
+  '#0097A7', // Cyan
+  '#F57C00', // Orange
+  '#7B1FA2', // Magenta
+  '#388E3C', // Teal
+  '#1976D2', // Light Blue
+  '#D84315', // Deep Orange
+  '#00796B', // Mint
+]
+
+const avatarColor = computed(() => {
+  const id = senderId.value || senderName.value
+  const seed = String(id)
+  let hash = 0
+  for (let i = 0; i < seed.length; i++) {
+    hash = ((hash << 5) - hash) + seed.charCodeAt(i)
+    hash = hash & hash
+  }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
 })
 
 const formattedTime = computed(() => {

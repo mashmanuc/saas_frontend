@@ -75,6 +75,7 @@ export interface ContactsDTO {
 
 /**
  * Negotiation Thread DTO v0.69
+ * Updated v0.88.2: Added student_id, tutor_id, student_name, tutor_name from backend
  */
 export interface NegotiationThreadDTO {
   id: string
@@ -82,6 +83,11 @@ export interface NegotiationThreadDTO {
   readOnly: boolean
   participants: UserSummary[]
   lastMessagePreview: string
+  // New fields from backend v0.88.2
+  student_id?: number
+  tutor_id?: number
+  student_name?: string
+  tutor_name?: string
 }
 
 /**
@@ -103,6 +109,9 @@ export interface ChatMessageDTO {
   sender?: UserSummary
   createdAt?: string
   clientMessageId?: string
+  
+  // API response format (snake_case)
+  client_message_id?: string
 
   // Common field
   body: string

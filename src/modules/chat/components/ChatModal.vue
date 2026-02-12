@@ -24,7 +24,7 @@
               {{ studentName }}
             </h2>
             <span class="shrink-0 rounded-full bg-accent/10 px-2.5 py-0.5 text-[11px] font-semibold text-accent">
-              {{ $t('dashboard.tutor.cta.chatWithStudent') }}
+              {{ chatLabel }}
             </span>
           </div>
           <button
@@ -100,6 +100,11 @@ const threadId = ref(null)
 const loading = ref(false)
 const error = ref(null)
 const studentName = ref('')
+const chatLabel = computed(() => {
+  if (props.tutorId) return t('dashboard.student.cta.chatWithTutor')
+  if (props.studentId) return t('dashboard.tutor.cta.chatWithStudent')
+  return t('chat.title')
+})
 
 const currentUserId = computed(() => authStore.user?.id)
 
@@ -118,7 +123,7 @@ async function loadThread() {
 
   loading.value = true
   error.value = null
-  threadId.value = null
+  // ⚠️ НЕ скидаємо threadId - це викликає unmount компонента
 
   try {
     let relId = props.relationId
@@ -137,10 +142,10 @@ async function loadThread() {
         studentName.value = s.display_name || s.full_name || s.email || t('common.unknown')
       }
       
-      // Перевірка доступу для тьютора
-      let hasAccess = contactAccessStore.canOpenChat(props.studentId)
-      if (!hasAccess) {
-        // Silent fail
+      // SSOT: Перевірка доступу через relation.status, НЕ через contactAccessStore
+      // Якщо relation.status === 'active' → чат доступний
+      // ContactAccess НЕ є gate для чату (див. CHAT_ACCESS_FIX_DOCUMENTATION.md)
+      if (relation.status !== 'active') {
         error.value = t('chat.errors.contactAccessRequired')
         return
       }
@@ -181,13 +186,10 @@ async function loadThread() {
 }
 
 function handleClose() {
-  // Позначити прочитаними при закритті
   if (threadId.value) {
     chatThreadsStore.markThreadRead(threadId.value)
     chatThreadsStore.fetchUnreadSummary()
   }
-  // Очистити стан
-  threadId.value = null
   error.value = null
   studentName.value = ''
   emit('close')
@@ -211,7 +213,7 @@ onUnmounted(() => {
 <style scoped>
 .chat-modal-content {
   max-height: calc(100vh - 2rem);
-  animation: chatModalSlideUp 200ms ease-out;
+  /* ⚠️ Анімацію видалено - вона змушує чат сплющуватися при оновленні */
 }
 
 /* Перевизначити max-height NegotiationChatWindow для модалки */

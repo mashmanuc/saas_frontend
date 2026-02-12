@@ -87,7 +87,21 @@ export async function sendMessage(
   threadId: string,
   payload: SendMessagePayload
 ): Promise<ChatMessageDTO> {
-  return apiClient.post(`${BASE_URL}/threads/${threadId}/messages/`, payload)
+  const response = await apiClient.post(`${BASE_URL}/threads/${threadId}/messages/`, payload)
+  
+  // Трансформуємо snake_case → camelCase
+  return {
+    id: response.message_id || response.id,
+    threadId: response.thread_id || response.threadId,
+    sender_id: response.sender_id,
+    sender_name: response.sender_name,
+    body: response.body,
+    is_read: response.is_read,
+    createdAt: response.created_at || response.createdAt,
+    clientMessageId: response.client_message_id || response.clientMessageId,
+    client_message_id: response.client_message_id,
+    sender: response.sender
+  }
 }
 
 /**

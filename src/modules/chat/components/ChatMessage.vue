@@ -1,6 +1,9 @@
 <template>
   <div class="flex gap-3 text-sm" :class="isOwn ? 'flex-row-reverse text-right' : 'text-left'">
-    <div class="w-10 h-10 rounded-full bg-surface-soft text-body flex items-center justify-center font-semibold">
+    <div
+      class="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-white"
+      :style="{ backgroundColor: avatarColor }"
+    >
       {{ initials }}
     </div>
     <div class="flex-1 space-y-1">
@@ -72,6 +75,23 @@ const bodyRef = ref(null)
 const renderedBody = computed(() => renderMarkdown(props.message?.text || ''))
 const isOwn = computed(() => String(props.message?.author?.id ?? props.message?.author_id) === String(props.currentUserId))
 const authorName = computed(() => props.message?.author?.name || props.message?.author_name || props.message?.author?.email || '—')
+
+// Google-style colors for avatars
+const AVATAR_COLORS = [
+  '#1A73E8', // Blue
+  '#D93025', // Red
+  '#188038', // Green
+  '#F9AB00', // Yellow
+  '#9334E6', // Purple
+  '#0097A7', // Cyan
+  '#F57C00', // Orange
+  '#7B1FA2', // Magenta
+  '#388E3C', // Teal
+  '#1976D2', // Light Blue
+  '#D84315', // Deep Orange
+  '#00796B', // Mint
+]
+
 const initials = computed(() => {
   const name = authorName.value || ''
   const parts = name.split(' ').filter(Boolean)
@@ -82,6 +102,17 @@ const initials = computed(() => {
     .slice(0, 2)
     .map((chunk) => chunk[0]?.toUpperCase())
     .join('')
+})
+
+const avatarColor = computed(() => {
+  const authorId = props.message?.author?.id || props.message?.author_id || authorName.value
+  const seed = String(authorId)
+  let hash = 0
+  for (let i = 0; i < seed.length; i++) {
+    hash = ((hash << 5) - hash) + seed.charCodeAt(i)
+    hash = hash & hash
+  }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
 })
 
 const formattedTime = computed(() => dayjs(props.message?.created_at).format('HH:mm'))

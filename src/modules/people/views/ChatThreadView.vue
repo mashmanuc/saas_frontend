@@ -132,7 +132,40 @@ const canSend = computed(() => {
 
 const otherParticipant = computed(() => {
   if (!activeThread.value) return null
-  return activeThread.value.participants.find(p => p.id !== 'current')
+  
+  // Backend тепер повертає student_name, tutor_name, student_id, tutor_id
+  // Визначаємо поточного користувача через sender_id з messages
+  const currentUserId = messages.value.length > 0 
+    ? messages.value.find(m => m.sender?.id === 'current')?.sender_id 
+    : null
+  
+  // Якщо я студент → показати tutor
+  if (activeThread.value.student_id === currentUserId) {
+    const nameParts = (activeThread.value.tutor_name || '').split(' ')
+    return {
+      id: activeThread.value.tutor_id,
+      firstName: nameParts[0] || '?',
+      lastName: nameParts.slice(1).join(' ') || '',
+    }
+  }
+  
+  // Якщо я tutor → показати student
+  if (activeThread.value.tutor_id === currentUserId) {
+    const nameParts = (activeThread.value.student_name || '').split(' ')
+    return {
+      id: activeThread.value.student_id,
+      firstName: nameParts[0] || '?',
+      lastName: nameParts.slice(1).join(' ') || '',
+    }
+  }
+  
+  // Fallback: якщо не можемо визначити - показуємо student
+  const nameParts = (activeThread.value.student_name || '').split(' ')
+  return {
+    id: activeThread.value.student_id,
+    firstName: nameParts[0] || '?',
+    lastName: nameParts.slice(1).join(' ') || '',
+  }
 })
 
 onMounted(async () => {

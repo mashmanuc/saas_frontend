@@ -721,7 +721,9 @@
       "loading": "Реєструємо...",
       "submit": "Зареєструватися",
       "haveAccount": "Вже маєте акаунт?",
-      "loginLink": "Увійти"
+      "loginLink": "Увійти",
+      "privacyPolicyText": "Я приймаю ",
+      "privacyPolicyLink": "Політику конфіденційності"
     },
     "login": {
       "title": "Вхід",
@@ -2524,6 +2526,11 @@
         "archiveSelected": "Архівувати вибраних"
       },
       "notifications": {}
+    },
+    "student": {
+      "cta": {
+        "chatWithTutor": "Написати репетитору"
+      }
     }
   },
   "relations": {

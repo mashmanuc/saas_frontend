@@ -25,6 +25,8 @@ import {
   sendMessage as apiSendMessage
 } from '@/api/negotiationChat'
 import { rethrowAsDomainError } from '@/utils/rethrowAsDomainError'
+import { useAuthStore } from '@/modules/auth/store/authStore'
+import { wsConnect, wsDisconnect, wsSend } from '@/composables/useChatWebSocket'
 
 export const useNegotiationChatStore = defineStore('negotiationChat', () => {
   // State v0.69
@@ -134,10 +136,9 @@ export const useNegotiationChatStore = defineStore('negotiationChat', () => {
    * @param body - текст повідомлення
    * @returns створене повідомлення
    */
-  async function sendMessage(threadId: string, body: string): Promise<ChatMessageDTO> {
+  async function sendMessage(threadId: string, body: string): Promise<boolean> {
     const clientMessageId = generateMessageId()
     
-    // Перевірка read-only
     const thread = threads.value.find(t => t.id === threadId)
     if (thread?.readOnly) {
       throw new Error('Thread is read-only')
@@ -146,56 +147,25 @@ export const useNegotiationChatStore = defineStore('negotiationChat', () => {
     isSending.value = true
     error.value = null
     
-    // Optimistic update
-    const optimisticMessage: ChatMessageDTO = {
-      id: clientMessageId,
-      threadId,
-      sender: { id: 'current', firstName: '', lastName: '', role: 'student' }, // Буде замінено
-      body,
-      createdAt: new Date().toISOString(),
-      clientMessageId
-    }
-    
-    if (!messagesByThread.value[threadId]) {
-      messagesByThread.value[threadId] = []
-    }
-    // Create new array for reactivity instead of mutation
-    messagesByThread.value[threadId] = [...messagesByThread.value[threadId], optimisticMessage]
-    
     try {
       const message = await apiSendMessage(threadId, { body, clientMessageId })
       
-      // Замінити optimistic на реальне через новий масив (реактивність)
       const currentMessages = messagesByThread.value[threadId] || []
-      const index = currentMessages.findIndex(
-        m => m.clientMessageId === clientMessageId
-      )
-      if (index !== -1) {
-        messagesByThread.value[threadId] = [
-          ...currentMessages.slice(0, index),
-          message,
-          ...currentMessages.slice(index + 1)
-        ]
+      const exists = currentMessages.some(m => m.id === message.id)
+      
+      if (!exists) {
+        if (!messagesByThread.value[threadId]) {
+          messagesByThread.value[threadId] = []
+        }
+        messagesByThread.value[threadId] = [...messagesByThread.value[threadId], message]
       }
       
-      return message
-    } catch (err) {
-      // Видалити optimistic при помилці через новий масив (реактивність)
-      const currentMessages = messagesByThread.value[threadId] || []
-      const index = currentMessages.findIndex(
-        m => m.clientMessageId === clientMessageId
-      )
-      if (index !== -1) {
-        messagesByThread.value[threadId] = [
-          ...currentMessages.slice(0, index),
-          ...currentMessages.slice(index + 1)
-        ]
-      }
-      
-      rethrowAsDomainError(err)
-      throw err
-    } finally {
       isSending.value = false
+      return true
+    } catch (err) {
+      error.value = 'Failed to send'
+      isSending.value = false
+      return false
     }
   }
   
@@ -209,17 +179,67 @@ export const useNegotiationChatStore = defineStore('negotiationChat', () => {
   /**
    * Computed: активний thread
    */
+  function setActiveThread(threadId: string | null) {
+    if (activeThreadId.value === threadId) return
+    
+    if (threadId) {
+      wsConnect(threadId)
+    } else {
+      wsDisconnect()
+    }
+    
+    activeThreadId.value = threadId
+  }
+  
+  /**
+   * Computed: активний thread
+   */
   const activeThread = computed(() => {
     if (!activeThreadId.value) return null
     return threads.value.find(t => t.id === activeThreadId.value) || null
   })
   
-  /**
-   * Встановити активний thread
-   */
-  function setActiveThread(threadId: string | null) {
-    activeThreadId.value = threadId
+  // Actions для WebSocket
+  function appendMessage(threadId: string, message: ChatMessageDTO, currentUserId?: number) {
+    if (!messagesByThread.value[threadId]) {
+      messagesByThread.value[threadId] = []
+    }
+    
+    // Перевірка на дублікат
+    const exists = messagesByThread.value[threadId].some(m => m.id === message.id)
+    if (exists) return
+    
+    messagesByThread.value[threadId] = [...messagesByThread.value[threadId], message]
   }
+  
+  function updateMessage(threadId: string, message: ChatMessageDTO) {
+    const messages = messagesByThread.value[threadId] || []
+    const index = messages.findIndex(m => m.id === message.id)
+    if (index !== -1) {
+      messagesByThread.value[threadId] = [
+        ...messages.slice(0, index),
+        message,
+        ...messages.slice(index + 1)
+      ]
+    }
+  }
+  
+  function deleteMessage(threadId: string, messageId: string) {
+    const messages = messagesByThread.value[threadId] || []
+    messagesByThread.value[threadId] = messages.filter(m => m.id !== messageId)
+  }
+  
+  function markMessageRead(threadId: string, messageId: string) {
+    const messages = messagesByThread.value[threadId] || []
+    messagesByThread.value[threadId] = messages.map(m => 
+      m.id === messageId ? { ...m, is_read: true } : m
+    )
+  }
+  
+  const currentMessages = computed(() => {
+    if (!activeThreadId.value) return []
+    return messagesByThread.value[activeThreadId.value] || []
+  })
   
   return {
     // State
@@ -238,6 +258,11 @@ export const useNegotiationChatStore = defineStore('negotiationChat', () => {
     fetchThreads,
     fetchMessages,
     sendMessage,
-    setActiveThread
+    setActiveThread,
+    appendMessage,
+    updateMessage,
+    deleteMessage,
+    markMessageRead,
+    currentMessages,
   }
 })

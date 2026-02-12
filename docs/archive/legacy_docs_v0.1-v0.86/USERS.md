@@ -30,5 +30,9 @@ http://127.0.0.1:5173/tutor
 
 
 python manage.py runserver
+
+python -m daphne -b 0.0.0.0 -p 8000 config.asgi:application
+
 python -m celery -A config worker --pool=solo --loglevel=info
+
 npm run dev -- --host 0.0.0.0 --port 5173

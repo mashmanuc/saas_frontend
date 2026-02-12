@@ -4,7 +4,7 @@ const isSupportedChannel = (channel) => {
   return SUPPORTED_CHANNELS.has(root)
 }
 
-const SUPPORTED_CHANNELS = new Set(['chat', 'board', 'presence', 'notifications', 'tutor', 'student', 'match', 'availability'])
+const SUPPORTED_CHANNELS = new Set(['chat', 'board', 'presence', 'notifications', 'tutor', 'student', 'match', 'availability', 'room'])
 const DEFAULT_HEARTBEAT_MS = 25_000
 const HEARTBEAT_TIMEOUT_MS = 60_000  // Increased from 30s for stable connections
 const MAX_BACKOFF_MS = 15_000

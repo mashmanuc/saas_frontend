@@ -76,7 +76,19 @@
         autocomplete="new-password"
       />
 
-      <Button class="w-full" type="submit" :disabled="auth.loading">
+      <!-- Privacy Policy Checkbox -->
+      <div class="space-y-2">
+        <label class="flex items-start gap-3 rounded-lg border p-3 cursor-pointer" :class="form.privacy_policy_accepted ? 'border-[var(--accent)]' : 'border-[var(--border)]'">
+          <input v-model="form.privacy_policy_accepted" type="checkbox" required />
+          <div class="text-sm">
+            <span style="color: var(--text-primary);">{{ $t('auth.register.privacyPolicyText') }}</span>
+            <RouterLink to="/legal/privacy" target="_blank" class="hover:underline font-medium" style="color: var(--accent);">{{ $t('auth.register.privacyPolicyLink') }}</RouterLink>
+          </div>
+        </label>
+        <p v-if="fieldError('privacy_policy_accepted')" class="text-sm text-red-600">{{ fieldError('privacy_policy_accepted') }}</p>
+      </div>
+
+      <Button class="w-full" type="submit" :disabled="auth.loading || !form.privacy_policy_accepted">
         <span v-if="auth.loading">{{ $t('auth.register.loading') }}</span>
         <span v-else>{{ $t('auth.register.submit') }}</span>
       </Button>
@@ -143,6 +155,7 @@ const form = reactive({
   email: '',
   password: '',
   password_confirm: '',
+  privacy_policy_accepted: false,
 })
 
 async function onSubmit() {
