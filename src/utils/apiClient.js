@@ -17,7 +17,7 @@ if (import.meta.env.VITE_CALENDAR_DEBUG === 'true') {
 // NOTE: do not set global axios defaults; the API instance below controls credentials
 
 const api = axios.create({
-  baseURL: import.meta.env.DEV ? '/api' : (import.meta.env.VITE_API_BASE_URL || '/api'),
+  baseURL: '/api',
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
 })
