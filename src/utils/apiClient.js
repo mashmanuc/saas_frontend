@@ -16,8 +16,12 @@ if (import.meta.env.VITE_CALENDAR_DEBUG === 'true') {
 
 // NOTE: do not set global axios defaults; the API instance below controls credentials
 
+const isProduction = !import.meta.env.DEV
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: isProduction 
+    ? 'https://saas-backend-rough-dawn-1961.fly.dev/api'  // Production: прямо на backend
+    : '/api',  // Local: через Vite proxy
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
 })
