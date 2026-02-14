@@ -1,7 +1,12 @@
 const isSupportedChannel = (channel) => {
   if (!channel) return false
-  const [root] = String(channel).split(':')
-  return SUPPORTED_CHANNELS.has(root)
+  const channelStr = String(channel)
+  // Support both colon-based (notifications:12) and underscore-based (notifications_user_12) formats
+  const [root] = channelStr.split(':')
+  if (SUPPORTED_CHANNELS.has(root)) return true
+  // Support underscore-based format like notifications_user_12
+  const underscoreRoot = channelStr.split('_')[0]
+  return SUPPORTED_CHANNELS.has(underscoreRoot)
 }
 
 const SUPPORTED_CHANNELS = new Set(['chat', 'board', 'presence', 'notifications', 'tutor', 'student', 'match', 'availability', 'room'])
@@ -114,10 +119,16 @@ class RealtimeService {
       ...this.options,
       ...options,
     }
+    // Use VITE_WS_URL from environment, fallback to window.location or localhost
     if (!this.options.url) {
-      const protocol = window?.location?.protocol === 'https:' ? 'wss' : 'ws'
-      const host = window?.location?.host || 'localhost'
-      this.options.url = `${protocol}://${host}/ws`
+      const envUrl = typeof import.meta !== 'undefined' && import.meta.env?.VITE_WS_URL
+      if (envUrl) {
+        this.options.url = envUrl
+      } else {
+        const protocol = window?.location?.protocol === 'https:' ? 'wss' : 'ws'
+        const host = window?.location?.host || 'localhost'
+        this.options.url = `${protocol}://${host}/ws`
+      }
     }
   }
 

@@ -11,8 +11,30 @@ function buildWsUrlFromOrigin(path) {
   return `${wsOrigin}${path}`
 }
 
+function getEnvWsUrl() {
+  try {
+    return import.meta.env?.VITE_WS_URL || null
+  } catch {
+    return null
+  }
+}
+
 function normalizeWsUrl(wsHost) {
   if (!wsHost) {
+    // Use VITE_WS_URL if available, otherwise fall back to origin
+    const envUrl = getEnvWsUrl()
+    if (envUrl) {
+      // If env URL already starts with ws(s)://, use as-is
+      if (envUrl.startsWith('ws://') || envUrl.startsWith('wss://')) {
+        return envUrl
+      }
+      // If it's a path like /ws/gateway/, resolve against origin
+      if (envUrl.startsWith('/')) {
+        return buildWsUrlFromOrigin(envUrl)
+      }
+      // Otherwise treat as hostname
+      return `wss://${envUrl.replace(/\/$/, '')}/ws/gateway/`
+    }
     return buildWsUrlFromOrigin('/ws/gateway/')
   }
 
