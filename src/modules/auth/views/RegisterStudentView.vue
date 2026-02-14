@@ -24,13 +24,6 @@
       </div>
 
       <Input
-        :label="$t('auth.register.username')"
-        v-model="form.username"
-        :error="fieldError('username')"
-        autocomplete="username"
-      />
-
-      <Input
         :label="$t('auth.register.email')"
         type="email"
         v-model="form.email"
@@ -140,7 +133,6 @@ const form = reactive({
   account_type: 'student',
   first_name: '',
   last_name: '',
-  username: '',
   email: '',
   password: '',
   password_confirm: '',
