@@ -256,8 +256,8 @@ class WebSocketService {
     userId: number,
     handler: (event: RealtimeNotificationEvent) => void
   ) {
-    // NOTE: Channel name format must match backend (alphanumerics, hyphens, underscores, periods only)
-    const channel = `notifications_user_${userId}`
+    // Use colon-based format for backend compatibility
+    const channel = `notifications:user:${userId}`
     return this.subscribe(channel, (data) => {
       // Handle notification events from the notifications channel
       if (data.type === 'notification' || data.event === 'notification') {
