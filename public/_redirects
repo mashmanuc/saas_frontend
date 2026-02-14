@@ -1,8 +1,8 @@
 # Cloudflare Pages redirects and proxies
 # https://developers.cloudflare.com/pages/configuration/redirects/
 
-# Proxy WebSocket requests to backend
-/ws/*  wss://saas-backend-rough-dawn-1961.fly.dev/ws/:splat  200
-
 # Proxy all /api/* requests to backend API
 /api/*  https://saas-backend-rough-dawn-1961.fly.dev/api/:splat  200
+
+# SPA fallback
+/*  /index.html  200
