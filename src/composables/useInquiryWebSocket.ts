@@ -16,6 +16,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useInquiriesStore } from '@/stores/inquiriesStore'
 import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
+import { buildWsUrl } from '@/utils/wsUrl'
 
 interface InquiryWebSocketEvent {
   type: 'inquiry.created' | 'inquiry.updated'
@@ -65,9 +66,7 @@ export function useInquiryWebSocket(options: UseInquiryWebSocketOptions = {}) {
       return
     }
     
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const host = window.location.host
-    const wsUrl = `${protocol}//${host}/ws/inquiries/`
+    const wsUrl = buildWsUrl('/ws/inquiries/')
     
     try {
       ws = new WebSocket(wsUrl)

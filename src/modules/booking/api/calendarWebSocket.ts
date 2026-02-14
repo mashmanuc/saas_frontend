@@ -2,6 +2,7 @@
  * Calendar WebSocket Client v0.49.3
  * Realtime updates for calendar events
  */
+import { buildWsUrl } from '@/utils/wsUrl'
 
 type MessageHandler = (data: any) => void
 
@@ -26,9 +27,7 @@ export class CalendarWebSocket {
 
   connect(): Promise<void> {
     return new Promise((resolve, reject) => {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-      const host = window.location.host
-      const url = `${protocol}//${host}/ws/calendar/`
+      const url = buildWsUrl('/ws/calendar/')
 
       console.log('[CalendarWebSocket] Connecting to:', url)
 

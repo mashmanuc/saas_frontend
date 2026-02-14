@@ -1,6 +1,7 @@
 import { computed } from 'vue'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { useNegotiationChatStore } from '@/stores/negotiationChatStore'
+import { buildWsUrl } from '@/utils/wsUrl'
 
 let globalSocket: WebSocket | null = null
 let globalReconnectTimer: ReturnType<typeof setTimeout> | null = null
@@ -9,13 +10,9 @@ let globalThreadId: string | null = null
 let globalUserId: number | null = null
 
 function getWsUrl(threadId: string): string {
-  const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
-  const host = window.location.host.includes(':5173')
-    ? window.location.host.replace(':5173', ':8000')
-    : (window.location.host || 'localhost:8000')
   const authStore = useAuthStore()
   const token = authStore.access || ''
-  return `${protocol}://${host}/ws/room/${threadId}/?token=${token}`
+  return `${buildWsUrl(`/ws/room/${threadId}/`)}?token=${token}`
 }
 
 function handleWsMessage(data: any): void {

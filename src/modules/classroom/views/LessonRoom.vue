@@ -123,6 +123,7 @@ import { useReconnect } from '../composables/useReconnect'
 import { classroomApi } from '../api/classroom'
 import { useSubscriptionStore } from '@/modules/payments/stores/subscriptionStore'
 import { notifyWarning } from '@/utils/notify'
+import { buildWsUrl } from '@/utils/wsUrl'
 
 // Components
 import RoomLoader from '../components/room/RoomLoader.vue'
@@ -235,8 +236,7 @@ onMounted(async () => {
         participantStore.setLocalUserId(local.user_id)
       }
 
-      const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
-      const wsBaseUrl = `${wsProtocol}://${window.location.host}/ws`
+      const wsBaseUrl = buildWsUrl('/ws').replace(/\/$/, '')
 
       const classroomId = sessionId
       const wsSessionId = session.value?.uuid
