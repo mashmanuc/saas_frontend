@@ -19,8 +19,8 @@ if (import.meta.env.VITE_CALENDAR_DEBUG === 'true') {
 const isProduction = !import.meta.env.DEV
 
 const api = axios.create({
-  baseURL: isProduction 
-    ? 'https://saas-backend-rough-dawn-1961.fly.dev/api'  // Production: прямо на backend
+  baseURL: isProduction
+    ? (import.meta.env.VITE_API_BASE_URL || 'https://api.m4sh.org/api')
     : '/api',  // Local: через Vite proxy
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
