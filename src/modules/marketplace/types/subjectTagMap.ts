@@ -11,12 +11,13 @@
 /**
  * Subject tag group identifier
  */
-export type SubjectTagGroup = 
-  | 'classes' 
-  | 'exams' 
-  | 'goals' 
-  | 'format' 
-  | 'audience' 
+export type SubjectTagGroup =
+  | 'grades'
+  | 'exams'
+  | 'levels'
+  | 'goals'
+  | 'formats'
+  | 'audience'
   | string
 
 /**

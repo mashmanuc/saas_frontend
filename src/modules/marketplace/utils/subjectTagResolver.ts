@@ -89,13 +89,13 @@ export function isTagAllowedForSubject(
 
 /**
  * Normalize tag group names for compatibility between API and subject_tag_map.json
- * API uses: grades, formats
- * subject_tag_map.json uses: classes, format
+ * v3: Both API and subject_tag_map.json now use the same group names (grades, formats, etc.)
+ * Kept for backward compatibility in case old data appears.
  */
 function normalizeTagGroup(group: string): string {
   const normalizationMap: Record<string, string> = {
-    'grades': 'classes',
-    'formats': 'format',
+    'classes': 'grades',
+    'format': 'formats',
   }
   return normalizationMap[group] ?? group
 }

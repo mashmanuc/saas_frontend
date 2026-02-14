@@ -40,6 +40,7 @@ const { t } = useI18n()
 const SUBJECT_GROUP_TO_TAB: Record<string, string> = {
   grades: 'class',
   exams: 'exam',
+  levels: 'level',
   goals: 'goal',
   formats: 'format',
   audience: 'audience',
@@ -57,6 +58,7 @@ const subjectTags = computed<LanguageTag[]>(() =>
 const subjectTabs = computed(() => [
   { id: 'class', title: t('marketplace.subjects.tabs.classes') },
   { id: 'exam', title: t('marketplace.subjects.tabs.exams') },
+  { id: 'level', title: t('marketplace.languages.tabs.level') },
   { id: 'goal', title: t('marketplace.subjects.tabs.goals') },
   { id: 'format', title: t('marketplace.subjects.tabs.format') },
   { id: 'audience', title: t('marketplace.subjects.tabs.audience') },
