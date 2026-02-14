@@ -610,9 +610,12 @@ function getSubmitPayload(opts?: { silent?: boolean }) {
     // Validation feedback should be shown only on explicit Save.
     if (!silent) {
       console.error('[ProfileEditor] Validation errors:', validationErrors)
-      const firstError = validationErrors[0]
-      const errorMsg = `${t('marketplace.errors.validationFailed')}: ${t(firstError.message)}`
-      notifyError(errorMsg)
+      // v0.89: Show ALL validation errors, not just the first one
+      const errorMessages = validationErrors
+        .map(err => `• ${t(err.message)}`)
+        .join('\n')
+      const errorMsg = `${t('marketplace.errors.validationFailed')}:\n${errorMessages}`
+      notifyError(errorMsg, { timeout: 10000 })
     }
     return null
   }

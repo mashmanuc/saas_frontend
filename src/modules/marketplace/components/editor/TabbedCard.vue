@@ -52,8 +52,7 @@ const hasTagMapConfiguration = computed(() => {
 })
 
 const showTagMapWarning = computed(() => {
-  return props.type === 'subject' && 
-         props.availableTags !== undefined && 
+  return props.availableTags !== undefined &&
          props.availableTags.length === 0 &&
          activeTab.value !== 'description'
 })

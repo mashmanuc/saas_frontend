@@ -130,15 +130,46 @@ const otherLanguages = computed(() => {
   return others
 })
 
+// v0.89: Маппінг ISO кодів мов → subject codes в subject_tag_map.json
+const LANGUAGE_ISO_TO_SUBJECT: Record<string, string> = {
+  'en': 'english-language',
+  'de': 'german-language',
+  'pl': 'polish-language',
+  'uk': 'ukrainian-language',
+  'fr': 'english-language',   // fallback to english-language config
+  'es': 'english-language',
+  'it': 'english-language',
+  'pt': 'english-language',
+  'cs': 'english-language',
+  'sk': 'english-language',
+  'ro': 'english-language',
+  'hu': 'english-language',
+  'nl': 'english-language',
+  'tr': 'english-language',
+  'zh': 'english-language',
+  'ja': 'english-language',
+  'ko': 'english-language',
+  'el': 'english-language',
+  'sv': 'english-language',
+  'no': 'english-language',
+}
+
 // v0.87: FAIL-CLOSED - Get available tags for a specific subject
 // Returns empty array if map not loaded or subject not configured
 // This prevents showing incorrect tags (e.g., language tags for STEM)
 function getAvailableTagsForSubject(subjectCode: string): SpecialtyTagCatalog[] {
   const tagMap = marketplaceStore.subjectTagMap
-  
+
+  // v0.89: Resolve language_* codes to *-language subject codes
+  let resolvedCode = subjectCode
+  if (subjectCode.startsWith('language_')) {
+    const isoCode = subjectCode.replace('language_', '')
+    resolvedCode = LANGUAGE_ISO_TO_SUBJECT[isoCode] || 'english-language'
+  }
+
   // FAIL-CLOSED: Use safe filter that returns [] if map not ready
   return filterTagsForSubjectSafe(
-    subjectCode,
+    resolvedCode,
     props.subjectTagCatalog,
     tagMap
   )
@@ -167,6 +198,8 @@ const languageSubjects = computed(() =>
       level: '',
       tags: s.tags || [],
       description: s.custom_direction_text || '',
+      // v0.89: Pass available tags for language subjects (resolved via ISO→subject mapping)
+      availableTags: getAvailableTagsForSubject(s.code),
     }))
 )
 
@@ -516,18 +549,21 @@ function handleTogglePopularLanguage(langCode: string) {
   align-items: center;
   gap: 0.35rem;
   padding: 0.5rem 1rem;
-  border: 1px solid var(--border-color);
+  border: 2px solid var(--accent-primary, #047857);
   border-radius: 999px;
-  background: var(--surface-card);
-  color: var(--text-secondary);
+  background: #fff;
+  color: var(--text-primary);
   font-size: 0.875rem;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 .language-chip:hover {
   border-color: var(--accent-primary);
-  background: color-mix(in srgb, var(--accent-primary) 8%, transparent);
+  background: color-mix(in srgb, var(--accent-primary) 10%, #fff);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .language-chip:focus-visible {
@@ -539,6 +575,7 @@ function handleTogglePopularLanguage(langCode: string) {
   border-color: var(--accent-primary);
   background: var(--accent-primary);
   color: white;
+  box-shadow: 0 2px 6px rgba(4, 120, 87, 0.3);
 }
 
 .chip-check,

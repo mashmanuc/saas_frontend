@@ -19,6 +19,7 @@ interface LanguageCard {
   level: string
   tags: string[]
   description: string
+  availableTags?: SpecialtyTagCatalog[]
 }
 
 interface Props {
@@ -66,10 +67,12 @@ const subjectTabs = computed(() => [
 ])
 
 const languageTabs = computed(() => [
+  { id: 'class', title: t('marketplace.subjects.tabs.classes') },
   { id: 'level', title: t('marketplace.languages.tabs.level') },
-  { id: 'format', title: t('marketplace.languages.tabs.format') },
-  { id: 'goal', title: t('marketplace.languages.tabs.goals') },
-  { id: 'audience', title: t('marketplace.languages.tabs.audience') },
+  { id: 'exam', title: t('marketplace.subjects.tabs.exams') },
+  { id: 'goal', title: t('marketplace.subjects.tabs.goals') },
+  { id: 'format', title: t('marketplace.subjects.tabs.format') },
+  { id: 'audience', title: t('marketplace.subjects.tabs.audience') },
   { id: 'description', title: t('marketplace.languages.tabs.description') },
 ])
 
@@ -162,7 +165,8 @@ function handleRemoveLanguage(languageCode: string) {
         :key="language.code"
         :title="`${language.title} (${language.level || t('marketplace.languages.levelNotSet')})`"
         :tabs="languageTabs"
-        :tags="languageTags"
+        :tags="subjectTags"
+        :available-tags="language.availableTags"
         :selected-tags="language.tags"
         :description="language.description"
         type="language"

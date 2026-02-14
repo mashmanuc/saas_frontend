@@ -178,6 +178,7 @@ const progressStyle = (item) => {
 .toast-message {
   margin: 0;
   font-size: 0.92rem;
+  white-space: pre-line;
 }
 
 .toast-actions {
