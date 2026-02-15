@@ -46,6 +46,16 @@ const selectedCountry = computed({
   set: (v) => emit('update', { country: v || null })
 })
 
+const selectedCity = computed({
+  get: () => props.filters.city || '',
+  set: (v) => emit('update', { city: v || undefined })
+})
+
+const selectedFormat = computed({
+  get: () => props.filters.format || '',
+  set: (v) => emit('update', { format: (v || undefined) as any })
+})
+
 const priceMin = computed({
   get: () => props.filters.price_min ?? '',
   set: (v) => emit('update', { price_min: v ? Number(v) : null })
@@ -59,6 +69,7 @@ const priceMax = computed({
 const subjectOptions = computed(() => props.options?.subjects || [])
 const languageOptions = computed(() => props.options?.languages || [])
 const countryOptions = computed(() => props.options?.countries || [])
+const cityOptions = computed(() => (props.options as any)?.cities || [])
 
 function handleClear() {
   emit('clear')
@@ -125,6 +136,32 @@ function handleClear() {
             >
               {{ opt.label }}
             </option>
+          </select>
+        </div>
+
+        <!-- City -->
+        <div v-if="cityOptions.length > 0" class="filter-group">
+          <label class="filter-label">{{ t('marketplace.filters.city') }}</label>
+          <select v-model="selectedCity" class="filter-select">
+            <option value="">{{ t('marketplace.filters.cityAll') }}</option>
+            <option
+              v-for="opt in cityOptions"
+              :key="opt.slug"
+              :value="opt.slug"
+            >
+              {{ opt.name }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Format -->
+        <div class="filter-group">
+          <label class="filter-label">{{ t('marketplace.filters.format') }}</label>
+          <select v-model="selectedFormat" class="filter-select">
+            <option value="">{{ t('marketplace.filters.any') }}</option>
+            <option value="online">{{ t('marketplace.filters.formatOnline') }}</option>
+            <option value="offline">{{ t('marketplace.filters.formatOffline') }}</option>
+            <option value="hybrid">{{ t('marketplace.filters.formatHybrid') }}</option>
           </select>
         </div>
 
@@ -227,7 +264,7 @@ function handleClear() {
 
 .filters-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 1rem;
   flex: 2;
 }

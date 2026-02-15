@@ -787,6 +787,17 @@ const subjectTagChips = computed<LanguageTag[]>(() =>
   }))
 )
 
+/**
+ * v1.0: Хлібні крихти — показати секцію "Місто" якщо тютор обрав
+ * формат офлайн або гібрид для хоча б одного предмета/мови.
+ */
+const needsCityPrompt = computed(() => {
+  const subjects = formData.value.subjects || []
+  return subjects.some((s: any) =>
+    Array.isArray(s.tags) && (s.tags.includes('offline') || s.tags.includes('hybrid'))
+  )
+})
+
 const languageTagOptions = computed(() => [
   ...languagesCatalog.levelTags.value,
   ...languagesCatalog.formatTags.value,
@@ -1102,23 +1113,26 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
           />
         </div>
 
-        <!-- v1.0: City field for discovery -->
-        <div class="privacy-card span-2">
-          <div class="privacy-card-header">
-            <span class="privacy-card-title">{{ $t('tutor.city.label') }}</span>
-            <p class="privacy-card-hint">{{ $t('tutor.city.section_description') }}</p>
+        <!-- v1.0: City field for discovery — хлібні крихти -->
+        <!-- Показується тільки коли тютор обрав офлайн/гібрид формат для хоча б 1 предмета -->
+        <Transition name="fade">
+          <div v-if="needsCityPrompt" class="privacy-card span-2 city-prompt">
+            <div class="privacy-card-header">
+              <span class="privacy-card-title">🏙️ {{ $t('tutor.city.label') }}</span>
+              <p class="privacy-card-hint">{{ $t('tutor.city.section_description') }}</p>
+            </div>
+            <CityAutocomplete
+              v-model="formData.city_code"
+              country-code="UA"
+            />
+            <CityPrivacyToggle
+              v-model="formData.is_city_public"
+            />
+            <p class="helper-text">
+              {{ $t('tutor.city.helper_text') }}
+            </p>
           </div>
-          <CityAutocomplete
-            v-model="formData.city_code"
-            country-code="UA"
-          />
-          <CityPrivacyToggle
-            v-model="formData.is_city_public"
-          />
-          <p class="helper-text">
-            {{ $t('tutor.city.helper_text') }}
-          </p>
-        </div>
+        </Transition>
 
         <div class="privacy-card span-2">
           <div class="privacy-card-header">
@@ -1719,5 +1733,21 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
   padding: 0.5rem;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
+}
+
+/* v1.0: Breadcrumb city prompt animation */
+.city-prompt {
+  border-left: 3px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 5%, var(--card-bg));
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
 }
 </style>

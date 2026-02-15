@@ -77,6 +77,20 @@ const languageOptions = computed(() => {
   }))
 })
 
+// Get cities
+const cityOptions = computed(() => {
+  if (!props.options) return []
+  if (isExtendedOptions.value) {
+    const opts = props.options as ExtendedFilterOptions
+    return (opts.cities || []).map((c) => ({
+      value: c.slug,
+      label: c.name,
+      count: c.count,
+    }))
+  }
+  return []
+})
+
 // Get categories (only for extended)
 const filteredSubjects = computed(() => subjectOptions.value)
 
@@ -197,6 +211,20 @@ function hasActiveFilters(): boolean {
             :value="opt.value"
           >
             {{ opt.label }} ({{ opt.count }})
+          </option>
+        </select>
+      </div>
+
+      <div v-if="cityOptions.length > 0" class="filter-group">
+        <label>{{ t('marketplace.filters.city') }}</label>
+        <select v-model="localFilters.city" data-test="marketplace-filter-city" @change="applyFilters">
+          <option value="">{{ t('marketplace.filters.cityAll') }}</option>
+          <option
+            v-for="opt in cityOptions"
+            :key="opt.value"
+            :value="opt.value"
+          >
+            {{ opt.label }} <template v-if="opt.count > 0">({{ opt.count }})</template>
           </option>
         </select>
       </div>

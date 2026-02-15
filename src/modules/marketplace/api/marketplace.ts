@@ -509,6 +509,7 @@ export interface CatalogFilters {
   experience_max?: number
   direction?: string
   country?: string
+  city?: string
   timezone?: string
   format?: 'online' | 'offline' | 'hybrid'
   has_certifications?: boolean
@@ -520,11 +521,13 @@ export interface SearchFilters {
   subject: string | null
   category: string | null
   country: string | null
+  city: string | null
   language: string | null
   minPrice: number | null
   maxPrice: number | null
   minRating: number | null
   minExperience: number | null
+  format: string | null
   hasVideo: boolean
   isVerified: boolean
 }
@@ -559,10 +562,17 @@ export interface LanguageOption {
   count: number
 }
 
+export interface CityOption {
+  slug: string
+  name: string
+  count: number
+}
+
 export interface ExtendedFilterOptions {
   categories: Category[]
   subjects: SubjectOption[]
   countries: CountryOption[]
+  cities: CityOption[]
   languages: LanguageOption[]
   priceRange: { min: number; max: number; avg: number }
   experienceRange: { min: number; max: number }
