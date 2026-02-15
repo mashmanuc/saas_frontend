@@ -79,7 +79,7 @@ function handleSelectLanguageSubject(code: string) {
           v-for="subject in popularSubjects"
           :key="subject.code"
           type="button"
-          class="subject-chip"
+          class="chip"
           :class="{ 'is-selected': selectedSubjects.includes(subject.code) }"
           @click="handleSelectSubject(subject.code)"
         >
@@ -101,7 +101,7 @@ function handleSelectLanguageSubject(code: string) {
           v-for="lang in popularLanguageSubjects"
           :key="lang.code"
           type="button"
-          class="language-chip"
+          class="chip"
           :class="{ 'is-selected': selectedSubjects.includes(`language_${lang.code}`) }"
           @click="handleSelectLanguageSubject(lang.code)"
         >
@@ -165,30 +165,7 @@ function handleSelectLanguageSubject(code: string) {
   gap: var(--space-sm);
 }
 
-.subject-chip,
-.language-chip {
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  background: var(--surface-card);
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.subject-chip:hover,
-.language-chip:hover {
-  border-color: var(--accent-primary);
-  background: color-mix(in srgb, var(--accent-primary) 8%, transparent);
-}
-
-.subject-chip.is-selected,
-.language-chip.is-selected {
-  border-color: var(--accent-primary);
-  background: var(--accent-primary);
-  color: white;
-}
+/* Chip стилі — використовуються глобальні .chip з main.css */
 
 .language-chips {
   display: flex;

@@ -7,9 +7,9 @@ import type {
 } from '../types/notifications'
 
 export const notificationsApi = {
-  async getNotifications(params?: NotificationsListParams): Promise<NotificationsListResponse> {
+  async getNotifications(params?: NotificationsListParams & { skipLoader?: boolean }): Promise<NotificationsListResponse> {
     const queryParams: Record<string, any> = {}
-    
+
     if (params?.unreadOnly) {
       queryParams.unread = 'true'
     }
@@ -20,7 +20,10 @@ export const notificationsApi = {
       queryParams.offset = params.offset
     }
 
-    return apiClient.get('/notifications/me', { params: queryParams })
+    return apiClient.get('/notifications/me', {
+      params: queryParams,
+      meta: { skipLoader: params?.skipLoader ?? false },
+    } as any)
   },
 
   async markAsRead(id: string): Promise<InAppNotification> {

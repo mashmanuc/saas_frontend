@@ -1904,6 +1904,18 @@
         "saveFailed": "Failed to save lesson links",
         "conflict": "Settings were changed in another session. Refresh the page."
       }
+    },
+    "city": {
+      "label": "City",
+      "placeholder": "Start typing a city name...",
+      "no_results": "City not found",
+      "selected": "Selected city",
+      "privacy_label": "Show city on marketplace",
+      "privacy_description": "Allow students to see your city when searching",
+      "public_warning": "Your city will be visible to all students on the marketplace",
+      "private_notice": "Your city is hidden. Students will not see it in search",
+      "section_description": "Choose the city where you teach",
+      "helper_text": "This helps students find you by location"
     }
   },
   "studentDashboard": {

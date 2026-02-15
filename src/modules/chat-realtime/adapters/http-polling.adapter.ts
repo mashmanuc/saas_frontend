@@ -173,8 +173,8 @@ export class HttpPollingAdapter implements ChatTransport {
   /** Poll for new messages */
   private async pollMessages(): Promise<void> {
     try {
-      // Use after_ts parameter if supported by API
-      const response = await getThreadMessages(this.config.threadId)
+      // Фоновий polling — skipLoader щоб не мигав глобальний loader
+      const response = await getThreadMessages(this.config.threadId, { skipLoader: true })
 
       // Process new messages
       const newMessages = response.messages.filter(

@@ -340,7 +340,7 @@ function handleTogglePopularLanguage(langCode: string) {
           v-for="lang in popularLanguages"
           :key="lang.code"
           type="button"
-          class="language-chip"
+          class="chip"
           :class="{
             'is-selected': isLanguageSubjectSelected(lang.code),
           }"
@@ -544,39 +544,7 @@ function handleTogglePopularLanguage(langCode: string) {
   margin-bottom: var(--space-lg);
 }
 
-.language-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.5rem 1rem;
-  border: 2px solid var(--accent-primary, #047857);
-  border-radius: 999px;
-  background: #fff;
-  color: var(--text-primary);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-}
-
-.language-chip:hover {
-  border-color: var(--accent-primary);
-  background: color-mix(in srgb, var(--accent-primary) 10%, #fff);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-}
-
-.language-chip:focus-visible {
-  outline: 2px solid var(--accent-primary);
-  outline-offset: 2px;
-}
-
-.language-chip.is-selected {
-  border-color: var(--accent-primary);
-  background: var(--accent-primary);
-  color: white;
-  box-shadow: 0 2px 6px rgba(4, 120, 87, 0.3);
-}
+/* Chip стилі — використовуються глобальні .chip з main.css */
 
 .chip-check,
 .item-check {
@@ -743,7 +711,7 @@ function handleTogglePopularLanguage(langCode: string) {
     gap: 0.4rem;
   }
 
-  .language-chip {
+  .chip {
     padding: 0.4rem 0.75rem;
     font-size: 0.8125rem;
   }

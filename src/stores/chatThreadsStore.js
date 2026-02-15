@@ -92,7 +92,9 @@ export const useChatThreadsStore = defineStore('chatThreads', () => {
      * ⚠️ Оптимізація: оновлюємо state тільки якщо дані змінилися
      */
     try {
-      const response = await apiClient.get('/api/v1/chat/unread-summary/')
+      const response = await apiClient.get('/api/v1/chat/unread-summary/', {
+        meta: { skipLoader: true },
+      })
       
       // Phase 1 v0.87.1: Перевірка на undefined після 401 Unauthorized
       if (!response) {

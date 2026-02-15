@@ -78,7 +78,7 @@ async function submit() {
               v-for="n in 5"
               :key="n"
               type="button"
-              class="pill"
+              class="chip"
               :class="{ active: rating === n }"
               :disabled="isSubmitting"
               @click="rating = n"
@@ -195,25 +195,7 @@ async function submit() {
   flex-wrap: wrap;
 }
 
-.pill {
-  border: 1px solid var(--border-color);
-  background: var(--surface-card);
-  border-radius: 999px;
-  padding: 0.375rem 0.75rem;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.pill.active {
-  border-color: var(--accent-primary);
-  color: var(--accent-primary);
-  background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
-}
-
-.pill:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+/* Chip стилі — використовуються глобальні .chip з main.css */
 
 .textarea {
   width: 100%;

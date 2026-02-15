@@ -369,6 +369,114 @@
       transform: rotate(360deg);
     }
   }
+
+  /* ========================================
+     CHIP / PILL Design System
+     Єдиний стиль для всіх chip/pill елементів
+     ======================================== */
+
+  /* Базовий chip — для інтерактивних тегів, фільтрів, вибору */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.375rem 0.85rem;
+    border: 2px solid var(--border-color);
+    border-radius: 999px;
+    background: var(--card-bg, #fff);
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+  }
+
+  .chip:hover {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 8%, var(--card-bg, #fff));
+    color: var(--text-primary);
+  }
+
+  .chip.is-active,
+  .chip.is-selected,
+  .chip.active,
+  .chip.selected {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--accent-contrast, #fff);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 30%, transparent);
+  }
+
+  .chip:disabled,
+  .chip.is-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  /* Chip розміри */
+  .chip--sm {
+    padding: 0.25rem 0.65rem;
+    font-size: 0.8rem;
+  }
+
+  .chip--lg {
+    padding: 0.5rem 1rem;
+    font-size: 0.95rem;
+  }
+
+  /* Pill — для статусів, бейджів (не інтерактивний) */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.65rem;
+    border: 1.5px solid var(--border-color);
+    border-radius: 999px;
+    background: var(--card-bg, #fff);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .pill.is-active,
+  .pill.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 12%, var(--card-bg, #fff));
+  }
+
+  /* Tag — для read-only тегів (предмети, рівні на профілі) */
+  .tag-display {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 0.7rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+
+  .tag-display--subject {
+    background: var(--subject-tag-bg);
+    color: var(--subject-tag-text);
+  }
+
+  .tag-display--language {
+    background: var(--language-tag-bg);
+    color: var(--language-tag-text);
+  }
+
+  .tag-display--price {
+    background: var(--price-tag-bg);
+    color: var(--price-tag-text);
+  }
+
+  .tag-display--neutral {
+    background: color-mix(in srgb, var(--accent) 10%, var(--card-bg, #fff));
+    color: var(--accent);
+    border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  }
 }
 
 @layer utilities {

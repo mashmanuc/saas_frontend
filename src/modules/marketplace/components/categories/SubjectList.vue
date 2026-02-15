@@ -22,7 +22,7 @@ const handleSelect = (subject: string | null) => {
 <template>
   <div class="subject-list">
     <button
-      class="subject-chip"
+      class="chip"
       :class="{ 'is-selected': selected === null }"
       @click="handleSelect(null)"
     >
@@ -31,7 +31,7 @@ const handleSelect = (subject: string | null) => {
     <button
       v-for="subject in subjects"
       :key="subject.code"
-      class="subject-chip"
+      class="chip"
       :class="{ 'is-selected': selected === subject.title }"
       @click="handleSelect(subject.title)"
     >
@@ -47,35 +47,7 @@ const handleSelect = (subject: string | null) => {
   gap: 8px;
 }
 
-.subject-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 16px;
-  background: var(--surface-card);
-  border: 1px solid var(--border-color);
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.subject-chip:hover {
-  border-color: var(--accent-primary);
-  background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
-}
-
-.subject-chip.is-selected {
-  background: var(--accent-primary);
-  border-color: var(--accent-primary);
-  color: var(--text-on-accent);
-}
-
-.subject-chip.is-selected .count {
-  color: rgba(255, 255, 255, 0.8);
-}
+/* Chip стилі — використовуються глобальні .chip з main.css */
 
 .count {
   font-size: 12px;

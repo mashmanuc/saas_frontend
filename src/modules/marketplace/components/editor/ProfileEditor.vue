@@ -5,21 +5,10 @@
   gap: 0.5rem;
 }
 
-.choice-pill {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.35rem;
-  padding: 0.4rem 0.85rem;
-  border: 1px solid var(--border-color);
-  border-radius: 999px;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
-}
-
-.choice-pill input {
+/* Chip стилі — використовуються глобальні .chip з main.css */
+/* Додаткове: приховуємо radio input всередині chip-label */
+.chip input[type="radio"],
+.chip input[type="checkbox"] {
   position: absolute;
   inset: 0;
   opacity: 0;
@@ -77,16 +66,15 @@
   gap: 0.5rem;
 }
 
-.privacy-section .choice-pill {
+.privacy-section .chip {
   justify-content: center;
-  color: var(--text-secondary);
-  background: var(--surface-base);
 }
 
-.privacy-section .choice-pill.is-active {
-  border-color: var(--accent-primary);
-  background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
-  color: var(--accent-primary);
+.privacy-section .chip.is-active {
+  /* Для privacy pill використовуємо м'який accent замість повного заливу */
+  border-color: var(--accent, #047857);
+  background: color-mix(in srgb, var(--accent, #047857) 12%, var(--card-bg, #fff));
+  color: var(--accent, #047857);
 }
 
 .inline-toggle {
@@ -135,6 +123,8 @@ import { useRouter, useRoute } from 'vue-router'
 import LessonLinksEditor from '@/modules/booking/components/lessonLinks/LessonLinksEditor.vue'
 import { useLanguagesCatalog } from '../../composables/useLanguagesCatalog'
 import { useCatalog } from '../../composables/useCatalog'
+import CityAutocomplete from '@/components/geo/CityAutocomplete.vue'
+import CityPrivacyToggle from '@/components/geo/CityPrivacyToggle.vue'
 import type { SpecialtyTagCatalog } from '../../api/marketplace'
 import type { LanguageTag } from '../../api/languages'
 import { onMounted } from 'vue'
@@ -1062,7 +1052,7 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
             <label
               v-for="option in genderOptions"
               :key="option.value"
-              :class="['choice-pill', { 'is-active': formData.gender === option.value }]"
+              :class="['chip', { 'is-active': formData.gender === option.value }]"
             >
               <input v-model="formData.gender" type="radio" :value="option.value" />
               <span>{{ option.label }}</span>
@@ -1110,6 +1100,24 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
             placeholder="@username"
             data-test="marketplace-editor-telegram"
           />
+        </div>
+
+        <!-- v1.0: City field for discovery -->
+        <div class="privacy-card span-2">
+          <div class="privacy-card-header">
+            <span class="privacy-card-title">{{ $t('tutor.city.label') }}</span>
+            <p class="privacy-card-hint">{{ $t('tutor.city.section_description') }}</p>
+          </div>
+          <CityAutocomplete
+            v-model="formData.city_code"
+            country-code="UA"
+          />
+          <CityPrivacyToggle
+            v-model="formData.is_city_public"
+          />
+          <p class="helper-text">
+            {{ $t('tutor.city.helper_text') }}
+          </p>
         </div>
 
         <div class="privacy-card span-2">

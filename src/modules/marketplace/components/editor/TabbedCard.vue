@@ -117,7 +117,7 @@ function handleDescriptionChange(event: Event) {
             v-for="tag in tagsForCurrentTab"
             :key="tag.code"
             type="button"
-            class="tag-chip"
+            class="chip"
             :class="{ 'is-active': selectedTags.includes(tag.code) }"
             @click="handleToggleTag(tag.code)"
           >
@@ -240,27 +240,7 @@ function handleDescriptionChange(event: Event) {
   min-height: 60px;
 }
 
-.tag-chip {
-  padding: 0.4rem 0.85rem;
-  border: 1px solid var(--border-color);
-  border-radius: 999px;
-  background: var(--surface-base);
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.tag-chip:hover {
-  border-color: var(--accent-primary);
-  background: color-mix(in srgb, var(--accent-primary) 8%, transparent);
-}
-
-.tag-chip.is-active {
-  border-color: var(--accent-primary);
-  background: var(--accent-primary);
-  color: white;
-}
+/* Chip стилі — використовуються глобальні .chip з main.css */
 
 .tag-map-warning {
   display: flex;

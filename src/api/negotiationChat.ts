@@ -55,13 +55,17 @@ export interface SmartPollingResponse {
 export async function fetchMessages(
   threadId: string,
   afterTs?: string,
-  limit?: number
+  limit?: number,
+  options?: { skipLoader?: boolean }
 ): Promise<SmartPollingResponse> {
   const params: Record<string, string | number> = {}
   if (afterTs) params.after_ts = afterTs
   if (limit) params.limit = limit
 
-  return apiClient.get(`${BASE_URL}/threads/${threadId}/messages/`, { params })
+  return apiClient.get(`${BASE_URL}/threads/${threadId}/messages/`, {
+    params,
+    meta: { skipLoader: options?.skipLoader ?? false },
+  } as any)
 }
 
 /**

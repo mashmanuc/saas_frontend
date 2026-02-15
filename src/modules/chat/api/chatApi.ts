@@ -63,10 +63,15 @@ export async function getThreads(): Promise<{ threads: ChatThread[]; count: numb
 
 /**
  * Get messages for a thread
+ * @param options.skipLoader - пропустити глобальний loader (для фонового polling)
  */
-export async function getThreadMessages(threadId: string): Promise<ThreadMessagesResponse> {
+export async function getThreadMessages(
+  threadId: string,
+  options?: { skipLoader?: boolean }
+): Promise<ThreadMessagesResponse> {
   const response = await apiClient.get<ThreadMessagesResponse>(
-    `/api/v1/chat/threads/${threadId}/messages/`
+    `/api/v1/chat/threads/${threadId}/messages/`,
+    { meta: { skipLoader: options?.skipLoader ?? false } } as any
   )
   return response
 }

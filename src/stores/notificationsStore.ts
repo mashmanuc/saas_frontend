@@ -141,17 +141,18 @@ export const useNotificationsStore = defineStore('notifications', () => {
 
   async function pollUnreadCount() {
     /**
-     * ⚠️ Оптимізація: не оновлюємо state якщо count не змінився
-     * CONTRACT FIX: Backend returns { notifications: [...] }
+     * Запитуємо бекенд для отримання актуальної кількості непрочитаних.
+     * Backend повертає { notifications: [...], total: N } де total — реальна кількість.
+     * Використовуємо response.total, а не notifications.length (бо limit: 1).
      */
     try {
-      const response = await notificationsApi.getNotifications({ unreadOnly: true, limit: 1 })
-      // Backend returns { notifications: [...] } not { count: N }
-      // Compute count from notifications array length
-      const notifications = response?.notifications ?? []
-      const newCount = Array.isArray(notifications) ? notifications.length : 0
+      const response = await notificationsApi.getNotifications({ unreadOnly: true, limit: 1, skipLoader: true })
+      // Backend повертає total — реальну кількість непрочитаних повідомлень
+      const newCount = typeof response?.total === 'number'
+        ? response.total
+        : (Array.isArray(response?.notifications) ? response.notifications.length : 0)
       const currentCount = unreadCount.value
-      
+
       // Оновлюємо тільки якщо значення змінилося
       if (newCount !== currentCount) {
         unreadCount.value = newCount

@@ -95,7 +95,9 @@ export function useChatPolling(
     try {
       const response: SmartPollingResponse = await negotiationChatApi.fetchMessages(
         tid,
-        latestTs.value || undefined
+        latestTs.value || undefined,
+        undefined,
+        { skipLoader: true }
       )
 
       // ✅ Оптимізація: додаємо тільки якщо є нові повідомлення

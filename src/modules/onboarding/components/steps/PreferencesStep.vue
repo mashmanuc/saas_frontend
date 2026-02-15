@@ -65,7 +65,7 @@ function toggleSubject(id: string) {
           <button
             v-for="subject in subjects"
             :key="subject.id"
-            :class="['subject-chip', { selected: selectedSubjects.includes(subject.id) }]"
+            :class="['chip', { selected: selectedSubjects.includes(subject.id) }]"
             @click="toggleSubject(subject.id)"
           >
             {{ subject.label }}
@@ -170,26 +170,7 @@ function toggleSubject(id: string) {
   gap: 8px;
 }
 
-.subject-chip {
-  padding: 8px 16px;
-  background: var(--color-bg-secondary, #f5f5f5);
-  border: 2px solid transparent;
-  border-radius: 20px;
-  font-size: 14px;
-  color: var(--color-text-primary, #111827);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.subject-chip:hover {
-  background: var(--color-bg-tertiary, #e5e7eb);
-}
-
-.subject-chip.selected {
-  background: var(--color-primary-light, #eff6ff);
-  border-color: var(--color-primary, #3b82f6);
-  color: var(--color-primary, #3b82f6);
-}
+/* Chip стилі — використовуються глобальні .chip з main.css */
 
 /* Schedule Options */
 .schedule-options {

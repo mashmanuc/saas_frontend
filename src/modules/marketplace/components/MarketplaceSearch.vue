@@ -311,26 +311,7 @@ onMounted(() => {
   gap: 0.5rem;
 }
 
-.chip {
-  padding: 0.375rem 0.75rem;
-  background: var(--surface-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 999px;
-  font-size: 0.875rem;
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.chip:hover {
-  border-color: var(--primary);
-}
-
-.chip.active {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: white;
-}
+/* Chip стилі — використовуються глобальні .chip з main.css */
 
 .input {
   padding: 0.5rem 0.75rem;

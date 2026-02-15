@@ -8,35 +8,40 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { Bell as BellIcon } from 'lucide-vue-next'
-import { bookingApi } from '@/modules/booking/api/booking'
+import apiClient from '@/utils/apiClient'
 
 const unreadCount = ref(0)
+let pollTimer: ReturnType<typeof setInterval> | null = null
 
 async function loadUnreadCount() {
   try {
-    const data = await bookingApi.getBookingRequests({
-      status: 'pending',
-      page: 1,
-      page_size: 1,
-    })
+    const data = await apiClient.get('/v1/booking/requests/', {
+      params: { status: 'pending', page: 1, page_size: 1 },
+      meta: { skipLoader: true },
+    } as any)
     unreadCount.value = data.count || 0
   } catch (err) {
-    console.error('Failed to load unread count:', err)
+    // Silent fail — фоновий polling
   }
 }
 
 function toggleDropdown() {
-  // Navigate to booking requests page
   window.location.href = '/booking/requests'
 }
 
 onMounted(() => {
   loadUnreadCount()
-  
-  // Poll every 30 seconds
-  setInterval(loadUnreadCount, 30000)
+  // Poll кожні 60 секунд (замість 30)
+  pollTimer = setInterval(loadUnreadCount, 60000)
+})
+
+onUnmounted(() => {
+  if (pollTimer) {
+    clearInterval(pollTimer)
+    pollTimer = null
+  }
 })
 </script>
 

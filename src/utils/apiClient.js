@@ -53,7 +53,10 @@ api.interceptors.request.use(
   (config) => {
     const store = useAuthStore()
     const loader = useLoaderStore()
-    loader.start()
+    // Пропускаємо loader для фонових запитів (polling, тощо)
+    if (!config.meta?.skipLoader) {
+      loader.start()
+    }
 
     config.headers = config.headers || {}
     config.withCredentials = true
@@ -88,7 +91,9 @@ api.interceptors.request.use(
   },
   (error) => {
     const loader = useLoaderStore()
-    loader.stop()
+    if (!error?.config?.meta?.skipLoader) {
+      loader.stop()
+    }
     return Promise.reject(error)
   }
 )
@@ -96,7 +101,9 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (res) => {
     const loader = useLoaderStore()
-    loader.stop()
+    if (!res?.config?.meta?.skipLoader) {
+      loader.stop()
+    }
     
     if (res?.config?.meta?.fullResponse) {
       return res
@@ -105,7 +112,9 @@ api.interceptors.response.use(
   },
   async (error) => {
     const loader = useLoaderStore()
-    loader.stop()
+    if (!error?.config?.meta?.skipLoader) {
+      loader.stop()
+    }
     const store = useAuthStore()
     const original = error.config || {}
 

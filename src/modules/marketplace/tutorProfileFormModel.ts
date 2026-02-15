@@ -31,6 +31,10 @@ export type TutorProfileFormModel = {
   birth_year: number | null
   show_age: boolean
   telegram_username: string  // Private field, not shown to students
+  
+  // v1.0: City fields for discovery
+  city_code: string | null  // City code from geo.City reference table
+  is_city_public: boolean  // Whether to show city on public profile
 }
 
 function asString(v: unknown): string {
@@ -132,6 +136,10 @@ export function fromApi(profile: TutorProfileFull): TutorProfileFormModel {
     birth_year: asNullableNumber((profile as any)?.birth_year),
     show_age: asBool((profile as any)?.show_age, false),
     telegram_username: asString((profile as any)?.telegram_username).trim(),
+    
+    // v1.0: City fields from API (city object or direct fields)
+    city_code: (profile as any)?.city?.code || asString((profile as any)?.city_code).trim() || null,
+    is_city_public: asBool((profile as any)?.is_city_public, true),
   }
 }
 
@@ -161,6 +169,9 @@ export function toApi(model: TutorProfileFormModel): TutorProfilePatchPayload & 
     birth_year: model.birth_year,
     show_age: model.show_age,
     telegram_username: model.telegram_username || undefined,
+    // v1.0: City fields for API
+    city_code: model.city_code || undefined,
+    is_city_public: model.is_city_public,
   }
 
   // Explicitly ensure marketplace write payload does NOT include `photo`.

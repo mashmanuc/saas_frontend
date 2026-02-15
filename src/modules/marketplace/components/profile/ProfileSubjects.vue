@@ -66,7 +66,7 @@ const normalizedSubjects = computed(() => {
               <span
                 v-for="tag in groupTags"
                 :key="tag.code"
-                class="tag"
+                class="tag-display tag-display--neutral"
               >
                 {{ tag.label }}
               </span>
@@ -153,14 +153,7 @@ const normalizedSubjects = computed(() => {
   gap: 0.5rem;
 }
 
-.tag {
-  padding: 0.375rem 0.75rem;
-  background: var(--accent-bg, #eff6ff);
-  color: var(--accent-color, #2563eb);
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 500;
-}
+/* Tag стилі — використовуються глобальні .tag-display з main.css */
 
 .custom-text {
   margin-top: 1rem;
