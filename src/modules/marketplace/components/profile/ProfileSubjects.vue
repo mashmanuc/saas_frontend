@@ -12,6 +12,21 @@ const props = defineProps<Props>()
 
 const { t } = useI18n()
 
+/**
+ * v1.0: Визначити чи тег є форматом навчання (online/offline/hybrid)
+ * для особливого виділення на профілі
+ */
+function isFormatModeTag(tagCode: string): boolean {
+  return ['online', 'offline', 'hybrid'].includes(tagCode)
+}
+
+function getTagDisplayClass(tag: SpecialtyTagPublic): string {
+  if (tag.code === 'online') return 'tag-display--online'
+  if (tag.code === 'offline') return 'tag-display--offline'
+  if (tag.code === 'hybrid') return 'tag-display--hybrid'
+  return 'tag-display--neutral'
+}
+
 function groupTagsByGroup(tags: SpecialtyTagPublic[]): Record<TagGroup, SpecialtyTagPublic[]> {
   const grouped: Record<string, SpecialtyTagPublic[]> = {}
   
@@ -66,7 +81,7 @@ const normalizedSubjects = computed(() => {
               <span
                 v-for="tag in groupTags"
                 :key="tag.code"
-                class="tag-display tag-display--neutral"
+                :class="['tag-display', getTagDisplayClass(tag)]"
               >
                 {{ tag.label }}
               </span>

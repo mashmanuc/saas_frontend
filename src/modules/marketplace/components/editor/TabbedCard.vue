@@ -65,6 +65,26 @@ function handleDescriptionChange(event: Event) {
   const target = event.target as HTMLTextAreaElement
   emit('update:description', target.value)
 }
+
+/**
+ * v1.0: Отримати CSS клас для чіпа тега формату навчання
+ * online/offline/hybrid мають особливе виділення
+ */
+function getChipClass(tagCode: string): Record<string, boolean> {
+  const baseClass = { 'is-active': props.selectedTags.includes(tagCode) }
+  
+  if (tagCode === 'online') {
+    return { ...baseClass, 'chip--online': true }
+  }
+  if (tagCode === 'offline') {
+    return { ...baseClass, 'chip--offline': true }
+  }
+  if (tagCode === 'hybrid') {
+    return { ...baseClass, 'chip--hybrid': true }
+  }
+  
+  return baseClass
+}
 </script>
 
 <template>
@@ -118,7 +138,7 @@ function handleDescriptionChange(event: Event) {
             :key="tag.code"
             type="button"
             class="chip"
-            :class="{ 'is-active': selectedTags.includes(tag.code) }"
+            :class="getChipClass(tag.code)"
             @click="handleToggleTag(tag.code)"
           >
             {{ tag.title }}
