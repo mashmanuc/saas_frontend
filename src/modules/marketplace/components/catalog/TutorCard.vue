@@ -30,6 +30,9 @@ const headlineText = computed(() => {
 })
 
 const countryText = computed(() => {
+  // v1.0 fix: Show city_name if available, fallback to country
+  const city = props.tutor?.city_name
+  if (city) return city
   return toDisplayText(props.tutor?.country, t('common.notSpecified'))
 })
 

@@ -40,7 +40,13 @@ const headlineText = computed(() => {
   return typeof raw === 'string' && raw.trim().length > 0 ? raw : t('common.notSpecified')
 })
 
-const countryText = computed(() => t('common.notSpecified'))
+const countryText = computed(() => {
+  // v1.0 fix: Show city name if tutor opted in, fallback to country
+  const cityName = props.profile?.city_name_uk
+  if (cityName) return cityName
+  const country = props.profile?.country
+  return typeof country === 'string' && country.trim().length > 0 ? country : t('common.notSpecified')
+})
 const timezoneText = computed(() => props.profile?.availability_summary?.timezone || t('common.notSpecified'))
 
 const experienceYears = computed(() => {

@@ -324,7 +324,8 @@ const steps = computed<Array<{ id: EditorStepId; title: string }>>(() => [
   { id: 'subjects', title: t('marketplace.profile.editor.subjectsTitle') },
   { id: 'teaching-languages', title: t('marketplace.profile.editor.teachingLanguagesTitle') },
   { id: 'pricing', title: t('marketplace.profile.editor.pricingTitle') },
-  { id: 'video', title: t('marketplace.profile.editor.videoTitle') },
+  // v1.0: Video Intro hidden — not used on platform, contradicts platform logic
+  // { id: 'video', title: t('marketplace.profile.editor.videoTitle') },
   { id: 'privacy', title: t('marketplace.profile.editor.privacyTitle') },
   { id: 'lesson-links', title: t('marketplace.profile.editor.lessonLinksTitle') },
   { id: 'publish', title: t('marketplace.profile.publish') },
@@ -813,7 +814,7 @@ const stepCompletion = computed<Record<string, boolean>>(() => {
     subjects: f.subjects.length >= 1,
     'teaching-languages': (f.teaching_languages || []).length >= 1,
     pricing: f.hourly_rate > 0 && !!f.currency,
-    video: !!f.video_intro_url?.trim(),
+    video: true, // v1.0: Video Intro hidden — always complete to not block progress
     privacy: true,
     'lesson-links': true,
     publish: f.is_published,

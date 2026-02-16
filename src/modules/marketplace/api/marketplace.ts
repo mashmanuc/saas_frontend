@@ -306,6 +306,11 @@ export interface TutorProfileFull {
   slug: string
   user_id: number  // v0.60.1: tutor user ID for calendar
   user_name?: string  // P0.1: Privacy-safe name from API (format: "FirstName L.")
+  country?: string  // v1.0: Country code
+  city_code?: string | null  // v1.0: City code
+  city_name_uk?: string | null  // v1.0: City name (Ukrainian)
+  is_city_public?: boolean  // v1.0: Whether city is publicly visible
+  format?: string  // v1.0: Teaching format (online/offline/hybrid)
   bio: string
   headline: string
   education: Education[]
@@ -483,6 +488,7 @@ export interface TutorListItem {
   photo?: string
   headline: string
   country: string
+  city_name?: string | null  // v1.0: City name if tutor opted in
   hourly_rate: number
   currency: string
   average_rating: number
