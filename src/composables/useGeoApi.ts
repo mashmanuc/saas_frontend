@@ -23,13 +23,14 @@ export function useGeoApi() {
     error.value = null
     
     try {
-      const response = await api.get('/geo/cities/', {
+      // apiClient interceptor auto-unwraps res.data, so result is already the array
+      const cities = await api.get('/v1/geo/cities/', {
         params: {
           country: params.country,
           query: params.query
         }
       })
-      return response.data
+      return (cities as unknown as City[]) || []
     } catch (e) {
       error.value = 'Failed to fetch cities'
       return []
