@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // TASK MF8: ProfileHeader component
-import { ArrowLeft, MapPin, Clock, Star, Play } from 'lucide-vue-next'
+import { ArrowLeft, MapPin, Clock, Star, Play, User, GraduationCap, Calendar } from 'lucide-vue-next'
 import type { TutorProfileFull } from '../../api/marketplace'
 import { resolveMediaUrl } from '@/utils/media'
 import Rating from '../shared/Rating.vue'
@@ -53,6 +53,28 @@ const experienceYears = computed(() => {
   const n = Number((props.profile as any)?.experience_years)
   return Number.isFinite(n) ? n : 0
 })
+
+const genderText = computed(() => {
+  const g = props.profile?.gender
+  if (!g) return null
+  const map: Record<string, string> = {
+    'male': t('marketplace.profile.gender.male'),
+    'female': t('marketplace.profile.gender.female'),
+    'other': t('marketplace.profile.gender.other'),
+  }
+  return map[g.toLowerCase()] || g
+})
+
+const ageText = computed(() => {
+  const year = props.profile?.birth_year
+  if (!year) return null
+  const currentYear = new Date().getFullYear()
+  const age = currentYear - year
+  if (age < 0 || age > 120) return null
+  return t('marketplace.profile.age', { age })
+})
+
+const hasCertifications = computed(() => !!props.profile?.has_certifications)
 
 const emit = defineEmits<{
   (e: 'back'): void
@@ -110,6 +132,18 @@ const emit = defineEmits<{
                   ? t('marketplace.profile.experienceYears', { n: experienceYears })
                   : t('marketplace.profile.experienceYearsNotSpecified')
               }}
+            </div>
+            <div v-if="genderText" class="meta-item">
+              <User :size="16" />
+              {{ genderText }}
+            </div>
+            <div v-if="ageText" class="meta-item">
+              <Calendar :size="16" />
+              {{ ageText }}
+            </div>
+            <div v-if="hasCertifications" class="meta-item meta-badge">
+              <GraduationCap :size="16" />
+              {{ t('marketplace.profile.certified') }}
             </div>
           </div>
 
@@ -274,6 +308,11 @@ const emit = defineEmits<{
   color: var(--text-muted);
   word-wrap: break-word;
   overflow-wrap: break-word;
+}
+
+.meta-badge {
+  color: var(--accent-primary);
+  font-weight: 500;
 }
 
 .stats {

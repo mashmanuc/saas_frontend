@@ -317,7 +317,7 @@ function handleInquirySuccess() {
       :show="isInquiryModalOpen"
       :tutor="{
         id: currentProfile.user_id,
-        full_name: currentProfile.slug,
+        full_name: currentProfile.user_name || currentProfile.display_name || currentProfile.slug,
         avatar: currentProfile.media?.photo_url || '',
         subjects: currentProfile.subjects?.map(s => s.title) || [],
         min_hourly_rate: currentProfile.pricing?.hourly_rate

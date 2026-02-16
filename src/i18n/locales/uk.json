@@ -1438,6 +1438,13 @@
       "watchIntro": "Дивитись інтро",
       "experienceYears": "Стаж: {n} років",
       "experienceYearsNotSpecified": "Стаж: не вказано",
+      "certified": "Дипломований",
+      "age": "{age} років",
+      "gender": {
+        "male": "Чоловік",
+        "female": "Жінка",
+        "other": "Інше"
+      },
       "errors": {
         "headlineRequired": "Вкажіть заголовок.",
         "bioRequired": "Вкажіть опис про себе.",

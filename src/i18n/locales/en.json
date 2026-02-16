@@ -1198,6 +1198,13 @@
       "watchIntro": "Watch introduction",
       "experienceYears": "Experience: {n} years",
       "experienceYearsNotSpecified": "Experience: not specified",
+      "certified": "Certified",
+      "age": "{age} years old",
+      "gender": {
+        "male": "Male",
+        "female": "Female",
+        "other": "Other"
+      },
       "errors": {
         "headlineRequired": "Please enter a headline.",
         "bioRequired": "Please enter your bio.",

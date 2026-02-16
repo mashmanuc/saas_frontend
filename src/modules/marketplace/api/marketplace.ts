@@ -299,6 +299,14 @@ export type BadgeHistoryItem = {
 
 export type ProfileStatus = 'draft' | 'pending_review' | 'approved' | 'rejected' | 'suspended'
 
+// v1.0: Public certification (without file URL for privacy)
+export interface CertificationPublic {
+  id: number
+  title: string
+  issuer: string
+  issued_year: number | null
+}
+
 // v0.60.1: Full tutor profile (read)
 export interface TutorProfileFull {
   profile_version: number
@@ -306,11 +314,17 @@ export interface TutorProfileFull {
   slug: string
   user_id: number  // v0.60.1: tutor user ID for calendar
   user_name?: string  // P0.1: Privacy-safe name from API (format: "FirstName L.")
+  display_name?: string  // v1.0: Alias for user_name
   country?: string  // v1.0: Country code
   city_code?: string | null  // v1.0: City code
   city_name_uk?: string | null  // v1.0: City name (Ukrainian)
   is_city_public?: boolean  // v1.0: Whether city is publicly visible
   format?: string  // v1.0: Teaching format (online/offline/hybrid)
+  // v1.0: Privacy-aware personal data (only present if tutor opted in)
+  gender?: string | null  // Only if show_gender=true on backend
+  birth_year?: number | null  // Only if show_age=true on backend
+  has_certifications?: boolean  // Whether tutor has approved public certifications
+  certifications_public?: CertificationPublic[]  // Approved public certs (no file URLs)
   bio: string
   headline: string
   education: Education[]
@@ -489,6 +503,8 @@ export interface TutorListItem {
   headline: string
   country: string
   city_name?: string | null  // v1.0: City name if tutor opted in
+  gender?: string | null  // v1.0: Only if show_gender=true
+  has_certifications?: boolean  // v1.0: Whether tutor has approved public certifications
   hourly_rate: number
   currency: string
   average_rating: number
