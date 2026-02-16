@@ -11,11 +11,6 @@ import ProfileAbout from '../components/profile/ProfileAbout.vue'
 import ProfileEducation from '../components/profile/ProfileEducation.vue'
 import ProfileSubjects from '../components/profile/ProfileSubjects.vue'
 import ProfileReviews from '../components/profile/ProfileReviews.vue'
-import ProfileCtaStrip from '../components/profile/ProfileCtaStrip.vue'
-import CreateReviewModal from '../components/profile/CreateReviewModal.vue'
-import NewTutorCard from '../components/profile/NewTutorCard.vue'
-import DoubtCard from '../components/profile/DoubtCard.vue'
-import ProfileStickyBar from '../components/profile/ProfileStickyBar.vue'
 import LoadingSpinner from '@/ui/LoadingSpinner.vue'
 import NotFound from '@/ui/NotFound.vue'
 import TutorAvailabilityCalendar from '../components/TutorAvailabilityCalendar.vue'
@@ -43,24 +38,16 @@ const hasRelationWithTutor = computed(() => {
   if (!auth.isAuthenticated || auth.userRole !== 'student') return false
   if (!currentProfile.value?.user_id) return false
   const tutorId = String(currentProfile.value.user_id)
-  return relationsStore.relations.some(
-    r => r.tutor.id === tutorId && (r.status === 'active' || r.status === 'invited')
+  const store$ = relationsStore as any
+  const rels: any[] = store$.studentRelations || store$.relations || []
+  return rels.some(
+    (r: any) => String(r.tutor?.id) === tutorId && (r.status === 'active' || r.status === 'invited')
   )
 })
 
 const tutorUserId = computed(() => {
   if (!currentProfile.value?.user_id) return null
   return parseInt(currentProfile.value.user_id.toString())
-})
-
-const isNewTutor = computed(() => {
-  const reviews = currentProfile.value?.stats?.total_reviews || 0
-  const lessons = currentProfile.value?.stats?.total_lessons || 0
-  return reviews === 0 && lessons < 5
-})
-
-const tutorDisplayName = computed(() => {
-  return currentProfile.value?.user_name || currentProfile.value?.display_name || currentProfile.value?.slug || ''
 })
 
 const calendarRef = ref<HTMLElement | null>(null)
@@ -70,7 +57,12 @@ onMounted(() => {
     store.loadProfile(slug.value)
   }
   if (auth.isAuthenticated && auth.userRole === 'student') {
-    relationsStore.fetchRelations()
+    const store$ = relationsStore as any
+    if (typeof store$.fetchStudentRelations === 'function') {
+      store$.fetchStudentRelations()
+    } else if (typeof store$.fetchRelations === 'function') {
+      store$.fetchRelations()
+    }
   }
 })
 
@@ -200,11 +192,6 @@ function handleInquirySuccess() {
     <LoadingSpinner v-if="isLoadingProfile" class="loading" />
 
     <template v-else-if="currentProfile">
-      <!-- Platform message -->
-      <div class="platform-message">
-        {{ t('marketplace.profileV3.platformMessage') }}
-      </div>
-
       <!-- Hero with CTA -->
       <div class="profile-header-wrapper">
         <ProfileHero
@@ -248,12 +235,6 @@ function handleInquirySuccess() {
             :subjects="currentProfile.subjects"
           />
 
-          <!-- Repeat CTA strip after content -->
-          <ProfileCtaStrip
-            @inquiry="openInquiryModal"
-            @login-required="handleLoginRequired"
-          />
-
           <!-- Reviews section -->
           <ProfileReviews
             ref="reviewsRef"
@@ -264,13 +245,6 @@ function handleInquirySuccess() {
         </main>
 
         <aside class="profile-sidebar">
-          <!-- New tutor card (if no reviews/lessons) -->
-          <NewTutorCard
-            v-if="isNewTutor"
-            @inquiry="openInquiryModal"
-            @login-required="handleLoginRequired"
-          />
-
           <!-- Calendar section -->
           <section ref="calendarRef" class="profile-section cal-section" data-test="marketplace-availability">
             <TutorAvailabilityCalendar
@@ -283,25 +257,8 @@ function handleInquirySuccess() {
               <p>{{ $t('marketplace.profile.calendar.notConfigured') }}</p>
             </div>
           </section>
-
-          <!-- Doubt card — tertiary CTA -->
-          <DoubtCard
-            :tutor-name="tutorDisplayName"
-            @inquiry="openInquiryModal"
-            @login-required="handleLoginRequired"
-          />
         </aside>
       </div>
-
-      <!-- Sticky bar -->
-      <ProfileStickyBar
-        :tutor-name="tutorDisplayName"
-        :hourly-rate="currentProfile.pricing?.hourly_rate || 0"
-        :currency="currentProfile.pricing?.currency || 'UAH'"
-        :response-time-hours="currentProfile.stats?.response_time_hours"
-        @inquiry="openInquiryModal"
-        @login-required="handleLoginRequired"
-      />
     </template>
 
     <NotFound
@@ -354,16 +311,6 @@ function handleInquirySuccess() {
   display: flex;
   justify-content: center;
   padding: 4rem;
-}
-
-.platform-message {
-  text-align: center;
-  padding: 1rem 0 0.75rem;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  max-width: 1060px;
-  margin: 0 auto;
 }
 
 .profile-layout {
