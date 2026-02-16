@@ -7,7 +7,6 @@ import { useMarketplaceStore } from '../stores/marketplaceStore'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { useRelationsStore } from '@/stores/relationsStore'
 import ProfileHero from '../components/profile/ProfileHero.vue'
-import PlatformStatBar from '../components/profile/PlatformStatBar.vue'
 import ProfileAbout from '../components/profile/ProfileAbout.vue'
 import ProfileEducation from '../components/profile/ProfileEducation.vue'
 import ProfileSubjects from '../components/profile/ProfileSubjects.vue'
@@ -206,11 +205,6 @@ function handleInquirySuccess() {
         {{ t('marketplace.profileV3.platformMessage') }}
       </div>
 
-      <!-- Platform stat bar -->
-      <div class="stat-bar-wrap">
-        <PlatformStatBar />
-      </div>
-
       <!-- Hero with CTA -->
       <div class="profile-header-wrapper">
         <ProfileHero
@@ -370,12 +364,6 @@ function handleInquirySuccess() {
   color: var(--text-secondary);
   max-width: 1060px;
   margin: 0 auto;
-}
-
-.stat-bar-wrap {
-  max-width: 1060px;
-  margin: 0 auto;
-  padding: 0 1rem;
 }
 
 .profile-layout {
