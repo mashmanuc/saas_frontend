@@ -78,8 +78,10 @@ watch(
       <Rating :value="averageRating ?? 0" :count="totalReviews ?? 0" />
     </div>
 
-    <div v-if="!isLoading && reviews.length === 0" class="empty" data-test="marketplace-reviews-empty">
-      {{ t('marketplace.profile.reviews.empty') }}
+    <div v-if="!isLoading && reviews.length === 0" class="empty-reframe" data-test="marketplace-reviews-empty">
+      <div class="frp-headline">{{ t('marketplace.profileV3.reviews.emptyHeadline') }}</div>
+      <p class="frp-sub">{{ t('marketplace.profileV3.reviews.emptySub') }}</p>
+      <div class="frp-incentive">{{ t('marketplace.profileV3.reviews.incentive') }}</div>
     </div>
 
     <div v-else class="list" data-test="marketplace-reviews-list">
@@ -127,8 +129,31 @@ watch(
   color: var(--text-primary);
 }
 
-.empty {
-  color: var(--text-muted);
+.empty-reframe {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border-radius: 12px;
+  padding: 1rem 1.125rem;
+}
+.frp-headline {
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+.frp-sub {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  line-height: 1.55;
+  margin: 0 0 0.75rem;
+}
+.frp-incentive {
+  font-size: 0.75rem;
+  color: var(--accent);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
 }
 
 .list {

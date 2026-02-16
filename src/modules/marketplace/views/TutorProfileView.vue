@@ -6,15 +6,17 @@ import { storeToRefs } from 'pinia'
 import { useMarketplaceStore } from '../stores/marketplaceStore'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { useTrustStore } from '@/stores/trustStore'
-import ProfileHeader from '../components/profile/ProfileHeader.vue'
+import ProfileHero from '../components/profile/ProfileHero.vue'
+import PlatformStatBar from '../components/profile/PlatformStatBar.vue'
 import ProfileAbout from '../components/profile/ProfileAbout.vue'
 import ProfileEducation from '../components/profile/ProfileEducation.vue'
 import ProfileSubjects from '../components/profile/ProfileSubjects.vue'
-import ProfileBadges from '../components/profile/ProfileBadges.vue'
-import TutorBadgeHistory from '../components/profile/TutorBadgeHistory.vue'
 import ProfileReviews from '../components/profile/ProfileReviews.vue'
+import ProfileCtaStrip from '../components/profile/ProfileCtaStrip.vue'
 import CreateReviewModal from '../components/profile/CreateReviewModal.vue'
-import ProfileContact from '../components/profile/ProfileContact.vue'
+import NewTutorCard from '../components/profile/NewTutorCard.vue'
+import DoubtCard from '../components/profile/DoubtCard.vue'
+import ProfileStickyBar from '../components/profile/ProfileStickyBar.vue'
 import LoadingSpinner from '@/ui/LoadingSpinner.vue'
 import NotFound from '@/ui/NotFound.vue'
 import TutorAvailabilityCalendar from '../components/TutorAvailabilityCalendar.vue'
@@ -46,6 +48,18 @@ const tutorUserId = computed(() => {
   return parseInt(currentProfile.value.user_id.toString())
 })
 
+const isNewTutor = computed(() => {
+  const reviews = currentProfile.value?.stats?.total_reviews || 0
+  const lessons = currentProfile.value?.stats?.total_lessons || 0
+  return reviews === 0 && lessons < 5
+})
+
+const tutorDisplayName = computed(() => {
+  return currentProfile.value?.user_name || currentProfile.value?.display_name || currentProfile.value?.slug || ''
+})
+
+const calendarRef = ref<HTMLElement | null>(null)
+
 onMounted(() => {
   if (slug.value) {
     store.loadProfile(slug.value)
@@ -58,9 +72,8 @@ watch(slug, (newSlug) => {
   }
 })
 
-function handleMessage() {
-  // TODO: Implement messaging functionality
-  return
+function scrollToCalendar() {
+  calendarRef.value?.scrollIntoView({ behavior: 'smooth', block: 'center' })
 }
 
 function handleLoginRequired() {
@@ -200,9 +213,27 @@ function handleInquirySuccess() {
     <LoadingSpinner v-if="isLoadingProfile" class="loading" />
 
     <template v-else-if="currentProfile">
+      <!-- Platform message -->
+      <div class="platform-message">
+        {{ t('marketplace.profileV3.platformMessage') }}
+      </div>
+
+      <!-- Platform stat bar -->
+      <div class="stat-bar-wrap">
+        <PlatformStatBar />
+      </div>
+
+      <!-- Hero with CTA -->
       <div class="profile-header-wrapper">
-        <ProfileHeader :profile="currentProfile" @back="goBack" />
-        
+        <ProfileHero
+          :profile="currentProfile"
+          @back="goBack"
+          @inquiry="openInquiryModal"
+          @login-required="handleLoginRequired"
+          @scroll-calendar="scrollToCalendar"
+          @ask-question="openInquiryModal"
+        />
+
         <div v-if="canAccessProfileActions" class="profile-actions-menu">
           <button 
             class="actions-menu-btn"
@@ -222,6 +253,7 @@ function handleInquirySuccess() {
         </div>
       </div>
 
+      <!-- Content Grid: left (main) + right (sidebar) -->
       <div class="profile-layout">
         <main class="profile-main">
           <ProfileAbout :bio="currentProfile.bio" />
@@ -236,10 +268,31 @@ function handleInquirySuccess() {
             :subjects="currentProfile.subjects"
           />
 
-          <!-- Availability Section v0.59 - Real Calendar -->
-          <section class="profile-section" data-test="marketplace-availability">
-            <h2 class="section-title">{{ $t('marketplace.calendar.title') }}</h2>
-            <p class="section-note">{{ $t('marketplace.calendar.infoNote') }}</p>
+          <!-- Repeat CTA strip after content -->
+          <ProfileCtaStrip
+            @scroll-calendar="scrollToCalendar"
+            @login-required="handleLoginRequired"
+          />
+
+          <!-- Reviews section -->
+          <ProfileReviews
+            ref="reviewsRef"
+            :slug="slug"
+            :average-rating="currentProfile.stats?.average_rating || 0"
+            :total-reviews="currentProfile.stats?.total_reviews || 0"
+          />
+        </main>
+
+        <aside class="profile-sidebar">
+          <!-- New tutor card (if no reviews/lessons) -->
+          <NewTutorCard
+            v-if="isNewTutor"
+            @scroll-calendar="scrollToCalendar"
+            @login-required="handleLoginRequired"
+          />
+
+          <!-- Calendar section -->
+          <section ref="calendarRef" class="profile-section cal-section" data-test="marketplace-availability">
             <TutorAvailabilityCalendar
               v-if="currentProfile.user_id && currentProfile.availability_summary?.timezone"
               :tutor-id="currentProfile.user_id"
@@ -251,42 +304,25 @@ function handleInquirySuccess() {
             </div>
           </section>
 
-          <!-- Reviews section placeholder -->
-          <section class="profile-section">
-            <!-- TODO: Uncomment when review system is fully implemented (source_lesson_id, booking selection)
-            <div class="reviews-header">
-              <button
-                v-if="canWriteReview"
-                type="button"
-                class="btn btn-secondary"
-                data-test="marketplace-write-review"
-                @click="openCreateReview"
-              >
-                {{ $t('marketplace.profile.reviews.write.title') }}
-              </button>
-            </div>
-            -->
-
-            <ProfileReviews
-              ref="reviewsRef"
-              :slug="slug"
-              :average-rating="currentProfile.stats?.average_rating || 0"
-              :total-reviews="currentProfile.stats?.total_reviews || 0"
-            />
-          </section>
-        </main>
-
-        <aside class="profile-sidebar">
-          <ProfileContact
-            :profile="currentProfile"
-            @message="handleMessage"
+          <!-- Doubt card — tertiary CTA -->
+          <DoubtCard
+            :tutor-name="tutorDisplayName"
             @inquiry="openInquiryModal"
             @login-required="handleLoginRequired"
           />
-
-          <!-- Note: TutorProfileFull doesn't have badges or badges_history fields -->
         </aside>
       </div>
+
+      <!-- Sticky bar -->
+      <ProfileStickyBar
+        :tutor-name="tutorDisplayName"
+        :hourly-rate="currentProfile.pricing?.hourly_rate || 0"
+        :currency="currentProfile.pricing?.currency || 'UAH'"
+        :response-time-hours="currentProfile.stats?.response_time_hours"
+        @scroll-calendar="scrollToCalendar"
+        @inquiry="openInquiryModal"
+        @login-required="handleLoginRequired"
+      />
     </template>
 
     <NotFound
@@ -332,6 +368,7 @@ function handleInquirySuccess() {
 .profile-view {
   min-height: 100vh;
   background: var(--surface-marketplace);
+  padding-bottom: 4rem;
 }
 
 .loading {
@@ -340,45 +377,60 @@ function handleInquirySuccess() {
   padding: 4rem;
 }
 
-.profile-layout {
-  max-width: 1200px;
+.platform-message {
+  text-align: center;
+  padding: 1rem 0 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  max-width: 1060px;
   margin: 0 auto;
-  padding: 1rem;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 1rem;
 }
 
-@media (max-width: 968px) {
+.stat-bar-wrap {
+  max-width: 1060px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.profile-layout {
+  max-width: 1060px;
+  margin: 0 auto;
+  padding: 0 1rem;
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
   .profile-layout {
     grid-template-columns: 1fr;
-  }
-
-  .profile-sidebar {
-    order: -1;
   }
 }
 
 .profile-main {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem;
 }
 
 .profile-sidebar {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem;
 }
 
 .profile-section {
   background: var(--surface-card);
   border-radius: var(--radius-lg);
-  padding: 1rem;
-  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  padding: 1.375rem 1.5rem;
+  box-shadow: var(--shadow-sm, 0 1px 8px rgba(0,0,0,0.06));
   word-wrap: break-word;
   overflow-wrap: break-word;
   overflow: hidden;
+  animation: fadeUp 0.35s ease 0.15s both;
 }
 
 .profile-section h2 {
@@ -389,21 +441,8 @@ function handleInquirySuccess() {
   overflow-wrap: break-word;
 }
 
-.reviews-header {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 0.75rem;
-}
-
-.availability-section {
-  background: var(--surface-card);
-  border-radius: var(--radius-lg);
-  padding: var(--space-xl);
-  box-shadow: var(--shadow-sm);
-}
-
-.mt-4 {
-  margin-top: 1.5rem;
+.cal-section {
+  padding: 1.375rem;
 }
 
 .calendar-empty {
@@ -413,4 +452,8 @@ function handleInquirySuccess() {
   font-style: italic;
 }
 
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 </style>

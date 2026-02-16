@@ -1445,6 +1445,58 @@
         "notConfigured": "Календар ще не налаштовано"
       }
     },
+    "profileV3": {
+      "platformMessage": "M4SH — verified tutors for students who want results",
+      "statBar": {
+        "activeStudents": "active students",
+        "platformAlive": "— platform is alive",
+        "avgRating": "average tutor rating",
+        "strictSelection": "— strict selection",
+        "continueAfterFirst": "continue after 1st lesson",
+        "minimalRisk": "— minimal risk"
+      },
+      "hero": {
+        "experience": "{n} years experience",
+        "expYears": "{n} years of practice",
+        "respondsIn": "Responds in {hours}h",
+        "verified": "Verified by M4SH",
+        "contactsChecked": "Contacts verified"
+      },
+      "cta": {
+        "uah": "UAH",
+        "hour": "hr",
+        "step1": "Pick a time in the calendar ↓",
+        "step2": "Send a request — it's free",
+        "step3": "First lesson risk-free",
+        "bookLesson": "Book a lesson",
+        "askFirst": "Ask first",
+        "freeNote": "Request is free and non-binding"
+      },
+      "ctaStrip": {
+        "slotsThisWeek": "Available slots this week: {n}",
+        "nearest": "Nearest — {slot}",
+        "pickTime": "Pick a time"
+      },
+      "sticky": {
+        "book": "Book"
+      },
+      "newTutor": {
+        "badge": "New tutor",
+        "description": "Rating is formed after first lessons. New tutors are the most motivated: every lesson matters to them.",
+        "guarantee": "M4SH verified tutor's documents and contacts",
+        "pickTime": "Pick a time in the calendar"
+      },
+      "doubt": {
+        "label": "Have a question before the lesson?",
+        "text": "Write to {name} directly — no booking, no obligations.",
+        "cta": "Ask a question"
+      },
+      "reviews": {
+        "emptyHeadline": "First reviews are coming",
+        "emptySub": "This tutor is just starting on the platform. First students shape the reputation — and usually get the most attention.",
+        "incentive": "🎁 Your review will help other students choose"
+      }
+    },
     "draft": {
       "conflictTitle": "Change conflict",
       "conflictDescription": "Your local changes conflict with the server version. Choose a resolution strategy.",
