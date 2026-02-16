@@ -195,7 +195,7 @@ async function loadAvailability() {
     clampWeekStartToAllowedRange()
     const response = await marketplaceApi.getTutorCalendar({
       tutorId: props.tutorId,
-      weekStart: weekStart.value.toISOString().split('T')[0],
+      weekStart: toLocalDateString(weekStart.value),
       timezone: props.timezone,
     })
     
@@ -311,6 +311,13 @@ function formatTime(utcTime: string): string {
 function getSlotAriaLabel(slot: CalendarSlot): string {
   const time = formatTime(slot.start_at)
   return t('marketplace.calendar.bookSlotAria', { time })
+}
+
+function toLocalDateString(d: Date): string {
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 // Нормалізація більше не потрібна - бекенд повертає правильний контракт

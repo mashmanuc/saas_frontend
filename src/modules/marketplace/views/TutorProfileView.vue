@@ -5,7 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useMarketplaceStore } from '../stores/marketplaceStore'
 import { useAuthStore } from '@/modules/auth/store/authStore'
-import { useTrustStore } from '@/stores/trustStore'
+import { useRelationsStore } from '@/stores/relationsStore'
 import ProfileHero from '../components/profile/ProfileHero.vue'
 import PlatformStatBar from '../components/profile/PlatformStatBar.vue'
 import ProfileAbout from '../components/profile/ProfileAbout.vue'
@@ -29,7 +29,7 @@ const route = useRoute()
 const router = useRouter()
 const store = useMarketplaceStore()
 const auth = useAuthStore()
-const trustStore = useTrustStore()
+const relationsStore = useRelationsStore()
 const { t } = useI18n()
 const { currentProfile, isLoadingProfile, error } = storeToRefs(store)
 
@@ -40,8 +40,14 @@ const isReportModalOpen = ref(false)
 const showActionsMenu = ref(false)
 const isInquiryModalOpen = ref(false)
 
-const canWriteReview = computed(() => auth.isAuthenticated && auth.userRole === 'student')
-const canAccessProfileActions = computed(() => auth.isAuthenticated && auth.userRole === 'student')
+const hasRelationWithTutor = computed(() => {
+  if (!auth.isAuthenticated || auth.userRole !== 'student') return false
+  if (!currentProfile.value?.user_id) return false
+  const tutorId = String(currentProfile.value.user_id)
+  return relationsStore.relations.some(
+    r => r.tutor.id === tutorId && (r.status === 'active' || r.status === 'invited')
+  )
+})
 
 const tutorUserId = computed(() => {
   if (!currentProfile.value?.user_id) return null
@@ -64,6 +70,9 @@ onMounted(() => {
   if (slug.value) {
     store.loadProfile(slug.value)
   }
+  if (auth.isAuthenticated && auth.userRole === 'student') {
+    relationsStore.fetchRelations()
+  }
 })
 
 watch(slug, (newSlug) => {
@@ -71,10 +80,6 @@ watch(slug, (newSlug) => {
     store.loadProfile(newSlug)
   }
 })
-
-function scrollToCalendar() {
-  calendarRef.value?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-}
 
 function handleLoginRequired() {
   // Redirect to login with return URL
@@ -87,6 +92,7 @@ function goBack() {
 }
 
 function openCreateReview() {
+  showActionsMenu.value = false
   isCreateReviewOpen.value = true
 }
 
@@ -105,24 +111,6 @@ function handleOpenActionsMenu() {
 function handleReport() {
   showActionsMenu.value = false
   isReportModalOpen.value = true
-}
-
-async function handleBlock() {
-  if (!tutorUserId.value) return
-  
-  showActionsMenu.value = false
-  
-  if (confirm(t('trust.block.confirmMessage'))) {
-    try {
-      await trustStore.blockUser({
-        user_id: tutorUserId.value,
-        reason: 'Blocked from tutor profile'
-      })
-      router.push('/marketplace')
-    } catch (err) {
-      console.error('Block error:', err)
-    }
-  }
 }
 
 function handleReportSuccess() {
@@ -230,11 +218,9 @@ function handleInquirySuccess() {
           @back="goBack"
           @inquiry="openInquiryModal"
           @login-required="handleLoginRequired"
-          @scroll-calendar="scrollToCalendar"
-          @ask-question="openInquiryModal"
         />
 
-        <div v-if="canAccessProfileActions" class="profile-actions-menu">
+        <div v-if="hasRelationWithTutor" class="profile-actions-menu">
           <button 
             class="actions-menu-btn"
             @click="handleOpenActionsMenu"
@@ -246,8 +232,8 @@ function handleInquirySuccess() {
             <button class="menu-item" @click="handleReport">
               {{ t('trust.report.action') }}
             </button>
-            <button class="menu-item" @click="handleBlock">
-              {{ t('trust.block.action') }}
+            <button class="menu-item" @click="openCreateReview">
+              {{ t('reviews.writeReview') }}
             </button>
           </div>
         </div>
@@ -270,7 +256,7 @@ function handleInquirySuccess() {
 
           <!-- Repeat CTA strip after content -->
           <ProfileCtaStrip
-            @scroll-calendar="scrollToCalendar"
+            @inquiry="openInquiryModal"
             @login-required="handleLoginRequired"
           />
 
@@ -287,7 +273,7 @@ function handleInquirySuccess() {
           <!-- New tutor card (if no reviews/lessons) -->
           <NewTutorCard
             v-if="isNewTutor"
-            @scroll-calendar="scrollToCalendar"
+            @inquiry="openInquiryModal"
             @login-required="handleLoginRequired"
           />
 
@@ -319,7 +305,6 @@ function handleInquirySuccess() {
         :hourly-rate="currentProfile.pricing?.hourly_rate || 0"
         :currency="currentProfile.pricing?.currency || 'UAH'"
         :response-time-hours="currentProfile.stats?.response_time_hours"
-        @scroll-calendar="scrollToCalendar"
         @inquiry="openInquiryModal"
         @login-required="handleLoginRequired"
       />

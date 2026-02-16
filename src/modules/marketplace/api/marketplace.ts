@@ -1342,7 +1342,7 @@ function normalizeWeekStart(raw?: string): string {
   const day = parsed.getDay() // 0-6, Sunday=0
   const diff = day === 0 ? -6 : 1 - day
   parsed.setDate(parsed.getDate() + diff)
-  return parsed.toISOString().split('T')[0]
+  return toLocalDateStr(parsed)
 }
 
 function getCurrentMondayISO(): string {
@@ -1350,7 +1350,14 @@ function getCurrentMondayISO(): string {
   const day = today.getDay()
   const diff = day === 0 ? -6 : 1 - day
   today.setDate(today.getDate() + diff)
-  return today.toISOString().split('T')[0]
+  return toLocalDateStr(today)
+}
+
+function toLocalDateStr(d: Date): string {
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 function getBrowserTimezone(): string {

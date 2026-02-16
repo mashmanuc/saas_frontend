@@ -9,7 +9,7 @@ const auth = useAuthStore()
 const isAuthenticated = computed(() => auth.isAuthenticated)
 
 const emit = defineEmits<{
-  (e: 'scroll-calendar'): void
+  (e: 'inquiry'): void
   (e: 'login-required'): void
 }>()
 
@@ -17,7 +17,7 @@ function handleClick() {
   if (!isAuthenticated.value) {
     emit('login-required')
   } else {
-    emit('scroll-calendar')
+    emit('inquiry')
   }
 }
 </script>

@@ -42,7 +42,7 @@ function handleBook() {
   if (!isAuthenticated.value) {
     emit('login-required')
   } else {
-    emit('scroll-calendar')
+    emit('inquiry')
   }
 }
 

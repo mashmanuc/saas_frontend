@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M4SH — Віктор Л.</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #1DB954;
+    --green-dark: #158f3e;
+    --green-light: #edf9f2;
+    --green-mid: #c8ecd8;
+    --bg: #f5f7f6;
+    --text: #111816;
+    --muted: #7a9186;
+    --border: #e0ece5;
+    --white: #ffffff;
+    --shadow: 0 1px 8px rgba(0,0,0,0.06);
+    --radius: 18px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Manrope', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+  }
+
+  /* ─── SIDEBAR ─── */
+  .sidebar {
+    width: 216px; min-height: 100vh;
+    background: var(--white);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    padding: 24px 14px;
+    position: fixed; top: 0; left: 0; bottom: 0; z-index: 10;
+  }
+  .logo {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 17px; font-weight: 900; color: var(--green);
+    margin-bottom: 32px; padding: 0 8px; letter-spacing: -0.5px;
+  }
+  .logo span { color: var(--text); }
+  .nav-item {
+    display: flex; align-items: center; gap: 9px;
+    padding: 9px 12px; border-radius: 10px;
+    font-size: 13px; font-weight: 600; color: var(--muted);
+    cursor: pointer; margin-bottom: 2px; text-decoration: none;
+    transition: all 0.15s;
+  }
+  .nav-item:hover { background: var(--green-light); color: var(--green-dark); }
+  .nav-item.active { background: var(--green-light); color: var(--green-dark); }
+
+  /* ─── TOPBAR ─── */
+  .topbar {
+    position: fixed; top: 0; left: 216px; right: 0;
+    height: 52px; background: var(--white);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center;
+    padding: 0 28px; z-index: 9;
+  }
+  .breadcrumb {
+    font-size: 13px; color: var(--muted); font-weight: 500;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .breadcrumb a { color: var(--muted); text-decoration: none; }
+  .breadcrumb a:hover { color: var(--green-dark); }
+  .bc-sep { color: var(--border); }
+  .bc-current { color: var(--text); font-weight: 700; }
+  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .avatar-sm {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--green); display: flex; align-items: center;
+    justify-content: center; font-size: 12px; font-weight: 800; color: white;
+  }
+
+  /* ─── LAYOUT ─── */
+  .main { margin-left: 216px; padding-top: 52px; flex: 1; }
+  .page { max-width: 1060px; margin: 0 auto; padding: 32px 28px 80px; }
+
+  /* ─── HERO ─── */
+  .hero {
+    background: var(--white); border-radius: var(--radius);
+    border: 1px solid var(--border); box-shadow: var(--shadow);
+    padding: 32px 36px; margin-bottom: 20px;
+    display: grid; grid-template-columns: auto 1fr 260px; gap: 24px;
+    align-items: start;
+  }
+
+  .avatar-wrap { position: relative; flex-shrink: 0; }
+  .avatar-main {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: var(--green-mid);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; font-weight: 800; color: var(--green-dark);
+    border: 2.5px solid var(--green-mid);
+  }
+  .online-dot {
+    position: absolute; bottom: 3px; right: 3px;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--green); border: 2px solid white;
+  }
+  @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(29,185,84,.4)} 50%{box-shadow:0 0 0 5px rgba(29,185,84,0)} }
+  .online-dot { animation: pulse 2.5s infinite; }
+
+  .hero-info {}
+  .hero-name {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 22px; font-weight: 700; color: var(--text);
+    margin-bottom: 3px; line-height: 1.2;
+  }
+  .hero-sub {
+    font-size: 14px; color: var(--muted); font-weight: 500; margin-bottom: 14px;
+  }
+
+  /* VALUE PROP — одна чітка фраза, без зеленого фону */
+  .value-prop {
+    font-size: 15px; font-weight: 700; color: var(--text);
+    line-height: 1.5; margin-bottom: 14px;
+    padding-left: 14px;
+    border-left: 3px solid var(--green);
+  }
+
+  .hero-meta {
+    display: flex; flex-wrap: wrap; gap: 14px;
+    font-size: 12.5px; color: var(--muted); font-weight: 600;
+  }
+  .meta-item { display: flex; align-items: center; gap: 4px; }
+
+  /* TRUST — тільки 2, мінімальні */
+  .trust-row { display: flex; gap: 8px; margin-top: 14px; }
+  .trust-chip {
+    font-size: 11.5px; font-weight: 700; color: var(--muted);
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 20px; padding: 4px 10px;
+  }
+  .trust-chip.platform {
+    color: var(--green-dark); background: var(--green-light);
+    border-color: var(--green-mid);
+  }
+
+  /* ─── CTA BLOCK — Fix #1: 1 primary, 1 ghost secondary ─── */
+  .cta-block {
+    background: var(--white); border: 1.5px solid var(--border);
+    border-radius: 16px; padding: 24px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .price-row { display: flex; align-items: baseline; gap: 5px; margin-bottom: 2px; }
+  .price-big {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 28px; font-weight: 900; color: var(--text); letter-spacing: -1px;
+  }
+  .price-per { font-size: 13px; color: var(--muted); font-weight: 600; }
+
+  /* process — 3 рядки, тихі */
+  .process {
+    display: flex; flex-direction: column; gap: 5px;
+    font-size: 12px; font-weight: 600; color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .proc-row { display: flex; align-items: center; gap: 7px; }
+  .proc-n {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--green-light); color: var(--green-dark);
+    font-size: 9px; font-weight: 900;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+
+  /* PRIMARY — повний акцент */
+  .btn-primary {
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    background: var(--green); color: white; border: none;
+    border-radius: 11px; padding: 13px 18px;
+    font-size: 14.5px; font-weight: 700; cursor: pointer; width: 100%;
+    transition: background .15s, transform .15s, box-shadow .15s;
+    font-family: 'Manrope', sans-serif;
+    box-shadow: 0 3px 12px rgba(29,185,84,.3);
+  }
+  .btn-primary:hover {
+    background: var(--green-dark); transform: translateY(-1px);
+    box-shadow: 0 5px 20px rgba(29,185,84,.4);
+  }
+
+  /* SECONDARY — ghost, значно слабший */
+  .btn-ghost {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    background: transparent; color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 11px; padding: 10px 18px;
+    font-size: 13px; font-weight: 600; cursor: pointer; width: 100%;
+    transition: all .15s; font-family: 'Manrope', sans-serif;
+  }
+  .btn-ghost:hover { border-color: var(--green-mid); color: var(--green-dark); background: var(--green-light); }
+
+  .free-note {
+    text-align: center; font-size: 11px; color: var(--muted); font-weight: 600;
+  }
+  .free-note b { color: var(--green-dark); }
+
+  /* ─── FIX #2: STAT BAR — одна стрічка, з контекстом ─── */
+  .stat-bar {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: 14px; padding: 14px 24px;
+    display: flex; align-items: center; gap: 0;
+    margin-bottom: 20px; box-shadow: var(--shadow);
+  }
+  .stat-item {
+    flex: 1; text-align: center;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .stat-item + .stat-item {
+    border-left: 1px solid var(--border);
+  }
+  .stat-val { font-size: 17px; font-weight: 800; color: var(--text); line-height: 1; }
+  .stat-ctx { font-size: 11px; font-weight: 600; color: var(--muted); line-height: 1.3; }
+  /* Що означає для студента */
+  .stat-meaning { font-size: 10.5px; font-weight: 700; color: var(--green-dark); }
+
+  /* ─── CONTENT GRID ─── */
+  .content-grid {
+    display: grid; grid-template-columns: 1fr 280px; gap: 20px; align-items: start;
+  }
+  .left-col { display: flex; flex-direction: column; gap: 20px; }
+  .right-col { display: flex; flex-direction: column; gap: 20px; }
+
+  /* ─── CARDS ─── */
+  .card {
+    background: var(--white); border-radius: var(--radius);
+    border: 1px solid var(--border); box-shadow: var(--shadow);
+    padding: 24px 28px;
+  }
+  .card-title {
+    font-size: 14px; font-weight: 800; color: var(--text);
+    margin-bottom: 14px; display: flex; align-items: center; gap: 7px;
+  }
+
+  .about-text {
+    font-size: 14px; color: #3d5045; line-height: 1.75; font-weight: 500;
+  }
+
+  .subjects-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .subj-tag {
+    background: var(--green-light); color: var(--green-dark);
+    border: 1px solid var(--green-mid); border-radius: 9px;
+    padding: 7px 13px; font-size: 13px; font-weight: 700;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .fmt-badge {
+    background: var(--green); color: white;
+    border-radius: 5px; padding: 2px 7px;
+    font-size: 10.5px; font-weight: 700;
+  }
+
+  /* ─── REPEAT CTA STRIP ─── */
+  .cta-strip {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: 14px; padding: 18px 22px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    box-shadow: var(--shadow);
+  }
+  .strip-text { font-size: 13.5px; font-weight: 700; color: var(--text); }
+  .strip-sub { font-size: 12px; color: var(--muted); font-weight: 600; margin-top: 2px; }
+  .btn-strip {
+    background: var(--green); color: white; border: none;
+    border-radius: 10px; padding: 10px 18px;
+    font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap;
+    transition: background .15s; font-family: 'Manrope', sans-serif;
+  }
+  .btn-strip:hover { background: var(--green-dark); }
+
+  /* ─── FIX #5: REVIEWS — переосмислений порожній стан ─── */
+  .reviews-reframe {
+    background: var(--white); border-radius: var(--radius);
+    border: 1px solid var(--border); box-shadow: var(--shadow);
+    padding: 24px 28px;
+  }
+  .reviews-reframe .card-title { margin-bottom: 16px; }
+  .first-review-prompt {
+    background: var(--green-light); border-radius: 12px;
+    padding: 16px 18px; margin-bottom: 0;
+  }
+  .frp-headline {
+    font-size: 14px; font-weight: 800; color: var(--text); margin-bottom: 4px;
+  }
+  .frp-sub {
+    font-size: 12.5px; color: var(--muted); font-weight: 600; line-height: 1.55; margin-bottom: 12px;
+  }
+  .frp-incentive {
+    font-size: 12px; color: var(--green-dark); font-weight: 700;
+    display: flex; align-items: center; gap: 5px; margin-bottom: 12px;
+  }
+  .btn-frp {
+    background: var(--white); color: var(--green-dark);
+    border: 1.5px solid var(--green-mid);
+    border-radius: 9px; padding: 9px 16px;
+    font-size: 13px; font-weight: 700; cursor: pointer;
+    transition: all .15s; font-family: 'Manrope', sans-serif;
+  }
+  .btn-frp:hover { background: var(--green-mid); }
+
+  /* ─── FIX #4: NEW TUTOR CARD — без зірок, без конфлікту ─── */
+  .new-tutor-card {
+    background: var(--white); border-radius: var(--radius);
+    border: 1px solid var(--border); box-shadow: var(--shadow);
+    padding: 20px 22px;
+  }
+  .nt-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--green); color: white;
+    border-radius: 6px; padding: 3px 9px;
+    font-size: 11px; font-weight: 800; margin-bottom: 10px;
+  }
+  .nt-text {
+    font-size: 13px; color: var(--muted); font-weight: 600; line-height: 1.6;
+    margin-bottom: 14px;
+  }
+  /* Жодних зірок, жодного рейтингу — без конфлікту */
+  .nt-guarantee {
+    font-size: 12px; font-weight: 700; color: var(--green-dark);
+    display: flex; align-items: center; gap: 5px;
+    padding: 8px 12px; background: var(--green-light);
+    border-radius: 8px; margin-bottom: 12px;
+  }
+
+  /* ─── CALENDAR ─── */
+  .cal-card {
+    background: var(--white); border-radius: var(--radius);
+    border: 1px solid var(--border); box-shadow: var(--shadow);
+    padding: 22px 22px 20px;
+  }
+  .cal-title {
+    font-size: 14px; font-weight: 800; color: var(--text);
+    margin-bottom: 12px; display: flex; align-items: center; gap: 6px;
+  }
+  .cal-urgency {
+    font-size: 11.5px; font-weight: 700; color: #b45309;
+    background: #fef3c7; border: 1px solid #fde68a;
+    border-radius: 7px; padding: 6px 10px; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .cal-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .cal-period { font-size: 13px; font-weight: 700; color: var(--text); }
+  .cal-btn {
+    width: 26px; height: 26px; border-radius: 7px;
+    background: var(--green-light); border: 1px solid var(--green-mid);
+    color: var(--green-dark); font-size: 14px; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all .15s;
+  }
+  .cal-btn:hover { background: var(--green); color: white; }
+
+  .cal-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 8px; }
+  .cal-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 14px; }
+  .cal-day { text-align: center; }
+  .cd-name { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; }
+  .cd-num { font-size: 12px; font-weight: 800; color: var(--text); margin-bottom: 5px; }
+
+  .slot {
+    background: var(--green-light); color: var(--green-dark);
+    border: 1px solid var(--green-mid);
+    border-radius: 6px; padding: 4px 3px;
+    font-size: 10.5px; font-weight: 700;
+    cursor: pointer; text-align: center;
+    display: block; margin-bottom: 3px;
+    transition: all .12s;
+  }
+  .slot:hover { background: var(--green); color: white; border-color: var(--green); }
+  .slot.selected { background: var(--text); color: white; border-color: var(--text); }
+
+  .selected-confirm {
+    display: none; align-items: center; gap: 6px;
+    background: var(--green-light); border: 1px solid var(--green-mid);
+    border-radius: 8px; padding: 8px 12px;
+    font-size: 12px; font-weight: 700; color: var(--green-dark);
+    margin-bottom: 10px;
+    animation: fadeUp .25s ease both;
+  }
+  .selected-confirm.show { display: flex; }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+  .cal-divider { height: 1px; background: var(--border); margin: 0 0 12px; }
+
+  .btn-cal-book {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    background: var(--green); color: white; border: none;
+    border-radius: 10px; padding: 12px; font-size: 13.5px; font-weight: 700;
+    cursor: pointer; width: 100%; transition: all .15s; font-family: 'Manrope', sans-serif;
+    opacity: .45; pointer-events: none;
+    box-shadow: 0 3px 10px rgba(29,185,84,.25);
+  }
+  .btn-cal-book.active { opacity: 1; pointer-events: auto; }
+  .btn-cal-book.active:hover { background: var(--green-dark); transform: translateY(-1px); }
+  .cal-note { text-align: center; font-size: 10.5px; color: var(--muted); font-weight: 600; margin-top: 7px; }
+
+  /* ─── "Ще не впевнені" — спокійний, без btn-secondary ─── */
+  .doubt-card {
+    background: var(--bg); border-radius: 12px;
+    border: 1px solid var(--border);
+    padding: 16px 18px;
+  }
+  .doubt-label { font-size: 12px; font-weight: 800; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .4px; }
+  .doubt-text { font-size: 12.5px; color: var(--muted); font-weight: 600; line-height: 1.55; margin-bottom: 10px; }
+  .btn-doubt {
+    display: flex; align-items: center; gap: 6px;
+    background: transparent; color: var(--green-dark);
+    border: 1px solid var(--green-mid); border-radius: 8px; padding: 8px 14px;
+    font-size: 12.5px; font-weight: 700; cursor: pointer; width: 100%;
+    justify-content: center; transition: all .15s; font-family: 'Manrope', sans-serif;
+  }
+  .btn-doubt:hover { background: var(--green-light); }
+
+  /* ─── STICKY BAR ─── */
+  .sticky {
+    position: fixed; bottom: 0; left: 216px; right: 0;
+    background: rgba(255,255,255,.96); backdrop-filter: blur(10px);
+    border-top: 1px solid var(--border); padding: 10px 28px;
+    display: flex; align-items: center; justify-content: space-between;
+    z-index: 100; box-shadow: 0 -2px 16px rgba(0,0,0,.07);
+  }
+  .sticky-left { display: flex; align-items: baseline; gap: 8px; }
+  .sticky-name { font-size: 14px; font-weight: 800; color: var(--text); }
+  .sticky-price { font-size: 13px; color: var(--muted); font-weight: 600; }
+  .sticky-right { display: flex; gap: 8px; }
+  .btn-sticky-ghost {
+    background: transparent; color: var(--muted);
+    border: 1px solid var(--border); border-radius: 9px; padding: 9px 14px;
+    font-size: 13px; font-weight: 700; cursor: pointer; transition: all .15s;
+    font-family: 'Manrope', sans-serif;
+  }
+  .btn-sticky-ghost:hover { border-color: var(--green-mid); color: var(--green-dark); }
+  .btn-sticky-main {
+    background: var(--green); color: white; border: none;
+    border-radius: 9px; padding: 9px 18px;
+    font-size: 13px; font-weight: 700; cursor: pointer; transition: background .15s;
+    font-family: 'Manrope', sans-serif;
+  }
+  .btn-sticky-main:hover { background: var(--green-dark); }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+  .main > .page > div:first-child { animation: fadeUp .3s ease 0s both; }
+  .hero { animation: fadeUp .35s ease .05s both; }
+  .stat-bar { animation: fadeUp .35s ease .1s both; }
+  .card, .cal-card, .new-tutor-card, .reviews-reframe, .cta-strip, .doubt-card
+    { animation: fadeUp .35s ease .15s both; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo">M4<span>SH</span></div>
+  <a class="nav-item" href="#">🏠 Панель</a>
+  <a class="nav-item active" href="#">🛍 Маркетплейс</a>
+  <a class="nav-item" href="#">📅 Календар</a>
+  <a class="nav-item" href="#">💬 Повідомлення</a>
+  <a class="nav-item" href="#">👤 Акаунт</a>
+</aside>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <nav class="breadcrumb">
+    <a href="#">Маркетплейс</a><span class="bc-sep">›</span>
+    <a href="#">Математика</a><span class="bc-sep">›</span>
+    <span class="bc-current">Віктор Л.</span>
+  </nav>
+  <div class="topbar-right">
+    <div style="font-size:18px;cursor:pointer;color:var(--muted)">🔔</div>
+    <div class="avatar-sm">О</div>
+  </div>
+</header>
+
+<main class="main">
+<div class="page">
+
+  <!-- Platform message — один рядок контексту -->
+  <div style="text-align:center;padding:16px 0 12px;font-size:13px;font-weight:600;color:var(--muted);">
+    M4SH — перевірені тьютори для студентів, які хочуть результат 
+    <span style="color:var(--green-dark);margin-left:4px;">· 847 активних студентів вже навчаються</span>
+  </div>
+
+  <!-- ═══════════════════════
+       FIX #2: STAT BAR — кожна цифра пояснена одним рядком
+  ════════════════════════════ -->
+  <div class="stat-bar">
+    <div class="stat-item">
+      <div class="stat-val">847</div>
+      <div class="stat-ctx">активних студентів</div>
+      <div class="stat-meaning">— платформа жива</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-val">4.9 ★</div>
+      <div class="stat-ctx">середній рейтинг тьюторів</div>
+      <div class="stat-meaning">— суворий відбір</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-val">98%</div>
+      <div class="stat-ctx">після 1-го уроку продовжують</div>
+      <div class="stat-meaning">— ризик мінімальний</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════
+       HERO
+  ════════════════════════════ -->
+  <div class="hero">
+    <!-- Avatar -->
+    <div class="avatar-wrap">
+      <div class="avatar-main">ВЛ</div>
+      <div class="online-dot"></div>
+    </div>
+
+    <!-- Info -->
+    <div class="hero-info">
+      <div class="hero-name">Віктор Л.</div>
+      <div class="hero-sub">Вчитель математики і фізики</div>
+
+      <!-- VALUE PROP — тиха, але точна -->
+      <div class="value-prop">
+        12 років практики · пояснює через приклади з життя · учні складають ЗНО на 185–200 балів
+      </div>
+
+      <div class="hero-meta">
+        <div class="meta-item">📍 Ковель</div>
+        <div class="meta-item">🎓 Стаж 12 років</div>
+        <div class="meta-item">👤 Чоловік · 26 р.</div>
+        <div class="meta-item">💬 Відповідь за 24 год</div>
+      </div>
+
+      <!-- FIX #1: тільки 2 чіпи, тільки правда -->
+      <div class="trust-row">
+        <div class="trust-chip platform">✅ Верифікований M4SH</div>
+        <div class="trust-chip">📞 Контакти перевірені</div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════
+         FIX #3: CTA BLOCK — чітка ієрархія
+         1 primary (яскравий), 1 ghost (тихий)
+    ════════════════════════════ -->
+    <div class="cta-block">
+      <div class="price-row">
+        <div class="price-big">120 грн</div>
+        <div class="price-per">/год</div>
+      </div>
+
+      <div class="process">
+        <div class="proc-row"><div class="proc-n">1</div>Оберіть час у календарі ↓</div>
+        <div class="proc-row"><div class="proc-n">2</div>Надішліть запит — безкоштовно</div>
+        <div class="proc-row"><div class="proc-n">3</div>Перший урок без ризику ↩</div>
+      </div>
+
+      <!-- ЄДИНА ЯСКРАВА КНОПКА -->
+      <button class="btn-primary" onclick="document.getElementById('cal').scrollIntoView({behavior:'smooth'})">
+        📅 Записатись на урок
+      </button>
+
+      <!-- тихий ghost — не конкурує -->
+      <button class="btn-ghost" onclick="alert('Чат відкрито!')">
+        💬 Спочатку запитати
+      </button>
+
+      <div class="free-note">Запит <b>безкоштовний</b> і без зобов'язань</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════
+       CONTENT GRID
+  ════════════════════════════ -->
+  <div class="content-grid">
+
+    <!-- LEFT -->
+    <div class="left-col">
+
+      <div class="card">
+        <div class="card-title">📝 Про себе</div>
+        <div class="about-text">
+          Протягом моєї роботи з учнями різного віку я переконався, що успішне викладання математики ґрунтується не лише на знанні предмету, а й на умінні знайти підхід до кожного учня. Математика часто здається складною або абстрактною, тому моїм першочерговим завданням завжди було зробити її зрозумілою, живою та пов'язаною з реальним життям. На уроці панує дружня атмосфера.
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📚 Предмети та напрями</div>
+        <div class="subjects-row">
+          <div class="subj-tag">➕ Математика <span class="fmt-badge">Офлайн</span></div>
+          <div class="subj-tag">⚛️ Фізика <span class="fmt-badge">Офлайн</span></div>
+        </div>
+      </div>
+
+      <!-- Repeat CTA — спокійний, не зелений блок -->
+      <div class="cta-strip">
+        <div>
+          <div class="strip-text">Вільних слотів цього тижня: 8</div>
+          <div class="strip-sub">Найближчий — вт 17 лют, 17:00</div>
+        </div>
+        <button class="btn-strip" onclick="document.getElementById('cal').scrollIntoView({behavior:'smooth'})">
+          Обрати час →
+        </button>
+      </div>
+
+      <!-- FIX #5: Reviews — переосмислений, не порожній блок -->
+      <div class="reviews-reframe">
+        <div class="card-title">⭐ Відгуки</div>
+        <div class="first-review-prompt">
+          <div class="frp-headline">Перші відгуки ще попереду</div>
+          <div class="frp-sub">
+            Віктор тільки починає на платформі. Саме перші учні формують репутацію тьютора — і зазвичай отримують максимум уваги.
+          </div>
+          <div class="frp-incentive">
+            🎁 Ваш відгук допоможе іншим студентам обрати
+          </div>
+          <button class="btn-frp" onclick="alert('Запис на урок → потім відгук')">
+            Стати першим учнем
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT -->
+    <div class="right-col">
+
+      <!-- FIX #4: NEW TUTOR — без зірок, без конфлікту з рейтингом -->
+      <div class="new-tutor-card">
+        <div class="nt-badge">🆕 Новий тьютор</div>
+        <div class="nt-text">
+          Рейтинг формується після перших уроків. Нові тьютори — найбільш мотивовані: кожен урок для них важливий.
+        </div>
+        <!-- платформна цінність замість фальшивих обіцянок -->
+        <div class="nt-guarantee">
+          ✅ M4SH перевірив документи і контакти тьютора
+        </div>
+        <!-- FIX: secondary ghost button тут, не конкурує з календарем -->
+        <button class="btn-ghost" style="font-size:12.5px;padding:9px 14px;" onclick="document.getElementById('cal').scrollIntoView({behavior:'smooth'})">
+          Обрати час у календарі ↓
+        </button>
+      </div>
+
+      <!-- CALENDAR -->
+      <div class="cal-card" id="cal">
+        <div class="cal-title">📅 Оберіть зручний час</div>
+        <div class="cal-urgency">⚡ 8 вільних слотів цього тижня</div>
+
+        <div class="cal-nav">
+          <button class="cal-btn">‹</button>
+          <span class="cal-period">16 — 22 лют.</span>
+          <button class="cal-btn">›</button>
+        </div>
+
+        <div class="selected-confirm" id="sel-confirm">
+          ✅ <span id="sel-text">—</span>
+        </div>
+
+        <div class="cal-grid">
+          <div class="cal-day">
+            <div class="cd-name">пн</div>
+            <div class="cd-num">16</div>
+          </div>
+          <div class="cal-day">
+            <div class="cd-name">вт</div>
+            <div class="cd-num">17</div>
+            <span class="slot" onclick="pick(this,'вт 17 лют, 17:00')">17:00</span>
+          </div>
+          <div class="cal-day">
+            <div class="cd-name">ср</div>
+            <div class="cd-num">18</div>
+            <span class="slot" onclick="pick(this,'ср 18 лют, 09:00')">09:00</span>
+            <span class="slot" onclick="pick(this,'ср 18 лют, 13:00')">13:00</span>
+          </div>
+          <div class="cal-day">
+            <div class="cd-name">чт</div>
+            <div class="cd-num">19</div>
+            <span class="slot" onclick="pick(this,'чт 19 лют, 07:00')">07:00</span>
+            <span class="slot" onclick="pick(this,'чт 19 лют, 13:00')">13:00</span>
+            <span class="slot" onclick="pick(this,'чт 19 лют, 15:00')">15:00</span>
+          </div>
+          <div class="cal-day">
+            <div class="cd-name">пт</div>
+            <div class="cd-num">20</div>
+            <span class="slot" onclick="pick(this,'пт 20 лют, 07:00')">07:00</span>
+            <span class="slot" onclick="pick(this,'пт 20 лют, 10:00')">10:00</span>
+          </div>
+        </div>
+
+        <div class="cal-grid-2">
+          <div class="cal-day">
+            <div class="cd-name">сб</div>
+            <div class="cd-num">21</div>
+            <span class="slot" onclick="pick(this,'сб 21 лют, 07:00')">07:00</span>
+            <span class="slot" onclick="pick(this,'сб 21 лют, 11:00')">11:00</span>
+          </div>
+          <div class="cal-day">
+            <div class="cd-name">нд</div>
+            <div class="cd-num">22</div>
+            <span class="slot" onclick="pick(this,'нд 22 лют, 09:00')">09:00</span>
+          </div>
+        </div>
+
+        <div class="cal-divider"></div>
+        <button class="btn-cal-book" id="book-btn" onclick="book()">
+          Оберіть слот вище ↑
+        </button>
+        <div class="cal-note">Безкоштовно · Тьютор підтвердить за 24 год</div>
+      </div>
+
+      <!-- Doubt block — TERTIARY дія, максимально тиха -->
+      <div class="doubt-card" style="opacity:.85;">
+        <div class="doubt-label" style="font-size:11px;color:var(--muted);">Є питання перед уроком?</div>
+        <div class="doubt-text" style="font-size:12px;">
+          Напишіть Віктору напряму — без записи, без зобов'язань.
+        </div>
+        <button class="btn-doubt" style="font-size:12px;padding:7px 12px;color:var(--muted);border-color:var(--border);" onclick="alert('Чат відкрито!')">
+          💬 Написати питання
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+</main>
+
+<!-- STICKY BAR -->
+<div class="sticky">
+  <div class="sticky-left">
+    <span class="sticky-name">Віктор Л.</span>
+    <span class="sticky-price">· 120 грн/год · відповідь за 24 год</span>
+  </div>
+  <div class="sticky-right">
+    <button class="btn-sticky-ghost" onclick="alert('Чат відкрито!')">Запитати</button>
+    <button class="btn-sticky-main" onclick="document.getElementById('cal').scrollIntoView({behavior:'smooth'})">📅 Записатись</button>
+  </div>
+</div>
+
+<script>
+  let active = null, activeText = '';
+
+  function pick(el, label) {
+    if (active) active.classList.remove('selected');
+    el.classList.add('selected');
+    active = el; activeText = label;
+
+    document.getElementById('sel-text').textContent = label;
+    document.getElementById('sel-confirm').classList.add('show');
+
+    const btn = document.getElementById('book-btn');
+    btn.textContent = '📅 Записатись · ' + label;
+    btn.classList.add('active');
+  }
+
+  function book() {
+    if (!activeText) return;
+    alert('✅ Запит надіслано!\n\n' + activeText + '\n120 грн/год\n\nТьютор підтвердить протягом 24 год. Перший урок — без ризику.');
+  }
+</script>
+</body>
+</html>

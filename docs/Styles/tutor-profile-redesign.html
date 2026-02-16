@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M4SH — Віктор Л.</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #1DB954;
+    --green-dark: #17a349;
+    --green-light: #e8f9ef;
+    --green-mid: #c6f0d7;
+    --bg: #f4fdf7;
+    --sidebar: #ffffff;
+    --text: #0d1f14;
+    --muted: #6b8a76;
+    --border: #d4eddf;
+    --white: #ffffff;
+    --shadow: 0 2px 16px rgba(29,185,84,0.10);
+    --shadow-lg: 0 8px 40px rgba(29,185,84,0.18);
+    --card-radius: 20px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Manrope', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+  }
+
+  /* ─── SIDEBAR ─── */
+  .sidebar {
+    width: 220px;
+    min-height: 100vh;
+    background: var(--sidebar);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 24px 16px;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 10;
+  }
+  .logo {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 18px;
+    font-weight: 900;
+    color: var(--green);
+    letter-spacing: -0.5px;
+    margin-bottom: 36px;
+    padding: 0 8px;
+  }
+  .logo span { color: var(--text); }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: 10px;
+    font-size: 13px; font-weight: 600; color: var(--muted);
+    cursor: pointer; margin-bottom: 4px; text-decoration: none;
+    transition: all 0.2s;
+  }
+  .nav-item:hover, .nav-item.active {
+    background: var(--green-light); color: var(--green-dark);
+  }
+  .nav-icon { font-size: 16px; }
+
+  /* ─── TOPBAR ─── */
+  .topbar {
+    position: fixed; top: 0; left: 220px; right: 0;
+    height: 56px; background: var(--white);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center;
+    padding: 0 32px; gap: 16px; z-index: 9;
+  }
+  .breadcrumb {
+    font-size: 13px; color: var(--muted); font-weight: 500;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .breadcrumb a { color: var(--muted); text-decoration: none; }
+  .breadcrumb a:hover { color: var(--green); }
+  .breadcrumb-sep { color: var(--border); }
+  .breadcrumb-current { color: var(--text); font-weight: 700; }
+  .topbar-right {
+    margin-left: auto; display: flex; align-items: center; gap: 12px;
+  }
+  .avatar-sm {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--green); display: flex; align-items: center;
+    justify-content: center; font-size: 13px; font-weight: 800;
+    color: white; cursor: pointer;
+  }
+
+  /* ─── MAIN LAYOUT ─── */
+  .main {
+    margin-left: 220px;
+    padding-top: 56px;
+    flex: 1;
+  }
+  .page-content {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px 32px;
+  }
+
+  /* ─── HERO SECTION (First Screen) ─── */
+  .hero {
+    background: var(--white);
+    border-radius: var(--card-radius);
+    padding: 36px 40px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle at 100% 0%, rgba(29,185,84,0.08) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .hero-layout {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 28px;
+    align-items: start;
+  }
+  .avatar-wrap { position: relative; }
+  .avatar-main {
+    width: 88px; height: 88px; border-radius: 50%;
+    background: var(--green-mid);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; font-weight: 800; color: var(--green-dark);
+    border: 3px solid var(--green);
+    overflow: hidden;
+  }
+  .avatar-main img { width: 100%; height: 100%; object-fit: cover; }
+  .online-badge {
+    position: absolute; bottom: 4px; right: 4px;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--green);
+    border: 2px solid white;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(29,185,84,0.4); }
+    50% { box-shadow: 0 0 0 6px rgba(29,185,84,0); }
+  }
+  .hero-info { flex: 1; }
+  .hero-name {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 24px; font-weight: 700;
+    color: var(--text); margin-bottom: 4px;
+    line-height: 1.2;
+  }
+  .hero-tagline {
+    font-size: 15px; color: var(--muted); font-weight: 500;
+    margin-bottom: 16px;
+  }
+
+  /* VALUE PROPOSITION — KEY FIX #1 */
+  .value-prop {
+    background: var(--green-light);
+    border-left: 3px solid var(--green);
+    border-radius: 0 10px 10px 0;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    font-size: 14px; font-weight: 600; color: var(--green-dark);
+    line-height: 1.5;
+  }
+  .value-prop .vp-icon { margin-right: 6px; }
+
+  .hero-meta {
+    display: flex; flex-wrap: wrap; gap: 16px;
+    font-size: 13px; color: var(--muted); font-weight: 500;
+  }
+  .meta-item { display: flex; align-items: center; gap: 5px; }
+  .meta-icon { font-size: 14px; }
+
+  /* TRUST SIGNALS — KEY FIX #4 */
+  .trust-row {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-top: 16px;
+  }
+  .trust-badge {
+    display: flex; align-items: center; gap: 5px;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 12px; font-weight: 600; color: var(--muted);
+  }
+  .trust-badge.verified {
+    background: var(--green-light);
+    border-color: var(--green-mid);
+    color: var(--green-dark);
+  }
+  .trust-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+
+  /* PRICING CTA BLOCK — KEY FIX #3, #8, #10 */
+  .cta-block {
+    background: var(--green-light);
+    border-radius: 16px;
+    padding: 28px 28px 24px;
+    border: 1.5px solid var(--green-mid);
+    min-width: 240px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .price-row { display: flex; align-items: baseline; gap: 4px; }
+  .price-big {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 30px; font-weight: 900;
+    color: var(--text); letter-spacing: -1px;
+  }
+  .price-per { font-size: 13px; color: var(--muted); font-weight: 600; }
+
+  /* PROCESS EXPLANATION — KEY FIX #10 */
+  .process-mini {
+    display: flex; flex-direction: column; gap: 6px;
+    font-size: 12px; color: var(--muted); font-weight: 600;
+  }
+  .process-step { display: flex; align-items: center; gap: 6px; }
+  .step-num {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--green); color: white;
+    font-size: 10px; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* CTA BUTTONS — KEY FIX #3 (segmented intent) */
+  .btn-primary {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    background: var(--green);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 14px 20px;
+    font-size: 15px; font-weight: 700;
+    cursor: pointer;
+    width: 100%;
+    transition: all 0.2s;
+    letter-spacing: -0.2px;
+    box-shadow: 0 4px 16px rgba(29,185,84,0.35);
+  }
+  .btn-primary:hover {
+    background: var(--green-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 24px rgba(29,185,84,0.45);
+  }
+  .btn-secondary {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    background: transparent;
+    color: var(--green-dark);
+    border: 1.5px solid var(--green);
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-size: 13px; font-weight: 700;
+    cursor: pointer;
+    width: 100%;
+    transition: all 0.2s;
+    letter-spacing: -0.2px;
+  }
+  .btn-secondary:hover {
+    background: var(--white);
+    transform: translateY(-1px);
+  }
+
+  /* FREE LABEL — reassurance */
+  .free-note {
+    text-align: center;
+    font-size: 11px; color: var(--muted); font-weight: 600;
+  }
+  .free-note strong { color: var(--green-dark); }
+
+  /* ─── CONTENT GRID ─── */
+  .content-grid {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 24px;
+    align-items: start;
+  }
+  .left-col { display: flex; flex-direction: column; gap: 24px; }
+  .right-col { display: flex; flex-direction: column; gap: 24px; }
+
+  /* ─── CARDS ─── */
+  .card {
+    background: var(--white);
+    border-radius: var(--card-radius);
+    padding: 28px 32px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+  }
+  .card-title {
+    font-size: 16px; font-weight: 800; color: var(--text);
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-icon { font-size: 18px; }
+
+  /* ABOUT */
+  .about-text {
+    font-size: 14px; color: #3a5040; line-height: 1.75; font-weight: 500;
+  }
+
+  /* SUBJECTS */
+  .subjects-list { display: flex; flex-wrap: wrap; gap: 10px; }
+  .subject-tag {
+    background: var(--green-light);
+    color: var(--green-dark);
+    border: 1px solid var(--green-mid);
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 13px; font-weight: 700;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .format-badge {
+    background: var(--green);
+    color: white;
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 11px; font-weight: 700;
+  }
+
+  /* CALENDAR — KEY FIX #6 */
+  .calendar-card {
+    background: var(--white);
+    border-radius: var(--card-radius);
+    padding: 28px 32px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  .calendar-card::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--green), transparent);
+    border-radius: 0 0 0 20px;
+  }
+  .cal-urgency {
+    background: linear-gradient(135deg, #fff8e1, #fff3cd);
+    border: 1px solid #ffd54f;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 12px; font-weight: 700; color: #f57f17;
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .cal-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .cal-nav-title {
+    font-size: 14px; font-weight: 800; color: var(--text);
+  }
+  .cal-nav-btn {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--green-light); border: 1px solid var(--green-mid);
+    color: var(--green-dark); cursor: pointer; font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; transition: all 0.15s;
+  }
+  .cal-nav-btn:hover { background: var(--green); color: white; }
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .cal-day { text-align: center; }
+  .cal-day-name {
+    font-size: 11px; font-weight: 700; color: var(--muted);
+    margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.3px;
+  }
+  .cal-day-num {
+    font-size: 12px; font-weight: 800; color: var(--text);
+    margin-bottom: 8px;
+  }
+  .time-slot {
+    background: var(--green);
+    color: white;
+    border-radius: 8px;
+    padding: 5px 4px;
+    font-size: 11px; font-weight: 700;
+    margin-bottom: 4px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+    display: block;
+  }
+  .time-slot:hover {
+    background: var(--green-dark);
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(29,185,84,0.4);
+  }
+  .time-slot.selected {
+    background: var(--text); color: white;
+  }
+
+  /* calendar CTA after slots */
+  .cal-cta {
+    margin-top: 4px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ─── SOCIAL PROOF — KEY FIX #5 ─── */
+  .social-proof-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--white);
+    border-radius: 14px;
+    padding: 16px;
+    border: 1px solid var(--border);
+    text-align: center;
+  }
+  .stat-val {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 22px; font-weight: 900;
+    color: var(--green-dark); line-height: 1;
+    margin-bottom: 4px;
+  }
+  .stat-label {
+    font-size: 11px; font-weight: 600; color: var(--muted);
+    line-height: 1.3;
+  }
+
+  /* NEW tutor signal */
+  .new-tutor-card {
+    background: var(--white);
+    border-radius: var(--card-radius);
+    padding: 24px;
+    border: 1.5px solid var(--green-mid);
+    text-align: center;
+  }
+  .new-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--green);
+    color: white;
+    border-radius: 20px; padding: 4px 12px;
+    font-size: 12px; font-weight: 800;
+    margin-bottom: 12px;
+  }
+  .new-tutor-text {
+    font-size: 13px; color: var(--muted); font-weight: 600;
+    line-height: 1.6; margin-bottom: 16px;
+  }
+  .stars-empty {
+    display: flex; justify-content: center; gap: 4px; margin-bottom: 8px;
+  }
+  .star { font-size: 20px; color: #ddd; }
+  .star.hint { color: #ffd700; }
+
+  /* ─── REVIEWS SECTION ─── */
+  .reviews-empty {
+    text-align: center; padding: 24px;
+    font-size: 14px; color: var(--muted); font-weight: 600;
+  }
+  .review-cta {
+    display: flex; justify-content: center;
+    margin-top: 12px;
+  }
+
+  /* ─── STICKY BOTTOM CTA (mobile feel) — KEY FIX #8 ─── */
+  .sticky-cta {
+    position: fixed; bottom: 0; left: 220px; right: 0;
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border);
+    padding: 12px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    z-index: 100;
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.08);
+  }
+  .sticky-info {
+    display: flex; align-items: baseline; gap: 6px;
+  }
+  .sticky-name { font-size: 15px; font-weight: 700; color: var(--text); }
+  .sticky-price { font-size: 14px; color: var(--muted); font-weight: 600; }
+  .sticky-actions { display: flex; gap: 10px; }
+  .btn-sticky-primary {
+    background: var(--green);
+    color: white; border: none;
+    border-radius: 10px; padding: 10px 20px;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Manrope', sans-serif;
+    white-space: nowrap;
+  }
+  .btn-sticky-primary:hover { background: var(--green-dark); }
+  .btn-sticky-secondary {
+    background: var(--green-light);
+    color: var(--green-dark); border: 1.5px solid var(--green-mid);
+    border-radius: 10px; padding: 10px 16px;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Manrope', sans-serif;
+    white-space: nowrap;
+  }
+  .btn-sticky-secondary:hover { background: var(--green-mid); }
+
+  /* ─── RESPONSIVE SPACING ─── */
+  .section-divider {
+    height: 1px; background: var(--border); margin: 8px 0;
+  }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .hero, .card, .calendar-card, .stat-card, .new-tutor-card {
+    animation: fadeUp 0.4s ease both;
+  }
+  .hero { animation-delay: 0.05s; }
+  .card:nth-child(1) { animation-delay: 0.1s; }
+  .card:nth-child(2) { animation-delay: 0.15s; }
+  .calendar-card { animation-delay: 0.2s; }
+  .new-tutor-card { animation-delay: 0.12s; }
+
+  /* ─── SELECTED STATE DEMO ─── */
+  .selected-slot-info {
+    display: none;
+    background: var(--green-light);
+    border: 1px solid var(--green-mid);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px; font-weight: 700; color: var(--green-dark);
+    margin-bottom: 12px;
+    animation: fadeUp 0.3s ease both;
+  }
+  .selected-slot-info.visible { display: flex; align-items: center; gap: 6px; }
+
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo">M4<span>SH</span></div>
+  <a class="nav-item" href="#"><span class="nav-icon">🏠</span> Панель</a>
+  <a class="nav-item active" href="#"><span class="nav-icon">🛍️</span> Маркетплейс</a>
+  <a class="nav-item" href="#"><span class="nav-icon">📅</span> Календар</a>
+  <a class="nav-item" href="#"><span class="nav-icon">💬</span> Повідомлення</a>
+  <a class="nav-item" href="#"><span class="nav-icon">👤</span> Акаунт</a>
+</aside>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="breadcrumb">
+    <a href="#">Маркетплейс</a>
+    <span class="breadcrumb-sep">›</span>
+    <a href="#">Математика</a>
+    <span class="breadcrumb-sep">›</span>
+    <span class="breadcrumb-current">Віктор Л.</span>
+  </div>
+  <div class="topbar-right">
+    <div style="font-size:20px;cursor:pointer;">🔔</div>
+    <div class="avatar-sm">О</div>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="main">
+<div class="page-content">
+
+  <!-- ═══════════════════════════════════ -->
+  <!-- FIX #5: STATS ROW (social proof, платформа) -->
+  <!-- ═══════════════════════════════════ -->
+  <div class="social-proof-row">
+    <div class="stat-card">
+      <div class="stat-val">847</div>
+      <div class="stat-label">студентів навчаються на платформі</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val">4.9★</div>
+      <div class="stat-label">середній рейтинг тьюторів</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val">98%</div>
+      <div class="stat-label">задоволені після першого уроку</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════ -->
+  <!-- HERO CARD (Fixes #1, #2, #4, #7) -->
+  <!-- ═══════════════════════════════════ -->
+  <div class="hero">
+    <div class="hero-layout">
+
+      <!-- Avatar -->
+      <div class="avatar-wrap">
+        <div class="avatar-main">ВЛ</div>
+        <div class="online-badge" title="Онлайн"></div>
+      </div>
+
+      <!-- Info -->
+      <div class="hero-info">
+        <div class="hero-name">Віктор Л.</div>
+        <div class="hero-tagline">Досвідчений вчитель математики і фізики</div>
+
+        <!-- FIX #1: VALUE PROPOSITION -->
+        <div class="value-prop">
+          <span class="vp-icon">💡</span>
+          12 років досвіду · пояснює складне просто · учні складають ЗНО на 185–200 балів
+        </div>
+
+        <!-- FIX #7: No UTC, human-friendly info only -->
+        <div class="hero-meta">
+          <div class="meta-item"><span class="meta-icon">📍</span> Ковель</div>
+          <div class="meta-item"><span class="meta-icon">🎓</span> Стаж 12 років</div>
+          <div class="meta-item"><span class="meta-icon">👤</span> Чоловік · 26 років</div>
+          <div class="meta-item"><span class="meta-icon">💬</span> Відповідає за 24 год</div>
+        </div>
+
+        <!-- FIX #4: Platform-generated trust signals -->
+        <div class="trust-row">
+          <div class="trust-badge verified">
+            <div class="trust-dot"></div>
+            ✅ Верифікований M4SH
+          </div>
+          <div class="trust-badge verified">
+            <div class="trust-dot"></div>
+            🆕 Новий тьютор
+          </div>
+          <div class="trust-badge">
+            🔒 Безпечна оплата
+          </div>
+          <div class="trust-badge">
+            ↩️ Повернення якщо не сподобалось
+          </div>
+        </div>
+      </div>
+
+      <!-- FIX #3, #8, #10: CTA Block with process + segmented intent -->
+      <div class="cta-block">
+        <div class="price-row">
+          <div class="price-big">120 грн</div>
+          <div class="price-per">/ година</div>
+        </div>
+
+        <!-- FIX #10: explain the process -->
+        <div class="process-mini">
+          <div class="process-step">
+            <div class="step-num">1</div>
+            Оберіть зручний час ↓
+          </div>
+          <div class="process-step">
+            <div class="step-num">2</div>
+            Надішліть запит — безкоштовно
+          </div>
+          <div class="process-step">
+            <div class="step-num">3</div>
+            Перший урок — без ризику ✓
+          </div>
+        </div>
+
+        <!-- FIX #3: PRIMARY CTA — ready to book -->
+        <button class="btn-primary" onclick="alert('Запит надіслано!')">
+          📅 Записатись на урок
+        </button>
+
+        <!-- FIX #3: SECONDARY CTA — lower threshold for doubters -->
+        <button class="btn-secondary" onclick="alert('Чат відкрито!')">
+          💬 Спочатку поставити питання
+        </button>
+
+        <!-- reassurance -->
+        <div class="free-note">
+          <strong>Безкоштовно</strong> і без зобов'язань
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════ -->
+  <!-- CONTENT GRID -->
+  <!-- ═══════════════════════════════════ -->
+  <div class="content-grid">
+
+    <!-- LEFT COLUMN -->
+    <div class="left-col">
+
+      <!-- About -->
+      <div class="card">
+        <div class="card-title"><span class="card-icon">📝</span> Про себе</div>
+        <div class="about-text">
+          Протягом моєї роботи з учнями різного віку я переконався, що успішне викладання математики ґрунтується не лише на знанні предмету, а й на умінні знайти підхід до кожного учня. Математика часто здається складною або абстрактною, тому моїм першочерговим завданням завжди було зробити її зрозумілою, живою та пов'язаною з реальним життям. На уроці панує дружня атмосфера.
+        </div>
+      </div>
+
+      <!-- Subjects + formats -->
+      <div class="card">
+        <div class="card-title"><span class="card-icon">📚</span> Предмети та напрями</div>
+        <div class="subjects-list">
+          <div class="subject-tag">
+            ➕ Математика
+            <span class="format-badge">Офлайн</span>
+          </div>
+          <div class="subject-tag">
+            ⚛️ Фізика
+            <span class="format-badge">Офлайн</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- FIX #8: REPEAT CTA after content blocks -->
+      <div style="background:var(--green-light); border:1.5px dashed var(--green); border-radius:16px; padding:20px 24px; display:flex; align-items:center; justify-content:space-between; gap:16px;">
+        <div>
+          <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:4px;">Готові спробувати?</div>
+          <div style="font-size:13px;color:var(--muted);font-weight:600;">Вільних слотів цього тижня: <strong style="color:var(--green-dark)">8</strong></div>
+        </div>
+        <button class="btn-primary" style="width:auto;padding:12px 20px;font-size:14px;" onclick="document.getElementById('cal').scrollIntoView({behavior:'smooth'})">
+          📅 Обрати час
+        </button>
+      </div>
+
+      <!-- Reviews (empty state handled well) — FIX #5 -->
+      <div class="card">
+        <div class="card-title"><span class="card-icon">⭐</span> Відгуки</div>
+        <div class="reviews-empty">
+          <div style="font-size:36px;margin-bottom:8px;">✨</div>
+          Цей тьютор ще набирає перших учнів.<br>
+          <span style="color:var(--green-dark)">Станьте одним із перших — і допоможіть іншим обрати!</span>
+        </div>
+        <div class="review-cta">
+          <button class="btn-secondary" style="width:auto;padding:10px 20px;" onclick="alert('Залишити відгук')">
+            ✍️ Залишити відгук після уроку
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="right-col">
+
+      <!-- FIX #5 + new tutor framing -->
+      <div class="new-tutor-card">
+        <div class="new-badge">🆕 Новий на платформі</div>
+        <div class="stars-empty">
+          <span class="star hint">★</span>
+          <span class="star hint">★</span>
+          <span class="star hint">★</span>
+          <span class="star">★</span>
+          <span class="star">★</span>
+        </div>
+        <div class="new-tutor-text">
+          Рейтинг з'явиться після перших уроків. Нові тьютори часто виявляються найкращими — вони мотивовані та уважні!
+        </div>
+        <button class="btn-primary" style="font-size:13px;padding:11px 16px;" onclick="alert('Стати першим!')">
+          🚀 Стати першим учнем
+        </button>
+      </div>
+
+      <!-- FIX #6: Calendar as conversion trigger -->
+      <div class="calendar-card" id="cal">
+        <div class="card-title" style="margin-bottom:12px;"><span class="card-icon">📅</span> Оберіть зручний час</div>
+
+        <!-- urgency nudge -->
+        <div class="cal-urgency">
+          ⚡ Залишилось 8 вільних слотів цього тижня
+        </div>
+
+        <div class="cal-nav">
+          <button class="cal-nav-btn">‹</button>
+          <div class="cal-nav-title">16 — 22 лют.</div>
+          <button class="cal-nav-btn">›</button>
+        </div>
+
+        <!-- selected slot confirmation -->
+        <div class="selected-slot-info" id="selected-info">
+          ✅ <span id="selected-text">Обрано: ...</span>
+        </div>
+
+        <div class="cal-grid">
+          <div class="cal-day">
+            <div class="cal-day-name">пн</div>
+            <div class="cal-day-num">16</div>
+          </div>
+          <div class="cal-day">
+            <div class="cal-day-name">вт</div>
+            <div class="cal-day-num">17</div>
+            <span class="time-slot" onclick="selectSlot(this,'вт 17, 17:00')">17:00</span>
+          </div>
+          <div class="cal-day">
+            <div class="cal-day-name">ср</div>
+            <div class="cal-day-num">18</div>
+            <span class="time-slot" onclick="selectSlot(this,'ср 18, 09:00')">09:00</span>
+            <span class="time-slot" onclick="selectSlot(this,'ср 18, 09:00')">09:00</span>
+          </div>
+          <div class="cal-day">
+            <div class="cal-day-name">чт</div>
+            <div class="cal-day-num">19</div>
+            <span class="time-slot" onclick="selectSlot(this,'чт 19, 07:00')">07:00</span>
+            <span class="time-slot" onclick="selectSlot(this,'чт 19, 13:00')">13:00</span>
+            <span class="time-slot" onclick="selectSlot(this,'чт 19, 10:00')">10:00</span>
+          </div>
+          <div class="cal-day">
+            <div class="cal-day-name">пт</div>
+            <div class="cal-day-num">20</div>
+            <span class="time-slot" onclick="selectSlot(this,'пт 20, 07:00')">07:00</span>
+            <span class="time-slot" onclick="selectSlot(this,'пт 20, 10:00')">10:00</span>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px;">
+          <div class="cal-day">
+            <div class="cal-day-name">сб</div>
+            <div class="cal-day-num">21</div>
+            <span class="time-slot" onclick="selectSlot(this,'сб 21, 07:00')">07:00</span>
+            <span class="time-slot" onclick="selectSlot(this,'сб 21, 11:00')">11:00</span>
+          </div>
+          <div class="cal-day">
+            <div class="cal-day-name">нд</div>
+            <div class="cal-day-num">22</div>
+            <span class="time-slot" onclick="selectSlot(this,'нд 22, 09:00')">09:00</span>
+          </div>
+        </div>
+
+        <!-- FIX #6 + #8: CTA inside calendar -->
+        <div class="cal-cta">
+          <button class="btn-primary" id="book-btn" onclick="bookSelected()" style="opacity:0.5;pointer-events:none;">
+            Оберіть слот вище ↑
+          </button>
+          <div style="text-align:center;margin-top:8px;font-size:11px;color:var(--muted);font-weight:600;">
+            Заявка безкоштовна · Тьютор підтвердить протягом 24 год
+          </div>
+        </div>
+      </div>
+
+      <!-- FIX #9: intent segmentation -->
+      <div class="card" style="padding:20px 24px;">
+        <div class="card-title" style="font-size:14px;margin-bottom:12px;"><span class="card-icon">🤔</span> Ще не впевнені?</div>
+        <div style="font-size:13px;color:var(--muted);font-weight:600;margin-bottom:12px;line-height:1.6;">
+          Абсолютно нормально! Задайте будь-яке питання — відповідь отримаєте безкоштовно і без зобов'язань.
+        </div>
+        <button class="btn-secondary" onclick="alert('Чат відкрито!')">
+          💬 Написати Віктору
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</main>
+
+<!-- FIX #8: STICKY BOTTOM CTA -->
+<div class="sticky-cta">
+  <div class="sticky-info">
+    <span class="sticky-name">Віктор Л.</span>
+    <span class="sticky-price">— 120 грн/год · Онлайн відповідь за 24г</span>
+  </div>
+  <div class="sticky-actions">
+    <button class="btn-sticky-secondary" onclick="alert('Чат відкрито!')">💬 Запитати</button>
+    <button class="btn-sticky-primary" onclick="document.getElementById('cal').scrollIntoView({behavior:'smooth'})">📅 Записатись</button>
+  </div>
+</div>
+
+<script>
+  let selectedSlotEl = null;
+  let selectedSlotText = '';
+
+  function selectSlot(el, label) {
+    if (selectedSlotEl) {
+      selectedSlotEl.classList.remove('selected');
+    }
+    el.classList.add('selected');
+    selectedSlotEl = el;
+    selectedSlotText = label;
+
+    document.getElementById('selected-text').textContent = 'Обрано: ' + label;
+    document.getElementById('selected-info').classList.add('visible');
+
+    const btn = document.getElementById('book-btn');
+    btn.style.opacity = '1';
+    btn.style.pointerEvents = 'auto';
+    btn.textContent = '📅 Записатись на ' + label;
+  }
+
+  function bookSelected() {
+    if (!selectedSlotText) return;
+    alert('✅ Запит надіслано! Тьютор підтвердить урок протягом 24 год.\n\n🕐 ' + selectedSlotText + '\n💰 120 грн/год\n\nЗаявка безкоштовна і без зобов\'язань.');
+  }
+</script>
+</body>
+</html>
