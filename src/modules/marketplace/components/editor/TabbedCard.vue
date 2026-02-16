@@ -329,4 +329,38 @@ function getChipClass(tagCode: string): Record<string, boolean> {
   color: var(--text-muted);
   margin-top: 0.25rem;
 }
+
+/* v1.0: Visual distinction for format chips (online/offline/hybrid) */
+.chip.chip--online {
+  border-color: #10b981;
+  color: #059669;
+}
+.chip.chip--online.is-active {
+  background: #10b981;
+  border-color: #10b981;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.chip.chip--offline {
+  border-color: #f59e0b;
+  color: #d97706;
+}
+.chip.chip--offline.is-active {
+  background: #f59e0b;
+  border-color: #f59e0b;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+.chip.chip--hybrid {
+  border-color: #8b5cf6;
+  color: #7c3aed;
+}
+.chip.chip--hybrid.is-active {
+  background: #8b5cf6;
+  border-color: #8b5cf6;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+}
 </style>

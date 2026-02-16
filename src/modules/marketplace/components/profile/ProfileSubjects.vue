@@ -190,4 +190,29 @@ const normalizedSubjects = computed(() => {
   overflow-wrap: break-word;
   max-width: 100%;
 }
+
+/* v1.0: Visual distinction for format tags on public profile */
+.tag-display--online {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+  font-weight: 600;
+}
+.tag-display--offline {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+  font-weight: 600;
+}
+.tag-display--hybrid {
+  background: #ede9fe;
+  color: #5b21b6;
+  border: 1px solid #c4b5fd;
+  font-weight: 600;
+}
+.tag-display--neutral {
+  background: var(--bg-secondary, #f3f4f6);
+  color: var(--text-secondary, #6b7280);
+  border: 1px solid var(--border-color, #e5e7eb);
+}
 </style>

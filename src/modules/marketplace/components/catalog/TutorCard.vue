@@ -73,6 +73,16 @@ const languagesText = computed(() => {
   return formatList(props.tutor?.languages, t('common.notSpecified'))
 })
 
+/**
+ * v1.0: Витягнути теги формату (online/offline/hybrid) для предмета
+ */
+function getFormatTags(subject: any) {
+  if (!subject || !Array.isArray(subject.tags)) return []
+  return subject.tags.filter((tag: any) => 
+    tag.group === 'formats' && ['online', 'offline', 'hybrid'].includes(tag.code)
+  )
+}
+
 const aboutText = computed(() => {
   // TutorListItem does not include full bio, so show headline as fallback.
   return headlineText.value || t('common.notSpecified')
@@ -170,7 +180,18 @@ function handleTabChange(tab: TabKey) {
         </div>
 
         <div class="subjects">
-          <strong>{{ t('marketplace.filters.subjects') }}:</strong> {{ subjectsText }}
+          <strong>{{ t('marketplace.filters.subjects') }}:</strong>
+          <span v-for="(subject, i) in tutor.subjects" :key="subject.code">
+            {{ subject.title }}
+            <span
+              v-for="ftag in getFormatTags(subject)"
+              :key="ftag.code"
+              :class="['format-badge', `format-badge--${ftag.code}`]"
+            >
+              {{ ftag.label }}
+            </span>
+            <span v-if="i < tutor.subjects.length - 1">, </span>
+          </span>
         </div>
         
         <div class="languages">
@@ -519,5 +540,34 @@ function handleTabChange(tab: TabKey) {
 .availability-value {
   font-weight: 600;
   color: var(--text-primary);
+}
+
+/* v1.0: Format badges for subjects */
+.format-badge {
+  display: inline-block;
+  margin-left: 0.375rem;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 4px;
+  vertical-align: middle;
+}
+
+.format-badge--online {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+}
+
+.format-badge--offline {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}
+
+.format-badge--hybrid {
+  background: #ede9fe;
+  color: #5b21b6;
+  border: 1px solid #c4b5fd;
 }
 </style>

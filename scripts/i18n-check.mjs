@@ -199,8 +199,8 @@ function main() {
 
     if (undefinedUsages.length > 0) {
       console.error(`\n[i18n-check] Keys used in code but missing in ${REFERENCE_LOCALE}.json (${undefinedUsages.length}):`)
-      for (const key of undefinedUsages.slice(0, 10)) console.error(`  - ${key}`)
-      if (undefinedUsages.length > 10) console.error(`  ... and ${undefinedUsages.length - 10} more`)
+      for (const key of undefinedUsages.slice(0, 50)) console.error(`  - ${key}`)
+      if (undefinedUsages.length > 50) console.error(`  ... and ${undefinedUsages.length - 50} more`)
       hasErrors = true
       report.summary.errors++
     }

@@ -1918,7 +1918,8 @@
       "public_warning": "Your city will be visible to all students on the marketplace",
       "private_notice": "Your city is hidden. Students will not see it in search",
       "section_description": "Choose the city where you teach",
-      "helper_text": "This helps students find you by location"
+      "helper_text": "This helps students find you by location",
+      "breadcrumb_hint": "Since you selected offline or hybrid format, please specify the city for lessons"
     }
   },
   "studentDashboard": {

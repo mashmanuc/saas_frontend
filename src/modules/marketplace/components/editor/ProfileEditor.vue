@@ -1113,27 +1113,6 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
           />
         </div>
 
-        <!-- v1.0: City field for discovery — хлібні крихти -->
-        <!-- Показується тільки коли тютор обрав офлайн/гібрид формат для хоча б 1 предмета -->
-        <Transition name="fade">
-          <div v-if="needsCityPrompt" class="privacy-card span-2 city-prompt">
-            <div class="privacy-card-header">
-              <span class="privacy-card-title">🏙️ {{ $t('tutor.city.label') }}</span>
-              <p class="privacy-card-hint">{{ $t('tutor.city.section_description') }}</p>
-            </div>
-            <CityAutocomplete
-              v-model="formData.city_code"
-              country-code="UA"
-            />
-            <CityPrivacyToggle
-              v-model="formData.is_city_public"
-            />
-            <p class="helper-text">
-              {{ $t('tutor.city.helper_text') }}
-            </p>
-          </div>
-        </Transition>
-
         <div class="privacy-card span-2">
           <div class="privacy-card-header">
             <span class="privacy-card-title">{{ t('marketplace.profile.editor.certificationsTitle') }}</span>
@@ -1233,6 +1212,26 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
         @select-subject="handleSelectSubject"
         @update:subjects="handleUpdateSubjects"
       />
+
+      <!-- v1.0: Хлібні крихти — Місто з'являється коли обрано офлайн/гібрид -->
+      <Transition name="fade">
+        <div v-if="needsCityPrompt" class="breadcrumb-city-section">
+          <div class="breadcrumb-arrow">↓</div>
+          <div class="breadcrumb-card">
+            <h3>🏙️ {{ $t('tutor.city.label') }}</h3>
+            <p class="breadcrumb-hint">
+              {{ $t('tutor.city.breadcrumb_hint') }}
+            </p>
+            <CityAutocomplete
+              v-model="formData.city_code"
+              country-code="UA"
+            />
+            <CityPrivacyToggle
+              v-model="formData.is_city_public"
+            />
+          </div>
+        </div>
+      </Transition>
     </section>
 
     <!-- Вкладка: Мова викладання -->
@@ -1739,6 +1738,47 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
 .city-prompt {
   border-left: 3px solid var(--accent);
   background: color-mix(in srgb, var(--accent) 5%, var(--card-bg));
+}
+
+/* v1.0: Breadcrumb city section styles */
+.breadcrumb-city-section {
+  margin-top: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.breadcrumb-arrow {
+  font-size: 1.5rem;
+  color: var(--accent-primary);
+  animation: bounce 1.5s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(6px); }
+}
+
+.breadcrumb-card {
+  width: 100%;
+  padding: var(--space-lg);
+  border: 2px solid var(--accent-primary);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--accent-primary) 5%, var(--card-bg));
+}
+
+.breadcrumb-card h3 {
+  margin: 0 0 var(--space-sm) 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.breadcrumb-hint {
+  margin: 0 0 var(--space-md) 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
 }
 
 .fade-enter-active,
