@@ -793,10 +793,36 @@ const subjectTagChips = computed<LanguageTag[]>(() =>
  */
 const needsCityPrompt = computed(() => {
   const subjects = formData.value.subjects || []
-  return subjects.some((s: any) =>
-    Array.isArray(s.tags) && (s.tags.includes('offline') || s.tags.includes('hybrid'))
-  )
+  return subjects.some((s: any) => {
+    if (!Array.isArray(s.tags)) return false
+    // Підтримка обох форматів: string[] та object[]
+    return s.tags.some((tag: any) => {
+      const code = typeof tag === 'string' ? tag : tag?.code
+      return code === 'offline' || code === 'hybrid'
+    })
+  })
 })
+
+const stepCompletion = computed<Record<string, boolean>>(() => {
+  const f = formData.value
+  return {
+    photo: !!(props.profile?.media?.photo_url || avatarUrl.value),
+    basic: (f.headline?.trim() || '').length >= 20 &&
+           (f.bio?.trim() || '').length >= 100 &&
+           f.experience_years > 0,
+    subjects: f.subjects.length >= 3,
+    'teaching-languages': (f.teaching_languages || []).length >= 2,
+    pricing: f.hourly_rate > 0 && !!f.currency,
+    video: !!f.video_intro_url?.trim(),
+    privacy: true,
+    'lesson-links': true,
+    publish: f.is_published,
+  }
+})
+
+const completedSteps = computed(() =>
+  Object.values(stepCompletion.value).filter(Boolean).length
+)
 
 const languageTagOptions = computed(() => [
   ...languagesCatalog.levelTags.value,
@@ -941,11 +967,17 @@ function handleSelectLanguage(code: string) {
 }
 
 function handleUpdateSubjects(updated: Array<{ code: string; title: string; tags: string[]; custom_direction_text: string }>) {
+  if (import.meta.env.DEV) {
+    console.log('[PE] handleUpdateSubjects, tags:', updated.map(s => ({ code: s.code, tags: s.tags })))
+  }
   formData.value.subjects = updated.map(s => ({
     code: s.code,
     tags: s.tags,
     custom_direction_text: s.custom_direction_text
   }))
+  if (import.meta.env.DEV) {
+    console.log('[PE] needsCityPrompt after update:', needsCityPrompt.value)
+  }
 }
 
 function handleUpdateLanguages(updated: Array<{ code: string; title: string; level: string; tags: string[]; description: string }>) {
@@ -974,6 +1006,13 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
       </div>
     </div>
 
+    <div class="editor-progress">
+      <span class="progress-label">{{ completedSteps }}/{{ steps.length }} {{ $t('marketplace.profile.editor.stepsCompleted') }}</span>
+      <div class="progress-track">
+        <div class="progress-fill" :style="{ width: `${(completedSteps / steps.length) * 100}%` }" />
+      </div>
+    </div>
+
     <nav class="editor-steps" data-test="marketplace-editor-steps">
       <button
         v-for="(s, idx) in steps"
@@ -983,6 +1022,9 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
         :class="{ 'is-active': idx === stepIndex, 'has-errors': (stepErrors[s.id] || 0) > 0 }"
         @click="stepIndex = idx"
       >
+        <span class="step-indicator" :class="stepCompletion[s.id] ? 'step-done' : 'step-todo'">
+          {{ stepCompletion[s.id] ? '✓' : (idx + 1) }}
+        </span>
         <span class="step-pill-title">{{ s.title }}</span>
       </button>
     </nav>
@@ -1732,6 +1774,57 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
   padding: 0.5rem;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
+}
+
+/* v1.0: Progress bar styles */
+.editor-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.progress-label {
+  white-space: nowrap;
+}
+
+.progress-track {
+  flex: 1;
+  height: 8px;
+  background: var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--accent-primary);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.step-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.step-done {
+  background: #10b981;
+  color: white;
+}
+
+.step-todo {
+  background: var(--border-color);
+  color: var(--text-muted);
 }
 
 /* v1.0: Breadcrumb city prompt animation */

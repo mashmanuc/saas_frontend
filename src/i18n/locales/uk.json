@@ -1599,6 +1599,7 @@
         "videoUrlPlaceholder": "https://youtube.com/watch?v=…",
         "videoHint": "Посилання на YouTube або Vimeo",
         "lessonLinksTitle": "Посилання",
+        "stepsCompleted": "кроків заповнено",
         "privacyTitle": "Приватність",
         "genderLabel": "Стать",
         "genderPlaceholder": "Напр. Жінка / Чоловік / Інше",

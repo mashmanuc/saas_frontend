@@ -156,6 +156,10 @@ export function buildTutorProfileUpdate(model: TutorProfileFormModel): TutorProf
     show_age: typeof model.show_age === 'boolean' ? model.show_age : undefined,
     telegram_username: model.telegram_username?.trim() || undefined,
 
+    // City (v1.0)
+    city_code: model.city_code || null,
+    is_city_public: typeof model.is_city_public === 'boolean' ? model.is_city_public : true,
+
     // Required nested object: pricing
     pricing: {
       hourly_rate: model.hourly_rate || 0,
@@ -186,6 +190,8 @@ export function debugPayload(payload: TutorProfileUpdate, label = 'TutorProfileU
     console.log('teaching_languages:', (payload as any).teaching_languages?.length ?? 0, (payload as any).teaching_languages ?? [])
     console.log('experience_years:', payload.experience_years)
     console.log('is_published:', payload.is_published)
+    console.log('city_code:', (payload as any).city_code ?? '(none)')
+    console.log('is_city_public:', (payload as any).is_city_public ?? '(default)')
     console.log('pricing:', payload.pricing)
     console.log('media:', payload.media)
     console.log('education:', payload.education?.length ?? 0)

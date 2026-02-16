@@ -360,6 +360,9 @@ export interface TutorProfileUpdate {
   birth_year?: number | null
   show_age?: boolean
   telegram_username?: string
+  // City (v1.0)
+  city_code?: string | null
+  is_city_public?: boolean
   pricing: {
     hourly_rate: number
     currency: string
