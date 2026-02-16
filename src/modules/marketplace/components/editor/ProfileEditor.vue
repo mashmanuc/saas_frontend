@@ -810,8 +810,8 @@ const stepCompletion = computed<Record<string, boolean>>(() => {
     basic: (f.headline?.trim() || '').length >= 20 &&
            (f.bio?.trim() || '').length >= 100 &&
            f.experience_years > 0,
-    subjects: f.subjects.length >= 3,
-    'teaching-languages': (f.teaching_languages || []).length >= 2,
+    subjects: f.subjects.length >= 1,
+    'teaching-languages': (f.teaching_languages || []).length >= 1,
     pricing: f.hourly_rate > 0 && !!f.currency,
     video: !!f.video_intro_url?.trim(),
     privacy: true,
