@@ -115,6 +115,19 @@ const routes = [
       { path: 'accept/:token', name: 'invite-accept', component: InviteAcceptView, meta: { requiresAuth: false } },
     ],
   },
+  // v1.0: Redirect legacy email URLs to /auth/* routes (safety net for old emails)
+  {
+    path: '/reset-password',
+    redirect: to => ({ path: '/auth/reset-password', query: to.query }),
+  },
+  {
+    path: '/verify-email',
+    redirect: to => ({ path: '/auth/verify-email', query: to.query }),
+  },
+  {
+    path: '/forgot-password',
+    redirect: '/auth/forgot-password',
+  },
   {
     path: '/lesson-invite/:token',
     name: 'lesson-invite-resolve',
