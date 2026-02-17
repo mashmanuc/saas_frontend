@@ -49,6 +49,9 @@
         @cancel="handleCancel"
       />
 
+      <!-- Activity Status (moved from dashboard v0.88.2) -->
+      <ActivityStatusBlock v-if="activityStatus" :status="activityStatus" />
+
       <PlansList
         :plans="billingStore.plans"
         :current-plan-code="billingStore.currentPlanCode"
@@ -62,7 +65,7 @@
 </template>
 
 <script setup>
-import { onMounted, computed } from 'vue'
+import { onMounted, computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useBillingStore } from '../stores/billingStore'
 import Button from '@/ui/Button.vue'
@@ -70,9 +73,12 @@ import Card from '@/ui/Card.vue'
 import Heading from '@/ui/Heading.vue'
 import CurrentPlanCard from '../components/CurrentPlanCard.vue'
 import PlansList from '../components/PlansList.vue'
+import ActivityStatusBlock from '../../marketplace/components/ActivityStatusBlock.vue'
+import marketplaceApi from '../../marketplace/api/marketplace'
 
 const router = useRouter()
 const billingStore = useBillingStore()
+const activityStatus = ref(null)
 
 const plansError = computed(() => {
   if (billingStore.lastError && billingStore.plans.length === 0) {
@@ -137,7 +143,12 @@ function goBack() {
   router.push({ name: 'user-account' })
 }
 
-onMounted(() => {
+onMounted(async () => {
   loadData()
+  try {
+    activityStatus.value = await marketplaceApi.getTutorActivityStatus()
+  } catch {
+    // Silent fail - activity status is not critical
+  }
 })
 </script>

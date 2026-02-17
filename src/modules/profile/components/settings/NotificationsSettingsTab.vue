@@ -35,30 +35,7 @@
         </button>
       </div>
 
-      <div class="flex items-center justify-between rounded-lg border border-border p-4">
-        <div>
-          <p class="font-medium text-foreground">
-            {{ $t('users.settings.notifications.sms') }}
-          </p>
-          <p class="text-sm text-muted-foreground">
-            {{ $t('users.settings.notifications.smsDescription') }}
-          </p>
-        </div>
-        <button
-          type="button"
-          role="switch"
-          :aria-checked="formData.sms_notifications"
-          :disabled="saving"
-          class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-          :class="formData.sms_notifications ? 'bg-primary' : 'bg-surface-muted'"
-          @click="formData.sms_notifications = !formData.sms_notifications"
-        >
-          <span
-            class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
-            :class="formData.sms_notifications ? 'translate-x-5' : 'translate-x-0'"
-          />
-        </button>
-      </div>
+      <!-- SMS notifications hidden — not implemented yet -->
     </div>
 
     <!-- Telegram Notifications (tutors only) -->
@@ -101,7 +78,7 @@ import { i18n } from '@/i18n'
 
 const profileStore = useProfileStore()
 const authStore = useAuthStore()
-const isTutor = computed(() => authStore.user?.role === 'tutor')
+const isTutor = computed(() => authStore.user?.role?.toLowerCase() === 'tutor')
 
 const formData = ref({
   email_notifications: true,

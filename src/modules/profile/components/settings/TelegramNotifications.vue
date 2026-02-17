@@ -21,7 +21,7 @@
     </div>
 
     <!-- State: Connected -->
-    <template v-else-if="status.connected">
+    <template v-else-if="status?.connected">
       <div class="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950/30">
         <div class="flex items-center gap-2">
           <svg class="h-5 w-5 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -29,7 +29,7 @@
           </svg>
           <span class="font-medium text-green-700 dark:text-green-300">Telegram підключено</span>
         </div>
-        <p v-if="status.connected_at" class="mt-1 text-sm text-green-600 dark:text-green-400">
+        <p v-if="status?.connected_at" class="mt-1 text-sm text-green-600 dark:text-green-400">
           Підключено: {{ formatDate(status.connected_at) }}
         </p>
       </div>
@@ -45,15 +45,15 @@
         <button
           type="button"
           role="switch"
-          :aria-checked="status.enabled"
+          :aria-checked="status?.enabled"
           :disabled="toggling"
           class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-          :class="status.enabled ? 'bg-primary' : 'bg-surface-muted'"
+          :class="status?.enabled ? 'bg-primary' : 'bg-surface-muted'"
           @click="handleToggle"
         >
           <span
             class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
-            :class="status.enabled ? 'translate-x-5' : 'translate-x-0'"
+            :class="status?.enabled ? 'translate-x-5' : 'translate-x-0'"
           />
         </button>
       </div>
@@ -175,9 +175,12 @@ async function loadStatus() {
   errorMessage.value = ''
 
   try {
-    status.value = await getTelegramStatus()
+    const result = await getTelegramStatus()
+    if (result) {
+      status.value = result
+    }
   } catch (err: any) {
-    if (err?.response?.status !== 403) {
+    if (err?.response?.status !== 403 && err?.response?.status !== 404) {
       errorMessage.value = 'Не вдалося завантажити статус Telegram'
     }
   } finally {
@@ -248,9 +251,11 @@ async function handleToggle() {
   errorMessage.value = ''
 
   try {
-    const result = await toggleTelegramNotifications(!status.value.enabled)
-    status.value.enabled = result.enabled
-    status.value.connected = result.connected
+    const result = await toggleTelegramNotifications(!status.value?.enabled)
+    if (status.value) {
+      status.value.enabled = result.enabled
+      status.value.connected = result.connected
+    }
   } catch (err: any) {
     errorMessage.value = err?.response?.data?.detail || 'Не вдалося змінити налаштування'
   } finally {
@@ -266,9 +271,11 @@ async function handleDisconnect() {
 
   try {
     const result = await disconnectTelegram()
-    status.value.connected = result.connected
-    status.value.enabled = result.enabled
-    status.value.connected_at = null
+    status.value = {
+      connected: result.connected,
+      enabled: result.enabled,
+      connected_at: null,
+    }
   } catch (err: any) {
     errorMessage.value = err?.response?.data?.detail || 'Не вдалося відключити Telegram'
   } finally {

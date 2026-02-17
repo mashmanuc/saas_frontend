@@ -25,9 +25,6 @@
         </p>
       </div>
 
-      <!-- Activity Status (v0.88.2) -->
-      <ActivityStatusBlock v-if="activityStatus" :status="activityStatus" />
-
       <!-- Today's Lessons -->
       <div v-if="dashboard.todaysLessons?.length > 0" class="space-y-3">
         <h3 class="text-base font-medium text-body">{{ $t('dashboard.tutor.todaysLessons') }}</h3>
@@ -311,7 +308,6 @@ import Card from '../../../ui/Card.vue'
 import Avatar from '../../../ui/Avatar.vue'
 import PresenceDot from '../../../ui/PresenceDot.vue'
 import UpcomingLessonCard from '../components/UpcomingLessonCard.vue'
-import ActivityStatusBlock from '../../marketplace/components/ActivityStatusBlock.vue'
 import StudentContactUnlock from '../components/StudentContactUnlock.vue'
 import ChatModal from '../../chat/components/ChatModal.vue'
 import { formatDateTime } from '../../../utils/datetime'
@@ -324,7 +320,6 @@ import { useContactAccessStore } from '../../../stores/contactAccessStore'
 import TrialBanner from '../../auth/components/TrialBanner.vue'
 import { notifySuccess, notifyError, notifyWarning } from '../../../utils/notify'
 import { getMessageAction } from '@/utils/relationsUi'
-import marketplaceApi from '../../marketplace/api/marketplace'
 
 const auth = useAuthStore()
 const dashboard = useDashboardStore()
@@ -370,8 +365,6 @@ watch(
 const actionLoadingId = ref(null)
 const resendLoadingId = ref(null)
 const retryLoading = ref(false)
-const activityStatus = ref(null)
-
 // Chat modal state
 const chatModalOpen = ref(false)
 const chatModalStudentId = ref(null)
@@ -744,13 +737,6 @@ onMounted(async () => {
   }
   relationsStore.fetchTutorRelations().catch(() => {})
   
-  // Load activity status (v0.88.2)
-  try {
-    activityStatus.value = await marketplaceApi.getTutorActivityStatus()
-  } catch (error) {
-    // Silent fail - activity status is not critical
-  }
-
   // Phase 1 v0.87.1: ТЗ-1.2 - Unread Summary Polling
   if (auth.isAuthenticated) {
     startUnreadPolling()
