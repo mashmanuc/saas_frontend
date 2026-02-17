@@ -44,31 +44,6 @@
           <option value="America/Los_Angeles">America/Los_Angeles</option>
         </select>
       </div>
-
-      <div class="flex items-center justify-between rounded-lg border border-border p-4">
-        <div>
-          <p class="font-medium text-foreground">
-            {{ $t('users.settings.general.darkMode') }}
-          </p>
-          <p class="text-sm text-muted-foreground">
-            {{ $t('users.settings.general.darkModeDescription') }}
-          </p>
-        </div>
-        <button
-          type="button"
-          role="switch"
-          :aria-checked="formData.dark_mode"
-          :disabled="saving"
-          class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-          :class="formData.dark_mode ? 'bg-primary' : 'bg-surface-muted'"
-          @click="toggleDarkMode"
-        >
-          <span
-            class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
-            :class="formData.dark_mode ? 'translate-x-5' : 'translate-x-0'"
-          />
-        </button>
-      </div>
     </div>
 
     <div v-if="errorMessage" class="rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-200">
@@ -108,8 +83,7 @@ const profileStore = useProfileStore()
 
 const formData = ref({
   language: 'uk',
-  timezone: 'UTC',
-  dark_mode: false
+  timezone: 'UTC'
 })
 
 const initialData = ref({ ...formData.value })
@@ -124,8 +98,7 @@ onMounted(async () => {
   if (profileStore.settings) {
     formData.value = {
       language: profileStore.settings.language || 'uk',
-      timezone: profileStore.settings.timezone || 'UTC',
-      dark_mode: profileStore.settings.dark_mode || false
+      timezone: profileStore.settings.timezone || 'UTC'
     }
     initialData.value = { ...formData.value }
   }
@@ -133,11 +106,6 @@ onMounted(async () => {
 
 function handleChange() {
   errorMessage.value = ''
-}
-
-function toggleDarkMode() {
-  formData.value.dark_mode = !formData.value.dark_mode
-  handleChange()
 }
 
 function handleReset() {
