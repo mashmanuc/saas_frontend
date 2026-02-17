@@ -102,6 +102,7 @@ const formatError = (err) => {
 
   if (status === 422 && data && typeof data === 'object') {
     fieldMessages.value = data.field_messages && typeof data.field_messages === 'object' ? data.field_messages : null
+    if (fieldMessages.value) return ''
     const summary = Array.isArray(data.summary) ? data.summary : null
     if (summary && summary.length > 0) return withRequestId(String(summary[0]))
     const msg = data.message
