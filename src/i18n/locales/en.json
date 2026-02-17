@@ -904,6 +904,19 @@
     "title": "Find a Tutor",
     "noResults": "No tutors found",
     "loadMore": "Load more",
+    "hero": {
+      "title": "Find your tutor in 3 minutes",
+      "subtitle": "Verified tutors · Free inquiry"
+    },
+    "trust": {
+      "verified": "All tutors are verified",
+      "contactsChecked": "Contacts checked",
+      "freeInquiry": "Free inquiry",
+      "noObligation": "No obligation to start"
+    },
+    "card": {
+      "viewProfile": "View profile"
+    },
     "filters": {
       "subjects": "Subjects",
       "selectSubjects": "Select subjects",
@@ -960,7 +973,9 @@
       "hasCertifications": "Has certifications",
       "verified": "Verification",
       "verifiedOnly": "Verified only",
-      "clearAll": "Clear all"
+      "clearAll": "Clear all",
+      "hint": "Start with a subject — you can refine later",
+      "searchLabel": "Search"
     },
     "editor": {
       "tagMapNotConfigured": "Tags not configured",

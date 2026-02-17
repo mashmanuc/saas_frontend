@@ -1,12 +1,10 @@
 <script setup lang="ts">
 // TASK MF6: TutorCard component
-import { computed, ref, onMounted } from 'vue'
-import { MapPin, BookOpen, Calendar, Clock } from 'lucide-vue-next'
+import { computed } from 'vue'
+import { MapPin } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import type { TutorListItem, Badge } from '../../api/marketplace'
 import { formatList, toDisplayText } from '../../utils/formatters'
-import { availabilityApi } from '@/modules/booking/api/availabilityApi'
-import type { AvailabilitySummary } from '@/modules/booking/api/availabilityApi'
 import BadgeIcon from '../shared/Badge.vue'
 import Rating from '../shared/Rating.vue'
 import PriceTag from '../shared/PriceTag.vue'
@@ -36,9 +34,6 @@ const countryText = computed(() => {
   return toDisplayText(props.tutor?.country, t('common.notSpecified'))
 })
 
-const lessonsText = computed(() => {
-  return toDisplayText(props.tutor?.total_lessons, t('common.notSpecified'))
-})
 
 const hourlyRateText = computed(() => {
   const amount = props.tutor?.hourly_rate
@@ -49,28 +44,6 @@ const hourlyRateText = computed(() => {
   return t('common.notSpecified')
 })
 
-type TabKey = 'summary' | 'about' | 'calendar'
-const activeTab = ref<TabKey>('summary')
-
-const availabilitySummary = ref<AvailabilitySummary | null>(null)
-const loadingAvailability = ref(false)
-
-const subjectsText = computed(() => {
-  // Handle API format: array of objects with title field
-  const subjects = props.tutor?.subjects
-  if (Array.isArray(subjects) && subjects.length > 0) {
-    // Extract titles from subject objects
-    const titles = subjects
-      .map(s => typeof s === 'object' && s !== null ? s.title : null)
-      .filter((t): t is string => typeof t === 'string' && t.trim().length > 0)
-    
-    if (titles.length > 0) {
-      return titles.join(', ')
-    }
-  }
-  
-  return t('common.notSpecified')
-})
 
 const languagesText = computed(() => {
   return formatList(props.tutor?.languages, t('common.notSpecified'))
@@ -86,491 +59,336 @@ function getFormatTags(subject: any) {
   )
 }
 
-const aboutText = computed(() => {
-  // TutorListItem does not include full bio, so show headline as fallback.
-  return headlineText.value || t('common.notSpecified')
-})
-
-const nextAvailableText = computed(() => {
-  if (!availabilitySummary.value?.next_available_slot) {
-    return t('marketplace.profile.noSlotsAvailable')
-  }
-  
-  const date = new Date(availabilitySummary.value.next_available_slot)
-  const now = new Date()
-  const diffMs = date.getTime() - now.getTime()
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-  
-  if (diffHours < 24) {
-    return t('marketplace.profile.today')
-  } else if (diffDays === 1) {
-    return t('marketplace.profile.tomorrow')
-  } else if (diffDays < 7) {
-    return t('marketplace.profile.inDays', { count: diffDays })
-  }
-  
-  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-})
-
-async function loadAvailability() {
-  if (activeTab.value !== 'calendar') return
-  
-  loadingAvailability.value = true
-  try {
-    availabilitySummary.value = await availabilityApi.getTutorAvailabilitySummary(props.tutor.slug)
-  } catch (err) {
-    console.error('[TutorCard] Failed to load availability:', err)
-  } finally {
-    loadingAvailability.value = false
-  }
-}
-
-function handleTabChange(tab: TabKey) {
-  activeTab.value = tab
-  if (tab === 'calendar' && !availabilitySummary.value) {
-    loadAvailability()
-  }
-}
 </script>
 
 <template>
-  <article class="tutor-card surface-card" data-test="marketplace-tutor-card-row">
-    <div class="left">
-      <RouterLink :to="`/marketplace/tutors/${tutor.slug}`" class="avatar-link">
-        <img
-          v-if="tutor.photo"
-          :src="tutor.photo"
-          :alt="(tutor.display_name || tutor.full_name) || 'Tutor'"
-          class="photo"
-        />
-        <div v-else class="photo-placeholder">
-          {{ ((tutor.display_name || tutor.full_name) || 'T').charAt(0) }}
+  <article class="tutor-card" data-test="marketplace-tutor-card-row">
+    <!-- Avatar -->
+    <div class="tc-avatar-wrap">
+      <RouterLink :to="`/marketplace/tutors/${tutor.slug}`" class="tc-avatar-link">
+        <div class="tc-avatar">
+          <img
+            v-if="tutor.photo"
+            :src="tutor.photo"
+            :alt="(tutor.display_name || tutor.full_name) || 'Tutor'"
+          />
+          <span v-else class="tc-avatar-letter">
+            {{ ((tutor.display_name || tutor.full_name) || 'T').charAt(0) }}
+          </span>
         </div>
       </RouterLink>
     </div>
 
-    <div class="middle">
-      <div class="top-row">
-        <div class="name-row">
-          <RouterLink :to="`/marketplace/tutors/${tutor.slug}`" class="name">
-            {{ (tutor.display_name || tutor.full_name) || t('common.notSpecified') }}
-          </RouterLink>
+    <!-- Info -->
+    <div class="tc-info">
+      <RouterLink :to="`/marketplace/tutors/${tutor.slug}`" class="tc-name">
+        {{ (tutor.display_name || tutor.full_name) || t('common.notSpecified') }}
+      </RouterLink>
 
-          <div class="badges" v-if="displayBadges.length > 0">
-            <BadgeIcon
-              v-for="badge in displayBadges"
-              :key="badge.type"
-              :badge="badge"
-              size="sm"
-            />
-          </div>
+      <div class="tc-tagline">{{ headlineText }}</div>
 
-          <div class="rating">
-            <Rating :value="tutor.average_rating" :count="tutor.total_reviews" />
-          </div>
+      <div class="tc-meta">
+        <div class="tc-meta-item">
+          <MapPin :size="13" />
+          <span>{{ countryText }}</span>
         </div>
-
-        <div class="meta-row">
-          <div class="meta-item">
-            <BookOpen :size="14" />
-            <span>{{ lessonsText }}</span>
-          </div>
-          <div class="meta-item">
-            <MapPin :size="14" />
-            <span>{{ countryText }}</span>
-          </div>
+        <div v-if="tutor.total_reviews > 0" class="tc-meta-item">
+          <Rating :value="tutor.average_rating" :count="tutor.total_reviews" />
         </div>
+        <div class="tc-meta-item">
+          <span>{{ languagesText }}</span>
+        </div>
+      </div>
 
-        <div class="subjects">
-          <strong>{{ t('marketplace.filters.subjects') }}:</strong>
-          <span v-for="(subject, i) in tutor.subjects" :key="subject.code">
-            {{ subject.title }}
-            <span
-              v-for="ftag in getFormatTags(subject)"
-              :key="ftag.code"
-              :class="['format-badge', `format-badge--${ftag.code}`]"
-            >
-              {{ ftag.label }}
-            </span>
-            <span v-if="i < tutor.subjects.length - 1">, </span>
+      <div v-if="displayBadges.length > 0" class="tc-badges">
+        <span
+          v-for="badge in displayBadges"
+          :key="badge.type"
+          class="tc-badge tc-badge--verified"
+        >
+          <BadgeIcon :badge="badge" size="sm" />
+          {{ badge.name || badge.type }}
+        </span>
+      </div>
+
+      <div v-if="tutor.subjects?.length" class="tc-subjects">
+        <span
+          v-for="subject in tutor.subjects"
+          :key="subject.code"
+          class="tc-subj"
+        >
+          {{ subject.title }}
+          <span
+            v-for="ftag in getFormatTags(subject)"
+            :key="ftag.code"
+            :class="['tc-subj-format', `tc-subj-format--${ftag.code}`]"
+          >
+            {{ ftag.label }}
           </span>
-        </div>
-        
-        <div class="languages">
-          <strong>{{ t('marketplace.filters.languages') }}:</strong> {{ languagesText }}
-        </div>
+        </span>
       </div>
     </div>
 
-    <div class="right">
-      <div class="price">
+    <!-- CTA block -->
+    <div class="tc-cta-block">
+      <div class="tc-price">
         <template v-if="!hourlyRateText">
-          <span class="price-label">{{ t('marketplace.filters.price') }}</span>
-          <span class="price-value">
+          <div class="tc-price-val">
             <PriceTag :amount="tutor.hourly_rate" :currency="tutor.currency" size="sm" />
-            <span class="per-hour">{{ t('marketplace.common.perHour') }}</span>
-          </span>
+          </div>
+          <div class="tc-price-per">{{ t('marketplace.common.perHour') }}</div>
         </template>
         <template v-else>
-          <span class="price-label">{{ t('marketplace.filters.price') }}</span>
-          <span class="price-value">{{ hourlyRateText }}</span>
+          <div class="tc-price-val tc-price-val--na">{{ hourlyRateText }}</div>
         </template>
       </div>
 
-      <RouterLink :to="`/marketplace/tutors/${tutor.slug}`" class="btn btn-primary cta">
-        {{ t('common.open') }}
+      <RouterLink :to="`/marketplace/tutors/${tutor.slug}`" class="btn-tc-view">
+        {{ t('marketplace.card.viewProfile') }} &rarr;
       </RouterLink>
-
-      <div class="tabs">
-        <button type="button" class="tab" :class="{ active: activeTab === 'summary' }" @click="handleTabChange('summary')">
-          {{ t('marketplace.catalog.tabs.summary') }}
-        </button>
-        <button type="button" class="tab" :class="{ active: activeTab === 'about' }" @click="handleTabChange('about')">
-          {{ t('marketplace.catalog.tabs.about') }}
-        </button>
-        <button type="button" class="tab" :class="{ active: activeTab === 'calendar' }" @click="handleTabChange('calendar')">
-          {{ t('marketplace.catalog.tabs.calendar') }}
-        </button>
-      </div>
-
-      <div class="tab-body">
-        <div v-if="activeTab === 'summary'" class="tab-panel">
-          <div class="headline">{{ headlineText }}</div>
-        </div>
-        <div v-else-if="activeTab === 'about'" class="tab-panel">
-          <div class="about">{{ aboutText }}</div>
-        </div>
-        <div v-else class="tab-panel">
-          <div v-if="loadingAvailability" class="calendar-loading">
-            <span>{{ t('common.loading') }}</span>
-          </div>
-          <div v-else-if="availabilitySummary" class="calendar-info">
-            <div class="availability-row">
-              <Calendar :size="16" />
-              <div class="availability-details">
-                <span class="availability-label">{{ t('marketplace.profile.nextAvailable') }}:</span>
-                <span class="availability-value">{{ nextAvailableText }}</span>
-              </div>
-            </div>
-            <div v-if="availabilitySummary.weekly_hours" class="availability-row">
-              <Clock :size="16" />
-              <div class="availability-details">
-                <span class="availability-label">{{ t('marketplace.profile.weeklyHours') }}:</span>
-                <span class="availability-value">{{ availabilitySummary.weekly_hours }}h</span>
-              </div>
-            </div>
-          </div>
-          <div v-else class="calendar-empty">
-            <Calendar :size="16" />
-            <span>{{ t('marketplace.profile.noAvailability') }}</span>
-          </div>
-        </div>
-      </div>
     </div>
   </article>
 </template>
 
 <style scoped>
 .tutor-card {
+  background: var(--white, #ffffff);
+  border: 1px solid var(--border, #e0ece5);
+  border-radius: 18px;
+  padding: 22px 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
   display: grid;
-  grid-template-columns: 96px 1fr 340px;
-  gap: 1.5rem;
+  grid-template-columns: auto 1fr auto;
+  gap: 20px;
   align-items: start;
-  background: var(--card-bg);
-  border: 1.5px solid var(--border-color);
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: box-shadow 0.2s, transform 0.2s;
+  transition: all 0.2s;
+  animation: fadeUp 0.3s ease both;
 }
 
 .tutor-card:hover {
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  transform: translateY(-2px);
+  box-shadow: 0 3px 16px rgba(0, 0, 0, 0.1);
+  border-color: var(--green-mid, #c8ecd8);
 }
 
-@media (max-width: 900px) {
-  .tutor-card {
-    grid-template-columns: 84px 1fr;
-  }
-  .right {
-    grid-column: 1 / -1;
-  }
+/* Avatar */
+.tc-avatar-link {
+  text-decoration: none;
 }
 
-.left {
+.tc-avatar {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: var(--green-mid, #c8ecd8);
   display: flex;
+  align-items: center;
   justify-content: center;
-}
-
-.avatar-link {
-  display: inline-flex;
-  border-radius: var(--radius-lg);
+  border: 2px solid var(--green-mid, #c8ecd8);
   overflow: hidden;
-  border: 1px solid var(--border-color);
 }
 
-.photo,
-.photo-placeholder {
-  width: 96px;
-  height: 96px;
-  border-radius: 12px;
-}
-
-.photo {
-  object-fit: cover;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-}
-
-.photo-placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2.25rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  background: var(--bg-secondary);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.name-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  flex-wrap: wrap;
-}
-
-.badges {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.name {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  text-decoration: none;
-  transition: color 0.2s;
-}
-
-.name:hover {
-  color: var(--accent);
-  text-decoration: none;
-}
-
-.trust {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.8125rem;
-  color: var(--text-muted);
-}
-
-.meta-row {
-  display: flex;
-  gap: 1rem;
-  margin-top: 0.75rem;
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-}
-
-.meta-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.25rem 0.5rem;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-}
-
-.subjects {
-  margin-top: 0.75rem;
-  padding: 0.5rem 0.75rem;
-  background: var(--subject-tag-bg);
-  border: 1.5px solid var(--subject-tag-bg);
-  border-radius: 6px;
-  color: var(--subject-tag-text);
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-.subjects strong {
-  color: var(--subject-tag-text);
-  font-weight: 600;
-}
-
-.languages {
-  margin-top: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  background: var(--language-tag-bg);
-  border: 1.5px solid var(--language-tag-bg);
-  border-radius: 6px;
-  color: var(--language-tag-text);
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-.languages strong {
-  color: var(--language-tag-text);
-  font-weight: 600;
-}
-
-.right {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-  align-items: stretch;
-}
-
-.price {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  padding: 1rem;
-  background: var(--price-tag-bg);
-  border: 1.5px solid var(--price-tag-bg);
-  border-radius: 8px;
-}
-
-.price-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--price-tag-text);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.price-value {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--price-tag-text);
-}
-
-.per-hour {
-  margin-left: 0.25rem;
-  font-size: 0.8125rem;
-  color: var(--text-muted);
-}
-
-.cta {
+.tc-avatar img {
   width: 100%;
-  padding: 0.75rem 1.5rem;
-  background: var(--accent);
-  color: var(--accent-contrast);
-  border: 1px solid transparent;
-  border-radius: 8px;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 2px 8px var(--shadow);
+  height: 100%;
+  object-fit: cover;
 }
 
-.cta:hover {
-  background: var(--accent-hover);
-  box-shadow: 0 4px 12px var(--shadow-strong);
-  transform: translateY(-1px);
+.tc-avatar-letter {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--green-dark, #158f3e);
 }
 
-.tabs {
+/* Info */
+.tc-name {
+  display: block;
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text, #111816);
+  margin-bottom: 3px;
+  line-height: 1.2;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.tc-name:hover {
+  color: var(--green-dark, #158f3e);
+}
+
+.tc-tagline {
+  font-size: 13px;
+  color: var(--muted, #7a9186);
+  font-weight: 500;
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+.tc-meta {
   display: flex;
-  gap: var(--space-sm);
-  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--muted, #7a9186);
+  font-weight: 600;
+  margin-bottom: 10px;
 }
 
-.tab {
-  border: none;
-  background: transparent;
-  padding: 0.25rem 0.5rem;
-  font-size: 0.875rem;
-  color: var(--text-muted);
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
+.tc-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
-.tab.active {
-  color: var(--text-primary);
-  border-bottom-color: var(--accent-primary);
+/* Trust badges */
+.tc-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
 }
 
-.tab-body {
-  border-top: 1px solid var(--border-color);
-  padding-top: var(--space-sm);
-  color: var(--text-muted);
-  font-size: 0.875rem;
-}
-
-.calendar {
+.tc-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted, #7a9186);
+  background: var(--bg, #f5f7f6);
+  border: 1px solid var(--border, #e0ece5);
+  border-radius: 20px;
+  padding: 3px 9px;
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 4px;
 }
 
-.calendar-loading,
-.calendar-empty {
+.tc-badge--verified {
+  color: var(--green-dark, #158f3e);
+  background: var(--green-light, #edf9f2);
+  border-color: var(--green-mid, #c8ecd8);
+}
+
+/* Subjects tags */
+.tc-subjects {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--text-muted);
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
 }
 
-.calendar-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+.tc-subj {
+  background: var(--green-light, #edf9f2);
+  color: var(--green-dark, #158f3e);
+  border: 1px solid var(--green-mid, #c8ecd8);
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 11.5px;
+  font-weight: 700;
 }
 
-.availability-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-}
-
-.availability-details {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.availability-label {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
-
-.availability-value {
+.tc-subj-format {
+  margin-left: 4px;
+  font-size: 10px;
   font-weight: 600;
-  color: var(--text-primary);
-}
-
-/* v1.0: Format badges for subjects */
-.format-badge {
-  display: inline-block;
-  margin-left: 0.375rem;
-  padding: 0.125rem 0.5rem;
-  font-size: 0.75rem;
-  font-weight: 600;
+  padding: 1px 5px;
   border-radius: 4px;
-  vertical-align: middle;
 }
 
-.format-badge--online {
+.tc-subj-format--online {
   background: #d1fae5;
   color: #065f46;
-  border: 1px solid #6ee7b7;
 }
 
-.format-badge--offline {
+.tc-subj-format--offline {
   background: #fef3c7;
   color: #92400e;
-  border: 1px solid #fcd34d;
 }
 
-.format-badge--hybrid {
+.tc-subj-format--hybrid {
   background: #ede9fe;
   color: #5b21b6;
-  border: 1px solid #c4b5fd;
+}
+
+/* CTA block */
+.tc-cta-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+  min-width: 160px;
+}
+
+.tc-price {
+  text-align: right;
+}
+
+.tc-price-val {
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--text, #111816);
+  line-height: 1;
+  letter-spacing: -0.5px;
+}
+
+.tc-price-val--na {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted, #7a9186);
+}
+
+.tc-price-per {
+  font-size: 12px;
+  color: var(--muted, #7a9186);
+  font-weight: 600;
+}
+
+.btn-tc-view {
+  background: var(--green, #1DB954);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 11px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+  width: 100%;
+  text-align: center;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-shadow: 0 2px 10px rgba(29, 185, 84, 0.3);
+}
+
+.btn-tc-view:hover {
+  background: var(--green-dark, #158f3e);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(29, 185, 84, 0.4);
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+  .tutor-card {
+    grid-template-columns: auto 1fr;
+    gap: 14px;
+    padding: 16px;
+  }
+  .tc-cta-block {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    min-width: auto;
+  }
+  .btn-tc-view {
+    width: auto;
+    flex: 1;
+  }
 }
 </style>

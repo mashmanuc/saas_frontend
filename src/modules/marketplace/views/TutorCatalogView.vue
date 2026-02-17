@@ -1,6 +1,8 @@
 <script setup lang="ts">
 // TASK MF3: Tutor Catalog View
 import { ref, onMounted, computed, watch } from 'vue'
+import MarketplaceHero from '../components/catalog/MarketplaceHero.vue'
+import TrustStrip from '../components/catalog/TrustStrip.vue'
 import CatalogFilterBar from '../components/catalog/CatalogFilterBar.vue'
 import AdvancedFiltersModal from '../components/catalog/AdvancedFiltersModal.vue'
 import CatalogPagination from '../components/catalog/CatalogPagination.vue'
@@ -94,17 +96,15 @@ watch(
 
 <template>
   <div class="catalog-view" data-test="marketplace-catalog">
-    <header class="catalog-header">
-      <div class="header-content">
-        <h1>{{ t('marketplace.catalog.title') }}</h1>
-        <p class="subtitle">
-          {{ t('marketplace.catalog.subtitle', { count: totalCount }) }}
-        </p>
-      </div>
-    </header>
+    <div class="catalog-page">
+      <!-- Hero -->
+      <MarketplaceHero />
 
-    <!-- Filter Bar -->
-    <CatalogFilterBar
+      <!-- Trust Strip -->
+      <TrustStrip />
+
+      <!-- Filter Bar -->
+      <CatalogFilterBar
       :filters="filters"
       :options="filterOptions"
       :active-filters-count="activeFiltersCount"
@@ -123,14 +123,17 @@ watch(
       @apply="handleCloseAdvanced"
     />
 
-    <div class="catalog-layout">
-      <main class="catalog-main">
-        <div class="catalog-toolbar">
-          <CatalogSort :value="sortBy" @update="handleSortUpdate" />
-          <span class="results-count">
-            {{ t('marketplace.catalog.resultsCount', { count: totalCount }) }}
-          </span>
+      <!-- Results bar -->
+      <div class="results-bar">
+        <div class="results-count">
+          <span v-if="totalCount > 0">{{ t('marketplace.catalog.resultsCount', { count: totalCount }) }}</span>
         </div>
+        <div class="sort-wrap">
+          <CatalogSort :value="sortBy" @update="handleSortUpdate" />
+        </div>
+      </div>
+
+      <div class="catalog-main">
 
         <LoadingSpinner v-if="isLoading && tutors.length === 0" data-test="marketplace-loading" />
 
@@ -174,7 +177,7 @@ watch(
             {{ t('marketplace.catalog.clearFilters') }}
           </button>
         </EmptyState>
-      </main>
+      </div>
     </div>
   </div>
 </template>
@@ -182,67 +185,36 @@ watch(
 <style scoped>
 .catalog-view {
   min-height: 100vh;
-  background: #f7f8fa;
+  background: var(--bg, #f5f7f6);
 }
 
-.catalog-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 3rem 1.5rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.header-content {
-  max-width: 1400px;
+.catalog-page {
+  max-width: 1100px;
   margin: 0 auto;
+  padding: 32px 28px 80px;
 }
 
-.catalog-header h1 {
-  font-size: 2.25rem;
+.results-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.results-count {
+  font-size: 13px;
   font-weight: 700;
-  margin: 0 0 0.75rem;
-  letter-spacing: -0.025em;
+  color: var(--text, #111816);
 }
 
-.subtitle {
-  font-size: 1.125rem;
-  opacity: 0.95;
-  margin: 0;
-  font-weight: 400;
-}
-
-.catalog-layout {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 2rem 1.5rem;
+.sort-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .catalog-main {
   min-width: 0;
-}
-
-.catalog-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1.5rem;
-  padding: 1rem 1.25rem;
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-}
-
-.results-count {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #6b7280;
-}
-
-.load-more {
-  display: flex;
-  justify-content: center;
-  padding: 2rem 0;
 }
 
 .error-actions {
@@ -254,12 +226,8 @@ watch(
 }
 
 @media (max-width: 768px) {
-  .catalog-header h1 {
-    font-size: 1.75rem;
-  }
-
-  .catalog-layout {
-    padding: 1rem;
+  .catalog-page {
+    padding: 16px 12px 60px;
   }
 }
 </style>

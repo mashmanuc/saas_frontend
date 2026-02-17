@@ -77,161 +77,201 @@ function handleClear() {
 </script>
 
 <template>
-  <div class="catalog-filter-bar">
-    <div class="filter-bar-container">
-      <!-- Search -->
-      <div class="filter-group search-group">
+  <div class="filters-wrap">
+    <div class="filters-hint">
+      {{ t('marketplace.filters.hint') }}
+    </div>
+
+    <!-- Row 1: Subject, Language, Country, Format -->
+    <div class="filter-row filter-row--main">
+      <div class="filter-group">
+        <label class="filter-label">{{ t('marketplace.filters.subject') }}</label>
+        <select v-model="selectedSubject" class="filter-select">
+          <option value="">{{ t('marketplace.filters.any') }}</option>
+          <option
+            v-for="opt in subjectOptions"
+            :key="opt.value"
+            :value="opt.value"
+          >
+            {{ opt.label }}
+          </option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label">{{ t('marketplace.filters.language') }}</label>
+        <select v-model="selectedLanguage" class="filter-select">
+          <option value="">{{ t('marketplace.filters.any') }}</option>
+          <option
+            v-for="opt in languageOptions"
+            :key="opt.value"
+            :value="opt.value"
+          >
+            {{ opt.label }}
+          </option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label">{{ t('marketplace.filters.country') }}</label>
+        <select v-model="selectedCountry" class="filter-select">
+          <option value="">{{ t('marketplace.filters.allCountries') }}</option>
+          <option
+            v-for="opt in countryOptions"
+            :key="opt.value"
+            :value="opt.value"
+          >
+            {{ opt.label }}
+          </option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label">{{ t('marketplace.filters.format') }}</label>
+        <select v-model="selectedFormat" class="filter-select">
+          <option value="">{{ t('marketplace.filters.any') }}</option>
+          <option value="online">{{ t('marketplace.filters.formatOnline') }}</option>
+          <option value="offline">{{ t('marketplace.filters.formatOffline') }}</option>
+          <option value="hybrid">{{ t('marketplace.filters.formatHybrid') }}</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Row 2: Search + Price + Actions -->
+    <div class="filter-row filter-row--secondary">
+      <div class="filter-group">
+        <label class="filter-label">{{ t('marketplace.filters.searchLabel') }}</label>
         <div class="search-input-wrapper">
-          <Search :size="18" class="search-icon" />
+          <Search :size="16" class="search-icon" />
           <input
             v-model="localSearch"
             type="text"
             :placeholder="t('marketplace.filters.searchPlaceholder')"
-            class="search-input"
+            class="filter-input search-input"
           />
         </div>
       </div>
 
-      <!-- Top Filters Grid -->
-      <div class="filters-grid">
-        <!-- Subject -->
-        <div class="filter-group">
-          <label class="filter-label">{{ t('marketplace.filters.subject') }}</label>
-          <select v-model="selectedSubject" class="filter-select">
-            <option value="">{{ t('marketplace.filters.any') }}</option>
-            <option
-              v-for="opt in subjectOptions"
-              :key="opt.value"
-              :value="opt.value"
-            >
-              {{ opt.label }}
-            </option>
-          </select>
-        </div>
-
-        <!-- Language -->
-        <div class="filter-group">
-          <label class="filter-label">{{ t('marketplace.filters.language') }}</label>
-          <select v-model="selectedLanguage" class="filter-select">
-            <option value="">{{ t('marketplace.filters.any') }}</option>
-            <option
-              v-for="opt in languageOptions"
-              :key="opt.value"
-              :value="opt.value"
-            >
-              {{ opt.label }}
-            </option>
-          </select>
-        </div>
-
-        <!-- Country -->
-        <div class="filter-group">
-          <label class="filter-label">{{ t('marketplace.filters.country') }}</label>
-          <select v-model="selectedCountry" class="filter-select">
-            <option value="">{{ t('marketplace.filters.allCountries') }}</option>
-            <option
-              v-for="opt in countryOptions"
-              :key="opt.value"
-              :value="opt.value"
-            >
-              {{ opt.label }}
-            </option>
-          </select>
-        </div>
-
-        <!-- City -->
-        <div v-if="cityOptions.length > 0" class="filter-group">
-          <label class="filter-label">{{ t('marketplace.filters.city') }}</label>
-          <select v-model="selectedCity" class="filter-select">
-            <option value="">{{ t('marketplace.filters.cityAll') }}</option>
-            <option
-              v-for="opt in cityOptions"
-              :key="opt.slug"
-              :value="opt.slug"
-            >
-              {{ opt.name }}
-            </option>
-          </select>
-        </div>
-
-        <!-- Format -->
-        <div class="filter-group">
-          <label class="filter-label">{{ t('marketplace.filters.format') }}</label>
-          <select v-model="selectedFormat" class="filter-select">
-            <option value="">{{ t('marketplace.filters.any') }}</option>
-            <option value="online">{{ t('marketplace.filters.formatOnline') }}</option>
-            <option value="offline">{{ t('marketplace.filters.formatOffline') }}</option>
-            <option value="hybrid">{{ t('marketplace.filters.formatHybrid') }}</option>
-          </select>
-        </div>
-
-        <!-- Price Range -->
-        <div class="filter-group price-group">
-          <label class="filter-label">{{ t('marketplace.filters.price') }}</label>
-          <div class="price-inputs">
-            <input
-              v-model="priceMin"
-              type="number"
-              :placeholder="t('marketplace.filters.min')"
-              class="price-input"
-              min="0"
-            />
-            <span class="price-separator">—</span>
-            <input
-              v-model="priceMax"
-              type="number"
-              :placeholder="t('marketplace.filters.max')"
-              class="price-input"
-              min="0"
-            />
-          </div>
+      <div class="filter-group">
+        <label class="filter-label">{{ t('marketplace.filters.price') }}</label>
+        <div class="price-range">
+          <input
+            v-model="priceMin"
+            type="number"
+            :placeholder="t('marketplace.filters.min')"
+            class="filter-input"
+            min="0"
+          />
+          <span class="price-sep">&mdash;</span>
+          <input
+            v-model="priceMax"
+            type="number"
+            :placeholder="t('marketplace.filters.max')"
+            class="filter-input"
+            min="0"
+          />
         </div>
       </div>
 
-      <!-- Actions -->
-      <div class="filter-actions">
-        <button
-          class="btn-advanced"
-          @click="emit('openAdvanced')"
-          :title="t('marketplace.filters.title')"
-        >
-          <SlidersHorizontal :size="18" />
-          <span v-if="activeFiltersCount" class="badge">{{ activeFiltersCount }}</span>
-        </button>
-        <button
-          v-if="activeFiltersCount"
-          class="btn-clear"
-          @click="handleClear"
-          :title="t('marketplace.filters.clearAll')"
-        >
-          <X :size="18" />
-        </button>
+      <div class="filter-group filter-group--actions">
+        <label class="filter-label filter-label--spacer">&nbsp;</label>
+        <div class="filter-actions">
+          <button
+            v-if="activeFiltersCount"
+            class="btn-reset"
+            @click="handleClear"
+          >
+            {{ t('marketplace.filters.clearAll') }}
+          </button>
+          <button
+            class="btn-advanced"
+            @click="emit('openAdvanced')"
+            :title="t('marketplace.filters.title')"
+          >
+            <SlidersHorizontal :size="16" />
+            <span v-if="activeFiltersCount" class="adv-badge">{{ activeFiltersCount }}</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.catalog-filter-bar {
-  background: white;
-  border-bottom: 1px solid var(--border-color, #e5e7eb);
-  padding: 1rem 1.5rem;
-  position: sticky;
-  top: 0;
-  z-index: 10;
+.filters-wrap {
+  background: var(--white, #ffffff);
+  border: 1px solid var(--border, #e0ece5);
+  border-radius: 18px;
+  padding: 24px 28px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
+  animation: fadeUp 0.3s ease 0.1s both;
 }
 
-.filter-bar-container {
-  max-width: 1400px;
-  margin: 0 auto;
+.filters-hint {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--green-dark, #158f3e);
+  margin-bottom: 16px;
   display: flex;
-  gap: 1rem;
-  align-items: flex-end;
+  align-items: center;
+  gap: 5px;
 }
 
-.search-group {
-  flex: 1;
-  min-width: 240px;
+.filter-row {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.filter-row--main {
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+}
+
+.filter-row--secondary {
+  grid-template-columns: 2fr 2fr auto;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter-group--actions {
+  justify-content: flex-end;
+}
+
+.filter-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted, #7a9186);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.filter-label--spacer {
+  opacity: 0;
+}
+
+.filter-select,
+.filter-input {
+  border: 1.5px solid var(--border, #e0ece5);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text, #111816);
+  font-family: inherit;
+  background: var(--bg, #f5f7f6);
+  transition: all 0.15s;
+}
+
+.filter-select:focus,
+.filter-input:focus {
+  outline: none;
+  border-color: var(--green-mid, #c8ecd8);
+  background: var(--white, #ffffff);
 }
 
 .search-input-wrapper {
@@ -243,139 +283,73 @@ function handleClear() {
 .search-icon {
   position: absolute;
   left: 12px;
-  color: var(--text-muted, #6b7280);
+  color: var(--muted, #7a9186);
   pointer-events: none;
 }
 
 .search-input {
   width: 100%;
-  padding: 0.625rem 0.75rem 0.625rem 2.5rem;
-  border: 1px solid var(--border-color, #d1d5db);
-  border-radius: 8px;
-  font-size: 0.9375rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  padding-left: 2.25rem;
 }
 
-.search-input:focus {
-  outline: none;
-  border-color: var(--accent-primary, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.filters-grid {
+.price-range {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 1rem;
-  flex: 2;
-}
-
-@media (max-width: 1200px) {
-  .filters-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 768px) {
-  .filter-bar-container {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .filters-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .search-group {
-    min-width: auto;
-  }
-}
-
-.filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.375rem;
-}
-
-.filter-label {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--text-secondary, #374151);
-}
-
-.filter-select {
-  padding: 0.625rem 0.75rem;
-  border: 1px solid var(--border-color, #d1d5db);
-  border-radius: 8px;
-  font-size: 0.9375rem;
-  background: white;
-  cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.filter-select:focus {
-  outline: none;
-  border-color: var(--accent-primary, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.price-group {
-  grid-column: span 1;
-}
-
-.price-inputs {
-  display: flex;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 8px;
   align-items: center;
-  gap: 0.5rem;
 }
 
-.price-input {
-  flex: 1;
-  padding: 0.625rem 0.75rem;
-  border: 1px solid var(--border-color, #d1d5db);
-  border-radius: 8px;
-  font-size: 0.9375rem;
-  min-width: 0;
-}
-
-.price-input:focus {
-  outline: none;
-  border-color: var(--accent-primary, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.price-separator {
-  color: var(--text-muted, #6b7280);
-  font-weight: 500;
+.price-sep {
+  font-size: 12px;
+  color: var(--muted, #7a9186);
+  font-weight: 600;
 }
 
 .filter-actions {
   display: flex;
-  gap: 0.5rem;
+  gap: 10px;
   align-items: center;
 }
 
-.btn-advanced,
-.btn-clear {
+.btn-reset {
+  background: transparent;
+  color: var(--muted, #7a9186);
+  border: 1px solid var(--border, #e0ece5);
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.btn-reset:hover {
+  border-color: var(--green-mid, #c8ecd8);
+  color: var(--green-dark, #158f3e);
+}
+
+.btn-advanced {
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.625rem;
-  border: 1px solid var(--border-color, #d1d5db);
-  border-radius: 8px;
-  background: white;
-  color: var(--text-primary, #111827);
+  padding: 10px;
+  border: 1px solid var(--border, #e0ece5);
+  border-radius: 10px;
+  background: var(--bg, #f5f7f6);
+  color: var(--muted, #7a9186);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s;
 }
 
-.btn-advanced:hover,
-.btn-clear:hover {
-  background: var(--surface-hover, #f9fafb);
-  border-color: var(--accent-primary, #3b82f6);
+.btn-advanced:hover {
+  border-color: var(--green-mid, #c8ecd8);
+  color: var(--green-dark, #158f3e);
 }
 
-.badge {
+.adv-badge {
   position: absolute;
   top: -6px;
   right: -6px;
@@ -385,10 +359,34 @@ function handleClear() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--accent-primary, #3b82f6);
+  background: var(--green, #1DB954);
   color: white;
   font-size: 0.6875rem;
-  font-weight: 600;
+  font-weight: 700;
   border-radius: 9px;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 900px) {
+  .filter-row--main {
+    grid-template-columns: 1fr 1fr;
+  }
+  .filter-row--secondary {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .filters-wrap {
+    padding: 16px 16px;
+    border-radius: 14px;
+  }
+  .filter-row--main {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

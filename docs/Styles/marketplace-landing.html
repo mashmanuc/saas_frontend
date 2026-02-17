@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M4SH — Маркетплейс тьюторів</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #1DB954;
+    --green-dark: #158f3e;
+    --green-light: #edf9f2;
+    --green-mid: #c8ecd8;
+    --bg: #f5f7f6;
+    --text: #111816;
+    --muted: #7a9186;
+    --border: #e0ece5;
+    --white: #ffffff;
+    --shadow: 0 1px 8px rgba(0,0,0,0.06);
+    --radius: 18px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Manrope', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+  }
+
+  /* ─── SIDEBAR ─── */
+  .sidebar {
+    width: 216px; min-height: 100vh;
+    background: var(--white);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    padding: 24px 14px;
+    position: fixed; top: 0; left: 0; bottom: 0; z-index: 10;
+  }
+  .logo {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 17px; font-weight: 900; color: var(--green);
+    margin-bottom: 32px; padding: 0 8px; letter-spacing: -0.5px;
+  }
+  .logo span { color: var(--text); }
+  .nav-item {
+    display: flex; align-items: center; gap: 9px;
+    padding: 9px 12px; border-radius: 10px;
+    font-size: 13px; font-weight: 600; color: var(--muted);
+    cursor: pointer; margin-bottom: 2px; text-decoration: none;
+    transition: all 0.15s;
+  }
+  .nav-item:hover { background: var(--green-light); color: var(--green-dark); }
+  .nav-item.active { background: var(--green-light); color: var(--green-dark); }
+
+  /* ─── TOPBAR ─── */
+  .topbar {
+    position: fixed; top: 0; left: 216px; right: 0;
+    height: 52px; background: var(--white);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center;
+    padding: 0 28px; z-index: 9;
+  }
+  .breadcrumb {
+    font-size: 13px; color: var(--muted); font-weight: 500;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .breadcrumb a { color: var(--muted); text-decoration: none; }
+  .breadcrumb a:hover { color: var(--green-dark); }
+  .bc-current { color: var(--text); font-weight: 700; }
+  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .avatar-sm {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--green); display: flex; align-items: center;
+    justify-content: center; font-size: 12px; font-weight: 800; color: white;
+  }
+
+  /* ─── LAYOUT ─── */
+  .main { margin-left: 216px; padding-top: 52px; flex: 1; }
+  .page { max-width: 1100px; margin: 0 auto; padding: 32px 28px 80px; }
+
+  /* ═══════════════════════════════════
+     FIX #1: HERO — marketing, not admin
+  ════════════════════════════════════ */
+  .hero {
+    background: linear-gradient(135deg, var(--green) 0%, var(--green-dark) 100%);
+    border-radius: var(--radius);
+    padding: 40px 44px;
+    margin-bottom: 24px;
+    color: white;
+    box-shadow: 0 4px 24px rgba(29,185,84,0.25);
+  }
+  .hero-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 28px; font-weight: 900; line-height: 1.2;
+    margin-bottom: 8px; letter-spacing: -0.8px;
+  }
+  .hero-sub {
+    font-size: 15px; font-weight: 600; opacity: 0.92;
+    margin-bottom: 20px; line-height: 1.5;
+  }
+  .hero-stats {
+    display: flex; gap: 28px; flex-wrap: wrap;
+  }
+  .hstat {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 700; opacity: 0.95;
+  }
+  .hstat-icon { font-size: 16px; }
+
+  /* ═══════════════════════════════════
+     FIX #5: TRUST STRIP — platform layer
+  ════════════════════════════════════ */
+  .trust-strip {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 24px;
+    margin-bottom: 24px;
+    display: flex; align-items: center; justify-content: center;
+    gap: 32px; flex-wrap: wrap;
+    box-shadow: var(--shadow);
+  }
+  .tstrip-item {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 12.5px; font-weight: 700; color: var(--muted);
+  }
+  .tstrip-icon { font-size: 15px; color: var(--green-dark); }
+
+  /* ═══════════════════════════════════
+     FIX #2: FILTERS — grouped, with hints
+  ════════════════════════════════════ */
+  .filters-wrap {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 28px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow);
+  }
+  .filters-hint {
+    font-size: 12px; font-weight: 700; color: var(--green-dark);
+    margin-bottom: 16px; display: flex; align-items: center; gap: 5px;
+  }
+  .filter-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .filter-group {
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .filter-label {
+    font-size: 11px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.4px;
+  }
+  .filter-select, .filter-input {
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 13px; font-weight: 600; color: var(--text);
+    font-family: 'Manrope', sans-serif;
+    background: var(--bg);
+    transition: all 0.15s;
+  }
+  .filter-select:focus, .filter-input:focus {
+    outline: none;
+    border-color: var(--green-mid);
+    background: var(--white);
+  }
+
+  .price-range {
+    display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center;
+  }
+  .price-range input {
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 13px; font-weight: 600; color: var(--text);
+    font-family: 'Manrope', sans-serif;
+    background: var(--bg);
+    transition: all 0.15s;
+  }
+  .price-range input:focus {
+    outline: none; border-color: var(--green-mid); background: var(--white);
+  }
+  .price-sep { font-size: 12px; color: var(--muted); font-weight: 600; }
+
+  .filter-actions {
+    display: flex; gap: 10px; align-items: center;
+  }
+  .btn-filter {
+    background: var(--green); color: white; border: none;
+    border-radius: 10px; padding: 10px 20px;
+    font-size: 13px; font-weight: 700; cursor: pointer;
+    transition: background 0.15s; font-family: 'Manrope', sans-serif;
+  }
+  .btn-filter:hover { background: var(--green-dark); }
+  .btn-reset {
+    background: transparent; color: var(--muted);
+    border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px 16px; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s; font-family: 'Manrope', sans-serif;
+  }
+  .btn-reset:hover { border-color: var(--green-mid); color: var(--green-dark); }
+
+  /* ═══════════════════════════════════
+     RESULTS BAR
+  ════════════════════════════════════ */
+  .results-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 18px;
+  }
+  .results-count {
+    font-size: 13px; font-weight: 700; color: var(--text);
+  }
+  .results-count span { color: var(--green-dark); }
+  .sort-wrap {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .sort-label {
+    font-size: 12px; font-weight: 600; color: var(--muted);
+  }
+  .sort-select {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 12px; font-weight: 600; color: var(--text);
+    font-family: 'Manrope', sans-serif;
+    background: var(--white);
+  }
+
+  /* ═══════════════════════════════════
+     FIX #3, #4: TUTOR CARD — mini v2 profile
+  ════════════════════════════════════ */
+  .tutor-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px 24px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 20px;
+    align-items: start;
+    transition: all 0.2s;
+  }
+  .tutor-card:hover {
+    box-shadow: 0 3px 16px rgba(0,0,0,0.1);
+    border-color: var(--green-mid);
+  }
+
+  .tc-avatar-wrap { position: relative; }
+  .tc-avatar {
+    width: 68px; height: 68px; border-radius: 50%;
+    background: var(--green-mid);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 800; color: var(--green-dark);
+    border: 2px solid var(--green-mid);
+    overflow: hidden;
+  }
+  .tc-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .tc-online {
+    position: absolute; bottom: 2px; right: 2px;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--green); border: 2px solid white;
+  }
+
+  .tc-info {}
+  .tc-name {
+    font-size: 17px; font-weight: 800; color: var(--text);
+    margin-bottom: 3px; line-height: 1.2;
+  }
+  .tc-tagline {
+    font-size: 13px; color: var(--muted); font-weight: 500;
+    margin-bottom: 10px;
+  }
+
+  /* Value prop в картці — як у профілі */
+  .tc-value {
+    font-size: 13px; font-weight: 700; color: var(--text);
+    padding-left: 10px; border-left: 2.5px solid var(--green);
+    margin-bottom: 10px; line-height: 1.5;
+  }
+
+  .tc-meta {
+    display: flex; flex-wrap: wrap; gap: 12px;
+    font-size: 12px; color: var(--muted); font-weight: 600;
+    margin-bottom: 10px;
+  }
+  .tc-meta-item { display: flex; align-items: center; gap: 4px; }
+
+  /* Trust badges в картці */
+  .tc-badges {
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .tc-badge {
+    font-size: 11px; font-weight: 700; color: var(--muted);
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 20px; padding: 3px 9px;
+  }
+  .tc-badge.verified {
+    color: var(--green-dark); background: var(--green-light);
+    border-color: var(--green-mid);
+  }
+
+  /* Subjects tags */
+  .tc-subjects {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    margin-top: 10px;
+  }
+  .tc-subj {
+    background: var(--green-light); color: var(--green-dark);
+    border: 1px solid var(--green-mid);
+    border-radius: 8px; padding: 4px 10px;
+    font-size: 11.5px; font-weight: 700;
+  }
+
+  /* Right side — price + CTA */
+  .tc-cta-block {
+    display: flex; flex-direction: column; gap: 8px;
+    align-items: flex-end;
+    min-width: 160px;
+  }
+  .tc-price {
+    text-align: right;
+  }
+  .tc-price-val {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 22px; font-weight: 900; color: var(--text);
+    line-height: 1; letter-spacing: -0.5px;
+  }
+  .tc-price-per {
+    font-size: 12px; color: var(--muted); font-weight: 600;
+  }
+
+  /* FIX #4: CTA button — про ціль, не "Відкрити" */
+  .btn-tc-view {
+    background: var(--green); color: white; border: none;
+    border-radius: 10px; padding: 11px 18px;
+    font-size: 13px; font-weight: 700; cursor: pointer;
+    transition: all 0.15s; font-family: 'Manrope', sans-serif;
+    width: 100%; text-align: center; text-decoration: none;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    box-shadow: 0 2px 10px rgba(29,185,84,0.3);
+  }
+  .btn-tc-view:hover {
+    background: var(--green-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(29,185,84,0.4);
+  }
+
+  .tc-quick-info {
+    font-size: 11px; color: var(--muted); font-weight: 600;
+    text-align: right; line-height: 1.4;
+  }
+
+  /* Empty state */
+  .empty-state {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 48px 32px;
+    text-align: center;
+    box-shadow: var(--shadow);
+  }
+  .empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+  .empty-title {
+    font-size: 16px; font-weight: 800; color: var(--text);
+    margin-bottom: 8px;
+  }
+  .empty-text {
+    font-size: 13px; color: var(--muted); font-weight: 600;
+    line-height: 1.6;
+  }
+
+  /* Animations */
+  @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+  .hero { animation: fadeUp .3s ease 0s both; }
+  .trust-strip { animation: fadeUp .3s ease .05s both; }
+  .filters-wrap { animation: fadeUp .3s ease .1s both; }
+  .tutor-card { animation: fadeUp .3s ease both; }
+  .tutor-card:nth-child(1) { animation-delay: .15s; }
+  .tutor-card:nth-child(2) { animation-delay: .18s; }
+  .tutor-card:nth-child(3) { animation-delay: .21s; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo">M4<span>SH</span></div>
+  <a class="nav-item" href="#">🏠 Панель керування</a>
+  <a class="nav-item active" href="#">🛍 Маркетплейс</a>
+  <a class="nav-item" href="#">📅 Календар</a>
+  <a class="nav-item" href="#">👤 Робочий профіль</a>
+  <a class="nav-item" href="#">👤 Акаунт</a>
+</aside>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <nav class="breadcrumb">
+    <span class="bc-current">Маркетплейс</span>
+  </nav>
+  <div class="topbar-right">
+    <div style="font-size:18px;cursor:pointer;color:var(--muted)">🔔</div>
+    <div class="avatar-sm">О</div>
+  </div>
+</header>
+
+<main class="main">
+<div class="page">
+
+  <!-- ═══════════════════════════════════
+       FIX #1: HERO — marketing message
+  ════════════════════════════════════ -->
+  <div class="hero">
+    <div class="hero-title">Знайдіть свого тьютора за 3 хвилини</div>
+    <div class="hero-sub">
+      Перевірені викладачі · Безкоштовний запит 
+    </div>
+    <div class="hero-stats">
+      <div class="hstat">
+        
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════
+       FIX #5: TRUST STRIP
+  ════════════════════════════════════ -->
+  <div class="trust-strip">
+    
+  </div>
+
+  <!-- ═══════════════════════════════════
+       FIX #2: FILTERS — grouped, helpful
+  ════════════════════════════════════ -->
+  <div class="filters-wrap">
+    <div class="filters-hint">
+      💡 Почніть з предмету — інше можна уточнити пізніше
+    </div>
+
+    <div class="filter-row">
+      <div class="filter-group">
+        <label class="filter-label">Предмет</label>
+        <select class="filter-select">
+          <option>Будь-який</option>
+          <option>Математика</option>
+          <option>Фізика</option>
+          <option>Хімія</option>
+          <option>Англійська</option>
+          <option>Українська</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label">Мова навчання</label>
+        <select class="filter-select">
+          <option>Будь-яка</option>
+          <option>Українська</option>
+          <option>Англійська</option>
+          <option>Російська</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label">Країна</label>
+        <select class="filter-select">
+          <option>Усі країни</option>
+          <option>Україна</option>
+          <option>Польща</option>
+          <option>Німеччина</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label">Формат</label>
+        <select class="filter-select">
+          <option>Будь-який</option>
+          <option>Онлайн</option>
+          <option>Офлайн</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="filter-row" style="grid-template-columns: 2fr 2fr;">
+      <div class="filter-group">
+        <label class="filter-label">Ціна (грн/год)</label>
+        <div class="price-range">
+          <input type="number" placeholder="Від" value="">
+          <span class="price-sep">—</span>
+          <input type="number" placeholder="До" value="">
+        </div>
+      </div>
+
+      <div class="filter-group" style="justify-content:flex-end;">
+        <label class="filter-label" style="opacity:0;">.</label>
+        <div class="filter-actions">
+          <button class="btn-reset">Скинути фільтри</button>
+          <button class="btn-filter">🔍 Знайти тьюторів</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results bar -->
+  <div class="results-bar">
+    <div class="results-count">
+      <!-- Не показуємо кількість, якщо < 20 -->
+    </div>
+    <div class="sort-wrap">
+      <span class="sort-label">Сортувати:</span>
+      <select class="sort-select">
+        <option>За релевантністю</option>
+        <option>За рейтингом</option>
+        <option>За ціною (зростання)</option>
+        <option>За ціною (спадання)</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════
+       FIX #3, #4: TUTOR CARDS
+  ════════════════════════════════════ -->
+
+  <div class="tutor-card">
+    <!-- Avatar -->
+    <div class="tc-avatar-wrap">
+      <div class="tc-avatar">
+        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=faces" alt="Віктор Л.">
+      </div>
+      <div class="tc-online"></div>
+    </div>
+
+    <!-- Info -->
+    <div class="tc-info">
+      <div class="tc-name">Віктор Л.</div>
+      <div class="tc-tagline">Вчитель математики і фізики</div>
+
+      <!-- Value prop — як у профілі -->
+      <div class="tc-value">
+        12 років практики · пояснює через приклади з життя · учні складають ЗНО на 185–200 балів
+      </div>
+
+      <!-- Факти окремо -->
+      <div class="tc-meta">
+        <div class="tc-meta-item">📍 Ковель</div>
+        <div class="tc-meta-item">🎓 12 років досвіду</div>
+        <div class="tc-meta-item">💬 Відповідь за 24 год</div>
+      </div>
+
+      <!-- Trust badges окремим рядком -->
+      <div class="tc-badges">
+        <div class="tc-badge verified">✅ Верифікований</div>
+        <div class="tc-badge verified">📞 Контакти OK</div>
+      </div>
+
+      <!-- Subjects внизу -->
+      <div class="tc-subjects">
+        <div class="tc-subj">➕ Математика</div>
+        <div class="tc-subj">⚛️ Фізика</div>
+        <div class="tc-subj" style="background:var(--bg);border-color:var(--border);color:var(--muted);">📍 Офлайн</div>
+      </div>
+    </div>
+
+    <!-- CTA block -->
+    <div class="tc-cta-block">
+      <div class="tc-price">
+        <div class="tc-price-val" style="font-size:20px;">120 грн</div>
+        <div class="tc-price-per" style="font-size:11px;">/ год · без комісії</div>
+      </div>
+
+      <!-- FIX #4: CTA про ціль — але не занадто різкий крок -->
+      <a href="#" class="btn-tc-view">
+        Переглянути профіль →
+      </a>
+
+      <div class="tc-quick-info">
+        Домовляєтесь напряму<br>
+        <span style="color:var(--green-dark);">M4SH не бере комісії</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty state (якщо нічого не знайдено) -->
+  <!-- <div class="empty-state">
+    <div class="empty-icon">🔍</div>
+    <div class="empty-title">Тьюторів не знайдено</div>
+    <div class="empty-text">
+      Спробуйте змінити фільтри або розширити критерії пошуку.<br>
+      Можливо, ви шукаєте щось дуже специфічне — напишіть нам, ми допоможемо знайти!
+    </div>
+  </div> -->
+
+</div>
+</main>
+
+</body>
+</html>
