@@ -101,17 +101,28 @@ const formatError = (err) => {
   }
 
   if (status === 422 && data && typeof data === 'object') {
-    fieldMessages.value = data.field_messages && typeof data.field_messages === 'object' ? data.field_messages : null
-    if (fieldMessages.value) return ''
+    const fm = data.field_messages && typeof data.field_messages === 'object' ? data.field_messages : null
+    const formFields = ['new_password', 'new_password_confirm']
+    const hasFormFieldErrors = fm && formFields.some(f => Array.isArray(fm[f]) && fm[f].length > 0)
+    if (hasFormFieldErrors) {
+      fieldMessages.value = fm
+      return ''
+    }
+    fieldMessages.value = null
+    const msg = data.message
+    if (typeof msg === 'string' && msg.trim().length > 0) return withRequestId(msg)
     const summary = Array.isArray(data.summary) ? data.summary : null
     if (summary && summary.length > 0) return withRequestId(String(summary[0]))
-    const msg = data.message
-    return withRequestId(typeof msg === 'string' && msg.trim().length > 0 ? msg : 'Перевірте дані.')
+    return withRequestId('Перевірте дані.')
   }
 
   if (data && typeof data === 'object') {
     const msg = data.message || data.detail
     if (typeof msg === 'string' && msg.trim().length > 0) return withRequestId(msg)
+  }
+
+  if (!err?.response) {
+    return 'Немає зʼєднання з сервером. Перевірте інтернет і спробуйте ще раз.'
   }
 
   return withRequestId('Тимчасова помилка. Спробуйте пізніше.')
