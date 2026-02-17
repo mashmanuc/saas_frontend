@@ -61,6 +61,9 @@
       </div>
     </div>
 
+    <!-- Telegram Notifications (tutors only) -->
+    <TelegramNotifications v-if="isTutor" />
+
     <div v-if="errorMessage" class="rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-200">
       {{ errorMessage }}
     </div>
@@ -89,12 +92,16 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import Button from '@/ui/Button.vue'
+import TelegramNotifications from './TelegramNotifications.vue'
 import { useProfileStore } from '../../store/profileStore'
+import { useAuthStore } from '@/stores/authStore'
 import { updateUserSettings } from '@/api/users'
 import { notifySuccess, notifyError } from '@/utils/notify'
 import { i18n } from '@/i18n'
 
 const profileStore = useProfileStore()
+const authStore = useAuthStore()
+const isTutor = computed(() => authStore.user?.role === 'tutor')
 
 const formData = ref({
   email_notifications: true,

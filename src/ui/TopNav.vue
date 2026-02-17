@@ -14,9 +14,33 @@
         ☰
       </button>
 
-      <h1 class="font-semibold text-lg" style="color: var(--text-primary);">
-        M4SH Platform
-      </h1>
+      <!-- Logo -->
+      <router-link to="/" class="flex items-center">
+        <svg width="100" height="32" viewBox="0 0 200 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="logoGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#1DB954"/>
+              <stop offset="100%" stop-color="#158f3e"/>
+            </linearGradient>
+          </defs>
+          <!-- M4 (dark on light) -->
+          <text x="0" y="48"
+            font-family="'Arial Black', sans-serif"
+            font-weight="900"
+            font-size="52"
+            letter-spacing="-2"
+            fill="#111816">M4</text>
+          <!-- SH (green gradient) -->
+          <text x="88" y="48"
+            font-family="'Arial Black', sans-serif"
+            font-weight="900"
+            font-size="52"
+            letter-spacing="-2"
+            fill="url(#logoGrad)">SH</text>
+          <!-- Green dot accent -->
+          <circle cx="192" cy="12" r="7" fill="#1DB954"/>
+        </svg>
+      </router-link>
 
       <!-- Primary Navigation -->
       <nav v-if="auth.isAuthenticated" class="hidden md:flex items-center gap-1 ml-6">
