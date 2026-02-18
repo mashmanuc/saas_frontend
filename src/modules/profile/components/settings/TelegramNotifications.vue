@@ -78,7 +78,7 @@
           Відскануйте QR-код або натисніть кнопку, щоб підключити Telegram-бот для отримання сповіщень.
         </p>
 
-        <!-- QR Code (server-side SVG, same pattern as MFA) -->
+        <!-- QR Code: server-side SVG via v-html (MFA pattern) -->
         <div v-if="linkData" class="flex flex-col items-center gap-4">
           <div v-if="linkData.qr_svg" class="rounded-xl border border-border bg-white p-4 text-center" v-html="linkData.qr_svg" />
 
