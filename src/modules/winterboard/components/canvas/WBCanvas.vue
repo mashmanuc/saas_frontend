@@ -154,15 +154,17 @@
     <!-- Offscreen preview canvas overlay -->
     <canvas ref="previewCanvasRef" class="wb-preview-canvas" />
 
-    <!-- Text editing overlay -->
+    <!-- Text editing overlay (v-if ensures clean mount/unmount cycle) -->
     <textarea
-      v-show="editingText"
+      v-if="editingText"
       ref="textareaRef"
       v-model="editingTextValue"
       class="wb-text-edit-overlay"
       :style="textEditStyle"
       @blur="finishTextEdit"
       @keydown.enter.exact="finishTextEdit"
+      @mousedown.stop
+      @pointerdown.stop
     />
   </div>
 </template>
@@ -292,6 +294,12 @@ const currentPoints = ref<WBPoint[]>([])
 // A4.1: Pressure sensitivity — track last native PointerEvent for pressure capture
 let lastNativePointerEvent: PointerEvent | null = null
 let currentPointerType: string = 'mouse'
+
+// BUG-1 FIX: Timestamp of last pen/stylus activity.
+// Used to block zoom events that arrive shortly after pen strokes
+// (tablet drivers and browsers emit synthetic wheel/pinch events).
+let lastPenActivityTime = 0
+const PEN_ZOOM_BLOCK_MS = 800
 const shapePreview = ref<{ x: number; y: number; width: number; height: number } | null>(null)
 const selectedNode = shallowRef<Konva.Node | null>(null)
 const editingText = ref<WBStroke | null>(null)
@@ -536,6 +544,8 @@ function getPointerPosition(): WBPoint | null {
     if (pe.pointerType === 'pen') {
       // Stylus: real pressure (0.0-1.0)
       pressure = pe.pressure > 0 ? pe.pressure : 0.5
+      // BUG-1: Track pen activity time for zoom blocking
+      lastPenActivityTime = Date.now()
     } else if (pe.pointerType === 'touch') {
       // Touch: use force if available, otherwise default
       pressure = pe.pressure > 0 ? pe.pressure : 0.5
@@ -996,9 +1006,17 @@ function createTextAtPosition(pos: WBPoint): void {
   editingText.value = stroke
   editingTextValue.value = ''
 
+  // BUG-2 FIX: Robust focus — v-if textarea needs nextTick for DOM mount,
+  // then setTimeout to escape Konva's event processing cycle.
   nextTick(() => {
     nextTick(() => {
-      textareaRef.value?.focus()
+      const ta = textareaRef.value
+      if (ta) {
+        ta.focus()
+      } else {
+        // Fallback: textarea may not be mounted yet (v-if timing)
+        setTimeout(() => { textareaRef.value?.focus() }, 50)
+      }
     })
   })
 }
@@ -1006,8 +1024,16 @@ function createTextAtPosition(pos: WBPoint): void {
 function handleTextEdit(stroke: WBStroke): void {
   editingText.value = stroke
   editingTextValue.value = stroke.text || ''
+  // BUG-2 FIX: Same robust focus as createTextAtPosition
   nextTick(() => {
-    textareaRef.value?.focus()
+    nextTick(() => {
+      const ta = textareaRef.value
+      if (ta) {
+        ta.focus()
+      } else {
+        setTimeout(() => { textareaRef.value?.focus() }, 50)
+      }
+    })
   })
 }
 
@@ -1450,18 +1476,20 @@ function prewarmFonts(): void {
 
 const isPanningRef = ref(false)
 
+/** BUG-1: Check if zoom should be blocked (pen active or drawing) */
+function isZoomBlocked(): boolean {
+  // Block during active drawing/erasing
+  if (isDrawing.value) return true
+  // Block if pen/stylus was active recently — tablet drivers emit
+  // synthetic wheel events (ctrlKey=true) from pinch gestures
+  if (Date.now() - lastPenActivityTime < PEN_ZOOM_BLOCK_MS) return true
+  return false
+}
+
 /** Ctrl+scroll = zoom to cursor position; plain scroll = vertical pan */
 function handleWheel(e: WheelEvent): void {
-  // BUG-1 FIX: Never zoom while actively drawing or erasing.
-  // Pen tablets / trackpads emit synthetic wheel events with ctrlKey=true
-  // (browser converts pinch gestures to Ctrl+Wheel), which triggers zoom
-  // in the middle of a stroke. Block zoom entirely during drawing.
-  if (isDrawing.value) return
-
-  // Also ignore if the last pointer input was a pen stylus —
-  // the ctrlKey on wheel is almost certainly a synthetic pinch event
-  // from the tablet driver, not a real Ctrl+Scroll from the user.
-  if (currentPointerType === 'pen' && e.ctrlKey && !e.metaKey) return
+  // BUG-1 FIX: Block zoom during drawing or recent pen activity
+  if (isZoomBlocked()) return
 
   if (e.ctrlKey || e.metaKey) {
     // Zoom to cursor
@@ -1514,6 +1542,9 @@ function handlePanStart(e: MouseEvent): void {
 
 /** Touch start — detect pinch (2 fingers) or double-tap */
 function handleTouchStartZoom(e: TouchEvent): void {
+  // BUG-1 FIX: Block touch zoom during drawing or recent pen activity
+  if (isZoomBlocked()) return
+
   if (e.touches.length === 2) {
     // Pinch start
     isPinching = true
@@ -1547,6 +1578,8 @@ function handleTouchStartZoom(e: TouchEvent): void {
 /** Touch move — pinch zoom */
 function handleTouchMoveZoom(e: TouchEvent): void {
   if (!isPinching || e.touches.length < 2) return
+  // BUG-1 FIX: Stop pinch if drawing started
+  if (isZoomBlocked()) { isPinching = false; return }
   e.preventDefault()
 
   const dist = pinchDistance(e.touches[0], e.touches[1])
@@ -1589,7 +1622,14 @@ onMounted(async () => {
   // A4.1: Capture native PointerEvent for pressure data
   const container = containerRef.value
   if (container) {
-    const capturePointer = (e: PointerEvent) => { lastNativePointerEvent = e }
+    const capturePointer = (e: PointerEvent) => {
+      lastNativePointerEvent = e
+      // BUG-1: Track pen activity directly from pointer events
+      if (e.pointerType === 'pen') {
+        lastPenActivityTime = Date.now()
+        currentPointerType = 'pen'
+      }
+    }
     container.addEventListener('pointerdown', capturePointer)
     container.addEventListener('pointermove', capturePointer)
     container.addEventListener('pointerup', capturePointer)
