@@ -49,7 +49,7 @@ type ErrorPayload = {
   message?: string
 }
 
-const V1_SOLO_BASE = buildUrl(API_V1_ALT_PREFIX, '/solo/sessions')
+const V1_WB_BASE = buildUrl(API_V1_ALT_PREFIX, '/winterboard/sessions')
 
 const DIFF_MAX_BYTES = 512 * 1024
 const STREAM_MAX_BYTES = 2 * 1024 * 1024
@@ -162,7 +162,7 @@ export const saveCoordinator = {
   _waiters: [] as Array<{ resolve: (v: SaveCoordinatorResult) => void; reject: (e: unknown) => void }>,
 
   async resyncSession(sessionId: string): Promise<ResyncResult> {
-    const url = `${V1_SOLO_BASE}/${sessionId}/`
+    const url = `${V1_WB_BASE}/${sessionId}/`
     const { res, data } = await requestJson(url, {
       method: 'GET',
       headers: {
@@ -197,8 +197,8 @@ export const saveCoordinator = {
     const run = async (opts: SaveCoordinatorOptions): Promise<SaveCoordinatorResult> => {
       const { sessionId, etag, rev, ops, state, extraDrawsDuringSave } = opts
 
-      const diffUrl = `${V1_SOLO_BASE}/${sessionId}/diff/`
-      const streamUrl = `${V1_SOLO_BASE}/${sessionId}/save-stream/`
+      const diffUrl = `${V1_WB_BASE}/${sessionId}/diff/`
+      const streamUrl = `${V1_WB_BASE}/${sessionId}/save-stream/`
 
       const diffPayload = {
         rev,
@@ -232,7 +232,7 @@ export const saveCoordinator = {
         })
       }
 
-      telemetry.trigger('solo_save', {
+      telemetry.trigger('wb_save', {
         version: (import.meta.env.VITE_APP_VERSION as string) || 'unknown',
         endpoint: 'save-stream',
         status: 413,
@@ -282,14 +282,14 @@ export const saveCoordinator = {
   },
 
   async beaconTelemetry(sessionId: string, payload: Record<string, unknown>): Promise<boolean> {
-    const url = `${V1_SOLO_BASE}/${sessionId}/beacon/`
+    const url = `${V1_WB_BASE}/${sessionId}/beacon/`
     const body = JSON.stringify(payload)
     const bytes = new TextEncoder().encode(body).byteLength
     if (bytes > BEACON_MAX_BYTES) return false
 
     if (!navigator.sendBeacon) return false
     try {
-      telemetry.trigger('solo_beacon_heartbeat', {
+      telemetry.trigger('wb_beacon_heartbeat', {
         version: (import.meta.env.VITE_APP_VERSION as string) || 'unknown',
         size_bytes: bytes,
       })
@@ -311,7 +311,7 @@ export const saveCoordinator = {
     const first = await this._saveDiff(params.url, params.payload, params.etag, params.rev)
 
     if (first.ok) {
-      telemetry.trigger('solo_save', {
+      telemetry.trigger('wb_save', {
         version: (import.meta.env.VITE_APP_VERSION as string) || 'unknown',
         endpoint: 'diff',
         status: 200,
@@ -321,7 +321,7 @@ export const saveCoordinator = {
       return first.result
     }
 
-    telemetry.trigger('solo_save', {
+    telemetry.trigger('wb_save', {
       version: (import.meta.env.VITE_APP_VERSION as string) || 'unknown',
       endpoint: 'diff',
       status: first.code,
@@ -356,7 +356,7 @@ export const saveCoordinator = {
       const retryPayload = { ...params.payload, rev: nextRev }
       const retry = await this._saveDiff(params.url, retryPayload, resync.etag, nextRev)
       if (retry.ok) {
-        telemetry.trigger('solo_save', {
+        telemetry.trigger('wb_save', {
           version: (import.meta.env.VITE_APP_VERSION as string) || 'unknown',
           endpoint: 'diff',
           status: 200,
@@ -391,7 +391,7 @@ export const saveCoordinator = {
 
     try {
       const result = await doAttempt(params.etag, params.rev, params.state)
-      telemetry.trigger('solo_save', {
+      telemetry.trigger('wb_save', {
         version: (import.meta.env.VITE_APP_VERSION as string) || 'unknown',
         endpoint: 'save-stream',
         status: 200,
@@ -401,7 +401,7 @@ export const saveCoordinator = {
       return result
     } catch (e) {
       if (!(e instanceof SaveCoordinatorError)) {
-        telemetry.trigger('solo_save', {
+        telemetry.trigger('wb_save', {
           version: (import.meta.env.VITE_APP_VERSION as string) || 'unknown',
           endpoint: 'save-stream',
           status: 0,
@@ -411,7 +411,7 @@ export const saveCoordinator = {
         throw e
       }
 
-      telemetry.trigger('solo_save', {
+      telemetry.trigger('wb_save', {
         version: (import.meta.env.VITE_APP_VERSION as string) || 'unknown',
         endpoint: 'save-stream',
         status: e.code,
@@ -430,7 +430,7 @@ export const saveCoordinator = {
 
         await sleep(jitterMs())
         const retry = await doAttempt(resync.etag, resync.rev ?? params.rev, resync.state)
-        telemetry.trigger('solo_save', {
+        telemetry.trigger('wb_save', {
           version: (import.meta.env.VITE_APP_VERSION as string) || 'unknown',
           endpoint: 'save-stream',
           status: 200,
@@ -521,7 +521,7 @@ export const saveCoordinator = {
     const payloadMeta = ensureErrorMeta(((data as ErrorPayload) || null), res)
 
     if (status === 429) {
-      telemetry.trigger('solo_save', {
+      telemetry.trigger('wb_save', {
         version: (import.meta.env.VITE_APP_VERSION as string) || 'unknown',
         endpoint: 'save-stream',
         status,

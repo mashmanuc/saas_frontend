@@ -1,0 +1,50 @@
+name: Visual Regression
+
+on:
+  pull_request:
+    paths:
+      - 'src/modules/winterboard/**'
+      - 'tests/visual/**'
+      - 'playwright.visual.config.ts'
+
+jobs:
+  visual-regression:
+    name: Visual Regression Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build application
+        run: npm run build
+
+      - name: Run visual regression tests
+        run: npm run test:visual
+
+      - name: Upload diff artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-regression-diff
+          path: |
+            tests/visual/test-results/
+            tests/visual/report/
+          retention-days: 14
+
+      - name: Upload snapshots for review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-snapshots
+          path: tests/visual/__snapshots__/
+          retention-days: 30

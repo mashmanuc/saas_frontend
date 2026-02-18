@@ -667,8 +667,7 @@
     "calendar": "Календарь",
     "marketplace": "Маркетплейс",
     "tutorCalendar": "Календарь репетитора",
-    "soloWorkspace": "Рабочее пространство",
-    "soloWorkspaceV2": "Solo v2",
+    "winterboard": "Доска",
     "profile": "Профиль",
     "tutorProfile": "Профиль репетитора",
     "account": "Аккаунт",
@@ -2718,72 +2717,6 @@
       }
     }
   },
-  "solo": {
-    "pages": "страниц",
-    "shared": "Общий доступ",
-    "share": "Поделиться",
-    "duplicate": "Дублировать",
-    "delete": "Удалить",
-    "mySessions": {
-      "title": "Мои доски",
-      "createNew": "Создать новую доску",
-      "createNewV2": "Создать Solo v2",
-      "search": "Поиск досок…",
-      "sortUpdated": "Сортировать по обновлению",
-      "sortCreated": "Сортировать по дате создания",
-      "sortName": "Сортировать по названию",
-      "empty": "У вас еще нет сохраненных досок.",
-      "createFirst": "Создайте первую доску, чтобы увидеть ее здесь."
-    },
-    "sharing": {
-      "title": "Поделиться",
-      "createLink": "Создать ссылку",
-      "expiresIn": "Срок действия",
-      "expiresAt": "Действует до",
-      "day": "день",
-      "days": "дней",
-      "never": "Бессрочно",
-      "allowDownload": "Разрешить скачивание",
-      "maxViews": "Максимум просмотров",
-      "unlimited": "Неограничено",
-      "views": "Просмотров",
-      "revoke": "Отменить доступ"
-    },
-    "export": {
-      "title": "Экспорт",
-      "format": "Формат",
-      "pageSize": "Размер страницы",
-      "orientation": "Ориентация",
-      "landscape": "Альбомная",
-      "portrait": "Портретная",
-      "export": "Экспортировать",
-      "exporting": "Экспортируется...",
-      "success": "Экспорт завершен успешно",
-      "error": "Ошибка экспорта. Попробуйте еще раз.",
-      "statusPending": "Подготовка экспорта...",
-      "statusProcessing": "Обработка...",
-      "statusCompleted": "Готово к скачиванию",
-      "statusFailed": "Экспорт не удался"
-    },
-    "sync": {
-      "cloudStatus": "Статус облака",
-      "syncing": "Сохранение...",
-      "saved": "Сохранено",
-      "error": "Ошибка сохранения",
-      "loadError": "Не удалось загрузить сессию",
-      "createError": "Не удалось создать сессию",
-      "saveError": "Не удалось сохранить изменения"
-    },
-    "assets": {
-      "upload": "Загрузить файл",
-      "addToBoard": "Добавить на доску",
-      "empty": "Нет загруженных файлов"
-    },
-    "public": {
-      "notFound": "Доска не найдена",
-      "download": "Скачать"
-    }
-  },
   "profile": {
     "title": "Профиль",
     "subtitle": "Актуализируйте свою личную информацию.",
@@ -2991,10 +2924,6 @@
       "rateLimitedDescription": "Пожалуйста, подождите перед следующей попыткой.",
       "rateLimitedRetryIn": "Попробовать через {time}",
       "rateLimitedRetry": "Попробовать снова"
-    },
-    "soloWorkspace": {
-      "untitled": "Без названия",
-      "clearConfirm": "Очистить страницу? Это действие нельзя отменить."
     },
     "board": {
       "title": "Доска",
@@ -3423,79 +3352,6 @@
     },
     "noReviews": "Нет отзывов"
   },
-  "soloWorkspace": {
-    "toolbar": {
-      "sections": {
-        "draw": "Рисование",
-        "shapes": "Фигуры",
-        "text": "Текст",
-        "style": "Стиль",
-        "actions": "Действия"
-      },
-      "tools": {
-        "pen": "Ручка",
-        "highlighter": "Маркер",
-        "eraser": "Ластик",
-        "line": "Линия",
-        "arrow": "Стрелка",
-        "rectangle": "Прямоугольник",
-        "circle": "Круг",
-        "text": "Текст",
-        "note": "Заметка",
-        "select": "Выбор"
-      },
-      "shortcuts": {
-        "pen": "P",
-        "highlighter": "H",
-        "eraser": "E",
-        "line": "L",
-        "arrow": "A",
-        "rectangle": "R",
-        "circle": "C",
-        "text": "T",
-        "note": "N",
-        "select": "V"
-      },
-      "actions": {
-        "undo": "Отменить",
-        "redo": "Повторить",
-        "clear": "Очистить"
-      }
-    },
-    "header": {
-      "save": "Сохранить",
-      "exit": "Выйти",
-      "backToList": "Назад к списку",
-      "undo": "Отменить (Ctrl+Z)",
-      "redo": "Повторить (Ctrl+Y)",
-      "clear": "Очистить страницу",
-      "exportPDF": "Экспорт в PDF",
-      "importPDF": "Импорт PDF"
-    },
-    "status": {
-      "saving": "Сохранение...",
-      "saved": "Сохранено {time}",
-      "unsavedChanges": "Несохраненные изменения",
-      "justNow": "только что"
-    },
-    "footer": {
-      "previousPage": "Предыдущая страница",
-      "nextPage": "Следующая страница",
-      "addPage": "Добавить страницу",
-      "currentPage": "Текущая страница",
-      "zoomOut": "Уменьшить (-)",
-      "zoomIn": "Увеличить (+)",
-      "zoomLevel": "Уровень масштаба",
-      "fullscreen": "Полноэкранный режим (F11)"
-    },
-    "alerts": {
-      "pdfExportSuccess": "PDF успешно экспортирован",
-      "pdfExportError": "Не удалось экспортировать PDF. Попробуйте еще раз.",
-      "pdfImportSuccess": "PDF успешно импортирован! Добавлено {count} страниц.",
-      "pdfImportError": "Не удалось импортировать PDF. Попробуйте еще раз.",
-      "invalidFileType": "Неверный тип файла. Выберите PDF файл."
-    }
-  },
   "phone_verification": {
     "title": "Подтверждение телефона",
     "description": "Подтвердите ваш номер телефона для верификации аккаунта",
@@ -3569,6 +3425,337 @@
       "invalid_state": "Невозможная операция для текущего состояния запроса",
       "subscription_required": "Для создания запроса нужна подписка PRO. Обновите подписку для продолжения.",
       "user_blocked": "Вы не можете взаимодействовать с этим пользователем"
+    }
+  },
+  "winterboard": {
+    "toolbar": {
+      "title": "Инструменты рисования",
+      "drawingTools": "Инструменты рисования",
+      "colorPalette": "Палитра цветов",
+      "strokeSize": "Толщина линии",
+      "actions": "Действия",
+      "selectColor": "Выбрать цвет {color}",
+      "customColor": "Произвольный цвет"
+    },
+    "tools": {
+      "pen": "Ручка",
+      "highlighter": "Маркер",
+      "eraser": "Ластик",
+      "line": "Линия",
+      "rectangle": "Прямоугольник",
+      "circle": "Круг",
+      "text": "Текст",
+      "select": "Выбор",
+      "undo": "Отменить",
+      "redo": "Повторить",
+      "clear": "Очистить страницу"
+    },
+    "pages": {
+      "title": "Страницы",
+      "addPage": "Добавить страницу",
+      "maxReached": "Максимум {max} страниц",
+      "pageN": "Страница {n}"
+    },
+    "status": {
+      "idle": "Готово",
+      "syncing": "Сохранение…",
+      "saved": "Сохранено {time}",
+      "savedJustNow": "Только что сохранено",
+      "error": "Ошибка сохранения",
+      "errorRetry": "Ошибка сохранения — Повторить",
+      "offline": "Офлайн",
+      "retry": "Повторить"
+    },
+    "sessions": {
+      "title": "Мои доски",
+      "newSession": "Новая сессия",
+      "comingSoon": "Список сессий — Скоро",
+      "hint": "Нажмите «Новая сессия», чтобы создать доску",
+      "emptyTitle": "Досок пока нет",
+      "emptyMessage": "Создайте первую доску, чтобы начать",
+      "createFirst": "Создать доску",
+      "loading": "Загрузка сессий…",
+      "pages": "{n} страница | {n} страниц",
+      "edited": "Изменено {time}",
+      "actions": {
+        "open": "Открыть",
+        "duplicate": "Дублировать",
+        "share": "Поделиться",
+        "export": "Экспорт",
+        "delete": "Удалить",
+        "rename": "Переименовать"
+      },
+      "confirmDelete": {
+        "title": "Удалить доску?",
+        "message": "Доска «{name}» будет удалена навсегда. Это действие нельзя отменить.",
+        "confirm": "Удалить",
+        "cancel": "Отмена"
+      },
+      "duplicated": "Доска дублирована",
+      "deleted": "Доска удалена",
+      "deleteError": "Не удалось удалить доску",
+      "loadError": "Не удалось загрузить доски",
+      "duplicateError": "Не удалось дублировать доску"
+    },
+    "share": {
+      "title": "Поделиться доской",
+      "description": "Любой с ссылкой может просмотреть эту доску",
+      "generateLink": "Создать ссылку",
+      "shareLink": "Ссылка для доступа",
+      "copy": "Копировать",
+      "copied": "Скопировано!",
+      "copyError": "Не удалось скопировать ссылку",
+      "revoke": "Отозвать ссылку",
+      "revokeConfirm": "Вы уверены, что хотите отозвать ссылку? Все, у кого есть ссылка, потеряют доступ.",
+      "revoked": "Ссылка отозвана",
+      "revokeError": "Не удалось отозвать ссылку",
+      "generateError": "Не удалось создать ссылку",
+      "options": "Параметры доступа",
+      "expires": "Срок действия",
+      "expiresOptions": {
+        "1h": "1 час",
+        "24h": "24 часа",
+        "7d": "7 дней",
+        "never": "Бессрочно"
+      },
+      "maxViews": "Макс. просмотров",
+      "maxViewsOptions": {
+        "10": "10 просмотров",
+        "100": "100 просмотров",
+        "unlimited": "Без ограничений"
+      },
+      "allowDownload": "Разрешить скачивание",
+      "status": {
+        "active": "Активна",
+        "expired": "Истекла",
+        "revoked": "Отозвана"
+      },
+      "viewCount": "{count} просмотр | {count} просмотров",
+      "close": "Закрыть"
+    },
+    "export": {
+      "title": "Экспорт доски",
+      "description": "Выберите формат для экспорта доски",
+      "format": "Формат",
+      "formats": {
+        "png": "PNG изображение",
+        "pngDesc": "Экспорт текущей страницы как изображение",
+        "pdf": "PDF документ",
+        "pdfDesc": "Экспорт всех страниц в PDF",
+        "json": "JSON данные",
+        "jsonDesc": "Экспорт необработанных данных"
+      },
+      "startExport": "Экспорт",
+      "processing": "Экспортируется…",
+      "ready": "Экспорт готов!",
+      "download": "Скачать",
+      "error": "Ошибка экспорта",
+      "retry": "Повторить",
+      "close": "Закрыть",
+      "exportError": "Не удалось начать экспорт",
+      "pollError": "Не удалось проверить статус экспорта",
+      "pageSelection": "Страницы",
+      "currentPage": "Только текущая страница",
+      "allPages": "Все страницы",
+      "pngOptions": "Настройки PNG",
+      "quality": "Качество",
+      "qualityHigh": "Высокое (2x)",
+      "qualityMedium": "Стандартное (1x)",
+      "qualityLow": "Низкое",
+      "background": "Фон",
+      "bgWhite": "Белый",
+      "bgTransparent": "Прозрачный",
+      "pdfOptions": "Настройки PDF",
+      "original": "Оригинал",
+      "jsonOptions": "Настройки JSON",
+      "prettyPrint": "Форматированный вывод",
+      "timeout": "Экспорт занимает слишком много времени. Попробуйте снова."
+    },
+    "error": {
+      "title": "Что-то пошло не так",
+      "message": "Произошла непредвиденная ошибка. Ваша работа сохранена.",
+      "retry": "Попробовать снова",
+      "showDetails": "Показать детали ошибки"
+    },
+    "a11y": {
+      "toolSelected": "Выбран инструмент {tool}",
+      "undoAction": "Отменить: {action}",
+      "redoAction": "Повторить: {action}",
+      "strokeRemoved": "штрих удалён",
+      "strokeRestored": "штрих восстановлен",
+      "skipToCanvas": "Перейти к холсту",
+      "notifications": "Уведомления",
+      "dismiss": "Закрыть"
+    },
+    "room": {
+      "untitled": "Без названия",
+      "undoShortcut": "Отменить (Ctrl+Z)",
+      "redoShortcut": "Повторить (Ctrl+Shift+Z)",
+      "exit": "Выйти",
+      "saving": "Сохранение…",
+      "saved": "Сохранено",
+      "saveError": "Ошибка сохранения",
+      "offline": "Офлайн",
+      "unsavedChanges": "Несохранённые изменения",
+      "ready": "Готово",
+      "prevPage": "Предыдущая страница (PageUp)",
+      "nextPage": "Следующая страница (PageDown)",
+      "addPage": "Добавить страницу",
+      "zoomOut": "Уменьшить",
+      "zoomIn": "Увеличить",
+      "zoomReset": "Сбросить масштаб (Ctrl+0)",
+      "fitToPage": "По размеру страницы",
+      "pageIndicator": "{current} / {total}",
+      "followTeacher": "Следовать за учителем",
+      "following": "Следуем за {name}",
+      "stopFollowing": "Остановить"
+    },
+    "time": {
+      "justNow": "только что",
+      "secondsAgo": "{n}с назад",
+      "minutesAgo": "{n}м назад",
+      "hoursAgo": "{n}ч назад",
+      "daysAgo": "{n}д назад"
+    },
+    "sessionCard": {
+      "untitled": "Без названия",
+      "pageCount": "{n} стр",
+      "viewCount": "{count} просмотр | {count} просмотров"
+    },
+    "colorPicker": {
+      "recent": "Недавние",
+      "custom": "Произвольный"
+    },
+    "sizePresets": {
+      "thin": "Тонкая",
+      "medium": "Средняя",
+      "thick": "Толстая",
+      "extra": "Очень толстая"
+    },
+    "loading": {
+      "canvas": "Загрузка доски…",
+      "canvasSubtitle": "Подготовка рабочего пространства"
+    },
+    "emptyCanvas": {
+      "hint": "Начните рисовать здесь"
+    },
+    "emptySession": {
+      "title": "Досок пока нет",
+      "message": "Создайте первую доску, чтобы начать рисовать",
+      "cta": "Создать доску"
+    },
+    "errorSession": {
+      "title": "Не удалось загрузить доски",
+      "retry": "Попробовать снова"
+    },
+    "errorRoom": {
+      "notFound": "Сессия не найдена",
+      "loadFailed": "Не удалось загрузить сессию",
+      "goBack": "Вернуться к списку"
+    },
+    "upload": {
+      "dragHere": "Перетащите изображение сюда",
+      "supportedFormats": "PNG, JPEG, WebP, SVG — макс. 10 МБ",
+      "pickFile": "Выбрать файл изображения",
+      "uploading": "Загрузка…",
+      "success": "Изображение загружено",
+      "error": "Ошибка загрузки",
+      "tooLarge": "Файл слишком большой. Максимум 10 МБ",
+      "wrongType": "Поддерживаются только PNG, JPEG, WebP, SVG",
+      "cancel": "Отмена",
+      "emptyFile": "Файл пуст",
+      "quotaExceeded": "Квота хранилища исчерпана"
+    },
+    "classroom": {
+      "locked": "Рисование заблокировано",
+      "unlock": "Разблокировать рисование",
+      "lock": "Заблокировать рисование",
+      "endSession": "Завершить сессию",
+      "endSessionConfirm": "Вы уверены, что хотите завершить эту сессию?",
+      "studentList": "Подключённые ученики",
+      "students": "Ученики",
+      "noStudents": "Нет подключённых учеников",
+      "kick": "Удалить ученика",
+      "roleTeacher": "Учитель",
+      "roleStudent": "Ученик",
+      "roleViewer": "Зритель",
+      "follow": {
+        "following": "Следите за {name}",
+        "stopFollowing": "Прекратить следование",
+        "returnToTeacher": "Вернуться к учителю",
+        "teacherDisconnected": "Учитель отключился",
+        "teacherReconnected": "Учитель вернулся",
+        "movedToPage": "Учитель перешёл на страницу {page}"
+      },
+      "notifications": {
+        "joined": "{name} присоединился",
+        "left": "{name} вышел",
+        "locked": "Учитель заблокировал рисование",
+        "unlocked": "Рисование разблокировано",
+        "kicked": "Вы были удалены из сессии",
+        "ended": "Сессия завершена учителем",
+        "saved": "Сохранено",
+        "exportReady": "Экспорт готов  Скачать",
+        "connectionLost": "Соединение потеряно  Переподключение...",
+        "reconnecting": "Переподключение...",
+        "soundOn": "Звук включён",
+        "soundOff": "Звук выключен",
+        "joinLeaveOn": "Уведомления о входе/выходе включены",
+        "joinLeaveOff": "Уведомления о входе/выходе выключены"
+      }
+    },
+    "gestures": {
+      "pinchToZoom": "Сведите пальцы для масштабирования",
+      "twoFingerPan": "Перетащите двумя пальцами для прокрутки",
+      "threeFingerUndo": "Проведите тремя пальцами влево для отмены",
+      "threeFingerRedo": "Проведите тремя пальцами вправо для повтора",
+      "doubleTapReset": "Двойное касание для сброса масштаба",
+      "longPressMenu": "Удерживайте для меню",
+      "edgeSwipeTools": "Проведите от левого края для инструментов",
+      "edgeSwipePages": "Проведите от правого края для страниц"
+    },
+    "pdf": {
+      "importPdf": "Импорт PDF",
+      "importProgress": "Импорт PDF...",
+      "convertingPage": "Конвертация страницы {current} из {total}",
+      "importComplete": "PDF успешно импортирован",
+      "exportAnnotatedPdf": "Аннотированный PDF",
+      "exportAnnotatedPdfTooltip": "Экспорт PDF с вашими аннотациями",
+      "mergingAnnotations": "Объединение аннотаций... Страница {current} из {total}",
+      "exportComplete": "Экспорт завершён",
+      "pdfPagesWithAnnotations": "{count} страниц с аннотациями",
+      "noPdfPages": "Нет PDF страниц в этой сессии",
+      "annotationTypes": "Типы аннотаций",
+      "filterStrokes": "Штрихи",
+      "filterText": "Текст",
+      "filterShapes": "Фигуры",
+      "errorTooLarge": "PDF должен быть менее 50МБ",
+      "errorTooManyPages": "PDF должен содержать не более 50 страниц",
+      "errorInvalidPdf": "Пожалуйста, выберите действительный PDF файл",
+      "dropPdfHere": "Перетащите PDF сюда для импорта",
+      "cancelImport": "Отменить импорт",
+      "dismissError": "Закрыть"
+    },
+    "collaboration": {
+      "onlineUsers": "Онлайн пользователи",
+      "you": "Вы",
+      "follow": "Следить",
+      "unfollow": "Отписаться",
+      "following": "Следите",
+      "connected": "Подключено",
+      "syncing": "Синхронизация...",
+      "disconnected": "Отключено",
+      "reconnecting": "Переподключение...",
+      "lockedBy": "Редактируется {name}",
+      "editingThisArea": "{name} редактирует эту область",
+      "concurrentEditors": "{count} человек редактируют эту страницу",
+      "userJoined": "{name} присоединился",
+      "userLeft": "{name} вышел",
+      "nowFollowing": "Теперь следите за {name}",
+      "unfollowed": "Перестали следить",
+      "page": "Страница",
+      "expandPanel": "Развернуть панель",
+      "collapsePanel": "Свернуть панель"
     }
   }
 }

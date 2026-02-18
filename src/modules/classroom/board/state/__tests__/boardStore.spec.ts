@@ -3,12 +3,35 @@ import { setActivePinia, createPinia } from 'pinia'
 import { useBoardStore } from '../boardStore'
 import { useBoardSyncStore } from '../boardSyncStore'
 
-// Mock soloApi
-vi.mock('@/modules/solo/api/soloApi', () => ({
-  soloApi: {
+// [WB:B1.6] Mock winterboardApi (boardStore migrated from soloApi → winterboardApi)
+vi.mock('@/modules/winterboard/api/winterboardApi', () => ({
+  winterboardApi: {
     getSession: vi.fn(),
     createSession: vi.fn(),
     updateSession: vi.fn(),
+    presignUpload: vi.fn(),
+    createExport: vi.fn(),
+    getExport: vi.fn(),
+  },
+}))
+
+// Mock saveCoordinator (used by loadSession for ETag resync)
+vi.mock('../saveCoordinator', () => ({
+  saveCoordinator: {
+    resyncSession: vi.fn().mockResolvedValue({ etag: null, rev: null }),
+    save: vi.fn().mockResolvedValue({ etag: 'test-etag', rev: 1 }),
+    beaconTelemetry: vi.fn(),
+  },
+  SaveCoordinatorError: class SaveCoordinatorError extends Error {
+    code: number
+    endpoint: string
+    payload: Record<string, unknown>
+    constructor(code: number, endpoint: string, payload?: Record<string, unknown>) {
+      super(`SaveCoordinatorError ${code}`)
+      this.code = code
+      this.endpoint = endpoint
+      this.payload = payload || {}
+    }
   },
 }))
 
@@ -40,7 +63,7 @@ describe('boardStore', () => {
 
   describe('createSession', () => {
     it('should not create duplicate if sessionId already exists', async () => {
-      const { soloApi } = await import('@/modules/solo/api/soloApi')
+      const { winterboardApi } = await import('@/modules/winterboard/api/winterboardApi')
       const store = useBoardStore()
 
       // Set existing sessionId
@@ -50,25 +73,30 @@ describe('boardStore', () => {
 
       // Should return existing sessionId without calling API
       expect(result).toBe('existing-session-123')
-      expect(soloApi.createSession).not.toHaveBeenCalled()
+      expect(winterboardApi.createSession).not.toHaveBeenCalled()
     })
 
     it('should create new session if no sessionId exists', async () => {
-      const { soloApi } = await import('@/modules/solo/api/soloApi')
+      const { winterboardApi } = await import('@/modules/winterboard/api/winterboardApi')
       const mockSession = {
         id: 'new-session-456',
         name: 'Test Session',
         owner_id: 'user-123',
         updated_at: new Date().toISOString(),
+        state: null,
+        page_count: 1,
+        thumbnail_url: null,
+        rev: 1,
+        created_at: new Date().toISOString(),
       }
-      vi.mocked(soloApi.createSession).mockResolvedValue(mockSession as any)
+      vi.mocked(winterboardApi.createSession).mockResolvedValue(mockSession as any)
 
       const store = useBoardStore()
       const result = await store.createSession('Test Session')
 
       expect(result).toBe('new-session-456')
       expect(store.sessionId).toBe('new-session-456')
-      expect(soloApi.createSession).toHaveBeenCalled()
+      expect(winterboardApi.createSession).toHaveBeenCalled()
     })
   })
 
@@ -122,18 +150,22 @@ describe('boardStore', () => {
 
   describe('loadSession', () => {
     it('should hydrate state from session data', async () => {
-      const { soloApi } = await import('@/modules/solo/api/soloApi')
+      const { winterboardApi } = await import('@/modules/winterboard/api/winterboardApi')
       const mockSession = {
         id: 'session-789',
         name: 'Loaded Session',
         owner_id: 'owner-456',
         updated_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        page_count: 1,
+        thumbnail_url: null,
+        rev: 1,
         state: {
           pages: [{ id: 'page-1', name: 'Page 1', strokes: [{ id: 'stroke-1' }], assets: [{ id: 'asset-1' }] }],
           currentPageIndex: 0,
         },
       }
-      vi.mocked(soloApi.getSession).mockResolvedValue(mockSession as any)
+      vi.mocked(winterboardApi.getSession).mockResolvedValue(mockSession as any)
 
       const store = useBoardStore()
       const syncStore = useBoardSyncStore()
@@ -148,8 +180,8 @@ describe('boardStore', () => {
     })
 
     it('should return false on error', async () => {
-      const { soloApi } = await import('@/modules/solo/api/soloApi')
-      vi.mocked(soloApi.getSession).mockRejectedValue(new Error('Not found'))
+      const { winterboardApi } = await import('@/modules/winterboard/api/winterboardApi')
+      vi.mocked(winterboardApi.getSession).mockRejectedValue(new Error('Not found'))
 
       const store = useBoardStore()
       const syncStore = useBoardSyncStore()

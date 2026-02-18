@@ -11,13 +11,17 @@ const classroomRoutes: RouteRecordRaw[] = [
     },
   },
   {
-    path: '/classroom/solo',
-    name: 'solo-room',
-    component: () => import('./views/SoloRoom.vue'),
+    path: '/classroom/board',
+    name: 'classroom-board',
+    component: () => import('./views/ClassroomBoard.vue'),
     meta: {
       requiresAuth: true,
-      title: 'Solo Practice',
+      title: 'Classroom Board',
     },
+  },
+  {
+    path: '/classroom/solo',
+    redirect: '/winterboard',
   },
 ]
 

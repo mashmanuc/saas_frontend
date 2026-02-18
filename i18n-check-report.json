@@ -2,21 +2,21 @@
   "locales": {
     "en": {
       "status": "ok",
-      "totalKeys": 3900,
+      "totalKeys": 4055,
       "missing": [],
       "extra": [],
       "empty": []
     }
   },
   "summary": {
-    "totalKeys": 3900,
+    "totalKeys": 4055,
     "locales": 2,
-    "errors": 1,
+    "errors": 0,
     "warnings": 1
   },
   "usage": {
-    "scannedFiles": 1103,
-    "detectedKeys": 3126,
+    "scannedFiles": 1165,
+    "detectedKeys": 3245,
     "unusedKeys": [
       "auth.mfa.status.errors.regenerateFailed",
       "auth.mfa.status.passwordPrompt",
@@ -480,6 +480,12 @@
       "marketplace.availability.loadError",
       "marketplace.availability.title",
       "marketplace.availableSlots",
+      "marketplace.calendar.infoNote",
+      "marketplace.calendar.title",
+      "marketplace.catalog.subtitle",
+      "marketplace.catalog.tabs.calendar",
+      "marketplace.catalog.tabs.summary",
+      "marketplace.catalog.title",
       "marketplace.categories.featured",
       "marketplace.countries.${country.labelKey}",
       "marketplace.countries.australia",
@@ -505,6 +511,7 @@
       "marketplace.errors.profileNotCreated",
       "marketplace.errors.unknown",
       "marketplace.filters.cityPlaceholder",
+      "marketplace.filters.languages",
       "marketplace.languages.otherTitle",
       "marketplace.languages.popularTitle",
       "marketplace.languages.tabs.audience",
@@ -527,6 +534,7 @@
       "marketplace.profile.errors.subjectCodeRequired",
       "marketplace.profile.errors.subjectsRequired",
       "marketplace.profile.errors.teachingLanguagesRequired",
+      "marketplace.profile.reviews.empty",
       "marketplace.profile.stats.lessons",
       "marketplace.profile.stats.students",
       "marketplace.profile.status.approved",
@@ -538,6 +546,7 @@
       "marketplace.profile.subjectLevel.beginner",
       "marketplace.profile.subjectLevel.expert",
       "marketplace.profile.subjectLevel.intermediate",
+      "marketplace.profileV3.platformMessage",
       "marketplace.sections.featured",
       "marketplace.sections.new",
       "marketplace.sections.popular",
@@ -769,6 +778,10 @@
       "users.settings.account.emailDescription",
       "users.settings.account.passwordDescription",
       "users.settings.account.personalInfo",
+      "users.settings.general.darkMode",
+      "users.settings.general.darkModeDescription",
+      "users.settings.notifications.sms",
+      "users.settings.notifications.smsDescription",
       "users.settings.security.sessions.current",
       "users.settings.security.sessions.empty",
       "users.settings.security.sessions.errors.currentForbidden",
@@ -792,10 +805,30 @@
       "users.settings.tabs.profile",
       "users.settings.tabs.security",
       "warnings.accessDenied.message",
-      "warnings.accessDenied.title"
+      "warnings.accessDenied.title",
+      "winterboard.export.format",
+      "winterboard.pages.pageN",
+      "winterboard.sessions.actions.rename",
+      "winterboard.sessions.comingSoon",
+      "winterboard.sessions.edited",
+      "winterboard.sessions.hint",
+      "winterboard.sessions.loading",
+      "winterboard.sessions.pages",
+      "winterboard.share.shareLink",
+      "winterboard.share.status.active",
+      "winterboard.share.status.expired",
+      "winterboard.share.status.revoked",
+      "winterboard.share.viewCount",
+      "winterboard.status.error",
+      "winterboard.tools.circle",
+      "winterboard.tools.eraser",
+      "winterboard.tools.highlighter",
+      "winterboard.tools.line",
+      "winterboard.tools.pen",
+      "winterboard.tools.rectangle",
+      "winterboard.tools.select",
+      "winterboard.tools.text"
     ],
-    "undefinedUsages": [
-      "tutor.city.breadcrumb_hint"
-    ]
+    "undefinedUsages": []
   }
 }

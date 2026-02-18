@@ -1,8 +1,9 @@
 import { defineStore } from 'pinia'
-import { soloApi } from '@/modules/solo/api/soloApi'
+import { winterboardApi } from '@/modules/winterboard/api/winterboardApi'
+import type { WBSessionDetailResponse } from '@/modules/winterboard/api/winterboardApi'
+import type { WBWorkspaceState } from '@/modules/winterboard/types/winterboard'
 import { notifyError, notifySuccess, notifyWarning } from '@/utils/notify'
 import { i18n } from '@/i18n'
-import type { SoloSession } from '@/modules/solo/types/solo'
 import { useBoardSyncStore } from './boardSyncStore'
 import { telemetry } from '@/services/telemetry'
 // F29-STEALTH: Import stealth autosave utilities
@@ -33,8 +34,8 @@ const translate = (key: string, params?: Record<string, unknown>) => {
   }
 }
 
-const SOLO_BEACON_MAX_BYTES = 64 * 1024
-const SOLO_SAVE_STREAM_MAX_BYTES = 2 * 1024 * 1024
+const WB_BEACON_MAX_BYTES = 64 * 1024
+const WB_SAVE_STREAM_MAX_BYTES = 2 * 1024 * 1024
 
 export type SyncStatus = 'idle' | 'syncing' | 'saved' | 'error'
 
@@ -78,7 +79,7 @@ let _stableAutosaveStore: ReturnType<typeof useBoardStore> | null = null
 let _pendingOps: DiffOp[] = []
 let _forceStreamSave = false
 
-const AUTOSAVE_PREF_KEY = 'solo.autosave_beta.enabled'
+const AUTOSAVE_PREF_KEY = 'wb.autosave_beta.enabled'
 
 function safeLocalStorageGet(key: string): string | null {
   try {
@@ -403,33 +404,29 @@ export const useBoardStore = defineStore('board', {
       }
 
       const doPresignAndPut = async (): Promise<string> => {
-        const presign = await soloApi.presignUpload({
-          session_id: this.sessionId as string,
-          content_type: processed.contentType,
-          size_bytes: processed.blob.size,
-          ext,
-        })
+        const filename = `asset${ext}`
+        const presign = await winterboardApi.presignUpload(
+          this.sessionId as string,
+          {
+            filename,
+            content_type: processed.contentType,
+            file_size: processed.blob.size,
+          },
+        )
 
-        if (presign.max_bytes && processed.blob.size > presign.max_bytes) {
-          const err = Object.assign(new Error('payload_too_large'), {
-            status: 413,
-            data: { error: 'payload_too_large', limit: presign.max_bytes },
-          })
-          throw err
-        }
+        // Upload to presigned URL
+        await winterboardApi.uploadToPresigned(
+          presign.upload_url,
+          new File([processed.blob], filename, { type: processed.contentType }),
+        )
 
-        const putRes = await fetch(presign.upload_url, {
-          method: presign.method,
-          headers: presign.headers,
-          body: processed.blob,
-        })
+        // Confirm upload with backend
+        const confirm = await winterboardApi.confirmUpload(
+          this.sessionId as string,
+          presign.asset_id,
+        )
 
-        if (!putRes.ok) {
-          const err = Object.assign(new Error('put_failed'), { status: putRes.status, _kind: 'put' })
-          throw err
-        }
-
-        return presign.cdn_url
+        return confirm.asset_url
       }
 
       try {
@@ -527,7 +524,7 @@ export const useBoardStore = defineStore('board', {
       syncStore.setStatus('syncing')
 
       try {
-        const session = await soloApi.getSession(sessionId)
+        const session = await winterboardApi.getSession(sessionId)
         this.hydrateFromSession(session)
         const savedAt = new Date(session.updated_at)
         syncStore.setStatus('saved')
@@ -546,8 +543,8 @@ export const useBoardStore = defineStore('board', {
         return true
       } catch (error) {
         syncStore.setStatus('error')
-        syncStore.setError(translate('solo.sync.loadError'))
-        notifyError(translate('solo.sync.loadError'))
+        syncStore.setError(translate('winterboard.board.loadError'))
+        notifyError(translate('winterboard.board.loadError'))
         console.error('[BoardStore] loadSession failed:', error)
         return false
       }
@@ -567,9 +564,9 @@ export const useBoardStore = defineStore('board', {
       syncStore.setStatus('syncing')
 
       try {
-        const session = await soloApi.createSession({
+        const session = await winterboardApi.createSession({
           name: name || this.sessionName,
-          state: this.serializedState as { pages: unknown[] },
+          state: this.serializedState as unknown as WBWorkspaceState,
         })
 
         this.sessionId = session.id
@@ -584,8 +581,8 @@ export const useBoardStore = defineStore('board', {
         return session.id
       } catch (error) {
         syncStore.setStatus('error')
-        syncStore.setError(translate('solo.sync.createError'))
-        notifyError(translate('solo.sync.createError'))
+        syncStore.setError(translate('winterboard.board.createError'))
+        notifyError(translate('winterboard.board.createError'))
         console.error('[BoardStore] createSession failed:', error)
         return null
       }
@@ -615,10 +612,10 @@ export const useBoardStore = defineStore('board', {
 
         const statePayload = { state: this.serializedState as Record<string, unknown> }
         const stateBytes = new TextEncoder().encode(JSON.stringify(statePayload)).byteLength
-        if (stateBytes > SOLO_SAVE_STREAM_MAX_BYTES) {
-          notifyError(`Payload завеликий: ліміт ${SOLO_SAVE_STREAM_MAX_BYTES} для save-stream. ID: -`)
+        if (stateBytes > WB_SAVE_STREAM_MAX_BYTES) {
+          notifyError(`Payload завеликий: ліміт ${WB_SAVE_STREAM_MAX_BYTES} для save-stream. ID: -`)
           throw new SaveCoordinatorError(413, 'save-stream', {
-            limit: SOLO_SAVE_STREAM_MAX_BYTES,
+            limit: WB_SAVE_STREAM_MAX_BYTES,
             endpoint: 'save-stream',
           })
         }
@@ -688,7 +685,7 @@ export const useBoardStore = defineStore('board', {
         }
 
         syncStore.setStatus('error')
-        syncStore.setError(translate('solo.sync.saveError'))
+        syncStore.setError(translate('winterboard.board.saveError'))
         console.error('[BoardStore] updateSession failed:', error)
         return false
       }
@@ -697,13 +694,13 @@ export const useBoardStore = defineStore('board', {
     /**
      * Hydrate store from session data
      */
-    hydrateFromSession(session: SoloSession): void {
+    hydrateFromSession(session: WBSessionDetailResponse): void {
       this.sessionId = session.id
       this.sessionName = session.name
       this.ownerId = session.owner_id || null
 
       if (session.state) {
-        const state = session.state as Record<string, unknown>
+        const state = session.state as unknown as Record<string, unknown>
         // Support both old format (strokes at root) and new format (strokes in pages)
         if (state.pages && Array.isArray(state.pages)) {
           this.pages = state.pages as Page[]
@@ -775,7 +772,7 @@ export const useBoardStore = defineStore('board', {
         logAutosaveDebug('manualSave.success', { rttMs: _lastSaveRTT, sessionId: this.sessionId })
       } catch (error) {
         syncStore.setStatus('error')
-        syncStore.setError((error as Error)?.message || translate('solo.sync.saveError'))
+        syncStore.setError((error as Error)?.message || translate('winterboard.board.saveError'))
         logAutosaveDebug('manualSave.error', { message: (error as Error)?.message })
       } finally {
         _currentSaveController = null
@@ -801,7 +798,7 @@ export const useBoardStore = defineStore('board', {
       }
       const body = JSON.stringify(heartbeatPayload)
       const bytes = new TextEncoder().encode(body).byteLength
-      if (bytes > SOLO_BEACON_MAX_BYTES) return
+      if (bytes > WB_BEACON_MAX_BYTES) return
       void saveCoordinator.beaconTelemetry(this.sessionId, heartbeatPayload)
     },
 

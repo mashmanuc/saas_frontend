@@ -6,11 +6,11 @@
       class="export-trigger"
       :aria-expanded="isOpen"
       aria-haspopup="menu"
-      :aria-label="$t('solo.export.title')"
+      :aria-label="$t('winterboard.export.title')"
       @click="toggleMenu"
     >
       <IconExport class="export-trigger__icon" />
-      <span class="export-trigger__text">{{ $t('solo.export.title') }}</span>
+      <span class="export-trigger__text">{{ $t('winterboard.export.title') }}</span>
     </button>
 
     <!-- Dropdown Menu -->
@@ -25,14 +25,14 @@
           @keydown.escape="closeMenu"
         >
           <div class="export-dropdown__header">
-            <h3>{{ $t('solo.export.title') }}</h3>
+            <h3>{{ $t('winterboard.export.title') }}</h3>
             <button class="close-btn" @click="closeMenu" :aria-label="$t('common.close')">×</button>
           </div>
 
           <div class="export-dropdown__content">
             <!-- Format Selection -->
             <div class="export-option">
-              <label class="export-label">{{ $t('solo.export.format') }}</label>
+              <label class="export-label">{{ $t('winterboard.export.format') }}</label>
               <div class="format-buttons">
                 <button
                   v-for="fmt in formats"
@@ -50,28 +50,28 @@
 
             <!-- PDF Options -->
             <div v-if="selectedFormat === 'pdf'" class="export-option">
-              <label class="export-label">{{ $t('solo.export.pageSize') }}</label>
+              <label class="export-label">{{ $t('winterboard.export.pageSize') }}</label>
               <select v-model="pdfOptions.pageSize" class="export-select">
                 <option value="a4">A4</option>
                 <option value="letter">Letter</option>
                 <option value="a3">A3</option>
               </select>
 
-              <label class="export-label">{{ $t('solo.export.orientation') }}</label>
+              <label class="export-label">{{ $t('winterboard.export.orientation') }}</label>
               <div class="orientation-buttons">
                 <button
                   class="orientation-btn"
                   :class="{ 'orientation-btn--active': pdfOptions.orientation === 'landscape' }"
                   @click="pdfOptions.orientation = 'landscape'"
                 >
-                  {{ $t('solo.export.landscape') }}
+                  {{ $t('winterboard.export.landscape') }}
                 </button>
                 <button
                   class="orientation-btn"
                   :class="{ 'orientation-btn--active': pdfOptions.orientation === 'portrait' }"
                   @click="pdfOptions.orientation = 'portrait'"
                 >
-                  {{ $t('solo.export.portrait') }}
+                  {{ $t('winterboard.export.portrait') }}
                 </button>
               </div>
             </div>
@@ -85,7 +85,7 @@
               @click="startExport"
             >
               <IconLoader v-if="isExporting" class="export-btn__spinner" />
-              <span>{{ isExporting ? $t('solo.export.exporting') : $t('solo.export.export') }}</span>
+              <span>{{ isExporting ? $t('winterboard.export.exporting') : $t('winterboard.export.export') }}</span>
             </button>
           </div>
 
@@ -108,9 +108,9 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { soloApi } from '@/modules/solo/api/soloApi'
+import { winterboardApi } from '@/modules/winterboard/api/winterboardApi'
+import type { WBExport } from '@/modules/winterboard/types/winterboard'
 import { notifyError, notifySuccess } from '@/utils/notify'
-import type { ExportRequest } from '@/modules/solo/types/solo'
 
 // Icons
 import IconExport from './icons/IconExport.vue'
@@ -158,7 +158,7 @@ const triggerRef = ref<HTMLElement | null>(null)
 const menuRef = ref<HTMLElement | null>(null)
 const selectedFormat = ref<'png' | 'pdf' | 'json'>('png')
 const isExporting = ref(false)
-const exportStatus = ref<ExportRequest | null>(null)
+const exportStatus = ref<WBExport | null>(null)
 const pollInterval = ref<number | null>(null)
 
 const pdfOptions = reactive({
@@ -190,7 +190,7 @@ const progressPercent = computed(() => {
       return 25
     case 'processing':
       return 60
-    case 'completed':
+    case 'done':
       return 100
     default:
       return 0
@@ -201,13 +201,13 @@ const exportStatusText = computed(() => {
   if (!exportStatus.value) return ''
   switch (exportStatus.value.status) {
     case 'pending':
-      return t('solo.export.statusPending')
+      return t('winterboard.export.statusPending')
     case 'processing':
-      return t('solo.export.statusProcessing')
-    case 'completed':
-      return t('solo.export.statusCompleted')
-    case 'failed':
-      return t('solo.export.statusFailed')
+      return t('winterboard.export.statusProcessing')
+    case 'done':
+      return t('winterboard.export.statusCompleted')
+    case 'error':
+      return t('winterboard.export.statusFailed')
     default:
       return ''
   }
@@ -248,14 +248,14 @@ async function startExport(): Promise<void> {
   }
 
   try {
-    const request = await soloApi.requestExport(props.sessionId, selectedFormat.value)
+    const request = await winterboardApi.createExport(props.sessionId, selectedFormat.value)
     exportStatus.value = request
 
     // Start polling for status
     startPolling(request.id)
   } catch (error) {
     isExporting.value = false
-    const message = (error as Error)?.message || t('solo.export.error')
+    const message = (error as Error)?.message || t('winterboard.export.error')
     notifyError(message)
     emit('export-error', message)
     console.error('[ExportMenu] Export failed:', error)
@@ -265,7 +265,7 @@ async function startExport(): Promise<void> {
 async function exportClientSide(): Promise<void> {
   if (selectedFormat.value === 'json') {
     // Export as JSON - emit event to get state from parent
-    // The parent (SoloWorkspace) should pass boardState as prop
+    // The parent should pass boardState as prop
     const boardState = getBoardStateForExport()
     if (!boardState || Object.keys(boardState).length === 0) {
       throw new Error('Board state is empty')
@@ -277,7 +277,7 @@ async function exportClientSide(): Promise<void> {
     URL.revokeObjectURL(url)
     
     isExporting.value = false
-    notifySuccess(t('solo.export.success'))
+    notifySuccess(t('winterboard.export.success'))
     emit('export-complete', url)
   } else if (selectedFormat.value === 'png') {
     // Export as PNG using Konva stage
@@ -301,7 +301,7 @@ async function exportClientSide(): Promise<void> {
       downloadFile(dataUrl, `board-${props.sessionId}.png`)
       
       isExporting.value = false
-      notifySuccess(t('solo.export.success'))
+      notifySuccess(t('winterboard.export.success'))
       emit('export-complete', dataUrl)
     } catch (stageError) {
       console.error('[ExportMenu] Stage toDataURL failed:', stageError)
@@ -357,7 +357,7 @@ async function exportClientSide(): Promise<void> {
         downloadFile(pdfDataUrl, `board-${props.sessionId}-a4.png`)
         
         isExporting.value = false
-        notifySuccess(t('solo.export.success'))
+        notifySuccess(t('winterboard.export.success'))
         emit('export-complete', pdfDataUrl)
       }
       img.onerror = () => {
@@ -382,12 +382,12 @@ function startPolling(exportId: string): void {
 
       exportStatus.value = status
 
-      if (status.status === 'completed') {
+      if (status.status === 'done') {
         stopPolling()
         isExporting.value = false
 
         if (status.file_url) {
-          notifySuccess(t('solo.export.success'))
+          notifySuccess(t('winterboard.export.success'))
           emit('export-complete', status.file_url)
 
           // Auto-download
@@ -395,10 +395,10 @@ function startPolling(exportId: string): void {
         }
 
         console.log('[ui.export_complete]', { format: selectedFormat.value })
-      } else if (status.status === 'failed') {
+      } else if (status.status === 'error') {
         stopPolling()
         isExporting.value = false
-        notifyError(t('solo.export.error'))
+        notifyError(t('winterboard.export.error'))
         emit('export-error', 'Export failed')
       }
     } catch (error) {
@@ -414,8 +414,8 @@ function stopPolling(): void {
   }
 }
 
-async function checkExportStatus(exportId: string): Promise<ExportRequest> {
-  return await soloApi.getExportStatus(exportId)
+async function checkExportStatus(exportId: string): Promise<WBExport> {
+  return await winterboardApi.getExport(exportId)
 }
 
 function downloadFile(url: string, filename?: string): void {

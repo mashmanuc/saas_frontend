@@ -206,7 +206,7 @@ function canUseTool(toolId: string): boolean {
 }
 
 function handleClear(): void {
-  if (confirm(t('classroom.soloWorkspace.clearConfirm'))) {
+  if (confirm(t('winterboard.board.clearConfirm'))) {
     emit('clear')
     console.log('[ui.board_clear]')
   }

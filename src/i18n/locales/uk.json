@@ -1042,8 +1042,7 @@
     "calendar": "Календар",
     "marketplace": "Маркетплейс",
     "tutorCalendar": "Календар тьютора",
-    "soloWorkspace": "Робочий простір",
-    "soloWorkspaceV2": "Solo v2",
+    "winterboard": "Дошка",
     "profile": "Профіль",
     "tutorProfile": "Профіль тьютора",
     "account": "Акаунт",
@@ -3157,19 +3156,6 @@
       "rateLimitedRetryIn": "Спробувати через {time}",
       "rateLimitedRetry": "Спробувати знову"
     },
-    "soloWorkspace": {
-      "untitled": "Без назви",
-      "clearConfirm": "Очистити сторінку? Цю дію неможливо скасувати."
-    },
-    "solo": {
-      "mySessions": {},
-      "sharing": {
-        "education": {}
-      },
-      "export": {},
-      "assets": {},
-      "public": {}
-    },
     "board": {
       "title": "Дошка",
       "participantsLabel": "{count} у сесії",
@@ -3554,72 +3540,6 @@
         "copyInviteSuccess": "Інвайт скопійовано",
         "copyInviteError": "Не вдалося скопіювати інвайт"
       }
-    }
-  },
-  "solo": {
-    "pages": "сторінок",
-    "shared": "Спільний доступ",
-    "share": "Поділитися",
-    "duplicate": "Дублювати",
-    "delete": "Видалити",
-    "mySessions": {
-      "title": "Мої дошки",
-      "createNew": "Створити нову дошку",
-      "createNewV2": "Створити Solo v2",
-      "search": "Пошук дошок…",
-      "sortUpdated": "Сортувати за оновленням",
-      "sortCreated": "Сортувати за датою створення",
-      "sortName": "Сортувати за назвою",
-      "empty": "У вас ще немає збережених дощок.",
-      "createFirst": "Створіть першу дошку, щоб побачити її тут."
-    },
-    "sharing": {
-      "title": "Поділитися",
-      "createLink": "Створити посилання",
-      "expiresIn": "Термін дії",
-      "expiresAt": "Діє до",
-      "day": "день",
-      "days": "днів",
-      "never": "Безстроково",
-      "allowDownload": "Дозволити завантаження",
-      "maxViews": "Максимум переглядів",
-      "unlimited": "Необмежено",
-      "views": "Переглядів",
-      "revoke": "Скасувати доступ"
-    },
-    "export": {
-      "title": "Експорт",
-      "format": "Формат",
-      "pageSize": "Розмір сторінки",
-      "orientation": "Орієнтація",
-      "landscape": "Альбомна",
-      "portrait": "Портретна",
-      "export": "Експортувати",
-      "exporting": "Експортується...",
-      "success": "Експорт завершено успішно",
-      "error": "Помилка експорту. Спробуйте ще раз.",
-      "statusPending": "Підготовка експорту...",
-      "statusProcessing": "Обробка...",
-      "statusCompleted": "Готово до завантаження",
-      "statusFailed": "Експорт не вдався"
-    },
-    "sync": {
-      "cloudStatus": "Статус хмари",
-      "syncing": "Збереження...",
-      "saved": "Збережено",
-      "error": "Помилка збереження",
-      "loadError": "Не вдалося завантажити сесію",
-      "createError": "Не вдалося створити сесію",
-      "saveError": "Не вдалося зберегти зміни"
-    },
-    "assets": {
-      "upload": "Завантажити файл",
-      "addToBoard": "Додати на дошку",
-      "empty": "Немає завантажених файлів"
-    },
-    "public": {
-      "notFound": "Дошка не знайдена",
-      "download": "Завантажити"
     }
   },
   "errors": {
@@ -5029,87 +4949,6 @@
       "showing": "Показано {from}-{to} з {total}"
     }
   },
-  "soloWorkspace": {
-    "toolbar": {
-      "sections": {
-        "draw": "Малювання",
-        "shapes": "Фігури",
-        "text": "Текст",
-        "style": "Стиль",
-        "actions": "Дії"
-      },
-      "tools": {
-        "pen": "Перо",
-        "highlighter": "Маркер",
-        "eraser": "Гумка",
-        "line": "Лінія",
-        "arrow": "Стрілка",
-        "rectangle": "Прямокутник",
-        "circle": "Коло",
-        "text": "Текст",
-        "note": "Нотатка",
-        "select": "Вибір"
-      },
-      "shortcuts": {
-        "pen": "P",
-        "highlighter": "H",
-        "eraser": "E",
-        "line": "L",
-        "arrow": "A",
-        "rectangle": "R",
-        "circle": "C",
-        "text": "T",
-        "note": "N",
-        "select": "V"
-      },
-      "arrow": {
-        "styles": {
-          "end": "Стрілка в кінці",
-          "start": "Стрілка на початку",
-          "both": "Стрілки з обох боків"
-        },
-        "headSize": "Розмір голівки"
-      },
-      "actions": {
-        "undo": "Скасувати",
-        "redo": "Повторити",
-        "clear": "Очистити"
-      }
-    },
-    "header": {
-      "save": "Зберегти",
-      "exit": "Вийти",
-      "backToList": "Назад до списку",
-      "undo": "Скасувати (Ctrl+Z)",
-      "redo": "Повторити (Ctrl+Y)",
-      "clear": "Очистити сторінку",
-      "exportPDF": "Експорт в PDF",
-      "importPDF": "Імпорт PDF"
-    },
-    "status": {
-      "saving": "Збереження...",
-      "saved": "Збережено {time}",
-      "unsavedChanges": "Незбережені зміни",
-      "justNow": "щойно"
-    },
-    "footer": {
-      "previousPage": "Попередня сторінка",
-      "nextPage": "Наступна сторінка",
-      "addPage": "Додати сторінку",
-      "currentPage": "Поточна сторінка",
-      "zoomOut": "Зменшити (-)",
-      "zoomIn": "Збільшити (+)",
-      "zoomLevel": "Рівень масштабу",
-      "fullscreen": "Повноекранний режим (F11)"
-    },
-    "alerts": {
-      "pdfExportSuccess": "PDF успішно експортовано",
-      "pdfExportError": "Не вдалося експортувати PDF. Спробуйте ще раз.",
-      "pdfImportSuccess": "PDF успішно імпортовано! Додано {count} сторінок.",
-      "pdfImportError": "Не вдалося імпортувати PDF. Спробуйте ще раз.",
-      "invalidFileType": "Невірний тип файлу. Виберіть PDF файл."
-    }
-  },
   "phone_verification": {
     "title": "Підтвердження телефону",
     "description": "Підтвердіть ваш номер телефону для верифікації акаунту",
@@ -5416,6 +5255,372 @@
         "title": "Пряме спілкування",
         "description": "Студент і тьютор працюють напряму через платформу. Швидкі домовленості, прозорі умови, зручні інструменти."
       }
+    }
+  },
+  "winterboard": {
+    "toolbar": {
+      "title": "Інструменти малювання",
+      "drawingTools": "Інструменти малювання",
+      "colorPalette": "Палітра кольорів",
+      "strokeSize": "Розмір штриха",
+      "actions": "Дії",
+      "selectColor": "Обрати колір {color}",
+      "customColor": "Довільний колір"
+    },
+    "tools": {
+      "pen": "Ручка",
+      "highlighter": "Маркер",
+      "eraser": "Гумка",
+      "line": "Лінія",
+      "rectangle": "Прямокутник",
+      "circle": "Коло",
+      "text": "Текст",
+      "select": "Виділення",
+      "undo": "Скасувати",
+      "redo": "Повторити",
+      "clear": "Очистити сторінку"
+    },
+    "pages": {
+      "title": "Сторінки",
+      "addPage": "Додати сторінку",
+      "maxReached": "Максимум {max} сторінок",
+      "pageN": "Сторінка {n}"
+    },
+    "status": {
+      "idle": "Готово",
+      "syncing": "Збереження…",
+      "saved": "Збережено {time}",
+      "savedJustNow": "Збережено щойно",
+      "error": "Помилка збереження",
+      "errorRetry": "Помилка — Повторити",
+      "offline": "Офлайн",
+      "retry": "Повторити"
+    },
+    "sessions": {
+      "title": "Мої дошки",
+      "newSession": "Нова сесія",
+      "comingSoon": "Список сесій — Скоро",
+      "hint": "Натисніть \"Нова сесія\" щоб створити дошку",
+      "emptyTitle": "Ще немає дошок",
+      "emptyMessage": "Створіть першу дошку щоб почати",
+      "createFirst": "Створити дошку",
+      "loading": "Завантаження сесій…",
+      "pages": "{n} сторінка | {n} сторінок",
+      "edited": "Редаговано {time}",
+      "actions": {
+        "open": "Відкрити",
+        "duplicate": "Дублювати",
+        "share": "Поділитися",
+        "export": "Експорт",
+        "delete": "Видалити",
+        "rename": "Перейменувати"
+      },
+      "confirmDelete": {
+        "title": "Видалити дошку?",
+        "message": "Це назавжди видалить \"{name}\". Цю дію неможливо скасувати.",
+        "confirm": "Видалити",
+        "cancel": "Скасувати"
+      },
+      "duplicated": "Дошку дубльовано",
+      "deleted": "Дошку видалено",
+      "deleteError": "Не вдалося видалити дошку",
+      "loadError": "Не вдалося завантажити дошки",
+      "duplicateError": "Не вдалося дублювати дошку"
+    },
+    "share": {
+      "title": "Поділитися дошкою",
+      "description": "Будь-хто з посиланням зможе переглянути цю дошку",
+      "generateLink": "Створити посилання",
+      "shareLink": "Посилання",
+      "copy": "Копіювати",
+      "copied": "Скопійовано!",
+      "copyError": "Не вдалося скопіювати",
+      "revoke": "Відкликати посилання",
+      "revokeConfirm": "Ви впевнені? Всі з посиланням втратять доступ.",
+      "revoked": "Посилання відкликано",
+      "revokeError": "Не вдалося відкликати посилання",
+      "generateError": "Не вдалося створити посилання",
+      "options": "Налаштування",
+      "expires": "Термін дії",
+      "expiresOptions": {
+        "1h": "1 година",
+        "24h": "24 години",
+        "7d": "7 днів",
+        "never": "Безстроково"
+      },
+      "maxViews": "Макс. переглядів",
+      "maxViewsOptions": {
+        "10": "10 переглядів",
+        "100": "100 переглядів",
+        "unlimited": "Без обмежень"
+      },
+      "allowDownload": "Дозволити завантаження",
+      "status": {
+        "active": "Активне",
+        "expired": "Прострочене",
+        "revoked": "Відкликане"
+      },
+      "viewCount": "{count} перегляд | {count} переглядів",
+      "close": "Закрити"
+    },
+    "export": {
+      "title": "Експорт дошки",
+      "description": "Оберіть формат для експорту",
+      "format": "Формат",
+      "formats": {
+        "png": "PNG зображення",
+        "pngDesc": "Експорт поточної сторінки як зображення",
+        "pdf": "PDF документ",
+        "pdfDesc": "Експорт всіх сторінок як PDF",
+        "json": "JSON дані",
+        "jsonDesc": "Експорт сирих даних дошки"
+      },
+      "pageSize": "Розмір сторінки",
+      "orientation": "Орієнтація",
+      "landscape": "Альбомна",
+      "portrait": "Книжкова",
+      "export": "Експортувати",
+      "exporting": "Експортування…",
+      "startExport": "Експортувати",
+      "processing": "Експортування…",
+      "ready": "Експорт готовий!",
+      "download": "Завантажити",
+      "success": "Експорт завершено",
+      "error": "Помилка експорту",
+      "statusPending": "Очікування…",
+      "statusProcessing": "Обробка…",
+      "statusCompleted": "Завершено",
+      "statusFailed": "Помилка",
+      "retry": "Повторити",
+      "close": "Закрити",
+      "exportError": "Не вдалося розпочати експорт",
+      "pollError": "Не вдалося перевірити статус експорту",
+      "pageSelection": "Сторінки",
+      "currentPage": "Тільки поточна сторінка",
+      "allPages": "Всі сторінки",
+      "pngOptions": "Налаштування PNG",
+      "quality": "Якість",
+      "qualityHigh": "Висока (2x)",
+      "qualityMedium": "Стандартна (1x)",
+      "qualityLow": "Низька",
+      "background": "Фон",
+      "bgWhite": "Білий",
+      "bgTransparent": "Прозорий",
+      "pdfOptions": "Налаштування PDF",
+      "original": "Оригінал",
+      "jsonOptions": "Налаштування JSON",
+      "prettyPrint": "Форматований вивід",
+      "timeout": "Експорт займає занадто довго. Спробуйте ще раз."
+    },
+    "board": {
+      "untitled": "Без назви",
+      "clearConfirm": "Очистити дошку? Цю дію неможливо скасувати.",
+      "syncing": "Збереження…",
+      "saved": "Збережено",
+      "error": "Помилка",
+      "cloudStatus": "Стан хмари",
+      "loadError": "Не вдалося завантажити сесію",
+      "createError": "Не вдалося створити сесію",
+      "saveError": "Не вдалося зберегти"
+    },
+    "public": {
+      "loading": "Завантаження дошки…",
+      "readOnly": "Тільки перегляд",
+      "download": "Завантажити",
+      "goBack": "Повернутися",
+      "notFound": "Не знайдено",
+      "invalidLink": "Посилання недійсне або відсутнє",
+      "sessionNotFound": "Сесію не знайдено або посилання більше не дійсне",
+      "expired": "Посилання прострочене",
+      "linkExpired": "Термін дії цього посилання закінчився",
+      "error": "Помилка",
+      "loadFailed": "Не вдалося завантажити дошку"
+    },
+    "error": {
+      "title": "Щось пішло не так",
+      "message": "Виникла неочікувана помилка на дошці. Ваша робота збережена.",
+      "retry": "Спробувати знову",
+      "showDetails": "Показати деталі помилки"
+    },
+    "a11y": {
+      "toolSelected": "Інструмент {tool} обрано",
+      "undoAction": "Скасування: {action}",
+      "redoAction": "Повтор: {action}",
+      "strokeRemoved": "штрих видалено",
+      "strokeRestored": "штрих відновлено",
+      "skipToCanvas": "Перейти до полотна",
+      "notifications": "Сповіщення",
+      "dismiss": "Закрити"
+    },
+    "room": {
+      "untitled": "Без назви",
+      "undoShortcut": "Скасувати (Ctrl+Z)",
+      "redoShortcut": "Повторити (Ctrl+Shift+Z)",
+      "exit": "Вийти",
+      "saving": "Збереження",
+      "saved": "Збережено",
+      "saveError": "Помилка збереження",
+      "offline": "Офлайн",
+      "unsavedChanges": "Незбережені зміни",
+      "ready": "Готово",
+      "prevPage": "Попередня сторінка (PageUp)",
+      "nextPage": "Наступна сторінка (PageDown)",
+      "addPage": "Додати сторінку",
+      "zoomOut": "Зменшити",
+      "zoomIn": "Збільшити",
+      "zoomReset": "Скинути масштаб (Ctrl+0)",
+      "fitToPage": "Вписати в сторінку",
+      "pageIndicator": "{current} / {total}",
+      "followTeacher": "Слідкувати за вчителем",
+      "following": "Слідкую за {name}",
+      "stopFollowing": "Зупинити"
+    },
+    "sizePresets": {
+      "thin": "Тонкий",
+      "medium": "Середній",
+      "thick": "Товстий",
+      "extra": "Дуже товстий"
+    },
+    "loading": {
+      "canvas": "Завантаження дошки…",
+      "canvasSubtitle": "Підготовка робочого простору"
+    },
+    "emptyCanvas": {
+      "hint": "Почніть малювати тут"
+    },
+    "emptySession": {
+      "title": "Ще немає дошок",
+      "message": "Створіть першу дошку щоб почати малювати",
+      "cta": "Створити дошку"
+    },
+    "errorSession": {
+      "title": "Не вдалося завантажити дошки",
+      "retry": "Спробувати знову"
+    },
+    "errorRoom": {
+      "notFound": "Сесію не знайдено",
+      "loadFailed": "Не вдалося завантажити сесію",
+      "goBack": "Повернутися до списку"
+    },
+    "classroom": {
+      "locked": "Малювання заблоковано",
+      "unlock": "Розблокувати малювання",
+      "lock": "Заблокувати малювання",
+      "endSession": "Завершити сесію",
+      "endSessionConfirm": "Ви впевнені, що хочете завершити цю сесію?",
+      "studentList": "Підключені учні",
+      "students": "Учні",
+      "noStudents": "Немає підключених учнів",
+      "kick": "Видалити учня",
+      "roleTeacher": "Вчитель",
+      "roleStudent": "Учень",
+      "roleViewer": "Глядач",
+      "follow": {
+        "following": "Слідкуєте за {name}",
+        "stopFollowing": "Припинити слідкування",
+        "returnToTeacher": "Повернутися до вчителя",
+        "teacherDisconnected": "Вчитель відключився",
+        "teacherReconnected": "Вчитель повернувся",
+        "movedToPage": "Вчитель перейшов на сторінку {page}"
+      },
+      "notifications": {
+        "joined": "{name} приєднався",
+        "left": "{name} вийшов",
+        "locked": "Вчитель заблокував малювання",
+        "unlocked": "Малювання розблоковано",
+        "kicked": "Вас видалено з сесії",
+        "ended": "Сесію завершено вчителем",
+        "saved": "Збережено",
+        "exportReady": "Експорт готовий — Завантажити",
+        "connectionLost": "Зʼєднання втрачено — Перепідключення...",
+        "reconnecting": "Перепідключення...",
+        "soundOn": "Звук увімкнено",
+        "soundOff": "Звук вимкнено",
+        "joinLeaveOn": "Сповіщення про вхід/вихід увімкнено",
+        "joinLeaveOff": "Сповіщення про вхід/вихід вимкнено"
+      }
+    },
+    "upload": {
+      "dragHere": "Перетягніть зображення сюди",
+      "supportedFormats": "PNG, JPEG, WebP, SVG — макс. 10 МБ",
+      "pickFile": "Обрати файл зображення",
+      "uploading": "Завантаження…",
+      "success": "Зображення завантажено",
+      "error": "Помилка завантаження",
+      "tooLarge": "Файл занадто великий. Максимум 10 МБ",
+      "wrongType": "Підтримуються лише PNG, JPEG, WebP, SVG",
+      "cancel": "Скасувати",
+      "emptyFile": "Файл порожній",
+      "quotaExceeded": "Квоту сховища вичерпано"
+    },
+    "time": {
+      "justNow": "щойно",
+      "secondsAgo": "{n}с тому",
+      "minutesAgo": "{n}хв тому",
+      "hoursAgo": "{n}год тому",
+      "daysAgo": "{n}д тому"
+    },
+    "sessionCard": {
+      "untitled": "Без назви",
+      "pageCount": "{n} стор.",
+      "viewCount": "{count} перегляд | {count} переглядів"
+    },
+    "colorPicker": {
+      "recent": "Нещодавні",
+      "custom": "Довільний"
+    },
+    "gestures": {
+      "pinchToZoom": "Зведіть пальці для масштабування",
+      "twoFingerPan": "Перетягніть двома пальцями для прокрутки",
+      "threeFingerUndo": "Проведіть трьома пальцями вліво для скасування",
+      "threeFingerRedo": "Проведіть трьома пальцями вправо для повтору",
+      "doubleTapReset": "Подвійний дотик для скидання масштабу",
+      "longPressMenu": "Утримуйте для меню",
+      "edgeSwipeTools": "Проведіть від лівого краю для інструментів",
+      "edgeSwipePages": "Проведіть від правого краю для сторінок"
+    },
+    "pdf": {
+      "importPdf": "Імпорт PDF",
+      "importProgress": "Імпортування PDF...",
+      "convertingPage": "Конвертація сторінки {current} з {total}",
+      "importComplete": "PDF успішно імпортовано",
+      "exportAnnotatedPdf": "Анотований PDF",
+      "exportAnnotatedPdfTooltip": "Експорт PDF з вашими анотаціями",
+      "mergingAnnotations": "Обʼєднання анотацій... Сторінка {current} з {total}",
+      "exportComplete": "Експорт завершено",
+      "pdfPagesWithAnnotations": "{count} сторінок з анотаціями",
+      "noPdfPages": "Немає PDF сторінок у цій сесії",
+      "annotationTypes": "Типи анотацій",
+      "filterStrokes": "Штрихи",
+      "filterText": "Текст",
+      "filterShapes": "Фігури",
+      "errorTooLarge": "PDF має бути менше 50МБ",
+      "errorTooManyPages": "PDF має містити не більше 50 сторінок",
+      "errorInvalidPdf": "Будь ласка, оберіть дійсний PDF файл",
+      "dropPdfHere": "Перетягніть PDF сюди для імпорту",
+      "cancelImport": "Скасувати імпорт",
+      "dismissError": "Закрити"
+    },
+    "collaboration": {
+      "onlineUsers": "Онлайн користувачі",
+      "you": "Ви",
+      "follow": "Слідкувати",
+      "unfollow": "Відписатися",
+      "following": "Слідкуєте",
+      "connected": "Підключено",
+      "syncing": "Синхронізація...",
+      "disconnected": "Відключено",
+      "reconnecting": "Перепідключення...",
+      "lockedBy": "Редагується {name}",
+      "editingThisArea": "{name} редагує цю область",
+      "concurrentEditors": "{count} людей редагують цю сторінку",
+      "userJoined": "{name} приєднався",
+      "userLeft": "{name} вийшов",
+      "nowFollowing": "Тепер слідкуєте за {name}",
+      "unfollowed": "Перестали слідкувати",
+      "page": "Сторінка",
+      "expandPanel": "Розгорнути панель",
+      "collapsePanel": "Згорнути панель"
     }
   }
 }

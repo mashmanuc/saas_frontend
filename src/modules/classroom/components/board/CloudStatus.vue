@@ -79,18 +79,18 @@ const { t } = useI18n()
 const statusText = computed(() => {
   switch (props.status) {
     case 'syncing':
-      return t('solo.sync.syncing')
+      return t('winterboard.board.syncing')
     case 'saved':
-      return t('solo.sync.saved')
+      return t('winterboard.board.saved')
     case 'error':
-      return props.errorMessage || t('solo.sync.error')
+      return props.errorMessage || t('winterboard.board.error')
     default:
       return ''
   }
 })
 
 const statusLabel = computed(() => {
-  return `${t('solo.sync.cloudStatus')}: ${statusText.value}`
+  return `${t('winterboard.board.cloudStatus')}: ${statusText.value}`
 })
 
 function formatTime(date: Date | string): string {

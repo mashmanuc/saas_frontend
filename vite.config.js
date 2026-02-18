@@ -67,6 +67,9 @@ export default defineConfig({
           'vendor-ui': ['lucide-vue-next'],
           'vendor-utils': ['dayjs', 'axios'],
           
+          // Konva — isolated vendor chunk (~140KB min)
+          'vendor-konva': ['konva'],
+
           // Feature chunks
           'chunk-whiteboard': [
             './src/modules/board/views/BoardView.vue',

@@ -70,18 +70,15 @@ const RoleSelectionView = () => import('../views/RoleSelectionView.vue')
 
 // Classroom views (v0.24.2)
 const LessonRoom = () => import('../modules/classroom/views/LessonRoom.vue')
-const SoloRoom = () => import('../modules/classroom/views/SoloRoom.vue')
-
-// Solo Workspace (v0.26, v0.27)
-const SoloWorkspace = () => import('../modules/solo/views/SoloWorkspace.vue')
-const SoloWorkspaceV2 = () => import('../modules/solo/views/SoloWorkspaceV2.vue')
-const SoloSessionList = () => import('../modules/solo/views/SoloSessionList.vue')
-const SoloPublicView = () => import('../modules/solo/views/SoloPublicView.vue')
+const ClassroomBoard = () => import('../modules/classroom/views/ClassroomBoard.vue')
 
 // Classroom views (v0.24.3)
 const LessonSummary = () => import('../modules/classroom/summary/LessonSummary.vue')
 const LessonReplay = () => import('../modules/classroom/views/LessonReplay.vue')
 const LessonHistory = () => import('../modules/classroom/views/LessonHistory.vue')
+
+// Winterboard v3 (lazy-loaded module routes)
+import winterboardRoutes from '../modules/winterboard/router'
 
 const routes = [
   // Role selection landing page (root redirect)
@@ -520,49 +517,22 @@ const routes = [
         meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
       },
       {
-        path: 'classroom/solo',
-        name: 'solo-room',
-        component: SoloRoom,
+        path: 'classroom/board',
+        name: 'classroom-board',
+        component: ClassroomBoard,
         meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
       },
-      // v0.26-v0.27: Solo Workspace
       {
-        path: 'solo',
-        name: 'solo-sessions',
-        component: SoloSessionList,
-        meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR] },
+        path: 'classroom/solo',
+        redirect: { name: 'winterboard-sessions' },
       },
-      {
-        path: 'solo/new',
-        name: 'solo-workspace',
-        component: SoloWorkspace,
-        meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR] },
-      },
-      {
-        path: 'solo/:id',
-        name: 'solo-workspace-edit',
-        component: SoloWorkspace,
-        meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR] },
-      },
-      // Solo V2 (NEW) - parallel to old version
-      {
-        path: 'solo-v2/new',
-        name: 'solo-workspace-v2',
-        component: SoloWorkspaceV2,
-        meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR] },
-      },
-      {
-        path: 'solo-v2/:id',
-        name: 'solo-workspace-v2-edit',
-        component: SoloWorkspaceV2,
-        meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR] },
-      },
-      {
-        path: 'solo/shared/:token',
-        name: 'solo-public',
-        component: SoloPublicView,
-        meta: { public: true },
-      },
+      // [WB:A1.1] Solo → Winterboard redirects (v0.26-v0.27 routes deprecated)
+      { path: 'solo', redirect: { name: 'winterboard-sessions' } },
+      { path: 'solo/new', redirect: { name: 'winterboard-new' } },
+      { path: 'solo/:id', redirect: to => ({ name: 'winterboard-solo', params: { id: to.params.id } }) },
+      { path: 'solo-v2/new', redirect: { name: 'winterboard-new' } },
+      { path: 'solo-v2/:id', redirect: to => ({ name: 'winterboard-solo', params: { id: to.params.id } }) },
+      { path: 'solo/shared/:token', redirect: to => ({ name: 'winterboard-public', params: { token: to.params.token } }) },
       // v0.24.3: Classroom history routes
       {
         path: 'classroom/:sessionId/summary',
@@ -823,6 +793,8 @@ const routes = [
     component: () => import('../modules/reviews/views/TutorReviewsView.vue'),
     meta: { requiresAuth: false },
   },
+  // Winterboard v3 routes (top-level, own layout)
+  ...winterboardRoutes,
   { path: '/:pathMatch(.*)*', redirect: '/start' },
 ]
 

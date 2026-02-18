@@ -1,0 +1,67 @@
+name: Lighthouse CI
+
+on:
+  pull_request:
+    paths:
+      - 'src/modules/winterboard/**'
+      - 'lighthouserc.js'
+      - 'lighthouserc.mobile.js'
+
+jobs:
+  lighthouse-desktop:
+    name: Lighthouse Desktop
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - name: Run Lighthouse CI (Desktop)
+        run: npx @lhci/cli autorun
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+
+      - name: Upload Lighthouse results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-desktop-results
+          path: .lighthouseci/
+          retention-days: 14
+
+  lighthouse-mobile:
+    name: Lighthouse Mobile
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - name: Run Lighthouse CI (Mobile)
+        run: npx @lhci/cli autorun --config=lighthouserc.mobile.js
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+
+      - name: Upload Lighthouse results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-mobile-results
+          path: .lighthouseci/
+          retention-days: 14

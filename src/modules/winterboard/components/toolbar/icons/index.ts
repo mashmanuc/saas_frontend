@@ -1,0 +1,13 @@
+// WB: Barrel export for toolbar icons
+export { default as WBIconPen } from './WBIconPen.vue'
+export { default as WBIconHighlighter } from './WBIconHighlighter.vue'
+export { default as WBIconEraser } from './WBIconEraser.vue'
+export { default as WBIconLine } from './WBIconLine.vue'
+export { default as WBIconRectangle } from './WBIconRectangle.vue'
+export { default as WBIconCircle } from './WBIconCircle.vue'
+export { default as WBIconText } from './WBIconText.vue'
+export { default as WBIconSelect } from './WBIconSelect.vue'
+export { default as WBIconUndo } from './WBIconUndo.vue'
+export { default as WBIconRedo } from './WBIconRedo.vue'
+export { default as WBIconTrash } from './WBIconTrash.vue'
+export { default as WBIconPalette } from './WBIconPalette.vue'
