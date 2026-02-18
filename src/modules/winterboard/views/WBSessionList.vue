@@ -1,6 +1,7 @@
 <!-- WB: Session list view — full implementation
      Ref: TASK_BOARD.md B4.1
-     Grid of session cards, CRUD, loading/empty states -->
+     Grid of session cards, CRUD, loading/empty states
+     Deploy: 2026-02-18 18:45 -->
 <template>
   <div class="wb-session-list">
     <!-- Header -->
