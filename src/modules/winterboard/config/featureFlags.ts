@@ -65,28 +65,9 @@ function getEnvVar(key: string): string | undefined {
  * URL param also persists to localStorage for session continuity.
  */
 export function isWinterboardEnabled(): boolean {
-  // 1. URL param override (also persists to localStorage)
-  const urlParam = getUrlParam(URL_PARAM_WB)
-  if (urlParam !== null) {
-    const enabled = urlParam === 'true' || urlParam === '1'
-    setLocalStorage(LS_KEY_WB, String(enabled))
-    return enabled
-  }
-
-  // 2. localStorage override
-  const lsValue = getLocalStorage(LS_KEY_WB)
-  if (lsValue !== null) {
-    return lsValue === 'true'
-  }
-
-  // 3. Env variable
-  const envValue = getEnvVar('VITE_WB_ENABLED')
-  if (envValue !== undefined) {
-    return envValue === 'true'
-  }
-
-  // 4. Default: disabled
-  return false
+  // Winterboard v4 is now GA — always enabled.
+  // Legacy flag logic removed. Yjs sub-flag still gated separately.
+  return true
 }
 
 // ─── Yjs Collaboration Flag ─────────────────────────────────────────────────

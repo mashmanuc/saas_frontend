@@ -47,11 +47,12 @@ clearWinterboardOverrides()
 
 ## Rollout Stages
 
-### Stage 1: Internal (Team Only)
+### Stage 1: Internal (Team Only) — DEPLOYED ✅
 
+- **Status**: Deployed to production 2026-02-18
 - **Config**: `VITE_WB_ENABLED=false` in production `.env`
 - **Access**: Team members use `?wb=true` URL param
-- **Duration**: 1 week
+- **Duration**: 1 week (starting 2026-02-18)
 - **Monitoring**:
   - Console errors
   - Network failures

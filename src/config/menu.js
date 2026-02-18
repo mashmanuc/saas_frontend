@@ -14,7 +14,7 @@ export const MENU_BY_ROLE = {
     { label: 'menu.dashboard', icon: 'home', to: '/tutor' },
     { label: 'menu.classrooms', icon: 'class', to: '/dashboard/classrooms' },
     { label: 'menu.tutorCalendar', icon: 'book', to: '/booking/tutor' },
-    { label: 'menu.soloWorkspace', icon: 'edit', to: '/solo' },
+    { label: 'menu.winterboard', icon: 'edit', to: '/winterboard' },
     { label: 'menu.tutorProfile', icon: 'briefcase', to: '/marketplace/my-profile' },
     { label: 'menu.account', icon: 'user', to: '/settings' },
     { label: 'menu.billing', icon: 'credit-card', to: '/billing' },    
@@ -26,7 +26,7 @@ export const MENU_BY_ROLE = {
     { label: 'menu.dashboard', icon: 'home', to: '/student' },
     { label: 'menu.marketplace', icon: 'users', to: '/marketplace' },
     { label: 'menu.calendar', icon: 'calendar', to: '/calendar' },
-    { label: 'menu.soloWorkspace', icon: 'edit', to: '/solo' },
+    { label: 'menu.winterboard', icon: 'edit', to: '/winterboard' },
     { label: 'menu.account', icon: 'user', to: '/settings' },
   ],
 }
