@@ -1,6 +1,6 @@
 /**
  * Telegram Bot API client.
- *
+ * v2: Use server-side QR SVG (MFA pattern) - removes broken qrcode npm
  * SPEC: backend/docs/Plan_telegram/SPEC_TELEGRAM_NOTIFICATIONS.md §5
  */
 import apiClient from '@/utils/apiClient'
