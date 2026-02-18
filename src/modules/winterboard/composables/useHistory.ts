@@ -2,12 +2,25 @@
 // Ref: ManifestWinterboard_v2.md LAW-19, TASK_BOARD.md B1.1
 // Adapted from SOLO_v2/useHistory.ts for Konva/Pinia architecture
 
-import { ref, computed } from 'vue'
+import { ref, computed, toRaw } from 'vue'
 import type {
   WBStroke,
   WBAsset,
   WBHistoryActionType,
 } from '../types/winterboard'
+
+/**
+ * Safe deep clone that works with Vue reactive Proxy objects.
+ * structuredClone fails on Vue Proxy — JSON round-trip handles it.
+ */
+function safeClone<T>(obj: T): T {
+  try {
+    return JSON.parse(JSON.stringify(toRaw(obj)))
+  } catch {
+    // Fallback: return shallow copy if JSON fails
+    return { ...toRaw(obj) } as T
+  }
+}
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -94,7 +107,7 @@ export function useHistory(options: UseHistoryOptions = {}) {
       type: actionType,
       pageId,
       timestamp: Date.now(),
-      item: structuredClone(item),
+      item: safeClone(item),
       itemId: item.id,
     })
   }
@@ -106,7 +119,7 @@ export function useHistory(options: UseHistoryOptions = {}) {
       type: actionType,
       pageId,
       timestamp: Date.now(),
-      item: structuredClone(item),
+      item: safeClone(item),
       itemId: item.id,
     })
   }
@@ -125,8 +138,8 @@ export function useHistory(options: UseHistoryOptions = {}) {
       pageId,
       timestamp: Date.now(),
       itemId,
-      before: structuredClone(before),
-      after: structuredClone(after),
+      before: safeClone(before),
+      after: safeClone(after),
     })
   }
 
@@ -136,8 +149,8 @@ export function useHistory(options: UseHistoryOptions = {}) {
       type: 'clear-page',
       pageId,
       timestamp: Date.now(),
-      clearedStrokes: structuredClone(strokes),
-      clearedAssets: structuredClone(assets),
+      clearedStrokes: safeClone(strokes),
+      clearedAssets: safeClone(assets),
     })
   }
 

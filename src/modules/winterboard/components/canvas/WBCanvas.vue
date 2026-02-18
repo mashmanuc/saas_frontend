@@ -172,7 +172,7 @@
 // Ref: ARCHITECTURE.md ADR-01, BoardCanvas.vue (classroom reference)
 // Stripped of: classroom session linking, stealth autosave, save window guards, presence cursors
 
-import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { ref, shallowRef, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import Konva from 'konva'
 import getStroke from 'perfect-freehand'
 import type { WBStroke, WBAsset, WBToolType, WBPoint, WBPageBackground, WBPdfBackground } from '../../types/winterboard'
@@ -293,7 +293,7 @@ const currentPoints = ref<WBPoint[]>([])
 let lastNativePointerEvent: PointerEvent | null = null
 let currentPointerType: string = 'mouse'
 const shapePreview = ref<{ x: number; y: number; width: number; height: number } | null>(null)
-const selectedNode = ref<Konva.Node | null>(null)
+const selectedNode = shallowRef<Konva.Node | null>(null)
 const editingText = ref<WBStroke | null>(null)
 const editingTextValue = ref('')
 const loadedImages = reactive<Map<string, HTMLImageElement>>(new Map())

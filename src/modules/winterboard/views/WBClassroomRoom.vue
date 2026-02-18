@@ -405,7 +405,11 @@ function handleStrokeAdd(stroke: WBStroke): void {
   if (isDrawingDisabled.value) return
   store.addStroke(stroke)
   const page = store.currentPage
-  if (page) history.recordAdd(page.id, stroke, 'stroke')
+  if (page) {
+    try { history.recordAdd(page.id, stroke, 'stroke') } catch (err) {
+      console.warn('[WB:Classroom] history.recordAdd failed:', err)
+    }
+  }
 }
 
 function handleStrokeUpdate(stroke: WBStroke): void {
@@ -416,18 +420,26 @@ function handleStrokeUpdate(stroke: WBStroke): void {
 function handleStrokeDelete(strokeId: string): void {
   if (isDrawingDisabled.value) return
   const page = store.currentPage
-  if (page) {
-    const existing = page.strokes.find((s) => s.id === strokeId)
-    if (existing) history.recordRemove(page.id, existing, 'stroke')
-  }
+  const existing = page?.strokes.find((s) => s.id === strokeId)
+
   store.deleteStroke(strokeId)
+
+  if (page && existing) {
+    try { history.recordRemove(page.id, existing, 'stroke') } catch (err) {
+      console.warn('[WB:Classroom] history.recordRemove failed:', err)
+    }
+  }
 }
 
 function handleAssetAdd(asset: WBAsset): void {
   if (isDrawingDisabled.value) return
   store.addAsset(asset)
   const page = store.currentPage
-  if (page) history.recordAdd(page.id, asset, 'asset')
+  if (page) {
+    try { history.recordAdd(page.id, asset, 'asset') } catch (err) {
+      console.warn('[WB:Classroom] history.recordAdd (asset) failed:', err)
+    }
+  }
 }
 
 function handleAssetUpdate(asset: WBAsset): void {
@@ -438,11 +450,15 @@ function handleAssetUpdate(asset: WBAsset): void {
 function handleAssetDelete(assetId: string): void {
   if (isDrawingDisabled.value) return
   const page = store.currentPage
-  if (page) {
-    const existing = page.assets.find((a) => a.id === assetId)
-    if (existing) history.recordRemove(page.id, existing, 'asset')
-  }
+  const existing = page?.assets.find((a) => a.id === assetId)
+
   store.deleteAsset(assetId)
+
+  if (page && existing) {
+    try { history.recordRemove(page.id, existing, 'asset') } catch (err) {
+      console.warn('[WB:Classroom] history.recordRemove (asset) failed:', err)
+    }
+  }
 }
 
 function handleSelect(id: string | null): void {

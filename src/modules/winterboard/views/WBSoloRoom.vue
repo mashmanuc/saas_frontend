@@ -316,10 +316,14 @@ useKeyboard({
 function handleStrokeAdd(stroke: WBStroke): void {
   store.addStroke(stroke)
 
-  // Record in external history (AGENT-B composable)
+  // Record in external history (AGENT-B composable, non-critical)
   const page = store.currentPage
   if (page) {
-    history.recordAdd(page.id, stroke, 'stroke')
+    try {
+      history.recordAdd(page.id, stroke, 'stroke')
+    } catch (err) {
+      console.warn('[WB:Room] history.recordAdd failed:', err)
+    }
   }
 }
 
@@ -330,22 +334,32 @@ function handleStrokeUpdate(stroke: WBStroke): void {
 function handleStrokeDelete(strokeId: string): void {
   // Find stroke before deleting for history
   const page = store.currentPage
-  if (page) {
-    const existing = page.strokes.find((s) => s.id === strokeId)
-    if (existing) {
+  const existing = page?.strokes.find((s) => s.id === strokeId)
+
+  // Delete first — store action must succeed even if history recording fails
+  store.deleteStroke(strokeId)
+
+  // Record in history (non-critical — wrapped in try-catch)
+  if (page && existing) {
+    try {
       history.recordRemove(page.id, existing, 'stroke')
+    } catch (err) {
+      console.warn('[WB:Room] history.recordRemove failed:', err)
     }
   }
-  store.deleteStroke(strokeId)
 }
 
 function handleAssetAdd(asset: WBAsset): void {
   store.addAsset(asset)
 
-  // A4.3: Record in history for undo/redo
+  // A4.3: Record in history for undo/redo (non-critical)
   const page = store.currentPage
   if (page) {
-    history.recordAdd(page.id, asset, 'asset')
+    try {
+      history.recordAdd(page.id, asset, 'asset')
+    } catch (err) {
+      console.warn('[WB:Room] history.recordAdd (asset) failed:', err)
+    }
   }
 }
 
@@ -354,15 +368,20 @@ function handleAssetUpdate(asset: WBAsset): void {
 }
 
 function handleAssetDelete(assetId: string): void {
-  // A4.3: Record in history for undo/redo
   const page = store.currentPage
-  if (page) {
-    const existing = page.assets.find((a) => a.id === assetId)
-    if (existing) {
+  const existing = page?.assets.find((a) => a.id === assetId)
+
+  // Delete first — store action must succeed even if history recording fails
+  store.deleteAsset(assetId)
+
+  // A4.3: Record in history for undo/redo (non-critical)
+  if (page && existing) {
+    try {
       history.recordRemove(page.id, existing, 'asset')
+    } catch (err) {
+      console.warn('[WB:Room] history.recordRemove (asset) failed:', err)
     }
   }
-  store.deleteAsset(assetId)
 }
 
 function handleSelect(id: string | null): void {
