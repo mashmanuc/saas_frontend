@@ -5473,7 +5473,9 @@
       "pageIndicator": "{current} / {total}",
       "followTeacher": "Слідкувати за вчителем",
       "following": "Слідкую за {name}",
-      "stopFollowing": "Зупинити"
+      "stopFollowing": "Зупинити",
+      "share": "Поділитися",
+      "export": "Експорт"
     },
     "sizePresets": {
       "thin": "Тонкий",

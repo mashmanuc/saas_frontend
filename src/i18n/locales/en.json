@@ -5489,7 +5489,9 @@
       "pageIndicator": "{current} / {total}",
       "followTeacher": "Follow teacher",
       "following": "Following {name}",
-      "stopFollowing": "Stop following"
+      "stopFollowing": "Stop following",
+      "share": "Share",
+      "export": "Export"
     },
     "sizePresets": {
       "thin": "Thin",

@@ -3608,7 +3608,9 @@
       "pageIndicator": "{current} / {total}",
       "followTeacher": "Следовать за учителем",
       "following": "Следуем за {name}",
-      "stopFollowing": "Остановить"
+      "stopFollowing": "Остановить",
+      "share": "Поделиться",
+      "export": "Экспорт"
     },
     "time": {
       "justNow": "только что",

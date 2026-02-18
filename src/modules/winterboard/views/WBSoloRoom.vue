@@ -62,6 +62,22 @@
         >
           ↪
         </button>
+        <button
+          type="button"
+          class="wb-header-btn"
+          :title="t('winterboard.room.export')"
+          @click="showExportDialog = true"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 10v3a1 1 0 001 1h10a1 1 0 001-1v-3M8 2v8M5 5l3-3 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button
+          type="button"
+          class="wb-header-btn"
+          :title="t('winterboard.room.share')"
+          @click="showShareDialog = true"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="12" cy="4" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="2" stroke="currentColor" stroke-width="1.5"/><path d="M5.7 7l4.6-2M5.7 9l4.6 2" stroke="currentColor" stroke-width="1.5"/></svg>
+        </button>
         <button type="button" class="wb-header-btn wb-header-btn--exit" @click="handleExit">
           {{ t('winterboard.room.exit') }}
         </button>
@@ -186,6 +202,22 @@
         <button type="button" class="wb-zoom-btn" :title="t('winterboard.room.fitToPage')" @click="handleFitToPage">⧉</button>
       </div>
     </footer>
+
+    <!-- Share dialog -->
+    <WBShareDialog
+      v-if="showShareDialog && sessionId"
+      :session-id="sessionId"
+      :is-open="showShareDialog"
+      @close="showShareDialog = false"
+    />
+
+    <!-- Export dialog -->
+    <WBExportDialog
+      v-if="showExportDialog && sessionId"
+      :session-id="sessionId"
+      :is-open="showExportDialog"
+      @close="showExportDialog = false"
+    />
   </div>
 </template>
 
@@ -211,6 +243,8 @@ import WBCanvas from '../components/canvas/WBCanvas.vue'
 import WBToolbar from '../components/toolbar/WBToolbar.vue'
 import WBRemoteCursors from '../components/cursors/WBRemoteCursors.vue'
 import WBCanvasLoader from '../components/loading/WBCanvasLoader.vue'
+import WBShareDialog from '../components/sharing/WBShareDialog.vue'
+import WBExportDialog from '../components/export/WBExportDialog.vue'
 
 // ─── Store & Composables ────────────────────────────────────────────────────
 
@@ -274,6 +308,8 @@ const canvasContainerRef = ref<HTMLElement | null>(null)
 const sessionName = ref('Untitled')
 const selectedId = ref<string | null>(null)
 const isLoading = ref(true)
+const showShareDialog = ref(false)
+const showExportDialog = ref(false)
 
 // ─── Computed ───────────────────────────────────────────────────────────────
 
