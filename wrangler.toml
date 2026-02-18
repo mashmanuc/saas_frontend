@@ -2,11 +2,13 @@
 # This file tells Cloudflare how to build and deploy your frontend
 
 name = "m4sh-frontend"
-type = "pages"
 
 [build]
 command = "npm run build"
 output_directory = "dist"
+
+# Cloudflare Pages specific setting
+pages_build_output_dir = "dist"
 
 [build.environment]
 NODE_VERSION = "20"
