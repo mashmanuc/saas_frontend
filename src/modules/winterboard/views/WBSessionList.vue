@@ -110,15 +110,19 @@
               @click.stop
             >
               <button type="button" class="wb-session-card__menu-item" @click="openSession(session.id)">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="wb-menu-icon"><path d="M6 2l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 {{ t('winterboard.sessions.actions.open') }}
               </button>
               <button type="button" class="wb-session-card__menu-item" @click="handleDuplicate(session.id)">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="wb-menu-icon"><rect x="5" y="5" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M11 5V3.5A1.5 1.5 0 009.5 2h-6A1.5 1.5 0 002 3.5v6A1.5 1.5 0 003.5 11H5" stroke="currentColor" stroke-width="1.5"/></svg>
                 {{ t('winterboard.sessions.actions.duplicate') }}
               </button>
               <button type="button" class="wb-session-card__menu-item" @click="handleShare(session.id)">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="wb-menu-icon"><circle cx="12" cy="4" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="2" stroke="currentColor" stroke-width="1.5"/><path d="M5.7 7l4.6-2M5.7 9l4.6 2" stroke="currentColor" stroke-width="1.5"/></svg>
                 {{ t('winterboard.sessions.actions.share') }}
               </button>
               <button type="button" class="wb-session-card__menu-item" @click="handleExport(session.id)">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="wb-menu-icon"><path d="M2 10v3a1 1 0 001 1h10a1 1 0 001-1v-3M8 2v8M5 5l3-3 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 {{ t('winterboard.sessions.actions.export') }}
               </button>
               <div class="wb-session-card__menu-divider" />
@@ -127,6 +131,7 @@
                 class="wb-session-card__menu-item wb-session-card__menu-item--danger"
                 @click="confirmDelete(session)"
               >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="wb-menu-icon"><path d="M2 4h12M5 4V3a1 1 0 011-1h4a1 1 0 011 1v1M6 7v4M10 7v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 4l1 9a1 1 0 001 1h6a1 1 0 001-1l1-9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 {{ t('winterboard.sessions.actions.delete') }}
               </button>
             </div>
@@ -373,7 +378,6 @@ onUnmounted(() => {
   background: var(--wb-card-bg, #ffffff);
   border: 1px solid var(--wb-toolbar-border, #e2e8f0);
   border-radius: 12px;
-  overflow: hidden;
   cursor: pointer;
   transition: box-shadow 0.15s ease, border-color 0.15s ease;
 }
@@ -386,6 +390,7 @@ onUnmounted(() => {
 .wb-session-card__thumb {
   height: 140px;
   background: var(--wb-canvas-bg, #f8fafc);
+  border-radius: 12px 12px 0 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -403,17 +408,18 @@ onUnmounted(() => {
 }
 
 .wb-session-card__body {
-  padding: 12px 16px;
+  padding: 14px 16px 16px;
 }
 
 .wb-session-card__name {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--wb-fg, #0f172a);
-  margin: 0 0 4px;
+  margin: 0 0 6px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: calc(100% - 8px);
 }
 
 .wb-session-card__meta {
@@ -429,51 +435,55 @@ onUnmounted(() => {
   position: absolute;
   top: 8px;
   right: 8px;
+  z-index: 10;
 }
 
 .wb-session-card__actions-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  background: rgba(255, 255, 255, 0.9);
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.95);
   border: 1px solid var(--wb-toolbar-border, #e2e8f0);
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   color: var(--wb-fg-secondary, #64748b);
-  transition: background 0.1s;
+  transition: background 0.1s, box-shadow 0.1s;
 }
 
 .wb-session-card__actions-btn:hover {
   background: #ffffff;
   color: var(--wb-fg, #0f172a);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .wb-session-card__menu {
   position: absolute;
-  top: 32px;
+  top: 36px;
   right: 0;
-  min-width: 160px;
+  min-width: 180px;
   background: #ffffff;
   border: 1px solid var(--wb-toolbar-border, #e2e8f0);
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  padding: 4px 0;
-  z-index: 50;
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.14);
+  padding: 6px 0;
+  z-index: 100;
 }
 
 .wb-session-card__menu-item {
-  display: block;
+  display: flex;
+  align-items: center;
   width: 100%;
-  padding: 8px 14px;
+  padding: 10px 16px;
   background: none;
   border: none;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--wb-fg, #0f172a);
   text-align: left;
   cursor: pointer;
   transition: background 0.1s;
+  white-space: nowrap;
 }
 
 .wb-session-card__menu-item:hover {
@@ -486,6 +496,12 @@ onUnmounted(() => {
 
 .wb-session-card__menu-item--danger:hover {
   background: #fef2f2;
+}
+
+.wb-menu-icon {
+  flex-shrink: 0;
+  margin-right: 10px;
+  opacity: 0.6;
 }
 
 .wb-session-card__menu-divider {

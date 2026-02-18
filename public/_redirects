@@ -1,8 +1,4 @@
-# Cloudflare Pages redirects and proxies
+# Cloudflare Pages redirects
 # https://developers.cloudflare.com/pages/configuration/redirects/
-
-# Proxy all /api/* requests to backend API
-/api/*  https://saas-backend-rough-dawn-1961.fly.dev/api/:splat  200
-
-# SPA fallback
-/*  /index.html  200
+# NOTE: API calls go directly to backend (apiClient.js baseURL in production)
+# NOTE: SPA fallback is handled by Cloudflare Pages automatically (no rule needed)

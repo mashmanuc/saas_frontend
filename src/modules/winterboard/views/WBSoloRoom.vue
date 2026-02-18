@@ -489,6 +489,16 @@ function handleExit(): void {
   router.push('/winterboard')
 }
 
+// ─── Presence: graceful WebSocket connect ────────────────────────────────────
+
+function connectPresenceSafe(sid: string): void {
+  try {
+    presence.connect(sid)
+  } catch (err) {
+    console.warn('[WBSoloRoom] Presence WebSocket unavailable (non-blocking):', err)
+  }
+}
+
 // ─── Lifecycle ──────────────────────────────────────────────────────────────
 
 onMounted(async () => {
@@ -498,12 +508,34 @@ onMounted(async () => {
   if (!id || route.name === 'winterboard-new') {
     try {
       const created = await winterboardApi.createSession({ name: t('winterboard.room.untitled') })
+      // Hydrate store immediately with created session data to avoid re-fetch flicker
+      store.workspaceId = created.id
+      sessionId.value = created.id
+      if (created.state) {
+        store.hydrateFromSession({
+          id: created.id,
+          name: created.name,
+          owner_id: created.owner_id ?? '',
+          state: created.state,
+          page_count: created.page_count,
+          thumbnail_url: created.thumbnail_url,
+          rev: created.rev,
+          created_at: created.created_at,
+          updated_at: created.updated_at,
+        })
+      } else {
+        store.workspaceName = created.name || t('winterboard.room.untitled')
+        store.rev = created.rev ?? 0
+      }
+      sessionName.value = created.name || t('winterboard.room.untitled')
+      isLoading.value = false
+      connectPresenceSafe(created.id)
       router.replace({ name: 'winterboard-solo', params: { id: created.id } })
       return
     } catch (err: unknown) {
       const status = (err as Record<string, Record<string, number>>)?.response?.status
       if (status === 401) {
-        router.push('/login')
+        router.push('/auth/login')
         return
       }
       console.error('[WBSoloRoom] Failed to create session:', err)
@@ -533,11 +565,10 @@ onMounted(async () => {
         })
       }
       sessionName.value = detail.name || t('winterboard.room.untitled')
-      isLoading.value = false
     } catch (err: unknown) {
       const status = (err as Record<string, Record<string, number>>)?.response?.status
       if (status === 401) {
-        router.push('/login')
+        router.push('/auth/login')
         return
       }
       if (status === 404) {
@@ -545,20 +576,20 @@ onMounted(async () => {
         return
       }
       if (status === 409) {
-        // Conflict — force reload
         window.location.reload()
         return
       }
-      // Network error or other — set offline
       if (!navigator.onLine || !status) {
         store.setSyncStatus('offline')
       }
       console.error('[WBSoloRoom] Failed to load session:', err)
+    } finally {
+      // Always stop loading — even on error, show the canvas
       isLoading.value = false
     }
 
-    // Connect presence WebSocket
-    presence.connect(id)
+    // Connect presence WebSocket (non-blocking, graceful)
+    connectPresenceSafe(id)
   }
 
   sessionName.value = store.workspaceName

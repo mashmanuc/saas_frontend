@@ -13,12 +13,6 @@ pages_build_output_dir = "dist"
 [build.environment]
 NODE_VERSION = "20"
 
-# SPA routing - redirect all paths to index.html for Vue Router
-[[redirects]]
-from = "/*"
-to = "/index.html"
-status = 200
-
 # Headers for security
 [[headers]]
 for = "/*"

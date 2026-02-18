@@ -108,8 +108,25 @@ export interface UsePresenceOptions {
 
 function getWsBaseUrl(): string {
   if (typeof window === 'undefined') return 'ws://localhost:8000'
+  // In production, use dedicated WS backend if configured
+  const wsEnv = import.meta.env.VITE_WS_BASE_URL
+  if (wsEnv) return wsEnv
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
   return `${protocol}//${window.location.host}`
+}
+
+/**
+ * Check if WebSocket presence is available.
+ * On Cloudflare Pages (static hosting), WS is not available.
+ * Returns false if no dedicated WS backend is configured in production.
+ */
+function isPresenceAvailable(): boolean {
+  // Always available in dev (Vite proxy or local backend)
+  if (import.meta.env.DEV) return true
+  // Available if explicit WS URL is configured
+  if (import.meta.env.VITE_WS_BASE_URL) return true
+  // Not available on static hosting (Cloudflare Pages) without dedicated WS
+  return false
 }
 
 function jitter(ms: number): number {
@@ -154,6 +171,13 @@ export function usePresence(options: UsePresenceOptions) {
   // ── WebSocket connection ────────────────────────────────────────────────
 
   function connect(sessionId: string): void {
+    // Skip WS connection if presence is not available (e.g. Cloudflare Pages)
+    if (!isPresenceAvailable()) {
+      console.info(LOG_PREFIX, 'Presence unavailable (no WS backend configured). Skipping.')
+      connectionState.value = 'disconnected'
+      return
+    }
+
     disconnect()
     reconnectAborted = false
     reconnectAttempts = 0
