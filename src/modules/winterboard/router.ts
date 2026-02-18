@@ -26,36 +26,29 @@ const winterboardRoutes: RouteRecordRaw[] = [
     path: '/winterboard',
     name: 'winterboard-sessions',
     component: () => import('./views/WBSessionList.vue'),
-    beforeEnter: winterboardGuard,
     meta: { title: 'Winterboard', roles: ['STUDENT', 'TUTOR'] },
   },
   {
     path: '/winterboard/new',
     name: 'winterboard-new',
     component: () => import('./views/WBSoloRoom.vue'),
-    beforeEnter: winterboardGuard,
     meta: { title: 'Winterboard', roles: ['STUDENT', 'TUTOR'] },
   },
   {
     path: '/winterboard/:id',
     name: 'winterboard-solo',
     component: () => import('./views/WBSoloRoom.vue'),
-    beforeEnter: winterboardGuard,
     props: true,
     meta: { title: 'Winterboard', roles: ['STUDENT', 'TUTOR'] },
   },
   {
-    // [WB:A3.1] Classroom whiteboard — teacher/student RBAC view
     path: '/winterboard/classroom/:lessonId',
     name: 'winterboard-classroom',
     component: () => import('./views/WBClassroomRoom.vue'),
-    beforeEnter: winterboardGuard,
     props: true,
     meta: { title: 'Winterboard — Classroom', roles: ['STUDENT', 'TUTOR'] },
   },
   {
-    // [WB:A1.3] Public view — read-only, no auth required
-    // Public view bypasses feature flag — shared links should always work
     path: '/winterboard/public/:token',
     name: 'winterboard-public',
     component: () => import('./views/WBPublicView.vue'),
