@@ -1122,14 +1122,37 @@ function handleStrokeDragEnd(stroke: WBStroke, e: Konva.KonvaEventObject<DragEve
   if (currentTool.value !== 'select') return
 
   const node = e.target
-  const dx = node.x()
-  const dy = node.y()
+  const nodeX = node.x()
+  const nodeY = node.y()
+
+  // BUG-2 FIX: Shapes that set x/y in their Konva config (text, rect, circle)
+  // return initial_position + drag_offset from node.x()/y() after drag.
+  // Shapes without x/y (pen, highlighter, line) return just the drag_offset.
+  // We must subtract the initial config position to get the pure drag delta.
+  const tool = stroke.tool
+  const hasConfigPosition = tool === 'text' || tool === 'rectangle' || tool === 'circle'
+
+  let dx: number, dy: number
+  if (hasConfigPosition && stroke.points[0]) {
+    // For circle, config x = points[0].x + width/2, but drag delta is the same
+    if (tool === 'circle') {
+      dx = nodeX - (stroke.points[0].x + (stroke.width || 0) / 2)
+      dy = nodeY - (stroke.points[0].y + (stroke.height || 0) / 2)
+    } else {
+      dx = nodeX - stroke.points[0].x
+      dy = nodeY - stroke.points[0].y
+    }
+  } else {
+    dx = nodeX
+    dy = nodeY
+  }
 
   // Reset node position — offset stored in stroke data
-  node.x(0)
-  node.y(0)
+  node.x(hasConfigPosition && stroke.points[0] ? (tool === 'circle' ? stroke.points[0].x + (stroke.width || 0) / 2 : stroke.points[0].x) : 0)
+  node.y(hasConfigPosition && stroke.points[0] ? (tool === 'circle' ? stroke.points[0].y + (stroke.height || 0) / 2 : stroke.points[0].y) : 0)
 
-  // Shapes store origin in points[0]; pen/highlighter/line offset all points
+  if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return
+
   const updatedStroke: WBStroke = {
     ...stroke,
     points: stroke.points.map((p) => ({ ...p, x: p.x + dx, y: p.y + dy })),
@@ -1429,6 +1452,17 @@ const isPanningRef = ref(false)
 
 /** Ctrl+scroll = zoom to cursor position; plain scroll = vertical pan */
 function handleWheel(e: WheelEvent): void {
+  // BUG-1 FIX: Never zoom while actively drawing or erasing.
+  // Pen tablets / trackpads emit synthetic wheel events with ctrlKey=true
+  // (browser converts pinch gestures to Ctrl+Wheel), which triggers zoom
+  // in the middle of a stroke. Block zoom entirely during drawing.
+  if (isDrawing.value) return
+
+  // Also ignore if the last pointer input was a pen stylus —
+  // the ctrlKey on wheel is almost certainly a synthetic pinch event
+  // from the tablet driver, not a real Ctrl+Scroll from the user.
+  if (currentPointerType === 'pen' && e.ctrlKey && !e.metaKey) return
+
   if (e.ctrlKey || e.metaKey) {
     // Zoom to cursor
     const rect = containerRef.value?.getBoundingClientRect()

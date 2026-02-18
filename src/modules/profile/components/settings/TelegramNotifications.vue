@@ -78,36 +78,10 @@
           Відскануйте QR-код або натисніть кнопку, щоб підключити Telegram-бот для отримання сповіщень.
         </p>
 
-        <!-- QR Code -->
-        <div v-if="qrDataUrl" class="flex flex-col items-center gap-4">
-          <div class="rounded-xl border border-border bg-white p-4">
-            <img :src="qrDataUrl" alt="QR Code" class="h-48 w-48" />
-          </div>
+        <!-- QR Code (server-side SVG, same pattern as MFA) -->
+        <div v-if="linkData" class="flex flex-col items-center gap-4">
+          <div v-if="linkData.qr_svg" class="rounded-xl border border-border bg-white p-4 text-center" v-html="linkData.qr_svg" />
 
-          <a
-            :href="linkData?.deep_link"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="inline-flex items-center gap-2 rounded-lg bg-[#229ED9] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#1e8fc4] transition-colors"
-          >
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
-            </svg>
-            Відкрити в Telegram
-          </a>
-
-          <!-- Timer -->
-          <p v-if="timeLeft > 0" class="text-xs text-muted-foreground">
-            Посилання дійсне ще {{ formatTimeLeft(timeLeft) }}
-          </p>
-          <p v-else-if="linkData" class="text-xs text-destructive">
-            Посилання закінчилось.
-            <button type="button" class="underline" @click="generateLink">Згенерувати нове</button>
-          </p>
-        </div>
-
-        <!-- Fallback: link generated but QR failed -->
-        <div v-else-if="linkData" class="flex flex-col items-center gap-4">
           <a
             :href="linkData.deep_link"
             target="_blank"
@@ -119,6 +93,8 @@
             </svg>
             Відкрити в Telegram
           </a>
+
+          <!-- Timer -->
           <p v-if="timeLeft > 0" class="text-xs text-muted-foreground">
             Посилання дійсне ще {{ formatTimeLeft(timeLeft) }}
           </p>
@@ -155,7 +131,6 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import QRCode from 'qrcode'
 import {
   generateTelegramLink,
   getTelegramStatus,
@@ -177,7 +152,6 @@ const status = ref<TelegramStatusResponse>({
 })
 
 const linkData = ref<TelegramLinkResponse | null>(null)
-const qrDataUrl = ref('')
 const timeLeft = ref(0)
 
 let countdownInterval: ReturnType<typeof setInterval> | null = null
@@ -216,30 +190,18 @@ async function generateLink() {
 
   try {
     linkData.value = await generateTelegramLink()
+
+    // Start countdown
+    timeLeft.value = linkData.value.ttl_seconds
+    startCountdown()
+
+    // Start polling for connection
+    startPolling()
   } catch (err: any) {
     errorMessage.value = err?.response?.data?.detail || 'Не вдалося згенерувати посилання'
+  } finally {
     generating.value = false
-    return
   }
-
-  // QR generation — non-critical, fallback to deep_link button
-  try {
-    qrDataUrl.value = await QRCode.toDataURL(linkData.value.qr_data, {
-      width: 256,
-      margin: 2,
-      color: { dark: '#000000', light: '#ffffff' },
-    })
-  } catch {
-    qrDataUrl.value = ''
-  }
-
-  // Start countdown
-  timeLeft.value = linkData.value.ttl_seconds
-  startCountdown()
-
-  // Start polling for connection
-  startPolling()
-  generating.value = false
 }
 
 function startCountdown() {
@@ -262,7 +224,6 @@ function startPolling() {
       const newStatus = await getTelegramStatus()
       if (newStatus.connected) {
         status.value = newStatus
-        qrDataUrl.value = ''
         linkData.value = null
         if (countdownInterval) clearInterval(countdownInterval)
         if (pollInterval) clearInterval(pollInterval)

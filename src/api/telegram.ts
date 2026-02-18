@@ -7,6 +7,7 @@ import apiClient from '@/utils/apiClient'
 
 export interface TelegramLinkResponse {
   deep_link: string
+  qr_svg: string
   qr_data: string
   expires_at: string
   ttl_seconds: number
