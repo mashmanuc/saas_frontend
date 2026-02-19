@@ -26,24 +26,25 @@ export interface TelegramToggleResponse {
 
 /** GET /api/v1/telegram/generate-link/ */
 export async function generateTelegramLink(): Promise<TelegramLinkResponse> {
-  const { data } = await apiClient.get('/api/v1/telegram/generate-link/')
-  return data
+  // apiClient інтерцептор вже розгортає res.data, тому не деструктуризуємо
+  const result = await apiClient.get('/api/v1/telegram/generate-link/')
+  return result as TelegramLinkResponse
 }
 
 /** GET /api/v1/telegram/status/ */
 export async function getTelegramStatus(): Promise<TelegramStatusResponse> {
-  const { data } = await apiClient.get('/api/v1/telegram/status/')
-  return data
+  const result = await apiClient.get('/api/v1/telegram/status/')
+  return result as TelegramStatusResponse
 }
 
 /** POST /api/v1/telegram/toggle/ */
 export async function toggleTelegramNotifications(enabled: boolean): Promise<TelegramToggleResponse> {
-  const { data } = await apiClient.post('/api/v1/telegram/toggle/', { enabled })
-  return data
+  const result = await apiClient.post('/api/v1/telegram/toggle/', { enabled })
+  return result as TelegramToggleResponse
 }
 
 /** POST /api/v1/telegram/disconnect/ */
 export async function disconnectTelegram(): Promise<{ connected: boolean; enabled: boolean }> {
-  const { data } = await apiClient.post('/api/v1/telegram/disconnect/')
-  return data
+  const result = await apiClient.post('/api/v1/telegram/disconnect/')
+  return result as { connected: boolean; enabled: boolean }
 }

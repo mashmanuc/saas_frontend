@@ -4,6 +4,26 @@
     <a href="#wb-canvas" class="wb-skip-link">{{ t('winterboard.a11y.skipToCanvas') }}</a>
     <!-- ── Header ──────────────────────────────────────────────────────────── -->
     <header class="wb-solo-room__header">
+      <!-- FIX-5: Logo + hamburger for site navigation -->
+      <div class="wb-solo-room__nav">
+        <button
+          type="button"
+          class="wb-header-btn wb-header-btn--hamburger"
+          :title="t('winterboard.room.menu')"
+          @click="showSidebarOverlay = !showSidebarOverlay"
+        >
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+            <path d="M2 4h14M2 9h14M2 14h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <router-link to="/" class="wb-logo-link" :title="t('winterboard.room.home')">
+          <svg width="60" height="20" viewBox="0 0 200 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <text x="0" y="48" font-family="'Arial Black', sans-serif" font-weight="900" font-size="52" letter-spacing="-2" fill="currentColor">M4</text>
+            <text x="88" y="48" font-family="'Arial Black', sans-serif" font-weight="900" font-size="52" letter-spacing="-2" fill="#1DB954">SH</text>
+          </svg>
+        </router-link>
+      </div>
+
       <!-- Left: Editable title -->
       <div class="wb-solo-room__title">
         <input
@@ -83,6 +103,26 @@
         </button>
       </div>
     </header>
+
+    <!-- FIX-6: Sidebar overlay with autosave on navigation -->
+    <Transition name="wb-sidebar">
+      <div v-if="showSidebarOverlay" class="wb-sidebar-overlay" @click.self="showSidebarOverlay = false">
+        <nav class="wb-sidebar-panel">
+          <div class="wb-sidebar-panel__header">
+            <span class="wb-sidebar-panel__title">{{ t('winterboard.room.menu') }}</span>
+            <button type="button" class="wb-sidebar-panel__close" @click="showSidebarOverlay = false">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+          <ul class="wb-sidebar-panel__links">
+            <li><a href="#" @click.prevent="navigateWithSave('/')">{{ t('winterboard.sidebar.home') }}</a></li>
+            <li><a href="#" @click.prevent="navigateWithSave('/winterboard')">{{ t('winterboard.sidebar.boards') }}</a></li>
+            <li><a href="#" @click.prevent="navigateWithSave('/tutor')">{{ t('winterboard.sidebar.dashboard') }}</a></li>
+            <li><a href="#" @click.prevent="navigateWithSave('/settings')">{{ t('winterboard.sidebar.settings') }}</a></li>
+          </ul>
+        </nav>
+      </div>
+    </Transition>
 
     <!-- ── Main content: Toolbar + Canvas ──────────────────────────────────── -->
     <div class="wb-solo-room__main">
@@ -226,7 +266,7 @@
 // Ref: TASK_BOARD.md A2.1, ManifestWinterboard_v2.md LAW-01/03/08/09
 
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useWBStore } from '../board/state/boardStore'
 import { useHistory } from '../composables/useHistory'
@@ -310,6 +350,7 @@ const selectedId = ref<string | null>(null)
 const isLoading = ref(true)
 const showShareDialog = ref(false)
 const showExportDialog = ref(false)
+const showSidebarOverlay = ref(false)
 
 // ─── Computed ───────────────────────────────────────────────────────────────
 
@@ -538,10 +579,40 @@ function handleTitleBlur(): void {
   }
   store.workspaceName = sessionName.value
   store.markDirty()
+  // BUG-1 FIX: Persist name immediately via API (non-blocking)
+  if (sessionId.value) {
+    winterboardApi.updateSession(sessionId.value, { name: sessionName.value }).catch((err) => {
+      console.warn('[WBSoloRoom] Failed to persist session name:', err)
+    })
+  }
 }
 
-function handleExit(): void {
+// BUG-1 FIX: Save all pending changes before exiting
+async function handleExit(): Promise<void> {
+  await saveBeforeLeave()
   router.push('/winterboard')
+}
+
+// FIX-6: Navigate with autosave — used by sidebar overlay links
+async function navigateWithSave(path: string): Promise<void> {
+  showSidebarOverlay.value = false
+  await saveBeforeLeave()
+  router.push(path)
+}
+
+// BUG-1 FIX: Shared save logic for exit and route leave
+async function saveBeforeLeave(): Promise<void> {
+  if (!sessionId.value) return
+  try {
+    // Save name if changed
+    if (store.workspaceName !== 'Untitled') {
+      await winterboardApi.updateSession(sessionId.value, { name: store.workspaceName }).catch(() => {})
+    }
+    // Flush all pending drawing changes
+    await autosave.saveNow()
+  } catch (err) {
+    console.warn('[WBSoloRoom] Save before leave failed (best-effort):', err)
+  }
 }
 
 // ─── Presence: graceful WebSocket connect ────────────────────────────────────
@@ -651,14 +722,16 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(async () => {
-  // Flush pending changes (was TODO[A-SAVE])
-  try {
-    await autosave.saveNow()
-  } catch {
-    // Best-effort save on unmount
-  }
+  // BUG-1 FIX: Use shared save logic on unmount
+  await saveBeforeLeave()
   autosave.destroy()
   presence.disconnect()
+})
+
+// BUG-1 FIX: Route leave guard — saves before any SPA navigation away
+onBeforeRouteLeave(async (_to, _from, next) => {
+  await saveBeforeLeave()
+  next()
 })
 
 watch(() => store.workspaceName, (name) => {
@@ -1163,6 +1236,128 @@ watch(() => store.workspaceName, (name) => {
   top: 0;
   outline: 2px solid #ffffff;
   outline-offset: 2px;
+}
+
+/* ── FIX-5: Compact header nav (logo + hamburger) ─────────────────────────── */
+
+.wb-solo-room__nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 12px;
+}
+
+.wb-header-btn--hamburger {
+  width: 36px;
+  height: 36px;
+}
+
+.wb-logo-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: var(--wb-fg, #0f172a);
+}
+
+/* ── FIX-6: Sidebar overlay ───────────────────────────────────────────────── */
+
+.wb-sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+}
+
+.wb-sidebar-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 280px;
+  background: var(--wb-bg, #ffffff);
+  box-shadow: 4px 0 16px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.wb-sidebar-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--wb-border, #e2e8f0);
+}
+
+.wb-sidebar-panel__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--wb-fg, #0f172a);
+}
+
+.wb-sidebar-panel__close {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--wb-fg-secondary, #64748b);
+}
+
+.wb-sidebar-panel__close:hover {
+  background: var(--wb-btn-hover, #f1f5f9);
+}
+
+.wb-sidebar-panel__links {
+  list-style: none;
+  margin: 0;
+  padding: 12px 0;
+}
+
+.wb-sidebar-panel__links li a {
+  display: block;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--wb-fg, #0f172a);
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.wb-sidebar-panel__links li a:hover {
+  background: var(--wb-btn-hover, #f1f5f9);
+  color: var(--wb-brand, #2563eb);
+}
+
+/* Sidebar slide-in transition */
+.wb-sidebar-enter-active {
+  transition: opacity 0.2s ease;
+}
+.wb-sidebar-enter-active .wb-sidebar-panel {
+  transition: transform 0.25s ease;
+}
+.wb-sidebar-leave-active {
+  transition: opacity 0.2s ease 0.05s;
+}
+.wb-sidebar-leave-active .wb-sidebar-panel {
+  transition: transform 0.2s ease;
+}
+.wb-sidebar-enter-from {
+  opacity: 0;
+}
+.wb-sidebar-enter-from .wb-sidebar-panel {
+  transform: translateX(-100%);
+}
+.wb-sidebar-leave-to {
+  opacity: 0;
+}
+.wb-sidebar-leave-to .wb-sidebar-panel {
+  transform: translateX(-100%);
 }
 
 /* ── Reduced motion ────────────────────────────────────────────────────────── */

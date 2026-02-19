@@ -82,6 +82,8 @@
       },
       "message": "What would you like to learn?",
       "messagePlaceholder": "Tell us about your goals and expectations...",
+      "goals": "Your goals or preferences for lessons",
+      "goalsPlaceholder": "Write in your own words what you want from the lessons. For example: prepare for an exam, work through topics, improve grades, understand the subject better.",
       "submit": "Send inquiry",
       "submitting": "Sending...",
       "cancel": "Cancel",
@@ -5566,7 +5568,9 @@
       "following": "Following {name}",
       "stopFollowing": "Stop following",
       "share": "Share",
-      "export": "Export"
+      "export": "Export",
+      "menu": "Menu",
+      "home": "Home"
     },
     "sizePresets": {
       "thin": "Thin",
@@ -5610,6 +5614,12 @@
     "colorPicker": {
       "recent": "Recent",
       "custom": "Custom"
+    },
+    "sidebar": {
+      "home": "Home",
+      "boards": "My Boards",
+      "dashboard": "Dashboard",
+      "settings": "Settings"
     }
   }
 }

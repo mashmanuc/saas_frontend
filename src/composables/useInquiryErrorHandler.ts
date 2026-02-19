@@ -139,6 +139,31 @@ export function useInquiryErrorHandler() {
       return
     }
 
+    // Validation error (422) - typically from PATCH /me (phone format, etc.)
+    if ((error as AxiosError)?.response?.status === 422) {
+      const data = (error as AxiosError)?.response?.data as any
+      // Спробуємо витягти конкретне поле з помилки
+      if (data?.phone) {
+        errorState.value = {
+          variant: 'error',
+          title: 'Невірний формат телефону',
+          message: 'Використовуйте міжнародний формат: +[код країни][номер]. Наприклад: +380501234567',
+          showRetry: false
+        }
+        return
+      }
+      // Загальна помилка валідації
+      const firstField = data ? Object.keys(data)[0] : null
+      const detail = firstField ? `Помилка у полі: ${firstField}` : 'Перевірте введені дані.'
+      errorState.value = {
+        variant: 'error',
+        title: 'Помилка валідації',
+        message: detail,
+        showRetry: false
+      }
+      return
+    }
+
     // Unauthorized (401)
     if ((error as AxiosError)?.response?.status === 401) {
       errorState.value = {

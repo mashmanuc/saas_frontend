@@ -21,13 +21,16 @@ function winterboardGuard(
   }
 }
 
+// FIX-5: Session list route — mounted inside PageShell for full header + sidebar
+const winterboardSessionListRoute: RouteRecordRaw = {
+  path: 'winterboard',
+  name: 'winterboard-sessions',
+  component: () => import('./views/WBSessionList.vue'),
+  meta: { title: 'Winterboard', roles: ['student', 'tutor'] },
+}
+
+// Standalone routes — own layout (solo room has compact header, public has no auth)
 const winterboardRoutes: RouteRecordRaw[] = [
-  {
-    path: '/winterboard',
-    name: 'winterboard-sessions',
-    component: () => import('./views/WBSessionList.vue'),
-    meta: { title: 'Winterboard', roles: ['student', 'tutor'] },
-  },
   {
     path: '/winterboard/new',
     name: 'winterboard-new',
@@ -57,5 +60,5 @@ const winterboardRoutes: RouteRecordRaw[] = [
   },
 ]
 
-export { winterboardGuard }
+export { winterboardGuard, winterboardSessionListRoute }
 export default winterboardRoutes

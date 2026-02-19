@@ -404,7 +404,7 @@ onUnmounted(() => {
 }
 
 .wb-session-card__thumb-placeholder {
-  color: #cbd5e1;
+  color: var(--wb-fg-secondary, #cbd5e1);
 }
 
 .wb-session-card__body {
@@ -444,7 +444,7 @@ onUnmounted(() => {
   justify-content: center;
   width: 32px;
   height: 32px;
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--wb-card-bg, rgba(255, 255, 255, 0.95));
   border: 1px solid var(--wb-toolbar-border, #e2e8f0);
   border-radius: 8px;
   cursor: pointer;
@@ -453,7 +453,7 @@ onUnmounted(() => {
 }
 
 .wb-session-card__actions-btn:hover {
-  background: #ffffff;
+  background: var(--wb-card-bg, #ffffff);
   color: var(--wb-fg, #0f172a);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
@@ -463,7 +463,7 @@ onUnmounted(() => {
   top: 36px;
   right: 0;
   min-width: 180px;
-  background: #ffffff;
+  background: var(--wb-card-bg, #ffffff);
   border: 1px solid var(--wb-toolbar-border, #e2e8f0);
   border-radius: 10px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.14);
@@ -495,7 +495,7 @@ onUnmounted(() => {
 }
 
 .wb-session-card__menu-item--danger:hover {
-  background: #fef2f2;
+  background: var(--wb-danger-bg, #fef2f2);
 }
 
 .wb-menu-icon {
@@ -578,7 +578,7 @@ onUnmounted(() => {
 }
 
 .wb-skeleton-pulse {
-  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background: linear-gradient(90deg, var(--wb-toolbar-border, #e2e8f0) 25%, var(--wb-canvas-bg, #f1f5f9) 50%, var(--wb-toolbar-border, #e2e8f0) 75%);
   background-size: 200% 100%;
   animation: wb-skeleton-shimmer 1.5s ease-in-out infinite;
   border-radius: 4px;
@@ -615,7 +615,7 @@ onUnmounted(() => {
 }
 
 .wb-dialog {
-  background: #ffffff;
+  background: var(--wb-card-bg, #ffffff);
   border-radius: 12px;
   padding: 24px;
   max-width: 420px;
@@ -659,7 +659,7 @@ onUnmounted(() => {
 }
 
 .wb-dialog__btn--cancel:hover {
-  background: #e2e8f0;
+  background: var(--wb-toolbar-border, #e2e8f0);
 }
 
 .wb-dialog__btn--danger {

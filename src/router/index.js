@@ -78,7 +78,7 @@ const LessonReplay = () => import('../modules/classroom/views/LessonReplay.vue')
 const LessonHistory = () => import('../modules/classroom/views/LessonHistory.vue')
 
 // Winterboard v3 (lazy-loaded module routes)
-import winterboardRoutes from '../modules/winterboard/router'
+import winterboardRoutes, { winterboardSessionListRoute } from '../modules/winterboard/router'
 
 const routes = [
   // Role selection landing page (root redirect)
@@ -777,6 +777,8 @@ const routes = [
           },
         ],
       },
+      // FIX-5: Winterboard session list — inside PageShell for header + sidebar
+      winterboardSessionListRoute,
     ],
   },
   // P0.3: Lighthouse route без auth для performance testing

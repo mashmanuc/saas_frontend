@@ -22,12 +22,6 @@
       :error="dashboardStore.error"
     />
 
-    <StudentUpcomingLessonsSection
-      :upcoming-lessons="dashboardStore.upcomingLessons"
-      :loading="dashboardStore.isLoading"
-      :error="dashboardStore.error"
-    />
-
     <Card class="space-y-4">
       <div class="flex justify-between items-center">
         <Heading :level="2">
@@ -41,19 +35,11 @@
         {{ $t('inquiries.student.description') }}
       </p>
     </Card>
-
-    <Card v-if="!hasActiveTutors" class="space-y-4">
-      <Heading :level="2">
-        {{ $t('studentDashboard.findTutor.title') }}
-      </Heading>
-      <TutorSearchView />
-    </Card>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Card from '../../../ui/Card.vue'
 import Heading from '../../../ui/Heading.vue'
@@ -61,21 +47,12 @@ import { useDashboardStore } from '../store/dashboardStore'
 import { useAuthStore } from '../../auth/store/authStore'
 import { useRelationsStore } from '../../../stores/relationsStore'
 import StudentActiveTutorsSection from '../components/StudentActiveTutorsSection.vue'
-import StudentUpcomingLessonsSection from '../components/StudentUpcomingLessonsSection.vue'
-import TutorSearchView from '../../tutor/views/TutorSearchView.vue'
 import TrialBanner from '../../auth/components/TrialBanner.vue'
 
-const router = useRouter()
 const { t } = useI18n()
 const dashboardStore = useDashboardStore()
 const auth = useAuthStore()
 const relationsStore = useRelationsStore()
-
-const hasActiveTutors = computed(() => dashboardStore.hasActiveTutors)
-
-function goToMarketplace() {
-  router.push('/marketplace').catch(() => {})
-}
 
 onMounted(() => {
   dashboardStore.fetchStudentDashboard().catch(() => {})

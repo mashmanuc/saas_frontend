@@ -77,45 +77,10 @@
           
           <!-- Form Fields -->
           <div class="form-group">
-            <label for="student_level">{{ $t('inquiries.form.studentLevel') }} *</label>
-            <select 
-              id="student_level"
-              v-model="form.student_level" 
-              required
-              class="form-control"
-            >
-              <option value="">{{ $t('inquiries.form.studentLevelPlaceholder') }}</option>
-              <option value="beginner">{{ $t('inquiries.form.levels.beginner') }}</option>
-              <option value="intermediate">{{ $t('inquiries.form.levels.intermediate') }}</option>
-              <option value="advanced">{{ $t('inquiries.form.levels.advanced') }}</option>
-            </select>
-          </div>
-          
-          <div class="form-group">
-            <label for="budget">{{ $t('inquiries.form.budget') }} *</label>
-            <input 
-              id="budget"
-              v-model.number="form.budget" 
-              type="number" 
-              min="0"
-              step="50"
-              placeholder="500"
-              required
-              class="form-control"
-            />
-            <span v-if="tutor.min_hourly_rate" class="hint">
-              {{ $t('inquiries.form.budgetHint', { rate: tutor.min_hourly_rate }) }}
-            </span>
-            <span v-if="budgetTooLow" class="error-text">
-              ⚠️ {{ $t('inquiries.form.budgetTooLow') }}
-            </span>
-          </div>
-          
-          <div class="form-group">
             <label for="start_preference">{{ $t('inquiries.form.startPreference') }} *</label>
-            <select 
+            <select
               id="start_preference"
-              v-model="form.start_preference" 
+              v-model="form.start_preference"
               required
               class="form-control"
             >
@@ -124,14 +89,14 @@
               <option value="month">{{ $t('inquiries.form.startOptions.month') }}</option>
             </select>
           </div>
-          
+
           <div class="form-group">
-            <label for="message">{{ $t('inquiries.form.message') }} *</label>
+            <label for="message">{{ $t('inquiries.form.goals') }} *</label>
             <textarea 
               id="message"
               v-model="form.message" 
               rows="4"
-              :placeholder="$t('inquiries.form.messagePlaceholder')"
+              :placeholder="$t('inquiries.form.goalsPlaceholder')"
               required
               class="form-control"
               maxlength="500"
@@ -244,27 +209,19 @@ const phoneRef = toRef(contactForm, 'phone')
 const { isValidFormat, errorMessage: phoneError } = usePhoneValidation(phoneRef)
 
 const form = reactive({
-  student_level: '',
-  budget: props.tutor.min_hourly_rate || 500,
   start_preference: 'asap',
   message: ''
 })
 
-const budgetTooLow = computed(() => {
-  return props.tutor.min_hourly_rate && form.budget < props.tutor.min_hourly_rate
-})
-
 const isFormValid = computed(() => {
-  const baseValid = form.student_level && 
-                    form.budget > 0 && 
-                    form.start_preference && 
+  const baseValid = form.start_preference &&
                     form.message.trim().length >= 10
-  
+
   // Якщо студент почав заповнювати phone - перевіряємо формат
   if (contactForm.phone.trim().length > 0) {
     return baseValid && isValidFormat.value
   }
-  
+
   return baseValid
 })
 
@@ -287,12 +244,14 @@ async function handleSubmit() {
     // Phase 1 v0.87: Якщо немає контактів І студент заповнив поля - оновлюємо профіль
     if (!hasContactInfo.value && contactForm.phone.trim()) {
       console.log('[InquiryFormModal] Updating profile with contact info...')
-      const updatedUser = await updateMyProfile({
+      const result = await updateMyProfile({
         phone: contactForm.phone,
         telegram_username: contactForm.telegram_username || undefined
       })
-      // Оновлюємо user в authStore
-      authStore.user = updatedUser
+      // apiClient вже розгортає res.data, результат: { user: {...} }
+      if (result?.user) {
+        authStore.user = result.user
+      }
       console.log('[InquiryFormModal] Profile updated successfully')
     }
     

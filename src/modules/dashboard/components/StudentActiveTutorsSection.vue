@@ -30,9 +30,6 @@
         <Button variant="primary" size="sm" @click="goToMarketplace">
           {{ $t('studentDashboard.actions.chooseTutor') }}
         </Button>
-        <Button variant="ghost" size="sm" @click="goToMarketplace">
-          {{ $t('studentDashboard.actions.exploreMarketplace') }}
-        </Button>
       </div>
     </template>
 

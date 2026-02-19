@@ -25,6 +25,8 @@ export function createThrottle(fn: (...args: unknown[]) => void, ms: number): (.
 const FADE_TIMEOUT = 3000 // ms — remove stale remote lasers after 3s
 const FADE_CHECK_INTERVAL = 1000 // ms — check every 1s
 const BROADCAST_THROTTLE_MS = 33 // ~30 broadcasts/sec
+const TRAIL_DURATION_MS = 1500 // ms — trail points fade after 1.5s
+const TRAIL_CLEANUP_INTERVAL_MS = 50 // ms — cleanup stale trail points every 50ms
 
 // ─── Composable ──────────────────────────────────────────────────────────────
 
@@ -40,6 +42,9 @@ export function useLaserPointer(options?: UseLaserPointerOptions) {
   const isActive = ref(false)
   const localPosition = ref<WBLaserPosition | null>(null)
 
+  // BUG-2 FIX: Trail points for laser path visualization
+  const trailPoints = ref<Array<{ x: number; y: number; t: number }>>([])
+
   // Throttled WS broadcast
   const throttledBroadcast = createThrottle((...args: unknown[]) => {
     const [x, y, pageId] = args as [number, number, string]
@@ -53,6 +58,8 @@ export function useLaserPointer(options?: UseLaserPointerOptions) {
   function startLaser(x: number, y: number): void {
     isActive.value = true
     localPosition.value = { x, y }
+    // BUG-2 FIX: Start trail
+    trailPoints.value = [{ x, y, t: Date.now() }]
     // Immediate broadcast (not throttled) for start
     const pageId = options?.getPageId?.() ?? ''
     options?.onBroadcast?.({ x, y, active: true, page_id: pageId })
@@ -66,6 +73,8 @@ export function useLaserPointer(options?: UseLaserPointerOptions) {
   function moveLaser(x: number, y: number): void {
     if (!isActive.value) return
     localPosition.value = { x, y }
+    // BUG-2 FIX: Append trail point
+    trailPoints.value = [...trailPoints.value, { x, y, t: Date.now() }]
     const pageId = options?.getPageId?.() ?? ''
     throttledBroadcast(x, y, pageId)
   }
@@ -78,6 +87,7 @@ export function useLaserPointer(options?: UseLaserPointerOptions) {
     if (!isActive.value) return
     isActive.value = false
     localPosition.value = null
+    // BUG-2 FIX: Don't clear trail immediately — let it fade out naturally
     // Immediate broadcast for stop
     options?.onBroadcast?.({ x: 0, y: 0, active: false })
   }
@@ -126,8 +136,19 @@ export function useLaserPointer(options?: UseLaserPointerOptions) {
     }
   }, FADE_CHECK_INTERVAL)
 
+  // BUG-2 FIX: Auto-cleanup trail points older than TRAIL_DURATION_MS
+  const trailCleanupInterval = setInterval(() => {
+    const now = Date.now()
+    const before = trailPoints.value.length
+    const filtered = trailPoints.value.filter((p) => now - p.t < TRAIL_DURATION_MS)
+    if (filtered.length !== before) {
+      trailPoints.value = filtered
+    }
+  }, TRAIL_CLEANUP_INTERVAL_MS)
+
   onUnmounted(() => {
     clearInterval(fadeInterval)
+    clearInterval(trailCleanupInterval)
     if (isActive.value) stopLaser()
   })
 
@@ -140,6 +161,7 @@ export function useLaserPointer(options?: UseLaserPointerOptions) {
     // Local
     isActive,
     localPosition,
+    trailPoints,
     startLaser,
     moveLaser,
     stopLaser,
@@ -150,5 +172,6 @@ export function useLaserPointer(options?: UseLaserPointerOptions) {
     removeRemoteLaser,
     // Exposed for testing
     FADE_TIMEOUT,
+    TRAIL_DURATION_MS,
   }
 }

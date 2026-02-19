@@ -209,6 +209,19 @@
       @pointerdown.stop
     />
 
+    <!-- BUG-2 FIX: Laser trail — fading dots behind the pointer -->
+    <div
+      v-for="(tp, idx) in laserTrailWithOpacity"
+      :key="`trail-${idx}`"
+      class="wb-laser-trail-dot"
+      :style="{
+        left: `${tp.x * props.zoom}px`,
+        top: `${tp.y * props.zoom}px`,
+        opacity: tp.opacity,
+        transform: `translate(-50%, -50%) scale(${0.3 + tp.opacity * 0.7})`,
+      }"
+    />
+
     <!-- v5 A4: Local laser dot -->
     <div
       v-if="laserPointer.isActive.value && laserPointer.localPosition.value"
@@ -783,6 +796,19 @@ const stickyEditStyle = computed(() => {
   }
 })
 
+// BUG-2 FIX: Computed trail points with opacity based on age
+const laserTrailWithOpacity = computed(() => {
+  const points = laserPointer.trailPoints.value
+  if (points.length === 0) return []
+  const now = Date.now()
+  const duration = laserPointer.TRAIL_DURATION_MS
+  return points.map((p) => {
+    const age = now - p.t
+    const opacity = Math.max(0, 1 - age / duration) * 0.8
+    return { x: p.x, y: p.y, opacity }
+  }).filter((p) => p.opacity > 0.01)
+})
+
 function startStickyTextEdit(assetId: string): void {
   const page = wbStore.currentPage
   if (!page) return
@@ -1141,6 +1167,12 @@ function handleMouseDown(e: Konva.KonvaEventObject<MouseEvent | TouchEvent>): vo
     return
   }
 
+  // BUG-4 FIX: Sticky note tool — create sticky at click position
+  if (currentTool.value === 'sticky') {
+    stickyNotes.createSticky(pos.x, pos.y)
+    return
+  }
+
   // Start drawing
   isDrawing.value = true
   currentPoints.value = [pos]
@@ -1220,6 +1252,17 @@ function handleMouseMove(_e: Konva.KonvaEventObject<MouseEvent | TouchEvent>): v
   }
 
   schedulePreviewDraw()
+}
+
+// BUG-3 FIX: Global mouseup handler — stops drawing when mouse released outside canvas
+function globalMouseUp(): void {
+  if (isDrawing.value) {
+    handleMouseUp()
+  }
+  // Also stop laser if active outside canvas
+  if (currentTool.value === 'laser' && laserPointer.isActive.value) {
+    laserPointer.stopLaser()
+  }
 }
 
 function handleMouseUp(): void {
@@ -2174,6 +2217,10 @@ onMounted(async () => {
     ;(container as unknown as Record<string, unknown>).__wbPointerCapture = capturePointer
   }
 
+  // BUG-3 FIX: Global mouseup/pointerup to stop drawing when released outside canvas
+  window.addEventListener('mouseup', globalMouseUp)
+  window.addEventListener('pointerup', globalMouseUp)
+
   // A5.3: Register touch zoom listeners (passive: false for preventDefault)
   if (container) {
     container.addEventListener('touchstart', handleTouchStartZoom, { passive: false })
@@ -2216,6 +2263,9 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  // BUG-3 FIX: Remove global mouseup listeners
+  window.removeEventListener('mouseup', globalMouseUp)
+  window.removeEventListener('pointerup', globalMouseUp)
   document.removeEventListener('paste', handlePaste as EventListener)
   clearPreviewCanvas()
   currentBitmap?.close?.()
@@ -2410,6 +2460,18 @@ defineExpose({
 
 .wb-canvas--laser-active {
   cursor: none;
+}
+
+/* BUG-2 FIX: Laser trail dot styles */
+.wb-laser-trail-dot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #dc2626;
+  pointer-events: none;
+  z-index: 999;
+  will-change: opacity, transform;
 }
 
 /* v5 A4: Laser dot styles */
