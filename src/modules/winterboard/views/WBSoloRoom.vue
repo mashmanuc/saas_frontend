@@ -134,12 +134,18 @@
           :current-size="store.currentSize"
           :can-undo="store.canUndo"
           :can-redo="store.canRedo"
+          :has-selection="store.hasSelection"
+          :has-locked-in-selection="hasLockedInSelection"
+          :can-clear-page="!isCanvasEmpty"
           @tool-change="handleToolChange"
           @color-change="handleColorChange"
           @size-change="handleSizeChange"
           @undo="handleUndo"
           @redo="handleRedo"
           @clear="handleClear"
+          @lock-selected="handleLockSelected"
+          @unlock-selected="handleUnlockSelected"
+          @clear-page-request="handleClearPageRequest"
         />
       </aside>
 
@@ -274,6 +280,7 @@ import { useKeyboard } from '../composables/useKeyboard'
 import { useAutosave } from '../composables/useAutosave'
 import { usePresence } from '../composables/usePresence'
 import { useFollowMode } from '../composables/useFollowMode'
+import { useLocking } from '../composables/useLocking'
 import { useAnnouncer } from '../composables/useAnnouncer'
 import { winterboardApi } from '../api/winterboardApi'
 import type { WBStroke, WBAsset, WBToolType } from '../types/winterboard'
@@ -295,6 +302,7 @@ const { t } = useI18n()
 const { announce } = useAnnouncer()
 
 const history = useHistory({ maxSize: 100 })
+const locking = useLocking(store)
 
 // Session ID ref for autosave + presence
 const sessionId = ref<string | null>(null)
@@ -359,6 +367,11 @@ const isCanvasEmpty = computed(() => {
   const page = store.currentPage
   if (!page) return true
   return page.strokes.length === 0 && page.assets.length === 0
+})
+
+// PROB-1 FIX: Check if any selected item is locked (for lock/unlock toggle in toolbar)
+const hasLockedInSelection = computed(() => {
+  return store.selectedIds.some((id) => store.isItemLocked(id))
 })
 
 const saveStatusText = computed(() => {
@@ -518,6 +531,20 @@ function handleRedo(): void {
 }
 
 function handleClear(): void {
+  store.clearPage()
+}
+
+// PROB-1 FIX: Lock/Unlock handlers
+function handleLockSelected(): void {
+  locking.lockSelected()
+}
+
+function handleUnlockSelected(): void {
+  locking.unlockSelected()
+}
+
+// PROB-3 FIX: Clear page request handler (safe — clears only current page)
+function handleClearPageRequest(): void {
   store.clearPage()
 }
 

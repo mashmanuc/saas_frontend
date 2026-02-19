@@ -185,23 +185,30 @@ export function useAutosave(sessionId: Ref<string | null>): AutosaveReturn {
     lastError.value = null
 
     try {
-      // Strategy 1: Try diff save with retry
-      const diffSuccess = await retryWithBackoff(async () => {
-        try {
-          return await performDiffSave()
-        } catch {
-          return false
-        }
-      })
+      // PROB-4 FIX: If no pending diff ops, skip diff save entirely and use stream save.
+      // Previously diffSave returned true with 0 ops, marking isDirty=false without saving.
+      const hasPendingOps = pendingOps.value.length > 0
 
-      if (diffSuccess) {
-        onSaveSuccess()
-        return
+      let diffSuccess = false
+      if (hasPendingOps) {
+        // Strategy 1: Try diff save with retry (only when we have ops)
+        diffSuccess = await retryWithBackoff(async () => {
+          try {
+            return await performDiffSave()
+          } catch {
+            return false
+          }
+        })
+
+        if (diffSuccess) {
+          onSaveSuccess()
+          return
+        }
       }
 
-      // Strategy 2: Fallback to stream save with retry
+      // Strategy 2: Stream save — used as fallback OR when no diff ops but store is dirty
       if (import.meta.env?.DEV) {
-        console.warn('[WB:autosave] Diff save exhausted, trying stream save')
+        console.warn(`[WB:autosave] ${hasPendingOps ? 'Diff save exhausted, trying' : 'No pending ops, using'} stream save`)
       }
 
       const streamSuccess = await retryWithBackoff(async () => {

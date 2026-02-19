@@ -87,30 +87,17 @@
       >
         <WBIconRedo class="wb-toolbar__icon" />
       </button>
+      <!-- PROB-3 FIX: Single clear button — clears current page only -->
       <button
         type="button"
         class="wb-toolbar__btn wb-toolbar__btn--danger wb-toolbar__btn--tooltip"
-        :aria-label="t('winterboard.tools.clear')"
-        :data-tooltip="t('winterboard.tools.clear')"
-        :tabindex="getTabIndex(3, 2)"
-        @click="emit('clear')"
-      >
-        <WBIconTrash class="wb-toolbar__icon" />
-      </button>
-      <!-- B8: Clear page button -->
-      <button
-        type="button"
-        class="wb-toolbar__btn wb-toolbar__btn--tooltip"
         :aria-label="t('winterboard.clear.button')"
         :data-tooltip="t('winterboard.clear.button')"
-        :tabindex="getTabIndex(3, 3)"
+        :tabindex="getTabIndex(3, 2)"
         :disabled="!canClearPage"
         @click="emit('clear-page-request')"
       >
-        <svg class="wb-toolbar__icon" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M3 5h14M7 5V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M8 9v5M12 9v5" />
-          <path d="M5 5l1 11a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2l1-11" />
-        </svg>
+        <WBIconTrash class="wb-toolbar__icon" />
       </button>
     </div>
 

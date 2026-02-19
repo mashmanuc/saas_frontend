@@ -163,7 +163,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   if (countdownInterval) clearInterval(countdownInterval)
-  if (pollInterval) clearInterval(pollInterval)
+  stopPolling()
 })
 
 async function loadStatus() {
@@ -216,22 +216,34 @@ function startCountdown() {
   }, 1000)
 }
 
+function stopPolling() {
+  if (pollInterval) {
+    clearInterval(pollInterval)
+    pollInterval = null
+  }
+}
+
 function startPolling() {
-  if (pollInterval) clearInterval(pollInterval)
+  stopPolling()
 
   pollInterval = setInterval(async () => {
+    // Зупиняємо polling якщо посилання вже протухло
+    if (timeLeft.value <= 0) {
+      stopPolling()
+      return
+    }
     try {
       const newStatus = await getTelegramStatus()
       if (newStatus.connected) {
         status.value = newStatus
         linkData.value = null
         if (countdownInterval) clearInterval(countdownInterval)
-        if (pollInterval) clearInterval(pollInterval)
+        stopPolling()
       }
     } catch {
       // Ignore polling errors
     }
-  }, 3000)
+  }, 5000)
 }
 
 async function handleToggle() {

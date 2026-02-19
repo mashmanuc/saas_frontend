@@ -2483,12 +2483,17 @@ defineExpose({
   pointer-events: none;
   z-index: 1000;
   transform: translate(-50%, -50%);
-  transition: left 0.05s linear, top 0.05s linear;
 }
 
+/* PROB-2 FIX: Local dot — NO transition, must follow cursor instantly */
 .wb-laser-dot--local {
   background: #dc2626;
   box-shadow: 0 0 8px 4px rgba(220, 38, 38, 0.5);
+}
+
+/* Remote dots — slight transition to smooth network jitter */
+.wb-laser-dot--remote {
+  transition: left 0.05s linear, top 0.05s linear;
 }
 
 .wb-laser-dot__label {
