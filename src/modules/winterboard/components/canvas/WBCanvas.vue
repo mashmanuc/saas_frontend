@@ -68,16 +68,29 @@
         </v-group>
       </v-layer>
 
-      <!-- Assets layer (images) — BELOW strokes -->
+      <!-- Assets layer (images + sticky notes) — BELOW strokes -->
       <v-layer ref="assetsLayerRef">
-        <v-image
-          v-for="asset in assets"
-          :key="asset.id"
-          :config="getAssetConfig(asset)"
-          @click="handleAssetClick(asset, $event)"
-          @dragend="handleAssetDragEnd(asset, $event)"
-          @transformend="handleAssetTransformEnd(asset, $event)"
-        />
+        <template v-for="asset in assets" :key="asset.id">
+          <!-- v5 A9: Sticky note rendering -->
+          <WBStickyNote
+            v-if="asset.type === 'sticky'"
+            :sticky="asset"
+            :is-selected="wbStore.selectedIds.includes(asset.id)"
+            :scale="props.zoom"
+            @select="handleStickySelect"
+            @drag-end="handleStickyDragEnd"
+            @transform-end="handleStickyTransformEnd"
+            @edit-text="startStickyTextEdit"
+          />
+          <!-- Regular image asset -->
+          <v-image
+            v-else
+            :config="getAssetConfig(asset)"
+            @click="handleAssetClick(asset, $event)"
+            @dragend="handleAssetDragEnd(asset, $event)"
+            @transformend="handleAssetTransformEnd(asset, $event)"
+          />
+        </template>
       </v-layer>
 
       <!-- Strokes layer — ABOVE images -->
@@ -141,12 +154,29 @@
         />
       </v-layer>
 
-      <!-- UI layer (transformer) -->
+      <!-- UI layer (transformer + selection) -->
       <v-layer ref="uiLayerRef">
         <v-transformer
           v-if="selectedNode"
           ref="transformerRef"
           :config="transformerConfig"
+        />
+        <!-- v5 A1: Selection rubber band rect during drag -->
+        <v-rect
+          v-if="selectionRectConfig"
+          :config="selectionRectConfig"
+        />
+        <!-- v5 A1: Selection indicators around selected items -->
+        <v-rect
+          v-for="indicator in selectionIndicators"
+          :key="indicator.key"
+          :config="indicator.config"
+        />
+        <!-- v5 A2: Group indicators — dashed border around grouped items -->
+        <v-rect
+          v-for="indicator in groupIndicators"
+          :key="indicator.key"
+          :config="indicator.config"
         />
       </v-layer>
     </v-stage>
@@ -166,6 +196,43 @@
       @mousedown.stop
       @pointerdown.stop
     />
+
+    <!-- v5 A9: Sticky note text editing overlay -->
+    <textarea
+      v-if="stickyEditingId"
+      ref="stickyTextareaRef"
+      v-model="stickyEditingText"
+      class="wb-sticky-edit-overlay"
+      :style="stickyEditStyle"
+      @blur="finishStickyTextEdit"
+      @mousedown.stop
+      @pointerdown.stop
+    />
+
+    <!-- v5 A4: Local laser dot -->
+    <div
+      v-if="laserPointer.isActive.value && laserPointer.localPosition.value"
+      class="wb-laser-dot wb-laser-dot--local"
+      :style="{
+        left: `${laserPointer.localPosition.value.x * props.zoom}px`,
+        top: `${laserPointer.localPosition.value.y * props.zoom}px`,
+      }"
+    />
+
+    <!-- v5 A4: Remote laser dots -->
+    <div
+      v-for="laser in laserPointer.activeRemoteLasers.value"
+      :key="laser.userId"
+      class="wb-laser-dot wb-laser-dot--remote"
+      :style="{
+        left: `${laser.x * props.zoom}px`,
+        top: `${laser.y * props.zoom}px`,
+        backgroundColor: laser.color,
+        boxShadow: `0 0 8px 4px ${laser.color}40`,
+      }"
+    >
+      <span class="wb-laser-dot__label" :style="{ color: laser.color }">{{ laser.displayName }}</span>
+    </div>
   </div>
 </template>
 
@@ -177,7 +244,15 @@
 import { ref, shallowRef, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import Konva from 'konva'
 import getStroke from 'perfect-freehand'
-import type { WBStroke, WBAsset, WBToolType, WBPoint, WBPageBackground, WBPdfBackground } from '../../types/winterboard'
+import type { WBStroke, WBAsset, WBToolType, WBPoint, WBPageBackground, WBPdfBackground, WBSelectionRect } from '../../types/winterboard'
+import { useWBStore } from '../../board/state/boardStore'
+import { useRectSelect, getStrokeBBox, getAssetBBox } from '../../composables/useRectSelect'
+import { useGrouping } from '../../composables/useGrouping'
+import { useLocking } from '../../composables/useLocking'
+import { useLaserPointer } from '../../composables/useLaserPointer'
+import { useDuplicate } from '../../composables/useDuplicate'
+import { useStickyNotes } from '../../composables/useStickyNotes'
+import WBStickyNote from './WBStickyNote.vue'
 import { useImageCache } from '../../composables/useImageCache'
 import { getSmoothedPoints, clearSmoothedCache } from '../../engine/smoothing'
 import { handleDrop as imageHandleDrop, handlePaste as imageHandlePaste } from '../../composables/useImageUpload'
@@ -224,6 +299,20 @@ const props = withDefaults(defineProps<Props>(), {
   background: 'white',
 })
 
+// v5 A1: Store + rectangle select composable
+const wbStore = useWBStore()
+const rectSelect = useRectSelect(wbStore)
+// v5 A2: Grouping composable
+const grouping = useGrouping(wbStore)
+// v5 A3: Locking composable
+const locking = useLocking(wbStore)
+// v5 A4: Laser pointer composable (ephemeral — not persisted)
+const laserPointer = useLaserPointer()
+// v5 A5: Duplicate composable
+const duplicate = useDuplicate(wbStore)
+// v5 A9: Sticky notes composable
+const stickyNotes = useStickyNotes(wbStore)
+
 // Stable references — use props directly, fallback to empty array only once
 const allStrokes = computed(() => props.strokes ?? [])
 const assets = computed(() => props.assets ?? [])
@@ -263,6 +352,8 @@ const emit = defineEmits<{
   'zoom-change': [zoom: number]
   'scroll-change': [scrollX: number, scrollY: number]
   'fit-to-page': []
+  // v5 A4: Tool change from keyboard shortcut
+  'tool-change': [tool: WBToolType]
 }>()
 
 // ─── Refs ───────────────────────────────────────────────────────────────────
@@ -277,6 +368,7 @@ const uiLayerRef = ref(null)
 const previewCanvasRef = ref<HTMLCanvasElement | null>(null)
 const transformerRef = ref<{ getNode: () => Konva.Transformer } | null>(null)
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
+const stickyTextareaRef = ref<HTMLTextAreaElement | null>(null)
 
 // ─── State ──────────────────────────────────────────────────────────────────
 
@@ -304,6 +396,13 @@ const shapePreview = ref<{ x: number; y: number; width: number; height: number }
 const selectedNode = shallowRef<Konva.Node | null>(null)
 const editingText = ref<WBStroke | null>(null)
 const editingTextValue = ref('')
+// BUG-FIX: Guard against immediate blur after textarea creation
+let textEditCreatedAt = 0
+const TEXT_BLUR_GUARD_MS = 300
+// v5 A9: Sticky note text editing state
+const stickyEditingId = ref<string | null>(null)
+const stickyEditingText = ref('')
+let stickyEditCreatedAt = 0
 const loadedImages = reactive<Map<string, HTMLImageElement>>(new Map())
 
 // Stroke config cache for performance (R10)
@@ -350,10 +449,13 @@ const LAZY_RENDER_THRESHOLD = 500
 const currentTool = computed(() => props.tool)
 
 const cursorClass = computed(() => {
+  // v5 A4: Laser active → hide cursor (dot replaces it)
+  if (props.tool === 'laser' && laserPointer.isActive.value) return 'wb-canvas--laser-active'
   switch (props.tool) {
     case 'eraser': return 'wb-canvas--eraser'
     case 'text': return 'wb-canvas--text'
     case 'select': return 'wb-canvas--select'
+    case 'laser': return 'wb-canvas--laser'
     default: return 'wb-canvas--drawing'
   }
 })
@@ -504,6 +606,144 @@ const transformerConfig = computed(() => ({
   enabledAnchors: ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
 }))
 
+// v5 A1: Selection rect (rubber band) config for Konva rendering
+const selectionRectConfig = computed(() => {
+  const rect = wbStore.selectionRect
+  if (!rect) return null
+  return {
+    x: rect.x,
+    y: rect.y,
+    width: rect.width,
+    height: rect.height,
+    fill: 'rgba(37, 99, 235, 0.08)',
+    stroke: '#2563eb',
+    strokeWidth: 1 / props.zoom,
+    dash: [6 / props.zoom, 3 / props.zoom],
+    listening: false,
+    perfectDrawEnabled: false,
+  }
+})
+
+// v5 A1: Selection indicator configs — blue border around each selected item
+const selectionIndicators = computed(() => {
+  const ids = new Set(wbStore.selectedIds)
+  if (ids.size === 0) return []
+
+  const page = wbStore.currentPage
+  if (!page) return []
+
+  const indicators: Array<{ key: string; config: Record<string, unknown> }> = []
+  const pad = 4 / props.zoom
+  const sw = 1.5 / props.zoom
+
+  for (const stroke of page.strokes) {
+    if (!ids.has(stroke.id)) continue
+    const bbox = getStrokeBBox(stroke)
+    indicators.push({
+      key: `sel-${stroke.id}`,
+      config: {
+        x: bbox.x - pad,
+        y: bbox.y - pad,
+        width: bbox.width + pad * 2,
+        height: bbox.height + pad * 2,
+        stroke: '#2563eb',
+        strokeWidth: sw,
+        dash: [4 / props.zoom, 2 / props.zoom],
+        fill: 'transparent',
+        listening: false,
+        perfectDrawEnabled: false,
+      },
+    })
+  }
+
+  for (const asset of page.assets) {
+    if (!ids.has(asset.id)) continue
+    const bbox = getAssetBBox(asset)
+    indicators.push({
+      key: `sel-${asset.id}`,
+      config: {
+        x: bbox.x - pad,
+        y: bbox.y - pad,
+        width: bbox.width + pad * 2,
+        height: bbox.height + pad * 2,
+        stroke: '#2563eb',
+        strokeWidth: sw,
+        dash: [4 / props.zoom, 2 / props.zoom],
+        fill: 'transparent',
+        listening: false,
+        perfectDrawEnabled: false,
+      },
+    })
+  }
+
+  return indicators
+})
+
+// v5 A2: Group indicator configs — dashed border around group bounding box
+const groupIndicators = computed(() => {
+  const selectedIds = new Set(wbStore.selectedIds)
+  if (selectedIds.size === 0) return []
+
+  const page = wbStore.currentPage
+  if (!page) return []
+
+  const groups = page.groups ?? []
+  if (groups.length === 0) return []
+
+  const indicators: Array<{ key: string; config: Record<string, unknown> }> = []
+
+  for (const group of groups) {
+    // Only show group indicator if at least one item in the group is selected
+    const hasSelectedItem = group.itemIds.some((id) => selectedIds.has(id))
+    if (!hasSelectedItem) continue
+
+    // Compute union bounding box of all items in the group
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+
+    for (const itemId of group.itemIds) {
+      const stroke = page.strokes.find((s) => s.id === itemId)
+      if (stroke) {
+        const bbox = getStrokeBBox(stroke)
+        if (bbox.x < minX) minX = bbox.x
+        if (bbox.y < minY) minY = bbox.y
+        if (bbox.x + bbox.width > maxX) maxX = bbox.x + bbox.width
+        if (bbox.y + bbox.height > maxY) maxY = bbox.y + bbox.height
+        continue
+      }
+      const asset = page.assets.find((a) => a.id === itemId)
+      if (asset) {
+        const bbox = getAssetBBox(asset)
+        if (bbox.x < minX) minX = bbox.x
+        if (bbox.y < minY) minY = bbox.y
+        if (bbox.x + bbox.width > maxX) maxX = bbox.x + bbox.width
+        if (bbox.y + bbox.height > maxY) maxY = bbox.y + bbox.height
+      }
+    }
+
+    if (!isFinite(minX)) continue
+
+    const pad = 8 / props.zoom
+    indicators.push({
+      key: `grp-${group.id}`,
+      config: {
+        x: minX - pad,
+        y: minY - pad,
+        width: maxX - minX + pad * 2,
+        height: maxY - minY + pad * 2,
+        stroke: '#2563eb',
+        strokeWidth: 1 / props.zoom,
+        dash: [4 / props.zoom, 4 / props.zoom],
+        fill: 'transparent',
+        cornerRadius: 4 / props.zoom,
+        listening: false,
+        perfectDrawEnabled: false,
+      },
+    })
+  }
+
+  return indicators
+})
+
 const textEditStyle = computed(() => {
   if (!editingText.value) return {}
   const stroke = editingText.value
@@ -514,6 +754,80 @@ const textEditStyle = computed(() => {
     color: stroke.color,
   }
 })
+
+// v5 A9: Sticky note text editing style
+const stickyEditStyle = computed(() => {
+  if (!stickyEditingId.value) return {}
+  const page = wbStore.currentPage
+  if (!page) return {}
+  const asset = page.assets.find((a) => a.id === stickyEditingId.value)
+  if (!asset || asset.type !== 'sticky') return {}
+  return {
+    position: 'absolute' as const,
+    left: `${asset.x * props.zoom}px`,
+    top: `${asset.y * props.zoom}px`,
+    width: `${asset.w * props.zoom}px`,
+    height: `${asset.h * props.zoom}px`,
+    fontSize: `${(asset.fontSize || 14) * props.zoom}px`,
+    color: asset.textColor || '#1e293b',
+    backgroundColor: asset.bgColor || '#fde047',
+    border: '2px solid #3b82f6',
+    borderRadius: '4px',
+    padding: '8px',
+    resize: 'none' as const,
+    outline: 'none',
+    zIndex: 1000,
+    fontFamily: 'inherit',
+    lineHeight: '1.4',
+    boxSizing: 'border-box' as const,
+  }
+})
+
+function startStickyTextEdit(assetId: string): void {
+  const page = wbStore.currentPage
+  if (!page) return
+  const asset = page.assets.find((a) => a.id === assetId)
+  if (!asset || asset.type !== 'sticky') return
+  if (asset.locked) return
+
+  stickyEditCreatedAt = Date.now()
+  stickyEditingId.value = assetId
+  stickyEditingText.value = asset.text || ''
+
+  nextTick(() => {
+    setTimeout(() => {
+      const ta = stickyTextareaRef.value
+      if (ta) {
+        ta.focus()
+        ta.setSelectionRange(ta.value.length, ta.value.length)
+      }
+    }, 50)
+  })
+}
+
+function finishStickyTextEdit(): void {
+  if (!stickyEditingId.value) return
+  if (Date.now() - stickyEditCreatedAt < TEXT_BLUR_GUARD_MS) return
+
+  const id = stickyEditingId.value
+  const text = stickyEditingText.value
+  stickyNotes.updateText(id, text)
+
+  stickyEditingId.value = null
+  stickyEditingText.value = ''
+}
+
+function handleStickySelect(id: string): void {
+  wbStore.selectItems([id])
+}
+
+function handleStickyDragEnd(id: string, x: number, y: number): void {
+  stickyNotes.updatePosition(id, x, y)
+}
+
+function handleStickyTransformEnd(id: string, w: number, h: number): void {
+  stickyNotes.updateDimensions(id, w, h)
+}
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -788,12 +1102,29 @@ function handleMouseDown(e: Konva.KonvaEventObject<MouseEvent | TouchEvent>): vo
   const pos = getPointerPosition()
   if (!pos) return
 
-  // Selection mode
+  // Selection mode (v5 A1: rectangle drag select + multi-select)
   if (currentTool.value === 'select') {
     const target = e.target
-    if (target === stageRef.value?.getStage() || target.name() === 'background') {
-      clearSelection()
+    const isBackground = target === stageRef.value?.getStage() || target.name() === 'background'
+    const nativeEvent = (e.evt as MouseEvent | TouchEvent)
+    const shiftKey = nativeEvent && 'shiftKey' in nativeEvent ? (nativeEvent as MouseEvent).shiftKey : false
+
+    if (isBackground) {
+      if (!shiftKey) {
+        // Start rectangle drag selection on empty area
+        rectSelect.startRectSelect(pos)
+        isDrawing.value = true // reuse isDrawing flag for drag tracking
+      } else {
+        // Shift+click on empty — do nothing (keep current selection)
+      }
     }
+    // Click on a specific item is handled by handleStrokeClick/handleAssetClick
+    return
+  }
+
+  // v5 A4: Laser pointer mode — ephemeral, no stroke creation
+  if (currentTool.value === 'laser') {
+    laserPointer.startLaser(pos.x, pos.y)
     return
   }
 
@@ -837,7 +1168,25 @@ function handleMouseMove(_e: Konva.KonvaEventObject<MouseEvent | TouchEvent>): v
     color: props.color,
   })
 
+  // v5 A4: Laser pointer move
+  if (currentTool.value === 'laser' && laserPointer.isActive.value) {
+    laserPointer.moveLaser(pos.x, pos.y)
+    return
+  }
+
   if (!isDrawing.value) return
+
+  // v5 A1: Rectangle drag select update
+  if (currentTool.value === 'select' && rectSelect.isDragging.value) {
+    rectSelect.updateRectSelect(pos)
+    return
+  }
+
+  // v5 A1: Move selected group
+  if (currentTool.value === 'select' && rectSelect.isMoving.value) {
+    rectSelect.updateMoveSelected(pos)
+    return
+  }
 
   // Eraser drag
   if (currentTool.value === 'eraser') {
@@ -874,6 +1223,26 @@ function handleMouseMove(_e: Konva.KonvaEventObject<MouseEvent | TouchEvent>): v
 }
 
 function handleMouseUp(): void {
+  // v5 A4: Stop laser pointer
+  if (currentTool.value === 'laser') {
+    laserPointer.stopLaser()
+    return
+  }
+
+  // v5 A1: Finish rectangle drag select
+  if (currentTool.value === 'select' && rectSelect.isDragging.value) {
+    isDrawing.value = false
+    rectSelect.finishRectSelect()
+    return
+  }
+
+  // v5 A1: Finish move selected group
+  if (currentTool.value === 'select' && rectSelect.isMoving.value) {
+    isDrawing.value = false
+    rectSelect.finishMoveSelected()
+    return
+  }
+
   if (!isDrawing.value) return
   isDrawing.value = false
 
@@ -934,6 +1303,9 @@ function handleErase(pos: WBPoint): void {
 
   // Use allStrokes (not viewport-filtered) so eraser works on all elements
   for (const stroke of allStrokes.value) {
+    // v5 A3: Skip locked items — eraser cannot delete them
+    if (stroke.locked) continue
+
     // Shapes (rectangle, circle): check bounding box
     if (stroke.tool === 'rectangle' || stroke.tool === 'circle') {
       const sx = stroke.points[0]?.x || 0
@@ -1003,42 +1375,43 @@ function createTextAtPosition(pos: WBPoint): void {
     text: '',
   }
 
+  textEditCreatedAt = Date.now()
   editingText.value = stroke
   editingTextValue.value = ''
 
-  // BUG-2 FIX: Robust focus — v-if textarea needs nextTick for DOM mount,
+  // v-if textarea needs nextTick for DOM mount,
   // then setTimeout to escape Konva's event processing cycle.
   nextTick(() => {
-    nextTick(() => {
+    // Use setTimeout to break out of Konva's synchronous event chain
+    // which can steal focus back to the stage element
+    setTimeout(() => {
       const ta = textareaRef.value
       if (ta) {
         ta.focus()
-      } else {
-        // Fallback: textarea may not be mounted yet (v-if timing)
-        setTimeout(() => { textareaRef.value?.focus() }, 50)
       }
-    })
+    }, 30)
   })
 }
 
 function handleTextEdit(stroke: WBStroke): void {
+  textEditCreatedAt = Date.now()
   editingText.value = stroke
   editingTextValue.value = stroke.text || ''
-  // BUG-2 FIX: Same robust focus as createTextAtPosition
   nextTick(() => {
-    nextTick(() => {
+    setTimeout(() => {
       const ta = textareaRef.value
       if (ta) {
         ta.focus()
-      } else {
-        setTimeout(() => { textareaRef.value?.focus() }, 50)
       }
-    })
+    }, 30)
   })
 }
 
 function finishTextEdit(): void {
   if (!editingText.value) return
+  // Guard: ignore blur events that fire immediately after textarea creation
+  // (caused by Konva stage reclaiming focus during its event processing)
+  if (Date.now() - textEditCreatedAt < TEXT_BLUR_GUARD_MS) return
 
   const stroke: WBStroke = {
     ...editingText.value,
@@ -1058,23 +1431,123 @@ function finishTextEdit(): void {
 }
 
 function handleKeydown(e: KeyboardEvent): void {
-  // Delete selected
-  if ((e.key === 'Delete' || e.key === 'Backspace') && selectedNode.value) {
-    e.preventDefault()
-    const nodeId = selectedNode.value.id()
-    const nodeName = selectedNode.value.name() || ''
+  // v5 A2: Ctrl+G → group selected, Ctrl+Shift+G → ungroup
+  if (e.key === 'g' && (e.ctrlKey || e.metaKey) && !e.shiftKey) {
+    if (grouping.canGroup.value) {
+      e.preventDefault()
+      grouping.groupSelected()
+    }
+    return
+  }
+  if (e.key === 'G' && (e.ctrlKey || e.metaKey) && e.shiftKey) {
+    if (grouping.canUngroup.value) {
+      e.preventDefault()
+      grouping.ungroupSelected()
+    }
+    return
+  }
 
-    if (nodeName.startsWith('stroke-')) {
-      emit('stroke-delete', nodeId)
-    } else if (nodeName.startsWith('asset-')) {
-      emit('asset-delete', nodeId)
+  // v5 A3: Ctrl+Shift+L → lock selected items
+  // Design decision: Ctrl+L conflicts with browser address bar, so we use Ctrl+Shift+L
+  if (e.key === 'L' && (e.ctrlKey || e.metaKey) && e.shiftKey) {
+    if (locking.canLock.value) {
+      e.preventDefault()
+      locking.lockSelected()
+    }
+    return
+  }
+  // v5 A3: Ctrl+Shift+U → unlock selected items
+  if (e.key === 'U' && (e.ctrlKey || e.metaKey) && e.shiftKey) {
+    if (locking.canUnlock.value) {
+      e.preventDefault()
+      locking.unlockSelected()
+    }
+    return
+  }
+
+  // Delete selected — v5 A1: support multi-select delete
+  if (e.key === 'Delete' || e.key === 'Backspace') {
+    // v5 A1: Multi-select delete
+    if (wbStore.hasSelection) {
+      e.preventDefault()
+      // v5 A3: Filter out locked items — they cannot be deleted
+      const unlocked = wbStore.selectedIds.filter((id) => !wbStore.isItemLocked(id))
+      if (unlocked.length > 0) {
+        // Select only unlocked items, then delete
+        wbStore.selectItems(unlocked)
+        const deletedIds = [...unlocked]
+        rectSelect.deleteSelected()
+        // v5 A2: Auto-cleanup groups when items are deleted
+        wbStore.removeItemsFromGroups(deletedIds)
+      } else {
+        // All selected items are locked — just clear selection
+        wbStore.clearSelection()
+      }
+      selectedNode.value = null
+      const transformer = transformerRef.value?.getNode()
+      if (transformer) transformer.nodes([])
+      return
     }
 
+    // Legacy single-select delete
+    if (selectedNode.value) {
+      const nodeId = selectedNode.value.id()
+      // v5 A3: Skip locked items
+      if (wbStore.isItemLocked(nodeId)) return
+
+      e.preventDefault()
+      const nodeName = selectedNode.value.name() || ''
+
+      if (nodeName.startsWith('stroke-')) {
+        emit('stroke-delete', nodeId)
+      } else if (nodeName.startsWith('asset-')) {
+        emit('asset-delete', nodeId)
+      }
+      // v5 A2: Auto-cleanup groups
+      wbStore.removeItemsFromGroups([nodeId])
+
+      selectedNode.value = null
+      const transformer = transformerRef.value?.getNode()
+      if (transformer) transformer.nodes([])
+    }
+  }
+
+  // v5 A5: Ctrl+D → duplicate selected items
+  if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+    e.preventDefault() // prevent browser bookmark dialog
+    if (duplicate.canDuplicate.value) {
+      duplicate.duplicateSelected()
+    }
+    return
+  }
+
+  // v5 A9: 'S' → create sticky note at canvas center, switch to select tool
+  if (e.key === 's' && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
+    if (editingText.value) return
+    if (stickyEditingId.value) return
+    e.preventDefault()
+    const cx = (props.width / 2) / (props.zoom || 1) + (wbStore.scrollX || 0)
+    const cy = (props.height / 2) / (props.zoom || 1) + (wbStore.scrollY || 0)
+    stickyNotes.createSticky(cx - 100, cy - 75)
+    emit('tool-change', 'select')
+    return
+  }
+
+  // v5 A4: 'L' → switch to laser tool (single-key, no modifier, not in text input)
+  if (e.key === 'l' && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
+    // Don't switch tool if editing text
+    if (editingText.value) return
+    e.preventDefault()
+    emit('tool-change', 'laser')
+    return
+  }
+
+  // v5 A1: Escape clears selection
+  if (e.key === 'Escape' && wbStore.hasSelection) {
+    wbStore.clearSelection()
     selectedNode.value = null
     const transformer = transformerRef.value?.getNode()
-    if (transformer) {
-      transformer.nodes([])
-    }
+    if (transformer) transformer.nodes([])
   }
 }
 
@@ -1133,15 +1606,44 @@ function handlePaste(e: Event): void {
 function handleStrokeClick(stroke: WBStroke, e: Konva.KonvaEventObject<MouseEvent>): void {
   if (currentTool.value !== 'select') return
   e.cancelBubble = true
-  selectedNode.value = e.target
-  emit('select', stroke.id)
 
-  nextTick(() => {
+  // v5 A3: Locked items cannot be selected
+  if (stroke.locked) return
+
+  const nativeEvent = e.evt as MouseEvent
+  const shiftKey = nativeEvent?.shiftKey ?? false
+
+  // v5 A2: If item is in a group → select whole group
+  const group = grouping.getGroupForItem(stroke.id)
+  if (group && !shiftKey) {
+    grouping.selectGroup(group.id)
+    selectedNode.value = null
     const transformer = transformerRef.value?.getNode()
-    if (transformer && e.target) {
-      transformer.nodes([e.target])
-    }
-  })
+    if (transformer) transformer.nodes([])
+    emit('select', stroke.id)
+    return
+  }
+
+  // v5 A1: Multi-select with Shift+click
+  rectSelect.handleClick(stroke.id, shiftKey)
+
+  // Legacy single-select transformer support
+  if (!shiftKey && wbStore.selectedIds.length <= 1) {
+    selectedNode.value = e.target
+    emit('select', stroke.id)
+    nextTick(() => {
+      const transformer = transformerRef.value?.getNode()
+      if (transformer && e.target) {
+        transformer.nodes([e.target])
+      }
+    })
+  } else {
+    // Multi-select: clear transformer (we use custom selection indicators)
+    selectedNode.value = null
+    const transformer = transformerRef.value?.getNode()
+    if (transformer) transformer.nodes([])
+    emit('select', stroke.id)
+  }
 }
 
 function handleStrokeDragEnd(stroke: WBStroke, e: Konva.KonvaEventObject<DragEvent>): void {
@@ -1199,15 +1701,42 @@ function clearSelection(): void {
 function handleAssetClick(asset: WBAsset, e: Konva.KonvaEventObject<MouseEvent>): void {
   if (currentTool.value !== 'select') return
   e.cancelBubble = true
-  selectedNode.value = e.target
-  emit('select', asset.id)
 
-  nextTick(() => {
+  // v5 A3: Locked assets cannot be selected
+  if (asset.locked) return
+
+  const nativeEvent = e.evt as MouseEvent
+  const shiftKey = nativeEvent?.shiftKey ?? false
+
+  // v5 A2: If asset is in a group → select whole group
+  const group = grouping.getGroupForItem(asset.id)
+  if (group && !shiftKey) {
+    grouping.selectGroup(group.id)
+    selectedNode.value = null
     const transformer = transformerRef.value?.getNode()
-    if (transformer && e.target) {
-      transformer.nodes([e.target])
-    }
-  })
+    if (transformer) transformer.nodes([])
+    emit('select', asset.id)
+    return
+  }
+
+  // v5 A1: Multi-select with Shift+click
+  rectSelect.handleClick(asset.id, shiftKey)
+
+  if (!shiftKey && wbStore.selectedIds.length <= 1) {
+    selectedNode.value = e.target
+    emit('select', asset.id)
+    nextTick(() => {
+      const transformer = transformerRef.value?.getNode()
+      if (transformer && e.target) {
+        transformer.nodes([e.target])
+      }
+    })
+  } else {
+    selectedNode.value = null
+    const transformer = transformerRef.value?.getNode()
+    if (transformer) transformer.nodes([])
+    emit('select', asset.id)
+  }
 }
 
 function handleAssetDragEnd(asset: WBAsset, e: Konva.KonvaEventObject<DragEvent>): void {
@@ -1243,7 +1772,7 @@ function handleAssetTransformEnd(asset: WBAsset, e: Konva.KonvaEventObject<Event
 function buildStrokeSig(stroke: WBStroke, selectable: boolean): string {
   const last = stroke.points[stroke.points.length - 1]
   const first = stroke.points[0]
-  return `${stroke.tool}|${stroke.color}|${stroke.size}|${stroke.opacity}|${selectable ? 1 : 0}|${stroke.points.length}|${first?.x ?? 0},${first?.y ?? 0}|${last?.x ?? 0},${last?.y ?? 0}|${stroke.width ?? 0}|${stroke.height ?? 0}|${stroke.text ?? ''}`
+  return `${stroke.tool}|${stroke.color}|${stroke.size}|${stroke.opacity}|${selectable ? 1 : 0}|${stroke.points.length}|${first?.x ?? 0},${first?.y ?? 0}|${last?.x ?? 0},${last?.y ?? 0}|${stroke.width ?? 0}|${stroke.height ?? 0}|${stroke.text ?? ''}|${stroke.locked ? 1 : 0}`
 }
 
 /** Get cached config or build new one */
@@ -1279,14 +1808,15 @@ function getStrokeConfig(stroke: WBStroke): Record<string, unknown> {
       ),
     )
 
+    const isLockedItem = !!stroke.locked
     return {
       id: stroke.id,
       name: `stroke-${stroke.id}`,
       data: strokePath,
       fill: stroke.color,
-      opacity: stroke.opacity,
+      opacity: isLockedItem ? Math.min(stroke.opacity, 0.85) : stroke.opacity,
       globalCompositeOperation: stroke.tool === 'highlighter' ? 'multiply' : 'source-over',
-      draggable: selectable,
+      draggable: selectable && !isLockedItem,
       perfectDrawEnabled: false,
       listening: selectable,
     }
@@ -1300,6 +1830,7 @@ function getLineConfig(stroke: WBStroke): Record<string, unknown> {
     const selectable = currentTool.value === 'select'
     const start = stroke.points[0]
     const end = stroke.points[stroke.points.length - 1]
+    const isLockedItem = !!stroke.locked
     return {
       id: stroke.id,
       name: `stroke-${stroke.id}`,
@@ -1308,8 +1839,8 @@ function getLineConfig(stroke: WBStroke): Record<string, unknown> {
       strokeWidth: stroke.size,
       lineCap: 'round',
       lineJoin: 'round',
-      opacity: stroke.opacity,
-      draggable: selectable,
+      opacity: isLockedItem ? Math.min(stroke.opacity, 0.85) : stroke.opacity,
+      draggable: selectable && !isLockedItem,
       perfectDrawEnabled: false,
       listening: selectable,
     }
@@ -1321,6 +1852,7 @@ function getRectConfig(stroke: WBStroke): Record<string, unknown> {
 
   return getCachedConfig(stroke, () => {
     const selectable = currentTool.value === 'select'
+    const isLockedItem = !!stroke.locked
     return {
       id: stroke.id,
       name: `stroke-${stroke.id}`,
@@ -1331,8 +1863,8 @@ function getRectConfig(stroke: WBStroke): Record<string, unknown> {
       stroke: stroke.color,
       strokeWidth: stroke.size,
       fill: 'transparent',
-      opacity: stroke.opacity,
-      draggable: selectable,
+      opacity: isLockedItem ? Math.min(stroke.opacity, 0.85) : stroke.opacity,
+      draggable: selectable && !isLockedItem,
       perfectDrawEnabled: false,
       listening: selectable,
     }
@@ -1344,6 +1876,7 @@ function getCircleConfig(stroke: WBStroke): Record<string, unknown> {
 
   return getCachedConfig(stroke, () => {
     const selectable = currentTool.value === 'select'
+    const isLockedItem = !!stroke.locked
     return {
       id: stroke.id,
       name: `stroke-${stroke.id}`,
@@ -1354,8 +1887,8 @@ function getCircleConfig(stroke: WBStroke): Record<string, unknown> {
       stroke: stroke.color,
       strokeWidth: stroke.size,
       fill: 'transparent',
-      opacity: stroke.opacity,
-      draggable: selectable,
+      opacity: isLockedItem ? Math.min(stroke.opacity, 0.85) : stroke.opacity,
+      draggable: selectable && !isLockedItem,
       perfectDrawEnabled: false,
       listening: selectable,
     }
@@ -1367,6 +1900,7 @@ function getTextConfig(stroke: WBStroke): Record<string, unknown> {
 
   return getCachedConfig(stroke, () => {
     const selectable = currentTool.value === 'select'
+    const isLockedItem = !!stroke.locked
     return {
       id: stroke.id,
       name: `stroke-${stroke.id}`,
@@ -1376,7 +1910,8 @@ function getTextConfig(stroke: WBStroke): Record<string, unknown> {
       fontSize: stroke.size || 16,
       fill: stroke.color,
       fontFamily: 'system-ui, -apple-system, sans-serif',
-      draggable: selectable,
+      opacity: isLockedItem ? 0.85 : 1,
+      draggable: selectable && !isLockedItem,
       perfectDrawEnabled: false,
       listening: selectable,
     }
@@ -1410,6 +1945,7 @@ function getAssetConfig(asset: WBAsset): Record<string, unknown> {
   }
 
   const selectable = currentTool.value === 'select'
+  const isLockedItem = !!asset.locked
   return {
     id: asset.id,
     name: `asset-${asset.id}`,
@@ -1419,7 +1955,8 @@ function getAssetConfig(asset: WBAsset): Record<string, unknown> {
     height: asset.h,
     rotation: asset.rotation,
     image: loadedImages.get(asset.src),
-    draggable: selectable,
+    opacity: isLockedItem ? 0.85 : 1,
+    draggable: selectable && !isLockedItem,
     perfectDrawEnabled: false,
     listening: selectable,
   }
@@ -1864,5 +2401,59 @@ defineExpose({
   z-index: 1000;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   border-radius: 4px;
+}
+
+/* v5 A4: Laser pointer cursor classes */
+.wb-canvas--laser {
+  cursor: crosshair;
+}
+
+.wb-canvas--laser-active {
+  cursor: none;
+}
+
+/* v5 A4: Laser dot styles */
+.wb-laser-dot {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 1000;
+  transform: translate(-50%, -50%);
+  transition: left 0.05s linear, top 0.05s linear;
+}
+
+.wb-laser-dot--local {
+  background: #dc2626;
+  box-shadow: 0 0 8px 4px rgba(220, 38, 38, 0.5);
+}
+
+.wb-laser-dot__label {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  white-space: nowrap;
+  color: #dc2626;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+/* v5 A9: Sticky note text editing overlay */
+.wb-sticky-edit-overlay {
+  position: absolute;
+  overflow: hidden;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .wb-laser-dot {
+    transition: none;
+    box-shadow: none;
+  }
 }
 </style>

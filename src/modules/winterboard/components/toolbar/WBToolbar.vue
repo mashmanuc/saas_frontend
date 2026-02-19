@@ -1,6 +1,7 @@
-<!-- WB: Vertical toolbar — drawing tools, colors, sizes, actions
+<!-- WB: Vertical toolbar — drawing tools, thickness, colors, actions, lock
      Ref: ManifestWinterboard_v2.md LAW-09, LAW-21, LAW-22
-     B3.1: Full keyboard a11y — roving tabindex, arrow keys, focus trap
+     B3: Toolbar integration (conditional visibility, transitions, keyboard nav)
+     B4: Lock/Unlock context action
      Adapted from classroom/BoardToolbarVertical.vue with WB prefix -->
 <template>
   <div
@@ -20,7 +21,7 @@
         :class="{ 'wb-toolbar__btn--active': currentTool === tool.id }"
         :aria-pressed="currentTool === tool.id"
         :aria-label="`${t(`winterboard.tools.${tool.id}`)} (${tool.shortcut})`"
-        :data-tooltip="`${t(`winterboard.tools.${tool.id}`)} (${tool.shortcut})`"
+        :data-tooltip="toolTooltip(tool)"
         :tabindex="getTabIndex(0, idx)"
         @click="emit('tool-change', tool.id)"
       >
@@ -28,26 +29,37 @@
       </button>
     </div>
 
-    <div class="wb-toolbar__sep" role="separator" aria-hidden="true" />
+    <!-- Thickness Presets (B3: conditional — hidden for eraser/select) -->
+    <Transition name="wb-collapse">
+      <template v-if="showThickness">
+        <div class="wb-toolbar__sep" role="separator" aria-hidden="true" />
+      </template>
+    </Transition>
+    <Transition name="wb-collapse">
+      <div v-if="showThickness" class="wb-toolbar__group" role="group" :aria-label="t('winterboard.toolbar.thickness_section')">
+        <WBThicknessPresets
+          :model-value="currentSize"
+          :current-color="currentColor"
+          @update:model-value="emit('size-change', $event)"
+        />
+      </div>
+    </Transition>
 
-    <!-- Color Picker (B6.1) -->
-    <div class="wb-toolbar__group" role="group" :aria-label="t('winterboard.toolbar.colorPalette')">
-      <WBColorPicker
-        :model-value="currentColor"
-        @update:model-value="emit('color-change', $event)"
-      />
-    </div>
-
-    <div class="wb-toolbar__sep" role="separator" aria-hidden="true" />
-
-    <!-- Size Slider (B6.1) -->
-    <div class="wb-toolbar__group" role="group" :aria-label="t('winterboard.toolbar.strokeSize')">
-      <WBSizeSlider
-        :model-value="currentSize"
-        :current-color="currentColor"
-        @update:model-value="emit('size-change', $event)"
-      />
-    </div>
+    <!-- Color Palette (B3: conditional — hidden for eraser/select) -->
+    <Transition name="wb-collapse">
+      <template v-if="showColorPalette">
+        <div class="wb-toolbar__sep" role="separator" aria-hidden="true" />
+      </template>
+    </Transition>
+    <Transition name="wb-collapse">
+      <div v-if="showColorPalette" class="wb-toolbar__group" role="group" :aria-label="t('winterboard.toolbar.color_section')">
+        <WBQuickPalette
+          :model-value="currentColor"
+          :current-tool="currentTool"
+          @update:model-value="emit('color-change', $event)"
+        />
+      </div>
+    </Transition>
 
     <div class="wb-toolbar__sep" role="separator" aria-hidden="true" />
 
@@ -85,7 +97,44 @@
       >
         <WBIconTrash class="wb-toolbar__icon" />
       </button>
+      <!-- B8: Clear page button -->
+      <button
+        type="button"
+        class="wb-toolbar__btn wb-toolbar__btn--tooltip"
+        :aria-label="t('winterboard.clear.button')"
+        :data-tooltip="t('winterboard.clear.button')"
+        :tabindex="getTabIndex(3, 3)"
+        :disabled="!canClearPage"
+        @click="emit('clear-page-request')"
+      >
+        <svg class="wb-toolbar__icon" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M3 5h14M7 5V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M8 9v5M12 9v5" />
+          <path d="M5 5l1 11a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2l1-11" />
+        </svg>
+      </button>
     </div>
+
+    <!-- B4: Lock/Unlock context action (visible when items selected) -->
+    <Transition name="wb-collapse">
+      <template v-if="hasSelection">
+        <div class="wb-toolbar__sep" role="separator" aria-hidden="true" />
+      </template>
+    </Transition>
+    <Transition name="wb-collapse">
+      <div v-if="hasSelection" class="wb-toolbar__group wb-toolbar__context" role="group" :aria-label="t('winterboard.lock.lock')">
+        <button
+          type="button"
+          class="wb-toolbar__btn wb-toolbar__btn--tooltip"
+          :aria-label="t(hasLockedInSelection ? 'winterboard.lock.unlock' : 'winterboard.lock.lock')"
+          :data-tooltip="t(hasLockedInSelection ? 'winterboard.lock.unlock' : 'winterboard.lock.lock')"
+          :tabindex="getTabIndex(4, 0)"
+          @click="hasLockedInSelection ? emit('unlock-selected') : emit('lock-selected')"
+        >
+          <WBIconUnlock v-if="hasLockedInSelection" class="wb-toolbar__icon" />
+          <WBIconLock v-else class="wb-toolbar__icon" />
+        </button>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -94,7 +143,7 @@
 // Ref: TASK_BOARD.md B1.3, B3.1
 // B3.1: Roving tabindex, arrow key nav, Tab between groups, focus trap
 
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { WBToolType } from '../../types/winterboard'
 
@@ -110,8 +159,12 @@ import WBIconSelect from './icons/WBIconSelect.vue'
 import WBIconUndo from './icons/WBIconUndo.vue'
 import WBIconRedo from './icons/WBIconRedo.vue'
 import WBIconTrash from './icons/WBIconTrash.vue'
-import WBColorPicker from './WBColorPicker.vue'
-import WBSizeSlider from './WBSizeSlider.vue'
+import WBIconLaser from './icons/WBIconLaser.vue'
+import WBIconSticky from './icons/WBIconSticky.vue'
+import WBIconLock from './icons/WBIconLock.vue'
+import WBIconUnlock from './icons/WBIconUnlock.vue'
+import WBThicknessPresets from './WBThicknessPresets.vue'
+import WBQuickPalette from './WBQuickPalette.vue'
 
 // ─── Props ──────────────────────────────────────────────────────────────────
 
@@ -121,14 +174,20 @@ interface Props {
   currentSize?: number
   canUndo?: boolean
   canRedo?: boolean
+  hasSelection?: boolean
+  hasLockedInSelection?: boolean
+  canClearPage?: boolean
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   currentTool: 'pen',
   currentColor: '#000000',
   currentSize: 2,
   canUndo: false,
   canRedo: false,
+  hasSelection: false,
+  hasLockedInSelection: false,
+  canClearPage: false,
 })
 
 // ─── Emits ──────────────────────────────────────────────────────────────────
@@ -140,6 +199,9 @@ const emit = defineEmits<{
   undo: []
   redo: []
   clear: []
+  'lock-selected': []
+  'unlock-selected': []
+  'clear-page-request': []
 }>()
 
 // ─── i18n ───────────────────────────────────────────────────────────────────
@@ -163,21 +225,38 @@ const drawingTools: ToolDef[] = [
   { id: 'circle', icon: WBIconCircle, shortcut: 'C' },
   { id: 'text', icon: WBIconText, shortcut: 'T' },
   { id: 'eraser', icon: WBIconEraser, shortcut: 'E' },
+  { id: 'laser', icon: WBIconLaser, shortcut: 'F' },
+  { id: 'sticky', icon: WBIconSticky, shortcut: 'S' },
 ]
 
-// Color presets and size presets are now in WBColorPicker.vue and WBSizeSlider.vue
+// ─── B3: Conditional visibility ─────────────────────────────────────────────
+
+const THICKNESS_TOOLS: WBToolType[] = ['pen', 'highlighter', 'line', 'rectangle', 'circle']
+const COLOR_TOOLS: WBToolType[] = ['pen', 'highlighter', 'line', 'rectangle', 'circle', 'text']
+
+const showThickness = computed(() => THICKNESS_TOOLS.includes(props.currentTool))
+const showColorPalette = computed(() => COLOR_TOOLS.includes(props.currentTool))
+
+// B5: Tooltip text — laser gets extra hint
+function toolTooltip(tool: ToolDef): string {
+  const base = `${t(`winterboard.tools.${tool.id}`)} (${tool.shortcut})`
+  if (tool.id === 'laser') return `${base}\n${t('winterboard.toolbar.laser_hint')}`
+  if (tool.id === 'sticky') return `${base}\n${t('winterboard.toolbar.sticky_hint')}`
+  return base
+}
 
 // ─── B3.1: Roving tabindex + arrow key navigation ──────────────────────────
 // Pattern: Tab/Shift+Tab moves between groups, Arrow keys move within group
 // Only the "active" item in each group has tabindex=0, rest have tabindex=-1
 
 const toolbarEl = ref<HTMLElement | null>(null)
-// Group sizes: [tools(8), color picker(1), size slider(1), actions(3)]
-const GROUP_SIZES = [drawingTools.length, 1, 1, 3]
-const TOTAL_GROUPS = GROUP_SIZES.length
+// Group sizes: [tools(8), thickness(4), palette(8 max), actions(3), lock(1)]
+// Dynamic — actual count resolved from DOM via getGroupElements()
+const GROUP_SIZES = [drawingTools.length, 4, 8, 4, 1]  // tools(9), thickness(4), palette(8), actions(4), lock(1)
+const MAX_GROUPS = GROUP_SIZES.length
 
 // Track active index within each group
-const activeIndices = reactive<number[]>([0, 0, 0, 0])
+const activeIndices = reactive<number[]>([0, 0, 0, 0, 0])
 
 function getTabIndex(groupIdx: number, itemIdx: number): number {
   return activeIndices[groupIdx] === itemIdx ? 0 : -1
@@ -240,12 +319,12 @@ function handleToolbarKeydown(event: KeyboardEvent): void {
     case 'Tab': {
       if (event.shiftKey) {
         // Shift+Tab: previous group
-        const prevGroup = (currentGroup - 1 + TOTAL_GROUPS) % TOTAL_GROUPS
+        const prevGroup = (currentGroup - 1 + MAX_GROUPS) % MAX_GROUPS
         event.preventDefault()
         focusItem(prevGroup, activeIndices[prevGroup])
       } else {
         // Tab: next group
-        const nextGroup = (currentGroup + 1) % TOTAL_GROUPS
+        const nextGroup = (currentGroup + 1) % MAX_GROUPS
         event.preventDefault()
         focusItem(nextGroup, activeIndices[nextGroup])
       }
@@ -279,10 +358,8 @@ function handleToolbarKeydown(event: KeyboardEvent): void {
   background: var(--wb-toolbar-bg, #ffffff);
   border-right: 1px solid var(--wb-toolbar-border, #e2e8f0);
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.06);
-  overflow-y: auto;
+  overflow: visible;
   max-height: 100vh;
-  contain: layout style;
-  will-change: contents;
   z-index: 20;
 }
 
@@ -395,6 +472,7 @@ function handleToolbarKeydown(event: KeyboardEvent): void {
     width: 48px;
     padding: 6px 2px;
     gap: 2px;
+    overflow-y: auto;
   }
 }
 
@@ -405,10 +483,34 @@ function handleToolbarKeydown(event: KeyboardEvent): void {
   }
 }
 
+/* B3: Collapse transition for conditional sections */
+.wb-collapse-enter-active,
+.wb-collapse-leave-active {
+  transition: max-height 0.2s ease, opacity 0.2s ease;
+  overflow: hidden;
+}
+.wb-collapse-enter-from,
+.wb-collapse-leave-to {
+  max-height: 0;
+  opacity: 0;
+}
+.wb-collapse-enter-to,
+.wb-collapse-leave-from {
+  max-height: 500px;
+  opacity: 1;
+}
+
+/* B4: Context actions group */
+.wb-toolbar__context {
+  border-top: none;
+}
+
 /* Reduced motion (LAW-22) */
 @media (prefers-reduced-motion: reduce) {
   .wb-toolbar__btn,
-  .wb-toolbar__btn--tooltip::after {
+  .wb-toolbar__btn--tooltip::after,
+  .wb-collapse-enter-active,
+  .wb-collapse-leave-active {
     transition: none;
   }
 }

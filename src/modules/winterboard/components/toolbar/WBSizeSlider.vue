@@ -16,11 +16,12 @@
       />
     </button>
 
-    <!-- Popover -->
+    <!-- Popover (position:fixed to escape toolbar overflow clipping) -->
     <Transition name="wb-popover">
       <div
         v-if="isOpen"
         class="wb-size-slider__popover"
+        :style="popoverStyle"
         role="dialog"
         :aria-label="t('winterboard.toolbar.strokeSize')"
         @keydown.escape="close"
@@ -98,8 +99,15 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const rootEl = ref<HTMLElement | null>(null)
 const isOpen = ref(false)
+const popoverPos = ref<{ top: number; left: number }>({ top: 0, left: 0 })
 
 const clampedSize = computed(() => Math.max(4, Math.min(16, props.modelValue * 1.5)))
+
+const popoverStyle = computed(() => ({
+  position: 'fixed' as const,
+  top: `${popoverPos.value.top}px`,
+  left: `${popoverPos.value.left}px`,
+}))
 
 function handleInput(val: string): void {
   emit('update:modelValue', Number(val))
@@ -110,7 +118,21 @@ function selectSize(size: number): void {
 }
 
 function toggle(): void {
+  if (!isOpen.value) {
+    updatePopoverPosition()
+  }
   isOpen.value = !isOpen.value
+}
+
+function updatePopoverPosition(): void {
+  const el = rootEl.value
+  if (!el) return
+  const rect = el.getBoundingClientRect()
+  // Position to the right of the trigger, vertically aligned
+  popoverPos.value = {
+    top: rect.top,
+    left: rect.right + 8,
+  }
 }
 
 function close(): void {
@@ -166,12 +188,9 @@ onUnmounted(() => {
   min-height: 4px;
 }
 
-/* Popover */
+/* Popover — position:fixed set via inline style to escape overflow clipping */
 .wb-size-slider__popover {
-  position: absolute;
-  left: calc(100% + 8px);
-  top: 0;
-  z-index: 50;
+  z-index: 200;
   width: 180px;
   padding: 12px;
   background: var(--wb-toolbar-bg, #ffffff);
@@ -300,9 +319,7 @@ onUnmounted(() => {
 /* Mobile: popover opens above trigger when toolbar is at bottom */
 @media (max-width: 768px) {
   .wb-size-slider__popover {
-    left: 0;
-    top: auto;
-    bottom: calc(100% + 8px);
+    /* position:fixed overrides handled in JS for mobile */
   }
 }
 

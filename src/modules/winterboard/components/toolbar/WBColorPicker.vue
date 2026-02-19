@@ -14,11 +14,12 @@
       <span class="wb-color-picker__current" :style="{ background: modelValue }" />
     </button>
 
-    <!-- Popover -->
+    <!-- Popover (position:fixed to escape toolbar overflow clipping) -->
     <Transition name="wb-popover">
       <div
         v-if="isOpen"
         class="wb-color-picker__popover"
+        :style="popoverStyle"
         role="dialog"
         :aria-label="t('winterboard.toolbar.colorPalette')"
         @keydown.escape="close"
@@ -78,7 +79,7 @@
 // WB: WBColorPicker — color picker popover with presets + custom + recent
 // Ref: TASK_BOARD.md B6.1
 
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const PRESET_COLORS = [
@@ -101,6 +102,7 @@ const { t } = useI18n()
 const rootEl = ref<HTMLElement | null>(null)
 const isOpen = ref(false)
 const recentColors = ref<string[]>([])
+const popoverPos = ref<{ top: number; left: number }>({ top: 0, left: 0 })
 
 function loadRecent(): void {
   try {
@@ -135,8 +137,27 @@ function handleCustomColor(color: string): void {
   saveRecent(color)
 }
 
+const popoverStyle = computed(() => ({
+  position: 'fixed' as const,
+  top: `${popoverPos.value.top}px`,
+  left: `${popoverPos.value.left}px`,
+}))
+
 function toggle(): void {
+  if (!isOpen.value) {
+    updatePopoverPosition()
+  }
   isOpen.value = !isOpen.value
+}
+
+function updatePopoverPosition(): void {
+  const el = rootEl.value
+  if (!el) return
+  const rect = el.getBoundingClientRect()
+  popoverPos.value = {
+    top: rect.top,
+    left: rect.right + 8,
+  }
 }
 
 function close(): void {
@@ -194,12 +215,9 @@ onUnmounted(() => {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* Popover */
+/* Popover — position:fixed set via inline style to escape overflow clipping */
 .wb-color-picker__popover {
-  position: absolute;
-  left: calc(100% + 8px);
-  top: 0;
-  z-index: 50;
+  z-index: 200;
   width: 200px;
   padding: 12px;
   background: var(--wb-toolbar-bg, #ffffff);
@@ -315,9 +333,7 @@ onUnmounted(() => {
 /* Mobile: popover opens above trigger when toolbar is at bottom */
 @media (max-width: 768px) {
   .wb-color-picker__popover {
-    left: 0;
-    top: auto;
-    bottom: calc(100% + 8px);
+    /* position:fixed overrides handled in JS for mobile */
   }
 }
 

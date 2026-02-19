@@ -23,6 +23,26 @@ export type WBToolType =
   | 'circle'
   | 'text'
   | 'select'
+  | 'laser'
+  | 'sticky'
+
+// ─── Laser Pointer (v5 A4 — ephemeral, not persisted) ──────────────────────
+
+export interface WBLaserPosition {
+  x: number
+  y: number
+}
+
+export interface WBRemoteLaser {
+  userId: string
+  displayName: string
+  x: number
+  y: number
+  pageId: string
+  color: string
+  active: boolean
+  lastUpdate: number
+}
 
 // ─── Stroke ─────────────────────────────────────────────────────────────────
 
@@ -38,6 +58,32 @@ export interface WBStroke {
   height?: number
   /** For text tool */
   text?: string
+  /** v5 A3: Lock state — locked items cannot be moved/deleted/erased */
+  locked?: boolean
+  lockedBy?: string
+}
+
+// ─── Selection (v5: A1 — Rectangle Select) ─────────────────────────────────
+
+export interface WBSelectionRect {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+export interface WBSelectionState {
+  selectedIds: string[]
+  selectionRect: WBSelectionRect | null
+  isMultiSelect: boolean
+}
+
+// ─── Group (v5: A2 — Group/Ungroup) ─────────────────────────────────────────
+
+export interface WBGroup {
+  id: string
+  itemIds: string[]  // stroke/asset IDs
+  createdBy: string
 }
 
 // ─── Shape (future-proof alias — shapes are strokes with tool=rectangle|circle|line) ─
@@ -59,14 +105,45 @@ export type WBTextElement = WBStroke & {
 
 export interface WBAsset {
   id: string
-  type: 'image'
+  type: 'image' | 'sticky'
   src: string
   x: number
   y: number
   w: number
   h: number
   rotation: number
+  /** v5 A3: Lock state — locked items cannot be moved/deleted/erased */
+  locked?: boolean
+  lockedBy?: string
+  /** v5 A9: Sticky note fields (present when type='sticky') */
+  text?: string
+  bgColor?: string
+  textColor?: string
+  fontSize?: number
 }
+
+// v5 A9: Sticky note — typed alias for assets with type='sticky'
+export interface WBStickyNote extends WBAsset {
+  type: 'sticky'
+  text: string
+  bgColor: string      // '#fde047' default
+  textColor: string    // '#1e293b' default
+  fontSize: number     // 14 default
+}
+
+export const STICKY_COLORS = [
+  { name: 'yellow', bg: '#fde047', text: '#1e293b' },
+  { name: 'green',  bg: '#86efac', text: '#1e293b' },
+  { name: 'blue',   bg: '#93c5fd', text: '#1e293b' },
+  { name: 'pink',   bg: '#f9a8d4', text: '#1e293b' },
+  { name: 'purple', bg: '#c4b5fd', text: '#1e293b' },
+  { name: 'orange', bg: '#fdba74', text: '#1e293b' },
+] as const
+
+export const STICKY_DEFAULTS = {
+  width: 200, height: 150, fontSize: 14,
+  bgColor: '#fde047', textColor: '#1e293b', text: '',
+} as const
 
 // ─── Page ───────────────────────────────────────────────────────────────────
 // LAW-03: Pages = Ordered Stack
@@ -89,6 +166,8 @@ export interface WBPage {
   /** A5.1: Custom page dimensions (e.g. from PDF import) */
   width?: number
   height?: number
+  /** v5 A2: Groups — flat grouping of strokes/assets */
+  groups?: WBGroup[]
 }
 
 // ─── Workspace State (serialized to backend JSONB) ──────────────────────────
