@@ -12,10 +12,10 @@
           <div class="success-icon">✓</div>
           <p class="success-description">{{ $t('inquiries.success.description') }}</p>
           <div class="success-actions">
-            <router-link to="/student/inquiries" class="btn btn-primary" @click="$emit('close')">
+            <router-link to="/student/inquiries" class="link-primary" @click="$emit('close')">
               {{ $t('inquiries.success.viewMyInquiries') }}
             </router-link>
-            <router-link to="/marketplace" class="btn btn-secondary" @click="$emit('close')">
+            <router-link to="/marketplace" class="link-secondary" @click="$emit('close')">
               {{ $t('inquiries.success.findMoreTutors') }}
             </router-link>
           </div>
@@ -115,7 +115,7 @@
             @retry="clearError"
           >
             <template v-if="errorState.showUpgrade" #actions>
-              <router-link to="/billing/plans" class="btn btn-primary">
+              <router-link to="/billing/plans" class="link-primary">
                 {{ $t('inquiries.errors.maxOpenReachedUpgrade') }}
               </router-link>
             </template>
@@ -459,5 +459,49 @@ function handleOverlayClick() {
   gap: 12px;
   flex-wrap: wrap;
   justify-content: center;
+}
+
+.link-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.625rem 1.125rem;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border: 1px solid transparent;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px var(--shadow), 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+.link-primary:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--shadow-strong), 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.link-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.625rem 1.125rem;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1.5px solid var(--border-color);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.link-secondary:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 </style>

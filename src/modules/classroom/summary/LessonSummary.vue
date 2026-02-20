@@ -56,7 +56,7 @@
               </p>
               <router-link
                 :to="`/classroom/${sessionId}/replay`"
-                class="btn btn-primary inline-flex items-center"
+                class="link-btn link-primary inline-flex items-center"
               >
                 <Play class="w-5 h-5 mr-2" />
                 Переглянути запис
@@ -129,7 +129,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.btn {
+.link-btn {
   display: inline-flex;
   align-items: center;
   padding: 10px 20px;
@@ -142,12 +142,12 @@ onMounted(() => {
   text-decoration: none;
 }
 
-.btn-primary {
+.link-primary {
   background: var(--color-primary, #3b82f6);
   color: white;
 }
 
-.btn-primary:hover {
+.link-primary:hover {
   background: var(--color-primary-dark, #2563eb);
 }
 

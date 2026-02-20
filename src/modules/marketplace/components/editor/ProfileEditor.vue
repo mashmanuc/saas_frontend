@@ -1080,7 +1080,7 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
           {{ t('marketplace.profile.editor.noPhoto') }}
         </div>
 
-        <label class="btn btn-secondary photo-upload" :class="{ disabled: saving || isAvatarUploading }">
+        <label class="label-secondary photo-upload" :class="{ disabled: saving || isAvatarUploading }">
           {{ isAvatarUploading ? t('profile.avatar.uploading') : t('profile.avatar.update') }}
           <input
             type="file"
@@ -1887,5 +1887,32 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
 .fade-leave-to {
   opacity: 0;
   transform: translateY(-8px);
+}
+
+.label-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.625rem 1.125rem;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1.5px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.label-secondary:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.label-secondary.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 </style>

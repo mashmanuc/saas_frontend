@@ -56,7 +56,7 @@
     </div>
     
     <div class="widget-footer">
-      <button class="btn btn-link" @click="goToCatalog">
+      <button class="btn-link" @click="goToCatalog">
         {{ $t('inquiries.recommended.viewAll') }}
         <i class="icon-arrow-right"></i>
       </button>

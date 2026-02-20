@@ -112,7 +112,7 @@ async function handleUnpublish() {
             v-if="myProfile && profileUrl"
             :href="profileUrl"
             target="_blank"
-            class="btn btn-ghost"
+            class="link-ghost"
           >
             {{ t('marketplace.profile.viewPublic') }}
           </a>
@@ -216,6 +216,28 @@ async function handleUnpublish() {
 </template>
 
 <style scoped>
+.link-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.625rem 1.125rem;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: transparent;
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  text-decoration: none;
+}
+
+.link-ghost:hover {
+  background-color: color-mix(in srgb, var(--accent) 8%, transparent);
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
 .my-profile-view {
   min-height: 100vh;
   background: var(--surface-marketplace);

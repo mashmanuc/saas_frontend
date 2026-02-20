@@ -35,7 +35,7 @@
             <button
               v-if="isSubscriptionError"
               type="button"
-              class="btn btn-upgrade"
+              class="btn-upgrade"
               @click="handleUpgrade"
               data-testid="inquiry-upgrade-button"
             >
@@ -48,7 +48,7 @@
               <div class="actions-menu-wrapper">
                 <button
                   type="button"
-                  class="btn btn-text"
+                  class="btn-text"
                   @click="showActionsMenu = !showActionsMenu"
                   :disabled="isLoading"
                   data-testid="inquiry-actions-menu-button"

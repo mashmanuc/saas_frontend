@@ -26,7 +26,7 @@
       :description="$t('inquiries.student.empty.description')"
     >
       <template #action>
-        <router-link to="/marketplace" class="btn btn-primary">
+        <router-link to="/marketplace" class="link-primary">
           Знайти тьютора
         </router-link>
       </template>
@@ -158,5 +158,27 @@ function handleRetry() {
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
+}
+
+.link-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.625rem 1.125rem;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border: 1px solid transparent;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px var(--shadow), 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+.link-primary:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--shadow-strong), 0 0 0 1px rgba(0, 0, 0, 0.08);
 }
 </style>

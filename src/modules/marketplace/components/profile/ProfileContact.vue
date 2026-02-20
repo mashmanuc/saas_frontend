@@ -72,10 +72,6 @@ const emit = defineEmits<{
       </Button>
       
       <!-- Message button - тимчасово прихований до реалізації чату -->
-      <!-- <button class="btn btn-secondary" @click="emit('message')">
-        <MessageCircle :size="18" />
-        {{ t('marketplace.profile.contact.sendMessage') }}
-      </button> -->
     </div>
   </div>
 </template>

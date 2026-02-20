@@ -152,20 +152,18 @@
 | A-3.4 | Позначити `.btn-*` в `main.css` як @deprecated | ✅ | 1a5bb4a | Коментар @deprecated додано, чекає B-4.0 для видалення |
 | A-3.5 | Фінальний аудит hex в CSS файлах | ✅ | b43e3c3 | .btn-soft/.btn-white #fff→var(--card-bg); theme defs + brand hex залишені |
 | A-3.6 | Sync `tailwind.config.js` з `tokens.css` | ✅ | — | Вже синхронізовано: borderRadius, zIndex, colors, boxShadow |
-| A-3.7 | Видалити `.btn-*` з `main.css` | ⬜ | — | ТІЛЬКИ після B-4.0! |
+| A-3.7 | Видалити `.btn-*` з `main.css` | ✅ | — | 0 залежностей від глобального .btn, весь блок видалено |
 
 ### Агент B — Масова заміна btn→Button + очищення компонентів
 
 | # | Задача | Статус | Коміт | Примітки |
 |---|--------|--------|-------|----------|
-| B-4.0 | `class="btn"` → `<Button>` в marketplace/ (~30 файлів) | ⬜ | — | Найбільший блок |
-| B-4.0b | `class="btn"` → `<Button>` в booking/ (~15 файлів) | ⬜ | — | Без debug/ |
-| B-4.0c | `class="btn"` → `<Button>` в classroom/ (~8 файлів) | ⬜ | — | |
-| B-4.0d | `class="btn"` → `<Button>` в board/ (~7 файлів) | ⬜ | — | |
-| B-4.0e | `class="btn"` → `<Button>` в інших модулях | ⬜ | — | inquiries, matches, operator, contacts тощо |
-| B-4.1 | Замінити `components/ui/Modal` → `@/ui/Modal` (6 файлів) | ⬜ | — | trust, contacts, inquiries |
-| B-4.2 | Замінити `ConfirmDialog` → `@/ui/ConfirmModal` (2 файли) | ⬜ | — | booking modals |
-| B-4.3 | Видалити `components/ui/Modal.vue` + `ConfirmDialog.vue` | ⬜ | — | Після B-4.1 + B-4.2 |
+| B-4.0 | `class="btn"` → `<Button>` в marketplace/ (18 файлів) | ✅ | B | Агент B |
+| B-4.0b | `class="btn"` → `<Button>` в booking+classroom+board+operator (12 файлів) | ✅ | B | Агент B |
+| B-4.0c | `class="btn btn-*"` залишки → scoped (11 файлів: router-link/a/label) | ✅ | — | Координатор: link-primary/link-ghost/label-secondary scoped |
+| B-4.1 | Замінити `components/ui/Modal` → `@/ui/Modal` (6 файлів) | ✅ | B | Агент B |
+| B-4.2 | Замінити `ConfirmDialog` → `@/ui/ConfirmModal` (2 файли) | ✅ | B | Агент B |
+| B-4.3 | Видалити `components/ui/Modal.vue` + `ConfirmDialog.vue` | ✅ | — | 0 імпортів, файли видалено |
 
 ### Агент C — QA
 

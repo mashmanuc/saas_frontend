@@ -106,7 +106,7 @@ function setTab(tab: TabType) {
         <router-link
           v-if="activeTab === 'upcoming'"
           to="/tutors"
-          class="btn btn-primary"
+          class="link-primary"
         >
           Find a Tutor
         </router-link>
@@ -265,5 +265,27 @@ function setTab(tab: TabType) {
   .tab {
     white-space: nowrap;
   }
+}
+
+.link-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.625rem 1.125rem;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border: 1px solid transparent;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px var(--shadow), 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+.link-primary:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--shadow-strong), 0 0 0 1px rgba(0, 0, 0, 0.08);
 }
 </style>

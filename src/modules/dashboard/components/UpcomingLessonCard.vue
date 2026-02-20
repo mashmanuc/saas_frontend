@@ -24,7 +24,7 @@
         size="small"
         @click="$emit('join', lesson)"
       />
-      <router-link :to="`/bookings/${lesson.id}`" class="btn btn-ghost px-3 py-1.5 text-sm">
+      <router-link :to="`/bookings/${lesson.id}`" class="link-ghost px-3 py-1.5 text-sm">
         Деталі
       </router-link>
     </div>
@@ -171,5 +171,24 @@ const statusLabel = computed(() => {
 .lesson-actions {
   display: flex;
   gap: var(--space-xs);
+}
+
+.link-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 25px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: transparent;
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  text-decoration: none;
+}
+
+.link-ghost:hover {
+  background-color: color-mix(in srgb, var(--accent) 8%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
 }
 </style>

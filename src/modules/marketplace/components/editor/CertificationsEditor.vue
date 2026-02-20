@@ -270,7 +270,7 @@ onMounted(() => {
               @change="handleFileChange"
             />
             <label
-              class="btn btn-secondary"
+              class="label-secondary"
               :class="{ disabled: isUploading }"
               :for="fileInputId"
               data-test="marketplace-certifications-file-button"
@@ -499,5 +499,32 @@ onMounted(() => {
   flex-direction: column;
   gap: 0.5rem;
   align-items: flex-end;
+}
+
+.label-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.625rem 1.125rem;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1.5px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.label-secondary:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.label-secondary.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 </style>

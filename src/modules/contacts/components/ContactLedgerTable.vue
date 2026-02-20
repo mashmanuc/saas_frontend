@@ -14,7 +14,7 @@
         </select>
         
         <button
-          class="btn btn-icon"
+          class="ctrl-btn ctrl-icon"
           :title="$t('contacts.ledger.refresh')"
           @click="refresh"
         >
@@ -70,7 +70,7 @@
     </div>
     
     <div v-if="ledgerHasMore && !loading" class="load-more">
-      <button class="btn btn-link" @click="loadMore">
+      <button class="ctrl-btn ctrl-link" @click="loadMore">
         {{ $t('contacts.ledger.loadMore') }}
       </button>
     </div>
@@ -286,7 +286,7 @@ function loadMore() {
   border-top: 1px solid var(--color-border);
 }
 
-.btn {
+.ctrl-btn {
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-xs);
@@ -300,16 +300,16 @@ function loadMore() {
   color: var(--color-text-secondary);
 }
 
-.btn-icon:hover {
+.ctrl-icon:hover {
   background: var(--color-surface-hover);
 }
 
-.btn-link {
+.ctrl-link {
   color: var(--color-primary);
   font-weight: 500;
 }
 
-.btn-link:hover {
+.ctrl-link:hover {
   color: var(--color-primary-hover);
 }
 

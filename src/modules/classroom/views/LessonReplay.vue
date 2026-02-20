@@ -18,7 +18,7 @@
       <div class="flex items-center gap-2">
         <router-link
           :to="`/classroom/${sessionId}/history`"
-          class="btn btn-secondary"
+          class="link-btn link-secondary"
         >
           <History class="w-4 h-4 mr-2" />
           Історія
@@ -136,7 +136,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.btn {
+.link-btn {
   display: inline-flex;
   align-items: center;
   padding: 8px 16px;
@@ -149,21 +149,12 @@ onUnmounted(() => {
   text-decoration: none;
 }
 
-.btn-primary {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-}
-
-.btn-primary:hover {
-  background: var(--color-primary-dark, #2563eb);
-}
-
-.btn-secondary {
+.link-secondary {
   background: var(--color-bg-secondary, #374151);
   color: white;
 }
 
-.btn-secondary:hover {
+.link-secondary:hover {
   background: var(--color-bg-tertiary, #4b5563);
 }
 
