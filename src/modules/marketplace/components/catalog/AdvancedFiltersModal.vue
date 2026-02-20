@@ -252,7 +252,7 @@ function handleClose() {
 }
 
 .section-header:hover {
-  color: var(--accent-primary, #3b82f6);
+  color: var(--accent);
 }
 
 .section-content {
@@ -288,7 +288,7 @@ function handleClose() {
 .filter-group select:focus,
 .filter-group input:focus {
   outline: none;
-  border-color: var(--accent-primary, #3b82f6);
+  border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
@@ -335,12 +335,12 @@ function handleClose() {
 }
 
 .btn-primary {
-  background: var(--accent-primary, #3b82f6);
-  border: 1px solid var(--accent-primary, #3b82f6);
+  background: var(--accent);
+  border: 1px solid var(--accent);
   color: white;
 }
 
 .btn-primary:hover {
-  background: color-mix(in srgb, var(--accent-primary, #3b82f6) 90%, black);
+  background: color-mix(in srgb, var(--accent) 90%, black);
 }
 </style>

@@ -172,11 +172,11 @@ const emit = defineEmits<{
   left: 0;
   right: 0;
   height: 150px;
-  background: radial-gradient(1200px circle at 20% 0%, color-mix(in srgb, var(--accent-primary) 28%, transparent), transparent 55%),
+  background: radial-gradient(1200px circle at 20% 0%, color-mix(in srgb, var(--accent) 28%, transparent), transparent 55%),
     linear-gradient(
       135deg,
-      color-mix(in srgb, var(--accent-primary) 85%, transparent),
-      color-mix(in srgb, var(--accent-primary) 55%, transparent)
+      color-mix(in srgb, var(--accent) 85%, transparent),
+      color-mix(in srgb, var(--accent) 55%, transparent)
     );
 }
 
@@ -257,7 +257,7 @@ const emit = defineEmits<{
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--accent-primary);
+  background: var(--accent);
   border: 3px solid var(--surface-card);
   border-radius: 50%;
   color: white;
@@ -311,7 +311,7 @@ const emit = defineEmits<{
 }
 
 .meta-badge {
-  color: var(--accent-primary);
+  color: var(--accent);
   font-weight: 500;
 }
 

@@ -144,7 +144,7 @@ const handleViewAll = () => {
 }
 
 .section-icon {
-  color: var(--accent-primary);
+  color: var(--accent);
 }
 
 .tutors-carousel {

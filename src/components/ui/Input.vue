@@ -32,7 +32,7 @@ defineEmits<{
 
 .ui-input:focus {
   outline: none;
-  border-color: var(--accent-primary, #3b82f6);
+  border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 </style>

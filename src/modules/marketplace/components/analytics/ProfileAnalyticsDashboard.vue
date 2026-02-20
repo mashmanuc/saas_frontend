@@ -282,7 +282,7 @@ function exportCSV() {
 }
 
 .range-btn.active {
-  background: var(--accent-primary);
+  background: var(--accent);
   color: white;
 }
 
@@ -339,7 +339,7 @@ function exportCSV() {
 
 .chart-bar {
   flex: 1;
-  background: var(--accent-primary);
+  background: var(--accent);
   border-radius: 4px 4px 0 0;
   min-height: 4px;
   transition: all 0.2s;
@@ -347,7 +347,7 @@ function exportCSV() {
 }
 
 .chart-bar:hover {
-  background: color-mix(in srgb, var(--accent-primary) 80%, black);
+  background: color-mix(in srgb, var(--accent) 80%, black);
 }
 
 .subjects-list {
@@ -378,7 +378,7 @@ function exportCSV() {
 
 .subject-bar {
   height: 100%;
-  background: var(--accent-primary);
+  background: var(--accent);
   transition: width 0.3s;
 }
 

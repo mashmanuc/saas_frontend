@@ -247,7 +247,7 @@ const handleSuggestionSelect = (suggestion: Suggestion) => {
 }
 
 .search-bar.is-focused .search-input-wrapper {
-  border-color: var(--accent-primary);
+  border-color: var(--accent);
   box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
 }
 
@@ -289,14 +289,14 @@ const handleSuggestionSelect = (suggestion: Suggestion) => {
 }
 
 .submit-btn {
-  background: var(--accent-primary);
+  background: var(--accent);
   color: white;
   border-radius: 8px;
   margin-left: 8px;
 }
 
 .submit-btn:hover {
-  background: color-mix(in srgb, var(--accent-primary) 86%, transparent);
+  background: color-mix(in srgb, var(--accent) 86%, transparent);
   color: white;
 }
 
@@ -350,7 +350,7 @@ const handleSuggestionSelect = (suggestion: Suggestion) => {
 .clear-history {
   background: none;
   border: none;
-  color: var(--accent-primary);
+  color: var(--accent);
   cursor: pointer;
   font-size: 12px;
   font-weight: 500;

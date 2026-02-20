@@ -75,9 +75,9 @@ const handleClear = () => {
 }
 
 .rating-option.is-selected {
-  background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
-  border-color: var(--accent-primary);
-  color: var(--accent-primary);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .star {

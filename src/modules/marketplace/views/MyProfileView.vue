@@ -343,7 +343,7 @@ async function handleUnpublish() {
 
 .completeness-fill {
   height: 100%;
-  background: var(--accent-primary);
+  background: var(--accent);
   transition: width 0.3s ease;
   border-radius: 999px;
 }

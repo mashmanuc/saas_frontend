@@ -86,8 +86,8 @@ function getIconSize(): number {
 }
 
 .badge--experienced {
-  background: color-mix(in srgb, var(--accent-primary) 14%, transparent);
-  color: var(--accent-primary);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
 }
 
 .badge-name {

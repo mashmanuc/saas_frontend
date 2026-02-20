@@ -78,7 +78,7 @@ async function handleCreate() {
   align-items: center;
   justify-content: center;
   background: var(--accent-muted);
-  color: var(--accent-primary);
+  color: var(--accent);
   border-radius: 50%;
   margin: 0 auto 1.5rem;
 }
@@ -114,8 +114,8 @@ p {
 
 .prompt-form input:focus {
   outline: none;
-  border-color: color-mix(in srgb, var(--accent-primary) 60%, var(--border-color));
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 18%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 60%, var(--border-color));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
 .benefits {

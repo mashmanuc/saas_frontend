@@ -68,7 +68,7 @@ const handleClick = () => {
 .category-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  border-color: var(--category-color, var(--accent-primary));
+  border-color: var(--category-color, var(--accent));
 }
 
 .card-icon {
@@ -77,8 +77,8 @@ const handleClick = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: color-mix(in srgb, var(--category-color, var(--accent-primary)) 15%, transparent);
-  color: var(--category-color, var(--accent-primary));
+  background: color-mix(in srgb, var(--category-color, var(--accent)) 15%, transparent);
+  color: var(--category-color, var(--accent));
   border-radius: var(--radius-lg);
   margin-bottom: 12px;
 }

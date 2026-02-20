@@ -52,7 +52,7 @@ defineEmits<{
 }
 
 .toggle-wrapper input:checked + .toggle-track {
-  background: var(--accent-primary, #3b82f6);
+  background: var(--accent);
 }
 
 .toggle-thumb {

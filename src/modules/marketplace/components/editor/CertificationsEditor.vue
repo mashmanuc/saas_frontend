@@ -422,13 +422,13 @@ onMounted(() => {
   position: relative;
   height: 10px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--accent-primary) 12%, var(--border-color));
+  background: color-mix(in srgb, var(--accent) 12%, var(--border-color));
   overflow: hidden;
 }
 
 .progress-bar {
   height: 100%;
-  background: var(--accent-primary);
+  background: var(--accent);
 }
 
 .progress-text {

@@ -477,13 +477,13 @@ function handleTogglePopularLanguage(langCode: string) {
 }
 
 .mode-option:focus-visible {
-  outline: 2px solid var(--accent-primary);
+  outline: 2px solid var(--accent);
   outline-offset: -2px;
   z-index: 1;
 }
 
 .mode-option.is-active {
-  background: var(--accent-primary);
+  background: var(--accent);
   color: white;
   font-weight: 600;
 }
@@ -621,7 +621,7 @@ function handleTogglePopularLanguage(langCode: string) {
 
 .language-search:focus {
   outline: none;
-  border-color: var(--accent-primary);
+  border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
@@ -653,14 +653,14 @@ function handleTogglePopularLanguage(langCode: string) {
 }
 
 .language-item:focus-visible {
-  outline: 2px solid var(--accent-primary);
+  outline: 2px solid var(--accent);
   outline-offset: -2px;
 }
 
 .language-item.is-selected {
-  background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
-  color: var(--accent-primary);
-  border-color: var(--accent-primary);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+  border-color: var(--accent);
   font-weight: 500;
 }
 

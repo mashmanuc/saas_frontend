@@ -1424,7 +1424,7 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
   display: inline-block;
   font-size: 0.6rem;
   animation: pulse 1.5s ease-in-out infinite;
-  color: var(--accent-primary);
+  color: var(--accent);
 }
 
 .autosave-saved {
@@ -1459,9 +1459,9 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
 }
 
 .step-pill.is-active {
-  border-color: var(--accent-primary);
-  color: var(--accent-primary);
-  background: color-mix(in srgb, var(--accent-primary) 10%, transparent);
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
 .step-pill.has-errors {
@@ -1473,7 +1473,7 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
 }
 
 .step-pill--link:hover {
-  background: color-mix(in srgb, var(--accent-primary) 6%, transparent);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
 }
 
 .photo-row {
@@ -1579,7 +1579,7 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
 .form-group textarea:focus,
 .form-group select:focus {
   outline: none;
-  border-color: var(--accent-primary);
+  border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
@@ -1801,7 +1801,7 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
 
 .progress-fill {
   height: 100%;
-  background: var(--accent-primary);
+  background: var(--accent);
   border-radius: 4px;
   transition: width 0.3s ease;
 }
@@ -1845,7 +1845,7 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
 
 .breadcrumb-arrow {
   font-size: 1.5rem;
-  color: var(--accent-primary);
+  color: var(--accent);
   animation: bounce 1.5s infinite;
 }
 
@@ -1857,9 +1857,9 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
 .breadcrumb-card {
   width: 100%;
   padding: var(--space-lg);
-  border: 2px solid var(--accent-primary);
+  border: 2px solid var(--accent);
   border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--accent-primary) 5%, var(--card-bg));
+  background: color-mix(in srgb, var(--accent) 5%, var(--card-bg));
 }
 
 .breadcrumb-card h3 {

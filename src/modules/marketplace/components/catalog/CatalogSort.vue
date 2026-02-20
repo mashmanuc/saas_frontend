@@ -62,6 +62,6 @@ select {
 
 select:focus {
   outline: none;
-  border-color: var(--accent-primary);
+  border-color: var(--accent);
 }
 </style>

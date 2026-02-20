@@ -382,8 +382,8 @@ function hasActiveFilters(): boolean {
 }
 
 .clear-btn:hover {
-  background: color-mix(in srgb, var(--accent-primary) 10%, transparent);
-  border-color: color-mix(in srgb, var(--accent-primary) 25%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 25%, transparent);
   color: var(--text-primary);
 }
 
@@ -414,8 +414,8 @@ function hasActiveFilters(): boolean {
 .filter-group select:focus,
 .filter-group input:focus {
   outline: none;
-  border-color: color-mix(in srgb, var(--accent-primary) 60%, var(--border-color));
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 18%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 60%, var(--border-color));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
 .price-inputs {

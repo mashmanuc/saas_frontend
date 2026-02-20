@@ -160,7 +160,7 @@ const emitChange = () => {
 .slider-range {
   position: absolute;
   height: 100%;
-  background: var(--accent-primary);
+  background: var(--accent);
   border-radius: 3px;
 }
 
@@ -181,7 +181,7 @@ const emitChange = () => {
   width: 18px;
   height: 18px;
   background: var(--surface-card);
-  border: 2px solid var(--accent-primary);
+  border: 2px solid var(--accent);
   border-radius: 50%;
   cursor: pointer;
   pointer-events: auto;
@@ -192,7 +192,7 @@ const emitChange = () => {
   width: 18px;
   height: 18px;
   background: var(--surface-card);
-  border: 2px solid var(--accent-primary);
+  border: 2px solid var(--accent);
   border-radius: 50%;
   cursor: pointer;
   pointer-events: auto;
@@ -231,7 +231,7 @@ const emitChange = () => {
 }
 
 .input-group:focus-within {
-  border-color: var(--accent-primary);
+  border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 

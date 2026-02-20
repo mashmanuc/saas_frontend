@@ -331,7 +331,7 @@ function handleClose() {
 }
 
 .step-item.completed:not(:last-child)::after {
-  background: var(--accent-primary);
+  background: var(--accent);
 }
 
 .step-number {
@@ -349,15 +349,15 @@ function handleClose() {
 }
 
 .step-item.active .step-number {
-  background: var(--accent-primary);
+  background: var(--accent);
   color: white;
-  border-color: var(--accent-primary);
+  border-color: var(--accent);
 }
 
 .step-item.completed .step-number {
-  background: var(--accent-primary);
+  background: var(--accent);
   color: white;
-  border-color: var(--accent-primary);
+  border-color: var(--accent);
 }
 
 .step-label {
@@ -411,8 +411,8 @@ function handleClose() {
 }
 
 .upload-label:hover {
-  border-color: var(--accent-primary);
-  background: color-mix(in srgb, var(--accent-primary) 5%, transparent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
 }
 
 .upload-icon {
@@ -494,8 +494,8 @@ function handleClose() {
 
 .form-control:focus {
   outline: none;
-  border-color: var(--accent-primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 10%, transparent);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
 .form-control:disabled {

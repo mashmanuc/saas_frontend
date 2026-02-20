@@ -249,8 +249,8 @@ function getChipClass(tagCode: string): Record<string, boolean> {
 }
 
 .tab.is-active {
-  color: var(--accent-primary);
-  border-bottom-color: var(--accent-primary);
+  color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 
 .tag-grid {
@@ -318,7 +318,7 @@ function getChipClass(tagCode: string): Record<string, boolean> {
 
 .description-textarea:focus {
   outline: none;
-  border-color: var(--accent-primary);
+  border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 

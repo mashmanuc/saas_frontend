@@ -228,7 +228,7 @@ function handleQuickAddLanguage(langCode: string) {
   height: 1.5rem;
   padding: 0 0.4rem;
   border-radius: 999px;
-  background: var(--accent-primary);
+  background: var(--accent);
   color: white;
   font-size: 0.75rem;
   font-weight: 600;
@@ -267,7 +267,7 @@ function handleQuickAddLanguage(langCode: string) {
 
 .language-search-input:focus {
   outline: none;
-  border-color: var(--accent-primary);
+  border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
@@ -285,7 +285,7 @@ function handleQuickAddLanguage(langCode: string) {
 .language-select:focus,
 .level-select:focus {
   outline: none;
-  border-color: var(--accent-primary);
+  border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
@@ -329,7 +329,7 @@ function handleQuickAddLanguage(langCode: string) {
 }
 
 .teaching-language-item:hover {
-  border-color: var(--accent-primary);
+  border-color: var(--accent);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
@@ -350,7 +350,7 @@ function handleQuickAddLanguage(langCode: string) {
 
 .level-select-inline:focus {
   outline: none;
-  border-color: var(--accent-primary);
+  border-color: var(--accent);
 }
 
 .btn-remove {

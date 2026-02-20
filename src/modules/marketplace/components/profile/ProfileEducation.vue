@@ -75,8 +75,8 @@ h2 {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
-  color: var(--accent-primary);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
   border-radius: var(--radius-md);
   flex-shrink: 0;
 }

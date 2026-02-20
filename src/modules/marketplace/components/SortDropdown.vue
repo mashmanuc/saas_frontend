@@ -145,7 +145,7 @@ onBeforeUnmount(() => {
 
 .sort-dropdown__option.is-active {
   background: var(--accent-muted);
-  color: var(--accent-primary-strong);
+  color: var(--accent-hover);
 }
 
 .scale-fade-enter-active,

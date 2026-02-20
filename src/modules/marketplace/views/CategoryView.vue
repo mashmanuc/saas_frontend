@@ -61,7 +61,7 @@ const loadMore = () => {
 }
 
 // Get category icon dynamically
-const getCategoryColor = computed(() => category.value?.color || 'var(--accent-primary)')
+const getCategoryColor = computed(() => category.value?.color || 'var(--accent)')
 </script>
 
 <template>

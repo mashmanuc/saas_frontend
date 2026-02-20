@@ -272,11 +272,11 @@ const handleRefreshFilters = async () => {
 }
 
 .btn-filters-toggle:hover {
-  border-color: var(--accent-primary);
+  border-color: var(--accent);
 }
 
 .btn-filters-toggle .badge {
-  background: var(--accent-primary);
+  background: var(--accent);
   color: white;
   padding: 2px 8px;
   border-radius: 10px;
@@ -299,7 +299,7 @@ const handleRefreshFilters = async () => {
   width: 32px;
   height: 32px;
   border: 3px solid var(--border-color);
-  border-top-color: var(--accent-primary);
+  border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }

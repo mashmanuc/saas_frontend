@@ -135,8 +135,8 @@ function handleCardClick(tutor: TutorListItem) {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
-  background: color-mix(in srgb, var(--accent-primary) 8%, transparent);
-  border-top: 1px solid color-mix(in srgb, var(--accent-primary) 15%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--accent) 15%, transparent);
   font-size: 0.75rem;
   color: var(--text-secondary);
 }

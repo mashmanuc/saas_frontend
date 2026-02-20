@@ -192,7 +192,7 @@ const handleRemove = (key: string) => {
 .clear-all {
   background: none;
   border: none;
-  color: var(--accent-primary);
+  color: var(--accent);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;

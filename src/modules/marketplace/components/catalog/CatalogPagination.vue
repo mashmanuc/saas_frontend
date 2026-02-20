@@ -153,7 +153,7 @@ function nextPage() {
 
 .pagination-btn:hover:not(:disabled):not(.dots) {
   background: var(--surface-hover, #f9fafb);
-  border-color: var(--accent-primary, #3b82f6);
+  border-color: var(--accent);
 }
 
 .pagination-btn:disabled {
@@ -162,8 +162,8 @@ function nextPage() {
 }
 
 .pagination-btn.active {
-  background: var(--accent-primary, #3b82f6);
-  border-color: var(--accent-primary, #3b82f6);
+  background: var(--accent);
+  border-color: var(--accent);
   color: white;
 }
 
