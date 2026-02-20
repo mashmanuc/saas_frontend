@@ -767,8 +767,8 @@ function handleClose() {
 }
 
 .modal-container {
-  background: white;
-  border-radius: 12px;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
   max-width: 500px;
   width: 100%;
   max-height: 90vh;
@@ -781,23 +781,23 @@ function handleClose() {
   align-items: center;
   justify-content: space-between;
   padding: 20px 24px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .modal-header h2 {
   font-size: 20px;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .close-btn {
   padding: 4px;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   transition: background-color 0.2s;
 }
 
 .close-btn:hover {
-  background-color: #f3f4f6;
+  background-color: var(--bg-secondary);
 }
 
 .modal-form {
@@ -812,20 +812,20 @@ function handleClose() {
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background: #eff6ff;
-  border-radius: 8px;
-  border: 1px solid #dbeafe;
+  background: var(--accent-bg, #eff6ff);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--accent-bg, #dbeafe);
 }
 
 .time-label {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 .time-value {
   font-size: 14px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary);
 }
 
 .form-field {
@@ -837,18 +837,18 @@ function handleClose() {
 .field-label {
   font-size: 14px;
   font-weight: 500;
-  color: #374151;
+  color: var(--text-primary);
 }
 
 .required {
-  color: #ef4444;
+  color: var(--danger);
 }
 
 .field-select,
 .field-textarea {
   padding: 10px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   font-size: 14px;
   transition: border-color 0.2s;
 }
@@ -856,7 +856,7 @@ function handleClose() {
 .field-select:focus,
 .field-textarea:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
@@ -868,23 +868,23 @@ function handleClose() {
 
 .duration-btn {
   padding: 10px 16px;
-  border: 2px solid #e5e7eb;
-  border-radius: 6px;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
   font-size: 14px;
   font-weight: 500;
   transition: all 0.2s;
-  background: white;
-  color: #6b7280;
+  background: var(--card-bg);
+  color: var(--text-secondary);
 }
 
 .duration-btn:hover {
-  border-color: #3b82f6;
-  color: #3b82f6;
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .duration-btn.active {
-  border-color: #3b82f6;
-  background: #3b82f6;
+  border-color: var(--accent);
+  background: var(--accent);
   color: white;
 }
 
@@ -893,10 +893,10 @@ function handleClose() {
   align-items: center;
   gap: 8px;
   padding: 12px;
-  background: #fef3c7;
-  border: 1px solid #fde68a;
-  border-radius: 6px;
-  color: #92400e;
+  background: var(--warning-bg, #fef3c7);
+  border: 1px solid var(--warning, #fde68a);
+  border-radius: var(--radius-md);
+  color: var(--warning);
   font-size: 14px;
 }
 
@@ -905,30 +905,30 @@ function handleClose() {
   align-items: center;
   gap: 8px;
   padding: 12px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 6px;
-  color: #dc2626;
+  background: var(--danger-bg, #fef2f2);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-md);
+  color: var(--danger);
   font-size: 14px;
 }
 
 .field-hint {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-secondary);
   margin-top: 4px;
 }
 
 .field-input {
   padding: 10px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   font-size: 14px;
   transition: border-color 0.2s;
 }
 
 .field-input:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
@@ -942,7 +942,7 @@ function handleClose() {
 .btn-secondary,
 .btn-primary {
   padding: 10px 20px;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   font-size: 14px;
   font-weight: 500;
   transition: all 0.2s;
@@ -952,22 +952,22 @@ function handleClose() {
 }
 
 .btn-secondary {
-  border: 1px solid #d1d5db;
-  background: white;
-  color: #374151;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  color: var(--text-primary);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: #f3f4f6;
+  background: var(--bg-secondary);
 }
 
 .btn-primary {
-  background: #3b82f6;
+  background: var(--accent);
   color: white;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #2563eb;
+  background: var(--accent-hover, #2563eb);
 }
 
 .btn-primary:disabled,
@@ -988,9 +988,9 @@ function handleClose() {
   right: 0;
   max-height: 200px;
   overflow-y: auto;
-  background: white;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   z-index: 1000;
   margin-top: 4px;
@@ -1000,14 +1000,14 @@ function handleClose() {
   width: 100%;
   padding: 10px 12px;
   border: none;
-  background: white;
+  background: var(--card-bg);
   text-align: left;
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
 .dropdown-item:hover {
-  background: #f3f4f6;
+  background: var(--bg-secondary);
 }
 
 .student-info {
@@ -1019,31 +1019,31 @@ function handleClose() {
 
 .student-name {
   font-size: 14px;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .balance-badge {
   padding: 2px 8px;
-  background: #dbeafe;
+  background: var(--accent-bg, #dbeafe);
   border-radius: 12px;
   font-size: 12px;
   font-weight: 500;
-  color: #1e40af;
+  color: var(--accent);
   white-space: nowrap;
 }
 
 .field-error {
   font-size: 12px;
-  color: #dc2626;
+  color: var(--danger);
   margin-top: 4px;
 }
 
 /* F7: Conflict warning styles */
 .conflict-warning {
   padding: 16px;
-  background: #fef3c7;
-  border: 2px solid #fbbf24;
-  border-radius: 8px;
+  background: var(--warning-bg, #fef3c7);
+  border: 2px solid var(--warning, #fbbf24);
+  border-radius: var(--radius-md);
   margin-top: 12px;
 }
 
@@ -1058,7 +1058,7 @@ function handleClose() {
   margin: 0;
   font-size: 14px;
   font-weight: 600;
-  color: #92400e;
+  color: var(--warning);
 }
 
 .conflict-list {
@@ -1070,27 +1070,27 @@ function handleClose() {
 
 .conflict-item {
   padding: 8px;
-  background: white;
-  border-radius: 6px;
-  border: 1px solid #fde68a;
+  background: var(--card-bg);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--warning, #fde68a);
 }
 
 .conflict-student {
   font-size: 13px;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
   margin: 0 0 4px 0;
 }
 
 .conflict-time {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-secondary);
   margin: 0 0 4px 0;
 }
 
 .conflict-reason {
   font-size: 12px;
-  color: #92400e;
+  color: var(--warning);
   margin: 0;
 }
 
@@ -1102,10 +1102,10 @@ function handleClose() {
 
 .btn-warning {
   padding: 8px 16px;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   font-size: 14px;
   font-weight: 500;
-  background: #f59e0b;
+  background: var(--warning, #f59e0b);
   color: white;
   border: none;
   cursor: pointer;
@@ -1113,6 +1113,6 @@ function handleClose() {
 }
 
 .btn-warning:hover {
-  background: #d97706;
+  background: var(--warning-hover, #d97706);
 }
 </style>

@@ -458,8 +458,8 @@ function cancelDelete() {
 }
 
 .modal-container {
-  background: white;
-  border-radius: 12px;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
   max-width: 600px;
   width: 100%;
   max-height: 90vh;
@@ -483,13 +483,13 @@ function cancelDelete() {
   align-items: center;
   justify-content: space-between;
   padding: 20px 24px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .modal-header h2 {
   font-size: 20px;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .close-btn {
@@ -499,7 +499,7 @@ function cancelDelete() {
 }
 
 .close-btn:hover {
-  background-color: #f3f4f6;
+  background-color: var(--bg-secondary);
 }
 
 .loading-state {
@@ -523,10 +523,10 @@ function cancelDelete() {
   align-items: center;
   gap: 8px;
   padding: 12px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 6px;
-  color: #dc2626;
+  background: var(--danger-bg, #fef2f2);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-md);
+  color: var(--danger);
   font-size: 14px;
 }
 
@@ -535,13 +535,13 @@ function cancelDelete() {
   gap: 12px;
   justify-content: flex-end;
   padding-top: 8px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--border-color);
 }
 
 .btn-secondary,
 .btn-danger {
   padding: 10px 20px;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   font-size: 14px;
   font-weight: 500;
   transition: all 0.2s;
@@ -551,22 +551,22 @@ function cancelDelete() {
 }
 
 .btn-secondary {
-  border: 1px solid #d1d5db;
-  background: white;
-  color: #374151;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  color: var(--text-primary);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: #f3f4f6;
+  background: var(--bg-secondary);
 }
 
 .btn-danger {
-  background: #dc2626;
+  background: var(--danger);
   color: white;
 }
 
 .btn-danger:hover:not(:disabled) {
-  background: #b91c1c;
+  background: var(--danger-hover, #b91c1c);
 }
 
 .btn-danger:disabled,
@@ -576,10 +576,10 @@ function cancelDelete() {
 }
 
 .btn-primary {
-  background: #3b82f6;
+  background: var(--accent);
   color: white;
   padding: 10px 20px;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   font-size: 14px;
   font-weight: 500;
   transition: all 0.2s;
@@ -589,7 +589,7 @@ function cancelDelete() {
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #2563eb;
+  background: var(--accent-hover, #2563eb);
 }
 
 .btn-primary:disabled {
@@ -612,14 +612,14 @@ function cancelDelete() {
 .field-label {
   font-size: 14px;
   font-weight: 500;
-  color: #374151;
+  color: var(--text-primary);
 }
 
 .field-input,
 .field-textarea {
   padding: 10px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   font-size: 14px;
   transition: border-color 0.2s;
 }
@@ -627,7 +627,7 @@ function cancelDelete() {
 .field-input:focus,
 .field-textarea:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
@@ -639,49 +639,49 @@ function cancelDelete() {
 
 .duration-btn {
   padding: 10px 16px;
-  border: 2px solid #e5e7eb;
-  border-radius: 6px;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
   font-size: 14px;
   font-weight: 500;
   transition: all 0.2s;
-  background: white;
-  color: #6b7280;
+  background: var(--card-bg);
+  color: var(--text-secondary);
 }
 
 .duration-btn:hover {
-  border-color: #3b82f6;
-  color: #3b82f6;
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .duration-btn.active {
-  border-color: #3b82f6;
-  background: #3b82f6;
+  border-color: var(--accent);
+  background: var(--accent);
   color: white;
 }
 
 .field-readonly {
   padding: 10px 12px;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   font-size: 14px;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 .field-select {
   padding: 10px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   font-size: 14px;
-  background: white;
-  color: #374151;
+  background: var(--card-bg);
+  color: var(--text-primary);
   cursor: pointer;
   transition: border-color 0.2s;
 }
 
 .field-select:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
@@ -699,6 +699,6 @@ function cancelDelete() {
 .time-separator {
   font-size: 18px;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 </style>

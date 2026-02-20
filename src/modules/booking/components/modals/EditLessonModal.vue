@@ -649,8 +649,8 @@ function handleClose() {
 }
 
 .modal-container {
-  background: white;
-  border-radius: 0.75rem;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
   max-width: 42rem;
   width: 100%;
@@ -668,13 +668,13 @@ function handleClose() {
   align-items: center;
   justify-content: space-between;
   padding: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .modal-header h2 {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .close-btn {
@@ -684,7 +684,7 @@ function handleClose() {
 }
 
 .close-btn:hover {
-  background-color: #f3f4f6;
+  background-color: var(--bg-secondary);
 }
 
 .modal-content {
@@ -705,7 +705,7 @@ function handleClose() {
 .tabs-container {
   display: flex;
   gap: 0.5rem;
-  border-bottom: 2px solid #e5e7eb;
+  border-bottom: 2px solid var(--border-color);
   margin-bottom: 1.5rem;
 }
 
@@ -716,7 +716,7 @@ function handleClose() {
   padding: 0.75rem 1rem;
   border: none;
   background: transparent;
-  color: #6b7280;
+  color: var(--text-secondary);
   font-weight: 500;
   cursor: pointer;
   border-bottom: 2px solid transparent;
@@ -725,12 +725,12 @@ function handleClose() {
 }
 
 .tab-btn:hover:not(.disabled) {
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .tab-btn.active {
-  color: #3b82f6;
-  border-bottom-color: #3b82f6;
+  color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 
 .tab-btn.disabled {
@@ -754,22 +754,22 @@ function handleClose() {
   display: block;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--text-primary);
   margin-bottom: 0.5rem;
 }
 
 .field-readonly {
   padding: 0.625rem 0.75rem;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 0.375rem;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 .field-textarea {
   width: 100%;
   padding: 0.625rem 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-color);
   border-radius: 0.375rem;
   font-size: 0.875rem;
   resize: vertical;
@@ -783,22 +783,22 @@ function handleClose() {
 .duration-btn {
   flex: 1;
   padding: 0.625rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-color);
   border-radius: 0.375rem;
-  background: white;
+  background: var(--card-bg);
   font-size: 0.875rem;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .duration-btn:hover {
-  border-color: #3b82f6;
+  border-color: var(--accent);
 }
 
 .duration-btn.active {
-  background: #3b82f6;
+  background: var(--accent);
   color: white;
-  border-color: #3b82f6;
+  border-color: var(--accent);
 }
 
 .warning-box, .info-box, .success-box {
@@ -809,25 +809,25 @@ function handleClose() {
 }
 
 .warning-box {
-  background: #fef3c7;
-  border: 1px solid #fbbf24;
+  background: var(--warning-bg, #fef3c7);
+  border: 1px solid var(--warning, #fbbf24);
 }
 
 .info-box {
-  background: #dbeafe;
-  border: 1px solid #3b82f6;
+  background: var(--accent-bg, #dbeafe);
+  border: 1px solid var(--accent);
 }
 
 .success-box {
-  background: #d1fae5;
-  border: 1px solid #10b981;
+  background: var(--success-bg, #d1fae5);
+  border: 1px solid var(--success);
 }
 
 .current-event-box {
   padding: 1rem;
-  background: #f9fafb;
+  background: var(--bg-secondary);
   border-radius: 0.5rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-color);
 }
 
 .preview-result {
@@ -836,8 +836,8 @@ function handleClose() {
 
 .conflict-warning {
   padding: 1rem;
-  background: #fef2f2;
-  border: 1px solid #ef4444;
+  background: var(--danger-bg, #fef2f2);
+  border: 1px solid var(--danger);
   border-radius: 0.5rem;
 }
 
@@ -846,7 +846,7 @@ function handleClose() {
   align-items: center;
   gap: 0.5rem;
   margin-bottom: 0.75rem;
-  color: #dc2626;
+  color: var(--danger);
   font-weight: 600;
 }
 
@@ -858,26 +858,26 @@ function handleClose() {
 
 .conflict-item {
   padding: 0.5rem;
-  background: white;
+  background: var(--card-bg);
   border-radius: 0.375rem;
 }
 
 .conflict-type {
   font-weight: 500;
   font-size: 0.875rem;
-  color: #dc2626;
+  color: var(--danger);
 }
 
 .conflict-reason {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--text-secondary);
   margin-top: 0.25rem;
 }
 
 .suggestions-box {
   margin-top: 1rem;
   padding: 1rem;
-  background: #f9fafb;
+  background: var(--bg-secondary);
   border-radius: 0.5rem;
 }
 
@@ -893,16 +893,16 @@ function handleClose() {
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem;
-  background: white;
-  border: 1px solid #d1d5db;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 0.375rem;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .suggestion-item:hover {
-  border-color: #3b82f6;
-  background: #eff6ff;
+  border-color: var(--accent);
+  background: var(--accent-bg, #eff6ff);
 }
 
 .error-message {
@@ -910,10 +910,10 @@ function handleClose() {
   align-items: center;
   gap: 0.75rem;
   padding: 1rem;
-  background: #fef2f2;
-  border: 1px solid #ef4444;
+  background: var(--danger-bg, #fef2f2);
+  border: 1px solid var(--danger);
   border-radius: 0.5rem;
-  color: #dc2626;
+  color: var(--danger);
 }
 
 .modal-actions {
@@ -921,7 +921,7 @@ function handleClose() {
   gap: 0.75rem;
   justify-content: flex-end;
   padding-top: 1rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--border-color);
   margin-top: 1.5rem;
 }
 
@@ -938,33 +938,33 @@ function handleClose() {
 }
 
 .btn-secondary {
-  background: white;
-  border: 1px solid #d1d5db;
-  color: #374151;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: #f9fafb;
+  background: var(--bg-secondary);
 }
 
 .btn-primary {
-  background: #3b82f6;
-  border: 1px solid #3b82f6;
+  background: var(--accent);
+  border: 1px solid var(--accent);
   color: white;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #2563eb;
+  background: var(--accent-hover, #2563eb);
 }
 
 .btn-danger {
-  background: #ef4444;
-  border: 1px solid #ef4444;
+  background: var(--danger);
+  border: 1px solid var(--danger);
   color: white;
 }
 
 .btn-danger:hover:not(:disabled) {
-  background: #dc2626;
+  background: var(--danger-hover, #dc2626);
 }
 
 button:disabled {
