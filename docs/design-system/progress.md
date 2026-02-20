@@ -17,7 +17,7 @@
 | 2 | Міграція модулів | A ║ B ║ C | ✅ | 2026-02-20 | 2026-02-20 |
 | 2.5 | Добивання хвостів MF2 | A ║ B ║ C | ✅ | 2026-02-20 | 2026-02-20 |
 | 3 | Очищення + QA | A ║ B ║ C | ✅ | 2026-02-20 | 2026-02-20 |
-| 4 | Полірування + ThemeStore | A ║ B ║ C | ⬜ | — | — |
+| 4 | Полірування + ThemeStore | A ║ B ║ C | ✅ | 2026-02-20 | 2026-02-20 |
 
 ---
 
@@ -272,3 +272,13 @@
 | 2026-02-20 | C-3.9: фінальний звіт MF3_QA_REPORT.md — PASS з зауваженнями | C | — |
 | 2026-02-20 | **MF3/C ЗАВЕРШЕНО** — QA pass, звіт створено | C | — |
 | 2026-02-20 | **MF3 ЗАВЕРШЕНО** — all agents done, Design System migration complete | — | — |
+| 2026-02-20 | B-5: migrate last 3 btn remnants + AccountDeletionModal → @/ui/Modal | B | 3e90ac9 |
+| 2026-02-20 | A-4: consolidate themeStore — single Pinia store, fix theme reset on navigation | A | — |
+| 2026-02-20 | C-4.1: тема НЕ скидається при навігації — PASS (4 маршрути перевірено) | C | — |
+| 2026-02-20 | C-4.2: ThemeSwitcher — всі 3 теми перемикаються коректно — PASS | C | — |
+| 2026-02-20 | C-4.3: Modal.vue аудит — focus trap + Esc + backdrop + scroll lock — PASS | C | — |
+| 2026-02-20 | C-4.4: AccountDeletionModal → @/ui/Modal.vue — PASS | C | — |
+| 2026-02-20 | C-4.5: ExportModal — НЕ мігрована (board-specific, backlog) | C | — |
+| 2026-02-20 | C-4.6: npm run build — OK (11.02s) | C | — |
+| 2026-02-20 | C-4.7: MF4_QA_REPORT.md створено — PASS | C | — |
+| 2026-02-20 | **MF4 ЗАВЕРШЕНО** — theme stable, modals verified, build OK | — | — |
