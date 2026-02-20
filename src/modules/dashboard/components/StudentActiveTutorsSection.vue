@@ -283,20 +283,14 @@ function canChatWithTutor(tutor: AssignedTutor): boolean {
 }
 
 // Phase 1 v0.87.1: ТЗ-1.2 - Lazy Polling: оновлюємо тільки unread counts
-// ⚠️ Оптимізація: оновлюємо тільки кеш, не весь reactive state
-let unreadPollingInterval: ReturnType<typeof setInterval> | null = null
+// ⚠️ Anti-jank: використовуємо pollingCoordinator для дедуплікації
+import { pollingCoordinator } from '@/services/pollingCoordinator'
 
-function stopUnreadPolling() {
-  if (unreadPollingInterval) {
-    clearInterval(unreadPollingInterval)
-    unreadPollingInterval = null
-  }
-}
+let unsubUnreadPolling: (() => void) | null = null
 
 async function fetchAndCacheUnreadCounts() {
   try {
     await chatThreadsStore.fetchUnreadSummary()
-    // Оновлюємо тільки кеш для кожного тьютора
     props.activeTutors.forEach(tutor => {
       if (tutor.id) {
         const count = chatThreadsStore.getUnreadCount(tutor.id)
@@ -309,13 +303,22 @@ async function fetchAndCacheUnreadCounts() {
 }
 
 function startUnreadPolling() {
-  stopUnreadPolling()
-  
-  // Перший запит
-  fetchAndCacheUnreadCounts()
-  
-  // Періодичний polling кожні 2 хвилини (замість 30 секунд)
-  unreadPollingInterval = setInterval(fetchAndCacheUnreadCounts, 120000)
+  // Anti-jank: shared polling task (same ID = deduplicated across components)
+  unsubUnreadPolling = pollingCoordinator.register({
+    id: 'chat-unread-summary',
+    fn: fetchAndCacheUnreadCounts,
+    interval: 60_000,
+    priority: 'low',
+    runImmediately: true,
+    visibilityAware: true,
+  })
+}
+
+function stopUnreadPolling() {
+  if (unsubUnreadPolling) {
+    unsubUnreadPolling()
+    unsubUnreadPolling = null
+  }
 }
 
 onMounted(async () => {

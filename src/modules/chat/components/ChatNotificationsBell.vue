@@ -105,6 +105,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useChatThreadsStore } from '@/stores/chatThreadsStore'
 import { useAuthStore } from '@/modules/auth/store/authStore'
+import { pollingCoordinator } from '@/services/pollingCoordinator'
 
 const router = useRouter()
 const chatThreadsStore = useChatThreadsStore()
@@ -112,7 +113,7 @@ const authStore = useAuthStore()
 
 const isOpen = ref(false)
 const loading = ref(false)
-let pollingInterval = null
+let unsubPolling = null
 
 const totalUnread = computed(() => chatThreadsStore.totalUnread)
 const unreadThreads = computed(() => chatThreadsStore.unreadSummary.threads || [])
@@ -120,7 +121,7 @@ const unreadThreads = computed(() => chatThreadsStore.unreadSummary.threads || [
 function toggleDropdown() {
   isOpen.value = !isOpen.value
   if (isOpen.value) {
-    fetchUnreadSummary()
+    pollingCoordinator.forceRun('chat-unread-summary')
   }
 }
 
@@ -130,7 +131,6 @@ function closeDropdown() {
 
 // ⚠️ Оптимізація: silent polling без loading state
 async function fetchUnreadSummary() {
-  // Не встановлюємо loading при polling щоб уникнути "дьоргання"
   try {
     await chatThreadsStore.fetchUnreadSummary()
   } catch (err) {
@@ -178,27 +178,22 @@ function formatRelativeTime(isoString) {
 }
 
 function startPolling() {
-  // ⚠️ Оптимізація: 30s when visible, 2min when hidden (було 3s/15s)
-  const updateInterval = () => {
-    const interval = document.hidden ? 120000 : 30000
-    if (pollingInterval) {
-      clearInterval(pollingInterval)
-    }
-    pollingInterval = setInterval(() => {
-      chatThreadsStore.fetchUnreadSummary()
-    }, interval)
-  }
-
-  updateInterval()
-  document.addEventListener('visibilitychange', updateInterval)
+  // Anti-jank: use pollingCoordinator for deduplicated, visibility-aware polling
+  unsubPolling = pollingCoordinator.register({
+    id: 'chat-unread-summary',
+    fn: fetchUnreadSummary,
+    interval: 60_000,
+    priority: 'low',
+    runImmediately: false,
+    visibilityAware: true,
+  })
 }
 
 function stopPolling() {
-  if (pollingInterval) {
-    clearInterval(pollingInterval)
-    pollingInterval = null
+  if (unsubPolling) {
+    unsubPolling()
+    unsubPolling = null
   }
-  document.removeEventListener('visibilitychange', startPolling)
 }
 
 // Click outside directive

@@ -11,9 +11,10 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { Bell as BellIcon } from 'lucide-vue-next'
 import apiClient from '@/utils/apiClient'
+import { pollingCoordinator } from '@/services/pollingCoordinator'
 
 const unreadCount = ref(0)
-let pollTimer: ReturnType<typeof setInterval> | null = null
+let unsubPolling: (() => void) | null = null
 
 async function loadUnreadCount() {
   try {
@@ -32,15 +33,21 @@ function toggleDropdown() {
 }
 
 onMounted(() => {
-  loadUnreadCount()
-  // Poll кожні 60 секунд (замість 30)
-  pollTimer = setInterval(loadUnreadCount, 60000)
+  // Anti-jank: use pollingCoordinator for deduplicated, visibility-aware polling
+  unsubPolling = pollingCoordinator.register({
+    id: 'booking-requests-badge',
+    fn: loadUnreadCount,
+    interval: 120_000,
+    priority: 'low',
+    runImmediately: true,
+    visibilityAware: true,
+  })
 })
 
 onUnmounted(() => {
-  if (pollTimer) {
-    clearInterval(pollTimer)
-    pollTimer = null
+  if (unsubPolling) {
+    unsubPolling()
+    unsubPolling = null
   }
 })
 </script>

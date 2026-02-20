@@ -14,11 +14,20 @@ import { useBillingStore } from '@/modules/billing/stores/billingStore'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { useNotificationsStore } from '@/stores/notificationsStore'
 import { websocketService } from '@/services/websocket'
+import { pollingCoordinator } from '@/services/pollingCoordinator'
+import { jankDetector } from '@/utils/jankDetector'
 
 const isDev = import.meta.env.DEV
 
-// Refetch entitlements and billing on app mount
-// This ensures that after returning from checkout, the plan is updated
+// Anti-jank: start jank detector (silent in production, verbose in dev)
+if (isDev) {
+  jankDetector.start()
+} else {
+  jankDetector.startSilent()
+}
+
+let unsubNotifPolling = null
+
 onMounted(async () => {
   const entitlementsStore = useEntitlementsStore()
   const billingStore = useBillingStore()
@@ -36,7 +45,6 @@ onMounted(async () => {
       billingStore.fetchMe()
     ])
   } catch (err) {
-    // Silently fail - stores will handle errors
     console.debug('Failed to load entitlements/billing on app mount:', err)
   }
 
@@ -44,9 +52,16 @@ onMounted(async () => {
   // This is the SINGLE SOURCE for WS events - Bell just reads from store
   if (authStore.user?.id) {
     setupNotificationsRealtime(authStore.user.id)
-    // Start polling as fallback (adaptive interval based on WS state)
-    const pollInterval = isWsConnected.value ? 300000 : 60000 // 5min with WS, 1min without
-    notificationsStore.startPolling(pollInterval)
+    // Anti-jank: use pollingCoordinator instead of manual startPolling
+    const pollInterval = isWsConnected.value ? 300_000 : 60_000
+    unsubNotifPolling = pollingCoordinator.register({
+      id: 'notifications-unread',
+      fn: () => notificationsStore.pollUnreadCount(),
+      interval: pollInterval,
+      priority: 'low',
+      runImmediately: true,
+      visibilityAware: true,
+    })
   }
 })
 
@@ -84,7 +99,11 @@ function cleanupNotificationsRealtime() {
   isWsConnected.value = false
   const notificationsStore = useNotificationsStore()
   notificationsStore.setRealtimeActive(false)
-  notificationsStore.stopPolling()
+  // Anti-jank: unsubscribe from pollingCoordinator instead of manual stopPolling
+  if (unsubNotifPolling) {
+    unsubNotifPolling()
+    unsubNotifPolling = null
+  }
 }
 
 // Watch auth state to manage WS subscription and polling
@@ -95,9 +114,16 @@ const stopAuthWatch = watch(
     const notificationsStore = useNotificationsStore()
     if (isAuth && authStore.user?.id) {
       setupNotificationsRealtime(authStore.user.id)
-      // Adaptive polling: 5min when WS active, 1min when not
-      const pollInterval = isWsConnected.value ? 300000 : 60000
-      notificationsStore.startPolling(pollInterval)
+      // Anti-jank: use pollingCoordinator
+      const pollInterval = isWsConnected.value ? 300_000 : 60_000
+      unsubNotifPolling = pollingCoordinator.register({
+        id: 'notifications-unread',
+        fn: () => notificationsStore.pollUnreadCount(),
+        interval: pollInterval,
+        priority: 'low',
+        runImmediately: true,
+        visibilityAware: true,
+      })
     } else {
       cleanupNotificationsRealtime()
     }
@@ -107,5 +133,7 @@ const stopAuthWatch = watch(
 onBeforeUnmount(() => {
   cleanupNotificationsRealtime()
   stopAuthWatch()
+  jankDetector.stop()
+  pollingCoordinator.dispose()
 })
 </script>

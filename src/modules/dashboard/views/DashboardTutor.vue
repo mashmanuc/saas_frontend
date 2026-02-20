@@ -666,21 +666,15 @@ function isOnline(userId) {
 }
 
 // Phase 1 v0.87.1: ТЗ-1.2 - Lazy Unread Summary Polling з lifecycle контролем
-// ⚠️ Оптимізація: кешування + 2 хвилини інтервал замість 30 секунд
-let unreadPollingInterval = null
-const unreadCountsCache = ref(new Map())
+// ⚠️ Anti-jank: використовуємо pollingCoordinator для дедуплікації з ChatNotificationsBell
+import { pollingCoordinator } from '@/services/pollingCoordinator'
 
-function stopUnreadPolling() {
-  if (unreadPollingInterval) {
-    clearInterval(unreadPollingInterval)
-    unreadPollingInterval = null
-  }
-}
+let unsubUnreadPolling = null
+const unreadCountsCache = ref(new Map())
 
 async function fetchAndCacheUnreadCounts() {
   try {
     await chatThreadsStore.fetchUnreadSummary()
-    // Оновлюємо тільки кеш, не весь reactive state
     filteredRelations.value.forEach(relation => {
       const studentId = relation.student?.id
       if (studentId) {
@@ -699,37 +693,42 @@ async function fetchAndCacheUnreadCounts() {
 function getUnreadCountForStudent(relation) {
   const studentId = relation.student?.id
   if (!studentId) return 0
-  // Використовуємо кешоване значення
   const cached = unreadCountsCache.value.get(studentId)
   if (cached !== undefined) return cached
-  // Якщо немає в кеші - беремо з store
   const count = chatThreadsStore.getUnreadCount(studentId)
   unreadCountsCache.value.set(studentId, count)
   return count
 }
 
 function startUnreadPolling() {
-  // Зупиняємо попередній polling якщо є
-  stopUnreadPolling()
-  
-  // Початкове завантаження
-  fetchAndCacheUnreadCounts()
-  
-  // ⚠️ Оптимізація: Періодичний polling кожні 2 хвилини (замість 30 секунд)
-  unreadPollingInterval = setInterval(fetchAndCacheUnreadCounts, 120000)
+  // Anti-jank: shared polling task with ChatNotificationsBell (same ID = deduplicated)
+  unsubUnreadPolling = pollingCoordinator.register({
+    id: 'chat-unread-summary',
+    fn: fetchAndCacheUnreadCounts,
+    interval: 60_000,
+    priority: 'low',
+    runImmediately: true,
+    visibilityAware: true,
+  })
+}
+
+function stopUnreadPolling() {
+  if (unsubUnreadPolling) {
+    unsubUnreadPolling()
+    unsubUnreadPolling = null
+  }
 }
 
 // Watch auth state - зупиняємо polling при logout
 watch(() => auth.isAuthenticated, (isAuth) => {
   if (!isAuth) {
     stopUnreadPolling()
-  } else if (isAuth && !unreadPollingInterval) {
+  } else if (isAuth && !unsubUnreadPolling) {
     startUnreadPolling()
   }
 })
 
 onMounted(async () => {
-  // Use new method if available, fallback to old
   if (dashboard.fetchTutorDashboard) {
     dashboard.fetchTutorDashboard().catch(() => {})
   } else if (dashboard.fetchTutorStudents) {
@@ -737,14 +736,12 @@ onMounted(async () => {
   }
   relationsStore.fetchTutorRelations().catch(() => {})
   
-  // Phase 1 v0.87.1: ТЗ-1.2 - Unread Summary Polling
   if (auth.isAuthenticated) {
     startUnreadPolling()
   }
 })
 
 onUnmounted(() => {
-  // ⚠️ R-P0-2 ОБОВ'ЯЗКОВО: Очищення polling при unmount
   stopUnreadPolling()
 })
 </script>
