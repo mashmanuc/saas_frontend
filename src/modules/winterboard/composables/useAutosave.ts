@@ -178,6 +178,9 @@ export function useAutosave(sessionId: Ref<string | null>): AutosaveReturn {
     if (destroyed || !sessionId.value) return
     if (isSaving.value) return
 
+    // Guard: nothing to save
+    if (!store.isDirty && pendingOps.value.length === 0) return
+
     clearTimers()
     isSaving.value = true
     status.value = 'syncing'
@@ -214,7 +217,20 @@ export function useAutosave(sessionId: Ref<string | null>): AutosaveReturn {
       const streamSuccess = await retryWithBackoff(async () => {
         try {
           return await performStreamSave()
-        } catch {
+        } catch (err: any) {
+          const errStatus = err?.response?.status
+          console.error(`[WB:autosave] Stream save error: ${errStatus}`, err?.response?.data || err?.message)
+          // 401 = auth expired — axios interceptor already tried refresh, no point retrying
+          if (errStatus === 401) {
+            throw err // bubble up to stop retries
+          }
+          // 412/409 = rev mismatch — sync rev from server and retry
+          if (errStatus === 412 || errStatus === 409) {
+            const serverRev = err?.response?.data?.server_rev
+            if (typeof serverRev === 'number') {
+              store.rev = serverRev
+            }
+          }
           return false
         }
       })

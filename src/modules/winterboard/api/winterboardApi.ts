@@ -3,6 +3,7 @@
 // All endpoints: /api/v1/winterboard/*
 
 import apiClient from '@/utils/apiClient'
+import { useAuthStore } from '@/modules/auth/store/authStore'
 import type {
   WBSession,
   WBExport,
@@ -233,23 +234,28 @@ export const winterboardApi = {
 
   /**
    * Beacon save — fire-and-forget for beforeunload.
-   * Uses navigator.sendBeacon when available, falls back to fetch keepalive.
+   * Uses fetch with keepalive + Authorization header.
+   * navigator.sendBeacon cannot send custom headers, so we use fetch instead.
    */
   beaconSave(sessionId: string, data: Record<string, unknown>): boolean {
     const url = `${resolveBeaconUrl()}${BASE}/sessions/${sessionId}/beacon/`
     const body = JSON.stringify(data)
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
 
-    if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
-      const blob = new Blob([body], { type: 'application/json' })
-      return navigator.sendBeacon(url, blob)
+    try {
+      const authStore = useAuthStore()
+      if (authStore.access) {
+        headers['Authorization'] = `Bearer ${authStore.access}`
+      }
+    } catch {
+      // Auth store unavailable — send without token (best-effort)
     }
 
-    // Fallback: fetch with keepalive
     try {
       fetch(url, {
         method: 'POST',
         body,
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         keepalive: true,
         credentials: 'include',
       })
@@ -504,17 +510,22 @@ export const winterboardApi = {
   ): boolean {
     const url = `${resolveBeaconUrl()}${BASE}/telemetry/ingest/`
     const body = JSON.stringify({ events })
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
 
-    if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
-      const blob = new Blob([body], { type: 'application/json' })
-      return navigator.sendBeacon(url, blob)
+    try {
+      const authStore = useAuthStore()
+      if (authStore.access) {
+        headers['Authorization'] = `Bearer ${authStore.access}`
+      }
+    } catch {
+      // Auth store unavailable
     }
 
     try {
       fetch(url, {
         method: 'POST',
         body,
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         keepalive: true,
         credentials: 'include',
       })
