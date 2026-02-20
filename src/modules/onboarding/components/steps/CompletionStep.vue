@@ -3,6 +3,7 @@
 import { useI18n } from 'vue-i18n'
 import { CheckCircle, ArrowRight } from 'lucide-vue-next'
 import type { OnboardingStep } from '../../api/onboarding'
+import Button from '@/ui/Button.vue'
 
 defineProps<{
   step: OnboardingStep | null
@@ -41,10 +42,10 @@ const { t } = useI18n()
       </div>
     </div>
 
-    <button class="cta-button" @click="emit('complete')">
+    <Button variant="primary" @click="emit('complete')">
       {{ t('onboarding.completion.goToDashboard') }}
       <ArrowRight :size="18" />
-    </button>
+    </Button>
   </div>
 </template>
 
@@ -142,22 +143,4 @@ const { t } = useI18n()
   background: var(--color-border, #e5e7eb);
 }
 
-.cta-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 16px 32px;
-  background: var(--color-primary, #3b82f6);
-  border: none;
-  border-radius: 10px;
-  font-size: 16px;
-  font-weight: 600;
-  color: white;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.cta-button:hover {
-  background: var(--color-primary-dark, #2563eb);
-}
 </style>

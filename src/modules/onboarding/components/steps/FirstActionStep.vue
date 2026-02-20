@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Search, Shield, ArrowRight } from 'lucide-vue-next'
 import type { OnboardingStep } from '../../api/onboarding'
+import Button from '@/ui/Button.vue'
 
 const props = defineProps<{
   step: OnboardingStep | null
@@ -45,10 +46,10 @@ function handleAction() {
       {{ isStudent ? t('onboarding.firstAction.student.description') : t('onboarding.firstAction.tutor.description') }}
     </p>
 
-    <button class="action-button" @click="handleAction">
+    <Button variant="primary" @click="handleAction">
       {{ isStudent ? t('onboarding.firstAction.student.cta') : t('onboarding.firstAction.tutor.cta') }}
       <ArrowRight :size="18" />
-    </button>
+    </Button>
 
     <p class="action-hint">
       {{ isStudent ? t('onboarding.firstAction.student.hint') : t('onboarding.firstAction.tutor.hint') }}
@@ -91,26 +92,6 @@ function handleAction() {
   font-size: 15px;
   color: var(--color-text-secondary, #6b7280);
   line-height: 1.6;
-}
-
-.action-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 16px 32px;
-  background: var(--color-primary, #3b82f6);
-  border: none;
-  border-radius: 10px;
-  font-size: 16px;
-  font-weight: 600;
-  color: white;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.action-button:hover {
-  background: var(--color-primary-dark, #2563eb);
-  transform: translateY(-1px);
 }
 
 .action-hint {

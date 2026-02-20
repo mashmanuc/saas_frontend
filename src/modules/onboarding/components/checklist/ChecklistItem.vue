@@ -3,6 +3,7 @@
 import { useI18n } from 'vue-i18n'
 import { CheckCircle, Circle, ArrowRight } from 'lucide-vue-next'
 import type { ChecklistItem } from '../../api/onboarding'
+import Button from '@/ui/Button.vue'
 
 const props = defineProps<{
   item: ChecklistItem
@@ -41,10 +42,10 @@ const { t } = useI18n()
     </div>
 
     <div v-if="!item.is_completed" class="item-action">
-      <button class="action-btn" @click="emit('action', item)">
+      <Button variant="primary" size="sm" @click="emit('action', item)">
         <span v-if="!compact">{{ t('checklist.complete') }}</span>
         <ArrowRight :size="16" />
-      </button>
+      </Button>
     </div>
 
     <div v-if="item.points && !compact" class="item-points">
@@ -117,29 +118,6 @@ const { t } = useI18n()
 
 .item-action {
   flex-shrink: 0;
-}
-
-.action-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  background: var(--color-primary, #3b82f6);
-  border: none;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  color: white;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.action-btn:hover {
-  background: var(--color-primary-dark, #2563eb);
-}
-
-.compact .action-btn {
-  padding: 6px 10px;
 }
 
 .item-points {

@@ -2,6 +2,7 @@
 // F28: Onboarding Tooltip Component
 import { ref, onMounted, onUnmounted } from 'vue'
 import { X } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 
 const props = defineProps<{
   target: string // CSS selector
@@ -71,9 +72,9 @@ onUnmounted(() => {
           : {}
       "
     >
-      <button class="close-btn" @click="emit('close')">
+      <Button variant="ghost" size="sm" iconOnly class="tooltip-close" @click="emit('close')">
         <X :size="16" />
-      </button>
+      </Button>
 
       <h4 class="tooltip-title">{{ title }}</h4>
       <p class="tooltip-description">{{ description }}</p>
@@ -84,8 +85,8 @@ onUnmounted(() => {
         </span>
 
         <div class="tooltip-actions">
-          <button class="btn-skip" @click="emit('skip')">Skip</button>
-          <button class="btn-next" @click="emit('next')">Next</button>
+          <Button variant="ghost" size="sm" @click="emit('skip')">Skip</Button>
+          <Button variant="primary" size="sm" @click="emit('next')">Next</Button>
         </div>
       </div>
     </div>
@@ -131,21 +132,10 @@ onUnmounted(() => {
   border-bottom-color: var(--color-bg-primary, white);
 }
 
-.close-btn {
+.tooltip-close {
   position: absolute;
   top: 12px;
   right: 12px;
-  display: flex;
-  padding: 4px;
-  background: none;
-  border: none;
-  border-radius: 4px;
-  color: var(--color-text-secondary, #6b7280);
-  cursor: pointer;
-}
-
-.close-btn:hover {
-  background: var(--color-bg-secondary, #f5f5f5);
 }
 
 .tooltip-title {
@@ -176,33 +166,5 @@ onUnmounted(() => {
 .tooltip-actions {
   display: flex;
   gap: 8px;
-}
-
-.btn-skip {
-  padding: 8px 12px;
-  background: none;
-  border: none;
-  font-size: 13px;
-  color: var(--color-text-secondary, #6b7280);
-  cursor: pointer;
-}
-
-.btn-skip:hover {
-  text-decoration: underline;
-}
-
-.btn-next {
-  padding: 8px 16px;
-  background: var(--color-primary, #3b82f6);
-  border: none;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  color: white;
-  cursor: pointer;
-}
-
-.btn-next:hover {
-  background: var(--color-primary-dark, #2563eb);
 }
 </style>

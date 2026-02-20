@@ -7,6 +7,7 @@ import { storeToRefs } from 'pinia'
 import { useOnboardingStore } from '../stores/onboardingStore'
 import OnboardingProgress from '../components/progress/OnboardingProgress.vue'
 import OnboardingStep from '../components/steps/OnboardingStep.vue'
+import Button from '@/ui/Button.vue'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -145,9 +146,9 @@ function goToFindTutor() {
         :step="currentStep"
       >
         <div class="first-action">
-          <button class="btn btn-primary btn-lg" @click="goToFindTutor">
+          <Button variant="primary" @click="goToFindTutor">
             {{ t('onboarding.student.firstTutor.cta') }}
-          </button>
+          </Button>
         </div>
       </OnboardingStep>
 
@@ -165,16 +166,16 @@ function goToFindTutor() {
     </div>
 
     <div class="onboarding-actions">
-      <button
+      <Button
         v-if="currentStep?.is_skippable"
-        class="btn btn-outline"
+        variant="outline"
         @click="handleSkip"
       >
         {{ t('onboarding.skip') }}
-      </button>
-      <button class="btn btn-primary" @click="handleNext" :disabled="isLoading">
+      </Button>
+      <Button variant="primary" :disabled="isLoading" :loading="isLoading" @click="handleNext">
         {{ t('common.next') }}
-      </button>
+      </Button>
     </div>
   </div>
 </template>
@@ -244,28 +245,4 @@ function goToFindTutor() {
   margin-top: 32px;
 }
 
-.btn {
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.btn-primary {
-  background: var(--color-primary, #3b82f6);
-  border: none;
-  color: white;
-}
-
-.btn-outline {
-  background: transparent;
-  border: 1px solid var(--color-border, #d1d5db);
-  color: var(--color-text-primary, #111827);
-}
-
-.btn-lg {
-  padding: 16px 32px;
-  font-size: 16px;
-}
 </style>

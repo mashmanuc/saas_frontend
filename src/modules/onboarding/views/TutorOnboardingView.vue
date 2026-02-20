@@ -7,6 +7,7 @@ import { storeToRefs } from 'pinia'
 import { useOnboardingStore } from '../stores/onboardingStore'
 import OnboardingProgress from '../components/progress/OnboardingProgress.vue'
 import OnboardingStep from '../components/steps/OnboardingStep.vue'
+import Button from '@/ui/Button.vue'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -120,9 +121,9 @@ function goToAvailability() {
               <input type="number" :placeholder="t('onboarding.tutor.subjects.price')" />
             </div>
           </div>
-          <button class="btn btn-outline btn-sm">
+          <Button variant="outline" size="sm">
             + {{ t('onboarding.tutor.subjects.addMore') }}
-          </button>
+          </Button>
         </div>
       </OnboardingStep>
 
@@ -133,9 +134,9 @@ function goToAvailability() {
       >
         <div class="availability-step">
           <p>{{ t('onboarding.tutor.availability.description') }}</p>
-          <button class="btn btn-primary" @click="goToAvailability">
+          <Button variant="primary" @click="goToAvailability">
             {{ t('onboarding.tutor.availability.setup') }}
-          </button>
+          </Button>
         </div>
       </OnboardingStep>
 
@@ -146,9 +147,9 @@ function goToAvailability() {
       >
         <div class="verification-step">
           <p>{{ t('onboarding.tutor.verification.description') }}</p>
-          <button class="btn btn-primary" @click="goToVerification">
+          <Button variant="primary" @click="goToVerification">
             {{ t('onboarding.tutor.verification.start') }}
-          </button>
+          </Button>
         </div>
       </OnboardingStep>
 
@@ -166,16 +167,16 @@ function goToAvailability() {
     </div>
 
     <div class="onboarding-actions">
-      <button
+      <Button
         v-if="currentStep?.is_skippable"
-        class="btn btn-outline"
+        variant="outline"
         @click="handleSkip"
       >
         {{ t('onboarding.skip') }}
-      </button>
-      <button class="btn btn-primary" @click="handleNext" :disabled="isLoading">
+      </Button>
+      <Button variant="primary" :disabled="isLoading" :loading="isLoading" @click="handleNext">
         {{ t('common.next') }}
-      </button>
+      </Button>
     </div>
   </div>
 </template>
@@ -275,28 +276,4 @@ function goToAvailability() {
   margin-top: 32px;
 }
 
-.btn {
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.btn-primary {
-  background: var(--color-primary, #3b82f6);
-  border: none;
-  color: white;
-}
-
-.btn-outline {
-  background: transparent;
-  border: 1px solid var(--color-border, #d1d5db);
-  color: var(--color-text-primary, #111827);
-}
-
-.btn-sm {
-  padding: 8px 16px;
-  font-size: 13px;
-}
 </style>

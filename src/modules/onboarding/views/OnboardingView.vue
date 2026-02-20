@@ -11,6 +11,7 @@ import ProfileStep from '../components/steps/ProfileStep.vue'
 import PreferencesStep from '../components/steps/PreferencesStep.vue'
 import FirstActionStep from '../components/steps/FirstActionStep.vue'
 import CompletionStep from '../components/steps/CompletionStep.vue'
+import Button from '@/ui/Button.vue'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -91,27 +92,28 @@ async function handleDismiss() {
     </div>
 
     <div class="onboarding-actions">
-      <button v-if="prevStep" class="btn btn-ghost" @click="goBack">
+      <Button v-if="prevStep" variant="ghost" @click="goBack">
         {{ t('common.back') }}
-      </button>
+      </Button>
 
       <div class="actions-right">
-        <button
+        <Button
           v-if="currentStep?.is_skippable"
-          class="btn btn-outline"
-          @click="handleSkip"
+          variant="outline"
           :disabled="isLoading"
+          @click="handleSkip"
         >
           {{ t('onboarding.skip') }}
-        </button>
+        </Button>
 
-        <button
-          class="btn btn-primary"
-          @click="handleComplete"
+        <Button
+          variant="primary"
           :disabled="isLoading"
+          :loading="isLoading"
+          @click="handleComplete"
         >
-          {{ isLoading ? '...' : nextStep ? t('common.next') : t('onboarding.finish') }}
-        </button>
+          {{ nextStep ? t('common.next') : t('onboarding.finish') }}
+        </Button>
       </div>
     </div>
 
@@ -165,51 +167,6 @@ async function handleDismiss() {
 
 .dismiss-link:hover {
   text-decoration: underline;
-}
-
-/* Buttons */
-.btn {
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.btn-primary {
-  background: var(--color-primary, #3b82f6);
-  border: none;
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--color-primary-dark, #2563eb);
-}
-
-.btn-outline {
-  background: transparent;
-  border: 1px solid var(--color-border, #d1d5db);
-  color: var(--color-text-primary, #111827);
-}
-
-.btn-outline:hover:not(:disabled) {
-  background: var(--color-bg-secondary, #f5f5f5);
-}
-
-.btn-ghost {
-  background: transparent;
-  border: none;
-  color: var(--color-text-secondary, #6b7280);
-}
-
-.btn-ghost:hover {
-  color: var(--color-text-primary, #111827);
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 /* Transitions */

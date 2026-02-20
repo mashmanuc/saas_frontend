@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 import { X, ArrowRight } from 'lucide-vue-next'
 import { useOnboardingStore } from '../../stores/onboardingStore'
+import Button from '@/ui/Button.vue'
 
 const props = defineProps<{
   userName?: string
@@ -50,18 +51,18 @@ function dismiss() {
       </div>
 
       <div class="banner-actions">
-        <button class="btn-continue" @click="continueOnboarding">
+        <Button variant="secondary" @click="continueOnboarding">
           {{ t('onboarding.continue') }}
           <ArrowRight :size="16" />
-        </button>
-        <button class="btn-later" @click="dismiss">
+        </Button>
+        <Button variant="ghost" class="btn-later" @click="dismiss">
           {{ t('common.later') }}
-        </button>
+        </Button>
       </div>
 
-      <button class="banner-close" @click="dismiss">
+      <Button variant="ghost" size="sm" iconOnly class="banner-close" @click="dismiss">
         <X :size="18" />
-      </button>
+      </Button>
     </div>
   </Transition>
 </template>
@@ -126,55 +127,15 @@ function dismiss() {
   gap: 12px;
 }
 
-.btn-continue {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 16px;
-  background: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-primary, #3b82f6);
-  cursor: pointer;
-  transition: transform 0.15s;
-}
-
-.btn-continue:hover {
-  transform: translateY(-1px);
-}
-
 .btn-later {
-  padding: 10px 16px;
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: 8px;
-  font-size: 14px;
   color: white;
-  cursor: pointer;
-}
-
-.btn-later:hover {
-  background: rgba(255, 255, 255, 0.1);
 }
 
 .banner-close {
   position: absolute;
   top: 8px;
   right: 8px;
-  display: flex;
-  padding: 4px;
-  background: none;
-  border: none;
-  border-radius: 4px;
   color: rgba(255, 255, 255, 0.7);
-  cursor: pointer;
-}
-
-.banner-close:hover {
-  color: white;
-  background: rgba(255, 255, 255, 0.1);
 }
 
 /* Responsive */
