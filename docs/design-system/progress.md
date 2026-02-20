@@ -80,10 +80,10 @@
 
 | # | Модуль | Кнопок | Модалок | Статус | Коміт | Примітки |
 |---|--------|--------|---------|--------|-------|----------|
-| B-3.1 | `inquiries/` | ~15 | 3 | ⬜ | — | 🔴 |
-| B-3.2 | `marketplace/` | ~40 | 5 | ⬜ | — | 🟡 |
-| B-3.3 | `profile/` | ~25 | 2 | ⬜ | — | 🟡 |
-| B-3.4 | `chat/` | ~20 | 2 | ⬜ | — | 🟢 |
+| B-3.1 | `inquiries/` | ~15 | 3 | ✅ | 0cc5600 | buttons→Button, hex→tokens |
+| B-3.2 | `marketplace/` | ~40 | 5 | ✅ | fdb9931 | 8 modals: action buttons→Button, hex→tokens |
+| B-3.3 | `profile/` | ~25 | 2 | ✅ | ff1de05 | draft dialog→Modal, already had Button |
+| B-3.4 | `chat/` | ~20 | 2 | ✅ | 2cc91a8 | ErrorBoundary→Button, hex→CSS vars (no WS) |
 
 ### Агент C — Група 3
 
@@ -164,3 +164,8 @@
 | 2026-02-20 | C-2.1/P1: booking/ root views + components — buttons→Button, modals→Modal, hex→CSS vars | C | design(C-booking-p1) |
 | 2026-02-20 | C-2.2: classroom/ — HistoryModal→Modal, SessionEnded/WaitingRoom/ReconnectOverlay buttons→Button | C | design(C-classroom) |
 | 2026-02-20 | C-2.3: winterboard/ — WBExportDialog overlay→Modal, action-btn→Button, hex→CSS vars | C | design(C-winterboard) |
+| 2026-02-20 | B-3.1: inquiries/ — buttons→Button, Modal for contacts, hex→tokens | B | 0cc5600 |
+| 2026-02-20 | B-3.2: marketplace/ — 8 modals action buttons→Button, conflict-banner hex→tokens | B | fdb9931 |
+| 2026-02-20 | B-3.3: profile/ — draft dialog→Modal component | B | ff1de05 |
+| 2026-02-20 | B-3.4: chat/ — ErrorBoundary buttons→Button, hex→CSS vars (no WS changes) | B | 2cc91a8 |
+| 2026-02-20 | **MF2/B ЗАВЕРШЕНО** — all 4 modules migrated, build OK | B | — |
