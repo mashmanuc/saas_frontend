@@ -37,10 +37,10 @@
 
 | # | Задача | Статус | Коміт | Примітки |
 |---|--------|--------|-------|----------|
-| A-1.1 | `.form-stack`, `.form-row`, `.form-actions` | ⬜ | — | |
-| A-1.2 | Уніфікувати `.input` / `.form-control` | ⬜ | — | |
-| A-1.3 | `.form-label`, `.form-error`, `.form-hint` | ⬜ | — | |
-| A-1.4 | Глобальний `.form-group` | ⬜ | — | |
+| A-1.1 | `.form-stack`, `.form-row`, `.form-actions` | ✅ | design(A-1) | Layout класи з токенами, responsive .form-row |
+| A-1.2 | Уніфікувати `.input` / `.form-control` | ✅ | design(A-1) | Хардкод → токени, .form-control як аліас |
+| A-1.3 | `.form-label`, `.form-error`, `.form-hint` | ✅ | design(A-1) | Токени для розмірів та кольорів |
+| A-1.4 | Глобальний `.form-group` | ✅ | design(A-1) | Backward-compatible, 214 використань |
 
 ### Агент B — UI-компоненти
 
@@ -151,3 +151,4 @@
 | 2026-02-20 | Створено план і ТЗ | — | — |
 | 2026-02-20 | Переробка на 3-агентний план (AGENT_PLAN.md) | — | — |
 | 2026-02-20 | MF0 завершено: tokens.css, main.js, @deprecated, tailwind sync | A | design(A-0) |
+| 2026-02-20 | MF1/A завершено: form CSS classes, .input/.form-control уніфікація | A | design(A-1) |

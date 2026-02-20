@@ -268,34 +268,94 @@
     color: var(--accent);
   }
 
-  .input {
+  .input,
+  .form-control {
     width: 100%;
-    border-radius: 0.5rem;
+    padding: var(--space-xs) var(--space-sm);
     border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
     background-color: var(--bg-secondary);
     color: var(--text-primary);
-    padding: 0.5rem 0.75rem;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    font-size: var(--text-sm);
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
   }
 
-  .input::placeholder {
+  .input::placeholder,
+  .form-control::placeholder {
     color: var(--text-secondary);
   }
 
-  .input:focus {
+  .input:focus,
+  .form-control:focus {
     outline: none;
     border-color: var(--accent);
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
   }
 
-  .input.error {
+  .input.error,
+  .form-control.error {
     border-color: var(--danger-bg);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger-bg) 25%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger-bg) 15%, transparent);
   }
 
-  .input.disabled {
+  .input:disabled,
+  .input.disabled,
+  .form-control:disabled,
+  .form-control.disabled {
     opacity: 0.6;
     cursor: not-allowed;
+  }
+
+  /* ─── Form Layout (Design System Phase 4) ─── */
+  .form-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md);
+  }
+  @media (max-width: 640px) {
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+  }
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-xs);
+    padding-top: var(--space-md);
+  }
+
+  /* ─── Form Labels (Design System Phase 4) ─── */
+  .form-label {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+  .form-error {
+    font-size: var(--text-xs);
+    color: var(--danger-bg);
+    margin-top: var(--space-2xs);
+  }
+  .form-hint {
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    margin-top: var(--space-2xs);
+  }
+
+  /* ─── Form Group (backward-compatible global) ─── */
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2xs);
+  }
+  .form-group label {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--text-primary);
   }
 
   .menu-item {

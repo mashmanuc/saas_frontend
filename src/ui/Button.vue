@@ -44,6 +44,18 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  pill: {
+    type: Boolean,
+    default: false,
+  },
+  iconOnly: {
+    type: Boolean,
+    default: false,
+  },
+  fullWidth: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const variantClasses = {
@@ -64,6 +76,19 @@ const classes = computed(() => {
   return [
     variantClasses[props.variant] || variantClasses.primary,
     sizeClasses[props.size] || sizeClasses.md,
-  ].join(' ')
+    props.pill ? 'btn-pill' : '',
+    props.iconOnly ? 'btn-icon-only' : '',
+    props.fullWidth ? 'w-full' : '',
+  ].filter(Boolean).join(' ')
 })
 </script>
+
+<style scoped>
+.btn-pill {
+  border-radius: var(--radius-full) !important;
+}
+.btn-icon-only {
+  padding: 0.5rem !important;
+  aspect-ratio: 1;
+}
+</style>
