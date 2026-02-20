@@ -46,13 +46,13 @@
 
 | # | Задача | Статус | Коміт | Примітки |
 |---|--------|--------|-------|----------|
-| B-1.1 | Оновити `Button.vue` (pill, iconOnly, fullWidth) | ⬜ | — | |
-| B-1.2 | Створити `Textarea.vue` | ⬜ | — | |
-| B-1.3 | Створити `FormField.vue` | ⬜ | — | |
-| B-1.4 | Оновити `Input.vue` на токени | ⬜ | — | |
-| B-1.5 | Оновити `Select.vue` на токени | ⬜ | — | |
-| B-2.1 | Створити `Modal.vue` (teleport, focus trap, a11y) | ⬜ | — | Залежить від B-1.1 |
-| B-2.2 | Створити `ConfirmModal.vue` | ⬜ | — | Залежить від B-2.1 |
+| B-1.1 | Оновити `Button.vue` (pill, iconOnly, fullWidth) | ✅ | design(B-1.1) | pill, iconOnly, fullWidth props + scoped CSS |
+| B-1.2 | Створити `Textarea.vue` | ✅ | design(B-1.2) | v-model, maxlength counter, error/help, design tokens |
+| B-1.3 | Створити `FormField.vue` | ✅ | design(B-1.3) | Wrapper з label/error/hint слотами |
+| B-1.4 | Оновити `Input.vue` на токени | ✅ | design(B-1.4) | Tailwind → .form-field__label/error/hint |
+| B-1.5 | Оновити `Select.vue` на токени | ✅ | design(B-1.5) | Хардкод → токени, focus state |
+| B-2.1 | Створити `Modal.vue` (teleport, focus trap, a11y) | ✅ | design(B-2.1) | Teleport, focus trap, Esc, body scroll lock, animations, a11y |
+| B-2.2 | Створити `ConfirmModal.vue` | ✅ | design(B-2.2) | Обгортка Modal, primary/danger, loading |
 
 ### Агент C — Аудит і підготовка
 
@@ -153,3 +153,11 @@
 | 2026-02-20 | MF0 завершено: tokens.css, main.js, @deprecated, tailwind sync | A | design(A-0) |
 | 2026-02-20 | C-1.1—C-1.4: аудит модулів (buttons, modals, colors) + migration-checklist.md | C | design(C-1) |
 | 2026-02-20 | MF1/A завершено: form CSS classes, .input/.form-control уніфікація | A | design(A-1) |
+| 2026-02-20 | B-1.1: Button.vue — pill, iconOnly, fullWidth props | B | design(B-1.1) |
+| 2026-02-20 | B-1.2: Textarea.vue створено | B | design(B-1.2) |
+| 2026-02-20 | B-1.3: FormField.vue створено | B | design(B-1.3) |
+| 2026-02-20 | B-1.4: Input.vue оновлено на токени | B | design(B-1.4) |
+| 2026-02-20 | B-1.5: Select.vue оновлено на токени | B | design(B-1.5) |
+| 2026-02-20 | B-2.1: Modal.vue створено (focus trap, a11y, animations) | B | design(B-2.1) |
+| 2026-02-20 | B-2.2: ConfirmModal.vue створено | B | design(B-2.2) |
+| 2026-02-20 | **MF1/B ЗАВЕРШЕНО** — build OK | B | — |
