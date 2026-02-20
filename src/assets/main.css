@@ -172,6 +172,8 @@
     box-shadow: 0 15px 40px var(--shadow-strong);
   }
 
+  /* @deprecated — Use <Button variant="..."> from @/ui/Button.vue instead.
+     These .btn-* classes will be removed after Agent B completes B-4.0 migration. */
   .btn {
     @apply inline-flex items-center justify-center transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-60 disabled:cursor-not-allowed;
     padding: 0.625rem 1.125rem;
