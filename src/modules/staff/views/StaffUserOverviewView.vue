@@ -85,14 +85,15 @@
                   <strong>{{ $t('staff.userOverview.endsAt') }}:</strong> {{ $t('staff.userOverview.permanent') }}
                 </p>
               </div>
-              <button 
+              <Button 
                 v-if="ban.status === 'ACTIVE'"
-                @click="handleLiftBan(ban.id)"
+                variant="primary"
+                size="sm"
                 :disabled="staffStore.isLoading"
-                class="btn btn-lift"
+                @click="handleLiftBan(ban.id)"
               >
                 {{ $t('staff.userOverview.liftBan') }}
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -129,13 +130,13 @@
                   rows="3"
                 />
               </div>
-              <button 
+              <Button 
                 type="submit" 
+                variant="primary"
                 :disabled="staffStore.isLoading"
-                class="btn btn-primary"
               >
                 {{ $t('staff.userOverview.createBanButton') }}
-              </button>
+              </Button>
             </form>
           </div>
         </div>
@@ -166,20 +167,20 @@
         <div v-if="staffStore.userOverview.billing.subscription_status" class="billing-actions">
           <h3>{{ $t('staff.userOverview.billingActions') }}</h3>
           <div class="action-buttons">
-            <button 
-              @click="handleCancelBilling('at_period_end')"
+            <Button 
+              variant="secondary"
               :disabled="staffStore.isLoading || staffStore.userOverview.billing.cancel_at_period_end"
-              class="btn btn-warning"
+              @click="handleCancelBilling('at_period_end')"
             >
               {{ $t('staff.userOverview.cancelAtPeriodEnd') }}
-            </button>
-            <button 
-              @click="handleCancelBilling('immediate')"
+            </Button>
+            <Button 
+              variant="danger"
               :disabled="staffStore.isLoading"
-              class="btn btn-danger"
+              @click="handleCancelBilling('immediate')"
             >
               {{ $t('staff.userOverview.cancelImmediate') }}
-            </button>
+            </Button>
           </div>
         </div>
       </section>
@@ -213,6 +214,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useStaffStore } from '@/stores/staffStore'
 import { BanScope, BillingCancelMode } from '@/types/staff'
+import Button from '@/ui/Button.vue'
 import UserBillingOpsPanel from '@/modules/staff/components/UserBillingOpsPanel.vue'
 
 const route = useRoute()
@@ -298,7 +300,7 @@ function formatDate(dateString: string): string {
 
 <style scoped>
 .staff-user-overview {
-  padding: 2rem;
+  padding: var(--space-xl);
   max-width: 1200px;
   margin: 0 auto;
 }
@@ -307,16 +309,16 @@ function formatDate(dateString: string): string {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: var(--space-xl);
 }
 
 .header h1 {
-  font-size: 2rem;
+  font-size: var(--text-2xl);
   font-weight: 600;
 }
 
 .back-link {
-  color: #007bff;
+  color: var(--accent);
   text-decoration: none;
 }
 
@@ -325,180 +327,182 @@ function formatDate(dateString: string): string {
 }
 
 .error-banner {
-  padding: 1rem;
-  background-color: #fee;
-  border: 1px solid #fcc;
-  border-radius: 4px;
-  color: #c00;
-  margin-bottom: 1rem;
+  padding: var(--space-md);
+  background: color-mix(in srgb, var(--danger-bg) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger-bg) 30%, transparent);
+  border-radius: var(--radius-sm);
+  color: var(--danger-bg);
+  margin-bottom: var(--space-md);
 }
 
 .loading {
   text-align: center;
-  padding: 3rem;
-  color: #666;
+  padding: var(--space-xl);
+  color: var(--text-secondary);
 }
 
 .overview-content {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: var(--space-xl);
 }
 
 .section {
-  background: white;
-  border-radius: 8px;
-  padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  background: var(--card-bg);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-sm);
 }
 
 .section h2 {
-  margin: 0 0 1.5rem 0;
-  font-size: 1.5rem;
+  margin: 0 0 var(--space-lg) 0;
+  font-size: var(--text-xl);
   font-weight: 600;
-  border-bottom: 2px solid #007bff;
-  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--accent);
+  padding-bottom: var(--space-xs);
 }
 
 .section h3 {
-  margin: 1.5rem 0 1rem 0;
-  font-size: 1.25rem;
+  margin: var(--space-lg) 0 var(--space-md) 0;
+  font-size: var(--text-lg);
   font-weight: 600;
 }
 
 .info-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1rem;
+  gap: var(--space-md);
 }
 
 .info-item {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: var(--space-2xs);
 }
 
 .info-item .label {
   font-weight: 600;
-  color: #666;
-  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
 }
 
 .trust-stats,
 .activity-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
 }
 
 .stat-card {
-  background: #f8f9fa;
-  border-radius: 8px;
-  padding: 1.5rem;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
   text-align: center;
 }
 
 .stat-value {
   display: block;
-  font-size: 2rem;
+  font-size: var(--text-2xl);
   font-weight: 700;
-  color: #007bff;
-  margin-bottom: 0.5rem;
+  color: var(--accent);
+  margin-bottom: var(--space-xs);
 }
 
 .stat-label {
   display: block;
-  font-size: 0.875rem;
-  color: #666;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
 }
 
 .empty-state {
   text-align: center;
-  padding: 2rem;
-  color: #666;
-  background: #f8f9fa;
-  border-radius: 4px;
+  padding: var(--space-xl);
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
 }
 
 .bans-list {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--space-md);
 }
 
 .ban-card {
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 1rem;
-  background: #f8f9fa;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  background: var(--bg-secondary);
 }
 
 .ban-card.ban-active {
-  border-color: #ffc107;
-  background: #fff3cd;
+  border-color: var(--warning-bg);
+  background: color-mix(in srgb, var(--warning-bg) 15%, transparent);
 }
 
 .ban-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.75rem;
+  margin-bottom: var(--space-sm);
 }
 
 .ban-scope {
   font-weight: 600;
-  font-size: 1.125rem;
+  font-size: var(--text-lg);
 }
 
 .ban-status {
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  font-size: 0.875rem;
+  padding: var(--space-2xs) var(--space-sm);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
   font-weight: 500;
 }
 
 .status-active {
-  background-color: #ffc107;
-  color: #856404;
+  background: color-mix(in srgb, var(--warning-bg) 20%, transparent);
+  color: var(--warning-bg);
 }
 
 .status-lifted {
-  background-color: #d1ecf1;
-  color: #0c5460;
+  background: color-mix(in srgb, var(--info-bg) 15%, transparent);
+  color: var(--info-bg);
 }
 
 .ban-details p {
-  margin: 0.5rem 0;
-  font-size: 0.875rem;
+  margin: var(--space-xs) 0;
+  font-size: var(--text-sm);
 }
 
 .ban-form {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--space-md);
   max-width: 500px;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--space-xs);
 }
 
 .form-group label {
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
 }
 
 .form-group input,
 .form-group select,
 .form-group textarea {
-  padding: 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: var(--space-xs);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
   font-family: inherit;
-  font-size: 1rem;
+  font-size: var(--text-base);
+  background: var(--card-bg);
+  color: var(--text-primary);
 }
 
 .form-group textarea {
@@ -507,59 +511,7 @@ function formatDate(dateString: string): string {
 
 .action-buttons {
   display: flex;
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-.btn {
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 4px;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-primary {
-  background-color: #007bff;
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background-color: #0056b3;
-}
-
-.btn-lift {
-  background-color: #28a745;
-  color: white;
-  margin-top: 0.5rem;
-}
-
-.btn-lift:hover:not(:disabled) {
-  background-color: #218838;
-}
-
-.btn-warning {
-  background-color: #ffc107;
-  color: #212529;
-}
-
-.btn-warning:hover:not(:disabled) {
-  background-color: #e0a800;
-}
-
-.btn-danger {
-  background-color: #dc3545;
-  color: white;
-}
-
-.btn-danger:hover:not(:disabled) {
-  background-color: #c82333;
+  gap: var(--space-md);
+  margin-top: var(--space-md);
 }
 </style>

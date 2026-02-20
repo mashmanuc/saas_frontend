@@ -28,13 +28,14 @@
         </nav>
 
         <div class="header-right">
-          <button
-            class="logout-btn"
+          <Button
+            variant="ghost"
+            size="sm"
             data-testid="staff-logout-btn"
             @click="handleLogout"
           >
             {{ $t('staff.nav.logout') }}
-          </button>
+          </Button>
         </div>
       </div>
     </header>
@@ -48,6 +49,7 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
+import Button from '@/ui/Button.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -63,12 +65,12 @@ const handleLogout = async () => {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f8fafc;
+  background: var(--bg-primary);
 }
 
 .staff-header {
-  background: white;
-  border-bottom: 1px solid #e2e8f0;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border-color);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -77,12 +79,12 @@ const handleLogout = async () => {
 .header-content {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 2rem;
+  padding: 0 var(--space-xl);
   height: 64px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 2rem;
+  gap: var(--space-xl);
 }
 
 .header-left {
@@ -96,76 +98,60 @@ const handleLogout = async () => {
 }
 
 .logo-text {
-  font-size: 1.25rem;
+  font-size: var(--text-lg);
   font-weight: 700;
-  color: #1a202c;
+  color: var(--text-primary);
 }
 
 .staff-nav {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-xs);
   flex: 1;
 }
 
 .nav-link {
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-sm);
   text-decoration: none;
-  color: #64748b;
+  color: var(--text-secondary);
   font-weight: 500;
-  transition: all 0.2s;
+  transition: all var(--transition-base);
 }
 
 .nav-link:hover {
-  color: #1a202c;
-  background: #f1f5f9;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
 }
 
 .nav-link.active {
-  color: #3b82f6;
-  background: #eff6ff;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
 .header-right {
   flex-shrink: 0;
 }
 
-.logout-btn {
-  padding: 0.5rem 1rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.375rem;
-  background: white;
-  color: #64748b;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.logout-btn:hover {
-  border-color: #cbd5e1;
-  color: #1a202c;
-}
-
 .staff-main {
   flex: 1;
-  padding: 2rem 0;
+  padding: var(--space-xl) 0;
 }
 
 @media (max-width: 768px) {
   .header-content {
-    padding: 0 1rem;
+    padding: 0 var(--space-md);
     flex-wrap: wrap;
     height: auto;
-    padding-top: 1rem;
-    padding-bottom: 1rem;
+    padding-top: var(--space-md);
+    padding-bottom: var(--space-md);
   }
 
   .staff-nav {
     order: 3;
     width: 100%;
     justify-content: flex-start;
-    padding-top: 0.5rem;
+    padding-top: var(--space-xs);
   }
 
   .header-right {

@@ -5,15 +5,15 @@
         <h3>Billing Operations</h3>
         <DevModeBadge />
       </div>
-      <button 
+      <Button 
         v-if="!loading && snapshot"
-        @click="refreshSnapshot" 
-        class="btn-refresh"
-        :disabled="refreshing"
+        variant="primary"
+        size="sm"
+        :loading="refreshing"
+        @click="refreshSnapshot"
       >
-        <span v-if="!refreshing">🔄 Refresh</span>
-        <span v-else>⏳ Refreshing...</span>
-      </button>
+        🔄 Refresh
+      </Button>
     </div>
 
     <div v-if="loading" class="loading-state">
@@ -22,13 +22,13 @@
 
     <div v-else-if="error" class="error-state">
       <p class="error-message">{{ error }}</p>
-      <button @click="loadSnapshot" class="btn-retry">Retry</button>
+      <Button variant="primary" size="sm" @click="loadSnapshot">Retry</Button>
     </div>
 
     <!-- P0.2: Guard - перевірити user перед відображенням -->
     <div v-else-if="!user" class="error-state">
       <p class="error-message">Snapshot user missing</p>
-      <button @click="loadSnapshot" class="btn-retry">Retry</button>
+      <Button variant="primary" size="sm" @click="loadSnapshot">Retry</Button>
     </div>
 
     <div v-else-if="snapshot" class="snapshot-content">
@@ -163,13 +163,14 @@
                 </td>
                 <td>{{ formatDateTime(session.created_at) }}</td>
                 <td class="actions-cell">
-                  <button 
-                    @click="openPreviewModal(session.order_id)"
-                    class="btn-preview"
+                  <Button 
+                    variant="primary"
+                    size="sm"
                     :disabled="session.status === 'completed'"
+                    @click="openPreviewModal(session.order_id)"
                   >
                     Preview Finalize
-                  </button>
+                  </Button>
                 </td>
               </tr>
             </tbody>
@@ -191,6 +192,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { getUserBillingSnapshot, type UserBillingSnapshotDto, type CheckoutSessionDto } from '../api/billingOpsApi'
+import Button from '@/ui/Button.vue'
 import FinalizeModal from './FinalizeModal.vue'
 import DevModeBadge from './DevModeBadge.vue'
 
@@ -378,169 +380,133 @@ onMounted(() => {
 
 <style scoped>
 .user-billing-ops-panel {
-  padding: 20px;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: var(--space-lg);
+  background: var(--card-bg);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
 }
 
 .panel-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: var(--space-lg);
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-sm);
 }
 
 .panel-header h3 {
   margin: 0;
-  font-size: 20px;
+  font-size: var(--text-xl);
   font-weight: 600;
-}
-
-.btn-refresh {
-  padding: 8px 16px;
-  background: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.btn-refresh:hover:not(:disabled) {
-  background: #45a049;
-}
-
-.btn-refresh:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .loading-state,
 .error-state {
-  padding: 40px;
+  padding: var(--space-xl);
   text-align: center;
 }
 
 .error-message {
-  color: #f44336;
-  margin-bottom: 16px;
-}
-
-.btn-retry {
-  padding: 8px 16px;
-  background: #2196F3;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
+  color: var(--danger-bg);
+  margin-bottom: var(--space-md);
 }
 
 .section {
-  margin-bottom: 24px;
-  padding: 16px;
-  background: #f9f9f9;
-  border-radius: 6px;
+  margin-bottom: var(--space-lg);
+  padding: var(--space-md);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
 }
 
 .section h4 {
-  margin: 0 0 12px 0;
-  font-size: 16px;
+  margin: 0 0 var(--space-sm) 0;
+  font-size: var(--text-base);
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .info-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 12px;
+  gap: var(--space-sm);
 }
 
 .info-item {
   display: flex;
-  gap: 8px;
+  gap: var(--space-xs);
 }
 
 .info-item .label {
   font-weight: 500;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .info-item .value {
-  color: #333;
+  color: var(--text-primary);
 }
 
 .plan-badge {
   display: inline-block;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 12px;
+  padding: 2px var(--space-xs);
+  border-radius: var(--radius-xs);
+  font-size: var(--text-xs);
   font-weight: 600;
 }
 
 .plan-badge.plan-free {
-  background: #e0e0e0;
-  color: #666;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
 }
 
 .plan-badge.plan-pro {
-  background: #e3f2fd;
-  color: #1976d2;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
 }
 
 .plan-badge.plan-business {
-  background: #f3e5f5;
-  color: #7b1fa2;
+  background: color-mix(in srgb, var(--info-bg) 15%, transparent);
+  color: var(--info-bg);
 }
 
 .status-badge {
   display: inline-block;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 12px;
+  padding: 2px var(--space-xs);
+  border-radius: var(--radius-xs);
+  font-size: var(--text-xs);
   font-weight: 600;
 }
 
 .status-badge.status-pending {
-  background: #fff3cd;
-  color: #856404;
+  background: color-mix(in srgb, var(--warning-bg) 15%, transparent);
+  color: var(--warning-bg);
 }
 
-.status-badge.status-active {
-  background: #d4edda;
-  color: #155724;
-}
-
+.status-badge.status-active,
 .status-badge.status-completed {
-  background: #d4edda;
-  color: #155724;
+  background: color-mix(in srgb, var(--success-bg) 15%, transparent);
+  color: var(--success-bg);
 }
 
 .status-badge.status-failed {
-  background: #f8d7da;
-  color: #721c24;
+  background: color-mix(in srgb, var(--danger-bg) 15%, transparent);
+  color: var(--danger-bg);
 }
 
-.status-badge.status-canceled {
-  background: #e0e0e0;
-  color: #666;
-}
-
+.status-badge.status-canceled,
 .status-badge.status-none {
-  background: #e0e0e0;
-  color: #666;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
 }
 
 .empty-state {
-  padding: 20px;
+  padding: var(--space-lg);
   text-align: center;
-  color: #999;
+  color: var(--text-secondary);
 }
 
 .sessions-table-wrapper {
@@ -550,92 +516,73 @@ onMounted(() => {
 .sessions-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: var(--text-sm);
 }
 
 .sessions-table th {
-  background: #f5f5f5;
-  padding: 10px;
+  background: var(--bg-secondary);
+  padding: var(--space-xs);
   text-align: left;
   font-weight: 600;
-  border-bottom: 2px solid #ddd;
+  border-bottom: 2px solid var(--border-color);
 }
 
 .sessions-table td {
-  padding: 10px;
-  border-bottom: 1px solid #eee;
+  padding: var(--space-xs);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .sessions-table tbody tr:hover {
-  background: #fafafa;
+  background: var(--bg-secondary);
 }
 
 .highlighted-row {
-  background: #e8f5e9 !important;
+  background: color-mix(in srgb, var(--success-bg) 15%, transparent) !important;
   animation: highlight-fade 3s ease-out;
 }
 
 @keyframes highlight-fade {
-  0% { background: #c8e6c9; }
-  100% { background: #e8f5e9; }
+  0% { background: color-mix(in srgb, var(--success-bg) 25%, transparent); }
+  100% { background: color-mix(in srgb, var(--success-bg) 15%, transparent); }
 }
 
 .order-id-cell {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-xs);
 }
 
 .order-id {
   font-family: monospace;
-  font-size: 12px;
-  background: #f5f5f5;
-  padding: 2px 6px;
-  border-radius: 3px;
+  font-size: var(--text-xs);
+  background: var(--bg-secondary);
+  padding: 2px var(--space-2xs);
+  border-radius: var(--radius-xs);
 }
 
 .btn-copy {
-  padding: 2px 6px;
+  padding: 2px var(--space-2xs);
   background: transparent;
-  border: 1px solid #ddd;
-  border-radius: 3px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xs);
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--text-xs);
 }
 
 .btn-copy:hover {
-  background: #f5f5f5;
+  background: var(--bg-secondary);
 }
 
 .text-muted {
-  color: #999;
+  color: var(--text-secondary);
 }
 
 .pending-age {
   font-weight: 500;
-  color: #ff9800;
+  color: var(--warning-bg);
 }
 
 .actions-cell {
   text-align: right;
-}
-
-.btn-preview {
-  padding: 6px 12px;
-  background: #2196F3;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 13px;
-}
-
-.btn-preview:hover:not(:disabled) {
-  background: #1976d2;
-}
-
-.btn-preview:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 </style>

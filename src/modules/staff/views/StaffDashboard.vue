@@ -44,42 +44,42 @@
 .staff-dashboard {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: var(--space-xl);
 }
 
 .dashboard-header {
-  margin-bottom: 2rem;
+  margin-bottom: var(--space-xl);
 }
 
 .dashboard-title {
-  font-size: 2rem;
+  font-size: var(--text-2xl);
   font-weight: 600;
-  color: #1a202c;
+  color: var(--text-primary);
   margin: 0;
 }
 
 .dashboard-tiles {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
+  gap: var(--space-lg);
 }
 
 .dashboard-tile {
   display: flex;
   align-items: flex-start;
-  gap: 1rem;
-  padding: 1.5rem;
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.5rem;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   text-decoration: none;
   color: inherit;
-  transition: all 0.2s;
+  transition: all var(--transition-base);
 }
 
 .dashboard-tile:hover {
-  border-color: #3b82f6;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border-color: var(--accent);
+  box-shadow: var(--shadow-md);
   transform: translateY(-2px);
 }
 
@@ -90,9 +90,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #eff6ff;
-  border-radius: 0.5rem;
-  color: #3b82f6;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border-radius: var(--radius-md);
+  color: var(--accent);
 }
 
 .tile-content {
@@ -100,25 +100,25 @@
 }
 
 .tile-title {
-  font-size: 1.125rem;
+  font-size: var(--text-lg);
   font-weight: 600;
-  color: #1a202c;
-  margin: 0 0 0.5rem 0;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-xs) 0;
 }
 
 .tile-description {
-  font-size: 0.875rem;
-  color: #64748b;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
   margin: 0;
 }
 
 @media (max-width: 768px) {
   .staff-dashboard {
-    padding: 1rem;
+    padding: var(--space-md);
   }
 
   .dashboard-title {
-    font-size: 1.5rem;
+    font-size: var(--text-xl);
   }
 
   .dashboard-tiles {

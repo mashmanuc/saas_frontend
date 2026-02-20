@@ -51,14 +51,15 @@
             </span>
           </td>
           <td>
-            <button 
+            <Button 
               v-if="report.status === 'OPEN'"
-              @click="openReportDetails(report)"
-              class="btn-view"
+              variant="primary"
+              size="sm"
               :aria-label="$t('staff.reports.viewDetails')"
+              @click="openReportDetails(report)"
             >
               {{ $t('staff.reports.view') }}
-            </button>
+            </Button>
           </td>
         </tr>
       </tbody>
@@ -78,6 +79,7 @@
 import { ref, onMounted } from 'vue'
 import { useStaffStore } from '@/stores/staffStore'
 import { ReportStatus, type StaffReport } from '@/types/staff'
+import Button from '@/ui/Button.vue'
 import ReportDetailsModal from '../components/ReportDetailsModal.vue'
 
 const staffStore = useStaffStore()
@@ -136,7 +138,7 @@ function formatDate(dateString: string): string {
 
 <style scoped>
 .staff-reports-view {
-  padding: 2rem;
+  padding: var(--space-xl);
   max-width: 1400px;
   margin: 0 auto;
 }
@@ -145,102 +147,85 @@ function formatDate(dateString: string): string {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: var(--space-xl);
 }
 
 .header h1 {
-  font-size: 2rem;
+  font-size: var(--text-2xl);
   font-weight: 600;
 }
 
 .filters select {
-  padding: 0.5rem 1rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 1rem;
+  padding: var(--space-xs) var(--space-md);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-base);
+  background: var(--card-bg);
+  color: var(--text-primary);
 }
 
 .error-banner {
-  padding: 1rem;
-  background-color: #fee;
-  border: 1px solid #fcc;
-  border-radius: 4px;
-  color: #c00;
-  margin-bottom: 1rem;
+  padding: var(--space-md);
+  background: color-mix(in srgb, var(--danger-bg) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger-bg) 30%, transparent);
+  border-radius: var(--radius-sm);
+  color: var(--danger-bg);
+  margin-bottom: var(--space-md);
 }
 
 .loading,
 .empty-state {
   text-align: center;
-  padding: 3rem;
-  color: #666;
+  padding: var(--space-xl);
+  color: var(--text-secondary);
 }
 
 .reports-table {
   width: 100%;
   border-collapse: collapse;
-  background: white;
-  border-radius: 8px;
+  background: var(--card-bg);
+  border-radius: var(--radius-md);
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .reports-table th,
 .reports-table td {
-  padding: 1rem;
+  padding: var(--space-md);
   text-align: left;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .reports-table th {
-  background-color: #f8f9fa;
+  background: var(--bg-secondary);
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .reports-table tbody tr:hover {
-  background-color: #f8f9fa;
+  background: var(--bg-secondary);
 }
 
 .status-badge {
   display: inline-block;
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  font-size: 0.875rem;
+  padding: var(--space-2xs) var(--space-sm);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
   font-weight: 500;
 }
 
 .status-open {
-  background-color: #fff3cd;
-  color: #856404;
+  background: color-mix(in srgb, var(--warning-bg) 15%, transparent);
+  color: var(--warning-bg);
 }
 
 .status-dismissed {
-  background-color: #d1ecf1;
-  color: #0c5460;
+  background: color-mix(in srgb, var(--info-bg) 15%, transparent);
+  color: var(--info-bg);
 }
 
 .status-actioned {
-  background-color: #d4edda;
-  color: #155724;
-}
-
-.btn-view {
-  padding: 0.5rem 1rem;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.875rem;
-}
-
-.btn-view:hover {
-  background-color: #0056b3;
-}
-
-.btn-view:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
+  background: color-mix(in srgb, var(--success-bg) 15%, transparent);
+  color: var(--success-bg);
 }
 </style>
