@@ -1,10 +1,10 @@
 <template>
-  <Modal v-if="isOpen" @close="close" class="report-user-modal">
+  <Modal :open="isOpen" @close="close" class="report-user-modal">
     <template #header>
       <h3>{{ $t('trust.report.title') }}</h3>
     </template>
     
-    <template #body>
+    <template #default>
       <div class="report-content">
         <div class="target-preview">
           <div class="target-icon">
@@ -79,7 +79,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import Modal from '@/components/ui/Modal.vue'
+import Modal from '@/ui/Modal.vue'
 import Button from '@/ui/Button.vue'
 import Textarea from '@/ui/Textarea.vue'
 

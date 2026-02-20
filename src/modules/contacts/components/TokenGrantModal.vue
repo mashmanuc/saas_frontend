@@ -1,10 +1,10 @@
 <template>
-  <Modal v-if="isOpen" @close="close" class="token-grant-modal">
+  <Modal :open="isOpen" @close="close" class="token-grant-modal">
     <template #header>
       <h3>{{ $t('contacts.grant.title') }}</h3>
     </template>
     
-    <template #body>
+    <template #default>
       <div class="grant-form">
         <div class="form-group">
           <label for="grant-amount">
@@ -77,7 +77,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useContactTokensStore } from '../stores/contactTokensStore'
-import Modal from '@/components/ui/Modal.vue'
+import Modal from '@/ui/Modal.vue'
 import Button from '@/ui/Button.vue'
 import Textarea from '@/ui/Textarea.vue'
 

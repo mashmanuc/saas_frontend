@@ -1,10 +1,10 @@
 <template>
-  <Modal v-if="isOpen" @close="close" class="block-user-modal">
+  <Modal :open="isOpen" @close="close" class="block-user-modal">
     <template #header>
       <h3>{{ $t('trust.block.title') }}</h3>
     </template>
     
-    <template #body>
+    <template #default>
       <div class="block-content">
         <div class="user-preview">
           <div class="user-avatar">
@@ -72,7 +72,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import Modal from '@/components/ui/Modal.vue'
+import Modal from '@/ui/Modal.vue'
 import Button from '@/ui/Button.vue'
 import Textarea from '@/ui/Textarea.vue'
 

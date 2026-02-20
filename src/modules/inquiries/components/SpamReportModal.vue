@@ -1,10 +1,10 @@
 <template>
-  <Modal v-if="isOpen" @close="close" class="spam-report-modal">
+  <Modal :open="isOpen" @close="close" class="spam-report-modal">
     <template #header>
       <h3>{{ $t('inquiries.spam.title') }}</h3>
     </template>
     
-    <template #body>
+    <template #default>
       <div class="spam-report-content">
         <div class="warning-box">
           <i class="icon-alert-triangle"></i>
@@ -67,7 +67,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import Modal from '@/components/ui/Modal.vue'
+import Modal from '@/ui/Modal.vue'
 import Button from '@/ui/Button.vue'
 
 const props = defineProps({

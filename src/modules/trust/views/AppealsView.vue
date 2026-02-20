@@ -54,11 +54,11 @@
     </div>
     
     <!-- Appeal Modal -->
-    <Modal v-if="showAppealModal" @close="closeAppealModal">
+    <Modal :open="showAppealModal" @close="closeAppealModal">
       <template #header>
         <h3>{{ $t('trust.appeals.modalTitle') }}</h3>
       </template>
-      <template #body>
+      <template #default>
         <div class="appeal-form">
           <p class="form-hint">{{ $t('trust.appeals.modalHint') }}</p>
           <Textarea
@@ -91,7 +91,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useTrustStore } from '../stores/trustStore'
-import Modal from '@/components/ui/Modal.vue'
+import Modal from '@/ui/Modal.vue'
 import Button from '@/ui/Button.vue'
 import Textarea from '@/ui/Textarea.vue'
 

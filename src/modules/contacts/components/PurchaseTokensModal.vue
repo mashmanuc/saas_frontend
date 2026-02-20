@@ -1,10 +1,10 @@
 <template>
-  <Modal v-if="isOpen" @close="close" class="purchase-tokens-modal">
+  <Modal :open="isOpen" @close="close" class="purchase-tokens-modal">
     <template #header>
       <h3>{{ $t('contacts.purchase.title') }}</h3>
     </template>
     
-    <template #body>
+    <template #default>
       <div class="purchase-content">
         <!-- Current Balance -->
         <div class="current-balance">
@@ -49,7 +49,7 @@
         </div>
       </div>
     </template>
-    
+
     <template #footer>
       <div class="modal-actions">
         <Button variant="outline" @click="close">
@@ -71,7 +71,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useContactTokensStore } from '../stores/contactTokensStore'
-import Modal from '@/components/ui/Modal.vue'
+import Modal from '@/ui/Modal.vue'
 import Button from '@/ui/Button.vue'
 
 const props = defineProps({
