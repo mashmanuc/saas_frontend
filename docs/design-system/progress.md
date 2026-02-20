@@ -18,7 +18,7 @@
 | 2.5 | Добивання хвостів MF2 | A ║ B ║ C | ✅ | 2026-02-20 | 2026-02-20 |
 | 3 | Очищення + QA | A ║ B ║ C | ✅ | 2026-02-20 | 2026-02-20 |
 | 4 | Полірування + ThemeStore | A ║ B ║ C | ✅ | 2026-02-20 | 2026-02-20 |
-| 5 | Button self-contained + дублікати | A → A ║ B → C | ⬜ | — | — |
+| 5 | Button self-contained + дублікати | A → A ║ B → C | ✅ | 2026-02-20 | 2026-02-20 |
 
 ---
 
@@ -283,3 +283,10 @@
 | 2026-02-20 | C-4.6: npm run build — OK (11.02s) | C | — |
 | 2026-02-20 | C-4.7: MF4_QA_REPORT.md створено — PASS | C | — |
 | 2026-02-20 | **MF4 ЗАВЕРШЕНО** — theme stable, modals verified, build OK | — | — |
+| 2026-02-20 | B-6: remove 15 duplicated .btn scoped styles (booking + marketplace) | B | — |
+| 2026-02-20 | C-5.1–C-5.4: Button QA — 5 variants × 3 themes × 3 sizes, responsive 375px — PASS | C | — |
+| 2026-02-20 | C-5.5: booking модалки — 12 файлів очищені від .btn дублікатів, :deep(.btn) OK | C | — |
+| 2026-02-20 | C-5.6: marketplace модалки — 4 файли очищені | C | — |
+| 2026-02-20 | C-5.7: npm run build — OK (11.07s) | C | — |
+| 2026-02-20 | C-5.8: MF5_QA_REPORT.md — PASS з зауваженнями (variant="destructive" баг, ~10 залишків) | C | — |
+| 2026-02-20 | **MF5 ЗАВЕРШЕНО** — .btn SSOT in Button.vue, 16 files cleaned, build OK | — | — |
