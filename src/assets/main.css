@@ -250,17 +250,17 @@
   }
 
   .btn-soft {
-    background-color: color-mix(in srgb, var(--accent) 12%, #ffffff);
+    background-color: color-mix(in srgb, var(--accent) 12%, var(--card-bg, #fff));
     color: var(--accent);
     border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
   }
 
   .btn-soft:hover {
-    background-color: color-mix(in srgb, var(--accent) 18%, #ffffff);
+    background-color: color-mix(in srgb, var(--accent) 18%, var(--card-bg, #fff));
   }
 
   .btn-white {
-    background-color: #ffffff;
+    background-color: var(--card-bg, #fff);
     color: var(--accent);
     border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
   }
