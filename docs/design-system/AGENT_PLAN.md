@@ -222,22 +222,22 @@
          │
 День 2:  MF5 ─── A (Button.vue self-contained → booking+classroom) ║ B (mkt+operator+misc) ║ C (QA)  ✅
          │
-День 3:  MF6 ─── A (залишки booking+mkt) ║ B (ErrorBoundary+PushHandler+RelationAction) ║ C (QA)
+День 2:  MF6 ─── A (залишки booking+mkt) ║ B (ErrorBoundary+PushHandler+RelationAction) ║ C (QA)  ✅
+         │
+День 3:  MF7 ─── A (booking+mkt bg:white→vars 14 файлів) ║ B (components+views 16 файлів) ║ C (3 файли + QA)
 ```
 
-**Факт: MF0–MF5 завершені за 2 дні!**
+**Факт: MF0–MF6 завершені за 2 дні!**
 
 ---
 
 ## Метрики успіху
 
-| Метрика | До | Після MF5 | Ціль MF6 | Перевірка |
+| Метрика | До | Після MF6 | Ціль MF7 | Перевірка |
 |---------|-----|-----------|----------|-----------|
-| Файлів з сирими `<button>` | 856 | 211 | 209 (-2: ErrorBoundary, PushHandler) | `grep -rl '<button ' src/` |
-| `.btn {` дублікати | 30 | 1 (Button.vue) ✅ | 1 | `grep -rl '\.btn\s*{' src/` |
-| `.btn-primary` scoped (не Button.vue) | 27 | 6 | 0 | `grep -rl '\.btn-primary' src/` |
+| `.btn-primary` scoped (не Button.vue) | 27 | 0 ✅ | 0 | `grep -rl '\.btn-primary' src/` |
 | `variant="destructive"` | 2 | 0 ✅ | 0 | `grep -rl 'destructive' src/` |
-| Hex кольори в button стилях | ~20 | ~10 | 0 | Ручна перевірка |
+| `background: white` (user-facing) | 55 | 34 | 0 | `grep -rl 'background:\s*white' src/` |
 | Button.vue self-contained | ні | так ✅ | так | Стилі всередині компонента |
 | Build | OK | OK | OK | `npm run build` |
 
