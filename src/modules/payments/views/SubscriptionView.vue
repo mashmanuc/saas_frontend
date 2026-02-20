@@ -7,6 +7,7 @@ import { CreditCard, Calendar, AlertCircle } from 'lucide-vue-next'
 import { useSubscriptionStore } from '../stores/subscriptionStore'
 import CurrentPlan from '../components/subscription/CurrentPlan.vue'
 import CancelModal from '../components/subscription/CancelModal.vue'
+import Button from '@/ui/Button.vue'
 
 const router = useRouter()
 const store = useSubscriptionStore()
@@ -88,9 +89,9 @@ function formatCurrency(amount: number, currency: string): string {
         <CreditCard :size="48" />
         <h2>No Active Subscription</h2>
         <p>Subscribe to a plan to unlock premium features and save on lessons.</p>
-        <button class="btn btn-primary" @click="goToPlans">
+        <Button variant="primary" @click="goToPlans">
           View Plans
-        </button>
+        </Button>
       </div>
     </div>
 

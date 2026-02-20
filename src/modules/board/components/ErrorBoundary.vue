@@ -3,6 +3,7 @@
 import { ref, onErrorCaptured } from 'vue'
 import { AlertCircle, RefreshCw } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
+import Button from '@/ui/Button.vue'
 
 const router = useRouter()
 
@@ -52,12 +53,12 @@ function goHome() {
       <h3>Something went wrong</h3>
       <p class="error-message">{{ errorMessage }}</p>
       <div class="error-actions">
-        <button class="btn btn-primary" @click="retry">
+        <Button variant="primary" @click="retry">
           <RefreshCw class="icon" :size="18" />
           Try Again
-        </button>
-        <button class="btn btn-secondary" @click="goBack">Go Back</button>
-        <button class="btn btn-ghost" @click="goHome">Go Home</button>
+        </Button>
+        <Button variant="secondary" @click="goBack">Go Back</Button>
+        <Button variant="ghost" @click="goHome">Go Home</Button>
       </div>
       <details v-if="isDev" class="error-details">
         <summary>Technical Details</summary>

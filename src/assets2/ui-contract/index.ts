@@ -1,4 +1,4 @@
 // UI Contract System
-// Імпортуй токени в main.css або App.vue: @import './assets2/ui-contract/tokens/tokens.css';
+// Токени тепер в src/styles/tokens.css (SSOT). Старий файл tokens/tokens.css видалено.
 
 export * from './components';

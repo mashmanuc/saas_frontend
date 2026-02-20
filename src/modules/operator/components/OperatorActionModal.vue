@@ -52,22 +52,20 @@
         </div>
 
         <div class="modal-footer">
-          <button
-            type="button"
-            class="btn btn-secondary"
+          <Button
+            variant="secondary"
             :disabled="executing"
             @click="handleClose"
           >
             {{ $t('common.cancel') }}
-          </button>
-          <button
-            type="button"
-            class="btn btn-danger"
+          </Button>
+          <Button
+            variant="danger"
             :disabled="!confirmedRisks || executing"
             @click="handleExecute"
           >
             {{ executing ? $t('common.executing') : $t('operator.actions.execute') }}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -79,6 +77,7 @@ import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { AlertTriangle, AlertCircle } from 'lucide-vue-next'
 import operatorApi from '../api/operatorApi'
+import Button from '@/ui/Button.vue'
 
 const props = defineProps({
   show: {

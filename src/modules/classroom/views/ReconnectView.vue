@@ -30,12 +30,12 @@
 
       <!-- Actions -->
       <div class="reconnect-view__actions">
-        <button class="btn btn-primary" @click="handleRetry" :disabled="isRetrying">
+        <Button variant="primary" @click="handleRetry" :disabled="isRetrying">
           {{ $t('common.retry') }}
-        </button>
-        <button class="btn btn-ghost" @click="handleLeave">
+        </Button>
+        <Button variant="ghost" @click="handleLeave">
           {{ $t('classroom.reconnect.leave') }}
-        </button>
+        </Button>
       </div>
 
       <!-- Tips -->
@@ -54,6 +54,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import Button from '@/ui/Button.vue'
 
 const { t } = useI18n()
 

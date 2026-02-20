@@ -3,6 +3,7 @@ import { onMounted, ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Activity, AlertCircle, TrendingUp, Loader2 } from 'lucide-vue-next'
 import operatorApi, { type ActivityFeedItem } from '../api/operatorApi'
+import Button from '@/ui/Button.vue'
 
 const { t } = useI18n()
 
@@ -115,10 +116,10 @@ onMounted(() => {
         </select>
       </div>
 
-      <button type="button" class="btn btn-primary" :disabled="loading" @click="loadFeed">
+      <Button variant="primary" :disabled="loading" @click="loadFeed">
         <Loader2 v-if="loading" :size="16" class="animate-spin" />
         {{ t('operator.actions.refresh') }}
-      </button>
+      </Button>
     </div>
 
     <div v-if="error" class="error-banner">
@@ -151,9 +152,9 @@ onMounted(() => {
         </div>
         <p class="item-message">{{ item.message }}</p>
         <div v-if="item.action_link" class="item-actions">
-          <button type="button" class="btn btn-sm btn-outline">
+          <Button variant="outline" size="sm">
             {{ t('operator.actions.view') }}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

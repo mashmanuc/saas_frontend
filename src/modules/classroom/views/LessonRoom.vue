@@ -103,9 +103,9 @@
       <div class="error-message">
         <span class="error-icon">⚠️</span>
         <p>{{ error }}</p>
-        <button class="btn btn-primary" @click="handleRetry">
+        <Button variant="primary" @click="handleRetry">
           Спробувати знову
-        </button>
+        </Button>
       </div>
     </div>
   </div>
@@ -122,6 +122,7 @@ import { useWebRTC } from '../composables/useWebRTC'
 import { useReconnect } from '../composables/useReconnect'
 import { classroomApi } from '../api/classroom'
 import { useSubscriptionStore } from '@/modules/payments/stores/subscriptionStore'
+import Button from '@/ui/Button.vue'
 import { notifyWarning } from '@/utils/notify'
 import { buildWsUrl } from '@/utils/wsUrl'
 

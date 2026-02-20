@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useMatchStore } from '@/modules/matches/store/matchStore'
 import { Search, Filter, RefreshCw } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 
 const { t } = useI18n()
 const matchStore = useMatchStore()
@@ -42,10 +43,10 @@ onMounted(() => {
   <div class="matches-console">
     <div class="header">
       <h2>{{ t('operator.matches.title') }}</h2>
-      <button class="btn btn-secondary" @click="loadMatches">
+      <Button variant="secondary" @click="loadMatches">
         <RefreshCw :size="18" />
         {{ t('common.refresh') }}
-      </button>
+      </Button>
     </div>
 
     <div class="filters">
@@ -70,13 +71,13 @@ onMounted(() => {
       </div>
 
       <div class="filter-actions">
-        <button class="btn btn-secondary" @click="clearFilters">
+        <Button variant="secondary" @click="clearFilters">
           {{ t('common.clear') }}
-        </button>
-        <button class="btn btn-primary" @click="loadMatches">
+        </Button>
+        <Button variant="primary" @click="loadMatches">
           <Search :size="18" />
           {{ t('common.search') }}
-        </button>
+        </Button>
       </div>
     </div>
 

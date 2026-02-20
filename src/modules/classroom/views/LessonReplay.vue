@@ -36,9 +36,9 @@
       <div class="text-center">
         <AlertCircle class="w-12 h-12 text-red-500 mx-auto mb-4" />
         <p class="text-gray-400 mb-4">{{ replayEngine.error.value }}</p>
-        <button class="btn btn-primary" @click="loadReplay">
+        <Button variant="primary" @click="loadReplay">
           Спробувати знову
-        </button>
+        </Button>
       </div>
     </div>
 
@@ -94,6 +94,7 @@ import { ReplayEngine } from '../replay/ReplayEngine'
 import ReplayControls from '../replay/ReplayControls.vue'
 import ReplayTimeline from '../replay/ReplayTimeline.vue'
 import TimelinePanel from '../timeline/TimelinePanel.vue'
+import Button from '@/ui/Button.vue'
 
 const route = useRoute()
 const sessionId = route.params.sessionId as string

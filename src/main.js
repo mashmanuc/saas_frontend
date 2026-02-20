@@ -7,7 +7,7 @@ import './styles/tokens.css'
 import './assets/main.css'
 import './assets/fullcalendar.css'
 import './styles/m4sh.css'
-import './assets2/ui-contract/tokens/tokens.css'
+/* assets2/ui-contract/tokens removed — all tokens in src/styles/tokens.css */
 import { notifications as notificationBus } from './utils/notify'
 import { useNotifyStore } from './stores/notifyStore'
 import { useSettingsStore } from './stores/settingsStore'

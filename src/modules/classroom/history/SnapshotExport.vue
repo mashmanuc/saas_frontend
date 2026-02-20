@@ -1,13 +1,13 @@
 <template>
   <div class="snapshot-export relative">
-    <button
-      class="btn btn-secondary"
+    <Button
+      variant="secondary"
       @click="showMenu = !showMenu"
     >
       <Download class="w-4 h-4 mr-2" />
       Експорт
       <ChevronDown class="w-4 h-4 ml-2" />
-    </button>
+    </Button>
 
     <div
       v-if="showMenu"
@@ -31,6 +31,7 @@
 import { ref } from 'vue'
 import { Download, ChevronDown, FileJson, Image, FileCode } from 'lucide-vue-next'
 import { classroomApi } from '../api/classroom'
+import Button from '@/ui/Button.vue'
 
 interface Props {
   sessionId: string

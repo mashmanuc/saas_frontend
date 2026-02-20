@@ -43,9 +43,9 @@
           @export-complete="handleExportComplete"
           @export-error="handleExportError"
         />
-        <button class="btn btn-primary" @click="handleExit">
+        <Button variant="primary" @click="handleExit">
           {{ $t('common.exit') }}
-        </button>
+        </Button>
       </div>
     </header>
 
@@ -107,6 +107,7 @@ import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useBoardStore } from '../board/state/boardStore'
+import Button from '@/ui/Button.vue'
 import { useBoardSyncStore } from '../board/state/boardSyncStore'
 import { DEFAULT_PERMISSIONS } from '../engine/permissionsEngine'
 import type { RoomPermissions } from '../api/classroom'

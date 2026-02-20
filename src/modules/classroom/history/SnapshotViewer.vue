@@ -83,25 +83,25 @@
         </div>
 
         <div class="flex gap-2 flex-wrap">
-          <button
-            class="btn btn-secondary"
+          <Button
+            variant="secondary"
             @click="$emit('compare', selectedSnapshot)"
           >
             <GitCompare class="w-4 h-4 mr-2" />
             Порівняти
-          </button>
+          </Button>
           <SnapshotExport
             :session-id="sessionId"
             :version="selectedSnapshot.version"
           />
-          <button
+          <Button
             v-if="canRestore"
-            class="btn btn-primary"
+            variant="primary"
             @click="$emit('restore', selectedSnapshot.version)"
           >
             <RotateCcw class="w-4 h-4 mr-2" />
             Відновити
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -113,6 +113,7 @@ import { ref, computed, onMounted } from 'vue'
 import { FileImage, GitCompare, RotateCcw, Loader2, History } from 'lucide-vue-next'
 import { classroomApi } from '../api/classroom'
 import SnapshotExport from './SnapshotExport.vue'
+import Button from '@/ui/Button.vue'
 
 interface Props {
   sessionId: string

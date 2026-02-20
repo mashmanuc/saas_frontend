@@ -26,9 +26,9 @@
       <div v-else-if="error" class="text-center py-12">
         <AlertCircle class="w-12 h-12 text-red-500 mx-auto mb-4" />
         <p class="text-gray-400">{{ error }}</p>
-        <button class="btn btn-primary mt-4" @click="loadSummary">
+        <Button variant="primary" class="mt-4" @click="loadSummary">
           Спробувати знову
-        </button>
+        </Button>
       </div>
 
       <template v-else-if="summary">
@@ -84,6 +84,7 @@ import { classroomApi, type SessionSummaryResponse, type SnapshotResponse } from
 import SummaryStats from './SummaryStats.vue'
 import SummaryParticipants from './SummaryParticipants.vue'
 import SummarySnapshots from './SummarySnapshots.vue'
+import Button from '@/ui/Button.vue'
 
 const route = useRoute()
 const router = useRouter()
