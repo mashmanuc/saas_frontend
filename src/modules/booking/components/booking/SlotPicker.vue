@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // F13: Slot Picker Component
 import { ref, computed, watch } from 'vue'
+import Button from '@/ui/Button.vue'
 import type { TimeSlot } from '../../api/booking'
 
 import CalendarHeader from '../calendar/CalendarHeader.vue'
@@ -86,9 +87,9 @@ function formatSelectedTime(slot: TimeSlot): string {
       <p class="selected-duration">
         Duration: {{ selectedSlot.duration_minutes }} minutes
       </p>
-      <button class="clear-btn" @click="clearSelection()">
+      <Button variant="ghost" size="sm" @click="clearSelection()">
         Clear Selection
-      </button>
+      </Button>
       </div>
     </Transition>
 

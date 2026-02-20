@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // F17: Booking Actions Component
 import { X, RefreshCw, Video } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 
 defineProps<{
   canCancel: boolean
@@ -18,34 +19,40 @@ defineEmits<{
 <template>
   <div class="booking-actions">
     <!-- Join Lesson -->
-    <button
+    <Button
       v-if="canJoin"
-      class="btn btn-primary btn-large"
+      variant="primary"
       @click="$emit('join')"
     >
-      <Video :size="20" />
+      <template #iconLeft>
+        <Video :size="20" />
+      </template>
       Join Lesson
-    </button>
+    </Button>
 
     <!-- Reschedule -->
-    <button
+    <Button
       v-if="canReschedule"
-      class="btn btn-secondary"
+      variant="outline"
       @click="$emit('reschedule')"
     >
-      <RefreshCw :size="18" />
+      <template #iconLeft>
+        <RefreshCw :size="18" />
+      </template>
       Reschedule
-    </button>
+    </Button>
 
     <!-- Cancel -->
-    <button
+    <Button
       v-if="canCancel"
-      class="btn btn-danger-outline"
+      variant="danger"
       @click="$emit('cancel')"
     >
-      <X :size="18" />
+      <template #iconLeft>
+        <X :size="18" />
+      </template>
       Cancel Booking
-    </button>
+    </Button>
   </div>
 </template>
 

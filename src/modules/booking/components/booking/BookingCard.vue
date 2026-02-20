@@ -3,6 +3,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { Calendar, Clock, User, BookOpen } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 import type { Booking } from '../../api/booking'
 import BookingStatus from './BookingStatus.vue'
 
@@ -85,18 +86,18 @@ function viewDetails() {
 
     <!-- Actions for pending bookings -->
     <div v-if="booking.status === 'pending' && !compact" class="card-actions">
-      <button class="btn btn-success" @click.stop="emit('confirm')">
+      <Button variant="primary" size="sm" @click.stop="emit('confirm')">
         Confirm
-      </button>
-      <button class="btn btn-danger" @click.stop="emit('cancel')">
+      </Button>
+      <Button variant="danger" size="sm" @click.stop="emit('cancel')">
         Decline
-      </button>
+      </Button>
     </div>
 
     <!-- Compact actions -->
     <div v-if="booking.status === 'pending' && compact" class="compact-actions">
-      <button class="action-btn confirm" @click.stop="emit('confirm')">✓</button>
-      <button class="action-btn cancel" @click.stop="emit('cancel')">✕</button>
+      <Button variant="ghost" iconOnly size="sm" @click.stop="emit('confirm')">✓</Button>
+      <Button variant="ghost" iconOnly size="sm" @click.stop="emit('cancel')">✕</Button>
     </div>
 
     <!-- Price -->

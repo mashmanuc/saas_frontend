@@ -5,35 +5,36 @@
     </div>
     
     <div class="draft-actions">
-      <button
-        class="btn btn-primary"
-        :disabled="isApplying"
+      <Button
+        variant="primary"
+        :loading="isApplying"
         @click="handleApply"
       >
-        {{ isApplying ? 'Applying...' : 'Apply' }}
-      </button>
+        Apply
+      </Button>
       
-      <button
-        class="btn btn-secondary"
+      <Button
+        variant="outline"
         :disabled="isApplying"
         @click="handleReset"
       >
         Reset
-      </button>
+      </Button>
       
-      <button
-        class="btn btn-template"
+      <Button
+        variant="outline"
         :disabled="isApplying"
         @click="handleSaveAsTemplate"
       >
         Save as Template
-      </button>
+      </Button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import Button from '@/ui/Button.vue'
 import { useDraftStore } from '@/modules/booking/stores/draftStore'
 import { useConfirm } from '@/composables/useConfirm'
 
