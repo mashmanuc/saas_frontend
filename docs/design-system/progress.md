@@ -15,7 +15,7 @@
 | 0 | Фундамент (токени) | A соло | ✅ | 2026-02-20 | 2026-02-20 |
 | 1 | Компоненти + CSS | A ║ B ║ C | ✅ | 2026-02-20 | 2026-02-20 |
 | 2 | Міграція модулів | A ║ B ║ C | ✅ | 2026-02-20 | 2026-02-20 |
-| 2.5 | Добивання хвостів MF2 | A ║ B ║ C | 🔄 | 2026-02-20 | — |
+| 2.5 | Добивання хвостів MF2 | A ║ B ║ C | ✅ | 2026-02-20 | 2026-02-20 |
 | 3 | Очищення + QA | A ║ B ║ C | ⬜ | — | — |
 
 ---
@@ -115,6 +115,27 @@
 | B-5.11 | `profileV2/` | — | ✅ | — | Already uses ui-contract (Button, Modal, FormField) |
 | B-5.12 | `tutor/` | — | ✅ | — | TutorSearchView already uses Button |
 
+### Агент A — Залишкові модулі
+
+| # | Модуль | Що зроблено | Статус | Коміт | Примітки |
+|---|--------|-------------|--------|-------|----------|
+| A-5.1 | `reviews/` | buttons→Button, textarea→Textarea, overlay→Modal, hex→tokens | ✅ | 27c9908..96c10bb | ~44 buttons, ~4 textarea, ~35 hex |
+| A-5.2 | `billing/` | buttons→Button, overlay→Modal, hex→tokens | ✅ | 96c10bb | CheckoutLockedAlert, UpgradeCTA, SubscriptionRequiredModal/Banner |
+| A-5.3 | `onboarding/` | buttons→Button, overlay→Modal | ✅ | 34a8f81 | 9 files, ~25 raw buttons replaced |
+| A-5.4 | `lessons/` | buttons→Button, overlay→Modal, hex→tokens | ✅ | 839a25f | LessonList create/cancel modals, LessonView retry+hex |
+| A-5.5 | `entitlements/` | buttons→Button | ✅ | 6221a59 | FeatureGate, GraceBanner, PlanFeaturesView |
+| A-5.6 | `diagnostics/` | buttons→Button | ✅ | 6221a59 | DiagnosticsPanel clear/close |
+
+### Агент C — Залишкові модулі booking/
+
+| # | Модуль | Що зроблено | Статус | Коміт | Примітки |
+|---|--------|-------------|--------|-------|----------|
+| C-5.1 | `booking/availability` | raw buttons, textareas→Button, Textarea | ✅ | 4ebc008 | |
+| C-5.2 | `booking/modals` | raw buttons, textareas→Button, Textarea | ✅ | 27c9908 | |
+| C-5.3 | `booking/calendar` | raw buttons→Button | ✅ | 3cca033 | |
+| C-5.4 | `booking/common+SlotPicker` | raw buttons→Button | ✅ | e35b475 | |
+| C-5.5 | `marketplace/` | raw buttons, close-btns→Button | ✅ | 6221a59 | |
+
 ---
 
 ## MF3 — Очищення + QA
@@ -201,3 +222,11 @@
 | 2026-02-20 | B-5.6–B-5.8: admin/ + student/ + tutors/ — overlay→Modal, buttons→Button, hex→CSS vars | B | b43085b |
 | 2026-02-20 | B-5.9–B-5.12: call/, negotiation/, profileV2/, tutor/ — already migrated, no changes needed | B | — |
 | 2026-02-20 | **MF2.5/B ЗАВЕРШЕНО** — all 12 modules audited, 8 migrated, build OK | B | — |
+| 2026-02-20 | A-5.1: reviews/ — buttons→Button, textarea→Textarea, overlay→Modal, hex→tokens | A | 96c10bb |
+| 2026-02-20 | A-5.2: billing/ — buttons→Button, overlay→Modal, hex→tokens | A | 96c10bb |
+| 2026-02-20 | A-5.3: onboarding/ — buttons→Button, overlay→Modal (9 files, ~25 buttons) | A | 34a8f81 |
+| 2026-02-20 | A-5.4: lessons/ — buttons→Button, overlay→Modal, hex→tokens | A | 839a25f |
+| 2026-02-20 | A-5.5–A-5.6: entitlements/ + diagnostics/ — buttons→Button | A | 6221a59 |
+| 2026-02-20 | C-5.1–C-5.5: booking/ remaining + marketplace/ — raw buttons/textareas→Button/Textarea | C | 4ebc008..6221a59 |
+| 2026-02-20 | **MF2.5/A ЗАВЕРШЕНО** — all 6 modules migrated, build OK | A | — |
+| 2026-02-20 | **MF2.5 ЗАВЕРШЕНО** — all agents done | — | — |
