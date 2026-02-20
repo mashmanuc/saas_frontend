@@ -146,12 +146,12 @@
 
 | # | Задача | Статус | Коміт | Примітки |
 |---|--------|--------|-------|----------|
-| A-3.1 | Консолідація `m4sh.css` → `tokens.css` | ⬜ | — | Перенести line-height, font-family-serif, видалити дублі |
-| A-3.2 | Видалити `src/ui/tokens.css` | ⬜ | — | Імпорт в style.css |
-| A-3.3 | Видалити `src/assets2/ui-contract/tokens/tokens.css` | ⬜ | — | Імпорт в main.js |
-| A-3.4 | Позначити `.btn-*` в `main.css` як @deprecated | ⬜ | — | 106 файлів ще використовують — чекає B-4.0 |
-| A-3.5 | Фінальний аудит hex в CSS файлах | ⬜ | — | |
-| A-3.6 | Sync `tailwind.config.js` з `tokens.css` | ⬜ | — | borderRadius, zIndex |
+| A-3.1 | Консолідація `m4sh.css` → `tokens.css` | ✅ | 59d63aa | --font-serif, --leading-*, --text-display/title додано; дублі spacing/radius/transition видалено |
+| A-3.2 | Видалити `src/ui/tokens.css` | ✅ | 17f434f | Аліаси перенесено в tokens.css, файл видалено, style.css оновлено |
+| A-3.3 | Видалити `src/assets2/ui-contract/tokens/tokens.css` | ✅ | 25299fe | 289 --ui-* аліасів перенесено в tokens.css, import з main.js видалено |
+| A-3.4 | Позначити `.btn-*` в `main.css` як @deprecated | ✅ | 1a5bb4a | Коментар @deprecated додано, чекає B-4.0 для видалення |
+| A-3.5 | Фінальний аудит hex в CSS файлах | ✅ | b43e3c3 | .btn-soft/.btn-white #fff→var(--card-bg); theme defs + brand hex залишені |
+| A-3.6 | Sync `tailwind.config.js` з `tokens.css` | ✅ | — | Вже синхронізовано: borderRadius, zIndex, colors, boxShadow |
 | A-3.7 | Видалити `.btn-*` з `main.css` | ⬜ | — | ТІЛЬКИ після B-4.0! |
 
 ### Агент B — Масова заміна btn→Button + очищення компонентів
@@ -191,7 +191,7 @@
 | Сирих `<button>` в модулях | 856 | ~95 | < 50 |
 | Сирих `<textarea>` | 20+ | 20+ | 0 |
 | Кастомних overlay-модалок | 63 | ~43 | 0 |
-| Файлів токенів | 5 | 5 | 1 |
+| Файлів токенів | 5 | 1 (tokens.css SSOT) | 1 |
 | Хардкоджених кольорів | ~30 | ~2500 (≈500 реальних) | 0 |
 | Build warnings | ? | ? | 0 |
 
@@ -240,3 +240,10 @@
 | 2026-02-20 | C-5.1–C-5.5: booking/ remaining + marketplace/ — raw buttons/textareas→Button/Textarea | C | 4ebc008..6221a59 |
 | 2026-02-20 | **MF2.5/A ЗАВЕРШЕНО** — all 6 modules migrated, build OK | A | — |
 | 2026-02-20 | **MF2.5 ЗАВЕРШЕНО** — all agents done | — | — |
+| 2026-02-20 | A-3.1: consolidate m4sh.css → tokens.css (--font-serif, --leading-*, --text-display/title; дублі видалено) | A | 59d63aa |
+| 2026-02-20 | A-3.2: видалено src/ui/tokens.css, аліаси перенесено в tokens.css | A | 17f434f |
+| 2026-02-20 | A-3.3: видалено assets2/ui-contract/tokens/tokens.css, 289 --ui-* аліасів перенесено | A | 25299fe |
+| 2026-02-20 | A-3.4: .btn-* в main.css позначено @deprecated | A | 1a5bb4a |
+| 2026-02-20 | A-3.5: фінальний аудит hex — .btn-soft/.btn-white #fff→var(--card-bg) | A | b43e3c3 |
+| 2026-02-20 | A-3.6: tailwind.config.js вже синхронізовано з tokens.css | A | — |
+| 2026-02-20 | **MF3/A ЗАВЕРШЕНО** (крім A-3.7 — чекає B-4.0) — build OK, 5→1 token files | A | — |
