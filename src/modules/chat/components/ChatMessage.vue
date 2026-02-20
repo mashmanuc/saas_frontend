@@ -146,16 +146,16 @@ onMounted(() => {
 
 <style scoped>
 .text-body {
-  color: rgba(7, 15, 30, 0.9);
+  color: var(--text-primary, rgba(7, 15, 30, 0.9));
 }
 .bg-surface-soft {
-  background-color: rgba(7, 15, 30, 0.04);
+  background-color: var(--bg-secondary, rgba(7, 15, 30, 0.04));
 }
 .text-muted {
-  color: rgba(7, 15, 30, 0.55);
+  color: var(--text-secondary, rgba(7, 15, 30, 0.55));
 }
 .text-danger {
-  color: #d63a3a;
+  color: var(--danger, #d63a3a);
 }
 .bg-accent {
   background: linear-gradient(135deg, #2563eb, #7c3aed);
@@ -185,22 +185,22 @@ onMounted(() => {
   background-color: currentColor;
 }
 .status-pill--sending {
-  color: #2563eb;
-  background-color: rgba(37, 99, 235, 0.12);
+  color: var(--accent, #2563eb);
+  background-color: color-mix(in srgb, var(--accent, #2563eb) 12%, transparent);
 }
 .status-pill--delivered {
-  color: #059669;
-  background-color: rgba(5, 150, 105, 0.12);
+  color: var(--success, #059669);
+  background-color: color-mix(in srgb, var(--success, #059669) 12%, transparent);
 }
 .status-pill--error {
-  color: #dc2626;
-  background-color: rgba(220, 38, 38, 0.12);
+  color: var(--danger, #dc2626);
+  background-color: color-mix(in srgb, var(--danger, #dc2626) 12%, transparent);
 }
 .retry-link {
   border: none;
   background: none;
   padding: 0;
-  color: #dc2626;
+  color: var(--danger, #dc2626);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;

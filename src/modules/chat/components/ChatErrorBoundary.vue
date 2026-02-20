@@ -7,15 +7,12 @@
       <h3 class="error-title">{{ $t('chat.error.title') }}</h3>
       <p class="error-message">{{ errorMessage }}</p>
       <div class="error-actions">
-        <button @click="handleRetry" class="btn-retry" :disabled="isRetrying">
-          <svg v-if="isRetrying" class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-          {{ isRetrying ? $t('chat.error.retrying') : $t('chat.error.retry') }}
-        </button>
-        <button @click="handleFallback" class="btn-fallback">
+        <Button variant="primary" :disabled="isRetrying" :loading="isRetrying" @click="handleRetry">
+          {{ $t('chat.error.retry') }}
+        </Button>
+        <Button variant="outline" @click="handleFallback">
           {{ $t('chat.error.usePolling') }}
-        </button>
+        </Button>
       </div>
     </div>
   </div>
@@ -25,6 +22,7 @@
 <script setup>
 import { ref, onErrorCaptured, provide, inject } from 'vue'
 import { useI18n } from 'vue-i18n'
+import Button from '@/ui/Button.vue'
 
 const { t } = useI18n()
 
@@ -109,10 +107,10 @@ const emit = defineEmits(['fallback'])
   align-items: center;
   justify-content: center;
   min-height: 300px;
-  padding: 24px;
-  background: rgba(254, 242, 242, 0.5);
-  border-radius: 12px;
-  border: 1px solid rgba(252, 165, 165, 0.3);
+  padding: var(--space-lg);
+  background: var(--danger-bg, rgba(254, 242, 242, 0.5));
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--danger, rgba(252, 165, 165, 0.3));
 }
 
 .error-content {
@@ -123,80 +121,28 @@ const emit = defineEmits(['fallback'])
 .error-icon {
   width: 48px;
   height: 48px;
-  color: #ef4444;
-  margin-bottom: 16px;
+  color: var(--danger, #ef4444);
+  margin-bottom: var(--space-md);
 }
 
 .error-title {
-  font-size: 18px;
+  font-size: var(--text-lg);
   font-weight: 600;
-  color: #1f2937;
-  margin: 0 0 8px 0;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-xs) 0;
 }
 
 .error-message {
-  font-size: 14px;
-  color: #6b7280;
-  margin: 0 0 20px 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-lg) 0;
   line-height: 1.5;
 }
 
 .error-actions {
   display: flex;
-  gap: 12px;
+  gap: var(--space-sm);
   justify-content: center;
   flex-wrap: wrap;
-}
-
-.btn-retry {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-retry:hover:not(:disabled) {
-  background: #2563eb;
-}
-
-.btn-retry:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-fallback {
-  padding: 10px 20px;
-  background: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-fallback:hover {
-  background: #f9fafb;
-  border-color: #9ca3af;
-}
-
-.spinner {
-  width: 16px;
-  height: 16px;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
 }
 </style>

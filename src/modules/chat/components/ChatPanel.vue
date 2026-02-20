@@ -308,25 +308,25 @@ onRecoveryChange((status) => {
 
 <style scoped>
 .border-default {
-  border-color: rgba(7, 15, 30, 0.08);
+  border-color: var(--border-color, rgba(7, 15, 30, 0.08));
 }
 .border-border-subtle {
-  border-color: rgba(7, 15, 30, 0.05);
+  border-color: var(--border-color, rgba(7, 15, 30, 0.05));
 }
 .bg-surface-soft {
-  background-color: rgba(7, 15, 30, 0.04);
+  background-color: var(--bg-secondary, rgba(7, 15, 30, 0.04));
 }
 .text-muted {
-  color: rgba(7, 15, 30, 0.55);
+  color: var(--text-secondary, rgba(7, 15, 30, 0.55));
 }
 .text-body {
-  color: rgba(7, 15, 30, 0.9);
+  color: var(--text-primary, rgba(7, 15, 30, 0.9));
 }
 .text-accent {
-  color: #4f46e5;
+  color: var(--accent, #4f46e5);
 }
 .text-danger {
-  color: #d63a3a;
+  color: var(--danger, #d63a3a);
 }
 .bg-chat-pattern {
   background-image: radial-gradient(circle at 1px 1px, rgba(7, 15, 30, 0.04) 1px, transparent 0);
