@@ -216,24 +216,26 @@
          │
 День 2:  MF2.5── A (reviews,billing,lessons,onb) ║ B (12 дрібних) ║ C (залишки)     ✅
          │
-День 3:  MF3 ─── A (очищення CSS) ║ B (btn→Button 106 файлів) ║ C (QA всіх тем)
+День 2:  MF3 ─── A (очищення CSS) ║ B (btn→Button 106 файлів) ║ C (QA всіх тем)    ✅
+         │
+День 3:  MF4 ─── A (themeStore консолідація) ║ B (3 btn + 1 overlay) ║ C (QA модалок)
 ```
 
-**Факт: MF0+MF1+MF2+MF2.5 завершені за 2 дні!**
+**Факт: MF0+MF1+MF2+MF2.5+MF3 завершені за 2 дні!**
 
 ---
 
 ## Метрики успіху
 
-| Метрика | До | Після | Перевірка |
-|---------|-----|-------|-----------|
-| Сирих `<button>` в модулях | 856 | < 50 | `grep -c '<button ' src/modules/` |
-| Сирих `<textarea>` | 20+ | 0 | `grep -c '<textarea ' src/modules/` |
-| Кастомних overlay-модалок | 63 | 0 | `grep -c 'fixed inset-0' src/modules/` |
-| Файлів токенів | 5 | 1 | `src/styles/tokens.css` |
-| Хардкоджених кольорів | ~30 | 0 (крім brand) | grep hex codes |
-| Build warnings | ? | 0 | `npm run build` |
-| Теми працюють | 3 (з багами) | 3 (без багів) | Ручна перевірка |
+| Метрика | До | Після MF3 | Ціль MF4 | Перевірка |
+|---------|-----|-----------|----------|-----------|
+| Файлів з сирими `<button>` | 856 | 211 | 211 (form-specific OK) | `grep -rl '<button ' src/` |
+| `class="btn"` (не scoped) | ? | 3 | 0 | `grep -rl 'class="btn' src/` |
+| Overlay-модалки | 63 | 2 | 1 (chat only) | `grep -rl 'fixed inset-0' src/` |
+| Файлів токенів | 5 | 1 ✅ | 1 | `src/styles/tokens.css` |
+| ThemeStore конфлікт | 2 stores | 2 stores | 1 store | Pinia ID `'theme'` |
+| Тема скидається | так | так | ні | Ручна перевірка |
+| Build | OK | OK | OK | `npm run build` |
 
 ---
 
