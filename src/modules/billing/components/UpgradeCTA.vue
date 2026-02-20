@@ -25,14 +25,16 @@
           {{ ctaText }}
         </Button>
         
-        <button
+        <Button
           v-if="dismissible"
-          class="upgrade-cta-close"
-          @click="handleDismiss"
+          variant="ghost"
+          size="sm"
+          iconOnly
           aria-label="Close"
+          @click="handleDismiss"
         >
           <X :size="16" />
-        </button>
+        </Button>
       </div>
     </div>
   </div>
@@ -43,7 +45,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { AlertCircle, Info, X } from 'lucide-vue-next'
-import Button from '@/components/ui/Button.vue'
+import Button from '@/ui/Button.vue'
 import { BillingErrorCodes } from '../api/dto'
 
 interface Props {
@@ -110,21 +112,21 @@ function handleDismiss() {
 }
 
 .upgrade-cta-banner.warning {
-  background-color: #fef3c7;
-  border-color: #f59e0b;
-  color: #92400e;
+  background-color: color-mix(in srgb, var(--warning-bg) 15%, transparent);
+  border-color: var(--warning-bg);
+  color: var(--warning-bg);
 }
 
 .upgrade-cta-banner.error {
-  background-color: #fee2e2;
-  border-color: #ef4444;
-  color: #991b1b;
+  background-color: color-mix(in srgb, var(--danger-bg) 15%, transparent);
+  border-color: var(--danger-bg);
+  color: var(--danger-bg);
 }
 
 .upgrade-cta-banner.info {
-  background-color: #dbeafe;
-  border-color: #3b82f6;
-  color: #1e40af;
+  background-color: color-mix(in srgb, var(--accent) 15%, transparent);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .upgrade-cta-content {
@@ -160,19 +162,4 @@ function handleDismiss() {
   flex-shrink: 0;
 }
 
-.upgrade-cta-close {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0.7;
-  transition: opacity 0.2s;
-}
-
-.upgrade-cta-close:hover {
-  opacity: 1;
-}
 </style>

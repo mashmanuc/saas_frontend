@@ -16,12 +16,9 @@
         <Button variant="primary" size="sm" @click="goToPlans">
           {{ $t('billing.upgrade') }}
         </Button>
-        <button
-          class="p-2 hover:bg-warning/10 rounded-lg transition-colors"
-          @click="$emit('close')"
-        >
+        <Button variant="ghost" size="sm" iconOnly @click="$emit('close')">
           <X :size="20" class="text-warning-dark" />
-        </button>
+        </Button>
       </div>
     </div>
   </div>

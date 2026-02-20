@@ -25,12 +25,12 @@
       </div>
 
       <div class="alert-actions">
-        <button @click="handleRefresh" class="btn-refresh">
+        <Button variant="primary" size="sm" @click="handleRefresh">
           {{ $t('billing.checkout.locked.refresh') }}
-        </button>
-        <button @click="handleClose" class="btn-close">
+        </Button>
+        <Button variant="secondary" size="sm" @click="handleClose">
           {{ $t('billing.checkout.locked.close') }}
-        </button>
+        </Button>
       </div>
     </div>
   </div>
@@ -38,6 +38,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import Button from '@/ui/Button.vue'
 
 /**
  * CheckoutLockedAlert Component
@@ -169,35 +170,5 @@ function handleClose() {
 .alert-actions {
   display: flex;
   gap: 12px;
-}
-
-.btn-refresh,
-.btn-close {
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-}
-
-.btn-refresh {
-  background: var(--color-primary);
-  color: white;
-}
-
-.btn-refresh:hover {
-  background: var(--color-primary-dark);
-}
-
-.btn-close {
-  background: var(--color-background-soft);
-  color: var(--color-text);
-  border: 1px solid var(--color-border);
-}
-
-.btn-close:hover {
-  background: var(--color-background-mute);
 }
 </style>
