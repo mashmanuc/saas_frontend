@@ -16,9 +16,9 @@
       <div v-else-if="error" class="lesson-links-editor__state lesson-links-editor__state--error">
         <AlertCircleIcon class="icon" />
         <p>{{ error }}</p>
-        <button @click="loadLinks" class="btn-retry">
+        <Button variant="primary" @click="loadLinks">
           {{ t('common.retry') }}
-        </button>
+        </Button>
       </div>
 
       <div v-else class="lesson-links-form">
@@ -101,24 +101,22 @@
         </div>
 
         <div v-if="showActions" class="form-actions">
-          <button
+          <Button
             v-if="showCancelButton"
-            type="button"
-            class="btn-secondary"
+            variant="outline"
             :disabled="saving"
             @click="handleCancel"
           >
             {{ t('common.cancel') }}
-          </button>
-          <button
-            type="button"
-            class="btn-primary"
-            :disabled="saving || !hasChanges"
+          </Button>
+          <Button
+            variant="primary"
+            :disabled="!hasChanges"
+            :loading="saving"
             @click="handleSave"
           >
-            <LoaderIcon v-if="saving" class="spinner-small" />
             {{ t('common.save') }}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -129,6 +127,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Loader as LoaderIcon, AlertCircle as AlertCircleIcon, Link as LinkIcon } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 import { useTutorLessonLinksStore } from '@/modules/booking/stores/tutorLessonLinksStore'
 import { useToast } from '@/composables/useToast'
 import type { LessonLinkProvider } from '@/modules/booking/api/tutorSettingsApi'
@@ -408,21 +407,6 @@ onMounted(() => {
   }
 }
 
-.btn-retry {
-  padding: 10px 20px;
-  background: var(--accent);
-  color: white;
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn-retry:hover {
-  background: var(--accent-hover, #2563eb);
-}
 
 .lesson-links-form {
   display: flex;
@@ -613,45 +597,6 @@ input:checked + .toggle-slider:before {
   padding-top: 8px;
 }
 
-.btn-secondary,
-.btn-primary {
-  padding: 10px 20px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.btn-secondary {
-  border: 1px solid var(--border-color);
-  background: var(--card-bg);
-  color: var(--text-primary);
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: var(--bg-secondary);
-}
-
-.btn-primary {
-  background: var(--accent);
-  color: white;
-  border: none;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--accent-hover, #2563eb);
-}
-
-.btn-primary:disabled,
-.btn-secondary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 @media (max-width: 640px) {
   .lesson-links-editor__card {
     padding: 20px;
@@ -659,12 +604,6 @@ input:checked + .toggle-slider:before {
 
   .form-actions {
     flex-direction: column-reverse;
-  }
-
-  .btn-secondary,
-  .btn-primary {
-    width: 100%;
-    justify-content: center;
   }
 }
 </style>

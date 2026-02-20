@@ -2,6 +2,7 @@
 // F22: Booking Settings Component
 import { ref, watch } from 'vue'
 import { Save, Clock, Bell, Shield } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 import { bookingApi } from '../../api/booking'
 import type { TutorSettings } from '../../api/booking'
 
@@ -208,14 +209,16 @@ const cancellationPolicies = [
 
       <!-- Save Button -->
       <div v-if="hasChanges" class="save-section">
-        <button
-          class="btn btn-primary"
-          :disabled="isSaving"
+        <Button
+          variant="primary"
+          :loading="isSaving"
           @click="saveSettings"
         >
-          <Save :size="16" />
-          {{ isSaving ? 'Saving...' : 'Save Settings' }}
-        </button>
+          <template #iconLeft>
+            <Save :size="16" />
+          </template>
+          Save Settings
+        </Button>
       </div>
     </template>
   </div>
@@ -328,30 +331,4 @@ const cancellationPolicies = [
   border-top: 1px solid var(--color-border, #e5e7eb);
 }
 
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.btn-primary {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--color-primary-dark, #2563eb);
-}
-
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
 </style>

@@ -20,7 +20,7 @@
     <div v-else-if="error" class="error-state">
       <AlertCircle :size="32" class="error-icon" />
       <p>{{ error }}</p>
-      <button @click="loadAnalytics" class="btn-retry">{{ t('common.retry') }}</button>
+      <Button variant="primary" @click="loadAnalytics">{{ t('common.retry') }}</Button>
     </div>
 
     <div v-else class="analytics-content">
@@ -207,6 +207,7 @@ import {
   AlertTriangle,
   Clock
 } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 import { useSlotStore } from '@/stores/slotStore'
 
 interface Analytics {
@@ -437,17 +438,6 @@ function formatTime(timestamp: number): string {
 
 .error-icon {
   color: var(--color-error);
-}
-
-.btn-retry {
-  padding: 10px 20px;
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
 }
 
 .analytics-content {
