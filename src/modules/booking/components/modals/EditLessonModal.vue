@@ -278,7 +278,7 @@
 
         <!-- Confirm Delete Dialog -->
         <ConfirmDialog
-          :visible="showConfirmDelete"
+          :open="showConfirmDelete"
           :title="$t('calendar.editLesson.confirmDelete')"
           :message="$t('calendar.editLesson.confirmDeleteMessage', { student: eventDetails?.event?.clientName || '' })"
           :confirm-text="$t('calendar.editLesson.delete')"
@@ -311,7 +311,7 @@ import { useFocusTrap } from '@/composables/useFocusTrap'
 import { useErrorHandler } from '@/modules/booking/composables/useErrorHandler'
 import { sanitizeComment } from '@/utils/sanitize'
 import EventDetailsView from './EventDetailsView.vue'
-import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import ConfirmDialog from '@/ui/ConfirmModal.vue'
 import DateTimePicker from '@/components/ui/DateTimePicker.vue'
 import type { ReschedulePreviewResponse } from '@/modules/booking/types/calendarV055'
 

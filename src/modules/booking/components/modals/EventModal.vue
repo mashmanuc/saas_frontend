@@ -189,7 +189,7 @@
 
     <!-- Confirm Delete Dialog -->
     <ConfirmDialog
-      :visible="showConfirmDelete"
+      :open="showConfirmDelete"
       :title="t('booking.calendar.eventModal.confirmDelete')"
       :message="t('booking.calendar.eventModal.confirmDeleteMessage', { student: eventDetails?.event?.clientName || '' })"
       :confirm-text="t('booking.calendar.eventModal.delete')"
@@ -214,7 +214,7 @@ import { useFocusTrap } from '@/composables/useFocusTrap'
 import { useErrorHandler } from '@/modules/booking/composables/useErrorHandler'
 import { sanitizeComment } from '@/utils/sanitize'
 import EventDetailsView from './EventDetailsView.vue'
-import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import ConfirmDialog from '@/ui/ConfirmModal.vue'
 
 const props = defineProps<{
   visible: boolean
