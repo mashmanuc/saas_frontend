@@ -569,26 +569,4 @@ function zoomOut(): void {
   text-align: center;
 }
 
-/* Buttons */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: var(--radius-sm, 4px);
-  font-size: 0.8125rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.btn-primary {
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  color: white;
-}
-
-.btn-primary:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
 </style>

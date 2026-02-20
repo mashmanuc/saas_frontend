@@ -363,26 +363,6 @@ function formatCurrency(amount: number, currency: string): string {
   text-decoration: underline;
 }
 
-/* Buttons */
-.btn {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.btn-primary {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-}
-
-.btn-primary:hover {
-  background: var(--color-primary-dark, #2563eb);
-}
-
 /* Error */
 .error-message {
   margin-top: 16px;

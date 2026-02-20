@@ -349,44 +349,6 @@ watch(() => props.show, (newVal) => {
   gap: 0.75rem;
 }
 
-.btn {
-  padding: 0.5rem 1rem;
-  border-radius: var(--radius-sm, 6px);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-}
-
-.btn-secondary {
-  background: var(--surface-secondary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: var(--surface-hover);
-}
-
-.btn-danger {
-  background: var(--danger, #dc2626);
-  color: white;
-}
-
-.btn-danger:hover:not(:disabled) {
-  background: var(--danger-hover, #b91c1c);
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .modal-enter-active,
 .modal-leave-active {
   transition: opacity 0.3s ease;

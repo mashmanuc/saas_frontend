@@ -514,43 +514,6 @@ watch(() => props.slot, (newSlot) => {
   border-radius: 12px;
 }
 
-.btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-}
-
-.btn-primary {
-  background: var(--color-primary);
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--color-primary-dark);
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: var(--color-bg-secondary);
-  color: var(--color-text-primary);
-  border: 1px solid var(--color-border);
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: var(--color-bg-tertiary);
-}
-
 /* Responsive */
 @media (max-width: 640px) {
   .slot-editor {
@@ -573,7 +536,7 @@ watch(() => props.slot, (newSlot) => {
     justify-content: stretch;
   }
   
-  .btn {
+  :deep(.btn) {
     flex: 1;
     justify-content: center;
   }

@@ -316,32 +316,4 @@ function handleClose() {
   border-top: 1px solid var(--border-color, #e5e7eb);
 }
 
-.btn {
-  padding: 0.625rem 1.25rem;
-  border-radius: 8px;
-  font-size: 0.9375rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-secondary {
-  background: white;
-  border: 1px solid var(--border-color, #d1d5db);
-  color: var(--text-primary, #111827);
-}
-
-.btn-secondary:hover {
-  background: var(--surface-hover, #f9fafb);
-}
-
-.btn-primary {
-  background: var(--accent);
-  border: 1px solid var(--accent);
-  color: white;
-}
-
-.btn-primary:hover {
-  background: color-mix(in srgb, var(--accent) 90%, black);
-}
 </style>

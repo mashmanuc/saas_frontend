@@ -166,35 +166,6 @@ function viewDetails() {
   border-top: 1px solid var(--color-border, #e5e7eb);
 }
 
-.btn {
-  flex: 1;
-  padding: 8px 16px;
-  border: none;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.btn-success {
-  background: var(--color-success, #10b981);
-  color: white;
-}
-
-.btn-success:hover {
-  background: var(--color-success-dark, #059669);
-}
-
-.btn-danger {
-  background: var(--color-danger, #ef4444);
-  color: white;
-}
-
-.btn-danger:hover {
-  background: var(--color-danger-dark, #dc2626);
-}
-
 .compact-actions {
   position: absolute;
   top: 12px;

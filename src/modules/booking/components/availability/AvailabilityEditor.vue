@@ -646,43 +646,6 @@ function handleBackToCalendar() {
   cursor: not-allowed;
 }
 
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.btn-primary {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--color-primary-dark, #2563eb);
-}
-
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: var(--color-bg-primary, white);
-  border: 1px solid var(--color-border, #e5e7eb);
-  color: var(--color-text-primary, #111827);
-}
-
-.btn-secondary:hover {
-  background: var(--color-bg-tertiary, #e5e7eb);
-}
-
 /* Job status banner */
 .job-status-banner {
   margin-bottom: 1.5rem;

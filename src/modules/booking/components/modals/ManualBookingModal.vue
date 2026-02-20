@@ -284,39 +284,6 @@ textarea.form-control {
   border-top: 1px solid var(--border-color);
 }
 
-.btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn--primary {
-  background-color: var(--accent);
-  color: white;
-}
-
-.btn--primary:hover:not(:disabled) {
-  background-color: var(--accent-hover, #2563eb);
-}
-
-.btn--secondary {
-  background-color: var(--bg-secondary);
-  color: var(--text-primary);
-}
-
-.btn--secondary:hover:not(:disabled) {
-  background-color: var(--bg-tertiary, #d1d5db);
-}
-
 .duration-buttons {
   display: flex;
   gap: 8px;

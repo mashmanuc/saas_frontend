@@ -76,24 +76,4 @@ async function exportAs(format: 'json' | 'png' | 'svg'): Promise<void> {
 </script>
 
 <style scoped>
-.btn {
-  display: inline-flex;
-  align-items: center;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-weight: 500;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-}
-
-.btn-secondary {
-  background: var(--color-bg-secondary, #374151);
-  color: white;
-}
-
-.btn-secondary:hover {
-  background: var(--color-bg-tertiary, #4b5563);
-}
 </style>

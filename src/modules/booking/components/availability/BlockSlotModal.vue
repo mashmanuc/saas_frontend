@@ -407,48 +407,6 @@ function handleCancel() {
   border-top: 1px solid var(--color-border, #e5e7eb);
 }
 
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-  border: none;
-}
-
-.btn-secondary {
-  background: var(--color-bg-secondary, #f3f4f6);
-  color: var(--color-text-primary, #111827);
-  border: 1px solid var(--color-border, #e5e7eb);
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: var(--color-bg-tertiary, #e5e7eb);
-}
-
-.btn-secondary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-danger {
-  background: var(--color-error, #ef4444);
-  color: white;
-}
-
-.btn-danger:hover:not(:disabled) {
-  background: var(--color-error-dark, #dc2626);
-}
-
-.btn-danger:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 @media (max-width: 640px) {
   .modal-content {
     max-width: 100%;
@@ -461,7 +419,7 @@ function handleCancel() {
     flex-direction: column-reverse;
   }
   
-  .btn {
+  :deep(.btn) {
     width: 100%;
     justify-content: center;
   }

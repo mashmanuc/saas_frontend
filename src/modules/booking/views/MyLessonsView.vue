@@ -228,21 +228,6 @@ function setTab(tab: TabType) {
   margin: 0 0 24px;
 }
 
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px 24px;
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  text-decoration: none;
-  transition: var(--transition-fast);
-}
-
 .router-link-primary {
   background: var(--accent);
   color: white;

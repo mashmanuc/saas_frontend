@@ -380,7 +380,7 @@ function handleClose() {
     flex-direction: column-reverse;
   }
 
-  .btn {
+  :deep(.btn) {
     width: 100%;
     justify-content: center;
   }

@@ -261,37 +261,6 @@ onMounted(() => {
   outline: none;
 }
 
-.btn {
-  padding: 0.625rem 1.25rem;
-  border: none;
-  border-radius: var(--radius-sm, 6px);
-  font-size: 0.9375rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.btn-primary {
-  background: var(--primary);
-  color: white;
-}
-
-.btn-primary:hover {
-  background: var(--primary-hover);
-}
-
-.btn-secondary {
-  background: var(--surface-secondary);
-  color: var(--text-primary);
-}
-
-.btn-secondary:hover {
-  background: var(--surface-hover);
-}
-
 .filters-panel {
   padding: 1.5rem;
   background: var(--surface-card);

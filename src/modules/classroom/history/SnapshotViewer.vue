@@ -175,36 +175,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.btn {
-  display: inline-flex;
-  align-items: center;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-weight: 500;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-}
-
-.btn-primary {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-}
-
-.btn-primary:hover {
-  background: var(--color-primary-dark, #2563eb);
-}
-
-.btn-secondary {
-  background: var(--color-bg-secondary, #374151);
-  color: white;
-}
-
-.btn-secondary:hover {
-  background: var(--color-bg-tertiary, #4b5563);
-}
-
 .animate-spin {
   animation: spin 1s linear infinite;
 }

@@ -114,45 +114,4 @@ function handleSaveAsTemplate() {
   gap: 8px;
 }
 
-.btn {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn--primary {
-  background-color: var(--accent);
-  color: white;
-}
-
-.btn--primary:hover:not(:disabled) {
-  background-color: var(--accent-hover, #2563eb);
-}
-
-.btn--secondary {
-  background-color: var(--bg-secondary);
-  color: var(--text-primary);
-}
-
-.btn--secondary:hover:not(:disabled) {
-  background-color: var(--bg-tertiary, #d1d5db);
-}
-
-.btn--danger {
-  background-color: var(--danger);
-  color: white;
-}
-
-.btn--danger:hover:not(:disabled) {
-  background-color: var(--danger-hover, #dc2626);
-}
 </style>

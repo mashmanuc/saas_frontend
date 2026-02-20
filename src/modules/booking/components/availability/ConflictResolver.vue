@@ -315,52 +315,6 @@ async function handleApplyResolutions() {
   border-top: 1px solid var(--color-border);
 }
 
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-}
-
-.btn-secondary {
-  background: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  border: 1px solid var(--color-border);
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: var(--color-bg-tertiary);
-}
-
-.btn-warning {
-  background: var(--color-warning);
-  color: white;
-}
-
-.btn-warning:hover:not(:disabled) {
-  background: var(--color-warning-dark, #d97706);
-}
-
-.btn-primary {
-  background: var(--color-primary);
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--color-primary-dark);
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .spinner {
   animation: spin 1s linear infinite;
 }
@@ -379,7 +333,7 @@ async function handleApplyResolutions() {
     flex-direction: column;
   }
   
-  .btn {
+  :deep(.btn) {
     width: 100%;
     justify-content: center;
   }

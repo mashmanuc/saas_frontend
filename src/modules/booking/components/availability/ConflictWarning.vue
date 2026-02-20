@@ -149,35 +149,6 @@ const severity = computed<'error' | 'warning'>(() => {
   justify-content: flex-end;
 }
 
-.btn {
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-}
-
-.btn-primary {
-  background: var(--color-primary);
-  color: white;
-}
-
-.btn-primary:hover {
-  background: var(--color-primary-dark);
-}
-
-.btn-secondary {
-  background: var(--color-bg-secondary);
-  color: var(--color-text-primary);
-  border: 1px solid var(--color-border);
-}
-
-.btn-secondary:hover {
-  background: var(--color-bg-tertiary);
-}
-
 /* Responsive */
 @media (max-width: 640px) {
   .conflict-warning {
@@ -189,7 +160,7 @@ const severity = computed<'error' | 'warning'>(() => {
     flex-direction: column;
   }
   
-  .btn {
+  :deep(.btn) {
     width: 100%;
   }
 }
