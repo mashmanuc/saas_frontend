@@ -74,34 +74,24 @@
       </div>
     </Card>
 
-    <transition name="fade">
-      <div
-        v-if="draftDialogOpen"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
-        role="dialog"
-        aria-modal="true"
-      >
-        <div class="w-full max-w-md rounded-2xl border border-default bg-card p-6 shadow-theme space-y-4">
-          <Heading :level="3" class="text-lg font-semibold">
-            {{ $t('profile.draft.foundTitle') }}
-          </Heading>
-          <p class="text-sm text-muted">
-            {{ draftDescription }}
-          </p>
-          <div class="flex flex-col gap-3 text-xs text-muted" v-if="profileStore.draftError">
-            <span class="text-danger-500">{{ profileStore.draftError }}</span>
-          </div>
-          <div class="flex justify-end gap-2">
-            <Button variant="ghost" size="sm" :disabled="isDraftRestoring" @click="discardDraft">
-              {{ $t('profile.draft.discard') }}
-            </Button>
-            <Button variant="primary" size="sm" :disabled="isDraftRestoring" :loading="isDraftRestoring" @click="restoreDraft">
-              {{ $t('profile.draft.restore') }}
-            </Button>
-          </div>
-        </div>
+    <Modal :open="draftDialogOpen" :title="$t('profile.draft.foundTitle')" size="sm" :persistent="true" @close="discardDraft">
+      <p class="text-sm text-muted">
+        {{ draftDescription }}
+      </p>
+      <div class="flex flex-col gap-3 text-xs text-muted" v-if="profileStore.draftError">
+        <span class="text-danger-500">{{ profileStore.draftError }}</span>
       </div>
-    </transition>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <Button variant="ghost" size="sm" :disabled="isDraftRestoring" @click="discardDraft">
+            {{ $t('profile.draft.discard') }}
+          </Button>
+          <Button variant="primary" size="sm" :disabled="isDraftRestoring" :loading="isDraftRestoring" @click="restoreDraft">
+            {{ $t('profile.draft.restore') }}
+          </Button>
+        </div>
+      </template>
+    </Modal>
   </div>
 </template>
 
@@ -110,6 +100,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } 
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import Button from '../../../ui/Button.vue'
+import Modal from '../../../ui/Modal.vue'
 import Card from '../../../ui/Card.vue'
 import Heading from '../../../ui/Heading.vue'
 import AvatarUpload from '../components/AvatarUpload.vue'
