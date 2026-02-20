@@ -14,7 +14,7 @@
 |----|-------|--------|--------|-------------|----------------|
 | 0 | Фундамент (токени) | A соло | ✅ | 2026-02-20 | 2026-02-20 |
 | 1 | Компоненти + CSS | A ║ B ║ C | 🔄 | 2026-02-20 | — |
-| 2 | Міграція модулів | A ║ B ║ C | 🔄 | 2026-02-20 | — |
+| 2 | Міграція модулів | A ║ B ║ C | ✅ | 2026-02-20 | 2026-02-20 |
 | 3 | Очищення + QA | A ║ B ║ C | ⬜ | — | — |
 
 ---
@@ -89,7 +89,7 @@
 
 | # | Модуль | Кнопок | Модалок | Статус | Коміт | Примітки |
 |---|--------|--------|---------|--------|-------|----------|
-| C-2.1 | `booking/` | ~150 | 7 | 🔄 | design(C-booking-p1) | P1 ✅ views+root. P2 calendar, P3 slot — pending |
+| C-2.1 | `booking/` | ~150 | 7 | ✅ | design(C-booking-p3) | P1 views+root, P2 calendar, P3 modals/availability/links/settings/analytics |
 | C-2.2 | `classroom/` | ~15 | 2 | ✅ | design(C-classroom) | HistoryModal→Modal, buttons→Button |
 | C-2.3 | `winterboard/` | ~100 | 1 | ✅ | design(C-winterboard) | WBExportDialog→Modal+Button, toolbar untouched |
 
@@ -169,3 +169,8 @@
 | 2026-02-20 | B-3.3: profile/ — draft dialog→Modal component | B | ff1de05 |
 | 2026-02-20 | B-3.4: chat/ — ErrorBoundary buttons→Button, hex→CSS vars (no WS changes) | B | 2cc91a8 |
 | 2026-02-20 | **MF2/B ЗАВЕРШЕНО** — all 4 modules migrated, build OK | B | — |
+| 2026-02-20 | C-2.1/P2: booking/calendar — CalendarHeader(V2), CalendarFooter, CalendarWeekView hex→CSS vars | C | design(C-booking-p2) |
+| 2026-02-20 | C-2.1/P3: hex→CSS vars — modals/ (Edit,Create,Event,ManualBooking,TemplateConfirm,JoinLessonPicker,EventDetails), availability/ (GenerationProgress,AvailabilityEditor,TemplateEditor), common/ (DraftToolbar,StudentAutocomplete), lessonLinks/, requests/, settings/, analytics/ | C | 3af8a86 |
+| 2026-02-20 | C-2.1/P3: overlay→Modal — BookingRequestModal, TemplateConfirmModal, GenerationProgressModal | C | 85c3b6c |
+| 2026-02-20 | C-2.1/P3: raw button→Button — EventModal, EditLessonModal, CreateLessonModal, BookingRequestModal, GenerationProgressModal, TemplateConfirmModal, LessonLinksEditor, BookingSettings, SlotAnalyticsDashboard | C | c51f9e5 |
+| 2026-02-20 | **C-2.1 ЗАВЕРШЕНО** — booking/ повністю мігровано (3 підфази), build OK | C | — |
