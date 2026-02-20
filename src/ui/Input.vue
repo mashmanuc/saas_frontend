@@ -1,15 +1,14 @@
 <template>
-  <div class="w-full">
+  <div class="form-field">
     
     <!-- LABEL -->
     <label
       v-if="label"
       :for="id"
-      class="block mb-1 text-sm font-medium"
-      style="color: var(--text-primary);"
+      class="form-field__label"
     >
       {{ label }}
-      <span v-if="required" style="color: var(--danger-bg);">*</span>
+      <span v-if="required" class="text-danger"> *</span>
     </label>
 
     <!-- INPUT WRAPPER -->
@@ -30,20 +29,12 @@
     </div>
 
     <!-- ERROR MESSAGE -->
-    <p
-      v-if="error"
-      class="mt-1 text-sm"
-      style="color: var(--danger-bg);"
-    >
+    <p v-if="error" class="form-field__error">
       {{ error }}
     </p>
 
     <!-- HELP TEXT -->
-    <p
-      v-else-if="help"
-      class="mt-1 text-sm"
-      style="color: var(--text-secondary);"
-    >
+    <p v-else-if="help" class="form-field__hint">
       {{ help }}
     </p>
 
