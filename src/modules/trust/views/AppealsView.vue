@@ -24,13 +24,13 @@
           <p class="appeal-date">{{ $t('trust.appeals.appealed') }}: {{ formatDate(getAppeal(ban.id).created_at) }}</p>
         </div>
         
-        <button
+        <Button
           v-else
-          class="btn btn-primary"
+          variant="primary"
           @click="openAppealModal(ban)"
         >
           {{ $t('trust.appeals.fileAppeal') }}
-        </button>
+        </Button>
       </div>
     </div>
     
@@ -61,28 +61,27 @@
       <template #body>
         <div class="appeal-form">
           <p class="form-hint">{{ $t('trust.appeals.modalHint') }}</p>
-          <textarea
+          <Textarea
             v-model="appealReason"
-            class="form-input"
-            rows="4"
+            :rows="4"
             :placeholder="$t('trust.appeals.reasonPlaceholder')"
-          ></textarea>
+          />
           <div v-if="appealError" class="alert alert-error">{{ appealError }}</div>
         </div>
       </template>
       <template #footer>
         <div class="modal-actions">
-          <button class="btn btn-secondary" @click="closeAppealModal">
+          <Button variant="outline" @click="closeAppealModal">
             {{ $t('common.cancel') }}
-          </button>
-          <button
-            class="btn btn-primary"
+          </Button>
+          <Button
+            variant="primary"
             :disabled="!appealReason.trim() || submitting"
+            :loading="submitting"
             @click="submitAppeal"
           >
-            <span v-if="submitting" class="spinner"></span>
             {{ $t('trust.appeals.submit') }}
-          </button>
+          </Button>
         </div>
       </template>
     </Modal>
@@ -93,6 +92,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { useTrustStore } from '../stores/trustStore'
 import Modal from '@/components/ui/Modal.vue'
+import Button from '@/ui/Button.vue'
+import Textarea from '@/ui/Textarea.vue'
 
 const store = useTrustStore()
 
@@ -302,36 +303,6 @@ async function submitAppeal() {
   color: var(--color-error);
 }
 
-.btn {
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border: none;
-}
-
-.btn-primary {
-  background: var(--color-primary);
-  color: var(--color-primary-text);
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--color-primary-hover);
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  border: 1px solid var(--color-border);
-}
-
 .empty-state {
   text-align: center;
   padding: var(--spacing-xl);
@@ -387,19 +358,6 @@ async function submitAppeal() {
   margin: 0;
 }
 
-.form-input {
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-base);
-  resize: vertical;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
 .alert {
   padding: var(--spacing-sm);
   border-radius: var(--radius-md);
@@ -418,18 +376,4 @@ async function submitAppeal() {
   gap: var(--spacing-sm);
 }
 
-.spinner {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 2px solid currentColor;
-  border-right-color: transparent;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
 </style>

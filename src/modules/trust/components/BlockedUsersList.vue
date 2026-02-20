@@ -29,14 +29,15 @@
             </p>
           </div>
         </div>
-        <button
-          class="btn btn-unblock"
+        <Button
+          variant="outline"
+          size="sm"
           :disabled="processingId === block.id"
+          :loading="processingId === block.id"
           @click="unblock(block.id)"
         >
-          <span v-if="processingId === block.id" class="spinner"></span>
-          <span v-else>{{ $t('trust.blocked.unblock') }}</span>
-        </button>
+          {{ $t('trust.blocked.unblock') }}
+        </Button>
       </div>
     </div>
     
@@ -50,6 +51,7 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { useTrustStore } from '../stores/trustStore'
+import Button from '@/ui/Button.vue'
 
 const store = useTrustStore()
 
@@ -221,49 +223,6 @@ async function unblock(blockId) {
   font-size: var(--font-size-xs);
   color: var(--color-text-tertiary);
   margin: 0;
-}
-
-.btn-unblock {
-  padding: var(--spacing-sm) var(--spacing-md);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-  min-width: 100px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.btn-unblock:hover:not(:disabled) {
-  background: var(--color-success-subtle);
-  border-color: var(--color-success);
-  color: var(--color-success);
-}
-
-.btn-unblock:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.spinner {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 2px solid currentColor;
-  border-right-color: transparent;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
 }
 
 .empty-state {

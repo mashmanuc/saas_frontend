@@ -52,17 +52,17 @@
     
     <template #footer>
       <div class="modal-actions">
-        <button class="btn btn-secondary" @click="close">
+        <Button variant="outline" @click="close">
           {{ $t('common.cancel') }}
-        </button>
-        <button
-          class="btn btn-primary"
+        </Button>
+        <Button
+          variant="primary"
           :disabled="!selectedPackage || processing"
+          :loading="processing"
           @click="purchase"
         >
-          <span v-if="processing" class="spinner"></span>
           {{ $t('contacts.purchase.submit') }}
-        </button>
+        </Button>
       </div>
     </template>
   </Modal>
@@ -72,6 +72,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useContactTokensStore } from '../stores/contactTokensStore'
 import Modal from '@/components/ui/Modal.vue'
+import Button from '@/ui/Button.vue'
 
 const props = defineProps({
   isOpen: {
@@ -297,55 +298,4 @@ async function purchase() {
   gap: var(--spacing-sm);
 }
 
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-sm) var(--spacing-lg);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border: 1px solid transparent;
-}
-
-.btn-primary {
-  background: var(--color-primary);
-  color: var(--color-primary-text);
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--color-primary-hover);
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  border-color: var(--color-border);
-}
-
-.btn-secondary:hover {
-  background: var(--color-surface-hover);
-}
-
-.spinner {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 2px solid currentColor;
-  border-right-color: transparent;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
 </style>

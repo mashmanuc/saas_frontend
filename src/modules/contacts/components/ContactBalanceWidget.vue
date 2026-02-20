@@ -43,19 +43,19 @@
       </div>
       
       <div class="balance-actions">
-        <button
+        <Button
           v-if="hasLowBalance || hasNoTokens"
-          class="btn btn-primary"
+          variant="primary"
           @click="$emit('purchase')"
         >
           {{ $t('contacts.actions.purchase') }}
-        </button>
-        <button
-          class="btn btn-secondary"
+        </Button>
+        <Button
+          variant="outline"
           @click="$emit('view-history')"
         >
           {{ $t('contacts.actions.history') }}
-        </button>
+        </Button>
       </div>
     </div>
   </div>
@@ -64,6 +64,7 @@
 <script setup>
 import { computed, onMounted } from 'vue'
 import { useContactTokensStore } from '../stores/contactTokensStore'
+import Button from '@/ui/Button.vue'
 
 const props = defineProps({
   autoRefresh: {
@@ -219,36 +220,5 @@ onMounted(() => {
 .balance-actions {
   display: flex;
   gap: var(--spacing-sm);
-}
-
-.btn {
-  flex: 1;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border: 1px solid transparent;
-}
-
-.btn-primary {
-  background: var(--color-primary);
-  color: var(--color-primary-text);
-  border-color: var(--color-primary);
-}
-
-.btn-primary:hover {
-  background: var(--color-primary-hover);
-}
-
-.btn-secondary {
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  border-color: var(--color-border);
-}
-
-.btn-secondary:hover {
-  background: var(--color-surface-hover);
 }
 </style>

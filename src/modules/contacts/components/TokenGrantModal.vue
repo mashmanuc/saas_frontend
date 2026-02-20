@@ -27,14 +27,12 @@
           <label for="grant-reason">
             {{ $t('contacts.grant.reason') }}
           </label>
-          <textarea
-            id="grant-reason"
+          <Textarea
             v-model="form.reason"
-            class="form-input"
-            :class="{ 'error': errors.reason }"
-            rows="3"
+            :rows="3"
             :placeholder="$t('contacts.grant.reasonPlaceholder')"
-          ></textarea>
+            :error="errors.reason || undefined"
+          />
           <span v-if="errors.reason" class="error-text">{{ errors.reason }}</span>
           <span class="help-text">{{ $t('contacts.grant.reasonHelp') }}</span>
         </div>
@@ -60,17 +58,17 @@
     
     <template #footer>
       <div class="modal-actions">
-        <button class="btn btn-secondary" @click="close">
+        <Button variant="outline" @click="close">
           {{ $t('common.cancel') }}
-        </button>
-        <button
-          class="btn btn-primary"
+        </Button>
+        <Button
+          variant="primary"
           :disabled="!isValid || loading"
+          :loading="loading"
           @click="submit"
         >
-          <span v-if="loading" class="spinner"></span>
           {{ $t('contacts.grant.submit') }}
-        </button>
+        </Button>
       </div>
     </template>
   </Modal>
@@ -80,6 +78,8 @@
 import { ref, computed } from 'vue'
 import { useContactTokensStore } from '../stores/contactTokensStore'
 import Modal from '@/components/ui/Modal.vue'
+import Button from '@/ui/Button.vue'
+import Textarea from '@/ui/Textarea.vue'
 
 const props = defineProps({
   isOpen: {
@@ -227,55 +227,4 @@ async function submit() {
   gap: var(--spacing-sm);
 }
 
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-sm) var(--spacing-lg);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border: 1px solid transparent;
-}
-
-.btn-primary {
-  background: var(--color-primary);
-  color: var(--color-primary-text);
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--color-primary-hover);
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  border-color: var(--color-border);
-}
-
-.btn-secondary:hover {
-  background: var(--color-surface-hover);
-}
-
-.spinner {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 2px solid currentColor;
-  border-right-color: transparent;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
 </style>

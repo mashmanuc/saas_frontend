@@ -29,14 +29,12 @@
         </div>
         
         <div v-if="reason === 'other'" class="form-group">
-          <label for="block-note">{{ $t('trust.block.noteLabel') }}</label>
-          <textarea
-            id="block-note"
+          <Textarea
             v-model="note"
-            class="form-input"
-            rows="2"
+            :label="$t('trust.block.noteLabel')"
+            :rows="2"
             :placeholder="$t('trust.block.notePlaceholder')"
-          ></textarea>
+          />
         </div>
         
         <div class="warning-box">
@@ -56,17 +54,17 @@
     
     <template #footer>
       <div class="modal-actions">
-        <button class="btn btn-secondary" @click="close">
+        <Button variant="outline" @click="close">
           {{ $t('common.cancel') }}
-        </button>
-        <button
-          class="btn btn-danger"
+        </Button>
+        <Button
+          variant="danger"
           :disabled="!canSubmit || processing || alreadyBlocked"
+          :loading="processing"
           @click="submit"
         >
-          <span v-if="processing" class="spinner"></span>
           {{ $t('trust.block.submit') }}
-        </button>
+        </Button>
       </div>
     </template>
   </Modal>
@@ -75,6 +73,8 @@
 <script setup>
 import { ref, computed } from 'vue'
 import Modal from '@/components/ui/Modal.vue'
+import Button from '@/ui/Button.vue'
+import Textarea from '@/ui/Textarea.vue'
 
 const props = defineProps({
   isOpen: {
@@ -262,57 +262,5 @@ function submit() {
   display: flex;
   justify-content: flex-end;
   gap: var(--spacing-sm);
-}
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-sm) var(--spacing-lg);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border: 1px solid transparent;
-}
-
-.btn-danger {
-  background: var(--color-error);
-  color: var(--color-error-text);
-}
-
-.btn-danger:hover:not(:disabled) {
-  background: var(--color-error-hover);
-}
-
-.btn-danger:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  border-color: var(--color-border);
-}
-
-.btn-secondary:hover {
-  background: var(--color-surface-hover);
-}
-
-.spinner {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 2px solid currentColor;
-  border-right-color: transparent;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
 }
 </style>
