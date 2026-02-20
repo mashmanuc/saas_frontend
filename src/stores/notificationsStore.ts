@@ -97,17 +97,20 @@ export const useNotificationsStore = defineStore('notifications', () => {
 
     try {
       const updated = await notificationsApi.markAsRead(id)
-      const index = items.value.findIndex(n => n.id === id)
-      if (index !== -1) {
-        const current = items.value[index]
-        const patch = deepClone(updated)
-        items.value[index] = {
-          ...current,
-          ...patch,
-          // keep optimistic timestamp if API returned partial payload
-          read_at: patch.read_at ?? current.read_at,
+      // Backend returns {ok: true} — only merge if response is a full notification object
+      if (updated && typeof updated === 'object' && 'id' in updated && 'read_at' in updated) {
+        const index = items.value.findIndex(n => n.id === id)
+        if (index !== -1) {
+          const current = items.value[index]
+          const patch = deepClone(updated)
+          items.value[index] = {
+            ...current,
+            ...patch,
+            read_at: patch.read_at ?? current.read_at,
+          }
         }
       }
+      // Otherwise keep optimistic update (read_at already set above)
     } catch (err) {
       if (wasUnread) {
         unreadCount.value += 1

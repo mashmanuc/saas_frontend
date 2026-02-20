@@ -100,7 +100,7 @@ async function loadThread() {
     }
 
     // Get student name
-    studentName.value = relation.student?.full_name || relation.student?.email || t('common.unknown')
+    studentName.value = relation.student?.display_name || relation.student?.full_name || relation.student?.email || t('common.unknown')
 
     // SSOT: Перевірка доступу через relation.status, НЕ через contactAccessStore
     // Якщо relation.status === 'active' → чат доступний

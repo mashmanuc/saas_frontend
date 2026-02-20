@@ -98,7 +98,7 @@ async function loadThread() {
     }
 
     // Get tutor name
-    tutorName.value = relation.tutor?.full_name || relation.tutor?.email || t('common.unknown')
+    tutorName.value = relation.tutor?.display_name || relation.tutor?.full_name || relation.tutor?.email || t('common.unknown')
 
     // Студенту не потрібна перевірка ContactAccess (він має автоматичний доступ до активного relation)
     // ContactAccess потрібен тільки тьютору

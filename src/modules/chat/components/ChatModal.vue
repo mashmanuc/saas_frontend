@@ -158,7 +158,7 @@ async function loadThread() {
       if (relation?.tutor) {
         const tut = relation.tutor
         // Student sees tutor's full name (no privacy restriction needed)
-        studentName.value = tut.full_name || tut.display_name || tut.email || t('common.unknown')
+        studentName.value = tut.display_name || tut.full_name || tut.email || t('common.unknown')
       }
       
       // Студенту не потрібна перевірка contact access
