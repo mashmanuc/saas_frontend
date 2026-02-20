@@ -23,26 +23,17 @@
             class="link-input"
             @focus="(e) => (e.target as HTMLInputElement).select()"
           />
-          <button class="btn-secondary" @click="openLink" :disabled="!displayLink">
-            <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-              <polyline points="15 3 21 3 21 9"/>
-              <line x1="10" y1="14" x2="21" y2="3"/>
-            </svg>
+          <Button variant="outline" @click="openLink" :disabled="!displayLink">
             {{ t('calendar.footer.join_lesson') }}
-          </button>
-          <button
-            class="btn-tertiary"
+          </Button>
+          <Button
+            variant="ghost"
             @click="navigateToProfile"
             :disabled="loading"
             data-testid="edit-lesson-links-button"
           >
-            <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-            </svg>
             {{ t('calendar.footer.edit_link') }}
-          </button>
+          </Button>
           <button class="copy-btn" @click="copyLink">
             <svg v-if="!copied" class="icon" width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
               <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
@@ -76,6 +67,7 @@
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import Button from '@/ui/Button.vue'
 import { storeToRefs } from 'pinia'
 import { useTutorLessonLinksStore } from '@/modules/booking/stores/tutorLessonLinksStore'
 import { useToast } from '@/composables/useToast'
@@ -161,9 +153,9 @@ const copyBackupLink = async () => {
 <style scoped>
 .calendar-footer {
   padding: 16px 24px;
-  background: #f5f7fa;
-  border-radius: 0 0 8px 8px;
-  border-top: 1px solid #e0e0e0;
+  background: var(--bg-secondary);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  border-top: 1px solid var(--border-color);
 }
 
 .footer-content {
@@ -178,11 +170,11 @@ const copyBackupLink = async () => {
   gap: 8px;
   font-size: 14px;
   font-weight: 500;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .icon {
-  color: #1976D2;
+  color: var(--accent);
   flex-shrink: 0;
 }
 
@@ -195,17 +187,17 @@ const copyBackupLink = async () => {
 .link-input {
   flex: 1;
   padding: 10px 12px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   font-size: 14px;
-  background: white;
-  color: #333;
+  background: var(--card-bg);
+  color: var(--text-primary);
   font-family: monospace;
 }
 
 .link-input:focus {
   outline: none;
-  border-color: #1976D2;
+  border-color: var(--accent);
 }
 
 .copy-btn {
@@ -213,10 +205,10 @@ const copyBackupLink = async () => {
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
-  background: #1976D2;
+  background: var(--accent);
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -225,7 +217,7 @@ const copyBackupLink = async () => {
 }
 
 .copy-btn:hover {
-  background: #1565C0;
+  background: var(--accent-hover, #1565C0);
 }
 
 .copy-btn .icon {
@@ -254,57 +246,23 @@ const copyBackupLink = async () => {
 }
 
 .provider-badge--platform {
-  background: #e0f2fe;
-  color: #0369a1;
+  background: var(--accent-bg, #e0f2fe);
+  color: var(--accent);
 }
 
 .provider-badge--zoom {
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--accent-bg, #dbeafe);
+  color: var(--accent);
 }
 
 .provider-badge--meet {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--warning-bg, #fef3c7);
+  color: var(--warning);
 }
 
 .provider-badge--custom {
-  background: #f3e8ff;
-  color: #6b21a8;
-}
-
-.btn-secondary, .btn-tertiary {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 14px;
-  border: 1px solid #d1d5db;
-  background: white;
-  color: #374151;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: #f9fafb;
-  border-color: #9ca3af;
-}
-
-.btn-tertiary {
-  background: transparent;
-}
-
-.btn-tertiary:hover:not(:disabled) {
-  background: #f3f4f6;
-}
-
-.btn-secondary:disabled, .btn-tertiary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  background: var(--calendar-first-lesson-bg, #f3e8ff);
+  color: var(--calendar-first-lesson, #6b21a8);
 }
 
 .backup-link {
@@ -312,29 +270,29 @@ const copyBackupLink = async () => {
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background: #f9fafb;
-  border-radius: 6px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
   font-size: 13px;
 }
 
 .backup-label {
   font-weight: 600;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 .backup-provider {
   font-weight: 500;
-  color: #374151;
+  color: var(--text-primary);
 }
 
 .backup-url {
   flex: 1;
   padding: 4px 8px;
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   font-size: 12px;
-  color: #1f2937;
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -343,14 +301,14 @@ const copyBackupLink = async () => {
 .copy-btn-small {
   padding: 4px 8px;
   background: transparent;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   cursor: pointer;
   transition: background 0.2s;
 }
 
 .copy-btn-small:hover {
-  background: #f3f4f6;
+  background: var(--bg-secondary);
 }
 
 /* Edit mode styles */
@@ -365,13 +323,13 @@ const copyBackupLink = async () => {
   align-items: center;
   justify-content: space-between;
   padding-bottom: 12px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .edit-title {
   font-size: 16px;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -380,12 +338,12 @@ const copyBackupLink = async () => {
   background: transparent;
   border: none;
   cursor: pointer;
-  color: #6b7280;
+  color: var(--text-secondary);
   transition: color 0.2s;
 }
 
 .btn-close:hover {
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .form-section {
@@ -397,7 +355,7 @@ const copyBackupLink = async () => {
 .form-label {
   font-size: 14px;
   font-weight: 500;
-  color: #374151;
+  color: var(--text-primary);
 }
 
 .form-row {
@@ -408,32 +366,32 @@ const copyBackupLink = async () => {
 .form-select {
   min-width: 140px;
   padding: 8px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   font-size: 14px;
-  background: white;
-  color: #111827;
+  background: var(--card-bg);
+  color: var(--text-primary);
   cursor: pointer;
 }
 
 .form-input {
   flex: 1;
   padding: 8px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   font-size: 14px;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .form-input:disabled {
-  background: #f9fafb;
-  color: #9ca3af;
+  background: var(--bg-secondary);
+  color: var(--text-muted);
   cursor: not-allowed;
 }
 
 .form-input:focus, .form-select:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
@@ -442,7 +400,7 @@ const copyBackupLink = async () => {
   align-items: center;
   gap: 8px;
   font-size: 14px;
-  color: #374151;
+  color: var(--text-primary);
   cursor: pointer;
 }
 
@@ -450,7 +408,7 @@ const copyBackupLink = async () => {
   width: 18px;
   height: 18px;
   cursor: pointer;
-  accent-color: #3b82f6;
+  accent-color: var(--accent);
 }
 
 .form-actions {
@@ -462,10 +420,10 @@ const copyBackupLink = async () => {
 .btn-primary {
   flex: 1;
   padding: 10px 16px;
-  background: #3b82f6;
+  background: var(--accent);
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -473,7 +431,7 @@ const copyBackupLink = async () => {
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #2563eb;
+  background: var(--accent-hover, #2563eb);
 }
 
 .btn-primary:disabled {
@@ -482,7 +440,7 @@ const copyBackupLink = async () => {
 }
 
 .error-text {
-  color: #dc2626;
+  color: var(--danger);
   font-size: 13px;
   margin: 0;
 }

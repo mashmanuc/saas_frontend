@@ -9,16 +9,13 @@
       </div>
       
       <div class="header-actions">
-        <button class="btn-primary" @click="$emit('open-quick-block')">
-          <svg class="icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M8 0v16M0 8h16" stroke="currentColor" stroke-width="2"/>
-          </svg>
+        <Button variant="primary" @click="$emit('open-quick-block')">
           {{ t('calendar.header.mark_free_time') }}
-        </button>
+        </Button>
         
-        <button class="btn-link" @click="showLegend = true">
+        <Button variant="ghost" @click="showLegend = true">
           {{ t('calendar.header.color_legend') }}
-        </button>
+        </Button>
         
         <a 
           href="https://www.youtube.com/watch?v=example" 
@@ -49,6 +46,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import Button from '@/ui/Button.vue'
 import ColorLegendModal from './ColorLegendModal.vue'
 import WeekNavigationSimple from './WeekNavigationSimple.vue'
 
@@ -83,8 +81,8 @@ function handleToday() {
 
 <style scoped>
 .calendar-header-v2 {
-  background: #f8f9fa;
-  border-bottom: 1px solid #e0e0e0;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
   padding: 16px 24px 24px;
 }
 
@@ -108,12 +106,12 @@ function handleToday() {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #616161;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
 .icon-info {
-  color: #2196F3;
+  color: var(--accent);
   flex-shrink: 0;
 }
 
@@ -121,46 +119,6 @@ function handleToday() {
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-.btn-primary {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 10px 16px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn-primary:hover {
-  background: #45a049;
-}
-
-.btn-primary .icon {
-  flex-shrink: 0;
-}
-
-.btn-link {
-  background: none;
-  border: none;
-  color: #2196F3;
-  font-size: 14px;
-  cursor: pointer;
-  text-decoration: none;
-  padding: 8px 12px;
-  border-radius: 4px;
-  transition: background 0.2s;
-}
-
-.btn-link:hover {
-  background: rgba(33, 150, 243, 0.1);
-  text-decoration: underline;
 }
 
 /* Responsive */
@@ -173,12 +131,6 @@ function handleToday() {
   .header-actions {
     flex-direction: column;
     align-items: stretch;
-  }
-  
-  .btn-primary,
-  .btn-link {
-    width: 100%;
-    justify-content: center;
   }
 }
 </style>

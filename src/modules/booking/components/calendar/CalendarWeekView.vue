@@ -844,7 +844,7 @@ function handleAvailabilityCellClick(cellInfo: { start: string; end: string; can
   display: flex;
   align-items: center;
   gap: 16px;
-  color: #475569;
+  color: var(--text-secondary);
   font-size: 13px;
 }
 
@@ -862,14 +862,14 @@ function handleAvailabilityCellClick(cellInfo: { start: string; end: string; can
 }
 
 .legend-item--interactive:hover {
-  background-color: #f1f5f9;
+  background-color: var(--bg-secondary);
 }
 
 .legend-checkbox {
   width: 16px;
   height: 16px;
   cursor: pointer;
-  accent-color: #3b82f6;
+  accent-color: var(--accent);
 }
 
 .legend-dot {
@@ -881,13 +881,13 @@ function handleAvailabilityCellClick(cellInfo: { start: string; end: string; can
 }
 
 .legend-dot--lesson {
-  background: #22c55e;
-  border-color: #16a34a;
+  background: var(--success);
+  border-color: var(--success);
 }
 
 .legend-dot--availability {
-  background: #fbbf24;
-  border-color: #d97706;
+  background: var(--warning);
+  border-color: var(--warning);
 }
 
 .loading-state,
@@ -902,9 +902,9 @@ function handleAvailabilityCellClick(cellInfo: { start: string; end: string; can
 }
 
 .calendar-header-inline {
-  background: white;
+  background: var(--card-bg);
   padding: 16px 24px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color);
   margin-bottom: 16px;
 }
 
@@ -922,14 +922,14 @@ function handleAvailabilityCellClick(cellInfo: { start: string; end: string; can
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: #f3f4f6;
+  background: var(--bg-secondary);
   border: none;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .nav-btn-inline:hover:not(:disabled) {
-  background: #e5e7eb;
+  background: var(--bg-tertiary, #e5e7eb);
   transform: scale(1.05);
 }
 
@@ -949,14 +949,14 @@ function handleAvailabilityCellClick(cellInfo: { start: string; end: string; can
 .week-range-inline {
   font-size: 16px;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .today-btn-inline {
   padding: 4px 12px;
   border-radius: 9999px;
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--accent-bg, #dbeafe);
+  color: var(--accent);
   border: none;
   font-size: 12px;
   font-weight: 600;
@@ -965,22 +965,22 @@ function handleAvailabilityCellClick(cellInfo: { start: string; end: string; can
 }
 
 .today-btn-inline:hover {
-  background: #bfdbfe;
+  background: var(--accent-bg-hover, #bfdbfe);
 }
 
 .btn-secondary {
   padding: 8px 16px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   font-size: 14px;
   font-weight: 500;
   transition: background-color 0.2s;
-  background: white;
+  background: var(--card-bg);
   cursor: pointer;
 }
 
 .btn-secondary:hover {
-  background-color: #f3f4f6;
+  background-color: var(--bg-secondary);
 }
 
 .connection-warning {
@@ -988,10 +988,10 @@ function handleAvailabilityCellClick(cellInfo: { start: string; end: string; can
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
-  background: #fef3c7;
-  border: 1px solid #fbbf24;
-  border-radius: 8px;
-  color: #92400e;
+  background: var(--warning-bg, #fef3c7);
+  border: 1px solid var(--warning, #fbbf24);
+  border-radius: var(--radius-md);
+  color: var(--warning);
   font-size: 14px;
   font-weight: 500;
 }
@@ -1003,8 +1003,8 @@ function handleAvailabilityCellClick(cellInfo: { start: string; end: string; can
 }
 
 .empty-state-card {
-  background: white;
-  border-radius: 16px;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
   padding: 32px;
   max-width: 480px;
   text-align: center;
@@ -1018,11 +1018,11 @@ function handleAvailabilityCellClick(cellInfo: { start: string; end: string; can
 .empty-state-card h3 {
   font-size: 20px;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .empty-state-card p {
-  color: #475569;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
@@ -1030,17 +1030,17 @@ function handleAvailabilityCellClick(cellInfo: { start: string; end: string; can
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: #ecfeff;
+  background: var(--accent-bg, #ecfeff);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #0e7490;
+  color: var(--accent);
 }
 
 .btn-primary {
   padding: 10px 24px;
   border-radius: 999px;
-  background: linear-gradient(135deg, #0ea5e9, #14b8a6);
+  background: var(--accent);
   color: white;
   border: none;
   font-weight: 600;
@@ -1063,17 +1063,17 @@ function handleAvailabilityCellClick(cellInfo: { start: string; end: string; can
   gap: 12px;
   justify-content: center;
   padding: 16px;
-  background: white;
-  border-radius: 8px;
+  background: var(--card-bg);
+  border-radius: var(--radius-md);
   margin-bottom: 16px;
 }
 
 .toggle-btn {
   padding: 10px 20px;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  background: white;
-  color: #6b7280;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--card-bg);
+  color: var(--text-secondary);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -1081,13 +1081,13 @@ function handleAvailabilityCellClick(cellInfo: { start: string; end: string; can
 }
 
 .toggle-btn:hover {
-  border-color: #3b82f6;
-  color: #3b82f6;
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .toggle-btn.active {
-  border-color: #3b82f6;
-  background: #3b82f6;
+  border-color: var(--accent);
+  background: var(--accent);
   color: white;
 }
 
@@ -1095,8 +1095,8 @@ function handleAvailabilityCellClick(cellInfo: { start: string; end: string; can
   display: flex;
   flex-direction: column;
   gap: 16px;
-  background: white;
-  border-radius: 8px;
+  background: var(--card-bg);
+  border-radius: var(--radius-md);
   padding: 16px;
 }
 
@@ -1115,8 +1115,8 @@ function handleAvailabilityCellClick(cellInfo: { start: string; end: string; can
 }
 
 .modal-content {
-  background: white;
-  border-radius: 12px;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
   padding: 24px;
   max-width: 500px;
   width: 90%;
@@ -1144,17 +1144,17 @@ function handleAvailabilityCellClick(cellInfo: { start: string; end: string; can
   margin-top: 20px;
   width: 100%;
   padding: 12px;
-  background: #f5f5f5;
+  background: var(--bg-secondary);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   font-size: 14px;
   font-weight: 600;
-  color: #666;
+  color: var(--text-secondary);
   cursor: pointer;
   transition: background 0.2s ease;
 }
 
 .btn-close-modal:hover {
-  background: #e0e0e0;
+  background: var(--bg-tertiary, #e0e0e0);
 }
 </style>

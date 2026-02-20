@@ -7,15 +7,15 @@
       <span>{{ t('calendar.header.reminder') }}</span>
     </div>
     <div class="header-actions">
-      <button class="btn-primary" @click="$emit('open-quick-block')">
+      <Button variant="primary" @click="$emit('open-quick-block')">
         {{ t('calendar.header.mark_free_time') }}
-      </button>
-      <button class="btn-link" @click="showLegend = true">
+      </Button>
+      <Button variant="ghost" @click="showLegend = true">
         {{ t('calendar.header.color_legend') }}
-      </button>
-      <button class="btn-link" @click="openVideoGuide">
+      </Button>
+      <Button variant="ghost" @click="openVideoGuide">
         {{ t('calendar.header.video_guide') }}
-      </button>
+      </Button>
     </div>
   </div>
   
@@ -25,6 +25,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import Button from '@/ui/Button.vue'
 import ColorLegendModal from './ColorLegendModal.vue'
 
 const { t } = useI18n()
@@ -45,16 +46,16 @@ const openVideoGuide = () => {
   justify-content: space-between;
   align-items: center;
   padding: 16px 24px;
-  background: #f5f7fa;
-  border-radius: 8px 8px 0 0;
-  border-bottom: 1px solid #e0e0e0;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .header-message {
   display: flex;
   align-items: center;
   gap: 12px;
-  color: #1976D2;
+  color: var(--accent);
   font-size: 14px;
 }
 
@@ -66,37 +67,6 @@ const openVideoGuide = () => {
   display: flex;
   gap: 12px;
   align-items: center;
-}
-
-.btn-primary {
-  padding: 10px 20px;
-  background: #1976D2;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn-primary:hover {
-  background: #1565C0;
-}
-
-.btn-link {
-  padding: 8px 16px;
-  background: transparent;
-  color: #1976D2;
-  border: none;
-  font-size: 14px;
-  cursor: pointer;
-  text-decoration: underline;
-  transition: color 0.2s;
-}
-
-.btn-link:hover {
-  color: #1565C0;
 }
 
 @media (max-width: 768px) {
