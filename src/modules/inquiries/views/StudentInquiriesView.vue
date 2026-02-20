@@ -42,13 +42,14 @@
         :show-actions="inquiry.status === 'OPEN'"
       >
         <template #actions>
-          <button 
-            @click="handleCancel(inquiry.id)"
-            class="btn btn-secondary btn-sm"
+          <Button 
+            variant="secondary"
+            size="sm"
             :disabled="isLoading"
+            @click="handleCancel(inquiry.id)"
           >
             {{ $t('inquiries.student.cancel') }}
-          </button>
+          </Button>
         </template>
       </InquiryCard>
     </div>
@@ -67,6 +68,7 @@ import { useInquiriesStore } from '@/stores/inquiriesStore'
 import { useInquiryErrorHandler } from '@/composables/useInquiryErrorHandler'
 import { usePageVisibility } from '@/composables/usePageVisibility'
 import { storeToRefs } from 'pinia'
+import Button from '@/ui/Button.vue'
 import LoadingState from '@/components/inquiries/LoadingState.vue'
 import ErrorState from '@/components/inquiries/ErrorState.vue'
 import EmptyInquiriesState from '@/components/inquiries/EmptyInquiriesState.vue'
@@ -132,58 +134,29 @@ function handleRetry() {
 .student-inquiries-view {
   max-width: 800px;
   margin: 0 auto;
-  padding: 24px;
+  padding: var(--space-lg);
 }
 
 .view-header {
-  margin-bottom: 32px;
+  margin-bottom: var(--space-2xl);
 }
 
 .view-header h1 {
-  margin: 0 0 8px 0;
-  font-size: 28px;
+  margin: 0 0 var(--space-xs) 0;
+  font-size: var(--text-2xl);
   font-weight: 700;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .view-description {
   margin: 0;
-  font-size: 16px;
-  color: #6B7280;
+  font-size: var(--text-base);
+  color: var(--text-secondary);
 }
 
 .inquiries-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-}
-
-.btn {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 6px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 14px;
-}
-
-.btn-sm {
-  padding: 6px 12px;
-  font-size: 13px;
-}
-
-.btn-secondary {
-  background: #F3F4F6;
-  color: #374151;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: #E5E7EB;
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  gap: var(--space-md);
 }
 </style>

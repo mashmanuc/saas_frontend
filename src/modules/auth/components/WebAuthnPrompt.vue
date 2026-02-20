@@ -4,6 +4,8 @@ import { useI18n } from 'vue-i18n'
 import { Fingerprint, AlertCircle, Loader2 } from 'lucide-vue-next'
 import { authenticateWithWebAuthn } from '@/utils/webauthn'
 import type { WebAuthnChallenge } from '@/utils/webauthn'
+import Modal from '@/ui/Modal.vue'
+import Button from '@/ui/Button.vue'
 
 const props = defineProps<{
   show: boolean
@@ -60,102 +62,63 @@ function handleCancel() {
 </script>
 
 <template>
-  <Transition name="modal">
-    <div v-if="show" class="modal-overlay" @click="handleCancel">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <div class="header-icon">
-            <Fingerprint :size="32" />
-          </div>
-          <h2>{{ t('auth.webauthn.promptTitle') }}</h2>
-          <span class="beta-badge">{{ t('auth.webauthn.betaLabel') }}</span>
+  <Modal
+    :open="show"
+    size="sm"
+    @close="handleCancel"
+  >
+    <template #header>
+      <div class="header-column">
+        <div class="header-icon">
+          <Fingerprint :size="32" />
         </div>
+        <h3 class="modal-title">{{ t('auth.webauthn.promptTitle') }}</h3>
+        <span class="beta-badge">{{ t('auth.webauthn.betaLabel') }}</span>
+      </div>
+    </template>
 
-        <div class="modal-body">
-          <p class="description">
-            {{ t('auth.webauthn.promptDescription') }}
-          </p>
+    <div class="space-y-4">
+      <p class="description">
+        {{ t('auth.webauthn.promptDescription') }}
+      </p>
 
-          <div v-if="error" class="error-box">
-            <AlertCircle :size="18" />
-            <div>
-              <p>{{ error }}</p>
-              <p v-if="requestId" class="request-id">Request ID: {{ requestId }}</p>
-            </div>
-          </div>
-
-          <div v-if="isAuthenticating" class="authenticating-box">
-            <Loader2 :size="24" class="animate-spin" />
-            <p>{{ t('auth.webauthn.authenticating') }}</p>
-          </div>
-        </div>
-
-        <div class="modal-footer">
-          <button
-            type="button"
-            class="btn btn-ghost"
-            :disabled="isAuthenticating"
-            @click="handleFallback"
-          >
-            {{ t('auth.webauthn.useOtpInstead') }}
-          </button>
-          <div class="footer-actions">
-            <button
-              type="button"
-              class="btn btn-secondary"
-              :disabled="isAuthenticating"
-              @click="handleCancel"
-            >
-              {{ t('common.cancel') }}
-            </button>
-            <button
-              type="button"
-              class="btn btn-primary"
-              :disabled="isAuthenticating"
-              @click="handleAuthenticate"
-            >
-              <Fingerprint v-if="!isAuthenticating" :size="16" />
-              <Loader2 v-else :size="16" class="animate-spin" />
-              {{ isAuthenticating ? t('auth.webauthn.authenticating') : t('auth.webauthn.authenticate') }}
-            </button>
-          </div>
+      <div v-if="error" class="error-box">
+        <AlertCircle :size="18" />
+        <div>
+          <p>{{ error }}</p>
+          <p v-if="requestId" class="request-id">Request ID: {{ requestId }}</p>
         </div>
       </div>
+
+      <div v-if="isAuthenticating" class="authenticating-box">
+        <Loader2 :size="24" class="animate-spin" />
+        <p>{{ t('auth.webauthn.authenticating') }}</p>
+      </div>
     </div>
-  </Transition>
+
+    <template #footer>
+      <Button variant="ghost" :disabled="isAuthenticating" @click="handleFallback">
+        {{ t('auth.webauthn.useOtpInstead') }}
+      </Button>
+      <Button variant="secondary" :disabled="isAuthenticating" @click="handleCancel">
+        {{ t('common.cancel') }}
+      </Button>
+      <Button variant="primary" :disabled="isAuthenticating" :loading="isAuthenticating" @click="handleAuthenticate">
+        <template v-if="!isAuthenticating" #iconLeft><Fingerprint :size="16" /></template>
+        {{ isAuthenticating ? t('auth.webauthn.authenticating') : t('auth.webauthn.authenticate') }}
+      </Button>
+    </template>
+  </Modal>
 </template>
 
 <style scoped>
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 1rem;
-}
-
-.modal-content {
-  background: var(--surface-card);
-  border-radius: var(--radius-lg, 12px);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  max-width: 450px;
-  width: 100%;
-}
-
-.modal-header {
-  padding: 1.5rem;
-  border-bottom: 1px solid var(--border-color);
+.header-column {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--space-sm);
   text-align: center;
+  flex: 1;
 }
 
 .header-icon {
@@ -164,37 +127,30 @@ function handleCancel() {
   justify-content: center;
   width: 64px;
   height: 64px;
-  background: var(--primary-bg, #e0f2fe);
-  color: var(--primary);
-  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+  border-radius: var(--radius-full);
 }
 
-.modal-header h2 {
-  font-size: 1.25rem;
+.modal-title {
+  font-size: var(--text-xl);
   font-weight: 600;
   margin: 0;
   color: var(--text-primary);
 }
 
 .beta-badge {
-  padding: 0.25rem 0.5rem;
-  background: var(--warning-bg, #fef3c7);
-  color: var(--warning, #f59e0b);
-  border-radius: var(--radius-sm, 4px);
-  font-size: 0.75rem;
+  padding: var(--space-2xs) var(--space-xs);
+  background: color-mix(in srgb, var(--warning-bg) 20%, transparent);
+  color: var(--warning-bg);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
   font-weight: 600;
   text-transform: uppercase;
 }
 
-.modal-body {
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
 .description {
-  font-size: 0.9375rem;
+  font-size: var(--text-sm);
   color: var(--text-secondary);
   margin: 0;
   line-height: 1.6;
@@ -204,13 +160,13 @@ function handleCancel() {
 .error-box {
   display: flex;
   align-items: flex-start;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  border-radius: var(--radius-md, 8px);
-  font-size: 0.875rem;
-  background: var(--danger-bg, #fee2e2);
-  color: var(--danger, #dc2626);
-  border: 1px solid var(--danger-border, #fca5a5);
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  background: color-mix(in srgb, var(--danger-bg) 15%, transparent);
+  color: var(--danger-bg);
+  border: 1px solid color-mix(in srgb, var(--danger-bg) 30%, transparent);
 }
 
 .error-box p {
@@ -219,9 +175,9 @@ function handleCancel() {
 }
 
 .request-id {
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   opacity: 0.8;
-  margin-top: 0.25rem;
+  margin-top: var(--space-2xs);
   font-family: monospace;
 }
 
@@ -229,106 +185,21 @@ function handleCancel() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
-  padding: 1.5rem;
-  background: var(--surface-secondary);
-  border-radius: var(--radius-md, 8px);
+  gap: var(--space-sm);
+  padding: var(--space-lg);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
 }
 
 .authenticating-box p {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   color: var(--text-secondary);
-}
-
-.modal-footer {
-  padding: 1rem 1.5rem;
-  border-top: 1px solid var(--border-color);
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.footer-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-}
-
-.btn {
-  padding: 0.5rem 1rem;
-  border-radius: var(--radius-sm, 6px);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-}
-
-.btn-ghost {
-  background: transparent;
-  color: var(--text-secondary);
-  text-decoration: underline;
-}
-
-.btn-ghost:hover:not(:disabled) {
-  color: var(--text-primary);
-}
-
-.btn-secondary {
-  background: var(--surface-secondary);
-  color: var(--text-primary);
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: var(--surface-hover);
-}
-
-.btn-primary {
-  background: var(--primary);
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--primary-hover);
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.modal-enter-active,
-.modal-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-}
-
-.modal-enter-active .modal-content,
-.modal-leave-active .modal-content {
-  transition: transform 0.3s ease;
-}
-
-.modal-enter-from .modal-content,
-.modal-leave-to .modal-content {
-  transform: scale(0.95);
 }
 
 @keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .animate-spin {

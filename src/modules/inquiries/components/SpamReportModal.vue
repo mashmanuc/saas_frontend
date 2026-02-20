@@ -49,17 +49,17 @@
     
     <template #footer>
       <div class="modal-actions">
-        <button class="btn btn-secondary" @click="close">
+        <Button variant="outline" @click="close">
           {{ $t('common.cancel') }}
-        </button>
-        <button
-          class="btn btn-danger"
+        </Button>
+        <Button
+          variant="danger"
           :disabled="processing || alreadyReported"
+          :loading="processing"
           @click="submit"
         >
-          <span v-if="processing" class="spinner"></span>
           {{ $t('inquiries.spam.submit') }}
-        </button>
+        </Button>
       </div>
     </template>
   </Modal>
@@ -68,6 +68,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import Modal from '@/components/ui/Modal.vue'
+import Button from '@/ui/Button.vue'
 
 const props = defineProps({
   isOpen: {

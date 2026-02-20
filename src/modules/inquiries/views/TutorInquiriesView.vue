@@ -51,20 +51,22 @@
         :show-actions="inquiry.status === 'OPEN'"
       >
         <template #actions>
-          <button 
-            @click="handleAccept(inquiry.id)"
-            class="btn btn-primary btn-sm"
+          <Button 
+            variant="primary"
+            size="sm"
             :disabled="isLoading || isAccepting || !acceptanceStore.canAccept"
+            @click="handleAccept(inquiry.id)"
           >
             {{ isAccepting ? $t('inquiries.tutor.accepting') : $t('inquiries.tutor.accept') }}
-          </button>
-          <button 
-            @click="openRejectModal(inquiry.id)"
-            class="btn btn-secondary btn-sm"
+          </Button>
+          <Button 
+            variant="secondary"
+            size="sm"
             :disabled="isLoading"
+            @click="openRejectModal(inquiry.id)"
           >
             {{ $t('inquiries.tutor.reject') }}
-          </button>
+          </Button>
         </template>
       </InquiryCard>
     </div>
@@ -78,33 +80,27 @@
     />
     
     <!-- Accept Success Modal (показує контакти) -->
-    <div v-if="showContactsModal" class="modal-overlay" @click="closeContactsModal">
-      <div class="modal-container" @click.stop>
-        <div class="modal-header">
-          <h2>{{ $t('inquiries.tutor.contactsUnlocked') }}</h2>
-          <button @click="closeContactsModal" class="close-btn">✕</button>
+    <Modal :open="showContactsModal" :title="$t('inquiries.tutor.contactsUnlocked')" size="sm" @close="closeContactsModal">
+      <div v-if="unlockedContacts" class="contacts-display">
+        <div class="contact-item">
+          <span class="contact-label">Email:</span>
+          <span class="contact-value">{{ unlockedContacts.email }}</span>
         </div>
-        <div class="modal-body">
-          <div v-if="unlockedContacts" class="contacts-display">
-            <div class="contact-item">
-              <span class="contact-label">Email:</span>
-              <span class="contact-value">{{ unlockedContacts.email }}</span>
-            </div>
-            <div v-if="unlockedContacts.phone" class="contact-item">
-              <span class="contact-label">Телефон:</span>
-              <span class="contact-value">{{ unlockedContacts.phone }}</span>
-            </div>
-            <div v-if="unlockedContacts.telegram" class="contact-item">
-              <span class="contact-label">Telegram:</span>
-              <span class="contact-value">{{ unlockedContacts.telegram }}</span>
-            </div>
-          </div>
-          <button @click="closeContactsModal" class="btn btn-primary">
-            {{ $t('common.close') }}
-          </button>
+        <div v-if="unlockedContacts.phone" class="contact-item">
+          <span class="contact-label">Телефон:</span>
+          <span class="contact-value">{{ unlockedContacts.phone }}</span>
+        </div>
+        <div v-if="unlockedContacts.telegram" class="contact-item">
+          <span class="contact-label">Telegram:</span>
+          <span class="contact-value">{{ unlockedContacts.telegram }}</span>
         </div>
       </div>
-    </div>
+      <template #footer>
+        <Button variant="primary" @click="closeContactsModal">
+          {{ $t('common.close') }}
+        </Button>
+      </template>
+    </Modal>
   </div>
 </template>
 
@@ -123,6 +119,8 @@ import { useInquiryAccept } from '@/composables/useInquiryAccept'
 import { useInquiryErrorHandler } from '@/composables/useInquiryErrorHandler'
 import { storeToRefs } from 'pinia'
 import type { ContactsDTO } from '@/types/inquiries'
+import Button from '@/ui/Button.vue'
+import Modal from '@/ui/Modal.vue'
 import LoadingState from '@/components/inquiries/LoadingState.vue'
 import ErrorState from '@/components/inquiries/ErrorState.vue'
 import EmptyInquiriesState from '@/components/inquiries/EmptyInquiriesState.vue'
@@ -205,212 +203,107 @@ function handleRetry() {
 .tutor-inquiries-view {
   max-width: 800px;
   margin: 0 auto;
-  padding: 24px;
+  padding: var(--space-lg);
 }
 
 .view-header {
-  margin-bottom: 32px;
+  margin-bottom: var(--space-2xl);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-md);
 }
 
 .view-header h1 {
-  margin: 0 0 8px 0;
-  font-size: 28px;
+  margin: 0 0 var(--space-xs) 0;
+  font-size: var(--text-2xl);
   font-weight: 700;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .view-description {
   margin: 0;
-  font-size: 16px;
-  color: #6B7280;
+  font-size: var(--text-base);
+  color: var(--text-secondary);
 }
 
 /* Accept Limit Info Block */
 .accept-limit-info {
-  margin: 24px 0;
-  padding: 16px 20px;
-  background: #F0F9FF;
-  border: 2px solid #3B82F6;
-  border-radius: 8px;
+  margin: var(--space-lg) 0;
+  padding: var(--space-md) var(--space-lg);
+  background: var(--info-bg, #F0F9FF);
+  border: 2px solid var(--accent);
+  border-radius: var(--radius-md);
 }
 
 .limit-text {
-  font-size: 15px;
-  color: #1E40AF;
+  font-size: var(--text-sm);
+  color: var(--accent);
   line-height: 1.5;
 }
 
 .limit-text strong {
   font-weight: 700;
-  color: #1E3A8A;
 }
 
 .limit-exhausted {
-  background: #FEF2F2;
-  border-color: #EF4444;
-  color: #991B1B;
-  padding: 16px 20px;
-  border-radius: 8px;
-  margin: -16px -20px;
-}
-
-.limit-exhausted strong {
-  color: #7F1D1D;
+  background: var(--danger-bg, #FEF2F2);
+  border-color: var(--danger, #EF4444);
+  color: var(--danger, #991B1B);
+  padding: var(--space-md) var(--space-lg);
+  border-radius: var(--radius-md);
+  margin: calc(-1 * var(--space-md)) calc(-1 * var(--space-lg));
 }
 
 /* Empty State */
 .empty-state {
   text-align: center;
-  padding: 48px 24px;
-  background: #F9FAFB;
-  border-radius: 12px;
-  margin-top: 24px;
+  padding: var(--space-2xl) var(--space-lg);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  margin-top: var(--space-lg);
 }
 
 .empty-title {
-  font-size: 18px;
+  font-size: var(--text-lg);
   font-weight: 600;
-  color: #111827;
-  margin: 0 0 8px 0;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-xs) 0;
 }
 
 .empty-description {
-  font-size: 15px;
-  color: #6B7280;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
   margin: 0;
 }
 
 .inquiries-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-md);
 }
 
-.btn {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 6px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 14px;
-}
-
-.btn-sm {
-  padding: 6px 12px;
-  font-size: 13px;
-}
-
-.btn-primary {
-  background: #4F46E5;
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #4338CA;
-}
-
-.btn-secondary {
-  background: #F3F4F6;
-  color: #374151;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: #E5E7EB;
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Contacts Modal */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-}
-
-.modal-container {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-  max-width: 500px;
-  width: 100%;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px 24px;
-  border-bottom: 1px solid #E5E7EB;
-}
-
-.modal-header h2 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 24px;
-  color: #9CA3AF;
-  cursor: pointer;
-  padding: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  transition: all 0.2s;
-}
-
-.close-btn:hover {
-  background: #F3F4F6;
-  color: #374151;
-}
-
-.modal-body {
-  padding: 24px;
-}
-
+/* Contacts Display (inside Modal) */
 .contacts-display {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-bottom: 24px;
+  gap: var(--space-md);
 }
 
 .contact-item {
   display: flex;
   justify-content: space-between;
-  padding: 12px;
-  background: #F9FAFB;
-  border-radius: 6px;
+  padding: var(--space-sm);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
 }
 
 .contact-label {
   font-weight: 500;
-  color: #6B7280;
+  color: var(--text-secondary);
 }
 
 .contact-value {
-  color: #111827;
+  color: var(--text-primary);
   font-weight: 600;
 }
 </style>
