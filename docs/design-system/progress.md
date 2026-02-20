@@ -19,7 +19,7 @@
 | 3 | Очищення + QA | A ║ B ║ C | ✅ | 2026-02-20 | 2026-02-20 |
 | 4 | Полірування + ThemeStore | A ║ B ║ C | ✅ | 2026-02-20 | 2026-02-20 |
 | 5 | Button self-contained + дублікати | A → A ║ B → C | ✅ | 2026-02-20 | 2026-02-20 |
-| 6 | Фінальне очищення: залишки + токенізація | A ║ B → C | ⬜ | — | — |
+| 6 | Фінальне очищення: залишки + токенізація | A ║ B → C | ✅ | 2026-02-20 | 2026-02-20 |
 
 ---
 
@@ -291,3 +291,11 @@
 | 2026-02-20 | C-5.7: npm run build — OK (11.07s) | C | — |
 | 2026-02-20 | C-5.8: MF5_QA_REPORT.md — PASS з зауваженнями (variant="destructive" баг, ~10 залишків) | C | — |
 | 2026-02-20 | **MF5 ЗАВЕРШЕНО** — .btn SSOT in Button.vue, 16 files cleaned, build OK | — | — |
+| 2026-02-20 | A-5: remove .btn-primary/.btn-secondary scoped from AvailabilityTemplateEditor, CalendarFooter, CalendarWeekView, TutorAvailabilityCalendar | A | — |
+| 2026-02-20 | B-7: migrate ErrorBoundary + PushHandler to <Button>, fix destructive→danger in 2 files | B | — |
+| 2026-02-20 | C-6.1–C-6.3: ErrorBoundary, PushHandler, RelationActionButton — PASS | C | — |
+| 2026-02-20 | C-6.4–C-6.5: booking + marketplace модалки — .btn-primary/.btn-secondary видалено — PASS | C | — |
+| 2026-02-20 | C-6.6–C-6.7: variant="danger" в AdminArchiveUserModal + PrivacySettingsTab × 3 теми — PASS | C | — |
+| 2026-02-20 | C-6.8: npm run build — OK (11.35s) | C | — |
+| 2026-02-20 | C-6.9: MF6_QA_REPORT.md — PASS | C | — |
+| 2026-02-20 | **MF6 ЗАВЕРШЕНО** — Design System міграція ЗАВЕРШЕНА | — | — |
