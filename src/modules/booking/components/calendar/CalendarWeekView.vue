@@ -969,21 +969,6 @@ function handleAvailabilityCellClick(cellInfo: { start: string; end: string; can
   background: var(--accent-bg-hover, #bfdbfe);
 }
 
-.btn-secondary {
-  padding: 8px 16px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  font-size: 14px;
-  font-weight: 500;
-  transition: background-color 0.2s;
-  background: var(--card-bg);
-  cursor: pointer;
-}
-
-.btn-secondary:hover {
-  background-color: var(--bg-secondary);
-}
-
 .connection-warning {
   display: flex;
   align-items: center;

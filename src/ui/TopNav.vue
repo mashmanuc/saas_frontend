@@ -29,7 +29,7 @@
             font-weight="900"
             font-size="52"
             letter-spacing="-2"
-            fill="#111816">M4</text>
+            fill="var(--text-primary, #111816)">M4</text>
           <!-- SH (green gradient) -->
           <text x="88" y="48"
             font-family="'Arial Black', sans-serif"
