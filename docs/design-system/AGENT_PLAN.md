@@ -218,23 +218,27 @@
          │
 День 2:  MF3 ─── A (очищення CSS) ║ B (btn→Button 106 файлів) ║ C (QA всіх тем)    ✅
          │
-День 3:  MF4 ─── A (themeStore консолідація) ║ B (3 btn + 1 overlay) ║ C (QA модалок)
+День 2:  MF4 ─── A (themeStore консолідація) ║ B (3 btn + 1 overlay) ║ C (QA модалок)  ✅
+         │
+День 3:  MF5 ─── A (Button.vue self-contained → booking+classroom) ║ B (mkt+operator+misc) ║ C (QA)
 ```
 
-**Факт: MF0+MF1+MF2+MF2.5+MF3 завершені за 2 дні!**
+**Факт: MF0–MF4 завершені за 2 дні!**
 
 ---
 
 ## Метрики успіху
 
-| Метрика | До | Після MF3 | Ціль MF4 | Перевірка |
+| Метрика | До | Після MF4 | Ціль MF5 | Перевірка |
 |---------|-----|-----------|----------|-----------|
 | Файлів з сирими `<button>` | 856 | 211 | 211 (form-specific OK) | `grep -rl '<button ' src/` |
-| `class="btn"` (не scoped) | ? | 3 | 0 | `grep -rl 'class="btn' src/` |
-| Overlay-модалки | 63 | 2 | 1 (chat only) | `grep -rl 'fixed inset-0' src/` |
+| `class="btn"` (не scoped) | ? | 0 ✅ | 0 | `grep -rl 'class="btn' src/` |
+| Overlay-модалки | 63 | 1 (chat) ✅ | 1 | `grep -rl 'fixed inset-0' src/` |
 | Файлів токенів | 5 | 1 ✅ | 1 | `src/styles/tokens.css` |
-| ThemeStore конфлікт | 2 stores | 2 stores | 1 store | Pinia ID `'theme'` |
-| Тема скидається | так | так | ні | Ручна перевірка |
+| ThemeStore конфлікт | 2 stores | 1 store ✅ | 1 | Pinia ID `'theme'` |
+| Тема скидається | так | ні ✅ | ні | Ручна перевірка |
+| Дублікати `.btn` в scoped | 30 | 30 | 0 | `grep -rl '\.btn\s*{' src/` |
+| Button.vue self-contained | ні | ні | так | Стилі всередині компонента |
 | Build | OK | OK | OK | `npm run build` |
 
 ---
