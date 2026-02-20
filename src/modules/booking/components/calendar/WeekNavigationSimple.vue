@@ -82,9 +82,9 @@ function handleToday() {
   justify-content: center;
   gap: 12px;
   padding: 12px 16px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm, 0 4px 12px rgba(0, 0, 0, 0.05));
 }
 
 .nav-btn {
@@ -94,14 +94,14 @@ function handleToday() {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: #f3f4f6;
+  background: var(--bg-secondary);
   border: none;
   cursor: pointer;
   transition: background-color 0.2s, transform 0.2s;
 }
 
 .nav-btn:hover:not(:disabled) {
-  background: #e5e7eb;
+  background: var(--bg-tertiary, #e5e7eb);
   transform: translateY(-1px);
 }
 
@@ -120,14 +120,14 @@ function handleToday() {
 .week-range {
   font-size: 16px;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .today-btn {
   padding: 4px 12px;
   border-radius: 9999px;
-  background: #e0f2fe;
-  color: #0369a1;
+  background: var(--accent-bg, #e0f2fe);
+  color: var(--accent);
   border: none;
   font-size: 12px;
   font-weight: 600;
@@ -136,6 +136,6 @@ function handleToday() {
 }
 
 .today-btn:hover {
-  background: #bae6fd;
+  background: var(--accent-bg-hover, #bae6fd);
 }
 </style>

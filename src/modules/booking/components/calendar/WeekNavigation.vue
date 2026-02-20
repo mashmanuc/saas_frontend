@@ -129,9 +129,9 @@ const hasAvailability = computed(() => Boolean(props.hasAvailability))
   justify-content: center;
   gap: 12px;
   padding: 12px 16px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm, 0 4px 12px rgba(0, 0, 0, 0.05));
 }
 
 .nav-btn {
@@ -141,14 +141,14 @@ const hasAvailability = computed(() => Boolean(props.hasAvailability))
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: #f3f4f6;
+  background: var(--bg-secondary);
   border: none;
   cursor: pointer;
   transition: background-color 0.2s, transform 0.2s;
 }
 
 .nav-btn:hover:not(:disabled) {
-  background: #e5e7eb;
+  background: var(--bg-tertiary, #e5e7eb);
   transform: translateY(-1px);
 }
 
@@ -167,14 +167,14 @@ const hasAvailability = computed(() => Boolean(props.hasAvailability))
 .week-range {
   font-size: 16px;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .today-btn {
   padding: 4px 12px;
   border-radius: 9999px;
-  background: #e0f2fe;
-  color: #0369a1;
+  background: var(--accent-bg, #e0f2fe);
+  color: var(--accent);
   border: none;
   font-size: 12px;
   font-weight: 600;
@@ -183,7 +183,7 @@ const hasAvailability = computed(() => Boolean(props.hasAvailability))
 }
 
 .today-btn:hover {
-  background: #bae6fd;
+  background: var(--accent-bg-hover, #bae6fd);
 }
 
 .availability-status {
@@ -191,21 +191,21 @@ const hasAvailability = computed(() => Boolean(props.hasAvailability))
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: white;
-  border-radius: 12px;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
   padding: 10px 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-sm, 0 2px 8px rgba(0, 0, 0, 0.04));
   gap: 12px;
 }
 
 .status-text {
   font-size: 14px;
   font-weight: 600;
-  color: #065f46;
+  color: var(--success);
 }
 
 .status-text--empty {
-  color: #b45309;
+  color: var(--warning);
 }
 
 .actions {
@@ -221,15 +221,15 @@ const hasAvailability = computed(() => Boolean(props.hasAvailability))
   padding: 6px 12px;
   border-radius: 8px;
   border: none;
-  background: #e0f2fe;
-  color: #0369a1;
+  background: var(--accent-bg, #e0f2fe);
+  color: var(--accent);
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
 .scroll-available-btn:hover:not(:disabled) {
-  background: #bae6fd;
+  background: var(--accent-bg-hover, #bae6fd);
 }
 
 .scroll-available-btn:disabled {
@@ -242,7 +242,7 @@ const hasAvailability = computed(() => Boolean(props.hasAvailability))
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  background: #3b82f6;
+  background: var(--accent);
   color: white;
   border: none;
   border-radius: 8px;
@@ -252,7 +252,7 @@ const hasAvailability = computed(() => Boolean(props.hasAvailability))
 }
 
 .create-slot-btn:hover {
-  background: #2563eb;
+  background: var(--accent-hover, #2563eb);
   transform: translateY(-1px);
 }
 
@@ -260,7 +260,7 @@ const hasAvailability = computed(() => Boolean(props.hasAvailability))
   padding: 10px 20px;
   border: none;
   border-radius: 8px;
-  background: #4caf50;
+  background: var(--success);
   color: white;
   font-size: 14px;
   font-weight: 600;
@@ -270,14 +270,14 @@ const hasAvailability = computed(() => Boolean(props.hasAvailability))
 }
 
 .mark-free-time-btn:hover {
-  background: #45a049;
+  background: var(--success-hover, #45a049);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
 }
 
 .edit-availability-btn {
   padding: 8px 16px;
-  background: #10b981;
+  background: var(--success);
   color: white;
   border: none;
   border-radius: 8px;
@@ -287,7 +287,7 @@ const hasAvailability = computed(() => Boolean(props.hasAvailability))
 }
 
 .edit-availability-btn:hover {
-  background: #059669;
+  background: var(--success-hover, #059669);
   transform: translateY(-1px);
 }
 
@@ -298,16 +298,16 @@ const hasAvailability = computed(() => Boolean(props.hasAvailability))
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: #f3f4f6;
+  background: var(--bg-secondary);
   border: none;
-  color: #6b7280;
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .help-btn:hover {
-  background: #e5e7eb;
-  color: #111827;
+  background: var(--bg-tertiary, #e5e7eb);
+  color: var(--text-primary);
   transform: scale(1.05);
 }
 </style>

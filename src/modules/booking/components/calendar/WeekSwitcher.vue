@@ -87,9 +87,9 @@ function onToday() {
   justify-content: center;
   gap: 16px;
   padding: 16px;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm, 0 2px 8px rgba(0,0,0,0.08));
   margin-bottom: 16px;
 }
 
@@ -98,7 +98,7 @@ function onToday() {
   height: 44px;
   border-radius: 50%;
   border: none;
-  background: #f3f4f6;
+  background: var(--bg-secondary);
   font-size: 24px;
   font-weight: bold;
   cursor: pointer;
@@ -109,7 +109,7 @@ function onToday() {
 }
 
 .week-switcher__btn:hover:not(:disabled) {
-  background: #e5e7eb;
+  background: var(--bg-tertiary, #e5e7eb);
   transform: scale(1.05);
 }
 
@@ -129,15 +129,15 @@ function onToday() {
 .week-switcher__range {
   font-size: 18px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary);
 }
 
 .week-switcher__today {
   padding: 6px 16px;
   border-radius: 20px;
   border: none;
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: var(--accent-bg, #dbeafe);
+  color: var(--accent);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -145,7 +145,7 @@ function onToday() {
 }
 
 .week-switcher__today:hover:not(:disabled) {
-  background: #bfdbfe;
+  background: var(--accent-bg-hover, #bfdbfe);
 }
 
 .week-switcher__today:disabled {

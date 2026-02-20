@@ -1,12 +1,6 @@
 <template>
-  <div v-if="modelValue && lesson" class="drawer-overlay" @click="close">
-    <div class="drawer-content" @click.stop>
-      <div class="drawer-header">
-        <h3>{{ t('calendar.lesson_card.title') }}</h3>
-        <button class="close-btn" @click="close">×</button>
-      </div>
-      
-      <div class="lesson-details">
+  <Modal :open="!!(modelValue && lesson)" :title="t('calendar.lesson_card.title')" size="sm" @close="close">
+    <div class="lesson-details">
         <div class="detail-row">
           <svg class="icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
             <path d="M10 10c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
@@ -36,31 +30,32 @@
           </svg>
           {{ t('calendar.lesson_card.first_lesson') }}
         </div>
-      </div>
-      
-      <div class="lesson-actions">
-        <button 
-          v-if="lesson.can_reschedule && !isPast(lesson.start)"
-          class="btn-secondary" 
-          @click="openReschedule"
-        >
-          {{ t('calendar.lesson_card.reschedule') }}
-        </button>
-        
-        <button class="btn-secondary" @click="goToLesson">
-          {{ t('calendar.lesson_card.go_to_lesson') }}
-        </button>
-        
-        <button 
-          v-if="lesson.can_mark_no_show && isPast(lesson.start) && lesson.status === 'scheduled'"
-          class="btn-warning" 
-          @click="confirmNoShow"
-        >
-          {{ t('calendar.lesson_card.mark_no_show') }}
-        </button>
-      </div>
     </div>
-  </div>
+    
+    <div class="lesson-actions">
+      <Button 
+        v-if="lesson?.can_reschedule && !isPast(lesson.start)"
+        variant="outline" 
+        fullWidth
+        @click="openReschedule"
+      >
+        {{ t('calendar.lesson_card.reschedule') }}
+      </Button>
+      
+      <Button variant="outline" fullWidth @click="goToLesson">
+        {{ t('calendar.lesson_card.go_to_lesson') }}
+      </Button>
+      
+      <Button 
+        v-if="lesson?.can_mark_no_show && isPast(lesson.start) && lesson.status === 'scheduled'"
+        variant="danger" 
+        fullWidth
+        @click="confirmNoShow"
+      >
+        {{ t('calendar.lesson_card.mark_no_show') }}
+      </Button>
+    </div>
+  </Modal>
   
   <RescheduleModal
     v-if="lesson"
@@ -79,6 +74,8 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import Modal from '@/ui/Modal.vue'
+import Button from '@/ui/Button.vue'
 import { useCalendarWeekStore } from '@/modules/booking/stores/calendarWeekStore'
 import { useToast } from '@/composables/useToast'
 import { useCalendarGrid } from '@/modules/booking/composables/useCalendarGrid'
@@ -159,76 +156,6 @@ const handleRescheduleConfirmed = () => {
 </script>
 
 <style scoped>
-.drawer-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  z-index: 1000;
-  animation: fadeIn 0.2s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.drawer-content {
-  background: white;
-  border-radius: 16px 16px 0 0;
-  padding: 24px;
-  max-width: 600px;
-  width: 100%;
-  max-height: 80vh;
-  overflow-y: auto;
-  animation: slideUp 0.3s ease;
-}
-
-@keyframes slideUp {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
-}
-
-.drawer-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.drawer-header h3 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: #333;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 32px;
-  color: #666;
-  cursor: pointer;
-  padding: 0;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.2s;
-}
-
-.close-btn:hover {
-  color: #333;
-}
-
 .lesson-details {
   display: flex;
   flex-direction: column;
@@ -241,23 +168,23 @@ const handleRescheduleConfirmed = () => {
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background: #f5f7fa;
-  border-radius: 8px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
 }
 
 .icon {
-  color: #1976D2;
+  color: var(--accent);
   flex-shrink: 0;
 }
 
 .detail-text {
   font-size: 14px;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .lesson-link {
   font-size: 14px;
-  color: #1976D2;
+  color: var(--accent);
   text-decoration: none;
   font-weight: 500;
 }
@@ -271,9 +198,9 @@ const handleRescheduleConfirmed = () => {
   align-items: center;
   gap: 8px;
   padding: 12px;
-  background: #F3E5F5;
-  border-radius: 8px;
-  color: #9C27B0;
+  background: var(--calendar-first-lesson-bg, #F3E5F5);
+  border-radius: var(--radius-md);
+  color: var(--calendar-first-lesson, #9C27B0);
   font-weight: 600;
   font-size: 14px;
 }
@@ -282,45 +209,5 @@ const handleRescheduleConfirmed = () => {
   display: flex;
   flex-direction: column;
   gap: 12px;
-}
-
-.btn-secondary,
-.btn-warning {
-  padding: 12px 20px;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-secondary {
-  background: #f5f7fa;
-  color: #1976D2;
-}
-
-.btn-secondary:hover {
-  background: #e3f2fd;
-}
-
-.btn-warning {
-  background: #FFF3E0;
-  color: #F57C00;
-}
-
-.btn-warning:hover {
-  background: #FFE0B2;
-}
-
-@media (min-width: 768px) {
-  .drawer-overlay {
-    align-items: center;
-  }
-  
-  .drawer-content {
-    border-radius: 16px;
-    max-height: 90vh;
-  }
 }
 </style>

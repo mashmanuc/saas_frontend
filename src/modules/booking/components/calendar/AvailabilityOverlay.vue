@@ -142,7 +142,7 @@ function handleBlockClick(slotId: number) {
 .availability-block__label {
   font-size: 11px;
   font-weight: 600;
-  color: #92400e;
+  color: var(--calendar-slot-label, #92400e);
   background: rgba(255, 255, 255, 0.85);
   border-radius: 6px;
   padding: 2px 6px;
@@ -181,26 +181,26 @@ function handleBlockClick(slotId: number) {
 }
 
 .action-btn--edit {
-  color: #2563eb;
+  color: var(--accent, #2563eb);
 }
 
 .action-btn--edit:hover {
-  background: #dbeafe;
+  background: var(--accent-bg, #dbeafe);
 }
 
 .action-btn--block {
-  color: #f59e0b;
+  color: var(--warning, #f59e0b);
 }
 
 .action-btn--block:hover {
-  background: #fef3c7;
+  background: var(--warning-bg, #fef3c7);
 }
 
 .action-btn--delete {
-  color: #dc2626;
+  color: var(--danger, #dc2626);
 }
 
 .action-btn--delete:hover {
-  background: #fee2e2;
+  background: var(--danger-bg, #fee2e2);
 }
 </style>
