@@ -60,4 +60,22 @@
 
   /* ─── Overlay ─── */
   --color-overlay: rgba(0, 0, 0, 0.5);
+
+  /* ─── Semantic Aliases (migrated from ui/tokens.css) ─── */
+  --surface-marketplace: var(--bg-primary);
+  --surface-card: var(--card-bg);
+  --surface-card-muted: var(--bg-secondary);
+  --surface-elevated: var(--card-bg);
+
+  --text-muted: var(--text-secondary);
+  --text-subtle: color-mix(in srgb, var(--text-secondary) 70%, transparent);
+
+  --shadow-card: 0 8px 25px var(--shadow);
+  --shadow-card-hover: 0 12px 35px var(--shadow-strong);
+
+  /* ─── Font Shorthands ─── */
+  --font-headline: 600 1.25rem/1.4 'Space Grotesk', var(--font-sans);
+  --font-body: 400 1rem/1.5 var(--font-sans);
+  --font-display: 600 clamp(1.75rem, 3vw, 2.5rem)/1.2 'Space Grotesk', var(--font-sans);
+  --font-eyebrow: 600 0.75rem/1 var(--font-sans);
 }

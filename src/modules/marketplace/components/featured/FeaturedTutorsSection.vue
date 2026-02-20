@@ -6,6 +6,7 @@ import TutorCard from '../catalog/TutorCard.vue'
 import LoadingSpinner from '@/ui/LoadingSpinner.vue'
 import { useI18n } from 'vue-i18n'
 import { telemetry } from '@/services/telemetry'
+import Button from '@/ui/Button.vue'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -56,9 +57,9 @@ function handleCardClick(tutor: TutorListItem) {
 
     <div v-else-if="error" class="error-state">
       <p>{{ error }}</p>
-      <button class="btn btn-secondary" @click="loadFeatured">
+      <Button variant="secondary" @click="loadFeatured">
         {{ t('common.retry') }}
-      </button>
+      </Button>
     </div>
 
     <div v-else-if="tutors.length === 0" class="empty-state">

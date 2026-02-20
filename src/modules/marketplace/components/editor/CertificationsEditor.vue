@@ -3,6 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import marketplaceApi, { type Certification, type CertificationStatus } from '../../api/marketplace'
 import { notifyError, notifySuccess } from '@/utils/notify'
+import Button from '@/ui/Button.vue'
 
 const { t } = useI18n()
 
@@ -297,15 +298,14 @@ onMounted(() => {
         <div class="progress-text">{{ uploadProgress }}%</div>
       </div>
 
-      <button
-        type="button"
-        class="btn btn-secondary"
+      <Button
+        variant="secondary"
         :disabled="!canSubmit || isUploading"
         data-test="marketplace-certifications-submit"
         @click="createCertification"
       >
         {{ isUploading ? t('marketplace.profile.editor.certificationsUploading') : t('marketplace.profile.editor.certificationsAdd') }}
-      </button>
+      </Button>
     </div>
 
     <div class="list" data-test="marketplace-certifications-list">
@@ -335,9 +335,9 @@ onMounted(() => {
             <input :checked="c.is_public" type="checkbox" @change="togglePublic(c)" />
             {{ t('marketplace.profile.editor.certificationPublic') }}
           </label>
-          <button type="button" class="btn btn-ghost" @click="removeCertification(c)">
+          <Button variant="ghost" @click="removeCertification(c)">
             {{ t('marketplace.profile.editor.remove') }}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

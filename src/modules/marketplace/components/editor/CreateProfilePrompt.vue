@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { UserPlus, ArrowRight } from 'lucide-vue-next'
 import type { TutorProfileUpsertPayload } from '../../api/marketplace'
 import { useI18n } from 'vue-i18n'
+import Button from '@/ui/Button.vue'
 
 const emit = defineEmits<{
   (e: 'create', data: TutorProfileUpsertPayload): void
@@ -40,14 +41,14 @@ async function handleCreate() {
         maxlength="100"
         @keyup.enter="handleCreate"
       />
-      <button
-        class="btn btn-primary"
+      <Button
+        variant="primary"
         :disabled="!headline.trim() || isCreating"
         @click="handleCreate"
       >
         {{ isCreating ? t('marketplace.profile.create.creating') : t('marketplace.profile.create.cta') }}
         <ArrowRight :size="18" />
-      </button>
+      </Button>
     </div>
 
     <ul class="benefits">

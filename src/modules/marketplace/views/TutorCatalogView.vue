@@ -14,6 +14,7 @@ import type { CatalogFilters as CatalogFiltersType } from '../api/marketplace'
 import { telemetry } from '@/services/telemetry'
 import { useI18n } from 'vue-i18n'
 import { useMarketplace } from '../composables/useMarketplace'
+import Button from '@/ui/Button.vue'
 
 const { t } = useI18n()
 const { tutors, totalCount, totalPages, currentPage, pageSize, isLoading, hasMore, filters, sortBy, filterOptions, error, setFilters, setSort, setPage, loadTutors, loadMore, clearFilters, loadFilterOptions, syncFiltersWithUrl } =
@@ -145,12 +146,12 @@ watch(
           icon="alert"
         >
           <div class="error-actions">
-            <button class="btn btn-secondary" data-test="marketplace-retry" @click="handleRetry">
+            <Button variant="secondary" data-test="marketplace-retry" @click="handleRetry">
               {{ t('common.retry') }}
-            </button>
-            <button class="btn btn-primary" data-test="marketplace-clear" @click="handleClearFilters">
+            </Button>
+            <Button variant="primary" data-test="marketplace-clear" @click="handleClearFilters">
               {{ t('marketplace.catalog.clearFilters') }}
-            </button>
+            </Button>
           </div>
         </EmptyState>
 
@@ -173,9 +174,9 @@ watch(
           :description="t('marketplace.catalog.emptyDescription')"
           icon="search"
         >
-          <button class="btn btn-primary" @click="handleClearFilters">
+          <Button variant="primary" @click="handleClearFilters">
             {{ t('marketplace.catalog.clearFilters') }}
-          </button>
+          </Button>
         </EmptyState>
       </div>
     </div>

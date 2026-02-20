@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import VerificationBadge from './VerificationBadge.vue'
 import { useI18n } from 'vue-i18n'
+import Button from '@/ui/Button.vue'
 
 export interface VerificationStatus {
   level: 'none' | 'basic' | 'advanced' | 'premium'
@@ -72,14 +73,15 @@ function handleRequestClick() {
       <p>{{ t('marketplace.verification.widget.noVerification') }}</p>
     </div>
 
-    <button
+    <Button
       v-if="canRequestUpgrade"
-      class="btn btn-primary btn-block"
+      variant="primary"
+      fullWidth
       data-test="request-verification-btn"
       @click="handleRequestClick"
     >
       {{ nextLevel ? t('marketplace.verification.widget.requestUpgrade', { level: nextLevel }) : t('marketplace.verification.widget.requestVerification') }}
-    </button>
+    </Button>
   </div>
 </template>
 

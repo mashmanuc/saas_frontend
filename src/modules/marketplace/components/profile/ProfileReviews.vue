@@ -5,6 +5,7 @@ import Rating from '../shared/Rating.vue'
 import marketplaceApi, { type Review } from '../../api/marketplace'
 import { notifyError } from '@/utils/notify'
 import { mapMarketplaceErrorToMessage, parseMarketplaceApiError } from '../../utils/apiErrors'
+import Button from '@/ui/Button.vue'
 
 interface Props {
   slug: string
@@ -93,16 +94,15 @@ watch(
         <p class="text">{{ r.text }}</p>
       </article>
 
-      <button
+      <Button
         v-if="hasMore"
-        type="button"
-        class="btn btn-secondary"
+        variant="secondary"
         :disabled="isLoading"
         data-test="marketplace-reviews-load-more"
         @click="loadMore"
       >
         {{ isLoading ? t('common.loading') : t('marketplace.profile.reviews.loadMore') }}
-      </button>
+      </Button>
     </div>
   </section>
 </template>

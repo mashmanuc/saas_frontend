@@ -6,6 +6,7 @@ import { storeToRefs } from 'pinia'
 import { BookOpen } from 'lucide-vue-next'
 import { useSearchStore } from '../stores/searchStore'
 import { useI18n } from 'vue-i18n'
+import Button from '@/ui/Button.vue'
 
 // Components
 import SubjectList from '../components/categories/SubjectList.vue'
@@ -98,14 +99,15 @@ const getCategoryColor = computed(() => category.value?.color || 'var(--accent)'
 
       <TutorGrid :tutors="tutors" :loading="isLoading" />
 
-      <button
+      <Button
         v-if="hasMore"
-        class="btn btn-secondary load-more"
+        variant="secondary"
+        class="load-more"
         :disabled="isLoading"
         @click="loadMore"
       >
         {{ isLoading ? t('common.loading') : t('marketplace.catalog.loadMore') }}
-      </button>
+      </Button>
 
       <!-- Empty State -->
       <div v-if="!isLoading && tutors.length === 0" class="empty-state">

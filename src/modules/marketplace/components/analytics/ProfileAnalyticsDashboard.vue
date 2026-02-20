@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import LoadingSpinner from '@/ui/LoadingSpinner.vue'
+import Button from '@/ui/Button.vue'
 import { telemetry } from '@/services/telemetry'
 
 export interface ProfileAnalytics {
@@ -148,9 +149,9 @@ function exportCSV() {
             {{ t(`marketplace.analytics.range.${range}`) }}
           </button>
         </div>
-        <button class="btn btn-secondary" @click="exportCSV" :disabled="!analytics">
+        <Button variant="secondary" @click="exportCSV" :disabled="!analytics">
           {{ t('marketplace.analytics.exportCSV') }}
-        </button>
+        </Button>
       </div>
     </div>
 
@@ -158,9 +159,9 @@ function exportCSV() {
 
     <div v-else-if="error" class="error-state">
       <p>{{ error }}</p>
-      <button class="btn btn-primary" @click="loadAnalytics">
+      <Button variant="primary" @click="loadAnalytics">
         {{ t('common.retry') }}
-      </button>
+      </Button>
     </div>
 
     <div v-else-if="analytics" class="analytics-content">

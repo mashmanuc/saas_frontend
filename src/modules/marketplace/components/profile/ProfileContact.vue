@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import type { TutorProfileFull } from '../../api/marketplace'
 import PriceTag from '../shared/PriceTag.vue'
+import Button from '@/ui/Button.vue'
 
 interface Props {
   profile: TutorProfileFull
@@ -59,16 +60,16 @@ const emit = defineEmits<{
 
     <div class="actions">
       <!-- Inquiry CTA - показується для всіх авторизованих студентів -->
-      <button v-if="canSendInquiry" class="btn btn-primary" @click="emit('inquiry')" data-test="inquiry-cta">
+      <Button v-if="canSendInquiry" variant="primary" @click="emit('inquiry')" data-test="inquiry-cta">
         <Send :size="18" />
         {{ t('inquiries.form.title') }}
-      </button>
+      </Button>
       
       <!-- Login required для неавторизованих -->
-      <button v-else-if="needsLogin" class="btn btn-primary" @click="emit('login-required')" data-test="inquiry-login-cta">
+      <Button v-else-if="needsLogin" variant="primary" @click="emit('login-required')" data-test="inquiry-login-cta">
         <Send :size="18" />
         {{ t('inquiries.form.title') }}
-      </button>
+      </Button>
       
       <!-- Message button - тимчасово прихований до реалізації чату -->
       <!-- <button class="btn btn-secondary" @click="emit('message')">

@@ -14,6 +14,7 @@ import tutorActivityApi from '../api/tutorActivity'
 import { telemetry } from '@/services/telemetry'
 import { useI18n } from 'vue-i18n'
 import { notifyError, notifySuccess } from '@/utils/notify'
+import Button from '@/ui/Button.vue'
 
 const store = useMarketplaceStore()
 const { t } = useI18n()
@@ -116,35 +117,35 @@ async function handleUnpublish() {
             {{ t('marketplace.profile.viewPublic') }}
           </a>
 
-          <button
+          <Button
             v-if="canPublish"
-            class="btn btn-primary"
+            variant="primary"
             :disabled="isSaving"
             data-test="marketplace-publish"
             @click="handlePublish"
           >
             {{ isSaving ? t('marketplace.profile.publishing') : t('marketplace.profile.publish') }}
-          </button>
+          </Button>
 
-          <button
+          <Button
             v-if="myProfile"
-            class="btn btn-secondary"
+            variant="secondary"
             :disabled="isSaving"
             data-test="marketplace-unpublish"
             @click="handleUnpublish"
           >
             {{ isSaving ? t('marketplace.profile.unpublishing') : t('marketplace.profile.unpublish') }}
-          </button>
+          </Button>
 
-          <button
+          <Button
             v-if="canSubmitForReview"
-            class="btn btn-secondary"
+            variant="secondary"
             :disabled="isSaving"
             data-test="marketplace-submit"
             @click="handleSubmit"
           >
             {{ isSaving ? t('marketplace.profile.submitting') : t('marketplace.profile.submit') }}
-          </button>
+          </Button>
         </div>
       </div>
     </header>

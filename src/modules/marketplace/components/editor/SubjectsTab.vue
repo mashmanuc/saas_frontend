@@ -16,6 +16,7 @@ import SubjectCardList from './SubjectCardList.vue'
 import type { Language, LanguageTag } from '../../api/languages'
 import type { SpecialtyTagCatalog } from '../../api/marketplace'
 import { useMarketplaceStore } from '../../stores/marketplaceStore'
+import Button from '@/ui/Button.vue'
 import { filterTagsForSubjectSafe } from '../../utils/subjectTagResolver'
 
 // v0.86: Subject tab mode (subjects vs languages as subjects)
@@ -308,14 +309,13 @@ function handleTogglePopularLanguage(langCode: string) {
             {{ option.label }}
           </option>
         </select>
-        <button
-          type="button"
-          class="btn btn-secondary"
+        <Button
+          variant="secondary"
           :disabled="!selectedSubjectCode || basicSubjectCodes.includes(selectedSubjectCode)"
           @click="handleAddSubjectFromSelect"
         >
           {{ t('marketplace.profile.editor.add') }}
-        </button>
+        </Button>
       </div>
 
       <SubjectSelectionPanel

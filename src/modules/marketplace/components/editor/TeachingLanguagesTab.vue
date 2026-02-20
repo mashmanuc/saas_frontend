@@ -12,6 +12,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { Language } from '../../api/languages'
 import type { LanguageLevel } from '../../api/marketplace'
+import Button from '@/ui/Button.vue'
 
 interface TeachingLanguage {
   code: string
@@ -133,14 +134,14 @@ function handleQuickAddLanguage(langCode: string) {
           </option>
         </select>
 
-        <button
-          type="button"
-          class="btn btn-primary add-btn"
+        <Button
+          variant="primary"
+          class="add-btn"
           :disabled="!newLanguageCode || isLanguageAlreadyAdded(newLanguageCode)"
           @click="handleAddLanguage"
         >
           {{ t('marketplace.profile.editor.add') }}
-        </button>
+        </Button>
       </div>
 
       <!-- Hint text -->
@@ -176,15 +177,15 @@ function handleQuickAddLanguage(langCode: string) {
             </option>
           </select>
 
-          <button
-            type="button"
-            class="btn btn-ghost btn-remove"
+          <Button
+            variant="ghost"
+            class="btn-remove"
             :aria-label="`${t('marketplace.profile.editor.remove')} ${getLanguageTitle(tl.code)}`"
             @click="handleRemoveLanguage(tl.code)"
           >
             <span aria-hidden="true">✕</span>
             <span class="visually-hidden">{{ t('marketplace.profile.editor.remove') }}</span>
-          </button>
+          </Button>
         </li>
       </ul>
     </section>

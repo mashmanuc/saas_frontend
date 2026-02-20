@@ -18,6 +18,7 @@ import ReportModal from '@/components/trust/ReportModal.vue'
 import { ReportTargetType } from '@/types/trust'
 import { useI18n } from 'vue-i18n'
 import InquiryFormModal from '@/components/inquiries/InquiryFormModal.vue'
+import Button from '@/ui/Button.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -266,7 +267,7 @@ function handleInquirySuccess() {
       :title="$t('marketplace.profile.notFound.title')"
       :description="$t('marketplace.profile.notFound.description')"
     >
-      <button class="btn btn-primary" @click="goBack">{{ $t('marketplace.profile.notFound.backCta') }}</button>
+      <Button variant="primary" @click="goBack">{{ $t('marketplace.profile.notFound.backCta') }}</Button>
     </NotFound>
 
     <CreateReviewModal

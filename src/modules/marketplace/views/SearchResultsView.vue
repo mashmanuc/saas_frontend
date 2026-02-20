@@ -6,6 +6,7 @@ import { SlidersHorizontal } from 'lucide-vue-next'
 import { useSearchStore } from '../stores/searchStore'
 import type { SearchFilters } from '../api/marketplace'
 import { useI18n } from 'vue-i18n'
+import Button from '@/ui/Button.vue'
 
 // Components
 import SearchBar from '../components/search/SearchBar.vue'
@@ -189,9 +190,9 @@ const handleRefreshFilters = async () => {
           <div class="empty-icon">🔍</div>
           <h3>{{ t('marketplace.catalog.emptyTitle') }}</h3>
           <p>{{ t('marketplace.catalog.emptyDescription') }}</p>
-          <button class="btn btn-primary" @click="handleClearFilters">
+          <Button variant="primary" @click="handleClearFilters">
             {{ t('marketplace.catalog.clearFilters') }}
-          </button>
+          </Button>
         </div>
       </main>
     </div>

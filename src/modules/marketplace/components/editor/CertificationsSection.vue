@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Plus, Trash2 } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 
 const props = defineProps<{
   modelValue: Array<{
@@ -42,10 +43,10 @@ function updateCertification(index: number, field: string, value: any) {
   <div class="certifications-section">
     <div class="section-header">
       <h3>{{ t('profile.editor.certifications.title') }}</h3>
-      <button class="btn btn-secondary btn-sm" @click="addCertification">
+      <Button variant="secondary" size="sm" @click="addCertification">
         <Plus :size="16" />
         {{ t('profile.editor.certifications.add') }}
-      </button>
+      </Button>
     </div>
 
     <div class="certifications-list">
@@ -140,32 +141,6 @@ function updateCertification(index: number, field: string, value: any) {
   font-size: 0.9375rem;
   background: var(--surface-input);
   color: var(--text-primary);
-}
-
-.btn {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: var(--radius-sm, 6px);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-secondary {
-  background: var(--surface-secondary);
-  color: var(--text-primary);
-}
-
-.btn-secondary:hover {
-  background: var(--surface-hover);
-}
-
-.btn-sm {
-  padding: 0.375rem 0.75rem;
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
 }
 
 .btn-remove {

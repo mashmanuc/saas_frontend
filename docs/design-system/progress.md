@@ -140,28 +140,38 @@
 
 ## MF3 — Очищення + QA
 
+> Промти: `PROMPTS_MF3.md`
+
 ### Агент A — Очищення CSS
 
 | # | Задача | Статус | Коміт | Примітки |
 |---|--------|--------|-------|----------|
-| A-3.1 | Консолідація тем-систем | ⬜ | — | |
-| A-3.2 | Видалити `ui/tokens.css` | ⬜ | — | Після grep |
-| A-3.3 | Видалити `ui-contract/tokens.css` | ⬜ | — | Після grep |
-| A-3.4 | Очистити `main.css` від старих `.btn` | ⬜ | — | |
-| A-3.5 | Фінальний аудит хардкоджених кольорів | ⬜ | — | |
+| A-3.1 | Консолідація `m4sh.css` → `tokens.css` | ⬜ | — | Перенести line-height, font-family-serif, видалити дублі |
+| A-3.2 | Видалити `src/ui/tokens.css` | ⬜ | — | Імпорт в style.css |
+| A-3.3 | Видалити `src/assets2/ui-contract/tokens/tokens.css` | ⬜ | — | Імпорт в main.js |
+| A-3.4 | Позначити `.btn-*` в `main.css` як @deprecated | ⬜ | — | 106 файлів ще використовують — чекає B-4.0 |
+| A-3.5 | Фінальний аудит hex в CSS файлах | ⬜ | — | |
+| A-3.6 | Sync `tailwind.config.js` з `tokens.css` | ⬜ | — | borderRadius, zIndex |
+| A-3.7 | Видалити `.btn-*` з `main.css` | ⬜ | — | ТІЛЬКИ після B-4.0! |
 
-### Агент B — Очищення компонентів
+### Агент B — Масова заміна btn→Button + очищення компонентів
 
 | # | Задача | Статус | Коміт | Примітки |
 |---|--------|--------|-------|----------|
-| B-4.1 | Видалити `components/ui/Modal.vue` | ⬜ | — | Після grep |
-| B-4.2 | Видалити `ConfirmDialog.vue` | ⬜ | — | Після grep |
-| B-4.3 | Перенести з `m4sh.css` → `tokens.css`/`main.css` | ⬜ | — | |
+| B-4.0 | `class="btn"` → `<Button>` в marketplace/ (~30 файлів) | ⬜ | — | Найбільший блок |
+| B-4.0b | `class="btn"` → `<Button>` в booking/ (~15 файлів) | ⬜ | — | Без debug/ |
+| B-4.0c | `class="btn"` → `<Button>` в classroom/ (~8 файлів) | ⬜ | — | |
+| B-4.0d | `class="btn"` → `<Button>` в board/ (~7 файлів) | ⬜ | — | |
+| B-4.0e | `class="btn"` → `<Button>` в інших модулях | ⬜ | — | inquiries, matches, operator, contacts тощо |
+| B-4.1 | Замінити `components/ui/Modal` → `@/ui/Modal` (6 файлів) | ⬜ | — | trust, contacts, inquiries |
+| B-4.2 | Замінити `ConfirmDialog` → `@/ui/ConfirmModal` (2 файли) | ⬜ | — | booking modals |
+| B-4.3 | Видалити `components/ui/Modal.vue` + `ConfirmDialog.vue` | ⬜ | — | Після B-4.1 + B-4.2 |
 
 ### Агент C — QA
 
 | # | Перевірка | Light | Dark | Classic |
 |---|-----------|-------|------|---------|
+| C-3.0 | Фінальний аудит метрик | — | — | — |
 | C-3.1 | Кнопки (всі варіанти) | ⬜ | ⬜ | ⬜ |
 | C-3.2 | Модалки (backdrop, focus trap, Esc) | ⬜ | ⬜ | ⬜ |
 | C-3.3 | Форми (focus, error, disabled) | ⬜ | ⬜ | ⬜ |
@@ -170,7 +180,7 @@
 | C-3.6 | Tablet (768px) | ⬜ | ⬜ | ⬜ |
 | C-3.7 | Desktop (1280px) | ⬜ | ⬜ | ⬜ |
 | C-3.8 | Accessibility | ⬜ | ⬜ | ⬜ |
-| C-3.9 | Фінальний аудит метрик | — | — | — |
+| C-3.9 | Фінальний звіт `MF3_QA_REPORT.md` | — | — | — |
 
 ---
 

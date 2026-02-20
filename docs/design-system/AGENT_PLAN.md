@@ -214,12 +214,12 @@
          │
 День 1:  MF2 ─── A (auth,dash,pay,staff) ║ B (inq,mkt,profile,chat) ║ C (booking)   ✅
          │
-День 2:  MF2.5── A (reviews,billing,lessons,onb) ║ B (12 дрібних) ║ C (залишки)
+День 2:  MF2.5── A (reviews,billing,lessons,onb) ║ B (12 дрібних) ║ C (залишки)     ✅
          │
-День 3:  MF3 ─── A (очищення CSS) ║ B (очищення компонентів) ║ C (QA всіх тем)
+День 3:  MF3 ─── A (очищення CSS) ║ B (btn→Button 106 файлів) ║ C (QA всіх тем)
 ```
 
-**Факт: MF0+MF1+MF2 завершені за 1 день!**
+**Факт: MF0+MF1+MF2+MF2.5 завершені за 2 дні!**
 
 ---
 

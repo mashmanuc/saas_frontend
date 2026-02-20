@@ -6,6 +6,7 @@ import { TrendingUp, Sparkles, ThumbsUp, Star, ArrowRight } from 'lucide-vue-nex
 import marketplaceApi, { type TutorListItem } from '../../api/marketplace'
 import TutorCard from '../catalog/TutorCard.vue'
 import { useI18n } from 'vue-i18n'
+import Button from '@/ui/Button.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -86,10 +87,10 @@ const handleViewAll = () => {
         <component :is="icon" :size="24" class="section-icon" />
         {{ title }}
       </h2>
-      <button class="btn btn-ghost" @click="handleViewAll">
+      <Button variant="ghost" @click="handleViewAll">
         {{ t('marketplace.sections.viewAll') }}
         <ArrowRight :size="16" />
-      </button>
+      </Button>
     </div>
 
     <!-- Loading State -->

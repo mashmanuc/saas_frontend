@@ -5,6 +5,7 @@ import { Plus, X, GripVertical, ChevronDown, ChevronUp } from 'lucide-vue-next'
 import { useCatalog } from '../../composables/useCatalog'
 import type { TagGroup } from '../../api/marketplace'
 import { getErrorForField, formatErrorMessages, type NestedError } from '../../utils/nestedErrorMapper'
+import Button from '@/ui/Button.vue'
 
 interface SubjectItem {
   code: string
@@ -201,15 +202,14 @@ function validateCustomText(text: string): string | null {
           {{ subject.title }}
         </option>
       </select>
-      <button
-        type="button"
-        class="btn btn-secondary"
+      <Button
+        variant="secondary"
         :disabled="!newSubjectCode || loading"
         @click="addSubject"
       >
         <Plus :size="16" />
         {{ t('marketplace.profile.editor.add') }}
-      </button>
+      </Button>
     </div>
 
     <div v-if="localSubjects.length" class="subjects-list">
@@ -341,33 +341,6 @@ function validateCustomText(text: string): string | null {
   border: 1px solid var(--border-color, #ddd);
   border-radius: 6px;
   font-size: 0.875rem;
-}
-
-.btn {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  transition: all 0.2s;
-}
-
-.btn-secondary {
-  background: var(--secondary-bg, #f5f5f5);
-  color: var(--text-primary, #333);
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: var(--secondary-hover, #e0e0e0);
-}
-
-.btn-secondary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .subjects-list {
