@@ -1,12 +1,11 @@
 <template>
-  <div class="modal-overlay" @click.self="close">
-    <div class="modal-container">
-      <div class="modal-header">
-        <h3>Manual Finalize: {{ orderId }}</h3>
-        <button @click="close" class="btn-close">✕</button>
-      </div>
-
-      <div class="modal-body">
+  <Modal
+    :open="true"
+    :title="`Manual Finalize: ${orderId}`"
+    size="lg"
+    @close="close"
+  >
+    <div class="modal-body-content">
         <!-- Loading Preview -->
         <div v-if="loadingPreview" class="loading-state">
           Loading preview...
@@ -15,7 +14,7 @@
         <!-- Preview Error -->
         <div v-else-if="previewError" class="error-state">
           <p class="error-message">{{ previewError }}</p>
-          <button @click="loadPreview" class="btn-retry">Retry</button>
+          <Button variant="primary" size="sm" @click="loadPreview">Retry</Button>
         </div>
 
         <!-- Preview Content -->
@@ -141,29 +140,30 @@
             </div>
           </div>
         </div>
-      </div>
-
-      <div class="modal-footer">
-        <button @click="close" class="btn btn-secondary">
-          {{ confirmResult ? 'Close' : 'Cancel' }}
-        </button>
-        <button 
-          v-if="!confirmResult"
-          @click="confirmFinalize"
-          class="btn btn-primary"
-          :disabled="!canConfirm"
-          :title="getConfirmTooltip()"
-        >
-          <span v-if="!confirming">Confirm Finalize</span>
-          <span v-else>⏳ Processing...</span>
-        </button>
-      </div>
     </div>
-  </div>
+
+    <template #footer>
+      <Button variant="secondary" @click="close">
+        {{ confirmResult ? 'Close' : 'Cancel' }}
+      </Button>
+      <Button 
+        v-if="!confirmResult"
+        variant="primary"
+        :disabled="!canConfirm"
+        :loading="confirming"
+        :title="getConfirmTooltip()"
+        @click="confirmFinalize"
+      >
+        Confirm Finalize
+      </Button>
+    </template>
+  </Modal>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import Modal from '@/ui/Modal.vue'
+import Button from '@/ui/Button.vue'
 import { 
   previewFinalize, 
   confirmFinalize as apiConfirmFinalize,
@@ -348,311 +348,209 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-container {
-  background: white;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 700px;
-  max-height: 90vh;
+.modal-body-content {
   display: flex;
   flex-direction: column;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px;
-  border-bottom: 1px solid #eee;
-}
-
-.modal-header h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.btn-close {
-  background: transparent;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: #999;
-  padding: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.btn-close:hover {
-  color: #333;
-}
-
-.modal-body {
-  padding: 20px;
-  overflow-y: auto;
-  flex: 1;
+  gap: var(--space-md);
 }
 
 .loading-state,
 .error-state {
-  padding: 40px;
+  padding: var(--space-xl);
   text-align: center;
 }
 
 .error-message {
-  color: #f44336;
-  margin-bottom: 16px;
-}
-
-.btn-retry {
-  padding: 8px 16px;
-  background: #2196F3;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
+  color: var(--danger-bg);
+  margin-bottom: var(--space-md);
 }
 
 .preview-section {
-  margin-bottom: 24px;
+  margin-bottom: var(--space-lg);
 }
 
 .preview-section h4 {
-  margin: 0 0 12px 0;
-  font-size: 16px;
+  margin: 0 0 var(--space-sm) 0;
+  font-size: var(--text-base);
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .preview-section h5 {
-  margin: 0 0 8px 0;
-  font-size: 14px;
+  margin: 0 0 var(--space-xs) 0;
+  font-size: var(--text-sm);
   font-weight: 600;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .alert {
-  padding: 12px 16px;
-  border-radius: 6px;
-  margin-bottom: 16px;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-md);
 }
 
 .alert-warning {
-  background: #fff3cd;
-  color: #856404;
-  border: 1px solid #ffeaa7;
+  background: color-mix(in srgb, var(--warning-bg) 15%, transparent);
+  color: var(--warning-bg);
+  border: 1px solid color-mix(in srgb, var(--warning-bg) 30%, transparent);
 }
 
 .alert-success {
-  background: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
+  background: color-mix(in srgb, var(--success-bg) 15%, transparent);
+  color: var(--success-bg);
+  border: 1px solid color-mix(in srgb, var(--success-bg) 30%, transparent);
 }
 
 .alert-info {
-  background: #d1ecf1;
-  color: #0c5460;
-  border: 1px solid #bee5eb;
+  background: color-mix(in srgb, var(--info-bg) 15%, transparent);
+  color: var(--info-bg);
+  border: 1px solid color-mix(in srgb, var(--info-bg) 30%, transparent);
 }
 
 .alert-danger {
-  background: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
+  background: color-mix(in srgb, var(--danger-bg) 15%, transparent);
+  color: var(--danger-bg);
+  border: 1px solid color-mix(in srgb, var(--danger-bg) 30%, transparent);
 }
 
 .info-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
+  gap: var(--space-sm);
 }
 
 .info-item {
   display: flex;
-  gap: 8px;
+  gap: var(--space-xs);
 }
 
 .info-item .label {
   font-weight: 500;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .info-item .value {
-  color: #333;
+  color: var(--text-primary);
 }
 
 .state-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: var(--space-md);
 }
 
 .state-column {
-  padding: 12px;
-  background: #f9f9f9;
-  border-radius: 6px;
+  padding: var(--space-sm);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
 }
 
 .text-muted {
-  color: #999;
+  color: var(--text-secondary);
   font-style: italic;
 }
 
 .plan-badge {
   display: inline-block;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 12px;
+  padding: 2px var(--space-xs);
+  border-radius: var(--radius-xs);
+  font-size: var(--text-xs);
   font-weight: 600;
 }
 
 .plan-badge.plan-free {
-  background: #e0e0e0;
-  color: #666;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
 }
 
 .plan-badge.plan-pro {
-  background: #e3f2fd;
-  color: #1976d2;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
 }
 
 .plan-badge.plan-business {
-  background: #f3e5f5;
-  color: #7b1fa2;
+  background: color-mix(in srgb, var(--info-bg) 15%, transparent);
+  color: var(--info-bg);
 }
 
 .status-badge {
   display: inline-block;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 12px;
+  padding: 2px var(--space-xs);
+  border-radius: var(--radius-xs);
+  font-size: var(--text-xs);
   font-weight: 600;
 }
 
 .status-badge.status-pending {
-  background: #fff3cd;
-  color: #856404;
+  background: color-mix(in srgb, var(--warning-bg) 15%, transparent);
+  color: var(--warning-bg);
 }
 
 .status-badge.status-completed {
-  background: #d4edda;
-  color: #155724;
+  background: color-mix(in srgb, var(--success-bg) 15%, transparent);
+  color: var(--success-bg);
 }
 
 .status-badge.status-failed {
-  background: #f8d7da;
-  color: #721c24;
+  background: color-mix(in srgb, var(--danger-bg) 15%, transparent);
+  color: var(--danger-bg);
 }
 
 .status-badge.status-canceled {
-  background: #e0e0e0;
-  color: #666;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
 }
 
 .pending-age {
   font-weight: 600;
-  color: #ff9800;
+  color: var(--warning-bg);
 }
 
 .required {
-  color: #f44336;
+  color: var(--danger-bg);
 }
 
 .reason-input {
   width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: var(--space-xs);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
   font-family: inherit;
-  font-size: 14px;
+  font-size: var(--text-sm);
   resize: vertical;
+  background: var(--card-bg);
+  color: var(--text-primary);
 }
 
 .reason-input:focus {
   outline: none;
-  border-color: #2196F3;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
 .reason-input:disabled {
-  background: #f5f5f5;
+  background: var(--bg-secondary);
   cursor: not-allowed;
 }
 
 .field-error {
-  color: #f44336;
-  font-size: 12px;
-  margin-top: 4px;
+  color: var(--danger-bg);
+  font-size: var(--text-xs);
+  margin-top: var(--space-2xs);
 }
 
 .field-hint {
-  color: #999;
-  font-size: 12px;
-  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  margin-top: var(--space-2xs);
 }
 
 .confirm-result {
-  margin-top: 16px;
+  margin-top: var(--space-md);
 }
 
 .result-detail {
-  margin-top: 8px;
-  font-size: 14px;
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  padding: 20px;
-  border-top: 1px solid #eee;
-}
-
-.btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.btn-secondary {
-  background: #e0e0e0;
-  color: #333;
-}
-
-.btn-secondary:hover {
-  background: #d0d0d0;
-}
-
-.btn-primary {
-  background: #2196F3;
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #1976d2;
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  margin-top: var(--space-xs);
+  font-size: var(--text-sm);
 }
 </style>

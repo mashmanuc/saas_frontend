@@ -1,19 +1,11 @@
 <template>
-  <teleport to="body">
-    <div v-if="isOpen" class="modal-overlay" @click="handleClose">
-      <div class="modal-content" @click.stop role="dialog" aria-modal="true">
-        <div class="modal-header">
-          <h2>{{ $t('staff.reports.detailsTitle') }}</h2>
-          <button 
-            @click="handleClose" 
-            class="close-button"
-            :aria-label="$t('common.close')"
-          >
-            ×
-          </button>
-        </div>
-
-        <div class="modal-body">
+  <Modal
+    :open="isOpen"
+    :title="$t('staff.reports.detailsTitle')"
+    size="md"
+    @close="handleClose"
+  >
+    <div class="report-modal-body">
           <div class="report-info">
             <div class="info-row">
               <span class="label">{{ $t('staff.reports.reporter') }}:</span>
@@ -53,20 +45,20 @@
               class="resolution-note"
             />
             <div class="action-buttons">
-              <button 
-                @click="handleResolve('DISMISSED')"
+              <Button 
+                variant="secondary"
                 :disabled="isResolving"
-                class="btn btn-dismiss"
+                @click="handleResolve('DISMISSED')"
               >
                 {{ $t('staff.reports.dismiss') }}
-              </button>
-              <button 
-                @click="handleResolve('ACTIONED')"
+              </Button>
+              <Button 
+                variant="primary"
                 :disabled="isResolving"
-                class="btn btn-action"
+                @click="handleResolve('ACTIONED')"
               >
                 {{ $t('staff.reports.actioned') }}
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -85,14 +77,14 @@
               <span>{{ report.resolution_note }}</span>
             </div>
           </div>
-        </div>
-      </div>
     </div>
-  </teleport>
+  </Modal>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import Modal from '@/ui/Modal.vue'
+import Button from '@/ui/Button.vue'
 import type { StaffReport } from '@/types/staff'
 
 interface Props {
@@ -137,114 +129,62 @@ function formatDate(dateString: string): string {
 </script>
 
 <style scoped>
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+.report-modal-body {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 8px;
-  max-width: 600px;
-  width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.5rem;
-  border-bottom: 1px solid #eee;
-}
-
-.modal-header h2 {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
-}
-
-.close-button {
-  background: none;
-  border: none;
-  font-size: 2rem;
-  cursor: pointer;
-  color: #666;
-  padding: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.close-button:hover {
-  color: #000;
-}
-
-.modal-body {
-  padding: 1.5rem;
+  flex-direction: column;
+  gap: var(--space-md);
 }
 
 .report-info,
 .resolution-info {
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--space-lg);
 }
 
 .info-row {
   display: flex;
-  margin-bottom: 0.75rem;
-  gap: 0.5rem;
+  margin-bottom: var(--space-sm);
+  gap: var(--space-xs);
 }
 
 .info-row .label {
   font-weight: 600;
   min-width: 120px;
+  color: var(--text-secondary);
 }
 
 .status-badge {
   display: inline-block;
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  font-size: 0.875rem;
+  padding: var(--space-2xs) var(--space-sm);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
   font-weight: 500;
 }
 
 .status-open {
-  background-color: #fff3cd;
-  color: #856404;
+  background: color-mix(in srgb, var(--warning-bg) 15%, transparent);
+  color: var(--warning-bg);
 }
 
 .status-dismissed {
-  background-color: #d1ecf1;
-  color: #0c5460;
+  background: color-mix(in srgb, var(--info-bg) 15%, transparent);
+  color: var(--info-bg);
 }
 
 .status-actioned {
-  background-color: #d4edda;
-  color: #155724;
+  background: color-mix(in srgb, var(--success-bg) 15%, transparent);
+  color: var(--success-bg);
 }
 
 .report-details {
-  margin-bottom: 1.5rem;
-  padding: 1rem;
-  background-color: #f8f9fa;
-  border-radius: 4px;
+  margin-bottom: var(--space-lg);
+  padding: var(--space-md);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
 }
 
 .report-details h3 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1rem;
+  margin: 0 0 var(--space-xs) 0;
+  font-size: var(--text-base);
   font-weight: 600;
 }
 
@@ -254,64 +194,38 @@ function formatDate(dateString: string): string {
 }
 
 .resolution-section {
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid #eee;
+  margin-top: var(--space-lg);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--border-color);
 }
 
 .resolution-section h3 {
-  margin: 0 0 1rem 0;
-  font-size: 1rem;
+  margin: 0 0 var(--space-md) 0;
+  font-size: var(--text-base);
   font-weight: 600;
 }
 
 .resolution-note {
   width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: var(--space-sm);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
   font-family: inherit;
-  font-size: 1rem;
+  font-size: var(--text-base);
   resize: vertical;
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-md);
+  background: var(--card-bg);
+  color: var(--text-primary);
+}
+
+.resolution-note:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
 .action-buttons {
   display: flex;
-  gap: 1rem;
-}
-
-.btn {
-  flex: 1;
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 4px;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-dismiss {
-  background-color: #6c757d;
-  color: white;
-}
-
-.btn-dismiss:hover:not(:disabled) {
-  background-color: #5a6268;
-}
-
-.btn-action {
-  background-color: #28a745;
-  color: white;
-}
-
-.btn-action:hover:not(:disabled) {
-  background-color: #218838;
+  gap: var(--space-md);
 }
 </style>
