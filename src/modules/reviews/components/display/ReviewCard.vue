@@ -7,6 +7,7 @@ import RatingStars from './RatingStars.vue'
 import ReviewResponse from './ReviewResponse.vue'
 import HelpfulButton from '../actions/HelpfulButton.vue'
 import ReportButton from '../actions/ReportButton.vue'
+import Button from '@/ui/Button.vue'
 
 const props = defineProps<{
   review: Review
@@ -91,14 +92,15 @@ function formatDate(dateStr: string): string {
         <ReportButton @report="(reason, details) => emit('report', reason, details)" />
       </div>
 
-      <button
+      <Button
         v-if="showResponseAction && !review.response"
-        class="respond-btn"
+        variant="primary"
+        size="sm"
         @click="emit('respond')"
       >
         <MessageCircle :size="16" />
         Respond
-      </button>
+      </Button>
     </footer>
   </div>
 </template>
@@ -210,22 +212,4 @@ function formatDate(dateStr: string): string {
   gap: 12px;
 }
 
-.respond-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  background: var(--color-primary, #3b82f6);
-  border: none;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  color: white;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.respond-btn:hover {
-  background: var(--color-primary-dark, #2563eb);
-}
 </style>

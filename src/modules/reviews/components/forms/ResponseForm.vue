@@ -1,6 +1,8 @@
 <script setup lang="ts">
 // F15: Tutor Response Form Component
 import { ref, computed } from 'vue'
+import Button from '@/ui/Button.vue'
+import Textarea from '@/ui/Textarea.vue'
 
 const props = defineProps<{
   existingResponse?: string
@@ -31,12 +33,11 @@ function handleSubmit() {
       <h4>{{ isEditing ? 'Edit Response' : 'Write a Response' }}</h4>
     </div>
 
-    <textarea
+    <Textarea
       v-model="content"
-      class="textarea"
       placeholder="Thank the student for their feedback or address any concerns..."
       :maxlength="maxLength"
-      rows="4"
+      :rows="4"
     />
 
     <div class="form-footer">
@@ -50,17 +51,18 @@ function handleSubmit() {
       </div>
 
       <div class="form-actions">
-        <button type="button" class="btn btn-secondary" @click="emit('cancel')">
+        <Button variant="secondary" size="sm" @click="emit('cancel')">
           Cancel
-        </button>
-        <button
-          type="button"
-          class="btn btn-primary"
-          :disabled="!isValid || isSubmitting"
+        </Button>
+        <Button
+          variant="primary"
+          size="sm"
+          :disabled="!isValid"
+          :loading="isSubmitting"
           @click="handleSubmit"
         >
-          {{ isSubmitting ? 'Sending...' : isEditing ? 'Update' : 'Send Response' }}
-        </button>
+          {{ isEditing ? 'Update' : 'Send Response' }}
+        </Button>
       </div>
     </div>
   </div>
@@ -79,23 +81,6 @@ function handleSubmit() {
   font-size: 14px;
   font-weight: 600;
   color: var(--color-text-primary, #111827);
-}
-
-.textarea {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid var(--color-border, #d1d5db);
-  border-radius: 8px;
-  font-size: 14px;
-  font-family: inherit;
-  resize: vertical;
-  min-height: 100px;
-  transition: border-color 0.15s;
-}
-
-.textarea:focus {
-  outline: none;
-  border-color: var(--color-primary, #3b82f6);
 }
 
 .form-footer {
@@ -131,40 +116,6 @@ function handleSubmit() {
 
 .form-actions {
   display: flex;
-  gap: 8px;
-}
-
-.btn {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.btn-primary {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--color-primary-dark, #2563eb);
-}
-
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: var(--color-bg-primary, white);
-  border: 1px solid var(--color-border, #d1d5db);
-  color: var(--color-text-primary, #111827);
-}
-
-.btn-secondary:hover {
-  background: var(--color-bg-tertiary, #e5e7eb);
+  gap: var(--space-xs);
 }
 </style>

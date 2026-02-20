@@ -31,13 +31,12 @@
         {{ $t('reviews.yourReview') }}
         <span class="char-count">{{ reviewText.length }}/2000</span>
       </label>
-      <textarea
+      <Textarea
         v-model="reviewText"
-        class="review-textarea"
         :placeholder="$t('reviews.reviewPlaceholder')"
-        rows="6"
-        maxlength="2000"
-      ></textarea>
+        :rows="6"
+        :maxlength="2000"
+      />
       <p v-if="textError" class="error-message">{{ textError }}</p>
     </div>
 
@@ -66,22 +65,21 @@
 
     <!-- Actions -->
     <div class="form-actions">
-      <button
-        type="button"
-        class="btn-submit"
-        :disabled="!canSubmit || submitting"
+      <Button
+        variant="primary"
+        :disabled="!canSubmit"
+        :loading="submitting"
+        fullWidth
         @click="submitReview"
       >
-        <span v-if="submitting">{{ $t('common.sending') }}...</span>
-        <span v-else>{{ $t('reviews.submitReview') }}</span>
-      </button>
-      <button
-        type="button"
-        class="btn-cancel"
+        {{ $t('reviews.submitReview') }}
+      </Button>
+      <Button
+        variant="secondary"
         @click="$emit('cancel')"
       >
         {{ $t('common.cancel') }}
-      </button>
+      </Button>
     </div>
 
     <!-- Already Reviewed Message -->
@@ -105,6 +103,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useReviewsStore } from '../stores/reviewsStore'
+import Button from '@/ui/Button.vue'
+import Textarea from '@/ui/Textarea.vue'
 
 const props = defineProps({
   tutorId: {
@@ -195,41 +195,41 @@ async function submitReview() {
 
 <style scoped>
 .review-form {
-  background: #fff;
-  border-radius: 12px;
-  padding: 24px;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
 }
 
 .form-header {
-  margin-bottom: 24px;
+  margin-bottom: var(--space-lg);
 }
 
 .form-header h3 {
-  margin: 0 0 8px;
-  font-size: 20px;
-  color: #111827;
+  margin: 0 0 var(--space-xs);
+  font-size: var(--text-xl);
+  color: var(--text-primary);
 }
 
 .subtitle {
-  color: #6b7280;
+  color: var(--text-secondary);
   margin: 0;
 }
 
 .rating-section {
-  margin-bottom: 24px;
+  margin-bottom: var(--space-lg);
 }
 
 .section-label {
   display: block;
   font-weight: 500;
-  margin-bottom: 12px;
-  color: #374151;
+  margin-bottom: var(--space-sm);
+  color: var(--text-primary);
 }
 
 .star-rating {
   display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-xs);
 }
 
 .star-btn {
@@ -237,7 +237,7 @@ async function submitReview() {
   background: none;
   border: none;
   cursor: pointer;
-  color: #e5e7eb;
+  color: var(--border-color);
   transition: color 0.2s;
   padding: 0;
   line-height: 1;
@@ -246,54 +246,39 @@ async function submitReview() {
 .star-btn:hover,
 .star-btn--hover,
 .star-btn--active {
-  color: #fbbf24;
+  color: var(--warning-bg);
 }
 
 .rating-label {
-  font-size: 14px;
-  color: #6b7280;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
 }
 
 .text-section {
-  margin-bottom: 20px;
-}
-
-.review-textarea {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  resize: vertical;
-  font-family: inherit;
-  font-size: 15px;
-}
-
-.review-textarea:focus {
-  outline: none;
-  border-color: #3b82f6;
+  margin-bottom: var(--space-lg);
 }
 
 .char-count {
   float: right;
   font-weight: normal;
-  color: #9ca3af;
-  font-size: 14px;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
 }
 
 .error-message {
-  color: #ef4444;
-  font-size: 14px;
-  margin: 8px 0 0;
+  color: var(--danger-bg);
+  font-size: var(--text-sm);
+  margin: var(--space-xs) 0 0;
 }
 
 .anonymous-section {
-  margin-bottom: 20px;
+  margin-bottom: var(--space-lg);
 }
 
 .checkbox-label {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: var(--space-sm);
   cursor: pointer;
 }
 
@@ -304,90 +289,53 @@ async function submitReview() {
 .checkmark {
   width: 20px;
   height: 20px;
-  border: 2px solid #d1d5db;
-  border-radius: 4px;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-sm);
   flex-shrink: 0;
   margin-top: 2px;
 }
 
 .checkbox-label input:checked + .checkmark {
-  background: #3b82f6;
-  border-color: #3b82f6;
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 .label-text {
   display: flex;
   flex-direction: column;
   font-size: 15px;
-  color: #374151;
+  color: var(--text-primary);
 }
 
 .label-text small {
-  color: #9ca3af;
-  font-size: 13px;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
 }
 
 .warnings {
-  margin-bottom: 24px;
-  padding: 12px 16px;
-  background: #f0fdf4;
-  border-radius: 8px;
+  margin-bottom: var(--space-lg);
+  padding: var(--space-sm) var(--space-md);
+  background: color-mix(in srgb, var(--success-bg) 10%, transparent);
+  border-radius: var(--radius-md);
 }
 
 .edit-warning {
   margin: 0;
-  font-size: 14px;
-  color: #166534;
+  font-size: var(--text-sm);
+  color: var(--success-bg);
 }
 
 .form-actions {
   display: flex;
-  gap: 12px;
-}
-
-.btn-submit {
-  flex: 1;
-  padding: 12px 24px;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn-submit:hover:not(:disabled) {
-  background: #2563eb;
-}
-
-.btn-submit:disabled {
-  background: #93c5fd;
-  cursor: not-allowed;
-}
-
-.btn-cancel {
-  padding: 12px 24px;
-  background: #f3f4f6;
-  color: #6b7280;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn-cancel:hover {
-  background: #e5e7eb;
+  gap: var(--space-sm);
 }
 
 .already-reviewed {
-  margin-top: 24px;
-  padding: 16px;
-  background: #fef3c7;
-  border-radius: 8px;
-  color: #92400e;
+  margin-top: var(--space-lg);
+  padding: var(--space-md);
+  background: color-mix(in srgb, var(--warning-bg) 15%, transparent);
+  border-radius: var(--radius-md);
+  color: var(--warning-bg);
 }
 
 .already-reviewed p {

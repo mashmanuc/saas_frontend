@@ -4,6 +4,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { X } from 'lucide-vue-next'
 import StarRating from '../forms/StarRating.vue'
+import Button from '@/ui/Button.vue'
 
 const props = defineProps<{
   bookingId: number
@@ -37,9 +38,9 @@ function dismiss() {
 <template>
   <Transition name="slide">
     <div v-if="showPrompt" class="review-prompt">
-      <button class="dismiss-btn" @click="dismiss">
+      <Button variant="ghost" size="sm" iconOnly class="dismiss-btn" @click="dismiss">
         <X :size="18" />
-      </button>
+      </Button>
 
       <div class="prompt-content">
         <h4>How was your lesson?</h4>
@@ -48,12 +49,12 @@ function dismiss() {
         <StarRating v-model="quickRating" size="lg" />
 
         <div class="prompt-actions">
-          <button class="btn btn-primary" @click="openFullReview">
+          <Button variant="primary" @click="openFullReview">
             Write Review
-          </button>
-          <button class="btn btn-ghost" @click="dismiss">
+          </Button>
+          <Button variant="ghost" @click="dismiss">
             Later
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -74,20 +75,6 @@ function dismiss() {
   position: absolute;
   top: 12px;
   right: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px;
-  background: none;
-  border: none;
-  border-radius: 4px;
-  color: var(--color-text-secondary, #6b7280);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.dismiss-btn:hover {
-  background: var(--color-bg-secondary, #f5f5f5);
 }
 
 .prompt-content {
@@ -114,36 +101,8 @@ function dismiss() {
 
 .prompt-actions {
   display: flex;
-  gap: 12px;
+  gap: var(--space-sm);
   justify-content: center;
-}
-
-.btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.btn-primary {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-}
-
-.btn-primary:hover {
-  background: var(--color-primary-dark, #2563eb);
-}
-
-.btn-ghost {
-  background: none;
-  color: var(--color-text-secondary, #6b7280);
-}
-
-.btn-ghost:hover {
-  background: var(--color-bg-secondary, #f5f5f5);
 }
 
 /* Transition */

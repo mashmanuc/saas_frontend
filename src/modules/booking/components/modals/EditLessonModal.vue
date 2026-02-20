@@ -4,9 +4,9 @@
       <div ref="modalRef" class="modal-container modal-large" role="dialog" aria-labelledby="edit-modal-title" aria-modal="true">
         <div class="modal-header">
           <h2 id="edit-modal-title" data-testid="event-modal-title">{{ $t('calendar.editLesson.title') }}</h2>
-          <button @click="handleClose" class="close-btn" aria-label="Закрити" data-testid="event-modal-close">
+          <Button variant="ghost" iconOnly aria-label="Закрити" data-testid="event-modal-close" @click="handleClose">
             <XIcon class="w-5 h-5" />
-          </button>
+          </Button>
         </div>
 
         <!-- Loading State -->
@@ -80,11 +80,10 @@
                 <!-- Tutor Comment -->
                 <div class="form-field">
                   <label for="edit-comment" class="field-label">{{ $t('calendar.createLesson.tutorComment') }}</label>
-                  <textarea
+                  <Textarea
                     id="edit-comment"
                     v-model="editForm.tutorComment"
-                    class="field-textarea"
-                    rows="3"
+                    :rows="3"
                     :placeholder="$t('calendar.createLesson.tutorCommentPlaceholder')"
                   />
                 </div>
@@ -198,15 +197,16 @@
               </div>
 
               <!-- Preview Button -->
-              <button
+              <Button
                 v-if="!previewResult"
+                variant="outline"
+                fullWidth
+                :disabled="!rescheduleForm.targetStart"
+                :loading="isCheckingConflicts"
                 @click="handleReschedulePreview"
-                class="btn-secondary w-full"
-                :disabled="!rescheduleForm.targetStart || isCheckingConflicts"
               >
-                <LoaderIcon v-if="isCheckingConflicts" class="w-4 h-4 animate-spin" />
                 {{ $t('calendar.editLesson.checkConflicts') }}
-              </button>
+              </Button>
 
               <!-- Preview Result -->
               <div v-if="previewResult" class="preview-result">
@@ -304,6 +304,7 @@ import {
   CheckCircle as CheckCircleIcon
 } from 'lucide-vue-next'
 import Button from '@/ui/Button.vue'
+import Textarea from '@/ui/Textarea.vue'
 import { useCalendarWeekStore } from '@/modules/booking/stores/calendarWeekStore'
 import { useToast } from '@/composables/useToast'
 import { useFocusTrap } from '@/composables/useFocusTrap'

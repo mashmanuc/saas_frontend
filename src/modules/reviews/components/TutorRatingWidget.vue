@@ -46,19 +46,21 @@
     </div>
 
     <!-- CTA Button (if showCta) -->
-    <button 
+    <Button 
       v-if="showCta && tutorId"
-      class="btn-view-reviews"
+      variant="secondary"
+      fullWidth
       @click="navigateToReviews"
     >
       {{ $t('reviews.viewAllReviews') }}
-    </button>
+    </Button>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import Button from '@/ui/Button.vue'
 
 const props = defineProps({
   rating: {
@@ -134,17 +136,17 @@ function navigateToReviews() {
 
 <style scoped>
 .tutor-rating-widget {
-  background: #fff;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-sm);
 }
 
 .widget--compact {
-  padding: 12px 16px;
+  padding: var(--space-sm) var(--space-md);
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-sm);
 }
 
 .widget--compact .rating-main {
@@ -170,7 +172,7 @@ function navigateToReviews() {
 }
 
 .widget--large {
-  padding: 32px;
+  padding: var(--space-xl);
 }
 
 .widget--large .score-value {
@@ -188,7 +190,7 @@ function navigateToReviews() {
 .score-value {
   font-size: 36px;
   font-weight: 700;
-  color: #111827;
+  color: var(--text-primary);
   line-height: 1;
 }
 
@@ -201,15 +203,15 @@ function navigateToReviews() {
 
 .star {
   font-size: 20px;
-  color: #e5e7eb;
+  color: var(--border-color);
 }
 
 .star--filled {
-  color: #fbbf24;
+  color: var(--warning-bg);
 }
 
 .star--partial {
-  background: linear-gradient(90deg, #fbbf24 50%, #e5e7eb 50%);
+  background: linear-gradient(90deg, var(--warning-bg) 50%, var(--border-color) 50%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -217,14 +219,14 @@ function navigateToReviews() {
 
 .score-count {
   display: block;
-  font-size: 14px;
-  color: #6b7280;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
 }
 
 .rating-distribution {
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid #e5e7eb;
+  margin-top: var(--space-lg);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--border-color);
 }
 
 .dist-bar {
@@ -236,58 +238,42 @@ function navigateToReviews() {
 
 .dist-label {
   width: 16px;
-  font-size: 13px;
-  color: #6b7280;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
   text-align: right;
 }
 
 .dist-track {
   flex: 1;
   height: 6px;
-  background: #f3f4f6;
-  border-radius: 3px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
   overflow: hidden;
 }
 
 .dist-fill {
   height: 100%;
-  background: #fbbf24;
-  border-radius: 3px;
+  background: var(--warning-bg);
+  border-radius: var(--radius-sm);
   transition: width 0.3s ease;
 }
 
 .rating-breakdown {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid #e5e7eb;
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border-color);
 }
 
 .breakdown-item {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
-  color: #22c55e;
+  font-size: var(--text-xs);
+  color: var(--success-bg);
 }
 
 .breakdown-item i {
   font-size: 14px;
 }
 
-.btn-view-reviews {
-  width: 100%;
-  margin-top: 16px;
-  padding: 12px;
-  background: #f3f4f6;
-  color: #374151;
-  border: none;
-  border-radius: 8px;
-  font-size: 15px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn-view-reviews:hover {
-  background: #e5e7eb;
-}
 </style>

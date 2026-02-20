@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useMatchStore } from '../store/matchStore'
 import { CheckCircle, XCircle, Archive, User } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -88,33 +89,21 @@ onMounted(() => {
       </div>
 
       <div v-if="match.status === 'invited'" class="actions">
-        <button
-          class="btn btn-primary"
-          :disabled="actionLoading"
-          @click="acceptMatch"
-        >
+        <Button variant="primary" :disabled="actionLoading" @click="acceptMatch">
           <CheckCircle :size="18" />
           {{ t('matches.actions.accept') }}
-        </button>
-        <button
-          class="btn btn-secondary"
-          :disabled="actionLoading"
-          @click="declineMatch"
-        >
+        </Button>
+        <Button variant="outline" :disabled="actionLoading" @click="declineMatch">
           <XCircle :size="18" />
           {{ t('matches.actions.decline') }}
-        </button>
+        </Button>
       </div>
 
       <div v-if="match.status === 'active'" class="actions">
-        <button
-          class="btn btn-secondary"
-          :disabled="actionLoading"
-          @click="archiveMatch"
-        >
+        <Button variant="outline" :disabled="actionLoading" @click="archiveMatch">
           <Archive :size="18" />
           {{ t('matches.actions.archive') }}
-        </button>
+        </Button>
       </div>
 
       <div class="timeline">
@@ -207,42 +196,6 @@ onMounted(() => {
   display: flex;
   gap: 0.75rem;
   margin-bottom: 2rem;
-}
-
-.btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.625rem 1.25rem;
-  border: none;
-  border-radius: var(--radius-sm, 6px);
-  font-size: 0.9375rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-primary {
-  background: var(--primary);
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--primary-hover);
-}
-
-.btn-secondary {
-  background: var(--surface-secondary);
-  color: var(--text-primary);
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: var(--surface-hover);
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .timeline {

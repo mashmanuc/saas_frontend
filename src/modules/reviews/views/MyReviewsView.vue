@@ -50,13 +50,14 @@
         />
 
         <!-- Load More -->
-        <button
+        <Button
           v-if="store.myReviewsHasMore"
-          class="btn-load-more"
+          variant="outline"
+          fullWidth
           @click="loadMoreMyReviews"
         >
           {{ $t('reviews.loadMore') }}
-        </button>
+        </Button>
       </div>
     </div>
 
@@ -98,27 +99,32 @@
             </span>
           </div>
 
-          <button
-            class="btn-write-review"
+          <Button
+            variant="primary"
+            size="sm"
             @click="openReviewForm(pending)"
           >
             {{ $t('reviews.writeReview') }}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
 
     <!-- Review Form Modal -->
-    <div v-if="selectedPending" class="modal-overlay" @click.self="closeReviewForm">
-      <div class="modal-content">
-        <ReviewForm
-          :tutor-id="selectedPending.tutor_id"
-          :tutor-name="selectedPending.tutor_name"
-          @success="onReviewSubmitted"
-          @cancel="closeReviewForm"
-        />
-      </div>
-    </div>
+    <Modal
+      :open="!!selectedPending"
+      :title="$t('reviews.writeReview')"
+      size="lg"
+      @close="closeReviewForm"
+    >
+      <ReviewForm
+        v-if="selectedPending"
+        :tutor-id="selectedPending.tutor_id"
+        :tutor-name="selectedPending.tutor_name"
+        @success="onReviewSubmitted"
+        @cancel="closeReviewForm"
+      />
+    </Modal>
   </div>
 </template>
 
@@ -127,6 +133,8 @@ import { ref, onMounted } from 'vue'
 import { useReviewsStore } from '../stores/reviewsStore'
 import ReviewCard from '../components/ReviewCard.vue'
 import ReviewForm from '../components/ReviewForm.vue'
+import Button from '@/ui/Button.vue'
+import Modal from '@/ui/Modal.vue'
 
 const store = useReviewsStore()
 
@@ -184,61 +192,61 @@ function formatDate(dateString) {
 .my-reviews-view {
   max-width: 900px;
   margin: 0 auto;
-  padding: 24px;
+  padding: var(--space-lg);
 }
 
 .view-header {
-  margin-bottom: 24px;
+  margin-bottom: var(--space-lg);
 }
 
 .view-header h1 {
-  margin: 0 0 8px;
-  font-size: 28px;
-  color: #111827;
+  margin: 0 0 var(--space-xs);
+  font-size: var(--text-2xl);
+  color: var(--text-primary);
 }
 
 .subtitle {
-  color: #6b7280;
+  color: var(--text-secondary);
   margin: 0;
 }
 
 .reviews-tabs {
   display: flex;
-  gap: 8px;
-  margin-bottom: 24px;
-  border-bottom: 1px solid #e5e7eb;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-lg);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .tab-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-lg);
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
   font-size: 15px;
-  color: #6b7280;
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
   margin-bottom: -1px;
 }
 
 .tab-btn:hover {
-  color: #374151;
+  color: var(--text-primary);
 }
 
 .tab-btn--active {
-  color: #3b82f6;
-  border-bottom-color: #3b82f6;
+  color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 
 .tab-count {
-  background: #dbeafe;
-  color: #1e40af;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
   padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 12px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
   font-weight: 500;
 }
 
@@ -250,11 +258,11 @@ function formatDate(dateString) {
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid #e5e7eb;
-  border-top-color: #3b82f6;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin: 0 auto 16px;
+  margin: 0 auto var(--space-md);
 }
 
 @keyframes spin {
@@ -264,72 +272,54 @@ function formatDate(dateString) {
 .empty-state {
   text-align: center;
   padding: 60px 20px;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
 }
 
 .empty-state i {
   font-size: 48px;
-  color: #d1d5db;
-  margin-bottom: 16px;
+  color: var(--border-color);
+  margin-bottom: var(--space-md);
 }
 
 .empty-state h3 {
-  margin: 0 0 8px;
-  color: #374151;
+  margin: 0 0 var(--space-xs);
+  color: var(--text-primary);
 }
 
 .empty-state p {
   margin: 0;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 .reviews-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-}
-
-.btn-load-more {
-  width: 100%;
-  padding: 16px;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  color: #374151;
-  font-size: 15px;
-  cursor: pointer;
-  transition: all 0.2s;
-  margin-top: 8px;
-}
-
-.btn-load-more:hover {
-  background: #f9fafb;
-  border-color: #d1d5db;
+  gap: var(--space-md);
 }
 
 .pending-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-md);
 }
 
 .pending-card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-sm);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: var(--space-md);
 }
 
 .pending-tutor {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-sm);
 }
 
 .tutor-avatar,
@@ -337,7 +327,7 @@ function formatDate(dateString) {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: #f3f4f6;
+  background: var(--bg-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -348,7 +338,7 @@ function formatDate(dateString) {
 }
 
 .avatar-placeholder {
-  color: #9ca3af;
+  color: var(--text-secondary);
 }
 
 .tutor-info {
@@ -358,12 +348,12 @@ function formatDate(dateString) {
 
 .tutor-name {
   font-weight: 500;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .lesson-date {
-  font-size: 13px;
-  color: #6b7280;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
 }
 
 .pending-meta {
@@ -372,49 +362,11 @@ function formatDate(dateString) {
 }
 
 .deadline {
-  font-size: 13px;
-  color: #92400e;
-  background: #fef3c7;
+  font-size: var(--text-xs);
+  color: var(--warning-bg);
+  background: color-mix(in srgb, var(--warning-bg) 15%, transparent);
   padding: 4px 12px;
-  border-radius: 12px;
-}
-
-.btn-write-review {
-  padding: 10px 20px;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn-write-review:hover {
-  background: #2563eb;
-}
-
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  padding: 24px;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 12px;
-  max-width: 600px;
-  width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
+  border-radius: var(--radius-full);
 }
 
 @media (max-width: 640px) {

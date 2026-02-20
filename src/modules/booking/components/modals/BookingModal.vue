@@ -4,9 +4,9 @@
       <div class="modal-container" @click.stop>
         <div class="modal-header">
           <h2>{{ t('booking.modal.title') }}</h2>
-          <button @click="$emit('close')" class="close-button">
+          <Button variant="ghost" iconOnly @click="$emit('close')">
             <X :size="20" />
-          </button>
+          </Button>
         </div>
 
         <div class="modal-body">
@@ -49,14 +49,14 @@
 
             <div class="form-group">
               <label for="note">{{ t('booking.modal.noteLabel') }}</label>
-              <textarea
+              <Textarea
                 id="note"
                 v-model="formData.student_notes"
                 :placeholder="t('booking.modal.notePlaceholder')"
                 :disabled="submitting"
-                rows="3"
-                maxlength="500"
-              ></textarea>
+                :rows="3"
+                :maxlength="500"
+              />
               <span class="char-count">{{ formData.student_notes.length }} / 500</span>
             </div>
 
@@ -72,9 +72,9 @@
             <div class="conflict-content">
               <h4>{{ t('booking.conflict.title') }}</h4>
               <p>{{ t('booking.conflict.body') }}</p>
-              <button @click="handleSelectAnother" class="btn btn-sm btn-outline">
+              <Button variant="outline" size="sm" @click="handleSelectAnother">
                 {{ t('booking.conflict.selectAnother') }}
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -85,22 +85,24 @@
         </div>
 
         <div class="modal-footer">
-          <button 
-            @click="$emit('close')" 
-            class="btn btn-outline"
+          <Button
+            variant="outline"
             :disabled="submitting"
+            @click="$emit('close')"
           >
             {{ t('common.cancel') }}
-          </button>
-          <button 
-            @click="handleConfirm" 
-            class="btn btn-primary"
-            :disabled="submitting || !isValid"
+          </Button>
+          <Button
+            variant="primary"
+            :disabled="!isValid"
+            :loading="submitting"
+            @click="handleConfirm"
           >
-            <Loader2 v-if="submitting" :size="16" class="animate-spin" />
-            <Check v-else :size="16" />
+            <template v-if="!submitting" #iconLeft>
+              <Check :size="16" />
+            </template>
             {{ submitting ? t('booking.modal.confirming') : t('booking.modal.confirm') }}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -111,6 +113,8 @@
 import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { X, Calendar, Clock, User, Info, AlertCircle, Check, Loader2 } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
+import Textarea from '@/ui/Textarea.vue'
 import { bookingApi } from '../../api/bookingApi'
 import type { TimeSlot } from '../../api/availabilityApi'
 import type { Booking } from '../../api/bookingApi'
@@ -311,19 +315,6 @@ watch(() => props.show, (newVal) => {
   font-weight: 600;
 }
 
-.close-button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0.5rem;
-  color: var(--text-secondary);
-  border-radius: 0.375rem;
-  transition: background-color 0.2s;
-}
-
-.close-button:hover {
-  background-color: var(--surface-muted);
-}
 
 .modal-body {
   padding: 1.5rem;

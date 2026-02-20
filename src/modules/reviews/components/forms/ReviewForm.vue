@@ -3,6 +3,8 @@
 import { ref, computed } from 'vue'
 import StarRating from './StarRating.vue'
 import DetailedRating from './DetailedRating.vue'
+import Button from '@/ui/Button.vue'
+import Textarea from '@/ui/Textarea.vue'
 
 const props = defineProps<{
   isSubmitting?: boolean
@@ -115,12 +117,11 @@ function handleSubmit() {
     <!-- Content -->
     <div class="form-section">
       <label class="section-label required">Your Review</label>
-      <textarea
+      <Textarea
         v-model="content"
-        class="textarea"
         placeholder="Share your experience with this tutor..."
         :maxlength="maxContentLength"
-        rows="5"
+        :rows="5"
       />
       <div class="textarea-footer">
         <span v-if="content.length < 10" class="hint error">
@@ -143,16 +144,17 @@ function handleSubmit() {
 
     <!-- Actions -->
     <div class="form-actions">
-      <button type="button" class="btn btn-secondary" @click="emit('cancel')">
+      <Button variant="secondary" @click="emit('cancel')">
         Cancel
-      </button>
-      <button
+      </Button>
+      <Button
+        variant="primary"
         type="submit"
-        class="btn btn-primary"
-        :disabled="!isValid || isSubmitting"
+        :disabled="!isValid"
+        :loading="isSubmitting"
       >
-        {{ isSubmitting ? 'Submitting...' : 'Submit Review' }}
-      </button>
+        Submit Review
+      </Button>
     </div>
   </form>
 </template>
@@ -220,22 +222,6 @@ function handleSubmit() {
   border-color: var(--color-primary, #3b82f6);
 }
 
-.textarea {
-  padding: 12px;
-  border: 1px solid var(--color-border, #d1d5db);
-  border-radius: 8px;
-  font-size: 14px;
-  font-family: inherit;
-  resize: vertical;
-  min-height: 120px;
-  transition: border-color 0.15s;
-}
-
-.textarea:focus {
-  outline: none;
-  border-color: var(--color-primary, #3b82f6);
-}
-
 .textarea-footer {
   display: flex;
   justify-content: space-between;
@@ -268,42 +254,9 @@ function handleSubmit() {
 /* Actions */
 .form-actions {
   display: flex;
-  gap: 12px;
+  gap: var(--space-sm);
   justify-content: flex-end;
-  padding-top: 16px;
+  padding-top: var(--space-md);
   border-top: 1px solid var(--color-border, #e5e7eb);
-}
-
-.btn {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.btn-primary {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--color-primary-dark, #2563eb);
-}
-
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: var(--color-bg-secondary, #f5f5f5);
-  color: var(--color-text-primary, #111827);
-}
-
-.btn-secondary:hover {
-  background: var(--color-bg-tertiary, #e5e7eb);
 }
 </style>

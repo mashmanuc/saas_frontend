@@ -3,6 +3,7 @@
 import { computed } from 'vue'
 import type { Review } from '../../api/reviews'
 import ReviewCard from './ReviewCard.vue'
+import Button from '@/ui/Button.vue'
 
 const props = defineProps<{
   reviews: Review[]
@@ -48,14 +49,14 @@ const isEmpty = computed(() => props.reviews.length === 0 && !props.isLoading)
       />
 
       <!-- Load More -->
-      <button
+      <Button
         v-if="hasMore"
-        class="load-more-btn"
-        :disabled="isLoading"
+        variant="outline"
+        :loading="isLoading"
         @click="emit('loadMore')"
       >
-        {{ isLoading ? 'Loading...' : 'Load More Reviews' }}
-      </button>
+        Load More Reviews
+      </Button>
     </template>
   </div>
 </template>
@@ -96,26 +97,4 @@ const isEmpty = computed(() => props.reviews.length === 0 && !props.isLoading)
   color: var(--color-text-secondary, #6b7280);
 }
 
-/* Load More */
-.load-more-btn {
-  padding: 12px 24px;
-  background: var(--color-bg-primary, white);
-  border: 1px solid var(--color-border, #d1d5db);
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-primary, #111827);
-  cursor: pointer;
-  transition: all 0.15s;
-  align-self: center;
-}
-
-.load-more-btn:hover:not(:disabled) {
-  background: var(--color-bg-secondary, #f5f5f5);
-}
-
-.load-more-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
 </style>

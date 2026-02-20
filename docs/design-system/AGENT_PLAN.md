@@ -142,7 +142,32 @@
 
 ---
 
-## Мегафаза 3 — Очищення + QA (Дні 6-7)
+## Мегафаза 2.5 — Добивання хвостів (День 3)
+
+> Аудит після MF2 показав: 15 модулів НЕ були покриті + великі залишки в покритих.
+> Стан: ~1035 сирих `<button>`, 48 `<textarea>`, 7 overlay, 2580 hex.
+> Промти: `PROMPTS_MF2_TAILS.md`
+
+### Розподіл
+
+| Агент | Модулі | ~Buttons | Тип |
+|-------|--------|----------|-----|
+| **A** | reviews, billing, lessons, onboarding, entitlements, diagnostics | ~122 | Нові |
+| **B** | matches, people, trust, contacts, negotiation, call, classrooms, profileV2, student, tutor, tutors, admin | ~96 | Нові (дрібні) |
+| **C** | booking↻, marketplace↻, classroom↻, board, profile↻, chat↻, інші↻ | ~500+ | Залишки |
+
+### Виключення (свідомо НЕ мігрувати)
+
+- winterboard/ toolbar, canvas, color picker — canvas UI
+- classroom/ board toolbars — canvas UI
+- dev/ — тестовий модуль
+- chat inline buttons — chat UI
+- booking/debug/ — dev-only
+- Brand hex (#229ED9, #1DB954)
+
+---
+
+## Мегафаза 3 — Очищення + QA (Дні 4-5)
 
 > Після завершення міграції всіх модулів.
 
@@ -183,19 +208,18 @@
 ## Таймлайн
 
 ```
-День 1:  MF0 ─── A соло (токени, tailwind)
+День 1:  MF0 ─── A соло (токени, tailwind)                                          ✅
          │
-День 2:  MF1 ─── A (CSS форм) ║ B (компоненти) ║ C (аудит + підготовка)
-День 3:  MF1 ─── A (CSS форм) ║ B (Modal)       ║ C (початок міграції)
+День 1:  MF1 ─── A (CSS форм) ║ B (компоненти) ║ C (аудит + підготовка)             ✅
          │
-День 4:  MF2 ─── A (auth, dashboard) ║ B (inquiries, marketplace) ║ C (booking)
-День 5:  MF2 ─── A (payments, staff)  ║ B (profile, chat)          ║ C (booking cont.)
-День 6:  MF2 ─── A (залишки)          ║ B (залишки)                ║ C (classroom, WB)
+День 1:  MF2 ─── A (auth,dash,pay,staff) ║ B (inq,mkt,profile,chat) ║ C (booking)   ✅
          │
-День 7:  MF3 ─── A (очищення CSS) ║ B (очищення компонентів) ║ C (QA всіх тем)
+День 2:  MF2.5── A (reviews,billing,lessons,onb) ║ B (12 дрібних) ║ C (залишки)
+         │
+День 3:  MF3 ─── A (очищення CSS) ║ B (очищення компонентів) ║ C (QA всіх тем)
 ```
 
-**Загальна оцінка: 5-7 днів замість 13-20** (прискорення ~3x)
+**Факт: MF0+MF1+MF2 завершені за 1 день!**
 
 ---
 

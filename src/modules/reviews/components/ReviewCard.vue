@@ -57,106 +57,115 @@
 
     <!-- Actions -->
     <div class="review-actions">
-      <button 
-        class="btn-helpful"
+      <Button 
+        variant="ghost"
+        size="sm"
         :class="{ 'btn-helpful--active': review.has_user_marked_helpful }"
-        @click="toggleHelpful"
         :disabled="helpfulLoading"
+        @click="toggleHelpful"
       >
         <i class="icon-thumbs-up"></i>
         {{ $t('reviews.helpful') }} ({{ review.helpful_count }})
-      </button>
+      </Button>
       
-      <button 
+      <Button 
         v-if="showReport"
-        class="btn-report"
+        variant="ghost"
+        size="sm"
         @click="showReportModal = true"
       >
         <i class="icon-flag"></i>
         {{ $t('reviews.report') }}
-      </button>
+      </Button>
 
-      <button 
+      <Button 
         v-if="review.can_edit && !editMode"
-        class="btn-edit"
+        variant="ghost"
+        size="sm"
         @click="startEdit"
       >
         <i class="icon-edit"></i>
         {{ $t('reviews.edit') }}
-      </button>
+      </Button>
 
-      <button 
+      <Button 
         v-if="review.can_delete && !editMode"
-        class="btn-delete"
+        variant="danger"
+        size="sm"
         @click="confirmDelete"
       >
         <i class="icon-trash"></i>
         {{ $t('reviews.delete') }}
-      </button>
+      </Button>
     </div>
 
     <!-- Edit Mode -->
     <div v-if="editMode" class="edit-form">
-      <textarea 
+      <Textarea 
         v-model="editedText" 
-        class="edit-textarea"
         :placeholder="$t('reviews.editPlaceholder')"
-        rows="4"
-      ></textarea>
+        :rows="4"
+      />
       <div class="edit-actions">
-        <button class="btn-save" @click="saveEdit" :disabled="!canSaveEdit">
+        <Button variant="primary" size="sm" :disabled="!canSaveEdit" @click="saveEdit">
           {{ $t('common.save') }}
-        </button>
-        <button class="btn-cancel" @click="cancelEdit">
+        </Button>
+        <Button variant="secondary" size="sm" @click="cancelEdit">
           {{ $t('common.cancel') }}
-        </button>
+        </Button>
       </div>
     </div>
 
     <!-- Report Modal -->
-    <div v-if="showReportModal" class="report-modal" @click.self="showReportModal = false">
-      <div class="modal-content">
-        <h3>{{ $t('reviews.reportTitle') }}</h3>
-        <p>{{ $t('reviews.reportSubtitle') }}</p>
-        
-        <div class="report-options">
-          <label v-for="reason in reportReasons" :key="reason.value" class="report-option">
-            <input 
-              type="radio" 
-              v-model="selectedReportReason" 
-              :value="reason.value"
-            />
-            <span>{{ reason.label }}</span>
-          </label>
-        </div>
-        
-        <textarea 
-          v-model="reportComment"
-          class="report-comment"
-          :placeholder="$t('reviews.reportCommentPlaceholder')"
-          rows="3"
-        ></textarea>
-        
-        <div class="modal-actions">
-          <button 
-            class="btn-submit-report" 
-            @click="submitReport"
-            :disabled="!selectedReportReason || reportSubmitting"
-          >
-            {{ $t('reviews.submitReport') }}
-          </button>
-          <button class="btn-cancel" @click="showReportModal = false">
-            {{ $t('common.cancel') }}
-          </button>
-        </div>
+    <Modal
+      :open="showReportModal"
+      :title="$t('reviews.reportTitle')"
+      size="sm"
+      @close="showReportModal = false"
+    >
+      <p>{{ $t('reviews.reportSubtitle') }}</p>
+      
+      <div class="report-options">
+        <label v-for="reason in reportReasons" :key="reason.value" class="report-option">
+          <input 
+            type="radio" 
+            v-model="selectedReportReason" 
+            :value="reason.value"
+          />
+          <span>{{ reason.label }}</span>
+        </label>
       </div>
-    </div>
+      
+      <Textarea 
+        v-model="reportComment"
+        :placeholder="$t('reviews.reportCommentPlaceholder')"
+        :rows="3"
+      />
+      
+      <template #footer>
+        <Button variant="secondary" size="sm" @click="showReportModal = false">
+          {{ $t('common.cancel') }}
+        </Button>
+        <Button 
+          variant="danger"
+          size="sm"
+          :disabled="!selectedReportReason || reportSubmitting"
+          :loading="reportSubmitting"
+          @click="submitReport"
+        >
+          {{ $t('reviews.submitReport') }}
+        </Button>
+      </template>
+    </Modal>
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
 import { useReviewsStore } from '../stores/reviewsStore'
+import Button from '@/ui/Button.vue'
+import Modal from '@/ui/Modal.vue'
+import Textarea from '@/ui/Textarea.vue'
 
 const props = defineProps({
   review: {
@@ -280,28 +289,28 @@ async function submitReport() {
 
 <style scoped>
 .review-card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  margin-bottom: 16px;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--space-md);
 }
 
 .review-card--verified {
-  border-left: 4px solid #22c55e;
+  border-left: 4px solid var(--success-bg);
 }
 
 .review-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 16px;
+  margin-bottom: var(--space-md);
 }
 
 .review-author {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-sm);
 }
 
 .author-avatar {
@@ -309,7 +318,7 @@ async function submitReport() {
   height: 48px;
   border-radius: 50%;
   overflow: hidden;
-  background: #f3f4f6;
+  background: var(--bg-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -323,34 +332,34 @@ async function submitReport() {
 
 .avatar-placeholder {
   font-size: 20px;
-  color: #9ca3af;
+  color: var(--text-secondary);
 }
 
 .author-name {
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .review-meta {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: #6b7280;
-  margin-top: 4px;
+  gap: var(--space-xs);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-top: var(--space-2xs);
 }
 
 .verified-badge {
   display: flex;
   align-items: center;
-  gap: 4px;
-  color: #22c55e;
+  gap: var(--space-2xs);
+  color: var(--success-bg);
   font-weight: 500;
 }
 
 .review-rating {
   display: flex;
-  gap: 4px;
+  gap: var(--space-2xs);
 }
 
 .star {
@@ -358,222 +367,87 @@ async function submitReport() {
 }
 
 .star--filled {
-  color: #fbbf24;
+  color: var(--warning-bg);
 }
 
 .star--empty {
-  color: #e5e7eb;
+  color: var(--border-color);
 }
 
 .review-content {
-  margin-bottom: 16px;
+  margin-bottom: var(--space-md);
 }
 
 .review-text {
-  color: #374151;
+  color: var(--text-primary);
   line-height: 1.6;
   margin: 0;
 }
 
 .tutor-response {
-  background: #f9fafb;
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 16px;
-  border-left: 3px solid #3b82f6;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
+  border-left: 3px solid var(--accent);
 }
 
 .response-header {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-xs);
   font-weight: 500;
-  color: #3b82f6;
-  margin-bottom: 8px;
-  font-size: 14px;
+  color: var(--accent);
+  margin-bottom: var(--space-xs);
+  font-size: var(--text-sm);
 }
 
 .response-date {
-  color: #9ca3af;
+  color: var(--text-secondary);
   font-weight: normal;
   margin-left: auto;
 }
 
 .response-text {
-  color: #4b5563;
+  color: var(--text-primary);
   margin: 0;
   line-height: 1.5;
 }
 
 .review-actions {
   display: flex;
-  gap: 12px;
+  gap: var(--space-sm);
   flex-wrap: wrap;
 }
 
-.review-actions button {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: none;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-helpful {
-  background: #f3f4f6;
-  color: #6b7280;
-}
-
-.btn-helpful:hover:not(:disabled) {
-  background: #e5e7eb;
-}
-
 .btn-helpful--active {
-  background: #dbeafe;
-  color: #2563eb;
-}
-
-.btn-report {
-  background: transparent;
-  color: #9ca3af;
-}
-
-.btn-report:hover {
-  color: #ef4444;
-}
-
-.btn-edit {
-  background: transparent;
-  color: #6b7280;
-}
-
-.btn-edit:hover {
-  color: #3b82f6;
-}
-
-.btn-delete {
-  background: transparent;
-  color: #6b7280;
-}
-
-.btn-delete:hover {
-  color: #ef4444;
+  background: color-mix(in srgb, var(--accent) 15%, transparent) !important;
+  color: var(--accent) !important;
 }
 
 .edit-form {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid #e5e7eb;
-}
-
-.edit-textarea {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  resize: vertical;
-  font-family: inherit;
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border-color);
 }
 
 .edit-actions {
   display: flex;
-  gap: 12px;
-  margin-top: 12px;
-}
-
-.btn-save {
-  background: #3b82f6;
-  color: white;
-  padding: 8px 16px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-}
-
-.btn-save:disabled {
-  background: #93c5fd;
-  cursor: not-allowed;
-}
-
-.btn-cancel {
-  background: #f3f4f6;
-  color: #6b7280;
-  padding: 8px 16px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-}
-
-/* Report Modal */
-.report-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-}
-
-.modal-content {
-  background: white;
-  padding: 24px;
-  border-radius: 12px;
-  max-width: 400px;
-  width: 90%;
-}
-
-.modal-content h3 {
-  margin: 0 0 8px;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
 }
 
 .report-options {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin: 16px 0;
+  gap: var(--space-xs);
+  margin: var(--space-md) 0;
 }
 
 .report-option {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-xs);
   cursor: pointer;
-}
-
-.report-comment {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  margin-top: 12px;
-  resize: vertical;
-}
-
-.modal-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 20px;
-}
-
-.btn-submit-report {
-  background: #ef4444;
-  color: white;
-  padding: 10px 20px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-}
-
-.btn-submit-report:disabled {
-  background: #fca5a5;
-  cursor: not-allowed;
 }
 </style>

@@ -7,6 +7,7 @@ import { ArrowLeft, CheckCircle } from 'lucide-vue-next'
 import { useReviewStore } from '../stores/reviewStore'
 import type { Booking, ReviewInput } from '../api/reviews'
 import ReviewForm from '../components/forms/ReviewForm.vue'
+import Button from '@/ui/Button.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -81,9 +82,9 @@ function formatDate(dateStr: string): string {
   <div class="write-review-view">
     <!-- Header -->
     <header class="view-header">
-      <button class="back-btn" @click="goBack">
+      <Button variant="ghost" size="sm" iconOnly @click="goBack">
         <ArrowLeft :size="20" />
-      </button>
+      </Button>
       <h1>Write a Review</h1>
     </header>
 
@@ -98,7 +99,7 @@ function formatDate(dateStr: string): string {
       <div class="message-card">
         <h2>Cannot Write Review</h2>
         <p>{{ eligibility?.reason || 'You are not eligible to review this tutor.' }}</p>
-        <button class="btn btn-primary" @click="goBack">Go Back</button>
+        <Button variant="primary" @click="goBack">Go Back</Button>
       </div>
     </div>
 
@@ -108,9 +109,9 @@ function formatDate(dateStr: string): string {
         <CheckCircle :size="64" class="success-icon" />
         <h2>Thank You!</h2>
         <p>Your review has been submitted successfully.</p>
-        <button class="btn btn-primary" @click="goToTutor">
+        <Button variant="primary" @click="goToTutor">
           View Tutor Profile
-        </button>
+        </Button>
       </div>
     </div>
 
@@ -153,13 +154,14 @@ function formatDate(dateStr: string): string {
           </div>
         </div>
 
-        <button
+        <Button
           v-if="eligibleBookings.length > 1"
-          class="change-btn"
+          variant="outline"
+          size="sm"
           @click="selectedBooking = null"
         >
           Change
-        </button>
+        </Button>
       </div>
 
       <!-- Form -->
@@ -191,23 +193,6 @@ function formatDate(dateStr: string): string {
   margin-bottom: 24px;
 }
 
-.back-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  background: none;
-  border: none;
-  border-radius: 8px;
-  color: var(--color-text-primary, #111827);
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.back-btn:hover {
-  background: var(--color-bg-secondary, #f5f5f5);
-}
 
 .view-header h1 {
   margin: 0;
@@ -373,40 +358,6 @@ function formatDate(dateStr: string): string {
   color: var(--color-text-secondary, #6b7280);
 }
 
-.change-btn {
-  padding: 8px 16px;
-  background: none;
-  border: 1px solid var(--color-border, #d1d5db);
-  border-radius: 6px;
-  font-size: 14px;
-  color: var(--color-text-primary, #111827);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.change-btn:hover {
-  background: var(--color-bg-primary, white);
-}
-
-/* Buttons */
-.btn {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.btn-primary {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-}
-
-.btn-primary:hover {
-  background: var(--color-primary-dark, #2563eb);
-}
 
 /* Error */
 .error-message {

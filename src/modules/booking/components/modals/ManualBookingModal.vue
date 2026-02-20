@@ -3,9 +3,9 @@
     <div class="modal-container" @click.stop>
       <div class="modal-header">
         <h2 class="modal-title">{{ $t('booking.manualBooking.title') }}</h2>
-        <button class="modal-close" @click="handleClose">
+        <Button variant="ghost" iconOnly aria-label="Close" @click="handleClose">
           <span aria-hidden="true">&times;</span>
-        </button>
+        </Button>
       </div>
       
       <div class="modal-body">
@@ -49,11 +49,10 @@
         
         <div class="form-group">
           <label for="notes">{{ $t('booking.manualBooking.notes') }}</label>
-          <textarea
+          <Textarea
             id="notes"
             v-model="notes"
-            class="form-control"
-            rows="3"
+            :rows="3"
             :disabled="isLoading"
           />
         </div>
@@ -64,20 +63,21 @@
       </div>
       
       <div class="modal-footer">
-        <button
-          class="btn btn--secondary"
+        <Button
+          variant="outline"
           :disabled="isLoading"
           @click="handleClose"
         >
           {{ $t('common.cancel') }}
-        </button>
-        <button
-          class="btn btn--primary"
-          :disabled="isLoading || !isFormValid"
+        </Button>
+        <Button
+          variant="primary"
+          :disabled="!isFormValid"
+          :loading="isLoading"
           @click="handleSubmit"
         >
-          {{ isLoading ? $t('common.creating') : $t('booking.manualBooking.create') }}
-        </button>
+          {{ $t('booking.manualBooking.create') }}
+        </Button>
       </div>
     </div>
   </div>
@@ -85,6 +85,8 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import Button from '@/ui/Button.vue'
+import Textarea from '@/ui/Textarea.vue'
 
 interface Props {
   visible: boolean

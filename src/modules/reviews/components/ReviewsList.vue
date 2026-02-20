@@ -94,13 +94,13 @@
       <i class="icon-reviews-empty"></i>
       <h3>{{ $t('reviews.noReviews') }}</h3>
       <p>{{ $t('reviews.noReviewsSubtitle') }}</p>
-      <button 
+      <Button 
         v-if="showWriteButton"
-        class="btn-write-first"
+        variant="primary"
         @click="$emit('write-review')"
       >
         {{ $t('reviews.writeFirst') }}
-      </button>
+      </Button>
     </div>
 
     <!-- Reviews List -->
@@ -115,13 +115,14 @@
       />
       
       <!-- Load More -->
-      <button 
+      <Button 
         v-if="hasMore && !loadingMore"
-        class="btn-load-more"
+        variant="outline"
+        fullWidth
         @click="loadMore"
       >
         {{ $t('reviews.loadMore') }}
-      </button>
+      </Button>
       
       <div v-if="loadingMore" class="loading-more">
         <div class="spinner-small"></div>
@@ -134,6 +135,7 @@
 import { ref, computed, watch } from 'vue'
 import { useReviewsStore } from '../stores/reviewsStore'
 import ReviewCard from './ReviewCard.vue'
+import Button from '@/ui/Button.vue'
 
 const props = defineProps({
   tutorId: {
@@ -236,17 +238,17 @@ function onReviewDelete(reviewId) {
 }
 
 .reviews-header {
-  background: #fff;
-  border-radius: 12px;
-  padding: 24px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-lg);
+  box-shadow: var(--shadow-sm);
 }
 
 .rating-summary {
   display: flex;
   gap: 40px;
-  margin-bottom: 20px;
+  margin-bottom: var(--space-lg);
 }
 
 .average-rating {
@@ -258,28 +260,28 @@ function onReviewDelete(reviewId) {
 .rating-number {
   font-size: 48px;
   font-weight: 700;
-  color: #111827;
+  color: var(--text-primary);
   line-height: 1;
 }
 
 .rating-stars {
   display: flex;
-  gap: 4px;
-  margin: 8px 0;
+  gap: var(--space-2xs);
+  margin: var(--space-xs) 0;
 }
 
 .star {
   font-size: 20px;
-  color: #e5e7eb;
+  color: var(--border-color);
 }
 
 .star--filled {
-  color: #fbbf24;
+  color: var(--warning-bg);
 }
 
 .total-reviews {
-  font-size: 14px;
-  color: #6b7280;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
 }
 
 .rating-distribution {
@@ -292,56 +294,56 @@ function onReviewDelete(reviewId) {
 .distribution-bar {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-sm);
 }
 
 .bar-label {
   width: 60px;
-  font-size: 14px;
-  color: #6b7280;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
   text-align: right;
 }
 
 .bar-track {
   flex: 1;
   height: 8px;
-  background: #f3f4f6;
-  border-radius: 4px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
   overflow: hidden;
 }
 
 .bar-fill {
   height: 100%;
-  background: #fbbf24;
-  border-radius: 4px;
+  background: var(--warning-bg);
+  border-radius: var(--radius-sm);
   transition: width 0.3s ease;
 }
 
 .bar-count {
   width: 40px;
-  font-size: 14px;
-  color: #6b7280;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
 }
 
 .strength-tags {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding-top: 20px;
-  border-top: 1px solid #e5e7eb;
+  gap: var(--space-sm);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--border-color);
 }
 
 .tags-label {
-  font-size: 14px;
-  color: #6b7280;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
 }
 
 .tag {
-  background: #dbeafe;
-  color: #1e40af;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
   padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 13px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
   font-weight: 500;
 }
 
@@ -349,33 +351,34 @@ function onReviewDelete(reviewId) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding: 16px;
-  background: #fff;
-  border-radius: 8px;
+  margin-bottom: var(--space-lg);
+  padding: var(--space-md);
+  background: var(--card-bg);
+  border-radius: var(--radius-md);
 }
 
 .filter-group {
   display: flex;
-  gap: 16px;
+  gap: var(--space-md);
   align-items: center;
 }
 
 .filter-select,
 .sort-select {
-  padding: 8px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  background: #fff;
-  font-size: 14px;
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
 }
 
 .filter-checkbox {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 14px;
-  color: #374151;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
   cursor: pointer;
 }
 
@@ -387,17 +390,17 @@ function onReviewDelete(reviewId) {
 .loading-state {
   text-align: center;
   padding: 60px 20px;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid #e5e7eb;
-  border-top-color: #3b82f6;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin: 0 auto 16px;
+  margin: 0 auto var(--space-md);
 }
 
 @keyframes spin {
@@ -407,74 +410,42 @@ function onReviewDelete(reviewId) {
 .empty-state {
   text-align: center;
   padding: 60px 20px;
-  background: #fff;
-  border-radius: 12px;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
 }
 
 .empty-state i {
   font-size: 48px;
-  color: #d1d5db;
-  margin-bottom: 16px;
+  color: var(--border-color);
+  margin-bottom: var(--space-md);
 }
 
 .empty-state h3 {
-  margin: 0 0 8px;
-  color: #374151;
+  margin: 0 0 var(--space-xs);
+  color: var(--text-primary);
 }
 
 .empty-state p {
-  margin: 0 0 20px;
-  color: #6b7280;
-}
-
-.btn-write-first {
-  padding: 12px 24px;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn-write-first:hover {
-  background: #2563eb;
+  margin: 0 0 var(--space-lg);
+  color: var(--text-secondary);
 }
 
 .reviews-container {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-}
-
-.btn-load-more {
-  width: 100%;
-  padding: 16px;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  color: #374151;
-  font-size: 15px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-load-more:hover {
-  background: #f9fafb;
-  border-color: #d1d5db;
+  gap: var(--space-md);
 }
 
 .loading-more {
   text-align: center;
-  padding: 20px;
+  padding: var(--space-lg);
 }
 
 .spinner-small {
   width: 24px;
   height: 24px;
-  border: 2px solid #e5e7eb;
-  border-top-color: #3b82f6;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto;
@@ -483,12 +454,12 @@ function onReviewDelete(reviewId) {
 @media (max-width: 768px) {
   .rating-summary {
     flex-direction: column;
-    gap: 24px;
+    gap: var(--space-lg);
   }
   
   .reviews-filters {
     flex-direction: column;
-    gap: 12px;
+    gap: var(--space-sm);
     align-items: stretch;
   }
   

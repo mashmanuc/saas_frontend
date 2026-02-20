@@ -6,6 +6,7 @@ import { bookingApi } from '@/modules/booking/api/booking'
 import { availabilityApi } from '@/modules/booking/api/availabilityApi'
 import type { TemplateSlot } from '@/modules/booking/api/availabilityApi'
 import { Calendar, Plus, Trash2, Copy, Play } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 
 const { t } = useI18n()
 const availabilityStore = useAvailabilityStore()
@@ -168,35 +169,37 @@ onMounted(() => {
   <div class="availability-editor">
     <div class="header">
       <h2>{{ t('calendar.editor.title') }}</h2>
-      <button class="btn btn-primary" :disabled="saving" @click="saveAvailability">
-        {{ saving ? t('common.saving') : t('common.save') }}
-      </button>
+      <Button variant="primary" :disabled="saving" :loading="saving" @click="saveAvailability">
+        {{ t('common.save') }}
+      </Button>
     </div>
 
     <div class="section">
       <div class="section-header">
         <h3>{{ t('calendar.editor.weeklyTemplate') }}</h3>
         <div class="actions">
-          <button class="btn btn-secondary btn-sm" @click="showPreview = !showPreview">
+          <Button variant="secondary" size="sm" @click="showPreview = !showPreview">
             <Calendar :size="16" />
             {{ showPreview ? t('calendar.editor.hidePreview') : t('calendar.editor.showPreview') }}
-          </button>
-          <button class="btn btn-secondary btn-sm" @click="copyWeek">
+          </Button>
+          <Button variant="secondary" size="sm" @click="copyWeek">
             <Copy :size="16" />
             {{ t('calendar.editor.copyWeek') }}
-          </button>
-          <button class="btn btn-secondary btn-sm" @click="addWeeklySlot">
+          </Button>
+          <Button variant="secondary" size="sm" @click="addWeeklySlot">
             <Plus :size="16" />
             {{ t('calendar.editor.addSlot') }}
-          </button>
-          <button 
-            class="btn btn-primary btn-sm" 
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
             :disabled="applyingTemplate || weeklyTemplate.length === 0"
+            :loading="applyingTemplate"
             @click="applyTemplate"
           >
             <Play :size="16" />
-            {{ applyingTemplate ? t('calendar.editor.applying') : t('calendar.editor.applyTemplate') }}
-          </button>
+            {{ t('calendar.editor.applyTemplate') }}
+          </Button>
         </div>
       </div>
 
@@ -242,10 +245,10 @@ onMounted(() => {
     <div class="section">
       <div class="section-header">
         <h3>{{ t('calendar.editor.overrides') }}</h3>
-        <button class="btn btn-secondary btn-sm" @click="addOverride">
+        <Button variant="secondary" size="sm" @click="addOverride">
           <Plus :size="16" />
           {{ t('calendar.editor.addOverride') }}
-        </button>
+        </Button>
       </div>
 
       <div class="overrides">
@@ -261,10 +264,10 @@ onMounted(() => {
     <div class="section">
       <div class="section-header">
         <h3>{{ t('calendar.editor.blackoutDates') }}</h3>
-        <button class="btn btn-secondary btn-sm" @click="addBlackoutDate">
+        <Button variant="secondary" size="sm" @click="addBlackoutDate">
           <Plus :size="16" />
           {{ t('calendar.editor.addBlackout') }}
-        </button>
+        </Button>
       </div>
 
       <div class="blackouts">
@@ -363,47 +366,6 @@ onMounted(() => {
 .override-row .input,
 .blackout-row .input {
   flex: 1;
-}
-
-.btn {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: var(--radius-sm, 6px);
-  font-size: 0.9375rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-primary {
-  background: var(--primary);
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--primary-hover);
-}
-
-.btn-secondary {
-  background: var(--surface-secondary);
-  color: var(--text-primary);
-}
-
-.btn-secondary:hover {
-  background: var(--surface-hover);
-}
-
-.btn-sm {
-  padding: 0.375rem 0.75rem;
-  font-size: 0.875rem;
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .btn-icon {

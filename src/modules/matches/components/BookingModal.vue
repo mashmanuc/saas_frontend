@@ -2,7 +2,10 @@
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useBookingStore } from '../store/bookingStore'
-import { Calendar, Clock, CheckCircle, X } from 'lucide-vue-next'
+import { Calendar, Clock, CheckCircle } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
+import Modal from '@/ui/Modal.vue'
+import Textarea from '@/ui/Textarea.vue'
 
 const props = defineProps<{
   show: boolean
@@ -47,141 +50,65 @@ function handleClose() {
 </script>
 
 <template>
-  <Transition name="modal">
-    <div v-if="show" class="modal-overlay" @click="handleClose">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <h2>{{ t('booking.modal.title') }}</h2>
-          <button class="close-btn" @click="handleClose">
-            <X :size="20" />
-          </button>
-        </div>
-
-        <div class="modal-body">
-          <div v-if="step === 'confirm'" class="step-confirm">
-            <div class="slot-info">
-              <Calendar :size="20" />
-              <div>
-                <p class="label">{{ t('booking.modal.selectedSlot') }}</p>
-                <p class="value">{{ slotStart }} - {{ slotEnd }}</p>
-              </div>
-            </div>
-
-            <div class="note-input">
-              <label>{{ t('booking.modal.noteLabel') }}</label>
-              <textarea
-                v-model="note"
-                :placeholder="t('booking.modal.notePlaceholder')"
-                rows="3"
-              />
-            </div>
-
-            <div class="info-box">
-              <Clock :size="18" />
-              <p>{{ t('booking.modal.tutorResponseTime') }}</p>
-            </div>
-          </div>
-
-          <div v-if="step === 'success'" class="step-success">
-            <CheckCircle :size="48" class="success-icon" />
-            <h3>{{ t('booking.modal.successTitle') }}</h3>
-            <p>{{ t('booking.modal.successMessage') }}</p>
-          </div>
-        </div>
-
-        <div class="modal-footer">
-          <button
-            v-if="step === 'confirm'"
-            class="btn btn-secondary"
-            :disabled="loading"
-            @click="handleClose"
-          >
-            {{ t('common.cancel') }}
-          </button>
-          <button
-            v-if="step === 'confirm'"
-            class="btn btn-primary"
-            :disabled="loading"
-            @click="confirmBooking"
-          >
-            {{ loading ? t('booking.modal.confirming') : t('booking.modal.confirm') }}
-          </button>
-          <button
-            v-if="step === 'success'"
-            class="btn btn-primary"
-            @click="handleClose"
-          >
-            {{ t('common.close') }}
-          </button>
+  <Modal :open="show" :title="t('booking.modal.title')" @close="handleClose">
+    <div v-if="step === 'confirm'" class="step-confirm">
+      <div class="slot-info">
+        <Calendar :size="20" />
+        <div>
+          <p class="label">{{ t('booking.modal.selectedSlot') }}</p>
+          <p class="value">{{ slotStart }} - {{ slotEnd }}</p>
         </div>
       </div>
+
+      <Textarea
+        v-model="note"
+        :label="t('booking.modal.noteLabel')"
+        :placeholder="t('booking.modal.notePlaceholder')"
+        :rows="3"
+      />
+
+      <div class="info-box">
+        <Clock :size="18" />
+        <p>{{ t('booking.modal.tutorResponseTime') }}</p>
+      </div>
     </div>
-  </Transition>
+
+    <div v-if="step === 'success'" class="step-success">
+      <CheckCircle :size="48" class="success-icon" />
+      <h3>{{ t('booking.modal.successTitle') }}</h3>
+      <p>{{ t('booking.modal.successMessage') }}</p>
+    </div>
+
+    <template #footer>
+      <Button
+        v-if="step === 'confirm'"
+        variant="outline"
+        :disabled="loading"
+        @click="handleClose"
+      >
+        {{ t('common.cancel') }}
+      </Button>
+      <Button
+        v-if="step === 'confirm'"
+        variant="primary"
+        :disabled="loading"
+        :loading="loading"
+        @click="confirmBooking"
+      >
+        {{ t('booking.modal.confirm') }}
+      </Button>
+      <Button
+        v-if="step === 'success'"
+        variant="primary"
+        @click="handleClose"
+      >
+        {{ t('common.close') }}
+      </Button>
+    </template>
+  </Modal>
 </template>
 
 <style scoped>
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(4, 6, 20, 0.78);
-  backdrop-filter: blur(6px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 1rem;
-}
-
-.modal-content {
-  background: var(--surface-card);
-  border-radius: var(--radius-lg, 12px);
-  box-shadow: 0 30px 60px rgba(2, 6, 23, 0.55);
-  max-width: 500px;
-  width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
-  border: 1px solid var(--border-color);
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.5rem;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.modal-header h2 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin: 0;
-  color: var(--text-primary);
-}
-
-.close-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: color 0.2s;
-}
-
-.close-btn:hover {
-  color: var(--text-primary);
-}
-
-.modal-body {
-  padding: 1.5rem;
-}
-
 .step-confirm {
   display: flex;
   flex-direction: column;
@@ -208,26 +135,6 @@ function handleClose() {
   font-weight: 600;
   color: var(--text-primary);
   margin: 0;
-}
-
-.note-input label {
-  display: block;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--text-primary);
-  margin-bottom: 0.5rem;
-}
-
-.note-input textarea {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm, 6px);
-  font-size: 0.9375rem;
-  font-family: inherit;
-  background: var(--surface-input);
-  color: var(--text-primary);
-  resize: vertical;
 }
 
 .info-box {
@@ -268,54 +175,4 @@ function handleClose() {
   margin: 0;
 }
 
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  padding: 1rem 1.5rem;
-  border-top: 1px solid var(--border-color);
-}
-
-.btn {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: var(--radius-sm, 6px);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-primary {
-  background: var(--primary);
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--primary-hover);
-}
-
-.btn-secondary {
-  background: var(--surface-secondary);
-  color: var(--text-primary);
-}
-
-.btn-secondary:hover {
-  background: var(--surface-hover);
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.modal-enter-active,
-.modal-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-}
 </style>

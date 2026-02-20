@@ -9,9 +9,9 @@
     >
       <div class="modal-header">
         <h2 id="event-modal-title" data-testid="event-modal-title">{{ $t('booking.calendar.eventModal.title') }}</h2>
-        <button @click="handleClose" class="close-btn" aria-label="Закрити" data-testid="event-modal-close">
+        <Button variant="ghost" iconOnly aria-label="Закрити" data-testid="event-modal-close" @click="handleClose">
           <XIcon class="w-5 h-5" />
-        </button>
+        </Button>
       </div>
 
       <!-- Loading State -->
@@ -113,11 +113,10 @@
           <!-- Коментар -->
           <div class="form-field">
             <label for="edit-comment" class="field-label">{{ $t('booking.calendar.createLesson.comment') }}</label>
-            <textarea
+            <Textarea
               id="edit-comment"
               v-model="editForm.tutorComment"
-              class="field-textarea"
-              rows="3"
+              :rows="3"
               :placeholder="$t('booking.calendar.createLesson.commentPlaceholder')"
               data-testid="event-comment-input"
             />
@@ -208,6 +207,7 @@ import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { X as XIcon, AlertCircle as AlertCircleIcon, Trash as TrashIcon } from 'lucide-vue-next'
 import Button from '@/ui/Button.vue'
+import Textarea from '@/ui/Textarea.vue'
 import { useCalendarWeekStore } from '@/modules/booking/stores/calendarWeekStore'
 import { useToast } from '@/composables/useToast'
 import { useFocusTrap } from '@/composables/useFocusTrap'

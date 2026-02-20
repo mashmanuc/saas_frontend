@@ -1,15 +1,17 @@
 <template>
   <div class="join-picker">
-    <button
-      @click="togglePicker"
-      class="join-button"
+    <Button
+      variant="primary"
       :disabled="!hasLinks"
       data-testid="join-lesson-button"
+      @click="togglePicker"
     >
-      <VideoIcon class="w-5 h-5" />
+      <template #iconLeft>
+        <VideoIcon class="w-5 h-5" />
+      </template>
       {{ $t('booking.calendar.eventDetails.joinLesson') }}
       <ChevronDownIcon v-if="hasLinks" class="w-4 h-4" />
-    </button>
+    </Button>
 
     <!-- Dropdown Menu -->
     <div
@@ -19,13 +21,15 @@
     >
       <div class="picker-header">
         <p class="picker-title">{{ $t('booking.calendar.joinPicker.title') }}</p>
-        <button
-          @click="closePicker"
-          class="close-btn"
+        <Button
+          variant="ghost"
+          iconOnly
+          size="sm"
           :aria-label="$t('common.close')"
+          @click="closePicker"
         >
           <XIcon class="w-4 h-4" />
-        </button>
+        </Button>
       </div>
 
       <div class="picker-options">
@@ -92,6 +96,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Video as VideoIcon, ChevronDown as ChevronDownIcon, X as XIcon, ExternalLink as ExternalLinkIcon } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 import { useTutorLessonLinksStore } from '@/modules/booking/stores/tutorLessonLinksStore'
 import api from '@/utils/apiClient'
 

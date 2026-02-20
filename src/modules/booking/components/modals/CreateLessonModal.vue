@@ -4,9 +4,9 @@
       <div ref="modalRef" class="modal-container" role="dialog" aria-labelledby="modal-title" aria-modal="true">
       <div class="modal-header">
         <h2 id="modal-title">{{ $t('calendar.createLesson.title') }}</h2>
-        <button @click="handleClose" class="close-btn" aria-label="Закрити">
+        <Button variant="ghost" iconOnly aria-label="Закрити" @click="handleClose">
           <XIcon class="w-5 h-5" />
-        </button>
+        </Button>
       </div>
 
       <form @submit.prevent="submitForm" class="modal-form">
@@ -185,13 +185,13 @@
                 class="field-input"
                 :placeholder="$t('calendar.createLesson.repeatUntil')"
               />
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
                 @click="repeatByCount = !repeatByCount"
-                class="px-3 py-2 text-sm border border-border-subtle rounded-md hover:bg-background-subtle"
               >
                 {{ repeatByCount ? '📅' : '#' }}
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -213,11 +213,10 @@
           <label for="tutor-comment" class="field-label">
             {{ $t('calendar.createLesson.tutorComment') }}
           </label>
-          <textarea
+          <Textarea
             id="tutor-comment"
             v-model="formData.tutorComment"
-            class="field-textarea"
-            rows="2"
+            :rows="2"
             :placeholder="$t('calendar.createLesson.tutorCommentPlaceholder')"
           />
         </div>
@@ -227,11 +226,10 @@
           <label for="student-comment" class="field-label">
             {{ $t('calendar.createLesson.studentComment') }}
           </label>
-          <textarea
+          <Textarea
             id="student-comment"
             v-model="formData.studentComment"
-            class="field-textarea"
-            rows="2"
+            :rows="2"
             :placeholder="$t('calendar.createLesson.studentCommentPlaceholder')"
           />
         </div>
@@ -303,6 +301,7 @@ import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { X as XIcon, Calendar as CalendarIcon, AlertCircle as AlertCircleIcon } from 'lucide-vue-next'
 import Button from '@/ui/Button.vue'
+import Textarea from '@/ui/Textarea.vue'
 import { useCalendarWeekStore } from '@/modules/booking/stores/calendarWeekStore'
 import { useToast } from '@/composables/useToast'
 import { useFocusTrap } from '@/composables/useFocusTrap'
