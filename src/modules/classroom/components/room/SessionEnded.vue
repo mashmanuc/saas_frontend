@@ -25,14 +25,14 @@
 
       <!-- Actions -->
       <div class="ended-actions">
-        <button class="btn btn-primary" @click="$emit('leave')">
-          <Home class="w-5 h-5 mr-2" />
+        <Button variant="primary" @click="$emit('leave')">
+          <template #iconLeft><Home class="w-5 h-5" /></template>
           На головну
-        </button>
-        <button class="btn btn-secondary" @click="$emit('view-history')">
-          <History class="w-5 h-5 mr-2" />
+        </Button>
+        <Button variant="outline" @click="$emit('view-history')">
+          <template #iconLeft><History class="w-5 h-5" /></template>
           Переглянути історію
-        </button>
+        </Button>
       </div>
 
       <!-- Feedback prompt -->
@@ -57,6 +57,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { CheckCircle, Clock, Calendar, Home, History, Star } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 import type { ClassroomSession } from '../../api/classroom'
 
 interface Props {
@@ -103,7 +104,7 @@ function setRating(value: number): void {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  background: linear-gradient(135deg, var(--bg-tertiary, #1f2937) 0%, var(--bg-primary, #111827) 100%);
   padding: 24px;
 }
 
@@ -125,7 +126,7 @@ function setRating(value: number): void {
 
 .ended-message {
   font-size: 1.125rem;
-  color: var(--color-text-secondary, #9ca3af);
+  color: var(--text-secondary);
   margin: 0 0 32px;
 }
 
@@ -140,7 +141,7 @@ function setRating(value: number): void {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--color-text-secondary, #9ca3af);
+  color: var(--text-secondary);
 }
 
 .ended-actions {
@@ -151,42 +152,10 @@ function setRating(value: number): void {
   margin-bottom: 48px;
 }
 
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-  min-width: 200px;
-}
-
-.btn-primary {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-}
-
-.btn-primary:hover {
-  background: var(--color-primary-dark, #2563eb);
-}
-
-.btn-secondary {
-  background: transparent;
-  color: var(--color-text-secondary, #9ca3af);
-  border: 1px solid var(--color-border, #374151);
-}
-
-.btn-secondary:hover {
-  background: var(--color-bg-secondary, #374151);
-}
-
 .feedback-prompt {
   padding: 24px;
-  background: var(--color-bg-secondary, #374151);
-  border-radius: 12px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
 }
 
 .feedback-prompt p {
@@ -204,7 +173,7 @@ function setRating(value: number): void {
 .star-btn {
   background: none;
   border: none;
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
   padding: 4px;
@@ -212,7 +181,7 @@ function setRating(value: number): void {
 
 .star-btn:hover,
 .star-btn.active {
-  color: #fbbf24;
+  color: var(--warning, #fbbf24);
   transform: scale(1.1);
 }
 </style>

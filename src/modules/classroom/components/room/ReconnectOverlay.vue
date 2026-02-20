@@ -20,14 +20,14 @@
       </div>
 
       <div class="reconnect-actions">
-        <button class="btn btn-primary" @click="$emit('retry')">
-          <RefreshCw class="w-4 h-4 mr-2" />
+        <Button variant="primary" @click="$emit('retry')">
+          <template #iconLeft><RefreshCw class="w-4 h-4" /></template>
           Спробувати зараз
-        </button>
-        <button class="btn btn-secondary" @click="$emit('leave')">
-          <LogOut class="w-4 h-4 mr-2" />
+        </Button>
+        <Button variant="outline" @click="$emit('leave')">
+          <template #iconLeft><LogOut class="w-4 h-4" /></template>
           Вийти
-        </button>
+        </Button>
       </div>
     </div>
   </div>
@@ -35,6 +35,7 @@
 
 <script setup lang="ts">
 import { WifiOff, RefreshCw, LogOut } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 
 interface Props {
   attempt: number
@@ -73,7 +74,7 @@ import { computed } from 'vue'
 .reconnect-content {
   text-align: center;
   padding: 48px;
-  background: var(--color-bg-primary, #1f2937);
+  background: var(--bg-primary, #1f2937);
   border-radius: 16px;
   max-width: 400px;
 }
@@ -90,13 +91,13 @@ import { computed } from 'vue'
 }
 
 .reconnect-message {
-  color: var(--color-text-secondary, #9ca3af);
+  color: var(--text-secondary);
   margin: 0 0 24px;
 }
 
 .reconnect-progress {
   height: 4px;
-  background: var(--color-bg-secondary, #374151);
+  background: var(--bg-secondary);
   border-radius: 2px;
   overflow: hidden;
   margin-bottom: 16px;
@@ -104,13 +105,13 @@ import { computed } from 'vue'
 
 .progress-bar {
   height: 100%;
-  background: var(--color-primary, #3b82f6);
+  background: var(--accent);
   transition: width 0.3s ease;
 }
 
 .reconnect-countdown {
   font-size: 14px;
-  color: var(--color-text-secondary, #9ca3af);
+  color: var(--text-secondary);
   margin-bottom: 24px;
 }
 
@@ -120,32 +121,4 @@ import { computed } from 'vue'
   justify-content: center;
 }
 
-.btn {
-  display: inline-flex;
-  align-items: center;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-}
-
-.btn-primary {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-}
-
-.btn-primary:hover {
-  background: var(--color-primary-dark, #2563eb);
-}
-
-.btn-secondary {
-  background: var(--color-bg-secondary, #374151);
-  color: white;
-}
-
-.btn-secondary:hover {
-  background: var(--color-bg-tertiary, #4b5563);
-}
 </style>

@@ -30,19 +30,20 @@
 
       <!-- Actions -->
       <div class="waiting-actions">
-        <button 
+        <Button 
           v-if="userRole === 'host'"
-          class="btn btn-primary btn-large"
+          variant="primary"
+          size="lg"
           @click="$emit('ready')"
         >
-          <Play class="w-5 h-5 mr-2" />
+          <template #iconLeft><Play class="w-5 h-5" /></template>
           Почати урок
-        </button>
+        </Button>
 
-        <button class="btn btn-secondary" @click="$emit('leave')">
-          <LogOut class="w-5 h-5 mr-2" />
+        <Button variant="outline" @click="$emit('leave')">
+          <template #iconLeft><LogOut class="w-5 h-5" /></template>
           Вийти
-        </button>
+        </Button>
       </div>
 
       <!-- Tips -->
@@ -60,6 +61,7 @@
 
 <script setup lang="ts">
 import { Clock, Calendar, Play, LogOut } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 import type { ClassroomSession } from '../../api/classroom'
 
 interface Props {
@@ -96,7 +98,7 @@ function formatTime(dateStr: string): string {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  background: linear-gradient(135deg, var(--bg-tertiary, #1f2937) 0%, var(--bg-primary, #111827) 100%);
   padding: 24px;
 }
 
@@ -118,7 +120,7 @@ function formatTime(dateStr: string): string {
 
 .waiting-message {
   font-size: 1.125rem;
-  color: var(--color-text-secondary, #9ca3af);
+  color: var(--text-secondary);
   margin: 0 0 32px;
 }
 
@@ -133,7 +135,7 @@ function formatTime(dateStr: string): string {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--color-text-secondary, #9ca3af);
+  color: var(--text-secondary);
 }
 
 .waiting-actions {
@@ -144,48 +146,11 @@ function formatTime(dateStr: string): string {
   margin-bottom: 48px;
 }
 
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-  min-width: 200px;
-}
-
-.btn-large {
-  padding: 16px 32px;
-  font-size: 1.125rem;
-}
-
-.btn-primary {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-}
-
-.btn-primary:hover {
-  background: var(--color-primary-dark, #2563eb);
-}
-
-.btn-secondary {
-  background: transparent;
-  color: var(--color-text-secondary, #9ca3af);
-  border: 1px solid var(--color-border, #374151);
-}
-
-.btn-secondary:hover {
-  background: var(--color-bg-secondary, #374151);
-}
-
 .waiting-tips {
   text-align: left;
   padding: 24px;
-  background: var(--color-bg-secondary, #374151);
-  border-radius: 12px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
 }
 
 .waiting-tips h3 {
@@ -201,7 +166,7 @@ function formatTime(dateStr: string): string {
 }
 
 .waiting-tips li {
-  color: var(--color-text-secondary, #9ca3af);
+  color: var(--text-secondary);
   font-size: 14px;
   margin-bottom: 8px;
 }
