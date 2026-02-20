@@ -2,6 +2,7 @@
 // F21: Payout Form Component
 import { ref, computed } from 'vue'
 import { Banknote, AlertCircle } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 import type { Wallet } from '../../api/payments'
 
 const props = defineProps<{
@@ -56,9 +57,9 @@ function handleSubmit() {
         <strong>No payout method configured</strong>
         <p>Please add your bank details before requesting a payout.</p>
       </div>
-      <button type="button" class="btn btn-primary" @click="emit('edit-settings')">
+      <Button variant="primary" @click="emit('edit-settings')">
         Add Bank Details
-      </button>
+      </Button>
     </div>
 
     <template v-else>
@@ -106,13 +107,15 @@ function handleSubmit() {
       </div>
 
       <!-- Submit -->
-      <button
+      <Button
+        variant="primary"
         type="submit"
-        class="submit-btn"
-        :disabled="!isValid || isLoading || !wallet.can_withdraw"
+        fullWidth
+        :disabled="!isValid || !wallet.can_withdraw"
+        :loading="isLoading"
       >
-        {{ isLoading ? 'Processing...' : 'Request Withdrawal' }}
-      </button>
+        Request Withdrawal
+      </Button>
     </template>
   </form>
 </template>
@@ -121,99 +124,99 @@ function handleSubmit() {
 .payout-form {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: var(--space-lg);
 }
 
-/* Warning Card */
 .warning-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 24px;
-  background: var(--color-warning-light, #fef3c7);
-  border-radius: 12px;
+  gap: var(--space-sm);
+  padding: var(--space-lg);
+  background: color-mix(in srgb, var(--warning-bg) 15%, transparent);
+  border-radius: var(--radius-lg);
   text-align: center;
 }
 
 .warning-card svg {
-  color: var(--color-warning-dark, #92400e);
+  color: var(--warning-bg);
 }
 
 .warning-card strong {
-  color: var(--color-warning-dark, #92400e);
+  color: var(--warning-bg);
 }
 
 .warning-card p {
   margin: 0;
-  font-size: 14px;
-  color: var(--color-warning-dark, #92400e);
+  font-size: var(--text-sm);
+  color: var(--warning-bg);
 }
 
-/* Form Section */
 .form-section {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-xs);
 }
 
 .form-section label {
-  font-size: 14px;
+  font-size: var(--text-sm);
   font-weight: 500;
-  color: var(--color-text-primary, #111827);
+  color: var(--text-primary);
 }
 
 .amount-input-wrapper {
   display: flex;
-  gap: 8px;
+  gap: var(--space-xs);
 }
 
 .amount-input {
   flex: 1;
-  padding: 12px;
-  border: 1px solid var(--color-border, #d1d5db);
-  border-radius: 8px;
-  font-size: 16px;
+  padding: var(--space-sm);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
+  background: var(--card-bg);
+  color: var(--text-primary);
 }
 
 .amount-input:focus {
   outline: none;
-  border-color: var(--color-primary, #3b82f6);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
 .max-btn {
-  padding: 12px 16px;
-  background: var(--color-bg-secondary, #f5f5f5);
-  border: 1px solid var(--color-border, #d1d5db);
-  border-radius: 8px;
-  font-size: 14px;
-  color: var(--color-text-primary, #111827);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
   cursor: pointer;
   white-space: nowrap;
 }
 
 .max-btn:hover {
-  background: var(--color-bg-tertiary, #e5e7eb);
+  background: var(--border-color);
 }
 
 .help-text {
   margin: 0;
-  font-size: 13px;
-  color: var(--color-text-secondary, #6b7280);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
 }
 
-/* Payout Method */
 .payout-method {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 16px;
-  background: var(--color-bg-secondary, #f5f5f5);
-  border-radius: 8px;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
 }
 
 .payout-method svg {
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--text-secondary);
 }
 
 .method-info {
@@ -224,22 +227,22 @@ function handleSubmit() {
 }
 
 .method-info strong {
-  font-size: 14px;
-  color: var(--color-text-primary, #111827);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
 }
 
 .method-info span {
-  font-size: 13px;
-  color: var(--color-text-secondary, #6b7280);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
   font-family: monospace;
 }
 
 .edit-btn {
-  padding: 6px 12px;
+  padding: var(--space-2xs) var(--space-sm);
   background: none;
   border: none;
-  font-size: 14px;
-  color: var(--color-primary, #3b82f6);
+  font-size: var(--text-sm);
+  color: var(--accent);
   cursor: pointer;
 }
 
@@ -247,56 +250,14 @@ function handleSubmit() {
   text-decoration: underline;
 }
 
-/* Info Alert */
 .info-alert {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
-  background: var(--color-info-light, #dbeafe);
-  border-radius: 8px;
-  font-size: 14px;
-  color: var(--color-info-dark, #1e40af);
-}
-
-/* Submit Button */
-.submit-btn {
-  padding: 14px 24px;
-  background: var(--color-primary, #3b82f6);
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  color: white;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.submit-btn:hover:not(:disabled) {
-  background: var(--color-primary-dark, #2563eb);
-}
-
-.submit-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* Buttons */
-.btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.btn-primary {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-}
-
-.btn-primary:hover {
-  background: var(--color-primary-dark, #2563eb);
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  background: color-mix(in srgb, var(--info-bg) 15%, transparent);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  color: var(--info-bg);
 }
 </style>
