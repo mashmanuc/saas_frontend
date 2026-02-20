@@ -5,23 +5,25 @@
     :class="{ 'compact-view': view === 'compact' }"
   >
     <div v-if="showHeader" class="calendar-header">
-      <button 
-        @click="previousWeek" 
-        class="btn-icon" 
+      <Button
+        variant="ghost"
+        iconOnly
+        @click="previousWeek"
         :disabled="!canGoPrevious"
         :aria-label="$t('common.previousWeek')"
       >
         <ChevronLeftIcon class="w-5 h-5" />
-      </button>
+      </Button>
       <span class="week-label">{{ formatWeekRange(weekStart) }}</span>
-      <button 
-        @click="nextWeek" 
-        class="btn-icon" 
+      <Button
+        variant="ghost"
+        iconOnly
+        @click="nextWeek"
         :disabled="!canGoNext"
         :aria-label="$t('common.nextWeek')"
       >
         <ChevronRightIcon class="w-5 h-5" />
-      </button>
+      </Button>
     </div>
 
     <div v-if="loading" class="loading-state" data-testid="availability-loading-state">
@@ -32,9 +34,9 @@
     <div v-else-if="error" class="error-state" data-testid="availability-error-state">
       <AlertCircleIcon class="w-8 h-8 text-red-500" />
       <p>{{ error }}</p>
-      <button @click="loadAvailability" class="btn-secondary">
+      <Button variant="outline" @click="loadAvailability">
         {{ $t('common.retry') }}
-      </button>
+      </Button>
     </div>
 
     <div v-else-if="!hasAnySlots" class="empty-state" data-testid="availability-empty-state">
@@ -84,6 +86,7 @@ import {
   AlertCircle as AlertCircleIcon,
   Calendar as CalendarIcon,
 } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 import marketplaceApi from '@/modules/marketplace/api/marketplace'
 
 const { t } = useI18n()

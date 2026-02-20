@@ -106,9 +106,9 @@ declare global {
     <div class="modal">
       <div class="top">
         <h3>{{ t('marketplace.trialRequest.title') }}</h3>
-        <button class="icon" type="button" @click="emit('close')" :disabled="isSubmitting">
+        <Button variant="ghost" iconOnly @click="emit('close')" :disabled="isSubmitting">
           <X :size="18" />
-        </button>
+        </Button>
       </div>
 
       <div class="body">

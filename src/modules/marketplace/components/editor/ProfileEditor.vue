@@ -105,6 +105,7 @@
 // TASK MF10: ProfileEditor component
 import { ref, watch, computed, onBeforeUnmount } from 'vue'
 import { Save } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 import { getLanguageName, getLanguageOptions } from '@/config/languages'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/modules/auth/store/authStore'
@@ -998,12 +999,12 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
         {{ t('profile.draft.foundTitle') }}
       </div>
       <div class="draft-banner-actions">
-        <button type="button" class="btn btn-secondary" @click="restoreLocalDraft">
+        <Button variant="outline" @click="restoreLocalDraft">
           {{ t('profile.draft.restore') }}
-        </button>
-        <button type="button" class="btn btn-ghost" @click="discardLocalDraft">
+        </Button>
+        <Button variant="ghost" @click="discardLocalDraft">
           {{ t('profile.draft.discard') }}
-        </button>
+        </Button>
       </div>
     </div>
 
@@ -1358,24 +1359,27 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
     </section>
 
     <div class="editor-actions">
-      <button type="button" class="btn btn-secondary" :disabled="isFirstStep" @click="goPrev">
+      <Button variant="outline" :disabled="isFirstStep" @click="goPrev">
         {{ t('common.back') }}
-      </button>
+      </Button>
 
-      <button type="button" class="btn btn-secondary" :disabled="isLastStep || !canGoNext" @click="goNext">
+      <Button variant="outline" :disabled="isLastStep || !canGoNext" @click="goNext">
         {{ t('common.next') }}
-      </button>
+      </Button>
 
-      <button
+      <Button
         v-if="isLastStep"
+        variant="primary"
         type="submit"
-        class="btn btn-primary"
-        :disabled="saving || !canSubmit"
+        :disabled="!canSubmit"
+        :loading="saving"
         data-test="marketplace-editor-save"
       >
-        <Save :size="18" />
+        <template v-if="!saving" #iconLeft>
+          <Save :size="18" />
+        </template>
         {{ saving ? t('marketplace.profile.editor.saving') : t('marketplace.profile.editor.save') }}
-      </button>
+      </Button>
 
       <span v-if="autosaveStatus !== 'idle'" class="autosave-status" :class="`autosave-${autosaveStatus}`" data-test="marketplace-editor-autosave-status">
         <span v-if="autosaveStatus === 'saving'" class="autosave-indicator">●</span>

@@ -51,9 +51,9 @@
     
     <div v-if="!isActive" class="upgrade-section">
       <p>{{ $t('entitlements.features.upgradePrompt') }}</p>
-      <button class="btn btn-primary btn-lg" @click="goToBilling">
+      <Button variant="primary" @click="goToBilling">
         {{ $t('entitlements.features.upgradeCta') }}
-      </button>
+      </Button>
     </div>
   </div>
 </template>
@@ -62,6 +62,7 @@
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useEntitlementsStore } from '../stores/entitlementsStore'
+import Button from '@/ui/Button.vue'
 
 const store = useEntitlementsStore()
 const router = useRouter()
@@ -287,30 +288,6 @@ function goToBilling() {
 .upgrade-section p {
   color: var(--color-text-secondary);
   margin: 0 0 var(--spacing-md);
-}
-
-.btn {
-  padding: var(--spacing-sm) var(--spacing-lg);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border: none;
-}
-
-.btn-primary {
-  background: var(--color-primary);
-  color: var(--color-primary-text);
-}
-
-.btn-primary:hover {
-  background: var(--color-primary-hover);
-}
-
-.btn-lg {
-  padding: var(--spacing-md) var(--spacing-xl);
-  font-size: var(--font-size-base);
 }
 
 @media (max-width: 768px) {

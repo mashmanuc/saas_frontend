@@ -19,9 +19,9 @@
             <span class="value">{{ formatNextAvailable(summary.next_available_slot) }}</span>
           </div>
         </div>
-        <button @click="openDrawer" class="btn btn-sm btn-outline">
+        <Button variant="outline" size="sm" @click="openDrawer">
           {{ t('marketplace.profile.viewCalendar') }} →
-        </button>
+        </Button>
       </div>
 
       <div v-else class="full-view">
@@ -51,9 +51,9 @@
           </div>
         </div>
 
-        <button @click="openDrawer" class="btn btn-primary btn-block">
+        <Button variant="primary" fullWidth @click="openDrawer">
           {{ t('marketplace.profile.viewFullCalendar') }}
-        </button>
+        </Button>
       </div>
     </div>
 
@@ -68,9 +68,9 @@
         <div class="drawer-container" @click.stop>
           <div class="drawer-header">
             <h3>{{ t('marketplace.profile.fullCalendar') }}</h3>
-            <button @click="closeDrawer" class="close-button">
+            <Button variant="ghost" iconOnly @click="closeDrawer">
               <X :size="20" />
-            </button>
+            </Button>
           </div>
           <div class="drawer-body">
             <slot name="calendar" :close="closeDrawer">
@@ -87,6 +87,7 @@
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Calendar, CalendarX, Loader2, AlertCircle, X, Clock } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 import { availabilityApi } from '../../booking/api/availabilityApi'
 import type { AvailabilitySummary, TutorAvailabilityFull } from '../../booking/api/availabilityApi'
 

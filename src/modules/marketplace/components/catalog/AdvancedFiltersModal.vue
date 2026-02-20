@@ -51,9 +51,9 @@ function handleClose() {
       <div class="modal-container" @click.stop>
         <div class="modal-header">
           <h3>{{ t('marketplace.filters.title') }}</h3>
-          <button class="close-btn" @click="handleClose">
+          <Button variant="ghost" iconOnly @click="handleClose">
             <X :size="20" />
-          </button>
+          </Button>
         </div>
 
         <div class="modal-body">

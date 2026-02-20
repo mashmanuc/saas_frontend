@@ -29,20 +29,26 @@
             </span>
 
             <!-- Actions -->
-            <button
-              class="p-1 text-gray-400 hover:text-white"
+            <Button
+              variant="ghost"
+              size="sm"
+              iconOnly
+              class="text-gray-400 hover:text-white"
               title="Clear logs"
               @click="clearLogs"
             >
               <Trash2 class="w-4 h-4" />
-            </button>
-            <button
-              class="p-1 text-gray-400 hover:text-white"
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              iconOnly
+              class="text-gray-400 hover:text-white"
               title="Close"
               @click="closePanel"
             >
               <X class="w-4 h-4" />
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -102,6 +108,7 @@ import { computed, onMounted, onUnmounted } from 'vue'
 import { Bug, Trash2, X } from 'lucide-vue-next'
 import { useDiagnostics } from '../composables/useDiagnostics'
 import LogItem from './LogItem.vue'
+import Button from '@/ui/Button.vue'
 
 const {
   filteredLogs,

@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import marketplaceApi from '../api/marketplace'
 import { Search, Filter, X } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 
 const { t } = useI18n()
 
@@ -95,13 +96,15 @@ onMounted(() => {
           @keydown.enter="search"
         />
       </div>
-      <button class="btn btn-primary" @click="search">
+      <Button variant="primary" @click="search">
         {{ t('marketplace.search.search') }}
-      </button>
-      <button class="btn btn-secondary" @click="showFilters = !showFilters">
-        <Filter :size="18" />
+      </Button>
+      <Button variant="outline" @click="showFilters = !showFilters">
+        <template #iconLeft>
+          <Filter :size="18" />
+        </template>
         {{ t('marketplace.search.filters') }}
-      </button>
+      </Button>
     </div>
 
     <div v-if="showFilters" class="filters-panel">
@@ -176,13 +179,15 @@ onMounted(() => {
       </div>
 
       <div class="filter-actions">
-        <button class="btn btn-secondary" @click="clearFilters">
-          <X :size="18" />
+        <Button variant="outline" @click="clearFilters">
+          <template #iconLeft>
+            <X :size="18" />
+          </template>
           {{ t('marketplace.search.clearFilters') }}
-        </button>
-        <button class="btn btn-primary" @click="search">
+        </Button>
+        <Button variant="primary" @click="search">
           {{ t('marketplace.search.apply') }}
-        </button>
+        </Button>
       </div>
     </div>
 

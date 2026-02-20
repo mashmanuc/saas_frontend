@@ -120,7 +120,7 @@ function handleClose() {
     <div class="modal-content" data-test="verification-request-modal">
       <div class="modal-header">
         <h2>{{ t('marketplace.verification.modal.title', { level: targetLevel }) }}</h2>
-        <button class="close-btn" @click="handleClose" :disabled="isSubmitting">×</button>
+        <Button variant="ghost" iconOnly @click="handleClose" :disabled="isSubmitting">×</Button>
       </div>
 
       <div class="steps-indicator">
@@ -160,7 +160,7 @@ function handleClose() {
           <div v-if="formData.documents.length > 0" class="uploaded-files">
             <div v-for="(file, index) in formData.documents" :key="index" class="file-item">
               <span class="file-name">{{ file.name }}</span>
-              <button class="remove-btn" @click="removeDocument(index)" :disabled="isSubmitting">×</button>
+              <Button variant="ghost" iconOnly size="sm" @click="removeDocument(index)" :disabled="isSubmitting">×</Button>
             </div>
           </div>
         </div>

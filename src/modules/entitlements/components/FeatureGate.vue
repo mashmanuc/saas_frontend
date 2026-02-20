@@ -8,13 +8,13 @@
         </div>
         <h4 class="locked-title">{{ $t('entitlements.locked.title') }}</h4>
         <p class="locked-message">{{ lockedMessage }}</p>
-        <button 
+        <Button 
           v-if="showUpgrade" 
-          class="btn btn-primary"
+          variant="primary"
           @click="onUpgrade"
         >
           {{ $t('entitlements.locked.upgrade') }}
-        </button>
+        </Button>
       </div>
     </slot>
   </div>
@@ -24,6 +24,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useFeatureGate } from '../composables/useFeatureGate'
+import Button from '@/ui/Button.vue'
 
 const props = defineProps({
   feature: {
@@ -105,22 +106,4 @@ function onUpgrade() {
   max-width: 300px;
 }
 
-.btn {
-  padding: var(--spacing-sm) var(--spacing-lg);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border: none;
-}
-
-.btn-primary {
-  background: var(--color-primary);
-  color: var(--color-primary-text);
-}
-
-.btn-primary:hover {
-  background: var(--color-primary-hover);
-}
 </style>

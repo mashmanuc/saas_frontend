@@ -75,14 +75,14 @@ function handleCancel() {
             <AlertTriangle :size="24" />
           </div>
           <h2>{{ t('marketplace.draft.conflictTitle') }}</h2>
-          <button
-            type="button"
-            class="close-button"
+          <Button
+            variant="ghost"
+            iconOnly
             :disabled="isResolving"
             @click="handleCancel"
           >
             <X :size="20" />
-          </button>
+          </Button>
         </div>
 
         <div class="modal-body">

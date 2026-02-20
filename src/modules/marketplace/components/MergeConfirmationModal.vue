@@ -4,7 +4,7 @@
       <div class="modal-content" @click.stop>
         <div class="modal-header">
           <h2>{{ $t('marketplace.draft.mergeConfirmTitle') }}</h2>
-          <button type="button" class="close-btn" @click="handleClose">×</button>
+          <Button variant="ghost" iconOnly @click="handleClose">×</Button>
         </div>
 
         <div class="modal-body">

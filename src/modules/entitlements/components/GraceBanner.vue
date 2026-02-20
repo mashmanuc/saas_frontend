@@ -15,17 +15,17 @@
           </p>
         </div>
         <div class="banner-actions">
-          <button class="btn btn-primary" @click="onRenew">
+          <Button variant="secondary" @click="onRenew">
             {{ $t('entitlements.grace.renew') }}
-          </button>
-          <button class="btn btn-text" @click="onDismiss">
+          </Button>
+          <Button variant="ghost" class="btn-text" @click="onDismiss">
             {{ $t('common.dismiss') }}
-          </button>
+          </Button>
         </div>
       </div>
-      <button class="btn-close" @click="onDismiss" :aria-label="$t('common.close')">
+      <Button variant="ghost" size="sm" iconOnly class="btn-close" @click="onDismiss" :aria-label="$t('common.close')">
         <i class="icon-close"></i>
-      </button>
+      </Button>
     </div>
   </Transition>
 </template>
@@ -34,6 +34,7 @@
 import { computed } from 'vue'
 import { useEntitlementsStore } from '../stores/entitlementsStore'
 import { useRouter } from 'vue-router'
+import Button from '@/ui/Button.vue'
 
 const store = useEntitlementsStore()
 const router = useRouter()
@@ -103,27 +104,7 @@ function onDismiss() {
   flex-shrink: 0;
 }
 
-.btn {
-  padding: var(--spacing-xs) var(--spacing-md);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border: none;
-}
-
-.btn-primary {
-  background: var(--color-surface);
-  color: var(--color-warning);
-}
-
-.btn-primary:hover {
-  background: var(--color-surface-hover);
-}
-
 .btn-text {
-  background: transparent;
   color: var(--color-warning-text);
   text-decoration: underline;
   opacity: 0.8;
@@ -134,13 +115,8 @@ function onDismiss() {
 }
 
 .btn-close {
-  background: none;
-  border: none;
   color: var(--color-warning-text);
-  cursor: pointer;
-  padding: var(--spacing-xs);
   opacity: 0.6;
-  transition: opacity 0.2s ease;
   flex-shrink: 0;
 }
 
