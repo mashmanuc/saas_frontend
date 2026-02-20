@@ -12,7 +12,7 @@
         :class="['filter-btn', { active: selectedStatus === status }]"
       >
         {{ $t(`booking.requests.${status}`) }}
-        <span v-if="status === 'pending' && pendingCount > 0" class="badge">
+        <span v-if="status === 'pending' && pendingCount > 0" class="filter-badge">
           {{ pendingCount }}
         </span>
       </button>
@@ -38,9 +38,9 @@
     </div>
 
     <div v-if="hasMore && !loading" class="load-more">
-      <button @click="loadMore" class="btn-secondary">
+      <Button variant="outline" @click="loadMore">
         {{ $t('common.loadMore') }}
-      </button>
+      </Button>
     </div>
   </div>
 </template>
@@ -48,6 +48,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
 import { Inbox as InboxIcon } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 import BookingRequestCard from '@/modules/booking/components/BookingRequestCard.vue'
 import { bookingApi } from '@/modules/booking/api/booking'
 import { useToast } from '@/composables/useToast'
@@ -155,7 +156,7 @@ onMounted(() => {
 .page-header h1 {
   font-size: 28px;
   font-weight: 700;
-  color: #111827;
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -163,7 +164,7 @@ onMounted(() => {
   display: flex;
   gap: 8px;
   margin-bottom: 24px;
-  border-bottom: 2px solid #e5e7eb;
+  border-bottom: 2px solid var(--border-color);
   padding-bottom: 12px;
 }
 
@@ -173,7 +174,7 @@ onMounted(() => {
   border-radius: 6px;
   font-size: 14px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--text-secondary);
   transition: all 0.15s;
   display: flex;
   align-items: center;
@@ -181,32 +182,32 @@ onMounted(() => {
 }
 
 .filter-btn:hover {
-  background-color: #f3f4f6;
-  color: #111827;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 .filter-btn.active {
-  background-color: #3b82f6;
+  background-color: var(--accent);
   color: white;
 }
 
-.badge {
+.filter-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-width: 20px;
   height: 20px;
   padding: 0 6px;
-  background-color: #ef4444;
+  background-color: var(--danger);
   color: white;
   border-radius: 10px;
   font-size: 12px;
   font-weight: 600;
 }
 
-.filter-btn.active .badge {
+.filter-btn.active .filter-badge {
   background-color: white;
-  color: #3b82f6;
+  color: var(--accent);
 }
 
 .loading {
@@ -217,7 +218,7 @@ onMounted(() => {
 
 .skeleton-card {
   height: 180px;
-  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background: linear-gradient(90deg, var(--bg-secondary) 25%, var(--border-color) 50%, var(--bg-secondary) 75%);
   background-size: 200% 100%;
   animation: loading 1.5s infinite;
   border-radius: 12px;
@@ -244,7 +245,7 @@ onMounted(() => {
 
 .empty-state p {
   font-size: 16px;
-  color: #6b7280;
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -260,18 +261,4 @@ onMounted(() => {
   margin-top: 24px;
 }
 
-.btn-secondary {
-  padding: 10px 24px;
-  background-color: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.15s;
-}
-
-.btn-secondary:hover {
-  background-color: #f9fafb;
-}
 </style>

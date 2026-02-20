@@ -137,7 +137,7 @@ function setTab(tab: TabType) {
   display: flex;
   gap: 8px;
   margin-bottom: 24px;
-  border-bottom: 1px solid var(--color-border, #e5e7eb);
+  border-bottom: 1px solid var(--border-color);
   padding-bottom: 0;
 }
 
@@ -151,23 +151,23 @@ function setTab(tab: TabType) {
   border-bottom: 2px solid transparent;
   font-size: 14px;
   font-weight: 500;
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
   margin-bottom: -1px;
 }
 
 .tab:hover {
-  color: var(--color-text-primary, #111827);
+  color: var(--text-primary);
 }
 
 .tab.active {
-  color: var(--color-primary, #3b82f6);
-  border-bottom-color: var(--color-primary, #3b82f6);
+  color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 
 .badge {
-  background: var(--color-primary, #3b82f6);
+  background: var(--accent);
   color: white;
   padding: 2px 8px;
   border-radius: 10px;
@@ -183,8 +183,8 @@ function setTab(tab: TabType) {
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid var(--color-border, #e5e7eb);
-  border-top-color: var(--color-primary, #3b82f6);
+  border: 3px solid var(--border-color);
+  border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin: 0 auto 16px;
@@ -207,9 +207,9 @@ function setTab(tab: TabType) {
 .empty-state {
   text-align: center;
   padding: 60px 20px;
-  background: var(--color-bg-primary, white);
-  border-radius: 12px;
-  border: 1px solid var(--color-border, #e5e7eb);
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
 }
 
 .empty-icon {
@@ -224,7 +224,7 @@ function setTab(tab: TabType) {
 }
 
 .empty-state p {
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--text-secondary);
   margin: 0 0 24px;
 }
 
@@ -235,21 +235,21 @@ function setTab(tab: TabType) {
   gap: 8px;
   padding: 12px 24px;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   text-decoration: none;
-  transition: all 0.2s;
+  transition: var(--transition-fast);
 }
 
-.btn-primary {
-  background: var(--color-primary, #3b82f6);
+.router-link-primary {
+  background: var(--accent);
   color: white;
 }
 
-.btn-primary:hover {
-  background: var(--color-primary-dark, #2563eb);
+.router-link-primary:hover {
+  background: var(--accent-hover);
 }
 
 @media (max-width: 640px) {

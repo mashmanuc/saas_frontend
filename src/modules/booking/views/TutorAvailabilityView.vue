@@ -50,32 +50,32 @@ const { t } = useI18n()
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #0ea5e9;
+  color: var(--accent);
   margin-bottom: 4px;
 }
 
 .availability-view__header h1 {
   font-size: 1.75rem;
   margin: 0;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .availability-view__subtitle {
   margin: 8px 0 0;
-  color: #475569;
+  color: var(--text-secondary);
 }
 
 .availability-view__card {
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
   padding: 24px;
 }
 
 .availability-view__loader {
   padding: 32px;
   text-align: center;
-  color: #475569;
+  color: var(--text-secondary);
 }
 
 @media (max-width: 768px) {

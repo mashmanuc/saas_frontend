@@ -19,22 +19,22 @@
   </div>
 
   <div class="lesson-links-navigation">
-    <button
+    <Button
       v-if="previousTab"
-      type="button"
-      class="nav-button"
+      variant="outline"
+      pill
       @click="goToTab(previousTab)"
     >
       {{ t(previousTab.labelKey) }}
-    </button>
-    <button
+    </Button>
+    <Button
       v-if="nextTab"
-      type="button"
-      class="nav-button nav-button--publish"
+      variant="danger"
+      pill
       @click="goToTab(nextTab)"
     >
       {{ t(nextTab.labelKey) }}
-    </button>
+    </Button>
   </div>
 </template>
 
@@ -42,6 +42,7 @@
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import LessonLinksEditor from '@/modules/booking/components/lessonLinks/LessonLinksEditor.vue'
+import Button from '@/ui/Button.vue'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -90,33 +91,33 @@ function handleCancel() {
 }
 
 .lesson-links-tab {
-  border: 1px solid var(--border-color, #d1d5db);
+  border: 1px solid var(--border-color);
   border-radius: 999px;
   padding: 6px 14px;
   font-size: 0.875rem;
-  color: var(--text-secondary, #475467);
+  color: var(--text-secondary);
   text-decoration: none;
   transition: all 0.2s ease;
 }
 
 .lesson-links-tab--active {
-  border-color: #2563eb;
-  color: #2563eb;
-  background: color-mix(in srgb, #2563eb 12%, transparent);
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
 .lesson-links-tab--publish {
-  border-color: #f87171;
-  color: #b91c1c;
-  background: color-mix(in srgb, #f87171 20%, white);
+  border-color: var(--danger);
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 20%, transparent);
   font-weight: 600;
   box-shadow: 0 4px 12px rgba(185, 28, 28, 0.15);
 }
 
 .lesson-links-tab--publish.lesson-links-tab--active {
-  border-color: #dc2626;
+  border-color: var(--danger);
   color: white;
-  background: #dc2626;
+  background: var(--danger);
   box-shadow: 0 6px 16px rgba(185, 28, 28, 0.3);
 }
 
@@ -137,31 +138,6 @@ function handleCancel() {
   padding: 16px 24px;
 }
 
-.nav-button {
-  border: 1px solid #d1d5db;
-  border-radius: 999px;
-  padding: 8px 18px;
-  font-size: 0.9rem;
-  background: white;
-  color: #374151;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.nav-button--publish {
-  border-color: #dc2626;
-  background: #dc2626;
-  color: white;
-}
-
-.nav-button:hover {
-  background: #f3f4f6;
-}
-
-.nav-button--publish:hover {
-  background: #b91c1c;
-  border-color: #b91c1c;
-}
 
 @media (max-width: 640px) {
   .lesson-links-view {

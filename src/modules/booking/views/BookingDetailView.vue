@@ -19,6 +19,7 @@ import { useBooking } from '../composables/useBooking'
 import BookingStatus from '../components/booking/BookingStatus.vue'
 import BookingActions from '../components/booking/BookingActions.vue'
 import ClassroomButton from '@/components/buttons/ClassroomButton.vue'
+import Button from '@/ui/Button.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -75,10 +76,10 @@ function handleReschedule() {
   <div class="booking-detail-view">
     <!-- Header -->
     <header class="view-header">
-      <button class="back-btn" @click="goBack">
-        <ArrowLeft :size="20" />
+      <Button variant="ghost" size="sm" @click="goBack">
+        <template #iconLeft><ArrowLeft :size="20" /></template>
         Back
-      </button>
+      </Button>
       <h1>Booking Details</h1>
     </header>
 
@@ -236,7 +237,7 @@ function handleReschedule() {
     <!-- Not Found -->
     <div v-else class="error-state">
       <p>Booking not found</p>
-      <button class="btn btn-secondary" @click="goBack">Go Back</button>
+      <Button variant="secondary" @click="goBack">Go Back</Button>
     </div>
   </div>
 </template>
@@ -245,31 +246,14 @@ function handleReschedule() {
 .booking-detail-view {
   max-width: 800px;
   margin: 0 auto;
-  padding: 24px;
+  padding: var(--space-lg);
 }
 
 .view-header {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 32px;
-}
-
-.back-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: none;
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: 8px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.back-btn:hover {
-  background: var(--color-bg-secondary, #f5f5f5);
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
 }
 
 .view-header h1 {
@@ -287,8 +271,8 @@ function handleReschedule() {
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid var(--color-border, #e5e7eb);
-  border-top-color: var(--color-primary, #3b82f6);
+  border: 3px solid var(--border-color);
+  border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin: 0 auto 16px;
@@ -304,16 +288,16 @@ function handleReschedule() {
 .status-card {
   text-align: center;
   padding: 24px;
-  background: var(--color-bg-primary, white);
-  border-radius: 12px;
-  border: 1px solid var(--color-border, #e5e7eb);
-  margin-bottom: 24px;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  margin-bottom: var(--space-lg);
 }
 
 .booking-id {
   margin: 12px 0 0;
   font-size: 14px;
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--text-secondary);
 }
 
 /* Info Grid */
@@ -328,9 +312,9 @@ function handleReschedule() {
   display: flex;
   gap: 16px;
   padding: 20px;
-  background: var(--color-bg-primary, white);
-  border-radius: 12px;
-  border: 1px solid var(--color-border, #e5e7eb);
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
 }
 
 .info-icon {
@@ -339,8 +323,8 @@ function handleReschedule() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-primary-light, #eff6ff);
-  color: var(--color-primary, #3b82f6);
+  background: var(--bg-secondary);
+  color: var(--accent);
   border-radius: 12px;
   flex-shrink: 0;
 }
@@ -349,7 +333,7 @@ function handleReschedule() {
   margin: 0 0 4px;
   font-size: 12px;
   font-weight: 500;
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--text-secondary);
   text-transform: uppercase;
 }
 
@@ -357,13 +341,13 @@ function handleReschedule() {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: var(--color-text-primary, #111827);
+  color: var(--text-primary);
 }
 
 .info-secondary {
   margin: 4px 0 0;
   font-size: 14px;
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--text-secondary);
 }
 
 /* Sections */
@@ -389,21 +373,21 @@ section h2 {
   align-items: center;
   gap: 12px;
   padding: 16px;
-  background: var(--color-bg-primary, white);
-  border-radius: 12px;
-  border: 1px solid var(--color-border, #e5e7eb);
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
 }
 
 .participant-avatar {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: var(--color-bg-secondary, #f5f5f5);
+  background: var(--bg-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--text-secondary);
 }
 
 .participant-avatar img {
@@ -419,33 +403,33 @@ section h2 {
 
 .participant-role {
   font-size: 12px;
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--text-secondary);
   text-transform: uppercase;
 }
 
 .participant-name {
   font-weight: 600;
-  color: var(--color-text-primary, #111827);
+  color: var(--text-primary);
 }
 
 /* Notes */
 .notes-card {
   padding: 16px;
-  background: var(--color-bg-secondary, #f5f5f5);
-  border-radius: 12px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
 }
 
 .notes-card p {
   margin: 0;
   font-size: 14px;
-  color: var(--color-text-primary, #111827);
+  color: var(--text-primary);
   white-space: pre-wrap;
 }
 
 /* Actions */
 .actions-section {
   padding-top: 16px;
-  border-top: 1px solid var(--color-border, #e5e7eb);
+  border-top: 1px solid var(--border-color);
 }
 
 /* Error */
@@ -454,28 +438,6 @@ section h2 {
   padding: 60px 20px;
 }
 
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px 24px;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-secondary {
-  background: var(--color-bg-secondary, #f5f5f5);
-  color: var(--color-text-primary, #111827);
-}
-
-.btn-secondary:hover {
-  background: var(--color-bg-tertiary, #e5e7eb);
-}
 
 @media (max-width: 640px) {
   .booking-detail-view {

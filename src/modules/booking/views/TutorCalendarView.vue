@@ -12,7 +12,7 @@ import CalendarWeekView from '@/modules/booking/components/calendar/CalendarWeek
 .tutor-calendar-wrapper {
   padding: 24px;
   min-height: calc(100vh - 64px);
-  background: var(--surface-calendar, #f5f7fa);
+  background: var(--bg-secondary);
 }
 
 
@@ -28,8 +28,8 @@ import CalendarWeekView from '@/modules/booking/components/calendar/CalendarWeek
 .spinner {
   width: 48px;
   height: 48px;
-  border: 4px solid #e5e7eb;
-  border-top-color: #3b82f6;
+  border: 4px solid var(--border-color);
+  border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -38,19 +38,6 @@ import CalendarWeekView from '@/modules/booking/components/calendar/CalendarWeek
   to { transform: rotate(360deg); }
 }
 
-.btn-retry {
-  padding: 12px 24px;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 16px;
-}
-
-.btn-retry:hover {
-  background: #2563eb;
-}
 
 .calendar-container {
   max-width: 1400px;
@@ -65,13 +52,13 @@ import CalendarWeekView from '@/modules/booking/components/calendar/CalendarWeek
   margin: 0 0 8px 0;
   font-size: 32px;
   font-weight: 700;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .week-info {
   display: flex;
   gap: 16px;
-  color: #6b7280;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
@@ -83,23 +70,23 @@ import CalendarWeekView from '@/modules/booking/components/calendar/CalendarWeek
 }
 
 .stat-card {
-  background: white;
-  padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  background: var(--card-bg);
+  padding: var(--space-lg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
   text-align: center;
 }
 
 .stat-value {
   font-size: 36px;
   font-weight: 700;
-  color: #3b82f6;
+  color: var(--accent);
   margin-bottom: 8px;
 }
 
 .stat-label {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -111,9 +98,9 @@ import CalendarWeekView from '@/modules/booking/components/calendar/CalendarWeek
 }
 
 .day-column {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
   transition: transform 0.2s, box-shadow 0.2s;
 }
@@ -124,7 +111,7 @@ import CalendarWeekView from '@/modules/booking/components/calendar/CalendarWeek
 }
 
 .day-column.is-today {
-  border: 2px solid #3b82f6;
+  border: 2px solid var(--accent);
 }
 
 .day-column.is-past {
@@ -132,7 +119,7 @@ import CalendarWeekView from '@/modules/booking/components/calendar/CalendarWeek
 }
 
 .day-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover, #764ba2) 100%);
   color: white;
   padding: 16px;
   text-align: center;
@@ -170,7 +157,7 @@ import CalendarWeekView from '@/modules/booking/components/calendar/CalendarWeek
   gap: 8px;
   margin-bottom: 16px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .stat-item {
@@ -178,7 +165,7 @@ import CalendarWeekView from '@/modules/booking/components/calendar/CalendarWeek
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 .stat-icon {
@@ -194,42 +181,42 @@ import CalendarWeekView from '@/modules/booking/components/calendar/CalendarWeek
 .event-card {
   padding: 12px;
   border-radius: 8px;
-  border-left: 4px solid #3b82f6;
-  background: #f0f9ff;
+  border-left: 4px solid var(--accent);
+  background: var(--bg-secondary);
   font-size: 13px;
 }
 
 .event-card.event-completed {
-  border-left-color: #10b981;
-  background: #f0fdf4;
+  border-left-color: var(--success);
+  background: var(--success-bg, #f0fdf4);
 }
 
 .event-card.event-no_show {
-  border-left-color: #ef4444;
-  background: #fef2f2;
+  border-left-color: var(--danger);
+  background: var(--danger-bg, #fef2f2);
 }
 
 .event-card.event-cancelled {
-  border-left-color: #6b7280;
-  background: #f9fafb;
+  border-left-color: var(--text-secondary);
+  background: var(--bg-secondary);
 }
 
 .event-time {
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
   margin-bottom: 4px;
 }
 
 .event-student {
-  color: #6b7280;
+  color: var(--text-secondary);
   margin-bottom: 4px;
 }
 
 .first-lesson-badge {
   display: inline-block;
   padding: 2px 8px;
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--warning-bg, #fef3c7);
+  color: var(--warning-text, #92400e);
   border-radius: 4px;
   font-size: 11px;
   font-weight: 600;
@@ -241,7 +228,7 @@ import CalendarWeekView from '@/modules/booking/components/calendar/CalendarWeek
   align-items: center;
   gap: 8px;
   padding: 24px;
-  color: #9ca3af;
+  color: var(--text-secondary);
   font-size: 13px;
 }
 

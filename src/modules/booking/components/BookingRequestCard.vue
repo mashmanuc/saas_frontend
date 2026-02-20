@@ -33,14 +33,14 @@
     </div>
 
     <div v-if="request.status === 'pending'" class="card-actions">
-      <button @click="handleReject" class="btn-secondary" :disabled="processing">
-        <XIcon class="w-4 h-4" />
+      <Button variant="outline" :disabled="processing" @click="handleReject">
+        <template #iconLeft><XIcon class="w-4 h-4" /></template>
         {{ $t('common.reject') }}
-      </button>
-      <button @click="handleAccept" class="btn-primary" :disabled="processing">
-        <CheckIcon class="w-4 h-4" />
+      </Button>
+      <Button variant="primary" :disabled="processing" @click="handleAccept">
+        <template #iconLeft><CheckIcon class="w-4 h-4" /></template>
         {{ $t('common.accept') }}
-      </button>
+      </Button>
     </div>
   </div>
 </template>
@@ -48,6 +48,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { User as UserIcon, Clock as ClockIcon, X as XIcon, Check as CheckIcon } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 
 const props = defineProps<{
   request: {
@@ -101,8 +102,8 @@ function handleReject() {
 
 <style scoped>
 .booking-request-card {
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   overflow: hidden;
   transition: box-shadow 0.15s;
@@ -117,7 +118,7 @@ function handleReject() {
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .student-info {
@@ -131,7 +132,7 @@ function handleReject() {
   height: 48px;
   border-radius: 50%;
   overflow: hidden;
-  background-color: #f3f4f6;
+  background-color: var(--bg-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -146,13 +147,13 @@ function handleReject() {
 .student-details h4 {
   font-size: 16px;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
   margin: 0 0 4px 0;
 }
 
 .student-details .time {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -165,23 +166,23 @@ function handleReject() {
 }
 
 .status-pending {
-  background-color: #fef3c7;
-  color: #92400e;
+  background-color: var(--warning-bg, #fef3c7);
+  color: var(--warning-text, #92400e);
 }
 
 .status-accepted {
-  background-color: #d1fae5;
-  color: #065f46;
+  background-color: var(--success-bg, #d1fae5);
+  color: var(--success-text, #065f46);
 }
 
 .status-rejected {
-  background-color: #fee2e2;
-  color: #991b1b;
+  background-color: var(--danger-bg, #fee2e2);
+  color: var(--danger-text, #991b1b);
 }
 
 .status-cancelled {
-  background-color: #f3f4f6;
-  color: #6b7280;
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
 }
 
 .card-body {
@@ -196,13 +197,13 @@ function handleReject() {
   align-items: center;
   gap: 8px;
   font-size: 14px;
-  color: #374151;
+  color: var(--text-primary);
 }
 
 .message,
 .response {
   padding: 12px;
-  background-color: #f9fafb;
+  background-color: var(--bg-secondary);
   border-radius: 8px;
   font-size: 14px;
 }
@@ -210,14 +211,14 @@ function handleReject() {
 .message p,
 .response p {
   margin: 0;
-  color: #374151;
+  color: var(--text-primary);
   line-height: 1.5;
 }
 
 .response strong {
   display: block;
   margin-bottom: 8px;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .card-actions {
@@ -225,45 +226,8 @@ function handleReject() {
   justify-content: flex-end;
   gap: 12px;
   padding: 16px 20px;
-  border-top: 1px solid #f3f4f6;
-  background-color: #fafafa;
+  border-top: 1px solid var(--border-color);
+  background-color: var(--bg-secondary);
 }
 
-.btn-secondary,
-.btn-primary {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.15s;
-}
-
-.btn-secondary {
-  background-color: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background-color: #f9fafb;
-}
-
-.btn-primary {
-  background-color: #10b981;
-  color: white;
-  border: none;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background-color: #059669;
-}
-
-.btn-secondary:disabled,
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
 </style>

@@ -12,6 +12,7 @@ import type { BookingInput } from '../api/booking'
 // Components
 import SlotPicker from '../components/booking/SlotPicker.vue'
 import BookingForm from '../components/booking/BookingForm.vue'
+import Button from '@/ui/Button.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -114,10 +115,10 @@ function goToLessons() {
   <div class="book-lesson-view">
     <!-- Header -->
     <header class="view-header">
-      <button class="back-btn" @click="goBack">
-        <ArrowLeft :size="20" />
+      <Button variant="ghost" size="sm" @click="goBack">
+        <template #iconLeft><ArrowLeft :size="20" /></template>
         Back
-      </button>
+      </Button>
       <h1>Book a Lesson</h1>
     </header>
 
@@ -129,12 +130,12 @@ function goToLessons() {
       <h2>Booking Confirmed!</h2>
       <p>Your lesson has been booked successfully.</p>
       <div class="success-actions">
-        <button class="btn btn-primary" @click="viewBooking">
+        <Button variant="primary" @click="viewBooking">
           View Booking
-        </button>
-        <button class="btn btn-secondary" @click="goToLessons">
+        </Button>
+        <Button variant="secondary" @click="goToLessons">
           My Lessons
-        </button>
+        </Button>
       </div>
     </div>
 
@@ -212,20 +213,22 @@ function goToLessons() {
             </div>
           </div>
 
-          <button
-            class="btn btn-primary btn-block"
+          <Button
+            variant="primary"
+            fullWidth
             :disabled="!canSubmit"
+            :loading="isSubmitting"
             @click="handleSubmit"
           >
-            {{ isSubmitting ? 'Booking...' : 'Confirm Booking' }}
-          </button>
+            Confirm Booking
+          </Button>
         </section>
       </template>
 
       <!-- Error -->
       <div v-else class="error-state">
         <p>Tutor not found</p>
-        <button class="btn btn-secondary" @click="goBack">Go Back</button>
+        <Button variant="secondary" @click="goBack">Go Back</Button>
       </div>
     </div>
   </div>
@@ -235,32 +238,16 @@ function goToLessons() {
 .book-lesson-view {
   max-width: 800px;
   margin: 0 auto;
-  padding: 24px;
+  padding: var(--space-lg);
 }
 
 .view-header {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 32px;
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
 }
 
-.back-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: none;
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: 8px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.back-btn:hover {
-  background: var(--color-bg-secondary, #f5f5f5);
-}
 
 .view-header h1 {
   margin: 0;
@@ -275,8 +262,8 @@ function goToLessons() {
 }
 
 .success-icon {
-  color: var(--color-success, #10b981);
-  margin-bottom: 24px;
+  color: var(--success);
+  margin-bottom: var(--space-lg);
 }
 
 .success-state h2 {
@@ -285,13 +272,13 @@ function goToLessons() {
 }
 
 .success-state p {
-  color: var(--color-text-secondary, #6b7280);
-  margin: 0 0 32px;
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-xl);
 }
 
 .success-actions {
   display: flex;
-  gap: 12px;
+  gap: var(--space-sm);
   justify-content: center;
 }
 
@@ -304,8 +291,8 @@ function goToLessons() {
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid var(--color-border, #e5e7eb);
-  border-top-color: var(--color-primary, #3b82f6);
+  border: 3px solid var(--border-color);
+  border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin: 0 auto 16px;
@@ -322,10 +309,10 @@ function goToLessons() {
   display: flex;
   gap: 16px;
   padding: 20px;
-  background: var(--color-bg-primary, white);
-  border-radius: 12px;
-  border: 1px solid var(--color-border, #e5e7eb);
-  margin-bottom: 24px;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  margin-bottom: var(--space-lg);
 }
 
 .tutor-photo {
@@ -341,9 +328,9 @@ function goToLessons() {
 }
 
 .tutor-headline {
-  color: var(--color-text-secondary, #6b7280);
-  margin: 0 0 12px;
-  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-sm);
+  font-size: var(--text-sm);
 }
 
 .tutor-meta {
@@ -356,11 +343,11 @@ function goToLessons() {
   align-items: center;
   gap: 4px;
   font-size: 14px;
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--text-secondary);
 }
 
 .tutor-meta .price {
-  color: var(--color-primary, #3b82f6);
+  color: var(--accent);
   font-weight: 600;
 }
 
@@ -377,11 +364,11 @@ section h3 {
 
 /* Summary */
 .summary-card {
-  background: var(--color-bg-primary, white);
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
 }
 
 .summary-row {
@@ -392,56 +379,15 @@ section h3 {
 }
 
 .summary-row:not(:last-child) {
-  border-bottom: 1px solid var(--color-border, #e5e7eb);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .summary-row.total {
   font-weight: 600;
   font-size: 16px;
-  color: var(--color-primary, #3b82f6);
+  color: var(--accent);
 }
 
-/* Buttons */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px 24px;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-primary {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--color-primary-dark, #2563eb);
-}
-
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: var(--color-bg-secondary, #f5f5f5);
-  color: var(--color-text-primary, #111827);
-}
-
-.btn-secondary:hover {
-  background: var(--color-bg-tertiary, #e5e7eb);
-}
-
-.btn-block {
-  width: 100%;
-}
 
 /* Error */
 .error-state {

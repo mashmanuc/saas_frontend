@@ -3,28 +3,32 @@
     <!-- Header with navigation & filters -->
     <div class="calendar-header">
       <div class="week-navigation">
-        <button
-          class="nav-btn"
+        <Button
+          variant="ghost"
+          size="sm"
+          iconOnly
           @click="goToPreviousWeek"
           :disabled="loading"
           :title="$t('calendar.weekNavigation.prevWeek')"
         >
-          <ChevronLeftIcon class="icon" />
-        </button>
+          <ChevronLeftIcon :size="20" />
+        </Button>
         <span class="week-range">{{ weekRangeLabel }}</span>
-        <button
-          class="nav-btn"
+        <Button
+          variant="ghost"
+          size="sm"
+          iconOnly
           @click="goToNextWeek"
           :disabled="loading"
           :title="$t('calendar.weekNavigation.nextWeek')"
         >
-          <ChevronRightIcon class="icon" />
-        </button>
+          <ChevronRightIcon :size="20" />
+        </Button>
       </div>
       <div class="header-toolbar">
-        <button class="today-btn" @click="goToCurrentWeek" :disabled="isCurrentWeek || loading">
+        <Button variant="outline" size="sm" @click="goToCurrentWeek" :disabled="isCurrentWeek || loading">
           {{ $t('calendar.weekNavigation.today') }}
-        </button>
+        </Button>
         <select v-model="selectedTutorId" class="tutor-filter">
           <option :value="null">{{ $t('student.calendar.allTutors') }}</option>
           <option v-for="tutor in uniqueTutors" :key="tutor.id" :value="tutor.id">
@@ -42,7 +46,7 @@
     
     <div v-else-if="error" class="error-state">
       <p>{{ error }}</p>
-      <button @click="fetchMyCalendar" class="btn-retry">{{ $t('common.retry') }}</button>
+      <Button variant="primary" @click="fetchMyCalendar">{{ $t('common.retry') }}</Button>
     </div>
     
     <!-- Unified Calendar Grid (student mode) -->
@@ -54,52 +58,42 @@
     />
 
     <!-- Student Event Drawer -->
-    <Teleport to="body">
-      <div v-if="selectedEvent" class="student-event-drawer-overlay" @click.self="closeEventDrawer">
-        <div class="student-event-drawer">
-          <div class="drawer-header">
-            <h2>{{ $t('student.calendar.eventDetails') }}</h2>
-            <button @click="closeEventDrawer" class="btn-close">×</button>
-          </div>
-
-          <div class="drawer-body">
-            <div class="event-detail">
-              <label>{{ $t('calendar.time') }}</label>
-              <p>{{ formatDateTime(selectedEvent.start) }} - {{ formatTime(selectedEvent.end) }}</p>
-            </div>
-
-            <div class="event-detail">
-              <label>{{ $t('calendar.tutor') }}</label>
-              <p>{{ selectedEvent.tutor?.name || $t('common.unknown') }}</p>
-            </div>
-
-            <div class="event-detail">
-              <label>{{ $t('calendar.status') }}</label>
-              <p>{{ $t(`calendar.status.${selectedEvent.status}`) }}</p>
-            </div>
-
-            <div class="drawer-actions">
-              <button
-                v-if="selectedEvent.permissions?.can_message"
-                @click="handleMessageTutor"
-                class="btn-primary"
-              >
-                {{ $t('student.calendar.messageTutor') }}
-              </button>
-
-              <button
-                v-if="selectedEvent.permissions?.can_join_room"
-                @click="handleJoinLesson"
-                class="btn-secondary"
-                :disabled="joiningRoom"
-              >
-                {{ joiningRoom ? $t('common.loading') : $t('student.calendar.joinLesson') }}
-              </button>
-            </div>
-          </div>
+    <Modal :open="!!selectedEvent" :title="$t('student.calendar.eventDetails')" size="sm" @close="closeEventDrawer">
+      <template v-if="selectedEvent">
+        <div class="event-detail">
+          <label>{{ $t('calendar.time') }}</label>
+          <p>{{ formatDateTime(selectedEvent.start) }} - {{ formatTime(selectedEvent.end) }}</p>
         </div>
-      </div>
-    </Teleport>
+
+        <div class="event-detail">
+          <label>{{ $t('calendar.tutor') }}</label>
+          <p>{{ selectedEvent.tutor?.name || $t('common.unknown') }}</p>
+        </div>
+
+        <div class="event-detail">
+          <label>{{ $t('calendar.status') }}</label>
+          <p>{{ $t(`calendar.status.${selectedEvent.status}`) }}</p>
+        </div>
+      </template>
+
+      <template #footer>
+        <Button
+          v-if="selectedEvent?.permissions?.can_message"
+          variant="primary"
+          @click="handleMessageTutor"
+        >
+          {{ $t('student.calendar.messageTutor') }}
+        </Button>
+        <Button
+          v-if="selectedEvent?.permissions?.can_join_room"
+          variant="secondary"
+          :loading="joiningRoom"
+          @click="handleJoinLesson"
+        >
+          {{ $t('student.calendar.joinLesson') }}
+        </Button>
+      </template>
+    </Modal>
   </div>
 </template>
 
@@ -116,6 +110,8 @@ import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
 import 'dayjs/locale/uk'
 import { ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
+import Modal from '@/ui/Modal.vue'
 import CalendarWeekView from '@/modules/booking/components/calendar/CalendarWeekView.vue'
 import type { MyCalendarEvent, DaySnapshot, CalendarEvent as CalendarEventV055 } from '@/modules/booking/types/calendarV055'
 
@@ -347,158 +343,66 @@ function goToCurrentWeek() {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid var(--border-color, #e5e7eb);
-  background: var(--bg-primary, #ffffff);
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--card-bg);
 }
 
-.calendar-header h1 {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin: 0;
-}
-
-.calendar-controls {
+.week-navigation {
   display: flex;
-  gap: 1rem;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.week-range {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 200px;
+  text-align: center;
+}
+
+.header-toolbar {
+  display: flex;
+  gap: var(--space-sm);
   align-items: center;
 }
 
 .tutor-filter {
   padding: 0.5rem 1rem;
-  border: 1px solid var(--border-color, #e5e7eb);
-  border-radius: 0.375rem;
-  background: var(--bg-primary, #ffffff);
-  font-size: 0.875rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--card-bg);
+  font-size: var(--text-sm);
   cursor: pointer;
   min-width: 200px;
 }
 
 .tutor-filter:focus {
-  outline: 2px solid var(--accent-color, #3b82f6);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
-/* Student Event Drawer */
-.student-event-drawer-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.student-event-drawer {
-  background: var(--bg-primary, #ffffff);
-  border-radius: 0.5rem;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  max-width: 500px;
-  width: 90%;
-  max-height: 80vh;
-  overflow-y: auto;
-}
-
-.drawer-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.5rem;
-  border-bottom: 1px solid var(--border-color, #e5e7eb);
-}
-
-.drawer-header h2 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin: 0;
-}
-
-.btn-close {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  padding: 0.25rem 0.5rem;
-  color: var(--text-secondary, #6b7280);
-  transition: color 0.2s;
-}
-
-.btn-close:hover {
-  color: var(--text-primary, #111827);
-}
-
-.drawer-body {
-  padding: 1.5rem;
-}
-
+/* Event detail (inside Modal) */
 .event-detail {
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--space-lg);
 }
 
 .event-detail label {
   display: block;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   font-weight: 500;
-  color: var(--text-secondary, #6b7280);
-  margin-bottom: 0.5rem;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-xs);
 }
 
 .event-detail p {
-  font-size: 1rem;
-  color: var(--text-primary, #111827);
+  font-size: var(--text-base);
+  color: var(--text-primary);
   margin: 0;
 }
 
-.drawer-actions {
-  display: flex;
-  gap: 0.75rem;
-  margin-top: 2rem;
-}
-
-.btn-primary,
-.btn-secondary {
-  flex: 1;
-  padding: 0.75rem 1.5rem;
-  border-radius: 0.375rem;
-  font-weight: 500;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-}
-
-.btn-primary {
-  background: var(--accent-color, #3b82f6);
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--accent-hover, #2563eb);
-}
-
-.btn-secondary {
-  background: var(--bg-secondary, #f3f4f6);
-  color: var(--text-primary, #111827);
-  border: 1px solid var(--border-color, #e5e7eb);
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: var(--bg-tertiary, #e5e7eb);
-}
-
-.btn-primary:disabled,
-.btn-secondary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.student-calendar-wrapper {
-  padding: 24px;
-  min-height: calc(100vh - 64px);
-  background: var(--surface-calendar, #f5f7fa);
-}
-
+/* Loading / Error */
 .loading-state,
 .error-state {
   display: flex;
@@ -506,14 +410,14 @@ function goToCurrentWeek() {
   align-items: center;
   justify-content: center;
   min-height: 400px;
-  gap: 16px;
+  gap: var(--space-md);
 }
 
 .spinner {
   width: 48px;
   height: 48px;
-  border: 4px solid #e5e7eb;
-  border-top-color: #3b82f6;
+  border: 4px solid var(--border-color);
+  border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -522,279 +426,5 @@ function goToCurrentWeek() {
   to {
     transform: rotate(360deg);
   }
-}
-
-.error-message {
-  color: #dc2626;
-  font-size: 16px;
-}
-
-.btn-retry {
-  padding: 12px 24px;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 16px;
-}
-
-.btn-retry:hover {
-  background: #2563eb;
-}
-
-.calendar-container {
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.calendar-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-}
-
-.calendar-header h1 {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 700;
-  color: #111827;
-}
-
-.calendar-controls {
-  display: flex;
-  gap: 12px;
-}
-
-.tutor-filter {
-  padding: 8px 16px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  background: white;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.tutor-filter:focus {
-  outline: none;
-  border-color: #3b82f6;
-}
-
-.calendar-grid {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.week-navigation {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.btn-nav {
-  padding: 8px 16px;
-  background: white;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 18px;
-  transition: all 0.2s;
-}
-
-.btn-nav:hover {
-  background: #f3f4f6;
-  border-color: #9ca3af;
-}
-
-.week-label {
-  font-size: 18px;
-  font-weight: 600;
-  color: #111827;
-}
-
-.events-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.event-card {
-  padding: 16px;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.event-card:hover {
-  background: #f3f4f6;
-  border-color: #3b82f6;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.event-time {
-  font-size: 16px;
-  font-weight: 600;
-  color: #111827;
-  margin-bottom: 4px;
-}
-
-.event-tutor {
-  font-size: 14px;
-  color: #6b7280;
-  margin-bottom: 8px;
-}
-
-.event-status {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.status-scheduled {
-  background: #dbeafe;
-  color: #1e40af;
-}
-
-.status-completed {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.status-cancelled {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 48px 24px;
-  color: #6b7280;
-}
-
-.event-drawer {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: flex-end;
-  z-index: 1000;
-}
-
-.drawer-content {
-  width: 100%;
-  max-width: 480px;
-  background: white;
-  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: column;
-}
-
-.drawer-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 24px;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.drawer-header h2 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: #111827;
-}
-
-.btn-close {
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: transparent;
-  font-size: 28px;
-  color: #6b7280;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-}
-
-.btn-close:hover {
-  background: #f3f4f6;
-}
-
-.drawer-body {
-  flex: 1;
-  padding: 24px;
-  overflow-y: auto;
-}
-
-.event-detail {
-  margin-bottom: 24px;
-}
-
-.event-detail label {
-  display: block;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  color: #6b7280;
-  margin-bottom: 8px;
-}
-
-.event-detail p {
-  margin: 0;
-  font-size: 16px;
-  color: #111827;
-}
-
-.drawer-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 32px;
-}
-
-.btn-primary,
-.btn-secondary {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-primary {
-  background: #3b82f6;
-  color: white;
-}
-
-.btn-primary:hover {
-  background: #2563eb;
-}
-
-.btn-secondary {
-  background: white;
-  color: #3b82f6;
-  border: 1px solid #3b82f6;
-}
-
-.btn-secondary:hover {
-  background: #eff6ff;
 }
 </style>
