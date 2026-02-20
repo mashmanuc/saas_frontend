@@ -11,9 +11,9 @@
       >
         <AlertCircleIcon class="w-4 h-4" />
         <span>{{ t('calendar.warnings.disconnected') }}</span>
-        <button class="retry-btn" @click="handleReconnect">
+        <Button variant="outline" size="sm" @click="handleReconnect">
           {{ t('calendar.realtime.status.retrying') }}
-        </button>
+        </Button>
       </div>
     </transition>
 
@@ -35,9 +35,9 @@
     <div v-else-if="error" class="error-state">
       <AlertCircleIcon class="w-8 h-8 text-red-500" />
       <p>{{ error }}</p>
-      <button @click="handleRetry" class="btn-secondary">
+      <Button variant="outline" @click="handleRetry">
         {{ t('calendar.retry') }}
-      </button>
+      </Button>
     </div>
 
     <!-- Empty availability state - disabled: duplicate message exists elsewhere -->
@@ -69,9 +69,9 @@
       <div v-else-if="errorV055" class="error-state">
         <AlertCircleIcon class="w-8 h-8 text-red-500" />
         <p>{{ errorV055 }}</p>
-        <button class="btn-secondary" @click="fetchV055Snapshot()">
+        <Button variant="outline" @click="fetchV055Snapshot()">
           {{ t('calendar.retry') }}
-        </button>
+        </Button>
       </div>
       <template v-else>
         <CalendarBoardV2 
@@ -158,9 +158,9 @@
       <div v-if="showAvailabilityLegend" class="modal-overlay" @click="showAvailabilityLegend = false">
         <div class="modal-content" @click.stop>
           <AvailabilityLegend />
-          <button class="btn-close-modal" @click="showAvailabilityLegend = false">
+          <Button variant="outline" @click="showAvailabilityLegend = false">
             {{ t('common.close', 'Закрити') }}
-          </button>
+          </Button>
         </div>
       </div>
     </Teleport>
@@ -193,6 +193,7 @@ const props = withDefaults(defineProps<{
   externalEvents: () => [],
 })
 import { Loader as LoaderIcon, AlertCircle as AlertCircleIcon, ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'

@@ -9,55 +9,60 @@
       </span>
     </div>
     <div class="actions">
-      <button
-        class="mark-free-time-btn"
+      <Button
+        variant="primary"
+        size="sm"
         @click="handleMarkFreeTime"
         data-testid="mark-free-time-btn"
       >
         {{ t('calendar.header.mark_free_time') }}
-      </button>
-      <button
-        class="help-btn"
+      </Button>
+      <Button
+        variant="ghost"
+        iconOnly
         @click="handleShowGuide"
         :aria-label="t('calendar.weekNavigation.showGuide')"
         title="Допомога"
       >
         <HelpCircleIcon class="w-5 h-5" />
-      </button>
+      </Button>
     </div>
   </div>
 
   <div class="week-navigation">
-    <button
+    <Button
+      variant="ghost"
+      iconOnly
       @click="handleNavigate(-1)"
       :disabled="isLoading"
-      class="nav-btn"
       :aria-label="t('calendar.weekNavigation.prevWeek')"
       data-testid="calendar-prev-week"
     >
       <ChevronLeftIcon class="w-5 h-5" />
-    </button>
+    </Button>
 
     <div class="week-info">
       <span class="week-range">{{ weekRangeFormatted }}</span>
-      <button
+      <Button
         v-if="currentPage !== 0"
+        variant="outline"
+        size="sm"
         @click="handleToday"
-        class="today-btn"
       >
         {{ t('calendar.weekNavigation.today') }}
-      </button>
+      </Button>
     </div>
 
-    <button
+    <Button
+      variant="ghost"
+      iconOnly
       @click="handleNavigate(1)"
       :disabled="isLoading"
-      class="nav-btn"
       :aria-label="t('calendar.weekNavigation.nextWeek')"
       data-testid="calendar-next-week"
     >
       <ChevronRightIcon class="w-5 h-5" />
-    </button>
+    </Button>
   </div>
 </template>
 
@@ -69,6 +74,7 @@ import {
   ChevronRight as ChevronRightIcon,
   HelpCircle as HelpCircleIcon,
 } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 
 const { t } = useI18n()
 

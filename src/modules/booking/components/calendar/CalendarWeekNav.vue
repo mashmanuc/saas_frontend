@@ -1,41 +1,42 @@
 <template>
   <div class="week-nav">
-    <button 
-      type="button"
-      class="week-nav__btn"
+    <Button
+      variant="ghost"
+      iconOnly
       @click="prevWeek"
       :disabled="loading"
     >
       ←
-    </button>
+    </Button>
     
     <div class="week-nav__info">
       <span class="week-nav__range">{{ weekRange }}</span>
-      <button 
+      <Button
         v-if="!isCurrentWeek"
-        type="button"
-        class="week-nav__today"
+        variant="outline"
+        size="sm"
         @click="goToToday"
         :disabled="loading"
       >
         Сьогодні
-      </button>
+      </Button>
     </div>
     
-    <button 
-      type="button"
-      class="week-nav__btn"
+    <Button
+      variant="ghost"
+      iconOnly
       @click="nextWeek"
       :disabled="loading"
     >
       →
-    </button>
+    </Button>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import dayjs from 'dayjs'
+import Button from '@/ui/Button.vue'
 
 const props = defineProps<{
   weekStart: string

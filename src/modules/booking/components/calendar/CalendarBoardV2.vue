@@ -92,12 +92,12 @@
       <h3>{{ t('calendar.emptyState.noAvailability.title') }}</h3>
       <p>{{ t('calendar.emptyState.noAvailability.description') }}</p>
       <div class="empty-actions">
-        <button class="btn-primary" @click="$emit('open-quick-block')">
+        <Button variant="primary" @click="$emit('open-quick-block')">
           {{ t('calendar.header.mark_free_time') }}
-        </button>
-        <button class="btn-link" @click="$emit('open-guide')">
+        </Button>
+        <Button variant="ghost" @click="$emit('open-guide')">
           {{ t('calendar.guide.title') }}
-        </button>
+        </Button>
       </div>
     </div>
   </div>
@@ -106,6 +106,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import Button from '@/ui/Button.vue'
 import { useCalendarGrid } from '@/modules/booking/composables/useCalendarGrid'
 import { useDragDrop } from '@/modules/booking/composables/useDragDrop'
 import GridLayer from './layers/GridLayer.vue'

@@ -1,41 +1,42 @@
 <template>
   <div class="week-switcher">
-    <button 
-      type="button"
-      class="week-switcher__btn"
+    <Button
+      variant="ghost"
+      iconOnly
       @click="onPrev"
       :disabled="loading"
     >
       ‹
-    </button>
+    </Button>
     
     <div class="week-switcher__info">
       <span class="week-switcher__range">{{ displayRange }}</span>
-      <button 
+      <Button
         v-if="!isCurrentWeek"
-        type="button"
-        class="week-switcher__today"
+        variant="outline"
+        size="sm"
         @click="onToday"
         :disabled="loading"
       >
         Сьогодні
-      </button>
+      </Button>
     </div>
     
-    <button 
-      type="button"
-      class="week-switcher__btn"
+    <Button
+      variant="ghost"
+      iconOnly
       @click="onNext"
       :disabled="loading"
     >
       ›
-    </button>
+    </Button>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import dayjs from 'dayjs'
+import Button from '@/ui/Button.vue'
 
 const props = defineProps<{
   weekStart: string

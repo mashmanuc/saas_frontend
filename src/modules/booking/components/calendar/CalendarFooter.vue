@@ -34,7 +34,7 @@
           >
             {{ t('calendar.footer.edit_link') }}
           </Button>
-          <button class="copy-btn" @click="copyLink">
+          <Button variant="ghost" size="sm" @click="copyLink">
             <svg v-if="!copied" class="icon" width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
               <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
             </svg>
@@ -42,7 +42,7 @@
               <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
             </svg>
             {{ copied ? t('calendar.footer.copied') : t('calendar.footer.copy') }}
-          </button>
+          </Button>
         </div>
         
         <!-- Backup link if exists -->
@@ -50,11 +50,11 @@
           <span class="backup-label">{{ t('calendar.footer.backup') }}:</span>
           <span class="backup-provider">{{ getProviderLabel(backupProvider) }}</span>
           <code class="backup-url">{{ backupUrl }}</code>
-          <button class="copy-btn-small" @click="copyBackupLink">
+          <Button variant="ghost" iconOnly size="sm" @click="copyBackupLink">
             <svg class="icon" width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
               <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
             </svg>
-          </button>
+          </Button>
         </div>
       </div>
       

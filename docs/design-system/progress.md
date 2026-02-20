@@ -15,7 +15,7 @@
 | 0 | Фундамент (токени) | A соло | ✅ | 2026-02-20 | 2026-02-20 |
 | 1 | Компоненти + CSS | A ║ B ║ C | ✅ | 2026-02-20 | 2026-02-20 |
 | 2 | Міграція модулів | A ║ B ║ C | ✅ | 2026-02-20 | 2026-02-20 |
-| 2.5 | Добивання хвостів MF2 | A ║ B ║ C | ⬜ | — | — |
+| 2.5 | Добивання хвостів MF2 | A ║ B ║ C | 🔄 | 2026-02-20 | — |
 | 3 | Очищення + QA | A ║ B ║ C | ⬜ | — | — |
 
 ---
@@ -93,6 +93,27 @@
 | C-2.1 | `booking/` | ~150 | 7 | ✅ | design(C-booking-p3) | P1 views+root, P2 calendar, P3 modals/availability/links/settings/analytics |
 | C-2.2 | `classroom/` | ~15 | 2 | ✅ | design(C-classroom) | HistoryModal→Modal, buttons→Button |
 | C-2.3 | `winterboard/` | ~100 | 1 | ✅ | design(C-winterboard) | WBExportDialog→Modal+Button, toolbar untouched |
+
+---
+
+## MF2.5 — Добивання хвостів
+
+### Агент B — Малі модулі
+
+| # | Модуль | Що зроблено | Статус | Коміт | Примітки |
+|---|--------|-------------|--------|-------|----------|
+| B-5.1 | `matches/` | buttons→Button, BookingModal overlay→Modal+Textarea | ✅ | f3fbef7 | AvailabilityEditor, BookingModal, MatchDetail |
+| B-5.2 | `people/` | CreateInquiryModal overlay→Modal+Textarea+Button | ✅ | f3fbef7 | hex→CSS vars |
+| B-5.3 | `trust/` | buttons→Button, textarea→Textarea | ✅ | f3fbef7 | BlockUser, Report, BlockedUsers, Appeals |
+| B-5.4 | `contacts/` | buttons→Button, textarea→Textarea | ✅ | f3fbef7 | PurchaseTokens, TokenGrant, ContactBalance |
+| B-5.5 | `classrooms/` | InviteStudentModal overlay→Modal | ✅ | f3fbef7 | Already had Button |
+| B-5.6 | `admin/` | AdminArchiveUserModal overlay→Modal+Textarea | ✅ | b43085b | Already had Button |
+| B-5.7 | `student/` | MyTutorWidget buttons→Button | ✅ | b43085b | 3 raw buttons replaced |
+| B-5.8 | `tutors/` | TutorAnalyticsView retry→Button, hex→CSS vars | ✅ | b43085b | ~25 hex colors replaced |
+| B-5.9 | `call/` | — | ✅ | — | Call UI controls, not standard buttons |
+| B-5.10 | `negotiation/` | — | ✅ | — | Already uses Button from @/ui |
+| B-5.11 | `profileV2/` | — | ✅ | — | Already uses ui-contract (Button, Modal, FormField) |
+| B-5.12 | `tutor/` | — | ✅ | — | TutorSearchView already uses Button |
 
 ---
 
@@ -175,3 +196,8 @@
 | 2026-02-20 | C-2.1/P3: overlay→Modal — BookingRequestModal, TemplateConfirmModal, GenerationProgressModal | C | 85c3b6c |
 | 2026-02-20 | C-2.1/P3: raw button→Button — EventModal, EditLessonModal, CreateLessonModal, BookingRequestModal, GenerationProgressModal, TemplateConfirmModal, LessonLinksEditor, BookingSettings, SlotAnalyticsDashboard | C | c51f9e5 |
 | 2026-02-20 | **C-2.1 ЗАВЕРШЕНО** — booking/ повністю мігровано (3 підфази), build OK | C | — |
+| 2026-02-20 | B-5.1–B-5.2: matches/ + people/ — buttons→Button, overlays→Modal, textarea→Textarea | B | f3fbef7 |
+| 2026-02-20 | B-5.3–B-5.5: trust/ + contacts/ + classrooms/ — buttons→Button, textarea→Textarea, overlay→Modal | B | f3fbef7 |
+| 2026-02-20 | B-5.6–B-5.8: admin/ + student/ + tutors/ — overlay→Modal, buttons→Button, hex→CSS vars | B | b43085b |
+| 2026-02-20 | B-5.9–B-5.12: call/, negotiation/, profileV2/, tutor/ — already migrated, no changes needed | B | — |
+| 2026-02-20 | **MF2.5/B ЗАВЕРШЕНО** — all 12 modules audited, 8 migrated, build OK | B | — |

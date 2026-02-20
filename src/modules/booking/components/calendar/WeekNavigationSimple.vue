@@ -1,33 +1,36 @@
 <template>
   <div class="week-navigation-simple">
-    <button
+    <Button
+      variant="ghost"
+      iconOnly
       @click="handleNavigate(-1)"
       :disabled="isLoading"
-      class="nav-btn"
       :aria-label="t('calendar.weekNavigation.prevWeek')"
     >
       <ChevronLeftIcon class="w-5 h-5" />
-    </button>
+    </Button>
 
     <div class="week-info">
       <span class="week-range">{{ weekRangeFormatted }}</span>
-      <button
+      <Button
         v-if="currentPage !== 0"
+        variant="outline"
+        size="sm"
         @click="handleToday"
-        class="today-btn"
       >
         {{ t('calendar.weekNavigation.today') }}
-      </button>
+      </Button>
     </div>
 
-    <button
+    <Button
+      variant="ghost"
+      iconOnly
       @click="handleNavigate(1)"
       :disabled="isLoading"
-      class="nav-btn"
       :aria-label="t('calendar.weekNavigation.nextWeek')"
     >
       <ChevronRightIcon class="w-5 h-5" />
-    </button>
+    </Button>
   </div>
 </template>
 
@@ -38,6 +41,7 @@ import {
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
 } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 
 const { t } = useI18n()
 

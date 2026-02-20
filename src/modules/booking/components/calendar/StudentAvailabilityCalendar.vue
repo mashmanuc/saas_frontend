@@ -4,26 +4,26 @@
     <div v-if="!wsConnected" class="ws-banner">
       <AlertCircle :size="20" />
       <span>{{ t('calendar.realtime.status.disconnected') }}</span>
-      <button @click="reconnectWebSocket" class="btn btn-sm">{{ t('common.retry') }}</button>
+      <Button variant="outline" size="sm" @click="reconnectWebSocket">{{ t('common.retry') }}</Button>
     </div>
 
     <!-- Cache Stale Banner -->
     <div v-if="state === 'cache_stale'" class="cache-banner">
       <span>{{ t('calendar.cache.staleLabel') }}</span>
-      <button @click="loadAvailability" class="btn btn-sm">{{ t('common.retry') }}</button>
+      <Button variant="outline" size="sm" @click="loadAvailability">{{ t('common.retry') }}</Button>
     </div>
 
     <!-- Error Banner -->
     <div v-if="error && state === 'error'" class="error-banner">
       <AlertCircle :size="20" />
       <span>{{ error }}</span>
-      <button @click="loadAvailability" class="btn btn-sm">{{ t('common.retry') }}</button>
+      <Button variant="outline" size="sm" @click="loadAvailability">{{ t('common.retry') }}</Button>
     </div>
 
     <div class="calendar-header">
-      <button @click="navigateWeek(-1)" class="btn btn-ghost" :disabled="state === 'loading'">
+      <Button variant="ghost" iconOnly :disabled="state === 'loading'" @click="navigateWeek(-1)">
         <ChevronLeft :size="20" />
-      </button>
+      </Button>
       
       <div class="week-info">
         <h3>{{ t('calendar.weekOf', { date: formatDate(currentWeekStart) }) }}</h3>
@@ -33,13 +33,13 @@
         </span>
       </div>
       
-      <button @click="navigateWeek(1)" class="btn btn-ghost" :disabled="state === 'loading'">
+      <Button variant="ghost" iconOnly :disabled="state === 'loading'" @click="navigateWeek(1)">
         <ChevronRight :size="20" />
-      </button>
+      </Button>
       
-      <button @click="goToToday" class="btn btn-outline btn-sm">
+      <Button variant="outline" size="sm" @click="goToToday">
         {{ t('common.today') }}
-      </button>
+      </Button>
     </div>
 
     <div v-if="state === 'loading'" class="calendar-skeleton">
@@ -91,9 +91,9 @@
         <Calendar :size="16" />
         <span>{{ formatSlotDateTime(selectedSlot) }}</span>
       </div>
-      <button @click="$emit('slot-selected', selectedSlot)" class="btn btn-primary">
+      <Button variant="primary" @click="$emit('slot-selected', selectedSlot)">
         {{ t('booking.bookLesson') }}
-      </button>
+      </Button>
     </div>
   </div>
 </template>
@@ -102,6 +102,7 @@
 import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Calendar, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 import { availabilityApi } from '../../api/availabilityApi'
 import { useWebSocket } from '@/composables/useWebSocket'
 import { useCalendarDeepLink } from '@/composables/useCalendarDeepLink'
