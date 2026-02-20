@@ -11,22 +11,12 @@
           </div>
         </div>
         <div class="banner-actions">
-          <button 
-            type="button" 
-            class="btn-secondary"
-            @click="dismissBanner"
-          >
+          <Button variant="secondary" size="sm" @click="dismissBanner">
             {{ $t('common.later') }}
-          </button>
-          <button 
-            type="button" 
-            class="btn-primary"
-            :disabled="isEnabling"
-            @click="enablePush"
-          >
-            <Loader2 v-if="isEnabling" class="btn-icon spinning" />
+          </Button>
+          <Button variant="primary" size="sm" :disabled="isEnabling" :loading="isEnabling" @click="enablePush">
             {{ $t('push.enable') }}
-          </button>
+          </Button>
         </div>
       </div>
     </Transition>
@@ -80,8 +70,8 @@ import {
   AlertCircle, 
   CheckCircle,
   X,
-  Loader2,
 } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 import { 
   isPushSupported, 
   isNotificationPermitted, 
@@ -349,7 +339,7 @@ defineExpose({
   align-items: center;
   gap: 16px;
   padding: 16px 20px;
-  background: white;
+  background: var(--bg-primary, white);
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   z-index: 1000;
@@ -393,58 +383,6 @@ defineExpose({
   flex-shrink: 0;
 }
 
-.btn-primary,
-.btn-secondary {
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.btn-primary {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-  border: none;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--color-primary-hover, #2563eb);
-}
-
-.btn-primary:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: transparent;
-  color: var(--text-secondary, #6b7280);
-  border: 1px solid var(--border-color, #e5e7eb);
-}
-
-.btn-secondary:hover {
-  background: var(--bg-hover, #f3f4f6);
-}
-
-.btn-icon {
-  width: 14px;
-  height: 14px;
-}
-
-.spinning {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
 /* Toast Container */
 .push-toast-container {
   position: fixed;
@@ -464,7 +402,7 @@ defineExpose({
   align-items: flex-start;
   gap: 12px;
   padding: 14px 16px;
-  background: white;
+  background: var(--bg-primary, white);
   border-radius: 10px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   cursor: pointer;
@@ -487,12 +425,12 @@ defineExpose({
   flex-shrink: 0;
 }
 
-.toast-message .toast-icon-wrapper { background: #dbeafe; color: #2563eb; }
-.toast-lesson .toast-icon-wrapper { background: #dcfce7; color: #16a34a; }
-.toast-user .toast-icon-wrapper { background: #fef3c7; color: #d97706; }
-.toast-success .toast-icon-wrapper { background: #dcfce7; color: #16a34a; }
-.toast-error .toast-icon-wrapper { background: #fee2e2; color: #dc2626; }
-.toast-default .toast-icon-wrapper { background: #f3f4f6; color: #6b7280; }
+.toast-message .toast-icon-wrapper { background: var(--color-info-bg, #dbeafe); color: var(--color-info, #2563eb); }
+.toast-lesson .toast-icon-wrapper { background: var(--color-success-bg, #dcfce7); color: var(--color-success, #16a34a); }
+.toast-user .toast-icon-wrapper { background: var(--color-warning-bg, #fef3c7); color: var(--color-warning, #d97706); }
+.toast-success .toast-icon-wrapper { background: var(--color-success-bg, #dcfce7); color: var(--color-success, #16a34a); }
+.toast-error .toast-icon-wrapper { background: var(--color-error-bg, #fee2e2); color: var(--color-error, #dc2626); }
+.toast-default .toast-icon-wrapper { background: var(--color-bg-secondary, #f3f4f6); color: var(--text-secondary, #6b7280); }
 
 .toast-icon {
   width: 18px;
@@ -568,20 +506,6 @@ defineExpose({
 .toast-leave-to {
   opacity: 0;
   transform: translateX(100%);
-}
-
-/* Dark mode */
-@media (prefers-color-scheme: dark) {
-  .permission-banner,
-  .push-toast {
-    background: var(--bg-secondary-dark, #1f2937);
-    color: var(--text-primary-dark, #f9fafb);
-  }
-  
-  .banner-text p,
-  .toast-body {
-    color: var(--text-secondary-dark, #9ca3af);
-  }
 }
 
 /* Mobile */

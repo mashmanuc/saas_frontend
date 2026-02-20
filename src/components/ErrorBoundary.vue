@@ -3,10 +3,10 @@
     <AlertCircleIcon class="w-12 h-12 text-red-600" />
     <h2 class="error-title">{{ $t('errors.somethingWentWrong') }}</h2>
     <p class="error-message">{{ errorMessage }}</p>
-    <button @click="handleRetry" class="btn-primary">
-      <RefreshCwIcon class="w-4 h-4" />
+    <Button variant="primary" @click="handleRetry">
+      <template #iconLeft><RefreshCwIcon class="w-4 h-4" /></template>
       {{ $t('common.retry') }}
-    </button>
+    </Button>
   </div>
   <slot v-else />
 </template>
@@ -14,6 +14,7 @@
 <script setup lang="ts">
 import { ref, onErrorCaptured } from 'vue'
 import { AlertCircle as AlertCircleIcon, RefreshCw as RefreshCwIcon } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 
 const hasError = ref(false)
 const errorMessage = ref('')
@@ -49,33 +50,15 @@ function handleRetry() {
 .error-title {
   font-size: 24px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary);
   margin: 0;
 }
 
 .error-message {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--text-secondary);
   max-width: 500px;
   margin: 0;
 }
 
-.btn-primary {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background-color: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.btn-primary:hover {
-  background-color: #2563eb;
-}
 </style>

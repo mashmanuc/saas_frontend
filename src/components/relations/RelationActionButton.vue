@@ -161,30 +161,30 @@ function handleClick() {
 }
 
 .btn-primary {
-  background-color: #3b82f6;
+  background-color: var(--accent);
   color: white;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: #2563eb;
+  filter: brightness(1.1);
 }
 
 .btn-primary:active:not(:disabled) {
-  background-color: #1d4ed8;
+  filter: brightness(0.95);
 }
 
 .btn-secondary {
-  background-color: #f3f4f6;
-  color: #374151;
-  border: 1px solid #d1d5db;
+  background-color: var(--color-bg-secondary, #f3f4f6);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background-color: #e5e7eb;
+  background-color: var(--color-bg-tertiary, #e5e7eb);
 }
 
 .btn-secondary:active:not(:disabled) {
-  background-color: #d1d5db;
+  background-color: var(--border-color);
 }
 
 /* Специфічні стилі для типів дій */
@@ -194,11 +194,11 @@ function handleClick() {
 
 .btn-request {
   /* Request contact - важлива дія */
-  background-color: #10b981;
+  background-color: var(--color-success, #10b981);
 }
 
 .btn-request:hover:not(:disabled) {
-  background-color: #059669;
+  filter: brightness(1.1);
 }
 
 .btn-book {
@@ -207,10 +207,10 @@ function handleClick() {
 
 .btn-locked {
   /* Why locked - інформаційна дія */
-  background-color: #f59e0b;
+  background-color: var(--color-warning, #f59e0b);
 }
 
 .btn-locked:hover:not(:disabled) {
-  background-color: #d97706;
+  filter: brightness(1.1);
 }
 </style>
