@@ -32,12 +32,12 @@
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" @click="handleClose">
+          <Button variant="outline" @click="handleClose">
             {{ $t('common.cancel') }}
-          </button>
-          <button type="button" class="btn btn-primary" @click="handleSync">
+          </Button>
+          <Button variant="primary" @click="handleSync">
             {{ $t('marketplace.draft.syncNow') }}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -47,6 +47,7 @@
 <script setup>
 import { useI18n } from 'vue-i18n'
 import { AlertTriangle } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 
 const props = defineProps({
   show: {

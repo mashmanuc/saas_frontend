@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { notifyError, notifySuccess } from '@/utils/notify'
+import Button from '@/ui/Button.vue'
 
 export interface Props {
   show: boolean
@@ -205,32 +206,33 @@ function handleClose() {
       </div>
 
       <div class="modal-footer">
-        <button
+        <Button
           v-if="currentStep > 1"
-          class="btn btn-secondary"
+          variant="outline"
           @click="prevStep"
           :disabled="isSubmitting"
         >
           {{ t('common.back') }}
-        </button>
+        </Button>
         
-        <button
+        <Button
           v-if="currentStep < 3"
-          class="btn btn-primary"
+          variant="primary"
           @click="nextStep"
           :disabled="!canProceed || isSubmitting"
         >
           {{ t('common.next') }}
-        </button>
+        </Button>
         
-        <button
+        <Button
           v-if="currentStep === 3"
-          class="btn btn-primary"
+          variant="primary"
           @click="handleSubmit"
           :disabled="!canProceed || isSubmitting"
+          :loading="isSubmitting"
         >
-          {{ isSubmitting ? t('common.submitting') : t('common.submit') }}
-        </button>
+          {{ t('common.submit') }}
+        </Button>
       </div>
     </div>
   </div>

@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { AlertTriangle, X } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 
 const props = defineProps<{
   show: boolean
@@ -164,14 +165,13 @@ function handleCancel() {
         </div>
 
         <div class="modal-footer">
-          <button
-            type="button"
-            class="btn btn-secondary"
+          <Button
+            variant="outline"
             :disabled="isResolving"
             @click="handleCancel"
           >
             {{ t('common.cancel') }}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

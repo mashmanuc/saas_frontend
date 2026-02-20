@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { X, ChevronDown, ChevronUp } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 import { useI18n } from 'vue-i18n'
 import type { CatalogFilters, FilterOptions } from '../../api/marketplace'
 
@@ -152,12 +153,12 @@ function handleClose() {
         </div>
 
         <div class="modal-footer">
-          <button class="btn btn-secondary" @click="handleClose">
+          <Button variant="outline" @click="handleClose">
             {{ t('common.cancel') }}
-          </button>
-          <button class="btn btn-primary" @click="handleApply">
+          </Button>
+          <Button variant="primary" @click="handleApply">
             {{ t('common.apply') }}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

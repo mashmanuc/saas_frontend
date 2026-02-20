@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { X, AlertCircle } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 import marketplaceApi, { type TrialRequestPayload } from '../../api/marketplace'
 import { notifyError, notifySuccess } from '@/utils/notify'
 import { mapMarketplaceErrorToMessage, parseMarketplaceApiError } from '../../utils/apiErrors'
@@ -124,9 +125,9 @@ declare global {
           <AlertCircle class="icon" :size="20" />
           <div class="conflict-content">
             <p class="conflict-message">{{ errorMessage }}</p>
-            <button class="btn-refresh" type="button" @click="refreshCalendar">
+            <Button variant="danger" size="sm" @click="refreshCalendar">
               {{ t('marketplace.trialRequest.refreshCalendar') }}
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -140,12 +141,12 @@ declare global {
       </div>
 
       <div class="actions">
-        <button class="btn btn-secondary" type="button" @click="emit('close')" :disabled="isSubmitting" data-testid="trial-request-cancel">
+        <Button variant="outline" @click="emit('close')" :disabled="isSubmitting" data-testid="trial-request-cancel">
           {{ t('common.cancel') }}
-        </button>
-        <button class="btn btn-primary" type="button" @click="submit" :disabled="isSubmitting" data-testid="trial-request-submit">
-          {{ isSubmitting ? t('marketplace.trialRequest.submitting') : t('marketplace.trialRequest.submit') }}
-        </button>
+        </Button>
+        <Button variant="primary" @click="submit" :disabled="isSubmitting" :loading="isSubmitting" data-testid="trial-request-submit">
+          {{ t('marketplace.trialRequest.submit') }}
+        </Button>
       </div>
     </div>
   </div>
@@ -202,14 +203,14 @@ declare global {
   display: flex;
   gap: 12px;
   padding: 12px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  margin-top: 16px;
+  background: var(--danger-bg, #fef2f2);
+  border: 1px solid var(--danger, #fecaca);
+  border-radius: var(--radius-md);
+  margin-top: var(--space-md);
 }
 
 .conflict-banner .icon {
-  color: #dc2626;
+  color: var(--danger, #dc2626);
   flex-shrink: 0;
 }
 
@@ -218,25 +219,9 @@ declare global {
 }
 
 .conflict-message {
-  margin: 0 0 8px 0;
-  color: #991b1b;
-  font-size: 14px;
-}
-
-.btn-refresh {
-  padding: 6px 12px;
-  background: #dc2626;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn-refresh:hover {
-  background: #b91c1c;
+  margin: 0 0 var(--space-xs) 0;
+  color: var(--danger, #991b1b);
+  font-size: var(--text-sm);
 }
 
 .body {

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { X } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 import { useI18n } from 'vue-i18n'
 import marketplaceApi, { type CreateReviewPayload } from '../../api/marketplace'
 import { notifyError, notifySuccess } from '@/utils/notify'
@@ -110,17 +111,17 @@ async function submit() {
       </div>
 
       <div class="actions">
-        <button class="btn btn-secondary" type="button" @click="emit('close')" :disabled="isSubmitting">
+        <Button variant="outline" @click="emit('close')" :disabled="isSubmitting">
           {{ t('common.cancel') }}
-        </button>
-        <button
-          class="btn btn-primary"
-          type="button"
+        </Button>
+        <Button
+          variant="primary"
           :disabled="isSubmitting || !canSubmit"
+          :loading="isSubmitting"
           @click="submit"
         >
-          {{ isSubmitting ? t('common.loading') : t('marketplace.profile.reviews.write.submit') }}
-        </button>
+          {{ t('marketplace.profile.reviews.write.submit') }}
+        </Button>
       </div>
     </div>
   </div>

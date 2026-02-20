@@ -2,6 +2,7 @@
 // TASK F7: Search Filters Modal
 import { ref, watch } from 'vue'
 import { X } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 import CatalogFilters from '../catalog/CatalogFilters.vue'
 import type { SearchFilters, ExtendedFilterOptions } from '../../api/marketplace'
 import { useI18n } from 'vue-i18n'
@@ -81,12 +82,12 @@ const handleClear = () => {
           </div>
 
           <footer class="modal-footer">
-            <button class="btn btn-secondary" type="button" @click="handleClear">
+            <Button variant="outline" @click="handleClear">
               {{ t('marketplace.filters.clearAll') }}
-            </button>
-            <button class="btn btn-primary" type="button" @click="handleApply">
+            </Button>
+            <Button variant="primary" @click="handleApply">
               {{ t('marketplace.search.showResults', { count: resultsCount }) }}
-            </button>
+            </Button>
           </footer>
         </div>
       </div>

@@ -31,24 +31,24 @@
             <div>
               <p>{{ error }}</p>
               <p v-if="requestId" class="request-id">Request ID: {{ requestId }}</p>
-              <button type="button" class="btn btn-sm btn-ghost" @click="handleRetry" :disabled="loading">
+              <Button variant="ghost" size="sm" @click="handleRetry" :disabled="loading">
                 {{ $t('common.retry') }}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn btn-ghost" @click="handleRollback" :disabled="loading">
+          <Button variant="ghost" @click="handleRollback" :disabled="loading">
             {{ $t('marketplace.draft.rollback') }}
-          </button>
+          </Button>
           <div class="footer-actions">
-            <button type="button" class="btn btn-secondary" @click="handleClose" :disabled="loading">
+            <Button variant="outline" @click="handleClose" :disabled="loading">
               {{ $t('common.cancel') }}
-            </button>
-            <button type="button" class="btn btn-primary" @click="handleConfirm" :disabled="loading">
-              {{ loading ? $t('common.saving') : $t('marketplace.draft.confirmMerge') }}
-            </button>
+            </Button>
+            <Button variant="primary" @click="handleConfirm" :disabled="loading" :loading="loading">
+              {{ $t('marketplace.draft.confirmMerge') }}
+            </Button>
           </div>
         </div>
       </div>
@@ -60,6 +60,7 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { AlertCircle } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 
 const props = defineProps({
   show: {
