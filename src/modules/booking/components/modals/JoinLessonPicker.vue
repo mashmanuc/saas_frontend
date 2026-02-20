@@ -194,9 +194,9 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
-  background: #3b82f6;
+  background: var(--accent);
   color: white;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font-size: 14px;
   font-weight: 500;
   transition: all 0.2s;
@@ -205,13 +205,13 @@ onUnmounted(() => {
 }
 
 .join-button:hover:not(:disabled) {
-  background: #2563eb;
+  background: var(--accent-hover, #2563eb);
   transform: translateY(-1px);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 .join-button:disabled {
-  background: #9ca3af;
+  background: var(--text-secondary);
   cursor: not-allowed;
 }
 
@@ -220,8 +220,8 @@ onUnmounted(() => {
   top: calc(100% + 8px);
   left: 0;
   right: 0;
-  background: white;
-  border-radius: 12px;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   z-index: 50;
   overflow: hidden;
@@ -244,13 +244,13 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .picker-title {
   font-size: 14px;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .close-btn {
@@ -260,7 +260,7 @@ onUnmounted(() => {
 }
 
 .close-btn:hover {
-  background-color: #f3f4f6;
+  background-color: var(--bg-secondary);
 }
 
 .picker-options {
@@ -279,7 +279,7 @@ onUnmounted(() => {
 }
 
 .picker-option:hover {
-  background-color: #f9fafb;
+  background-color: var(--bg-secondary);
 }
 
 .option-icon {
@@ -289,8 +289,8 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f3f4f6;
-  border-radius: 8px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
 }
 
 .option-content {
@@ -301,13 +301,13 @@ onUnmounted(() => {
 .option-label {
   font-size: 14px;
   font-weight: 500;
-  color: #111827;
+  color: var(--text-primary);
   margin-bottom: 2px;
 }
 
 .option-url {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -315,13 +315,13 @@ onUnmounted(() => {
 
 .picker-footer {
   padding: 12px 16px;
-  background: #f9fafb;
-  border-top: 1px solid #e5e7eb;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
 }
 
 .picker-hint {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-secondary);
   text-align: center;
 }
 </style>

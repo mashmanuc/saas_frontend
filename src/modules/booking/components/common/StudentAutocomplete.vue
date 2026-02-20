@@ -123,15 +123,15 @@ function selectStudent(student: Student) {
 .autocomplete-input {
   width: 100%;
   padding: 8px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   font-size: 14px;
   transition: border-color 0.15s;
 }
 
 .autocomplete-input:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
@@ -140,9 +140,9 @@ function selectStudent(student: Student) {
   top: calc(100% + 4px);
   left: 0;
   right: 0;
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   max-height: 300px;
   overflow-y: auto;
@@ -157,7 +157,7 @@ function selectStudent(student: Student) {
   padding: 8px 12px;
   font-size: 12px;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--text-secondary);
   text-transform: uppercase;
 }
 
@@ -174,6 +174,6 @@ function selectStudent(student: Student) {
 }
 
 .dropdown-item:hover {
-  background-color: #f3f4f6;
+  background-color: var(--bg-secondary);
 }
 </style>

@@ -144,8 +144,8 @@ function formatTime(utcTime: string): string {
 }
 
 .modal-container {
-  background: white;
-  border-radius: 12px;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
   padding: 24px;
   max-width: 500px;
   width: 90%;
@@ -162,17 +162,17 @@ function formatTime(utcTime: string): string {
 .modal-header h2 {
   font-size: 20px;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .close-btn {
   padding: 4px;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   transition: background-color 0.2s;
 }
 
 .close-btn:hover {
-  background-color: #f3f4f6;
+  background-color: var(--bg-secondary);
 }
 
 .request-form {
@@ -186,19 +186,19 @@ function formatTime(utcTime: string): string {
   align-items: center;
   gap: 12px;
   padding: 16px;
-  background-color: #eff6ff;
-  border-radius: 8px;
+  background-color: var(--accent-bg, #eff6ff);
+  border-radius: var(--radius-md);
 }
 
 .slot-date {
   font-size: 16px;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .slot-time {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 .form-field {
@@ -210,7 +210,7 @@ function formatTime(utcTime: string): string {
 .form-field label {
   font-size: 14px;
   font-weight: 500;
-  color: #374151;
+  color: var(--text-primary);
 }
 
 .duration-selector {
@@ -221,28 +221,28 @@ function formatTime(utcTime: string): string {
 
 .duration-btn {
   padding: 10px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   font-size: 14px;
   transition: all 0.2s;
 }
 
 .duration-btn:hover {
-  border-color: #3b82f6;
-  background-color: #eff6ff;
+  border-color: var(--accent);
+  background-color: var(--accent-bg, #eff6ff);
 }
 
 .duration-btn.active {
-  border-color: #3b82f6;
-  background-color: #3b82f6;
+  border-color: var(--accent);
+  background-color: var(--accent);
   color: white;
   font-weight: 500;
 }
 
 .textarea {
   padding: 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   font-size: 14px;
   resize: vertical;
   min-height: 100px;
@@ -250,7 +250,7 @@ function formatTime(utcTime: string): string {
 
 .textarea:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
@@ -259,10 +259,10 @@ function formatTime(utcTime: string): string {
   align-items: center;
   gap: 8px;
   padding: 12px;
-  background-color: #fee2e2;
-  border: 1px solid #ef4444;
-  border-radius: 8px;
-  color: #991b1b;
+  background-color: var(--danger-bg, #fee2e2);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-md);
+  color: var(--danger);
   font-size: 14px;
 }
 
@@ -278,15 +278,15 @@ function formatTime(utcTime: string): string {
   align-items: center;
   gap: 8px;
   padding: 10px 20px;
-  background-color: #3b82f6;
+  background-color: var(--accent);
   color: white;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font-weight: 500;
   transition: background-color 0.2s;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: #2563eb;
+  background-color: var(--accent-hover, #2563eb);
 }
 
 .btn-primary:disabled {
@@ -296,13 +296,13 @@ function formatTime(utcTime: string): string {
 
 .btn-secondary {
   padding: 10px 20px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   font-weight: 500;
   transition: background-color 0.2s;
 }
 
 .btn-secondary:hover {
-  background-color: #f3f4f6;
+  background-color: var(--bg-secondary);
 }
 </style>

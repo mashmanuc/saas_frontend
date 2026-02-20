@@ -125,8 +125,8 @@ function formatTime(utcTime: string): string {
 }
 
 .modal-container {
-  background: white;
-  border-radius: 12px;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
   padding: 24px;
   max-width: 600px;
   width: 90%;
@@ -145,17 +145,17 @@ function formatTime(utcTime: string): string {
 .modal-header h2 {
   font-size: 20px;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .close-btn {
   padding: 4px;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   transition: background-color 0.2s;
 }
 
 .close-btn:hover {
-  background-color: #f3f4f6;
+  background-color: var(--bg-secondary);
 }
 
 .modal-content {
@@ -171,19 +171,19 @@ function formatTime(utcTime: string): string {
   gap: 16px;
   text-align: center;
   padding: 16px;
-  background-color: #eff6ff;
-  border-radius: 8px;
+  background-color: var(--accent-bg, #eff6ff);
+  border-radius: var(--radius-md);
 }
 
 .info-text {
   font-size: 14px;
-  color: #374151;
+  color: var(--text-primary);
   line-height: 1.5;
 }
 
 .changes-preview {
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   padding: 16px;
 }
 
@@ -191,7 +191,7 @@ function formatTime(utcTime: string): string {
   font-size: 14px;
   font-weight: 600;
   margin-bottom: 12px;
-  color: #374151;
+  color: var(--text-primary);
 }
 
 .changes-list {
@@ -207,8 +207,8 @@ function formatTime(utcTime: string): string {
   align-items: center;
   gap: 12px;
   padding: 8px;
-  background-color: #f9fafb;
-  border-radius: 6px;
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-md);
 }
 
 .change-icon {
@@ -221,13 +221,13 @@ function formatTime(utcTime: string): string {
 }
 
 .change-icon.status-available {
-  background-color: #d1fae5;
-  color: #065f46;
+  background-color: var(--success-bg, #d1fae5);
+  color: var(--success);
 }
 
 .change-icon.status-blocked {
-  background-color: #fee2e2;
-  color: #991b1b;
+  background-color: var(--danger-bg, #fee2e2);
+  color: var(--danger);
 }
 
 .change-details {
@@ -239,12 +239,12 @@ function formatTime(utcTime: string): string {
 .change-time {
   font-size: 14px;
   font-weight: 500;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .change-status {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 .warning-section {
@@ -252,14 +252,14 @@ function formatTime(utcTime: string): string {
   align-items: flex-start;
   gap: 12px;
   padding: 12px;
-  background-color: #fffbeb;
-  border: 1px solid #fbbf24;
-  border-radius: 8px;
+  background-color: var(--warning-bg, #fffbeb);
+  border: 1px solid var(--warning, #fbbf24);
+  border-radius: var(--radius-md);
 }
 
 .warning-text {
   font-size: 13px;
-  color: #92400e;
+  color: var(--warning);
   line-height: 1.5;
 }
 
@@ -269,7 +269,7 @@ function formatTime(utcTime: string): string {
   gap: 12px;
   margin-top: 24px;
   padding-top: 24px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--border-color);
 }
 
 .btn-primary {
@@ -277,15 +277,15 @@ function formatTime(utcTime: string): string {
   align-items: center;
   gap: 8px;
   padding: 10px 20px;
-  background-color: #3b82f6;
+  background-color: var(--accent);
   color: white;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font-weight: 500;
   transition: background-color 0.2s;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: #2563eb;
+  background-color: var(--accent-hover, #2563eb);
 }
 
 .btn-primary:disabled {
@@ -295,13 +295,13 @@ function formatTime(utcTime: string): string {
 
 .btn-secondary {
   padding: 10px 20px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   font-weight: 500;
   transition: background-color 0.2s;
 }
 
 .btn-secondary:hover {
-  background-color: #f3f4f6;
+  background-color: var(--bg-secondary);
 }
 </style>

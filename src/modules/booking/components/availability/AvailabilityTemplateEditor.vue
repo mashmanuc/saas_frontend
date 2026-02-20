@@ -358,7 +358,7 @@ function handleCancel() {
 }
 
 .subtitle {
-  color: #6b7280;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
@@ -368,7 +368,7 @@ function handleCancel() {
   gap: 8px;
   margin-top: 16px;
   padding: 12px;
-  background: #f3f4f6;
+  background: var(--bg-secondary);
   border-radius: 8px;
   font-size: 14px;
 }
@@ -380,8 +380,8 @@ function handleCancel() {
 }
 
 .weekday-section {
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
   padding: 16px;
 }
 
@@ -400,21 +400,21 @@ function handleCancel() {
 
 .copy-select {
   padding: 6px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   font-size: 13px;
-  background: white;
+  background: var(--card-bg);
   cursor: pointer;
   transition: border-color 0.2s;
 }
 
 .copy-select:hover {
-  border-color: #3b82f6;
+  border-color: var(--accent);
 }
 
 .copy-select:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
@@ -427,7 +427,7 @@ function handleCancel() {
 .empty-slots {
   padding: 16px;
   text-align: center;
-  color: #9ca3af;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
@@ -436,36 +436,36 @@ function handleCancel() {
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background: #f9fafb;
-  border-radius: 8px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
   flex-wrap: wrap;
 }
 
 .time-input {
   padding: 8px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   font-size: 14px;
 }
 
 .separator {
-  color: #6b7280;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
 .btn-icon-danger {
   padding: 8px;
-  color: #ef4444;
+  color: var(--danger);
   border-radius: 6px;
   transition: background-color 0.2s;
 }
 
 .btn-icon-danger:hover {
-  background-color: #fee2e2;
+  background-color: var(--danger-bg, #fee2e2);
 }
 
 .slot-error {
-  color: #ef4444;
+  color: var(--danger);
   font-size: 12px;
   width: 100%;
   margin-top: 4px;
@@ -476,15 +476,15 @@ function handleCancel() {
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
-  color: #3b82f6;
-  border: 1px dashed #3b82f6;
+  color: var(--accent);
+  border: 1px dashed var(--accent);
   border-radius: 8px;
   font-size: 14px;
   transition: all 0.2s;
 }
 
 .btn-add-slot:hover {
-  background-color: #eff6ff;
+  background-color: var(--accent-bg, #eff6ff);
 }
 
 .editor-actions {
@@ -493,7 +493,7 @@ function handleCancel() {
   gap: 12px;
   margin-top: 32px;
   padding-top: 24px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--border-color);
 }
 
 .btn-primary {
@@ -501,15 +501,15 @@ function handleCancel() {
   align-items: center;
   gap: 8px;
   padding: 12px 24px;
-  background-color: #3b82f6;
+  background-color: var(--accent);
   color: white;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font-weight: 500;
   transition: background-color 0.2s;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: #2563eb;
+  background-color: var(--accent-hover, #2563eb);
 }
 
 .btn-primary:disabled {
@@ -519,14 +519,14 @@ function handleCancel() {
 
 .btn-secondary {
   padding: 12px 24px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   font-weight: 500;
   transition: background-color 0.2s;
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background-color: #f3f4f6;
+  background-color: var(--bg-secondary);
 }
 
 .btn-secondary:disabled {

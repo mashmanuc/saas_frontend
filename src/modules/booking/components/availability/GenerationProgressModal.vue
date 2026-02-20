@@ -185,8 +185,8 @@ function handleClose() {
 }
 
 .modal-container {
-  background: white;
-  border-radius: 12px;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
   padding: 24px;
   max-width: 500px;
   width: 90%;
@@ -200,7 +200,7 @@ function handleClose() {
 .modal-header h2 {
   font-size: 20px;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .progress-content {
@@ -221,23 +221,23 @@ function handleClose() {
 
 .status-text {
   font-size: 16px;
-  color: #374151;
+  color: var(--text-primary);
   font-weight: 500;
 }
 
 .status-text.success {
-  color: #059669;
+  color: var(--success);
 }
 
 .status-text.error {
-  color: #dc2626;
+  color: var(--danger);
 }
 
 .error-message {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--text-secondary);
   padding: 12px;
-  background-color: #fee2e2;
+  background-color: var(--danger-bg, #fee2e2);
   border-radius: 8px;
   margin-top: 8px;
 }
@@ -256,19 +256,19 @@ function handleClose() {
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background-color: #f9fafb;
+  background-color: var(--bg-secondary);
   border-radius: 8px;
 }
 
 .stat-label {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 .stat-value {
   font-size: 18px;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .modal-actions {
@@ -277,12 +277,12 @@ function handleClose() {
   gap: 12px;
   margin-top: 24px;
   padding-top: 24px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--border-color);
 }
 
 .btn-primary {
   padding: 10px 20px;
-  background-color: #3b82f6;
+  background-color: var(--accent);
   color: white;
   border-radius: 8px;
   font-weight: 500;
@@ -290,19 +290,19 @@ function handleClose() {
 }
 
 .btn-primary:hover {
-  background-color: #2563eb;
+  background-color: var(--accent-hover, #2563eb);
 }
 
 .btn-secondary {
   padding: 10px 20px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   font-weight: 500;
   transition: background-color 0.2s;
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background-color: #f3f4f6;
+  background-color: var(--bg-secondary);
 }
 
 .btn-secondary:disabled {

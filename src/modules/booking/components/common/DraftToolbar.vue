@@ -89,8 +89,8 @@ function handleSaveAsTemplate() {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  background-color: #f9fafb;
-  border: 1px solid #e5e7eb;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   gap: 16px;
 }
@@ -104,7 +104,7 @@ function handleSaveAsTemplate() {
 .draft-count {
   font-size: 14px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 .draft-actions {
@@ -129,29 +129,29 @@ function handleSaveAsTemplate() {
 }
 
 .btn--primary {
-  background-color: #3b82f6;
+  background-color: var(--accent);
   color: white;
 }
 
 .btn--primary:hover:not(:disabled) {
-  background-color: #2563eb;
+  background-color: var(--accent-hover, #2563eb);
 }
 
 .btn--secondary {
-  background-color: #e5e7eb;
-  color: #374151;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 .btn--secondary:hover:not(:disabled) {
-  background-color: #d1d5db;
+  background-color: var(--bg-tertiary, #d1d5db);
 }
 
 .btn--danger {
-  background-color: #ef4444;
+  background-color: var(--danger);
   color: white;
 }
 
 .btn--danger:hover:not(:disabled) {
-  background-color: #dc2626;
+  background-color: var(--danger-hover, #dc2626);
 }
 </style>

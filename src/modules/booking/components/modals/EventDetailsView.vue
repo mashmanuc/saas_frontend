@@ -83,27 +83,27 @@ function formatTime(utcTime: string): string {
 
 .detail-label {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-secondary);
   margin-bottom: 2px;
 }
 
 .detail-value {
   font-size: 14px;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .detail-subvalue {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 .comment-text {
   padding: 12px;
-  background: #f9fafb;
-  border-radius: 6px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
   font-size: 14px;
-  color: #374151;
+  color: var(--text-primary);
   white-space: pre-wrap;
 }
 </style>

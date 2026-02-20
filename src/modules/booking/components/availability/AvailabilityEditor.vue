@@ -688,18 +688,18 @@ function handleBackToCalendar() {
 
 .status-pending,
 .status-running {
-  border-color: #3b82f6;
-  background: #eff6ff;
+  border-color: var(--accent);
+  background: var(--accent-bg, #eff6ff);
 }
 
 .status-success {
-  border-color: #10b981;
-  background: #ecfdf5;
+  border-color: var(--success);
+  background: var(--success-bg, #ecfdf5);
 }
 
 .status-failed {
-  border-color: #ef4444;
-  background: #fef2f2;
+  border-color: var(--danger);
+  background: var(--danger-bg, #fef2f2);
 }
 
 .status-content {
@@ -716,15 +716,15 @@ function handleBackToCalendar() {
 
 .spinner-icon {
   animation: spin 1s linear infinite;
-  color: #3b82f6;
+  color: var(--accent);
 }
 
 .icon-success {
-  color: #10b981;
+  color: var(--success);
 }
 
 .icon-error {
-  color: #ef4444;
+  color: var(--danger);
 }
 
 .status-text {
@@ -744,13 +744,13 @@ function handleBackToCalendar() {
 }
 
 .status-details.error {
-  color: #ef4444;
+  color: var(--danger);
 }
 
 .btn-retry {
   padding: 0.5rem 1rem;
   border-radius: 6px;
-  background: #3b82f6;
+  background: var(--accent);
   color: white;
   border: none;
   cursor: pointer;
@@ -760,20 +760,20 @@ function handleBackToCalendar() {
 }
 
 .btn-retry:hover {
-  background: #2563eb;
+  background: var(--accent-hover, #2563eb);
 }
 
 .progress-bar {
   margin-top: 0.75rem;
   height: 4px;
-  background: #e5e7eb;
+  background: var(--border-color);
   border-radius: 2px;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  background: #3b82f6;
+  background: var(--accent);
 }
 
 .progress-fill.indeterminate {
