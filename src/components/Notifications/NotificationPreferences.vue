@@ -200,7 +200,7 @@ onMounted(() => {
   padding: 0.5rem 1rem;
   border: 1px solid var(--border-color);
   border-radius: 6px;
-  background: white;
+  background: var(--card-bg);
   color: var(--text-primary);
   cursor: pointer;
   font-size: 0.9rem;

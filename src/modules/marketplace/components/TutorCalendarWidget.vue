@@ -175,7 +175,7 @@ onMounted(() => {
 
 <style scoped>
 .tutor-calendar-widget {
-  background: white;
+  background: var(--card-bg);
   border-radius: 12px;
   padding: 24px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -184,7 +184,7 @@ onMounted(() => {
 .widget-title {
   font-size: 20px;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
   margin: 0 0 20px 0;
 }
 
@@ -291,7 +291,7 @@ onMounted(() => {
 .day-date {
   font-size: 16px;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
   margin-top: 4px;
 }
 

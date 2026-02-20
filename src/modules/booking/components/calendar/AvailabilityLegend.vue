@@ -73,7 +73,7 @@
 
 <style scoped>
 .availability-legend {
-  background: white;
+  background: var(--card-bg);
   border-radius: 8px;
   padding: 20px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
@@ -84,7 +84,7 @@
   font-size: 16px;
   font-weight: 600;
   margin: 0 0 16px 0;
-  color: #1a1a1a;
+  color: var(--text-primary);
 }
 
 .legend-items {
@@ -105,7 +105,7 @@
   height: 32px;
   border-radius: 4px;
   flex-shrink: 0;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border-color);
 }
 
 .legend-color.available {
@@ -148,12 +148,12 @@
 .legend-label {
   font-size: 14px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--text-primary);
 }
 
 .legend-description {
   font-size: 12px;
-  color: #666;
+  color: var(--text-secondary);
   line-height: 1.4;
 }
 
@@ -161,7 +161,7 @@
   display: flex;
   gap: 16px;
   padding: 16px;
-  background: #f5f5f5;
+  background: var(--bg-secondary);
   border-radius: 6px;
   margin-bottom: 20px;
 }
@@ -182,7 +182,7 @@
   justify-content: center;
   font-weight: bold;
   font-size: 20px;
-  background: white;
+  background: var(--card-bg);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
@@ -198,18 +198,18 @@
 
 .action-text {
   font-size: 13px;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .legend-tips {
   padding-top: 16px;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid var(--border-color);
 }
 
 .tip-title {
   font-size: 13px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--text-primary);
   margin: 0 0 8px 0;
 }
 
@@ -221,7 +221,7 @@
 
 .tip-list li {
   font-size: 12px;
-  color: #666;
+  color: var(--text-secondary);
   line-height: 1.6;
   margin-bottom: 4px;
 }

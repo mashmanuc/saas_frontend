@@ -216,7 +216,7 @@ function handleClose() {
 }
 
 .report-modal {
-  background: white;
+  background: var(--card-bg);
   border-radius: 8px;
   max-width: 500px;
   width: 100%;
@@ -230,13 +230,13 @@ function handleClose() {
   align-items: center;
   justify-content: space-between;
   padding: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .modal-title {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -277,12 +277,12 @@ function handleClose() {
 .success-title {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
   margin: 0 0 0.5rem 0;
 }
 
 .success-message {
-  color: #6b7280;
+  color: var(--text-secondary);
   margin: 0 0 1.5rem 0;
 }
 

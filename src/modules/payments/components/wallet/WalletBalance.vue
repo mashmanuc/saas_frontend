@@ -128,7 +128,7 @@ function formatCurrency(amount: number): string {
   align-items: center;
   gap: 8px;
   padding: 12px 20px;
-  background: white;
+  background: var(--card-bg);
   border: none;
   border-radius: 8px;
   font-size: 14px;

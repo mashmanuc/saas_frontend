@@ -33,8 +33,8 @@ function handleCellClick(cell: CalendarCell) {
 .day-column {
   display: flex;
   flex-direction: column;
-  background: white;
-  border-right: 1px solid #e5e7eb;
+  background: var(--card-bg);
+  border-right: 1px solid var(--border-color);
 }
 
 .day-column:last-child {

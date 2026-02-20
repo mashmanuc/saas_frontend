@@ -259,7 +259,7 @@ function handleReportSuccess() {
 }
 
 .inquiry-modal {
-  background: white;
+  background: var(--card-bg);
   border-radius: 8px;
   max-width: 500px;
   width: 90%;
@@ -273,7 +273,7 @@ function handleReportSuccess() {
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .inquiry-modal-header h2 {
@@ -287,7 +287,7 @@ function handleReportSuccess() {
   border: none;
   font-size: 1.5rem;
   cursor: pointer;
-  color: #6b7280;
+  color: var(--text-secondary);
   padding: 0;
   width: 2rem;
   height: 2rem;
@@ -408,8 +408,8 @@ function handleReportSuccess() {
   bottom: 100%;
   left: 0;
   margin-bottom: 0.5rem;
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   min-width: 150px;

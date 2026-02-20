@@ -238,7 +238,7 @@ function formatDate(date: string | Date | null | undefined): string {
 .current-plan-card,
 .coming-soon-card,
 .info-card {
-  background: white;
+  background: var(--card-bg);
   border-radius: 12px;
   padding: 2rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -248,7 +248,7 @@ function formatDate(date: string | Date | null | undefined): string {
 .coming-soon-card h2 {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
   margin: 0 0 1rem 0;
 }
 
@@ -280,7 +280,7 @@ function formatDate(date: string | Date | null | undefined): string {
 .expiry-info {
   margin-top: 1rem;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 .coming-soon-card {
@@ -294,7 +294,7 @@ function formatDate(date: string | Date | null | undefined): string {
 
 .coming-soon-card p {
   font-size: 1.125rem;
-  color: #6b7280;
+  color: var(--text-secondary);
   margin: 0 0 1.5rem 0;
 }
 
@@ -309,8 +309,8 @@ function formatDate(date: string | Date | null | undefined): string {
 
 .features-list li {
   padding: 0.75rem 0;
-  border-bottom: 1px solid #e5e7eb;
-  color: #374151;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
 }
 
 .features-list li:last-child {
@@ -327,17 +327,17 @@ function formatDate(date: string | Date | null | undefined): string {
 .info-card h3 {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
   margin: 0 0 0.5rem 0;
 }
 
 .info-card p {
-  color: #6b7280;
+  color: var(--text-secondary);
   margin: 0;
 }
 
 .action-card {
-  background: white;
+  background: var(--card-bg);
   border-radius: 12px;
   padding: 2rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -346,7 +346,7 @@ function formatDate(date: string | Date | null | undefined): string {
 .action-card h2 {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
   margin: 0 0 1rem 0;
 }
 

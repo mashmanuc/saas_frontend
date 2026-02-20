@@ -20,7 +20,7 @@
 | 4 | Полірування + ThemeStore | A ║ B ║ C | ✅ | 2026-02-20 | 2026-02-20 |
 | 5 | Button self-contained + дублікати | A → A ║ B → C | ✅ | 2026-02-20 | 2026-02-20 |
 | 6 | Фінальне очищення: залишки + токенізація | A ║ B → C | ✅ | 2026-02-20 | 2026-02-20 |
-| 7 | Токенізація background:white → CSS vars | A ║ B → C | ⬜ | — | — |
+| 7 | Токенізація background:white → CSS vars | A ║ B → C | ✅ | 2026-02-20 | 2026-02-20 |
 
 ---
 
@@ -300,3 +300,8 @@
 | 2026-02-20 | C-6.8: npm run build — OK (11.35s) | C | — |
 | 2026-02-20 | C-6.9: MF6_QA_REPORT.md — PASS | C | — |
 | 2026-02-20 | **MF6 ЗАВЕРШЕНО** — Design System міграція ЗАВЕРШЕНА | — | — |
+| 2026-02-20 | A-7: tokenize background:white → var(--card-bg) in booking+marketplace (14 files) + hex→CSS vars | A | — |
+| 2026-02-20 | B-8: tokenize background:white → var(--card-bg) in components+views (16 files) + hex→CSS vars | B | — |
+| 2026-02-20 | C-7: tokenize background:white → var(--card-bg) in onboarding+classroom (2 files) | C | — |
+| 2026-02-20 | MF7 build verification — OK (12.26s) | — | — |
+| 2026-02-20 | **MF7 ЗАВЕРШЕНО** — 32 files tokenized, 15 remain (debug/board/winterboard/functional) | — | — |

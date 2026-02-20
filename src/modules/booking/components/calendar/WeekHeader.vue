@@ -51,9 +51,9 @@ const weekDays = computed((): DayInfo[] => {
 <style scoped>
 .week-header {
   display: flex;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color);
   flex-shrink: 0;
-  background: white;
+  background: var(--card-bg);
 }
 
 .time-gutter {
@@ -67,7 +67,7 @@ const weekDays = computed((): DayInfo[] => {
   flex-direction: column;
   align-items: center;
   padding: 12px 8px;
-  border-left: 1px solid #e5e7eb;
+  border-left: 1px solid var(--border-color);
 }
 
 .day-header.is-today {
@@ -77,14 +77,14 @@ const weekDays = computed((): DayInfo[] => {
 .day-label {
   font-size: 12px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--text-secondary);
   text-transform: uppercase;
 }
 
 .day-number {
   font-size: 20px;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .day-header.is-today .day-number {

@@ -199,8 +199,8 @@ watch(() => props.modelValue, async (code) => {
   top: 100%;
   left: 0;
   right: 0;
-  background: white;
-  border: 1px solid #ddd;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   max-height: 200px;
   overflow-y: auto;

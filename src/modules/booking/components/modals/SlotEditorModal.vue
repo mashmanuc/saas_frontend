@@ -100,7 +100,7 @@ function handleError(error: any) {
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
-  background: white;
+  background: var(--card-bg);
   border-radius: 12px;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }

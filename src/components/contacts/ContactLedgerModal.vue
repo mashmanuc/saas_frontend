@@ -180,7 +180,7 @@ onUnmounted(() => {
 }
 
 .modal-content {
-  background: white;
+  background: var(--card-bg);
   border-radius: 0.5rem;
   max-width: 600px;
   width: 90%;
@@ -195,14 +195,14 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .modal-header h2 {
   margin: 0;
   font-size: 1.25rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .close-button {
@@ -211,7 +211,7 @@ onUnmounted(() => {
   font-size: 2rem;
   line-height: 1;
   cursor: pointer;
-  color: #6b7280;
+  color: var(--text-secondary);
   padding: 0;
   width: 2rem;
   height: 2rem;
@@ -222,8 +222,8 @@ onUnmounted(() => {
 }
 
 .close-button:hover {
-  background: #f3f4f6;
-  color: #111827;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 .modal-body {
@@ -237,7 +237,7 @@ onUnmounted(() => {
 .empty-state {
   text-align: center;
   padding: 2rem;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 .retry-button {
@@ -289,9 +289,9 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: flex-start;
   padding: 1rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-color);
   border-radius: 0.375rem;
-  background: #f9fafb;
+  background: var(--bg-secondary);
 }
 
 .item-main {
@@ -324,13 +324,13 @@ onUnmounted(() => {
 
 .item-reason {
   margin-top: 0.5rem;
-  color: #374151;
+  color: var(--text-primary);
   font-size: 0.875rem;
 }
 
 .item-date {
   margin-top: 0.25rem;
-  color: #9ca3af;
+  color: var(--text-secondary);
   font-size: 0.75rem;
 }
 
@@ -356,7 +356,7 @@ onUnmounted(() => {
 
 .balance-after {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 .load-more-container {
@@ -366,12 +366,12 @@ onUnmounted(() => {
 
 .load-more-button {
   padding: 0.75rem 1.5rem;
-  background: white;
-  border: 1px solid #d1d5db;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 0.375rem;
   cursor: pointer;
   font-weight: 500;
-  color: #374151;
+  color: var(--text-primary);
 }
 
 .load-more-button:hover:not(:disabled) {
@@ -387,7 +387,7 @@ onUnmounted(() => {
 .end-message {
   text-align: center;
   padding: 1rem;
-  color: #9ca3af;
+  color: var(--text-secondary);
   font-size: 0.875rem;
 }
 </style>

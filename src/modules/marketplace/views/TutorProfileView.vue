@@ -149,7 +149,7 @@ function handleInquirySuccess() {
 }
 
 .actions-menu-btn:hover {
-  background: white;
+  background: var(--card-bg);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
@@ -158,8 +158,8 @@ function handleInquirySuccess() {
   top: 100%;
   right: 0;
   margin-top: 0.5rem;
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   min-width: 180px;

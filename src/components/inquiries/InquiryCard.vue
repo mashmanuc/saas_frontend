@@ -102,8 +102,8 @@ const formattedDate = computed(() => {
 
 <style scoped>
 .inquiry-card {
-  background: white;
-  border: 1px solid #E5E7EB;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 16px;
   transition: box-shadow 0.2s;
@@ -137,12 +137,12 @@ const formattedDate = computed(() => {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .inquiry-date {
   font-size: 13px;
-  color: #6B7280;
+  color: var(--text-secondary);
 }
 
 .status-badge {
@@ -184,7 +184,7 @@ const formattedDate = computed(() => {
 .inquiry-message {
   margin: 0 0 12px 0;
   font-size: 14px;
-  color: #374151;
+  color: var(--text-primary);
   line-height: 1.5;
 }
 
@@ -196,18 +196,18 @@ const formattedDate = computed(() => {
 }
 
 .meta-label {
-  color: #6B7280;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
 .meta-value {
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .inquiry-actions {
   display: flex;
   gap: 8px;
   padding-top: 12px;
-  border-top: 1px solid #F3F4F6;
+  border-top: 1px solid var(--border-color);
 }
 </style>

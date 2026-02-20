@@ -416,7 +416,7 @@ onMounted(() => {
 
 .preview-day {
   padding: 0.5rem;
-  background: white;
+  background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: 0.375rem;
 }

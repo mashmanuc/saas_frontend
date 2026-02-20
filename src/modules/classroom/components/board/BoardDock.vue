@@ -258,7 +258,7 @@ defineExpose({
 .board-dock {
   position: relative;
   height: 100%;
-  background: white;
+  background: var(--card-bg);
   border-radius: 12px;
   overflow: hidden;
 }

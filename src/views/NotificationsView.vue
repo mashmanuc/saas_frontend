@@ -303,7 +303,7 @@ onMounted(() => {
   padding: 0.5rem 1rem;
   border: 1px solid var(--border-color);
   border-radius: 6px;
-  background: white;
+  background: var(--card-bg);
   color: var(--text-primary);
   font-size: 0.9rem;
   font-weight: 500;
@@ -409,7 +409,7 @@ onMounted(() => {
   padding: 0.75rem 1.5rem;
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  background: white;
+  background: var(--card-bg);
   color: var(--text-primary);
   font-size: 1rem;
   font-weight: 500;
@@ -509,7 +509,7 @@ onMounted(() => {
   padding: 0.625rem 1.25rem;
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  background: white;
+  background: var(--card-bg);
   color: var(--text-primary);
   font-size: 0.9rem;
   font-weight: 500;
@@ -567,7 +567,7 @@ onMounted(() => {
   padding: 0.4rem 0.875rem;
   border: 1px solid var(--border-color);
   border-radius: 6px;
-  background: white;
+  background: var(--card-bg);
   color: var(--text-primary);
   font-size: 0.85rem;
   font-weight: 500;

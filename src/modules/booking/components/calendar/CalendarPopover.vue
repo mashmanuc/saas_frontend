@@ -132,8 +132,8 @@ onUnmounted(() => {
 .calendar-popover {
   position: fixed;
   z-index: 9999;
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   max-width: 320px;
@@ -144,8 +144,8 @@ onUnmounted(() => {
   position: absolute;
   width: 12px;
   height: 12px;
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-right: none;
   border-bottom: none;
 }

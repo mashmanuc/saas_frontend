@@ -181,7 +181,7 @@ function handleClose() {
 }
 
 .modal-container {
-  background: white;
+  background: var(--card-bg);
   border-radius: 12px;
   max-width: 600px;
   width: 100%;
@@ -283,7 +283,7 @@ function handleClose() {
   border: 1px solid var(--border-color, #d1d5db);
   border-radius: 8px;
   font-size: 0.9375rem;
-  background: white;
+  background: var(--card-bg);
 }
 
 .filter-group select:focus,

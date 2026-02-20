@@ -33,8 +33,8 @@ function formatTime(slot: { hour: number; minute: number }): string {
 .time-column {
   width: 60px;
   flex-shrink: 0;
-  background: white;
-  border-right: 1px solid #e5e7eb;
+  background: var(--card-bg);
+  border-right: 1px solid var(--border-color);
 }
 
 .time-label {
@@ -45,7 +45,7 @@ function formatTime(slot: { hour: number; minute: number }): string {
   padding-right: 8px;
   padding-top: 4px;
   font-size: 11px;
-  color: #6b7280;
-  border-bottom: 1px solid #f3f4f6;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
 }
 </style>

@@ -224,7 +224,7 @@
          │
 День 2:  MF6 ─── A (залишки booking+mkt) ║ B (ErrorBoundary+PushHandler+RelationAction) ║ C (QA)  ✅
          │
-День 3:  MF7 ─── A (booking+mkt bg:white→vars 14 файлів) ║ B (components+views 16 файлів) ║ C (3 файли + QA)
+День 3:  MF7 ─── A (booking+mkt bg:white→vars 14 файлів) ║ B (components+views 16 файлів) ║ C (3 файли + QA)  ✅
 ```
 
 **Факт: MF0–MF6 завершені за 2 дні!**
@@ -237,7 +237,7 @@
 |---------|-----|-----------|----------|-----------|
 | `.btn-primary` scoped (не Button.vue) | 27 | 0 ✅ | 0 | `grep -rl '\.btn-primary' src/` |
 | `variant="destructive"` | 2 | 0 ✅ | 0 | `grep -rl 'destructive' src/` |
-| `background: white` (user-facing) | 55 | 34 | 0 | `grep -rl 'background:\s*white' src/` |
+| `background: white` (user-facing) | 55 | 34 | 15 (excl.) ✅ | `grep -rl 'background:\s*white' src/` |
 | Button.vue self-contained | ні | так ✅ | так | Стилі всередині компонента |
 | Build | OK | OK | OK | `npm run build` |
 

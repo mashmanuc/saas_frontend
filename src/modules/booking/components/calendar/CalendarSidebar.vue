@@ -112,8 +112,8 @@ function handleEventClick(eventId: number) {
 <style scoped>
 .calendar-sidebar {
   width: 320px;
-  background: white;
-  border-left: 1px solid #e5e7eb;
+  background: var(--card-bg);
+  border-left: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   max-height: calc(100vh - 120px);
@@ -126,13 +126,13 @@ function handleEventClick(eventId: number) {
   align-items: center;
   justify-content: space-between;
   padding: 16px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .sidebar-title {
   font-size: 16px;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -158,7 +158,7 @@ function handleEventClick(eventId: number) {
   gap: 12px;
   padding: 48px 24px;
   text-align: center;
-  color: #6b7280;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
@@ -175,8 +175,8 @@ function handleEventClick(eventId: number) {
   gap: 8px;
   padding: 12px;
   margin-bottom: 8px;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -184,8 +184,8 @@ function handleEventClick(eventId: number) {
 }
 
 .sidebar-item:hover {
-  background: #f3f4f6;
-  border-color: #d1d5db;
+  background: var(--bg-tertiary, #f3f4f6);
+  border-color: var(--border-color);
   transform: translateX(-2px);
 }
 
@@ -204,7 +204,7 @@ function handleEventClick(eventId: number) {
 .sidebar-item__student {
   font-size: 14px;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -234,12 +234,12 @@ function handleEventClick(eventId: number) {
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: #4b5563;
+  color: var(--text-secondary);
 }
 
 .sidebar-item__date {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 

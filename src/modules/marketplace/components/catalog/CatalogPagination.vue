@@ -143,7 +143,7 @@ function nextPage() {
   padding: 0 0.5rem;
   border: 1px solid var(--border-color, #d1d5db);
   border-radius: 6px;
-  background: white;
+  background: var(--card-bg);
   color: var(--text-primary, #111827);
   font-size: 0.875rem;
   font-weight: 500;

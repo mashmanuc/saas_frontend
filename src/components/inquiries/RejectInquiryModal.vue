@@ -155,7 +155,7 @@ function handleOverlayClick() {
 }
 
 .modal-container {
-  background: white;
+  background: var(--card-bg);
   border-radius: 12px;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
   max-height: 90vh;
@@ -169,7 +169,7 @@ function handleOverlayClick() {
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
-  border-bottom: 1px solid #E5E7EB;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .modal-header h2 {

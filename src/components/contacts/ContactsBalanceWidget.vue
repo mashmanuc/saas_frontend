@@ -83,9 +83,9 @@ onMounted(async () => {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-color);
   border-radius: 0.375rem;
-  background: white;
+  background: var(--card-bg);
   cursor: pointer;
   transition: all 0.2s;
   font-size: 0.875rem;
@@ -102,12 +102,12 @@ onMounted(async () => {
 }
 
 .balance-label {
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 .balance-value {
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .balance-ok .balance-value {

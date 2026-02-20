@@ -1390,7 +1390,7 @@ defineExpose({
 
 .text-edit-overlay {
   position: absolute;
-  background: white;
+  background: var(--card-bg);
   border: 2px solid var(--color-brand, #2563eb);
   padding: 8px;
   min-width: 150px;

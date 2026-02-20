@@ -275,8 +275,8 @@ const handleDragEnd = async () => {
 <style scoped>
 .calendar-board-v2 {
   position: relative;
-  background: white;
-  border: 1px solid #e0e0e0;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -305,7 +305,7 @@ const handleDragEnd = async () => {
   min-width: 78px;
   padding: 10px 16px;
   border-radius: 999px;
-  background: #ffffff;
+  background: var(--card-bg);
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
   border: 1px solid rgba(15, 23, 42, 0.08);
   text-align: center;
@@ -328,7 +328,7 @@ const handleDragEnd = async () => {
 
 .day-name {
   font-size: 12px;
-  color: #475467;
+  color: var(--text-secondary);
   text-transform: lowercase;
   font-weight: 600;
 }
@@ -336,7 +336,7 @@ const handleDragEnd = async () => {
 .day-date {
   font-size: 14px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 /* Grid container */
@@ -349,8 +349,8 @@ const handleDragEnd = async () => {
 }
 
 .time-column {
-  border-right: 1px solid #e0e0e0;
-  background: #fafafa;
+  border-right: 1px solid var(--border-color);
+  background: var(--bg-secondary);
 }
 
 .time-label {
@@ -359,8 +359,8 @@ const handleDragEnd = async () => {
   justify-content: center;
   padding-top: 4px;
   font-size: 12px;
-  color: #6b7280;
-  border-bottom: 1px solid #e0e0e0;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .days-grid {
@@ -371,7 +371,7 @@ const handleDragEnd = async () => {
 
 .day-column {
   position: relative;
-  border-right: 1px solid #f0f0f0;
+  border-right: 1px solid var(--border-color);
   min-width: 0;
 }
 
