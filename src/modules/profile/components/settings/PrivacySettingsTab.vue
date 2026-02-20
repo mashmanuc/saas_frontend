@@ -37,7 +37,7 @@
           {{ $t('users.settings.privacy.dangerZoneDescription') }}
         </p>
         <Button
-          variant="destructive"
+          variant="danger"
           size="sm"
           class="mt-3"
           @click="showDeleteModal = true"

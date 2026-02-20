@@ -77,7 +77,7 @@
         Скасувати
       </Button>
       <Button
-        variant="destructive"
+        variant="danger"
         :disabled="!canArchive"
         :loading="loading"
         @click="handleArchive"
