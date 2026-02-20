@@ -1,76 +1,62 @@
 <template>
-  <div v-if="visible" class="modal-overlay" @click.self="handleClose">
-    <div class="modal-container">
-      <div class="modal-header">
-        <h2>{{ $t('booking.template.saveAsTemplate') }}</h2>
-        <button @click="handleClose" class="close-btn">
-          <XIcon class="w-5 h-5" />
-        </button>
+  <Modal :open="visible" :title="$t('booking.template.saveAsTemplate')" size="md" @close="handleClose">
+    <div class="modal-content">
+      <div class="info-section">
+        <InfoIcon class="w-12 h-12 text-blue-500" />
+        <p class="info-text">
+          {{ $t('booking.template.confirmMessage') }}
+        </p>
       </div>
-      
-      <div class="modal-content">
-        <div class="info-section">
-          <InfoIcon class="w-12 h-12 text-blue-500" />
-          <p class="info-text">
-            {{ $t('booking.template.confirmMessage') }}
-          </p>
-        </div>
-        
-        <div class="changes-preview">
-          <h3>{{ $t('booking.template.changesPreview') }}</h3>
-          <div class="changes-list">
-            <div
-              v-for="(patch, index) in patches"
-              :key="index"
-              class="change-item"
-            >
-              <div class="change-icon" :class="`status-${patch.newStatus}`">
-                <CheckIcon v-if="patch.newStatus === 'available'" class="w-4 h-4" />
-                <BanIcon v-else class="w-4 h-4" />
-              </div>
-              <div class="change-details">
-                <span class="change-time">{{ formatTime(patch.startAtUTC) }}</span>
-                <span class="change-status">{{ $t(`booking.status.${patch.newStatus}`) }}</span>
-              </div>
+
+      <div class="changes-preview">
+        <h3>{{ $t('booking.template.changesPreview') }}</h3>
+        <div class="changes-list">
+          <div
+            v-for="(patch, index) in patches"
+            :key="index"
+            class="change-item"
+          >
+            <div class="change-icon" :class="`status-${patch.newStatus}`">
+              <CheckIcon v-if="patch.newStatus === 'available'" class="w-4 h-4" />
+              <BanIcon v-else class="w-4 h-4" />
+            </div>
+            <div class="change-details">
+              <span class="change-time">{{ formatTime(patch.startAtUTC) }}</span>
+              <span class="change-status">{{ $t(`booking.status.${patch.newStatus}`) }}</span>
             </div>
           </div>
         </div>
-        
-        <div class="warning-section">
-          <AlertCircleIcon class="w-5 h-5 text-amber-500" />
-          <p class="warning-text">
-            {{ $t('booking.template.warningMessage') }}
-          </p>
-        </div>
       </div>
-      
-      <div class="modal-actions">
-        <button @click="handleClose" class="btn-secondary">
-          {{ $t('common.cancel') }}
-        </button>
-        <button
-          @click="handleConfirm"
-          :disabled="saving"
-          class="btn-primary"
-        >
-          <LoaderIcon v-if="saving" class="w-4 h-4 animate-spin" />
-          {{ $t('booking.template.confirmSave') }}
-        </button>
+
+      <div class="warning-section">
+        <AlertCircleIcon class="w-5 h-5 text-amber-500" />
+        <p class="warning-text">
+          {{ $t('booking.template.warningMessage') }}
+        </p>
       </div>
     </div>
-  </div>
+
+    <template #footer>
+      <Button variant="outline" @click="handleClose">
+        {{ $t('common.cancel') }}
+      </Button>
+      <Button variant="primary" :loading="saving" @click="handleConfirm">
+        {{ $t('booking.template.confirmSave') }}
+      </Button>
+    </template>
+  </Modal>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import {
-  X as XIcon,
   Info as InfoIcon,
   Check as CheckIcon,
   Ban as BanIcon,
-  Loader as LoaderIcon,
   AlertCircle as AlertCircleIcon,
 } from 'lucide-vue-next'
+import Modal from '@/ui/Modal.vue'
+import Button from '@/ui/Button.vue'
 
 interface DraftPatch {
   startAtUTC: string
@@ -111,53 +97,6 @@ function formatTime(utcTime: string): string {
 </script>
 
 <style scoped>
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-container {
-  background: var(--card-bg);
-  border-radius: var(--radius-lg);
-  padding: 24px;
-  max-width: 600px;
-  width: 90%;
-  max-height: 80vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-}
-
-.modal-header h2 {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.close-btn {
-  padding: 4px;
-  border-radius: var(--radius-md);
-  transition: background-color 0.2s;
-}
-
-.close-btn:hover {
-  background-color: var(--bg-secondary);
-}
-
 .modal-content {
   display: flex;
   flex-direction: column;
@@ -263,45 +202,4 @@ function formatTime(utcTime: string): string {
   line-height: 1.5;
 }
 
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 24px;
-  padding-top: 24px;
-  border-top: 1px solid var(--border-color);
-}
-
-.btn-primary {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background-color: var(--accent);
-  color: white;
-  border-radius: var(--radius-md);
-  font-weight: 500;
-  transition: background-color 0.2s;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background-color: var(--accent-hover, #2563eb);
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  padding: 10px 20px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  font-weight: 500;
-  transition: background-color 0.2s;
-}
-
-.btn-secondary:hover {
-  background-color: var(--bg-secondary);
-}
 </style>

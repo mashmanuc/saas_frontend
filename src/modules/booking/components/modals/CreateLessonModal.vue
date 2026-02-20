@@ -258,12 +258,12 @@
             </div>
           </div>
           <div class="conflict-actions">
-            <button type="button" @click="handleCancelConflict" class="btn-secondary">
+            <Button variant="outline" @click="handleCancelConflict">
               {{ $t('common.cancel') }}
-            </button>
-            <button type="button" @click="handleForceCreate" class="btn-warning">
+            </Button>
+            <Button variant="danger" @click="handleForceCreate">
               {{ $t('calendar.createLesson.createAnyway') }}
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -275,23 +275,22 @@
 
         <!-- Actions -->
         <div class="modal-actions">
-          <button
-            type="button"
-            @click="handleClose"
-            class="btn-secondary"
+          <Button
+            variant="outline"
             :disabled="isSubmitting"
+            @click="handleClose"
           >
             {{ $t('common.cancel') }}
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="primary"
             type="submit"
-            class="btn-primary"
             data-testid="create-lesson-submit"
-            :disabled="!isFormValid || isSubmitting"
+            :disabled="!isFormValid"
+            :loading="isSubmitting"
           >
-            <LoaderIcon v-if="isSubmitting" class="w-4 h-4 animate-spin" />
             {{ $t('calendar.createLesson.create') }}
-          </button>
+          </Button>
         </div>
       </form>
     </div>
@@ -302,7 +301,8 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { X as XIcon, Calendar as CalendarIcon, Loader as LoaderIcon, AlertCircle as AlertCircleIcon } from 'lucide-vue-next'
+import { X as XIcon, Calendar as CalendarIcon, AlertCircle as AlertCircleIcon } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 import { useCalendarWeekStore } from '@/modules/booking/stores/calendarWeekStore'
 import { useToast } from '@/composables/useToast'
 import { useFocusTrap } from '@/composables/useFocusTrap'
@@ -937,43 +937,6 @@ function handleClose() {
   gap: 12px;
   justify-content: flex-end;
   padding-top: 8px;
-}
-
-.btn-secondary,
-.btn-primary {
-  padding: 10px 20px;
-  border-radius: var(--radius-md);
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.btn-secondary {
-  border: 1px solid var(--border-color);
-  background: var(--card-bg);
-  color: var(--text-primary);
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: var(--bg-secondary);
-}
-
-.btn-primary {
-  background: var(--accent);
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--accent-hover, #2563eb);
-}
-
-.btn-primary:disabled,
-.btn-secondary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 /* F2-F5: New styles for combobox, dropdown, errors */

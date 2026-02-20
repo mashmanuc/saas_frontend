@@ -92,40 +92,41 @@
 
               <!-- Actions -->
               <div class="modal-actions">
-                <button
+                <Button
                   v-if="!isEditing"
+                  variant="outline"
                   @click="handleClose"
-                  class="btn-secondary"
                 >
                   {{ $t('common.close') }}
-                </button>
-                <button
+                </Button>
+                <Button
                   v-if="!isEditing && canEdit"
-                  @click="isEditing = true"
-                  class="btn-primary"
+                  variant="primary"
                   data-testid="event-edit-button"
+                  @click="isEditing = true"
                 >
-                  <EditIcon class="w-4 h-4" />
+                  <template #iconLeft>
+                    <EditIcon class="w-4 h-4" />
+                  </template>
                   {{ $t('calendar.editLesson.edit') }}
-                </button>
+                </Button>
 
                 <template v-if="isEditing">
-                  <button
-                    @click="handleCancelEdit"
-                    class="btn-secondary"
+                  <Button
+                    variant="outline"
                     :disabled="isSaving"
+                    @click="handleCancelEdit"
                   >
                     {{ $t('common.cancel') }}
-                  </button>
-                  <button
-                    @click="handleSaveEdit"
-                    class="btn-primary"
-                    :disabled="isSaving"
+                  </Button>
+                  <Button
+                    variant="primary"
+                    :loading="isSaving"
                     data-testid="event-save-button"
+                    @click="handleSaveEdit"
                   >
-                    <LoaderIcon v-if="isSaving" class="w-4 h-4 animate-spin" />
                     {{ $t('common.save') }}
-                  </button>
+                  </Button>
                 </template>
               </div>
             </div>
@@ -151,19 +152,21 @@
               </div>
 
               <div class="modal-actions">
-                <button @click="handleClose" class="btn-secondary">
+                <Button variant="outline" @click="handleClose">
                   {{ $t('common.cancel') }}
-                </button>
-                <button
-                  @click="handleDelete"
-                  class="btn-danger"
-                  :disabled="!canDelete || isDeleting"
+                </Button>
+                <Button
+                  variant="danger"
+                  :disabled="!canDelete"
+                  :loading="isDeleting"
                   data-testid="event-delete-button"
+                  @click="handleDelete"
                 >
-                  <LoaderIcon v-if="isDeleting" class="w-4 h-4 animate-spin" />
-                  <TrashIcon v-else class="w-4 h-4" />
+                  <template #iconLeft>
+                    <TrashIcon class="w-4 h-4" />
+                  </template>
                   {{ $t('calendar.editLesson.delete') }}
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -244,25 +247,24 @@
 
               <!-- Actions -->
               <div class="modal-actions">
-                <button @click="handleClose" class="btn-secondary">
+                <Button variant="outline" @click="handleClose">
                   {{ $t('common.cancel') }}
-                </button>
-                <button
+                </Button>
+                <Button
                   v-if="previewResult"
+                  variant="outline"
                   @click="previewResult = null"
-                  class="btn-secondary"
                 >
                   {{ $t('calendar.editLesson.changeTime') }}
-                </button>
-                <button
+                </Button>
+                <Button
                   v-if="previewResult?.allowed"
+                  variant="primary"
+                  :loading="isRescheduling"
                   @click="handleRescheduleConfirm"
-                  class="btn-primary"
-                  :disabled="isRescheduling"
                 >
-                  <LoaderIcon v-if="isRescheduling" class="w-4 h-4 animate-spin" />
                   {{ $t('calendar.editLesson.confirmReschedule') }}
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -295,13 +297,13 @@ import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { 
   X as XIcon, 
-  Loader as LoaderIcon, 
   AlertCircle as AlertCircleIcon, 
-  Trash as TrashIcon,
+  Trash as TrashIcon, 
   Edit as EditIcon,
   Calendar as CalendarIcon,
   CheckCircle as CheckCircleIcon
 } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 import { useCalendarWeekStore } from '@/modules/booking/stores/calendarWeekStore'
 import { useToast } from '@/composables/useToast'
 import { useFocusTrap } from '@/composables/useFocusTrap'
@@ -923,53 +925,6 @@ function handleClose() {
   padding-top: 1rem;
   border-top: 1px solid var(--border-color);
   margin-top: 1.5rem;
-}
-
-.btn-secondary, .btn-primary, .btn-danger {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.625rem 1.25rem;
-  border-radius: 0.375rem;
-  font-weight: 500;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-secondary {
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: var(--bg-secondary);
-}
-
-.btn-primary {
-  background: var(--accent);
-  border: 1px solid var(--accent);
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--accent-hover, #2563eb);
-}
-
-.btn-danger {
-  background: var(--danger);
-  border: 1px solid var(--danger);
-  color: white;
-}
-
-.btn-danger:hover:not(:disabled) {
-  background: var(--danger-hover, #dc2626);
-}
-
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .w-full {

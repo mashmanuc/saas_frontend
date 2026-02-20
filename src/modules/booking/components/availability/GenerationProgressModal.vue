@@ -1,79 +1,79 @@
 <template>
-  <div v-if="visible" class="modal-overlay" @click.self="handleClose">
-    <div class="modal-container">
-      <div class="modal-header">
-        <h2>{{ $t('booking.template.generatingSlots') }}</h2>
+  <Modal
+    :open="visible"
+    :title="$t('booking.template.generatingSlots')"
+    size="md"
+    :persistent="status === 'running'"
+    @close="handleClose"
+  >
+    <div class="progress-content">
+      <div v-if="status === 'queued'" class="status-section">
+        <ClockIcon class="w-12 h-12 text-blue-500 animate-pulse" />
+        <p class="status-text">{{ $t('booking.template.jobQueued') }}</p>
       </div>
-      
-      <div class="progress-content">
-        <div v-if="status === 'queued'" class="status-section">
-          <ClockIcon class="w-12 h-12 text-blue-500 animate-pulse" />
-          <p class="status-text">{{ $t('booking.template.jobQueued') }}</p>
-        </div>
-        
-        <div v-else-if="status === 'running'" class="status-section">
-          <LoaderIcon class="w-12 h-12 text-blue-500 animate-spin" />
-          <p class="status-text">{{ $t('booking.template.jobRunning') }}</p>
-          <div class="progress-stats">
-            <div class="stat-item">
-              <span class="stat-label">{{ $t('booking.template.slotsCreated') }}:</span>
-              <span class="stat-value">{{ jobData?.slots_created || 0 }}</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">{{ $t('booking.template.slotsDeleted') }}:</span>
-              <span class="stat-value">{{ jobData?.slots_deleted || 0 }}</span>
-            </div>
+
+      <div v-else-if="status === 'running'" class="status-section">
+        <LoaderIcon class="w-12 h-12 text-blue-500 animate-spin" />
+        <p class="status-text">{{ $t('booking.template.jobRunning') }}</p>
+        <div class="progress-stats">
+          <div class="stat-item">
+            <span class="stat-label">{{ $t('booking.template.slotsCreated') }}:</span>
+            <span class="stat-value">{{ jobData?.slots_created || 0 }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">{{ $t('booking.template.slotsDeleted') }}:</span>
+            <span class="stat-value">{{ jobData?.slots_deleted || 0 }}</span>
           </div>
         </div>
-        
-        <div v-else-if="status === 'done'" class="status-section">
-          <CheckCircleIcon class="w-12 h-12 text-green-500" />
-          <p class="status-text success">{{ $t('booking.template.jobComplete') }}</p>
-          <div class="progress-stats">
-            <div class="stat-item">
-              <span class="stat-label">{{ $t('booking.template.slotsCreated') }}:</span>
-              <span class="stat-value">{{ jobData?.slots_created || 0 }}</span>
-            </div>
+      </div>
+
+      <div v-else-if="status === 'done'" class="status-section">
+        <CheckCircleIcon class="w-12 h-12 text-green-500" />
+        <p class="status-text success">{{ $t('booking.template.jobComplete') }}</p>
+        <div class="progress-stats">
+          <div class="stat-item">
+            <span class="stat-label">{{ $t('booking.template.slotsCreated') }}:</span>
+            <span class="stat-value">{{ jobData?.slots_created || 0 }}</span>
           </div>
         </div>
-        
-        <div v-else-if="status === 'failed'" class="status-section">
-          <AlertCircleIcon class="w-12 h-12 text-red-500" />
-          <p class="status-text error">{{ $t('booking.template.jobFailed') }}</p>
-          <p v-if="jobData?.error_message" class="error-message">
-            {{ jobData.error_message }}
-          </p>
-        </div>
       </div>
-      
-      <div class="modal-actions">
-        <button
-          v-if="status === 'done'"
-          @click="handleComplete"
-          class="btn-primary"
-        >
-          {{ $t('common.continue') }}
-        </button>
-        
-        <button
-          v-else-if="status === 'failed'"
-          @click="handleClose"
-          class="btn-secondary"
-        >
-          {{ $t('common.close') }}
-        </button>
-        
-        <button
-          v-else
-          @click="handleClose"
-          class="btn-secondary"
-          :disabled="status === 'running'"
-        >
-          {{ $t('common.cancel') }}
-        </button>
+
+      <div v-else-if="status === 'failed'" class="status-section">
+        <AlertCircleIcon class="w-12 h-12 text-red-500" />
+        <p class="status-text error">{{ $t('booking.template.jobFailed') }}</p>
+        <p v-if="jobData?.error_message" class="error-message">
+          {{ jobData.error_message }}
+        </p>
       </div>
     </div>
-  </div>
+
+    <template #footer>
+      <Button
+        v-if="status === 'done'"
+        variant="primary"
+        @click="handleComplete"
+      >
+        {{ $t('common.continue') }}
+      </Button>
+
+      <Button
+        v-else-if="status === 'failed'"
+        variant="outline"
+        @click="handleClose"
+      >
+        {{ $t('common.close') }}
+      </Button>
+
+      <Button
+        v-else
+        variant="outline"
+        :disabled="status === 'running'"
+        @click="handleClose"
+      >
+        {{ $t('common.cancel') }}
+      </Button>
+    </template>
+  </Modal>
 </template>
 
 <script setup lang="ts">
@@ -85,6 +85,8 @@ import {
   AlertCircle as AlertCircleIcon,
 } from 'lucide-vue-next'
 import { availabilityApi, type GenerationJob } from '@/modules/booking/api/availabilityApi'
+import Modal from '@/ui/Modal.vue'
+import Button from '@/ui/Button.vue'
 
 const props = defineProps<{
   visible: boolean
@@ -171,38 +173,6 @@ function handleClose() {
 </script>
 
 <style scoped>
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-container {
-  background: var(--card-bg);
-  border-radius: var(--radius-lg);
-  padding: 24px;
-  max-width: 500px;
-  width: 90%;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-}
-
-.modal-header {
-  margin-bottom: 24px;
-}
-
-.modal-header h2 {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
 .progress-content {
   min-height: 200px;
   display: flex;
@@ -271,42 +241,4 @@ function handleClose() {
   color: var(--text-primary);
 }
 
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 24px;
-  padding-top: 24px;
-  border-top: 1px solid var(--border-color);
-}
-
-.btn-primary {
-  padding: 10px 20px;
-  background-color: var(--accent);
-  color: white;
-  border-radius: 8px;
-  font-weight: 500;
-  transition: background-color 0.2s;
-}
-
-.btn-primary:hover {
-  background-color: var(--accent-hover, #2563eb);
-}
-
-.btn-secondary {
-  padding: 10px 20px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  font-weight: 500;
-  transition: background-color 0.2s;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background-color: var(--bg-secondary);
-}
-
-.btn-secondary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
 </style>

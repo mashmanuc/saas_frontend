@@ -133,55 +133,56 @@
         <!-- Actions -->
         <div :class="['modal-actions', { 'view-mode': !isEditing }]">
           <template v-if="!isEditing">
-            <button
-              @click="handleClose"
-              class="btn-secondary"
+            <Button
+              variant="outline"
               :disabled="isDeleting"
+              @click="handleClose"
             >
               {{ $t('common.close') }}
-            </button>
-            
-            <button
+            </Button>
+
+            <Button
               v-if="canEdit"
-              @click="handleEdit"
-              class="btn-secondary"
+              variant="outline"
               :disabled="isDeleting"
               data-testid="event-edit-button"
+              @click="handleEdit"
             >
               {{ $t('booking.calendar.eventModal.edit') }}
-            </button>
-            
-            <button
+            </Button>
+
+            <Button
               v-if="canDelete"
-              @click="handleDelete"
-              class="btn-danger"
+              variant="danger"
               :disabled="isDeleting"
+              :loading="isDeleting"
               data-testid="event-delete-button"
+              @click="handleDelete"
             >
-              <LoaderIcon v-if="isDeleting" class="w-4 h-4 animate-spin" />
-              <TrashIcon v-else class="w-4 h-4" />
+              <template #iconLeft>
+                <TrashIcon class="w-4 h-4" />
+              </template>
               {{ $t('booking.calendar.eventModal.delete') }}
-            </button>
+            </Button>
           </template>
 
           <template v-else>
-            <button
-              @click="handleCancelEdit"
-              class="btn-secondary"
+            <Button
+              variant="outline"
               :disabled="isSaving"
+              @click="handleCancelEdit"
             >
               {{ $t('common.cancel') }}
-            </button>
-            
-            <button
-              @click="handleSaveEdit"
-              class="btn-primary"
-              :disabled="isSaving"
+            </Button>
+
+            <Button
+              variant="primary"
+              :loading="isSaving"
               data-testid="event-save-button"
+              @click="handleSaveEdit"
             >
-              <LoaderIcon v-if="isSaving" class="w-4 h-4 animate-spin" />
               {{ $t('common.save') }}
-            </button>
+            </Button>
           </template>
         </div>
       </div>
@@ -205,7 +206,8 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { X as XIcon, Loader as LoaderIcon, AlertCircle as AlertCircleIcon, Trash as TrashIcon } from 'lucide-vue-next'
+import { X as XIcon, AlertCircle as AlertCircleIcon, Trash as TrashIcon } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 import { useCalendarWeekStore } from '@/modules/booking/stores/calendarWeekStore'
 import { useToast } from '@/composables/useToast'
 import { useFocusTrap } from '@/composables/useFocusTrap'
@@ -536,65 +538,6 @@ function cancelDelete() {
   justify-content: flex-end;
   padding-top: 8px;
   border-top: 1px solid var(--border-color);
-}
-
-.btn-secondary,
-.btn-danger {
-  padding: 10px 20px;
-  border-radius: var(--radius-md);
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.btn-secondary {
-  border: 1px solid var(--border-color);
-  background: var(--card-bg);
-  color: var(--text-primary);
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: var(--bg-secondary);
-}
-
-.btn-danger {
-  background: var(--danger);
-  color: white;
-}
-
-.btn-danger:hover:not(:disabled) {
-  background: var(--danger-hover, #b91c1c);
-}
-
-.btn-danger:disabled,
-.btn-secondary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-primary {
-  background: var(--accent);
-  color: white;
-  padding: 10px 20px;
-  border-radius: var(--radius-md);
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--accent-hover, #2563eb);
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .edit-form {
