@@ -417,28 +417,6 @@ const copyBackupLink = async () => {
   padding-top: 8px;
 }
 
-.btn-primary {
-  flex: 1;
-  padding: 10px 16px;
-  background: var(--accent);
-  color: white;
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--accent-hover, #2563eb);
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .error-text {
   color: var(--danger);
   font-size: 13px;
@@ -450,7 +428,7 @@ const copyBackupLink = async () => {
     flex-direction: column;
   }
   
-  .copy-btn, .btn-secondary, .btn-tertiary {
+  .copy-btn, :deep(.btn-secondary), :deep(.btn-tertiary) {
     width: 100%;
     justify-content: center;
   }

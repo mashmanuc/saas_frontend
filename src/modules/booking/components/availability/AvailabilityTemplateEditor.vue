@@ -502,44 +502,6 @@ function handleCancel() {
   border-top: 1px solid var(--border-color);
 }
 
-.btn-primary {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
-  background-color: var(--accent);
-  color: white;
-  border-radius: var(--radius-md);
-  font-weight: 500;
-  transition: background-color 0.2s;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background-color: var(--accent-hover, #2563eb);
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  padding: 12px 24px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  font-weight: 500;
-  transition: background-color 0.2s;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background-color: var(--bg-secondary);
-}
-
-.btn-secondary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .loading-state,
 .error-state {
   display: flex;

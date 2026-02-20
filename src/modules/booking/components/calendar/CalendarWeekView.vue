@@ -1038,22 +1038,6 @@ function handleAvailabilityCellClick(cellInfo: { start: string; end: string; can
   color: var(--accent);
 }
 
-.btn-primary {
-  padding: 10px 24px;
-  border-radius: 999px;
-  background: var(--accent);
-  color: white;
-  border: none;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.2s, transform 0.2s;
-}
-
-.btn-primary:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
-}
-
 .calendar-cell--scrolled {
   box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.4);
   transition: box-shadow 0.3s ease;

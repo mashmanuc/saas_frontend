@@ -410,16 +410,4 @@ function toLocalDateString(d: Date): string {
   text-align: center;
 }
 
-.btn-secondary {
-  padding: 8px 16px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  transition: background-color 0.2s;
-}
-
-.btn-secondary:hover {
-  background-color: #f3f4f6;
-}
 </style>
