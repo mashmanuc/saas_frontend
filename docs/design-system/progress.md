@@ -169,7 +169,7 @@
 
 | # | Перевірка | Light | Dark | Classic |
 |---|-----------|-------|------|---------|
-| C-3.0 | Фінальний аудит метрик | — | — | — |
+| C-3.0 | Фінальний аудит метрик | ✅ | ✅ | ✅ |
 | C-3.1 | Кнопки (всі варіанти) | ⬜ | ⬜ | ⬜ |
 | C-3.2 | Модалки (backdrop, focus trap, Esc) | ⬜ | ⬜ | ⬜ |
 | C-3.3 | Форми (focus, error, disabled) | ⬜ | ⬜ | ⬜ |
@@ -184,14 +184,35 @@
 
 ## Метрики
 
-| Метрика | Початок | Зараз | Ціль |
-|---------|---------|-------|------|
-| Сирих `<button>` в модулях | 856 | ~95 | < 50 |
-| Сирих `<textarea>` | 20+ | 20+ | 0 |
-| Кастомних overlay-модалок | 63 | ~43 | 0 |
-| Файлів токенів | 5 | 1 (tokens.css SSOT) | 1 |
-| Хардкоджених кольорів | ~30 | ~2500 (≈500 реальних) | 0 |
-| Build warnings | ? | ? | 0 |
+| Метрика | Початок | Після MF2.5 | Після MF3/A | Ціль |
+|---------|---------|-------------|-------------|------|
+| Файлів з сирими `<button>` | 856 | ~95 | **211** | < 50 |
+| Файлів з сирими `<textarea>` | 20+ | 20+ | **2** | 0 |
+| Overlay-модалки (`fixed inset-0`) | 63 | ~43 | **2** (chat, profile) | 0 |
+| Файлів токенів | 5 | 5 | **1** (tokens.css SSOT) ✅ | 1 |
+| `class="btn"` в модулях | ? | ? | **3** (board, trust) | < 15 ✅ |
+| Hex в CSS (`src/styles/`, `src/assets/`) | ~30 | ~2500 | **132** | < 20 |
+| Імпорти `components/ui/Modal` | ? | ? | **0** ✅ | 0 |
+| Імпорти `ConfirmDialog` (старий) | ? | ? | **0** ✅ (2 файли = аліас на @/ui/ConfirmModal) | 0 |
+| `src/ui/tokens.css` | існує | існує | **видалено** ✅ | видалено |
+| `src/assets2/ui-contract/tokens/tokens.css` | існує | існує | **видалено** ✅ | видалено |
+| `npm run build` | OK | OK | **OK** ✅ | OK |
+
+### C-3.0 Аналіз: 211 файлів з raw `<button>`
+
+> Більшість — це form-specific UI (tabs, chips, filters, duration pickers, rating pills,
+> accordion headers, slot buttons, canvas toolbar, chat inline, debug) які **свідомо НЕ мігруються**.
+> Агент B (B-4.0–B-4.0e) ще працює над `class="btn"` → `<Button>` заміною.
+> Після B-4.0 кількість зменшиться значно.
+
+**Overlay-модалки (2):**
+- `chat/ChatModal.vue` — chat-specific UI
+- `profile/AccountDeletionModal.vue` — потребує міграції (B або A)
+
+**`class="btn"` залишки (3):**
+- `board/export/ExportModal.vue` — board UI
+- `board/history/HistoryPanel.vue` — board UI
+- `trust/TrustGuardBanner.vue` — потребує міграції (B-4.0e)
 
 ---
 
