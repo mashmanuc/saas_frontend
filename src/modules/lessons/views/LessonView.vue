@@ -3,9 +3,9 @@
     <Card v-if="loading" class="p-6 text-sm text-muted">{{ $t('loader.loading') }}</Card>
     <Card v-else-if="error" class="p-6 text-sm text-danger space-y-3">
       <p>{{ error }}</p>
-      <button class="text-accent text-sm font-semibold hover:underline" @click="reloadLesson">
+      <Button variant="ghost" size="sm" @click="reloadLesson">
         {{ $t('lessons.detail.actions.retry') }}
-      </button>
+      </Button>
     </Card>
     <div v-else class="grid gap-6 xl:grid-cols-[1.2fr,minmax(0,1fr)]">
       <Card class="space-y-6 p-6">
@@ -347,38 +347,38 @@ function isOnline(userId) {
 
 <style scoped>
 .text-muted {
-  color: rgba(7, 15, 30, 0.55);
+  color: var(--color-text-secondary, rgba(7, 15, 30, 0.55));
 }
 .text-body {
-  color: rgba(7, 15, 30, 0.9);
+  color: var(--color-text-primary, rgba(7, 15, 30, 0.9));
 }
 .text-danger {
-  color: #d63a3a;
+  color: var(--color-danger, #d63a3a);
 }
 .text-accent {
-  color: #4f46e5;
+  color: var(--color-primary, #4f46e5);
 }
 .border-border-subtle {
-  border-color: rgba(7, 15, 30, 0.05);
+  border-color: var(--color-border-soft, rgba(7, 15, 30, 0.05));
 }
 .bg-surface-soft {
-  background-color: rgba(7, 15, 30, 0.04);
+  background-color: var(--color-background-soft, rgba(7, 15, 30, 0.04));
 }
 .detail-block {
   padding: 1rem;
   border-radius: 1rem;
-  border: 1px solid rgba(7, 15, 30, 0.05);
-  background: rgba(7, 15, 30, 0.02);
+  border: 1px solid var(--color-border-soft, rgba(7, 15, 30, 0.05));
+  background: var(--color-background-mute, rgba(7, 15, 30, 0.02));
 }
 .detail-label {
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: rgba(7, 15, 30, 0.55);
+  color: var(--color-text-secondary, rgba(7, 15, 30, 0.55));
 }
 .detail-value {
   font-size: 1rem;
   font-weight: 600;
-  color: rgba(7, 15, 30, 0.9);
+  color: var(--color-text-primary, rgba(7, 15, 30, 0.9));
 }
 </style>

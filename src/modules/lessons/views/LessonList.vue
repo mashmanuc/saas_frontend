@@ -88,14 +88,16 @@
             </div>
           </div>
 
-          <button
-            type="button"
-            class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary text-white shadow hover:brightness-110"
+          <Button
+            variant="primary"
+            size="sm"
+            iconOnly
+            pill
             data-test="create-lesson-button"
             @click="openCreateModal()"
           >
             +
-          </button>
+          </Button>
 
           <Button
             variant="ghost"
@@ -143,20 +145,13 @@
     </Card>
 
     <!-- Create lesson modal -->
-    <div
-      v-if="createModalOpen"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
-      role="dialog"
-      aria-modal="true"
+    <Modal
+      :open="createModalOpen"
+      :title="t('lessons.calendar.createTitle')"
+      size="md"
+      @close="closeCreateModal"
     >
-      <div class="w-full max-w-lg rounded-xl bg-surface shadow-xl">
-        <header class="border-b border-border-subtle px-5 py-4">
-          <h2 class="text-lg font-semibold text-foreground">
-            {{ t('lessons.calendar.createTitle') }}
-          </h2>
-        </header>
-
-        <div class="space-y-4 px-5 py-4">
+        <div class="space-y-4">
           <div
             v-if="myStudentsGate.loading"
             class="rounded-lg border border-border-subtle bg-background px-3 py-2 text-sm text-muted"
@@ -255,7 +250,7 @@
           </div>
         </div>
 
-        <footer class="flex justify-end gap-2 border-t border-border-subtle px-5 py-4">
+        <template #footer>
           <Button variant="ghost" size="sm" :disabled="createSubmitting" @click="closeCreateModal">
             {{ t('common.cancel') }}
           </Button>
@@ -268,24 +263,17 @@
           >
             {{ t('lessons.calendar.actions.saveLesson') }}
           </Button>
-        </footer>
-      </div>
-    </div>
+        </template>
+    </Modal>
 
     <!-- Cancel lesson modal -->
-    <div
-      v-if="cancelModalOpen && selectedLesson"
-      class="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4"
-      role="dialog"
-      aria-modal="true"
+    <Modal
+      :open="cancelModalOpen && !!selectedLesson"
+      :title="t('lessons.calendar.cancelTitle')"
+      size="sm"
+      @close="closeCancelModal"
     >
-      <div class="w-full max-w-md rounded-xl bg-surface shadow-xl">
-        <header class="border-b border-border-subtle px-5 py-4">
-          <h2 class="text-lg font-semibold text-foreground">
-            {{ t('lessons.calendar.cancelTitle') }}
-          </h2>
-        </header>
-        <div class="space-y-3 px-5 py-4 text-sm text-muted">
+        <div class="space-y-3 text-sm text-muted">
           <p>
             {{ t('lessons.calendar.cancelDescription') }}
           </p>
@@ -301,16 +289,15 @@
             </li>
           </ul>
         </div>
-        <footer class="flex justify-end gap-2 border-t border-border-subtle px-5 py-4">
+        <template #footer>
           <Button variant="ghost" size="sm" :disabled="cancelSubmitting" @click="closeCancelModal">
             {{ t('common.cancel') }}
           </Button>
           <Button variant="danger" size="sm" :loading="cancelSubmitting" @click="confirmCancelLesson">
             {{ t('lessons.calendar.actions.confirmCancel') }}
           </Button>
-        </footer>
-      </div>
-    </div>
+        </template>
+    </Modal>
   </div>
 </template>
 
@@ -326,6 +313,7 @@ import interactionPlugin from '@fullcalendar/interaction'
 
 import Button from '@/ui/Button.vue'
 import Card from '@/ui/Card.vue'
+import Modal from '@/ui/Modal.vue'
 import StudentAutocomplete from '@/modules/booking/components/StudentAutocomplete.vue'
 import DateTimePicker from '@/components/ui/DateTimePicker.vue'
 import { notifyError, notifySuccess } from '@/utils/notify'
@@ -790,20 +778,20 @@ onBeforeUnmount(() => {
 }
 
 .lesson-calendar :deep(.lesson-event.lesson-cancelled) {
-  background-color: #fee2e2;
-  border-color: #fecdd3;
-  color: #b91c1c;
+  background-color: var(--color-danger-light, #fee2e2);
+  border-color: var(--color-danger-border, #fecdd3);
+  color: var(--color-danger-dark, #b91c1c);
 }
 
 .lesson-calendar :deep(.lesson-event.lesson-scheduled) {
-  background-color: #e0f2fe;
-  border-color: #bae6fd;
-  color: #0369a1;
+  background-color: var(--color-info-light, #e0f2fe);
+  border-color: var(--color-info-border, #bae6fd);
+  color: var(--color-info-dark, #0369a1);
 }
 
 .lesson-calendar :deep(.lesson-event.lesson-completed) {
-  background-color: #dcfce7;
-  border-color: #bbf7d0;
-  color: #15803d;
+  background-color: var(--color-success-light, #dcfce7);
+  border-color: var(--color-success-border, #bbf7d0);
+  color: var(--color-success-dark, #15803d);
 }
 </style>
