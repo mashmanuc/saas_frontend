@@ -24,7 +24,7 @@
         size="small"
         @click="$emit('join', lesson)"
       />
-      <router-link :to="`/bookings/${lesson.id}`" class="btn ghost small">
+      <router-link :to="`/bookings/${lesson.id}`" class="btn btn-ghost px-3 py-1.5 text-sm">
         Деталі
       </router-link>
     </div>
@@ -87,16 +87,16 @@ const statusLabel = computed(() => {
 .lesson-card {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  background: var(--bg-primary, #fff);
-  border-radius: 8px;
-  border: 1px solid var(--border-color, #e5e7eb);
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background: var(--card-bg);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
 }
 
 .lesson-card.can-join {
-  border-color: var(--primary-500, #3b82f6);
-  background: var(--primary-50, #eff6ff);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
 .lesson-time {
@@ -106,13 +106,13 @@ const statusLabel = computed(() => {
 
 .lesson-time .date {
   display: block;
-  font-size: 0.875rem;
-  color: var(--text-secondary, #6b7280);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
 }
 
 .lesson-time .time {
   display: block;
-  font-size: 1.25rem;
+  font-size: var(--text-xl);
   font-weight: 600;
 }
 
@@ -120,80 +120,56 @@ const statusLabel = computed(() => {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: var(--space-md);
 }
 
 .participant {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-xs);
 }
 
 .avatar {
   width: 32px;
   height: 32px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   object-fit: cover;
 }
 
 .status-badge {
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
+  padding: var(--space-2xs) var(--space-xs);
+  border-radius: var(--radius-xs);
+  font-size: var(--text-xs);
   font-weight: 500;
 }
 
 .status-badge.confirmed {
-  background: var(--success-100, #dcfce7);
-  color: var(--success-700, #15803d);
+  background: color-mix(in srgb, var(--success-bg) 15%, transparent);
+  color: var(--success-bg);
 }
 
 .status-badge.in_progress {
-  background: var(--primary-100, #dbeafe);
-  color: var(--primary-700, #1d4ed8);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
 }
 
 .status-badge.pending {
-  background: var(--warning-100, #fef3c7);
-  color: var(--warning-700, #b45309);
+  background: color-mix(in srgb, var(--warning-bg) 15%, transparent);
+  color: var(--warning-bg);
 }
 
 .status-badge.completed {
-  background: var(--gray-100, #f3f4f6);
-  color: var(--gray-700, #374151);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
 }
 
 .status-badge.cancelled {
-  background: var(--danger-100, #fee2e2);
-  color: var(--danger-700, #b91c1c);
+  background: color-mix(in srgb, var(--danger-bg) 15%, transparent);
+  color: var(--danger-bg);
 }
 
 .lesson-actions {
   display: flex;
-  gap: 0.5rem;
-}
-
-.btn {
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  font-weight: 500;
-  text-decoration: none;
-  cursor: pointer;
-  border: none;
-}
-
-.btn.ghost {
-  background: transparent;
-  border: 1px solid var(--border-color, #e5e7eb);
-  color: inherit;
-}
-
-.btn.ghost:hover {
-  background: var(--bg-secondary, #f9fafb);
-}
-
-.btn.small {
-  padding: 0.375rem 0.75rem;
-  font-size: 0.875rem;
+  gap: var(--space-xs);
 }
 </style>

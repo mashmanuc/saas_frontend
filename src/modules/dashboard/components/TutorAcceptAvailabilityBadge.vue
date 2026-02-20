@@ -74,10 +74,10 @@ onMounted(async () => {
 
 <style scoped>
 .accept-availability {
-  padding: 0.75rem 1rem;
-  border: 1px dashed var(--border-subtle, #e5e7eb);
-  border-radius: 999px;
-  background: var(--surface-soft, #f9fafb);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-full);
+  background: var(--bg-secondary);
   min-width: 220px;
 }
 
@@ -85,57 +85,58 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: var(--space-md);
 }
 
 .accept-availability__label {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  color: var(--text-muted, #6b7280);
+  gap: var(--space-xs);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
 }
 
 .accept-availability__value {
   display: flex;
   align-items: baseline;
-  gap: 0.25rem;
+  gap: var(--space-2xs);
 }
 
 .value {
-  font-size: 1.5rem;
+  font-size: var(--text-2xl);
   font-weight: 700;
-  color: var(--text-body, #111827);
+  color: var(--text-primary);
 }
 
 .suffix {
-  font-size: 0.875rem;
-  color: var(--text-muted, #6b7280);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
 }
 
 .accept-availability__meta {
-  margin-top: 0.35rem;
-  font-size: 0.75rem;
-  color: var(--text-muted, #6b7280);
+  margin-top: var(--space-2xs);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
 }
 
 .dot {
   width: 0.5rem;
   height: 0.5rem;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   display: inline-flex;
 }
 
-.dot--ok { background: #10b981; }
-.dot--warning { background: #f59e0b; }
-.dot--danger { background: #ef4444; }
-.dot--error { background: #dc2626; }
+.dot--ok { background: var(--success-bg); }
+.dot--warning { background: var(--warning-bg); }
+.dot--danger { background: var(--danger-bg); }
+.dot--error { background: var(--danger-bg); }
 
 .skeleton {
   width: 2rem;
   height: 1rem;
-  border-radius: 0.25rem;
-  background: linear-gradient(90deg, rgba(229,231,235,1) 25%, rgba(243,244,246,1) 50%, rgba(229,231,235,1) 75%);
+  border-radius: var(--radius-xs);
+  background: linear-gradient(90deg, var(--border-color) 25%, var(--bg-secondary) 50%, var(--border-color) 75%);
+  background-size: 400px 100%;
   animation: shimmer 1.2s infinite;
 }
 
@@ -145,7 +146,7 @@ onMounted(async () => {
 }
 
 .error-icon {
-  color: #dc2626;
+  color: var(--danger-bg);
 }
 
 .sr-only {

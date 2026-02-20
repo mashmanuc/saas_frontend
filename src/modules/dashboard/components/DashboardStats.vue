@@ -33,26 +33,26 @@ defineProps<Props>()
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 1rem;
+  gap: var(--space-md);
 }
 
 .stat-card {
   text-align: center;
-  padding: 1rem;
-  background: var(--bg-primary, #fff);
-  border-radius: 8px;
-  border: 1px solid var(--border-color, #e5e7eb);
+  padding: var(--space-md);
+  background: var(--card-bg);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
 }
 
 .stat-value {
   display: block;
-  font-size: 2rem;
+  font-size: var(--text-2xl);
   font-weight: 700;
-  color: var(--primary-600, #2563eb);
+  color: var(--accent);
 }
 
 .stat-label {
-  font-size: 0.875rem;
-  color: var(--text-secondary, #6b7280);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
 }
 </style>

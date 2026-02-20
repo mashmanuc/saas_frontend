@@ -7,14 +7,14 @@
       <p class="unlock-message">
         {{ $t('contacts.unlockPrompt') }}
       </p>
-      <button
-        class="btn btn-primary"
+      <Button
+        variant="primary"
         :disabled="loading"
+        :loading="loading"
         @click="handleUnlock"
       >
-        <span v-if="!loading">{{ $t('contacts.unlockButton') }}</span>
-        <span v-else>{{ $t('common.loading') }}</span>
-      </button>
+        {{ $t('contacts.unlockButton') }}
+      </Button>
     </div>
 
     <!-- Якщо relation ACTIVE - ЗАВЖДИ показуємо контакти -->
@@ -53,13 +53,14 @@
       </div>
 
       <!-- Кнопка revoke (опціонально) -->
-      <button
+      <Button
         v-if="showRevokeButton && studentContacts"
-        class="btn btn-danger btn-sm"
+        variant="danger"
+        size="sm"
         @click="handleRevoke"
       >
         {{ $t('contacts.revokeButton') }}
-      </button>
+      </Button>
     </div>
   </div>
 </template>
@@ -67,6 +68,7 @@
 <script setup>
 import { computed, onMounted } from 'vue'
 import { useContactAccessStore } from '@/stores/contactAccessStore'
+import Button from '@/ui/Button.vue'
 
 const props = defineProps({
   relation: {
@@ -152,100 +154,49 @@ async function handleRevoke() {
 
 <style scoped>
 .unlock-prompt {
-  padding: 1rem;
-  background: #f0f9ff;
-  border: 1px solid #bae6fd;
-  border-radius: 8px;
-  margin-bottom: 1rem;
+  padding: var(--space-md);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-md);
 }
 
 .unlock-message {
-  margin-bottom: 0.75rem;
-  color: #0c4a6e;
+  margin-bottom: var(--space-sm);
+  color: var(--text-primary);
 }
 
 .contacts-display {
-  padding: 1rem;
-  background: #f9fafb;
-  border-radius: 8px;
+  padding: var(--space-md);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
 }
 
 .contact-item {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-xs);
 }
 
 .contact-icon {
-  font-size: 1.25rem;
+  font-size: var(--text-xl);
 }
 
 .contact-value {
   font-family: monospace;
-  color: #374151;
-}
-
-.btn {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s;
-}
-
-.btn-primary {
-  background: #3b82f6;
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #2563eb;
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-danger {
-  background: #ef4444;
-  color: white;
-  margin-top: 0.5rem;
-}
-
-.btn-danger:hover {
-  background: #dc2626;
-}
-
-.btn-sm {
-  padding: 0.375rem 0.75rem;
-  font-size: 0.875rem;
-}
-
-.btn-secondary {
-  background: #6b7280;
-  color: white;
-}
-
-.btn-secondary:hover {
-  background: #4b5563;
+  color: var(--text-primary);
 }
 
 .loading-state {
-  color: #6b7280;
+  color: var(--text-secondary);
   font-style: italic;
-  padding: 0.5rem 0;
+  padding: var(--space-xs) 0;
 }
 
 .no-contacts {
-  color: #9ca3af;
+  color: var(--text-secondary);
   font-style: italic;
-  padding: 0.5rem 0;
-}
-
-.load-contacts {
-  padding: 0.5rem 0;
+  padding: var(--space-xs) 0;
 }
 </style>
