@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useMatchStore } from '@/modules/matches/store/matchStore'
 import { User, MessageCircle, Calendar } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -49,9 +50,9 @@ onMounted(() => {
     <div v-else-if="!activeMatch" class="empty">
       <User :size="48" />
       <p>{{ t('studentDashboard.myTutor.noTutor') }}</p>
-      <button class="btn btn-primary" @click="router.push('/marketplace')">
+      <Button variant="primary" @click="router.push('/marketplace')">
         {{ t('studentDashboard.myTutor.findTutor') }}
-      </button>
+      </Button>
     </div>
 
     <div v-else class="tutor-info">
@@ -66,14 +67,14 @@ onMounted(() => {
       </div>
 
       <div class="actions">
-        <button class="btn btn-secondary" @click="openChat">
+        <Button variant="outline" @click="openChat">
           <MessageCircle :size="18" />
           {{ t('studentDashboard.myTutor.message') }}
-        </button>
-        <button class="btn btn-primary" @click="bookLesson">
+        </Button>
+        <Button variant="primary" @click="bookLesson">
           <Calendar :size="18" />
           {{ t('studentDashboard.myTutor.bookLesson') }}
-        </button>
+        </Button>
       </div>
     </div>
   </div>
@@ -156,38 +157,5 @@ onMounted(() => {
 .actions {
   display: flex;
   gap: 0.75rem;
-}
-
-.btn {
-  flex: 1;
-  padding: 0.625rem 1rem;
-  border: none;
-  border-radius: var(--radius-sm, 6px);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-}
-
-.btn-primary {
-  background: var(--primary);
-  color: white;
-}
-
-.btn-primary:hover {
-  background: var(--primary-hover);
-}
-
-.btn-secondary {
-  background: var(--surface-secondary);
-  color: var(--text-primary);
-}
-
-.btn-secondary:hover {
-  background: var(--surface-hover);
 }
 </style>

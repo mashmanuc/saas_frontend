@@ -27,9 +27,9 @@
     <div v-else-if="error" class="error-state">
       <AlertCircle class="error-icon" />
       <p class="error-message">{{ error }}</p>
-      <button @click="loadStats" class="retry-button">
+      <Button variant="primary" @click="loadStats">
         {{ t('common.retry') }}
-      </button>
+      </Button>
     </div>
 
     <!-- Stats content -->
@@ -111,6 +111,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { AlertCircle } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 import { getDetailedStats } from '@/api/tutorStats'
 import type { DetailedStatsResponse } from '@/api/tutorStats'
 import { useToast } from '@/composables/useToast'
@@ -217,13 +218,13 @@ onMounted(() => {
 .title {
   font-size: 2rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--text-primary, #111827);
   margin-bottom: 0.5rem;
 }
 
 .subtitle {
   font-size: 1rem;
-  color: #6b7280;
+  color: var(--text-secondary, #6b7280);
 }
 
 .period-selector {
@@ -235,8 +236,8 @@ onMounted(() => {
 
 .period-button {
   padding: 0.5rem 1rem;
-  border: 1px solid #d1d5db;
-  background: white;
+  border: 1px solid var(--border-color, #d1d5db);
+  background: var(--surface-card, white);
   border-radius: 6px;
   cursor: pointer;
   font-weight: 500;
@@ -244,14 +245,14 @@ onMounted(() => {
 }
 
 .period-button:hover {
-  border-color: #3b82f6;
-  background: #eff6ff;
+  border-color: var(--accent, #3b82f6);
+  background: var(--accent-bg, #eff6ff);
 }
 
 .period-button.active {
-  background: #3b82f6;
+  background: var(--accent, #3b82f6);
   color: white;
-  border-color: #3b82f6;
+  border-color: var(--accent, #3b82f6);
 }
 
 .loading-state {
@@ -265,8 +266,8 @@ onMounted(() => {
 .spinner {
   width: 3rem;
   height: 3rem;
-  border: 4px solid #e5e7eb;
-  border-top-color: #3b82f6;
+  border: 4px solid var(--border-color, #e5e7eb);
+  border-top-color: var(--accent, #3b82f6);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -286,29 +287,13 @@ onMounted(() => {
 .error-icon {
   width: 4rem;
   height: 4rem;
-  color: #ef4444;
+  color: var(--danger, #ef4444);
 }
 
 .error-message {
-  color: #dc2626;
+  color: var(--danger, #dc2626);
   text-align: center;
   font-size: 1.125rem;
-}
-
-.retry-button {
-  padding: 0.75rem 1.5rem;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  font-size: 1rem;
-  transition: background 0.2s;
-}
-
-.retry-button:hover {
-  background: #2563eb;
 }
 
 .stats-content {
@@ -324,8 +309,8 @@ onMounted(() => {
 }
 
 .stat-card {
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: var(--surface-card, white);
+  border: 1px solid var(--border-color, #e5e7eb);
   border-radius: 8px;
   padding: 1.5rem;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
@@ -333,7 +318,7 @@ onMounted(() => {
 
 .stat-label {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--text-secondary, #6b7280);
   margin-bottom: 0.5rem;
   font-weight: 500;
 }
@@ -341,12 +326,12 @@ onMounted(() => {
 .stat-value {
   font-size: 2rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--text-primary, #111827);
 }
 
 .chart-section {
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: var(--surface-card, white);
+  border: 1px solid var(--border-color, #e5e7eb);
   border-radius: 8px;
   padding: 1.5rem;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
@@ -355,7 +340,7 @@ onMounted(() => {
 .section-title {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary, #111827);
   margin-bottom: 1.5rem;
 }
 
@@ -371,7 +356,7 @@ onMounted(() => {
 .day-bar {
   flex: 1;
   min-width: 20px;
-  background: #f3f4f6;
+  background: var(--bg-secondary, #f3f4f6);
   border-radius: 4px 4px 0 0;
   position: relative;
   cursor: pointer;
@@ -414,7 +399,7 @@ onMounted(() => {
   align-items: center;
   gap: 0.5rem;
   font-size: 0.875rem;
-  color: #374151;
+  color: var(--text-primary, #374151);
 }
 
 .legend-color {
@@ -446,24 +431,24 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 0.75rem;
-  background: #f9fafb;
+  background: var(--bg-secondary, #f9fafb);
   border-radius: 6px;
   transition: background 0.2s;
 }
 
 .subject-item:hover {
-  background: #f3f4f6;
+  background: var(--surface-hover, #f3f4f6);
 }
 
 .subject-name {
   font-weight: 500;
-  color: #374151;
+  color: var(--text-primary, #374151);
 }
 
 .subject-count {
   font-weight: 600;
-  color: #111827;
-  background: white;
+  color: var(--text-primary, #111827);
+  background: var(--surface-card, white);
   padding: 0.25rem 0.75rem;
   border-radius: 12px;
   font-size: 0.875rem;
