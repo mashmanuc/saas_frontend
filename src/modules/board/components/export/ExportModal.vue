@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { X, Download, Image, FileJson, FileText } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 import type { ExportFormat } from '@/core/board/types'
 
 const emit = defineEmits<{
@@ -64,11 +65,11 @@ async function handleExport() {
       </div>
 
       <div class="modal-footer">
-        <button class="btn secondary" @click="emit('close')">Cancel</button>
-        <button class="btn primary" :disabled="isExporting" @click="handleExport">
+        <Button variant="secondary" @click="emit('close')">Cancel</Button>
+        <Button variant="primary" :disabled="isExporting" @click="handleExport">
           <Download :size="18" />
           {{ isExporting ? 'Exporting...' : 'Export' }}
-        </button>
+        </Button>
       </div>
     </div>
   </div>
@@ -195,39 +196,4 @@ async function handleExport() {
   border-top: 1px solid #e0e0e0;
 }
 
-.btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.25rem;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn.primary {
-  background: #3b82f6;
-  color: white;
-}
-
-.btn.primary:hover {
-  background: #2563eb;
-}
-
-.btn.primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn.secondary {
-  background: #f0f0f0;
-  color: #333;
-}
-
-.btn.secondary:hover {
-  background: #e0e0e0;
-}
 </style>

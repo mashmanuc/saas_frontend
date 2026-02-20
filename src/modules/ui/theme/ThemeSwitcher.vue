@@ -18,7 +18,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useThemeStore } from './themeStore'
-import type { ThemeId } from './themes'
+import type { ThemeId } from './themeStore'
 
 // Icons
 import IconSun from './icons/IconSun.vue'
@@ -27,12 +27,12 @@ import IconSunset from './icons/IconSunset.vue'
 
 const themeStore = useThemeStore()
 
-const currentThemeId = computed(() => themeStore.currentThemeId)
+const currentThemeId = computed(() => themeStore.theme)
 
 const themes = [
-  { id: 'themeA' as ThemeId, label: 'Light', icon: IconSun },
-  { id: 'themeB' as ThemeId, label: 'Dark', icon: IconMoon },
-  { id: 'themeC' as ThemeId, label: 'Warm', icon: IconSunset },
+  { id: 'light' as ThemeId, label: 'Light', icon: IconSun },
+  { id: 'dark' as ThemeId, label: 'Dark', icon: IconMoon },
+  { id: 'classic' as ThemeId, label: 'Classic', icon: IconSunset },
 ]
 
 function setTheme(themeId: ThemeId): void {

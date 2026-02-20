@@ -8,15 +8,14 @@
         <h4 class="banner-title">{{ title }}</h4>
         <p class="banner-message">{{ message }}</p>
         <div v-if="actions.length" class="banner-actions">
-          <button
+          <Button
             v-for="action in actions"
             :key="action.label"
-            class="btn"
-            :class="action.class || 'btn-text'"
+            :variant="action.variant || 'ghost'"
             @click="action.handler"
           >
             {{ action.label }}
-          </button>
+          </Button>
         </div>
       </div>
       <button class="btn-close" @click="dismiss" :aria-label="$t('common.close')">
@@ -29,6 +28,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import Button from '@/ui/Button.vue'
 
 const props = defineProps({
   error: {
@@ -90,7 +90,7 @@ const actions = computed(() => {
   if (errorCode.value === 'BANNED' && errorData.value?.can_appeal) {
     actions.push({
       label: 'Подати апеляцію',
-      class: 'btn-primary',
+      variant: 'primary',
       handler: () => router.push('/trust/appeals')
     })
   }
@@ -98,7 +98,7 @@ const actions = computed(() => {
   if (errorCode.value === 'CONTACT_ACCESS_DENIED') {
     actions.push({
       label: 'Поповнити баланс',
-      class: 'btn-primary',
+      variant: 'primary',
       handler: () => router.push('/contacts')
     })
   }
@@ -106,7 +106,7 @@ const actions = computed(() => {
   if (errorCode.value === 'INQUIRY_BLOCKED') {
     actions.push({
       label: 'Дізнатися більше',
-      class: 'btn-text',
+      variant: 'ghost',
       handler: () => router.push('/help/trust')
     })
   }
@@ -171,37 +171,6 @@ function dismiss() {
   display: flex;
   gap: var(--spacing-sm);
   flex-wrap: wrap;
-}
-
-.btn {
-  padding: var(--spacing-xs) var(--spacing-md);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border: none;
-}
-
-.severity-error .btn-primary {
-  background: var(--color-surface);
-  color: var(--color-error);
-}
-
-.severity-warning .btn-primary {
-  background: var(--color-surface);
-  color: var(--color-warning);
-}
-
-.btn-text {
-  background: transparent;
-  color: inherit;
-  text-decoration: underline;
-  opacity: 0.8;
-}
-
-.btn-text:hover {
-  opacity: 1;
 }
 
 .btn-close {

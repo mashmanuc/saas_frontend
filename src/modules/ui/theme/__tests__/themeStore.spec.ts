@@ -1,15 +1,13 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useThemeStore } from '../themeStore'
-import { defaultThemeId } from '../themes'
 
-describe('themeStore', () => {
+describe('themeStore (consolidated)', () => {
   let localStorageMock: Record<string, string> = {}
   let setItemSpy: ReturnType<typeof vi.fn>
   let getItemSpy: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
-    setActivePinia(createPinia())
     localStorageMock = {}
 
     getItemSpy = vi.fn((key: string) => localStorageMock[key] ?? null)
@@ -23,105 +21,85 @@ describe('themeStore', () => {
       removeItem: vi.fn(),
       clear: vi.fn(),
     })
+
+    setActivePinia(createPinia())
   })
 
   afterEach(() => {
     vi.unstubAllGlobals()
+    document.documentElement.removeAttribute('data-theme')
+    document.documentElement.classList.remove('dark')
   })
 
   describe('setTheme', () => {
-    it('should change currentThemeId', () => {
+    it('should change theme to light/dark/classic', () => {
       const store = useThemeStore()
-      expect(store.currentThemeId).toBe(defaultThemeId)
+      expect(store.theme).toBe('light')
 
-      store.setTheme('themeB')
-      expect(store.currentThemeId).toBe('themeB')
+      store.setTheme('dark')
+      expect(store.theme).toBe('dark')
 
-      store.setTheme('themeC')
-      expect(store.currentThemeId).toBe('themeC')
+      store.setTheme('classic')
+      expect(store.theme).toBe('classic')
     })
 
-    it('should save to localStorage', () => {
+    it('should save to localStorage with key "theme"', () => {
       const store = useThemeStore()
-      store.setTheme('themeB')
+      store.setTheme('dark')
 
-      expect(setItemSpy).toHaveBeenCalledWith('m4sh_theme', 'themeB')
+      expect(setItemSpy).toHaveBeenCalledWith('theme', 'dark')
     })
 
-    it('should fallback to default for invalid themeId', () => {
+    it('should fallback to light for invalid value', () => {
       const store = useThemeStore()
       store.setTheme('invalidTheme' as any)
 
-      // Should keep current theme or fallback to default
-      expect(['themeA', 'themeB', 'themeC']).toContain(store.currentThemeId)
+      expect(store.theme).toBe('light')
     })
   })
 
   describe('applyTheme', () => {
-    it('should set CSS variables on document.documentElement', () => {
+    it('should set data-theme attribute on <html>', () => {
       const store = useThemeStore()
-      const mockSetProperty = vi.fn()
-      vi.spyOn(document.documentElement.style, 'setProperty').mockImplementation(mockSetProperty)
+      store.setTheme('dark')
 
-      store.applyTheme()
+      expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
+    })
 
-      // Should have called setProperty for CSS variables
-      expect(mockSetProperty).toHaveBeenCalled()
-      // Check that brand color was set
-      const calls = mockSetProperty.mock.calls
-      const hasBrandColor = calls.some(([key]) => key === '--color-brand')
-      expect(hasBrandColor).toBe(true)
+    it('should add "dark" class for dark theme', () => {
+      const store = useThemeStore()
+      store.setTheme('dark')
+
+      expect(document.documentElement.classList.contains('dark')).toBe(true)
+    })
+
+    it('should remove "dark" class for non-dark themes', () => {
+      const store = useThemeStore()
+      store.setTheme('dark')
+      store.setTheme('light')
+
+      expect(document.documentElement.classList.contains('dark')).toBe(false)
     })
   })
 
-  describe('initFromStorage', () => {
-    it('should read theme from localStorage', () => {
-      // Set mock value before creating store
-      localStorageMock['m4sh_theme'] = 'themeB'
+  describe('init', () => {
+    it('should read theme from localStorage on init', () => {
+      localStorageMock['theme'] = 'classic'
 
+      // Re-create pinia so store reads fresh localStorage
+      setActivePinia(createPinia())
       const store = useThemeStore()
-      store.initFromStorage()
+      store.init()
 
-      expect(store.currentThemeId).toBe('themeB')
+      expect(store.theme).toBe('classic')
+      expect(document.documentElement.getAttribute('data-theme')).toBe('classic')
     })
 
-    it('should use default if localStorage is empty', () => {
-      // localStorage is empty by default in beforeEach
-
+    it('should default to light if localStorage is empty', () => {
       const store = useThemeStore()
-      store.initFromStorage()
+      store.init()
 
-      expect(store.currentThemeId).toBe(defaultThemeId)
-    })
-
-    it('should fallback to default for invalid stored value', () => {
-      localStorageMock['m4sh_theme'] = 'nonexistent'
-
-      const store = useThemeStore()
-      store.initFromStorage()
-
-      expect(store.currentThemeId).toBe(defaultThemeId)
-    })
-  })
-
-  describe('getters', () => {
-    it('currentTheme should return theme tokens object', () => {
-      const store = useThemeStore()
-      store.setTheme('themeA')
-
-      const theme = store.currentTheme
-      expect(theme).toBeDefined()
-      // Theme tokens have colorBrand
-      expect(theme.colorBrand).toBeDefined()
-    })
-
-    it('cssVars should return CSS variables object', () => {
-      const store = useThemeStore()
-      const cssVars = store.cssVars
-
-      expect(cssVars).toBeDefined()
-      expect(typeof cssVars).toBe('object')
-      expect(cssVars['--color-brand']).toBeDefined()
+      expect(store.theme).toBe('light')
     })
   })
 })

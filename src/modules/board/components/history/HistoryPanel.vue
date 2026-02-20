@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { Clock, Save, RotateCcw } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 import type { HistoryEntry, BoardVersion } from '@/core/board/types'
 
 interface Props {
@@ -117,8 +118,8 @@ function handleCreateVersion() {
           rows="3"
         />
         <div class="modal-actions">
-          <button class="btn secondary" @click="showCreateModal = false">Cancel</button>
-          <button class="btn primary" @click="handleCreateVersion">Save</button>
+          <Button variant="secondary" @click="showCreateModal = false">Cancel</Button>
+          <Button variant="primary" @click="handleCreateVersion">Save</Button>
         </div>
       </div>
     </div>
@@ -290,21 +291,4 @@ function handleCreateVersion() {
   justify-content: flex-end;
 }
 
-.btn {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  cursor: pointer;
-}
-
-.btn.primary {
-  background: #3b82f6;
-  color: white;
-}
-
-.btn.secondary {
-  background: #f0f0f0;
-  color: #333;
-}
 </style>
