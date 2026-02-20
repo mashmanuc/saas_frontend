@@ -1,21 +1,8 @@
 <!-- WB: Export dialog — format selection, polling, download
      Ref: TASK_BOARD.md B4.3 -->
 <template>
-  <Teleport to="body">
-    <Transition name="wb-dialog-fade">
-      <div v-if="isOpen" class="wb-export-overlay" @click.self="emit('close')">
-        <div class="wb-export-dialog" role="dialog" aria-modal="true" :aria-label="t('winterboard.export.title')" @keydown.escape="emit('close')">
-          <!-- Header -->
-          <div class="wb-export-dialog__header">
-            <h2 class="wb-export-dialog__title">{{ t('winterboard.export.title') }}</h2>
-            <button type="button" class="wb-export-dialog__close" :aria-label="t('winterboard.export.close')" @click="emit('close')">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-              </svg>
-            </button>
-          </div>
-
-          <p class="wb-export-dialog__desc">{{ t('winterboard.export.description') }}</p>
+  <Modal :open="isOpen" :title="t('winterboard.export.title')" size="sm" @close="emit('close')">
+    <p class="wb-export-dialog__desc">{{ t('winterboard.export.description') }}</p>
 
           <!-- State: idle — format selection + options -->
           <template v-if="state === 'idle'">
@@ -138,14 +125,15 @@
               </div>
             </fieldset>
 
-            <button
-              type="button"
-              class="wb-export-dialog__action-btn"
+            <Button
+              variant="primary"
+              fullWidth
               :disabled="exporting"
+              :loading="exporting"
               @click="startExport"
             >
-              {{ exporting ? '…' : t('winterboard.export.startExport') }}
-            </button>
+              {{ t('winterboard.export.startExport') }}
+            </Button>
           </template>
 
           <!-- State: processing -->
@@ -170,9 +158,9 @@
                 <path d="M16 24l6 6 10-12" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
               </svg>
               <p class="wb-export-dialog__ready-text">{{ t('winterboard.export.ready') }}</p>
-              <button type="button" class="wb-export-dialog__action-btn" @click="downloadFile">
+              <Button variant="primary" fullWidth @click="downloadFile">
                 {{ t('winterboard.export.download') }}
-              </button>
+              </Button>
             </div>
           </template>
 
@@ -185,15 +173,12 @@
               </svg>
               <p class="wb-export-dialog__error-text">{{ t('winterboard.export.error') }}</p>
               <p v-if="errorMessage" class="wb-export-dialog__error-detail">{{ errorMessage }}</p>
-              <button type="button" class="wb-export-dialog__action-btn" @click="resetToIdle">
+              <Button variant="primary" fullWidth @click="resetToIdle">
                 {{ t('winterboard.export.retry') }}
-              </button>
+              </Button>
             </div>
           </template>
-        </div>
-      </div>
-    </Transition>
-  </Teleport>
+  </Modal>
 </template>
 
 <script setup lang="ts">
@@ -201,6 +186,8 @@
 // Ref: TASK_BOARD.md B4.3
 import { ref, onUnmounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import Modal from '@/ui/Modal.vue'
+import Button from '@/ui/Button.vue'
 import { winterboardApi } from '../../api/winterboardApi'
 import { useToast } from '../../composables/useToast'
 import type { WBExportFormat } from '../../types/winterboard'
@@ -399,59 +386,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* ── Overlay ─────────────────────────────────────────────────────────── */
-.wb-export-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.wb-export-dialog {
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 24px;
-  max-width: 440px;
-  width: 90%;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.16);
-}
-
-/* ── Header ──────────────────────────────────────────────────────────── */
-.wb-export-dialog__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 4px;
-}
-
-.wb-export-dialog__title {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--wb-fg, #0f172a);
-  margin: 0;
-}
-
-.wb-export-dialog__close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  background: none;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  color: var(--wb-fg-secondary, #64748b);
-  transition: background 0.1s;
-}
-
-.wb-export-dialog__close:hover {
-  background: var(--wb-canvas-bg, #f1f5f9);
-}
-
 .wb-export-dialog__desc {
   font-size: 13px;
   color: var(--wb-fg-secondary, #94a3b8);
@@ -483,7 +417,7 @@ onUnmounted(() => {
 
 .wb-export-format--selected {
   border-color: var(--wb-brand, #0066FF);
-  background: #eff6ff;
+  background: var(--accent-bg, #eff6ff);
 }
 
 .wb-export-format__radio {
@@ -581,7 +515,7 @@ onUnmounted(() => {
 .wb-export-dialog__ready-text {
   font-size: 16px;
   font-weight: 600;
-  color: #16a34a;
+  color: var(--success);
   margin: 0;
 }
 
@@ -597,7 +531,7 @@ onUnmounted(() => {
 .wb-export-dialog__error-text {
   font-size: 16px;
   font-weight: 600;
-  color: #ef4444;
+  color: var(--danger);
   margin: 0;
 }
 
@@ -656,7 +590,7 @@ onUnmounted(() => {
   border-radius: 6px;
   font-size: 13px;
   color: var(--wb-fg, #0f172a);
-  background: #ffffff;
+  background: var(--card-bg);
   cursor: pointer;
   margin-left: 8px;
 }
@@ -674,35 +608,17 @@ onUnmounted(() => {
 
 .wb-export-dialog__progress-timeout {
   font-size: 13px;
-  color: #ef4444;
+  color: var(--danger);
   font-weight: 500;
   margin: 0;
 }
 
-/* ── Dialog transition ───────────────────────────────────────────────── */
-.wb-dialog-fade-enter-active,
-.wb-dialog-fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.wb-dialog-fade-enter-from,
-.wb-dialog-fade-leave-to {
-  opacity: 0;
-}
-
 /* B5.2: Reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .wb-export-dialog__close,
-  .wb-export-dialog__action-btn,
   .wb-export-format,
   .wb-export-dialog__spinner {
     transition: none;
     animation: none;
-  }
-
-  .wb-dialog-fade-enter-active,
-  .wb-dialog-fade-leave-active {
-    transition: none;
   }
 }
 </style>
