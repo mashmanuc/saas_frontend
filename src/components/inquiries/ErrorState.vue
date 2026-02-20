@@ -25,9 +25,9 @@
     
     <div class="error-actions">
       <slot name="actions">
-        <button v-if="showRetry" @click="$emit('retry')" class="btn btn-primary">
+        <Button v-if="showRetry" variant="primary" @click="$emit('retry')">
           {{ $t('common.retry') }}
-        </button>
+        </Button>
       </slot>
     </div>
   </div>
@@ -54,6 +54,8 @@ defineProps<{
 defineEmits<{
   retry: []
 }>()
+
+import Button from '@/ui/Button.vue'
 </script>
 
 <style scoped>
@@ -110,21 +112,4 @@ defineEmits<{
   gap: 12px;
 }
 
-.btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 6px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-primary {
-  background: #4F46E5;
-  color: white;
-}
-
-.btn-primary:hover {
-  background: #4338CA;
-}
 </style>

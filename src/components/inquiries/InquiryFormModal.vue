@@ -123,23 +123,22 @@
           
           <!-- Actions -->
           <div class="form-actions">
-            <button 
-              type="button" 
+            <Button 
+              variant="secondary"
               @click="$emit('close')" 
-              class="btn btn-secondary"
               :disabled="isSubmitting"
             >
               {{ $t('inquiries.form.cancel') }}
-            </button>
-            <button 
+            </Button>
+            <Button 
               type="submit" 
-              class="btn btn-primary" 
+              variant="primary"
               :disabled="isSubmitting || !isFormValid || isRateLimited"
             >
               <span v-if="isRateLimited">{{ $t('inquiries.form.retryIn', { seconds: remainingSeconds }) }}</span>
               <span v-else-if="!isSubmitting">{{ $t('inquiries.form.submit') }}</span>
               <span v-else>{{ $t('inquiries.form.submitting') }}</span>
-            </button>
+            </Button>
           </div>
         </form>
       </div>
@@ -163,6 +162,7 @@ import { useRateLimitCountdown } from '@/composables/useRateLimitCountdown'
 import { usePhoneValidation } from '@/composables/usePhoneValidation'
 import { updateMyProfile } from '@/api/users'
 import ErrorState from './ErrorState.vue'
+import Button from '@/ui/Button.vue'
 
 interface Tutor {
   id: number
@@ -423,38 +423,6 @@ function handleOverlayClick() {
   gap: 12px;
   justify-content: flex-end;
   margin-top: 8px;
-}
-
-.btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 6px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-secondary {
-  background: #F3F4F6;
-  color: #374151;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: #E5E7EB;
-}
-
-.btn-primary {
-  background: #4F46E5;
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #4338CA;
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .success-state {

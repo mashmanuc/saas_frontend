@@ -15,14 +15,14 @@
 
     <div class="locked-actions">
       <!-- inquiry_required: Show "Request contact" button -->
-      <button
+      <Button
         v-if="lockedReason === 'inquiry_required'"
-        class="btn btn-primary"
+        variant="primary"
         @click="handleRequestContact"
         data-testid="request-contact-button"
       >
         {{ $t('contact.locked.actions.requestContact') }}
-      </button>
+      </Button>
 
       <!-- inquiry_pending: Show waiting text -->
       <p
@@ -34,24 +34,24 @@
       </p>
 
       <!-- no_active_lesson: Show "Book lesson" button -->
-      <button
+      <Button
         v-else-if="lockedReason === 'no_active_lesson'"
-        class="btn btn-primary"
+        variant="primary"
         @click="handleBookLesson"
         data-testid="book-lesson-button"
       >
         {{ $t('contact.locked.actions.bookLesson') }}
-      </button>
+      </Button>
 
       <!-- subscription_required: Show "Upgrade" button (placeholder) -->
-      <button
+      <Button
         v-else-if="lockedReason === 'subscription_required'"
-        class="btn btn-primary"
+        variant="primary"
         @click="handleUpgrade"
         data-testid="upgrade-button"
       >
         {{ $t('contact.locked.actions.upgrade') }}
-      </button>
+      </Button>
 
       <!-- inquiry_rejected: Show text -->
       <p
@@ -115,6 +115,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import type { ContactLockedReason } from '@/types/inquiries'
+import Button from '@/ui/Button.vue'
 
 interface Props {
   lockedReason: ContactLockedReason
@@ -196,30 +197,6 @@ function handleUpgrade() {
   gap: 0.75rem;
   width: 100%;
   max-width: 300px;
-}
-
-.btn {
-  padding: 0.75rem 1.5rem;
-  border-radius: 6px;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-  width: 100%;
-}
-
-.btn-primary {
-  background-color: #3b82f6;
-  color: white;
-}
-
-.btn-primary:hover {
-  background-color: #2563eb;
-}
-
-.btn-primary:active {
-  background-color: #1d4ed8;
 }
 
 .waiting-text {

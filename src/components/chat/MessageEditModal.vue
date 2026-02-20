@@ -29,17 +29,17 @@
       </div>
       
       <div class="modal-footer">
-        <button class="btn btn-secondary" @click="handleClose" :disabled="loading">
+        <Button variant="secondary" @click="handleClose" :disabled="loading">
           {{ $t('common.cancel') }}
-        </button>
-        <button 
-          class="btn btn-primary" 
+        </Button>
+        <Button 
+          variant="primary" 
           @click="handleSave" 
           :disabled="loading || !canSave"
         >
           <span v-if="!loading">{{ $t('common.save') }}</span>
           <span v-else>{{ $t('common.saving') }}...</span>
-        </button>
+        </Button>
       </div>
     </div>
   </div>
@@ -49,6 +49,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { editMessage } from '@/api/messageEdit'
 import { notifySuccess, notifyError } from '@/utils/notify'
+import Button from '@/ui/Button.vue'
 
 const props = defineProps({
   isOpen: {
@@ -269,35 +270,4 @@ onUnmounted(() => {
   border-top: 1px solid #e5e7eb;
 }
 
-.btn {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 6px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: #f3f4f6;
-  color: #374151;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: #e5e7eb;
-}
-
-.btn-primary {
-  background: #3b82f6;
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #2563eb;
-}
 </style>

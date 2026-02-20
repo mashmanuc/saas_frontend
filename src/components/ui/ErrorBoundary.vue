@@ -5,12 +5,12 @@
       <h3>{{ title }}</h3>
       <p>{{ message }}</p>
       <div class="error-actions">
-        <button @click="retry" class="btn btn-primary">
+        <Button variant="primary" @click="retry">
           Retry
-        </button>
-        <button v-if="showReset" @click="reset" class="btn btn-secondary">
+        </Button>
+        <Button v-if="showReset" variant="secondary" @click="reset">
           Reset
-        </button>
+        </Button>
       </div>
     </div>
   </div>
@@ -19,6 +19,7 @@
 
 <script setup lang="ts">
 import { ref, onErrorCaptured } from 'vue'
+import Button from '@/ui/Button.vue'
 
 interface Props {
   title?: string
@@ -98,31 +99,4 @@ function reset() {
   justify-content: center;
 }
 
-.btn {
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  border: none;
-  transition: all 0.2s;
-}
-
-.btn-primary {
-  background: var(--color-primary, #3b82f6);
-  color: white;
-}
-
-.btn-primary:hover {
-  background: var(--color-primary-dark, #2563eb);
-}
-
-.btn-secondary {
-  background: var(--color-bg-secondary, #f3f4f6);
-  color: var(--color-text-primary, #111827);
-}
-
-.btn-secondary:hover {
-  background: var(--color-bg-tertiary, #e5e7eb);
-}
 </style>

@@ -48,26 +48,27 @@
           
           <div v-if="showUpgradeCta" class="upgrade-section">
             <p>{{ $t('billing.upgradeDescription') }}</p>
-            <button 
-              class="btn btn-primary btn-large"
+            <Button 
+              variant="primary"
+              size="lg"
               @click="handleUpgrade"
               :disabled="billingStore.isLoading"
               data-testid="upgrade-button"
             >
               {{ billingStore.isLoading ? $t('billing.processing') : $t('billing.upgradeToPro') }}
-            </button>
+            </Button>
           </div>
           
           <div v-else-if="showCancelCta" class="cancel-section">
             <p>{{ $t('billing.cancelDescription') }}</p>
-            <button 
-              class="btn btn-secondary"
+            <Button 
+              variant="secondary"
               @click="handleCancel"
               :disabled="billingStore.isLoading"
               data-testid="cancel-button"
             >
               {{ billingStore.isLoading ? $t('billing.processing') : $t('billing.cancelAtPeriodEnd') }}
-            </button>
+            </Button>
           </div>
           
           <div v-else-if="showReactivateCta" class="reactivate-section">
@@ -91,6 +92,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useBillingStore } from '@/modules/billing/stores/billingStore'
 import { useI18n } from 'vue-i18n'
 import NotificationPreferences from '@/components/Notifications/NotificationPreferences.vue'
+import Button from '@/ui/Button.vue'
 
 const { t } = useI18n()
 const billingStore = useBillingStore()

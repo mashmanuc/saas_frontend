@@ -51,22 +51,21 @@
           
           <!-- Actions -->
           <div class="form-actions">
-            <button 
-              type="button" 
+            <Button 
+              variant="secondary"
               @click="$emit('close')" 
-              class="btn btn-secondary"
               :disabled="isSubmitting"
             >
               {{ $t('common.cancel') }}
-            </button>
-            <button 
+            </Button>
+            <Button 
               type="submit" 
-              class="btn btn-danger" 
+              variant="danger"
               :disabled="isSubmitting || !isFormValid"
             >
               <span v-if="!isSubmitting">{{ $t('inquiries.reject.submit') }}</span>
               <span v-else>{{ $t('inquiries.reject.submitting') }}</span>
-            </button>
+            </Button>
           </div>
         </form>
       </div>
@@ -86,6 +85,7 @@ import { useInquiriesStore } from '@/stores/inquiriesStore'
 import { useInquiryErrorHandler } from '@/composables/useInquiryErrorHandler'
 import type { RejectionReason } from '@/types/inquiries'
 import ErrorState from './ErrorState.vue'
+import Button from '@/ui/Button.vue'
 
 const props = defineProps<{
   show: boolean
@@ -247,35 +247,4 @@ function handleOverlayClick() {
   margin-top: 8px;
 }
 
-.btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 6px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-secondary {
-  background: #F3F4F6;
-  color: #374151;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: #E5E7EB;
-}
-
-.btn-danger {
-  background: #EF4444;
-  color: white;
-}
-
-.btn-danger:hover:not(:disabled) {
-  background: #DC2626;
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
 </style>

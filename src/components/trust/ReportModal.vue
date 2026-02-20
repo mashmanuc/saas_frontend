@@ -27,9 +27,9 @@
           </div>
           <h3 class="success-title">{{ $t('trust.report.success.title') }}</h3>
           <p class="success-message">{{ $t('trust.report.success.message') }}</p>
-          <button class="btn btn-primary" @click="handleClose" data-testid="success-close-button">
+          <Button variant="primary" @click="handleClose" data-testid="success-close-button">
             {{ $t('common.close') }}
-          </button>
+          </Button>
         </div>
 
         <!-- Form state -->
@@ -84,24 +84,23 @@
 
           <!-- Actions -->
           <div class="modal-actions">
-            <button
-              type="button"
-              class="btn btn-secondary"
+            <Button
+              variant="secondary"
               @click="handleClose"
               :disabled="isSubmitting"
               data-testid="cancel-button"
             >
               {{ $t('common.cancel') }}
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
-              class="btn btn-primary"
+              variant="primary"
               :disabled="isSubmitting || !isFormValid"
               data-testid="submit-button"
             >
               <span v-if="isSubmitting" class="spinner"></span>
               {{ isSubmitting ? $t('trust.report.submitting') : $t('trust.report.submit') }}
-            </button>
+            </Button>
           </div>
         </form>
       </div>
@@ -115,6 +114,7 @@ import { useI18n } from 'vue-i18n'
 import { useTrustStore } from '@/stores/trustStore'
 import { ReportCategory, ReportTargetType } from '@/types/trust'
 import { RateLimitedError } from '@/utils/errors'
+import Button from '@/ui/Button.vue'
 
 interface Props {
   isOpen: boolean
@@ -351,42 +351,6 @@ function handleClose() {
   display: flex;
   gap: 0.75rem;
   justify-content: flex-end;
-}
-
-.btn {
-  padding: 0.625rem 1.25rem;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-primary {
-  background-color: #3b82f6;
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background-color: #2563eb;
-}
-
-.btn-secondary {
-  background-color: #f3f4f6;
-  color: #374151;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background-color: #e5e7eb;
 }
 
 .spinner {

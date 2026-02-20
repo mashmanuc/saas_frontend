@@ -11,9 +11,9 @@
           <p v-if="requestId" class="request-id">Request ID: {{ requestId }}</p>
         </div>
         <div class="banner-actions">
-          <button type="button" class="btn btn-primary" @click="handleRelogin">
+          <Button variant="primary" @click="handleRelogin">
             {{ $t('auth.sessionRevoked.relogin') }}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -25,6 +25,7 @@ import { ref, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { AlertTriangle } from 'lucide-vue-next'
 import { trackEvent } from '@/utils/telemetryAgent'
+import Button from '@/ui/Button.vue'
 
 const props = defineProps({
   show: {
@@ -128,29 +129,6 @@ function handleRelogin() {
   display: flex;
   justify-content: center;
   gap: 0.75rem;
-}
-
-.btn {
-  padding: 0.75rem 1.5rem;
-  border-radius: var(--radius-sm, 6px);
-  font-size: 0.9375rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-}
-
-.btn-primary {
-  background: var(--primary);
-  color: white;
-}
-
-.btn-primary:hover {
-  background: var(--primary-hover);
 }
 
 .banner-enter-active,

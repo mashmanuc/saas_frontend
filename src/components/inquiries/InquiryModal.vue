@@ -66,22 +66,21 @@
               </div>
             </div>
             <div class="actions-right">
-              <button
-                type="button"
-                class="btn btn-secondary"
+              <Button
+                variant="secondary"
                 @click="handleClose"
                 :disabled="isLoading"
               >
                 {{ $t('inquiry.modal.cancelButton') }}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
-                class="btn btn-primary"
+                variant="primary"
                 :disabled="isLoading || !message.trim()"
                 data-testid="inquiry-submit-button"
               >
                 {{ isLoading ? $t('inquiry.modal.sending') : $t('inquiry.modal.sendButton') }}
-              </button>
+              </Button>
             </div>
           </div>
         </form>
@@ -114,6 +113,7 @@ import {
 import { useI18n } from 'vue-i18n'
 import ReportModal from '@/components/trust/ReportModal.vue'
 import { ReportTargetType } from '@/types/trust'
+import Button from '@/ui/Button.vue'
 
 interface Props {
   isOpen: boolean
@@ -374,39 +374,6 @@ function handleReportSuccess() {
   display: flex;
   gap: 0.75rem;
   justify-content: flex-end;
-}
-
-.btn {
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background-color: #f3f4f6;
-  color: #374151;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background-color: #e5e7eb;
-}
-
-.btn-primary {
-  background-color: #3b82f6;
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background-color: #2563eb;
 }
 
 .btn-text {
