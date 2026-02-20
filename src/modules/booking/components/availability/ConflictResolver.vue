@@ -69,35 +69,35 @@
 
     <!-- Actions -->
     <div class="conflict-actions">
-      <button
-        class="btn btn-secondary"
+      <Button
+        variant="outline"
         @click="handleCancel"
         :disabled="isResolving"
         data-testid="cancel-resolution"
       >
         {{ t('common.cancel') }}
-      </button>
+      </Button>
       
-      <button
+      <Button
         v-if="!showResolutionOptions"
-        class="btn btn-warning"
+        variant="danger"
         @click="handleResolveAnyway"
         :disabled="isResolving || hasErrorConflicts"
         data-testid="resolve-anyway"
       >
         {{ t('calendar.conflicts.resolveAnyway') }}
-      </button>
+      </Button>
       
-      <button
+      <Button
         v-else
-        class="btn btn-primary"
+        variant="primary"
         @click="handleApplyResolutions"
-        :disabled="isResolving || !allResolutionsSelected"
+        :disabled="!allResolutionsSelected"
+        :loading="isResolving"
         data-testid="apply-resolutions"
       >
-        <Loader v-if="isResolving" class="spinner" :size="16" />
         {{ t('calendar.conflicts.resolution.apply') }}
-      </button>
+      </Button>
     </div>
   </div>
 </template>
@@ -114,6 +114,7 @@ import {
   AlertTriangle,
   Loader 
 } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 import type { Conflict } from '@/modules/booking/types/slot'
 
 interface Props {

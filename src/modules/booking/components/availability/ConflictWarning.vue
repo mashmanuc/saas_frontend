@@ -23,21 +23,21 @@
       </div>
       
       <div class="conflict-actions">
-        <button
+        <Button
           v-if="showResolveButton"
-          class="btn btn-primary"
+          variant="primary"
           @click="$emit('resolve')"
           data-testid="resolve-conflicts"
         >
           {{ t('calendar.conflicts.resolveAnyway') }}
-        </button>
+        </Button>
         
-        <button
-          class="btn btn-secondary"
+        <Button
+          variant="outline"
           @click="$emit('cancel')"
         >
           {{ t('common.cancel') }}
-        </button>
+        </Button>
       </div>
     </div>
   </div>
@@ -47,6 +47,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { AlertTriangle as AlertTriangleIcon, AlertCircle as AlertCircleIcon } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 import type { Conflict } from '@/modules/booking/types/slot'
 
 interface Props {

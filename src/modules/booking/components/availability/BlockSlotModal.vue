@@ -3,14 +3,15 @@
     <div class="modal-content" role="dialog" aria-labelledby="block-slot-title" aria-modal="true">
       <div class="modal-header">
         <h3 id="block-slot-title" class="modal-title">{{ t('calendar.blockSlot.title') }}</h3>
-        <button
-          class="close-button"
+        <Button
+          variant="ghost"
+          iconOnly
           @click="handleCancel"
           :aria-label="t('common.close')"
           data-testid="close-modal"
         >
           <XIcon :size="20" />
-        </button>
+        </Button>
       </div>
 
       <div class="modal-body">
@@ -32,13 +33,12 @@
             {{ t('calendar.blockSlot.reason') }}
             <span class="optional-text">({{ t('common.optional') }})</span>
           </label>
-          <textarea
+          <Textarea
             id="block-reason"
             v-model="blockReason"
-            class="reason-textarea"
             :placeholder="t('calendar.blockSlot.reasonPlaceholder')"
             :disabled="isLoading"
-            rows="4"
+            :rows="4"
             data-testid="block-reason-textarea"
           />
         </div>
@@ -57,24 +57,25 @@
       </div>
 
       <div class="modal-footer">
-        <button
-          class="btn btn-secondary"
+        <Button
+          variant="outline"
           @click="handleCancel"
           :disabled="isLoading"
           data-testid="cancel-block"
         >
           {{ t('common.cancel') }}
-        </button>
-        <button
-          class="btn btn-danger"
+        </Button>
+        <Button
+          variant="danger"
           @click="handleBlock"
-          :disabled="isLoading"
+          :loading="isLoading"
           data-testid="confirm-block"
         >
-          <BanIcon v-if="!isLoading" :size="16" />
-          <LoaderIcon v-else :size="16" class="spinner" />
+          <template v-if="!isLoading" #iconLeft>
+            <BanIcon :size="16" />
+          </template>
           {{ t('calendar.blockSlot.block') }}
-        </button>
+        </Button>
       </div>
     </div>
   </div>
@@ -84,6 +85,8 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { X as XIcon, Calendar as CalendarIcon, Clock as ClockIcon, AlertCircle as AlertCircleIcon, Loader as LoaderIcon, Ban as BanIcon } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
+import Textarea from '@/ui/Textarea.vue'
 import { bookingApi } from '@/modules/booking/api/booking'
 import { useSlotStore } from '@/stores/slotStore'
 import { useToast } from '@/composables/useToast'

@@ -18,9 +18,9 @@
     <div v-else-if="error" class="error-state">
       <AlertCircleIcon class="w-8 h-8 text-red-500" />
       <p>{{ error }}</p>
-      <button @click="loadTemplate" class="btn-secondary">
+      <Button variant="outline" @click="loadTemplate">
         {{ $t('common.retry') }}
-      </button>
+      </Button>
     </div>
 
     <div v-else class="weekdays-list">
@@ -77,55 +77,60 @@
               class="time-input"
               @change="validateSlot(index, slotIndex)"
             />
-            <button
+            <Button
+              variant="ghost"
+              iconOnly
+              size="sm"
               @click="removeSlot(index, slotIndex)"
-              class="btn-icon-danger"
               :aria-label="$t('common.delete')"
             >
               <XIcon class="w-4 h-4" />
-            </button>
+            </Button>
             
             <span v-if="slot.error" class="slot-error">
               {{ slot.error }}
             </span>
           </div>
 
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             @click="addSlot(index)"
-            class="btn-add-slot"
           >
-            <PlusIcon class="w-4 h-4" />
+            <template #iconLeft>
+              <PlusIcon class="w-4 h-4" />
+            </template>
             {{ $t('booking.template.addTime') }}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
 
     <div class="editor-actions">
-      <button
+      <Button
         v-if="hasAnySlots"
+        variant="outline"
         @click="applyToAllDays"
-        class="btn-secondary"
       >
         {{ $t('booking.template.applyToAll') }}
-      </button>
+      </Button>
       
-      <button
+      <Button
+        variant="outline"
         @click="handleCancel"
-        class="btn-secondary"
         :disabled="saving"
       >
         {{ $t('common.cancel') }}
-      </button>
+      </Button>
       
-      <button
+      <Button
+        variant="primary"
         @click="handleSave"
-        class="btn-primary"
-        :disabled="!isValid || saving"
+        :disabled="!isValid"
+        :loading="saving"
       >
-        <LoaderIcon v-if="saving" class="w-4 h-4 animate-spin" />
         {{ $t('booking.template.saveAndGenerate') }}
-      </button>
+      </Button>
     </div>
 
     <!-- Generation Progress Modal -->
@@ -150,6 +155,7 @@ import {
   Loader as LoaderIcon,
   AlertCircle as AlertCircleIcon,
 } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 import { useAvailabilityStore } from '@/modules/booking/stores/availabilityStore'
 import { useToast } from '@/composables/useToast'
 import GenerationProgressModal from './GenerationProgressModal.vue'

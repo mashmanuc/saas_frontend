@@ -4,34 +4,36 @@
     <div class="slot-editor-header">
       <h3 class="slot-editor-title">{{ t('calendar.slotEditor.title') }}</h3>
       <div class="slot-editor-actions">
-        <button
-          class="btn btn-primary"
+        <Button
+          variant="primary"
           :disabled="isLoading || hasConflicts || !hasChanges"
           @click="handleSave"
           data-testid="save-slot"
           aria-label="Save slot changes"
         >
-          <SaveIcon class="w-4 h-4" />
+          <template #iconLeft>
+            <SaveIcon class="w-4 h-4" />
+          </template>
           {{ t('common.save') }}
-        </button>
+        </Button>
         
-        <button
-          class="btn btn-secondary"
+        <Button
+          variant="outline"
           :disabled="isLoading"
           @click="handleCancel"
           data-testid="cancel-edit"
           aria-label="Cancel editing"
         >
           {{ t('common.cancel') }}
-        </button>
-        <button
-          class="btn btn-danger"
+        </Button>
+        <Button
+          variant="danger"
           :disabled="isLoading"
           @click="handleDelete"
           data-testid="delete-slot"
         >
           {{ t('calendar.slotEditor.delete') }}
-        </button>
+        </Button>
       </div>
     </div>
 
@@ -118,12 +120,11 @@
     <!-- Override Reason -->
     <div v-if="selectedStrategy === 'override'" class="override-section" data-testid="override-reason">
       <h4 class="section-title">{{ t('calendar.slotEditor.overrideReason') }}</h4>
-      <textarea
+      <Textarea
         v-model="overrideReason"
-        class="override-textarea"
         :placeholder="t('calendar.slotEditor.overrideReasonPlaceholder')"
         :disabled="isLoading"
-        rows="3"
+        :rows="3"
         data-testid="override-reason-textarea"
       />
     </div>
@@ -141,6 +142,8 @@ import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Save as SaveIcon, Calendar as CalendarIcon, Loader as LoaderIcon } from 'lucide-vue-next'
 import { Clock, AlertCircle } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
+import Textarea from '@/ui/Textarea.vue'
 import { useSlotEditor } from '../../composables/useSlotEditor'
 import { useSlotStore } from '@/stores/slotStore'
 import ConflictResolver from './ConflictResolver.vue'

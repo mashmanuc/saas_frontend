@@ -2,6 +2,7 @@
 // F21: Exception Manager Component
 import { ref, onMounted } from 'vue'
 import { Plus, X, Calendar } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 import { bookingApi } from '../../api/booking'
 import type { ExceptionInput, DateException } from '../../api/booking'
 
@@ -88,10 +89,12 @@ async function handleDelete(exception: DateException) {
   <div class="exception-manager">
     <div class="manager-header">
       <h3>Date Exceptions</h3>
-      <button v-if="!showForm" class="add-btn" @click="showForm = true">
-        <Plus :size="16" />
+      <Button v-if="!showForm" variant="ghost" size="sm" @click="showForm = true">
+        <template #iconLeft>
+          <Plus :size="16" />
+        </template>
         Add Exception
-      </button>
+      </Button>
     </div>
 
     <!-- Add Form -->
@@ -137,14 +140,15 @@ async function handleDelete(exception: DateException) {
       </div>
 
       <div class="form-actions">
-        <button class="btn btn-secondary" @click="resetForm">Cancel</button>
-        <button
-          class="btn btn-primary"
-          :disabled="!formData.date || isSubmitting"
+        <Button variant="outline" @click="resetForm">Cancel</Button>
+        <Button
+          variant="primary"
+          :disabled="!formData.date"
+          :loading="isSubmitting"
           @click="handleSubmit"
         >
-          {{ isSubmitting ? 'Adding...' : 'Add Exception' }}
-        </button>
+          Add Exception
+        </Button>
       </div>
     </div>
 
@@ -175,9 +179,9 @@ async function handleDelete(exception: DateException) {
             {{ exception.reason }}
           </span>
         </div>
-        <button class="delete-btn" @click="handleDelete(exception)">
+        <Button variant="ghost" iconOnly size="sm" @click="handleDelete(exception)">
           <X :size="16" />
-        </button>
+        </Button>
       </div>
     </div>
   </div>

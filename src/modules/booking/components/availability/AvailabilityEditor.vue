@@ -4,6 +4,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { Loader as LoaderIcon, CheckCircle as CheckCircleIcon, AlertCircle as AlertCircleIcon, Save } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 import { bookingApi } from '../../api/booking'
 import { calendarWeekApi } from '../../api/calendarWeekApi'
 import type { AvailabilityInput } from '../../api/booking'
@@ -386,14 +387,14 @@ function handleBackToCalendar() {
 <template>
   <div class="availability-editor">
     <div class="editor-top-bar">
-      <button 
-        class="back-button" 
+      <Button
+        variant="ghost"
         @click="handleBackToCalendar"
         data-testid="back-to-calendar"
         :aria-label="t('calendar.weekNavigation.backToCalendar', 'Повернутися до календаря')"
       >
         ← {{ t('calendar.weekNavigation.backToCalendar', 'Повернутися до календаря') }}
-      </button>
+      </Button>
     </div>
     <div class="editor-header">
       <h3>{{ t('calendar.availability.weeklyScheduleTitle') }}</h3>
@@ -429,15 +430,16 @@ function handleBackToCalendar() {
           </p>
         </div>
         
-        <button
+        <Button
           v-if="currentJob.status === 'failed'"
+          variant="outline"
+          size="sm"
           @click="handleRetry"
-          class="btn-retry"
           data-testid="retry-job"
           :aria-label="t('calendar.jobStatus.retry')"
         >
           {{ t('calendar.jobStatus.retry') }}
-        </button>
+        </Button>
       </div>
       
       <!-- Progress bar для running status -->
@@ -467,8 +469,9 @@ function handleBackToCalendar() {
     <div v-if="hasChanges" class="editor-actions">
       <!-- Undo/Redo Controls -->
       <div class="undo-redo-controls">
-        <button
-          class="btn-icon"
+        <Button
+          variant="ghost"
+          iconOnly
           @click="handleUndo"
           :disabled="!slotStore.canUndo || isLoading"
           :title="t('calendar.availability.actions.undo')"
@@ -478,9 +481,10 @@ function handleBackToCalendar() {
             <path d="M3 7v6h6"/>
             <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
           </svg>
-        </button>
-        <button
-          class="btn-icon"
+        </Button>
+        <Button
+          variant="ghost"
+          iconOnly
           @click="handleRedo"
           :disabled="!slotStore.canRedo || isLoading"
           :title="t('calendar.availability.actions.redo')"
@@ -490,26 +494,28 @@ function handleBackToCalendar() {
             <path d="M21 7v6h-6"/>
             <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/>
           </svg>
-        </button>
+        </Button>
       </div>
       
-      <button
-        class="btn btn-secondary" 
-        @click="resetChanges" 
+      <Button
+        variant="outline"
+        @click="resetChanges"
         :disabled="!hasChanges || isLoading"
         data-testid="reset-changes"
       >
         {{ t('calendar.availability.actions.reset') }}
-      </button>
-      <button
-        class="btn btn-primary"
+      </Button>
+      <Button
+        variant="primary"
         :disabled="isSavingTemplate || isCheckingConflicts || (currentJob && (currentJob.status === 'pending' || currentJob.status === 'running'))"
+        :loading="isSavingTemplate || isCheckingConflicts"
         @click="saveAvailability"
         data-testid="save-availability"
         :aria-label="t('calendar.availability.actions.save')"
       >
-        <LoaderIcon v-if="isSavingTemplate || isCheckingConflicts" class="spinner-small" :size="16" />
-        <Save v-else :size="16" />
+        <template v-if="!isSavingTemplate && !isCheckingConflicts" #iconLeft>
+          <Save :size="16" />
+        </template>
         {{
           isCheckingConflicts
             ? t('calendar.availability.actions.checking')
@@ -517,7 +523,7 @@ function handleBackToCalendar() {
             ? t('calendar.availability.actions.saving')
             : t('calendar.availability.actions.save')
         }}
-      </button>
+      </Button>
     </div>
 
     <!-- Slot Editor Modal -->

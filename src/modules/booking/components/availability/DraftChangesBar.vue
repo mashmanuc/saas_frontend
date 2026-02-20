@@ -17,25 +17,28 @@
         </div>
         
         <div class="draft-changes-actions">
-          <button
-            class="btn btn-secondary btn-sm"
+          <Button
+            variant="outline"
+            size="sm"
             :disabled="isLoading"
             @click="handleDiscard"
             data-testid="discard-changes"
           >
             {{ t('common.cancel') }}
-          </button>
+          </Button>
           
-          <button
-            class="btn btn-primary btn-sm"
-            :disabled="isLoading"
+          <Button
+            variant="primary"
+            size="sm"
+            :loading="isLoading"
             @click="handleApply"
             data-testid="apply-changes"
           >
-            <Loader2 v-if="isLoading" class="w-4 h-4 animate-spin" />
-            <Check v-else class="w-4 h-4" />
+            <template v-if="!isLoading" #iconLeft>
+              <Check class="w-4 h-4" />
+            </template>
             {{ t('calendar.draftChanges.apply') }}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -46,6 +49,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { AlertCircle, Check, Loader2 } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 import { useSlotEditor } from '@/modules/booking/composables/useSlotEditor'
 import { useToast } from '@/composables/useToast'
 

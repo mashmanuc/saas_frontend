@@ -2,6 +2,7 @@
 // F20: Day Schedule Component
 import { Plus, X, Clock } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
+import Button from '@/ui/Button.vue'
 import TimeRangeInput from './TimeRangeInput.vue'
 
 interface TimeWindow {
@@ -88,15 +89,17 @@ const getSlotClass = (slot: BlockedSlot) => {
           @update:start="(v) => emit('update', index, 'start', v)"
           @update:end="(v) => emit('update', index, 'end', v)"
         />
-        <button 
-          class="remove-btn" 
+        <Button
+          variant="ghost"
+          iconOnly
+          size="sm"
           @click="emit('remove', index)"
           :disabled="props.disabled"
           :data-testid="`remove-window-${index}`"
           :aria-label="t('calendar.availability.daySchedule.remove')"
         >
           <X :size="16" />
-        </button>
+        </Button>
       </div>
     </div>
 
@@ -105,16 +108,19 @@ const getSlotClass = (slot: BlockedSlot) => {
       <span>{{ t('calendar.availability.daySchedule.empty') }}</span>
     </div>
 
-    <button 
-      class="add-btn" 
+    <Button
+      variant="ghost"
+      size="sm"
       @click="emit('add')"
       :disabled="props.disabled"
       data-testid="add-window"
       :aria-label="t('calendar.availability.daySchedule.add')"
     >
-      <Plus :size="16" />
+      <template #iconLeft>
+        <Plus :size="16" />
+      </template>
       {{ t('calendar.availability.daySchedule.add') }}
-    </button>
+    </Button>
   </div>
 </template>
 

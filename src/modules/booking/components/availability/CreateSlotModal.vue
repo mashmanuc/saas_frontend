@@ -3,14 +3,15 @@
     <div class="modal-content" role="dialog" aria-labelledby="create-slot-title" aria-modal="true">
       <div class="modal-header">
         <h3 id="create-slot-title" class="modal-title">{{ t('calendar.createSlot.title') }}</h3>
-        <button
-          class="close-button"
+        <Button
+          variant="ghost"
+          iconOnly
           @click="handleCancel"
           :aria-label="t('common.close')"
           data-testid="close-modal"
         >
           <XIcon :size="20" />
-        </button>
+        </Button>
       </div>
 
       <div class="modal-body">
@@ -67,24 +68,26 @@
       </div>
 
       <div class="modal-footer">
-        <button
-          class="btn btn-secondary"
+        <Button
+          variant="outline"
           @click="handleCancel"
           :disabled="isLoading"
           data-testid="cancel-create"
         >
           {{ t('common.cancel') }}
-        </button>
-        <button
-          class="btn btn-primary"
+        </Button>
+        <Button
+          variant="primary"
           @click="handleCreate"
-          :disabled="isLoading || hasErrorConflicts || !isValid || validationError !== null"
+          :disabled="hasErrorConflicts || !isValid || validationError !== null"
+          :loading="isLoading"
           data-testid="confirm-create"
         >
-          <PlusIcon v-if="!isLoading" :size="16" />
-          <LoaderIcon v-else :size="16" class="spinner" />
+          <template v-if="!isLoading" #iconLeft>
+            <PlusIcon :size="16" />
+          </template>
           {{ t('calendar.createSlot.create') }}
-        </button>
+        </Button>
       </div>
     </div>
   </div>
@@ -94,6 +97,7 @@
 import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { X as XIcon, Calendar as CalendarIcon, AlertCircle as AlertCircleIcon, Loader as LoaderIcon, Plus as PlusIcon } from 'lucide-vue-next'
+import Button from '@/ui/Button.vue'
 import TimeRangeInput from './TimeRangeInput.vue'
 import { bookingApi } from '@/modules/booking/api/booking'
 import { useSlotStore } from '@/stores/slotStore'
