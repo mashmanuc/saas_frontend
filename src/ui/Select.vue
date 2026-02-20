@@ -81,21 +81,28 @@ function handleChange(event) {
 .select-field {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: var(--space-2xs);
 }
 
 .select-field__label {
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   font-weight: 500;
-  color: var(--text-muted, #4f5565);
+  color: var(--text-primary);
 }
 
 .select {
   width: 100%;
-  border-radius: var(--radius-md, 8px);
-  border: 1px solid rgba(18, 28, 45, 0.14);
-  padding: 0.5rem 0.75rem;
-  background: #fff;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--bg-secondary);
   font: inherit;
+  color: var(--text-primary);
+  transition: var(--transition-fast);
+}
+.select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 </style>
