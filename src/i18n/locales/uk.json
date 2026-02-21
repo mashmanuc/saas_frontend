@@ -4298,12 +4298,98 @@
     }
   },
   "staff": {
+    "sidebar": {
+      "collapse": "Згорнути",
+      "expand": "Розгорнути",
+      "overview": "Огляд",
+      "dashboard": "Дашборд",
+      "users": "Користувачі",
+      "operations": "Операції",
+      "reports": "Скарги",
+      "tutorActivity": "Активність тьюторів",
+      "billing": "Біллінг",
+      "system": "Система",
+      "health": "Здоров'я системи",
+      "backToApp": "Назад до додатку"
+    },
+    "breadcrumbs": {
+      "staff": "Staff",
+      "dashboard": "Дашборд",
+      "users": "Користувачі",
+      "userDetail": "Деталі користувача",
+      "reports": "Скарги",
+      "tutorActivity": "Активність тьюторів",
+      "billing": "Біллінг",
+      "health": "Здоров'я системи"
+    },
     "dashboard": {
       "title": "Панель управління Staff",
+      "users": "Користувачі",
+      "subscriptions": "Підписки",
+      "openReports": "Відкриті скарги",
+      "activeTutors": "Активні тьютори",
+      "quickSearch": "Швидкий пошук",
+      "searchPlaceholder": "Пошук за email або ім'ям...",
+      "showAll": "Показати всіх",
+      "noResults": "Нічого не знайдено",
+      "quickActions": "Швидкі дії",
+      "pendingBilling": "Незавершені платежі",
+      "noPending": "Немає незавершених сесій",
+      "stuckSessions": "застряглих сесій",
+      "viewAll": "Переглянути все",
+      "systemHealth": "Здоров'я системи",
+      "suspicious": "Підозрілі",
+      "bans": "Бани",
+      "exempted": "Звільнені",
+      "recentActivity": "Остання активність",
       "tiles": {
         "tutorActivity": "Активність тьюторів",
         "tutorActivityDesc": "Перегляд та управління активністю тьюторів"
       }
+    },
+    "users": {
+      "title": "Користувачі",
+      "searchPlaceholder": "Пошук за email або ім'ям...",
+      "allRoles": "Всі ролі",
+      "allStatuses": "Всі статуси",
+      "active": "Активні",
+      "inactive": "Неактивні",
+      "noResults": "Користувачів не знайдено",
+      "name": "Ім'я",
+      "email": "Email",
+      "role": "Роль",
+      "bans": "Бани",
+      "reports": "Скарги",
+      "plan": "План"
+    },
+    "billing": {
+      "title": "Огляд біллінгу",
+      "trialing": "Пробний період",
+      "pendingCheckouts": "Незавершені checkout-сесії",
+      "noPending": "Немає незавершених сесій",
+      "user": "Користувач",
+      "plan": "План",
+      "pendingAge": "Час очікування",
+      "created": "Створено",
+      "recentPayments": "Останні платежі",
+      "noPayments": "Немає платежів",
+      "amount": "Сума",
+      "status": "Статус",
+      "date": "Дата"
+    },
+    "health": {
+      "title": "Здоров'я системи",
+      "users": "Користувачі",
+      "openReports": "Відкриті скарги",
+      "activeBans": "Активні бани",
+      "activeSubs": "Активні підписки"
+    },
+    "activityFeed": {
+      "empty": "Немає подій",
+      "justNow": "щойно",
+      "minutesAgo": "{n} хв тому",
+      "hoursAgo": "{n} год тому",
+      "daysAgo": "{n} дн тому"
     },
     "nav": {
       "dashboard": "Головна",

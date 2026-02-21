@@ -1,10 +1,21 @@
 <template>
   <div class="staff-user-overview">
-    <div class="header">
-      <h1>{{ $t('staff.userOverview.title') }}</h1>
-      <router-link to="/staff/reports" class="back-link">
-        ← {{ $t('staff.userOverview.backToReports') }}
-      </router-link>
+    <div class="page-header">
+      <div class="header-left">
+        <router-link to="/staff/users" class="back-link">
+          ← {{ $t('staff.sidebar.users') }}
+        </router-link>
+        <h1 class="page-title">
+          <template v-if="staffStore.userOverview">
+            {{ staffStore.userOverview.user.first_name || '' }}
+            {{ staffStore.userOverview.user.last_name || '' }}
+            <Badge v-if="staffStore.userOverview.user.role" :variant="roleBadgeVariant(staffStore.userOverview.user.role)" size="sm">
+              {{ staffStore.userOverview.user.role }}
+            </Badge>
+          </template>
+          <template v-else>{{ $t('staff.userOverview.title') }}</template>
+        </h1>
+      </div>
     </div>
 
     <div v-if="staffStore.loadUserOverviewError" class="error-banner" role="alert">
@@ -12,45 +23,47 @@
     </div>
 
     <div v-if="staffStore.isLoading" class="loading">
-      {{ $t('common.loading') }}
+      <LoadingSpinner />
     </div>
 
     <div v-else-if="staffStore.userOverview" class="overview-content">
       <!-- User Info Section -->
-      <section class="section user-section">
-        <h2>{{ $t('staff.userOverview.userInfo') }}</h2>
+      <Card class="section">
+        <h2 class="section-heading">{{ $t('staff.userOverview.userInfo') }}</h2>
         <div class="info-grid">
           <div class="info-item">
-            <span class="label">{{ $t('staff.userOverview.userId') }}:</span>
-            <span>{{ staffStore.userOverview.user.id }}</span>
+            <span class="label">{{ $t('staff.userOverview.userId') }}</span>
+            <span class="value mono">{{ staffStore.userOverview.user.id }}</span>
           </div>
           <div class="info-item">
-            <span class="label">{{ $t('staff.userOverview.email') }}:</span>
-            <span>{{ staffStore.userOverview.user.email }}</span>
+            <span class="label">{{ $t('staff.userOverview.email') }}</span>
+            <span class="value">{{ staffStore.userOverview.user.email }}</span>
           </div>
           <div class="info-item">
-            <span class="label">{{ $t('staff.userOverview.role') }}:</span>
-            <span>{{ staffStore.userOverview.user.role }}</span>
+            <span class="label">{{ $t('staff.userOverview.role') }}</span>
+            <Badge :variant="roleBadgeVariant(staffStore.userOverview.user.role)" size="sm">
+              {{ staffStore.userOverview.user.role }}
+            </Badge>
           </div>
           <div class="info-item">
-            <span class="label">{{ $t('staff.userOverview.createdAt') }}:</span>
-            <span>{{ formatDate(staffStore.userOverview.user.created_at) }}</span>
+            <span class="label">{{ $t('staff.userOverview.createdAt') }}</span>
+            <span class="value">{{ formatDate(staffStore.userOverview.user.created_at) }}</span>
           </div>
         </div>
-      </section>
+      </Card>
 
       <!-- Trust Section -->
-      <section class="section trust-section">
-        <h2>{{ $t('staff.userOverview.trustInfo') }}</h2>
+      <Card class="section">
+        <h2 class="section-heading">{{ $t('staff.userOverview.trustInfo') }}</h2>
         
         <div class="trust-stats">
-          <div class="stat-card">
-            <span class="stat-value">{{ staffStore.userOverview.trust.blocks_count }}</span>
-            <span class="stat-label">{{ $t('staff.userOverview.blocksCount') }}</span>
+          <div class="mini-stat">
+            <span class="mini-stat-value">{{ staffStore.userOverview.trust.blocks_count }}</span>
+            <span class="mini-stat-label">{{ $t('staff.userOverview.blocksCount') }}</span>
           </div>
-          <div class="stat-card">
-            <span class="stat-value">{{ staffStore.userOverview.trust.reports_open_count }}</span>
-            <span class="stat-label">{{ $t('staff.userOverview.reportsOpenCount') }}</span>
+          <div class="mini-stat" :class="{ 'mini-stat-danger': staffStore.userOverview.trust.reports_open_count > 0 }">
+            <span class="mini-stat-value">{{ staffStore.userOverview.trust.reports_open_count }}</span>
+            <span class="mini-stat-label">{{ $t('staff.userOverview.reportsOpenCount') }}</span>
           </div>
         </div>
 
@@ -140,11 +153,11 @@
             </form>
           </div>
         </div>
-      </section>
+      </Card>
 
       <!-- Billing Section -->
-      <section class="section billing-section">
-        <h2>{{ $t('staff.userOverview.billingInfo') }}</h2>
+      <Card class="section">
+        <h2 class="section-heading">{{ $t('staff.userOverview.billingInfo') }}</h2>
         <div class="info-grid">
           <div class="info-item">
             <span class="label">{{ $t('staff.userOverview.plan') }}:</span>
@@ -183,28 +196,28 @@
             </Button>
           </div>
         </div>
-      </section>
+      </Card>
 
       <!-- Billing Operations Section (v0.79.0) -->
-      <section class="section billing-ops-section">
-        <h2>{{ $t('staff.userOverview.billingOperations') }}</h2>
+      <Card class="section">
+        <h2 class="section-heading">{{ $t('staff.userOverview.billingOperations') }}</h2>
         <UserBillingOpsPanel :user-id="staffStore.userOverview.user.id" />
-      </section>
+      </Card>
 
       <!-- Activity Section -->
-      <section class="section activity-section">
-        <h2>{{ $t('staff.userOverview.activityInfo') }}</h2>
+      <Card class="section">
+        <h2 class="section-heading">{{ $t('staff.userOverview.activityInfo') }}</h2>
         <div class="activity-stats">
-          <div class="stat-card">
-            <span class="stat-value">{{ staffStore.userOverview.activity.inquiries_count_30d }}</span>
-            <span class="stat-label">{{ $t('staff.userOverview.inquiries30d') }}</span>
+          <div class="mini-stat">
+            <span class="mini-stat-value">{{ staffStore.userOverview.activity.inquiries_count_30d }}</span>
+            <span class="mini-stat-label">{{ $t('staff.userOverview.inquiries30d') }}</span>
           </div>
-          <div class="stat-card">
-            <span class="stat-value">{{ staffStore.userOverview.activity.contacts_unlocked_30d }}</span>
-            <span class="stat-label">{{ $t('staff.userOverview.contactsUnlocked30d') }}</span>
+          <div class="mini-stat">
+            <span class="mini-stat-value">{{ staffStore.userOverview.activity.contacts_unlocked_30d }}</span>
+            <span class="mini-stat-label">{{ $t('staff.userOverview.contactsUnlocked30d') }}</span>
           </div>
         </div>
-      </section>
+      </Card>
     </div>
   </div>
 </template>
@@ -215,10 +228,20 @@ import { useRoute } from 'vue-router'
 import { useStaffStore } from '@/stores/staffStore'
 import { BanScope, BillingCancelMode } from '@/types/staff'
 import Button from '@/ui/Button.vue'
+import Badge from '@/ui/Badge.vue'
+import Card from '@/ui/Card.vue'
+import LoadingSpinner from '@/ui/LoadingSpinner.vue'
 import UserBillingOpsPanel from '@/modules/staff/components/UserBillingOpsPanel.vue'
 
 const route = useRoute()
 const staffStore = useStaffStore()
+
+function roleBadgeVariant(role: string) {
+  if (role === 'tutor') return 'accent'
+  if (role === 'student') return 'default'
+  if (role === 'admin' || role === 'superadmin') return 'warning'
+  return 'muted'
+}
 
 const banForm = ref({
   scope: 'CONTACTS' as BanScope,
@@ -300,118 +323,148 @@ function formatDate(dateString: string): string {
 
 <style scoped>
 .staff-user-overview {
-  padding: var(--space-xl);
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--space-xl);
+  flex-direction: column;
+  gap: var(--space-lg);
 }
 
-.header h1 {
-  font-size: var(--text-2xl);
-  font-weight: 600;
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
 }
 
 .back-link {
-  color: var(--accent);
+  color: var(--text-secondary);
   text-decoration: none;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  transition: color var(--transition-base);
 }
 
 .back-link:hover {
-  text-decoration: underline;
+  color: var(--accent);
+}
+
+.page-title {
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
 }
 
 .error-banner {
   padding: var(--space-md);
-  background: color-mix(in srgb, var(--danger-bg) 15%, transparent);
-  border: 1px solid color-mix(in srgb, var(--danger-bg) 30%, transparent);
-  border-radius: var(--radius-sm);
-  color: var(--danger-bg);
-  margin-bottom: var(--space-md);
+  background: color-mix(in srgb, var(--danger-bg, #ef4444) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger-bg, #ef4444) 25%, transparent);
+  border-radius: var(--radius-md);
+  color: var(--danger-bg, #ef4444);
 }
 
 .loading {
   text-align: center;
   padding: var(--space-xl);
-  color: var(--text-secondary);
 }
 
 .overview-content {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xl);
+  gap: var(--space-lg);
 }
 
 .section {
-  background: var(--card-bg);
-  border-radius: var(--radius-md);
   padding: var(--space-lg);
-  box-shadow: var(--shadow-sm);
 }
 
-.section h2 {
+.section-heading {
   margin: 0 0 var(--space-lg) 0;
-  font-size: var(--text-xl);
+  font-size: var(--text-lg);
   font-weight: 600;
-  border-bottom: 2px solid var(--accent);
+  color: var(--text-primary);
   padding-bottom: var(--space-xs);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .section h3 {
   margin: var(--space-lg) 0 var(--space-md) 0;
-  font-size: var(--text-lg);
+  font-size: var(--text-base);
   font-weight: 600;
+  color: var(--text-primary);
 }
 
 .info-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: var(--space-md);
 }
 
 .info-item {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2xs);
+  gap: 2px;
 }
 
 .info-item .label {
   font-weight: 600;
   color: var(--text-secondary);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.info-item .value {
   font-size: var(--text-sm);
+  color: var(--text-primary);
+}
+
+.info-item .mono {
+  font-family: monospace;
 }
 
 .trust-stats,
 .activity-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: var(--space-md);
   margin-bottom: var(--space-lg);
 }
 
-.stat-card {
+.mini-stat {
   background: var(--bg-secondary);
   border-radius: var(--radius-md);
-  padding: var(--space-lg);
+  padding: var(--space-md);
   text-align: center;
+  border: 1px solid var(--border-color);
 }
 
-.stat-value {
+.mini-stat-danger {
+  border-color: color-mix(in srgb, var(--danger-bg, #ef4444) 40%, transparent);
+}
+
+.mini-stat-value {
   display: block;
   font-size: var(--text-2xl);
   font-weight: 700;
-  color: var(--accent);
-  margin-bottom: var(--space-xs);
+  color: var(--text-primary);
+  margin-bottom: 2px;
 }
 
-.stat-label {
+.mini-stat-danger .mini-stat-value {
+  color: var(--danger-bg, #ef4444);
+}
+
+.mini-stat-label {
   display: block;
-  font-size: var(--text-sm);
+  font-size: var(--text-xs);
   color: var(--text-secondary);
 }
 

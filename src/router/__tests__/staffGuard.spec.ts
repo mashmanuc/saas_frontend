@@ -30,7 +30,7 @@ describe('Staff Route Guard', () => {
           path: '/staff',
           name: 'staff',
           component: { template: '<div>Staff</div>' },
-          meta: { requiresAuth: true, requiresStaff: true, roles: [USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN] }
+          meta: { requiresAuth: true, requiresStaff: true, roles: [USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN, USER_ROLES.STAFF] }
         },
         {
           path: '/tutor',
@@ -54,7 +54,8 @@ describe('Staff Route Guard', () => {
       const requiresStaff = to.matched.some((record: any) => record.meta?.requiresStaff)
       
       if (requiresStaff) {
-        const isStaff = user?.role === USER_ROLES.ADMIN || user?.role === USER_ROLES.SUPERADMIN
+        const staffRoles = [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.STAFF]
+        const isStaff = staffRoles.includes(user?.role)
         if (!isStaff) {
           const homeRoute = user?.role === USER_ROLES.TUTOR ? '/tutor' : user?.role === USER_ROLES.STUDENT ? '/student' : '/'
           return next(homeRoute)

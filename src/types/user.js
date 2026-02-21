@@ -16,6 +16,7 @@
 export const USER_ROLES = Object.freeze({
   SUPERADMIN: 'superadmin',
   ADMIN: 'admin',
+  STAFF: 'staff',
   TUTOR: 'tutor',
   STUDENT: 'student',
 })

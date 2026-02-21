@@ -3033,12 +3033,98 @@
     }
   },
   "staff": {
+    "sidebar": {
+      "collapse": "Свернуть",
+      "expand": "Развернуть",
+      "overview": "Обзор",
+      "dashboard": "Дашборд",
+      "users": "Пользователи",
+      "operations": "Операции",
+      "reports": "Жалобы",
+      "tutorActivity": "Активность репетиторов",
+      "billing": "Биллинг",
+      "system": "Система",
+      "health": "Здоровье системы",
+      "backToApp": "Назад к приложению"
+    },
+    "breadcrumbs": {
+      "staff": "Staff",
+      "dashboard": "Дашборд",
+      "users": "Пользователи",
+      "userDetail": "Детали пользователя",
+      "reports": "Жалобы",
+      "tutorActivity": "Активность репетиторов",
+      "billing": "Биллинг",
+      "health": "Здоровье системы"
+    },
     "dashboard": {
       "title": "Панель управления Staff",
+      "users": "Пользователи",
+      "subscriptions": "Подписки",
+      "openReports": "Открытые жалобы",
+      "activeTutors": "Активные репетиторы",
+      "quickSearch": "Быстрый поиск",
+      "searchPlaceholder": "Поиск по email или имени...",
+      "showAll": "Показать всех",
+      "noResults": "Ничего не найдено",
+      "quickActions": "Быстрые действия",
+      "pendingBilling": "Незавершённые платежи",
+      "noPending": "Нет незавершённых сессий",
+      "stuckSessions": "застрявших сессий",
+      "viewAll": "Посмотреть все",
+      "systemHealth": "Здоровье системы",
+      "suspicious": "Подозрительные",
+      "bans": "Баны",
+      "exempted": "Освобождённые",
+      "recentActivity": "Последняя активность",
       "tiles": {
         "tutorActivity": "Активность репетиторов",
         "tutorActivityDesc": "Просмотр и управление активностью репетиторов"
       }
+    },
+    "users": {
+      "title": "Пользователи",
+      "searchPlaceholder": "Поиск по email или имени...",
+      "allRoles": "Все роли",
+      "allStatuses": "Все статусы",
+      "active": "Активные",
+      "inactive": "Неактивные",
+      "noResults": "Пользователи не найдены",
+      "name": "Имя",
+      "email": "Email",
+      "role": "Роль",
+      "bans": "Баны",
+      "reports": "Жалобы",
+      "plan": "План"
+    },
+    "billing": {
+      "title": "Обзор биллинга",
+      "trialing": "Пробный период",
+      "pendingCheckouts": "Незавершённые checkout-сессии",
+      "noPending": "Нет незавершённых сессий",
+      "user": "Пользователь",
+      "plan": "План",
+      "pendingAge": "Время ожидания",
+      "created": "Создано",
+      "recentPayments": "Последние платежи",
+      "noPayments": "Нет платежей",
+      "amount": "Сумма",
+      "status": "Статус",
+      "date": "Дата"
+    },
+    "health": {
+      "title": "Здоровье системы",
+      "users": "Пользователи",
+      "openReports": "Открытые жалобы",
+      "activeBans": "Активные баны",
+      "activeSubs": "Активные подписки"
+    },
+    "activityFeed": {
+      "empty": "Нет событий",
+      "justNow": "только что",
+      "minutesAgo": "{n} мин назад",
+      "hoursAgo": "{n} ч назад",
+      "daysAgo": "{n} дн назад"
     },
     "nav": {
       "dashboard": "Главная",

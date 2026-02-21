@@ -1,10 +1,11 @@
 <template>
-  <div class="staff-reports-view">
-    <div class="header">
-      <h1>{{ $t('staff.reports.title') }}</h1>
+  <div class="staff-reports-view" data-testid="staff-reports">
+    <div class="page-header">
+      <h1 class="page-title">{{ $t('staff.reports.title') }}</h1>
       <div class="filters">
-        <select 
-          v-model="statusFilter" 
+        <select
+          v-model="statusFilter"
+          class="filter-select"
           @change="loadReportsWithFilter"
           :aria-label="$t('staff.reports.filterByStatus')"
         >
@@ -20,50 +21,80 @@
       {{ staffStore.loadReportsError }}
     </div>
 
-    <div v-if="staffStore.isLoading" class="loading">
-      {{ $t('common.loading') }}
-    </div>
+    <Card>
+      <div v-if="staffStore.isLoading" class="loading-state">
+        <LoadingSpinner />
+      </div>
 
-    <div v-else-if="staffStore.reports.length === 0" class="empty-state">
-      {{ $t('staff.reports.noReports') }}
-    </div>
+      <div v-else-if="staffStore.reports.length === 0" class="empty-state">
+        <EmptyState :title="$t('staff.reports.noReports')" />
+      </div>
 
-    <table v-else class="reports-table">
-      <thead>
-        <tr>
-          <th>{{ $t('staff.reports.reporter') }}</th>
-          <th>{{ $t('staff.reports.target') }}</th>
-          <th>{{ $t('staff.reports.categoryLabel') }}</th>
-          <th>{{ $t('staff.reports.created') }}</th>
-          <th>{{ $t('staff.reports.status') }}</th>
-          <th>{{ $t('staff.reports.actions') }}</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="report in staffStore.reports" :key="report.id">
-          <td>{{ report.reporter_name || report.reporter_id }}</td>
-          <td>{{ report.target_name || report.target_id }}</td>
-          <td>{{ $t(`staff.reports.category.${report.category}`) }}</td>
-          <td>{{ formatDate(report.created_at) }}</td>
-          <td>
-            <span :class="`status-badge status-${report.status.toLowerCase()}`">
-              {{ $t(`staff.reports.status${report.status}`) }}
-            </span>
-          </td>
-          <td>
-            <Button 
-              v-if="report.status === 'OPEN'"
-              variant="primary"
-              size="sm"
-              :aria-label="$t('staff.reports.viewDetails')"
-              @click="openReportDetails(report)"
+      <div v-else>
+        <table class="reports-table">
+          <thead>
+            <tr>
+              <th>{{ $t('staff.reports.reporter') }}</th>
+              <th>{{ $t('staff.reports.target') }}</th>
+              <th>{{ $t('staff.reports.categoryLabel') }}</th>
+              <th>{{ $t('staff.reports.created') }}</th>
+              <th>{{ $t('staff.reports.status') }}</th>
+              <th>{{ $t('staff.reports.actions') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="report in staffStore.reports"
+              :key="report.id"
+              class="report-row"
             >
-              {{ $t('staff.reports.view') }}
-            </Button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+              <td>
+                <span class="cell-name">{{ report.reporter_name || report.reporter_id }}</span>
+              </td>
+              <td>
+                <router-link
+                  v-if="report.target_id"
+                  :to="`/staff/users/${report.target_id}`"
+                  class="cell-link"
+                >
+                  {{ report.target_name || report.target_id }}
+                </router-link>
+                <span v-else>—</span>
+              </td>
+              <td>
+                <Badge variant="muted" size="sm">
+                  {{ $t(`staff.reports.category.${report.category}`) }}
+                </Badge>
+              </td>
+              <td class="cell-muted">{{ formatDate(report.created_at) }}</td>
+              <td>
+                <Badge :variant="statusBadgeVariant(report.status)" size="sm">
+                  {{ $t(`staff.reports.status${report.status}`) }}
+                </Badge>
+              </td>
+              <td>
+                <Button
+                  v-if="report.status === 'OPEN'"
+                  variant="primary"
+                  size="sm"
+                  :aria-label="$t('staff.reports.viewDetails')"
+                  @click="openReportDetails(report)"
+                >
+                  {{ $t('staff.reports.view') }}
+                </Button>
+                <span v-else class="cell-muted">—</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="table-footer">
+          <span class="table-count">
+            {{ staffStore.reports.length }} / {{ staffStore.reportsTotal }}
+          </span>
+        </div>
+      </div>
+    </Card>
 
     <ReportDetailsModal
       v-if="selectedReport"
@@ -80,12 +111,22 @@ import { ref, onMounted } from 'vue'
 import { useStaffStore } from '@/stores/staffStore'
 import { ReportStatus, type StaffReport } from '@/types/staff'
 import Button from '@/ui/Button.vue'
+import Badge from '@/ui/Badge.vue'
+import Card from '@/ui/Card.vue'
+import LoadingSpinner from '@/ui/LoadingSpinner.vue'
+import EmptyState from '@/ui/EmptyState.vue'
 import ReportDetailsModal from '../components/ReportDetailsModal.vue'
 
 const staffStore = useStaffStore()
 const statusFilter = ref<string>('')
 const selectedReport = ref<StaffReport | null>(null)
 const isModalOpen = ref(false)
+
+function statusBadgeVariant(status: string) {
+  if (status === 'OPEN') return 'warning'
+  if (status === 'ACTIONED') return 'success'
+  return 'muted'
+}
 
 onMounted(async () => {
   await loadReportsWithFilter()
@@ -138,94 +179,120 @@ function formatDate(dateString: string): string {
 
 <style scoped>
 .staff-reports-view {
-  padding: var(--space-xl);
-  max-width: 1400px;
-  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
 }
 
-.header {
+.page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--space-xl);
 }
 
-.header h1 {
+.page-title {
   font-size: var(--text-2xl);
   font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
 }
 
-.filters select {
+.filter-select {
   padding: var(--space-xs) var(--space-md);
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  font-size: var(--text-base);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
   background: var(--card-bg);
   color: var(--text-primary);
+  cursor: pointer;
 }
 
 .error-banner {
   padding: var(--space-md);
-  background: color-mix(in srgb, var(--danger-bg) 15%, transparent);
-  border: 1px solid color-mix(in srgb, var(--danger-bg) 30%, transparent);
-  border-radius: var(--radius-sm);
-  color: var(--danger-bg);
-  margin-bottom: var(--space-md);
+  background: color-mix(in srgb, var(--danger-bg, #ef4444) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger-bg, #ef4444) 25%, transparent);
+  border-radius: var(--radius-md);
+  color: var(--danger-bg, #ef4444);
 }
 
-.loading,
+.loading-state,
 .empty-state {
-  text-align: center;
   padding: var(--space-xl);
-  color: var(--text-secondary);
+  text-align: center;
 }
 
 .reports-table {
   width: 100%;
   border-collapse: collapse;
-  background: var(--card-bg);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  box-shadow: var(--shadow-sm);
-}
-
-.reports-table th,
-.reports-table td {
-  padding: var(--space-md);
-  text-align: left;
-  border-bottom: 1px solid var(--border-color);
 }
 
 .reports-table th {
-  background: var(--bg-secondary);
+  text-align: left;
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--text-xs);
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.reports-table td {
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--text-sm);
+  border-bottom: 1px solid var(--border-color);
   color: var(--text-primary);
 }
 
-.reports-table tbody tr:hover {
+.report-row {
+  transition: background var(--transition-base);
+}
+
+.report-row:hover {
   background: var(--bg-secondary);
 }
 
-.status-badge {
-  display: inline-block;
-  padding: var(--space-2xs) var(--space-sm);
-  border-radius: var(--radius-full);
-  font-size: var(--text-sm);
+.cell-name {
   font-weight: 500;
 }
 
-.status-open {
-  background: color-mix(in srgb, var(--warning-bg) 15%, transparent);
-  color: var(--warning-bg);
+.cell-link {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
 }
 
-.status-dismissed {
-  background: color-mix(in srgb, var(--info-bg) 15%, transparent);
-  color: var(--info-bg);
+.cell-link:hover {
+  text-decoration: underline;
 }
 
-.status-actioned {
-  background: color-mix(in srgb, var(--success-bg) 15%, transparent);
-  color: var(--success-bg);
+.cell-muted {
+  color: var(--text-secondary);
+}
+
+.table-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--space-sm) var(--space-md);
+  border-top: 1px solid var(--border-color);
+}
+
+.table-count {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-sm);
+  }
+
+  .reports-table th,
+  .reports-table td {
+    padding: var(--space-xs);
+    font-size: var(--text-xs);
+  }
 }
 </style>

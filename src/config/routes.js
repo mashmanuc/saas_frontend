@@ -1,6 +1,7 @@
 export const ROLE_HOME_ROUTES = {
-  superadmin: '/admin',
-  admin: '/admin',
+  superadmin: '/staff',
+  admin: '/staff',
+  staff: '/staff',
   tutor: '/tutor',
   student: '/student',
 }

@@ -3799,12 +3799,98 @@
     }
   },
   "staff": {
+    "sidebar": {
+      "collapse": "Collapse",
+      "expand": "Expand",
+      "overview": "Overview",
+      "dashboard": "Dashboard",
+      "users": "Users",
+      "operations": "Operations",
+      "reports": "Reports",
+      "tutorActivity": "Tutor Activity",
+      "billing": "Billing",
+      "system": "System",
+      "health": "System Health",
+      "backToApp": "Back to App"
+    },
+    "breadcrumbs": {
+      "staff": "Staff",
+      "dashboard": "Dashboard",
+      "users": "Users",
+      "userDetail": "User Details",
+      "reports": "Reports",
+      "tutorActivity": "Tutor Activity",
+      "billing": "Billing",
+      "health": "System Health"
+    },
     "dashboard": {
       "title": "Staff Dashboard",
+      "users": "Users",
+      "subscriptions": "Subscriptions",
+      "openReports": "Open Reports",
+      "activeTutors": "Active Tutors",
+      "quickSearch": "Quick Search",
+      "searchPlaceholder": "Search by email or name...",
+      "showAll": "Show all",
+      "noResults": "No results found",
+      "quickActions": "Quick Actions",
+      "pendingBilling": "Pending Billing",
+      "noPending": "No pending sessions",
+      "stuckSessions": "stuck sessions",
+      "viewAll": "View all",
+      "systemHealth": "System Health",
+      "suspicious": "Suspicious",
+      "bans": "Bans",
+      "exempted": "Exempted",
+      "recentActivity": "Recent Activity",
       "tiles": {
         "tutorActivity": "Tutor Activity",
         "tutorActivityDesc": "View and manage tutor activity"
       }
+    },
+    "users": {
+      "title": "Users",
+      "searchPlaceholder": "Search by email or name...",
+      "allRoles": "All roles",
+      "allStatuses": "All statuses",
+      "active": "Active",
+      "inactive": "Inactive",
+      "noResults": "No users found",
+      "name": "Name",
+      "email": "Email",
+      "role": "Role",
+      "bans": "Bans",
+      "reports": "Reports",
+      "plan": "Plan"
+    },
+    "billing": {
+      "title": "Billing Overview",
+      "trialing": "Trialing",
+      "pendingCheckouts": "Pending Checkout Sessions",
+      "noPending": "No pending sessions",
+      "user": "User",
+      "plan": "Plan",
+      "pendingAge": "Pending Age",
+      "created": "Created",
+      "recentPayments": "Recent Payments",
+      "noPayments": "No payments",
+      "amount": "Amount",
+      "status": "Status",
+      "date": "Date"
+    },
+    "health": {
+      "title": "System Health",
+      "users": "Users",
+      "openReports": "Open Reports",
+      "activeBans": "Active Bans",
+      "activeSubs": "Active Subscriptions"
+    },
+    "activityFeed": {
+      "empty": "No events",
+      "justNow": "just now",
+      "minutesAgo": "{n}m ago",
+      "hoursAgo": "{n}h ago",
+      "daysAgo": "{n}d ago"
     },
     "nav": {
       "dashboard": "Dashboard",

@@ -275,14 +275,12 @@ async function onSubmit() {
 
     const user = res
     const redirect = route.query?.redirect
-    // v0.88.4: Staff users go to /staff dashboard
+    // v0.88.4: Redirect визначається через role (SSOT: config/routes.js)
     let target
     // Ignore Solo v2 redirects - always go to dashboard first
     const isSoloV2Redirect = redirect && typeof redirect === 'string' && redirect.includes('/solo-v2')
     if (redirect && typeof redirect === 'string' && !isSoloV2Redirect) {
       target = redirect
-    } else if (user?.is_staff) {
-      target = '/staff'
     } else {
       target = getDefaultRouteForRole(user?.role)
     }
@@ -297,14 +295,12 @@ async function onSubmitOtp() {
   try {
     const user = await auth.verifyMfa(otp.value)
     const redirect = route.query?.redirect
-    // v0.88.4: Staff users go to /staff dashboard
+    // v0.88.4: Redirect визначається через role (SSOT: config/routes.js)
     let target
     // Ignore Solo v2 redirects - always go to dashboard first
     const isSoloV2Redirect = redirect && typeof redirect === 'string' && redirect.includes('/solo-v2')
     if (redirect && typeof redirect === 'string' && !isSoloV2Redirect) {
       target = redirect
-    } else if (user?.is_staff) {
-      target = '/staff'
     } else {
       target = getDefaultRouteForRole(user?.role)
     }
@@ -337,14 +333,12 @@ async function handleWebAuthnSuccess(credential) {
     const user = await auth.verifyWebAuthn(credential)
     showWebAuthnPrompt.value = false
     const redirect = route.query?.redirect
-    // v0.88.4: Staff users go to /staff dashboard
+    // v0.88.4: Redirect визначається через role (SSOT: config/routes.js)
     let target
     // Ignore Solo v2 redirects - always go to dashboard first
     const isSoloV2Redirect = redirect && typeof redirect === 'string' && redirect.includes('/solo-v2')
     if (redirect && typeof redirect === 'string' && !isSoloV2Redirect) {
       target = redirect
-    } else if (user?.is_staff) {
-      target = '/staff'
     } else {
       target = getDefaultRouteForRole(user?.role)
     }

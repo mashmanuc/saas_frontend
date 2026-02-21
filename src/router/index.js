@@ -741,17 +741,17 @@ const routes = [
             component: () => import('../modules/staff/views/StaffDashboard.vue'),
             meta: { 
               requiresAuth: true,
-              roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN],
+              roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.STAFF],
               requiresStaff: true
             },
           },
           {
-            path: 'reports',
-            name: 'staff-reports',
-            component: () => import('../modules/staff/views/StaffReportsView.vue'),
+            path: 'users',
+            name: 'staff-users',
+            component: () => import('../modules/staff/views/StaffUsersListView.vue'),
             meta: { 
               requiresAuth: true,
-              roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN],
+              roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.STAFF],
               requiresStaff: true
             },
           },
@@ -761,7 +761,17 @@ const routes = [
             component: () => import('../modules/staff/views/StaffUserOverviewView.vue'),
             meta: { 
               requiresAuth: true,
-              roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN],
+              roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.STAFF],
+              requiresStaff: true
+            },
+          },
+          {
+            path: 'reports',
+            name: 'staff-reports',
+            component: () => import('../modules/staff/views/StaffReportsView.vue'),
+            meta: { 
+              requiresAuth: true,
+              roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.STAFF],
               requiresStaff: true
             },
           },
@@ -769,6 +779,26 @@ const routes = [
             path: 'tutor-activity',
             name: 'staff-tutor-activity',
             component: () => import('../modules/staff/views/TutorActivityManagement.vue'),
+            meta: { 
+              requiresAuth: true,
+              roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN],
+              requiresStaff: true
+            },
+          },
+          {
+            path: 'billing',
+            name: 'staff-billing',
+            component: () => import('../modules/staff/views/StaffBillingView.vue'),
+            meta: { 
+              requiresAuth: true,
+              roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN],
+              requiresStaff: true
+            },
+          },
+          {
+            path: 'health',
+            name: 'staff-health',
+            component: () => import('../modules/staff/views/StaffSystemHealthView.vue'),
             meta: { 
               requiresAuth: true,
               roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN],
@@ -816,8 +846,8 @@ router.beforeEach(async (to, from, next) => {
   const hasAccessToken = Boolean(auth.access)
   let isAuthenticated = auth.isAuthenticated
   const user = auth.user
-  // v0.88.4: Staff users have /staff as home
-  const homeRoute = user?.is_staff ? '/staff' : (user?.role ? getDefaultRouteForRole(user.role) : '/start')
+  // v0.88.4: homeRoute визначається через role (SSOT: config/routes.js)
+  const homeRoute = user?.role ? getDefaultRouteForRole(user.role) : '/start'
   const isAuthRoute = to.path.startsWith('/auth')
   const isInviteRoute = to.path.startsWith('/invite')
   const isStartRoute = to.path === '/start'
@@ -855,9 +885,7 @@ router.beforeEach(async (to, from, next) => {
 
   // Redirect from root path based on auth status
   if (to.path === '/') {
-    if (user?.is_staff) {
-      return next('/staff')
-    } else if (isAuthenticated && user?.role) {
+    if (isAuthenticated && user?.role) {
       return next(getDefaultRouteForRole(user.role))
     } else {
       return next('/start')
@@ -868,11 +896,11 @@ router.beforeEach(async (to, from, next) => {
     return next({ path: '/auth/login', query: { redirect: to.fullPath } })
   }
 
-  // v0.88.4: Staff guard - check if route requires staff access
+  // v0.88.4: Staff guard - check if route requires staff access (role-based SSOT)
   const requiresStaff = to.matched.some((record) => record.meta?.requiresStaff)
   if (requiresStaff) {
-    // Use is_staff flag from backend (v0.88.4) or fallback to role check
-    const isStaff = user?.is_staff || user?.role === USER_ROLES.ADMIN || user?.role === USER_ROLES.SUPERADMIN
+    const staffRoles = [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.STAFF]
+    const isStaff = staffRoles.includes(user?.role)
     if (!isStaff) {
       return next(homeRoute)
     }
