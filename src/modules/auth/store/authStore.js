@@ -8,27 +8,33 @@ const REFRESH_INTERVAL_MS = 25 * 60 * 1000
 let refreshInterval = null
 
 export const useAuthStore = defineStore('auth', {
-  state: () => ({
-    access: storage.getAccess(),
-    user: storage.getUser(),
-    csrfToken: null,
-    pendingMfaSessionId: null,
-    pendingWebAuthnSessionId: null,
-    webAuthnChallenge: null,
-    loading: false,
-    error: null,
-    lastErrorCode: null,
-    lastRequestId: null,
-    lastFieldMessages: null,
-    lastSummary: null,
-    initialized: false,
-    refreshPromise: null,
-    sessionExpiredNotified: false,
-    showSessionRevokedBanner: false,
-    sessionRevokedRequestId: null,
-    lockedUntil: null,
-    trialStatus: null,
-  }),
+  state: () => {
+    const rawUser = storage.getUser()
+    const user = rawUser && typeof rawUser === 'object' && typeof rawUser.role === 'string'
+      ? { ...rawUser, role: rawUser.role.toLowerCase() }
+      : rawUser
+    return {
+      access: storage.getAccess(),
+      user,
+      csrfToken: null,
+      pendingMfaSessionId: null,
+      pendingWebAuthnSessionId: null,
+      webAuthnChallenge: null,
+      loading: false,
+      error: null,
+      lastErrorCode: null,
+      lastRequestId: null,
+      lastFieldMessages: null,
+      lastSummary: null,
+      initialized: false,
+      refreshPromise: null,
+      sessionExpiredNotified: false,
+      showSessionRevokedBanner: false,
+      sessionRevokedRequestId: null,
+      lockedUntil: null,
+      trialStatus: null,
+    }
+  },
 
   getters: {
     isAuthenticated: (state) => Boolean(state.access && state.user),
@@ -52,7 +58,8 @@ export const useAuthStore = defineStore('auth', {
 
       if (!this.user) {
         try {
-          const user = await authApi.getCurrentUser()
+          const raw = await authApi.getCurrentUser()
+          const user = this._normalizeUser(raw)
           this.user = user
           storage.setUser(user)
         } catch (error) {
@@ -271,7 +278,8 @@ export const useAuthStore = defineStore('auth', {
     async reloadUser() {
       if (!this.access) return null
       try {
-        const user = await authApi.getCurrentUser()
+        const raw = await authApi.getCurrentUser()
+        const user = this._normalizeUser(raw)
         this.user = user
         storage.setUser(user)
         return user
@@ -279,6 +287,14 @@ export const useAuthStore = defineStore('auth', {
         await this.forceLogout()
         throw error
       }
+    },
+
+    _normalizeUser(user) {
+      if (!user || typeof user !== 'object') return user
+      if (typeof user.role === 'string') {
+        return { ...user, role: user.role.toLowerCase() }
+      }
+      return user
     },
 
     setAuth({ access, user } = {}) {
@@ -291,7 +307,7 @@ export const useAuthStore = defineStore('auth', {
       }
 
       if (typeof user !== 'undefined') {
-        this.user = user || null
+        this.user = this._normalizeUser(user) || null
         storage.setUser(this.user)
       }
 
@@ -372,7 +388,8 @@ export const useAuthStore = defineStore('auth', {
     async fetchCurrentUser() {
       if (!this.access) return null
       try {
-        const user = await authApi.getCurrentUser()
+        const raw = await authApi.getCurrentUser()
+        const user = this._normalizeUser(raw)
         this.user = user
         storage.setUser(user)
         return user
