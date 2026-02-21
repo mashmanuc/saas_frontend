@@ -835,12 +835,19 @@ const router = createRouter({
   routes,
 })
 
+let _gc = 0
 router.beforeEach(async (to, from, next) => {
+  _gc++
+  const _n = _gc
+  console.warn(`[guard #${_n}] ${from.path} → ${to.path} matched=${to.matched.length}`)
+  if (_gc > 30) { console.error('[guard] LOOP BREAK #' + _n); return next(false) }
   const auth = useAuthStore()
   const profileStore = useProfileStore()
 
   if (!auth.isBootstrapped) {
+    console.warn(`[guard #${_n}] bootstrapping...`)
     await auth.bootstrap()
+    console.warn(`[guard #${_n}] bootstrap done`)
   }
 
   const hasAccessToken = Boolean(auth.access)
@@ -848,6 +855,7 @@ router.beforeEach(async (to, from, next) => {
   const user = auth.user
   // v0.88.4: homeRoute визначається через role (SSOT: config/routes.js)
   const homeRoute = user?.role ? getDefaultRouteForRole(user.role) : '/start'
+  console.warn(`[guard #${_n}] auth=${isAuthenticated} role=${user?.role} home=${homeRoute}`)
   const isAuthRoute = to.path.startsWith('/auth')
   const isInviteRoute = to.path.startsWith('/invite')
   const isStartRoute = to.path === '/start'

@@ -261,7 +261,9 @@ async function onSubmit() {
   validationErrors.password = ''
   
   try {
+    console.warn('[LoginView] calling auth.login...')
     const res = await auth.login(form)
+    console.warn('[LoginView] auth.login returned:', typeof res, res?.role, res?.id)
     if (res && typeof res === 'object' && res.webauthn_required) {
       await auth.loadWebAuthnChallenge()
       showWebAuthnPrompt.value = true
@@ -284,7 +286,13 @@ async function onSubmit() {
     } else {
       target = getDefaultRouteForRole(user?.role)
     }
-    router.push(target)
+    console.warn('[LoginView] pushing to:', target, 'user.role:', user?.role)
+    try {
+      await router.push(target)
+      console.warn('[LoginView] router.push resolved')
+    } catch (navErr) {
+      console.error('[LoginView] router.push FAILED:', navErr)
+    }
   } catch (error) {
     // v0.82.0: Помилка вже відображається через auth.error
     // auth.loading автоматично скидається в finally блоці authStore.login
