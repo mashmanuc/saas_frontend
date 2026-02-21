@@ -484,6 +484,7 @@
     "noResults": "No results",
     "back": "Back",
     "next": "Next",
+    "prev": "Previous",
     "changeLanguage": "Change Language",
     "offline": {
       "lastSync": "Остання синхронізація",
