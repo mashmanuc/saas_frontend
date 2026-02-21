@@ -7,7 +7,8 @@ export const ROLE_HOME_ROUTES = {
 }
 
 export function getDefaultRouteForRole(role) {
-  return ROLE_HOME_ROUTES[role] || '/'
+  const key = typeof role === 'string' ? role.toLowerCase() : role
+  return ROLE_HOME_ROUTES[key] || '/'
 }
 
 export function hasAccess(user, route) {
@@ -18,5 +19,6 @@ export function hasAccess(user, route) {
   if (!user?.role) {
     return false
   }
-  return allowedRoles.includes(user.role)
+  const userRole = typeof user.role === 'string' ? user.role.toLowerCase() : user.role
+  return allowedRoles.some(r => (typeof r === 'string' ? r.toLowerCase() : r) === userRole)
 }
