@@ -120,6 +120,7 @@ import Button from '../../../ui/Button.vue'
 import Card from '../../../ui/Card.vue'
 import Input from '../../../ui/Input.vue'
 import OnboardingModal from '../../onboarding/components/widgets/OnboardingModal.vue'
+import { getCanonicalOrigin } from '@/utils/canonicalOrigin'
 
 const router = useRouter()
 const route = useRoute()
@@ -187,7 +188,7 @@ onMounted(() => {
 
 async function onSubmit() {
   try {
-    const origin = typeof window !== 'undefined' ? window.location.origin : ''
+    const origin = getCanonicalOrigin()
     const redirect = form.account_type === 'tutor' ? '/marketplace/my-profile' : ''
     const redirectQuery = redirect ? `&redirect=${encodeURIComponent(redirect)}` : ''
     const verify_url = origin ? `${origin}/auth/verify-email?token={token}${redirectQuery}` : undefined

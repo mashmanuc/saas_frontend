@@ -107,6 +107,7 @@ import Button from '../../../ui/Button.vue'
 import Card from '../../../ui/Card.vue'
 import Input from '../../../ui/Input.vue'
 import OnboardingModal from '../../onboarding/components/widgets/OnboardingModal.vue'
+import { getCanonicalOrigin } from '@/utils/canonicalOrigin'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -141,7 +142,7 @@ const form = reactive({
 
 async function onSubmit() {
   try {
-    const origin = typeof window !== 'undefined' ? window.location.origin : ''
+    const origin = getCanonicalOrigin()
     const verify_url = origin ? `${origin}/auth/verify-email?token={token}` : undefined
 
     await auth.register({ ...form, verify_url })
