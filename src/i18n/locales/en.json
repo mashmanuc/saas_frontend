@@ -1360,6 +1360,8 @@
         "languagesLabel": "Languages",
         "selectLanguage": "Select language…",
         "lessonLinksTitle": "Lesson links",
+        "telegramBotTitle": "Telegram Notifications",
+        "telegramBotHint": "Connect the Telegram bot for instant notifications about new student requests. This step is optional.",
         "add": "Add",
         "remove": "Remove",
         "pricingTitle": "Pricing",

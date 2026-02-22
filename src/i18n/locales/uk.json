@@ -1623,6 +1623,8 @@
         "videoUrlPlaceholder": "https://youtube.com/watch?v=…",
         "videoHint": "Посилання на YouTube або Vimeo",
         "lessonLinksTitle": "Посилання",
+        "telegramBotTitle": "Telegram-сповіщення",
+        "telegramBotHint": "Підключіть Telegram-бот для миттєвих сповіщень про нові запити від студентів. Це необов'язковий крок.",
         "stepsCompleted": "кроків заповнено",
         "privacyTitle": "Приватність",
         "genderLabel": "Стать",

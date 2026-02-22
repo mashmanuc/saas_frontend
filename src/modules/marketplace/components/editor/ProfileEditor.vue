@@ -94,6 +94,12 @@
   grid-column: span 2;
 }
 
+.telegram-hint {
+  margin-bottom: var(--space-lg);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
 @media (max-width: 768px) {
   .span-2 {
     grid-column: span 1;
@@ -124,6 +130,7 @@ import { useRouter, useRoute } from 'vue-router'
 import LessonLinksEditor from '@/modules/booking/components/lessonLinks/LessonLinksEditor.vue'
 import { useLanguagesCatalog } from '../../composables/useLanguagesCatalog'
 import { useCatalog } from '../../composables/useCatalog'
+import TelegramNotifications from '@/modules/profile/components/settings/TelegramNotifications.vue'
 import CityAutocomplete from '@/components/geo/CityAutocomplete.vue'
 import CityPrivacyToggle from '@/components/geo/CityPrivacyToggle.vue'
 import type { SpecialtyTagCatalog } from '../../api/marketplace'
@@ -317,7 +324,7 @@ const lastAutosavedAt = ref<number | null>(null)
 const hasLocalDraft = ref(false)
 const showDraftBanner = ref(false)
 
-type EditorStepId = 'photo' | 'basic' | 'subjects' | 'teaching-languages' | 'pricing' | 'video' | 'privacy' | 'lesson-links' | 'publish'
+type EditorStepId = 'photo' | 'basic' | 'subjects' | 'teaching-languages' | 'pricing' | 'video' | 'privacy' | 'lesson-links' | 'telegram' | 'publish'
 
 const steps = computed<Array<{ id: EditorStepId; title: string }>>(() => [
   { id: 'photo', title: t('marketplace.profile.editor.photoTitle') },
@@ -329,6 +336,7 @@ const steps = computed<Array<{ id: EditorStepId; title: string }>>(() => [
   // { id: 'video', title: t('marketplace.profile.editor.videoTitle') },
   { id: 'privacy', title: t('marketplace.profile.editor.privacyTitle') },
   { id: 'lesson-links', title: t('marketplace.profile.editor.lessonLinksTitle') },
+  { id: 'telegram', title: t('marketplace.profile.editor.telegramBotTitle') },
   { id: 'publish', title: t('marketplace.profile.publish') },
 ])
 
@@ -371,6 +379,7 @@ const stepErrors = computed(() => {
     video: [],
     privacy: [],
     'lesson-links': [],
+    telegram: [],
     publish: [],
   }
 
@@ -383,6 +392,7 @@ const stepErrors = computed(() => {
     video: 0,
     privacy: 0,
     'lesson-links': 0,
+    telegram: 0,
     publish: 0,
   }
 
@@ -815,9 +825,10 @@ const stepCompletion = computed<Record<string, boolean>>(() => {
     subjects: f.subjects.length >= 1,
     'teaching-languages': (f.teaching_languages || []).length >= 1,
     pricing: f.hourly_rate > 0 && !!f.currency,
-    video: true, // v1.0: Video Intro hidden — always complete to not block progress
+    // video: removed — step hidden, excluded from progress count
     privacy: true,
     'lesson-links': true,
+    telegram: true, // Необов'язковий — завжди completed
     publish: f.is_published,
   }
 })
@@ -1063,6 +1074,12 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
         :show-header="false"
         :show-cancel-button="false"
       />
+    </section>
+
+    <section v-show="currentStep === 'telegram'" class="editor-section">
+      <h2>{{ t('marketplace.profile.editor.telegramBotTitle') }}</h2>
+      <p class="hint telegram-hint">{{ t('marketplace.profile.editor.telegramBotHint') }}</p>
+      <TelegramNotifications />
     </section>
 
     <section v-show="currentStep === 'photo'" class="editor-section">
