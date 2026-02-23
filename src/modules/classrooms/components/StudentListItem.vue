@@ -46,7 +46,7 @@ const isDeleted = computed(() => !!props.student?.is_deleted)
 
 const displayName = computed(() => {
   if (isDeleted.value) return 'Видалений користувач'
-  return props.student?.display_name || props.student?.full_name || '—'
+  return props.student?.display_name || props.student?.full_name || props.student?.name || '—'
 })
 
 const email = computed(() => {

@@ -141,11 +141,21 @@ async function loadThread() {
         // Privacy-first: use display_name from backend (format: "FirstName L.")
         studentName.value = s.display_name || s.full_name || s.email || t('common.unknown')
       }
+
+      // Fallback: якщо relation не знайдено в store — спробуємо з unreadSummary
+      if (!studentName.value) {
+        const thread = (chatThreadsStore.unreadSummary?.threads || []).find(
+          th => th.other_user_id === props.studentId
+        )
+        if (thread?.other_user_name) {
+          studentName.value = thread.other_user_name
+        }
+      }
       
       // SSOT: Перевірка доступу через relation.status, НЕ через contactAccessStore
       // Якщо relation.status === 'active' → чат доступний
-      // ContactAccess НЕ є gate для чату (див. CHAT_ACCESS_FIX_DOCUMENTATION.md)
-      if (relation.status !== 'active') {
+      // ContactAccess НЄ є gate для чату (див. CHAT_ACCESS_FIX_DOCUMENTATION.md)
+      if (relation && relation.status !== 'active') {
         error.value = t('chat.errors.contactAccessRequired')
         return
       }
@@ -159,6 +169,16 @@ async function loadThread() {
         const tut = relation.tutor
         // Student sees tutor's full name (no privacy restriction needed)
         studentName.value = tut.display_name || tut.full_name || tut.email || t('common.unknown')
+      }
+
+      // Fallback: якщо relation не знайдено в store — спробуємо з unreadSummary
+      if (!studentName.value) {
+        const thread = (chatThreadsStore.unreadSummary?.threads || []).find(
+          th => th.other_user_id === props.tutorId
+        )
+        if (thread?.other_user_name) {
+          studentName.value = thread.other_user_name
+        }
       }
       
       // Студенту не потрібна перевірка contact access

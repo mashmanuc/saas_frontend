@@ -152,7 +152,7 @@ function handleThreadClick(thread) {
     }).catch(() => {})
   } else if (role === 'student') {
     router.push({
-      name: 'chat-tutor',
+      name: 'chat_with_tutor',
       params: { tutorId: userId }
     }).catch(() => {})
   }
