@@ -1741,6 +1741,8 @@
       "studentsDescription": "Latest linked students and their status.",
       "timezoneLabel": "Timezone:",
       "timezoneUnknown": "not set",
+      "deletedUser": "Deleted user",
+      "accountDeleted": "Account deleted",
       "loadMore": "Load more",
       "status": {
         "pending": "Pending",

@@ -2568,6 +2568,8 @@
       "studentsDescription": "Останні прив'язані учні та їх статус.",
       "timezoneLabel": "Таймзона:",
       "timezoneUnknown": "не вказано",
+      "deletedUser": "Видалений користувач",
+      "accountDeleted": "Акаунт видалено",
       "loadMore": "Завантажити ще",
       "status": {
         "pending": "Очікує",

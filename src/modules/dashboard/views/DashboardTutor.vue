@@ -235,7 +235,7 @@
               </div>
             </div>
 
-            <!-- Архівні студенти - тільки 2 кнопки: Відновити та Видалити -->
+            <!-- Архівні студенти -->
             <div v-if="relation.status === 'archived'" class="flex flex-wrap items-center gap-2">
               <span
                 class="rounded-full border border-default px-3 py-1 text-xs font-semibold text-muted"
@@ -243,8 +243,19 @@
               >
                 {{ statusLabels[relation.status] || relation.status }}
               </span>
+
+              <!-- Акаунт видалено — неможливо відновити -->
+              <span
+                v-if="relation.student?.is_deleted"
+                class="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-600 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400"
+              >
+                {{ $t('dashboard.tutor.accountDeleted') }}
+              </span>
+
               <div class="flex flex-wrap gap-2">
+                <!-- Відновити — тільки якщо акаунт ще існує -->
                 <Button
+                  v-if="!relation.student?.is_deleted"
                   variant="primary"
                   size="sm"
                   :disabled="actionLoadingId === getRelationId(relation)"
@@ -484,9 +495,10 @@ const errorState = computed(() => {
 
 function getStudentName(student) {
   if (!student) return '—'
+  if (student.is_deleted) return t('dashboard.tutor.deletedUser')
   // Privacy-first: use display_name from backend (format: "FirstName L.")
   // Backend is the single source of truth for privacy-safe names
-  return student.display_name || student.full_name || '—'
+  return student.display_name || student.full_name || `${student.first_name || ''} ${student.last_name || ''}`.trim() || '—'
 }
 
 function formatLessonCount(value) {

@@ -42,9 +42,17 @@ const props = defineProps({
   },
 })
 
-const displayName = computed(() => props.student?.display_name || '—')
+const isDeleted = computed(() => !!props.student?.is_deleted)
 
-const email = computed(() => props.student?.email || '—')
+const displayName = computed(() => {
+  if (isDeleted.value) return 'Видалений користувач'
+  return props.student?.display_name || props.student?.full_name || '—'
+})
+
+const email = computed(() => {
+  if (isDeleted.value) return ''
+  return props.student?.email || '—'
+})
 
 const statusLabel = computed(() => props.student?.status || '—')
 
