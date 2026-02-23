@@ -845,7 +845,8 @@ const hasOfflineOnly = computed(() => {
 /**
  * FTUE: has_availability — чи є відкриті слоти (з профілю)
  */
-const profileHasAvailability = ref(true)
+// Default false = show no-availability hint immediately; hide after API confirms has_availability=true
+const profileHasAvailability = ref(false)
 onMounted(async () => {
   try {
     const me = await apiClient.get('/v1/marketplace/me/', { meta: { skipLoader: true } } as any)

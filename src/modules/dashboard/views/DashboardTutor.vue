@@ -368,7 +368,8 @@ const router = useRouter()
 const { t } = useI18n()
 
 // FTUE: Check if tutor profile is published
-const isProfilePublished = ref(true) // default true = hide banner until checked
+// Default false = show banner immediately; hide only after API confirms is_published=true
+const isProfilePublished = ref(false)
 
 const nextLessonAt = computed(() => dashboard.nextLessonAt)
 const userTimezone = computed(() => auth.user?.timezone)
