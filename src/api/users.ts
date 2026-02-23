@@ -153,7 +153,7 @@ export async function archiveAccount(password: string, reason: string = 'user_re
   archived_at: string
   email_suffix: string
 }> {
-  return apiClient.post(`${BASE_URL}/me/archive`, { password, reason })
+  return apiClient.post('/v1/me/archive', { password, reason })
 }
 
 /**
@@ -168,7 +168,7 @@ export async function adminArchiveUser(userId: number, reason: string = 'admin_a
   user_id: number
   archived_at: string
 }> {
-  return apiClient.post(`${BASE_URL}/admin/users/${userId}/archive`, { reason, notes })
+  return apiClient.post(`/v1/admin/users/${userId}/archive`, { reason, notes })
 }
 
 /**
@@ -182,7 +182,7 @@ export async function deleteAccount(password: string): Promise<void> {
  * Експортувати дані користувача (GDPR)
  */
 export async function exportUserData(): Promise<Blob> {
-  return apiClient.get(`${BASE_URL}/me/export/`, { responseType: 'blob' })
+  return apiClient.get('/v1/me/export/', { responseType: 'blob' })
 }
 
 /**

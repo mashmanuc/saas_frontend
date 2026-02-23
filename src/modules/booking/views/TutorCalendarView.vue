@@ -1,11 +1,35 @@
 <template>
   <div class="tutor-calendar-wrapper">
+    <!-- FTUE: First visit hint when no availability -->
+    <OnboardingHint
+      :hint-id="TutorHintId.CALENDAR_FIRST_VISIT"
+      :condition="!hasAvailability"
+      icon="💡"
+    >
+      {{ $t('onboarding.hints.calendar.firstVisit.text') }}
+    </OnboardingHint>
+
     <CalendarWeekView />
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted } from 'vue'
 import CalendarWeekView from '@/modules/booking/components/calendar/CalendarWeekView.vue'
+import OnboardingHint from '@/components/OnboardingHint.vue'
+import { TutorHintId } from '@/composables/useOnboardingHints'
+import apiClient from '@/utils/apiClient'
+
+const hasAvailability = ref(true) // default true = hide hint until checked
+
+onMounted(async () => {
+  try {
+    const me = await apiClient.get('/v1/marketplace/me/', { meta: { skipLoader: true } } as any)
+    hasAvailability.value = !!me?.has_availability
+  } catch {
+    // Silent — hint is non-critical
+  }
+})
 </script>
 
 <style scoped>

@@ -6,7 +6,29 @@
       :trial-active="auth.hasTrial"
       :dismissible="true"
     />
-    
+
+    <!-- FTUE: Welcome banner for unpublished tutors -->
+    <OnboardingHint
+      :hint-id="TutorHintId.DASHBOARD_WELCOME"
+      :condition="!isProfilePublished"
+      icon="💡"
+    >
+      <strong>{{ $t('onboarding.hints.dashboard.welcome.title') }}</strong>
+      <ol>
+        <li>{{ $t('onboarding.hints.dashboard.welcome.step1') }}</li>
+        <li>{{ $t('onboarding.hints.dashboard.welcome.step2') }}</li>
+        <li>{{ $t('onboarding.hints.dashboard.welcome.step3') }}</li>
+      </ol>
+      <template #actions>
+        <router-link to="/calendar" class="hint-btn">
+          {{ $t('onboarding.hints.dashboard.welcome.openCalendar') }}
+        </router-link>
+        <router-link to="/marketplace/my-profile" class="hint-btn">
+          {{ $t('onboarding.hints.dashboard.welcome.editProfile') }}
+        </router-link>
+      </template>
+    </OnboardingHint>
+
     <Card class="space-y-4">
       <header class="space-y-1">
         <h1 class="text-2xl font-semibold text-body">{{ $t('dashboard.tutor.title') }}</h1>
@@ -318,6 +340,9 @@ import { usePresenceStore } from '../../../stores/presenceStore'
 import { useChatThreadsStore } from '../../../stores/chatThreadsStore'
 import { useContactAccessStore } from '../../../stores/contactAccessStore'
 import TrialBanner from '../../auth/components/TrialBanner.vue'
+import OnboardingHint from '@/components/OnboardingHint.vue'
+import { TutorHintId } from '@/composables/useOnboardingHints'
+import apiClient from '@/utils/apiClient'
 import { notifySuccess, notifyError, notifyWarning } from '../../../utils/notify'
 import { getMessageAction } from '@/utils/relationsUi'
 
@@ -330,6 +355,9 @@ const contactAccessStore = useContactAccessStore()
 presenceStore.init()
 const router = useRouter()
 const { t } = useI18n()
+
+// FTUE: Check if tutor profile is published
+const isProfilePublished = ref(true) // default true = hide banner until checked
 
 const nextLessonAt = computed(() => dashboard.nextLessonAt)
 const userTimezone = computed(() => auth.user?.timezone)
@@ -735,9 +763,17 @@ onMounted(async () => {
     dashboard.fetchTutorStudents().catch(() => {})
   }
   relationsStore.fetchTutorRelations().catch(() => {})
-  
+
   if (auth.isAuthenticated) {
     startUnreadPolling()
+  }
+
+  // FTUE: Check profile publish status for welcome banner
+  try {
+    const me = await apiClient.get('/v1/marketplace/me/', { meta: { skipLoader: true } })
+    isProfilePublished.value = !!me?.is_published
+  } catch {
+    // Silent — banner is non-critical
   }
 })
 
@@ -745,3 +781,21 @@ onUnmounted(() => {
   stopUnreadPolling()
 })
 </script>
+
+<style scoped>
+.hint-btn {
+  display: inline-block;
+  padding: var(--space-2xs, 4px) var(--space-sm, 8px);
+  border-radius: var(--radius-sm, 4px);
+  background: var(--accent);
+  color: #fff;
+  text-decoration: none;
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: 500;
+  transition: opacity 0.15s;
+}
+
+.hint-btn:hover {
+  opacity: 0.85;
+}
+</style>

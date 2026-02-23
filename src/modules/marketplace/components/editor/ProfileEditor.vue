@@ -131,6 +131,9 @@ import LessonLinksEditor from '@/modules/booking/components/lessonLinks/LessonLi
 import { useLanguagesCatalog } from '../../composables/useLanguagesCatalog'
 import { useCatalog } from '../../composables/useCatalog'
 import TelegramNotifications from '@/modules/profile/components/settings/TelegramNotifications.vue'
+import OnboardingHint from '@/components/OnboardingHint.vue'
+import { TutorHintId } from '@/composables/useOnboardingHints'
+import apiClient from '@/utils/apiClient'
 import CityAutocomplete from '@/components/geo/CityAutocomplete.vue'
 import CityPrivacyToggle from '@/components/geo/CityPrivacyToggle.vue'
 import type { SpecialtyTagCatalog } from '../../api/marketplace'
@@ -815,6 +818,43 @@ const needsCityPrompt = computed(() => {
   })
 })
 
+/**
+ * FTUE: Format detection — визначає які формати обрано для subject tags
+ */
+const hasOnlineOnly = computed(() => {
+  const subjects = formData.value.subjects || []
+  const hasTags = subjects.some((s: any) =>
+    Array.isArray(s.tags) && s.tags.some((tag: any) => {
+      const code = typeof tag === 'string' ? tag : tag?.code
+      return code === 'online'
+    })
+  )
+  return hasTags && !needsCityPrompt.value
+})
+
+const hasOfflineOnly = computed(() => {
+  const subjects = formData.value.subjects || []
+  return subjects.some((s: any) =>
+    Array.isArray(s.tags) && s.tags.some((tag: any) => {
+      const code = typeof tag === 'string' ? tag : tag?.code
+      return code === 'offline'
+    })
+  )
+})
+
+/**
+ * FTUE: has_availability — чи є відкриті слоти (з профілю)
+ */
+const profileHasAvailability = ref(true)
+onMounted(async () => {
+  try {
+    const me = await apiClient.get('/v1/marketplace/me/', { meta: { skipLoader: true } } as any)
+    profileHasAvailability.value = !!me?.has_availability
+  } catch {
+    // Silent
+  }
+})
+
 const stepCompletion = computed<Record<string, boolean>>(() => {
   const f = formData.value
   return {
@@ -948,6 +988,11 @@ const publishMissingItems = computed(() => {
     items.push(t('marketplace.profile.editor.hourlyRateLabel'))
   }
 
+  // FTUE: availability check
+  if (!profileHasAvailability.value) {
+    items.push(t('onboarding.hints.profile.noAvailability'))
+  }
+
   return items
 })
 
@@ -1051,7 +1096,23 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
         <ul class="incomplete-list">
           <li v-for="item in publishMissingItems" :key="item">{{ item }}</li>
         </ul>
+        <router-link
+          v-if="!profileHasAvailability"
+          to="/calendar"
+          class="calendar-link"
+        >
+          {{ t('onboarding.hints.profile.goToCalendar') }} →
+        </router-link>
       </div>
+
+      <!-- FTUE: Пояснення що дає публікація -->
+      <OnboardingHint
+        :hint-id="TutorHintId.PROFILE_PUBLISH_BLOCKED"
+        icon="ℹ️"
+        variant="info"
+      >
+        {{ t('onboarding.hints.profile.publishExplanation') }}
+      </OnboardingHint>
 
       <div class="form-group">
         <label class="inline-toggle">
@@ -1273,6 +1334,23 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
         @select-subject="handleSelectSubject"
         @update:subjects="handleUpdateSubjects"
       />
+
+      <!-- FTUE: Format hints — пояснення наслідків вибору формату -->
+      <OnboardingHint
+        v-if="hasOnlineOnly"
+        :hint-id="TutorHintId.PROFILE_FORMAT_ONLINE"
+        icon="🌐"
+      >
+        {{ t('onboarding.hints.profile.formatOnline') }}
+      </OnboardingHint>
+      <OnboardingHint
+        v-if="hasOfflineOnly"
+        :hint-id="TutorHintId.PROFILE_FORMAT_OFFLINE"
+        variant="warning"
+        icon="📍"
+      >
+        {{ t('onboarding.hints.profile.formatOffline') }}
+      </OnboardingHint>
 
       <!-- v1.0: Хлібні крихти — Місто з'являється коли обрано офлайн/гібрид -->
       <Transition name="fade">

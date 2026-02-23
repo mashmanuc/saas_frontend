@@ -2619,6 +2619,35 @@
     "offline": "Disconnected from realtime services"
   },
   "onboarding": {
+    "hints": {
+      "dismiss": "Close hint",
+      "dashboard": {
+        "welcome": {
+          "title": "To be visible to students on Marketplace:",
+          "step1": "Set your available days in the calendar",
+          "step2": "Complete your tutor profile",
+          "step3": "Publish your profile",
+          "openCalendar": "Open Calendar",
+          "editProfile": "Edit Profile",
+          "dismiss": "Don't show again"
+        }
+      },
+      "calendar": {
+        "firstVisit": {
+          "text": "Students can only see you on the days you open here. Without available days, your profile won't appear on Marketplace.",
+          "dismiss": "Got it"
+        }
+      },
+      "profile": {
+        "formatOnline": "Students from any city can find you",
+        "formatOffline": "Students will see you in the selected city. Don't forget to set your city.",
+        "formatHybrid": "Students will find you both online and in your city",
+        "publishExplanation": "After publishing, your profile will appear in Marketplace search. Students will be able to view your profile, see your schedule, and send a lesson request.",
+        "noAvailability": "Open available days in the calendar — without them, students can't book a lesson",
+        "goToCalendar": "Go to Calendar",
+        "publishBlocked": "To publish your profile, fill in the required fields and open days in the calendar"
+      }
+    },
     "skip": "Skip",
     "finish": "Finish",
     "dismissForNow": "I'll do this later",
