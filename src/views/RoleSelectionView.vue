@@ -19,7 +19,8 @@ const currentLanguage = computed(() => {
 
 const languages = [
   { code: 'uk', label: 'Українська', short: 'УКР' },
-  { code: 'en', label: 'English', short: 'ENG' }
+  { code: 'en', label: 'English', short: 'ENG' },
+  { code: 'ru', label: 'Русский', short: 'РУС' }
 ]
 
 onMounted(() => {

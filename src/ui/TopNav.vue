@@ -224,7 +224,7 @@ const roleLabel = computed(() => {
 })
 
 /* ------------------------- Language toggle ------------------------- */
-const localeOptions = ['uk', 'en']
+const localeOptions = ['uk', 'en', 'ru']
 const currentLocale = computed(() => settings.locale)
 
 function changeLocale(locale) {

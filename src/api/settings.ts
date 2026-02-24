@@ -87,7 +87,7 @@ export async function updateUserSettings(data: UserSettingsUpdate): Promise<User
  * Validate language code
  */
 export function isValidLanguage(lang: string): boolean {
-  return ['uk', 'en'].includes(lang)
+  return ['uk', 'en', 'ru'].includes(lang)
 }
 
 /**
