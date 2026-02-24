@@ -132,66 +132,77 @@ const otherLanguages = computed(() => {
 })
 
 // v0.89: Маппінг ISO кодів мов → subject codes в subject_tag_map.json
+// Only map languages that have explicit entries in subject_tag_map.json
+// Others fall back to 'english-language' config (generic language tags)
 const LANGUAGE_ISO_TO_SUBJECT: Record<string, string> = {
   'en': 'english-language',
   'de': 'german-language',
   'pl': 'polish-language',
   'uk': 'ukrainian-language',
-  'fr': 'english-language',   // fallback to english-language config
-  'es': 'english-language',
-  'it': 'english-language',
-  'pt': 'english-language',
-  'cs': 'english-language',
-  'sk': 'english-language',
-  'ro': 'english-language',
-  'hu': 'english-language',
-  'nl': 'english-language',
-  'tr': 'english-language',
-  'zh': 'english-language',
-  'ja': 'english-language',
-  'ko': 'english-language',
-  'el': 'english-language',
-  'sv': 'english-language',
-  'no': 'english-language',
+  'fr': 'french-language',
+  'es': 'spanish-language',
+  'it': 'italian-language',
+  'pt': 'portuguese-language',
+  'cs': 'czech-language',
+  'sk': 'slovak-language',
+  'ro': 'romanian-language',
+  'hu': 'hungarian-language',
+  'nl': 'dutch-language',
+  'tr': 'turkish-language',
+  'zh': 'chinese-language',
+  'ja': 'japanese-language',
+  'ko': 'korean-language',
+  'el': 'greek-language',
+  'sv': 'swedish-language',
+  'no': 'norwegian-language',
 }
 
-// v0.87: FAIL-CLOSED - Get available tags for a specific subject
-// Returns empty array if map not loaded or subject not configured
-// This prevents showing incorrect tags (e.g., language tags for STEM)
-function getAvailableTagsForSubject(subjectCode: string): SpecialtyTagCatalog[] {
-  const tagMap = marketplaceStore.subjectTagMap
+// Reactive ref to tagMap — computed deps update when map loads
+const tagMap = computed(() => marketplaceStore.subjectTagMap)
 
-  // v0.89: Resolve language_* codes to *-language subject codes
-  let resolvedCode = subjectCode
-  if (subjectCode.startsWith('language_')) {
-    const isoCode = subjectCode.replace('language_', '')
-    resolvedCode = LANGUAGE_ISO_TO_SUBJECT[isoCode] || 'english-language'
+// Resolve subject code for tag lookup
+// language_en → english-language, language_fr → french-language (or fallback)
+function resolveSubjectCode(subjectCode: string): string {
+  if (!subjectCode.startsWith('language_')) return subjectCode
+  const isoCode = subjectCode.replace('language_', '')
+  const mapped = LANGUAGE_ISO_TO_SUBJECT[isoCode]
+  if (!mapped) return 'english-language'
+  // If specific language not in map, fallback to english-language
+  if (tagMap.value?.subjects && !tagMap.value.subjects[mapped]) {
+    return 'english-language'
   }
+  return mapped
+}
 
-  // FAIL-CLOSED: Use safe filter that returns [] if map not ready
+// Get available tags — reactive, recomputes when tagMap loads
+function getAvailableTagsForSubject(subjectCode: string): SpecialtyTagCatalog[] {
+  const resolvedCode = resolveSubjectCode(subjectCode)
   return filterTagsForSubjectSafe(
     resolvedCode,
     props.subjectTagCatalog,
-    tagMap
+    tagMap.value
   )
 }
 
 // v0.84.0: Розділяємо основні предмети та мови для SubjectCardList
-const basicSubjects = computed(() =>
-  props.subjects
+const basicSubjects = computed(() => {
+  // Explicit dependency on tagMap so computed re-runs when map loads
+  const _map = tagMap.value
+  return props.subjects
     .filter(s => !s.code.startsWith('language_'))
     .map(s => ({
       code: s.code,
       title: props.getSubjectLabel(s.code),
       tags: s.tags || [],
       custom_direction_text: s.custom_direction_text || '',
-      // v0.87: Pass available tags (FAIL-CLOSED - returns [] if map not ready)
       availableTags: getAvailableTagsForSubject(s.code),
     }))
-)
+})
 
-const languageSubjects = computed(() =>
-  props.subjects
+const languageSubjects = computed(() => {
+  // Explicit dependency on tagMap so computed re-runs when map loads
+  const _map = tagMap.value
+  return props.subjects
     .filter(s => s.code.startsWith('language_'))
     .map(s => ({
       code: s.code,
@@ -199,10 +210,9 @@ const languageSubjects = computed(() =>
       level: '',
       tags: s.tags || [],
       description: s.custom_direction_text || '',
-      // v0.89: Pass available tags for language subjects (resolved via ISO→subject mapping)
       availableTags: getAvailableTagsForSubject(s.code),
     }))
-)
+})
 
 // v0.84.0: Перевірка чи мова вже додана (анти-дубль)
 function isLanguageSubjectSelected(langCode: string): boolean {
