@@ -117,6 +117,8 @@ export const useRelationsStore = defineStore('relations', {
     },
 
     async fetchStudentRelations(params = {}) {
+      // Захист від паралельних запитів
+      if (this.studentLoading) return
       this.studentLoading = true
       this.studentError = null
 

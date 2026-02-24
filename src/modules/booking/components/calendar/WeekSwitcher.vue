@@ -65,18 +65,15 @@ const isCurrentWeek = computed(() => {
 
 function onPrev() {
   const newStart = dayjs(props.weekStart).subtract(1, 'week').format('YYYY-MM-DD')
-  console.log('[WeekSwitcher] onPrev', { current: props.weekStart, new: newStart })
   emit('change', newStart)
 }
 
 function onNext() {
   const newStart = dayjs(props.weekStart).add(1, 'week').format('YYYY-MM-DD')
-  console.log('[WeekSwitcher] onNext', { current: props.weekStart, new: newStart })
   emit('change', newStart)
 }
 
 function onToday() {
-  console.log('[WeekSwitcher] onToday', { todayWeekStart: todayWeekStart.value })
   emit('change', todayWeekStart.value)
 }
 </script>

@@ -304,7 +304,6 @@ async function fetchMyCalendar() {
     })
     
     myEvents.value = response.results
-    console.log('[StudentCalendarView] Fetched events:', response.results.length)
   } catch (err: any) {
     error.value = err.message || 'Failed to load calendar'
     console.error('[StudentCalendarView] Error fetching calendar:', err)
@@ -315,7 +314,6 @@ async function fetchMyCalendar() {
 
 watch(currentWeekStart, () => {
   fetchMyCalendar()
-  console.log('[StudentCalendarView] Fetching week starting', currentWeekStart.value.format('YYYY-MM-DD'))
 }, { immediate: true })
 
 function goToPreviousWeek() {

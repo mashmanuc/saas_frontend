@@ -210,17 +210,8 @@ const blockedRangesForDay = (dateStr: string): BlockedRange[] => {
 }
 
 const draftSlotsForDay = (dateStr: string): DraftSlot[] => {
-  console.log('[CalendarBoardV2] draftSlotsForDay called for:', dateStr)
-  console.log('[CalendarBoardV2] props.draftSlots:', props.draftSlots)
-  
-  if (!props.draftSlots) {
-    console.log('[CalendarBoardV2] No draftSlots prop, returning []')
-    return []
-  }
-  
-  const filtered = props.draftSlots.filter(s => s.start.startsWith(dateStr))
-  console.log('[CalendarBoardV2] Filtered draft slots for', dateStr, ':', filtered)
-  return filtered
+  if (!props.draftSlots) return []
+  return props.draftSlots.filter(s => s.start.startsWith(dateStr))
 }
 
 const boardStyles = computed(() => ({
@@ -232,31 +223,23 @@ const handleEventClick = (event: CalendarEvent) => {
 }
 
 const handleSlotClick = (slot: AccessibleSlot) => {
-  console.log('[CalendarBoardV2] handleSlotClick called with:', slot)
   emit('slot-click', slot)
-  console.log('[CalendarBoardV2] slot-click event emitted')
 }
 
 const handleCellClick = (date: string, hour: number) => {
-  console.log('[CalendarBoardV2] Cell clicked:', { date, hour })
   emit('cell-click', { date, hour })
 }
 
 const handleAvailabilityCellClick = (cellInfo: { start: string; end: string; canAdd: boolean; canRemove: boolean; slotId?: number }) => {
-  console.log('[CalendarBoardV2] Availability cell clicked:', cellInfo)
-  console.log('[CalendarBoardV2] Emitting cell-click event with:', cellInfo)
   emit('cell-click', cellInfo)
-  console.log('[CalendarBoardV2] cell-click event emitted successfully')
 }
 
-const handleEventDragStart = (event: CalendarEvent, mouseEvent: MouseEvent) => {
+const handleEventDragStart = (event: CalendarEvent, _mouseEvent: MouseEvent) => {
   dragDrop.startDrag(event)
 }
 
-const handleDragStart = (mouseEvent: MouseEvent) => {
-  // InteractionLayer emits mouseEvent, but we need to determine which event was clicked
-  // This will be handled by EventsLayer click, not InteractionLayer mousedown
-  console.log('[CalendarBoardV2] Drag start from interaction layer', mouseEvent)
+const handleDragStart = (_mouseEvent: MouseEvent) => {
+  // InteractionLayer emits mouseEvent, but drag is handled by EventsLayer click
 }
 
 const handleDragMove = (slot: { start: string; end: string }) => {

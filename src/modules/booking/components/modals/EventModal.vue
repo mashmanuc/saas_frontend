@@ -281,28 +281,15 @@ const canDelete = computed(() => {
 })
 
 const canEdit = computed(() => {
-  if (!eventDetails.value) {
-    console.log('[EventModal] canEdit: no eventDetails')
-    return false
-  }
+  if (!eventDetails.value) return false
   const event = eventDetails.value.event
-  
+
   // Не можна редагувати урок у минулому
   const eventStart = new Date(event.start)
   const now = new Date()
-  console.log('[EventModal] canEdit check:', {
-    eventStart: eventStart.toISOString(),
-    now: now.toISOString(),
-    isPast: eventStart < now,
-    eventData: event
-  })
-  
-  if (eventStart < now) {
-    console.log('[EventModal] canEdit: false (event in past)')
-    return false
-  }
-  
-  console.log('[EventModal] canEdit: true')
+
+  if (eventStart < now) return false
+
   return true
 })
 
@@ -312,7 +299,6 @@ const availableDurations = computed(() => {
 })
 
 watch(() => props.visible, async (visible) => {
-  console.log('[EventModal] Visibility changed:', visible, 'eventId:', props.eventId)
   if (visible) {
     await loadEventDetails()
   } else {
@@ -322,18 +308,14 @@ watch(() => props.visible, async (visible) => {
 })
 
 async function loadEventDetails() {
-  console.log('[EventModal] loadEventDetails START, eventId:', props.eventId)
   isLoading.value = true
   error.value = null
-  
+
   try {
-    console.log('[EventModal] Calling store.getEventDetails...')
     const details = await store.getEventDetails(props.eventId)
-    console.log('[EventModal] Received details:', details)
-    
+
     eventDetails.value = details
-    console.info('[EventModal] Event details loaded:', props.eventId, eventDetails.value)
-    
+
     // Ініціалізувати форму редагування
     const startDate = new Date(eventDetails.value.event.start)
     editForm.value = {
@@ -344,13 +326,11 @@ async function loadEventDetails() {
       regularity: eventDetails.value.event.regularity || 'single',
       tutorComment: eventDetails.value.event.tutorComment || '',
     }
-    console.log('[EventModal] Form initialized:', editForm.value)
   } catch (err: any) {
     console.error('[EventModal] Load error:', err)
     handleError(err, t('booking.calendar.errors.loadFailed'))
   } finally {
     isLoading.value = false
-    console.log('[EventModal] loadEventDetails END, isLoading:', isLoading.value, 'eventDetails:', !!eventDetails.value)
   }
 }
 

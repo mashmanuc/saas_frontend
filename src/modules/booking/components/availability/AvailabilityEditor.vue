@@ -117,7 +117,6 @@ onMounted(async () => {
     // Load existing slots from store
     try {
       await slotStore.loadSlots({ page: 0 })
-      console.log('[AvailabilityEditor] Loaded existing slots:', slotStore.slots)
     } catch (calendarError) {
       console.warn('[AvailabilityEditor] Could not load calendar data:', calendarError)
     }
@@ -267,7 +266,6 @@ async function handleRetry() {
     
     // Handle 401 errors - token might have been refreshed, retry once
     if (error?.response?.status === 401 && !error.config?._retryAfter401) {
-      console.log('[AvailabilityEditor] 401 on retry, attempting again after token refresh...')
       try {
         if (error.config) {
           error.config._retryAfter401 = true

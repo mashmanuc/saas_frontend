@@ -49,8 +49,6 @@ export function useSlotEditor() {
   ): Promise<AccessibleSlotV055> {
     isLoading.value = true
     
-    console.log('[useSlotEditor] editSlot called:', { slotId, newStart, newEnd, strategy, overrideReason })
-    
     // Optimistic update: remove slot temporarily
     const slotIdNum = parseInt(slotId)
     calendarStore.removeOptimisticSlot(slotIdNum)
@@ -64,8 +62,6 @@ export function useSlotEditor() {
           end: newEnd
         }
       )
-      
-      console.log('[useSlotEditor] editSlot response:', updatedSlot)
       
       // Refresh snapshot to get updated data
       if (calendarStore.currentTutorId && calendarStore.currentWeekStart) {
@@ -145,20 +141,13 @@ export function useSlotEditor() {
    * Mark slot for deletion (draft-only, no immediate DELETE)
    */
   function markSlotForDeletion(slotId: number): void {
-    console.log('[useSlotEditor] markSlotForDeletion called:', slotId)
     draftStore.markSlotForDeletion(slotId)
-    console.log('[useSlotEditor] Slot marked for deletion:', {
-      slotId,
-      toRemove: draftStore.removedIds,
-      hasChanges: draftStore.hasChanges
-    })
   }
   
   /**
    * Add new slot to draft (for future use)
    */
   function addSlotToDraft(slot: DraftSlot): void {
-    console.log('[useSlotEditor] addSlotToDraft called:', slot)
     if (slot.start && slot.end) {
       draftStore.addSlot(slot.start, slot.end, slot.status || 'available')
     }
@@ -168,7 +157,6 @@ export function useSlotEditor() {
    * Clear all draft changes
    */
   function clearDraft(): void {
-    console.log('[useSlotEditor] clearDraft called')
     draftStore.resetState()
   }
 
@@ -180,31 +168,19 @@ export function useSlotEditor() {
    * Apply all draft changes (toAdd + toRemove)
    */
   async function applyDraft(force: boolean = false, options?: { weekStart?: string; timezone?: string }): Promise<void> {
-    if (!draftStore.hasChanges) {
-      console.log('[useSlotEditor] No changes to apply')
-      return
-    }
-    
+    if (!draftStore.hasChanges) return
+
     const effectiveWeekStart = options?.weekStart || draftStore.weekStart || calendarStore.currentWeekStart
-    
+
     if (!effectiveWeekStart) {
       toast.error(t('calendar.slotEditor.noWeekStart'))
       return
     }
-    
+
     isLoading.value = true
-    
+
     try {
-      console.log('[useSlotEditor] Applying draft:', {
-        weekStart: effectiveWeekStart,
-        changesCount: draftStore.changeCount,
-        toAdd: draftStore.toAdd.length,
-        toRemove: draftStore.toRemove.length
-      })
-      
       const applyResponse = await draftStore.applyDraft(force, effectiveWeekStart)
-      
-      console.log('[useSlotEditor] Draft applied:', applyResponse)
       
       if (applyResponse.status === 'conflicts') {
         console.warn('[useSlotEditor] Conflicts detected:', applyResponse.conflicts)

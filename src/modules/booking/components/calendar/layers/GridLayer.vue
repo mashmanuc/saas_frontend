@@ -46,7 +46,6 @@ const handleCellClick = (hour: number) => {
   const date = dayDate.value
   if (!date) return
   
-  console.log('[GridLayer] Cell clicked:', { date, hour })
   emit('cell-click', hour)
 }
 

@@ -248,11 +248,6 @@ export const useAvailabilityDraftUnifiedStore = defineStore('availabilityDraftUn
         }
       })
 
-      console.log('[availabilityDraftUnifiedStore] createDraft payload:', {
-        weekStart: effectiveWeekStart,
-        slots: payload,
-      })
-
       const response = await calendarAvailabilityApi.createDraft({
         weekStart: effectiveWeekStart,
         slots: payload,

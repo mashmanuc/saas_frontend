@@ -44,11 +44,6 @@ export const useTutorLessonLinksStore = defineStore('tutorLessonLinks', () => {
       effectivePrimary.value = response.effective_primary
       updatedAt.value = response.updated_at
       
-      console.log('[tutorLessonLinksStore] Fetched lesson links:', {
-        primary: primary.value?.provider,
-        backup: backup.value?.provider,
-        effectivePrimary: effectivePrimary.value?.provider
-      })
     } catch (err: any) {
       error.value = err?.response?.data?.error || err.message || 'Failed to fetch lesson links'
       console.error('[tutorLessonLinksStore] Fetch error:', err)
@@ -79,11 +74,6 @@ export const useTutorLessonLinksStore = defineStore('tutorLessonLinks', () => {
       backup.value = response.backup
       effectivePrimary.value = response.effective_primary
       updatedAt.value = response.updated_at
-      
-      console.log('[tutorLessonLinksStore] Patched lesson links:', {
-        primary: primary.value?.provider,
-        backup: backup.value?.provider
-      })
       
       return response
     } catch (err: any) {

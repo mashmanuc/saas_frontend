@@ -228,7 +228,6 @@ function selectStudent(student: StudentListItem): void {
   searchQuery.value = ''
   isOpen.value = false
   emit('update:modelValue', student.student_id)
-  console.log('[ui.student_selected]', { studentId: student.student_id })
 }
 
 function clearSelection(): void {

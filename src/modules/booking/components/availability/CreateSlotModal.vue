@@ -242,8 +242,6 @@ async function handleCreate() {
       regularity: 'single' as const
     }
     
-    console.log('[CreateSlotModal] Optimistic slot created:', optimisticSlot)
-    
     // Add to calendar store for immediate display
     calendarStore.addOptimisticSlot(optimisticSlot)
     
@@ -251,16 +249,6 @@ async function handleCreate() {
     await new Promise(resolve => setTimeout(resolve, 0))
     
     const createdSlot = await bookingApi.createCustomSlot(slotData)
-    
-    console.log('[CreateSlotModal] Slot created on server:', createdSlot)
-    console.log('[CreateSlotModal] Server response structure:', {
-      id: createdSlot?.id,
-      date: createdSlot?.date,
-      start_time: createdSlot?.start_time,
-      end_time: createdSlot?.end_time,
-      start_datetime: createdSlot?.start_datetime,
-      end_datetime: createdSlot?.end_datetime
-    })
     
     // Update optimistic slot with real data (same approach as editSlot)
     // Don't remove and re-add - just update in place to avoid race conditions with WebSocket
@@ -287,8 +275,6 @@ async function handleCreate() {
         end: endTime,
         regularity: 'single' as const
       }
-      console.log('[CreateSlotModal] Updating optimistic slot to real:', { tempId, realSlot })
-      
       // Replace temp with real in one atomic operation (prevents WebSocket race conditions)
       calendarStore.replaceOptimisticSlot(tempId, realSlot)
     } else {
@@ -340,7 +326,6 @@ async function handleCreate() {
     
     // Handle 401 errors - retry after token refresh
     if (status === 401 && !err.config?._retryAfter401) {
-      console.log('[CreateSlotModal] 401 detected, retrying after token refresh...')
       try {
         if (err.config) {
           err.config._retryAfter401 = true

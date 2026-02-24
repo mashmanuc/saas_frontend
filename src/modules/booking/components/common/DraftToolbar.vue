@@ -55,11 +55,9 @@ async function handleApply() {
     if (result && typeof result === 'object' && 'summary' in result) {
       const { summary } = result as any
       if (summary.rejected === 0) {
-        // Success notification would go here
-        console.log(`Застосовано ${summary.applied} змін`)
+        // Success: summary.applied changes applied
       } else {
-        // Warning notification would go here
-        console.log(`${summary.rejected} відхилено`)
+        // Warning: summary.rejected changes rejected
       }
     }
   } catch (err: any) {
@@ -74,8 +72,6 @@ async function handleReset() {
   const confirmed = await confirmService.confirm('Clear all changes?')
   if (confirmed) {
     draftStore.clearAllPatches()
-    // Info notification would go here
-    console.log('Changes cleared')
   }
 }
 

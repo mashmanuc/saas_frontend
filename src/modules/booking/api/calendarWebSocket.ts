@@ -29,13 +29,10 @@ export class CalendarWebSocket {
     return new Promise((resolve, reject) => {
       const url = buildWsUrl('/ws/calendar/')
 
-      console.log('[CalendarWebSocket] Connecting to:', url)
-
       const protocols: string[] = ['access_token', this.token]
       this.ws = new WebSocket(url, protocols)
 
       this.ws.onopen = () => {
-        console.log('[CalendarWebSocket] Connected')
         this.reconnectAttempts = 0
         this.startPing()
         resolve()
@@ -46,8 +43,7 @@ export class CalendarWebSocket {
         reject(error)
       }
 
-      this.ws.onclose = (event) => {
-        console.log('[CalendarWebSocket] Disconnected:', event.code, event.reason)
+      this.ws.onclose = (_event) => {
         this.stopPing()
         this.handleReconnect()
       }
@@ -89,8 +85,6 @@ export class CalendarWebSocket {
   }
 
   private handleMessage(message: WebSocketMessage): void {
-    console.log('[CalendarWebSocket] Message received:', message.type)
-
     const handlers = this.handlers.get(message.type)
     if (handlers) {
       handlers.forEach(handler => handler(message.data))
@@ -116,8 +110,6 @@ export class CalendarWebSocket {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++
       const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1)
-      
-      console.log(`[CalendarWebSocket] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`)
       
       setTimeout(() => {
         this.connect().catch(error => {

@@ -1041,6 +1041,7 @@
   "menu": {
     "studentDashboard": "Кабінет студента",
     "dashboard": "Панель керування",
+    "security": "Безпека / MFA",
     "classrooms": "Класи",
     "students": "Студенти",
     "lessons": "Уроки",

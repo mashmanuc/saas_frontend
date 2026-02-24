@@ -433,44 +433,35 @@ watch(
 )
 
 async function loadEventDetails() {
-  console.log('[EditLessonModal] loadEventDetails START, eventId:', props.eventId)
   isLoading.value = true
   error.value = null
-  
+
   try {
-    console.log('[EditLessonModal] Calling store.getEventDetails...')
     const details = await store.getEventDetails(props.eventId)
-    console.log('[EditLessonModal] Received details:', details)
-    console.log('[EditLessonModal] details.event:', details?.event)
-    console.log('[EditLessonModal] details.dictionaries:', details?.dictionaries)
-    
+
     eventDetails.value = details
-    console.log('[EditLessonModal] eventDetails.value set:', eventDetails.value)
-    
+
     const startDate = new Date(details.event.start)
     const year = startDate.getFullYear()
     const month = String(startDate.getMonth() + 1).padStart(2, '0')
     const day = String(startDate.getDate()).padStart(2, '0')
     const hours = String(startDate.getHours()).padStart(2, '0')
     const minutes = String(startDate.getMinutes()).padStart(2, '0')
-    
+
     editForm.value = {
       start: `${year}-${month}-${day}T${hours}:${minutes}`,
       durationMin: details.event.durationMin || 60,
       tutorComment: details.event.tutorComment || '',
     }
-    console.log('[EditLessonModal] editForm initialized:', editForm.value)
-    
+
     rescheduleForm.value = {
       targetStart: `${year}-${month}-${day}T${hours}:${minutes}`,
     }
-    console.log('[EditLessonModal] rescheduleForm initialized:', rescheduleForm.value)
   } catch (err: any) {
     console.error('[EditLessonModal] Load error:', err)
     handleError(err, t('calendar.errors.loadFailed'))
   } finally {
     isLoading.value = false
-    console.log('[EditLessonModal] loadEventDetails END, isLoading:', isLoading.value, 'eventDetails:', !!eventDetails.value)
   }
 }
 

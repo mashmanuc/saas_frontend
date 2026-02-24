@@ -1291,13 +1291,6 @@ export const marketplaceApi = {
     const safeWeekStart = normalizeWeekStart(params.weekStart)
     const safeTimezone = params.timezone || getBrowserTimezone()
     
-    console.log('[marketplaceApi.getTutorCalendar] Request:', {
-      tutorId: params.tutorId,
-      weekStart: safeWeekStart,
-      timezone: safeTimezone,
-      url: `/v1/marketplace/tutors/${params.tutorId}/calendar/`
-    })
-    
     const response = await apiClient.get(`/v1/marketplace/tutors/${params.tutorId}/calendar/`, {
       params: {
         // v0.59 compatibility: backend may expect either start or week_start (or both)
@@ -1306,11 +1299,6 @@ export const marketplaceApi = {
         tz: safeTimezone,
         timezone: safeTimezone,
       },
-    })
-    
-    console.log('[marketplaceApi.getTutorCalendar] Response:', {
-      status: 'success',
-      data: response
     })
     
     return response as unknown as TutorCalendarResponse

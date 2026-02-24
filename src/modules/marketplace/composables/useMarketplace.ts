@@ -96,13 +96,13 @@ export function useMarketplace() {
   }
 
   // Watch for filter changes and update URL
+  // deep: true не потрібен - геттер вже повертає новий об'єкт при кожній зміні filters
   watch(
     () => ({ ...filters.value, sort: sortBy.value }),
     (payload) => {
       const { sort, ...rest } = payload as any
       updateUrlWithFilters(rest)
-    },
-    { deep: true }
+    }
   )
 
   onMounted(() => {

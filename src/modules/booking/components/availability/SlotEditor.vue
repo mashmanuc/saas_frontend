@@ -223,14 +223,6 @@ async function handleTimeChange() {
 }
 
 async function handleSave() {
-  console.log('[SlotEditor] handleSave called:', {
-    slotId: props.slot.id,
-    localStart: localStart.value,
-    localEnd: localEnd.value,
-    strategy: selectedStrategy.value,
-    overrideReason: overrideReason.value
-  })
-  
   try {
     const updatedSlot = await editSlot(
       props.slot.id,
@@ -239,9 +231,7 @@ async function handleSave() {
       selectedStrategy.value,
       overrideReason.value
     )
-    
-    console.log('[SlotEditor] Slot saved successfully:', updatedSlot)
-    
+
     // Convert AccessibleSlotV055 to Slot format for emit
     const slotForEmit: Slot = {
       id: String(updatedSlot.id),
@@ -260,7 +250,6 @@ async function handleSave() {
     
     // Handle 401 errors specifically - token might have been refreshed, retry once
     if (error?.response?.status === 401 && !error.config?._retryAfter401) {
-      console.log('[SlotEditor] 401 detected, token should be refreshed, retrying...')
       try {
         // Mark this request as retried to avoid infinite loops
         if (error.config) {
@@ -274,8 +263,6 @@ async function handleSave() {
           selectedStrategy.value,
           overrideReason.value
         )
-        console.log('[SlotEditor] Retry successful:', updatedSlot)
-        
         const slotForEmit: Slot = {
           id: String(updatedSlot.id),
           date: updatedSlot.start.slice(0, 10),

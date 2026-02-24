@@ -301,6 +301,12 @@ const routes = [
         component: () => import('../modules/profile/views/UserSettingsView.vue'),
         meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
       },
+      {
+        path: 'settings/security',
+        name: 'settings-security',
+        component: SettingsSecurityView,
+        meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
+      },
       // Tutor Profile routes - REDIRECTED TO MARKETPLACE
       {
         path: 'tutor/profile',

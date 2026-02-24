@@ -148,8 +148,6 @@ async function handleBlock() {
   try {
     await bookingApi.blockSlot(Number(props.slot.id), blockReason.value || undefined)
     
-    console.log('[BlockSlotModal] Slot blocked:', props.slot.id)
-    
     toast.success(t('calendar.blockSlot.success'))
     emit('blocked', props.slot.id)
   } catch (error: any) {
@@ -157,7 +155,6 @@ async function handleBlock() {
     
     // Handle 401 errors - retry after token refresh
     if (error?.response?.status === 401 && !error.config?._retryAfter401) {
-      console.log('[BlockSlotModal] 401 detected, retrying after token refresh...')
       try {
         if (error.config) {
           error.config._retryAfter401 = true

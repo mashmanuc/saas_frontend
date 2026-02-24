@@ -95,27 +95,11 @@ export const calendarV055Api = {
       params.timezone = timezone
     }
 
-    console.log('[calendarV055Api] getCalendarWeek request', {
-      tutorId,
-      weekStart,
-      etag: etag || null,
-      timezone: timezone || null,
-      headers,
-    })
-
     try {
       const response = await api.get('/v1/calendar/week/v055/', {
         params,
         headers,
       }) as CalendarSnapshot
-      console.log('[calendarV055Api] getCalendarWeek response', {
-        hasResponse: !!response,
-        days: (response as any)?.days?.length ?? 0,
-        events: Array.isArray((response as any)?.events)
-          ? (response as any).events.length
-          : Object.values((response as any)?.events || {}).flat().length,
-        metaEtag: (response as any)?.meta?.etag || null,
-      })
       
       if (!response) {
         throw new Error('API returned empty response')
@@ -277,13 +261,10 @@ export const calendarV055Api = {
       doneStatuses: string[]
     }
   }> {
-    console.log('[calendarV055Api] getEventDetails called for id:', id)
     const payload = await api.get(`/v1/calendar/event/${id}/`)
-    console.log('[calendarV055Api] getEventDetails raw payload:', payload)
-    
+
     // Backend returns { status: "success", data: { event, dictionaries } }
     if (payload?.data?.event && payload?.data?.dictionaries) {
-      console.log('[calendarV055Api] getEventDetails returning data:', payload.data)
       return payload.data
     }
     

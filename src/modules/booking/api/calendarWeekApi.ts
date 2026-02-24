@@ -53,7 +53,6 @@ export const calendarWeekApi = {
     includeStats?: boolean
     etag?: string
   }): Promise<{ data: WeekSnapshot; etag: string; cached: boolean }> {
-    console.log('[calendarWeekApi] Fetching week snapshot:', params)
     const headers: Record<string, string> = {}
     
     if (params.etag) {
@@ -105,12 +104,6 @@ export const calendarWeekApi = {
         },
       }
       
-      console.log('[calendarWeekApi] Snapshot received:', {
-        daysCount: normalizedData.days.length,
-        eventsCount: Object.values(normalizedData.events).flat().length,
-        etag,
-      })
-      
       return {
         data: normalizedData,
         etag,
@@ -119,7 +112,6 @@ export const calendarWeekApi = {
     } catch (error: any) {
       // Handle 304 Not Modified
       if (error.response?.status === 304) {
-        console.log('[calendarWeekApi] Snapshot not modified (304)')
         return {
           data: null as any,
           etag: params.etag || '',
@@ -137,12 +129,8 @@ export const calendarWeekApi = {
     notifyStudent?: boolean
     autoGenerateZoom?: boolean
   }): Promise<CreateEventResponse> {
-    console.log('[calendarWeekApi] Creating event:', payload)
-    
     const response = await api.post<any>('/v1/calendar/event/create/', payload) as unknown as CreateEventResponse
-    
-    console.log('[calendarWeekApi] Event created:', response)
-    
+
     return response
   },
 
@@ -150,11 +138,7 @@ export const calendarWeekApi = {
    * Видалити урок
    */
   async deleteEvent(payload: DeleteEventPayload): Promise<void> {
-    console.log('[calendarWeekApi] Deleting event:', payload.id)
-    
     await api.post<DeleteEventResponse>('/v1/calendar/event/delete/', payload)
-    
-    console.log('[calendarWeekApi] Event deleted')
   },
 
   /**
@@ -165,22 +149,14 @@ export const calendarWeekApi = {
     doneStatus?: 'done' | 'not_done' | 'not_done_client_missed' | 'done_client_missed'
     notifyStudent?: boolean
   }): Promise<void> {
-    console.log('[calendarWeekApi] Updating event:', payload)
-    
     await api.post<DeleteEventResponse>('/v1/calendar/event/update/', payload)
-    
-    console.log('[calendarWeekApi] Event updated')
   },
 
   /**
    * Масове оновлення подій
    */
   async bulkUpdateEvents(payload: BulkUpdatePayload): Promise<BulkUpdateResponse> {
-    console.log('[calendarWeekApi] Bulk updating events:', payload)
-    
     const response = await api.post<BulkUpdateResponse>('/v1/calendar/event/bulk-update/', payload) as unknown as BulkUpdateResponse
-    
-    console.log('[calendarWeekApi] Bulk update completed:', response)
     
     return response
   },
@@ -189,8 +165,6 @@ export const calendarWeekApi = {
    * Отримати деталі уроку
    */
   async getEventDetails(id: number): Promise<EventDetailsResponse> {
-    console.log('[calendarWeekApi] Fetching event details:', id)
-    
     const response = await api.get<any>(`/v1/calendar/event/${id}/`)
     
     // Backend повертає { status: 'success', data: { event, dictionaries } }
@@ -209,8 +183,6 @@ export const calendarWeekApi = {
     endDate?: string
     groupBy?: 'day' | 'week' | 'month'
   }): Promise<StatsResponse> {
-    console.log('[calendarWeekApi] Fetching stats:', params)
-    
     const response = await api.get<StatsResponse>('/v1/calendar/stats/', { params }) as unknown as StatsResponse
     
     return response
@@ -223,8 +195,6 @@ export const calendarWeekApi = {
     weeksAhead?: number
     regenerate?: boolean
   }): Promise<SyncResponse> {
-    console.log('[calendarWeekApi] Syncing availability:', params)
-    
     const response = await api.post<SyncResponse>('/v1/calendar/availability/sync/', params) as unknown as SyncResponse
     
     return response

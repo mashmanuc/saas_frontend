@@ -67,15 +67,11 @@ const { t } = useI18n()
 const showLegend = ref(false)
 
 function handleNavigate(direction: -1 | 1) {
-  console.log('[CalendarHeaderV2] handleNavigate called', { direction })
   emit('navigate', direction)
-  console.log('[CalendarHeaderV2] navigate event emitted')
 }
 
 function handleToday() {
-  console.log('[CalendarHeaderV2] handleToday called')
   emit('today')
-  console.log('[CalendarHeaderV2] today event emitted')
 }
 </script>
 

@@ -77,7 +77,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   ChevronLeft as ChevronLeftIcon,
@@ -138,6 +138,7 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 const dayCells = ref<DayCell[]>([])
 const currentWeekOffset = ref(0)
+let isMounted = false
 
 const hasAnySlots = computed(() => {
   return dayCells.value.some(day => day.slots.length > 0)
@@ -181,11 +182,18 @@ function resetToCurrentWeek() {
 }
 
 onMounted(() => {
+  isMounted = true
   clampWeekStartToAllowedRange()
   loadAvailability()
 })
 
-watch(() => props.tutorId, () => {
+onUnmounted(() => {
+  isMounted = false
+})
+
+watch(() => props.tutorId, (newId, oldId) => {
+  // Не тригеримо якщо id не змінився (захист від зайвих рендерів)
+  if (!isMounted || newId === oldId) return
   resetToCurrentWeek()
   loadAvailability()
 })
@@ -202,27 +210,13 @@ async function loadAvailability() {
       timezone: props.timezone,
     })
     
-    console.log('[TutorAvailabilityCalendar] API response:', {
-      tutor_id: response.tutor_id,
-      week_start: response.week_start,
-      cells_count: response.cells?.length,
-      cells: response.cells,
-      total_slots: response.cells?.reduce((sum, day) => sum + day.slots.length, 0)
-    })
-    
     // Синхронізуємо weekStart з відповіддю бекенду
     if (response.week_start) {
       weekStart.value = new Date(response.week_start + 'T00:00:00')
       clampWeekStartToAllowedRange()
     }
-    
+
     dayCells.value = response.cells || []
-    
-    console.log('[TutorAvailabilityCalendar] dayCells after assignment:', {
-      length: dayCells.value.length,
-      hasAnySlots: dayCells.value.some(day => day.slots.length > 0),
-      dayCells: dayCells.value
-    })
     
     // Telemetry: availability_viewed
     if (window.gtag) {

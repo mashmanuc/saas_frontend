@@ -36,16 +36,8 @@ const emit = defineEmits<{
   deleted: []
 }>()
 
-console.log('[SlotEditorModal] Component setup, props:', props)
-
-watch(() => props.visible, (newVal) => {
-  console.log('[SlotEditorModal] visible changed to:', newVal, 'slot:', props.slot)
-})
-
 // Transform AccessibleSlot to Slot format expected by SlotEditor
 const transformedSlot = computed<Slot>(() => {
-  console.log('[SlotEditorModal] Computing transformedSlot from:', props.slot, 'timezone:', props.timezone)
-  
   // Format times in calendar timezone (not browser locale)
   const startTime = formatTimeInCalendarTz(props.slot.start, props.timezone)
   const endTime = formatTimeInCalendarTz(props.slot.end, props.timezone)

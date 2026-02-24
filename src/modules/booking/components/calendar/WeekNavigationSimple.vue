@@ -67,15 +67,11 @@ const weekRangeFormatted = computed(() => {
 })
 
 function handleNavigate(direction: -1 | 1) {
-  console.log('[WeekNavigationSimple] handleNavigate called', { direction, weekStart: props.weekStart })
   emit('navigate', direction)
-  console.log('[WeekNavigationSimple] navigate event emitted')
 }
 
 function handleToday() {
-  console.log('[WeekNavigationSimple] handleToday called')
   emit('today')
-  console.log('[WeekNavigationSimple] today event emitted')
 }
 </script>
 

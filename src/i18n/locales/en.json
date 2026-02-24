@@ -888,6 +888,7 @@
   "menu": {
     "studentDashboard": "Student dashboard",
     "dashboard": "Dashboard",
+    "security": "Security / MFA",
     "classrooms": "Classrooms",
     "students": "Students",
     "lessons": "Lessons",

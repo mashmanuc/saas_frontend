@@ -2,12 +2,14 @@ export const MENU_BY_ROLE = {
   superadmin: [
     { label: 'menu.dashboard', icon: 'home', to: '/staff' },
     { label: 'menu.classrooms', icon: 'class', to: '/classrooms' },
+    { label: 'menu.security', icon: 'shield', to: '/settings/security' },
     { label: 'dev.playground', icon: 'lab', to: '/dev/theme' },
   ],
   admin: [
     { label: 'menu.dashboard', icon: 'home', to: '/staff' },
     { label: 'menu.classrooms', icon: 'class', to: '/classrooms' },
     { label: 'menu.profile', icon: 'user', to: '/settings' },
+    { label: 'menu.security', icon: 'shield', to: '/settings/security' },
     { label: 'dev.playground', icon: 'lab', to: '/dev/theme' },
   ],
   tutor: [

@@ -33,7 +33,7 @@ const activeFiltersCount = computed(() => {
 })
 
 onMounted(async () => {
-  syncFiltersWithUrl()
+  // syncFiltersWithUrl вже викликається в useMarketplace composable (onMounted)
   await Promise.all([loadTutors(true), loadFilterOptions()])
 })
 
@@ -90,8 +90,7 @@ watch(
       has_certifications: payload.has_certifications ?? null,
       sort: payload.sort,
     })
-  },
-  { deep: true }
+  }
 )
 </script>
 

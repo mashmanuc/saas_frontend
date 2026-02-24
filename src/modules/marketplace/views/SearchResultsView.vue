@@ -41,6 +41,8 @@ const { t } = useI18n()
 
 // Intersection observer for infinite scroll
 let observer: IntersectionObserver | null = null
+// Флаг для захисту від race condition у IntersectionObserver
+let isLoadingMore = false
 
 onMounted(async () => {
   store.syncFiltersFromUrl()
@@ -52,8 +54,11 @@ onMounted(async () => {
   if (loadMoreTrigger.value) {
     observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore.value && !isLoading.value) {
-          store.loadMore()
+        if (entries[0].isIntersecting && hasMore.value && !isLoading.value && !isLoadingMore) {
+          isLoadingMore = true
+          store.loadMore().finally(() => {
+            isLoadingMore = false
+          })
         }
       },
       { threshold: 0.1 }

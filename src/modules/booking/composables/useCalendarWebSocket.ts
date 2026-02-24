@@ -28,22 +28,18 @@ export function useCalendarWebSocket() {
 
     // Subscribe to events
     ws.value.on('event.created', (data) => {
-      console.log('[useCalendarWebSocket] Event created:', data)
       store.handleEventCreated(data)
     })
 
     ws.value.on('event.updated', (data) => {
-      console.log('[useCalendarWebSocket] Event updated:', data)
       store.handleEventUpdated(data)
     })
 
     ws.value.on('event.deleted', (data) => {
-      console.log('[useCalendarWebSocket] Event deleted:', data)
       store.handleEventDeleted(data)
     })
 
-    ws.value.on('week.refresh', (data) => {
-      console.log('[useCalendarWebSocket] Week refresh:', data)
+    ws.value.on('week.refresh', (_data) => {
       if (store.currentTutorId && store.currentWeekStart) {
         store.fetchWeekSnapshot(store.currentTutorId, store.currentWeekStart)
       }
@@ -51,7 +47,6 @@ export function useCalendarWebSocket() {
 
     // v0.49.5: Availability slots generated event
     ws.value.on('availability.slots_generated', (data) => {
-      console.log('[useCalendarWebSocket] Availability slots generated:', data)
       // Only refetch for bulk generation (multiple slots), not for single slot creation
       // Single slot creation is handled by optimistic updates
       if (data.slotsCreated > 1 || data.slotsDeleted > 0) {
@@ -61,14 +56,10 @@ export function useCalendarWebSocket() {
           }
         }, 500)
       }
-      // Optionally show toast notification
-      if (data.tutorId === authStore.user?.id) {
-        console.log(`[useCalendarWebSocket] Slots generated: ${data.slotsCreated} created, ${data.slotsDeleted} deleted`)
-      }
     })
 
     ws.value.on('pong', () => {
-      console.log('[useCalendarWebSocket] Pong received')
+      // pong received - connection alive
     })
 
     try {

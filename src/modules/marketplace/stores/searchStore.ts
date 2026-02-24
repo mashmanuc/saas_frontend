@@ -44,6 +44,7 @@ export const useSearchStore = defineStore('search', () => {
   // Suggestions state
   const suggestions = ref<Suggestion[]>([])
   const isLoadingSuggestions = ref(false)
+  let suggestionsAbortController: AbortController | null = null
 
   // Filter options
   const filterOptions = ref<ExtendedFilterOptions | null>(null)
@@ -151,14 +152,24 @@ export const useSearchStore = defineStore('search', () => {
       return
     }
 
+    // Скасовуємо попередній запит якщо він ще виконується
+    if (suggestionsAbortController) {
+      suggestionsAbortController.abort()
+    }
+    suggestionsAbortController = new AbortController()
+
     isLoadingSuggestions.value = true
 
     try {
       suggestions.value = await marketplaceApi.getSearchSuggestions(q)
-    } catch {
-      suggestions.value = []
+    } catch (err: any) {
+      // Ігноруємо помилку якщо запит був скасований
+      if (err?.name !== 'AbortError' && err?.code !== 'ERR_CANCELED') {
+        suggestions.value = []
+      }
     } finally {
       isLoadingSuggestions.value = false
+      suggestionsAbortController = null
     }
   }
 

@@ -42,9 +42,11 @@ export const useRelationsStore = defineStore('relations', () => {
   }
   
   async function fetchRelations() {
+    // Захист від паралельних запитів
+    if (isFetchingRelations.value) return
     isFetchingRelations.value = true
     fetchError.value = null
-    
+
     try {
       const response = await apiClient.get<RelationsResponse>('/v1/users/me/relations/')
       mergeRelations(response.relations)
