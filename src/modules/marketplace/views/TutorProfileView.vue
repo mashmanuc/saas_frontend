@@ -18,6 +18,7 @@ import ReportModal from '@/components/trust/ReportModal.vue'
 import { ReportTargetType } from '@/types/trust'
 import { useI18n } from 'vue-i18n'
 import InquiryFormModal from '@/components/inquiries/InquiryFormModal.vue'
+import CreateReviewModal from '../components/profile/CreateReviewModal.vue'
 import Button from '@/ui/Button.vue'
 
 const route = useRoute()
