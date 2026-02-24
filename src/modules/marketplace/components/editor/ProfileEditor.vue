@@ -1122,7 +1122,7 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
       <!-- FTUE availability hint — separate soft warning, not a blocker -->
       <div v-if="availabilityMissing" class="availability-hint" data-test="marketplace-editor-availability-hint">
         <strong>{{ t('onboarding.hints.profile.noAvailability') }}</strong>
-        <router-link to="/calendar" class="calendar-link">
+        <router-link to="/booking/tutor" class="calendar-link">
           {{ t('onboarding.hints.profile.goToCalendar') }} →
         </router-link>
       </div>
