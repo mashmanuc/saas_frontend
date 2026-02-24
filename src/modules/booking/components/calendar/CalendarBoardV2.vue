@@ -332,7 +332,7 @@ const handleDragEnd = async () => {
 }
 
 .time-column {
-  border-right: 1px solid var(--border-color);
+  border-right: 1px solid var(--calendar-grid-line, rgba(128, 128, 128, 0.14));
   background: var(--bg-secondary);
 }
 
@@ -343,7 +343,7 @@ const handleDragEnd = async () => {
   padding-top: 4px;
   font-size: 12px;
   color: var(--text-secondary);
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--calendar-grid-line, rgba(128, 128, 128, 0.14));
 }
 
 .days-grid {
@@ -354,7 +354,7 @@ const handleDragEnd = async () => {
 
 .day-column {
   position: relative;
-  border-right: 1px solid var(--border-color);
+  border-right: 1px solid var(--calendar-grid-line, rgba(128, 128, 128, 0.14));
   min-width: 0;
 }
 
@@ -368,15 +368,15 @@ const handleDragEnd = async () => {
 }
 
 .calendar-board-v2::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: var(--bg-secondary);
 }
 
 .calendar-board-v2::-webkit-scrollbar-thumb {
-  background: #888;
+  background: var(--calendar-grid-line, rgba(128, 128, 128, 0.3));
   border-radius: 4px;
 }
 
 .calendar-board-v2::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: var(--text-secondary);
 }
 </style>

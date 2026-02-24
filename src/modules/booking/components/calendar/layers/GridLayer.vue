@@ -13,8 +13,7 @@
       @click="handleCellClick(hour)"
     >
       <div v-if="showLabels" class="hour-label">{{ formatHour(hour) }}</div>
-      <div class="grid-line" />
-      <div class="grid-line half" />
+      <div class="grid-line-half" />
     </div>
   </div>
 </template>
@@ -101,28 +100,17 @@ const formatHour = (hour: number): string => {
 
 .grid-hour {
   position: relative;
-  border-bottom: 1px solid #e0e0e0;
-  transition: background-color 0.3s ease;
+  border-bottom: 1px solid var(--calendar-grid-line, rgba(128, 128, 128, 0.15));
+  transition: background-color 0.2s ease;
 }
 
 .grid-hour.is-past {
-  background: #f5f5f5;
-  opacity: 0.4;
-  position: relative;
+  opacity: 0.45;
 }
 
 .grid-hour.is-disabled {
   pointer-events: none;
-}
-
-.grid-hour.is-disabled::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(229,231,235,0.8) 100%);
+  opacity: 0.5;
 }
 
 .hour-label {
@@ -130,22 +118,18 @@ const formatHour = (hour: number): string => {
   top: 4px;
   left: 8px;
   font-size: 12px;
-  color: #666;
+  color: var(--text-secondary);
   font-weight: 500;
   pointer-events: auto;
 }
 
-.grid-line {
+.grid-line-half {
   position: absolute;
-  bottom: 0;
   left: 0;
   right: 0;
+  top: 50%;
   height: 1px;
-  background: #e0e0e0;
-}
-
-.grid-line.half {
-  bottom: 50%;
-  background: #f0f0f0;
+  background: var(--calendar-grid-line-half, rgba(128, 128, 128, 0.07));
+  pointer-events: none;
 }
 </style>

@@ -52,6 +52,10 @@
   --calendar-shadow-md: 0 4px 12px var(--shadow);
   --calendar-shadow-lg: 0 8px 25px var(--shadow-strong);
   
+  /* Grid lines */
+  --calendar-grid-line: rgba(128, 128, 128, 0.14);
+  --calendar-grid-line-half: rgba(128, 128, 128, 0.06);
+
   /* Spacing */
   --calendar-cell-height: 36px;
   --calendar-cell-gap: 1px;
@@ -68,6 +72,8 @@
   --calendar-event-bg: #059669;
   --calendar-event-text: #ffffff;
   --calendar-today-highlight: #059669;
+  --calendar-grid-line: rgba(0, 0, 0, 0.08);
+  --calendar-grid-line-half: rgba(0, 0, 0, 0.04);
 }
 
 /* ========================================
@@ -79,6 +85,8 @@
   --calendar-event-bg: #26c6da;
   --calendar-event-text: #0a1929;
   --calendar-today-highlight: #26c6da;
+  --calendar-grid-line: rgba(255, 255, 255, 0.07);
+  --calendar-grid-line-half: rgba(255, 255, 255, 0.03);
   
   /* Adjust shadows for dark theme */
   --calendar-shadow-sm: 0 1px 3px rgba(38, 198, 218, 0.2);
@@ -95,4 +103,6 @@
   --calendar-event-bg: #6d28d9;
   --calendar-event-text: #ffffff;
   --calendar-today-highlight: #6d28d9;
+  --calendar-grid-line: rgba(109, 40, 217, 0.1);
+  --calendar-grid-line-half: rgba(109, 40, 217, 0.04);
 }

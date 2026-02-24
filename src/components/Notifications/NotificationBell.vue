@@ -84,6 +84,7 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 import { useNotificationsStore } from '@/stores/notificationsStore'
+import { useAuthStore } from '@/modules/auth/store/authStore'
 import type { InAppNotification } from '@/types/notifications'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
@@ -98,6 +99,7 @@ const isOpen = ref(false)
 // SSOT: Bell ONLY reads from store. WS subscription is in App.vue
 const notificationsStore = useNotificationsStore()
 const { items, unreadCount, latestItems, isLoading, error } = storeToRefs(notificationsStore)
+const authStore = useAuthStore()
 
 const canMarkAll = computed(() => unreadCount.value > 0)
 
@@ -126,13 +128,22 @@ async function handleNotificationClick(notification: InAppNotification) {
 
   close()
 
-  if (notification.data?.relation_id) {
-    router.push(`/relations/${notification.data.relation_id}`)
-  } else if (notification.data?.inquiry_id) {
-    router.push(`/inquiries/${notification.data.inquiry_id}`)
+  const role = authStore.userRole // 'student' | 'tutor' | null
+
+  // inquiry_id або relation_id → відкриваємо список запитів за роллю
+  if (notification.data?.inquiry_id || notification.data?.relation_id) {
+    if (role === 'tutor') {
+      router.push('/tutor/inquiries')
+    } else {
+      // student або невідома роль
+      router.push('/student/inquiries')
+    }
+  } else if (notification.data?.booking_id) {
+    router.push('/bookings')
   } else if (notification.data?.billing) {
     router.push('/billing')
   }
+  // Якщо немає посилання — просто закриваємо dropdown (вже зроблено вище)
 }
 
 async function handleMarkAllAsRead() {
