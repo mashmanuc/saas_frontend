@@ -48,6 +48,9 @@
       <span class="hint-label">{{ $t('tutor.city.selected') }}:</span>
       <span class="hint-value">{{ selectedCity.name }}</span>
     </div>
+    <div v-else-if="hasUnmatchedInput && !showDropdown" class="unmatched-warning">
+      {{ $t('tutor.city.unmatched_warning') }}
+    </div>
   </div>
 </template>
 
@@ -88,6 +91,7 @@ const searchQuery = ref('')
 const showDropdown = ref(false)
 const cities = ref<City[]>([])
 const selectedCity = ref<City | null>(null)
+const hasUnmatchedInput = ref(false)
 
 const error = computed(() => {
   if (apiError.value) return apiError.value
@@ -126,12 +130,20 @@ function onBlur() {
   // Delay hiding to allow click on dropdown items
   setTimeout(() => {
     showDropdown.value = false
+    // If user typed something but didn't select from dropdown — clear city_code and show warning
+    if (searchQuery.value.length >= 2 && !selectedCity.value) {
+      hasUnmatchedInput.value = true
+      emit('update:modelValue', null)
+    } else {
+      hasUnmatchedInput.value = false
+    }
   }, 200)
 }
 
 function selectCity(city: City) {
   selectedCity.value = city
   searchQuery.value = city.name
+  hasUnmatchedInput.value = false
   emit('update:modelValue', city.code)
   showDropdown.value = false
 }
@@ -140,6 +152,7 @@ function clearSelection() {
   selectedCity.value = null
   searchQuery.value = ''
   cities.value = []
+  hasUnmatchedInput.value = false
   emit('update:modelValue', null)
 }
 
@@ -251,5 +264,15 @@ watch(() => props.modelValue, async (code) => {
 
 .hint-value {
   color: #333;
+}
+
+.unmatched-warning {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #b45309;
+  background: #fef3c7;
+  padding: 6px 10px;
+  border-radius: 4px;
+  border: 1px solid #fcd34d;
 }
 </style>

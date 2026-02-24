@@ -860,9 +860,9 @@ const stepCompletion = computed<Record<string, boolean>>(() => {
   const f = formData.value
   return {
     photo: !!(props.profile?.media?.photo_url || avatarUrl.value),
-    basic: (f.headline?.trim() || '').length >= 20 &&
-           (f.bio?.trim() || '').length >= 100 &&
-           f.experience_years > 0,
+    basic: (f.headline?.trim() || '').length >= 3 &&
+           (f.bio?.trim() || '').length >= 10 &&
+           f.experience_years >= 0,
     subjects: f.subjects.length >= 1,
     'teaching-languages': (f.teaching_languages || []).length >= 1,
     pricing: f.hourly_rate > 0 && !!f.currency,
@@ -1464,7 +1464,6 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
       </Button>
 
       <Button
-        v-if="isLastStep"
         variant="primary"
         type="submit"
         :disabled="!canSubmit"

@@ -2001,7 +2001,8 @@
       "private_notice": "Your city is hidden. Students will not see it in search",
       "section_description": "Choose the city where you teach",
       "helper_text": "This helps students find you by location",
-      "breadcrumb_hint": "Since you selected offline or hybrid format, please specify the city for lessons"
+      "breadcrumb_hint": "Since you selected offline or hybrid format, please specify the city for lessons",
+      "unmatched_warning": "City not found in the directory. Please select a city from the list or leave the field empty."
     }
   },
   "studentDashboard": {

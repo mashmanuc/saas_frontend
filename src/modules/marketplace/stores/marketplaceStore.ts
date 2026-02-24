@@ -317,12 +317,13 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
       setValidationErrorsFromApi(err)
       error.value = mapApiError(err, t('marketplace.errors.updateProfile'))
       
-      // Show toast with first validation error (only for non-silent saves)
+      // Show toast with ALL validation errors (only for non-silent saves)
       if (!options?.silent && validationErrors.value) {
-        const firstField = Object.keys(validationErrors.value)[0]
-        const firstMessages = validationErrors.value[firstField]
-        if (firstMessages && firstMessages.length > 0) {
-          notifyError(`${firstField}: ${firstMessages[0]}`)
+        const errorLines = Object.entries(validationErrors.value)
+          .map(([field, msgs]) => `• ${field}: ${(msgs || []).join(', ')}`)
+          .slice(0, 5) // max 5 to avoid huge toast
+        if (errorLines.length > 0) {
+          notifyError(errorLines.join('\n'), { timeout: 10000 })
         }
       }
       

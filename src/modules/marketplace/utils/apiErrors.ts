@@ -18,8 +18,30 @@ export function parseMarketplaceApiError(err: unknown): MarketplaceApiErrorInfo 
   const detail = (data?.detail ?? data?.message ?? null) as string | null
 
   let fields: MarketplaceValidationErrors | null = null
-  if (status === 422 && data && typeof data === 'object') {
-    const raw = (data as any).fields && typeof (data as any).fields === 'object' ? (data as any).fields : (data as any).errors
+  // DRF ValidationError returns 400 (not 422). Parse field errors for both.
+  if ((status === 400 || status === 422) && data && typeof data === 'object') {
+    // Try structured containers first: data.fields, data.errors
+    let raw = (data as any).fields && typeof (data as any).fields === 'object'
+      ? (data as any).fields
+      : (data as any).errors && typeof (data as any).errors === 'object'
+        ? (data as any).errors
+        : null
+
+    // DRF default: validation errors are directly in data (e.g. { "headline": ["This field is required."] })
+    if (!raw) {
+      const skipKeys = new Set(['detail', 'error', 'message', 'code', 'error_code', 'non_field_errors'])
+      const candidate: Record<string, unknown> = {}
+      let hasFieldErrors = false
+      for (const [k, v] of Object.entries(data)) {
+        if (skipKeys.has(k)) continue
+        if (Array.isArray(v) || typeof v === 'string') {
+          candidate[k] = v
+          hasFieldErrors = true
+        }
+      }
+      if (hasFieldErrors) raw = candidate
+    }
+
     if (raw && typeof raw === 'object') {
       const next: MarketplaceValidationErrors = {}
       for (const [k, v] of Object.entries(raw)) {
@@ -59,8 +81,15 @@ export function mapMarketplaceErrorToMessage(info: MarketplaceApiErrorInfo, fall
     return t('marketplace.errors.profileSuspended')
   }
 
-  // Existing error codes
-  if (info.status === 422 || info.code === 'validation_failed') {
+  // Existing error codes — DRF uses 400 for ValidationError, not 422
+  if (info.status === 400 || info.status === 422 || info.code === 'validation_failed') {
+    // If we have per-field errors, show them; otherwise show generic message
+    if (info.fields) {
+      const fieldMessages = Object.entries(info.fields)
+        .map(([field, msgs]) => `${field}: ${msgs.join(', ')}`)
+        .slice(0, 3) // max 3 fields to avoid huge toast
+      return fieldMessages.join('\n') || t('marketplace.errors.validation')
+    }
     return t('marketplace.errors.validation')
   }
   if (info.status === 409 || info.code === 'slot_conflict') {

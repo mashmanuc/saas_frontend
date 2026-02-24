@@ -156,8 +156,8 @@ export function buildTutorProfileUpdate(model: TutorProfileFormModel): TutorProf
     show_age: typeof model.show_age === 'boolean' ? model.show_age : undefined,
     telegram_username: model.telegram_username?.trim() || undefined,
 
-    // City (v1.0)
-    city_code: model.city_code || null,
+    // City (v1.0): Send city_code only if it has a value; undefined = don't touch the field on backend
+    city_code: model.city_code || undefined,
     is_city_public: typeof model.is_city_public === 'boolean' ? model.is_city_public : true,
 
     // Required nested object: pricing
