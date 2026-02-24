@@ -14,7 +14,8 @@ const benefitsRef = ref<HTMLElement | null>(null)
 const showLanguageMenu = ref(false)
 
 const currentLanguage = computed(() => {
-  return locale.value === 'uk' ? 'УКР' : 'ENG'
+  const lang = languages.find(l => l.code === locale.value)
+  return lang?.short ?? 'УКР'
 })
 
 const languages = [
