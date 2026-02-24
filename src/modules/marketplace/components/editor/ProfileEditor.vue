@@ -846,13 +846,27 @@ const hasOfflineOnly = computed(() => {
  * FTUE: has_availability — чи є відкриті слоти (з профілю)
  */
 // Default false = show no-availability hint immediately; hide after API confirms has_availability=true
-const profileHasAvailability = ref(false)
+// Also sync from props.profile when available (GET /v1/tutors/me/profile/ returns has_availability)
+const profileHasAvailability = ref(!!(props.profile as any)?.has_availability)
+
+// Watch props.profile — after every save/reload, profile payload includes has_availability
+watch(
+  () => (props.profile as any)?.has_availability,
+  (val) => {
+    if (typeof val === 'boolean') {
+      profileHasAvailability.value = val
+    }
+  },
+  { immediate: true }
+)
+
 onMounted(async () => {
   try {
     const me = await apiClient.get('/v1/marketplace/me/', { meta: { skipLoader: true } } as any)
+    // Live check takes priority over cached props.profile.has_availability
     profileHasAvailability.value = !!me?.has_availability
   } catch {
-    // Silent
+    // Silent — fallback to props.profile value already set above
   }
 })
 
@@ -961,7 +975,8 @@ const genderOptions = computed(() => [
   { value: '', label: t('marketplace.profile.editor.genderOptions.unspecified') },
 ])
 
-const publishMissingItems = computed(() => {
+// Mandatory fields that block publish readiness
+const publishBlockers = computed(() => {
   const items: string[] = []
 
   if (!avatarUrl.value) {
@@ -989,13 +1004,17 @@ const publishMissingItems = computed(() => {
     items.push(t('marketplace.profile.editor.hourlyRateLabel'))
   }
 
-  // FTUE: availability check
-  if (!profileHasAvailability.value) {
-    items.push(t('onboarding.hints.profile.noAvailability'))
-  }
-
   return items
 })
+
+// FTUE: availability is a suggestion, NOT a blocker for publishing
+const availabilityMissing = computed(() => !profileHasAvailability.value)
+
+// Combined list for backwards compat (used in step completion indicators)
+const publishMissingItems = computed(() => [
+  ...publishBlockers.value,
+  ...(availabilityMissing.value ? [t('onboarding.hints.profile.noAvailability')] : []),
+])
 
 // v0.84.0: Handlers for new UX components
 function handleSelectSubject(code: string) {
@@ -1091,17 +1110,19 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
     <section v-show="currentStep === 'publish'" class="editor-section">
       <h2>{{ t('marketplace.profile.publish') }}</h2>
 
-      <div v-if="publishMissingItems.length" class="incomplete-banner" data-test="marketplace-editor-incomplete">
+      <!-- Mandatory fields blocker — shown only when required fields are missing -->
+      <div v-if="publishBlockers.length" class="incomplete-banner" data-test="marketplace-editor-incomplete">
         <strong>{{ t('marketplace.profile.incompleteTitle') }}</strong>
         <p class="hint">{{ t('marketplace.profile.incompleteDescription') }}</p>
         <ul class="incomplete-list">
-          <li v-for="item in publishMissingItems" :key="item">{{ item }}</li>
+          <li v-for="item in publishBlockers" :key="item">{{ item }}</li>
         </ul>
-        <router-link
-          v-if="!profileHasAvailability"
-          to="/calendar"
-          class="calendar-link"
-        >
+      </div>
+
+      <!-- FTUE availability hint — separate soft warning, not a blocker -->
+      <div v-if="availabilityMissing" class="availability-hint" data-test="marketplace-editor-availability-hint">
+        <strong>{{ t('onboarding.hints.profile.noAvailability') }}</strong>
+        <router-link to="/calendar" class="calendar-link">
           {{ t('onboarding.hints.profile.goToCalendar') }} →
         </router-link>
       </div>
@@ -1640,6 +1661,27 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   background: var(--surface-base);
+}
+
+.availability-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid #f5a623;
+  border-radius: var(--radius-lg);
+  background: #fffbf0;
+  font-size: 0.875rem;
+  color: #7a5800;
+}
+
+.availability-hint .calendar-link {
+  margin-left: auto;
+  white-space: nowrap;
+  color: #7a5800;
+  font-weight: 500;
+  text-decoration: underline;
 }
 
 .incomplete-list {
