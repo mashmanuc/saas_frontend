@@ -128,7 +128,7 @@ async function handleUnpublish() {
           </Button>
 
           <Button
-            v-if="myProfile"
+            v-if="myProfile?.is_published"
             variant="secondary"
             :disabled="isSaving"
             data-test="marketplace-unpublish"

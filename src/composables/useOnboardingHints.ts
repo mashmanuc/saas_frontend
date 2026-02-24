@@ -4,7 +4,7 @@
  * Зберігає стан dismissed hints у localStorage.
  * Не блокує інтерфейс — hints = пояснення, не заборони.
  */
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 
 export enum TutorHintId {
@@ -40,34 +40,54 @@ function saveDismissed(dismissed: Set<string>, userId?: number | string): void {
   }
 }
 
+// Singleton shared state — всі екземпляри OnboardingHint читають один ref.
+// Це гарантує що dismiss в одному компоненті одразу оновлює всі інші.
+const _dismissed = ref<Set<string>>(new Set())
+let _initialized = false
+
+function _ensureInitialized(userId?: number | string) {
+  if (!_initialized) {
+    _dismissed.value = loadDismissed(userId)
+    _initialized = true
+  }
+}
+
 export function useOnboardingHints() {
   const authStore = useAuthStore()
   const userId = computed(() => authStore.user?.id)
 
-  // Реактивний стан
-  const dismissed = ref<Set<string>>(loadDismissed(userId.value))
+  // Ініціалізуємо при першому виклику
+  _ensureInitialized(userId.value)
+
+  // Перезавантажуємо при зміні userId (login, logout, новий акаунт)
+  watch(userId, (newId, oldId) => {
+    if (newId !== oldId) {
+      _dismissed.value = loadDismissed(newId)
+    }
+  })
 
   function isHintVisible(hintId: string): boolean {
-    return !dismissed.value.has(hintId)
+    return !_dismissed.value.has(hintId)
   }
 
   function dismissHint(hintId: string): void {
-    dismissed.value = new Set([...dismissed.value, hintId])
-    saveDismissed(dismissed.value, userId.value)
+    _dismissed.value = new Set([..._dismissed.value, hintId])
+    saveDismissed(_dismissed.value, userId.value)
   }
 
   function dismissAllHints(): void {
     const all = new Set([
-      ...dismissed.value,
+      ..._dismissed.value,
       ...Object.values(TutorHintId),
     ])
-    dismissed.value = all
+    _dismissed.value = all
     saveDismissed(all, userId.value)
   }
 
   function resetHints(): void {
-    dismissed.value = new Set()
-    saveDismissed(dismissed.value, userId.value)
+    _dismissed.value = new Set()
+    _initialized = false
+    saveDismissed(_dismissed.value, userId.value)
   }
 
   return {
@@ -75,6 +95,6 @@ export function useOnboardingHints() {
     dismissHint,
     dismissAllHints,
     resetHints,
-    dismissed: computed(() => dismissed.value),
+    dismissed: computed(() => _dismissed.value),
   }
 }

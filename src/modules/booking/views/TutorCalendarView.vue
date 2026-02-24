@@ -20,7 +20,8 @@ import OnboardingHint from '@/components/OnboardingHint.vue'
 import { TutorHintId } from '@/composables/useOnboardingHints'
 import apiClient from '@/utils/apiClient'
 
-const hasAvailability = ref(true) // default true = hide hint until checked
+// Default false = show hint immediately; hide only after API confirms has_availability=true
+const hasAvailability = ref(false)
 
 onMounted(async () => {
   try {

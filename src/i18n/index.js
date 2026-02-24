@@ -1,12 +1,13 @@
 import { createI18n } from 'vue-i18n'
 import uk from './locales/uk.json'
 import en from './locales/en.json'
+import ru from './locales/ru.json'
 import pl from './locales/pl.json'
 import de from './locales/de.json'
 
 export const DEFAULT_LOCALE = 'uk'
 export const STORAGE_KEY = 'lang'
-export const SUPPORTED_LOCALES = ['uk', 'en', 'pl', 'de']
+export const SUPPORTED_LOCALES = ['uk', 'en', 'ru', 'pl', 'de']
 
 export function getInitialLocale() {
   if (typeof window === 'undefined') {
@@ -56,6 +57,7 @@ export const i18n = createI18n({
   messages: {
     uk,
     en,
+    ru,
     pl,
     de,
   },

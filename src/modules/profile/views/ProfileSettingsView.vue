@@ -171,6 +171,7 @@ const errorMessage = computed(() => profileStore.error)
 const languageOptions = computed(() => [
   { value: 'uk', label: t('lang.uk') },
   { value: 'en', label: t('lang.en') },
+  { value: 'ru', label: t('lang.ru') },
 ])
 
 watch(
