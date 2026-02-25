@@ -1096,7 +1096,8 @@
       "errorLoad": "Failed to load availability",
       "bookSlotAria": "Book slot at {time}",
       "title": "Календар",
-      "infoNote": "Це інформаційний розклад. Забронювати урок можна через запит"
+      "infoNote": "Це інформаційний розклад. Забронювати урок можна через запит",
+      "scheduleTitle": "Tutor schedule"
     },
     "trialRequest": {
       "title": "Trial Lesson Request",
@@ -3848,7 +3849,11 @@
       "billing": "Billing",
       "system": "System",
       "health": "System Health",
-      "backToApp": "Back to App"
+      "backToApp": "Back to App",
+      "financeSection": "Finance",
+      "payouts": "Tutor Payouts",
+      "profileModeration": "Profile Moderation",
+      "verification": "Verification"
     },
     "breadcrumbs": {
       "staff": "Staff",
@@ -3858,7 +3863,10 @@
       "reports": "Reports",
       "tutorActivity": "Tutor Activity",
       "billing": "Billing",
-      "health": "System Health"
+      "health": "System Health",
+      "payouts": "Payouts",
+      "profileModeration": "Profile Moderation",
+      "verification": "Verification"
     },
     "dashboard": {
       "title": "Staff Dashboard",
@@ -3883,7 +3891,8 @@
       "tiles": {
         "tutorActivity": "Tutor Activity",
         "tutorActivityDesc": "View and manage tutor activity"
-      }
+      },
+      "helpText": "General platform status overview. View key metrics, recent activity, and quickly navigate to any section."
     },
     "users": {
       "title": "Users",
@@ -3898,7 +3907,8 @@
       "role": "Role",
       "bans": "Bans",
       "reports": "Reports",
-      "plan": "Plan"
+      "plan": "Plan",
+      "helpText": "Search and view all registered users. Click a row to see detailed information."
     },
     "billing": {
       "title": "Billing Overview",
@@ -3913,21 +3923,62 @@
       "noPayments": "No payments",
       "amount": "Amount",
       "status": "Status",
-      "date": "Date"
+      "date": "Date",
+      "allStatuses": "All Statuses",
+      "helpText": "Platform financial overview: subscriptions, pending payments, and recent transactions.",
+      "order": "Order",
+      "paymentDetail": "Payment Detail",
+      "pendingCheckoutsTable": "Pending Checkout Sessions",
+      "provider": "Provider",
+      "showing": "{from}–{to} of {total}",
+      "statusFailed": "Failed",
+      "statusPending": "Pending",
+      "statusSuccess": "Success"
     },
     "health": {
       "title": "System Health",
       "users": "Users",
       "openReports": "Open Reports",
       "activeBans": "Active Bans",
-      "activeSubs": "Active Subscriptions"
+      "activeSubs": "Active Subscriptions",
+      "activeTutors": "Active Tutors",
+      "alertBansCritical": "CRITICAL: {count} active bans",
+      "alertPendingWarning": "Warning: {count} pending payment sessions",
+      "alertReportsCritical": "CRITICAL: {count} open reports — immediate action required",
+      "alertReportsWarning": "Warning: {count} open reports",
+      "asOf": "as of",
+      "errorLoad": "Failed to load monitoring data",
+      "helpText": "Technical platform health indicators. Red means immediate action needed, yellow means monitoring required.",
+      "inactive": "inactive",
+      "last7d": "last 7 days",
+      "pendingHint": "Check in Finance section",
+      "pendingSessions": "Pending Sessions",
+      "reportsHint": "Need review",
+      "statusCritical": "Critical state — action required!",
+      "statusHealthy": "System is operating normally",
+      "statusWarning": "Warnings detected — check details",
+      "suspicious": "Suspicious Users"
     },
     "activityFeed": {
       "empty": "No events",
       "justNow": "just now",
       "minutesAgo": "{n}m ago",
       "hoursAgo": "{n}h ago",
-      "daysAgo": "{n}d ago"
+      "daysAgo": "{n}d ago",
+      "actions": {
+        "login": "Login",
+        "logout": "Logout",
+        "register": "Registration",
+        "ban_create": "Ban Created",
+        "ban_lift": "Ban Lifted",
+        "report_create": "Report Submitted",
+        "report_resolve": "Report Resolved",
+        "subscription_create": "Subscription Created",
+        "subscription_cancel": "Subscription Cancelled",
+        "profile_update": "Profile Updated",
+        "email_verify": "Email Verified",
+        "mfa_enable": "MFA Enabled"
+      }
     },
     "nav": {
       "dashboard": "Dashboard",
@@ -3985,7 +4036,8 @@
         "inactive": "Inactive",
         "exempted": "Exempted",
         "atRisk": "At Risk"
-      }
+      },
+      "helpText": "View tutor activity on the platform. Grant activity exemptions for individual tutors."
     },
     "reports": {
       "title": "Reports",
@@ -4024,7 +4076,8 @@
       "status${report.status}": "{report.status}",
       "statusACTIONED": "Опрацьована",
       "statusDISMISSED": "Відхилена",
-      "statusOPEN": "Відкрита"
+      "statusOPEN": "Відкрита",
+      "helpText": "User reports that require review. Filter by status for convenience. Click \"View\" for details."
     },
     "userOverview": {
       "title": "User Overview",
@@ -4059,7 +4112,187 @@
       "activityInfo": "Activity",
       "inquiries30d": "Inquiries (30 days)",
       "contactsUnlocked30d": "Contacts Unlocked (30 days)",
-      "billingOperations": "Billing Operations (Manual Finalize)"
+      "billingOperations": "Billing Operations (Manual Finalize)",
+      "accountStatus": "Account Status",
+      "activate": "Activate",
+      "active": "Active",
+      "auditEmpty": "No actions yet",
+      "auditLog": "Action History",
+      "auditTotal": "Total: {count}",
+      "backToUsers": "Back to Users",
+      "confirmCancelImmediate": "Are you sure you want to cancel the subscription IMMEDIATELY? This action is irreversible.",
+      "confirmCancelPeriodEnd": "Cancel subscription at the end of the current period?",
+      "confirmToggleActive": "Perform action \"{action}\" for {email}?",
+      "confirmVerifyEmail": "Verify email {email}?\nThis will activate the account.",
+      "deactivate": "Deactivate",
+      "emailNotVerified": "Not Verified",
+      "emailVerification": "Email Verification",
+      "emailVerified": "Verified",
+      "inactive": "Inactive",
+      "lastLogin": "Last Login",
+      "never": "Never logged in",
+      "openProfile": "Open Profile",
+      "publicProfile": "Public Profile",
+      "verifyEmailAlready": "Email already verified",
+      "verifyEmailButton": "Verify Manually",
+      "verifyEmailError": "Failed to verify email",
+      "verifyEmailSuccess": "Email successfully verified"
+    },
+    "billingOps": {
+      "actions": "Actions",
+      "cancelAtPeriodEnd": "Cancel at Period End",
+      "copyOrderId": "Copy Order ID",
+      "created": "Created",
+      "email": "Email",
+      "entitlementSection": "Entitlements",
+      "expires": "Expires",
+      "features": "features",
+      "loading": "Loading billing data...",
+      "never": "Never",
+      "noSessions": "No checkout sessions",
+      "none": "none",
+      "orderId": "Order ID",
+      "pendingAge": "Pending Age",
+      "pendingSince": "Pending Since",
+      "periodEnd": "Period End",
+      "periodStart": "Period Start",
+      "plan": "Plan",
+      "previewFinalize": "Preview & Finalize",
+      "provider": "Provider",
+      "refresh": "Refresh",
+      "retry": "Retry",
+      "role": "Role",
+      "sessionsSection": "Checkout Sessions (last 10)",
+      "snapshotMissing": "User data not available",
+      "status": "Status",
+      "subscriptionSection": "Subscription",
+      "title": "Billing Operations",
+      "userSection": "User",
+      "yes": "Yes"
+    },
+    "consoleName": "Admin Panel",
+    "payouts": {
+      "allStatuses": "All Statuses",
+      "approve": "Approve",
+      "complete": "Complete",
+      "completeModal": {
+        "title": "Complete Payout",
+        "providerIdLabel": "Provider Transaction ID",
+        "providerIdPlaceholder": "Enter transaction ID (optional)",
+        "confirm": "Confirm Payout"
+      },
+      "confirmApprove": "Approve payout #{id}?",
+      "confirmProcess": "Start processing payout #{id}?",
+      "empty": "No payouts. Tutor requests will appear here.",
+      "error": "Failed to load payouts",
+      "fail": "Mark as Failed",
+      "failModal": {
+        "title": "Mark as Failed",
+        "reasonLabel": "Failure Reason",
+        "reasonPlaceholder": "Provide a reason...",
+        "confirm": "Mark as Failed"
+      },
+      "helpText": "Manage payout requests from tutors. Review and process requests sequentially: Pending → Approved → Processing → Completed.",
+      "loading": "Loading payouts...",
+      "process": "Process",
+      "refresh": "Refresh",
+      "showing": "{count} of {total} shown",
+      "statusApproved": "Approved",
+      "statusCancelled": "Cancelled",
+      "statusCompleted": "Completed",
+      "statusFailed": "Failed",
+      "statusPending": "Pending",
+      "statusProcessing": "Processing",
+      "table": {
+        "id": "ID",
+        "tutor": "Tutor",
+        "amount": "Amount",
+        "method": "Method",
+        "status": "Status",
+        "createdAt": "Request Date",
+        "actions": "Actions"
+      },
+      "title": "Tutor Payouts"
+    },
+    "profileModeration": {
+      "allStatuses": "All Statuses",
+      "approve": "Approve",
+      "approveConfirm": "Approve profile for {name}? It will become visible on the marketplace.",
+      "approveSuccess": "Profile successfully approved",
+      "empty": "No profiles to moderate. All profiles have been reviewed.",
+      "error": "Failed to perform action. Please try again.",
+      "helpText": "Review and approve tutor profiles. New profiles require verification before being published to the marketplace.",
+      "loading": "Loading profiles...",
+      "reject": "Reject",
+      "rejectModal": {
+        "title": "Reject Profile",
+        "reasonLabel": "Rejection Reason",
+        "reasonPlaceholder": "Provide a reason for rejecting this profile...",
+        "cancel": "Cancel",
+        "confirm": "Reject Profile"
+      },
+      "rejectSuccess": "Profile rejected",
+      "statusApproved": "Approved",
+      "statusDraft": "Draft",
+      "statusPending": "Pending",
+      "statusRejected": "Rejected",
+      "statusSuspended": "Suspended",
+      "table": {
+        "tutor": "Tutor",
+        "email": "Email",
+        "subjects": "Subjects",
+        "status": "Status",
+        "createdAt": "Created",
+        "actions": "Actions"
+      },
+      "title": "Profile Moderation",
+      "viewProfile": "View Profile"
+    },
+    "toast": {
+      "banCreated": "Ban successfully created",
+      "banLifted": "Ban successfully lifted",
+      "billingCancelled": "Subscription cancelled",
+      "emailVerified": "Email successfully verified",
+      "error": "Error: {message}",
+      "exemptionGranted": "Exemption granted",
+      "genericError": "An error occurred. Please try again.",
+      "profileApproved": "Profile approved",
+      "profileRejected": "Profile rejected",
+      "reportResolved": "Report resolved",
+      "verificationApproved": "Verification approved",
+      "verificationRejected": "Verification rejected"
+    },
+    "verification": {
+      "allStatuses": "All Statuses",
+      "approve": "Approve",
+      "approveConfirm": "Approve verification for {name}?",
+      "approveSuccess": "Verification successfully approved",
+      "empty": "No verification requests. All documents have been reviewed.",
+      "error": "Failed to perform action. Please try again.",
+      "helpText": "Review tutor documents to verify their qualifications. View uploaded documents and make a decision.",
+      "loading": "Loading applications...",
+      "reject": "Reject",
+      "rejectModal": {
+        "title": "Reject Verification",
+        "reasonLabel": "Rejection Reason",
+        "reasonPlaceholder": "Provide a reason for rejecting this verification...",
+        "cancel": "Cancel",
+        "confirm": "Reject Verification"
+      },
+      "rejectSuccess": "Verification rejected",
+      "statusApproved": "Approved",
+      "statusPending": "Pending",
+      "statusRejected": "Rejected",
+      "table": {
+        "tutor": "Tutor",
+        "email": "Email",
+        "type": "Document Type",
+        "submittedAt": "Submitted",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "title": "Tutor Verification",
+      "viewDocuments": "View Documents"
     }
   },
   "relationAction": {

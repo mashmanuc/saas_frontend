@@ -26,6 +26,11 @@ const TEXT_EXTENSIONS = new Set([
 ])
 const TRANSLATION_FUNCTIONS = new Set(['t', '$t', 'translate'])
 
+// Prefixes detected via dynamic template literals t(`prefix.${var}`) — keys under
+// these prefixes are intentionally not statically scannable and must not be flagged unused.
+// Populated automatically by collectUsageKeys() during dynamic-pattern scan.
+const DYNAMIC_KEY_PREFIXES = new Set()
+
 function isObject(v) {
   return v && typeof v === 'object' && !Array.isArray(v)
 }
@@ -92,7 +97,17 @@ function collectUsageKeys(rootDir) {
     /\$t\(\s*(['`"])([^'"`]+?)\1/g
   ]
 
+  // Detects dynamic template patterns: t(`some.prefix.${variable}`) → registers 'some.prefix' as dynamic
+  const dynamicTemplateRegex = /[`]([A-Za-z0-9_.]+)\.\$\{/g
+
   function extractKeys(content) {
+    // Detect dynamic key prefixes from template literals
+    dynamicTemplateRegex.lastIndex = 0
+    let dynMatch
+    while ((dynMatch = dynamicTemplateRegex.exec(content)) !== null) {
+      DYNAMIC_KEY_PREFIXES.add(dynMatch[1])
+    }
+
     simpleCallRegex.lastIndex = 0
     let match
     while ((match = simpleCallRegex.exec(content)) !== null) {
@@ -181,13 +196,33 @@ function main() {
 
   if (!disableUsageScan) {
     const { usageKeys, filesScanned } = collectUsageKeys(root)
+
+    // A key is "covered" if it is directly used OR its namespace prefix is used dynamically
+    // e.g. t(`winterboard.tools.${tool}`) covers all winterboard.tools.* keys
+    function isDynamicallyCovered(key) {
+      for (const prefix of DYNAMIC_KEY_PREFIXES) {
+        if (key.startsWith(prefix + '.') || key === prefix) return true
+      }
+      return false
+    }
+
     const unusedKeys = []
+    const dynamicallyCoveredKeys = []
     for (const key of refKeys.keys()) {
-      if (!usageKeys.has(key)) unusedKeys.push(key)
+      if (usageKeys.has(key)) continue
+      if (isDynamicallyCovered(key)) {
+        dynamicallyCoveredKeys.push(key)
+      } else {
+        unusedKeys.push(key)
+      }
     }
     const undefinedUsages = []
     for (const key of usageKeys) {
       if (!refKeys.has(key)) undefinedUsages.push(key)
+    }
+
+    if (dynamicallyCoveredKeys.length > 0) {
+      console.log(`\n[i18n-check] Dynamic-template covered keys (${dynamicallyCoveredKeys.length}) — not flagged as unused`)
     }
 
     if (unusedKeys.length > 0) {
@@ -208,6 +243,8 @@ function main() {
     report.usage = {
       scannedFiles: filesScanned,
       detectedKeys: usageKeys.size,
+      dynamicPrefixes: [...DYNAMIC_KEY_PREFIXES].sort(),
+      dynamicallyCoveredKeys: dynamicallyCoveredKeys.sort(),
       unusedKeys: unusedKeys.sort(),
       undefinedUsages: undefinedUsages.sort()
     }
