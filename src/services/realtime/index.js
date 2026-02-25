@@ -9,7 +9,7 @@ const isSupportedChannel = (channel) => {
   return SUPPORTED_CHANNELS.has(underscoreRoot)
 }
 
-const SUPPORTED_CHANNELS = new Set(['chat', 'board', 'presence', 'notifications', 'tutor', 'student', 'match', 'availability', 'room'])
+const SUPPORTED_CHANNELS = new Set(['chat', 'board', 'presence', 'notifications', 'tutor', 'student', 'match', 'availability', 'room', 'inquiries', 'calendar'])
 const DEFAULT_HEARTBEAT_MS = 25_000
 const HEARTBEAT_TIMEOUT_MS = 60_000  // Increased from 30s for stable connections
 const MAX_BACKOFF_MS = 15_000
@@ -243,6 +243,14 @@ class RealtimeService {
       if (data?.type === 'pong') {
         this.lastPongTime = Date.now()
         this.resetHeartbeatTimeout()
+        return
+      }
+      // Backend надсилає auth_required коли JWT токен протух під час revalidation.
+      // Емітуємо auth_required — websocket.ts перехопить і зробить refresh + reconnect.
+      if (data?.type === 'auth_required') {
+        this.options.logger?.warn?.('[realtime] Backend sent auth_required, emitting event...')
+        this.shouldReconnect = false // зупиняємо авторекконект — reconnect зробить handleTokenRefresh
+        this.emitter.emit('auth_required', { reason: data?.reason || 'token_expired' })
         return
       }
       if (data?.channel && this.channelSubscriptions.has(data.channel)) {
