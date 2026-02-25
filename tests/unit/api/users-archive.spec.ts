@@ -16,7 +16,7 @@ describe('User Archive API', () => {
   })
 
   describe('archiveAccount', () => {
-    it('should call POST /v1/users/me/archive with password and reason', async () => {
+    it('should call POST /v1/me/archive with password and reason', async () => {
       const mockResponse = {
         status: 'success',
         message: 'Account archived successfully',
@@ -28,7 +28,7 @@ describe('User Archive API', () => {
 
       const result = await archiveAccount('testpass123', 'user_request')
 
-      expect(apiClient.post).toHaveBeenCalledWith('/v1/users/me/archive', {
+      expect(apiClient.post).toHaveBeenCalledWith('/v1/me/archive', {
         password: 'testpass123',
         reason: 'user_request'
       })
@@ -47,7 +47,7 @@ describe('User Archive API', () => {
 
       await archiveAccount('testpass123')
 
-      expect(apiClient.post).toHaveBeenCalledWith('/v1/users/me/archive', {
+      expect(apiClient.post).toHaveBeenCalledWith('/v1/me/archive', {
         password: 'testpass123',
         reason: 'user_request'
       })
@@ -81,7 +81,7 @@ describe('User Archive API', () => {
 
       const result = await adminArchiveUser(123, 'policy_violation', 'Spam activity')
 
-      expect(apiClient.post).toHaveBeenCalledWith('/v1/users/admin/users/123/archive', {
+      expect(apiClient.post).toHaveBeenCalledWith('/v1/admin/users/123/archive', {
         reason: 'policy_violation',
         notes: 'Spam activity'
       })
@@ -100,7 +100,7 @@ describe('User Archive API', () => {
 
       await adminArchiveUser(123)
 
-      expect(apiClient.post).toHaveBeenCalledWith('/v1/users/admin/users/123/archive', {
+      expect(apiClient.post).toHaveBeenCalledWith('/v1/admin/users/123/archive', {
         reason: 'admin_action',
         notes: undefined
       })
@@ -118,7 +118,7 @@ describe('User Archive API', () => {
 
       await adminArchiveUser(123, 'admin_action')
 
-      expect(apiClient.post).toHaveBeenCalledWith('/v1/users/admin/users/123/archive', {
+      expect(apiClient.post).toHaveBeenCalledWith('/v1/admin/users/123/archive', {
         reason: 'admin_action',
         notes: undefined
       })

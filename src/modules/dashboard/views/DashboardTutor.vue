@@ -65,12 +65,6 @@
         <router-link to="/tutor/inquiries" class="text-sm text-accent hover:underline">
           {{ $t('inquiries.tutor.title') }}
         </router-link>
-        <router-link to="/bookings" class="text-sm text-accent hover:underline">
-          {{ $t('dashboard.tutor.viewBookings') }}
-        </router-link>
-        <router-link to="/calendar" class="text-sm text-accent hover:underline">
-          {{ $t('dashboard.tutor.viewLessons') }}
-        </router-link>
       </div>
     </Card>
 

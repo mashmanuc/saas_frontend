@@ -362,16 +362,7 @@ onMounted(() => {
       }
     )
     
-    // Monitor WebSocket connection status
-    const wsStatusInterval = setInterval(() => {
-      // This would be enhanced with actual WebSocket status from useWebSocket
-      // For now, we assume connection is good if we're subscribed
-    }, 5000)
-    
-    // Cleanup interval on unmount
-    onUnmounted(() => {
-      clearInterval(wsStatusInterval)
-    })
+    // WS connection status is managed by realtimeService — no polling needed
   }
 })
 

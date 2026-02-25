@@ -71,3 +71,38 @@ export async function liftBan(id: string, payload?: StaffLiftBanPayload): Promis
 export async function cancelBilling(userId: string, payload: StaffCancelBillingPayload): Promise<{ ok: boolean }> {
   return apiClient.post(`${BASE_URL}/billing/${userId}/cancel/`, payload)
 }
+
+/**
+ * Manually verify user's email (staff action)
+ */
+export async function verifyEmail(userId: string): Promise<{ success: boolean; email?: string; reason?: string }> {
+  return apiClient.post(`${BASE_URL}/users/${userId}/verify-email/`)
+}
+
+/**
+ * Toggle user active/inactive status
+ */
+export async function toggleUserActive(userId: string): Promise<{ success: boolean; is_active: boolean; email: string }> {
+  return apiClient.post(`${BASE_URL}/users/${userId}/toggle-active/`)
+}
+
+/**
+ * Get audit log events for a specific user
+ */
+export async function getUserAuditLog(userId: string, params?: { limit?: number; offset?: number }): Promise<{
+  results: AuditEvent[]
+  count: number
+  limit: number
+  offset: number
+}> {
+  return apiClient.get(`${BASE_URL}/users/${userId}/audit-log/`, { params })
+}
+
+export interface AuditEvent {
+  id: string
+  action: string
+  entity_type: string
+  entity_id: string
+  metadata: Record<string, any>
+  created_at: string
+}

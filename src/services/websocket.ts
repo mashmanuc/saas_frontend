@@ -105,9 +105,18 @@ class WebSocketService {
     realtimeService.on('auth_required', async () => {
       console.warn('[websocket] Auth required, refreshing token...')
       try {
-        await authStore.refreshAccess()
+        const newToken = await authStore.refreshAccess()
+        if (newToken) {
+          // БАГ №1 FIX: після успішного refresh — перепідключити WS з новим токеном
+          // Без цього WS залишається закритим назавжди після auth_required
+          realtimeService.handleTokenRefresh()
+          console.log('[websocket] Token refreshed, WS reconnecting...')
+        } else {
+          console.warn('[websocket] Token refresh returned null — session may have expired')
+        }
       } catch (error) {
         console.error('[websocket] Token refresh failed:', error)
+        // Не форсуємо logout тут — authStore.refreshAccess() сам це робить при 401/403
       }
     })
 
@@ -256,17 +265,14 @@ class WebSocketService {
     userId: number,
     handler: (event: RealtimeNotificationEvent) => void
   ) {
-    // Use colon-based format for backend compatibility
-    const channel = `notifications:user:${userId}`
+    const channel = `notifications_user_${userId}`
     return this.subscribe(channel, (data) => {
-      // Handle notification events from the notifications channel
-      if (data.type === 'notification' || data.event === 'notification') {
-        const payload = data.payload || data.data || data
-        handler({
-          type: 'notification',
-          payload: payload as RealtimeNotificationEvent['payload']
-        })
-      }
+      // Handle all notification events from the notifications channel
+      const payload = data.payload || data.data || data
+      handler({
+        type: data.type || data.event || 'notification',
+        payload: payload as RealtimeNotificationEvent['payload']
+      })
     })
   }
 

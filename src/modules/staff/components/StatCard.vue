@@ -6,7 +6,9 @@
     :class="{ clickable: !!to, [colorClass]: true }"
     data-testid="stat-card"
   >
-    <div class="stat-icon" v-if="icon">{{ icon }}</div>
+    <div class="stat-icon" v-if="$slots.icon || icon">
+      <slot name="icon">{{ icon }}</slot>
+    </div>
     <div class="stat-body">
       <div v-if="loading" class="stat-skeleton" />
       <div v-else class="stat-value">{{ formattedValue }}</div>

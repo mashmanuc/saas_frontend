@@ -12,8 +12,9 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useChatStore } from '@/stores/chatStore'
 import { useChatPolling } from '@/composables/useChatPolling'
 
-const WS_RECONNECT_THRESHOLD = 3  // Скільки невдалих спроб до fallback
-const WS_RECOVERY_INTERVAL_MS = 60000  // Як часто пробувати повернутися до WS (1 хв)
+const WS_RECONNECT_THRESHOLD = 5  // Скільки невдалих спроб до fallback (підвищено з 3)
+const WS_RECOVERY_INTERVAL_MS = 120000  // Як часто пробувати повернутися до WS (2 хв)
+const WS_FAILURE_COUNT_CAP = 10 // FIX BUG-4: cap щоб уникнути Infinity після тривалого offline
 
 export function useChatTransport(lessonId, options = {}) {
   const chatStore = useChatStore()
@@ -46,7 +47,8 @@ export function useChatTransport(lessonId, options = {}) {
   // Watch WebSocket failures
   watch(() => chatStore.chatStatus, (status) => {
     if (status === 'offline') {
-      wsFailureCount.value++
+      // FIX BUG-4: cap лічильник щоб уникнути нескінченного зростання при тривалому offline
+      wsFailureCount.value = Math.min(wsFailureCount.value + 1, WS_FAILURE_COUNT_CAP)
       
       if (wsFailureCount.value >= WS_RECONNECT_THRESHOLD && transport.value === 'websocket') {
         console.log('[useChatTransport] Fallback to polling after', wsFailureCount.value, 'failures')
@@ -61,6 +63,9 @@ export function useChatTransport(lessonId, options = {}) {
     if (transport.value === 'polling') return
     
     transport.value = 'polling'
+    // FIX BUG-4: скидаємо лічильник при переключенні — подальші offline події не повинні
+    // знову тригерити fallbackToPolling (вже і так в polling режимі)
+    wsFailureCount.value = 0
     
     // Initialize polling
     const threadId = ref(lessonId)

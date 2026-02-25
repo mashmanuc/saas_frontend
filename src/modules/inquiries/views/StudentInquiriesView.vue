@@ -5,12 +5,9 @@
       <p class="view-description">{{ $t('inquiries.student.description') }}</p>
     </div>
     
-    <!-- Loading State -->
-    <LoadingState v-if="isLoading && !items.length" :message="$t('inquiries.loading')" />
-    
     <!-- Error State -->
     <ErrorState
-      v-else-if="errorState"
+      v-if="errorState && !items.length"
       :variant="errorState.variant"
       :title="errorState.title"
       :message="errorState.message"
@@ -18,10 +15,15 @@
       :show-retry="errorState.showRetry"
       @retry="handleRetry"
     />
-    
+
+    <!-- Skeleton loaders (перший завантаження без даних) -->
+    <div v-else-if="isLoading && !items.length" class="inquiries-list">
+      <InquiryCardSkeleton v-for="i in 3" :key="i" />
+    </div>
+
     <!-- Empty State -->
     <EmptyInquiriesState
-      v-else-if="!items.length"
+      v-else-if="!isLoading && !items.length"
       :title="$t('inquiries.student.empty.title')"
       :description="$t('inquiries.student.empty.description')"
     >
@@ -63,44 +65,36 @@
  * Дашборд студента для перегляду та управління своїми inquiries
  */
 
-import { onMounted, onUnmounted, watch } from 'vue'
+import { onMounted, watch } from 'vue'
 import { useInquiriesStore } from '@/stores/inquiriesStore'
 import { useInquiryErrorHandler } from '@/composables/useInquiryErrorHandler'
 import { usePageVisibility } from '@/composables/usePageVisibility'
+import { useInquiryWebSocket } from '@/composables/useInquiryWebSocket'
 import { storeToRefs } from 'pinia'
 import Button from '@/ui/Button.vue'
 import LoadingState from '@/components/inquiries/LoadingState.vue'
 import ErrorState from '@/components/inquiries/ErrorState.vue'
 import EmptyInquiriesState from '@/components/inquiries/EmptyInquiriesState.vue'
 import InquiryCard from '@/components/inquiries/InquiryCard.vue'
+import InquiryCardSkeleton from '@/components/inquiries/InquiryCardSkeleton.vue'
 
 const inquiriesStore = useInquiriesStore()
 const { items, isLoading } = storeToRefs(inquiriesStore)
 const { errorState, handleError, clearError } = useInquiryErrorHandler()
 const { isVisible } = usePageVisibility()
 
-let refreshInterval: number | null = null
-
 onMounted(async () => {
   await loadInquiries()
-  
-  // Auto-refresh every 2 minutes (120s) - only when tab is active
-  refreshInterval = window.setInterval(() => {
-    if (isVisible.value && !isLoading.value) {
-      loadInquiries()
-    }
-  }, 120000) // 120 seconds = 2 minutes
 })
 
-onUnmounted(() => {
-  // Cleanup interval on component unmount
-  if (refreshInterval !== null) {
-    clearInterval(refreshInterval)
-    refreshInterval = null
+// Setup WebSocket for real-time inquiry updates
+useInquiryWebSocket({
+  onEvent: () => {
+    loadInquiries()
   }
 })
 
-// Refetch when tab becomes visible again (immediate, not waiting for interval)
+// Refetch when tab becomes visible again (fallback for missed WS events)
 watch(isVisible, (visible) => {
   if (visible && !isLoading.value) {
     loadInquiries()

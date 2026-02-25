@@ -83,13 +83,12 @@ const confirm = () => {
   if (!selectedReason.value) return
   
   isLoading.value = true
-  emit('confirm', selectedReason.value, comment.value)
-  
-  // Reset after emit
-  setTimeout(() => {
+  try {
+    emit('confirm', selectedReason.value, comment.value)
+  } finally {
     isLoading.value = false
     close()
-  }, 100)
+  }
 }
 </script>
 

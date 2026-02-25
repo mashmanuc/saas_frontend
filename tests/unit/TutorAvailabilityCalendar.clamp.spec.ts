@@ -36,7 +36,7 @@ describe('TutorAvailabilityCalendar - FE-1 Past Navigation Clamp', () => {
 
     await flushPromises()
 
-    const prevButton = wrapper.findAll('.btn-icon')[0]
+    const prevButton = wrapper.findAll('.cal-nav button')[0]
     expect(prevButton.attributes('disabled')).toBeDefined()
   })
 
@@ -52,7 +52,7 @@ describe('TutorAvailabilityCalendar - FE-1 Past Navigation Clamp', () => {
 
     await flushPromises()
 
-    const prevButton = wrapper.findAll('.btn-icon')[0]
+    const prevButton = wrapper.findAll('.cal-nav button')[0]
     await prevButton.trigger('click')
     await flushPromises()
 
@@ -74,7 +74,7 @@ describe('TutorAvailabilityCalendar - FE-1 Past Navigation Clamp', () => {
     await flushPromises()
 
     // Try to go back (should be clamped)
-    const prevButton = wrapper.findAll('.btn-icon')[0]
+    const prevButton = wrapper.findAll('.cal-nav button')[0]
     await prevButton.trigger('click')
     await flushPromises()
 
@@ -101,12 +101,12 @@ describe('TutorAvailabilityCalendar - FE-1 Past Navigation Clamp', () => {
     await flushPromises()
 
     // Navigate forward first
-    const nextButton = wrapper.findAll('.btn-icon')[1]
+    const nextButton = wrapper.findAll('.cal-nav button')[1]
     await nextButton.trigger('click')
     await flushPromises()
 
     // Now previous should be enabled (disabled attribute should not be present or be falsy)
-    const prevButton = wrapper.findAll('.btn-icon')[0]
+    const prevButton = wrapper.findAll('.cal-nav button')[0]
     const disabledAttr = prevButton.attributes('disabled')
     expect(!disabledAttr || disabledAttr === 'false').toBe(true)
   })
@@ -141,7 +141,7 @@ describe('TutorAvailabilityCalendar - FE-2 Horizon Limit', () => {
     await flushPromises()
 
     // Navigate to week 3 (offset 3 = 4th week, which is the limit)
-    const nextButton = wrapper.findAll('.btn-icon')[1]
+    const nextButton = wrapper.findAll('.cal-nav button')[1]
     
     for (let i = 0; i < 3; i++) {
       await nextButton.trigger('click')
@@ -167,7 +167,7 @@ describe('TutorAvailabilityCalendar - FE-2 Horizon Limit', () => {
 
     await flushPromises()
 
-    const nextButton = wrapper.findAll('.btn-icon')[1]
+    const nextButton = wrapper.findAll('.cal-nav button')[1]
     
     // Try to navigate 5 times (should stop at 4)
     for (let i = 0; i < 5; i++) {
@@ -193,7 +193,7 @@ describe('TutorAvailabilityCalendar - FE-2 Horizon Limit', () => {
 
     await flushPromises()
 
-    const nextButton = wrapper.findAll('.btn-icon')[1]
+    const nextButton = wrapper.findAll('.cal-nav button')[1]
     
     // Navigate to week 2 (offset 1, which is maxWeeks - 1)
     await nextButton.trigger('click')

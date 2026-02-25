@@ -13,6 +13,10 @@ vi.mock('@/api/negotiationChat')
 vi.mock('@/utils/rethrowAsDomainError', () => ({
   rethrowAsDomainError: (err: any) => { throw err }
 }))
+vi.mock('@/composables/useChatWebSocket', () => ({
+  wsConnect: vi.fn(),
+  wsDisconnect: vi.fn(),
+}))
 
 describe('negotiationChatStore v0.69', () => {
   beforeEach(() => {
@@ -146,9 +150,12 @@ describe('negotiationChatStore v0.69', () => {
       
       vi.mocked(chatApi.sendMessage).mockRejectedValue(new Error('Network error'))
 
-      await expect(store.sendMessage('thread_1', 'Hello')).rejects.toThrow('Network error')
+      const result = await store.sendMessage('thread_1', 'Hello')
       
-      expect(store.messagesByThread['thread_1']).toEqual([])
+      expect(result).toBe(false)
+      // messagesByThread may be undefined or empty after failed send
+      const msgs = store.messagesByThread['thread_1']
+      expect(!msgs || msgs.length === 0).toBe(true)
     })
   })
 

@@ -178,9 +178,9 @@ const showResendVerify = computed(() => auth.lastErrorCode === 'email_not_verifi
 const registerLink = computed(() => {
   const roleParam = route.query.role
   if (roleParam === 'student' || roleParam === 'tutor') {
-    return `/auth/register?role=${roleParam}`
+    return `/start?role=${roleParam}`
   }
-  return '/auth/register'
+  return '/start'
 })
 
 const modalSuppressedErrors = new Set([

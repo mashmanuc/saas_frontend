@@ -2,7 +2,7 @@
   <div class="user-billing-ops-panel">
     <div class="panel-header">
       <div class="header-left">
-        <h3>Billing Operations</h3>
+        <h3>{{ $t('staff.billingOps.title') }}</h3>
         <DevModeBadge />
       </div>
       <Button 
@@ -12,36 +12,36 @@
         :loading="refreshing"
         @click="refreshSnapshot"
       >
-        🔄 Refresh
+        {{ $t('staff.billingOps.refresh') }}
       </Button>
     </div>
 
     <div v-if="loading" class="loading-state">
-      Loading billing snapshot...
+      {{ $t('staff.billingOps.loading') }}
     </div>
 
     <div v-else-if="error" class="error-state">
       <p class="error-message">{{ error }}</p>
-      <Button variant="primary" size="sm" @click="loadSnapshot">Retry</Button>
+      <Button variant="primary" size="sm" @click="loadSnapshot">{{ $t('staff.billingOps.retry') }}</Button>
     </div>
 
     <!-- P0.2: Guard - перевірити user перед відображенням -->
     <div v-else-if="!user" class="error-state">
-      <p class="error-message">Snapshot user missing</p>
-      <Button variant="primary" size="sm" @click="loadSnapshot">Retry</Button>
+      <p class="error-message">{{ $t('staff.billingOps.snapshotMissing') }}</p>
+      <Button variant="primary" size="sm" @click="loadSnapshot">{{ $t('staff.billingOps.retry') }}</Button>
     </div>
 
     <div v-else-if="snapshot" class="snapshot-content">
       <!-- User Info -->
       <section class="section user-info">
-        <h4>User</h4>
+        <h4>{{ $t('staff.billingOps.userSection') }}</h4>
         <div class="info-grid">
           <div class="info-item">
-            <span class="label">Email:</span>
+            <span class="label">{{ $t('staff.billingOps.email') }}:</span>
             <span class="value">{{ user.email }}</span>
           </div>
           <div class="info-item">
-            <span class="label">Role:</span>
+            <span class="label">{{ $t('staff.billingOps.role') }}:</span>
             <span class="value">{{ user.role }}</span>
           </div>
         </div>
@@ -49,76 +49,76 @@
 
       <!-- Entitlement -->
       <section v-if="entitlement" class="section entitlement-info">
-        <h4>Entitlement</h4>
+        <h4>{{ $t('staff.billingOps.entitlementSection') }}</h4>
         <div class="info-grid">
           <div class="info-item">
-            <span class="label">Plan:</span>
+            <span class="label">{{ $t('staff.billingOps.plan') }}:</span>
             <span class="value plan-badge" :class="`plan-${entitlement.plan_code.toLowerCase()}`">
               {{ entitlement.plan_code }}
             </span>
           </div>
           <div class="info-item">
-            <span class="label">Expires:</span>
+            <span class="label">{{ $t('staff.billingOps.expires') }}:</span>
             <span class="value">{{ formatDate(entitlement.expires_at) }}</span>
           </div>
           <div class="info-item">
-            <span class="label">Features:</span>
-            <span class="value">{{ entitlement.features.length }} features</span>
+            <span class="label">{{ $t('staff.billingOps.features') }}:</span>
+            <span class="value">{{ entitlement.features.length }}</span>
           </div>
         </div>
       </section>
 
       <!-- Subscription -->
       <section v-if="subscription" class="section subscription-info">
-        <h4>Subscription</h4>
+        <h4>{{ $t('staff.billingOps.subscriptionSection') }}</h4>
         <div class="info-grid">
           <div class="info-item">
-            <span class="label">Status:</span>
+            <span class="label">{{ $t('staff.billingOps.status') }}:</span>
             <span class="value status-badge" :class="`status-${subscription.status}`">
-              {{ subscription.status || 'none' }}
+              {{ subscription.status || $t('staff.billingOps.none') }}
             </span>
           </div>
           <div class="info-item" v-if="subscription.plan_code">
-            <span class="label">Plan:</span>
+            <span class="label">{{ $t('staff.billingOps.plan') }}:</span>
             <span class="value">{{ subscription.plan_code }}</span>
           </div>
           <div class="info-item" v-if="subscription.provider">
-            <span class="label">Provider:</span>
+            <span class="label">{{ $t('staff.billingOps.provider') }}:</span>
             <span class="value">{{ subscription.provider }}</span>
           </div>
           <div class="info-item" v-if="subscription.current_period_start">
-            <span class="label">Period Start:</span>
+            <span class="label">{{ $t('staff.billingOps.periodStart') }}:</span>
             <span class="value">{{ formatDate(subscription.current_period_start) }}</span>
           </div>
           <div class="info-item" v-if="subscription.current_period_end">
-            <span class="label">Period End:</span>
+            <span class="label">{{ $t('staff.billingOps.periodEnd') }}:</span>
             <span class="value">{{ formatDate(subscription.current_period_end) }}</span>
           </div>
           <div class="info-item" v-if="subscription.cancel_at_period_end">
-            <span class="label">Cancel at period end:</span>
-            <span class="value">Yes</span>
+            <span class="label">{{ $t('staff.billingOps.cancelAtPeriodEnd') }}:</span>
+            <span class="value">{{ $t('staff.billingOps.yes') }}</span>
           </div>
         </div>
       </section>
 
       <!-- Checkout Sessions -->
       <section class="section checkout-sessions">
-        <h4>Checkout Sessions (Last 10)</h4>
+        <h4>{{ $t('staff.billingOps.sessionsSection') }}</h4>
         <div v-if="sessions.length === 0" class="empty-state">
-          No checkout sessions found
+          {{ $t('staff.billingOps.noSessions') }}
         </div>
         <div v-else class="sessions-table-wrapper">
           <table class="sessions-table">
             <thead>
               <tr>
-                <th>Order ID</th>
-                <th>Status</th>
-                <th>Provider</th>
-                <th>Plan</th>
-                <th>Pending Since</th>
-                <th>Pending Age</th>
-                <th>Created</th>
-                <th>Actions</th>
+                <th>{{ $t('staff.billingOps.orderId') }}</th>
+                <th>{{ $t('staff.billingOps.status') }}</th>
+                <th>{{ $t('staff.billingOps.provider') }}</th>
+                <th>{{ $t('staff.billingOps.plan') }}</th>
+                <th>{{ $t('staff.billingOps.pendingSince') }}</th>
+                <th>{{ $t('staff.billingOps.pendingAge') }}</th>
+                <th>{{ $t('staff.billingOps.created') }}</th>
+                <th>{{ $t('staff.billingOps.actions') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -132,9 +132,9 @@
                   <button 
                     @click="copyOrderId(session.order_id)" 
                     class="btn-copy"
-                    title="Copy order ID"
+                    :title="$t('staff.billingOps.copyOrderId')"
                   >
-                    📋
+                    <ClipboardCopy :size="14" />
                   </button>
                 </td>
                 <td>
@@ -169,7 +169,7 @@
                     :disabled="session.status === 'completed'"
                     @click="openPreviewModal(session.order_id)"
                   >
-                    Preview Finalize
+                    {{ $t('staff.billingOps.previewFinalize') }}
                   </Button>
                 </td>
               </tr>
@@ -191,10 +191,14 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { ClipboardCopy } from 'lucide-vue-next'
 import { getUserBillingSnapshot, type UserBillingSnapshotDto, type CheckoutSessionDto } from '../api/billingOpsApi'
 import Button from '@/ui/Button.vue'
 import FinalizeModal from './FinalizeModal.vue'
 import DevModeBadge from './DevModeBadge.vue'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   userId: string | number
@@ -345,7 +349,7 @@ function handleFinalized(data: { orderId: string; sessionId?: string }) {
 }
 
 function formatDate(dateStr: string | null): string {
-  if (!dateStr) return 'Never'
+  if (!dateStr) return t('staff.billingOps.never')
   const date = new Date(dateStr)
   return date.toLocaleDateString('uk-UA', { 
     year: 'numeric', 

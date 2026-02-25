@@ -60,6 +60,7 @@ export const useCalendarStore = defineStore('calendar', () => {
 
   // Actions
   async function loadSettings() {
+    if (isLoading.value) return
     try {
       isLoading.value = true
       error.value = null
@@ -87,6 +88,7 @@ export const useCalendarStore = defineStore('calendar', () => {
   }
 
   async function loadSlots(tutorId: number, startDate: string, endDate: string) {
+    if (isLoading.value) return
     try {
       isLoading.value = true
       error.value = null

@@ -63,7 +63,7 @@ describe('AvailabilityTemplateEditor', () => {
     await flushPromises()
     await wrapper.vm.$nextTick()
 
-    const addButtons = wrapper.findAll('.btn-add-slot')
+    const addButtons = wrapper.findAll('button.btn.btn-ghost')
     expect(addButtons.length).toBeGreaterThan(0)
 
     await addButtons[0].trigger('click')
@@ -86,7 +86,7 @@ describe('AvailabilityTemplateEditor', () => {
     await wrapper.vm.$nextTick()
 
     // Add two slots to Monday
-    const addButton = wrapper.findAll('.btn-add-slot')[0]
+    const addButton = wrapper.findAll('button.btn.btn-ghost')[0]
     await addButton.trigger('click')
     await addButton.trigger('click')
     await wrapper.vm.$nextTick()
@@ -132,7 +132,7 @@ describe('AvailabilityTemplateEditor', () => {
     await wrapper.vm.$nextTick()
 
     // Add a valid slot
-    const addButton = wrapper.findAll('.btn-add-slot')[0]
+    const addButton = wrapper.findAll('button.btn.btn-ghost')[0]
     await addButton.trigger('click')
     await wrapper.vm.$nextTick()
 
@@ -158,15 +158,15 @@ describe('AvailabilityTemplateEditor', () => {
     await wrapper.vm.$nextTick()
 
     // Add a slot
-    const addButton = wrapper.findAll('.btn-add-slot')[0]
+    const addButton = wrapper.findAll('button.btn.btn-ghost')[0]
     await addButton.trigger('click')
     await wrapper.vm.$nextTick()
 
     let timeSlots = wrapper.findAll('.time-slot-item')
     expect(timeSlots.length).toBe(1)
 
-    // Remove the slot
-    const deleteButton = wrapper.find('.btn-icon-danger')
+    // Remove the slot — delete button is inside .time-slot-item
+    const deleteButton = wrapper.find('.time-slot-item button.btn')
     await deleteButton.trigger('click')
     await wrapper.vm.$nextTick()
 
@@ -187,7 +187,7 @@ describe('AvailabilityTemplateEditor', () => {
     await wrapper.vm.$nextTick()
 
     // Add a slot
-    const addButton = wrapper.findAll('.btn-add-slot')[0]
+    const addButton = wrapper.findAll('button.btn.btn-ghost')[0]
     await addButton.trigger('click')
     await wrapper.vm.$nextTick()
 

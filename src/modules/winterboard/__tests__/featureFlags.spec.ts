@@ -30,12 +30,11 @@ describe('Feature Flags (A7.2)', () => {
   // ── isWinterboardEnabled ──────────────────────────────────────────────
 
   describe('isWinterboardEnabled', () => {
-    it('returns false by default (no env, no localStorage, no URL param)', async () => {
-      // Ensure env is not set
+    it('returns true by default (GA release — always enabled)', async () => {
       delete (import.meta.env as Record<string, unknown>).VITE_WB_ENABLED
 
       const { isWinterboardEnabled } = await import('../config/featureFlags')
-      expect(isWinterboardEnabled()).toBe(false)
+      expect(isWinterboardEnabled()).toBe(true)
     })
 
     it('returns true when VITE_WB_ENABLED=true', async () => {
@@ -46,11 +45,11 @@ describe('Feature Flags (A7.2)', () => {
       expect(isWinterboardEnabled()).toBe(true)
     })
 
-    it('returns false when VITE_WB_ENABLED=false', async () => {
+    it('returns true even when VITE_WB_ENABLED=false (GA override)', async () => {
       ;(import.meta.env as Record<string, unknown>).VITE_WB_ENABLED = 'false'
 
       const { isWinterboardEnabled } = await import('../config/featureFlags')
-      expect(isWinterboardEnabled()).toBe(false)
+      expect(isWinterboardEnabled()).toBe(true)
     })
 
     it('URL param ?wb=true overrides env=false', async () => {
@@ -64,16 +63,14 @@ describe('Feature Flags (A7.2)', () => {
       expect(isWinterboardEnabled()).toBe(true)
     })
 
-    it('URL param ?wb=true persists to localStorage', async () => {
+    it('always returns true regardless of URL params (GA)', async () => {
       Object.defineProperty(window, 'location', {
-        value: { ...window.location, search: '?wb=true' },
+        value: { ...window.location, search: '?wb=false' },
         writable: true,
       })
 
       const { isWinterboardEnabled } = await import('../config/featureFlags')
-      isWinterboardEnabled()
-
-      expect(window.localStorage.getItem('wb_enabled')).toBe('true')
+      expect(isWinterboardEnabled()).toBe(true)
     })
 
     it('localStorage override takes precedence over env', async () => {
@@ -84,14 +81,14 @@ describe('Feature Flags (A7.2)', () => {
       expect(isWinterboardEnabled()).toBe(true)
     })
 
-    it('setWinterboardEnabled persists to localStorage', async () => {
+    it('setWinterboardEnabled persists to localStorage (GA: always returns true)', async () => {
       const { setWinterboardEnabled, isWinterboardEnabled } = await import('../config/featureFlags')
 
       setWinterboardEnabled(true)
       expect(isWinterboardEnabled()).toBe(true)
 
       setWinterboardEnabled(false)
-      expect(isWinterboardEnabled()).toBe(false)
+      expect(isWinterboardEnabled()).toBe(true)
     })
 
     it('clearWinterboardOverrides removes localStorage keys', async () => {
@@ -108,12 +105,12 @@ describe('Feature Flags (A7.2)', () => {
   // ── isWinterboardYjsEnabled ───────────────────────────────────────────
 
   describe('isWinterboardYjsEnabled', () => {
-    it('returns false when WB is disabled (nested flag)', async () => {
+    it('returns true when Yjs env=true (WB always enabled in GA)', async () => {
       delete (import.meta.env as Record<string, unknown>).VITE_WB_ENABLED
       ;(import.meta.env as Record<string, unknown>).VITE_WB_USE_YJS = 'true'
 
       const { isWinterboardYjsEnabled } = await import('../config/featureFlags')
-      expect(isWinterboardYjsEnabled()).toBe(false)
+      expect(isWinterboardYjsEnabled()).toBe(true)
     })
 
     it('returns true when WB enabled AND Yjs enabled', async () => {
@@ -136,7 +133,7 @@ describe('Feature Flags (A7.2)', () => {
   // ── Router guard ──────────────────────────────────────────────────────
 
   describe('Router guard', () => {
-    it('guard redirects to /404 when WB disabled', async () => {
+    it('guard allows access (WB always enabled in GA)', async () => {
       delete (import.meta.env as Record<string, unknown>).VITE_WB_ENABLED
 
       const { winterboardGuard } = await import('../router')
@@ -148,7 +145,7 @@ describe('Feature Flags (A7.2)', () => {
         next,
       )
 
-      expect(next).toHaveBeenCalledWith({ path: '/404' })
+      expect(next).toHaveBeenCalledWith()
     })
 
     it('guard allows access when WB enabled', async () => {

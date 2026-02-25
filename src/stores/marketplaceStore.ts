@@ -70,6 +70,7 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
   }
   
   async function searchTutors(params: TutorSearchParams) {
+    if (isLoading.value) return
     isLoading.value = true
     error.value = null
     filters.value = params

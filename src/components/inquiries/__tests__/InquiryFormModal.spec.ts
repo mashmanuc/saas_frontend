@@ -157,7 +157,6 @@ describe('InquiryFormModal', () => {
       }
     })
 
-    await wrapper.find('select#student_level').setValue('beginner')
     await wrapper.find('textarea#message').setValue('Test message for inquiry')
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
@@ -199,7 +198,6 @@ describe('InquiryFormModal', () => {
       }
     })
 
-    await wrapper.find('select#student_level').setValue('beginner')
     await wrapper.find('textarea#message').setValue('Test message for inquiry')
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()

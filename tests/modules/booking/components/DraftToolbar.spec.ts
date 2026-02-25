@@ -62,7 +62,7 @@ describe('DraftToolbar', () => {
     mockConfirm.mockResolvedValue(true)
     const wrapper = mount(DraftToolbar)
 
-    const resetButton = wrapper.get('button.btn.btn-secondary')
+    const resetButton = wrapper.get('button.btn.btn-outline')
     await resetButton.trigger('click')
     await nextTick()
 

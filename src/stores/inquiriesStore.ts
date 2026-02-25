@@ -81,6 +81,9 @@ export const useInquiriesStore = defineStore('inquiries', () => {
    * @returns список inquiries
    */
   async function fetchInquiries(filters: InquiryFilters = {}): Promise<InquiryDTO[]> {
+    // NOTE: Do NOT guard with isLoading here — refetch() called from mutations
+    // (cancelInquiry, acceptInquiry, rejectInquiry) needs to run even when isLoading=true.
+    // The mutation functions set isLoading=true and call refetch() before their own finally block.
     isLoading.value = true
     error.value = null
     

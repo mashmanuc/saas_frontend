@@ -104,12 +104,19 @@ class RealtimeService {
 
   /**
    * Called by auth store when token is refreshed
-   * Reconnects with new token if currently connected
+   * Reconnects with new token if currently connected or was closed due to auth_required
    */
   handleTokenRefresh() {
+    // БАГ №5 FIX: після auth_required стан = CLOSED і shouldReconnect = false
+    // Тому перевіряємо CLOSED окремо — WS треба перепідключити після успішного рефрешу
     if (this.status === READY_STATES.OPEN || this.status === READY_STATES.CONNECTING) {
       this.options.logger?.info?.('[realtime] Token refreshed, reconnecting...')
       this.disconnect()
+      this.connect()
+    } else if (this.status === READY_STATES.CLOSED) {
+      // Був закритий через auth_required — тепер маємо новий токен, підключаємось знову
+      this.options.logger?.info?.('[realtime] Token refreshed after auth_required, reconnecting from CLOSED...')
+      this.shouldReconnect = true
       this.connect()
     }
   }
@@ -263,10 +270,11 @@ class RealtimeService {
     this.emitter.emit('status', this.status)
     this.clearHeartbeat()
 
-    if (event?.code === 1006 && !this.wsUnavailable) {
-      this.wsUnavailable = true
-      this.shouldReconnect = false
-      this.options.logger?.warn?.('[realtime] websocket unavailable, realtime disabled')
+    if (event?.code === 1006) {
+      this.options.logger?.warn?.('[realtime] abnormal closure (1006), scheduling reconnect with backoff')
+      if (this.shouldReconnect) {
+        this.scheduleReconnect()
+      }
       return
     }
 
@@ -286,6 +294,9 @@ class RealtimeService {
 
   handleNetworkChange(isOnline) {
     if (isOnline) {
+      this.wsUnavailable = false
+      this.shouldReconnect = true
+      this.backoff = INITIAL_BACKOFF_MS
       this.connect()
     } else {
       this.emitter.emit('status', 'offline')

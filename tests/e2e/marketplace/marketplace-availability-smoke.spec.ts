@@ -191,7 +191,7 @@ test.describe('Marketplace Availability Smoke', () => {
     await expect(page.locator('[data-testid="tutor-availability-calendar"]')).toBeVisible({ timeout: 10000 })
     
     // Клік по "Next week"
-    const nextButton = page.locator('.btn-icon').nth(1)
+    const nextButton = page.locator('.cal-nav button').nth(1)
     await nextButton.click()
     
     // Дочекатися оновлення (другий запит)

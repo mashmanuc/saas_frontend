@@ -52,6 +52,7 @@ export const useReviewStore = defineStore('reviews', () => {
   }
 
   async function loadTutorReviews(tutorId: number, reset = false): Promise<void> {
+    if (isLoading.value && !reset) return
     if (reset) {
       reviews.value = []
       currentPage.value = 1
@@ -102,6 +103,7 @@ export const useReviewStore = defineStore('reviews', () => {
   }
 
   async function loadMyReviews(): Promise<void> {
+    if (isLoading.value) return
     isLoading.value = true
     error.value = null
 

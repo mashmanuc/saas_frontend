@@ -58,6 +58,7 @@ export const useChecklistStore = defineStore('checklist', () => {
 
   // Actions
   async function loadChecklist() {
+    if (isLoading.value) return
     isLoading.value = true
     error.value = null
     try {
@@ -70,6 +71,7 @@ export const useChecklistStore = defineStore('checklist', () => {
   }
 
   async function loadChecklistByCategory(category: string) {
+    if (isLoading.value) return
     isLoading.value = true
     try {
       const categoryItems = await onboardingApi.getChecklistByCategory(category)

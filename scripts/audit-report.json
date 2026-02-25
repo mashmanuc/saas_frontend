@@ -1,0 +1,887 @@
+{
+  "scanned": 1147,
+  "findings": [
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/assets2/ui-contract/components/Select/Select.vue",
+      "line": 182,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "HIGH",
+      "category": "POLLING_INSTEAD_OF_WS",
+      "file": "src/components/chat/MessageEditModal.vue",
+      "line": 143,
+      "message": "setInterval polling for \"chat\" domain — WS alternative available: useChatWebSocket"
+    },
+    {
+      "severity": "HIGH",
+      "category": "POLLING_INSTEAD_OF_WS",
+      "file": "src/components/chat/MessageEditModal.vue",
+      "line": 156,
+      "message": "setInterval polling for \"chat\" domain — WS alternative available: useChatWebSocket"
+    },
+    {
+      "severity": "HIGH",
+      "category": "POLLING_INSTEAD_OF_WS",
+      "file": "src/components/inquiries/CountdownTimer.vue",
+      "line": 46,
+      "message": "setInterval polling for \"inquiries\" domain — WS alternative available: useInquiryWebSocket"
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/components/inquiries/RecommendedTutorsSection.vue",
+      "line": 7,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/components/Notifications/NotificationPreferences.vue",
+      "line": 6,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "CRITICAL",
+      "category": "INFINITE_LOADER",
+      "file": "src/composables/useAvailability.ts",
+      "line": 72,
+      "message": "\"isLoading.value = true\" — missing finally { isLoading.value = false }. Loader will be infinite on error/exception."
+    },
+    {
+      "severity": "HIGH",
+      "category": "POLLING_INSTEAD_OF_WS",
+      "file": "src/core/push/register.js",
+      "line": 231,
+      "message": "setInterval polling for \"notifications\" domain — WS alternative available: websocketService.subscribeNotifications"
+    },
+    {
+      "severity": "HIGH",
+      "category": "POLLING_INSTEAD_OF_WS",
+      "file": "src/core/realtime/eventQueue.js",
+      "line": 248,
+      "message": "setInterval polling for \"chat\" domain — WS alternative available: useChatWebSocket"
+    },
+    {
+      "severity": "HIGH",
+      "category": "POLLING_INSTEAD_OF_WS",
+      "file": "src/core/realtime/eventQueue.js",
+      "line": 248,
+      "message": "setInterval polling for \"slots\" domain — WS alternative available: subscribeTutorSlots"
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/admin/pages/I18nMissingTranslations.vue",
+      "line": 33,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/auth/components/BackupCodesModal.vue",
+      "line": 13,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/auth/views/InviteValidationView.vue",
+      "line": 8,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/auth/views/VerifyEmailView.vue",
+      "line": 10,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/billing/components/PlansList.vue",
+      "line": 12,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "HIGH",
+      "category": "POLLING_INSTEAD_OF_WS",
+      "file": "src/modules/booking/api/calendarWebSocket.ts",
+      "line": 95,
+      "message": "setInterval polling for \"calendar\" domain — WS alternative available: CalendarConsumer WS"
+    },
+    {
+      "severity": "CRITICAL",
+      "category": "INFINITE_LOADER",
+      "file": "src/modules/booking/components/analytics/SlotAnalyticsDashboard.vue",
+      "line": 282,
+      "message": "\"isLoading.value = true\" — missing finally { isLoading.value = false }. Loader will be infinite on error/exception."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/booking/components/analytics/SlotAnalyticsDashboard.vue",
+      "line": 15,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/booking/components/availability/AvailabilityEditor.vue",
+      "line": 449,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/booking/components/availability/AvailabilityTemplateEditor.vue",
+      "line": 13,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "CRITICAL",
+      "category": "INFINITE_LOADER",
+      "file": "src/modules/booking/components/availability/CreateSlotModal.vue",
+      "line": 211,
+      "message": "\"isLoading.value = true\" — missing finally { isLoading.value = false }. Loader will be infinite on error/exception."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/booking/components/availability/ExceptionManager.vue",
+      "line": 156,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "HIGH",
+      "category": "POLLING_INSTEAD_OF_WS",
+      "file": "src/modules/booking/components/availability/GenerationProgressModal.vue",
+      "line": 128,
+      "message": "setInterval polling for \"slots\" domain — WS alternative available: subscribeTutorSlots"
+    },
+    {
+      "severity": "HIGH",
+      "category": "POLLING_INSTEAD_OF_WS",
+      "file": "src/modules/booking/components/availability/GenerationProgressModal.vue",
+      "line": 128,
+      "message": "setInterval polling for \"booking\" domain — WS alternative available: subscribeStudentBookings"
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/booking/components/booking/SlotPicker.vue",
+      "line": 70,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/booking/components/calendar/CalendarWeekView.vue",
+      "line": 29,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/booking/components/calendar/CalendarWeekView.vue",
+      "line": 65,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/booking/components/lessonLinks/LessonLinksEditor.vue",
+      "line": 11,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/booking/components/modals/EditLessonModal.vue",
+      "line": 13,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/booking/components/modals/EventModal.vue",
+      "line": 18,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/booking/components/settings/BookingSettings.vue",
+      "line": 77,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/booking/components/StudentAutocomplete.vue",
+      "line": 72,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "HIGH",
+      "category": "POLLING_INSTEAD_OF_WS",
+      "file": "src/modules/booking/composables/useAvailabilityJob.ts",
+      "line": 49,
+      "message": "setInterval polling for \"booking\" domain — WS alternative available: subscribeStudentBookings"
+    },
+    {
+      "severity": "HIGH",
+      "category": "CONCURRENT_LOADING_RACE",
+      "file": "src/modules/booking/composables/useDragDrop.ts",
+      "line": 1,
+      "message": "2 places set isLoading=true without concurrent call guard. Multiple simultaneous calls will corrupt loading state."
+    },
+    {
+      "severity": "CRITICAL",
+      "category": "INFINITE_LOADER",
+      "file": "src/modules/booking/stores/calendarWeekStore.ts",
+      "line": 373,
+      "message": "\"isLoading.value = true\" — missing finally { isLoading.value = false }. Loader will be infinite on error/exception."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/booking/views/BookingDetailView.vue",
+      "line": 87,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/booking/views/BookingRequestsView.vue",
+      "line": 21,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/booking/views/BookLessonView.vue",
+      "line": 145,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/booking/views/MyLessonsView.vue",
+      "line": 85,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/booking/views/StudentCalendarView.vue",
+      "line": 42,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "CRITICAL",
+      "category": "INFINITE_LOADER",
+      "file": "src/modules/chat/components/ChatModal.vue",
+      "line": 124,
+      "message": "\"loading.value = true\" — missing finally { loading.value = false }. Loader will be infinite on error/exception."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/chat/components/ChatModal.vue",
+      "line": 45,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "HIGH",
+      "category": "POLLING_INSTEAD_OF_WS",
+      "file": "src/modules/chat/composables/useChatTransport.js",
+      "line": 84,
+      "message": "setInterval polling for \"chat\" domain — WS alternative available: useChatWebSocket"
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/chat/views/ChatWithStudentView.vue",
+      "line": 33,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/chat/views/ChatWithTutorView.vue",
+      "line": 33,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/classroom/components/modals/HistoryModal.vue",
+      "line": 4,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/classrooms/views/ClassroomDetailView.vue",
+      "line": 13,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/classrooms/views/ClassroomListView.vue",
+      "line": 11,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/classrooms/views/DashboardClassroomsView.vue",
+      "line": 25,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/contacts/components/ContactBalanceWidget.vue",
+      "line": 15,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/contacts/components/MonthlyAllowanceWidget.vue",
+      "line": 12,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/contacts/components/PurchaseTokensModal.vue",
+      "line": 16,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/dashboard/components/StudentActiveTutorsSection.vue",
+      "line": 8,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/dashboard/components/StudentContactUnlock.vue",
+      "line": 25,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/dashboard/components/StudentUpcomingLessonsSection.vue",
+      "line": 8,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/inquiries/components/RecommendedTutorsWidget.vue",
+      "line": 15,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/lessons/views/LessonList.vue",
+      "line": 155,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/marketplace/components/MarketplaceSearch.vue",
+      "line": 198,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/marketplace/components/search/SearchSuggestions.vue",
+      "line": 33,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/marketplace/components/TutorAvailabilityCalendar.vue",
+      "line": 33,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/marketplace/components/TutorAvailabilityWidget.vue",
+      "line": 3,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/marketplace/components/TutorCalendarWidget.vue",
+      "line": 5,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/matches/components/MatchDetail.vue",
+      "line": 65,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/matches/components/MatchList.vue",
+      "line": 74,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/negotiation/views/ChatListView.vue",
+      "line": 12,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/negotiation/views/ChatView.vue",
+      "line": 5,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/onboarding/components/checklist/ChecklistPanel.vue",
+      "line": 44,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/onboarding/views/ChecklistView.vue",
+      "line": 68,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/operator/components/MatchesConsole.vue",
+      "line": 84,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/operator/components/TelemetryChart.vue",
+      "line": 15,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/operator/views/ActivityConsoleView.vue",
+      "line": 130,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/payments/components/wallet/TransactionList.vue",
+      "line": 21,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/payments/views/InvoicesView.vue",
+      "line": 66,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/payments/views/PaymentHistoryView.vue",
+      "line": 130,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/payments/views/PayoutView.vue",
+      "line": 92,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/payments/views/SubscriptionView.vue",
+      "line": 82,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/payments/views/WalletView.vue",
+      "line": 75,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "CRITICAL",
+      "category": "INFINITE_LOADER",
+      "file": "src/modules/profile/components/AvatarUploadWidget.vue",
+      "line": 186,
+      "message": "\"uploading.value = true\" — missing finally { uploading.value = false }. Loader will be infinite on error/exception."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/profile/components/settings/AccountSettingsTab.vue",
+      "line": 4,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/profile/components/settings/ContactsSettingsTab.vue",
+      "line": 10,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/profile/components/settings/ProfileSettingsTab.vue",
+      "line": 10,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/profile/components/settings/TelegramNotifications.vue",
+      "line": 19,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/profileV2/views/ProfileEditView.vue",
+      "line": 97,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/profileV2/views/ProfileOverviewView.vue",
+      "line": 41,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/profileV2/views/UserAccountView.vue",
+      "line": 68,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/reviews/components/display/ReviewList.vue",
+      "line": 28,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/reviews/components/ReviewsList.vue",
+      "line": 87,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/reviews/views/MyReviewsView.vue",
+      "line": 29,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/reviews/views/WriteReviewView.vue",
+      "line": 92,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/staff/components/FinalizeModal.vue",
+      "line": 10,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/staff/components/RecentActivityFeed.vue",
+      "line": 3,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/staff/components/StatCard.vue",
+      "line": 13,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/staff/components/UserBillingOpsPanel.vue",
+      "line": 19,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/staff/views/StaffBillingView.vue",
+      "line": 8,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/staff/views/StaffDashboard.vue",
+      "line": 117,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/staff/views/StaffDashboard.vue",
+      "line": 141,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/staff/views/StaffPayoutsView.vue",
+      "line": 27,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/staff/views/StaffProfileModerationView.vue",
+      "line": 27,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/staff/views/StaffReportsView.vue",
+      "line": 28,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/staff/views/StaffSystemHealthView.vue",
+      "line": 8,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/staff/views/StaffUserOverviewView.vue",
+      "line": 25,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/staff/views/StaffUserOverviewView.vue",
+      "line": 284,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/staff/views/StaffUsersListView.vue",
+      "line": 34,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/staff/views/StaffVerificationView.vue",
+      "line": 25,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/staff/views/TutorActivityManagement.vue",
+      "line": 30,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/student/components/MyTutorWidget.vue",
+      "line": 46,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/trust/components/BlockedUsersList.vue",
+      "line": 8,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/trust/views/AppealsView.vue",
+      "line": 8,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/tutors/views/TutorAnalyticsView.vue",
+      "line": 21,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "HIGH",
+      "category": "POLLING_INSTEAD_OF_WS",
+      "file": "src/modules/websocket-engine/client.ts",
+      "line": 160,
+      "message": "setInterval polling for \"notifications\" domain — WS alternative available: websocketService.subscribeNotifications"
+    },
+    {
+      "severity": "HIGH",
+      "category": "POLLING_INSTEAD_OF_WS",
+      "file": "src/modules/websocket-engine/client.ts",
+      "line": 290,
+      "message": "setInterval polling for \"notifications\" domain — WS alternative available: websocketService.subscribeNotifications"
+    },
+    {
+      "severity": "HIGH",
+      "category": "POLLING_INSTEAD_OF_WS",
+      "file": "src/modules/websocket-engine/client.ts",
+      "line": 160,
+      "message": "setInterval polling for \"chat\" domain — WS alternative available: useChatWebSocket"
+    },
+    {
+      "severity": "HIGH",
+      "category": "POLLING_INSTEAD_OF_WS",
+      "file": "src/modules/websocket-engine/client.ts",
+      "line": 290,
+      "message": "setInterval polling for \"chat\" domain — WS alternative available: useChatWebSocket"
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "HIGH_FREQ_RERENDER",
+      "file": "src/modules/winterboard/components/canvas/WBCanvas.vue",
+      "line": 1,
+      "message": "Component uses realtime/presence store + multiple v-for loops. Consider virtualizing lists or using shallowRef to prevent excessive re-renders."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/winterboard/components/sharing/WBShareDialog.vue",
+      "line": 21,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/modules/winterboard/views/WBPublicView.vue",
+      "line": 4,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    },
+    {
+      "severity": "HIGH",
+      "category": "CONCURRENT_LOADING_RACE",
+      "file": "src/stores/boardHistoryStore.ts",
+      "line": 1,
+      "message": "5 places set isLoading=true without concurrent call guard. Multiple simultaneous calls will corrupt loading state."
+    },
+    {
+      "severity": "CRITICAL",
+      "category": "INFINITE_LOADER",
+      "file": "src/stores/boardStore.ts",
+      "line": 80,
+      "message": "\"isLoading.value = true\" — missing finally { isLoading.value = false }. Loader will be infinite on error/exception."
+    },
+    {
+      "severity": "HIGH",
+      "category": "CONCURRENT_LOADING_RACE",
+      "file": "src/stores/boardStore.ts",
+      "line": 1,
+      "message": "2 places set isLoading=true without concurrent call guard. Multiple simultaneous calls will corrupt loading state."
+    },
+    {
+      "severity": "HIGH",
+      "category": "POLLING_INSTEAD_OF_WS",
+      "file": "src/stores/notificationsStore.ts",
+      "line": 173,
+      "message": "setInterval polling for \"notifications\" domain — WS alternative available: websocketService.subscribeNotifications"
+    },
+    {
+      "severity": "CRITICAL",
+      "category": "INFINITE_LOADER",
+      "file": "src/stores/slotStore.ts",
+      "line": 149,
+      "message": "\"isLoading.value = true\" — missing finally { isLoading.value = false }. Loader will be infinite on error/exception."
+    },
+    {
+      "severity": "CRITICAL",
+      "category": "INFINITE_LOADER",
+      "file": "src/stores/slotStore.ts",
+      "line": 256,
+      "message": "\"isLoading.value = true\" — missing finally { isLoading.value = false }. Loader will be infinite on error/exception."
+    },
+    {
+      "severity": "HIGH",
+      "category": "CONCURRENT_LOADING_RACE",
+      "file": "src/stores/slotStore.ts",
+      "line": 1,
+      "message": "6 places set isLoading=true without concurrent call guard. Multiple simultaneous calls will corrupt loading state."
+    },
+    {
+      "severity": "HIGH",
+      "category": "CONCURRENT_LOADING_RACE",
+      "file": "src/stores/staffStore.ts",
+      "line": 1,
+      "message": "9 places set isLoading=true without concurrent call guard. Multiple simultaneous calls will corrupt loading state."
+    },
+    {
+      "severity": "HIGH",
+      "category": "CONCURRENT_LOADING_RACE",
+      "file": "src/stores/trustStore.ts",
+      "line": 1,
+      "message": "5 places set isLoading=true without concurrent call guard. Multiple simultaneous calls will corrupt loading state."
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "LAYOUT_SHIFT",
+      "file": "src/views/BillingView.vue",
+      "line": 9,
+      "message": "Full component replace on loading (v-if loading → v-else content). Use v-show or CSS opacity/skeleton instead to avoid CLS."
+    }
+  ]
+}

@@ -65,7 +65,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
       return response
     } catch (err) {
       error.value = String(err)
-      items.value = []
+      // C4: НЕ очищаємо items при помилці — зберігаємо stale дані, уникаємо CLS
       try {
         rethrowAsDomainError(err)
       } catch {

@@ -13,7 +13,10 @@ import {
 
 export const useDashboardStore = defineStore('dashboard', () => {
   // State
-  const isLoading = ref(false)
+  // FIX BUG-3: окремі прапори щоб student/tutor не блокували один одного
+  const isLoadingStudent = ref(false)
+  const isLoadingTutor = ref(false)
+  const isLoading = computed(() => isLoadingStudent.value || isLoadingTutor.value) // legacy compat
   const error = ref<string | null>(null)
 
   // Student state
@@ -39,7 +42,8 @@ export const useDashboardStore = defineStore('dashboard', () => {
 
   // Actions
   async function fetchStudentDashboard() {
-    isLoading.value = true
+    if (isLoadingStudent.value) return
+    isLoadingStudent.value = true
     error.value = null
 
     try {
@@ -63,7 +67,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
       error.value = e.message || 'Failed to load dashboard'
       console.error('[Dashboard] Failed to fetch student dashboard:', err)
     } finally {
-      isLoading.value = false
+      isLoadingStudent.value = false
     }
   }
 
@@ -86,7 +90,8 @@ export const useDashboardStore = defineStore('dashboard', () => {
   }
 
   async function fetchTutorDashboard() {
-    isLoading.value = true
+    if (isLoadingTutor.value) return
+    isLoadingTutor.value = true
     error.value = null
 
     try {
@@ -98,7 +103,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
       error.value = e.message || 'Failed to load dashboard'
       console.error('[Dashboard] Failed to fetch tutor dashboard:', err)
     } finally {
-      isLoading.value = false
+      isLoadingTutor.value = false
     }
   }
 
@@ -127,6 +132,8 @@ export const useDashboardStore = defineStore('dashboard', () => {
   return {
     // State
     isLoading,
+    isLoadingStudent,
+    isLoadingTutor,
     error,
     upcomingLessons,
     assignedTutor,

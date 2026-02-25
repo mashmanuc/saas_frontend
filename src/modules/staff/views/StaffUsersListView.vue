@@ -2,6 +2,7 @@
   <div class="staff-users-list" data-testid="staff-users-list">
     <div class="page-header">
       <h1 class="page-title">{{ $t('staff.users.title') }}</h1>
+      <p class="help-text">{{ $t('staff.users.helpText') }}</p>
     </div>
 
     <!-- Filters -->
@@ -217,6 +218,12 @@ onMounted(fetchUsers)
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.help-text {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin: var(--space-xs) 0 0 0;
 }
 
 .page-title {

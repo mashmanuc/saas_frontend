@@ -73,7 +73,7 @@ describe('TutorAvailabilityCalendar', () => {
 
     await flushPromises()
 
-    const dayColumns = wrapper.findAll('.day-column')
+    const dayColumns = wrapper.findAll('.schedule-column')
     expect(dayColumns.length).toBe(2) // 2 days with slots
   })
 
@@ -97,7 +97,7 @@ describe('TutorAvailabilityCalendar', () => {
     await wrapper.vm.$nextTick()
     await new Promise((resolve) => setTimeout(resolve, 100))
 
-    const slotButton = wrapper.find('.time-slot-btn')
+    const slotButton = wrapper.find('.schedule-slot')
     expect(slotButton.exists()).toBe(true)
     await slotButton.trigger('click')
 
@@ -201,7 +201,7 @@ describe('TutorAvailabilityCalendar', () => {
     await wrapper.vm.$nextTick()
     await new Promise((resolve) => setTimeout(resolve, 100))
 
-    const slotButton = wrapper.find('.time-slot-btn')
+    const slotButton = wrapper.find('.schedule-slot')
     
     // Test Enter key
     await slotButton.trigger('keydown.enter')
@@ -231,7 +231,7 @@ describe('TutorAvailabilityCalendar', () => {
 
     await flushPromises()
 
-    const slotButton = wrapper.find('.time-slot-btn')
+    const slotButton = wrapper.find('.schedule-slot')
     expect(slotButton.exists()).toBe(true)
     expect(slotButton.attributes('tabindex')).toBe('0')
     expect(slotButton.attributes('aria-label')).toBeTruthy()

@@ -21,12 +21,9 @@
       </div>
     </div>
     
-    <!-- Loading State -->
-    <LoadingState v-if="isLoading && !items.length" :message="$t('inquiries.loading')" />
-    
     <!-- Error State -->
     <ErrorState
-      v-else-if="errorState"
+      v-if="errorState && !items.length"
       :variant="errorState.variant"
       :title="errorState.title"
       :message="errorState.message"
@@ -34,14 +31,19 @@
       :show-retry="errorState.showRetry"
       @retry="handleRetry"
     />
-    
-    <!-- Empty State (новий текст) -->
-    <div v-else-if="!items.length" class="empty-state">
+
+    <!-- Skeleton loaders (перший завантаження без даних) -->
+    <div v-else-if="isLoading && !items.length" class="inquiries-list">
+      <InquiryCardSkeleton v-for="i in 3" :key="i" />
+    </div>
+
+    <!-- Empty State -->
+    <div v-else-if="!isLoading && !items.length" class="empty-state">
       <p class="empty-title">Наразі у вас немає запитів від студентів.</p>
       <p class="empty-description">Коли з'являться — ви зможете прийняти їх одразу.</p>
     </div>
-    
-    <!-- Inquiries List -->
+
+    <!-- Inquiries List (залишається видимим під час рефетчу) -->
     <div v-else class="inquiries-list">
       <InquiryCard
         v-for="inquiry in items"
@@ -117,6 +119,7 @@ import { useContactsStore } from '@/stores/contactsStore'
 import { useAcceptanceStore } from '@/stores/acceptanceStore'
 import { useInquiryAccept } from '@/composables/useInquiryAccept'
 import { useInquiryErrorHandler } from '@/composables/useInquiryErrorHandler'
+import { useInquiryWebSocket } from '@/composables/useInquiryWebSocket'
 import { storeToRefs } from 'pinia'
 import type { ContactsDTO } from '@/types/inquiries'
 import Button from '@/ui/Button.vue'
@@ -125,6 +128,7 @@ import LoadingState from '@/components/inquiries/LoadingState.vue'
 import ErrorState from '@/components/inquiries/ErrorState.vue'
 import EmptyInquiriesState from '@/components/inquiries/EmptyInquiriesState.vue'
 import InquiryCard from '@/components/inquiries/InquiryCard.vue'
+import InquiryCardSkeleton from '@/components/inquiries/InquiryCardSkeleton.vue'
 import RejectInquiryModal from '@/components/inquiries/RejectInquiryModal.vue'
 import DeclineStreakWarning from '@/components/contacts/DeclineStreakWarning.vue'
 
@@ -147,6 +151,14 @@ onMounted(async () => {
     contactsStore.fetchStats(),
     acceptanceStore.fetchAvailability()
   ])
+})
+
+// Setup WebSocket for real-time inquiry updates
+useInquiryWebSocket({
+  onEvent: (event) => {
+    // Refresh inquiries when we receive any inquiry event
+    loadInquiries()
+  }
 })
 
 async function loadInquiries() {

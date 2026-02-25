@@ -107,7 +107,7 @@ test.describe('QA-1: Marketplace Availability Smoke Suite', () => {
     expect(calendarRequestCount).toBe(1)
     
     // 3. Past navigation disabled
-    const prevButton = page.locator('.btn-icon').first()
+    const prevButton = page.locator('.cal-nav button').first()
     await expect(prevButton).toBeDisabled()
     
     // 4. Slot click
@@ -175,7 +175,7 @@ test.describe('QA-1: Marketplace Availability Smoke Suite', () => {
     await page.goto('/marketplace/tutors/tutor-79')
     await expect(page.locator('[data-testid="tutor-availability-calendar"]')).toBeVisible({ timeout: 10000 })
     
-    const nextButton = page.locator('.btn-icon').last()
+    const nextButton = page.locator('.cal-nav button').last()
     
     // Navigate forward 3 times (weeks 0 -> 1 -> 2 -> 3)
     for (let i = 0; i < 3; i++) {

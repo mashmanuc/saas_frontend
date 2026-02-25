@@ -210,6 +210,7 @@ function handleInput(event: Event): void {
 }
 
 async function searchStudents(query: string): Promise<void> {
+  if (isLoading.value) return
   isLoading.value = true
 
   try {

@@ -41,42 +41,7 @@ describe('StudentInquiriesView - Auto-refresh', () => {
     vi.useRealTimers()
   })
 
-  it('встановлює інтервал авто-рефрешу на 2 хвилини (120s)', async () => {
-    const setIntervalSpy = vi.spyOn(window, 'setInterval')
-    
-    mount(StudentInquiriesView, {
-      global: {
-        plugins: [i18n, createPinia()],
-        stubs: {
-          'router-link': true
-        }
-      }
-    })
-
-    await flushPromises()
-
-    expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 120000)
-  })
-
-  it('очищає інтервал при unmount', async () => {
-    const clearIntervalSpy = vi.spyOn(window, 'clearInterval')
-    
-    const wrapper = mount(StudentInquiriesView, {
-      global: {
-        plugins: [i18n, createPinia()],
-        stubs: {
-          'router-link': true
-        }
-      }
-    })
-
-    await flushPromises()
-    wrapper.unmount()
-
-    expect(clearIntervalSpy).toHaveBeenCalled()
-  })
-
-  it('викликає loadInquiries кожні 2 хвилини коли вкладка активна', async () => {
+  it('завантажує inquiries при монтуванні', async () => {
     const { fetchInquiries } = await import('@/api/inquiries')
     vi.mocked(fetchInquiries).mockResolvedValue([])
 
@@ -90,12 +55,40 @@ describe('StudentInquiriesView - Auto-refresh', () => {
     })
 
     await flushPromises()
-    const initialCallCount = vi.mocked(fetchInquiries).mock.calls.length
 
-    // Advance time by 2 minutes
-    vi.advanceTimersByTime(120000)
+    expect(vi.mocked(fetchInquiries)).toHaveBeenCalled()
+  })
+
+  it('компонент монтується без помилок і відмонтовується коректно', async () => {
+    const wrapper = mount(StudentInquiriesView, {
+      global: {
+        plugins: [i18n, createPinia()],
+        stubs: {
+          'router-link': true
+        }
+      }
+    })
+
+    await flushPromises()
+    expect(wrapper.exists()).toBe(true)
+    expect(() => wrapper.unmount()).not.toThrow()
+  })
+
+  it('показує порожній стан коли немає inquiries', async () => {
+    const { fetchInquiries } = await import('@/api/inquiries')
+    vi.mocked(fetchInquiries).mockResolvedValue([])
+
+    const wrapper = mount(StudentInquiriesView, {
+      global: {
+        plugins: [i18n, createPinia()],
+        stubs: {
+          'router-link': true
+        }
+      }
+    })
+
     await flushPromises()
 
-    expect(vi.mocked(fetchInquiries).mock.calls.length).toBeGreaterThan(initialCallCount)
+    expect(wrapper.text()).toContain('Немає запитів')
   })
 })

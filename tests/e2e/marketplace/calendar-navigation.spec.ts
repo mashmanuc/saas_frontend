@@ -70,7 +70,7 @@ test.describe('Marketplace Calendar Navigation - FE-1 & FE-2', () => {
     await expect(page.locator('[data-testid="tutor-availability-calendar"]')).toBeVisible({ timeout: 10000 })
     
     // Previous button should be disabled at current week
-    const prevButton = page.locator('.btn-icon').first()
+    const prevButton = page.locator('.cal-nav button').first()
     await expect(prevButton).toBeDisabled()
     
     // Click should not trigger API call
@@ -118,12 +118,12 @@ test.describe('Marketplace Calendar Navigation - FE-1 & FE-2', () => {
     await expect(page.locator('[data-testid="tutor-availability-calendar"]')).toBeVisible({ timeout: 10000 })
     
     // Navigate forward
-    const nextButton = page.locator('.btn-icon').last()
+    const nextButton = page.locator('.cal-nav button').last()
     await nextButton.click()
     await page.waitForTimeout(500)
     
     // Try to navigate back twice (should clamp to current Monday)
-    const prevButton = page.locator('.btn-icon').first()
+    const prevButton = page.locator('.cal-nav button').first()
     await prevButton.click()
     await page.waitForTimeout(500)
     await prevButton.click()
@@ -180,7 +180,7 @@ test.describe('Marketplace Calendar Navigation - FE-1 & FE-2', () => {
     await page.goto('/marketplace/tutors/tutor-79')
     await expect(page.locator('[data-testid="tutor-availability-calendar"]')).toBeVisible({ timeout: 10000 })
     
-    const nextButton = page.locator('.btn-icon').last()
+    const nextButton = page.locator('.cal-nav button').last()
     
     // Navigate forward 3 times (weeks 0 -> 1 -> 2 -> 3)
     for (let i = 0; i < 3; i++) {
@@ -234,8 +234,8 @@ test.describe('Marketplace Calendar Navigation - FE-1 & FE-2', () => {
     await page.goto('/marketplace/tutors/tutor-79')
     await expect(page.locator('[data-testid="tutor-availability-calendar"]')).toBeVisible({ timeout: 10000 })
     
-    const prevButton = page.locator('.btn-icon').first()
-    const nextButton = page.locator('.btn-icon').last()
+    const prevButton = page.locator('.cal-nav button').first()
+    const nextButton = page.locator('.cal-nav button').last()
     
     // Initially, previous should be disabled
     await expect(prevButton).toBeDisabled()

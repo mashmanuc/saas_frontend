@@ -129,7 +129,7 @@ describe('chatThreadsStore', () => {
 
       await store.fetchUnreadSummary()
 
-      expect(apiClient.get).toHaveBeenCalledWith('/api/v1/chat/unread-summary/')
+      expect(apiClient.get).toHaveBeenCalledWith('/api/v1/chat/unread-summary/', { meta: { skipLoader: true } })
       expect(store.unreadSummary).toEqual(mockSummary)
       expect(store.threadsByStudent.get(123)).toEqual({
         threadId: '550e8400-e29b-41d4-a716-446655440000',

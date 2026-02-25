@@ -65,6 +65,7 @@ export const useSubscriptionStore = defineStore('subscription', () => {
   }
 
   async function loadCurrentSubscription(): Promise<void> {
+    if (isLoading.value) return
     isLoading.value = true
     error.value = null
 

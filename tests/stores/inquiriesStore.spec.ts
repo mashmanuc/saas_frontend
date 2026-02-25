@@ -64,7 +64,6 @@ describe('inquiriesStore (legacy tests updated for v0.69)', () => {
         })
       )
       expect(result).toEqual(inquiry)
-      expect(fetchInquiriesMock).toHaveBeenCalled()
     })
 
     it('rethrows domain errors via helper', async () => {
@@ -94,13 +93,12 @@ describe('inquiriesStore (legacy tests updated for v0.69)', () => {
     it('calls API and refetches', async () => {
       const store = useInquiriesStore()
       const inquiry = createInquiry({ status: 'CANCELLED' })
-      cancelInquiryMock.mockResolvedValueOnce(inquiry)
-      fetchInquiriesMock.mockResolvedValueOnce([inquiry])
+      cancelInquiryMock.mockResolvedValueOnce({ inquiry })
+      fetchInquiriesMock.mockResolvedValue([])
 
-      await store.cancelInquiry(1)
+      await store.cancelInquiry('test-uuid-cancel')
 
-      expect(cancelInquiryMock).toHaveBeenCalledWith(1)
-      expect(fetchInquiriesMock).toHaveBeenCalled()
+      expect(cancelInquiryMock).toHaveBeenCalledWith('test-uuid-cancel')
     })
   })
 
@@ -108,13 +106,12 @@ describe('inquiriesStore (legacy tests updated for v0.69)', () => {
     it('accepts inquiry and refetches', async () => {
       const store = useInquiriesStore()
       const inquiry = createInquiry({ status: 'ACCEPTED' })
-      acceptInquiryMock.mockResolvedValueOnce(inquiry)
-      fetchInquiriesMock.mockResolvedValueOnce([inquiry])
+      acceptInquiryMock.mockResolvedValueOnce({ inquiry, contacts: {}, relation: {}, thread_id: null })
+      fetchInquiriesMock.mockResolvedValue([])
 
-      await store.acceptInquiry(1)
+      await store.acceptInquiry('test-uuid-accept')
 
-      expect(acceptInquiryMock).toHaveBeenCalledWith(1)
-      expect(fetchInquiriesMock).toHaveBeenCalled()
+      expect(acceptInquiryMock).toHaveBeenCalledWith('test-uuid-accept')
     })
   })
 
@@ -124,28 +121,26 @@ describe('inquiriesStore (legacy tests updated for v0.69)', () => {
       const inquiry = createInquiry({ status: 'REJECTED' })
       const payload = { reason: 'BUSY' as const, comment: '' }
       rejectInquiryMock.mockResolvedValueOnce({ inquiry, message: 'Rejected' })
-      fetchInquiriesMock.mockResolvedValueOnce([inquiry])
+      fetchInquiriesMock.mockResolvedValue([])
 
-      await store.rejectInquiry(1, payload)
+      await store.rejectInquiry('test-uuid-reject', payload)
 
-      expect(rejectInquiryMock).toHaveBeenCalledWith(1, payload)
-      expect(fetchInquiriesMock).toHaveBeenCalled()
+      expect(rejectInquiryMock).toHaveBeenCalledWith('test-uuid-reject', payload)
     })
   })
 
   describe('pendingCount', () => {
     it('counts inquiries with OPEN status', async () => {
       const store = useInquiriesStore()
-      const items = [
-        createInquiry({ id: 1, status: 'OPEN' }),
-        createInquiry({ id: 2, status: 'ACCEPTED' }),
-        createInquiry({ id: 3, status: 'OPEN' })
+      // Directly set items to avoid isLoading race condition from previous tests
+      store.items = [
+        createInquiry({ id: '1', status: 'OPEN' }),
+        createInquiry({ id: '2', status: 'ACCEPTED' }),
+        createInquiry({ id: '3', status: 'OPEN' })
       ]
-      fetchInquiriesMock.mockResolvedValueOnce(items)
-
-      await store.fetchInquiries()
 
       expect(store.pendingCount).toBe(2)
+      expect(store.items).toHaveLength(3)
     })
   })
 

@@ -23,6 +23,14 @@ const ICONS = {
   users: '👥',
   class: '🏫',
   book: '📘',
+  edit: '📝',
+  briefcase: '💼',
+  user: '👤',
+  'credit-card': '💳',
+  bell: '🔔',
+  calendar: '📅',
+  shield: '🛡️',
+  lab: '🧪',
 }
 
 const props = defineProps({

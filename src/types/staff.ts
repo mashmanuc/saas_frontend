@@ -28,6 +28,9 @@ export interface StaffUser {
   first_name?: string
   last_name?: string
   is_active?: boolean
+  email_verified?: boolean
+  email_verified_at?: string | null
+  last_login?: string | null
   created_at: string
 }
 

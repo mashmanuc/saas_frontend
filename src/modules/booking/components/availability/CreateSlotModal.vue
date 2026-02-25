@@ -220,6 +220,7 @@ async function handleCreate() {
     
     if (hasErrorConflicts.value) {
       error.value = t('calendar.createSlot.conflictsDetected')
+      isLoading.value = false
       return
     }
     

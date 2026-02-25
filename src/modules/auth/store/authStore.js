@@ -4,7 +4,10 @@ import { storage } from '../../../utils/storage'
 import { logAuthEvent, AUTH_EVENTS } from '../../../utils/telemetry/authEvents'
 
 const hasDocument = typeof document !== 'undefined'
-const REFRESH_INTERVAL_MS = 25 * 60 * 1000
+// БАГ №4 FIX: JWT TTL = 30 хв (backend SIMPLE_JWT.ACCESS_TOKEN_LIFETIME).
+// Було 25 хв — залишало лише 5 хв запасу, що недостатньо при мережевих затримках або фоновій вкладці.
+// 15 хв дає надійні 2 спроби на 30-хвилинне вікно.
+const REFRESH_INTERVAL_MS = 15 * 60 * 1000
 let refreshInterval = null
 
 export const useAuthStore = defineStore('auth', {
@@ -422,12 +425,36 @@ export const useAuthStore = defineStore('auth', {
           await this.forceLogout()
         }
       }, REFRESH_INTERVAL_MS)
+
+      // БАГ №3 FIX: при поверненні до вкладки — відразу перевіряємо токен
+      // Без цього після 25+ хв у фоні перший запит дає 401
+      if (hasDocument) {
+        this._visibilityHandler = async () => {
+          if (document.visibilityState !== 'visible') return
+          if (!this.access) return
+          // Рефрешимо одразу при поверненні — не чекаємо наступного інтервалу
+          try {
+            await this.refreshAccess()
+          } catch (error) {
+            const status = error?.response?.status
+            if (status !== 429) {
+              await this.forceLogout()
+            }
+          }
+        }
+        document.addEventListener('visibilitychange', this._visibilityHandler)
+      }
     },
 
     stopProactiveRefresh() {
       if (refreshInterval) {
         clearInterval(refreshInterval)
         refreshInterval = null
+      }
+      // БАГ №3 FIX: прибираємо listener при зупинці
+      if (hasDocument && this._visibilityHandler) {
+        document.removeEventListener('visibilitychange', this._visibilityHandler)
+        this._visibilityHandler = null
       }
     },
 
@@ -458,6 +485,14 @@ export const useAuthStore = defineStore('auth', {
       this.lastRequestId = null
       this.lastFieldMessages = null
       this.lastSummary = null
+
+      // БАГ №2 FIX: відключаємо WS при logout щоб уникнути отримання чужих подій
+      try {
+        const { websocketService } = await import('../../../services/websocket')
+        websocketService.disconnect()
+      } catch (_e) {
+        // WS може не бути ініціалізований — це нормально
+      }
 
       storage.clearAll()
       

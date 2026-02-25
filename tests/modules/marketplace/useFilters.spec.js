@@ -293,6 +293,7 @@ describe('useFilters composable', () => {
         categories: [],
         subjects: [],
         countries: [],
+        cities: [],
         languages: [],
         priceRange: { min: 0, max: 200, avg: 25 },
         experienceRange: { min: 0, max: 30 },

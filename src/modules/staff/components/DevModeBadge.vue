@@ -1,12 +1,13 @@
 <template>
   <div v-if="isDev" class="dev-mode-badge" title="Development Mode - Manual finalize available">
-    <span class="badge-icon">🔧</span>
+    <Wrench :size="14" class="badge-icon-svg" />
     <span class="badge-text">DEV MODE</span>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { Wrench } from 'lucide-vue-next'
 
 const isDev = computed(() => {
   return import.meta.env.DEV || import.meta.env.MODE === 'development'

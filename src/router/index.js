@@ -3,7 +3,6 @@ import AuthLayout from '../modules/auth/components/AuthLayout.vue'
 import PageShell from '../ui/PageShell.vue'
 
 import LoginView from '../modules/auth/views/LoginView.vue'
-import RegisterView from '../modules/auth/views/RegisterView.vue'
 import RegisterStudentView from '../modules/auth/views/RegisterStudentView.vue'
 import RegisterTutorView from '../modules/auth/views/RegisterTutorView.vue'
 import CheckEmailView from '../modules/auth/views/CheckEmailView.vue'
@@ -94,7 +93,7 @@ const routes = [
     meta: { requiresAuth: false },
     children: [
       { path: 'login', name: 'login', component: LoginView, meta: { requiresAuth: false } },
-      { path: 'register', name: 'register', component: RegisterView, meta: { requiresAuth: false } },
+      { path: 'register', redirect: '/start' },
       { path: 'register/student', name: 'register-student', component: RegisterStudentView, meta: { requiresAuth: false } },
       { path: 'register/tutor', name: 'register-tutor', component: RegisterTutorView, meta: { requiresAuth: false } },
       { path: 'check-email', name: 'auth-check-email', component: CheckEmailView, meta: { requiresAuth: false } },
@@ -778,6 +777,36 @@ const routes = [
             meta: { 
               requiresAuth: true,
               roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.STAFF],
+              requiresStaff: true
+            },
+          },
+          {
+            path: 'payouts',
+            name: 'staff-payouts',
+            component: () => import('../modules/staff/views/StaffPayoutsView.vue'),
+            meta: {
+              requiresAuth: true,
+              roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN],
+              requiresStaff: true
+            },
+          },
+          {
+            path: 'profile-moderation',
+            name: 'staff-profile-moderation',
+            component: () => import('../modules/staff/views/StaffProfileModerationView.vue'),
+            meta: { 
+              requiresAuth: true,
+              roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN],
+              requiresStaff: true
+            },
+          },
+          {
+            path: 'verification',
+            name: 'staff-verification',
+            component: () => import('../modules/staff/views/StaffVerificationView.vue'),
+            meta: { 
+              requiresAuth: true,
+              roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN],
               requiresStaff: true
             },
           },

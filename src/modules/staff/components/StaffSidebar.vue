@@ -6,8 +6,8 @@
   >
     <div class="sidebar-header">
       <router-link to="/staff" class="sidebar-logo">
-        <span class="logo-icon">⚙</span>
-        <span v-if="!collapsed" class="logo-text">Staff Console</span>
+        <ShieldCheck class="logo-icon-svg" :size="22" />
+        <span v-if="!collapsed" class="logo-text">{{ $t('staff.consoleName') }}</span>
       </router-link>
       <button
         v-if="!collapsed"
@@ -15,7 +15,7 @@
         :title="$t('staff.sidebar.collapse')"
         @click="$emit('toggle-collapse')"
       >
-        ‹
+        <ChevronsLeft :size="16" />
       </button>
       <button
         v-if="collapsed"
@@ -23,13 +23,13 @@
         :title="$t('staff.sidebar.expand')"
         @click="$emit('toggle-collapse')"
       >
-        ›
+        <ChevronsRight :size="16" />
       </button>
       <button
         class="close-btn mobile-only"
         @click="$emit('close-mobile')"
       >
-        ✕
+        <X :size="16" />
       </button>
     </div>
 
@@ -43,7 +43,7 @@
           :title="collapsed ? $t('staff.sidebar.dashboard') : undefined"
           exact
         >
-          <span class="nav-icon">📊</span>
+          <LayoutDashboard class="nav-icon-svg" :size="18" />
           <span v-if="!collapsed" class="nav-label">{{ $t('staff.sidebar.dashboard') }}</span>
         </router-link>
         <router-link
@@ -52,7 +52,7 @@
           :class="{ active: route.path.startsWith('/staff/users') }"
           :title="collapsed ? $t('staff.sidebar.users') : undefined"
         >
-          <span class="nav-icon">👥</span>
+          <Users class="nav-icon-svg" :size="18" />
           <span v-if="!collapsed" class="nav-label">{{ $t('staff.sidebar.users') }}</span>
         </router-link>
       </div>
@@ -65,9 +65,27 @@
           :class="{ active: route.path.startsWith('/staff/reports') }"
           :title="collapsed ? $t('staff.sidebar.reports') : undefined"
         >
-          <span class="nav-icon">🚩</span>
+          <Flag class="nav-icon-svg" :size="18" />
           <span v-if="!collapsed" class="nav-label">{{ $t('staff.sidebar.reports') }}</span>
           <span v-if="!collapsed && openReportsCount > 0" class="nav-badge danger">{{ openReportsCount }}</span>
+        </router-link>
+        <router-link
+          to="/staff/profile-moderation"
+          class="nav-item"
+          :class="{ active: route.path.startsWith('/staff/profile-moderation') }"
+          :title="collapsed ? $t('staff.sidebar.profileModeration') : undefined"
+        >
+          <UserCheck class="nav-icon-svg" :size="18" />
+          <span v-if="!collapsed" class="nav-label">{{ $t('staff.sidebar.profileModeration') }}</span>
+        </router-link>
+        <router-link
+          to="/staff/verification"
+          class="nav-item"
+          :class="{ active: route.path.startsWith('/staff/verification') }"
+          :title="collapsed ? $t('staff.sidebar.verification') : undefined"
+        >
+          <BadgeCheck class="nav-icon-svg" :size="18" />
+          <span v-if="!collapsed" class="nav-label">{{ $t('staff.sidebar.verification') }}</span>
         </router-link>
         <router-link
           to="/staff/tutor-activity"
@@ -75,17 +93,30 @@
           :class="{ active: route.path.startsWith('/staff/tutor-activity') }"
           :title="collapsed ? $t('staff.sidebar.tutorActivity') : undefined"
         >
-          <span class="nav-icon">📋</span>
+          <Activity class="nav-icon-svg" :size="18" />
           <span v-if="!collapsed" class="nav-label">{{ $t('staff.sidebar.tutorActivity') }}</span>
         </router-link>
+      </div>
+
+      <div class="nav-section">
+        <span v-if="!collapsed" class="nav-section-label">{{ $t('staff.sidebar.financeSection') }}</span>
         <router-link
           to="/staff/billing"
           class="nav-item"
           :class="{ active: route.path.startsWith('/staff/billing') }"
           :title="collapsed ? $t('staff.sidebar.billing') : undefined"
         >
-          <span class="nav-icon">💳</span>
+          <CreditCard class="nav-icon-svg" :size="18" />
           <span v-if="!collapsed" class="nav-label">{{ $t('staff.sidebar.billing') }}</span>
+        </router-link>
+        <router-link
+          to="/staff/payouts"
+          class="nav-item"
+          :class="{ active: route.path.startsWith('/staff/payouts') }"
+          :title="collapsed ? $t('staff.sidebar.payouts') : undefined"
+        >
+          <Banknote class="nav-icon-svg" :size="18" />
+          <span v-if="!collapsed" class="nav-label">{{ $t('staff.sidebar.payouts') }}</span>
         </router-link>
       </div>
 
@@ -97,7 +128,7 @@
           :class="{ active: route.path.startsWith('/staff/health') }"
           :title="collapsed ? $t('staff.sidebar.health') : undefined"
         >
-          <span class="nav-icon">🩺</span>
+          <HeartPulse class="nav-icon-svg" :size="18" />
           <span v-if="!collapsed" class="nav-label">{{ $t('staff.sidebar.health') }}</span>
         </router-link>
       </div>
@@ -105,11 +136,11 @@
 
     <div class="sidebar-footer">
       <router-link
-        to="/tutor"
+        to="/"
         class="nav-item"
         :title="collapsed ? $t('staff.sidebar.backToApp') : undefined"
       >
-        <span class="nav-icon">←</span>
+        <ArrowLeft class="nav-icon-svg" :size="18" />
         <span v-if="!collapsed" class="nav-label">{{ $t('staff.sidebar.backToApp') }}</span>
       </router-link>
     </div>
@@ -125,6 +156,22 @@
 
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
+import {
+  ShieldCheck,
+  ChevronsLeft,
+  ChevronsRight,
+  X,
+  LayoutDashboard,
+  Users,
+  Flag,
+  UserCheck,
+  BadgeCheck,
+  Activity,
+  CreditCard,
+  Banknote,
+  HeartPulse,
+  ArrowLeft,
+} from 'lucide-vue-next'
 
 defineProps<{
   collapsed: boolean
@@ -181,9 +228,9 @@ const route = useRoute()
   white-space: nowrap;
 }
 
-.logo-icon {
-  font-size: 1.25rem;
+.logo-icon-svg {
   flex-shrink: 0;
+  color: var(--accent);
 }
 
 .collapse-btn,
@@ -262,11 +309,9 @@ const route = useRoute()
   background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
-.nav-icon {
+.nav-icon-svg {
   flex-shrink: 0;
   width: 20px;
-  text-align: center;
-  font-size: 1rem;
 }
 
 .nav-badge {

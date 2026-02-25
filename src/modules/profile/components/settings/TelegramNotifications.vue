@@ -138,6 +138,8 @@ import {
   disconnectTelegram,
 } from '@/api/telegram'
 import type { TelegramLinkResponse, TelegramStatusResponse } from '@/api/telegram'
+import { useAuthStore } from '@/modules/auth/store/authStore'
+import { realtimeService } from '@/services/realtime'
 
 const loading = ref(true)
 const generating = ref(false)
@@ -156,15 +158,47 @@ const timeLeft = ref(0)
 
 let countdownInterval: ReturnType<typeof setInterval> | null = null
 let pollInterval: ReturnType<typeof setInterval> | null = null
+let wsUnsubscribe: (() => void) | null = null
 
 onMounted(async () => {
   await loadStatus()
+  setupWsSubscription()
 })
 
 onUnmounted(() => {
   if (countdownInterval) clearInterval(countdownInterval)
   stopPolling()
+  if (wsUnsubscribe) {
+    wsUnsubscribe()
+    wsUnsubscribe = null
+  }
 })
+
+function setupWsSubscription() {
+  const authStore = useAuthStore()
+  const userId = authStore.user?.id
+  if (!userId) return
+
+  try {
+    wsUnsubscribe = realtimeService.subscribe(
+      `notifications_user_${userId}`,
+      (data: any) => {
+        if (data?.type === 'telegram.connected' && data?.payload) {
+          status.value = {
+            connected: data.payload.connected,
+            enabled: data.payload.enabled,
+            connected_at: data.payload.connected_at,
+          }
+          linkData.value = null
+          if (countdownInterval) clearInterval(countdownInterval)
+          stopPolling()
+        }
+      }
+    )
+  } catch {
+    // WS subscription failed — polling will be fallback
+  }
+}
 
 async function loadStatus() {
   loading.value = true
@@ -243,7 +277,7 @@ function startPolling() {
     } catch {
       // Ignore polling errors
     }
-  }, 5000)
+  }, 30000) // 30s fallback polling (primary: WS event)
 }
 
 async function handleToggle() {

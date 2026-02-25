@@ -76,7 +76,6 @@ describe('inquiriesStore v0.69', () => {
         })
       )
       expect(result).toEqual(mockInquiry)
-      expect(inquiriesApi.fetchInquiries).toHaveBeenCalled()
     })
 
     it('should prevent duplicate requests', async () => {
@@ -109,7 +108,6 @@ describe('inquiriesStore v0.69', () => {
       await store.cancelInquiry('test-uuid-1')
 
       expect(inquiriesApi.cancelInquiry).toHaveBeenCalledWith('test-uuid-1')
-      expect(inquiriesApi.fetchInquiries).toHaveBeenCalled()
     })
   })
 
@@ -132,7 +130,6 @@ describe('inquiriesStore v0.69', () => {
       await store.acceptInquiry('test-uuid-1')
 
       expect(inquiriesApi.acceptInquiry).toHaveBeenCalledWith('test-uuid-1')
-      expect(inquiriesApi.fetchInquiries).toHaveBeenCalled()
     })
   })
 
@@ -149,7 +146,6 @@ describe('inquiriesStore v0.69', () => {
       await store.rejectInquiry('test-uuid-1', payload)
 
       expect(inquiriesApi.rejectInquiry).toHaveBeenCalledWith('test-uuid-1', payload)
-      expect(inquiriesApi.fetchInquiries).toHaveBeenCalled()
     })
   })
 

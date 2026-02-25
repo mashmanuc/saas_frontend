@@ -34,8 +34,11 @@ export const useNegotiationChatStore = defineStore('negotiationChat', () => {
   const messagesByThread = ref<Record<string, ChatMessageDTO[]>>({})
   const activeThreadId = ref<string | null>(null)
   
-  // Loading states
-  const isLoading = ref(false)
+  // Loading states — FIX BUG-2: окремі прапори щоб уникнути взаємного блокування
+  const isLoading = ref(false)        // legacy compat — true коли будь-яка операція активна
+  const isLoadingThreads = ref(false) // специфічно для fetchThreads (дедуплікація)
+  const isLoadingEnsure = ref(false)  // специфічно для ensureThread
+  const isLoadingMessages = ref(false) // специфічно для fetchMessages
   const isSending = ref(false)
   const error = ref<string | null>(null)
   
@@ -46,6 +49,9 @@ export const useNegotiationChatStore = defineStore('negotiationChat', () => {
    * @returns thread з threadId
    */
   async function ensureThread(inquiryId: string): Promise<NegotiationThreadDTO> {
+    // ensureThread не має isLoadingThreads guard — він завжди виконує конкретний запит
+    // і не конфліктує з fetchThreads
+    isLoadingEnsure.value = true
     isLoading.value = true
     error.value = null
     
@@ -65,7 +71,8 @@ export const useNegotiationChatStore = defineStore('negotiationChat', () => {
       rethrowAsDomainError(err)
       throw err
     } finally {
-      isLoading.value = false
+      isLoadingEnsure.value = false
+      isLoading.value = isLoadingThreads.value || isLoadingMessages.value
     }
   }
   
@@ -75,6 +82,9 @@ export const useNegotiationChatStore = defineStore('negotiationChat', () => {
    * @returns список threads
    */
   async function fetchThreads(): Promise<NegotiationThreadDTO[]> {
+    // FIX BUG-2: використовуємо isLoadingThreads замість спільного isLoading
+    if (isLoadingThreads.value) return threads.value
+    isLoadingThreads.value = true
     isLoading.value = true
     error.value = null
     
@@ -86,7 +96,8 @@ export const useNegotiationChatStore = defineStore('negotiationChat', () => {
       rethrowAsDomainError(err)
       throw err
     } finally {
-      isLoading.value = false
+      isLoadingThreads.value = false
+      isLoading.value = isLoadingMessages.value
     }
   }
   
@@ -101,6 +112,9 @@ export const useNegotiationChatStore = defineStore('negotiationChat', () => {
     threadId: string,
     cursor?: string
   ): Promise<MessagesListResponse> {
+    // FIX BUG-2: використовуємо isLoadingMessages замість спільного isLoading
+    if (isLoadingMessages.value && !cursor) return { messages: messagesByThread.value[threadId] || [], cursor: null, hasMore: false }
+    isLoadingMessages.value = true
     isLoading.value = true
     error.value = null
     
@@ -125,7 +139,8 @@ export const useNegotiationChatStore = defineStore('negotiationChat', () => {
       rethrowAsDomainError(err)
       throw err
     } finally {
-      isLoading.value = false
+      isLoadingMessages.value = false
+      isLoading.value = isLoadingThreads.value
     }
   }
   
@@ -247,6 +262,9 @@ export const useNegotiationChatStore = defineStore('negotiationChat', () => {
     messagesByThread,
     activeThreadId,
     isLoading,
+    isLoadingThreads,
+    isLoadingEnsure,
+    isLoadingMessages,
     isSending,
     error,
     

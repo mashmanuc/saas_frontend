@@ -8,6 +8,11 @@ let globalReconnectTimer: ReturnType<typeof setTimeout> | null = null
 let globalShouldReconnect = false
 let globalThreadId: string | null = null
 let globalUserId: number | null = null
+let globalReconnectAttempts = 0
+
+const CHAT_WS_INITIAL_DELAY = 1000
+const CHAT_WS_MAX_DELAY = 30000
+const CHAT_WS_BACKOFF_MULTIPLIER = 2
 
 function getWsUrl(threadId: string): string {
   const authStore = useAuthStore()
@@ -56,14 +61,27 @@ function connectInternal(threadId: string, userId?: number): void {
 
   try {
     globalSocket = new WebSocket(getWsUrl(threadId))
-    globalSocket.onopen = () => console.log('[WS] Connected:', threadId)
+    globalSocket.onopen = () => {
+      console.log('[WS] Connected:', threadId)
+      globalReconnectAttempts = 0
+    }
     globalSocket.onmessage = (e) => handleWsMessage(JSON.parse(e.data))
-    globalSocket.onclose = () => {
+    globalSocket.onclose = (event) => {
+      // Stop reconnect on auth errors
+      if (event?.code === 4001 || event?.code === 4003) {
+        globalShouldReconnect = false
+        return
+      }
       if (globalShouldReconnect && !globalReconnectTimer) {
+        const delay = Math.min(
+          CHAT_WS_INITIAL_DELAY * Math.pow(CHAT_WS_BACKOFF_MULTIPLIER, globalReconnectAttempts),
+          CHAT_WS_MAX_DELAY
+        )
+        globalReconnectAttempts++
         globalReconnectTimer = setTimeout(() => {
           globalReconnectTimer = null
           if (globalShouldReconnect && globalThreadId) connectInternal(globalThreadId)
-        }, 3000)
+        }, delay)
       }
     }
   } catch (err) {

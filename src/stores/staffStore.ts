@@ -281,6 +281,66 @@ export const useStaffStore = defineStore('staff', {
     },
 
     /**
+     * Manually verify user's email
+     */
+    async verifyEmail(userId: string): Promise<{ success: boolean }> {
+      this.isLoading = true
+      this.error = null
+
+      try {
+        const result = await staffApi.verifyEmail(userId)
+
+        // Update user overview if loaded
+        if (this.userOverview && this.userOverview.user.id === userId) {
+          (this.userOverview.user as any).email_verified = true
+          ;(this.userOverview.user as any).email_verified_at = new Date().toISOString()
+        }
+
+        return result
+      } catch (err) {
+        try {
+          rethrowAsDomainError(err)
+        } catch (domainError: any) {
+          this.error = domainError.message || 'Failed to verify email'
+          throw domainError
+        }
+      } finally {
+        this.isLoading = false
+      }
+
+      return { success: false }
+    },
+
+    /**
+     * Toggle user active/inactive status
+     */
+    async toggleUserActive(userId: string): Promise<{ success: boolean; is_active: boolean }> {
+      this.isLoading = true
+      this.error = null
+
+      try {
+        const result = await staffApi.toggleUserActive(userId)
+
+        if (this.userOverview && String(this.userOverview.user.id) === String(userId)) {
+          ;(this.userOverview.user as any).is_active = result.is_active
+        }
+
+        return result
+      } catch (err) {
+        try {
+          rethrowAsDomainError(err)
+        } catch (domainError: any) {
+          this.error = domainError.message || 'Failed to toggle user status'
+          throw domainError
+        }
+      } finally {
+        this.isLoading = false
+      }
+
+      return { success: false, is_active: false }
+    },
+
+    /**
      * Clear all errors
      */
     clearErrors(): void {

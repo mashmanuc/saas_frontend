@@ -16,19 +16,19 @@ import type { SubjectTagMap } from '../../types/subjectTagMap'
 
 describe('subjectTagResolver', () => {
   const mockTagMap: SubjectTagMap = {
-    version: 1,
+    version: 3,
     defaults: {
-      enabled_groups: ['classes', 'exams', 'goals'],
-      groups_order: ['classes', 'exams', 'goals'],
+      enabled_groups: ['grades', 'exams', 'goals'],
+      groups_order: ['grades', 'exams', 'goals'],
       allow_all_tags_in_enabled_groups: true,
     },
     subjects: {
       mathematics: {
-        enabled_groups: ['classes', 'exams'],
-        groups_order: ['classes', 'exams'],
+        enabled_groups: ['grades', 'exams'],
+        groups_order: ['grades', 'exams'],
         allow_all_tags_in_enabled_groups: false,
         allowed_tags: {
-          classes: ['class_1_4', 'class_5_9'],
+          grades: ['grade_1_4', 'grade_5_9'],
           exams: ['exam_nmt'],
         },
       },
@@ -44,7 +44,7 @@ describe('subjectTagResolver', () => {
       const config = resolveSubjectTags('physics', mockTagMap)
 
       expect(config.subjectCode).toBe('physics')
-      expect(config.enabledGroups).toEqual(['classes', 'exams', 'goals'])
+      expect(config.enabledGroups).toEqual(['grades', 'exams', 'goals'])
       expect(config.allowAllTags).toBe(true)
     })
 
@@ -52,10 +52,10 @@ describe('subjectTagResolver', () => {
       const config = resolveSubjectTags('mathematics', mockTagMap)
 
       expect(config.subjectCode).toBe('mathematics')
-      expect(config.enabledGroups).toEqual(['classes', 'exams'])
-      expect(config.groupsOrder).toEqual(['classes', 'exams'])
+      expect(config.enabledGroups).toEqual(['grades', 'exams'])
+      expect(config.groupsOrder).toEqual(['grades', 'exams'])
       expect(config.allowAllTags).toBe(false)
-      expect(config.allowedTags.classes).toEqual(['class_1_4', 'class_5_9'])
+      expect(config.allowedTags.grades).toEqual(['grade_1_4', 'grade_5_9'])
       expect(config.allowedTags.exams).toEqual(['exam_nmt'])
     })
 
@@ -71,7 +71,7 @@ describe('subjectTagResolver', () => {
 
       // Should use defaults.groups_order since override doesn't specify groups_order
       // and defaults has groups_order defined
-      expect(config.groupsOrder).toEqual(['classes', 'exams', 'goals'])
+      expect(config.groupsOrder).toEqual(['grades', 'exams', 'goals'])
     })
   })
 
@@ -87,7 +87,7 @@ describe('subjectTagResolver', () => {
     it('should return true if allowAllTags is true and group is enabled', () => {
       const config = resolveSubjectTags('physics', mockTagMap)
 
-      const allowed = isTagAllowedForSubject('class_1_4', 'classes', config)
+      const allowed = isTagAllowedForSubject('grade_1_4', 'grades', config)
 
       expect(allowed).toBe(true)
     })
@@ -95,8 +95,8 @@ describe('subjectTagResolver', () => {
     it('should check allowed_tags when allowAllTags is false', () => {
       const config = resolveSubjectTags('mathematics', mockTagMap)
 
-      expect(isTagAllowedForSubject('class_1_4', 'classes', config)).toBe(true)
-      expect(isTagAllowedForSubject('class_10_11', 'classes', config)).toBe(false)
+      expect(isTagAllowedForSubject('grade_1_4', 'grades', config)).toBe(true)
+      expect(isTagAllowedForSubject('grade_10_11', 'grades', config)).toBe(false)
     })
 
     it('should return false for tag not in allowed_tags list', () => {
@@ -110,9 +110,9 @@ describe('subjectTagResolver', () => {
 
   describe('filterTagsForSubject', () => {
     const mockTags = [
-      { code: 'class_1_4', group: 'classes', title: 'Grades 1-4' },
-      { code: 'class_5_9', group: 'classes', title: 'Grades 5-9' },
-      { code: 'class_10_11', group: 'classes', title: 'Grades 10-11' },
+      { code: 'grade_1_4', group: 'grades', title: 'Grades 1-4' },
+      { code: 'grade_5_9', group: 'grades', title: 'Grades 5-9' },
+      { code: 'grade_10_11', group: 'grades', title: 'Grades 10-11' },
       { code: 'exam_nmt', group: 'exams', title: 'NMT' },
       { code: 'exam_zno', group: 'exams', title: 'ZNO' },
       { code: 'goal_level_up', group: 'goals', title: 'Level up' },
@@ -124,7 +124,7 @@ describe('subjectTagResolver', () => {
       const filtered = filterTagsForSubject(mockTags, config)
 
       expect(filtered).toHaveLength(3)
-      expect(filtered.map(t => t.code)).toEqual(['class_1_4', 'class_5_9', 'exam_nmt'])
+      expect(filtered.map(t => t.code)).toEqual(['grade_1_4', 'grade_5_9', 'exam_nmt'])
     })
 
     it('should return all enabled group tags when allowAllTags is true', () => {
@@ -149,16 +149,16 @@ describe('subjectTagResolver', () => {
   describe('groupTagsByGroup', () => {
     it('should group tags by their group property', () => {
       const tags = [
-        { code: 'class_1_4', group: 'classes' },
-        { code: 'class_5_9', group: 'classes' },
+        { code: 'grade_1_4', group: 'grades' },
+        { code: 'grade_5_9', group: 'grades' },
         { code: 'exam_nmt', group: 'exams' },
       ]
 
       const grouped = groupTagsByGroup(tags)
 
-      expect(grouped.classes).toHaveLength(2)
+      expect(grouped.grades).toHaveLength(2)
       expect(grouped.exams).toHaveLength(1)
-      expect(grouped.classes[0].code).toBe('class_1_4')
+      expect(grouped.grades[0].code).toBe('grade_1_4')
     })
 
     it('should handle empty array', () => {
@@ -171,20 +171,20 @@ describe('subjectTagResolver', () => {
   describe('getOrderedGroups', () => {
     it('should return groups in specified order', () => {
       const config = resolveSubjectTags('mathematics', mockTagMap)
-      const availableGroups = ['exams', 'classes', 'goals']
+      const availableGroups = ['exams', 'grades', 'goals']
 
       const ordered = getOrderedGroups(config, availableGroups)
 
-      expect(ordered).toEqual(['classes', 'exams'])
+      expect(ordered).toEqual(['grades', 'exams'])
     })
 
     it('should only include enabled and available groups', () => {
       const config = resolveSubjectTags('mathematics', mockTagMap)
-      const availableGroups = ['classes', 'goals'] // exams not available
+      const availableGroups = ['grades', 'goals'] // exams not available
 
       const ordered = getOrderedGroups(config, availableGroups)
 
-      expect(ordered).toEqual(['classes'])
+      expect(ordered).toEqual(['grades'])
     })
 
     it('should append missing enabled groups at the end', () => {
@@ -201,8 +201,8 @@ describe('subjectTagResolver', () => {
 
   describe('filterTagsForSubjectSafe (FAIL-CLOSED)', () => {
     const mockTags = [
-      { code: 'class_1_4', group: 'classes', title: 'Grades 1-4' },
-      { code: 'class_5_9', group: 'classes', title: 'Grades 5-9' },
+      { code: 'grade_1_4', group: 'grades', title: 'Grades 1-4' },
+      { code: 'grade_5_9', group: 'grades', title: 'Grades 5-9' },
       { code: 'exam_nmt', group: 'exams', title: 'NMT' },
       { code: 'goal_business', group: 'goals', title: 'Business' },
       { code: 'goal_conversational', group: 'goals', title: 'Conversational' },
@@ -234,26 +234,26 @@ describe('subjectTagResolver', () => {
     it('should return filtered tags when subject is configured', () => {
       const filtered = filterTagsForSubjectSafe('mathematics', mockTags, mockTagMap)
 
-      // Mathematics allows only class_1_4, class_5_9, exam_nmt
+      // Mathematics allows only grade_1_4, grade_5_9, exam_nmt
       expect(filtered).toHaveLength(3)
-      expect(filtered.map(t => t.code)).toEqual(['class_1_4', 'class_5_9', 'exam_nmt'])
+      expect(filtered.map(t => t.code)).toEqual(['grade_1_4', 'grade_5_9', 'exam_nmt'])
     })
 
     it('should prevent language tags from appearing in STEM subjects', () => {
       // Create a STEM subject map that explicitly excludes language goals
       const stemMap: SubjectTagMap = {
-        version: 1,
+        version: 3,
         defaults: {
-          enabled_groups: ['classes', 'exams', 'goals'],
-          groups_order: ['classes', 'exams', 'goals'],
+          enabled_groups: ['grades', 'exams', 'goals'],
+          groups_order: ['grades', 'exams', 'goals'],
           allow_all_tags_in_enabled_groups: true,
         },
         subjects: {
           mathematics: {
-            enabled_groups: ['classes', 'exams'],
+            enabled_groups: ['grades', 'exams'],
             allow_all_tags_in_enabled_groups: false,
             allowed_tags: {
-              classes: ['class_1_4', 'class_5_9'],
+              grades: ['grade_1_4', 'grade_5_9'],
               exams: ['exam_nmt'],
             },
           },
@@ -266,7 +266,7 @@ describe('subjectTagResolver', () => {
       expect(filtered.some(t => t.code === 'goal_business')).toBe(false)
       expect(filtered.some(t => t.code === 'goal_conversational')).toBe(false)
       // Should only include allowed tags
-      expect(filtered.map(t => t.code)).toEqual(['class_1_4', 'class_5_9', 'exam_nmt'])
+      expect(filtered.map(t => t.code)).toEqual(['grade_1_4', 'grade_5_9', 'exam_nmt'])
     })
 
     it('FAIL-CLOSED: should handle errors gracefully and return empty array', () => {

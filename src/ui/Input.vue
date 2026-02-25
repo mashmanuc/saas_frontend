@@ -12,20 +12,32 @@
     </label>
 
     <!-- INPUT WRAPPER -->
-    <div class="relative">
+    <div class="input-wrapper">
       <input
         :id="id"
         v-bind="cleanAttrs"
-        :type="type"
+        :type="resolvedType"
         :value="modelValue"
         :disabled="disabled"
         @input="$emit('update:modelValue', $event.target.value)"
         class="input"
         :class="{
           'error': !!error,
-          'disabled': disabled
+          'disabled': disabled,
+          'input--has-toggle': type === 'password'
         }"
       />
+      <button
+        v-if="type === 'password'"
+        type="button"
+        class="input-toggle-btn"
+        tabindex="-1"
+        @click="togglePasswordVisibility"
+        :aria-label="showPassword ? 'Hide password' : 'Show password'"
+      >
+        <EyeOff v-if="showPassword" :size="18" />
+        <Eye v-else :size="18" />
+      </button>
     </div>
 
     <!-- ERROR MESSAGE -->
@@ -42,7 +54,8 @@
 </template>
 
 <script setup>
-import { computed, useAttrs } from 'vue'
+import { computed, ref, useAttrs } from 'vue'
+import { Eye, EyeOff } from 'lucide-vue-next'
 
 defineOptions({
   inheritAttrs: false,
@@ -75,6 +88,17 @@ const props = defineProps({
 })
 
 defineEmits(['update:modelValue'])
+
+const showPassword = ref(false)
+
+const resolvedType = computed(() => {
+  if (props.type === 'password' && showPassword.value) return 'text'
+  return props.type
+})
+
+function togglePasswordVisibility() {
+  showPassword.value = !showPassword.value
+}
 
 const attrs = useAttrs()
 const cleanAttrs = computed(() => {

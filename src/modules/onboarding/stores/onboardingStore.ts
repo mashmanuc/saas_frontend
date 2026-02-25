@@ -48,6 +48,7 @@ export const useOnboardingStore = defineStore('onboarding', () => {
 
   // Actions
   async function loadProgress() {
+    if (isLoading.value) return
     isLoading.value = true
     error.value = null
     try {

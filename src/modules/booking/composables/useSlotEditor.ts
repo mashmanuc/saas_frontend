@@ -176,6 +176,7 @@ export function useSlotEditor() {
       toast.error(t('calendar.slotEditor.noWeekStart'))
       return
     }
+    if (isLoading.value) return
 
     isLoading.value = true
 

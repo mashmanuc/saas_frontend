@@ -43,6 +43,7 @@ export const usePaymentStore = defineStore('payments', () => {
     params?: { status?: string; type?: string },
     reset = false
   ): Promise<void> {
+    if (isLoading.value && !reset) return
     if (reset) {
       payments.value = []
       currentPage.value = 1
@@ -79,6 +80,7 @@ export const usePaymentStore = defineStore('payments', () => {
   }
 
   async function loadPayment(id: number): Promise<void> {
+    if (isLoading.value) return
     isLoading.value = true
     error.value = null
 

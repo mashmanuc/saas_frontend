@@ -5,7 +5,7 @@
  * Run: npx vitest run tests/core/winterboardRouter.spec.js
  */
 import { describe, it, expect } from 'vitest'
-import winterboardRoutes from '@modules/winterboard/router.ts'
+import winterboardRoutes, { winterboardSessionListRoute } from '@modules/winterboard/router.ts'
 
 describe('winterboardRoutes', () => {
   it('exports an array of 4 routes', () => {
@@ -14,14 +14,14 @@ describe('winterboardRoutes', () => {
   })
 
   describe('route: winterboard-sessions', () => {
-    const route = winterboardRoutes.find(r => r.name === 'winterboard-sessions')
+    const route = winterboardSessionListRoute
 
     it('exists', () => {
       expect(route).toBeDefined()
     })
 
-    it('has path /winterboard', () => {
-      expect(route.path).toBe('/winterboard')
+    it('has path winterboard (nested route, no leading slash)', () => {
+      expect(route.path).toBe('winterboard')
     })
 
     it('has lazy-loaded component', () => {
@@ -29,7 +29,7 @@ describe('winterboardRoutes', () => {
     })
 
     it('has correct meta.roles', () => {
-      expect(route.meta.roles).toEqual(['STUDENT', 'TUTOR'])
+      expect(route.meta.roles).toEqual(['student', 'tutor'])
     })
 
     it('has meta.title = Winterboard', () => {
@@ -53,7 +53,7 @@ describe('winterboardRoutes', () => {
     })
 
     it('has correct meta.roles', () => {
-      expect(route.meta.roles).toEqual(['STUDENT', 'TUTOR'])
+      expect(route.meta.roles).toEqual(['student', 'tutor'])
     })
   })
 
@@ -77,7 +77,7 @@ describe('winterboardRoutes', () => {
     })
 
     it('has correct meta.roles', () => {
-      expect(route.meta.roles).toEqual(['STUDENT', 'TUTOR'])
+      expect(route.meta.roles).toEqual(['student', 'tutor'])
     })
   })
 

@@ -2,43 +2,48 @@
   <div class="staff-dashboard" data-testid="staff-dashboard">
     <div class="dashboard-header">
       <h1 class="dashboard-title">{{ $t('staff.dashboard.title') }}</h1>
+      <p class="dashboard-help-text">{{ $t('staff.dashboard.helpText') }}</p>
     </div>
 
     <!-- KPI Stat Cards -->
     <div class="stat-cards-row">
       <StatCard
-        icon="👥"
         :value="stats?.users?.total"
         :label="$t('staff.dashboard.users')"
         :trend="stats?.users?.new_7d ? `${stats.users.new_7d} / 7d` : undefined"
         color="accent"
         to="/staff/users"
         :loading="loading"
-      />
+      >
+        <template #icon><Users :size="22" /></template>
+      </StatCard>
       <StatCard
-        icon="💳"
         :value="stats?.billing?.active_subscriptions"
         :label="$t('staff.dashboard.subscriptions')"
         color="success"
         to="/staff/billing"
         :loading="loading"
-      />
+      >
+        <template #icon><CreditCard :size="22" /></template>
+      </StatCard>
       <StatCard
-        icon="🚩"
         :value="stats?.trust?.open_reports"
         :label="$t('staff.dashboard.openReports')"
         :color="(stats?.trust?.open_reports ?? 0) > 0 ? 'danger' : 'default'"
         to="/staff/reports"
         :loading="loading"
-      />
+      >
+        <template #icon><Flag :size="22" /></template>
+      </StatCard>
       <StatCard
-        icon="📋"
         :value="stats?.activity?.active_tutors"
         :label="$t('staff.dashboard.activeTutors')"
         :trend="stats?.activity?.inactive_tutors ? `${stats.activity.inactive_tutors} inactive` : undefined"
         to="/staff/tutor-activity"
         :loading="loading"
-      />
+      >
+        <template #icon><Activity :size="22" /></template>
+      </StatCard>
     </div>
 
     <!-- Quick sections grid -->
@@ -84,23 +89,23 @@
         <h2 class="section-title">{{ $t('staff.dashboard.quickActions') }}</h2>
         <div class="quick-links">
           <router-link to="/staff/reports" class="quick-link">
-            <span class="ql-icon">🚩</span>
+            <Flag :size="16" class="ql-icon-svg" />
             <span>{{ $t('staff.sidebar.reports') }}</span>
           </router-link>
           <router-link to="/staff/tutor-activity" class="quick-link">
-            <span class="ql-icon">📋</span>
+            <Activity :size="16" class="ql-icon-svg" />
             <span>{{ $t('staff.sidebar.tutorActivity') }}</span>
           </router-link>
           <router-link to="/staff/billing" class="quick-link">
-            <span class="ql-icon">💳</span>
+            <CreditCard :size="16" class="ql-icon-svg" />
             <span>{{ $t('staff.sidebar.billing') }}</span>
           </router-link>
           <router-link to="/staff/health" class="quick-link">
-            <span class="ql-icon">🩺</span>
+            <HeartPulse :size="16" class="ql-icon-svg" />
             <span>{{ $t('staff.sidebar.health') }}</span>
           </router-link>
           <router-link to="/staff/users" class="quick-link">
-            <span class="ql-icon">👥</span>
+            <Users :size="16" class="ql-icon-svg" />
             <span>{{ $t('staff.sidebar.users') }}</span>
           </router-link>
         </div>
@@ -162,6 +167,13 @@
 import { ref } from 'vue'
 import { useStaffStats } from '../composables/useStaffStats'
 import apiClient from '@/utils/apiClient'
+import {
+  Users,
+  CreditCard,
+  Flag,
+  Activity,
+  HeartPulse,
+} from 'lucide-vue-next'
 import StatCard from '../components/StatCard.vue'
 import RecentActivityFeed from '../components/RecentActivityFeed.vue'
 import Card from '@/ui/Card.vue'
@@ -214,6 +226,12 @@ async function doSearch() {
 
 .dashboard-header {
   margin-bottom: 0;
+}
+
+.dashboard-help-text {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin: var(--space-xs) 0 0 0;
 }
 
 .dashboard-title {
@@ -333,10 +351,9 @@ async function doSearch() {
   background: var(--bg-secondary);
 }
 
-.ql-icon {
-  font-size: 1rem;
-  width: 20px;
-  text-align: center;
+.ql-icon-svg {
+  flex-shrink: 0;
+  width: 18px;
 }
 
 .section-loading,

@@ -126,7 +126,7 @@ watch([newDate, newTime], async () => {
 
 const checkPreview = async () => {
   if (!props.event || !newDate.value || !newTime.value) return
-  
+  if (isLoading.value) return
   isLoading.value = true
   try {
     const newStart = `${newDate.value}T${newTime.value}:00`
@@ -152,7 +152,7 @@ const checkPreview = async () => {
 
 const confirmReschedule = async () => {
   if (!canConfirm.value || !props.event) return
-  
+  if (isLoading.value) return
   isLoading.value = true
   try {
     const newStart = `${newDate.value}T${newTime.value}:00`

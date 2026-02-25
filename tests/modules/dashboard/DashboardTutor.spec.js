@@ -140,10 +140,21 @@ describe('DashboardTutor.vue', () => {
   })
 
   it('renders status badge for relation', async () => {
+    relationsStore = createRelationsStore({
+      filteredTutorRelations: [
+        {
+          id: '1',
+          status: 'active',
+          student: { id: 's1', first_name: 'Ada', last_name: 'Lovelace', email: 'ada@example.com', timezone: 'UTC' },
+        },
+      ],
+    })
+    relationsStoreModule.useRelationsStore.mockReturnValue(relationsStore)
+
     const wrapper = mountView()
     await flushPromises()
 
-    expect(wrapper.find('[data-test="relation-status-1"]').text()).toContain('dashboard.tutor.status.invited')
+    expect(wrapper.find('[data-test="relation-status-1"]').text()).toContain('dashboard.tutor.status.active')
   })
 
   it('shows error banner when store has error', async () => {

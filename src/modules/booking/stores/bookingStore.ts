@@ -54,6 +54,7 @@ export const useBookingStore = defineStore('booking', () => {
 
   // Actions
   async function loadBookings(params?: BookingListParams): Promise<void> {
+    if (isLoading.value) return
     isLoading.value = true
     error.value = null
 
@@ -69,6 +70,7 @@ export const useBookingStore = defineStore('booking', () => {
   }
 
   async function loadBooking(id: number): Promise<void> {
+    if (isLoading.value) return
     isLoading.value = true
     error.value = null
 

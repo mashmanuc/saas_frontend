@@ -52,7 +52,7 @@ describe('TutorAvailabilityCalendar', () => {
 
     expect(wrapper.find('.calendar-header').exists()).toBe(true)
     expect(wrapper.find('.week-label').exists()).toBe(true)
-    expect(wrapper.findAll('.btn-icon').length).toBe(2) // prev/next buttons
+    expect(wrapper.find('.cal-nav').exists()).toBe(true) // nav buttons container
   })
 
   it('loads availability on mount', async () => {
@@ -102,7 +102,7 @@ describe('TutorAvailabilityCalendar', () => {
 
     await flushPromises()
 
-    const dayColumns = wrapper.findAll('.day-column')
+    const dayColumns = wrapper.findAll('.schedule-column')
     expect(dayColumns.length).toBe(2)
   })
 
@@ -117,7 +117,7 @@ describe('TutorAvailabilityCalendar', () => {
 
     await flushPromises()
 
-    const slotButton = wrapper.find('.time-slot-btn')
+    const slotButton = wrapper.find('.schedule-slot')
     expect(slotButton.exists()).toBe(true)
     await slotButton.trigger('click')
     
@@ -142,12 +142,13 @@ describe('TutorAvailabilityCalendar', () => {
     await flushPromises()
 
     // First navigate forward to enable previous button (FE-1: past navigation clamp)
-    const nextButton = wrapper.findAll('.btn-icon')[1]
+    const navButtons = wrapper.find('.cal-nav').findAll('button')
+    const nextButton = navButtons[1]
     await nextButton.trigger('click')
     await flushPromises()
 
     // Now navigate back (should work since we're not at current week anymore)
-    const prevButton = wrapper.findAll('.btn-icon')[0]
+    const prevButton = navButtons[0]
     await prevButton.trigger('click')
     await flushPromises()
 
@@ -166,8 +167,9 @@ describe('TutorAvailabilityCalendar', () => {
 
     await flushPromises()
 
-    const nextButton = wrapper.findAll('.btn-icon')[1]
-    await nextButton.trigger('click')
+    const navButtons2 = wrapper.find('.cal-nav').findAll('button')
+    const nextButton2 = navButtons2[1]
+    await nextButton2.trigger('click')
     await flushPromises()
 
     expect(marketplaceApi.getTutorCalendar).toHaveBeenCalledTimes(2)
@@ -233,7 +235,7 @@ describe('TutorAvailabilityCalendar', () => {
 
     await flushPromises()
 
-    const slotButtons = wrapper.findAll('.time-slot-btn')
+    const slotButtons = wrapper.findAll('.schedule-slot')
     expect(slotButtons.length).toBe(3)
   })
 })

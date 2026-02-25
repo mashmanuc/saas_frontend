@@ -113,6 +113,11 @@ const stopAuthWatch = watch(
     const authStore = useAuthStore()
     const notificationsStore = useNotificationsStore()
     if (isAuth && authStore.user?.id) {
+      // FIX WARN-2: cleanup previous polling before re-registering to avoid subscriber leak
+      if (unsubNotifPolling) {
+        unsubNotifPolling()
+        unsubNotifPolling = null
+      }
       setupNotificationsRealtime(authStore.user.id)
       // Anti-jank: use pollingCoordinator
       const pollInterval = isWsConnected.value ? 300_000 : 60_000

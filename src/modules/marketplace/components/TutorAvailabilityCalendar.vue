@@ -4,26 +4,30 @@
     data-testid="tutor-availability-calendar"
     :class="{ 'compact-view': view === 'compact' }"
   >
+    <h3 class="cal-title">{{ $t('marketplace.calendar.scheduleTitle') || 'Розклад викладача' }}</h3>
+
     <div v-if="showHeader" class="calendar-header">
-      <Button
-        variant="ghost"
-        iconOnly
-        @click="previousWeek"
-        :disabled="!canGoPrevious"
-        :aria-label="$t('common.previousWeek')"
-      >
-        <ChevronLeftIcon class="w-5 h-5" />
-      </Button>
       <span class="week-label">{{ formatWeekRange(weekStart) }}</span>
-      <Button
-        variant="ghost"
-        iconOnly
-        @click="nextWeek"
-        :disabled="!canGoNext"
-        :aria-label="$t('common.nextWeek')"
-      >
-        <ChevronRightIcon class="w-5 h-5" />
-      </Button>
+      <div class="cal-nav">
+        <Button
+          variant="ghost"
+          iconOnly
+          @click="previousWeek"
+          :disabled="!canGoPrevious"
+          :aria-label="$t('common.previousWeek')"
+        >
+          <ChevronLeftIcon class="w-4 h-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          iconOnly
+          @click="nextWeek"
+          :disabled="!canGoNext"
+          :aria-label="$t('common.nextWeek')"
+        >
+          <ChevronRightIcon class="w-4 h-4" />
+        </Button>
+      </div>
     </div>
 
     <div v-if="loading" class="loading-state" data-testid="availability-loading-state">
@@ -44,23 +48,31 @@
       <p>{{ emptyState || $t('marketplace.noAvailableSlots') }}</p>
     </div>
 
-    <div v-else class="slots-grid">
-      <div
-        v-for="day in dayCells"
-        :key="day.date"
-        class="day-column"
-      >
-        <div class="day-header">
-          {{ formatDate(day.date) }}
+    <div v-else class="schedule-table">
+      <div class="schedule-header">
+        <div
+          v-for="day in dayCells"
+          :key="'h-' + day.date"
+          class="schedule-col-header"
+          :class="{ 'is-today': isToday(day.date) }"
+        >
+          <span class="day-weekday">{{ formatDayWeekday(day.date) }}</span>
+          <span class="day-number">{{ formatDayNumber(day.date) }}</span>
         </div>
-        <div class="day-slots">
+      </div>
+      <div class="schedule-body">
+        <div
+          v-for="day in dayCells"
+          :key="day.date"
+          class="schedule-column"
+        >
           <button
             v-for="slot in day.slots"
             :key="slot.slot_id"
             @click="handleSlotClick(slot)"
             @keydown.enter="handleSlotClick(slot)"
             @keydown.space.prevent="handleSlotClick(slot)"
-            class="time-slot-btn"
+            class="schedule-slot"
             data-testid="marketplace-slot"
             :data-slot-id="slot.slot_id"
             tabindex="0"
@@ -288,12 +300,32 @@ function getCurrentMonday(): Date {
 
 function formatWeekRange(start: Date): string {
   const end = new Date(start.getTime() + 6 * 24 * 60 * 60 * 1000)
-  return `${start.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })} - ${end.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })}`
+  const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' }
+  const yearStr = end.getFullYear()
+  return `${start.toLocaleDateString('uk-UA', opts)}-${end.toLocaleDateString('uk-UA', opts)}, ${yearStr}`
 }
 
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr)
   return date.toLocaleDateString('uk-UA', { weekday: 'short', day: 'numeric', month: 'short' })
+}
+
+function formatDayWeekday(dateStr: string): string {
+  const date = new Date(dateStr)
+  return date.toLocaleDateString('uk-UA', { weekday: 'short' }).toUpperCase()
+}
+
+function formatDayNumber(dateStr: string): string {
+  const date = new Date(dateStr)
+  return String(date.getDate())
+}
+
+function isToday(dateStr: string): boolean {
+  const date = new Date(dateStr)
+  const today = new Date()
+  return date.getFullYear() === today.getFullYear()
+    && date.getMonth() === today.getMonth()
+    && date.getDate() === today.getDate()
 }
 
 function formatTime(utcTime: string): string {
@@ -323,73 +355,120 @@ function toLocalDateString(d: Date): string {
 
 <style scoped>
 .tutor-availability-calendar {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-color, #e5e7eb);
   border-radius: 12px;
   padding: 16px;
+  background: var(--bg-primary, #fff);
+}
+
+.cal-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary, #111827);
+  margin: 0 0 12px;
 }
 
 .calendar-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .week-label {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 0.8125rem;
+  color: var(--text-secondary, #6b7280);
 }
 
-.btn-icon {
-  padding: 8px;
-  border-radius: 6px;
-  transition: background-color 0.2s;
+.cal-nav {
+  display: flex;
+  gap: 2px;
 }
 
-.btn-icon:hover {
-  background-color: #f3f4f6;
+/* ─── Schedule table (7-column grid) ─── */
+.schedule-table {
+  overflow-x: auto;
 }
 
-.slots-grid {
+.schedule-header {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0;
+  border-bottom: 2px solid var(--border-color, #e5e7eb);
+  margin-bottom: 4px;
 }
 
-.day-column {
+.schedule-col-header {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  align-items: center;
+  padding: 6px 4px;
+  gap: 2px;
 }
 
-.day-header {
-  font-size: 14px;
+.schedule-col-header.is-today .day-number {
+  background: var(--accent, #16a34a);
+  color: #fff;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.day-weekday {
+  font-size: 0.6875rem;
   font-weight: 600;
-  color: #374151;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #e5e7eb;
+  color: var(--text-secondary, #6b7280);
+  letter-spacing: 0.02em;
 }
 
-.day-slots {
+.day-number {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--text-primary, #111827);
+}
+
+.schedule-body {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0;
+}
+
+.schedule-column {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  min-height: 40px;
+  border-right: 1px solid var(--border-color, #f3f4f6);
 }
 
-.time-slot-btn {
-  padding: 8px 12px;
-  background-color: #10b981;
-  color: white;
-  border-radius: 6px;
-  font-size: 14px;
+.schedule-column:last-child {
+  border-right: none;
+}
+
+.schedule-slot {
+  padding: 4px 6px;
+  font-size: 0.8125rem;
   font-weight: 500;
-  transition: all 0.2s;
+  color: var(--text-primary, #374151);
+  text-align: center;
+  background: transparent;
+  border: none;
+  cursor: default;
+  transition: background-color 0.15s;
+  border-radius: 4px;
+  margin: 1px 2px;
 }
 
-.time-slot-btn:hover {
-  background-color: #059669;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+.schedule-slot:not(:disabled):hover {
+  background-color: color-mix(in srgb, var(--accent, #16a34a) 8%, transparent);
+  cursor: pointer;
+}
+
+.schedule-slot:disabled {
+  cursor: default;
+  opacity: 1;
 }
 
 .loading-state,
@@ -404,4 +483,15 @@ function toLocalDateString(d: Date): string {
   text-align: center;
 }
 
+@media (max-width: 480px) {
+  .schedule-header,
+  .schedule-body {
+    grid-template-columns: repeat(7, minmax(44px, 1fr));
+  }
+
+  .schedule-slot {
+    font-size: 0.75rem;
+    padding: 3px 2px;
+  }
+}
 </style>

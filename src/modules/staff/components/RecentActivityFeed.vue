@@ -15,7 +15,7 @@
         class="feed-item"
         @click="navigateToEntity(ev)"
       >
-        <span class="feed-icon">{{ iconForAction(ev.action) }}</span>
+        <component :is="iconComponentForAction(ev.action)" class="feed-icon-svg" :size="16" />
         <div class="feed-body">
           <div class="feed-action">
             <span class="feed-action-text">{{ ev.action }}</span>
@@ -35,11 +35,26 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, type Component } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import apiClient from '@/utils/apiClient'
 import LoadingSpinner from '@/ui/LoadingSpinner.vue'
+import {
+  KeyRound,
+  LogOut,
+  Sparkles,
+  Ban,
+  CheckCircle,
+  Flag,
+  ClipboardCheck,
+  CreditCard,
+  HeartCrack,
+  Pencil,
+  Mail,
+  Lock,
+  Pin,
+} from 'lucide-vue-next'
 
 interface AuditEvent {
   id: string
@@ -58,24 +73,24 @@ const { t } = useI18n()
 const events = ref<AuditEvent[]>([])
 const loading = ref(true)
 
-const ACTION_ICONS: Record<string, string> = {
-  login: '🔑',
-  logout: '🚪',
-  register: '✨',
-  ban_create: '🚫',
-  ban_lift: '✅',
-  report_create: '🚩',
-  report_resolve: '📋',
-  subscription_create: '💳',
-  subscription_cancel: '💔',
-  profile_update: '✏️',
-  email_verify: '📧',
-  mfa_enable: '🔒',
+const ACTION_ICON_COMPONENTS: Record<string, Component> = {
+  login: KeyRound,
+  logout: LogOut,
+  register: Sparkles,
+  ban_create: Ban,
+  ban_lift: CheckCircle,
+  report_create: Flag,
+  report_resolve: ClipboardCheck,
+  subscription_create: CreditCard,
+  subscription_cancel: HeartCrack,
+  profile_update: Pencil,
+  email_verify: Mail,
+  mfa_enable: Lock,
 }
 
-function iconForAction(action: string): string {
-  const key = Object.keys(ACTION_ICONS).find(k => action.toLowerCase().includes(k))
-  return key ? ACTION_ICONS[key] : '📌'
+function iconComponentForAction(action: string): Component {
+  const key = Object.keys(ACTION_ICON_COMPONENTS).find(k => action.toLowerCase().includes(k))
+  return key ? ACTION_ICON_COMPONENTS[key] : Pin
 }
 
 function relativeTime(iso: string): string {
@@ -146,12 +161,11 @@ onMounted(async () => {
   border-top: 1px solid var(--border-color);
 }
 
-.feed-icon {
+.feed-icon-svg {
   flex-shrink: 0;
-  width: 24px;
-  text-align: center;
-  font-size: 0.875rem;
-  padding-top: 2px;
+  width: 20px;
+  color: var(--text-secondary);
+  margin-top: 2px;
 }
 
 .feed-body {

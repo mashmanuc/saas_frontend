@@ -49,6 +49,58 @@
             <span class="label">{{ $t('staff.userOverview.createdAt') }}</span>
             <span class="value">{{ formatDate(staffStore.userOverview.user.created_at) }}</span>
           </div>
+          <div class="info-item">
+            <span class="label">{{ $t('staff.userOverview.lastLogin') }}</span>
+            <span class="value">{{ staffStore.userOverview.user.last_login ? formatDate(staffStore.userOverview.user.last_login) : $t('staff.userOverview.never') }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">{{ $t('staff.userOverview.emailVerification') }}</span>
+            <div class="email-verify-row">
+              <Badge v-if="staffStore.userOverview.user.email_verified" variant="success" size="sm">
+                {{ $t('staff.userOverview.emailVerified') }}
+              </Badge>
+              <Badge v-else variant="danger" size="sm">
+                {{ $t('staff.userOverview.emailNotVerified') }}
+              </Badge>
+              <Button
+                v-if="!staffStore.userOverview.user.email_verified"
+                variant="primary"
+                size="sm"
+                :disabled="staffStore.isLoading"
+                @click="handleVerifyEmail"
+              >
+                {{ $t('staff.userOverview.verifyEmailButton') }}
+              </Button>
+            </div>
+          </div>
+          <div class="info-item">
+            <span class="label">{{ $t('staff.userOverview.accountStatus') }}</span>
+            <div class="status-action-row">
+              <Badge :variant="(staffStore.userOverview.user as any).is_active !== false ? 'success' : 'danger'" size="sm">
+                {{ (staffStore.userOverview.user as any).is_active !== false ? $t('staff.userOverview.active') : $t('staff.userOverview.inactive') }}
+              </Badge>
+              <Button
+                :variant="(staffStore.userOverview.user as any).is_active !== false ? 'danger' : 'primary'"
+                size="sm"
+                :disabled="staffStore.isLoading"
+                @click="handleToggleActive"
+              >
+                {{ (staffStore.userOverview.user as any).is_active !== false ? $t('staff.userOverview.deactivate') : $t('staff.userOverview.activate') }}
+              </Button>
+            </div>
+          </div>
+          <div class="info-item" v-if="staffStore.userOverview.user.role === 'tutor'">
+            <span class="label">{{ $t('staff.userOverview.publicProfile') }}</span>
+            <a
+              :href="`/tutors/${staffStore.userOverview.user.id}`"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="profile-link"
+            >
+              <ExternalLink :size="14" />
+              {{ $t('staff.userOverview.openProfile') }}
+            </a>
+          </div>
         </div>
       </Card>
 
@@ -218,6 +270,33 @@
           </div>
         </div>
       </Card>
+
+      <!-- Audit Log Section -->
+      <Card class="section">
+        <div class="section-header-row">
+          <h2 class="section-heading">
+            <History :size="18" class="section-icon" />
+            {{ $t('staff.userOverview.auditLog') }}
+          </h2>
+          <span v-if="auditLogTotal > 0" class="audit-total">{{ $t('staff.userOverview.auditTotal', { count: auditLogTotal }) }}</span>
+        </div>
+
+        <div v-if="auditLogLoading" class="audit-loading">
+          <LoadingSpinner />
+        </div>
+        <div v-else-if="auditLog.length === 0" class="audit-empty">
+          {{ $t('staff.userOverview.auditEmpty') }}
+        </div>
+        <div v-else class="audit-list">
+          <div v-for="ev in auditLog" :key="ev.id" class="audit-item">
+            <div class="audit-action">{{ auditActionLabel(ev.action) }}</div>
+            <div class="audit-meta">
+              <span v-if="ev.entity_type" class="audit-entity">{{ ev.entity_type }}</span>
+              <span class="audit-time">{{ formatDate(ev.created_at) }}</span>
+            </div>
+          </div>
+        </div>
+      </Card>
     </div>
   </div>
 </template>
@@ -225,7 +304,11 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import { ExternalLink, History } from 'lucide-vue-next'
 import { useStaffStore } from '@/stores/staffStore'
+import { getUserAuditLog } from '@/api/staff'
+import type { AuditEvent } from '@/api/staff'
 import { BanScope, BillingCancelMode } from '@/types/staff'
 import Button from '@/ui/Button.vue'
 import Badge from '@/ui/Badge.vue'
@@ -234,7 +317,12 @@ import LoadingSpinner from '@/ui/LoadingSpinner.vue'
 import UserBillingOpsPanel from '@/modules/staff/components/UserBillingOpsPanel.vue'
 
 const route = useRoute()
+const { t } = useI18n()
 const staffStore = useStaffStore()
+
+const auditLog = ref<AuditEvent[]>([])
+const auditLogLoading = ref(false)
+const auditLogTotal = ref(0)
 
 function roleBadgeVariant(role: string) {
   if (role === 'tutor') return 'accent'
@@ -257,8 +345,22 @@ onMounted(async () => {
     } catch (error) {
       console.error('Failed to load user overview:', error)
     }
+    loadAuditLog(userId)
   }
 })
+
+async function loadAuditLog(userId: string) {
+  auditLogLoading.value = true
+  try {
+    const res = await getUserAuditLog(userId, { limit: 20 })
+    auditLog.value = res.results
+    auditLogTotal.value = res.count
+  } catch {
+    // Silent — audit log is non-critical
+  } finally {
+    auditLogLoading.value = false
+  }
+}
 
 async function handleCreateBan() {
   if (!staffStore.userOverview) return
@@ -290,13 +392,52 @@ async function handleLiftBan(banId: string) {
   }
 }
 
+async function handleVerifyEmail() {
+  if (!staffStore.userOverview) return
+
+  const confirmed = confirm(
+    t('staff.userOverview.confirmVerifyEmail', { email: staffStore.userOverview.user.email })
+  )
+  if (!confirmed) return
+
+  try {
+    await staffStore.verifyEmail(staffStore.userOverview.user.id)
+    await staffStore.loadUserOverview(staffStore.userOverview.user.id)
+  } catch (error) {
+    console.error('Failed to verify email:', error)
+  }
+}
+
+async function handleToggleActive() {
+  if (!staffStore.userOverview) return
+  const user = staffStore.userOverview.user
+  const action = (user as any).is_active
+    ? t('staff.userOverview.deactivate')
+    : t('staff.userOverview.activate')
+  const confirmed = confirm(
+    t('staff.userOverview.confirmToggleActive', { action, email: user.email })
+  )
+  if (!confirmed) return
+
+  try {
+    await staffStore.toggleUserActive(String(user.id))
+    await staffStore.loadUserOverview(String(user.id))
+  } catch (error) {
+    console.error('Failed to toggle user status:', error)
+  }
+}
+
+function auditActionLabel(action: string): string {
+  return action.replace(/[._]/g, ' ')
+}
+
 async function handleCancelBilling(mode: 'at_period_end' | 'immediate') {
   if (!staffStore.userOverview) return
 
   const confirmed = confirm(
-    mode === 'immediate' 
-      ? 'Are you sure you want to cancel billing immediately?' 
-      : 'Are you sure you want to cancel billing at period end?'
+    mode === 'immediate'
+      ? t('staff.userOverview.confirmCancelImmediate')
+      : t('staff.userOverview.confirmCancelPeriodEnd')
   )
 
   if (!confirmed) return
@@ -357,6 +498,12 @@ function formatDate(dateString: string): string {
   font-weight: 600;
   color: var(--text-primary);
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.email-verify-row {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
@@ -566,5 +713,105 @@ function formatDate(dateString: string): string {
   display: flex;
   gap: var(--space-md);
   margin-top: var(--space-md);
+}
+
+.status-action-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.profile-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--accent);
+  font-size: var(--text-sm);
+  text-decoration: none;
+}
+
+.profile-link:hover {
+  text-decoration: underline;
+}
+
+.section-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-lg);
+  padding-bottom: var(--space-xs);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.section-header-row .section-heading {
+  margin: 0;
+  padding: 0;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.section-icon {
+  color: var(--text-secondary);
+}
+
+.audit-total {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.audit-loading,
+.audit-empty {
+  padding: var(--space-md);
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.audit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.audit-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-base);
+}
+
+.audit-item:hover {
+  background: var(--bg-secondary);
+}
+
+.audit-action {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  font-family: monospace;
+  font-size: 0.8rem;
+}
+
+.audit-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--text-xs);
+}
+
+.audit-entity {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.audit-time {
+  color: var(--text-secondary);
+  white-space: nowrap;
 }
 </style>

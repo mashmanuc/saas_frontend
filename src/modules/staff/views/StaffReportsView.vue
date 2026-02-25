@@ -1,7 +1,10 @@
 <template>
   <div class="staff-reports-view" data-testid="staff-reports">
     <div class="page-header">
-      <h1 class="page-title">{{ $t('staff.reports.title') }}</h1>
+      <div class="header-left">
+        <h1 class="page-title">{{ $t('staff.reports.title') }}</h1>
+        <p class="help-text">{{ $t('staff.reports.helpText') }}</p>
+      </div>
       <div class="filters">
         <select
           v-model="statusFilter"
@@ -188,6 +191,12 @@ function formatDate(dateString: string): string {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.help-text {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin: var(--space-xs) 0 0 0;
 }
 
 .page-title {

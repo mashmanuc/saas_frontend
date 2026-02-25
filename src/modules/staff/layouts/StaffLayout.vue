@@ -15,7 +15,7 @@
             class="mobile-menu-btn"
             @click="mobileMenuOpen = true"
           >
-            ☰
+            <Menu :size="20" />
           </button>
         </div>
 
@@ -47,6 +47,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import apiClient from '@/utils/apiClient'
+import { Menu, LogOut } from 'lucide-vue-next'
 import Button from '@/ui/Button.vue'
 import StaffSidebar from '../components/StaffSidebar.vue'
 import StaffBreadcrumbs from '../components/StaffBreadcrumbs.vue'

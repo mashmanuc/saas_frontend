@@ -36,10 +36,8 @@ describe('notificationsStore', () => {
       ]
 
       vi.mocked(notificationsApi.getNotifications).mockResolvedValue({
-        results: mockNotifications,
-        count: 2,
-        next: null,
-        previous: null,
+        notifications: mockNotifications,
+        total: 2,
       })
 
       const store = useNotificationsStore()
@@ -86,10 +84,8 @@ describe('notificationsStore', () => {
       ]
 
       vi.mocked(notificationsApi.getNotifications).mockResolvedValue({
-        results: mockNotifications,
-        count: 2,
-        next: null,
-        previous: null,
+        notifications: mockNotifications,
+        total: 2,
       })
 
       const store = useNotificationsStore()
@@ -115,10 +111,8 @@ describe('notificationsStore', () => {
       const updatedNotification = { ...notification, read_at: '2026-01-09T01:00:00Z' }
 
       vi.mocked(notificationsApi.getNotifications).mockResolvedValue({
-        results: [notification],
-        count: 1,
-        next: null,
-        previous: null,
+        notifications: [notification],
+        total: 1,
       })
 
       vi.mocked(notificationsApi.markAsRead).mockResolvedValue(updatedNotification)
@@ -147,10 +141,8 @@ describe('notificationsStore', () => {
       }
 
       vi.mocked(notificationsApi.getNotifications).mockResolvedValue({
-        results: [notification],
-        count: 1,
-        next: null,
-        previous: null,
+        notifications: [notification],
+        total: 1,
       })
 
       vi.mocked(notificationsApi.markAsRead).mockRejectedValue(new Error('API error'))
@@ -191,10 +183,8 @@ describe('notificationsStore', () => {
       ]
 
       vi.mocked(notificationsApi.getNotifications).mockResolvedValue({
-        results: mockNotifications,
-        count: 2,
-        next: null,
-        previous: null,
+        notifications: mockNotifications,
+        total: 2,
       })
 
       vi.mocked(notificationsApi.markAllAsRead).mockResolvedValue({ marked_count: 2 })
@@ -225,10 +215,8 @@ describe('notificationsStore', () => {
       ]
 
       vi.mocked(notificationsApi.getNotifications).mockResolvedValue({
-        results: mockNotifications,
-        count: 1,
-        next: null,
-        previous: null,
+        notifications: mockNotifications,
+        total: 1,
       })
 
       vi.mocked(notificationsApi.markAllAsRead).mockRejectedValue(new Error('API error'))
@@ -249,10 +237,8 @@ describe('notificationsStore', () => {
   describe('pollUnreadCount', () => {
     it('updates unread count from API', async () => {
       vi.mocked(notificationsApi.getNotifications).mockResolvedValue({
-        results: [],
-        count: 5,
-        next: null,
-        previous: null,
+        notifications: [],
+        total: 5,
       })
 
       const store = useNotificationsStore()
@@ -262,6 +248,7 @@ describe('notificationsStore', () => {
       expect(notificationsApi.getNotifications).toHaveBeenCalledWith({
         unreadOnly: true,
         limit: 1,
+        skipLoader: true,
       })
     })
 
@@ -349,10 +336,8 @@ describe('notificationsStore', () => {
       }))
 
       vi.mocked(notificationsApi.getNotifications).mockResolvedValue({
-        results: mockNotifications,
-        count: 15,
-        next: null,
-        previous: null,
+        notifications: mockNotifications,
+        total: 15,
       })
 
       const store = useNotificationsStore()
@@ -371,16 +356,14 @@ describe('notificationsStore', () => {
       const store = useNotificationsStore()
 
       vi.mocked(notificationsApi.getNotifications).mockResolvedValue({
-        results: [],
-        count: 0,
-        next: null,
-        previous: null,
+        notifications: [],
+        total: 0,
       })
 
       store.startPolling(1000)
 
       expect(notificationsApi.getNotifications).toHaveBeenCalledTimes(1)
-      expect(notificationsApi.getNotifications).toHaveBeenLastCalledWith({ unreadOnly: true, limit: 1 })
+      expect(notificationsApi.getNotifications).toHaveBeenLastCalledWith({ unreadOnly: true, limit: 1, skipLoader: true })
 
       vi.advanceTimersByTime(1000)
       expect(notificationsApi.getNotifications).toHaveBeenCalledTimes(2)
