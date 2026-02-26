@@ -67,6 +67,7 @@ export const useRealtimeStore = defineStore('realtime', {
     errorUnsubscribe: null,
     messageUnsubscribe: null,
     failoverUnsubscribe: null,
+    heartbeatUnsubscribe: null,
   }),
 
   actions: {
@@ -127,6 +128,15 @@ export const useRealtimeStore = defineStore('realtime', {
             reason: data.reason,
           })
         })
+      })
+
+      // Track heartbeat events (pong responses)
+      if (this.heartbeatUnsubscribe) {
+        this.heartbeatUnsubscribe()
+        this.heartbeatUnsubscribe = null
+      }
+      this.heartbeatUnsubscribe = realtimeService.on('heartbeat', (timestamp) => {
+        this.lastHeartbeat = timestamp
       })
 
       this.bindAuthWatcher(auth)
@@ -226,7 +236,14 @@ export const useRealtimeStore = defineStore('realtime', {
         this.messageUnsubscribe()
         this.messageUnsubscribe = null
       }
-
+      if (this.failoverUnsubscribe) {
+        this.failoverUnsubscribe()
+        this.failoverUnsubscribe = null
+      }
+      if (this.heartbeatUnsubscribe) {
+        this.heartbeatUnsubscribe()
+        this.heartbeatUnsubscribe = null
+      }
       this.subscriptions = new Map()
       this.status = 'disconnected'
       this.offline = false

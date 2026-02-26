@@ -243,6 +243,7 @@ class RealtimeService {
       if (data?.type === 'pong') {
         this.lastPongTime = Date.now()
         this.resetHeartbeatTimeout()
+        this.emitter.emit('heartbeat', this.lastPongTime)
         return
       }
       // Backend надсилає auth_required коли JWT токен протух під час revalidation.
