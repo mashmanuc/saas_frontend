@@ -1,5 +1,5 @@
 <template>
-  <Modal :open="open" :title="$t('classroom.create.title')" @close="handleCancel">
+  <Modal :open="modelValue" :title="$t('classroom.create.title')" @close="handleCancel">
     <div class="space-y-4">
       <div class="space-y-1">
         <label class="block text-xs font-medium text-gray-600 dark:text-gray-400" for="classroom-name">
@@ -69,7 +69,6 @@ const emit = defineEmits(['update:modelValue', 'created'])
 const { t } = useI18n()
 const store = useClassroomStore()
 
-const open = ref(props.modelValue)
 const name = ref('')
 const classroomType = ref('group')
 const loading = ref(false)
@@ -79,7 +78,6 @@ const nameInputRef = ref(null)
 watch(
   () => props.modelValue,
   (value) => {
-    open.value = value
     if (value) {
       name.value = ''
       classroomType.value = 'group'
@@ -88,10 +86,6 @@ watch(
     }
   },
 )
-
-watch(open, (value) => {
-  emit('update:modelValue', value)
-})
 
 async function handleSubmit() {
   const trimmed = name.value.trim()
@@ -110,7 +104,7 @@ async function handleSubmit() {
     })
     notifySuccess(t('classroom.create.success'))
     emit('created', created)
-    open.value = false
+    emit('update:modelValue', false)
   } catch (e) {
     const detail = e?.response?.data?.detail
     const code = e?.response?.data?.code
@@ -131,6 +125,6 @@ async function handleSubmit() {
 
 function handleCancel() {
   if (loading.value) return
-  open.value = false
+  emit('update:modelValue', false)
 }
 </script>

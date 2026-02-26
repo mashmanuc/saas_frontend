@@ -1,5 +1,5 @@
 <template>
-  <Modal :open="open" :title="$t('classroom.invite.title')" @close="handleCancel">
+  <Modal :open="modelValue" :title="$t('classroom.invite.title')" @close="handleCancel">
     <p class="text-sm text-gray-600 dark:text-gray-300">
       {{ $t('classroom.invite.description') }}
     </p>
@@ -50,7 +50,6 @@ const emit = defineEmits(['update:modelValue'])
 
 const { t } = useI18n()
 
-const open = ref(props.modelValue)
 const email = ref('')
 const loading = ref(false)
 const validationError = ref('')
@@ -58,17 +57,12 @@ const validationError = ref('')
 watch(
   () => props.modelValue,
   (value) => {
-    open.value = value
     if (value) {
       email.value = ''
       validationError.value = ''
     }
   },
 )
-
-watch(open, (value) => {
-  emit('update:modelValue', value)
-})
 
 function validateEmail(value) {
   const trimmed = (value || '').trim()
@@ -99,7 +93,7 @@ async function handleSubmit() {
     await fakeApiDelay(1200)
     // Тут пізніше буде реальний бекенд-запит
     notifySuccess(t('classroom.invite.success'))
-    open.value = false
+    emit('update:modelValue', false)
   } catch (e) {
     notifyError(t('classroom.invite.errors.generic'))
   } finally {
@@ -109,6 +103,6 @@ async function handleSubmit() {
 
 function handleCancel() {
   if (loading.value) return
-  open.value = false
+  emit('update:modelValue', false)
 }
 </script>
