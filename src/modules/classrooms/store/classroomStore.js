@@ -3,6 +3,7 @@ import {
   getTutorClassrooms,
   getClassroomDetails,
   createClassroom as apiCreateClassroom,
+  updateClassroom as apiUpdateClassroom,
   deleteClassroom as apiDeleteClassroom,
   addStudentToClassroom as apiAddStudent,
   removeStudentFromClassroom as apiRemoveStudent,
@@ -83,6 +84,16 @@ export const useClassroomStore = defineStore('classrooms', {
 
     async createClassroom(payload) {
       const data = await apiCreateClassroom(payload)
+      await this.loadClassrooms()
+      return data
+    },
+
+    async updateClassroom(classroomId, payload) {
+      const data = await apiUpdateClassroom(classroomId, payload)
+      // Оновлюємо поточний клас якщо він відкритий
+      if (this.currentClassroom?.id === classroomId) {
+        await this.loadClassroomById(classroomId)
+      }
       await this.loadClassrooms()
       return data
     },

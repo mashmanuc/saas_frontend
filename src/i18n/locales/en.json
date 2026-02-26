@@ -2370,7 +2370,10 @@
       "confirmDelete": "Delete classroom \"{name}\"? This action cannot be undone.",
       "deleteSuccess": "Classroom deleted.",
       "deleteError": "Failed to delete classroom.",
-      "cannotDeleteDefault": "Cannot delete the default classroom."
+      "cannotDeleteDefault": "Cannot delete the default classroom.",
+      "editName": "Edit name",
+      "nameSaved": "Name saved.",
+      "nameSaveError": "Failed to save name."
     },
     "create": {
       "title": "Create classroom",

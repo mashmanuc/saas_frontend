@@ -13,8 +13,30 @@
             </svg>
             {{ $t('classroom.detail.backToList') }}
           </button>
-          <h1 class="text-2xl font-semibold">
+          <div v-if="editingName" class="flex items-center gap-2">
+            <input
+              v-model="editNameValue"
+              type="text"
+              class="text-lg font-semibold border rounded px-2 py-1 w-64"
+              :disabled="savingName"
+              @keydown.enter="saveName"
+              @keydown.esc="cancelEditName"
+            />
+            <Button size="xs" :loading="savingName" @click="saveName">{{ $t('common.save') }}</Button>
+            <Button size="xs" variant="ghost" :disabled="savingName" @click="cancelEditName">{{ $t('common.cancel') }}</Button>
+          </div>
+          <h1 v-else class="text-2xl font-semibold flex items-center gap-2">
             {{ classroom?.name || classroom?.title || $t('classroom.detail.title') }}
+            <button
+              v-if="classroom && !classroom.is_default"
+              class="text-gray-400 hover:text-primary transition-colors"
+              title="{{ $t('classroom.detail.editName') }}"
+              @click="startEditName"
+            >
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+            </button>
           </h1>
           <p v-if="classroom?.classroom_type" class="text-gray-500 text-sm dark:text-gray-400">
             {{ typeLabel }}
@@ -118,6 +140,9 @@ const classroomStore = useClassroomStore()
 const addStudentOpen = ref(false)
 const removingId = ref(null)
 const deleting = ref(false)
+const editingName = ref(false)
+const editNameValue = ref('')
+const savingName = ref(false)
 
 const classroomId = computed(() => route.params.id)
 const classroom = computed(() => classroomStore.currentClassroom)
@@ -194,6 +219,35 @@ async function handleDeleteClassroom() {
 
 function handleStudentAdded() {
   classroomStore.loadClassroomById(classroomId.value)
+}
+
+function startEditName() {
+  if (classroom.value?.is_default) return
+  editNameValue.value = classroom.value?.name || classroom.value?.title || ''
+  editingName.value = true
+}
+
+async function saveName() {
+  const trimmed = editNameValue.value.trim()
+  if (!trimmed) {
+    editingName.value = false
+    return
+  }
+  savingName.value = true
+  try {
+    await classroomStore.updateClassroom(classroomId.value, { name: trimmed })
+    notifySuccess(t('classroom.detail.nameSaved'))
+    editingName.value = false
+  } catch (e) {
+    notifyError(e?.response?.data?.detail || t('classroom.detail.nameSaveError'))
+  } finally {
+    savingName.value = false
+  }
+}
+
+function cancelEditName() {
+  editingName.value = false
+  editNameValue.value = ''
 }
 
 onMounted(() => {
