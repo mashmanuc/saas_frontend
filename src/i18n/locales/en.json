@@ -2391,6 +2391,8 @@
       "searchPlaceholder": "Name or email",
       "add": "Add",
       "empty": "No available students to add.",
+      "noStudentsYet": "You don't have any students yet",
+      "noStudentsHint": "To add a student to a classroom, you first need to establish a connection. The student can send you a request via the marketplace, or you can invite them by email.",
       "success": "Student added to classroom.",
       "errors": {
         "alreadyMember": "Student is already in this classroom.",
