@@ -1,5 +1,12 @@
 import { defineStore } from 'pinia'
-import { getTutorClassrooms, getClassroomDetails } from '../../../api/classrooms'
+import {
+  getTutorClassrooms,
+  getClassroomDetails,
+  createClassroom as apiCreateClassroom,
+  addStudentToClassroom as apiAddStudent,
+  removeStudentFromClassroom as apiRemoveStudent,
+  getAvailableStudents as apiGetAvailableStudents,
+} from '../../../api/classrooms'
 import { notifyError } from '../../../utils/notify'
 
 export const useClassroomStore = defineStore('classrooms', {
@@ -14,6 +21,10 @@ export const useClassroomStore = defineStore('classrooms', {
     currentLoading: false,
     currentError: null,
     currentErrorCode: null,
+
+    // доступні учні для додавання
+    availableStudents: [],
+    availableStudentsLoading: false,
   }),
   actions: {
     async loadClassrooms() {
@@ -67,6 +78,42 @@ export const useClassroomStore = defineStore('classrooms', {
       } finally {
         this.currentLoading = false
       }
+    },
+
+    async createClassroom(payload) {
+      const data = await apiCreateClassroom(payload)
+      await this.loadClassrooms()
+      return data
+    },
+
+    async loadAvailableStudents(classroomId, q = '') {
+      this.availableStudentsLoading = true
+      try {
+        const data = await apiGetAvailableStudents(classroomId, q)
+        this.availableStudents = data?.results || []
+      } catch (e) {
+        this.availableStudents = []
+      } finally {
+        this.availableStudentsLoading = false
+      }
+    },
+
+    async addStudent(classroomId, studentId) {
+      const data = await apiAddStudent(classroomId, studentId)
+      // Оновлюємо поточний клас та список
+      if (this.currentClassroom?.id === classroomId) {
+        await this.loadClassroomById(classroomId)
+      }
+      await this.loadClassrooms()
+      return data
+    },
+
+    async removeStudent(classroomId, userId) {
+      await apiRemoveStudent(classroomId, userId)
+      if (this.currentClassroom?.id === classroomId) {
+        await this.loadClassroomById(classroomId)
+      }
+      await this.loadClassrooms()
     },
   },
 })

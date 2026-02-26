@@ -76,6 +76,7 @@ import OnboardingModal from '@/modules/onboarding/components/widgets/OnboardingM
 import Button from '@/ui/Button.vue'
 import Input from '@/ui/Input.vue'
 import mfaApi from '@/api/mfa'
+import { useAuthStore } from '@/modules/auth/store/authStore'
 import { logAuthEvent, AUTH_EVENTS } from '@/utils/telemetry/authEvents'
 
 const props = defineProps<{
@@ -88,6 +89,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const authStore = useAuthStore()
 
 const loading = ref(false)
 const error = ref('')
@@ -112,6 +114,9 @@ async function initSetup() {
   otpError.value = ''
   
   try {
+    // Ensure CSRF token is present before making POST request
+    await authStore.ensureCsrfToken()
+    
     const res = await mfaApi.setup({ method: 'totp' })
     qrSvg.value = res.qr_svg || ''
     secretHint.value = res.secret_hint || ''
@@ -121,7 +126,40 @@ async function initSetup() {
       event: AUTH_EVENTS.MFA_SETUP_STARTED,
     })
   } catch (err: any) {
-    error.value = err?.response?.data?.message || t('auth.mfa.setup.errors.initFailed')
+    const status = err?.response?.status
+    const data = err?.response?.data
+    const fields = data?.fields || data?.field_messages
+    
+    // CSRF token error — retry once after refreshing token
+    if (status === 422 && fields?.csrf) {
+      try {
+        await authStore.ensureCsrfToken()
+        const res = await mfaApi.setup({ method: 'totp' })
+        qrSvg.value = res.qr_svg || ''
+        secretHint.value = res.secret_hint || ''
+        backupCodes.value = Array.isArray(res.backup_codes) ? res.backup_codes : []
+        step.value = 'qr'
+        logAuthEvent({ event: AUTH_EVENTS.MFA_SETUP_STARTED })
+        return
+      } catch (retryErr: any) {
+        error.value = t('auth.mfa.setup.errors.csrfFailed')
+        return
+      }
+    }
+    
+    // MFA already enabled
+    if (status === 409 && data?.error === 'mfa_already_enabled') {
+      error.value = t('auth.mfa.setup.errors.alreadyEnabled')
+      return
+    }
+    
+    // Session expired
+    if (status === 401) {
+      error.value = t('auth.mfa.setup.errors.sessionExpired')
+      return
+    }
+    
+    error.value = data?.message || data?.detail || t('auth.mfa.setup.errors.initFailed')
   } finally {
     loading.value = false
   }

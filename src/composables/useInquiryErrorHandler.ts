@@ -47,9 +47,53 @@ export function useInquiryErrorHandler() {
       return
     }
 
-    // Permission denied (403) - check specific codes
+    // Permission denied / domain validation - check specific codes
     if (error instanceof InquiryNotAllowedError) {
       const meta = error.meta || {}
+      
+      // Contact information required
+      if (meta.reason === 'contact_required') {
+        errorState.value = {
+          variant: 'error',
+          title: 'Необхідна контактна інформація',
+          message: 'Будь ласка, додайте номер телефону або Telegram у налаштуваннях профілю перед створенням запиту.',
+          showRetry: false
+        }
+        return
+      }
+      
+      // Invalid phone format
+      if (meta.reason === 'invalid_phone_format') {
+        errorState.value = {
+          variant: 'error',
+          title: 'Невірний формат телефону',
+          message: 'Використовуйте міжнародний формат: +[код країни][номер]. Наприклад: +380501234567',
+          showRetry: false
+        }
+        return
+      }
+      
+      // Tutor not found
+      if (meta.reason === 'tutor_not_found') {
+        errorState.value = {
+          variant: 'error',
+          title: 'Тьютора не знайдено',
+          message: 'Профіль цього тьютора недоступний. Можливо, він був видалений або деактивований.',
+          showRetry: false
+        }
+        return
+      }
+      
+      // Not a student role
+      if (meta.reason === 'not_student') {
+        errorState.value = {
+          variant: 'forbidden',
+          title: 'Недоступно для вашого акаунта',
+          message: 'Надсилати запити можуть тільки студенти.',
+          showRetry: false
+        }
+        return
+      }
       
       // Cooldown active
       if (meta.locked_reason === 'cooldown' || meta.cooldown_expires_at) {
@@ -88,12 +132,13 @@ export function useInquiryErrorHandler() {
       return
     }
 
-    // Phase 1: Contact required (400)
+    // DomainError responses (400 with code field from custom_exception_handler)
     if ((error as AxiosError)?.response?.status === 400) {
       const data = (error as AxiosError)?.response?.data as any
+      const domainCode = data?.code
       
       // Contact information required
-      if (data?.contact_required || data?.code === 'contact_required') {
+      if (domainCode === 'contact_required' || data?.contact_required) {
         errorState.value = {
           variant: 'error',
           title: 'Необхідна контактна інформація',
@@ -104,11 +149,56 @@ export function useInquiryErrorHandler() {
       }
       
       // Invalid phone format
-      if (data?.invalid_phone_format || data?.code === 'invalid_phone_format') {
+      if (domainCode === 'invalid_phone_format' || data?.invalid_phone_format) {
         errorState.value = {
           variant: 'error',
           title: 'Невірний формат телефону',
-          message: 'Використовуйте міжнародний формат: +[код країни][номер]',
+          message: 'Використовуйте міжнародний формат: +[код країни][номер]. Наприклад: +380501234567',
+          showRetry: false
+        }
+        return
+      }
+      
+      // Tutor not found
+      if (domainCode === 'inquiry_not_allowed' && data?.meta?.reason === 'tutor_not_found') {
+        errorState.value = {
+          variant: 'error',
+          title: 'Тьютора не знайдено',
+          message: 'Профіль цього тьютора недоступний. Можливо, він був видалений або деактивований.',
+          showRetry: false
+        }
+        return
+      }
+      
+      // Not a student role
+      if (domainCode === 'inquiry_not_allowed' && data?.meta?.reason === 'not_student') {
+        errorState.value = {
+          variant: 'forbidden',
+          title: 'Недоступно для вашого акаунта',
+          message: 'Надсилати запити можуть тільки студенти.',
+          showRetry: false
+        }
+        return
+      }
+      
+      // Generic inquiry_not_allowed with known code
+      if (domainCode === 'inquiry_not_allowed') {
+        const reason = data?.meta?.reason || ''
+        errorState.value = {
+          variant: 'forbidden',
+          title: 'Неможливо надіслати запит',
+          message: data?.message || `Дія заборонена: ${reason}`,
+          showRetry: false
+        }
+        return
+      }
+      
+      // inquiry_already_exists (handled by DomainError but can also come as raw 400)
+      if (domainCode === 'inquiry_already_exists') {
+        errorState.value = {
+          variant: 'error',
+          title: 'Запит вже існує',
+          message: 'У вас вже є активний запит до цього тьютора.',
           showRetry: false
         }
         return
@@ -143,7 +233,7 @@ export function useInquiryErrorHandler() {
     const respData = (error as AxiosError)?.response?.data as any
     const respStatus = (error as AxiosError)?.response?.status
     if (respStatus === 422 || 
-        (respStatus === 400 && !respData?.contact_required && !respData?.code && !respData?.invalid_phone_format)) {
+        (respStatus === 400 && !respData?.code && !respData?.contact_required && !respData?.invalid_phone_format)) {
       const data400 = (error as AxiosError)?.response?.data as any
       
       // Phone validation error
@@ -168,27 +258,33 @@ export function useInquiryErrorHandler() {
         goals: 'цілі та побажання',
       }
       
+      // Skip structural keys that are NOT field errors
+      const skipKeys = new Set(['detail', 'error', 'message', 'code', 'error_code', 'non_field_errors', 'meta', 'request_id'])
+      
       // Extract human-readable error
-      const fieldKeys = data400 ? Object.keys(data400).filter(k => k !== 'code' && k !== 'detail') : []
+      const fieldKeys = data400 ? Object.keys(data400).filter(k => !skipKeys.has(k)) : []
       if (fieldKeys.length > 0) {
         const messages: string[] = []
         for (const key of fieldKeys) {
           const rawMsg = Array.isArray(data400[key]) ? data400[key][0] : data400[key]
+          if (typeof rawMsg === 'object') continue
           const label = fieldLabels[key] || key
           const friendlyMsg = mapValidationMessage(String(rawMsg))
           messages.push(`${label}: ${friendlyMsg}`)
         }
-        errorState.value = {
-          variant: 'error',
-          title: 'Перевірте введені дані',
-          message: messages.join('. '),
-          showRetry: false
+        if (messages.length > 0) {
+          errorState.value = {
+            variant: 'error',
+            title: 'Перевірте введені дані',
+            message: messages.join('. '),
+            showRetry: false
+          }
+          return
         }
-        return
       }
       
       // Fallback for unknown structure
-      const detail = data400?.detail || data400?.message || data400?.error
+      const detail = data400?.detail || data400?.message
       errorState.value = {
         variant: 'error',
         title: 'Перевірте введені дані',

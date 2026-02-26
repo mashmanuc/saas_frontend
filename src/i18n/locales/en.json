@@ -806,7 +806,10 @@
         "errors": {
           "initFailed": "Failed to initialize MFA setup",
           "invalidCode": "Invalid verification code",
-          "confirmFailed": "Failed to confirm MFA setup"
+          "confirmFailed": "Failed to confirm MFA setup",
+          "csrfFailed": "Session security error. Please reload the page and try again.",
+          "alreadyEnabled": "Two-factor authentication is already enabled for this account.",
+          "sessionExpired": "Session expired. Please log in again and try again."
         }
       },
       "verify": {
@@ -2357,15 +2360,50 @@
       "empty": "This classroom has no students yet.",
       "loadError": "Failed to load classroom data",
       "notFound": "Classroom not found",
-      "forbidden": "You don't have access to this classroom"
+      "forbidden": "You don't have access to this classroom",
+      "remove": "Remove",
+      "removeSuccess": "Student removed from classroom.",
+      "removeError": "Failed to remove student."
+    },
+    "create": {
+      "title": "Create classroom",
+      "nameLabel": "Classroom name",
+      "namePlaceholder": "E.g. Algebra Grade 8",
+      "typeLabel": "Classroom type",
+      "types": {
+        "group": "Group",
+        "microgroup": "Micro-group",
+        "individual": "Individual"
+      },
+      "submit": "Create",
+      "success": "Classroom created successfully.",
+      "errors": {
+        "nameRequired": "Please enter a classroom name.",
+        "nameTooLong": "Name is too long (max 255 characters).",
+        "limitReached": "Classroom limit reached. Please delete unused classrooms.",
+        "generic": "Failed to create classroom."
+      }
+    },
+    "addStudent": {
+      "title": "Add student",
+      "button": "Add student",
+      "searchLabel": "Search student",
+      "searchPlaceholder": "Name or email",
+      "add": "Add",
+      "empty": "No available students to add.",
+      "success": "Student added to classroom.",
+      "errors": {
+        "alreadyMember": "Student is already in this classroom.",
+        "maxReached": "Maximum number of students in this classroom reached.",
+        "noRelation": "This student is not yet your student. Please establish a connection first.",
+        "generic": "Failed to add student."
+      }
     },
     "dashboard": {
       "title": "My classrooms",
       "subtitle": "Organise your students into groups and track their progress.",
       "create": "Create classroom",
-      "empty": "You don't have any classrooms yet.",
-      "createSuccess": "Classroom created successfully.",
-      "createError": "Failed to create classroom."
+      "empty": "You don't have any classrooms yet."
     },
     "card": {
       "students": "students"

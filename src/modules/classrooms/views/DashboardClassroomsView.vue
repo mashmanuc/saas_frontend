@@ -11,8 +11,8 @@
           </p>
         </div>
 
-        <Button variant="primary" :disabled="creating" :loading="creating" @click="handleCreate">
-          {{ creating ? $t('loader.loading') : $t('classroom.dashboard.create') }}
+        <Button variant="primary" @click="showCreateModal = true">
+          {{ $t('classroom.dashboard.create') }}
         </Button>
       </div>
 
@@ -55,23 +55,21 @@
         </p>
       </div>
     </div>
+
+    <CreateClassroomModal v-model="showCreateModal" />
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 import Button from '../../../ui/Button.vue'
 import Card from '../../../ui/Card.vue'
 import ClassroomCard from '../components/ClassroomCard.vue'
+import CreateClassroomModal from '../components/CreateClassroomModal.vue'
 import { useClassroomStore } from '../store/classroomStore'
-import apiClient from '../../../utils/apiClient'
-import { notifySuccess, notifyError } from '../../../utils/notify'
 
 const store = useClassroomStore()
-
-const creating = ref(false)
-const { t } = useI18n()
+const showCreateModal = ref(false)
 
 const classrooms = computed(() => store.items)
 const loading = computed(() => store.loading)
@@ -80,22 +78,6 @@ const error = computed(() => store.error)
 const gridClasses = computed(
   () => 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
 )
-
-async function handleCreate() {
-  if (creating.value) return
-  creating.value = true
-
-  try {
-    const name = t('classroom.dashboard.title')
-    await apiClient.post('/tutor/classrooms/', { name })
-    await store.refreshClassrooms()
-    notifySuccess(t('classroom.dashboard.createSuccess'))
-  } catch (e) {
-    notifyError(t('classroom.dashboard.createError'))
-  } finally {
-    creating.value = false
-  }
-}
 
 onMounted(() => {
   store.loadClassrooms()
