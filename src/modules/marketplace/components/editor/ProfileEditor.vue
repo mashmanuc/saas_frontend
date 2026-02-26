@@ -78,16 +78,38 @@
 }
 
 .inline-toggle {
-  display: inline-flex;
+  display: inline-flex !important;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.5rem;
   font-size: 0.875rem;
   color: var(--text-muted);
+  cursor: pointer;
+}
+
+.inline-toggle input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  accent-color: var(--accent);
 }
 
 .privacy-card input[type='number'],
 .privacy-card input[type='text'] {
   width: 100%;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background: var(--surface-card);
+  color: var(--text-primary);
+}
+
+.privacy-card input[type='number']:focus,
+.privacy-card input[type='text']:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .span-2 {
@@ -528,7 +550,16 @@ const debouncedAutosave = debounce(async () => {
 }, 2000) as ((...args: any[]) => void) & { cancel?: () => void }
 
 onBeforeUnmount(() => {
+  // Flush pending draft to localStorage before unmount
+  // so data is preserved when user navigates away
   debouncedAutosave.cancel?.()
+  try {
+    const { newLanguageCode, newLanguageLevel, ...model } = formData.value
+    const apiPayload = buildTutorProfileUpdate(model)
+    writeLocalDraft(apiPayload as any)
+  } catch {
+    // Silent — best effort save
+  }
 })
 
 watch(
@@ -1450,6 +1481,7 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
             v-model.number="formData.trial_lesson_price"
             type="number"
             min="0"
+            max="99999"
             step="1"
             :placeholder="t('marketplace.profile.editor.trialPricePlaceholder')"
             data-test="marketplace-editor-trial-price"
@@ -1818,6 +1850,7 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
 .editor-actions {
   display: flex;
   justify-content: flex-end;
+  gap: 0.75rem;
   padding-top: 1rem;
 }
 

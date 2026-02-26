@@ -92,6 +92,44 @@ const timeToMinutes = (time: string) => {
   return hours * 60 + minutes
 }
 
+// Helper: convert minutes to HH:MM
+const minutesToTime = (m: number) => {
+  const h = Math.floor(m / 60).toString().padStart(2, '0')
+  const min = (m % 60).toString().padStart(2, '0')
+  return `${h}:${min}`
+}
+
+// Check if two time windows overlap
+function windowsOverlap(a: { start: string; end: string }, b: { start: string; end: string }): boolean {
+  const aStart = timeToMinutes(a.start)
+  const aEnd = timeToMinutes(a.end)
+  const bStart = timeToMinutes(b.start)
+  const bEnd = timeToMinutes(b.end)
+  return aStart < bEnd && bStart < aEnd
+}
+
+// Find overlapping windows for a specific day
+function getOverlapsForDay(dayValue: number): Array<{ indexA: number; indexB: number }> {
+  const windows = localSchedule.value[dayValue] || []
+  const overlaps: Array<{ indexA: number; indexB: number }> = []
+  for (let i = 0; i < windows.length; i++) {
+    for (let j = i + 1; j < windows.length; j++) {
+      if (windowsOverlap(windows[i], windows[j])) {
+        overlaps.push({ indexA: i, indexB: j })
+      }
+    }
+  }
+  return overlaps
+}
+
+// Computed: are there any overlapping windows across all days?
+const hasOverlaps = computed(() => {
+  for (let day = 1; day <= 7; day++) {
+    if (getOverlapsForDay(day).length > 0) return true
+  }
+  return false
+})
+
 // Initialize local schedule from API
 onMounted(async () => {
   isLoading.value = true
@@ -157,7 +195,44 @@ function addWindow(dayValue: number) {
     localSchedule.value[dayValue] = []
   }
   
-  const newWindow = { start: '09:00', end: '17:00' }
+  const existing = localSchedule.value[dayValue]
+  let newWindow = { start: '09:00', end: '17:00' }
+
+  // If there are existing windows, find a free gap to avoid overlap
+  if (existing.length > 0) {
+    const sorted = [...existing]
+      .map(w => ({ startM: timeToMinutes(w.start), endM: timeToMinutes(w.end) }))
+      .sort((a, b) => a.startM - b.startM)
+
+    // Try to find a 60-min gap after the last window
+    const lastEnd = sorted[sorted.length - 1].endM
+    if (lastEnd + 60 <= 23 * 60) {
+      newWindow = { start: minutesToTime(lastEnd), end: minutesToTime(Math.min(lastEnd + 60, 23 * 60)) }
+    } else {
+      // Try before the first window
+      const firstStart = sorted[0].startM
+      if (firstStart >= 60) {
+        newWindow = { start: minutesToTime(Math.max(firstStart - 60, 0)), end: minutesToTime(firstStart) }
+      } else {
+        // Try gaps between windows
+        let placed = false
+        for (let i = 0; i < sorted.length - 1; i++) {
+          const gapStart = sorted[i].endM
+          const gapEnd = sorted[i + 1].startM
+          if (gapEnd - gapStart >= 60) {
+            newWindow = { start: minutesToTime(gapStart), end: minutesToTime(gapStart + 60) }
+            placed = true
+            break
+          }
+        }
+        if (!placed) {
+          toast.warning(t('calendar.availability.noFreeSlot', 'Немає вільного часу для додавання нового вікна'))
+          return
+        }
+      }
+    }
+  }
+
   localSchedule.value[dayValue].push(newWindow)
   slotStore.setDraftSchedule({ ...localSchedule.value })
 }
@@ -175,6 +250,14 @@ function updateWindow(
 ) {
   const window = localSchedule.value[dayValue][index]
   const updatedWindow = { ...window, [field]: value }
+  
+  // Check overlap with other windows on the same day
+  const otherWindows = localSchedule.value[dayValue].filter((_: any, i: number) => i !== index)
+  const hasOverlap = otherWindows.some((w: { start: string; end: string }) => windowsOverlap(updatedWindow, w))
+  
+  if (hasOverlap) {
+    toast.warning(t('calendar.availability.overlapWarning', 'Увага: часові вікна перекриваються'))
+  }
   
   localSchedule.value[dayValue][index] = updatedWindow
   slotStore.setDraftSchedule({ ...localSchedule.value })
@@ -464,6 +547,11 @@ function handleBackToCalendar() {
       </div>
     </div>
 
+    <div v-if="hasOverlaps" class="overlap-warning" data-testid="overlap-warning">
+      <AlertCircleIcon :size="18" />
+      <span>{{ t('calendar.availability.overlapWarning', 'Увага: часові вікна перекриваються. Виправте перед збереженням.') }}</span>
+    </div>
+
     <div v-if="hasChanges" class="editor-actions">
       <!-- Undo/Redo Controls -->
       <div class="undo-redo-controls">
@@ -505,7 +593,7 @@ function handleBackToCalendar() {
       </Button>
       <Button
         variant="primary"
-        :disabled="isSavingTemplate || isCheckingConflicts || (currentJob && (currentJob.status === 'pending' || currentJob.status === 'running'))"
+        :disabled="isSavingTemplate || isCheckingConflicts || hasOverlaps || (currentJob && (currentJob.status === 'pending' || currentJob.status === 'running'))"
         :loading="isSavingTemplate || isCheckingConflicts"
         @click="saveAvailability"
         data-testid="save-availability"
@@ -601,6 +689,19 @@ function handleBackToCalendar() {
   padding-top: 8px;
   font-weight: 500;
   color: var(--color-text-primary, #111827);
+}
+
+.overlap-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--color-danger-light, #fef2f2);
+  border: 1px solid var(--color-danger, #ef4444);
+  border-radius: 8px;
+  color: var(--color-danger, #ef4444);
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .editor-actions {

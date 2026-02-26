@@ -140,7 +140,7 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../store/authStore'
@@ -171,6 +171,17 @@ const showUnlockModal = ref(false)
 const validationErrors = reactive({
   email: '',
   password: '',
+})
+
+// FIX: Показуємо повідомлення про закінчення сесії при завантаженні
+onMounted(() => {
+  const msg = sessionStorage.getItem('auth_message')
+  if (msg === 'session_expired') {
+    sessionStorage.removeItem('auth_message')
+    // Показуємо inline помилку
+    auth.lastErrorCode = 'session_expired'
+    auth.error = 'Сесія закінчилась. Будь ласка, увійдіть знову.'
+  }
 })
 
 const showResendVerify = computed(() => auth.lastErrorCode === 'email_not_verified' && Boolean(form.email))

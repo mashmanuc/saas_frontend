@@ -40,7 +40,10 @@ export const useClassroomStore = defineStore('classrooms', {
         const status = e?.response?.status
 
         if (status === 401) {
-          window.location.href = '/auth/login'
+          // Використовуємо authStore для правильного logout
+          const { useAuthStore } = await import('../../auth/store/authStore')
+          const authStore = useAuthStore()
+          await authStore.forceLogout('session_expired')
           return
         }
 

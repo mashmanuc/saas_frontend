@@ -197,8 +197,14 @@ api.interceptors.response.use(
           return Promise.reject(error)
         }
 
+        // FIX: Не робити forceLogout при мережевій помилці або відсутності інтернету
+        if (!navigator.onLine || !refreshError?.response) {
+          console.warn('[apiClient] Network offline or no response, skipping forceLogout')
+          return Promise.reject(refreshError)
+        }
+
         const hadSession = Boolean(store.access)
-        await store.forceLogout()
+        await store.forceLogout('session_expired')
         if (hadSession) {
           notifySessionExpired()
         }

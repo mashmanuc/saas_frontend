@@ -157,25 +157,29 @@ function clearSelection() {
 }
 
 // Load city details if modelValue provided externally
-watch(() => props.modelValue, async (code) => {
+// Guard: skip re-fetch if selected city already matches the code
+watch(() => props.modelValue, async (code, oldCode) => {
   if (!code) {
     selectedCity.value = null
     searchQuery.value = ''
     return
   }
   
-  if (!selectedCity.value || selectedCity.value.code !== code) {
-    // Fetch city by code
-    try {
-      const result = await fetchCities({ country: props.countryCode, query: code })
-      const city = result.find(c => c.code === code)
-      if (city) {
-        selectedCity.value = city
-        searchQuery.value = city.name
-      }
-    } catch {
-      // Silent fail - city not found
+  // Skip if already selected with matching code (prevents flash on autosave)
+  if (selectedCity.value?.code === code) return
+  
+  // Skip if code hasn't actually changed (reactive re-trigger)
+  if (code === oldCode) return
+  
+  try {
+    const result = await fetchCities({ country: props.countryCode, query: code })
+    const city = result.find(c => c.code === code)
+    if (city) {
+      selectedCity.value = city
+      searchQuery.value = city.name
     }
+  } catch {
+    // Silent fail - city not found
   }
 }, { immediate: true })
 </script>

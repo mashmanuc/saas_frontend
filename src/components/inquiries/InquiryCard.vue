@@ -117,6 +117,7 @@ const formattedDate = computed(() => {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  gap: 12px;
   margin-bottom: 12px;
 }
 
@@ -124,6 +125,8 @@ const formattedDate = computed(() => {
   display: flex;
   gap: 12px;
   align-items: center;
+  min-width: 0;
+  flex: 1;
 }
 
 .avatar {
@@ -138,6 +141,8 @@ const formattedDate = computed(() => {
   font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .inquiry-date {
@@ -150,6 +155,8 @@ const formattedDate = computed(() => {
   border-radius: 12px;
   font-size: 12px;
   font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .status-badge.status-open {
@@ -186,6 +193,8 @@ const formattedDate = computed(() => {
   font-size: 14px;
   color: var(--text-primary);
   line-height: 1.5;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .inquiry-meta {
@@ -202,6 +211,8 @@ const formattedDate = computed(() => {
 
 .meta-value {
   color: var(--text-primary);
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .inquiry-actions {

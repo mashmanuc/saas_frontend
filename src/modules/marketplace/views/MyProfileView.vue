@@ -78,6 +78,31 @@ async function handleSubmit() {
   }
 }
 
+const FIELD_LABEL_MAP: Record<string, string> = {
+  photo: 'marketplace.profile.editor.photoTitle',
+  headline: 'marketplace.profile.editor.headlineLabel',
+  bio: 'marketplace.profile.editor.bioLabel',
+  subjects: 'marketplace.profile.editor.subjectsLabel',
+  languages: 'marketplace.profile.editor.teachingLanguagesLabel',
+  teaching_languages: 'marketplace.profile.editor.teachingLanguagesLabel',
+  hourly_rate: 'marketplace.profile.editor.hourlyRateLabel',
+  currency: 'marketplace.profile.editor.pricingTitle',
+  experience_years: 'marketplace.profile.editor.experienceYearsLabel',
+  timezone: 'marketplace.profile.editor.timezoneLabel',
+  format: 'marketplace.profile.editor.formatLabel',
+  availability: 'marketplace.profile.editor.availabilityLabel',
+  status: 'marketplace.profile.statusLabel',
+}
+
+function fieldLabel(field: string): string {
+  const key = FIELD_LABEL_MAP[field]
+  if (key) {
+    const translated = t(key)
+    if (translated !== key) return translated
+  }
+  return field
+}
+
 async function handlePublish() {
   telemetry.trigger('marketplace_profile_publish', {})
   try {
@@ -137,6 +162,7 @@ async function handleUnpublish() {
             {{ isSaving ? t('marketplace.profile.unpublishing') : t('marketplace.profile.unpublish') }}
           </Button>
 
+          <!-- v1.0: Hidden — self-publish flow makes moderation button confusing for users
           <Button
             v-if="canSubmitForReview"
             variant="secondary"
@@ -146,6 +172,7 @@ async function handleUnpublish() {
           >
             {{ isSaving ? t('marketplace.profile.submitting') : t('marketplace.profile.submit') }}
           </Button>
+          -->
         </div>
       </div>
     </header>
@@ -163,7 +190,7 @@ async function handleUnpublish() {
           <strong>{{ t('marketplace.profile.validationTitle') }}</strong>
           <ul>
             <li v-for="(messages, field) in validationErrors" :key="field">
-              {{ field }}: {{ (messages || []).join(', ') }}
+              <strong>{{ fieldLabel(field as string) }}:</strong> {{ (messages || []).join(', ') }}
             </li>
           </ul>
         </div>

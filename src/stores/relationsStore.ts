@@ -48,7 +48,7 @@ export const useRelationsStore = defineStore('relations', () => {
     fetchError.value = null
 
     try {
-      const response = await apiClient.get<RelationsResponse>('/v1/users/me/relations/')
+      const response = await apiClient.get<RelationsResponse>('/v1/users/me/relations/', { meta: { skipLoader: true } } as any)
       mergeRelations(response.relations)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error'

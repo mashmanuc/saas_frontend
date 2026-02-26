@@ -18,9 +18,12 @@ const { isLoading } = storeToRefs(loader)
 </script>
 
 <style scoped>
-.fade-enter-active,
+.fade-enter-active {
+  transition: opacity 0.2s ease;
+}
 .fade-leave-active {
   transition: opacity 0.2s ease;
+  pointer-events: none; /* Не блокуємо кліки під час fade-out */
 }
 .fade-enter-from,
 .fade-leave-to {

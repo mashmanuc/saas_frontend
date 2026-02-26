@@ -51,11 +51,13 @@ import { useI18n } from 'vue-i18n'
 import { AlertCircle, Check, Loader2 } from 'lucide-vue-next'
 import Button from '@/ui/Button.vue'
 import { useSlotEditor } from '@/modules/booking/composables/useSlotEditor'
+import { useAvailabilityDraftUnifiedStore } from '@/modules/booking/stores/availabilityDraftUnifiedStore'
 import { useToast } from '@/composables/useToast'
 
 const { t } = useI18n()
 const toast = useToast()
 const { hasUnsavedChanges, draftState, isLoading, applyDraft, clearDraft } = useSlotEditor()
+const draftStore = useAvailabilityDraftUnifiedStore()
 
 const changesCount = computed(() => {
   return draftState.value.toAdd.length + draftState.value.toRemove.length
@@ -77,7 +79,7 @@ function handleDiscard() {
   const confirmed = window.confirm(t('calendar.draftChanges.discardConfirm'))
   if (!confirmed) return
   
-  clearDraft()
+  draftStore.exitMode()
   toast.info(t('calendar.draftChanges.discarded'))
 }
 </script>

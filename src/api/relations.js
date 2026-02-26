@@ -8,7 +8,7 @@ const relationsApi = {
    * @returns {Promise<Array|{results: Array}>}
    */
   getStudentRelations(params = {}) {
-    return apiClient.get(RELATION_ENDPOINTS.STUDENT_RELATIONS, { params })
+    return apiClient.get(RELATION_ENDPOINTS.STUDENT_RELATIONS, { params, meta: { skipLoader: true } })
   },
 
   /**
@@ -17,7 +17,7 @@ const relationsApi = {
    * @returns {Promise<{results: Array, cursor?: string|null, has_more?: boolean, summary?: object}>}
    */
   getTutorRelations(params = {}) {
-    return apiClient.get(RELATION_ENDPOINTS.TUTOR_RELATIONS, { params })
+    return apiClient.get(RELATION_ENDPOINTS.TUTOR_RELATIONS, { params, meta: { skipLoader: true } })
   },
 
   bulkAcceptTutorRelations(ids = []) {

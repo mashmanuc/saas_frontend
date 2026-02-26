@@ -68,6 +68,7 @@ export const calendarWeekApi = {
           includeStats: params.includeStats ?? true,
         },
         headers,
+        meta: { skipLoader: true },  // ← не блокуємо UI при завантаженні тижня
       })
       
       const etag = (response as any).headers?.['etag'] || ''

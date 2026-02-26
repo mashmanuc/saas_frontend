@@ -54,8 +54,8 @@
               @click="handleNotificationClick(item)"
             >
               <div class="item-content">
-                <p class="item-title">{{ item.title }}</p>
-                <p class="item-body">{{ item.body }}</p>
+                <p class="item-title">{{ getNotificationTitle(item) }}</p>
+                <p class="item-body">{{ item.body || '' }}</p>
                 <span class="item-time">{{ formatTime(item.created_at) }}</span>
               </div>
               <span v-if="!item.read_at" class="unread-dot" aria-hidden="true" />
@@ -100,6 +100,30 @@ const isOpen = ref(false)
 const notificationsStore = useNotificationsStore()
 const { items, unreadCount, latestItems, isLoading, error } = storeToRefs(notificationsStore)
 const authStore = useAuthStore()
+
+// Fallback titles for notifications without title from backend
+const NOTIFICATION_FALLBACK_TITLES: Record<string, string> = {
+  'subscription.confirmed': 'Підписку активовано',
+  'subscription.cancelled': 'Підписку скасовано',
+  'subscription.renewed': 'Підписку подовжено',
+  'inquiry.created': 'Новий запит від студента',
+  'inquiry.accepted': 'Запит прийнято',
+  'inquiry.rejected': 'Запит відхилено',
+  'inquiry.cancelled': 'Запит скасовано',
+  'booking.created': 'Нове бронювання',
+  'booking.cancelled': 'Бронювання скасовано',
+  'booking.rescheduled': 'Бронювання перенесено',
+  'relation.accepted': 'Студент додано',
+  'relation.rejected': 'Запит відхилено',
+  'billing.payment_success': 'Платіж успішний',
+  'billing.payment_failed': 'Помилка платежу',
+  'verification.verified': 'Верифікація пройдена',
+  'verification.rejected': 'Верифікацію відхилено',
+}
+
+function getNotificationTitle(item: InAppNotification): string {
+  return item.title || NOTIFICATION_FALLBACK_TITLES[item.type] || 'Сповіщення'
+}
 
 const canMarkAll = computed(() => unreadCount.value > 0)
 
@@ -376,6 +400,9 @@ onBeforeUnmount(() => {
   font-size: 0.9rem;
   margin: 0 0 0.25rem;
   color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .item-body {

@@ -10,7 +10,7 @@ type ApiClientFullResponse<T> = {
 }
 
 async function apiGetFull<T>(path: string, config: any = {}): Promise<ApiClientFullResponse<T>> {
-  const res = (await apiClient.get(path, { ...config, meta: { ...(config?.meta || {}), fullResponse: true } })) as any
+  const res = (await apiClient.get(path, { ...config, meta: { ...(config?.meta || {}), fullResponse: true, skipLoader: true } })) as any
   return {
     status: Number(res?.status ?? 0),
     data: res?.data as T,
@@ -722,7 +722,7 @@ export const marketplaceApi = {
       }
     }
 
-    const response = await apiClient.get('/v1/marketplace/tutors/', { params })
+    const response = await apiClient.get('/v1/marketplace/tutors/', { params, meta: { skipLoader: true } } as any)
     return response as unknown as PaginatedResponse<TutorListItem>
   },
 
@@ -731,7 +731,7 @@ export const marketplaceApi = {
    * GET /api/v1/marketplace/tutors/<slug>/profile/
    */
   async getTutorProfile(slug: string): Promise<TutorProfileFull> {
-    const response = await apiClient.get(`/v1/marketplace/tutors/${slug}/profile/`)
+    const response = await apiClient.get(`/v1/marketplace/tutors/${slug}/profile/`, { meta: { skipLoader: true } } as any)
     return response as unknown as TutorProfileFull
   },
 
@@ -740,7 +740,7 @@ export const marketplaceApi = {
    * GET /api/v1/tutors/me/profile/
    */
   async getTutorMeProfile(): Promise<TutorProfileFull> {
-    const response = await apiClient.get('/v1/tutors/me/profile/')
+    const response = await apiClient.get('/v1/tutors/me/profile/', { meta: { skipLoader: true } } as any)
     return response as unknown as TutorProfileFull
   },
 

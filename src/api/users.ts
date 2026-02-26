@@ -107,14 +107,14 @@ export async function saveTutorDraft(payload: Partial<TutorProfile>): Promise<an
  * Отримати налаштування користувача
  */
 export async function getUserSettings(): Promise<UserSettings> {
-  return apiClient.get(`${BASE_URL}/me/settings/`)
+  return apiClient.get('/v1/me/settings')
 }
 
 /**
  * Оновити налаштування користувача
  */
 export async function updateUserSettings(payload: Partial<UserSettings>): Promise<UserSettings> {
-  return apiClient.patch(`${BASE_URL}/me/settings/`, payload)
+  return apiClient.patch('/v1/me/settings', payload)
 }
 
 /**

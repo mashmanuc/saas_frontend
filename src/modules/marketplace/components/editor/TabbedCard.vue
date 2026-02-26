@@ -158,9 +158,21 @@ function getChipClass(tagCode: string): Record<string, boolean> {
           maxlength="800"
           rows="4"
           class="description-textarea"
+          :class="{ 'has-error': description.length > 0 && description.length < 50 }"
           @input="handleDescriptionChange"
         />
-        <span class="char-count">{{ description.length }}/800</span>
+        <span
+          class="char-count"
+          :class="{
+            'char-error': description.length > 0 && description.length < 50,
+            'char-ok': description.length >= 50
+          }"
+        >
+          {{ description.length }}/800
+          <template v-if="description.length > 0 && description.length < 50">
+            ({{ t('marketplace.profile.editor.validation.minChars', { min: 50 }) || `мін. 50 символів` }})
+          </template>
+        </span>
       </div>
     </div>
   </div>
@@ -328,6 +340,22 @@ function getChipClass(tagCode: string): Record<string, boolean> {
   font-size: 0.75rem;
   color: var(--text-muted);
   margin-top: 0.25rem;
+}
+
+.char-count.char-error {
+  color: var(--danger, #ef4444);
+}
+
+.char-count.char-ok {
+  color: var(--success, #10b981);
+}
+
+.description-textarea.has-error {
+  border-color: var(--danger, #ef4444);
+}
+
+.description-textarea.has-error:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
 }
 
 /* v1.0: Visual distinction for format chips (online/offline/hybrid) */

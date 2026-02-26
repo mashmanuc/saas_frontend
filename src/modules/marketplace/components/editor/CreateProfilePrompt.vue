@@ -43,11 +43,16 @@ async function handleCreate() {
       />
       <Button
         variant="primary"
+        size="lg"
+        fullWidth
         :disabled="!headline.trim() || isCreating"
+        :loading="isCreating"
         @click="handleCreate"
       >
         {{ isCreating ? t('marketplace.profile.create.creating') : t('marketplace.profile.create.cta') }}
-        <ArrowRight :size="18" />
+        <template #iconRight>
+          <ArrowRight :size="18" />
+        </template>
       </Button>
     </div>
 

@@ -30,6 +30,9 @@ export const useAuthStore = defineStore('auth', {
       lastFieldMessages: null,
       lastSummary: null,
       initialized: false,
+      _bootstrapPromise: null,
+      _lastUserFetch: null,
+      USER_CACHE_TTL: 5 * 60 * 1000, // 5 хвилин
       refreshPromise: null,
       sessionExpiredNotified: false,
       showSessionRevokedBanner: false,
@@ -51,9 +54,21 @@ export const useAuthStore = defineStore('auth', {
 
   actions: {
     async bootstrap() {
+      // Вже запущено — повертаємо існуючий promise
+      if (this._bootstrapPromise) return this._bootstrapPromise
+      // Вже ініціалізовано
       if (this.initialized) return
-      this.initialized = true
 
+      this._bootstrapPromise = this._doBootstrap()
+        .finally(() => {
+          this.initialized = true
+          this._bootstrapPromise = null
+        })
+
+      return this._bootstrapPromise
+    },
+
+    async _doBootstrap() {
       // Якщо немає access токена — не намагаємося refresh, просто виходимо
       if (!this.access) {
         return
@@ -61,12 +76,12 @@ export const useAuthStore = defineStore('auth', {
 
       if (!this.user) {
         try {
-          const raw = await authApi.getCurrentUser()
+          const raw = await authApi.getCurrentUser({ meta: { skipLoader: true } })
           const user = this._normalizeUser(raw)
           this.user = user
           storage.setUser(user)
         } catch (error) {
-          await this.forceLogout()
+          await this.forceLogout('session_expired')
           return
         }
       }
@@ -280,14 +295,22 @@ export const useAuthStore = defineStore('auth', {
 
     async reloadUser() {
       if (!this.access) return null
+
+      // Кеш: не перезавантажувати якщо дані свіжі (менше 5 хв)
+      const now = Date.now()
+      if (this._lastUserFetch && (now - this._lastUserFetch) < this.USER_CACHE_TTL) {
+        return this.user
+      }
+
       try {
-        const raw = await authApi.getCurrentUser()
+        const raw = await authApi.getCurrentUser({ meta: { skipLoader: true } })
         const user = this._normalizeUser(raw)
         this.user = user
+        this._lastUserFetch = now
         storage.setUser(user)
         return user
       } catch (error) {
-        await this.forceLogout()
+        await this.forceLogout('session_expired')
         throw error
       }
     },
@@ -465,15 +488,33 @@ export const useAuthStore = defineStore('auth', {
         // ігноруємо помилку logout, головне очистити стан локально
       }
 
-      await this.forceLogout()
-      
-      // 🔥 CRITICAL FIX v0.87.1: Перезавантажуємо сторінку для повного очищення стану
+      await this.forceLogout('manual_logout')
+
+      // Після logout — редирект на сторінку логіну з можливістю повернення
+      const returnUrl = sessionStorage.getItem('auth_return_url')
+      sessionStorage.removeItem('auth_return_url')
+
       if (typeof window !== 'undefined') {
-        window.location.href = '/login'
+        if (returnUrl && returnUrl !== '/login' && returnUrl !== '/start') {
+          window.location.href = `/start?redirect=${encodeURIComponent(returnUrl)}`
+        } else {
+          window.location.href = '/start'
+        }
       }
     },
 
-    async forceLogout() {
+    async forceLogout(reason = 'session_expired') {
+      // Зберегти URL для повернення (тільки якщо це не /start)
+      const currentPath = typeof window !== 'undefined' ? window.location.pathname : ''
+      if (currentPath && currentPath !== '/start' && currentPath !== '/login') {
+        sessionStorage.setItem('auth_return_url', currentPath + window.location.search)
+      }
+
+      // Зберегти повідомлення для показу після логіну
+      if (reason === 'session_expired') {
+        sessionStorage.setItem('auth_message', 'session_expired')
+      }
+
       this.stopProactiveRefresh()
       this.access = null
       this.user = null
@@ -485,6 +526,8 @@ export const useAuthStore = defineStore('auth', {
       this.lastRequestId = null
       this.lastFieldMessages = null
       this.lastSummary = null
+      this._lastUserFetch = null
+      this._bootstrapPromise = null
 
       // БАГ №2 FIX: відключаємо WS при logout щоб уникнути отримання чужих подій
       try {
@@ -495,7 +538,7 @@ export const useAuthStore = defineStore('auth', {
       }
 
       storage.clearAll()
-      
+
       // 🔥 CRITICAL FIX v0.87.1: Очищення всіх Pinia stores при logout
       // Запобігає витоку даних між користувачами
       try {
@@ -593,6 +636,28 @@ export const useAuthStore = defineStore('auth', {
     dispose() {
       this.stopProactiveRefresh()
       this.refreshPromise = null
+      this._storageSyncUnsubscribe?.()
+    },
+
+    // FIX: localStorage sync між вкладками
+    initStorageSync() {
+      if (typeof window === 'undefined') return () => {}
+
+      const handler = (event) => {
+        if (event.key === 'access') {
+          if (!event.newValue) {
+            // Інша вкладка зробила logout — теж виходимо
+            this.forceLogout('other_tab_logout')
+          } else if (event.newValue !== this.access) {
+            // Інша вкладка оновила токен — оновлюємо свій
+            this.access = event.newValue
+          }
+        }
+      }
+
+      window.addEventListener('storage', handler)
+      this._storageSyncUnsubscribe = () => window.removeEventListener('storage', handler)
+      return this._storageSyncUnsubscribe
     },
 
     handleError(error) {

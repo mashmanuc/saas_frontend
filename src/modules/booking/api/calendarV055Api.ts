@@ -56,8 +56,9 @@ export const calendarV055Api = {
         from: params.from,
         to: params.to,
         tz: params.tz || 'Europe/Kiev'
-      }
-    })
+      },
+      meta: { skipLoader: true }
+    } as any)
     return response.data || response
   },
 
@@ -99,7 +100,8 @@ export const calendarV055Api = {
       const response = await api.get('/v1/calendar/week/v055/', {
         params,
         headers,
-      }) as CalendarSnapshot
+        meta: { skipLoader: true }
+      } as any) as CalendarSnapshot
       
       if (!response) {
         throw new Error('API returned empty response')

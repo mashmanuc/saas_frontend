@@ -9,10 +9,12 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { Bell as BellIcon } from 'lucide-vue-next'
 import apiClient from '@/utils/apiClient'
 import { pollingCoordinator } from '@/services/pollingCoordinator'
 
+const router = useRouter()
 const unreadCount = ref(0)
 let unsubPolling: (() => void) | null = null
 
@@ -29,7 +31,7 @@ async function loadUnreadCount() {
 }
 
 function toggleDropdown() {
-  window.location.href = '/booking/requests'
+  router.push('/booking/requests')
 }
 
 onMounted(() => {

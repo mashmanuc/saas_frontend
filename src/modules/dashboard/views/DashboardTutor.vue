@@ -177,16 +177,16 @@
                 :checked="relationsStore.isTutorSelected(getRelationId(relation))"
                 @change="toggleSelection(getRelationId(relation))"
               />
-              <div class="flex-1 space-y-1">
-                <p class="text-base font-semibold text-body">{{ getStudentName(relation.student) }}</p>
-                <p class="text-sm text-muted" v-if="relation.status === 'active'">{{ relation.student?.email }}</p>
+              <div class="flex-1 min-w-0 space-y-1">
+                <p class="text-base font-semibold text-body break-words">{{ getStudentName(relation.student) }}</p>
+                <p class="text-sm text-muted break-all" v-if="relation.status === 'active'">{{ relation.student?.email }}</p>
                 <p class="text-xs text-muted">
                   {{ $t('dashboard.tutor.timezoneLabel') }}
                   <span class="font-medium">
                     {{ relation.student?.timezone || $t('dashboard.tutor.timezoneUnknown') }}
                   </span>
                 </p>
-                <p v-if="relation.notes" class="text-xs text-muted">
+                <p v-if="relation.notes" class="text-xs text-muted break-words">
                   {{ relation.notes }}
                 </p>
               </div>

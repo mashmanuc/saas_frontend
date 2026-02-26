@@ -52,7 +52,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
     error.value = null
 
     try {
-      const response = await notificationsApi.getNotifications(params)
+      const response = await notificationsApi.getNotifications({ ...params, skipLoader: true } as any)
       
       // ⚠️ CONTRACT FIX: Backend returns { notifications: [...] }
       const rawNotifications = response?.notifications ?? []
