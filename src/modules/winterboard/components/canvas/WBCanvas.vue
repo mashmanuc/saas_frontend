@@ -2462,13 +2462,14 @@ defineExpose({
   cursor: none;
 }
 
-/* BUG-2 FIX: Laser trail dot styles */
+/* BUG-2 FIX: Laser trail dot styles — denser, more visible trail */
 .wb-laser-trail-dot {
   position: absolute;
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: #dc2626;
+  box-shadow: 0 0 6px 2px rgba(220, 38, 38, 0.5);
   pointer-events: none;
   z-index: 999;
   will-change: opacity, transform;

@@ -51,8 +51,12 @@
                 type="tel"
                 placeholder="+380501234567"
                 class="form-control"
+                :class="{ 'form-control--error': phoneError || fieldValidation.phone }"
               />
-              <span v-if="phoneError" class="error-text">
+              <span v-if="fieldValidation.phone" class="error-text">
+                {{ fieldValidation.phone }}
+              </span>
+              <span v-else-if="phoneError" class="error-text">
                 {{ phoneError }}
               </span>
               <span class="hint">
@@ -83,11 +87,15 @@
               v-model="form.start_preference"
               required
               class="form-control"
+              :class="{ 'form-control--error': fieldValidation.start_preference }"
             >
               <option value="asap">{{ $t('inquiries.form.startOptions.asap') }}</option>
               <option value="week">{{ $t('inquiries.form.startOptions.week') }}</option>
               <option value="month">{{ $t('inquiries.form.startOptions.month') }}</option>
             </select>
+            <span v-if="fieldValidation.start_preference" class="error-text">
+              {{ fieldValidation.start_preference }}
+            </span>
           </div>
 
           <div class="form-group">
@@ -99,8 +107,12 @@
               :placeholder="$t('inquiries.form.goalsPlaceholder')"
               required
               class="form-control"
+              :class="{ 'form-control--error': fieldValidation.message }"
               maxlength="500"
             ></textarea>
+            <span v-if="fieldValidation.message" class="error-text">
+              {{ fieldValidation.message }}
+            </span>
             <span class="char-count">{{ form.message.length }}/500</span>
           </div>
           
@@ -213,6 +225,12 @@ const form = reactive({
   message: ''
 })
 
+const fieldValidation = reactive({
+  phone: '',
+  message: '',
+  start_preference: '',
+})
+
 const isFormValid = computed(() => {
   const baseValid = form.start_preference &&
                     form.message.trim().length >= 10
@@ -225,6 +243,36 @@ const isFormValid = computed(() => {
   return baseValid
 })
 
+function validateFormFields(): boolean {
+  let valid = true
+  fieldValidation.phone = ''
+  fieldValidation.message = ''
+  fieldValidation.start_preference = ''
+
+  if (!hasContactInfo.value && !contactForm.phone.trim()) {
+    fieldValidation.phone = 'Вкажіть номер телефону для звʼязку з тьютором.'
+    valid = false
+  } else if (!hasContactInfo.value && contactForm.phone.trim() && !isValidFormat.value) {
+    fieldValidation.phone = 'Невірний формат. Використовуйте: +380XXXXXXXXX'
+    valid = false
+  }
+
+  if (!form.start_preference) {
+    fieldValidation.start_preference = 'Оберіть, коли хочете почати.'
+    valid = false
+  }
+
+  if (!form.message.trim()) {
+    fieldValidation.message = 'Опишіть ваші цілі або побажання до занять.'
+    valid = false
+  } else if (form.message.trim().length < 10) {
+    fieldValidation.message = `Опис занадто короткий — мінімум 10 символів (зараз ${form.message.trim().length}).`
+    valid = false
+  }
+
+  return valid
+}
+
 async function handleSubmit() {
   console.log('[InquiryFormModal] handleSubmit called', {
     isFormValid: isFormValid.value,
@@ -233,7 +281,7 @@ async function handleSubmit() {
     contactForm: contactForm
   })
   
-  if (!isFormValid.value) {
+  if (!validateFormFields()) {
     return
   }
   
@@ -400,6 +448,15 @@ function handleOverlayClick() {
   outline: none;
   border-color: #4F46E5;
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.form-control--error {
+  border-color: #EF4444;
+}
+
+.form-control--error:focus {
+  border-color: #EF4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
 }
 
 .hint {

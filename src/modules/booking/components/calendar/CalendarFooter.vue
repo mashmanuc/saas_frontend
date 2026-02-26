@@ -16,16 +16,24 @@
         </div>
         
         <div class="footer-link-container">
-          <input 
-            ref="linkInput"
-            :value="displayLink" 
-            readonly 
-            class="link-input"
-            @focus="(e) => (e.target as HTMLInputElement).select()"
-          />
-          <Button variant="outline" @click="openLink" :disabled="!displayLink">
-            {{ t('calendar.footer.join_lesson') }}
-          </Button>
+          <!-- Placeholder when no real link configured -->
+          <template v-if="isPlatformDefault">
+            <div class="link-placeholder">
+              <span class="link-placeholder__text">{{ t('calendar.footer.no_link_placeholder') }}</span>
+            </div>
+          </template>
+          <template v-else>
+            <input 
+              ref="linkInput"
+              :value="displayLink" 
+              readonly 
+              class="link-input"
+              @focus="(e) => (e.target as HTMLInputElement).select()"
+            />
+            <Button variant="outline" @click="openLink" :disabled="!displayLink">
+              {{ t('calendar.footer.join_lesson') }}
+            </Button>
+          </template>
           <Button
             variant="ghost"
             @click="navigateToProfile"
@@ -34,7 +42,7 @@
           >
             {{ t('calendar.footer.edit_link') }}
           </Button>
-          <Button variant="ghost" size="sm" @click="copyLink">
+          <Button v-if="!isPlatformDefault" variant="ghost" size="sm" @click="copyLink">
             <svg v-if="!copied" class="icon" width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
               <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
             </svg>
@@ -90,6 +98,11 @@ const backupProvider = computed(() => backup.value?.provider || '')
 const backupUrl = computed(() => backup.value?.url || '')
 
 const hasInitialData = computed(() => Boolean(primary.value) || Boolean(effectivePrimary.value))
+
+const isPlatformDefault = computed(() => {
+  // Platform provider with no real user-configured URL
+  return currentProvider.value === 'platform' || !displayLink.value
+})
 
 function getProviderLabel(provider: string): string {
   const labels: Record<string, string> = {
@@ -198,6 +211,22 @@ const copyBackupLink = async () => {
 .link-input:focus {
   outline: none;
   border-color: var(--accent);
+}
+
+.link-placeholder {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  display: flex;
+  align-items: center;
+}
+
+.link-placeholder__text {
+  font-size: 14px;
+  color: var(--text-muted, #9ca3af);
+  font-style: italic;
 }
 
 .copy-btn {

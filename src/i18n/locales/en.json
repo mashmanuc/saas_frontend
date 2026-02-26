@@ -217,15 +217,29 @@
       "title": "Зміна email"
     },
     "changePassword": {
-      "confirmPassword": "Повторіть новий пароль",
-      "currentPassword": "Поточний пароль",
-      "error": "Не вдалося змінити пароль.",
-      "mismatch": "Паролі не збігаються.",
-      "newPassword": "Новий пароль",
-      "submit": "Змінити пароль",
-      "subtitle": "Введіть поточний та новий пароль.",
-      "success": "Пароль успішно змінено.",
-      "title": "Зміна пароля"
+      "confirmPassword": "Confirm new password",
+      "currentPassword": "Current password",
+      "error": "Failed to change password. Please try again.",
+      "mismatch": "Passwords do not match.",
+      "newPassword": "New password",
+      "submit": "Change password",
+      "subtitle": "Enter your current and new password.",
+      "success": "Password changed successfully.",
+      "title": "Change password",
+      "errors": {
+        "currentRequired": "Please enter your current password.",
+        "newRequired": "Please enter a new password.",
+        "confirmRequired": "Please confirm your new password.",
+        "mismatch": "New password and confirmation do not match.",
+        "wrongCurrent": "Current password is incorrect.",
+        "tooShort": "Password is too short — minimum 8 characters.",
+        "tooCommon": "This password is too common. Choose a more secure one.",
+        "entirelyNumeric": "Password cannot consist only of digits.",
+        "tooSimilar": "Password is too similar to your personal information.",
+        "sameAsCurrent": "New password must be different from the current one.",
+        "rateLimited": "Too many attempts. Please wait a few minutes.",
+        "network": "Connection error. Check your internet and try again."
+      }
     }
   },
   "lang": {
@@ -3414,6 +3428,7 @@
       "settings_saved": "Settings saved",
       "save_failed": "Failed to save settings",
       "invalid_link": "Unsafe link. Only https:// links are allowed",
+      "no_link_placeholder": "Lesson link not configured yet. Set it up in your settings.",
       "provider": {
         "platform": "Platform",
         "custom": "Custom"

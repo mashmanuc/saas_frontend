@@ -25,8 +25,9 @@ export function createThrottle(fn: (...args: unknown[]) => void, ms: number): (.
 const FADE_TIMEOUT = 3000 // ms — remove stale remote lasers after 3s
 const FADE_CHECK_INTERVAL = 1000 // ms — check every 1s
 const BROADCAST_THROTTLE_MS = 33 // ~30 broadcasts/sec
-const TRAIL_DURATION_MS = 1500 // ms — trail points fade after 1.5s
+const TRAIL_DURATION_MS = 2000 // ms — trail points fade after 2s (denser, more visible trail)
 const TRAIL_CLEANUP_INTERVAL_MS = 50 // ms — cleanup stale trail points every 50ms
+const TRAIL_INTERPOLATION_STEP = 4 // px — insert intermediate trail points every N pixels for dense trail
 
 // ─── Composable ──────────────────────────────────────────────────────────────
 
@@ -72,9 +73,34 @@ export function useLaserPointer(options?: UseLaserPointerOptions) {
    */
   function moveLaser(x: number, y: number): void {
     if (!isActive.value) return
+    const prevPos = localPosition.value
     localPosition.value = { x, y }
-    // BUG-2 FIX: Append trail point
-    trailPoints.value = [...trailPoints.value, { x, y, t: Date.now() }]
+    const now = Date.now()
+
+    // Interpolate intermediate points for a dense, continuous trail
+    if (prevPos) {
+      const dx = x - prevPos.x
+      const dy = y - prevPos.y
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      if (dist > TRAIL_INTERPOLATION_STEP) {
+        const steps = Math.ceil(dist / TRAIL_INTERPOLATION_STEP)
+        const newPoints: Array<{ x: number; y: number; t: number }> = []
+        for (let i = 1; i <= steps; i++) {
+          const ratio = i / steps
+          newPoints.push({
+            x: prevPos.x + dx * ratio,
+            y: prevPos.y + dy * ratio,
+            t: now,
+          })
+        }
+        trailPoints.value = [...trailPoints.value, ...newPoints]
+      } else {
+        trailPoints.value = [...trailPoints.value, { x, y, t: now }]
+      }
+    } else {
+      trailPoints.value = [...trailPoints.value, { x, y, t: now }]
+    }
+
     const pageId = options?.getPageId?.() ?? ''
     throttledBroadcast(x, y, pageId)
   }

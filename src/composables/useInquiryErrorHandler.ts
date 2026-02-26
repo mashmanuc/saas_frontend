@@ -139,11 +139,15 @@ export function useInquiryErrorHandler() {
       return
     }
 
-    // Validation error (422) - typically from PATCH /me (phone format, etc.)
-    if ((error as AxiosError)?.response?.status === 422) {
-      const data = (error as AxiosError)?.response?.data as any
-      // Спробуємо витягти конкретне поле з помилки
-      if (data?.phone) {
+    // Validation error (422 / 400 with generic field errors)
+    const respData = (error as AxiosError)?.response?.data as any
+    const respStatus = (error as AxiosError)?.response?.status
+    if (respStatus === 422 || 
+        (respStatus === 400 && !respData?.contact_required && !respData?.code && !respData?.invalid_phone_format)) {
+      const data400 = (error as AxiosError)?.response?.data as any
+      
+      // Phone validation error
+      if (data400?.phone) {
         errorState.value = {
           variant: 'error',
           title: 'Невірний формат телефону',
@@ -152,13 +156,43 @@ export function useInquiryErrorHandler() {
         }
         return
       }
-      // Загальна помилка валідації
-      const firstField = data ? Object.keys(data)[0] : null
-      const detail = firstField ? `Помилка у полі: ${firstField}` : 'Перевірте введені дані.'
+      
+      // Map known field names to user-friendly messages
+      const fieldLabels: Record<string, string> = {
+        phone: 'телефон',
+        telegram_username: 'Telegram',
+        message: 'повідомлення',
+        start_preference: 'бажаний час початку',
+        tutor_id: 'тьютор',
+        email: 'email',
+        goals: 'цілі та побажання',
+      }
+      
+      // Extract human-readable error
+      const fieldKeys = data400 ? Object.keys(data400).filter(k => k !== 'code' && k !== 'detail') : []
+      if (fieldKeys.length > 0) {
+        const messages: string[] = []
+        for (const key of fieldKeys) {
+          const rawMsg = Array.isArray(data400[key]) ? data400[key][0] : data400[key]
+          const label = fieldLabels[key] || key
+          const friendlyMsg = mapValidationMessage(String(rawMsg))
+          messages.push(`${label}: ${friendlyMsg}`)
+        }
+        errorState.value = {
+          variant: 'error',
+          title: 'Перевірте введені дані',
+          message: messages.join('. '),
+          showRetry: false
+        }
+        return
+      }
+      
+      // Fallback for unknown structure
+      const detail = data400?.detail || data400?.message || data400?.error
       errorState.value = {
         variant: 'error',
-        title: 'Помилка валідації',
-        message: detail,
+        title: 'Перевірте введені дані',
+        message: detail ? mapValidationMessage(String(detail)) : 'Одне або кілька полів заповнені некоректно.',
         showRetry: false
       }
       return
@@ -193,6 +227,29 @@ export function useInquiryErrorHandler() {
       message: 'Щось пішло не так. Спробуйте ще раз пізніше.',
       showRetry: true
     }
+  }
+
+  function mapValidationMessage(raw: string): string {
+    const lower = raw.toLowerCase()
+    if (lower.includes('required') || lower.includes('blank') || lower === 'missing') {
+      return 'це поле обовʼязкове'
+    }
+    if (lower.includes('too short') || lower.includes('min') || lower.includes('ensure this value has at least')) {
+      return 'значення занадто коротке'
+    }
+    if (lower.includes('too long') || lower.includes('max') || lower.includes('ensure this value has at most')) {
+      return 'значення занадто довге'
+    }
+    if (lower.includes('invalid') || lower.includes('not a valid')) {
+      return 'невірний формат'
+    }
+    if (lower.includes('already exists') || lower.includes('unique')) {
+      return 'таке значення вже існує'
+    }
+    if (lower.includes('phone')) {
+      return 'невірний формат телефону'
+    }
+    return raw
   }
 
   function clearError(): void {

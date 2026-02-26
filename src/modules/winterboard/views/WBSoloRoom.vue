@@ -16,12 +16,12 @@
             <path d="M2 4h14M2 9h14M2 14h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
         </button>
-        <router-link to="/" class="wb-logo-link" :title="t('winterboard.room.home')">
+        <span class="wb-logo" aria-label="M4SH">
           <svg width="60" height="20" viewBox="0 0 200 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <text x="0" y="48" font-family="'Arial Black', sans-serif" font-weight="900" font-size="52" letter-spacing="-2" fill="currentColor">M4</text>
+            <text x="0" y="48" font-family="'Arial Black', sans-serif" font-weight="900" font-size="52" letter-spacing="-2" fill="#ffffff">M4</text>
             <text x="88" y="48" font-family="'Arial Black', sans-serif" font-weight="900" font-size="52" letter-spacing="-2" fill="#1DB954">SH</text>
           </svg>
-        </router-link>
+        </span>
       </div>
 
       <!-- Left: Editable title -->
@@ -1279,11 +1279,11 @@ watch(() => store.workspaceName, (name) => {
   height: 36px;
 }
 
-.wb-logo-link {
+.wb-logo {
   display: flex;
   align-items: center;
-  text-decoration: none;
-  color: var(--wb-fg, #0f172a);
+  pointer-events: none;
+  user-select: none;
 }
 
 /* ── FIX-6: Sidebar overlay ───────────────────────────────────────────────── */
