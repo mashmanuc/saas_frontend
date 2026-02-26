@@ -980,4 +980,30 @@ router.afterEach((to) => {
   })
 })
 
+// Handle stale chunk errors after deploy.
+// When Vite produces new hashes, old chunks return 404.
+// We do a single hard reload to pick up fresh assets.
+// sessionStorage flag prevents infinite reload loop.
+router.onError((error) => {
+  const isChunkError =
+    error?.message?.includes('Failed to fetch dynamically imported module') ||
+    error?.message?.includes('Importing a module script failed') ||
+    error?.name === 'ChunkLoadError'
+
+  if (!isChunkError) return
+
+  const RELOAD_KEY = 'chunk_reload_attempted'
+  const alreadyAttempted = sessionStorage.getItem(RELOAD_KEY)
+
+  if (alreadyAttempted) {
+    sessionStorage.removeItem(RELOAD_KEY)
+    console.error('[router] Chunk reload failed twice — giving up to avoid loop', error)
+    return
+  }
+
+  sessionStorage.setItem(RELOAD_KEY, '1')
+  console.warn('[router] Stale chunk detected after deploy — reloading to fetch fresh assets')
+  window.location.reload()
+})
+
 export default router

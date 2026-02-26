@@ -137,9 +137,8 @@ export function filterTagsForSubjectSafe<T extends { code: string; group: string
   allTags: T[],
   tagMap: SubjectTagMap | null
 ): T[] {
-  // FAIL-CLOSED: No map loaded → return empty array
+  // FAIL-CLOSED: No map loaded yet (async load in progress) → return empty array silently
   if (!tagMap) {
-    console.warn(`[subjectTagResolver] No tagMap loaded for ${subjectCode}`)
     return []
   }
   
