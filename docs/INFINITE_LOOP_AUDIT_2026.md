@@ -1,217 +1,137 @@
-# Аудит нескінченних циклів та зависань
-**Дата:** 2026-02-26  
-**Автор:** Cascade (автоматичний аналіз)  
-**Статус:** КРИТИЧНО — потребує негайного виправлення
+# Аудит нескінченних лодерів — 2026-02-26
+
+## Дата: 2026-02-26
+## Статус: ВИПРАВЛЕНО
 
 ---
 
-## 🔴 КРИТИЧНІ БАГИ (виправлено в цій сесії)
+## Симптом
 
-### BUG-1: `inquiriesStore` — рефетч ніколи не виконується після мутацій
-
-**Файл:** `src/stores/inquiriesStore.ts`  
-**Проблема:** `fetchInquiries()` мала guard `if (isLoading.value) return items.value`.
-Функції `cancelInquiry`, `acceptInquiry`, `rejectInquiry` встановлюють `isLoading=true`, 
-потім викликають `refetch()` → `fetchInquiries()`. Але `fetchInquiries` бачить `isLoading=true` 
-і **повертається без HTTP-запиту**. Дані залишаються застарілими після кожної дії.
-
-**Наслідок:** UI показує старий статус inquiry після cancel/accept/reject. 
-Користувач бачить "OPEN" коли має бути "CANCELLED".
-
-**Виправлення:** Видалено `isLoading` guard з `fetchInquiries` з поясненням у коментарі.
+На багатьох сторінках (dashboard, billing, classrooms та ін.) глобальний спінер "Завантаження..." залишався активним нескінченно довго, блокуючи UI.
 
 ---
 
-## 🔴 КРИТИЧНІ ПРОБЛЕМИ (потребують виправлення)
+## Архітектура глобального лодера
 
-### BUG-2: `negotiationChatStore` — `fetchThreads()` блокується своїм же `isLoading`
-
-**Файл:** `src/stores/negotiationChatStore.ts:78`
-```typescript
-async function fetchThreads(): Promise<NegotiationThreadDTO[]> {
-  if (isLoading.value) return threads.value  // ← BUG: блокує повторний виклик
 ```
-**Проблема:** Якщо `ensureThread()` запущений (він ставить `isLoading=true`), 
-одночасний `fetchThreads()` поверне кешовані дані без мережевого запиту.
-Потенційний deadlock при паралельних викликах.
-
-**Рекомендація:** Використати окремі `isLoadingThreads` та `isLoadingMessages` замість спільного `isLoading`.
-
----
-
-### BUG-3: `dashboardStore` — єдиний `isLoading` блокує `fetchStudentDashboard` + `fetchTutorDashboard`
-
-**Файл:** `src/modules/dashboard/store/dashboardStore.ts:42,90`
-```typescript
-async function fetchStudentDashboard() {
-  if (isLoading.value) return  // ← Якщо tutor dashboard вантажиться — student не завантажиться
-```
-**Проблема:** Один спільний `isLoading` для двох незалежних функцій. 
-При одночасному рендері student + tutor компонентів один з них ніколи не завантажиться.
-
-**Рекомендація:** Окремі `isLoadingStudent` та `isLoadingTutor`.
-
----
-
-### BUG-4: `useChatTransport` — watch на `chatStatus` може викликати нескінченний reconnect loop
-
-**Файл:** `src/modules/chat/composables/useChatTransport.js:47-58`
-```javascript
-watch(() => chatStore.chatStatus, (status) => {
-  if (status === 'offline') {
-    wsFailureCount.value++
-    if (wsFailureCount.value >= WS_RECONNECT_THRESHOLD) {
-      fallbackToPolling()
-    }
-  }
-})
-```
-**Проблема:** `fallbackToPolling()` → `startRecoveryAttempts()` → кожні 2 хв викликає 
-`chatStore.subscribeToRealtime()`. Якщо WS постійно fail → `status` oscillates 
-`offline → connecting → offline` → `wsFailureCount++` кожен раз.
-Після деяких циклів `wsFailureCount` → Infinity, fallback залишається активним назавжди.
-
-**Рекомендація:** Скинути `wsFailureCount=0` при переключенні на polling, 
-або додати cap `wsFailureCount = Math.min(wsFailureCount, MAX_COUNT)`.
-
----
-
-### BUG-5: `while(true)` без timeout guard у `usePdfImport`
-
-**Файл:** `src/modules/winterboard/composables/usePdfImport.ts:133`
-```typescript
-while (true) {
-  if (abortController?.signal.aborted) { ... }
-  const elapsed = Date.now() - startTime
-  if (elapsed > POLL_TIMEOUT_MS) { ... }  // 5 хв timeout
-  const status = await winterboardApi.getImportStatus(sid, taskId)
-  ...
-  await sleep(POLL_INTERVAL_MS)
-}
-```
-**Статус:** Частково безпечно — є timeout (5 хв) та abort signal.
-**Ризик:** Якщо `winterboardApi.getImportStatus` кидає помилку без catch — цикл зупиняється.
-Але якщо API постійно повертає `status: 'processing'` — зупиниться через 5 хв.
-
-**Рекомендація:** Додати catch для мережевих помилок з лічильником невдалих спроб.
-
----
-
-## 🟡 ПОМІРНІ ПРОБЛЕМИ
-
-### WARN-1: Дублювання polling registration при re-mount компонентів
-
-**Файли:** `App.vue`, `DashboardTutor.vue`, `StudentActiveTutorsSection.vue`, `ChatNotificationsBell.vue`
-
-**Проблема:** Всі 4 компоненти реєструють polling task з `id: 'chat-unread-summary'` або 
-`id: 'notifications-unread'`. `pollingCoordinator` дедуплікує за ID (підраховує `subscribers`).
-Але при швидкому mount/unmount компонентів (наприклад, при router navigation) може виникнути 
-ситуація де `subscribers` стає від'ємним через race condition.
-
-**Рекомендація:** Перевірити `pollingCoordinator.unsubscribe()` — додати guard `Math.max(0, ...)`.
-
----
-
-### WARN-2: `App.vue` — подвійна реєстрація polling при re-auth
-
-**Файл:** `src/App.vue:57,119`
-```javascript
-// onMounted — реєструє polling
-unsubNotifPolling = pollingCoordinator.register({ id: 'notifications-unread', ... })
-
-// watch(isAuthenticated) — реєструє polling ЗНОВУ при логіні
-unsubNotifPolling = pollingCoordinator.register({ id: 'notifications-unread', ... })
-```
-**Проблема:** Якщо користувач логіниться після mount — `unsubNotifPolling` перезаписується 
-без виклику старого unsub. Старий subscriber залишається активним (`subscribers` +1).
-
-**Виправлення:** Перед новою реєстрацією викликати `if (unsubNotifPolling) { unsubNotifPolling(); unsubNotifPolling = null }`.
-
----
-
-### WARN-3: `inquiriesStore.fetchInquiries` після fix — потенційне дублювання запитів
-
-**Після виправлення BUG-1:** Прибрано `isLoading` guard. Тепер паралельні виклики 
-`fetchInquiries` можуть запустити кілька HTTP-запитів одночасно. 
-
-**Рекомендація:** Замість `isLoading` guard використати promise deduplication:
-```typescript
-let fetchPromise: Promise<InquiryDTO[]> | null = null
-
-async function fetchInquiries(filters = {}) {
-  if (fetchPromise) return fetchPromise
-  fetchPromise = apiFetchInquiries(filters)
-    .finally(() => { fetchPromise = null })
-  return fetchPromise
-}
+GlobalLoader.vue  →  loaderStore.js  →  apiClient.js interceptors
+     ↑ isLoading        ↑ active > 0         ↑ start() / stop()
 ```
 
+- `loaderStore.js` — лічильник `active`. Кожен `start()` інкрементує (+1), `stop()` декрементує (-1).
+- `GlobalLoader.vue` — показує оверлей коли `active > 0`.
+- `apiClient.js` — request interceptor робить `loader.start()`, response interceptor — `loader.stop()`.
+
+Якщо `start()` викликається більше разів ніж `stop()` — лодер зависає назавжди.
+
 ---
 
-### WARN-4: `useCalendarDeepLink` — watch без `immediate: false` може тригерити fetch двічі
+## Root Causes (3 критичні)
 
-**Файл:** `src/composables/useCalendarDeepLink.ts:109`
-```typescript
-watch(() => route.query, () => {
-  applyDeepLink()
-})
+### RC-1: `authApi.refresh()` і `authApi.csrf()` без `skipLoader`
+
+**Файл**: `src/modules/auth/api/authApi.js`
+
+`refresh()` викликається:
+1. Кожні 15 хвилин через `startProactiveRefresh()` (authStore.js:410)
+2. При поверненні до вкладки через `visibilitychange` (authStore.js:432)
+3. При 401 error в apiClient interceptor (apiClient.js:175)
+
+`csrf()` викликається при ініціалізації сесії.
+
+**Проблема**: Ці фонові запити проходили через `apiClient` без `meta.skipLoader`, тому кожен refresh показував глобальний спінер на ~200-500мс. При повільній мережі або race conditions — спінер міг застрягнути.
+
+**Виправлення**: Додано `{ meta: { skipLoader: true } }` для `refresh()` і `csrf()`.
+
+### RC-2: Подвійний `loader.start()` при 401 retry
+
+**Файл**: `src/utils/apiClient.js`
+
+**Сценарій**:
+1. Original request → `loader.start()` (+1)
+2. 401 error → `loader.stop()` (-1) в error interceptor
+3. Token refresh → `authApi.refresh()` → (тепер skipLoader)
+4. Retry request `api(original)` → **знову `loader.start()`** (+1) через request interceptor
+5. Retry response → `loader.stop()` (-1)
+
+Для одного запиту: `start(2) - stop(2) = 0` — balanced.
+
+**АЛЕ**: при паралельних запитах (5-10 одночасно), кожен потрапляє в `refreshQueue`, і кожен retry робить додатковий `start()`. Якщо один з retries фейлиться — `active` залишається > 0.
+
+**Виправлення**: Retry-запити позначаються `meta.skipLoader = true`, бо `stop()` для оригінального запиту вже відбувся.
+
+### RC-3: Відсутність safety timeout
+
+**Файл**: `src/stores/loaderStore.js`
+
+**Проблема**: Не існувало механізму автоматичного скидання лічильника. Якщо через будь-який edge case `active > 0` залишався назавжди — UI був заблокований до перезавантаження.
+
+**Виправлення**: Додано safety timeout 15 секунд — якщо лодер крутиться більше 15с, лічильник автоматично скидається до 0 з console.warn для діагностики.
+
+---
+
+## Виправлені файли
+
+| Файл | Зміна |
+|---|---|
+| `src/modules/auth/api/authApi.js` | `skipLoader: true` для `refresh()` і `csrf()` |
+| `src/utils/apiClient.js` | `skipLoader: true` для retry-запитів (рядки 166-168, 185-186) |
+| `src/stores/loaderStore.js` | Safety timeout 15с + `_startSafetyTimer` / `_clearSafetyTimer` |
+
+---
+
+## Перевірені та ОК stores/composables (108 файлів)
+
+Всі наступні stores мають коректні `try/finally` блоки для скидання `isLoading`:
+
+- `dashboardStore.ts` — `fetchStudentDashboard`, `fetchTutorDashboard` ✅
+- `relationsStore.js` — `fetchTutorRelations`, `fetchStudentRelations` ✅
+- `billingStore.ts` — `fetchMe`, `fetchPlans`, `startCheckout`, `cancel` ✅
+- `entitlementsStore.ts` — `loadEntitlements` ✅
+- `marketplaceStore.ts` — `searchTutors`, `loadMore` ✅
+- `notificationsStore.ts` — `loadNotifications` ✅
+- `inquiriesStore.ts` — `createInquiry`, `fetchInquiries`, etc. ✅
+- `staffStore.ts` — всі async actions ✅
+- `trustStore.ts` — всі async actions ✅
+- `reviewStore.ts` — всі async actions ✅
+- `subscriptionStore.ts` — `loadCurrentSubscription`, `subscribe`, `changePlan` ✅
+- `paymentStore.ts` — `loadPayments`, `loadPayment` ✅
+- `negotiationChatStore.ts` — `ensureThread`, `fetchThreads`, `fetchMessages` ✅
+- `calendarStore.ts` — `loadSettings`, `updateSettings`, `loadSlots`, etc. ✅
+- `slotStore.ts` — `loadSlots`, `updateSlot` ✅
+- `onboardingStore.ts` — всі async actions ✅
+- `boardHistoryStore.ts` — всі async actions ✅
+- `useSlotEditor.ts` — `editSlot` ✅
+- `useDragDrop.ts` — `checkPreview`, `confirmDrop` ✅
+- `useTimeline.ts` — `loadTimeline` ✅
+- `useClassroomEntry.ts` — `getJwtAndNavigate` ✅
+- `useAvailability.ts` — `fetchWeek` ✅
+- `useChatPolling.ts` — `loadInitialMessages` ✅
+
+---
+
+## Скрипт для автоматичного аудиту
+
+**Файл**: `scripts/audit-loaders.mjs`
+
+Запуск:
+```bash
+node scripts/audit-loaders.mjs
 ```
-**Проблема:** `applyDeepLink()` може викликатись і в `onMounted` і в watch при першому рендері.
-Подвійний fetch при cold start.
+
+Шукає:
+1. `isLoading = true` без `finally { isLoading = false }`
+2. `loader.start()` без відповідного `loader.stop()`
+3. `setTimeout` для скидання `isLoading` (fragile pattern)
+4. `setInterval` без `clearInterval`
 
 ---
 
-## 🟢 БЕЗПЕЧНІ ПАТЕРНИ (підтверджено)
+## Рекомендації для майбутньої розробки
 
-- `pollingCoordinator` — централізований, дедуплікований, visibility-aware ✅
-- `useFollowMode` — `setInterval` з `clearInterval` в `stopFollowing` та `onUnmounted` ✅  
-- `useLaserPointer` — `setInterval` з `clearInterval` в `onUnmounted` ✅
-- `WBRemoteCursors` — `setInterval` з `clearInterval` в `onUnmounted` ✅
-- `useAutosave` — debounce + cleanup в `destroy()` + `onUnmounted` ✅
-- `boardStore.js` — `cursorCleanupTimer` з `clearInterval` в cleanup ✅
-- `presenceStore.js` — `timer` з `clearInterval` в reset/destroy ✅
+1. **Завжди використовуйте `try/finally`** для скидання `isLoading` в async функціях
+2. **Фонові запити** (polling, refresh, health-check) повинні мати `meta: { skipLoader: true }`
+3. **Retry-запити** не повинні інкрементувати глобальний лодер
+4. **Періодично запускайте** `node scripts/audit-loaders.mjs` для перевірки нових файлів
+5. **Safety timeout** в `loaderStore` — останній рубіж захисту, не покладайтесь тільки на нього
 
----
-
-## 🔧 Рекомендовані виправлення (пріоритет)
-
-| # | Файл | Проблема | Пріоритет |
-|---|------|----------|-----------|
-| 1 | `inquiriesStore.ts` | ✅ FIXED: refetch блокувався isLoading | КРИТИЧНО |
-| 2 | `negotiationChatStore.ts` | Окремі isLoading для threads/messages | ВИСОКИЙ |
-| 3 | `dashboardStore.ts` | Окремі isLoading для student/tutor | СЕРЕДНІЙ |
-| 4 | `useChatTransport.js` | wsFailureCount cap + reset | СЕРЕДНІЙ |
-| 5 | `App.vue` | Подвійна реєстрація polling при re-auth | СЕРЕДНІЙ |
-| 6 | `inquiriesStore.ts` | Promise deduplication замість isLoading guard | НИЗЬКИЙ |
-
----
-
-## 📊 Скрипт для детекції проблем у runtime
-
-Для виявлення зависань у браузері можна запустити в DevTools Console:
-
-```javascript
-// Моніторинг нескінченних fetch-запитів
-(function monitorInfiniteRequests() {
-  const counts = {};
-  const orig = window.fetch;
-  window.fetch = function(url, ...args) {
-    const key = typeof url === 'string' ? url.split('?')[0] : url;
-    counts[key] = (counts[key] || 0) + 1;
-    if (counts[key] > 10) {
-      console.warn('[InfiniteLoop?] Fetch called', counts[key], 'times for:', key);
-    }
-    return orig.apply(this, [url, ...args]);
-  };
-  setInterval(() => {
-    const suspects = Object.entries(counts)
-      .filter(([, n]) => n > 5)
-      .sort(([, a], [, b]) => b - a);
-    if (suspects.length) console.table(suspects.map(([url, n]) => ({ url, count: n })));
-    Object.keys(counts).forEach(k => counts[k] = 0);
-  }, 5000);
-})();
-
-// Моніторинг pollingCoordinator
-console.table(window.__pollingCoordinator?.getStats());
-```

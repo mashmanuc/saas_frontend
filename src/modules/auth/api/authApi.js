@@ -70,11 +70,11 @@ const authApi = {
   },
 
   refresh() {
-    return api.post('/v1/auth/refresh/')
+    return api.post('/v1/auth/refresh/', null, { meta: { skipLoader: true } })
   },
 
   csrf() {
-    return api.post('/v1/auth/csrf')
+    return api.post('/v1/auth/csrf', null, { meta: { skipLoader: true } })
   },
 
   logout(payload) {

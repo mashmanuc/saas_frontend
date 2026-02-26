@@ -163,6 +163,9 @@ api.interceptors.response.use(
             }
             original.headers = original.headers || {}
             original.headers.Authorization = `Bearer ${newToken}`
+            // FIX: skipLoader для retry — original вже зробив stop()
+            if (!original.meta) original.meta = {}
+            original.meta.skipLoader = true
             resolve(api(original))
           })
         })
@@ -180,6 +183,10 @@ api.interceptors.response.use(
         flushRefreshQueue(null, newAccess)
         original.headers = original.headers || {}
         original.headers.Authorization = `Bearer ${newAccess}`
+        // FIX: Позначаємо retry-запит щоб request interceptor не робив зайвий loader.start()
+        // (loader.stop() для оригінального запиту вже відбувся вище)
+        if (!original.meta) original.meta = {}
+        original.meta.skipLoader = true
         return api(original)
       } catch (refreshError) {
         flushRefreshQueue(refreshError, null)

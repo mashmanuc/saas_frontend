@@ -3952,6 +3952,7 @@
       "errorLoad": "Failed to load plans",
       "errorDeactivate": "Failed to deactivate plan",
       "errorActivate": "Failed to activate plan",
+      "errorSave": "Failed to save plan",
       "confirmDeactivate": "Deactivate plan '{name}'? New subscriptions to this plan will no longer be possible. Existing subscriptions will remain active.",
       "deactivatedWithSubs": "Plan deactivated. {count} active subscriptions remain until their expiry.",
       "interval": {
