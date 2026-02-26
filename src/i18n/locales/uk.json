@@ -4416,6 +4416,7 @@
       "system": "Система",
       "health": "Здоров'я системи",
       "subscriptionPlans": "Плани підписки",
+      "analytics": "Аналітика",
       "backToApp": "Назад до платформи"
     },
     "breadcrumbs": {
@@ -4430,7 +4431,54 @@
       "billing": "Фінанси",
       "payouts": "Виплати",
       "health": "Здоров'я системи",
-      "subscriptionPlans": "Плани підписки"
+      "subscriptionPlans": "Плани підписки",
+      "analytics": "Аналітика"
+    },
+    "analytics": {
+      "title": "Аналітика воронки",
+      "helpText": "Відстеження шляху користувачів від реєстрації до ключових дій. Аналіз drop-off між кроками.",
+      "period": "Період",
+      "periodDaily": "Щоденно",
+      "periodWeekly": "Щотижнево",
+      "periodMonthly": "Щомісячно",
+      "role": "Роль",
+      "roleAll": "Всі",
+      "roleTutor": "Тьютор",
+      "roleStudent": "Студент",
+      "days": "Діапазон",
+      "daysLabel": "днів",
+      "realtimeTitle": "Сьогодні (realtime)",
+      "dropoffTitle": "Аналіз drop-off",
+      "trendTitle": "Історичний тренд",
+      "periodLabel": "Період",
+      "fromStep": "Від кроку",
+      "toStep": "До кроку",
+      "fromCount": "Від (к-ть)",
+      "toCount": "До (к-ть)",
+      "conversionRate": "Конверсія",
+      "dropRate": "Drop-off",
+      "noData": "Даних ще немає. Дані з'являться після першої агрегації.",
+      "errorLoad": "Не вдалося завантажити аналітику",
+      "steps": {
+        "registered": "Реєстрація",
+        "emailVerified": "Email підтверджено",
+        "firstLogin": "Перший логін",
+        "onboardingStarted": "Онбординг розпочато",
+        "onboardingCompleted": "Онбординг завершено",
+        "profileSaved": "Профіль збережено",
+        "profilePublished": "Профіль опубліковано",
+        "firstInquiry": "Перший запит"
+      },
+      "stepsShort": {
+        "reg": "Реєстр.",
+        "email": "Email",
+        "login": "Логін",
+        "obStart": "Онб. ↗",
+        "obDone": "Онб. ✓",
+        "saved": "Збереж.",
+        "published": "Публ.",
+        "inquiry": "Запит"
+      }
     },
     "plans": {
       "title": "Плани підписки",
@@ -4452,6 +4500,7 @@
       "errorLoad": "Не вдалося завантажити плани",
       "errorDeactivate": "Не вдалося деактивувати план",
       "errorActivate": "Не вдалося активувати план",
+      "errorSave": "Не вдалося зберегти план",
       "confirmDeactivate": "Деактивувати план '{name}'? Нові підписки на цей план будуть неможливі. Існуючі підписки залишаться активними.",
       "deactivatedWithSubs": "План деактивовано. {count} активних підписок залишається до закінчення свого терміну.",
       "interval": {

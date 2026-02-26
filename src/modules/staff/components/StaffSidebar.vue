@@ -141,6 +141,15 @@
           <PackageOpen class="nav-icon-svg" :size="18" />
           <span v-if="!collapsed" class="nav-label">{{ $t('staff.sidebar.subscriptionPlans') }}</span>
         </router-link>
+        <router-link
+          to="/staff/analytics"
+          class="nav-item"
+          :class="{ active: route.path.startsWith('/staff/analytics') }"
+          :title="collapsed ? $t('staff.sidebar.analytics') : undefined"
+        >
+          <BarChart3 class="nav-icon-svg" :size="18" />
+          <span v-if="!collapsed" class="nav-label">{{ $t('staff.sidebar.analytics') }}</span>
+        </router-link>
       </div>
     </nav>
 
@@ -181,6 +190,7 @@ import {
   Banknote,
   HeartPulse,
   PackageOpen,
+  BarChart3,
   ArrowLeft,
 } from 'lucide-vue-next'
 

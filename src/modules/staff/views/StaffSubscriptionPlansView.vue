@@ -363,14 +363,24 @@ async function handleSubmit() {
     }
     closeModal()
   } catch (e: any) {
-    const data = e?.response?.data || e
-    if (typeof data === 'object') {
+    const data = e?.response?.data
+    if (data && typeof data === 'object') {
       const msgs = Object.entries(data)
-        .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
+        .map(([k, v]) => {
+          let msg: string
+          if (Array.isArray(v)) {
+            msg = v.map(item => typeof item === 'object' ? JSON.stringify(item) : String(item)).join(', ')
+          } else if (typeof v === 'object' && v !== null) {
+            msg = JSON.stringify(v)
+          } else {
+            msg = String(v)
+          }
+          return `${k}: ${msg}`
+        })
         .join(' | ')
-      submitError.value = msgs
+      submitError.value = msgs || t('staff.plans.errorSave')
     } else {
-      submitError.value = String(data)
+      submitError.value = e?.message || t('staff.plans.errorSave')
     }
   } finally {
     submitting.value = false

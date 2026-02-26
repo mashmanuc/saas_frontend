@@ -3916,7 +3916,8 @@
       "payouts": "Tutor Payouts",
       "profileModeration": "Profile Moderation",
       "verification": "Verification",
-      "subscriptionPlans": "Subscription Plans"
+      "subscriptionPlans": "Subscription Plans",
+      "analytics": "Analytics"
     },
     "breadcrumbs": {
       "staff": "Staff",
@@ -3930,7 +3931,54 @@
       "payouts": "Payouts",
       "profileModeration": "Profile Moderation",
       "verification": "Verification",
-      "subscriptionPlans": "Subscription Plans"
+      "subscriptionPlans": "Subscription Plans",
+      "analytics": "Analytics"
+    },
+    "analytics": {
+      "title": "Funnel Analytics",
+      "helpText": "Track user journey from registration to key actions. Analyze drop-off between steps.",
+      "period": "Period",
+      "periodDaily": "Daily",
+      "periodWeekly": "Weekly",
+      "periodMonthly": "Monthly",
+      "role": "Role",
+      "roleAll": "All",
+      "roleTutor": "Tutor",
+      "roleStudent": "Student",
+      "days": "Range",
+      "daysLabel": "days",
+      "realtimeTitle": "Today (realtime)",
+      "dropoffTitle": "Drop-off Analysis",
+      "trendTitle": "Historical Trend",
+      "periodLabel": "Period",
+      "fromStep": "From Step",
+      "toStep": "To Step",
+      "fromCount": "From (count)",
+      "toCount": "To (count)",
+      "conversionRate": "Conversion",
+      "dropRate": "Drop-off",
+      "noData": "No data yet. Data will appear after the first aggregation.",
+      "errorLoad": "Failed to load analytics",
+      "steps": {
+        "registered": "Registration",
+        "emailVerified": "Email Verified",
+        "firstLogin": "First Login",
+        "onboardingStarted": "Onboarding Started",
+        "onboardingCompleted": "Onboarding Completed",
+        "profileSaved": "Profile Saved",
+        "profilePublished": "Profile Published",
+        "firstInquiry": "First Inquiry"
+      },
+      "stepsShort": {
+        "reg": "Reg.",
+        "email": "Email",
+        "login": "Login",
+        "obStart": "Onb. ↗",
+        "obDone": "Onb. ✓",
+        "saved": "Saved",
+        "published": "Publ.",
+        "inquiry": "Inquiry"
+      }
     },
     "plans": {
       "title": "Subscription Plans",

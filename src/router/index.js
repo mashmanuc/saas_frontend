@@ -850,6 +850,16 @@ const routes = [
               requiresStaff: true
             },
           },
+          {
+            path: 'analytics',
+            name: 'staff-analytics',
+            component: () => import('../modules/staff/views/StaffAnalyticsView.vue'),
+            meta: {
+              requiresAuth: true,
+              roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN],
+              requiresStaff: true
+            },
+          },
         ],
       },
       // FIX-5: Winterboard session list — inside PageShell for header + sidebar

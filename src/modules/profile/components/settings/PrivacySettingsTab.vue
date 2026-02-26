@@ -10,7 +10,7 @@
     </div>
 
     <div class="space-y-4">
-      <div class="rounded-lg border border-border p-4">
+      <div v-if="false" class="rounded-lg border border-border p-4">
         <h4 class="font-medium text-foreground">
           {{ $t('users.settings.privacy.dataExport') }}
         </h4>
