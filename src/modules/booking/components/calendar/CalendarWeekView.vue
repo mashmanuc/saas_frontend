@@ -306,7 +306,9 @@ const weekEndForNav = computed(
 
 const todayWeekStartComputed = computed(() => {
   const tz = timezoneForNav.value
-  return dayjs().tz(tz).startOf('week').format('YYYY-MM-DD')
+  const now = dayjs().tz(tz)
+  const daysFromMonday = (now.day() + 6) % 7
+  return now.subtract(daysFromMonday, 'day').startOf('day').format('YYYY-MM-DD')
 })
 
 const currentPageForNav = computed(() => {

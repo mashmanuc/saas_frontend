@@ -56,7 +56,9 @@ const weekRange = computed(() => {
 })
 
 const todayWeekStart = computed(() => {
-  return dayjs().startOf('week').format('YYYY-MM-DD')
+  const now = dayjs()
+  const daysFromMonday = (now.day() + 6) % 7
+  return now.subtract(daysFromMonday, 'day').startOf('day').format('YYYY-MM-DD')
 })
 
 const isCurrentWeek = computed(() => {
