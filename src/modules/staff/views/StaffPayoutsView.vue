@@ -54,8 +54,8 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="payout in payouts" :key="payout.id" :class="rowClass(payout.status)">
-            <td class="mono">#{{ payout.id }}</td>
+          <tr v-for="payout in payouts" :key="payout.uuid" :class="rowClass(payout.status)">
+            <td class="mono">{{ payout.uuid?.slice(0, 8) }}…</td>
             <td>
               <div class="tutor-name">{{ payout.tutor_name || '—' }}</div>
               <div class="tutor-email">{{ payout.tutor_email }}</div>
@@ -232,10 +232,10 @@ function nextPage() {
 }
 
 async function handleApprove(payout: PayoutItem) {
-  if (!confirm(t('staff.payouts.confirmApprove', { id: payout.id }))) return
+  if (!confirm(t('staff.payouts.confirmApprove', { id: payout.uuid?.slice(0, 8) }))) return
   actionLoading.value = true
   try {
-    await approvePayout(payout.id)
+    await approvePayout(payout.uuid)
     await loadPayouts()
   } catch {
     alert(t('staff.payouts.error'))
@@ -245,10 +245,10 @@ async function handleApprove(payout: PayoutItem) {
 }
 
 async function handleProcess(payout: PayoutItem) {
-  if (!confirm(t('staff.payouts.confirmProcess', { id: payout.id }))) return
+  if (!confirm(t('staff.payouts.confirmProcess', { id: payout.uuid?.slice(0, 8) }))) return
   actionLoading.value = true
   try {
-    await processPayout(payout.id)
+    await processPayout(payout.uuid)
     await loadPayouts()
   } catch {
     alert(t('staff.payouts.error'))
@@ -265,7 +265,7 @@ async function handleComplete() {
   if (!completeModal.value.payout) return
   actionLoading.value = true
   try {
-    await completePayout(completeModal.value.payout.id, completeModal.value.providerId)
+    await completePayout(completeModal.value.payout.uuid, completeModal.value.providerId)
     completeModal.value.open = false
     await loadPayouts()
   } catch {
@@ -283,7 +283,7 @@ async function handleFail() {
   if (!failModal.value.payout || !failModal.value.reason.trim()) return
   actionLoading.value = true
   try {
-    await failPayout(failModal.value.payout.id, failModal.value.reason.trim())
+    await failPayout(failModal.value.payout.uuid, failModal.value.reason.trim())
     failModal.value.open = false
     await loadPayouts()
   } catch {

@@ -3,6 +3,7 @@ import {
   getTutorClassrooms,
   getClassroomDetails,
   createClassroom as apiCreateClassroom,
+  deleteClassroom as apiDeleteClassroom,
   addStudentToClassroom as apiAddStudent,
   removeStudentFromClassroom as apiRemoveStudent,
   getAvailableStudents as apiGetAvailableStudents,
@@ -84,6 +85,14 @@ export const useClassroomStore = defineStore('classrooms', {
       const data = await apiCreateClassroom(payload)
       await this.loadClassrooms()
       return data
+    },
+
+    async deleteClassroom(classroomId) {
+      await apiDeleteClassroom(classroomId)
+      this.currentClassroom = null
+      this.currentError = null
+      this.currentErrorCode = null
+      await this.loadClassrooms()
     },
 
     async loadAvailableStudents(classroomId, q = '') {

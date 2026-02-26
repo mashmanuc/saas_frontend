@@ -256,6 +256,69 @@
         <UserBillingOpsPanel :user-id="staffStore.userOverview.user.id" />
       </Card>
 
+      <!-- Account Management Section (v0.91.0) -->
+      <Card class="section">
+        <h2 class="section-heading">{{ $t('staff.userOverview.accountManagement') }}</h2>
+        <div class="account-mgmt-grid">
+
+          <!-- Change Role -->
+          <div class="mgmt-panel">
+            <h3 class="mgmt-panel-title">{{ $t('staff.userOverview.changeRole') }}</h3>
+            <div class="mgmt-row">
+              <select v-model="roleForm.newRole" class="mgmt-select">
+                <option value="student">student</option>
+                <option value="tutor">tutor</option>
+                <option value="admin">admin</option>
+                <option value="superadmin">superadmin</option>
+              </select>
+              <Button variant="default" size="sm" :disabled="roleForm.loading" @click="handleChangeRole">
+                {{ roleForm.loading ? $t('common.saving') + '…' : $t('staff.userOverview.applyRole') }}
+              </Button>
+            </div>
+            <p v-if="roleForm.result" class="mgmt-result" :class="roleForm.error ? 'mgmt-error' : 'mgmt-success'">
+              {{ roleForm.result }}
+            </p>
+          </div>
+
+          <!-- Reset MFA -->
+          <div class="mgmt-panel">
+            <h3 class="mgmt-panel-title">{{ $t('staff.userOverview.resetMfa') }}</h3>
+            <p class="mgmt-desc">{{ $t('staff.userOverview.resetMfaDesc') }}</p>
+            <Button variant="danger" size="sm" :disabled="mfaForm.loading" @click="handleResetMfa">
+              {{ mfaForm.loading ? $t('common.loading') + '…' : $t('staff.userOverview.resetMfaBtn') }}
+            </Button>
+            <p v-if="mfaForm.result" class="mgmt-result" :class="mfaForm.error ? 'mgmt-error' : 'mgmt-success'">
+              {{ mfaForm.result }}
+            </p>
+          </div>
+
+          <!-- Grant Subscription -->
+          <div class="mgmt-panel">
+            <h3 class="mgmt-panel-title">{{ $t('staff.userOverview.grantSubscription') }}</h3>
+            <div class="mgmt-row" style="flex-wrap: wrap; gap: 8px;">
+              <select v-model="grantForm.planId" class="mgmt-select">
+                <option value="">{{ $t('staff.userOverview.selectPlan') }}</option>
+                <option v-for="p in availablePlans" :key="p.id" :value="p.id">{{ p.name }} ({{ p.slug }})</option>
+              </select>
+              <input
+                v-model.number="grantForm.days"
+                type="number"
+                min="1"
+                max="3650"
+                class="mgmt-input-days"
+                :placeholder="$t('staff.userOverview.days')"
+              />
+              <Button variant="primary" size="sm" :disabled="!grantForm.planId || grantForm.loading" @click="handleGrantSubscription">
+                {{ grantForm.loading ? $t('common.saving') + '…' : $t('staff.userOverview.grantBtn') }}
+              </Button>
+            </div>
+            <p v-if="grantForm.result" class="mgmt-result" :class="grantForm.error ? 'mgmt-error' : 'mgmt-success'">
+              {{ grantForm.result }}
+            </p>
+          </div>
+        </div>
+      </Card>
+
       <!-- Activity Section -->
       <Card class="section">
         <h2 class="section-heading">{{ $t('staff.userOverview.activityInfo') }}</h2>
@@ -315,6 +378,9 @@ import Badge from '@/ui/Badge.vue'
 import Card from '@/ui/Card.vue'
 import LoadingSpinner from '@/ui/LoadingSpinner.vue'
 import UserBillingOpsPanel from '@/modules/staff/components/UserBillingOpsPanel.vue'
+import apiClient from '@/utils/apiClient'
+import { getSubscriptionPlans } from '@/modules/staff/api/subscriptionPlansApi'
+import type { PlanItem } from '@/modules/staff/api/subscriptionPlansApi'
 
 const route = useRoute()
 const { t } = useI18n()
@@ -323,6 +389,72 @@ const staffStore = useStaffStore()
 const auditLog = ref<AuditEvent[]>([])
 const auditLogLoading = ref(false)
 const auditLogTotal = ref(0)
+
+// Account Management forms (v0.91.0)
+const availablePlans = ref<PlanItem[]>([])
+const roleForm = ref({ newRole: 'tutor', loading: false, result: '', error: false })
+const mfaForm = ref({ loading: false, result: '', error: false })
+const grantForm = ref({ planId: '' as string | number, days: 30, loading: false, result: '', error: false })
+
+async function handleChangeRole() {
+  if (!staffStore.userOverview) return
+  const userId = staffStore.userOverview.user.id
+  roleForm.value.loading = true
+  roleForm.value.result = ''
+  roleForm.value.error = false
+  try {
+    const res = await apiClient.patch(`/v1/staff/users/${userId}/change-role/`, { role: roleForm.value.newRole })
+    roleForm.value.result = t('staff.userOverview.roleChanged', { role: res.new_role })
+    await staffStore.loadUserOverview(String(userId))
+  } catch (e: any) {
+    roleForm.value.error = true
+    roleForm.value.result = e?.response?.data?.error || t('staff.userOverview.roleChangeFailed')
+  } finally {
+    roleForm.value.loading = false
+  }
+}
+
+async function handleResetMfa() {
+  if (!staffStore.userOverview) return
+  const userId = staffStore.userOverview.user.id
+  if (!confirm(t('staff.userOverview.confirmResetMfa', { email: staffStore.userOverview.user.email }))) return
+  mfaForm.value.loading = true
+  mfaForm.value.result = ''
+  mfaForm.value.error = false
+  try {
+    await apiClient.post(`/v1/staff/users/${userId}/reset-mfa/`)
+    mfaForm.value.result = t('staff.userOverview.mfaResetSuccess')
+  } catch (e: any) {
+    mfaForm.value.error = true
+    mfaForm.value.result = e?.response?.data?.error || t('staff.userOverview.mfaResetFailed')
+  } finally {
+    mfaForm.value.loading = false
+  }
+}
+
+async function handleGrantSubscription() {
+  if (!staffStore.userOverview || !grantForm.value.planId) return
+  const userId = staffStore.userOverview.user.id
+  grantForm.value.loading = true
+  grantForm.value.result = ''
+  grantForm.value.error = false
+  try {
+    const res = await apiClient.post(`/v1/staff/users/${userId}/grant-subscription/`, {
+      plan_id: grantForm.value.planId,
+      days: grantForm.value.days,
+    })
+    grantForm.value.result = t('staff.userOverview.subscriptionGranted', {
+      plan: res.plan,
+      days: res.days,
+    })
+    await staffStore.loadUserOverview(String(userId))
+  } catch (e: any) {
+    grantForm.value.error = true
+    grantForm.value.result = e?.response?.data?.error || t('staff.userOverview.subscriptionGrantFailed')
+  } finally {
+    grantForm.value.loading = false
+  }
+}
 
 function roleBadgeVariant(role: string) {
   if (role === 'tutor') return 'accent'
@@ -346,6 +478,13 @@ onMounted(async () => {
       console.error('Failed to load user overview:', error)
     }
     loadAuditLog(userId)
+  }
+  // Load plans for grant-subscription panel (silent fail)
+  try {
+    const res = await getSubscriptionPlans()
+    availablePlans.value = res.results.filter(p => p.is_active)
+  } catch {
+    // Non-critical
   }
 })
 
@@ -813,5 +952,82 @@ function formatDate(dateString: string): string {
 .audit-time {
   color: var(--text-secondary);
   white-space: nowrap;
+}
+
+/* Account Management Section (v0.91.0) */
+.account-mgmt-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--space-md);
+}
+
+.mgmt-panel {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.mgmt-panel-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.mgmt-desc {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.mgmt-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.mgmt-select {
+  flex: 1;
+  padding: 5px var(--space-sm);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-family: inherit;
+}
+
+.mgmt-input-days {
+  width: 72px;
+  padding: 5px var(--space-xs);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-family: inherit;
+  text-align: center;
+}
+
+.mgmt-result {
+  font-size: var(--text-xs);
+  margin: 0;
+  padding: 4px var(--space-sm);
+  border-radius: var(--radius-sm);
+}
+
+.mgmt-success {
+  background: color-mix(in srgb, #22c55e 12%, transparent);
+  color: #166534;
+}
+
+.mgmt-error {
+  background: color-mix(in srgb, #ef4444 10%, transparent);
+  color: #ef4444;
 }
 </style>

@@ -2356,14 +2356,21 @@
     },
     "detail": {
       "title": "Classroom",
+      "backToList": "Back to classrooms",
       "studentsTitle": "Class students",
       "empty": "This classroom has no students yet.",
       "loadError": "Failed to load classroom data",
       "notFound": "Classroom not found",
       "forbidden": "You don't have access to this classroom",
       "remove": "Remove",
+      "confirmRemoveStudent": "Remove student {name} from this classroom?",
       "removeSuccess": "Student removed from classroom.",
-      "removeError": "Failed to remove student."
+      "removeError": "Failed to remove student.",
+      "deleteClassroom": "Delete classroom",
+      "confirmDelete": "Delete classroom \"{name}\"? This action cannot be undone.",
+      "deleteSuccess": "Classroom deleted.",
+      "deleteError": "Failed to delete classroom.",
+      "cannotDeleteDefault": "Cannot delete the default classroom."
     },
     "create": {
       "title": "Create classroom",
@@ -3908,7 +3915,8 @@
       "financeSection": "Finance",
       "payouts": "Tutor Payouts",
       "profileModeration": "Profile Moderation",
-      "verification": "Verification"
+      "verification": "Verification",
+      "subscriptionPlans": "Subscription Plans"
     },
     "breadcrumbs": {
       "staff": "Staff",
@@ -3921,7 +3929,56 @@
       "health": "System Health",
       "payouts": "Payouts",
       "profileModeration": "Profile Moderation",
-      "verification": "Verification"
+      "verification": "Verification",
+      "subscriptionPlans": "Subscription Plans"
+    },
+    "plans": {
+      "title": "Subscription Plans",
+      "helpText": "Manage platform subscription plans. Only superadmins can create, edit and deactivate plans.",
+      "createPlan": "New plan",
+      "editPlan": "Edit plan",
+      "total": "Total",
+      "active": "Active",
+      "inactive": "Inactive",
+      "featured": "Featured",
+      "unlimited": "Unlimited",
+      "lessons": "lessons/mo",
+      "statusActive": "Active",
+      "statusInactive": "Inactive",
+      "edit": "Edit",
+      "deactivate": "Deactivate",
+      "activate": "Activate",
+      "empty": "No plans yet. Click 'New plan' to create the first one.",
+      "errorLoad": "Failed to load plans",
+      "errorDeactivate": "Failed to deactivate plan",
+      "errorActivate": "Failed to activate plan",
+      "confirmDeactivate": "Deactivate plan '{name}'? New subscriptions to this plan will no longer be possible. Existing subscriptions will remain active.",
+      "deactivatedWithSubs": "Plan deactivated. {count} active subscriptions remain until their expiry.",
+      "interval": {
+        "monthly": "month",
+        "quarterly": "quarter",
+        "yearly": "year"
+      },
+      "form": {
+        "name": "Name",
+        "slug": "Slug (unique code)",
+        "price": "Price",
+        "priceHint": "in minor units, e.g. 49900 = 499 UAH",
+        "currency": "Currency",
+        "interval": "Interval",
+        "lessonsPerMonth": "Lessons per month",
+        "description": "Description (EN)",
+        "titleUk": "Title (UA)",
+        "descriptionUk": "Description (UA)",
+        "features": "Features",
+        "featuresHint": "one per line",
+        "featuresPlaceholder": "Unlimited lessons\nPriority support\nAnalytics access",
+        "providerPriceId": "Provider Price ID",
+        "providerProductId": "Provider Product ID",
+        "isActive": "Active plan",
+        "isFeatured": "Featured",
+        "displayOrder": "Display order"
+      }
     },
     "dashboard": {
       "title": "Staff Dashboard",
@@ -4191,7 +4248,24 @@
       "verifyEmailAlready": "Email already verified",
       "verifyEmailButton": "Verify Manually",
       "verifyEmailError": "Failed to verify email",
-      "verifyEmailSuccess": "Email successfully verified"
+      "verifyEmailSuccess": "Email successfully verified",
+      "accountManagement": "Account Management",
+      "changeRole": "Change Role",
+      "applyRole": "Apply",
+      "roleChanged": "Role changed to {role}",
+      "roleChangeFailed": "Failed to change role",
+      "resetMfa": "Reset MFA",
+      "resetMfaDesc": "Disable two-factor authentication for the user. Use when the user has lost access to their authenticator app.",
+      "resetMfaBtn": "Reset MFA",
+      "confirmResetMfa": "Reset MFA for {email}? The user will need to set up MFA again.",
+      "mfaResetSuccess": "MFA successfully reset",
+      "mfaResetFailed": "Failed to reset MFA",
+      "grantSubscription": "Grant Subscription",
+      "selectPlan": "Select plan...",
+      "days": "days",
+      "grantBtn": "Grant",
+      "subscriptionGranted": "Subscription '{plan}' granted for {days} days",
+      "subscriptionGrantFailed": "Failed to grant subscription"
     },
     "billingOps": {
       "actions": "Actions",

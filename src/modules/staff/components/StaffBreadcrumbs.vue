@@ -42,6 +42,7 @@ const LABEL_MAP: Record<string, string> = {
   'staff-tutor-activity': 'staff.breadcrumbs.tutorActivity',
   'staff-billing': 'staff.breadcrumbs.billing',
   'staff-health': 'staff.breadcrumbs.health',
+  'staff-subscription-plans': 'staff.breadcrumbs.subscriptionPlans',
 }
 
 const crumbs = computed<Crumb[]>(() => {

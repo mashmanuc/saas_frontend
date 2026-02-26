@@ -4,6 +4,7 @@
       :collapsed="sidebarCollapsed"
       :mobile-open="mobileMenuOpen"
       :open-reports-count="openReportsCount"
+      :user-role="authStore.user?.role"
       @toggle-collapse="sidebarCollapsed = !sidebarCollapsed"
       @close-mobile="mobileMenuOpen = false"
     />

@@ -6,20 +6,26 @@
  */
 import apiClient from '@/utils/apiClient'
 
-const BASE_URL = '/v1/payments/v1/admin/payouts'
+const BASE_URL = '/v1/staff/payouts'
 
 export interface PayoutItem {
   id: number
+  uuid: string
   tutor_id: number
   tutor_email: string
   tutor_name: string
   amount: number
+  amount_decimal: number
   currency: string
   status: 'pending' | 'approved' | 'processing' | 'completed' | 'failed' | 'cancelled'
   payout_method: string
-  provider_payout_id: string | null
-  failure_reason: string | null
-  processed_by: string | null
+  bank_name: string
+  bank_account: string
+  bank_holder_name: string
+  provider_payout_id: string
+  failure_reason: string
+  notes: string
+  is_cancellable: boolean
   created_at: string
   updated_at: string
   processed_at: string | null
@@ -41,22 +47,22 @@ export async function getAdminPayouts(params?: {
     : { results: res.results || [], count: res.count || 0 }
 }
 
-export async function approvePayout(payoutId: number): Promise<PayoutItem> {
-  return apiClient.post(`${BASE_URL}/${payoutId}/approve/`)
+export async function approvePayout(payoutUuid: string): Promise<PayoutItem> {
+  return apiClient.post(`${BASE_URL}/${payoutUuid}/approve/`)
 }
 
-export async function processPayout(payoutId: number): Promise<PayoutItem> {
-  return apiClient.post(`${BASE_URL}/${payoutId}/process/`)
+export async function processPayout(payoutUuid: string): Promise<PayoutItem> {
+  return apiClient.post(`${BASE_URL}/${payoutUuid}/process/`)
 }
 
-export async function completePayout(payoutId: number, providerPayoutId?: string): Promise<PayoutItem> {
-  return apiClient.post(`${BASE_URL}/${payoutId}/complete/`, {
+export async function completePayout(payoutUuid: string, providerPayoutId?: string): Promise<PayoutItem> {
+  return apiClient.post(`${BASE_URL}/${payoutUuid}/complete/`, {
     provider_payout_id: providerPayoutId || '',
   })
 }
 
-export async function failPayout(payoutId: number, reason: string): Promise<PayoutItem> {
-  return apiClient.post(`${BASE_URL}/${payoutId}/fail/`, { reason })
+export async function failPayout(payoutUuid: string, reason: string): Promise<PayoutItem> {
+  return apiClient.post(`${BASE_URL}/${payoutUuid}/fail/`, { reason })
 }
 
 export default {

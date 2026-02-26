@@ -1,14 +1,41 @@
 <template>
   <div class="space-y-4">
-    <Card class="space-y-2">
-      <h1 class="text-2xl font-semibold">
-        {{ classroom?.name || classroom?.title || $t('classroom.detail.title') }}
-      </h1>
-      <p v-if="classroom?.classroom_type" class="text-gray-500 text-sm dark:text-gray-400">
-        {{ typeLabel }}
-      </p>
+    <!-- Хедер класу -->
+    <Card>
+      <div class="flex items-start justify-between gap-4">
+        <div class="space-y-1">
+          <button
+            class="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-primary transition-colors mb-2"
+            @click="router.push('/dashboard/classrooms')"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            {{ $t('classroom.detail.backToList') }}
+          </button>
+          <h1 class="text-2xl font-semibold">
+            {{ classroom?.name || classroom?.title || $t('classroom.detail.title') }}
+          </h1>
+          <p v-if="classroom?.classroom_type" class="text-gray-500 text-sm dark:text-gray-400">
+            {{ typeLabel }}
+          </p>
+        </div>
+
+        <Button
+          v-if="classroom && !classroom.is_default"
+          variant="ghost"
+          size="sm"
+          class="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 shrink-0"
+          :disabled="deleting"
+          :loading="deleting"
+          @click="confirmDeleteClassroom"
+        >
+          {{ $t('classroom.detail.deleteClassroom') }}
+        </Button>
+      </div>
     </Card>
 
+    <!-- Список учнів -->
     <Card>
       <div v-if="loading" class="text-sm text-gray-500 dark:text-gray-400">
         {{ $t('loader.loading') }}
@@ -50,7 +77,7 @@
               class="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
               :disabled="removingId === student.id"
               :loading="removingId === student.id"
-              @click="handleRemoveStudent(student.id)"
+              @click="confirmRemoveStudent(student)"
             >
               {{ $t('classroom.detail.remove') }}
             </Button>
@@ -63,17 +90,18 @@
       </div>
     </Card>
 
+    <!-- Модалка додавання учня -->
     <AddStudentModal
-      v-if="classroomId"
       v-model="addStudentOpen"
-      :classroom-id="classroomId"
+      :classroom-id="classroomId ?? ''"
+      @added="handleStudentAdded"
     />
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import Avatar from '../../../ui/Avatar.vue'
 import Button from '../../../ui/Button.vue'
@@ -83,11 +111,13 @@ import { useClassroomStore } from '../store/classroomStore'
 import AddStudentModal from '../components/AddStudentModal.vue'
 
 const route = useRoute()
+const router = useRouter()
 const { t } = useI18n()
 const classroomStore = useClassroomStore()
 
 const addStudentOpen = ref(false)
 const removingId = ref(null)
+const deleting = ref(false)
 
 const classroomId = computed(() => route.params.id)
 const classroom = computed(() => classroomStore.currentClassroom)
@@ -120,6 +150,12 @@ const error = computed(() => {
   return rawError.value || t('classroom.detail.loadError')
 })
 
+function confirmRemoveStudent(student) {
+  const name = student.display_name || student.name || student.email
+  if (!window.confirm(t('classroom.detail.confirmRemoveStudent', { name }))) return
+  handleRemoveStudent(student.id)
+}
+
 async function handleRemoveStudent(studentId) {
   removingId.value = studentId
   try {
@@ -130,6 +166,34 @@ async function handleRemoveStudent(studentId) {
   } finally {
     removingId.value = null
   }
+}
+
+function confirmDeleteClassroom() {
+  const name = classroom.value?.name || classroom.value?.title || ''
+  if (!window.confirm(t('classroom.detail.confirmDelete', { name }))) return
+  handleDeleteClassroom()
+}
+
+async function handleDeleteClassroom() {
+  deleting.value = true
+  try {
+    await classroomStore.deleteClassroom(classroomId.value)
+    notifySuccess(t('classroom.detail.deleteSuccess'))
+    router.push('/dashboard/classrooms')
+  } catch (e) {
+    const code = e?.response?.data?.code
+    if (code === 'cannot_delete_default') {
+      notifyError(t('classroom.detail.cannotDeleteDefault'))
+    } else {
+      notifyError(e?.response?.data?.detail || t('classroom.detail.deleteError'))
+    }
+  } finally {
+    deleting.value = false
+  }
+}
+
+function handleStudentAdded() {
+  classroomStore.loadClassroomById(classroomId.value)
 }
 
 onMounted(() => {

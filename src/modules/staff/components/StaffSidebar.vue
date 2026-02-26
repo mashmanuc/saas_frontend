@@ -131,6 +131,16 @@
           <HeartPulse class="nav-icon-svg" :size="18" />
           <span v-if="!collapsed" class="nav-label">{{ $t('staff.sidebar.health') }}</span>
         </router-link>
+        <router-link
+          v-if="userRole === 'superadmin' || userRole === 'SUPERADMIN'"
+          to="/staff/subscription-plans"
+          class="nav-item"
+          :class="{ active: route.path.startsWith('/staff/subscription-plans') }"
+          :title="collapsed ? $t('staff.sidebar.subscriptionPlans') : undefined"
+        >
+          <PackageOpen class="nav-icon-svg" :size="18" />
+          <span v-if="!collapsed" class="nav-label">{{ $t('staff.sidebar.subscriptionPlans') }}</span>
+        </router-link>
       </div>
     </nav>
 
@@ -170,6 +180,7 @@ import {
   CreditCard,
   Banknote,
   HeartPulse,
+  PackageOpen,
   ArrowLeft,
 } from 'lucide-vue-next'
 
@@ -177,6 +188,7 @@ defineProps<{
   collapsed: boolean
   mobileOpen: boolean
   openReportsCount?: number
+  userRole?: string
 }>()
 
 defineEmits<{
