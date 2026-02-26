@@ -199,7 +199,6 @@ api.interceptors.response.use(
 
         // FIX: Не робити forceLogout при мережевій помилці або відсутності інтернету
         if (!navigator.onLine || !refreshError?.response) {
-          console.warn('[apiClient] Network offline or no response, skipping forceLogout')
           return Promise.reject(refreshError)
         }
 

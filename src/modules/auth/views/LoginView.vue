@@ -178,9 +178,8 @@ onMounted(() => {
   const msg = sessionStorage.getItem('auth_message')
   if (msg === 'session_expired') {
     sessionStorage.removeItem('auth_message')
-    // Показуємо inline помилку
     auth.lastErrorCode = 'session_expired'
-    auth.error = 'Сесія закінчилась. Будь ласка, увійдіть знову.'
+    auth.error = t('errors.api.sessionExpired')
   }
 })
 

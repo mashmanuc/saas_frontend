@@ -263,20 +263,19 @@ export const calendarV055Api = {
       doneStatuses: string[]
     }
   }> {
-    const payload = await api.get(`/v1/calendar/event/${id}/`)
+    const payload = await api.get(`/v1/calendar/event/${id}/`, { meta: { skipLoader: true } } as any)
 
     // Backend returns { status: "success", data: { event, dictionaries } }
     if (payload?.data?.event && payload?.data?.dictionaries) {
       return payload.data
     }
-    
+
     if ((payload as any)?.event && (payload as any)?.dictionaries) {
       // Already unwrapped
       return payload as unknown as { event: CalendarEventV055; dictionaries: { durations: number[]; regularities: string[]; classTypes: string[]; paidStatuses: string[]; doneStatuses: string[]; }; }
     }
-    
+
     // Fallback if response structure is different
-    console.warn('[calendarV055Api] getEventDetails unexpected payload structure:', payload)
     throw new Error('Invalid response structure from getEventDetails')
   }
 }

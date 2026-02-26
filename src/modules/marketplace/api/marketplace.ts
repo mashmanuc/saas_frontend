@@ -1299,7 +1299,8 @@ export const marketplaceApi = {
         tz: safeTimezone,
         timezone: safeTimezone,
       },
-    })
+      meta: { skipLoader: true },
+    } as any)
     
     return response as unknown as TutorCalendarResponse
   },

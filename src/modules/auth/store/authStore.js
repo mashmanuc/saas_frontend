@@ -88,6 +88,7 @@ export const useAuthStore = defineStore('auth', {
 
       if (this.user) {
         this.startProactiveRefresh()
+        this.initStorageSync()
       }
     },
 
@@ -356,10 +357,8 @@ export const useAuthStore = defineStore('auth', {
         const { useContactAccessStore } = await import('../../../stores/contactAccessStore')
         const contactAccessStore = useContactAccessStore()
         contactAccessStore.$reset()
-
-        console.log('[AuthStore] All stores reset on user change')
-      } catch (error) {
-        console.warn('[AuthStore] Failed to reset stores:', error)
+      } catch {
+        // stores reset failed silently — not critical
       }
     },
 
@@ -440,7 +439,6 @@ export const useAuthStore = defineStore('auth', {
           // Якщо 429 (rate limit) - не робимо logout, просто пропускаємо цей refresh
           const status = error?.response?.status
           if (status === 429) {
-            console.warn('Refresh rate limited, skipping this cycle')
             return
           }
           
@@ -551,8 +549,8 @@ export const useAuthStore = defineStore('auth', {
             }
           })
         }
-      } catch (error) {
-        console.warn('[authStore] Failed to reset stores on logout:', error)
+      } catch {
+        // stores reset on logout failed silently — not critical
       }
     },
 
