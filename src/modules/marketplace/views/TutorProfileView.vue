@@ -222,7 +222,7 @@ function handleInquirySuccess() {
         </div>
       </div>
 
-      <!-- Content Grid: left (main) + right (sidebar) -->
+      <!-- Content Grid: single column main -->
       <div class="profile-layout">
         <main class="profile-main">
           <ProfileAbout :bio="currentProfile.bio" />
@@ -245,21 +245,22 @@ function handleInquirySuccess() {
             :total-reviews="currentProfile.stats?.total_reviews || 0"
           />
         </main>
+      </div>
 
-        <aside class="profile-sidebar">
-          <!-- Calendar section -->
-          <section ref="calendarRef" class="profile-section cal-section" data-test="marketplace-availability">
-            <TutorAvailabilityCalendar
-              v-if="currentProfile.user_id && currentProfile.availability_summary?.timezone"
-              :tutor-id="currentProfile.user_id"
-              :timezone="currentProfile.availability_summary.timezone"
-              :interactive="false"
-            />
-            <div v-else class="calendar-empty">
-              <p>{{ $t('marketplace.profile.calendar.notConfigured') }}</p>
-            </div>
-          </section>
-        </aside>
+      <!-- Calendar section — full width below main content -->
+      <div class="profile-calendar-wrapper">
+        <section ref="calendarRef" class="profile-section cal-section" data-test="marketplace-availability">
+          <TutorAvailabilityCalendar
+            v-if="currentProfile.user_id && currentProfile.availability_summary?.timezone"
+            :tutor-id="currentProfile.user_id"
+            :timezone="currentProfile.availability_summary.timezone"
+            :interactive="false"
+            view="full"
+          />
+          <div v-else class="calendar-empty">
+            <p>{{ $t('marketplace.profile.calendar.notConfigured') }}</p>
+          </div>
+        </section>
       </div>
     </template>
 
@@ -320,15 +321,9 @@ function handleInquirySuccess() {
   margin: 0 auto;
   padding: 0 1rem;
   display: grid;
-  grid-template-columns: 1fr 280px;
+  grid-template-columns: 1fr;
   gap: 1.25rem;
   align-items: start;
-}
-
-@media (max-width: 900px) {
-  .profile-layout {
-    grid-template-columns: 1fr;
-  }
 }
 
 .profile-main {
@@ -337,10 +332,10 @@ function handleInquirySuccess() {
   gap: 1.25rem;
 }
 
-.profile-sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
+.profile-calendar-wrapper {
+  max-width: 1060px;
+  margin: 0 auto;
+  padding: 0 1rem 1rem;
 }
 
 .profile-section {
@@ -365,6 +360,7 @@ function handleInquirySuccess() {
 
 .cal-section {
   padding: 1.375rem;
+  overflow-x: auto;
 }
 
 .calendar-empty {

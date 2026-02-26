@@ -355,17 +355,15 @@ function toLocalDateString(d: Date): string {
 
 <style scoped>
 .tutor-availability-calendar {
-  border: 1px solid var(--border-color, #e5e7eb);
-  border-radius: 12px;
-  padding: 16px;
-  background: var(--bg-primary, #fff);
+  width: 100%;
+  background: transparent;
 }
 
 .cal-title {
-  font-size: 1rem;
+  font-size: 1.125rem;
   font-weight: 600;
   color: var(--text-primary, #111827);
-  margin: 0 0 12px;
+  margin: 0 0 16px;
 }
 
 .calendar-header {
@@ -376,7 +374,7 @@ function toLocalDateString(d: Date): string {
 }
 
 .week-label {
-  font-size: 0.8125rem;
+  font-size: 0.9375rem;
   color: var(--text-secondary, #6b7280);
 }
 
@@ -388,22 +386,23 @@ function toLocalDateString(d: Date): string {
 /* ─── Schedule table (7-column grid) ─── */
 .schedule-table {
   overflow-x: auto;
+  width: 100%;
 }
 
 .schedule-header {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(100px, 1fr));
   gap: 0;
   border-bottom: 2px solid var(--border-color, #e5e7eb);
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .schedule-col-header {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 6px 4px;
-  gap: 2px;
+  padding: 10px 8px;
+  gap: 4px;
 }
 
 .schedule-col-header.is-today .day-number {
@@ -418,29 +417,31 @@ function toLocalDateString(d: Date): string {
 }
 
 .day-weekday {
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--text-secondary, #6b7280);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .day-number {
-  font-size: 0.8125rem;
+  font-size: 1rem;
   font-weight: 700;
   color: var(--text-primary, #111827);
 }
 
 .schedule-body {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(100px, 1fr));
   gap: 0;
 }
 
 .schedule-column {
   display: flex;
   flex-direction: column;
-  min-height: 40px;
+  min-height: 48px;
   border-right: 1px solid var(--border-color, #f3f4f6);
+  padding: 4px 0;
 }
 
 .schedule-column:last-child {
@@ -448,17 +449,18 @@ function toLocalDateString(d: Date): string {
 }
 
 .schedule-slot {
-  padding: 4px 6px;
-  font-size: 0.8125rem;
+  padding: 6px 8px;
+  font-size: 0.875rem;
   font-weight: 500;
   color: var(--text-primary, #374151);
   text-align: center;
-  background: transparent;
-  border: none;
+  background: var(--surface-subtle, #f9fafb);
+  border: 1px solid var(--border-color, #e5e7eb);
   cursor: default;
-  transition: background-color 0.15s;
-  border-radius: 4px;
-  margin: 1px 2px;
+  transition: background-color 0.15s, border-color 0.15s;
+  border-radius: 6px;
+  margin: 2px 4px;
+  white-space: nowrap;
 }
 
 .schedule-slot:not(:disabled):hover {
@@ -483,15 +485,20 @@ function toLocalDateString(d: Date): string {
   text-align: center;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 640px) {
   .schedule-header,
   .schedule-body {
-    grid-template-columns: repeat(7, minmax(44px, 1fr));
+    grid-template-columns: repeat(7, minmax(60px, 1fr));
   }
 
   .schedule-slot {
     font-size: 0.75rem;
-    padding: 3px 2px;
+    padding: 4px 4px;
+    margin: 2px 2px;
+  }
+
+  .schedule-col-header {
+    padding: 8px 4px;
   }
 }
 </style>
