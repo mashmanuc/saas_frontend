@@ -20,7 +20,7 @@
         <li>{{ $t('onboarding.hints.dashboard.welcome.step3') }}</li>
       </ol>
       <template #actions>
-        <router-link to="/calendar" class="hint-btn">
+        <router-link to="/booking/tutor" class="hint-btn">
           {{ $t('onboarding.hints.dashboard.welcome.openCalendar') }}
         </router-link>
         <router-link to="/marketplace/my-profile" class="hint-btn">

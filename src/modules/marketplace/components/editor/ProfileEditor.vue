@@ -381,6 +381,14 @@ watch(
 watch(
   stepIndex,
   (idx) => {
+    // Flush draft immediately on step change to prevent data loss
+    debouncedAutosave.cancel?.()
+    try {
+      const { newLanguageCode, newLanguageLevel, ...model } = formData.value
+      const apiPayload = buildTutorProfileUpdate(model)
+      writeLocalDraft(apiPayload as any)
+    } catch { /* silent */ }
+
     const stepId = steps.value[idx]?.id
     if (!stepId) return
     if (route.query.step === stepId) return
@@ -566,23 +574,28 @@ watch(
   () => props.profile,
   (newProfile) => {
     isUpdatingFromProps.value = true
+
+    const draft = readLocalDraft()
+    if (draft && !props.saving) {
+      // Draft exists and this is NOT a post-save reload → preserve user edits
+      hasLocalDraft.value = true
+      lastAutosavedAt.value = draft.savedAt
+      showDraftBanner.value = true
+      setTimeout(() => {
+        isUpdatingFromProps.value = false
+      }, 0)
+      return
+    }
+
     formData.value = {
       ...fromApi(newProfile),
       newLanguageCode: '',
       newLanguageLevel: 'fluent' as LanguageLevel,
     }
+    hasLocalDraft.value = false
+    showDraftBanner.value = false
+    lastAutosavedAt.value = null
 
-    const draft = readLocalDraft()
-    if (draft) {
-      hasLocalDraft.value = true
-      lastAutosavedAt.value = draft.savedAt
-      showDraftBanner.value = true
-    } else {
-      hasLocalDraft.value = false
-      showDraftBanner.value = false
-      lastAutosavedAt.value = null
-    }
-    
     // Reset flag after Vue's reactivity updates
     setTimeout(() => {
       isUpdatingFromProps.value = false
@@ -670,6 +683,14 @@ function getSubmitPayload(opts?: { silent?: boolean }) {
 
 defineExpose({
   getSubmitPayload,
+  flushDraft() {
+    debouncedAutosave.cancel?.()
+    try {
+      const { newLanguageCode, newLanguageLevel, ...model } = formData.value
+      const apiPayload = buildTutorProfileUpdate(model)
+      writeLocalDraft(apiPayload as any)
+    } catch { /* silent */ }
+  },
 })
 
 const currencies = ['USD', 'EUR', 'GBP', 'UAH', 'PLN']
