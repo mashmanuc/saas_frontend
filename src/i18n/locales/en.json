@@ -1465,7 +1465,8 @@
           "hourlyRate": "Hourly rate must be greater than 0.",
           "subjects": "Select at least one subject.",
           "languages": "Select at least one language.",
-          "teachingLanguages": "Select at least one teaching language."
+          "teachingLanguages": "Select at least one teaching language.",
+          "minChars": "Min. {min} characters"
         },
         "teachingLanguagesLabel": "Teaching languages",
         "addTeachingLanguage": "Add teaching language",
@@ -3312,6 +3313,8 @@
     "availability": {
       "jobInProgress": "Please wait for the current operation to complete",
       "conflictsDetected": "Conflicts detected on days: {days}",
+      "noFreeSlot": "No free time to add a new window",
+      "overlapWarning": "Warning: time windows overlap. Please fix before saving.",
       "notifications": {
         "saveSuccess": "Availability saved successfully!",
         "saveError": "Failed to save availability. Please try again.",

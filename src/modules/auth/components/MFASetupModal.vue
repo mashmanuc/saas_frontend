@@ -57,13 +57,13 @@
 
           <div class="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" @click="downloadBackupCodes">
-              <template #icon>
+              <template #iconLeft>
                 <Download :size="16" />
               </template>
               {{ $t('auth.mfa.setup.downloadCodes') }}
             </Button>
             <Button variant="outline" size="sm" @click="copyBackupCodes">
-              <template #icon>
+              <template #iconLeft>
                 <Copy :size="16" />
               </template>
               {{ $t('auth.mfa.setup.copyCodes') }}

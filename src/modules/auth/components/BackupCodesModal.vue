@@ -83,9 +83,11 @@ const props = defineProps({
   },
   onClose: {
     type: Function,
-    default: () => {},
+    default: null,
   },
 })
+
+const emit = defineEmits(['close'])
 
 const { t } = useI18n()
 
@@ -193,6 +195,7 @@ async function copyCodes() {
 
 function handleClose() {
   if (props.onClose) props.onClose()
+  emit('close')
 }
 </script>
 

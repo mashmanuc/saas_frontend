@@ -21,7 +21,7 @@
         <Input
           v-model="disableOtp"
           :label="$t('auth.mfa.status.otpLabel')"
-          inputmode="numeric"
+          inputmode="text"
           autocomplete="one-time-code"
           maxlength="8"
           :placeholder="$t('auth.mfa.status.otpPlaceholder')"
