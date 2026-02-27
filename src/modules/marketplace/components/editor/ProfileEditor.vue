@@ -573,18 +573,18 @@ onBeforeUnmount(() => {
 watch(
   () => props.profile,
   (newProfile) => {
+    // While save is in progress, skip — profile will update again after save completes
+    if (props.saving) return
+
     isUpdatingFromProps.value = true
 
     const draft = readLocalDraft()
-    if (draft && !props.saving) {
-      // Draft exists and this is NOT a post-save reload → preserve user edits
+    if (draft) {
+      // Draft exists — show banner so user can choose to restore or discard
       hasLocalDraft.value = true
       lastAutosavedAt.value = draft.savedAt
       showDraftBanner.value = true
-      setTimeout(() => {
-        isUpdatingFromProps.value = false
-      }, 0)
-      return
+      // Still load server data into formData — draft restore is explicit via banner
     }
 
     formData.value = {
@@ -592,9 +592,12 @@ watch(
       newLanguageCode: '',
       newLanguageLevel: 'fluent' as LanguageLevel,
     }
-    hasLocalDraft.value = false
-    showDraftBanner.value = false
-    lastAutosavedAt.value = null
+
+    if (!draft) {
+      hasLocalDraft.value = false
+      showDraftBanner.value = false
+      lastAutosavedAt.value = null
+    }
 
     // Reset flag after Vue's reactivity updates
     setTimeout(() => {
@@ -621,9 +624,21 @@ watch(
   () => props.saving,
   (next, prev) => {
     if (prev && !next) {
+      // Save completed: clear draft first, then sync formData from server
       clearLocalDraft()
       autosaveStatus.value = 'idle'
       lastAutosavedAt.value = null
+
+      // Force-sync formData with latest server data
+      isUpdatingFromProps.value = true
+      formData.value = {
+        ...fromApi(props.profile),
+        newLanguageCode: '',
+        newLanguageLevel: 'fluent' as LanguageLevel,
+      }
+      setTimeout(() => {
+        isUpdatingFromProps.value = false
+      }, 0)
     }
   }
 )

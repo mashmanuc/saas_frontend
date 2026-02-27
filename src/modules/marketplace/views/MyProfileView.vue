@@ -58,7 +58,14 @@ onBeforeRouteLeave(() => {
 
 async function handleSave(data: TutorProfilePatchPayload, options?: { silent?: boolean }) {
   telemetry.trigger('marketplace_profile_save', { has_slug: !!myProfile.value?.slug, silent: !!options?.silent })
-  await store.updateProfile(data, options)
+  try {
+    await store.updateProfile(data, options)
+    if (!options?.silent) {
+      notifySuccess(t('marketplace.profile.saveSuccess'))
+    }
+  } catch {
+    // Error is already handled inside store.updateProfile (sets validationErrors, shows toast)
+  }
 }
 
 async function handleCreate(data: TutorProfileUpsertPayload) {

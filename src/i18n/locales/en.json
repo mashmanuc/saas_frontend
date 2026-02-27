@@ -1330,6 +1330,7 @@
       "publish": "Publish",
       "publishing": "Publishing…",
       "publishSuccess": "Profile published.",
+      "saveSuccess": "Changes saved.",
       "publishError": "Unable to publish profile.",
       "unpublish": "Unpublish",
       "unpublishing": "Unpublishing…",
