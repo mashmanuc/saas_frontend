@@ -526,6 +526,7 @@ export const useAuthStore = defineStore('auth', {
       this.lastSummary = null
       this._lastUserFetch = null
       this._bootstrapPromise = null
+      this.sessionExpiredNotified = false
 
       // БАГ №2 FIX: відключаємо WS при logout щоб уникнути отримання чужих подій
       try {

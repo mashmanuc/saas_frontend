@@ -150,6 +150,9 @@ api.interceptors.response.use(
 
     if (status === 401 && !isAuthRefresh && !isAuthLogout) {
       if (!store.access) {
+        // Session already cleared (e.g. by a previous forceLogout).
+        // Notify user so they know why their action failed.
+        notifySessionExpired()
         return Promise.reject(error)
       }
 
@@ -206,6 +209,12 @@ api.interceptors.response.use(
         await store.forceLogout('session_expired')
         if (hadSession) {
           notifySessionExpired()
+          // Navigate to /start so user doesn't stay on page in zombie state.
+          // Draft data is safe in localStorage.
+          try {
+            const { default: router } = await import('../router')
+            router.push('/start')
+          } catch { /* navigation may fail if already at /start */ }
         }
         return Promise.reject(refreshError)
       } finally {
@@ -218,6 +227,10 @@ api.interceptors.response.use(
       await store.forceLogout()
       if (hadSession) {
         notifySessionExpired()
+        try {
+          const { default: router } = await import('../router')
+          router.push('/start')
+        } catch { /* navigation may fail if already at /start */ }
       }
       return Promise.reject(error)
     }

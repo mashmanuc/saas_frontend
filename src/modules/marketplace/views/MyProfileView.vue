@@ -63,8 +63,16 @@ async function handleSave(data: TutorProfilePatchPayload, options?: { silent?: b
     if (!options?.silent) {
       notifySuccess(t('marketplace.profile.saveSuccess'))
     }
-  } catch {
-    // Error is already handled inside store.updateProfile (sets validationErrors, shows toast)
+  } catch (err: any) {
+    // store.updateProfile already shows toasts for 400 validation errors.
+    // Here we handle everything else (401, 500, network errors).
+    if (options?.silent) return
+    const status = err?.response?.status
+    if (status === 401) {
+      notifyError(t('common.sessionExpired', 'Сесію завершено. Увійдіть знову.'))
+    } else if (!validationErrors.value) {
+      notifyError(error.value || t('marketplace.errors.updateProfile'))
+    }
   }
 }
 

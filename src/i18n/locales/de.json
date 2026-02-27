@@ -16,7 +16,8 @@
     "justNow": "Gerade eben",
     "minutesAgo": "vor {count} Min.",
     "hoursAgo": "vor {count} Std.",
-    "daysAgo": "vor {count} Tagen"
+    "daysAgo": "vor {count} Tagen",
+    "sessionExpired": "Sitzung abgelaufen. Bitte erneut anmelden."
   },
   "onboarding": {
     "skip": "Überspringen",

@@ -515,6 +515,7 @@
       "tryNow": "Спробувати зараз",
       "waiting": "Очікування..."
     },
+    "sessionExpired": "Session expired. Please log in again.",
     "delete": "Delete",
     "save": "Save",
     "submit": "Submit",

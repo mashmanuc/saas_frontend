@@ -16,7 +16,8 @@
     "justNow": "Przed chwilą",
     "minutesAgo": "{count} min temu",
     "hoursAgo": "{count} godz. temu",
-    "daysAgo": "{count} dni temu"
+    "daysAgo": "{count} dni temu",
+    "sessionExpired": "Sesja wygasła. Zaloguj się ponownie."
   },
   "onboarding": {
     "skip": "Pomiń",
