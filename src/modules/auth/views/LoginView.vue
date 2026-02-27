@@ -76,29 +76,53 @@
 
     <form v-else class="space-y-4" @submit.prevent="onSubmitOtp">
       <Input
-        :label="$t('auth.login.otpLabel')"
+        :label="isBackupCodeMode ? $t('auth.login.backupCodeLabel') : $t('auth.login.otpLabel')"
         type="text"
         v-model="otp"
         :error="fieldError('otp')"
         required
         autocomplete="one-time-code"
-        inputmode="numeric"
+        :inputmode="isBackupCodeMode ? 'text' : 'numeric'"
+        :maxlength="isBackupCodeMode ? 8 : 6"
+        :placeholder="isBackupCodeMode ? $t('auth.login.backupCodePlaceholder') : $t('auth.login.otpPlaceholder')"
         data-testid="login-otp-input"
       />
 
-      <div class="flex items-center justify-between gap-3">
-        <Button variant="ghost" type="button" :disabled="auth.loading" @click="backToPassword">
+      <div class="flex items-center justify-between text-sm">
+        <button
+          type="button"
+          class="hover:underline"
+          style="color: var(--accent);"
+          @click="toggleBackupCodeMode"
+        >
+          {{ isBackupCodeMode ? $t('auth.login.useTotp') : $t('auth.login.useBackupCode') }}
+        </button>
+        <button
+          type="button"
+          class="hover:underline"
+          style="color: var(--text-secondary);"
+          @click="backToPassword"
+        >
           {{ $t('auth.login.otpBack') }}
-        </Button>
+        </button>
+      </div>
+
+      <div class="text-center text-sm" style="color: var(--text-secondary);">
+        {{ $t('auth.login.lostPhone') }}
+        <a href="mailto:support@m4sh.org" style="color: var(--accent);" class="hover:underline">
+          {{ $t('auth.login.contactSupport') }}
+        </a>
+      </div>
+
+      <div class="flex items-center justify-between gap-3 pt-2">
         <Button variant="outline" type="button" :disabled="auth.loading" @click="resendOtp">
           {{ $t('auth.login.otpResend') }}
         </Button>
+        <Button class="w-full" type="submit" :disabled="auth.loading">
+          <span v-if="auth.loading">{{ $t('auth.login.otpLoading') }}</span>
+          <span v-else>{{ $t('auth.login.otpSubmit') }}</span>
+        </Button>
       </div>
-
-      <Button class="w-full" type="submit" :disabled="auth.loading">
-        <span v-if="auth.loading">{{ $t('auth.login.otpLoading') }}</span>
-        <span v-else>{{ $t('auth.login.otpSubmit') }}</span>
-      </Button>
     </form>
 
     <p class="text-center text-sm" style="color: var(--text-secondary);">
@@ -164,6 +188,7 @@ const form = reactive({
 
 const step = ref('password')
 const otp = ref('')
+const isBackupCodeMode = ref(false)
 const showWebAuthnPrompt = ref(false)
 const showUnlockModal = ref(false)
 
@@ -323,7 +348,13 @@ async function onSubmitOtp() {
 function backToPassword() {
   step.value = 'password'
   otp.value = ''
+  isBackupCodeMode.value = false
   auth.pendingMfaSessionId = null
+}
+
+function toggleBackupCodeMode() {
+  isBackupCodeMode.value = !isBackupCodeMode.value
+  otp.value = ''
 }
 
 async function resendOtp() {

@@ -765,10 +765,17 @@
       "submit": "Увійти",
       "loading": "Входимо...",
       "otpLabel": "Код підтвердження",
+      "otpPlaceholder": "000000",
       "otpSubmit": "Підтвердити",
       "otpLoading": "Перевіряємо...",
       "otpBack": "Назад",
       "otpResend": "Надіслати код ще раз",
+      "backupCodeLabel": "Резервний код",
+      "backupCodePlaceholder": "xxxxxxxx",
+      "useTotp": "Використати код з додатку",
+      "useBackupCode": "Використати резервний код",
+      "lostPhone": "Немає доступу до телефона?",
+      "contactSupport": "Написати в підтримку",
       "forgotPassword": "Забули пароль?",
       "resendVerifyCta": "Надіслати лист підтвердження ще раз",
       "noAccount": "Немає акаунта?",
@@ -890,6 +897,9 @@
         "backupCodesTitle": "Резервні коди",
         "backupCodesDescription": "Збережіть ці коди в безпечному місці. Кожен код можна використати лише один раз.",
         "downloadCodes": "Завантажити коди",
+        "copyCodes": "Скопіювати коди",
+        "backupCodesConfirm": "Я зберіг резервні коди в безпечному місці",
+        "finish": "Завершити",
         "otpLabel": "Код підтвердження",
         "confirm": "Підтвердити",
         "cancel": "Скасувати",
@@ -934,12 +944,20 @@
         "regenerateConfirm": "Ви впевнені, що хочете перегенерувати резервні коди? Старі коди перестануть працювати.",
         "regenerateSuccess": "Резервні коди успішно перегенеровані",
         "enableSuccess": "Двофакторна автентифікація успішно увімкнена",
+        "enabledAt": "Увімкнено {date}",
+        "backupCodesRemaining": "Залишилось резервних кодів: {count}",
+        "noCodesWarning": "Згенеруйте нові коди!",
+        "otpLabel": "Код підтвердження",
+        "otpPlaceholder": "000000",
+        "confirmDisable": "Вимкнути MFA",
+        "viewBackupCodes": "Переглянути резервні коди",
         "errors": {
           "disableFailed": "Не вдалося вимкнути MFA",
           "regenerateFailed": "Не вдалося перегенерувати резервні коди",
           "invalidOtpFormat": "Код має містити 6 цифр",
           "invalidOtpCode": "Невірний код підтвердження. Перевірте код у додатку-автентифікаторі",
-          "mfaNotEnabled": "Двофакторна автентифікація не увімкнена"
+          "mfaNotEnabled": "Двофакторна автентифікація не увімкнена",
+          "otpRequired": "Введіть код підтвердження"
         }
       }
     },
@@ -2907,6 +2925,7 @@
         "codesCopied": "Коди скопійовано в буфер обміну",
         "regenerateCodes": "Згенерувати нові коди",
         "regenerateConfirm": "Це призведе до скасування всіх попередніх кодів. Продовжити?",
+        "otpForRegenerate": "Введіть код підтвердження з додатку для регенерації кодів",
         "otpLabel": "Код підтвердження",
         "confirm": "Підтвердити",
         "cancel": "Скасувати",
@@ -2918,7 +2937,8 @@
           "setupFailed": "Не вдалося розпочати налаштування MFA.",
           "confirmFailed": "Не вдалося підтвердити MFA.",
           "loadCodesFailed": "Не вдалося завантажити коди",
-          "regenerateFailed": "Не вдалося згенерувати коди"
+          "regenerateFailed": "Не вдалося згенерувати коди",
+          "invalidOtpForRegenerate": "Невірний код підтвердження. Регенерацію скасовано"
         }
       },
       "sessions": {

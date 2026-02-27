@@ -6,6 +6,7 @@
     @close="handleClose"
   >
     <div class="space-y-6">
+      <!-- Крок 1: QR код + OTP підтвердження -->
       <div v-if="step === 'qr'" class="space-y-4">
         <p class="text-sm text-muted-foreground">
           {{ $t('auth.mfa.setup.description') }}
@@ -16,19 +17,6 @@
         <div v-if="secretHint" class="space-y-2">
           <p class="text-sm font-medium">{{ $t('auth.mfa.setup.secretLabel') }}</p>
           <code class="block rounded border bg-muted px-3 py-2 text-sm">{{ secretHint }}</code>
-        </div>
-
-        <div v-if="backupCodes.length" class="space-y-2">
-          <p class="text-sm font-semibold text-foreground">{{ $t('auth.mfa.setup.backupCodesTitle') }}</p>
-          <p class="text-sm text-muted-foreground">{{ $t('auth.mfa.setup.backupCodesDescription') }}</p>
-          <div class="grid gap-2 sm:grid-cols-2">
-            <code v-for="code in backupCodes" :key="code" class="rounded border bg-muted px-3 py-2 text-sm">
-              {{ code }}
-            </code>
-          </div>
-          <Button variant="outline" size="sm" @click="downloadBackupCodes">
-            {{ $t('auth.mfa.setup.downloadCodes') }}
-          </Button>
         </div>
 
         <form class="space-y-4" @submit.prevent="handleConfirm">
@@ -53,6 +41,61 @@
         </form>
       </div>
 
+      <!-- Крок 2: Backup codes (тільки після підтвердження OTP) -->
+      <div v-else-if="step === 'backup'" class="space-y-4">
+        <div class="rounded-lg border border-amber-300 bg-amber-50 p-4">
+          <p class="text-sm font-semibold text-amber-800">{{ $t('auth.mfa.setup.backupCodesTitle') }}</p>
+          <p class="text-sm text-amber-700 mt-1">{{ $t('auth.mfa.setup.backupCodesDescription') }}</p>
+        </div>
+
+        <div v-if="backupCodes.length" class="space-y-3">
+          <div class="grid gap-2 sm:grid-cols-2">
+            <code v-for="code in backupCodes" :key="code" class="rounded border bg-muted px-3 py-2 text-sm font-mono">
+              {{ code }}
+            </code>
+          </div>
+
+          <div class="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" @click="downloadBackupCodes">
+              <template #icon>
+                <Download :size="16" />
+              </template>
+              {{ $t('auth.mfa.setup.downloadCodes') }}
+            </Button>
+            <Button variant="outline" size="sm" @click="copyBackupCodes">
+              <template #icon>
+                <Copy :size="16" />
+              </template>
+              {{ $t('auth.mfa.setup.copyCodes') }}
+            </Button>
+          </div>
+
+          <div class="flex items-start gap-2 pt-2">
+            <input
+              id="backup-codes-check"
+              v-model="confirmedBackupCodes"
+              type="checkbox"
+              class="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+            />
+            <label for="backup-codes-check" class="text-sm text-muted-foreground cursor-pointer">
+              {{ $t('auth.mfa.setup.backupCodesConfirm') }}
+            </label>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap gap-2 pt-2">
+          <Button
+            variant="primary"
+            :disabled="!confirmedBackupCodes || loading"
+            :loading="loading"
+            @click="finishSetup"
+          >
+            {{ $t('auth.mfa.setup.finish') }}
+          </Button>
+        </div>
+      </div>
+
+      <!-- Крок 3: Успіх -->
       <div v-else-if="step === 'success'" class="space-y-4">
         <div class="rounded-lg border border-green-300 bg-green-50 p-4">
           <p class="text-sm text-green-800">{{ $t('auth.mfa.setup.successMessage') }}</p>
@@ -72,6 +115,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { Download, Copy } from 'lucide-vue-next'
 import OnboardingModal from '@/modules/onboarding/components/widgets/OnboardingModal.vue'
 import Button from '@/ui/Button.vue'
 import Input from '@/ui/Input.vue'
@@ -93,12 +137,13 @@ const authStore = useAuthStore()
 
 const loading = ref(false)
 const error = ref('')
-const step = ref<'qr' | 'success'>('qr')
+const step = ref<'qr' | 'backup' | 'success'>('qr')
 const qrSvg = ref('')
 const secretHint = ref('')
 const backupCodes = ref<string[]>([])
 const otp = ref('')
 const otpError = ref('')
+const confirmedBackupCodes = ref(false)
 
 watch(() => props.show, async (newVal) => {
   if (newVal) {
@@ -168,21 +213,21 @@ async function initSetup() {
 async function handleConfirm() {
   error.value = ''
   otpError.value = ''
-  
+
   if (!otp.value || !/^\d{6}$/.test(otp.value)) {
     otpError.value = t('auth.mfa.status.errors.invalidOtpFormat')
     return
   }
-  
+
   loading.value = true
-  
+
   try {
     await mfaApi.confirm({ otp: otp.value })
-    step.value = 'success'
+    // Після успішного підтвердження OTP → показуємо backup codes
+    step.value = 'backup'
     logAuthEvent({
       event: AUTH_EVENTS.MFA_SETUP_COMPLETED,
     })
-    emit('success')
   } catch (err: any) {
     const errorCode = err?.response?.data?.error || err?.response?.data?.code
     logAuthEvent({
@@ -212,6 +257,7 @@ function reset() {
   otp.value = ''
   error.value = ''
   otpError.value = ''
+  confirmedBackupCodes.value = false
   loading.value = false
 }
 
@@ -224,5 +270,19 @@ function downloadBackupCodes() {
   a.download = 'mfa-backup-codes.txt'
   a.click()
   URL.revokeObjectURL(url)
+}
+
+async function copyBackupCodes() {
+  const text = backupCodes.value.join('\n')
+  try {
+    await navigator.clipboard.writeText(text)
+  } catch (err) {
+    console.error('Failed to copy backup codes', err)
+  }
+}
+
+function finishSetup() {
+  step.value = 'success'
+  emit('success')
 }
 </script>

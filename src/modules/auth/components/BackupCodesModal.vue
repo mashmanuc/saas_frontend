@@ -139,16 +139,26 @@ async function loadCodes() {
 
 async function regenerateCodes() {
   if (!confirm(t('profile.security.mfa.regenerateConfirm'))) return
-  
+
+  // Запитуємо OTP перед регенерацією (backend вимагає otp_code)
+  const otpCode = prompt(t('profile.security.mfa.otpForRegenerate'))
+  if (!otpCode) return
+
   loading.value = true
   error.value = ''
   requestId.value = ''
-  
+
   try {
-    const res = await authApi.regenerateBackupCodes()
+    const res = await authApi.regenerateBackupCodes({ otp_code: otpCode })
     codes.value = Array.isArray(res?.codes) ? res.codes : []
+    infoMessage.value = ''
   } catch (err) {
-    error.value = err?.response?.data?.message || t('profile.security.mfa.errors.regenerateFailed')
+    const errCode = err?.response?.data?.error
+    if (errCode === 'mfa_invalid_code') {
+      error.value = t('profile.security.mfa.errors.invalidOtpForRegenerate')
+    } else {
+      error.value = err?.response?.data?.message || t('profile.security.mfa.errors.regenerateFailed')
+    }
     requestId.value = err?.response?.data?.request_id || ''
   } finally {
     loading.value = false
