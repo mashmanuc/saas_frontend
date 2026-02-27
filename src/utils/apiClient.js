@@ -27,7 +27,22 @@ const api = axios.create({
 })
 
 let isRefreshingToken = false
+let isRefreshingCsrf = false
 const refreshQueue = []
+
+/**
+ * Detect backend csrf:missing / csrf:invalid validation error.
+ * Backend returns 400 with body like {"csrf": ["missing"]} or {"csrf": ["invalid"]}.
+ */
+const isCsrfError = (error) => {
+  const status = error?.response?.status
+  if (status !== 400) return false
+  const data = error?.response?.data
+  if (!data || typeof data !== 'object') return false
+  const csrfField = data.csrf || data.fields?.csrf
+  if (!Array.isArray(csrfField)) return false
+  return csrfField.some(msg => typeof msg === 'string' && (msg === 'missing' || msg === 'invalid'))
+}
 
 const enqueueRequestWhileRefreshing = (callback) => {
   refreshQueue.push(callback)
@@ -127,6 +142,30 @@ api.interceptors.response.use(
     const status = error.response.status
     const data = error.response?.data
     const requestId = (data && typeof data === 'object' && data.request_id) ? data.request_id : null
+
+    // CSRF auto-retry: if backend returns csrf:missing/invalid, refresh token and retry once
+    if (isCsrfError(error) && !original._csrfRetry) {
+      original._csrfRetry = true
+      try {
+        if (!isRefreshingCsrf) {
+          isRefreshingCsrf = true
+          await store.ensureCsrfToken()
+          isRefreshingCsrf = false
+        }
+        // Re-attach fresh CSRF token
+        const freshCsrf = getCookie('csrf') || getCookie('csrftoken') || store.csrfToken
+        if (freshCsrf) {
+          original.headers = original.headers || {}
+          original.headers['X-CSRF-Token'] = freshCsrf
+        }
+        if (!original.meta) original.meta = {}
+        original.meta.skipLoader = true
+        return api(original)
+      } catch (csrfErr) {
+        isRefreshingCsrf = false
+        // CSRF refresh failed — fall through to normal error handling
+      }
+    }
 
     if (status === 429) {
       const retryAfter = error.response?.headers?.['retry-after']
