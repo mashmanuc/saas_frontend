@@ -86,6 +86,50 @@ export function validateProfileBeforeSubmit(model: TutorProfileFormModel): Profi
 }
 
 /**
+ * FIX-A: Map frontend language_* codes to backend Subject slugs.
+ * Frontend uses language_en internally, backend expects english-language slug.
+ * Only languages present in backend subjects.json are mapped.
+ */
+const LANGUAGE_CODE_TO_BACKEND_SLUG: Record<string, string> = {
+  'language_en': 'english-language',
+  'language_de': 'german-language',
+  'language_pl': 'polish-language',
+  'language_uk': 'ukrainian-language',
+  'language_fr': 'french-language',
+  'language_es': 'spanish-language',
+  'language_it': 'italian-language',
+  'language_pt': 'portuguese-language',
+  'language_cs': 'czech-language',
+  'language_sk': 'slovak-language',
+  'language_ro': 'romanian-language',
+  'language_hu': 'hungarian-language',
+  'language_nl': 'dutch-language',
+  'language_tr': 'turkish-language',
+  'language_zh': 'chinese-language',
+  'language_ja': 'japanese-language',
+  'language_ko': 'korean-language',
+  'language_el': 'greek-language',
+  'language_sv': 'swedish-language',
+  'language_no': 'norwegian-language',
+}
+
+/**
+ * Reverse mapping: backend slug → frontend language_* code.
+ * Used when parsing API response back to form model.
+ */
+const BACKEND_SLUG_TO_LANGUAGE_CODE: Record<string, string> = Object.fromEntries(
+  Object.entries(LANGUAGE_CODE_TO_BACKEND_SLUG).map(([k, v]) => [v, k])
+)
+
+export function resolveSubjectSlugForApi(code: string): string {
+  return LANGUAGE_CODE_TO_BACKEND_SLUG[code] || code
+}
+
+export function resolveSubjectCodeFromApi(slug: string): string {
+  return BACKEND_SLUG_TO_LANGUAGE_CODE[slug] || slug
+}
+
+/**
  * Build TutorProfileUpdate payload from UI form state
  * 
  * This is the ONLY way to convert form data to API payload.
@@ -98,7 +142,7 @@ export function buildTutorProfileUpdate(model: TutorProfileFormModel): TutorProf
     .map((s) => {
       const customText = s.custom_direction_text?.trim()
       return {
-        code: s.code.trim(),
+        code: resolveSubjectSlugForApi(s.code.trim()),
         tags: Array.isArray(s.tags) ? s.tags.filter((t) => t?.trim()) : [],
         custom_direction_text: customText && customText.length >= 50 && customText.length <= 800 
           ? customText 

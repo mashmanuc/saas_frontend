@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // TASK MF5: My Profile View
 import { onMounted, computed, ref } from 'vue'
-import { onBeforeRouteLeave } from 'vue-router'
+import { onBeforeRouteLeave, useRouter, useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useMarketplaceStore } from '../stores/marketplaceStore'
 import ProfileEditor from '../components/editor/ProfileEditor.vue'
@@ -15,10 +15,13 @@ import tutorActivityApi from '../api/tutorActivity'
 import { telemetry } from '@/services/telemetry'
 import { useI18n } from 'vue-i18n'
 import { notifyError, notifySuccess } from '@/utils/notify'
+import { findFirstTabWithError } from '../utils/validationMessages'
 import Button from '@/ui/Button.vue'
 
 const store = useMarketplaceStore()
 const { t } = useI18n()
+const router = useRouter()
+const route = useRoute()
 const activityStatus = ref<TutorActivityStatus | null>(null)
 const {
   myProfile,
@@ -72,6 +75,13 @@ async function handleSave(data: TutorProfilePatchPayload, options?: { silent?: b
       notifyError(t('common.sessionExpired', 'Сесію завершено. Увійдіть знову.'))
     } else if (!validationErrors.value) {
       notifyError(error.value || t('marketplace.errors.updateProfile'))
+    }
+    // FIX-D: Auto-switch to the first tab with validation errors
+    if (validationErrors.value) {
+      const errorTab = findFirstTabWithError(validationErrors.value)
+      if (errorTab && route.query.step !== errorTab) {
+        router.replace({ query: { ...route.query, step: errorTab } })
+      }
     }
   }
 }

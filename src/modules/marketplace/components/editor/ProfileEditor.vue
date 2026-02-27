@@ -1381,6 +1381,9 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
           data-test="marketplace-editor-experience-years"
         />
         <span class="hint">{{ t('marketplace.profile.editor.experienceYearsHint') }}</span>
+        <div v-if="errors.experience_years" class="field-error" data-test="marketplace-editor-error-experience">
+          {{ errors.experience_years }}
+        </div>
       </div>
 
       <div class="form-row">
@@ -1405,6 +1408,10 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
     <!-- Вкладка: Предмети (основні предмети + мови для вивчення) -->
     <section v-show="currentStep === 'subjects'" class="editor-section">
       <h2>{{ t('marketplace.profile.editor.subjectsTitle') }}</h2>
+
+      <div v-if="errors.subjects" class="field-error" data-test="marketplace-editor-error-subjects">
+        {{ errors.subjects }}
+      </div>
 
       <SubjectsTab
         :subject-options="subjectOptions"

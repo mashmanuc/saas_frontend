@@ -4,6 +4,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { debounce } from '@/utils/debounce'
 import { mapMarketplaceErrorToMessage, parseMarketplaceApiError } from '../utils/apiErrors'
+import { buildFriendlyErrorSummary } from '../utils/validationMessages'
 import { i18n } from '@/i18n'
 import marketplaceApi, {
   type TutorListItem,
@@ -317,13 +318,11 @@ export const useMarketplaceStore = defineStore('marketplace', () => {
       setValidationErrorsFromApi(err)
       error.value = mapApiError(err, t('marketplace.errors.updateProfile'))
       
-      // Show toast with ALL validation errors (only for non-silent saves)
+      // FIX-B: Show toast with user-friendly validation errors (only for non-silent saves)
       if (!options?.silent && validationErrors.value) {
-        const errorLines = Object.entries(validationErrors.value)
-          .map(([field, msgs]) => `• ${field}: ${(msgs || []).join(', ')}`)
-          .slice(0, 5) // max 5 to avoid huge toast
+        const errorLines = buildFriendlyErrorSummary(validationErrors.value, t, 5)
         if (errorLines.length > 0) {
-          notifyError(errorLines.join('\n'), { timeout: 10000 })
+          notifyError(errorLines.map(l => `• ${l}`).join('\n'), { timeout: 10000 })
         }
       }
       

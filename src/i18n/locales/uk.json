@@ -1336,6 +1336,42 @@
       "notFound": "Не знайдено",
       "unknown": "Невідома помилка"
     },
+    "validation": {
+      "fields": {
+        "headline": "Заголовок",
+        "bio": "Про мене",
+        "subjects": "Предмети",
+        "subjectCode": "Код предмету",
+        "teachingLanguages": "Мови викладання",
+        "languages": "Мови",
+        "hourlyRate": "Ціна за годину",
+        "experienceYears": "Досвід (років)",
+        "birthYear": "Рік народження",
+        "city": "Місто",
+        "country": "Країна",
+        "timezone": "Часовий пояс",
+        "gender": "Стать",
+        "format": "Формат",
+        "telegram": "Telegram",
+        "pricing": "Ціна",
+        "currency": "Валюта",
+        "education": "Освіта",
+        "certifications": "Сертифікати",
+        "media": "Медіа",
+        "customDirection": "Опис напрямку"
+      },
+      "errors": {
+        "notFoundInCatalog": "Не знайдено в каталозі. Оберіть зі списку.",
+        "required": "Обов'язкове поле.",
+        "minValue": "Значення замале.",
+        "maxValue": "Значення завелике.",
+        "tooLong": "Текст задовгий.",
+        "tooShort": "Текст закороткий.",
+        "mustBeNumber": "Має бути числом.",
+        "invalidSubjectsFormat": "Невірний формат предметів.",
+        "cityNotFound": "Місто не знайдено. Оберіть зі списку."
+      }
+    },
     "tutorCard": {
       "experience": "Досвід",
       "rate": "Ставка",

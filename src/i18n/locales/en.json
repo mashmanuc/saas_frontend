@@ -1246,6 +1246,42 @@
       "unknown": "Unknown error",
       "validationFailed": "Validation error"
     },
+    "validation": {
+      "fields": {
+        "headline": "Headline",
+        "bio": "About me",
+        "subjects": "Subjects",
+        "subjectCode": "Subject code",
+        "teachingLanguages": "Teaching languages",
+        "languages": "Languages",
+        "hourlyRate": "Hourly rate",
+        "experienceYears": "Experience (years)",
+        "birthYear": "Birth year",
+        "city": "City",
+        "country": "Country",
+        "timezone": "Timezone",
+        "gender": "Gender",
+        "format": "Format",
+        "telegram": "Telegram",
+        "pricing": "Pricing",
+        "currency": "Currency",
+        "education": "Education",
+        "certifications": "Certifications",
+        "media": "Media",
+        "customDirection": "Teaching approach"
+      },
+      "errors": {
+        "notFoundInCatalog": "Not found in catalog. Please select from the list.",
+        "required": "This field is required.",
+        "minValue": "Value is too small.",
+        "maxValue": "Value is too large.",
+        "tooLong": "Text is too long.",
+        "tooShort": "Text is too short.",
+        "mustBeNumber": "Must be a number.",
+        "invalidSubjectsFormat": "Invalid subjects format.",
+        "cityNotFound": "City not found. Please select from the list."
+      }
+    },
     "profile": {
       "completenessScore": "Completed",
       "title": "Tutor profile",

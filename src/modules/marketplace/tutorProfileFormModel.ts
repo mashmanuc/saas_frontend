@@ -1,4 +1,5 @@
 import type { LanguageLevel, TutorProfileFull, TutorProfilePatchPayload } from './api/marketplace'
+import { resolveSubjectCodeFromApi } from './adapters/profileAdapter'
 
 type FormLanguageItem = { code: string; level: LanguageLevel }
 
@@ -81,7 +82,7 @@ export function fromApi(profile: TutorProfileFull): TutorProfileFormModel {
           // Only accept normalized format (SubjectPublic)
           if (s && typeof s === 'object' && s.code) {
             return {
-              code: s.code,
+              code: resolveSubjectCodeFromApi(s.code),
               tags: Array.isArray(s.tags) ? s.tags.map((t: any) => t.code || t) : [],
               custom_direction_text: s.custom_direction_text || '',
             }

@@ -1298,6 +1298,42 @@
       "notFound": "Не найдено",
       "unknown": "Неизвестная ошибка"
     },
+    "validation": {
+      "fields": {
+        "headline": "Заголовок",
+        "bio": "О себе",
+        "subjects": "Предметы",
+        "subjectCode": "Код предмета",
+        "teachingLanguages": "Языки преподавания",
+        "languages": "Языки",
+        "hourlyRate": "Цена за час",
+        "experienceYears": "Опыт (лет)",
+        "birthYear": "Год рождения",
+        "city": "Город",
+        "country": "Страна",
+        "timezone": "Часовой пояс",
+        "gender": "Пол",
+        "format": "Формат",
+        "telegram": "Telegram",
+        "pricing": "Цена",
+        "currency": "Валюта",
+        "education": "Образование",
+        "certifications": "Сертификаты",
+        "media": "Медиа",
+        "customDirection": "Описание направления"
+      },
+      "errors": {
+        "notFoundInCatalog": "Не найдено в каталоге. Выберите из списка.",
+        "required": "Обязательное поле.",
+        "minValue": "Значение слишком маленькое.",
+        "maxValue": "Значение слишком большое.",
+        "tooLong": "Текст слишком длинный.",
+        "tooShort": "Текст слишком короткий.",
+        "mustBeNumber": "Должно быть числом.",
+        "invalidSubjectsFormat": "Неверный формат предметов.",
+        "cityNotFound": "Город не найден. Выберите из списка."
+      }
+    },
     "tutorCard": {
       "experience": "Опыт",
       "rate": "Ставка",
