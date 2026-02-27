@@ -155,7 +155,6 @@ import { useCatalog } from '../../composables/useCatalog'
 import TelegramNotifications from '@/modules/profile/components/settings/TelegramNotifications.vue'
 import OnboardingHint from '@/components/OnboardingHint.vue'
 import { TutorHintId } from '@/composables/useOnboardingHints'
-import apiClient from '@/utils/apiClient'
 import CityAutocomplete from '@/components/geo/CityAutocomplete.vue'
 import CityPrivacyToggle from '@/components/geo/CityPrivacyToggle.vue'
 import type { SpecialtyTagCatalog } from '../../api/marketplace'
@@ -648,16 +647,10 @@ watch(
 )
 
 function handleSubmit() {
-  // Mark all fields as touched so validation errors will show
-  markAllFieldsAsTouched()
-  
-  if (!canSubmit.value) {
-    // Validation prevents save — getSubmitPayload will show the toast
-    getSubmitPayload({ silent: false })
-    return
-  }
-  const apiPayload = getSubmitPayload({ silent: false })
-  if (!apiPayload) return
+  // Save = send whatever the user has. Backend validates.
+  // Full client-side validation is only for Publish (via getSubmitPayload).
+  const { newLanguageCode, newLanguageLevel, ...model } = formData.value
+  const apiPayload = buildTutorProfileUpdate(model)
   emit('save', apiPayload as any)
 }
 
@@ -665,7 +658,7 @@ function markAllFieldsAsTouched() {
   const allFields = [
     'headline', 'bio', 'subjects', 'teaching_languages', 'hourly_rate',
     'experience_years', 'birth_year', 'country', 'timezone', 'format',
-    'gender', 'show_gender', 'show_age', 'telegram_username', 'show_telegram'
+    'gender', 'show_gender', 'show_age', 'telegram_username'
   ]
   allFields.forEach(field => touchedFields.value.add(field))
 }
@@ -936,15 +929,8 @@ watch(
   { immediate: true }
 )
 
-onMounted(async () => {
-  try {
-    const me = await apiClient.get('/v1/marketplace/me/', { meta: { skipLoader: true } } as any)
-    // Live check takes priority over cached props.profile.has_availability
-    profileHasAvailability.value = !!me?.has_availability
-  } catch {
-    // Silent — fallback to props.profile value already set above
-  }
-})
+// has_availability is sourced from props.profile via the watcher above (immediate: true).
+// No separate API call needed — avoids a potential 401 → forceLogout risk.
 
 const stepCompletion = computed<Record<string, boolean>>(() => {
   const f = formData.value
@@ -1564,7 +1550,7 @@ function handleUpdateLanguages(updated: Array<{ code: string; title: string; lev
       <Button
         variant="primary"
         type="submit"
-        :disabled="!canSubmit"
+        :disabled="saving"
         :loading="saving"
         data-test="marketplace-editor-save"
       >
