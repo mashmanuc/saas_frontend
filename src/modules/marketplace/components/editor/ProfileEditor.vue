@@ -381,13 +381,15 @@ watch(
 watch(
   stepIndex,
   (idx) => {
-    // Flush draft immediately on step change to prevent data loss
-    debouncedAutosave.cancel?.()
-    try {
-      const { newLanguageCode, newLanguageLevel, ...model } = formData.value
-      const apiPayload = buildTutorProfileUpdate(model)
-      writeLocalDraft(apiPayload as any)
-    } catch { /* silent */ }
+    // Flush draft immediately on step change — but only if user has edits
+    if (isDirty.value) {
+      debouncedAutosave.cancel?.()
+      try {
+        const { newLanguageCode, newLanguageLevel, ...model } = formData.value
+        const apiPayload = buildTutorProfileUpdate(model)
+        writeLocalDraft(apiPayload as any)
+      } catch { /* silent */ }
+    }
 
     const stepId = steps.value[idx]?.id
     if (!stepId) return
@@ -505,18 +507,65 @@ function clearLocalDraft(): void {
   showDraftBanner.value = false
 }
 
+// --- Draft / autosave state ---
+
+// Reliable guard: incremented before programmatic formData writes, decremented after.
+// While > 0, watch(formData) will NOT trigger autosave.
+const suppressAutosave = ref(0)
+
+// True only when user has made real edits (not programmatic loads from server/draft).
+const isDirty = ref(false)
+
+/** Helper: write formData from server data without triggering autosave */
+function setFormDataFromServer(profile: TutorProfileFull) {
+  suppressAutosave.value++
+  formData.value = {
+    ...fromApi(profile),
+    newLanguageCode: '',
+    newLanguageLevel: 'fluent' as LanguageLevel,
+  }
+  // Decrement after Vue reactivity flush to cover sync watch triggers
+  setTimeout(() => { suppressAutosave.value-- }, 0)
+}
+
+const debouncedAutosave = debounce(async () => {
+  if (import.meta.env.DEV) {
+    console.log('[ProfileEditor] debouncedAutosave called, saving:', props.saving, 'suppressAutosave:', suppressAutosave.value, 'isDirty:', isDirty.value)
+  }
+  if (props.saving || suppressAutosave.value > 0 || !isDirty.value) return
+  autosaveStatus.value = 'saving'
+  try {
+    const { newLanguageCode, newLanguageLevel, ...model } = formData.value
+    const apiPayload = buildTutorProfileUpdate(model)
+    if (import.meta.env.DEV) {
+      console.log('[ProfileEditor] Writing draft to localStorage, bio length:', apiPayload.bio?.length || 0)
+    }
+    writeLocalDraft(apiPayload as any)
+    lastAutosavedAt.value = Date.now()
+    autosaveStatus.value = 'saved'
+  } catch (err) {
+    console.error('[ProfileEditor] Autosave error:', err)
+    autosaveStatus.value = 'idle'
+  }
+}, 2000) as ((...args: any[]) => void) & { cancel?: () => void }
+
 function restoreLocalDraft(): void {
   const draft = readLocalDraft()
   if (!draft) {
     clearLocalDraft()
     return
   }
+  // Suppress autosave during restore — draft is already in localStorage
+  suppressAutosave.value++
   const model = fromApi({ ...(props.profile as any), ...(draft.data as any) })
   formData.value = {
     ...(model as any),
     newLanguageCode: '',
     newLanguageLevel: 'fluent' as LanguageLevel,
   }
+  setTimeout(() => { suppressAutosave.value-- }, 0)
+  // Data now differs from server — mark as dirty
+  isDirty.value = true
   autosaveStatus.value = 'restored'
   showDraftBanner.value = false
 }
@@ -524,85 +573,48 @@ function restoreLocalDraft(): void {
 function discardLocalDraft(): void {
   clearLocalDraft()
   autosaveStatus.value = 'idle'
+  isDirty.value = false
+  // Reload server data to ensure clean state
+  setFormDataFromServer(props.profile)
 }
 
-const isUpdatingFromProps = ref(false)
-
-const debouncedAutosave = debounce(async () => {
-  if (import.meta.env.DEV) {
-    console.log('[ProfileEditor] debouncedAutosave called, saving:', props.saving, 'isUpdatingFromProps:', isUpdatingFromProps.value)
-  }
-  if (props.saving || isUpdatingFromProps.value) return
-  autosaveStatus.value = 'saving'
-  try {
-    const { newLanguageCode, newLanguageLevel, ...model } = formData.value
-    // v0.60.1: Build payload WITHOUT debugPayload to avoid infinite loop
-    const apiPayload = buildTutorProfileUpdate(model)
-    // Skip debugPayload during autosave to prevent console.log spam
-    if (import.meta.env.DEV) {
-      console.log('[ProfileEditor] Writing draft to localStorage, bio length:', apiPayload.bio?.length || 0)
-    }
-    writeLocalDraft(apiPayload as any)
-
-    // Keep autosave local-only to avoid spamming API (rate-limited).
-    lastAutosavedAt.value = Date.now()
-
-    autosaveStatus.value = 'saved'
-    if (import.meta.env.DEV) {
-      console.log('[ProfileEditor] Autosave completed successfully')
-    }
-  } catch (err) {
-    console.error('[ProfileEditor] Autosave error:', err)
-    autosaveStatus.value = 'idle'
-  }
-}, 2000) as ((...args: any[]) => void) & { cancel?: () => void }
-
 onBeforeUnmount(() => {
-  // Flush pending draft to localStorage before unmount
-  // so data is preserved when user navigates away
   debouncedAutosave.cancel?.()
-  try {
-    const { newLanguageCode, newLanguageLevel, ...model } = formData.value
-    const apiPayload = buildTutorProfileUpdate(model)
-    writeLocalDraft(apiPayload as any)
-  } catch {
-    // Silent — best effort save
+  // Only write draft if user actually edited something
+  if (isDirty.value) {
+    try {
+      const { newLanguageCode, newLanguageLevel, ...model } = formData.value
+      const apiPayload = buildTutorProfileUpdate(model)
+      writeLocalDraft(apiPayload as any)
+    } catch {
+      // Silent — best effort save
+    }
   }
 })
 
 watch(
   () => props.profile,
   (newProfile) => {
-    // While save is in progress, skip — profile will update again after save completes
+    // While save is in progress, skip — watch(saving) will handle sync after save completes
     if (props.saving) return
 
-    isUpdatingFromProps.value = true
+    // Always load server data into formData (suppressing autosave)
+    setFormDataFromServer(newProfile)
 
+    // Check if a user draft exists in localStorage
     const draft = readLocalDraft()
     if (draft) {
-      // Draft exists — show banner so user can choose to restore or discard
       hasLocalDraft.value = true
       lastAutosavedAt.value = draft.savedAt
       showDraftBanner.value = true
-      // Still load server data into formData — draft restore is explicit via banner
-    }
-
-    formData.value = {
-      ...fromApi(newProfile),
-      newLanguageCode: '',
-      newLanguageLevel: 'fluent' as LanguageLevel,
-    }
-
-    if (!draft) {
+    } else {
       hasLocalDraft.value = false
       showDraftBanner.value = false
       lastAutosavedAt.value = null
     }
 
-    // Reset flag after Vue's reactivity updates
-    setTimeout(() => {
-      isUpdatingFromProps.value = false
-    }, 0)
+    // Server data loaded — user hasn't edited yet
+    isDirty.value = false
   },
   { deep: true, immediate: true }
 )
@@ -610,12 +622,10 @@ watch(
 watch(
   formData,
   () => {
-    if (import.meta.env.DEV) {
-      console.log('[ProfileEditor] formData changed, isUpdatingFromProps:', isUpdatingFromProps.value)
-    }
-    if (!isUpdatingFromProps.value) {
-      debouncedAutosave()
-    }
+    if (suppressAutosave.value > 0) return
+    // User made a real edit
+    isDirty.value = true
+    debouncedAutosave()
   },
   { deep: true }
 )
@@ -624,21 +634,15 @@ watch(
   () => props.saving,
   (next, prev) => {
     if (prev && !next) {
-      // Save completed: clear draft first, then sync formData from server
+      // Save completed successfully
+      debouncedAutosave.cancel?.()
       clearLocalDraft()
       autosaveStatus.value = 'idle'
       lastAutosavedAt.value = null
+      isDirty.value = false
 
-      // Force-sync formData with latest server data
-      isUpdatingFromProps.value = true
-      formData.value = {
-        ...fromApi(props.profile),
-        newLanguageCode: '',
-        newLanguageLevel: 'fluent' as LanguageLevel,
-      }
-      setTimeout(() => {
-        isUpdatingFromProps.value = false
-      }, 0)
+      // Force-sync formData with latest server data (suppresses autosave)
+      setFormDataFromServer(props.profile)
     }
   }
 )
@@ -647,7 +651,11 @@ function handleSubmit() {
   // Mark all fields as touched so validation errors will show
   markAllFieldsAsTouched()
   
-  if (!canSubmit.value) return
+  if (!canSubmit.value) {
+    // Validation prevents save — getSubmitPayload will show the toast
+    getSubmitPayload({ silent: false })
+    return
+  }
   const apiPayload = getSubmitPayload({ silent: false })
   if (!apiPayload) return
   emit('save', apiPayload as any)
@@ -700,6 +708,7 @@ defineExpose({
   getSubmitPayload,
   flushDraft() {
     debouncedAutosave.cancel?.()
+    if (!isDirty.value) return
     try {
       const { newLanguageCode, newLanguageLevel, ...model } = formData.value
       const apiPayload = buildTutorProfileUpdate(model)
