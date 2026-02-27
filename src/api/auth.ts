@@ -48,7 +48,7 @@ const authApi = {
   },
 
   refresh(): Promise<RefreshResponse> {
-    return apiClient.post('/v1/auth/refresh')
+    return apiClient.post('/v1/auth/refresh/')
   },
 
   csrf(): Promise<{ csrf: string }> {
