@@ -134,6 +134,27 @@ export const useAvailabilityDraftUnifiedStore = defineStore('availabilityDraftUn
   }
 
   function addSlot(start: string, end: string, status: 'available' | 'blocked' = 'available') {
+    // Check for duplicate/overlapping slots in existing changes
+    const newStart = new Date(start).getTime()
+    const newEnd = new Date(end).getTime()
+
+    const hasOverlap = changes.value.some(change => {
+      if (change.type !== 'add') return false
+      if (!change.start || !change.end) return false
+
+      const existingStart = new Date(change.start).getTime()
+      const existingEnd = new Date(change.end).getTime()
+
+      // Overlap check: new slot overlaps with existing if:
+      // newStart < existingEnd AND newEnd > existingStart
+      return newStart < existingEnd && newEnd > existingStart
+    })
+
+    if (hasOverlap) {
+      // Slot already exists or overlaps - ignore duplicate
+      return null
+    }
+
     const change: DraftChange = {
       id: generateId(),
       type: 'add',
