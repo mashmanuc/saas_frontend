@@ -11,7 +11,7 @@
       </slot>
     </div>
     <div class="alert__content">
-      <p class="alert__title">{{ title }}</p>
+      <p v-if="title" class="alert__title">{{ title }}</p>
       <p v-if="description" class="alert__description">
         {{ description }}
       </p>
@@ -35,7 +35,7 @@ const VARIANT_ICONS = {
 const props = defineProps({
   title: {
     type: String,
-    required: true,
+    default: '',
   },
   description: {
     type: String,

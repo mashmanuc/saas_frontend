@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useReviewsStore } from '../reviewsStore'
 import * as reviewsApi from '../../api/reviewsApi'
+import type { Review } from '../../api/reviewsApi'
 
 vi.mock('../../api/reviewsApi')
 
@@ -27,7 +28,21 @@ describe('reviewsStore', () => {
     it('should fetch tutor reviews', async () => {
       const mockReviews = {
         results: [
-          { id: 1, tutor_id: 123, rating: 5, text: 'Great tutor!', is_verified: true }
+          { 
+            id: 1, 
+            tutor_id: 123, 
+            student_id: 456,
+            rating: 5, 
+            text: 'Great tutor!', 
+            is_anonymous: false,
+            is_verified: true,
+            helpful_count: 0,
+            created_at: '2024-01-01T00:00:00Z',
+            updated_at: '2024-01-01T00:00:00Z',
+            can_edit: false,
+            can_delete: false,
+            has_user_marked_helpful: false
+          } as Review
         ],
         count: 1,
         next: null,
@@ -46,12 +61,20 @@ describe('reviewsStore', () => {
 
   describe('createReview', () => {
     it('should create review and update state', async () => {
-      const mockReview = { 
-        id: 1, 
-        tutor_id: 123, 
-        rating: 5, 
+      const mockReview: Review = {
+        id: 1,
+        tutor_id: 123,
+        student_id: 456,
+        rating: 5,
         text: 'Excellent!',
-        is_verified: false
+        is_anonymous: false,
+        is_verified: false,
+        helpful_count: 0,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+        can_edit: true,
+        can_delete: true,
+        has_user_marked_helpful: false
       }
       
       vi.mocked(reviewsApi.reviewsApi.createReview).mockResolvedValue(mockReview)

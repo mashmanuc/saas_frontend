@@ -7,6 +7,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useTrustStore } from '../trustStore'
 import * as trustApi from '../../api/trust'
+import type { Report, Ban, Appeal } from '../../api/trust'
 
 // Mock trustApi
 vi.mock('../../api/trust')
@@ -109,7 +110,7 @@ describe('trustStore', () => {
 
   describe('createReport', () => {
     it('should create report successfully', async () => {
-      const mockReport = { 
+      const mockReport: Report = { 
         id: 1, 
         target_type: 'user', 
         target_id: 123, 
@@ -131,7 +132,7 @@ describe('trustStore', () => {
 
   describe('fetchBans', () => {
     it('should fetch active bans', async () => {
-      const mockBans = [
+      const mockBans: Ban[] = [
         { id: 1, scope: 'inquiries', reason: 'Too many rejections', expires_at: '2026-02-01', is_permanent: false, created_at: '2026-01-01' }
       ]
       
@@ -147,7 +148,7 @@ describe('trustStore', () => {
 
   describe('createAppeal', () => {
     it('should create appeal successfully', async () => {
-      const mockAppeal = { 
+      const mockAppeal: Appeal = { 
         id: 1, 
         ban_id: 1, 
         reason: 'I believe this was a mistake', 
