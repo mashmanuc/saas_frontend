@@ -1,5 +1,5 @@
 <template>
-  <div class="city-autocomplete">
+  <div class="city-autocomplete" data-test="city-autocomplete">
     <div class="input-wrapper">
       <Input
         v-model="searchQuery"
@@ -11,28 +11,31 @@
         @blur="onBlur"
         autocomplete="off"
       />
+      <!-- Inline spinner — absolute, no layout shift -->
+      <span v-if="loading" class="input-spinner" aria-hidden="true" />
       <button
-        v-if="selectedCity"
+        v-if="selectedCity && !loading"
         type="button"
         class="clear-btn"
         @click="clearSelection"
+        :aria-label="$t('common.clear')"
       >
         ×
       </button>
     </div>
     
+    <!-- Dropdown: position absolute, capped height, never in normal flow -->
     <div
-      v-if="showDropdown && (cities.length || loading)"
+      v-if="showDropdown && (cities.length || hasPendingSearch)"
       class="dropdown"
+      role="listbox"
     >
-      <div v-if="loading" class="dropdown-item loading">
-        {{ $t('common.loading') }}
-      </div>
       <div
         v-for="city in cities"
         :key="city.code"
         class="dropdown-item"
-        @mousedown="selectCity(city)"
+        role="option"
+        @mousedown.prevent="selectCity(city)"
       >
         <span class="city-name">{{ city.name }}</span>
         <span v-if="city.country_code !== 'UA'" class="country-badge">
@@ -55,7 +58,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Input from '@/components/ui/Input.vue'
 import { useGeoApi } from '@/composables/useGeoApi'
@@ -85,37 +88,51 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const { fetchCities, loading, error: apiError } = useGeoApi()
+const { fetchCities, cancelPending, loading, error: apiError } = useGeoApi()
 
 const searchQuery = ref('')
 const showDropdown = ref(false)
 const cities = ref<City[]>([])
 const selectedCity = ref<City | null>(null)
 const hasUnmatchedInput = ref(false)
+// Track whether a search is pending (debounce queued OR request in-flight)
+const hasPendingSearch = computed(() => loading.value || searchQuery.value.length >= 2)
 
 const error = computed(() => {
   if (apiError.value) return apiError.value
   return ''
 })
 
-// Debounced search
+// Debounced search — 350ms to reduce API calls while typing
 const debouncedSearch = debounce(async (query: string) => {
   if (!query || query.length < 2) {
+    // Only clear results when query is explicitly too short — not during loading
     cities.value = []
     return
   }
   
   try {
-    cities.value = await fetchCities({
+    const result = await fetchCities({
       country: props.countryCode,
       query: query
     })
+    // Only update cities if we got a real result (aborted requests return [])
+    // Keep previous results visible while a new request is in-flight
+    if (result.length > 0 || !loading.value) {
+      cities.value = result
+    }
   } catch {
-    cities.value = []
+    // Don't clear cities on error — keep stale results visible
   }
-}, 300)
+}, 350)
 
 function onSearchInput() {
+  // If user cleared selection by typing, reset selectedCity
+  if (selectedCity.value && searchQuery.value !== selectedCity.value.name) {
+    selectedCity.value = null
+    emit('update:modelValue', null)
+  }
+  showDropdown.value = true
   debouncedSearch(searchQuery.value)
 }
 
@@ -127,7 +144,7 @@ function onFocus() {
 }
 
 function onBlur() {
-  // Delay hiding to allow click on dropdown items
+  // Delay hiding to allow click on dropdown items (mousedown.prevent helps too)
   setTimeout(() => {
     showDropdown.value = false
     // If user typed something but didn't select from dropdown — clear city_code and show warning
@@ -146,6 +163,9 @@ function selectCity(city: City) {
   hasUnmatchedInput.value = false
   emit('update:modelValue', city.code)
   showDropdown.value = false
+  // Cancel any pending search — user made a choice
+  debouncedSearch.cancel?.()
+  cancelPending()
 }
 
 function clearSelection() {
@@ -154,7 +174,15 @@ function clearSelection() {
   cities.value = []
   hasUnmatchedInput.value = false
   emit('update:modelValue', null)
+  debouncedSearch.cancel?.()
+  cancelPending()
 }
+
+// Cleanup on unmount
+onBeforeUnmount(() => {
+  debouncedSearch.cancel?.()
+  cancelPending()
+})
 
 // Load city details if modelValue provided externally
 // Guard: skip re-fetch if selected city already matches the code
@@ -193,11 +221,27 @@ watch(() => props.modelValue, async (code, oldCode) => {
   position: relative;
 }
 
-.clear-btn {
+.input-spinner {
   position: absolute;
   right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
+  bottom: 10px;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #e5e7eb;
+  border-top-color: #10b981;
+  border-radius: 50%;
+  animation: city-spin 0.6s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes city-spin {
+  to { transform: rotate(360deg); }
+}
+
+.clear-btn {
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
   background: none;
   border: none;
   font-size: 20px;
@@ -216,13 +260,15 @@ watch(() => props.modelValue, async (code, oldCode) => {
   top: 100%;
   left: 0;
   right: 0;
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  max-height: 200px;
+  margin-top: 4px;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 8px;
+  max-height: 240px;
   overflow-y: auto;
-  z-index: 100;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  z-index: 50;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  overscroll-behavior: contain;
 }
 
 .dropdown-item {
@@ -231,12 +277,16 @@ watch(() => props.modelValue, async (code, oldCode) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  transition: background-color 0.1s ease;
   
   &:hover {
     background: #f5f5f5;
   }
   
-  &.loading,
+  &:active {
+    background: #e8e8e8;
+  }
+  
   &.no-results {
     color: #999;
     cursor: default;
