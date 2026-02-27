@@ -81,7 +81,11 @@ export const useAuthStore = defineStore('auth', {
           this.user = user
           storage.setUser(user)
         } catch (error) {
-          await this.forceLogout('session_expired')
+          // FIX-1: forceLogout ONLY on 401. Server errors (500) must not kill session.
+          const status = error?.response?.status
+          if (status === 401) {
+            await this.forceLogout('session_expired')
+          }
           return
         }
       }
@@ -311,7 +315,11 @@ export const useAuthStore = defineStore('auth', {
         storage.setUser(user)
         return user
       } catch (error) {
-        await this.forceLogout('session_expired')
+        // FIX-2: forceLogout ONLY on 401. 500/network must not kill session.
+        const status = error?.response?.status
+        if (status === 401) {
+          await this.forceLogout('session_expired')
+        }
         throw error
       }
     },
@@ -419,7 +427,11 @@ export const useAuthStore = defineStore('auth', {
         storage.setUser(user)
         return user
       } catch (error) {
-        await this.forceLogout()
+        // FIX-3: forceLogout ONLY on 401.
+        const status = error?.response?.status
+        if (status === 401) {
+          await this.forceLogout()
+        }
         throw error
       }
     },
@@ -436,14 +448,13 @@ export const useAuthStore = defineStore('auth', {
         try {
           await this.refreshAccess()
         } catch (error) {
-          // Якщо 429 (rate limit) - не робимо logout, просто пропускаємо цей refresh
+          // FIX-4: forceLogout ONLY on 401 (token truly dead).
+          // 429 = rate limit, 500 = server error, network = glitch — all recoverable.
           const status = error?.response?.status
-          if (status === 429) {
-            return
+          if (status === 401) {
+            await this.forceLogout()
           }
-          
-          // Для інших помилок - logout
-          await this.forceLogout()
+          // else: skip, try again on next interval
         }
       }, REFRESH_INTERVAL_MS)
 
@@ -457,10 +468,12 @@ export const useAuthStore = defineStore('auth', {
           try {
             await this.refreshAccess()
           } catch (error) {
+            // FIX-5: forceLogout ONLY on 401.
             const status = error?.response?.status
-            if (status !== 429) {
+            if (status === 401) {
               await this.forceLogout()
             }
+            // else: skip — will retry on next visibility change or interval
           }
         }
         document.addEventListener('visibilitychange', this._visibilityHandler)

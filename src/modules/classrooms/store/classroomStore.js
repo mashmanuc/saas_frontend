@@ -37,15 +37,9 @@ export const useClassroomStore = defineStore('classrooms', {
         const data = await getTutorClassrooms()
         this.items = data
       } catch (e) {
+        // FIX-6: Removed duplicate 401 handling — apiClient interceptor already
+        // handles 401 → refresh → forceLogout. Manual handling here bypassed refresh.
         const status = e?.response?.status
-
-        if (status === 401) {
-          // Використовуємо authStore для правильного logout
-          const { useAuthStore } = await import('../../auth/store/authStore')
-          const authStore = useAuthStore()
-          await authStore.forceLogout('session_expired')
-          return
-        }
 
         if (status === 500) {
           notifyError('Помилка сервера')

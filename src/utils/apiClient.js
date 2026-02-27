@@ -205,16 +205,18 @@ api.interceptors.response.use(
           return Promise.reject(refreshError)
         }
 
-        const hadSession = Boolean(store.access)
-        await store.forceLogout('session_expired')
-        if (hadSession) {
-          notifySessionExpired()
-          // Navigate to /start so user doesn't stay on page in zombie state.
-          // Draft data is safe in localStorage.
-          try {
-            const { default: router } = await import('../router')
-            router.push('/start')
-          } catch { /* navigation may fail if already at /start */ }
+        // FIX-7: forceLogout ONLY when refresh returns 401 (token truly dead).
+        // 500 from refresh = server temporarily down, session may still be valid.
+        if (refreshStatus === 401) {
+          const hadSession = Boolean(store.access)
+          await store.forceLogout('session_expired')
+          if (hadSession) {
+            notifySessionExpired()
+            try {
+              const { default: router } = await import('../router')
+              router.push('/start')
+            } catch { /* navigation may fail if already at /start */ }
+          }
         }
         return Promise.reject(refreshError)
       } finally {
