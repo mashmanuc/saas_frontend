@@ -1,7 +1,7 @@
 <template>
   <button
     type="button"
-    class="flex flex-col items-start rounded-lg border border-border-subtle bg-surface-muted/40 p-4 text-left shadow-sm hover:shadow-md hover:border-primary transition"
+    class="flex flex-col items-start rounded-lg border border-border-subtle bg-surface p-4 text-left shadow-sm hover:shadow-md hover:border-primary transition"
     @click="goToDetail"
   >
     <h3 class="text-base font-semibold text-foreground truncate w-full">

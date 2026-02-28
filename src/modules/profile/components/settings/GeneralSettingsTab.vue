@@ -16,7 +16,7 @@
         </label>
         <select
           id="language"
-          v-model="formData.language"
+          v-model="formData.ui_language"
           :disabled="saving"
           class="input mt-1"
           @change="handleChange"
@@ -76,19 +76,20 @@
 import { ref, computed, onMounted } from 'vue'
 import Button from '@/ui/Button.vue'
 import { useProfileStore } from '../../store/profileStore'
-import { updateUserSettings } from '@/api/users'
+import { getUserSettings, updateUserSettings } from '@/api/users'
 import { notifySuccess, notifyError } from '@/utils/notify'
 import { i18n } from '@/i18n'
 
 const profileStore = useProfileStore()
 
 const formData = ref({
-  language: 'uk',
+  ui_language: 'uk',
   timezone: 'UTC'
 })
 
 const initialData = ref({ ...formData.value })
 const saving = ref(false)
+const loading = ref(false)
 const errorMessage = ref('')
 
 const hasChanges = computed(() => {
@@ -96,10 +97,20 @@ const hasChanges = computed(() => {
 })
 
 onMounted(async () => {
-  if (profileStore.settings) {
+  // Try cached settings first, then fetch from API
+  let settings = profileStore.settings
+  if (!settings) {
+    loading.value = true
+    try {
+      settings = await getUserSettings()
+      profileStore.settings = settings
+    } catch { /* silent — form will use defaults */ }
+    finally { loading.value = false }
+  }
+  if (settings) {
     formData.value = {
-      language: profileStore.settings.language || 'uk',
-      timezone: profileStore.settings.timezone || 'UTC'
+      ui_language: settings.ui_language || settings.language || 'uk',
+      timezone: settings.timezone || 'UTC'
     }
     initialData.value = { ...formData.value }
   }
@@ -121,9 +132,16 @@ async function handleSubmit() {
   errorMessage.value = ''
 
   try {
-    await updateUserSettings(formData.value)
-    await profileStore.loadProfile()
+    const updated = await updateUserSettings(formData.value)
+    // Update local settings in profileStore without calling loadProfile
+    if (profileStore.settings) {
+      profileStore.settings = { ...profileStore.settings, ...updated }
+    }
     initialData.value = { ...formData.value }
+    // Apply locale change
+    if (formData.value.ui_language && i18n.global.locale) {
+      i18n.global.locale.value = formData.value.ui_language as any
+    }
     notifySuccess(i18n.global.t('users.settings.saveSuccess'))
   } catch (error: any) {
     errorMessage.value = error?.response?.data?.detail || i18n.global.t('users.settings.saveError')
