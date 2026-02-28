@@ -244,9 +244,10 @@ api.interceptors.response.use(
           return Promise.reject(refreshError)
         }
 
-        // FIX-7: forceLogout ONLY when refresh returns 401 (token truly dead).
+        // FIX-7: forceLogout when refresh returns 401 or 422 (token truly dead).
+        // 422 = unprocessable (expired/invalid refresh token) — same outcome.
         // 500 from refresh = server temporarily down, session may still be valid.
-        if (refreshStatus === 401) {
+        if (refreshStatus === 401 || refreshStatus === 422) {
           const hadSession = Boolean(store.access)
           await store.forceLogout('session_expired')
           if (hadSession) {

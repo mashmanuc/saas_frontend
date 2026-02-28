@@ -1,14 +1,33 @@
 import apiClient from '../utils/apiClient'
 
-const PROFILE_BASE = '/me/profile/'
-const PROFILE_AUTOSAVE = `${PROFILE_BASE}autosave/`
+const PROFILE_AUTOSAVE = '/me/profile/autosave/'
 
+/**
+ * Fetch current user profile by combining /v1/me (user data) and /v1/me/settings.
+ * Returns shape expected by profileStore.normalizeProfileResponse:
+ *   { user, settings, avatar_url }
+ */
 export async function getMeProfile() {
-  return apiClient.get(PROFILE_BASE)
+  const [meData, settings] = await Promise.all([
+    apiClient.get('/v1/me'),
+    apiClient.get('/v1/me/settings').catch(() => null),
+  ])
+  const user = meData?.user ?? meData
+  return {
+    user,
+    settings,
+    avatar_url: user?.avatar_url ?? null,
+  }
 }
 
+/**
+ * Patch user profile fields via /v1/me.
+ * Accepts: { first_name, last_name, timezone, username, phone, telegram_username }
+ */
 export async function patchMeProfile(payload) {
-  return apiClient.patch(PROFILE_BASE, payload)
+  const res = await apiClient.patch('/v1/me', payload)
+  const user = res?.user ?? res
+  return { user, avatar_url: user?.avatar_url ?? null }
 }
 
 export async function autosaveProfile(payload) {

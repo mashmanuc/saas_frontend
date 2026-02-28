@@ -600,6 +600,37 @@
   [data-theme="dark"] .bg-red-50 {
     background-color: rgba(127, 29, 29, 0.3);
   }
+
+  /* ─── Dark Theme: Winterboard Variables ─── */
+  [data-theme="dark"] {
+    --wb-bg: #0f172a;
+    --wb-bg-hover: #1e293b;
+    --wb-bg-secondary: #1e293b;
+    --wb-bg-tertiary: #334155;
+    --wb-border: #334155;
+    --wb-brand: #3b82f6;
+    --wb-brand-hover: #2563eb;
+    --wb-brand-dark: #1d4ed8;
+    --wb-btn-hover: #334155;
+    --wb-canvas-area-bg: #0f172a;
+    --wb-canvas-bg: #1e293b;
+    --wb-card-bg: #1e293b;
+    --wb-danger-bg: rgba(239, 68, 68, 0.15);
+    --wb-error: #f87171;
+    --wb-fg: #e2e8f0;
+    --wb-fg-secondary: #94a3b8;
+    --wb-footer-bg: #0f172a;
+    --wb-header-bg: #020617;
+    --wb-primary: #3b82f6;
+    --wb-primary-hover: #2563eb;
+    --wb-surface: #1e293b;
+    --wb-text: #e2e8f0;
+    --wb-text-muted: #94a3b8;
+    --wb-toolbar-bg: #0f172a;
+    --wb-toolbar-border: #334155;
+    --wb-warning-bg: rgba(234, 179, 8, 0.15);
+    --wb-warning-text: #fbbf24;
+  }
 }
 
 @layer utilities {
