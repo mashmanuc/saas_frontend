@@ -25,8 +25,9 @@
     </div>
     
     <!-- Dropdown: position absolute, capped height, never in normal flow -->
+    <!-- Показуємо лише коли є результати АБО запит вже виконується — не під час debounce-паузи -->
     <div
-      v-if="showDropdown && (cities.length || hasPendingSearch)"
+      v-if="showDropdown && (cities.length > 0 || loading)"
       class="dropdown"
       role="listbox"
     >
@@ -46,13 +47,16 @@
         {{ $t('tutor.city.no_results') }}
       </div>
     </div>
-    
-    <div v-if="selectedCity && !showDropdown" class="selected-hint">
-      <span class="hint-label">{{ $t('tutor.city.selected') }}:</span>
-      <span class="hint-value">{{ selectedCity.name }}</span>
-    </div>
-    <div v-else-if="hasUnmatchedInput && !showDropdown" class="unmatched-warning">
-      {{ $t('tutor.city.unmatched_warning') }}
+
+    <!-- hint-area має min-height — резервує місце щоб контент нижче не стрибав при фокусі -->
+    <div class="hint-area">
+      <div v-if="selectedCity && !showDropdown" class="selected-hint">
+        <span class="hint-label">{{ $t('tutor.city.selected') }}:</span>
+        <span class="hint-value">{{ selectedCity.name }}</span>
+      </div>
+      <div v-else-if="hasUnmatchedInput && !showDropdown" class="unmatched-warning">
+        {{ $t('tutor.city.unmatched_warning') }}
+      </div>
     </div>
   </div>
 </template>
@@ -95,15 +99,12 @@ const showDropdown = ref(false)
 const cities = ref<City[]>([])
 const selectedCity = ref<City | null>(null)
 const hasUnmatchedInput = ref(false)
-// Track whether a search is pending (debounce queued OR request in-flight)
-const hasPendingSearch = computed(() => loading.value || searchQuery.value.length >= 2)
-
 const error = computed(() => {
   if (apiError.value) return apiError.value
   return ''
 })
 
-// Debounced search — 350ms to reduce API calls while typing
+// Debounced search — 400ms: баланс між чуйністю і кількістю запитів
 const debouncedSearch = debounce(async (query: string) => {
   if (!query || query.length < 2) {
     // Only clear results when query is explicitly too short — not during loading
@@ -124,7 +125,7 @@ const debouncedSearch = debounce(async (query: string) => {
   } catch {
     // Don't clear cities on error — keep stale results visible
   }
-}, 350)
+}, 400)
 
 function onSearchInput() {
   // If user cleared selection by typing, reset selectedCity
@@ -306,8 +307,14 @@ watch(() => props.modelValue, async (code, oldCode) => {
   border-radius: 3px;
 }
 
+// Резервує простір під полем — ключ до відсутності layout shift
+// min-height = висота selected-hint (~28px), щоб при фокусі контент нижче не стрибав
+.hint-area {
+  min-height: 28px;
+}
+
 .selected-hint {
-  margin-top: 8px;
+  padding-top: 6px;
   font-size: 13px;
   color: #666;
 }
@@ -321,7 +328,7 @@ watch(() => props.modelValue, async (code, oldCode) => {
 }
 
 .unmatched-warning {
-  margin-top: 8px;
+  margin-top: 4px;
   font-size: 13px;
   color: #b45309;
   background: #fef3c7;
