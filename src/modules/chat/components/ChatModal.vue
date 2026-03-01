@@ -86,6 +86,7 @@ const props = defineProps({
   studentId: { type: Number, default: null }, // For tutor: ID студента
   tutorId: { type: Number, default: null }, // For student: ID тьютора
   relationId: { type: [String, Number], default: null },
+  otherUserName: { type: String, default: null }, // Priority display name for chat header
 })
 
 const emit = defineEmits(['close'])
@@ -133,22 +134,28 @@ async function loadThread() {
     if (isTutorMode) {
       // Tutor mode: шукаємо студента
       otherUserId = props.studentId
-      const relations = relationsStore.tutorRelations || []
-      relation = relations.find(r => r.student?.id === props.studentId)
       
-      if (relation?.student) {
-        const s = relation.student
-        // Privacy-first: use display_name from backend (format: "FirstName L.")
-        studentName.value = s.display_name || s.full_name || s.email || t('common.unknown')
-      }
+      // Priority: use passed otherUserName if available
+      if (props.otherUserName) {
+        studentName.value = props.otherUserName
+      } else {
+        const relations = relationsStore.tutorRelations || []
+        relation = relations.find(r => r.student?.id === props.studentId)
+        
+        if (relation?.student) {
+          const s = relation.student
+          // Privacy-first: use display_name from backend (format: "FirstName L.")
+          studentName.value = s.display_name || s.full_name || s.email || t('common.unknown')
+        }
 
-      // Fallback: якщо relation не знайдено в store — спробуємо з unreadSummary
-      if (!studentName.value) {
-        const thread = (chatThreadsStore.unreadSummary?.threads || []).find(
-          th => th.other_user_id === props.studentId
-        )
-        if (thread?.other_user_name) {
-          studentName.value = thread.other_user_name
+        // Fallback: якщо relation не знайдено в store — спробуємо з unreadSummary
+        if (!studentName.value) {
+          const thread = (chatThreadsStore.unreadSummary?.threads || []).find(
+            th => th.other_user_id === props.studentId
+          )
+          if (thread?.other_user_name) {
+            studentName.value = thread.other_user_name
+          }
         }
       }
       
@@ -162,22 +169,28 @@ async function loadThread() {
     } else {
       // Student mode: шукаємо тьютора
       otherUserId = props.tutorId
-      const relations = relationsStore.studentRelations || []
-      relation = relations.find(r => r.tutor?.id === props.tutorId)
       
-      if (relation?.tutor) {
-        const tut = relation.tutor
-        // Student sees tutor's full name (no privacy restriction needed)
-        studentName.value = tut.display_name || tut.full_name || tut.email || t('common.unknown')
-      }
+      // Priority: use passed otherUserName if available
+      if (props.otherUserName) {
+        studentName.value = props.otherUserName
+      } else {
+        const relations = relationsStore.studentRelations || []
+        relation = relations.find(r => r.tutor?.id === props.tutorId)
+        
+        if (relation?.tutor) {
+          const tut = relation.tutor
+          // Student sees tutor's full name (no privacy restriction needed)
+          studentName.value = tut.display_name || tut.full_name || tut.email || t('common.unknown')
+        }
 
-      // Fallback: якщо relation не знайдено в store — спробуємо з unreadSummary
-      if (!studentName.value) {
-        const thread = (chatThreadsStore.unreadSummary?.threads || []).find(
-          th => th.other_user_id === props.tutorId
-        )
-        if (thread?.other_user_name) {
-          studentName.value = thread.other_user_name
+        // Fallback: якщо relation не знайдено в store — спробуємо з unreadSummary
+        if (!studentName.value) {
+          const thread = (chatThreadsStore.unreadSummary?.threads || []).find(
+            th => th.other_user_id === props.tutorId
+          )
+          if (thread?.other_user_name) {
+            studentName.value = thread.other_user_name
+          }
         }
       }
       

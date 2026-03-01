@@ -111,6 +111,7 @@
       :student-id="null"
       :tutor-id="selectedTutorId"
       :relation-id="selectedRelationId"
+      :other-user-name="selectedTutorName"
       @close="closeChatModal"
     />
   </Card>
@@ -149,6 +150,7 @@ const hasActiveTutors = computed(() => props.activeTutors.length > 0)
 const chatModalOpen = ref(false)
 const selectedTutorId = ref<number | null>(null)
 const selectedRelationId = ref<number | null>(null)
+const selectedTutorName = ref<string>('')
 
 // Phase 1 v0.87.1: ТЗ від користувача - handler для чату студента
 async function handleOpenChat(tutor: AssignedTutor) {
@@ -175,6 +177,7 @@ async function handleOpenChat(tutor: AssignedTutor) {
     // Відкриваємо модалку
     selectedTutorId.value = tutor.id
     selectedRelationId.value = relationId
+    selectedTutorName.value = tutor.full_name || tutor.email || ''
     chatModalOpen.value = true
   } catch (error) {
     // Silent fail
@@ -186,6 +189,7 @@ function closeChatModal() {
   chatModalOpen.value = false
   selectedTutorId.value = null
   selectedRelationId.value = null
+  selectedTutorName.value = ''
 }
 
 function getCollaborationStatusLabel(status: string): string {
