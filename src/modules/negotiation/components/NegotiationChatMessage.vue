@@ -116,7 +116,7 @@ const bubbleClasses = computed(() => {
   background: linear-gradient(135deg, #2563eb, #7c3aed);
 }
 .bg-surface-soft {
-  background-color: var(--surface-soft, rgba(7, 15, 30, 0.04));
-  color: var(--text-primary, rgba(7, 15, 30, 0.9));
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
 }
 </style>

@@ -156,11 +156,11 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.5rem;
-  border-bottom: 1px solid var(--border-subtle, rgba(7, 15, 30, 0.08));
+  border-bottom: 1px solid var(--border-color);
 }
 
 .chat-messages {
   padding: 1.5rem;
-  background-color: var(--surface-soft, #f8fafc);
+  background-color: var(--bg-primary);
 }
 </style>

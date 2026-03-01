@@ -15,7 +15,7 @@
 
       <!-- Modal -->
       <div
-        class="chat-modal-content relative z-10 flex w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-default bg-white shadow-2xl"
+        class="chat-modal-content relative z-10 flex w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-default bg-card shadow-2xl"
       >
         <!-- Modal header -->
         <div class="flex items-center justify-between border-b border-border-subtle px-5 py-3">

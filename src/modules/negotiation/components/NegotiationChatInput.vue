@@ -79,8 +79,8 @@ defineExpose({ focus })
 <style scoped>
 .chat-input-wrapper {
   padding: 1rem 1.5rem;
-  border-top: 1px solid var(--border-subtle, rgba(7, 15, 30, 0.08));
-  background: var(--surface-bg, white);
+  border-top: 1px solid var(--border-color);
+  background: var(--card-bg);
 }
 
 .chat-textarea {
@@ -91,11 +91,12 @@ defineExpose({ focus })
   border-radius: 1.25rem;
   padding: 0.75rem 1rem;
   line-height: 1.5;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 .chat-textarea:focus {
   outline: none;
-  ring: 2px;
-  ring-color: var(--accent, #2563eb);
+  box-shadow: 0 0 0 2px var(--accent);
 }
 </style>
