@@ -419,6 +419,9 @@ export const useAuthStore = defineStore('auth', {
           // Lock is valid if not expired
           if (lock.timestamp && (now - lock.timestamp) < REFRESH_LOCK_TTL_MS) {
             // Lock held by another tab - wait and retry
+            if (process.env.NODE_ENV === 'development') {
+              console.log('[auth] Refresh lock held by other tab, waiting...')
+            }
             return false
           }
         } catch {
@@ -436,6 +439,9 @@ export const useAuthStore = defineStore('auth', {
       }
 
       this._refreshLockOwned = true
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[auth] Refresh lock acquired, proceeding with refresh')
+      }
       return true
     },
 
@@ -523,6 +529,9 @@ export const useAuthStore = defineStore('auth', {
           const nextBackoff = Math.min(currentBackoff * 2, 5 * 60_000)
           this._rateLimitBackoffMs = nextBackoff
           this.lockedUntil = new Date(Date.now() + currentBackoff).toISOString()
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`[auth] Rate limited, backing off for ${currentBackoff}ms (next: ${nextBackoff}ms)`)
+          }
           return null
         }
         // Reset backoff on non-429 errors
