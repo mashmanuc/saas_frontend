@@ -40,7 +40,7 @@ describe('chatThreadsStore', () => {
       })
     })
 
-    it('should return cached thread if valid', async () => {
+    it('should return cached thread without verification GET', async () => {
       const store = useChatThreadsStore()
       const mockThreadId = '550e8400-e29b-41d4-a716-446655440000'
       
@@ -51,47 +51,40 @@ describe('chatThreadsStore', () => {
         lastSync: new Date().toISOString()
       })
 
-      // Mock verification call
-      apiClient.get.mockResolvedValueOnce({ messages: [] })
-
       const threadId = await store.ensureThread(123, 42)
 
       expect(threadId).toBe(mockThreadId)
-      expect(apiClient.get).toHaveBeenCalledWith(`/api/v1/chat/threads/${mockThreadId}/messages/`)
+      // No HTTP calls — cache is trusted
+      expect(apiClient.get).not.toHaveBeenCalled()
       expect(apiClient.post).not.toHaveBeenCalled()
     })
 
-    it('should recreate thread if cache is stale', async () => {
+    it('should create thread via POST when cache is empty', async () => {
       const store = useChatThreadsStore()
-      const oldThreadId = '550e8400-e29b-41d4-a716-446655440000'
       const newThreadId = '660e8400-e29b-41d4-a716-446655440001'
       
-      // Set up stale cache
-      store.threadsByStudent.set(123, {
-        threadId: oldThreadId,
-        kind: 'contact',
-        lastSync: new Date().toISOString()
-      })
-
-      // Mock verification failure and new thread creation
-      apiClient.get.mockRejectedValueOnce(new Error('Thread not found'))
+      // No cache — should call POST
       apiClient.post.mockResolvedValueOnce({
         thread_id: newThreadId,
         kind: 'contact',
         relation_id: 42,
-        student_id: 123,
+        student_id: 456,
         is_writable: true
       })
 
-      const threadId = await store.ensureThread(123, 42)
+      const threadId = await store.ensureThread(456, 42)
 
       expect(threadId).toBe(newThreadId)
-      expect(store.threadsByStudent.get(123).threadId).toBe(newThreadId)
+      expect(store.threadsByStudent.get(456).threadId).toBe(newThreadId)
+      expect(apiClient.post).toHaveBeenCalledWith('/api/v1/chat/threads/negotiation/', {
+        relation_id: 42
+      })
     })
 
     it('should throw error if thread creation fails', async () => {
       const store = useChatThreadsStore()
       
+      // Use uncached student (789) so POST is attempted
       apiClient.post.mockRejectedValueOnce({
         response: {
           data: {
@@ -102,7 +95,7 @@ describe('chatThreadsStore', () => {
         }
       })
 
-      await expect(store.ensureThread(123, 42)).rejects.toThrow()
+      await expect(store.ensureThread(789, 42)).rejects.toThrow()
       expect(store.error).toBe('Contact access required')
     })
   })

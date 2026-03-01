@@ -63,7 +63,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { useNegotiationChatStore } from '@/stores/negotiationChatStore'
-import { wsIsConnected } from '@/composables/useChatWebSocket'
 import Card from '@/ui/Card.vue'
 import Avatar from '@/ui/Avatar.vue'
 import Badge from '@/ui/Badge.vue'

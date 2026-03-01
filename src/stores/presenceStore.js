@@ -113,7 +113,8 @@ export const usePresenceStore = defineStore('presence', {
 
       this.timer = setInterval(() => {
         this.prune()
-        if (this.trackedIds.length) {
+        // HTTP polling only as fallback when WebSocket is NOT connected
+        if (this.trackedIds.length && realtimeService.getState() !== 'open') {
           this.fetch(this.trackedIds)
         }
       }, REFRESH_INTERVAL)

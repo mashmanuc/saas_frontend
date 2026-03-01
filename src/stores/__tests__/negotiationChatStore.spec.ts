@@ -13,9 +13,12 @@ vi.mock('@/api/negotiationChat')
 vi.mock('@/utils/rethrowAsDomainError', () => ({
   rethrowAsDomainError: (err: any) => { throw err }
 }))
-vi.mock('@/composables/useChatWebSocket', () => ({
-  wsConnect: vi.fn(),
-  wsDisconnect: vi.fn(),
+vi.mock('@/services/realtime', () => ({
+  realtimeService: {
+    subscribe: vi.fn(() => vi.fn()),
+    unsubscribe: vi.fn(),
+    getState: vi.fn(() => 'open'),
+  },
 }))
 
 describe('negotiationChatStore v0.69', () => {

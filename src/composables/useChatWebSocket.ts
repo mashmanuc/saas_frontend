@@ -1,3 +1,9 @@
+/**
+ * @deprecated Use realtimeService.subscribe('chat:thread:{uuid}') instead.
+ * This module created a separate WS connection per chat thread.
+ * Now negotiationChatStore uses realtimeService gateway WS (single connection).
+ * Kept for backward compatibility — will be removed in next cleanup.
+ */
 import { computed } from 'vue'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { useNegotiationChatStore } from '@/stores/negotiationChatStore'

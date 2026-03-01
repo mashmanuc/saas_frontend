@@ -26,13 +26,14 @@ import {
 } from '@/api/negotiationChat'
 import { rethrowAsDomainError } from '@/utils/rethrowAsDomainError'
 import { useAuthStore } from '@/modules/auth/store/authStore'
-import { wsConnect, wsDisconnect, wsSend } from '@/composables/useChatWebSocket'
+import { realtimeService } from '@/services/realtime'
 
 export const useNegotiationChatStore = defineStore('negotiationChat', () => {
   // State v0.69
   const threads = ref<NegotiationThreadDTO[]>([])
   const messagesByThread = ref<Record<string, ChatMessageDTO[]>>({})
   const activeThreadId = ref<string | null>(null)
+  let _chatUnsubscribe: (() => void) | null = null
   
   // Loading states — FIX BUG-2: окремі прапори щоб уникнути взаємного блокування
   const isLoading = ref(false)        // legacy compat — true коли будь-яка операція активна
@@ -197,13 +198,51 @@ export const useNegotiationChatStore = defineStore('negotiationChat', () => {
   function setActiveThread(threadId: string | null) {
     if (activeThreadId.value === threadId) return
     
+    // Unsubscribe from previous thread
+    if (_chatUnsubscribe) {
+      _chatUnsubscribe()
+      _chatUnsubscribe = null
+    }
+    
     if (threadId) {
-      wsConnect(threadId)
-    } else {
-      wsDisconnect()
+      // Subscribe to chat thread via existing gateway WS (no separate connection)
+      const channel = `chat:thread:${threadId}`
+      _chatUnsubscribe = realtimeService.subscribe(channel, (payload: any) => {
+        _handleRealtimeEvent(threadId, payload)
+      })
     }
     
     activeThreadId.value = threadId
+  }
+  
+  function _handleRealtimeEvent(threadId: string, data: any) {
+    const payload = data?.payload || data
+    const type = payload?.type
+    const authStore = useAuthStore()
+    const currentUserId = authStore.user?.id
+    
+    switch (type) {
+      case 'message.new':
+        if (payload.message) {
+          appendMessage(threadId, payload.message, currentUserId)
+        }
+        break
+      case 'message.edited':
+        if (payload.message) {
+          updateMessage(threadId, payload.message)
+        }
+        break
+      case 'message.deleted':
+        if (payload.message_id) {
+          deleteMessage(threadId, payload.message_id)
+        }
+        break
+      case 'message.read':
+        if (payload.message_id) {
+          markMessageRead(threadId, payload.message_id)
+        }
+        break
+    }
   }
   
   /**

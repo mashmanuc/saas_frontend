@@ -40,23 +40,17 @@ export const useChatThreadsStore = defineStore('chatThreads', () => {
      * ВАЖЛИВО: викликається тільки при першій спробі відкрити чат,
      * НЕ автоматично після unlock.
      */
-    loading.value = true
     error.value = null
 
-    try {
-      // Перевіряємо кеш (але не довіряємо йому повністю)
-      const cached = threadsByStudent.value.get(studentId)
-      if (cached?.threadId) {
-        // Верифікуємо через backend
-        try {
-          await apiClient.get(`/api/v1/chat/threads/${cached.threadId}/messages/`)
-          return cached.threadId
-        } catch (err) {
-          // Кеш застарів, створюємо новий
-          threadsByStudent.value.delete(studentId)
-        }
-      }
+    // Thread IDs are stable — trust cached value without verification GET
+    const cached = threadsByStudent.value.get(studentId)
+    if (cached?.threadId) {
+      return cached.threadId
+    }
 
+    loading.value = true
+
+    try {
       // Створюємо або отримуємо thread через backend
       const response = await apiClient.post('/api/v1/chat/threads/negotiation/', {
         relation_id: relationId
