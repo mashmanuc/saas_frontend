@@ -9,6 +9,10 @@ const hasDocument = typeof document !== 'undefined'
 // 15 хв дає надійні 2 спроби на 30-хвилинне вікно.
 const REFRESH_INTERVAL_MS = 15 * 60 * 1000
 let refreshInterval = null
+// Cross-tab refresh coordination
+const REFRESH_LOCK_KEY = 'auth_refresh_lock'
+const REFRESH_LOCK_TTL_MS = 30_000 // 30 seconds max for refresh operation
+const LOCK_RETRY_DELAY_MS = 100
 
 export const useAuthStore = defineStore('auth', {
   state: () => {
@@ -46,6 +50,9 @@ export const useAuthStore = defineStore('auth', {
       sessionRevokedRequestId: null,
       lockedUntil: null,
       trialStatus: null,
+      // Cross-tab coordination state
+      _refreshLockOwned: false,
+      _bc: null,
     }
   },
 
@@ -395,6 +402,75 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    // Cross-tab refresh coordination using BroadcastChannel + localStorage lock
+    // Prevents race condition when multiple tabs try to refresh simultaneously
+    async _acquireRefreshLock() {
+      if (typeof window === 'undefined') return true
+
+      // Try to acquire lock via localStorage (synchronous, atomic within tab)
+      const now = Date.now()
+      const lockValue = JSON.stringify({ timestamp: now, tabId: this._tabId })
+
+      // Check if lock is held by another tab
+      const currentLock = storage.get(REFRESH_LOCK_KEY)
+      if (currentLock) {
+        try {
+          const lock = JSON.parse(currentLock)
+          // Lock is valid if not expired
+          if (lock.timestamp && (now - lock.timestamp) < REFRESH_LOCK_TTL_MS) {
+            // Lock held by another tab - wait and retry
+            return false
+          }
+        } catch {
+          // Invalid lock format - can acquire
+        }
+      }
+
+      // Try to acquire lock
+      storage.set(REFRESH_LOCK_KEY, lockValue)
+
+      // Verify we got the lock (race condition check)
+      const verifyLock = storage.get(REFRESH_LOCK_KEY)
+      if (verifyLock !== lockValue) {
+        return false // Another tab got it
+      }
+
+      this._refreshLockOwned = true
+      return true
+    },
+
+    _releaseRefreshLock() {
+      if (!this._refreshLockOwned) return
+      if (typeof window === 'undefined') return
+
+      // Only remove if we still own the lock
+      const currentLock = storage.get(REFRESH_LOCK_KEY)
+      if (currentLock) {
+        try {
+          const lock = JSON.parse(currentLock)
+          if (lock.tabId === this._tabId) {
+            storage.remove(REFRESH_LOCK_KEY)
+          }
+        } catch {
+          storage.remove(REFRESH_LOCK_KEY)
+        }
+      }
+      this._refreshLockOwned = false
+    },
+
+    // Generate unique tab ID for cross-tab coordination
+    _getTabId() {
+      if (typeof window === 'undefined') return 'server'
+      if (!window.__m4shTabId) {
+        window.__m4shTabId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+      }
+      return window.__m4shTabId
+    },
+
+    get _tabId() {
+      return this._getTabId()
+    },
+
     async refreshAccess() {
       if (!this.access) return null
 
@@ -413,21 +489,28 @@ export const useAuthStore = defineStore('auth', {
         return this.refreshPromise
       }
 
+      // Store reference to release lock for use in finally block
+      const self = this
+
       this.refreshPromise = (async () => {
-        const res = await authApi.refresh()
-        if (!res?.access) {
-          throw new Error('Не вдалося оновити токен')
-        }
+        try {
+          const res = await authApi.refresh()
+          if (!res?.access) {
+            throw new Error('Не вдалося оновити токен')
+          }
 
-        // Phase 1.3: Keep JWT in memory for WS/beacon auth.
-        // httpOnly cookie is set by backend automatically.
-        this.access = res.access
-        storage.set('auth_session', '1')
+          // Phase 1.3: Keep JWT in memory for WS/beacon auth.
+          // httpOnly cookie is set by backend automatically.
+          this.access = res.access
+          storage.set('auth_session', '1')
 
-        if (!this.csrfToken) {
-          await this.ensureCsrfToken()
+          if (!this.csrfToken) {
+            await this.ensureCsrfToken()
+          }
+          return this.access
+        } finally {
+          self._releaseRefreshLock()
         }
-        return this.access
       })()
 
       try {
@@ -435,10 +518,15 @@ export const useAuthStore = defineStore('auth', {
       } catch (error) {
         const status = error?.response?.status
         if (status === 429) {
-          // Cooldown to avoid hammering refresh endpoint
-          this.lockedUntil = new Date(Date.now() + 60_000).toISOString()
+          // Exponential backoff for rate limit - starts at 5s, max 5min
+          const currentBackoff = this._rateLimitBackoffMs || 5_000
+          const nextBackoff = Math.min(currentBackoff * 2, 5 * 60_000)
+          this._rateLimitBackoffMs = nextBackoff
+          this.lockedUntil = new Date(Date.now() + currentBackoff).toISOString()
           return null
         }
+        // Reset backoff on non-429 errors
+        this._rateLimitBackoffMs = null
         throw error
       } finally {
         this.refreshPromise = null
