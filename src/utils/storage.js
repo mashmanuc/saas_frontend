@@ -23,6 +23,33 @@ const safeRemove = (key) => {
   window.localStorage.removeItem(key)
 }
 
+// Phase 2: One-time migration — clean legacy sensitive data from localStorage
+;(function migrateStorage() {
+  if (!hasWindow) return
+  // Remove legacy access/refresh tokens (now in httpOnly cookies)
+  if (window.localStorage.getItem(ACCESS_KEY)) {
+    window.localStorage.removeItem(ACCESS_KEY)
+  }
+  if (window.localStorage.getItem(REFRESH_KEY)) {
+    window.localStorage.removeItem(REFRESH_KEY)
+  }
+  // Re-serialize user data with minimal fields (strip email, phone, etc.)
+  const rawUser = window.localStorage.getItem(USER_KEY)
+  if (rawUser) {
+    try {
+      const parsed = JSON.parse(rawUser)
+      if (parsed && (parsed.email || parsed.phone || parsed.first_name)) {
+        const minimal = {
+          id: parsed.id,
+          role: parsed.role,
+          display_name: parsed.display_name || parsed.first_name || null,
+        }
+        window.localStorage.setItem(USER_KEY, JSON.stringify(minimal))
+      }
+    } catch { /* ignore parse errors */ }
+  }
+})()
+
 export const storage = {
   // Generic key-value (Phase 1.3: auth_session marker)
   get(key) {
@@ -61,7 +88,13 @@ export const storage = {
       safeRemove(USER_KEY)
       return
     }
-    safeSet(USER_KEY, JSON.stringify(user))
+    // Phase 2: Мінімізація — НЕ зберігати email, phone, full_name в localStorage
+    const minimal = {
+      id: user.id,
+      role: user.role,
+      display_name: user.display_name || user.first_name || null,
+    }
+    safeSet(USER_KEY, JSON.stringify(minimal))
   },
   getUser() {
     const raw = safeGet(USER_KEY)

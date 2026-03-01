@@ -1,0 +1,18 @@
+# =============================================================================
+# Security Headers — CSP Phase 2 (docs/security/PROGRESS.md)
+# =============================================================================
+# Cloudflare Pages: https://developers.cloudflare.com/pages/configuration/headers/
+#
+# IMPORTANT: Start with Content-Security-Policy-Report-Only
+# Switch to Content-Security-Policy AFTER production validation
+# =============================================================================
+
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(self), geolocation=(), payment=()
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src 'self' https://api.m4sh.org https://saas-backend-rough-dawn-1961.fly.dev wss://saas-backend-rough-dawn-1961.fly.dev; img-src 'self' data: blob: https://images.m4sh.org https://m4sh.org; font-src 'self' data:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self' https://www.liqpay.ua; upgrade-insecure-requests
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
