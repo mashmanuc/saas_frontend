@@ -76,9 +76,9 @@ api.interceptors.request.use(
     config.headers = config.headers || {}
     config.withCredentials = true
 
-    if (store.access) {
-      config.headers.Authorization = `Bearer ${store.access}`
-    }
+    // Phase 1.3: Access token is now in httpOnly cookie.
+    // Cookie is sent automatically with withCredentials:true.
+    // Authorization header removed — no longer exposing token to JS.
 
     if (!config.headers['X-Request-Id']) {
       config.headers['X-Request-Id'] = createRequestId()
@@ -203,8 +203,7 @@ api.interceptors.response.use(
               reject(queueError || new Error('refresh_failed'))
               return
             }
-            original.headers = original.headers || {}
-            original.headers.Authorization = `Bearer ${newToken}`
+            // Phase 1.3: Cookie auto-sent with retry, no Authorization header needed
             // FIX: skipLoader для retry — original вже зробив stop()
             if (!original.meta) original.meta = {}
             original.meta.skipLoader = true
@@ -223,8 +222,7 @@ api.interceptors.response.use(
         }
 
         flushRefreshQueue(null, newAccess)
-        original.headers = original.headers || {}
-        original.headers.Authorization = `Bearer ${newAccess}`
+        // Phase 1.3: Cookie auto-sent with retry, no Authorization header needed
         // FIX: Позначаємо retry-запит щоб request interceptor не робив зайвий loader.start()
         // (loader.stop() для оригінального запиту вже відбувся вище)
         if (!original.meta) original.meta = {}

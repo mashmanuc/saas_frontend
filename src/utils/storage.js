@@ -24,11 +24,25 @@ const safeRemove = (key) => {
 }
 
 export const storage = {
+  // Generic key-value (Phase 1.3: auth_session marker)
+  get(key) {
+    return safeGet(key)
+  },
+  set(key, value) {
+    safeSet(key, value)
+  },
+  remove(key) {
+    safeRemove(key)
+  },
+
   setAccess(token) {
     safeSet(ACCESS_KEY, token)
   },
   getAccess() {
     return safeGet(ACCESS_KEY)
+  },
+  removeAccess() {
+    safeRemove(ACCESS_KEY)
   },
   clearAccess() {
     safeRemove(ACCESS_KEY)
@@ -66,5 +80,6 @@ export const storage = {
     this.clearAccess()
     this.clearRefresh()
     this.clearUser()
+    this.remove('auth_session')
   },
 }

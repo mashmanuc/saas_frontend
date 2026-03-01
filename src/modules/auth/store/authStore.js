@@ -16,8 +16,15 @@ export const useAuthStore = defineStore('auth', {
     const user = rawUser && typeof rawUser === 'object' && typeof rawUser.role === 'string'
       ? { ...rawUser, role: rawUser.role.toLowerCase() }
       : rawUser
+    // Phase 1.3: access token is in httpOnly cookie for REST API.
+    // We still keep the JWT in memory (NOT localStorage) for:
+    //   - WebSocket authentication (ws subprotocol/query)
+    //   - Winterboard beacon/fetch (keepalive requests)
+    //   - isAuthenticated checks
+    // localStorage stores only a session marker, never the real JWT.
+    const hasSession = Boolean(storage.get('auth_session') || storage.getAccess())
     return {
-      access: storage.getAccess(),
+      access: hasSession ? (storage.getAccess() || '__cookie__') : null,
       user,
       csrfToken: null,
       pendingMfaSessionId: null,
@@ -72,6 +79,17 @@ export const useAuthStore = defineStore('auth', {
       // Якщо немає access токена — не намагаємося refresh, просто виходимо
       if (!this.access) {
         return
+      }
+
+      // Phase 1.3: On page reload, access is '__cookie__' (session marker).
+      // We need a real JWT in memory for WebSocket auth.
+      // Trigger a refresh to get real JWT + let backend set fresh cookie.
+      if (this.access === '__cookie__') {
+        try {
+          await this.refreshAccess()
+        } catch {
+          // Refresh failed — try to load user with cookie auth anyway
+        }
       }
 
       if (!this.user) {
@@ -334,10 +352,17 @@ export const useAuthStore = defineStore('auth', {
 
     setAuth({ access, user } = {}) {
       if (typeof access !== 'undefined') {
+        // Phase 1.3: Keep JWT in memory for WS/beacon auth.
+        // httpOnly cookie handles REST API auth.
+        // localStorage stores only session marker (not real JWT).
         this.access = access || null
-        storage.setAccess(this.access)
         if (access) {
+          storage.set('auth_session', '1')
+          // Migration: remove legacy access token from localStorage
+          storage.removeAccess()
           this.sessionExpiredNotified = false
+        } else {
+          storage.remove('auth_session')
         }
       }
 
@@ -394,8 +419,10 @@ export const useAuthStore = defineStore('auth', {
           throw new Error('Не вдалося оновити токен')
         }
 
+        // Phase 1.3: Keep JWT in memory for WS/beacon auth.
+        // httpOnly cookie is set by backend automatically.
         this.access = res.access
-        storage.setAccess(this.access)
+        storage.set('auth_session', '1')
 
         if (!this.csrfToken) {
           await this.ensureCsrfToken()
@@ -651,18 +678,20 @@ export const useAuthStore = defineStore('auth', {
       this._storageSyncUnsubscribe?.()
     },
 
-    // FIX: localStorage sync між вкладками
+    // Phase 1.3: Cross-tab sync via auth_session marker (not real token)
     initStorageSync() {
       if (typeof window === 'undefined') return () => {}
 
       const handler = (event) => {
-        if (event.key === 'access') {
+        // Listen for auth_session marker OR legacy access key
+        if (event.key === 'auth_session' || event.key === 'access') {
           if (!event.newValue) {
             // Інша вкладка зробила logout — теж виходимо
             this.forceLogout('other_tab_logout')
-          } else if (event.newValue !== this.access) {
-            // Інша вкладка оновила токен — оновлюємо свій
-            this.access = event.newValue
+          } else if (event.key === 'auth_session' && !this.access) {
+            // Інша вкладка залогінилась — оновлюємо маркер
+            // JWT will be obtained on next refresh cycle
+            this.access = '__cookie__'
           }
         }
       }

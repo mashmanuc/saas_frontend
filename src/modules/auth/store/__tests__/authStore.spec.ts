@@ -19,9 +19,13 @@ vi.mock('../../api/authApi', () => {
 })
 vi.mock('../../../../utils/storage', () => ({
   storage: {
+    get: vi.fn(() => null),
+    set: vi.fn(),
+    remove: vi.fn(),
     getAccess: vi.fn(() => null),
     getUser: vi.fn(() => null),
     setAccess: vi.fn(),
+    removeAccess: vi.fn(),
     setUser: vi.fn(),
     clearAll: vi.fn(),
   },
