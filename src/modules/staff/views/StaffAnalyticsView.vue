@@ -37,6 +37,11 @@
       </div>
     </Card>
 
+    <!-- Alerts (Phase 5.1) -->
+    <Card class="section-card">
+      <AlertsPanel />
+    </Card>
+
     <!-- Realtime Today -->
     <Card class="section-card">
       <div class="section-header">
@@ -108,6 +113,35 @@
       </div>
     </Card>
 
+    <!-- Cohort Analysis (Phase 5.2) -->
+    <Card class="section-card">
+      <CohortTable />
+    </Card>
+
+    <!-- Engagement Scores (Phase 6.2) -->
+    <Card class="section-card">
+      <h2 class="section-title">{{ $t('staff.engagement.title') }}</h2>
+      <EngagementPanel />
+    </Card>
+
+    <!-- Revenue Analytics (Phase 7.1) -->
+    <Card class="section-card">
+      <h2 class="section-title">{{ $t('staff.revenue.title') }}</h2>
+      <RevenuePanel />
+    </Card>
+
+    <!-- Marketplace Health (Phase 7.2) -->
+    <Card class="section-card">
+      <h2 class="section-title">{{ $t('staff.marketplaceHealth.title') }}</h2>
+      <MarketplaceHealthPanel />
+    </Card>
+
+    <!-- Experiments (Phase 8) -->
+    <Card class="section-card">
+      <h2 class="section-title">{{ $t('staff.experiments.title') }}</h2>
+      <ExperimentsPanel />
+    </Card>
+
     <!-- Historical Funnel Trend -->
     <Card class="section-card">
       <h2 class="section-title">{{ $t('staff.analytics.trendTitle') }}</h2>
@@ -157,6 +191,12 @@ import Card from '@/ui/Card.vue'
 import LoadingSpinner from '@/ui/LoadingSpinner.vue'
 import Alert from '@/ui/Alert.vue'
 import EmptyState from '@/ui/EmptyState.vue'
+import AlertsPanel from '../components/AlertsPanel.vue'
+import CohortTable from '../components/CohortTable.vue'
+import EngagementPanel from '../components/EngagementPanel.vue'
+import RevenuePanel from '../components/RevenuePanel.vue'
+import MarketplaceHealthPanel from '../components/MarketplaceHealthPanel.vue'
+import ExperimentsPanel from '../components/ExperimentsPanel.vue'
 
 const { t } = useI18n()
 

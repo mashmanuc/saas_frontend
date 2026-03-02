@@ -38,6 +38,12 @@ const winterboardRoutes: RouteRecordRaw[] = [
     meta: { title: 'Winterboard', roles: ['student', 'tutor'] },
   },
   {
+    path: '/winterboard/content-preview',
+    name: 'winterboard-content-preview',
+    component: () => import('./views/WBContentPreview.vue'),
+    meta: { title: 'Winterboard — Content Preview', roles: ['tutor'] },
+  },
+  {
     path: '/winterboard/:id',
     name: 'winterboard-solo',
     component: () => import('./views/WBSoloRoom.vue'),

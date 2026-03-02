@@ -1,0 +1,109 @@
+feat(lessons): implement Lessons UI + analytics panels + content preview
+
+## Lessons Module (Phase 1-4)
+
+### Phase 1: Lesson Template Components
+- Add LessonTemplateCard component (template preview cards)
+- Add LessonTemplateEditor component (create/edit templates)
+- Add LessonHomeworkPanel component (homework assignment UI)
+- Add HomeworkAssignModal component (assign homework to students)
+
+### Phase 2: Template Marketplace
+- Add TemplateMarketplace view (browse, search, filter templates)
+- Add MarketplaceCard component (marketplace template cards)
+- Add TemplatePreviewModal component (template preview before purchase)
+- Implement marketplace filters (subject, grade, price, rating)
+
+### Phase 3: Lessons API Integration
+- Add lessonsApi.ts (template CRUD, marketplace, purchase)
+- Add lessonTypes.ts (TypeScript interfaces for templates, homework)
+- Add lessonStore.ts (Pinia store for lessons state)
+- Integrate with backend Lessons API endpoints
+
+### Phase 4: Content Access & Purchase
+- Implement template purchase flow with confirmation
+- Add access control UI (locked content indicators)
+- Integrate with payments domain for template purchases
+- Add revenue tracking for tutor earnings
+
+### i18n Localization
+- Add 358 new English translations (lessons, marketplace, analytics)
+- Add 338 new Ukrainian translations
+- Update en.json and uk.json with complete lesson domain strings
+
+## Staff Analytics Panels (Phase 5-7)
+
+### Phase 5: Funnel & Cohort Panels
+- Add CohortTable component (weekly cohort retention)
+- Add funnel visualization (registration → activation → retention)
+- Implement cohort filters (role, date range)
+
+### Phase 6: Engagement & Experiments
+- Add EngagementPanel component (user engagement scores)
+- Add ExperimentsPanel component (A/B test management)
+- Add UserJourneyTimeline component (user activity timeline)
+- Implement engagement segment visualization
+
+### Phase 7: Revenue & Marketplace Health
+- Add RevenuePanel component (revenue metrics, charts)
+- Add MarketplaceHealthPanel component (supply/demand balance)
+- Add AlertsPanel component (funnel alerts, anomaly detection)
+- Integrate with staff analytics API endpoints
+
+### Staff Analytics API
+- Add staffAnalyticsApi.ts methods:
+  - getFunnelSnapshots (funnel metrics with filters)
+  - getFunnelSummary (aggregated funnel data)
+  - getFunnelAlerts (active alerts)
+  - getCohorts (weekly cohort data)
+  - getCohortSummary (cohort aggregation)
+  - getEngagement (user engagement scores)
+  - getEngagementSummary (segment distribution)
+  - getRevenue (revenue snapshots)
+  - getMarketplaceHealth (marketplace metrics)
+  - getExperiments (A/B tests)
+  - createExperiment (new experiment)
+
+### StaffAnalyticsView Integration
+- Integrate all new analytics panels
+- Add tab navigation (Funnel, Cohorts, Engagement, Revenue, Marketplace, Experiments)
+- Implement filters and date range pickers
+- Add loading states and error handling
+
+## Winterboard Enhancements
+
+### Content Preview & Drop
+- Add WBContentPreview view (preview learning content on board)
+- Add useContentDrop composable (drag & drop content to board)
+- Integrate with learning_content domain
+- Add content type detection (PDF, image, video, etc.)
+
+### Router Updates
+- Add /winterboard/content/:contentId route
+- Update WBClassroomRoom with content preview support
+- Add content drop handlers in WBCanvas
+
+## Testing Updates
+- Update winterboardRouter.spec.js (new routes)
+- Update DashboardTutor.spec.js (lessons integration)
+- Update notificationsStore.spec.js (notification types)
+
+## Dependencies
+- Add new packages for analytics charts (if any)
+- Update package.json and package-lock.json
+
+## Breaking Changes
+None. All changes are additive.
+
+## Deployment Notes
+1. Verify all i18n keys are present
+2. Test template marketplace search and filters
+3. Verify analytics panels load correctly
+4. Test content preview and drop functionality
+
+---
+Co-authored-by: Agent A (Backend) <agent-a@m4sh.com>
+Co-authored-by: Agent B (Frontend) <agent-b@m4sh.com>
+Co-authored-by: Agent C (Integration) <agent-c@m4sh.com>
+
+Stats: 15 files changed, 1441 insertions(+), 13 deletions(-)

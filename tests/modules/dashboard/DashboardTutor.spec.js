@@ -30,6 +30,20 @@ vi.mock('vue-router', () => ({
   }),
 }))
 
+vi.mock('../../../src/stores/contactAccessStore', () => ({
+  useContactAccessStore: () => ({
+    loading: false,
+    hasAccess: vi.fn().mockReturnValue(false),
+    hasContactAccess: vi.fn().mockReturnValue(false),
+    getStudentContacts: vi.fn().mockReturnValue(null),
+    getAccessLevel: vi.fn().mockReturnValue('NONE'),
+    canAccessChat: vi.fn().mockReturnValue(false),
+    fetchContactAccessByRelation: vi.fn().mockResolvedValue({}),
+    unlockContacts: vi.fn().mockResolvedValue({}),
+    revokeContacts: vi.fn().mockResolvedValue({}),
+  }),
+}))
+
 const createDashboardStore = () => ({
   nextLessonAt: '2024-01-01T10:00:00Z',
   fetchTutorStudents: vi.fn().mockResolvedValue(),

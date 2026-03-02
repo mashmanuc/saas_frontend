@@ -616,7 +616,12 @@ const transformerConfig = computed(() => ({
   anchorStroke: '#2563eb',
   anchorFill: '#ffffff',
   rotateEnabled: true,
-  enabledAnchors: ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
+  keepRatio: true,
+  enabledAnchors: [
+    'top-left', 'top-center', 'top-right',
+    'middle-left', 'middle-right',
+    'bottom-left', 'bottom-center', 'bottom-right',
+  ],
 }))
 
 // v5 A1: Selection rect (rubber band) config for Konva rendering

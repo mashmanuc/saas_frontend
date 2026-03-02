@@ -62,7 +62,7 @@ describe('notifications store', () => {
 
     await store.fetchNotifications({ replace: true })
 
-    expect(listMock).toHaveBeenCalledWith({ limit: 10 })
+    expect(listMock).toHaveBeenCalledWith({ limit: 10, skipLoader: true })
     expect(store.items).toHaveLength(1)
     expect(store.loading).toBe(false)
   })

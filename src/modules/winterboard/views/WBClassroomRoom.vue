@@ -19,6 +19,13 @@
         <span class="wb-role-badge" :class="`wb-role-badge--${classroomRole.role.value}`">
           {{ roleBadgeText }}
         </span>
+        <span
+          v-if="lessonStatus"
+          class="wb-lesson-status"
+          :class="`wb-lesson-status--${lessonStatus}`"
+        >
+          {{ t(`lessons.status.${lessonStatus}`) }}
+        </span>
       </div>
 
       <!-- Center: Save status + lock indicator -->
@@ -104,14 +111,41 @@
 
     <!-- ── Main: Sidebar (teacher) + Toolbar + Canvas ──────────────────── -->
     <div class="wb-classroom-room__main">
-      <!-- Teacher sidebar: connected students -->
+      <!-- Teacher sidebar: tabs (students + materials) -->
       <aside
         v-if="classroomRole.isTeacher.value"
         class="wb-classroom-room__sidebar"
         role="complementary"
         :aria-label="t('winterboard.classroom.studentList')"
       >
-        <div class="wb-student-list">
+        <!-- Tab switcher -->
+        <div class="wb-sidebar-tabs">
+          <button
+            class="wb-sidebar-tab"
+            :class="{ 'wb-sidebar-tab--active': activeTab === 'students' }"
+            @click="activeTab = 'students'"
+          >
+            {{ t('winterboard.classroom.students') }}
+            <span class="wb-student-list__count">{{ connectedStudents.length }}</span>
+          </button>
+          <button
+            class="wb-sidebar-tab"
+            :class="{ 'wb-sidebar-tab--active': activeTab === 'materials' }"
+            @click="activeTab = 'materials'"
+          >
+            {{ t('learningContent.panel.title') }}
+          </button>
+          <button
+            class="wb-sidebar-tab"
+            :class="{ 'wb-sidebar-tab--active': activeTab === 'homework' }"
+            @click="activeTab = 'homework'"
+          >
+            {{ t('lessons.homework.title') }}
+          </button>
+        </div>
+
+        <!-- Students tab — existing HTML preserved fully -->
+        <div v-if="activeTab === 'students'" class="wb-student-list">
           <h3 class="wb-student-list__title">
             {{ t('winterboard.classroom.students') }}
             <span class="wb-student-list__count">{{ connectedStudents.length }}</span>
@@ -144,6 +178,22 @@
             {{ t('winterboard.classroom.noStudents') }}
           </p>
         </div>
+
+        <!-- Materials tab -->
+        <ContentPanel
+          v-else-if="activeTab === 'materials'"
+          :session-id="resolvedSessionId"
+          @drag-start="onContentDragStart"
+        />
+
+        <!-- Homework tab (C1.1) -->
+        <div v-else-if="activeTab === 'homework'" class="wb-homework-tab">
+          <LessonHomeworkPanel
+            :items="homeworkItems"
+            :loading="homeworkLoading"
+            @assign="fetchHomework"
+          />
+        </div>
       </aside>
 
       <!-- Toolbar (role-aware) -->
@@ -166,7 +216,14 @@
       </aside>
 
       <!-- Canvas -->
-      <div id="wb-canvas" ref="canvasContainerRef" class="wb-classroom-room__canvas" tabindex="-1">
+      <div
+        id="wb-canvas"
+        ref="canvasContainerRef"
+        class="wb-classroom-room__canvas"
+        tabindex="-1"
+        @dragover.prevent
+        @drop="contentDrop.handleCanvasDrop($event)"
+      >
         <Transition name="wb-fade">
           <WBCanvasLoader v-if="isLoading" />
         </Transition>
@@ -276,6 +333,17 @@ import WBToolbar from '../components/toolbar/WBToolbar.vue'
 import WBRemoteCursors from '../components/cursors/WBRemoteCursors.vue'
 import WBCanvasLoader from '../components/loading/WBCanvasLoader.vue'
 
+// Learning Content integration
+import ContentPanel from '@/modules/learning-content/components/ContentPanel.vue'
+import { useContentDrop } from '../composables/useContentDrop'
+import type { ContentDragPayload } from '@/modules/learning-content'
+
+// Lesson Domain integration (Agent B → Agent C)
+import LessonHomeworkPanel from '@/modules/lessons/components/LessonHomeworkPanel.vue'
+import { lessonsTemplateApi } from '@/modules/lessons/api/lessonsTemplateApi'
+import type { LessonHomework, LessonStatus } from '@/modules/lessons/types/lessonTypes'
+import lessonsApi from '@/api/lessons'
+
 // ─── Props ──────────────────────────────────────────────────────────────────
 
 const props = defineProps<{
@@ -295,10 +363,72 @@ const history = useHistory({ maxSize: 100 })
 
 const resolvedSessionId = ref<string | null>(props.sessionId ?? null)
 
+// Sidebar tabs: 'students' | 'materials' | 'homework'
+const activeTab = ref<'students' | 'materials' | 'homework'>('materials')
+
+// ─── Lesson Domain state (C1.1 homework + C1.2 status) ─────────────────────
+const homeworkItems = ref<LessonHomework[]>([])
+const homeworkLoading = ref(false)
+const lessonStatus = ref<LessonStatus | null>(null)
+
+async function fetchHomework(): Promise<void> {
+  const id = props.lessonId
+  if (!id) return
+  homeworkLoading.value = true
+  try {
+    homeworkItems.value = await lessonsTemplateApi.getHomework(Number(id))
+  } catch (err) {
+    console.warn('[WB:Classroom] Failed to fetch homework:', err)
+    homeworkItems.value = []
+  } finally {
+    homeworkLoading.value = false
+  }
+}
+
+async function fetchLessonStatus(): Promise<void> {
+  const id = props.lessonId
+  if (!id) return
+  try {
+    const res = await lessonsApi.getLesson(id)
+    const lesson = res?.data ?? res
+    lessonStatus.value = (lesson?.status?.toUpperCase() as LessonStatus) ?? null
+  } catch (err) {
+    console.warn('[WB:Classroom] Failed to fetch lesson status:', err)
+    lessonStatus.value = null
+  }
+}
+
 const autosave = useAutosave(resolvedSessionId)
 
 const classroomRole = useClassroomRole(resolvedSessionId)
 const classroomSession = useClassroomSession()
+
+// Learning Content drop handler
+const contentDrop = useContentDrop({
+  sessionId: resolvedSessionId,
+  canDraw: classroomRole.canDraw,
+  onAssetAdd: (asset) => {
+    store.addAsset(asset)
+    const page = store.currentPage
+    if (page) {
+      try { history.recordAdd(page.id, asset, 'asset') } catch (err) {
+        console.warn('[WB:Classroom] history.recordAdd (content-drop asset) failed:', err)
+      }
+    }
+  },
+  screenToCanvas: (x, y) => {
+    // Matches WBCanvas.vue handleDrop logic (lines 1598-1606):
+    // canvasX = (clientX - rect.left) / zoom
+    const rect = canvasContainerRef.value?.getBoundingClientRect()
+    if (rect) {
+      return {
+        x: (x - rect.left) / (store.zoom || 1),
+        y: (y - rect.top) / (store.zoom || 1),
+      }
+    }
+    return { x: (store.pageWidth ?? 800) / 2, y: 100 }
+  },
+})
 
 const presence = usePresence({
   sessionId: resolvedSessionId,
@@ -593,6 +723,12 @@ async function handleKickStudent(userId: string): Promise<void> {
   }
 }
 
+// Content drag-and-drop handlers
+function onContentDragStart(_payload: ContentDragPayload): void {
+  // Drag data is already set in ContentItemCard via dataTransfer.
+  // Future: show drop hint overlay on canvas.
+}
+
 async function handleEndSession(): Promise<void> {
   if (!classroomRole.canEnd.value || !resolvedSessionId.value) return
   // Simple confirmation
@@ -651,6 +787,10 @@ onMounted(async () => {
   }
 
   isLoading.value = false
+
+  // Fetch lesson status + homework (C1.1 + C1.2)
+  fetchLessonStatus()
+  fetchHomework()
 
   // Connect presence
   presence.connect(init.sessionId)
@@ -897,12 +1037,46 @@ onBeforeUnmount(async () => {
 }
 
 .wb-classroom-room__sidebar {
-  width: 220px;
+  width: 320px;
   flex-shrink: 0;
   background: var(--wb-bg-secondary, #f8fafc);
   border-right: 1px solid var(--wb-border, #e2e8f0);
   overflow-y: auto;
   z-index: 20;
+  display: flex;
+  flex-direction: column;
+}
+
+.wb-sidebar-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--wb-border, #e2e8f0);
+  flex-shrink: 0;
+}
+
+.wb-sidebar-tab {
+  flex: 1;
+  padding: 10px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--wb-text-secondary, #64748b);
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: color 0.15s;
+}
+
+.wb-sidebar-tab--active {
+  color: var(--wb-accent, #4F46E5);
+  border-bottom: 2px solid var(--wb-accent, #4F46E5);
+}
+
+.wb-sidebar-tab:hover:not(.wb-sidebar-tab--active) {
+  color: var(--wb-text-primary, #1e293b);
+  background: var(--wb-bg-hover, #f1f5f9);
 }
 
 .wb-classroom-room__toolbar {
@@ -1093,4 +1267,31 @@ onBeforeUnmount(async () => {
 .wb-fade-leave-active { transition: opacity 0.2s ease; }
 .wb-fade-enter-from,
 .wb-fade-leave-to { opacity: 0; }
+
+/* ── Lesson status badge (C1.2) ─────────────────────────────────────────── */
+
+.wb-lesson-status {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+.wb-lesson-status--DRAFT { background: rgba(243, 244, 246, 0.2); color: #d1d5db; }
+.wb-lesson-status--SCHEDULED { background: rgba(219, 234, 254, 0.2); color: #93c5fd; }
+.wb-lesson-status--CONFIRMED { background: rgba(209, 250, 229, 0.2); color: #6ee7b7; }
+.wb-lesson-status--IN_PROGRESS { background: rgba(254, 243, 199, 0.2); color: #fcd34d; }
+.wb-lesson-status--COMPLETED { background: rgba(209, 250, 229, 0.2); color: #6ee7b7; }
+.wb-lesson-status--CANCELLED { background: rgba(254, 226, 226, 0.2); color: #fca5a5; }
+.wb-lesson-status--DISPUTED { background: rgba(254, 226, 226, 0.2); color: #f87171; }
+.wb-lesson-status--ARCHIVED { background: rgba(243, 244, 246, 0.2); color: #9ca3af; }
+
+/* ── Homework tab container (C1.1) ──────────────────────────────────────── */
+
+.wb-homework-tab {
+  padding: 12px;
+  overflow-y: auto;
+  flex: 1;
+}
 </style>

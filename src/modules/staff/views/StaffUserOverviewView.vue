@@ -334,6 +334,12 @@
         </div>
       </Card>
 
+      <!-- User Journey Timeline (Phase 6.1) -->
+      <Card class="section">
+        <h2 class="section-heading">{{ $t('staff.journey.title') }}</h2>
+        <UserJourneyTimeline :user-id="staffStore.userOverview.user.id" />
+      </Card>
+
       <!-- Audit Log Section -->
       <Card class="section">
         <div class="section-header-row">
@@ -378,6 +384,7 @@ import Badge from '@/ui/Badge.vue'
 import Card from '@/ui/Card.vue'
 import LoadingSpinner from '@/ui/LoadingSpinner.vue'
 import UserBillingOpsPanel from '@/modules/staff/components/UserBillingOpsPanel.vue'
+import UserJourneyTimeline from '@/modules/staff/components/UserJourneyTimeline.vue'
 import apiClient from '@/utils/apiClient'
 import { getSubscriptionPlans } from '@/modules/staff/api/subscriptionPlansApi'
 import type { PlanItem } from '@/modules/staff/api/subscriptionPlansApi'

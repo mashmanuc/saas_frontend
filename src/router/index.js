@@ -255,6 +255,12 @@ const routes = [
         component: LessonView,
         meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
       },
+      {
+        path: 'templates/marketplace',
+        name: 'template-marketplace',
+        component: () => import('../modules/lessons/views/TemplateMarketplace.vue'),
+        meta: { requiresAuth: true, roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
+      },
       // Phase 2: Redirect old profile routes to new settings
       {
         path: 'dashboard/profile',

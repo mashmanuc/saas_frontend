@@ -159,7 +159,6 @@ export const useContactAccessStore = defineStore('contactAccess', () => {
    * Використовується після accept для отримання контактів студента
    */
   async function fetchContactAccessByRelation(relationId) {
-    const studentId = studentIdFromRelationId(relationId) // Will be determined from response
     loadingStudentIds.value.add(relationId)
     try {
       const response = await contactsApi.getContactsByRelation(relationId)
