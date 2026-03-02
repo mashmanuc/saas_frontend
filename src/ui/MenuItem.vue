@@ -31,6 +31,7 @@ const ICONS = {
   calendar: '📅',
   shield: '🛡️',
   lab: '🧪',
+  'book-open': '📚',
 }
 
 const props = defineProps({

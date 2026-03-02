@@ -17,12 +17,11 @@ export const MENU_BY_ROLE = {
     { label: 'menu.classrooms', icon: 'class', to: '/dashboard/classrooms' },
     { label: 'menu.tutorCalendar', icon: 'book', to: '/booking/tutor' },
     { label: 'menu.winterboard', icon: 'edit', to: '/winterboard' },
+    { label: 'menu.learningContent', icon: 'book-open', to: '/learning-content' },
     { label: 'menu.tutorProfile', icon: 'briefcase', to: '/marketplace/my-profile' },
     { label: 'menu.account', icon: 'user', to: '/settings' },
     { label: 'menu.billing', icon: 'credit-card', to: '/billing' },    
     { label: 'menu.notifications', icon: 'bell', to: '/notifications' },
-   
-   
   ],
   student: [
     { label: 'menu.dashboard', icon: 'home', to: '/student' },
