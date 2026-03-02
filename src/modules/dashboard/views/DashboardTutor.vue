@@ -389,12 +389,16 @@ const trackedStudentIds = computed(() =>
     .map((id) => String(id)),
 )
 
+let _trackDebounce = null
 watch(
   trackedStudentIds,
   (ids) => {
-    if (ids?.length) {
-      presenceStore.track(ids)
-    }
+    if (_trackDebounce) clearTimeout(_trackDebounce)
+    _trackDebounce = setTimeout(() => {
+      if (ids?.length) {
+        presenceStore.track(ids)
+      }
+    }, 300)
   },
   { immediate: true },
 )

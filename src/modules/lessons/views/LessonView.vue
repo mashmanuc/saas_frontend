@@ -275,12 +275,16 @@ const durationLabel = computed(() => {
   return `${minutes}m`
 })
 
+let _trackDebounce = null
 watch(
   () => participants.value.map((participant) => participant.id),
   (ids) => {
-    if (ids?.length) {
-      presenceStore.track(ids)
-    }
+    if (_trackDebounce) clearTimeout(_trackDebounce)
+    _trackDebounce = setTimeout(() => {
+      if (ids?.length) {
+        presenceStore.track(ids)
+      }
+    }, 300)
   },
   { immediate: true },
 )

@@ -1,12 +1,13 @@
 import { defineStore } from 'pinia'
-import dayjs from 'dayjs'
 import { presenceApi } from '../api/presence'
 import { realtimeService } from '../services/realtime'
 import { notifyError } from '../utils/notify'
 import { useAuthStore } from '../modules/auth/store/authStore'
 
 const TTL_SECONDS = 90
-const REFRESH_INTERVAL = 30_000
+const TTL_MS = TTL_SECONDS * 1000
+const REFRESH_INTERVAL = 90_000
+const FETCH_DEBOUNCE_MS = 500
 
 export const usePresenceStore = defineStore('presence', {
   state: () => ({
@@ -20,15 +21,14 @@ export const usePresenceStore = defineStore('presence', {
 
   getters: {
     isOnline: (state) => (userId) => {
-      const entry = state.statuses[userId]
+      const entry = state.statuses[String(userId)]
       if (!entry) return false
-      return dayjs(entry.timestamp).isAfter(dayjs().subtract(TTL_SECONDS, 'second'))
+      return entry.online
     },
     list(state) {
       return Object.entries(state.statuses).map(([id, data]) => ({
         id,
         ...data,
-        online: dayjs(data.timestamp).isAfter(dayjs().subtract(TTL_SECONDS, 'second')),
       }))
     },
   },
@@ -76,18 +76,24 @@ export const usePresenceStore = defineStore('presence', {
       })
       if (changed) {
         this.trackedIds = Array.from(current)
-        this.fetch(this.trackedIds)
+        const newIds = normalized.filter((id) => !this.statuses[id])
+        if (newIds.length) {
+          this.fetch(newIds)
+        }
       }
     },
 
     setStatus(userId, online) {
       if (!userId) return
-      this.statuses = {
-        ...this.statuses,
-        [userId]: {
-          online,
-          timestamp: new Date().toISOString(),
-        },
+      const key = String(userId)
+      const current = this.statuses[key]
+      if (current && current.online === online) {
+        current.timestamp = new Date().toISOString()
+        return
+      }
+      this.statuses[key] = {
+        online,
+        timestamp: new Date().toISOString(),
       }
     },
 
@@ -104,30 +110,42 @@ export const usePresenceStore = defineStore('presence', {
       }
       this.subscription = realtimeService.subscribe('presence', (payload) => {
         if (payload?.type === 'user.online') {
-          this.setStatus(payload.userId, true)
+          this.setStatus(payload.user_id, true)
         }
         if (payload?.type === 'user.offline') {
-          this.setStatus(payload.userId, false)
+          this.setStatus(payload.user_id, false)
         }
       })
 
       this.timer = setInterval(() => {
         this.prune()
-        // HTTP polling only as fallback when WebSocket is NOT connected
-        if (this.trackedIds.length && realtimeService.getState() !== 'open') {
-          this.fetch(this.trackedIds)
+        const wsState = realtimeService.getState()
+        if (wsState === 'open' || wsState === 'connecting') return
+        if (this.trackedIds.length) {
+          this._debouncedFetch()
         }
       }, REFRESH_INTERVAL)
     },
 
-    prune() {
-      const next = {}
-      Object.entries(this.statuses).forEach(([id, entry]) => {
-        if (dayjs(entry.timestamp).isAfter(dayjs().subtract(TTL_SECONDS, 'second'))) {
-          next[id] = entry
+    _debouncedFetch() {
+      if (this._fetchTimer) return
+      this._fetchTimer = setTimeout(() => {
+        this._fetchTimer = null
+        if (this.trackedIds.length) {
+          this.fetch(this.trackedIds)
         }
-      })
-      this.statuses = next
+      }, FETCH_DEBOUNCE_MS)
+    },
+
+    prune() {
+      const cutoff = Date.now() - TTL_MS
+      const keys = Object.keys(this.statuses)
+      for (const key of keys) {
+        const entry = this.statuses[key]
+        if (entry && new Date(entry.timestamp).getTime() < cutoff) {
+          delete this.statuses[key]
+        }
+      }
     },
 
     dispose() {
@@ -138,6 +156,10 @@ export const usePresenceStore = defineStore('presence', {
       if (this.timer) {
         clearInterval(this.timer)
         this.timer = null
+      }
+      if (this._fetchTimer) {
+        clearTimeout(this._fetchTimer)
+        this._fetchTimer = null
       }
       if (this.subscription) {
         this.subscription()
