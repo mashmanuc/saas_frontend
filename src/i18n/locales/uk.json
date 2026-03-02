@@ -348,7 +348,8 @@
     "bookings": "Бронювання",
     "chat": "Чат",
     "contacts": "Контакти",
-    "billing": "Оплата"
+    "billing": "Оплата",
+    "learningContent": "Навчальні матеріали"
   },
   "notifications": {
     "title": "Сповіщення",

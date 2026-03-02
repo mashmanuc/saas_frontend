@@ -261,7 +261,8 @@
     "bookings": "Бронювання",
     "chat": "Чат",
     "contacts": "Контакти",
-    "billing": "Оплата"
+    "billing": "Оплата",
+    "learningContent": "Learning Materials"
   },
   "notifications": {
     "title": "Notifications",

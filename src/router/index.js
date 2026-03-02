@@ -47,6 +47,9 @@ const ProfileEditViewV2 = () => import('../modules/profileV2/views/ProfileEditVi
 const ProfileOverviewViewV2 = () => import('../modules/profileV2/views/ProfileOverviewView.vue')
 const UserAccountViewV2 = () => import('../modules/profileV2/views/UserAccountView.vue')
 
+// Learning Content view
+const LearningContentView = () => import('../modules/learning-content/views/LearningContentView.vue')
+
 // Onboarding views
 const OnboardingView = () => import('../modules/onboarding/views/OnboardingView.vue')
 const StudentOnboardingView = () => import('../modules/onboarding/views/StudentOnboardingView.vue')
@@ -589,6 +592,16 @@ const routes = [
         meta: { 
           requiresAuth: true,
           roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR]
+        },
+      },
+      // Learning Content route
+      {
+        path: 'learning-content',
+        name: 'learning-content',
+        component: LearningContentView,
+        meta: { 
+          requiresAuth: true,
+          roles: [USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.STAFF]
         },
       },
       // v0.71: Chat with tutor route
