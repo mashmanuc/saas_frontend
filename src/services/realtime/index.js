@@ -317,7 +317,7 @@ class RealtimeService {
     const payload = typeof message === 'string' ? message : JSON.stringify(message)
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
       this.pendingMessages.push(payload)
-      if (!this.socket) {
+      if (!this.socket && this.shouldReconnect) {
         this.connect()
       }
       return
