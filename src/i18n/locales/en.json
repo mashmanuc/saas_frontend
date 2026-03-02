@@ -493,6 +493,8 @@
     }
   },
   "common": {
+    "title": "Title",
+    "description": "Description",
     "cancel": "Cancel",
     "loading": "Loading...",
     "close": "Close",
@@ -6490,6 +6492,8 @@
       "custom": "Custom"
     },
     "sidebar": {
+      "dashboard": "Dashboard",
+      "settings": "Settings",
       "home": "Home",
       "boards": "My Boards",
       "filters": "Filters",
