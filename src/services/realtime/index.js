@@ -174,10 +174,14 @@ class RealtimeService {
 
     try {
       const token = (await this.options.tokenProvider?.()) || null
-      const url = new URL(this.options.url)
-      if (token) {
-        url.searchParams.set('token', token)
+      if (!token) {
+        this.options.logger?.warn?.('[realtime] No auth token available, deferring connect')
+        this.status = READY_STATES.CLOSED
+        this.scheduleReconnect()
+        return
       }
+      const url = new URL(this.options.url)
+      url.searchParams.set('token', token)
 
       this.socket = new WebSocket(url.toString())
       this.socket.addEventListener('open', () => this.handleOpen())

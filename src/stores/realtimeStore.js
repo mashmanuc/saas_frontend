@@ -82,6 +82,17 @@ export const useRealtimeStore = defineStore('realtime', {
       realtimeService.init({
         url: this.wsUrl || normalizeWsUrl(null),
         tokenProvider: async () => {
+          // Wait for auth bootstrap (page reload: '__cookie__' → refreshAccess → real JWT).
+          // _bootstrapPromise is set during bootstrap and nulled after — check both.
+          if (auth._bootstrapPromise) {
+            try { await auth._bootstrapPromise } catch { /* ignore */ }
+          }
+          // If refresh is in-flight (e.g. after auth_required), wait for it too
+          if (auth.refreshPromise) {
+            try { await auth.refreshPromise } catch { /* ignore */ }
+          }
+          // Never send placeholder as token — backend can't decode it → 1006
+          if (!auth.access || auth.access === '__cookie__') return null
           return auth.access
         },
         ...options,
