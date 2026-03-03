@@ -70,6 +70,8 @@ class RealtimeService {
     this.reconnectTimer = null
     this.tokenRefreshCallback = null
     this.lastToken = null
+    this._lastConnectAttempt = 0
+    this._openedAt = 0
 
     this.handleOnlineEvent = () => this.handleNetworkChange(true)
     this.handleOfflineEvent = () => this.handleNetworkChange(false)
@@ -155,6 +157,17 @@ class RealtimeService {
     if (this.socket && (this.status === READY_STATES.OPEN || this.status === READY_STATES.CONNECTING)) {
       return
     }
+    // Burst guard: prevent rapid-fire connect() during page load / component mount storm.
+    // If last connect attempt was < 1s ago, defer to existing scheduleReconnect backoff.
+    const now = Date.now()
+    if (this._lastConnectAttempt && (now - this._lastConnectAttempt) < 1000) {
+      if (!this.reconnectTimer) {
+        this.scheduleReconnect()
+      }
+      return
+    }
+    this._lastConnectAttempt = now
+
     this.shouldReconnect = true
     this.status = READY_STATES.CONNECTING
     this.emitter.emit('status', this.status)
@@ -234,7 +247,13 @@ class RealtimeService {
     this.flushPending()
     this.resubscribeAll()
     this.startHeartbeat()
-    this.backoff = INITIAL_BACKOFF_MS
+    // Only reset backoff if previous connection was stable (>5s).
+    // Prevents burst loop: open → 1006 close → backoff reset → immediate reconnect → repeat.
+    const prevOpened = this._openedAt || 0
+    this._openedAt = Date.now()
+    if (!prevOpened || (this._openedAt - prevOpened) > 5000) {
+      this.backoff = INITIAL_BACKOFF_MS
+    }
   }
 
   handleMessage(event) {
@@ -275,6 +294,7 @@ class RealtimeService {
   }
 
   handleClose(event) {
+    this.socket = null
     this.status = READY_STATES.CLOSED
     this.emitter.emit('status', this.status)
     this.clearHeartbeat()

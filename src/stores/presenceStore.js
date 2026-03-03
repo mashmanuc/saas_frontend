@@ -46,11 +46,10 @@ export const usePresenceStore = defineStore('presence', {
       if (!ids.length || !authStore?.access) return
       try {
         const response = await presenceApi.getStatuses(ids)
-        if (Array.isArray(response)) {
-          response.forEach((entry) => {
-            this.setStatus(entry.user_id, entry.online)
-          })
-        }
+        const results = response?.results ?? (Array.isArray(response) ? response : [])
+        results.forEach((entry) => {
+          this.setStatus(entry.user_id, entry.online)
+        })
         this.lastUpdated = new Date().toISOString()
       } catch (error) {
         if (error?.response?.status === 401) {
