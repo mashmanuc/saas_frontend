@@ -7,7 +7,7 @@ import { useAuthStore } from '../modules/auth/store/authStore'
 
 const TTL_SECONDS = 90
 const TTL_MS = TTL_SECONDS * 1000
-const REFRESH_INTERVAL = 90_000
+const PRUNE_INTERVAL = 60_000
 const FETCH_DEBOUNCE_MS = 500
 
 export const usePresenceStore = defineStore('presence', {
@@ -125,16 +125,10 @@ export const usePresenceStore = defineStore('presence', {
         }
       })
 
+      // Lightweight prune timer — no HTTP polling, WS is the sole update source
       this.timer = setInterval(() => {
         this.prune()
-        const wsState = realtimeService.getState()
-        if (wsState === 'open' || wsState === 'connecting') return
-        // Only leader tab does HTTP fallback polling
-        if (!this.isLeaderTab && presenceBroadcast.isSupported()) return
-        if (this.trackedIds.length) {
-          this._debouncedFetch()
-        }
-      }, REFRESH_INTERVAL)
+      }, PRUNE_INTERVAL)
     },
 
     _debouncedFetch() {
