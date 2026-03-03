@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { presenceApi } from '../api/presence'
 import { realtimeService } from '../services/realtime'
+import { presenceBroadcast } from '../services/presenceBroadcast'
 import { notifyError } from '../utils/notify'
 import { useAuthStore } from '../modules/auth/store/authStore'
 
@@ -17,6 +18,7 @@ export const usePresenceStore = defineStore('presence', {
     initialized: false,
     trackedIds: [],
     subscription: null,
+    isLeaderTab: false,
   }),
 
   getters: {
@@ -39,6 +41,7 @@ export const usePresenceStore = defineStore('presence', {
       if (this.initialized || !authStore?.access) return
       this.initialized = true
       this.subscribeRealtime()
+      this._initBroadcast()
     },
 
     async fetch(ids = []) {
@@ -47,10 +50,16 @@ export const usePresenceStore = defineStore('presence', {
       try {
         const response = await presenceApi.getStatuses(ids)
         const results = response?.results ?? (Array.isArray(response) ? response : [])
+        const statusMap = {}
         results.forEach((entry) => {
           this.setStatus(entry.user_id, entry.online)
+          statusMap[String(entry.user_id)] = entry.online
         })
         this.lastUpdated = new Date().toISOString()
+        // Broadcast fetched statuses to other tabs
+        if (Object.keys(statusMap).length) {
+          presenceBroadcast.broadcastStatuses(statusMap)
+        }
       } catch (error) {
         if (error?.response?.status === 401) {
           this.dispose()
@@ -120,6 +129,8 @@ export const usePresenceStore = defineStore('presence', {
         this.prune()
         const wsState = realtimeService.getState()
         if (wsState === 'open' || wsState === 'connecting') return
+        // Only leader tab does HTTP fallback polling
+        if (!this.isLeaderTab && presenceBroadcast.isSupported()) return
         if (this.trackedIds.length) {
           this._debouncedFetch()
         }
@@ -147,11 +158,31 @@ export const usePresenceStore = defineStore('presence', {
       }
     },
 
+    _initBroadcast() {
+      if (!presenceBroadcast.isSupported()) {
+        this.isLeaderTab = true
+        return
+      }
+      presenceBroadcast.init({
+        onStatusUpdate: (statusMap) => {
+          // Receive statuses from leader tab
+          Object.entries(statusMap).forEach(([userId, online]) => {
+            this.setStatus(userId, online)
+          })
+        },
+        onLeaderChange: (amLeader) => {
+          this.isLeaderTab = amLeader
+        },
+      })
+      this.isLeaderTab = presenceBroadcast.isLeader()
+    },
+
     dispose() {
       this.statuses = {}
       this.lastUpdated = null
       this.trackedIds = []
       this.initialized = false
+      this.isLeaderTab = false
       if (this.timer) {
         clearInterval(this.timer)
         this.timer = null
@@ -164,6 +195,7 @@ export const usePresenceStore = defineStore('presence', {
         this.subscription()
         this.subscription = null
       }
+      presenceBroadcast.dispose()
     },
   },
 })
