@@ -2720,6 +2720,13 @@
       "DISPUTED": "Disputed",
       "ARCHIVED": "Archived"
     },
+    "history": {
+      "title": "My Lessons",
+      "loading": "Loading...",
+      "empty": "No lessons yet",
+      "unknownStudent": "Unknown student",
+      "openBoard": "Open Board"
+    },
     "marketplace": {
       "title": "Template Marketplace",
       "subtitle": "Find ready-made lesson templates from tutors",
@@ -6160,6 +6167,23 @@
         "joinLeaveOff": "Join/leave notifications off"
       }
     },
+    "contentSidebar": {
+      "loading": "Loading materials...",
+      "processing": "Processing...",
+      "failed": "Failed",
+      "dropToUpload": "Drop file to upload",
+      "load_failed": "Failed to load",
+      "upload_failed": "Upload failed",
+      "unsupported_format": "Unsupported format",
+      "category": {
+        "problem": "Problems",
+        "image": "Images",
+        "pdf": "PDF",
+        "audio": "Audio",
+        "video": "Video",
+        "presentation": "Presentations"
+      }
+    },
     "upload": {
       "dragHere": "Drop image here",
       "supportedFormats": "PNG, JPEG, WebP, SVG — max 10 MB",
@@ -6518,11 +6542,43 @@
     }
   },
   "learningContent": {
+    "groups": {
+      "selectGroup": "Select group",
+      "implicitLabel": "Personal",
+      "explicitLabel": "Groups",
+      "students": "students",
+      "materials": "materials",
+      "empty": "No groups",
+      "createGroup": "Create group",
+      "groupTitle": "Group title",
+      "addMaterial": "Add material",
+      "removeMaterial": "Remove material",
+      "materialAdded": "Material added",
+      "materialRemoved": "Material removed",
+      "accessDenied": "Access to this material is denied",
+      "manager": "Materials Management",
+      "subjectLabel": "Subject",
+      "noSubject": "No subject",
+      "subjectImmutableWarning": "Subject cannot be changed while group has materials",
+      "subjectLocked": "Subject is locked for this group",
+      "noMaterials": "No materials yet",
+      "selectSubjectHint": "Select a subject to auto-populate starter materials",
+      "titlePlaceholder": "e.g. Math Grade 10-B",
+      "materialActive": "Material active",
+      "materialInactive": "Material inactive",
+      "sidebarTitle": "Learning",
+      "sidebarStudents": "Students",
+      "sidebarGroups": "Groups",
+      "sidebarEmpty": "No students or groups yet",
+      "sidebarEmptyHint": "Students will appear automatically after accepting a relation"
+    },
     "view": {
       "subtitle": "Library of educational materials for use in lessons"
     },
     "panel": {
       "title": "Materials",
+      "lessonTitle": "Lesson Materials",
+      "lessonEmpty": "No allowed materials for this lesson",
       "subjects": "Subjects",
       "collections": "Collections",
       "noContent": "No materials",
@@ -6534,7 +6590,13 @@
       "noResults": "Nothing found",
       "filters": "Filters",
       "difficulty": "Difficulty",
-      "tags": "Tags"
+      "tags": "Tags",
+      "language": "Language"
+    },
+    "language": {
+      "all": "All languages",
+      "uk": "Українська",
+      "en": "English"
     },
     "item": {
       "problem": "Problem",

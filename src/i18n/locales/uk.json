@@ -3744,6 +3744,13 @@
       "DISPUTED": "Оскаржено",
       "ARCHIVED": "Архівовано"
     },
+    "history": {
+      "title": "Мої уроки",
+      "loading": "Завантаження...",
+      "empty": "Уроків ще немає",
+      "unknownStudent": "Невідомий учень",
+      "openBoard": "Відкрити дошку"
+    },
     "marketplace": {
       "title": "Маркетплейс шаблонів",
       "subtitle": "Знайдіть готові шаблони уроків від тьюторів",
@@ -6498,6 +6505,23 @@
         "joinLeaveOff": "Сповіщення про вхід/вихід вимкнено"
       }
     },
+    "contentSidebar": {
+      "loading": "Завантаження матеріалів...",
+      "processing": "Обробка...",
+      "failed": "Помилка",
+      "dropToUpload": "Перетягніть файл для завантаження",
+      "load_failed": "Помилка завантаження",
+      "upload_failed": "Помилка завантаження файлу",
+      "unsupported_format": "Формат не підтримується",
+      "category": {
+        "problem": "Задачі",
+        "image": "Зображення",
+        "pdf": "PDF",
+        "audio": "Аудіо",
+        "video": "Відео",
+        "presentation": "Презентації"
+      }
+    },
     "upload": {
       "dragHere": "Перетягніть зображення сюди",
       "supportedFormats": "PNG, JPEG, WebP, SVG — макс. 10 МБ",
@@ -6588,11 +6612,43 @@
     }
   },
   "learningContent": {
+    "groups": {
+      "selectGroup": "Виберіть групу",
+      "implicitLabel": "Особисті",
+      "explicitLabel": "Групи",
+      "students": "учнів",
+      "materials": "матеріалів",
+      "empty": "Немає груп",
+      "createGroup": "Створити групу",
+      "groupTitle": "Назва групи",
+      "addMaterial": "Додати матеріал",
+      "removeMaterial": "Видалити матеріал",
+      "materialAdded": "Матеріал додано",
+      "materialRemoved": "Матеріал видалено",
+      "accessDenied": "Доступ до цього матеріалу заборонено",
+      "manager": "Управління матеріалами",
+      "subjectLabel": "Предмет",
+      "noSubject": "Без предмета",
+      "subjectImmutableWarning": "Предмет не можна змінити, поки в групі є матеріали",
+      "subjectLocked": "Предмет закріплений за цією групою",
+      "noMaterials": "Матеріалів поки немає",
+      "selectSubjectHint": "Оберіть предмет для автозаповнення стартовими матеріалами",
+      "titlePlaceholder": "Наприклад: Математика 10-Б",
+      "materialActive": "Матеріал активний",
+      "materialInactive": "Матеріал неактивний",
+      "sidebarTitle": "Навчання",
+      "sidebarStudents": "Учні",
+      "sidebarGroups": "Групи",
+      "sidebarEmpty": "Ще немає учнів чи груп",
+      "sidebarEmptyHint": "Учні з'являться автоматично після підтвердження зв'язку"
+    },
     "view": {
       "subtitle": "Бібліотека навчальних матеріалів для використання на уроках"
     },
     "panel": {
       "title": "Матеріали",
+      "lessonTitle": "Матеріали уроку",
+      "lessonEmpty": "Для цього уроку немає дозволених матеріалів",
       "subjects": "Предмети",
       "collections": "Збірники",
       "noContent": "Немає матеріалів",
@@ -6604,7 +6660,13 @@
       "noResults": "Нічого не знайдено",
       "filters": "Фільтри",
       "difficulty": "Складність",
-      "tags": "Теги"
+      "tags": "Теги",
+      "language": "Мова"
+    },
+    "language": {
+      "all": "Всі мови",
+      "uk": "Українська",
+      "en": "English"
     },
     "item": {
       "problem": "Задача",

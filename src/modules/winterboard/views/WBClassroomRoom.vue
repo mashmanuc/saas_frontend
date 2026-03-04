@@ -179,10 +179,16 @@
           </p>
         </div>
 
-        <!-- Materials tab -->
+        <!-- Materials tab: sidebar (lesson mode) or library (browse mode) -->
+        <ContentSidebar
+          v-else-if="activeTab === 'materials' && lessonIdNum"
+          :lesson-id="props.lessonId"
+          :is-tutor="classroomRole.isTeacher.value"
+        />
         <ContentPanel
           v-else-if="activeTab === 'materials'"
           :session-id="resolvedSessionId"
+          :lesson-id="lessonIdNum"
           @drag-start="onContentDragStart"
         />
 
@@ -335,6 +341,7 @@ import WBCanvasLoader from '../components/loading/WBCanvasLoader.vue'
 
 // Learning Content integration
 import ContentPanel from '@/modules/learning-content/components/ContentPanel.vue'
+import ContentSidebar from '../components/sidebar/ContentSidebar.vue'
 import { useContentDrop } from '../composables/useContentDrop'
 import type { ContentDragPayload } from '@/modules/learning-content'
 
@@ -493,6 +500,13 @@ const effectiveTool = computed<WBToolType>(() => {
 const connectedStudents = computed(() =>
   classroomSession.connectedUsers.value.filter((u) => u.role !== 'owner'),
 )
+
+const lessonIdNum = computed(() => {
+  const id = props.lessonId
+  if (!id) return null
+  const num = Number(id)
+  return Number.isNaN(num) ? null : num
+})
 
 const roleBadgeText = computed(() => {
   const r = classroomRole.role.value

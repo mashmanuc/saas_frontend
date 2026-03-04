@@ -4,6 +4,7 @@ import type {
   Collection,
   Topic,
   Unit,
+  ContentItemSummary,
   ContentItemDetail,
   LessonMaterial,
   SearchParams,
@@ -41,6 +42,8 @@ export const learningContentApi = {
     if (params.page) query.page = params.page
     if (params.ownership_type) query.ownership_type = params.ownership_type
     if (params.owner) query.owner = params.owner
+    if (params.language) query.language = params.language
+    if (params.lesson_id) query.lesson_id = params.lesson_id
     return apiClient.get(`${BASE}/items/search/`, { params: query })
   },
 
@@ -54,5 +57,19 @@ export const learningContentApi = {
 
   async getLessonMaterials(sessionUuid: string): Promise<LessonMaterial[]> {
     return apiClient.get(`${BASE}/lesson-materials/`, { params: { session: sessionUuid } })
+  },
+
+  async getLessonAllowedItems(lessonId: number): Promise<ContentItemSummary[]> {
+    return apiClient.get(`${BASE}/lessons/${lessonId}/allowed-content/`)
+  },
+
+  async getLessonParticipants(lessonId: number): Promise<unknown[]> {
+    return apiClient.get(`${BASE}/lessons/${lessonId}/participants/`)
+  },
+
+  async uploadFile(formData: FormData): Promise<unknown> {
+    return apiClient.post(`${BASE}/content-items/upload/`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
   },
 }
