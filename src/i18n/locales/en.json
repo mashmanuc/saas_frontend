@@ -6167,6 +6167,16 @@
         "joinLeaveOff": "Join/leave notifications off"
       }
     },
+    "audio": {
+      "untitled": "Untitled audio",
+      "listening": "Audio (via Zoom)"
+    },
+    "video": {
+      "play": "Play",
+      "pause": "Pause",
+      "playing": "▶ Playing",
+      "paused": "⏹ Paused"
+    },
     "contentSidebar": {
       "loading": "Loading materials...",
       "processing": "Processing...",
@@ -6183,6 +6193,18 @@
         "video": "Video",
         "presentation": "Presentations"
       }
+    },
+    "pdfSelector": {
+      "pageCount": "{count} pages",
+      "close": "Close",
+      "dragFull": "Drag (page 1)",
+      "pageAlt": "Page {n}",
+      "noPages": "Pages still loading"
+    },
+    "media": {
+      "processing": "Processing...",
+      "failed": "Processing failed",
+      "retry": "Retry"
     },
     "upload": {
       "dragHere": "Drop image here",

@@ -6505,6 +6505,16 @@
         "joinLeaveOff": "Сповіщення про вхід/вихід вимкнено"
       }
     },
+    "audio": {
+      "untitled": "Аудіо без назви",
+      "listening": "Аудіо (через Zoom)"
+    },
+    "video": {
+      "play": "Грати",
+      "pause": "Пауза",
+      "playing": "▶ Грає",
+      "paused": "⏹ Пауза"
+    },
     "contentSidebar": {
       "loading": "Завантаження матеріалів...",
       "processing": "Обробка...",
@@ -6521,6 +6531,18 @@
         "video": "Відео",
         "presentation": "Презентації"
       }
+    },
+    "pdfSelector": {
+      "pageCount": "{count} стор.",
+      "close": "Закрити",
+      "dragFull": "Перетягнути (стор. 1)",
+      "pageAlt": "Сторінка {n}",
+      "noPages": "Сторінки ще завантажуються"
+    },
+    "media": {
+      "processing": "Обробка...",
+      "failed": "Помилка обробки",
+      "retry": "Повторити"
     },
     "upload": {
       "dragHere": "Перетягніть зображення сюди",
