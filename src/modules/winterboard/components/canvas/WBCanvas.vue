@@ -2164,15 +2164,30 @@ function getTextConfig(stroke: WBStroke): Record<string, unknown> {
   })
 }
 
+// URL-нормалізатор: виправляє подвійний /media/ prefix що міг зберегтись у старих asset'ах.
+// Django FileSystemStorage повертає /media/content/... (root-relative) — якщо _to_absolute_url
+// не мав перевірки на '/', URL ставав /media//media/content/... і 404-ив.
+// Ця функція прозоро виправляє вже збережені URL без перезапуску сервера.
+function normalizeAssetUrl(url: string): string {
+  if (!url || url.startsWith('data:') || url.startsWith('http')) return url
+  return url.replace(/^\/media\/\/media\//, '/media/')
+}
+
+// Set URL'ів що остаточно не завантажились — захист від нескінченного циклу 404.
+// preloadAssetImage викликається з getAssetConfig на КОЖЕН рендер; без цього Set'у
+// кожна невдала картинка ретраєтиметься при кожному strokeEnd/mousemove.
+const failedImages = new Set<string>()
+
 // A4.3: Preload an asset image into the loadedImages cache (for immediate rendering after drop/paste)
 // FLICKER FIX: loadedImages is a plain Map (not reactive) — we imperatively update the Konva node
 // instead of relying on Vue reactivity, which would re-render ALL assets on every image load.
 function preloadAssetImage(asset: WBAsset): void {
-  if (loadedImages.has(asset.src)) return
-  const isDataUrl = asset.src.startsWith('data:')
+  const src = normalizeAssetUrl(asset.src)
+  if (loadedImages.has(src) || failedImages.has(src)) return
+  const isDataUrl = src.startsWith('data:')
 
   function applyImage(image: HTMLImageElement): void {
-    loadedImages.set(asset.src, image)
+    loadedImages.set(src, image)
     // Invalidate the memoized config for this asset so next render picks up the image
     assetConfigCache.delete(asset.id)
     // Imperatively update the Konva node — no Vue reactive re-render triggered
@@ -2195,29 +2210,34 @@ function preloadAssetImage(asset: WBAsset): void {
   image.onerror = () => {
     if (isDataUrl) {
       console.warn('[WB:Canvas] Failed to preload data-URL asset:', asset.id)
+      failedImages.add(src)
       return
     }
     // CORS failed — retry without crossOrigin (display-only mode, canvas may be tainted)
-    console.warn('[WB:Canvas] CORS preload failed, retrying without crossOrigin:', asset.src)
+    console.warn('[WB:Canvas] CORS preload failed, retrying without crossOrigin:', src)
     const imgNoCors = new Image()
     imgNoCors.onload = () => { applyImage(imgNoCors) }
     imgNoCors.onerror = () => {
-      console.error('[WB:Canvas] Image completely inaccessible, ghost will remain:', asset.src)
+      // Остаточно недоступне — додаємо в failedImages щоб не ретраїти нескінченно
+      console.error('[WB:Canvas] Image completely inaccessible, skipping retries:', src)
+      failedImages.add(src)
+      assetConfigCache.delete(asset.id)
     }
-    imgNoCors.src = asset.src
+    imgNoCors.src = src
   }
-  image.src = asset.src
+  image.src = src
 }
 
 function getAssetConfig(asset: WBAsset): Record<string, unknown> {
-  if (!loadedImages.has(asset.src)) {
+  const src = normalizeAssetUrl(asset.src)
+  if (!loadedImages.has(src) && !failedImages.has(src)) {
     // Lazy-load image on first render (non-blocking — Konva node gets image imperatively on load)
     preloadAssetImage(asset)
   }
 
   const selectable = currentTool.value === 'select'
   const isLockedItem = !!asset.locked
-  const hasImage = loadedImages.has(asset.src)
+  const hasImage = loadedImages.has(src)
 
   // Memoize by signature — return cached config object if nothing changed.
   // This prevents Vue-Konva from detecting a new config object on every stroke render,
@@ -2234,7 +2254,7 @@ function getAssetConfig(asset: WBAsset): Record<string, unknown> {
     width: asset.w,
     height: asset.h,
     rotation: asset.rotation,
-    image: loadedImages.get(asset.src),
+    image: loadedImages.get(src),
     opacity: isLockedItem ? 0.85 : 1,
     draggable: selectable && !isLockedItem,
     perfectDrawEnabled: false,

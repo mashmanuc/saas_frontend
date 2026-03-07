@@ -267,7 +267,9 @@ export function useContentDrop(options: UseContentDropOptions) {
       let sizes = DEFAULT_BOARD_SIZES[boardType] ?? { w: 400, h: 300 }
 
       // Content-aware sizing: load actual image dimensions for all visual asset types
-      const src = (board_object.src as string) || ''
+      // Normalize /media//media/ → /media/ (legacy broken URL від старого _to_absolute_url)
+      const rawSrc = (board_object.src as string) || ''
+      const src = rawSrc.replace(/^\/media\/\/media\//, '/media/')
 
       console.info('[WB:Drop] drop_mode=%s boardType=%s src=%s', drop_mode, boardType, src || '(empty)')
 
