@@ -334,6 +334,7 @@ import { useAnnouncer } from '../composables/useAnnouncer'
 import { useClassroomRole } from '../composables/useClassroomRole'
 import { useClassroomSession } from '../composables/useClassroomSession'
 import { winterboardApi } from '../api/winterboardApi'
+import { useAuthStore } from '@/modules/auth/store/authStore'
 import type { WBStroke, WBAsset, WBToolType } from '../types/winterboard'
 
 // Components
@@ -441,11 +442,13 @@ const contentDrop = useContentDrop({
   },
 })
 
+const authStore = useAuthStore()
 const presence = usePresence({
   sessionId: resolvedSessionId,
-  userId: `user-${Date.now()}`,
-  displayName: 'Anonymous',
+  userId: String(authStore.user?.id ?? ''),
+  displayName: authStore.user?.first_name || authStore.user?.email || 'Anonymous',
   color: '#2563eb',
+  token: authStore.access && authStore.access !== '__cookie__' ? authStore.access : undefined,
 })
 
 const followMode = useFollowMode({

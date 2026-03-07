@@ -31,31 +31,31 @@ export interface WBPresenceUser {
   color: string
 }
 
-/** Server → Client message types from WBPresenceConsumer */
+/** Server → Client message types from WBPresenceConsumer (camelCase from Django) */
 interface WBPresenceJoinMsg {
   type: 'presence.join'
-  user_id: string
-  display_name: string
+  userId: string
+  displayName: string
   color: string
 }
 
 interface WBPresenceLeaveMsg {
   type: 'presence.leave'
-  user_id: string
+  userId: string
 }
 
 interface WBCursorUpdateMsg {
   type: 'cursor.update'
-  user_id: string
-  display_name: string
+  userId: string
+  displayName: string
   color: string
   x: number
   y: number
-  page_id: string
+  pageId: string
   tool: string
   // A5.2: Optional viewport data piggybacked on cursor updates
-  scroll_x?: number
-  scroll_y?: number
+  scrollX?: number
+  scrollY?: number
   zoom?: number
   role?: string
 }
@@ -63,13 +63,13 @@ interface WBCursorUpdateMsg {
 /** A5.2: Dedicated viewport update message */
 interface WBViewportUpdateMsg {
   type: 'viewport.update'
-  user_id: string
-  display_name: string
+  userId: string
+  displayName: string
   color: string
-  scroll_x: number
-  scroll_y: number
+  scrollX: number
+  scrollY: number
   zoom: number
-  page_id: string
+  pageId: string
   role?: string
 }
 
@@ -109,8 +109,12 @@ export interface UsePresenceOptions {
 function getWsBaseUrl(): string {
   if (typeof window === 'undefined') return 'ws://localhost:8000'
   // In production, use dedicated WS backend if configured
-  const wsEnv = import.meta.env.VITE_WS_BASE_URL
-  if (wsEnv) return wsEnv
+  // Priority 1: explicit base URL
+  const wsBaseEnv = import.meta.env.VITE_WS_BASE_URL
+  if (wsBaseEnv) return wsBaseEnv.replace(/\/+$/, '')
+  // Priority 2: derive base from VITE_WB_WS_URL (strip /ws/winterboard/ suffix)
+  const wbWsEnv = import.meta.env.VITE_WB_WS_URL
+  if (wbWsEnv) return wbWsEnv.replace(/\/ws\/winterboard\/.*$/, '').replace(/\/+$/, '')
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
   return `${protocol}//${window.location.host}`
 }
@@ -123,8 +127,8 @@ function getWsBaseUrl(): string {
 function isPresenceAvailable(): boolean {
   // Always available in dev (Vite proxy or local backend)
   if (import.meta.env.DEV) return true
-  // Available if explicit WS URL is configured
-  if (import.meta.env.VITE_WS_BASE_URL) return true
+  // Available if explicit WS URL is configured (either base or winterboard-specific)
+  if (import.meta.env.VITE_WS_BASE_URL || import.meta.env.VITE_WB_WS_URL) return true
   // Not available on static hosting (Cloudflare Pages) without dedicated WS
   return false
 }
@@ -201,11 +205,11 @@ export function usePresence(options: UsePresenceOptions) {
       lastError.value = null
       console.info(LOG_PREFIX, 'Connected to', sessionId)
 
-      // Send join message
+      // Send join message (camelCase — matches BE _handle_join expectation)
       sendMessage({
         type: 'presence.join',
-        user_id: userId,
-        display_name: displayName,
+        userId,
+        displayName,
         color,
       })
 
@@ -258,7 +262,7 @@ export function usePresence(options: UsePresenceOptions) {
         try {
           sendMessage({
             type: 'presence.leave',
-            user_id: userId,
+            userId,
           })
         } catch {
           // ignore send errors during disconnect
@@ -301,48 +305,48 @@ export function usePresence(options: UsePresenceOptions) {
     switch (msg.type) {
       case 'presence.join': {
         // Skip own join
-        if (msg.user_id === userId) return
+        if (msg.userId === userId) return
 
-        onlineUsers.set(msg.user_id, {
-          userId: msg.user_id,
-          displayName: msg.display_name,
+        onlineUsers.set(msg.userId, {
+          userId: msg.userId,
+          displayName: msg.displayName,
           color: msg.color,
         })
         break
       }
 
       case 'presence.leave': {
-        onlineUsers.delete(msg.user_id)
-        remoteCursors.delete(msg.user_id)
+        onlineUsers.delete(msg.userId)
+        remoteCursors.delete(msg.userId)
         break
       }
 
       case 'cursor.update': {
         // Skip own cursor
-        if (msg.user_id === userId) return
+        if (msg.userId === userId) return
 
-        const existing = remoteCursors.get(msg.user_id)
-        remoteCursors.set(msg.user_id, {
-          userId: msg.user_id,
-          displayName: msg.display_name,
+        const existing = remoteCursors.get(msg.userId)
+        remoteCursors.set(msg.userId, {
+          userId: msg.userId,
+          displayName: msg.displayName,
           color: msg.color,
           x: msg.x,
           y: msg.y,
-          pageId: msg.page_id,
+          pageId: msg.pageId,
           tool: msg.tool as WBToolType,
           lastUpdate: Date.now(),
           // A5.2: Preserve viewport data from cursor updates or keep existing
-          scrollX: msg.scroll_x ?? existing?.scrollX,
-          scrollY: msg.scroll_y ?? existing?.scrollY,
+          scrollX: msg.scrollX ?? existing?.scrollX,
+          scrollY: msg.scrollY ?? existing?.scrollY,
           zoom: msg.zoom ?? existing?.zoom,
           role: msg.role ?? existing?.role,
         })
 
         // Also update presence
-        if (!onlineUsers.has(msg.user_id)) {
-          onlineUsers.set(msg.user_id, {
-            userId: msg.user_id,
-            displayName: msg.display_name,
+        if (!onlineUsers.has(msg.userId)) {
+          onlineUsers.set(msg.userId, {
+            userId: msg.userId,
+            displayName: msg.displayName,
             color: msg.color,
           })
         }
@@ -351,38 +355,38 @@ export function usePresence(options: UsePresenceOptions) {
 
       // A5.2: Dedicated viewport update
       case 'viewport.update': {
-        if (msg.user_id === userId) return
+        if (msg.userId === userId) return
 
-        const cur = remoteCursors.get(msg.user_id)
+        const cur = remoteCursors.get(msg.userId)
         if (cur) {
-          cur.scrollX = msg.scroll_x
-          cur.scrollY = msg.scroll_y
+          cur.scrollX = msg.scrollX
+          cur.scrollY = msg.scrollY
           cur.zoom = msg.zoom
-          cur.pageId = msg.page_id
+          cur.pageId = msg.pageId
           cur.role = msg.role
           cur.lastUpdate = Date.now()
         } else {
           // Create cursor entry with viewport data (no x/y yet)
-          remoteCursors.set(msg.user_id, {
-            userId: msg.user_id,
-            displayName: msg.display_name,
+          remoteCursors.set(msg.userId, {
+            userId: msg.userId,
+            displayName: msg.displayName,
             color: msg.color,
             x: 0,
             y: 0,
-            pageId: msg.page_id,
+            pageId: msg.pageId,
             tool: 'pen' as WBToolType,
             lastUpdate: Date.now(),
-            scrollX: msg.scroll_x,
-            scrollY: msg.scroll_y,
+            scrollX: msg.scrollX,
+            scrollY: msg.scrollY,
             zoom: msg.zoom,
             role: msg.role,
           })
         }
 
-        if (!onlineUsers.has(msg.user_id)) {
-          onlineUsers.set(msg.user_id, {
-            userId: msg.user_id,
-            displayName: msg.display_name,
+        if (!onlineUsers.has(msg.userId)) {
+          onlineUsers.set(msg.userId, {
+            userId: msg.userId,
+            displayName: msg.displayName,
             color: msg.color,
           })
         }
@@ -425,12 +429,12 @@ export function usePresence(options: UsePresenceOptions) {
 
     sendMessage({
       type: 'cursor.update',
-      user_id: userId,
-      display_name: displayName,
+      userId,
+      displayName,
       color: cursorColor ?? color,
       x: Math.round(x * 10) / 10, // 1 decimal precision
       y: Math.round(y * 10) / 10,
-      page_id: pageId,
+      pageId,
       tool,
     })
   }
@@ -452,13 +456,13 @@ export function usePresence(options: UsePresenceOptions) {
 
     sendMessage({
       type: 'viewport.update',
-      user_id: userId,
-      display_name: displayName,
+      userId,
+      displayName,
       color,
-      scroll_x: Math.round(scrollX),
-      scroll_y: Math.round(scrollY),
+      scrollX: Math.round(scrollX),
+      scrollY: Math.round(scrollY),
       zoom: Math.round(zoom * 100) / 100, // 2 decimal precision
-      page_id: pageId,
+      pageId,
       role,
     })
   }

@@ -321,6 +321,7 @@ import { useLocking } from '../composables/useLocking'
 import { useAnnouncer } from '../composables/useAnnouncer'
 import { useContentDrop } from '../composables/useContentDrop'
 import { winterboardApi } from '../api/winterboardApi'
+import { useAuthStore } from '@/modules/auth/store/authStore'
 import { learningGroupApi } from '@/modules/learning-content/api/learningGroupApi'
 import type { WBStroke, WBAsset, WBToolType } from '../types/winterboard'
 
@@ -355,12 +356,13 @@ const sessionId = ref<string | null>(null)
 const autosave = useAutosave(sessionId)
 
 // Presence / remote cursors (A3.2)
-// TODO(7.A1): Replace hardcoded userId/displayName/color with real auth data (needs auth integration)
+const authStore = useAuthStore()
 const presence = usePresence({
   sessionId,
-  userId: `user-${Date.now()}`,
-  displayName: 'Anonymous',
+  userId: String(authStore.user?.id ?? ''),
+  displayName: authStore.user?.first_name || authStore.user?.email || 'Anonymous',
   color: '#2563eb',
+  token: authStore.access && authStore.access !== '__cookie__' ? authStore.access : undefined,
 })
 
 // A5.1: Follow mode composable
