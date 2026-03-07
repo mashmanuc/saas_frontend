@@ -897,8 +897,10 @@ onMounted(async () => {
       showTemplateSelector.value = true
       connectPresenceSafe(created.id)
       // Auto-detect group for sidebar before redirect (route.query may have no groupId)
-      if (!route.query.groupId) detectTutorGroup()
-      router.replace({ name: 'winterboard-solo', params: { id: created.id }, query: route.query })
+      if (!route.query.groupId) await detectTutorGroup()
+      // Preserve groupId in query params (either explicit or auto-detected)
+      const query = groupId.value ? { ...route.query, groupId: groupId.value } : route.query
+      router.replace({ name: 'winterboard-solo', params: { id: created.id }, query })
       return
     } catch (err: unknown) {
       const status = (err as Record<string, Record<string, number>>)?.response?.status
