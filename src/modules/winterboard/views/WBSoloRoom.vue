@@ -149,6 +149,22 @@
         />
       </aside>
 
+      <!-- ── Page thumbnails panel (collapsible) ──────────────────────────── -->
+      <aside
+        class="wb-solo-room__page-panel"
+        :class="{ 'wb-solo-room__page-panel--open': showPagePanel }"
+        aria-label="Панель сторінок"
+      >
+        <WBPageThumbnails
+          :pages="store.pages"
+          :current-index="store.currentPageIndex"
+          @select="store.goToPage($event)"
+          @add="store.addPage()"
+          @delete="store.deletePageUndoable($event)"
+          @reorder="(from: number, to: number) => store.reorderPages(from, to)"
+        />
+      </aside>
+
       <!-- Canvas area -->
       <div id="wb-canvas" ref="canvasContainerRef" class="wb-solo-room__canvas" :class="{ 'wb-solo-room__canvas--with-sidebar': showMaterialsSidebar }" tabindex="-1" @dragover.prevent @drop="contentDrop.handleCanvasDrop($event)">
         <!-- B6.2: Loading state -->
@@ -203,6 +219,12 @@
         />
       </div>
 
+      <!-- Phase 3: Upload progress indicator -->
+      <WBUploadIndicator
+        :is-uploading="boardClipboard.isUploading.value"
+        :upload-error="boardClipboard.uploadError.value"
+      />
+
       <!-- Resize handle for right sidebar -->
       <div
         v-if="showMaterialsSidebar"
@@ -234,6 +256,22 @@
     <footer class="wb-solo-room__footer">
       <!-- Page navigation -->
       <div class="wb-page-nav">
+        <!-- Toggle панелі мініатюр -->
+        <button
+          type="button"
+          class="wb-page-btn wb-page-btn--panel"
+          :class="{ 'wb-page-btn--panel-active': showPagePanel }"
+          :title="showPagePanel ? 'Сховати панель сторінок' : 'Показати панель сторінок'"
+          :aria-pressed="showPagePanel"
+          @click="showPagePanel = !showPagePanel"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <rect x="1" y="1" width="12" height="3.5" rx="1" fill="currentColor"/>
+            <rect x="1" y="5.25" width="12" height="3.5" rx="1" fill="currentColor"/>
+            <rect x="1" y="9.5" width="12" height="3.5" rx="1" fill="currentColor"/>
+          </svg>
+        </button>
+        <div class="wb-page-nav__sep"></div>
         <button
           type="button"
           class="wb-page-btn"
@@ -314,6 +352,7 @@ import { useI18n } from 'vue-i18n'
 import { useWBStore } from '../board/state/boardStore'
 import { useHistory } from '../composables/useHistory'
 import { useKeyboard } from '../composables/useKeyboard'
+import { useBoardClipboard } from '../composables/useBoardClipboard'
 import { useAutosave } from '../composables/useAutosave'
 import { usePresence } from '../composables/usePresence'
 import { useFollowMode } from '../composables/useFollowMode'
@@ -330,9 +369,11 @@ import WBCanvas from '../components/canvas/WBCanvas.vue'
 import WBToolbar from '../components/toolbar/WBToolbar.vue'
 import WBRemoteCursors from '../components/cursors/WBRemoteCursors.vue'
 import WBCanvasLoader from '../components/loading/WBCanvasLoader.vue'
+import WBUploadIndicator from '../components/status/WBUploadIndicator.vue'
 import WBShareDialog from '../components/sharing/WBShareDialog.vue'
 import WBExportDialog from '../components/export/WBExportDialog.vue'
 import GroupContentSidebar from '../components/sidebar/GroupContentSidebar.vue'
+import WBPageThumbnails from '../components/pages/WBPageThumbnails.vue'
 import WBDragGhost from '../components/sidebar/WBDragGhost.vue'
 import type { AllowedContentItem } from '../types/sidebar'
 import BoardTemplateSelector from '../components/templates/BoardTemplateSelector.vue'
@@ -406,6 +447,10 @@ const showShareDialog = ref(false)
 const showExportDialog = ref(false)
 const showTemplateSelector = ref(false)
 const showSidebarOverlay = ref(false)
+
+// ── Page thumbnails panel: два режими (compact / panel), стан у localStorage ──
+const showPagePanel = ref(localStorage.getItem('wb:pagePanel') === 'true')
+watch(showPagePanel, (v) => localStorage.setItem('wb:pagePanel', String(v)))
 
 // ── Group sidebar: materials panel ──
 // Priority: 1) explicit ?groupId= from URL  2) auto-detect tutor's first implicit group
@@ -600,6 +645,20 @@ const saveStatusText = computed(() => {
   }
 })
 
+// ─── Board clipboard (unified paste/copy/cut handler) ────────────────────────
+
+const boardClipboard = useBoardClipboard({
+  store,
+  sessionId: () => sessionId.value,
+  canvasCenter: () => ({
+    x: (store.pageWidth ?? 800) / 2,
+    y: (store.pageHeight ?? 600) / 2,
+  }),
+  onAssetAdd: (asset: WBAsset) => {
+    store.addAsset(asset)
+  },
+})
+
 // ─── Keyboard shortcuts (AGENT-B: useKeyboard) ─────────────────────────────
 
 useKeyboard({
@@ -613,6 +672,9 @@ useKeyboard({
   onPageFirst: () => store.goToPage(0),
   onPageLast: () => store.goToPage(store.pageCount - 1),
   onZoomReset: () => handleZoomReset(),
+  onCopy: () => boardClipboard.copySelected(),
+  onPaste: () => boardClipboard.pasteInternal(),
+  onCut: () => boardClipboard.cutSelected(),
 })
 
 // ─── Handlers: Drawing ──────────────────────────────────────────────────────
@@ -858,8 +920,12 @@ async function saveBeforeLeave(): Promise<void> {
 
 // ─── Presence: graceful WebSocket connect ────────────────────────────────────
 
-function connectPresenceSafe(sid: string): void {
+async function connectPresenceSafe(sid: string): Promise<void> {
   try {
+    // CRITICAL: Wait for auth bootstrap to get real JWT token in memory
+    // In production, authStore.access = '__cookie__' on page load
+    // Bootstrap calls refreshAccess() which sets real JWT needed for WS auth
+    await authStore.bootstrap()
     presence.connect(sid)
   } catch (err) {
     console.warn('[WBSoloRoom] Presence WebSocket unavailable (non-blocking):', err)
@@ -897,7 +963,7 @@ onMounted(async () => {
       sessionName.value = created.name || t('winterboard.room.untitled')
       isLoading.value = false
       showTemplateSelector.value = true
-      connectPresenceSafe(created.id)
+      await connectPresenceSafe(created.id)
       // Auto-detect group for sidebar before redirect (route.query may have no groupId)
       if (!route.query.groupId) await detectTutorGroup()
       // Preserve groupId in query params (either explicit or auto-detected)
@@ -958,10 +1024,13 @@ onMounted(async () => {
     } finally {
       // Always stop loading — even on error, show the canvas
       isLoading.value = false
-    }
 
-    // Connect presence WebSocket (non-blocking, graceful)
-    connectPresenceSafe(id)
+      // Auto-detect group for sidebar
+      await detectTutorGroup()
+
+      // Connect presence (waits for auth bootstrap internally)
+      await connectPresenceSafe(id)
+    }
   }
 
   // Auto-detect tutor group for materials sidebar (non-blocking)
@@ -1212,6 +1281,20 @@ watch(() => store.workspaceName, (name) => {
   z-index: 20;
 }
 
+/* ── Page thumbnails panel (collapsible) ──────────────────────────────────── */
+.wb-solo-room__page-panel {
+  flex-shrink: 0;
+  width: 0;
+  overflow: hidden;
+  transition: width 0.2s ease;
+  background: var(--wb-bg-secondary, #f8fafc);
+  border-right: 1px solid var(--wb-border, #e2e8f0);
+  z-index: 15;
+}
+.wb-solo-room__page-panel--open {
+  width: 156px; /* 140px thumbnail + 8px padding × 2 */
+}
+
 .wb-solo-room__canvas {
   flex: 1;
   overflow: hidden;
@@ -1347,6 +1430,28 @@ watch(() => store.workspaceName, (name) => {
 .wb-page-btn--add {
   font-weight: 600;
   color: var(--wb-brand, #2563eb);
+}
+
+/* Toggle кнопка панелі сторінок */
+.wb-page-btn--panel {
+  color: var(--wb-fg-secondary, #475569);
+}
+.wb-page-btn--panel-active {
+  background: var(--wb-brand, #2563eb);
+  color: #fff;
+  border-color: var(--wb-brand, #2563eb);
+}
+.wb-page-btn--panel-active:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+/* Роздільник між toggle і стрілками */
+.wb-page-nav__sep {
+  width: 1px;
+  height: 20px;
+  background: var(--wb-border, #e2e8f0);
+  flex-shrink: 0;
 }
 
 .wb-page-indicator {

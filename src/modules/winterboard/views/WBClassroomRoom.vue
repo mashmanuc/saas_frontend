@@ -26,6 +26,22 @@
         >
           {{ t(`lessons.status.${lessonStatus}`) }}
         </span>
+        <button
+          v-if="classroomRole.isTeacher.value && lessonStatus === 'DRAFT'"
+          class="wb-lesson-action-btn wb-lesson-action-btn--start"
+          :disabled="lessonRuntime.isLoading"
+          @click="handleStartLesson"
+        >
+          {{ t('winterboard.lesson.start') }}
+        </button>
+        <button
+          v-if="classroomRole.isTeacher.value && lessonRuntime.isActive"
+          class="wb-lesson-action-btn wb-lesson-action-btn--complete"
+          :disabled="lessonRuntime.isLoading"
+          @click="handleCompleteLesson"
+        >
+          {{ t('winterboard.lesson.complete') }}
+        </button>
       </div>
 
       <!-- Center: Save status + lock indicator -->
@@ -267,6 +283,12 @@
       </div>
     </div>
 
+    <!-- Phase 3: Upload progress indicator -->
+    <WBUploadIndicator
+      :is-uploading="boardClipboard.isUploading.value"
+      :upload-error="boardClipboard.uploadError.value"
+    />
+
     <!-- ── Footer: Page nav + Zoom ─────────────────────────────────────── -->
     <footer class="wb-classroom-room__footer">
       <div class="wb-page-nav">
@@ -327,6 +349,7 @@ import { useI18n } from 'vue-i18n'
 import { useWBStore } from '../board/state/boardStore'
 import { useHistory } from '../composables/useHistory'
 import { useKeyboard } from '../composables/useKeyboard'
+import { useBoardClipboard } from '../composables/useBoardClipboard'
 import { useAutosave } from '../composables/useAutosave'
 import { usePresence } from '../composables/usePresence'
 import { useFollowMode } from '../composables/useFollowMode'
@@ -342,6 +365,7 @@ import WBCanvas from '../components/canvas/WBCanvas.vue'
 import WBToolbar from '../components/toolbar/WBToolbar.vue'
 import WBRemoteCursors from '../components/cursors/WBRemoteCursors.vue'
 import WBCanvasLoader from '../components/loading/WBCanvasLoader.vue'
+import WBUploadIndicator from '../components/status/WBUploadIndicator.vue'
 
 // Learning Content integration
 import ContentPanel from '@/modules/learning-content/components/ContentPanel.vue'
@@ -355,6 +379,7 @@ import LessonHomeworkPanel from '@/modules/lessons/components/LessonHomeworkPane
 import { lessonsTemplateApi } from '@/modules/lessons/api/lessonsTemplateApi'
 import type { LessonHomework, LessonStatus } from '@/modules/lessons/types/lessonTypes'
 import lessonsApi from '@/api/lessons'
+import { useLessonRuntimeStore } from '@/modules/learning-content/stores/useLessonRuntimeStore'
 
 // ─── Props ──────────────────────────────────────────────────────────────────
 
@@ -443,6 +468,8 @@ const contentDrop = useContentDrop({
 })
 
 const authStore = useAuthStore()
+const lessonRuntime = useLessonRuntimeStore()
+
 const presence = usePresence({
   sessionId: resolvedSessionId,
   userId: String(authStore.user?.id ?? ''),
@@ -533,6 +560,31 @@ const saveStatusText = computed(() => {
   }
 })
 
+// ─── Board clipboard (unified paste/copy/cut handler) ────────────────────────
+
+const boardClipboard = useBoardClipboard({
+  store,
+  sessionId: () => resolvedSessionId.value,
+  canvasCenter: () => ({
+    x: (store.pageWidth ?? 800) / 2,
+    y: (store.pageHeight ?? 600) / 2,
+  }),
+  onAssetAdd: (asset: WBAsset) => {
+    store.addAsset(asset)
+  },
+  // Teacher can always paste materials even when drawing is locked for students
+  disabled: () => !classroomRole.canDraw.value && !classroomRole.isTeacher.value,
+  // Phase 2: dual-write to lesson when content is uploaded
+  onContentUploaded: (contentItemId: number) => {
+    if (lessonRuntime.isActive) {
+      lessonRuntime.addContent(contentItemId)
+    }
+  },
+  // Phase 3: dual-write context
+  lessonId: () => lessonIdNum.value,
+  groupId: () => null, // Classroom doesn't have direct groupId — lesson.group is used by backend
+})
+
 // ─── Keyboard shortcuts ─────────────────────────────────────────────────────
 
 useKeyboard({
@@ -548,6 +600,9 @@ useKeyboard({
   onPageFirst: () => store.goToPage(0),
   onPageLast: () => store.goToPage(store.pageCount - 1),
   onZoomReset: () => handleZoomReset(),
+  onCopy: () => boardClipboard.copySelected(),
+  onPaste: () => boardClipboard.pasteInternal(),
+  onCut: () => boardClipboard.cutSelected(),
 })
 
 // ─── Handlers: Drawing ──────────────────────────────────────────────────────
@@ -762,6 +817,24 @@ async function handleEndSession(): Promise<void> {
   }
 }
 
+// ─── Handlers: Lesson lifecycle (Phase 2) ────────────────────────────────────
+
+async function handleStartLesson(): Promise<void> {
+  const ok = await lessonRuntime.startLesson()
+  if (ok) {
+    lessonStatus.value = 'IN_PROGRESS' as LessonStatus
+    announce(t('winterboard.lesson.started'))
+  }
+}
+
+async function handleCompleteLesson(): Promise<void> {
+  const ok = await lessonRuntime.completeLesson()
+  if (ok) {
+    lessonStatus.value = 'COMPLETED' as LessonStatus
+    announce(t('winterboard.lesson.completed'))
+  }
+}
+
 // ─── Lifecycle ──────────────────────────────────────────────────────────────
 
 onMounted(async () => {
@@ -813,7 +886,16 @@ onMounted(async () => {
   fetchLessonStatus()
   fetchHomework()
 
-  // Connect presence
+  // Phase 2: Initialize lesson runtime store
+  if (lessonIdNum.value) {
+    await lessonRuntime.init(lessonIdNum.value)
+    if (lessonRuntime.lessonStatus) {
+      lessonStatus.value = lessonRuntime.lessonStatus as LessonStatus
+    }
+  }
+
+  // Connect presence (wait for auth bootstrap to get real JWT token)
+  await authStore.bootstrap()
   presence.connect(init.sessionId)
 
   // Start polling connected users (teacher only)
@@ -838,6 +920,7 @@ onBeforeUnmount(async () => {
   classroomSession.stopUserPolling()
   classroomSession.reset()
   classroomRole.reset()
+  lessonRuntime.$reset()
 })
 </script>
 
@@ -1288,6 +1371,37 @@ onBeforeUnmount(async () => {
 .wb-fade-leave-active { transition: opacity 0.2s ease; }
 .wb-fade-enter-from,
 .wb-fade-leave-to { opacity: 0; }
+
+/* ── Lesson action buttons (Phase 2) ────────────────────────────────────── */
+
+.wb-lesson-action-btn {
+  padding: 3px 12px;
+  border: none;
+  border-radius: 5px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+.wb-lesson-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.wb-lesson-action-btn--start {
+  background: rgba(34, 197, 94, 0.8);
+  color: white;
+}
+.wb-lesson-action-btn--start:hover:not(:disabled) {
+  background: rgba(34, 197, 94, 1);
+}
+.wb-lesson-action-btn--complete {
+  background: rgba(251, 191, 36, 0.8);
+  color: #1e293b;
+}
+.wb-lesson-action-btn--complete:hover:not(:disabled) {
+  background: rgba(251, 191, 36, 1);
+}
 
 /* ── Lesson status badge (C1.2) ─────────────────────────────────────────── */
 
