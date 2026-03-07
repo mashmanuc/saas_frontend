@@ -22,6 +22,9 @@
     "error": "Push notification error"
   },
   "student": {
+    "demoBadge": "Demo",
+    "demoHint": "This is your test student. Invite a real student to start teaching.",
+    "inviteReal": "Invite student",
     "myTutors": {
       "title": "My Tutors",
       "empty": "You don't have any active tutors yet",
@@ -942,7 +945,8 @@
     "settings": "Settings",
     "billing": "Білінг",
     "booking": "Бронювання",
-    "notifications": "Сповіщення"
+    "notifications": "Сповіщення",
+    "knowledge": "Knowledge Library"
   },
   "marketplace": {
     "title": "Find a Tutor",
@@ -2725,7 +2729,10 @@
       "loading": "Loading...",
       "empty": "No lessons yet",
       "unknownStudent": "Unknown student",
-      "openBoard": "Open Board"
+      "openBoard": "Open Board",
+      "clone": "Clone lesson",
+      "cloneSuccess": "Lesson cloned",
+      "cloneFailed": "Failed to clone lesson"
     },
     "marketplace": {
       "title": "Template Marketplace",
@@ -6185,6 +6192,10 @@
       "load_failed": "Failed to load",
       "upload_failed": "Upload failed",
       "unsupported_format": "Unsupported format",
+      "search": "Search materials...",
+      "filterAll": "All",
+      "noResults": "Nothing found",
+      "upload": "Upload",
       "category": {
         "problem": "Problems",
         "image": "Images",
@@ -6193,6 +6204,33 @@
         "video": "Video",
         "presentation": "Presentations"
       }
+    },
+    "templates": {
+      "chooseTemplate": "Choose a board template",
+      "blank": "Blank",
+      "blankDesc": "Empty board with no elements",
+      "twoColumns": "Two Columns",
+      "twoColumnsDesc": "Explanation left, practice right",
+      "grid2x2": "Grid 2×2",
+      "grid2x2Desc": "4 zones for tasks or ideas",
+      "timeline": "Timeline",
+      "timelineDesc": "Horizontal sequence of steps",
+      "cancel": "Cancel",
+      "apply": "Apply"
+    },
+    "player": {
+      "play": "Play",
+      "prev": "Previous",
+      "next": "Next",
+      "close": "Close",
+      "dblClickToPlay": "Double-click to play"
+    },
+    "slideSelector": {
+      "slideCount": "{count} slides",
+      "close": "Close",
+      "dragFull": "Drag (slide 1)",
+      "slideAlt": "Slide {n}",
+      "noSlides": "Slides still loading"
     },
     "pdfSelector": {
       "pageCount": "{count} pages",
@@ -6493,7 +6531,9 @@
       "share": "Share",
       "export": "Export",
       "menu": "Menu",
-      "home": "Home"
+      "home": "Home",
+      "sidebarCollapse": "Collapse panel (double-click)",
+      "sidebarExpand": "Expand panel (double-click)"
     },
     "sizePresets": {
       "thin": "Thin",
@@ -6562,6 +6602,13 @@
       "4": "Above average",
       "5": "Hard"
     }
+  },
+  "storage": {
+    "quotaLabel": "Storage: {used} of {total}",
+    "quotaWarning": "Running low on space. Delete unnecessary files",
+    "quotaCritical": "Storage almost full! Free up space or purchase additional storage",
+    "quotaExceeded": "Storage limit exceeded. Delete unnecessary files or purchase additional storage",
+    "rateLimited": "Too many uploads. Please wait a minute"
   },
   "learningContent": {
     "groups": {
@@ -6662,5 +6709,53 @@
       "restricted": "Restricted access",
       "previewOnly": "Preview only"
     }
+  },
+  "template": {
+    "saveAsTemplate": "Save as template",
+    "titleLabel": "Template title",
+    "titlePlaceholder": "e.g., Algebra — trigonometry",
+    "save": "Save",
+    "createLesson": "Create lesson",
+    "materials": "materials",
+    "hasBoard": "with board",
+    "noTemplates": "No templates yet",
+    "titleRequired": "Template title required",
+    "lessonNotFound": "Lesson not found",
+    "saveFailed": "Failed to save template",
+    "deleteConfirm": "Delete template?"
+  },
+  "knowledge": {
+    "title": "Knowledge Library",
+    "tabLessons": "Lessons",
+    "tabTemplates": "Templates",
+    "tabStarterPacks": "Starter Packs",
+    "noLessons": "No lessons yet",
+    "noTemplates": "No templates yet",
+    "materials": "materials",
+    "templates": "templates",
+    "openBoard": "Open board",
+    "starterPacksInfo": "Starter Packs are managed in Content section",
+    "goToContent": "Go to Content",
+    "myStudents": "My Students",
+    "selectStudent": "Select a student on the left",
+    "materialsFor": "Materials",
+    "uploadFiles": "Upload files",
+    "uploading": "Uploading...",
+    "uploadSuccess": "File uploaded",
+    "uploadFailed": "Upload failed",
+    "noMaterials": "No materials yet. Upload files to get started.",
+    "lessonsWithStudent": "Lessons with student",
+    "openBoardWithStudent": "Open board",
+    "createLesson": "Create lesson",
+    "creatingLesson": "Creating...",
+    "storageQuota": "Storage quota",
+    "demoBadge": "Demo",
+    "noStudents": "You have no students yet",
+    "removeMaterial": "Remove",
+    "newBoard": "New board",
+    "tutorLibrary": "Tutor Library",
+    "myClasses": "MY CLASSES",
+    "noClasses": "No classes yet",
+    "sandbox": "Sandbox"
   }
 }

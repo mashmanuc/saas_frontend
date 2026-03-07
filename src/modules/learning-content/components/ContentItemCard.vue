@@ -33,6 +33,9 @@
         <OwnershipBadge v-if="item.ownership_type" :ownership-type="item.ownership_type" size="sm" />
         <AccessLockIcon v-if="item.access_type" :access-type="item.access_type" size="sm" />
       </span>
+      <span v-if="item.language" class="lc-item-lang-badge">
+        {{ item.language === 'uk' ? 'UA' : 'EN' }}
+      </span>
       <span
         class="lc-item-difficulty"
         :title="t(`learningContent.difficulty.${item.difficulty}`)"
@@ -68,6 +71,7 @@ function onDragStart(event: DragEvent) {
     type: props.item.type,
     title: props.item.title,
     contentJson: {} as any,
+    version: props.item.version,  // B1: version pinning at drag time
   }
   event.dataTransfer?.setData('application/learning-content', JSON.stringify(payload))
   event.dataTransfer!.effectAllowed = 'copy'
@@ -182,6 +186,16 @@ function onImageError(e: Event) {
   align-items: center;
   gap: 3px;
   flex-shrink: 0;
+}
+.lc-item-lang-badge {
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: #f3f4f6;
+  color: #6b7280;
+  flex-shrink: 0;
+  text-transform: uppercase;
 }
 .lc-item-difficulty {
   font-size: 9px;

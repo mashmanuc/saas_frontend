@@ -13,6 +13,9 @@
       </div>
     </Transition>
 
+    <!-- Phase 3.1: Storage quota bar -->
+    <StorageQuotaBar v-if="isTutor" :quota="storageQuota" />
+
     <!-- Header -->
     <div class="content-sidebar__header">
       <span class="content-sidebar__title">
@@ -58,10 +61,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, toRef } from 'vue'
+import { ref, toRef, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useContentSidebar } from '../../composables/useContentSidebar'
 import ContentSidebarItem from './ContentSidebarItem.vue'
+import StorageQuotaBar from '@/modules/learning-content/components/StorageQuotaBar.vue'
+import { learningContentApi } from '@/modules/learning-content/api/learningContentApi'
+import type { StorageQuota } from '@/modules/learning-content/api/learningContentApi'
 
 const props = defineProps<{
   lessonId: string | null
@@ -70,6 +76,19 @@ const props = defineProps<{
 
 const { t } = useI18n()
 const sidebar = useContentSidebar(toRef(props, 'lessonId'))
+
+// Phase 3.1: Storage quota
+const storageQuota = ref<StorageQuota | null>(null)
+
+async function loadQuota() {
+  try {
+    storageQuota.value = await learningContentApi.getStorageQuota()
+  } catch (e) {
+    console.warn('[ContentSidebar] Quota load failed:', e)
+  }
+}
+
+onMounted(loadQuota)
 
 // ── File drag-upload from OS ──
 const isDragOver = ref(false)
@@ -92,7 +111,7 @@ function onDrop(e: DragEvent) {
   const files = Array.from(e.dataTransfer?.files ?? [])
   if (!files.length || !props.isTutor) return
 
-  files.forEach(file => sidebar.uploadFile(file))
+  sidebar.uploadFiles(files).then(loadQuota)
 }
 </script>
 

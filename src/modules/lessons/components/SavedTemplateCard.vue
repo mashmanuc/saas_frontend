@@ -1,0 +1,124 @@
+<template>
+  <div class="stc">
+    <div class="stc__header">
+      <div>
+        <h3 class="stc__title">{{ template.title }}</h3>
+        <p class="stc__meta">
+          {{ formattedDate }}
+          <span v-if="template.content_count" class="stc__sep">
+            · {{ template.content_count }} {{ $t('template.materials') }}
+          </span>
+          <span v-if="template.has_board" class="stc__sep">
+            · {{ $t('template.hasBoard') }}
+          </span>
+        </p>
+      </div>
+    </div>
+    <div class="stc__actions">
+      <button
+        @click="$emit('createLesson', template.id)"
+        class="stc__btn stc__btn--create"
+      >
+        {{ $t('template.createLesson') }}
+      </button>
+      <button
+        @click="confirmDelete"
+        class="stc__btn stc__btn--delete"
+      >
+        {{ $t('common.delete') }}
+      </button>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+
+export interface SavedTemplateItem {
+  id: number
+  title: string
+  content_count?: number
+  has_board?: boolean
+  source_lesson_id?: number | null
+  created_at: string
+}
+
+const props = defineProps<{
+  template: SavedTemplateItem
+}>()
+
+const emit = defineEmits<{
+  createLesson: [templateId: number]
+  delete: [templateId: number]
+}>()
+
+const formattedDate = computed(() => {
+  return new Date(props.template.created_at).toLocaleDateString()
+})
+
+function confirmDelete() {
+  if (window.confirm('Delete template?')) {
+    emit('delete', props.template.id)
+  }
+}
+</script>
+
+<style scoped>
+.stc {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  padding: 14px;
+  transition: box-shadow 0.15s;
+}
+.stc:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+.stc__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.stc__title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+  margin: 0;
+}
+.stc__meta {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 4px 0 0;
+}
+.stc__sep {
+  margin-left: 2px;
+}
+.stc__actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+}
+.stc__btn {
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s;
+}
+.stc__btn--create {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+.stc__btn--create:hover {
+  background: #dbeafe;
+}
+.stc__btn--delete {
+  background: none;
+  color: #dc2626;
+}
+.stc__btn--delete:hover {
+  background: #fef2f2;
+}
+</style>

@@ -32,6 +32,7 @@ const ICONS = {
   shield: '🛡️',
   lab: '🧪',
   'book-open': '📚',
+  library: '📖',
 }
 
 const props = defineProps({

@@ -21,6 +21,16 @@
           {{ t(`learningContent.difficulty.${d}`) }}
         </option>
       </select>
+      <select
+        :value="store.searchParams.language ?? ''"
+        class="lc-filter-select"
+        :aria-label="t('learningContent.search.language')"
+        @change="onLanguageChange"
+      >
+        <option value="">{{ t('learningContent.language.all') }}</option>
+        <option value="uk">{{ t('learningContent.language.uk') }}</option>
+        <option value="en">{{ t('learningContent.language.en') }}</option>
+      </select>
     </div>
   </div>
 </template>
@@ -35,6 +45,14 @@ const store = useContentLibraryStore()
 function onDifficultyChange(e: Event) {
   const val = (e.target as HTMLSelectElement).value
   store.searchParams.difficulty = val ? Number(val) : undefined
+  if (store.searchQuery) {
+    store.searchItems({ ...store.searchParams, q: store.searchQuery })
+  }
+}
+
+function onLanguageChange(e: Event) {
+  const val = (e.target as HTMLSelectElement).value
+  store.searchParams.language = (val || undefined) as typeof store.searchParams.language
   if (store.searchQuery) {
     store.searchItems({ ...store.searchParams, q: store.searchQuery })
   }

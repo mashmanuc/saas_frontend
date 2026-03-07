@@ -161,3 +161,14 @@ export interface TemplatePurchaseResponse {
   purchase: TemplatePurchase | null
   error?: string
 }
+
+// ── Phase 2 Day 3: Lesson History ─────────────────────────
+export interface LessonHistoryItem {
+  id: number
+  student_name: string
+  started_at: string | null
+  status: LessonStatus
+  start: string
+  end: string
+  group: string | null
+}

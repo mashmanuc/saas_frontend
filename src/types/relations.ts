@@ -26,6 +26,7 @@ export interface Relation {
     display_name?: string   // P0.1: Privacy-safe name (format: "FirstName L.")
     full_name?: string      // P0.1: Full name when contact access granted
     avatar_url?: string
+    is_demo?: boolean       // Pre-Phase 4: Demo Student flag
   }
   status: 'invited' | 'active' | 'paused' | 'archived'
   created_at: string

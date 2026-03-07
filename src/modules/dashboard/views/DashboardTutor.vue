@@ -71,6 +71,20 @@
       </div>
     </Card>
 
+    <!-- Pre-Phase 4: Demo Student onboarding hint -->
+    <OnboardingHint
+      :hint-id="TutorHintId.DEMO_STUDENT_ONLY"
+      :condition="hasOnlyDemoStudent"
+      icon="🎓"
+    >
+      <strong>{{ $t('student.demoHint') }}</strong>
+      <template #actions>
+        <router-link to="/marketplace/my-profile" class="hint-btn">
+          {{ $t('student.inviteReal') }} →
+        </router-link>
+      </template>
+    </OnboardingHint>
+
     <Card class="space-y-6">
       <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -181,7 +195,15 @@
                 @change="toggleSelection(getRelationId(relation))"
               />
               <div class="flex-1 min-w-0 space-y-1">
-                <p class="text-base font-semibold text-body break-words">{{ getStudentName(relation.student) }}</p>
+                <p class="text-base font-semibold text-body break-words">
+                  {{ getStudentName(relation.student) }}
+                  <span
+                    v-if="relation.student?.is_demo"
+                    class="ml-1.5 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300"
+                  >
+                    {{ $t('student.demoBadge') }}
+                  </span>
+                </p>
                 <p class="text-sm text-muted break-all" v-if="relation.status === 'active'">{{ relation.student?.email }}</p>
                 <p class="text-xs text-muted">
                   {{ $t('dashboard.tutor.timezoneLabel') }}
@@ -367,6 +389,13 @@ const { t } = useI18n()
 // FTUE: Check if tutor profile is published
 // Default false = show banner immediately; hide only after API confirms is_published=true
 const isProfilePublished = ref(false)
+
+// Pre-Phase 4: Demo Student onboarding hint condition
+const hasOnlyDemoStudent = computed(() => {
+  const rels = relationsStore.tutorRelations
+  if (!rels || !rels.length) return false
+  return rels.every(r => r.student?.is_demo)
+})
 
 const nextLessonAt = computed(() => dashboard.nextLessonAt)
 const userTimezone = computed(() => auth.user?.timezone)

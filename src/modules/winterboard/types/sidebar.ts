@@ -10,6 +10,12 @@ export interface AllowedContentItem {
   asset_category: string    // problem | image | pdf | audio | video | presentation | link
   thumbnail_url: string | null
   processing_status: string // pending | processing | ready | failed
+  // Phase 3B: PDF pages (from content_json.pages after processing)
+  pages?: Record<string, { thumbnail_url: string }>
+  page_count?: number
+  // Phase 3B: Presentation slides (from content_json.slides after processing)
+  slides?: Record<string, { image_url: string }>
+  slide_count?: number
 }
 
 export interface SidebarDragPayload {

@@ -69,7 +69,12 @@ export const useRelationsStore = defineStore('relations', {
   getters: {
     invitedStudentRelations: (state) => state.studentRelations.filter((rel) => rel.status === 'invited'),
     activeStudentRelations: (state) => state.studentRelations.filter((rel) => rel.status === 'active'),
-    filteredTutorRelations: (state) => state.tutorRelations,
+    filteredTutorRelations: (state) => [...state.tutorRelations].sort((a, b) => {
+      // Pre-Phase 4: Demo Student always first
+      const aDemo = a.student?.is_demo ? 1 : 0
+      const bDemo = b.student?.is_demo ? 1 : 0
+      return bDemo - aDemo
+    }),
     selectedTutorRelations(state) {
       return state.tutorRelations.filter((relation) => state.tutorSelectedIds.includes(relation.id))
     },

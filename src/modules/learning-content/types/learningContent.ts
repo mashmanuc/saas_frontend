@@ -25,6 +25,8 @@ export type AccessType =
   | 'RESTRICTED'
   | 'ARCHIVED'
 
+export type ContentLanguage = 'uk' | 'en'
+
 export interface Subject {
   id: number
   slug: string
@@ -76,12 +78,14 @@ export interface ContentItemSummary {
   ownership_type?: OwnershipType
   access_type?: AccessType
   owner?: number | null
+  language?: ContentLanguage
 }
 
 export interface ContentItemDetail extends ContentItemSummary {
   content_json: ProblemContent | TheoryContent | TestContent | VideoContent | PresentationContent | LinkContent
   estimated_time: number
   tags: string[]
+  language?: ContentLanguage
   is_latest: boolean
   parent_id: number | null
   owner_display_name?: string | null
@@ -105,6 +109,7 @@ export interface ContentDragPayload {
   type: ContentItemType
   title: string
   contentJson: ContentItemDetail['content_json']
+  version: number  // B1: pinned at drag time
 }
 
 export interface SearchParams {
@@ -116,6 +121,8 @@ export interface SearchParams {
   page?: number
   ownership_type?: OwnershipType | ''
   owner?: 'me' | ''
+  language?: ContentLanguage | ''
+  lesson_id?: number
 }
 
 export interface SearchResult {
@@ -130,6 +137,55 @@ export interface CreateLessonMaterialPayload {
   board_page_index?: number
   position_json?: { x: number; y: number }
   tutor_notes?: string
+}
+
+// ── Phase 1a: LearningGroup + GroupMaterialAccess ──────────────
+
+export type GroupType = 'EXPLICIT' | 'IMPLICIT'
+
+export interface LearningGroup {
+  id: string              // UUID
+  group_type: GroupType
+  title: string
+  subject: number | null
+  is_active: boolean
+  student_count: number
+  material_count: number
+  created_at: string
+}
+
+export interface LearningGroupDetail extends LearningGroup {
+  students: number[]       // user IDs
+  default_modules: string[] // module IDs (curriculum planning, not board objects)
+  updated_at: string
+}
+
+export interface LearningGroupCreate {
+  title: string
+  subject?: number | null
+}
+
+export interface GroupMaterialAccess {
+  id: string              // UUID
+  content_item: number
+  content_title: string
+  content_type: ContentItemType
+  is_active: boolean
+  added_at: string
+  added_by: number | null
+}
+
+export interface GroupMaterialAdd {
+  content_item_id: number
+}
+
+export interface GroupStudentAdd {
+  user_id: number
+}
+
+export interface GroupStudentsResponse {
+  students: number[]
+  count: number
 }
 
 // Re-export content schemas for convenience

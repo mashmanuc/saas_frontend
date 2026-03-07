@@ -17,14 +17,15 @@ describe('Bundle Optimization (A7.1)', () => {
       }
     })
 
-    it('WB module has 4 standalone lazy-loaded routes', async () => {
+    it('WB module has 5 standalone lazy-loaded routes', async () => {
       const routerModule = await import('../router')
       const routes = routerModule.default
 
-      expect(routes.length).toBe(4)
+      expect(routes.length).toBe(5)
 
       const routePaths = routes.map((r) => r.path)
       expect(routePaths).toContain('/winterboard/new')
+      expect(routePaths).toContain('/winterboard/content-preview')
       expect(routePaths).toContain('/winterboard/:id')
       expect(routePaths).toContain('/winterboard/classroom/:lessonId')
       expect(routePaths).toContain('/winterboard/public/:token')

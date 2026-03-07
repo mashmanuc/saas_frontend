@@ -1,11 +1,8 @@
 /**
  * Phase 3C: Extended asset types for audio/video board objects.
  *
- * WBAsset.type is 'image' | 'sticky' in core types.
- * At runtime, board_dnd_service creates objects with type='audio_player'|'video_player'.
- * These interfaces extend WBAsset with media-specific fields.
- *
- * We do NOT modify WBAsset to respect the boardStore type contract.
+ * WBAsset.type now includes 'audio_player' | 'video_player'.
+ * These interfaces narrow the type union with media-specific required fields.
  */
 import type { WBAsset } from './winterboard'
 

@@ -105,7 +105,7 @@ export type WBTextElement = WBStroke & {
 
 export interface WBAsset {
   id: string
-  type: 'image' | 'sticky'
+  type: 'image' | 'sticky' | 'audio_player' | 'video_player'
   src: string
   x: number
   y: number
@@ -120,6 +120,10 @@ export interface WBAsset {
   bgColor?: string
   textColor?: string
   fontSize?: number
+  /** Phase 3C: Media object fields (present when type='audio_player'|'video_player') */
+  title?: string
+  duration?: number
+  thumbnail?: string
 }
 
 // v5 A9: Sticky note — typed alias for assets with type='sticky'

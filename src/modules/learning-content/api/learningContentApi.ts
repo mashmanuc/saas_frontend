@@ -1,4 +1,12 @@
 import apiClient from '@/utils/apiClient'
+
+export interface StorageQuota {
+  used_bytes: number
+  total_quota_bytes: number
+  available_bytes: number
+  usage_percent: number
+}
+
 import type {
   Subject,
   Collection,
@@ -67,9 +75,20 @@ export const learningContentApi = {
     return apiClient.get(`${BASE}/lessons/${lessonId}/participants/`)
   },
 
+  async resolveDropMode(payload: {
+    content_item_id: number
+    extra?: { page_number?: number; slide_index?: number }
+  }): Promise<{ board_object: Record<string, unknown>; drop_mode: string }> {
+    return apiClient.post(`${BASE}/board/resolve-drop/`, payload)
+  },
+
   async uploadFile(formData: FormData): Promise<unknown> {
     return apiClient.post(`${BASE}/content-items/upload/`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
+  },
+
+  async getStorageQuota(): Promise<StorageQuota> {
+    return apiClient.get(`${BASE}/storage/quota/`)
   },
 }

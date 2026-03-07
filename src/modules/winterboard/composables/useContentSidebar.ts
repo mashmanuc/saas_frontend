@@ -1,8 +1,7 @@
 import { ref, computed, onMounted, type Ref } from 'vue'
 import { learningContentApi } from '@/modules/learning-content/api/learningContentApi'
 import type { AllowedContentItem, AssetCategoryGroup } from '../types/sidebar'
-
-export const SIDEBAR_DRAG_MIME = 'application/vnd.m4sh.content'
+import { SIDEBAR_DRAG_MIME } from '../types/boardDrop'
 
 // ── Allowed MIME types for drag-upload ──
 const ALLOWED_UPLOAD_MIMES: Record<string, string> = {
@@ -138,11 +137,33 @@ export function useContentSidebar(lessonId: Ref<string | null>) {
           thumbnail_url: null,
         })
       }
-    } catch (e) {
+    } catch (e: unknown) {
       console.warn('[useContentSidebar] Upload failed:', e)
       // Remove temp item on error
       items.value = items.value.filter(i => (i.content_item_id as unknown) !== tempId)
-      error.value = 'upload_failed'
+
+      // Phase 3.1: Differentiate error codes
+      const axiosErr = e as { response?: { status?: number } }
+      const status = axiosErr?.response?.status
+      if (status === 507) {
+        error.value = 'quota_exceeded'
+      } else if (status === 429) {
+        error.value = 'rate_limited'
+      } else {
+        error.value = 'upload_failed'
+      }
+    }
+  }
+
+  // Phase 3.1: Batched parallel upload
+  const MAX_PARALLEL_UPLOADS = 3
+
+  async function uploadFiles(files: File[]) {
+    for (let i = 0; i < files.length; i += MAX_PARALLEL_UPLOADS) {
+      const batch = files.slice(i, i + MAX_PARALLEL_UPLOADS)
+      await Promise.all(batch.map(file => uploadFile(file)))
+      // Stop on quota error — no point uploading more
+      if (error.value === 'quota_exceeded') break
     }
   }
 
@@ -156,6 +177,7 @@ export function useContentSidebar(lessonId: Ref<string | null>) {
     error,
     reload: load,
     uploadFile,
+    uploadFiles,
     isUploadAllowed,
     SIDEBAR_DRAG_MIME,
   }

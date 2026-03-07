@@ -4,9 +4,13 @@
     :class="{
       'sidebar-item--processing': !isReady,
       'sidebar-item--failed': item.processing_status === 'failed',
+      'sidebar-item--pdf': isPdf || isPresentation,
     }"
-    :draggable="isTutor && isReady"
+    :draggable="isTutor && isReady && !isPresentation"
     @dragstart="onDragStart"
+    @dragend="onDragEnd"
+    @click="handleClick"
+    @dblclick.prevent="handleDblClick"
   >
     <img
       v-if="item.thumbnail_url"
@@ -14,6 +18,7 @@
       class="sidebar-item__thumb"
       :alt="item.title"
       loading="lazy"
+      draggable="false"
     />
     <div v-else class="sidebar-item__icon" :aria-hidden="true">
       {{ categoryIcon }}
@@ -36,17 +41,42 @@
       {{ t('winterboard.contentSidebar.failed') }}
     </span>
   </div>
+
+  <!-- Phase 3B: PDF page selector — inline in sidebar -->
+  <PdfPageSelector
+    v-if="showPdfSelector && isPdf"
+    class="sidebar-item__pdf-inline"
+    :item="item"
+    @close="showPdfSelector = false"
+    @retry="$emit('retry', item)"
+  />
+
+  <!-- Phase 3B: Presentation slide selector — inline in sidebar -->
+  <PresentationSlideSelector
+    v-if="showSlideSelector && isPresentation"
+    class="sidebar-item__pdf-inline"
+    :item="item"
+    @close="showSlideSelector = false"
+    @retry="$emit('retry', item)"
+  />
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { AllowedContentItem, SidebarDragPayload } from '../../types/sidebar'
-import { SIDEBAR_DRAG_MIME } from '../../composables/useContentSidebar'
+import type { AllowedContentItem } from '../../types/sidebar'
+import { SIDEBAR_DRAG_MIME, type SidebarDragPayload } from '../../types/boardDrop'
+import PdfPageSelector from './PdfPageSelector.vue'
+import PresentationSlideSelector from './PresentationSlideSelector.vue'
 
 const props = defineProps<{
   item: AllowedContentItem
   isTutor: boolean
+}>()
+
+const emit = defineEmits<{
+  retry: [item: AllowedContentItem]
+  place: [item: AllowedContentItem]
 }>()
 
 const { t } = useI18n()
@@ -54,6 +84,28 @@ const { t } = useI18n()
 const isReady = computed(() =>
   !props.item.processing_status || props.item.processing_status === 'ready',
 )
+
+const isPdf = computed(() => props.item.asset_category === 'pdf')
+const isPresentation = computed(() => props.item.asset_category === 'presentation')
+const showPdfSelector = ref(false)
+const showSlideSelector = ref(false)
+
+function handleClick() {
+  if (!isReady.value) return
+  if (isPdf.value) {
+    showPdfSelector.value = !showPdfSelector.value
+    showSlideSelector.value = false
+  } else if (isPresentation.value) {
+    showSlideSelector.value = !showSlideSelector.value
+    showPdfSelector.value = false
+  }
+}
+
+function handleDblClick() {
+  if (!isReady.value || !props.isTutor) return
+  if (isPdf.value || isPresentation.value) return // uses click → selector
+  emit('place', props.item)
+}
 
 const CATEGORY_ICONS: Record<string, string> = {
   problem: '📐',
@@ -73,6 +125,10 @@ function onDragStart(e: DragEvent) {
     e.preventDefault()
     return
   }
+  // Presentations and PDFs are dragged via child selectors (PresentationSlideSelector / PdfPageSelector).
+  // Don't call e.preventDefault() here — that would cancel the child's drag operation.
+  // Just bail out without setting SIDEBAR_DRAG_MIME (child already set it).
+  if (isPresentation.value || isPdf.value) return
   const payload: SidebarDragPayload = {
     content_item_id: props.item.content_item_id as number,
     asset_category: props.item.asset_category,
@@ -80,6 +136,26 @@ function onDragStart(e: DragEvent) {
   }
   e.dataTransfer?.setData(SIDEBAR_DRAG_MIME, JSON.stringify(payload))
   e.dataTransfer!.effectAllowed = 'copy'
+
+  // Ghost drag preview — dispatch custom event for WBDragGhost overlay
+  window.dispatchEvent(new CustomEvent('wb-drag-preview', {
+    detail: {
+      asset_category: props.item.asset_category,
+      thumbnail_url: props.item.thumbnail_url ?? null,
+      title: props.item.title,
+    },
+  }))
+
+  // Hide browser native drag ghost — show our custom ghost instead
+  const phantom = document.createElement('div')
+  phantom.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0'
+  document.body.appendChild(phantom)
+  e.dataTransfer!.setDragImage(phantom, 0, 0)
+  requestAnimationFrame(() => { if (phantom.parentNode) document.body.removeChild(phantom) })
+}
+
+function onDragEnd() {
+  window.dispatchEvent(new CustomEvent('wb-drag-stop'))
 }
 </script>
 
@@ -145,5 +221,11 @@ function onDragStart(e: DragEvent) {
 .sidebar-item__badge--error {
   background: #fef2f2;
   color: #991b1b;
+}
+.sidebar-item--pdf {
+  cursor: pointer;
+}
+.sidebar-item__pdf-inline {
+  display: block;
 }
 </style>

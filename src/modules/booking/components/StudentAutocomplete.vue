@@ -97,7 +97,15 @@
               </span>
             </div>
             <div class="dropdown-item__info">
-              <span class="dropdown-item__name">{{ displayName(student) }}</span>
+              <span class="dropdown-item__name">
+                {{ displayName(student) }}
+                <span
+                  v-if="student.is_demo"
+                  class="demo-badge"
+                >
+                  {{ $t('student.demoBadge') }}
+                </span>
+              </span>
               <span class="dropdown-item__email">{{ student.email }}</span>
             </div>
           </button>
@@ -551,6 +559,19 @@ onUnmounted(() => {
 
 .invite-cta:hover {
   background: var(--color-brand-dark, #1d4ed8);
+}
+
+/* Pre-Phase 4: Demo badge */
+.demo-badge {
+  margin-left: 6px;
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  background: #f3e8ff;
+  color: #6b21a8;
 }
 
 /* Transitions */

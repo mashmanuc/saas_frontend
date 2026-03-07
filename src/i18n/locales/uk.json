@@ -23,6 +23,9 @@
   },
   "app": {},
   "student": {
+    "demoBadge": "Demo",
+    "demoHint": "Це ваш тестовий студент. Запросіть реального студента, щоб розпочати навчання.",
+    "inviteReal": "Запросити студента",
     "myTutors": {
       "title": "Мої тьютори",
       "empty": "У вас ще немає активних тьюторів",
@@ -1095,7 +1098,8 @@
     "settings": "Налаштування",
     "billing": "Білінг",
     "booking": "Бронювання",
-    "notifications": "Сповіщення"
+    "notifications": "Сповіщення",
+    "knowledge": "База знань"
   },
   "loader": {
     "loading": "Завантаження..."
@@ -3749,7 +3753,10 @@
       "loading": "Завантаження...",
       "empty": "Уроків ще немає",
       "unknownStudent": "Невідомий учень",
-      "openBoard": "Відкрити дошку"
+      "openBoard": "Відкрити дошку",
+      "clone": "Клонувати урок",
+      "cloneSuccess": "Урок скопійовано",
+      "cloneFailed": "Помилка копіювання уроку"
     },
     "marketplace": {
       "title": "Маркетплейс шаблонів",
@@ -6438,7 +6445,9 @@
       "share": "Поділитися",
       "export": "Експорт",
       "menu": "Меню",
-      "home": "На головну"
+      "home": "На головну",
+      "sidebarCollapse": "Згорнути панель (подвійний клік)",
+      "sidebarExpand": "Розгорнути панель (подвійний клік)"
     },
     "sizePresets": {
       "thin": "Тонкий",
@@ -6523,6 +6532,10 @@
       "load_failed": "Помилка завантаження",
       "upload_failed": "Помилка завантаження файлу",
       "unsupported_format": "Формат не підтримується",
+      "search": "Пошук матеріалів...",
+      "filterAll": "Всі",
+      "noResults": "Нічого не знайдено",
+      "upload": "Завантажити",
       "category": {
         "problem": "Задачі",
         "image": "Зображення",
@@ -6532,12 +6545,39 @@
         "presentation": "Презентації"
       }
     },
+    "templates": {
+      "chooseTemplate": "Оберіть шаблон дошки",
+      "blank": "Порожня",
+      "blankDesc": "Чиста дошка без елементів",
+      "twoColumns": "Два стовпці",
+      "twoColumnsDesc": "Пояснення зліва, практика справа",
+      "grid2x2": "Грід 2×2",
+      "grid2x2Desc": "4 зони для задач або ідей",
+      "timeline": "Таймлайн",
+      "timelineDesc": "Горизонтальна послідовність етапів",
+      "cancel": "Скасувати",
+      "apply": "Застосувати"
+    },
     "pdfSelector": {
       "pageCount": "{count} стор.",
       "close": "Закрити",
       "dragFull": "Перетягнути (стор. 1)",
       "pageAlt": "Сторінка {n}",
       "noPages": "Сторінки ще завантажуються"
+    },
+    "slideSelector": {
+      "slideCount": "{count} сл.",
+      "close": "Закрити",
+      "dragFull": "Перетягнути (слайд 1)",
+      "slideAlt": "Слайд {n}",
+      "noSlides": "Слайди ще обробляються"
+    },
+    "player": {
+      "play": "Показати презентацію",
+      "close": "Закрити (ESC)",
+      "prev": "Попередній слайд",
+      "next": "Наступний слайд",
+      "dblClickToPlay": "Подвійний клік — відкрити з цього слайду"
     },
     "media": {
       "processing": "Обробка...",
@@ -6632,6 +6672,13 @@
       "dashboard": "Панель керування",
       "settings": "Налаштування"
     }
+  },
+  "storage": {
+    "quotaLabel": "Сховище: {used} з {total}",
+    "quotaWarning": "Залишилось мало місця. Видаліть непотрібні файли",
+    "quotaCritical": "Сховище майже заповнене! Звільніть місце або придбайте додатковий простір",
+    "quotaExceeded": "Перевищено ліміт сховища. Видаліть непотрібні файли або придбайте додатковий простір",
+    "rateLimited": "Забагато завантажень. Зачекайте хвилину"
   },
   "learningContent": {
     "groups": {
@@ -6732,5 +6779,53 @@
       "restricted": "Обмежений доступ",
       "previewOnly": "Тільки перегляд"
     }
+  },
+  "template": {
+    "saveAsTemplate": "Зберегти як шаблон",
+    "titleLabel": "Назва шаблону",
+    "titlePlaceholder": "Наприклад: Алгебра — тригонометрія",
+    "save": "Зберегти",
+    "createLesson": "Створити урок",
+    "materials": "матеріалів",
+    "hasBoard": "з дошкою",
+    "noTemplates": "Шаблонів ще немає",
+    "titleRequired": "Вкажіть назву шаблону",
+    "lessonNotFound": "Урок не знайдено",
+    "saveFailed": "Помилка збереження шаблону",
+    "deleteConfirm": "Видалити шаблон?"
+  },
+  "knowledge": {
+    "title": "База знань",
+    "tabLessons": "Уроки",
+    "tabTemplates": "Шаблони",
+    "tabStarterPacks": "Starter Packs",
+    "noLessons": "Уроків ще немає",
+    "noTemplates": "Шаблонів ще немає",
+    "materials": "матеріалів",
+    "templates": "шаблонів",
+    "openBoard": "Відкрити дошку",
+    "starterPacksInfo": "Starter Packs керуються у розділі Контент",
+    "goToContent": "Перейти до Контенту",
+    "myStudents": "Мої учні",
+    "selectStudent": "Оберіть учня зліва",
+    "materialsFor": "Матеріали",
+    "uploadFiles": "Завантажити файли",
+    "uploading": "Завантаження...",
+    "uploadSuccess": "Файл завантажено",
+    "uploadFailed": "Помилка завантаження",
+    "noMaterials": "Матеріалів ще немає. Завантажте файли.",
+    "lessonsWithStudent": "Уроки з учнем",
+    "openBoardWithStudent": "Відкрити дошку",
+    "createLesson": "Створити урок",
+    "creatingLesson": "Створення...",
+    "storageQuota": "Квота сховища",
+    "demoBadge": "Demo",
+    "noStudents": "У вас ще немає учнів",
+    "removeMaterial": "Видалити",
+    "newBoard": "Нова дошка",
+    "tutorLibrary": "Бібліотека репетитора",
+    "myClasses": "МОЇ КЛАСИ",
+    "noClasses": "Класів ще немає",
+    "sandbox": "Пісочниця"
   }
 }

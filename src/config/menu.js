@@ -18,6 +18,7 @@ export const MENU_BY_ROLE = {
     { label: 'menu.tutorCalendar', icon: 'book', to: '/booking/tutor' },
     { label: 'menu.winterboard', icon: 'edit', to: '/winterboard' },
     { label: 'menu.learningContent', icon: 'book-open', to: '/learning-content' },
+    { label: 'menu.knowledge', icon: 'library', to: '/dashboard/knowledge' },
     { label: 'menu.tutorProfile', icon: 'briefcase', to: '/marketplace/my-profile' },
     { label: 'menu.account', icon: 'user', to: '/settings' },
     { label: 'menu.billing', icon: 'credit-card', to: '/billing' },    

@@ -38,6 +38,21 @@ export const lessonsTemplateApi = {
     return apiClient.delete(`${BASE}/templates/${id}/`)
   },
 
+  // ── Save-as-template (Phase 4 Day 2) ──────────────────────
+  async saveAsTemplate(
+    lessonId: number,
+    title: string,
+  ): Promise<{ id: number; title: string; content_count: number; has_board: boolean; source_lesson_id: number; created_at: string }> {
+    return apiClient.post(`${BASE}/${lessonId}/save-as-template/`, { title })
+  },
+
+  async createLessonFromTemplate(
+    templateId: number,
+    data: { student_id: number; start: string; end: string; group_id?: number },
+  ): Promise<{ lesson_id: number; status: string; has_initial_board: boolean }> {
+    return apiClient.post(`/v1/lesson-templates/${templateId}/create-lesson/`, data)
+  },
+
   // ── Homework ───────────────────────────────────────────────
   async getHomework(lessonId: number): Promise<LessonHomework[]> {
     return apiClient.get(`${BASE}/${lessonId}/homework/`)

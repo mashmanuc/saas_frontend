@@ -604,6 +604,16 @@ const routes = [
           roles: [USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.STAFF]
         },
       },
+      // Knowledge Library (Phase 4 Day 3)
+      {
+        path: 'dashboard/knowledge',
+        name: 'knowledge-library',
+        component: () => import('../modules/knowledge/KnowledgeLibrary.vue'),
+        meta: {
+          requiresAuth: true,
+          roles: [USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN],
+        },
+      },
       // v0.71: Chat with tutor route
       {
         path: 'chat/tutor/:tutorId',

@@ -150,7 +150,7 @@
       </aside>
 
       <!-- Canvas area -->
-      <div id="wb-canvas" ref="canvasContainerRef" class="wb-solo-room__canvas" tabindex="-1">
+      <div id="wb-canvas" ref="canvasContainerRef" class="wb-solo-room__canvas" :class="{ 'wb-solo-room__canvas--with-sidebar': showMaterialsSidebar }" tabindex="-1" @dragover.prevent @drop="contentDrop.handleCanvasDrop($event)">
         <!-- B6.2: Loading state -->
         <Transition name="wb-fade">
           <WBCanvasLoader v-if="isLoading" />
@@ -167,6 +167,7 @@
           :width="store.pageWidth"
           :height="store.pageHeight"
           :zoom="store.zoom"
+          :is-tutor="true"
           @stroke-add="handleStrokeAdd"
           @stroke-update="handleStrokeUpdate"
           @stroke-delete="handleStrokeDelete"
@@ -201,6 +202,32 @@
           :current-page-id="store.currentPage?.id ?? ''"
         />
       </div>
+
+      <!-- Resize handle for right sidebar -->
+      <div
+        v-if="showMaterialsSidebar"
+        class="wb-solo-room__resize-handle"
+        :class="{ 'wb-solo-room__resize-handle--collapsed': sidebarCollapsedBefore !== null }"
+        :title="sidebarCollapsedBefore !== null ? t('winterboard.room.sidebarExpand') : t('winterboard.room.sidebarCollapse')"
+        @mousedown="startSidebarResize"
+        @touchstart.prevent="startSidebarResizeTouch"
+        @dblclick="toggleSidebarCollapse"
+      >
+        <div class="wb-solo-room__resize-grip" />
+      </div>
+
+      <!-- Right sidebar: materials from LearningGroup (resizable) -->
+      <aside
+        v-if="showMaterialsSidebar"
+        class="wb-solo-room__content-sidebar"
+        :style="sidebarStyle"
+      >
+        <GroupContentSidebar
+          :group-id="groupId"
+          :is-tutor="true"
+          @place="placeItemAtCenter"
+        />
+      </aside>
     </div>
 
     <!-- ── Footer: Page nav + Zoom ─────────────────────────────────────────── -->
@@ -257,6 +284,13 @@
       @close="showShareDialog = false"
     />
 
+    <!-- Board template selector (shown for new sessions) -->
+    <BoardTemplateSelector
+      :is-open="showTemplateSelector"
+      @close="showTemplateSelector = false"
+      @apply="applyTemplate"
+    />
+
     <!-- Export dialog -->
     <WBExportDialog
       v-if="showExportDialog && sessionId"
@@ -264,6 +298,9 @@
       :is-open="showExportDialog"
       @close="showExportDialog = false"
     />
+
+    <!-- Drag ghost preview — follows cursor while dragging from sidebar -->
+    <WBDragGhost />
   </div>
 </template>
 
@@ -282,7 +319,9 @@ import { usePresence } from '../composables/usePresence'
 import { useFollowMode } from '../composables/useFollowMode'
 import { useLocking } from '../composables/useLocking'
 import { useAnnouncer } from '../composables/useAnnouncer'
+import { useContentDrop } from '../composables/useContentDrop'
 import { winterboardApi } from '../api/winterboardApi'
+import { learningGroupApi } from '@/modules/learning-content/api/learningGroupApi'
 import type { WBStroke, WBAsset, WBToolType } from '../types/winterboard'
 
 // Components
@@ -292,6 +331,11 @@ import WBRemoteCursors from '../components/cursors/WBRemoteCursors.vue'
 import WBCanvasLoader from '../components/loading/WBCanvasLoader.vue'
 import WBShareDialog from '../components/sharing/WBShareDialog.vue'
 import WBExportDialog from '../components/export/WBExportDialog.vue'
+import GroupContentSidebar from '../components/sidebar/GroupContentSidebar.vue'
+import WBDragGhost from '../components/sidebar/WBDragGhost.vue'
+import type { AllowedContentItem } from '../types/sidebar'
+import BoardTemplateSelector from '../components/templates/BoardTemplateSelector.vue'
+import { BOARD_TEMPLATES } from '../data/boardTemplates'
 
 // ─── Store & Composables ────────────────────────────────────────────────────
 
@@ -358,7 +402,175 @@ const selectedId = ref<string | null>(null)
 const isLoading = ref(true)
 const showShareDialog = ref(false)
 const showExportDialog = ref(false)
+const showTemplateSelector = ref(false)
 const showSidebarOverlay = ref(false)
+
+// ── Group sidebar: materials panel ──
+// Priority: 1) explicit ?groupId= from URL  2) auto-detect tutor's first implicit group
+const explicitGroupId = computed(() => {
+  const qg = route.query.groupId
+  return typeof qg === 'string' ? qg : null
+})
+const autoGroupId = ref<string | null>(null)
+const groupId = computed(() => explicitGroupId.value || autoGroupId.value)
+const showMaterialsSidebar = computed(() => !!groupId.value)
+
+async function detectTutorGroup() {
+  if (explicitGroupId.value) return
+  try {
+    const groups = await learningGroupApi.listGroups()
+    if (groups && groups.length > 0) {
+      // Prefer IMPLICIT group (auto-created per student), fallback to first group
+      const implicit = groups.find((g) => g.group_type === 'IMPLICIT')
+      autoGroupId.value = String((implicit || groups[0]).id)
+    }
+  } catch (e) {
+    console.warn('[WBSoloRoom] Could not auto-detect tutor group:', e)
+  }
+}
+
+// ── Content drop: D&D from sidebar onto canvas ──
+const contentDrop = useContentDrop({
+  sessionId,
+  canDraw: computed(() => true),
+  onAssetAdd: (asset: WBAsset) => {
+    store.addAsset(asset)
+  },
+  screenToCanvas: (x: number, y: number) => {
+    const rect = canvasContainerRef.value?.getBoundingClientRect()
+    if (rect) {
+      return {
+        x: (x - rect.left) / (store.zoom || 1),
+        y: (y - rect.top) / (store.zoom || 1),
+      }
+    }
+    return { x: (store.pageWidth ?? 800) / 2, y: 100 }
+  },
+})
+
+// ── Quick Gallery: dblclick places item at canvas center ──
+async function placeItemAtCenter(item: AllowedContentItem) {
+  const center = contentDrop.handleSidebarDrop(
+    {
+      content_item_id: item.content_item_id as number,
+      asset_category: item.asset_category,
+      content_type: item.content_type,
+    },
+    {
+      x: (store.pageWidth ?? 800) / 2,
+      y: (store.pageHeight ?? 600) / 2,
+    },
+  )
+  await center
+}
+
+// ── Board Templates: apply pre-built layout ──
+function applyTemplate(templateId: string) {
+  const tmpl = BOARD_TEMPLATES.find(t => t.id === templateId)
+  if (!tmpl || tmpl.assets.length === 0) return
+  for (const assetData of tmpl.assets) {
+    const asset: WBAsset = {
+      ...assetData,
+      id: `tmpl-${templateId}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    }
+    store.addAsset(asset)
+  }
+}
+
+// ── Resizable sidebar ──
+const SIDEBAR_MIN = 240
+const SIDEBAR_MAX = 800
+const SIDEBAR_DEFAULT = 320
+/** Snap points (px): sidebar snaps to these widths when dragging within ±30px */
+const SNAP_WIDTHS = [320, 480, 640] as const
+const SNAP_THRESHOLD = 30
+
+const SIDEBAR_WIDTH_KEY = 'wb-sidebar-width'
+const _savedWidth = typeof localStorage !== 'undefined' ? localStorage.getItem(SIDEBAR_WIDTH_KEY) : null
+const sidebarWidth = ref(_savedWidth ? Math.max(SIDEBAR_MIN, Math.min(SIDEBAR_MAX, parseInt(_savedWidth, 10))) : SIDEBAR_DEFAULT)
+/** Width saved before double-click collapse; null = sidebar is expanded */
+const sidebarCollapsedBefore = ref<number | null>(null)
+let isSidebarResizing = false
+
+/** Computed style: disables min-width when collapsed so sidebar can hide fully */
+const sidebarStyle = computed(() => ({
+  width: sidebarWidth.value + 'px',
+  ...(sidebarCollapsedBefore.value !== null ? { minWidth: '0', overflow: 'hidden' } : {}),
+}))
+
+/** Snaps value to nearest SNAP_WIDTHS entry if within SNAP_THRESHOLD */
+function snapWidth(w: number): number {
+  for (const snap of SNAP_WIDTHS) {
+    if (Math.abs(w - snap) <= SNAP_THRESHOLD) return snap
+  }
+  return w
+}
+
+function startSidebarResize(e: MouseEvent) {
+  isSidebarResizing = true
+  document.body.style.cursor = 'col-resize'
+  document.body.style.userSelect = 'none'
+  document.addEventListener('mousemove', onSidebarResize)
+  document.addEventListener('mouseup', stopSidebarResize)
+}
+
+function startSidebarResizeTouch(e: TouchEvent) {
+  isSidebarResizing = true
+  document.body.style.userSelect = 'none'
+  document.addEventListener('touchmove', onSidebarResizeTouch)
+  document.addEventListener('touchend', stopSidebarResize)
+}
+
+function onSidebarResize(e: MouseEvent) {
+  if (!isSidebarResizing) return
+  const raw = Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, window.innerWidth - e.clientX))
+  sidebarWidth.value = snapWidth(raw)
+  // Dragging always restores from collapsed state
+  if (sidebarCollapsedBefore.value !== null) sidebarCollapsedBefore.value = null
+}
+
+function onSidebarResizeTouch(e: TouchEvent) {
+  if (!isSidebarResizing || !e.touches[0]) return
+  const raw = Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, window.innerWidth - e.touches[0].clientX))
+  sidebarWidth.value = snapWidth(raw)
+  if (sidebarCollapsedBefore.value !== null) sidebarCollapsedBefore.value = null
+}
+
+function stopSidebarResize() {
+  isSidebarResizing = false
+  document.body.style.cursor = ''
+  document.body.style.userSelect = ''
+  document.removeEventListener('mousemove', onSidebarResize)
+  document.removeEventListener('mouseup', stopSidebarResize)
+  document.removeEventListener('touchmove', onSidebarResizeTouch)
+  document.removeEventListener('touchend', stopSidebarResize)
+}
+
+/** Double-click resize handle: collapse sidebar / restore to previous width */
+function toggleSidebarCollapse() {
+  if (sidebarCollapsedBefore.value !== null) {
+    // Restore
+    sidebarWidth.value = sidebarCollapsedBefore.value
+    sidebarCollapsedBefore.value = null
+  } else {
+    // Collapse
+    sidebarCollapsedBefore.value = sidebarWidth.value
+    sidebarWidth.value = 0
+  }
+  // Notify Konva ResizeObserver about container size change after CSS transition ends
+  setTimeout(() => window.dispatchEvent(new Event('resize')), 220)
+}
+
+// Persist sidebar width to localStorage (debounced)
+let _sidebarSaveTimer: ReturnType<typeof setTimeout> | null = null
+watch(sidebarWidth, (w) => {
+  if (w > 0) {
+    if (_sidebarSaveTimer) clearTimeout(_sidebarSaveTimer)
+    _sidebarSaveTimer = setTimeout(() => {
+      localStorage.setItem(SIDEBAR_WIDTH_KEY, String(w))
+    }, 300)
+  }
+})
 
 // ─── Computed ───────────────────────────────────────────────────────────────
 
@@ -682,8 +894,11 @@ onMounted(async () => {
       }
       sessionName.value = created.name || t('winterboard.room.untitled')
       isLoading.value = false
+      showTemplateSelector.value = true
       connectPresenceSafe(created.id)
-      router.replace({ name: 'winterboard-solo', params: { id: created.id } })
+      // Auto-detect group for sidebar before redirect (route.query may have no groupId)
+      if (!route.query.groupId) detectTutorGroup()
+      router.replace({ name: 'winterboard-solo', params: { id: created.id }, query: route.query })
       return
     } catch (err: unknown) {
       const status = (err as Record<string, Record<string, number>>)?.response?.status
@@ -745,14 +960,28 @@ onMounted(async () => {
     connectPresenceSafe(id)
   }
 
+  // Auto-detect tutor group for materials sidebar (non-blocking)
+  detectTutorGroup()
+
   sessionName.value = store.workspaceName
 })
 
+// ── Keyboard shortcuts ──
+function onGlobalKeyDown(e: KeyboardEvent) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+    e.preventDefault()
+    if (showMaterialsSidebar.value) toggleSidebarCollapse()
+  }
+}
+document.addEventListener('keydown', onGlobalKeyDown)
+
 onBeforeUnmount(async () => {
+  document.removeEventListener('keydown', onGlobalKeyDown)
   // BUG-1 FIX: Use shared save logic on unmount
   await saveBeforeLeave()
   autosave.destroy()
   presence.disconnect()
+  stopSidebarResize()
 })
 
 // BUG-1 FIX: Route leave guard — saves before any SPA navigation away
@@ -986,6 +1215,85 @@ watch(() => store.workspaceName, (name) => {
   align-items: center;
   justify-content: center;
   background: var(--wb-canvas-area-bg, #e2e8f0);
+}
+
+.wb-solo-room__canvas--with-sidebar {
+  /* When sidebar is visible, canvas takes remaining space */
+}
+
+/* ── Resize handle for right sidebar ────────────────────────────────────── */
+
+.wb-solo-room__resize-handle {
+  width: 6px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  background: var(--wb-border, #e2e8f0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  position: relative;
+  z-index: 16;
+}
+.wb-solo-room__resize-handle:hover,
+.wb-solo-room__resize-handle:active {
+  background: #94a3b8;
+}
+.wb-solo-room__resize-grip {
+  width: 2px;
+  height: 32px;
+  border-radius: 1px;
+  background: #94a3b8;
+}
+.wb-solo-room__resize-handle:hover .wb-solo-room__resize-grip,
+.wb-solo-room__resize-handle:active .wb-solo-room__resize-grip {
+  background: white;
+}
+/* Collapsed state — handle stays visible with a subtle arrow hint */
+.wb-solo-room__resize-handle--collapsed {
+  background: #cbd5e1;
+}
+.wb-solo-room__resize-handle--collapsed .wb-solo-room__resize-grip {
+  width: 0;
+  height: 0;
+  border: 5px solid transparent;
+  border-left-color: #64748b;
+  border-radius: 0;
+  background: none;
+  margin-left: 2px;
+}
+.wb-solo-room__resize-handle--collapsed:hover .wb-solo-room__resize-grip {
+  border-left-color: white;
+  background: none;
+}
+
+/* ── Right content sidebar (materials from LearningGroup, resizable) ───── */
+
+.wb-solo-room__content-sidebar {
+  flex-shrink: 0;
+  min-width: 240px;
+  max-width: 800px;
+  border-left: 1px solid var(--wb-border, #e2e8f0);
+  background: var(--wb-bg-primary, #ffffff);
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 15;
+  transition: width 200ms ease;
+}
+
+@media (max-width: 768px) {
+  .wb-solo-room__content-sidebar {
+    position: absolute;
+    right: 0;
+    top: 56px;
+    bottom: 44px;
+    min-width: 240px;
+    width: 240px !important;
+    box-shadow: -4px 0 12px rgba(0, 0, 0, 0.1);
+  }
+  .wb-solo-room__resize-handle {
+    display: none;
+  }
 }
 
 /* ── Footer ────────────────────────────────────────────────────────────────── */

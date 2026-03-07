@@ -71,9 +71,11 @@
       <!-- Assets layer (images + sticky notes) — BELOW strokes -->
       <v-layer ref="assetsLayerRef">
         <template v-for="asset in assets" :key="asset.id">
+          <!-- Phase 3C: audio/video rendered as HTML overlays — skip in Konva -->
+          <template v-if="asset.type === 'audio_player' || asset.type === 'video_player'" />
           <!-- v5 A9: Sticky note rendering -->
           <WBStickyNote
-            v-if="asset.type === 'sticky'"
+            v-else-if="asset.type === 'sticky'"
             :sticky="asset"
             :is-selected="wbStore.selectedIds.includes(asset.id)"
             :scale="props.zoom"
@@ -209,6 +211,57 @@
       @pointerdown.stop
     />
 
+    <!-- Phase 3C: Media HTML overlays (audio/video players) — positioned over canvas -->
+    <!-- Media overlays support: click to select, pointer-drag to move, Delete to delete -->
+    <template v-for="asset in mediaAssets" :key="`media-${asset.id}`">
+      <div
+        :data-media-id="asset.id"
+        class="wb-media-overlay"
+        :class="{
+          'wb-media-overlay--selected': wbStore.selectedIds.includes(asset.id),
+          'wb-media-overlay--selectable': currentTool === 'select',
+        }"
+        :style="{
+          left: `${asset.x * props.zoom}px`,
+          top: `${asset.y * props.zoom}px`,
+          width: `${asset.w * props.zoom}px`,
+        }"
+        @mousedown.stop
+        @click.stop
+        @pointerdown.stop="handleMediaPointerDown(asset, $event)"
+      >
+        <!-- Drag/select handle strip at top — visible in select mode -->
+        <div
+          v-if="currentTool === 'select'"
+          class="wb-media-drag-handle"
+          title="Перетягніть, щоб перемістити"
+        >
+          <svg width="20" height="10" viewBox="0 0 20 10" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <circle cx="4" cy="3" r="1.5" fill="currentColor"/>
+            <circle cx="10" cy="3" r="1.5" fill="currentColor"/>
+            <circle cx="16" cy="3" r="1.5" fill="currentColor"/>
+            <circle cx="4" cy="8" r="1.5" fill="currentColor"/>
+            <circle cx="10" cy="8" r="1.5" fill="currentColor"/>
+            <circle cx="16" cy="8" r="1.5" fill="currentColor"/>
+          </svg>
+        </div>
+        <AudioPlayerObject
+          v-if="asset.type === 'audio_player'"
+          :obj="asAudioAsset(asset)"
+          :is-tutor="props.isTutor !== false"
+        />
+        <VideoPlayerObject
+          v-else-if="asset.type === 'video_player'"
+          :obj="asVideoAsset(asset)"
+          :is-tutor="props.isTutor !== false"
+          :video-states="localVideoStates"
+          :send-play="localSendPlay"
+          :send-pause="localSendPause"
+          :send-seek="localSendSeek"
+        />
+      </div>
+    </template>
+
     <!-- BUG-2 FIX: Laser trail — fading dots behind the pointer -->
     <div
       v-for="(tp, idx) in laserTrailWithOpacity"
@@ -254,7 +307,7 @@
 // Ref: ARCHITECTURE.md ADR-01, BoardCanvas.vue (classroom reference)
 // Stripped of: classroom session linking, stealth autosave, save window guards, presence cursors
 
-import { ref, shallowRef, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { ref, shallowRef, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import Konva from 'konva'
 import getStroke from 'perfect-freehand'
 import type { WBStroke, WBAsset, WBToolType, WBPoint, WBPageBackground, WBPdfBackground, WBSelectionRect } from '../../types/winterboard'
@@ -266,9 +319,14 @@ import { useLaserPointer } from '../../composables/useLaserPointer'
 import { useDuplicate } from '../../composables/useDuplicate'
 import { useStickyNotes } from '../../composables/useStickyNotes'
 import WBStickyNote from './WBStickyNote.vue'
+import AudioPlayerObject from '../board/objects/AudioPlayerObject.vue'
+import VideoPlayerObject from '../board/objects/VideoPlayerObject.vue'
+import type { WBAudioAsset, WBVideoAsset } from '../../types/mediaObjects'
+import type { VideoSyncState } from '../../composables/useMediaSync'
 import { useImageCache } from '../../composables/useImageCache'
 import { getSmoothedPoints, clearSmoothedCache } from '../../engine/smoothing'
 import { handleDrop as imageHandleDrop, handlePaste as imageHandlePaste } from '../../composables/useImageUpload'
+import { SIDEBAR_DRAG_MIME, CONTENT_DRAG_MIME } from '../../types/boardDrop'
 import { loadKonva } from '../../engine/konvaLoader'
 import { WBSpatialIndex } from '../../engine/spatialIndex'
 import {
@@ -299,6 +357,8 @@ interface Props {
   zoom?: number
   /** A5.2: Page background — 'white' | 'grid' | 'dots' | 'lined' | WBPdfBackground */
   background?: WBPageBackground
+  /** Phase 3C: show full audio/video controls (true for tutor/solo, false for student) */
+  isTutor?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -310,6 +370,9 @@ const props = withDefaults(defineProps<Props>(), {
   height: 1080,
   zoom: 1,
   background: 'white',
+  // Default to tutor mode so solo boards always show controls.
+  // Classroom passes isTutor explicitly based on user role.
+  isTutor: true,
 })
 
 // v5 A1: Store + rectangle select composable
@@ -329,6 +392,39 @@ const stickyNotes = useStickyNotes(wbStore)
 // Stable references — use props directly, fallback to empty array only once
 const allStrokes = computed(() => props.strokes ?? [])
 const assets = computed(() => props.assets ?? [])
+
+// Phase 3C: Media assets (audio/video) rendered as HTML overlays — excluded from Konva
+const mediaAssets = computed(() =>
+  assets.value.filter(a => a.type === 'audio_player' || a.type === 'video_player'),
+)
+
+// Phase 3C: Type cast helpers for media assets
+function asAudioAsset(asset: WBAsset): WBAudioAsset { return asset as unknown as WBAudioAsset }
+function asVideoAsset(asset: WBAsset): WBVideoAsset { return asset as unknown as WBVideoAsset }
+
+// Phase 3C: Local video state (no WebSocket in solo mode — managed locally)
+const localVideoStates = ref<Record<string, VideoSyncState>>({})
+
+function localSendPlay(objectId: string, position?: number) {
+  localVideoStates.value = {
+    ...localVideoStates.value,
+    [objectId]: { playing: true, position: position ?? 0, serverTimestamp: Date.now() },
+  }
+}
+function localSendPause(objectId: string) {
+  const prev = localVideoStates.value[objectId]
+  localVideoStates.value = {
+    ...localVideoStates.value,
+    [objectId]: { playing: false, position: prev?.position ?? 0, serverTimestamp: Date.now() },
+  }
+}
+function localSendSeek(objectId: string, position: number) {
+  const prev = localVideoStates.value[objectId]
+  localVideoStates.value = {
+    ...localVideoStates.value,
+    [objectId]: { playing: prev?.playing ?? false, position, serverTimestamp: Date.now() },
+  }
+}
 
 // A6.2: Spatial index for viewport culling (replaces A3.3 inline filter)
 const spatialIndex = new WBSpatialIndex(500)
@@ -416,10 +512,14 @@ const TEXT_BLUR_GUARD_MS = 300
 const stickyEditingId = ref<string | null>(null)
 const stickyEditingText = ref('')
 let stickyEditCreatedAt = 0
-const loadedImages = reactive<Map<string, HTMLImageElement>>(new Map())
+// Plain Map — NOT reactive: Vue must NOT re-render all assets on every image load (flicker fix)
+const loadedImages = new Map<string, HTMLImageElement>()
 
 // Stroke config cache for performance (R10)
 const strokeConfigCache = new Map<string, { sig: string; config: Record<string, unknown> }>()
+
+// Asset config cache — memoizes getAssetConfig per asset to prevent Konva node churn during drawing
+const assetConfigCache = new Map<string, { sig: string; config: Record<string, unknown> }>()
 
 // rAF scheduling for preview canvas (A3.3)
 let previewRafId: number | null = null
@@ -610,11 +710,25 @@ const konvaShapePreview = computed<{ type: string; config: Record<string, unknow
   return { type: '', config: {} }
 })
 
+// WOW transformer — premium Figma/Miro-like selection handles
 const transformerConfig = computed(() => ({
-  anchorSize: 8,
-  borderStroke: '#2563eb',
-  anchorStroke: '#2563eb',
+  // Handle size & shape
+  anchorSize: 11,
+  anchorCornerRadius: 3,
+  // Handle colors — white fill with vivid blue border
   anchorFill: '#ffffff',
+  anchorStroke: '#3b82f6',
+  anchorStrokeWidth: 2,
+  // Selection border — solid vivid blue (not dashed)
+  borderStroke: '#3b82f6',
+  borderStrokeWidth: 1.5,
+  // Breathing room between node and handles
+  padding: 4,
+  // Shadow/glow on anchors
+  anchorShadowColor: 'rgba(59, 130, 246, 0.45)',
+  anchorShadowBlur: 8,
+  anchorShadowOffsetX: 0,
+  anchorShadowOffsetY: 2,
   rotateEnabled: true,
   keepRatio: true,
   enabledAnchors: [
@@ -624,7 +738,7 @@ const transformerConfig = computed(() => ({
   ],
 }))
 
-// v5 A1: Selection rect (rubber band) config for Konva rendering
+// v5 A1: Selection rect (rubber band) — WOW design: glowing vivid blue
 const selectionRectConfig = computed(() => {
   const rect = wbStore.selectionRect
   if (!rect) return null
@@ -633,16 +747,21 @@ const selectionRectConfig = computed(() => {
     y: rect.y,
     width: rect.width,
     height: rect.height,
-    fill: 'rgba(37, 99, 235, 0.08)',
-    stroke: '#2563eb',
-    strokeWidth: 1 / props.zoom,
-    dash: [6 / props.zoom, 3 / props.zoom],
+    fill: 'rgba(59, 130, 246, 0.10)',
+    stroke: '#3b82f6',
+    strokeWidth: 1.5 / props.zoom,
+    dash: [5 / props.zoom, 3 / props.zoom],
+    cornerRadius: 2 / props.zoom,
+    shadowColor: 'rgba(59, 130, 246, 0.3)',
+    shadowBlur: 8 / props.zoom,
+    shadowOffsetX: 0,
+    shadowOffsetY: 0,
     listening: false,
     perfectDrawEnabled: false,
   }
 })
 
-// v5 A1: Selection indicator configs — blue border around each selected item
+// v5 A1: Selection indicator configs — WOW design: solid glow border around each selected item
 const selectionIndicators = computed(() => {
   const ids = new Set(wbStore.selectedIds)
   if (ids.size === 0) return []
@@ -651,46 +770,46 @@ const selectionIndicators = computed(() => {
   if (!page) return []
 
   const indicators: Array<{ key: string; config: Record<string, unknown> }> = []
-  const pad = 4 / props.zoom
-  const sw = 1.5 / props.zoom
+  const pad = 5 / props.zoom
+  const sw = 2 / props.zoom
+  const glow = 8 / props.zoom
+
+  // Shared WOW config for selection border
+  const selConfig = (x: number, y: number, w: number, h: number) => ({
+    x: x - pad,
+    y: y - pad,
+    width: w + pad * 2,
+    height: h + pad * 2,
+    cornerRadius: 3 / props.zoom,
+    stroke: '#3b82f6',
+    strokeWidth: sw,
+    fill: 'rgba(59, 130, 246, 0.05)',
+    // Glow/shadow for the "premium" feel
+    shadowColor: 'rgba(59, 130, 246, 0.5)',
+    shadowBlur: glow,
+    shadowOffsetX: 0,
+    shadowOffsetY: 0,
+    listening: false,
+    perfectDrawEnabled: false,
+  })
 
   for (const stroke of page.strokes) {
     if (!ids.has(stroke.id)) continue
     const bbox = getStrokeBBox(stroke)
     indicators.push({
       key: `sel-${stroke.id}`,
-      config: {
-        x: bbox.x - pad,
-        y: bbox.y - pad,
-        width: bbox.width + pad * 2,
-        height: bbox.height + pad * 2,
-        stroke: '#2563eb',
-        strokeWidth: sw,
-        dash: [4 / props.zoom, 2 / props.zoom],
-        fill: 'transparent',
-        listening: false,
-        perfectDrawEnabled: false,
-      },
+      config: selConfig(bbox.x, bbox.y, bbox.width, bbox.height),
     })
   }
 
   for (const asset of page.assets) {
     if (!ids.has(asset.id)) continue
+    // Media assets get CSS ring from wb-media-overlay--selected, skip Konva indicator for them
+    if (asset.type === 'audio_player' || asset.type === 'video_player') continue
     const bbox = getAssetBBox(asset)
     indicators.push({
       key: `sel-${asset.id}`,
-      config: {
-        x: bbox.x - pad,
-        y: bbox.y - pad,
-        width: bbox.width + pad * 2,
-        height: bbox.height + pad * 2,
-        stroke: '#2563eb',
-        strokeWidth: sw,
-        dash: [4 / props.zoom, 2 / props.zoom],
-        fill: 'transparent',
-        listening: false,
-        perfectDrawEnabled: false,
-      },
+      config: selConfig(bbox.x, bbox.y, bbox.width, bbox.height),
     })
   }
 
@@ -740,7 +859,7 @@ const groupIndicators = computed(() => {
 
     if (!isFinite(minX)) continue
 
-    const pad = 8 / props.zoom
+    const pad = 10 / props.zoom
     indicators.push({
       key: `grp-${group.id}`,
       config: {
@@ -748,11 +867,16 @@ const groupIndicators = computed(() => {
         y: minY - pad,
         width: maxX - minX + pad * 2,
         height: maxY - minY + pad * 2,
-        stroke: '#2563eb',
-        strokeWidth: 1 / props.zoom,
-        dash: [4 / props.zoom, 4 / props.zoom],
-        fill: 'transparent',
-        cornerRadius: 4 / props.zoom,
+        // WOW: purple group indicator (distinct from blue selection)
+        stroke: '#8b5cf6',
+        strokeWidth: 1.5 / props.zoom,
+        dash: [6 / props.zoom, 4 / props.zoom],
+        fill: 'rgba(139, 92, 246, 0.04)',
+        cornerRadius: 6 / props.zoom,
+        shadowColor: 'rgba(139, 92, 246, 0.3)',
+        shadowBlur: 6 / props.zoom,
+        shadowOffsetX: 0,
+        shadowOffsetY: 0,
         listening: false,
         perfectDrawEnabled: false,
       },
@@ -1601,6 +1725,12 @@ function handleKeydown(e: KeyboardEvent): void {
 
 // A4.3: Image drop handler — uses useImageUpload for validation (5MB, PNG/JPEG/WebP/GIF) + data URL
 async function handleDrop(e: DragEvent): Promise<void> {
+  // Skip sidebar/content-panel drops — they are handled by the parent component's drop handler.
+  // Use dataTransfer.types (always accessible) instead of getData() for reliable detection.
+  // This prevents a ghost asset being created when Chrome adds the dragged <img> to dataTransfer.files.
+  const dragTypes = Array.from(e.dataTransfer?.types ?? [])
+  if (dragTypes.includes(SIDEBAR_DRAG_MIME) || dragTypes.includes(CONTENT_DRAG_MIME)) return
+
   // Calculate drop position in canvas coordinates
   let dropX = props.width / 2
   let dropY = 100
@@ -1647,6 +1777,74 @@ function handlePaste(e: Event): void {
   }).catch((err) => {
     console.error('[WB:Canvas] Paste image failed:', err)
   })
+}
+
+// ─── Media Overlay: Drag + Select ───────────────────────────────────────────
+
+/**
+ * Phase 3C: Handle pointerdown on a media overlay (audio/video player).
+ * - Selects the asset (adds to wbStore.selectedIds)
+ * - In select mode: initiates custom pointer drag (DOM-direct, bypasses Konva)
+ * - Stops propagation always to prevent drawing strokes on top of media
+ *
+ * Skip drag initiation if the click target is a native control element
+ * (audio element, buttons, inputs) so that audio/video controls still work.
+ */
+function handleMediaPointerDown(asset: WBAsset, e: PointerEvent): void {
+  // Always stop — prevents Konva canvas from receiving drawing events under overlay
+  // (.stop on the template handles stopPropagation; this function handles drag logic)
+
+  if (currentTool.value !== 'select') return
+
+  // Don't initiate drag when clicking native audio/video controls or buttons
+  const target = e.target as HTMLElement
+  if (target.closest('audio, video, button, input, select, [role="button"]')) {
+    // Just select, don't drag
+    wbStore.selectItems([asset.id])
+    selectedNode.value = null
+    const transformer = transformerRef.value?.getNode?.()
+    if (transformer) transformer.nodes([])
+    emit('select', asset.id)
+    return
+  }
+
+  // Select the media asset
+  wbStore.selectItems([asset.id])
+  selectedNode.value = null
+  const transformer = transformerRef.value?.getNode?.()
+  if (transformer) transformer.nodes([])
+  emit('select', asset.id)
+
+  // Custom pointer drag — track pointer globally, update DOM directly for smooth UX
+  const startClientX = e.clientX
+  const startClientY = e.clientY
+  const startAssetX = asset.x
+  const startAssetY = asset.y
+  const el = e.currentTarget as HTMLElement
+  let hasMoved = false
+
+  function onPointerMove(ev: PointerEvent) {
+    const dx = (ev.clientX - startClientX) / (props.zoom || 1)
+    const dy = (ev.clientY - startClientY) / (props.zoom || 1)
+    if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+      hasMoved = true
+      el.style.left = `${(startAssetX + dx) * (props.zoom || 1)}px`
+      el.style.top = `${(startAssetY + dy) * (props.zoom || 1)}px`
+      el.style.cursor = 'grabbing'
+    }
+  }
+
+  function onPointerUp(ev: PointerEvent) {
+    document.removeEventListener('pointermove', onPointerMove)
+    el.style.cursor = ''
+    if (!hasMoved) return
+    const dx = (ev.clientX - startClientX) / (props.zoom || 1)
+    const dy = (ev.clientY - startClientY) / (props.zoom || 1)
+    emit('asset-update', { ...asset, x: startAssetX + dx, y: startAssetY + dy })
+  }
+
+  document.addEventListener('pointermove', onPointerMove)
+  document.addEventListener('pointerup', onPointerUp, { once: true })
 }
 
 // ─── Selection Handlers ─────────────────────────────────────────────────────
@@ -1967,34 +2165,68 @@ function getTextConfig(stroke: WBStroke): Record<string, unknown> {
 }
 
 // A4.3: Preload an asset image into the loadedImages cache (for immediate rendering after drop/paste)
+// FLICKER FIX: loadedImages is a plain Map (not reactive) — we imperatively update the Konva node
+// instead of relying on Vue reactivity, which would re-render ALL assets on every image load.
 function preloadAssetImage(asset: WBAsset): void {
   if (loadedImages.has(asset.src)) return
+  const isDataUrl = asset.src.startsWith('data:')
+
+  function applyImage(image: HTMLImageElement): void {
+    loadedImages.set(asset.src, image)
+    // Invalidate the memoized config for this asset so next render picks up the image
+    assetConfigCache.delete(asset.id)
+    // Imperatively update the Konva node — no Vue reactive re-render triggered
+    const assetsLayer = assetsLayerRef.value?.getNode?.()
+    if (assetsLayer) {
+      const node = assetsLayer.findOne(`#${asset.id}`) as Konva.Image | undefined
+      if (node) {
+        node.image(image)
+      }
+      assetsLayer.batchDraw()
+    }
+  }
+
   const image = new Image()
-  // data: URLs don't need crossOrigin; external URLs do
-  if (!asset.src.startsWith('data:')) {
+  if (!isDataUrl) {
+    // Try with CORS first (needed for canvas read-back), fall back to no-CORS for display-only
     image.crossOrigin = 'anonymous'
   }
-  image.onload = () => {
-    loadedImages.set(asset.src, image)
-    // Trigger Konva re-render so the image appears immediately
-    const assetsLayer = assetsLayerRef.value?.getNode?.()
-    if (assetsLayer) assetsLayer.batchDraw()
-  }
+  image.onload = () => { applyImage(image) }
   image.onerror = () => {
-    console.warn('[WB:Canvas] Failed to preload asset image:', asset.id)
+    if (isDataUrl) {
+      console.warn('[WB:Canvas] Failed to preload data-URL asset:', asset.id)
+      return
+    }
+    // CORS failed — retry without crossOrigin (display-only mode, canvas may be tainted)
+    console.warn('[WB:Canvas] CORS preload failed, retrying without crossOrigin:', asset.src)
+    const imgNoCors = new Image()
+    imgNoCors.onload = () => { applyImage(imgNoCors) }
+    imgNoCors.onerror = () => {
+      console.error('[WB:Canvas] Image completely inaccessible, ghost will remain:', asset.src)
+    }
+    imgNoCors.src = asset.src
   }
   image.src = asset.src
 }
 
 function getAssetConfig(asset: WBAsset): Record<string, unknown> {
   if (!loadedImages.has(asset.src)) {
-    // Lazy-load image on first render
+    // Lazy-load image on first render (non-blocking — Konva node gets image imperatively on load)
     preloadAssetImage(asset)
   }
 
   const selectable = currentTool.value === 'select'
   const isLockedItem = !!asset.locked
-  return {
+  const hasImage = loadedImages.has(asset.src)
+
+  // Memoize by signature — return cached config object if nothing changed.
+  // This prevents Vue-Konva from detecting a new config object on every stroke render,
+  // which would cause all Konva Image nodes to re-draw (the source of flickering during drawing).
+  const sig = `${asset.x}|${asset.y}|${asset.w}|${asset.h}|${asset.rotation}|${isLockedItem ? 1 : 0}|${selectable ? 1 : 0}|${hasImage ? 1 : 0}`
+  const cached = assetConfigCache.get(asset.id)
+  if (cached && cached.sig === sig) return cached.config
+
+  const config: Record<string, unknown> = {
     id: asset.id,
     name: `asset-${asset.id}`,
     x: asset.x,
@@ -2008,6 +2240,8 @@ function getAssetConfig(asset: WBAsset): Record<string, unknown> {
     perfectDrawEnabled: false,
     listening: selectable,
   }
+  assetConfigCache.set(asset.id, { sig, config })
+  return config
 }
 
 // ─── Background layer cache ─────────────────────────────────────────────────
@@ -2343,17 +2577,75 @@ watch(
   { immediate: true },
 )
 
-// A6.2: Memory cleanup on page switch — clear caches
+// A6.2: Memory cleanup on page switch — clear caches + reset selection state
 watch(
   () => props.strokes,
   () => {
     // Clear stroke config cache (stale entries from previous page)
     strokeConfigCache.clear()
+    // Clear asset config memoization cache
+    assetConfigCache.clear()
     // Clear smoothing cache
     clearSmoothedCache()
     // Clear loaded images for previous page assets
     loadedImages.clear()
+    // Clear known asset IDs so re-visiting a page re-animates assets correctly
+    _knownAssetIds.clear()
+    // GHOST FIX: Stale selectedNode causes the Konva transformer to render a ghost
+    // rectangle on the new page (transformer renders at the old node's last position).
+    // Must clear selection state whenever the page changes.
+    selectedNode.value = null
+    const transformer = transformerRef.value?.getNode?.()
+    if (transformer) transformer.nodes([])
+    wbStore.clearSelection()
   },
+)
+
+// ─── Smart Drop Animation ────────────────────────────────────────────────────
+
+const _knownAssetIds = new Set<string>()
+
+watch(
+  assets,
+  (newAssets, oldAssets) => {
+    if (!konvaReady.value) {
+      // Initial load — seed known IDs without animating
+      for (const a of newAssets) _knownAssetIds.add(a.id)
+      return
+    }
+    const oldIds = new Set((oldAssets ?? []).map(a => a.id))
+    const freshIds: string[] = []
+    for (const a of newAssets) {
+      if (!oldIds.has(a.id) && !_knownAssetIds.has(a.id)) {
+        freshIds.push(a.id)
+      }
+      _knownAssetIds.add(a.id)
+    }
+    if (!freshIds.length) return
+
+    // Wait for Vue to render v-image nodes, then animate via Konva
+    nextTick(() => {
+      const layer = assetsLayerRef.value?.getNode?.() as Konva.Layer | null
+      if (!layer) return
+      for (const id of freshIds) {
+        const node = layer.findOne(`#${id}`) as Konva.Node | null
+        if (!node) continue
+        node.opacity(0)
+        node.scaleX(0.85)
+        node.scaleY(0.85)
+        new Konva.Tween({
+          node,
+          duration: 0.25,
+          opacity: 1,
+          scaleX: 1,
+          scaleY: 1,
+          easing: Konva.Easings.EaseOut,
+          onFinish: () => layer.batchDraw(),
+        }).play()
+      }
+    })
+  },
+  { immediate: true },
 )
 
 // ─── Expose ─────────────────────────────────────────────────────────────────
@@ -2528,5 +2820,55 @@ defineExpose({
     transition: none;
     box-shadow: none;
   }
+}
+
+/* Phase 3C: Media HTML overlay (audio/video players) */
+.wb-media-overlay {
+  position: absolute;
+  z-index: 20;
+  transform-origin: top left;
+  border-radius: 8px;
+  overflow: visible; /* allow selection ring to show outside bounds */
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
+  transition: box-shadow 0.15s ease;
+}
+.wb-media-overlay--selectable {
+  cursor: default;
+}
+.wb-media-overlay--selectable:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(59, 130, 246, 0.3);
+}
+/* WOW selection ring — glowing blue border around selected media asset */
+.wb-media-overlay--selected {
+  outline: 2.5px solid #3b82f6;
+  outline-offset: 3px;
+  border-radius: 10px;
+  box-shadow:
+    0 0 0 5px rgba(59, 130, 246, 0.18),
+    0 4px 24px rgba(59, 130, 246, 0.25),
+    0 2px 12px rgba(0, 0, 0, 0.18);
+}
+
+/* Drag handle strip at top of media overlay */
+.wb-media-drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 18px;
+  background: linear-gradient(to bottom, rgba(241, 245, 249, 0.95), rgba(226, 232, 240, 0.9));
+  border-bottom: 1px solid rgba(203, 213, 225, 0.6);
+  cursor: grab;
+  color: #94a3b8;
+  border-radius: 8px 8px 0 0;
+  user-select: none;
+  transition: background 0.1s, color 0.1s;
+}
+.wb-media-drag-handle:hover {
+  background: linear-gradient(to bottom, rgba(219, 234, 254, 0.95), rgba(191, 219, 254, 0.9));
+  color: #3b82f6;
+}
+.wb-media-drag-handle:active,
+.wb-media-overlay--selected .wb-media-drag-handle {
+  cursor: grabbing;
 }
 </style>

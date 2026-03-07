@@ -59,6 +59,9 @@ const lessonsApi = {
         throw err
       })
   },
+  cloneLesson(id) {
+    return apiClient.post(`/lessons/${id}/clone/`)
+  },
   createInvite(id) {
     return apiClient.post(`/lessons/${id}/invite/`)
   },

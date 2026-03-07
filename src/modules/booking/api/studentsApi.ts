@@ -10,6 +10,7 @@ export interface StudentListItem {
   membership_id?: number
   avatar?: string
   timezone?: string
+  is_demo?: boolean      // Pre-Phase 4: Demo Student flag
 }
 
 export interface StudentsListResponse {

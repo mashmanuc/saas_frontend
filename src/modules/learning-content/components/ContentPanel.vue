@@ -1,9 +1,19 @@
 <template>
   <div class="lc-panel">
-    <ContentSearchBar />
+    <!-- Header: different for lesson vs library mode -->
+    <div class="lc-panel-header">
+      <span class="lc-panel-title">
+        {{ store.isLessonMode
+          ? t('learningContent.panel.lessonTitle')
+          : t('learningContent.panel.title')
+        }}
+      </span>
+    </div>
 
-    <!-- Phase 2: Ownership filter -->
-    <div class="lc-ownership-filter">
+    <ContentSearchBar v-if="!store.isLessonMode" />
+
+    <!-- Ownership filter: only in library mode -->
+    <div v-if="!store.isLessonMode" class="lc-ownership-filter">
       <select
         v-model="ownershipFilter"
         class="lc-ownership-select"
@@ -27,6 +37,23 @@
       <button class="lc-retry-btn" aria-label="Retry" @click="retry">&#8635;</button>
     </div>
 
+    <!-- LESSON MODE -->
+    <template v-else-if="store.isLessonMode">
+      <div v-if="!store.lessonItems.length" class="lc-empty">
+        {{ t('learningContent.panel.lessonEmpty') }}
+      </div>
+      <div v-else class="lc-search-results" role="list">
+        <ContentItemCard
+          v-for="item in store.lessonItems"
+          :key="item.id"
+          :item="item"
+          @preview="previewItem = $event"
+          @drag-start="$emit('dragStart', $event)"
+        />
+      </div>
+    </template>
+
+    <!-- SEARCH MODE -->
     <template v-else-if="store.searchMode">
       <div v-if="store.isSearching" class="lc-loading">
         {{ t('learningContent.panel.loading') }}
@@ -45,6 +72,7 @@
       </div>
     </template>
 
+    <!-- LIBRARY / TREE MODE -->
     <template v-else>
       <ContentSubjectTabs
         v-if="store.subjects.length"
@@ -73,7 +101,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useContentLibraryStore } from '../stores/contentLibraryStore'
 import type { ContentItemSummary, ContentDragPayload } from '../types/learningContent'
@@ -84,7 +112,10 @@ import ContentTree from './ContentTree.vue'
 import ContentItemCard from './ContentItemCard.vue'
 import ContentItemPreview from './ContentItemPreview.vue'
 
-defineProps<{ sessionId?: string | null }>()
+const props = defineProps<{
+  sessionId?: string | null
+  lessonId?: number | null
+}>()
 defineEmits<{
   dragStart: [payload: ContentDragPayload]
   itemDrop: [payload: ContentDragPayload]
@@ -96,14 +127,29 @@ const previewItem = ref<ContentItemSummary | null>(null)
 const ownershipFilter = ref('')
 
 onMounted(() => {
-  if (!store.subjects.length) {
+  if (props.lessonId) {
+    store.enterLessonMode(props.lessonId)
+  } else if (!store.subjects.length) {
     store.fetchSubjects()
+  }
+})
+
+// Watch for lessonId prop changes (e.g. navigating between lessons)
+watch(() => props.lessonId, (newId) => {
+  if (newId) {
+    store.enterLessonMode(newId)
+  } else {
+    store.exitLessonMode()
   }
 })
 
 function retry() {
   store.error = null
-  store.fetchSubjects()
+  if (store.isLessonMode) {
+    store.fetchLessonItems()
+  } else {
+    store.fetchSubjects()
+  }
 }
 
 function onOwnershipFilterChange() {
@@ -204,5 +250,14 @@ function onOwnershipFilterChange() {
   outline: none;
   border-color: #4f46e5;
   box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
+}
+.lc-panel-header {
+  padding: 8px 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.lc-panel-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
 }
 </style>

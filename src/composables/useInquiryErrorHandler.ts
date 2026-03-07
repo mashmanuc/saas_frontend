@@ -132,6 +132,59 @@ export function useInquiryErrorHandler() {
       return
     }
 
+    // Conflict responses (409) — cooldown, max open limit, already exists
+    if ((error as AxiosError)?.response?.status === 409) {
+      const data409 = (error as AxiosError)?.response?.data as any
+      const meta = data409?.meta || {}
+      
+      // Cooldown active
+      if (data409?.code === 'INQUIRY_COOLDOWN_ACTIVE' || meta.locked_reason === 'cooldown') {
+        const daysRemaining = meta.cooldown_expires_at && typeof meta.cooldown_expires_at === 'string'
+          ? Math.ceil((new Date(meta.cooldown_expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+          : 7
+        errorState.value = {
+          variant: 'forbidden',
+          title: 'Cooldown активний',
+          message: `Ви можете надіслати новий запит цьому тьютору через ${daysRemaining} днів`,
+          showRetry: false
+        }
+        return
+      }
+      
+      // Max open limit reached
+      if (data409?.code === 'STUDENT_ACTIVE_LIMIT_REACHED' || meta.locked_reason === 'max_open_limit') {
+        const limit = meta.limit || 5
+        errorState.value = {
+          variant: 'forbidden',
+          title: 'Досягнуто ліміт активних запитів',
+          message: `Досягнуто ліміт активних запитів (${limit})`,
+          showRetry: false,
+          showUpgrade: limit === 5
+        }
+        return
+      }
+      
+      // Already exists (409 variant)
+      if (data409?.code === 'inquiry_already_exists' || data409?.code === 'INQUIRY_ALREADY_EXISTS') {
+        errorState.value = {
+          variant: 'error',
+          title: 'Запит вже існує',
+          message: 'У вас вже є активний запит до цього тьютора.',
+          showRetry: false
+        }
+        return
+      }
+      
+      // Generic 409
+      errorState.value = {
+        variant: 'error',
+        title: 'Конфлікт',
+        message: data409?.message || 'Не вдалося виконати дію через конфлікт стану.',
+        showRetry: false
+      }
+      return
+    }
+
     // DomainError responses (400 with code field from custom_exception_handler)
     if ((error as AxiosError)?.response?.status === 400) {
       const data = (error as AxiosError)?.response?.data as any

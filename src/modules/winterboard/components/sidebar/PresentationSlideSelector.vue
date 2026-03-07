@@ -1,0 +1,267 @@
+<template>
+  <div class="slide-selector">
+    <div class="slide-selector__header">
+      <span class="slide-selector__title">{{ item.title }}</span>
+      <span class="slide-selector__count">
+        {{ t('winterboard.slideSelector.slideCount', { count: sortedSlides.length }) }}
+      </span>
+      <!-- Кнопка запуску плеєра -->
+      <button
+        v-if="sortedSlides.length > 0"
+        class="slide-selector__play"
+        type="button"
+        :aria-label="t('winterboard.player.play')"
+        :title="t('winterboard.player.play')"
+        @click="playerOpen = true"
+      >
+        ▶
+      </button>
+      <button
+        class="slide-selector__close"
+        type="button"
+        :aria-label="t('winterboard.slideSelector.close')"
+        @click="$emit('close')"
+      >
+        &#x2715;
+      </button>
+    </div>
+
+    <!-- Drag full presentation (slide 1) -->
+    <div
+      class="slide-selector__full"
+      draggable="true"
+      @dragstart="dragSlide($event, 1)"
+      @dragend="onDragEnd"
+    >
+      <span class="slide-selector__full-icon">📊</span>
+      <span>{{ t('winterboard.slideSelector.dragFull') }}</span>
+    </div>
+
+  <!-- Fullscreen player -->
+  <PresentationPlayer
+    v-if="playerOpen"
+    :item="item"
+    :start-index="playerStartIndex"
+    @close="playerOpen = false"
+  />
+
+    <!-- Slide thumbnail grid -->
+    <div class="slide-selector__grid">
+      <div
+        v-for="slide in sortedSlides"
+        :key="slide.index"
+        class="slide-selector__slide"
+        draggable="true"
+        :title="t('winterboard.player.dblClickToPlay')"
+        @dragstart="dragSlide($event, slide.index)"
+        @dragend="onDragEnd"
+        @dblclick.prevent="openPlayerAt(slide.index - 1)"
+      >
+        <img
+          :src="slide.image_url"
+          :alt="t('winterboard.slideSelector.slideAlt', { n: slide.index })"
+          class="slide-selector__slide-thumb"
+          loading="lazy"
+          draggable="false"
+        />
+        <span class="slide-selector__slide-num">{{ slide.index }}</span>
+      </div>
+    </div>
+
+    <!-- Empty state: processing or no slides -->
+    <div v-if="sortedSlides.length === 0" class="slide-selector__empty">
+      <MediaStatusGuard :status="item.processing_status" @retry="$emit('retry')">
+        <span>{{ t('winterboard.slideSelector.noSlides') }}</span>
+      </MediaStatusGuard>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+import type { AllowedContentItem } from '../../types/sidebar'
+import { SIDEBAR_DRAG_MIME } from '../../types/boardDrop'
+import MediaStatusGuard from '../shared/MediaStatusGuard.vue'
+import PresentationPlayer from './PresentationPlayer.vue'
+
+const props = defineProps<{
+  item: AllowedContentItem
+}>()
+
+defineEmits<{
+  close: []
+  retry: []
+}>()
+
+const { t } = useI18n()
+
+// ── Плеєр ──
+const playerOpen = ref(false)
+const playerStartIndex = ref(0)
+
+function openPlayerAt(i: number) {
+  playerStartIndex.value = i
+  playerOpen.value = true
+}
+
+const sortedSlides = computed(() => {
+  const slides = props.item.slides ?? {}
+  return Object.entries(slides)
+    .map(([idx, data]) => ({
+      index: parseInt(idx, 10),
+      image_url: data.image_url,
+    }))
+    .sort((a, b) => a.index - b.index)
+})
+
+function dragSlide(e: DragEvent, slideIndex: number) {
+  const payload = {
+    content_item_id: props.item.content_item_id,
+    asset_category: 'presentation',
+    content_type: 'presentation',
+    extra: { slide_index: slideIndex },
+  }
+  e.dataTransfer?.setData(SIDEBAR_DRAG_MIME, JSON.stringify(payload))
+  e.dataTransfer!.effectAllowed = 'copy'
+
+  // Ghost drag preview — find thumbnail of the dragged slide
+  const slideThumb = slideIndex === 1 && sortedSlides.value.length > 0
+    ? sortedSlides.value[0].image_url
+    : (sortedSlides.value.find(s => s.index === slideIndex)?.image_url ?? null)
+
+  window.dispatchEvent(new CustomEvent('wb-drag-preview', {
+    detail: {
+      asset_category: 'presentation',
+      thumbnail_url: slideThumb ?? props.item.thumbnail_url ?? null,
+      title: `${props.item.title} — слайд ${slideIndex}`,
+    },
+  }))
+
+  // Hide browser native drag ghost
+  const phantom = document.createElement('div')
+  phantom.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0'
+  document.body.appendChild(phantom)
+  e.dataTransfer!.setDragImage(phantom, 0, 0)
+  requestAnimationFrame(() => { if (phantom.parentNode) document.body.removeChild(phantom) })
+}
+
+function onDragEnd() {
+  window.dispatchEvent(new CustomEvent('wb-drag-stop'))
+}
+</script>
+
+<style scoped>
+.slide-selector {
+  background: #f8fafc;
+  border-top: 2px solid #e2e8f0;
+  max-height: 420px;
+  overflow-y: auto;
+  width: 100%;
+}
+.slide-selector__header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  position: sticky;
+  top: 0;
+  background: #f8fafc;
+  z-index: 1;
+}
+.slide-selector__play {
+  background: #3b82f6;
+  border: none;
+  color: #fff;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 3px 8px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  line-height: 1.4;
+  transition: background 0.1s;
+}
+.slide-selector__play:hover {
+  background: #2563eb;
+}
+.slide-selector__title {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.slide-selector__count {
+  font-size: 11px;
+  color: #64748b;
+  flex-shrink: 0;
+}
+.slide-selector__close {
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 2px;
+  line-height: 1;
+}
+.slide-selector__close:hover {
+  color: #475569;
+}
+.slide-selector__full {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: grab;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 12px;
+  color: #3b82f6;
+  transition: background 0.1s;
+}
+.slide-selector__full:hover {
+  background: #f0f9ff;
+}
+.slide-selector__full-icon {
+  font-size: 16px;
+}
+.slide-selector__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  padding: 8px;
+}
+.slide-selector__slide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  cursor: grab;
+  border-radius: 4px;
+  padding: 4px;
+  transition: background 0.1s;
+}
+.slide-selector__slide:hover {
+  background: #e0f2fe;
+}
+.slide-selector__slide-thumb {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border: 1px solid #e2e8f0;
+  border-radius: 3px;
+}
+.slide-selector__slide-num {
+  font-size: 10px;
+  color: #64748b;
+}
+.slide-selector__empty {
+  padding: 24px 12px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 13px;
+}
+</style>

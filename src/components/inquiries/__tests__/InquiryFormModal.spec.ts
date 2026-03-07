@@ -4,6 +4,7 @@ import { createI18n } from 'vue-i18n'
 import { createPinia, setActivePinia } from 'pinia'
 import InquiryFormModal from '../InquiryFormModal.vue'
 import { useInquiriesStore } from '@/stores/inquiriesStore'
+import { useAuthStore } from '@/stores/authStore'
 
 vi.mock('@/api/inquiries', () => ({
   createInquiry: vi.fn(),
@@ -144,13 +145,18 @@ describe('InquiryFormModal', () => {
     }
     vi.mocked(createInquiry).mockRejectedValue(cooldownError)
 
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const authStore = useAuthStore()
+    authStore.user = { id: 1, phone: '+380501234567' } as any
+
     const wrapper = mount(InquiryFormModal, {
       props: {
         show: true,
         tutor
       },
       global: {
-        plugins: [i18n, createPinia()],
+        plugins: [i18n, pinia],
         stubs: {
           'router-link': true
         }
@@ -183,13 +189,18 @@ describe('InquiryFormModal', () => {
     }
     vi.mocked(createInquiry).mockRejectedValue(maxOpenError)
 
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const authStore = useAuthStore()
+    authStore.user = { id: 1, phone: '+380501234567' } as any
+
     const wrapper = mount(InquiryFormModal, {
       props: {
         show: true,
         tutor
       },
       global: {
-        plugins: [i18n, createPinia()],
+        plugins: [i18n, pinia],
         stubs: {
           'router-link': {
             template: '<a><slot /></a>'

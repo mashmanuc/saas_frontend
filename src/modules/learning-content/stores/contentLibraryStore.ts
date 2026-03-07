@@ -34,6 +34,11 @@ export const useContentLibraryStore = defineStore('contentLibrary', () => {
   const isSearching = ref(false)
   const searchMode = ref(false)
 
+  // ── Lesson mode state ─────────────────────────────────────
+  const lessonId = ref<number | null>(null)
+  const lessonItems = ref<ContentItemSummary[]>([])
+  const isLessonMode = computed(() => lessonId.value !== null)
+
   // ── Debounce (400ms) ────────────────────────────────────────
   let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -161,6 +166,30 @@ export const useContentLibraryStore = defineStore('contentLibrary', () => {
     if (searchDebounceTimer) clearTimeout(searchDebounceTimer)
   }
 
+  function enterLessonMode(id: number) {
+    lessonId.value = id
+    clearSearch()
+    fetchLessonItems()
+  }
+
+  function exitLessonMode() {
+    lessonId.value = null
+    lessonItems.value = []
+  }
+
+  async function fetchLessonItems() {
+    if (!lessonId.value) return
+    isLoading.value = true
+    error.value = null
+    try {
+      lessonItems.value = await learningContentApi.getLessonAllowedItems(lessonId.value)
+    } catch {
+      error.value = 'Помилка завантаження матеріалів уроку'
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   function reset() {
     subjects.value = []
     collections.value = []
@@ -172,6 +201,8 @@ export const useContentLibraryStore = defineStore('contentLibrary', () => {
     expandedUnits.value.clear()
     loadingUnits.value.clear()
     clearSearch()
+    lessonId.value = null
+    lessonItems.value = []
     error.value = null
   }
 
@@ -201,6 +232,13 @@ export const useContentLibraryStore = defineStore('contentLibrary', () => {
     searchParams,
     isSearching,
     searchMode,
+    // Lesson mode
+    lessonId,
+    lessonItems,
+    isLessonMode,
+    enterLessonMode,
+    exitLessonMode,
+    fetchLessonItems,
     // Actions
     fetchSubjects,
     fetchCollections,

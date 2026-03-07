@@ -13,6 +13,7 @@ export enum TutorHintId {
   PROFILE_FORMAT_ONLINE = 'tutor.profile.format.online',
   PROFILE_FORMAT_OFFLINE = 'tutor.profile.format.offline',
   PROFILE_PUBLISH_BLOCKED = 'tutor.profile.publish.blocked',
+  DEMO_STUDENT_ONLY = 'tutor.dashboard.demoStudentOnly',
 }
 
 const STORAGE_PREFIX = 'm4sh:hints:dismissed'

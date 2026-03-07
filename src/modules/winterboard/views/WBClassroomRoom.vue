@@ -310,6 +310,9 @@
         <button type="button" class="wb-zoom-btn" :title="t('winterboard.room.zoomReset')" @click="handleZoomReset">⊙</button>
       </div>
     </footer>
+
+    <!-- Drag ghost preview — follows cursor while dragging from sidebar -->
+    <WBDragGhost />
   </div>
 </template>
 
@@ -342,6 +345,7 @@ import WBCanvasLoader from '../components/loading/WBCanvasLoader.vue'
 // Learning Content integration
 import ContentPanel from '@/modules/learning-content/components/ContentPanel.vue'
 import ContentSidebar from '../components/sidebar/ContentSidebar.vue'
+import WBDragGhost from '../components/sidebar/WBDragGhost.vue'
 import { useContentDrop } from '../composables/useContentDrop'
 import type { ContentDragPayload } from '@/modules/learning-content'
 
