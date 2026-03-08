@@ -123,23 +123,21 @@ export function useKeyboard(
       return
     }
 
-    // Copy: Ctrl+C
+    // Copy: Ctrl+C — DO NOT preventDefault, allow native clipboard event to propagate
     if (ctrl && !shift && code === 'KeyC' && !isEditableTarget(event)) {
-      event.preventDefault()
       callbacks.onCopy?.()
       return
     }
 
-    // Paste: Ctrl+V
+    // Paste: Ctrl+V — DO NOT preventDefault, native 'paste' event must fire
+    // Paste is handled by document 'paste' listener in useBoardClipboard
     if (ctrl && !shift && code === 'KeyV' && !isEditableTarget(event)) {
-      event.preventDefault()
       callbacks.onPaste?.()
       return
     }
 
-    // Cut: Ctrl+X
+    // Cut: Ctrl+X — DO NOT preventDefault, allow native clipboard event
     if (ctrl && !shift && code === 'KeyX' && !isEditableTarget(event)) {
-      event.preventDefault()
       callbacks.onCut?.()
       return
     }

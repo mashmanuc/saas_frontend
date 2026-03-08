@@ -43,11 +43,24 @@
       >
         {{ '\u25CF'.repeat(item.difficulty) }}{{ '\u25CB'.repeat(5 - item.difficulty) }}
       </span>
+      <!-- Phase 1c: Delete button (own content only) -->
+      <button
+        v-if="canDelete"
+        class="lc-item-delete-btn"
+        :title="t('learningContent.actions.delete')"
+        :aria-label="t('learningContent.actions.deleteItem', { title: item.title })"
+        @click.stop="onDeleteClick"
+      >
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M5 2V1h6v1h4v2H1V2h4zm1 4v7h4V6H6zm-3 9h10l1-10H3l1 10z" fill="currentColor" />
+        </svg>
+      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ContentItemSummary, ContentDragPayload } from '../types/learningContent'
 import OwnershipBadge from './OwnershipBadge.vue'
@@ -61,6 +74,7 @@ const emit = defineEmits<{
   preview: [item: ContentItemSummary]
   dragStart: [payload: ContentDragPayload]
   accessDenied: [reason: string]
+  delete: [item: ContentItemSummary]
 }>()
 const { t } = useI18n()
 const { checkAccess } = useContentAccess()
@@ -96,6 +110,15 @@ async function onCardClick() {
   }
   // PREVIEW access → open in preview mode (read-only)
   emit('preview', props.item)
+}
+
+const canDelete = computed(() => {
+  return props.item.ownership_type === 'TUTOR'
+    || props.item.ownership_type === 'USER_GENERATED'
+})
+
+function onDeleteClick() {
+  emit('delete', props.item)
 }
 
 function onImageError(e: Event) {
@@ -203,4 +226,17 @@ function onImageError(e: Event) {
   flex-shrink: 0;
   letter-spacing: 1px;
 }
+.lc-item-delete-btn {
+  opacity: 0;
+  transition: opacity 0.15s;
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.lc-item-card:hover .lc-item-delete-btn { opacity: 1; }
+.lc-item-delete-btn:hover { color: #dc2626; background: #fef2f2; }
 </style>

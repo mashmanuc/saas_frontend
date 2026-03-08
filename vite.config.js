@@ -53,6 +53,19 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      // Winterboard API (legacy direct path)
+      '/winterboard/api': {
+        target: process.env.VITE_DEV_API_TARGET || 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false,
+      },
+      // WebSocket connections
+      '/websocket': {
+        target: process.env.VITE_DEV_WS_TARGET || 'ws://localhost:8000',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+      },
     },
   },
   test: {

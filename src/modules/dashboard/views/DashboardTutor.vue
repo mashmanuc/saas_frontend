@@ -65,9 +65,6 @@
         <router-link to="/tutor/inquiries" class="text-sm text-accent hover:underline">
           {{ $t('inquiries.tutor.title') }}
         </router-link>
-        <router-link to="/learning-content" class="text-sm text-accent hover:underline">
-          📚 {{ $t('nav.learningContent') }}
-        </router-link>
       </div>
     </Card>
 
@@ -402,7 +399,13 @@ const userTimezone = computed(() => auth.user?.timezone)
 const relationsLoading = computed(() => relationsStore.tutorLoading)
 const relationsError = computed(() => relationsStore.tutorError)
 const relationsErrorCode = computed(() => relationsStore.tutorErrorCode)
-const filteredRelations = computed(() => relationsStore.filteredTutorRelations)
+// Виключаємо демо-студентів зі списку (лише реальні учні)
+const nonDemoRelations = computed(() =>
+  relationsStore.tutorRelations.filter(r => !r.student?.is_demo)
+)
+const filteredRelations = computed(() =>
+  relationsStore.filteredTutorRelations.filter(r => !r.student?.is_demo)
+)
 const tutorFilter = computed(() => relationsStore.tutorFilter)
 const summary = computed(() => relationsStore.tutorSummary || {})
 const totalSelected = computed(() => relationsStore.selectedTutorCount)
@@ -440,26 +443,27 @@ const chatModalOpen = ref(false)
 const chatModalStudentId = ref(null)
 const chatModalRelationId = ref(null)
 
+// Лічильники вкладок — рахуємо тільки реальних студентів (без демо)
 const tabs = computed(() => [
   {
     value: 'all',
     label: 'dashboard.tutor.tabs.all',
-    count: summary.value?.total ?? relationsStore.tutorRelations.length,
+    count: nonDemoRelations.value.length,
   },
   {
     value: 'invited',
     label: 'dashboard.tutor.tabs.invited',
-    count: summary.value?.invited ?? 0,
+    count: nonDemoRelations.value.filter(r => r.status === 'invited').length,
   },
   {
     value: 'active',
     label: 'dashboard.tutor.tabs.active',
-    count: summary.value?.active ?? 0,
+    count: nonDemoRelations.value.filter(r => r.status === 'active').length,
   },
   {
     value: 'archived',
     label: 'dashboard.tutor.tabs.archived',
-    count: summary.value?.archived ?? 0,
+    count: nonDemoRelations.value.filter(r => r.status === 'archived').length,
   },
 ])
 

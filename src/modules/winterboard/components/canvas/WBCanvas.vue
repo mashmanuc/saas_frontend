@@ -325,7 +325,7 @@ import type { WBAudioAsset, WBVideoAsset } from '../../types/mediaObjects'
 import type { VideoSyncState } from '../../composables/useMediaSync'
 import { useImageCache } from '../../composables/useImageCache'
 import { getSmoothedPoints, clearSmoothedCache } from '../../engine/smoothing'
-import { handleDrop as imageHandleDrop, handlePaste as imageHandlePaste } from '../../composables/useImageUpload'
+import { handleDrop as imageHandleDrop } from '../../composables/useImageUpload'
 import { SIDEBAR_DRAG_MIME, CONTENT_DRAG_MIME } from '../../types/boardDrop'
 import { loadKonva } from '../../engine/konvaLoader'
 import { WBSpatialIndex } from '../../engine/spatialIndex'
@@ -1751,33 +1751,7 @@ async function handleDrop(e: DragEvent): Promise<void> {
   }
 }
 
-// A4.3: Image paste handler — uses useImageUpload for validation + data URL
-function handlePaste(e: Event): void {
-  const clipboardEvent = e as ClipboardEvent
-  if (!clipboardEvent.clipboardData?.items) return
-
-  // Check if any item is an image
-  const hasImage = Array.from(clipboardEvent.clipboardData.items).some(
-    (item) => item.kind === 'file' && item.type.startsWith('image/'),
-  )
-  if (!hasImage) return
-
-  e.preventDefault()
-  const centerX = props.width / 2
-  const centerY = props.height / 2
-
-  imageHandlePaste(clipboardEvent, centerX, centerY).then((asset) => {
-    if (asset) {
-      // Center the asset
-      asset.x = centerX - asset.w / 2
-      asset.y = centerY - asset.h / 2
-      preloadAssetImage(asset)
-      emit('asset-add', asset)
-    }
-  }).catch((err) => {
-    console.error('[WB:Canvas] Paste image failed:', err)
-  })
-}
+// A4.3: Image paste — now handled by useBoardClipboard composable in Room views
 
 // ─── Media Overlay: Drag + Select ───────────────────────────────────────────
 
@@ -2455,9 +2429,6 @@ function handleFitToPage(): void {
 onMounted(async () => {
   containerRef.value?.focus()
 
-  // Register paste listener globally
-  document.addEventListener('paste', handlePaste as EventListener)
-
   // A4.1: Capture native PointerEvent for pressure data
   const container = containerRef.value
   if (container) {
@@ -2525,7 +2496,6 @@ onUnmounted(() => {
   // BUG-3 FIX: Remove global mouseup listeners
   window.removeEventListener('mouseup', globalMouseUp)
   window.removeEventListener('pointerup', globalMouseUp)
-  document.removeEventListener('paste', handlePaste as EventListener)
   clearPreviewCanvas()
   currentBitmap?.close?.()
   currentBitmap = null
@@ -2598,6 +2568,14 @@ watch(
 )
 
 // A6.2: Memory cleanup on page switch — clear caches + reset selection state
+// NOTE: loadedImages та _knownAssetIds свідомо НЕ очищуємо тут, щоб уникнути
+// джиттеру при автосейві. currentStrokes повертає новий масив-референс при
+// кожній Vue-реевалюації (напр. коли isDirty→false після save), що спричиняє
+// спрацювання цього watcher без реального переключення сторінки.
+// - loadedImages: стейл-записи нешкідливі (нові ассети мають інші ключі, тому
+//   промахнуться в кеш і завантажаться заново).
+// - _knownAssetIds: анімація нових ассетів керується watcher'ом assets нижче,
+//   який точно визначає нові ID порівнянням зі старими.
 watch(
   () => props.strokes,
   () => {
@@ -2607,10 +2585,6 @@ watch(
     assetConfigCache.clear()
     // Clear smoothing cache
     clearSmoothedCache()
-    // Clear loaded images for previous page assets
-    loadedImages.clear()
-    // Clear known asset IDs so re-visiting a page re-animates assets correctly
-    _knownAssetIds.clear()
     // GHOST FIX: Stale selectedNode causes the Konva transformer to render a ghost
     // rectangle on the new page (transformer renders at the old node's last position).
     // Must clear selection state whenever the page changes.

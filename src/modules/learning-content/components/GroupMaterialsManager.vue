@@ -79,8 +79,21 @@ async function onToggleMaterial(materialId: string, isActive: boolean) {
   await groupStore.toggleMaterial(materialId, isActive)
 }
 
-async function onRemoveMaterial(materialId: string) {
-  await groupStore.removeMaterial(materialId)
+// Inline delete confirmation — не видаляємо одразу, просимо підтвердження
+const pendingDeleteId = ref<string | null>(null)
+
+function onRemoveMaterial(materialId: string) {
+  pendingDeleteId.value = materialId
+}
+
+async function confirmDelete() {
+  if (!pendingDeleteId.value) return
+  await groupStore.removeMaterial(pendingDeleteId.value)
+  pendingDeleteId.value = null
+}
+
+function cancelDelete() {
+  pendingDeleteId.value = null
 }
 </script>
 
@@ -104,36 +117,6 @@ async function onRemoveMaterial(materialId: string) {
 
     <!-- Selected Group Panel -->
     <template v-if="groupStore.selectedGroup && selectedGroupId">
-      <!-- Subject Selector -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          {{ t('learningContent.groups.subjectLabel') }}
-        </label>
-        <select
-          :value="selectedSubjectId"
-          class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-sm"
-          :disabled="!canChangeSubject"
-          @change="onSubjectChange(Number(($event.target as HTMLSelectElement).value) || null)"
-        >
-          <option :value="null">{{ t('learningContent.groups.noSubject') }}</option>
-          <option
-            v-for="subj in contentStore.subjects"
-            :key="subj.id"
-            :value="subj.id"
-          >
-            {{ subj.name }}
-          </option>
-        </select>
-
-        <!-- CL10 Warning -->
-        <p v-if="subjectWarning" class="mt-1 text-xs text-amber-600 dark:text-amber-400">
-          {{ t('learningContent.groups.subjectImmutableWarning') }}
-        </p>
-        <p v-else-if="!canChangeSubject" class="mt-1 text-xs text-gray-400">
-          {{ t('learningContent.groups.subjectLocked') }}
-        </p>
-      </div>
-
       <!-- Materials List -->
       <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
         <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
@@ -158,7 +141,31 @@ async function onRemoveMaterial(materialId: string) {
                 {{ material.content_type }}
               </p>
             </div>
+            <!-- Inline delete confirmation -->
+            <div v-if="pendingDeleteId === material.id" class="flex items-center gap-2 ml-2">
+              <span class="text-xs text-red-600 dark:text-red-400 font-medium whitespace-nowrap">
+                Видалити з класу?
+              </span>
+              <button
+                type="button"
+                class="px-2 py-1 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded transition-colors"
+                title="Підтвердити видалення матеріалу з класу"
+                @click="confirmDelete"
+              >
+                Так
+              </button>
+              <button
+                type="button"
+                class="px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                title="Скасувати видалення"
+                @click="cancelDelete"
+              >
+                Ні
+              </button>
+            </div>
+
             <MaterialAccessToggle
+              v-else
               :material-id="material.id"
               :is-active="material.is_active"
               @toggle="onToggleMaterial"
@@ -196,39 +203,19 @@ async function onRemoveMaterial(materialId: string) {
             {{ t('learningContent.groups.createGroup') }}
           </h3>
 
-          <div class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {{ t('learningContent.groups.groupTitle') }}
-              </label>
-              <input
-                v-model="newGroupTitle"
-                type="text"
-                maxlength="200"
-                class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-sm"
-                :placeholder="t('learningContent.groups.titlePlaceholder')"
-                @keydown.enter="createGroup"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {{ t('learningContent.groups.subjectLabel') }}
-              </label>
-              <select
-                v-model="selectedSubjectId"
-                class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-sm"
-              >
-                <option :value="null">{{ t('learningContent.groups.noSubject') }}</option>
-                <option
-                  v-for="subj in contentStore.subjects"
-                  :key="subj.id"
-                  :value="subj.id"
-                >
-                  {{ subj.name }}
-                </option>
-              </select>
-            </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              {{ t('learningContent.groups.groupTitle') }}
+            </label>
+            <input
+              v-model="newGroupTitle"
+              type="text"
+              maxlength="200"
+              autofocus
+              class="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
+              :placeholder="t('learningContent.groups.titlePlaceholder')"
+              @keydown.enter="createGroup"
+            />
           </div>
 
           <div class="flex justify-end gap-3 mt-6">

@@ -5867,5 +5867,47 @@
       "dashboard": "Панель управления",
       "settings": "Настройки"
     }
+  },
+  "knowledge": {
+    "title": "База знаний",
+    "tabLessons": "Уроки",
+    "tabTemplates": "Шаблоны",
+    "tabStarterPacks": "Starter Packs",
+    "noLessons": "Уроков пока нет",
+    "noTemplates": "Шаблонов пока нет",
+    "materials": "материалов",
+    "templates": "шаблонов",
+    "openBoard": "Открыть доску",
+    "starterPacksInfo": "Starter Packs управляются в разделе Контент",
+    "goToContent": "Перейти к Контенту",
+    "myStudents": "Мои ученики",
+    "selectStudent": "Выберите ученика слева",
+    "materialsFor": "Материалы",
+    "uploadFiles": "Загрузить файлы",
+    "uploading": "Загрузка...",
+    "uploadSuccess": "Файл загружен",
+    "uploadFailed": "Ошибка загрузки",
+    "noMaterials": "Материалов пока нет. Загрузите файлы.",
+    "lessonsWithStudent": "Уроки с учеником",
+    "openBoardWithStudent": "Открыть доску",
+    "createLesson": "Создать урок",
+    "creatingLesson": "Создание...",
+    "storageQuota": "Квота хранилища",
+    "demoBadge": "Demo",
+    "noStudents": "У вас еще нет учеников",
+    "removeMaterial": "Удалить",
+    "newBoard": "Новая доска",
+    "tutorLibrary": "Библиотека репетитора",
+    "myClasses": "МОИ КЛАССЫ",
+    "noClasses": "Классов пока нет",
+    "sandbox": "Песочница",
+    "emptyState": {
+      "title": "Выберите ученика или класс",
+      "hint": "чтобы увидеть материалы, уроки и открыть доску",
+      "step1": "Загрузите файлы в библиотеку (кнопка выше)",
+      "step2": "Выберите ученика или класс слева",
+      "step3": "Добавьте нужные файлы в класс через «+»",
+      "step4": "Откройте доску — файлы уже там"
+    }
   }
 }

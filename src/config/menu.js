@@ -14,10 +14,12 @@ export const MENU_BY_ROLE = {
   ],
   tutor: [
     { label: 'menu.dashboard', icon: 'home', to: '/tutor' },
-    { label: 'menu.classrooms', icon: 'class', to: '/dashboard/classrooms' },
+    // LEGACY: menu.classrooms → /dashboard/classrooms використовує старий apps/classrooms (Classroom model).
+    // Новий Teacher OS використовує LearningGroup (/v1/learning-content/learning-groups/) через "База знань".
+    // Не показуємо тьютору щоб не плутати два різних списки класів. Маршрут і бекенд збережено.
+    // { label: 'menu.classrooms', icon: 'class', to: '/dashboard/classrooms' },
     { label: 'menu.tutorCalendar', icon: 'book', to: '/booking/tutor' },
     { label: 'menu.winterboard', icon: 'edit', to: '/winterboard' },
-    { label: 'menu.learningContent', icon: 'book-open', to: '/learning-content' },
     { label: 'menu.knowledge', icon: 'library', to: '/dashboard/knowledge' },
     { label: 'menu.tutorProfile', icon: 'briefcase', to: '/marketplace/my-profile' },
     { label: 'menu.account', icon: 'user', to: '/settings' },

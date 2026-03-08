@@ -59,8 +59,16 @@ const lessonsApi = {
         throw err
       })
   },
-  cloneLesson(id) {
-    return apiClient.post(`/lessons/${id}/clone/`)
+  /**
+   * Клонує урок у новий DRAFT.
+   * @param {number} id - id вихідного уроку
+   * @param {object} overrides - опціональні перевизначення:
+   *   student_id {number} — інший учень (якщо не передати — той самий)
+   *   start      {string} — ISO 8601 datetime нового уроку
+   *   end        {string} — ISO 8601 datetime завершення
+   */
+  cloneLesson(id, overrides = {}) {
+    return apiClient.post(`/lessons/${id}/clone/`, overrides)
   },
   createInvite(id) {
     return apiClient.post(`/lessons/${id}/invite/`)

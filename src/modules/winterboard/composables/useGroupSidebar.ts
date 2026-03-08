@@ -1,5 +1,5 @@
 import { ref, computed, watch, onUnmounted, type Ref } from 'vue'
-import { learningGroupApi } from '@/modules/learning-content/api/learningGroupApi'
+import { groupApi as learningGroupApi } from '@/modules/groups/api/groupApi'
 import { learningContentApi } from '@/modules/learning-content/api/learningContentApi'
 import type { AllowedContentItem, AssetCategoryGroup } from '../types/sidebar'
 import { SIDEBAR_DRAG_MIME } from '../types/boardDrop'
@@ -61,8 +61,8 @@ export function useGroupSidebar(groupId: Ref<string | null>) {
     for (const item of pending) {
       try {
         const res = await learningContentApi.getItemDetail(item.content_item_id)
-        const detail = (res as Record<string, unknown>).data
-          ? ((res as Record<string, unknown>).data as Record<string, unknown>)
+        const detail = (res as unknown as Record<string, unknown>).data
+          ? ((res as unknown as Record<string, unknown>).data as Record<string, unknown>)
           : (res as unknown as Record<string, unknown>)
 
         const newStatus = (detail.processing_status as string) ?? item.processing_status

@@ -75,6 +75,38 @@ export const learningContentApi = {
     return apiClient.get(`${BASE}/lessons/${lessonId}/participants/`)
   },
 
+  /** Phase 2: Start lesson — creates frozen snapshot of materials + participants */
+  async startLesson(lessonId: number): Promise<{ status: string }> {
+    return apiClient.post(`${BASE}/lessons/${lessonId}/start/`)
+  },
+
+  /** Phase 2: Complete lesson — transitions to COMPLETED */
+  async completeLesson(lessonId: number): Promise<{ status: string }> {
+    return apiClient.post(`${BASE}/lessons/${lessonId}/complete/`)
+  },
+
+  /** Phase 2: Live-append content to IN_PROGRESS lesson (paste/drop during lesson) */
+  async addAllowedContent(lessonId: number, contentItemId: number): Promise<{ id: number; content_item_id: number; created: boolean }> {
+    return apiClient.post(`${BASE}/lessons/${lessonId}/allowed-content/add/`, {
+      content_item_id: contentItemId,
+    })
+  },
+
+  /** Phase 2: Get lesson history for tutor */
+  async getLessonHistory(params?: { group_id?: string; student_id?: number }): Promise<unknown[]> {
+    return apiClient.get(`${BASE}/lessons/`, { params })
+  },
+
+  /** Phase 1c: Soft-delete content item owned by current user */
+  async deleteContentItem(itemId: number): Promise<void> {
+    return apiClient.delete(`${BASE}/items/${itemId}/delete/`)
+  },
+
+  /** Phase 1c: Update content item metadata (title, tags, difficulty) */
+  async updateContentItem(itemId: number, data: Partial<{ title: string; tags: string[]; difficulty: number }>): Promise<unknown> {
+    return apiClient.patch(`${BASE}/items/${itemId}/`, data)
+  },
+
   async resolveDropMode(payload: {
     content_item_id: number
     extra?: { page_number?: number; slide_index?: number }
