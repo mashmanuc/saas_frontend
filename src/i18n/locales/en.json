@@ -946,7 +946,7 @@
     "billing": "Білінг",
     "booking": "Бронювання",
     "notifications": "Сповіщення",
-    "knowledge": "Knowledge Library"
+    "knowledge": "Lessons"
   },
   "marketplace": {
     "title": "Find a Tutor",
@@ -1872,7 +1872,7 @@
       "cta": {
         "createLesson": "Create lesson",
         "openChat": "Open chat",
-        "chatWithStudent": "Чат зі студентом"
+        "chatWithStudent": "Chat with student"
       },
       "bulk": {
         "selectHint": "Select students to perform bulk actions.",
@@ -6255,7 +6255,13 @@
       "wrongType": "Only PNG, JPEG, WebP, SVG supported",
       "cancel": "Cancel",
       "emptyFile": "File is empty",
-      "quotaExceeded": "Storage quota exceeded"
+      "quotaExceeded": "Storage quota exceeded",
+      "saved": "Saved",
+      "savedToLibrary": "Saved to library",
+      "uploadFailed": "Upload failed — image saved to board only",
+      "invalidFormat": "Unsupported file format",
+      "fileTooLarge": "File too large (max 10 MB)",
+      "networkError": "Network error — please try again"
     },
     "gestures": {
       "pinchToZoom": "Pinch to zoom",
@@ -6533,7 +6539,9 @@
       "menu": "Menu",
       "home": "Home",
       "sidebarCollapse": "Collapse panel (double-click)",
-      "sidebarExpand": "Expand panel (double-click)"
+      "sidebarExpand": "Expand panel (double-click)",
+      "hidePagePanel": "Hide page panel",
+      "showPagePanel": "Show page panel"
     },
     "sizePresets": {
       "thin": "Thin",
@@ -6547,6 +6555,16 @@
     },
     "emptyCanvas": {
       "hint": "Start drawing here"
+    },
+    "grid": {
+      "toggleGrid": "Board grid",
+      "backgroundGrid": "Board background",
+      "none": "No grid",
+      "smallGrid": "Small grid",
+      "largeGrid": "Large grid",
+      "dots": "Dots",
+      "ruled": "Ruled lines",
+      "coordinate": "Coordinate plane"
     },
     "emptySession": {
       "title": "No boards yet",
@@ -6586,6 +6604,17 @@
       "filters": "Filters",
       "difficulty": "Difficulty",
       "tags": "Tags"
+    },
+    "lesson": {
+      "start": "Start Lesson",
+      "complete": "Complete Lesson",
+      "started": "Lesson started",
+      "completed": "Lesson completed",
+      "materialsBanner": "Lesson materials",
+      "noMaterials": "No materials added",
+      "statusDraft": "Draft",
+      "statusInProgress": "In Progress",
+      "statusCompleted": "Completed"
     },
     "item": {
       "problem": "Problem",
@@ -6708,6 +6737,26 @@
       "ownerOnly": "Available to author only",
       "restricted": "Restricted access",
       "previewOnly": "Preview only"
+    },
+    "actions": {
+      "delete": "Delete",
+      "deleteItem": "Delete {title}",
+      "confirmDelete": "Confirm deletion",
+      "confirmDeleteMessage": "Delete \"{title}\"? Material will be moved to archive.",
+      "confirmDeleteBtn": "Delete",
+      "cancel": "Cancel",
+      "deleting": "Deleting..."
+    },
+    "upload": {
+      "dropHere": "Drop file here to upload",
+      "uploading": "Uploading...",
+      "uploadSuccess": "File uploaded",
+      "uploadError": "Upload failed"
+    },
+    "quota": {
+      "storage": "Storage",
+      "used": "{used} of {total}",
+      "full": "Storage full"
     }
   },
   "template": {
@@ -6725,7 +6774,7 @@
     "deleteConfirm": "Delete template?"
   },
   "knowledge": {
-    "title": "Knowledge Library",
+    "title": "Lessons",
     "tabLessons": "Lessons",
     "tabTemplates": "Templates",
     "tabStarterPacks": "Starter Packs",
@@ -6753,9 +6802,17 @@
     "noStudents": "You have no students yet",
     "removeMaterial": "Remove",
     "newBoard": "New board",
-    "tutorLibrary": "Tutor Library",
+    "tutorLibrary": "My Materials",
     "myClasses": "MY CLASSES",
     "noClasses": "No classes yet",
-    "sandbox": "Sandbox"
+    "sandbox": "Sandbox",
+    "emptyState": {
+      "title": "Select a student or class",
+      "hint": "to see materials, lessons and open the board",
+      "step1": "Upload files to library (button above)",
+      "step2": "Select a student or class on the left",
+      "step3": "Add needed files to class via «+»",
+      "step4": "Open the board — files are already there"
+    }
   }
 }

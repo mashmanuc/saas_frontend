@@ -172,6 +172,15 @@
           <WBCanvasLoader v-if="isLoading" />
         </Transition>
 
+        <!-- Grid overlay (renders behind strokes) -->
+        <WBGridOverlay
+          v-show="!isLoading"
+          :grid-type="gridOverlay.gridType.value"
+          :width="store.pageWidth"
+          :height="store.pageHeight"
+          :zoom="store.zoom"
+        />
+
         <WBCanvas
           v-show="!isLoading"
           ref="canvasRef"
@@ -256,12 +265,19 @@
     <footer class="wb-solo-room__footer">
       <!-- Page navigation -->
       <div class="wb-page-nav">
+        <!-- Grid toggle button -->
+        <WBGridButton
+          :model-value="gridOverlay.gridType.value"
+          :is-grid-active="gridOverlay.isGridActive.value"
+          @update:model-value="gridOverlay.setGrid"
+        />
+        <div class="wb-page-nav__sep"></div>
         <!-- Toggle панелі мініатюр -->
         <button
           type="button"
           class="wb-page-btn wb-page-btn--panel"
           :class="{ 'wb-page-btn--panel-active': showPagePanel }"
-          :title="showPagePanel ? 'Сховати панель сторінок' : 'Показати панель сторінок'"
+          :title="showPagePanel ? t('winterboard.room.hidePagePanel') : t('winterboard.room.showPagePanel')"
           :aria-pressed="showPagePanel"
           @click="showPagePanel = !showPagePanel"
         >
@@ -361,7 +377,7 @@ import { useAnnouncer } from '../composables/useAnnouncer'
 import { useContentDrop } from '../composables/useContentDrop'
 import { winterboardApi } from '../api/winterboardApi'
 import { useAuthStore } from '@/modules/auth/store/authStore'
-import { learningGroupApi } from '@/modules/learning-content/api/learningGroupApi'
+import { groupApi as learningGroupApi } from '@/modules/groups/api/groupApi'
 import type { WBStroke, WBAsset, WBToolType } from '../types/winterboard'
 
 // Components
@@ -378,6 +394,9 @@ import WBDragGhost from '../components/sidebar/WBDragGhost.vue'
 import type { AllowedContentItem } from '../types/sidebar'
 import BoardTemplateSelector from '../components/templates/BoardTemplateSelector.vue'
 import { BOARD_TEMPLATES } from '../data/boardTemplates'
+import WBGridOverlay from '../components/canvas/WBGridOverlay.vue'
+import WBGridButton from '../components/canvas/WBGridButton.vue'
+import { useGridOverlay } from '../composables/useGridOverlay'
 
 // ─── Store & Composables ────────────────────────────────────────────────────
 
@@ -395,6 +414,9 @@ const sessionId = ref<string | null>(null)
 
 // Autosave (AGENT-C: C2.1)
 const autosave = useAutosave(sessionId)
+
+// Grid overlay (background grid for the canvas)
+const gridOverlay = useGridOverlay(sessionId.value ?? 'default')
 
 // Presence / remote cursors (A3.2)
 const authStore = useAuthStore()
@@ -940,7 +962,18 @@ onMounted(async () => {
   // New session flow: /winterboard/new → create via API → redirect to /winterboard/:id
   if (!id || route.name === 'winterboard-new') {
     try {
-      const created = await winterboardApi.createSession({ name: t('winterboard.room.untitled') })
+      // Якщо тьютор відкрив дошку для конкретного учня — використовуємо ім'я учня як назву сесії
+      // щоб дошка була впізнаваною у списку "Мої дошки"
+      // Якщо тьютор запустив урок з плану → використовуємо назву плану
+      // Якщо тьютор відкрив дошку для учня → використовуємо ім'я учня
+      const lessonNameParam = typeof route.query.lessonName === 'string' ? route.query.lessonName.trim() : null
+      const studentNameParam = typeof route.query.studentName === 'string' ? route.query.studentName.trim() : null
+      const initialName = lessonNameParam
+        ? lessonNameParam
+        : studentNameParam
+          ? `Заняття — ${studentNameParam}`
+          : t('winterboard.room.untitled')
+      const created = await winterboardApi.createSession({ name: initialName })
       // Hydrate store immediately with created session data to avoid re-fetch flicker
       store.workspaceId = created.id
       sessionId.value = created.id
@@ -962,7 +995,7 @@ onMounted(async () => {
       }
       sessionName.value = created.name || t('winterboard.room.untitled')
       isLoading.value = false
-      showTemplateSelector.value = true
+      // Template selector modal removed — grid overlay button replaces it
       await connectPresenceSafe(created.id)
       // Auto-detect group for sidebar before redirect (route.query may have no groupId)
       if (!route.query.groupId) await detectTutorGroup()

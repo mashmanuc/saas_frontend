@@ -250,6 +250,15 @@
           <WBCanvasLoader v-if="isLoading" />
         </Transition>
 
+        <!-- Grid overlay (renders behind strokes) -->
+        <WBGridOverlay
+          v-show="!isLoading"
+          :grid-type="gridOverlay.gridType.value"
+          :width="store.pageWidth"
+          :height="store.pageHeight"
+          :zoom="store.zoom"
+        />
+
         <WBCanvas
           v-show="!isLoading"
           ref="canvasRef"
@@ -292,6 +301,13 @@
     <!-- ── Footer: Page nav + Zoom ─────────────────────────────────────── -->
     <footer class="wb-classroom-room__footer">
       <div class="wb-page-nav">
+        <!-- Grid toggle button -->
+        <WBGridButton
+          :model-value="gridOverlay.gridType.value"
+          :is-grid-active="gridOverlay.isGridActive.value"
+          @update:model-value="gridOverlay.setGrid"
+        />
+        <div class="wb-page-nav__sep"></div>
         <button
           type="button"
           class="wb-page-btn"
@@ -366,6 +382,9 @@ import WBToolbar from '../components/toolbar/WBToolbar.vue'
 import WBRemoteCursors from '../components/cursors/WBRemoteCursors.vue'
 import WBCanvasLoader from '../components/loading/WBCanvasLoader.vue'
 import WBUploadIndicator from '../components/status/WBUploadIndicator.vue'
+import WBGridOverlay from '../components/canvas/WBGridOverlay.vue'
+import WBGridButton from '../components/canvas/WBGridButton.vue'
+import { useGridOverlay } from '../composables/useGridOverlay'
 
 // Learning Content integration
 import ContentPanel from '@/modules/learning-content/components/ContentPanel.vue'
@@ -436,6 +455,9 @@ async function fetchLessonStatus(): Promise<void> {
 }
 
 const autosave = useAutosave(resolvedSessionId)
+
+// Grid overlay (background grid for the canvas)
+const gridOverlay = useGridOverlay(resolvedSessionId.value ?? 'default')
 
 const classroomRole = useClassroomRole(resolvedSessionId)
 const classroomSession = useClassroomSession()

@@ -1099,7 +1099,7 @@
     "billing": "Білінг",
     "booking": "Бронювання",
     "notifications": "Сповіщення",
-    "knowledge": "База знань"
+    "knowledge": "Уроки"
   },
   "loader": {
     "loading": "Завантаження..."
@@ -6447,7 +6447,9 @@
       "menu": "Меню",
       "home": "На головну",
       "sidebarCollapse": "Згорнути панель (подвійний клік)",
-      "sidebarExpand": "Розгорнути панель (подвійний клік)"
+      "sidebarExpand": "Розгорнути панель (подвійний клік)",
+      "hidePagePanel": "Сховати панель сторінок",
+      "showPagePanel": "Показати панель сторінок"
     },
     "sizePresets": {
       "thin": "Тонкий",
@@ -6461,6 +6463,16 @@
     },
     "emptyCanvas": {
       "hint": "Почніть малювати тут"
+    },
+    "grid": {
+      "toggleGrid": "Сітка на дошці",
+      "backgroundGrid": "Фон дошки",
+      "none": "Без сітки",
+      "smallGrid": "Дрібна клітинка",
+      "largeGrid": "Велика клітинка",
+      "dots": "Крапки",
+      "ruled": "Лінійки",
+      "coordinate": "Координатна площина"
     },
     "emptySession": {
       "title": "Ще немає дошок",
@@ -6595,7 +6607,13 @@
       "wrongType": "Підтримуються лише PNG, JPEG, WebP, SVG",
       "cancel": "Скасувати",
       "emptyFile": "Файл порожній",
-      "quotaExceeded": "Квоту сховища вичерпано"
+      "quotaExceeded": "Квоту сховища вичерпано",
+      "saved": "Збережено",
+      "savedToLibrary": "Збережено в бібліотеку",
+      "uploadFailed": "Помилка завантаження — зображення збережено тільки на дошці",
+      "invalidFormat": "Непідтримуваний формат файлу",
+      "fileTooLarge": "Файл занадто великий (макс. 10 МБ)",
+      "networkError": "Помилка мережі — спробуйте ще раз"
     },
     "time": {
       "justNow": "щойно",
@@ -6671,6 +6689,17 @@
       "boards": "Мої дошки",
       "dashboard": "Панель керування",
       "settings": "Налаштування"
+    },
+    "lesson": {
+      "start": "Почати урок",
+      "complete": "Завершити урок",
+      "started": "Урок розпочато",
+      "completed": "Урок завершено",
+      "materialsBanner": "Матеріали уроку",
+      "noMaterials": "Матеріали не додані",
+      "statusDraft": "Чернетка",
+      "statusInProgress": "Урок йде",
+      "statusCompleted": "Завершено"
     }
   },
   "storage": {
@@ -6778,6 +6807,26 @@
       "ownerOnly": "Доступно тільки автору",
       "restricted": "Обмежений доступ",
       "previewOnly": "Тільки перегляд"
+    },
+    "actions": {
+      "delete": "Видалити",
+      "deleteItem": "Видалити {title}",
+      "confirmDelete": "Підтвердити видалення",
+      "confirmDeleteMessage": "Видалити \"{title}\"? Матеріал буде переміщено в архів.",
+      "confirmDeleteBtn": "Видалити",
+      "cancel": "Скасувати",
+      "deleting": "Видалення..."
+    },
+    "upload": {
+      "dropHere": "Перетягніть файл сюди для завантаження",
+      "uploading": "Завантаження...",
+      "uploadSuccess": "Файл завантажено",
+      "uploadError": "Помилка завантаження"
+    },
+    "quota": {
+      "storage": "Сховище",
+      "used": "{used} з {total}",
+      "full": "Сховище заповнено"
     }
   },
   "template": {
@@ -6795,7 +6844,7 @@
     "deleteConfirm": "Видалити шаблон?"
   },
   "knowledge": {
-    "title": "База знань",
+    "title": "Уроки",
     "tabLessons": "Уроки",
     "tabTemplates": "Шаблони",
     "tabStarterPacks": "Starter Packs",
@@ -6823,9 +6872,17 @@
     "noStudents": "У вас ще немає учнів",
     "removeMaterial": "Видалити",
     "newBoard": "Нова дошка",
-    "tutorLibrary": "Бібліотека репетитора",
+    "tutorLibrary": "Мої матеріали",
     "myClasses": "МОЇ КЛАСИ",
     "noClasses": "Класів ще немає",
-    "sandbox": "Пісочниця"
+    "sandbox": "Пісочниця",
+    "emptyState": {
+      "title": "Виберіть учня або клас",
+      "hint": "щоб побачити матеріали, уроки та відкрити дошку",
+      "step1": "Завантажте файли у бібліотеку (кнопка вище)",
+      "step2": "Виберіть учня або клас зліва",
+      "step3": "Додайте потрібні файли до класу через «+»",
+      "step4": "Відкрийте дошку — файли вже там"
+    }
   }
 }
