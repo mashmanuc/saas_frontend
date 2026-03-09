@@ -165,7 +165,7 @@ async function handleNotificationClick(notification: InAppNotification) {
   } else if (notification.data?.booking_id) {
     router.push('/bookings')
   } else if (notification.data?.billing) {
-    router.push('/billing')
+    router.push('/tutor/billing')
   }
   // Якщо немає посилання — просто закриваємо dropdown (вже зроблено вище)
 }

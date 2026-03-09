@@ -36,7 +36,7 @@ function handleItemAction(item: any) {
     'set-availability': '/tutor/availability',
     'verify-identity': '/verification',
     'first-booking': '/tutors',
-    'first-lesson': '/calendar',
+    'first-lesson': '/student/schedule',
     'add-payment': '/settings/payments',
   }
 

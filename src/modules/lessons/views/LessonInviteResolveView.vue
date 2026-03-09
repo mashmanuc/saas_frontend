@@ -127,7 +127,7 @@ async function resolve() {
 }
 
 function goToLessons() {
-  router.push('/calendar').catch(() => {})
+  router.push('/student/schedule').catch(() => {})
 }
 
 onMounted(() => {

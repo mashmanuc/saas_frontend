@@ -12,8 +12,12 @@ import ResetPasswordView from '../modules/auth/views/ResetPasswordView.vue'
 import InviteValidationView from '../modules/auth/views/InviteValidationView.vue'
 import InviteAcceptView from '../modules/auth/views/InviteAcceptView.vue'
 
-import DashboardTutor from '../modules/dashboard/views/DashboardTutor.vue'
-import DashboardStudent from '../modules/dashboard/views/DashboardStudent.vue'
+// R2: DashboardTutor replaced by TutorHome (new dashboard layout)
+// Legacy DashboardTutor.vue preserved in codebase but no longer imported in router.
+const TutorHome = () => import('../modules/dashboard/views/TutorHome.vue')
+// R2: DashboardStudent replaced by StudentHome (new dashboard layout)
+// Legacy DashboardStudent.vue preserved in codebase but no longer imported in router.
+const StudentHome = () => import('../modules/dashboard/views/StudentHome.vue')
 import ClassroomList from '../modules/classrooms/views/ClassroomList.vue'
 import ClassroomView from '../modules/classrooms/views/ClassroomView.vue'
 import ClassroomListView from '../modules/classrooms/views/ClassroomListView.vue'
@@ -160,7 +164,13 @@ const routes = [
       {
         path: 'tutor',
         name: 'tutor-dashboard',
-        component: DashboardTutor,
+        component: TutorHome,
+        meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR] },
+      },
+      {
+        path: 'tutor/students',
+        name: 'tutor-students',
+        component: () => import('../modules/dashboard/views/TutorStudents.vue'),
         meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR] },
       },
       {
@@ -190,7 +200,7 @@ const routes = [
       {
         path: 'student',
         name: 'student-dashboard',
-        component: DashboardStudent,
+        component: StudentHome,
         meta: { roles: [USER_ROLES.STUDENT] },
       },
       {
@@ -237,7 +247,7 @@ const routes = [
       },
       {
         path: 'lessons',
-        redirect: '/calendar',
+        redirect: '/student/schedule',
       },
       {
         path: 'lessons/:id',
@@ -302,14 +312,10 @@ const routes = [
         component: SettingsSecurityView,
         meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
       },
-      // Tutor Profile routes - REDIRECTED TO MARKETPLACE
-      {
-        path: 'tutor/profile',
-        redirect: '/marketplace/my-profile',
-      },
+      // R4: tutor/profile/edit legacy redirect
       {
         path: 'tutor/profile/edit',
-        redirect: '/marketplace/my-profile',
+        redirect: '/tutor/profile',
       },
       // Student Profile routes - TEMPORARILY DISABLED (using _NEW version)
       // {
@@ -359,8 +365,8 @@ const routes = [
         meta: { roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN] },
       },
       {
-        path: 'marketplace/my-profile',
-        name: 'marketplace-my-profile',
+        path: 'tutor/profile',
+        name: 'tutor-profile',
         component: MarketplaceMyProfileView,
         meta: {
           requiresAuth: true,
@@ -377,7 +383,7 @@ const routes = [
             try {
               await auth.reloadUser()
             } catch (error) {
-              console.warn('[router] Failed to load user for marketplace/my-profile', error)
+              console.warn('[router] Failed to load user for tutor/profile', error)
             }
           }
 
@@ -387,6 +393,8 @@ const routes = [
           return next()
         },
       },
+      // R4: Legacy redirect
+      { path: 'marketplace/my-profile', redirect: '/tutor/profile' },
       {
         path: 'booking/requests',
         name: 'booking-requests',
@@ -442,35 +450,45 @@ const routes = [
       },
       // v0.25-FIX: Booking routes
       {
-        path: 'bookings',
-        name: 'bookings',
+        path: 'tutor/bookings',
+        name: 'tutor-bookings',
         component: () => import('../modules/booking/views/MyLessonsView.vue'),
         meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
       },
+      // R4: Legacy redirect
+      { path: 'bookings', redirect: '/tutor/bookings' },
       {
-        path: 'bookings/:id',
-        name: 'booking-detail',
+        path: 'tutor/bookings/:id',
+        name: 'tutor-booking-detail',
         component: () => import('../modules/booking/views/BookingDetailView.vue'),
         meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
       },
+      // R4: Legacy redirect
+      { path: 'bookings/:id', redirect: to => `/tutor/bookings/${to.params.id}` },
       {
-        path: 'booking/tutor',
+        path: 'tutor/schedule',
         name: 'tutor-calendar',
         component: () => import('../modules/booking/views/TutorCalendarView.vue'),
         meta: { roles: [USER_ROLES.TUTOR] },
       },
+      // R4: Legacy redirect
+      { path: 'booking/tutor', redirect: '/tutor/schedule' },
       {
-        path: 'calendar',
-        name: 'calendar',
+        path: 'student/schedule',
+        name: 'student-calendar',
         component: () => import('../modules/booking/views/StudentCalendarView.vue'),
         meta: { roles: [USER_ROLES.STUDENT] },
       },
+      // R4: Legacy redirect
+      { path: 'calendar', redirect: '/student/schedule' },
       {
-        path: 'booking/availability',
-        name: 'booking-availability',
+        path: 'tutor/availability',
+        name: 'tutor-availability',
         component: TutorAvailabilityView,
         meta: { roles: [USER_ROLES.TUTOR] },
       },
+      // R4: Legacy redirect
+      { path: 'booking/availability', redirect: '/tutor/availability' },
       {
         path: 'tutor/lesson-links',
         name: 'tutor-lesson-links',
@@ -498,17 +516,20 @@ const routes = [
       },
       // v0.70: Chat routes (Smart Polling)
       {
-        path: 'chat',
-        name: 'chat-list',
+        path: 'tutor/messages',
+        name: 'tutor-messages',
         component: () => import('../modules/negotiation/views/ChatListView.vue'),
         meta: { roles: [USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
       },
       {
-        path: 'chat/:threadId',
-        name: 'chat-thread',
+        path: 'tutor/messages/:threadId',
+        name: 'tutor-message-thread',
         component: () => import('../modules/negotiation/views/ChatView.vue'),
         meta: { roles: [USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
       },
+      // R4: Legacy redirects
+      { path: 'chat', redirect: '/tutor/messages' },
+      { path: 'chat/:threadId', redirect: to => `/tutor/messages/${to.params.threadId}` },
       // [LEGACY→WB] Old classroom routes redirected to winterboard (classroom module removed)
       { path: 'classroom/board', redirect: { name: 'winterboard-sessions' } },
       { path: 'classroom/solo', redirect: { name: 'winterboard-sessions' } },
@@ -553,7 +574,7 @@ const routes = [
       },
       // Knowledge Library (Phase 4 Day 3)
       {
-        path: 'dashboard/knowledge',
+        path: 'tutor/knowledge',
         name: 'knowledge-library',
         component: () => import('../modules/knowledge/KnowledgeLibrary.vue'),
         meta: {
@@ -561,6 +582,8 @@ const routes = [
           roles: [USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN],
         },
       },
+      // R4: Legacy redirect
+      { path: 'dashboard/knowledge', redirect: '/tutor/knowledge' },
       // v0.71: Chat with tutor route
       {
         path: 'chat/tutor/:tutorId',
@@ -583,16 +606,18 @@ const routes = [
       },
       // v0.72: Billing routes
       {
-        path: 'billing',
-        name: 'billing',
+        path: 'tutor/billing',
+        name: 'tutor-billing',
         component: () => import('../modules/billing/views/BillingView.vue'),
         meta: { 
           requiresAuth: true,
           roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR]
         },
       },
+      // R4: Legacy redirect
+      { path: 'billing', redirect: '/tutor/billing' },
       {
-        path: 'billing/plans',
+        path: 'tutor/billing/plans',
         name: 'billing-plans',
         component: () => import('../modules/payments/views/PlansView.vue'),
         meta: { 
@@ -600,8 +625,10 @@ const routes = [
           roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR]
         },
       },
+      // R4: Legacy redirect
+      { path: 'billing/plans', redirect: '/tutor/billing/plans' },
       {
-        path: 'billing/success',
+        path: 'tutor/billing/success',
         name: 'billing-success',
         component: () => import('../modules/billing/views/BillingSuccessView.vue'),
         meta: { 
@@ -609,8 +636,10 @@ const routes = [
           roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN]
         },
       },
+      // R4: Legacy redirect
+      { path: 'billing/success', redirect: '/tutor/billing/success' },
       {
-        path: 'billing/cancel',
+        path: 'tutor/billing/cancel',
         name: 'billing-cancel',
         component: () => import('../modules/billing/views/BillingCancelView.vue'),
         meta: { 
@@ -618,18 +647,22 @@ const routes = [
           roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN]
         },
       },
+      // R4: Legacy redirect
+      { path: 'billing/cancel', redirect: '/tutor/billing/cancel' },
       // DOMAIN-07: Contacts module routes
       {
-        path: 'contacts',
-        name: 'contacts-dashboard',
+        path: 'tutor/contacts',
+        name: 'tutor-contacts',
         component: () => import('../modules/contacts/views/ContactsView.vue'),
         meta: { 
           requiresAuth: true,
           roles: [USER_ROLES.TUTOR]
         },
       },
+      // R4: Legacy redirect
+      { path: 'contacts', redirect: '/tutor/contacts' },
       {
-        path: 'contacts/purchase',
+        path: 'tutor/contacts/purchase',
         name: 'contacts-purchase',
         component: () => import('../modules/contacts/views/ContactsView.vue'),
         meta: { 
@@ -642,8 +675,10 @@ const routes = [
           next()
         }
       },
+      // R4: Legacy redirect
+      { path: 'contacts/purchase', redirect: '/tutor/contacts/purchase' },
       {
-        path: 'contacts/purchase/success',
+        path: 'tutor/contacts/purchase/success',
         name: 'contacts-purchase-success',
         component: () => import('../modules/contacts/views/ContactsView.vue'),
         meta: { 
@@ -655,8 +690,10 @@ const routes = [
           next()
         }
       },
+      // R4: Legacy redirect
+      { path: 'contacts/purchase/success', redirect: '/tutor/contacts/purchase/success' },
       {
-        path: 'contacts/purchase/cancel',
+        path: 'tutor/contacts/purchase/cancel',
         name: 'contacts-purchase-cancel',
         component: () => import('../modules/contacts/views/ContactsView.vue'),
         meta: { 
@@ -668,6 +705,8 @@ const routes = [
           next()
         }
       },
+      // R4: Legacy redirect
+      { path: 'contacts/purchase/cancel', redirect: '/tutor/contacts/purchase/cancel' },
       // DOMAIN-06: Entitlements module routes
       {
         path: 'plan-features',

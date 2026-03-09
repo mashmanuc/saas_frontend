@@ -83,7 +83,7 @@ async function handleUpgrade(planCode: string) {
 }
 
 function goToBilling() {
-  router.push('/billing')
+  router.push('/tutor/billing')
 }
 </script>
 

@@ -59,7 +59,7 @@ const lockedMessage = computed(() => {
 })
 
 function onUpgrade() {
-  router.push('/billing')
+  router.push('/tutor/billing')
 }
 </script>
 

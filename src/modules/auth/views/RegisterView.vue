@@ -189,7 +189,7 @@ onMounted(() => {
 async function onSubmit() {
   try {
     const origin = getCanonicalOrigin()
-    const redirect = form.account_type === 'tutor' ? '/marketplace/my-profile' : ''
+    const redirect = form.account_type === 'tutor' ? '/tutor/profile' : ''
     const redirectQuery = redirect ? `&redirect=${encodeURIComponent(redirect)}` : ''
     const verify_url = origin ? `${origin}/auth/verify-email?token={token}${redirectQuery}` : undefined
 

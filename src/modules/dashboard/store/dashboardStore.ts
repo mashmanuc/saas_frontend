@@ -9,6 +9,7 @@ import {
   type AssignedTutor,
   type StudentStats,
   type TutorStats,
+  type TutorDashboardSnapshot,
 } from '../api/dashboard'
 
 export const useDashboardStore = defineStore('dashboard', () => {
@@ -29,6 +30,10 @@ export const useDashboardStore = defineStore('dashboard', () => {
   const todaysLessons = ref<ActiveLesson[]>([])
   const pendingBookingsCount = ref(0)
   const tutorStats = ref<TutorStats | null>(null)
+
+  // Snapshot state (R2: single-call dashboard pattern)
+  const snapshot = ref<TutorDashboardSnapshot | null>(null)
+  const isLoadingSnapshot = ref(false)
 
   // Legacy state (for backward compatibility)
   const tutorStudents = ref<unknown[]>([])
@@ -116,6 +121,35 @@ export const useDashboardStore = defineStore('dashboard', () => {
     }
   }
 
+  /**
+   * Fetch tutor dashboard via single snapshot endpoint.
+   * Falls back to individual calls if /snapshot/ returns 404.
+   * Syncs legacy state fields for backward compatibility.
+   * Ref: UX_PRODUCT_VISION.md §R2.4
+   */
+  async function fetchTutorSnapshot() {
+    if (isLoadingSnapshot.value) return
+    isLoadingSnapshot.value = true
+    error.value = null
+
+    try {
+      const data = await dashboardApi.getTutorSnapshot()
+      snapshot.value = data
+      // Sync legacy state so existing components still work
+      todaysLessons.value = data.todays_lessons
+      pendingBookingsCount.value = data.pending_inquiries_count
+      if (data.stats) {
+        tutorStats.value = data.stats
+      }
+    } catch (err: unknown) {
+      const e = err as Error
+      error.value = e.message || 'Failed to load dashboard'
+      console.error('[Dashboard] Failed to fetch tutor snapshot:', err)
+    } finally {
+      isLoadingSnapshot.value = false
+    }
+  }
+
   function reset() {
     upcomingLessons.value = []
     assignedTutor.value = null
@@ -126,6 +160,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
     tutorStats.value = null
     tutorStudents.value = []
     nextLessonAt.value = null
+    snapshot.value = null
     error.value = null
   }
 
@@ -151,12 +186,17 @@ export const useDashboardStore = defineStore('dashboard', () => {
     hasActiveTutors,
     nextLesson,
 
+    // Snapshot (R2)
+    snapshot,
+    isLoadingSnapshot,
+
     // Actions
     fetchStudentDashboard,
     fetchStudentActiveLessons,
     fetchStudentTeacher,
     fetchTutorDashboard,
     fetchTutorStats,
+    fetchTutorSnapshot,
     reset,
   }
 })

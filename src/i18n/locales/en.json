@@ -265,7 +265,14 @@
     "chat": "Чат",
     "contacts": "Контакти",
     "billing": "Оплата",
-    "learningContent": "Learning Materials"
+    "learningContent": "Learning Materials",
+    "avatar": {
+      "ariaLabel": "User menu",
+      "menuLabel": "Settings and profile",
+      "settings": "Settings",
+      "theme": "Theme",
+      "language": "Language"
+    }
   },
   "notifications": {
     "title": "Notifications",
@@ -947,6 +954,45 @@
     "booking": "Бронювання",
     "notifications": "Сповіщення",
     "knowledge": "Lessons"
+  },
+  "sidebar": {
+    "section": {
+      "main": "Main",
+      "teaching": "Teaching",
+      "learning": "Learning",
+      "students": "Students",
+      "tutors": "Tutors",
+      "business": "Business",
+      "system": "System"
+    },
+    "item": {
+      "dashboard": "Home",
+      "schedule": "Schedule",
+      "mySchedule": "My Schedule",
+      "knowledge": "Knowledge Base",
+      "winterboard": "Whiteboard",
+      "myStudents": "My Students",
+      "messages": "Messages",
+      "inquiries": "Inquiries",
+      "myInquiries": "My Inquiries",
+      "tutorProfile": "My Profile",
+      "billing": "Billing",
+      "settings": "Settings",
+      "notifications": "Notifications",
+      "findTutor": "Find Tutor",
+      "staffPanel": "Staff Panel",
+      "classrooms": "Classrooms",
+      "profile": "Profile",
+      "security": "Security",
+      "devPlayground": "Dev Playground"
+    },
+    "collapse": "Collapse menu",
+    "expand": "Expand menu",
+    "ariaLabel": "Main navigation",
+    "closeMobile": "Close menu",
+    "badge": {
+      "ariaLabel": "{count} new"
+    }
   },
   "marketplace": {
     "title": "Find a Tutor",
@@ -1888,12 +1934,67 @@
         "suffixOne": "запит",
         "suffix": "запитів",
         "expires": "Оновлення {time}"
+      },
+      "emptyState": {
+        "title": "Start your tutor journey",
+        "description": "Complete your profile and open availability — students are waiting!",
+        "cta": "Complete profile"
       }
     },
     "student": {
       "cta": {
         "chatWithTutor": "Написати репетитору"
+      },
+      "emptyState": {
+        "title": "Welcome!",
+        "description": "Find your first tutor and start learning",
+        "cta": "Find a tutor"
+      },
+      "quickActions": {
+        "findTutor": "Find tutor",
+        "mySchedule": "My schedule",
+        "messages": "Messages"
       }
+    },
+    "greeting": {
+      "morning": "Good morning",
+      "afternoon": "Good afternoon",
+      "evening": "Good evening"
+    },
+    "stats": {
+      "ariaLabel": "Today's metrics",
+      "lessonsToday": "Lessons today",
+      "activeStudents": "Active students",
+      "pendingInquiries": "New inquiries",
+      "balance": "Balance",
+      "upcomingLessons": "Upcoming lessons",
+      "activeTutors": "Active tutors",
+      "unreadMessages": "Unread"
+    },
+    "todaySchedule": {
+      "title": "Today's schedule",
+      "viewAll": "Full schedule",
+      "empty": "No lessons scheduled for today",
+      "openCalendar": "Open calendar"
+    },
+    "quickActions": {
+      "title": "Quick actions",
+      "createLesson": "Create lesson",
+      "openCalendar": "Calendar",
+      "openKnowledge": "Knowledge base",
+      "myStudents": "My Students"
+    },
+    "newInquiries": {
+      "title": "New inquiries",
+      "viewAll": "All inquiries",
+      "empty": "No new inquiries",
+      "accept": "Accept",
+      "decline": "Decline",
+      "wantsToLearn": "wants to learn"
+    },
+    "studentsPage": {
+      "title": "My Students",
+      "subtitle": "Manage your students, inquiries, and communication"
     }
   },
   "relations": {
@@ -4876,6 +4977,9 @@
     "manageBilling": "Manage Billing",
     "basicFeatures": "Basic features",
     "features": {
+      "BASIC_PROFILE": "Basic Tutor Profile",
+      "BASIC_CALENDAR": "Calendar and Booking",
+      "BASIC_CHAT": "Chat with Students",
       "CONTACT_UNLOCK_LIMITED": "Limited Contact Unlock",
       "CONTACT_UNLOCK": "Unlimited Contact Unlock",
       "UNLIMITED_INQUIRIES": "Unlimited Inquiries",
@@ -6600,10 +6704,7 @@
       "dashboard": "Dashboard",
       "settings": "Settings",
       "home": "Home",
-      "boards": "My Boards",
-      "filters": "Filters",
-      "difficulty": "Difficulty",
-      "tags": "Tags"
+      "boards": "My Boards"
     },
     "lesson": {
       "start": "Start Lesson",
@@ -6615,21 +6716,6 @@
       "statusDraft": "Draft",
       "statusInProgress": "In Progress",
       "statusCompleted": "Completed"
-    },
-    "item": {
-      "problem": "Problem",
-      "test": "Test",
-      "theory": "Theory",
-      "video": "Video",
-      "presentation": "Presentation",
-      "link": "Link"
-    },
-    "difficulty": {
-      "1": "Easy",
-      "2": "Below average",
-      "3": "Medium",
-      "4": "Above average",
-      "5": "Hard"
     }
   },
   "storage": {

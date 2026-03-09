@@ -107,7 +107,7 @@ async function resend() {
   loading.value = true
   try {
     const origin = getCanonicalOrigin()
-    const redirect = accountType.value === 'tutor' ? '/marketplace/my-profile' : ''
+    const redirect = accountType.value === 'tutor' ? '/tutor/profile' : ''
     const redirectQuery = redirect ? `&redirect=${encodeURIComponent(redirect)}` : ''
     const verify_url = origin ? `${origin}/auth/verify-email?token={token}${redirectQuery}` : undefined
 

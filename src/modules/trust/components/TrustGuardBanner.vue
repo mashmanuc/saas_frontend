@@ -99,7 +99,7 @@ const actions = computed(() => {
     actions.push({
       label: 'Поповнити баланс',
       variant: 'primary',
-      handler: () => router.push('/contacts')
+      handler: () => router.push('/tutor/contacts')
     })
   }
   

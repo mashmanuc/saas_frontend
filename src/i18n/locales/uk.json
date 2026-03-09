@@ -352,7 +352,14 @@
     "chat": "Чат",
     "contacts": "Контакти",
     "billing": "Оплата",
-    "learningContent": "Навчальні матеріали"
+    "learningContent": "Навчальні матеріали",
+    "avatar": {
+      "ariaLabel": "Меню користувача",
+      "menuLabel": "Налаштування та профіль",
+      "settings": "Налаштування",
+      "theme": "Тема",
+      "language": "Мова"
+    }
   },
   "notifications": {
     "title": "Сповіщення",
@@ -1100,6 +1107,45 @@
     "booking": "Бронювання",
     "notifications": "Сповіщення",
     "knowledge": "Уроки"
+  },
+  "sidebar": {
+    "section": {
+      "main": "Основне",
+      "teaching": "Навчання",
+      "learning": "Навчання",
+      "students": "Учні",
+      "tutors": "Тьютори",
+      "business": "Бізнес",
+      "system": "Система"
+    },
+    "item": {
+      "dashboard": "Головна",
+      "schedule": "Розклад",
+      "mySchedule": "Мій розклад",
+      "knowledge": "База знань",
+      "winterboard": "Дошка",
+      "myStudents": "Мої учні",
+      "messages": "Повідомлення",
+      "inquiries": "Запити",
+      "myInquiries": "Мої запити",
+      "tutorProfile": "Мій профіль",
+      "billing": "Фінанси",
+      "settings": "Налаштування",
+      "notifications": "Сповіщення",
+      "findTutor": "Знайти тьютора",
+      "staffPanel": "Панель Staff",
+      "classrooms": "Класи",
+      "profile": "Профіль",
+      "security": "Безпека",
+      "devPlayground": "Dev Playground"
+    },
+    "collapse": "Згорнути меню",
+    "expand": "Розгорнути меню",
+    "ariaLabel": "Головна навігація",
+    "closeMobile": "Закрити меню",
+    "badge": {
+      "ariaLabel": "{count} нових"
+    }
   },
   "loader": {
     "loading": "Завантаження..."
@@ -2723,12 +2769,67 @@
         "acceptSelected": "Прийняти вибраних",
         "archiveSelected": "Архівувати вибраних"
       },
-      "notifications": {}
+      "notifications": {},
+      "emptyState": {
+        "title": "Почніть свій шлях тьютора",
+        "description": "Заповніть профіль і відкрийте доступність — учні вже чекають!",
+        "cta": "Заповнити профіль"
+      }
     },
     "student": {
       "cta": {
         "chatWithTutor": "Написати репетитору"
+      },
+      "emptyState": {
+        "title": "Ласкаво просимо!",
+        "description": "Знайдіть свого першого тьютора і почніть навчання",
+        "cta": "Знайти тьютора"
+      },
+      "quickActions": {
+        "findTutor": "Знайти тьютора",
+        "mySchedule": "Мій розклад",
+        "messages": "Повідомлення"
       }
+    },
+    "greeting": {
+      "morning": "Доброго ранку",
+      "afternoon": "Добрий день",
+      "evening": "Добрий вечір"
+    },
+    "stats": {
+      "ariaLabel": "Показники за сьогодні",
+      "lessonsToday": "Уроків сьогодні",
+      "activeStudents": "Активних учнів",
+      "pendingInquiries": "Нових запитів",
+      "balance": "Баланс",
+      "upcomingLessons": "Майбутніх уроків",
+      "activeTutors": "Активних тьюторів",
+      "unreadMessages": "Непрочитаних"
+    },
+    "todaySchedule": {
+      "title": "Розклад на сьогодні",
+      "viewAll": "Весь розклад",
+      "empty": "На сьогодні уроків не заплановано",
+      "openCalendar": "Відкрити календар"
+    },
+    "quickActions": {
+      "title": "Швидкі дії",
+      "createLesson": "Створити урок",
+      "openCalendar": "Календар",
+      "openKnowledge": "База знань",
+      "myStudents": "Мої учні"
+    },
+    "newInquiries": {
+      "title": "Нові запити",
+      "viewAll": "Всі запити",
+      "empty": "Немає нових запитів",
+      "accept": "Прийняти",
+      "decline": "Відхилити",
+      "wantsToLearn": "хоче вивчати"
+    },
+    "studentsPage": {
+      "title": "Мої учні",
+      "subtitle": "Керуйте вашими учнями, запитами та комунікацією"
     }
   },
   "relations": {

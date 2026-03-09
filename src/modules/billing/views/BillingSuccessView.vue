@@ -169,7 +169,7 @@ async function handleRecovery() {
   await authStore.logout()
   router.push({ 
     name: 'login', 
-    query: { redirect: '/billing', message: 'session_expired' } 
+    query: { redirect: '/tutor/billing', message: 'session_expired' } 
   })
 }
 

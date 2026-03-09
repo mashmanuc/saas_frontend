@@ -206,7 +206,7 @@ async function handleSubmit() {
 }
 
 function handleUpgrade() {
-  router.push('/billing')
+  router.push('/tutor/billing')
   emit('close')
 }
 

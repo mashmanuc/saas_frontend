@@ -65,6 +65,20 @@ export interface TutorDashboardData {
   profile_status: string
 }
 
+/**
+ * Aggregated snapshot for tutor dashboard (single-call pattern).
+ * Ref: UX_PRODUCT_VISION.md §R2.4
+ * Extensible: нові поля додаються без зміни контракту.
+ */
+export interface TutorDashboardSnapshot {
+  greeting_name: string
+  todays_lessons: ActiveLesson[]
+  stats: TutorStats
+  pending_inquiries_count: number
+  unread_messages_count: number
+  profile_status: 'draft' | 'published' | 'suspended'
+}
+
 // API
 export const dashboardApi = {
   // Student endpoints
@@ -99,6 +113,37 @@ export const dashboardApi = {
 
   getTutorStats(): Promise<TutorStats> {
     return apiClient.get('/v1/dashboard/tutor/stats/')
+  },
+
+  /**
+   * Single snapshot endpoint for tutor dashboard.
+   * Falls back to individual calls if snapshot endpoint doesn't exist (404).
+   * Ref: UX_PRODUCT_VISION.md §R2.4
+   */
+  async getTutorSnapshot(): Promise<TutorDashboardSnapshot> {
+    try {
+      return await apiClient.get('/v1/dashboard/tutor/snapshot/')
+    } catch (err: unknown) {
+      // as any cast: apiClient errors have response property but TS doesn't know the shape
+      const httpErr = err as { response?: { status?: number } }
+      if (httpErr?.response?.status === 404) {
+        // Fallback: збираємо з окремих endpoints
+        const [dashboard, stats] = await Promise.all([
+          apiClient.get('/v1/dashboard/tutor/') as Promise<TutorDashboardData>,
+          (apiClient.get('/v1/dashboard/tutor/stats/') as Promise<TutorStats>).catch(() => null),
+        ])
+        return {
+          greeting_name: '',
+          todays_lessons: dashboard.todays_lessons || [],
+          stats: stats || { total_lessons: 0, total_students: 0, this_month_lessons: 0, pending_bookings: 0 },
+          pending_inquiries_count: dashboard.pending_bookings_count || 0,
+          unread_messages_count: 0,
+          // as cast: profile_status from TutorDashboardData is string, snapshot expects union type
+          profile_status: (dashboard.profile_status as TutorDashboardSnapshot['profile_status']) || 'draft',
+        }
+      }
+      throw err
+    }
   },
 }
 

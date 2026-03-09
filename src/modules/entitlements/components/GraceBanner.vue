@@ -43,7 +43,7 @@ const shouldShow = computed(() => store.shouldShowGraceBanner)
 const daysRemaining = computed(() => store.daysRemaining)
 
 function onRenew() {
-  router.push('/billing')
+  router.push('/tutor/billing')
 }
 
 function onDismiss() {

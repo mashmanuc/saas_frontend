@@ -155,7 +155,7 @@ function handleBookLesson() {
 
 function handleUpgrade() {
   // Navigate to billing page for upgrade
-  router.push('/billing')
+  router.push('/tutor/billing')
   emit('upgrade')
 }
 </script>

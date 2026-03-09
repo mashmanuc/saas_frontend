@@ -20,10 +20,10 @@
         <li>{{ $t('onboarding.hints.dashboard.welcome.step3') }}</li>
       </ol>
       <template #actions>
-        <router-link to="/booking/tutor" class="hint-btn">
+        <router-link to="/tutor/schedule" class="hint-btn">
           {{ $t('onboarding.hints.dashboard.welcome.openCalendar') }}
         </router-link>
-        <router-link to="/marketplace/my-profile" class="hint-btn">
+        <router-link to="/tutor/profile" class="hint-btn">
           {{ $t('onboarding.hints.dashboard.welcome.editProfile') }}
         </router-link>
       </template>
@@ -76,7 +76,7 @@
     >
       <strong>{{ $t('student.demoHint') }}</strong>
       <template #actions>
-        <router-link to="/marketplace/my-profile" class="hint-btn">
+        <router-link to="/tutor/profile" class="hint-btn">
           {{ $t('student.inviteReal') }} →
         </router-link>
       </template>

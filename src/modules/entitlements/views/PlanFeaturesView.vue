@@ -101,7 +101,7 @@ onMounted(() => {
 })
 
 function goToBilling() {
-  router.push('/billing')
+  router.push('/tutor/billing')
 }
 </script>
 

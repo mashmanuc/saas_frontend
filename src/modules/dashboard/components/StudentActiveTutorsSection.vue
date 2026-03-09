@@ -223,7 +223,7 @@ function goToMarketplace() {
 }
 
 function goToLessons() {
-  router.push('/calendar').catch(() => {})
+  router.push('/student/schedule').catch(() => {})
 }
 
 function goToChat(tutor: AssignedTutor) {
