@@ -10,18 +10,20 @@ import type { CheckoutDetails } from '../api/billingApi'
 /**
  * Submit checkout form to payment provider
  * 
- * Creates a hidden form with provided fields and submits it.
- * This causes browser to navigate to the payment provider's checkout page.
+ * Opens payment provider page in a NEW TAB to preserve auth session.
+ * Previous implementation navigated the current tab, which caused
+ * JWT token loss after returning from LiqPay/Stripe external domain.
  * 
  * @param checkoutDetails - Checkout details from backend (method, url, form_fields)
  */
 export function submitCheckoutForm(checkoutDetails: CheckoutDetails): void {
   const { method, url, form_fields } = checkoutDetails
 
-  // Create form element
+  // Create form element that opens in a new tab
   const form = document.createElement('form')
   form.method = method
   form.action = url
+  form.target = '_blank'
   form.style.display = 'none'
 
   // Add all form fields as hidden inputs
@@ -37,7 +39,7 @@ export function submitCheckoutForm(checkoutDetails: CheckoutDetails): void {
   document.body.appendChild(form)
   form.submit()
   
-  // Note: cleanup happens after navigation, but we set timeout as safety
+  // Cleanup form from DOM after submission
   setTimeout(() => {
     if (document.body.contains(form)) {
       document.body.removeChild(form)

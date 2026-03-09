@@ -65,7 +65,7 @@
 </template>
 
 <script setup>
-import { onMounted, computed, ref } from 'vue'
+import { onMounted, onUnmounted, computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useBillingStore } from '../stores/billingStore'
 import Button from '@/ui/Button.vue'
@@ -143,12 +143,24 @@ function goBack() {
   router.push({ name: 'user-account' })
 }
 
+// Auto-refresh billing status when user returns from payment tab
+function handleVisibilityChange() {
+  if (document.visibilityState === 'visible' && billingStore.me) {
+    billingStore.fetchMe().catch(() => {})
+  }
+}
+
 onMounted(async () => {
   loadData()
+  document.addEventListener('visibilitychange', handleVisibilityChange)
   try {
     activityStatus.value = await marketplaceApi.getTutorActivityStatus()
   } catch {
     // Silent fail - activity status is not critical
   }
+})
+
+onUnmounted(() => {
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 </script>

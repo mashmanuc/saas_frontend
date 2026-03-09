@@ -183,7 +183,7 @@ describe('billingStore', () => {
       expect(billingApi.startCheckout).toHaveBeenCalledWith('PRO')
     })
 
-    it('should handle Stripe checkout with redirect', async () => {
+    it('should handle Stripe checkout with new tab', async () => {
       const mockResponse: billingApi.CheckoutResponse = {
         provider: 'stripe',
         session_id: 'cs_test_123',
@@ -191,12 +191,12 @@ describe('billingStore', () => {
       }
 
       vi.mocked(billingApi.startCheckout).mockResolvedValue(mockResponse)
-      const windowLocationSpy = vi.spyOn(window.location, 'href', 'set')
+      const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
 
       const store = useBillingStore()
       await store.startCheckout('PRO')
 
-      expect(windowLocationSpy).toHaveBeenCalledWith(mockResponse.checkout_url)
+      expect(windowOpenSpy).toHaveBeenCalledWith(mockResponse.checkout_url, '_blank')
     })
 
     it('should handle checkout error', async () => {

@@ -148,8 +148,8 @@ export const useBillingStore = defineStore('billing-v074', () => {
         validateCheckoutResponse(response.provider, response.session_id, response.checkout)
         submitCheckoutForm(response.checkout)
       } else if (response.provider === 'stripe' && response.checkout_url) {
-        // Stripe: Redirect to checkout URL
-        window.location.href = response.checkout_url
+        // Stripe: Open in new tab to preserve auth session
+        window.open(response.checkout_url, '_blank')
       } else {
         throw new Error(`Unsupported provider: ${response.provider}`)
       }
