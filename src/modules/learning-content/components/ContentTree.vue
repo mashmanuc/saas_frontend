@@ -69,7 +69,7 @@ const store = useContentLibraryStore()
 .lc-empty {
   padding: 24px 12px;
   text-align: center;
-  color: #9ca3af;
+  color: var(--text-secondary);
   font-size: 13px;
 }
 .lc-topic-header,
@@ -88,16 +88,16 @@ const store = useContentLibraryStore()
 }
 .lc-topic-header:hover,
 .lc-unit-header:hover {
-  background: #f3f4f6;
+  background: var(--bg-secondary);
 }
 .lc-topic-header:focus-visible,
 .lc-unit-header:focus-visible {
-  outline: 2px solid #4f46e5;
+  outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
 .lc-chevron {
   font-size: 8px;
-  color: #9ca3af;
+  color: var(--text-secondary);
   transition: transform 0.2s;
   flex-shrink: 0;
 }
@@ -108,7 +108,7 @@ const store = useContentLibraryStore()
   flex: 1;
   font-size: 13px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -117,8 +117,8 @@ const store = useContentLibraryStore()
   font-size: 10px;
   padding: 1px 5px;
   border-radius: 3px;
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
   flex-shrink: 0;
 }
 .lc-units {
@@ -127,20 +127,20 @@ const store = useContentLibraryStore()
 .lc-unit-title {
   flex: 1;
   font-size: 12px;
-  color: #374151;
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .lc-item-count {
   font-size: 10px;
-  color: #9ca3af;
+  color: var(--text-secondary);
   flex-shrink: 0;
 }
 .lc-spinner {
   animation: spin 1s linear infinite;
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 @keyframes spin {
   from { transform: rotate(0deg); }

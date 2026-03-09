@@ -314,7 +314,7 @@ function onOwnershipFilterChange() {
   flex-direction: column;
   height: 100%;
   overflow-y: auto;
-  background: white;
+  background: var(--card-bg);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 .lc-loading {
@@ -322,7 +322,7 @@ function onOwnershipFilterChange() {
   align-items: center;
   justify-content: center;
   padding: 32px 16px;
-  color: #9ca3af;
+  color: var(--text-secondary);
   font-size: 13px;
   gap: 8px;
 }
@@ -332,38 +332,38 @@ function onOwnershipFilterChange() {
   justify-content: center;
   gap: 8px;
   padding: 16px;
-  color: #dc2626;
+  color: var(--danger-bg);
   font-size: 13px;
-  background: #fef2f2;
+  background: color-mix(in srgb, var(--danger-bg) 8%, var(--card-bg));
   margin: 8px;
   border-radius: 6px;
 }
 .lc-retry-btn {
   background: none;
-  border: 1px solid #fca5a5;
+  border: 1px solid color-mix(in srgb, var(--danger-bg) 40%, transparent);
   border-radius: 4px;
-  color: #dc2626;
+  color: var(--danger-bg);
   font-size: 14px;
   cursor: pointer;
   padding: 2px 8px;
 }
 .lc-retry-btn:hover {
-  background: #fee2e2;
+  background: color-mix(in srgb, var(--danger-bg) 12%, var(--card-bg));
 }
 .lc-retry-btn:focus-visible {
-  outline: 2px solid #dc2626;
+  outline: 2px solid var(--danger-bg);
   outline-offset: 1px;
 }
 .lc-empty {
   padding: 32px 16px;
   text-align: center;
-  color: #9ca3af;
+  color: var(--text-secondary);
   font-size: 13px;
 }
 .lc-hint {
   padding: 32px 16px;
   text-align: center;
-  color: #9ca3af;
+  color: var(--text-secondary);
   font-size: 13px;
 }
 .lc-search-results {
@@ -378,43 +378,43 @@ function onOwnershipFilterChange() {
 .lc-ownership-select {
   width: 100%;
   border-radius: 6px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-color);
   padding: 4px 8px;
-  background: #f9fafb;
+  background: var(--bg-secondary);
   font-size: 12px;
-  color: #374151;
+  color: var(--text-primary);
   cursor: pointer;
   transition: border-color 0.15s;
 }
 .lc-ownership-select:focus {
   outline: none;
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 15%, transparent);
 }
 .lc-panel-header {
   padding: 8px 12px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color);
 }
 .lc-panel-title {
   font-size: 13px;
   font-weight: 600;
-  color: #374151;
+  color: var(--text-primary);
 }
 .lc-lesson-banner {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 6px 12px;
-  background: #eff6ff;
-  border-bottom: 1px solid #dbeafe;
+  background: color-mix(in srgb, var(--info-bg) 10%, var(--card-bg));
+  border-bottom: 1px solid color-mix(in srgb, var(--info-bg) 20%, var(--card-bg));
   font-size: 12px;
   font-weight: 500;
-  color: #1e40af;
+  color: var(--info-bg);
 }
 .lc-lesson-badge {
   padding: 1px 7px;
-  background: #2563eb;
-  color: white;
+  background: var(--accent);
+  color: var(--accent-contrast);
   border-radius: 10px;
   font-size: 11px;
   font-weight: 700;
@@ -430,16 +430,16 @@ function onOwnershipFilterChange() {
   justify-content: center;
 }
 .lc-delete-dialog {
-  background: white;
+  background: var(--card-bg);
   border-radius: 12px;
   padding: 20px 24px;
   max-width: 360px;
   width: 90%;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 32px var(--shadow);
 }
 .lc-delete-msg {
   font-size: 14px;
-  color: #374151;
+  color: var(--text-primary);
   margin: 0 0 16px;
   line-height: 1.5;
 }
@@ -450,48 +450,48 @@ function onOwnershipFilterChange() {
 }
 .lc-delete-cancel {
   padding: 6px 14px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  background: white;
-  color: #374151;
+  background: var(--card-bg);
+  color: var(--text-primary);
   font-size: 13px;
   cursor: pointer;
 }
-.lc-delete-cancel:hover { background: #f3f4f6; }
+.lc-delete-cancel:hover { background: var(--bg-secondary); }
 .lc-delete-confirm {
   padding: 6px 14px;
   border: none;
   border-radius: 6px;
-  background: #dc2626;
-  color: white;
+  background: var(--danger-bg);
+  color: var(--accent-contrast);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
 }
-.lc-delete-confirm:hover { background: #b91c1c; }
+.lc-delete-confirm:hover { background: color-mix(in srgb, var(--danger-bg) 85%, black); }
 .lc-delete-confirm:disabled { opacity: 0.6; cursor: not-allowed; }
 /* Phase 1c: Upload zone */
 .lc-upload-zone {
   margin: 8px;
   padding: 12px;
-  border: 2px dashed #d1d5db;
+  border: 2px dashed var(--border-color);
   border-radius: 8px;
   text-align: center;
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--text-secondary);
   cursor: pointer;
   transition: border-color 0.2s, background 0.2s;
 }
 .lc-upload-zone:hover,
 .lc-upload-zone--active {
-  border-color: #4f46e5;
-  background: #f5f3ff;
-  color: #4f46e5;
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--card-bg));
+  color: var(--accent);
 }
 .lc-upload-spinner {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #4f46e5;
+  color: var(--accent);
 }
 </style>

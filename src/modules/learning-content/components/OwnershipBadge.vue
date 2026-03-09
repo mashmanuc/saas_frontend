@@ -67,27 +67,27 @@ const label = computed(() => t(`learningContent.ownership.${props.ownershipType}
 
 /* Variants */
 .lc-ownership-platform {
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
 }
 .lc-ownership-tutor {
-  background: #dbeafe;
-  color: #1e40af;
+  background: color-mix(in srgb, var(--info-bg) 12%, var(--card-bg));
+  color: var(--info-bg);
 }
 .lc-ownership-co_owned {
-  background: #d1fae5;
-  color: #065f46;
+  background: color-mix(in srgb, var(--success-bg) 12%, var(--card-bg));
+  color: var(--success-bg);
 }
 .lc-ownership-licensed {
-  background: #fef3c7;
-  color: #92400e;
+  background: color-mix(in srgb, var(--warning-bg) 15%, var(--card-bg));
+  color: var(--warning-bg);
 }
 .lc-ownership-third_party {
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
 }
 .lc-ownership-user_generated {
-  background: #ede9fe;
-  color: #6d28d9;
+  background: color-mix(in srgb, #7c3aed 12%, var(--card-bg));
+  color: #7c3aed;
 }
 </style>

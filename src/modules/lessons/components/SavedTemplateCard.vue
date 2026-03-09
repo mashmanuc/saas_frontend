@@ -65,14 +65,14 @@ function confirmDelete() {
 
 <style scoped>
 .stc {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
-  background: #fff;
+  background: var(--card-bg);
   padding: 14px;
   transition: box-shadow 0.15s;
 }
 .stc:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 8px var(--shadow);
 }
 .stc__header {
   display: flex;
@@ -82,12 +82,12 @@ function confirmDelete() {
 .stc__title {
   font-size: 14px;
   font-weight: 500;
-  color: #111827;
+  color: var(--text-primary);
   margin: 0;
 }
 .stc__meta {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-secondary);
   margin: 4px 0 0;
 }
 .stc__sep {
@@ -108,17 +108,17 @@ function confirmDelete() {
   transition: background 0.15s;
 }
 .stc__btn--create {
-  background: #eff6ff;
-  color: #1d4ed8;
+  background: color-mix(in srgb, var(--accent) 10%, var(--card-bg));
+  color: var(--accent);
 }
 .stc__btn--create:hover {
-  background: #dbeafe;
+  background: color-mix(in srgb, var(--accent) 18%, var(--card-bg));
 }
 .stc__btn--delete {
   background: none;
-  color: #dc2626;
+  color: var(--danger-bg);
 }
 .stc__btn--delete:hover {
-  background: #fef2f2;
+  background: color-mix(in srgb, var(--danger-bg) 8%, var(--card-bg));
 }
 </style>

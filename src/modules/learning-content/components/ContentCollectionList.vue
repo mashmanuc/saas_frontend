@@ -33,12 +33,12 @@ const store = useContentLibraryStore()
   flex-direction: column;
   gap: 2px;
   padding: 6px 8px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color);
 }
 .lc-empty {
   padding: 16px 12px;
   text-align: center;
-  color: #9ca3af;
+  color: var(--text-secondary);
   font-size: 13px;
 }
 .lc-collection-item {
@@ -54,20 +54,20 @@ const store = useContentLibraryStore()
   transition: all 0.15s;
 }
 .lc-collection-item:hover {
-  background: #f3f4f6;
-  border-color: #e5e7eb;
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
 }
 .lc-collection-item.selected {
-  background: #eef2ff;
-  border-color: #c7d2fe;
+  background: color-mix(in srgb, var(--accent) 10%, var(--card-bg));
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
 }
 .lc-collection-item:focus-visible {
-  outline: 2px solid #4f46e5;
+  outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
 .lc-col-title {
   font-size: 12px;
-  color: #374151;
+  color: var(--text-primary);
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -75,8 +75,8 @@ const store = useContentLibraryStore()
 }
 .lc-col-count {
   font-size: 10px;
-  color: #9ca3af;
-  background: #f3f4f6;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
   padding: 1px 6px;
   border-radius: 8px;
   flex-shrink: 0;

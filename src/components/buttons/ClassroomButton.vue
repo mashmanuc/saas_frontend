@@ -10,10 +10,12 @@
 </template>
 
 <script setup lang="ts">
-// F1: ClassroomButton - Entry point to classroom
+// [LEGACY→WB] ClassroomButton — кнопка входу в урок.
+// useClassroomEntry видалено разом з modules/classroom/.
+// Навігація тепер веде на winterboard-sessions.
 import { computed } from 'vue'
-import { Video, Clock, CheckCircle, Loader2, XCircle } from 'lucide-vue-next'
-import { useClassroomEntry } from '@/modules/classroom/composables/useClassroomEntry'
+import { useRouter } from 'vue-router'
+import { Video, Clock, CheckCircle, XCircle } from 'lucide-vue-next'
 
 interface Props {
   bookingId: number
@@ -24,20 +26,14 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-const { getJwtAndNavigate, isLoading, canJoinSession } = useClassroomEntry()
-
-const joinCheck = computed(() => {
-  return canJoinSession(props.sessionStatus, props.scheduledStart)
-})
+const router = useRouter()
 
 const canJoin = computed(() => {
   if (!props.sessionId) return false
-  return joinCheck.value.canJoin
+  return ['scheduled', 'waiting', 'active', 'paused'].includes(props.sessionStatus)
 })
 
 const buttonText = computed(() => {
-  if (isLoading.value) return 'Підключення...'
-
   switch (props.sessionStatus) {
     case 'scheduled':
       return props.userRole === 'tutor' ? 'Почати урок' : 'Очікуємо тьютора'
@@ -55,7 +51,6 @@ const buttonText = computed(() => {
 })
 
 const icon = computed(() => {
-  if (isLoading.value) return Loader2
   if (props.sessionStatus === 'completed') return CheckCircle
   if (props.sessionStatus === 'terminated') return XCircle
   if (props.sessionStatus === 'waiting' || props.sessionStatus === 'scheduled') return Clock
@@ -68,12 +63,12 @@ const buttonClasses = computed(() => [
   canJoin.value
     ? 'bg-primary-600 text-white hover:bg-primary-700 cursor-pointer'
     : 'bg-gray-200 text-gray-500 cursor-not-allowed',
-  isLoading.value && 'animate-pulse',
 ])
 
-async function handleClick() {
-  if (!canJoin.value || !props.sessionId) return
-  await getJwtAndNavigate(props.sessionId)
+function handleClick() {
+  if (!canJoin.value) return
+  // [LEGACY→WB] modules/classroom видалено — перенаправляємо на список winterboard
+  router.push({ name: 'winterboard-sessions' })
 }
 </script>
 
@@ -84,18 +79,5 @@ async function handleClick() {
 
 .classroom-button:disabled {
   opacity: 0.7;
-}
-
-.animate-pulse {
-  animation: pulse 1.5s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.7;
-  }
 }
 </style>

@@ -70,16 +70,16 @@ const barColorClass = computed(() => {
 }
 .storage-quota__label {
   font-size: 11px;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 .storage-quota__percent {
   font-size: 11px;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 .storage-quota__track {
   width: 100%;
   height: 6px;
-  background: #e5e7eb;
+  background: var(--border-color);
   border-radius: 9999px;
   overflow: hidden;
 }
@@ -89,13 +89,13 @@ const barColorClass = computed(() => {
   transition: width 0.3s ease;
 }
 .storage-quota__bar--normal {
-  background: #3b82f6;
+  background: var(--accent);
 }
 .storage-quota__bar--amber {
-  background: #f59e0b;
+  background: var(--warning-bg);
 }
 .storage-quota__bar--critical {
-  background: #ef4444;
+  background: var(--danger-bg);
 }
 .storage-quota__warning {
   font-size: 11px;
@@ -103,10 +103,10 @@ const barColorClass = computed(() => {
   line-height: 1.3;
 }
 .storage-quota__warning--amber {
-  color: #d97706;
+  color: var(--warning-bg);
 }
 .storage-quota__warning--critical {
-  color: #dc2626;
+  color: var(--danger-bg);
   font-weight: 500;
 }
 </style>

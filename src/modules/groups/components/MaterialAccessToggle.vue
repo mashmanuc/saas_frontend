@@ -30,8 +30,8 @@ async function onToggle() {
   <div class="flex items-center gap-2">
     <!-- Toggle вмикання/вимикання матеріалу в групі -->
     <button
-      class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-      :class="isActive ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-600'"
+      class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none mat-toggle"
+      :class="isActive ? 'mat-toggle--on' : 'mat-toggle--off'"
       :disabled="toggling"
       role="switch"
       :aria-checked="isActive"
@@ -51,7 +51,7 @@ async function onToggle() {
 
     <!-- Кнопка видалення матеріалу з групи -->
     <button
-      class="text-gray-400 hover:text-red-500 transition-colors p-1"
+      class="transition-colors p-1 mat-remove-btn"
       :title="t('learningContent.groups.removeMaterial')"
       @click="emit('remove', materialId)"
     >
@@ -66,3 +66,23 @@ async function onToggle() {
     </button>
   </div>
 </template>
+
+<style scoped>
+.mat-toggle--on {
+  background-color: var(--accent);
+}
+.mat-toggle--off {
+  background-color: var(--border-color);
+}
+.mat-toggle:focus {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+.mat-remove-btn {
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+.mat-remove-btn:hover {
+  color: var(--danger-bg);
+  opacity: 1;
+}
+</style>

@@ -122,14 +122,14 @@ function formatDate(dt: string | null): string {
 .lesson-history__title {
   font-size: 14px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-primary);
   margin: 0 0 12px;
 }
 .lesson-history__loading,
 .lesson-history__empty {
   padding: 24px 8px;
   text-align: center;
-  color: #9ca3af;
+  color: var(--text-secondary);
   font-size: 13px;
 }
 .lesson-history__error {
@@ -137,27 +137,27 @@ function formatDate(dt: string | null): string {
   align-items: center;
   gap: 8px;
   padding: 12px;
-  color: #dc2626;
+  color: var(--danger-bg);
   font-size: 13px;
-  background: #fef2f2;
+  background: color-mix(in srgb, var(--danger-bg) 8%, var(--card-bg));
   border-radius: 6px;
 }
 .lesson-history__retry {
   background: none;
-  border: 1px solid #fca5a5;
+  border: 1px solid color-mix(in srgb, var(--danger-bg) 40%, transparent);
   border-radius: 4px;
-  color: #dc2626;
+  color: var(--danger-bg);
   font-size: 14px;
   cursor: pointer;
   padding: 2px 8px;
 }
 .lesson-history__item {
   padding: 10px 8px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-color);
   transition: background 0.1s;
 }
 .lesson-history__item:hover {
-  background: #f8fafc;
+  background: var(--bg-secondary);
 }
 .lesson-history__info {
   display: flex;
@@ -168,11 +168,11 @@ function formatDate(dt: string | null): string {
 .lesson-history__student {
   font-size: 13px;
   font-weight: 500;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 .lesson-history__date {
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 .lesson-history__status {
   font-size: 11px;
@@ -182,21 +182,21 @@ function formatDate(dt: string | null): string {
   text-transform: uppercase;
 }
 .lesson-history__status--completed {
-  background: #dcfce7;
-  color: #166534;
+  background: color-mix(in srgb, var(--success-bg) 15%, var(--card-bg));
+  color: var(--success-bg);
 }
 .lesson-history__status--in_progress {
-  background: #dbeafe;
-  color: #1e40af;
+  background: color-mix(in srgb, var(--info-bg) 15%, var(--card-bg));
+  color: var(--info-bg);
 }
 .lesson-history__status--draft,
 .lesson-history__status--scheduled {
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
 }
 .lesson-history__status--cancelled {
-  background: #fef2f2;
-  color: #991b1b;
+  background: color-mix(in srgb, var(--danger-bg) 12%, var(--card-bg));
+  color: var(--danger-bg);
 }
 .lesson-history__actions {
   margin-top: 6px;
@@ -208,16 +208,16 @@ function formatDate(dt: string | null): string {
   padding: 4px 10px;
   font-size: 12px;
   font-weight: 500;
-  color: #374151;
+  color: var(--text-primary);
   background: none;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
 }
 .lesson-history__clone-btn:hover:not(:disabled) {
-  background: #f3f4f6;
-  border-color: #d1d5db;
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
 }
 .lesson-history__clone-btn:disabled {
   opacity: 0.5;
@@ -239,16 +239,16 @@ function formatDate(dt: string | null): string {
   padding: 4px 10px;
   font-size: 12px;
   font-weight: 500;
-  color: #374151;
+  color: var(--text-primary);
   background: none;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
 }
 .lesson-history__save-tmpl-btn:hover {
-  background: #f3f4f6;
-  border-color: #d1d5db;
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
 }
 @keyframes lh-spin {
   to { transform: rotate(360deg); }

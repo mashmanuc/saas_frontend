@@ -16,14 +16,14 @@
     </div>
 
     <div class="lesson-actions">
-      <ClassroomButton
-        v-if="lesson.classroom_session_id"
-        :session-id="lesson.classroom_session_id"
-        :can-join="lesson.can_join"
-        :scheduled-at="lesson.scheduled_at"
-        size="small"
+      <!-- [LEGACY→WB] ClassroomButton (modules/classroom) видалено — проста кнопка join -->
+      <button
+        v-if="lesson.can_join"
+        class="link-ghost px-3 py-1.5 text-sm"
         @click="$emit('join', lesson)"
-      />
+      >
+        Приєднатися
+      </button>
       <router-link :to="`/bookings/${lesson.id}`" class="link-ghost px-3 py-1.5 text-sm">
         Деталі
       </router-link>
@@ -33,7 +33,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import ClassroomButton from '@/modules/classroom/components/ClassroomButton.vue'
+// [LEGACY→WB] ClassroomButton з modules/classroom видалено (classroom module removed)
 import type { ActiveLesson } from '../api/dashboard'
 
 interface Props {

@@ -111,13 +111,13 @@ function cancelDelete() {
     <div class="flex items-start justify-between gap-3">
       <div class="min-w-0">
         <!-- Динамічна назва: назва класу або дефолт -->
-        <h2 class="text-base font-semibold text-gray-900 dark:text-white leading-tight flex items-center gap-1.5 min-w-0">
+        <h2 class="text-base font-semibold leading-tight flex items-center gap-1.5 min-w-0 gm-title">
           <span class="flex-shrink-0">📁</span>
           <span v-if="groupStore.selectedGroup" class="truncate">{{ groupStore.selectedGroup.title }}</span>
-          <span v-else class="text-gray-500 dark:text-gray-400">{{ t('learningContent.groups.manager') }}</span>
+          <span v-else class="gm-text-muted">{{ t('learningContent.groups.manager') }}</span>
         </h2>
         <!-- Статистика: кількість матеріалів і учнів -->
-        <p v-if="groupStore.selectedGroup" class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+        <p v-if="groupStore.selectedGroup" class="text-xs gm-text-muted mt-0.5">
           <span>{{ groupStore.materials.length }}
             {{ groupStore.materials.length === 1 ? 'матеріал' : groupStore.materials.length < 5 ? 'матеріали' : 'матеріалів' }}
           </span>
@@ -126,7 +126,7 @@ function cancelDelete() {
             {{ groupStore.students.length === 1 ? 'учень' : groupStore.students.length < 5 ? 'учні' : 'учнів' }}
           </span>
         </p>
-        <p v-else class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+        <p v-else class="text-xs gm-text-muted mt-0.5">
           Виберіть клас зі списку або створіть новий
         </p>
       </div>
@@ -139,18 +139,18 @@ function cancelDelete() {
     <!-- Selected Group Panel -->
     <template v-if="groupStore.selectedGroup && selectedGroupId">
       <!-- Materials List -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-        <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+      <div class="rounded-lg gm-panel">
+        <div class="p-4 flex items-center justify-between gm-panel-header">
+          <h3 class="text-sm font-medium flex items-center gap-2 gm-text-secondary">
             {{ t('learningContent.groups.materials') }}
             <span
               v-if="groupStore.materials.length > 0"
-              class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-semibold text-indigo-700 bg-indigo-100 dark:text-indigo-300 dark:bg-indigo-900/40 rounded-full"
+              class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-semibold rounded-full gm-badge-count"
             >
               {{ groupStore.materials.length }}
             </span>
           </h3>
-          <span v-if="groupStore.activeMaterials.length < groupStore.materials.length" class="text-xs text-amber-600 dark:text-amber-400">
+          <span v-if="groupStore.activeMaterials.length < groupStore.materials.length" class="text-xs gm-text-warning">
             {{ groupStore.materials.length - groupStore.activeMaterials.length }} вимкнено
           </span>
         </div>
@@ -176,29 +176,29 @@ function cancelDelete() {
           </div>
 
           <!-- Filtered list -->
-          <div v-if="filteredMaterials.length > 0" class="divide-y divide-gray-100 dark:divide-gray-700">
+          <div v-if="filteredMaterials.length > 0" class="gm-divider-list">
             <div
               v-for="material in filteredMaterials"
               :key="material.id"
               class="flex items-center justify-between px-4 py-3"
             >
               <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+                <p class="text-sm font-medium truncate gm-title">
                   {{ material.content_title }}
                 </p>
-                <p class="text-xs text-gray-500">
+                <p class="text-xs gm-text-muted">
                   {{ material.content_type }}
                 </p>
               </div>
 
               <!-- Inline delete confirmation -->
               <div v-if="pendingDeleteId === material.id" class="flex items-center gap-2 ml-2">
-                <span class="text-xs text-red-600 dark:text-red-400 font-medium whitespace-nowrap">
+                <span class="text-xs font-medium whitespace-nowrap gm-text-danger">
                   Видалити з класу?
                 </span>
                 <button
                   type="button"
-                  class="px-2 py-1 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded transition-colors"
+                  class="px-2 py-1 text-xs font-semibold rounded transition-colors gm-btn-danger"
                   title="Підтвердити видалення матеріалу з класу"
                   @click="confirmDelete"
                 >
@@ -206,7 +206,7 @@ function cancelDelete() {
                 </button>
                 <button
                   type="button"
-                  class="px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                  class="px-2 py-1 text-xs font-medium rounded transition-colors gm-btn-cancel"
                   title="Скасувати видалення"
                   @click="cancelDelete"
                 >
@@ -225,7 +225,7 @@ function cancelDelete() {
           </div>
 
           <!-- No results for this tab -->
-          <div v-else class="p-6 text-center text-sm text-gray-400">
+          <div v-else class="p-6 text-center text-sm gm-text-muted">
             🔍 Немає файлів у цій категорії
           </div>
         </template>
@@ -233,10 +233,10 @@ function cancelDelete() {
         <!-- Empty state (жодного матеріалу в групі) -->
         <div v-else class="p-8 text-center">
           <p class="text-2xl mb-2">📂</p>
-          <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+          <p class="text-sm font-medium mb-1 gm-text-muted">
             Матеріали ще не додано
           </p>
-          <p class="text-xs text-gray-400 dark:text-gray-500 leading-snug">
+          <p class="text-xs leading-snug gm-text-muted">
             Знайдіть файл у бібліотеці ліворуч і натисніть «+» щоб додати до цього класу
           </p>
         </div>
@@ -245,7 +245,7 @@ function cancelDelete() {
 
     <!-- Loading -->
     <div v-if="groupStore.isLoading" class="flex items-center justify-center py-8">
-      <div class="animate-spin rounded-full h-6 w-6 border-2 border-indigo-600 border-t-transparent" />
+      <div class="animate-spin rounded-full h-6 w-6 border-2 border-t-transparent gm-spinner" />
     </div>
 
     <!-- Create Group Modal -->
@@ -255,13 +255,13 @@ function cancelDelete() {
         class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
         @click.self="showCreateModal = false"
       >
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        <div class="rounded-xl shadow-xl p-6 w-full max-w-md mx-4 gm-modal">
+          <h3 class="text-lg font-semibold mb-4 gm-title">
             {{ t('learningContent.groups.createGroup') }}
           </h3>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label class="block text-sm font-medium mb-1 gm-text-secondary">
               {{ t('learningContent.groups.groupTitle') }}
             </label>
             <input
@@ -269,7 +269,7 @@ function cancelDelete() {
               type="text"
               maxlength="200"
               autofocus
-              class="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
+              class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-shadow gm-input"
               :placeholder="t('learningContent.groups.titlePlaceholder')"
               @keydown.enter="createGroup"
             />
@@ -277,13 +277,13 @@ function cancelDelete() {
 
           <div class="flex justify-end gap-3 mt-6">
             <button
-              class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              class="px-4 py-2 text-sm rounded-lg transition-colors gm-btn-cancel"
               @click="showCreateModal = false"
             >
               {{ t('common.cancel') }}
             </button>
             <button
-              class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors disabled:opacity-50"
+              class="px-4 py-2 text-sm font-medium rounded-lg transition-colors disabled:opacity-50 gm-btn-primary"
               :disabled="!newGroupTitle.trim()"
               @click="createGroup"
             >
@@ -310,9 +310,9 @@ function cancelDelete() {
   gap: 4px;
   padding: 3px 10px;
   border-radius: 20px;
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
-  color: #64748b;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
   font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
@@ -321,16 +321,16 @@ function cancelDelete() {
   line-height: 1.5;
 }
 .gm-tab:hover {
-  background: #e2e8f0;
-  color: #1e293b;
+  background: var(--border-color);
+  color: var(--text-primary);
 }
 .gm-tab--active {
-  background: #4f46e5;
-  border-color: #4f46e5;
-  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
 }
 .gm-tab--active:hover {
-  background: #4338ca;
+  background: var(--accent-hover);
 }
 .gm-tab-count {
   font-size: 0.6875rem;
@@ -342,5 +342,79 @@ function cancelDelete() {
   min-width: 16px;
   text-align: center;
   line-height: 1.6;
+}
+
+/* ── Theme-aware utility classes ──────────────────────────── */
+.gm-title {
+  color: var(--text-primary);
+}
+.gm-text-secondary {
+  color: var(--text-secondary);
+}
+.gm-text-muted {
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+.gm-text-warning {
+  color: var(--warning-bg);
+}
+.gm-text-danger {
+  color: var(--danger-bg);
+}
+.gm-panel {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+}
+.gm-panel-header {
+  border-bottom: 1px solid var(--border-color);
+}
+.gm-badge-count {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.gm-divider-list > * + * {
+  border-top: 1px solid var(--border-color);
+}
+.gm-btn-danger {
+  color: var(--accent-contrast);
+  background: var(--danger-bg);
+}
+.gm-btn-danger:hover {
+  background: color-mix(in srgb, var(--danger-bg) 85%, black);
+}
+.gm-btn-cancel {
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  background: transparent;
+}
+.gm-btn-cancel:hover {
+  background: var(--bg-secondary);
+}
+.gm-btn-primary {
+  color: var(--accent-contrast);
+  background: var(--accent);
+}
+.gm-btn-primary:hover {
+  background: var(--accent-hover);
+}
+.gm-spinner {
+  border-color: var(--accent);
+}
+.gm-modal {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+}
+.gm-input {
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  color: var(--text-primary);
+}
+.gm-input::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+.gm-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 15%, transparent);
 }
 </style>

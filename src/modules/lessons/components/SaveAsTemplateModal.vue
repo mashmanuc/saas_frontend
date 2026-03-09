@@ -113,9 +113,9 @@ async function save() {
   background: rgba(0, 0, 0, 0.5);
 }
 .sat-modal {
-  background: #fff;
+  background: var(--card-bg);
   border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 20px 60px var(--shadow);
   width: 100%;
   max-width: 420px;
   padding: 24px;
@@ -123,19 +123,19 @@ async function save() {
 .sat-modal__title {
   font-size: 18px;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
   margin: 0 0 16px;
 }
 .sat-modal__label {
   display: block;
   font-size: 13px;
   font-weight: 500;
-  color: #374151;
+  color: var(--text-primary);
   margin-bottom: 4px;
 }
 .sat-modal__input {
   width: 100%;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 8px 12px;
   font-size: 14px;
@@ -143,13 +143,13 @@ async function save() {
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .sat-modal__input:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent);
 }
 .sat-modal__error {
   margin-top: 8px;
   font-size: 13px;
-  color: #dc2626;
+  color: var(--danger-bg);
 }
 .sat-modal__footer {
   margin-top: 20px;
@@ -168,17 +168,17 @@ async function save() {
 }
 .sat-modal__btn--secondary {
   background: none;
-  color: #374151;
+  color: var(--text-primary);
 }
 .sat-modal__btn--secondary:hover {
-  background: #f3f4f6;
+  background: var(--bg-secondary);
 }
 .sat-modal__btn--primary {
-  background: #2563eb;
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-contrast);
 }
 .sat-modal__btn--primary:hover:not(:disabled) {
-  background: #1d4ed8;
+  background: var(--accent-hover);
 }
 .sat-modal__btn--primary:disabled {
   opacity: 0.5;

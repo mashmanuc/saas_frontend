@@ -1,5 +1,5 @@
 <template>
-  <div class="rounded-lg border border-gray-200 bg-white p-4 hover:shadow-md transition-shadow">
+  <div class="klc-card">
     <div class="flex items-start justify-between">
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-2">
@@ -11,15 +11,15 @@
           </span>
           <span
             v-if="lesson.student_is_demo"
-            class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800"
+            class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium klc-demo-badge"
           >
             Demo
           </span>
         </div>
-        <p class="mt-1 text-sm font-medium text-gray-900 truncate">
+        <p class="klc-student-name">
           {{ lesson.student_name }}
         </p>
-        <p class="text-xs text-gray-500 mt-0.5">
+        <p class="klc-meta">
           {{ formattedDate }}
           <span v-if="lesson.content_count" class="ml-2">
             · {{ lesson.content_count }} {{ $t('knowledge.materials') }}
@@ -34,19 +34,19 @@
       <button
         v-if="lesson.has_board && lesson.session_uuid"
         @click="$emit('openBoard', lesson.session_uuid)"
-        class="px-3 py-1.5 text-xs rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100"
+        class="klc-action klc-action--primary"
       >
         {{ $t('knowledge.openBoard') }}
       </button>
       <button
         @click="$emit('clone', lesson.id)"
-        class="px-3 py-1.5 text-xs rounded-md text-gray-700 hover:bg-gray-100"
+        class="klc-action"
       >
         {{ $t('lessons.history.clone') }}
       </button>
       <button
         @click="$emit('saveAsTemplate', lesson.id)"
-        class="px-3 py-1.5 text-xs rounded-md text-gray-700 hover:bg-gray-100"
+        class="klc-action"
       >
         {{ $t('template.saveAsTemplate') }}
       </button>
@@ -74,10 +74,62 @@ const formattedDate = computed(() => {
 
 const statusClass = computed(() => {
   const s = props.lesson.status
-  if (s === 'COMPLETED' || s === 'completed') return 'bg-green-100 text-green-800'
-  if (s === 'DRAFT') return 'bg-gray-100 text-gray-800'
-  if (s === 'IN_PROGRESS') return 'bg-blue-100 text-blue-800'
-  if (s === 'CANCELLED' || s === 'cancelled') return 'bg-red-100 text-red-800'
-  return 'bg-gray-100 text-gray-800'
+  if (s === 'COMPLETED' || s === 'completed') return 'klc-status--completed'
+  if (s === 'DRAFT') return 'klc-status--draft'
+  if (s === 'IN_PROGRESS') return 'klc-status--in_progress'
+  if (s === 'CANCELLED' || s === 'cancelled') return 'klc-status--cancelled'
+  return 'klc-status--draft'
 })
 </script>
+
+<style scoped>
+.klc-card {
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  padding: 1rem;
+  transition: box-shadow 0.15s;
+}
+.klc-card:hover {
+  box-shadow: 0 4px 12px var(--shadow);
+}
+.klc-student-name {
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.klc-meta {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 0.125rem;
+}
+.klc-action {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  border-radius: 0.375rem;
+  color: var(--text-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.klc-action:hover {
+  background: var(--bg-secondary);
+}
+.klc-action--primary {
+  background: color-mix(in srgb, var(--accent) 10%, var(--card-bg));
+  color: var(--accent);
+}
+.klc-action--primary:hover {
+  background: color-mix(in srgb, var(--accent) 18%, var(--card-bg));
+}
+.klc-status--completed { background: color-mix(in srgb, var(--success-bg) 15%, var(--card-bg)); color: var(--success-bg); }
+.klc-status--in_progress { background: color-mix(in srgb, var(--info-bg) 15%, var(--card-bg)); color: var(--info-bg); }
+.klc-status--draft { background: var(--bg-secondary); color: var(--text-secondary); }
+.klc-status--cancelled { background: color-mix(in srgb, var(--danger-bg) 12%, var(--card-bg)); color: var(--danger-bg); }
+.klc-demo-badge { background: color-mix(in srgb, #7c3aed 12%, var(--card-bg)); color: #7c3aed; }
+</style>

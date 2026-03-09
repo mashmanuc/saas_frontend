@@ -48,7 +48,7 @@ const { t } = useI18n()
   margin: 0 auto;
   background: var(--card-bg, #ffffff);
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px var(--shadow, rgba(0, 0, 0, 0.1));
   overflow: hidden;
   height: calc(100vh - 200px);
 }

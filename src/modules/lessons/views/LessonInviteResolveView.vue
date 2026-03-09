@@ -116,7 +116,8 @@ async function resolve() {
     }
 
     status.value = 'redirecting'
-    await router.replace({ name: 'lesson-room', params: { sessionId: sessionUuid } })
+    // [LEGACY→WB] Old classroom removed — redirect to winterboard sessions list
+    await router.replace({ name: 'winterboard-sessions' })
   } catch (err) {
     status.value = 'error'
     errorCode.value = normalizeErrorCode(err)

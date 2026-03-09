@@ -18,7 +18,7 @@ import { useBooking } from '../composables/useBooking'
 // Components
 import BookingStatus from '../components/booking/BookingStatus.vue'
 import BookingActions from '../components/booking/BookingActions.vue'
-import ClassroomButton from '@/components/buttons/ClassroomButton.vue'
+// [LEGACY→WB] ClassroomButton видалено — навігація через winterboard-sessions
 import Button from '@/ui/Button.vue'
 
 const route = useRoute()
@@ -209,16 +209,13 @@ function handleReschedule() {
         </div>
       </section>
 
-      <!-- Classroom Entry -->
-      <section v-if="currentBooking.classroom_session" class="classroom-section">
+      <!-- [LEGACY→WB] Classroom Entry — ClassroomButton замінено на router-link до winterboard -->
+      <section v-if="canJoin" class="classroom-section">
         <h2>Classroom</h2>
-        <ClassroomButton
-          :booking-id="currentBooking.id"
-          :session-id="currentBooking.classroom_session.uuid"
-          :session-status="currentBooking.classroom_session.status"
-          :scheduled-start="currentBooking.time_slot.start_datetime"
-          :user-role="isStudent ? 'student' : 'tutor'"
-        />
+        <Button variant="primary" @click="router.push({ name: 'winterboard-sessions' })">
+          <template #iconLeft><Video :size="18" /></template>
+          Увійти в урок
+        </Button>
       </section>
 
       <!-- Actions -->

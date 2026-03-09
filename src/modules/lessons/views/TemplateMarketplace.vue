@@ -284,11 +284,11 @@ onMounted(() => {
 .mp-title {
   font-size: 22px;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--text-primary);
 }
 .mp-subtitle {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--text-secondary);
   margin-top: 4px;
 }
 
@@ -296,9 +296,9 @@ onMounted(() => {
 .mp-filters {
   margin-bottom: 20px;
   padding: 12px 16px;
-  background: #f9fafb;
+  background: var(--bg-secondary);
   border-radius: 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-color);
 }
 .mp-filters-row {
   display: flex;
@@ -316,54 +316,54 @@ onMounted(() => {
   flex: 1;
   min-width: 200px;
   padding: 8px 12px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   font-size: 13px;
-  background: white;
+  background: var(--card-bg);
   transition: border-color 0.15s;
 }
 .mp-search-input:focus {
   outline: none;
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 15%, transparent);
 }
 .mp-select {
   padding: 8px 12px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   font-size: 13px;
-  background: white;
+  background: var(--card-bg);
   cursor: pointer;
   min-width: 140px;
   transition: border-color 0.15s;
 }
 .mp-select:focus {
   outline: none;
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 15%, transparent);
 }
 .mp-checkbox-label {
   display: flex;
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: #4b5563;
+  color: var(--text-secondary);
   cursor: pointer;
 }
 .mp-checkbox {
-  accent-color: #4f46e5;
+  accent-color: var(--accent);
 }
 
 /* States */
 .mp-state {
   text-align: center;
   padding: 48px 16px;
-  color: #9ca3af;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 .mp-state-error {
-  color: #dc2626;
-  background: #fef2f2;
+  color: var(--danger-bg);
+  background: color-mix(in srgb, var(--danger-bg) 8%, var(--card-bg));
   border-radius: 8px;
   margin: 8px 0;
   display: flex;
@@ -374,14 +374,14 @@ onMounted(() => {
 }
 .mp-retry-btn {
   background: none;
-  border: 1px solid #fca5a5;
+  border: 1px solid color-mix(in srgb, var(--danger-bg) 40%, transparent);
   border-radius: 6px;
-  color: #dc2626;
+  color: var(--danger-bg);
   font-size: 16px;
   cursor: pointer;
   padding: 4px 10px;
 }
-.mp-retry-btn:hover { background: #fee2e2; }
+.mp-retry-btn:hover { background: color-mix(in srgb, var(--danger-bg) 12%, var(--card-bg)); }
 
 /* Grid */
 .mp-grid {
@@ -414,33 +414,33 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
-  background: white;
+  background: var(--card-bg);
   font-size: 13px;
-  color: #374151;
+  color: var(--text-primary);
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
 }
 .mp-page-btn:hover:not(:disabled) {
-  background: #f3f4f6;
-  border-color: #9ca3af;
+  background: var(--bg-secondary);
+  border-color: var(--text-secondary);
 }
 .mp-page-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
 .mp-page-active {
-  background: #4f46e5;
-  color: white;
-  border-color: #4f46e5;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border-color: var(--accent);
 }
 .mp-page-active:hover:not(:disabled) {
-  background: #4338ca;
+  background: var(--accent-hover);
 }
 .mp-page-ellipsis {
   padding: 0 6px;
-  color: #9ca3af;
+  color: var(--text-secondary);
   font-size: 13px;
 }
 </style>

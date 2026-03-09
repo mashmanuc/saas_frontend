@@ -33,7 +33,7 @@
         </div>
 
         <div v-if="studentsLoading" class="knowledge-page__sidebar-loading">
-          <div v-for="i in 3" :key="i" class="h-10 rounded bg-gray-100 animate-pulse mb-2" />
+          <div v-for="i in 3" :key="i" class="h-10 rounded animate-pulse mb-2 knowledge-page__skeleton-pulse" />
         </div>
 
         <div v-else-if="studentRelations.length === 0" class="knowledge-page__sidebar-empty">
@@ -416,7 +416,7 @@
 
                 <!-- Матеріали уроку (завжди видимі) -->
                 <div class="knowledge-page__plan-materials">
-                  <div v-if="!plan.materials?.length" style="font-size:0.8125rem;color:#94a3b8;padding:0.25rem 0">
+                  <div v-if="!plan.materials?.length" class="knowledge-page__plan-mat-empty">
                     Натисніть «+» у бібліотеці знизу, щоб додати матеріал до цього уроку
                   </div>
                   <div
@@ -525,7 +525,7 @@
           <section v-if="selectedRelation" class="knowledge-page__section">
             <h3 class="knowledge-page__section-title">
               {{ $t('knowledge.lessonsWithStudent') }}
-              <span class="text-gray-500">({{ studentLessons.length }})</span>
+              <span class="knowledge-page__count-label">({{ studentLessons.length }})</span>
             </h3>
             <div v-if="studentLessons.length === 0" class="knowledge-page__empty-materials">
               {{ $t('knowledge.noLessons') }}
@@ -542,7 +542,7 @@
                     :class="`knowledge-page__lesson-status--${lesson.status.toLowerCase()}`"
                   >{{ lesson.status }}</span>
                   <span class="knowledge-page__lesson-date">{{ formatDate(lesson.start) }}</span>
-                  <span v-if="lesson.content_count" class="text-gray-400 text-xs">
+                  <span v-if="lesson.content_count" class="text-xs knowledge-page__lesson-meta">
                     · {{ lesson.content_count }} {{ $t('knowledge.materials') }}
                   </span>
                 </div>
@@ -570,7 +570,7 @@
           <section v-if="selectedRelation && templates.length" class="knowledge-page__section">
             <h3 class="knowledge-page__section-title">
               {{ $t('knowledge.tabTemplates') }}
-              <span class="text-gray-500">({{ templates.length }})</span>
+              <span class="knowledge-page__count-label">({{ templates.length }})</span>
             </h3>
             <div class="knowledge-page__lessons-list">
               <SavedTemplateCard
@@ -1220,12 +1220,12 @@ function getTypeIcon(type: string): string {
 .knowledge-page__title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #1a202c;
+  color: var(--text-primary);
   margin-bottom: 0.25rem;
 }
 .knowledge-page__subtitle {
   font-size: 0.875rem;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 .knowledge-page__layout {
   display: grid;
@@ -1249,8 +1249,8 @@ function getTypeIcon(type: string): string {
   padding: 0.625rem 0.75rem;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #ffffff;
-  background: #10b981;
+  color: var(--accent-contrast);
+  background: var(--success-bg);
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -1258,20 +1258,20 @@ function getTypeIcon(type: string): string {
   margin-bottom: 0.75rem;
 }
 .knowledge-page__new-board-btn:hover {
-  background: #059669;
+  background: var(--accent-hover);
 }
 .knowledge-page__sidebar-divider {
   height: 1px;
-  background: #e2e8f0;
+  background: var(--border-color);
   margin-bottom: 0.75rem;
 }
 
 /* ── Sidebar ── */
 .knowledge-page__sidebar {
-  background: #f8fafc;
+  background: var(--bg-secondary);
   border-radius: 12px;
   padding: 1rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
 }
 .knowledge-page__sidebar-section-header {
   display: flex;
@@ -1282,7 +1282,7 @@ function getTypeIcon(type: string): string {
 .knowledge-page__sidebar-title {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #475569;
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: 0; /* reset: тепер margin на wrapper */
@@ -1296,8 +1296,8 @@ function getTypeIcon(type: string): string {
   padding: 0 5px;
   font-size: 0.6875rem;
   font-weight: 700;
-  color: #475569;
-  background: #e2e8f0;
+  color: var(--text-secondary);
+  background: var(--border-color);
   border-radius: 20px;
 }
 .knowledge-page__sidebar-empty {
@@ -1306,10 +1306,11 @@ function getTypeIcon(type: string): string {
   align-items: center;
   gap: 0.25rem;
   font-size: 0.8125rem;
-  color: #94a3b8;
+  color: var(--text-secondary);
   text-align: center;
   padding: 1.25rem 0.5rem;
   line-height: 1.45;
+  opacity: 0.7;
 }
 .knowledge-page__sidebar-empty-icon {
   font-size: 1.5rem;
@@ -1330,25 +1331,25 @@ function getTypeIcon(type: string): string {
   margin-bottom: 0.25rem;
 }
 .knowledge-page__student-btn:hover {
-  background: #e2e8f0;
+  background: var(--border-color);
 }
 .knowledge-page__student-btn--active {
-  background: #ffffff;
-  border-color: #3b82f6;
-  box-shadow: 0 1px 3px rgba(59, 130, 246, 0.15);
+  background: var(--card-bg);
+  border-color: var(--accent);
+  box-shadow: 0 1px 3px var(--shadow);
 }
 .knowledge-page__student-name {
   font-size: 0.875rem;
   font-weight: 500;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 .knowledge-page__group-count {
   font-size: 0.6875rem;
   font-weight: 600;
   padding: 1px 6px;
   border-radius: 4px;
-  background: #e0f2fe;
-  color: #0369a1;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
   margin-left: auto;
 }
 .knowledge-page__demo-badge {
@@ -1356,7 +1357,7 @@ function getTypeIcon(type: string): string {
   font-weight: 600;
   padding: 1px 6px;
   border-radius: 4px;
-  background: #f3e8ff;
+  background: color-mix(in srgb, #7c3aed 12%, var(--card-bg));
   color: #7c3aed;
 }
 
@@ -1371,12 +1372,12 @@ function getTypeIcon(type: string): string {
   transition: border-color 0.15s, background 0.15s;
 }
 .knowledge-page__group-row:hover {
-  background: #e2e8f0;
+  background: var(--border-color);
 }
 .knowledge-page__group-row--active {
-  background: #ffffff;
-  border-color: #3b82f6;
-  box-shadow: 0 1px 3px rgba(59, 130, 246, 0.15);
+  background: var(--card-bg);
+  border-color: var(--accent);
+  box-shadow: 0 1px 3px var(--shadow);
 }
 .knowledge-page__group-btn {
   display: flex;
@@ -1400,7 +1401,7 @@ function getTypeIcon(type: string): string {
   justify-content: center;
   font-size: 1rem;
   line-height: 1;
-  color: #94a3b8;
+  color: var(--text-secondary);
   background: none;
   border: none;
   border-radius: 4px;
@@ -1413,8 +1414,8 @@ function getTypeIcon(type: string): string {
   opacity: 1;
 }
 .knowledge-page__group-del:hover {
-  color: #ef4444;
-  background: #fee2e2;
+  color: var(--danger-bg);
+  background: color-mix(in srgb, var(--danger-bg) 12%, transparent);
 }
 /* ── Кнопка "+" в заголовку класів ── */
 .knowledge-page__sidebar-add-btn {
@@ -1422,9 +1423,9 @@ function getTypeIcon(type: string): string {
   width: 22px;
   height: 22px;
   border-radius: 6px;
-  border: 1.5px solid #d1d5db;
+  border: 1.5px solid var(--border-color);
   background: transparent;
-  color: #6b7280;
+  color: var(--text-secondary);
   font-size: 18px;
   line-height: 1;
   cursor: pointer;
@@ -1435,9 +1436,9 @@ function getTypeIcon(type: string): string {
   flex-shrink: 0;
 }
 .knowledge-page__sidebar-add-btn:hover {
-  border-color: #2563eb;
-  color: #2563eb;
-  background: #eff6ff;
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 /* ── Рядок створення/перейменування класу ── */
 .knowledge-page__group-create-row {
@@ -1450,10 +1451,11 @@ function getTypeIcon(type: string): string {
   flex: 1;
   padding: 4px 8px;
   font-size: 0.875rem;
-  border: 1.5px solid #2563eb;
+  border: 1.5px solid var(--accent);
   border-radius: 6px;
   outline: none;
-  background: #fff;
+  background: var(--card-bg);
+  color: var(--text-primary);
   min-width: 0;
 }
 /* ── Кнопка перейменування (олівець) ── */
@@ -1463,7 +1465,7 @@ function getTypeIcon(type: string): string {
   height: 22px;
   border: none;
   background: transparent;
-  color: #9ca3af;
+  color: var(--text-secondary);
   font-size: 14px;
   cursor: pointer;
   border-radius: 4px;
@@ -1478,14 +1480,14 @@ function getTypeIcon(type: string): string {
   opacity: 1;
 }
 .knowledge-page__group-edit:hover {
-  color: #2563eb;
-  background: #eff6ff;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 /* ── Текст-підказка при видаленні ── */
 .knowledge-page__group-del-prompt {
   flex: 1;
   font-size: 0.75rem;
-  color: #ef4444;
+  color: var(--danger-bg);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1507,20 +1509,20 @@ function getTypeIcon(type: string): string {
   transition: background 0.15s;
 }
 .knowledge-page__group-del-confirm {
-  color: #fff;
-  background: #ef4444;
+  color: var(--accent-contrast);
+  background: var(--danger-bg);
   margin-right: 2px;
 }
 .knowledge-page__group-del-confirm:hover {
-  background: #dc2626;
+  background: color-mix(in srgb, var(--danger-bg) 85%, black);
 }
 .knowledge-page__group-del-cancel {
-  color: #64748b;
-  background: #f1f5f9;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
   margin-right: 4px;
 }
 .knowledge-page__group-del-cancel:hover {
-  background: #e2e8f0;
+  background: var(--border-color);
 }
 
 /* ── Main area ── */
@@ -1539,9 +1541,9 @@ function getTypeIcon(type: string): string {
   justify-content: center;
   min-height: 320px;
   padding: 2rem;
-  background: #f8fafc;
+  background: var(--bg-secondary);
   border-radius: 12px;
-  border: 1px dashed #cbd5e1;
+  border: 1px dashed var(--border-color);
   margin-bottom: 1rem;
 }
 .knowledge-page__placeholder-inner {
@@ -1564,12 +1566,13 @@ function getTypeIcon(type: string): string {
 .knowledge-page__placeholder-title {
   font-size: 1.0625rem;
   font-weight: 600;
-  color: #475569;
+  color: var(--text-secondary);
   margin-bottom: 0.25rem;
 }
 .knowledge-page__placeholder-hint {
   font-size: 0.8125rem;
-  color: #94a3b8;
+  color: var(--text-secondary);
+  opacity: 0.7;
   margin-bottom: 1.5rem;
   line-height: 1.5;
 }
@@ -1585,7 +1588,7 @@ function getTypeIcon(type: string): string {
   align-items: flex-start;
   gap: 0.625rem;
   font-size: 0.8125rem;
-  color: #64748b;
+  color: var(--text-secondary);
   line-height: 1.4;
 }
 .knowledge-page__placeholder-step-num {
@@ -1597,14 +1600,14 @@ function getTypeIcon(type: string): string {
   height: 20px;
   font-size: 0.6875rem;
   font-weight: 700;
-  color: #ffffff;
-  background: #3b82f6;
+  color: var(--accent-contrast);
+  background: var(--accent);
   border-radius: 50%;
   margin-top: 1px;
 }
 .knowledge-page__section {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 1rem 1.25rem;
   margin-bottom: 1rem;
@@ -1618,7 +1621,7 @@ function getTypeIcon(type: string): string {
 .knowledge-page__section-title {
   font-size: 0.9375rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -1634,16 +1637,16 @@ function getTypeIcon(type: string): string {
   padding: 0 6px;
   font-size: 0.6875rem;
   font-weight: 700;
-  color: #3b82f6;
-  background: #eff6ff;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
   border-radius: 20px;
-  border: 1px solid #bfdbfe;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
 }
 
 /* Contextual hint під заголовком бібліотеки */
 .knowledge-page__section-hint {
   font-size: 0.75rem;
-  color: #6366f1;
+  color: var(--accent);
   margin-top: 0.25rem;
   font-weight: 500;
 }
@@ -1655,14 +1658,14 @@ function getTypeIcon(type: string): string {
   padding: 0.5rem 1rem;
   font-size: 0.8125rem;
   font-weight: 600;
-  color: #ffffff;
-  background: #3b82f6;
+  color: var(--accent-contrast);
+  background: var(--accent);
   border-radius: 8px;
   cursor: pointer;
   transition: background 0.15s;
 }
 .knowledge-page__upload-btn:hover {
-  background: #2563eb;
+  background: var(--accent-hover);
 }
 
 /* ── Quota bar ── */
@@ -1675,34 +1678,34 @@ function getTypeIcon(type: string): string {
 .knowledge-page__quota-bar {
   flex: 1;
   height: 6px;
-  background: #e2e8f0;
+  background: var(--border-color);
   border-radius: 3px;
   overflow: hidden;
 }
 .knowledge-page__quota-fill {
   height: 100%;
-  background: #3b82f6;
+  background: var(--accent);
   border-radius: 3px;
   transition: width 0.3s;
 }
 .knowledge-page__quota-fill--warning {
-  background: #f59e0b;
+  background: var(--warning-bg);
 }
 .knowledge-page__quota-fill--critical {
-  background: #ef4444;
+  background: var(--danger-bg);
 }
 .knowledge-page__quota-text {
   font-size: 0.75rem;
-  color: #64748b;
+  color: var(--text-secondary);
   white-space: nowrap;
 }
 
 /* ── Upload error ── */
 .knowledge-page__upload-error {
   font-size: 0.8125rem;
-  color: #b91c1c;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  color: var(--danger-bg);
+  background: color-mix(in srgb, var(--danger-bg) 8%, var(--card-bg));
+  border: 1px solid color-mix(in srgb, var(--danger-bg) 25%, transparent);
   border-radius: 6px;
   padding: 0.5rem 0.75rem;
   margin-bottom: 0.5rem;
@@ -1711,7 +1714,8 @@ function getTypeIcon(type: string): string {
 /* ── Materials list ── */
 .knowledge-page__empty-materials {
   text-align: center;
-  color: #94a3b8;
+  color: var(--text-secondary);
+  opacity: 0.7;
   font-size: 0.8125rem;
   padding: 1.5rem 0;
 }
@@ -1729,7 +1733,7 @@ function getTypeIcon(type: string): string {
   transition: background 0.1s;
 }
 .knowledge-page__material-item:hover {
-  background: #f1f5f9;
+  background: var(--bg-secondary);
 }
 .knowledge-page__material-icon {
   font-size: 1rem;
@@ -1737,7 +1741,7 @@ function getTypeIcon(type: string): string {
 }
 .knowledge-page__material-title {
   font-size: 0.8125rem;
-  color: #334155;
+  color: var(--text-primary);
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -1746,7 +1750,7 @@ function getTypeIcon(type: string): string {
 }
 .knowledge-page__material-remove {
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: var(--text-secondary);
   background: none;
   border: none;
   cursor: pointer;
@@ -1759,8 +1763,8 @@ function getTypeIcon(type: string): string {
   opacity: 1;
 }
 .knowledge-page__material-remove:hover {
-  color: #ef4444;
-  background: #fef2f2;
+  color: var(--danger-bg);
+  background: color-mix(in srgb, var(--danger-bg) 8%, transparent);
 }
 
 /* ══════════════════════════════════════════
@@ -1768,13 +1772,15 @@ function getTypeIcon(type: string): string {
    ══════════════════════════════════════════ */
 .knowledge-page__lib-loading {
   font-size: 0.8125rem;
-  color: #94a3b8;
+  color: var(--text-secondary);
+  opacity: 0.7;
   text-align: center;
   padding: 0.75rem 0 0.25rem;
 }
 .knowledge-page__lib-empty {
   font-size: 0.8125rem;
-  color: #94a3b8;
+  color: var(--text-secondary);
+  opacity: 0.7;
   text-align: center;
   padding: 0.75rem 0 0.25rem;
 }
@@ -1806,9 +1812,9 @@ function getTypeIcon(type: string): string {
   gap: 4px;
   padding: 3px 10px;
   border-radius: 20px;
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
-  color: #64748b;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
   font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
@@ -1817,16 +1823,16 @@ function getTypeIcon(type: string): string {
   line-height: 1.5;
 }
 .knowledge-page__lib-tab:hover {
-  background: #e2e8f0;
-  color: #1e293b;
+  background: var(--border-color);
+  color: var(--text-primary);
 }
 .knowledge-page__lib-tab--active {
-  background: #2563eb;
-  border-color: #2563eb;
-  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
 }
 .knowledge-page__lib-tab--active:hover {
-  background: #1d4ed8;
+  background: var(--accent-hover);
 }
 .knowledge-page__lib-tab-count {
   font-size: 0.6875rem;
@@ -1846,11 +1852,12 @@ function getTypeIcon(type: string): string {
 .knowledge-page__lib-empty-title {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 .knowledge-page__lib-empty-hint {
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: var(--text-secondary);
+  opacity: 0.7;
   line-height: 1.5;
   max-width: 280px;
 }
@@ -1871,12 +1878,12 @@ function getTypeIcon(type: string): string {
   transition: background 0.1s;
 }
 .knowledge-page__lib-item:hover {
-  background: #f8fafc;
+  background: var(--bg-secondary);
 }
 .knowledge-page__lib-name {
   flex: 1;
   font-size: 0.8125rem;
-  color: #334155;
+  color: var(--text-primary);
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1889,9 +1896,9 @@ function getTypeIcon(type: string): string {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  border: 1.5px solid #c7d2fe;
-  background: #eef2ff;
-  color: #4f46e5;
+  border: 1.5px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--card-bg));
+  color: var(--accent);
   font-weight: 700;
   cursor: pointer;
   display: flex;
@@ -1900,21 +1907,21 @@ function getTypeIcon(type: string): string {
   transition: all 0.15s;
 }
 .knowledge-page__lib-add:hover:not(:disabled) {
-  background: #4f46e5;
-  border-color: #4f46e5;
-  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
 }
 .knowledge-page__lib-add--done {
-  background: #dcfce7;
-  border-color: #86efac;
-  color: #16a34a;
+  background: color-mix(in srgb, var(--success-bg) 15%, var(--card-bg));
+  border-color: color-mix(in srgb, var(--success-bg) 40%, transparent);
+  color: var(--success-bg);
   cursor: default;
 }
 
 /* Inline delete confirm */
 .knowledge-page__lib-del-text {
   font-size: 0.75rem;
-  color: #dc2626;
+  color: var(--danger-bg);
   font-weight: 500;
   white-space: nowrap;
 }
@@ -1922,23 +1929,23 @@ function getTypeIcon(type: string): string {
   padding: 2px 8px;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #fff;
-  background: #ef4444;
+  color: var(--accent-contrast);
+  background: var(--danger-bg);
   border: none;
   border-radius: 4px;
   cursor: pointer;
 }
-.knowledge-page__lib-del-confirm:hover { background: #dc2626; }
+.knowledge-page__lib-del-confirm:hover { background: color-mix(in srgb, var(--danger-bg) 85%, black); }
 .knowledge-page__lib-del-cancel {
   padding: 2px 8px;
   font-size: 0.75rem;
-  color: #64748b;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   cursor: pointer;
 }
-.knowledge-page__lib-del-cancel:hover { background: #e2e8f0; }
+.knowledge-page__lib-del-cancel:hover { background: var(--border-color); }
 
 /* [🗑️] кнопка видалення */
 .knowledge-page__lib-del {
@@ -1951,7 +1958,7 @@ function getTypeIcon(type: string): string {
   background: none;
   border: none;
   border-radius: 4px;
-  color: #cbd5e1;
+  color: var(--border-color);
   cursor: pointer;
   opacity: 0;
   transition: opacity 0.15s, color 0.15s, background 0.15s;
@@ -1960,8 +1967,8 @@ function getTypeIcon(type: string): string {
   opacity: 1;
 }
 .knowledge-page__lib-del:hover {
-  color: #ef4444;
-  background: #fef2f2;
+  color: var(--danger-bg);
+  background: color-mix(in srgb, var(--danger-bg) 8%, transparent);
 }
 
 /* ── Board button ── */
@@ -1970,15 +1977,15 @@ function getTypeIcon(type: string): string {
   padding: 0.75rem;
   font-size: 0.9375rem;
   font-weight: 600;
-  color: #ffffff;
-  background: #10b981;
+  color: var(--accent-contrast);
+  background: var(--success-bg);
   border: none;
   border-radius: 10px;
   cursor: pointer;
   transition: background 0.15s;
 }
 .knowledge-page__board-btn:hover:not(:disabled) {
-  background: #059669;
+  background: color-mix(in srgb, var(--success-bg) 85%, black);
 }
 .knowledge-page__board-btn:disabled {
   opacity: 0.6;
@@ -1986,10 +1993,10 @@ function getTypeIcon(type: string): string {
 }
 /* "Почати заняття" — синя brand-кнопка коли вибрано учня */
 .knowledge-page__board-btn--lesson {
-  background: #2563eb;
+  background: var(--accent);
 }
 .knowledge-page__board-btn--lesson:hover:not(:disabled) {
-  background: #1d4ed8;
+  background: var(--accent-hover);
 }
 
 /* ── Lessons list ── */
@@ -2000,7 +2007,7 @@ function getTypeIcon(type: string): string {
 }
 .knowledge-page__lesson-item {
   padding: 0.625rem 0.5rem;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-color);
 }
 .knowledge-page__lesson-info {
   display: flex;
@@ -2016,13 +2023,13 @@ function getTypeIcon(type: string): string {
   border-radius: 4px;
   text-transform: uppercase;
 }
-.knowledge-page__lesson-status--completed { background: #dcfce7; color: #166534; }
-.knowledge-page__lesson-status--in_progress { background: #dbeafe; color: #1e40af; }
-.knowledge-page__lesson-status--draft { background: #f1f5f9; color: #475569; }
-.knowledge-page__lesson-status--cancelled { background: #fef2f2; color: #991b1b; }
+.knowledge-page__lesson-status--completed { background: color-mix(in srgb, var(--success-bg) 15%, var(--card-bg)); color: var(--success-bg); }
+.knowledge-page__lesson-status--in_progress { background: color-mix(in srgb, var(--info-bg) 15%, var(--card-bg)); color: var(--info-bg); }
+.knowledge-page__lesson-status--draft { background: var(--bg-secondary); color: var(--text-secondary); }
+.knowledge-page__lesson-status--cancelled { background: color-mix(in srgb, var(--danger-bg) 12%, var(--card-bg)); color: var(--danger-bg); }
 .knowledge-page__lesson-date {
   font-size: 0.75rem;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 .knowledge-page__lesson-actions {
   display: flex;
@@ -2032,25 +2039,25 @@ function getTypeIcon(type: string): string {
   padding: 0.25rem 0.625rem;
   font-size: 0.75rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--text-primary);
   background: none;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   cursor: pointer;
   transition: background 0.15s;
 }
 .knowledge-page__action-btn:hover {
-  background: #f3f4f6;
-  border-color: #d1d5db;
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
 }
 .knowledge-page__action-btn--primary {
-  color: #2563eb;
-  border-color: #bfdbfe;
-  background: #eff6ff;
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--card-bg));
 }
 .knowledge-page__action-btn--primary:hover {
-  background: #dbeafe;
-  border-color: #93c5fd;
+  background: color-mix(in srgb, var(--accent) 15%, var(--card-bg));
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
 }
 
 /* ══════════════════════════════════════════
@@ -2070,7 +2077,7 @@ function getTypeIcon(type: string): string {
   padding: 0.75rem 1.25rem;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #4f46e5;
+  color: var(--accent);
   background: none;
   border: none;
   cursor: pointer;
@@ -2079,7 +2086,7 @@ function getTypeIcon(type: string): string {
   border-radius: 12px;
 }
 .knowledge-page__catalog-toggle:hover {
-  background: #f5f3ff;
+  background: color-mix(in srgb, var(--accent) 5%, var(--card-bg));
 }
 .knowledge-page__catalog-toggle-label {
   display: flex;
@@ -2088,7 +2095,7 @@ function getTypeIcon(type: string): string {
 }
 .knowledge-page__catalog-chevron {
   transition: transform 0.2s ease;
-  color: #9ca3af;
+  color: var(--text-secondary);
   flex-shrink: 0;
 }
 .knowledge-page__catalog-chevron--open {
@@ -2098,11 +2105,11 @@ function getTypeIcon(type: string): string {
 /* Expanded body */
 .knowledge-page__catalog-body {
   padding: 0 1.25rem 1rem;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--border-color);
 }
 .knowledge-page__catalog-input {
   width: 100%;
-  border: 1.5px solid #e5e7eb;
+  border: 1.5px solid var(--border-color);
   border-radius: 8px;
   padding: 0.5rem 0.75rem;
   font-size: 0.875rem;
@@ -2110,21 +2117,24 @@ function getTypeIcon(type: string): string {
   margin: 0.75rem 0 0.5rem;
   transition: border-color 0.15s, box-shadow 0.15s;
   box-sizing: border-box;
-  color: #1e293b;
+  color: var(--text-primary);
+  background: var(--card-bg);
 }
 .knowledge-page__catalog-input:focus {
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent);
 }
 .knowledge-page__catalog-status {
   text-align: center;
   font-size: 0.8125rem;
-  color: #9ca3af;
+  color: var(--text-secondary);
+  opacity: 0.7;
   padding: 1rem 0;
 }
 .knowledge-page__catalog-hint {
   font-size: 0.8125rem;
-  color: #94a3b8;
+  color: var(--text-secondary);
+  opacity: 0.7;
   padding: 0.5rem 0 0.25rem;
   text-align: center;
 }
@@ -2147,7 +2157,7 @@ function getTypeIcon(type: string): string {
   transition: background 0.1s;
 }
 .knowledge-page__catalog-item:hover {
-  background: #f8fafc;
+  background: var(--bg-secondary);
 }
 
 /* Type badge */
@@ -2160,21 +2170,21 @@ function getTypeIcon(type: string): string {
   flex-shrink: 0;
   white-space: nowrap;
 }
-.kct-problem     { background: #ede9fe; color: #6d28d9; }
-.kct-test        { background: #fef3c7; color: #92400e; }
-.kct-theory      { background: #dbeafe; color: #1e40af; }
-.kct-video       { background: #fce7f3; color: #9d174d; }
-.kct-presentation{ background: #d1fae5; color: #065f46; }
-.kct-pdf         { background: #fee2e2; color: #991b1b; }
-.kct-image       { background: #f0fdf4; color: #166534; }
-.kct-audio       { background: #fdf4ff; color: #7e22ce; }
-.kct-link        { background: #e0e7ff; color: #3730a3; }
+.kct-problem     { background: color-mix(in srgb, #7c3aed 12%, var(--card-bg)); color: #7c3aed; }
+.kct-test        { background: color-mix(in srgb, var(--warning-bg) 15%, var(--card-bg)); color: var(--warning-bg); }
+.kct-theory      { background: color-mix(in srgb, var(--info-bg) 12%, var(--card-bg)); color: var(--info-bg); }
+.kct-video       { background: color-mix(in srgb, #ec4899 10%, var(--card-bg)); color: #ec4899; }
+.kct-presentation{ background: color-mix(in srgb, var(--success-bg) 12%, var(--card-bg)); color: var(--success-bg); }
+.kct-pdf         { background: color-mix(in srgb, var(--danger-bg) 12%, var(--card-bg)); color: var(--danger-bg); }
+.kct-image       { background: color-mix(in srgb, var(--success-bg) 10%, var(--card-bg)); color: var(--success-bg); }
+.kct-audio       { background: color-mix(in srgb, #a855f7 10%, var(--card-bg)); color: #a855f7; }
+.kct-link        { background: color-mix(in srgb, var(--accent) 10%, var(--card-bg)); color: var(--accent); }
 
 /* Item name */
 .knowledge-page__catalog-name {
   flex: 1;
   font-size: 0.8125rem;
-  color: #374151;
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2185,9 +2195,9 @@ function getTypeIcon(type: string): string {
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  border: 1.5px solid #c7d2fe;
-  background: #eef2ff;
-  color: #4f46e5;
+  border: 1.5px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--card-bg));
+  color: var(--accent);
   font-weight: 700;
   cursor: pointer;
   display: flex;
@@ -2197,15 +2207,15 @@ function getTypeIcon(type: string): string {
   transition: all 0.15s;
 }
 .knowledge-page__catalog-add-btn:hover:not(.knowledge-page__catalog-add-btn--added) {
-  background: #4f46e5;
-  border-color: #4f46e5;
-  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
   transform: scale(1.1);
 }
 .knowledge-page__catalog-add-btn--added {
-  background: #dcfce7;
-  border-color: #86efac;
-  color: #16a34a;
+  background: color-mix(in srgb, var(--success-bg) 15%, var(--card-bg));
+  border-color: color-mix(in srgb, var(--success-bg) 40%, transparent);
+  color: var(--success-bg);
   cursor: default;
 }
 
@@ -2217,7 +2227,7 @@ function getTypeIcon(type: string): string {
 .knowledge-page__plan-skeleton {
   height: 72px;
   border-radius: 8px;
-  background: #f1f5f9;
+  background: var(--bg-secondary);
   margin-bottom: 6px;
 }
 
@@ -2230,19 +2240,19 @@ function getTypeIcon(type: string): string {
 
 /* Картка одного уроку */
 .knowledge-page__plan-card {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
-  background: #fafcff;
+  background: var(--card-bg);
   overflow: hidden;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .knowledge-page__plan-card:hover {
-  border-color: #93c5fd;
-  box-shadow: 0 1px 4px rgba(59, 130, 246, 0.1);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  box-shadow: 0 1px 4px var(--shadow);
 }
 .knowledge-page__plan-card--expanded {
-  border-color: #3b82f6;
-  box-shadow: 0 1px 6px rgba(59, 130, 246, 0.15);
+  border-color: var(--accent);
+  box-shadow: 0 1px 6px var(--shadow);
 }
 
 /* Заголовок картки: назва + кількість матеріалів + кнопки */
@@ -2265,7 +2275,7 @@ function getTypeIcon(type: string): string {
   min-width: 0;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2278,8 +2288,8 @@ function getTypeIcon(type: string): string {
   font-weight: 600;
   padding: 1px 7px;
   border-radius: 20px;
-  background: #e0f2fe;
-  color: #0369a1;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
 }
 
 /* Кнопки дій під заголовком */
@@ -2300,9 +2310,9 @@ function getTypeIcon(type: string): string {
 
 /* Розкрита панель матеріалів уроку */
 .knowledge-page__plan-materials {
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--border-color);
   padding: 0.5rem 0.75rem;
-  background: #f8fafc;
+  background: var(--bg-secondary);
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -2318,7 +2328,26 @@ function getTypeIcon(type: string): string {
   transition: background 0.1s;
 }
 .knowledge-page__plan-mat-row:hover {
-  background: #e2e8f0;
+  background: var(--border-color);
+}
+
+/* Порожній стан матеріалів уроку */
+.knowledge-page__skeleton-pulse {
+  background: var(--bg-secondary);
+}
+.knowledge-page__count-label {
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+.knowledge-page__lesson-meta {
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+.knowledge-page__plan-mat-empty {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  opacity: 0.7;
+  padding: 0.25rem 0;
 }
 
 /* Назва матеріалу */
@@ -2326,7 +2355,7 @@ function getTypeIcon(type: string): string {
   flex: 1;
   min-width: 0;
   font-size: 0.8125rem;
-  color: #374151;
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

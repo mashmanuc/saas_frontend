@@ -57,7 +57,6 @@ import { useAuthStore } from '../modules/auth/store/authStore'
 import { useProfileStore } from '../modules/profile/store/profileStore'
 import { USER_ROLES } from '../types/user'
 import { getDefaultRouteForRole, hasAccess } from '../config/routes'
-import { classroomGuard } from './guards/classroomGuard'
 import { requiresAdminOrOperator } from './guards/adminGuard'
 import { setCurrentRoute } from '@/modules/diagnostics/plugins/errorCollector'
 
@@ -66,15 +65,6 @@ const LighthouseCalendarView = () => import('../views/__lighthouse__/LighthouseC
 
 // Role selection landing page
 const RoleSelectionView = () => import('../views/RoleSelectionView.vue')
-
-// Classroom views (v0.24.2)
-const LessonRoom = () => import('../modules/classroom/views/LessonRoom.vue')
-const ClassroomBoard = () => import('../modules/classroom/views/ClassroomBoard.vue')
-
-// Classroom views (v0.24.3)
-const LessonSummary = () => import('../modules/classroom/summary/LessonSummary.vue')
-const LessonReplay = () => import('../modules/classroom/views/LessonReplay.vue')
-const LessonHistory = () => import('../modules/classroom/views/LessonHistory.vue')
 
 // Winterboard v3 (lazy-loaded module routes)
 import winterboardRoutes, { winterboardSessionListRoute } from '../modules/winterboard/router'
@@ -519,24 +509,13 @@ const routes = [
         component: () => import('../modules/negotiation/views/ChatView.vue'),
         meta: { roles: [USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
       },
-      // v0.24.2: Classroom routes
-      {
-        path: 'classroom/:sessionId',
-        name: 'lesson-room',
-        component: LessonRoom,
-        beforeEnter: classroomGuard,
-        meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
-      },
-      {
-        path: 'classroom/board',
-        name: 'classroom-board',
-        component: ClassroomBoard,
-        meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
-      },
-      {
-        path: 'classroom/solo',
-        redirect: { name: 'winterboard-sessions' },
-      },
+      // [LEGACY→WB] Old classroom routes redirected to winterboard (classroom module removed)
+      { path: 'classroom/board', redirect: { name: 'winterboard-sessions' } },
+      { path: 'classroom/solo', redirect: { name: 'winterboard-sessions' } },
+      { path: 'classroom/:sessionId', redirect: { name: 'winterboard-sessions' } },
+      { path: 'classroom/:sessionId/summary', redirect: { name: 'winterboard-sessions' } },
+      { path: 'classroom/:sessionId/replay', redirect: { name: 'winterboard-sessions' } },
+      { path: 'classroom/:sessionId/history', redirect: { name: 'winterboard-sessions' } },
       // [WB:A1.1] Solo → Winterboard redirects (v0.26-v0.27 routes deprecated)
       { path: 'solo', redirect: { name: 'winterboard-sessions' } },
       { path: 'solo/new', redirect: { name: 'winterboard-new' } },
@@ -544,25 +523,6 @@ const routes = [
       { path: 'solo-v2/new', redirect: { name: 'winterboard-new' } },
       { path: 'solo-v2/:id', redirect: to => ({ name: 'winterboard-solo', params: { id: to.params.id } }) },
       { path: 'solo/shared/:token', redirect: to => ({ name: 'winterboard-public', params: { token: to.params.token } }) },
-      // v0.24.3: Classroom history routes
-      {
-        path: 'classroom/:sessionId/summary',
-        name: 'lesson-summary',
-        component: LessonSummary,
-        meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
-      },
-      {
-        path: 'classroom/:sessionId/replay',
-        name: 'lesson-replay',
-        component: LessonReplay,
-        meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
-      },
-      {
-        path: 'classroom/:sessionId/history',
-        name: 'lesson-history',
-        component: LessonHistory,
-        meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR, USER_ROLES.STUDENT] },
-      },
       // v0.69: People & Negotiation Chat routes
       {
         path: 'beta/people',

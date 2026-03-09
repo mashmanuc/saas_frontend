@@ -139,12 +139,12 @@ function onImageError(e: Event) {
   border: 1px solid transparent;
 }
 .lc-item-card:hover {
-  background: #f3f4f6;
-  border-color: #d1d5db;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+  box-shadow: 0 2px 8px var(--shadow);
 }
 .lc-item-card:focus-visible {
-  outline: 2px solid #4f46e5;
+  outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
 .lc-item-card:active {
@@ -156,8 +156,8 @@ function onImageError(e: Event) {
   width: 100%;
   border-radius: 6px;
   overflow: hidden;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
 }
 .lc-item-image {
   width: 100%;
@@ -190,16 +190,16 @@ function onImageError(e: Event) {
   white-space: nowrap;
   flex-shrink: 0;
 }
-.lc-type-problem { background: #ede9fe; color: #6d28d9; }
-.lc-type-test { background: #fef3c7; color: #92400e; }
-.lc-type-theory { background: #dbeafe; color: #1e40af; }
-.lc-type-video { background: #fce7f3; color: #9d174d; }
-.lc-type-presentation { background: #d1fae5; color: #065f46; }
-.lc-type-link { background: #e0e7ff; color: #3730a3; }
+.lc-type-problem { background: color-mix(in srgb, #7c3aed 12%, var(--card-bg)); color: #7c3aed; }
+.lc-type-test { background: color-mix(in srgb, var(--warning-bg) 15%, var(--card-bg)); color: var(--warning-bg); }
+.lc-type-theory { background: color-mix(in srgb, var(--info-bg) 12%, var(--card-bg)); color: var(--info-bg); }
+.lc-type-video { background: color-mix(in srgb, #ec4899 10%, var(--card-bg)); color: #ec4899; }
+.lc-type-presentation { background: color-mix(in srgb, var(--success-bg) 12%, var(--card-bg)); color: var(--success-bg); }
+.lc-type-link { background: color-mix(in srgb, var(--accent) 10%, var(--card-bg)); color: var(--accent); }
 .lc-item-title {
   flex: 1;
   font-size: 11px;
-  color: #374151;
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -215,14 +215,14 @@ function onImageError(e: Event) {
   font-weight: 600;
   padding: 1px 4px;
   border-radius: 3px;
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
   flex-shrink: 0;
   text-transform: uppercase;
 }
 .lc-item-difficulty {
   font-size: 9px;
-  color: #9ca3af;
+  color: var(--text-secondary);
   flex-shrink: 0;
   letter-spacing: 1px;
 }
@@ -231,12 +231,12 @@ function onImageError(e: Event) {
   transition: opacity 0.15s;
   background: none;
   border: none;
-  color: #9ca3af;
+  color: var(--text-secondary);
   cursor: pointer;
   padding: 2px;
   border-radius: 3px;
   flex-shrink: 0;
 }
 .lc-item-card:hover .lc-item-delete-btn { opacity: 1; }
-.lc-item-delete-btn:hover { color: #dc2626; background: #fef2f2; }
+.lc-item-delete-btn:hover { color: var(--danger-bg); background: color-mix(in srgb, var(--danger-bg) 8%, var(--card-bg)); }
 </style>

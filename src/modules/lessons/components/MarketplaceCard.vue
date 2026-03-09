@@ -91,8 +91,8 @@ const priceLabel = computed(() => {
 
 const priceClass = computed(() => {
   const p = props.template.price
-  if (p == null || p === 0) return 'bg-green-50 text-green-700'
-  return 'bg-blue-50 text-blue-700'
+  if (p == null || p === 0) return 'mp-price-free'
+  return 'mp-price-paid'
 })
 
 const formattedDate = computed(() => {
@@ -107,3 +107,14 @@ const formattedDate = computed(() => {
   }
 })
 </script>
+
+<style scoped>
+.mp-price-free {
+  background: color-mix(in srgb, var(--success-bg) 12%, var(--card-bg));
+  color: var(--success-bg);
+}
+.mp-price-paid {
+  background: color-mix(in srgb, var(--info-bg) 12%, var(--card-bg));
+  color: var(--info-bg);
+}
+</style>

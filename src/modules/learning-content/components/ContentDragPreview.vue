@@ -23,12 +23,12 @@ defineExpose({ ghostEl })
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  background: white;
-  border: 1px solid #c7d2fe;
+  background: var(--card-bg);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
   border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px var(--shadow);
   font-size: 12px;
-  color: #374151;
+  color: var(--text-primary);
   pointer-events: none;
   z-index: 10000;
 }

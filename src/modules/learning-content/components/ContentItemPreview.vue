@@ -114,7 +114,7 @@ const renderedHtml = computed(() => {
   z-index: 9999;
 }
 .lc-preview-modal {
-  background: white;
+  background: var(--card-bg);
   border-radius: 12px;
   padding: 24px;
   max-width: 560px;
@@ -122,7 +122,7 @@ const renderedHtml = computed(() => {
   max-height: 80vh;
   overflow-y: auto;
   position: relative;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 20px 60px var(--shadow);
 }
 .lc-preview-close {
   position: absolute;
@@ -131,23 +131,23 @@ const renderedHtml = computed(() => {
   background: none;
   border: none;
   font-size: 16px;
-  color: #9ca3af;
+  color: var(--text-secondary);
   cursor: pointer;
   padding: 4px;
   border-radius: 4px;
   line-height: 1;
 }
 .lc-preview-close:hover {
-  color: #374151;
-  background: #f3f4f6;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
 }
 .lc-preview-close:focus-visible {
-  outline: 2px solid #4f46e5;
+  outline: 2px solid var(--accent);
 }
 .lc-preview-title {
   font-size: 16px;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--text-primary);
   margin-bottom: 8px;
   padding-right: 32px;
 }
@@ -163,31 +163,31 @@ const renderedHtml = computed(() => {
   border-radius: 4px;
   text-transform: uppercase;
 }
-.lc-type-problem { background: #ede9fe; color: #6d28d9; }
-.lc-type-test { background: #fef3c7; color: #92400e; }
-.lc-type-theory { background: #dbeafe; color: #1e40af; }
-.lc-type-video { background: #fce7f3; color: #9d174d; }
-.lc-type-presentation { background: #d1fae5; color: #065f46; }
-.lc-type-link { background: #e0e7ff; color: #3730a3; }
+.lc-type-problem { background: color-mix(in srgb, #7c3aed 12%, var(--card-bg)); color: #7c3aed; }
+.lc-type-test { background: color-mix(in srgb, var(--warning-bg) 15%, var(--card-bg)); color: var(--warning-bg); }
+.lc-type-theory { background: color-mix(in srgb, var(--info-bg) 12%, var(--card-bg)); color: var(--info-bg); }
+.lc-type-video { background: color-mix(in srgb, #ec4899 10%, var(--card-bg)); color: #ec4899; }
+.lc-type-presentation { background: color-mix(in srgb, var(--success-bg) 12%, var(--card-bg)); color: var(--success-bg); }
+.lc-type-link { background: color-mix(in srgb, var(--accent) 10%, var(--card-bg)); color: var(--accent); }
 .lc-diff-badge {
   font-size: 10px;
   padding: 2px 8px;
   border-radius: 4px;
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
 }
 .lc-preview-loading {
   text-align: center;
   padding: 24px;
-  color: #9ca3af;
+  color: var(--text-secondary);
   font-size: 13px;
 }
 .lc-preview-image-wrap {
   margin-bottom: 16px;
   border-radius: 8px;
   overflow: hidden;
-  border: 1px solid #e5e7eb;
-  background: #f9fafb;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
 }
 .lc-preview-image {
   width: 100%;
@@ -198,20 +198,20 @@ const renderedHtml = computed(() => {
 .lc-preview-content {
   font-size: 14px;
   line-height: 1.7;
-  color: #374151;
+  color: var(--text-primary);
 }
 .lc-preview-answer {
   margin-top: 12px;
   padding: 8px 12px;
-  background: #f0fdf4;
-  border-left: 3px solid #22c55e;
+  background: color-mix(in srgb, var(--success-bg) 10%, var(--card-bg));
+  border-left: 3px solid var(--success-bg);
   border-radius: 4px;
   font-size: 13px;
-  color: #15803d;
+  color: var(--success-bg);
 }
 .lc-preview-owner {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-secondary);
   margin-bottom: 12px;
 }
 .lc-preview-content :deep(.lc-display-math) {

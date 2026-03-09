@@ -65,20 +65,20 @@ function onLanguageChange(e: Event) {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color);
 }
 .lc-search-input {
   width: 100%;
   padding: 7px 10px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 13px;
   outline: none;
   transition: border-color 0.15s;
 }
 .lc-search-input:focus {
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 15%, transparent);
 }
 .lc-search-filters {
   display: flex;
@@ -86,15 +86,15 @@ function onLanguageChange(e: Event) {
 }
 .lc-filter-select {
   padding: 4px 8px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   font-size: 11px;
-  color: #374151;
-  background: white;
+  color: var(--text-primary);
+  background: var(--card-bg);
   outline: none;
   cursor: pointer;
 }
 .lc-filter-select:focus {
-  border-color: #4f46e5;
+  border-color: var(--accent);
 }
 </style>

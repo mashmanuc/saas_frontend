@@ -32,31 +32,31 @@ const store = useContentLibraryStore()
   gap: 4px;
   padding: 8px;
   overflow-x: auto;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color);
 }
 .lc-subject-tab {
   padding: 5px 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-color);
   border-radius: 16px;
   font-size: 12px;
   font-weight: 500;
-  color: #6b7280;
-  background: white;
+  color: var(--text-secondary);
+  background: var(--card-bg);
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.15s;
 }
 .lc-subject-tab:hover {
-  background: #f9fafb;
-  color: #374151;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
 }
 .lc-subject-tab.active {
-  background: #4f46e5;
-  color: white;
-  border-color: #4f46e5;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border-color: var(--accent);
 }
 .lc-subject-tab:focus-visible {
-  outline: 2px solid #4f46e5;
+  outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
 .lc-subject-icon {

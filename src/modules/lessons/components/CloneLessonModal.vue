@@ -180,8 +180,8 @@ async function confirmClone() {
                   class="cll-student-check"
                   width="16" height="16" viewBox="0 0 16 16" fill="none"
                 >
-                  <circle cx="8" cy="8" r="7" fill="#3b82f6"/>
-                  <path d="M4.5 8l2.5 2.5 4-4" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <circle cx="8" cy="8" r="7" fill="currentColor"/>
+                  <path d="M4.5 8l2.5 2.5 4-4" stroke="var(--accent-contrast, #fff)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
               </label>
 
@@ -221,8 +221,8 @@ async function confirmClone() {
           <!-- Preview -->
           <div v-if="isValid" class="cll-preview">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" class="cll-preview-icon">
-              <circle cx="8" cy="8" r="7" stroke="#3b82f6" stroke-width="1.5"/>
-              <path d="M8 5v3.5l2 2" stroke="#3b82f6" stroke-width="1.5" stroke-linecap="round"/>
+              <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M8 5v3.5l2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
             </svg>
             Буде створено чернетку уроку для
             <strong>{{ selectedStudentName }}</strong>
@@ -275,9 +275,9 @@ async function confirmClone() {
 
 /* ── Panel ── */
 .cll-panel {
-  background: #ffffff;
+  background: var(--card-bg);
   border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 20px 60px var(--shadow);
   width: 100%;
   max-width: 440px;
   animation: cll-slide-up 0.2s ease;
@@ -298,12 +298,12 @@ async function confirmClone() {
 .cll-title {
   font-size: 1rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
   margin: 0;
 }
 .cll-subtitle {
   font-size: 0.8125rem;
-  color: #64748b;
+  color: var(--text-secondary);
   margin: 0.125rem 0 0;
   max-width: 300px;
   overflow: hidden;
@@ -314,11 +314,11 @@ async function confirmClone() {
   width: 28px;
   height: 28px;
   border: none;
-  background: #f1f5f9;
+  background: var(--bg-secondary);
   border-radius: 6px;
   font-size: 1.125rem;
   line-height: 1;
-  color: #64748b;
+  color: var(--text-secondary);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -327,8 +327,8 @@ async function confirmClone() {
   transition: background 0.15s, color 0.15s;
 }
 .cll-close:hover {
-  background: #e2e8f0;
-  color: #1e293b;
+  background: var(--border-color);
+  color: var(--text-primary);
 }
 
 /* ── Body ── */
@@ -353,25 +353,25 @@ async function confirmClone() {
 .cll-label {
   font-size: 0.8125rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--text-primary);
 }
 .cll-required {
-  color: #ef4444;
+  color: var(--danger-bg);
   margin-left: 2px;
 }
 .cll-input {
   padding: 0.5rem 0.75rem;
-  border: 1.5px solid #e5e7eb;
+  border: 1.5px solid var(--border-color);
   border-radius: 8px;
   font-size: 0.875rem;
-  color: #1e293b;
-  background: #fff;
+  color: var(--text-primary);
+  background: var(--card-bg);
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .cll-input:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
 /* ── Student list ── */
@@ -381,7 +381,7 @@ async function confirmClone() {
   gap: 2px;
   max-height: 200px;
   overflow-y: auto;
-  border: 1.5px solid #e5e7eb;
+  border: 1.5px solid var(--border-color);
   border-radius: 10px;
   padding: 0.375rem;
 }
@@ -396,10 +396,10 @@ async function confirmClone() {
   user-select: none;
 }
 .cll-student-option:hover {
-  background: #f1f5f9;
+  background: var(--bg-secondary);
 }
 .cll-student-option--selected {
-  background: #eff6ff;
+  background: color-mix(in srgb, var(--accent) 8%, var(--card-bg));
 }
 .cll-student-avatar {
   font-size: 1rem;
@@ -409,7 +409,7 @@ async function confirmClone() {
   flex: 1;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #1e293b;
+  color: var(--text-primary);
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -418,20 +418,21 @@ async function confirmClone() {
 .cll-student-badge {
   font-size: 0.6875rem;
   font-weight: 600;
-  color: #3b82f6;
-  background: #dbeafe;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, var(--card-bg));
   padding: 1px 6px;
   border-radius: 4px;
   flex-shrink: 0;
 }
 .cll-student-check {
   flex-shrink: 0;
+  color: var(--accent);
 }
 .cll-no-students {
   padding: 1rem;
   text-align: center;
   font-size: 0.8125rem;
-  color: #94a3b8;
+  color: var(--text-secondary);
 }
 
 /* ── Preview ── */
@@ -440,11 +441,11 @@ async function confirmClone() {
   align-items: center;
   gap: 0.5rem;
   padding: 0.625rem 0.75rem;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
+  background: color-mix(in srgb, var(--info-bg) 10%, var(--card-bg));
+  border: 1px solid color-mix(in srgb, var(--info-bg) 25%, transparent);
   border-radius: 8px;
   font-size: 0.8125rem;
-  color: #1e40af;
+  color: var(--info-bg);
   line-height: 1.4;
 }
 .cll-preview strong {
@@ -452,16 +453,17 @@ async function confirmClone() {
 }
 .cll-preview-icon {
   flex-shrink: 0;
+  color: var(--accent);
 }
 
 /* ── Error ── */
 .cll-error {
   padding: 0.5rem 0.75rem;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: color-mix(in srgb, var(--danger-bg) 8%, var(--card-bg));
+  border: 1px solid color-mix(in srgb, var(--danger-bg) 25%, transparent);
   border-radius: 8px;
   font-size: 0.8125rem;
-  color: #dc2626;
+  color: var(--danger-bg);
 }
 
 /* ── Footer ── */
@@ -470,7 +472,7 @@ async function confirmClone() {
   justify-content: flex-end;
   gap: 0.75rem;
   padding: 0.75rem 1.25rem 1.25rem;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--border-color);
 }
 .cll-btn {
   padding: 0.5rem 1.25rem;
@@ -485,18 +487,18 @@ async function confirmClone() {
   border: none;
 }
 .cll-btn--cancel {
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
 }
 .cll-btn--cancel:hover {
-  background: #e2e8f0;
+  background: var(--border-color);
 }
 .cll-btn--confirm {
-  background: #3b82f6;
-  color: #ffffff;
+  background: var(--accent);
+  color: var(--accent-contrast);
 }
 .cll-btn--confirm:hover:not(:disabled) {
-  background: #2563eb;
+  background: var(--accent-hover);
 }
 .cll-btn--confirm:disabled {
   opacity: 0.5;
