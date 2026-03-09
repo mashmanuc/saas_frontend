@@ -60,13 +60,11 @@ class WebSocketService {
   init() {
     if (this.initialized) return
     
-    const authStore = useAuthStore()
-    
-    realtimeService.init({
-      tokenProvider: () => authStore.access,
-      heartbeatInterval: 25000,
-      logger: console
-    })
+    // NOTE: Do NOT call realtimeService.init() here!
+    // realtimeStore.js already initializes realtimeService with the correct
+    // tokenProvider (awaits bootstrap, filters '__cookie__' placeholder).
+    // Re-init here would overwrite that with a naive tokenProvider that
+    // sends invalid tokens → backend 1006 close → reconnect storm.
 
     // Initialize reconnect manager
     this.reconnectManager = new WebSocketReconnectManager(
@@ -91,10 +89,11 @@ class WebSocketService {
     realtimeService.on('status', (status) => {
       console.log('[websocket] Status:', status)
       
-      if (status === 'connected' && this.reconnectManager) {
+      // Track metrics only — reconnection is handled by realtime/index.js scheduleReconnect()
+      // Do NOT call reconnectManager.onDisconnect() here — it would trigger a parallel
+      // reconnect loop that conflicts with the built-in one, causing a reconnect storm.
+      if (status === 'open' && this.reconnectManager) {
         this.reconnectManager.onConnect()
-      } else if (status === 'disconnected' && this.reconnectManager) {
-        this.reconnectManager.onDisconnect()
       }
     })
 
@@ -105,6 +104,7 @@ class WebSocketService {
     realtimeService.on('auth_required', async () => {
       console.warn('[websocket] Auth required, refreshing token...')
       try {
+        const authStore = useAuthStore()
         const newToken = await authStore.refreshAccess()
         if (newToken) {
           // БАГ №1 FIX: після успішного refresh — перепідключити WS з новим токеном
