@@ -34,6 +34,7 @@ export const useInquiriesStore = defineStore('inquiries', () => {
   // State v0.69
   const items = ref<InquiryDTO[]>([])
   const statusFilter = ref<InquiryStatus | null>(null)
+  const roleFilter = ref<'student' | 'tutor' | null>(null)
   const pendingRequestIds = ref<Set<string>>(new Set())
   
   // Loading states
@@ -86,6 +87,11 @@ export const useInquiriesStore = defineStore('inquiries', () => {
     // The mutation functions set isLoading=true and call refetch() before their own finally block.
     isLoading.value = true
     error.value = null
+    
+    // Persist role filter for refetch() after mutations
+    if (filters.role) {
+      roleFilter.value = filters.role
+    }
     
     try {
       const inquiries = await apiFetchInquiries(filters)
@@ -183,6 +189,9 @@ export const useInquiriesStore = defineStore('inquiries', () => {
    */
   async function refetch(): Promise<void> {
     const filters: InquiryFilters = {}
+    if (roleFilter.value) {
+      filters.role = roleFilter.value
+    }
     if (statusFilter.value) {
       filters.status = statusFilter.value
     }
@@ -242,6 +251,7 @@ export const useInquiriesStore = defineStore('inquiries', () => {
     // State
     items,
     statusFilter,
+    roleFilter,
     pendingRequestIds,
     isLoading,
     error,

@@ -156,34 +156,49 @@ async function handleUnpublish() {
       <div class="header-content">
         <h1>{{ t('marketplace.profile.title') }}</h1>
         <div class="header-actions">
-          <a
-            v-if="myProfile && profileUrl"
-            :href="profileUrl"
-            target="_blank"
-            class="link-ghost"
-          >
-            {{ t('marketplace.profile.viewPublic') }}
-          </a>
+          <!-- Published: show View + Update + Unpublish -->
+          <template v-if="myProfile?.is_published">
+            <a
+              v-if="profileUrl"
+              :href="profileUrl"
+              target="_blank"
+              class="link-ghost"
+            >
+              {{ t('marketplace.profile.viewPublic') }}
+            </a>
 
-          <Button
-            v-if="canPublish"
-            variant="primary"
-            :disabled="isSaving"
-            data-test="marketplace-publish"
-            @click="handlePublish"
-          >
-            {{ isSaving ? t('marketplace.profile.publishing') : t('marketplace.profile.publish') }}
-          </Button>
+            <Button
+              v-if="canPublish"
+              variant="primary"
+              :disabled="isSaving"
+              data-test="marketplace-publish"
+              @click="handlePublish"
+            >
+              {{ isSaving ? t('marketplace.profile.publishing') : t('marketplace.profile.update') }}
+            </Button>
 
-          <Button
-            v-if="myProfile?.is_published"
-            variant="secondary"
-            :disabled="isSaving"
-            data-test="marketplace-unpublish"
-            @click="handleUnpublish"
-          >
-            {{ isSaving ? t('marketplace.profile.unpublishing') : t('marketplace.profile.unpublish') }}
-          </Button>
+            <Button
+              variant="secondary"
+              :disabled="isSaving"
+              data-test="marketplace-unpublish"
+              @click="handleUnpublish"
+            >
+              {{ isSaving ? t('marketplace.profile.unpublishing') : t('marketplace.profile.unpublish') }}
+            </Button>
+          </template>
+
+          <!-- Not published: show only Publish -->
+          <template v-else>
+            <Button
+              v-if="canPublish"
+              variant="primary"
+              :disabled="isSaving"
+              data-test="marketplace-publish"
+              @click="handlePublish"
+            >
+              {{ isSaving ? t('marketplace.profile.publishing') : t('marketplace.profile.publish') }}
+            </Button>
+          </template>
 
           <!-- v1.0: Hidden — self-publish flow makes moderation button confusing for users
           <Button
@@ -221,6 +236,11 @@ async function handleUnpublish() {
         <div v-if="myProfile && myProfile.is_published && isProfileComplete" class="success-banner" data-test="marketplace-profile-published">
           <strong>{{ t('marketplace.profile.publishedTitle') }}</strong>
           {{ t('marketplace.profile.publishedDescription') }}
+        </div>
+
+        <div v-else-if="myProfile && !myProfile.is_published && isProfileComplete" class="info-banner" data-test="marketplace-profile-not-published">
+          <strong>{{ t('marketplace.profile.notPublishedTitle') }}</strong>
+          {{ t('marketplace.profile.notPublishedDescription') }}
         </div>
 
         <div v-else-if="missingProfileSections.length > 0 && myProfile" class="incomplete-banner" data-test="marketplace-profile-incomplete">
@@ -368,6 +388,15 @@ async function handleUnpublish() {
 .success-banner {
   background: color-mix(in srgb, var(--success-bg) 14%, transparent);
   border: 1px solid color-mix(in srgb, var(--success-bg) 32%, transparent);
+  color: var(--text-primary);
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.info-banner {
+  background: color-mix(in srgb, var(--info-bg) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--info-bg) 32%, transparent);
   color: var(--text-primary);
   padding: 1rem;
   border-radius: 8px;

@@ -102,6 +102,13 @@ export function useInquiryAccept() {
    * але НЕ використовується як gate для чату
    */
   async function handleAcceptSuccess(inquiryId: string, result: any): Promise<void> {
+    // Optimistic UI update: immediately mark inquiry as ACCEPTED in store
+    const storeItems = inquiriesStore.items
+    const idx = storeItems.findIndex(i => String(i.id) === String(inquiryId))
+    if (idx !== -1) {
+      storeItems[idx] = { ...storeItems[idx], status: 'ACCEPTED' }
+    }
+    
     // Invalidate acceptance cache
     acceptanceStore.invalidate()
     
