@@ -4,7 +4,7 @@ import { useInquiriesStore } from '@/stores/inquiriesStore'
 import { useContactAccessStore } from '@/stores/contactAccessStore'
 import { useRelationsStore } from '@/stores/relationsStore'
 import { acceptInquiry } from '@/api/acceptance'
-import { useToast } from '@/composables/useToast'
+import { notifySuccess, notifyError } from '@/utils/notify'
 
 /**
  * Composable for inquiry accept flow.
@@ -16,8 +16,7 @@ export function useInquiryAccept() {
   const inquiriesStore = useInquiriesStore()
   const contactAccessStore = useContactAccessStore()
   const relationsStore = useRelationsStore()
-  const toast = useToast()
-  
+
   const isAccepting = ref(false)
   
   /**
@@ -131,8 +130,8 @@ export function useInquiryAccept() {
     // Refresh inquiries list
     await inquiriesStore.refetch()
     
-    // Show success toast
-    toast.success('Inquiry accepted successfully!')
+    // Show success notification
+    notifySuccess('Запит прийнято. Контакти відкрито.')
     
     // Analytics
     trackAcceptSuccess(inquiryId)
@@ -140,25 +139,32 @@ export function useInquiryAccept() {
   
   /**
    * Extract human-readable message from axios error or plain error.
+   * Backend returns DomainError format: { code, meta } (no message field!)
+   * or APIError format: { error: { code, detail } }
    */
   function getErrorMessage(error: any): string {
+    const data = error?.response?.data
     return (
-      error?.response?.data?.message ||
-      error?.response?.data?.detail ||
+      data?.message ||                                    // старий формат DomainError (apps.core.exceptions)
+      data?.error?.detail ||                             // APIError format
+      (data?.code && data?.meta?.reason
+        ? `${data.code}: ${data.meta.reason}`            // новий DomainError (apps.core.errors)
+        : null) ||
+      data?.code ||
       error?.message ||
-      'Failed to accept inquiry'
+      'Помилка при прийнятті запиту'
     )
   }
 
   /**
    * Handle accept error.
-   * Shows toast AND re-throws so caller can react.
+   * Shows notification AND re-throws so caller can react.
    */
   function handleAcceptError(error: any): void {
     const message = getErrorMessage(error)
-    
-    // Show error toast
-    toast.error(message)
+
+    // Show error via the real notification system (notifyStore → ToastContainer)
+    notifyError(message)
     
     // Analytics
     if (isLimitReachedError(error)) {
