@@ -277,7 +277,11 @@
       "accept": "Прийняти",
       "accepting": "Приймаємо...",
       "reject": "Відхилити",
-      "contactsUnlocked": "Контакти студента"
+      "contactsUnlocked": "Контакти студента",
+      "acceptedMessage": "Учня прийнято. Контакти відкрито.",
+      "rejectedMessage": "Запит відхилено",
+      "expiredMessage": "Запит прострочено",
+      "cancelledMessage": "Запит скасовано студентом"
     },
     "errors": {
       "retryAfter": "Спробуйте через {seconds} секунд",
@@ -1683,6 +1687,9 @@
       "incompleteDescription": "Заповніть фото, опис, предмети, мови та ставку.",
       "publishedTitle": "Профіль налаштований",
       "publishedDescription": "Ваш профіль опубліковано та доступний студентам.",
+      "notPublishedTitle": "Профіль не опубліковано",
+      "notPublishedDescription": "Ваш профіль готовий, але ще не доступний студентам. Натисніть \"Опублікувати\", щоб зробити його видимим.",
+      "update": "Оновити",
       "reviews": {
         "title": "Відгуки",
         "empty": "Відгуків ще немає",

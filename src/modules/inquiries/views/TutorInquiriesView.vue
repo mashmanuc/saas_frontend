@@ -50,25 +50,48 @@
         :key="inquiry.id"
         :inquiry="inquiry"
         current-user-role="tutor"
-        :show-actions="inquiry.status === 'OPEN'"
+        :show-actions="true"
       >
         <template #actions>
-          <Button 
-            variant="primary"
-            size="sm"
-            :disabled="isLoading || isAccepting || !acceptanceStore.canAccept"
-            @click="handleAccept(inquiry.id)"
-          >
-            {{ isAccepting ? $t('inquiries.tutor.accepting') : $t('inquiries.tutor.accept') }}
-          </Button>
-          <Button 
-            variant="secondary"
-            size="sm"
-            :disabled="isLoading"
-            @click="openRejectModal(inquiry.id)"
-          >
-            {{ $t('inquiries.tutor.reject') }}
-          </Button>
+          <!-- OPEN: show Accept / Reject buttons -->
+          <template v-if="inquiry.status === 'OPEN'">
+            <Button 
+              variant="primary"
+              size="sm"
+              :disabled="isLoading || isAccepting || !acceptanceStore.canAccept"
+              @click="handleAccept(inquiry.id)"
+            >
+              {{ isAccepting ? $t('inquiries.tutor.accepting') : $t('inquiries.tutor.accept') }}
+            </Button>
+            <Button 
+              variant="secondary"
+              size="sm"
+              :disabled="isLoading"
+              @click="openRejectModal(inquiry.id)"
+            >
+              {{ $t('inquiries.tutor.reject') }}
+            </Button>
+          </template>
+
+          <!-- ACCEPTED: show confirmation message -->
+          <div v-else-if="inquiry.status === 'ACCEPTED'" class="status-message status-accepted-msg">
+            ✓ {{ $t('inquiries.tutor.acceptedMessage') }}
+          </div>
+
+          <!-- REJECTED -->
+          <div v-else-if="inquiry.status === 'REJECTED'" class="status-message status-rejected-msg">
+            {{ $t('inquiries.tutor.rejectedMessage') }}
+          </div>
+
+          <!-- EXPIRED -->
+          <div v-else-if="inquiry.status === 'EXPIRED'" class="status-message status-expired-msg">
+            {{ $t('inquiries.tutor.expiredMessage') }}
+          </div>
+
+          <!-- CANCELLED -->
+          <div v-else-if="inquiry.status === 'CANCELLED'" class="status-message status-cancelled-msg">
+            {{ $t('inquiries.tutor.cancelledMessage') }}
+          </div>
         </template>
       </InquiryCard>
     </div>
@@ -353,5 +376,58 @@ function handleRetry() {
 .contact-value {
   color: var(--text-primary);
   font-weight: 600;
+}
+
+/* Status messages in actions area */
+.status-message {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: var(--radius-md);
+  width: 100%;
+}
+
+.status-accepted-msg {
+  color: #065F46;
+  background: #D1FAE5;
+}
+
+.status-rejected-msg {
+  color: #991B1B;
+  background: #FEE2E2;
+}
+
+.status-expired-msg {
+  color: #92400E;
+  background: #FEF3C7;
+}
+
+.status-cancelled-msg {
+  color: #6B7280;
+  background: #F3F4F6;
+}
+
+:root[data-theme='dark'] .status-accepted-msg,
+.dark .status-accepted-msg {
+  color: #A7F3D0;
+  background: rgba(16, 185, 129, 0.15);
+}
+
+:root[data-theme='dark'] .status-rejected-msg,
+.dark .status-rejected-msg {
+  color: #FCA5A5;
+  background: rgba(239, 68, 68, 0.15);
+}
+
+:root[data-theme='dark'] .status-expired-msg,
+.dark .status-expired-msg {
+  color: #FCD34D;
+  background: rgba(245, 158, 11, 0.15);
+}
+
+:root[data-theme='dark'] .status-cancelled-msg,
+.dark .status-cancelled-msg {
+  color: #D1D5DB;
+  background: rgba(107, 114, 128, 0.15);
 }
 </style>

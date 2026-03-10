@@ -277,7 +277,11 @@
       "accept": "Принять",
       "accepting": "Принимаем...",
       "reject": "Отклонить",
-      "contactsUnlocked": "Контакты студента"
+      "contactsUnlocked": "Контакты студента",
+      "acceptedMessage": "Ученик принят. Контакты открыты.",
+      "rejectedMessage": "Запрос отклонён",
+      "expiredMessage": "Запрос просрочен",
+      "cancelledMessage": "Запрос отменён студентом"
     },
     "errors": {
       "retryAfter": "Попробуйте через {seconds} секунд",
@@ -1685,6 +1689,9 @@
       "incompleteDescription": "Заполните фото, описание, предметы, языки и ставку.",
       "publishedTitle": "Профиль настроен",
       "publishedDescription": "Ваш профиль опубликован и доступен студентам.",
+      "notPublishedTitle": "Профиль не опубликован",
+      "notPublishedDescription": "Ваш профиль готов, но еще не доступен студентам. Нажмите \"Опубликовать\", чтобы сделать его видимым.",
+      "update": "Обновить",
       "reviews": {
         "title": "Отзывы",
         "empty": "Отзывов еще нет",

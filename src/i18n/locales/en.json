@@ -127,7 +127,11 @@
       "accept": "Accept",
       "reject": "Reject",
       "contactsUnlocked": "Student contacts",
-      "accepting": "Приймаємо..."
+      "accepting": "Accepting...",
+      "acceptedMessage": "Student accepted. Contacts unlocked.",
+      "rejectedMessage": "Inquiry rejected",
+      "expiredMessage": "Inquiry expired",
+      "cancelledMessage": "Inquiry cancelled by student"
     },
     "errors": {
       "retryAfter": "Try again in {seconds} seconds",
@@ -1436,6 +1440,9 @@
       "incompleteDescription": "Add avatar, bio, subjects, languages, and rate.",
       "publishedTitle": "Profile is ready",
       "publishedDescription": "Your profile is published and visible to students.",
+      "notPublishedTitle": "Profile is not published",
+      "notPublishedDescription": "Your profile is ready but not yet visible to students. Click \"Publish\" to make it visible.",
+      "update": "Update",
       "reviews": {
         "title": "Reviews",
         "empty": "No reviews yet",

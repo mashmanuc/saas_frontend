@@ -35,7 +35,7 @@ export async function acceptInquiry(
   }
   
   const response = await apiClient.post<AcceptInquiryResponse>(
-    `/api/inquiries/${inquiryId}/accept/`,
+    `/api/v1/inquiries/${inquiryId}/accept/`,
     payload
   )
   
