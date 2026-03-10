@@ -42,8 +42,8 @@ export function useInquiryAccept() {
     isAccepting.value = true
     
     try {
-      // Step 1: Fetch availability (lazy-load)
-      await acceptanceStore.fetchAvailability()
+      // Step 1: Always fetch fresh availability (grace token TTL=45s)
+      await acceptanceStore.fetchAvailability(true)
       
       // Step 2: Accept with grace token (if available)
       const graceToken = acceptanceStore.data?.grace_token
@@ -139,10 +139,23 @@ export function useInquiryAccept() {
   }
   
   /**
+   * Extract human-readable message from axios error or plain error.
+   */
+  function getErrorMessage(error: any): string {
+    return (
+      error?.response?.data?.message ||
+      error?.response?.data?.detail ||
+      error?.message ||
+      'Failed to accept inquiry'
+    )
+  }
+
+  /**
    * Handle accept error.
+   * Shows toast AND re-throws so caller can react.
    */
   function handleAcceptError(error: any): void {
-    const message = error.message || 'Failed to accept inquiry'
+    const message = getErrorMessage(error)
     
     // Show error toast
     toast.error(message)
@@ -153,16 +166,27 @@ export function useInquiryAccept() {
     } else {
       trackAcceptError(error)
     }
+
+    // Re-throw so TutorInquiriesView can handle it too
+    throw error
   }
   
   /**
-   * Check if error is "grace token expired".
+   * Check if error is "grace token expired" or "grace token required".
+   * Backend returns { code, message, meta } via DomainError handler.
+   * Axios wraps it in error.response.data.
    */
   function isGraceTokenExpiredError(error: any): boolean {
+    const data = error?.response?.data
+    const backendMessage = data?.message || ''
+    const backendReason = data?.meta?.reason || ''
+    const axiosMessage = error?.message || ''
     return (
-      error.message?.includes('Grace token expired') ||
-      error.message?.includes('Invalid grace token') ||
-      error.response?.data?.error?.includes('token')
+      backendMessage.includes('Grace token expired') ||
+      backendMessage.includes('Invalid grace token') ||
+      backendMessage.includes('grace_token') ||
+      backendReason.includes('grace_token') ||
+      axiosMessage.includes('Grace token expired')
     )
   }
   
