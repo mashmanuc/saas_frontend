@@ -25,7 +25,7 @@
         <form v-else @submit.prevent="handleSubmit" class="inquiry-form">
           <!-- Tutor Preview -->
           <div class="tutor-preview">
-            <img :src="tutor.avatar || '/default-avatar.png'" class="avatar-sm" alt="" />
+            <img :src="tutor.avatar || '/default-avatar.svg'" class="avatar-sm" alt="" />
             <div>
               <h3>{{ tutor.full_name }}</h3>
               <p class="subjects">{{ tutor.subjects?.join(', ') || '' }}</p>

@@ -68,7 +68,7 @@ const participantName = computed(() => {
 
 const participantAvatar = computed(() => {
   const avatar = props.isTutor ? props.lesson.student_avatar : props.lesson.tutor_avatar
-  return avatar || '/default-avatar.png'
+  return avatar || '/default-avatar.svg'
 })
 
 const statusLabel = computed(() => {

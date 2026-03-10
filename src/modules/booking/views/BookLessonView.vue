@@ -152,7 +152,7 @@ function goToLessons() {
         <!-- Tutor Info -->
         <section class="tutor-info">
           <img
-            :src="tutor.media?.photo_url || '/default-avatar.png'"
+            :src="tutor.media?.photo_url || '/default-avatar.svg'"
             :alt="tutor.slug"
             class="tutor-photo"
           />

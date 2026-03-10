@@ -1976,7 +1976,9 @@
       "balance": "Balance",
       "upcomingLessons": "Upcoming lessons",
       "activeTutors": "Active tutors",
-      "unreadMessages": "Unread"
+      "unreadMessages": "Unread",
+      "totalLessons": "Total lessons",
+      "totalHours": "Learning hours"
     },
     "todaySchedule": {
       "title": "Today's schedule",
@@ -1989,7 +1991,10 @@
       "createLesson": "Create lesson",
       "openCalendar": "Calendar",
       "openKnowledge": "Knowledge base",
-      "myStudents": "My Students"
+      "myStudents": "My Students",
+      "findTutor": "Find tutor",
+      "mySchedule": "My schedule",
+      "messages": "Messages"
     },
     "newInquiries": {
       "title": "New inquiries",

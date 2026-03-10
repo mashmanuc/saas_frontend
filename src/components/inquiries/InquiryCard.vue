@@ -2,7 +2,7 @@
   <div class="inquiry-card" :class="statusClass">
     <div class="inquiry-header">
       <div class="user-info">
-        <img :src="otherUser.avatar || '/default-avatar.png'" class="avatar" alt="" />
+        <img :src="otherUser.avatar || '/default-avatar.svg'" class="avatar" alt="" />
         <div>
           <h4 class="user-name">{{ otherUser.full_name }}</h4>
           <span class="inquiry-date">{{ formattedDate }}</span>

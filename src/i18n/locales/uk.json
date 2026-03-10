@@ -2811,7 +2811,9 @@
       "balance": "Баланс",
       "upcomingLessons": "Майбутніх уроків",
       "activeTutors": "Активних тьюторів",
-      "unreadMessages": "Непрочитаних"
+      "unreadMessages": "Непрочитаних",
+      "totalLessons": "Всього уроків",
+      "totalHours": "Годин навчання"
     },
     "todaySchedule": {
       "title": "Розклад на сьогодні",
@@ -2824,7 +2826,10 @@
       "createLesson": "Створити урок",
       "openCalendar": "Календар",
       "openKnowledge": "База знань",
-      "myStudents": "Мої учні"
+      "myStudents": "Мої учні",
+      "findTutor": "Знайти тьютора",
+      "mySchedule": "Мій розклад",
+      "messages": "Повідомлення"
     },
     "newInquiries": {
       "title": "Нові запити",

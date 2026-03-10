@@ -177,7 +177,11 @@ class RealtimeService {
       if (!token) {
         this.options.logger?.warn?.('[realtime] No auth token available, deferring connect')
         this.status = READY_STATES.CLOSED
-        this.scheduleReconnect()
+        this.emitter.emit('status', this.status)
+        // Do NOT scheduleReconnect here — without a token, retrying is pointless
+        // and creates an infinite loop. realtimeStore.bindAuthWatcher() will call
+        // connect() when auth.access becomes available.
+        this.shouldReconnect = false
         return
       }
       const url = new URL(this.options.url)
