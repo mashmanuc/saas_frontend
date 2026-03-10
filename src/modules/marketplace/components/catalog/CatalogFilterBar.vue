@@ -198,14 +198,23 @@ function handleClear() {
 </template>
 
 <style scoped>
+/* Mobile-first: compact padding */
 .filters-wrap {
   background: var(--white, #ffffff);
   border: 1px solid var(--border, #e0ece5);
-  border-radius: 18px;
-  padding: 24px 28px;
-  margin-bottom: 24px;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 16px;
   box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
   animation: fadeUp 0.3s ease 0.1s both;
+}
+
+@media (min-width: 768px) {
+  .filters-wrap {
+    border-radius: 18px;
+    padding: 24px 28px;
+    margin-bottom: 24px;
+  }
 }
 
 .filters-hint {
@@ -218,18 +227,32 @@ function handleClear() {
   gap: 5px;
 }
 
+/* Mobile-first: single column rows */
 .filter-row {
   display: grid;
+  grid-template-columns: 1fr;
   gap: 12px;
   margin-bottom: 14px;
 }
 
-.filter-row--main {
-  grid-template-columns: 2fr 1fr 1fr 1fr;
+/* Tablet: 2 columns main */
+@media (min-width: 640px) {
+  .filter-row--main {
+    grid-template-columns: 1fr 1fr;
+  }
+  .filter-row--secondary {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
-.filter-row--secondary {
-  grid-template-columns: 2fr 2fr auto;
+/* Desktop: full grid */
+@media (min-width: 1024px) {
+  .filter-row--main {
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+  }
+  .filter-row--secondary {
+    grid-template-columns: 2fr 2fr auto;
+  }
 }
 
 .filter-group {
@@ -254,17 +277,26 @@ function handleClear() {
   opacity: 0;
 }
 
+/* Mobile-first: 16px font to prevent iOS zoom */
 .filter-select,
 .filter-input {
   border: 1.5px solid var(--border, #e0ece5);
   border-radius: 10px;
   padding: 10px 12px;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--text, #111816);
   font-family: inherit;
   background: var(--bg, #f5f7f6);
   transition: all 0.15s;
+  min-height: 44px;
+}
+
+@media (min-width: 768px) {
+  .filter-select,
+  .filter-input {
+    font-size: 13px;
+  }
 }
 
 .filter-select:focus,
@@ -311,6 +343,7 @@ function handleClear() {
   align-items: center;
 }
 
+/* Touch-friendly buttons */
 .btn-reset {
   background: transparent;
   color: var(--muted, #7a9186);
@@ -323,6 +356,7 @@ function handleClear() {
   transition: all 0.15s;
   font-family: inherit;
   white-space: nowrap;
+  min-height: 44px;
 }
 
 .btn-reset:hover {
@@ -371,22 +405,4 @@ function handleClear() {
   to { opacity: 1; transform: translateY(0); }
 }
 
-@media (max-width: 900px) {
-  .filter-row--main {
-    grid-template-columns: 1fr 1fr;
-  }
-  .filter-row--secondary {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 600px) {
-  .filters-wrap {
-    padding: 16px 16px;
-    border-radius: 14px;
-  }
-  .filter-row--main {
-    grid-template-columns: 1fr;
-  }
-}
 </style>

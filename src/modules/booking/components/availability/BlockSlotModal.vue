@@ -200,6 +200,7 @@ function handleCancel() {
 </script>
 
 <style scoped>
+/* Mobile-first: fullscreen */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -211,17 +212,29 @@ function handleCancel() {
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 20px;
+  padding: 0;
 }
 
 .modal-content {
   background: var(--color-bg-primary, white);
-  border-radius: 12px;
-  max-width: 500px;
+  border-radius: 0;
   width: 100%;
-  max-height: 90vh;
+  max-height: 100vh;
   overflow-y: auto;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Tablet+: centered modal */
+@media (min-width: 768px) {
+  .modal-overlay {
+    padding: 20px;
+  }
+
+  .modal-content {
+    border-radius: var(--radius-xl, 16px);
+    max-width: 500px;
+    max-height: 90vh;
+  }
 }
 
 .modal-header {
@@ -396,29 +409,24 @@ function handleCancel() {
   to { transform: rotate(360deg); }
 }
 
+/* Mobile-first: stacked footer buttons */
 .modal-footer {
   display: flex;
-  justify-content: flex-end;
+  flex-direction: column-reverse;
   gap: 12px;
   padding: 16px 24px;
   border-top: 1px solid var(--color-border, #e5e7eb);
 }
 
-@media (max-width: 640px) {
-  .modal-content {
-    max-width: 100%;
-    margin: 0;
-    border-radius: 0;
-    max-height: 100vh;
-  }
-  
+.modal-footer :deep(.btn) {
+  min-height: 44px;
+}
+
+/* Tablet+: row footer */
+@media (min-width: 768px) {
   .modal-footer {
-    flex-direction: column-reverse;
-  }
-  
-  :deep(.btn) {
-    width: 100%;
-    justify-content: center;
+    flex-direction: row;
+    justify-content: flex-end;
   }
 }
 </style>

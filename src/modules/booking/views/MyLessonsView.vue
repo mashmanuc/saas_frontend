@@ -116,10 +116,18 @@ function setTab(tab: TabType) {
 </template>
 
 <style scoped>
+/* Mobile-first: compact padding */
 .my-lessons-view {
   max-width: 900px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 16px;
+}
+
+/* Tablet+: generous padding */
+@media (min-width: 768px) {
+  .my-lessons-view {
+    padding: 24px;
+  }
 }
 
 .view-header {
@@ -141,6 +149,7 @@ function setTab(tab: TabType) {
   padding-bottom: 0;
 }
 
+/* Mobile-first: touch-friendly tabs */
 .tab {
   display: flex;
   align-items: center;
@@ -155,6 +164,8 @@ function setTab(tab: TabType) {
   cursor: pointer;
   transition: all 0.2s;
   margin-bottom: -1px;
+  white-space: nowrap;
+  min-height: 44px;
 }
 
 .tab:hover {
@@ -196,11 +207,17 @@ function setTab(tab: TabType) {
   }
 }
 
-/* Bookings List */
+/* Bookings List — card layout */
 .bookings-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
+}
+
+@media (min-width: 768px) {
+  .bookings-list {
+    gap: 16px;
+  }
 }
 
 /* Empty State */
@@ -237,18 +254,20 @@ function setTab(tab: TabType) {
   background: var(--accent-hover);
 }
 
-@media (max-width: 640px) {
-  .my-lessons-view {
-    padding: 16px;
-  }
+/* Mobile: horizontal scrolling tabs */
+.tabs {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
 
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+@media (min-width: 768px) {
   .tabs {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .tab {
-    white-space: nowrap;
+    overflow-x: visible;
   }
 }
 

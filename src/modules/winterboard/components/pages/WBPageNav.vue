@@ -256,6 +256,38 @@ function startRename(_index: number): void {
   flex-shrink: 0;
 }
 
+/* Mobile: compact page nav with touch-friendly targets */
+@media (max-width: 768px) {
+  .wb-page-nav {
+    height: 36px;
+    padding: 0 4px;
+    gap: 2px;
+  }
+
+  .wb-page-nav__tab {
+    height: 28px;
+    padding: 0 8px;
+    min-width: 44px;
+    min-height: 36px;
+    font-size: 11px;
+  }
+
+  .wb-page-nav__tab-name {
+    display: none;
+  }
+
+  .wb-page-nav__add {
+    width: 36px;
+    height: 28px;
+    min-width: 44px;
+    min-height: 36px;
+  }
+
+  .wb-page-nav__count {
+    font-size: 10px;
+  }
+}
+
 /* Reduced motion (LAW-22) */
 @media (prefers-reduced-motion: reduce) {
   .wb-page-nav__tab,

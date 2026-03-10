@@ -73,6 +73,7 @@ function handleError(error: any) {
 </script>
 
 <style scoped>
+/* Mobile-first: fullscreen overlay */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -84,17 +85,30 @@ function handleError(error: any) {
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 16px;
+  padding: 0;
 }
 
+/* Mobile-first: fullscreen modal */
 .modal-container {
-  max-width: 600px;
   width: 100%;
-  max-height: 90vh;
+  max-height: 100vh;
   overflow-y: auto;
   background: var(--card-bg);
-  border-radius: 12px;
+  border-radius: 0;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Tablet+: centered modal */
+@media (min-width: 768px) {
+  .modal-overlay {
+    padding: 16px;
+  }
+
+  .modal-container {
+    max-width: 600px;
+    max-height: 90vh;
+    border-radius: var(--radius-xl, 16px);
+  }
 }
 
 /* Modal transitions */
@@ -118,15 +132,4 @@ function handleError(error: any) {
   transform: scale(0.95);
 }
 
-@media (max-width: 640px) {
-  .modal-overlay {
-    padding: 0;
-  }
-  
-  .modal-container {
-    max-width: 100%;
-    max-height: 100vh;
-    border-radius: 0;
-  }
-}
 </style>

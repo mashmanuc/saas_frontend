@@ -42,11 +42,26 @@ const formattedDate = computed(() => {
   padding: 0;
 }
 
+/* Mobile-first: smaller greeting */
 .greeting-title {
-  font-size: var(--text-2xl, 1.5rem);
+  font-size: var(--text-xl, 1.25rem);
   font-weight: 600;
   color: var(--text-primary, var(--color-text-body));
   line-height: 1.3;
+}
+
+/* Tablet: medium */
+@media (min-width: 768px) {
+  .greeting-title {
+    font-size: var(--text-2xl, 1.5rem);
+  }
+}
+
+/* Desktop: large */
+@media (min-width: 1024px) {
+  .greeting-title {
+    font-size: var(--text-3xl, 1.875rem);
+  }
 }
 
 .greeting-subtitle {

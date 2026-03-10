@@ -555,6 +555,46 @@ onMounted(() => {
   opacity: 0;
 }
 
+/* Mobile: fullscreen dialog */
+@media (max-width: 768px) {
+  .wb-share-overlay {
+    align-items: flex-end;
+  }
+
+  .wb-share-dialog {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 16px 16px 0 0;
+    padding: 20px 16px;
+    max-height: 90vh;
+    max-height: 90dvh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .wb-share-dialog__close {
+    width: 44px;
+    height: 44px;
+  }
+
+  .wb-share-dialog__link-row {
+    flex-direction: column;
+  }
+
+  .wb-share-dialog__select {
+    min-width: 120px;
+    font-size: 16px; /* prevent iOS zoom */
+  }
+
+  .wb-share-dialog__link-input {
+    font-size: 16px; /* prevent iOS zoom */
+  }
+
+  .wb-share-dialog__btn {
+    min-height: 44px;
+  }
+}
+
 /* B5.2: Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .wb-share-dialog__close,

@@ -41,14 +41,26 @@ const openVideoGuide = () => {
 </script>
 
 <style scoped>
+/* Mobile-first: stacked layout */
 .calendar-header-v2 {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 24px;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 16px;
   background: var(--bg-secondary);
   border-radius: var(--radius-md) var(--radius-md) 0 0;
   border-bottom: 1px solid var(--border-color);
+}
+
+/* Tablet+: row layout */
+@media (min-width: 768px) {
+  .calendar-header-v2 {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+  }
 }
 
 .header-message {
@@ -63,22 +75,25 @@ const openVideoGuide = () => {
   flex-shrink: 0;
 }
 
+/* Mobile-first: wrap actions, full width */
 .header-actions {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
+  width: 100%;
+  flex-wrap: wrap;
 }
 
-@media (max-width: 768px) {
-  .calendar-header-v2 {
-    flex-direction: column;
-    gap: 16px;
-    align-items: flex-start;
-  }
-  
+.header-actions :deep(button) {
+  min-height: 44px;
+}
+
+/* Tablet+: auto width */
+@media (min-width: 768px) {
   .header-actions {
-    width: 100%;
-    flex-wrap: wrap;
+    width: auto;
+    gap: 12px;
   }
 }
+
 </style>

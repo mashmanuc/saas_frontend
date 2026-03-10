@@ -217,8 +217,20 @@ onMounted(() => {
   color: var(--color-warning);
 }
 
+/* Mobile-first: stacked actions */
 .balance-actions {
   display: flex;
+  flex-direction: column;
   gap: var(--spacing-sm);
+}
+
+.balance-actions :deep(button) {
+  min-height: 44px;
+}
+
+@media (min-width: 640px) {
+  .balance-actions {
+    flex-direction: row;
+  }
 }
 </style>

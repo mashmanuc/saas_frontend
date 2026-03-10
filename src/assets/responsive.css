@@ -1,0 +1,81 @@
+/* ── Global Responsive Utilities ── */
+
+/* Hide/Show utilities */
+@media (max-width: 479px) {
+  .hide-mobile { display: none !important; }
+}
+@media (min-width: 480px) {
+  .show-mobile-only { display: none !important; }
+}
+@media (max-width: 767px) {
+  .hide-below-tablet { display: none !important; }
+}
+@media (min-width: 768px) {
+  .show-below-tablet-only { display: none !important; }
+}
+@media (max-width: 1023px) {
+  .hide-below-desktop { display: none !important; }
+}
+@media (min-width: 1024px) {
+  .show-below-desktop-only { display: none !important; }
+}
+
+/* Responsive container */
+.container-responsive {
+  width: 100%;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+@media (min-width: 640px) {
+  .container-responsive { padding-left: 1.5rem; padding-right: 1.5rem; }
+}
+@media (min-width: 1024px) {
+  .container-responsive { padding-left: 2rem; padding-right: 2rem; }
+}
+
+/* Touch-friendly */
+.touch-target {
+  min-height: var(--touch-target-min, 44px);
+  min-width: var(--touch-target-min, 44px);
+}
+
+@media (min-width: 1920px) and (pointer: coarse) {
+  .touch-target {
+    min-height: var(--touch-target-display, 64px);
+    min-width: var(--touch-target-display, 64px);
+  }
+}
+
+/* Prevent iOS zoom on input focus */
+@media (max-width: 767px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Modal fullscreen on mobile */
+@media (max-width: 767px) {
+  .modal-fullscreen-mobile {
+    position: fixed !important;
+    inset: 0 !important;
+    border-radius: 0 !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    overflow-y: auto;
+  }
+}
+
+/* Smooth scroll & tap highlight for touch devices */
+@media (pointer: coarse) {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+}

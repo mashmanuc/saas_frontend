@@ -5,6 +5,7 @@ import pinia from './stores'
 import i18n, { setupI18n } from './i18n'
 import './styles/tokens.css'
 import './assets/main.css'
+import './assets/responsive.css'
 import './assets/fullcalendar.css'
 import './styles/m4sh.css'
 /* assets2/ui-contract/tokens removed — all tokens in src/styles/tokens.css */

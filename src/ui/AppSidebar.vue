@@ -50,6 +50,7 @@
       <button
         class="close-btn mobile-only"
         :aria-label="$t('sidebar.closeMobile')"
+        style="touch-action: manipulation;"
         @click="$emit('close-mobile')"
       >
         <X :size="16" />
@@ -74,6 +75,7 @@
     <div
       v-if="mobileOpen"
       class="sidebar-overlay"
+      style="touch-action: auto;"
       @click="$emit('close-mobile')"
     />
   </Transition>
@@ -156,6 +158,7 @@ defineEmits<{
   cursor: pointer;
   width: 28px;
   height: 28px;
+  touch-action: manipulation;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -196,6 +199,15 @@ defineEmits<{
 .sidebar-nav::-webkit-scrollbar-thumb {
   background: var(--border-color);
   border-radius: 2px;
+}
+
+@media (pointer: coarse) {
+  .sidebar-nav::-webkit-scrollbar {
+    width: 8px;
+  }
+  .sidebar-nav::-webkit-scrollbar-thumb {
+    border-radius: 4px;
+  }
 }
 
 /* ── Footer ── */

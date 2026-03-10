@@ -112,19 +112,20 @@
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-.span-2 {
-  grid-column: span 2;
-}
-
 .telegram-hint {
   margin-bottom: var(--space-lg);
   color: var(--text-secondary);
   font-size: var(--text-sm);
 }
 
-@media (max-width: 768px) {
+/* Mobile-first: single column span */
+.span-2 {
+  grid-column: span 1;
+}
+
+@media (min-width: 768px) {
   .span-2 {
-    grid-column: span 1;
+    grid-column: span 2;
   }
 }
 </style>

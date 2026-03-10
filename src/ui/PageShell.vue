@@ -17,7 +17,13 @@
     >
       <TopNav @toggle-side-nav="sidebar.openMobile" />
 
-      <main class="p-6 max-w-6xl mx-auto w-full">
+      <main
+        :class="[
+          'mx-auto w-full',
+          isMobile ? 'px-3 py-4' : 'p-6',
+          isDesktop ? 'max-w-6xl' : 'max-w-full'
+        ]"
+      >
         <router-view />
       </main>
     </div>
@@ -46,12 +52,14 @@ import SessionRevokedBanner from '../components/SessionRevokedBanner.vue'
 import { useAuthStore } from '../modules/auth/store/authStore'
 import { useSidebar } from '../composables/useSidebar'
 import { useSidebarBadges } from '../composables/useSidebarBadges'
+import { useResponsiveLayout } from '../composables/useResponsiveLayout'
 import { getSectionedMenuByRole } from '../config/menu'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const sidebar = useSidebar()
 const sidebarBadges = useSidebarBadges()
+const { isMobile, isDesktop, width } = useResponsiveLayout()
 
 onMounted(() => {
   sidebar.initFromStorage()
@@ -72,10 +80,16 @@ const sidebarSections = computed(() => {
 })
 
 const mainAreaClass = computed(() => {
-  if (sidebar.collapsed.value) {
-    return 'lg:ml-16'
-  }
+  if (!isDesktop.value) return '' // mobile/tablet — sidebar is overlay, no offset
+  if (sidebar.collapsed.value) return 'lg:ml-16'
   return 'lg:ml-[260px]'
+})
+
+// Auto-collapse sidebar when viewport < 1280px
+watch(width, (w) => {
+  if (w < 1280 && !sidebar.collapsed.value && isDesktop.value) {
+    sidebar.toggleCollapse()
+  }
 })
 
 watch(

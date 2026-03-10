@@ -41,6 +41,19 @@
     --language-tag-text: #1e40af;
     --price-tag-bg: #dcfce7;
     --price-tag-text: #166534;
+
+    /* ── Responsive Design Tokens ── */
+    --bp-mobile: 480px;
+    --bp-mobile-l: 640px;
+    --bp-tablet: 768px;
+    --bp-tablet-l: 1024px;
+    --bp-desktop: 1280px;
+    --bp-wide: 1536px;
+    --bp-display: 1920px;
+
+    /* Touch targets */
+    --touch-target-min: 44px;
+    --touch-target-display: 64px;
   }
 
   /* ========================================

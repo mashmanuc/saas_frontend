@@ -181,6 +181,8 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   background: var(--wb-bg, #f8f9fa);
 }
 
@@ -318,6 +320,39 @@ onMounted(async () => {
 .wb-page-indicator {
   font-size: 0.875rem;
   color: var(--wb-text-muted, #6c757d);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .wb-public-view__header {
+    padding: 0.5rem 0.75rem;
+    gap: 0.5rem;
+  }
+
+  .wb-public-view__title {
+    font-size: 0.9375rem;
+  }
+
+  .wb-public-view__badge {
+    font-size: 0.6875rem;
+    padding: 0.15rem 0.375rem;
+  }
+
+  .wb-download-btn {
+    padding: 0.375rem 0.75rem;
+    min-height: 44px;
+    font-size: 0.8125rem;
+  }
+
+  .wb-public-view__footer {
+    padding: 0.375rem 0.5rem calc(env(safe-area-inset-bottom, 0px) + 0.375rem);
+  }
+
+  .wb-page-btn {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0.375rem 1rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

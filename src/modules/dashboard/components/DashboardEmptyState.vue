@@ -46,13 +46,21 @@ const iconComponent = computed(() => ICON_MAP[props.icon || ''] || Search)
 </script>
 
 <style scoped>
+/* Mobile-first: compact padding */
 .dashboard-empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: var(--space-2xl, 32px) var(--space-lg, 24px);
+  padding: var(--space-lg, 20px) var(--space-md, 16px);
   gap: var(--space-sm, 12px);
+}
+
+/* Tablet+: more generous padding */
+@media (min-width: 768px) {
+  .dashboard-empty-state {
+    padding: var(--space-2xl, 32px) var(--space-lg, 24px);
+  }
 }
 
 .empty-icon {
@@ -72,11 +80,13 @@ const iconComponent = computed(() => ICON_MAP[props.icon || ''] || Search)
   max-width: 28rem;
 }
 
+/* Mobile-first: full-width CTA with touch target */
 .empty-cta {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: var(--space-xs, 8px);
-  padding: var(--space-xs, 8px) var(--space-md, 16px);
+  padding: var(--space-sm, 12px) var(--space-md, 16px);
   border-radius: var(--radius-xl, 12px);
   background: var(--accent, var(--color-accent));
   color: var(--accent-contrast, #fff);
@@ -84,6 +94,16 @@ const iconComponent = computed(() => ICON_MAP[props.icon || ''] || Search)
   font-weight: 500;
   text-decoration: none;
   transition: opacity 0.15s;
+  min-height: 44px;
+  width: 100%;
+}
+
+/* Tablet+: auto-width CTA */
+@media (min-width: 768px) {
+  .empty-cta {
+    width: auto;
+    padding: var(--space-xs, 8px) var(--space-md, 16px);
+  }
 }
 
 .empty-cta:hover {

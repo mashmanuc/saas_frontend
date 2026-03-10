@@ -400,6 +400,62 @@ onUnmounted(() => {
   bottom: -5px;
 }
 
+/* Mobile: horizontal scroll layout */
+@media (max-width: 768px) {
+  .wb-page-thumbnails {
+    flex-direction: row;
+    width: 100%;
+    height: auto;
+    max-height: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 6px;
+    gap: 6px;
+    border-right: none;
+    border-top: 1px solid #e2e8f0;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .wb-thumbnail {
+    flex-shrink: 0;
+    width: 100px;
+  }
+
+  .wb-thumbnail__canvas {
+    width: 100px;
+    height: 56px;
+  }
+
+  .wb-thumbnail__delete {
+    opacity: 1;
+    width: 22px;
+    height: 22px;
+  }
+
+  .wb-thumbnail--add {
+    flex-shrink: 0;
+    width: 80px;
+    height: 56px;
+  }
+}
+
+/* Tablet: slightly smaller thumbnails */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .wb-page-thumbnails {
+    width: 130px;
+    padding: 6px;
+  }
+
+  .wb-thumbnail {
+    width: 110px;
+  }
+
+  .wb-thumbnail__canvas {
+    width: 110px;
+    height: 62px;
+  }
+}
+
 /* Reduced motion (LAW-22) */
 @media (prefers-reduced-motion: reduce) {
   .wb-thumbnail {

@@ -39,12 +39,36 @@ const actions = [
 </script>
 
 <style scoped>
+/* Mobile-first: horizontal scroll */
 .quick-actions-grid {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-sm, 12px);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  gap: var(--space-sm, 8px);
+  padding-bottom: 4px;
 }
 
+.quick-actions-grid::-webkit-scrollbar {
+  height: 2px;
+}
+
+.quick-actions-grid::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 2px;
+}
+
+/* Tablet+: grid wrap */
+@media (min-width: 768px) {
+  .quick-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    overflow-x: visible;
+    padding-bottom: 0;
+  }
+}
+
+/* Mobile: fixed-width snap items with touch target */
 .quick-action-btn {
   display: flex;
   align-items: center;
@@ -58,6 +82,18 @@ const actions = [
   font-weight: 500;
   text-decoration: none;
   transition: background-color 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  min-width: 120px;
+  min-height: 44px;
+}
+
+/* Tablet+: auto width in grid */
+@media (min-width: 768px) {
+  .quick-action-btn {
+    min-width: auto;
+    flex-shrink: 1;
+  }
 }
 
 .quick-action-btn:hover {

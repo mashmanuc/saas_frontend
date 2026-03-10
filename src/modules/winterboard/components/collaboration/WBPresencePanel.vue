@@ -508,6 +508,41 @@ defineExpose({
   opacity: 1;
 }
 
+/* ── Mobile: compact horizontal presence panel ─────────────────── */
+@media (max-width: 768px) {
+  .wb-presence-panel {
+    min-width: auto;
+    max-width: 100%;
+    border-radius: 8px;
+    font-size: 12px;
+  }
+
+  .wb-presence-panel__toggle {
+    padding: 6px 10px;
+  }
+
+  .wb-presence-panel__list {
+    max-height: 180px;
+  }
+
+  .wb-presence-panel__user {
+    padding: 8px 10px;
+    min-height: 44px;
+  }
+
+  .wb-presence-panel__follow-btn {
+    min-height: 36px;
+    padding: 4px 10px;
+    font-size: 12px;
+  }
+
+  .wb-presence-panel__avatar {
+    width: 24px;
+    height: 24px;
+    font-size: 11px;
+  }
+}
+
 /* ── Reduced motion ─────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .wb-presence-panel__chevron,

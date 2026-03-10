@@ -198,6 +198,7 @@ async function purchase() {
   gap: var(--spacing-md);
 }
 
+/* Touch-friendly package cards */
 .package-card {
   display: flex;
   flex-direction: column;
@@ -210,6 +211,7 @@ async function purchase() {
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
+  min-height: 44px;
 }
 
 .package-card:hover {
@@ -292,10 +294,22 @@ async function purchase() {
   border: 1px solid var(--color-error);
 }
 
+/* Mobile-first: stacked modal actions */
 .modal-actions {
   display: flex;
-  justify-content: flex-end;
+  flex-direction: column-reverse;
   gap: var(--spacing-sm);
+}
+
+.modal-actions :deep(button) {
+  min-height: 44px;
+}
+
+@media (min-width: 640px) {
+  .modal-actions {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
 }
 
 </style>

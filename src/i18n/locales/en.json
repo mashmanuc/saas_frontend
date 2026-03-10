@@ -6652,6 +6652,8 @@
       "stopFollowing": "Stop following",
       "share": "Share",
       "export": "Export",
+      "fullscreen": "Fullscreen",
+      "exitFullscreen": "Exit fullscreen",
       "menu": "Menu",
       "home": "Home",
       "sidebarCollapse": "Collapse panel (double-click)",

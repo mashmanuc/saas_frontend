@@ -244,15 +244,29 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* Mobile-first: fullscreen modal */
 .chat-modal-content {
-  max-height: calc(100vh - 2rem);
-  /* ⚠️ Анімацію видалено - вона змушує чат сплющуватися при оновленні */
+  max-height: 100vh;
+  height: 100vh;
+  border-radius: 0;
 }
 
-/* Перевизначити max-height NegotiationChatWindow для модалки */
 .chat-modal-window {
   max-height: none;
-  height: calc(100vh - 8rem);
+  height: calc(100vh - 4rem);
+}
+
+/* Tablet+: centered modal */
+@media (min-width: 768px) {
+  .chat-modal-content {
+    max-height: calc(100vh - 2rem);
+    height: auto;
+    border-radius: 1rem;
+  }
+
+  .chat-modal-window {
+    height: calc(100vh - 8rem);
+  }
 }
 
 @keyframes chatModalSlideUp {

@@ -218,6 +218,31 @@ function cancel(): void {
   opacity: 0;
 }
 
+/* Mobile: bottom-sheet dialog */
+@media (max-width: 768px) {
+  .wb-dialog-overlay {
+    align-items: flex-end;
+  }
+
+  .wb-dialog {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 16px 16px 0 0;
+    padding: 20px 16px calc(env(safe-area-inset-bottom, 0px) + 16px);
+  }
+
+  .wb-dialog__btn {
+    min-height: 44px;
+    padding: 10px 20px;
+    font-size: 15px;
+  }
+
+  .wb-dialog__actions {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+}
+
 /* Reduced motion (LAW-22) */
 @media (prefers-reduced-motion: reduce) {
   .wb-dialog__btn,

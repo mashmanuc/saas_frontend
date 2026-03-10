@@ -128,10 +128,20 @@ function updatePopoverPosition(): void {
   const el = rootEl.value
   if (!el) return
   const rect = el.getBoundingClientRect()
-  // Position to the right of the trigger, vertically aligned
-  popoverPos.value = {
-    top: rect.top,
-    left: rect.right + 8,
+  const isMobileToolbar = window.innerWidth <= 768
+  if (isMobileToolbar) {
+    // Toolbar is horizontal at bottom — open popover above trigger
+    const popoverHeight = 220 // approximate
+    popoverPos.value = {
+      top: Math.max(8, rect.top - popoverHeight - 8),
+      left: Math.max(8, Math.min(rect.left, window.innerWidth - 200)),
+    }
+  } else {
+    // Toolbar is vertical — open popover to the right
+    popoverPos.value = {
+      top: Math.max(8, Math.min(rect.top, window.innerHeight - 240)),
+      left: rect.right + 8,
+    }
   }
 }
 
@@ -314,13 +324,6 @@ onUnmounted(() => {
 .wb-popover-leave-to {
   opacity: 0;
   transform: translateX(-4px);
-}
-
-/* Mobile: popover opens above trigger when toolbar is at bottom */
-@media (max-width: 768px) {
-  .wb-size-slider__popover {
-    /* position:fixed overrides handled in JS for mobile */
-  }
 }
 
 /* Reduced motion */

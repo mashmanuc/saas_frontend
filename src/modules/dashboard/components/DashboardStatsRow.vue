@@ -34,15 +34,25 @@ defineProps<{
 </script>
 
 <style scoped>
+/* Mobile-first: 1 column */
 .stats-row {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--space-md, 16px);
+  grid-template-columns: 1fr;
+  gap: var(--space-sm, 8px);
 }
 
+/* Small screens: 2 columns */
+@media (min-width: 480px) {
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Desktop: 4 columns */
 @media (min-width: 1024px) {
   .stats-row {
     grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-md, 12px);
   }
 }
 </style>

@@ -82,34 +82,64 @@ const displayedInquiries = computed(() =>
   margin-bottom: var(--space-sm, 12px);
 }
 
+/* Mobile-first: stack layout */
 .inquiry-item {
   display: flex;
-  align-items: center;
-  gap: var(--space-md, 12px);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-sm, 8px);
   padding: var(--space-sm, 8px) var(--space-md, 12px);
   border-radius: var(--radius-lg, 12px);
   border: 1px solid var(--border-color, var(--color-border-default));
   background: var(--card-bg, var(--color-surface));
 }
 
+/* Small tablet+: row layout */
+@media (min-width: 640px) {
+  .inquiry-item {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-md, 12px);
+  }
+}
+
+/* Mobile: full width actions row */
 .inquiry-actions {
   display: flex;
   gap: var(--space-xs, 6px);
   flex-shrink: 0;
+  width: 100%;
 }
 
+/* Small tablet+: auto width */
+@media (min-width: 640px) {
+  .inquiry-actions {
+    width: auto;
+  }
+}
+
+/* Touch-friendly buttons: 44px min on mobile */
 .inquiry-accept-btn,
 .inquiry-decline-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  min-width: 44px;
+  min-height: 44px;
   border-radius: var(--radius-md, 8px);
   border: 1px solid var(--border-color, var(--color-border-default));
   background: transparent;
   cursor: pointer;
   transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+/* Desktop: compact buttons */
+@media (min-width: 1024px) {
+  .inquiry-accept-btn,
+  .inquiry-decline-btn {
+    min-width: 32px;
+    min-height: 32px;
+  }
 }
 
 .inquiry-accept-btn {

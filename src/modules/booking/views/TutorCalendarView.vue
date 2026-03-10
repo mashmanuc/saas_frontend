@@ -34,10 +34,18 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/* Mobile-first: compact padding */
 .tutor-calendar-wrapper {
-  padding: 24px;
+  padding: 16px;
   min-height: calc(100vh - 64px);
   background: var(--bg-secondary);
+}
+
+/* Tablet+: generous padding */
+@media (min-width: 768px) {
+  .tutor-calendar-wrapper {
+    padding: 24px;
+  }
 }
 
 
@@ -73,11 +81,18 @@ onMounted(async () => {
   margin-bottom: 32px;
 }
 
+/* Mobile-first: smaller heading */
 .calendar-header h1 {
   margin: 0 0 8px 0;
-  font-size: 32px;
+  font-size: 24px;
   font-weight: 700;
   color: var(--text-primary);
+}
+
+@media (min-width: 768px) {
+  .calendar-header h1 {
+    font-size: 32px;
+  }
 }
 
 .week-info {
@@ -116,10 +131,26 @@ onMounted(async () => {
   letter-spacing: 0.5px;
 }
 
+/* Mobile-first: single column day cards */
 .week-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 16px;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+/* Tablet: 3 columns */
+@media (min-width: 768px) {
+  .week-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+}
+
+/* Desktop: full 7-day grid */
+@media (min-width: 1024px) {
+  .week-grid {
+    grid-template-columns: repeat(7, 1fr);
+  }
 }
 
 .day-column {
@@ -261,9 +292,4 @@ onMounted(async () => {
   font-size: 32px;
 }
 
-@media (max-width: 768px) {
-  .tutor-calendar-wrapper {
-    padding: 16px;
-  }
-}
 </style>

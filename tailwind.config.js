@@ -40,6 +40,10 @@ export default {
         xl:   'var(--radius-xl)',
         full: 'var(--radius-full)',
       },
+      screens: {
+        'xs': '480px',
+        'display': '1920px',
+      },
       boxShadow: {
         theme: '0 8px 25px var(--shadow)',
         'theme-strong': '0 12px 35px var(--shadow-strong)',

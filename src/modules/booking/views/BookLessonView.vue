@@ -235,10 +235,18 @@ function goToLessons() {
 </template>
 
 <style scoped>
+/* Mobile-first: compact padding */
 .book-lesson-view {
   max-width: 800px;
   margin: 0 auto;
-  padding: var(--space-lg);
+  padding: var(--space-md, 16px);
+}
+
+/* Tablet+: generous padding */
+@media (min-width: 768px) {
+  .book-lesson-view {
+    padding: var(--space-lg);
+  }
 }
 
 .view-header {
@@ -276,10 +284,23 @@ function goToLessons() {
   margin: 0 0 var(--space-xl);
 }
 
+/* Mobile-first: stacked actions */
 .success-actions {
   display: flex;
+  flex-direction: column;
   gap: var(--space-sm);
-  justify-content: center;
+}
+
+.success-actions :deep(button) {
+  min-height: 44px;
+}
+
+/* Tablet+: row actions */
+@media (min-width: 640px) {
+  .success-actions {
+    flex-direction: row;
+    justify-content: center;
+  }
 }
 
 /* Loading */
@@ -304,15 +325,29 @@ function goToLessons() {
   }
 }
 
-/* Tutor Info */
+/* Mobile-first: stacked tutor info */
 .tutor-info {
   display: flex;
-  gap: 16px;
-  padding: 20px;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  padding: 16px;
   background: var(--card-bg);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-color);
   margin-bottom: var(--space-lg);
+}
+
+/* Tablet+: row layout */
+@media (min-width: 640px) {
+  .tutor-info {
+    flex-direction: row;
+    align-items: flex-start;
+    text-align: left;
+    gap: 16px;
+    padding: 20px;
+  }
 }
 
 .tutor-photo {
@@ -395,23 +430,14 @@ section h3 {
   padding: 60px 20px;
 }
 
-@media (max-width: 640px) {
-  .book-lesson-view {
-    padding: 16px;
-  }
+/* Mobile: centered tutor meta */
+.tutor-meta {
+  justify-content: center;
+}
 
-  .tutor-info {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-  }
-
+@media (min-width: 640px) {
   .tutor-meta {
-    justify-content: center;
-  }
-
-  .success-actions {
-    flex-direction: column;
+    justify-content: flex-start;
   }
 }
 </style>

@@ -76,19 +76,38 @@ function handleToday() {
 </script>
 
 <style scoped>
+/* Mobile-first: compact padding */
 .calendar-header-v2 {
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-color);
-  padding: 16px 24px 24px;
+  padding: 12px 16px 16px;
 }
 
+/* Tablet+: generous padding */
+@media (min-width: 768px) {
+  .calendar-header-v2 {
+    padding: 16px 24px 24px;
+  }
+}
+
+/* Mobile-first: stacked */
 .header-content {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
   max-width: 1400px;
   margin: 0 auto;
+}
+
+/* Tablet+: row layout */
+@media (min-width: 768px) {
+  .header-content {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
 }
 
 .week-navigation-wrapper {
@@ -111,22 +130,28 @@ function handleToday() {
   flex-shrink: 0;
 }
 
+/* Mobile-first: stacked actions */
 .header-actions {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .header-content {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
+.header-actions :deep(button),
+.header-actions .btn-link {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Tablet+: row actions */
+@media (min-width: 768px) {
   .header-actions {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
   }
 }
+
 </style>

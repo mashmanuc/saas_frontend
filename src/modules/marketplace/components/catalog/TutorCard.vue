@@ -151,19 +151,31 @@ function getFormatTags(subject: any) {
 </template>
 
 <style scoped>
+/* Mobile-first: 2-col card (avatar + info), CTA below */
 .tutor-card {
   background: var(--white, #ffffff);
   border: 1px solid var(--border, #e0ece5);
-  border-radius: 18px;
-  padding: 22px 24px;
-  margin-bottom: 16px;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 12px;
   box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
   display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 20px;
+  grid-template-columns: auto 1fr;
+  gap: 14px;
   align-items: start;
   transition: all 0.2s;
   animation: fadeUp 0.3s ease both;
+}
+
+/* Tablet+: 3-col layout with CTA on right */
+@media (min-width: 768px) {
+  .tutor-card {
+    grid-template-columns: auto 1fr auto;
+    gap: 20px;
+    padding: 22px 24px;
+    margin-bottom: 16px;
+    border-radius: 18px;
+  }
 }
 
 .tutor-card:hover {
@@ -308,13 +320,25 @@ function getFormatTags(subject: any) {
   color: #5b21b6;
 }
 
-/* CTA block */
+/* Mobile-first: CTA spans full width */
 .tc-cta-block {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
-  align-items: flex-end;
-  min-width: 160px;
+  grid-column: 1 / -1;
+  min-width: auto;
+}
+
+/* Tablet+: CTA as column on right */
+@media (min-width: 768px) {
+  .tc-cta-block {
+    flex-direction: column;
+    align-items: flex-end;
+    grid-column: auto;
+    min-width: 160px;
+  }
 }
 
 .tc-price {
@@ -341,6 +365,7 @@ function getFormatTags(subject: any) {
   font-weight: 600;
 }
 
+/* Touch-friendly CTA button */
 .btn-tc-view {
   background: var(--green, #1DB954);
   color: white;
@@ -352,7 +377,7 @@ function getFormatTags(subject: any) {
   cursor: pointer;
   transition: all 0.15s;
   font-family: inherit;
-  width: 100%;
+  flex: 1;
   text-align: center;
   text-decoration: none;
   display: flex;
@@ -360,6 +385,14 @@ function getFormatTags(subject: any) {
   justify-content: center;
   gap: 6px;
   box-shadow: 0 2px 10px rgba(29, 185, 84, 0.3);
+  min-height: 44px;
+}
+
+@media (min-width: 768px) {
+  .btn-tc-view {
+    width: 100%;
+    flex: none;
+  }
 }
 
 .btn-tc-view:hover {
@@ -373,22 +406,4 @@ function getFormatTags(subject: any) {
   to { opacity: 1; transform: translateY(0); }
 }
 
-@media (max-width: 768px) {
-  .tutor-card {
-    grid-template-columns: auto 1fr;
-    gap: 14px;
-    padding: 16px;
-  }
-  .tc-cta-block {
-    grid-column: 1 / -1;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    min-width: auto;
-  }
-  .btn-tc-view {
-    width: auto;
-    flex: 1;
-  }
-}
 </style>

@@ -210,10 +210,17 @@ const handleRefreshFilters = async () => {
   background: var(--surface-marketplace);
 }
 
+/* Mobile-first: compact search header */
 .search-header {
   background: var(--surface-card);
-  padding: 24px;
+  padding: 16px;
   border-bottom: 1px solid var(--border-color);
+}
+
+@media (min-width: 768px) {
+  .search-header {
+    padding: 24px;
+  }
 }
 
 .search-meta {
@@ -227,12 +234,20 @@ const handleRefreshFilters = async () => {
   opacity: 0.7;
 }
 
+/* Mobile-first: compact layout */
 .search-layout {
   display: flex;
   max-width: 1400px;
   margin: 0 auto;
-  padding: 24px;
-  gap: 24px;
+  padding: 16px;
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .search-layout {
+    padding: 24px;
+    gap: 24px;
+  }
 }
 
 .filters-sidebar {
@@ -263,8 +278,9 @@ const handleRefreshFilters = async () => {
   gap: 12px;
 }
 
+/* Mobile-first: visible filter toggle */
 .btn-filters-toggle {
-  display: none;
+  display: flex;
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
@@ -275,6 +291,14 @@ const handleRefreshFilters = async () => {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
+  min-height: 44px;
+}
+
+/* Desktop: hide toggle (sidebar always visible) */
+@media (min-width: 1025px) {
+  .btn-filters-toggle {
+    display: none;
+  }
 }
 
 .btn-filters-toggle:hover {
@@ -340,72 +364,97 @@ const handleRefreshFilters = async () => {
   margin: 0 0 24px;
 }
 
+/* Mobile-first: overlay hidden by default */
 .filters-overlay {
   display: none;
 }
 
-@media (max-width: 1024px) {
-  .filters-sidebar {
-    position: fixed;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 100%;
-    max-width: 320px;
-    background: var(--surface-card);
-    z-index: 100;
-    transform: translateX(-100%);
-    transition: transform 0.3s ease;
-    border-radius: 0;
-    padding: 0;
-    overflow-y: auto;
-  }
+/* Mobile-first: sidebar as slide-out drawer */
+.filters-sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+  max-width: 320px;
+  background: var(--surface-card);
+  z-index: 100;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+  border-radius: 0;
+  padding: 0;
+  overflow-y: auto;
+}
 
-  .filters-sidebar.is-open {
-    transform: translateX(0);
+.filters-sidebar.is-open {
+  transform: translateX(0);
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.sidebar-header h3 {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--text-muted);
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.filters-overlay.is-open,
+.filters-sidebar.is-open ~ .filters-overlay {
+  display: block;
+  position: fixed;
+  inset: 0;
+  background: color-mix(in srgb, var(--text-primary) 50%, transparent);
+  z-index: 99;
+}
+
+/* Mobile: wrap toolbar */
+.results-toolbar {
+  flex-wrap: wrap;
+}
+
+/* Desktop: sidebar as static panel */
+@media (min-width: 1025px) {
+  .filters-sidebar {
+    position: sticky;
+    top: 24px;
+    width: 280px;
+    flex-shrink: 0;
+    transform: none;
+    border-radius: 12px;
+    padding: 20px;
+    height: fit-content;
+    overflow-y: visible;
+    z-index: auto;
   }
 
   .sidebar-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--border-color);
-  }
-
-  .sidebar-header h3 {
-    margin: 0;
-    font-size: 1.125rem;
-  }
-
-  .close-btn {
-    background: none;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
-    color: var(--text-muted);
-  }
-
-  .btn-filters-toggle {
-    display: flex;
+    display: none;
   }
 
   .filters-overlay {
-    display: block;
-    position: fixed;
-    inset: 0;
-    background: color-mix(in srgb, var(--text-primary) 50%, transparent);
-    z-index: 99;
-  }
-}
-
-@media (max-width: 640px) {
-  .search-layout {
-    padding: 16px;
+    display: none !important;
   }
 
   .results-toolbar {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
   }
 }
 </style>

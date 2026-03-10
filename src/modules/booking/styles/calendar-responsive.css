@@ -58,17 +58,42 @@
 /* ========================================
    Tablet (768px - 1024px)
    ======================================== */
-@media (min-width: 768px) and (max-width: 1024px) {
+@media (min-width: 768px) and (max-width: 1023px) {
   .calendar-board {
-    grid-template-columns: 70px repeat(7, 1fr);
+    grid-template-columns: 70px repeat(3, 1fr);
+  }
+
+  /* Tablet: show only 3 days at a time */
+  .day-column:nth-child(n+5):not(.day-column--active) {
+    display: none;
   }
 
   .event-block {
     font-size: 0.875rem;
+    padding: var(--space-sm, 8px);
+  }
+
+  .day-header {
+    padding: var(--space-sm, 8px);
   }
 
   .day-header__date {
-    font-size: 1.25rem;
+    font-size: 1.125rem;
+  }
+
+  .week-navigation {
+    flex-wrap: wrap;
+    gap: var(--space-sm, 8px);
+  }
+
+  .week-navigation__controls button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Calendar cells: touch-friendly on tablet */
+  .calendar-cell {
+    min-height: 44px;
   }
 }
 

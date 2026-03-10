@@ -17,10 +17,17 @@ defineProps<Props>()
 </template>
 
 <style scoped>
+/* Mobile-first: single column list */
 .tutor-list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
+  gap: var(--space-md, 12px);
+}
+
+@media (min-width: 768px) {
+  .tutor-list {
+    gap: var(--space-lg);
+  }
 }
 
 .tutor-list.loading {

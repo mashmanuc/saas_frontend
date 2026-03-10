@@ -26,36 +26,92 @@
       />
     </button>
 
-    <!-- Dropdown panel -->
+    <!-- Mobile: bottom sheet -->
+    <Teleport to="body">
+      <Transition name="sheet">
+        <div v-if="isOpen && isMobile" class="avatar-sheet-overlay" @click="close">
+          <div class="avatar-sheet" @click.stop>
+            <div class="avatar-sheet-handle" />
+            <div class="dropdown-header">
+              <p class="text-sm font-medium text-body truncate">{{ userName }}</p>
+              <p class="text-xs text-muted truncate">{{ userEmail }}</p>
+            </div>
+            <div class="dropdown-divider" role="separator" />
+            <router-link to="/settings" class="dropdown-item" role="menuitem" @click="close">
+              <Settings :size="16" />
+              <span>{{ $t('nav.avatar.settings') }}</span>
+            </router-link>
+            <div class="dropdown-divider" role="separator" />
+            <div class="dropdown-section">
+              <span class="dropdown-section-label">{{ $t('nav.avatar.theme') }}</span>
+              <div class="theme-options">
+                <button
+                  v-for="option in themeOptions"
+                  :key="option.value"
+                  type="button"
+                  class="theme-option"
+                  :class="{ active: currentTheme === option.value }"
+                  :title="$t(option.labelKey)"
+                  :aria-pressed="currentTheme === option.value"
+                  role="menuitemradio"
+                  @click="setTheme(option.value)"
+                >
+                  <component :is="option.icon" :size="14" />
+                  <span class="text-xs">{{ $t(option.labelKey) }}</span>
+                </button>
+              </div>
+            </div>
+            <div class="dropdown-divider" role="separator" />
+            <div class="dropdown-section">
+              <span class="dropdown-section-label">{{ $t('nav.avatar.language') }}</span>
+              <div class="language-options">
+                <button
+                  v-for="locale in localeOptions"
+                  :key="locale.code"
+                  type="button"
+                  class="language-option"
+                  :class="{ active: currentLocale === locale.code }"
+                  :aria-pressed="currentLocale === locale.code"
+                  role="menuitemradio"
+                  @click="changeLocale(locale.code)"
+                >
+                  {{ locale.label }}
+                </button>
+              </div>
+            </div>
+            <div class="dropdown-divider" role="separator" />
+            <button
+              type="button"
+              class="dropdown-item dropdown-item--danger"
+              role="menuitem"
+              @click="handleLogout"
+            >
+              <LogOut :size="16" />
+              <span>{{ $t('nav.logout') }}</span>
+            </button>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- Desktop: positioned dropdown -->
     <Transition name="dropdown">
       <div
-        v-if="isOpen"
+        v-if="isOpen && !isMobile"
         class="dropdown-panel"
         role="menu"
         :aria-label="$t('nav.avatar.menuLabel')"
       >
-        <!-- User info header -->
         <div class="dropdown-header">
           <p class="text-sm font-medium text-body truncate">{{ userName }}</p>
           <p class="text-xs text-muted truncate">{{ userEmail }}</p>
         </div>
-
         <div class="dropdown-divider" role="separator" />
-
-        <!-- Navigation items -->
-        <router-link
-          to="/settings"
-          class="dropdown-item"
-          role="menuitem"
-          @click="close"
-        >
+        <router-link to="/settings" class="dropdown-item" role="menuitem" @click="close">
           <Settings :size="16" />
           <span>{{ $t('nav.avatar.settings') }}</span>
         </router-link>
-
         <div class="dropdown-divider" role="separator" />
-
-        <!-- Theme section -->
         <div class="dropdown-section">
           <span class="dropdown-section-label">{{ $t('nav.avatar.theme') }}</span>
           <div class="theme-options">
@@ -75,10 +131,7 @@
             </button>
           </div>
         </div>
-
         <div class="dropdown-divider" role="separator" />
-
-        <!-- Language section -->
         <div class="dropdown-section">
           <span class="dropdown-section-label">{{ $t('nav.avatar.language') }}</span>
           <div class="language-options">
@@ -96,10 +149,7 @@
             </button>
           </div>
         </div>
-
         <div class="dropdown-divider" role="separator" />
-
-        <!-- Logout -->
         <button
           type="button"
           class="dropdown-item dropdown-item--danger"
@@ -121,11 +171,14 @@ import { ChevronDown, Settings, LogOut, Sun, Moon, GraduationCap } from 'lucide-
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { useThemeStore } from '@/stores/themeStore'
 import { useSettingsStore } from '@/stores/settingsStore'
+import { useResponsiveLayout } from '@/composables/useResponsiveLayout'
 
 const router = useRouter()
 const auth = useAuthStore()
 const theme = useThemeStore()
 const settings = useSettingsStore()
+
+const { isMobile } = useResponsiveLayout()
 
 const rootRef = ref<HTMLElement | null>(null)
 const isOpen = ref(false)
@@ -340,7 +393,7 @@ onUnmounted(() => {
   border-color: var(--accent);
 }
 
-/* Transition */
+/* Transition — desktop dropdown */
 .dropdown-enter-active,
 .dropdown-leave-active {
   transition: opacity 0.15s ease, transform 0.15s ease;
@@ -350,5 +403,61 @@ onUnmounted(() => {
 .dropdown-leave-to {
   opacity: 0;
   transform: translateY(-4px);
+}
+
+/* ── Mobile bottom sheet ── */
+.avatar-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in srgb, var(--text-primary, #000) 40%, transparent);
+  z-index: 9999;
+  display: flex;
+  align-items: flex-end;
+}
+
+.avatar-sheet {
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  background: var(--bg-primary);
+  border-radius: 16px 16px 0 0;
+  padding: 0.5rem 1rem 1rem;
+  padding-bottom: env(safe-area-inset-bottom, 1rem);
+}
+
+.avatar-sheet-handle {
+  width: 36px;
+  height: 4px;
+  background: var(--border-color);
+  border-radius: 2px;
+  margin: 0.5rem auto 0.75rem;
+}
+
+.avatar-sheet .dropdown-item {
+  min-height: var(--touch-target-min, 44px);
+}
+
+.avatar-sheet .theme-option,
+.avatar-sheet .language-option {
+  min-height: var(--touch-target-min, 44px);
+  padding: 0.5rem 0.75rem;
+}
+
+/* Transition — mobile sheet */
+.sheet-enter-active,
+.sheet-leave-active {
+  transition: opacity 0.25s ease;
+}
+.sheet-enter-active .avatar-sheet,
+.sheet-leave-active .avatar-sheet {
+  transition: transform 0.25s ease;
+}
+.sheet-enter-from,
+.sheet-leave-to {
+  opacity: 0;
+}
+.sheet-enter-from .avatar-sheet,
+.sheet-leave-to .avatar-sheet {
+  transform: translateY(100%);
 }
 </style>

@@ -87,14 +87,24 @@ function handleClick() {
 </script>
 
 <style scoped>
+/* Mobile-first: touch-friendly cells */
 .calendar-cell {
   border: 1px solid var(--calendar-border-color);
   border-radius: var(--calendar-border-radius);
-  padding: var(--calendar-cell-padding);
+  padding: 6px;
   transition: background-color var(--calendar-transition-base), 
               transform var(--calendar-transition-fast);
   position: relative;
-  min-height: var(--calendar-cell-height); /* Use CSS variable for consistent height */
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+/* Tablet+: use CSS variable height */
+@media (min-width: 768px) {
+  .calendar-cell {
+    padding: var(--calendar-cell-padding);
+    min-height: var(--calendar-cell-height);
+  }
 }
 
 .calendar-cell.calendar-cell--empty {
@@ -175,11 +185,4 @@ function handleClick() {
   opacity: 1;
 }
 
-/* Responsive: mobile touch targets */
-@media (max-width: 768px) {
-  .calendar-cell {
-    min-height: var(--calendar-cell-height);
-    padding: 6px;
-  }
-}
 </style>

@@ -99,6 +99,8 @@ const iconComponent = computed(() => {
   transition: all var(--transition-base);
   white-space: nowrap;
   overflow: hidden;
+  min-height: var(--touch-target-min, 44px);
+  touch-action: manipulation;
 }
 
 .nav-item:hover {

@@ -31,12 +31,21 @@ const { t } = useI18n()
 </script>
 
 <style scoped>
+/* Mobile-first: compact padding */
 .availability-view {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  padding: 24px;
+  gap: 16px;
+  padding: 16px;
   min-height: 100%;
+}
+
+/* Tablet+: generous spacing */
+@media (min-width: 768px) {
+  .availability-view {
+    gap: 24px;
+    padding: 24px;
+  }
 }
 
 .availability-view__header {
@@ -54,10 +63,17 @@ const { t } = useI18n()
   margin-bottom: 4px;
 }
 
+/* Mobile-first: smaller heading */
 .availability-view__header h1 {
-  font-size: 1.75rem;
+  font-size: 1.375rem;
   margin: 0;
   color: var(--text-primary);
+}
+
+@media (min-width: 768px) {
+  .availability-view__header h1 {
+    font-size: 1.75rem;
+  }
 }
 
 .availability-view__subtitle {
@@ -65,11 +81,18 @@ const { t } = useI18n()
   color: var(--text-secondary);
 }
 
+/* Mobile-first: compact card padding */
 .availability-view__card {
   background: var(--card-bg);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
-  padding: 24px;
+  padding: 16px;
+}
+
+@media (min-width: 768px) {
+  .availability-view__card {
+    padding: 24px;
+  }
 }
 
 .availability-view__loader {
@@ -78,13 +101,4 @@ const { t } = useI18n()
   color: var(--text-secondary);
 }
 
-@media (max-width: 768px) {
-  .availability-view {
-    padding: 16px;
-  }
-
-  .availability-view__card {
-    padding: 16px;
-  }
-}
 </style>

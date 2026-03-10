@@ -110,15 +110,23 @@ function handleEventClick(eventId: number) {
 </script>
 
 <style scoped>
+/* Mobile-first: hidden on small screens */
 .calendar-sidebar {
+  display: none;
   width: 320px;
   background: var(--card-bg);
   border-left: 1px solid var(--border-color);
-  display: flex;
   flex-direction: column;
   max-height: calc(100vh - 120px);
   position: sticky;
   top: 80px;
+}
+
+/* Desktop (xl+): show sidebar */
+@media (min-width: 1280px) {
+  .calendar-sidebar {
+    display: flex;
+  }
 }
 
 .sidebar-header {
@@ -168,6 +176,7 @@ function handleEventClick(eventId: number) {
   padding: 8px;
 }
 
+/* Touch-friendly sidebar items */
 .sidebar-item {
   width: 100%;
   display: flex;
@@ -181,6 +190,7 @@ function handleEventClick(eventId: number) {
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: left;
+  min-height: 44px;
 }
 
 .sidebar-item:hover {
@@ -243,9 +253,4 @@ function handleEventClick(eventId: number) {
   font-weight: 500;
 }
 
-@media (max-width: 1280px) {
-  .calendar-sidebar {
-    display: none;
-  }
-}
 </style>

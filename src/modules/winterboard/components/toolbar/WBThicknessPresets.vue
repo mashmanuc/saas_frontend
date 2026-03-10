@@ -196,6 +196,20 @@ function handleKeydown(event: KeyboardEvent): void {
   flex-shrink: 0;
 }
 
+/* Mobile: horizontal layout when toolbar is at bottom */
+@media (max-width: 768px) {
+  .wb-thickness-presets {
+    flex-direction: row;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+
+  .wb-thickness-btn {
+    width: 40px;
+    height: 40px;
+  }
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .wb-thickness-btn,

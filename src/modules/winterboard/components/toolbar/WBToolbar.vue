@@ -456,15 +456,56 @@ function handleToolbarKeydown(event: KeyboardEvent): void {
 /* Responsive: compact on mobile (LAW-22: 44px min touch target maintained) */
 @media (max-width: 768px) {
   .wb-toolbar {
-    width: 48px;
-    padding: 6px 2px;
+    flex-direction: row;
+    width: 100%;
+    height: 52px;
+    max-height: none;
+    padding: 4px 6px;
     gap: 2px;
-    overflow-y: auto;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-right: none;
+    border-top: 1px solid var(--wb-toolbar-border, #e2e8f0);
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .wb-toolbar__group {
+    flex-direction: row;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+
+  .wb-toolbar__sep {
+    width: 1px;
+    height: 32px;
+    margin: 6px 4px;
   }
 }
 
-/* Hide tooltips on mobile — use touch instead */
-@media (max-width: 768px) {
+/* Tablet: scrollable vertical toolbar with tighter spacing */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .wb-toolbar {
+    width: 52px;
+    padding: 6px 2px;
+    gap: 2px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .wb-toolbar__btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .wb-toolbar__sep {
+    margin: 4px 4px;
+  }
+}
+
+/* Hide tooltips on touch devices */
+@media (max-width: 1024px) {
   .wb-toolbar__btn--tooltip::after {
     display: none;
   }

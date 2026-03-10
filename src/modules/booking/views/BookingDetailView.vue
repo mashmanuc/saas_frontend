@@ -240,10 +240,18 @@ function handleReschedule() {
 </template>
 
 <style scoped>
+/* Mobile-first: compact padding */
 .booking-detail-view {
   max-width: 800px;
   margin: 0 auto;
-  padding: var(--space-lg);
+  padding: var(--space-md, 16px);
+}
+
+/* Tablet+: generous padding */
+@media (min-width: 768px) {
+  .booking-detail-view {
+    padding: var(--space-lg);
+  }
 }
 
 .view-header {
@@ -297,12 +305,20 @@ function handleReschedule() {
   color: var(--text-secondary);
 }
 
-/* Info Grid */
+/* Mobile-first: single column info grid */
 .info-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  grid-template-columns: 1fr;
+  gap: 12px;
   margin-bottom: 24px;
+}
+
+/* Tablet+: 2 columns */
+@media (min-width: 640px) {
+  .info-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
 }
 
 .info-card {
@@ -358,11 +374,19 @@ section h2 {
   margin: 0 0 16px;
 }
 
-/* Participants */
+/* Mobile-first: single column participants */
 .participants-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+/* Tablet+: 2 columns */
+@media (min-width: 640px) {
+  .participants-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
 }
 
 .participant-card {
@@ -435,15 +459,4 @@ section h2 {
   padding: 60px 20px;
 }
 
-
-@media (max-width: 640px) {
-  .booking-detail-view {
-    padding: 16px;
-  }
-
-  .info-grid,
-  .participants-grid {
-    grid-template-columns: 1fr;
-  }
-}
 </style>

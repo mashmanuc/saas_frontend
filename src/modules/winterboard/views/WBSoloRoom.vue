@@ -98,6 +98,15 @@
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="12" cy="4" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="2" stroke="currentColor" stroke-width="1.5"/><path d="M5.7 7l4.6-2M5.7 9l4.6 2" stroke="currentColor" stroke-width="1.5"/></svg>
         </button>
+        <button
+          type="button"
+          class="wb-header-btn wb-header-btn--fullscreen"
+          :title="isFullscreen ? t('winterboard.room.exitFullscreen') : t('winterboard.room.fullscreen')"
+          @click="toggleFullscreen"
+        >
+          <svg v-if="!isFullscreen" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg v-else width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 2v4H2M10 6h4V2M10 14v-4h4M6 10H2v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
         <button type="button" class="wb-header-btn wb-header-btn--exit" @click="handleExit">
           {{ t('winterboard.room.exit') }}
         </button>
@@ -397,6 +406,8 @@ import { BOARD_TEMPLATES } from '../data/boardTemplates'
 import WBGridOverlay from '../components/canvas/WBGridOverlay.vue'
 import WBGridButton from '../components/canvas/WBGridButton.vue'
 import { useGridOverlay } from '../composables/useGridOverlay'
+import { useCanvasResize } from '../composables/useCanvasResize'
+import { useTouchGestures } from '../components/gestures/useTouchGestures'
 
 // ─── Store & Composables ────────────────────────────────────────────────────
 
@@ -469,6 +480,99 @@ const showShareDialog = ref(false)
 const showExportDialog = ref(false)
 const showTemplateSelector = ref(false)
 const showSidebarOverlay = ref(false)
+const isFullscreen = ref(false)
+
+async function toggleFullscreen() {
+  try {
+    if (!document.fullscreenElement) {
+      await document.documentElement.requestFullscreen()
+      isFullscreen.value = true
+    } else {
+      await document.exitFullscreen()
+      isFullscreen.value = false
+    }
+  } catch { /* Fullscreen not supported or denied */ }
+}
+
+// Listen for fullscreen changes (Esc key exits fullscreen)
+onMounted(() => {
+  document.addEventListener('fullscreenchange', () => {
+    isFullscreen.value = !!document.fullscreenElement
+  })
+})
+
+// ── Responsive canvas resize: auto-fit zoom when container changes size ──
+const { width: canvasContainerWidth, height: canvasContainerHeight, recalculate: recalculateCanvas } = useCanvasResize({
+  containerRef: canvasContainerRef,
+  onResize(w, h) {
+    // Auto-fit: if current zoom makes stage larger than container, adjust zoom down
+    if (w > 0 && h > 0 && store.pageWidth > 0 && store.pageHeight > 0) {
+      const maxZoomX = w / store.pageWidth
+      const maxZoomY = h / store.pageHeight
+      const fitZoom = Math.min(maxZoomX, maxZoomY, 1) // Don't zoom above 1 on auto-fit
+      if (store.zoom > fitZoom + 0.01) {
+        store.setZoom(fitZoom)
+      }
+    }
+  },
+  debounceMs: 100,
+})
+
+// ── Touch gestures: pinch-zoom, 2-finger pan, 3-finger undo/redo, double-tap, edge swipe ──
+const touchGestureMode = computed<'drawing' | 'selection'>(() =>
+  store.currentTool === 'select' ? 'selection' : 'drawing',
+)
+
+const touchGestures = useTouchGestures(canvasContainerRef, {
+  onPan(dx, dy) {
+    store.setScroll(store.scrollX + dx, store.scrollY + dy)
+    followMode.onUserInteraction()
+  },
+  onPanEnd() {
+    // Inertia finished — no action needed
+  },
+  onZoom(zoom, _centerX, _centerY) {
+    store.setZoom(zoom)
+    followMode.onUserInteraction()
+  },
+  onUndo() {
+    handleUndo()
+  },
+  onRedo() {
+    handleRedo()
+  },
+  onDoubleTap(_x, _y) {
+    // Double-tap: toggle between fit-to-page and 1x zoom
+    if (store.zoom < 0.95 || store.zoom > 1.05) {
+      store.setZoom(1)
+    } else {
+      canvasRef.value?.fitToPage?.()
+    }
+    followMode.onUserInteraction()
+  },
+  onLongPress(_x, _y) {
+    // Long press: switch to select tool for touch users
+    if (store.currentTool !== 'select') {
+      store.setTool('select')
+    }
+  },
+  onEdgeSwipeLeft() {
+    // Edge swipe from left: toggle page thumbnails panel
+    showPagePanel.value = !showPagePanel.value
+  },
+  onEdgeSwipeRight() {
+    // Edge swipe from right: toggle materials sidebar (if available)
+    // Sidebar visibility is driven by groupId — no toggle action here
+  },
+}, {
+  mode: touchGestureMode,
+  currentZoom: computed(() => store.zoom),
+})
+
+// Attach touch gestures after mount
+onMounted(() => {
+  touchGestures.attach()
+})
 
 // ── Page thumbnails panel: два режими (compact / panel), стан у localStorage ──
 const showPagePanel = ref(localStorage.getItem('wb:pagePanel') === 'true')
@@ -626,8 +730,8 @@ function toggleSidebarCollapse() {
     sidebarCollapsedBefore.value = sidebarWidth.value
     sidebarWidth.value = 0
   }
-  // Notify Konva ResizeObserver about container size change after CSS transition ends
-  setTimeout(() => window.dispatchEvent(new Event('resize')), 220)
+  // Notify ResizeObserver about container size change after CSS transition ends
+  setTimeout(() => recalculateCanvas(), 220)
 }
 
 // Persist sidebar width to localStorage (debounced)
@@ -1109,6 +1213,8 @@ watch(() => store.workspaceName, (name) => {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh; /* dynamic viewport height — accounts for mobile browser chrome */
+  overflow: hidden;
   background: var(--wb-bg-tertiary, #f1f5f9);
 }
 
@@ -1330,15 +1436,14 @@ watch(() => store.workspaceName, (name) => {
 
 .wb-solo-room__canvas {
   flex: 1;
+  min-width: 0;
+  min-height: 0;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
   background: var(--wb-canvas-area-bg, #e2e8f0);
-}
-
-.wb-solo-room__canvas--with-sidebar {
-  /* When sidebar is visible, canvas takes remaining space */
 }
 
 /* ── Resize handle for right sidebar ────────────────────────────────────── */
@@ -1835,6 +1940,84 @@ watch(() => store.workspaceName, (name) => {
 }
 .wb-sidebar-leave-to .wb-sidebar-panel {
   transform: translateX(-100%);
+}
+
+/* ── Display mode (>1920px) — interactive whiteboards, projectors ─────────── */
+
+@media (min-width: 1920px) {
+  .wb-solo-room__header {
+    height: 56px;
+    padding: 0 28px;
+  }
+
+  .wb-header-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 1.125rem;
+  }
+
+  .wb-title-input {
+    font-size: 1rem;
+  }
+
+  .wb-page-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .wb-zoom-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .wb-zoom-level {
+    font-size: 0.9375rem;
+  }
+}
+
+/* Display mode + touch (interactive whiteboard) */
+@media (min-width: 1920px) and (pointer: coarse) {
+  .wb-header-btn {
+    width: 48px;
+    height: 48px;
+    min-width: 64px;
+    min-height: 64px;
+  }
+
+  .wb-header-btn--exit {
+    min-width: 64px;
+    min-height: 64px;
+    padding: 0 16px;
+    font-size: 1rem;
+  }
+
+  .wb-page-btn {
+    width: 44px;
+    height: 44px;
+    min-width: 64px;
+    min-height: 64px;
+  }
+
+  .wb-zoom-btn {
+    width: 44px;
+    height: 44px;
+    min-width: 64px;
+    min-height: 64px;
+  }
+
+  .wb-sidebar-panel__links li a {
+    padding: 16px 24px;
+    font-size: 16px;
+    min-height: 64px;
+    display: flex;
+    align-items: center;
+  }
+}
+
+/* ── Fullscreen button highlight ─────────────────────────────────────────── */
+
+.wb-header-btn--fullscreen:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* ── Reduced motion ────────────────────────────────────────────────────────── */

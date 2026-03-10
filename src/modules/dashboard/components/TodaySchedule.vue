@@ -64,13 +64,28 @@ defineProps<{
   margin-bottom: var(--space-md, 16px);
 }
 
+/* Touch-friendly links: min 44px tap target */
+.schedule-header a,
+.schedule-empty a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
 .schedule-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--space-sm, 8px);
-  padding: var(--space-xl, 24px) 0;
+  padding: var(--space-lg, 20px) 0;
   text-align: center;
+}
+
+/* Tablet+: more generous empty state padding */
+@media (min-width: 768px) {
+  .schedule-empty {
+    padding: var(--space-xl, 24px) 0;
+  }
 }
 
 .schedule-empty-icon {

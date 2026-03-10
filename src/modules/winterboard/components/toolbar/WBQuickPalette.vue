@@ -267,6 +267,22 @@ function handleKeydown(event: KeyboardEvent): void {
   opacity: 1;
 }
 
+/* Mobile: horizontal layout when toolbar is at bottom */
+@media (max-width: 768px) {
+  .wb-quick-palette {
+    flex-direction: row;
+    gap: 4px;
+    padding: 0 2px;
+    flex-shrink: 0;
+  }
+
+  .wb-quick-palette__btn {
+    width: 28px;
+    height: 28px;
+    margin: 0;
+  }
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .wb-quick-palette__btn {

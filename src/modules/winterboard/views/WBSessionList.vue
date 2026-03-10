@@ -687,6 +687,83 @@ onUnmounted(() => {
   opacity: 0;
 }
 
+/* ── Mobile responsive ───────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .wb-session-list {
+    padding: 16px 12px;
+  }
+
+  .wb-session-list__header {
+    margin-bottom: 20px;
+  }
+
+  .wb-session-list__title {
+    font-size: 20px;
+  }
+
+  .wb-session-list__new-btn {
+    padding: 8px 14px;
+    font-size: 13px;
+    min-height: 44px;
+  }
+
+  .wb-session-card__thumb {
+    height: 100px;
+  }
+
+  .wb-session-card__actions-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .wb-session-card__menu {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    border-radius: 16px 16px 0 0;
+    min-width: 100%;
+    padding: 8px 0 calc(env(safe-area-inset-bottom, 0px) + 8px);
+    z-index: 1000;
+  }
+
+  .wb-session-card__menu-item {
+    padding: 14px 20px;
+    font-size: 15px;
+    min-height: 48px;
+  }
+
+  .wb-session-list__empty {
+    padding: 40px 16px;
+  }
+
+  .wb-dialog-overlay {
+    align-items: flex-end;
+  }
+
+  .wb-dialog {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 16px 16px 0 0;
+    padding: 20px 16px calc(env(safe-area-inset-bottom, 0px) + 16px);
+  }
+
+  .wb-dialog__btn {
+    min-height: 44px;
+    padding: 10px 20px;
+  }
+
+  .wb-dialog__actions {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+
+  .wb-session-list__cta-btn {
+    min-height: 44px;
+  }
+}
+
 /* ── B5.2: Reduced motion ────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .wb-session-card,

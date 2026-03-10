@@ -69,13 +69,20 @@ const displayValue = computed(() => {
   display: flex;
   align-items: center;
   gap: var(--space-md, 12px);
-  padding: var(--space-md, 16px);
+  padding: var(--space-sm, 12px);
   background: var(--card-bg, var(--color-surface));
   border: 1px solid var(--border-color, var(--color-border-default));
   border-radius: var(--radius-xl, 16px);
   text-decoration: none;
   color: inherit;
   transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+/* Tablet+: larger padding */
+@media (min-width: 768px) {
+  .stat-card {
+    padding: var(--space-md, 16px);
+  }
 }
 
 .stat-card--clickable:hover {
@@ -106,11 +113,19 @@ const displayValue = computed(() => {
   min-width: 0;
 }
 
+/* Mobile-first: smaller value text */
 .stat-value {
-  font-size: var(--text-2xl, 1.5rem);
+  font-size: var(--text-xl, 1.25rem);
   font-weight: 700;
   line-height: 1.2;
   color: var(--text-primary, var(--color-text-body));
+}
+
+/* Tablet+: larger value text */
+@media (min-width: 768px) {
+  .stat-value {
+    font-size: var(--text-2xl, 1.5rem);
+  }
 }
 
 .stat-label {
