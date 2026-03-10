@@ -53,9 +53,9 @@
         :show-actions="true"
       >
         <template #actions>
-          <!-- OPEN: show Accept / Reject buttons -->
-          <template v-if="inquiry.status === 'OPEN'">
-            <Button 
+          <!-- OPEN + relation не active: показуємо кнопки Прийняти/Відхилити -->
+          <template v-if="inquiry.status === 'OPEN' && inquiry.relation_status !== 'active'">
+            <Button
               variant="primary"
               size="sm"
               :disabled="isLoading || isAccepting || !acceptanceStore.canAccept"
@@ -63,7 +63,7 @@
             >
               {{ isAccepting ? $t('inquiries.tutor.accepting') : $t('inquiries.tutor.accept') }}
             </Button>
-            <Button 
+            <Button
               variant="secondary"
               size="sm"
               :disabled="isLoading"
@@ -73,8 +73,8 @@
             </Button>
           </template>
 
-          <!-- ACCEPTED: show confirmation message -->
-          <div v-else-if="inquiry.status === 'ACCEPTED'" class="status-message status-accepted-msg">
+          <!-- ACCEPTED або relation вже active (прийнято через dashboard): підтвердження -->
+          <div v-else-if="inquiry.status === 'ACCEPTED' || inquiry.relation_status === 'active'" class="status-message status-accepted-msg">
             ✓ {{ $t('inquiries.tutor.acceptedMessage') }}
           </div>
 
