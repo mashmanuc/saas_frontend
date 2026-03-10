@@ -107,7 +107,6 @@ export function useInquiryAccept() {
     const idx = storeItems.findIndex(i => String(i.id) === String(inquiryId))
     if (idx !== -1) {
       storeItems[idx] = { ...storeItems[idx], status: 'ACCEPTED' }
-      console.log('[useInquiryAccept] Optimistic update: inquiry marked as ACCEPTED')
     }
     
     // Invalidate acceptance cache
@@ -116,10 +115,8 @@ export function useInquiryAccept() {
     // Phase 1 v0.87.1: ТЗ-1.1 - Синхронізація ContactAccess після accept
     if (result?.relation?.id) {
       try {
-        // ⚠️ R-P0-1: ContactAccess синхронізується для відображення контактів
         await contactAccessStore.fetchContactAccessByRelation(result.relation.id)
-      } catch (error) {
-        console.warn('[useInquiryAccept] Failed to fetch contact access:', error)
+      } catch {
         // Не блокуємо flow якщо не вдалося отримати контакти
       }
     }
@@ -127,27 +124,12 @@ export function useInquiryAccept() {
     // Оновлюємо relations - relation.status стане 'active'
     try {
       await relationsStore.fetchRelations()
-    } catch (error) {
-      console.warn('[useInquiryAccept] Failed to fetch relations:', error)
+    } catch {
+      // Не блокуємо flow
     }
     
-    // Refresh inquiries list with delay to ensure backend consistency
-    console.log('[useInquiryAccept] Refetching inquiries...')
-    try {
-      await inquiriesStore.refetch()
-      console.log('[useInquiryAccept] Refetch successful, items count:', inquiriesStore.items.length)
-      
-      // Double-check if our inquiry is updated
-      const updatedInquiry = inquiriesStore.items.find(i => String(i.id) === String(inquiryId))
-      console.log('[useInquiryAccept] Inquiry status after refetch:', updatedInquiry?.status)
-    } catch (error) {
-      console.error('[useInquiryAccept] Refetch failed:', error)
-      // Fallback: try again after 1 second
-      setTimeout(() => {
-        console.log('[useInquiryAccept] Fallback refetch...')
-        inquiriesStore.refetch()
-      }, 1000)
-    }
+    // Refresh inquiries list
+    await inquiriesStore.refetch()
     
     // Show success toast
     toast.success('Inquiry accepted successfully!')

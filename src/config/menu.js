@@ -71,7 +71,6 @@ export const SECTIONED_MENU_BY_ROLE = {
       label: 'sidebar.section.students',
       items: [
         { label: 'sidebar.item.myStudents', icon: 'users', to: '/tutor/students' },
-        { label: 'sidebar.item.messages', icon: 'message-circle', to: '/tutor/messages' },
         { label: 'sidebar.item.inquiries', icon: 'inbox', to: '/tutor/inquiries' },
       ],
     },
@@ -114,7 +113,6 @@ export const SECTIONED_MENU_BY_ROLE = {
       label: 'sidebar.section.tutors',
       items: [
         { label: 'sidebar.item.findTutor', icon: 'search', to: '/marketplace' },
-        { label: 'sidebar.item.messages', icon: 'message-circle', to: '/student/messages' },
         { label: 'sidebar.item.myInquiries', icon: 'inbox', to: '/student/inquiries' },
       ],
     },
