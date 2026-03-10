@@ -107,6 +107,7 @@ export function useInquiryAccept() {
     const idx = storeItems.findIndex(i => String(i.id) === String(inquiryId))
     if (idx !== -1) {
       storeItems[idx] = { ...storeItems[idx], status: 'ACCEPTED' }
+      console.log('[useInquiryAccept] Optimistic update: inquiry marked as ACCEPTED')
     }
     
     // Invalidate acceptance cache
@@ -130,8 +131,23 @@ export function useInquiryAccept() {
       console.warn('[useInquiryAccept] Failed to fetch relations:', error)
     }
     
-    // Refresh inquiries list
-    await inquiriesStore.refetch()
+    // Refresh inquiries list with delay to ensure backend consistency
+    console.log('[useInquiryAccept] Refetching inquiries...')
+    try {
+      await inquiriesStore.refetch()
+      console.log('[useInquiryAccept] Refetch successful, items count:', inquiriesStore.items.length)
+      
+      // Double-check if our inquiry is updated
+      const updatedInquiry = inquiriesStore.items.find(i => String(i.id) === String(inquiryId))
+      console.log('[useInquiryAccept] Inquiry status after refetch:', updatedInquiry?.status)
+    } catch (error) {
+      console.error('[useInquiryAccept] Refetch failed:', error)
+      // Fallback: try again after 1 second
+      setTimeout(() => {
+        console.log('[useInquiryAccept] Fallback refetch...')
+        inquiriesStore.refetch()
+      }, 1000)
+    }
     
     // Show success toast
     toast.success('Inquiry accepted successfully!')
