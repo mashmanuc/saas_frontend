@@ -69,6 +69,12 @@ export function useErrorHandler() {
 
     let message = fallbackMessage || t('calendar.errors.unknown')
 
+    // 401 is handled by apiClient interceptor (token refresh + redirect).
+    // Do NOT show error toast — it would flash before redirect completes.
+    if (status === 401) {
+      return ''
+    }
+
     if (errorCode && errorMessages[errorCode]) {
       message = t(errorMessages[errorCode])
     } else if (errorMessage) {
@@ -107,6 +113,11 @@ export function useErrorHandler() {
     const fieldErrors: Record<string, string> = {}
     let message = fallbackMessage || t('calendar.errors.unknown')
     let shouldShowToast = true
+
+    // 401 is handled by apiClient interceptor (token refresh + redirect).
+    if (status === 401) {
+      return { message: '', fieldErrors: {}, shouldShowToast: false }
+    }
 
     // Якщо є код помилки
     if (errorCode) {

@@ -485,7 +485,13 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
         return
       }
       
-      error.value = err instanceof Error ? err.message : 'Failed to fetch snapshot'
+      // Don't show error UI for auth failures — apiClient interceptor handles
+      // token refresh and redirect. The calendar should stay in loading/normal
+      // state while the token is being refreshed silently.
+      const httpStatus = err?.response?.status
+      if (httpStatus !== 401) {
+        error.value = err instanceof Error ? err.message : 'Failed to fetch snapshot'
+      }
       throw err
     } finally {
       isLoading.value = false

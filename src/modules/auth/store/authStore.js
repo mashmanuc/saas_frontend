@@ -4,10 +4,10 @@ import { storage } from '../../../utils/storage'
 import { logAuthEvent, AUTH_EVENTS } from '../../../utils/telemetry/authEvents'
 
 const hasDocument = typeof document !== 'undefined'
-// БАГ №4 FIX: JWT TTL = 30 хв (backend SIMPLE_JWT.ACCESS_TOKEN_LIFETIME).
-// Було 25 хв — залишало лише 5 хв запасу, що недостатньо при мережевих затримках або фоновій вкладці.
-// 15 хв дає надійні 2 спроби на 30-хвилинне вікно.
-const REFRESH_INTERVAL_MS = 15 * 60 * 1000
+// JWT TTL = 60 хв (backend SIMPLE_JWT.ACCESS_TOKEN_LIFETIME).
+// Proactive refresh кожні 20 хв дає 3 спроби на 60-хвилинне вікно.
+// При поверненні до вкладки — рефреш відбувається одразу (visibilitychange handler).
+const REFRESH_INTERVAL_MS = 20 * 60 * 1000
 let refreshInterval = null
 // Cross-tab refresh coordination
 const REFRESH_LOCK_KEY = 'auth_refresh_lock'
