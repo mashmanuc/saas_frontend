@@ -91,6 +91,13 @@ export const useRealtimeStore = defineStore('realtime', {
           if (auth.refreshPromise) {
             try { await auth.refreshPromise } catch { /* ignore */ }
           }
+          // If bootstrap finished but access is still placeholder,
+          // attempt one refresh to get a real JWT for WS.
+          if (auth.access === '__cookie__') {
+            try {
+              await auth.refreshAccess()
+            } catch { /* ignore — will return null below */ }
+          }
           // Never send placeholder as token — backend can't decode it → 1006
           if (!auth.access || auth.access === '__cookie__') return null
           return auth.access
@@ -156,13 +163,16 @@ export const useRealtimeStore = defineStore('realtime', {
     bindAuthWatcher(auth) {
       if (this.authUnsubscribe) return
 
-      // Guard: track last access to debounce rapid changes
+      // Guard: track last access to debounce rapid changes.
+      // Track actual value (not just boolean) to detect '__cookie__' → real JWT transitions.
       let lastAccess = auth.access
       let connectDebounceTimer = null
 
       this.authUnsubscribe = auth.$subscribe(
         (_mutation, state) => {
-          const hasAccess = Boolean(state.access)
+          const currentAccess = state.access
+          const hasRealToken = Boolean(currentAccess && currentAccess !== '__cookie__')
+          const hadRealToken = Boolean(lastAccess && lastAccess !== '__cookie__')
           
           // Debounce rapid auth changes
           if (connectDebounceTimer) {
@@ -170,19 +180,21 @@ export const useRealtimeStore = defineStore('realtime', {
           }
           
           connectDebounceTimer = setTimeout(() => {
-            // Only act if access actually changed
-            if (hasAccess && !lastAccess) {
+            if (hasRealToken && !hadRealToken) {
+              // Got a real JWT (login, or __cookie__ → real token after refresh)
               this.connect()
-            } else if (!hasAccess && lastAccess) {
+            } else if (!currentAccess && lastAccess) {
+              // Logged out (access became null)
               this.disconnect()
             }
-            lastAccess = state.access
+            lastAccess = currentAccess
           }, 100)
         },
         { detached: true }
       )
 
-      if (auth.access) {
+      // Only auto-connect if we have a real token (not placeholder)
+      if (auth.access && auth.access !== '__cookie__') {
         this.connect()
       }
     },

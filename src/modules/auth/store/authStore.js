@@ -94,8 +94,18 @@ export const useAuthStore = defineStore('auth', {
       if (this.access === '__cookie__') {
         try {
           await this.refreshAccess()
-        } catch {
-          // Refresh failed — try to load user with cookie auth anyway
+        } catch (err) {
+          // Refresh failed — REST API still works via httpOnly cookie,
+          // but WS needs real JWT. Log for diagnostics, proceed with cookie auth.
+          const status = err?.response?.status
+          console.warn('[auth:bootstrap] Initial refresh failed, status:', status,
+            '— REST API works via cookie, WS deferred until next refresh cycle')
+          // If refresh returned 401/422 — session is truly dead
+          if (status === 401 || status === 422) {
+            await this.forceLogout('session_expired')
+            return
+          }
+          // For 429/500/network — session is likely valid, continue
         }
       }
 
@@ -115,6 +125,9 @@ export const useAuthStore = defineStore('auth', {
         }
       }
 
+      // CRITICAL: always start proactive refresh when session exists.
+      // Even if initial refresh failed (access='__cookie__'), the next proactive
+      // refresh cycle will obtain a real JWT and WS can then connect.
       if (this.user) {
         this.startProactiveRefresh()
         this.initStorageSync()
@@ -570,7 +583,13 @@ export const useAuthStore = defineStore('auth', {
         if (hasDocument && document.visibilityState !== 'visible') return
 
         try {
-          await this.refreshAccess()
+          const newToken = await this.refreshAccess()
+          // After successful refresh, ensure WS is connected.
+          // If tokenProvider previously returned null (access was '__cookie__'),
+          // WS is in CLOSED state with shouldReconnect=false — needs explicit reconnect.
+          if (newToken && newToken !== '__cookie__') {
+            this._ensureWsConnected()
+          }
         } catch (error) {
           // FIX-4: forceLogout ONLY on 401 (token truly dead).
           // 429 = rate limit, 500 = server error, network = glitch — all recoverable.
@@ -590,7 +609,10 @@ export const useAuthStore = defineStore('auth', {
           if (!this.access) return
           // Рефрешимо одразу при поверненні — не чекаємо наступного інтервалу
           try {
-            await this.refreshAccess()
+            const newToken = await this.refreshAccess()
+            if (newToken && newToken !== '__cookie__') {
+              this._ensureWsConnected()
+            }
           } catch (error) {
             // FIX-5: forceLogout ONLY on 401.
             const status = error?.response?.status
@@ -601,6 +623,23 @@ export const useAuthStore = defineStore('auth', {
           }
         }
         document.addEventListener('visibilitychange', this._visibilityHandler)
+      }
+    },
+
+    /**
+     * Ensure WebSocket is connected after token refresh.
+     * If WS was closed due to missing token (tokenProvider returned null),
+     * this triggers a reconnect with the now-available real JWT.
+     */
+    async _ensureWsConnected() {
+      try {
+        const { useRealtimeStore } = await import('../../../stores/realtimeStore')
+        const realtimeStore = useRealtimeStore()
+        if (realtimeStore.initialized && (realtimeStore.status === 'closed' || realtimeStore.status === 'disconnected')) {
+          realtimeStore.connect()
+        }
+      } catch {
+        // realtimeStore may not be initialized yet — not critical
       }
     },
 
