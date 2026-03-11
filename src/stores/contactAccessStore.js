@@ -216,7 +216,8 @@ export const useContactAccessStore = defineStore('contactAccess', () => {
 
   function $reset() {
     contactsCache.value = new Map()
-    loading.value = false
+    accessExistsByStudentId.value = new Map()
+    loadingStudentIds.value = new Set()
   }
 
   return {

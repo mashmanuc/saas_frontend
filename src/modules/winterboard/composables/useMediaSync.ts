@@ -10,6 +10,7 @@
  * ⚠️ Does NOT use Yjs. Uses raw WebSocket to BoardConsumer.
  */
 import { ref, readonly, onUnmounted, type Ref } from 'vue'
+import { tokenVault } from '@/utils/tokenVault'
 
 const LOG = '[WB:MediaSync]'
 
@@ -43,11 +44,17 @@ export function useMediaSync(
 
   // ── Connect ─────────────────────────────────────────────────
 
-  function connect(): void {
+  async function connect(): Promise<void> {
     const sid = sessionId.value
-    const tok = token.value
-    if (!sid || !tok) {
-      console.warn(LOG, 'Cannot connect: missing sessionId or token')
+    const rawTok = token.value
+    if (!sid || !rawTok || rawTok === '__cookie__') {
+      console.warn(LOG, 'Cannot connect: missing sessionId or real token')
+      return
+    }
+    // Phase 2: token may be encrypted in memory — decrypt before sending to WS
+    const tok = await tokenVault.decrypt(rawTok) || rawTok
+    if (!tok) {
+      console.warn(LOG, 'Cannot connect: token decrypt failed')
       return
     }
 

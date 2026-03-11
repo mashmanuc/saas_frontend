@@ -14,6 +14,7 @@
 
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useInquiriesStore } from '@/stores/inquiriesStore'
+import { useAuthStore } from '@/modules/auth/store/authStore'
 import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 import { buildWsUrl } from '@/utils/wsUrl'
@@ -61,12 +62,19 @@ export function useInquiryWebSocket(options: UseInquiryWebSocketOptions = {}) {
   /**
    * Підключитися до WebSocket
    */
-  function connect() {
+  async function connect() {
     if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) {
       return
     }
     
-    const wsUrl = buildWsUrl('/ws/inquiries/')
+    const authStore = useAuthStore()
+    const token = await authStore.getDecryptedAccess()
+    if (!token) {
+      // No real JWT available — defer connection until token is available
+      return
+    }
+    const baseUrl = buildWsUrl('/ws/inquiries/')
+    const wsUrl = `${baseUrl}?token=${encodeURIComponent(token)}`
     
     try {
       ws = new WebSocket(wsUrl)

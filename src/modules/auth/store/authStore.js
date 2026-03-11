@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import authApi from '../api/authApi'
 import { storage } from '../../../utils/storage'
 import { logAuthEvent, AUTH_EVENTS } from '../../../utils/telemetry/authEvents'
+import { tokenVault } from '../../../utils/tokenVault'
 
 const hasDocument = typeof document !== 'undefined'
 // JWT TTL = 60 хв (backend SIMPLE_JWT.ACCESS_TOKEN_LIFETIME).
@@ -67,7 +68,19 @@ export const useAuthStore = defineStore('auth', {
   },
 
   actions: {
+    /**
+     * Decrypt access token from memory vault.
+     * Single entry point for all WS auth and beacon requests.
+     * Returns null if no real JWT available.
+     */
+    async getDecryptedAccess() {
+      if (!this.access || this.access === '__cookie__') return null
+      return await tokenVault.decrypt(this.access)
+    },
+
     async bootstrap() {
+      // Initialize tokenVault early (generates ephemeral AES key)
+      await tokenVault.init()
       // Вже запущено — повертаємо існуючий promise
       if (this._bootstrapPromise) return this._bootstrapPromise
       // Вже ініціалізовано
@@ -370,12 +383,18 @@ export const useAuthStore = defineStore('auth', {
       return user
     },
 
-    setAuth({ access, user } = {}) {
+    async setAuth({ access, user } = {}) {
       if (typeof access !== 'undefined') {
         // Phase 1.3: Keep JWT in memory for WS/beacon auth.
         // httpOnly cookie handles REST API auth.
         // localStorage stores only session marker (not real JWT).
-        this.access = access || null
+        // Phase 2: JWT encrypted in memory via tokenVault (AES-GCM).
+        // Pinia state holds ciphertext; decrypt() required for WS auth.
+        if (access && access !== '__cookie__') {
+          this.access = await tokenVault.encrypt(access)
+        } else {
+          this.access = access || null
+        }
         if (access) {
           storage.set('auth_session', '1')
           // Migration: remove legacy access token from localStorage
@@ -520,7 +539,8 @@ export const useAuthStore = defineStore('auth', {
 
           // Phase 1.3: Keep JWT in memory for WS/beacon auth.
           // httpOnly cookie is set by backend automatically.
-          this.access = res.access
+          // Phase 2: Encrypt JWT in memory via tokenVault (AES-GCM).
+          this.access = await tokenVault.encrypt(res.access)
           storage.set('auth_session', '1')
 
           if (!this.csrfToken) {

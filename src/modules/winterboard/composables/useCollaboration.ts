@@ -12,6 +12,7 @@
 
 import { ref, computed, onMounted, onUnmounted, type Ref } from 'vue'
 import * as Y from 'yjs'
+import { tokenVault } from '@/utils/tokenVault'
 import { createWBDocument, setMeta } from '../engine/collaboration/yjsDocument'
 import { setupYjsSync, type YjsSyncHandle, type WBStoreAdapter } from '../engine/collaboration/yjsSync'
 import { useWBStore } from '../board/state/boardStore'
@@ -164,7 +165,11 @@ export function useCollaboration(
       const { WebsocketProvider } = await import('y-websocket')
       const wsUrl = resolveWsUrl()
       const params: Record<string, string> = {}
-      if (opts?.token) params.token = opts.token
+      if (opts?.token) {
+        // Phase 2: token may be encrypted in memory — decrypt before sending
+        const decrypted = await tokenVault.decrypt(opts.token)
+        params.token = decrypted || opts.token
+      }
 
       wsProvider = new WebsocketProvider(wsUrl, sid, doc, {
         params,

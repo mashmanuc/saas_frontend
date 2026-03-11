@@ -100,7 +100,8 @@ export const useRealtimeStore = defineStore('realtime', {
           }
           // Never send placeholder as token — backend can't decode it → 1006
           if (!auth.access || auth.access === '__cookie__') return null
-          return auth.access
+          // Phase 2: Decrypt ciphertext → plaintext JWT for WS auth
+          return await auth.getDecryptedAccess()
         },
         ...options,
       })

@@ -20,9 +20,9 @@ const CHAT_WS_INITIAL_DELAY = 1000
 const CHAT_WS_MAX_DELAY = 30000
 const CHAT_WS_BACKOFF_MULTIPLIER = 2
 
-function getWsUrl(threadId: string): string {
+async function getWsUrlAsync(threadId: string): Promise<string> {
   const authStore = useAuthStore()
-  const token = authStore.access || ''
+  const token = await authStore.getDecryptedAccess() || ''
   return `${buildWsUrl(`/ws/room/${threadId}/`)}?token=${token}`
 }
 
@@ -56,7 +56,7 @@ function handleWsMessage(data: any): void {
   }
 }
 
-function connectInternal(threadId: string, userId?: number): void {
+async function connectInternal(threadId: string, userId?: number): Promise<void> {
   if (globalSocket) {
     globalSocket.close()
     globalSocket = null
@@ -66,7 +66,7 @@ function connectInternal(threadId: string, userId?: number): void {
   globalUserId = userId || null
 
   try {
-    globalSocket = new WebSocket(getWsUrl(threadId))
+    globalSocket = new WebSocket(await getWsUrlAsync(threadId))
     globalSocket.onopen = () => {
       console.log('[WS] Connected:', threadId)
       globalReconnectAttempts = 0

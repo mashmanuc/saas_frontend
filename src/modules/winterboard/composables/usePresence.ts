@@ -144,6 +144,21 @@ function sleep(ms: number): Promise<void> {
 
 // ─── Composable ─────────────────────────────────────────────────────────────
 
+/**
+ * Get fresh decrypted JWT from authStore at call time (not stale snapshot from mount).
+ * Returns null if no real JWT available (e.g. '__cookie__' placeholder or decrypt fail).
+ */
+async function _getFreshTokenAsync(): Promise<string | null> {
+  try {
+    const { useAuthStore } = await import('@/modules/auth/store/authStore')
+    const authStore = useAuthStore()
+    if (!authStore.access || authStore.access === '__cookie__') return null
+    return await authStore.getDecryptedAccess()
+  } catch {
+    return null
+  }
+}
+
 export function usePresence(options: UsePresenceOptions) {
   const { userId, displayName, color } = options
   const wsBaseUrl = options.wsBaseUrl ?? getWsBaseUrl()
@@ -174,10 +189,18 @@ export function usePresence(options: UsePresenceOptions) {
 
   // ── WebSocket connection ────────────────────────────────────────────────
 
-  function connect(sessionId: string): void {
+  async function connect(sessionId: string): Promise<void> {
     // Skip WS connection if presence is not available (e.g. Cloudflare Pages)
     if (!isPresenceAvailable()) {
       console.info(LOG_PREFIX, 'Presence unavailable (no WS backend configured). Skipping.')
+      connectionState.value = 'disconnected'
+      return
+    }
+
+    // Get fresh decrypted token at connect time (not stale snapshot from mount)
+    const token = await _getFreshTokenAsync()
+    if (!token) {
+      console.warn(LOG_PREFIX, 'No auth token available, deferring connect')
       connectionState.value = 'disconnected'
       return
     }
@@ -187,7 +210,7 @@ export function usePresence(options: UsePresenceOptions) {
     reconnectAttempts = 0
     connectionState.value = 'connecting'
 
-    const tokenParam = options.token ? `?token=${encodeURIComponent(options.token)}` : ''
+    const tokenParam = `?token=${encodeURIComponent(token)}`
     const url = `${wsBaseUrl}/ws/winterboard/${sessionId}/${tokenParam}`
 
     try {
@@ -233,10 +256,35 @@ export function usePresence(options: UsePresenceOptions) {
       const code = event.code
       console.info(LOG_PREFIX, 'Disconnected, code:', code)
 
-      // 4403 = forbidden, 4401 = auth expired — do not reconnect
-      if (code === 4403 || code === 4401) {
-        lastError.value = code === 4403 ? 'Access denied' : 'Session expired'
+      // 4403 = forbidden — do not reconnect (permanent)
+      if (code === 4403) {
+        lastError.value = 'Access denied'
         reconnectAborted = true
+        return
+      }
+
+      // 4401 = auth expired — try to refresh token, then reconnect
+      if (code === 4401) {
+        console.info(LOG_PREFIX, 'Token expired, attempting refresh before reconnect')
+        void (async () => {
+          try {
+            const pinia = (window as any).__pinia__
+            const authState = pinia?.state?.value?.auth
+            if (authState) {
+              // Dynamically import to avoid circular deps
+              const { useAuthStore } = await import('@/modules/auth/store/authStore')
+              const authStore = useAuthStore()
+              await authStore.refreshAccess()
+              // After refresh, _getFreshToken() will return new JWT
+              if (!reconnectAborted && reconnectAttempts < RECONNECT_MAX_ATTEMPTS) {
+                void scheduleReconnect(sessionId)
+              }
+            }
+          } catch {
+            lastError.value = 'Session expired'
+            reconnectAborted = true
+          }
+        })()
         return
       }
 

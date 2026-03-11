@@ -59,7 +59,14 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
-      // WebSocket connections
+      // WebSocket connections — all /ws/* endpoints (gateway, winterboard, inquiries, calendar, room, webrtc, etc.)
+      '/ws': {
+        target: process.env.VITE_DEV_WS_TARGET || 'ws://localhost:8000',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+      },
+      // Legacy WebSocket path (kept for backward compat)
       '/websocket': {
         target: process.env.VITE_DEV_WS_TARGET || 'ws://localhost:8000',
         changeOrigin: true,

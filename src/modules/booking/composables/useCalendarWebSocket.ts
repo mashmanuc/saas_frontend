@@ -19,12 +19,13 @@ export function useCalendarWebSocket() {
       return
     }
 
-    if (!authStore.access) {
-      console.warn('[useCalendarWebSocket] No auth token')
+    const token = await authStore.getDecryptedAccess()
+    if (!token) {
+      console.warn('[useCalendarWebSocket] No real auth token available')
       return
     }
 
-    ws.value = new CalendarWebSocket(authStore.access)
+    ws.value = new CalendarWebSocket(token)
 
     // Subscribe to events
     ws.value.on('event.created', (data) => {
