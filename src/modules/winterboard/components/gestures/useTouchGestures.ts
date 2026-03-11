@@ -10,10 +10,13 @@
 //   Edge swipe = open panels
 
 import { ref, readonly, onBeforeUnmount, type Ref } from 'vue'
+import type { DeviceMode } from '../../types/responsive'
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
 const LOG = '[WB:TouchGestures]'
+
+// ── Default (desktop) thresholds ─────────────────────────────────────────
 
 /** Minimum distance (px) to recognize a pan gesture */
 const PAN_THRESHOLD = 5
@@ -54,6 +57,55 @@ const ZOOM_MAX = 4.0
 
 /** Haptic vibration duration (ms) */
 const HAPTIC_MS = 10
+
+// ── Responsive Phase 2 A3: Device-aware adaptive thresholds ──────────────
+
+export interface AdaptiveThresholds {
+  panThreshold: number
+  longPressMs: number
+  edgeZonePx: number
+  inertiaFriction: number
+  hapticMs: number
+}
+
+const THRESHOLDS_BY_DEVICE: Record<DeviceMode, AdaptiveThresholds> = {
+  mobile: {
+    panThreshold: 3,
+    longPressMs: 400,
+    edgeZonePx: 24,
+    inertiaFriction: 0.94,
+    hapticMs: 15,
+  },
+  tablet: {
+    panThreshold: 5,
+    longPressMs: 500,
+    edgeZonePx: 32,
+    inertiaFriction: 0.92,
+    hapticMs: 10,
+  },
+  desktop: {
+    panThreshold: 5,
+    longPressMs: 500,
+    edgeZonePx: 24,
+    inertiaFriction: 0.92,
+    hapticMs: 10,
+  },
+  display: {
+    panThreshold: 8,
+    longPressMs: 600,
+    edgeZonePx: 48,
+    inertiaFriction: 0.88,
+    hapticMs: 20,
+  },
+}
+
+/**
+ * Get adaptive thresholds based on device mode.
+ * Responsive Phase 2 A3: Device-aware calibration.
+ */
+export function getAdaptiveThresholds(deviceMode: DeviceMode): AdaptiveThresholds {
+  return THRESHOLDS_BY_DEVICE[deviceMode] ?? THRESHOLDS_BY_DEVICE.desktop
+}
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -123,8 +175,15 @@ export function useTouchGestures(
     filterTouch?: (e: PointerEvent) => boolean
     /** Respect prefers-reduced-motion */
     reducedMotion?: boolean
+    /** Responsive Phase 2 A3: Current device mode for adaptive thresholds */
+    deviceMode?: Ref<DeviceMode>
   } = {},
 ) {
+  // Responsive Phase 2 A3: Resolve adaptive thresholds
+  function currentThresholds(): AdaptiveThresholds {
+    const mode = options.deviceMode?.value ?? 'desktop'
+    return getAdaptiveThresholds(mode)
+  }
   // ── State ─────────────────────────────────────────────────────────
 
   const activeGesture = ref<ActiveGesture>('none')
@@ -175,7 +234,8 @@ export function useTouchGestures(
 
   function haptic(): void {
     try {
-      navigator?.vibrate?.(HAPTIC_MS)
+      const ms = currentThresholds().hapticMs
+      navigator?.vibrate?.(ms)
     } catch {
       // Not supported
     }
@@ -233,10 +293,11 @@ export function useTouchGestures(
     isInertiaActive.value = true
     let cvx = vx
     let cvy = vy
+    const friction = currentThresholds().inertiaFriction
 
     const tick = () => {
-      cvx *= INERTIA_FRICTION
-      cvy *= INERTIA_FRICTION
+      cvx *= friction
+      cvy *= friction
 
       if (Math.abs(cvx) < INERTIA_MIN_VELOCITY && Math.abs(cvy) < INERTIA_MIN_VELOCITY) {
         isInertiaActive.value = false
@@ -263,6 +324,7 @@ export function useTouchGestures(
 
   function startLongPressTimer(x: number, y: number): void {
     cancelLongPress()
+    const lpMs = currentThresholds().longPressMs
     longPressTimer = setTimeout(() => {
       if (touchCount.value === 1 && activeGesture.value === 'none') {
         activeGesture.value = 'long-press'
@@ -272,7 +334,7 @@ export function useTouchGestures(
         console.info(`${LOG} Long press at (${x.toFixed(0)}, ${y.toFixed(0)})`)
         callbacks.onLongPress(x, y)
       }
-    }, LONG_PRESS_MS)
+    }, lpMs)
   }
 
   function cancelLongPress(): void {
@@ -289,9 +351,10 @@ export function useTouchGestures(
   function detectEdge(clientX: number): 'left' | 'right' | null {
     const rect = getContainerRect()
     if (!rect) return null
+    const edgeZone = currentThresholds().edgeZonePx
     const relX = clientX - rect.left
-    if (relX < EDGE_ZONE_PX) return 'left'
-    if (relX > rect.width - EDGE_ZONE_PX) return 'right'
+    if (relX < edgeZone) return 'left'
+    if (relX > rect.width - edgeZone) return 'right'
     return null
   }
 
@@ -404,7 +467,8 @@ export function useTouchGestures(
     if (longPressTimer) {
       const dx = e.clientX - touch.startX
       const dy = e.clientY - touch.startY
-      if (dx * dx + dy * dy > PAN_THRESHOLD * PAN_THRESHOLD) {
+      const pt = currentThresholds().panThreshold
+      if (dx * dx + dy * dy > pt * pt) {
         cancelLongPress()
       }
     }
@@ -503,7 +567,7 @@ export function useTouchGestures(
       )
 
       // Only count as tap if finger didn't move much
-      if (movedDist < PAN_THRESHOLD) {
+      if (movedDist < currentThresholds().panThreshold) {
         if (dt < DOUBLE_TAP_MS && dx * dx + dy * dy < DOUBLE_TAP_DISTANCE * DOUBLE_TAP_DISTANCE) {
           // Double-tap detected
           const rect = getContainerRect()

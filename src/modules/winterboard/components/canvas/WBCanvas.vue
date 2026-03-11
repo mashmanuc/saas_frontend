@@ -573,12 +573,22 @@ const cursorClass = computed(() => {
   }
 })
 
-const stageConfig = computed(() => ({
-  width: props.width * props.zoom,
-  height: props.height * props.zoom,
-  scaleX: props.zoom,
-  scaleY: props.zoom,
-}))
+// INV-1: Canvas NEVER resizes — only stage.scale() + stage.position()
+// Use container size for stage width/height, zoom only for scale transform.
+// When container size is available from store, use it; otherwise fallback to props.
+const stageConfig = computed(() => {
+  const cw = wbStore.containerWidth
+  const ch = wbStore.containerHeight
+  const offset = wbStore.canvasOffset
+  return {
+    width: cw > 0 ? cw : props.width * props.zoom,
+    height: ch > 0 ? ch : props.height * props.zoom,
+    scaleX: props.zoom,
+    scaleY: props.zoom,
+    x: cw > 0 ? offset.x : 0,
+    y: ch > 0 ? offset.y : 0,
+  }
+})
 
 const backgroundConfig = computed(() => ({
   x: 0,

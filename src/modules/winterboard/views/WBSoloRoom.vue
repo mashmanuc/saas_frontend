@@ -1,5 +1,10 @@
 <template>
-  <div class="wb-solo-room">
+  <div
+    class="wb-solo-room"
+    :data-device-mode="deviceModeState.deviceMode.value"
+    :data-input-mode="deviceModeState.inputMode.value"
+    :data-orientation="deviceModeState.orientation.value"
+  >
     <!-- B5.1: Skip to canvas link for keyboard/screen reader users -->
     <a href="#wb-canvas" class="wb-skip-link">{{ t('winterboard.a11y.skipToCanvas') }}</a>
     <!-- ── Header ──────────────────────────────────────────────────────────── -->
@@ -408,12 +413,16 @@ import WBGridButton from '../components/canvas/WBGridButton.vue'
 import { useGridOverlay } from '../composables/useGridOverlay'
 import { useCanvasResize } from '../composables/useCanvasResize'
 import { useTouchGestures } from '../components/gestures/useTouchGestures'
+import { useDeviceMode } from '../composables/useDeviceMode'
 
 // ─── Store & Composables ────────────────────────────────────────────────────
 
 const router = useRouter()
 const route = useRoute()
 const store = useWBStore()
+
+// Responsive Phase 1 B2: Device mode detection for layout data-attributes
+const deviceModeState = useDeviceMode()
 const { t } = useI18n()
 const { announce } = useAnnouncer()
 

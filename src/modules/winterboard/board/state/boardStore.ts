@@ -239,6 +239,11 @@ export interface WBBoardState {
   // v5 A1: Multi-select state
   selectedIds: string[]
   selectionRect: WBSelectionRect | null
+
+  // Responsive Phase 1 A2: Viewport container dimensions
+  // INV-1: Canvas NEVER resizes — these drive stage.scale() + stage.position()
+  containerWidth: number
+  containerHeight: number
 }
 
 // ─── Helper ─────────────────────────────────────────────────────────────────
@@ -298,6 +303,9 @@ export const useWBStore = defineStore('wb-board', {
 
     selectedIds: [],
     selectionRect: null,
+
+    containerWidth: 0,
+    containerHeight: 0,
   }),
 
   // ─── Getters ────────────────────────────────────────────────────────────
@@ -349,6 +357,40 @@ export const useWBStore = defineStore('wb-board', {
         currentPageIndex: state.currentPageIndex,
       }
     },
+
+    // Responsive Phase 1 A2: Viewport transform getters (INV-1)
+    /** Optimal zoom to fit entire page in current container */
+    optimalZoom(state): number {
+      if (state.containerWidth <= 0 || state.containerHeight <= 0) return 1
+      const scaleX = state.containerWidth / state.pageWidth
+      const scaleY = state.containerHeight / state.pageHeight
+      return Math.min(scaleX, scaleY)
+    },
+
+    /** Current viewport scale (alias for zoom — used by stageConfig) */
+    viewportScale(state): number {
+      return state.zoom
+    },
+
+    /** Offset to center page in container at current zoom */
+    viewportOffset(state): { x: number; y: number } {
+      const scaledW = state.pageWidth * state.zoom
+      const scaledH = state.pageHeight * state.zoom
+      return {
+        x: Math.max(0, (state.containerWidth - scaledW) / 2) + state.scrollX,
+        y: Math.max(0, (state.containerHeight - scaledH) / 2) + state.scrollY,
+      }
+    },
+
+    /** Canvas offset for stage.position() (combines center + scroll) */
+    canvasOffset(state): { x: number; y: number } {
+      const scaledW = state.pageWidth * state.zoom
+      const scaledH = state.pageHeight * state.zoom
+      return {
+        x: Math.max(0, (state.containerWidth - scaledW) / 2) + state.scrollX,
+        y: Math.max(0, (state.containerHeight - scaledH) / 2) + state.scrollY,
+      }
+    },
   },
 
   // ─── Actions ──────────────────────────────────────────────────────────────
@@ -389,6 +431,23 @@ export const useWBStore = defineStore('wb-board', {
 
     markDirty(): void {
       this.isDirty = true
+    },
+
+    // Responsive Phase 1 A2: Container sync + fit-to-container
+    /** Update container dimensions (called by useCanvasResize) */
+    setContainerSize(width: number, height: number): void {
+      this.containerWidth = width
+      this.containerHeight = height
+    },
+
+    /** Fit page to container: set zoom to optimalZoom, reset scroll (INV-1) */
+    fitToContainer(): void {
+      if (this.containerWidth <= 0 || this.containerHeight <= 0) return
+      const scaleX = this.containerWidth / this.pageWidth
+      const scaleY = this.containerHeight / this.pageHeight
+      this.zoom = Math.min(scaleX, scaleY)
+      this.scrollX = 0
+      this.scrollY = 0
     },
 
     setSyncStatus(status: WBSyncStatus): void {

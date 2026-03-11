@@ -1,0 +1,220 @@
+/**
+ * WB Responsive: CSS Custom Properties + Media Queries + Utility Classes
+ * Ref: winterboard_dev/responsive/PHASE1.md B1
+ * Aligned with: RESPONSIVE_STRATEGY.md breakpoints, AGENT_RULES.md §2.3
+ *
+ * INV-5: NEVER use 100vh — use var(--wb-vh, 100vh) instead
+ * INV-3: One toolbar with variant — CSS variables drive layout
+ */
+
+:root {
+  /* ─── Breakpoints ─────────────────────────────────────────────── */
+  --wb-bp-mobile: 640px;
+  --wb-bp-tablet: 768px;
+  --wb-bp-tablet-l: 1024px;
+  --wb-bp-desktop: 1280px;
+  --wb-bp-display: 1920px;
+
+  /* ─── Touch Targets (WCAG 2.1 AA minimum) ──────────────────────── */
+  --wb-touch-target-mobile: 48px;
+  --wb-touch-target-tablet: 44px;
+  --wb-touch-target-desktop: 40px;
+  --wb-touch-target-display: 64px;
+
+  /* ─── Active touch target (set by media queries below) ─────────── */
+  --wb-active-touch-target: var(--wb-touch-target-desktop);
+
+  /* ─── Toolbar Dimensions ───────────────────────────────────────── */
+  --wb-toolbar-height-mobile: 56px;
+  --wb-toolbar-width-mobile: 100vw;
+  --wb-toolbar-width-tablet: 56px;
+  --wb-toolbar-width-desktop: 56px;
+  --wb-toolbar-width-display: 72px;
+
+  /* ─── Header Heights ───────────────────────────────────────────── */
+  --wb-header-height: 48px;
+  --wb-header-height-mobile: 40px;
+  --wb-header-height-display: 56px;
+
+  /* ─── Z-index Layers ───────────────────────────────────────────── */
+  --wb-z-canvas: 1;
+  --wb-z-toolbar: 10;
+  --wb-z-mobile-toolbar: 20;
+  --wb-z-header: 30;
+  --wb-z-sheet: 40;
+  --wb-z-dialog: 50;
+  --wb-z-toast: 60;
+
+  /* ─── Spacing ──────────────────────────────────────────────────── */
+  --wb-spacing-mobile: 8px;
+  --wb-spacing-tablet: 12px;
+  --wb-spacing-desktop: 16px;
+  --wb-spacing-display: 24px;
+  --wb-active-spacing: var(--wb-spacing-desktop);
+
+  /* ─── Font Sizes ───────────────────────────────────────────────── */
+  --wb-font-size-mobile: 14px;
+  --wb-font-size-tablet: 14px;
+  --wb-font-size-desktop: 14px;
+  --wb-font-size-display: 18px;
+
+  /* ─── Safe Area (iPhone notch / Dynamic Island) ────────────────── */
+  --wb-safe-area-top: env(safe-area-inset-top, 0px);
+  --wb-safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --wb-safe-area-left: env(safe-area-inset-left, 0px);
+  --wb-safe-area-right: env(safe-area-inset-right, 0px);
+
+  /* ─── Viewport Height (INV-5: iOS Safari fix — JS updates this) ── */
+  --wb-vh: 1vh;
+
+  /* ─── Animation ────────────────────────────────────────────────── */
+  --wb-transition-fast: 150ms ease;
+  --wb-transition-normal: 250ms ease;
+}
+
+/* ─── Media Queries: Active tokens per breakpoint ────────────────────── */
+
+/* Mobile: < 640px */
+@media (max-width: 639px) {
+  :root {
+    --wb-active-touch-target: var(--wb-touch-target-mobile);
+    --wb-active-spacing: var(--wb-spacing-mobile);
+  }
+}
+
+/* Tablet: 640–1023px */
+@media (min-width: 640px) and (max-width: 1023px) {
+  :root {
+    --wb-active-touch-target: var(--wb-touch-target-tablet);
+    --wb-active-spacing: var(--wb-spacing-tablet);
+  }
+}
+
+/* Desktop: 1024–1919px */
+@media (min-width: 1024px) and (max-width: 1919px) {
+  :root {
+    --wb-active-touch-target: var(--wb-touch-target-desktop);
+    --wb-active-spacing: var(--wb-spacing-desktop);
+  }
+}
+
+/* Display: >= 1920px */
+@media (min-width: 1920px) {
+  :root {
+    --wb-active-touch-target: var(--wb-touch-target-display);
+    --wb-active-spacing: var(--wb-spacing-display);
+  }
+}
+
+/* ─── Touch-specific overrides ───────────────────────────────────────── */
+
+/* Touch devices — enlarge targets */
+@media (pointer: coarse) {
+  :root {
+    --wb-active-touch-target: max(var(--wb-active-touch-target), 44px);
+  }
+}
+
+/* Multimedia board: touch + large screen */
+@media (pointer: coarse) and (min-width: 1920px) {
+  :root {
+    --wb-active-touch-target: var(--wb-touch-target-display);
+    --wb-active-spacing: var(--wb-spacing-display);
+  }
+}
+
+/* ─── Reduced motion ─────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --wb-transition-fast: 0ms;
+    --wb-transition-normal: 0ms;
+  }
+}
+
+/* ─── Touch Action: Browser zoom prevention ──────────────────────────── */
+
+/* Canvas container — prevent browser zoom, let Konva handle all touch */
+.wb-canvas-container {
+  touch-action: none;
+}
+
+/* Toolbar — allow taps but disable double-tap-zoom */
+.wb-toolbar,
+.wb-mobile-toolbar,
+.wb-display-toolbar {
+  touch-action: manipulation;
+}
+
+/* Dialogs, sheets — allow vertical scroll */
+.wb-dialog,
+.wb-bottom-sheet {
+  touch-action: pan-y;
+}
+
+/* Header — allow taps only */
+.wb-solo-room__header {
+  touch-action: manipulation;
+}
+
+/* ─── Utility Classes ────────────────────────────────────────────────── */
+
+/* Hide on mobile (< 640px) */
+.wb-hide-mobile {
+  display: none;
+}
+@media (min-width: 640px) {
+  .wb-hide-mobile {
+    display: initial;
+  }
+}
+
+/* Show only on mobile */
+.wb-show-mobile {
+  display: initial;
+}
+@media (min-width: 640px) {
+  .wb-show-mobile {
+    display: none;
+  }
+}
+
+/* Hide on desktop (>= 1024px) */
+.wb-hide-desktop {
+  display: initial;
+}
+@media (min-width: 1024px) {
+  .wb-hide-desktop {
+    display: none;
+  }
+}
+
+/* Show only on display (>= 1920px) */
+.wb-show-display {
+  display: none;
+}
+@media (min-width: 1920px) {
+  .wb-show-display {
+    display: initial;
+  }
+}
+
+/* Touch-only: visible only with coarse pointer */
+.wb-touch-only {
+  display: none;
+}
+@media (pointer: coarse) {
+  .wb-touch-only {
+    display: initial;
+  }
+}
+
+/* Show only on tablet (640–1023px) */
+.wb-show-tablet {
+  display: none;
+}
+@media (min-width: 640px) and (max-width: 1023px) {
+  .wb-show-tablet {
+    display: initial;
+  }
+}

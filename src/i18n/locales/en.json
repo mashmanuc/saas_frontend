@@ -6463,7 +6463,10 @@
       "thickness_section": "Line thickness",
       "color_section": "Color palette",
       "laser_hint": "Hold to point (not saved)",
-      "sticky_hint": "Click to place a sticky note"
+      "sticky_hint": "Click to place a sticky note",
+      "collapse": "Collapse panel",
+      "expand": "Expand panel",
+      "sheetTitle": "Tool settings"
     },
     "lock": {
       "lock": "Lock",
@@ -6533,7 +6536,11 @@
       "page_list": "Page list",
       "page_n": "Page {n}",
       "add": "Add page",
-      "delete_page": "Delete page {n}"
+      "delete_page": "Delete page {n}",
+      "navigation": "Page navigation",
+      "previous": "Previous page",
+      "next": "Next page",
+      "showAll": "Show all pages"
     },
     "status": {
       "idle": "Idle",
@@ -6659,7 +6666,8 @@
       "sidebarCollapse": "Collapse panel (double-click)",
       "sidebarExpand": "Expand panel (double-click)",
       "hidePagePanel": "Hide page panel",
-      "showPagePanel": "Show page panel"
+      "showPagePanel": "Show page panel",
+      "syncError": "Sync error"
     },
     "sizePresets": {
       "thin": "Thin",
@@ -6913,6 +6921,20 @@
       "step2": "Select a student or class on the left",
       "step3": "Add needed files to class via «+»",
       "step4": "Open the board — files are already there"
+    },
+    "responsive": {
+      "mobileMode": "Mobile mode",
+      "tabletMode": "Tablet mode",
+      "desktopMode": "Desktop mode",
+      "displayMode": "Display mode",
+      "orientationPortrait": "Portrait",
+      "orientationLandscape": "Landscape",
+      "inputTouch": "Touch input",
+      "inputPen": "Pen input",
+      "inputMouse": "Mouse input",
+      "fitToScreen": "Fit to screen",
+      "autoZoom": "Auto zoom",
+      "layoutChanged": "Layout changed to {mode} mode"
     }
   }
 }

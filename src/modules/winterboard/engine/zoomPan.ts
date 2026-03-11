@@ -118,6 +118,184 @@ export function fitToPage(
   return snapZoom(Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, zoom)))
 }
 
+// ─── Responsive Phase 2 A4: Snap-to-fit + Bounce-back + Double-tap ──────────
+
+/** Snap threshold: if zoom is within ±5% of a snap level, snap to it */
+const SNAP_TOLERANCE = 0.05
+
+/**
+ * Calculate snap zoom after pinch-zoom ends.
+ * Snaps to nearest "comfortable" level: fit-width, fit-page, 100%, or 200%.
+ * Only snaps if within SNAP_TOLERANCE of a snap target.
+ *
+ * @returns snapped zoom or currentZoom if no snap applies
+ */
+export function calculateSnapZoom(
+  currentZoom: number,
+  containerWidth: number,
+  containerHeight: number,
+  pageWidth: number,
+  pageHeight: number,
+): number {
+  if (containerWidth <= 0 || containerHeight <= 0) return currentZoom
+  if (pageWidth <= 0 || pageHeight <= 0) return currentZoom
+
+  const fitWidth = containerWidth / pageWidth
+  const fitPage = Math.min(containerWidth / pageWidth, containerHeight / pageHeight)
+
+  // Snap targets: fit-page, fit-width, 100%, 200%
+  const snapTargets = [fitPage, fitWidth, 1.0, 2.0].filter(
+    (t) => t >= ZOOM_MIN && t <= ZOOM_MAX,
+  )
+
+  for (const target of snapTargets) {
+    if (Math.abs(currentZoom - target) <= SNAP_TOLERANCE * target) {
+      return target
+    }
+  }
+
+  return currentZoom
+}
+
+/**
+ * Calculate bounce-back offset when pan goes out of bounds.
+ * Returns the corrected scroll position, or null if no bounce needed.
+ *
+ * @returns { x, y } corrected scroll, or null if within bounds
+ */
+export function calculateBounceBack(
+  scrollX: number,
+  scrollY: number,
+  zoom: number,
+  containerWidth: number,
+  containerHeight: number,
+  pageWidth: number,
+  pageHeight: number,
+): { x: number; y: number } | null {
+  const scaledW = pageWidth * zoom
+  const scaledH = pageHeight * zoom
+
+  // Max scroll = scaled page size - container (can't scroll past edge)
+  // Min scroll = 0 (or negative if page is smaller than container → center)
+  let targetX = scrollX
+  let targetY = scrollY
+  let bounced = false
+
+  if (scaledW <= containerWidth) {
+    // Page fits horizontally → no horizontal scroll allowed
+    if (scrollX !== 0) {
+      targetX = 0
+      bounced = true
+    }
+  } else {
+    const maxScrollX = scaledW - containerWidth
+    if (scrollX < 0) {
+      targetX = 0
+      bounced = true
+    } else if (scrollX > maxScrollX) {
+      targetX = maxScrollX
+      bounced = true
+    }
+  }
+
+  if (scaledH <= containerHeight) {
+    if (scrollY !== 0) {
+      targetY = 0
+      bounced = true
+    }
+  } else {
+    const maxScrollY = scaledH - containerHeight
+    if (scrollY < 0) {
+      targetY = 0
+      bounced = true
+    } else if (scrollY > maxScrollY) {
+      targetY = maxScrollY
+      bounced = true
+    }
+  }
+
+  return bounced ? { x: targetX, y: targetY } : null
+}
+
+/**
+ * Double-tap zoom cycle: fit-page → 100% → 200% → fit-page.
+ *
+ * @returns next zoom level in the cycle
+ */
+export function doubleTapZoomCycle(
+  currentZoom: number,
+  containerWidth: number,
+  containerHeight: number,
+  pageWidth: number,
+  pageHeight: number,
+): number {
+  if (containerWidth <= 0 || containerHeight <= 0) return 1
+  if (pageWidth <= 0 || pageHeight <= 0) return 1
+
+  const fitPage = Math.min(containerWidth / pageWidth, containerHeight / pageHeight)
+
+  // Cycle: fitPage → 1.0 → 2.0 → fitPage
+  const levels = [fitPage, 1.0, 2.0]
+
+  // Find current position in cycle (with tolerance)
+  for (let i = 0; i < levels.length; i++) {
+    if (Math.abs(currentZoom - levels[i]) < 0.05) {
+      // Go to next level (wrap around)
+      return levels[(i + 1) % levels.length]
+    }
+  }
+
+  // If not at any level, go to fit-page
+  return fitPage
+}
+
+/**
+ * Animate a value from start to end using requestAnimationFrame.
+ * Respects prefers-reduced-motion.
+ *
+ * @returns cancel function
+ */
+export function animateValue(
+  from: number,
+  to: number,
+  durationMs: number,
+  onUpdate: (value: number) => void,
+  onComplete?: () => void,
+): () => void {
+  // Respect reduced motion
+  if (typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+    onUpdate(to)
+    onComplete?.()
+    return () => {}
+  }
+
+  const start = performance.now()
+  let rafId = 0
+
+  function tick(now: number) {
+    const elapsed = now - start
+    const progress = Math.min(1, elapsed / durationMs)
+    // Ease-out cubic
+    const eased = 1 - Math.pow(1 - progress, 3)
+    const value = from + (to - from) * eased
+
+    onUpdate(value)
+
+    if (progress < 1) {
+      rafId = requestAnimationFrame(tick)
+    } else {
+      onComplete?.()
+    }
+  }
+
+  rafId = requestAnimationFrame(tick)
+
+  return () => {
+    if (rafId) cancelAnimationFrame(rafId)
+  }
+}
+
 // ─── Pinch distance ─────────────────────────────────────────────────────────
 
 /**

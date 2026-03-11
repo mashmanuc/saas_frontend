@@ -3,7 +3,7 @@
 // Modes: 'auto' (pen detected → reject touch), 'always', 'never'
 // Strategy: when pen is active, ignore touch events; re-enable after timeout
 
-import { ref, readonly, computed } from 'vue'
+import { ref, readonly, computed, type Ref } from 'vue'
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -12,6 +12,9 @@ const STORAGE_KEY = 'wb:palmRejection:mode'
 const PEN_TIMEOUT_MS = 500
 const LARGE_CONTACT_RADIUS = 20
 const MAX_SIMULTANEOUS_TOUCHES = 2
+
+// Responsive Phase 2 A3: Pen debounce — re-enable touch after this ms since last pen event
+const PEN_DEBOUNCE_MS = 500
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -42,8 +45,11 @@ export interface PalmRejectionResult {
  * palm.onPenUp()
  * ```
  */
-export function usePalmRejection() {
-  // ── State ─────────────────────────────────────────────────────────
+export function usePalmRejection(options?: {
+  /** Responsive Phase 2 A3: Whether device has pen capability */
+  hasPen?: Ref<boolean>
+}) {
+  // ── State ─────────────────────────────────────────────────────
 
   const mode = ref<PalmRejectionMode>(loadMode())
   const isPenActive = ref(false)
@@ -53,13 +59,24 @@ export function usePalmRejection() {
 
   let penTimeoutId: ReturnType<typeof setTimeout> | null = null
 
-  // ── Computed ──────────────────────────────────────────────────────
+  // Responsive Phase 2 A3: Track pen type via pointerType for debounced re-enable
+  let penDebounceId: ReturnType<typeof setTimeout> | null = null
+  const isPenRecentlyUsed = ref(false)
+
+  // ── Computed ──────────────────────────────────────────────────
+
+  // Responsive Phase 2 A3: Device-mode aware — only enable palm rejection when
+  // the device actually has pen capability
+  const isPenDevice = computed(() => {
+    if (options?.hasPen?.value) return true
+    return penDetected.value
+  })
 
   const isEnabled = computed(() => {
     if (mode.value === 'never') return false
     if (mode.value === 'always') return true
-    // 'auto': enabled only when pen has been detected
-    return penDetected.value
+    // 'auto': enabled only when pen has been detected or device has pen
+    return isPenDevice.value
   })
 
   // ── Mode persistence ──────────────────────────────────────────────
@@ -258,6 +275,8 @@ export function usePalmRejection() {
     penDetected: readonly(penDetected),
     isEnabled,
     activeTouchCount: readonly(activeTouchCount),
+    // Responsive Phase 2 A3
+    isPenDevice,
 
     setMode,
     onPenDown,

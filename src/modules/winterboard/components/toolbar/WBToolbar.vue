@@ -7,6 +7,8 @@
   <div
     ref="toolbarEl"
     class="wb-toolbar"
+    :class="[variantClasses, { 'wb-toolbar--expanded': isExpanded }]"
+    :data-variant="variant"
     role="toolbar"
     :aria-label="t('winterboard.toolbar.title')"
     @keydown="handleToolbarKeydown"
@@ -122,6 +124,21 @@
         </button>
       </div>
     </Transition>
+
+    <!-- Phase 4 B8: Tablet expand/collapse toggle (only visible on tablet variant) -->
+    <button
+      v-if="variant === 'tablet'"
+      type="button"
+      class="wb-toolbar__btn wb-toolbar__toggle"
+      :aria-label="t(isExpanded ? 'winterboard.toolbar.collapse' : 'winterboard.toolbar.expand')"
+      :aria-expanded="isExpanded"
+      @click="toggleExpand"
+    >
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <path v-if="isExpanded" d="M15 12L10 7L5 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path v-else d="M5 8L10 13L15 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
   </div>
 </template>
 
@@ -155,6 +172,9 @@ import WBQuickPalette from './WBQuickPalette.vue'
 
 // ─── Props ──────────────────────────────────────────────────────────────────
 
+// Responsive Phase 2 B3: Toolbar variant type (INV-3)
+export type ToolbarVariant = 'mobile' | 'tablet' | 'desktop' | 'display'
+
 interface Props {
   currentTool?: WBToolType
   currentColor?: string
@@ -164,6 +184,8 @@ interface Props {
   hasSelection?: boolean
   hasLockedInSelection?: boolean
   canClearPage?: boolean
+  /** Responsive Phase 2 B3: Layout variant (INV-3: one toolbar, not three) */
+  variant?: ToolbarVariant
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -175,7 +197,38 @@ const props = withDefaults(defineProps<Props>(), {
   hasSelection: false,
   hasLockedInSelection: false,
   canClearPage: false,
+  variant: 'desktop',
 })
+
+// Responsive Phase 2 B3: Variant CSS classes
+const variantClasses = computed(() => ({
+  'wb-toolbar--mobile': props.variant === 'mobile',
+  'wb-toolbar--tablet': props.variant === 'tablet',
+  'wb-toolbar--desktop': props.variant === 'desktop',
+  'wb-toolbar--display': props.variant === 'display',
+}))
+
+// Phase 4 B8: Tablet expand/collapse state
+const EXPAND_STORAGE_KEY = 'wb:toolbar-expanded'
+
+function loadExpandedState(): boolean {
+  try {
+    return localStorage.getItem(EXPAND_STORAGE_KEY) !== 'false'
+  } catch {
+    return true
+  }
+}
+
+const isExpanded = ref(loadExpandedState())
+
+function toggleExpand(): void {
+  isExpanded.value = !isExpanded.value
+  try {
+    localStorage.setItem(EXPAND_STORAGE_KEY, String(isExpanded.value))
+  } catch {
+    // Ignore
+  }
+}
 
 // ─── Emits ──────────────────────────────────────────────────────────────────
 
@@ -541,5 +594,100 @@ function handleToolbarKeydown(event: KeyboardEvent): void {
   .wb-collapse-leave-active {
     transition: none;
   }
+}
+
+/* ── Responsive Phase 2 B3: Variant-specific overrides (INV-3) ──── */
+
+/* Mobile: horizontal bottom bar, scrollable, glass effect, safe area */
+.wb-toolbar[data-variant="mobile"] {
+  flex-direction: row;
+  width: 100%;
+  height: 56px;
+  max-height: none;
+  padding: 4px 6px;
+  padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
+  gap: 2px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-right: none;
+  border-top: 1px solid var(--wb-toolbar-border, #e2e8f0);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
+  -webkit-overflow-scrolling: touch;
+  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.85);
+  z-index: var(--wb-z-mobile-toolbar, 20);
+}
+.wb-toolbar[data-variant="mobile"] .wb-toolbar__group {
+  flex-direction: row;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.wb-toolbar[data-variant="mobile"] .wb-toolbar__sep {
+  width: 1px;
+  height: 32px;
+  margin: 6px 4px;
+}
+.wb-toolbar[data-variant="mobile"] .wb-toolbar__btn {
+  width: 48px;
+  height: 48px;
+}
+.wb-toolbar[data-variant="mobile"] .wb-toolbar__btn--tooltip::after {
+  display: none;
+}
+
+/* Tablet: vertical left, collapsible, slightly compact (Phase 4 B8) */
+.wb-toolbar[data-variant="tablet"] {
+  width: 48px;
+  padding: 6px 2px;
+  gap: 2px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  transition: width 0.2s ease;
+}
+.wb-toolbar[data-variant="tablet"].wb-toolbar--expanded {
+  width: 56px;
+}
+.wb-toolbar[data-variant="tablet"] .wb-toolbar__btn {
+  width: 44px;
+  height: 44px;
+}
+.wb-toolbar[data-variant="tablet"] .wb-toolbar__btn--tooltip::after {
+  display: none;
+}
+/* Phase 4 B8: Hide thickness/color sections when collapsed on tablet */
+.wb-toolbar[data-variant="tablet"]:not(.wb-toolbar--expanded) .wb-toolbar__group:nth-child(n+2):nth-child(-n+4) {
+  display: none;
+}
+/* Phase 4 B8: Toggle button at bottom */
+.wb-toolbar__toggle {
+  margin-top: auto;
+  opacity: 0.6;
+}
+.wb-toolbar__toggle:hover {
+  opacity: 1;
+}
+
+/* Desktop: vertical left, always expanded (default / current layout) */
+.wb-toolbar[data-variant="desktop"] {
+  /* Inherits base styles — no overrides needed */
+}
+
+/* Display: vertical left, enlarged targets + icons */
+.wb-toolbar[data-variant="display"] {
+  width: 72px;
+  padding: 12px 4px;
+  gap: 4px;
+}
+.wb-toolbar[data-variant="display"] .wb-toolbar__btn {
+  width: 64px;
+  height: 64px;
+}
+.wb-toolbar[data-variant="display"] .wb-toolbar__icon {
+  width: 28px;
+  height: 28px;
+}
+.wb-toolbar[data-variant="display"] .wb-toolbar__sep {
+  margin: 8px 6px;
 }
 </style>
