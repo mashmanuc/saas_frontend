@@ -77,21 +77,41 @@ async function _doInit(): Promise<void> {
 }
 
 /**
- * Encrypt a JWT string → opaque ciphertext string.
- * Returns prefixed base64 ciphertext or original token if crypto unavailable.
+ * Encrypt plaintext JWT → ciphertext with prefix.
+ * Returns encrypted token string or plaintext if encryption fails.
+ * 
+ * RELOAD FALLBACK: Stores plaintext JWT in sessionStorage before encrypting.
+ * This allows session recovery after page reload (e.g., theme change, chunk error).
  */
 async function encrypt(plainToken: string | null): Promise<string | null> {
-  if (!plainToken || plainToken === '__cookie__') return plainToken
+  if (!plainToken) return null
+  if (plainToken === '__cookie__') return '__cookie__'
+
+  // RELOAD FALLBACK: Store plaintext in sessionStorage for recovery after reload
+  // This is needed because ephemeral key is lost on reload, but session should persist
+  if (typeof sessionStorage !== 'undefined') {
+    try {
+      sessionStorage.setItem('_jwt_fallback', plainToken)
+    } catch {
+      // Ignore sessionStorage errors (private mode, quota exceeded)
+    }
+  }
+
   if (!_ready) await init()
-  if (!_cryptoKey) return plainToken // fallback
+  if (!_cryptoKey) {
+    console.warn('[tokenVault] Encrypt called but no key — returning plaintext')
+    return plainToken
+  }
 
   try {
+    const encoder = new TextEncoder()
+    const data = encoder.encode(plainToken)
+
     const iv = globalThis.crypto.getRandomValues(new Uint8Array(IV_LENGTH))
-    const encoded = new TextEncoder().encode(plainToken)
     const cipherBuf = await globalThis.crypto.subtle.encrypt(
       { name: ALGO, iv },
       _cryptoKey,
-      encoded,
+      data,
     )
 
     // Combine IV + ciphertext → base64
@@ -113,6 +133,9 @@ async function encrypt(plainToken: string | null): Promise<string | null> {
 /**
  * Decrypt an encrypted token back to plaintext JWT.
  * If token is not encrypted (no prefix), returns as-is.
+ * 
+ * RELOAD FALLBACK: If decryption fails (ephemeral key lost after reload),
+ * attempts to recover plaintext JWT from sessionStorage.
  */
 async function decrypt(encryptedToken: string | null): Promise<string | null> {
   if (!encryptedToken) return null
@@ -123,7 +146,19 @@ async function decrypt(encryptedToken: string | null): Promise<string | null> {
 
   if (!_ready) await init()
   if (!_cryptoKey) {
-    console.error('[tokenVault] Decrypt called but no key — token lost')
+    console.warn('[tokenVault] Decrypt called but no key — attempting sessionStorage fallback')
+    // RELOAD FALLBACK: Try to recover from sessionStorage
+    if (typeof sessionStorage !== 'undefined') {
+      try {
+        const fallback = sessionStorage.getItem('_jwt_fallback')
+        if (fallback) {
+          console.info('[tokenVault] Recovered JWT from sessionStorage fallback after reload')
+          return fallback
+        }
+      } catch {
+        // Ignore sessionStorage errors
+      }
+    }
     return null
   }
 
@@ -146,7 +181,19 @@ async function decrypt(encryptedToken: string | null): Promise<string | null> {
 
     return new TextDecoder().decode(plainBuf)
   } catch (err) {
-    console.error('[tokenVault] Decrypt failed', err)
+    console.warn('[tokenVault] Decrypt failed — attempting sessionStorage fallback', err)
+    // RELOAD FALLBACK: Try to recover from sessionStorage
+    if (typeof sessionStorage !== 'undefined') {
+      try {
+        const fallback = sessionStorage.getItem('_jwt_fallback')
+        if (fallback) {
+          console.info('[tokenVault] Recovered JWT from sessionStorage fallback after decrypt error')
+          return fallback
+        }
+      } catch {
+        // Ignore sessionStorage errors
+      }
+    }
     return null
   }
 }
