@@ -103,22 +103,22 @@ const authStore = useAuthStore()
 
 // Fallback titles for notifications without title from backend
 const NOTIFICATION_FALLBACK_TITLES: Record<string, string> = {
-  'subscription.confirmed': 'Підписку активовано',
-  'subscription.cancelled': 'Підписку скасовано',
-  'subscription.renewed': 'Підписку подовжено',
-  'inquiry.created': 'Новий запит від студента',
-  'inquiry.accepted': 'Запит прийнято',
-  'inquiry.rejected': 'Запит відхилено',
-  'inquiry.cancelled': 'Запит скасовано',
-  'booking.created': 'Нове бронювання',
-  'booking.cancelled': 'Бронювання скасовано',
-  'booking.rescheduled': 'Бронювання перенесено',
-  'relation.accepted': 'Студент додано',
-  'relation.rejected': 'Запит відхилено',
-  'billing.payment_success': 'Платіж успішний',
-  'billing.payment_failed': 'Помилка платежу',
-  'verification.verified': 'Верифікація пройдена',
-  'verification.rejected': 'Верифікацію відхилено',
+  // Backend notification types (UPPER_SNAKE_CASE from NotificationServiceV065)
+  'SUBSCRIPTION_ACTIVATED': 'Підписку активовано',
+  'SUBSCRIPTION_CANCELED': 'Підписку скасовано',
+  'INQUIRY_CREATED': 'Новий запит від студента',
+  'INQUIRY_ACCEPTED': 'Запит прийнято',
+  'INQUIRY_REJECTED': 'Запит відхилено',
+  'INQUIRY_CANCELLED': 'Запит скасовано',
+  'BOOKING_CREATED': 'Нове бронювання',
+  'BOOKING_CANCELLED': 'Бронювання скасовано',
+  'BOOKING_RESCHEDULED': 'Бронювання перенесено',
+  'RELATION_ACCEPTED': 'Студент додано',
+  'RELATION_REJECTED': 'Запит відхилено',
+  'BILLING_PAYMENT_SUCCESS': 'Платіж успішний',
+  'BILLING_PAYMENT_FAILED': 'Помилка платежу',
+  'VERIFICATION_VERIFIED': 'Верифікація пройдена',
+  'VERIFICATION_REJECTED': 'Верифікацію відхилено',
 }
 
 function getNotificationTitle(item: InAppNotification): string {

@@ -227,6 +227,12 @@ export const useNotificationsStore = defineStore('notifications', () => {
   function handleRealtimeNotification(event: RealtimeNotificationEvent) {
     const { payload } = event
 
+    // Guard: reject WS protocol messages that leaked through (defense-in-depth).
+    // Real notifications always have id + title from backend dispatcher.
+    if (!payload?.id || !payload?.title) {
+      return
+    }
+
     // Check if notification already exists (idempotency)
     const existingIndex = items.value.findIndex(n => n.id === payload.id)
     if (existingIndex !== -1) {

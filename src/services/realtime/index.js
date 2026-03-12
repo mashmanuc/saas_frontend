@@ -281,6 +281,19 @@ class RealtimeService {
         this.emitter.emit('auth_required', { reason: data?.reason || 'token_expired' })
         return
       }
+      // Gateway protocol acks (subscribe/unsubscribe confirmations) must NOT
+      // be forwarded to channel handlers — they are not domain events.
+      const msgType = data?.type || ''
+      if (
+        msgType === 'subscription.confirmed' ||
+        msgType === 'subscription.released' ||
+        msgType === 'connection.established' ||
+        msgType === 'connection.timeout'
+      ) {
+        this.emitter.emit('protocol', data)
+        return
+      }
+
       if (data?.channel && this.channelSubscriptions.has(data.channel)) {
         this.channelSubscriptions.get(data.channel).forEach((handler) => {
           try {

@@ -266,11 +266,28 @@ class WebSocketService {
     handler: (event: RealtimeNotificationEvent) => void
   ) {
     const channel = `notifications_user_${userId}`
+    // WS system message types that must NOT be treated as notifications.
+    // gateway.py sends these as protocol-level confirmations (subscribe/unsubscribe acks).
+    const WS_SYSTEM_TYPES = new Set([
+      'subscription.confirmed',
+      'subscription.released',
+      'connection.established',
+      'connection.timeout',
+      'pong',
+      'auth_required',
+    ])
+
     return this.subscribe(channel, (data) => {
-      // Handle all notification events from the notifications channel
+      const messageType = data.type || data.event || ''
+
+      // Skip WS protocol messages — they are NOT notifications
+      if (WS_SYSTEM_TYPES.has(messageType)) {
+        return
+      }
+
       const payload = data.payload || data.data || data
       handler({
-        type: data.type || data.event || 'notification',
+        type: messageType || 'notification',
         payload: payload as RealtimeNotificationEvent['payload']
       })
     })

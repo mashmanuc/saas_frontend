@@ -290,4 +290,78 @@ describe('notifications store', () => {
     expect(store.unreadCount).toBe(0)
     expect(store.items).toHaveLength(0)
   })
+
+  /**
+   * 🐛 REGRESSION: subscription.confirmed phantom notification
+   *
+   * Root cause: gateway sends {type:'subscription.confirmed', channel:'notifications_user_X'}
+   * as a protocol ack. Without guard, handleRealtimeNotification created a phantom notification
+   * with no id/title, displayed as "Підписку активовано" via fallback titles.
+   *
+   * Fix: handleRealtimeNotification rejects payloads missing id or title.
+   */
+  it('rejects WS protocol messages without id (subscription.confirmed)', () => {
+    const store = useNotificationsStore()
+    store.unreadCount = 0
+    store.items = []
+
+    // Simulate subscription.confirmed leaking through (no id, no title)
+    store.handleRealtimeNotification({
+      type: 'subscription.confirmed',
+      payload: {
+        type: 'subscription.confirmed',
+        channel: 'notifications_user_1',
+      },
+    })
+
+    expect(store.unreadCount).toBe(0)
+    expect(store.items).toHaveLength(0)
+  })
+
+  /**
+   * 🐛 REGRESSION: WS event without title must not create notification
+   */
+  it('rejects WS events without title (defense-in-depth)', () => {
+    const store = useNotificationsStore()
+    store.unreadCount = 0
+    store.items = []
+
+    store.handleRealtimeNotification({
+      type: 'notification',
+      payload: {
+        id: 'some-id',
+        // title is missing
+        body: 'Body text',
+        data: {},
+        created_at: '2024-01-15T10:00:00.000Z',
+      },
+    })
+
+    expect(store.unreadCount).toBe(0)
+    expect(store.items).toHaveLength(0)
+  })
+
+  /**
+   * 🐛 REGRESSION: WS event without id must not create notification
+   */
+  it('rejects WS events without id (defense-in-depth)', () => {
+    const store = useNotificationsStore()
+    store.unreadCount = 0
+    store.items = []
+
+    store.handleRealtimeNotification({
+      type: 'notification',
+      payload: {
+        // id is missing
+        type: 'INQUIRY_CREATED',
+        title: 'Новий запит',
+        body: 'Body text',
+        data: {},
+        created_at: '2024-01-15T10:00:00.000Z',
+      },
+    })
+
+    expect(store.unreadCount).toBe(0)
+    expect(store.items).toHaveLength(0)
+  })
 })
