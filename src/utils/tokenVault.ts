@@ -82,6 +82,7 @@ async function _doInit(): Promise<void> {
  * 
  * RELOAD FALLBACK: Stores plaintext JWT in sessionStorage before encrypting.
  * This allows session recovery after page reload (e.g., theme change, chunk error).
+ * TTL: 55 minutes (backend JWT TTL is 60 min, we expire 5 min earlier for safety).
  */
 async function encrypt(plainToken: string | null): Promise<string | null> {
   if (!plainToken) return null
@@ -89,9 +90,14 @@ async function encrypt(plainToken: string | null): Promise<string | null> {
 
   // RELOAD FALLBACK: Store plaintext in sessionStorage for recovery after reload
   // This is needed because ephemeral key is lost on reload, but session should persist
+  // Store with timestamp to avoid using expired tokens after reload
   if (typeof sessionStorage !== 'undefined') {
     try {
-      sessionStorage.setItem('_jwt_fallback', plainToken)
+      const payload = {
+        token: plainToken,
+        timestamp: Date.now(),
+      }
+      sessionStorage.setItem('_jwt_fallback', JSON.stringify(payload))
     } catch {
       // Ignore sessionStorage errors (private mode, quota exceeded)
     }
@@ -136,6 +142,7 @@ async function encrypt(plainToken: string | null): Promise<string | null> {
  * 
  * RELOAD FALLBACK: If decryption fails (ephemeral key lost after reload),
  * attempts to recover plaintext JWT from sessionStorage.
+ * TTL check: Rejects tokens older than 55 minutes.
  */
 async function decrypt(encryptedToken: string | null): Promise<string | null> {
   if (!encryptedToken) return null
@@ -147,19 +154,7 @@ async function decrypt(encryptedToken: string | null): Promise<string | null> {
   if (!_ready) await init()
   if (!_cryptoKey) {
     console.warn('[tokenVault] Decrypt called but no key — attempting sessionStorage fallback')
-    // RELOAD FALLBACK: Try to recover from sessionStorage
-    if (typeof sessionStorage !== 'undefined') {
-      try {
-        const fallback = sessionStorage.getItem('_jwt_fallback')
-        if (fallback) {
-          console.info('[tokenVault] Recovered JWT from sessionStorage fallback after reload')
-          return fallback
-        }
-      } catch {
-        // Ignore sessionStorage errors
-      }
-    }
-    return null
+    return _recoverFromSessionStorage()
   }
 
   try {
@@ -182,18 +177,45 @@ async function decrypt(encryptedToken: string | null): Promise<string | null> {
     return new TextDecoder().decode(plainBuf)
   } catch (err) {
     console.warn('[tokenVault] Decrypt failed — attempting sessionStorage fallback', err)
-    // RELOAD FALLBACK: Try to recover from sessionStorage
-    if (typeof sessionStorage !== 'undefined') {
-      try {
-        const fallback = sessionStorage.getItem('_jwt_fallback')
-        if (fallback) {
-          console.info('[tokenVault] Recovered JWT from sessionStorage fallback after decrypt error')
-          return fallback
+    return _recoverFromSessionStorage()
+  }
+}
+
+/**
+ * Helper: Recover JWT from sessionStorage with TTL check.
+ * TTL: 55 minutes (backend JWT TTL is 60 min, we expire 5 min earlier).
+ */
+function _recoverFromSessionStorage(): string | null {
+  if (typeof sessionStorage === 'undefined') return null
+
+  try {
+    const raw = sessionStorage.getItem('_jwt_fallback')
+    if (!raw) return null
+
+    // Try to parse as JSON (new format with timestamp)
+    try {
+      const payload = JSON.parse(raw)
+      if (payload && typeof payload === 'object' && payload.token && payload.timestamp) {
+        const age = Date.now() - payload.timestamp
+        const MAX_AGE_MS = 55 * 60 * 1000 // 55 minutes
+
+        if (age > MAX_AGE_MS) {
+          console.warn('[tokenVault] sessionStorage fallback expired (age:', Math.round(age / 60000), 'min)')
+          sessionStorage.removeItem('_jwt_fallback')
+          return null
         }
-      } catch {
-        // Ignore sessionStorage errors
+
+        console.info('[tokenVault] Recovered JWT from sessionStorage fallback (age:', Math.round(age / 60000), 'min)')
+        return payload.token
       }
+    } catch {
+      // Not JSON — old format (plaintext token), accept it for backward compat
+      console.info('[tokenVault] Recovered JWT from sessionStorage fallback (legacy format)')
+      return raw
     }
+
+    return null
+  } catch {
     return null
   }
 }

@@ -6667,7 +6667,11 @@
       "sidebarExpand": "Expand panel (double-click)",
       "hidePagePanel": "Hide page panel",
       "showPagePanel": "Show page panel",
-      "syncError": "Sync error"
+      "syncError": "Sync error",
+      "followMode": "Follow mode"
+    },
+    "responsive": {
+      "tapToShowUI": "Tap to show UI"
     },
     "sizePresets": {
       "thin": "Thin",
