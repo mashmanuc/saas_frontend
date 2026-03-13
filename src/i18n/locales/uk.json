@@ -604,6 +604,7 @@
     "error": "Помилка",
     "save": "Зберегти",
     "cancel": "Скасувати",
+    "create": "Створити",
     "delete": "Видалити",
     "edit": "Редагувати",
     "close": "Закрити",
@@ -1117,6 +1118,7 @@
       "main": "Основне",
       "teaching": "Навчання",
       "learning": "Навчання",
+      "winterboard": "Дошка",
       "students": "Учні",
       "tutors": "Тьютори",
       "business": "Бізнес",
@@ -1128,6 +1130,11 @@
       "mySchedule": "Мій розклад",
       "knowledge": "База знань",
       "winterboard": "Дошка",
+      "wbDashboard": "Панель",
+      "wbLibrary": "Бібліотека",
+      "wbLessons": "Уроки",
+      "wbBoards": "Дошки",
+      "wbStudents": "Учні",
       "myStudents": "Мої учні",
       "messages": "Повідомлення",
       "inquiries": "Запити",
@@ -6931,6 +6938,14 @@
       "openClassroom": "Відкрити клас",
       "boardSessions": "Дошки цього уроку",
       "noSessions": "Пов'язаних дошок немає"
+    },
+    "students": {
+      "title": "Учні",
+      "noStudents": "Учнів ще немає",
+      "lastSession": "Остання сесія",
+      "sessions": "{count} сесій",
+      "viewSessions": "Переглянути сесії",
+      "loadError": "Не вдалося завантажити учнів"
     },
     "lesson": {
       "start": "Почати урок",

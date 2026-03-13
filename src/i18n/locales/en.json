@@ -511,6 +511,7 @@
     "title": "Title",
     "description": "Description",
     "cancel": "Cancel",
+    "create": "Create",
     "loading": "Loading...",
     "close": "Close",
     "noResults": "No results",
@@ -964,6 +965,7 @@
       "main": "Main",
       "teaching": "Teaching",
       "learning": "Learning",
+      "winterboard": "Whiteboard",
       "students": "Students",
       "tutors": "Tutors",
       "business": "Business",
@@ -975,6 +977,11 @@
       "mySchedule": "My Schedule",
       "knowledge": "Knowledge Base",
       "winterboard": "Whiteboard",
+      "wbDashboard": "Dashboard",
+      "wbLibrary": "Library",
+      "wbLessons": "Lessons",
+      "wbBoards": "Boards",
+      "wbStudents": "Students",
       "myStudents": "My Students",
       "messages": "Messages",
       "inquiries": "Inquiries",
@@ -6851,6 +6858,14 @@
       "openClassroom": "Open Classroom",
       "boardSessions": "Boards for this lesson",
       "noSessions": "No associated boards"
+    },
+    "students": {
+      "title": "Students",
+      "noStudents": "No students yet",
+      "lastSession": "Last session",
+      "sessions": "{count} sessions",
+      "viewSessions": "View sessions",
+      "loadError": "Failed to load students"
     }
   },
   "storage": {

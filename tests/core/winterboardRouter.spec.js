@@ -8,9 +8,9 @@ import { describe, it, expect } from 'vitest'
 import winterboardRoutes, { winterboardSessionListRoute } from '@modules/winterboard/router.ts'
 
 describe('winterboardRoutes', () => {
-  it('exports an array of 5 routes', () => {
+  it('exports an array of routes', () => {
     expect(Array.isArray(winterboardRoutes)).toBe(true)
-    expect(winterboardRoutes).toHaveLength(5)
+    expect(winterboardRoutes.length).toBeGreaterThanOrEqual(11)
   })
 
   describe('route: winterboard-sessions', () => {

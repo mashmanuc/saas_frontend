@@ -225,6 +225,10 @@ describe('WBLessonDetail — API calls', () => {
     })
     const wrapper = mountView(WBLessonDetail, { lessonId: '3' })
     await flushPromises()
+    // B16: sessions live in 'boards' tab — switch to it first
+    const boardsTab = wrapper.find('[data-testid="tab-boards"]')
+    if (boardsTab.exists()) await boardsTab.trigger('click')
+    await flushPromises()
     expect(wrapper.find('[data-testid="sessions-grid"]').exists()).toBe(true)
   })
 
@@ -232,6 +236,10 @@ describe('WBLessonDetail — API calls', () => {
     ;(lessonsApi.getLessonRoom as any).mockResolvedValue({ id: 4, title: 'Art', status: 'scheduled' })
     ;(apiClient.get as any).mockResolvedValue({ results: [] })
     const wrapper = mountView(WBLessonDetail, { lessonId: '4' })
+    await flushPromises()
+    // B16: sessions live in 'boards' tab — switch to it first
+    const boardsTab = wrapper.find('[data-testid="tab-boards"]')
+    if (boardsTab.exists()) await boardsTab.trigger('click')
     await flushPromises()
     expect(wrapper.find('[data-testid="sessions-empty"]').exists()).toBe(true)
   })
