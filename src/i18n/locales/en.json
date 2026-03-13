@@ -6583,6 +6583,35 @@
       "loadError": "Failed to load boards",
       "duplicateError": "Failed to duplicate board"
     },
+    "boards": {
+      "myBoards": "My Boards",
+      "newBoard": "New Board",
+      "empty": "No boards yet",
+      "emptyMessage": "Create your first board to start drawing",
+      "createFirst": "Create Board",
+      "pageCount": "{n} pages",
+      "untitled": "Untitled",
+      "viewGrid": "Grid view",
+      "viewList": "List view",
+      "viewToggleLabel": "View toggle",
+      "loadError": "Failed to load boards",
+      "duplicated": "Board duplicated",
+      "duplicateError": "Failed to duplicate board",
+      "openMenu": "Board options",
+      "actions": {
+        "open": "Open",
+        "duplicate": "Duplicate",
+        "share": "Share",
+        "export": "Export",
+        "delete": "Delete"
+      },
+      "confirmDelete": {
+        "title": "Delete board?",
+        "message": "This will permanently delete \"{name}\". This action cannot be undone.",
+        "confirm": "Delete",
+        "cancel": "Cancel"
+      }
+    },
     "share": {
       "title": "Share Board",
       "description": "Anyone with the link can view this board",
@@ -6730,7 +6759,9 @@
       "dashboard": "Dashboard",
       "settings": "Settings",
       "home": "Home",
-      "boards": "My Boards"
+      "boards": "My Boards",
+      "addToBoard": "Add to board",
+      "assets": "Assets"
     },
     "lesson": {
       "start": "Start Lesson",
@@ -6939,6 +6970,26 @@
       "fitToScreen": "Fit to screen",
       "autoZoom": "Auto zoom",
       "layoutChanged": "Layout changed to {mode} mode"
+    }
+  },
+  "wb": {
+    "ctx": {
+      "menu": "Context menu",
+      "copy": "Copy",
+      "paste": "Paste",
+      "duplicate": "Duplicate",
+      "delete": "Delete",
+      "bringToFront": "Bring to Front",
+      "sendToBack": "Send to Back"
+    },
+    "grid": {
+      "settings": "Grid settings",
+      "enabled": "Show grid",
+      "size": "Cell size",
+      "style": "Grid style",
+      "dots": "Dots",
+      "lines": "Lines",
+      "opacity": "Opacity"
     }
   }
 }
