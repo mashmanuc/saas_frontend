@@ -37,6 +37,11 @@
           v-if="pdfBackgroundConfig"
           :config="pdfBackgroundConfig"
         />
+        <!-- A9: Per-page grid pattern overlay (usePageGrid — per-page, configurable opacity) -->
+        <v-rect
+          v-if="pageGridPatternConfig"
+          :config="pageGridPatternConfig"
+        />
         <!-- A5.2: Grid pattern overlay -->
         <v-group v-if="bgPatternType === 'grid'" :config="{ listening: false }">
           <v-line
@@ -312,6 +317,7 @@ import Konva from 'konva'
 import getStroke from 'perfect-freehand'
 import type { WBStroke, WBAsset, WBToolType, WBPoint, WBPageBackground, WBPdfBackground, WBSelectionRect } from '../../types/winterboard'
 import { useWBStore } from '../../board/state/boardStore'
+import { usePageGrid } from '../../composables/usePageGrid'
 import { useRectSelect, getStrokeBBox, getAssetBBox } from '../../composables/useRectSelect'
 import { useGrouping } from '../../composables/useGrouping'
 import { useLocking } from '../../composables/useLocking'
@@ -388,6 +394,8 @@ const laserPointer = useLaserPointer()
 const duplicate = useDuplicate(wbStore)
 // v5 A9: Sticky notes composable
 const stickyNotes = useStickyNotes(wbStore)
+// A9 (responsive): Per-page grid composable — starts the watcher that generates gridPatternDataUrl
+const { currentPageGrid } = usePageGrid()
 
 // Stable references — use props directly, fallback to empty array only once
 const allStrokes = computed(() => props.strokes ?? [])
@@ -425,6 +433,28 @@ function localSendSeek(objectId: string, position: number) {
     [objectId]: { playing: prev?.playing ?? false, position, serverTimestamp: Date.now() },
   }
 }
+
+// A9: Per-page grid pattern image — loaded from wbStore.gridPatternDataUrl (canvas tile dataURL)
+// shallowRef avoids deep reactivity overhead on an HTMLImageElement
+const gridPatternImageEl = shallowRef<HTMLImageElement | null>(null)
+
+watch(
+  () => wbStore.gridPatternDataUrl,
+  (dataUrl) => {
+    if (!dataUrl) {
+      gridPatternImageEl.value = null
+      return
+    }
+    const img = new Image()
+    img.onload = () => {
+      gridPatternImageEl.value = img
+      // Force Konva background layer redraw so pattern appears immediately
+      backgroundLayerRef.value?.getNode?.()?.batchDraw?.()
+    }
+    img.src = dataUrl
+  },
+  { immediate: true },
+)
 
 // A6.2: Spatial index for viewport culling (replaces A3.3 inline filter)
 const spatialIndex = new WBSpatialIndex(500)
@@ -640,6 +670,24 @@ const pdfBgError = computed<boolean>(() => {
   if (!bg || typeof bg === 'string') return false
   if (bg.type !== 'pdf') return false
   return bgImageCache.isBroken(bg.url)
+})
+
+// A9: Per-page grid pattern config — fillPatternImage tiles across the full page
+// Only renders when grid is enabled AND the tile image is loaded into Konva
+const pageGridPatternConfig = computed<Record<string, unknown> | null>(() => {
+  const img = gridPatternImageEl.value
+  const grid = currentPageGrid.value
+  if (!img || !grid.enabled) return null
+  return {
+    x: 0,
+    y: 0,
+    width: props.width,
+    height: props.height,
+    fillPatternImage: img,
+    fillPatternRepeat: 'repeat',
+    listening: false,
+    name: 'page-grid-overlay',
+  }
 })
 
 // A5.2: Dots pattern — precomputed array for template v-for

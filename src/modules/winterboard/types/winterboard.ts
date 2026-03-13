@@ -149,6 +149,22 @@ export const STICKY_DEFAULTS = {
   bgColor: '#fde047', textColor: '#1e293b', text: '',
 } as const
 
+// ─── Per-Page Grid Settings (A9: Grid Scope Fix) ───────────────────────────
+// Ref: responsive/prompts/active/DAY12-13_PHASE6.md A9
+// Bug fix: grid is now per-page (not global), with configurable color/opacity
+
+export interface WBPageGridSettings {
+  enabled: boolean
+  /** Tile size in pixels */
+  size: 20 | 40 | 60
+  /** Visual style: dots pattern or lines grid */
+  style: 'dots' | 'lines'
+  /** CSS color string — default '#000000' */
+  color: string
+  /** 0.0–1.0 alpha — default 0.15 (visible on video conferences) */
+  opacity: number
+}
+
 // ─── Page ───────────────────────────────────────────────────────────────────
 // LAW-03: Pages = Ordered Stack
 
@@ -172,6 +188,8 @@ export interface WBPage {
   height?: number
   /** v5 A2: Groups — flat grouping of strokes/assets */
   groups?: WBGroup[]
+  /** A9: Per-page grid settings — overrides global grid (usePageGrid) */
+  grid?: WBPageGridSettings
 }
 
 // ─── Workspace State (serialized to backend JSONB) ──────────────────────────

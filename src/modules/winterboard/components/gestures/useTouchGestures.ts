@@ -42,6 +42,9 @@ const EDGE_ZONE_PX = 24
 /** Edge swipe minimum distance (px) */
 const EDGE_SWIPE_MIN = 60
 
+/** A10: Minimum rotation angle (rad) to fire onObjectRotate — filters noise (~1.7°) */
+const ROTATE_THRESHOLD_RAD = 0.03
+
 /** Inertia deceleration factor (0..1, lower = faster stop) */
 const INERTIA_FRICTION = 0.92
 
@@ -121,6 +124,13 @@ export interface GestureCallbacks {
   onLongPress: (x: number, y: number) => void
   onEdgeSwipeLeft: () => void
   onEdgeSwipeRight: () => void
+  // A10: Touch parity — optional, additive (no breaking change)
+  /** Long-press when an object-aware handler is registered — uses double haptic [50,30,50] */
+  onObjectLongPress?: (x: number, y: number) => void
+  /** 2-finger pinch while hasSelection() is true — scale delta relative to gesture start */
+  onObjectPinch?: (scaleDelta: number) => void
+  /** 2-finger rotation while hasSelection() is true — angle delta in radians */
+  onObjectRotate?: (angleDelta: number) => void
 }
 
 export interface TouchGestureState {
@@ -141,6 +151,8 @@ export type ActiveGesture =
   | 'draw'
   | 'pan'
   | 'pinch'
+  /** A10: 2-finger pinch/rotate acting on a selected object (not camera) */
+  | 'pinch-object'
   | 'three-finger-swipe'
   | 'long-press'
   | 'edge-swipe'
@@ -177,6 +189,12 @@ export function useTouchGestures(
     reducedMotion?: boolean
     /** Responsive Phase 2 A3: Current device mode for adaptive thresholds */
     deviceMode?: Ref<DeviceMode>
+    /**
+     * A10: Returns true when at least one object is currently selected.
+     * Determines whether a 2-finger pinch routes to object resize/rotate
+     * or to the default canvas pan+zoom.
+     */
+    hasSelection?: () => boolean
   } = {},
 ) {
   // Responsive Phase 2 A3: Resolve adaptive thresholds
@@ -198,6 +216,9 @@ export function useTouchGestures(
   let pinchStartZoom = 1
   let pinchCenterX = 0
   let pinchCenterY = 0
+  // A10: Rotation tracking for 2-finger rotate-on-object
+  let pinchStartAngle = 0
+  let pinchPrevAngle = 0
 
   // Pan velocity for inertia
   const velocitySamples: VelocitySample[] = []
@@ -241,6 +262,15 @@ export function useTouchGestures(
     }
   }
 
+  /** A10: Double-pulse haptic [50ms ON, 30ms OFF, 50ms ON] for long-press multi-select */
+  function hapticDouble(): void {
+    try {
+      navigator?.vibrate?.([50, 30, 50])
+    } catch {
+      // Not supported
+    }
+  }
+
   function getContainerRect(): DOMRect | null {
     return containerRef.value?.getBoundingClientRect() ?? null
   }
@@ -261,6 +291,14 @@ export function useTouchGestures(
     const dx = t1.x - t2.x
     const dy = t1.y - t2.y
     return Math.sqrt(dx * dx + dy * dy)
+  }
+
+  /** A10: Angle (radians) between two touch points — for rotation detection */
+  function touchAngle(id1: number, id2: number): number {
+    const t1 = touches.get(id1)
+    const t2 = touches.get(id2)
+    if (!t1 || !t2) return 0
+    return Math.atan2(t2.y - t1.y, t2.x - t1.x)
   }
 
   function addVelocitySample(x: number, y: number): void {
@@ -330,7 +368,13 @@ export function useTouchGestures(
         activeGesture.value = 'long-press'
         longPressActive.value = true
         longPressPosition.value = { x, y }
-        haptic()
+        // A10: Use double haptic when object-aware handler is registered
+        if (callbacks.onObjectLongPress) {
+          hapticDouble()
+          callbacks.onObjectLongPress(x, y)
+        } else {
+          haptic()
+        }
         console.info(`${LOG} Long press at (${x.toFixed(0)}, ${y.toFixed(0)})`)
         callbacks.onLongPress(x, y)
       }
@@ -378,11 +422,14 @@ export function useTouchGestures(
     }
 
     if (count === 2) {
-      // Pan + pinch
+      // Pan + pinch OR object resize/rotate (A10)
       const ids = [...touches.keys()]
       if (ids.length >= 2) {
         pinchStartDist = touchDistance(ids[0], ids[1])
         pinchStartZoom = options.currentZoom?.value ?? 1
+        // A10: Track initial angle for rotation
+        pinchStartAngle = touchAngle(ids[0], ids[1])
+        pinchPrevAngle  = pinchStartAngle
         const center = touchCenter(ids)
         const rect = getContainerRect()
         if (rect) {
@@ -393,7 +440,8 @@ export function useTouchGestures(
         lastPanY = center.y
         velocitySamples.length = 0
       }
-      activeGesture.value = 'pinch'
+      // A10: If objects are selected, route to object-mode; otherwise canvas pan+zoom
+      activeGesture.value = options.hasSelection?.() ? 'pinch-object' : 'pinch'
       cancelLongPress()
       return
     }
@@ -492,6 +540,36 @@ export function useTouchGestures(
         console.info(`${LOG} Edge swipe right → open page panel`)
         return
       }
+    }
+
+    // ── A10: Two-finger pinch/rotate on selected object ──
+    if (count === 2 && activeGesture.value === 'pinch-object') {
+      const ids = [...touches.keys()]
+      if (ids.length < 2) return
+
+      // Scale delta relative to gesture start
+      const dist = touchDistance(ids[0], ids[1])
+      const scaleDelta = pinchStartDist > 0 ? dist / pinchStartDist : 1
+
+      // Rotation delta (normalised to -π..π)
+      const currentAngle = touchAngle(ids[0], ids[1])
+      let angleDelta = currentAngle - pinchPrevAngle
+      if (angleDelta >  Math.PI) angleDelta -= 2 * Math.PI
+      if (angleDelta < -Math.PI) angleDelta += 2 * Math.PI
+      pinchPrevAngle = currentAngle
+
+      if (Math.abs(scaleDelta - 1) > 0.01 && callbacks.onObjectPinch) {
+        callbacks.onObjectPinch(scaleDelta)
+        // Reset start dist so next delta is relative to current size
+        pinchStartDist = dist
+      }
+
+      if (Math.abs(angleDelta) > ROTATE_THRESHOLD_RAD && callbacks.onObjectRotate) {
+        callbacks.onObjectRotate(angleDelta)
+      }
+
+      e.preventDefault()
+      return
     }
 
     // ── Two-finger pan + pinch ──
@@ -674,5 +752,9 @@ export function useTouchGestures(
     isGestureActive(): boolean {
       return activeGesture.value !== 'none' && activeGesture.value !== 'draw'
     },
+
+    // A10: Expose for external use (e.g. analytics, tests)
+    hapticDouble,
+    touchAngle,
   }
 }

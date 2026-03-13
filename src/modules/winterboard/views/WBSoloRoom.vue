@@ -369,6 +369,14 @@
 
     <!-- Drag ghost preview — follows cursor while dragging from sidebar -->
     <WBDragGhost />
+
+    <!-- A10: Touch context menu — shown on long-press when objects are selected -->
+    <WBTouchContextMenu
+      :visible="touchCtxVisible"
+      :x="touchCtxX"
+      :y="touchCtxY"
+      @close="touchCtxVisible = false"
+    />
   </div>
 </template>
 
@@ -410,6 +418,7 @@ import BoardTemplateSelector from '../components/templates/BoardTemplateSelector
 import { BOARD_TEMPLATES } from '../data/boardTemplates'
 import WBGridOverlay from '../components/canvas/WBGridOverlay.vue'
 import WBGridButton from '../components/canvas/WBGridButton.vue'
+import WBTouchContextMenu from '../components/canvas/WBTouchContextMenu.vue'
 import { useGridOverlay } from '../composables/useGridOverlay'
 import { useCanvasResize } from '../composables/useCanvasResize'
 import { useTouchGestures } from '../components/gestures/useTouchGestures'
@@ -532,6 +541,11 @@ const touchGestureMode = computed<'drawing' | 'selection'>(() =>
   store.currentTool === 'select' ? 'selection' : 'drawing',
 )
 
+// A10: Touch context menu state
+const touchCtxVisible = ref(false)
+const touchCtxX = ref(0)
+const touchCtxY = ref(0)
+
 const touchGestures = useTouchGestures(canvasContainerRef, {
   onPan(dx, dy) {
     store.setScroll(store.scrollX + dx, store.scrollY + dy)
@@ -565,6 +579,22 @@ const touchGestures = useTouchGestures(canvasContainerRef, {
       store.setTool('select')
     }
   },
+  // A10: Object-aware long press — show touch context menu
+  onObjectLongPress(x, y) {
+    touchCtxX.value = x
+    touchCtxY.value = y
+    touchCtxVisible.value = true
+  },
+  // A10: 2-finger pinch on selected object → resize
+  onObjectPinch(scaleDelta) {
+    const id = store.selectedIds[0]
+    if (id) store.resizeSelectedObject(id, scaleDelta, scaleDelta)
+  },
+  // A10: 2-finger rotation on selected object → rotate
+  onObjectRotate(angleDelta) {
+    const id = store.selectedIds[0]
+    if (id) store.rotateSelectedObject(id, angleDelta)
+  },
   onEdgeSwipeLeft() {
     // Edge swipe from left: toggle page thumbnails panel
     showPagePanel.value = !showPagePanel.value
@@ -576,6 +606,8 @@ const touchGestures = useTouchGestures(canvasContainerRef, {
 }, {
   mode: touchGestureMode,
   currentZoom: computed(() => store.zoom),
+  // A10: Route 2-finger pinch to object mode when selection is active
+  hasSelection: () => store.selectedIds.length > 0,
 })
 
 // Attach touch gestures after mount
