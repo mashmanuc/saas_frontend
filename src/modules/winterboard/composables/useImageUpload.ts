@@ -13,6 +13,9 @@ const LOG = '[WB:ImageUpload]'
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB (matches backend WB_MAX_ASSET_SIZE)
 const SUPPORTED_FORMATS = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml']
 const DEFAULT_ASSET_SIZE = 300 // Default width/height for dropped images
+const WB_MAX_IMAGE_DIMENSION = 4096  // px — absolute limit, upload blocked (A15)
+const WB_WARN_IMAGE_DIMENSION = 2048 // px — warn threshold, upload continues (A15)
+const WB_MAX_FILE_SIZE_MB = 10       // MB — matches MAX_FILE_SIZE and backend WB_MAX_ASSET_SIZE
 
 // ─── Validation ─────────────────────────────────────────────────────────────
 
@@ -46,6 +49,85 @@ export function validateFile(file: File): ValidationResult {
   }
 
   return { valid: true }
+}
+
+// ─── Dimension Validation (A15) ────────────────────────────────────────────
+
+/**
+ * Obtain image pixel dimensions by creating a temporary object URL from a File.
+ * Used for pre-upload dimension validation. Resolves on load, rejects on error.
+ */
+async function getFileDimensions(file: File): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      resolve({ width: img.naturalWidth, height: img.naturalHeight })
+    }
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      reject(new Error('[WB:ImageUpload] Cannot read image dimensions'))
+    }
+    img.src = url
+  })
+}
+
+export interface ImageValidationResult {
+  valid: boolean
+  blocked: boolean
+  warning?: string
+  info?: string
+}
+
+/**
+ * Pre-upload validation: checks file size (MB) and, for raster images, pixel dimensions.
+ * - Blocks if file > WB_MAX_FILE_SIZE_MB
+ * - Blocks if max(width, height) > WB_MAX_IMAGE_DIMENSION
+ * - Warns if max(width, height) > WB_WARN_IMAGE_DIMENSION
+ * - SVG and non-image types skip dimension check entirely.
+ */
+export async function validateImageFile(file: File): Promise<ImageValidationResult> {
+  const sizeMB = file.size / (1024 * 1024)
+  if (sizeMB > WB_MAX_FILE_SIZE_MB) {
+    return {
+      valid: false,
+      blocked: true,
+      warning: `File too large: ${sizeMB.toFixed(1)} MB. Maximum: ${WB_MAX_FILE_SIZE_MB} MB`,
+    }
+  }
+
+  // Skip dimension check for non-raster types
+  if (!file.type.startsWith('image/') || file.type === 'image/svg+xml') {
+    return { valid: true, blocked: false }
+  }
+
+  try {
+    const { width, height } = await getFileDimensions(file)
+    const maxDim = Math.max(width, height)
+
+    if (maxDim > WB_MAX_IMAGE_DIMENSION) {
+      return {
+        valid: false,
+        blocked: true,
+        warning: `Image too large: ${width}×${height}px. Maximum dimension: ${WB_MAX_IMAGE_DIMENSION}px`,
+      }
+    }
+
+    if (maxDim > WB_WARN_IMAGE_DIMENSION) {
+      return {
+        valid: true,
+        blocked: false,
+        warning: `Large image (${width}×${height}px). Will be optimized automatically on upload.`,
+        info: `Recommended max: ${WB_WARN_IMAGE_DIMENSION}px`,
+      }
+    }
+
+    return { valid: true, blocked: false }
+  } catch {
+    // Cannot read dimensions — do not block the upload
+    return { valid: true, blocked: false }
+  }
 }
 
 // ─── File → Data URL ────────────────────────────────────────────────────────
@@ -292,11 +374,13 @@ export function useImageUpload(sessionId: () => string | null) {
   const uploadProgress = ref(0)
   const uploadState = ref<WBUploadState>('idle')
   const uploadError = ref<string | null>(null)
+  const uploadWarning = ref<string | null>(null)
 
   function reset(): void {
     uploadProgress.value = 0
     uploadState.value = 'idle'
     uploadError.value = null
+    uploadWarning.value = null
   }
 
   /**
@@ -317,6 +401,17 @@ export function useImageUpload(sessionId: () => string | null) {
 
     reset()
     uploadState.value = 'validating'
+
+    // Dimension and size pre-validation (A15)
+    const dimValidation = await validateImageFile(file)
+    if (dimValidation.blocked) {
+      uploadError.value = dimValidation.warning ?? 'Image validation failed'
+      uploadState.value = 'error'
+      return null
+    }
+    if (dimValidation.warning) {
+      uploadWarning.value = dimValidation.warning
+    }
 
     // Validate
     const validation = validateFile(file)
@@ -382,10 +477,12 @@ export function useImageUpload(sessionId: () => string | null) {
     uploadProgress: readonly(uploadProgress),
     uploadState: readonly(uploadState),
     uploadError: readonly(uploadError),
+    uploadWarning: readonly(uploadWarning),
     reset,
     handleDrop,
     handlePaste,
     validateFile,
+    validateImageFile,
     fileToDataUrl,
   }
 }
