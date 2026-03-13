@@ -377,6 +377,25 @@
       :y="touchCtxY"
       @close="touchCtxVisible = false"
     />
+
+    <!-- A12p2: Replay mode controls -->
+    <WBReplayControls
+      v-if="mode === 'replay' && sessionId"
+      :session-id="sessionId"
+      @exit="exitReplayMode"
+      @operation="onReplayOperation"
+    />
+
+    <!-- A12p2: Replay entry button (edit mode only) -->
+    <button
+      v-if="mode === 'edit' && sessionId"
+      class="wb-solo-room__replay-btn"
+      data-testid="replay-button"
+      :aria-label="t('replay.viewReplay')"
+      @click="enterReplayMode"
+    >
+      &#9194; {{ t('replay.viewReplay') }}
+    </button>
   </div>
 </template>
 
@@ -419,6 +438,8 @@ import { BOARD_TEMPLATES } from '../data/boardTemplates'
 import WBGridOverlay from '../components/canvas/WBGridOverlay.vue'
 import WBGridButton from '../components/canvas/WBGridButton.vue'
 import WBTouchContextMenu from '../components/canvas/WBTouchContextMenu.vue'
+import WBReplayControls from '../components/replay/WBReplayControls.vue'
+import type { BoardOperation } from '../types/replay'
 import { useGridOverlay } from '../composables/useGridOverlay'
 import { useCanvasResize } from '../composables/useCanvasResize'
 import { useTouchGestures } from '../components/gestures/useTouchGestures'
@@ -540,6 +561,22 @@ const { width: canvasContainerWidth, height: canvasContainerHeight, recalculate:
 const touchGestureMode = computed<'drawing' | 'selection'>(() =>
   store.currentTool === 'select' ? 'selection' : 'drawing',
 )
+
+// A12p2: Replay mode
+const mode = ref<'edit' | 'replay'>('edit')
+
+function enterReplayMode(): void {
+  mode.value = 'replay'
+}
+
+function exitReplayMode(): void {
+  mode.value = 'edit'
+}
+
+function onReplayOperation(op: BoardOperation): void {
+  // TODO: apply operation to canvas — Phase 8 integration
+  console.debug('[Replay] op:', op.op_type, op.page_id)
+}
 
 // A10: Touch context menu state
 const touchCtxVisible = ref(false)
@@ -2081,5 +2118,27 @@ watch(() => store.workspaceName, (name) => {
   @keyframes wb-pulse {
     0%, 100% { opacity: 1; }
   }
+}
+
+/* A12p2: Replay mode entry button */
+.wb-solo-room__replay-btn {
+  position: fixed;
+  bottom: 80px;
+  right: 16px;
+  background: var(--primary, #6366f1);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 14px;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: background 0.15s, transform 0.1s;
+}
+
+.wb-solo-room__replay-btn:hover {
+  background: var(--primary-hover, #4f46e5);
+  transform: translateY(-1px);
 }
 </style>

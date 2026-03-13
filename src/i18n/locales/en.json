@@ -6972,6 +6972,18 @@
       "layoutChanged": "Layout changed to {mode} mode"
     }
   },
+  "replay": {
+    "timeline": "Replay timeline",
+    "play": "Play",
+    "pause": "Pause",
+    "stop": "Stop",
+    "speed": "Playback speed",
+    "exit": "Exit replay",
+    "exitReplay": "Exit replay",
+    "viewReplay": "View replay",
+    "replayEnded": "Replay ended",
+    "loading": "Loading replay…"
+  },
   "wb": {
     "ctx": {
       "menu": "Context menu",
