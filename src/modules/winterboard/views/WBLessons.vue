@@ -1,5 +1,5 @@
-<!-- WB: WBLessons — list of user's lessons with create/clone/delete
-     Ref: DAY18_AGENT-B.md B16
+<!-- WB: WBLessons — list of user's lessons with create/clone/delete + filter
+     Ref: DAY18_AGENT-B.md B16, DAY23_AGENT-B.md B21
      API: GET /lessons/my/ (apps/lessons/) — TODO: replace mock with real -->
 <template>
   <div class="wb-lessons">
@@ -13,6 +13,18 @@
         + {{ t('winterboard.lessons.create') }}
       </button>
     </header>
+
+    <!-- Filter bar (B21) -->
+    <LessonFilterBar
+      v-if="!loading && !error"
+      :categories="categories"
+      :available-tags="availableTags"
+      :filtered-count="filteredLessons.length"
+      @update:search="searchQuery = $event"
+      @update:category="selectedCategory = $event"
+      @update:tags="selectedTags = $event"
+      @clear="clearFilters"
+    />
 
     <!-- Error state -->
     <div v-if="error" class="wb-lessons__error" data-testid="lessons-error">
@@ -38,10 +50,19 @@
       </button>
     </div>
 
+    <!-- No results after filter -->
+    <div
+      v-else-if="filteredLessons.length === 0"
+      class="wb-lessons__empty"
+      data-testid="lessons-no-results"
+    >
+      <p>{{ t('lessons.noResults') }}</p>
+    </div>
+
     <!-- Lessons list -->
     <div v-else class="wb-lessons__list" data-testid="lessons-list">
       <LessonCard
-        v-for="lesson in lessons"
+        v-for="lesson in filteredLessons"
         :key="lesson.id"
         :lesson="normalizeLesson(lesson)"
         @click="openLesson(lesson.id)"
@@ -92,10 +113,11 @@
 // B16: WBLessons — create/clone/delete + LessonCard
 // Ref: DAY18_AGENT-B.md
 
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import LessonCard from '../components/lessons/LessonCard.vue'
+import LessonFilterBar from '../components/lessons/LessonFilterBar.vue'
 import lessonsApi from '@/api/lessons'
 import { useToast } from '../composables/useToast'
 
@@ -111,6 +133,55 @@ const error = ref<string | null>(null)
 const showCreate = ref(false)
 const newLessonName = ref('')
 const creating = ref(false)
+
+// B21: Filter state
+const searchQuery = ref('')
+const selectedCategory = ref<number | string | null>(null)
+const selectedTags = ref<string[]>([])
+
+// TODO: replace with GET /api/v1/lessons/categories/ when endpoint exists
+const categories = ref([
+  { id: 1, name: 'Math', slug: 'math' },
+  { id: 2, name: 'Physics', slug: 'physics' },
+  { id: 3, name: 'English', slug: 'english' },
+])
+
+// Collect available tags from loaded lessons
+const availableTags = computed(() => {
+  const tags = new Set<string>()
+  lessons.value.forEach((l) => (l.tags ?? []).forEach((tag: string) => tags.add(tag)))
+  return Array.from(tags).sort()
+})
+
+// Filtered lessons computed
+const filteredLessons = computed(() => {
+  let result = lessons.value
+
+  if (searchQuery.value) {
+    const q = searchQuery.value.toLowerCase()
+    result = result.filter((l) =>
+      (l.title ?? l.subject ?? l.name ?? '').toLowerCase().includes(q),
+    )
+  }
+
+  if (selectedCategory.value !== null) {
+    result = result.filter((l) => l.category_id === selectedCategory.value)
+  }
+
+  if (selectedTags.value.length > 0) {
+    result = result.filter((l) =>
+      selectedTags.value.every((tag) => (l.tags ?? []).includes(tag)),
+    )
+  }
+
+  return result
+})
+
+function clearFilters() {
+  searchQuery.value = ''
+  selectedCategory.value = null
+  selectedTags.value = []
+}
 
 // ─── Fetch ────────────────────────────────────────────────────────────────────
 

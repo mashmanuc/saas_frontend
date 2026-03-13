@@ -2648,6 +2648,12 @@
     }
   },
   "lessons": {
+    "searchPlaceholder": "Search lessons...",
+    "allCategories": "All",
+    "filtered": "{count} lessons",
+    "clearFilters": "Clear filters",
+    "noResults": "No lessons match filters",
+    "filterLabel": "Filter lessons",
     "calendar": {
       "title": "Hours when the tutor teaches",
       "subtitle": "Create, reschedule and manage lessons across timezones.",
