@@ -83,6 +83,18 @@ const winterboardRoutes: RouteRecordRaw[] = [
     meta: { title: 'Winterboard — Classroom', roles: ['student', 'tutor'] },
   },
   {
+    path: '/winterboard/boards',
+    name: 'winterboard-boards',
+    component: () => import('./views/WBBoardList.vue'),
+    meta: { title: 'Winterboard — Boards', roles: ['student', 'tutor'] },
+  },
+  {
+    path: '/winterboard/students',
+    name: 'winterboard-students',
+    component: () => import('./views/WBStudents.vue'),
+    meta: { title: 'Winterboard — Students', roles: ['tutor'] },
+  },
+  {
     path: '/winterboard/public/:token',
     name: 'winterboard-public',
     component: () => import('./views/WBPublicView.vue'),

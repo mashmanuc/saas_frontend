@@ -63,7 +63,17 @@ export const SECTIONED_MENU_BY_ROLE = {
       label: 'sidebar.section.teaching',
       items: [
         { label: 'sidebar.item.knowledge', icon: 'book-open', to: '/tutor/knowledge' },
-        { label: 'sidebar.item.winterboard', icon: 'pencil-line', to: '/winterboard' },
+      ],
+    },
+    {
+      key: 'winterboard',
+      label: 'sidebar.section.winterboard',
+      items: [
+        { label: 'sidebar.item.wbDashboard', icon: 'layout-dashboard', to: '/winterboard/dashboard' },
+        { label: 'sidebar.item.wbLibrary', icon: 'folder', to: '/winterboard/library' },
+        { label: 'sidebar.item.wbLessons', icon: 'book-open', to: '/winterboard/lessons' },
+        { label: 'sidebar.item.wbBoards', icon: 'layout', to: '/winterboard/boards' },
+        { label: 'sidebar.item.wbStudents', icon: 'users', to: '/winterboard/students' },
       ],
     },
     {
@@ -102,10 +112,13 @@ export const SECTIONED_MENU_BY_ROLE = {
       ],
     },
     {
-      key: 'learning',
-      label: 'sidebar.section.learning',
+      key: 'winterboard',
+      label: 'sidebar.section.winterboard',
       items: [
-        { label: 'sidebar.item.winterboard', icon: 'pencil-line', to: '/winterboard' },
+        { label: 'sidebar.item.wbDashboard', icon: 'layout-dashboard', to: '/winterboard/dashboard' },
+        { label: 'sidebar.item.wbLibrary', icon: 'folder', to: '/winterboard/library' },
+        { label: 'sidebar.item.wbLessons', icon: 'book-open', to: '/winterboard/lessons' },
+        { label: 'sidebar.item.wbBoards', icon: 'layout', to: '/winterboard/boards' },
       ],
     },
     {
