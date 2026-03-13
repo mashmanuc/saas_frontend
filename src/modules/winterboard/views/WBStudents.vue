@@ -8,7 +8,7 @@
     </header>
 
     <!-- Loading state -->
-    <div v-if="loading" class="wb-students__loading" data-testid="students-loading">
+    <div v-if="loading" class="wb-students__loading" data-testid="students-loading" aria-live="polite" aria-busy="true">
       <div v-for="i in 5" :key="i" class="wb-student-skeleton">
         <div class="wb-skeleton-pulse wb-skeleton-avatar" />
         <div class="wb-student-skeleton__info">
@@ -19,9 +19,9 @@
     </div>
 
     <!-- Error state -->
-    <div v-else-if="error" class="wb-students__error" data-testid="students-error">
+    <div v-else-if="error" class="wb-students__error" data-testid="students-error" role="alert">
       <p>{{ error }}</p>
-      <button class="wb-students__retry" @click="fetchStudents">
+      <button class="wb-students__retry" :aria-label="t('common.retry')" @click="fetchStudents">
         {{ t('common.retry') }}
       </button>
     </div>

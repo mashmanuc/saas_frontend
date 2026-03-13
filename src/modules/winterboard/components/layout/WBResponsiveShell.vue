@@ -94,10 +94,18 @@ const shellClasses = computed(() => ({
   'wb-responsive-shell--landscape': orientation.value === 'landscape',
 }))
 
-// INV-5: Use --wb-vh for height instead of 100vh
-const shellStyle = computed(() => ({
-  height: 'calc(var(--wb-vh, 1vh) * 100)',
-}))
+// INV-5: Set --wb-vh from visualViewport (Safari-safe), fallback to innerHeight
+// This makes the variable available to all children and avoids 100vh iOS jump.
+const shellStyle = computed(() => {
+  const vhPx =
+    typeof window !== 'undefined'
+      ? ((window.visualViewport?.height ?? window.innerHeight) / 100)
+      : 1
+  return {
+    '--wb-vh': `${vhPx}px`,
+    height: 'calc(var(--wb-vh, 1vh) * 100)',
+  }
+})
 
 // Expose for parent components
 defineExpose({

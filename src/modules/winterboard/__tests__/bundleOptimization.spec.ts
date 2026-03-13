@@ -17,11 +17,12 @@ describe('Bundle Optimization (A7.1)', () => {
       }
     })
 
-    it('WB module has 5 standalone lazy-loaded routes', async () => {
+    it('WB module has 11 standalone lazy-loaded routes', async () => {
       const routerModule = await import('../router')
       const routes = routerModule.default
 
-      expect(routes.length).toBe(5)
+      // B14-B17: dashboard, library, lessons, lesson-detail, boards, students added
+      expect(routes.length).toBe(11)
 
       const routePaths = routes.map((r) => r.path)
       expect(routePaths).toContain('/winterboard/new')
@@ -29,6 +30,12 @@ describe('Bundle Optimization (A7.1)', () => {
       expect(routePaths).toContain('/winterboard/:id')
       expect(routePaths).toContain('/winterboard/classroom/:lessonId')
       expect(routePaths).toContain('/winterboard/public/:token')
+      expect(routePaths).toContain('/winterboard/dashboard')
+      expect(routePaths).toContain('/winterboard/library')
+      expect(routePaths).toContain('/winterboard/lessons')
+      expect(routePaths).toContain('/winterboard/lessons/:lessonId')
+      expect(routePaths).toContain('/winterboard/boards')
+      expect(routePaths).toContain('/winterboard/students')
     })
   })
 

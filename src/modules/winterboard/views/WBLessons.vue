@@ -23,7 +23,7 @@
     </div>
 
     <!-- Loading state -->
-    <div v-else-if="loading" class="wb-lessons__loading" data-testid="lessons-loading">
+    <div v-else-if="loading" class="wb-lessons__loading" data-testid="lessons-loading" aria-live="polite" aria-busy="true">
       <div v-for="i in 4" :key="i" class="wb-lesson-skeleton">
         <div class="wb-skeleton-pulse wb-skeleton-line" />
         <div class="wb-skeleton-pulse wb-skeleton-line wb-skeleton-line--short" />
@@ -58,12 +58,13 @@
         data-testid="create-modal"
         @click.self="showCreate = false"
       >
-        <div class="wb-modal">
+        <div class="wb-modal" role="dialog" aria-modal="true" :aria-label="t('winterboard.lessons.create')">
           <h2 class="wb-modal__title">{{ t('winterboard.lessons.create') }}</h2>
           <input
             v-model="newLessonName"
             class="wb-modal__input"
             :placeholder="t('winterboard.lessons.namePlaceholder')"
+            :aria-label="t('winterboard.lessons.namePlaceholder')"
             data-testid="lesson-name-input"
             @keydown.enter="createLesson"
             @keydown.esc="showCreate = false"
