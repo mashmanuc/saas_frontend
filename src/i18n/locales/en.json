@@ -6581,6 +6581,7 @@
       "deleted": "Board deleted",
       "deleteError": "Failed to delete board",
       "loadError": "Failed to load boards",
+      "loadListError": "Failed to load lesson sessions",
       "duplicateError": "Failed to duplicate board"
     },
     "boards": {
@@ -6611,6 +6612,51 @@
         "confirm": "Delete",
         "cancel": "Cancel"
       }
+    },
+    "dashboard": {
+      "subtitle": "Welcome to Winterboard",
+      "quickActions": "Quick Actions",
+      "library": "Library",
+      "recentBoards": "Recent Boards",
+      "noRecentBoards": "No boards yet",
+      "viewAll": "View all",
+      "goodMorning": "Good morning, {name}",
+      "goodAfternoon": "Good afternoon, {name}",
+      "goodEvening": "Good evening, {name}"
+    },
+    "library": {
+      "folders": "Folders",
+      "allFiles": "All Files",
+      "favorites": "Favorites",
+      "recent": "Recent",
+      "noFolders": "No folders yet",
+      "newFolder": "New Folder",
+      "folderName": "Folder name",
+      "create": "Create",
+      "folderCreated": "Folder created",
+      "folderError": "Failed to create folder",
+      "search": "Search files…",
+      "upload": "Upload",
+      "uploadTitle": "Upload Files",
+      "uploading": "Uploading…",
+      "done": "Done",
+      "uploadError": "Upload failed",
+      "dropOrClick": "Drop files here or click to browse",
+      "acceptedTypes": "Images, PDFs, videos, audio",
+      "dropZoneLabel": "File drop zone",
+      "uploadToFolder": "Upload to:",
+      "noFiles": "No files yet",
+      "assetsLabel": "Files",
+      "pagination": "Pagination",
+      "prevPage": "Previous page",
+      "nextPage": "Next page",
+      "favorite": "Favorite",
+      "delete": "Delete",
+      "deleted": "File deleted",
+      "deleteError": "Failed to delete file",
+      "favoriteError": "Failed to update favorite",
+      "close": "Close",
+      "confirmDelete": "Delete {name}?"
     },
     "share": {
       "title": "Share Board",
@@ -6970,6 +7016,16 @@
       "fitToScreen": "Fit to screen",
       "autoZoom": "Auto zoom",
       "layoutChanged": "Layout changed to {mode} mode"
+    },
+    "lessons": {
+      "title": "Lessons",
+      "noLessons": "No lessons yet",
+      "loadError": "Failed to load lessons",
+      "untitled": "Untitled",
+      "openBoard": "Open Board",
+      "openClassroom": "Open Classroom",
+      "boardSessions": "Boards for this lesson",
+      "noSessions": "No associated boards"
     }
   },
   "replay": {

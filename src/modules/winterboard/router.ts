@@ -51,6 +51,31 @@ const winterboardRoutes: RouteRecordRaw[] = [
     meta: { title: 'Winterboard', roles: ['student', 'tutor'] },
   },
   {
+    path: '/winterboard/dashboard',
+    name: 'winterboard-dashboard',
+    component: () => import('./views/WBDashboard.vue'),
+    meta: { title: 'Winterboard — Dashboard', roles: ['student', 'tutor'] },
+  },
+  {
+    path: '/winterboard/library',
+    name: 'winterboard-library',
+    component: () => import('./views/WBLibrary.vue'),
+    meta: { title: 'Winterboard — Library', roles: ['student', 'tutor'] },
+  },
+  {
+    path: '/winterboard/lessons',
+    name: 'winterboard-lessons',
+    component: () => import('./views/WBLessons.vue'),
+    meta: { title: 'Lessons', roles: ['student', 'tutor'] },
+  },
+  {
+    path: '/winterboard/lessons/:lessonId',
+    name: 'winterboard-lesson',
+    component: () => import('./views/WBLessonDetail.vue'),
+    props: true,
+    meta: { title: 'Lesson', roles: ['student', 'tutor'] },
+  },
+  {
     path: '/winterboard/classroom/:lessonId',
     name: 'winterboard-classroom',
     component: () => import('./views/WBClassroomRoom.vue'),

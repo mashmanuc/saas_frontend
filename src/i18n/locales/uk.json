@@ -6406,6 +6406,7 @@
         "delete": "Видалити",
         "rename": "Перейменувати"
       },
+      "loadListError": "Не вдалося завантажити сесії уроку",
       "confirmDelete": {
         "title": "Видалити дошку?",
         "message": "Це назавжди видалить \"{name}\". Цю дію неможливо скасувати.",
@@ -6415,7 +6416,6 @@
       "duplicated": "Дошку дубльовано",
       "deleted": "Дошку видалено",
       "deleteError": "Не вдалося видалити дошку",
-      "loadError": "Не вдалося завантажити дошки",
       "duplicateError": "Не вдалося дублювати дошку"
     },
     "boards": {
@@ -6446,6 +6446,54 @@
         "confirm": "Видалити",
         "cancel": "Скасувати"
       }
+    },
+    "dashboard": {
+      "subtitle": "Ласкаво просимо до Winterboard",
+      "quickActions": "Швидкі дії",
+      "library": "Бібліотека",
+      "recentBoards": "Останні дошки",
+      "noRecentBoards": "Ще немає дошок",
+      "viewAll": "Всі дошки",
+      "goodMorning": "Доброго ранку, {name}",
+      "goodAfternoon": "Доброго дня, {name}",
+      "goodEvening": "Доброго вечора, {name}"
+    },
+    "library": {
+      "noFiles": "Файлів ще немає",
+      "favorite": "Обрати",
+      "delete": "Видалити",
+      "confirmDelete": "Видалити {name}?",
+      "folders": "Папки",
+      "allFiles": "Всі файли",
+      "favorites": "Вибране",
+      "recent": "Нещодавні",
+      "noFolders": "Папок ще немає",
+      "newFolder": "Нова папка",
+      "folderName": "Назва папки",
+      "create": "Створити",
+      "folderCreated": "Папку створено",
+      "folderError": "Не вдалося створити папку",
+      "search": "Пошук файлів…",
+      "upload": "Завантажити",
+      "uploadTitle": "Завантаження файлів",
+      "uploading": "Завантаження…",
+      "done": "Готово",
+      "uploadError": "Помилка завантаження",
+      "dropOrClick": "Перетягніть файли або натисніть для вибору",
+      "acceptedTypes": "Зображення, PDF, відео, аудіо",
+      "dropZoneLabel": "Зона для перетягування файлів",
+      "uploadToFolder": "Завантажити до:",
+      "noFiles": "Файлів ще немає",
+      "assetsLabel": "Файли",
+      "pagination": "Пагінація",
+      "prevPage": "Попередня сторінка",
+      "nextPage": "Наступна сторінка",
+      "favorite": "Вибране",
+      "delete": "Видалити",
+      "deleted": "Файл видалено",
+      "deleteError": "Не вдалося видалити файл",
+      "favoriteError": "Не вдалося оновити вибране",
+      "close": "Закрити"
     },
     "share": {
       "title": "Поділитися дошкою",
@@ -6850,6 +6898,16 @@
       "settings": "Налаштування",
       "addToBoard": "Додати на дошку",
       "assets": "Матеріали"
+    },
+    "lessons": {
+      "title": "Уроки",
+      "noLessons": "Уроків ще немає",
+      "loadError": "Не вдалося завантажити уроки",
+      "untitled": "Без назви",
+      "openBoard": "Відкрити дошку",
+      "openClassroom": "Відкрити клас",
+      "boardSessions": "Дошки цього уроку",
+      "noSessions": "Пов'язаних дошок немає"
     },
     "lesson": {
       "start": "Почати урок",
