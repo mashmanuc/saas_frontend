@@ -29,8 +29,49 @@ const winterboardSessionListRoute: RouteRecordRaw = {
   meta: { title: 'Winterboard', roles: ['student', 'tutor'] },
 }
 
+// Page-level routes — mounted inside PageShell (sidebar + header)
+const winterboardPageRoutes: RouteRecordRaw[] = [
+  {
+    path: 'winterboard/dashboard',
+    name: 'winterboard-dashboard',
+    component: () => import('./views/WBDashboard.vue'),
+    meta: { title: 'Winterboard — Dashboard', roles: ['student', 'tutor'] },
+  },
+  {
+    path: 'winterboard/library',
+    name: 'winterboard-library',
+    component: () => import('./views/WBLibrary.vue'),
+    meta: { title: 'Winterboard — Library', roles: ['student', 'tutor'] },
+  },
+  {
+    path: 'winterboard/lessons',
+    name: 'winterboard-lessons',
+    component: () => import('./views/WBLessons.vue'),
+    meta: { title: 'Lessons', roles: ['student', 'tutor'] },
+  },
+  {
+    path: 'winterboard/lessons/:lessonId',
+    name: 'winterboard-lesson',
+    component: () => import('./views/WBLessonDetail.vue'),
+    props: true,
+    meta: { title: 'Lesson', roles: ['student', 'tutor'] },
+  },
+  {
+    path: 'winterboard/boards',
+    name: 'winterboard-boards',
+    component: () => import('./views/WBBoardList.vue'),
+    meta: { title: 'Winterboard — Boards', roles: ['student', 'tutor'] },
+  },
+  {
+    path: 'winterboard/students',
+    name: 'winterboard-students',
+    component: () => import('./views/WBStudents.vue'),
+    meta: { title: 'Winterboard — Students', roles: ['tutor'] },
+  },
+]
+
 // Standalone routes — own layout (solo room has compact header, public has no auth)
-const winterboardRoutes: RouteRecordRaw[] = [
+const winterboardStandaloneRoutes: RouteRecordRaw[] = [
   {
     path: '/winterboard/new',
     name: 'winterboard-new',
@@ -44,55 +85,11 @@ const winterboardRoutes: RouteRecordRaw[] = [
     meta: { title: 'Winterboard — Content Preview', roles: ['tutor'] },
   },
   {
-    path: '/winterboard/:id',
-    name: 'winterboard-solo',
-    component: () => import('./views/WBSoloRoom.vue'),
-    props: true,
-    meta: { title: 'Winterboard', roles: ['student', 'tutor'] },
-  },
-  {
-    path: '/winterboard/dashboard',
-    name: 'winterboard-dashboard',
-    component: () => import('./views/WBDashboard.vue'),
-    meta: { title: 'Winterboard — Dashboard', roles: ['student', 'tutor'] },
-  },
-  {
-    path: '/winterboard/library',
-    name: 'winterboard-library',
-    component: () => import('./views/WBLibrary.vue'),
-    meta: { title: 'Winterboard — Library', roles: ['student', 'tutor'] },
-  },
-  {
-    path: '/winterboard/lessons',
-    name: 'winterboard-lessons',
-    component: () => import('./views/WBLessons.vue'),
-    meta: { title: 'Lessons', roles: ['student', 'tutor'] },
-  },
-  {
-    path: '/winterboard/lessons/:lessonId',
-    name: 'winterboard-lesson',
-    component: () => import('./views/WBLessonDetail.vue'),
-    props: true,
-    meta: { title: 'Lesson', roles: ['student', 'tutor'] },
-  },
-  {
     path: '/winterboard/classroom/:lessonId',
     name: 'winterboard-classroom',
     component: () => import('./views/WBClassroomRoom.vue'),
     props: true,
     meta: { title: 'Winterboard — Classroom', roles: ['student', 'tutor'] },
-  },
-  {
-    path: '/winterboard/boards',
-    name: 'winterboard-boards',
-    component: () => import('./views/WBBoardList.vue'),
-    meta: { title: 'Winterboard — Boards', roles: ['student', 'tutor'] },
-  },
-  {
-    path: '/winterboard/students',
-    name: 'winterboard-students',
-    component: () => import('./views/WBStudents.vue'),
-    meta: { title: 'Winterboard — Students', roles: ['tutor'] },
   },
   {
     path: '/winterboard/public/:token',
@@ -101,7 +98,14 @@ const winterboardRoutes: RouteRecordRaw[] = [
     props: true,
     meta: { title: 'Winterboard', public: true, requiresAuth: false },
   },
+  {
+    path: '/winterboard/:id',
+    name: 'winterboard-solo',
+    component: () => import('./views/WBSoloRoom.vue'),
+    props: true,
+    meta: { title: 'Winterboard', roles: ['student', 'tutor'] },
+  },
 ]
 
-export { winterboardGuard, winterboardSessionListRoute }
-export default winterboardRoutes
+export { winterboardGuard, winterboardSessionListRoute, winterboardPageRoutes }
+export default winterboardStandaloneRoutes

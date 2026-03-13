@@ -391,8 +391,12 @@ onMounted(async () => {
 <style scoped>
 .wb-library {
   display: flex;
-  height: calc(var(--wb-vh, 100vh) - var(--app-header-height, 60px));
+  min-height: 600px;
+  height: calc(100vh - 140px);
   overflow: hidden;
+  background: var(--wb-card-bg, #ffffff);
+  border: 1px solid var(--wb-toolbar-border, #e2e8f0);
+  border-radius: 12px;
 }
 
 /* ── Sidebar ─────────────────────────────────────────────────────────── */

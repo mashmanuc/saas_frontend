@@ -6871,6 +6871,7 @@
       "lastSession": "Last session",
       "sessions": "{count} sessions",
       "viewSessions": "View sessions",
+      "unknown": "Unknown student",
       "loadError": "Failed to load students"
     }
   },

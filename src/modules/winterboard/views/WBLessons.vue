@@ -119,10 +119,12 @@ import { useI18n } from 'vue-i18n'
 import LessonCard from '../components/lessons/LessonCard.vue'
 import LessonFilterBar from '../components/lessons/LessonFilterBar.vue'
 import lessonsApi from '@/api/lessons'
+import { useAuthStore } from '@/modules/auth/store/authStore'
 import { useToast } from '../composables/useToast'
 
 const { t } = useI18n()
 const router = useRouter()
+const authStore = useAuthStore()
 const { showToast } = useToast()
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -189,7 +191,16 @@ async function loadLessons(): Promise<void> {
   loading.value = true
   error.value = null
   try {
-    const res = await lessonsApi.listMyLessons()
+    // Backend requires from/to params; use wide range to fetch all relevant lessons
+    const now = new Date()
+    const yearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate())
+    const yearAhead = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate())
+    const role = (authStore.user as any)?.role ?? 'tutor'
+    const res = await lessonsApi.listMyLessons({
+      from: yearAgo.toISOString(),
+      to: yearAhead.toISOString(),
+      role,
+    })
     lessons.value = res?.results ?? res ?? []
   } catch (err) {
     const msg = err instanceof Error ? err.message : t('winterboard.lessons.loadError')

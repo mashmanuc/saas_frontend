@@ -71,7 +71,7 @@ const LighthouseCalendarView = () => import('../views/__lighthouse__/LighthouseC
 const RoleSelectionView = () => import('../views/RoleSelectionView.vue')
 
 // Winterboard v3 (lazy-loaded module routes)
-import winterboardRoutes, { winterboardSessionListRoute } from '../modules/winterboard/router'
+import winterboardStandaloneRoutes, { winterboardSessionListRoute, winterboardPageRoutes } from '../modules/winterboard/router'
 
 const routes = [
   // Role selection landing page (root redirect)
@@ -879,6 +879,8 @@ const routes = [
       },
       // FIX-5: Winterboard session list — inside PageShell for header + sidebar
       winterboardSessionListRoute,
+      // Winterboard page routes — inside PageShell for header + sidebar
+      ...winterboardPageRoutes,
     ],
   },
   // P0.3: Lighthouse route без auth для performance testing
@@ -895,8 +897,8 @@ const routes = [
     component: () => import('../modules/reviews/views/TutorReviewsView.vue'),
     meta: { requiresAuth: false },
   },
-  // Winterboard v3 routes (top-level, own layout)
-  ...winterboardRoutes,
+  // Winterboard v3 standalone routes (top-level, own layout — solo room, public, classroom)
+  ...winterboardStandaloneRoutes,
   { path: '/:pathMatch(.*)*', redirect: '/start' },
 ]
 

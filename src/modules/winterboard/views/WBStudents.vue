@@ -74,6 +74,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import apiClient from '@/utils/apiClient'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -94,11 +95,15 @@ async function fetchStudents(): Promise<void> {
   loading.value = true
   error.value = null
   try {
-    // TODO: replace with real API when students endpoint is available
-    // Candidates: /api/v1/users/?role=student, /api/v1/contacts/?role=student
-    // const res = await apiClient.get('/users/students/')
-    // students.value = res.data?.results ?? res.data ?? []
-    students.value = []
+    const res = await apiClient.get('/classroom/my-students/', { params: { limit: 200 } })
+    const data = res?.results ?? res ?? []
+    students.value = data.map((s: any) => ({
+      id: s.student_id ?? s.id,
+      display_name: [s.first_name, s.last_name].filter(Boolean).join(' ') || s.email || t('winterboard.students.unknown'),
+      avatar_url: s.avatar_url || null,
+      last_session_at: s.last_session_at || null,
+      sessions_count: s.sessions_count ?? 0,
+    }))
   } catch (e) {
     error.value = e instanceof Error ? e.message : t('winterboard.students.loadError')
     console.error('[WB:Students] Failed to load students', e)
