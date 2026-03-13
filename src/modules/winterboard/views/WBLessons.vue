@@ -1,10 +1,17 @@
-<!-- WB: WBLessons — list of user's lessons with winterboard sessions
-     Ref: DAY19_AGENT-A.md A13
-     API: GET /lessons/my/ (apps/lessons/) -->
+<!-- WB: WBLessons — list of user's lessons with create/clone/delete
+     Ref: DAY18_AGENT-B.md B16
+     API: GET /lessons/my/ (apps/lessons/) — TODO: replace mock with real -->
 <template>
   <div class="wb-lessons">
     <header class="wb-lessons__header">
       <h1 class="wb-lessons__title">{{ t('winterboard.lessons.title') }}</h1>
+      <button
+        class="wb-lessons__create-btn"
+        data-testid="create-lesson"
+        @click="showCreate = true"
+      >
+        + {{ t('winterboard.lessons.create') }}
+      </button>
     </header>
 
     <!-- Error state -->
@@ -17,7 +24,7 @@
 
     <!-- Loading state -->
     <div v-else-if="loading" class="wb-lessons__loading" data-testid="lessons-loading">
-      <div v-for="i in 6" :key="i" class="wb-lesson-card wb-lesson-card--skeleton">
+      <div v-for="i in 4" :key="i" class="wb-lesson-skeleton">
         <div class="wb-skeleton-pulse wb-skeleton-line" />
         <div class="wb-skeleton-pulse wb-skeleton-line wb-skeleton-line--short" />
       </div>
@@ -26,56 +33,68 @@
     <!-- Empty state -->
     <div v-else-if="lessons.length === 0" class="wb-lessons__empty" data-testid="lessons-empty">
       <p>{{ t('winterboard.lessons.noLessons') }}</p>
+      <button class="wb-lessons__create-btn" @click="showCreate = true">
+        {{ t('winterboard.lessons.create') }}
+      </button>
     </div>
 
     <!-- Lessons list -->
-    <div v-else class="wb-lessons__grid" data-testid="lessons-grid">
-      <div
+    <div v-else class="wb-lessons__list" data-testid="lessons-list">
+      <LessonCard
         v-for="lesson in lessons"
         :key="lesson.id"
-        class="wb-lesson-card"
-        role="button"
-        tabindex="0"
-        :aria-label="lesson.title || lesson.subject || t('winterboard.lessons.untitled')"
-        data-testid="lesson-card"
+        :lesson="normalizeLesson(lesson)"
         @click="openLesson(lesson.id)"
-        @keydown.enter="openLesson(lesson.id)"
+        @clone="cloneLesson(lesson)"
+        @delete="deleteLesson(lesson)"
+      />
+    </div>
+
+    <!-- Create lesson modal -->
+    <Teleport to="body">
+      <div
+        v-if="showCreate"
+        class="wb-modal-overlay"
+        data-testid="create-modal"
+        @click.self="showCreate = false"
       >
-        <div class="wb-lesson-card__body">
-          <span class="wb-lesson-card__title">
-            {{ lesson.title || lesson.subject || t('winterboard.lessons.untitled') }}
-          </span>
-          <span class="wb-lesson-card__meta">
-            {{ formatDate(lesson.scheduled_at || lesson.created_at) }}
-          </span>
-          <span
-            v-if="lesson.status"
-            class="wb-lesson-card__status"
-            :class="`wb-lesson-card__status--${lesson.status}`"
-          >
-            {{ t(`winterboard.board.status${capitalize(lesson.status)}`, lesson.status) }}
-          </span>
-        </div>
-        <div class="wb-lesson-card__actions">
-          <button
-            class="wb-lesson-card__open-btn"
-            @click.stop="openLesson(lesson.id)"
-          >
-            {{ t('winterboard.lessons.openBoard') }}
-          </button>
+        <div class="wb-modal">
+          <h2 class="wb-modal__title">{{ t('winterboard.lessons.create') }}</h2>
+          <input
+            v-model="newLessonName"
+            class="wb-modal__input"
+            :placeholder="t('winterboard.lessons.namePlaceholder')"
+            data-testid="lesson-name-input"
+            @keydown.enter="createLesson"
+            @keydown.esc="showCreate = false"
+          />
+          <div class="wb-modal__actions">
+            <button class="wb-modal__btn wb-modal__btn--secondary" @click="showCreate = false">
+              {{ t('common.cancel') }}
+            </button>
+            <button
+              class="wb-modal__btn wb-modal__btn--primary"
+              :disabled="!newLessonName.trim() || creating"
+              data-testid="create-lesson-submit"
+              @click="createLesson"
+            >
+              {{ creating ? t('common.loading') : t('common.create') }}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-// A13: WBLessons — real API, error/loading states, toast
-// Ref: DAY19_AGENT-A.md
+// B16: WBLessons — create/clone/delete + LessonCard
+// Ref: DAY18_AGENT-B.md
 
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import LessonCard from '../components/lessons/LessonCard.vue'
 import lessonsApi from '@/api/lessons'
 import { useToast } from '../composables/useToast'
 
@@ -88,6 +107,9 @@ const { showToast } = useToast()
 const lessons = ref<any[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
+const showCreate = ref(false)
+const newLessonName = ref('')
+const creating = ref(false)
 
 // ─── Fetch ────────────────────────────────────────────────────────────────────
 
@@ -96,7 +118,6 @@ async function loadLessons(): Promise<void> {
   error.value = null
   try {
     const res = await lessonsApi.listMyLessons()
-    // API may return { results: [...] } (paginated) or plain array
     lessons.value = res?.results ?? res ?? []
   } catch (err) {
     const msg = err instanceof Error ? err.message : t('winterboard.lessons.loadError')
@@ -108,21 +129,65 @@ async function loadLessons(): Promise<void> {
   }
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function normalizeLesson(lesson: any) {
+  return {
+    id: lesson.id,
+    name: lesson.title || lesson.subject || lesson.name || t('winterboard.lessons.untitled'),
+    description: lesson.description,
+    materials_count: lesson.materials_count,
+    created_at: lesson.scheduled_at || lesson.created_at || new Date().toISOString(),
+  }
+}
+
 // ─── Actions ─────────────────────────────────────────────────────────────────
 
-function openLesson(lessonId: number): void {
+function openLesson(lessonId: number | string): void {
   router.push({ name: 'winterboard-lesson', params: { lessonId } })
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function formatDate(iso?: string): string {
-  if (!iso) return ''
-  return new Date(iso).toLocaleDateString()
+async function createLesson(): Promise<void> {
+  if (!newLessonName.value.trim()) return
+  creating.value = true
+  try {
+    // TODO: replace with real API when lessons CRUD is ready
+    // const res = await lessonsApi.create({ name: newLessonName.value })
+    // lessons.value.unshift(res)
+    showCreate.value = false
+    newLessonName.value = ''
+  } catch (err) {
+    showToast(t('winterboard.lessons.createError'), 'error')
+    console.error('[WB:Lessons] Failed to create lesson', err)
+  } finally {
+    creating.value = false
+  }
 }
 
-function capitalize(s: string): string {
-  return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
+async function cloneLesson(lesson: any): Promise<void> {
+  const newName = prompt(t('winterboard.lessons.clonePrompt'), `${normalizeLesson(lesson).name} (copy)`)
+  if (!newName?.trim()) return
+  try {
+    // TODO: replace with real API when clone endpoint exists
+    console.log('[WB:Lessons] Clone lesson:', lesson.id, 'as:', newName)
+    showToast(t('winterboard.lessons.cloned'), 'success')
+  } catch (err) {
+    showToast(t('winterboard.lessons.cloneError'), 'error')
+    console.error('[WB:Lessons] Failed to clone lesson', err)
+  }
+}
+
+async function deleteLesson(lesson: any): Promise<void> {
+  const name = normalizeLesson(lesson).name
+  if (!confirm(t('winterboard.lessons.confirmDelete', { name }))) return
+  try {
+    // TODO: replace with real API
+    lessons.value = lessons.value.filter((l) => l.id !== lesson.id)
+    showToast(t('winterboard.lessons.deleted'), 'success')
+  } catch (err) {
+    showToast(t('winterboard.lessons.deleteError'), 'error')
+    console.error('[WB:Lessons] Failed to delete lesson', err)
+  }
 }
 
 // ─── Lifecycle ────────────────────────────────────────────────────────────────

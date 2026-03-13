@@ -1,6 +1,6 @@
-<!-- WB: WBLessonDetail — lesson detail with associated winterboard sessions
-     Ref: DAY19_AGENT-A.md A13
-     API: GET /lessons/{id}/room/ + GET /winterboard/sessions/?lesson={id} -->
+<!-- WB: WBLessonDetail — 3 tabs: materials / boards / notes
+     Ref: DAY18_AGENT-B.md B16
+     API: GET /winterboard/sessions/?lesson={id} — НЕ /winterboard/boards -->
 <template>
   <div class="wb-lesson-detail">
     <!-- Error state -->
@@ -21,71 +21,157 @@
     <!-- Content -->
     <template v-else>
       <header class="wb-lesson-detail__header">
-        <button class="wb-lesson-detail__back" @click="$router.back()">
+        <button
+          class="wb-lesson-detail__back"
+          data-testid="back-btn"
+          @click="router.back()"
+        >
           ← {{ t('common.back') }}
         </button>
         <h1 class="wb-lesson-detail__title">
-          {{ lesson?.title || lesson?.subject || t('winterboard.lessons.untitled') }}
+          {{ lesson?.title || lesson?.subject || lesson?.name || t('winterboard.lessons.untitled') }}
         </h1>
-        <div v-if="lesson?.status" class="wb-lesson-detail__status">
-          {{ lesson.status }}
-        </div>
+        <button
+          class="wb-lesson-detail__start-btn"
+          data-testid="start-lesson-btn"
+          @click="startLesson"
+        >
+          ▶ {{ t('winterboard.lessons.start') }}
+        </button>
       </header>
 
-      <!-- Open in classroom button -->
-      <section class="wb-lesson-detail__actions">
-        <router-link
-          v-if="lesson?.id"
-          :to="{ name: 'winterboard-classroom', params: { lessonId: lesson.id } }"
-          class="wb-lesson-detail__open-btn"
-          data-testid="open-classroom-btn"
+      <!-- Tabs -->
+      <div class="wb-lesson-detail__tabs" role="tablist">
+        <button
+          v-for="tab in TABS"
+          :key="tab"
+          role="tab"
+          class="wb-lesson-detail__tab"
+          :class="{ 'wb-lesson-detail__tab--active': activeTab === tab }"
+          :aria-selected="activeTab === tab"
+          :data-testid="`tab-${tab}`"
+          @click="activeTab = tab"
         >
-          {{ t('winterboard.lessons.openClassroom') }}
-        </router-link>
-      </section>
+          {{ t(`winterboard.lessons.${tab}`) }}
+        </button>
+      </div>
 
-      <!-- Associated sessions -->
-      <section class="wb-lesson-detail__sessions">
-        <h2 class="wb-lesson-detail__section-title">
-          {{ t('winterboard.lessons.boardSessions') }}
-        </h2>
-
-        <div v-if="loadingSessions" class="wb-lesson-detail__sessions-grid" data-testid="sessions-loading">
-          <div v-for="i in 3" :key="i" class="wb-session-item wb-session-item--skeleton">
-            <div class="wb-skeleton-pulse wb-skeleton-line" />
-          </div>
-        </div>
-
-        <div v-else-if="sessions.length === 0" class="wb-lesson-detail__sessions-empty" data-testid="sessions-empty">
-          {{ t('winterboard.lessons.noSessions') }}
-        </div>
-
-        <div v-else class="wb-lesson-detail__sessions-grid" data-testid="sessions-grid">
-          <div
-            v-for="session in sessions"
-            :key="session.id"
-            class="wb-session-item"
-            role="button"
-            tabindex="0"
-            @click="openSession(session.id)"
-            @keydown.enter="openSession(session.id)"
+      <div class="wb-lesson-detail__content">
+        <!-- Materials tab -->
+        <div v-if="activeTab === 'materials'" data-testid="tab-panel-materials">
+          <button
+            class="wb-lesson-detail__add-btn"
+            data-testid="add-material-btn"
+            @click="showAddMaterial = true"
           >
-            <span class="wb-session-item__name">
-              {{ session.name || t('winterboard.boards.untitled') }}
-            </span>
-            <span class="wb-session-item__date">
-              {{ formatTimeAgo(session.updated_at) }}
-            </span>
+            + {{ t('winterboard.lessons.addMaterial') }}
+          </button>
+
+          <div
+            v-if="materials.length === 0"
+            class="wb-lesson-detail__empty"
+            data-testid="materials-empty"
+          >
+            {{ t('winterboard.lessons.noMaterials') }}
+          </div>
+
+          <div v-else class="wb-lesson-detail__materials">
+            <div
+              v-for="(material, idx) in materials"
+              :key="material.id"
+              class="wb-material-item"
+              :data-testid="`material-${idx}`"
+            >
+              <img
+                v-if="material.thumbnail_url"
+                :src="material.thumbnail_url"
+                :alt="material.name"
+                width="48"
+                height="48"
+                class="wb-material-item__thumb"
+              />
+              <span class="wb-material-item__name">{{ material.name }}</span>
+              <button
+                class="wb-material-item__remove"
+                @click="removeMaterial(material)"
+              >✕</button>
+            </div>
           </div>
         </div>
-      </section>
+
+        <!-- Boards tab (sessions) -->
+        <div v-else-if="activeTab === 'boards'" data-testid="tab-panel-boards">
+          <div v-if="loadingSessions" data-testid="sessions-loading">
+            <div v-for="i in 3" :key="i" class="wb-session-item wb-session-item--skeleton">
+              <div class="wb-skeleton-pulse wb-skeleton-line" />
+            </div>
+          </div>
+
+          <div
+            v-else-if="sessions.length === 0"
+            class="wb-lesson-detail__empty"
+            data-testid="sessions-empty"
+          >
+            {{ t('winterboard.lessons.noBoards') }}
+          </div>
+
+          <div v-else class="wb-lesson-detail__sessions-grid" data-testid="sessions-grid">
+            <div
+              v-for="session in sessions"
+              :key="session.id"
+              class="wb-session-item"
+              role="button"
+              tabindex="0"
+              @click="openSession(session.id)"
+              @keydown.enter="openSession(session.id)"
+            >
+              <span class="wb-session-item__name">
+                {{ session.name || t('winterboard.boards.untitled') }}
+              </span>
+              <span class="wb-session-item__date">
+                {{ formatTimeAgo(session.updated_at) }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notes tab -->
+        <div v-else-if="activeTab === 'notes'" data-testid="tab-panel-notes">
+          <textarea
+            v-model="notes"
+            class="wb-lesson-detail__notes"
+            :placeholder="t('winterboard.lessons.notesPlaceholder')"
+            rows="10"
+            data-testid="notes-textarea"
+            @blur="saveNotes"
+          />
+        </div>
+      </div>
     </template>
+
+    <!-- Add material modal -->
+    <Teleport to="body">
+      <div
+        v-if="showAddMaterial"
+        class="wb-modal-overlay"
+        data-testid="add-material-modal"
+        @click.self="showAddMaterial = false"
+      >
+        <div class="wb-modal">
+          <h2 class="wb-modal__title">{{ t('winterboard.lessons.pickFromLibrary') }}</h2>
+          <p class="wb-modal__desc">{{ t('winterboard.lessons.libraryPickerComingSoon') }}</p>
+          <button class="wb-modal__btn wb-modal__btn--secondary" @click="showAddMaterial = false">
+            {{ t('common.close') }}
+          </button>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-// A13: WBLessonDetail — real API, error/loading states, toast
-// Ref: DAY19_AGENT-A.md
+// B16: WBLessonDetail — 3 tabs: materials / boards / notes
+// Ref: DAY18_AGENT-B.md
 
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
@@ -94,21 +180,26 @@ import lessonsApi from '@/api/lessons'
 import apiClient from '@/utils/apiClient'
 import { useToast } from '../composables/useToast'
 
-const props = defineProps<{
-  lessonId: string | number
-}>()
+const props = defineProps<{ lessonId: string | number }>()
 
 const { t } = useI18n()
 const router = useRouter()
 const { showToast } = useToast()
 
+const TABS = ['materials', 'boards', 'notes'] as const
+type Tab = (typeof TABS)[number]
+
 // ─── State ────────────────────────────────────────────────────────────────────
 
 const lesson = ref<any>(null)
 const sessions = ref<any[]>([])
+const materials = ref<{ id: number; name: string; thumbnail_url: string; content_type: string }[]>([])
+const notes = ref('')
+const activeTab = ref<Tab>('materials')
 const loading = ref(false)
 const loadingSessions = ref(false)
 const error = ref<string | null>(null)
+const showAddMaterial = ref(false)
 
 // ─── Fetch ────────────────────────────────────────────────────────────────────
 
@@ -130,7 +221,7 @@ async function loadLesson(): Promise<void> {
 async function loadSessions(): Promise<void> {
   loadingSessions.value = true
   try {
-    // GET /v1/winterboard/sessions/?lesson={id}
+    // ✅ GET /v1/winterboard/sessions/?lesson={id} — НЕ /winterboard/boards
     const res = await apiClient.get('/v1/winterboard/sessions/', { params: { lesson: props.lessonId } })
     sessions.value = (res as any)?.results ?? (res as any) ?? []
   } catch (err) {
@@ -144,15 +235,28 @@ async function loadSessions(): Promise<void> {
 
 async function loadData(): Promise<void> {
   await loadLesson()
-  if (!error.value) {
-    await loadSessions()
-  }
+  if (!error.value) await loadSessions()
 }
 
 // ─── Actions ─────────────────────────────────────────────────────────────────
 
 function openSession(sessionId: string): void {
   router.push({ name: 'winterboard-solo', params: { id: sessionId } })
+}
+
+function startLesson(): void {
+  // TODO: redirect to create new session for this lesson
+  router.push({ name: 'winterboard-classroom', params: { lessonId: props.lessonId } })
+}
+
+function removeMaterial(material: { id: number }): void {
+  // TODO: call real API
+  materials.value = materials.value.filter((m) => m.id !== material.id)
+}
+
+function saveNotes(): void {
+  // TODO: save notes via API
+  console.log('[WB:LessonDetail] Save notes:', notes.value)
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
