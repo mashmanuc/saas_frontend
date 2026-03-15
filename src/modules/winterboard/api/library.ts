@@ -114,6 +114,17 @@ export async function toggleFavorite(id: number, current: boolean): Promise<Libr
 
 // ─── Recent ────────────────────────────────────────────────────────────────
 
+/**
+ * Phase 10: Add YouTube video as library asset (JSON, not multipart).
+ * Backend creates ContentItem + LibraryAsset atomically. Dedup by video_id.
+ */
+export async function addYouTubeAsset(youtubeUrl: string, folderId?: number | null): Promise<LibraryAsset> {
+  return apiClient.post<LibraryAsset>(`${BASE}/assets/`, {
+    youtube_url: youtubeUrl,
+    ...(folderId != null ? { folder: folderId } : {}),
+  })
+}
+
 export async function fetchRecentAssets(): Promise<LibraryAsset[]> {
   return apiClient.get<LibraryAsset[]>(`${BASE}/recent/`)
 }

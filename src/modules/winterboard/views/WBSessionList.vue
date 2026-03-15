@@ -232,7 +232,8 @@ async function fetchSessions(): Promise<void> {
 // ── Actions ───────────────────────────────────────────────────────────────
 function openSession(id: string): void {
   openMenuId.value = null
-  router.push({ name: 'winterboard-solo', params: { id } })
+  const resolved = router.resolve({ name: 'winterboard-solo', params: { id } })
+  window.open(resolved.href, '_blank', 'noopener')
 }
 
 async function handleDuplicate(id: string): Promise<void> {
@@ -240,7 +241,8 @@ async function handleDuplicate(id: string): Promise<void> {
   try {
     const dup = await winterboardApi.duplicateSession(id)
     showToast(t('winterboard.sessions.duplicated'), 'success')
-    router.push({ name: 'winterboard-solo', params: { id: dup.id } })
+    const resolved = router.resolve({ name: 'winterboard-solo', params: { id: dup.id } })
+    window.open(resolved.href, '_blank', 'noopener')
   } catch (err) {
     console.error('[WB:SessionList] Duplicate failed', err)
     showToast(t('winterboard.sessions.duplicateError'), 'error')

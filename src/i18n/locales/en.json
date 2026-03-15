@@ -3807,15 +3807,15 @@
       "helpIconDesc": "Use the \"?\" icon in the top bar to open docs or ping support.",
       "howToCreate": "How to create slots",
       "howToEdit": "How to edit slots",
-      "intro": "Everything you need to know to manage availability and lessons in one place.",
+      "intro": "Your calendar shows availability, booked lessons, and blocked time. Click on a lesson to go to the board.",
       "limits": "Limits & best practices",
-      "maxDuration": "Slots longer than 3 hours may be split for better visibility.",
+      "maxDuration": "Click on any booked lesson to open it and go to the board.",
       "navigation": "Navigation",
       "navigationDesc": "Use arrows or keyboard shortcuts to move between weeks. \"Today\" jumps back to the current week.",
       "noDuplicates": "Avoid duplicate overlapping slots to keep booking simple.",
       "noOverlap": "Overlapping lessons and availability are blocked automatically.",
-      "setupButton": "Setup button",
-      "setupButtonDesc": "\"Set booking hours\" opens the availability editor for full schedule control.",
+      "setupButton": "Mark free time",
+      "setupButtonDesc": "\"Mark free time\" opens the editor where you set when students can book you.",
       "title": "Calendar guide"
     },
     "header": {
@@ -6331,7 +6331,8 @@
         "pdf": "PDF",
         "audio": "Audio",
         "video": "Video",
-        "presentation": "Presentations"
+        "presentation": "Presentations",
+        "youtube": "YouTube"
       }
     },
     "templates": {
@@ -6669,7 +6670,10 @@
       "deleteError": "Failed to delete file",
       "favoriteError": "Failed to update favorite",
       "close": "Close",
-      "confirmDelete": "Delete {name}?"
+      "confirmDelete": "Delete {name}?",
+      "ytInvalidUrl": "Invalid YouTube URL",
+      "ytAdded": "YouTube video added",
+      "ytError": "Failed to add YouTube video"
     },
     "share": {
       "title": "Share Board",
@@ -6699,6 +6703,11 @@
         "unlimited": "Unlimited"
       },
       "allowDownload": "Allow download",
+      "showMaterials": "Show materials publicly",
+      "lessonTitle": "Lesson title",
+      "lessonTitlePlaceholder": "e.g. Quadratic equations",
+      "customSlug": "Custom URL slug",
+      "customSlugHint": "(optional)",
       "status": {
         "active": "Active",
         "expired": "Expired",
@@ -6757,6 +6766,52 @@
       "showPagePanel": "Show page panel",
       "syncError": "Sync error",
       "followMode": "Follow mode"
+    },
+    "selection": {
+      "toolbar": "Selection toolbar",
+      "bringToFront": "Bring to front",
+      "sendToBack": "Send to back",
+      "duplicate": "Duplicate",
+      "lock": "Lock",
+      "unlock": "Unlock",
+      "delete": "Delete"
+    },
+    "youtube": {
+      "insert": "Insert YouTube video",
+      "modalTitle": "Insert YouTube video",
+      "urlLabel": "URL",
+      "urlPlaceholder": "https://www.youtube.com/watch?v=...",
+      "preview": "Video preview",
+      "previewHint": "Paste a YouTube URL to see preview",
+      "titleLabel": "Title (optional)",
+      "titlePlaceholder": "Video title...",
+      "cancel": "Cancel",
+      "add": "Add to board",
+      "close": "Close",
+      "invalidUrl": "Invalid YouTube URL"
+    },
+    "lessonMap": {
+      "title": "Lesson Map",
+      "empty": "No markers yet. Add your first!",
+      "addMarker": "Add marker",
+      "deleteMarker": "Delete marker",
+      "category": {
+        "theory": "Theory",
+        "formula": "Formula",
+        "example": "Example",
+        "practice": "Practice",
+        "solution": "Solution",
+        "custom": "Other"
+      }
+    },
+    "markerModal": {
+      "title": "Create marker",
+      "close": "Close",
+      "nameLabel": "Title",
+      "namePlaceholder": "Enter marker title",
+      "categoryLabel": "Category",
+      "cancel": "Cancel",
+      "create": "Create"
     },
     "responsive": {
       "tapToShowUI": "Tap to show UI"
@@ -6832,6 +6887,18 @@
       "statusDraft": "Draft",
       "statusInProgress": "In Progress",
       "statusCompleted": "Completed"
+    },
+    "replay": {
+      "viewReplay": "View lesson replay",
+      "viewingMode": "Viewing mode — editing disabled",
+      "exitReplay": "Exit"
+    },
+    "onboarding": {
+      "toolbar": "Drawing tools. Pick a pen and start!",
+      "materials": "Drag images, videos or YouTube from here onto the board",
+      "replay": "Review the entire lesson after it ends here",
+      "selection": "Click an object to see action buttons",
+      "dismiss": "Got it"
     },
     "lessons": {
       "title": "Lessons",
@@ -7111,6 +7178,34 @@
       "dots": "Dots",
       "lines": "Lines",
       "opacity": "Opacity"
+    }
+  },
+  "publicLesson": {
+    "header": {
+      "hourShort": "h",
+      "minShort": "min"
+    },
+    "player": {
+      "ariaLabel": "Lesson replay player",
+      "timeline": "Replay timeline",
+      "play": "Play",
+      "pause": "Pause",
+      "speed": "Playback speed"
+    },
+    "markers": {
+      "title": "Lesson markers",
+      "empty": "No markers in this lesson"
+    },
+    "materials": {
+      "title": "Lesson materials",
+      "empty": "No materials available",
+      "open": "Open"
+    },
+    "cta": {
+      "priceFrom": "From {price} UAH/hour",
+      "book": "Book a lesson",
+      "viewProfile": "View profile",
+      "hint": "Watch this lesson and book your first session with this tutor"
     }
   }
 }

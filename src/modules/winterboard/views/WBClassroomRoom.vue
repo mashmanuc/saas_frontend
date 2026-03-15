@@ -108,6 +108,28 @@
           ↪
         </button>
 
+        <!-- YouTube insert (Phase 10) -->
+        <button
+          type="button"
+          class="wb-header-btn"
+          :disabled="isDrawingDisabled"
+          :title="t('winterboard.youtube.insert')"
+          @click="showYouTubeModal = true"
+        >
+          ▶️
+        </button>
+
+        <!-- Share (teacher only) -->
+        <button
+          v-if="classroomRole.isTeacher.value && sessionId"
+          type="button"
+          class="wb-header-btn"
+          :title="t('winterboard.room.share')"
+          @click="showShareDialog = true"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="12" cy="4" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="2" stroke="currentColor" stroke-width="1.5"/><path d="M5.7 7l4.6-2M5.7 9l4.6 2" stroke="currentColor" stroke-width="1.5"/></svg>
+        </button>
+
         <!-- End session (teacher only) -->
         <button
           v-if="classroomRole.canEnd.value"
@@ -197,9 +219,11 @@
 
         <!-- Materials tab: sidebar (lesson mode) or library (browse mode) -->
         <ContentSidebar
+          ref="contentSidebarRef"
           v-else-if="activeTab === 'materials' && lessonIdNum"
           :lesson-id="props.lessonId"
           :is-tutor="classroomRole.isTeacher.value"
+          @youtube-add="handleYouTubeAdd"
         />
         <ContentPanel
           v-else-if="activeTab === 'materials'"
@@ -234,8 +258,20 @@
           @undo="handleUndo"
           @redo="handleRedo"
           @clear="handleClear"
+          @youtube-insert="showYouTubeModal = true"
         />
       </aside>
+
+      <!-- Phase 11 A4: Page thumbnails (teacher only) -->
+      <WBPageThumbnails
+        v-if="classroomRole.isTeacher.value"
+        :pages="store.pages"
+        :current-index="store.currentPageIndex"
+        @select="store.goToPage($event)"
+        @add="handlePageAdd"
+        @delete="store.deletePageUndoable($event)"
+        @reorder="(from: number, to: number) => store.reorderPages(from, to)"
+      />
 
       <!-- Canvas -->
       <div
@@ -249,15 +285,6 @@
         <Transition name="wb-fade">
           <WBCanvasLoader v-if="isLoading" />
         </Transition>
-
-        <!-- Grid overlay (renders behind strokes) -->
-        <WBGridOverlay
-          v-show="!isLoading"
-          :grid-type="gridOverlay.gridType.value"
-          :width="store.pageWidth"
-          :height="store.pageHeight"
-          :zoom="store.zoom"
-        />
 
         <WBCanvas
           v-show="!isLoading"
@@ -291,6 +318,86 @@
         />
       </div>
     </div>
+
+    <!-- P2: Selection toolbar — floating actions for selected objects (desktop only) -->
+    <WBSelectionToolbar
+      :selected-ids="store.selectedIds"
+      :zoom="store.zoom"
+      :canvas-rect="canvasContainerRef?.getBoundingClientRect() ?? null"
+      :mode="mode"
+      :is-locked="hasLockedInSelection"
+      :bbox="selectionBBox"
+      @bring-to-front="store.bringToFront(store.selectedIds[0])"
+      @send-to-back="store.sendToBack(store.selectedIds[0])"
+      @duplicate="store.copySelectedToClipboard(); store.pasteFromClipboard()"
+      @lock="locking.lockSelected()"
+      @unlock="locking.unlockSelected()"
+      @delete="handleDeleteSelected()"
+    />
+
+    <!-- P3: YouTube insert modal -->
+    <WBYouTubeModal
+      :visible="showYouTubeModal"
+      @close="showYouTubeModal = false"
+      @submit="handleYouTubeSubmit"
+    />
+
+    <!-- Share dialog -->
+    <WBShareDialog
+      v-if="showShareDialog && sessionId"
+      :session-id="sessionId"
+      :is-open="showShareDialog"
+      @close="showShareDialog = false"
+    />
+
+    <!-- Phase 11: Replay mode banner -->
+    <WBReplayBanner
+      v-if="mode === 'replay'"
+      @exit="exitReplayMode"
+    />
+
+    <!-- Phase 11: Replay mode controls (teacher only) -->
+    <WBReplayControls
+      v-if="mode === 'replay' && resolvedSessionId"
+      :session-id="resolvedSessionId"
+      @exit="exitReplayMode"
+      @operation="onReplayOperation"
+    />
+
+    <!-- Phase 11: Lesson Map sidebar in replay mode -->
+    <WBLessonMap
+      v-if="mode === 'replay' && resolvedSessionId"
+      :markers="replayMarkers"
+      :active-marker-id="replayActiveMarkerId"
+      :can-edit="classroomRole.isTeacher.value"
+      @seek="handleMarkerSeek"
+      @create="showMarkerModal = true"
+      @delete="handleMarkerDelete"
+    />
+
+    <!-- Phase 11: Marker create modal -->
+    <WBMarkerCreateModal
+      :visible="showMarkerModal"
+      @close="showMarkerModal = false"
+      @submit="handleMarkerCreateFromModal"
+    />
+
+    <!-- Phase 11 B5: Onboarding hints for empty board -->
+    <WBOnboardingHints
+      v-if="mode === 'edit' && !isLoading"
+      :is-empty="isBoardEmpty"
+    />
+
+    <!-- Phase 11: Replay entry button (teacher only, edit mode) -->
+    <button
+      v-if="mode === 'edit' && resolvedSessionId && classroomRole.isTeacher.value"
+      class="wb-classroom-room__replay-btn"
+      data-testid="replay-button"
+      :aria-label="t('winterboard.replay.viewReplay')"
+      @click="enterReplayMode"
+    >
+      &#9654; {{ t('winterboard.replay.viewReplay') }}
+    </button>
 
     <!-- Phase 3: Upload progress indicator -->
     <WBUploadIndicator
@@ -369,6 +476,7 @@ import { useBoardClipboard } from '../composables/useBoardClipboard'
 import { useAutosave } from '../composables/useAutosave'
 import { usePresence } from '../composables/usePresence'
 import { useFollowMode } from '../composables/useFollowMode'
+import { useLocking } from '../composables/useLocking'
 import { useAnnouncer } from '../composables/useAnnouncer'
 import { useClassroomRole } from '../composables/useClassroomRole'
 import { useClassroomSession } from '../composables/useClassroomSession'
@@ -382,13 +490,27 @@ import WBToolbar from '../components/toolbar/WBToolbar.vue'
 import WBRemoteCursors from '../components/cursors/WBRemoteCursors.vue'
 import WBCanvasLoader from '../components/loading/WBCanvasLoader.vue'
 import WBUploadIndicator from '../components/status/WBUploadIndicator.vue'
-import WBGridOverlay from '../components/canvas/WBGridOverlay.vue'
 import WBGridButton from '../components/canvas/WBGridButton.vue'
+import WBPageThumbnails from '../components/pages/WBPageThumbnails.vue'
+import WBSelectionToolbar from '../components/canvas/WBSelectionToolbar.vue'
+import WBYouTubeModal from '../components/toolbar/WBYouTubeModal.vue'
+import WBShareDialog from '../components/sharing/WBShareDialog.vue'
+import WBReplayControls from '../components/replay/WBReplayControls.vue'
+import WBLessonMap from '../components/replay/WBLessonMap.vue'
+import WBReplayBanner from '../components/replay/WBReplayBanner.vue'
+import WBMarkerCreateModal from '../components/replay/WBMarkerCreateModal.vue'
+import WBOnboardingHints from '../components/ui/WBOnboardingHints.vue'
+import type { BoardOperation } from '../types/replay'
+import type { WBLessonMarker } from '../types/winterboard'
+import { createLessonMarker } from '../api/replay'
 import { useGridOverlay } from '../composables/useGridOverlay'
+import { useReplayRecorder } from '../composables/useReplayRecorder'
+import { useDeviceMode } from '../composables/useDeviceMode'
 
 // Learning Content integration
 import ContentPanel from '@/modules/learning-content/components/ContentPanel.vue'
 import ContentSidebar from '../components/sidebar/ContentSidebar.vue'
+import { addYouTubeAsset } from '../api/library'
 import WBDragGhost from '../components/sidebar/WBDragGhost.vue'
 import { useContentDrop } from '../composables/useContentDrop'
 import type { ContentDragPayload } from '@/modules/learning-content'
@@ -416,8 +538,13 @@ const { t } = useI18n()
 const { announce } = useAnnouncer()
 
 const history = useHistory({ maxSize: 100 })
+const locking = useLocking(store)
+const deviceModeState = useDeviceMode()
 
 const resolvedSessionId = ref<string | null>(props.sessionId ?? null)
+
+// P2: edit/replay mode (classroom is always edit for now)
+const mode = ref<'edit' | 'replay'>('edit')
 
 // Sidebar tabs: 'students' | 'materials' | 'homework'
 const activeTab = ref<'students' | 'materials' | 'homework'>('materials')
@@ -455,6 +582,15 @@ async function fetchLessonStatus(): Promise<void> {
 }
 
 const autosave = useAutosave(resolvedSessionId)
+
+// P4: Replay recorder — batch records operations for replay timeline
+const replayRecorder = useReplayRecorder({
+  sessionId: resolvedSessionId,
+  getBoardState: () => ({
+    pages: JSON.parse(JSON.stringify(store.pages)),
+    currentPageIndex: store.currentPageIndex,
+  }),
+})
 
 // Grid overlay (background grid for the canvas)
 const gridOverlay = useGridOverlay(resolvedSessionId.value ?? 'default')
@@ -535,6 +671,19 @@ const canvasContainerRef = ref<HTMLElement | null>(null)
 const sessionName = ref('Untitled')
 const selectedId = ref<string | null>(null)
 const isLoading = ref(true)
+const showYouTubeModal = ref(false)
+const showShareDialog = ref(false)
+const replayMarkers = ref<WBLessonMarker[]>([])
+const replayActiveMarkerId = ref<string | null>(null)
+const showMarkerModal = ref(false)
+const contentSidebarRef = ref<InstanceType<typeof ContentSidebar> | null>(null)
+
+// Phase 11 B5: Board empty check for onboarding hints
+const isBoardEmpty = computed(() => {
+  const page = store.currentPage
+  if (!page) return true
+  return page.assets.length === 0 && page.strokes.length === 0
+})
 
 // ─── Computed ───────────────────────────────────────────────────────────────
 
@@ -562,6 +711,42 @@ const lessonIdNum = computed(() => {
   if (!id) return null
   const num = Number(id)
   return Number.isNaN(num) ? null : num
+})
+
+// P2: Check if any selected item is locked (for selection toolbar)
+const hasLockedInSelection = computed(() => {
+  return store.selectedIds.some((id) => store.isItemLocked(id))
+})
+
+// P2: Bounding box of selected objects for WBSelectionToolbar positioning
+const selectionBBox = computed(() => {
+  if (store.selectedIds.length === 0) return null
+  const page = store.currentPage
+  if (!page) return null
+
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+
+  for (const id of store.selectedIds) {
+    const asset = page.assets.find(a => a.id === id)
+    if (asset) {
+      minX = Math.min(minX, asset.x)
+      minY = Math.min(minY, asset.y)
+      maxX = Math.max(maxX, asset.x + asset.w)
+      maxY = Math.max(maxY, asset.y + asset.h)
+    }
+    const stroke = page.strokes.find(s => s.id === id)
+    if (stroke && stroke.points.length > 0) {
+      for (const pt of stroke.points) {
+        minX = Math.min(minX, pt.x)
+        minY = Math.min(minY, pt.y)
+        maxX = Math.max(maxX, pt.x)
+        maxY = Math.max(maxY, pt.y)
+      }
+    }
+  }
+
+  if (!isFinite(minX)) return null
+  return { x: minX, y: minY, w: maxX - minX, h: maxY - minY }
 })
 
 const roleBadgeText = computed(() => {
@@ -632,6 +817,14 @@ useKeyboard({
 function handleStrokeAdd(stroke: WBStroke): void {
   if (isDrawingDisabled.value) return
   store.addStroke(stroke)
+
+  // P4: Record replay operation
+  replayRecorder.record({
+    op_type: 'stroke_add',
+    page_id: store.currentPage?.id ?? '',
+    payload: { stroke },
+  })
+
   const page = store.currentPage
   if (page) {
     try { history.recordAdd(page.id, stroke, 'stroke') } catch (err) {
@@ -643,6 +836,13 @@ function handleStrokeAdd(stroke: WBStroke): void {
 function handleStrokeUpdate(stroke: WBStroke): void {
   if (isDrawingDisabled.value) return
   store.updateStroke(stroke)
+
+  // P4: Record replay operation
+  replayRecorder.record({
+    op_type: 'stroke_update',
+    page_id: store.currentPage?.id ?? '',
+    payload: { stroke },
+  })
 }
 
 function handleStrokeDelete(strokeId: string): void {
@@ -651,6 +851,13 @@ function handleStrokeDelete(strokeId: string): void {
   const existing = page?.strokes.find((s) => s.id === strokeId)
 
   store.deleteStroke(strokeId)
+
+  // P4: Record replay operation
+  replayRecorder.record({
+    op_type: 'stroke_delete',
+    page_id: page?.id ?? '',
+    payload: { stroke_id: strokeId },
+  })
 
   if (page && existing) {
     try { history.recordRemove(page.id, existing, 'stroke') } catch (err) {
@@ -662,6 +869,14 @@ function handleStrokeDelete(strokeId: string): void {
 function handleAssetAdd(asset: WBAsset): void {
   if (isDrawingDisabled.value) return
   store.addAsset(asset)
+
+  // P4: Record replay operation
+  replayRecorder.record({
+    op_type: 'asset_add',
+    page_id: store.currentPage?.id ?? '',
+    payload: { asset },
+  })
+
   const page = store.currentPage
   if (page) {
     try { history.recordAdd(page.id, asset, 'asset') } catch (err) {
@@ -673,6 +888,13 @@ function handleAssetAdd(asset: WBAsset): void {
 function handleAssetUpdate(asset: WBAsset): void {
   if (isDrawingDisabled.value) return
   store.updateAsset(asset)
+
+  // P4: Record replay operation
+  replayRecorder.record({
+    op_type: 'asset_update',
+    page_id: store.currentPage?.id ?? '',
+    payload: { asset },
+  })
 }
 
 function handleAssetDelete(assetId: string): void {
@@ -681,6 +903,13 @@ function handleAssetDelete(assetId: string): void {
   const existing = page?.assets.find((a) => a.id === assetId)
 
   store.deleteAsset(assetId)
+
+  // P4: Record replay operation
+  replayRecorder.record({
+    op_type: 'asset_delete',
+    page_id: page?.id ?? '',
+    payload: { asset_id: assetId },
+  })
 
   if (page && existing) {
     try { history.recordRemove(page.id, existing, 'asset') } catch (err) {
@@ -706,6 +935,115 @@ function handleDeleteSelected(): void {
   if (isStroke) store.deleteStroke(selectedId.value)
   else store.deleteAsset(selectedId.value)
   selectedId.value = null
+}
+
+// ─── P3: YouTube insert handler ─────────────────────────────────────────────
+
+function handleYouTubeSubmit(payload: { url: string; title?: string }): void {
+  showYouTubeModal.value = false
+  if (isDrawingDisabled.value) return
+  const page = store.currentPage
+  if (!page) return
+  const id = crypto.randomUUID()
+  const asset = {
+    id,
+    type: 'youtube_player' as const,
+    src: '',
+    youtubeUrl: payload.url,
+    x: (page.width ?? 1920) / 2 - 320,
+    y: (page.height ?? 1080) / 2 - 180,
+    w: 640,
+    h: 360,
+    title: payload.title,
+    locked: false,
+    zIndex: page.assets.length,
+  }
+  store.addAsset(asset as any)
+}
+
+// ─── Phase 11 FIX-1: YouTube sidebar add handler ────────────────────────────
+
+async function handleYouTubeAdd(url: string): Promise<void> {
+  try {
+    await addYouTubeAsset(url)
+    contentSidebarRef.value?.reload()
+  } catch (e) {
+    console.warn('[WBClassroomRoom] YouTube add failed:', e)
+  }
+}
+
+// ─── Phase 11: Replay mode (teacher can review the lesson) ──────────────────
+
+function enterReplayMode(): void {
+  if (!classroomRole.isTeacher.value) return
+  mode.value = 'replay'
+}
+
+function exitReplayMode(): void {
+  mode.value = 'edit'
+}
+
+function onReplayOperation(op: BoardOperation): void {
+  const payload = op.payload as Record<string, unknown>
+
+  switch (op.op_type) {
+    case 'stroke_add':
+      if (payload.stroke) store.addStroke(payload.stroke as WBStroke, { skipHistory: true })
+      break
+    case 'stroke_update':
+      if (payload.stroke) store.updateStroke(payload.stroke as WBStroke, { skipHistory: true })
+      break
+    case 'stroke_delete':
+      if (payload.stroke_id) store.deleteStroke(payload.stroke_id as string, { skipHistory: true })
+      break
+    case 'asset_add':
+      if (payload.asset) store.addAsset(payload.asset as WBAsset, { skipHistory: true })
+      break
+    case 'asset_update':
+      if (payload.asset) store.updateAsset(payload.asset as WBAsset, { skipHistory: true })
+      break
+    case 'asset_delete':
+      if (payload.asset_id) store.deleteAsset(payload.asset_id as string, { skipHistory: true })
+      break
+    case 'page_change':
+      if (typeof payload.page_index === 'number') store.goToPage(payload.page_index)
+      break
+    default:
+      console.debug('[Replay] unknown op:', op.op_type)
+  }
+}
+
+function handleMarkerSeek(marker: WBLessonMarker): void {
+  if (marker.page_id) {
+    const pageIdx = store.pages.findIndex(p => p.id === marker.page_id)
+    if (pageIdx >= 0) store.goToPage(pageIdx)
+  }
+  if (marker.board_position?.x !== undefined) {
+    store.setScroll(marker.board_position.x, marker.board_position.y)
+  }
+}
+
+async function handleMarkerCreate(data: { title: string; category: string }): Promise<void> {
+  if (!resolvedSessionId.value) return
+  await createLessonMarker(resolvedSessionId.value, {
+    title: data.title,
+    operation_index: 0,
+    page_id: store.currentPage?.id ?? '',
+    board_position: { x: store.scrollX, y: store.scrollY },
+    thumbnail_url: '',
+    category: data.category as WBLessonMarker['category'],
+    order: replayMarkers.value.length,
+  })
+}
+
+async function handleMarkerCreateFromModal(data: { title: string; category: string }): Promise<void> {
+  showMarkerModal.value = false
+  await handleMarkerCreate(data)
+}
+
+function handleMarkerDelete(id: string): void {
+  // TODO: implement marker delete via API
+  replayMarkers.value = replayMarkers.value.filter(m => m.id !== id)
 }
 
 // ─── Handlers: Tool / Color / Size ──────────────────────────────────────────
@@ -903,6 +1241,7 @@ onMounted(async () => {
   }
 
   isLoading.value = false
+  replayRecorder.start()
 
   // Fetch lesson status + homework (C1.1 + C1.2)
   fetchLessonStatus()
@@ -932,6 +1271,7 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(async () => {
+  replayRecorder.destroy()
   try {
     await autosave.saveNow()
   } catch {
@@ -1450,5 +1790,35 @@ onBeforeUnmount(async () => {
   padding: 12px;
   overflow-y: auto;
   flex: 1;
+}
+
+/* ── Phase 11: Replay entry button ─────────────────────────────────────── */
+
+.wb-classroom-room__replay-btn {
+  position: fixed;
+  bottom: 80px;
+  right: 16px;
+  padding: 10px 20px;
+  background: var(--wb-brand, #6366f1);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  z-index: 40;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+  transition: background 0.15s, transform 0.1s;
+  animation: wb-replay-pulse 2s ease-in-out 3;
+}
+
+.wb-classroom-room__replay-btn:hover {
+  background: var(--primary-hover, #4f46e5);
+  transform: translateY(-1px);
+}
+
+@keyframes wb-replay-pulse {
+  0%, 100% { box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35); }
+  50% { box-shadow: 0 4px 24px rgba(99, 102, 241, 0.6); }
 }
 </style>

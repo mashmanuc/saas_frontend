@@ -243,6 +243,29 @@ export function useContentDrop(options: UseContentDropOptions) {
         return
       }
 
+      // Phase 10 P3: YouTube embed — create youtube_player asset
+      if (drop_mode === 'youtube_embed') {
+        const sizes = DEFAULT_BOARD_SIZES['youtube_player'] ?? { w: 640, h: 360 }
+        const youtubeUrl = (board_object.youtubeUrl as string) || (board_object.src as string) || ''
+        const asset: WBAsset = {
+          id: `yt-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          type: 'youtube_player',
+          src: youtubeUrl,
+          youtubeUrl,
+          x: dropPosition.x - sizes.w / 2,
+          y: dropPosition.y - sizes.h / 2,
+          w: sizes.w,
+          h: sizes.h,
+          rotation: 0,
+          locked: false,
+          title: (board_object.title as string) || '',
+          thumbnail: (board_object.thumbnail as string) || '',
+        }
+        onAssetAdd(asset)
+        if (payload.content_item_id) trackMaterial(payload.content_item_id, dropPosition)
+        return
+      }
+
       // For render_svg — render SVG locally and build asset inline
       if (drop_mode === 'render_svg') {
         const detail = await learningContentApi.getItemDetail(payload.content_item_id!)

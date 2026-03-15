@@ -21,11 +21,39 @@
       draggable="false"
     />
     <div v-else class="sidebar-item__icon" :aria-hidden="true">
-      {{ categoryIcon }}
+      <svg v-if="item.asset_category === 'audio'" width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <path d="M10 3v10.5a3 3 0 1 1-2-2.83V5l6-1.5v8a3 3 0 1 1-2-2.83V3h-2z" fill="#8b5cf6"/>
+      </svg>
+      <svg v-else-if="item.asset_category === 'video'" width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <rect x="2" y="4" width="11" height="12" rx="2" fill="#3b82f6"/>
+        <path d="M13 8l5-2.5v9L13 12V8z" fill="#3b82f6"/>
+      </svg>
+      <svg v-else-if="item.asset_category === 'pdf'" width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <rect x="3" y="1" width="14" height="18" rx="2" fill="#ef4444"/>
+        <path d="M6 10h8M6 13h5" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M10 1v4h4" stroke="#fff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <svg v-else-if="item.asset_category === 'youtube_link' || item.asset_category === 'youtube'" width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <rect x="2" y="4" width="16" height="12" rx="3" fill="#FF0000"/>
+        <path d="M8.5 7.5l5 2.5-5 2.5V7.5z" fill="#fff"/>
+      </svg>
+      <svg v-else-if="item.asset_category === 'presentation'" width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <rect x="2" y="3" width="16" height="12" rx="2" fill="#f59e0b"/>
+        <path d="M6 9h8M6 12h5" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/>
+      </svg>
+      <svg v-else width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <rect x="3" y="2" width="14" height="16" rx="2" stroke="#94a3b8" stroke-width="1.5"/>
+        <path d="M7 7h6M7 10h4" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round"/>
+      </svg>
     </div>
 
     <span class="sidebar-item__title" :title="item.title">
       {{ item.title }}
+    </span>
+
+    <!-- Phase 11 B7: Drag hint overlay -->
+    <span v-if="isTutor && isReady && !isPresentation && !isPdf" class="sidebar-item__drag-hint">
+      ↗
     </span>
 
     <span
@@ -89,7 +117,12 @@ const isPdf = computed(() => props.item.asset_category === 'pdf')
 const isPresentation = computed(() => props.item.asset_category === 'presentation')
 
 const thumbSrc = computed<string | null>(() => {
-  if (props.item.thumbnail_url) return props.item.thumbnail_url
+  // BUG-2 FIX: Skip thumbnail_url for categories that don't have real thumbnails
+  // Backend returns cdn_url as thumbnail_url for audio/video/pdf, causing <img> to load .mp3/.mp4/.pdf
+  const NO_THUMB_CATEGORIES = ['audio', 'video', 'pdf', 'presentation']
+  if (props.item.thumbnail_url && !NO_THUMB_CATEGORIES.includes(props.item.asset_category)) {
+    return props.item.thumbnail_url
+  }
   if (props.item.asset_category === 'image' && props.item.cdn_url) return props.item.cdn_url
   return null
 })
@@ -113,18 +146,6 @@ function handleDblClick() {
   emit('place', props.item)
 }
 
-const CATEGORY_ICONS: Record<string, string> = {
-  problem: '📐',
-  image: '🖼',
-  pdf: '📄',
-  audio: '🎵',
-  video: '▶️',
-  presentation: '📊',
-}
-
-const categoryIcon = computed(() =>
-  CATEGORY_ICONS[props.item.asset_category] ?? '📎',
-)
 
 function onDragStart(e: DragEvent) {
   if (!props.isTutor || !isReady.value) {
@@ -234,6 +255,16 @@ function onDragEnd() {
 }
 .sidebar-item--pdf {
   cursor: pointer;
+}
+.sidebar-item__drag-hint {
+  display: none;
+  font-size: 11px;
+  color: #6366f1;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.sidebar-item:hover .sidebar-item__drag-hint {
+  display: inline;
 }
 .sidebar-item__pdf-inline {
   display: block;

@@ -129,7 +129,12 @@ import type { LibraryAsset, LibraryFolderTree } from '../../types/library'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const ACCEPTED_TYPES = 'image/*,application/pdf,video/*,audio/*'
+const ACCEPTED_TYPES = [
+  'image/*', 'application/pdf', 'video/*', 'audio/*',
+  '.pptx',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'application/vnd.ms-powerpoint',
+].join(',')
 const uid = Math.random().toString(36).slice(2, 8)
 
 type UploadStatus = 'pending' | 'uploading' | 'done' | 'error'

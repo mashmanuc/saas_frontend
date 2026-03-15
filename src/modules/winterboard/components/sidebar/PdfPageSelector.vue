@@ -27,7 +27,7 @@
     </div>
 
     <!-- Page thumbnail grid -->
-    <div class="pdf-selector__grid">
+    <div v-if="sortedPages.length > 0" class="pdf-selector__grid">
       <div
         v-for="page in sortedPages"
         :key="page.number"
@@ -47,8 +47,8 @@
       </div>
     </div>
 
-    <!-- Empty state: processing or no pages -->
-    <div v-if="sortedPages.length === 0" class="pdf-selector__empty">
+    <!-- Empty state: processing / failed / ready but no pages -->
+    <div v-else class="pdf-selector__empty">
       <MediaStatusGuard :status="item.processing_status" @retry="$emit('retry')">
         <span>{{ t('winterboard.pdfSelector.noPages') }}</span>
       </MediaStatusGuard>

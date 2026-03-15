@@ -46,7 +46,7 @@
   />
 
     <!-- Slide thumbnail grid -->
-    <div class="slide-selector__grid">
+    <div v-if="sortedSlides.length > 0" class="slide-selector__grid">
       <div
         v-for="slide in sortedSlides"
         :key="slide.index"
@@ -68,8 +68,8 @@
       </div>
     </div>
 
-    <!-- Empty state: processing or no slides -->
-    <div v-if="sortedSlides.length === 0" class="slide-selector__empty">
+    <!-- Empty state: processing / failed / ready but no slides -->
+    <div v-else class="slide-selector__empty">
       <MediaStatusGuard :status="item.processing_status" @retry="$emit('retry')">
         <span>{{ t('winterboard.slideSelector.noSlides') }}</span>
       </MediaStatusGuard>

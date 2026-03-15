@@ -33,4 +33,4 @@ export interface SidebarDragPayload {
   title?: string
 }
 
-export type AssetCategoryGroup = 'problem' | 'image' | 'pdf' | 'audio' | 'video' | 'presentation'
+export type AssetCategoryGroup = 'problem' | 'image' | 'pdf' | 'audio' | 'video' | 'presentation' | 'youtube'

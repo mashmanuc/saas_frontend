@@ -44,3 +44,12 @@ export interface ReplayQuery {
   limit?: number    // default 500, max 2000
   offset?: number
 }
+
+// ─── Replay snapshot (Phase 10 P4: fast seek support) ───────────────────────
+
+export interface ReplaySnapshot {
+  id: string
+  operation_index: number
+  board_state: Record<string, unknown>
+  created_at: string   // ISO datetime
+}

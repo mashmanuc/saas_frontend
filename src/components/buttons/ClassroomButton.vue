@@ -68,7 +68,8 @@ const buttonClasses = computed(() => [
 function handleClick() {
   if (!canJoin.value) return
   // [LEGACY→WB] modules/classroom видалено — перенаправляємо на список winterboard
-  router.push({ name: 'winterboard-sessions' })
+  const resolved = router.resolve({ name: 'winterboard-sessions' })
+  window.open(resolved.href, '_blank', 'noopener')
 }
 </script>
 

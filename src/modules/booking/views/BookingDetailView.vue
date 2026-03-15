@@ -59,6 +59,12 @@ function goBack() {
   router.back()
 }
 
+// UX-1: Open classroom in new tab so tutor stays on current page
+function openClassroom() {
+  const resolved = router.resolve({ name: 'winterboard-sessions' })
+  window.open(resolved.href, '_blank', 'noopener')
+}
+
 async function handleCancel() {
   if (confirm('Are you sure you want to cancel this booking?')) {
     await cancel()
@@ -212,7 +218,7 @@ function handleReschedule() {
       <!-- [LEGACY→WB] Classroom Entry — ClassroomButton замінено на router-link до winterboard -->
       <section v-if="canJoin" class="classroom-section">
         <h2>Classroom</h2>
-        <Button variant="primary" @click="router.push({ name: 'winterboard-sessions' })">
+        <Button variant="primary" @click="openClassroom">
           <template #iconLeft><Video :size="18" /></template>
           Увійти в урок
         </Button>

@@ -42,35 +42,6 @@
           v-if="pageGridPatternConfig"
           :config="pageGridPatternConfig"
         />
-        <!-- A5.2: Grid pattern overlay -->
-        <v-group v-if="bgPatternType === 'grid'" :config="{ listening: false }">
-          <v-line
-            v-for="i in Math.floor(props.width / 40)"
-            :key="'gv-' + i"
-            :config="{ points: [i * 40, 0, i * 40, props.height], stroke: '#e2e8f0', strokeWidth: 0.5, listening: false }"
-          />
-          <v-line
-            v-for="j in Math.floor(props.height / 40)"
-            :key="'gh-' + j"
-            :config="{ points: [0, j * 40, props.width, j * 40], stroke: '#e2e8f0', strokeWidth: 0.5, listening: false }"
-          />
-        </v-group>
-        <!-- A5.2: Dots pattern overlay -->
-        <v-group v-if="bgPatternType === 'dots'" :config="{ listening: false }">
-          <v-circle
-            v-for="dot in dotsPattern"
-            :key="dot.key"
-            :config="{ x: dot.x, y: dot.y, radius: 1.5, fill: '#cbd5e1', listening: false }"
-          />
-        </v-group>
-        <!-- A5.2: Lined pattern overlay -->
-        <v-group v-if="bgPatternType === 'lined'" :config="{ listening: false }">
-          <v-line
-            v-for="k in Math.floor(props.height / 32)"
-            :key="'ln-' + k"
-            :config="{ points: [0, k * 32, props.width, k * 32], stroke: '#93c5fd', strokeWidth: 0.5, listening: false }"
-          />
-        </v-group>
       </v-layer>
 
       <!-- Assets layer (images + sticky notes) — BELOW strokes -->
@@ -264,6 +235,11 @@
           :send-pause="localSendPause"
           :send-seek="localSendSeek"
         />
+        <YouTubePlayerObject
+          v-else-if="asset.type === 'youtube_player'"
+          :obj="asYouTubeAsset(asset)"
+          :is-tutor="props.isTutor !== false"
+        />
       </div>
     </template>
 
@@ -327,6 +303,7 @@ import { useStickyNotes } from '../../composables/useStickyNotes'
 import WBStickyNote from './WBStickyNote.vue'
 import AudioPlayerObject from '../board/objects/AudioPlayerObject.vue'
 import VideoPlayerObject from '../board/objects/VideoPlayerObject.vue'
+import YouTubePlayerObject, { type WBYouTubeAsset } from '../board/objects/YouTubePlayerObject.vue'
 import type { WBAudioAsset, WBVideoAsset } from '../../types/mediaObjects'
 import type { VideoSyncState } from '../../composables/useMediaSync'
 import { useImageCache } from '../../composables/useImageCache'
@@ -403,12 +380,13 @@ const assets = computed(() => props.assets ?? [])
 
 // Phase 3C: Media assets (audio/video) rendered as HTML overlays — excluded from Konva
 const mediaAssets = computed(() =>
-  assets.value.filter(a => a.type === 'audio_player' || a.type === 'video_player'),
+  assets.value.filter(a => a.type === 'audio_player' || a.type === 'video_player' || a.type === 'youtube_player'),
 )
 
 // Phase 3C: Type cast helpers for media assets
 function asAudioAsset(asset: WBAsset): WBAudioAsset { return asset as unknown as WBAudioAsset }
 function asVideoAsset(asset: WBAsset): WBVideoAsset { return asset as unknown as WBVideoAsset }
+function asYouTubeAsset(asset: WBAsset): WBYouTubeAsset { return asset as unknown as WBYouTubeAsset }
 
 // Phase 3C: Local video state (no WebSocket in solo mode — managed locally)
 const localVideoStates = ref<Record<string, VideoSyncState>>({})
@@ -443,13 +421,26 @@ watch(
   (dataUrl) => {
     if (!dataUrl) {
       gridPatternImageEl.value = null
+      // BUG-1b FIX: Clear Konva layer cache before redraw.
+      // cacheBackgroundLayer() freezes the layer as a static bitmap on mount.
+      // Without clearCache(), batchDraw() repaints the OLD cached grid — changes are invisible.
+      nextTick(() => {
+        const layer = backgroundLayerRef.value?.getNode?.()
+        layer?.clearCache?.()
+        layer?.batchDraw?.()
+      })
       return
     }
     const img = new Image()
     img.onload = () => {
       gridPatternImageEl.value = img
-      // Force Konva background layer redraw so pattern appears immediately
-      backgroundLayerRef.value?.getNode?.()?.batchDraw?.()
+      // BUG-1b FIX: Clear layer cache so Konva re-renders with new fillPatternImage.
+      // nextTick ensures vue-konva has applied updated pageGridPatternConfig to Konva node first.
+      nextTick(() => {
+        const layer = backgroundLayerRef.value?.getNode?.()
+        layer?.clearCache?.()
+        layer?.batchDraw?.()
+      })
     }
     img.src = dataUrl
   },
@@ -690,19 +681,6 @@ const pageGridPatternConfig = computed<Record<string, unknown> | null>(() => {
   }
 })
 
-// A5.2: Dots pattern — precomputed array for template v-for
-const dotsPattern = computed(() => {
-  const spacing = 40
-  const dots: Array<{ key: string; x: number; y: number }> = []
-  const cols = Math.floor(props.width / spacing)
-  const rows = Math.floor(props.height / spacing)
-  for (let r = 1; r <= rows; r++) {
-    for (let c = 1; c <= cols; c++) {
-      dots.push({ key: `d-${r}-${c}`, x: c * spacing, y: r * spacing })
-    }
-  }
-  return dots
-})
 
 // A4.2: Konva shape preview config for dedicated preview layer
 const konvaShapePreview = computed<{ type: string; config: Record<string, unknown> }>(() => {

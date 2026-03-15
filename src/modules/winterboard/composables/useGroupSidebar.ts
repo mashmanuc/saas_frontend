@@ -164,12 +164,17 @@ export function useGroupSidebar(groupId: Ref<string | null>) {
 
   const grouped = computed(() => {
     const groups: Record<AssetCategoryGroup, AllowedContentItem[]> = {
-      problem: [], image: [], pdf: [], audio: [], video: [], presentation: [],
+      problem: [], image: [], pdf: [], audio: [], video: [], presentation: [], youtube: [],
     }
     for (const item of items.value) {
-      const cat = item.asset_category as AssetCategoryGroup
+      const cat = item.asset_category
+      // UX-2 FIX: Backend повертає 'youtube' (не 'youtube_link')
+      if (cat === 'youtube' || cat === 'youtube_link') {
+        groups.youtube.push(item)
+        continue
+      }
       if (cat in groups) {
-        groups[cat].push(item)
+        groups[cat as AssetCategoryGroup].push(item)
       } else {
         groups.image.push(item)
       }
@@ -181,6 +186,7 @@ export function useGroupSidebar(groupId: Ref<string | null>) {
 
   function mimeToCategory(mime: string): string {
     if (!mime) return 'image'
+    if (mime === 'youtube_link' || mime === 'youtube') return 'youtube'
     if (mime.startsWith('image/')) return 'image'
     if (mime.startsWith('video/')) return 'video'
     if (mime.startsWith('audio/')) return 'audio'
@@ -191,6 +197,7 @@ export function useGroupSidebar(groupId: Ref<string | null>) {
 
   function guessAssetCategory(contentType: string): string {
     if (!contentType) return 'image'
+    if (contentType === 'youtube_link' || contentType === 'youtube') return 'youtube'
     if (contentType === 'pdf') return 'pdf'
     if (contentType === 'video') return 'video'
     if (contentType === 'presentation') return 'presentation'

@@ -1,0 +1,175 @@
+<!-- WB: Public markers list — clickable markers with time labels
+     Ref: PHASE12_PLAN.md B3 -->
+<template>
+  <section class="public-markers" :aria-label="t('publicLesson.markers.title')">
+    <h3 class="public-markers__title">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M8 1.5L9.8 5.2l4.1.6-3 2.9.7 4.1L8 10.8l-3.6 2 .7-4.1-3-2.9 4.1-.6L8 1.5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" fill="none"/>
+      </svg>
+      {{ t('publicLesson.markers.title') }}
+      <span class="public-markers__count">{{ markers.length }}</span>
+    </h3>
+
+    <div v-if="markers.length === 0" class="public-markers__empty">
+      {{ t('publicLesson.markers.empty') }}
+    </div>
+
+    <ul v-else class="public-markers__list" role="list">
+      <li
+        v-for="marker in markers"
+        :key="marker.id"
+        class="public-markers__item"
+        :class="{ 'public-markers__item--active': marker.id === activeId }"
+        role="listitem"
+        tabindex="0"
+        @click="$emit('seek', marker.time_seconds)"
+        @keydown.enter="$emit('seek', marker.time_seconds)"
+      >
+        <span class="public-markers__time">{{ formatTime(marker.time_seconds) }}</span>
+        <span class="public-markers__label">{{ marker.title }}</span>
+        <span v-if="marker.category" class="public-markers__badge" :style="{ background: categoryColor(marker.category) }">
+          {{ marker.category }}
+        </span>
+      </li>
+    </ul>
+  </section>
+</template>
+
+<script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
+export interface PublicMarker {
+  id: string
+  title: string
+  time_seconds: number
+  category?: string
+}
+
+defineProps<{
+  markers: PublicMarker[]
+  activeId?: string | null
+}>()
+
+defineEmits<{
+  seek: [seconds: number]
+}>()
+
+const { t } = useI18n()
+
+const CATEGORY_COLORS: Record<string, string> = {
+  theory: '#3b82f6',
+  formula: '#8b5cf6',
+  example: '#f59e0b',
+  practice: '#10b981',
+  solution: '#ef4444',
+  custom: '#64748b',
+}
+
+function categoryColor(cat: string): string {
+  return CATEGORY_COLORS[cat] ?? '#94a3b8'
+}
+
+function formatTime(sec: number): string {
+  const m = Math.floor(sec / 60)
+  const s = Math.floor(sec % 60)
+  return `${m}:${String(s).padStart(2, '0')}`
+}
+</script>
+
+<style scoped>
+.public-markers {
+  padding: 16px 0;
+}
+
+.public-markers__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 12px;
+}
+
+.public-markers__count {
+  font-size: 11px;
+  font-weight: 600;
+  background: #e2e8f0;
+  color: #475569;
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+.public-markers__empty {
+  font-size: 13px;
+  color: #94a3b8;
+  padding: 12px 0;
+}
+
+.public-markers__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.public-markers__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.public-markers__item:hover {
+  background: #f1f5f9;
+}
+
+.public-markers__item--active {
+  background: #ede9fe;
+}
+
+.public-markers__item:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: -2px;
+}
+
+.public-markers__time {
+  font-size: 13px;
+  font-weight: 700;
+  color: #6366f1;
+  font-variant-numeric: tabular-nums;
+  min-width: 40px;
+  flex-shrink: 0;
+}
+
+.public-markers__label {
+  font-size: 14px;
+  color: #0f172a;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.public-markers__badge {
+  font-size: 10px;
+  font-weight: 600;
+  color: #ffffff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .public-markers__item {
+    padding: 10px 8px;
+  }
+}
+</style>

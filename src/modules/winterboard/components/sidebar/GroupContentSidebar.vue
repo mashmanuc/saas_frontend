@@ -62,7 +62,11 @@
         :title="t(`winterboard.contentSidebar.category.${cat}`)"
         @click="activeFilter = cat"
       >
-        {{ CATEGORY_ICONS[cat] ?? '📎' }}
+        <svg v-if="cat === 'youtube'" width="14" height="10" viewBox="0 0 20 14" style="vertical-align: -1px">
+          <rect x="1" y="1" width="18" height="12" rx="3" fill="#FF0000"/>
+          <path d="M8 4l5 3-5 3V4z" fill="#fff"/>
+        </svg>
+        <span v-else>{{ CATEGORY_ICONS[cat] ?? '📎' }}</span>
       </button>
     </div>
 
@@ -125,6 +129,7 @@ const CATEGORY_ICONS: Record<string, string> = {
   audio: '🎵',
   video: '▶️',
   presentation: '📊',
+  youtube: '▶️',
 }
 
 const props = defineProps<{
@@ -150,7 +155,7 @@ const availableCategories = computed<string[]>(() => {
     if (item.asset_category) cats.add(item.asset_category)
   }
   // Return in consistent display order
-  return ['problem', 'image', 'pdf', 'audio', 'video', 'presentation'].filter(c => cats.has(c))
+  return ['problem', 'image', 'pdf', 'audio', 'video', 'youtube', 'presentation'].filter(c => cats.has(c))
 })
 
 /** Items after filter + search */

@@ -10,6 +10,8 @@ const ALLOWED_UPLOAD_MIMES: Record<string, string> = {
   'application/pdf': 'pdf',
   'audio/mpeg': 'audio', 'audio/ogg': 'audio', 'audio/wav': 'audio', 'audio/mp4': 'audio',
   'video/mp4': 'video', 'video/webm': 'video', 'video/ogg': 'video',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'presentation',
+  'application/vnd.ms-powerpoint': 'presentation',
 }
 
 /**
@@ -45,6 +47,10 @@ export function useContentSidebar(lessonId: Ref<string | null>) {
           asset_category: item.asset_category as string ?? 'image',
           thumbnail_url: item.thumbnail_url as string | null ?? ci?.thumbnail_url as string | null ?? null,
           processing_status: item.processing_status as string ?? 'ready',
+          pages: (item.pages as AllowedContentItem['pages']) ?? undefined,
+          page_count: (item.page_count as number) ?? 0,
+          slides: (item.slides as AllowedContentItem['slides']) ?? undefined,
+          slide_count: (item.slide_count as number) ?? 0,
         }
       })
     } catch (e) {
@@ -58,12 +64,17 @@ export function useContentSidebar(lessonId: Ref<string | null>) {
 
   const grouped = computed(() => {
     const groups: Record<AssetCategoryGroup, AllowedContentItem[]> = {
-      problem: [], image: [], pdf: [], audio: [], video: [], presentation: [],
+      problem: [], image: [], pdf: [], audio: [], video: [], presentation: [], youtube: [],
     }
     for (const item of items.value) {
-      const cat = item.asset_category as AssetCategoryGroup
+      const cat = item.asset_category
+      // UX-2 FIX: Backend повертає 'youtube' (не 'youtube_link')
+      if (cat === 'youtube' || cat === 'youtube_link') {
+        groups.youtube.push(item)
+        continue
+      }
       if (cat in groups) {
-        groups[cat].push(item)
+        groups[cat as AssetCategoryGroup].push(item)
       } else {
         groups.image.push(item) // fallback
       }
@@ -80,6 +91,7 @@ export function useContentSidebar(lessonId: Ref<string | null>) {
     if (file.type === 'application/pdf') return 'pdf'
     if (file.type.startsWith('audio/')) return 'audio'
     if (file.type.startsWith('video/')) return 'video'
+    if (ALLOWED_UPLOAD_MIMES[file.type] === 'presentation') return 'presentation'
     return 'image'
   }
 
@@ -88,6 +100,7 @@ export function useContentSidebar(lessonId: Ref<string | null>) {
     if (file.type.startsWith('image/')) return 'image'
     if (file.type.startsWith('audio/')) return 'audio'
     if (file.type.startsWith('video/')) return 'video'
+    if (ALLOWED_UPLOAD_MIMES[file.type] === 'presentation') return 'presentation'
     return 'image'
   }
 

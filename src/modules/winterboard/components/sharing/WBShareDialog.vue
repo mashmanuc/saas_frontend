@@ -80,6 +80,35 @@
 
           <!-- No active share — generate form -->
           <template v-else>
+            <!-- Lesson title -->
+            <div class="wb-share-dialog__field">
+              <label class="wb-share-dialog__field-label" for="share-title">
+                {{ t('winterboard.share.lessonTitle') }}
+              </label>
+              <input
+                id="share-title"
+                v-model="lessonTitle"
+                type="text"
+                class="wb-share-dialog__text-input"
+                :placeholder="t('winterboard.share.lessonTitlePlaceholder')"
+              />
+            </div>
+
+            <!-- Custom slug -->
+            <div class="wb-share-dialog__field">
+              <label class="wb-share-dialog__field-label" for="share-slug">
+                {{ t('winterboard.share.customSlug') }}
+                <span class="wb-share-dialog__field-hint">{{ t('winterboard.share.customSlugHint') }}</span>
+              </label>
+              <input
+                id="share-slug"
+                v-model="customSlug"
+                type="text"
+                class="wb-share-dialog__text-input"
+                placeholder="kvadratni-rivnyannya"
+              />
+            </div>
+
             <!-- Options -->
             <div class="wb-share-dialog__options">
               <h3 class="wb-share-dialog__options-title">{{ t('winterboard.share.options') }}</h3>
@@ -109,6 +138,12 @@
               <label class="wb-share-dialog__toggle-label">
                 <input v-model="allowDownload" type="checkbox" class="wb-share-dialog__checkbox" />
                 {{ t('winterboard.share.allowDownload') }}
+              </label>
+
+              <!-- Show materials publicly -->
+              <label class="wb-share-dialog__toggle-label">
+                <input v-model="showMaterials" type="checkbox" class="wb-share-dialog__checkbox" />
+                {{ t('winterboard.share.showMaterials') }}
               </label>
             </div>
 
@@ -162,6 +197,9 @@ const linkInput = ref<HTMLInputElement | null>(null)
 const expiresOption = ref<'1h' | '24h' | '7d' | 'never'>('7d')
 const maxViewsOption = ref<'10' | '100' | 'unlimited'>('unlimited')
 const allowDownload = ref(true)
+const showMaterials = ref(false)
+const lessonTitle = ref('')
+const customSlug = ref('')
 
 // ── Computed ──────────────────────────────────────────────────────────────
 const computedLinkStatus = computed<'active' | 'expired' | 'revoked'>(() => {
@@ -195,9 +233,12 @@ function resolveExpiresDays(): number | undefined {
 async function handleGenerate(): Promise<void> {
   generating.value = true
   try {
-    const opts: { expires_in_days?: number; max_views?: number; allow_download?: boolean } = {
+    const opts: { expires_in_days?: number; max_views?: number; allow_download?: boolean; title?: string; slug?: string; show_materials?: boolean } = {
       allow_download: allowDownload.value,
+      show_materials: showMaterials.value,
     }
+    if (lessonTitle.value.trim()) opts.title = lessonTitle.value.trim()
+    if (customSlug.value.trim()) opts.slug = customSlug.value.trim()
     const days = resolveExpiresDays()
     if (days !== undefined) opts.expires_in_days = days
     if (maxViewsOption.value !== 'unlimited') opts.max_views = Number(maxViewsOption.value)
@@ -435,6 +476,44 @@ onMounted(() => {
   display: flex;
   gap: 8px;
   justify-content: flex-end;
+}
+
+/* ── Fields ───────────────────────────────────────────────────────────── */
+.wb-share-dialog__field {
+  margin-bottom: 14px;
+}
+
+.wb-share-dialog__field-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--wb-fg, #0f172a);
+  margin-bottom: 6px;
+}
+
+.wb-share-dialog__field-hint {
+  font-weight: 400;
+  color: var(--wb-fg-secondary, #94a3b8);
+  font-size: 11px;
+  margin-left: 4px;
+}
+
+.wb-share-dialog__text-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--wb-toolbar-border, #e2e8f0);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--wb-fg, #0f172a);
+  background: var(--wb-canvas-bg, #f8fafc);
+  outline: none;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+
+.wb-share-dialog__text-input:focus {
+  border-color: var(--wb-brand, #0066FF);
+  background: var(--wb-card-bg, #ffffff);
 }
 
 /* ── Options ──────────────────────────────────────────────────────────── */

@@ -35,15 +35,18 @@ export interface ResolveDropResponse {
     title?: string
     duration?: number
     thumbnail?: string | null
+    /** Phase 10 P3: YouTube embed URL (present when type='youtube_player') */
+    youtubeUrl?: string
   }
   drop_mode: string
 }
 
 /** Default sizes for board objects by type (content-aware proportions) */
 export const DEFAULT_BOARD_SIZES: Record<string, { w: number; h: number }> = {
-  image:        { w: 400, h: 300 },    // fallback; images use dynamic sizing
-  pdf:          { w: 420, h: 594 },    // A4 ratio (1:√2)
-  audio_player: { w: 360, h: 80 },    // horizontal player widget
-  video_player: { w: 640, h: 360 },   // 16:9
-  presentation: { w: 640, h: 480 },   // 4:3
+  image:          { w: 400, h: 300 },    // fallback; images use dynamic sizing
+  pdf:            { w: 420, h: 594 },    // A4 ratio (1:√2)
+  audio_player:   { w: 360, h: 80 },    // horizontal player widget
+  video_player:   { w: 640, h: 360 },   // 16:9
+  youtube_player: { w: 640, h: 360 },   // 16:9
+  presentation:   { w: 640, h: 480 },   // 4:3
 }

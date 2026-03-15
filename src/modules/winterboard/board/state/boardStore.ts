@@ -478,7 +478,8 @@ export const useWBStore = defineStore('wb-board', {
         size: 20,
         style: 'dots',
         color: '#000000',
-        opacity: 0.15,
+        // 0.4 = matches DEFAULT_PAGE_GRID in usePageGrid.ts (was 0.15 — too faint)
+        opacity: 0.4,
       }
       const existing: WBPageGridSettings = page.grid ?? DEFAULT_GRID
       this.pages[pageIndex] = {
@@ -613,7 +614,7 @@ export const useWBStore = defineStore('wb-board', {
 
     // ── Stroke Actions ───────────────────────────────────────────────────
 
-    addStroke(stroke: WBStroke): void {
+    addStroke(stroke: WBStroke, opts?: { skipHistory?: boolean }): void {
       const pageIndex = this.currentPageIndex
       const page = this.pages[pageIndex]
       if (!page) {
@@ -621,14 +622,16 @@ export const useWBStore = defineStore('wb-board', {
         return
       }
 
-      const action: UndoAddStroke = {
-        type: 'addStroke',
-        pageIndex,
-        stroke,
-        index: page.strokes.length,
+      if (!opts?.skipHistory) {
+        const action: UndoAddStroke = {
+          type: 'addStroke',
+          pageIndex,
+          stroke,
+          index: page.strokes.length,
+        }
+        this.undoStack = trimStack([...this.undoStack, action])
+        this.redoStack = []
       }
-      this.undoStack = trimStack([...this.undoStack, action])
-      this.redoStack = []
 
       // Replace page object to trigger Vue reactivity
       this.pages[pageIndex] = {
@@ -639,7 +642,7 @@ export const useWBStore = defineStore('wb-board', {
       this.markDirty()
     },
 
-    updateStroke(updatedStroke: WBStroke): void {
+    updateStroke(updatedStroke: WBStroke, opts?: { skipHistory?: boolean }): void {
       const pageIndex = this.currentPageIndex
       const page = this.pages[pageIndex]
       if (!page) return
@@ -647,15 +650,17 @@ export const useWBStore = defineStore('wb-board', {
       const idx = page.strokes.findIndex((s) => s.id === updatedStroke.id)
       if (idx === -1) return
 
-      const action: UndoUpdateStroke = {
-        type: 'updateStroke',
-        pageIndex,
-        prev: page.strokes[idx],
-        next: updatedStroke,
-        index: idx,
+      if (!opts?.skipHistory) {
+        const action: UndoUpdateStroke = {
+          type: 'updateStroke',
+          pageIndex,
+          prev: page.strokes[idx],
+          next: updatedStroke,
+          index: idx,
+        }
+        this.undoStack = trimStack([...this.undoStack, action])
+        this.redoStack = []
       }
-      this.undoStack = trimStack([...this.undoStack, action])
-      this.redoStack = []
 
       const newStrokes = [...page.strokes]
       newStrokes[idx] = updatedStroke
@@ -664,7 +669,7 @@ export const useWBStore = defineStore('wb-board', {
       this.markDirty()
     },
 
-    deleteStroke(strokeId: string): void {
+    deleteStroke(strokeId: string, opts?: { skipHistory?: boolean }): void {
       const pageIndex = this.currentPageIndex
       const page = this.pages[pageIndex]
       if (!page) return
@@ -672,14 +677,16 @@ export const useWBStore = defineStore('wb-board', {
       const idx = page.strokes.findIndex((s) => s.id === strokeId)
       if (idx === -1) return
 
-      const action: UndoDeleteStroke = {
-        type: 'deleteStroke',
-        pageIndex,
-        stroke: page.strokes[idx],
-        index: idx,
+      if (!opts?.skipHistory) {
+        const action: UndoDeleteStroke = {
+          type: 'deleteStroke',
+          pageIndex,
+          stroke: page.strokes[idx],
+          index: idx,
+        }
+        this.undoStack = trimStack([...this.undoStack, action])
+        this.redoStack = []
       }
-      this.undoStack = trimStack([...this.undoStack, action])
-      this.redoStack = []
 
       this.pages[pageIndex] = {
         ...page,
@@ -691,19 +698,21 @@ export const useWBStore = defineStore('wb-board', {
 
     // ── Asset Actions ────────────────────────────────────────────────────
 
-    addAsset(asset: WBAsset): void {
+    addAsset(asset: WBAsset, opts?: { skipHistory?: boolean }): void {
       const pageIndex = this.currentPageIndex
       const page = this.pages[pageIndex]
       if (!page) return
 
-      const action: UndoAddAsset = {
-        type: 'addAsset',
-        pageIndex,
-        asset,
-        index: page.assets.length,
+      if (!opts?.skipHistory) {
+        const action: UndoAddAsset = {
+          type: 'addAsset',
+          pageIndex,
+          asset,
+          index: page.assets.length,
+        }
+        this.undoStack = trimStack([...this.undoStack, action])
+        this.redoStack = []
       }
-      this.undoStack = trimStack([...this.undoStack, action])
-      this.redoStack = []
 
       this.pages[pageIndex] = {
         ...page,
@@ -740,7 +749,7 @@ export const useWBStore = defineStore('wb-board', {
       this.markDirty()
     },
 
-    deleteAsset(assetId: string): void {
+    deleteAsset(assetId: string, opts?: { skipHistory?: boolean }): void {
       const pageIndex = this.currentPageIndex
       const page = this.pages[pageIndex]
       if (!page) return
@@ -748,14 +757,16 @@ export const useWBStore = defineStore('wb-board', {
       const idx = page.assets.findIndex((a) => a.id === assetId)
       if (idx === -1) return
 
-      const action: UndoDeleteAsset = {
-        type: 'deleteAsset',
-        pageIndex,
-        asset: page.assets[idx],
-        index: idx,
+      if (!opts?.skipHistory) {
+        const action: UndoDeleteAsset = {
+          type: 'deleteAsset',
+          pageIndex,
+          asset: page.assets[idx],
+          index: idx,
+        }
+        this.undoStack = trimStack([...this.undoStack, action])
+        this.redoStack = []
       }
-      this.undoStack = trimStack([...this.undoStack, action])
-      this.redoStack = []
 
       this.pages[pageIndex] = {
         ...page,

@@ -64,6 +64,39 @@
             </svg>
           </button>
 
+          <!-- YouTube URL button -->
+          <button
+            v-if="!showYtInput"
+            type="button"
+            class="wb-library__yt-btn"
+            @click="showYtInput = true"
+          >
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <rect x="2" y="4" width="16" height="12" rx="3" fill="#FF0000"/>
+              <path d="M8.5 7.5l5 2.5-5 2.5V7.5z" fill="#fff"/>
+            </svg>
+            + YouTube
+          </button>
+          <div v-else class="wb-library__yt-row">
+            <input
+              ref="ytInputRef"
+              v-model="ytUrl"
+              type="url"
+              class="wb-library__yt-input"
+              placeholder="https://youtube.com/watch?v=..."
+              @keydown.enter="submitYouTube"
+              @keydown.escape="showYtInput = false"
+            />
+            <button
+              type="button"
+              class="wb-library__yt-submit"
+              :disabled="!ytUrl.trim()"
+              @click="submitYouTube"
+            >
+              +
+            </button>
+          </div>
+
           <!-- Upload button -->
           <button
             type="button"
@@ -201,7 +234,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import LibraryFolderTree, { FAVORITES_ID, RECENT_ID } from '../components/library/LibraryFolderTree.vue'
 import LibraryAssetCard from '../components/library/LibraryAssetCard.vue'
@@ -213,8 +246,10 @@ import {
   toggleFavorite as apiFavorite,
   deleteAsset as apiDelete,
   createFolder as apiCreateFolder,
+  addYouTubeAsset,
 } from '../api/library'
 import type { LibraryFolderTree as FolderTree, LibraryAsset } from '../types/library'
+import { parseYouTubeVideoId } from '../utils/youtubeParser'
 import { useToast } from '../composables/useToast'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -238,6 +273,9 @@ const searchQuery = ref('')
 const filterFavorites = ref(false)
 const offset = ref(0)
 const showUpload = ref(false)
+const showYtInput = ref(false)
+const ytUrl = ref('')
+const ytInputRef = ref<HTMLInputElement | null>(null)
 const showCreateFolder = ref(false)
 const newFolderName = ref('')
 
@@ -246,6 +284,37 @@ const activeFolderId = computed<number | null>(() => {
   if (selectedFolderId.value === FAVORITES_ID || selectedFolderId.value === RECENT_ID) return null
   return selectedFolderId.value
 })
+
+// ─── YouTube ─────────────────────────────────────────────────────────────────
+
+watch(showYtInput, (v) => {
+  if (v) nextTick(() => ytInputRef.value?.focus())
+})
+
+async function submitYouTube(): Promise<void> {
+  const url = ytUrl.value.trim()
+  if (!url) return
+  const videoId = parseYouTubeVideoId(url)
+  if (!videoId) {
+    showToast(t('winterboard.library.ytInvalidUrl'), 'error')
+    return
+  }
+  try {
+    const asset = await addYouTubeAsset(url, activeFolderId.value)
+    // Dedup: не додавати якщо вже є в списку (backend повертає 200 для існуючих)
+    const alreadyExists = assets.value.some(a => a.id === asset.id)
+    if (!alreadyExists) {
+      assets.value.unshift(asset)
+      total.value += 1
+    }
+    ytUrl.value = ''
+    showYtInput.value = false
+    showToast(t('winterboard.library.ytAdded'), 'success')
+  } catch (err) {
+    console.error('[WB:Library] YouTube add failed', err)
+    showToast(t('winterboard.library.ytError'), 'error')
+  }
+}
 
 // ─── Fetch ────────────────────────────────────────────────────────────────────
 
@@ -526,6 +595,48 @@ onMounted(async () => {
 .wb-library__upload-btn:hover {
   background: var(--wb-brand-hover, #0052cc);
 }
+
+.wb-library__yt-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #dc2626;
+  cursor: pointer;
+  transition: background 0.12s;
+  min-height: 34px;
+  white-space: nowrap;
+}
+.wb-library__yt-btn:hover { background: #fee2e2; }
+.wb-library__yt-row {
+  display: flex;
+  gap: 4px;
+}
+.wb-library__yt-input {
+  padding: 7px 10px;
+  border: 1px solid var(--wb-toolbar-border, #e2e8f0);
+  border-radius: 7px;
+  font-size: 13px;
+  outline: none;
+  width: 220px;
+  transition: border-color 0.12s;
+}
+.wb-library__yt-input:focus { border-color: var(--wb-brand, #6366f1); }
+.wb-library__yt-submit {
+  padding: 6px 12px;
+  background: var(--wb-brand, #6366f1);
+  color: white;
+  border: none;
+  border-radius: 7px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.wb-library__yt-submit:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ── Grid ────────────────────────────────────────────────────────────── */
 

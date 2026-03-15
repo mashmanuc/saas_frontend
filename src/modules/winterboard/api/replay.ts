@@ -9,7 +9,9 @@ import type {
   BoardOperation,
   RecordOperationRequest,
   ReplayQuery,
+  ReplaySnapshot,
 } from '../types/replay'
+import type { WBLessonMarker } from '../types/winterboard'
 
 const BASE = '/v1/winterboard'
 
@@ -61,5 +63,97 @@ export async function recordOperationsBatch(
   return apiClient.post<{ recorded: number }>(
     `${BASE}/sessions/${sessionId}/replay/batch/`,
     { operations },
+  )
+}
+
+// ─── Snapshots (Phase 10 P4: fast seek support) ─────────────────────────────
+
+/**
+ * GET /winterboard/sessions/{uuid}/replay/snapshots/{operationIndex}/
+ * Returns the nearest snapshot at or before the given operation index.
+ * Returns null if no snapshot exists (graceful degradation).
+ */
+export async function fetchNearestSnapshot(
+  sessionId: string,
+  operationIndex: number,
+): Promise<ReplaySnapshot | null> {
+  try {
+    return await apiClient.get<ReplaySnapshot>(
+      `${BASE}/sessions/${sessionId}/replay/snapshots/${operationIndex}/`,
+    )
+  } catch {
+    return null
+  }
+}
+
+/**
+ * POST /winterboard/sessions/{uuid}/replay/snapshots/create/
+ * Creates a board state snapshot at the given operation index.
+ * Called automatically by useReplayRecorder every SNAPSHOT_EVERY ops.
+ */
+export async function createSnapshot(
+  sessionId: string,
+  operationIndex: number,
+  boardState: Record<string, unknown>,
+): Promise<void> {
+  await apiClient.post(
+    `${BASE}/sessions/${sessionId}/replay/snapshots/create/`,
+    { operation_index: operationIndex, board_state: boardState },
+  )
+}
+
+// ─── Lesson Markers (Phase 10 P5) ─────────────────────────────────────
+
+/**
+ * GET /winterboard/sessions/{uuid}/markers/
+ * Returns all markers for the session, ordered by [order, operation_index].
+ */
+export async function fetchLessonMarkers(
+  sessionId: string,
+): Promise<{ markers: WBLessonMarker[] }> {
+  return apiClient.get<{ markers: WBLessonMarker[] }>(
+    `${BASE}/sessions/${sessionId}/markers/`,
+  )
+}
+
+/**
+ * POST /winterboard/sessions/{uuid}/markers/
+ * Creates a new lesson marker. Max 50 per session.
+ */
+export async function createLessonMarker(
+  sessionId: string,
+  marker: Omit<WBLessonMarker, 'id' | 'created_at'>,
+): Promise<WBLessonMarker> {
+  return apiClient.post<WBLessonMarker>(
+    `${BASE}/sessions/${sessionId}/markers/`,
+    marker,
+  )
+}
+
+/**
+ * PATCH /winterboard/sessions/{uuid}/markers/{markerId}/
+ * Updates marker fields (title, category, order, board_position, etc.).
+ */
+export async function updateLessonMarker(
+  sessionId: string,
+  markerId: string,
+  updates: Partial<WBLessonMarker>,
+): Promise<WBLessonMarker> {
+  return apiClient.patch<WBLessonMarker>(
+    `${BASE}/sessions/${sessionId}/markers/${markerId}/`,
+    updates,
+  )
+}
+
+/**
+ * DELETE /winterboard/sessions/{uuid}/markers/{markerId}/
+ * Permanently removes a marker.
+ */
+export async function deleteLessonMarker(
+  sessionId: string,
+  markerId: string,
+): Promise<void> {
+  await apiClient.delete(
+    `${BASE}/sessions/${sessionId}/markers/${markerId}/`,
   )
 }

@@ -7,7 +7,6 @@
       data-testid="lesson-card"
       :data-lesson-id="event.id"
       :class="{
-        'is-first': event.is_first,
         'is-past': isPastFn(event.start),
         'is-no-show': event.status === 'no_show',
         'is-cancelled': event.status === 'cancelled'
@@ -18,7 +17,6 @@
     >
       <div class="event-student">{{ getStudentName(event) }}</div>
       <div class="event-time" data-testid="lesson-time">{{ formatTimeRange(event) }}</div>
-      <div v-if="event.is_first" class="first-badge">FIRST</div>
     </div>
   </div>
 </template>
@@ -126,12 +124,6 @@ const formatTimeRange = (event: CalendarEvent): string => {
   border: 1px solid #2e7d32;
 }
 
-.event-card.is-first {
-  background: #7c3aed;
-  border-color: #5b21b6;
-  color: #f5f3ff;
-}
-
 .event-card.is-past {
   opacity: 0.6;
   cursor: default;
@@ -169,15 +161,4 @@ const formatTimeRange = (event: CalendarEvent): string => {
   opacity: 0.95;
 }
 
-.first-badge {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  background: rgba(255, 255, 255, 0.3);
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-size: 10px;
-  font-weight: bold;
-  letter-spacing: 0.5px;
-}
 </style>

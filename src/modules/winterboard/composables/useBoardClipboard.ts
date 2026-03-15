@@ -15,6 +15,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import type { WBAsset, WBStroke } from '../types/winterboard'
 import { STICKY_DEFAULTS } from '../types/winterboard'
+import { parseYouTubeVideoId, getYouTubeThumbnail } from '../utils/youtubeParser'
 import { validateFile, fileToDataUrl, uploadFileToStorage } from './useImageUpload'
 import { learningContentApi } from '@/modules/learning-content/api/learningContentApi'
 import { useToast } from './useToast'
@@ -196,9 +197,30 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
     }
   }
 
-  // ─── Text paste: create StickyNote ─────────────────────────
+  // ─── Text paste: YouTube URL → player, otherwise StickyNote ─
   function handleTextPaste(text: string): void {
     const center = canvasCenter()
+
+    // Phase 11 P2.2: Detect YouTube URL and create youtube_player asset
+    const videoId = parseYouTubeVideoId(text)
+    if (videoId) {
+      const ytAsset: WBAsset = {
+        id: `yt-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        type: 'youtube_player',
+        src: text,
+        youtubeUrl: text,
+        x: center.x - 320,
+        y: center.y - 180,
+        w: 640,
+        h: 360,
+        rotation: 0,
+        title: '',
+        thumbnail: getYouTubeThumbnail(videoId),
+      }
+      onAssetAdd(ytAsset)
+      console.info('[BoardClipboard] YouTube URL pasted as player', { videoId })
+      return
+    }
 
     // Truncate to 500 chars (matches store.updateStickyText limit)
     const truncated = text.length > 500 ? text.slice(0, 500) + '…' : text

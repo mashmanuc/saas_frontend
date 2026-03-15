@@ -24,12 +24,6 @@
           </a>
         </div>
         
-        <div v-if="lesson.is_first" class="first-lesson-badge">
-          <svg class="icon" width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
-          </svg>
-          {{ t('calendar.lesson_card.first_lesson') }}
-        </div>
     </div>
     
     <div class="lesson-actions">
@@ -122,7 +116,7 @@ const openReschedule = () => {
 
 const goToLesson = () => {
   if (props.lesson) {
-    router.push(`/lessons/${props.lesson.id}`)
+    window.open(`/lessons/${props.lesson.id}`, '_blank', 'noopener')
   }
 }
 
@@ -191,18 +185,6 @@ const handleRescheduleConfirmed = () => {
 
 .lesson-link:hover {
   text-decoration: underline;
-}
-
-.first-lesson-badge {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px;
-  background: var(--calendar-first-lesson-bg, #F3E5F5);
-  border-radius: var(--radius-md);
-  color: var(--calendar-first-lesson, #9C27B0);
-  font-weight: 600;
-  font-size: 14px;
 }
 
 .lesson-actions {

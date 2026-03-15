@@ -24,6 +24,41 @@
       <span class="content-sidebar__count">{{ sidebar.totalCount.value }}</span>
     </div>
 
+    <!-- Phase 11 B8: YouTube URL inline input -->
+    <div v-if="isTutor" class="content-sidebar__yt-section">
+      <button
+        v-if="!showYtInput"
+        type="button"
+        class="content-sidebar__yt-btn"
+        @click="showYtInput = true"
+      >
+        <svg width="14" height="14" viewBox="0 0 20 20" fill="none" style="vertical-align: -2px">
+          <rect x="2" y="4" width="16" height="12" rx="3" fill="#FF0000"/>
+          <path d="M8.5 7.5l5 2.5-5 2.5V7.5z" fill="#fff"/>
+        </svg>
+        + YouTube URL
+      </button>
+      <div v-else class="content-sidebar__yt-input-row">
+        <input
+          ref="ytInputRef"
+          v-model="ytUrl"
+          type="url"
+          class="content-sidebar__yt-input"
+          placeholder="https://youtube.com/watch?v=..."
+          @keydown.enter="submitYouTube"
+          @keydown.escape="showYtInput = false"
+        />
+        <button
+          type="button"
+          class="content-sidebar__yt-submit"
+          :disabled="!ytUrl.trim()"
+          @click="submitYouTube"
+        >
+          +
+        </button>
+      </div>
+    </div>
+
     <!-- Loading -->
     <div v-if="sidebar.isLoading.value" class="content-sidebar__loading">
       {{ t('winterboard.contentSidebar.loading') }}
@@ -61,9 +96,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, toRef, onMounted } from 'vue'
+import { ref, toRef, onMounted, nextTick, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useContentSidebar } from '../../composables/useContentSidebar'
+import { parseYouTubeVideoId } from '../../utils/youtubeParser'
 import ContentSidebarItem from './ContentSidebarItem.vue'
 import StorageQuotaBar from '@/modules/learning-content/components/StorageQuotaBar.vue'
 import { learningContentApi } from '@/modules/learning-content/api/learningContentApi'
@@ -89,6 +125,31 @@ async function loadQuota() {
 }
 
 onMounted(loadQuota)
+
+defineExpose({ reload: () => sidebar.reload() })
+
+// Phase 11 B8: YouTube inline input
+const showYtInput = ref(false)
+const ytUrl = ref('')
+const ytInputRef = ref<HTMLInputElement | null>(null)
+
+const emit = defineEmits<{
+  (e: 'youtube-add', url: string): void
+}>()
+
+watch(showYtInput, (v) => {
+  if (v) nextTick(() => ytInputRef.value?.focus())
+})
+
+function submitYouTube(): void {
+  const url = ytUrl.value.trim()
+  if (!url) return
+  const videoId = parseYouTubeVideoId(url)
+  if (!videoId) return
+  emit('youtube-add', url)
+  ytUrl.value = ''
+  showYtInput.value = false
+}
 
 // ── File drag-upload from OS ──
 const isDragOver = ref(false)
@@ -213,6 +274,51 @@ function onDrop(e: DragEvent) {
   padding: 0 4px;
   border-radius: 6px;
 }
+
+/* Phase 11 B8: YouTube inline input */
+.content-sidebar__yt-section {
+  padding: 4px 12px 8px;
+}
+.content-sidebar__yt-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 10px;
+  background: #fef2f2;
+  border: 1px dashed #fca5a5;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #dc2626;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.content-sidebar__yt-btn:hover { background: #fee2e2; }
+.content-sidebar__yt-input-row {
+  display: flex;
+  gap: 4px;
+}
+.content-sidebar__yt-input {
+  flex: 1;
+  padding: 5px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.12s;
+}
+.content-sidebar__yt-input:focus { border-color: #6366f1; }
+.content-sidebar__yt-submit {
+  padding: 4px 10px;
+  background: #6366f1;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.content-sidebar__yt-submit:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .fade-enter-active, .fade-leave-active { transition: opacity 0.15s; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }

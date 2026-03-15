@@ -105,7 +105,7 @@ export type WBTextElement = WBStroke & {
 
 export interface WBAsset {
   id: string
-  type: 'image' | 'sticky' | 'audio_player' | 'video_player'
+  type: 'image' | 'sticky' | 'audio_player' | 'video_player' | 'youtube_player'
   src: string
   x: number
   y: number
@@ -124,6 +124,24 @@ export interface WBAsset {
   title?: string
   duration?: number
   thumbnail?: string
+  /** Phase 10 P3: YouTube embed URL (present when type='youtube_player') */
+  youtubeUrl?: string
+}
+
+// Phase 10 P5: Lesson navigation marker — lightweight anchor in the replay timeline.
+// Matches backend WBLessonMarkerSerializer fields exactly.
+export type LessonMarkerCategory = 'theory' | 'formula' | 'example' | 'practice' | 'solution' | 'custom'
+
+export interface WBLessonMarker {
+  id: string
+  title: string
+  operation_index: number
+  page_id: string
+  board_position: { x: number; y: number }
+  thumbnail_url: string
+  category: LessonMarkerCategory
+  order: number
+  created_at: string
 }
 
 // v5 A9: Sticky note — typed alias for assets with type='sticky'
@@ -153,15 +171,18 @@ export const STICKY_DEFAULTS = {
 // Ref: responsive/prompts/active/DAY12-13_PHASE6.md A9
 // Bug fix: grid is now per-page (not global), with configurable color/opacity
 
+/** Visual style for per-page grid pattern (Phase 10 expansion) */
+export type GridStyle = 'dots' | 'lines' | 'small-grid' | 'large-grid' | 'ruled' | 'coordinate'
+
 export interface WBPageGridSettings {
   enabled: boolean
   /** Tile size in pixels */
-  size: 20 | 40 | 60
-  /** Visual style: dots pattern or lines grid */
-  style: 'dots' | 'lines'
+  size: number
+  /** Visual style: dots, lines, small-grid, large-grid, ruled, coordinate */
+  style: GridStyle
   /** CSS color string — default '#000000' */
   color: string
-  /** 0.0–1.0 alpha — default 0.15 (visible on video conferences) */
+  /** 0.0–1.0 alpha — default 0.4 (clearly visible on white and video conference backgrounds) */
   opacity: number
 }
 

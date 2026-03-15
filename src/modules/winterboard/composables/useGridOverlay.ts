@@ -15,6 +15,8 @@
  */
 
 import { ref, computed, watch } from 'vue'
+import { useWBStore } from '../board/state/boardStore'
+import type { WBPageGridSettings } from '../types/winterboard'
 
 export type GridType = 'none' | 'small-grid' | 'large-grid' | 'dots' | 'ruled' | 'coordinate'
 
@@ -44,7 +46,7 @@ function loadGridType(sessionId: string): GridType {
   } catch {
     // localStorage unavailable — silent fallback
   }
-  return 'none'
+  return 'dots'
 }
 
 function saveGridType(sessionId: string, gridType: GridType): void {
@@ -59,8 +61,25 @@ function saveGridType(sessionId: string, gridType: GridType): void {
   }
 }
 
+/**
+ * Convert UI GridType → per-page WBPageGridSettings for usePageGrid / boardStore.
+ * 'coordinate' draws a large-grid tile (40px); primary axes can be added as a canvas overlay later.
+ */
+function gridTypeToSettings(type: GridType): Partial<WBPageGridSettings> {
+  switch (type) {
+    case 'none':       return { enabled: false }
+    case 'small-grid': return { enabled: true, style: 'small-grid', size: 20 }
+    case 'large-grid': return { enabled: true, style: 'large-grid', size: 40 }
+    case 'dots':       return { enabled: true, style: 'dots',       size: 20 }
+    case 'ruled':      return { enabled: true, style: 'ruled',      size: 32 }
+    case 'coordinate': return { enabled: true, style: 'coordinate', size: 40 }
+    default:           return { enabled: false }
+  }
+}
+
 export function useGridOverlay(sessionId: string) {
   const gridType = ref<GridType>(loadGridType(sessionId))
+  const wbStore = useWBStore()
 
   const isGridActive = computed(() => gridType.value !== 'none')
 
@@ -68,9 +87,29 @@ export function useGridOverlay(sessionId: string) {
     GRID_OPTIONS.find(o => o.id === gridType.value) ?? GRID_OPTIONS[0],
   )
 
+  // Persist to localStorage AND sync to per-page grid settings (Konva renderer)
+  // BUG-1 FIX: immediate:true ensures grid state syncs to store on mount
   watch(gridType, (val) => {
     saveGridType(sessionId, val)
-  })
+    wbStore.updateCurrentPageGrid(gridTypeToSettings(val))
+  }, { immediate: true })
+
+  // Re-apply grid after session loads (race condition fix)
+  // The immediate watch above fires before pages[] are hydrated from backend,
+  // so updateCurrentPageGrid operates on the initial empty page — not the session's pages.
+  // This watch fires when workspaceId changes (session loaded/created) and
+  // re-applies the user's grid preference to the now-hydrated current page.
+  // Watching workspaceId avoids the infinite loop that watching currentPage caused:
+  // updateCurrentPageGrid creates a new page object reference, which would
+  // re-trigger a currentPage watch on every call.
+  watch(
+    () => wbStore.workspaceId,
+    (id) => {
+      if (id) {
+        wbStore.updateCurrentPageGrid(gridTypeToSettings(gridType.value))
+      }
+    },
+  )
 
   function setGrid(type: GridType): void {
     gridType.value = type

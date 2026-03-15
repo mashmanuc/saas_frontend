@@ -12,7 +12,7 @@
 
 import { computed, watch } from 'vue'
 import { useWBStore } from '../board/state/boardStore'
-import type { WBPageGridSettings } from '../types/winterboard'
+import type { WBPageGridSettings, GridStyle } from '../types/winterboard'
 
 // ─── Defaults ───────────────────────────────────────────────────────────────
 
@@ -21,8 +21,9 @@ export const DEFAULT_PAGE_GRID: WBPageGridSettings = {
   size: 20,
   style: 'dots',
   color: '#000000',
-  // 0.15 = visible on white AND on video conference backgrounds
-  opacity: 0.15,
+  // 0.4 = clearly visible on white AND readable on video conference backgrounds
+  // (was 0.15 — too faint, barely perceptible)
+  opacity: 0.4,
 }
 
 // ─── Composable ─────────────────────────────────────────────────────────────
@@ -39,8 +40,8 @@ export function usePageGrid() {
     if (!page || !page.grid) return { ...DEFAULT_PAGE_GRID }
     return {
       enabled:  page.grid.enabled  ?? DEFAULT_PAGE_GRID.enabled,
-      size:    (page.grid.size     as 20 | 40 | 60) ?? DEFAULT_PAGE_GRID.size,
-      style:   (page.grid.style    as 'dots' | 'lines') ?? DEFAULT_PAGE_GRID.style,
+      size:     page.grid.size     ?? DEFAULT_PAGE_GRID.size,
+      style:   (page.grid.style    as GridStyle) ?? DEFAULT_PAGE_GRID.style,
       color:    page.grid.color   ?? DEFAULT_PAGE_GRID.color,
       opacity:  page.grid.opacity  ?? DEFAULT_PAGE_GRID.opacity,
     }
@@ -103,15 +104,64 @@ export function _applyGridToCanvas(
   ctx.globalAlpha = opacity
 
   if (style === 'dots') {
-    // Single dot centred in the tile
+    // Single dot centred in the tile — radius 1.5px for clear visibility
     ctx.fillStyle = color
     ctx.beginPath()
-    ctx.arc(size / 2, size / 2, 1, 0, Math.PI * 2)
+    ctx.arc(size / 2, size / 2, 1.5, 0, Math.PI * 2)
     ctx.fill()
+  } else if (style === 'small-grid') {
+    // Thin grid lines — tile size 20px
+    // Use 1px lines so globalAlpha still produces visible result at opacity 0.4
+    ctx.strokeStyle = '#94a3b8'
+    ctx.lineWidth   = 1
+    ctx.beginPath()
+    ctx.moveTo(size, 0);    ctx.lineTo(size, size)   // right edge
+    ctx.moveTo(0,    size); ctx.lineTo(size, size)   // bottom edge
+    ctx.stroke()
+  } else if (style === 'large-grid') {
+    // Larger grid lines — tile size 40px
+    ctx.strokeStyle = '#94a3b8'
+    ctx.lineWidth   = 1
+    ctx.beginPath()
+    ctx.moveTo(size, 0);    ctx.lineTo(size, size)   // right edge
+    ctx.moveTo(0,    size); ctx.lineTo(size, size)   // bottom edge
+    ctx.stroke()
+  } else if (style === 'ruled') {
+    // Horizontal ruled lines only — blue tint
+    ctx.strokeStyle = '#60a5fa'
+    ctx.lineWidth   = 1
+    ctx.beginPath()
+    ctx.moveTo(0, size); ctx.lineTo(size, size)      // bottom edge only
+    ctx.stroke()
+  } else if (style === 'coordinate') {
+    // Coordinate plane tile: two-level grid (5 minor cells per major cell)
+    // Major cell = tile size (40px); minor cell = 8px
+    // Visually identical to classic coordinate/graph paper
+    const minor = Math.round(size / 5)   // 40 / 5 = 8px
+
+    // Minor grid lines — very light, inside the major cell
+    ctx.strokeStyle = '#cbd5e1'   // slate-300 (lighter)
+    ctx.lineWidth = 0.5
+    ctx.globalAlpha = opacity * 0.5
+    ctx.beginPath()
+    for (let i = minor; i < size; i += minor) {
+      ctx.moveTo(i, 0);    ctx.lineTo(i, size)   // vertical minor
+      ctx.moveTo(0, i);    ctx.lineTo(size, i)   // horizontal minor
+    }
+    ctx.stroke()
+
+    // Major grid lines at tile boundary — darker, full opacity
+    ctx.strokeStyle = '#94a3b8'   // slate-400
+    ctx.lineWidth = 1
+    ctx.globalAlpha = opacity
+    ctx.beginPath()
+    ctx.moveTo(size, 0);    ctx.lineTo(size, size)   // right edge
+    ctx.moveTo(0,    size); ctx.lineTo(size, size)   // bottom edge
+    ctx.stroke()
   } else {
-    // 'lines' — draw right edge + bottom edge; tiling produces a grid
+    // 'lines' (legacy) — draw right edge + bottom edge; tiling produces a grid
     ctx.strokeStyle = color
-    ctx.lineWidth   = 0.5
+    ctx.lineWidth   = 1
     ctx.beginPath()
     ctx.moveTo(size, 0);    ctx.lineTo(size, size)   // right edge
     ctx.moveTo(0,    size); ctx.lineTo(size, size)   // bottom edge

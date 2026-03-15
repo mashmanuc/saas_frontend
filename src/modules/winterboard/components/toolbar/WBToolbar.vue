@@ -125,6 +125,23 @@
       </div>
     </Transition>
 
+    <!-- P3: YouTube insert button -->
+    <div class="wb-toolbar__sep" role="separator" aria-hidden="true" />
+    <div class="wb-toolbar__group" role="group" :aria-label="t('winterboard.youtube.insert')">
+      <button
+        type="button"
+        class="wb-toolbar__btn wb-toolbar__btn--tooltip"
+        :aria-label="t('winterboard.youtube.insert')"
+        :data-tooltip="t('winterboard.youtube.insert')"
+        @click="emit('youtube-insert')"
+      >
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <rect x="2" y="4" width="16" height="12" rx="3" fill="#FF0000"/>
+          <path d="M8.5 7.5l5 2.5-5 2.5V7.5z" fill="#fff"/>
+        </svg>
+      </button>
+    </div>
+
     <!-- Phase 4 B8: Tablet expand/collapse toggle (only visible on tablet variant) -->
     <button
       v-if="variant === 'tablet'"
@@ -242,6 +259,7 @@ const emit = defineEmits<{
   'lock-selected': []
   'unlock-selected': []
   'clear-page-request': []
+  'youtube-insert': []
 }>()
 
 // ─── i18n ───────────────────────────────────────────────────────────────────

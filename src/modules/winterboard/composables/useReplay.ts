@@ -7,10 +7,11 @@
 //   await replay.loadTimeline((op) => applyOpToShadowCanvas(op))
 //   replay.play()
 
-import { ref, readonly, computed } from 'vue'
+import { ref, readonly, computed, watch } from 'vue'
 import { WBReplayEngine, type ReplaySpeed, type ReplayState } from '../engine/WBReplayEngine'
-import { fetchReplayTimeline } from '../api/replay'
+import { fetchReplayTimeline, fetchNearestSnapshot, fetchLessonMarkers } from '../api/replay'
 import type { BoardOperation } from '../types/replay'
+import type { WBLessonMarker } from '../types/winterboard'
 
 export function useReplay(sessionId: string) {
   const engine = ref<WBReplayEngine | null>(null)
@@ -19,6 +20,13 @@ export function useReplay(sessionId: string) {
   const totalOperations = ref(0)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+
+  // Phase 10 P5: Lesson markers
+  const markers = ref<WBLessonMarker[]>([])
+  const activeMarkerId = ref<string | null>(null)
+
+  // Stored onOp callback for seekToWithSnapshot to re-apply ops
+  let _onOp: ((op: BoardOperation) => void) | null = null
 
   const progress = computed(() =>
     totalOperations.value > 0
@@ -31,6 +39,7 @@ export function useReplay(sessionId: string) {
    * @param onOp - callback fired for each replayed operation (render to shadow canvas)
    */
   async function loadTimeline(onOp: (op: BoardOperation) => void): Promise<void> {
+    _onOp = onOp
     isLoading.value = true
     error.value = null
     try {
@@ -67,9 +76,78 @@ export function useReplay(sessionId: string) {
   }
   function setSpeed(s: ReplaySpeed): void { engine.value?.setSpeed(s) }
   function seekTo(idx: number): void { engine.value?.seekTo(idx) }
+
+  /**
+   * Seek to a specific operation index using snapshots for performance.
+   * 1. Fetch nearest snapshot at or before idx
+   * 2. If found: load snapshot board state, then apply remaining ops
+   * 3. If not found: replay from beginning (fallback)
+   *
+   * @param idx - target operation index
+   * @param loadState - callback to hydrate board store from snapshot board_state
+   * @param clearState - callback to clear board state before replay-from-zero
+   */
+  async function seekToWithSnapshot(
+    idx: number,
+    loadState: (boardState: Record<string, unknown>) => void,
+    clearState: () => void,
+  ): Promise<void> {
+    if (!_onOp) return
+
+    const snapshot = await fetchNearestSnapshot(sessionId, idx)
+
+    if (snapshot && snapshot.operation_index <= idx) {
+      // Load snapshot board state
+      loadState(snapshot.board_state)
+
+      // Apply remaining ops from snapshot.operation_index to idx
+      const remaining = await fetchReplayTimeline(sessionId, {
+        offset: snapshot.operation_index,
+        limit: idx - snapshot.operation_index,
+      })
+      for (const op of remaining.operations) {
+        _onOp(op)
+      }
+    } else {
+      // No snapshot — replay from beginning
+      clearState()
+      const timeline = await fetchReplayTimeline(sessionId, { limit: idx })
+      for (const op of timeline.operations) {
+        _onOp(op)
+      }
+    }
+
+    // Sync engine position
+    engine.value?.seekTo(idx)
+    currentIndex.value = idx
+  }
+
+  // Phase 10 P5: Auto-detect active marker during playback
+  watch(currentIndex, (idx) => {
+    if (markers.value.length === 0) {
+      activeMarkerId.value = null
+      return
+    }
+    const sorted = [...markers.value].sort((a, b) => b.operation_index - a.operation_index)
+    const active = sorted.find(m => m.operation_index <= idx)
+    activeMarkerId.value = active?.id ?? null
+  })
+
+  async function loadMarkers(): Promise<void> {
+    try {
+      const result = await fetchLessonMarkers(sessionId)
+      markers.value = result.markers
+    } catch {
+      // markers are non-critical — silent fail
+    }
+  }
+
   function destroy(): void {
     engine.value?.destroy()
     engine.value = null
+    _onOp = null
+    markers.value = []
+    activeMarkerId.value = null
   }
 
   return {
@@ -85,6 +163,10 @@ export function useReplay(sessionId: string) {
     stop,
     setSpeed,
     seekTo,
+    seekToWithSnapshot,
+    markers: readonly(markers),
+    activeMarkerId: readonly(activeMarkerId),
+    loadMarkers,
     destroy,
   }
 }

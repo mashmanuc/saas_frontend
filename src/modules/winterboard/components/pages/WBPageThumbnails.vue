@@ -142,13 +142,15 @@ function handleDrop(index: number, e: DragEvent): void {
     return
   }
 
-  let toIndex = dropPosition.value === 'before' ? index : index
-  if (from < index && dropPosition.value === 'before') {
-    toIndex = index - 1
-  } else if (from > index && dropPosition.value === 'after') {
-    toIndex = index + 1
+  // Calculate target insertion index accounting for the splice-remove shift.
+  // After splice(from, 1), indices above `from` shift down by 1.
+  let toIndex: number
+  if (dropPosition.value === 'before') {
+    // Insert before the target element
+    toIndex = from < index ? index - 1 : index
   } else {
-    toIndex = index
+    // Insert after the target element
+    toIndex = from < index ? index : index + 1
   }
 
   toIndex = Math.max(0, Math.min(toIndex, props.pages.length - 1))

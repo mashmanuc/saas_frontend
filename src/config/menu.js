@@ -73,7 +73,6 @@ export const SECTIONED_MENU_BY_ROLE = {
         { label: 'sidebar.item.wbLibrary', icon: 'folder', to: '/winterboard/library' },
         { label: 'sidebar.item.wbLessons', icon: 'book-open', to: '/winterboard/lessons' },
         { label: 'sidebar.item.wbBoards', icon: 'layout', to: '/winterboard/boards' },
-        { label: 'sidebar.item.wbStudents', icon: 'users', to: '/winterboard/students' },
       ],
     },
     {

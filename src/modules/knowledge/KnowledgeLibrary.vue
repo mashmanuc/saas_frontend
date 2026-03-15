@@ -868,7 +868,8 @@ function startLessonPlan(plan: LessonPlan) {
   if (selectedGroupId.value) query.groupId = selectedGroupId.value
   query.lessonName = plan.title
   query.lessonPlanId = plan.id
-  router.push({ path: '/winterboard/new', query })
+  const resolved = router.resolve({ path: '/winterboard/new', query })
+  window.open(resolved.href, '_blank', 'noopener')
 }
 
 // Підвантажуємо плани при виборі групи
@@ -1105,12 +1106,14 @@ async function handleOpenBoardForStudent() {
   if (active) {
     if (active.session_uuid) {
       // Pass groupId so sidebar shows materials on the board
-      router.push({
+      const resolved = router.resolve({
         path: `/winterboard/${active.session_uuid}`,
         query: selectedGroupId.value ? { groupId: selectedGroupId.value } : {},
       })
+      window.open(resolved.href, '_blank', 'noopener')
     } else {
-      router.push(`/winterboard/classroom/${active.id}`)
+      const resolved = router.resolve({ path: `/winterboard/classroom/${active.id}` })
+      window.open(resolved.href, '_blank', 'noopener')
     }
     return
   }
@@ -1119,14 +1122,16 @@ async function handleOpenBoardForStudent() {
   const query: Record<string, string> = {}
   if (selectedGroupId.value) query.groupId = selectedGroupId.value
   if (studentDisplayName.value) query.studentName = studentDisplayName.value
-  router.push({ path: '/winterboard/new', query })
+  const resolved = router.resolve({ path: '/winterboard/new', query })
+  window.open(resolved.href, '_blank', 'noopener')
 }
 
 function openBoardSession(sessionUuid: string) {
-  router.push({
+  const resolved = router.resolve({
     path: `/winterboard/${sessionUuid}`,
     query: selectedGroupId.value ? { groupId: selectedGroupId.value } : {},
   })
+  window.open(resolved.href, '_blank', 'noopener')
 }
 
 // ── Clone via modal ─────────────────────────────────────────
