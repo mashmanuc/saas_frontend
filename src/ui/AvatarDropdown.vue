@@ -291,7 +291,7 @@ onUnmounted(() => {
   width: 280px;
   border-radius: 12px;
   border: 1px solid var(--border-color);
-  background: var(--bg-primary);
+  background: var(--dropdown-bg);
   box-shadow: 0 8px 24px color-mix(in srgb, var(--text-primary, #000) 12%, transparent);
   z-index: 50;
   overflow: hidden;
@@ -419,7 +419,7 @@ onUnmounted(() => {
   width: 100%;
   max-height: 80vh;
   overflow-y: auto;
-  background: var(--bg-primary);
+  background: var(--dropdown-bg);
   border-radius: 16px 16px 0 0;
   padding: 0.5rem 1rem 1rem;
   padding-bottom: env(safe-area-inset-bottom, 1rem);

@@ -9,9 +9,13 @@ export const SIDEBAR_DRAG_MIME = 'application/vnd.m4sh.content'
 export const CONTENT_DRAG_MIME = 'application/learning-content'
 
 export interface SidebarDragPayload {
-  content_item_id: number
+  content_item_id: number | null  // null для старих LibraryAsset без ContentItem FK
   asset_category: string
   content_type: string
+  /** Phase 9 fallback: пряма URL для старих активів без ContentItem */
+  cdn_url?: string | null
+  /** Назва для audio/video player title */
+  title?: string
   extra?: {
     page_number?: number
     slide_index?: number

@@ -8,8 +8,8 @@
     <!-- Preview -->
     <div class="library-asset-card__preview">
       <img
-        v-if="asset.thumbnail_url"
-        :src="asset.thumbnail_url"
+        v-if="previewSrc"
+        :src="previewSrc"
         :alt="asset.name"
         class="library-asset-card__img"
         loading="lazy"
@@ -86,6 +86,14 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 // ─── Computed ─────────────────────────────────────────────────────────────────
+
+const isImage = computed(() => props.asset.content_type.startsWith('image/'))
+
+const previewSrc = computed<string | null>(() => {
+  if (props.asset.thumbnail_url) return props.asset.thumbnail_url
+  if (isImage.value && props.asset.cdn_url) return props.asset.cdn_url
+  return null
+})
 
 const fileIcon = computed<string>(() => {
   const ct = props.asset.content_type

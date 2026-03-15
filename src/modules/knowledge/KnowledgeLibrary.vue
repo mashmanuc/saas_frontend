@@ -1003,6 +1003,7 @@ async function loadMyFiles() {
   try {
     const res: any = await learningContentApi.searchItems({
       ownership_type: 'TUTOR',
+      owner: 'me',
       q: '',
     })
     myFiles.value = res.items ?? []

@@ -13,8 +13,8 @@
     @dblclick.prevent="handleDblClick"
   >
     <img
-      v-if="item.thumbnail_url"
-      :src="item.thumbnail_url"
+      v-if="thumbSrc"
+      :src="thumbSrc"
       class="sidebar-item__thumb"
       :alt="item.title"
       loading="lazy"
@@ -87,6 +87,12 @@ const isReady = computed(() =>
 
 const isPdf = computed(() => props.item.asset_category === 'pdf')
 const isPresentation = computed(() => props.item.asset_category === 'presentation')
+
+const thumbSrc = computed<string | null>(() => {
+  if (props.item.thumbnail_url) return props.item.thumbnail_url
+  if (props.item.asset_category === 'image' && props.item.cdn_url) return props.item.cdn_url
+  return null
+})
 const showPdfSelector = ref(false)
 const showSlideSelector = ref(false)
 
@@ -130,9 +136,13 @@ function onDragStart(e: DragEvent) {
   // Just bail out without setting SIDEBAR_DRAG_MIME (child already set it).
   if (isPresentation.value || isPdf.value) return
   const payload: SidebarDragPayload = {
-    content_item_id: props.item.content_item_id as number,
+    content_item_id: props.item.content_item_id,
     asset_category: props.item.asset_category,
     content_type: props.item.content_type,
+    // Phase 9 fallback: для старих LibraryAsset без ContentItem FK (content_item_id=null)
+    // передаємо cdn_url щоб handleSidebarDrop міг рендерити файл напряму
+    cdn_url: props.item.cdn_url ?? null,
+    title: props.item.title,
   }
   e.dataTransfer?.setData(SIDEBAR_DRAG_MIME, JSON.stringify(payload))
   e.dataTransfer!.effectAllowed = 'copy'

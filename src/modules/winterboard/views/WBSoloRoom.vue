@@ -657,14 +657,14 @@ const showPagePanel = ref(localStorage.getItem('wb:pagePanel') === 'true')
 watch(showPagePanel, (v) => localStorage.setItem('wb:pagePanel', String(v)))
 
 // ── Group sidebar: materials panel ──
-// Priority: 1) explicit ?groupId= from URL  2) auto-detect tutor's first implicit group
+// groupId: explicit ?groupId= from URL → group materials; null → tutor's Library files
 const explicitGroupId = computed(() => {
   const qg = route.query.groupId
   return typeof qg === 'string' ? qg : null
 })
 const autoGroupId = ref<string | null>(null)
 const groupId = computed(() => explicitGroupId.value || autoGroupId.value)
-const showMaterialsSidebar = computed(() => !!groupId.value)
+const showMaterialsSidebar = ref(true)
 
 async function detectTutorGroup() {
   if (explicitGroupId.value) return
@@ -1179,10 +1179,8 @@ onMounted(async () => {
       isLoading.value = false
       // Template selector modal removed — grid overlay button replaces it
       await connectPresenceSafe(created.id)
-      // Auto-detect group for sidebar before redirect (route.query may have no groupId)
-      if (!route.query.groupId) await detectTutorGroup()
-      // Preserve groupId in query params (either explicit or auto-detected)
-      const query = groupId.value ? { ...route.query, groupId: groupId.value } : route.query
+      // Preserve explicit groupId in query params if present
+      const query = explicitGroupId.value ? { ...route.query, groupId: explicitGroupId.value } : route.query
       router.replace({ name: 'winterboard-solo', params: { id: created.id }, query })
       return
     } catch (err: unknown) {
@@ -1240,16 +1238,10 @@ onMounted(async () => {
       // Always stop loading — even on error, show the canvas
       isLoading.value = false
 
-      // Auto-detect group for sidebar
-      await detectTutorGroup()
-
       // Connect presence (waits for auth bootstrap internally)
       await connectPresenceSafe(id)
     }
   }
-
-  // Auto-detect tutor group for materials sidebar (non-blocking)
-  detectTutorGroup()
 
   sessionName.value = store.workspaceName
 })

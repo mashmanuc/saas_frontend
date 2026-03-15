@@ -50,6 +50,8 @@ export interface LibraryAsset {
   tags: string[]         // масив імен тегів
   created_at: string
   updated_at: string
+  /** Phase 9 SSOT FK — ContentItem PK. null для старих активів без ContentItem. */
+  content_item_id?: number | null
 }
 
 // ─── Paginated list response (GET /library/assets/) ───────────────────────

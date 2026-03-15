@@ -27,6 +27,8 @@
     --warning-bg: #f59e0b;
     --danger-bg: #ef4444;
     --info-bg: #06b6d4;
+    --dropdown-bg: #ffffff;
+    --bg-hover: rgba(5, 150, 105, 0.08);
 
     --color-bg-primary: var(--bg-primary);
     --color-bg-secondary: var(--bg-secondary);
@@ -79,6 +81,8 @@
     --warning-bg: #fbbf24;
     --danger-bg: #f87171;
     --info-bg: #22d3ee;
+    --dropdown-bg: #1e293b;
+    --bg-hover: rgba(56, 189, 248, 0.1);
 
     --color-bg-primary: var(--bg-primary);
     --color-bg-secondary: var(--bg-secondary);
@@ -118,6 +122,8 @@
     --warning-bg: #f59e0b;
     --danger-bg: #dc2626;
     --info-bg: #0ea5e9;
+    --dropdown-bg: #ffffff;
+    --bg-hover: rgba(124, 58, 237, 0.08);
 
     --color-bg-primary: var(--bg-primary);
     --color-bg-secondary: var(--bg-secondary);

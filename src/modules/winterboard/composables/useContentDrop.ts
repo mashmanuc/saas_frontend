@@ -220,6 +220,13 @@ export function useContentDrop(options: UseContentDropOptions) {
     payload: SidebarDragPayload,
     dropPosition: { x: number; y: number },
   ): Promise<void> {
+    // Phase 9 fallback: старі LibraryAsset не мають ContentItem FK.
+    // Якщо content_item_id = null — використовуємо cdn_url напряму, без resolve-drop.
+    if (!payload.content_item_id) {
+      await handleLegacyAssetDrop(payload, dropPosition)
+      return
+    }
+
     try {
       const res = await learningContentApi.resolveDropMode({
         content_item_id: payload.content_item_id,
@@ -238,7 +245,7 @@ export function useContentDrop(options: UseContentDropOptions) {
 
       // For render_svg — render SVG locally and build asset inline
       if (drop_mode === 'render_svg') {
-        const detail = await learningContentApi.getItemDetail(payload.content_item_id)
+        const detail = await learningContentApi.getItemDetail(payload.content_item_id!)
         let dataUrl: string
         try {
           dataUrl = await renderContentToSvgDataUrl(detail)
@@ -312,10 +319,95 @@ export function useContentDrop(options: UseContentDropOptions) {
       }
 
       onAssetAdd(asset)
-      trackMaterial(payload.content_item_id, dropPosition)
+      if (payload.content_item_id) trackMaterial(payload.content_item_id, dropPosition)
     } catch (e) {
       console.error('[useContentDrop] Sidebar drop failed:', e)
     }
+  }
+
+  /**
+   * Phase 9 fallback: обробляє drag для старих LibraryAsset без ContentItem FK.
+   * Замість resolve-drop — використовує cdn_url напряму з drag payload.
+   *
+   * Відображення за asset_category:
+   *   image → type='image' (якщо URL завантажується)
+   *   audio → type='audio_player' (завжди; плеєр покаже помилку якщо файл відсутній)
+   *   video → type='video_player'
+   *   pdf/presentation → не підтримується без ContentItem (пропускаємо з попередженням)
+   */
+  async function handleLegacyAssetDrop(
+    payload: SidebarDragPayload,
+    dropPosition: { x: number; y: number },
+  ): Promise<void> {
+    const src = payload.cdn_url || ''
+    const category = payload.asset_category
+    const assetId = `legacy-${category}-${Date.now()}`
+
+    console.info('[WB:Drop] legacy asset fallback: category=%s src=%s', category, src || '(empty)')
+
+    if (category === 'audio') {
+      const sizes = DEFAULT_BOARD_SIZES['audio_player']
+      const asset: WBAsset = {
+        id: assetId,
+        type: 'audio_player',
+        src,
+        x: dropPosition.x - sizes.w / 2,
+        y: dropPosition.y - sizes.h / 2,
+        w: sizes.w,
+        h: sizes.h,
+        rotation: 0,
+        locked: false,
+        title: payload.title,
+      }
+      onAssetAdd(asset)
+      return
+    }
+
+    if (category === 'video') {
+      const sizes = DEFAULT_BOARD_SIZES['video_player']
+      const asset: WBAsset = {
+        id: assetId,
+        type: 'video_player',
+        src,
+        x: dropPosition.x - sizes.w / 2,
+        y: dropPosition.y - sizes.h / 2,
+        w: sizes.w,
+        h: sizes.h,
+        rotation: 0,
+        locked: false,
+        title: payload.title,
+      }
+      onAssetAdd(asset)
+      return
+    }
+
+    if (category === 'image') {
+      if (!src) {
+        console.warn('[WB:Drop] Legacy image has no cdn_url — skipping')
+        return
+      }
+      const dims = await getImageDimensions(src)
+      if (!dims.loaded) {
+        console.warn('[WB:Drop] Legacy image failed to load (file missing?):', src)
+        return
+      }
+      const asset: WBAsset = {
+        id: assetId,
+        type: 'image',
+        src,
+        x: dropPosition.x - dims.w / 2,
+        y: dropPosition.y - dims.h / 2,
+        w: dims.w,
+        h: dims.h,
+        rotation: 0,
+        locked: false,
+      }
+      onAssetAdd(asset)
+      return
+    }
+
+    // pdf, presentation — без ContentItem не підтримується
+    console.warn('[WB:Drop] Legacy asset category not supported without ContentItem:', category)
   }
 
   return {

@@ -124,7 +124,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { createAsset, confirmAsset } from '../../api/library'
+import { uploadAsset } from '../../api/library'
 import type { LibraryAsset, LibraryFolderTree } from '../../types/library'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -217,18 +217,10 @@ async function startUpload(): Promise<void> {
   for (const pf of toUpload) {
     pf.status = 'uploading'
     try {
-      const asset = await createAsset({
-        name: pf.file.name,
-        folder: targetFolderId.value,
-        content_type: pf.file.type || 'application/octet-stream',
-        size_bytes: pf.file.size,
-      })
-      const confirmed = await confirmAsset(asset.id, {
-        cdn_url: asset.cdn_url || '',
-        size_bytes: pf.file.size,
-      })
+      // Phase 9 SSOT: single call uploads file + creates ContentItem + LibraryAsset
+      const asset = await uploadAsset(pf.file, targetFolderId.value)
       pf.status = 'done'
-      emit('uploaded', confirmed)
+      emit('uploaded', asset)
     } catch (err) {
       console.error('[WB:UploadModal] Upload failed', pf.file.name, err)
       pf.status = 'error'

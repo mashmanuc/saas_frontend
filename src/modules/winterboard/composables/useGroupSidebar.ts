@@ -1,6 +1,8 @@
 import { ref, computed, watch, onUnmounted, type Ref } from 'vue'
 import { groupApi as learningGroupApi } from '@/modules/groups/api/groupApi'
 import { learningContentApi } from '@/modules/learning-content/api/learningContentApi'
+import { fetchAssets } from '@/modules/winterboard/api/library'
+import type { LibraryAsset } from '@/modules/winterboard/types/library'
 import type { AllowedContentItem, AssetCategoryGroup } from '../types/sidebar'
 import { SIDEBAR_DRAG_MIME } from '../types/boardDrop'
 
@@ -106,28 +108,49 @@ export function useGroupSidebar(groupId: Ref<string | null>) {
   // ── Data loading ───────────────────────────────────────────────────────────
 
   async function load() {
-    if (!groupId.value) return
     isLoading.value = true
     error.value = null
     try {
-      const materials = await learningGroupApi.listMaterials(groupId.value) as unknown as Record<string, unknown>[]
-      items.value = materials.map((m: Record<string, unknown>) => ({
-        id: (m.content_item as number) ?? 0,
-        content_item_id: (m.content_item as number) ?? 0,
-        content_type: (m.content_type as string) ?? 'image',
-        title: (m.content_title as string) ?? 'Untitled',
-        asset_category: guessAssetCategory((m.content_type as string) ?? ''),
-        thumbnail_url: (m.content_thumbnail_url as string | null) ?? null,
-        processing_status: (m.content_processing_status as string) ?? 'ready',
-        pages: (m.content_pages as Record<string, { thumbnail_url: string }>) ?? undefined,
-        page_count: (m.content_page_count as number) ?? undefined,
-        slides: (m.content_slides as Record<string, { image_url: string }>) ?? undefined,
-        slide_count: (m.content_slide_count as number) ?? undefined,
-      }))
-      // Start polling if any items are still processing
-      startPolling()
-    } catch (e) {
-      console.warn('[useGroupSidebar] Load failed:', e)
+      if (groupId.value) {
+        // Group mode: load materials assigned to this class/group
+        const materials = await learningGroupApi.listMaterials(groupId.value) as unknown as Record<string, unknown>[]
+        items.value = materials.map((m: Record<string, unknown>) => ({
+          id: (m.content_item as number) ?? 0,
+          content_item_id: (m.content_item as number) ?? 0,
+          content_type: (m.content_type as string) ?? 'image',
+          title: (m.content_title as string) ?? 'Untitled',
+          asset_category: guessAssetCategory((m.content_type as string) ?? ''),
+          thumbnail_url: (m.content_thumbnail_url as string | null) ?? null,
+          processing_status: (m.content_processing_status as string) ?? 'ready',
+          pages: (m.content_pages as Record<string, { thumbnail_url: string }>) ?? undefined,
+          page_count: (m.content_page_count as number) ?? undefined,
+          slides: (m.content_slides as Record<string, { image_url: string }>) ?? undefined,
+          slide_count: (m.content_slide_count as number) ?? undefined,
+        }))
+        startPolling()
+      } else {
+        // Library mode: no group context — show tutor's files from Library
+        const res = await fetchAssets({ limit: 100 })
+        items.value = (res.results ?? []).map((a: LibraryAsset) => {
+          // Phase 9: content_item_id = null для старих активів без ContentItem FK.
+          // НЕ підставляємо a.id як fallback — це LibraryAsset.id, не ContentItem.id,
+          // і resolve-drop шукав би неправильний ContentItem → 404.
+          const ciId = a.content_item_id ?? null
+          // Fallback URL для старих активів (cdn_url або /media/ + storage_key)
+          const fallbackUrl = a.cdn_url || (a.storage_key ? `/media/${a.storage_key}` : null)
+          return {
+            id: ciId ?? a.id,
+            content_item_id: ciId,
+            content_type: mimeToCategory(a.content_type),
+            title: a.name,
+            asset_category: mimeToCategory(a.content_type),
+            thumbnail_url: a.thumbnail_url || a.cdn_url || null,
+            processing_status: a.status === 'active' ? 'ready' : 'pending',
+            cdn_url: fallbackUrl,
+          }
+        })
+      }
+    } catch {
       error.value = 'load_failed'
       items.value = []
     } finally {
@@ -135,8 +158,8 @@ export function useGroupSidebar(groupId: Ref<string | null>) {
     }
   }
 
-  watch(groupId, (newVal) => {
-    if (newVal) load()
+  watch(groupId, () => {
+    load()
   }, { immediate: true })
 
   const grouped = computed(() => {
@@ -155,6 +178,16 @@ export function useGroupSidebar(groupId: Ref<string | null>) {
   })
 
   const totalCount = computed(() => items.value.length)
+
+  function mimeToCategory(mime: string): string {
+    if (!mime) return 'image'
+    if (mime.startsWith('image/')) return 'image'
+    if (mime.startsWith('video/')) return 'video'
+    if (mime.startsWith('audio/')) return 'audio'
+    if (mime.includes('pdf')) return 'pdf'
+    if (mime.includes('presentation') || mime.includes('powerpoint')) return 'presentation'
+    return 'image'
+  }
 
   function guessAssetCategory(contentType: string): string {
     if (!contentType) return 'image'

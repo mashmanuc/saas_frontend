@@ -75,6 +75,25 @@ export async function createAsset(data: LibraryAssetCreateRequest): Promise<Libr
   return apiClient.post<LibraryAsset>(`${BASE}/assets/`, data)
 }
 
+/**
+ * Phase 9 SSOT: upload file via multipart/form-data.
+ * Backend creates ContentItem (SSOT) + LibraryAsset (organizer) atomically.
+ * Returns the created LibraryAsset with content_item_id populated.
+ */
+export async function uploadAsset(file: File, folderId?: number | null): Promise<LibraryAsset> {
+  const formData = new FormData()
+  formData.append('file', file)
+  if (folderId != null) {
+    formData.append('folder', String(folderId))
+  }
+  // IMPORTANT: do NOT set Content-Type manually — axios must auto-detect
+  // multipart/form-data with boundary from FormData object.
+  // Override the default 'application/json' from apiClient by deleting it.
+  return apiClient.post<LibraryAsset>(`${BASE}/assets/`, formData, {
+    headers: { 'Content-Type': undefined as unknown as string },
+  })
+}
+
 export async function updateAsset(id: number, data: LibraryAssetUpdateRequest): Promise<LibraryAsset> {
   return apiClient.patch<LibraryAsset>(`${BASE}/assets/${id}/`, data)
 }
