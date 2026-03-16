@@ -67,14 +67,15 @@ export function useCatalog() {
         cursor: reset ? undefined : (nextCursor.value ?? undefined),
       })
 
+      const items = res.lessons ?? []
       if (reset) {
-        lessons.value = res.lessons
+        lessons.value = items
       } else {
-        lessons.value = [...lessons.value, ...res.lessons]
+        lessons.value = [...lessons.value, ...items]
       }
 
-      nextCursor.value = res.next_cursor
-      totalCount.value = res.total
+      nextCursor.value = res.next_cursor ?? null
+      totalCount.value = res.total ?? 0
     } catch (err: unknown) {
       if ((err as Error)?.name === 'CanceledError' || (err as Error)?.name === 'AbortError') return
 

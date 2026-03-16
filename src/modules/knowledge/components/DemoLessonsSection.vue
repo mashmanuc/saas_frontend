@@ -5,7 +5,7 @@
     <div class="demo-lessons-section__header">
       <h2 class="demo-lessons-section__title">{{ t('knowledge.demo.title') }}</h2>
       <router-link
-        :to="`/knowledge/catalog?tutor=${tutorSlug}`"
+        :to="`/knowledge/catalog?tutor=${encodeURIComponent(tutorSlug)}`"
         class="demo-lessons-section__view-all"
       >
         {{ t('knowledge.publicLesson.viewAllLessons') }} →

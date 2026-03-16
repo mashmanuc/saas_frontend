@@ -5,7 +5,7 @@
   <div class="knowledge-stats-widget">
     <div class="knowledge-stats-widget__header">
       <h3 class="knowledge-stats-widget__title">Knowledge</h3>
-      <a href="/knowledge/analytics" class="knowledge-stats-widget__link">Детальніше →</a>
+      <router-link to="/knowledge/analytics" class="knowledge-stats-widget__link">Детальніше →</router-link>
     </div>
 
     <div v-if="isLoading" class="knowledge-stats-widget__loading">

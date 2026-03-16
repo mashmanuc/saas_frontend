@@ -2845,7 +2845,9 @@
       "myStudents": "Мої учні",
       "findTutor": "Знайти тьютора",
       "mySchedule": "Мій розклад",
-      "messages": "Повідомлення"
+      "messages": "Повідомлення",
+      "lessonCatalog": "Каталог уроків",
+      "knowledgeAnalytics": "Аналітика знань"
     },
     "newInquiries": {
       "title": "Нові запити",
@@ -7348,10 +7350,18 @@
     "library": {
       "title": "Бібліотека шаблонів",
       "subtitle": "Знайдіть шаблон уроку та почніть працювати швидше",
+      "searchPlaceholder": "Пошук шаблонів...",
       "difficulty": "Складність",
+      "any": "Будь-яка",
       "sortBy": "Сортувати",
       "sortPopular": "Популярні",
       "sortNewest": "Нові",
+      "retry": "Спробувати знову",
+      "usedCount": "Використано {count} разів",
+      "clone": "Клонувати",
+      "empty": "Шаблонів ще немає",
+      "loadMore": "Завантажити ще",
+      "totalCount": "Всього: {count}",
       "emptyTitle": "Бібліотека порожня",
       "emptySubtitle": "Опублікуйте свій перший урок і зробіть його шаблоном!",
       "emptyAction": "Створити урок"

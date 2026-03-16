@@ -197,16 +197,19 @@ async function handleSubmit() {
     visibility: form.visibility,
   })
 
-  if (publishedLesson.value && publicUrl.value) {
+  if (publishedLesson.value) {
     const result = {
       id: publishedLesson.value.id,
       title: publishedLesson.value.title,
-      url: publicUrl.value,
+      url: publicUrl.value || `/lesson/${publishedLesson.value.tutor_slug || ''}/${publishedLesson.value.slug || ''}`,
     }
     publishResult.value = result
     emit('published', result)
   } else if (publishComposableError.value) {
     publishError.value = publishComposableError.value
+  } else {
+    // BUG-12 fix: fallback error when no result and no explicit error
+    publishError.value = 'Публікація не вдалася. Спробуйте ще раз.'
   }
 }
 

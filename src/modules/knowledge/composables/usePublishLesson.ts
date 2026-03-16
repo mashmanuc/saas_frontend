@@ -3,6 +3,7 @@
 // Ref: AGENT_A_FE_CORE.md A3.2
 
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import apiClient from '@/utils/apiClient'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -47,7 +48,8 @@ export function usePublishLesson() {
       publishedLesson.value = result
     } catch (err: unknown) {
       const message = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-      error.value = message || 'Не вдалося опублікувати урок'
+      const { t } = useI18n()
+      error.value = message || t('knowledge.publish.error', 'Не вдалося опублікувати урок')
       console.error('[usePublishLesson] Publish failed:', err)
     } finally {
       isPublishing.value = false

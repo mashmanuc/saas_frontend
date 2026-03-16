@@ -84,7 +84,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, defineAsyncComponent, onMounted, ref } from 'vue'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { useDashboardStore } from '../store/dashboardStore'
 import { useRelationsStore } from '@/stores/relationsStore'
@@ -97,7 +97,11 @@ import DashboardEmptyState from '../components/DashboardEmptyState.vue'
 import TrialBanner from '@/modules/auth/components/TrialBanner.vue'
 import OnboardingHint from '@/components/OnboardingHint.vue'
 import { TutorHintId } from '@/composables/useOnboardingHints'
-import KnowledgeStatsWidget from '@/modules/knowledge/components/KnowledgeStatsWidget.vue'
+// BUG-10 fix: async import with error boundary to prevent dashboard crash
+const KnowledgeStatsWidget = defineAsyncComponent({
+  loader: () => import('@/modules/knowledge/components/KnowledgeStatsWidget.vue'),
+  errorComponent: { render: () => null },
+})
 import { notifySuccess, notifyError } from '@/utils/notify'
 import apiClient from '@/utils/apiClient'
 

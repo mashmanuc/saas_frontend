@@ -16,6 +16,7 @@ export interface TutorStats {
     id: string
     title: string
     slug: string
+    tutor_slug?: string
     views: number
     forks: number
     avg_rating: number | null

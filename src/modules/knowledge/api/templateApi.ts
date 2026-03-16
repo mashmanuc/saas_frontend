@@ -106,8 +106,13 @@ export const templateApi = {
    */
   async getTemplates(filters: TemplateFilters = {}): Promise<TemplateListResponse> {
     const qs = buildFilterParams(filters)
-    const res = await apiClient.get(`/v1/knowledge/lesson-templates/library/${qs}`)
-    return res as TemplateListResponse
+    const raw: any = await apiClient.get(`/v1/knowledge/lesson-templates/library/${qs}`)
+    // BUG-6 fix: BE returns { total }, FE expects { total_count }
+    return {
+      templates: raw.templates ?? [],
+      next_cursor: raw.next_cursor ?? null,
+      total_count: raw.total_count ?? raw.total ?? 0,
+    }
   },
 
   /**
@@ -170,7 +175,8 @@ export const templateApi = {
    */
   async getMyPacks(): Promise<LessonPack[]> {
     const res = await apiClient.get('/v1/knowledge/packs/')
-    return res as LessonPack[]
+    // BUG-1 fix: BE returns { packs: [...] } wrapper, unwrap it
+    return Array.isArray(res) ? res : ((res as any).packs ?? [])
   },
 
   /**

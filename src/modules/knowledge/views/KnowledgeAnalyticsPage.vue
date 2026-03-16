@@ -83,10 +83,10 @@
             <span class="analytics-page__top-col">Forks</span>
             <span class="analytics-page__top-col">Rating</span>
           </div>
-          <a
+          <router-link
             v-for="lesson in stats.top_lessons"
             :key="lesson.id"
-            :href="`/lesson/${lesson.slug}`"
+            :to="`/lesson/${lesson.tutor_slug || ''}/${lesson.slug}`"
             class="analytics-page__top-row"
           >
             <span class="analytics-page__top-col analytics-page__top-col--name">{{ lesson.title }}</span>
@@ -95,7 +95,7 @@
             <span class="analytics-page__top-col">
               {{ lesson.avg_rating != null ? `★${lesson.avg_rating.toFixed(1)}` : '—' }}
             </span>
-          </a>
+          </router-link>
         </div>
       </section>
 

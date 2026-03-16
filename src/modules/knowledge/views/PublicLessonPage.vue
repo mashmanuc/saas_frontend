@@ -320,15 +320,26 @@ const displayMaterials = computed(() =>
 
 // ── SEO (A1.4) ──────────────────────────────────────────────────────────────
 function updateSeoMeta(l: PublicLesson): void {
-  document.title = `${l.title} — урок з ${l.tutor.name} | M4SH`
-
-  setMeta('description', `Перегляньте урок "${l.title}" з репетитором ${l.tutor.name}`)
-  setMetaProperty('og:title', l.title)
-  setMetaProperty('og:description', `Урок з ${l.tutor.name} — ${l.subject_tag}`)
-  setMetaProperty('og:type', 'website')
-  if (l.board_thumbnail_url) {
-    setMetaProperty('og:image', l.board_thumbnail_url)
+  // Phase 16 INT-42: Use og_meta from BE when ?t= deep link is present
+  const og = l.og_meta
+  if (og) {
+    document.title = `${og.title} | M4SH`
+    setMeta('description', og.description || `Перегляньте урок "${l.title}" з репетитором ${l.tutor.name}`)
+    setMetaProperty('og:title', og.title)
+    setMetaProperty('og:description', og.description || `Урок з ${l.tutor.name} — ${l.subject_tag}`)
+    if (og.image) {
+      setMetaProperty('og:image', og.image)
+    }
+  } else {
+    document.title = `${l.title} — урок з ${l.tutor.name} | M4SH`
+    setMeta('description', `Перегляньте урок "${l.title}" з репетитором ${l.tutor.name}`)
+    setMetaProperty('og:title', l.title)
+    setMetaProperty('og:description', `Урок з ${l.tutor.name} — ${l.subject_tag}`)
+    if (l.board_thumbnail_url) {
+      setMetaProperty('og:image', l.board_thumbnail_url)
+    }
   }
+  setMetaProperty('og:type', 'website')
 
   // Canonical
   let canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]')
@@ -444,8 +455,9 @@ onMounted(async () => {
   }
 
   try {
-    // Fetch lesson detail first
-    const lessonData = await publicLessonApi.getLessonDetail(tutorSlug.value, lessonSlug.value)
+    // Fetch lesson detail (pass ?t= for OG meta context if deep-linking)
+    const tParam = Number(route.query.t) || undefined
+    const lessonData = await publicLessonApi.getLessonDetail(tutorSlug.value, lessonSlug.value, tParam != null ? { t: tParam } : undefined)
     lesson.value = lessonData
     updateSeoMeta(lessonData)
 

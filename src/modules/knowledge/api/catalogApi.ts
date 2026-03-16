@@ -92,15 +92,29 @@ export const catalogApi = {
   },
 
   // ── Search (public, CDN cached 300s) ───────────────────────────────
-  search(filters: CatalogFilters = {}): Promise<CatalogSearchResponse> {
+  async search(filters: CatalogFilters = {}): Promise<CatalogSearchResponse> {
     const params = new URLSearchParams()
     if (filters.query) params.set('query', filters.query)
     if (filters.category) params.set('category', filters.category)
     if (filters.min_rating != null) params.set('min_rating', String(filters.min_rating))
+    // BUG-7 fix: pass difficulty & language to API
+    if (filters.difficulty != null) params.set('difficulty', String(filters.difficulty))
+    if (filters.language) params.set('language', filters.language)
     if (filters.sort) params.set('sort', filters.sort)
     if (filters.cursor != null) params.set('cursor', String(filters.cursor))
     const qs = params.toString()
-    return publicFetch<CatalogSearchResponse>(`${CATALOG_BASE}/search/${qs ? `?${qs}` : ''}`)
+    const raw = await publicFetch<any>(`${CATALOG_BASE}/search/${qs ? `?${qs}` : ''}`)
+    // BUG-2 fix: BE returns { results }, FE expects { lessons }
+    // BUG-5 fix: BE returns avg_rating, FE expects average_rating
+    const lessons = (raw.lessons ?? raw.results ?? []).map((l: any) => ({
+      ...l,
+      average_rating: l.average_rating ?? l.avg_rating ?? null,
+    }))
+    return {
+      lessons,
+      next_cursor: raw.next_cursor ?? null,
+      total: raw.total ?? raw.total_count ?? 0,
+    }
   },
 
   // ── Featured (public, CDN cached 3600s) ────────────────────────────

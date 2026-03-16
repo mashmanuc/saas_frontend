@@ -2010,7 +2010,9 @@
       "myStudents": "My Students",
       "findTutor": "Find tutor",
       "mySchedule": "My schedule",
-      "messages": "Messages"
+      "messages": "Messages",
+      "lessonCatalog": "Lesson Catalog",
+      "knowledgeAnalytics": "Knowledge Analytics"
     },
     "newInquiries": {
       "title": "New inquiries",
@@ -7258,10 +7260,18 @@
     "library": {
       "title": "Template Library",
       "subtitle": "Find a lesson template and get started faster",
+      "searchPlaceholder": "Search templates...",
       "difficulty": "Difficulty",
+      "any": "Any",
       "sortBy": "Sort by",
       "sortPopular": "Popular",
       "sortNewest": "Newest",
+      "retry": "Try again",
+      "usedCount": "Used {count} times",
+      "clone": "Clone",
+      "empty": "No templates yet",
+      "loadMore": "Load more",
+      "totalCount": "Total: {count}",
       "emptyTitle": "Library is empty",
       "emptySubtitle": "Publish your first lesson and turn it into a template!",
       "emptyAction": "Create a lesson"

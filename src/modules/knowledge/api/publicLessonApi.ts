@@ -15,6 +15,15 @@ export interface PublicLessonTutor {
   price_from: number | null
 }
 
+export interface OgMeta {
+  title: string
+  description: string
+  image: string
+  time_seconds: number
+  time_display: string
+  marker_title: string | null
+}
+
 export interface PublicLesson {
   id: string
   title: string
@@ -31,6 +40,7 @@ export interface PublicLesson {
   average_rating?: number | null
   rating_count?: number
   user_rating?: { score: number; comment: string } | null
+  og_meta?: OgMeta
 }
 
 export interface ReplayChunk {
@@ -105,10 +115,24 @@ export const publicLessonApi = {
    * GET /knowledge/public/lessons/{tutorSlug}/{lessonSlug}/
    * Lesson detail — CDN cached (Cache-Control: public, max-age=3600)
    */
-  getLessonDetail(tutorSlug: string, lessonSlug: string): Promise<PublicLesson> {
-    return publicFetch<PublicLesson>(
-      `${PUBLIC_BASE}/lessons/${encodeURIComponent(tutorSlug)}/${encodeURIComponent(lessonSlug)}/`,
+  async getLessonDetail(tutorSlug: string, lessonSlug: string, params?: { t?: number }): Promise<PublicLesson> {
+    const qs = params?.t != null ? `?t=${params.t}` : ''
+    const raw: any = await publicFetch<any>(
+      `${PUBLIC_BASE}/lessons/${encodeURIComponent(tutorSlug)}/${encodeURIComponent(lessonSlug)}/${qs}`,
     )
+    // BUG-9 fix: BE returns flat tutor_name/tutor_slug/tutor_avatar_url,
+    // FE expects nested tutor: { name, slug, avatar_url, ... }
+    if (raw.tutor_name != null && !raw.tutor) {
+      raw.tutor = {
+        name: raw.tutor_name ?? '',
+        slug: raw.tutor_slug ?? tutorSlug,
+        avatar_url: raw.tutor_avatar_url ?? null,
+        subjects: raw.subject_tag ?? '',
+        rating: raw.average_rating ?? null,
+        price_from: null,
+      }
+    }
+    return raw as PublicLesson
   },
 
   /**
