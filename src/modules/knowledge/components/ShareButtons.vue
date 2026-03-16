@@ -26,6 +26,32 @@
       {{ t('knowledge.share.telegram') }}
     </a>
 
+    <!-- Phase 16 INT-38: LinkedIn -->
+    <a
+      :href="linkedinShareUrl"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="share-buttons__btn share-buttons__btn--linkedin"
+    >
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M2 6h2.5v8H2V6zm1.25-1C2.56 5 2 4.44 2 3.75S2.56 2.5 3.25 2.5 4.5 3.06 4.5 3.75 3.94 5 3.25 5zM14 14h-2.5v-3.9c0-.93-.02-2.13-1.3-2.13-1.3 0-1.5 1.02-1.5 2.07V14H6.2V6h2.4v1.09h.03c.34-.64 1.16-1.3 2.38-1.3 2.54 0 3.01 1.67 3.01 3.85V14z" fill="currentColor"/>
+      </svg>
+      LinkedIn
+    </a>
+
+    <!-- Phase 16 INT-38: Twitter/X -->
+    <a
+      :href="twitterShareUrl"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="share-buttons__btn share-buttons__btn--twitter"
+    >
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M12.6 1.5h2.2L10 7.1l5.7 7.4h-4.5l-3.5-4.5-4 4.5H1.5l5.1-5.8L1.2 1.5h4.6l3.1 4.2 3.7-4.2zm-.8 11.6h1.2L5.3 2.8H4L11.8 13.1z" fill="currentColor"/>
+      </svg>
+      X
+    </a>
+
     <button
       type="button"
       class="share-buttons__btn share-buttons__btn--qr"
@@ -128,6 +154,16 @@ const telegramShareUrl = computed(() => {
   const url = shareUrl.value
   return `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`
 })
+
+// Phase 16 INT-38: LinkedIn share URL
+const linkedinShareUrl = computed(() =>
+  `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl.value)}`
+)
+
+// Phase 16 INT-38: Twitter/X share URL
+const twitterShareUrl = computed(() =>
+  `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl.value)}&text=${encodeURIComponent(props.title)}`
+)
 
 const qrSvg = computed(() => generateQrSvg(shareUrl.value))
 
@@ -280,6 +316,18 @@ function generateQrSvg(text: string): string {
 
 .share-buttons__btn--moment {
   border-style: dashed;
+}
+
+.share-buttons__btn--linkedin:hover {
+  background: #e0f0ff;
+  border-color: #0a66c2;
+  color: #0a66c2;
+}
+
+.share-buttons__btn--twitter:hover {
+  background: #f0f0f0;
+  border-color: #1d1d1f;
+  color: #1d1d1f;
 }
 
 .share-buttons__toast {

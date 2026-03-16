@@ -51,7 +51,15 @@
         />
 
         <!-- Board viewer -->
-        <div class="public-lesson-page__board-section">
+        <div
+          ref="boardSectionRef"
+          class="public-lesson-page__board-section"
+          :class="{ 'replay-highlight': hasDeepLink && !deepLinkDismissed }"
+        >
+          <!-- Phase 16 INT-41: Deep link badge -->
+          <div v-if="deepLinkTime && !deepLinkDismissed" class="public-lesson-page__deep-link-badge">
+            ⏱ Момент: {{ deepLinkTime }}
+          </div>
           <PublicBoardViewer
             ref="boardViewerRef"
             :board-state="boardState"
@@ -61,11 +69,12 @@
         <!-- Replay player -->
         <PublicReplayPlayer
           :current-seconds="currentSeconds"
-          :total-seconds="lesson.duration_seconds"
+          :duration-seconds="lesson.duration_seconds"
           :is-playing="replay.isPlaying.value"
           :markers="replayMarkers"
           :speed="replay.speed.value"
-          @toggle-play="handleTogglePlay"
+          @play="replay.play"
+          @pause="replay.pause"
           @seek="handleSeek"
           @speed-change="handleSpeedChange"
         />
@@ -74,10 +83,10 @@
         <div class="public-lesson-page__columns">
           <PublicMarkersList
             :markers="displayMarkers"
-            :active-id="activeMarkerId"
+            :current-time-ms="replay.currentTimeMs.value"
             @seek="handleSeek"
           />
-          <PublicMaterialsList :materials="materials" />
+          <PublicMaterialsList :materials="displayMaterials" />
         </div>
 
         <!-- Rating widget -->
@@ -94,12 +103,13 @@
         <!-- Tutor CTA -->
         <TutorCTACard
           :tutor-name="lesson.tutor.name"
-          :tutor-avatar="lesson.tutor.avatar_url"
+          :tutor-avatar-url="lesson.tutor.avatar_url"
           :tutor-slug="lesson.tutor.slug"
           :lesson-slug="lesson.slug"
-          :subjects="lesson.tutor.subjects"
-          :rating="lesson.tutor.rating"
-          :price-from="lesson.tutor.price_from"
+          :subject-tags="lesson.tutor.subjects ? lesson.tutor.subjects.split(',').map((s: string) => s.trim()) : []"
+          :rating-avg="lesson.tutor.rating"
+          :rating-count="lesson.rating_count || 0"
+          :price-from-uah="lesson.tutor.price_from"
         />
 
         <!-- Phase 14 A2.4: Fork button (authenticated only, public lessons) -->
@@ -179,7 +189,7 @@
               <circle cx="12" cy="12" r="2" stroke="currentColor" stroke-width="1.5"/>
               <path d="M5.7 7l4.6-2M5.7 9l4.6 2" stroke="currentColor" stroke-width="1.5"/>
             </svg>
-            {{ shareCopied ? 'Скопійовано!' : 'Поділитися моментом' }}
+            {{ shareCopied ? 'Скопійовано!' : currentMomentTitle ? `Поділитися: ${currentMomentTitle}` : 'Поділитися моментом' }}
           </button>
         </div>
 
@@ -233,6 +243,18 @@ const boardViewerRef = ref<InstanceType<typeof PublicBoardViewer> | null>(null)
 const shareCopied = ref(false)
 const relatedLessons = ref<RelatedLesson[]>([])
 const lessonPacks = ref<LessonPackInfo[]>([])
+const boardSectionRef = ref<HTMLElement | null>(null)
+const deepLinkDismissed = ref(false)
+
+// Phase 16 INT-41: Deep link detection
+const hasDeepLink = computed(() => !!route.query.t)
+const deepLinkTime = computed<string | null>(() => {
+  const s = Number(route.query.t)
+  if (!s || isNaN(s)) return null
+  const mins = Math.floor(s / 60)
+  const secs = s % 60
+  return `${mins}:${String(secs).padStart(2, '0')}`
+})
 
 // ── Route params ────────────────────────────────────────────────────────────
 const tutorSlug = computed(() => route.params.tutorSlug as string)
@@ -270,7 +292,8 @@ const replayMarkers = computed(() =>
   markers.value.map(m => ({
     id: m.id,
     title: m.title,
-    time_seconds: m.time_seconds,
+    lesson_time_seconds: m.time_seconds,
+    category: m.category,
   })),
 )
 
@@ -279,8 +302,19 @@ const displayMarkers = computed(() =>
   markers.value.map(m => ({
     id: m.id,
     title: m.title,
-    time_seconds: m.time_seconds,
+    lesson_time_seconds: m.time_seconds,
     category: m.category,
+  })),
+)
+
+// Map API PublicMaterial[] to shape expected by PublicMaterialsList component
+const displayMaterials = computed(() =>
+  materials.value.map(m => ({
+    id: m.id,
+    name: m.title,
+    content_type: m.type,
+    is_public: true,
+    thumbnail_url: m.url ?? null,
   })),
 )
 
@@ -352,6 +386,14 @@ watch(
     }
   },
 )
+
+// Phase 16 INT-43: Moment title — find marker name near current replay position
+const currentMomentTitle = computed<string | null>(() => {
+  if (!replay.currentTimeMs.value || !markers.value.length) return null
+  const timeS = replay.currentTimeMs.value / 1000
+  const marker = markers.value.find(m => Math.abs((m as any).time_seconds - timeS) < 5)
+  return marker ? marker.title : null
+})
 
 // ── Share moment (A2.4) ─────────────────────────────────────────────────────
 async function shareCurrentMoment(): Promise<void> {
@@ -733,6 +775,30 @@ onUnmounted(() => {
   color: #94a3b8;
 }
 
+/* ── Phase 16 INT-41: Deep link highlight ──────────────────────── */
+@keyframes pulse-border {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5); }
+  50% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
+}
+
+.replay-highlight {
+  animation: pulse-border 1s ease-in-out 3;
+  border-radius: 12px;
+}
+
+.public-lesson-page__deep-link-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: #eff6ff;
+  color: #2563eb;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
 /* ── Mobile ─────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .public-lesson-page__container {
@@ -746,6 +812,11 @@ onUnmounted(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .public-lesson-page__spinner {
+    animation: none;
+  }
+}
+</style>
   .public-lesson-page__spinner {
     animation: none;
   }
