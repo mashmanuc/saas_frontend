@@ -20,6 +20,7 @@ import { useI18n } from 'vue-i18n'
 import InquiryFormModal from '@/components/inquiries/InquiryFormModal.vue'
 import CreateReviewModal from '../components/profile/CreateReviewModal.vue'
 import Button from '@/ui/Button.vue'
+import DemoLessonsSection from '@/modules/knowledge/components/DemoLessonsSection.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -244,6 +245,11 @@ function handleInquirySuccess() {
             :average-rating="currentProfile.stats?.average_rating || 0"
             :total-reviews="currentProfile.stats?.total_reviews || 0"
           />
+
+          <!-- Demo lessons from Knowledge domain -->
+          <section class="profile-section" data-test="demo-lessons">
+            <DemoLessonsSection :tutor-slug="slug" />
+          </section>
         </main>
       </div>
 

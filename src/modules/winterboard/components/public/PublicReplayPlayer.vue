@@ -1,5 +1,5 @@
 <!-- WB: Public replay player — Play/Pause/Seek + markers on timeline
-     Ref: PHASE12_PLAN.md B2 -->
+     Ref: PHASE12_PLAN.md B2 / Phase 13 B1.2 -->
 <template>
   <div class="public-replay-player" role="region" :aria-label="t('publicLesson.player.ariaLabel')">
     <!-- Timeline bar -->
@@ -9,7 +9,7 @@
       role="slider"
       :aria-label="t('publicLesson.player.timeline')"
       :aria-valuemin="0"
-      :aria-valuemax="totalSeconds"
+      :aria-valuemax="durationSeconds"
       :aria-valuenow="currentSeconds"
       tabindex="0"
       @click="onTimelineClick"
@@ -19,14 +19,14 @@
       <!-- Progress fill -->
       <div class="public-replay-player__progress" :style="{ width: progressPercent + '%' }" />
 
-      <!-- Marker dots on timeline -->
+      <!-- Marker dots on timeline (colored by category) -->
       <div
         v-for="marker in markers"
         :key="marker.id"
         class="public-replay-player__marker-dot"
-        :style="{ left: markerPercent(marker) + '%' }"
+        :style="{ left: markerPercent(marker) + '%', background: categoryColor(marker.category) }"
         :title="marker.title"
-        @click.stop="$emit('seek', marker.time_seconds)"
+        @click.stop="emit('seek', marker.lesson_time_seconds * 1000)"
       />
 
       <!-- Playhead -->
@@ -39,7 +39,7 @@
         type="button"
         class="public-replay-player__play-btn"
         :aria-label="isPlaying ? t('publicLesson.player.pause') : t('publicLesson.player.play')"
-        @click="$emit('toggle-play')"
+        @click="isPlaying ? emit('pause') : emit('play')"
       >
         <!-- Play icon -->
         <svg v-if="!isPlaying" width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
@@ -53,7 +53,7 @@
       </button>
 
       <span class="public-replay-player__time">
-        {{ formatTime(currentSeconds) }} / {{ formatTime(totalSeconds) }}
+        {{ formatTime(currentSeconds) }} / {{ formatTime(durationSeconds) }}
       </span>
 
       <!-- Speed selector -->
@@ -61,7 +61,7 @@
         v-model="speedModel"
         class="public-replay-player__speed"
         :aria-label="t('publicLesson.player.speed')"
-        @change="$emit('speed-change', Number(speedModel))"
+        @change="emit('speed-change', Number(speedModel))"
       >
         <option value="0.5">0.5x</option>
         <option value="1">1x</option>
@@ -79,20 +79,31 @@ import { useI18n } from 'vue-i18n'
 export interface ReplayMarker {
   id: string
   title: string
-  time_seconds: number
+  lesson_time_seconds: number
+  category?: string
+}
+
+const CATEGORY_COLORS: Record<string, string> = {
+  theory: '#3b82f6',
+  formula: '#8b5cf6',
+  example: '#10b981',
+  practice: '#f59e0b',
+  solution: '#ef4444',
+  custom: '#64748b',
 }
 
 const props = defineProps<{
   currentSeconds: number
-  totalSeconds: number
+  durationSeconds: number
   isPlaying: boolean
   markers?: ReplayMarker[]
   speed?: number
 }>()
 
 const emit = defineEmits<{
-  'toggle-play': []
-  'seek': [seconds: number]
+  'play': []
+  'pause': []
+  'seek': [timeMs: number]
   'speed-change': [speed: number]
 }>()
 
@@ -101,13 +112,18 @@ const timelineRef = ref<HTMLElement | null>(null)
 const speedModel = ref(String(props.speed ?? 1))
 
 const progressPercent = computed(() => {
-  if (!props.totalSeconds) return 0
-  return Math.min(100, (props.currentSeconds / props.totalSeconds) * 100)
+  if (!props.durationSeconds) return 0
+  return Math.min(100, (props.currentSeconds / props.durationSeconds) * 100)
 })
 
+function categoryColor(cat?: string): string {
+  if (!cat) return '#f59e0b'
+  return CATEGORY_COLORS[cat] ?? '#94a3b8'
+}
+
 function markerPercent(marker: ReplayMarker): number {
-  if (!props.totalSeconds) return 0
-  return Math.min(100, (marker.time_seconds / props.totalSeconds) * 100)
+  if (!props.durationSeconds) return 0
+  return Math.min(100, (marker.lesson_time_seconds / props.durationSeconds) * 100)
 }
 
 function onTimelineClick(e: MouseEvent): void {
@@ -115,12 +131,12 @@ function onTimelineClick(e: MouseEvent): void {
   if (!el) return
   const rect = el.getBoundingClientRect()
   const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
-  emit('seek', Math.round(ratio * props.totalSeconds))
+  emit('seek', Math.round(ratio * props.durationSeconds * 1000))
 }
 
 function seekRelative(delta: number): void {
-  const next = Math.max(0, Math.min(props.totalSeconds, props.currentSeconds + delta))
-  emit('seek', next)
+  const next = Math.max(0, Math.min(props.durationSeconds, props.currentSeconds + delta))
+  emit('seek', next * 1000)
 }
 
 function formatTime(sec: number): string {

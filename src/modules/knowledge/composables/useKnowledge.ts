@@ -3,6 +3,7 @@ import { knowledgeApi, type KnowledgeLesson, type KnowledgeTemplate } from '../a
 
 export function useKnowledge() {
   const lessons = ref<KnowledgeLesson[]>([])
+  /** @deprecated Templates are now managed via useTemplateLibrary (Phase 14+). Kept for legacy KnowledgeLibrary.vue */
   const templates = ref<KnowledgeTemplate[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
@@ -12,12 +13,8 @@ export function useKnowledge() {
     isLoading.value = true
     error.value = null
     try {
-      const [lessonsRes, templatesRes] = await Promise.all([
-        knowledgeApi.getLessons(),
-        knowledgeApi.getTemplates(),
-      ])
+      const lessonsRes = await knowledgeApi.getLessons()
       lessons.value = lessonsRes
-      templates.value = templatesRes
     } catch (e) {
       console.warn('[useKnowledge] Load failed:', e)
       error.value = 'load_failed'

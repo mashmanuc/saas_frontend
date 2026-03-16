@@ -103,6 +103,26 @@
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="12" cy="4" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="2" stroke="currentColor" stroke-width="1.5"/><path d="M5.7 7l4.6-2M5.7 9l4.6 2" stroke="currentColor" stroke-width="1.5"/></svg>
         </button>
+        <!-- Phase 13 A3.3: Publish button — only if session has operations -->
+        <button
+          v-if="sessionId && store.currentStrokes.length > 0"
+          type="button"
+          class="wb-header-btn wb-header-btn--publish"
+          :title="t('winterboard.room.publish') || 'Опублікувати урок'"
+          @click="showPublishDialog = true"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 14h12M8 2v9M5 5l3-3 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <!-- Phase 14 B2.2: Save as template button — only if lesson already published -->
+        <button
+          v-if="publishedLessonData"
+          type="button"
+          class="wb-header-btn wb-header-btn--template"
+          :title="t('knowledge.template.saveFromRoom') || 'Зберегти як шаблон'"
+          @click="showSaveTemplateDialog = true"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 6h6M5 9h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
         <button
           type="button"
           class="wb-header-btn wb-header-btn--fullscreen"
@@ -351,6 +371,27 @@
       @close="showShareDialog = false"
     />
 
+    <!-- Phase 13 A3.3: Publish dialog (Knowledge domain) -->
+    <WBShareDialog
+      v-if="showPublishDialog && sessionId"
+      :session-id="sessionId"
+      :is-open="showPublishDialog"
+      mode="publish"
+      @close="showPublishDialog = false"
+      @published="handlePublished"
+    />
+
+    <!-- Phase 14 B2.2: Save as template dialog -->
+    <SaveAsTemplateDialog
+      v-if="publishedLessonData"
+      v-model="showSaveTemplateDialog"
+      :lesson-id="publishedLessonData.id"
+      :lesson-title="publishedLessonData.title"
+      :subject-tag="publishedLessonData.subject_tag || ''"
+      :thumbnail-url="null"
+      @saved="handleTemplateSaved"
+    />
+
     <!-- Board template selector (shown for new sessions) -->
     <BoardTemplateSelector
       :is-open="showTemplateSelector"
@@ -488,6 +529,7 @@ import WBReplayControls from '../components/replay/WBReplayControls.vue'
 import WBLessonMap from '../components/replay/WBLessonMap.vue'
 import WBMarkerCreateModal from '../components/replay/WBMarkerCreateModal.vue'
 import WBReplayBanner from '../components/replay/WBReplayBanner.vue'
+import SaveAsTemplateDialog from '@/modules/knowledge/components/SaveAsTemplateDialog.vue'
 import WBOnboardingHints from '../components/ui/WBOnboardingHints.vue'
 import type { BoardOperation } from '../types/replay'
 import type { WBLessonMarker } from '../types/winterboard'
@@ -578,6 +620,9 @@ const sessionName = ref('Untitled')
 const selectedId = ref<string | null>(null)
 const isLoading = ref(true)
 const showShareDialog = ref(false)
+const showPublishDialog = ref(false)
+const showSaveTemplateDialog = ref(false)
+const publishedLessonData = ref<{ id: string; title: string; subject_tag?: string } | null>(null)
 const showExportDialog = ref(false)
 const showYouTubeModal = ref(false)
 const showMarkerModal = ref(false)
@@ -1322,6 +1367,21 @@ function handleTitleBlur(): void {
       console.warn('[WBSoloRoom] Failed to persist session name:', err)
     })
   }
+}
+
+// Phase 13 A3.3: Handle published lesson — navigate to public page
+// Phase 14 B2.2: Extended to store lesson data for SaveAsTemplate flow
+function handlePublished(publicUrl: string, lessonData?: { id: string; title: string; subject_tag?: string }): void {
+  showPublishDialog.value = false
+  if (lessonData) {
+    publishedLessonData.value = lessonData
+  }
+  window.open(publicUrl, '_blank')
+}
+
+// Phase 14 B2.2: Handle template saved
+function handleTemplateSaved(): void {
+  showSaveTemplateDialog.value = false
 }
 
 // BUG-1 FIX: Save all pending changes before exiting

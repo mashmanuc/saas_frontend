@@ -6490,7 +6490,7 @@
       "done": "Готово",
       "uploadError": "Помилка завантаження",
       "dropOrClick": "Перетягніть файли або натисніть для вибору",
-      "acceptedTypes": "Зображення, PDF, відео, аудіо",
+      "acceptedTypes": "Зображення, PDF, відео, аудіо, PPTX",
       "dropZoneLabel": "Зона для перетягування файлів",
       "uploadToFolder": "Завантажити до:",
       "noFiles": "Файлів ще немає",
@@ -6848,7 +6848,8 @@
       "close": "Закрити",
       "dragFull": "Перетягнути (стор. 1)",
       "pageAlt": "Сторінка {n}",
-      "noPages": "Сторінки ще завантажуються"
+      "noPages": "Сторінки недоступні",
+      "loadingPages": "Завантаження сторінок..."
     },
     "slideSelector": {
       "slideCount": "{count} сл.",
@@ -7225,6 +7226,158 @@
       "fitToScreen": "Вписати в екран",
       "autoZoom": "Автоматичний масштаб",
       "layoutChanged": "Макет змінено на режим {mode}"
+    },
+    "public": {
+      "loading": "Завантаження уроку...",
+      "notFound": "Урок не знайдено",
+      "error": "Помилка завантаження",
+      "restrictedMaterial": "Доступно після запису на урок"
+    },
+    "publish": {
+      "title": "Опублікувати урок",
+      "description": "Ваш урок стане доступним для перегляду всім",
+      "lessonTitle": "Назва уроку",
+      "lessonDescription": "Опис",
+      "subjectTag": "Предмет",
+      "slug": "URL-адреса (slug)",
+      "slugHint": "Буде доступний за адресою /lesson/{ваш_slug}/{url}",
+      "visibility": "Видимість",
+      "visibilityDemo": "Демо-урок (в профілі)",
+      "visibilityPublic": "Публічний (Google індексує)",
+      "publishButton": "Опублікувати",
+      "publishing": "Публікація...",
+      "success": "Урок опубліковано!",
+      "copyLink": "Скопіювати посилання"
+    },
+    "demo": {
+      "title": "Демо-уроки",
+      "subtitle": "Перегляньте як проходять уроки з цим репетитором",
+      "empty": "Цей репетитор ще не опублікував демо-уроків",
+      "duration": "{minutes} хв",
+      "durationHours": "{hours} год {minutes} хв"
+    },
+    "share": {
+      "ariaLabel": "Поділитися уроком",
+      "copyLink": "Копіювати посилання",
+      "telegram": "Telegram",
+      "qr": "QR-код",
+      "copied": "Посилання скопійовано!",
+      "shareMoment": "Поділитися моментом",
+      "shareMomentHint": "Посилання відкриє урок саме на цьому моменті"
+    },
+    "library": {
+      "title": "Бібліотека шаблонів",
+      "subtitle": "Знайдіть шаблон уроку та почніть працювати швидше",
+      "difficulty": "Складність",
+      "sortBy": "Сортувати",
+      "sortPopular": "Популярні",
+      "sortNewest": "Нові",
+      "emptyTitle": "Бібліотека порожня",
+      "emptySubtitle": "Опублікуйте свій перший урок і зробіть його шаблоном!",
+      "emptyAction": "Створити урок"
+    },
+    "template": {
+      "useButton": "Використати",
+      "usedCount": "Використано {count} разів",
+      "community": "Спільнота",
+      "difficultyLabel": "Рівень складності",
+      "subjectLabel": "Предмет",
+      "saveTitle": "Зберегти як шаблон",
+      "saveSubtitle": "Інші репетитори зможуть використати ваш урок як основу",
+      "titleLabel": "Назва шаблону",
+      "saveButton": "Зберегти шаблон",
+      "saving": "Збереження...",
+      "saveFromRoom": "Зберегти як шаблон",
+      "communityToggle": "Зробити доступним для всіх",
+      "communityHint": "Шаблон буде доступний у бібліотеці для інших репетиторів",
+      "saveSuccess": "Шаблон збережено!",
+      "saveFailed": "Не вдалося зберегти шаблон"
+    },
+    "pack": {
+      "lessonCount": "{count} уроків",
+      "status": {
+        "draft": "Чернетка",
+        "public": "Опубліковано",
+        "hidden": "Приховано"
+      },
+      "create": "Створити серію",
+      "edit": "Редагувати серію",
+      "empty": "Серій ще немає",
+      "emptyHint": "Об'єднайте уроки в серію для зручності"
+    },
+    "fork": {
+      "badge": "Форк від {author}",
+      "button": "Форкнути урок",
+      "treeCount": "Форкнули {count} разів",
+      "success": "Урок форкнуто!",
+      "error": "Не вдалося форкнути урок"
+    },
+    "catalog": {
+      "title": "Каталог уроків",
+      "subtitle": "Знайдіть найкращі уроки від спільноти",
+      "search": "Пошук уроків...",
+      "allCategories": "Всі категорії",
+      "sortBy": "Сортувати",
+      "sortPopular": "Популярні",
+      "sortNewest": "Нові",
+      "sortTopRated": "За рейтингом",
+      "minRating": "Мін. рейтинг",
+      "emptyTitle": "Нічого не знайдено",
+      "emptySubtitle": "Спробуйте змінити фільтри або пошуковий запит",
+      "loadMore": "Завантажити ще",
+      "totalResults": "{count} уроків"
+    },
+    "rating": {
+      "title": "Оцініть урок",
+      "selectScore": "Оберіть оцінку",
+      "star": "{n} зірок",
+      "placeholder": "Напишіть короткий відгук (необов'язково)...",
+      "submit": "Оцінити",
+      "submitting": "Надсилання...",
+      "thankYou": "Дякуємо за оцінку!",
+      "alreadyRated": "Ви вже оцінили цей урок",
+      "yourRating": "Ваша оцінка: {score} з 5",
+      "loginToRate": "Увійдіть, щоб оцінити урок",
+      "average": "Середня оцінка",
+      "count": "{count} оцінок",
+      "summaryAria": "Рейтинг {score} з 5, {count} оцінок",
+      "submitError": "Не вдалося надіслати оцінку"
+    },
+    "achievement": {
+      "title": "Досягнення",
+      "earned": "Отримано",
+      "locked": "Заблоковано",
+      "noData": "Досягнень поки немає. Публікуйте уроки щоб отримати перше!",
+      "first_lesson_published": "Опублікуйте свій перший урок",
+      "five_lessons_published": "Опублікуйте 5 уроків",
+      "first_fork_received": "Отримайте перший форк вашого уроку",
+      "ten_forks_received": "Отримайте 10 форків",
+      "fifty_forks_received": "Отримайте 50 форків",
+      "first_template_shared": "Поділіться першим шаблоном",
+      "template_100_uses": "Ваш шаблон використали 100 разів",
+      "first_pack_created": "Створіть першу серію уроків",
+      "first_rating_5star": "Отримайте першу оцінку 5 зірок"
+    },
+    "collection": {
+      "title": "Підбірки",
+      "featured": "Рекомендовано",
+      "lessonCount": "{count} уроків",
+      "seeAll": "Дивитися всі підбірки",
+      "emptyTitle": "Підбірок поки немає",
+      "emptySubtitle": "Скоро тут з'являться найкращі підбірки уроків"
+    },
+    "analytics": {
+      "title": "Аналітика",
+      "views": "Перегляди",
+      "forks": "Форки",
+      "clones": "Клони",
+      "avgRating": "Середній рейтинг",
+      "topLessons": "Топ-5 уроків",
+      "period": "Період",
+      "days7": "7 днів",
+      "days30": "30 днів",
+      "days90": "90 днів",
+      "noData": "Недостатньо даних для відображення"
     }
   },
   "replay": {
@@ -7273,7 +7426,13 @@
     },
     "markers": {
       "title": "Мітки уроку",
-      "empty": "У цьому уроці немає міток"
+      "empty": "У цьому уроці немає міток",
+      "categoryTheory": "Теорія",
+      "categoryFormula": "Формула",
+      "categoryExample": "Приклад",
+      "categoryPractice": "Практика",
+      "categorySolution": "Розв'язок",
+      "categoryCustom": "Інше"
     },
     "materials": {
       "title": "Матеріали уроку",
@@ -7284,7 +7443,20 @@
       "priceFrom": "Від {price} грн/год",
       "book": "Записатися на урок",
       "viewProfile": "Переглянути профіль",
-      "hint": "Перегляньте цей урок та запишіться на перше заняття з репетитором"
+      "hint": "Перегляньте цей урок та запишіться на перше заняття з репетитором",
+      "ariaLabel": "Картка репетитора"
     }
+  },
+  "subject": {
+    "math": "Математика",
+    "physics": "Фізика",
+    "english": "Англійська мова",
+    "ukrainian": "Українська мова",
+    "chemistry": "Хімія",
+    "biology": "Біологія",
+    "history": "Історія",
+    "geography": "Географія",
+    "informatics": "Інформатика",
+    "other": "Інше"
   }
 }

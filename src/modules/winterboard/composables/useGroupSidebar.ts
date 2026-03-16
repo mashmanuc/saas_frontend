@@ -254,6 +254,9 @@ export function useGroupSidebar(groupId: Ref<string | null>) {
     try {
       const formData = new FormData()
       formData.append('file', file)
+      if (groupId.value) {
+        formData.append('group_id', groupId.value)
+      }
       const res = await learningContentApi.uploadFile(formData)
       const uploaded = (res as Record<string, unknown>).data as Record<string, unknown> ?? res as Record<string, unknown>
 

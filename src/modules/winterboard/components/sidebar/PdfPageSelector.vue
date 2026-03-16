@@ -47,6 +47,12 @@
       </div>
     </div>
 
+    <!-- Loading pages lazily -->
+    <div v-else-if="isLoadingPages" class="pdf-selector__empty pdf-selector__empty--loading">
+      <span class="pdf-selector__loading-icon">&#x23F3;</span>
+      <span>{{ t('winterboard.pdfSelector.loadingPages') }}</span>
+    </div>
+
     <!-- Empty state: processing / failed / ready but no pages -->
     <div v-else class="pdf-selector__empty">
       <MediaStatusGuard :status="item.processing_status" @retry="$emit('retry')">
@@ -57,11 +63,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AllowedContentItem } from '../../types/sidebar'
 import { SIDEBAR_DRAG_MIME } from '../../types/boardDrop'
 import MediaStatusGuard from '../shared/MediaStatusGuard.vue'
+import { learningContentApi } from '@/modules/learning-content/api/learningContentApi'
 
 const props = defineProps<{
   item: AllowedContentItem
@@ -74,14 +81,45 @@ defineEmits<{
 
 const { t } = useI18n()
 
+// Lazily loaded pages — populated on mount if item.pages is missing
+const lazyPages = ref<Record<string, { thumbnail_url: string }> | null>(null)
+const isLoadingPages = ref(false)
+
 const sortedPages = computed(() => {
-  const pages = props.item.pages || {}
+  // Prefer lazily loaded pages over prop pages (lazy-load fills gap when
+  // learningGroupApi.listMaterials doesn't return content_pages)
+  const pages = lazyPages.value ?? props.item.pages ?? {}
   return Object.entries(pages)
     .map(([num, data]) => ({
       number: parseInt(num, 10),
       thumbnail_url: data.thumbnail_url,
     }))
     .sort((a, b) => a.number - b.number)
+})
+
+// Load pages on mount if not present in props and item is ready
+onMounted(async () => {
+  const hasPropPages = props.item.pages && Object.keys(props.item.pages).length > 0
+  if (hasPropPages) return
+  if (!props.item.content_item_id) return
+  if (props.item.processing_status === 'failed') return
+
+  isLoadingPages.value = true
+  try {
+    const detail = await learningContentApi.getItemDetail(props.item.content_item_id as number)
+    const raw = (detail as unknown as Record<string, unknown>)
+    const cj = (raw.data as Record<string, unknown>)?.content_json
+      ?? (raw.content_json as Record<string, unknown>)
+      ?? {}
+    const pages = (cj as Record<string, unknown>).pages as Record<string, { thumbnail_url: string }> | undefined
+    if (pages && Object.keys(pages).length > 0) {
+      lazyPages.value = pages
+    }
+  } catch {
+    // Non-critical — silently fall through to "no pages" state
+  } finally {
+    isLoadingPages.value = false
+  }
 })
 
 function dragPage(e: DragEvent, pageNumber: number) {
@@ -216,5 +254,20 @@ function onDragEnd() {
   text-align: center;
   color: #9ca3af;
   font-size: 13px;
+}
+.pdf-selector__empty--loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #64748b;
+}
+.pdf-selector__loading-icon {
+  font-size: 15px;
+  animation: pdf-spin 1.2s linear infinite;
+}
+@keyframes pdf-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 </style>

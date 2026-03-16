@@ -40,7 +40,7 @@
   <!-- Fullscreen player -->
   <PresentationPlayer
     v-if="playerOpen"
-    :item="item"
+    :item="effectiveItem"
     :start-index="playerStartIndex"
     @close="playerOpen = false"
   />
@@ -68,6 +68,12 @@
       </div>
     </div>
 
+    <!-- Loading slides lazily -->
+    <div v-else-if="isLoadingSlides" class="slide-selector__empty slide-selector__empty--loading">
+      <span class="slide-selector__loading-icon">&#x23F3;</span>
+      <span>{{ t('winterboard.pdfSelector.loadingPages') }}</span>
+    </div>
+
     <!-- Empty state: processing / failed / ready but no slides -->
     <div v-else class="slide-selector__empty">
       <MediaStatusGuard :status="item.processing_status" @retry="$emit('retry')">
@@ -78,12 +84,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AllowedContentItem } from '../../types/sidebar'
 import { SIDEBAR_DRAG_MIME } from '../../types/boardDrop'
 import MediaStatusGuard from '../shared/MediaStatusGuard.vue'
 import PresentationPlayer from './PresentationPlayer.vue'
+import { learningContentApi } from '@/modules/learning-content/api/learningContentApi'
 
 const props = defineProps<{
   item: AllowedContentItem
@@ -105,14 +112,49 @@ function openPlayerAt(i: number) {
   playerOpen.value = true
 }
 
+// Lazily loaded slides — populated on mount if item.slides is missing
+const lazySlides = ref<Record<string, { image_url: string }> | null>(null)
+const isLoadingSlides = ref(false)
+
 const sortedSlides = computed(() => {
-  const slides = props.item.slides ?? {}
+  const slides = lazySlides.value ?? props.item.slides ?? {}
   return Object.entries(slides)
     .map(([idx, data]) => ({
       index: parseInt(idx, 10),
       image_url: data.image_url,
     }))
     .sort((a, b) => a.index - b.index)
+})
+
+// Merged item passed to PresentationPlayer so it has access to lazily loaded slides
+const effectiveItem = computed(() => {
+  if (!lazySlides.value) return props.item
+  return { ...props.item, slides: lazySlides.value }
+})
+
+// Load slides on mount if not present in props and item is ready
+onMounted(async () => {
+  const hasPropSlides = props.item.slides && Object.keys(props.item.slides).length > 0
+  if (hasPropSlides) return
+  if (!props.item.content_item_id) return
+  if (props.item.processing_status === 'failed') return
+
+  isLoadingSlides.value = true
+  try {
+    const detail = await learningContentApi.getItemDetail(props.item.content_item_id as number)
+    const raw = (detail as unknown as Record<string, unknown>)
+    const cj = (raw.data as Record<string, unknown>)?.content_json
+      ?? (raw.content_json as Record<string, unknown>)
+      ?? {}
+    const slides = (cj as Record<string, unknown>).slides as Record<string, { image_url: string }> | undefined
+    if (slides && Object.keys(slides).length > 0) {
+      lazySlides.value = slides
+    }
+  } catch {
+    // Non-critical — silently fall through to "no slides" state
+  } finally {
+    isLoadingSlides.value = false
+  }
 })
 
 function dragSlide(e: DragEvent, slideIndex: number) {
@@ -263,5 +305,20 @@ function onDragEnd() {
   text-align: center;
   color: #9ca3af;
   font-size: 13px;
+}
+.slide-selector__empty--loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #64748b;
+}
+.slide-selector__loading-icon {
+  font-size: 15px;
+  animation: slide-spin 1.2s linear infinite;
+}
+@keyframes slide-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 </style>

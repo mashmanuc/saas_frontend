@@ -2,7 +2,7 @@
 // Ref: TASK_BOARD_PHASES.md A3.1, C3.1 RBAC, C3.2 classroom-session linking
 // Flow: lessonId → getClassroomSession → if 404 + teacher → createClassroomSession → sessionId + role
 
-import { ref, readonly, type Ref } from 'vue'
+import { ref, readonly, onUnmounted, type Ref } from 'vue'
 import { winterboardApi } from '../api/winterboardApi'
 import type {
   WBClassroomRole,
@@ -174,6 +174,11 @@ export function useClassroomSession() {
       usersPollTimer = null
     }
   }
+
+  // Clean up poll timer on composable teardown (prevents HMR / unmount leaks)
+  onUnmounted(() => {
+    stopUserPolling()
+  })
 
   // ── Lock state ──────────────────────────────────────────────────────
 

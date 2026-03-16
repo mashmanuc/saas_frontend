@@ -1,0 +1,130 @@
+// Phase 13 A1.3: Public Lesson API client
+// Public endpoints — NO auth token. Uses plain fetch for CDN-cacheable responses.
+// Ref: PROGRESS.md Phase 13 — INV-SCALE-1 (ReplayChunks), INV-SCALE-3 (CDN cache), INV-SCALE-5 (cursor pagination)
+
+const PUBLIC_BASE = '/api/v1/knowledge/public'
+
+// ─── Types ──────────────────────────────────────────────────────────────────
+
+export interface PublicLessonTutor {
+  name: string
+  slug: string
+  avatar_url: string | null
+  subjects: string
+  rating: number | null
+  price_from: number | null
+}
+
+export interface PublicLesson {
+  id: string
+  title: string
+  slug: string
+  description: string
+  subject_tag: string
+  tutor: PublicLessonTutor
+  duration_seconds: number
+  board_thumbnail_url: string | null
+  created_at: string
+  visibility: 'demo' | 'public'
+  average_rating?: number | null
+  rating_count?: number
+  user_rating?: { score: number; comment: string } | null
+}
+
+export interface ReplayChunk {
+  chunk_index: number
+  start_ms: number
+  end_ms: number
+  operations: ReplayOperation[]
+}
+
+export interface ReplayOperation {
+  op_type: string
+  page_id: string
+  data: Record<string, unknown>
+  timestamp_ms: number
+}
+
+export interface ReplayChunksResponse {
+  chunks: ReplayChunk[]
+  next_cursor: number | null
+}
+
+export interface PublicMarker {
+  id: string
+  title: string
+  time_seconds: number
+  category?: string
+}
+
+export interface PublicMaterial {
+  id: string
+  title: string
+  type: string
+  url?: string | null
+}
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+async function publicFetch<T>(path: string): Promise<T> {
+  const res = await fetch(path)
+  if (!res.ok) {
+    const err = new Error(`Public API error: ${res.status}`) as Error & { status: number }
+    err.status = res.status
+    throw err
+  }
+  return res.json() as Promise<T>
+}
+
+// ─── API ────────────────────────────────────────────────────────────────────
+
+export const publicLessonApi = {
+  /**
+   * GET /knowledge/public/lessons/{tutorSlug}/{lessonSlug}/
+   * Lesson detail — CDN cached (Cache-Control: public, max-age=3600)
+   */
+  getLessonDetail(tutorSlug: string, lessonSlug: string): Promise<PublicLesson> {
+    return publicFetch<PublicLesson>(
+      `${PUBLIC_BASE}/lessons/${encodeURIComponent(tutorSlug)}/${encodeURIComponent(lessonSlug)}/`,
+    )
+  },
+
+  /**
+   * GET /knowledge/public/lessons/{tutorSlug}/{lessonSlug}/replay/?cursor={cursor}
+   * ReplayChunks with cursor pagination (INV-SCALE-1, INV-SCALE-5).
+   * Max 50 chunks per request. next_cursor === null means no more chunks.
+   */
+  getReplayChunks(tutorSlug: string, lessonSlug: string, cursor?: number): Promise<ReplayChunksResponse> {
+    const base = `${PUBLIC_BASE}/lessons/${encodeURIComponent(tutorSlug)}/${encodeURIComponent(lessonSlug)}/replay/`
+    const url = cursor != null ? `${base}?cursor=${cursor}` : base
+    return publicFetch<ReplayChunksResponse>(url)
+  },
+
+  /**
+   * GET /knowledge/public/lessons/{tutorSlug}/{lessonSlug}/markers/
+   */
+  getMarkers(tutorSlug: string, lessonSlug: string): Promise<PublicMarker[]> {
+    return publicFetch<PublicMarker[]>(
+      `${PUBLIC_BASE}/lessons/${encodeURIComponent(tutorSlug)}/${encodeURIComponent(lessonSlug)}/markers/`,
+    )
+  },
+
+  /**
+   * GET /knowledge/public/lessons/{tutorSlug}/{lessonSlug}/board/
+   * Final board state JSON — CDN cached (Cache-Control: public, max-age=86400)
+   */
+  getBoardState(tutorSlug: string, lessonSlug: string): Promise<Record<string, unknown>> {
+    return publicFetch<Record<string, unknown>>(
+      `${PUBLIC_BASE}/lessons/${encodeURIComponent(tutorSlug)}/${encodeURIComponent(lessonSlug)}/board/`,
+    )
+  },
+
+  /**
+   * GET /knowledge/public/lessons/{tutorSlug}/{lessonSlug}/materials/
+   */
+  getMaterials(tutorSlug: string, lessonSlug: string): Promise<PublicMaterial[]> {
+    return publicFetch<PublicMaterial[]>(
+      `${PUBLIC_BASE}/lessons/${encodeURIComponent(tutorSlug)}/${encodeURIComponent(lessonSlug)}/materials/`,
+    )
+  },
+}

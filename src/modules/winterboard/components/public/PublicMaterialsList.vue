@@ -1,5 +1,5 @@
 <!-- WB: Public materials list — read-only list of lesson materials
-     Ref: PHASE12_PLAN.md B4 -->
+     Ref: PHASE12_PLAN.md B4 / Phase 13 B1.4 -->
 <template>
   <section class="public-materials" :aria-label="t('publicLesson.materials.title')">
     <h3 class="public-materials__title">
@@ -20,25 +20,26 @@
         v-for="item in materials"
         :key="item.id"
         class="public-materials__item"
+        :class="{ 'public-materials__item--restricted': !item.is_public }"
         role="listitem"
       >
         <div class="public-materials__icon" :aria-hidden="true">
-          <svg v-if="item.type === 'pdf'" width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <svg v-if="contentTypeIcon(item.content_type) === 'pdf'" width="20" height="20" viewBox="0 0 20 20" fill="none">
             <rect x="3" y="1" width="14" height="18" rx="2" fill="#ef4444"/>
             <path d="M6 10h8M6 13h5" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
-          <svg v-else-if="item.type === 'video'" width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <svg v-else-if="contentTypeIcon(item.content_type) === 'video'" width="20" height="20" viewBox="0 0 20 20" fill="none">
             <rect x="2" y="4" width="11" height="12" rx="2" fill="#3b82f6"/>
             <path d="M13 8l5-2.5v9L13 12V8z" fill="#3b82f6"/>
           </svg>
-          <svg v-else-if="item.type === 'audio'" width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <svg v-else-if="contentTypeIcon(item.content_type) === 'audio'" width="20" height="20" viewBox="0 0 20 20" fill="none">
             <path d="M10 3v10.5a3 3 0 1 1-2-2.83V5l6-1.5v8a3 3 0 1 1-2-2.83V3h-2z" fill="#8b5cf6"/>
           </svg>
-          <svg v-else-if="item.type === 'youtube_link'" width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <svg v-else-if="contentTypeIcon(item.content_type) === 'youtube'" width="20" height="20" viewBox="0 0 20 20" fill="none">
             <rect x="2" y="4" width="16" height="12" rx="3" fill="#FF0000"/>
             <path d="M8.5 7.5l5 2.5-5 2.5V7.5z" fill="#fff"/>
           </svg>
-          <svg v-else-if="item.type === 'image'" width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <svg v-else-if="contentTypeIcon(item.content_type) === 'image'" width="20" height="20" viewBox="0 0 20 20" fill="none">
             <rect x="2" y="3" width="16" height="14" rx="2" stroke="#10b981" stroke-width="1.3"/>
             <circle cx="7" cy="8" r="2" fill="#10b981"/>
             <path d="M2 15l5-4 3 2 4-3 4 3" stroke="#10b981" stroke-width="1.2" stroke-linejoin="round"/>
@@ -50,17 +51,24 @@
         </div>
 
         <div class="public-materials__info">
-          <span class="public-materials__name">{{ item.title }}</span>
-          <span v-if="item.type" class="public-materials__type">{{ item.type }}</span>
+          <span class="public-materials__name">{{ item.name }}</span>
+          <span v-if="!item.is_public" class="public-materials__restricted">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+              <rect x="2" y="5" width="8" height="6" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
+              <path d="M4 5V3.5a2 2 0 014 0V5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+            {{ t('knowledge.public.restrictedMaterial') }}
+          </span>
+          <span v-else-if="item.content_type" class="public-materials__type">{{ item.content_type }}</span>
         </div>
 
         <a
-          v-if="item.url"
-          :href="item.url"
+          v-if="item.is_public && item.thumbnail_url"
+          :href="item.thumbnail_url"
           target="_blank"
           rel="noopener noreferrer"
           class="public-materials__link"
-          :aria-label="t('publicLesson.materials.open') + ': ' + item.title"
+          :aria-label="t('publicLesson.materials.open') + ': ' + item.name"
         >
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
             <path d="M5.5 2H3a1 1 0 00-1 1v8a1 1 0 001 1h8a1 1 0 001-1V8.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
@@ -77,9 +85,10 @@ import { useI18n } from 'vue-i18n'
 
 export interface PublicMaterial {
   id: string
-  title: string
-  type: string
-  url?: string | null
+  name: string
+  content_type: string
+  is_public: boolean
+  thumbnail_url?: string | null
 }
 
 defineProps<{
@@ -87,6 +96,24 @@ defineProps<{
 }>()
 
 const { t } = useI18n()
+
+const CONTENT_TYPE_MAP: Record<string, string> = {
+  'application/pdf': 'pdf',
+  'pdf': 'pdf',
+  'video/mp4': 'video',
+  'video': 'video',
+  'audio/mpeg': 'audio',
+  'audio': 'audio',
+  'youtube_link': 'youtube',
+  'youtube': 'youtube',
+  'image/png': 'image',
+  'image/jpeg': 'image',
+  'image': 'image',
+}
+
+function contentTypeIcon(ct: string): string {
+  return CONTENT_TYPE_MAP[ct] ?? 'file'
+}
 </script>
 
 <style scoped>
@@ -140,6 +167,19 @@ const { t } = useI18n()
 
 .public-materials__item:hover {
   border-color: #e2e8f0;
+}
+
+.public-materials__item--restricted {
+  opacity: 0.65;
+}
+
+.public-materials__restricted {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #f59e0b;
+  font-weight: 500;
 }
 
 .public-materials__icon {

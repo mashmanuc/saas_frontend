@@ -78,7 +78,101 @@
             </div>
           </template>
 
-          <!-- No active share — generate form -->
+          <!-- Phase 13 A3.1: Publish mode — Knowledge publish form -->
+          <template v-else-if="mode === 'publish'">
+            <!-- Published success state -->
+            <template v-if="publishLesson.publishedLesson.value">
+              <div class="wb-share-dialog__status-row">
+                <span class="wb-share-badge wb-share-badge--active">Published</span>
+              </div>
+              <div class="wb-share-dialog__link-row">
+                <input
+                  type="text"
+                  class="wb-share-dialog__link-input"
+                  :value="publishLesson.publicAbsoluteUrl.value"
+                  readonly
+                  @focus="($event.target as HTMLInputElement).select()"
+                />
+                <button type="button" class="wb-share-dialog__copy-btn" @click="copyPublishLink">
+                  {{ copied ? t('winterboard.share.copied') : t('winterboard.share.copy') }}
+                </button>
+              </div>
+            </template>
+
+            <!-- Publish form -->
+            <template v-else>
+              <!-- Lesson title -->
+              <div class="wb-share-dialog__field">
+                <label class="wb-share-dialog__field-label" for="publish-title">
+                  {{ t('winterboard.share.lessonTitle') }}
+                </label>
+                <input
+                  id="publish-title"
+                  v-model="lessonTitle"
+                  type="text"
+                  class="wb-share-dialog__text-input"
+                  :placeholder="t('winterboard.share.lessonTitlePlaceholder')"
+                />
+              </div>
+
+              <!-- Description -->
+              <div class="wb-share-dialog__field">
+                <label class="wb-share-dialog__field-label" for="publish-desc">
+                  {{ t('winterboard.share.description') || 'Опис' }}
+                </label>
+                <input
+                  id="publish-desc"
+                  v-model="publishDescription"
+                  type="text"
+                  class="wb-share-dialog__text-input"
+                  placeholder="Короткий опис уроку"
+                />
+              </div>
+
+              <!-- Custom slug -->
+              <div class="wb-share-dialog__field">
+                <label class="wb-share-dialog__field-label" for="publish-slug">
+                  {{ t('winterboard.share.customSlug') }}
+                  <span class="wb-share-dialog__field-hint">{{ t('winterboard.share.customSlugHint') }}</span>
+                </label>
+                <input
+                  id="publish-slug"
+                  v-model="customSlug"
+                  type="text"
+                  class="wb-share-dialog__text-input"
+                  placeholder="kvadratni-rivnyannya"
+                />
+              </div>
+
+              <!-- Visibility -->
+              <div class="wb-share-dialog__options">
+                <label class="wb-share-dialog__label">
+                  {{ t('winterboard.share.visibility') || 'Видимість' }}
+                  <select v-model="publishVisibility" class="wb-share-dialog__select">
+                    <option value="public">{{ t('winterboard.share.visibilityPublic') || 'Публічний' }}</option>
+                    <option value="demo">{{ t('winterboard.share.visibilityDemo') || 'Демо-урок' }}</option>
+                  </select>
+                </label>
+              </div>
+
+              <!-- Error -->
+              <p v-if="publishLesson.error.value" class="wb-share-dialog__revoke-warn" style="color: #ef4444">
+                {{ publishLesson.error.value }}
+              </p>
+
+              <!-- Publish button -->
+              <button
+                type="button"
+                class="wb-share-dialog__generate-btn"
+                :disabled="publishLesson.isPublishing.value"
+                @click="handlePublish"
+              >
+                {{ publishLesson.isPublishing.value ? '…' : (t('winterboard.share.publishLesson') || 'Опублікувати урок') }}
+              </button>
+            </template>
+          </template>
+
+          <!-- No active share — generate form (original share token flow) -->
           <template v-else>
             <!-- Lesson title -->
             <div class="wb-share-dialog__field">
@@ -170,19 +264,68 @@ import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { winterboardApi, type WBShareStatus } from '../../api/winterboardApi'
 import { useToast } from '../../composables/useToast'
+import { usePublishLesson } from '@/modules/knowledge/composables/usePublishLesson'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   sessionId: string
   isOpen: boolean
-}>()
+  /** Phase 13 A3.1: 'share' = WBShareToken flow, 'publish' = Knowledge publish flow */
+  mode?: 'share' | 'publish'
+}>(), {
+  mode: 'share',
+})
 
 const emit = defineEmits<{
   close: []
   shared: []
+  /** Phase 13 A3.1: Emitted when lesson is published with public URL + lesson data */
+  published: [publicUrl: string, lessonData?: { id: string; title: string; subject_tag?: string }]
 }>()
 
 const { t } = useI18n()
 const { showToast } = useToast()
+
+// ── Phase 13 A3.1: Knowledge publish composable ──────────────────────────
+const publishLesson = usePublishLesson()
+const publishVisibility = ref<'public' | 'demo'>('public')
+const publishDescription = ref('')
+const publishSubjectTag = ref('')
+
+async function handlePublish(): Promise<void> {
+  const title = lessonTitle.value.trim()
+  if (!title) {
+    showToast(t('winterboard.share.lessonTitleRequired') || 'Введіть назву уроку', 'error')
+    return
+  }
+  await publishLesson.publish(props.sessionId, {
+    title,
+    description: publishDescription.value.trim() || undefined,
+    subject_tag: publishSubjectTag.value.trim() || undefined,
+    slug: customSlug.value.trim() || undefined,
+    visibility: publishVisibility.value,
+  })
+  if (publishLesson.publishedLesson.value && publishLesson.publicUrl.value) {
+    emit('published', publishLesson.publicUrl.value, {
+      id: publishLesson.publishedLesson.value!.id,
+      title: publishLesson.publishedLesson.value!.title,
+      subject_tag: publishSubjectTag.value || undefined,
+    })
+    showToast(t('winterboard.share.publishSuccess') || 'Урок опубліковано!', 'success')
+  } else if (publishLesson.error.value) {
+    showToast(publishLesson.error.value, 'error')
+  }
+}
+
+async function copyPublishLink(): Promise<void> {
+  if (!publishLesson.publicAbsoluteUrl.value) return
+  try {
+    await navigator.clipboard.writeText(publishLesson.publicAbsoluteUrl.value)
+    copied.value = true
+    setTimeout(() => { copied.value = false }, 2000)
+  } catch {
+    showToast(t('winterboard.share.copyError'), 'error')
+  }
+}
 
 // ── State ─────────────────────────────────────────────────────────────────
 const shareStatus = ref<WBShareStatus | null>(null)
@@ -283,7 +426,11 @@ async function handleRevoke(): Promise<void> {
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────
 onMounted(() => {
-  fetchShareStatus()
+  if (props.mode === 'share') {
+    fetchShareStatus()
+  } else {
+    loadingStatus.value = false
+  }
 })
 </script>
 

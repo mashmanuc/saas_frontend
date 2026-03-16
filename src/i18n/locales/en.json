@@ -7137,6 +7137,158 @@
       "autoZoom": "Auto zoom",
       "layoutChanged": "Layout changed to {mode} mode"
     },
+    "public": {
+      "loading": "Loading lesson...",
+      "notFound": "Lesson not found",
+      "error": "Error loading lesson",
+      "restrictedMaterial": "Available after booking a lesson"
+    },
+    "publish": {
+      "title": "Publish lesson",
+      "description": "Your lesson will become publicly viewable",
+      "lessonTitle": "Lesson title",
+      "lessonDescription": "Description",
+      "subjectTag": "Subject",
+      "slug": "URL address (slug)",
+      "slugHint": "Will be available at /lesson/{your_slug}/{url}",
+      "visibility": "Visibility",
+      "visibilityDemo": "Demo lesson (in profile)",
+      "visibilityPublic": "Public (Google indexes)",
+      "publishButton": "Publish",
+      "publishing": "Publishing...",
+      "success": "Lesson published!",
+      "copyLink": "Copy link"
+    },
+    "demo": {
+      "title": "Demo lessons",
+      "subtitle": "See how lessons go with this tutor",
+      "empty": "This tutor hasn't published demo lessons yet",
+      "duration": "{minutes} min",
+      "durationHours": "{hours} h {minutes} min"
+    },
+    "share": {
+      "ariaLabel": "Share lesson",
+      "copyLink": "Copy link",
+      "telegram": "Telegram",
+      "qr": "QR code",
+      "copied": "Link copied!",
+      "shareMoment": "Share moment",
+      "shareMomentHint": "Link will open the lesson at this exact moment"
+    },
+    "library": {
+      "title": "Template Library",
+      "subtitle": "Find a lesson template and get started faster",
+      "difficulty": "Difficulty",
+      "sortBy": "Sort by",
+      "sortPopular": "Popular",
+      "sortNewest": "Newest",
+      "emptyTitle": "Library is empty",
+      "emptySubtitle": "Publish your first lesson and turn it into a template!",
+      "emptyAction": "Create a lesson"
+    },
+    "template": {
+      "useButton": "Use",
+      "usedCount": "Used {count} times",
+      "community": "Community",
+      "difficultyLabel": "Difficulty level",
+      "subjectLabel": "Subject",
+      "saveTitle": "Save as template",
+      "saveSubtitle": "Other tutors will be able to use your lesson as a starting point",
+      "titleLabel": "Template title",
+      "saveButton": "Save template",
+      "saving": "Saving...",
+      "saveFromRoom": "Save as template",
+      "communityToggle": "Make available to everyone",
+      "communityHint": "Template will be available in the library for other tutors",
+      "saveSuccess": "Template saved!",
+      "saveFailed": "Failed to save template"
+    },
+    "pack": {
+      "lessonCount": "{count} lessons",
+      "status": {
+        "draft": "Draft",
+        "public": "Published",
+        "hidden": "Hidden"
+      },
+      "create": "Create series",
+      "edit": "Edit series",
+      "empty": "No series yet",
+      "emptyHint": "Group lessons into a series for convenience"
+    },
+    "fork": {
+      "badge": "Fork from {author}",
+      "button": "Fork lesson",
+      "treeCount": "Forked {count} times",
+      "success": "Lesson forked!",
+      "error": "Failed to fork lesson"
+    },
+    "catalog": {
+      "title": "Lesson Catalog",
+      "subtitle": "Find the best lessons from the community",
+      "search": "Search lessons...",
+      "allCategories": "All categories",
+      "sortBy": "Sort by",
+      "sortPopular": "Popular",
+      "sortNewest": "Newest",
+      "sortTopRated": "Top rated",
+      "minRating": "Min. rating",
+      "emptyTitle": "Nothing found",
+      "emptySubtitle": "Try changing the filters or search query",
+      "loadMore": "Load more",
+      "totalResults": "{count} lessons"
+    },
+    "rating": {
+      "title": "Rate this lesson",
+      "selectScore": "Select a rating",
+      "star": "{n} stars",
+      "placeholder": "Write a short review (optional)...",
+      "submit": "Rate",
+      "submitting": "Submitting...",
+      "thankYou": "Thank you for your rating!",
+      "alreadyRated": "You have already rated this lesson",
+      "yourRating": "Your rating: {score} out of 5",
+      "loginToRate": "Log in to rate this lesson",
+      "average": "Average rating",
+      "count": "{count} ratings",
+      "summaryAria": "Rating {score} out of 5, {count} ratings",
+      "submitError": "Failed to submit rating"
+    },
+    "achievement": {
+      "title": "Achievements",
+      "earned": "Earned",
+      "locked": "Locked",
+      "noData": "No achievements yet. Publish lessons to earn your first one!",
+      "first_lesson_published": "Publish your first lesson",
+      "five_lessons_published": "Publish 5 lessons",
+      "first_fork_received": "Receive your first fork",
+      "ten_forks_received": "Receive 10 forks",
+      "fifty_forks_received": "Receive 50 forks",
+      "first_template_shared": "Share your first template",
+      "template_100_uses": "Your template was used 100 times",
+      "first_pack_created": "Create your first lesson series",
+      "first_rating_5star": "Receive your first 5-star rating"
+    },
+    "collection": {
+      "title": "Collections",
+      "featured": "Featured",
+      "lessonCount": "{count} lessons",
+      "seeAll": "See all collections",
+      "emptyTitle": "No collections yet",
+      "emptySubtitle": "The best lesson collections will appear here soon"
+    },
+    "analytics": {
+      "title": "Analytics",
+      "views": "Views",
+      "forks": "Forks",
+      "clones": "Clones",
+      "avgRating": "Average rating",
+      "topLessons": "Top 5 lessons",
+      "period": "Period",
+      "days7": "7 days",
+      "days30": "30 days",
+      "days90": "90 days",
+      "noData": "Not enough data to display"
+    },
     "lessons": {
       "title": "Lessons",
       "noLessons": "No lessons yet",
@@ -7194,7 +7346,13 @@
     },
     "markers": {
       "title": "Lesson markers",
-      "empty": "No markers in this lesson"
+      "empty": "No markers in this lesson",
+      "categoryTheory": "Theory",
+      "categoryFormula": "Formula",
+      "categoryExample": "Example",
+      "categoryPractice": "Practice",
+      "categorySolution": "Solution",
+      "categoryCustom": "Other"
     },
     "materials": {
       "title": "Lesson materials",
@@ -7205,7 +7363,20 @@
       "priceFrom": "From {price} UAH/hour",
       "book": "Book a lesson",
       "viewProfile": "View profile",
-      "hint": "Watch this lesson and book your first session with this tutor"
+      "hint": "Watch this lesson and book your first session with this tutor",
+      "ariaLabel": "Tutor card"
     }
+  },
+  "subject": {
+    "math": "Mathematics",
+    "physics": "Physics",
+    "english": "English",
+    "ukrainian": "Ukrainian",
+    "chemistry": "Chemistry",
+    "biology": "Biology",
+    "history": "History",
+    "geography": "Geography",
+    "informatics": "Computer Science",
+    "other": "Other"
   }
 }

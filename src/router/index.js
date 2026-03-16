@@ -902,6 +902,62 @@ const routes = [
   },
   // Winterboard v3 routes (top-level, own layout)
   ...winterboardRoutes,
+  // Phase 15 A1.4: Knowledge catalog (public — no auth)
+  {
+    path: '/knowledge/catalog',
+    name: 'KnowledgeCatalog',
+    component: () => import('../modules/knowledge/views/KnowledgeCatalogPage.vue'),
+    meta: { requiresAuth: false }
+  },
+  // Phase 15 A2.4: Knowledge analytics dashboard (auth required)
+  {
+    path: '/knowledge/analytics',
+    name: 'KnowledgeAnalytics',
+    component: () => import('../modules/knowledge/views/KnowledgeAnalyticsPage.vue'),
+    meta: { requiresAuth: true }
+  },
+  // Phase 14 A1.3: Lesson template library (Knowledge domain — auth required)
+  {
+    path: '/knowledge/library',
+    name: 'LessonLibrary',
+    component: () => import('../modules/knowledge/views/LessonLibraryPage.vue'),
+    meta: { requiresAuth: true }
+  },
+  // Phase 14 A3.4: My packs management (Knowledge domain — auth required)
+  {
+    path: '/knowledge/packs',
+    name: 'MyPacks',
+    component: () => import('../modules/knowledge/views/MyPacksPage.vue'),
+    meta: { requiresAuth: true }
+  },
+  // Phase 14 A3.2: Public lesson pack page (Knowledge domain — no auth, blank layout)
+  {
+    path: '/pack/:tutorSlug/:packSlug',
+    name: 'LessonPack',
+    component: () => import('../modules/knowledge/views/LessonPackPage.vue'),
+    meta: { requiresAuth: false, layout: 'blank' }
+  },
+  // Phase 15 A3.2: Collections list (public — no auth)
+  {
+    path: '/knowledge/collections',
+    name: 'CollectionsList',
+    component: () => import('../modules/knowledge/views/CollectionsListPage.vue'),
+    meta: { requiresAuth: false }
+  },
+  // Phase 15 A3.2: Collection detail (public — no auth, blank layout)
+  {
+    path: '/knowledge/collections/:slug',
+    name: 'CollectionDetail',
+    component: () => import('../modules/knowledge/views/CollectionPage.vue'),
+    meta: { requiresAuth: false, layout: 'blank' }
+  },
+  // Phase 13 A1.1: Public lesson page (Knowledge domain — no auth, blank layout)
+  {
+    path: '/lesson/:tutorSlug/:lessonSlug',
+    name: 'PublicLesson',
+    component: () => import('../modules/knowledge/views/PublicLessonPage.vue'),
+    meta: { requiresAuth: false, layout: 'blank' }
+  },
   { path: '/:pathMatch(.*)*', redirect: '/start' },
 ]
 

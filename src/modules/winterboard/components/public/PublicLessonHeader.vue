@@ -1,36 +1,44 @@
-<!-- WB: Public lesson header — title, tutor info, date, duration
-     Ref: PHASE12_PLAN.md B1 -->
+<!-- WB: Public lesson header — title, tutor info, date, duration, subject badge
+     Ref: PHASE12_PLAN.md B1 / Phase 13 B1.1 -->
 <template>
   <header class="public-lesson-header">
     <div class="public-lesson-header__top">
       <h1 class="public-lesson-header__title">{{ title }}</h1>
-      <span v-if="duration" class="public-lesson-header__duration">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.4"/>
-          <path d="M8 4v4l2.5 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        {{ formattedDuration }}
-      </span>
+      <div class="public-lesson-header__badges">
+        <span v-if="subjectTag" class="public-lesson-header__subject-badge">
+          {{ subjectLabel }}
+        </span>
+        <span v-if="durationSeconds" class="public-lesson-header__duration">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M8 4v4l2.5 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          {{ formattedDuration }}
+        </span>
+      </div>
     </div>
 
     <div class="public-lesson-header__meta">
       <div class="public-lesson-header__tutor">
         <img
-          v-if="tutorAvatar"
-          :src="tutorAvatar"
+          :src="avatarSrc"
           :alt="tutorName"
           class="public-lesson-header__avatar"
+          @error="onAvatarError"
         />
-        <div v-else class="public-lesson-header__avatar public-lesson-header__avatar--placeholder">
-          {{ tutorInitial }}
-        </div>
         <div class="public-lesson-header__tutor-info">
-          <span class="public-lesson-header__tutor-name">{{ tutorName }}</span>
-          <span v-if="subject" class="public-lesson-header__subject">{{ subject }}</span>
+          <router-link
+            v-if="tutorSlug"
+            :to="`/marketplace/${tutorSlug}`"
+            class="public-lesson-header__tutor-name public-lesson-header__tutor-link"
+          >
+            {{ tutorName }}
+          </router-link>
+          <span v-else class="public-lesson-header__tutor-name">{{ tutorName }}</span>
         </div>
       </div>
 
-      <time v-if="date" class="public-lesson-header__date" :datetime="date">
+      <time v-if="createdAt" class="public-lesson-header__date" :datetime="createdAt">
         {{ formattedDate }}
       </time>
     </div>
@@ -38,32 +46,55 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+const FALLBACK_AVATAR = '/default-avatar.svg'
+
+const KNOWN_SUBJECTS = [
+  'math', 'physics', 'english', 'ukrainian', 'chemistry',
+  'biology', 'history', 'geography', 'informatics',
+] as const
 
 const props = defineProps<{
   title: string
   tutorName: string
-  tutorAvatar?: string | null
-  subject?: string
-  date?: string
-  duration?: number // seconds
+  tutorAvatarUrl: string | null
+  tutorSlug: string
+  subjectTag: string
+  durationSeconds: number
+  createdAt: string
 }>()
 
 const { t, locale } = useI18n()
 
-const tutorInitial = computed(() =>
-  props.tutorName?.charAt(0).toUpperCase() || '?',
-)
+const avatarFailed = ref(false)
+
+const avatarSrc = computed(() => {
+  if (avatarFailed.value || !props.tutorAvatarUrl) return FALLBACK_AVATAR
+  return props.tutorAvatarUrl
+})
+
+function onAvatarError(): void {
+  avatarFailed.value = true
+}
+
+const subjectLabel = computed(() => {
+  if (!props.subjectTag) return ''
+  if ((KNOWN_SUBJECTS as readonly string[]).includes(props.subjectTag)) {
+    return t(`subject.${props.subjectTag}`)
+  }
+  return props.subjectTag
+})
 
 const formattedDuration = computed(() => {
-  if (!props.duration) return ''
-  const mins = Math.floor(props.duration / 60)
-  const secs = props.duration % 60
+  if (!props.durationSeconds) return ''
+  const mins = Math.floor(props.durationSeconds / 60)
+  const secs = props.durationSeconds % 60
   if (mins >= 60) {
     const hrs = Math.floor(mins / 60)
     const remainMins = mins % 60
-    return `${hrs}${t('publicLesson.header.hourShort')} ${remainMins}${t('publicLesson.header.minShort')}`
+    return `${hrs} ${t('publicLesson.header.hourShort')} ${remainMins} ${t('publicLesson.header.minShort')}`
   }
   return secs > 0
     ? `${mins}:${String(secs).padStart(2, '0')}`
@@ -71,14 +102,14 @@ const formattedDuration = computed(() => {
 })
 
 const formattedDate = computed(() => {
-  if (!props.date) return ''
+  if (!props.createdAt) return ''
   try {
-    return new Date(props.date).toLocaleDateString(
+    return new Date(props.createdAt).toLocaleDateString(
       locale.value === 'uk' ? 'uk-UA' : 'en-US',
       { day: 'numeric', month: 'long', year: 'numeric' },
     )
   } catch {
-    return props.date
+    return props.createdAt
   }
 })
 </script>
@@ -161,9 +192,34 @@ const formattedDate = computed(() => {
   color: #0f172a;
 }
 
-.public-lesson-header__subject {
-  font-size: 13px;
-  color: #64748b;
+.public-lesson-header__badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.public-lesson-header__subject-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  background: #ede9fe;
+  color: #6366f1;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.public-lesson-header__tutor-link {
+  color: #6366f1;
+  text-decoration: none;
+  transition: color 0.12s;
+}
+
+.public-lesson-header__tutor-link:hover {
+  color: #4f46e5;
+  text-decoration: underline;
 }
 
 .public-lesson-header__date {

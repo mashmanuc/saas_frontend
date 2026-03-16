@@ -1,22 +1,25 @@
 <!-- WB: Tutor CTA card — viral loop component for public lesson page
-     Ref: PHASE12_PLAN.md B5 / §TutorCTACard -->
+     Ref: PHASE12_PLAN.md B5 / Phase 13 B2.1 -->
 <template>
-  <div class="tutor-cta">
+  <div class="tutor-cta" role="complementary" :aria-label="t('publicLesson.cta.ariaLabel')">
     <div class="tutor-cta__header">
       <img
-        v-if="tutorAvatar"
-        :src="tutorAvatar"
+        :src="avatarSrc"
         :alt="tutorName"
         class="tutor-cta__avatar"
+        @error="onAvatarError"
       />
-      <div v-else class="tutor-cta__avatar tutor-cta__avatar--placeholder">
-        {{ tutorInitial }}
-      </div>
 
       <div class="tutor-cta__info">
         <span class="tutor-cta__name">{{ tutorName }}</span>
-        <span v-if="subjects" class="tutor-cta__subjects">{{ subjects }}</span>
-        <div v-if="rating" class="tutor-cta__rating">
+        <div v-if="subjectTags.length" class="tutor-cta__subjects">
+          <span
+            v-for="tag in subjectTags"
+            :key="tag"
+            class="tutor-cta__subject-chip"
+          >{{ subjectLabel(tag) }}</span>
+        </div>
+        <div v-if="ratingAvg" class="tutor-cta__rating">
           <svg
             v-for="i in 5"
             :key="i"
@@ -28,33 +31,34 @@
           >
             <path
               d="M7 1l1.5 3 3.3.5-2.4 2.3.6 3.3L7 8.4l-3 1.7.6-3.3L2.2 4.5l3.3-.5L7 1z"
-              :fill="i <= Math.round(rating) ? '#f59e0b' : '#e2e8f0'"
+              :fill="i <= Math.round(ratingAvg) ? '#f59e0b' : '#e2e8f0'"
               stroke="none"
             />
           </svg>
-          <span class="tutor-cta__rating-value">{{ rating.toFixed(1) }}</span>
+          <span class="tutor-cta__rating-value">{{ ratingAvg.toFixed(1) }}</span>
+          <span v-if="ratingCount" class="tutor-cta__rating-count">({{ ratingCount }})</span>
         </div>
       </div>
     </div>
 
-    <div v-if="priceFrom" class="tutor-cta__price">
-      {{ t('publicLesson.cta.priceFrom', { price: priceFrom }) }}
+    <div v-if="priceFromUah" class="tutor-cta__price">
+      {{ t('publicLesson.cta.priceFrom', { price: priceFromUah }) }}
     </div>
 
     <div class="tutor-cta__actions">
-      <a
-        :href="bookUrl"
+      <router-link
+        :to="bookUrl"
         class="tutor-cta__btn tutor-cta__btn--primary"
       >
         {{ t('publicLesson.cta.book') }}
-      </a>
-      <a
-        v-if="profileUrl"
-        :href="profileUrl"
+      </router-link>
+      <router-link
+        v-if="tutorSlug"
+        :to="profileUrl"
         class="tutor-cta__btn tutor-cta__btn--outline"
       >
         {{ t('publicLesson.cta.viewProfile') }}
-      </a>
+      </router-link>
     </div>
 
     <p class="tutor-cta__hint">{{ t('publicLesson.cta.hint') }}</p>
@@ -62,36 +66,58 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useAuthStore } from '@/modules/auth/store/authStore'
+
+const FALLBACK_AVATAR = '/default-avatar.svg'
+
+const KNOWN_SUBJECTS = [
+  'math', 'physics', 'english', 'ukrainian', 'chemistry',
+  'biology', 'history', 'geography', 'informatics',
+] as const
 
 const props = defineProps<{
   tutorName: string
-  tutorAvatar?: string | null
-  tutorSlug?: string
-  lessonSlug?: string
-  subjects?: string
-  rating?: number | null
-  priceFrom?: number | null
-  isAuthenticated?: boolean
+  tutorAvatarUrl: string | null
+  tutorSlug: string
+  subjectTags: string[]
+  ratingAvg: number | null
+  ratingCount: number
+  priceFromUah: number | null
+  lessonSlug: string
 }>()
 
 const { t } = useI18n()
+const auth = useAuthStore()
 
-const tutorInitial = computed(() =>
-  props.tutorName?.charAt(0).toUpperCase() || '?',
-)
+const avatarFailed = ref(false)
 
-const profileUrl = computed(() =>
-  props.tutorSlug ? `/marketplace/${props.tutorSlug}` : null,
-)
+const avatarSrc = computed(() => {
+  if (avatarFailed.value || !props.tutorAvatarUrl) return FALLBACK_AVATAR
+  return props.tutorAvatarUrl
+})
+
+function onAvatarError(): void {
+  avatarFailed.value = true
+}
+
+function subjectLabel(tag: string): string {
+  if ((KNOWN_SUBJECTS as readonly string[]).includes(tag)) {
+    return t(`subject.${tag}`)
+  }
+  return tag
+}
+
+const profileUrl = computed(() => `/marketplace/${props.tutorSlug}`)
 
 const bookUrl = computed(() => {
-  if (props.isAuthenticated && props.tutorSlug) {
-    return `/marketplace/${props.tutorSlug}`
+  const refParam = props.lessonSlug ? `lesson_${props.lessonSlug}` : ''
+  if (auth.isAuthenticated) {
+    return `/marketplace/${props.tutorSlug}${refParam ? `?ref=${refParam}` : ''}`
   }
-  const ref = props.lessonSlug ? `lesson_${props.lessonSlug}` : ''
-  return `/auth/register${ref ? `?ref=${ref}` : ''}`
+  const redirect = encodeURIComponent(`/marketplace/${props.tutorSlug}`)
+  return `/auth/register?ref=${refParam}&redirect=${redirect}`
 })
 </script>
 
@@ -142,8 +168,19 @@ const bookUrl = computed(() => {
 }
 
 .tutor-cta__subjects {
-  font-size: 13px;
-  color: #64748b;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tutor-cta__subject-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  background: #ede9fe;
+  color: #6366f1;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
 }
 
 .tutor-cta__rating {
@@ -158,6 +195,12 @@ const bookUrl = computed(() => {
   font-weight: 600;
   color: #475569;
   margin-left: 4px;
+}
+
+.tutor-cta__rating-count {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-left: 2px;
 }
 
 .tutor-cta__price {
