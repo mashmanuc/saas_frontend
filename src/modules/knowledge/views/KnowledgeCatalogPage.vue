@@ -119,6 +119,30 @@
               >★</button>
             </div>
           </div>
+
+          <!-- Phase 16 INT-26: Difficulty filter -->
+          <div class="catalog-page__filter-group">
+            <label class="catalog-page__filter-label">Складність</label>
+            <select v-model="filters.difficulty" class="catalog-page__select">
+              <option :value="undefined">Усі</option>
+              <option :value="1">1 — Початковий</option>
+              <option :value="2">2 — Базовий</option>
+              <option :value="3">3 — Середній</option>
+              <option :value="4">4 — Просунутий</option>
+              <option :value="5">5 — Експерт</option>
+            </select>
+          </div>
+
+          <!-- Phase 16 INT-26: Language filter -->
+          <div class="catalog-page__filter-group">
+            <label class="catalog-page__filter-label">Мова</label>
+            <select v-model="filters.language" class="catalog-page__select">
+              <option :value="undefined">Усі</option>
+              <option value="uk">Українська</option>
+              <option value="en">English</option>
+              <option value="pl">Polski</option>
+            </select>
+          </div>
         </div>
 
         <!-- Error -->
@@ -185,6 +209,8 @@
                 <span class="catalog-page__card-stars">★ {{ lesson.average_rating.toFixed(1) }}</span>
                 <span class="catalog-page__card-rating-count">({{ lesson.rating_count }})</span>
               </div>
+              <!-- Phase 16 INT-31: Fork badge -->
+              <ForkBadge v-if="(lesson as any).parent_lesson" :parent-lesson="(lesson as any).parent_lesson" />
             </div>
           </a>
         </div>
@@ -226,6 +252,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useCatalog } from '../composables/useCatalog'
 import { catalogApi, type LessonCollection } from '../api/catalogApi'
+import ForkBadge from '../components/ForkBadge.vue'
 
 const {
   categories,

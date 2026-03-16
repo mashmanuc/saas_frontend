@@ -73,6 +73,11 @@
             </div>
           </a>
         </div>
+        <!-- Phase 16 INT-28: Share buttons -->
+        <ShareButtons
+          :url="`/knowledge/collections/${route.params.slug}`"
+          :title="collection.title"
+        />
       </div>
     </template>
   </div>
@@ -84,6 +89,7 @@ import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { catalogApi, type LessonCollectionDetail } from '../api/catalogApi'
 import Breadcrumbs from '@/ui/Breadcrumbs.vue'
+import ShareButtons from '../components/ShareButtons.vue'
 
 const route = useRoute()
 const { t } = useI18n()

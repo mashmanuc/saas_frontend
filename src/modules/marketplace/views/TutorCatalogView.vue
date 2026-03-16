@@ -15,12 +15,15 @@ import { telemetry } from '@/services/telemetry'
 import { useI18n } from 'vue-i18n'
 import { useMarketplace } from '../composables/useMarketplace'
 import Button from '@/ui/Button.vue'
+import { catalogApi, type CatalogSearchResult } from '@/modules/knowledge/api/catalogApi'
 
 const { t } = useI18n()
 const { tutors, totalCount, totalPages, currentPage, pageSize, isLoading, hasMore, filters, sortBy, filterOptions, error, setFilters, setSort, setPage, loadTutors, loadMore, clearFilters, loadFilterOptions, syncFiltersWithUrl } =
   useMarketplace()
 
 const showAdvancedFilters = ref(false)
+const featuredLessons = ref<CatalogSearchResult[]>([])
+const isLoadingFeatured = ref(true)
 const activeFiltersCount = computed(() => {
   let count = 0
   if (filters.value.experience_min) count++
@@ -35,6 +38,16 @@ const activeFiltersCount = computed(() => {
 onMounted(async () => {
   // syncFiltersWithUrl вже викликається в useMarketplace composable (onMounted)
   await Promise.all([loadTutors(true), loadFilterOptions()])
+
+  // Phase 16 INT-34: Load featured lessons (non-blocking)
+  try {
+    const data = await catalogApi.getFeatured()
+    featuredLessons.value = data.slice(0, 3)
+  } catch {
+    // silent — featured section simply won't show
+  } finally {
+    isLoadingFeatured.value = false
+  }
 })
 
 function handleFiltersUpdate(newFilters: Partial<any>) {
@@ -102,6 +115,34 @@ watch(
 
       <!-- Trust Strip -->
       <TrustStrip />
+
+      <!-- Phase 16 INT-34: Featured lessons from Knowledge catalog -->
+      <section v-if="!isLoadingFeatured && featuredLessons.length > 0" class="featured-lessons" data-test="featured-lessons">
+        <h2 class="featured-lessons__title">{{ t('marketplace.featuredLessons') }}</h2>
+        <div class="featured-lessons__grid">
+          <router-link
+            v-for="lesson in featuredLessons"
+            :key="lesson.id"
+            :to="`/lesson/${lesson.tutor?.slug || ''}/${lesson.slug}`"
+            class="featured-lessons__card"
+          >
+            <div v-if="lesson.board_thumbnail_url" class="featured-lessons__thumb">
+              <img :src="lesson.board_thumbnail_url" :alt="lesson.title" loading="lazy" />
+            </div>
+            <div v-else class="featured-lessons__thumb featured-lessons__thumb--empty">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3" stroke="#94a3b8" stroke-width="1.5"/><path d="M8 10h8M8 14h5" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </div>
+            <div class="featured-lessons__info">
+              <h3 class="featured-lessons__name">{{ lesson.title }}</h3>
+              <span v-if="lesson.tutor?.name" class="featured-lessons__author">{{ lesson.tutor.name }}</span>
+              <div v-if="lesson.average_rating != null" class="featured-lessons__rating">
+                <span class="featured-lessons__star">★</span>
+                {{ lesson.average_rating.toFixed(1) }}
+              </div>
+            </div>
+          </router-link>
+        </div>
+      </section>
 
       <!-- Filter Bar -->
       <CatalogFilterBar
@@ -231,6 +272,102 @@ watch(
   flex-wrap: wrap;
   justify-content: center;
   margin-top: 1.5rem;
+}
+
+/* ── Phase 16 INT-34: Featured lessons ────────────────────────────── */
+.featured-lessons {
+  margin-bottom: 24px;
+}
+
+.featured-lessons__title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text, #111816);
+  margin: 0 0 12px;
+}
+
+.featured-lessons__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .featured-lessons__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.featured-lessons__card {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 12px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.featured-lessons__card:hover {
+  border-color: #6366f1;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.1);
+}
+
+.featured-lessons__thumb {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.featured-lessons__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.featured-lessons__thumb--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.featured-lessons__info {
+  padding: 12px;
+}
+
+.featured-lessons__name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0 0 4px;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.featured-lessons__author {
+  display: block;
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.featured-lessons__rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #f59e0b;
+}
+
+.featured-lessons__star {
+  font-size: 13px;
 }
 
 /* ── Phase 16 INT-23: Lesson catalog CTA ────────────────────────── */

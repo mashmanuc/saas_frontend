@@ -30,9 +30,11 @@
     <div class="demo-lesson-card__body">
       <h3 class="demo-lesson-card__title">{{ lesson.title }}</h3>
       <div class="demo-lesson-card__meta">
-        <span v-if="lesson.subject_tag" class="demo-lesson-card__subject">
-          {{ subjectLabel }}
-        </span>
+        <SubjectBadge
+          v-if="lesson.subject_tag"
+          :category-name="lesson.subject_tag"
+          size="sm"
+        />
         <time class="demo-lesson-card__date" :datetime="lesson.created_at">
           {{ formattedDate }}
         </time>
@@ -51,6 +53,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import RatingSummary from './RatingSummary.vue'
+import SubjectBadge from './SubjectBadge.vue'
 
 export interface DemoLesson {
   id: string

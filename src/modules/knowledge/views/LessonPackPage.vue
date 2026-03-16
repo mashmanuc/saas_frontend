@@ -102,6 +102,12 @@
             Записатися до {{ pack.tutor_name }}
           </a>
         </div>
+
+        <!-- Phase 16 INT-28: Share buttons -->
+        <ShareButtons
+          :url="`/knowledge/packs/${tutorSlug}/${packSlug}`"
+          :title="pack.title"
+        />
       </div>
     </template>
   </div>
@@ -113,6 +119,7 @@ import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { templateApi, type LessonPackDetail } from '../api/templateApi'
 import Breadcrumbs from '@/ui/Breadcrumbs.vue'
+import ShareButtons from '../components/ShareButtons.vue'
 
 const route = useRoute()
 const { t } = useI18n()

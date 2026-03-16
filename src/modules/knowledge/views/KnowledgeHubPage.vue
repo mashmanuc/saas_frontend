@@ -70,6 +70,17 @@
       </div>
     </section>
 
+    <!-- Phase 16 INT-27: Achievements -->
+    <section v-if="isLoadingAchievements" class="knowledge-hub__section">
+      <h2 class="knowledge-hub__section-title">Досягнення</h2>
+      <div class="knowledge-hub__skeleton-grid">
+        <div v-for="i in 4" :key="i" class="knowledge-hub__skeleton-card knowledge-hub__skeleton-card--badge" />
+      </div>
+    </section>
+    <section v-else-if="achievements.length > 0" class="knowledge-hub__section">
+      <AchievementsPanel :achievements="achievements" />
+    </section>
+
     <!-- Terms Hint (Agent B) -->
     <KnowledgeTermsHint />
 
@@ -97,6 +108,8 @@
 import { ref, onMounted, defineAsyncComponent, h } from 'vue'
 import KnowledgeStatsWidget from '../components/KnowledgeStatsWidget.vue'
 import apiClient from '@/utils/apiClient'
+import AchievementsPanel from '../components/AchievementsPanel.vue'
+import { analyticsApi, type TutorAchievement } from '../api/analyticsApi'
 
 // Agent B components — loaded via defineAsyncComponent with null fallback
 const KnowledgeTermsHint = defineAsyncComponent({
@@ -122,6 +135,8 @@ interface RecentLesson {
 
 const recentLessons = ref<RecentLesson[]>([])
 const isLoadingLessons = ref(true)
+const achievements = ref<TutorAchievement[]>([])
+const isLoadingAchievements = ref(true)
 
 function formatDate(dateStr?: string): string {
   if (!dateStr) return ''
@@ -142,6 +157,15 @@ onMounted(async () => {
     console.warn('[KnowledgeHubPage] Failed to load recent lessons:', err)
   } finally {
     isLoadingLessons.value = false
+  }
+
+  // Phase 16 INT-27: Load achievements (non-blocking)
+  try {
+    achievements.value = await analyticsApi.getMyAchievements()
+  } catch (err) {
+    console.warn('[KnowledgeHubPage] Failed to load achievements:', err)
+  } finally {
+    isLoadingAchievements.value = false
   }
 })
 </script>
@@ -236,6 +260,11 @@ onMounted(async () => {
 @keyframes kh-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
+}
+
+.knowledge-hub__skeleton-card--badge {
+  height: 96px;
+  border-radius: 12px;
 }
 
 /* ── Lessons Grid ──────────────────────────────────────────── */
@@ -377,6 +406,23 @@ onMounted(async () => {
 @media (max-width: 640px) {
   .knowledge-hub { padding: 16px; }
   .knowledge-hub__title { font-size: 20px; }
+
+  /* Phase 16 INT-35: Single column on mobile */
+  .knowledge-hub__actions {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .knowledge-hub__lessons-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .knowledge-hub__skeleton-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .knowledge-hub__link-cards {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

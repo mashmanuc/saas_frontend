@@ -1016,6 +1016,7 @@
     "loadMore": "Load more",
     "lessonCatalogCTA": "Looking for ready-made lessons? Browse our lesson catalog from verified tutors.",
     "lessonCatalogCTALink": "Lesson Catalog",
+    "featuredLessons": "Featured Lessons",
     "hero": {
       "title": "Find your tutor in 3 minutes",
       "subtitle": "Verified tutors · Free inquiry"
@@ -7366,7 +7367,8 @@
       "days7": "7 days",
       "days30": "30 days",
       "days90": "90 days",
-      "noData": "Not enough data to display"
+      "noData": "Not enough data to display",
+      "networkTitle": "Lesson Network"
     },
     "lessons": {
       "title": "Lessons",

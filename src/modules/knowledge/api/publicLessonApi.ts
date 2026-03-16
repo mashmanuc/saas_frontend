@@ -26,6 +26,8 @@ export interface PublicLesson {
   board_thumbnail_url: string | null
   created_at: string
   visibility: 'demo' | 'public'
+  views_count?: number
+  fork_count?: number
   average_rating?: number | null
   rating_count?: number
   user_rating?: { score: number; comment: string } | null

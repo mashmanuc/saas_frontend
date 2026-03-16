@@ -24,6 +24,10 @@
     <div class="library-asset-card__info">
       <span class="library-asset-card__name" :title="asset.name">{{ asset.name }}</span>
       <span class="library-asset-card__size">{{ formatSize(asset.size_bytes) }}</span>
+      <!-- Phase 16 INT-32: Source badge -->
+      <span v-if="sourceBadge" class="library-asset-card__source" :class="`library-asset-card__source--${sourceBadge.type}`">
+        {{ sourceBadge.label }}
+      </span>
     </div>
 
     <!-- Actions -->
@@ -111,6 +115,15 @@ function formatSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
+
+// Phase 16 INT-32: Source badge
+const sourceBadge = computed<{ type: string; label: string } | null>(() => {
+  const name = props.asset.name.toLowerCase()
+  const ct = props.asset.content_type
+  if (name.includes('youtube') || ct === 'video/youtube') return { type: 'youtube', label: 'YouTube' }
+  if (props.asset.content_item_id) return { type: 'lesson', label: 'Lesson' }
+  return { type: 'upload', label: 'Upload' }
+})
 </script>
 
 <style scoped>
@@ -179,6 +192,30 @@ function formatSize(bytes: number): string {
 .library-asset-card__size {
   font-size: 11px;
   color: var(--wb-fg-secondary, #94a3b8);
+}
+
+.library-asset-card__source {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 4px;
+  display: inline-block;
+  width: fit-content;
+}
+
+.library-asset-card__source--upload {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.library-asset-card__source--lesson {
+  background: #ede9fe;
+  color: #7c3aed;
+}
+
+.library-asset-card__source--youtube {
+  background: #fee2e2;
+  color: #dc2626;
 }
 
 /* ── Actions ─────────────────────────────────────────────────────────── */

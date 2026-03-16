@@ -99,6 +99,12 @@
         </div>
       </section>
 
+      <!-- Phase 16 INT-45: Knowledge network mini-graph -->
+      <KnowledgeGraph
+        v-if="stats.top_lessons.length > 0"
+        :lessons="stats.top_lessons"
+      />
+
       <!-- Achievements -->
       <section v-if="achievements.length > 0" class="analytics-page__achievements-section">
         <h2 class="analytics-page__section-title">Досягнення</h2>
@@ -136,6 +142,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useKnowledgeAnalytics } from '../composables/useKnowledgeAnalytics'
+import KnowledgeGraph from '../components/KnowledgeGraph.vue'
 
 const {
   stats,

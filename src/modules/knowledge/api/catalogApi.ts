@@ -32,6 +32,8 @@ export interface CatalogFilters {
   query?: string
   category?: string      // category slug
   min_rating?: number    // 1-5
+  difficulty?: number    // 1-5 (Phase 16 INT-26)
+  language?: string      // Phase 16 INT-26
   sort?: 'popular' | 'newest' | 'top-rated'
   cursor?: number
 }

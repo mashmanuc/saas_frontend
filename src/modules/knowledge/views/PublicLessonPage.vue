@@ -182,6 +182,16 @@
             {{ shareCopied ? 'Скопійовано!' : 'Поділитися моментом' }}
           </button>
         </div>
+
+        <!-- Phase 16 INT-29: Share stats -->
+        <div v-if="lesson.views_count || lesson.fork_count" class="public-lesson-page__share-stats">
+          <span v-if="lesson.views_count" class="public-lesson-page__stat">
+            👁 {{ lesson.views_count }} {{ t('knowledge.publicLesson.views') }}
+          </span>
+          <span v-if="lesson.fork_count" class="public-lesson-page__stat">
+            🔀 {{ lesson.fork_count }} {{ t('knowledge.publicLesson.forks') }}
+          </span>
+        </div>
       </div>
     </template>
   </div>
@@ -708,6 +718,19 @@ onUnmounted(() => {
 
 .public-lesson-page__share-btn:hover {
   background: #e2e8f0;
+}
+
+/* ── Phase 16 INT-29: Share stats ──────────────────────────────── */
+.public-lesson-page__share-stats {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.public-lesson-page__stat {
+  font-size: 13px;
+  color: #94a3b8;
 }
 
 /* ── Mobile ─────────────────────────────────────────────────────── */

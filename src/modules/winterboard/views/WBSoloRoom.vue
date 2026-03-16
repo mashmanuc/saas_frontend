@@ -40,6 +40,12 @@
         />
       </div>
 
+      <!-- Phase 16 INT-33: Session context bar -->
+      <div v-if="sessionContextLabel" class="wb-solo-room__context">
+        <span class="wb-solo-room__context-dot" />
+        <span class="wb-solo-room__context-label">{{ sessionContextLabel }}</span>
+      </div>
+
       <!-- Center: Save status -->
       <div class="wb-solo-room__status">
         <span class="wb-save-indicator" :class="`wb-save-indicator--${store.syncStatus}`">
@@ -841,6 +847,16 @@ const explicitGroupId = computed(() => {
   const qg = route.query.groupId
   return typeof qg === 'string' ? qg : null
 })
+
+// Phase 16 INT-33: Session context label — shows student/lesson name from URL query
+const sessionContextLabel = computed<string | null>(() => {
+  const student = typeof route.query.studentName === 'string' ? route.query.studentName.trim() : ''
+  const lesson = typeof route.query.lessonName === 'string' ? route.query.lessonName.trim() : ''
+  if (student && lesson) return `${student} · ${lesson}`
+  if (student) return student
+  if (lesson) return lesson
+  return null
+})
 const autoGroupId = ref<string | null>(null)
 const groupId = computed(() => explicitGroupId.value || autoGroupId.value)
 const showMaterialsSidebar = ref(true)
@@ -1633,6 +1649,35 @@ watch(() => store.workspaceName, (name) => {
   outline: none;
   background: rgba(255, 255, 255, 0.18);
   border-color: var(--wb-brand, #2563eb);
+}
+
+/* Phase 16 INT-33: Session context bar */
+.wb-solo-room__context {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  background: rgba(99, 102, 241, 0.1);
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.wb-solo-room__context-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #6366f1;
+  flex-shrink: 0;
+}
+
+.wb-solo-room__context-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6366f1;
+  white-space: nowrap;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .wb-solo-room__status {
