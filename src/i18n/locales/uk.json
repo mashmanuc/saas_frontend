@@ -1148,7 +1148,12 @@
       "classrooms": "Класи",
       "profile": "Профіль",
       "security": "Безпека",
-      "devPlayground": "Dev Playground"
+      "devPlayground": "Dev Playground",
+      "knowledgeHub": "Knowledge Hub",
+      "lessonCatalog": "Каталог уроків",
+      "templateLibrary": "Бібліотека шаблонів",
+      "myPacks": "Мої серії",
+      "knowledgeAnalytics": "Аналітика"
     },
     "collapse": "Згорнути меню",
     "expand": "Розгорнути меню",
@@ -2820,7 +2825,8 @@
       "activeTutors": "Активних тьюторів",
       "unreadMessages": "Непрочитаних",
       "totalLessons": "Всього уроків",
-      "totalHours": "Годин навчання"
+      "totalHours": "Годин навчання",
+      "publishedLessons": "Опубліковані уроки"
     },
     "todaySchedule": {
       "title": "Розклад на сьогодні",
@@ -7029,6 +7035,12 @@
       "replay": "Тут можна переглянути весь урок після завершення",
       "selection": "Клікніть на об'єкт щоб побачити кнопки дій",
       "dismiss": "Зрозуміло"
+    },
+    "sessionEnd": {
+      "title": "Урок завершено",
+      "publish": "Опублікувати як урок",
+      "saveAsTemplate": "Зберегти як шаблон",
+      "close": "Закрити"
     }
   },
   "storage": {
@@ -7174,6 +7186,51 @@
   },
   "knowledge": {
     "title": "Уроки",
+    "hub": {
+      "title": "Knowledge Hub",
+      "quickActions": "Швидкі дії",
+      "recentLessons": "Останні уроки",
+      "myLessons": "Мої уроки",
+      "mySeries": "Мої серії",
+      "achievements": "Досягнення",
+      "publishLesson": "Опублікувати урок",
+      "catalogTemplates": "Каталог шаблонів",
+      "createSeries": "Створити серію",
+      "catalogLessons": "Каталог уроків",
+      "emptyTitle": "Опублікуйте свій перший урок!",
+      "emptyDescription": "Knowledge — це ваша бібліотека уроків. Кожен проведений урок можна опублікувати і зробити доступним для студентів.",
+      "emptyStep1": "Проведіть урок на дошці",
+      "emptyStep2": "Натисніть \"Опублікувати\"",
+      "emptyStep3": "Студенти побачать ваш урок",
+      "createBoard": "Створити дошку",
+      "viewAll": "Всі"
+    },
+    "terms": {
+      "title": "Поради",
+      "lesson": "Урок — запис проведеного заняття. Містить replay дошки, матеріали, маркери.",
+      "template": "Шаблон — урок який можна використати повторно. Інші тьютори можуть його форкнути.",
+      "pack": "Серія (Pack) — послідовність уроків за темою.",
+      "fork": "Форк — копія шаблону з вашими змінами. Автор бачить форки в аналітиці.",
+      "hide": "Приховати"
+    },
+    "breadcrumbs": {
+      "catalog": "Каталог",
+      "knowledge": "Knowledge",
+      "series": "Серії",
+      "collections": "Підбірки"
+    },
+    "publicLesson": {
+      "moreLessons": "Ще уроки цього тьютора",
+      "partOfPack": "Цей урок входить до серії:",
+      "viewPack": "Дивитися серію",
+      "views": "переглядів",
+      "forks": "форків"
+    },
+    "replay": {
+      "shareMoment": "Поділитися моментом",
+      "momentCopied": "Посилання на момент скопійовано!",
+      "momentBadge": "Момент: {time}"
+    },
     "tabLessons": "Уроки",
     "tabTemplates": "Шаблони",
     "tabStarterPacks": "Starter Packs",
@@ -7238,16 +7295,27 @@
       "description": "Ваш урок стане доступним для перегляду всім",
       "lessonTitle": "Назва уроку",
       "lessonDescription": "Опис",
+      "subject": "Предмет",
       "subjectTag": "Предмет",
+      "difficulty": "Складність",
       "slug": "URL-адреса (slug)",
       "slugHint": "Буде доступний за адресою /lesson/{ваш_slug}/{url}",
       "visibility": "Видимість",
-      "visibilityDemo": "Демо-урок (в профілі)",
-      "visibilityPublic": "Публічний (Google індексує)",
+      "visibilityDemo": "Demo — тільки ваш профіль",
+      "visibilityPublic": "Public — каталог + Google",
+      "publish": "Опублікувати",
       "publishButton": "Опублікувати",
+      "cancel": "Скасувати",
       "publishing": "Публікація...",
       "success": "Урок опубліковано!",
-      "copyLink": "Скопіювати посилання"
+      "copyLink": "Скопіювати посилання",
+      "consent": {
+        "title": "Приватність студента",
+        "hasStudentData": "Урок містить дані студента",
+        "studentConsented": "Студент надав згоду на публікацію",
+        "anonymize": "Анонімізувати дані студента",
+        "warning": "Без згоди публікація уроків з даними студента заборонена"
+      }
     },
     "demo": {
       "title": "Демо-уроки",

@@ -995,7 +995,12 @@
       "classrooms": "Classrooms",
       "profile": "Profile",
       "security": "Security",
-      "devPlayground": "Dev Playground"
+      "devPlayground": "Dev Playground",
+      "knowledgeHub": "Knowledge Hub",
+      "lessonCatalog": "Lesson Catalog",
+      "templateLibrary": "Template Library",
+      "myPacks": "My Series",
+      "knowledgeAnalytics": "Analytics"
     },
     "collapse": "Collapse menu",
     "expand": "Expand menu",
@@ -1985,7 +1990,8 @@
       "activeTutors": "Active tutors",
       "unreadMessages": "Unread",
       "totalLessons": "Total lessons",
-      "totalHours": "Learning hours"
+      "totalHours": "Learning hours",
+      "publishedLessons": "Published lessons"
     },
     "todaySchedule": {
       "title": "Today's schedule",
@@ -6900,6 +6906,12 @@
       "selection": "Click an object to see action buttons",
       "dismiss": "Got it"
     },
+    "sessionEnd": {
+      "title": "Lesson completed",
+      "publish": "Publish as lesson",
+      "saveAsTemplate": "Save as template",
+      "close": "Close"
+    },
     "lessons": {
       "title": "Lessons",
       "create": "Create lesson",
@@ -7084,6 +7096,51 @@
   },
   "knowledge": {
     "title": "Lessons",
+    "hub": {
+      "title": "Knowledge Hub",
+      "quickActions": "Quick actions",
+      "recentLessons": "Recent lessons",
+      "myLessons": "My lessons",
+      "mySeries": "My series",
+      "achievements": "Achievements",
+      "publishLesson": "Publish lesson",
+      "catalogTemplates": "Template catalog",
+      "createSeries": "Create series",
+      "catalogLessons": "Lesson catalog",
+      "emptyTitle": "Publish your first lesson!",
+      "emptyDescription": "Knowledge is your lesson library. Every lesson you teach can be published and made available to students.",
+      "emptyStep1": "Teach a lesson on the board",
+      "emptyStep2": "Click \"Publish\"",
+      "emptyStep3": "Students will see your lesson",
+      "createBoard": "Create board",
+      "viewAll": "All"
+    },
+    "terms": {
+      "title": "Tips",
+      "lesson": "Lesson — a recording of a conducted class. Contains board replay, materials, markers.",
+      "template": "Template — a lesson that can be reused. Other tutors can fork it.",
+      "pack": "Series (Pack) — a sequence of lessons on a topic.",
+      "fork": "Fork — a copy of a template with your changes. The author sees forks in analytics.",
+      "hide": "Hide"
+    },
+    "breadcrumbs": {
+      "catalog": "Catalog",
+      "knowledge": "Knowledge",
+      "series": "Series",
+      "collections": "Collections"
+    },
+    "publicLesson": {
+      "moreLessons": "More lessons by this tutor",
+      "partOfPack": "This lesson is part of series:",
+      "viewPack": "View series",
+      "views": "views",
+      "forks": "forks"
+    },
+    "replay": {
+      "shareMoment": "Share moment",
+      "momentCopied": "Moment link copied!",
+      "momentBadge": "Moment: {time}"
+    },
     "tabLessons": "Lessons",
     "tabTemplates": "Templates",
     "tabStarterPacks": "Starter Packs",
@@ -7148,16 +7205,27 @@
       "description": "Your lesson will become publicly viewable",
       "lessonTitle": "Lesson title",
       "lessonDescription": "Description",
+      "subject": "Subject",
       "subjectTag": "Subject",
+      "difficulty": "Difficulty",
       "slug": "URL address (slug)",
       "slugHint": "Will be available at /lesson/{your_slug}/{url}",
       "visibility": "Visibility",
-      "visibilityDemo": "Demo lesson (in profile)",
-      "visibilityPublic": "Public (Google indexes)",
+      "visibilityDemo": "Demo — your profile only",
+      "visibilityPublic": "Public — catalog + Google",
+      "publish": "Publish",
       "publishButton": "Publish",
+      "cancel": "Cancel",
       "publishing": "Publishing...",
       "success": "Lesson published!",
-      "copyLink": "Copy link"
+      "copyLink": "Copy link",
+      "consent": {
+        "title": "Student privacy",
+        "hasStudentData": "Lesson contains student data",
+        "studentConsented": "Student consented to publication",
+        "anonymize": "Anonymize student data",
+        "warning": "Publishing lessons with student data without consent is prohibited"
+      }
     },
     "demo": {
       "title": "Demo lessons",
