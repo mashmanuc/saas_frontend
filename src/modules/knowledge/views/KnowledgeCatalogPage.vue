@@ -174,7 +174,11 @@
             <div class="catalog-page__card-body">
               <h3 class="catalog-page__card-title">{{ lesson.title }}</h3>
               <div class="catalog-page__card-meta">
-                <span class="catalog-page__card-author">{{ lesson.tutor.name }}</span>
+                <a
+                  :href="`/marketplace/${lesson.tutor.slug}`"
+                  class="catalog-page__card-author catalog-page__card-author--link"
+                  @click.stop
+                >{{ lesson.tutor.name }}</a>
                 <span v-if="lesson.category_name" class="catalog-page__card-category">{{ lesson.category_name }}</span>
               </div>
               <div v-if="lesson.average_rating != null" class="catalog-page__card-rating">
@@ -657,6 +661,17 @@ onMounted(async () => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.catalog-page__card-author--link {
+  color: #6366f1;
+  text-decoration: none;
+  transition: color 0.12s;
+}
+
+.catalog-page__card-author--link:hover {
+  color: #4f46e5;
+  text-decoration: underline;
 }
 
 .catalog-page__card-category {

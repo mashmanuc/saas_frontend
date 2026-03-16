@@ -572,16 +572,8 @@ const routes = [
           roles: [USER_ROLES.STUDENT, USER_ROLES.TUTOR]
         },
       },
-      // Knowledge Library (Phase 4 Day 3)
-      {
-        path: 'tutor/knowledge',
-        name: 'knowledge-library',
-        component: () => import('../modules/knowledge/KnowledgeLibrary.vue'),
-        meta: {
-          requiresAuth: true,
-          roles: [USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN],
-        },
-      },
+      // Phase 16: Redirect legacy Knowledge Library to Knowledge Hub
+      { path: 'tutor/knowledge', redirect: '/knowledge' },
       // R4: Legacy redirect
       { path: 'dashboard/knowledge', redirect: '/tutor/knowledge' },
       // v0.71: Chat with tutor route
@@ -877,6 +869,42 @@ const routes = [
           },
         ],
       },
+      // Phase 16: Knowledge domain routes (inside PageShell for sidebar + header)
+      {
+        path: 'knowledge',
+        children: [
+          {
+            path: '',
+            name: 'KnowledgeHub',
+            component: () => import('../modules/knowledge/views/KnowledgeHubPage.vue'),
+            meta: { roles: [USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN] },
+          },
+          {
+            path: 'library',
+            name: 'LessonLibrary',
+            component: () => import('../modules/knowledge/views/LessonLibraryPage.vue'),
+            meta: { roles: [USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN] },
+          },
+          {
+            path: 'packs',
+            name: 'MyPacks',
+            component: () => import('../modules/knowledge/views/MyPacksPage.vue'),
+            meta: { roles: [USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN] },
+          },
+          {
+            path: 'analytics',
+            name: 'KnowledgeAnalytics',
+            component: () => import('../modules/knowledge/views/KnowledgeAnalyticsPage.vue'),
+            meta: { roles: [USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN] },
+          },
+          {
+            path: 'catalog',
+            name: 'KnowledgeCatalog',
+            component: () => import('../modules/knowledge/views/KnowledgeCatalogPage.vue'),
+            // No meta.roles — accessible to all authenticated users (tutor, student, admin)
+          },
+        ],
+      },
       // FIX-5: Winterboard session list — inside PageShell for header + sidebar
       winterboardSessionListRoute,
       // Winterboard page-level routes (library, dashboard, boards, lessons, students)
@@ -902,33 +930,12 @@ const routes = [
   },
   // Winterboard v3 routes (top-level, own layout)
   ...winterboardRoutes,
-  // Phase 15 A1.4: Knowledge catalog (public — no auth)
+  // Phase 15: Knowledge catalog (public fallback for anonymous users)
   {
     path: '/knowledge/catalog',
-    name: 'KnowledgeCatalog',
+    name: 'KnowledgeCatalogPublic',
     component: () => import('../modules/knowledge/views/KnowledgeCatalogPage.vue'),
     meta: { requiresAuth: false }
-  },
-  // Phase 15 A2.4: Knowledge analytics dashboard (auth required)
-  {
-    path: '/knowledge/analytics',
-    name: 'KnowledgeAnalytics',
-    component: () => import('../modules/knowledge/views/KnowledgeAnalyticsPage.vue'),
-    meta: { requiresAuth: true }
-  },
-  // Phase 14 A1.3: Lesson template library (Knowledge domain — auth required)
-  {
-    path: '/knowledge/library',
-    name: 'LessonLibrary',
-    component: () => import('../modules/knowledge/views/LessonLibraryPage.vue'),
-    meta: { requiresAuth: true }
-  },
-  // Phase 14 A3.4: My packs management (Knowledge domain — auth required)
-  {
-    path: '/knowledge/packs',
-    name: 'MyPacks',
-    component: () => import('../modules/knowledge/views/MyPacksPage.vue'),
-    meta: { requiresAuth: true }
   },
   // Phase 14 A3.2: Public lesson pack page (Knowledge domain — no auth, blank layout)
   {

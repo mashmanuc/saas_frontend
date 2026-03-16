@@ -27,6 +27,9 @@
     <!-- Content -->
     <template v-else-if="lesson">
       <div class="public-lesson-page__container">
+        <!-- Phase 16 INT-12: Breadcrumbs -->
+        <Breadcrumbs :items="breadcrumbItems" />
+
         <!-- Header -->
         <PublicLessonHeader
           :title="lesson.title"
@@ -125,6 +128,44 @@
           </a>
         </div>
 
+        <!-- Phase 16 INT-19: Pack membership banners -->
+        <div
+          v-for="pack in lessonPacks"
+          :key="pack.id"
+          class="public-lesson-page__pack-banner"
+        >
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+            <rect x="2" y="2" width="14" height="14" rx="3" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M6 7h6M6 11h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <span>Цей урок є частиною серії:</span>
+          <router-link :to="`/pack/${pack.tutor_slug}/${pack.slug}`" class="public-lesson-page__pack-link">
+            {{ pack.title }} — {{ pack.lessons_count }} уроків
+          </router-link>
+        </div>
+
+        <!-- Phase 16 INT-18: More lessons by this tutor -->
+        <section v-if="relatedLessons.length > 0" class="public-lesson-page__related">
+          <h2 class="public-lesson-page__related-title">Ще уроки цього тьютора</h2>
+          <div class="public-lesson-page__related-grid">
+            <router-link
+              v-for="rel in relatedLessons"
+              :key="rel.id"
+              :to="`/lesson/${rel.tutor_slug || lesson.tutor.slug}/${rel.slug}`"
+              class="public-lesson-page__related-card"
+            >
+              <div v-if="rel.board_thumbnail_url" class="public-lesson-page__related-thumb">
+                <img :src="rel.board_thumbnail_url" :alt="rel.title" loading="lazy" />
+              </div>
+              <div v-else class="public-lesson-page__related-thumb public-lesson-page__related-thumb--empty">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3" stroke="#94a3b8" stroke-width="1.5"/><path d="M8 10h8M8 14h5" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </div>
+              <h3 class="public-lesson-page__related-name">{{ rel.title }}</h3>
+              <span v-if="rel.subject_tag" class="public-lesson-page__related-tag">{{ rel.subject_tag }}</span>
+            </router-link>
+          </div>
+        </section>
+
         <!-- Share moment button -->
         <div class="public-lesson-page__share-moment">
           <button
@@ -149,7 +190,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { publicLessonApi, type PublicLesson, type PublicMarker, type PublicMaterial } from '../api/publicLessonApi'
+import { publicLessonApi, type PublicLesson, type PublicMarker, type PublicMaterial, type RelatedLesson, type LessonPackInfo } from '../api/publicLessonApi'
 import { usePublicReplay } from '../composables/usePublicReplay'
 import { useForkLesson } from '../composables/useForkLesson'
 import { useAuthStore } from '@/modules/auth/store/authStore'
@@ -162,11 +203,14 @@ import PublicBoardViewer from '../components/PublicBoardViewer.vue'
 import { catalogApi } from '../api/catalogApi'
 import RatingSummary from '../components/RatingSummary.vue'
 import LessonRatingWidget from '../components/LessonRatingWidget.vue'
+import Breadcrumbs from '@/ui/Breadcrumbs.vue'
+import { useI18n } from 'vue-i18n'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const { fork, isForking } = useForkLesson()
+const { t } = useI18n()
 
 // ── State ───────────────────────────────────────────────────────────────────
 const isLoading = ref(true)
@@ -177,10 +221,27 @@ const markers = ref<PublicMarker[]>([])
 const materials = ref<PublicMaterial[]>([])
 const boardViewerRef = ref<InstanceType<typeof PublicBoardViewer> | null>(null)
 const shareCopied = ref(false)
+const relatedLessons = ref<RelatedLesson[]>([])
+const lessonPacks = ref<LessonPackInfo[]>([])
 
 // ── Route params ────────────────────────────────────────────────────────────
 const tutorSlug = computed(() => route.params.tutorSlug as string)
 const lessonSlug = computed(() => route.params.lessonSlug as string)
+
+// ── Phase 16 INT-12: Breadcrumbs ─────────────────────────────────────────────
+const breadcrumbItems = computed(() => {
+  const items: Array<{ label: string; to?: string }> = [
+    { label: t('knowledge.breadcrumbs.catalog'), to: '/knowledge/catalog' },
+  ]
+  if (lesson.value?.subject_tag) {
+    items.push({
+      label: lesson.value.subject_tag,
+      to: `/knowledge/catalog?subject=${lesson.value.subject_tag}`,
+    })
+  }
+  items.push({ label: lesson.value?.title || '' })
+  return items
+})
 
 // ── Replay (lazy — only after Play) ─────────────────────────────────────────
 const replay = usePublicReplay(tutorSlug, lessonSlug)
@@ -355,6 +416,12 @@ onMounted(async () => {
 
     // Phase 15 A3.4: Log view (best-effort, no error handling)
     catalogApi.logView(tutorSlug.value, lessonSlug.value, 'direct')
+
+    // Phase 16 INT-18/INT-19: Load related lessons + pack info (non-blocking)
+    publicLessonApi.getRelatedLessons(tutorSlug.value, lessonSlug.value, 3)
+      .then(data => { relatedLessons.value = data })
+    publicLessonApi.getLessonPacks(tutorSlug.value, lessonSlug.value)
+      .then(data => { lessonPacks.value = data })
   } catch (err: unknown) {
     const status = (err as { status?: number })?.status
     if (status === 404) {
@@ -517,6 +584,104 @@ onUnmounted(() => {
 
 .public-lesson-page__fork-btn--login:hover {
   background: #e2e8f0;
+}
+
+/* ── Pack banner (INT-19) ──────────────────────────────────────── */
+.public-lesson-page__pack-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0;
+  padding: 12px 16px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #1e40af;
+}
+
+.public-lesson-page__pack-link {
+  font-weight: 600;
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.public-lesson-page__pack-link:hover {
+  text-decoration: underline;
+}
+
+/* ── Related lessons (INT-18) ─────────────────────────────────── */
+.public-lesson-page__related {
+  margin: 32px 0 24px;
+}
+
+.public-lesson-page__related-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 12px;
+}
+
+.public-lesson-page__related-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.public-lesson-page__related-card {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.public-lesson-page__related-card:hover {
+  border-color: #6366f1;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.1);
+}
+
+.public-lesson-page__related-thumb {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.public-lesson-page__related-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.public-lesson-page__related-thumb--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.public-lesson-page__related-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0;
+  padding: 10px 12px 4px;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.public-lesson-page__related-tag {
+  font-size: 11px;
+  color: #64748b;
+  padding: 0 12px 10px;
 }
 
 /* ── Share moment ───────────────────────────────────────────────── */

@@ -64,6 +64,26 @@ export interface PublicMaterial {
   url?: string | null
 }
 
+export interface RelatedLesson {
+  id: string
+  title: string
+  slug: string
+  tutor_slug: string
+  subject_tag?: string
+  board_thumbnail_url?: string | null
+  created_at?: string
+  views_count?: number
+}
+
+export interface LessonPackInfo {
+  id: string
+  title: string
+  slug: string
+  tutor_slug: string
+  lessons_count: number
+  description?: string
+}
+
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 async function publicFetch<T>(path: string): Promise<T> {
@@ -126,5 +146,35 @@ export const publicLessonApi = {
     return publicFetch<PublicMaterial[]>(
       `${PUBLIC_BASE}/lessons/${encodeURIComponent(tutorSlug)}/${encodeURIComponent(lessonSlug)}/materials/`,
     )
+  },
+
+  /**
+   * Phase 16 INT-18: Related lessons by same tutor.
+   * GET /knowledge/public/lessons/{tutorSlug}/{lessonSlug}/related/?limit=N
+   * Returns array of related lessons (excludes current lesson server-side).
+   */
+  async getRelatedLessons(tutorSlug: string, lessonSlug: string, limit = 3): Promise<RelatedLesson[]> {
+    try {
+      return await publicFetch<RelatedLesson[]>(
+        `${PUBLIC_BASE}/lessons/${encodeURIComponent(tutorSlug)}/${encodeURIComponent(lessonSlug)}/related/?limit=${limit}`,
+      )
+    } catch {
+      return []
+    }
+  },
+
+  /**
+   * Phase 16 INT-19: Packs that contain this lesson.
+   * GET /knowledge/public/lessons/{tutorSlug}/{lessonSlug}/packs/
+   * Returns array of packs (empty if lesson is not in any pack).
+   */
+  async getLessonPacks(tutorSlug: string, lessonSlug: string): Promise<LessonPackInfo[]> {
+    try {
+      return await publicFetch<LessonPackInfo[]>(
+        `${PUBLIC_BASE}/lessons/${encodeURIComponent(tutorSlug)}/${encodeURIComponent(lessonSlug)}/packs/`,
+      )
+    } catch {
+      return []
+    }
   },
 }

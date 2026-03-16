@@ -15,7 +15,27 @@
             </button>
           </div>
 
-          <p class="wb-share-dialog__desc">{{ t('winterboard.share.description') }}</p>
+          <!-- Phase 16 INT-25: Tab bar for Share / Publish modes -->
+          <div v-if="mode === 'share' || mode === 'publish'" class="wb-share-dialog__tabs">
+            <button
+              type="button"
+              class="wb-share-dialog__tab"
+              :class="{ 'wb-share-dialog__tab--active': activeTab === 'share' }"
+              @click="activeTab = 'share'"
+            >
+              {{ t('winterboard.share.tabShare') }}
+            </button>
+            <button
+              type="button"
+              class="wb-share-dialog__tab"
+              :class="{ 'wb-share-dialog__tab--active': activeTab === 'publish' }"
+              @click="activeTab = 'publish'"
+            >
+              {{ t('winterboard.share.tabPublish') }}
+            </button>
+          </div>
+
+          <p v-if="activeTab === 'share'" class="wb-share-dialog__desc">{{ t('winterboard.share.description') }}</p>
 
           <!-- Loading -->
           <div v-if="loadingStatus" class="wb-share-dialog__loading">
@@ -79,7 +99,7 @@
           </template>
 
           <!-- Phase 13 A3.1: Publish mode — Knowledge publish form -->
-          <template v-else-if="mode === 'publish'">
+          <template v-else-if="activeTab === 'publish'">
             <!-- Published success state -->
             <template v-if="publishLesson.publishedLesson.value">
               <div class="wb-share-dialog__status-row">
@@ -284,6 +304,9 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { showToast } = useToast()
+
+// ── Phase 16 INT-25: Tab state ───────────────────────────────────────────
+const activeTab = ref<'share' | 'publish'>(props.mode === 'publish' ? 'publish' : 'share')
 
 // ── Phase 13 A3.1: Knowledge publish composable ──────────────────────────
 const publishLesson = usePublishLesson()
@@ -492,6 +515,36 @@ onMounted(() => {
   font-size: 13px;
   color: var(--wb-fg-secondary, #94a3b8);
   margin: 0 0 20px;
+}
+
+/* ── Tabs (Phase 16 INT-25) ──────────────────────────────────────────── */
+.wb-share-dialog__tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--wb-toolbar-border, #e2e8f0);
+}
+
+.wb-share-dialog__tab {
+  flex: 1;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--wb-fg-secondary, #94a3b8);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.wb-share-dialog__tab:hover {
+  color: var(--wb-fg, #0f172a);
+}
+
+.wb-share-dialog__tab--active {
+  color: var(--wb-brand, #0066FF);
+  border-bottom-color: var(--wb-brand, #0066FF);
 }
 
 /* ── Loading ─────────────────────────────────────────────────────────── */

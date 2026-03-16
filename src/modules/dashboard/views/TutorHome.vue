@@ -60,6 +60,9 @@
     <!-- Quick Actions -->
     <QuickActions />
 
+    <!-- Phase 16: Knowledge Stats Widget -->
+    <KnowledgeStatsWidget />
+
     <!-- New Inquiries Preview -->
     <InquiriesPreview
       :inquiries="pendingInquiries"
@@ -94,6 +97,7 @@ import DashboardEmptyState from '../components/DashboardEmptyState.vue'
 import TrialBanner from '@/modules/auth/components/TrialBanner.vue'
 import OnboardingHint from '@/components/OnboardingHint.vue'
 import { TutorHintId } from '@/composables/useOnboardingHints'
+import KnowledgeStatsWidget from '@/modules/knowledge/components/KnowledgeStatsWidget.vue'
 import { notifySuccess, notifyError } from '@/utils/notify'
 import apiClient from '@/utils/apiClient'
 

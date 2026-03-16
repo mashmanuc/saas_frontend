@@ -23,8 +23,10 @@
     <!-- Content -->
     <template v-else-if="collection">
       <div class="collection-page__container">
+        <!-- Phase 16 INT-13: Breadcrumbs -->
+        <Breadcrumbs :items="breadcrumbs" />
+
         <header class="collection-page__header">
-          <a href="/knowledge/collections" class="collection-page__back">← Підбірки</a>
           <h1 class="collection-page__title">{{ collection.title }}</h1>
           <p v-if="collection.description" class="collection-page__description">
             {{ collection.description }}
@@ -77,15 +79,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { catalogApi, type LessonCollectionDetail } from '../api/catalogApi'
+import Breadcrumbs from '@/ui/Breadcrumbs.vue'
 
 const route = useRoute()
+const { t } = useI18n()
 
 const isLoading = ref(true)
 const error = ref<{ title: string; message: string } | null>(null)
 const collection = ref<LessonCollectionDetail | null>(null)
+
+// ── Phase 16 INT-13: Breadcrumbs ─────────────────────────────────────────────
+const breadcrumbs = computed(() => [
+  { label: t('knowledge.breadcrumbs.knowledge'), to: '/knowledge' },
+  { label: t('knowledge.breadcrumbs.collections'), to: '/knowledge/collections' },
+  { label: collection.value?.title || '' },
+])
 
 function lessonWord(count: number): string {
   if (count % 10 === 1 && count % 100 !== 11) return 'урок'

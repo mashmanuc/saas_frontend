@@ -1014,6 +1014,8 @@
     "title": "Find a Tutor",
     "noResults": "No tutors found",
     "loadMore": "Load more",
+    "lessonCatalogCTA": "Looking for ready-made lessons? Browse our lesson catalog from verified tutors.",
+    "lessonCatalogCTALink": "Lesson Catalog",
     "hero": {
       "title": "Find your tutor in 3 minutes",
       "subtitle": "Verified tutors · Free inquiry"
@@ -6720,7 +6722,15 @@
         "revoked": "Revoked"
       },
       "viewCount": "{count} view | {count} views",
-      "close": "Close"
+      "close": "Close",
+      "tabShare": "Temporary link",
+      "tabPublish": "Publish to Knowledge",
+      "lessonTitleRequired": "Enter lesson title",
+      "publishLesson": "Publish lesson",
+      "publishSuccess": "Lesson published!",
+      "visibility": "Visibility",
+      "visibilityPublic": "Public",
+      "visibilityDemo": "Demo lesson"
     },
     "error": {
       "title": "Something went wrong",
@@ -7134,7 +7144,8 @@
       "partOfPack": "This lesson is part of series:",
       "viewPack": "View series",
       "views": "views",
-      "forks": "forks"
+      "forks": "forks",
+      "viewAllLessons": "All lessons by this tutor"
     },
     "replay": {
       "shareMoment": "Share moment",

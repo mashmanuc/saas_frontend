@@ -1170,6 +1170,8 @@
     "title": "Знайти тьютора",
     "noResults": "Тьюторів не знайдено",
     "loadMore": "Завантажити ще",
+    "lessonCatalogCTA": "Шукаєте готові уроки? Подивіться каталог уроків від наших тьюторів.",
+    "lessonCatalogCTALink": "Каталог уроків",
     "hero": {
       "title": "Знайдіть свого тьютора за 3 хвилини",
       "subtitle": "Перевірені викладачі · Безкоштовний запит"
@@ -6554,7 +6556,15 @@
         "revoked": "Відкликане"
       },
       "viewCount": "{count} перегляд | {count} переглядів",
-      "close": "Закрити"
+      "close": "Закрити",
+      "tabShare": "Тимчасове посилання",
+      "tabPublish": "Опублікувати в Knowledge",
+      "lessonTitleRequired": "Введіть назву уроку",
+      "publishLesson": "Опублікувати урок",
+      "publishSuccess": "Урок опубліковано!",
+      "visibility": "Видимість",
+      "visibilityPublic": "Публічний",
+      "visibilityDemo": "Демо-урок"
     },
     "export": {
       "title": "Експорт дошки",
@@ -7224,7 +7234,8 @@
       "partOfPack": "Цей урок входить до серії:",
       "viewPack": "Дивитися серію",
       "views": "переглядів",
-      "forks": "форків"
+      "forks": "форків",
+      "viewAllLessons": "Всі уроки цього тьютора"
     },
     "replay": {
       "shareMoment": "Поділитися моментом",

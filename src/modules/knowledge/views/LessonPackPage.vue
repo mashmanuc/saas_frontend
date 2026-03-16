@@ -25,6 +25,9 @@
     <!-- Content -->
     <template v-else-if="pack">
       <div class="lesson-pack-page__container">
+        <!-- Phase 16 INT-13: Breadcrumbs -->
+        <Breadcrumbs :items="breadcrumbs" />
+
         <!-- Header -->
         <header class="lesson-pack-page__header">
           <div class="lesson-pack-page__meta">
@@ -107,9 +110,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { templateApi, type LessonPackDetail } from '../api/templateApi'
+import Breadcrumbs from '@/ui/Breadcrumbs.vue'
 
 const route = useRoute()
+const { t } = useI18n()
 
 const isLoading = ref(true)
 const error = ref<{ title: string; message: string } | null>(null)
@@ -117,6 +123,13 @@ const pack = ref<LessonPackDetail | null>(null)
 
 const tutorSlug = computed(() => route.params.tutorSlug as string)
 const packSlug = computed(() => route.params.packSlug as string)
+
+// ── Phase 16 INT-13: Breadcrumbs ─────────────────────────────────────────────
+const breadcrumbs = computed(() => [
+  { label: t('knowledge.breadcrumbs.knowledge'), to: '/knowledge' },
+  { label: t('knowledge.breadcrumbs.series'), to: '/knowledge/packs' },
+  { label: pack.value?.title || '' },
+])
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 

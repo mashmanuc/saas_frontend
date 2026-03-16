@@ -16,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-import { Calendar, BookOpen, Users } from 'lucide-vue-next'
+import { Calendar, BookOpen, Users, Search, BarChart3 } from 'lucide-vue-next'
 import Card from '@/ui/Card.vue'
 
 const actions = [
@@ -27,13 +27,23 @@ const actions = [
   },
   {
     label: 'dashboard.quickActions.openKnowledge',
-    to: '/tutor/knowledge',
+    to: '/knowledge',
     iconComponent: BookOpen,
   },
   {
     label: 'dashboard.quickActions.myStudents',
     to: '/tutor/students',
     iconComponent: Users,
+  },
+  {
+    label: 'dashboard.quickActions.lessonCatalog',
+    to: '/knowledge/catalog',
+    iconComponent: Search,
+  },
+  {
+    label: 'dashboard.quickActions.knowledgeAnalytics',
+    to: '/knowledge/analytics',
+    iconComponent: BarChart3,
   },
 ]
 </script>

@@ -177,6 +177,14 @@ watch(
             {{ t('marketplace.catalog.clearFilters') }}
           </Button>
         </EmptyState>
+
+        <!-- Phase 16 INT-23: Knowledge Catalog CTA -->
+        <div class="lesson-catalog-cta">
+          <p class="lesson-catalog-cta__text">{{ t('marketplace.lessonCatalogCTA') }}</p>
+          <router-link to="/knowledge/catalog" class="lesson-catalog-cta__link">
+            {{ t('marketplace.lessonCatalogCTALink') }} →
+          </router-link>
+        </div>
       </div>
     </div>
   </div>
@@ -223,6 +231,33 @@ watch(
   flex-wrap: wrap;
   justify-content: center;
   margin-top: 1.5rem;
+}
+
+/* ── Phase 16 INT-23: Lesson catalog CTA ────────────────────────── */
+.lesson-catalog-cta {
+  margin-top: 24px;
+  padding: 16px 20px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.lesson-catalog-cta__text {
+  font-size: 14px;
+  color: #1e40af;
+  margin: 0 0 8px;
+}
+
+.lesson-catalog-cta__link {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.lesson-catalog-cta__link:hover {
+  text-decoration: underline;
 }
 
 @media (max-width: 768px) {

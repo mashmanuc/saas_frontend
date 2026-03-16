@@ -2,7 +2,15 @@
      Ref: Phase 13 B2.2 — fetches and displays demo lessons for a tutor -->
 <template>
   <section v-if="!isLoading && lessons.length > 0" class="demo-lessons-section">
-    <h2 class="demo-lessons-section__title">{{ t('knowledge.demo.title') }}</h2>
+    <div class="demo-lessons-section__header">
+      <h2 class="demo-lessons-section__title">{{ t('knowledge.demo.title') }}</h2>
+      <router-link
+        :to="`/knowledge/catalog?tutor=${tutorSlug}`"
+        class="demo-lessons-section__view-all"
+      >
+        {{ t('knowledge.publicLesson.viewAllLessons') }} →
+      </router-link>
+    </div>
     <p class="demo-lessons-section__subtitle">{{ t('knowledge.demo.subtitle') }}</p>
     <div class="demo-lessons-grid">
       <DemoLessonCard
@@ -65,6 +73,27 @@ watch(() => props.tutorSlug, (newSlug) => {
 <style scoped>
 .demo-lessons-section {
   padding: 0;
+}
+
+.demo-lessons-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.demo-lessons-section__view-all {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6366f1;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.12s;
+}
+
+.demo-lessons-section__view-all:hover {
+  color: #4f46e5;
+  text-decoration: underline;
 }
 
 .demo-lessons-section__title {

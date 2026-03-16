@@ -39,6 +39,9 @@ import {
   LayoutDashboard,
   CreditCard,
   GraduationCap,
+  Package,
+  Layout,
+  Folder,
   Circle,
 } from 'lucide-vue-next'
 
@@ -62,6 +65,9 @@ const ICON_MAP: Record<string, Component> = {
   'layout-dashboard': LayoutDashboard,
   'credit-card': CreditCard,
   'graduation-cap': GraduationCap,
+  'package': Package,
+  'layout': Layout,
+  'folder': Folder,
 }
 
 const props = defineProps<{

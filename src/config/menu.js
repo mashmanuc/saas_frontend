@@ -20,7 +20,7 @@ export const MENU_BY_ROLE = {
     // { label: 'menu.classrooms', icon: 'class', to: '/dashboard/classrooms' },
     { label: 'menu.tutorCalendar', icon: 'book', to: '/tutor/schedule' },
     { label: 'menu.winterboard', icon: 'edit', to: '/winterboard' },
-    { label: 'menu.knowledge', icon: 'library', to: '/tutor/knowledge' },
+    { label: 'menu.knowledge', icon: 'library', to: '/knowledge' },
     { label: 'menu.tutorProfile', icon: 'briefcase', to: '/tutor/profile' },
     { label: 'menu.account', icon: 'user', to: '/settings' },
     { label: 'menu.billing', icon: 'credit-card', to: '/tutor/billing' },    
@@ -62,7 +62,11 @@ export const SECTIONED_MENU_BY_ROLE = {
       key: 'teaching',
       label: 'sidebar.section.teaching',
       items: [
-        { label: 'sidebar.item.knowledge', icon: 'book-open', to: '/tutor/knowledge' },
+        { label: 'sidebar.item.knowledgeHub', icon: 'book-open', to: '/knowledge' },
+        { label: 'sidebar.item.lessonCatalog', icon: 'search', to: '/knowledge/catalog' },
+        { label: 'sidebar.item.templateLibrary', icon: 'layout', to: '/knowledge/library' },
+        { label: 'sidebar.item.myPacks', icon: 'package', to: '/knowledge/packs' },
+        { label: 'sidebar.item.knowledgeAnalytics', icon: 'bar-chart-3', to: '/knowledge/analytics' },
       ],
     },
     {
@@ -125,6 +129,7 @@ export const SECTIONED_MENU_BY_ROLE = {
       label: 'sidebar.section.tutors',
       items: [
         { label: 'sidebar.item.findTutor', icon: 'search', to: '/marketplace' },
+        { label: 'sidebar.item.lessonCatalog', icon: 'book-open', to: '/knowledge/catalog' },
         { label: 'sidebar.item.myInquiries', icon: 'inbox', to: '/student/inquiries' },
       ],
     },
