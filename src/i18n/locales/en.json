@@ -6378,7 +6378,8 @@
       "close": "Close",
       "dragFull": "Drag (page 1)",
       "pageAlt": "Page {n}",
-      "noPages": "Pages still loading"
+      "noPages": "Pages still loading",
+      "loadingPages": "Loading pages..."
     },
     "media": {
       "processing": "Processing...",
@@ -6963,7 +6964,8 @@
       "lastSession": "Last session",
       "sessions": "{count} sessions",
       "viewSessions": "View sessions",
-      "loadError": "Failed to load students"
+      "loadError": "Failed to load students",
+      "unknown": "Unknown"
     }
   },
   "storage": {
