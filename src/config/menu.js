@@ -64,9 +64,6 @@ export const SECTIONED_MENU_BY_ROLE = {
       items: [
         { label: 'sidebar.item.knowledgeHub', icon: 'book-open', to: '/knowledge' },
         { label: 'sidebar.item.lessonCatalog', icon: 'search', to: '/knowledge/catalog' },
-        { label: 'sidebar.item.templateLibrary', icon: 'layout', to: '/knowledge/library' },
-        { label: 'sidebar.item.myPacks', icon: 'package', to: '/knowledge/packs' },
-        { label: 'sidebar.item.knowledgeAnalytics', icon: 'bar-chart-3', to: '/knowledge/analytics' },
       ],
     },
     {
@@ -75,7 +72,6 @@ export const SECTIONED_MENU_BY_ROLE = {
       items: [
         { label: 'sidebar.item.wbDashboard', icon: 'layout-dashboard', to: '/winterboard/dashboard' },
         { label: 'sidebar.item.wbLibrary', icon: 'folder', to: '/winterboard/library' },
-        { label: 'sidebar.item.wbLessons', icon: 'book-open', to: '/knowledge' },
         { label: 'sidebar.item.wbBoards', icon: 'layout', to: '/winterboard/boards' },
       ],
     },
@@ -120,7 +116,6 @@ export const SECTIONED_MENU_BY_ROLE = {
       items: [
         { label: 'sidebar.item.wbDashboard', icon: 'layout-dashboard', to: '/winterboard/dashboard' },
         { label: 'sidebar.item.wbLibrary', icon: 'folder', to: '/winterboard/library' },
-        { label: 'sidebar.item.wbLessons', icon: 'book-open', to: '/knowledge' },
         { label: 'sidebar.item.wbBoards', icon: 'layout', to: '/winterboard/boards' },
       ],
     },

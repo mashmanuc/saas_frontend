@@ -829,8 +829,3 @@ onUnmounted(() => {
   }
 }
 </style>
-  .public-lesson-page__spinner {
-    animation: none;
-  }
-}
-</style>
