@@ -41,6 +41,26 @@
                   {{ linkCopied ? '✓' : t('knowledge.publish.copyLink') }}
                 </button>
               </div>
+              <!-- SHARE-3: Contextual share after publish -->
+              <p class="publish-dialog__share-prompt">{{ t('knowledge.publish.sharePrompt') }}</p>
+              <div class="publish-dialog__share-row">
+                <a
+                  :href="`https://t.me/share/url?url=${encodeURIComponent(publishResult.url)}&text=${encodeURIComponent(publishResult.title)}`"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="publish-dialog__share-btn publish-dialog__share-btn--telegram"
+                >
+                  ✈️ {{ t('knowledge.publish.shareTelegram') }}
+                </a>
+                <a
+                  :href="`viber://forward?text=${encodeURIComponent(publishResult.title + ' ' + publishResult.url)}`"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="publish-dialog__share-btn publish-dialog__share-btn--viber"
+                >
+                  📱 {{ t('knowledge.publish.shareViber') }}
+                </a>
+              </div>
             </div>
           </template>
 
@@ -383,6 +403,47 @@ async function copyLink() {
   display: flex;
   gap: 8px;
   width: 100%;
+}
+
+.publish-dialog__share-prompt {
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  margin: 4px 0 0;
+}
+
+.publish-dialog__share-row {
+  display: flex;
+  gap: 8px;
+}
+
+.publish-dialog__share-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  background: #f8fafc;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.publish-dialog__share-btn:hover { background: #f1f5f9; }
+
+.publish-dialog__share-btn--telegram:hover {
+  background: #e0f2fe;
+  border-color: #0ea5e9;
+  color: #0284c7;
+}
+
+.publish-dialog__share-btn--viber:hover {
+  background: #f0e6ff;
+  border-color: #7360f2;
+  color: #7360f2;
 }
 
 .publish-dialog-fade-enter-active,

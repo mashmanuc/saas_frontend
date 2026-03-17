@@ -34,6 +34,7 @@ export interface CatalogFilters {
   min_rating?: number    // 1-5
   difficulty?: number    // 1-5 (Phase 16 INT-26)
   language?: string      // Phase 16 INT-26
+  tutor?: string         // Phase 16 CAT-4: tutor marketplace slug
   sort?: 'popular' | 'newest' | 'top-rated'
   cursor?: number
 }
@@ -91,6 +92,15 @@ export const catalogApi = {
     return publicFetch<SubjectCategory[]>(`${CATALOG_BASE}/categories/`)
   },
 
+  // ── Personalized categories (authenticated) ──────────────────────
+  async getPersonalizedCategories(): Promise<{
+    my_categories: SubjectCategory[]
+    other_categories: SubjectCategory[]
+  }> {
+    const { default: apiClient } = await import('@/utils/apiClient')
+    return apiClient.get('/v1/knowledge/catalog/categories/personalized/') as any
+  },
+
   // ── Search (public, CDN cached 300s) ───────────────────────────────
   async search(filters: CatalogFilters = {}): Promise<CatalogSearchResponse> {
     const params = new URLSearchParams()
@@ -100,6 +110,7 @@ export const catalogApi = {
     // BUG-7 fix: pass difficulty & language to API
     if (filters.difficulty != null) params.set('difficulty', String(filters.difficulty))
     if (filters.language) params.set('language', filters.language)
+    if (filters.tutor) params.set('tutor', filters.tutor)
     if (filters.sort) params.set('sort', filters.sort)
     if (filters.cursor != null) params.set('cursor', String(filters.cursor))
     const qs = params.toString()

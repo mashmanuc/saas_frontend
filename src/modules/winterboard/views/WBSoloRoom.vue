@@ -539,7 +539,7 @@ import SaveAsTemplateDialog from '@/modules/knowledge/components/SaveAsTemplateD
 import WBOnboardingHints from '../components/ui/WBOnboardingHints.vue'
 import type { BoardOperation } from '../types/replay'
 import type { WBLessonMarker } from '../types/winterboard'
-import { createLessonMarker } from '../api/replay'
+import { createLessonMarker, deleteLessonMarker } from '../api/replay'
 import { useGridOverlay } from '../composables/useGridOverlay'
 import { useReplayRecorder } from '../composables/useReplayRecorder'
 import { useCanvasResize } from '../composables/useCanvasResize'
@@ -700,7 +700,7 @@ function exitReplayMode(): void {
 
 // Phase 10 P5: Lesson Map marker handlers
 function handleMarkerSeek(marker: WBLessonMarker): void {
-  // TODO: wire replay.seekTo when useReplay is instantiated in replay mode
+  // Marker seek: navigate to page + scroll to board position
   if (marker.page_id) {
     const pageIdx = store.pages.findIndex(p => p.id === marker.page_id)
     if (pageIdx >= 0) store.goToPage(pageIdx)
@@ -728,9 +728,11 @@ async function handleMarkerCreateFromModal(data: { title: string; category: stri
   await handleMarkerCreate(data)
 }
 
-function handleMarkerDelete(id: string): void {
+async function handleMarkerDelete(id: string): Promise<void> {
   replayMarkers.value = replayMarkers.value.filter(m => m.id !== id)
-  // TODO: wire to API deleteLessonMarker(sessionId, id) when available
+  if (sessionId.value) {
+    deleteLessonMarker(sessionId.value, id).catch(() => {})
+  }
 }
 
 function onReplayOperation(op: BoardOperation): void {

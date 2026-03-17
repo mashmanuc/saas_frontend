@@ -19,10 +19,7 @@
         draggable="false"
       />
       <div v-else class="wb-board-card__thumb-placeholder" aria-hidden="true">
-        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-          <rect x="4" y="6" width="24" height="20" rx="2" stroke="#cbd5e1" stroke-width="1.5" />
-          <path d="M10 14h12M10 19h8" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round" />
-        </svg>
+        <img :src="logoSrc" alt="Winterboard" class="wb-board-card__thumb-logo" />
       </div>
     </div>
 
@@ -84,6 +81,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useSeasonalLogo } from '@/composables/useSeasonalLogo'
 import type { WBSessionListItem } from '../../api/winterboardApi'
 
 // ─── Props & Emits ────────────────────────────────────────────────────────────
@@ -104,6 +102,7 @@ const emit = defineEmits<{
 // ─── State ────────────────────────────────────────────────────────────────────
 
 const { t } = useI18n()
+const { logoSrc } = useSeasonalLogo()
 const menuOpen = ref(false)
 
 // ─── Close menu on outside click ──────────────────────────────────────────────
@@ -167,6 +166,12 @@ function formatTimeAgo(iso: string): string {
 
 .wb-board-card__thumb-placeholder {
   color: #cbd5e1;
+}
+
+.wb-board-card__thumb-logo {
+  width: 48px;
+  height: 48px;
+  opacity: 0.6;
 }
 
 /* ── Body ─────────────────────────────────────────────────────────────── */

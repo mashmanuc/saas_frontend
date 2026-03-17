@@ -2,10 +2,13 @@
      Adapts UI: friendly onboarding for new tutors, full dashboard for active ones. -->
 <template>
   <div class="knowledge-hub">
-    <h1 class="knowledge-hub__title">Knowledge Hub</h1>
+    <h1 class="knowledge-hub__title">{{ $t('sidebar.item.knowledgeHub') }}</h1>
 
-    <!-- Stats — показуємо ТІЛЬКИ якщо є хоч щось -->
-    <KnowledgeStatsWidget v-if="hasAnyContent" class="knowledge-hub__stats" />
+    <!-- UX-2 + UX-4: Stats — при 5+ уроків, collapsible -->
+    <details v-if="lessonsCount >= 5" class="knowledge-hub__collapsible" :open="!statsCollapsed" @toggle="handleStatsToggle">
+      <summary class="knowledge-hub__collapsible-summary">📊 {{ t('knowledge.hub.analyticsTitle') }}</summary>
+      <KnowledgeStatsWidget class="knowledge-hub__stats" />
+    </details>
 
     <!-- ═══ Новий тьютор — Onboarding ═══ -->
     <template v-if="!isLoadingLessons && !hasAnyContent">
@@ -14,33 +17,32 @@
         <div class="knowledge-hub__welcome-icon">
           <BookOpen :size="40" />
         </div>
-        <h2 class="knowledge-hub__welcome-title">Ласкаво просимо!</h2>
+        <h2 class="knowledge-hub__welcome-title">{{ t('knowledge.hub.welcomeTitle') }}</h2>
         <p class="knowledge-hub__welcome-text">
-          Тут будуть ваші уроки, шаблони та аналітика.
-          Почніть з дошки — створіть свій перший урок.
+          {{ t('knowledge.hub.welcomeText') }}
         </p>
         <router-link to="/winterboard" class="knowledge-hub__welcome-btn">
           <PenTool :size="18" />
-          Створити урок на дошці
+          {{ t('knowledge.hub.welcomeBtn') }}
         </router-link>
       </section>
 
       <!-- Підказка для новачка — 2 простих кроки -->
       <section class="knowledge-hub__steps">
-        <h3 class="knowledge-hub__steps-title">Як це працює</h3>
+        <h3 class="knowledge-hub__steps-title">{{ t('knowledge.hub.stepsTitle') }}</h3>
         <div class="knowledge-hub__steps-grid">
           <div class="knowledge-hub__step">
             <span class="knowledge-hub__step-number">1</span>
             <div>
-              <strong>Створіть урок на дошці</strong>
-              <p>Використовуйте Winterboard — малюйте, додавайте слайди, текст</p>
+              <strong>{{ t('knowledge.hub.step1Title') }}</strong>
+              <p>{{ t('knowledge.hub.step1Desc') }}</p>
             </div>
           </div>
           <div class="knowledge-hub__step">
             <span class="knowledge-hub__step-number">2</span>
             <div>
-              <strong>Опублікуйте в каталог</strong>
-              <p>Урок стане доступним для учнів у каталозі M4SH</p>
+              <strong>{{ t('knowledge.hub.step2Title') }}</strong>
+              <p>{{ t('knowledge.hub.step2Desc') }}</p>
             </div>
           </div>
         </div>
@@ -51,8 +53,8 @@
         <router-link to="/knowledge/catalog" class="knowledge-hub__explore-card">
           <Search :size="20" />
           <div>
-            <strong>Переглянути каталог уроків</strong>
-            <p>Подивіться що створюють інші тьютори</p>
+            <strong>{{ t('knowledge.hub.exploreCatalog') }}</strong>
+            <p>{{ t('knowledge.hub.exploreCatalogDesc') }}</p>
           </div>
           <ChevronRight :size="18" class="knowledge-hub__explore-arrow" />
         </router-link>
@@ -61,31 +63,31 @@
 
     <!-- ═══ Активний тьютор — повний dashboard ═══ -->
     <template v-else-if="!isLoadingLessons && hasAnyContent">
-      <!-- Quick Actions — лише 2 основних + 2 допоміжних -->
+      <!-- UX-1: Progressive QuickActions — 0→1 CTA (welcome), <5→2, 5+→all 4 -->
       <section class="knowledge-hub__section">
         <div class="knowledge-hub__actions">
           <router-link to="/winterboard" class="knowledge-hub__action-card knowledge-hub__action-card--primary">
             <PenTool :size="22" />
-            <span class="knowledge-hub__action-label">Створити урок</span>
+            <span class="knowledge-hub__action-label">{{ t('knowledge.hub.createLesson') }}</span>
           </router-link>
           <router-link to="/knowledge/catalog" class="knowledge-hub__action-card">
             <Search :size="22" />
-            <span class="knowledge-hub__action-label">Каталог уроків</span>
+            <span class="knowledge-hub__action-label">{{ $t('sidebar.item.lessonCatalog') }}</span>
           </router-link>
-          <router-link to="/knowledge/library" class="knowledge-hub__action-card">
+          <router-link v-if="lessonsCount >= 5" to="/knowledge/library" class="knowledge-hub__action-card">
             <Layout :size="22" />
-            <span class="knowledge-hub__action-label">Шаблони</span>
+            <span class="knowledge-hub__action-label">{{ $t('sidebar.item.templateLibrary') }}</span>
           </router-link>
-          <router-link to="/knowledge/packs" class="knowledge-hub__action-card">
+          <router-link v-if="lessonsCount >= 5" to="/knowledge/packs" class="knowledge-hub__action-card">
             <Package :size="22" />
-            <span class="knowledge-hub__action-label">Мої серії</span>
+            <span class="knowledge-hub__action-label">{{ $t('sidebar.item.myPacks') }}</span>
           </router-link>
         </div>
       </section>
 
       <!-- Recent Lessons -->
       <section class="knowledge-hub__section">
-        <h2 class="knowledge-hub__section-title">Останні уроки</h2>
+        <h2 class="knowledge-hub__section-title">{{ t('knowledge.hub.recentLessons') }}</h2>
         <div class="knowledge-hub__lessons-grid">
           <div
             v-for="lesson in recentLessons"
@@ -96,7 +98,7 @@
               :to="`/lesson/${lesson.tutor_slug || ''}/${lesson.slug || ''}`"
               class="knowledge-hub__lesson-link"
             >
-              <h3 class="knowledge-hub__lesson-title">{{ lesson.title || 'Без назви' }}</h3>
+              <h3 class="knowledge-hub__lesson-title">{{ lesson.title || t('knowledge.hub.noTitle') }}</h3>
               <div class="knowledge-hub__lesson-meta">
                 <span v-if="lesson.subject_tag" class="knowledge-hub__lesson-tag">{{ lesson.subject_tag }}</span>
                 <span class="knowledge-hub__lesson-date">{{ formatDate(lesson.published_at || lesson.created_at) }}</span>
@@ -107,18 +109,18 @@
                 class="knowledge-hub__lesson-status"
                 :class="lesson.status === 'public' ? 'knowledge-hub__lesson-status--public' : 'knowledge-hub__lesson-status--draft'"
               >
-                {{ lesson.status === 'public' ? 'Опублікований' : 'Чернетка' }}
+                {{ lesson.status === 'public' ? t('knowledge.hub.statusPublic') : t('knowledge.hub.statusDraft') }}
               </span>
               <button
                 type="button"
                 class="knowledge-hub__visibility-btn"
                 :disabled="togglingId === lesson.id"
-                :title="lesson.status === 'public' ? 'Сховати з каталогу' : 'Опублікувати'"
+                :title="lesson.status === 'public' ? t('knowledge.hub.hideFromCatalog') : t('knowledge.hub.publishAction')"
                 @click="toggleVisibility(lesson)"
               >
                 <Eye v-if="lesson.status !== 'public'" :size="16" />
                 <EyeOff v-else :size="16" />
-                {{ lesson.status === 'public' ? 'Сховати' : 'Опублікувати' }}
+                {{ lesson.status === 'public' ? t('knowledge.hub.hideAction') : t('knowledge.hub.publishAction') }}
               </button>
             </div>
           </div>
@@ -130,20 +132,20 @@
         <AchievementsPanel :achievements="achievements" />
       </section>
 
-      <!-- Аналітика / Колекції — карточки-посилання -->
-      <div class="knowledge-hub__link-cards">
+      <!-- UX-2: Analytics/Collections — тільки при 5+ уроків -->
+      <div v-if="lessonsCount >= 5" class="knowledge-hub__link-cards">
         <router-link to="/knowledge/analytics" class="knowledge-hub__link-card">
           <BarChart3 :size="24" />
           <div>
-            <h3 class="knowledge-hub__link-card-title">Аналітика</h3>
-            <p class="knowledge-hub__link-card-desc">Статистика ваших уроків</p>
+            <h3 class="knowledge-hub__link-card-title">{{ t('knowledge.hub.analyticsTitle') }}</h3>
+            <p class="knowledge-hub__link-card-desc">{{ t('knowledge.hub.analyticsDesc') }}</p>
           </div>
         </router-link>
         <router-link to="/knowledge/collections" class="knowledge-hub__link-card">
           <FolderOpen :size="24" />
           <div>
-            <h3 class="knowledge-hub__link-card-title">Підбірки</h3>
-            <p class="knowledge-hub__link-card-desc">Тематичні підбірки уроків</p>
+            <h3 class="knowledge-hub__link-card-title">{{ t('knowledge.hub.collectionsTitle') }}</h3>
+            <p class="knowledge-hub__link-card-desc">{{ t('knowledge.hub.collectionsDesc') }}</p>
           </div>
         </router-link>
       </div>
@@ -168,6 +170,9 @@ import {
   Package, ChevronRight, BarChart3, FolderOpen,
 } from 'lucide-vue-next'
 import apiClient from '@/utils/apiClient'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const KnowledgeStatsWidget = defineAsyncComponent({
   loader: () => import('../components/KnowledgeStatsWidget.vue'),
@@ -203,6 +208,18 @@ const togglingId = ref<string | null>(null)
 
 // Є контент — показати повний dashboard
 const hasAnyContent = computed(() => recentLessons.value.length > 0)
+
+// UX-1: Progressive QuickActions — lessons_count determines visible actions
+const lessonsCount = computed(() => recentLessons.value.length)
+
+// UX-4: Collapsible sections — persist collapse state in localStorage
+const statsCollapsed = ref(localStorage.getItem('kb:stats:collapsed') === 'true')
+
+function handleStatsToggle(e: Event) {
+  const open = (e.target as HTMLDetailsElement).open
+  statsCollapsed.value = !open
+  localStorage.setItem('kb:stats:collapsed', String(!open))
+}
 
 // Є хоч одне earned досягнення — тоді показуємо блок
 const hasEarnedAchievements = computed(() =>
@@ -266,6 +283,40 @@ onMounted(async () => {
   font-weight: 800;
   color: var(--text-primary);
   margin: 0 0 20px;
+}
+
+/* UX-4: Collapsible sections */
+.knowledge-hub__collapsible {
+  margin-bottom: 20px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.knowledge-hub__collapsible-summary {
+  padding: 12px 16px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  cursor: pointer;
+  background: var(--bg-secondary);
+  list-style: none;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.knowledge-hub__collapsible-summary::-webkit-details-marker { display: none; }
+
+.knowledge-hub__collapsible-summary::after {
+  content: '▸';
+  margin-left: auto;
+  transition: transform 0.15s;
+}
+
+.knowledge-hub__collapsible[open] > .knowledge-hub__collapsible-summary::after {
+  transform: rotate(90deg);
 }
 
 .knowledge-hub__stats {

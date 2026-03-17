@@ -4,6 +4,7 @@ export interface SidebarItem {
   to: string
   badge?: number
   badgeType?: 'danger' | 'warning' | 'info'
+  hint?: string
 }
 
 export interface SidebarSection {

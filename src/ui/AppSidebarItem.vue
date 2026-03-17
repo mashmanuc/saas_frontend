@@ -3,7 +3,7 @@
     :to="item.to"
     class="nav-item"
     :class="{ active: isActive }"
-    :title="collapsed ? $t(item.label) : undefined"
+    :title="collapsed ? $t(item.label) : (item.hint ? $t(item.hint) : undefined)"
     :aria-current="isActive ? 'page' : undefined"
   >
     <component :is="iconComponent" class="nav-icon-svg" :size="18" />

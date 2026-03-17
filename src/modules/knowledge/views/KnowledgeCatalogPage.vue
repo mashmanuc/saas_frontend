@@ -6,7 +6,7 @@
     <!-- Header -->
     <header class="catalog-page__header">
       <div class="catalog-page__header-inner">
-        <h1 class="catalog-page__title">Каталог уроків</h1>
+        <h1 class="catalog-page__title">{{ $t('sidebar.item.lessonCatalog') }}</h1>
         <div class="catalog-page__search-wrap">
           <svg class="catalog-page__search-icon" width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
             <circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.5"/>
@@ -16,7 +16,7 @@
             v-model="filters.query"
             type="search"
             class="catalog-page__search-input"
-            placeholder="Пошук уроків…"
+            :placeholder="$t('knowledge.catalog.filter.searchPlaceholder')"
           />
         </div>
       </div>
@@ -26,11 +26,11 @@
       <!-- Sidebar: categories -->
       <aside class="catalog-page__sidebar" :class="{ 'catalog-page__sidebar--open': sidebarOpen }">
         <div class="catalog-page__sidebar-head">
-          <h2 class="catalog-page__sidebar-title">Категорії</h2>
+          <h2 class="catalog-page__sidebar-title">{{ $t('knowledge.catalog.filter.categories') }}</h2>
           <button
             type="button"
             class="catalog-page__sidebar-close"
-            aria-label="Закрити категорії"
+            :aria-label="$t('knowledge.catalog.filter.closeCategories')"
             @click="sidebarOpen = false"
           >
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M6 6l8 8M14 6l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
@@ -41,7 +41,7 @@
           <div v-for="i in 5" :key="i" class="catalog-page__cat-skeleton" />
         </div>
 
-        <nav v-else class="catalog-page__cat-list" aria-label="Категорії уроків">
+        <nav v-else class="catalog-page__cat-list" :aria-label="$t('knowledge.catalog.filter.categories')">
           <button
             type="button"
             class="catalog-page__cat-item"
@@ -49,39 +49,98 @@
             @click="filters.category = undefined; sidebarOpen = false"
           >
             <span class="catalog-page__cat-icon">📚</span>
-            <span class="catalog-page__cat-name">Усі</span>
+            <span class="catalog-page__cat-name">{{ $t('knowledge.catalog.allCategories') }}</span>
             <span class="catalog-page__cat-count">{{ totalCount }}</span>
           </button>
 
-          <template v-for="cat in categories" :key="cat.id">
-            <button
-              type="button"
-              class="catalog-page__cat-item"
-              :class="{ 'catalog-page__cat-item--active': filters.category === cat.slug }"
-              @click="filters.category = cat.slug; sidebarOpen = false"
-            >
-              <component
-                :is="getCatIcon(cat.icon)"
-                v-if="getCatIcon(cat.icon)"
-                class="catalog-page__cat-icon"
-                :size="18"
-              />
-              <span v-else class="catalog-page__cat-icon">📖</span>
-              <span class="catalog-page__cat-name">{{ cat.name }}</span>
-              <span class="catalog-page__cat-count">{{ cat.lesson_count }}</span>
-            </button>
+          <!-- Level 6: Personalized sidebar -->
+          <template v-if="hasPersonalization">
+            <div class="catalog-page__cat-section-label">{{ $t('knowledge.catalog.mySubjects') }}</div>
+            <template v-for="cat in visibleMyCategories" :key="cat.id">
+              <button
+                type="button"
+                class="catalog-page__cat-item"
+                :class="{ 'catalog-page__cat-item--active': filters.category === cat.slug }"
+                @click="filters.category = cat.slug; sidebarOpen = false"
+              >
+                <component :is="getCatIcon(cat.icon)" v-if="getCatIcon(cat.icon)" class="catalog-page__cat-icon" :size="18" />
+                <span v-else class="catalog-page__cat-icon">📖</span>
+                <span class="catalog-page__cat-name">{{ cat.name }}</span>
+                <span class="catalog-page__cat-count">{{ cat.lesson_count }}</span>
+              </button>
+              <button
+                v-for="child in cat.children" :key="child.id"
+                type="button"
+                class="catalog-page__cat-item catalog-page__cat-item--child"
+                :class="{ 'catalog-page__cat-item--active': filters.category === child.slug }"
+                @click="filters.category = child.slug; sidebarOpen = false"
+              >
+                <span class="catalog-page__cat-name">{{ child.name }}</span>
+                <span class="catalog-page__cat-count">{{ child.lesson_count }}</span>
+              </button>
+            </template>
 
             <button
-              v-for="child in cat.children"
-              :key="child.id"
+              v-if="visibleOtherCategories.length > 0"
               type="button"
-              class="catalog-page__cat-item catalog-page__cat-item--child"
-              :class="{ 'catalog-page__cat-item--active': filters.category === child.slug }"
-              @click="filters.category = child.slug; sidebarOpen = false"
+              class="catalog-page__cat-toggle"
+              @click="showOther = !showOther"
             >
-              <span class="catalog-page__cat-name">{{ child.name }}</span>
-              <span class="catalog-page__cat-count">{{ child.lesson_count }}</span>
+              {{ showOther ? $t('knowledge.catalog.hideOther') : $t('knowledge.catalog.showAll', { count: visibleOtherCategories.length }) }}
             </button>
+
+            <template v-if="showOther">
+              <template v-for="cat in visibleOtherCategories" :key="cat.id">
+                <button
+                  type="button"
+                  class="catalog-page__cat-item"
+                  :class="{ 'catalog-page__cat-item--active': filters.category === cat.slug }"
+                  @click="filters.category = cat.slug; sidebarOpen = false"
+                >
+                  <component :is="getCatIcon(cat.icon)" v-if="getCatIcon(cat.icon)" class="catalog-page__cat-icon" :size="18" />
+                  <span v-else class="catalog-page__cat-icon">📖</span>
+                  <span class="catalog-page__cat-name">{{ cat.name }}</span>
+                  <span class="catalog-page__cat-count">{{ cat.lesson_count }}</span>
+                </button>
+                <button
+                  v-for="child in cat.children" :key="child.id"
+                  type="button"
+                  class="catalog-page__cat-item catalog-page__cat-item--child"
+                  :class="{ 'catalog-page__cat-item--active': filters.category === child.slug }"
+                  @click="filters.category = child.slug; sidebarOpen = false"
+                >
+                  <span class="catalog-page__cat-name">{{ child.name }}</span>
+                  <span class="catalog-page__cat-count">{{ child.lesson_count }}</span>
+                </button>
+              </template>
+            </template>
+          </template>
+
+          <!-- Fallback: non-personalized (anonymous or no subjects) -->
+          <template v-else>
+            <template v-for="cat in visibleCategories" :key="cat.id">
+              <button
+                type="button"
+                class="catalog-page__cat-item"
+                :class="{ 'catalog-page__cat-item--active': filters.category === cat.slug }"
+                @click="filters.category = cat.slug; sidebarOpen = false"
+              >
+                <component :is="getCatIcon(cat.icon)" v-if="getCatIcon(cat.icon)" class="catalog-page__cat-icon" :size="18" />
+                <span v-else class="catalog-page__cat-icon">📖</span>
+                <span class="catalog-page__cat-name">{{ cat.name }}</span>
+                <span class="catalog-page__cat-count">{{ cat.lesson_count }}</span>
+              </button>
+              <button
+                v-for="child in cat.children" :key="child.id"
+                type="button"
+                class="catalog-page__cat-item catalog-page__cat-item--child"
+                :class="{ 'catalog-page__cat-item--active': filters.category === child.slug }"
+                @click="filters.category = child.slug; sidebarOpen = false"
+              >
+                <span class="catalog-page__cat-name">{{ child.name }}</span>
+                <span class="catalog-page__cat-count">{{ child.lesson_count }}</span>
+              </button>
+            </template>
           </template>
         </nav>
       </aside>
@@ -100,62 +159,62 @@
           {{ activeCategoryName }}
         </button>
 
-        <!-- Toolbar: sort + rating filter -->
+        <!-- CAT-3: Smart toolbar — sort always visible, advanced filters only if ≥10 lessons -->
         <div class="catalog-page__toolbar">
           <div class="catalog-page__filter-group">
-            <label class="catalog-page__filter-label">Сортування</label>
+            <label class="catalog-page__filter-label">{{ $t('knowledge.catalog.filter.sort') }}</label>
             <select v-model="filters.sort" class="catalog-page__select">
-              <option value="popular">Популярні</option>
-              <option value="newest">Найновіші</option>
-              <option value="top-rated">Найвищий рейтинг</option>
+              <option value="popular">{{ $t('knowledge.catalog.filter.popular') }}</option>
+              <option value="newest">{{ $t('knowledge.catalog.filter.newest') }}</option>
+              <option value="top-rated">{{ $t('knowledge.catalog.filter.topRated') }}</option>
             </select>
           </div>
 
-          <div class="catalog-page__filter-group">
-            <label class="catalog-page__filter-label">Мін. рейтинг</label>
-            <div class="catalog-page__star-filter">
-              <button
-                v-for="star in 5"
-                :key="star"
-                type="button"
-                class="catalog-page__star-btn"
-                :class="{ 'catalog-page__star-btn--active': (filters.min_rating ?? 0) >= star }"
-                :aria-label="`Мінімум ${star} зірок`"
-                @click="filters.min_rating = filters.min_rating === star ? undefined : star"
-              >★</button>
+          <template v-if="totalCount >= 10">
+            <div class="catalog-page__filter-group">
+              <label class="catalog-page__filter-label">{{ $t('knowledge.catalog.filter.minRating') }}</label>
+              <div class="catalog-page__star-filter">
+                <button
+                  v-for="star in 5"
+                  :key="star"
+                  type="button"
+                  class="catalog-page__star-btn"
+                  :class="{ 'catalog-page__star-btn--active': (filters.min_rating ?? 0) >= star }"
+                  :aria-label="$t('knowledge.catalog.filter.minStars', { n: star })"
+                  @click="filters.min_rating = filters.min_rating === star ? undefined : star"
+                >★</button>
+              </div>
             </div>
-          </div>
 
-          <!-- Phase 16 INT-26: Difficulty filter -->
-          <div class="catalog-page__filter-group">
-            <label class="catalog-page__filter-label">Складність</label>
-            <select v-model="filters.difficulty" class="catalog-page__select">
-              <option :value="undefined">Усі</option>
-              <option :value="1">1 — Початковий</option>
-              <option :value="2">2 — Базовий</option>
-              <option :value="3">3 — Середній</option>
-              <option :value="4">4 — Просунутий</option>
-              <option :value="5">5 — Експерт</option>
-            </select>
-          </div>
+            <div class="catalog-page__filter-group">
+              <label class="catalog-page__filter-label">{{ $t('knowledge.catalog.filter.difficulty') }}</label>
+              <select v-model="filters.difficulty" class="catalog-page__select">
+                <option :value="undefined">{{ $t('knowledge.catalog.filter.diffAll') }}</option>
+                <option :value="1">{{ $t('knowledge.catalog.filter.diff1') }}</option>
+                <option :value="2">{{ $t('knowledge.catalog.filter.diff2') }}</option>
+                <option :value="3">{{ $t('knowledge.catalog.filter.diff3') }}</option>
+                <option :value="4">{{ $t('knowledge.catalog.filter.diff4') }}</option>
+                <option :value="5">{{ $t('knowledge.catalog.filter.diff5') }}</option>
+              </select>
+            </div>
 
-          <!-- Phase 16 INT-26: Language filter -->
-          <div class="catalog-page__filter-group">
-            <label class="catalog-page__filter-label">Мова</label>
-            <select v-model="filters.language" class="catalog-page__select">
-              <option :value="undefined">Усі</option>
-              <option value="uk">Українська</option>
-              <option value="en">English</option>
-              <option value="pl">Polski</option>
-            </select>
-          </div>
+            <div class="catalog-page__filter-group">
+              <label class="catalog-page__filter-label">{{ $t('knowledge.catalog.filter.language') }}</label>
+              <select v-model="filters.language" class="catalog-page__select">
+                <option :value="undefined">{{ $t('knowledge.catalog.filter.langAll') }}</option>
+                <option value="uk">{{ $t('knowledge.catalog.filter.lang.uk') }}</option>
+                <option value="en">{{ $t('knowledge.catalog.filter.lang.en') }}</option>
+                <option value="pl">{{ $t('knowledge.catalog.filter.lang.pl') }}</option>
+              </select>
+            </div>
+          </template>
         </div>
 
         <!-- Error -->
         <div v-if="error" class="catalog-page__error">
           <p>{{ error }}</p>
           <button type="button" class="catalog-page__retry-btn" @click="searchLessons(true)">
-            Спробувати знову
+            {{ $t('knowledge.catalog.filter.retryBtn') }}
           </button>
         </div>
 
@@ -168,14 +227,63 @@
           </div>
         </div>
 
-        <!-- Empty state -->
-        <div v-else-if="!isLoading && lessons.length === 0" class="catalog-page__empty">
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-            <circle cx="20" cy="20" r="14" stroke="#94a3b8" stroke-width="2"/>
-            <path d="M30 30l10 10" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round"/>
-          </svg>
-          <h3 class="catalog-page__empty-title">Нічого не знайдено</h3>
-          <p class="catalog-page__empty-text">Спробуйте змінити фільтри або пошуковий запит</p>
+        <!-- CAT-2: Empty state for specific category (no search query) -->
+        <div
+          v-else-if="!isLoading && lessons.length === 0 && filters.category && !filters.query"
+          class="catalog-page__empty"
+        >
+          <BookOpen :size="48" class="catalog-page__empty-icon" />
+          <h3 class="catalog-page__empty-title">
+            {{ $t('knowledge.catalog.categoryEmptyTitle', { category: activeCategoryName }) }}
+          </h3>
+          <p class="catalog-page__empty-text">
+            {{ isTutor
+              ? $t('knowledge.catalog.categoryEmptyTextTutor')
+              : $t('knowledge.catalog.categoryEmptyTextStudent')
+            }}
+          </p>
+          <router-link
+            v-if="isTutor"
+            to="/winterboard"
+            class="catalog-page__empty-btn catalog-page__empty-btn--primary"
+          >
+            <PenTool :size="18" />
+            {{ $t('knowledge.catalog.categoryEmptyPublish') }}
+          </router-link>
+          <button
+            v-else
+            type="button"
+            class="catalog-page__reset-btn"
+            @click="filters.category = undefined"
+          >
+            {{ $t('knowledge.catalog.categoryEmptyBack') }}
+          </button>
+        </div>
+
+        <!-- Empty state: active filters → no results -->
+        <div v-else-if="!isLoading && lessons.length === 0 && hasActiveFilters" class="catalog-page__empty">
+          <Search :size="48" class="catalog-page__empty-icon" />
+          <h3 class="catalog-page__empty-title">{{ $t('knowledge.catalog.emptyTitle') }}</h3>
+          <p class="catalog-page__empty-text">{{ $t('knowledge.catalog.emptySubtitle') }}</p>
+          <button type="button" class="catalog-page__reset-btn" @click="resetFilters">
+            {{ $t('knowledge.catalog.resetFilters') }}
+          </button>
+        </div>
+
+        <!-- Empty state: catalog globally empty -->
+        <div v-else-if="!isLoading && lessons.length === 0 && !hasActiveFilters" class="catalog-page__empty catalog-page__empty--welcome">
+          <BookOpen :size="48" class="catalog-page__empty-icon" />
+          <h3 class="catalog-page__empty-title">{{ $t('knowledge.catalog.globalEmptyTitle') }}</h3>
+          <p class="catalog-page__empty-text">{{ $t('knowledge.catalog.globalEmptyText') }}</p>
+          <div class="catalog-page__empty-actions">
+            <router-link to="/winterboard" class="catalog-page__empty-btn catalog-page__empty-btn--primary">
+              <PenTool :size="18" />
+              {{ $t('knowledge.catalog.createLesson') }}
+            </router-link>
+            <router-link to="/knowledge" class="catalog-page__empty-btn">
+              {{ $t('knowledge.catalog.goToMyLessons') }}
+            </router-link>
+          </div>
         </div>
 
         <!-- Lesson grid -->
@@ -224,28 +332,30 @@
         <!-- Load more -->
         <div v-if="hasMore() && !isLoading" class="catalog-page__load-more-wrap">
           <button type="button" class="catalog-page__load-more-btn" @click="loadMore">
-            Завантажити ще
+            {{ $t('knowledge.catalog.loadMore') }}
           </button>
         </div>
         <div v-if="isLoading && lessons.length > 0" class="catalog-page__loading-more">
           <div class="catalog-page__spinner" />
         </div>
 
-        <!-- Featured collections -->
-        <section v-if="featuredCollections.length > 0" class="catalog-page__collections">
-          <h2 class="catalog-page__collections-title">Підбірки</h2>
-          <div class="catalog-page__collections-grid">
+        <!-- CAT-1: Recently added (transparent logic — sorted by date) -->
+        <section v-if="recentlyAddedLessons.length > 0 && !hasActiveFilters" class="catalog-page__recent">
+          <h2 class="catalog-page__section-title">{{ $t('knowledge.catalog.recentlyAdded') }}</h2>
+          <div class="catalog-page__grid catalog-page__grid--recent">
             <a
-              v-for="col in featuredCollections"
-              :key="col.id"
-              :href="`/knowledge/collections/${col.slug}`"
-              class="catalog-page__collection-card"
+              v-for="lesson in recentlyAddedLessons"
+              :key="lesson.id"
+              :href="`/lesson/${lesson.tutor.slug}/${lesson.slug}`"
+              class="catalog-page__card"
             >
-              <h3 class="catalog-page__collection-name">{{ col.title }}</h3>
-              <p class="catalog-page__collection-desc">{{ col.description }}</p>
-              <span class="catalog-page__collection-count">
-                {{ col.lesson_count }} {{ lessonWord(col.lesson_count) }}
-              </span>
+              <div class="catalog-page__card-body">
+                <h3 class="catalog-page__card-title">{{ lesson.title }}</h3>
+                <div class="catalog-page__card-meta">
+                  <span class="catalog-page__card-author">{{ lesson.tutor.name }}</span>
+                  <span v-if="lesson.category_name" class="catalog-page__card-category">{{ lesson.category_name }}</span>
+                </div>
+              </div>
             </a>
           </div>
         </section>
@@ -256,10 +366,13 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, type Component } from 'vue'
+import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useCatalog } from '../composables/useCatalog'
-import { catalogApi, type LessonCollection } from '../api/catalogApi'
+import { catalogApi, type SubjectCategory } from '../api/catalogApi'
+import { useAuthStore } from '@/modules/auth/store/authStore'
 import ForkBadge from '../components/ForkBadge.vue'
-import { Calculator, Atom, FlaskConical, Leaf, BookText, Globe2, Laptop, Languages, Clock, BookOpen, Music, Palette, Dumbbell, Scale } from 'lucide-vue-next'
+import { Calculator, Atom, FlaskConical, Leaf, BookText, Globe2, Laptop, Languages, Clock, BookOpen, Music, Palette, Dumbbell, Scale, Search, PenTool } from 'lucide-vue-next'
 
 // FIX-2: map category icon slugs to Lucide components
 const ICON_MAP: Record<string, Component> = {
@@ -298,18 +411,59 @@ const {
   hasMore,
 } = useCatalog()
 
+const route = useRoute()
 const sidebarOpen = ref(false)
-const featuredCollections = ref<LessonCollection[]>([])
+const recentlyAddedLessons = ref<any[]>([])
+const authStore = useAuthStore()
+
+// Level 6: Personalization
+const myCategories = ref<SubjectCategory[]>([])
+const otherCategories = ref<SubjectCategory[]>([])
+const showOther = ref(false)
+const hasPersonalization = computed(() => myCategories.value.length > 0)
+
+const hasActiveFilters = computed(() =>
+  !!(filters.query || filters.category || filters.min_rating || filters.difficulty || filters.language || filters.tutor)
+)
+
+// CAT-2: isTutor for per-category empty state CTA
+const isTutor = computed(() => authStore.user?.role === 'tutor')
+
+function filterVisible(cats: SubjectCategory[]): SubjectCategory[] {
+  return cats
+    .map(cat => {
+      const visibleChildren = (cat.children || []).filter((child: any) => child.lesson_count > 0)
+      return { ...cat, children: visibleChildren }
+    })
+    .filter(cat => cat.lesson_count > 0 || cat.children?.length > 0)
+}
+
+const visibleCategories = computed(() => filterVisible(categories.value))
+const visibleMyCategories = computed(() => filterVisible(myCategories.value))
+const visibleOtherCategories = computed(() => filterVisible(otherCategories.value))
+
+function resetFilters() {
+  filters.query = undefined
+  filters.category = undefined
+  filters.min_rating = undefined
+  filters.difficulty = undefined
+  filters.language = undefined
+  filters.tutor = undefined
+  filters.sort = 'popular'
+  searchLessons(true)
+}
+
+const { t: $t } = useI18n()
 
 const activeCategoryName = computed(() => {
-  if (!filters.category) return 'Усі категорії'
+  if (!filters.category) return $t('knowledge.catalog.allCategories')
   for (const cat of categories.value) {
     if (cat.slug === filters.category) return cat.name
     for (const child of cat.children) {
       if (child.slug === filters.category) return child.name
     }
   }
-  return 'Категорія'
+  return $t('knowledge.catalog.allCategories')
 })
 
 function lessonWord(count: number): string {
@@ -322,10 +476,11 @@ function lessonWord(count: number): string {
 
 function updateSeo(): void {
   const cat = activeCategoryName.value
-  document.title = cat !== 'Усі категорії'
-    ? `${cat} — Каталог уроків | M4SH`
-    : 'Каталог уроків | M4SH'
-  setMeta('description', `Каталог інтерактивних уроків — ${cat}. Пошук, рейтинги, підбірки.`)
+  const allCats = $t('knowledge.catalog.allCategories')
+  document.title = cat !== allCats
+    ? `${cat} — ${$t('sidebar.item.lessonCatalog')} | M4SH`
+    : `${$t('sidebar.item.lessonCatalog')} | M4SH`
+  setMeta('description', `${$t('sidebar.item.lessonCatalog')} — ${cat}.`)
 }
 
 function setMeta(name: string, content: string): void {
@@ -340,16 +495,37 @@ function setMeta(name: string, content: string): void {
 
 // ── Lifecycle ────────────────────────────────────────────────────────────────
 
+async function loadPersonalizedCategories(): Promise<void> {
+  if (!authStore.user) return
+  try {
+    const data = await catalogApi.getPersonalizedCategories()
+    myCategories.value = data.my_categories || []
+    otherCategories.value = data.other_categories || []
+  } catch {
+    // Fallback: no personalization, use standard categories
+    myCategories.value = []
+    otherCategories.value = []
+  }
+}
+
 onMounted(async () => {
+  // CAT-4: Read ?tutor=slug query param to filter by tutor
+  if (route.query.tutor) {
+    filters.tutor = route.query.tutor as string
+  }
+
   updateSeo()
   await Promise.all([
     loadCategories(),
     searchLessons(true),
+    loadPersonalizedCategories(),
   ])
+  // CAT-1: Load recently added lessons (transparent sort by date)
   try {
-    featuredCollections.value = await catalogApi.getCollections()
+    const { lessons: recent } = await catalogApi.search({ sort: 'newest', cursor: 0 })
+    recentlyAddedLessons.value = recent.slice(0, 4)
   } catch {
-    // Collections are supplementary, don't block page
+    // Recently added is supplementary, don't block page
   }
 })
 </script>
@@ -511,6 +687,33 @@ onMounted(async () => {
   font-size: 13px;
 }
 
+.catalog-page__cat-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+  padding: 12px 10px 4px;
+}
+
+.catalog-page__cat-toggle {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6366f1;
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.15s;
+}
+
+.catalog-page__cat-toggle:hover {
+  color: #4f46e5;
+}
+
 .catalog-page__cat-icon {
   flex-shrink: 0;
   font-size: 16px;
@@ -645,6 +848,70 @@ onMounted(async () => {
   font-size: 14px;
   color: #64748b;
   margin: 0;
+  max-width: 400px;
+  line-height: 1.5;
+}
+
+.catalog-page__empty-icon {
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+
+.catalog-page__empty--welcome {
+  padding: 64px 24px;
+}
+
+.catalog-page__empty-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.catalog-page__empty-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s, transform 0.1s;
+  color: #475569;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+}
+
+.catalog-page__empty-btn:hover {
+  background: #e2e8f0;
+}
+
+.catalog-page__empty-btn--primary {
+  background: #6366f1;
+  color: #fff;
+  border-color: #6366f1;
+}
+
+.catalog-page__empty-btn--primary:hover {
+  background: #4f46e5;
+  transform: translateY(-1px);
+}
+
+.catalog-page__reset-btn {
+  margin-top: 4px;
+  padding: 8px 18px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.catalog-page__reset-btn:hover {
+  background: #e2e8f0;
 }
 
 /* ── Grid ──────────────────────────────────────────────────────── */

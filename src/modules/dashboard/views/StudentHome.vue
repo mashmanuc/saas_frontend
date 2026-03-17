@@ -2,9 +2,9 @@
   <div class="space-y-6" data-testid="student-home-page">
     <!-- Trial Banner -->
     <TrialBanner
-      v-if="auth.hasTrial"
-      :days-left="auth.trialDaysLeft"
-      :trial-active="auth.hasTrial"
+      v-if="auth?.hasTrial"
+      :days-left="auth?.trialDaysLeft ?? 0"
+      :trial-active="auth?.hasTrial ?? false"
       :dismissible="true"
     />
 

@@ -2,9 +2,9 @@
   <div class="space-y-6">
     <!-- Trial Banner -->
     <TrialBanner
-      v-if="auth.hasTrial"
-      :days-left="auth.trialDaysLeft"
-      :trial-active="auth.hasTrial"
+      v-if="auth?.hasTrial"
+      :days-left="auth?.trialDaysLeft ?? 0"
+      :trial-active="auth?.hasTrial ?? false"
       :dismissible="true"
     />
 
@@ -60,15 +60,16 @@
     </div>
 
     <!-- Quick Actions -->
-    <QuickActions />
+    <QuickActions :lessons-count="knowledgeLessonsCount" />
 
-    <!-- Phase 16: Knowledge Stats Widget -->
-    <div class="tutor-home__slot tutor-home__slot--stats">
+    <!-- Phase 16: Knowledge Stats Widget (ERR-3: lazy mount after first paint) -->
+    <div v-if="isReady" class="tutor-home__slot tutor-home__slot--stats">
       <KnowledgeStatsWidget />
     </div>
 
-    <!-- New Inquiries Preview -->
+    <!-- New Inquiries Preview (ERR-3: lazy mount after first paint) -->
     <InquiriesPreview
+      v-if="isReady"
       :inquiries="pendingInquiries"
       :loading-id="inquiryLoadingId"
       @accept="handleAcceptInquiry"
@@ -88,7 +89,7 @@
 </template>
 
 <script setup>
-import { computed, defineAsyncComponent, onMounted, ref } from 'vue'
+import { computed, defineAsyncComponent, nextTick, onMounted, ref } from 'vue'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { useDashboardStore } from '../store/dashboardStore'
 import { useRelationsStore } from '@/stores/relationsStore'
@@ -110,6 +111,7 @@ const KnowledgeStatsWidget = defineAsyncComponent({
 })
 import { notifySuccess, notifyError } from '@/utils/notify'
 import apiClient from '@/utils/apiClient'
+import { analyticsApi } from '@/modules/knowledge/api/analyticsApi'
 
 const auth = useAuthStore()
 const dashboard = useDashboardStore()
@@ -117,6 +119,10 @@ const relationsStore = useRelationsStore()
 
 const isProfilePublished = ref(false)
 const inquiryLoadingId = ref(null)
+const knowledgeLessonsCount = ref(undefined)
+
+// ERR-3 fix: lazy mount below-the-fold components after first paint to reduce jank
+const isReady = ref(false)
 
 const todaysLessons = computed(() => dashboard.todaysLessons ?? [])
 
@@ -198,16 +204,27 @@ async function handleDeclineInquiry(id) {
   }
 }
 
-onMounted(async () => {
-  dashboard.fetchTutorDashboard().catch(() => {})
+onMounted(() => {
+  // ERR-3 fix: don't block first paint with await — fire and forget, then mount heavy components
+  // Пріоритет 1: above-the-fold дані (розклад, статистика)
+  dashboard.fetchTutorDashboard()
+    .catch(() => {})
+    .finally(() => {
+      // Mount below-the-fold components after data + first paint
+      nextTick(() => { isReady.value = true })
+    })
+
+  // Пріоритет 2: другорядні дані — паралельно, не блокують рендер
   relationsStore.fetchTutorRelations().catch(() => {})
 
-  try {
-    const me = await apiClient.get('/v1/marketplace/me/', { meta: { skipLoader: true } })
-    isProfilePublished.value = !!me?.is_published
-  } catch {
-    // Silent — banner is non-critical
-  }
+  apiClient.get('/v1/marketplace/me/', { meta: { skipLoader: true } })
+    .then(me => { isProfilePublished.value = !!me?.is_published })
+    .catch(() => {})
+
+  // UX-1: Fetch lessons count for QuickActions progressive display
+  analyticsApi.getMyStats()
+    .then(s => { knowledgeLessonsCount.value = s.lessons_count })
+    .catch(() => {})
 })
 </script>
 

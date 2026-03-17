@@ -66,6 +66,8 @@
       />
     </nav>
 
+    <SidebarCoachingMarks />
+
     <div class="sidebar-footer" v-if="!collapsed">
       <span class="sidebar-version">v0.89</span>
     </div>
@@ -84,6 +86,7 @@
 <script setup lang="ts">
 import { ChevronsLeft, ChevronsRight, X } from 'lucide-vue-next'
 import AppSidebarSection from './AppSidebarSection.vue'
+import SidebarCoachingMarks from './SidebarCoachingMarks.vue'
 import type { SidebarSection } from './sidebar.types'
 
 defineProps<{

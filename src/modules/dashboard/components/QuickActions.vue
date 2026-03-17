@@ -3,7 +3,7 @@
     <h2 class="text-lg font-semibold mb-3">{{ $t('dashboard.quickActions.title') }}</h2>
     <div class="quick-actions-grid">
       <router-link
-        v-for="action in actions"
+        v-for="action in visibleActions"
         :key="action.to + action.label"
         :to="action.to"
         class="quick-action-btn"
@@ -16,36 +16,58 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { Calendar, BookOpen, Users, Search, BarChart3 } from 'lucide-vue-next'
 import Card from '@/ui/Card.vue'
 
+const props = defineProps<{
+  lessonsCount?: number
+}>()
+
 const actions = [
   {
+    key: 'createLesson',
     label: 'dashboard.quickActions.createLesson',
     to: '/tutor/schedule',
     iconComponent: Calendar,
   },
   {
+    key: 'openKnowledge',
     label: 'dashboard.quickActions.openKnowledge',
     to: '/knowledge',
     iconComponent: BookOpen,
   },
   {
+    key: 'myStudents',
     label: 'dashboard.quickActions.myStudents',
     to: '/tutor/students',
     iconComponent: Users,
   },
   {
+    key: 'lessonCatalog',
     label: 'dashboard.quickActions.lessonCatalog',
     to: '/knowledge/catalog',
     iconComponent: Search,
   },
   {
+    key: 'knowledgeAnalytics',
     label: 'dashboard.quickActions.knowledgeAnalytics',
     to: '/knowledge/analytics',
     iconComponent: BarChart3,
   },
 ]
+
+// UX-1: Progressive QuickActions — 0→1, <5→2, 5+→all
+const visibleActions = computed(() => {
+  const count = props.lessonsCount ?? Infinity
+  if (count === 0) {
+    return actions.filter(a => a.key === 'createLesson')
+  }
+  if (count < 5) {
+    return actions.filter(a => ['createLesson', 'lessonCatalog'].includes(a.key))
+  }
+  return actions
+})
 </script>
 
 <style scoped>

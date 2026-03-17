@@ -26,7 +26,46 @@
       {{ t('knowledge.share.telegram') }}
     </a>
 
-    <!-- Phase 16 INT-38: LinkedIn -->
+    <!-- SHARE-1: Viber (UA priority #3) -->
+    <a
+      :href="viberShareUrl"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="share-buttons__btn share-buttons__btn--viber"
+    >
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M8.3 1C5.1 1 2.5 3.3 2.5 6.1c0 1.5.7 2.9 1.8 3.9l-.5 2.5 2.6-1.3c.6.2 1.2.3 1.9.3 3.2 0 5.8-2.3 5.8-5.1S11.5 1 8.3 1zm3 4.1c-.1.2-.5.5-.5.5s-.4.3-.4.5c0 .1.1.3.2.5.3.5.8 1.1 1.3 1.5.3.2.7.5 1.1.6.2.1.3 0 .5-.1.1-.1.3-.4.4-.5.1-.1.2-.1.3 0 .2.1.8.4 1 .5.2.1.3.2.3.3 0 .2-.1.8-.6 1.1-.4.3-.9.3-1.3.2-.5-.1-1.8-.7-2.9-1.7-1.4-1.3-2.2-2.8-2.4-3.1-.2-.3 0-.5.1-.6.1-.1.3-.3.4-.5.1-.1.2-.3.2-.4 0-.1 0-.3-.1-.4-.1-.1-.5-1.2-.7-1.6-.2-.4-.3-.3-.5-.3h-.4s-.3 0-.5.2c-.2.2-.7.7-.7 1.7s.7 2 .8 2.1z" fill="currentColor"/>
+      </svg>
+      Viber
+    </a>
+
+    <!-- SHARE-1: Facebook (UA priority #4) -->
+    <a
+      :href="facebookShareUrl"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="share-buttons__btn share-buttons__btn--facebook"
+    >
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M9.5 2.7H11V.1C10.7.1 9.9 0 9 0 7 0 5.7 1.2 5.7 3.4V5.5H3.2v2.9h2.5V16h3V8.4h2.4l.4-2.9H8.7V3.6c0-.8.2-1 .8-1z" fill="currentColor"/>
+      </svg>
+      Facebook
+    </a>
+
+    <!-- SHARE-1: WhatsApp (UA priority #5) -->
+    <a
+      :href="whatsappShareUrl"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="share-buttons__btn share-buttons__btn--whatsapp"
+    >
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M8 1C4.1 1 1 4.1 1 8c0 1.2.3 2.4.9 3.4L1 15l3.7-.9c1 .5 2.1.8 3.3.8 3.9 0 7-3.1 7-7s-3.1-7-7-7zm3.6 9.8c-.2.5-.9.9-1.5 1-.4.1-.9.1-1.5-.1-.4-.1-.8-.3-1.4-.6-2.4-1.2-3.9-3.6-4-3.8-.1-.2-.9-1.2-.9-2.3s.6-1.6.8-1.8c.2-.2.4-.3.6-.3h.4c.1 0 .3 0 .5.4.2.4.6 1.5.7 1.6.1.1.1.3 0 .4-.1.2-.1.3-.2.4-.1.1-.3.3-.4.4-.1.1-.3.3-.1.5.1.3.6 1 1.3 1.6.9.8 1.7 1 1.9 1.2.2.1.4.1.5-.1.1-.2.6-.7.8-.9.2-.2.3-.2.5-.1.2.1 1.2.6 1.4.7.2.1.4.2.4.3.1.1.1.6-.1 1.1z" fill="currentColor"/>
+      </svg>
+      WhatsApp
+    </a>
+
+    <!-- LinkedIn -->
     <a
       :href="linkedinShareUrl"
       target="_blank"
@@ -39,7 +78,7 @@
       LinkedIn
     </a>
 
-    <!-- Phase 16 INT-38: Twitter/X -->
+    <!-- X (Twitter) -->
     <a
       :href="twitterShareUrl"
       target="_blank"
@@ -163,6 +202,21 @@ const linkedinShareUrl = computed(() =>
 // Phase 16 INT-38: Twitter/X share URL
 const twitterShareUrl = computed(() =>
   `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl.value)}&text=${encodeURIComponent(props.title)}`
+)
+
+// SHARE-1: Viber share URL
+const viberShareUrl = computed(() =>
+  `viber://forward?text=${encodeURIComponent(props.title + ' ' + shareUrl.value)}`
+)
+
+// SHARE-1: Facebook share URL
+const facebookShareUrl = computed(() =>
+  `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl.value)}`
+)
+
+// SHARE-1: WhatsApp share URL
+const whatsappShareUrl = computed(() =>
+  `https://wa.me/?text=${encodeURIComponent(props.title + ' ' + shareUrl.value)}`
 )
 
 const qrSvg = computed(() => generateQrSvg(shareUrl.value))
@@ -328,6 +382,24 @@ function generateQrSvg(text: string): string {
   background: #f0f0f0;
   border-color: #1d1d1f;
   color: #1d1d1f;
+}
+
+.share-buttons__btn--viber:hover {
+  background: #f0e6ff;
+  border-color: #7360f2;
+  color: #7360f2;
+}
+
+.share-buttons__btn--facebook:hover {
+  background: #e7f0ff;
+  border-color: #1877f2;
+  color: #1877f2;
+}
+
+.share-buttons__btn--whatsapp:hover {
+  background: #e6ffe6;
+  border-color: #25d366;
+  color: #128c7e;
 }
 
 .share-buttons__toast {

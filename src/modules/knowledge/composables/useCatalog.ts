@@ -29,6 +29,7 @@ export function useCatalog() {
     min_rating: undefined,
     difficulty: undefined,
     language: undefined,
+    tutor: undefined,
     sort: 'popular',
   })
 
@@ -107,6 +108,7 @@ export function useCatalog() {
       min_rating: filters.min_rating,
       difficulty: filters.difficulty,
       language: filters.language,
+      tutor: filters.tutor,
       sort: filters.sort,
     }),
     () => {

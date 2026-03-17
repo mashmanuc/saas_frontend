@@ -18,10 +18,7 @@
         draggable="false"
       />
       <div v-else class="wb-board-list-item__thumb-placeholder">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-          <rect x="2" y="3" width="16" height="14" rx="2" stroke="#cbd5e1" stroke-width="1.5" />
-          <path d="M5 9h10M5 12h7" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round" />
-        </svg>
+        <img :src="logoSrc" alt="Winterboard" class="wb-board-list__thumb-logo" />
       </div>
     </div>
 
@@ -69,6 +66,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { useSeasonalLogo } from '@/composables/useSeasonalLogo'
 import type { WBSessionListItem } from '../../api/winterboardApi'
 
 // ─── Props & Emits ────────────────────────────────────────────────────────────
@@ -89,6 +87,7 @@ const emit = defineEmits<{
 // ─── i18n ─────────────────────────────────────────────────────────────────────
 
 const { t } = useI18n()
+const { logoSrc } = useSeasonalLogo()
 
 // ─── Time formatting ──────────────────────────────────────────────────────────
 
@@ -150,6 +149,12 @@ function formatTimeAgo(iso: string): string {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.wb-board-list__thumb-logo {
+  width: 28px;
+  height: 28px;
+  opacity: 0.6;
 }
 
 /* ── Info ─────────────────────────────────────────────────────────────── */

@@ -54,49 +54,49 @@ export const SECTIONED_MENU_BY_ROLE = {
       key: 'main',
       label: 'sidebar.section.main',
       items: [
-        { label: 'sidebar.item.dashboard', icon: 'layout-dashboard', to: '/tutor' },
-        { label: 'sidebar.item.schedule', icon: 'calendar', to: '/tutor/schedule' },
+        { label: 'sidebar.item.dashboard', icon: 'layout-dashboard', to: '/tutor', hint: 'sidebar.hint.dashboard' },
+        { label: 'sidebar.item.schedule', icon: 'calendar', to: '/tutor/schedule', hint: 'sidebar.hint.schedule' },
       ],
     },
     {
       key: 'teaching',
       label: 'sidebar.section.teaching',
       items: [
-        { label: 'sidebar.item.knowledgeHub', icon: 'book-open', to: '/knowledge' },
-        { label: 'sidebar.item.lessonCatalog', icon: 'search', to: '/knowledge/catalog' },
+        { label: 'sidebar.item.knowledgeHub', icon: 'book-open', to: '/knowledge', hint: 'sidebar.hint.knowledgeHub' },
+        { label: 'sidebar.item.lessonCatalog', icon: 'search', to: '/knowledge/catalog', hint: 'sidebar.hint.lessonCatalog' },
       ],
     },
     {
       key: 'winterboard',
       label: 'sidebar.section.winterboard',
       items: [
-        { label: 'sidebar.item.wbDashboard', icon: 'layout-dashboard', to: '/winterboard/dashboard' },
-        { label: 'sidebar.item.wbLibrary', icon: 'folder', to: '/winterboard/library' },
-        { label: 'sidebar.item.wbBoards', icon: 'layout', to: '/winterboard/boards' },
+        { label: 'sidebar.item.wbDashboard', icon: 'layout-dashboard', to: '/winterboard/dashboard', hint: 'sidebar.hint.wbDashboard' },
+        { label: 'sidebar.item.wbLibrary', icon: 'folder', to: '/winterboard/library', hint: 'sidebar.hint.wbLibrary' },
+        { label: 'sidebar.item.wbBoards', icon: 'layout', to: '/winterboard/boards', hint: 'sidebar.hint.wbBoards' },
       ],
     },
     {
       key: 'students',
       label: 'sidebar.section.students',
       items: [
-        { label: 'sidebar.item.myStudents', icon: 'users', to: '/tutor/students' },
-        { label: 'sidebar.item.inquiries', icon: 'inbox', to: '/tutor/inquiries' },
+        { label: 'sidebar.item.myStudents', icon: 'users', to: '/tutor/students', hint: 'sidebar.hint.myStudents' },
+        { label: 'sidebar.item.inquiries', icon: 'inbox', to: '/tutor/inquiries', hint: 'sidebar.hint.inquiries' },
       ],
     },
     {
       key: 'business',
       label: 'sidebar.section.business',
       items: [
-        { label: 'sidebar.item.tutorProfile', icon: 'briefcase', to: '/tutor/profile' },
-        { label: 'sidebar.item.billing', icon: 'wallet', to: '/tutor/billing' },
+        { label: 'sidebar.item.tutorProfile', icon: 'briefcase', to: '/tutor/profile', hint: 'sidebar.hint.tutorProfile' },
+        { label: 'sidebar.item.billing', icon: 'wallet', to: '/tutor/billing', hint: 'sidebar.hint.billing' },
       ],
     },
     {
       key: 'system',
       label: 'sidebar.section.system',
       items: [
-        { label: 'sidebar.item.settings', icon: 'settings', to: '/settings' },
-        { label: 'sidebar.item.notifications', icon: 'bell', to: '/notifications' },
+        { label: 'sidebar.item.settings', icon: 'settings', to: '/settings', hint: 'sidebar.hint.settings' },
+        { label: 'sidebar.item.notifications', icon: 'bell', to: '/notifications', hint: 'sidebar.hint.notifications' },
       ],
     },
   ],

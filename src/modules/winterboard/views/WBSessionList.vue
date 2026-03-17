@@ -72,10 +72,7 @@
             class="wb-session-card__thumb-img"
           />
           <div v-else class="wb-session-card__thumb-placeholder">
-            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-              <rect x="4" y="6" width="24" height="20" rx="2" stroke="#cbd5e1" stroke-width="1.5" />
-              <path d="M10 16h12M10 20h8" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round" />
-            </svg>
+            <img :src="logoSrc" alt="Winterboard" class="wb-session-card__thumb-logo" />
           </div>
         </div>
 
@@ -191,6 +188,7 @@
 import { ref, defineAsyncComponent, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { useSeasonalLogo } from '@/composables/useSeasonalLogo'
 import { winterboardApi, type WBSessionListItem } from '../api/winterboardApi'
 import { useToast } from '../composables/useToast'
 
@@ -199,6 +197,7 @@ const WBShareDialog = defineAsyncComponent(() => import('../components/sharing/W
 const WBExportDialog = defineAsyncComponent(() => import('../components/export/WBExportDialog.vue'))
 
 const { t } = useI18n()
+const { logoSrc } = useSeasonalLogo()
 const router = useRouter()
 const { showToast } = useToast()
 
@@ -407,6 +406,12 @@ onUnmounted(() => {
 
 .wb-session-card__thumb-placeholder {
   color: var(--wb-fg-secondary, #cbd5e1);
+}
+
+.wb-session-card__thumb-logo {
+  width: 40px;
+  height: 40px;
+  opacity: 0.6;
 }
 
 .wb-session-card__body {

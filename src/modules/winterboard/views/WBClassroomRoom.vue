@@ -502,7 +502,7 @@ import WBMarkerCreateModal from '../components/replay/WBMarkerCreateModal.vue'
 import WBOnboardingHints from '../components/ui/WBOnboardingHints.vue'
 import type { BoardOperation } from '../types/replay'
 import type { WBLessonMarker } from '../types/winterboard'
-import { createLessonMarker } from '../api/replay'
+import { createLessonMarker, deleteLessonMarker } from '../api/replay'
 import { useGridOverlay } from '../composables/useGridOverlay'
 import { useReplayRecorder } from '../composables/useReplayRecorder'
 import { useDeviceMode } from '../composables/useDeviceMode'
@@ -1041,9 +1041,11 @@ async function handleMarkerCreateFromModal(data: { title: string; category: stri
   await handleMarkerCreate(data)
 }
 
-function handleMarkerDelete(id: string): void {
-  // TODO: implement marker delete via API
+async function handleMarkerDelete(id: string): Promise<void> {
   replayMarkers.value = replayMarkers.value.filter(m => m.id !== id)
+  if (resolvedSessionId.value) {
+    deleteLessonMarker(resolvedSessionId.value, id).catch(() => {})
+  }
 }
 
 // ─── Handlers: Tool / Color / Size ──────────────────────────────────────────

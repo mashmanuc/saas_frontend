@@ -19,11 +19,10 @@ import { jankDetector } from '@/utils/jankDetector'
 
 const isDev = import.meta.env.DEV
 
-// Anti-jank: start jank detector (silent in production, verbose in dev)
+// Jank detector — тільки в dev mode (MutationObserver + fetch patching = overhead у production)
+// ERR-3 fix: delay start to avoid adding overhead during initial navigation mount
 if (isDev) {
-  jankDetector.start()
-} else {
-  jankDetector.startSilent()
+  setTimeout(() => jankDetector.start(), 2000)
 }
 
 let unsubNotifPolling = null

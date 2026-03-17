@@ -8,7 +8,7 @@
     <!-- Loading -->
     <div v-if="isLoading" class="public-lesson-page__loading">
       <div class="public-lesson-page__spinner" />
-      <p class="public-lesson-page__loading-text">Завантаження уроку…</p>
+      <p class="public-lesson-page__loading-text">{{ t('knowledge.publicLesson.loading') }}</p>
     </div>
 
     <!-- Error -->
@@ -21,7 +21,7 @@
       </div>
       <h2 class="public-lesson-page__error-title">{{ error.title }}</h2>
       <p class="public-lesson-page__error-message">{{ error.message }}</p>
-      <a href="/" class="public-lesson-page__error-link">На головну</a>
+      <a href="/" class="public-lesson-page__error-link">{{ t('knowledge.publicLesson.backHome') }}</a>
     </div>
 
     <!-- Content -->
@@ -50,6 +50,14 @@
           class="mt-2"
         />
 
+        <!-- SHARE-5: Share buttons above fold -->
+        <ShareButtons
+          :url="lessonShareUrl"
+          :title="lesson.title"
+          :current-time-ms="replay.currentTimeMs.value"
+          class="my-3"
+        />
+
         <!-- Board viewer -->
         <div
           ref="boardSectionRef"
@@ -58,7 +66,7 @@
         >
           <!-- Phase 16 INT-41: Deep link badge -->
           <div v-if="deepLinkTime && !deepLinkDismissed" class="public-lesson-page__deep-link-badge">
-            ⏱ Момент: {{ deepLinkTime }}
+            ⏱ {{ t('knowledge.replay.momentBadge', { time: deepLinkTime }) }}
           </div>
           <PublicBoardViewer
             ref="boardViewerRef"
@@ -124,7 +132,7 @@
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <path d="M5 3v4a2 2 0 002 2h2a2 2 0 002-2V3M8 9v4M3 3h4M9 3h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            {{ isForking ? '...' : 'Форкнути урок' }}
+            {{ isForking ? '...' : t('knowledge.publicLesson.forkLesson') }}
           </button>
           <a
             v-else
@@ -134,7 +142,7 @@
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <path d="M5 3v4a2 2 0 002 2h2a2 2 0 002-2V3M8 9v4M3 3h4M9 3h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            Увійдіть, щоб форкнути
+            {{ t('knowledge.publicLesson.loginToFork') }}
           </a>
         </div>
 
@@ -148,15 +156,15 @@
             <rect x="2" y="2" width="14" height="14" rx="3" stroke="currentColor" stroke-width="1.5"/>
             <path d="M6 7h6M6 11h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
-          <span>Цей урок є частиною серії:</span>
+          <span>{{ t('knowledge.publicLesson.partOfPack') }}</span>
           <router-link :to="`/pack/${pack.tutor_slug}/${pack.slug}`" class="public-lesson-page__pack-link">
-            {{ pack.title }} — {{ pack.lessons_count }} уроків
+            {{ pack.title }} — {{ t('knowledge.publicLesson.lessonsCount', { count: pack.lessons_count }) }}
           </router-link>
         </div>
 
         <!-- Phase 16 INT-18: More lessons by this tutor -->
         <section v-if="relatedLessons.length > 0" class="public-lesson-page__related">
-          <h2 class="public-lesson-page__related-title">Ще уроки цього тьютора</h2>
+          <h2 class="public-lesson-page__related-title">{{ t('knowledge.publicLesson.moreLessons') }}</h2>
           <div class="public-lesson-page__related-grid">
             <router-link
               v-for="rel in relatedLessons"
@@ -189,7 +197,7 @@
               <circle cx="12" cy="12" r="2" stroke="currentColor" stroke-width="1.5"/>
               <path d="M5.7 7l4.6-2M5.7 9l4.6 2" stroke="currentColor" stroke-width="1.5"/>
             </svg>
-            {{ shareCopied ? 'Скопійовано!' : currentMomentTitle ? `Поділитися: ${currentMomentTitle}` : 'Поділитися моментом' }}
+            {{ shareCopied ? t('knowledge.publicLesson.linkCopied') : currentMomentTitle ? t('knowledge.publicLesson.shareAt', { title: currentMomentTitle }) : t('knowledge.publicLesson.shareMoment') }}
           </button>
         </div>
 
@@ -202,6 +210,14 @@
             🔀 {{ lesson.fork_count }} {{ t('knowledge.publicLesson.forks') }}
           </span>
         </div>
+
+        <!-- SHARE-5: Share buttons bottom (duplicated for visibility) -->
+        <ShareButtons
+          :url="lessonShareUrl"
+          :title="lesson.title"
+          :current-time-ms="replay.currentTimeMs.value"
+          class="my-4"
+        />
       </div>
     </template>
   </div>
@@ -224,6 +240,7 @@ import { catalogApi } from '../api/catalogApi'
 import RatingSummary from '../components/RatingSummary.vue'
 import LessonRatingWidget from '../components/LessonRatingWidget.vue'
 import Breadcrumbs from '@/ui/Breadcrumbs.vue'
+import ShareButtons from '../components/ShareButtons.vue'
 import { useI18n } from 'vue-i18n'
 
 const route = useRoute()
@@ -259,6 +276,11 @@ const deepLinkTime = computed<string | null>(() => {
 // ── Route params ────────────────────────────────────────────────────────────
 const tutorSlug = computed(() => route.params.tutorSlug as string)
 const lessonSlug = computed(() => route.params.lessonSlug as string)
+
+// SHARE-5: Share URL for ShareButtons component
+const lessonShareUrl = computed(() =>
+  `${window.location.origin}/lesson/${tutorSlug.value}/${lessonSlug.value}`
+)
 
 // ── Phase 16 INT-12: Breadcrumbs ─────────────────────────────────────────────
 const breadcrumbItems = computed(() => {
@@ -449,7 +471,7 @@ async function handleFork(): Promise<void> {
 // ── Lifecycle ────────────────────────────────────────────────────────────────
 onMounted(async () => {
   if (!tutorSlug.value || !lessonSlug.value) {
-    error.value = { title: 'Урок не знайдено', message: 'Невірне посилання на урок.' }
+    error.value = { title: t('knowledge.publicLesson.notFoundTitle'), message: t('knowledge.publicLesson.notFoundMsg') }
     isLoading.value = false
     return
   }
@@ -489,9 +511,9 @@ onMounted(async () => {
   } catch (err: unknown) {
     const status = (err as { status?: number })?.status
     if (status === 404) {
-      error.value = { title: 'Урок не знайдено', message: 'Цей урок не існує або був видалений.' }
+      error.value = { title: t('knowledge.publicLesson.notFoundTitle'), message: t('knowledge.publicLesson.notFoundMsg404') }
     } else {
-      error.value = { title: 'Помилка завантаження', message: 'Не вдалося завантажити урок. Спробуйте пізніше.' }
+      error.value = { title: t('knowledge.publicLesson.loadErrorTitle'), message: t('knowledge.publicLesson.loadErrorMsg') }
     }
     console.error('[PublicLessonPage] Failed to load lesson:', err)
   } finally {

@@ -102,10 +102,7 @@
               draggable="false"
             />
             <div v-else class="wb-recent-card__thumb-placeholder" aria-hidden="true">
-              <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                <rect x="3" y="5" width="22" height="18" rx="2" stroke="#cbd5e1" stroke-width="1.5"/>
-                <path d="M8 12h12M8 16h8" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round"/>
-              </svg>
+              <img :src="logoSrc" alt="Winterboard" class="wb-recent-card__thumb-logo" />
             </div>
           </div>
           <div class="wb-recent-card__body">
@@ -128,6 +125,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { useSeasonalLogo } from '@/composables/useSeasonalLogo'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { winterboardApi, type WBSessionListItem } from '../api/winterboardApi'
 import { useToast } from '../composables/useToast'
@@ -135,6 +133,7 @@ import { useToast } from '../composables/useToast'
 // ─── Composables ──────────────────────────────────────────────────────────────
 
 const { t } = useI18n()
+const { logoSrc } = useSeasonalLogo()
 const router = useRouter()
 const authStore = useAuthStore()
 const { showToast } = useToast()
@@ -373,6 +372,12 @@ onMounted(loadRecentBoards)
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.wb-recent-card__thumb-logo {
+  width: 40px;
+  height: 40px;
+  opacity: 0.6;
 }
 
 .wb-recent-card__meta {
