@@ -51,17 +51,21 @@
     <DashboardStatsRow :stats="dashboardStats" />
 
     <!-- Today's Schedule -->
-    <TodaySchedule
-      :lessons="todaysLessons"
-      :loading="dashboard.isLoadingTutor"
-      :is-tutor="true"
-    />
+    <div class="tutor-home__slot tutor-home__slot--schedule">
+      <TodaySchedule
+        :lessons="todaysLessons"
+        :loading="dashboard.isLoadingTutor"
+        :is-tutor="true"
+      />
+    </div>
 
     <!-- Quick Actions -->
     <QuickActions />
 
     <!-- Phase 16: Knowledge Stats Widget -->
-    <KnowledgeStatsWidget />
+    <div class="tutor-home__slot tutor-home__slot--stats">
+      <KnowledgeStatsWidget />
+    </div>
 
     <!-- New Inquiries Preview -->
     <InquiriesPreview
@@ -90,12 +94,14 @@ import { useDashboardStore } from '../store/dashboardStore'
 import { useRelationsStore } from '@/stores/relationsStore'
 import DashboardGreeting from '../components/DashboardGreeting.vue'
 import DashboardStatsRow from '../components/DashboardStatsRow.vue'
-import TodaySchedule from '../components/TodaySchedule.vue'
 import QuickActions from '../components/QuickActions.vue'
-import InquiriesPreview from '../components/InquiriesPreview.vue'
-import DashboardEmptyState from '../components/DashboardEmptyState.vue'
-import TrialBanner from '@/modules/auth/components/TrialBanner.vue'
 import OnboardingHint from '@/components/OnboardingHint.vue'
+
+// BUG-13 fix: lazy load heavy below-the-fold components to reduce initial bundle
+const TodaySchedule = defineAsyncComponent(() => import('../components/TodaySchedule.vue'))
+const InquiriesPreview = defineAsyncComponent(() => import('../components/InquiriesPreview.vue'))
+const DashboardEmptyState = defineAsyncComponent(() => import('../components/DashboardEmptyState.vue'))
+const TrialBanner = defineAsyncComponent(() => import('@/modules/auth/components/TrialBanner.vue'))
 import { TutorHintId } from '@/composables/useOnboardingHints'
 // BUG-10 fix: async import with error boundary to prevent dashboard crash
 const KnowledgeStatsWidget = defineAsyncComponent({
@@ -220,5 +226,13 @@ onMounted(async () => {
 
 .hint-btn:hover {
   opacity: 0.85;
+}
+
+/* BUG-17 fix: reserve min-height for async-loaded sections to prevent CLS */
+.tutor-home__slot--schedule {
+  min-height: 120px;
+}
+.tutor-home__slot--stats {
+  min-height: 96px;
 }
 </style>

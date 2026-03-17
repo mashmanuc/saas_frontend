@@ -106,9 +106,17 @@
 
 <script setup lang="ts">
 import { ref, onMounted, defineAsyncComponent, h } from 'vue'
-import KnowledgeStatsWidget from '../components/KnowledgeStatsWidget.vue'
 import apiClient from '@/utils/apiClient'
-import AchievementsPanel from '../components/AchievementsPanel.vue'
+
+// BUG-22 fix: async import with error boundary for non-critical widgets
+const KnowledgeStatsWidget = defineAsyncComponent({
+  loader: () => import('../components/KnowledgeStatsWidget.vue'),
+  errorComponent: { render: () => null },
+})
+const AchievementsPanel = defineAsyncComponent({
+  loader: () => import('../components/AchievementsPanel.vue'),
+  errorComponent: { render: () => null },
+})
 import { analyticsApi, type TutorAchievement } from '../api/analyticsApi'
 
 // Agent B components — loaded via defineAsyncComponent with null fallback

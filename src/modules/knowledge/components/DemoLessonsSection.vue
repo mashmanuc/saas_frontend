@@ -31,7 +31,7 @@ import { ref, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import DemoLessonCard from './DemoLessonCard.vue'
 import type { DemoLesson } from './DemoLessonCard.vue'
-import { apiClient } from '@/api/client'
+import apiClient from '@/utils/apiClient'
 
 const props = defineProps<{
   tutorSlug: string
