@@ -74,9 +74,9 @@
         </div>
 
         <!-- Results -->
-        <template v-else-if="students.length > 0">
+        <template v-else-if="visibleStudents.length > 0">
           <button
-            v-for="(student, index) in students"
+            v-for="(student, index) in visibleStudents"
             :key="student.student_id"
             type="button"
             class="dropdown-item"
@@ -97,15 +97,7 @@
               </span>
             </div>
             <div class="dropdown-item__info">
-              <span class="dropdown-item__name">
-                {{ displayName(student) }}
-                <span
-                  v-if="student.is_demo"
-                  class="demo-badge"
-                >
-                  {{ $t('student.demoBadge') }}
-                </span>
-              </span>
+              <span class="dropdown-item__name">{{ displayName(student) }}</span>
               <span class="dropdown-item__email">{{ student.email }}</span>
             </div>
           </button>
@@ -178,6 +170,9 @@ const isOpen = ref(false)
 const isLoading = ref(false)
 const focusedIndex = ref(-1)
 const debounceTimer = ref<number | null>(null)
+
+// FIX-3: defensive filter — hide demo students from dropdown
+const visibleStudents = computed(() => students.value.filter(s => !s.is_demo))
 
 // Computed
 const hasError = computed(() => !!props.errorMessage)
@@ -277,7 +272,7 @@ function handleKeydown(event: KeyboardEvent): void {
   switch (event.key) {
     case 'ArrowDown':
       event.preventDefault()
-      focusedIndex.value = Math.min(focusedIndex.value + 1, students.value.length - 1)
+      focusedIndex.value = Math.min(focusedIndex.value + 1, visibleStudents.value.length - 1)
       break
     case 'ArrowUp':
       event.preventDefault()
@@ -285,8 +280,8 @@ function handleKeydown(event: KeyboardEvent): void {
       break
     case 'Enter':
       event.preventDefault()
-      if (focusedIndex.value >= 0 && students.value[focusedIndex.value]) {
-        selectStudent(students.value[focusedIndex.value])
+      if (focusedIndex.value >= 0 && visibleStudents.value[focusedIndex.value]) {
+        selectStudent(visibleStudents.value[focusedIndex.value])
       }
       break
     case 'Escape':

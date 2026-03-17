@@ -72,6 +72,44 @@ export function usePublishLesson() {
     return `${window.location.origin}${publicUrl.value}`
   })
 
+  /**
+   * FIX-4: Unpublish — set lesson status to 'draft'.
+   * POST /api/v1/knowledge/my-lessons/{id}/unpublish/
+   */
+  async function unpublish(lessonId: string): Promise<void> {
+    isPublishing.value = true
+    error.value = null
+    try {
+      await apiClient.post(`/v1/knowledge/my-lessons/${lessonId}/unpublish/`)
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      const { t } = useI18n()
+      error.value = message || t('knowledge.publish.unpublishError', 'Не вдалося зняти з публікації')
+      throw err
+    } finally {
+      isPublishing.value = false
+    }
+  }
+
+  /**
+   * FIX-4: Republish — set lesson status back to 'public'.
+   * POST /api/v1/knowledge/my-lessons/{id}/republish/
+   */
+  async function republish(lessonId: string): Promise<void> {
+    isPublishing.value = true
+    error.value = null
+    try {
+      await apiClient.post(`/v1/knowledge/my-lessons/${lessonId}/republish/`)
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      const { t } = useI18n()
+      error.value = message || t('knowledge.publish.republishError', 'Не вдалося опублікувати урок')
+      throw err
+    } finally {
+      isPublishing.value = false
+    }
+  }
+
   function reset(): void {
     publishedLesson.value = null
     error.value = null
@@ -80,6 +118,8 @@ export function usePublishLesson() {
 
   return {
     publish,
+    unpublish,
+    republish,
     isPublishing,
     publishedLesson,
     publicUrl,

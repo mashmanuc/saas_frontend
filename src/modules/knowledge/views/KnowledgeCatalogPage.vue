@@ -60,7 +60,13 @@
               :class="{ 'catalog-page__cat-item--active': filters.category === cat.slug }"
               @click="filters.category = cat.slug; sidebarOpen = false"
             >
-              <span class="catalog-page__cat-icon">{{ cat.icon || '📖' }}</span>
+              <component
+                :is="getCatIcon(cat.icon)"
+                v-if="getCatIcon(cat.icon)"
+                class="catalog-page__cat-icon"
+                :size="18"
+              />
+              <span v-else class="catalog-page__cat-icon">📖</span>
               <span class="catalog-page__cat-name">{{ cat.name }}</span>
               <span class="catalog-page__cat-count">{{ cat.lesson_count }}</span>
             </button>
@@ -249,10 +255,35 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, type Component } from 'vue'
 import { useCatalog } from '../composables/useCatalog'
 import { catalogApi, type LessonCollection } from '../api/catalogApi'
 import ForkBadge from '../components/ForkBadge.vue'
+import { Calculator, Atom, FlaskConical, Leaf, BookText, Globe2, Laptop, Languages, Clock, BookOpen, Music, Palette, Dumbbell, Scale } from 'lucide-vue-next'
+
+// FIX-2: map category icon slugs to Lucide components
+const ICON_MAP: Record<string, Component> = {
+  calculator: Calculator,
+  atom: Atom,
+  'flask-conical': FlaskConical,
+  leaf: Leaf,
+  'book-text': BookText,
+  globe2: Globe2,
+  globe: Globe2,
+  laptop: Laptop,
+  languages: Languages,
+  clock: Clock,
+  'book-open': BookOpen,
+  music: Music,
+  palette: Palette,
+  dumbbell: Dumbbell,
+  scale: Scale,
+}
+
+function getCatIcon(name: string | undefined): Component | null {
+  if (!name) return null
+  return ICON_MAP[name] ?? null
+}
 
 const {
   categories,

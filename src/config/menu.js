@@ -75,7 +75,7 @@ export const SECTIONED_MENU_BY_ROLE = {
       items: [
         { label: 'sidebar.item.wbDashboard', icon: 'layout-dashboard', to: '/winterboard/dashboard' },
         { label: 'sidebar.item.wbLibrary', icon: 'folder', to: '/winterboard/library' },
-        { label: 'sidebar.item.wbLessons', icon: 'book-open', to: '/winterboard/lessons' },
+        { label: 'sidebar.item.wbLessons', icon: 'book-open', to: '/knowledge' },
         { label: 'sidebar.item.wbBoards', icon: 'layout', to: '/winterboard/boards' },
       ],
     },
@@ -120,7 +120,7 @@ export const SECTIONED_MENU_BY_ROLE = {
       items: [
         { label: 'sidebar.item.wbDashboard', icon: 'layout-dashboard', to: '/winterboard/dashboard' },
         { label: 'sidebar.item.wbLibrary', icon: 'folder', to: '/winterboard/library' },
-        { label: 'sidebar.item.wbLessons', icon: 'book-open', to: '/winterboard/lessons' },
+        { label: 'sidebar.item.wbLessons', icon: 'book-open', to: '/knowledge' },
         { label: 'sidebar.item.wbBoards', icon: 'layout', to: '/winterboard/boards' },
       ],
     },

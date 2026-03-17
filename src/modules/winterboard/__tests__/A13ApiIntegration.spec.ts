@@ -1,4 +1,4 @@
-// A13: Tests — API integration for WBLessons, WBLessonDetail, WBDashboard
+// A13: Tests — API integration for WBLessonDetail, WBDashboard
 // Ref: DAY19_AGENT-A.md — мінімум 8 тестів
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -106,75 +106,9 @@ function mountView(component: any, props = {}) {
   })
 }
 
-// ── WBLessons tests ───────────────────────────────────────────────────────────
-
-import WBLessons from '../views/WBLessons.vue'
-import WBLessonDetail from '../views/WBLessonDetail.vue'
-
-describe('WBLessons — API calls', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  it('calls lessonsApi.listMyLessons on mount', async () => {
-    ;(lessonsApi.listMyLessons as any).mockResolvedValue({ results: [] })
-    mountView(WBLessons)
-    await flushPromises()
-    expect(lessonsApi.listMyLessons).toHaveBeenCalledOnce()
-  })
-
-  it('renders lessons when API returns data', async () => {
-    ;(lessonsApi.listMyLessons as any).mockResolvedValue({
-      results: [
-        { id: 1, title: 'Math lesson', status: 'scheduled', created_at: new Date().toISOString() },
-        { id: 2, title: 'Physics', status: 'completed', created_at: new Date().toISOString() },
-      ],
-    })
-    const wrapper = mountView(WBLessons)
-    await flushPromises()
-    expect(wrapper.findAll('[data-testid="lesson-card"]')).toHaveLength(2)
-  })
-
-  it('shows empty state when no lessons', async () => {
-    ;(lessonsApi.listMyLessons as any).mockResolvedValue({ results: [] })
-    const wrapper = mountView(WBLessons)
-    await flushPromises()
-    expect(wrapper.find('[data-testid="lessons-empty"]').exists()).toBe(true)
-  })
-
-  it('shows error state and not loading when API fails', async () => {
-    ;(lessonsApi.listMyLessons as any).mockRejectedValue(new Error('Network error'))
-    const wrapper = mountView(WBLessons)
-    await flushPromises()
-    expect(wrapper.find('[data-testid="lessons-error"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="lessons-loading"]').exists()).toBe(false)
-  })
-
-  it('retries on retry button click', async () => {
-    ;(lessonsApi.listMyLessons as any)
-      .mockRejectedValueOnce(new Error('fail'))
-      .mockResolvedValueOnce({ results: [] })
-
-    const wrapper = mountView(WBLessons)
-    await flushPromises()
-    expect(wrapper.find('[data-testid="lessons-error"]').exists()).toBe(true)
-
-    await wrapper.find('.wb-lessons__retry').trigger('click')
-    await flushPromises()
-    expect(lessonsApi.listMyLessons).toHaveBeenCalledTimes(2)
-  })
-
-  it('supports plain array response (non-paginated)', async () => {
-    ;(lessonsApi.listMyLessons as any).mockResolvedValue([
-      { id: 1, title: 'History', status: 'completed', created_at: new Date().toISOString() },
-    ])
-    const wrapper = mountView(WBLessons)
-    await flushPromises()
-    expect(wrapper.findAll('[data-testid="lesson-card"]')).toHaveLength(1)
-  })
-})
-
 // ── WBLessonDetail tests ──────────────────────────────────────────────────────
+
+import WBLessonDetail from '../views/WBLessonDetail.vue'
 
 describe('WBLessonDetail — API calls', () => {
   beforeEach(() => {

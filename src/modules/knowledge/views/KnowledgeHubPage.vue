@@ -41,18 +41,38 @@
     <section v-else-if="recentLessons.length > 0" class="knowledge-hub__section">
       <h2 class="knowledge-hub__section-title">Останні уроки</h2>
       <div class="knowledge-hub__lessons-grid">
-        <router-link
+        <div
           v-for="lesson in recentLessons"
           :key="lesson.id"
-          :to="`/lesson/${lesson.tutor_slug || ''}/${lesson.slug || ''}`"
           class="knowledge-hub__lesson-card"
         >
-          <h3 class="knowledge-hub__lesson-title">{{ lesson.title || 'Без назви' }}</h3>
-          <div class="knowledge-hub__lesson-meta">
-            <span v-if="lesson.subject_tag" class="knowledge-hub__lesson-tag">{{ lesson.subject_tag }}</span>
-            <span class="knowledge-hub__lesson-date">{{ formatDate(lesson.published_at || lesson.created_at) }}</span>
+          <router-link
+            :to="`/lesson/${lesson.tutor_slug || ''}/${lesson.slug || ''}`"
+            class="knowledge-hub__lesson-link"
+          >
+            <h3 class="knowledge-hub__lesson-title">{{ lesson.title || 'Без назви' }}</h3>
+            <div class="knowledge-hub__lesson-meta">
+              <span v-if="lesson.subject_tag" class="knowledge-hub__lesson-tag">{{ lesson.subject_tag }}</span>
+              <span class="knowledge-hub__lesson-date">{{ formatDate(lesson.published_at || lesson.created_at) }}</span>
+            </div>
+          </router-link>
+          <div class="knowledge-hub__lesson-actions">
+            <span class="knowledge-hub__lesson-status" :class="lesson.status === 'public' ? 'knowledge-hub__lesson-status--public' : 'knowledge-hub__lesson-status--draft'">
+              {{ lesson.status === 'public' ? 'Опублікований' : 'Чернетка' }}
+            </span>
+            <button
+              type="button"
+              class="knowledge-hub__visibility-btn"
+              :disabled="togglingId === lesson.id"
+              :title="lesson.status === 'public' ? 'Сховати з каталогу' : 'Опублікувати'"
+              @click="toggleVisibility(lesson)"
+            >
+              <Eye v-if="lesson.status !== 'public'" :size="16" />
+              <EyeOff v-else :size="16" />
+              {{ lesson.status === 'public' ? 'Сховати' : 'Опублікувати' }}
+            </button>
           </div>
-        </router-link>
+        </div>
       </div>
     </section>
 
@@ -106,6 +126,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, defineAsyncComponent, h } from 'vue'
+import { Eye, EyeOff } from 'lucide-vue-next'
 import apiClient from '@/utils/apiClient'
 
 // BUG-22 fix: async import with error boundary for non-critical widgets
@@ -137,6 +158,7 @@ interface RecentLesson {
   slug?: string
   tutor_slug?: string
   subject_tag?: string
+  status?: string
   published_at?: string
   created_at?: string
 }
@@ -145,6 +167,23 @@ const recentLessons = ref<RecentLesson[]>([])
 const isLoadingLessons = ref(true)
 const achievements = ref<TutorAchievement[]>([])
 const isLoadingAchievements = ref(true)
+const togglingId = ref<string | null>(null)
+
+// FIX-4: Toggle visibility (publish/unpublish)
+async function toggleVisibility(lesson: RecentLesson): Promise<void> {
+  togglingId.value = lesson.id
+  try {
+    const endpoint = lesson.status === 'public'
+      ? `/v1/knowledge/my-lessons/${lesson.id}/unpublish/`
+      : `/v1/knowledge/my-lessons/${lesson.id}/republish/`
+    const res = await apiClient.post(endpoint) as { status: string }
+    lesson.status = res.status
+  } catch (err) {
+    console.error('[KnowledgeHubPage] Toggle visibility failed:', err)
+  } finally {
+    togglingId.value = null
+  }
+}
 
 function formatDate(dateStr?: string): string {
   if (!dateStr) return ''
@@ -294,6 +333,63 @@ onMounted(async () => {
 
 .knowledge-hub__lesson-card:hover {
   border-color: var(--accent, #6366f1);
+}
+
+.knowledge-hub__lesson-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.knowledge-hub__lesson-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color, #e2e8f0);
+}
+
+.knowledge-hub__lesson-status {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.knowledge-hub__lesson-status--public {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.knowledge-hub__lesson-status--draft {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.knowledge-hub__visibility-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 6px;
+  background: var(--bg-secondary, #f8fafc);
+  color: var(--text-secondary, #64748b);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.knowledge-hub__visibility-btn:hover:not(:disabled) {
+  border-color: var(--accent, #6366f1);
+  color: var(--accent, #6366f1);
+}
+
+.knowledge-hub__visibility-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .knowledge-hub__lesson-title {

@@ -45,9 +45,7 @@ const winterboardPageRoutes: RouteRecordRaw[] = [
   },
   {
     path: 'winterboard/lessons',
-    name: 'winterboard-lessons',
-    component: () => import('./views/WBLessons.vue'),
-    meta: { title: 'Lessons', roles: ['student', 'tutor'] },
+    redirect: { name: 'KnowledgeHub' },
   },
   {
     path: 'winterboard/lessons/:lessonId',

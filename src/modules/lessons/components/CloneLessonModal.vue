@@ -72,14 +72,16 @@ const startISO = computed<string>(() => {
 // Знайти ім'я вибраного студента для preview
 const selectedStudentName = computed<string>(() => {
   if (!selectedStudentId.value) return '—'
-  const rel = props.students.find(r => r.student?.id === selectedStudentId.value)
+  const rel = visibleStudents.value.find(r => r.student?.id === selectedStudentId.value)
   const s = rel?.student
   if (!s) return '—'
-  if (s.is_demo) return '🧪 Пісочниця'
   return `${s.first_name ?? ''} ${s.last_name ?? ''}`.trim() || `Учень #${s.id}`
 })
 
 // Валідність форми
+// FIX-3: hide demo students from clone modal
+const visibleStudents = computed(() => props.students.filter(r => !r.student?.is_demo))
+
 const isValid = computed(() => !!selectedStudentId.value && !!selectedDate.value)
 
 // Мінімальна дата — сьогодні
@@ -93,7 +95,6 @@ function close() {
 function studentLabel(rel: StudentRelation): string {
   const s = rel.student
   if (!s) return `Учень #${rel.id}`
-  if (s.is_demo) return '🧪 Пісочниця (demo)'
   const name = `${s.first_name ?? ''} ${s.last_name ?? ''}`.trim()
   return name || `Учень #${s.id}`
 }
@@ -155,7 +156,7 @@ async function confirmClone() {
             </label>
             <div class="cll-student-list">
               <label
-                v-for="rel in students"
+                v-for="rel in visibleStudents"
                 :key="rel.id"
                 class="cll-student-option"
                 :class="{ 'cll-student-option--selected': selectedStudentId === rel.student?.id }"
@@ -167,9 +168,7 @@ async function confirmClone() {
                   class="sr-only"
                   @change="selectedStudentId = rel.student?.id ?? null"
                 />
-                <span class="cll-student-avatar">
-                  {{ rel.student?.is_demo ? '🧪' : '👤' }}
-                </span>
+                <span class="cll-student-avatar">👤</span>
                 <span class="cll-student-name">{{ studentLabel(rel) }}</span>
                 <span v-if="rel.student?.id === currentStudentId" class="cll-student-badge">
                   поточний
@@ -185,7 +184,7 @@ async function confirmClone() {
                 </svg>
               </label>
 
-              <div v-if="students.length === 0" class="cll-no-students">
+              <div v-if="visibleStudents.length === 0" class="cll-no-students">
                 Немає учнів. Спочатку заброньте урок зі студентом.
               </div>
             </div>
