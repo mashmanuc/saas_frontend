@@ -6970,7 +6970,9 @@
     "replay": {
       "viewReplay": "View lesson replay",
       "viewingMode": "Viewing mode — editing disabled",
-      "exitReplay": "Exit"
+      "exitReplay": "Exit",
+      "shareMoment": "Share moment",
+      "momentCopied": "Moment link copied!"
     },
     "onboarding": {
       "toolbar": "Drawing tools. Pick a pen and start!",
@@ -7347,7 +7349,10 @@
         "studentConsented": "Student consented to publication",
         "anonymize": "Anonymize student data",
         "warning": "Publishing lessons with student data without consent is prohibited"
-      }
+      },
+      "error": "Failed to publish lesson",
+      "unpublishError": "Failed to unpublish lesson",
+      "republishError": "Failed to republish lesson"
     },
     "demo": {
       "title": "Demo lessons",
