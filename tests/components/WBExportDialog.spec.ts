@@ -118,8 +118,8 @@ describe('[WB:B2.2] WBExportDialog', () => {
 
   it('renders format selection when open', () => {
     const wrapper = mountDialog()
-    expect(wrapper.find('.modal-title').text()).toBe('Export Board')
-    expect(wrapper.findAll('.wb-export-format').length).toBeGreaterThanOrEqual(3)
+    expect(wrapper.text()).toContain('Export Board')
+    expect(wrapper.findAll('.wb-export-format').length).toBeGreaterThanOrEqual(2)
   })
 
   it('does not render when isOpen is false', () => {
@@ -158,13 +158,12 @@ describe('[WB:B2.2] WBExportDialog', () => {
     expect(wrapper.text()).toContain('Orientation')
   })
 
-  it('shows JSON options when JSON is selected', async () => {
+  it('shows PDF options when PDF is selected via radio', async () => {
     const wrapper = mountDialog()
-    const jsonRadio = wrapper.findAll<HTMLInputElement>('input[name="wb-export-format"]')[2]
-    await jsonRadio.setValue(true)
+    const pdfRadio = wrapper.findAll<HTMLInputElement>('input[name="wb-export-format"]')[1]
+    await pdfRadio.setValue(true)
     await flushPromises()
-    expect(wrapper.text()).toContain('JSON Options')
-    expect(wrapper.text()).toContain('Pretty print')
+    expect(wrapper.text()).toContain('PDF Options')
   })
 
   it('transitions to processing state on export start', async () => {
@@ -252,7 +251,7 @@ describe('[WB:B2.2] WBExportDialog', () => {
     await flushPromises()
 
     // Should be back to idle (format selection visible)
-    expect(wrapper.findAll('.wb-export-format').length).toBeGreaterThanOrEqual(3)
+    expect(wrapper.findAll('.wb-export-format').length).toBeGreaterThanOrEqual(2)
   })
 
   it('has proper ARIA attributes on dialog', () => {

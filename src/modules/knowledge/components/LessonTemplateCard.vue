@@ -13,6 +13,7 @@
         :alt="template.source_lesson_title"
         class="w-full h-full object-cover"
         loading="lazy"
+        @error="(e: Event) => (e.target as HTMLImageElement).style.display = 'none'"
       />
       <div v-else class="w-full h-full flex items-center justify-center text-gray-400">
         <LayoutDashboard :size="48" />

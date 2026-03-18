@@ -109,6 +109,16 @@
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="12" cy="4" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="2" stroke="currentColor" stroke-width="1.5"/><path d="M5.7 7l4.6-2M5.7 9l4.6 2" stroke="currentColor" stroke-width="1.5"/></svg>
         </button>
+        <!-- Phase 21: Save as Lesson button -->
+        <button
+          v-if="sessionId && isSessionOwner"
+          type="button"
+          class="wb-header-btn wb-header-btn--save-lesson"
+          :title="t('winterboard.lesson.saveButton') || 'Зберегти як урок'"
+          @click="showSaveLessonDialog = true"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13 14H3a1 1 0 01-1-1V3a1 1 0 011-1h8l3 3v9a1 1 0 01-1 1z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 14V9H5v5M5 2v3h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
         <!-- Phase 13 A3.3: Publish button — only if session has operations -->
         <button
           v-if="sessionId && store.currentStrokes.length > 0"
@@ -199,9 +209,9 @@
         <WBPageThumbnails
           :pages="store.pages"
           :current-index="store.currentPageIndex"
-          @select="store.goToPage($event)"
-          @add="store.addPage()"
-          @delete="store.deletePageUndoable($event)"
+          @select="handlePageSelect($event)"
+          @add="handlePageAdd()"
+          @delete="handlePageDelete($event)"
           @reorder="(from: number, to: number) => store.reorderPages(from, to)"
         />
       </aside>
@@ -398,6 +408,15 @@
       @saved="handleTemplateSaved"
     />
 
+    <!-- Phase 21: Save as Lesson dialog -->
+    <WBSaveLessonDialog
+      v-if="sessionId"
+      v-model="showSaveLessonDialog"
+      :session-id="sessionId"
+      :default-title="sessionName"
+      @saved="handleLessonSaved"
+    />
+
     <!-- Board template selector (shown for new sessions) -->
     <BoardTemplateSelector
       :is-open="showTemplateSelector"
@@ -480,7 +499,7 @@
 
     <!-- Phase 11: Replay entry button (edit mode only) -->
     <button
-      v-if="mode === 'edit' && sessionId"
+      v-if="mode === 'edit' && sessionId && hasOperations"
       class="wb-solo-room__replay-btn"
       data-testid="replay-button"
       :aria-label="t('winterboard.replay.viewReplay')"
@@ -536,10 +555,12 @@ import WBLessonMap from '../components/replay/WBLessonMap.vue'
 import WBMarkerCreateModal from '../components/replay/WBMarkerCreateModal.vue'
 import WBReplayBanner from '../components/replay/WBReplayBanner.vue'
 import SaveAsTemplateDialog from '@/modules/knowledge/components/SaveAsTemplateDialog.vue'
+import WBSaveLessonDialog from '@/modules/knowledge/components/WBSaveLessonDialog.vue'
 import WBOnboardingHints from '../components/ui/WBOnboardingHints.vue'
 import type { BoardOperation } from '../types/replay'
 import type { WBLessonMarker } from '../types/winterboard'
 import { createLessonMarker, deleteLessonMarker } from '../api/replay'
+import { applyReplayOperation } from '../engine/applyReplayOperation'
 import { useGridOverlay } from '../composables/useGridOverlay'
 import { useReplayRecorder } from '../composables/useReplayRecorder'
 import { useCanvasResize } from '../composables/useCanvasResize'
@@ -569,11 +590,10 @@ const autosave = useAutosave(sessionId)
 // P4: Replay recorder — batch records operations for replay timeline
 const replayRecorder = useReplayRecorder({
   sessionId,
-  getBoardState: () => ({
-    pages: JSON.parse(JSON.stringify(store.pages)),
-    currentPageIndex: store.currentPageIndex,
-  }),
+  getBoardState: () => store.getSnapshotState(),
 })
+// Phase 20: Auto-record all store operations — no manual record() calls needed
+const _unsubRecorder = replayRecorder.connectToStore(store)
 
 // Grid overlay (background grid for the canvas)
 const gridOverlay = useGridOverlay(sessionId.value ?? 'default')
@@ -630,11 +650,15 @@ const showPublishDialog = ref(false)
 const showSaveTemplateDialog = ref(false)
 const publishedLessonData = ref<{ id: string; title: string; subject_tag?: string } | null>(null)
 const showExportDialog = ref(false)
+const showSaveLessonDialog = ref(false)
 const showYouTubeModal = ref(false)
 const showMarkerModal = ref(false)
 const replayMarkers = ref<WBLessonMarker[]>([])
 const replayActiveMarkerId = ref<string | null>(null)
-const isSessionOwner = ref(true)
+const isSessionOwner = computed(() => {
+  if (!store.ownerId || !authStore.user) return false
+  return String(store.ownerId) === String(authStore.user.id)
+})
 const showTemplateSelector = ref(false)
 const showSidebarOverlay = ref(false)
 const isFullscreen = ref(false)
@@ -682,13 +706,29 @@ const isBoardEmpty = computed(() => {
   return page.assets.length === 0 && page.strokes.length === 0
 })
 
+// A1.4: Hide replay button on empty boards (check all pages)
+const hasOperations = computed(() => {
+  return store.pages.some(p => p.strokes.length > 0 || p.assets.length > 0)
+})
+
 // ── Touch gestures: pinch-zoom, 2-finger pan, 3-finger undo/redo, double-tap, edge swipe ──
 const touchGestureMode = computed<'drawing' | 'selection'>(() =>
   store.currentTool === 'select' ? 'selection' : 'drawing',
 )
 
-// A12p2: Replay mode
-const mode = ref<'edit' | 'replay'>('edit')
+// A12p2: Replay mode — synced to URL query for shareable links
+const mode = computed<'edit' | 'replay'>({
+  get: () => (route.query.mode === 'replay' ? 'replay' : 'edit'),
+  set: (value: 'edit' | 'replay') => {
+    const query = { ...route.query }
+    if (value === 'replay') {
+      query.mode = 'replay'
+    } else {
+      delete query.mode
+    }
+    router.replace({ query })
+  },
+})
 
 function enterReplayMode(): void {
   mode.value = 'replay'
@@ -735,34 +775,9 @@ async function handleMarkerDelete(id: string): Promise<void> {
   }
 }
 
+// R5: Delegate to shared applyReplayOperation (DRY)
 function onReplayOperation(op: BoardOperation): void {
-  const payload = op.payload as Record<string, unknown>
-
-  switch (op.op_type) {
-    case 'stroke_add':
-      if (payload.stroke) store.addStroke(payload.stroke as WBStroke, { skipHistory: true })
-      break
-    case 'stroke_update':
-      if (payload.stroke) store.updateStroke(payload.stroke as WBStroke, { skipHistory: true })
-      break
-    case 'stroke_delete':
-      if (payload.stroke_id) store.deleteStroke(payload.stroke_id as string, { skipHistory: true })
-      break
-    case 'asset_add':
-      if (payload.asset) store.addAsset(payload.asset as WBAsset, { skipHistory: true })
-      break
-    case 'asset_update':
-      if (payload.asset) store.updateAsset(payload.asset as WBAsset, { skipHistory: true })
-      break
-    case 'asset_delete':
-      if (payload.asset_id) store.deleteAsset(payload.asset_id as string, { skipHistory: true })
-      break
-    case 'page_change':
-      if (typeof payload.page_index === 'number') store.goToPage(payload.page_index)
-      break
-    default:
-      console.debug('[Replay] unknown op:', op.op_type)
-  }
+  applyReplayOperation(store, op)
 }
 
 // A10: Touch context menu state
@@ -840,8 +855,11 @@ onMounted(() => {
 })
 
 // ── Page thumbnails panel: два режими (compact / panel), стан у localStorage ──
-const showPagePanel = ref(localStorage.getItem('wb:pagePanel') === 'true')
-watch(showPagePanel, (v) => localStorage.setItem('wb:pagePanel', String(v)))
+function _loadPagePanel(): boolean {
+  try { return localStorage.getItem('wb:pagePanel') === 'true' } catch { return false }
+}
+const showPagePanel = ref(_loadPagePanel())
+watch(showPagePanel, (v) => { try { localStorage.setItem('wb:pagePanel', String(v)) } catch { /* Safari private */ } })
 
 // ── Group sidebar: materials panel ──
 // groupId: explicit ?groupId= from URL → group materials; null → tutor's Library files
@@ -934,7 +952,8 @@ const SNAP_WIDTHS = [320, 480, 640] as const
 const SNAP_THRESHOLD = 30
 
 const SIDEBAR_WIDTH_KEY = 'wb-sidebar-width'
-const _savedWidth = typeof localStorage !== 'undefined' ? localStorage.getItem(SIDEBAR_WIDTH_KEY) : null
+let _savedWidth: string | null = null
+try { _savedWidth = localStorage.getItem(SIDEBAR_WIDTH_KEY) } catch { /* Safari private */ }
 const sidebarWidth = ref(_savedWidth ? Math.max(SIDEBAR_MIN, Math.min(SIDEBAR_MAX, parseInt(_savedWidth, 10))) : SIDEBAR_DEFAULT)
 /** Width saved before double-click collapse; null = sidebar is expanded */
 const sidebarCollapsedBefore = ref<number | null>(null)
@@ -1015,7 +1034,7 @@ watch(sidebarWidth, (w) => {
   if (w > 0) {
     if (_sidebarSaveTimer) clearTimeout(_sidebarSaveTimer)
     _sidebarSaveTimer = setTimeout(() => {
-      localStorage.setItem(SIDEBAR_WIDTH_KEY, String(w))
+      try { localStorage.setItem(SIDEBAR_WIDTH_KEY, String(w)) } catch { /* Safari private */ }
     }, 300)
   }
 })
@@ -1101,8 +1120,8 @@ useKeyboard({
   onEscape: () => { selectedId.value = null },
   onPagePrev: () => handlePagePrev(),
   onPageNext: () => handlePageNext(),
-  onPageFirst: () => store.goToPage(0),
-  onPageLast: () => store.goToPage(store.pageCount - 1),
+  onPageFirst: () => handlePageSelect(0),
+  onPageLast: () => handlePageSelect(store.pageCount - 1),
   onZoomReset: () => handleZoomReset(),
   onCopy: () => boardClipboard.copySelected(),
   onPaste: () => boardClipboard.pasteInternal(),
@@ -1113,13 +1132,6 @@ useKeyboard({
 
 function handleStrokeAdd(stroke: WBStroke): void {
   store.addStroke(stroke)
-
-  // P4: Record replay operation (fire-and-forget)
-  replayRecorder.record({
-    op_type: 'stroke_add',
-    page_id: store.currentPage?.id ?? '',
-    payload: { stroke },
-  })
 
   // Record in external history (AGENT-B composable, non-critical)
   const page = store.currentPage
@@ -1134,13 +1146,6 @@ function handleStrokeAdd(stroke: WBStroke): void {
 
 function handleStrokeUpdate(stroke: WBStroke): void {
   store.updateStroke(stroke)
-
-  // P4: Record replay operation
-  replayRecorder.record({
-    op_type: 'stroke_update',
-    page_id: store.currentPage?.id ?? '',
-    payload: { stroke },
-  })
 }
 
 function handleStrokeDelete(strokeId: string): void {
@@ -1150,13 +1155,6 @@ function handleStrokeDelete(strokeId: string): void {
 
   // Delete first — store action must succeed even if history recording fails
   store.deleteStroke(strokeId)
-
-  // P4: Record replay operation
-  replayRecorder.record({
-    op_type: 'stroke_delete',
-    page_id: page?.id ?? '',
-    payload: { stroke_id: strokeId },
-  })
 
   // Record in history (non-critical — wrapped in try-catch)
   if (page && existing) {
@@ -1171,13 +1169,6 @@ function handleStrokeDelete(strokeId: string): void {
 function handleAssetAdd(asset: WBAsset): void {
   store.addAsset(asset)
 
-  // P4: Record replay operation
-  replayRecorder.record({
-    op_type: 'asset_add',
-    page_id: store.currentPage?.id ?? '',
-    payload: { asset },
-  })
-
   // A4.3: Record in history for undo/redo (non-critical)
   const page = store.currentPage
   if (page) {
@@ -1191,13 +1182,6 @@ function handleAssetAdd(asset: WBAsset): void {
 
 function handleAssetUpdate(asset: WBAsset): void {
   store.updateAsset(asset)
-
-  // P4: Record replay operation
-  replayRecorder.record({
-    op_type: 'asset_update',
-    page_id: store.currentPage?.id ?? '',
-    payload: { asset },
-  })
 }
 
 function handleAssetDelete(assetId: string): void {
@@ -1206,13 +1190,6 @@ function handleAssetDelete(assetId: string): void {
 
   // Delete first — store action must succeed even if history recording fails
   store.deleteAsset(assetId)
-
-  // P4: Record replay operation
-  replayRecorder.record({
-    op_type: 'asset_delete',
-    page_id: page?.id ?? '',
-    payload: { asset_id: assetId },
-  })
 
   // A4.3: Record in history for undo/redo (non-critical)
   if (page && existing) {
@@ -1318,7 +1295,7 @@ function handleUnlockSelected(): void {
 
 // PROB-3 FIX: Clear page request handler (safe — clears only current page)
 function handleClearPageRequest(): void {
-  store.clearPage()
+  handleClear()
 }
 
 // ─── Handlers: Pages ────────────────────────────────────────────────────────
@@ -1335,8 +1312,18 @@ function handlePageNext(): void {
   }
 }
 
+function handlePageSelect(index: number): void {
+  if (index === store.currentPageIndex) return
+  store.goToPage(index)
+}
+
 function handlePageAdd(): void {
   store.addPage()
+}
+
+function handlePageDelete(index: number): void {
+  if (!store.pages[index]) return
+  store.deletePageUndoable(index)
 }
 
 // ─── Handlers: Zoom ─────────────────────────────────────────────────────────
@@ -1400,6 +1387,12 @@ function handlePublished(publicUrl: string, lessonData?: { id: string; title: st
 // Phase 14 B2.2: Handle template saved
 function handleTemplateSaved(): void {
   showSaveTemplateDialog.value = false
+}
+
+// Phase 21: Handle lesson saved
+function handleLessonSaved(lesson: { id: string; title: string }): void {
+  showSaveLessonDialog.value = false
+  console.info('[WBSoloRoom] Lesson saved:', lesson.id, lesson.title)
 }
 
 // BUG-1 FIX: Save all pending changes before exiting
@@ -1573,6 +1566,7 @@ document.addEventListener('keydown', onGlobalKeyDown)
 
 onBeforeUnmount(async () => {
   document.removeEventListener('keydown', onGlobalKeyDown)
+  _unsubRecorder()
   replayRecorder.destroy()
   // BUG-1 FIX: Use shared save logic on unmount
   await saveBeforeLeave()

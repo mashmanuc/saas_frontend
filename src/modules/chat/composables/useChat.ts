@@ -42,6 +42,8 @@ export interface ChatMessage {
 export interface UseChatOptions {
   threadId: string
   token: string
+  /** Async token provider — called on every connect/reconnect to get a fresh JWT */
+  tokenProvider?: () => Promise<string>
   onMessage?: (message: ChatMessage) => void
   onTyping?: (userId: number, isTyping: boolean) => void
   onRead?: (userId: number, messageId: string) => void
@@ -67,7 +69,7 @@ export interface UseChatReturn {
 }
 
 export function useChat(options: UseChatOptions): UseChatReturn {
-  const { threadId, token, onMessage, onTyping, onRead } = options
+  const { threadId, token, tokenProvider, onMessage, onTyping, onRead } = options
   
   // Reactive state
   const messages = ref<ChatMessage[]>([])
@@ -94,6 +96,7 @@ export function useChat(options: UseChatOptions): UseChatReturn {
     wsClient = new WebSocketClient({
       roomId: threadId,
       token,
+      tokenProvider,
       onMessage: handleIncomingMessage,
       onConnect: () => {
         isConnected.value = true

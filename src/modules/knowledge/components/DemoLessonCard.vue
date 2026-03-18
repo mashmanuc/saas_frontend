@@ -13,6 +13,7 @@
         :alt="lesson.title"
         class="demo-lesson-card__img"
         loading="lazy"
+        @error="(e: Event) => (e.target as HTMLImageElement).style.display = 'none'"
       />
       <div v-else class="demo-lesson-card__placeholder">
         <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">

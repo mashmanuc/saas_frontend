@@ -46,7 +46,7 @@ function loadGridType(sessionId: string): GridType {
   } catch {
     // localStorage unavailable — silent fallback
   }
-  return 'dots'
+  return 'none'
 }
 
 function saveGridType(sessionId: string, gridType: GridType): void {

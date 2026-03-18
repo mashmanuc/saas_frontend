@@ -56,6 +56,22 @@
         {{ formatTime(currentSeconds) }} / {{ formatTime(durationSeconds) }}
       </span>
 
+      <!-- Share moment button -->
+      <button
+        type="button"
+        class="public-replay-player__share-moment"
+        :title="t('winterboard.replay.shareMoment')"
+        :aria-label="t('winterboard.replay.shareMoment')"
+        @click="handleShareMoment"
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="12" cy="4" r="2" stroke="currentColor" stroke-width="1.5"/>
+          <circle cx="4" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/>
+          <circle cx="12" cy="12" r="2" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M5.7 7l4.6-2M5.7 9l4.6 2" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+      </button>
+
       <!-- Speed selector -->
       <select
         v-model="speedModel"
@@ -69,6 +85,18 @@
         <option value="2">2x</option>
       </select>
     </div>
+
+    <!-- Share moment toast -->
+    <Transition name="toast">
+      <div
+        v-if="showMomentToast"
+        class="public-replay-player__toast"
+        role="status"
+        aria-live="polite"
+      >
+        {{ t('winterboard.replay.momentCopied') }}
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -105,6 +133,7 @@ const emit = defineEmits<{
   'pause': []
   'seek': [timeMs: number]
   'speed-change': [speed: number]
+  'share-moment': [seconds: number]
 }>()
 
 const { t } = useI18n()
@@ -144,10 +173,36 @@ function formatTime(sec: number): string {
   const s = Math.floor(sec % 60)
   return `${m}:${String(s).padStart(2, '0')}`
 }
+
+// A3.1: Share moment — copy URL with ?t= to clipboard
+const showMomentToast = ref(false)
+
+function handleShareMoment(): void {
+  const seconds = Math.floor(props.currentSeconds)
+  const url = new URL(window.location.href)
+  url.searchParams.set('t', String(seconds))
+
+  navigator.clipboard.writeText(url.toString()).then(() => {
+    showMomentToast.value = true
+    setTimeout(() => { showMomentToast.value = false }, 2500)
+  }).catch(() => {
+    const input = document.createElement('input')
+    input.value = url.toString()
+    document.body.appendChild(input)
+    input.select()
+    document.execCommand('copy')
+    document.body.removeChild(input)
+    showMomentToast.value = true
+    setTimeout(() => { showMomentToast.value = false }, 2500)
+  })
+
+  emit('share-moment', seconds)
+}
 </script>
 
 <style scoped>
 .public-replay-player {
+  position: relative;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
@@ -248,6 +303,52 @@ function formatTime(sec: number): string {
   color: #475569;
   background: #ffffff;
   cursor: pointer;
+}
+
+.public-replay-player__share-moment {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 6px;
+  background: var(--wb-surface-alt, #f3f4f6);
+  color: var(--wb-text-muted, #6b7280);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.public-replay-player__share-moment:hover {
+  background: var(--wb-primary, #2563eb);
+  color: #fff;
+}
+
+.public-replay-player__toast {
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.375rem 0.75rem;
+  background: var(--wb-success-bg, #065f46);
+  color: #fff;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.2s ease;
+}
+
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(4px);
 }
 
 @media (max-width: 640px) {

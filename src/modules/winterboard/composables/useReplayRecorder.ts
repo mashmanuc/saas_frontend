@@ -18,6 +18,7 @@ import { recordOperationsBatch, createSnapshot } from '../api/replay'
 const BATCH_SIZE = 50
 const FLUSH_INTERVAL_MS = 5000
 const SNAPSHOT_EVERY = 200
+const MAX_PAYLOAD_BYTES = 64 * 1024  // 64KB — must match backend WBBoardOperationCreateSerializer
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -39,8 +40,28 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
    * Record a single board operation into the buffer.
    * Auto-flushes when buffer reaches BATCH_SIZE.
    * Auto-creates snapshot every SNAPSHOT_EVERY ops.
+   *
+   * R4: Validates payload size before recording — rejects payloads > 64KB
+   * to match backend WBBoardOperationCreateSerializer.validate_payload.
    */
   function record(op: RecordOperationRequest): void {
+    // R4: Payload size guard — prevents 400 on backend
+    try {
+      const payloadJson = JSON.stringify(op.payload ?? {})
+      const payloadBytes = new TextEncoder().encode(payloadJson).byteLength
+      if (payloadBytes > MAX_PAYLOAD_BYTES) {
+        console.warn(
+          `[ReplayRecorder] payload too large (${payloadBytes}B > ${MAX_PAYLOAD_BYTES}B), skipping op:`,
+          op.op_type,
+        )
+        return
+      }
+    } catch {
+      // JSON.stringify failure — skip this operation
+      console.warn('[ReplayRecorder] payload serialization failed, skipping op:', op.op_type)
+      return
+    }
+
     buffer.push(op)
     opCount.value++
 
@@ -81,17 +102,30 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
   /**
    * Create a board state snapshot at the current operation index.
    * Called automatically every SNAPSHOT_EVERY ops — fire-and-forget.
+   *
+   * R4: Retries once on failure after 2s delay. If retry also fails,
+   * logs warning and continues — snapshots are non-critical optimization.
    */
   async function _createSnapshot(): Promise<void> {
     const sid = options.sessionId.value
     if (!sid) return
 
+    const opIdx = opCount.value
+
     try {
       const boardState = options.getBoardState()
-      await createSnapshot(sid, opCount.value, boardState)
+      await createSnapshot(sid, opIdx, boardState)
     } catch (e) {
-      // Non-critical — snapshot creation failure doesn't block recording
-      console.warn('[ReplayRecorder] snapshot creation failed:', e)
+      console.warn('[ReplayRecorder] snapshot creation failed, retrying in 2s:', e)
+      // R4: Single retry after delay
+      setTimeout(async () => {
+        try {
+          const boardState = options.getBoardState()
+          await createSnapshot(sid, opIdx, boardState)
+        } catch (retryErr) {
+          console.warn('[ReplayRecorder] snapshot retry also failed:', retryErr)
+        }
+      }, 2000)
     }
   }
 
@@ -124,12 +158,24 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
     opCount.value = 0
   }
 
+  /**
+   * Phase 20: Connect recorder to store operation emitter.
+   * All operations emitted by store actions will be auto-recorded.
+   * Returns unsubscribe function — call on unmount.
+   */
+  function connectToStore(store: { onOperation: (l: (op: RecordOperationRequest) => void) => () => void }): () => void {
+    return store.onOperation((op) => {
+      record(op)
+    })
+  }
+
   return {
     record,
     flush,
     start,
     stop,
     destroy,
+    connectToStore,
     opCount: readonly(opCount),
     isFlushing: readonly(isFlushing),
   }

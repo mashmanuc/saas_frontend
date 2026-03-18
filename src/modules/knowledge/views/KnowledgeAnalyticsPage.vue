@@ -2,6 +2,7 @@
      Authenticated. Ref: AGENT_A_FE_CORE.md A2.2 -->
 <template>
   <div class="analytics-page">
+    <BreadcrumbNav :items="breadcrumbs" />
     <h1 class="analytics-page__title">Аналітика Knowledge</h1>
 
     <!-- Loading -->
@@ -115,7 +116,7 @@
             class="analytics-page__ach-card"
             :class="{ 'analytics-page__ach-card--locked': !ach.earned_at }"
           >
-            <span class="analytics-page__ach-icon">{{ ach.icon || '🎖️' }}</span>
+            <component :is="getAchIcon(ach.icon)" :size="28" class="analytics-page__ach-icon" />
             <div class="analytics-page__ach-info">
               <h3 class="analytics-page__ach-name">{{ ach.display_name }}</h3>
               <p class="analytics-page__ach-desc">{{ ach.description }}</p>
@@ -140,9 +141,36 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, type Component } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useKnowledgeAnalytics } from '../composables/useKnowledgeAnalytics'
 import KnowledgeGraph from '../components/KnowledgeGraph.vue'
+import BreadcrumbNav from '@/components/ui/BreadcrumbNav.vue'
+import {
+  Trophy, GitFork, BookOpen, Star, Users, Package, Award, Flame, Heart,
+} from 'lucide-vue-next'
+
+const ACH_ICON_MAP: Record<string, Component> = {
+  trophy: Trophy,
+  'git-fork': GitFork,
+  'book-open': BookOpen,
+  star: Star,
+  users: Users,
+  package: Package,
+  award: Award,
+  flame: Flame,
+  heart: Heart,
+}
+function getAchIcon(name?: string): Component {
+  return (name && ACH_ICON_MAP[name]) || Award
+}
+
+const { t } = useI18n()
+
+const breadcrumbs = computed(() => [
+  { label: t('breadcrumb.knowledgeHub'), to: '/knowledge' },
+  { label: t('breadcrumb.analytics') },
+])
 
 const {
   stats,

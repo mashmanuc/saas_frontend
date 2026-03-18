@@ -40,6 +40,11 @@ export function useMediaSync(
   const isConnected = ref(false)
 
   let ws: WebSocket | null = null
+  let reconnectAttempts = 0
+  let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+  let shouldReconnect = true
+  const MAX_RECONNECT = 5
+  const BASE_DELAY = 1000
   const messageHandlers: Array<(event: MediaSyncEvent) => void> = []
 
   // ── Connect ─────────────────────────────────────────────────
@@ -66,6 +71,7 @@ export function useMediaSync(
 
     ws.onopen = () => {
       isConnected.value = true
+      reconnectAttempts = 0
       console.info(LOG, 'Connected', { sessionId: sid })
     }
 
@@ -78,9 +84,37 @@ export function useMediaSync(
       }
     }
 
-    ws.onclose = () => {
+    ws.onclose = async (event) => {
       isConnected.value = false
-      console.info(LOG, 'Disconnected')
+      console.info(LOG, 'Disconnected, code:', event.code)
+
+      // Don't reconnect on intentional close or permanent denial
+      if (!shouldReconnect || event.code === 1000 || event.code === 4403) return
+
+      if (reconnectAttempts >= MAX_RECONNECT) {
+        console.warn(LOG, 'Max reconnect attempts reached')
+        return
+      }
+
+      // Auth error — try refreshing token before reconnect
+      if (event.code === 4001 || event.code === 4401) {
+        try {
+          const { useAuthStore } = await import('@/modules/auth/store/authStore')
+          const authStore = useAuthStore()
+          await authStore.refreshAccess()
+        } catch {
+          console.warn(LOG, 'Token refresh failed, aborting reconnect')
+          return
+        }
+      }
+
+      const delay = BASE_DELAY * Math.pow(2, reconnectAttempts) + Math.random() * 1000
+      reconnectAttempts++
+      console.info(LOG, `Reconnecting in ${Math.round(delay)}ms (attempt ${reconnectAttempts}/${MAX_RECONNECT})`)
+      reconnectTimer = setTimeout(() => {
+        reconnectTimer = null
+        connect()
+      }, delay)
     }
 
     ws.onerror = (err) => {
@@ -169,8 +203,13 @@ export function useMediaSync(
   // ── Cleanup ─────────────────────────────────────────────────
 
   function disconnect(): void {
+    shouldReconnect = false
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer)
+      reconnectTimer = null
+    }
     if (ws) {
-      ws.close()
+      ws.close(1000, 'Client disconnect')
       ws = null
     }
     isConnected.value = false

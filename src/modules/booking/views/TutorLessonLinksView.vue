@@ -48,12 +48,12 @@ const { t } = useI18n()
 const router = useRouter()
 const activeTab = 'lesson-links'
 const tabs = [
-  { id: 'photo', labelKey: 'marketplace.profile.editor.photoTitle', to: { name: 'marketplace-my-profile', query: { step: 'photo' } } },
-  { id: 'basic', labelKey: 'marketplace.profile.editor.basicTitle', to: { name: 'marketplace-my-profile', query: { step: 'basic' } } },
-  { id: 'subjects', labelKey: 'marketplace.profile.editor.subjectsLanguagesTitle', to: { name: 'marketplace-my-profile', query: { step: 'subjects' } } },
-  { id: 'pricing', labelKey: 'marketplace.profile.editor.pricingTitle', to: { name: 'marketplace-my-profile', query: { step: 'pricing' } } },
-  { id: 'video', labelKey: 'marketplace.profile.editor.videoTitle', to: { name: 'marketplace-my-profile', query: { step: 'video' } } },
-  { id: 'privacy', labelKey: 'marketplace.profile.editor.privacyTitle', to: { name: 'marketplace-my-profile', query: { step: 'privacy' } } },
+  { id: 'photo', labelKey: 'marketplace.profile.editor.photoTitle', to: { name: 'tutor-profile', query: { step: 'photo' } } },
+  { id: 'basic', labelKey: 'marketplace.profile.editor.basicTitle', to: { name: 'tutor-profile', query: { step: 'basic' } } },
+  { id: 'subjects', labelKey: 'marketplace.profile.editor.subjectsLanguagesTitle', to: { name: 'tutor-profile', query: { step: 'subjects' } } },
+  { id: 'pricing', labelKey: 'marketplace.profile.editor.pricingTitle', to: { name: 'tutor-profile', query: { step: 'pricing' } } },
+  { id: 'video', labelKey: 'marketplace.profile.editor.videoTitle', to: { name: 'tutor-profile', query: { step: 'video' } } },
+  { id: 'privacy', labelKey: 'marketplace.profile.editor.privacyTitle', to: { name: 'tutor-profile', query: { step: 'privacy' } } },
   {
     id: 'lesson-links',
     labelKey: 'marketplace.profile.editor.lessonLinksTitle',
@@ -62,7 +62,7 @@ const tabs = [
   {
     id: 'publish',
     labelKey: 'marketplace.profile.publish',
-    to: { name: 'marketplace-my-profile', query: { step: 'publish' } },
+    to: { name: 'tutor-profile', query: { step: 'publish' } },
   }
 ]
 const previousTab = tabs.find((tab) => tab.id === 'privacy')

@@ -97,14 +97,6 @@
               </div>
             </fieldset>
 
-            <!-- JSON options -->
-            <fieldset v-if="selectedFormat === 'json'" class="wb-export-dialog__fieldset">
-              <legend class="wb-export-dialog__legend">{{ t('winterboard.export.jsonOptions') }}</legend>
-              <label class="wb-export-option">
-                <input v-model="jsonPretty" type="checkbox" />
-                <span>{{ t('winterboard.export.prettyPrint') }}</span>
-              </label>
-            </fieldset>
 
             <!-- B5.1: Annotated PDF options -->
             <fieldset v-if="selectedFormat === 'annotated_pdf'" class="wb-export-dialog__fieldset">
@@ -229,7 +221,6 @@ const pngQuality = ref<PngQuality>('high')
 const pngBackground = ref<PngBackground>('white')
 const pdfPageSize = ref<PdfPageSize>('a4')
 const pdfOrientation = ref<PdfOrientation>('auto')
-const jsonPretty = ref(true)
 
 // B5.1: Annotated PDF options
 type AnnotationFilter = 'strokes' | 'text' | 'shapes'
@@ -261,25 +252,20 @@ const formats = computed(() => {
       disabled: false,
       tooltip: '',
     },
-    {
-      value: 'json' as WBExportFormat,
-      label: t('winterboard.export.formats.json'),
-      desc: t('winterboard.export.formats.jsonDesc'),
-      icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M8 3H7a2 2 0 00-2 2v2c0 1.1-.9 2-2 2 1.1 0 2 .9 2 2v2a2 2 0 002 2h1M16 3h1a2 2 0 012 2v2c0 1.1.9 2 2 2-1.1 0-2 .9-2 2v2a2 2 0 01-2 2h-1" stroke="#8b5cf6" stroke-width="1.5" stroke-linecap="round"/></svg>',
-      disabled: false,
-      tooltip: '',
-    },
-    {
+  ]
+
+  // Only show Annotated PDF when session has PDF-background pages
+  if (hasPdfPages.value) {
+    base.push({
       value: 'annotated_pdf' as WBExportFormat,
       label: t('winterboard.pdf.exportAnnotatedPdf'),
-      desc: hasPdfPages.value
-        ? t('winterboard.pdf.pdfPagesWithAnnotations', { count: props.pdfPageCount ?? 0 })
-        : t('winterboard.pdf.noPdfPages'),
+      desc: t('winterboard.pdf.pdfPagesWithAnnotations', { count: props.pdfPageCount ?? 0 }),
       icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" stroke="#059669" stroke-width="1.5"/><path d="M14 2v6h6" stroke="#059669" stroke-width="1.5"/><path d="M9 15l2 2 4-5" stroke="#059669" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-      disabled: !hasPdfPages.value,
-      tooltip: hasPdfPages.value ? t('winterboard.pdf.exportAnnotatedPdfTooltip') : t('winterboard.pdf.noPdfPages'),
-    },
-  ]
+      disabled: false,
+      tooltip: t('winterboard.pdf.exportAnnotatedPdfTooltip'),
+    })
+  }
+
   return base
 })
 

@@ -1,9 +1,24 @@
 <template>
   <aside class="wb-lesson-map" data-testid="lesson-map">
     <header class="wb-lesson-map__header">
-      <h3 class="wb-lesson-map__heading">{{ t('winterboard.lessonMap.title') }}</h3>
       <button
-        v-if="canEdit"
+        type="button"
+        class="wb-lesson-map__toggle"
+        :aria-expanded="!collapsed"
+        :aria-label="collapsed ? t('winterboard.lessonMap.expand') : t('winterboard.lessonMap.collapse')"
+        @click="toggleCollapsed"
+      >
+        <svg
+          width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"
+          class="wb-lesson-map__chevron"
+          :class="{ 'wb-lesson-map__chevron--collapsed': collapsed }"
+        >
+          <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <h3 class="wb-lesson-map__heading">{{ t('winterboard.lessonMap.title') }}</h3>
+      </button>
+      <button
+        v-if="canEdit && !collapsed"
         type="button"
         class="wb-lesson-map__add"
         :aria-label="t('winterboard.lessonMap.addMarker')"
@@ -16,7 +31,7 @@
       </button>
     </header>
 
-    <div class="wb-lesson-map__list">
+    <div v-show="!collapsed" class="wb-lesson-map__list">
       <div
         v-for="marker in sortedMarkers"
         :key="marker.id"
@@ -66,8 +81,23 @@
       </div>
     </div>
 
-    <div v-if="markers.length === 0" class="wb-lesson-map__empty">
+    <div v-if="markers.length === 0 && !collapsed" class="wb-lesson-map__empty">
       {{ t('winterboard.lessonMap.empty') }}
+    </div>
+
+    <!-- Onboarding hint (shown once) -->
+    <div
+      v-if="showOnboardingHint && markers.length === 0 && !collapsed"
+      class="wb-lesson-map__hint"
+    >
+      <p>{{ t('winterboard.lessonMap.onboardingHint') }}</p>
+      <button
+        type="button"
+        class="wb-lesson-map__hint-dismiss"
+        @click="dismissHint"
+      >
+        {{ t('winterboard.lessonMap.dismiss') }}
+      </button>
     </div>
   </aside>
 </template>
@@ -77,7 +107,7 @@
 // Ref: DAY4_AGENT_B.md B5.1
 // Zone: AGENT-B (components/replay/)
 
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { WBLessonMarker, LessonMarkerCategory } from '../../types/winterboard'
 
@@ -94,6 +124,45 @@ defineEmits<{
 }>()
 
 const { t } = useI18n({ useScope: 'global' })
+
+// B2.4: Onboarding hint — shown once for new users
+const HINT_STORAGE_KEY = 'wb:lesson-map-hint-dismissed'
+
+const showOnboardingHint = ref((() => {
+  try {
+    return localStorage.getItem(HINT_STORAGE_KEY) !== 'true'
+  } catch {
+    return true
+  }
+})())
+
+function dismissHint(): void {
+  showOnboardingHint.value = false
+  try {
+    localStorage.setItem(HINT_STORAGE_KEY, 'true')
+  } catch { /* ignore */ }
+}
+
+// A2.1: Collapsed state with localStorage persist (expanded by default)
+const STORAGE_KEY = 'wb:lesson-map-collapsed'
+
+const collapsed = ref((() => {
+  try {
+    return localStorage.getItem(STORAGE_KEY) === 'true'
+  } catch {
+    return false
+  }
+})())
+
+watch(collapsed, (value) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, String(value))
+  } catch { /* localStorage not available */ }
+})
+
+function toggleCollapsed(): void {
+  collapsed.value = !collapsed.value
+}
 
 const CATEGORY_COLORS: Record<LessonMarkerCategory | string, string> = {
   theory: '#3b82f6',
@@ -134,6 +203,26 @@ const sortedMarkers = computed(() =>
   font-weight: 600;
   color: #f1f5f9;
   margin: 0;
+}
+
+.wb-lesson-map__toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+}
+
+.wb-lesson-map__chevron {
+  transition: transform 0.15s ease;
+  color: #94a3b8;
+}
+
+.wb-lesson-map__chevron--collapsed {
+  transform: rotate(-90deg);
 }
 
 .wb-lesson-map__add {
@@ -265,5 +354,36 @@ const sortedMarkers = computed(() =>
   text-align: center;
   color: #64748b;
   font-size: 13px;
+}
+
+.wb-lesson-map__hint {
+  margin: 0.75rem;
+  padding: 0.75rem;
+  background: var(--wb-info-bg, #dbeafe);
+  border: 1px solid var(--wb-info-border, #93c5fd);
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  color: var(--wb-info-text, #1e40af);
+}
+
+.wb-lesson-map__hint p {
+  margin: 0;
+}
+
+.wb-lesson-map__hint-dismiss {
+  display: block;
+  margin-top: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  background: transparent;
+  border: 1px solid var(--wb-info-border, #93c5fd);
+  border-radius: 4px;
+  color: var(--wb-info-text, #1e40af);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.wb-lesson-map__hint-dismiss:hover {
+  background: var(--wb-info-border, #93c5fd);
+  color: #fff;
 }
 </style>

@@ -96,6 +96,7 @@ describe('publicLessonApi', () => {
       expect(mockFetch).toHaveBeenCalledOnce()
       expect(mockFetch).toHaveBeenCalledWith(
         `/api/v1/knowledge/public/lessons/${TUTOR_SLUG}/${LESSON_SLUG}/`,
+        { credentials: 'include' },
       )
       expect(result).toEqual(mockLesson)
     })
@@ -107,6 +108,7 @@ describe('publicLessonApi', () => {
 
       expect(mockFetch).toHaveBeenCalledWith(
         '/api/v1/knowledge/public/lessons/tutor%20with%20spaces/lesson%2Fslash/',
+        { credentials: 'include' },
       )
     })
 
@@ -130,6 +132,7 @@ describe('publicLessonApi', () => {
 
       expect(mockFetch).toHaveBeenCalledWith(
         `/api/v1/knowledge/public/lessons/${TUTOR_SLUG}/${LESSON_SLUG}/replay/`,
+        { credentials: 'include' },
       )
       expect(result.chunks).toHaveLength(1)
       expect(result.next_cursor).toBe(1)
@@ -142,6 +145,7 @@ describe('publicLessonApi', () => {
 
       expect(mockFetch).toHaveBeenCalledWith(
         `/api/v1/knowledge/public/lessons/${TUTOR_SLUG}/${LESSON_SLUG}/replay/?cursor=5`,
+        { credentials: 'include' },
       )
     })
 
@@ -162,6 +166,7 @@ describe('publicLessonApi', () => {
 
       expect(mockFetch).toHaveBeenCalledWith(
         `/api/v1/knowledge/public/lessons/${TUTOR_SLUG}/${LESSON_SLUG}/markers/`,
+        { credentials: 'include' },
       )
       expect(result).toHaveLength(2)
     })
@@ -176,6 +181,7 @@ describe('publicLessonApi', () => {
 
       expect(mockFetch).toHaveBeenCalledWith(
         `/api/v1/knowledge/public/lessons/${TUTOR_SLUG}/${LESSON_SLUG}/board/`,
+        { credentials: 'include' },
       )
       expect(result).toEqual(state)
     })
@@ -189,6 +195,7 @@ describe('publicLessonApi', () => {
 
       expect(mockFetch).toHaveBeenCalledWith(
         `/api/v1/knowledge/public/lessons/${TUTOR_SLUG}/${LESSON_SLUG}/materials/`,
+        { credentials: 'include' },
       )
       expect(result).toHaveLength(1)
       expect(result[0].type).toBe('pdf')

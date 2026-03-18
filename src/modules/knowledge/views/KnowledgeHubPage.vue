@@ -2,6 +2,7 @@
      Adapts UI: friendly onboarding for new tutors, full dashboard for active ones. -->
 <template>
   <div class="knowledge-hub">
+    <BreadcrumbNav :items="breadcrumbs" />
     <h1 class="knowledge-hub__title">{{ $t('sidebar.item.knowledgeHub') }}</h1>
 
     <!-- UX-2 + UX-4: Stats — при 5+ уроків, collapsible -->
@@ -85,12 +86,28 @@
         </div>
       </section>
 
-      <!-- Recent Lessons -->
+      <!-- Lessons list -->
       <section class="knowledge-hub__section">
-        <h2 class="knowledge-hub__section-title">{{ t('knowledge.hub.recentLessons') }}</h2>
+        <div class="knowledge-hub__section-header">
+          <h2 class="knowledge-hub__section-title">
+            {{ showAllLessons ? t('knowledge.hub.myLessons') : t('knowledge.hub.recentLessons') }}
+          </h2>
+          <span v-if="totalLessonsCount > 4" class="knowledge-hub__total-badge">
+            {{ t('knowledge.hub.totalLessons', { count: totalLessonsCount }) }}
+          </span>
+          <button
+            v-if="totalLessonsCount > 4"
+            type="button"
+            class="knowledge-hub__show-all-btn"
+            :disabled="isLoadingAll"
+            @click="toggleShowAll"
+          >
+            {{ showAllLessons ? t('knowledge.hub.showLess') : t('knowledge.hub.showAll') }}
+          </button>
+        </div>
         <div class="knowledge-hub__lessons-grid">
           <div
-            v-for="lesson in recentLessons"
+            v-for="lesson in displayedLessons"
             :key="lesson.id"
             class="knowledge-hub__lesson-card"
           >
@@ -104,6 +121,14 @@
                 <span class="knowledge-hub__lesson-date">{{ formatDate(lesson.published_at || lesson.created_at) }}</span>
               </div>
             </router-link>
+            <!-- C1: Source board link -->
+            <router-link
+              v-if="lesson.source_session_id"
+              :to="`/winterboard/${lesson.source_session_id}`"
+              class="knowledge-hub__board-link"
+            >
+              {{ t('knowledge.hub.openBoard') }} →
+            </router-link>
             <div class="knowledge-hub__lesson-actions">
               <span
                 class="knowledge-hub__lesson-status"
@@ -111,21 +136,56 @@
               >
                 {{ lesson.status === 'public' ? t('knowledge.hub.statusPublic') : t('knowledge.hub.statusDraft') }}
               </span>
-              <button
-                type="button"
-                class="knowledge-hub__visibility-btn"
-                :disabled="togglingId === lesson.id"
-                :title="lesson.status === 'public' ? t('knowledge.hub.hideFromCatalog') : t('knowledge.hub.publishAction')"
-                @click="toggleVisibility(lesson)"
-              >
-                <Eye v-if="lesson.status !== 'public'" :size="16" />
-                <EyeOff v-else :size="16" />
-                {{ lesson.status === 'public' ? t('knowledge.hub.hideAction') : t('knowledge.hub.publishAction') }}
-              </button>
+              <div class="knowledge-hub__lesson-btns">
+                <button
+                  type="button"
+                  class="knowledge-hub__visibility-btn"
+                  :disabled="togglingId === lesson.id"
+                  :title="lesson.status === 'public' ? t('knowledge.hub.hideFromCatalog') : t('knowledge.hub.publishAction')"
+                  @click="toggleVisibility(lesson)"
+                >
+                  <Eye v-if="lesson.status !== 'public'" :size="16" />
+                  <EyeOff v-else :size="16" />
+                  {{ lesson.status === 'public' ? t('knowledge.hub.hideAction') : t('knowledge.hub.publishAction') }}
+                </button>
+                <button
+                  type="button"
+                  class="knowledge-hub__delete-btn"
+                  :disabled="deletingId === lesson.id"
+                  :title="t('knowledge.hub.deleteLesson')"
+                  @click="confirmDelete(lesson)"
+                >
+                  <Trash2 :size="14" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </section>
+
+      <!-- C1: Delete confirmation dialog -->
+      <Teleport to="body">
+        <div v-if="deleteTarget" class="knowledge-hub__confirm-overlay" @click.self="deleteTarget = null">
+          <div class="knowledge-hub__confirm-dialog" role="alertdialog" aria-modal="true">
+            <p class="knowledge-hub__confirm-text">
+              {{ t('knowledge.hub.deleteLessonConfirm', { title: deleteTarget.title }) }}
+            </p>
+            <div class="knowledge-hub__confirm-actions">
+              <button type="button" class="knowledge-hub__confirm-cancel" @click="deleteTarget = null">
+                {{ t('knowledge.hub.deleteLessonCancel') }}
+              </button>
+              <button
+                type="button"
+                class="knowledge-hub__confirm-delete"
+                :disabled="deletingId === deleteTarget.id"
+                @click="executeDelete"
+              >
+                {{ t('knowledge.hub.deleteLessonConfirmBtn') }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Teleport>
 
       <!-- Achievements — тільки якщо є хоч 1 earned -->
       <section v-if="hasEarnedAchievements" class="knowledge-hub__section">
@@ -167,12 +227,18 @@
 import { ref, computed, onMounted, defineAsyncComponent } from 'vue'
 import {
   Eye, EyeOff, BookOpen, PenTool, Search, Layout,
-  Package, ChevronRight, BarChart3, FolderOpen,
+  Package, ChevronRight, BarChart3, FolderOpen, Trash2,
 } from 'lucide-vue-next'
 import apiClient from '@/utils/apiClient'
 import { useI18n } from 'vue-i18n'
+import BreadcrumbNav from '@/components/ui/BreadcrumbNav.vue'
 
 const { t } = useI18n()
+
+const breadcrumbs = computed(() => [
+  { label: t('breadcrumb.home'), to: '/tutor' },
+  { label: t('breadcrumb.knowledgeHub') },
+])
 
 const KnowledgeStatsWidget = defineAsyncComponent({
   loader: () => import('../components/KnowledgeStatsWidget.vue'),
@@ -199,18 +265,32 @@ interface RecentLesson {
   status?: string
   published_at?: string
   created_at?: string
+  source_session_id?: string | null
 }
 
 const recentLessons = ref<RecentLesson[]>([])
+const allLessons = ref<RecentLesson[]>([])
 const isLoadingLessons = ref(true)
+const isLoadingAll = ref(false)
+const showAllLessons = ref(false)
+const totalLessonsCount = ref(0)
 const achievements = ref<TutorAchievement[]>([])
 const togglingId = ref<string | null>(null)
+const deletingId = ref<string | null>(null)
+const deleteTarget = ref<RecentLesson | null>(null)
 
 // Є контент — показати повний dashboard
 const hasAnyContent = computed(() => recentLessons.value.length > 0)
 
+// C1: Displayed lessons — recent 4 or full list
+const displayedLessons = computed(() =>
+  showAllLessons.value ? allLessons.value : recentLessons.value
+)
+
 // UX-1: Progressive QuickActions — lessons_count determines visible actions
-const lessonsCount = computed(() => recentLessons.value.length)
+const lessonsCount = computed(() =>
+  showAllLessons.value ? allLessons.value.length : recentLessons.value.length
+)
 
 // UX-4: Collapsible sections — persist collapse state in localStorage
 const statsCollapsed = ref(localStorage.getItem('kb:stats:collapsed') === 'true')
@@ -225,6 +305,51 @@ function handleStatsToggle(e: Event) {
 const hasEarnedAchievements = computed(() =>
   achievements.value.some(a => a.earned_at || a.progress >= 100)
 )
+
+// C1: Toggle show all lessons
+async function toggleShowAll(): Promise<void> {
+  if (showAllLessons.value) {
+    showAllLessons.value = false
+    return
+  }
+  if (allLessons.value.length > 0) {
+    showAllLessons.value = true
+    return
+  }
+  isLoadingAll.value = true
+  try {
+    const res = await apiClient.get('/v1/knowledge/my-lessons/') as { lessons?: RecentLesson[]; total?: number }
+    allLessons.value = res.lessons ?? []
+    totalLessonsCount.value = res.total ?? allLessons.value.length
+    showAllLessons.value = true
+  } catch (err) {
+    console.error('[KnowledgeHubPage] Failed to load all lessons:', err)
+  } finally {
+    isLoadingAll.value = false
+  }
+}
+
+// C1: Delete lesson (soft delete)
+function confirmDelete(lesson: RecentLesson): void {
+  deleteTarget.value = lesson
+}
+
+async function executeDelete(): Promise<void> {
+  if (!deleteTarget.value) return
+  const id = deleteTarget.value.id
+  deletingId.value = id
+  try {
+    await apiClient.delete(`/v1/knowledge/my-lessons/${id}/`)
+    recentLessons.value = recentLessons.value.filter(l => l.id !== id)
+    allLessons.value = allLessons.value.filter(l => l.id !== id)
+    totalLessonsCount.value = Math.max(0, totalLessonsCount.value - 1)
+    deleteTarget.value = null
+  } catch (err) {
+    console.error('[KnowledgeHubPage] Delete failed:', err)
+  } finally {
+    deletingId.value = null
+  }
+}
 
 async function toggleVisibility(lesson: RecentLesson): Promise<void> {
   togglingId.value = lesson.id
@@ -249,13 +374,9 @@ function formatDate(dateStr?: string): string {
 
 onMounted(async () => {
   try {
-    const res = await apiClient.get('/v1/knowledge/my-lessons/?limit=4&ordering=-published_at')
-    const data = res as Record<string, unknown>
-    recentLessons.value = Array.isArray(data)
-      ? data.slice(0, 4)
-      : Array.isArray((data as { results?: unknown[] }).results)
-        ? ((data as { results: RecentLesson[] }).results).slice(0, 4)
-        : []
+    const res = await apiClient.get('/v1/knowledge/my-lessons/?limit=4') as { lessons?: RecentLesson[]; total?: number }
+    recentLessons.value = res.lessons ?? []
+    totalLessonsCount.value = res.total ?? recentLessons.value.length
   } catch (err) {
     console.warn('[KnowledgeHubPage] Failed to load recent lessons:', err)
   } finally {
@@ -328,11 +449,50 @@ onMounted(async () => {
   margin-bottom: 28px;
 }
 
+.knowledge-hub__section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
 .knowledge-hub__section-title {
   font-size: 17px;
   font-weight: 700;
   color: var(--text-primary);
-  margin: 0 0 12px;
+  margin: 0;
+}
+
+.knowledge-hub__total-badge {
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 2px 8px;
+  background: var(--bg-tertiary);
+  border-radius: 10px;
+}
+
+.knowledge-hub__show-all-btn {
+  margin-left: auto;
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  background: none;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.knowledge-hub__show-all-btn:hover:not(:disabled) {
+  background: var(--accent);
+  color: #fff;
+}
+
+.knowledge-hub__show-all-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* ══ Welcome (new tutor) ═══════════════════════════ */
@@ -620,6 +780,122 @@ onMounted(async () => {
 }
 
 .knowledge-hub__visibility-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.knowledge-hub__board-link {
+  display: inline-block;
+  font-size: 12px;
+  color: var(--accent);
+  text-decoration: none;
+  margin-top: 6px;
+  transition: color 0.15s;
+}
+
+.knowledge-hub__board-link:hover {
+  color: var(--accent-hover, #4f46e5);
+  text-decoration: underline;
+}
+
+.knowledge-hub__lesson-btns {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.knowledge-hub__delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.knowledge-hub__delete-btn:hover:not(:disabled) {
+  border-color: var(--error, #ef4444);
+  color: var(--error, #ef4444);
+  background: color-mix(in srgb, var(--error, #ef4444) 8%, var(--bg-secondary));
+}
+
+.knowledge-hub__delete-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Confirm Dialog ──────────────────────────────────── */
+.knowledge-hub__confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.knowledge-hub__confirm-dialog {
+  background: var(--bg-primary, #fff);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+.knowledge-hub__confirm-text {
+  font-size: 14px;
+  color: var(--text-primary);
+  margin: 0 0 20px;
+  line-height: 1.5;
+}
+
+.knowledge-hub__confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.knowledge-hub__confirm-cancel {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.knowledge-hub__confirm-cancel:hover {
+  border-color: var(--text-secondary);
+}
+
+.knowledge-hub__confirm-delete {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  background: var(--error, #ef4444);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.knowledge-hub__confirm-delete:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--error, #ef4444) 85%, #000);
+}
+
+.knowledge-hub__confirm-delete:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }

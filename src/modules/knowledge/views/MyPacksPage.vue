@@ -3,6 +3,7 @@
      Ref: AGENT_A_FE_CORE.md A3.3 -->
 <template>
   <div class="my-packs-page">
+    <BreadcrumbNav :items="breadcrumbs" />
     <div class="my-packs-page__header">
       <h1 class="my-packs-page__title">Мої серії уроків</h1>
       <button
@@ -193,9 +194,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { templateApi, type LessonPack } from '../api/templateApi'
 import { useToast } from '@/modules/winterboard/composables/useToast'
+import BreadcrumbNav from '@/components/ui/BreadcrumbNav.vue'
+
+const { t } = useI18n()
+
+const breadcrumbs = computed(() => [
+  { label: t('breadcrumb.knowledgeHub'), to: '/knowledge' },
+  { label: t('breadcrumb.packs') },
+])
 
 const { showToast } = useToast()
 

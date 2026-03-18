@@ -33,9 +33,9 @@
         <!-- Header -->
         <PublicLessonHeader
           :title="lesson.title"
-          :tutor-name="lesson.tutor.name"
-          :tutor-avatar-url="lesson.tutor.avatar_url"
-          :tutor-slug="lesson.tutor.slug"
+          :tutor-name="lesson.tutor?.name"
+          :tutor-avatar-url="lesson.tutor?.avatar_url"
+          :tutor-slug="lesson.tutor?.slug"
           :subject-tag="lesson.subject_tag"
           :duration-seconds="lesson.duration_seconds"
           :created-at="lesson.created_at"
@@ -92,6 +92,7 @@
           <PublicMarkersList
             :markers="displayMarkers"
             :current-time-ms="replay.currentTimeMs.value"
+            :highlighted-time="highlightedMarkerTime"
             @seek="handleSeek"
           />
           <PublicMaterialsList :materials="displayMaterials" />
@@ -100,7 +101,7 @@
         <!-- Rating widget -->
         <LessonRatingWidget
           :lesson-id="lesson.id"
-          :tutor-slug="lesson.tutor.slug"
+          :tutor-slug="lesson.tutor?.slug"
           :lesson-slug="lesson.slug"
           :existing-rating="lesson.user_rating || null"
           :is-authenticated="authStore.isAuthenticated"
@@ -110,9 +111,9 @@
 
         <!-- Tutor CTA -->
         <TutorCTACard
-          :tutor-name="lesson.tutor.name"
-          :tutor-avatar-url="lesson.tutor.avatar_url"
-          :tutor-slug="lesson.tutor.slug"
+          :tutor-name="lesson.tutor?.name"
+          :tutor-avatar-url="lesson.tutor?.avatar_url"
+          :tutor-slug="lesson.tutor?.slug"
           :lesson-slug="lesson.slug"
           :subject-tags="lesson.tutor.subjects ? lesson.tutor.subjects.split(',').map((s: string) => s.trim()) : []"
           :rating-avg="lesson.tutor.rating"
@@ -169,11 +170,11 @@
             <router-link
               v-for="rel in relatedLessons"
               :key="rel.id"
-              :to="`/lesson/${rel.tutor_slug || lesson.tutor.slug}/${rel.slug}`"
+              :to="`/lesson/${rel.tutor_slug || lesson.tutor?.slug}/${rel.slug}`"
               class="public-lesson-page__related-card"
             >
               <div v-if="rel.board_thumbnail_url" class="public-lesson-page__related-thumb">
-                <img :src="rel.board_thumbnail_url" :alt="rel.title" loading="lazy" />
+                <img :src="rel.board_thumbnail_url" :alt="rel.title" loading="lazy" @error="(e: Event) => (e.target as HTMLImageElement).style.display = 'none'" />
               </div>
               <div v-else class="public-lesson-page__related-thumb public-lesson-page__related-thumb--empty">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3" stroke="#94a3b8" stroke-width="1.5"/><path d="M8 10h8M8 14h5" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round"/></svg>
@@ -263,6 +264,19 @@ const lessonPacks = ref<LessonPackInfo[]>([])
 const boardSectionRef = ref<HTMLElement | null>(null)
 const deepLinkDismissed = ref(false)
 
+// A2.2: Deep link marker highlight — pulses for 3 seconds then clears
+const highlightedMarkerTime = ref<number | null>(null)
+let highlightTimer: ReturnType<typeof setTimeout> | null = null
+
+watch(highlightedMarkerTime, (val) => {
+  if (highlightTimer) clearTimeout(highlightTimer)
+  if (val !== null) {
+    highlightTimer = setTimeout(() => {
+      highlightedMarkerTime.value = null
+    }, 3000)
+  }
+})
+
 // Phase 16 INT-41: Deep link detection
 const hasDeepLink = computed(() => !!route.query.t)
 const deepLinkTime = computed<string | null>(() => {
@@ -285,15 +299,15 @@ const lessonShareUrl = computed(() =>
 // ── Phase 16 INT-12: Breadcrumbs ─────────────────────────────────────────────
 const breadcrumbItems = computed(() => {
   const items: Array<{ label: string; to?: string }> = [
-    { label: t('knowledge.breadcrumbs.catalog'), to: '/knowledge/catalog' },
+    { label: t('breadcrumb.catalog'), to: '/knowledge/catalog' },
   ]
   if (lesson.value?.subject_tag) {
     items.push({
       label: lesson.value.subject_tag,
-      to: `/knowledge/catalog?subject=${lesson.value.subject_tag}`,
+      to: `/knowledge/catalog?subject=${encodeURIComponent(lesson.value.subject_tag)}`,
     })
   }
-  items.push({ label: lesson.value?.title || '' })
+  items.push({ label: lesson.value?.title || '...' })
   return items
 })
 
@@ -498,6 +512,8 @@ onMounted(async () => {
     const startTime = Number(route.query.t) || 0
     if (startTime > 0) {
       replay.seekTo(startTime * 1000)
+      // A2.2: Highlight marker closest to deep link time
+      highlightedMarkerTime.value = startTime
     }
 
     // Phase 15 A3.4: Log view (best-effort, no error handling)

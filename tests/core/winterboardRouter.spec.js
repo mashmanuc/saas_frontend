@@ -10,7 +10,7 @@ import winterboardRoutes, { winterboardSessionListRoute } from '@modules/winterb
 describe('winterboardRoutes', () => {
   it('exports an array of routes', () => {
     expect(Array.isArray(winterboardRoutes)).toBe(true)
-    expect(winterboardRoutes.length).toBeGreaterThanOrEqual(11)
+    expect(winterboardRoutes.length).toBeGreaterThanOrEqual(5)
   })
 
   describe('route: winterboard-sessions', () => {

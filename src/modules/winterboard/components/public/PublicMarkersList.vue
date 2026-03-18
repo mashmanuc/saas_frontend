@@ -19,7 +19,10 @@
         v-for="marker in markers"
         :key="marker.id"
         class="public-markers__item"
-        :class="{ 'public-markers__item--active': isActiveMarker(marker) }"
+        :class="{
+          'public-markers__item--active': isActiveMarker(marker),
+          'public-markers__item--highlighted': isHighlightedMarker(marker),
+        }"
         role="listitem"
         tabindex="0"
         @click="$emit('seek', marker.lesson_time_seconds * 1000)"
@@ -49,6 +52,7 @@ export interface PublicMarker {
 const props = defineProps<{
   markers: PublicMarker[]
   currentTimeMs?: number
+  highlightedTime?: number | null
 }>()
 
 defineEmits<{
@@ -96,6 +100,11 @@ function categoryColor(cat: string): string {
 function categoryLabel(cat: string): string {
   const key = CATEGORY_LABELS[cat]
   return key ? t(key) : cat
+}
+
+function isHighlightedMarker(marker: PublicMarker): boolean {
+  if (props.highlightedTime == null) return false
+  return Math.abs(marker.lesson_time_seconds - props.highlightedTime) < 2
 }
 
 function formatTime(sec: number): string {
@@ -194,6 +203,17 @@ function formatTime(sec: number): string {
   text-transform: uppercase;
   letter-spacing: 0.3px;
   flex-shrink: 0;
+}
+
+.public-markers__item--highlighted {
+  animation: marker-pulse 1s ease-in-out 3;
+  border-color: var(--primary, #10b981);
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
+}
+
+@keyframes marker-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
 }
 
 @media (max-width: 640px) {

@@ -66,8 +66,8 @@ describe('useReplayRecorder', () => {
       recorder.record(makeOp())
     }
 
-    // Let the flush promise resolve
-    await vi.runAllTimersAsync()
+    // Let the flush promise resolve (avoid runAllTimersAsync which loops on setInterval)
+    await vi.advanceTimersByTimeAsync(0)
 
     expect(mockBatch).toHaveBeenCalledTimes(1)
     expect(mockBatch).toHaveBeenCalledWith('test-session-123', expect.any(Array))
@@ -149,8 +149,8 @@ describe('useReplayRecorder', () => {
       recorder.record(makeOp())
     }
 
-    // Let flush promises resolve
-    await vi.runAllTimersAsync()
+    // Let flush promises resolve (avoid runAllTimersAsync which loops on setInterval)
+    await vi.advanceTimersByTimeAsync(0)
 
     expect(mockSnapshot).toHaveBeenCalledTimes(1)
     expect(mockSnapshot).toHaveBeenCalledWith(

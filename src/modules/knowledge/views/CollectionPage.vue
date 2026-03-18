@@ -44,7 +44,7 @@
           <a
             v-for="item in collection.items"
             :key="item.lesson.id"
-            :href="`/lesson/${item.lesson.tutor.slug}/${item.lesson.slug}`"
+            :href="`/lesson/${item.lesson?.tutor?.slug}/${item.lesson?.slug}`"
             class="collection-page__card"
           >
             <div class="collection-page__card-img-wrap">
@@ -54,6 +54,7 @@
                 :alt="item.lesson.title"
                 class="collection-page__card-img"
                 loading="lazy"
+                @error="(e: Event) => (e.target as HTMLImageElement).style.display = 'none'"
               />
               <div v-else class="collection-page__card-img-placeholder">
                 <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
@@ -100,9 +101,9 @@ const collection = ref<LessonCollectionDetail | null>(null)
 
 // ── Phase 16 INT-13: Breadcrumbs ─────────────────────────────────────────────
 const breadcrumbs = computed(() => [
-  { label: t('knowledge.breadcrumbs.knowledge'), to: '/knowledge' },
-  { label: t('knowledge.breadcrumbs.collections'), to: '/knowledge/collections' },
-  { label: collection.value?.title || '' },
+  { label: t('breadcrumb.catalog'), to: '/knowledge/catalog' },
+  { label: t('breadcrumb.collections'), to: '/knowledge/collections' },
+  { label: collection.value?.title || '...' },
 ])
 
 function lessonWord(count: number): string {

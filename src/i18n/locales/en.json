@@ -998,8 +998,8 @@
       "devPlayground": "Dev Playground",
       "knowledgeHub": "My Lessons",
       "lessonCatalog": "Catalog",
-      "templateLibrary": "Templates",
-      "myPacks": "Courses",
+      "templateLibrary": "Template Library",
+      "myPacks": "My Packs",
       "knowledgeAnalytics": "Analytics"
     },
     "hint": {
@@ -1015,7 +1015,10 @@
       "tutorProfile": "Your public marketplace profile",
       "billing": "Finances, subscription, and payments",
       "settings": "Account and notification settings",
-      "notifications": "Unread notifications"
+      "notifications": "Unread notifications",
+      "templateLibrary": "Community lesson templates",
+      "myPacks": "Your lesson series",
+      "knowledgeAnalytics": "View and fork statistics"
     },
     "collapse": "Collapse menu",
     "expand": "Expand menu",
@@ -1024,6 +1027,15 @@
     "badge": {
       "ariaLabel": "{count} new"
     }
+  },
+  "breadcrumb": {
+    "home": "Home",
+    "knowledgeHub": "Knowledge Hub",
+    "catalog": "Catalog",
+    "library": "Library",
+    "packs": "Packs",
+    "analytics": "Analytics",
+    "collections": "Collections"
   },
   "sidebarCoaching": {
     "step1": "This is where your created lessons will be. Start with the board!",
@@ -6297,7 +6309,10 @@
       "expired": "Link expired",
       "linkExpired": "This link has expired",
       "error": "Error",
-      "loadFailed": "Failed to load the board"
+      "loadFailed": "Failed to load the board",
+      "watchReplay": "Watch replay",
+      "staticView": "Static view",
+      "replayNotAvailable": "Replay not available"
     },
     "classroom": {
       "locked": "Drawing locked",
@@ -6808,7 +6823,8 @@
       "hidePagePanel": "Hide page panel",
       "showPagePanel": "Show page panel",
       "syncError": "Sync error",
-      "followMode": "Follow mode"
+      "followMode": "Follow mode",
+      "publish": "Publish lesson"
     },
     "selection": {
       "toolbar": "Selection toolbar",
@@ -6845,7 +6861,11 @@
         "practice": "Practice",
         "solution": "Solution",
         "custom": "Other"
-      }
+      },
+      "onboardingHint": "Add markers to your lesson for navigation",
+      "dismiss": "Got it",
+      "expand": "Expand lesson map",
+      "collapse": "Collapse lesson map"
     },
     "markerModal": {
       "title": "Create marker",
@@ -6929,7 +6949,23 @@
       "noMaterials": "No materials added",
       "statusDraft": "Draft",
       "statusInProgress": "In Progress",
-      "statusCompleted": "Completed"
+      "statusCompleted": "Completed",
+      "saveTitle": "Save as Lesson",
+      "saveSubtitle": "Save your current board state as a lesson in your library",
+      "titleLabel": "Lesson title",
+      "titlePlaceholder": "E.g. Equations with absolute value",
+      "saveButton": "Save as Lesson",
+      "saving": "Saving…",
+      "saved": "Lesson saved",
+      "saveError": "Failed to save lesson",
+      "myLessonsTitle": "My Lessons",
+      "emptyTitle": "No lessons yet",
+      "emptySubtitle": "Save your first board as a lesson",
+      "openButton": "Open",
+      "opening": "Opening…",
+      "openError": "Failed to open lesson",
+      "fetchError": "Failed to load lessons",
+      "viewMyLessons": "View my lessons"
     },
     "replay": {
       "viewReplay": "View lesson replay",
@@ -7172,7 +7208,16 @@
       "analyticsTitle": "Analytics",
       "analyticsDesc": "Statistics for your lessons",
       "collectionsTitle": "Collections",
-      "collectionsDesc": "Themed lesson collections"
+      "collectionsDesc": "Themed lesson collections",
+      "showAll": "Show all",
+      "showLess": "Show recent",
+      "totalLessons": "{count} lessons total",
+      "deleteLesson": "Delete",
+      "deleteLessonConfirm": "Delete \"{title}\"? This will hide the lesson from the catalog. You can't undo this.",
+      "deleteLessonCancel": "Cancel",
+      "deleteLessonConfirmBtn": "Delete",
+      "lessonDeleted": "Lesson deleted",
+      "openBoard": "Open board"
     },
     "terms": {
       "title": "Tips",
@@ -7212,7 +7257,8 @@
     "replay": {
       "shareMoment": "Share moment",
       "momentCopied": "Moment link copied!",
-      "momentBadge": "Moment: {time}"
+      "momentBadge": "Moment: {time}",
+      "noOperations": "No recordings on this board yet"
     },
     "tabLessons": "Lessons",
     "tabTemplates": "Templates",
@@ -7387,6 +7433,7 @@
       "emptyTitle": "Nothing found",
       "emptySubtitle": "Try changing the filters or search query",
       "resetFilters": "Reset filters",
+      "filteredByTutor": "Lessons by tutor",
       "globalEmptyTitle": "Catalog is empty for now",
       "globalEmptyText": "Be the first! Create a lesson on the board and publish it to the catalog.",
       "createLesson": "Create lesson",

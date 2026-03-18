@@ -17,9 +17,10 @@ vi.mock('vue-i18n', () => ({
 // ─── Mock vue-router ──────────────────────────────────────────────────────────
 
 const mockPush = vi.fn()
+const mockResolve = vi.fn((route: any) => ({ href: `/winterboard/${route.params?.id ?? ''}` }))
 
 vi.mock('vue-router', () => ({
-  useRouter: () => ({ push: mockPush }),
+  useRouter: () => ({ push: mockPush, resolve: mockResolve }),
   RouterLink: { template: '<a><slot /></a>' },
 }))
 
@@ -296,13 +297,23 @@ describe('WBDashboard.vue (B14)', () => {
 
   // Test 16
   it('navigates to board on recent card click', async () => {
+    const mockOpen = vi.fn()
+    vi.stubGlobal('open', mockOpen)
+
     const wrapper = await mountDashboard()
     await vi.waitFor(() => expect(wrapper.find('.wb-recent-card').exists()).toBe(true))
     await wrapper.find('.wb-recent-card').trigger('click')
-    expect(mockPush).toHaveBeenCalledWith({
+    expect(mockResolve).toHaveBeenCalledWith({
       name: 'winterboard-solo',
       params: { id: SESSION.id },
     })
+    expect(mockOpen).toHaveBeenCalledWith(
+      `/winterboard/${SESSION.id}`,
+      '_blank',
+      'noopener',
+    )
+
+    vi.unstubAllGlobals()
   })
 })
 

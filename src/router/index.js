@@ -903,6 +903,13 @@ const routes = [
             component: () => import('../modules/knowledge/views/KnowledgeCatalogPage.vue'),
             // No meta.roles — accessible to all authenticated users (tutor, student, admin)
           },
+          // Phase 21: My saved lessons
+          {
+            path: 'my-lessons',
+            name: 'MyLessons',
+            component: () => import('../modules/knowledge/views/WBMyLessonsPage.vue'),
+            meta: { roles: [USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN] },
+          },
         ],
       },
       // FIX-5: Winterboard session list — inside PageShell for header + sidebar

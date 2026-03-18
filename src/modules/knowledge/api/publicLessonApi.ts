@@ -1,5 +1,6 @@
 // Phase 13 A1.3: Public Lesson API client
-// Public endpoints — NO auth token. Uses plain fetch for CDN-cacheable responses.
+// Public endpoints — optional auth token. Uses plain fetch for CDN-cacheable responses.
+// Phase 21: додано optional auth — власник може бачити свої draft уроки.
 // Ref: PROGRESS.md Phase 13 — INV-SCALE-1 (ReplayChunks), INV-SCALE-3 (CDN cache), INV-SCALE-5 (cursor pagination)
 
 const PUBLIC_BASE = '/api/v1/knowledge/public'
@@ -99,7 +100,9 @@ export interface LessonPackInfo {
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 async function publicFetch<T>(path: string): Promise<T> {
-  const res = await fetch(path)
+  // Phase 21: credentials: 'include' — browser sends httpOnly auth cookies,
+  // so OptionalJWTAuthentication on BE can identify the owner for draft access.
+  const res = await fetch(path, { credentials: 'include' })
   if (!res.ok) {
     const err = new Error(`Public API error: ${res.status}`) as Error & { status: number }
     err.status = res.status
@@ -149,29 +152,39 @@ export const publicLessonApi = {
   /**
    * GET /knowledge/public/lessons/{tutorSlug}/{lessonSlug}/markers/
    */
-  getMarkers(tutorSlug: string, lessonSlug: string): Promise<PublicMarker[]> {
-    return publicFetch<PublicMarker[]>(
+  async getMarkers(tutorSlug: string, lessonSlug: string): Promise<PublicMarker[]> {
+    const data = await publicFetch<{ markers: PublicMarker[] } | PublicMarker[]>(
       `${PUBLIC_BASE}/lessons/${encodeURIComponent(tutorSlug)}/${encodeURIComponent(lessonSlug)}/markers/`,
     )
+    return Array.isArray(data) ? data : (data?.markers ?? [])
   },
 
   /**
    * GET /knowledge/public/lessons/{tutorSlug}/{lessonSlug}/board/
    * Final board state JSON — CDN cached (Cache-Control: public, max-age=86400)
    */
-  getBoardState(tutorSlug: string, lessonSlug: string): Promise<Record<string, unknown>> {
-    return publicFetch<Record<string, unknown>>(
+  async getBoardState(tutorSlug: string, lessonSlug: string): Promise<Record<string, unknown>> {
+    const data = await publicFetch<Record<string, unknown>>(
       `${PUBLIC_BASE}/lessons/${encodeURIComponent(tutorSlug)}/${encodeURIComponent(lessonSlug)}/board/`,
     )
+    // BE returns { snapshot_url: "..." } — if so, fetch the actual snapshot JSON
+    if (data?.snapshot_url && typeof data.snapshot_url === 'string') {
+      try {
+        const snap = await fetch(data.snapshot_url as string, { credentials: 'include' })
+        if (snap.ok) return snap.json()
+      } catch { /* fallback to wrapper */ }
+    }
+    return data
   },
 
   /**
    * GET /knowledge/public/lessons/{tutorSlug}/{lessonSlug}/materials/
    */
-  getMaterials(tutorSlug: string, lessonSlug: string): Promise<PublicMaterial[]> {
-    return publicFetch<PublicMaterial[]>(
+  async getMaterials(tutorSlug: string, lessonSlug: string): Promise<PublicMaterial[]> {
+    const data = await publicFetch<{ materials: PublicMaterial[] } | PublicMaterial[]>(
       `${PUBLIC_BASE}/lessons/${encodeURIComponent(tutorSlug)}/${encodeURIComponent(lessonSlug)}/materials/`,
     )
+    return Array.isArray(data) ? data : (data?.materials ?? [])
   },
 
   /**

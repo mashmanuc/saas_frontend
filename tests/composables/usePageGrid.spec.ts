@@ -32,11 +32,11 @@ function makeStore() {
 
 describe('DEFAULT_PAGE_GRID', () => {
   it('has expected default values', () => {
-    expect(DEFAULT_PAGE_GRID.enabled).toBe(true)
+    expect(DEFAULT_PAGE_GRID.enabled).toBe(false)
     expect(DEFAULT_PAGE_GRID.size).toBe(20)
     expect(DEFAULT_PAGE_GRID.style).toBe('dots')
     expect(DEFAULT_PAGE_GRID.color).toBe('#000000')
-    expect(DEFAULT_PAGE_GRID.opacity).toBe(0.15)
+    expect(DEFAULT_PAGE_GRID.opacity).toBe(0.4)
   })
 
   it('default opacity 0.15 is in valid range', () => {

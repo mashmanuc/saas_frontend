@@ -31,8 +31,10 @@
 export interface EngineClientConfig {
   /** Room ID for group subscriptions */
   roomId?: string
-  /** JWT access token for authentication */
-  token: string
+  /** JWT access token for authentication (deprecated — prefer tokenProvider) */
+  token?: string
+  /** Async token provider — called on every connect/reconnect to get a fresh JWT */
+  tokenProvider?: () => Promise<string>
   /** WebSocket base URL (defaults to env VITE_WS_URL) */
   baseUrl?: string
   /** Callback when message received from server */
@@ -61,7 +63,7 @@ export interface EngineMessage {
 
 export class WebSocketClient {
   private ws: WebSocket | null = null
-  private config: Required<EngineClientConfig>
+  private config: Omit<Required<EngineClientConfig>, 'token' | 'tokenProvider'> & Pick<EngineClientConfig, 'token' | 'tokenProvider'>
   private reconnectAttempts = 0
   private reconnectTimer: number | null = null
   private heartbeatInterval: number | null = null
@@ -92,6 +94,7 @@ export class WebSocketClient {
     this.config = {
       roomId: config.roomId,
       token: config.token,
+      tokenProvider: config.tokenProvider,
       baseUrl: config.baseUrl || getWebSocketUrl(),
       onMessage: config.onMessage || (() => {}),
       onConnect: config.onConnect || (() => {}),
@@ -117,7 +120,7 @@ export class WebSocketClient {
     this.isConnecting = true
 
     try {
-      const url = this.buildUrl()
+      const url = await this.buildUrl()
       this.ws = new WebSocket(url)
 
       return new Promise((resolve) => {
@@ -348,12 +351,23 @@ export class WebSocketClient {
   }
 
   /**
+   * Get fresh token — uses tokenProvider if available, falls back to static token.
+   */
+  private async getToken(): Promise<string> {
+    if (this.config.tokenProvider) {
+      return this.config.tokenProvider()
+    }
+    return this.config.token || ''
+  }
+
+  /**
    * Build WebSocket URL with authentication
    */
-  private buildUrl(): string {
+  private async buildUrl(): Promise<string> {
     const base = this.config.baseUrl.replace(/\/$/, '')
     const roomPath = this.config.roomId ? `/room/${this.config.roomId}/` : '/'
-    return `${base}/ws${roomPath}?token=${encodeURIComponent(this.config.token)}`
+    const token = await this.getToken()
+    return `${base}/ws${roomPath}?token=${encodeURIComponent(token)}`
   }
 
   /**
@@ -382,14 +396,16 @@ export class WebSocketClient {
  * Factory function to create configured WebSocket client
  *
  * @param roomId Room identifier
- * @param token JWT token
+ * @param token JWT token (deprecated — prefer tokenProvider)
  * @param onMessage Message handler callback
+ * @param tokenProvider Async function returning fresh JWT on every connect/reconnect
  * @returns Configured WebSocketClient instance
  */
 export function createEngineClient(
   roomId: string,
   token: string,
-  onMessage: (payload: any) => void
+  onMessage: (payload: any) => void,
+  tokenProvider?: () => Promise<string>,
 ): WebSocketClient {
-  return new WebSocketClient({ roomId, token, onMessage })
+  return new WebSocketClient({ roomId, token, onMessage, tokenProvider })
 }

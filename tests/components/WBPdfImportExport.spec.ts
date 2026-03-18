@@ -170,18 +170,14 @@ describe('[WB:B5.1] PDF Import & Export', () => {
 
   // ── 2. Export dialog disables "Annotated PDF" when no PDF pages ──
 
-  it('disables Annotated PDF option when pdfPageCount is 0', () => {
+  it('does not show Annotated PDF option when pdfPageCount is 0', () => {
     const wrapper = mountExportDialog(0)
 
     const formats = wrapper.findAll('.wb-export-format')
     const annotatedPdf = formats.find(f => f.text().includes('Annotated PDF'))
 
-    expect(annotatedPdf).toBeTruthy()
-    expect(annotatedPdf!.classes()).toContain('wb-export-format--disabled')
-
-    // Radio should be disabled
-    const radio = annotatedPdf!.find('input[type="radio"]')
-    expect(radio.attributes('disabled')).toBeDefined()
+    // annotated_pdf format is not added to the list when no PDF pages
+    expect(annotatedPdf).toBeFalsy()
   })
 
   // ── 3. Shows annotation type filters for annotated_pdf ───────────
@@ -290,12 +286,13 @@ describe('[WB:B5.1] PDF Import & Export', () => {
     expect(annotatedPdf!.attributes('title')).toBe('Export PDF with your annotations merged')
   })
 
-  it('shows "no PDF pages" tooltip when disabled', () => {
+  it('does not render annotated PDF tooltip when no PDF pages', () => {
     const wrapper = mountExportDialog(0)
 
     const formats = wrapper.findAll('.wb-export-format')
     const annotatedPdf = formats.find(f => f.text().includes('Annotated PDF'))
 
-    expect(annotatedPdf!.attributes('title')).toBe('No PDF pages in this session')
+    // Format is simply not rendered when pdfPageCount is 0
+    expect(annotatedPdf).toBeFalsy()
   })
 })

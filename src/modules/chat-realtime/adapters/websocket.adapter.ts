@@ -73,6 +73,7 @@ export class WebSocketAdapter implements ChatTransport {
       this.wsClient = new WebSocketClient({
         roomId: this.config.threadId,
         token: this.config.token,
+        tokenProvider: this.config.tokenProvider,
         baseUrl: this.wsOptions.wsUrl,
         onMessage: this.handleIncomingMessage.bind(this),
         onConnect: () => {

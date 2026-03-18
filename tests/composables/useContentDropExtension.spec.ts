@@ -31,12 +31,12 @@ describe('DEFAULT_BOARD_SIZES', () => {
     expect(DEFAULT_BOARD_SIZES.image).toEqual({ w: 400, h: 300 })
   })
 
-  it('audio_player has 320x80', () => {
-    expect(DEFAULT_BOARD_SIZES.audio_player).toEqual({ w: 320, h: 80 })
+  it('audio_player has 360x80', () => {
+    expect(DEFAULT_BOARD_SIZES.audio_player).toEqual({ w: 360, h: 80 })
   })
 
-  it('video_player has 480x270', () => {
-    expect(DEFAULT_BOARD_SIZES.video_player).toEqual({ w: 480, h: 270 })
+  it('video_player has 640x360', () => {
+    expect(DEFAULT_BOARD_SIZES.video_player).toEqual({ w: 640, h: 360 })
   })
 })
 

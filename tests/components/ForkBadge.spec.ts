@@ -41,8 +41,7 @@ describe('ForkBadge', () => {
 
   it('links to original lesson', () => {
     const w = mountBadge({ tutor_name: 'Alice', tutor_slug: 'alice', slug: 'lesson-1' })
-    const link = w.find('a')
-    expect(link.attributes('href')).toBe('/lesson/alice/lesson-1')
+    expect(w.html()).toContain('/lesson/alice/lesson-1')
   })
 
   it('renders nothing when parentLesson is null', () => {

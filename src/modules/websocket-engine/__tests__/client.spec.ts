@@ -48,13 +48,13 @@ describe('WebSocketClient', () => {
     expect(client.pendingCount).toBe(0)
   })
 
-  it('should build correct WebSocket URL', () => {
+  it('should build correct WebSocket URL', async () => {
     client = new WebSocketClient({
       roomId: 'test-room',
       token: 'test-token',
       onMessage: vi.fn(),
     })
-    const url = (client as any).buildUrl()
+    const url = await (client as any).buildUrl()
     expect(url).toContain('/ws/room/test-room/')
     expect(url).toContain('token=test-token')
   })

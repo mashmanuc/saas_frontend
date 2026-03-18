@@ -7,20 +7,28 @@
     </div>
 
     <!-- Error state -->
-    <div v-else-if="error" class="wb-public-view__error">
-      <h2>{{ error.title }}</h2>
-      <p>{{ error.message }}</p>
+    <div v-else-if="loadError" class="wb-public-view__error">
+      <h2>{{ loadError.title }}</h2>
+      <p>{{ loadError.message }}</p>
       <router-link to="/winterboard" class="wb-public-view__back-btn">
         {{ t('winterboard.public.goBack') }}
       </router-link>
     </div>
 
-    <!-- Read-only canvas -->
-    <template v-else-if="sessionData">
+    <!-- Read-only canvas — store is SSOT -->
+    <template v-else-if="isHydrated">
       <header class="wb-public-view__header">
-        <h1 class="wb-public-view__title">{{ sessionData.name || t('winterboard.room.untitled') }}</h1>
+        <h1 class="wb-public-view__title">{{ store.workspaceName || t('winterboard.room.untitled') }}</h1>
         <span class="wb-public-view__badge">{{ t('winterboard.public.readOnly') }}</span>
         <div class="wb-public-view__header-actions">
+          <button
+            v-if="hasReplayData"
+            type="button"
+            class="wb-replay-toggle-btn"
+            @click="toggleReplayMode"
+          >
+            {{ isReplayMode ? t('winterboard.public.staticView') : t('winterboard.public.watchReplay') }}
+          </button>
           <button
             v-if="allowDownload"
             type="button"
@@ -35,9 +43,9 @@
       <div class="wb-public-view__canvas-area">
         <WBCanvas
           ref="canvasRef"
-          :strokes="currentPageStrokes"
-          :assets="currentPageAssets"
-          :page-id="currentPageId"
+          :strokes="store.currentStrokes"
+          :assets="store.currentAssets"
+          :page-id="store.currentPage?.id ?? ''"
           :read-only="true"
           color="#000000"
           tool="select"
@@ -45,24 +53,45 @@
         />
       </div>
 
+      <!-- Replay player (above footer) -->
+      <PublicReplayPlayer
+        v-if="isReplayMode && hasReplayData"
+        :current-seconds="replayCurrentSeconds"
+        :duration-seconds="replayDurationSeconds"
+        :is-playing="replay.state.value === 'playing'"
+        :markers="replayMarkers"
+        @play="handleReplayPlay"
+        @pause="handleReplayPause"
+        @seek="handleReplaySeek"
+        @speed-change="handleSpeedChange"
+      />
+
+      <!-- Markers list (below player) -->
+      <PublicMarkersList
+        v-if="isReplayMode && replayMarkers.length > 0"
+        :markers="replayMarkers"
+        :current-time-ms="replayCurrentSeconds * 1000"
+        @seek="handleReplaySeek"
+      />
+
       <!-- Page navigation (read-only) -->
-      <footer v-if="pages.length > 1" class="wb-public-view__footer">
+      <footer v-if="store.pageCount > 1" class="wb-public-view__footer">
         <button
           type="button"
           class="wb-page-btn"
-          :disabled="currentPageIndex === 0"
-          @click="currentPageIndex--"
+          :disabled="store.currentPageIndex === 0"
+          @click="store.goToPage(store.currentPageIndex - 1)"
         >
           &larr;
         </button>
         <span class="wb-page-indicator">
-          {{ currentPageIndex + 1 }} / {{ pages.length }}
+          {{ store.currentPageIndex + 1 }} / {{ store.pageCount }}
         </span>
         <button
           type="button"
           class="wb-page-btn"
-          :disabled="currentPageIndex >= pages.length - 1"
-          @click="currentPageIndex++"
+          :disabled="store.currentPageIndex >= store.pageCount - 1"
+          @click="store.goToPage(store.currentPageIndex + 1)"
         >
           &rarr;
         </button>
@@ -72,47 +101,161 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { winterboardApi } from '../api/winterboardApi'
+import { useWBStore } from '../board/state/boardStore'
+import { useReplay } from '../composables/useReplay'
+import { applyReplayOperation } from '../engine/applyReplayOperation'
 import WBCanvas from '../components/canvas/WBCanvas.vue'
-import type { WBStroke, WBAsset, WBPage } from '../types/winterboard'
+import PublicReplayPlayer from '../components/public/PublicReplayPlayer.vue'
+import PublicMarkersList from '../components/public/PublicMarkersList.vue'
+import type { WBSession } from '../types/winterboard'
+import type { ReplaySpeed } from '../engine/WBReplayEngine'
 
 const { t } = useI18n()
 const route = useRoute()
-const router = useRouter()
+const store = useWBStore()
 
+// ── UI state (NOT board state — board lives in store) ──
 const isLoading = ref(true)
-const error = ref<{ title: string; message: string } | null>(null)
-const sessionData = ref<Record<string, unknown> | null>(null)
-const currentPageIndex = ref(0)
+const loadError = ref<{ title: string; message: string } | null>(null)
+const isHydrated = ref(false)
 const canvasRef = ref<InstanceType<typeof WBCanvas> | null>(null)
 
-// ── Computed ──
+// ── Replay ──
+const hasReplayData = ref(false)
+const isReplayMode = ref(false)
+const replayDurationSeconds = ref(0)
+const replaySessionId = ref<string | null>(null)
+let replay: ReturnType<typeof useReplay> | null = null
 
-const pages = computed<WBPage[]>(() => {
-  if (!sessionData.value?.state) return []
-  const state = sessionData.value.state as { pages?: WBPage[] }
-  return state.pages ?? []
+// Snapshot of board state before entering replay — to restore on exit
+let staticSnapshot: { pages: import('../types/winterboard').WBPage[]; currentPageIndex: number } | null = null
+
+const allowDownload = ref(false)
+
+// Replay current time — derived from engine progress + estimated duration
+const replayCurrentSeconds = computed(() => {
+  if (!replay || replayDurationSeconds.value <= 0) return 0
+  const total = replay.totalOperations.value
+  if (total <= 0) return 0
+  return (replay.currentIndex.value / total) * replayDurationSeconds.value
 })
 
-const currentPageId = computed(() => {
-  return pages.value[currentPageIndex.value]?.id ?? ''
+// Map lesson markers → replay marker format
+const replayMarkers = computed(() => {
+  if (!replay) return []
+  const totalOps = replay.totalOperations.value
+  const duration = replayDurationSeconds.value || 1
+  return replay.markers.value.map(m => ({
+    id: m.id,
+    title: m.title,
+    lesson_time_seconds: totalOps > 0
+      ? (m.operation_index / totalOps) * duration
+      : 0,
+    category: m.category,
+    page_id: m.page_id,
+  }))
 })
 
-const currentPageStrokes = computed<WBStroke[]>(() => {
-  return pages.value[currentPageIndex.value]?.strokes ?? []
-})
+// ── Replay mode toggle ──
 
-const currentPageAssets = computed<WBAsset[]>(() => {
-  return pages.value[currentPageIndex.value]?.assets ?? []
-})
+async function toggleReplayMode(): Promise<void> {
+  if (isReplayMode.value) {
+    exitReplayMode()
+  } else {
+    await enterReplayMode()
+  }
+}
 
-const allowDownload = computed(() => {
-  if (!sessionData.value) return false
-  return (sessionData.value as Record<string, unknown>).allow_download === true
-})
+async function enterReplayMode(): Promise<void> {
+  if (!replaySessionId.value) return
+
+  // Save static snapshot before replay
+  staticSnapshot = store.getSnapshotState()
+
+  // Prepare store for replay
+  store.setMode('replay')
+  store.resetForReplay()
+
+  // Create replay composable
+  replay = useReplay(replaySessionId.value)
+
+  // Load timeline — applyReplayOperation feeds ops into store
+  await replay.loadTimeline((op) => {
+    applyReplayOperation(store, op)
+  })
+
+  // Load lesson markers
+  await replay.loadMarkers()
+
+  isReplayMode.value = true
+
+  // Handle ?t= URL parameter — auto-seek to time
+  const tParam = route.query.t as string | undefined
+  if (tParam) {
+    const seconds = Number(tParam)
+    if (!isNaN(seconds) && seconds > 0) {
+      await handleReplaySeek(seconds * 1000)
+      return
+    }
+  }
+
+  // Auto-play
+  replay.play()
+}
+
+function exitReplayMode(): void {
+  // Stop and destroy replay engine
+  if (replay) {
+    replay.stop()
+    replay.destroy()
+    replay = null
+  }
+
+  // Restore board state from static snapshot
+  if (staticSnapshot) {
+    store.loadSnapshot(staticSnapshot)
+    staticSnapshot = null
+  }
+
+  store.setMode('readonly')
+  isReplayMode.value = false
+}
+
+// ── Replay handlers ──
+
+function handleReplayPlay(): void {
+  replay?.play()
+}
+
+function handleReplayPause(): void {
+  replay?.pause()
+}
+
+async function handleReplaySeek(timeMs: number): Promise<void> {
+  if (!replay || replayDurationSeconds.value <= 0) return
+
+  const ratio = (timeMs / 1000) / replayDurationSeconds.value
+  const targetIndex = Math.round(ratio * replay.totalOperations.value)
+
+  // Use snapshot-based seek for performance
+  await replay.seekToWithSnapshot(
+    targetIndex,
+    (boardState) => {
+      store.loadSnapshot(boardState as { pages: import('../types/winterboard').WBPage[]; currentPageIndex: number })
+    },
+    () => {
+      store.resetForReplay()
+    },
+  )
+}
+
+function handleSpeedChange(speed: number): void {
+  replay?.setSpeed(speed as ReplaySpeed)
+}
 
 // ── Download ──
 
@@ -126,7 +269,7 @@ function handleDownload(): void {
     const dataUrl = stage.toDataURL({ pixelRatio: 2 })
     const link = document.createElement('a')
     link.href = dataUrl
-    link.download = `${(sessionData.value?.name as string) || 'winterboard'}-page-${currentPageIndex.value + 1}.png`
+    link.download = `${store.workspaceName || 'winterboard'}-page-${store.currentPageIndex + 1}.png`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -140,7 +283,7 @@ function handleDownload(): void {
 onMounted(async () => {
   const token = route.params.token as string
   if (!token) {
-    error.value = {
+    loadError.value = {
       title: t('winterboard.public.notFound'),
       message: t('winterboard.public.invalidLink'),
     }
@@ -149,22 +292,58 @@ onMounted(async () => {
   }
 
   try {
-    const data = await winterboardApi.getPublicSession(token)
-    sessionData.value = data
+    // Fetch public session data from API
+    const data = await winterboardApi.getPublicSession(token) as unknown as WBSession
+
+    // Hydrate store — store is SSOT, no shadow state
+    store.hydrateFromSession(data)
+    store.setMode('readonly')
+
+    // allow_download is API-only field, not part of store state
+    allowDownload.value = (data as unknown as Record<string, unknown>).allow_download === true
+
+    const sessionId = data.id
+    replaySessionId.value = sessionId
+
+    // Check for replay data (non-blocking)
+    if (sessionId) {
+      try {
+        const { fetchReplayTimeline, fetchLessonMarkers } = await import('../api/replay')
+        const timeline = await fetchReplayTimeline(sessionId).catch(() => ({ operations: [], total_operations: 0 }))
+        hasReplayData.value = timeline.total_operations > 0
+        if (timeline.total_operations > 0) {
+          const ops = timeline.operations as Array<{ lesson_time_seconds?: number }>
+          const lastOp = ops[ops.length - 1]
+          if (lastOp?.lesson_time_seconds) {
+            replayDurationSeconds.value = lastOp.lesson_time_seconds
+          }
+        }
+      } catch {
+        // Replay data optional — don't block static view
+      }
+    }
+
+    isHydrated.value = true
+
+    // If ?t= is present and replay data exists, auto-enter replay mode
+    const tParam = route.query.t as string | undefined
+    if (tParam && hasReplayData.value) {
+      await enterReplayMode()
+    }
   } catch (err: unknown) {
     const status = (err as { response?: { status?: number } })?.response?.status
     if (status === 404) {
-      error.value = {
+      loadError.value = {
         title: t('winterboard.public.notFound'),
         message: t('winterboard.public.sessionNotFound'),
       }
     } else if (status === 410) {
-      error.value = {
+      loadError.value = {
         title: t('winterboard.public.expired'),
         message: t('winterboard.public.linkExpired'),
       }
     } else {
-      error.value = {
+      loadError.value = {
         title: t('winterboard.public.error'),
         message: t('winterboard.public.loadFailed'),
       }
@@ -173,6 +352,15 @@ onMounted(async () => {
   } finally {
     isLoading.value = false
   }
+})
+
+onBeforeUnmount(() => {
+  if (replay) {
+    replay.stop()
+    replay.destroy()
+    replay = null
+  }
+  store.$reset()
 })
 </script>
 
@@ -266,6 +454,22 @@ onMounted(async () => {
 }
 
 .wb-download-btn:hover {
+  background: var(--wb-primary-hover, #1d4ed8);
+}
+
+.wb-replay-toggle-btn {
+  padding: 0.375rem 1rem;
+  background: var(--wb-primary, #2563eb);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.wb-replay-toggle-btn:hover {
   background: var(--wb-primary-hover, #1d4ed8);
 }
 

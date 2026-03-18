@@ -101,7 +101,7 @@ describe('useDashboardStats', () => {
   it('tutor stats have correct navigation links', () => {
     const { stats } = useDashboardStats('tutor')
     const lessons = stats.value.find(s => s.key === 'lessonsToday')
-    expect(lessons?.to).toBe('/booking/tutor')
+    expect(lessons?.to).toBe('/tutor/schedule')
     const inquiries = stats.value.find(s => s.key === 'pendingInquiries')
     expect(inquiries?.to).toBe('/tutor/inquiries')
   })
@@ -109,10 +109,10 @@ describe('useDashboardStats', () => {
   it('student stats have correct navigation links', () => {
     const { stats } = useDashboardStats('student')
     const upcoming = stats.value.find(s => s.key === 'upcomingLessons')
-    expect(upcoming?.to).toBe('/calendar')
+    expect(upcoming?.to).toBe('/student/schedule')
     const tutors = stats.value.find(s => s.key === 'activeTutors')
     expect(tutors?.to).toBe('/marketplace')
     const unread = stats.value.find(s => s.key === 'unreadMessages')
-    expect(unread?.to).toBe('/chat')
+    expect(unread?.to).toBe('/student/messages')
   })
 })

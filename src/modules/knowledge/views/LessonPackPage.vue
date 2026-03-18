@@ -46,8 +46,18 @@
           </p>
         </header>
 
+        <!-- E1: Empty pack state -->
+        <section v-if="pack.items.length === 0" class="lesson-pack-page__empty">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+            <rect x="6" y="10" width="36" height="28" rx="4" stroke="#94a3b8" stroke-width="2"/>
+            <path d="M6 18h36" stroke="#94a3b8" stroke-width="2"/>
+            <path d="M20 28h8M24 24v8" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <p class="lesson-pack-page__empty-text">Ця серія поки що порожня. Уроки будуть додані пізніше.</p>
+        </section>
+
         <!-- Lesson list -->
-        <section class="lesson-pack-page__lessons" aria-label="Уроки серії">
+        <section v-else class="lesson-pack-page__lessons" aria-label="Уроки серії">
           <ol class="lesson-pack-page__list">
             <li
               v-for="(item, idx) in pack.items"
@@ -55,7 +65,7 @@
               class="lesson-pack-page__item"
             >
               <a
-                :href="`/lesson/${item.lesson.tutor.slug}/${item.lesson.slug}`"
+                :href="`/lesson/${item.lesson?.tutor?.slug}/${item.lesson?.slug}`"
                 class="lesson-pack-page__item-link"
               >
                 <span class="lesson-pack-page__item-number">{{ idx + 1 }}</span>
@@ -66,6 +76,7 @@
                     :alt="item.lesson.title"
                     class="lesson-pack-page__item-img"
                     loading="lazy"
+                    @error="(e: Event) => (e.target as HTMLImageElement).style.display = 'none'"
                   />
                   <div v-else class="lesson-pack-page__item-placeholder">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -133,9 +144,9 @@ const packSlug = computed(() => route.params.packSlug as string)
 
 // ── Phase 16 INT-13: Breadcrumbs ─────────────────────────────────────────────
 const breadcrumbs = computed(() => [
-  { label: t('knowledge.breadcrumbs.knowledge'), to: '/knowledge' },
-  { label: t('knowledge.breadcrumbs.series'), to: '/knowledge/packs' },
-  { label: pack.value?.title || '' },
+  { label: t('breadcrumb.catalog'), to: '/knowledge/catalog' },
+  { label: pack.value?.tutor_name || '...', to: `/marketplace/tutors/${pack.value?.tutor_slug}` },
+  { label: pack.value?.title || '...' },
 ])
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -351,6 +362,24 @@ onMounted(async () => {
   color: #475569;
   line-height: 1.6;
   margin: 0;
+}
+
+/* ── Empty pack ────────────────────────────────────────────────── */
+.lesson-pack-page__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 16px;
+  text-align: center;
+}
+
+.lesson-pack-page__empty-text {
+  font-size: 15px;
+  color: #64748b;
+  margin: 0;
+  max-width: 360px;
+  line-height: 1.5;
 }
 
 /* ── Lesson list ───────────────────────────────────────────────── */

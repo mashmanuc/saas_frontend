@@ -32,10 +32,14 @@ function makeAchievement(overrides = {}) {
   }
 }
 
+const TransitionStub = {
+  template: '<span v-if="$slots.default"><slot /></span>',
+}
+
 function mountBadge(overrides = {}) {
   return mount(AchievementBadge, {
     props: { achievement: makeAchievement(overrides) },
-    global: { plugins: [i18n] },
+    global: { plugins: [i18n], stubs: { Transition: TransitionStub } },
   })
 }
 

@@ -17,6 +17,7 @@ import type {
   WBPageGridSettings,
 } from '../../types/winterboard'
 import type { PdfPageResult } from '../../api/winterboardApi'
+import type { RecordOperationRequest } from '../../types/replay'
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -206,6 +207,9 @@ export interface WBBoardState {
   workspaceName: string
   ownerId: string | null
 
+  // R0: Board runtime mode — edit (normal), replay (playback), readonly (public static)
+  mode: 'edit' | 'replay' | 'readonly'
+
   // Sync metadata (LAW-02)
   lastSavedAt: Date | null
   isDirty: boolean
@@ -277,6 +281,29 @@ function trimStack(stack: UndoAction[]): UndoAction[] {
   return stack
 }
 
+// ─── Phase 20: Operation Emitter ─────────────────────────────────────────────
+// Listeners receive every board-data operation emitted from store actions.
+// Used by useReplayRecorder to auto-record without UI involvement.
+
+export type OperationListener = (op: RecordOperationRequest) => void
+
+const _operationListeners: OperationListener[] = []
+
+/** Phase 20: Reset listeners — exposed for test isolation only */
+export function _resetOperationListeners(): void {
+  _operationListeners.length = 0
+}
+
+function _emitOperation(op: RecordOperationRequest): void {
+  for (const listener of _operationListeners) {
+    try {
+      listener(op)
+    } catch (e) {
+      console.warn('[WB:Store] operation listener error:', e)
+    }
+  }
+}
+
 // ─── Store Definition ───────────────────────────────────────────────────────
 
 export const useWBStore = defineStore('wb-board', {
@@ -284,6 +311,8 @@ export const useWBStore = defineStore('wb-board', {
     workspaceId: null,
     workspaceName: 'Untitled',
     ownerId: null,
+
+    mode: 'edit',
 
     lastSavedAt: null,
     isDirty: false,
@@ -439,6 +468,50 @@ export const useWBStore = defineStore('wb-board', {
       this.redoStack = []
     },
 
+    // ── R0: Mode & Replay Lifecycle ──────────────────────────────────────
+
+    setMode(mode: 'edit' | 'replay' | 'readonly'): void {
+      this.mode = mode
+    },
+
+    // Phase 20: Subscribe to board operations. Returns unsubscribe function.
+    onOperation(listener: OperationListener): () => void {
+      _operationListeners.push(listener)
+      return () => {
+        const idx = _operationListeners.indexOf(listener)
+        if (idx >= 0) _operationListeners.splice(idx, 1)
+      }
+    },
+
+    /** Reset board state for replay playback — clean slate with single empty page */
+    resetForReplay(): void {
+      this.pages = [createEmptyPage(0)]
+      this.currentPageIndex = 0
+      this.undoStack = []
+      this.redoStack = []
+      this.isDirty = false
+      this.selectedIds = []
+    },
+
+    /** Load full board state from snapshot (for seek optimization) */
+    loadSnapshot(state: { pages: WBPage[]; currentPageIndex: number }): void {
+      if (state.pages && Array.isArray(state.pages)) {
+        this.pages = state.pages
+      }
+      this.currentPageIndex = state.currentPageIndex ?? 0
+      this.undoStack = []
+      this.redoStack = []
+      this.selectedIds = []
+    },
+
+    /** Get serializable state for snapshot creation */
+    getSnapshotState(): { pages: WBPage[]; currentPageIndex: number } {
+      return {
+        pages: JSON.parse(JSON.stringify(this.pages)),
+        currentPageIndex: this.currentPageIndex,
+      }
+    },
+
     // ── Dirty / Sync ─────────────────────────────────────────────────────
 
     markDirty(): void {
@@ -474,11 +547,11 @@ export const useWBStore = defineStore('wb-board', {
       const page = this.pages[pageIndex]
       if (!page) return
       const DEFAULT_GRID: WBPageGridSettings = {
-        enabled: true,
+        enabled: false,
         size: 20,
         style: 'dots',
         color: '#000000',
-        // 0.4 = matches DEFAULT_PAGE_GRID in usePageGrid.ts (was 0.15 — too faint)
+        // 0.4 = matches DEFAULT_PAGE_GRID in usePageGrid.ts
         opacity: 0.4,
       }
       const existing: WBPageGridSettings = page.grid ?? DEFAULT_GRID
@@ -640,6 +713,16 @@ export const useWBStore = defineStore('wb-board', {
       }
 
       this.markDirty()
+
+      // Phase 20: emit operation for recording
+      if (this.mode === 'edit' && !opts?.skipHistory) {
+        _emitOperation({
+          op_type: 'stroke_add',
+          page_id: this.pages[pageIndex]?.id ?? '',
+          payload: { stroke },
+          timestamp: Date.now(),
+        })
+      }
     },
 
     updateStroke(updatedStroke: WBStroke, opts?: { skipHistory?: boolean }): void {
@@ -667,6 +750,16 @@ export const useWBStore = defineStore('wb-board', {
       this.pages[pageIndex] = { ...page, strokes: newStrokes }
 
       this.markDirty()
+
+      // Phase 20: emit operation for recording
+      if (this.mode === 'edit' && !opts?.skipHistory) {
+        _emitOperation({
+          op_type: 'stroke_update',
+          page_id: this.pages[pageIndex]?.id ?? '',
+          payload: { stroke: updatedStroke },
+          timestamp: Date.now(),
+        })
+      }
     },
 
     deleteStroke(strokeId: string, opts?: { skipHistory?: boolean }): void {
@@ -694,6 +787,16 @@ export const useWBStore = defineStore('wb-board', {
       }
 
       this.markDirty()
+
+      // Phase 20: emit operation for recording
+      if (this.mode === 'edit' && !opts?.skipHistory) {
+        _emitOperation({
+          op_type: 'stroke_delete',
+          page_id: this.pages[pageIndex]?.id ?? '',
+          payload: { stroke_id: strokeId },
+          timestamp: Date.now(),
+        })
+      }
     },
 
     // ── Asset Actions ────────────────────────────────────────────────────
@@ -720,6 +823,16 @@ export const useWBStore = defineStore('wb-board', {
       }
 
       this.markDirty()
+
+      // Phase 20: emit operation for recording
+      if (this.mode === 'edit' && !opts?.skipHistory) {
+        _emitOperation({
+          op_type: 'asset_add',
+          page_id: this.pages[pageIndex]?.id ?? '',
+          payload: { asset },
+          timestamp: Date.now(),
+        })
+      }
     },
 
     updateAsset(asset: WBAsset, opts?: { skipHistory?: boolean }): void {
@@ -747,6 +860,16 @@ export const useWBStore = defineStore('wb-board', {
       this.pages[pageIndex] = { ...page, assets: newAssets }
 
       this.markDirty()
+
+      // Phase 20: emit operation for recording
+      if (this.mode === 'edit' && !opts?.skipHistory) {
+        _emitOperation({
+          op_type: 'asset_update',
+          page_id: this.pages[pageIndex]?.id ?? '',
+          payload: { asset },
+          timestamp: Date.now(),
+        })
+      }
     },
 
     deleteAsset(assetId: string, opts?: { skipHistory?: boolean }): void {
@@ -774,6 +897,16 @@ export const useWBStore = defineStore('wb-board', {
       }
 
       this.markDirty()
+
+      // Phase 20: emit operation for recording
+      if (this.mode === 'edit' && !opts?.skipHistory) {
+        _emitOperation({
+          op_type: 'asset_delete',
+          page_id: this.pages[pageIndex]?.id ?? '',
+          payload: { asset_id: assetId },
+          timestamp: Date.now(),
+        })
+      }
     },
 
     // ── Undo / Redo (LAW-19) ─────────────────────────────────────────────
@@ -1198,11 +1331,50 @@ export const useWBStore = defineStore('wb-board', {
 
       this.pages[pageIndex] = { ...page, strokes: [], assets: [] }
       this.markDirty()
+
+      // Phase 20: emit operation for recording
+      if (this.mode === 'edit') {
+        _emitOperation({
+          op_type: 'clear_page',
+          page_id: page.id ?? '',
+          payload: {},
+          timestamp: Date.now(),
+        })
+      }
     },
 
     goToPage(index: number): void {
       if (!Number.isFinite(index)) return
+      const prevIndex = this.currentPageIndex
       this.currentPageIndex = Math.max(0, Math.min(this.pages.length - 1, index))
+
+      // Phase 20: emit only if page actually changed and in edit mode
+      if (this.mode === 'edit' && this.currentPageIndex !== prevIndex) {
+        _emitOperation({
+          op_type: 'page_navigate',
+          page_id: this.pages[this.currentPageIndex]?.id ?? '',
+          payload: { pageIndex: this.currentPageIndex },
+          timestamp: Date.now(),
+        })
+      }
+    },
+
+    /**
+     * R0: Delete page by index without undo support.
+     * Used by replay engine — replay operations are not undoable.
+     * Cannot delete last remaining page.
+     */
+    deletePage(index: number): void {
+      if (this.pages.length <= 1) return
+      if (index < 0 || index >= this.pages.length) return
+
+      this.pages = this.pages.filter((_, i) => i !== index)
+
+      if (this.currentPageIndex >= this.pages.length) {
+        this.currentPageIndex = this.pages.length - 1
+      } else if (this.currentPageIndex > index) {
+        this.currentPageIndex--
+      }
     },
 
     addPage(opts?: { background?: WBPageBackground; width?: number; height?: number; name?: string }): void {
@@ -1210,6 +1382,8 @@ export const useWBStore = defineStore('wb-board', {
         console.warn('[WB:Store] Max 200 pages reached')
         return
       }
+      // A1: Inherit grid from current page so tutor's grid preference carries over
+      const currentPage = this.pages[this.currentPageIndex]
       const newPage: WBPage = {
         id: generatePageId(),
         name: opts?.name ?? `Page ${this.pages.length + 1}`,
@@ -1218,10 +1392,29 @@ export const useWBStore = defineStore('wb-board', {
         background: opts?.background ?? 'white',
         width: opts?.width,
         height: opts?.height,
+        grid: currentPage?.grid ? { ...currentPage.grid } : undefined,
       }
       this.pages = [...this.pages, newPage]
       this.currentPageIndex = this.pages.length - 1
       this.markDirty()
+
+      // Phase 20: emit operation for recording
+      if (this.mode === 'edit') {
+        _emitOperation({
+          op_type: 'page_add',
+          page_id: newPage.id,
+          payload: {
+            page: {
+              id: newPage.id,
+              name: newPage.name,
+              background: newPage.background,
+              width: newPage.width,
+              height: newPage.height,
+            },
+          },
+          timestamp: Date.now(),
+        })
+      }
     },
 
     /**
@@ -1304,6 +1497,8 @@ export const useWBStore = defineStore('wb-board', {
         console.warn('[WB:Store] Max 200 pages reached')
         return ''
       }
+      // A1: Inherit grid from current page so tutor's grid preference carries over
+      const currentPage = this.pages[this.currentPageIndex]
       const newPage: WBPage = {
         id: generatePageId(),
         name: opts?.name ?? `Page ${this.pages.length + 1}`,
@@ -1312,6 +1507,7 @@ export const useWBStore = defineStore('wb-board', {
         background: opts?.background ?? 'white',
         width: opts?.width,
         height: opts?.height,
+        grid: currentPage?.grid ? { ...currentPage.grid } : undefined,
       }
 
       this.pages = [...this.pages, newPage]
@@ -1326,6 +1522,24 @@ export const useWBStore = defineStore('wb-board', {
       this.undoStack = trimStack([...this.undoStack, action])
       this.redoStack = []
       this.markDirty()
+
+      // Phase 20: emit operation for recording
+      if (this.mode === 'edit') {
+        _emitOperation({
+          op_type: 'page_add',
+          page_id: newPage.id,
+          payload: {
+            page: {
+              id: newPage.id,
+              name: newPage.name,
+              background: newPage.background,
+              width: newPage.width,
+              height: newPage.height,
+            },
+          },
+          timestamp: Date.now(),
+        })
+      }
       return newPage.id
     },
 
@@ -1359,6 +1573,16 @@ export const useWBStore = defineStore('wb-board', {
       this.undoStack = trimStack([...this.undoStack, action])
       this.redoStack = []
       this.markDirty()
+
+      // Phase 20: emit operation for recording
+      if (this.mode === 'edit') {
+        _emitOperation({
+          op_type: 'page_delete',
+          page_id: deletedPage.id,
+          payload: { page_id: deletedPage.id },
+          timestamp: Date.now(),
+        })
+      }
       return true
     },
 
@@ -1412,6 +1636,16 @@ export const useWBStore = defineStore('wb-board', {
       this.pages[pageIndex] = { ...page, strokes: lockedStrokes, assets: lockedAssets }
       this.selectedIds = []
       this.markDirty()
+
+      // Phase 20: emit operation for recording
+      if (this.mode === 'edit') {
+        _emitOperation({
+          op_type: 'clear_page',
+          page_id: page.id ?? '',
+          payload: {},
+          timestamp: Date.now(),
+        })
+      }
     },
 
     /**

@@ -1151,8 +1151,8 @@
       "devPlayground": "Dev Playground",
       "knowledgeHub": "Мої уроки",
       "lessonCatalog": "Каталог",
-      "templateLibrary": "Шаблони",
-      "myPacks": "Курси",
+      "templateLibrary": "Бібліотека шаблонів",
+      "myPacks": "Мої серії",
       "knowledgeAnalytics": "Аналітика"
     },
     "hint": {
@@ -1168,7 +1168,10 @@
       "tutorProfile": "Ваш публічний профіль на маркетплейсі",
       "billing": "Фінанси, підписка та платежі",
       "settings": "Налаштування акаунту і сповіщень",
-      "notifications": "Непрочитані сповіщення"
+      "notifications": "Непрочитані сповіщення",
+      "templateLibrary": "Шаблони уроків спільноти",
+      "myPacks": "Серії ваших уроків",
+      "knowledgeAnalytics": "Статистика переглядів та форків"
     },
     "collapse": "Згорнути меню",
     "expand": "Розгорнути меню",
@@ -1177,6 +1180,15 @@
     "badge": {
       "ariaLabel": "{count} нових"
     }
+  },
+  "breadcrumb": {
+    "home": "Головна",
+    "knowledgeHub": "Knowledge Hub",
+    "catalog": "Каталог",
+    "library": "Бібліотека",
+    "packs": "Серії",
+    "analytics": "Аналітика",
+    "collections": "Колекції"
   },
   "sidebarCoaching": {
     "step1": "Тут будуть ваші створені уроки. Почніть з дошки!",
@@ -6663,7 +6675,10 @@
       "expired": "Посилання прострочене",
       "linkExpired": "Термін дії цього посилання закінчився",
       "error": "Помилка",
-      "loadFailed": "Не вдалося завантажити дошку"
+      "loadFailed": "Не вдалося завантажити дошку",
+      "watchReplay": "Переглянути replay",
+      "staticView": "Статичний вигляд",
+      "replayNotAvailable": "Replay недоступний"
     },
     "error": {
       "title": "Щось пішло не так",
@@ -6714,7 +6729,8 @@
       "hidePagePanel": "Сховати панель сторінок",
       "showPagePanel": "Показати панель сторінок",
       "syncError": "Помилка синхронізації",
-      "followMode": "Режим слідкування"
+      "followMode": "Режим слідкування",
+      "publish": "Опублікувати урок"
     },
     "selection": {
       "toolbar": "Панель виділення",
@@ -6751,7 +6767,11 @@
         "practice": "Практика",
         "solution": "Рішення",
         "custom": "Інше"
-      }
+      },
+      "onboardingHint": "Додайте мітки до уроку для навігації",
+      "dismiss": "Зрозуміло",
+      "expand": "Розгорнути карту уроку",
+      "collapse": "Згорнути карту уроку"
     },
     "markerModal": {
       "title": "Створити маркер",
@@ -7058,7 +7078,23 @@
       "noMaterials": "Матеріали не додані",
       "statusDraft": "Чернетка",
       "statusInProgress": "Урок йде",
-      "statusCompleted": "Завершено"
+      "statusCompleted": "Завершено",
+      "saveTitle": "Зберегти як урок",
+      "saveSubtitle": "Збережіть поточний стан дошки як урок у вашу бібліотеку",
+      "titleLabel": "Назва уроку",
+      "titlePlaceholder": "Наприклад: Рівняння з модулем",
+      "saveButton": "Зберегти як урок",
+      "saving": "Зберігаю…",
+      "saved": "Урок збережено",
+      "saveError": "Не вдалося зберегти урок",
+      "myLessonsTitle": "Мої уроки",
+      "emptyTitle": "Уроків поки немає",
+      "emptySubtitle": "Збережіть свою першу дошку як урок",
+      "openButton": "Відкрити",
+      "opening": "Відкриваю…",
+      "openError": "Не вдалося відкрити урок",
+      "fetchError": "Не вдалося завантажити уроки",
+      "viewMyLessons": "Переглянути мої уроки"
     },
     "replay": {
       "viewReplay": "Переглянути урок",
@@ -7260,7 +7296,16 @@
       "analyticsTitle": "Аналітика",
       "analyticsDesc": "Статистика ваших уроків",
       "collectionsTitle": "Підбірки",
-      "collectionsDesc": "Тематичні підбірки уроків"
+      "collectionsDesc": "Тематичні підбірки уроків",
+      "showAll": "Показати всі",
+      "showLess": "Показати останні",
+      "totalLessons": "{count} уроків всього",
+      "deleteLesson": "Видалити",
+      "deleteLessonConfirm": "Видалити \"{title}\"? Урок зникне з каталогу. Цю дію не можна скасувати.",
+      "deleteLessonCancel": "Скасувати",
+      "deleteLessonConfirmBtn": "Видалити",
+      "lessonDeleted": "Урок видалено",
+      "openBoard": "Відкрити дошку"
     },
     "terms": {
       "title": "Поради",
@@ -7300,7 +7345,8 @@
     "replay": {
       "shareMoment": "Поділитися моментом",
       "momentCopied": "Посилання на момент скопійовано!",
-      "momentBadge": "Момент: {time}"
+      "momentBadge": "Момент: {time}",
+      "noOperations": "На цій дошці ще немає записів"
     },
     "tabLessons": "Уроки",
     "tabTemplates": "Шаблони",
@@ -7475,6 +7521,7 @@
       "emptyTitle": "Нічого не знайдено",
       "emptySubtitle": "Спробуйте змінити фільтри або пошуковий запит",
       "resetFilters": "Скинути фільтри",
+      "filteredByTutor": "Уроки тьютора",
       "globalEmptyTitle": "Каталог поки порожній",
       "globalEmptyText": "Станьте першим! Створіть урок на дошці та опублікуйте його в каталог.",
       "createLesson": "Створити урок",

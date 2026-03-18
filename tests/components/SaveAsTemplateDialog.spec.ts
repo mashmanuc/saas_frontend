@@ -1,6 +1,7 @@
 // Phase 14 B3.3: Tests for SaveAsTemplateDialog component
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 import SaveAsTemplateDialog from '@/modules/knowledge/components/SaveAsTemplateDialog.vue'
 
@@ -56,14 +57,23 @@ const defaultProps = {
   thumbnailUrl: null,
 }
 
-function mountDialog(propsOverrides = {}) {
-  return mount(SaveAsTemplateDialog, {
-    props: { ...defaultProps, ...propsOverrides },
+async function mountDialog(propsOverrides = {}) {
+  const props = { ...defaultProps, ...propsOverrides }
+  // Mount with modelValue=false first, then open to trigger watch prefill
+  const shouldOpen = props.modelValue !== false
+  const w = mount(SaveAsTemplateDialog, {
+    props: { ...props, modelValue: false },
     global: {
       plugins: [i18n],
+      stubs: { Teleport: true },
     },
-    attachTo: document.body,
   })
+  if (shouldOpen) {
+    await w.setProps({ modelValue: true })
+    await nextTick()
+    await nextTick()
+  }
+  return w
 }
 
 beforeEach(() => {
@@ -85,37 +95,37 @@ beforeEach(() => {
 })
 
 describe('SaveAsTemplateDialog', () => {
-  it('renders dialog title', () => {
-    const w = mountDialog()
+  it('renders dialog title', async () => {
+    const w = await mountDialog()
     expect(w.text()).toContain('Save as template')
   })
 
-  it('prefills lesson title', () => {
-    const w = mountDialog()
+  it('prefills lesson title', async () => {
+    const w = await mountDialog()
     const input = w.find('#template-title')
     expect((input.element as HTMLInputElement).value).toBe('Quadratic Equations')
   })
 
-  it('prefills subject tag', () => {
-    const w = mountDialog()
+  it('prefills subject tag', async () => {
+    const w = await mountDialog()
     const select = w.find('#template-subject')
     expect((select.element as HTMLSelectElement).value).toBe('math')
   })
 
-  it('renders all 10 subject options', () => {
-    const w = mountDialog()
+  it('renders all 10 subject options', async () => {
+    const w = await mountDialog()
     const options = w.findAll('#template-subject option')
     expect(options.length).toBe(10)
   })
 
-  it('has community checkbox checked by default', () => {
-    const w = mountDialog()
+  it('has community checkbox checked by default', async () => {
+    const w = await mountDialog()
     const checkbox = w.find('#is_community')
     expect((checkbox.element as HTMLInputElement).checked).toBe(true)
   })
 
   it('calls templateApi.saveAsTemplate on save', async () => {
-    const w = mountDialog()
+    const w = await mountDialog()
     const saveBtn = w.findAll('button').find(b => b.text() === 'Save template')
     expect(saveBtn).toBeTruthy()
     await saveBtn!.trigger('click')
@@ -128,7 +138,7 @@ describe('SaveAsTemplateDialog', () => {
   })
 
   it('emits saved and update:modelValue on success', async () => {
-    const w = mountDialog()
+    const w = await mountDialog()
     const saveBtn = w.findAll('button').find(b => b.text() === 'Save template')
     await saveBtn!.trigger('click')
     await flushPromises()
@@ -141,7 +151,7 @@ describe('SaveAsTemplateDialog', () => {
     mockSave.mockRejectedValueOnce({
       response: { data: { detail: 'Lesson not published' } },
     })
-    const w = mountDialog()
+    const w = await mountDialog()
     const saveBtn = w.findAll('button').find(b => b.text() === 'Save template')
     await saveBtn!.trigger('click')
     await flushPromises()
@@ -149,26 +159,26 @@ describe('SaveAsTemplateDialog', () => {
   })
 
   it('emits update:modelValue(false) on cancel', async () => {
-    const w = mountDialog()
+    const w = await mountDialog()
     const cancelBtn = w.findAll('button').find(b => b.text() === 'Cancel')
     await cancelBtn!.trigger('click')
     expect(w.emitted('update:modelValue')![0]).toEqual([false])
   })
 
-  it('is not rendered when modelValue is false', () => {
-    const w = mountDialog({ modelValue: false })
+  it('is not rendered when modelValue is false', async () => {
+    const w = await mountDialog({ modelValue: false })
     expect(w.find('[role="dialog"]').exists()).toBe(false)
   })
 
-  it('shows thumbnail when URL provided', () => {
-    const w = mountDialog({ thumbnailUrl: 'https://example.com/thumb.png' })
-    const img = w.find('img[alt="Quadratic Equations"]')
+  it('shows thumbnail when URL provided', async () => {
+    const w = await mountDialog({ thumbnailUrl: 'https://example.com/thumb.png' })
+    const img = w.find('img')
     expect(img.exists()).toBe(true)
     expect(img.attributes('src')).toBe('https://example.com/thumb.png')
   })
 
   it('disables save button when title is empty', async () => {
-    const w = mountDialog()
+    const w = await mountDialog()
     const input = w.find('#template-title')
     await input.setValue('')
     const saveBtn = w.findAll('button').find(b => b.text() === 'Save template')

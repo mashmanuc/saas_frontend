@@ -44,6 +44,8 @@ export interface TransportCallbacks {
 export interface TransportConfig {
   threadId: string
   token: string
+  /** Async token provider — called on every connect/reconnect to get a fresh JWT */
+  tokenProvider?: () => Promise<string>
   userId: number
   baseUrl?: string
   wsUrl?: string

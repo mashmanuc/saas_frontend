@@ -1,6 +1,6 @@
 // Phase 15 B3.3: Tests for LessonCollectionCard
 import { describe, it, expect } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, RouterLinkStub } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import LessonCollectionCard from '../components/LessonCollectionCard.vue'
 
@@ -19,11 +19,6 @@ const i18n = createI18n({
   },
 })
 
-const routerLinkStub = {
-  template: '<a :href="to" :aria-label="$attrs[\'aria-label\']" :class="$attrs.class"><slot /></a>',
-  props: ['to'],
-}
-
 function makeCollection(overrides = {}) {
   return {
     id: 'col-1',
@@ -41,7 +36,7 @@ function mountCard(overrides = {}, thumbnails: string[] = []) {
     props: { collection: makeCollection(overrides), thumbnails },
     global: {
       plugins: [i18n],
-      stubs: { RouterLink: routerLinkStub },
+      stubs: { RouterLink: RouterLinkStub },
     },
   })
 }
@@ -54,7 +49,7 @@ describe('LessonCollectionCard', () => {
 
   it('links to /knowledge/collections/{slug}', () => {
     const w = mountCard()
-    expect(w.find('a').attributes('href')).toBe('/knowledge/collections/top-math')
+    expect(w.html()).toContain('/knowledge/collections/top-math')
   })
 
   it('shows featured badge', () => {

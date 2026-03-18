@@ -17,12 +17,12 @@ describe('Bundle Optimization (A7.1)', () => {
       }
     })
 
-    it('WB module has 11 standalone lazy-loaded routes', async () => {
+    it('WB module has 5 standalone lazy-loaded routes', async () => {
       const routerModule = await import('../router')
       const routes = routerModule.default
 
-      // B14-B17: dashboard, library, lessons, lesson-detail, boards, students added
-      expect(routes.length).toBe(11)
+      // default export = standaloneRoutes only (own layout, no PageShell)
+      expect(routes.length).toBe(5)
 
       const routePaths = routes.map((r) => r.path)
       expect(routePaths).toContain('/winterboard/new')
@@ -30,12 +30,21 @@ describe('Bundle Optimization (A7.1)', () => {
       expect(routePaths).toContain('/winterboard/:id')
       expect(routePaths).toContain('/winterboard/classroom/:lessonId')
       expect(routePaths).toContain('/winterboard/public/:token')
-      expect(routePaths).toContain('/winterboard/dashboard')
-      expect(routePaths).toContain('/winterboard/library')
-      expect(routePaths).toContain('/winterboard/lessons')
-      expect(routePaths).toContain('/winterboard/lessons/:lessonId')
-      expect(routePaths).toContain('/winterboard/boards')
-      expect(routePaths).toContain('/winterboard/students')
+    })
+
+    it('WB module exports page routes for PageShell', async () => {
+      const { winterboardPageRoutes } = await import('../router')
+
+      // B14-B17: dashboard, library, lessons redirect, lesson-detail, boards, students
+      expect(winterboardPageRoutes.length).toBe(6)
+
+      const pagePaths = winterboardPageRoutes.map((r) => r.path)
+      expect(pagePaths).toContain('winterboard/dashboard')
+      expect(pagePaths).toContain('winterboard/library')
+      expect(pagePaths).toContain('winterboard/lessons')
+      expect(pagePaths).toContain('winterboard/lessons/:lessonId')
+      expect(pagePaths).toContain('winterboard/boards')
+      expect(pagePaths).toContain('winterboard/students')
     })
   })
 

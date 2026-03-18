@@ -1,18 +1,14 @@
 // Phase 13 B3.4: Tests for DemoLessonsSection + DemoLessonCard
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 import DemoLessonsSection from '@/modules/knowledge/components/DemoLessonsSection.vue'
 
-vi.mock('@/api/client', () => ({
-  apiClient: {
-    get: vi.fn(),
-  },
+const { mockGet } = vi.hoisted(() => ({ mockGet: vi.fn() }))
+vi.mock('@/utils/apiClient', () => ({
+  default: { get: mockGet },
 }))
-
-import { apiClient } from '@/api/client'
-
-const mockGet = vi.mocked(apiClient.get)
 
 const i18n = createI18n({
   legacy: false,
@@ -95,9 +91,10 @@ describe('DemoLessonsSection', () => {
     expect(wrapper.find('.demo-lessons-section').exists()).toBe(false)
   })
 
-  it('shows loading skeletons while fetching', () => {
+  it('shows loading skeletons while fetching', async () => {
     mockGet.mockReturnValue(new Promise(() => {})) // never resolves
     const wrapper = mountSection()
+    await nextTick()
 
     expect(wrapper.findAll('.demo-lessons-section__skeleton').length).toBeGreaterThan(0)
   })
@@ -155,7 +152,6 @@ describe('DemoLessonsSection', () => {
     const wrapper = mountSection()
     await flushPromises()
 
-    const link = wrapper.find('.demo-lesson-card')
-    expect(link.attributes('href')).toBe('/lesson/john-d/quadratic-equations')
+    expect(wrapper.html()).toContain('/lesson/john-d/quadratic-equations')
   })
 })

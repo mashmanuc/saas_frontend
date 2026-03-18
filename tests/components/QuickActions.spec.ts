@@ -22,10 +22,10 @@ describe('QuickActions', () => {
     expect(wrapper.find('.quick-actions-grid').exists()).toBe(true)
   })
 
-  it('renders 3 action buttons', () => {
+  it('renders 5 action buttons (all shown when lessonsCount not provided)', () => {
     const wrapper = mountQuickActions()
     const btns = wrapper.findAll('.quick-action-btn')
-    expect(btns.length).toBe(3)
+    expect(btns.length).toBe(5)
   })
 
   it('action buttons are router-links (rendered as <a>)', () => {
@@ -36,16 +36,16 @@ describe('QuickActions', () => {
     })
   })
 
-  it('contains link to /booking/tutor (create lesson)', () => {
+  it('contains link to /tutor/schedule (create lesson)', () => {
     const wrapper = mountQuickActions()
     const html = wrapper.html()
-    expect(html).toContain('/booking/tutor')
+    expect(html).toContain('/tutor/schedule')
   })
 
-  it('contains link to /dashboard/knowledge', () => {
+  it('contains link to /knowledge', () => {
     const wrapper = mountQuickActions()
     const html = wrapper.html()
-    expect(html).toContain('/dashboard/knowledge')
+    expect(html).toContain('/knowledge')
   })
 
   it('contains link to /tutor/students', () => {

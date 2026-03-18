@@ -3,7 +3,12 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-// ── Mock apiClient ────────────────────────────────────────────────────────
+// ── Mock vue-i18n ────────────────────────────────────────────────────────────
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({ t: (key: string, fallback?: string) => fallback ?? key }),
+}))
+
+// ── Mock apiClient ────────────────────────────────────────────────────────────
 
 const mockPost = vi.fn()
 

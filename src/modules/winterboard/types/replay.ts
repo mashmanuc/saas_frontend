@@ -28,6 +28,7 @@ export interface RecordOperationRequest {
   op_type: string
   page_id?: string     // optional, default ''
   payload?: Record<string, unknown>  // max 64KB
+  timestamp?: number   // Phase 20: client-side Date.now(), optional
 }
 
 // ─── Batch record request (POST .../replay/batch/) ─────────────────────────

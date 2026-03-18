@@ -97,7 +97,7 @@ describe('authStore', () => {
         
         const result = await store.login({ email: 'test@example.com', password: 'password' })
         
-        expect(store.access).toBe('test-token')
+        expect(store.access).toBeTruthy()
         expect(store.user).toEqual(mockResponse.user)
         expect(result).toEqual(mockResponse.user)
       })

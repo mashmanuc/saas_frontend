@@ -267,9 +267,9 @@
         v-if="classroomRole.isTeacher.value"
         :pages="store.pages"
         :current-index="store.currentPageIndex"
-        @select="store.goToPage($event)"
+        @select="handlePageSelect($event)"
         @add="handlePageAdd"
-        @delete="store.deletePageUndoable($event)"
+        @delete="handlePageDelete($event)"
         @reorder="(from: number, to: number) => store.reorderPages(from, to)"
       />
 
@@ -390,7 +390,7 @@
 
     <!-- Phase 11: Replay entry button (teacher only, edit mode) -->
     <button
-      v-if="mode === 'edit' && resolvedSessionId && classroomRole.isTeacher.value"
+      v-if="mode === 'edit' && resolvedSessionId && (classroomRole.isTeacher.value || lessonEnded) && hasOperations"
       class="wb-classroom-room__replay-btn"
       data-testid="replay-button"
       :aria-label="t('winterboard.replay.viewReplay')"
@@ -503,6 +503,7 @@ import WBOnboardingHints from '../components/ui/WBOnboardingHints.vue'
 import type { BoardOperation } from '../types/replay'
 import type { WBLessonMarker } from '../types/winterboard'
 import { createLessonMarker, deleteLessonMarker } from '../api/replay'
+import { applyReplayOperation } from '../engine/applyReplayOperation'
 import { useGridOverlay } from '../composables/useGridOverlay'
 import { useReplayRecorder } from '../composables/useReplayRecorder'
 import { useDeviceMode } from '../composables/useDeviceMode'
@@ -543,8 +544,19 @@ const deviceModeState = useDeviceMode()
 
 const resolvedSessionId = ref<string | null>(props.sessionId ?? null)
 
-// P2: edit/replay mode (classroom is always edit for now)
-const mode = ref<'edit' | 'replay'>('edit')
+// P2: edit/replay mode — synced to URL query for shareable links
+const mode = computed<'edit' | 'replay'>({
+  get: () => (route.query.mode === 'replay' ? 'replay' : 'edit'),
+  set: (value: 'edit' | 'replay') => {
+    const query = { ...route.query }
+    if (value === 'replay') {
+      query.mode = 'replay'
+    } else {
+      delete query.mode
+    }
+    router.replace({ query })
+  },
+})
 
 // Sidebar tabs: 'students' | 'materials' | 'homework'
 const activeTab = ref<'students' | 'materials' | 'homework'>('materials')
@@ -586,11 +598,10 @@ const autosave = useAutosave(resolvedSessionId)
 // P4: Replay recorder — batch records operations for replay timeline
 const replayRecorder = useReplayRecorder({
   sessionId: resolvedSessionId,
-  getBoardState: () => ({
-    pages: JSON.parse(JSON.stringify(store.pages)),
-    currentPageIndex: store.currentPageIndex,
-  }),
+  getBoardState: () => store.getSnapshotState(),
 })
+// Phase 20: Auto-record all store operations — no manual record() calls needed
+const _unsubRecorder = replayRecorder.connectToStore(store)
 
 // Grid overlay (background grid for the canvas)
 const gridOverlay = useGridOverlay(resolvedSessionId.value ?? 'default')
@@ -683,6 +694,16 @@ const isBoardEmpty = computed(() => {
   const page = store.currentPage
   if (!page) return true
   return page.assets.length === 0 && page.strokes.length === 0
+})
+
+// A1.4: Hide replay button on empty boards (check all pages)
+const hasOperations = computed(() => {
+  return store.pages.some(p => p.strokes.length > 0 || p.assets.length > 0)
+})
+
+// A1.5: Detect lesson end — students can replay after lesson is completed/archived
+const lessonEnded = computed(() => {
+  return lessonStatus.value === 'COMPLETED' || lessonStatus.value === 'ARCHIVED'
 })
 
 // ─── Computed ───────────────────────────────────────────────────────────────
@@ -804,8 +825,8 @@ useKeyboard({
   onEscape: () => { selectedId.value = null },
   onPagePrev: () => handlePagePrev(),
   onPageNext: () => handlePageNext(),
-  onPageFirst: () => store.goToPage(0),
-  onPageLast: () => store.goToPage(store.pageCount - 1),
+  onPageFirst: () => handlePageSelect(0),
+  onPageLast: () => handlePageSelect(store.pageCount - 1),
   onZoomReset: () => handleZoomReset(),
   onCopy: () => boardClipboard.copySelected(),
   onPaste: () => boardClipboard.pasteInternal(),
@@ -818,13 +839,6 @@ function handleStrokeAdd(stroke: WBStroke): void {
   if (isDrawingDisabled.value) return
   store.addStroke(stroke)
 
-  // P4: Record replay operation
-  replayRecorder.record({
-    op_type: 'stroke_add',
-    page_id: store.currentPage?.id ?? '',
-    payload: { stroke },
-  })
-
   const page = store.currentPage
   if (page) {
     try { history.recordAdd(page.id, stroke, 'stroke') } catch (err) {
@@ -836,13 +850,6 @@ function handleStrokeAdd(stroke: WBStroke): void {
 function handleStrokeUpdate(stroke: WBStroke): void {
   if (isDrawingDisabled.value) return
   store.updateStroke(stroke)
-
-  // P4: Record replay operation
-  replayRecorder.record({
-    op_type: 'stroke_update',
-    page_id: store.currentPage?.id ?? '',
-    payload: { stroke },
-  })
 }
 
 function handleStrokeDelete(strokeId: string): void {
@@ -851,13 +858,6 @@ function handleStrokeDelete(strokeId: string): void {
   const existing = page?.strokes.find((s) => s.id === strokeId)
 
   store.deleteStroke(strokeId)
-
-  // P4: Record replay operation
-  replayRecorder.record({
-    op_type: 'stroke_delete',
-    page_id: page?.id ?? '',
-    payload: { stroke_id: strokeId },
-  })
 
   if (page && existing) {
     try { history.recordRemove(page.id, existing, 'stroke') } catch (err) {
@@ -870,13 +870,6 @@ function handleAssetAdd(asset: WBAsset): void {
   if (isDrawingDisabled.value) return
   store.addAsset(asset)
 
-  // P4: Record replay operation
-  replayRecorder.record({
-    op_type: 'asset_add',
-    page_id: store.currentPage?.id ?? '',
-    payload: { asset },
-  })
-
   const page = store.currentPage
   if (page) {
     try { history.recordAdd(page.id, asset, 'asset') } catch (err) {
@@ -888,13 +881,6 @@ function handleAssetAdd(asset: WBAsset): void {
 function handleAssetUpdate(asset: WBAsset): void {
   if (isDrawingDisabled.value) return
   store.updateAsset(asset)
-
-  // P4: Record replay operation
-  replayRecorder.record({
-    op_type: 'asset_update',
-    page_id: store.currentPage?.id ?? '',
-    payload: { asset },
-  })
 }
 
 function handleAssetDelete(assetId: string): void {
@@ -903,13 +889,6 @@ function handleAssetDelete(assetId: string): void {
   const existing = page?.assets.find((a) => a.id === assetId)
 
   store.deleteAsset(assetId)
-
-  // P4: Record replay operation
-  replayRecorder.record({
-    op_type: 'asset_delete',
-    page_id: page?.id ?? '',
-    payload: { asset_id: assetId },
-  })
 
   if (page && existing) {
     try { history.recordRemove(page.id, existing, 'asset') } catch (err) {
@@ -975,7 +954,7 @@ async function handleYouTubeAdd(url: string): Promise<void> {
 // ─── Phase 11: Replay mode (teacher can review the lesson) ──────────────────
 
 function enterReplayMode(): void {
-  if (!classroomRole.isTeacher.value) return
+  if (!classroomRole.isTeacher.value && !lessonEnded.value) return
   mode.value = 'replay'
 }
 
@@ -983,34 +962,9 @@ function exitReplayMode(): void {
   mode.value = 'edit'
 }
 
+// R5: Delegate to shared applyReplayOperation (DRY)
 function onReplayOperation(op: BoardOperation): void {
-  const payload = op.payload as Record<string, unknown>
-
-  switch (op.op_type) {
-    case 'stroke_add':
-      if (payload.stroke) store.addStroke(payload.stroke as WBStroke, { skipHistory: true })
-      break
-    case 'stroke_update':
-      if (payload.stroke) store.updateStroke(payload.stroke as WBStroke, { skipHistory: true })
-      break
-    case 'stroke_delete':
-      if (payload.stroke_id) store.deleteStroke(payload.stroke_id as string, { skipHistory: true })
-      break
-    case 'asset_add':
-      if (payload.asset) store.addAsset(payload.asset as WBAsset, { skipHistory: true })
-      break
-    case 'asset_update':
-      if (payload.asset) store.updateAsset(payload.asset as WBAsset, { skipHistory: true })
-      break
-    case 'asset_delete':
-      if (payload.asset_id) store.deleteAsset(payload.asset_id as string, { skipHistory: true })
-      break
-    case 'page_change':
-      if (typeof payload.page_index === 'number') store.goToPage(payload.page_index)
-      break
-    default:
-      console.debug('[Replay] unknown op:', op.op_type)
-  }
+  applyReplayOperation(store, op)
 }
 
 function handleMarkerSeek(marker: WBLessonMarker): void {
@@ -1086,16 +1040,30 @@ function handleClear(): void {
 // ─── Handlers: Pages ────────────────────────────────────────────────────────
 
 function handlePagePrev(): void {
-  if (store.currentPageIndex > 0) store.goToPage(store.currentPageIndex - 1)
+  if (store.currentPageIndex > 0) {
+    store.goToPage(store.currentPageIndex - 1)
+  }
 }
 
 function handlePageNext(): void {
-  if (store.currentPageIndex < store.pageCount - 1) store.goToPage(store.currentPageIndex + 1)
+  if (store.currentPageIndex < store.pageCount - 1) {
+    store.goToPage(store.currentPageIndex + 1)
+  }
+}
+
+function handlePageSelect(index: number): void {
+  if (index === store.currentPageIndex) return
+  store.goToPage(index)
 }
 
 function handlePageAdd(): void {
   if (!classroomRole.canAddPage.value) return
   store.addPage()
+}
+
+function handlePageDelete(index: number): void {
+  if (!store.pages[index]) return
+  store.deletePageUndoable(index)
 }
 
 // ─── Handlers: Zoom ─────────────────────────────────────────────────────────
@@ -1273,6 +1241,7 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(async () => {
+  _unsubRecorder()
   replayRecorder.destroy()
   try {
     await autosave.saveNow()

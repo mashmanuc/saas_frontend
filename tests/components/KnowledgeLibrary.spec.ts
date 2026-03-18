@@ -269,9 +269,9 @@ describe('knowledgeApi: methods', () => {
     expect(typeof api.getLessons).toBe('function')
   })
 
-  it('getTemplates exists', async () => {
-    const api = (await import('@/modules/knowledge/api/knowledgeApi')).knowledgeApi
-    expect(typeof api.getTemplates).toBe('function')
+  it('getTemplates exists (templateApi)', async () => {
+    const { templateApi } = await import('@/modules/knowledge/api/templateApi')
+    expect(typeof templateApi.getTemplates).toBe('function')
   })
 })
 

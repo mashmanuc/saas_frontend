@@ -34,6 +34,8 @@ import type {
 export interface UseChatTransportV2Options {
   threadId: string
   token: string
+  /** Async token provider — called on every connect/reconnect to get a fresh JWT */
+  tokenProvider?: () => Promise<string>
   userId: number
   wsUrl?: string
   autoConnect?: boolean
@@ -64,7 +66,7 @@ export function useChatTransportV2(
   options: UseChatTransportV2Options,
   flags: RealtimeFeatureFlags
 ): UseChatTransportV2Return {
-  const { threadId, token, userId, wsUrl, autoConnect = true } = options
+  const { threadId, token, tokenProvider, userId, wsUrl, autoConnect = true } = options
 
   // Reactive state
   const messages = ref<ChatMessage[]>([])
@@ -116,6 +118,7 @@ export function useChatTransportV2(
     const config: TransportConfig = {
       threadId,
       token,
+      tokenProvider,
       userId,
       wsUrl,
       fallbackOnError: true, // Enable automatic fallback

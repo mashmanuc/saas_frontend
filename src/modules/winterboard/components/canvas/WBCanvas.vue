@@ -2191,9 +2191,14 @@ const failedImages = new Set<string>()
 // A4.3: Preload an asset image into the loadedImages cache (for immediate rendering after drop/paste)
 // FLICKER FIX: loadedImages is a plain Map (not reactive) — we imperatively update the Konva node
 // instead of relying on Vue reactivity, which would re-render ALL assets on every image load.
+// E3: Video hosts that should never be preloaded as images
+const VIDEO_HOSTS = ['youtube.com', 'youtu.be', 'vimeo.com']
+
 function preloadAssetImage(asset: WBAsset): void {
   const src = normalizeAssetUrl(asset.src)
   if (loadedImages.has(src) || failedImages.has(src)) return
+  // E3: Skip video URLs — they are embeds, not images
+  if (VIDEO_HOSTS.some(h => src.includes(h))) return
   const isDataUrl = src.startsWith('data:')
 
   function applyImage(image: HTMLImageElement): void {

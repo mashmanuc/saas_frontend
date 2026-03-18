@@ -3,6 +3,7 @@
      Ref: AGENT_A_FE_CORE.md A1.2 -->
 <template>
   <div class="catalog-page">
+    <BreadcrumbNav :items="breadcrumbs" />
     <!-- Header -->
     <header class="catalog-page__header">
       <div class="catalog-page__header-inner">
@@ -159,6 +160,12 @@
           {{ activeCategoryName }}
         </button>
 
+        <!-- B3.1: Tutor filter indicator -->
+        <div v-if="filters.tutor" class="catalog-page__active-filter">
+          <span>{{ $t('knowledge.catalog.filteredByTutor') }}: <strong>{{ filters.tutor }}</strong></span>
+          <button type="button" class="catalog-page__clear-filter" @click="clearTutorFilter">✕</button>
+        </div>
+
         <!-- CAT-3: Smart toolbar — sort always visible, advanced filters only if ≥10 lessons -->
         <div class="catalog-page__toolbar">
           <div class="catalog-page__filter-group">
@@ -291,7 +298,7 @@
           <a
             v-for="lesson in lessons"
             :key="lesson.id"
-            :href="`/lesson/${lesson.tutor.slug}/${lesson.slug}`"
+            :href="`/lesson/${lesson.tutor?.slug}/${lesson.slug}`"
             class="catalog-page__card"
           >
             <div class="catalog-page__card-img-wrap">
@@ -301,6 +308,7 @@
                 :alt="lesson.title"
                 class="catalog-page__card-img"
                 loading="lazy"
+                @error="(e: Event) => (e.target as HTMLImageElement).style.display = 'none'"
               />
               <div v-else class="catalog-page__card-img-placeholder">
                 <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
@@ -313,10 +321,10 @@
               <h3 class="catalog-page__card-title">{{ lesson.title }}</h3>
               <div class="catalog-page__card-meta">
                 <a
-                  :href="`/marketplace/${lesson.tutor.slug}`"
+                  :href="`/marketplace/${lesson.tutor?.slug}`"
                   class="catalog-page__card-author catalog-page__card-author--link"
                   @click.stop
-                >{{ lesson.tutor.name }}</a>
+                >{{ lesson.tutor?.name }}</a>
                 <span v-if="lesson.category_name" class="catalog-page__card-category">{{ lesson.category_name }}</span>
               </div>
               <div v-if="lesson.average_rating != null" class="catalog-page__card-rating">
@@ -346,13 +354,13 @@
             <a
               v-for="lesson in recentlyAddedLessons"
               :key="lesson.id"
-              :href="`/lesson/${lesson.tutor.slug}/${lesson.slug}`"
+              :href="`/lesson/${lesson.tutor?.slug}/${lesson.slug}`"
               class="catalog-page__card"
             >
               <div class="catalog-page__card-body">
                 <h3 class="catalog-page__card-title">{{ lesson.title }}</h3>
                 <div class="catalog-page__card-meta">
-                  <span class="catalog-page__card-author">{{ lesson.tutor.name }}</span>
+                  <span class="catalog-page__card-author">{{ lesson.tutor?.name }}</span>
                   <span v-if="lesson.category_name" class="catalog-page__card-category">{{ lesson.category_name }}</span>
                 </div>
               </div>
@@ -366,8 +374,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, type Component } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import BreadcrumbNav from '@/components/ui/BreadcrumbNav.vue'
 import { useCatalog } from '../composables/useCatalog'
 import { catalogApi, type SubjectCategory } from '../api/catalogApi'
 import { useAuthStore } from '@/modules/auth/store/authStore'
@@ -412,6 +421,7 @@ const {
 } = useCatalog()
 
 const route = useRoute()
+const router = useRouter()
 const sidebarOpen = ref(false)
 const recentlyAddedLessons = ref<any[]>([])
 const authStore = useAuthStore()
@@ -450,10 +460,22 @@ function resetFilters() {
   filters.language = undefined
   filters.tutor = undefined
   filters.sort = 'popular'
+  router.replace({ query: { ...route.query, tutor: undefined } })
+  searchLessons(true)
+}
+
+function clearTutorFilter(): void {
+  filters.tutor = undefined
+  router.replace({ query: { ...route.query, tutor: undefined } })
   searchLessons(true)
 }
 
 const { t: $t } = useI18n()
+
+const breadcrumbs = computed(() => [
+  { label: $t('breadcrumb.knowledgeHub'), to: '/knowledge' },
+  { label: $t('breadcrumb.catalog') },
+])
 
 const activeCategoryName = computed(() => {
   if (!filters.category) return $t('knowledge.catalog.allCategories')
@@ -753,6 +775,34 @@ onMounted(async () => {
   color: #334155;
   cursor: pointer;
   margin-bottom: 16px;
+}
+
+/* ── Tutor filter indicator ────────────────────────────────────── */
+.catalog-page__active-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: #e0e7ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #3730a3;
+  margin-bottom: 16px;
+}
+
+.catalog-page__clear-filter {
+  background: none;
+  border: none;
+  color: #6366f1;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.catalog-page__clear-filter:hover {
+  color: #4338ca;
 }
 
 /* ── Toolbar ───────────────────────────────────────────────────── */

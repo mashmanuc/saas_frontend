@@ -1,6 +1,7 @@
 // Phase 16 B Day 2: Tests for KnowledgeTermsHint
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 import KnowledgeTermsHint from '../components/KnowledgeTermsHint.vue'
 
@@ -66,6 +67,7 @@ describe('KnowledgeTermsHint', () => {
   it('stays hidden after remount if dismissed', async () => {
     localStorage.setItem(STORAGE_KEY, 'true')
     const w = mountComponent()
+    await nextTick()
     expect(w.find('[role="complementary"]').exists()).toBe(false)
   })
 

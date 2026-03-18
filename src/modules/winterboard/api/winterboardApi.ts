@@ -343,7 +343,7 @@ export const winterboardApi = {
 
   createExport(
     sessionId: string,
-    format: 'png' | 'pdf' | 'json' | 'annotated_pdf',
+    format: 'png' | 'pdf' | 'annotated_pdf',
     idempotencyKey?: string,
   ): Promise<WBExport> {
     const headers: Record<string, string> = {}

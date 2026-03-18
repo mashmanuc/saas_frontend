@@ -29,6 +29,7 @@ export interface PublishedLesson {
 // ─── Composable ─────────────────────────────────────────────────────────────
 
 export function usePublishLesson() {
+  const { t } = useI18n()
   const isPublishing = ref(false)
   const publishedLesson = ref<PublishedLesson | null>(null)
   const error = ref<string | null>(null)
@@ -48,7 +49,6 @@ export function usePublishLesson() {
       publishedLesson.value = result
     } catch (err: unknown) {
       const message = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-      const { t } = useI18n()
       error.value = message || t('knowledge.publish.error', 'Не вдалося опублікувати урок')
       console.error('[usePublishLesson] Publish failed:', err)
     } finally {
@@ -83,7 +83,6 @@ export function usePublishLesson() {
       await apiClient.post(`/v1/knowledge/my-lessons/${lessonId}/unpublish/`)
     } catch (err: unknown) {
       const message = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-      const { t } = useI18n()
       error.value = message || t('knowledge.publish.unpublishError', 'Не вдалося зняти з публікації')
       throw err
     } finally {
@@ -102,7 +101,6 @@ export function usePublishLesson() {
       await apiClient.post(`/v1/knowledge/my-lessons/${lessonId}/republish/`)
     } catch (err: unknown) {
       const message = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-      const { t } = useI18n()
       error.value = message || t('knowledge.publish.republishError', 'Не вдалося опублікувати урок')
       throw err
     } finally {

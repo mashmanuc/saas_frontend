@@ -22,10 +22,14 @@ function makeCategory(overrides = {}) {
   }
 }
 
+const TransitionStub = {
+  template: '<span v-if="$slots.default"><slot /></span>',
+}
+
 function mountItem(overrides = {}, props = {}) {
   return mount(CategoryTreeItem, {
     props: { category: makeCategory(overrides), depth: 0, activeCategory: null, ...props },
-    global: { plugins: [i18n] },
+    global: { plugins: [i18n], stubs: { Transition: TransitionStub } },
   })
 }
 

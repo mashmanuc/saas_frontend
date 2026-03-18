@@ -111,7 +111,19 @@ export class CalendarWebSocket {
       this.reconnectAttempts++
       const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1)
       
-      setTimeout(() => {
+      setTimeout(async () => {
+        // Refresh token before reconnect to avoid using an expired JWT
+        try {
+          const { useAuthStore } = await import('@/modules/auth/store/authStore')
+          const authStore = useAuthStore()
+          const freshToken = await authStore.getDecryptedAccess()
+          if (freshToken) {
+            this.token = freshToken
+          }
+        } catch {
+          // fallback — use existing token
+        }
+
         this.connect().catch(error => {
           console.error('[CalendarWebSocket] Reconnect failed:', error)
         })

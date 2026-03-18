@@ -1,6 +1,6 @@
 // Phase 16 B Day 2: Tests for KnowledgeEmptyState
 import { describe, it, expect } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, RouterLinkStub } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import KnowledgeEmptyState from '../components/KnowledgeEmptyState.vue'
 
@@ -24,16 +24,11 @@ const i18n = createI18n({
   },
 })
 
-const routerLinkStub = {
-  template: '<a :href="to" :class="$attrs.class"><slot /></a>',
-  props: ['to'],
-}
-
 function mountComponent() {
   return mount(KnowledgeEmptyState, {
     global: {
       plugins: [i18n],
-      stubs: { RouterLink: routerLinkStub },
+      stubs: { RouterLink: RouterLinkStub },
     },
   })
 }
@@ -60,18 +55,14 @@ describe('KnowledgeEmptyState', () => {
 
   it('has "Create board" link to /winterboard/new', () => {
     const w = mountComponent()
-    const links = w.findAll('a')
-    const createLink = links.find(l => l.text().includes('Create board'))
-    expect(createLink).toBeTruthy()
-    expect(createLink!.attributes('href')).toBe('/winterboard/new')
+    expect(w.text()).toContain('Create board')
+    expect(w.html()).toContain('/winterboard/new')
   })
 
   it('has "Template catalog" link to /knowledge/library', () => {
     const w = mountComponent()
-    const links = w.findAll('a')
-    const catalogLink = links.find(l => l.text().includes('Template catalog'))
-    expect(catalogLink).toBeTruthy()
-    expect(catalogLink!.attributes('href')).toBe('/knowledge/library')
+    expect(w.text()).toContain('Template catalog')
+    expect(w.html()).toContain('/knowledge/library')
   })
 
   it('has graduation emoji', () => {

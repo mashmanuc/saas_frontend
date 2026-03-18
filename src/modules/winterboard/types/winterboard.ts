@@ -283,7 +283,7 @@ export interface WBSession {
 
 // ─── Export ─────────────────────────────────────────────────────────────────
 
-export type WBExportFormat = 'png' | 'pdf' | 'json' | 'annotated_pdf'
+export type WBExportFormat = 'png' | 'pdf' | 'annotated_pdf'
 export type WBExportStatus = 'pending' | 'processing' | 'done' | 'error'
 
 export interface WBExport {

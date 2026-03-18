@@ -51,25 +51,25 @@ describe('useExportPolling', () => {
     expect(currentExportId.value).toBeNull()
   })
 
-  it('handles instant done (JSON export)', async () => {
+  it('handles instant done (PNG export)', async () => {
     mockCreateExport.mockResolvedValue({
       id: 'exp-1',
       session_id: 's1',
-      format: 'json',
+      format: 'png',
       status: 'done',
-      file_url: 'https://cdn.example.com/export.json',
+      file_url: 'https://cdn.example.com/export.png',
       error: null,
     })
 
     const { startExport, exportState, exportProgress, downloadUrl } = useExportPolling()
-    const result = await startExport('s1', 'json')
+    const result = await startExport('s1', 'png')
 
     expect(result).not.toBeNull()
     expect(result!.exportId).toBe('exp-1')
-    expect(result!.downloadUrl).toBe('https://cdn.example.com/export.json')
+    expect(result!.downloadUrl).toBe('https://cdn.example.com/export.png')
     expect(exportState.value).toBe('done')
     expect(exportProgress.value).toBe(100)
-    expect(downloadUrl.value).toBe('https://cdn.example.com/export.json')
+    expect(downloadUrl.value).toBe('https://cdn.example.com/export.png')
   })
 
   it('handles immediate error from createExport', async () => {
@@ -218,14 +218,14 @@ describe('useExportPolling', () => {
     mockCreateExport.mockResolvedValue({
       id: 'exp-7',
       session_id: 's1',
-      format: 'json',
+      format: 'png',
       status: 'done',
-      file_url: 'https://cdn.example.com/export.json',
+      file_url: 'https://cdn.example.com/export.png',
       error: null,
     })
 
     const { startExport, reset, exportState, exportProgress, downloadUrl, currentExportId } = useExportPolling()
-    await startExport('s1', 'json')
+    await startExport('s1', 'png')
 
     expect(exportState.value).toBe('done')
 

@@ -202,6 +202,57 @@ export function useCollaboration(
         console.error(LOG, 'Connection error:', err)
       })
 
+      // 3b. Handle auth expiry — recreate provider with fresh token
+      wsProvider.on('connection-close', async (event: unknown) => {
+        const closeEvent = event as { code?: number }
+        const code = closeEvent?.code
+        if (code !== 4001 && code !== 4401) return
+
+        console.info(LOG, 'Auth expired (code:', code, '), refreshing token and reconnecting...')
+
+        try {
+          // Refresh JWT
+          const { useAuthStore } = await import('@/modules/auth/store/authStore')
+          const authStore = useAuthStore()
+          await authStore.refreshAccess()
+          const freshToken = await authStore.getDecryptedAccess()
+
+          if (!freshToken || !wsProvider) return
+
+          // y-websocket does not support changing params after creation,
+          // so we must destroy and recreate the provider with the new token
+          wsProvider.disconnect()
+          wsProvider.destroy()
+
+          const { WebsocketProvider: WsProvider } = await import('y-websocket')
+          const newParams: Record<string, string> = { token: freshToken }
+
+          wsProvider = new WsProvider(wsUrl, sid, doc, {
+            params: newParams,
+            connect: true,
+            resyncInterval: 30_000,
+            maxBackoffTime: 10_000,
+          }) as unknown as WsProviderLike
+
+          // Re-attach status/sync/error listeners
+          wsProvider.on('status', (ev: unknown) => {
+            const s = (ev as { status: string }).status
+            isConnected.value = s === 'connected'
+            if (s === 'connected') connectionError.value = null
+          })
+          wsProvider.on('sync', (synced: unknown) => { isSynced.value = synced as boolean })
+          wsProvider.on('connection-error', (err: unknown) => {
+            connectionError.value = 'WebSocket connection failed'
+            console.error(LOG, 'Connection error after token refresh:', err)
+          })
+
+          console.info(LOG, 'Reconnected with fresh token')
+        } catch (err) {
+          connectionError.value = 'Token refresh failed'
+          console.error(LOG, 'Failed to refresh token for Yjs reconnect:', err)
+        }
+      })
+
       // 4. Setup meta
       setMeta(doc, { sessionId: sid, name: '', rev: 0 })
 

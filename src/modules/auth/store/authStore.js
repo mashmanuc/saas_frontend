@@ -122,20 +122,22 @@ export const useAuthStore = defineStore('auth', {
         }
       }
 
-      if (!this.user) {
-        try {
-          const raw = await authApi.getCurrentUser({ meta: { skipLoader: true } })
-          const user = this._normalizeUser(raw)
-          this.user = user
-          storage.setUser(user)
-        } catch (error) {
-          // FIX-1: forceLogout ONLY on 401. Server errors (500) must not kill session.
-          const status = error?.response?.status
-          if (status === 401) {
-            await this.forceLogout('session_expired')
-          }
-          return
+      // Завжди перезавантажувати user з API при bootstrap.
+      // localStorage cache (this.user) використовується лише для instant render
+      // (ініціали, ім'я), але може бути неповним (без first_name/last_name).
+      try {
+        const raw = await authApi.getCurrentUser({ meta: { skipLoader: true } })
+        const user = this._normalizeUser(raw)
+        this.user = user
+        storage.setUser(user)
+      } catch (error) {
+        // FIX-1: forceLogout ONLY on 401. Server errors (500) must not kill session.
+        const status = error?.response?.status
+        if (status === 401) {
+          await this.forceLogout('session_expired')
         }
+        // Якщо API недоступний але user є з cache — продовжуємо з тим що є
+        if (!this.user) return
       }
 
       // CRITICAL: always start proactive refresh when session exists.

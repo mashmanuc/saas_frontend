@@ -88,10 +88,12 @@ export const storage = {
       safeRemove(USER_KEY)
       return
     }
-    // Phase 2: Мінімізація — НЕ зберігати email, phone, full_name в localStorage
+    // Phase 2: Мінімізація — зберігаємо мінімум для UI (ініціали, ім'я в header)
     const minimal = {
       id: user.id,
       role: user.role,
+      first_name: user.first_name || null,
+      last_name: user.last_name || null,
       display_name: user.display_name || user.first_name || null,
     }
     safeSet(USER_KEY, JSON.stringify(minimal))

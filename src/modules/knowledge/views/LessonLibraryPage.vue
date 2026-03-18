@@ -6,6 +6,7 @@
      Skeleton: 6 placeholders while loading. -->
 <template>
   <div class="lesson-library">
+    <BreadcrumbNav :items="breadcrumbs" />
     <!-- Header -->
     <header class="lesson-library__header">
       <h1 class="lesson-library__title">{{ t('knowledge.library.title') || 'Бібліотека шаблонів' }}</h1>
@@ -98,6 +99,7 @@
               :alt="tmpl.source_lesson_title"
               class="lesson-library__card-img"
               loading="lazy"
+              @error="(e: Event) => (e.target as HTMLImageElement).style.display = 'none'"
             />
             <div v-else class="lesson-library__card-placeholder">
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -169,15 +171,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import BreadcrumbNav from '@/components/ui/BreadcrumbNav.vue'
 import { useTemplateLibrary } from '../composables/useTemplateLibrary'
 import { useCloneTemplate } from '../composables/useCloneTemplate'
 import type { LessonTemplate } from '../api/templateApi'
 
 const { t } = useI18n()
 const router = useRouter()
+
+const breadcrumbs = computed(() => [
+  { label: t('breadcrumb.knowledgeHub'), to: '/knowledge' },
+  { label: t('breadcrumb.library') },
+])
 
 // ─── Template library composable ────────────────────────────────────────────
 

@@ -1,6 +1,6 @@
 // Phase 15 B3.3: Tests for LessonRatingWidget
 import { describe, it, expect, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, RouterLinkStub } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import LessonRatingWidget from '../components/LessonRatingWidget.vue'
 
@@ -28,10 +28,6 @@ const i18n = createI18n({
   },
 })
 
-const routerLinkStub = {
-  template: '<a :href="to"><slot /></a>',
-  props: ['to'],
-}
 
 const defaultProps = {
   lessonId: 'lesson-1',
@@ -46,7 +42,7 @@ function mountWidget(propsOverrides = {}) {
     props: { ...defaultProps, ...propsOverrides },
     global: {
       plugins: [i18n],
-      stubs: { RouterLink: routerLinkStub },
+      stubs: { RouterLink: RouterLinkStub },
     },
   })
 }
@@ -66,7 +62,8 @@ describe('LessonRatingWidget', () => {
   it('shows login link for unauthenticated users', () => {
     const w = mountWidget({ isAuthenticated: false })
     expect(w.text()).toContain('Log in to rate')
-    expect(w.find('a[href="/auth/login"]').exists()).toBe(true)
+    // RouterLinkStub renders as <a> with to prop stored internally
+    expect(w.html()).toContain('/auth/login')
   })
 
   it('renders 5 star buttons in radiogroup', () => {

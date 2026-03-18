@@ -268,17 +268,12 @@ export function usePresence(options: UsePresenceOptions) {
         console.info(LOG_PREFIX, 'Token expired, attempting refresh before reconnect')
         void (async () => {
           try {
-            const pinia = (window as any).__pinia__
-            const authState = pinia?.state?.value?.auth
-            if (authState) {
-              // Dynamically import to avoid circular deps
-              const { useAuthStore } = await import('@/modules/auth/store/authStore')
-              const authStore = useAuthStore()
-              await authStore.refreshAccess()
-              // After refresh, _getFreshToken() will return new JWT
-              if (!reconnectAborted && reconnectAttempts < RECONNECT_MAX_ATTEMPTS) {
-                void scheduleReconnect(sessionId)
-              }
+            const { useAuthStore } = await import('@/modules/auth/store/authStore')
+            const authStore = useAuthStore()
+            await authStore.refreshAccess()
+            // After refresh, _getFreshToken() will return new JWT
+            if (!reconnectAborted && reconnectAttempts < RECONNECT_MAX_ATTEMPTS) {
+              void scheduleReconnect(sessionId)
             }
           } catch {
             lastError.value = 'Session expired'

@@ -17,7 +17,7 @@ import type { WBPageGridSettings, GridStyle } from '../types/winterboard'
 // ─── Defaults ───────────────────────────────────────────────────────────────
 
 export const DEFAULT_PAGE_GRID: WBPageGridSettings = {
-  enabled: true,
+  enabled: false,
   size: 20,
   style: 'dots',
   color: '#000000',
