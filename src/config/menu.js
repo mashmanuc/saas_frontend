@@ -62,12 +62,8 @@ export const SECTIONED_MENU_BY_ROLE = {
       key: 'teaching',
       label: 'sidebar.section.teaching',
       items: [
-        { label: 'sidebar.item.knowledgeHub', icon: 'book-open', to: '/knowledge', hint: 'sidebar.hint.knowledgeHub' },
+        { label: 'sidebar.item.myLessons', icon: 'book-open', to: '/knowledge/my-lessons', hint: 'sidebar.hint.myLessons' },
         { label: 'sidebar.item.lessonCatalog', icon: 'search', to: '/knowledge/catalog', hint: 'sidebar.hint.lessonCatalog' },
-        // Бібліотека шаблонів — прихована поки feature не наповнена контентом (лякає тьютора пустою сторінкою)
-        // { label: 'sidebar.item.templateLibrary', icon: 'layout', to: '/knowledge/library', hint: 'sidebar.hint.templateLibrary' },
-        // Серія уроків (packs) — прихована: 400 при створенні, не інтегрована з каталогом/marketplace
-        // { label: 'sidebar.item.myPacks', icon: 'package', to: '/knowledge/packs', hint: 'sidebar.hint.myPacks' },
         { label: 'sidebar.item.knowledgeAnalytics', icon: 'bar-chart-3', to: '/knowledge/analytics', hint: 'sidebar.hint.knowledgeAnalytics' },
       ],
     },

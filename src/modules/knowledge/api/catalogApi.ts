@@ -19,6 +19,7 @@ export interface SubjectCategory {
 export interface CatalogSearchResult extends PublicLesson {
   average_rating: number | null
   rating_count: number
+  views_count?: number  // Phase 27 E2
   category_name: string
 }
 
@@ -160,6 +161,10 @@ export const catalogApi = {
   },
 
   // ── Log view (public, throttled) ───────────────────────────────────
+  /**
+   * @deprecated Phase 27: View logging moved to backend (auto-log on GET PublicLessonDetailView).
+   * FE should NOT call this anymore. Will be removed in Phase 28.
+   */
   async logView(tutorSlug: string, lessonSlug: string, source?: string): Promise<void> {
     try {
       await fetch(

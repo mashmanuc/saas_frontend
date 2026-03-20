@@ -308,13 +308,10 @@
                 :alt="lesson.title"
                 class="catalog-page__card-img"
                 loading="lazy"
-                @error="(e: Event) => (e.target as HTMLImageElement).style.display = 'none'"
+                @error="() => { lesson.board_thumbnail_url = '' }"
               />
               <div v-else class="catalog-page__card-img-placeholder">
-                <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
-                  <rect x="3" y="3" width="22" height="22" rx="4" stroke="#94a3b8" stroke-width="1.5"/>
-                  <path d="M3 18l6-6 5 5 4-4 7 7" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
+                <span class="catalog-page__card-letter">{{ lesson.title?.[0]?.toUpperCase() || '?' }}</span>
               </div>
             </div>
             <div class="catalog-page__card-body">
@@ -330,6 +327,14 @@
               <div v-if="lesson.average_rating != null" class="catalog-page__card-rating">
                 <span class="catalog-page__card-stars">★ {{ lesson.average_rating.toFixed(1) }}</span>
                 <span class="catalog-page__card-rating-count">({{ lesson.rating_count }})</span>
+              </div>
+              <!-- Phase 27 E2: Views count badge -->
+              <div v-if="lesson.views_count != null" class="catalog-page__card-views">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                  <path d="M1 7s2.5-4 6-4 6 4 6 4-2.5 4-6 4-6-4-6-4z" stroke="currentColor" stroke-width="1.2"/>
+                  <circle cx="7" cy="7" r="2" stroke="currentColor" stroke-width="1.2"/>
+                </svg>
+                <span>{{ lesson.views_count }}</span>
               </div>
               <!-- Phase 16 INT-31: Fork badge -->
               <ForkBadge v-if="(lesson as any).parent_lesson" :parent-lesson="(lesson as any).parent_lesson" />
@@ -1005,6 +1010,14 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: center;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+}
+
+.catalog-page__card-letter {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #16a34a;
+  opacity: 0.7;
 }
 
 .catalog-page__card-body {
@@ -1071,6 +1084,15 @@ onMounted(async () => {
 .catalog-page__card-rating-count {
   color: #94a3b8;
   font-size: 12px;
+}
+
+.catalog-page__card-views {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 4px;
 }
 
 /* ── Skeleton cards ────────────────────────────────────────────── */

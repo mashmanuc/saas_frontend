@@ -320,22 +320,46 @@ async function handlePublish(): Promise<void> {
     showToast(t('winterboard.share.lessonTitleRequired') || 'Введіть назву уроку', 'error')
     return
   }
-  await publishLesson.publish(props.sessionId, {
-    title,
-    description: publishDescription.value.trim() || undefined,
-    subject_tag: publishSubjectTag.value.trim() || undefined,
-    slug: customSlug.value.trim() || undefined,
-    visibility: publishVisibility.value,
-  })
-  if (publishLesson.publishedLesson.value && publishLesson.publicUrl.value) {
-    emit('published', publishLesson.publicUrl.value, {
-      id: publishLesson.publishedLesson.value!.id,
-      title: publishLesson.publishedLesson.value!.title,
-      subject_tag: publishSubjectTag.value || undefined,
+
+  // Phase 26 A4: diagnostic logging
+  console.info('[WBShareDialog] handlePublish', { sessionId: props.sessionId, title })
+
+  try {
+    await publishLesson.publish(props.sessionId, {
+      title,
+      description: publishDescription.value.trim() || undefined,
+      subject_tag: publishSubjectTag.value.trim() || undefined,
+      slug: customSlug.value.trim() || undefined,
+      visibility: publishVisibility.value,
     })
-    showToast(t('winterboard.share.publishSuccess') || 'Урок опубліковано!', 'success')
-  } else if (publishLesson.error.value) {
-    showToast(publishLesson.error.value, 'error')
+
+    // Phase 26 A4: log result for debugging
+    console.info('[WBShareDialog] publish result', {
+      lesson: publishLesson.publishedLesson.value,
+      url: publishLesson.publicUrl.value,
+      error: publishLesson.error.value,
+    })
+
+    if (publishLesson.publishedLesson.value && publishLesson.publicUrl.value) {
+      emit('published', publishLesson.publicUrl.value, {
+        id: publishLesson.publishedLesson.value!.id,
+        title: publishLesson.publishedLesson.value!.title,
+        subject_tag: publishSubjectTag.value || undefined,
+      })
+      showToast(t('winterboard.share.publishSuccess') || 'Урок опубліковано!', 'success')
+    } else if (publishLesson.error.value) {
+      // Phase 25: show detailed error from backend
+      showToast(publishLesson.error.value, 'error')
+    } else {
+      // Phase 26 A4: handle edge case — no lesson AND no error (silent fail)
+      console.warn('[WBShareDialog] Publish returned no lesson and no error')
+      showToast(t('winterboard.share.publishFailed') || 'Помилка публікації', 'error')
+    }
+  } catch (err: unknown) {
+    // Phase 25: catch ALL unhandled errors (network, timeout, 500)
+    const message = (err as Error)?.message || t('winterboard.share.publishFailed') || 'Помилка публікації'
+    console.error('[WBShareDialog] Publish failed:', err)
+    showToast(message, 'error')
   }
 }
 

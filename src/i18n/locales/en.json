@@ -996,8 +996,9 @@
       "profile": "Profile",
       "security": "Security",
       "devPlayground": "Dev Playground",
-      "knowledgeHub": "My Lessons",
+      "knowledgeHub": "Knowledge Hub",
       "lessonCatalog": "Catalog",
+      "myLessons": "My Lessons",
       "templateLibrary": "Template Library",
       "myPacks": "My Packs",
       "knowledgeAnalytics": "Analytics"
@@ -1007,8 +1008,10 @@
       "schedule": "Your lesson calendar and availability",
       "knowledgeHub": "Your created lessons, templates, and courses",
       "lessonCatalog": "All public lessons from M4SH tutors",
+      "myLessons": "My saved lessons with search and folders",
       "wbDashboard": "Manage your boards and materials",
       "wbLibrary": "Your files: PDFs, presentations, images",
+      "wbLessons": "My saved lessons with search and folders",
       "wbBoards": "Interactive whiteboards for lessons",
       "myStudents": "Your active students",
       "inquiries": "New requests from students",
@@ -6772,7 +6775,8 @@
       "publishSuccess": "Lesson published!",
       "visibility": "Visibility",
       "visibilityPublic": "Public",
-      "visibilityDemo": "Demo lesson"
+      "visibilityDemo": "Demo lesson",
+      "publishFailed": "Failed to publish lesson"
     },
     "error": {
       "title": "Something went wrong",
@@ -7243,6 +7247,7 @@
       "forks": "forks",
       "viewAllLessons": "All lessons by this tutor",
       "forkLesson": "Fork lesson",
+      "saveToMyLessons": "Save to my lessons",
       "loginToFork": "Log in to fork",
       "shareMoment": "Share moment",
       "shareAt": "Share: {title}",
@@ -7320,6 +7325,101 @@
       "notFound": "Lesson not found",
       "error": "Error loading lesson",
       "restrictedMaterial": "Available after booking a lesson"
+    },
+    "lesson": {
+      "tutor": "Tutor",
+      "public": "Public",
+      "startReplay": "Watch Lesson",
+      "exitReplay": "Back",
+      "loadingReplay": "Loading content...",
+      "retry": "Try again",
+      "error": {
+        "notFound": "Lesson not found",
+        "brokenSnapshot": "Lesson content is unavailable",
+        "replayError": "Replay error",
+        "serverError": "Something went wrong",
+        "goBack": "Go back",
+        "goHome": "Go home"
+      },
+      "cta": {
+        "title": "Enjoyed this lesson?",
+        "subtitle": "Book a lesson with this tutor",
+        "bookLesson": "Book a lesson",
+        "askTutor": "Message tutor"
+      },
+      "share": {
+        "generateLink": "Generate link",
+        "copyLink": "Copy",
+        "linkCopied": "Link copied!",
+        "revokeLink": "Revoke link",
+        "shareLesson": "Share lesson",
+        "linkActive": "Link is active",
+        "linkExpires": "Expires on {date}"
+      },
+      "reuse": {
+        "useLesson": "Use Lesson",
+        "loading": "Loading...",
+        "loadError": "Failed to load lesson into session",
+        "useLessonHint": "Open lesson in a new session for teaching"
+      },
+      "search": {
+        "placeholder": "Search lessons...",
+        "allStatuses": "All statuses",
+        "draft": "Drafts",
+        "public": "Public",
+        "clearAll": "Clear filters",
+        "loadMore": "Load more",
+        "publish": "Publish",
+        "hide": "Hide"
+      },
+      "delete": "Delete",
+      "deleteConfirmTitle": "Delete lesson?",
+      "deleteConfirmText": "Lesson \"{title}\" will be hidden. You can restore it later.",
+      "deleteConfirm": "Delete",
+      "deleteCancel": "Cancel",
+      "deleting": "Deleting...",
+      "deleteError": "Failed to delete lesson",
+      "shareError": "Failed to create share link",
+      "toggleVisibilityError": "Failed to change lesson visibility",
+      "empty": {
+        "searchNoResults": "No results found",
+        "tryDifferentQuery": "Try a different search query",
+        "folderEmpty": "This folder is empty",
+        "folderEmptyHint": "Move lessons to this folder or create a new lesson",
+        "createFirst": "Create your first lesson"
+      },
+      "editTitle": "Edit lesson",
+      "edit": {
+        "titleLabel": "Title",
+        "titlePlaceholder": "Enter lesson title",
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "Lesson description (optional)",
+        "subjectLabel": "Subject",
+        "subjectPlaceholder": "math, physics, english...",
+        "editLesson": "Edit",
+        "save": "Save",
+        "saving": "Saving...",
+        "cancel": "Cancel",
+        "error": "Failed to save changes"
+      },
+      "move": {
+        "moveToFolder": "Move to folder",
+        "selectFolder": "Select folder",
+        "moving": "Moving...",
+        "moved": "Lesson moved"
+      }
+    },
+    "folder": {
+      "title": "Folders",
+      "create": "Create folder",
+      "namePlaceholder": "Folder name...",
+      "allLessons": "All lessons",
+      "unfiled": "Unfiled",
+      "createChild": "Create subfolder",
+      "delete": "Delete folder",
+      "deleteConfirm": "Delete folder \"{name}\"? Lessons will be moved to root.",
+      "rename": "Rename",
+      "renaming": "Renaming..."
     },
     "publish": {
       "title": "Publish lesson",

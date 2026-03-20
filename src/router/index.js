@@ -876,8 +876,7 @@ const routes = [
           {
             path: '',
             name: 'KnowledgeHub',
-            component: () => import('../modules/knowledge/views/KnowledgeHubPage.vue'),
-            meta: { roles: [USER_ROLES.TUTOR, USER_ROLES.ADMIN, USER_ROLES.SUPERADMIN] },
+            redirect: { name: 'MyLessons' },
           },
           {
             path: 'library',
@@ -970,6 +969,13 @@ const routes = [
     path: '/lesson/:tutorSlug/:lessonSlug',
     name: 'PublicLesson',
     component: () => import('../modules/knowledge/views/PublicLessonPage.vue'),
+    meta: { requiresAuth: false, layout: 'blank' }
+  },
+  // Phase 22: Unified lesson view with access policy (/l/:lessonSlug)
+  {
+    path: '/l/:lessonSlug',
+    name: 'LessonView',
+    component: () => import('../modules/knowledge/views/LessonViewPage.vue'),
     meta: { requiresAuth: false, layout: 'blank' }
   },
   { path: '/:pathMatch(.*)*', redirect: '/start' },

@@ -50,42 +50,36 @@
           class="mt-2"
         />
 
-        <!-- SHARE-5: Share buttons above fold -->
-        <ShareButtons
-          :url="lessonShareUrl"
-          :title="lesson.title"
-          :current-time-ms="replay.currentTimeMs.value"
-          class="my-3"
-        />
-
-        <!-- Board viewer -->
-        <div
-          ref="boardSectionRef"
-          class="public-lesson-page__board-section"
-          :class="{ 'replay-highlight': hasDeepLink && !deepLinkDismissed }"
-        >
-          <!-- Phase 16 INT-41: Deep link badge -->
-          <div v-if="deepLinkTime && !deepLinkDismissed" class="public-lesson-page__deep-link-badge">
-            ⏱ {{ t('knowledge.replay.momentBadge', { time: deepLinkTime }) }}
+        <!-- Board viewer + Replay (Phase 26 G: ErrorBoundary) -->
+        <ErrorBoundary>
+          <div
+            ref="boardSectionRef"
+            class="public-lesson-page__board-section"
+            :class="{ 'replay-highlight': hasDeepLink && !deepLinkDismissed }"
+          >
+            <!-- Phase 16 INT-41: Deep link badge -->
+            <div v-if="deepLinkTime && !deepLinkDismissed" class="public-lesson-page__deep-link-badge">
+              ⏱ {{ t('knowledge.replay.momentBadge', { time: deepLinkTime }) }}
+            </div>
+            <PublicBoardViewer
+              ref="boardViewerRef"
+              :board-state="boardState"
+            />
           </div>
-          <PublicBoardViewer
-            ref="boardViewerRef"
-            :board-state="boardState"
-          />
-        </div>
 
-        <!-- Replay player -->
-        <PublicReplayPlayer
-          :current-seconds="currentSeconds"
-          :duration-seconds="lesson.duration_seconds"
-          :is-playing="replay.isPlaying.value"
-          :markers="replayMarkers"
-          :speed="replay.speed.value"
-          @play="replay.play"
-          @pause="replay.pause"
-          @seek="handleSeek"
-          @speed-change="handleSpeedChange"
-        />
+          <!-- Replay player -->
+          <PublicReplayPlayer
+            :current-seconds="currentSeconds"
+            :duration-seconds="lesson.duration_seconds"
+            :is-playing="replay.isPlaying.value"
+            :markers="replayMarkers"
+            :speed="replay.speed.value"
+            @play="replay.play"
+            @pause="replay.pause"
+            @seek="handleSeek"
+            @speed-change="handleSpeedChange"
+          />
+        </ErrorBoundary>
 
         <!-- Two-column layout: markers + materials -->
         <div class="public-lesson-page__columns">
@@ -109,8 +103,9 @@
           @rated="handleRated"
         />
 
-        <!-- Tutor CTA -->
+        <!-- Tutor CTA (hidden for lesson owner) -->
         <TutorCTACard
+          v-if="!lesson.is_owner"
           :tutor-name="lesson.tutor?.name"
           :tutor-avatar-url="lesson.tutor?.avatar_url"
           :tutor-slug="lesson.tutor?.slug"
@@ -133,7 +128,7 @@
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <path d="M5 3v4a2 2 0 002 2h2a2 2 0 002-2V3M8 9v4M3 3h4M9 3h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            {{ isForking ? '...' : t('knowledge.publicLesson.forkLesson') }}
+            {{ isForking ? '...' : t('knowledge.publicLesson.saveToMyLessons') }}
           </button>
           <a
             v-else
@@ -174,7 +169,7 @@
               class="public-lesson-page__related-card"
             >
               <div v-if="rel.board_thumbnail_url" class="public-lesson-page__related-thumb">
-                <img :src="rel.board_thumbnail_url" :alt="rel.title" loading="lazy" @error="(e: Event) => (e.target as HTMLImageElement).style.display = 'none'" />
+                <img :src="rel.board_thumbnail_url" :alt="rel.title" loading="lazy" @error="() => { rel.board_thumbnail_url = '' }" />
               </div>
               <div v-else class="public-lesson-page__related-thumb public-lesson-page__related-thumb--empty">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3" stroke="#94a3b8" stroke-width="1.5"/><path d="M8 10h8M8 14h5" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round"/></svg>
@@ -185,25 +180,8 @@
           </div>
         </section>
 
-        <!-- Share moment button -->
-        <div class="public-lesson-page__share-moment">
-          <button
-            type="button"
-            class="public-lesson-page__share-btn"
-            @click="shareCurrentMoment"
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <circle cx="12" cy="4" r="2" stroke="currentColor" stroke-width="1.5"/>
-              <circle cx="4" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/>
-              <circle cx="12" cy="12" r="2" stroke="currentColor" stroke-width="1.5"/>
-              <path d="M5.7 7l4.6-2M5.7 9l4.6 2" stroke="currentColor" stroke-width="1.5"/>
-            </svg>
-            {{ shareCopied ? t('knowledge.publicLesson.linkCopied') : currentMomentTitle ? t('knowledge.publicLesson.shareAt', { title: currentMomentTitle }) : t('knowledge.publicLesson.shareMoment') }}
-          </button>
-        </div>
-
-        <!-- Phase 16 INT-29: Share stats -->
-        <div v-if="lesson.views_count || lesson.fork_count" class="public-lesson-page__share-stats">
+        <!-- Phase 16 INT-29: Share stats (owner only, Phase 26 A3) -->
+        <div v-if="(lesson.views_count || lesson.fork_count) && lesson.is_owner" class="public-lesson-page__share-stats">
           <span v-if="lesson.views_count" class="public-lesson-page__stat">
             👁 {{ lesson.views_count }} {{ t('knowledge.publicLesson.views') }}
           </span>
@@ -237,7 +215,8 @@ import PublicMarkersList from '@/modules/winterboard/components/public/PublicMar
 import PublicMaterialsList from '@/modules/winterboard/components/public/PublicMaterialsList.vue'
 import TutorCTACard from '@/modules/winterboard/components/public/TutorCTACard.vue'
 import PublicBoardViewer from '../components/PublicBoardViewer.vue'
-import { catalogApi } from '../api/catalogApi'
+import ErrorBoundary from '@/components/ErrorBoundary.vue'
+// Phase 27: catalogApi.logView() removed — view logging is now backend-only
 import RatingSummary from '../components/RatingSummary.vue'
 import LessonRatingWidget from '../components/LessonRatingWidget.vue'
 import Breadcrumbs from '@/ui/Breadcrumbs.vue'
@@ -516,8 +495,7 @@ onMounted(async () => {
       highlightedMarkerTime.value = startTime
     }
 
-    // Phase 15 A3.4: Log view (best-effort, no error handling)
-    catalogApi.logView(tutorSlug.value, lessonSlug.value, 'direct')
+    // Phase 27: view logging moved to backend (auto-log on GET PublicLessonDetailView)
 
     // Phase 16 INT-18/INT-19: Load related lessons + pack info (non-blocking)
     publicLessonApi.getRelatedLessons(tutorSlug.value, lessonSlug.value, 3)

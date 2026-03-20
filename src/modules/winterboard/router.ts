@@ -45,7 +45,7 @@ const winterboardPageRoutes: RouteRecordRaw[] = [
   },
   {
     path: 'winterboard/lessons',
-    redirect: { name: 'KnowledgeHub' },
+    redirect: { name: 'MyLessons' },
   },
   {
     path: 'winterboard/lessons/:lessonId',

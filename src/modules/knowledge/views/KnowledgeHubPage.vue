@@ -129,6 +129,17 @@
             >
               {{ t('knowledge.hub.openBoard') }} →
             </router-link>
+            <button
+              type="button"
+              class="knowledge-hub__use-lesson-btn"
+              :disabled="loadingLessonId === lesson.id"
+              @click="useLessonInSession(lesson)"
+            >
+              {{ loadingLessonId === lesson.id
+                ? $t('knowledge.lesson.reuse.loading')
+                : $t('knowledge.lesson.reuse.useLesson') }}
+            </button>
+            <p v-if="loadLessonError && loadingLessonId === lesson.id" class="knowledge-hub__use-lesson-error">{{ loadLessonError }}</p>
             <div class="knowledge-hub__lesson-actions">
               <span
                 class="knowledge-hub__lesson-status"
@@ -229,10 +240,13 @@ import {
   Eye, EyeOff, BookOpen, PenTool, Search, Layout,
   Package, ChevronRight, BarChart3, FolderOpen, Trash2,
 } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
 import apiClient from '@/utils/apiClient'
 import { useI18n } from 'vue-i18n'
+import { lessonViewApi } from '../api/lessonViewApi'
 import BreadcrumbNav from '@/components/ui/BreadcrumbNav.vue'
 
+const router = useRouter()
 const { t } = useI18n()
 
 const breadcrumbs = computed(() => [
@@ -276,6 +290,8 @@ const showAllLessons = ref(false)
 const totalLessonsCount = ref(0)
 const achievements = ref<TutorAchievement[]>([])
 const togglingId = ref<string | null>(null)
+const loadingLessonId = ref<string | null>(null)
+const loadLessonError = ref<string | null>(null)
 const deletingId = ref<string | null>(null)
 const deleteTarget = ref<RecentLesson | null>(null)
 
@@ -348,6 +364,21 @@ async function executeDelete(): Promise<void> {
     console.error('[KnowledgeHubPage] Delete failed:', err)
   } finally {
     deletingId.value = null
+  }
+}
+
+async function useLessonInSession(lesson: RecentLesson): Promise<void> {
+  if (loadingLessonId.value) return
+  loadingLessonId.value = lesson.id
+  loadLessonError.value = null
+  try {
+    const { session_id } = await lessonViewApi.loadToSession(lesson.id)
+    await router.push({ name: 'winterboard-solo', params: { id: session_id } })
+  } catch (err) {
+    console.error('[KnowledgeHubPage] load lesson error:', err)
+    loadLessonError.value = t('knowledge.lesson.reuse.loadError')
+  } finally {
+    loadingLessonId.value = null
   }
 }
 
@@ -731,6 +762,38 @@ onMounted(async () => {
   text-decoration: none;
   color: inherit;
   display: block;
+}
+
+.knowledge-hub__use-lesson-btn {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent, #6366f1);
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.knowledge-hub__use-lesson-btn:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.knowledge-hub__use-lesson-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.knowledge-hub__use-lesson-error {
+  font-size: 11px;
+  color: var(--error, #ef4444);
+  margin: 4px 0 0;
 }
 
 .knowledge-hub__lesson-actions {
