@@ -209,7 +209,7 @@ Multi-factor authentication (backlog):
 ### Long-term (3-6 місяців)
 1. **Machine translation** — інтеграція з DeepL/Google Translate для автоматичних перекладів
 2. **Context screenshots** — автоматичні скріншоти UI для контексту перекладачів
-3. **A/B testing** — тестування різних варіантів перекладів
+3. **A/B testing** —    тестування різних варіантів перекладів
 
 ## Conclusion
 
