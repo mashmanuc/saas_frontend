@@ -11,6 +11,7 @@ import { publicLessonApi, type ReplayChunk, type ReplayOperation } from '../api/
 
 const PREFETCH_AHEAD_MS = 30_000
 const TICK_INTERVAL_MS = 16 // ~60fps via requestAnimationFrame
+const DEFAULT_OP_INTERVAL_MS = 100 // fallback interval when timestamps are zero
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -53,6 +54,40 @@ export function usePublicReplay(
     chunks.value.reduce((sum, c) => sum + c.operations.length, 0),
   )
 
+  // ── Zero-timestamp normalization ────────────────────────────────────────
+
+  /**
+   * Fix legacy recordings where all ops have timestamp_ms=0 and chunks have
+   * start_ms=0 / end_ms=0. Distributes ops evenly using DEFAULT_OP_INTERVAL_MS
+   * so the playback loop can replay them step-by-step.
+   */
+  function _normalizeChunkTimestamps(incoming: ReplayChunk[]): ReplayChunk[] {
+    // Check if normalization is needed: all ops have timestamp_ms <= 0
+    const allZero = incoming.every(c =>
+      c.start_ms === 0 && c.end_ms === 0 &&
+      c.operations.every(op => !op.timestamp_ms),
+    )
+    if (!allZero) return incoming
+
+    // Calculate time offset from already-loaded chunks
+    let timeOffset = 0
+    if (chunks.value.length > 0) {
+      const lastLoaded = chunks.value[chunks.value.length - 1]
+      timeOffset = lastLoaded.end_ms + DEFAULT_OP_INTERVAL_MS
+    }
+
+    return incoming.map(chunk => {
+      const ops = chunk.operations.map((op, i) => ({
+        ...op,
+        timestamp_ms: timeOffset + i * DEFAULT_OP_INTERVAL_MS,
+      }))
+      const start_ms = ops.length > 0 ? ops[0].timestamp_ms : timeOffset
+      const end_ms = ops.length > 0 ? ops[ops.length - 1].timestamp_ms : timeOffset
+      timeOffset = end_ms + DEFAULT_OP_INTERVAL_MS
+      return { ...chunk, start_ms, end_ms, operations: ops }
+    })
+  }
+
   // ── Chunk loading ───────────────────────────────────────────────────────
 
   async function loadNextBatch(): Promise<void> {
@@ -67,7 +102,10 @@ export function usePublicReplay(
       )
       if (_destroyed) return
 
-      for (const chunk of res.chunks) {
+      // Normalize zero-timestamp chunks: distribute ops evenly in time
+      const newChunks = _normalizeChunkTimestamps(res.chunks)
+
+      for (const chunk of newChunks) {
         // Deduplicate: skip if chunk already loaded
         if (!chunks.value.some(c => c.chunk_index === chunk.chunk_index)) {
           chunks.value.push(chunk)
@@ -149,40 +187,59 @@ export function usePublicReplay(
 
     switch (op.op_type) {
       case 'stroke_add': {
-        const stroke = op.data as Record<string, unknown>
+        const raw = op.data as Record<string, unknown>
+        const stroke = (raw.stroke ?? raw) as Record<string, unknown>
         pages[pageId].strokes.push(stroke)
         break
       }
       case 'stroke_update': {
-        const data = op.data as Record<string, unknown>
+        const raw = op.data as Record<string, unknown>
+        const data = (raw.stroke ?? raw) as Record<string, unknown>
         const idx = pages[pageId].strokes.findIndex(s => s.id === data.id)
         if (idx >= 0) pages[pageId].strokes[idx] = { ...pages[pageId].strokes[idx], ...data }
         break
       }
       case 'stroke_delete': {
-        const id = (op.data as Record<string, unknown>).id
+        const raw = op.data as Record<string, unknown>
+        const id = raw.stroke_id ?? raw.id ?? (raw.stroke as Record<string, unknown>)?.id
         pages[pageId].strokes = pages[pageId].strokes.filter(s => s.id !== id)
         break
       }
       case 'asset_add': {
-        const asset = op.data as Record<string, unknown>
+        const raw = op.data as Record<string, unknown>
+        const asset = (raw.asset ?? raw) as Record<string, unknown>
         pages[pageId].assets.push(asset)
         break
       }
       case 'asset_update': {
-        const data = op.data as Record<string, unknown>
+        const raw = op.data as Record<string, unknown>
+        const data = (raw.asset ?? raw) as Record<string, unknown>
         const idx = pages[pageId].assets.findIndex(a => a.id === data.id)
         if (idx >= 0) pages[pageId].assets[idx] = { ...pages[pageId].assets[idx], ...data }
         break
       }
       case 'asset_delete': {
-        const id = (op.data as Record<string, unknown>).id
+        const raw = op.data as Record<string, unknown>
+        const id = raw.asset_id ?? raw.id ?? (raw.asset as Record<string, unknown>)?.id
         pages[pageId].assets = pages[pageId].assets.filter(a => a.id !== id)
         break
       }
       case 'clear_page': {
         pages[pageId].strokes = []
         pages[pageId].assets = []
+        break
+      }
+      case 'page_add': {
+        // Page already auto-created above via pages[pageId] init
+        break
+      }
+      case 'page_delete': {
+        delete pages[pageId]
+        break
+      }
+      case 'page_navigate':
+      case 'page_change': {
+        // Navigation ops don't mutate data — used for timeline only
         break
       }
       default:

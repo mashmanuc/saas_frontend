@@ -66,6 +66,25 @@
       </v-layer>
     </v-stage>
 
+    <!-- Page navigation overlay -->
+    <div v-if="totalPages > 1" class="public-board-viewer__page-nav">
+      <button
+        type="button"
+        class="public-board-viewer__page-btn"
+        :disabled="currentPageIdx <= 0"
+        aria-label="Previous page"
+        @click="prevPage"
+      >&lsaquo;</button>
+      <span class="public-board-viewer__page-indicator">{{ currentPageIdx + 1 }} / {{ totalPages }}</span>
+      <button
+        type="button"
+        class="public-board-viewer__page-btn"
+        :disabled="currentPageIdx >= totalPages - 1"
+        aria-label="Next page"
+        @click="nextPage"
+      >&rsaquo;</button>
+    </div>
+
     <!-- Zoom controls overlay -->
     <div class="public-board-viewer__zoom-controls">
       <button
@@ -126,6 +145,11 @@ interface BoardAsset {
 
 const props = defineProps<{
   boardState: Record<string, unknown>
+  pageIndex?: number
+}>()
+
+const emit = defineEmits<{
+  'update:pageIndex': [index: number]
 }>()
 
 // ─── Constants ──────────────────────────────────────────────────────────────
@@ -163,44 +187,102 @@ const failedImages = new Set<string>()
 
 let resizeObserver: ResizeObserver | null = null
 
-// ─── Parsed board state ─────────────────────────────────────────────────────
+// ─── Page-aware board state ─────────────────────────────────────────────────
 
-const parsedStrokes = computed<BoardStroke[]>(() => {
+interface ParsedPage {
+  id: string
+  name: string
+  strokes: BoardStroke[]
+  assets: BoardAsset[]
+}
+
+const currentPageIdx = ref(0)
+
+// Normalize pages from snapshot (array) or replay (object map) format
+const allPages = computed<ParsedPage[]>(() => {
   const state = props.boardState
   if (!state) return []
 
-  // Support flat format: { strokes: [...] }
-  if (Array.isArray(state.strokes)) return state.strokes as BoardStroke[]
-
-  // Support paged format: { pages: { [id]: { strokes: [...] } } }
-  const pages = state.pages as Record<string, { strokes?: BoardStroke[] }> | undefined
-  if (!pages) return []
-
-  const all: BoardStroke[] = []
-  for (const page of Object.values(pages)) {
-    if (Array.isArray(page.strokes)) {
-      all.push(...page.strokes)
-    }
+  // Format 1: snapshot array — { pages: [{id, name, strokes, assets}, ...] }
+  if (Array.isArray(state.pages)) {
+    return (state.pages as Array<Record<string, unknown>>).map((p, i) => ({
+      id: (p.id as string) || `page-${i}`,
+      name: (p.name as string) || `Page ${i + 1}`,
+      strokes: Array.isArray(p.strokes) ? p.strokes as BoardStroke[] : [],
+      assets: (Array.isArray(p.assets) ? p.assets as BoardAsset[] : []).map(a => {
+        const raw = a as unknown as Record<string, unknown>
+        return {
+          ...a,
+          width: raw.width ?? raw.w,
+          height: raw.height ?? raw.h,
+        } as BoardAsset
+      }),
+    }))
   }
-  return all
+
+  // Format 2: replay object map — { pages: { [pageId]: { strokes, assets } } }
+  if (state.pages && typeof state.pages === 'object') {
+    const pagesMap = state.pages as Record<string, { strokes?: BoardStroke[]; assets?: BoardAsset[] }>
+    return Object.entries(pagesMap).map(([id, p], i) => ({
+      id,
+      name: `Page ${i + 1}`,
+      strokes: Array.isArray(p.strokes) ? p.strokes : [],
+      assets: Array.isArray(p.assets) ? p.assets : [],
+    }))
+  }
+
+  // Format 3: flat (single page) — { strokes: [...], assets: [...] }
+  if (Array.isArray(state.strokes) || Array.isArray(state.assets)) {
+    return [{
+      id: 'default',
+      name: 'Page 1',
+      strokes: Array.isArray(state.strokes) ? state.strokes as BoardStroke[] : [],
+      assets: Array.isArray(state.assets) ? state.assets as BoardAsset[] : [],
+    }]
+  }
+
+  return []
+})
+
+const totalPages = computed(() => allPages.value.length)
+
+// Sync external pageIndex prop
+watch(() => props.pageIndex, (idx) => {
+  if (idx != null && idx !== currentPageIdx.value) {
+    currentPageIdx.value = Math.max(0, Math.min(idx, totalPages.value - 1))
+  }
+})
+
+function prevPage(): void {
+  if (currentPageIdx.value > 0) {
+    currentPageIdx.value--
+    emit('update:pageIndex', currentPageIdx.value)
+    fitToView()
+  }
+}
+
+function nextPage(): void {
+  if (currentPageIdx.value < totalPages.value - 1) {
+    currentPageIdx.value++
+    emit('update:pageIndex', currentPageIdx.value)
+    fitToView()
+  }
+}
+
+// Expose for parent components
+defineExpose({ goToPage: (idx: number) => {
+  currentPageIdx.value = Math.max(0, Math.min(idx, totalPages.value - 1))
+  fitToView()
+}})
+
+const parsedStrokes = computed<BoardStroke[]>(() => {
+  const page = allPages.value[currentPageIdx.value]
+  return page?.strokes ?? []
 })
 
 const parsedAssets = computed<BoardAsset[]>(() => {
-  const state = props.boardState
-  if (!state) return []
-
-  if (Array.isArray(state.assets)) return state.assets as BoardAsset[]
-
-  const pages = state.pages as Record<string, { assets?: BoardAsset[] }> | undefined
-  if (!pages) return []
-
-  const all: BoardAsset[] = []
-  for (const page of Object.values(pages)) {
-    if (Array.isArray(page.assets)) {
-      all.push(...page.assets)
-    }
-  }
-  return all
+  const page = allPages.value[currentPageIdx.value]
+  return page?.assets ?? []
 })
 
 // ─── Stage config ───────────────────────────────────────────────────────────
@@ -592,6 +674,57 @@ watch(() => props.boardState, () => {
   font-variant-numeric: tabular-nums;
 }
 
+/* Page navigation */
+.public-board-viewer__page-nav {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 4px 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  z-index: 10;
+}
+
+.public-board-viewer__page-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #475569;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.public-board-viewer__page-btn:hover:not(:disabled) {
+  background: #f1f5f9;
+}
+
+.public-board-viewer__page-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.public-board-viewer__page-indicator {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  min-width: 40px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
 @media (max-width: 640px) {
   .public-board-viewer__zoom-controls {
     bottom: 8px;
@@ -601,6 +734,10 @@ watch(() => props.boardState, () => {
   .public-board-viewer__zoom-btn {
     width: 36px;
     height: 36px;
+  }
+
+  .public-board-viewer__page-nav {
+    bottom: 8px;
   }
 }
 </style>

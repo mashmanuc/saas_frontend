@@ -64,6 +64,24 @@ export interface ReplayChunksResponse {
   next_cursor: number | null
 }
 
+// Raw BE format (differs from FE types: operations_json vs operations, time_ms vs timestamp_ms, payload vs data)
+interface RawReplayOp {
+  op_type: string
+  page_id?: string
+  payload?: Record<string, unknown>
+  data?: Record<string, unknown>
+  time_ms?: number
+  timestamp_ms?: number
+}
+
+interface RawReplayChunk {
+  chunk_index: number
+  start_ms: number
+  end_ms: number
+  operations_json?: RawReplayOp[]
+  operations?: RawReplayOp[]
+}
+
 export interface PublicMarker {
   id: string
   title: string
@@ -132,10 +150,25 @@ export const publicLessonApi = {
    * ReplayChunks with cursor pagination (INV-SCALE-1, INV-SCALE-5).
    * Max 50 chunks per request. next_cursor === null means no more chunks.
    */
-  getReplayChunks(tutorSlug: string, lessonSlug: string, cursor?: number): Promise<ReplayChunksResponse> {
+  async getReplayChunks(tutorSlug: string, lessonSlug: string, cursor?: number): Promise<ReplayChunksResponse> {
     const base = `${PUBLIC_BASE}/lessons/${encodeURIComponent(tutorSlug)}/${encodeURIComponent(lessonSlug)}/replay/`
     const url = cursor != null ? `${base}?cursor=${cursor}` : base
-    return publicFetch<ReplayChunksResponse>(url)
+    const raw = await publicFetch<{ chunks: RawReplayChunk[]; next_cursor: number | null }>(url)
+    // Map BE format (operations_json, time_ms, payload) → FE format (operations, timestamp_ms, data)
+    return {
+      chunks: raw.chunks.map(c => ({
+        chunk_index: c.chunk_index,
+        start_ms: c.start_ms,
+        end_ms: c.end_ms,
+        operations: (c.operations_json || c.operations || []).map((op: RawReplayOp) => ({
+          op_type: op.op_type,
+          page_id: op.page_id || '',
+          data: op.payload ?? op.data ?? {},
+          timestamp_ms: op.time_ms ?? op.timestamp_ms ?? 0,
+        })),
+      })),
+      next_cursor: raw.next_cursor,
+    }
   },
 
   /**
