@@ -15,6 +15,13 @@ const REFRESH_LOCK_KEY = 'auth_refresh_lock'
 const REFRESH_LOCK_TTL_MS = 30_000 // 30 seconds max for refresh operation
 const LOCK_RETRY_DELAY_MS = 100
 
+// Check if CSRF cookie exists (needed before refresh after hard reload)
+const getCsrfCookie = () => {
+  if (!hasDocument) return null
+  const match = document.cookie.match(/(?:^|; )csrf=([^;]*)/)
+  return match ? match[1] : null
+}
+
 export const useAuthStore = defineStore('auth', {
   state: () => {
     const rawUser = storage.getUser()
@@ -105,6 +112,11 @@ export const useAuthStore = defineStore('auth', {
       // We need a real JWT in memory for WebSocket auth.
       // Trigger a refresh to get real JWT + let backend set fresh cookie.
       if (this.access === '__cookie__') {
+        // Ensure CSRF cookie exists before refresh — hard refresh (Ctrl+Shift+R)
+        // clears cookies, and refresh endpoint requires CSRF validation.
+        if (!getCsrfCookie()) {
+          await this.ensureCsrfToken()
+        }
         try {
           await this.refreshAccess()
         } catch (err) {
