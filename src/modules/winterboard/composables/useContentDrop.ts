@@ -33,6 +33,19 @@ export interface UseContentDropOptions {
 const MAX_ASSET_W = 500
 const MAX_ASSET_H = 500
 
+const _PROXY_HOSTS = ['images.m4sh.org']
+const _apiBase = (() => {
+  const env = import.meta.env.VITE_API_BASE_URL as string | undefined
+  return env || '/api'
+})()
+function _buildMediaProxyUrl(src: string): string | null {
+  try {
+    const u = new URL(src, window.location.origin)
+    if (!_PROXY_HOSTS.includes(u.hostname)) return null
+    return `${_apiBase}/v1/uploads/media-proxy/?url=${encodeURIComponent(src)}`
+  } catch { return null }
+}
+
 export function useContentDrop(options: UseContentDropOptions) {
   const { sessionId, lessonId, canDraw, onAssetAdd, screenToCanvas } = options
 
@@ -160,11 +173,9 @@ export function useContentDrop(options: UseContentDropOptions) {
       }
       img.onerror = () => {
         console.warn('[useContentDrop] Image failed to load (crossOrigin=anonymous):', src)
-        // Try again without crossOrigin — some servers don't send CORS headers for media
-        const imgNoCors = new Image()
-        imgNoCors.onload = () => {
-          let w = imgNoCors.naturalWidth
-          let h = imgNoCors.naturalHeight
+        const _resolveFromImg = (i: HTMLImageElement) => {
+          let w = i.naturalWidth
+          let h = i.naturalHeight
           if (w > MAX_ASSET_W || h > MAX_ASSET_H) {
             const scale = Math.min(MAX_ASSET_W / w, MAX_ASSET_H / h)
             w = Math.round(w * scale)
@@ -173,11 +184,33 @@ export function useContentDrop(options: UseContentDropOptions) {
           if (w < 100) { const s = 100 / w; w = 100; h = Math.round(h * s) }
           resolve({ w, h, loaded: true })
         }
-        imgNoCors.onerror = () => {
-          console.error('[useContentDrop] Image completely inaccessible:', src)
-          resolve({ w: MAX_ASSET_W, h: Math.round(MAX_ASSET_W * 0.6), loaded: false })
+        // Try through backend media proxy (preserves CORS)
+        const proxyUrl = _buildMediaProxyUrl(src)
+        if (proxyUrl) {
+          const imgProxy = new Image()
+          imgProxy.crossOrigin = 'anonymous'
+          imgProxy.onload = () => { _resolveFromImg(imgProxy) }
+          imgProxy.onerror = () => {
+            // Proxy failed — last resort: no-CORS
+            const imgNoCors = new Image()
+            imgNoCors.onload = () => { _resolveFromImg(imgNoCors) }
+            imgNoCors.onerror = () => {
+              console.error('[useContentDrop] Image completely inaccessible:', src)
+              resolve({ w: MAX_ASSET_W, h: Math.round(MAX_ASSET_W * 0.6), loaded: false })
+            }
+            imgNoCors.src = src
+          }
+          imgProxy.src = proxyUrl
+        } else {
+          // Not proxyable — direct no-CORS fallback
+          const imgNoCors = new Image()
+          imgNoCors.onload = () => { _resolveFromImg(imgNoCors) }
+          imgNoCors.onerror = () => {
+            console.error('[useContentDrop] Image completely inaccessible:', src)
+            resolve({ w: MAX_ASSET_W, h: Math.round(MAX_ASSET_W * 0.6), loaded: false })
+          }
+          imgNoCors.src = src
         }
-        imgNoCors.src = src
       }
       img.src = src
     })

@@ -2188,6 +2188,21 @@ function normalizeAssetUrl(url: string): string {
 // кожна невдала картинка ретраєтиметься при кожному strokeEnd/mousemove.
 const failedImages = new Set<string>()
 
+// Media proxy: when CORS fails for images.m4sh.org, route through backend proxy
+// which adds proper CORS headers via Django middleware.
+const _PROXY_HOSTS = ['images.m4sh.org']
+const _apiBase = (() => {
+  const env = import.meta.env.VITE_API_BASE_URL as string | undefined
+  return env || '/api'
+})()
+function _buildMediaProxyUrl(src: string): string | null {
+  try {
+    const u = new URL(src, window.location.origin)
+    if (!_PROXY_HOSTS.includes(u.hostname)) return null
+    return `${_apiBase}/v1/uploads/media-proxy/?url=${encodeURIComponent(src)}`
+  } catch { return null }
+}
+
 // A4.3: Preload an asset image into the loadedImages cache (for immediate rendering after drop/paste)
 // FLICKER FIX: loadedImages is a plain Map (not reactive) — we imperatively update the Konva node
 // instead of relying on Vue reactivity, which would re-render ALL assets on every image load.
@@ -2228,17 +2243,38 @@ function preloadAssetImage(asset: WBAsset): void {
       failedImages.add(src)
       return
     }
-    // CORS failed — retry without crossOrigin (display-only mode, canvas may be tainted)
-    console.warn('[WB:Canvas] CORS preload failed, retrying without crossOrigin:', src)
-    const imgNoCors = new Image()
-    imgNoCors.onload = () => { applyImage(imgNoCors) }
-    imgNoCors.onerror = () => {
-      // Остаточно недоступне — додаємо в failedImages щоб не ретраїти нескінченно
-      console.error('[WB:Canvas] Image completely inaccessible, skipping retries:', src)
-      failedImages.add(src)
-      assetConfigCache.delete(asset.id)
+    // CORS failed — retry through backend media proxy (preserves canvas non-tainted state)
+    const proxyUrl = _buildMediaProxyUrl(src)
+    if (proxyUrl) {
+      console.info('[WB:Canvas] CORS failed, retrying via media proxy:', asset.id)
+      const imgProxy = new Image()
+      imgProxy.crossOrigin = 'anonymous'
+      imgProxy.onload = () => { applyImage(imgProxy) }
+      imgProxy.onerror = () => {
+        // Proxy also failed — last resort: display-only without crossOrigin (canvas tainted)
+        console.warn('[WB:Canvas] Proxy failed, retrying without crossOrigin:', src)
+        const imgNoCors = new Image()
+        imgNoCors.onload = () => { applyImage(imgNoCors) }
+        imgNoCors.onerror = () => {
+          console.error('[WB:Canvas] Image completely inaccessible, skipping retries:', src)
+          failedImages.add(src)
+          assetConfigCache.delete(asset.id)
+        }
+        imgNoCors.src = src
+      }
+      imgProxy.src = proxyUrl
+    } else {
+      // Not a proxyable URL — fallback to no-CORS directly
+      console.warn('[WB:Canvas] CORS failed, retrying without crossOrigin:', src)
+      const imgNoCors = new Image()
+      imgNoCors.onload = () => { applyImage(imgNoCors) }
+      imgNoCors.onerror = () => {
+        console.error('[WB:Canvas] Image completely inaccessible, skipping retries:', src)
+        failedImages.add(src)
+        assetConfigCache.delete(asset.id)
+      }
+      imgNoCors.src = src
     }
-    imgNoCors.src = src
   }
   image.src = src
 }
