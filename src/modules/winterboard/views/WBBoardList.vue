@@ -248,16 +248,14 @@ async function fetchBoards(): Promise<void> {
 // ─── CRUD actions ─────────────────────────────────────────────────────────────
 
 function openBoard(id: string): void {
-  const resolved = router.resolve({ name: 'winterboard-solo', params: { id } })
-  window.open(resolved.href, '_blank', 'noopener')
+  router.push({ name: 'winterboard-solo', params: { id } })
 }
 
 async function handleDuplicate(id: string): Promise<void> {
   try {
     const dup = await winterboardApi.duplicateSession(id)
     showToast(t('winterboard.boards.duplicated'), 'success')
-    const resolved = router.resolve({ name: 'winterboard-solo', params: { id: dup.id } })
-    window.open(resolved.href, '_blank', 'noopener')
+    router.push({ name: 'winterboard-solo', params: { id: dup.id } })
   } catch (err) {
     console.error('[WB:BoardList] Duplicate failed', err)
     showToast(t('winterboard.boards.duplicateError'), 'error')

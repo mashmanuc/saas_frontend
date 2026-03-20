@@ -179,8 +179,7 @@ async function loadRecentBoards(): Promise<void> {
 // ─── Actions ──────────────────────────────────────────────────────────────────
 
 function openBoard(id: string): void {
-  const resolved = router.resolve({ name: 'winterboard-solo', params: { id } })
-  window.open(resolved.href, '_blank', 'noopener')
+  router.push({ name: 'winterboard-solo', params: { id } })
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

@@ -241,13 +241,11 @@ async function loadData(): Promise<void> {
 // ─── Actions ─────────────────────────────────────────────────────────────────
 
 function openSession(sessionId: string): void {
-  const resolved = router.resolve({ name: 'winterboard-solo', params: { id: sessionId } })
-  window.open(resolved.href, '_blank', 'noopener')
+  router.push({ name: 'winterboard-solo', params: { id: sessionId } })
 }
 
 function startLesson(): void {
-  const resolved = router.resolve({ name: 'winterboard-classroom', params: { lessonId: props.lessonId } })
-  window.open(resolved.href, '_blank', 'noopener')
+  router.push({ name: 'winterboard-classroom', params: { lessonId: props.lessonId } })
 }
 
 function removeMaterial(material: { id: number }): void {
