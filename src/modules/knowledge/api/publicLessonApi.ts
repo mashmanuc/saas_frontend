@@ -202,7 +202,7 @@ export const publicLessonApi = {
     // BE returns { snapshot_url: "..." } — if so, fetch the actual snapshot JSON
     if (data?.snapshot_url && typeof data.snapshot_url === 'string') {
       try {
-        const snap = await fetch(data.snapshot_url as string, { credentials: 'include' })
+        const snap = await fetch(data.snapshot_url as string)
         if (snap.ok) return snap.json()
       } catch { /* fallback to wrapper */ }
     }
