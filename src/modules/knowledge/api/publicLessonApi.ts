@@ -3,7 +3,15 @@
 // Phase 21: додано optional auth — власник може бачити свої draft уроки.
 // Ref: PROGRESS.md Phase 13 — INV-SCALE-1 (ReplayChunks), INV-SCALE-3 (CDN cache), INV-SCALE-5 (cursor pagination)
 
-const PUBLIC_BASE = '/api/v1/knowledge/public'
+// In production, VITE_API_BASE_URL = "https://api.m4sh.org/api" → strip trailing "/api"
+// to get the origin, then append the full path. In dev, use relative paths (Vite proxy).
+const _apiOrigin = (() => {
+  const base = import.meta.env.VITE_API_BASE_URL as string | undefined
+  if (base) return base.replace(/\/api\/?$/, '')
+  return ''
+})()
+
+const PUBLIC_BASE = `${_apiOrigin}/api/v1/knowledge/public`
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 

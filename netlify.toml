@@ -2,6 +2,21 @@
   publish = "dist"
   command = "npm run build"
 
+# API proxy — must come BEFORE the SPA fallback
+[[redirects]]
+  from = "/api/*"
+  to = "https://api.m4sh.org/api/:splat"
+  status = 200
+  force = true
+
+# Media proxy (avatars, snapshots, etc.)
+[[redirects]]
+  from = "/media/*"
+  to = "https://api.m4sh.org/media/:splat"
+  status = 200
+  force = true
+
+# SPA fallback — must be LAST
 [[redirects]]
   from = "/*"
   to = "/index.html"

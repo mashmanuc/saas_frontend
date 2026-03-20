@@ -900,7 +900,7 @@ const routes = [
             path: 'catalog',
             name: 'KnowledgeCatalog',
             component: () => import('../modules/knowledge/views/KnowledgeCatalogPage.vue'),
-            // No meta.roles — accessible to all authenticated users (tutor, student, admin)
+            meta: { requiresAuth: false },
           },
           // Phase 21: My saved lessons
           {
@@ -1002,8 +1002,10 @@ router.beforeEach(async (to, from, next) => {
   const isAuthRoute = to.path.startsWith('/auth')
   const isInviteRoute = to.path.startsWith('/invite')
   const isStartRoute = to.path === '/start'
-  const requiresAuth = to.matched.some((record) => record.meta?.requiresAuth !== false && record.meta?.requiresAuth !== undefined ? record.meta.requiresAuth : true)
+  // Child route meta takes priority over parent: check from most-specific (last) to least-specific (first).
+  // If any matched record explicitly sets requiresAuth: false, the route is public.
   const isPublicRoute = to.matched.some((record) => record.meta?.requiresAuth === false)
+  const requiresAuth = !isPublicRoute && to.matched.some((record) => record.meta?.requiresAuth !== false && record.meta?.requiresAuth !== undefined ? record.meta.requiresAuth : true)
   const hasRoleAccess = hasAccess(user, to)
 
   // Public routes (requiresAuth: false) - завжди пропускаємо

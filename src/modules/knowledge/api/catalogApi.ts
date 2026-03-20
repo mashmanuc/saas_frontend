@@ -72,8 +72,16 @@ export interface LessonCollectionDetail extends LessonCollection {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-const CATALOG_BASE = '/api/v1/knowledge/catalog'
-const PUBLIC_BASE = '/api/v1/knowledge/public'
+// In production, VITE_API_BASE_URL = "https://api.m4sh.org/api" → strip trailing "/api"
+// to get the origin, then append the full path. In dev, use relative paths (Vite proxy).
+const _apiOrigin = (() => {
+  const base = import.meta.env.VITE_API_BASE_URL as string | undefined
+  if (base) return base.replace(/\/api\/?$/, '')
+  return ''
+})()
+
+const CATALOG_BASE = `${_apiOrigin}/api/v1/knowledge/catalog`
+const PUBLIC_BASE = `${_apiOrigin}/api/v1/knowledge/public`
 
 async function publicFetch<T>(path: string): Promise<T> {
   const res = await fetch(path)
@@ -182,12 +190,12 @@ export const catalogApi = {
 
   // ── Collections (public, CDN cached 3600s) ─────────────────────────
   getCollections(): Promise<LessonCollection[]> {
-    return publicFetch<LessonCollection[]>('/api/v1/knowledge/collections/')
+    return publicFetch<LessonCollection[]>(`${_apiOrigin}/api/v1/knowledge/collections/`)
   },
 
   getCollectionDetail(slug: string): Promise<LessonCollectionDetail> {
     return publicFetch<LessonCollectionDetail>(
-      `/api/v1/knowledge/collections/${encodeURIComponent(slug)}/`,
+      `${_apiOrigin}/api/v1/knowledge/collections/${encodeURIComponent(slug)}/`,
     )
   },
 }
