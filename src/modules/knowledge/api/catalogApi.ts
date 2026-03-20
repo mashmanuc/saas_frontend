@@ -75,8 +75,10 @@ export interface LessonCollectionDetail extends LessonCollection {
 // In production, VITE_API_BASE_URL = "https://api.m4sh.org/api" → strip trailing "/api"
 // to get the origin, then append the full path. In dev, use relative paths (Vite proxy).
 const _apiOrigin = (() => {
-  const base = import.meta.env.VITE_API_BASE_URL as string | undefined
+  const base = (import.meta.env.VITE_API_BASE_URL || '') as string
   if (base) return base.replace(/\/api\/?$/, '')
+  // Production fallback: якщо env не задано, використовуємо hardcoded origin
+  if (import.meta.env.PROD) return 'https://api.m4sh.org'
   return ''
 })()
 
