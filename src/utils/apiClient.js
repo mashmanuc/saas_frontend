@@ -167,13 +167,12 @@ api.interceptors.response.use(
       }
     }
 
+    // 429 rate-limit: log quietly, do NOT show toast to user.
+    // Background store fetches (billing, entitlements, sessions) cause bursts
+    // on page load that hit rate limits — notifying the user is confusing UX.
     if (status === 429) {
       const retryAfter = error.response?.headers?.['retry-after']
-      if (retryAfter) {
-        notifyWarning(`Забагато запитів. Спробуйте через ${retryAfter}с.`)
-      } else {
-        notifyWarning('Забагато запитів. Спробуйте пізніше.')
-      }
+      console.warn(`[API] 429 Rate limited: ${original.url}${retryAfter ? ` (retry-after: ${retryAfter}s)` : ''}`)
     }
 
     const url = original.url || ''

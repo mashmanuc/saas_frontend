@@ -81,29 +81,23 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Vendor chunks
-          'vendor-vue': ['vue', 'vue-router', 'pinia'],
-          'vendor-ui': ['lucide-vue-next'],
-          'vendor-utils': ['dayjs', 'axios'],
-          
-          // Konva — isolated vendor chunk (~140KB min)
-          'vendor-konva': ['konva'],
+        manualChunks(id) {
+          // Vendor chunks — stable caching for node_modules
+          if (id.includes('node_modules/vue/') || id.includes('node_modules/@vue/') || id.includes('node_modules/vue-router') || id.includes('node_modules/pinia')) return 'vendor-vue'
+          if (id.includes('node_modules/konva')) return 'vendor-konva'
+          if (id.includes('node_modules/lucide-vue-next')) return 'vendor-ui'
+          if (id.includes('node_modules/dayjs') || id.includes('node_modules/axios')) return 'vendor-utils'
+          if (id.includes('node_modules/vue-i18n')) return 'vendor-i18n'
 
-          // Feature chunks
-          'chunk-whiteboard': [
-            './src/modules/board/views/BoardView.vue',
-            './src/stores/boardStore.js',
-          ],
-          'chunk-chat': [
-            './src/modules/chat/components/ChatPanel.vue',
-            './src/modules/chat/components/ChatMessage.vue',
-            './src/stores/chatStore.js',
-          ],
-          'chunk-dashboard': [
-            './src/modules/dashboard/views/DashboardTutor.vue',
-            './src/modules/dashboard/views/DashboardStudent.vue',
-          ],
+          // Feature modules — split by domain (only src/ files, not node_modules)
+          if (id.includes('/src/')) {
+            if (id.includes('/modules/winterboard/')) return 'chunk-winterboard'
+            if (id.includes('/modules/chat/') || id.includes('/modules/chat-realtime/') || id.includes('/stores/chatStore')) return 'chunk-chat'
+            if (id.includes('/modules/board/') || id.includes('/stores/boardStore')) return 'chunk-board'
+            if (id.includes('/modules/marketplace/')) return 'chunk-marketplace'
+            if (id.includes('/modules/booking/')) return 'chunk-booking'
+            if (id.includes('/modules/knowledge/')) return 'chunk-knowledge'
+          }
         },
       },
     },

@@ -52,24 +52,49 @@ export const useBillingStore = defineStore('billing-v074', () => {
   const subscriptionStatus = computed(() => me.value?.subscription_status || 'none')
   const hasPendingPlan = computed(() => !!pendingPlanCode.value)
 
+  // Cache: billing data rarely changes, no need to refetch every page load
+  const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
+  let _lastFetchedAt = 0
+  let _fetchPromise: Promise<void> | null = null
+
   /**
    * Fetch current user's billing status
-   * 
+   *
    * This is the source of truth for:
    * - Current plan
    * - Subscription status
    * - Entitlements
+   *
+   * Uses 5-minute cache + in-flight dedup to prevent burst requests.
    */
-  async function fetchMe() {
+  async function fetchMe(force = false) {
+    // Return cached data if still fresh
+    if (!force && me.value && Date.now() - _lastFetchedAt < CACHE_TTL_MS) {
+      return
+    }
+    // Deduplicate concurrent calls
+    if (_fetchPromise) return _fetchPromise
+
+    _fetchPromise = _doFetchMe()
+    try {
+      await _fetchPromise
+    } finally {
+      _fetchPromise = null
+    }
+  }
+
+  async function _doFetchMe() {
     isLoading.value = true
     lastError.value = null
 
     try {
       me.value = await billingApi.getMe()
+      _lastFetchedAt = Date.now()
     } catch (err: any) {
       console.error('Failed to fetch billing status:', err)
       lastError.value = err
-      throw err
+      // Don't throw on 429 — it's a background fetch, not user action
+      if (err?.response?.status !== 429) throw err
     } finally {
       isLoading.value = false
     }
