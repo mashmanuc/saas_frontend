@@ -40,10 +40,10 @@
         <p v-if="saveError" class="mt-2 text-sm text-red-600" role="alert">{{ saveError }}</p>
 
         <!-- Actions -->
-        <div class="mt-6 flex gap-3 justify-end">
+        <div class="save-lesson-dialog__actions">
           <button
             type="button"
-            class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
+            class="save-lesson-dialog__btn save-lesson-dialog__btn--cancel"
             @click="close"
           >
             {{ $t('common.cancel') }}
@@ -51,7 +51,7 @@
           <button
             type="button"
             :disabled="isSaving || !title.trim()"
-            class="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50 transition-colors"
+            class="save-lesson-dialog__btn save-lesson-dialog__btn--save"
             @click="save"
           >
             {{ isSaving ? $t('winterboard.lesson.saving') : $t('winterboard.lesson.saveButton') }}
@@ -148,12 +148,56 @@ if (typeof window !== 'undefined') {
 </script>
 
 <style scoped>
+.save-lesson-dialog__actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+.save-lesson-dialog__btn {
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.save-lesson-dialog__btn--cancel {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.save-lesson-dialog__btn--cancel:hover {
+  background: #e2e8f0;
+}
+
+.save-lesson-dialog__btn--save {
+  background: #0066FF;
+  color: #ffffff;
+}
+
+.save-lesson-dialog__btn--save:hover {
+  background: #0052cc;
+}
+
+.save-lesson-dialog__btn--save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 @media (max-width: 640px) {
   .save-lesson-dialog {
-    @apply rounded-none max-w-none m-0 min-h-screen;
+    border-radius: 0;
+    max-width: none;
+    margin: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
   }
   .save-lesson-overlay {
-    @apply items-stretch;
+    align-items: stretch;
   }
 }
 </style>

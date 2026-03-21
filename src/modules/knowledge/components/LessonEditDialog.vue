@@ -72,7 +72,8 @@
             </button>
             <button
               type="submit"
-              class="px-4 py-2 text-sm text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50"
+              class="px-4 py-2 text-sm text-white rounded-lg disabled:opacity-50"
+              style="background: #0066FF;"
               :disabled="isSaving || !form.title.trim()"
             >
               {{ isSaving
