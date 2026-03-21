@@ -2,19 +2,19 @@ import api from '../../../utils/apiClient'
 
 const authApi = {
   login(payload) {
-    return api.post('/v1/auth/login/', payload)
+    return api.post('/v1/auth/login', payload)
   },
 
   mfaVerify(payload) {
-    return api.post('/v1/auth/mfa/verify/', payload)
+    return api.post('/v1/auth/mfa/verify', payload)
   },
 
   mfaSetup(payload) {
-    return api.post('/v1/auth/mfa/setup/', payload)
+    return api.post('/v1/auth/mfa/setup', payload)
   },
 
   mfaConfirm(payload) {
-    return api.post('/v1/auth/mfa/confirm/', payload)
+    return api.post('/v1/auth/mfa/confirm', payload)
   },
 
   webauthnChallenge(sessionId) {

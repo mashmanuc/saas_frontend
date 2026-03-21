@@ -66,18 +66,6 @@ const createRequestId = () =>
 
 api.interceptors.request.use(
   (config) => {
-    // FIX: Ensure trailing slash on API URLs to prevent 301 redirects from Django.
-    // Each 301 redirect doubles the request count, wasting rate limit budget.
-    if (config.url && !config.url.endsWith('/') && !config.url.includes('?')) {
-      config.url += '/'
-    } else if (config.url && !config.url.includes('/?') && config.url.includes('?')) {
-      // URL with query params: /v1/me?limit=10 → /v1/me/?limit=10
-      const [path, query] = config.url.split('?')
-      if (!path.endsWith('/')) {
-        config.url = `${path}/?${query}`
-      }
-    }
-
     const store = useAuthStore()
     const loader = useLoaderStore()
     // Пропускаємо loader для фонових запитів (polling, тощо)

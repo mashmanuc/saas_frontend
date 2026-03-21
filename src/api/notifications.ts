@@ -20,7 +20,7 @@ export const notificationsApi = {
       queryParams.offset = params.offset
     }
 
-    return apiClient.get('/notifications/me/', {
+    return apiClient.get('/notifications/me', {
       params: queryParams,
       meta: { skipLoader: params?.skipLoader ?? false },
     } as any)
