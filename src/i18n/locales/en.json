@@ -7580,7 +7580,8 @@
       },
       "mySubjects": "Your subjects",
       "showAll": "Show all ({count})",
-      "hideOther": "Hide"
+      "hideOther": "Hide",
+      "noCategories": "No categories available"
     },
     "rating": {
       "title": "Rate this lesson",

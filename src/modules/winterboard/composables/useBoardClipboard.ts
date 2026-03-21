@@ -52,9 +52,21 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
   const isUploading = ref(false)
   const uploadError = ref<string | null>(null)
 
+  // FIX: Flag to skip system clipboard when internal paste already handled Ctrl+V.
+  // Without this, Ctrl+V pastes BOTH the internal board object AND the system
+  // clipboard image simultaneously (double-paste bug).
+  let _skipNextSystemPaste = false
+
   // ─── Paste handler (native 'paste' event) ──────────────────
   async function handlePaste(e: ClipboardEvent): Promise<void> {
     if (disabled?.()) return
+
+    // If pasteInternal() already handled this Ctrl+V, skip system clipboard
+    if (_skipNextSystemPaste) {
+      _skipNextSystemPaste = false
+      e.preventDefault()
+      return
+    }
 
     const items = e.clipboardData?.items
     if (!items) return
@@ -272,6 +284,9 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
   // ─── Internal paste (board objects) ────────────────────────
   function pasteInternal(): void {
     if (!internalClipboard.value) return
+
+    // Signal handlePaste() to skip system clipboard for this Ctrl+V
+    _skipNextSystemPaste = true
 
     const { strokes, assets } = internalClipboard.value
     const OFFSET = 20

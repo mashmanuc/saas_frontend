@@ -7668,7 +7668,8 @@
       },
       "mySubjects": "Ваші предмети",
       "showAll": "Показати всі ({count})",
-      "hideOther": "Сховати"
+      "hideOther": "Сховати",
+      "noCategories": "Категорії відсутні"
     },
     "rating": {
       "title": "Оцініть урок",

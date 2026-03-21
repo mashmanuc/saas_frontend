@@ -17,6 +17,7 @@ const DEBOUNCE_MS = 300
 
 export function useCatalog() {
   const categories = ref<SubjectCategory[]>([])
+  const categoriesLoaded = ref(false)
   const lessons = ref<CatalogSearchResult[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
@@ -43,6 +44,8 @@ export function useCatalog() {
       categories.value = await catalogApi.getCategories()
     } catch (err) {
       console.error('[useCatalog] Failed to load categories:', err)
+    } finally {
+      categoriesLoaded.value = true
     }
   }
 
@@ -122,6 +125,7 @@ export function useCatalog() {
 
   return {
     categories,
+    categoriesLoaded,
     lessons,
     isLoading,
     error,

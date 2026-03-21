@@ -38,8 +38,14 @@
           </button>
         </div>
 
-        <div v-if="categories.length === 0" class="catalog-page__cat-loading">
+        <!-- Skeleton: only while loading, not after failed/empty load -->
+        <div v-if="!categoriesLoaded" class="catalog-page__cat-loading">
           <div v-for="i in 5" :key="i" class="catalog-page__cat-skeleton" />
+        </div>
+
+        <!-- No categories loaded → hide sidebar content -->
+        <div v-else-if="categories.length === 0" class="catalog-page__cat-empty">
+          <span class="catalog-page__cat-empty-text">{{ $t('knowledge.catalog.noCategories', 'Категорії відсутні') }}</span>
         </div>
 
         <nav v-else class="catalog-page__cat-list" :aria-label="$t('knowledge.catalog.filter.categories')">
@@ -414,6 +420,7 @@ function getCatIcon(name: string | undefined): Component | null {
 
 const {
   categories,
+  categoriesLoaded,
   lessons,
   isLoading,
   error,
@@ -677,6 +684,15 @@ onMounted(async () => {
 @keyframes cat-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
+}
+
+.catalog-page__cat-empty {
+  padding: 16px 8px;
+  text-align: center;
+}
+.catalog-page__cat-empty-text {
+  font-size: 13px;
+  color: #94a3b8;
 }
 
 .catalog-page__cat-list {

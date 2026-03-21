@@ -33,8 +33,9 @@
     >
       <!-- Thumbnail canvas preview -->
       <canvas
-        ref="thumbnailCanvases"
+        :ref="(el) => setCanvasRef(el as HTMLCanvasElement | null, index)"
         class="wb-thumbnail__canvas"
+        :data-page-index="index"
         :width="THUMB_W"
         :height="THUMB_H"
       />
@@ -107,7 +108,18 @@ const emit = defineEmits<{
   reorder: [fromIndex: number, toIndex: number]
 }>()
 
-const thumbnailCanvases = ref<HTMLCanvasElement[]>([])
+// FIX: Use indexed Map instead of template ref array.
+// Vue 3 does NOT guarantee ref array order matches v-for order.
+// This caused thumbnails to render wrong page content (visual page reversal).
+const canvasMap = new Map<number, HTMLCanvasElement>()
+
+function setCanvasRef(el: HTMLCanvasElement | null, index: number): void {
+  if (el) {
+    canvasMap.set(index, el)
+  } else {
+    canvasMap.delete(index)
+  }
+}
 
 // ─── Drag and Drop ──────────────────────────────────────────────────────────
 
@@ -241,10 +253,10 @@ function scheduleRender(): void {
 }
 
 function renderAllThumbnails(): void {
-  const canvases = thumbnailCanvases.value
   for (let i = 0; i < props.pages.length; i++) {
-    if (canvases[i]) {
-      renderThumbnail(canvases[i], props.pages[i])
+    const canvas = canvasMap.get(i)
+    if (canvas) {
+      renderThumbnail(canvas, props.pages[i])
     }
   }
 }
@@ -262,7 +274,11 @@ watch(
 // Watch for page list changes (add/delete/reorder)
 watch(
   () => props.pages.length,
-  async () => {
+  async (newLen) => {
+    // Clean up stale canvas refs for removed pages
+    for (const key of canvasMap.keys()) {
+      if (key >= newLen) canvasMap.delete(key)
+    }
     await nextTick()
     renderAllThumbnails()
   }
@@ -274,6 +290,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (renderTimeout) clearTimeout(renderTimeout)
+  canvasMap.clear()
 })
 </script>
 

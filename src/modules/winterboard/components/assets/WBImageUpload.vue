@@ -211,6 +211,8 @@ async function onDrop(e: DragEvent): Promise<void> {
 // ── Clipboard paste ──────────────────────────────────────────────────────
 async function onPaste(e: ClipboardEvent): Promise<void> {
   if (props.disabled) return
+  // FIX: Skip if already handled by useBoardClipboard (prevents double-paste)
+  if (e.defaultPrevented) return
   const items = e.clipboardData?.items
   if (!items) return
 
