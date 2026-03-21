@@ -60,7 +60,7 @@ const authApi = {
   },
 
   getCurrentUser(): Promise<any> {
-    return apiClient.get('/v1/me').then((res: any) => res?.user || res)
+    return apiClient.get('/v1/me/').then((res: any) => res?.user || res)
   },
 
   register(payload: RegisterPayload): Promise<any> {

@@ -56,7 +56,7 @@ export type TutorProfileUpdate = Partial<Omit<TutorFullProfile, 'id' | 'email' |
  * @throws ApiError (401) if not authenticated
  */
 export async function getTutorProfile(): Promise<TutorFullProfile> {
-  const response = await apiClient.get('/v1/tutors/me')
+  const response = await apiClient.get('/v1/tutors/me/')
   return response.data
 }
 
@@ -72,7 +72,7 @@ export async function getTutorProfile(): Promise<TutorFullProfile> {
  * @throws ApiError (401) if not authenticated
  */
 export async function updateTutorProfile(data: TutorProfileUpdate): Promise<TutorFullProfile> {
-  const response = await apiClient.patch('/v1/tutors/me', data)
+  const response = await apiClient.patch('/v1/tutors/me/', data)
   return response.data
 }
 

@@ -209,7 +209,7 @@ export const useRealtimeStore = defineStore('realtime', {
       }
 
       try {
-        const res = await api.get('/v1/realtime/health')
+        const res = await api.get('/v1/realtime/health/')
         const wsHost = res?.ws_host
         this.wsUrl = normalizeWsUrl(wsHost)
         // Update service config for the next connect attempt

@@ -9,7 +9,7 @@ const PROFILE_AUTOSAVE = '/me/profile/autosave/'
  */
 export async function getMeProfile() {
   const [meData, settings] = await Promise.all([
-    apiClient.get('/v1/me'),
+    apiClient.get('/v1/me/'),
     apiClient.get('/v1/me/settings').catch(() => null),
   ])
   const user = meData?.user ?? meData
@@ -25,7 +25,7 @@ export async function getMeProfile() {
  * Accepts: { first_name, last_name, timezone, username, phone, telegram_username }
  */
 export async function patchMeProfile(payload) {
-  const res = await apiClient.patch('/v1/me', payload)
+  const res = await apiClient.patch('/v1/me/', payload)
   const user = res?.user ?? res
   return { user, avatar_url: user?.avatar_url ?? null }
 }

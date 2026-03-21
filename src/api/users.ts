@@ -72,14 +72,14 @@ export interface RoleHistoryEntry {
  * Отримати повний профіль поточного користувача
  */
 export async function getMyProfile(): Promise<ProfileResponse> {
-  return apiClient.get('/v1/me')
+  return apiClient.get('/v1/me/')
 }
 
 /**
  * Оновити профіль поточного користувача
  */
 export async function updateMyProfile(payload: Partial<TutorProfile | StudentProfile>): Promise<ProfileResponse> {
-  return apiClient.patch('/v1/me', payload)
+  return apiClient.patch('/v1/me/', payload)
 }
 
 /**
