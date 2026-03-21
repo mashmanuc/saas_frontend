@@ -37,7 +37,7 @@
           :tutor-avatar-url="lesson.tutor?.avatar_url"
           :tutor-slug="lesson.tutor?.slug"
           :subject-tag="lesson.subject_tag"
-          :duration-seconds="lesson.duration_seconds"
+          :duration-seconds="effectiveDurationSeconds"
           :created-at="lesson.created_at"
         />
 
@@ -70,7 +70,7 @@
           <!-- Replay player -->
           <PublicReplayPlayer
             :current-seconds="currentSeconds"
-            :duration-seconds="lesson.duration_seconds"
+            :duration-seconds="effectiveDurationSeconds"
             :is-playing="replay.isPlaying.value"
             :markers="replayMarkers"
             :speed="replay.speed.value"
@@ -294,6 +294,17 @@ const breadcrumbItems = computed(() => {
 const replay = usePublicReplay(tutorSlug, lessonSlug)
 
 const currentSeconds = computed(() => Math.floor(replay.currentTimeMs.value / 1000))
+
+// Duration: prefer API value, fallback to replay chunks max end_ms
+const effectiveDurationSeconds = computed(() => {
+  const apiDuration = lesson.value?.duration_seconds ?? 0
+  if (apiDuration > 0) return apiDuration
+  // Fallback: use loaded replay chunks' max end_ms
+  const chunkDuration = Math.floor(replay.totalDurationMs.value / 1000)
+  if (chunkDuration > 0) return chunkDuration
+  // Last resort: use current playback position (at least show something)
+  return currentSeconds.value > 0 ? currentSeconds.value : 0
+})
 
 const activeMarkerId = computed(() => {
   if (markers.value.length === 0) return null

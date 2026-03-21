@@ -356,11 +356,15 @@ export function useAutosave(sessionId: Ref<string | null>): AutosaveReturn {
   function handleVisibilityChange(): void {
     if (document.visibilityState === 'hidden' && sessionId.value) {
       if (store.isDirty || pendingOps.value.length > 0) {
+        // Always send beacon first as insurance (fast, fire-and-forget)
         winterboardApi.beaconSave(sessionId.value, {
           state: store.serializedState,
           rev: store.rev,
           client_ts: new Date().toISOString(),
         })
+        // Then try full save (works when tab hidden but browser alive)
+        // If autosave already in progress, performSave() will no-op (isSaving guard)
+        performSave().catch(() => { /* beacon already sent as fallback */ })
       }
     }
   }

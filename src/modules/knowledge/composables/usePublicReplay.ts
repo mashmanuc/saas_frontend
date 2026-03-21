@@ -25,6 +25,7 @@ export interface UsePublicReplayReturn {
   boardSnapshot: Ref<Record<string, unknown>>
   isLoadingChunks: Ref<boolean>
   totalLoadedOps: ComputedRef<number>
+  totalDurationMs: ComputedRef<number>
   play: () => void
   pause: () => void
   seekTo: (timeMs: number) => void
@@ -55,6 +56,12 @@ export function usePublicReplay(
   const totalLoadedOps = computed(() =>
     chunks.value.reduce((sum, c) => sum + c.operations.length, 0),
   )
+
+  // Total duration from loaded chunks (max end_ms across all chunks)
+  const totalDurationMs = computed(() => {
+    if (chunks.value.length === 0) return 0
+    return Math.max(...chunks.value.map(c => c.end_ms))
+  })
 
   // ── Zero-timestamp normalization ────────────────────────────────────────
 
@@ -345,6 +352,7 @@ export function usePublicReplay(
     boardSnapshot,
     isLoadingChunks,
     totalLoadedOps,
+    totalDurationMs,
     play,
     pause,
     seekTo,
