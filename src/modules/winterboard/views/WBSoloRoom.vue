@@ -447,7 +447,7 @@
     <WBSelectionToolbar
       :selected-ids="store.selectedIds"
       :zoom="store.zoom"
-      :canvas-rect="canvasContainerRef?.getBoundingClientRect() ?? null"
+      :canvas-rect="selectionCanvasRect"
       :mode="mode"
       :is-locked="hasLockedInSelection"
       :bbox="selectionBBox"
@@ -1051,6 +1051,13 @@ const isCanvasEmpty = computed(() => {
 // PROB-1 FIX: Check if any selected item is locked (for lock/unlock toggle in toolbar)
 const hasLockedInSelection = computed(() => {
   return store.selectedIds.some((id) => store.isItemLocked(id))
+})
+
+// P2: Canvas rect for WBSelectionToolbar — recalculated when selection changes
+const selectionCanvasRect = computed(() => {
+  // Depend on selectedIds so rect is recalculated on selection change
+  if (store.selectedIds.length === 0) return null
+  return canvasContainerRef.value?.getBoundingClientRect() ?? null
 })
 
 // P2: Bounding box of selected objects for WBSelectionToolbar positioning

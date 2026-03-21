@@ -137,7 +137,7 @@ const toolbarRef = ref<HTMLElement | null>(null)
 const isVisible = computed(() =>
   props.selectedIds.length > 0 &&
   props.mode === 'edit' &&
-  deviceMode.value === 'desktop',
+  (deviceMode.value === 'desktop' || deviceMode.value === 'display'),
 )
 
 // ─── Positioning ────────────────────────────────────────────────────────────
