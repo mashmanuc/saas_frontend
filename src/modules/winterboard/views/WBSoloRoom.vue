@@ -115,7 +115,7 @@
           type="button"
           class="wb-header-btn wb-header-btn--save-lesson"
           :title="t('winterboard.lesson.saveButton') || 'Зберегти як урок'"
-          @click="showSaveLessonDialog = true"
+          @click="openSaveLessonDialog"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13 14H3a1 1 0 01-1-1V3a1 1 0 011-1h8l3 3v9a1 1 0 01-1 1z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 14V9H5v5M5 2v3h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
@@ -1387,6 +1387,12 @@ function handlePublished(publicUrl: string, lessonData?: { id: string; title: st
 // Phase 14 B2.2: Handle template saved
 function handleTemplateSaved(): void {
   showSaveTemplateDialog.value = false
+}
+
+// Phase 21: Force autosave before opening save dialog to ensure latest state is persisted
+async function openSaveLessonDialog(): Promise<void> {
+  await autosave.saveNow()
+  showSaveLessonDialog.value = true
 }
 
 // Phase 21: Handle lesson saved

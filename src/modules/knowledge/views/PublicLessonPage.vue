@@ -413,6 +413,22 @@ watch(
   },
 )
 
+// Sync page navigation from replay to board viewer
+watch(
+  () => replay.currentPageId.value,
+  (pageId) => {
+    if (!pageId || !boardViewerRef.value) return
+    const pages = boardState.value?.pages
+    if (!pages || typeof pages !== 'object') return
+    // Find page index by pageId in the pages object map
+    const keys = Object.keys(pages)
+    const idx = keys.indexOf(pageId)
+    if (idx >= 0) {
+      boardViewerRef.value.goToPage(idx)
+    }
+  },
+)
+
 // Phase 16 INT-43: Moment title — find marker name near current replay position
 const currentMomentTitle = computed<string | null>(() => {
   if (!replay.currentTimeMs.value || !markers.value.length) return null

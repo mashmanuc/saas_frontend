@@ -18,6 +18,7 @@ const DEFAULT_OP_INTERVAL_MS = 100 // fallback interval when timestamps are zero
 export interface UsePublicReplayReturn {
   isPlaying: Ref<boolean>
   currentTimeMs: Ref<number>
+  currentPageId: Ref<string>
   speed: Ref<number>
   chunks: Ref<ReplayChunk[]>
   loadedUpToChunk: Ref<number>
@@ -38,6 +39,7 @@ export function usePublicReplay(
 ): UsePublicReplayReturn {
   const isPlaying = ref(false)
   const currentTimeMs = ref(0)
+  const currentPageId = ref('default')
   const speed = ref(1)
   const chunks = ref<ReplayChunk[]>([])
   const loadedUpToChunk = ref(-1)
@@ -174,13 +176,15 @@ export function usePublicReplay(
    * This builds up the board state incrementally.
    */
   function applyOperation(op: ReplayOperation): void {
-    const state = { ...boardSnapshot.value }
+    const prevState = boardSnapshot.value
     const pageId = op.page_id || 'default'
 
-    if (!state.pages) {
-      state.pages = {}
+    // Deep-clone pages to avoid mutating previous snapshot references
+    const oldPages = (prevState.pages ?? {}) as Record<string, { strokes: Record<string, unknown>[]; assets: Record<string, unknown>[] }>
+    const pages: Record<string, { strokes: Record<string, unknown>[]; assets: Record<string, unknown>[] }> = {}
+    for (const [k, v] of Object.entries(oldPages)) {
+      pages[k] = { strokes: [...v.strokes], assets: [...v.assets] }
     }
-    const pages = state.pages as Record<string, { strokes: Record<string, unknown>[]; assets: Record<string, unknown>[] }>
     if (!pages[pageId]) {
       pages[pageId] = { strokes: [], assets: [] }
     }
@@ -189,14 +193,15 @@ export function usePublicReplay(
       case 'stroke_add': {
         const raw = op.data as Record<string, unknown>
         const stroke = (raw.stroke ?? raw) as Record<string, unknown>
-        pages[pageId].strokes.push(stroke)
+        pages[pageId].strokes = [...pages[pageId].strokes, stroke]
         break
       }
       case 'stroke_update': {
         const raw = op.data as Record<string, unknown>
         const data = (raw.stroke ?? raw) as Record<string, unknown>
-        const idx = pages[pageId].strokes.findIndex(s => s.id === data.id)
-        if (idx >= 0) pages[pageId].strokes[idx] = { ...pages[pageId].strokes[idx], ...data }
+        pages[pageId].strokes = pages[pageId].strokes.map(s =>
+          s.id === data.id ? { ...s, ...data } : s,
+        )
         break
       }
       case 'stroke_delete': {
@@ -208,14 +213,15 @@ export function usePublicReplay(
       case 'asset_add': {
         const raw = op.data as Record<string, unknown>
         const asset = (raw.asset ?? raw) as Record<string, unknown>
-        pages[pageId].assets.push(asset)
+        pages[pageId].assets = [...pages[pageId].assets, asset]
         break
       }
       case 'asset_update': {
         const raw = op.data as Record<string, unknown>
         const data = (raw.asset ?? raw) as Record<string, unknown>
-        const idx = pages[pageId].assets.findIndex(a => a.id === data.id)
-        if (idx >= 0) pages[pageId].assets[idx] = { ...pages[pageId].assets[idx], ...data }
+        pages[pageId].assets = pages[pageId].assets.map(a =>
+          a.id === data.id ? { ...a, ...data } : a,
+        )
         break
       }
       case 'asset_delete': {
@@ -225,8 +231,7 @@ export function usePublicReplay(
         break
       }
       case 'clear_page': {
-        pages[pageId].strokes = []
-        pages[pageId].assets = []
+        pages[pageId] = { strokes: [], assets: [] }
         break
       }
       case 'page_add': {
@@ -239,16 +244,15 @@ export function usePublicReplay(
       }
       case 'page_navigate':
       case 'page_change': {
-        // Navigation ops don't mutate data — used for timeline only
+        // Track current page for UI sync
+        currentPageId.value = pageId
         break
       }
       default:
-        // Unknown op type — ignore for forward compatibility
         break
     }
 
-    state.pages = pages
-    boardSnapshot.value = state
+    boardSnapshot.value = { ...prevState, pages }
   }
 
   // ── Playback loop ─────────────────────────────────────────────────────
@@ -311,12 +315,10 @@ export function usePublicReplay(
     const wasPlaying = isPlaying.value
     if (wasPlaying) pause()
 
-    // Reset board state and replay from beginning to target time
-    boardSnapshot.value = {}
-    currentTimeMs.value = 0
-
-    // Apply all operations up to timeMs
+    // Load chunks first, THEN reset and rebuild — avoids blank flash
     ensureChunksUpTo(timeMs).then(() => {
+      boardSnapshot.value = {}
+      currentPageId.value = 'default'
       applyOperationsInRange(0, timeMs)
       currentTimeMs.value = timeMs
 
@@ -336,6 +338,7 @@ export function usePublicReplay(
   return {
     isPlaying,
     currentTimeMs,
+    currentPageId,
     speed,
     chunks,
     loadedUpToChunk,
