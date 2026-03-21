@@ -92,7 +92,7 @@ export function useKeyboard(
 
     const ctrl = event.ctrlKey || event.metaKey
     const shift = event.shiftKey
-    const key = event.key.toUpperCase()
+    const key = (event.key ?? '').toUpperCase()
     const code = event.code
 
     // ── Modifier combos (work even in editable fields for Ctrl+Z etc.) ──

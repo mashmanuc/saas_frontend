@@ -44,7 +44,35 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
    * R4: Validates payload size before recording — rejects payloads > 64KB
    * to match backend WBBoardOperationCreateSerializer.validate_payload.
    */
+  /**
+   * Strip base64 data URLs from asset payloads to keep size under limit.
+   * Replay only needs the remote URL (src), not the inline data.
+   */
+  function _stripDataUrls(payload: Record<string, unknown>): Record<string, unknown> {
+    const result = { ...payload }
+    // Strip from top-level src/url if it's a data URL
+    for (const key of ['src', 'url', 'thumbnail'] as const) {
+      if (typeof result[key] === 'string' && (result[key] as string).startsWith('data:')) {
+        result[key] = ''
+      }
+    }
+    // Strip from nested asset object
+    if (result.asset && typeof result.asset === 'object') {
+      result.asset = _stripDataUrls(result.asset as Record<string, unknown>)
+    }
+    // Strip from nested stroke object
+    if (result.stroke && typeof result.stroke === 'object') {
+      result.stroke = _stripDataUrls(result.stroke as Record<string, unknown>)
+    }
+    return result
+  }
+
   function record(op: RecordOperationRequest): void {
+    // Strip data URLs from asset payloads before size check
+    if (op.payload && typeof op.payload === 'object') {
+      op = { ...op, payload: _stripDataUrls(op.payload as Record<string, unknown>) }
+    }
+
     // R4: Payload size guard — prevents 400 on backend
     try {
       const payloadJson = JSON.stringify(op.payload ?? {})

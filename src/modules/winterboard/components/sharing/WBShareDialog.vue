@@ -15,25 +15,11 @@
             </button>
           </div>
 
-          <!-- Phase 16 INT-25: Tab bar for Share / Publish modes -->
-          <div v-if="mode === 'share' || mode === 'publish'" class="wb-share-dialog__tabs">
-            <button
-              type="button"
-              class="wb-share-dialog__tab"
-              :class="{ 'wb-share-dialog__tab--active': activeTab === 'share' }"
-              @click="activeTab = 'share'"
-            >
-              {{ t('winterboard.share.tabShare') }}
-            </button>
-            <button
-              type="button"
-              class="wb-share-dialog__tab"
-              :class="{ 'wb-share-dialog__tab--active': activeTab === 'publish' }"
-              @click="activeTab = 'publish'"
-            >
-              {{ t('winterboard.share.tabPublish') }}
-            </button>
-          </div>
+          <!-- Phase 16 INT-25: Tab bar — Publish tab hidden, use Save as Lesson flow instead -->
+          <!-- <div v-if="mode === 'share' || mode === 'publish'" class="wb-share-dialog__tabs">
+            <button type="button" class="wb-share-dialog__tab" :class="{ 'wb-share-dialog__tab--active': activeTab === 'share' }" @click="activeTab = 'share'">{{ t('winterboard.share.tabShare') }}</button>
+            <button type="button" class="wb-share-dialog__tab" :class="{ 'wb-share-dialog__tab--active': activeTab === 'publish' }" @click="activeTab = 'publish'">{{ t('winterboard.share.tabPublish') }}</button>
+          </div> -->
 
           <p v-if="activeTab === 'share'" class="wb-share-dialog__desc">{{ t('winterboard.share.description') }}</p>
 
@@ -306,7 +292,8 @@ const { t } = useI18n()
 const { showToast } = useToast()
 
 // ── Phase 16 INT-25: Tab state ───────────────────────────────────────────
-const activeTab = ref<'share' | 'publish'>(props.mode === 'publish' ? 'publish' : 'share')
+// Publish tab removed — always use Share mode. Publish flow via "Save as Lesson" button.
+const activeTab = ref<'share' | 'publish'>('share')
 
 // ── Phase 13 A3.1: Knowledge publish composable ──────────────────────────
 const publishLesson = usePublishLesson()

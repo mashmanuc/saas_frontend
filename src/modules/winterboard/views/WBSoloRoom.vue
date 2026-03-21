@@ -119,8 +119,8 @@
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13 14H3a1 1 0 01-1-1V3a1 1 0 011-1h8l3 3v9a1 1 0 01-1 1z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 14V9H5v5M5 2v3h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
-        <!-- Phase 13 A3.3: Publish button — only if session has operations -->
-        <button
+        <!-- Phase 13 A3.3: Publish button — прихована: дублює Save as Lesson flow -->
+        <!-- <button
           v-if="sessionId && store.currentStrokes.length > 0"
           type="button"
           class="wb-header-btn wb-header-btn--publish"
@@ -128,7 +128,7 @@
           @click="showPublishDialog = true"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 14h12M8 2v9M5 5l3-3 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
+        </button> -->
         <!-- Phase 14 B2.2: Save as template button — only if lesson already published -->
         <button
           v-if="publishedLessonData"
