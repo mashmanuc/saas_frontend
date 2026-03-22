@@ -6,12 +6,11 @@
 </template>
 
 <script setup>
-import { onMounted, onBeforeUnmount, watch, ref } from 'vue'
+import { onMounted, onBeforeUnmount, watch, ref, computed } from 'vue'
 import { PageThemeProvider } from './modules/ui/theme'
 import { DiagnosticsPanel } from './modules/diagnostics'
-import { useEntitlementsStore } from '@/stores/entitlementsStore'
-import { useBillingStore } from '@/modules/billing/stores/billingStore'
 import { useAuthStore } from '@/modules/auth/store/authStore'
+// import { useUserContextQuery } from '@/api/queries/useUserContextQuery'  // Phase 29 B1 — disabled until backend endpoint ready
 import { useNotificationsStore } from '@/stores/notificationsStore'
 import { websocketService } from '@/services/websocket'
 import { pollingCoordinator } from '@/services/pollingCoordinator'
@@ -27,24 +26,19 @@ if (isDev) {
 
 let unsubNotifPolling = null
 
+const authStore = useAuthStore()
+
+// Phase 29 B1: user context (entitlements + limits + billing) via TanStack Query
+// DISABLED: Backend endpoint /v1/users/me/context/ not yet implemented.
+// Uncomment when Agent C (Phase 28) deploys the endpoint.
+// const { entitlements: _ctx } = useUserContextQuery({ enabled: computed(() => authStore.isAuthenticated) })
+
 onMounted(async () => {
-  const entitlementsStore = useEntitlementsStore()
-  const billingStore = useBillingStore()
-  const authStore = useAuthStore()
   const notificationsStore = useNotificationsStore()
 
   await authStore.bootstrap()
   if (!authStore.isAuthenticated) {
     return
-  }
-  
-  try {
-    await Promise.all([
-      entitlementsStore.loadEntitlements(),
-      billingStore.fetchMe()
-    ])
-  } catch (err) {
-    console.debug('Failed to load entitlements/billing on app mount:', err)
   }
 
   // Setup global WebSocket subscription for notifications

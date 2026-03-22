@@ -11,10 +11,14 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useContactsStore } from '../contactsStore'
 import * as billingApi from '@/api/billing'
+import { queryClient } from '@/app/queryClient'
 
 vi.mock('@/api/billing')
 vi.mock('@/utils/rethrowAsDomainError', () => ({
   rethrowAsDomainError: vi.fn()
+}))
+vi.mock('@/app/queryClient', () => ({
+  queryClient: { invalidateQueries: vi.fn() }
 }))
 
 describe('contactsStore', () => {
@@ -137,13 +141,11 @@ describe('contactsStore', () => {
   })
 
   describe('afterAcceptRefresh (INV-3)', () => {
-    it('should refetch balance and reset ledger', async () => {
-      const mockBalance = { balance: 5, user_id: 1 }
+    it('should invalidate queries and reset ledger', async () => {
       const mockLedger = [
         { id: 1, transaction_type: 'DEDUCTION' as const, delta: -1, balance_after: 5, reason: 'contact unlocked', created_at: '2026-01-25', inquiry_id: null }
       ]
       
-      vi.mocked(billingApi.getContactBalance).mockResolvedValue(mockBalance)
       vi.mocked(billingApi.getContactLedger).mockResolvedValue(mockLedger)
       
       const store = useContactsStore()
@@ -152,9 +154,11 @@ describe('contactsStore', () => {
       
       await store.afterAcceptRefresh()
       
-      expect(billingApi.getContactBalance).toHaveBeenCalled()
+      // Phase 29: balance/stats refetch via TanStack Query invalidation
+      expect(queryClient.invalidateQueries).toHaveBeenCalledWith({ queryKey: ['contact-balance'] })
+      expect(queryClient.invalidateQueries).toHaveBeenCalledWith({ queryKey: ['contact-stats'] })
+      // Ledger still fetched via store (not migrated to Query)
       expect(billingApi.getContactLedger).toHaveBeenCalledWith(50, 0)
-      expect(store.balance).toBe(5)
       expect(store.ledger).toEqual(mockLedger)
     })
   })

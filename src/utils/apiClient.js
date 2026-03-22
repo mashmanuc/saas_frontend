@@ -26,6 +26,17 @@ const api = axios.create({
   withCredentials: true,
 })
 
+// Phase 28: GET request deduplication (INV-2: transport-level only)
+// If identical GET is already in-flight → reuse its Promise instead of making new HTTP call
+// Store TTL decides WHETHER to fetch. This decides WHETHER to make a new HTTP request.
+const _inFlightGets = new Map()
+
+export function _getDedupeKey(config) {
+  if (config.method?.toLowerCase() !== 'get') return null
+  const params = config.params ? JSON.stringify(config.params, Object.keys(config.params).sort()) : ''
+  return `GET:${config.url}:${params}`
+}
+
 let isRefreshingToken = false
 let isRefreshingCsrf = false
 const refreshQueue = []
@@ -100,6 +111,12 @@ api.interceptors.request.use(
         console.debug('[apiClient] Adjusting API path (removed /api prefix):', config.url)
       }
       config.url = config.url.replace(/^\/api/, '')
+    }
+
+    // Phase 28: GET dedup — attach dedup key to config for adapter
+    const dedupeKey = _getDedupeKey(config)
+    if (dedupeKey) {
+      config._dedupeKey = dedupeKey
     }
 
     return config
@@ -283,6 +300,40 @@ api.interceptors.response.use(
     return Promise.reject(error)
   }
 )
+
+// Phase 28: GET dedup adapter (INV-2: transport-level dedup)
+// FIX: axios 1.x adapter is an array of strings ['xhr','http','fetch'], not a function.
+// Use axios.getAdapter() to resolve the correct adapter function.
+const _resolvedAdapter = axios.getAdapter(api.defaults.adapter || axios.defaults.adapter)
+api.defaults.adapter = function dedupAdapter(config) {
+  const key = config._dedupeKey
+  if (!key) {
+    return _resolvedAdapter.call(this, config)
+  }
+
+  const existing = _inFlightGets.get(key)
+  if (existing) {
+    if (import.meta.env.DEV) {
+      console.debug('[FETCH:dedup]', key, 'REUSED in-flight')
+    }
+    return existing.then(
+      response => ({ ...response, config }),
+      error => Promise.reject(error)
+    )
+  }
+
+  if (import.meta.env.DEV) {
+    console.debug('[FETCH:dedup]', key, 'NEW request')
+  }
+
+  const promise = _resolvedAdapter.call(this, config)
+  _inFlightGets.set(key, promise)
+
+  const cleanup = () => { _inFlightGets.delete(key) }
+  promise.then(cleanup, cleanup)
+
+  return promise
+}
 
 export default api
 export const apiClient = api

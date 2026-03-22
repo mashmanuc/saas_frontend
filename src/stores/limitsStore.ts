@@ -14,11 +14,12 @@ export const useLimitsStore = defineStore('limits', () => {
   const limits = ref<ContactLimit[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
-  
+
+  // Phase 29: TTL removed. TanStack Query (useUserContextQuery) is sole cache.
   async function fetchLimits() {
     isLoading.value = true
     error.value = null
-    
+
     try {
       const response = await apiClient.get<LimitsResponse>('/v1/users/me/limits/')
       limits.value = response.limits

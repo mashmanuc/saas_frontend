@@ -297,23 +297,13 @@ describe('WBDashboard.vue (B14)', () => {
 
   // Test 16
   it('navigates to board on recent card click', async () => {
-    const mockOpen = vi.fn()
-    vi.stubGlobal('open', mockOpen)
-
     const wrapper = await mountDashboard()
     await vi.waitFor(() => expect(wrapper.find('.wb-recent-card').exists()).toBe(true))
     await wrapper.find('.wb-recent-card').trigger('click')
-    expect(mockResolve).toHaveBeenCalledWith({
+    expect(mockPush).toHaveBeenCalledWith({
       name: 'winterboard-solo',
       params: { id: SESSION.id },
     })
-    expect(mockOpen).toHaveBeenCalledWith(
-      `/winterboard/${SESSION.id}`,
-      '_blank',
-      'noopener',
-    )
-
-    vi.unstubAllGlobals()
   })
 })
 

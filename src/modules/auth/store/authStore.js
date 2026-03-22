@@ -746,6 +746,14 @@ export const useAuthStore = defineStore('auth', {
         // WS може не бути ініціалізований — це нормально
       }
 
+      // Phase 29: очищення TanStack Query cache при logout — запобігає витоку даних
+      try {
+        const { queryClient } = await import('../../../app/queryClient')
+        queryClient.clear()
+      } catch {
+        // queryClient може не бути ініціалізований — це нормально
+      }
+
       storage.clearAll()
 
       // 🔥 CRITICAL FIX v0.87.1: Очищення всіх Pinia stores при logout

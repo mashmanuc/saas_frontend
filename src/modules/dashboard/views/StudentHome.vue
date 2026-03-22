@@ -17,7 +17,7 @@
     <!-- Upcoming Lessons -->
     <TodaySchedule
       :lessons="upcomingLessons"
-      :loading="dashboard.isLoadingStudent"
+      :loading="isLoading"
       :is-tutor="false"
     />
 
@@ -26,9 +26,9 @@
 
     <!-- Active Tutors -->
     <StudentActiveTutorsSection
-      :active-tutors="dashboard.activeTutors"
-      :loading="dashboard.isLoading"
-      :error="dashboard.error"
+      :active-tutors="activeTutors"
+      :loading="isLoading"
+      :error="error?.message ?? null"
     />
 
     <!-- Empty Dashboard State -->
@@ -44,10 +44,9 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed } from 'vue'
 import { useAuthStore } from '@/modules/auth/store/authStore'
-import { useDashboardStore } from '../store/dashboardStore'
-import { useRelationsStore } from '@/stores/relationsStore'
+import { useStudentDashboardQuery } from '@/api/queries/useStudentDashboardQuery'
 import DashboardGreeting from '../components/DashboardGreeting.vue'
 import DashboardStatsRow from '../components/DashboardStatsRow.vue'
 import TodaySchedule from '../components/TodaySchedule.vue'
@@ -57,10 +56,9 @@ import DashboardEmptyState from '../components/DashboardEmptyState.vue'
 import TrialBanner from '@/modules/auth/components/TrialBanner.vue'
 
 const auth = useAuthStore()
-const dashboard = useDashboardStore()
-const relationsStore = useRelationsStore()
 
-const upcomingLessons = computed(() => dashboard.upcomingLessons ?? [])
+// Phase 29 B2: Query auto-fetches on mount. Replaces dashboardStore.fetchStudentDashboard()
+const { activeTutors, upcomingLessons, studentStats, isLoading, error } = useStudentDashboardQuery()
 
 const dashboardStats = computed(() => [
   {
@@ -74,30 +72,25 @@ const dashboardStats = computed(() => [
     key: 'activeTutors',
     icon: 'users',
     label: 'dashboard.stats.activeTutors',
-    value: dashboard.activeTutors?.length ?? 0,
+    value: activeTutors.value?.length ?? 0,
   },
   {
     key: 'totalLessons',
     icon: 'book-open',
     label: 'dashboard.stats.totalLessons',
-    value: dashboard.studentStats?.total_lessons ?? 0,
+    value: studentStats.value?.total_lessons ?? 0,
   },
   {
     key: 'totalHours',
     icon: 'clock',
     label: 'dashboard.stats.totalHours',
-    value: dashboard.studentStats?.total_hours ?? 0,
+    value: studentStats.value?.total_hours ?? 0,
   },
 ])
 
 const showEmptyState = computed(() => {
-  return !dashboard.isLoadingStudent
+  return !isLoading.value
     && !upcomingLessons.value.length
-    && !dashboard.activeTutors?.length
-})
-
-onMounted(() => {
-  dashboard.fetchStudentDashboard().catch(() => {})
-  relationsStore.fetchStudentRelations().catch(() => {})
+    && !activeTutors.value?.length
 })
 </script>

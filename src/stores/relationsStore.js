@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 import relationsApi from '../api/relations'
 import { notifyError, notifySuccess, notifyWarning, notifyInfo } from '../utils/notify'
 import { i18n } from '../i18n'
+import { queryClient } from '@/app/queryClient'
+import { queryKeys } from '@/api/queryKeys'
 
 function normalizeTutorRelationsResponse(response) {
   // legacy: { results, cursor, has_more, summary }
@@ -119,7 +121,6 @@ export const useRelationsStore = defineStore('relations', {
     },
 
     async fetchStudentRelations(params = {}) {
-      // Захист від паралельних запитів
       if (this.studentLoading) return
       this.studentLoading = true
       this.studentError = null
@@ -141,11 +142,14 @@ export const useRelationsStore = defineStore('relations', {
       }
     },
 
-    async fetchTutorRelations({ cursor = null, append = false } = {}) {
-      if (append && !this.tutorHasMore) {
-        return
+    async fetchTutorRelations({ cursor = null, append = false, force = false } = {}) {
+      if (append) {
+        if (!this.tutorHasMore) return
       }
+      return this._doFetchTutorRelations({ cursor, append, force })
+    },
 
+    async _doFetchTutorRelations({ cursor = null, append = false, force = false } = {}) {
       if (append) {
         this.tutorLoadingMore = true
       } else {
@@ -232,12 +236,10 @@ export const useRelationsStore = defineStore('relations', {
         notifyError(error?.response?.data?.detail || translate('relations.actions.acceptError'))
         throw error
       } finally {
-        // v0.88: Role-aware fetch - avoid 404 and unnecessary requests
-        if (userRole === 'TUTOR') {
-          await this.fetchTutorRelations().catch(() => {})
-        } else if (userRole === 'STUDENT') {
-        await this.fetchStudentRelations().catch(() => {})
-        }
+        // Phase 29 INV-3: mutation → invalidateQueries (Query handles refetch)
+        queryClient.invalidateQueries({ queryKey: queryKeys.relations() })
+        queryClient.invalidateQueries({ queryKey: queryKeys.limits() })
+        queryClient.invalidateQueries({ queryKey: queryKeys.userContext() })
       }
     },
 
@@ -257,10 +259,8 @@ export const useRelationsStore = defineStore('relations', {
         notifyError(error?.response?.data?.detail || translate('relations.actions.declineError'))
         throw error
       } finally {
-        // v0.88: Role-aware fetch - avoid 404 and unnecessary requests
-        if (userRole === 'STUDENT') {
-        await this.fetchStudentRelations().catch(() => {})
-        }
+        // Phase 29 INV-3: mutation → invalidateQueries
+        queryClient.invalidateQueries({ queryKey: queryKeys.relations() })
       }
     },
 
@@ -272,7 +272,8 @@ export const useRelationsStore = defineStore('relations', {
         notifyError(error?.response?.data?.detail || translate('relations.actions.resendError'))
         throw error
       } finally {
-        await this.fetchTutorRelations().catch(() => {})
+        // Phase 29 INV-3: mutation → invalidateQueries
+        queryClient.invalidateQueries({ queryKey: queryKeys.relations() })
       }
     },
 
@@ -288,8 +289,10 @@ export const useRelationsStore = defineStore('relations', {
         const result = await relationsApi.bulkAcceptTutorRelations(ids)
         this.handleBulkResult('accept', result)
         this.clearTutorSelection()
-        await this.fetchTutorRelations().catch(() => {})
-        await this.fetchStudentRelations().catch(() => {})
+        // Phase 29 INV-3: mutation → invalidateQueries
+        queryClient.invalidateQueries({ queryKey: queryKeys.relations() })
+        queryClient.invalidateQueries({ queryKey: queryKeys.limits() })
+        queryClient.invalidateQueries({ queryKey: queryKeys.userContext() })
       } catch (error) {
         notifyError(error?.response?.data?.detail || translate('relations.bulk.genericError'))
         throw error
@@ -309,7 +312,8 @@ export const useRelationsStore = defineStore('relations', {
         const result = await relationsApi.bulkArchiveTutorRelations(this.tutorSelectedIds)
         this.handleBulkResult('archive', result)
         this.clearTutorSelection()
-        await this.fetchTutorRelations().catch(() => {})
+        // Phase 29 INV-3: mutation → invalidateQueries
+        queryClient.invalidateQueries({ queryKey: queryKeys.relations() })
       } catch (error) {
         notifyError(error?.response?.data?.detail || translate('relations.bulk.genericError'))
         throw error
@@ -351,7 +355,8 @@ export const useRelationsStore = defineStore('relations', {
       try {
         await relationsApi.tutorRestoreRelation(relationId)
         notifySuccess(translate('relations.actions.restoreSuccess'))
-        await this.fetchTutorRelations().catch(() => {})
+        // Phase 29 INV-3: mutation → invalidateQueries
+        queryClient.invalidateQueries({ queryKey: queryKeys.relations() })
       } catch (error) {
         notifyError(error?.response?.data?.detail || translate('relations.actions.restoreError'))
         throw error
@@ -365,7 +370,8 @@ export const useRelationsStore = defineStore('relations', {
       try {
         await relationsApi.tutorHideRelation(relationId)
         notifySuccess(translate('relations.actions.hideSuccess'))
-        await this.fetchTutorRelations().catch(() => {})
+        // Phase 29 INV-3: mutation → invalidateQueries
+        queryClient.invalidateQueries({ queryKey: queryKeys.relations() })
       } catch (error) {
         notifyError(error?.response?.data?.detail || translate('relations.actions.hideError'))
         throw error
@@ -387,6 +393,9 @@ export const useRelationsStore = defineStore('relations', {
       this.tutorErrorCode = null
       this.tutorFilter = 'all'
       this.tutorSelectedIds = []
+      // Phase 28: reset TTL timestamps
+      _studentCache.invalidate()
+      _tutorCache.invalidate()
     },
   },
 })

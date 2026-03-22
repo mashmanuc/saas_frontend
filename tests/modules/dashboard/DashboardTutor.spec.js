@@ -30,6 +30,15 @@ vi.mock('vue-router', () => ({
   }),
 }))
 
+vi.mock('../../../src/api/queries/useTutorDashboardQuery', () => ({
+  useMarketplaceMeQuery: () => ({
+    isProfilePublished: { value: false },
+    data: { value: null },
+    isLoading: { value: false },
+    error: { value: null },
+  }),
+}))
+
 vi.mock('../../../src/stores/contactAccessStore', () => ({
   useContactAccessStore: () => ({
     loading: false,

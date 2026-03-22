@@ -47,7 +47,9 @@ export const useNotificationsStore = defineStore('notifications', () => {
     })
   })
 
-  async function loadNotifications(params?: { unreadOnly?: boolean; limit?: number; offset?: number }) {
+  async function loadNotifications(params?: { unreadOnly?: boolean; limit?: number; offset?: number; force?: boolean }) {
+    // Phase 28: NO TTL cache for notifications — per AGENT_RULES: "Do NOT cache polling endpoints"
+    // apiClient GET dedup (INV-2) handles in-flight dedup at transport level
     isLoading.value = true
     error.value = null
 

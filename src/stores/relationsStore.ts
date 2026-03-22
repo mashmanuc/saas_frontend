@@ -19,9 +19,10 @@ import type {
 } from '@/types/relations'
 import { LimitExceededError } from '@/utils/errors'
 import { rethrowAsDomainError } from '@/utils/rethrowAsDomainError'
-import { useLimitsStore } from './limitsStore'
+import { queryClient } from '@/app/queryClient'
+import { queryKeys } from '@/api/queryKeys'
 
-export const useRelationsStore = defineStore('relations', () => {
+export const useStudentRelationsStore = defineStore('studentRelations', () => {
   const relations = ref<Relation[]>([])
   
   // P0.2: Рознесені стани для різних дій
@@ -77,9 +78,10 @@ export const useRelationsStore = defineStore('relations', () => {
       
       upsertRelation(response.relation)
       
-      // Оновити ліміти
-      const limitsStore = useLimitsStore()
-      await limitsStore.fetchLimits()
+      // Phase 29 INV-3: mutation → invalidateQueries (Query handles refetch)
+      queryClient.invalidateQueries({ queryKey: queryKeys.relations() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.limits() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.userContext() })
       
       return response.relation
     } catch (err) {
@@ -113,9 +115,10 @@ export const useRelationsStore = defineStore('relations', () => {
       
       upsertRelation(response.relation)
       
-      // Оновити ліміти
-      const limitsStore = useLimitsStore()
-      await limitsStore.fetchLimits()
+      // Phase 29 INV-3: mutation → invalidateQueries (Query handles refetch)
+      queryClient.invalidateQueries({ queryKey: queryKeys.relations() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.limits() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.userContext() })
       
       return response.relation
     } catch (err) {
@@ -161,3 +164,6 @@ export const useRelationsStore = defineStore('relations', () => {
     invitedRequests
   }
 })
+
+/** @deprecated Use useStudentRelationsStore — renamed to fix Pinia ID conflict with relationsStore.js */
+export const useRelationsStore = useStudentRelationsStore

@@ -369,6 +369,7 @@ import { useContactAccessStore } from '../../../stores/contactAccessStore'
 import TrialBanner from '../../auth/components/TrialBanner.vue'
 import OnboardingHint from '@/components/OnboardingHint.vue'
 import { TutorHintId } from '@/composables/useOnboardingHints'
+import { useMarketplaceMeQuery } from '@/api/queries/useTutorDashboardQuery'
 import apiClient from '@/utils/apiClient'
 import { notifySuccess, notifyError, notifyWarning } from '../../../utils/notify'
 import { getMessageAction } from '@/utils/relationsUi'
@@ -383,9 +384,8 @@ presenceStore.init()
 const router = useRouter()
 const { t } = useI18n()
 
-// FTUE: Check if tutor profile is published
-// Default false = show banner immediately; hide only after API confirms is_published=true
-const isProfilePublished = ref(false)
+// Phase 29 B3: isProfilePublished via TanStack Query (replaces dashboard.isProfilePublished)
+const { isProfilePublished } = useMarketplaceMeQuery()
 
 // Pre-Phase 4: Demo Student onboarding hint condition
 const hasOnlyDemoStudent = computed(() => {
@@ -815,13 +815,6 @@ onMounted(async () => {
     startUnreadPolling()
   }
 
-  // FTUE: Check profile publish status for welcome banner
-  try {
-    const me = await apiClient.get('/v1/marketplace/me/', { meta: { skipLoader: true } })
-    isProfilePublished.value = !!me?.is_published
-  } catch {
-    // Silent — banner is non-critical
-  }
 })
 
 onUnmounted(() => {

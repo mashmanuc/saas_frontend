@@ -30,8 +30,13 @@ vi.mock('../../src/utils/notify', () => ({
   notifyInfo: vi.fn(),
 }))
 
+vi.mock('@/app/queryClient', () => ({
+  queryClient: { invalidateQueries: vi.fn() }
+}))
+
 import relationsApi from '../../src/api/relations'
 import { notifySuccess, notifyError, notifyWarning, notifyInfo } from '../../src/utils/notify'
+import { queryClient } from '@/app/queryClient'
 
 const baseRelationsResponse = {
   results: [
@@ -139,8 +144,9 @@ describe('relationsStore (tutor relations v3)', () => {
     expect(notifySuccess).toHaveBeenCalled()
     expect(store.tutorSelectedIds).toHaveLength(0)
     expect(store.tutorBulkLoading).toBe(false)
-    expect(relationsApi.getTutorRelations).toHaveBeenCalledTimes(2)
-    expect(relationsApi.getStudentRelations).toHaveBeenCalledTimes(1)
+    // Phase 29: mutation → invalidateQueries (no direct refetch)
+    expect(relationsApi.getTutorRelations).toHaveBeenCalledTimes(1) // only init fetch
+    expect(queryClient.invalidateQueries).toHaveBeenCalled()
   })
 
   it('bulkAcceptSelectedTutorRelations warns when no invited relations selected', async () => {

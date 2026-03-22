@@ -20,6 +20,9 @@ import { useAuthStore } from './modules/auth/store/authStore'
 import { createErrorCollector } from './modules/diagnostics/plugins/errorCollector'
 import { apiClient } from './utils/apiClient'
 import VueKonva from 'vue-konva'
+import { VueQueryPlugin } from '@tanstack/vue-query'
+import { queryClient } from '@/app/queryClient'
+import { setupQueryBridge, teardownQueryBridge } from '@/services/queryBridge'
 
 // Initialize calendar debug module (only in debug mode)
 if (import.meta.env.VITE_CALENDAR_DEBUG === 'true') {
@@ -32,6 +35,7 @@ const app = createApp(App)
 app.use(pinia)
 app.use(i18n)
 app.use(VueKonva)
+app.use(VueQueryPlugin, { queryClient })
 
 // Install error collector for diagnostics
 const errorCollector = createErrorCollector({
@@ -61,34 +65,20 @@ setupI18n(localStorage.getItem('locale') || 'uk').then(async () => {
   realtime.init()
 
   const authStore = useAuthStore()
-  const notificationsStore = useNotificationsStore()
 
   await authStore.bootstrap()
 
-  const preloadNotifications = () => {
-    if (!notificationsStore.items.length) {
-      notificationsStore
-        .loadNotifications({ limit: 10 })
-        .catch((error) => console.error('[main] Failed to preload notifications:', error))
-    }
-  }
-
-  if (authStore.isAuthenticated) {
-    preloadNotifications()
-  } else {
-    const stopWatch = watch(
-      () => authStore.isAuthenticated,
-      (isAuth) => {
-        if (isAuth) {
-          preloadNotifications()
-          stopWatch()
-        }
-      }
-    )
-  }
+  // Phase 29: WS → Query invalidation bridge (after auth + realtime ready)
+  setupQueryBridge({ queryClient })
 
   if (import.meta.hot) {
     import.meta.hot.dispose(() => {
+      try {
+        teardownQueryBridge()
+        queryClient.clear()
+      } catch {
+        // ignore
+      }
       try {
         useRealtimeStore().dispose?.()
       } catch {

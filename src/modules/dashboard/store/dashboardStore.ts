@@ -11,6 +11,7 @@ import {
   type TutorStats,
   type TutorDashboardSnapshot,
 } from '../api/dashboard'
+import apiClient from '@/utils/apiClient'
 
 export const useDashboardStore = defineStore('dashboard', () => {
   // State
@@ -38,6 +39,9 @@ export const useDashboardStore = defineStore('dashboard', () => {
   // Legacy state (for backward compatibility)
   const tutorStudents = ref<unknown[]>([])
   const nextLessonAt = ref<string | null>(null)
+
+  // Phase 28 B8: consolidated /v1/marketplace/me/ (INV-4: UI → store, not inline fetch)
+  const isProfilePublished = ref(false)
 
   // Computed
   const hasUpcomingLessons = computed(() => upcomingLessons.value.length > 0)
@@ -162,6 +166,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
     nextLessonAt.value = null
     snapshot.value = null
     error.value = null
+    isProfilePublished.value = false
   }
 
   return {
@@ -189,6 +194,9 @@ export const useDashboardStore = defineStore('dashboard', () => {
     // Snapshot (R2)
     snapshot,
     isLoadingSnapshot,
+
+    // Phase 28 B8: marketplace me (legacy — Phase 29: useMarketplaceMeQuery)
+    isProfilePublished,
 
     // Actions
     fetchStudentDashboard,

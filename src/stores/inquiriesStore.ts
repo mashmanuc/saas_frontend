@@ -29,6 +29,8 @@ import {
   rejectInquiry as apiRejectInquiry
 } from '@/api/inquiries'
 import { rethrowAsDomainError } from '@/utils/rethrowAsDomainError'
+import { queryClient } from '@/app/queryClient'
+import { queryKeys } from '@/api/queryKeys'
 
 export const useInquiriesStore = defineStore('inquiries', () => {
   // State v0.69
@@ -82,17 +84,14 @@ export const useInquiriesStore = defineStore('inquiries', () => {
    * @returns список inquiries
    */
   async function fetchInquiries(filters: InquiryFilters = {}): Promise<InquiryDTO[]> {
-    // NOTE: Do NOT guard with isLoading here — refetch() called from mutations
-    // (cancelInquiry, acceptInquiry, rejectInquiry) needs to run even when isLoading=true.
-    // The mutation functions set isLoading=true and call refetch() before their own finally block.
-    isLoading.value = true
-    error.value = null
-    
     // Persist role filter for refetch() after mutations
     if (filters.role) {
       roleFilter.value = filters.role
     }
-    
+
+    isLoading.value = true
+    error.value = null
+
     try {
       const inquiries = await apiFetchInquiries(filters)
       items.value = inquiries
@@ -144,6 +143,12 @@ export const useInquiriesStore = defineStore('inquiries', () => {
       const response = await apiAcceptInquiry(inquiryId)
       
       // Refetch після accept + trigger relationsStore refetch
+      // Phase 29: also invalidate cross-domain queries (accept affects relations + contacts)
+      queryClient.invalidateQueries({ queryKey: queryKeys.relations() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.contactBalance() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.contactStats() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.limits() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.userContext() })
       await refetch()
       
       return response
@@ -188,6 +193,8 @@ export const useInquiriesStore = defineStore('inquiries', () => {
    * Refetch inquiries (викликається після мутацій) v0.69
    */
   async function refetch(): Promise<void> {
+    // Phase 29 INV-3: mutation → invalidateQueries (Query handles refetch)
+    queryClient.invalidateQueries({ queryKey: queryKeys.inquiries() })
     const filters: InquiryFilters = {}
     if (roleFilter.value) {
       filters.role = roleFilter.value

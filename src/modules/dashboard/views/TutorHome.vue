@@ -93,6 +93,7 @@ import { computed, defineAsyncComponent, nextTick, onMounted, ref } from 'vue'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { useDashboardStore } from '../store/dashboardStore'
 import { useRelationsStore } from '@/stores/relationsStore'
+import { useMarketplaceMeQuery } from '@/api/queries/useTutorDashboardQuery'
 import DashboardGreeting from '../components/DashboardGreeting.vue'
 import DashboardStatsRow from '../components/DashboardStatsRow.vue'
 import QuickActions from '../components/QuickActions.vue'
@@ -117,7 +118,8 @@ const auth = useAuthStore()
 const dashboard = useDashboardStore()
 const relationsStore = useRelationsStore()
 
-const isProfilePublished = ref(false)
+// Phase 29 B3: isProfilePublished via TanStack Query (replaces dashboard.isProfilePublished)
+const { isProfilePublished } = useMarketplaceMeQuery()
 const inquiryLoadingId = ref(null)
 const knowledgeLessonsCount = ref(undefined)
 
@@ -216,10 +218,6 @@ onMounted(() => {
 
   // Пріоритет 2: другорядні дані — паралельно, не блокують рендер
   relationsStore.fetchTutorRelations().catch(() => {})
-
-  apiClient.get('/v1/marketplace/me/', { meta: { skipLoader: true } })
-    .then(me => { isProfilePublished.value = !!me?.is_published })
-    .catch(() => {})
 
   // UX-1: Fetch lessons count for QuickActions progressive display
   analyticsApi.getMyStats()

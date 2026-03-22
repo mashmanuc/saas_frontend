@@ -222,6 +222,7 @@ export interface InquiryFilters {
   status?: InquiryStatus
   page?: number
   pageSize?: number
+  force?: boolean // Phase 28: bypass TTL cache
 }
 
 /**

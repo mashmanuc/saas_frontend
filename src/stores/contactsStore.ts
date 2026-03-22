@@ -24,6 +24,8 @@ import {
   getInquiryStats
 } from '@/api/billing'
 import { rethrowAsDomainError } from '@/utils/rethrowAsDomainError'
+import { queryClient } from '@/app/queryClient'
+import { queryKeys } from '@/api/queryKeys'
 
 export const useContactsStore = defineStore('contacts', () => {
   // State
@@ -45,7 +47,7 @@ export const useContactsStore = defineStore('contacts', () => {
   const errorBalance = ref<string | null>(null)
   const errorLedger = ref<string | null>(null)
   const errorStats = ref<string | null>(null)
-  
+
   // Computed
   const hasBalance = computed(() => balance.value !== null)
   const isBlocked = computed(() => stats.value?.is_blocked_by_decline_streak ?? false)
@@ -58,7 +60,7 @@ export const useContactsStore = defineStore('contacts', () => {
   async function fetchBalance(): Promise<void> {
     isLoadingBalance.value = true
     errorBalance.value = null
-    
+
     try {
       const data = await getContactBalance()
       balance.value = data.balance
@@ -77,7 +79,7 @@ export const useContactsStore = defineStore('contacts', () => {
   async function fetchStats(): Promise<void> {
     isLoadingStats.value = true
     errorStats.value = null
-    
+
     try {
       const data = await getInquiryStats()
       stats.value = data
@@ -167,10 +169,10 @@ export const useContactsStore = defineStore('contacts', () => {
    * Викликається після успішного InquiryService.accept()
    */
   async function afterAcceptRefresh(): Promise<void> {
-    await Promise.all([
-      fetchBalance(),
-      resetLedgerAndFetchFirstPage()
-    ])
+    // Phase 29 INV-3: mutation → invalidateQueries (Query handles refetch)
+    queryClient.invalidateQueries({ queryKey: queryKeys.contactBalance() })
+    queryClient.invalidateQueries({ queryKey: queryKeys.contactStats() })
+    await resetLedgerAndFetchFirstPage()
   }
   
   /**
@@ -190,6 +192,7 @@ export const useContactsStore = defineStore('contacts', () => {
     errorBalance.value = null
     errorLedger.value = null
     errorStats.value = null
+    
   }
   
   return {

@@ -17,9 +17,9 @@
     </Card>
 
     <StudentActiveTutorsSection
-      :active-tutors="dashboardStore.activeTutors"
-      :loading="dashboardStore.isLoading"
-      :error="dashboardStore.error"
+      :active-tutors="activeTutors"
+      :loading="isLoading"
+      :error="error?.message ?? null"
     />
 
     <Card class="space-y-4">
@@ -39,24 +39,17 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Card from '../../../ui/Card.vue'
 import Heading from '../../../ui/Heading.vue'
-import { useDashboardStore } from '../store/dashboardStore'
 import { useAuthStore } from '../../auth/store/authStore'
-import { useRelationsStore } from '../../../stores/relationsStore'
+import { useStudentDashboardQuery } from '@/api/queries/useStudentDashboardQuery'
 import StudentActiveTutorsSection from '../components/StudentActiveTutorsSection.vue'
 import TrialBanner from '../../auth/components/TrialBanner.vue'
 
 const { t } = useI18n()
-const dashboardStore = useDashboardStore()
 const auth = useAuthStore()
-const relationsStore = useRelationsStore()
 
-onMounted(() => {
-  dashboardStore.fetchStudentDashboard().catch(() => {})
-  // Phase 1 v0.87.1: Завантажуємо relations для чату
-  relationsStore.fetchStudentRelations().catch(() => {})
-})
+// Phase 29 B2: Query auto-fetches on mount. Replaces dashboardStore.fetchStudentDashboard()
+const { activeTutors, isLoading, error } = useStudentDashboardQuery()
 </script>

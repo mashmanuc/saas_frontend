@@ -1,7 +1,21 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
+import { ref } from 'vue'
 import StudentHome from '@/modules/dashboard/views/StudentHome.vue'
+
+// Phase 29: mock useStudentDashboardQuery (component migrated from dashboardStore)
+vi.mock('@/api/queries/useStudentDashboardQuery', () => ({
+  useStudentDashboardQuery: () => ({
+    data: ref(null),
+    isLoading: ref(false),
+    error: ref(null),
+    upcomingLessons: ref([]),
+    activeTutors: ref([]),
+    studentStats: ref(null),
+    assignedTutor: ref(null),
+  }),
+}))
 
 function mountStudentHome() {
   return mount(StudentHome, {
