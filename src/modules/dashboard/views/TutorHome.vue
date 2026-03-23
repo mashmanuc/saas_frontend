@@ -64,7 +64,7 @@
 
     <!-- Phase 16: Knowledge Stats Widget (ERR-3: lazy mount after first paint) -->
     <div v-if="isReady" class="tutor-home__slot tutor-home__slot--stats">
-      <KnowledgeStatsWidget />
+      <KnowledgeStatsWidget @stats-loaded="s => knowledgeLessonsCount = s.lessons_count" />
     </div>
 
     <!-- New Inquiries Preview (ERR-3: lazy mount after first paint) -->
@@ -112,7 +112,6 @@ const KnowledgeStatsWidget = defineAsyncComponent({
 })
 import { notifySuccess, notifyError } from '@/utils/notify'
 import apiClient from '@/utils/apiClient'
-import { analyticsApi } from '@/modules/knowledge/api/analyticsApi'
 
 const auth = useAuthStore()
 const dashboard = useDashboardStore()
@@ -219,10 +218,7 @@ onMounted(() => {
   // Пріоритет 2: другорядні дані — паралельно, не блокують рендер
   relationsStore.fetchTutorRelations().catch(() => {})
 
-  // UX-1: Fetch lessons count for QuickActions progressive display
-  analyticsApi.getMyStats()
-    .then(s => { knowledgeLessonsCount.value = s.lessons_count })
-    .catch(() => {})
+  // UX-1: lessons count for QuickActions — provided via KnowledgeStatsWidget @stats-loaded emit (no separate API call)
 })
 </script>
 

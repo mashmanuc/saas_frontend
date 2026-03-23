@@ -98,12 +98,9 @@ const sortedFolders = computed<FolderWithDepth[]>(() => {
   return result
 })
 
-onMounted(async () => {
-  try {
-    folders.value = await lessonSaveApi.getFolders()
-  } catch (err) {
-    console.error('[MoveToFolderDropdown] load folders error:', err)
-  }
+let _foldersLoaded = false
+
+onMounted(() => {
   document.addEventListener('click', handleOutsideClick)
 })
 
@@ -111,10 +108,22 @@ onBeforeUnmount(() => {
   document.removeEventListener('click', handleOutsideClick)
 })
 
+async function ensureFolders() {
+  if (_foldersLoaded) return
+  _foldersLoaded = true
+  try {
+    folders.value = await lessonSaveApi.getFolders()
+  } catch (err) {
+    _foldersLoaded = false // дозволити retry
+    console.error('[MoveToFolderDropdown] load folders error:', err)
+  }
+}
+
 function toggle() {
   isOpen.value = !isOpen.value
   if (isOpen.value) {
     positionDropdown()
+    ensureFolders()
   }
 }
 

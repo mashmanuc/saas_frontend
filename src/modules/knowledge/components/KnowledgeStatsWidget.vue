@@ -33,6 +33,8 @@
 import { ref, onMounted } from 'vue'
 import { analyticsApi, type TutorStats } from '../api/analyticsApi'
 
+const emit = defineEmits<{ 'stats-loaded': [stats: TutorStats] }>()
+
 const stats = ref<TutorStats | null>(null)
 const isLoading = ref(true)
 
@@ -44,6 +46,7 @@ function formatNumber(n: number): string {
 onMounted(async () => {
   try {
     stats.value = await analyticsApi.getMyStats()
+    emit('stats-loaded', stats.value)
   } catch (err) {
     console.error('[KnowledgeStatsWidget] Load failed:', err)
   } finally {

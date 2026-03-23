@@ -2,13 +2,15 @@
   <PageThemeProvider>
     <router-view />
     <DiagnosticsPanel v-if="isDev" />
+    <AuditOverlayAsync v-if="isAuditMode" />
   </PageThemeProvider>
 </template>
 
 <script setup>
-import { onMounted, onBeforeUnmount, watch, ref, computed } from 'vue'
+import { onMounted, onBeforeUnmount, watch, ref, computed, defineAsyncComponent } from 'vue'
 import { PageThemeProvider } from './modules/ui/theme'
 import { DiagnosticsPanel } from './modules/diagnostics'
+import { isAuditEnabled } from '@/debug/isAuditEnabled'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 // import { useUserContextQuery } from '@/api/queries/useUserContextQuery'  // Phase 29 B1 — disabled until backend endpoint ready
 import { useNotificationsStore } from '@/stores/notificationsStore'
@@ -17,6 +19,10 @@ import { pollingCoordinator } from '@/services/pollingCoordinator'
 import { jankDetector } from '@/utils/jankDetector'
 
 const isDev = import.meta.env.DEV
+
+// Phase 30 B4: Lazy-loaded audit overlay (INV-3: 0 bytes in prod if disabled)
+const AuditOverlayAsync = defineAsyncComponent(() => import('@/debug/AuditOverlay.vue'))
+const isAuditMode = computed(() => isAuditEnabled())
 
 // Jank detector — тільки в dev mode (MutationObserver + fetch patching = overhead у production)
 // ERR-3 fix: delay start to avoid adding overhead during initial navigation mount
