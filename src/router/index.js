@@ -105,6 +105,14 @@ const routes = [
       { path: 'accept/:token', name: 'invite-accept', component: InviteAcceptView, meta: { requiresAuth: false } },
     ],
   },
+  // TutorInvite system (new invite-based onboarding)
+  // IMPORTANT: must be BEFORE legacy /invite children, so /invite/:token matches here first
+  {
+    path: '/invite/:token',
+    name: 'tutor-invite-accept',
+    component: () => import('../components/invites/InviteAcceptPage.vue'),
+    meta: { requiresAuth: false, isTutorInvite: true }
+  },
   // v1.0: Redirect legacy email URLs to /auth/* routes (safety net for old emails)
   {
     path: '/reset-password',
@@ -1001,6 +1009,7 @@ router.beforeEach(async (to, from, next) => {
   const homeRoute = user?.role ? getDefaultRouteForRole(user.role) : '/start'
   const isAuthRoute = to.path.startsWith('/auth')
   const isInviteRoute = to.path.startsWith('/invite')
+  const isTutorInvite = to.matched.some(r => r.meta?.isTutorInvite)
   const isStartRoute = to.path === '/start'
   // Child route meta takes priority over parent: check from most-specific (last) to least-specific (first).
   // If any matched record explicitly sets requiresAuth: false, the route is public.
@@ -1029,7 +1038,9 @@ router.beforeEach(async (to, from, next) => {
     return next({ path: '/start', query: { redirect: to.fullPath } })
   }
 
-  if (isAuthRoute || (isInviteRoute && isAuthenticated)) {
+  // Authenticated users on auth/legacy-invite routes → redirect home
+  // BUT tutor invites must pass through (student needs to see & accept)
+  if (isAuthRoute || (isInviteRoute && isAuthenticated && !isTutorInvite)) {
     if (to.path !== homeRoute) {
       return next(homeRoute)
     }

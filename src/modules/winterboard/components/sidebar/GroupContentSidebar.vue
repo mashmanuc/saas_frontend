@@ -26,7 +26,7 @@
         <input
           type="file"
           multiple
-          accept="image/*,application/pdf,audio/*,video/*,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-powerpoint"
+          accept="image/*,application/pdf,audio/*,video/*,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword"
           class="sr-only"
           @change="handleFileInput"
         />
@@ -92,7 +92,7 @@
     </div>
 
     <!-- Grouped items -->
-    <template v-else>
+    <template v-if="!sidebar.isLoading.value && sidebar.totalCount.value > 0">
       <template v-for="(categoryItems, category) in filteredGrouped" :key="category">
         <div v-if="categoryItems.length > 0" class="content-sidebar__group">
           <div class="content-sidebar__group-header">
@@ -116,11 +116,17 @@
 import { ref, computed, toRef, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useGroupSidebar } from '../../composables/useGroupSidebar'
+import { useWBStore } from '../../board/state/boardStore'
 import ContentSidebarItem from './ContentSidebarItem.vue'
 import StorageQuotaBar from '@/modules/learning-content/components/StorageQuotaBar.vue'
 import { learningContentApi } from '@/modules/learning-content/api/learningContentApi'
 import type { StorageQuota } from '@/modules/learning-content/api/learningContentApi'
 import type { AssetCategoryGroup, AllowedContentItem } from '../../types/sidebar'
+
+// Phase 38: module-level кеш quota щоб не дублювати запит при remount sidebar
+let _quotaCache: StorageQuota | null = null
+let _quotaCacheTime = 0
+const QUOTA_CACHE_MS = 30_000 // 30 секунд
 
 const CATEGORY_ICONS: Record<string, string> = {
   problem: '📐',
@@ -130,6 +136,7 @@ const CATEGORY_ICONS: Record<string, string> = {
   video: '▶️',
   presentation: '📊',
   youtube: '▶️',
+  document: '📝',  // Phase 35 B7: DOCX/Word documents
 }
 
 const props = defineProps<{
@@ -139,10 +146,12 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   place: [item: AllowedContentItem]
+  'apply-template': [templateId: string]
 }>()
 
 const { t } = useI18n()
 const sidebar = useGroupSidebar(toRef(props, 'groupId'))
+const wbStore = useWBStore()
 
 // ── Filter + Search state ──
 const activeFilter = ref<string>('all')
@@ -155,7 +164,7 @@ const availableCategories = computed<string[]>(() => {
     if (item.asset_category) cats.add(item.asset_category)
   }
   // Return in consistent display order
-  return ['problem', 'image', 'pdf', 'audio', 'video', 'youtube', 'presentation'].filter(c => cats.has(c))
+  return ['problem', 'image', 'pdf', 'document', 'audio', 'video', 'youtube', 'presentation'].filter(c => cats.has(c))
 })
 
 /** Items after filter + search */
@@ -181,12 +190,20 @@ const filteredGrouped = computed<Record<string, typeof filteredItems.value>>(() 
 
 const filteredCount = computed(() => filteredItems.value.length)
 
-// ── Storage quota ──
-const storageQuota = ref<StorageQuota | null>(null)
+// ── Storage quota (кешується на module level щоб не дублювати запит при remount) ──
+const storageQuota = ref<StorageQuota | null>(_quotaCache)
 
 async function loadQuota() {
+  // Phase 38: не перезавантажувати якщо дані свіжі
+  if (_quotaCache && Date.now() - _quotaCacheTime < QUOTA_CACHE_MS) {
+    storageQuota.value = _quotaCache
+    return
+  }
   try {
-    storageQuota.value = await learningContentApi.getStorageQuota()
+    const data = await learningContentApi.getStorageQuota()
+    storageQuota.value = data
+    _quotaCache = data
+    _quotaCacheTime = Date.now()
   } catch (e) {
     console.warn('[GroupContentSidebar] Quota load failed:', e)
   }

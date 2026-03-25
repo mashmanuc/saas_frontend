@@ -17,7 +17,8 @@
         Ваш ліміт прийомів: <strong>{{ acceptanceStore.remainingAccepts }} / 10</strong> доступно за останні 30 днів
       </div>
       <div v-else class="limit-text limit-exhausted">
-        Ліміт прийомів вичерпано: <strong>0 / 10</strong> (оновиться автоматично)
+        Ліміт прийомів вичерпано: <strong>0 / 10</strong>
+        <span v-if="nextAvailableText"> — наступний слот: {{ nextAvailableText }}</span>
       </div>
     </div>
     
@@ -136,7 +137,7 @@
  * Дашборд тьютора для перегляду та управління inquiries
  */
 
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useInquiriesStore } from '@/stores/inquiriesStore'
 import { useContactsStore } from '@/stores/contactsStore'
 import { useAcceptanceStore } from '@/stores/acceptanceStore'
@@ -167,6 +168,27 @@ const showRejectModal = ref(false)
 const selectedInquiryId = ref<string | null>(null)
 const showContactsModal = ref(false)
 const unlockedContacts = ref<ContactsDTO | null>(null)
+
+// Format next available date
+const nextAvailableText = computed(() => {
+  const nextAvailable = acceptanceStore.data?.next_available_at
+  if (!nextAvailable) return null
+  
+  const date = new Date(nextAvailable)
+  const now = new Date()
+  const diffMs = date.getTime() - now.getTime()
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+  
+  if (diffDays === 0) {
+    return 'сьогодні'
+  } else if (diffDays === 1) {
+    return 'завтра'
+  } else if (diffDays <= 7) {
+    return `через ${diffDays} днів`
+  } else {
+    return date.toLocaleDateString('uk-UA', { day: 'numeric', month: 'long' })
+  }
+})
 
 onMounted(async () => {
   await Promise.all([

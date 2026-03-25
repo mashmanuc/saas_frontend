@@ -15,6 +15,8 @@ import type {
   WBSelectionRect,
   WBGroup,
   WBPageGridSettings,
+  WBTestObject,
+  WBTestMeta,
 } from '../../types/winterboard'
 import type { PdfPageResult } from '../../api/winterboardApi'
 import type { RecordOperationRequest } from '../../types/replay'
@@ -177,6 +179,61 @@ interface UndoClearCurrentPage {
   clearedAssets: WBAsset[]
 }
 
+// Phase 34: Unified object update undo
+interface UndoUpdateObject {
+  type: 'updateObject'
+  pageIndex: number
+  objectId: string
+  objectKind: 'stroke' | 'asset'
+  before: Record<string, unknown>
+  after: Record<string, unknown>
+}
+
+// Phase 36: Batch update undo — single Ctrl+Z for multiple object updates
+interface UndoBatchUpdate {
+  type: 'batchUpdate'
+  pageIndex: number
+  entries: Array<{
+    objectId: string
+    objectKind: 'stroke' | 'asset'
+    before: Record<string, unknown>
+    after: Record<string, unknown>
+  }>
+}
+
+// Phase 37: Test object undo types
+interface UndoAddTestObject {
+  type: 'addTestObject'
+  pageIndex: number
+  testObject: WBTestObject
+  index: number
+}
+
+interface UndoDeleteTestObject {
+  type: 'deleteTestObject'
+  pageIndex: number
+  testObject: WBTestObject
+  index: number
+}
+
+interface UndoUpdateTestObject {
+  type: 'updateTestObject'
+  pageIndex: number
+  objectId: string
+  before: Record<string, unknown>
+  after: Record<string, unknown>
+}
+
+// Phase 34: Z-order undo
+interface UndoZOrder {
+  type: 'zOrder'
+  pageIndex: number
+  objectId: string
+  objectKind: 'stroke' | 'asset'
+  fromIndex: number
+  toIndex: number
+}
+
 type UndoAction =
   | UndoAddStroke
   | UndoDeleteStroke
@@ -198,6 +255,12 @@ type UndoAction =
   | UndoAddSticky
   | UndoUpdateStickyText
   | UndoUpdateStickyStyle
+  | UndoUpdateObject
+  | UndoBatchUpdate
+  | UndoAddTestObject
+  | UndoDeleteTestObject
+  | UndoUpdateTestObject
+  | UndoZOrder
 
 // ─── Store State Interface ──────────────────────────────────────────────────
 
@@ -256,6 +319,10 @@ export interface WBBoardState {
 
   // A10: Touch copy/paste clipboard (in-memory, session-scoped)
   clipboardAssets: WBAsset[]
+
+  // Phase 35: Background control
+  gridSize: number            // px, range 10-100, default 20
+  backgroundColor: string     // page background, default '#ffffff'
 }
 
 // ─── Helper ─────────────────────────────────────────────────────────────────
@@ -271,6 +338,7 @@ function createEmptyPage(index: number): WBPage {
     strokes: [],
     assets: [],
     background: 'white',
+    backgroundColor: '#ffffff',
   }
 }
 
@@ -347,6 +415,10 @@ export const useWBStore = defineStore('wb-board', {
     gridPatternDataUrl: null,
 
     clipboardAssets: [],
+
+    // Phase 35: Background control
+    gridSize: 20,                    // px, range 10-100
+    backgroundColor: '#ffffff',      // page background
   }),
 
   // ─── Getters ────────────────────────────────────────────────────────────
@@ -391,6 +463,12 @@ export const useWBStore = defineStore('wb-board', {
       return page ? page.assets : []
     },
 
+    // Phase 35 B6: Per-page background color (fallback to global)
+    currentPageBgColor(state): string {
+      const page = state.pages[state.currentPageIndex]
+      return page?.backgroundColor ?? state.backgroundColor ?? '#ffffff'
+    },
+
     // Serialize for API (LAW-02)
     serializedState(state): WBWorkspaceState {
       return {
@@ -431,6 +509,38 @@ export const useWBStore = defineStore('wb-board', {
         x: Math.max(0, (state.containerWidth - scaledW) / 2) + state.scrollX,
         y: Math.max(0, (state.containerHeight - scaledH) / 2) + state.scrollY,
       }
+    },
+
+    // Phase 34: Unified object access
+    getObjectById(state): (id: string) => WBStroke | WBAsset | null {
+      return (id: string) => {
+        const page = state.pages[state.currentPageIndex]
+        if (!page) return null
+        const stroke = page.strokes.find(s => s.id === id)
+        if (stroke) return stroke
+        const asset = page.assets.find(a => a.id === id)
+        if (asset) return asset
+        return null
+      }
+    },
+
+    // Phase 34: Performance limits
+    objectCount(state): number {
+      const page = state.pages[state.currentPageIndex]
+      if (!page) return 0
+      return page.strokes.length + page.assets.length
+    },
+
+    canAddObject(state): boolean {
+      const page = state.pages[state.currentPageIndex]
+      if (!page) return false
+      return page.strokes.length + page.assets.length < 300
+    },
+
+    isNearObjectLimit(state): boolean {
+      const page = state.pages[state.currentPageIndex]
+      if (!page) return false
+      return page.strokes.length + page.assets.length >= 280
     },
   },
 
@@ -533,6 +643,21 @@ export const useWBStore = defineStore('wb-board', {
       this.zoom = Math.min(scaleX, scaleY)
       this.scrollX = 0
       this.scrollY = 0
+    },
+
+    // Phase 35: Grid size control
+    setGridSize(size: number): void {
+      this.gridSize = Math.max(10, Math.min(100, size))
+      this.markDirty()
+    },
+
+    // Phase 35: Background color (per-page only — no global fallback leak)
+    setBackgroundColor(color: string): void {
+      const page = this.pages[this.currentPageIndex]
+      if (page) {
+        page.backgroundColor = color
+      }
+      this.markDirty()
     },
 
     // A9: Per-page grid actions ──────────────────────────────────────────────
@@ -638,37 +763,7 @@ export const useWBStore = defineStore('wb-board', {
       this.markDirty()
     },
 
-    /**
-     * Move asset to top of z-stack (end of assets array → renders last = on top).
-     */
-    bringToFront(assetId: string): void {
-      const pageIndex = this.currentPageIndex
-      const page = this.pages[pageIndex]
-      if (!page) return
-      const idx = page.assets.findIndex((a) => a.id === assetId)
-      if (idx === -1 || idx === page.assets.length - 1) return
-      const assets = [...page.assets]
-      const [asset] = assets.splice(idx, 1)
-      assets.push(asset)
-      this.pages[pageIndex] = { ...page, assets }
-      this.markDirty()
-    },
-
-    /**
-     * Move asset to bottom of z-stack (start of assets array → renders first = on bottom).
-     */
-    sendToBack(assetId: string): void {
-      const pageIndex = this.currentPageIndex
-      const page = this.pages[pageIndex]
-      if (!page) return
-      const idx = page.assets.findIndex((a) => a.id === assetId)
-      if (idx === -1 || idx === 0) return
-      const assets = [...page.assets]
-      const [asset] = assets.splice(idx, 1)
-      assets.unshift(asset)
-      this.pages[pageIndex] = { ...page, assets }
-      this.markDirty()
-    },
+    // Phase 34: bringToFront/sendToBack moved below with undo support + strokes
 
     setSyncStatus(status: WBSyncStatus): void {
       this.syncStatus = status
@@ -692,6 +787,12 @@ export const useWBStore = defineStore('wb-board', {
       const page = this.pages[pageIndex]
       if (!page) {
         console.error('[WB:Store] addStroke: no page at index', pageIndex)
+        return
+      }
+
+      // Phase 34: object limit guard
+      if (!this.canAddObject) {
+        console.warn('[WB] Object limit reached (300), cannot add stroke')
         return
       }
 
@@ -805,6 +906,12 @@ export const useWBStore = defineStore('wb-board', {
       const pageIndex = this.currentPageIndex
       const page = this.pages[pageIndex]
       if (!page) return
+
+      // Phase 34: object limit guard
+      if (!this.canAddObject) {
+        console.warn('[WB] Object limit reached (300), cannot add asset')
+        return
+      }
 
       if (!opts?.skipHistory) {
         const action: UndoAddAsset = {
@@ -1106,6 +1213,77 @@ export const useWBStore = defineStore('wb-board', {
           this.pages[action.pageIndex] = { ...page, assets }
           break
         }
+        case 'updateObject': {
+          // Phase 34: Undo updateObject → restore before values
+          if (action.objectKind === 'stroke') {
+            this.pages[action.pageIndex] = {
+              ...page,
+              strokes: page.strokes.map(s => s.id === action.objectId ? { ...s, ...action.before } : s),
+            }
+          } else {
+            this.pages[action.pageIndex] = {
+              ...page,
+              assets: page.assets.map(a => a.id === action.objectId ? { ...a, ...action.before } : a),
+            }
+          }
+          break
+        }
+        case 'batchUpdate': {
+          // Phase 36: Undo batch update → restore before values for all entries
+          let newStrokes = [...page.strokes]
+          let newAssets = [...page.assets]
+          for (const entry of action.entries) {
+            if (entry.objectKind === 'stroke') {
+              newStrokes = newStrokes.map(s => s.id === entry.objectId ? { ...s, ...entry.before } : s)
+            } else {
+              newAssets = newAssets.map(a => a.id === entry.objectId ? { ...a, ...entry.before } : a)
+            }
+          }
+          this.pages[action.pageIndex] = { ...page, strokes: newStrokes, assets: newAssets }
+          break
+        }
+        case 'addTestObject': {
+          // Undo add → remove test object
+          const testObjects = (page.testObjects ?? []).filter((_, i) => i !== action.index)
+          this.pages[action.pageIndex] = { ...page, testObjects }
+          break
+        }
+        case 'deleteTestObject': {
+          // Undo delete → restore test object at original index
+          const testObjects = [...(page.testObjects ?? [])]
+          testObjects.splice(action.index, 0, action.testObject)
+          this.pages[action.pageIndex] = { ...page, testObjects }
+          break
+        }
+        case 'updateTestObject': {
+          // Undo update → restore before values
+          const testObjects = (page.testObjects ?? []).map(t =>
+            t.id === action.objectId ? { ...t, ...action.before } as WBTestObject : t,
+          )
+          this.pages[action.pageIndex] = { ...page, testObjects }
+          break
+        }
+        case 'zOrder': {
+          // Phase 34: Undo z-order → move item from toIndex back to fromIndex
+          if (action.objectKind === 'stroke') {
+            const arr = [...page.strokes]
+            const curIdx = arr.findIndex(s => s.id === action.objectId)
+            if (curIdx !== -1) {
+              const [item] = arr.splice(curIdx, 1)
+              arr.splice(action.fromIndex, 0, item)
+              this.pages[action.pageIndex] = { ...page, strokes: arr }
+            }
+          } else {
+            const arr = [...page.assets]
+            const curIdx = arr.findIndex(a => a.id === action.objectId)
+            if (curIdx !== -1) {
+              const [item] = arr.splice(curIdx, 1)
+              arr.splice(action.fromIndex, 0, item)
+              this.pages[action.pageIndex] = { ...page, assets: arr }
+            }
+          }
+          break
+        }
       }
 
       this.redoStack.push(action)
@@ -1307,6 +1485,76 @@ export const useWBStore = defineStore('wb-board', {
           this.pages[action.pageIndex] = { ...page, assets }
           break
         }
+        case 'updateObject': {
+          // Phase 34: Redo updateObject → re-apply after values
+          if (action.objectKind === 'stroke') {
+            this.pages[action.pageIndex] = {
+              ...page,
+              strokes: page.strokes.map(s => s.id === action.objectId ? { ...s, ...action.after } : s),
+            }
+          } else {
+            this.pages[action.pageIndex] = {
+              ...page,
+              assets: page.assets.map(a => a.id === action.objectId ? { ...a, ...action.after } : a),
+            }
+          }
+          break
+        }
+        case 'batchUpdate': {
+          // Phase 36: Redo batch update → re-apply after values for all entries
+          let newStrokes = [...page.strokes]
+          let newAssets = [...page.assets]
+          for (const entry of action.entries) {
+            if (entry.objectKind === 'stroke') {
+              newStrokes = newStrokes.map(s => s.id === entry.objectId ? { ...s, ...entry.after } : s)
+            } else {
+              newAssets = newAssets.map(a => a.id === entry.objectId ? { ...a, ...entry.after } : a)
+            }
+          }
+          this.pages[action.pageIndex] = { ...page, strokes: newStrokes, assets: newAssets }
+          break
+        }
+        case 'addTestObject': {
+          // Redo add → re-add test object
+          const testObjects = [...(page.testObjects ?? []), action.testObject]
+          this.pages[action.pageIndex] = { ...page, testObjects }
+          break
+        }
+        case 'deleteTestObject': {
+          // Redo delete → remove test object again
+          const testObjects = (page.testObjects ?? []).filter(t => t.id !== action.testObject.id)
+          this.pages[action.pageIndex] = { ...page, testObjects }
+          break
+        }
+        case 'updateTestObject': {
+          // Redo update → re-apply after values
+          const testObjects = (page.testObjects ?? []).map(t =>
+            t.id === action.objectId ? { ...t, ...action.after } as WBTestObject : t,
+          )
+          this.pages[action.pageIndex] = { ...page, testObjects }
+          break
+        }
+        case 'zOrder': {
+          // Phase 34: Redo z-order → move item from fromIndex to toIndex
+          if (action.objectKind === 'stroke') {
+            const arr = [...page.strokes]
+            const curIdx = arr.findIndex(s => s.id === action.objectId)
+            if (curIdx !== -1) {
+              const [item] = arr.splice(curIdx, 1)
+              arr.splice(action.toIndex, 0, item)
+              this.pages[action.pageIndex] = { ...page, strokes: arr }
+            }
+          } else {
+            const arr = [...page.assets]
+            const curIdx = arr.findIndex(a => a.id === action.objectId)
+            if (curIdx !== -1) {
+              const [item] = arr.splice(curIdx, 1)
+              arr.splice(action.toIndex, 0, item)
+              this.pages[action.pageIndex] = { ...page, assets: arr }
+            }
+          }
+          break
+        }
       }
 
       this.undoStack.push(action)
@@ -1378,8 +1626,8 @@ export const useWBStore = defineStore('wb-board', {
     },
 
     addPage(opts?: { background?: WBPageBackground; width?: number; height?: number; name?: string }): void {
-      if (this.pages.length >= 200) {
-        console.warn('[WB:Store] Max 200 pages reached')
+      if (this.pages.length >= 50) {
+        console.warn('[WB:Store] Max 50 pages reached')
         return
       }
       // A1: Inherit grid from current page so tutor's grid preference carries over
@@ -1390,12 +1638,75 @@ export const useWBStore = defineStore('wb-board', {
         strokes: [],
         assets: [],
         background: opts?.background ?? 'white',
+        backgroundColor: '#ffffff',
         width: opts?.width,
         height: opts?.height,
         grid: currentPage?.grid ? { ...currentPage.grid } : undefined,
       }
       this.pages = [...this.pages, newPage]
       this.currentPageIndex = this.pages.length - 1
+      this.markDirty()
+
+      // Phase 20: emit operation for recording
+      if (this.mode === 'edit') {
+        _emitOperation({
+          op_type: 'page_add',
+          page_id: newPage.id,
+          payload: {
+            page: {
+              id: newPage.id,
+              name: newPage.name,
+              background: newPage.background,
+              width: newPage.width,
+              height: newPage.height,
+            },
+          },
+          timestamp: Date.now(),
+        })
+      }
+    },
+
+    /**
+     * Duplicate a page: deep-copy strokes, assets, settings.
+     * Inserts the copy right after the source page and navigates to it.
+     */
+    duplicatePage(sourceIndex: number): void {
+      if (this.pages.length >= 50) {
+        console.warn('[WB:Store] Max 50 pages reached — cannot duplicate')
+        return
+      }
+      const source = this.pages[sourceIndex]
+      if (!source) return
+
+      const newPage: WBPage = {
+        id: generatePageId(),
+        name: `${source.name} (copy)`,
+        strokes: source.strokes.map(s => ({
+          ...s,
+          id: `${s.id}-cp-${Date.now()}`,
+          points: s.points.map(p => ({ ...p })),
+        })),
+        assets: source.assets.map(a => ({
+          ...a,
+          id: `${a.id}-cp-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+        })),
+        background: source.background,
+        backgroundColor: source.backgroundColor,
+        width: source.width,
+        height: source.height,
+        grid: source.grid ? { ...source.grid } : undefined,
+        testObjects: source.testObjects
+          ? source.testObjects.map(t => ({ ...t, id: `${t.id}-cp-${Date.now()}` }))
+          : undefined,
+        testMeta: source.testMeta ? { ...source.testMeta } : undefined,
+      }
+
+      // Insert after source page
+      const insertAt = sourceIndex + 1
+      const pagesCopy = [...this.pages]
+      pagesCopy.splice(insertAt, 0, newPage)
+      this.pages = pagesCopy
+      this.currentPageIndex = insertAt
       this.markDirty()
 
       // Phase 20: emit operation for recording
@@ -1493,8 +1804,8 @@ export const useWBStore = defineStore('wb-board', {
      * Navigates to the new page.
      */
     addPageUndoable(opts?: { background?: WBPageBackground; width?: number; height?: number; name?: string }): string {
-      if (this.pages.length >= 200) {
-        console.warn('[WB:Store] Max 200 pages reached')
+      if (this.pages.length >= 50) {
+        console.warn('[WB:Store] Max 50 pages reached')
         return ''
       }
       // A1: Inherit grid from current page so tutor's grid preference carries over
@@ -1505,6 +1816,7 @@ export const useWBStore = defineStore('wb-board', {
         strokes: [],
         assets: [],
         background: opts?.background ?? 'white',
+        backgroundColor: '#ffffff',
         width: opts?.width,
         height: opts?.height,
         grid: currentPage?.grid ? { ...currentPage.grid } : undefined,
@@ -2113,11 +2425,15 @@ export const useWBStore = defineStore('wb-board', {
     // ── v5 A1: Selection Actions ──────────────────────────────────────────
 
     selectItems(ids: string[]): void {
-      this.selectedIds = [...ids]
+      // Phase 34: cap selection at 50
+      const limited = ids.slice(0, 50)
+      this.selectedIds = [...limited]
     },
 
     addToSelection(id: string): void {
       if (!this.selectedIds.includes(id)) {
+        // Phase 34: cap selection at 50
+        if (this.selectedIds.length >= 50) return
         this.selectedIds = [...this.selectedIds, id]
       }
     },
@@ -2167,6 +2483,359 @@ export const useWBStore = defineStore('wb-board', {
 
       this.pages[pageIndex] = { ...page, strokes: newStrokes, assets: newAssets }
       this.markDirty()
+    },
+
+    // Phase 34 A2 FIX-1: Move only unlocked selected items
+    moveSelectedUnlocked(dx: number, dy: number): void {
+      const pageIndex = this.currentPageIndex
+      const page = this.pages[pageIndex]
+      if (!page || this.selectedIds.length === 0) return
+
+      const unlockedIds = this.selectedIds.filter(id => !this.isItemLocked(id))
+      if (unlockedIds.length === 0) return
+      const ids = new Set(unlockedIds)
+
+      const newStrokes = page.strokes.map((s) => {
+        if (!ids.has(s.id)) return s
+        return {
+          ...s,
+          points: s.points.map((p) => ({ ...p, x: p.x + dx, y: p.y + dy })),
+        }
+      })
+
+      const newAssets = page.assets.map((a) => {
+        if (!ids.has(a.id)) return a
+        return { ...a, x: a.x + dx, y: a.y + dy }
+      })
+
+      this.pages[pageIndex] = { ...page, strokes: newStrokes, assets: newAssets }
+      this.markDirty()
+    },
+
+    // Phase 34 A1.2: Object type resolver
+    getObjectType(obj: WBStroke | WBAsset): string {
+      if ('tool' in obj) {
+        return (obj as WBStroke).tool || 'unknown'
+      }
+      if ('type' in obj && typeof (obj as WBAsset).type === 'string') {
+        return (obj as WBAsset).type || 'image'
+      }
+      return 'unknown'
+    },
+
+    // Phase 34 A1.3: Unified object update with undo
+    updateObject(id: string, updates: Record<string, unknown>): void {
+      const pageIndex = this.currentPageIndex
+      const page = this.pages[pageIndex]
+      if (!page) return
+
+      // Lock guard: if locked, only allow 'locked' field change (for unlock)
+      if (this.isItemLocked(id)) {
+        const isUnlockOnly = Object.keys(updates).length === 1 && 'locked' in updates
+        if (!isUnlockOnly) return
+      }
+
+      // Try strokes
+      const strokeIdx = page.strokes.findIndex(s => s.id === id)
+      if (strokeIdx !== -1) {
+        const old = page.strokes[strokeIdx]
+        const before: Record<string, unknown> = {}
+        const after: Record<string, unknown> = {}
+        for (const key of Object.keys(updates)) {
+          before[key] = (old as Record<string, unknown>)[key]
+          after[key] = updates[key]
+        }
+
+        const action: UndoUpdateObject = { type: 'updateObject', pageIndex, objectId: id, objectKind: 'stroke', before, after }
+        this.undoStack = trimStack([...this.undoStack, action])
+        this.redoStack = []
+
+        this.pages[pageIndex] = {
+          ...page,
+          strokes: page.strokes.map((s, i) => i === strokeIdx ? { ...s, ...updates } : s),
+        }
+        this.markDirty()
+        return
+      }
+
+      // Try assets
+      const assetIdx = page.assets.findIndex(a => a.id === id)
+      if (assetIdx !== -1) {
+        const old = page.assets[assetIdx]
+        const before: Record<string, unknown> = {}
+        const after: Record<string, unknown> = {}
+        for (const key of Object.keys(updates)) {
+          before[key] = (old as Record<string, unknown>)[key]
+          after[key] = updates[key]
+        }
+
+        const action: UndoUpdateObject = { type: 'updateObject', pageIndex, objectId: id, objectKind: 'asset', before, after }
+        this.undoStack = trimStack([...this.undoStack, action])
+        this.redoStack = []
+
+        this.pages[pageIndex] = {
+          ...page,
+          assets: page.assets.map((a, i) => i === assetIdx ? { ...a, ...updates } : a),
+        }
+        this.markDirty()
+        return
+      }
+    },
+
+    // Phase 36: Batch update multiple objects — single undo entry
+    batchUpdateObjects(updates: Array<{ id: string; changes: Record<string, unknown> }>): void {
+      const pageIndex = this.currentPageIndex
+      const page = this.pages[pageIndex]
+      if (!page || updates.length === 0) return
+
+      const entries: UndoBatchUpdate['entries'] = []
+      let newStrokes = [...page.strokes]
+      let newAssets = [...page.assets]
+
+      for (const { id, changes } of updates) {
+        // Lock guard: skip locked unless unlocking
+        if (this.isItemLocked(id)) {
+          const isUnlockOnly = Object.keys(changes).length === 1 && 'locked' in changes
+          if (!isUnlockOnly) continue
+        }
+
+        const strokeIdx = newStrokes.findIndex(s => s.id === id)
+        if (strokeIdx !== -1) {
+          const old = newStrokes[strokeIdx]
+          const before: Record<string, unknown> = {}
+          const after: Record<string, unknown> = {}
+          for (const key of Object.keys(changes)) {
+            before[key] = (old as Record<string, unknown>)[key]
+            after[key] = changes[key]
+          }
+          entries.push({ objectId: id, objectKind: 'stroke', before, after })
+          newStrokes = newStrokes.map((s, i) => i === strokeIdx ? { ...s, ...changes } : s)
+          continue
+        }
+
+        const assetIdx = newAssets.findIndex(a => a.id === id)
+        if (assetIdx !== -1) {
+          const old = newAssets[assetIdx]
+          const before: Record<string, unknown> = {}
+          const after: Record<string, unknown> = {}
+          for (const key of Object.keys(changes)) {
+            before[key] = (old as Record<string, unknown>)[key]
+            after[key] = changes[key]
+          }
+          entries.push({ objectId: id, objectKind: 'asset', before, after })
+          newAssets = newAssets.map((a, i) => i === assetIdx ? { ...a, ...changes } : a)
+        }
+      }
+
+      if (entries.length === 0) return
+
+      const action: UndoBatchUpdate = { type: 'batchUpdate', pageIndex, entries }
+      this.undoStack = trimStack([...this.undoStack, action])
+      this.redoStack = []
+
+      this.pages[pageIndex] = { ...page, strokes: newStrokes, assets: newAssets }
+      this.markDirty()
+    },
+
+    // ── Phase 37: Test Object CRUD ──────────────────────────────────────────
+
+    addTestObject(obj: WBTestObject): void {
+      const pageIndex = this.currentPageIndex
+      const page = this.pages[pageIndex]
+      if (!page) return
+
+      const testObjects = [...(page.testObjects ?? []), obj]
+      const index = testObjects.length - 1
+
+      const action: UndoAddTestObject = { type: 'addTestObject', pageIndex, testObject: { ...obj }, index }
+      this.undoStack = trimStack([...this.undoStack, action])
+      this.redoStack = []
+
+      this.pages[pageIndex] = { ...page, testObjects }
+      this.markDirty()
+    },
+
+    deleteTestObject(id: string): void {
+      const pageIndex = this.currentPageIndex
+      const page = this.pages[pageIndex]
+      if (!page?.testObjects) return
+
+      const idx = page.testObjects.findIndex(t => t.id === id)
+      if (idx === -1) return
+
+      const action: UndoDeleteTestObject = { type: 'deleteTestObject', pageIndex, testObject: { ...page.testObjects[idx] }, index: idx }
+      this.undoStack = trimStack([...this.undoStack, action])
+      this.redoStack = []
+
+      this.pages[pageIndex] = {
+        ...page,
+        testObjects: page.testObjects.filter((_, i) => i !== idx),
+      }
+      this.markDirty()
+    },
+
+    updateTestObject(id: string, updates: Record<string, unknown>): void {
+      const pageIndex = this.currentPageIndex
+      const page = this.pages[pageIndex]
+      if (!page?.testObjects) return
+
+      const idx = page.testObjects.findIndex(t => t.id === id)
+      if (idx === -1) return
+
+      const old = page.testObjects[idx]
+      const before: Record<string, unknown> = {}
+      const after: Record<string, unknown> = {}
+      for (const key of Object.keys(updates)) {
+        before[key] = (old as Record<string, unknown>)[key]
+        after[key] = updates[key]
+      }
+
+      const action: UndoUpdateTestObject = { type: 'updateTestObject', pageIndex, objectId: id, before, after }
+      this.undoStack = trimStack([...this.undoStack, action])
+      this.redoStack = []
+
+      this.pages[pageIndex] = {
+        ...page,
+        testObjects: page.testObjects.map((t, i) => i === idx ? { ...t, ...updates } as WBTestObject : t),
+      }
+      this.markDirty()
+    },
+
+    getTestObjectById(id: string): WBTestObject | null {
+      const page = this.currentPage
+      if (!page?.testObjects) return null
+      return page.testObjects.find(t => t.id === id) ?? null
+    },
+
+    // Phase 34 A3: Z-order actions with undo
+    bringForward(id: string): void {
+      const pageIndex = this.currentPageIndex
+      const page = this.pages[pageIndex]
+      if (!page) return
+
+      // Check strokes
+      const si = page.strokes.findIndex(s => s.id === id)
+      if (si !== -1 && si < page.strokes.length - 1) {
+        const action: UndoZOrder = { type: 'zOrder', pageIndex, objectId: id, objectKind: 'stroke', fromIndex: si, toIndex: si + 1 }
+        this.undoStack = trimStack([...this.undoStack, action])
+        this.redoStack = []
+        const arr = [...page.strokes]
+        ;[arr[si], arr[si + 1]] = [arr[si + 1], arr[si]]
+        this.pages[pageIndex] = { ...page, strokes: arr }
+        this.markDirty()
+        return
+      }
+
+      // Check assets
+      const ai = page.assets.findIndex(a => a.id === id)
+      if (ai !== -1 && ai < page.assets.length - 1) {
+        const action: UndoZOrder = { type: 'zOrder', pageIndex, objectId: id, objectKind: 'asset', fromIndex: ai, toIndex: ai + 1 }
+        this.undoStack = trimStack([...this.undoStack, action])
+        this.redoStack = []
+        const arr = [...page.assets]
+        ;[arr[ai], arr[ai + 1]] = [arr[ai + 1], arr[ai]]
+        this.pages[pageIndex] = { ...page, assets: arr }
+        this.markDirty()
+        return
+      }
+    },
+
+    sendBackward(id: string): void {
+      const pageIndex = this.currentPageIndex
+      const page = this.pages[pageIndex]
+      if (!page) return
+
+      const si = page.strokes.findIndex(s => s.id === id)
+      if (si > 0) {
+        const action: UndoZOrder = { type: 'zOrder', pageIndex, objectId: id, objectKind: 'stroke', fromIndex: si, toIndex: si - 1 }
+        this.undoStack = trimStack([...this.undoStack, action])
+        this.redoStack = []
+        const arr = [...page.strokes]
+        ;[arr[si], arr[si - 1]] = [arr[si - 1], arr[si]]
+        this.pages[pageIndex] = { ...page, strokes: arr }
+        this.markDirty()
+        return
+      }
+
+      const ai = page.assets.findIndex(a => a.id === id)
+      if (ai > 0) {
+        const action: UndoZOrder = { type: 'zOrder', pageIndex, objectId: id, objectKind: 'asset', fromIndex: ai, toIndex: ai - 1 }
+        this.undoStack = trimStack([...this.undoStack, action])
+        this.redoStack = []
+        const arr = [...page.assets]
+        ;[arr[ai], arr[ai - 1]] = [arr[ai - 1], arr[ai]]
+        this.pages[pageIndex] = { ...page, assets: arr }
+        this.markDirty()
+        return
+      }
+    },
+
+    // Phase 34: Override existing bringToFront with undo support + strokes
+    bringToFront(id: string): void {
+      const pageIndex = this.currentPageIndex
+      const page = this.pages[pageIndex]
+      if (!page) return
+
+      const si = page.strokes.findIndex(s => s.id === id)
+      if (si !== -1 && si < page.strokes.length - 1) {
+        const toIndex = page.strokes.length - 1
+        const action: UndoZOrder = { type: 'zOrder', pageIndex, objectId: id, objectKind: 'stroke', fromIndex: si, toIndex }
+        this.undoStack = trimStack([...this.undoStack, action])
+        this.redoStack = []
+        const arr = [...page.strokes]
+        const [item] = arr.splice(si, 1)
+        arr.push(item)
+        this.pages[pageIndex] = { ...page, strokes: arr }
+        this.markDirty()
+        return
+      }
+
+      const ai = page.assets.findIndex(a => a.id === id)
+      if (ai !== -1 && ai < page.assets.length - 1) {
+        const toIndex = page.assets.length - 1
+        const action: UndoZOrder = { type: 'zOrder', pageIndex, objectId: id, objectKind: 'asset', fromIndex: ai, toIndex }
+        this.undoStack = trimStack([...this.undoStack, action])
+        this.redoStack = []
+        const arr = [...page.assets]
+        const [item] = arr.splice(ai, 1)
+        arr.push(item)
+        this.pages[pageIndex] = { ...page, assets: arr }
+        this.markDirty()
+        return
+      }
+    },
+
+    // Phase 34: Override existing sendToBack with undo support + strokes
+    sendToBack(id: string): void {
+      const pageIndex = this.currentPageIndex
+      const page = this.pages[pageIndex]
+      if (!page) return
+
+      const si = page.strokes.findIndex(s => s.id === id)
+      if (si > 0) {
+        const action: UndoZOrder = { type: 'zOrder', pageIndex, objectId: id, objectKind: 'stroke', fromIndex: si, toIndex: 0 }
+        this.undoStack = trimStack([...this.undoStack, action])
+        this.redoStack = []
+        const arr = [...page.strokes]
+        const [item] = arr.splice(si, 1)
+        arr.unshift(item)
+        this.pages[pageIndex] = { ...page, strokes: arr }
+        this.markDirty()
+        return
+      }
+
+      const ai = page.assets.findIndex(a => a.id === id)
+      if (ai > 0) {
+        const action: UndoZOrder = { type: 'zOrder', pageIndex, objectId: id, objectKind: 'asset', fromIndex: ai, toIndex: 0 }
+        this.undoStack = trimStack([...this.undoStack, action])
+        this.redoStack = []
+        const arr = [...page.assets]
+        const [item] = arr.splice(ai, 1)
+        arr.unshift(item)
+        this.pages[pageIndex] = { ...page, assets: arr }
+        this.markDirty()
+        return
+      }
     },
 
     deleteSelected(): void {

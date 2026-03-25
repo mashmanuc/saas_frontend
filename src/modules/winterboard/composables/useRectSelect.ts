@@ -153,6 +153,11 @@ export function useRectSelect(store: WBStore) {
 
   function startMoveSelected(pos: WBPoint): void {
     if (!store.hasSelection) return
+
+    // Phase 34 FIX-1: skip move if ALL selected are locked
+    const allLocked = store.selectedIds.every(id => store.isItemLocked(id))
+    if (allLocked) return
+
     isMoving.value = true
     moveStart.value = { x: pos.x, y: pos.y }
   }
@@ -165,7 +170,8 @@ export function useRectSelect(store: WBStore) {
 
     if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return
 
-    store.moveSelected(dx, dy)
+    // Phase 34 FIX-1: move only unlocked items
+    store.moveSelectedUnlocked(dx, dy)
     moveStart.value = { x: pos.x, y: pos.y }
   }
 

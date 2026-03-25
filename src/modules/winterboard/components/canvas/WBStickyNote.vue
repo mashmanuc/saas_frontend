@@ -76,14 +76,26 @@ const rectConfig = computed(() => ({
   opacity: props.sticky.locked ? 0.85 : 1,
 }))
 
+// Phase 35: Konva fontStyle = "bold italic" | "bold" | "italic" | "normal"
+function buildKonvaFontStyle(fontWeight?: number, fontStyle?: string): string {
+  const parts: string[] = []
+  if (fontWeight === 700) parts.push('bold')
+  if (fontStyle === 'italic') parts.push('italic')
+  return parts.length > 0 ? parts.join(' ') : 'normal'
+}
+
 const textConfig = computed(() => ({
   x: PADDING,
   y: PADDING,
   width: props.sticky.w - PADDING * 2,
   height: props.sticky.h - PADDING * 2,
   text: props.sticky.text || '',
+  // REC-2: WBAsset(sticky) uses existing `fontSize` field
   fontSize: props.sticky.fontSize || 14,
-  fontFamily: 'Inter, system-ui, sans-serif',
+  // Phase 35: Font system for sticky notes (REC-1: font fields on WBAsset)
+  fontFamily: props.sticky.fontFamily || 'Inter, sans-serif',
+  fontStyle: buildKonvaFontStyle(props.sticky.fontWeight, props.sticky.fontStyle),
+  align: props.sticky.textAlign || 'left',
   fill: props.sticky.textColor || '#1e293b',
   wrap: 'word',
   ellipsis: true,

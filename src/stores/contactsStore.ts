@@ -15,14 +15,10 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type {
   ContactBalanceDTO,
-  ContactLedgerItemDTO,
   InquiryStatsDTO
 } from '@/types/billing'
-import {
-  getContactBalance,
-  getContactLedger,
-  getInquiryStats
-} from '@/api/billing'
+import { contactsApi, type ContactLedgerEntry } from '@/modules/contacts/api/contacts'
+import { getInquiryStats } from '@/api/billing'
 import { rethrowAsDomainError } from '@/utils/rethrowAsDomainError'
 import { queryClient } from '@/app/queryClient'
 import { queryKeys } from '@/api/queryKeys'
@@ -30,7 +26,7 @@ import { queryKeys } from '@/api/queryKeys'
 export const useContactsStore = defineStore('contacts', () => {
   // State
   const balance = ref<number | null>(null)
-  const ledger = ref<ContactLedgerItemDTO[]>([])
+  const ledger = ref<ContactLedgerEntry[]>([])
   const stats = ref<InquiryStatsDTO | null>(null)
   
   // Pagination state (SSOT: limit+offset)
@@ -62,7 +58,7 @@ export const useContactsStore = defineStore('contacts', () => {
     errorBalance.value = null
 
     try {
-      const data = await getContactBalance()
+      const data = await contactsApi.getBalance()
       balance.value = data.balance
     } catch (err: any) {
       errorBalance.value = err.message || 'Failed to load balance'
@@ -114,17 +110,17 @@ export const useContactsStore = defineStore('contacts', () => {
     errorLedger.value = null
     
     try {
-      const data = await getContactLedger(limit, offset)
+      const response = await contactsApi.getLedger({ limit, offset })
       
       if (append) {
-        ledger.value = [...ledger.value, ...data]
+        ledger.value = [...ledger.value, ...response.results]
       } else {
-        ledger.value = data
+        ledger.value = response.results
       }
       
       // Update pagination state
-      ledgerOffset.value = offset + data.length
-      ledgerHasMore.value = data.length === limit
+      ledgerOffset.value = offset + response.results.length
+      ledgerHasMore.value = response.results.length === limit
       
     } catch (err: any) {
       errorLedger.value = err.message || 'Failed to load ledger'

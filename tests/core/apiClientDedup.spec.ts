@@ -12,7 +12,7 @@ describe('apiClient GET dedup', () => {
 
     // Mock dependencies that apiClient.js imports at module level
     vi.doMock('axios', () => {
-      const mockAdapter = vi.fn()
+      const mockAdapter = vi.fn((config) => Promise.resolve({ data: {}, status: 200, config }))
       const instance = {
         interceptors: {
           request: { use: vi.fn() },
@@ -28,6 +28,7 @@ describe('apiClient GET dedup', () => {
         default: {
           create: instance.create,
           defaults: { adapter: mockAdapter },
+          getAdapter: vi.fn(() => mockAdapter),
         },
       }
     })

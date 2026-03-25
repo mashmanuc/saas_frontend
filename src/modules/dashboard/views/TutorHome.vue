@@ -76,6 +76,9 @@
       @decline="handleDeclineInquiry"
     />
 
+    <!-- Tutor Invites List (ERR-3: lazy mount after first paint) -->
+    <InvitesList v-if="isReady" />
+
     <!-- Empty Dashboard State (new tutor) -->
     <DashboardEmptyState
       v-if="showEmptyState"
@@ -93,6 +96,7 @@ import { computed, defineAsyncComponent, nextTick, onMounted, ref } from 'vue'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { useDashboardStore } from '../store/dashboardStore'
 import { useRelationsStore } from '@/stores/relationsStore'
+import { useContactTokensStore } from '@/modules/contacts/stores/contactTokensStore'
 import { useMarketplaceMeQuery } from '@/api/queries/useTutorDashboardQuery'
 import DashboardGreeting from '../components/DashboardGreeting.vue'
 import DashboardStatsRow from '../components/DashboardStatsRow.vue'
@@ -102,6 +106,7 @@ import OnboardingHint from '@/components/OnboardingHint.vue'
 // BUG-13 fix: lazy load heavy below-the-fold components to reduce initial bundle
 const TodaySchedule = defineAsyncComponent(() => import('../components/TodaySchedule.vue'))
 const InquiriesPreview = defineAsyncComponent(() => import('../components/InquiriesPreview.vue'))
+const InvitesList = defineAsyncComponent(() => import('@/components/invites/InvitesList.vue'))
 const DashboardEmptyState = defineAsyncComponent(() => import('../components/DashboardEmptyState.vue'))
 const TrialBanner = defineAsyncComponent(() => import('@/modules/auth/components/TrialBanner.vue'))
 import { TutorHintId } from '@/composables/useOnboardingHints'
@@ -116,6 +121,7 @@ import apiClient from '@/utils/apiClient'
 const auth = useAuthStore()
 const dashboard = useDashboardStore()
 const relationsStore = useRelationsStore()
+const contactTokensStore = useContactTokensStore()
 
 // Phase 29 B3: isProfilePublished via TanStack Query (replaces dashboard.isProfilePublished)
 const { isProfilePublished } = useMarketplaceMeQuery()
@@ -168,10 +174,10 @@ const dashboardStats = computed(() => [
     to: '/tutor/inquiries',
   },
   {
-    key: 'balance',
+    key: 'contactBalance',
     icon: 'wallet',
-    label: 'dashboard.stats.balance',
-    value: '—',
+    label: 'dashboard.stats.contactBalance',
+    value: contactTokensStore.balance,
   },
 ])
 
@@ -217,6 +223,7 @@ onMounted(() => {
 
   // Пріоритет 2: другорядні дані — паралельно, не блокують рендер
   relationsStore.fetchTutorRelations().catch(() => {})
+  contactTokensStore.fetchBalance().catch(() => {})
 
   // UX-1: lessons count for QuickActions — provided via KnowledgeStatsWidget @stats-loaded emit (no separate API call)
 })

@@ -14,6 +14,9 @@ const ALLOWED_UPLOAD_MIMES: Record<string, string> = {
   'video/mp4': 'video', 'video/webm': 'video', 'video/ogg': 'video',
   'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'presentation',
   'application/vnd.ms-powerpoint': 'presentation',
+  // Phase 35 B7: DOCX/Word documents
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'document',
+  'application/msword': 'document',
 }
 
 /** Interval (ms) between status poll cycles while items are processing */
@@ -107,7 +110,17 @@ export function useGroupSidebar(groupId: Ref<string | null>) {
 
   // ── Data loading ───────────────────────────────────────────────────────────
 
+  /** Phase 38: guard проти дублювання запитів */
+  let loadInFlight = false
+  let lastLoadedGroupId: string | null | undefined = undefined
+
   async function load() {
+    // Dedup: не перевантажувати якщо groupId не змінився і дані вже є
+    if (loadInFlight) return
+    if (groupId.value === lastLoadedGroupId && items.value.length > 0) return
+
+    loadInFlight = true
+    lastLoadedGroupId = groupId.value
     isLoading.value = true
     error.value = null
     try {
@@ -155,10 +168,18 @@ export function useGroupSidebar(groupId: Ref<string | null>) {
       items.value = []
     } finally {
       isLoading.value = false
+      loadInFlight = false
     }
   }
 
+  /** Примусове перезавантаження (наприклад після upload) */
+  function reload() {
+    lastLoadedGroupId = undefined
+    return load()
+  }
+
   watch(groupId, () => {
+    lastLoadedGroupId = undefined // groupId змінився — дозволити load
     load()
   }, { immediate: true })
 
@@ -192,6 +213,7 @@ export function useGroupSidebar(groupId: Ref<string | null>) {
     if (mime.startsWith('audio/')) return 'audio'
     if (mime.includes('pdf')) return 'pdf'
     if (mime.includes('presentation') || mime.includes('powerpoint')) return 'presentation'
+    if (mime.includes('wordprocessingml') || mime.includes('msword')) return 'document'
     return 'image'
   }
 
@@ -201,6 +223,7 @@ export function useGroupSidebar(groupId: Ref<string | null>) {
     if (contentType === 'pdf') return 'pdf'
     if (contentType === 'video') return 'video'
     if (contentType === 'presentation') return 'presentation'
+    if (contentType === 'document') return 'document'
     if (contentType === 'problem' || contentType === 'test') return 'problem'
     return 'image'
   }
@@ -211,6 +234,7 @@ export function useGroupSidebar(groupId: Ref<string | null>) {
     if (file.type.startsWith('audio/')) return 'audio'
     if (file.type.startsWith('video/')) return 'video'
     if (ALLOWED_UPLOAD_MIMES[file.type] === 'presentation') return 'presentation'
+    if (ALLOWED_UPLOAD_MIMES[file.type] === 'document') return 'document'
     return 'image'
   }
 
@@ -220,6 +244,7 @@ export function useGroupSidebar(groupId: Ref<string | null>) {
     if (file.type.startsWith('audio/')) return 'audio'
     if (file.type.startsWith('video/')) return 'video'
     if (ALLOWED_UPLOAD_MIMES[file.type] === 'presentation') return 'presentation'
+    if (ALLOWED_UPLOAD_MIMES[file.type] === 'document') return 'document'
     return 'image'
   }
 
@@ -317,7 +342,7 @@ export function useGroupSidebar(groupId: Ref<string | null>) {
     totalCount,
     isLoading,
     error,
-    reload: load,
+    reload,
     uploadFile,
     uploadFiles,
     isUploadAllowed,

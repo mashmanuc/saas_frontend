@@ -7,12 +7,13 @@
  */
 import { useQuery } from '@tanstack/vue-query'
 import { queryKeys } from '@/api/queryKeys'
-import { getContactBalance, getInquiryStats } from '@/api/billing'
+import { contactsApi } from '@/modules/contacts/api/contacts'
+import { getInquiryStats } from '@/api/billing'
 
 export function useContactBalanceQuery(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: queryKeys.contactBalance(),
-    queryFn: () => getContactBalance(),
+    queryFn: () => contactsApi.getBalance(),
     staleTime: 2 * 60_000, // 2 хв
     ...options,
   })

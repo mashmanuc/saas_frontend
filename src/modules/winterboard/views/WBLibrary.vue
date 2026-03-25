@@ -13,22 +13,13 @@
         :folders="foldersTree"
         :selected-id="selectedFolderId"
         :loading="loadingFolders"
+        editable
         @select="onSelectFolder"
+        @create="handleCreateFolder"
+        @rename="handleRenameFolder"
+        @delete="handleDeleteFolder"
+        @drop="handleFolderDrop"
       />
-
-      <!-- Create folder -->
-      <div class="wb-library__sidebar-footer">
-        <button
-          type="button"
-          class="wb-library__new-folder-btn"
-          @click="showCreateFolder = true"
-        >
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
-            <path d="M6.5 2v9M2 6.5h9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-          </svg>
-          {{ t('winterboard.library.newFolder') }}
-        </button>
-      </div>
     </aside>
 
     <!-- Main content -->
@@ -109,8 +100,45 @@
             </svg>
             {{ t('winterboard.library.upload') }}
           </button>
+
+          <!-- View mode toggle -->
+          <div class="wb-library__view-toggle" role="radiogroup" :aria-label="t('winterboard.library.viewMode')">
+            <button
+              type="button"
+              class="wb-library__view-btn"
+              :class="{ 'wb-library__view-btn--active': viewMode === 'grid' }"
+              :aria-pressed="viewMode === 'grid'"
+              :title="t('winterboard.library.gridView')"
+              @click="viewMode = 'grid'"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                <rect x="1" y="1" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2"/>
+                <rect x="8" y="1" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2"/>
+                <rect x="1" y="8" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2"/>
+                <rect x="8" y="8" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2"/>
+              </svg>
+            </button>
+            <button
+              type="button"
+              class="wb-library__view-btn"
+              :class="{ 'wb-library__view-btn--active': viewMode === 'list' }"
+              :aria-pressed="viewMode === 'list'"
+              :title="t('winterboard.library.listView')"
+              @click="viewMode = 'list'"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                <path d="M1 3h12M1 7h12M1 11h12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
+
+      <!-- Breadcrumb (Phase 33 B6) -->
+      <LibraryBreadcrumb
+        :items="breadcrumb"
+        @navigate="onSelectFolder"
+      />
 
       <!-- Loading -->
       <div v-if="loading" class="wb-library__grid" aria-busy="true">
@@ -139,16 +167,77 @@
         </button>
       </div>
 
-      <!-- Asset grid -->
-      <div v-else class="wb-library__grid" role="list" :aria-label="t('winterboard.library.assetsLabel')">
+      <!-- Asset grid view -->
+      <div
+        v-else-if="viewMode === 'grid'"
+        class="wb-library__grid"
+        role="list"
+        :aria-label="t('winterboard.library.assetsLabel')"
+      >
         <LibraryAssetCard
           v-for="asset in filteredAssets"
           :key="asset.id"
           :asset="asset"
           role="listitem"
           @toggle-favorite="onToggleFavorite"
+          @move="showMoveDropdown"
           @delete="onDeleteAsset"
         />
+      </div>
+
+      <!-- Asset list view -->
+      <div
+        v-else
+        class="wb-library__list"
+        role="list"
+        :aria-label="t('winterboard.library.assetsLabel')"
+      >
+        <div
+          v-for="asset in filteredAssets"
+          :key="asset.id"
+          class="wb-library__list-item"
+          role="listitem"
+        >
+          <div class="wb-library__list-preview">
+            <img
+              v-if="asset.thumbnail_url || asset.content_type.startsWith('image/')"
+              :src="asset.thumbnail_url || asset.cdn_url"
+              :alt="asset.name"
+              class="wb-library__list-img"
+              loading="lazy"
+            />
+            <span v-else class="wb-library__list-icon">{{ getFileIcon(asset.content_type) }}</span>
+          </div>
+          <div class="wb-library__list-info">
+            <span class="wb-library__list-name" :title="asset.name">{{ asset.name }}</span>
+            <span class="wb-library__list-meta">{{ formatFileSize(asset.size_bytes) }}</span>
+          </div>
+          <div class="wb-library__list-actions">
+            <button
+              type="button"
+              class="wb-library__list-action"
+              :class="{ 'wb-library__list-action--active': asset.is_favorite }"
+              :title="t('winterboard.library.favorite')"
+              @click="onToggleFavorite(asset)"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M7 1.5l1.545 3.13 3.455.5-2.5 2.435.59 3.435L7 9.25l-3.09 1.75.59-3.435L2 5.13l3.455-.5L7 1.5z"
+                  :fill="asset.is_favorite ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+              </svg>
+            </button>
+            <button
+              type="button"
+              class="wb-library__list-action wb-library__list-action--danger"
+              :title="t('winterboard.library.delete')"
+              @click="onDeleteAsset(asset)"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M2 3.5h10M4.5 3.5V2.5A.5.5 0 015 2h4a.5.5 0 01.5.5v1M5.5 6.5v3M8.5 6.5v3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                <path d="M2.5 3.5l.7 7.5a.5.5 0 00.5.5h6.6a.5.5 0 00.5-.5l.7-7.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- Pagination -->
@@ -190,46 +279,17 @@
       @uploaded="onUploaded"
     />
 
-    <!-- Create folder dialog -->
-    <Teleport to="body">
-      <Transition name="wb-dialog-fade">
-        <div
-          v-if="showCreateFolder"
-          class="wb-dialog-overlay"
-          role="dialog"
-          aria-modal="true"
-          :aria-label="t('winterboard.library.newFolder')"
-          @click.self="showCreateFolder = false"
-        >
-          <div class="wb-dialog">
-            <h2 class="wb-dialog__title">{{ t('winterboard.library.newFolder') }}</h2>
-            <input
-              v-model="newFolderName"
-              type="text"
-              class="wb-dialog__input"
-              :placeholder="t('winterboard.library.folderName')"
-              autofocus
-              @keydown.enter="createFolder"
-              @keydown.escape="showCreateFolder = false"
-            />
-            <div class="wb-dialog__actions">
-              <button type="button" class="wb-dialog__btn wb-dialog__btn--cancel"
-                @click="showCreateFolder = false">
-                {{ t('winterboard.boards.confirmDelete.cancel') }}
-              </button>
-              <button
-                type="button"
-                class="wb-dialog__btn wb-dialog__btn--primary"
-                :disabled="!newFolderName.trim()"
-                @click="createFolder"
-              >
-                {{ t('winterboard.library.create') }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
+    <!-- Move asset dropdown (Phase 33 B6) -->
+    <MoveAssetDropdown
+      v-if="moveTargetAsset"
+      :asset-id="moveTargetAsset.id"
+      :current-folder="moveTargetAsset.folder"
+      :folders="foldersTree"
+      @moved="onMoveConfirmed"
+      @close="moveTargetAsset = null"
+    />
+
+    <!-- Phase 32: folder CRUD now inline in LibraryFolderTree (editable prop) -->
   </div>
 </template>
 
@@ -239,6 +299,8 @@ import { useI18n } from 'vue-i18n'
 import LibraryFolderTree, { FAVORITES_ID, RECENT_ID } from '../components/library/LibraryFolderTree.vue'
 import LibraryAssetCard from '../components/library/LibraryAssetCard.vue'
 import LibraryUploadModal from '../components/library/LibraryUploadModal.vue'
+import LibraryBreadcrumb from '../components/library/LibraryBreadcrumb.vue'
+import MoveAssetDropdown from '../components/library/MoveAssetDropdown.vue'
 import {
   fetchFoldersTree,
   fetchAssets,
@@ -246,11 +308,14 @@ import {
   toggleFavorite as apiFavorite,
   deleteAsset as apiDelete,
   createFolder as apiCreateFolder,
+  updateFolder as apiUpdateFolder,
+  deleteFolder as apiDeleteFolder,
   addYouTubeAsset,
 } from '../api/library'
 import type { LibraryFolderTree as FolderTree, LibraryAsset } from '../types/library'
 import { parseYouTubeVideoId } from '../utils/youtubeParser'
 import { useToast } from '../composables/useToast'
+import { useAssetMove } from '../composables/useAssetMove'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -276,13 +341,57 @@ const showUpload = ref(false)
 const showYtInput = ref(false)
 const ytUrl = ref('')
 const ytInputRef = ref<HTMLInputElement | null>(null)
-const showCreateFolder = ref(false)
-const newFolderName = ref('')
+// Phase 32: folder CRUD now handled by LibraryFolderTree (editable prop)
+const viewMode = ref<'grid' | 'list'>('grid')
+// Phase 33 B6: move asset state
+const moveTargetAsset = ref<LibraryAsset | null>(null)
 
 // activeFolderId: only real folder IDs (not virtual FAVORITES/RECENT)
 const activeFolderId = computed<number | null>(() => {
   if (selectedFolderId.value === FAVORITES_ID || selectedFolderId.value === RECENT_ID) return null
   return selectedFolderId.value
+})
+
+// Phase 33 B6: breadcrumb computed
+const breadcrumb = computed(() => {
+  if (selectedFolderId.value === null) {
+    return [{ id: null, name: t('winterboard.library.breadcrumbAll') }]
+  }
+  if (selectedFolderId.value === FAVORITES_ID) {
+    return [
+      { id: null, name: t('winterboard.library.breadcrumbAll') },
+      { id: FAVORITES_ID, name: t('winterboard.library.favorites') }
+    ]
+  }
+  if (selectedFolderId.value === RECENT_ID) {
+    return [
+      { id: null, name: t('winterboard.library.breadcrumbAll') },
+      { id: RECENT_ID, name: t('winterboard.library.recent') }
+    ]
+  }
+  
+  // Real folder: build path from root
+  const path: Array<{ id: number | null; name: string }> = [
+    { id: null, name: t('winterboard.library.breadcrumbAll') }
+  ]
+  
+  function findPath(folders: FolderTree[], targetId: number): FolderTree[] | null {
+    for (const folder of folders) {
+      if (folder.id === targetId) return [folder]
+      if (folder.children.length > 0) {
+        const childPath = findPath(folder.children, targetId)
+        if (childPath) return [folder, ...childPath]
+      }
+    }
+    return null
+  }
+  
+  const folderPath = findPath(foldersTree.value, selectedFolderId.value)
+  if (folderPath) {
+    folderPath.forEach(f => path.push({ id: f.id, name: f.name }))
+  }
+  
+  return path
 })
 
 // ─── YouTube ─────────────────────────────────────────────────────────────────
@@ -357,6 +466,19 @@ async function loadAssets(): Promise<void> {
   }
 }
 
+// ─── Phase 33: Asset move ─────────────────────────────────────────────────────
+
+const { moveAsset } = useAssetMove({
+  assets,
+  total,
+  reloadFolders: loadFolders,
+  folders: foldersTree,
+})
+
+async function handleMoveAsset(asset: LibraryAsset, newFolderId: number | null): Promise<void> {
+  await moveAsset(asset, newFolderId)
+}
+
 // ─── Filter (client-side search) ─────────────────────────────────────────────
 
 const filteredAssets = computed<LibraryAsset[]>(() => {
@@ -413,21 +535,78 @@ function onUploaded(asset: LibraryAsset): void {
   showUpload.value = false
 }
 
-async function createFolder(): Promise<void> {
-  const name = newFolderName.value.trim()
-  if (!name) return
+async function handleCreateFolder(name: string, parentId: number | null): Promise<void> {
   try {
-    await apiCreateFolder({
-      name,
-      parent: activeFolderId.value,
-    })
-    newFolderName.value = ''
-    showCreateFolder.value = false
+    await apiCreateFolder({ name, parent: parentId })
     await loadFolders()
     showToast(t('winterboard.library.folderCreated'), 'success')
   } catch (err) {
     console.error('[WB:Library] Create folder failed', err)
     showToast(t('winterboard.library.folderError'), 'error')
+  }
+}
+
+async function handleRenameFolder(id: number, newName: string): Promise<void> {
+  try {
+    await apiUpdateFolder(id, { name: newName })
+    await loadFolders()
+    showToast(t('winterboard.library.folderRenamed'), 'success')
+  } catch (err) {
+    console.error('[WB:Library] Rename folder failed', err)
+    showToast(t('winterboard.library.folderError'), 'error')
+  }
+}
+
+async function handleDeleteFolder(id: number, name: string): Promise<void> {
+  if (!confirm(t('winterboard.library.deleteFolderConfirm', { name }))) return
+  try {
+    await apiDeleteFolder(id)
+    await loadFolders()
+    if (selectedFolderId.value === id) {
+      selectedFolderId.value = null
+    }
+    await loadAssets()
+    showToast(t('winterboard.library.folderDeleted'), 'success')
+  } catch (err) {
+    console.error('[WB:Library] Delete folder failed', err)
+    showToast(t('winterboard.library.folderError'), 'error')
+  }
+}
+
+// ─── List view helpers ────────────────────────────────────────────────────────
+
+function getFileIcon(contentType: string): string {
+  if (contentType.startsWith('image/')) return '🖼'
+  if (contentType === 'application/pdf') return '📄'
+  if (contentType.startsWith('video/')) return '🎬'
+  if (contentType.startsWith('audio/')) return '🎵'
+  return '📁'
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+// ─── Move asset (Phase 33 B6) ────────────────────────────────────────────────
+
+function showMoveDropdown(asset: LibraryAsset): void {
+  moveTargetAsset.value = asset
+}
+
+function onMoveConfirmed(assetId: number, newFolderId: number | null): void {
+  const asset = assets.value.find(a => a.id === assetId)
+  if (asset) {
+    moveAsset(asset, newFolderId)
+  }
+  moveTargetAsset.value = null
+}
+
+function handleFolderDrop(data: { assetId: number; folderId: number | null }): void {
+  const asset = assets.value.find(a => a.id === data.assetId)
+  if (asset) {
+    moveAsset(asset, data.folderId)
   }
 }
 
@@ -554,6 +733,43 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 
+/* ── View toggle ────────────────────────────────────────────────────── */
+
+.wb-library__view-toggle {
+  display: flex;
+  border: 1px solid var(--wb-toolbar-border, #e2e8f0);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.wb-library__view-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--wb-fg-secondary, #94a3b8);
+  transition: background 0.1s, color 0.1s;
+}
+
+.wb-library__view-btn:hover {
+  background: var(--wb-canvas-bg, #f1f5f9);
+  color: var(--wb-fg, #374151);
+}
+
+.wb-library__view-btn--active {
+  background: var(--wb-brand, #0066ff);
+  color: #ffffff;
+}
+
+.wb-library__view-btn--active:hover {
+  background: var(--wb-brand-hover, #0052cc);
+  color: #ffffff;
+}
+
 .wb-library__filter-btn {
   display: flex;
   align-items: center;
@@ -648,6 +864,125 @@ onMounted(async () => {
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 16px;
   align-content: start;
+}
+
+/* ── List view ──────────────────────────────────────────────────────── */
+
+.wb-library__list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wb-library__list-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: background 0.1s;
+  cursor: default;
+}
+
+.wb-library__list-item:hover {
+  background: var(--wb-canvas-bg, #f1f5f9);
+}
+
+.wb-library__list-preview {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  background: var(--wb-canvas-bg, #f8fafc);
+  border: 1px solid var(--wb-toolbar-border, #e2e8f0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.wb-library__list-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.wb-library__list-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.wb-library__list-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wb-library__list-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--wb-fg, #0f172a);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wb-library__list-meta {
+  font-size: 11px;
+  color: var(--wb-fg-secondary, #94a3b8);
+}
+
+.wb-library__list-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.1s;
+  flex-shrink: 0;
+}
+
+.wb-library__list-item:hover .wb-library__list-actions {
+  opacity: 1;
+}
+
+.wb-library__list-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--wb-fg-secondary, #64748b);
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+}
+
+.wb-library__list-action:hover {
+  background: var(--wb-card-bg, #ffffff);
+  border-color: var(--wb-toolbar-border, #e2e8f0);
+  color: var(--wb-fg, #0f172a);
+}
+
+.wb-library__list-action--active {
+  color: #f59e0b;
+}
+
+.wb-library__list-action--danger:hover {
+  color: #ef4444;
+  border-color: #fecaca;
+}
+
+@media (hover: none) {
+  .wb-library__list-actions {
+    opacity: 1;
+  }
 }
 
 /* ── Empty ───────────────────────────────────────────────────────────── */

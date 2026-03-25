@@ -61,6 +61,12 @@ export interface WBStroke {
   /** v5 A3: Lock state — locked items cannot be moved/deleted/erased */
   locked?: boolean
   lockedBy?: string
+  // Phase 35: Font system (optional — backward compatible)
+  // REC-2: WBStroke(text) uses `size` as fontSize — NO separate fontSize field
+  fontFamily?: string     // default render: 'Inter, sans-serif'
+  fontWeight?: number     // 400 (normal) | 700 (bold), default: 400
+  fontStyle?: string      // 'normal' | 'italic', default: 'normal'
+  textAlign?: string      // 'left' | 'center' | 'right', default: 'left'
 }
 
 // ─── Selection (v5: A1 — Rectangle Select) ─────────────────────────────────
@@ -126,6 +132,15 @@ export interface WBAsset {
   thumbnail?: string
   /** Phase 10 P3: YouTube embed URL (present when type='youtube_player') */
   youtubeUrl?: string
+  // Phase 35: Image properties (optional — backward compatible)
+  opacity?: number         // 0.0 - 1.0, default: 1
+  borderRadius?: number    // 0 - 20 (px), default: 0. FIX-8: max 20px
+  // Phase 35 REC-1: Font fields for sticky (sticky = WBAsset, not WBStroke)
+  // REC-2: WBAsset(sticky) uses existing `fontSize` field — NO `size` field
+  fontFamily?: string      // default: 'Inter, sans-serif'
+  fontWeight?: number      // 400 | 700, default: 400
+  fontStyle?: string       // 'normal' | 'italic', default: 'normal'
+  textAlign?: string       // 'left' | 'center' | 'right', default: 'left'
 }
 
 // Phase 10 P5: Lesson navigation marker — lightweight anchor in the replay timeline.
@@ -211,6 +226,89 @@ export interface WBPage {
   groups?: WBGroup[]
   /** A9: Per-page grid settings — overrides global grid (usePageGrid) */
   grid?: WBPageGridSettings
+  /** Phase 35 B6: Per-page background color (default '#ffffff') */
+  backgroundColor?: string
+  /** Phase 37: Test objects (HTML overlay) — per page */
+  testObjects?: WBTestObject[]
+  testMeta?: WBTestMeta
+}
+
+// ─── Phase 37: Test Objects (HTML overlay layer) ────────────────────────────
+
+export type WBTestObjectType = 'input' | 'radio' | 'checkbox' | 'dropdown' | 'gap-fill' | 'matching'
+
+export interface WBTestObject {
+  id: string
+  type: WBTestObjectType
+  // Position (canvas coordinates)
+  x: number
+  y: number
+  width: number
+  height: number
+  // Content
+  label?: string
+  correctAnswer?: string
+  points: number
+  // State
+  locked?: boolean
+  // Metadata
+  createdBy: string
+  createdAt: number
+}
+
+export interface WBTestInput extends WBTestObject {
+  type: 'input'
+  inputType: 'text' | 'number'
+  placeholder?: string
+  caseSensitive?: boolean
+}
+
+export interface WBTestRadio extends WBTestObject {
+  type: 'radio'
+  options: string[]
+  correctIndex: number
+  layout: 'vertical' | 'horizontal'
+}
+
+export interface WBTestCheckbox extends WBTestObject {
+  type: 'checkbox'
+  options: string[]
+  correctIndices: number[]
+  layout: 'vertical' | 'horizontal'
+}
+
+export interface WBTestDropdown extends WBTestObject {
+  type: 'dropdown'
+  options: string[]
+  correctIndex: number
+}
+
+export interface WBTestGapFill extends WBTestObject {
+  type: 'gap-fill'
+  template: string
+  gaps: Array<{
+    position: number
+    correctAnswer: string
+    caseSensitive?: boolean
+  }>
+}
+
+export interface WBTestMatching extends WBTestObject {
+  type: 'matching'
+  /** Left column items (prompts) */
+  leftItems: string[]
+  /** Right column items (answers), same length as leftItems */
+  rightItems: string[]
+  /** Correct mapping: correctPairs[i] = index in rightItems that matches leftItems[i] */
+  correctPairs: number[]
+}
+
+export interface WBTestMeta {
+  title?: string
+  totalPoints: number
+  passingScore?: number
+  timeLimit?: number
+  showCorrectAfter?: boolean
 }
 
 // ─── Workspace State (serialized to backend JSONB) ──────────────────────────

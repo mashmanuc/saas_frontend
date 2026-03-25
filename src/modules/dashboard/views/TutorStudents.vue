@@ -8,6 +8,7 @@
             {{ $t('dashboard.tutor.studentsDescription') }}
           </p>
         </div>
+        <InviteCreateButton class="shrink-0" />
         <div class="inline-flex rounded-full border border-default overflow-hidden text-xs">
           <button
             v-for="tab in tabs"
@@ -265,7 +266,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import Button from '../../../ui/Button.vue'
@@ -280,6 +281,7 @@ import { useContactAccessStore } from '../../../stores/contactAccessStore'
 import { notifySuccess, notifyError, notifyWarning } from '../../../utils/notify'
 import { getMessageAction } from '@/utils/relationsUi'
 import { pollingCoordinator } from '@/services/pollingCoordinator'
+const InviteCreateButton = defineAsyncComponent(() => import('@/components/invites/InviteCreateButton.vue'))
 
 const auth = useAuthStore()
 const relationsStore = useRelationsStore()

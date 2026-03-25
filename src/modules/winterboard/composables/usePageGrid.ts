@@ -37,10 +37,12 @@ export function usePageGrid() {
    */
   const currentPageGrid = computed((): WBPageGridSettings => {
     const page = wbStore.currentPage
-    if (!page || !page.grid) return { ...DEFAULT_PAGE_GRID }
+    // Phase 35: Use wbStore.gridSize as fallback instead of hardcoded DEFAULT_PAGE_GRID.size
+    const fallbackSize = wbStore.gridSize ?? DEFAULT_PAGE_GRID.size
+    if (!page || !page.grid) return { ...DEFAULT_PAGE_GRID, size: fallbackSize }
     return {
       enabled:  page.grid.enabled  ?? DEFAULT_PAGE_GRID.enabled,
-      size:     page.grid.size     ?? DEFAULT_PAGE_GRID.size,
+      size:     page.grid.size     ?? fallbackSize,
       style:   (page.grid.style    as GridStyle) ?? DEFAULT_PAGE_GRID.style,
       color:    page.grid.color   ?? DEFAULT_PAGE_GRID.color,
       opacity:  page.grid.opacity  ?? DEFAULT_PAGE_GRID.opacity,

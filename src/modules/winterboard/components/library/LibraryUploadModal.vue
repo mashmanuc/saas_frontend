@@ -134,6 +134,10 @@ const ACCEPTED_TYPES = [
   '.pptx',
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   'application/vnd.ms-powerpoint',
+  // Phase 35 B7: DOCX/Word documents
+  '.docx', '.doc',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/msword',
 ].join(',')
 const uid = Math.random().toString(36).slice(2, 8)
 

@@ -8,7 +8,8 @@
  * Future: BoardTemplate model for user-created templates.
  */
 
-import type { WBAsset } from '../types/winterboard'
+import type { WBAsset, WBStroke } from '../types/winterboard'
+import { generateCoordinatePlane, generateNumberLine, generateTable } from '../templates/templatePresets'
 
 export interface BoardTemplate {
   id: string
@@ -16,6 +17,8 @@ export interface BoardTemplate {
   descriptionKey: string // i18n key
   icon: string
   assets: Omit<WBAsset, 'id'>[]
+  /** Phase 34: Generator function for stroke-based templates */
+  generator?: () => WBStroke[]
 }
 
 const STICKY_BASE = {
@@ -145,5 +148,31 @@ export const BOARD_TEMPLATES: BoardTemplate[] = [
         textColor: '#db2777',
       },
     ],
+  },
+
+  // Phase 34 A5: Generator-based math templates
+  {
+    id: 'coordinate_plane',
+    nameKey: 'winterboard.templates.coordinatePlane',
+    descriptionKey: 'winterboard.templates.coordinatePlaneDesc',
+    icon: '📐',
+    assets: [],
+    generator: generateCoordinatePlane,
+  },
+  {
+    id: 'number_line',
+    nameKey: 'winterboard.templates.numberLine',
+    descriptionKey: 'winterboard.templates.numberLineDesc',
+    icon: '📏',
+    assets: [],
+    generator: generateNumberLine,
+  },
+  {
+    id: 'table_3x3',
+    nameKey: 'winterboard.templates.table',
+    descriptionKey: 'winterboard.templates.tableDesc',
+    icon: '📊',
+    assets: [],
+    generator: () => generateTable({ rows: 3, cols: 3 }),
   },
 ]

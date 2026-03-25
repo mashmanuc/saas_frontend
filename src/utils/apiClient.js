@@ -304,7 +304,10 @@ api.interceptors.response.use(
 // Phase 28: GET dedup adapter (INV-2: transport-level dedup)
 // FIX: axios 1.x adapter is an array of strings ['xhr','http','fetch'], not a function.
 // Use axios.getAdapter() to resolve the correct adapter function.
-const _resolvedAdapter = axios.getAdapter(api.defaults.adapter || axios.defaults.adapter)
+// Fallback: in test environments axios.getAdapter may not exist — use raw adapter.
+const _resolvedAdapter = typeof axios.getAdapter === 'function'
+  ? axios.getAdapter(api.defaults.adapter || axios.defaults.adapter)
+  : (typeof api.defaults.adapter === 'function' ? api.defaults.adapter : (config) => Promise.resolve({ data: {}, status: 200, config }))
 api.defaults.adapter = function dedupAdapter(config) {
   const key = config._dedupeKey
   if (!key) {

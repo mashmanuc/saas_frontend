@@ -212,12 +212,13 @@
           @select="handlePageSelect($event)"
           @add="handlePageAdd()"
           @delete="handlePageDelete($event)"
+          @duplicate="handlePageDuplicate($event)"
           @reorder="(from: number, to: number) => store.reorderPages(from, to)"
         />
       </aside>
 
       <!-- Canvas area -->
-      <div id="wb-canvas" ref="canvasContainerRef" class="wb-solo-room__canvas" :class="{ 'wb-solo-room__canvas--with-sidebar': showMaterialsSidebar }" tabindex="-1" @dragover.prevent @drop="contentDrop.handleCanvasDrop($event)">
+      <div id="wb-canvas" ref="canvasContainerRef" class="wb-solo-room__canvas" :class="{ 'wb-solo-room__canvas--with-sidebar': showMaterialsSidebar }" tabindex="-1" @dragover.prevent @drop="contentDrop.handleCanvasDrop($event)" @click="onCanvasContainerClick">
         <!-- B6.2: Loading state -->
         <Transition name="wb-fade">
           <WBCanvasLoader v-if="isLoading" />
@@ -262,6 +263,24 @@
           </div>
         </Transition>
 
+        <!-- Phase 37: Test overlay (HTML over canvas, synced with zoom/pan) -->
+        <WBTestOverlay
+          v-if="testStore.testMode"
+          :test-objects="currentTestObjects"
+          :zoom="store.zoom"
+          :scroll-x="store.scrollX ?? 0"
+          :scroll-y="store.scrollY ?? 0"
+          :mode="testStore.testPhase"
+          :selected-test-id="testStore.selectedTestId"
+          :grade-result="currentPageGradeResult"
+          :answers="currentPageAnswers"
+          :checks="currentPageChecks"
+          @select-test="handleTestSelect"
+          @update="handleTestObjectUpdate"
+          @answer="handleTestAnswer"
+          @check="handleTestCheck"
+        />
+
         <!-- Remote cursors overlay (A3.1) -->
         <WBRemoteCursors
           :cursors="presence.remoteCursors.value"
@@ -289,30 +308,160 @@
         <div class="wb-solo-room__resize-grip" />
       </div>
 
-      <!-- Right sidebar: materials from LearningGroup (resizable) -->
+      <!-- Phase 34 B5: Right sidebar - Properties (when selected) or Materials (when empty) -->
       <aside
         v-if="showMaterialsSidebar"
         class="wb-solo-room__content-sidebar"
         :style="sidebarStyle"
       >
+        <!-- Phase 37: Test object properties -->
+        <TestObjectProperties
+          v-if="testStore.testMode && selectedTestObject"
+          :object="selectedTestObject"
+          :is-locked="!!selectedTestObject.locked"
+          @update="handleTestObjectUpdate"
+          @delete="handleTestObjectDelete"
+        />
+        <PropertiesPanel
+          v-else-if="store.hasSelection"
+          :store="store"
+          @delete-selected="handleMultiDeleteConfirm"
+        />
         <GroupContentSidebar
+          v-else
           :group-id="groupId"
           :is-tutor="true"
           @place="placeItemAtCenter"
+          @apply-template="handleApplyTemplate"
         />
       </aside>
     </div>
 
     <!-- ── Footer: Page nav + Zoom ─────────────────────────────────────────── -->
     <footer class="wb-solo-room__footer">
+      <!-- Phase 37: Test mode controls -->
+      <div v-if="testStore.testMode" class="wb-test-bar">
+        <!-- Інструменти створення тестових об'єктів (тільки в edit фазі) -->
+        <div v-if="testStore.testPhase === 'edit'" class="wb-test-bar__tools">
+          <button
+            v-for="tool in TEST_TOOLS"
+            :key="tool.type"
+            type="button"
+            class="wb-test-bar__btn"
+            :class="{ 'wb-test-bar__btn--active': testStore.activeTestTool === tool.type }"
+            :title="t(tool.labelKey)"
+            @click="handleTestToolSelect(tool.type)"
+          >
+            {{ tool.icon }} {{ t(tool.labelKey) }}
+          </button>
+        </div>
+        <div v-if="testStore.testPhase === 'edit'" class="wb-test-bar__sep"></div>
+
+        <!-- 3-фазні кнопки переходу -->
+        <div class="wb-test-bar__phases">
+          <!-- Edit фаза → кнопка "Запустити тест" -->
+          <button
+            v-if="testStore.testPhase === 'edit'"
+            type="button"
+            class="wb-test-bar__btn wb-test-bar__btn--launch"
+            :disabled="currentTestObjects.length === 0"
+            @click="testStore.setTestPhase('live')"
+          >
+            ▶ {{ t('winterboard.test.launchTest') }}
+          </button>
+
+          <!-- Live фаза → кнопки "Здати" та "Назад до редагування" -->
+          <template v-if="testStore.testPhase === 'live'">
+            <span class="wb-test-bar__phase-label wb-test-bar__phase-label--live">
+              🟢 {{ t('winterboard.test.livePhase') }}
+            </span>
+            <button
+              type="button"
+              class="wb-test-bar__btn wb-test-bar__btn--grade"
+              @click="handleGradeTest"
+            >
+              ✅ {{ t('winterboard.test.submitGrade') }}
+            </button>
+            <button
+              type="button"
+              class="wb-test-bar__btn"
+              @click="testStore.setTestPhase('edit')"
+            >
+              ✏️ {{ t('winterboard.test.backToEdit') }}
+            </button>
+          </template>
+
+          <!-- Review фаза → кнопки "Повторити" та "Назад до редагування" -->
+          <template v-if="testStore.testPhase === 'review'">
+            <span class="wb-test-bar__phase-label wb-test-bar__phase-label--review">
+              📊 {{ t('winterboard.test.reviewPhase') }}
+            </span>
+            <button
+              type="button"
+              class="wb-test-bar__btn wb-test-bar__btn--launch"
+              @click="handleRetryTest"
+            >
+              🔄 {{ t('winterboard.test.retryTest') }}
+            </button>
+            <button
+              type="button"
+              class="wb-test-bar__btn"
+              @click="testStore.setTestPhase('edit')"
+            >
+              ✏️ {{ t('winterboard.test.backToEdit') }}
+            </button>
+          </template>
+        </div>
+
+        <div class="wb-test-bar__sep"></div>
+        <button type="button" class="wb-test-bar__btn wb-test-bar__btn--exit" @click="testStore.toggleTestMode()">
+          {{ t('winterboard.test.exitTest') }}
+        </button>
+      </div>
+
       <!-- Page navigation -->
       <div class="wb-page-nav">
+        <!-- Phase 37: Test mode toggle button -->
+        <button
+          type="button"
+          class="wb-page-btn"
+          :class="{ 'wb-page-btn--active': testStore.testMode }"
+          :title="t('winterboard.test.testMode')"
+          @click="testStore.toggleTestMode()"
+        >
+          📝
+        </button>
+        <div class="wb-page-nav__sep"></div>
         <!-- Grid toggle button -->
         <WBGridButton
           :model-value="gridOverlay.gridType.value"
           :is-grid-active="gridOverlay.isGridActive.value"
           @update:model-value="gridOverlay.setGrid"
         />
+        <!-- Phase 35 B5: Grid size dropdown (visible when grid active) -->
+        <select
+          v-if="gridOverlay.isGridActive.value"
+          class="wb-grid-size-select"
+          :value="store.gridSize ?? 20"
+          @change="onGridSizeChange"
+        >
+          <option :value="10">10px</option>
+          <option :value="20">20px</option>
+          <option :value="40">40px</option>
+          <option :value="50">50px</option>
+          <option :value="100">100px</option>
+        </select>
+        <!-- Phase 35 B6: Background color picker -->
+        <div class="wb-bg-color">
+          <label class="wb-bg-color__label">BG</label>
+          <input
+            type="color"
+            class="wb-bg-color__input"
+            :value="store.currentPageBgColor"
+            @input="onBgColorChange"
+            @change="onBgColorChange"
+          />
+        </div>
         <div class="wb-page-nav__sep"></div>
         <!-- Toggle панелі мініатюр -->
         <button
@@ -354,7 +503,7 @@
         <button
           type="button"
           class="wb-page-btn wb-page-btn--add"
-          :disabled="store.pageCount >= 20"
+          :disabled="store.pageCount >= 50"
           :title="t('winterboard.room.addPage')"
           @click="handlePageAdd"
         >
@@ -415,6 +564,14 @@
       :session-id="sessionId"
       :default-title="sessionName"
       @saved="handleLessonSaved"
+    />
+
+    <!-- Phase 37: Test grade results modal -->
+    <WBTestGradeModal
+      v-if="showGradeModal && currentGradeResult"
+      :result="currentGradeResult"
+      :test-objects="currentTestObjects"
+      @close="showGradeModal = false"
     />
 
     <!-- Board template selector (shown for new sessions) -->
@@ -507,6 +664,32 @@
     >
       &#9654; {{ t('winterboard.replay.viewReplay') }}
     </button>
+
+    <!-- Phase 34 B7: Multi-delete confirmation dialog -->
+    <Teleport to="body">
+      <div v-if="showDeleteConfirm" class="wb-confirm-overlay" @click.self="showDeleteConfirm = false">
+        <div class="wb-confirm-dialog">
+          <p class="wb-confirm-dialog__title">Delete {{ store.selectedIds.length }} items?</p>
+          <p class="wb-confirm-dialog__hint">This action can be undone with Ctrl+Z.</p>
+          <div class="wb-confirm-dialog__actions">
+            <button
+              type="button"
+              class="wb-confirm-dialog__btn wb-confirm-dialog__btn--cancel"
+              @click="showDeleteConfirm = false"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="wb-confirm-dialog__btn wb-confirm-dialog__btn--delete"
+              @click="performDelete"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -542,6 +725,7 @@ import WBShareDialog from '../components/sharing/WBShareDialog.vue'
 import WBYouTubeModal from '../components/toolbar/WBYouTubeModal.vue'
 import WBExportDialog from '../components/export/WBExportDialog.vue'
 import GroupContentSidebar from '../components/sidebar/GroupContentSidebar.vue'
+import PropertiesPanel from '../components/sidebar/PropertiesPanel.vue'
 import WBPageThumbnails from '../components/pages/WBPageThumbnails.vue'
 import WBDragGhost from '../components/sidebar/WBDragGhost.vue'
 import type { AllowedContentItem } from '../types/sidebar'
@@ -567,11 +751,20 @@ import { useCanvasResize } from '../composables/useCanvasResize'
 import { useTouchGestures } from '../components/gestures/useTouchGestures'
 import { useDeviceMode } from '../composables/useDeviceMode'
 
+// Phase 37: Test system
+import { useTestStore } from '../board/state/testStore'
+import WBTestOverlay from '../components/test/WBTestOverlay.vue'
+import WBTestGradeModal from '../components/test/WBTestGradeModal.vue'
+import TestObjectProperties from '../components/sidebar/properties/TestObjectProperties.vue'
+import type { WBTestObject, WBTestInput, WBTestRadio, WBTestCheckbox, WBTestDropdown, WBTestGapFill, WBTestMatching } from '../types/winterboard'
+import type { GradeResult } from '../utils/testGrading'
+
 // ─── Store & Composables ────────────────────────────────────────────────────
 
 const router = useRouter()
 const route = useRoute()
 const store = useWBStore()
+const testStore = useTestStore()
 
 // Responsive Phase 1 B2: Device mode detection for layout data-attributes
 const deviceModeState = useDeviceMode()
@@ -930,10 +1123,55 @@ async function placeItemAtCenter(item: AllowedContentItem) {
   await center
 }
 
+// ── Phase 34 B7: Multi-delete confirm dialog ──
+const showDeleteConfirm = ref(false)
+
+function handleMultiDeleteConfirm() {
+  const count = store.selectedIds.length
+  if (count > 3) {
+    showDeleteConfirm.value = true
+  } else {
+    performDelete()
+  }
+}
+
+function performDelete() {
+  showDeleteConfirm.value = false
+  const unlocked = store.selectedIds.filter(id => !store.isItemLocked(id))
+  if (unlocked.length > 0) {
+    store.selectItems(unlocked)
+    store.deleteSelected()
+    store.removeItemsFromGroups(unlocked)
+  }
+  store.clearSelection()
+}
+
+// ── Phase 34 B6: Handle template application from sidebar ──
+function handleApplyTemplate(templateId: string) {
+  // Phase 34 A4: Check object limit before applying template
+  if (!store.canAddObject) {
+    console.warn('[WB] Cannot add template: object limit reached (300)')
+    return
+  }
+  applyTemplate(templateId)
+}
+
 // ── Board Templates: apply pre-built layout ──
 function applyTemplate(templateId: string) {
   const tmpl = BOARD_TEMPLATES.find(t => t.id === templateId)
-  if (!tmpl || tmpl.assets.length === 0) return
+  if (!tmpl) return
+
+  // Phase 34 fix: generator-based templates (coordinate_plane, number_line, table)
+  if (tmpl.generator) {
+    const strokes = tmpl.generator()
+    for (const stroke of strokes) {
+      store.addStroke(stroke)
+    }
+    return
+  }
+
+  // Asset-based templates (blank, two_columns, grid_2x2, timeline)
+  if (!tmpl.assets || tmpl.assets.length === 0) return
   for (const assetData of tmpl.assets) {
     const asset: WBAsset = {
       ...assetData,
@@ -1328,6 +1566,10 @@ function handlePageAdd(): void {
   store.addPage()
 }
 
+function handlePageDuplicate(index: number): void {
+  store.duplicatePage(index)
+}
+
 function handlePageDelete(index: number): void {
   if (!store.pages[index]) return
   store.deletePageUndoable(index)
@@ -1338,6 +1580,18 @@ function handlePageDelete(index: number): void {
 function handleZoomIn(): void {
   store.setZoom(store.zoom + 0.25)
   followMode.onUserInteraction()
+}
+
+// Phase 35 B5: Grid size change
+function onGridSizeChange(e: Event) {
+  const val = Number((e.target as HTMLSelectElement).value)
+  if (store.setGridSize) store.setGridSize(val)
+}
+
+// Phase 35 B6: Background color change
+function onBgColorChange(e: Event) {
+  const color = (e.target as HTMLInputElement).value
+  if (store.setBackgroundColor) store.setBackgroundColor(color)
 }
 
 function handleZoomOut(): void {
@@ -1363,6 +1617,177 @@ function handleScrollChange(scrollX: number, scrollY: number): void {
 
 function handleFitToPage(): void {
   canvasRef.value?.fitToPage?.()
+}
+
+// ─── Phase 37: Test System ─────────────────────────────────────────────────
+
+const TEST_TOOLS = [
+  { type: 'input' as const, icon: '📝', labelKey: 'winterboard.test.input' },
+  { type: 'radio' as const, icon: '⭕', labelKey: 'winterboard.test.radio' },
+  { type: 'checkbox' as const, icon: '☑️', labelKey: 'winterboard.test.checkbox' },
+  { type: 'dropdown' as const, icon: '📋', labelKey: 'winterboard.test.dropdown' },
+  { type: 'gap-fill' as const, icon: '🔤', labelKey: 'winterboard.test.gapFill' },
+  { type: 'matching' as const, icon: '🔗', labelKey: 'winterboard.test.matching' },
+]
+
+const currentTestObjects = computed<WBTestObject[]>(() => store.currentPage?.testObjects ?? [])
+const selectedTestObject = computed<WBTestObject | null>(() => {
+  const id = testStore.selectedTestId
+  if (!id) return null
+  return store.getTestObjectById(id)
+})
+const showGradeModal = ref(false)
+const currentGradeResult = ref<GradeResult | null>(null)
+
+/** Grade result для поточної сторінки (для WBTestOverlay review mode) */
+const currentPageGradeResult = computed(() => {
+  const pageId = store.currentPage?.id
+  if (!pageId) return null
+  return testStore.getGradeResult(pageId)
+})
+
+/** Відповіді поточної сторінки (для передачі в WBTestOverlay → WBTestElement) */
+const currentPageAnswers = computed(() => {
+  const pageId = store.currentPage?.id
+  if (!pageId) return undefined
+  return testStore.getPageAnswers(pageId)
+})
+
+/** Phase 38: inline check results для поточної сторінки */
+const currentPageChecks = computed(() => {
+  const pageId = store.currentPage?.id
+  if (!pageId) return undefined
+  return testStore.getPageChecks(pageId)
+})
+
+function handleTestToolSelect(type: 'input' | 'radio' | 'checkbox' | 'dropdown' | 'gap-fill' | 'matching') {
+  if (testStore.activeTestTool === type) {
+    testStore.setActiveTestTool(null)
+  } else {
+    testStore.setActiveTestTool(type)
+  }
+}
+
+function handleTestSelect(id: string) {
+  testStore.selectTestObject(id)
+  store.clearSelection() // FIX-9: deselect board objects
+}
+
+function handleTestDeselect() {
+  testStore.selectTestObject(null)
+}
+
+function handleTestObjectUpdate(payload: { id: string; updates: Record<string, unknown> }) {
+  store.updateTestObject(payload.id, payload.updates)
+}
+
+function handleTestAnswer(payload: { objectId: string; answer: unknown }) {
+  const pageId = store.currentPage?.id
+  if (pageId) {
+    testStore.setAnswer(pageId, payload.objectId, payload.answer)
+  }
+}
+
+/** Phase 38: Inline перевірка одного тестового елемента */
+function handleTestCheck(objectId: string) {
+  const pageId = store.currentPage?.id
+  if (!pageId) return
+  const testObj = currentTestObjects.value.find(o => o.id === objectId)
+  if (!testObj) return
+  testStore.checkSingleAnswer(pageId, objectId, testObj)
+}
+
+function handleTestObjectDelete(id: string) {
+  store.deleteTestObject(id)
+  testStore.selectTestObject(null)
+}
+
+function handleGradeTest() {
+  const pageId = store.currentPage?.id
+  if (!pageId) return
+  const result = testStore.gradePage(pageId, currentTestObjects.value)
+  currentGradeResult.value = result
+  showGradeModal.value = true
+  // Перехід у review фазу — зелене/червоне підсвічування на елементах
+  testStore.setTestPhase('review')
+}
+
+/** Повторити тест — очистити відповіді та повернутись у live */
+function handleRetryTest() {
+  const pageId = store.currentPage?.id
+  if (pageId) {
+    testStore.clearPageAnswers(pageId)
+  }
+  currentGradeResult.value = null
+  testStore.setTestPhase('live')
+}
+
+/** Convert DOM click to canvas coordinates and dispatch to test handler */
+function onCanvasContainerClick(e: MouseEvent) {
+  // Phase 38: deselect тестового об'єкту при кліку на canvas (overlay = pointer-events:none)
+  if (testStore.selectedTestId) {
+    testStore.selectTestObject(null)
+  }
+
+  if (!testStore.testMode || !testStore.activeTestTool) return
+  if (testStore.testPhase !== 'edit') return // створення тільки в edit фазі
+
+  const container = canvasContainerRef.value
+  if (!container) return
+
+  const rect = container.getBoundingClientRect()
+  // Convert screen coordinates → canvas coordinates (account for zoom + scroll)
+  const canvasX = (e.clientX - rect.left) / store.zoom + (store.scrollX ?? 0)
+  const canvasY = (e.clientY - rect.top) / store.zoom + (store.scrollY ?? 0)
+
+  handleTestCanvasClick(canvasX, canvasY)
+}
+
+/** Create test object when canvas is clicked in test mode with active tool */
+function handleTestCanvasClick(canvasX: number, canvasY: number) {
+  const tool = testStore.activeTestTool
+  if (!tool) return
+
+  const id = `test-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+  const base: WBTestObject = {
+    id,
+    type: tool,
+    x: Math.round(canvasX),
+    y: Math.round(canvasY),
+    width: 250,
+    height: 40,
+    points: 1,
+    createdBy: 'local',
+    createdAt: Date.now(),
+  }
+
+  let obj: WBTestObject
+  switch (tool) {
+    case 'input':
+      obj = { ...base, type: 'input', inputType: 'text', placeholder: '', caseSensitive: false, label: t('winterboard.test.props.labelQuestion'), correctAnswer: '' } as WBTestInput
+      break
+    case 'radio':
+      obj = { ...base, type: 'radio', options: ['A', 'B', 'C'], correctIndex: 0, layout: 'vertical', label: t('winterboard.test.radio'), height: 120 } as WBTestRadio
+      break
+    case 'checkbox':
+      obj = { ...base, type: 'checkbox', options: ['A', 'B', 'C'], correctIndices: [0], layout: 'vertical', label: t('winterboard.test.checkbox'), height: 120 } as WBTestCheckbox
+      break
+    case 'dropdown':
+      obj = { ...base, type: 'dropdown', options: ['A', 'B', 'C'], correctIndex: 0, label: t('winterboard.test.dropdown') } as WBTestDropdown
+      break
+    case 'gap-fill':
+      obj = { ...base, type: 'gap-fill', template: '___ — ___', gaps: [{ position: 0, correctAnswer: '', caseSensitive: false }, { position: 5, correctAnswer: '', caseSensitive: false }], label: t('winterboard.test.gapFill'), height: 80 } as WBTestGapFill
+      break
+    case 'matching':
+      obj = { ...base, type: 'matching', leftItems: ['1', '2', '3'], rightItems: ['A', 'B', 'C'], correctPairs: [0, 1, 2], label: t('winterboard.test.matching'), width: 400, height: 160 } as WBTestMatching
+      break
+    default:
+      return
+  }
+
+  store.addTestObject(obj)
+  testStore.selectTestObject(id)
+  testStore.setActiveTestTool(null)
 }
 
 // ─── Handlers: Header ───────────────────────────────────────────────────────
@@ -1964,6 +2389,38 @@ watch(() => store.workspaceName, (name) => {
   gap: 8px;
 }
 
+/* Phase 35 B5: Grid size select */
+.wb-grid-size-select {
+  height: 28px;
+  border: 1px solid var(--wb-border, #e2e8f0);
+  border-radius: 6px;
+  padding: 0 6px;
+  font-size: 12px;
+  background: var(--wb-bg-primary, #fff);
+  color: var(--wb-fg, #0f172a);
+  cursor: pointer;
+}
+
+/* Phase 35 B6: Background color */
+.wb-bg-color {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.wb-bg-color__label {
+  font-size: 11px;
+  color: var(--wb-text-secondary, #6b7280);
+}
+.wb-bg-color__input {
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--wb-border, #e2e8f0);
+  border-radius: 4px;
+  padding: 1px;
+  cursor: pointer;
+  background: none;
+}
+
 .wb-page-btn {
   width: 28px;
   height: 28px;
@@ -2465,6 +2922,77 @@ watch(() => store.workspaceName, (name) => {
   }
 }
 
+/* Phase 34 B7: Multi-delete confirmation dialog */
+.wb-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+}
+
+.wb-confirm-dialog {
+  background: var(--wb-bg-primary, #ffffff);
+  border-radius: 12px;
+  padding: 24px;
+  min-width: 320px;
+  max-width: 400px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.wb-confirm-dialog__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--wb-text-primary, #111827);
+  margin: 0 0 8px 0;
+}
+
+.wb-confirm-dialog__hint {
+  color: var(--wb-text-secondary, #6b7280);
+  font-size: 13px;
+  margin: 0 0 16px 0;
+}
+
+.wb-confirm-dialog__actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.wb-confirm-dialog__btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.15s ease;
+}
+
+.wb-confirm-dialog__btn--cancel {
+  background: var(--wb-bg-secondary, #f3f4f6);
+  color: var(--wb-text-primary, #111827);
+}
+
+.wb-confirm-dialog__btn--cancel:hover {
+  background: var(--wb-bg-tertiary, #e5e7eb);
+}
+
+.wb-confirm-dialog__btn--delete {
+  background: #ef4444;
+  color: white;
+}
+
+.wb-confirm-dialog__btn--delete:hover {
+  background: #dc2626;
+}
+
+.wb-confirm-dialog__btn--delete:active {
+  background: #b91c1c;
+}
+
 /* Phase 11: Replay mode entry button — prominent, pulse animation */
 .wb-solo-room__replay-btn {
   position: fixed;
@@ -2492,5 +3020,99 @@ watch(() => store.workspaceName, (name) => {
 @keyframes wb-replay-pulse {
   0%, 100% { box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35); }
   50% { box-shadow: 0 4px 24px rgba(99, 102, 241, 0.6); }
+}
+
+/* Phase 37: Test mode bar */
+.wb-test-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: #eef2ff;
+  border-bottom: 1px solid #c7d2fe;
+}
+.wb-test-bar__tools {
+  display: flex;
+  gap: 4px;
+}
+.wb-test-bar__btn {
+  padding: 4px 10px;
+  border: 1px solid #c7d2fe;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s;
+}
+.wb-test-bar__btn:hover {
+  background: #e0e7ff;
+}
+.wb-test-bar__btn--active {
+  background: #6366f1;
+  color: #fff;
+  border-color: #6366f1;
+}
+.wb-test-bar__btn--grade {
+  background: #059669;
+  color: #fff;
+  border-color: #059669;
+}
+.wb-test-bar__btn--grade:hover {
+  background: #047857;
+}
+.wb-test-bar__btn--exit {
+  margin-left: auto;
+  color: #ef4444;
+  border-color: #fca5a5;
+}
+.wb-test-bar__btn--exit:hover {
+  background: #fee2e2;
+}
+.wb-test-bar__sep {
+  width: 1px;
+  height: 20px;
+  background: #c7d2fe;
+  margin: 0 4px;
+}
+.wb-test-bar__phases {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.wb-test-bar__phase-label {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+.wb-test-bar__phase-label--live {
+  background: #dcfce7;
+  color: #166534;
+}
+.wb-test-bar__phase-label--review {
+  background: #fef3c7;
+  color: #92400e;
+}
+.wb-test-bar__btn--launch {
+  background: #6366f1;
+  color: #fff;
+  border-color: #6366f1;
+}
+.wb-test-bar__btn--launch:hover {
+  background: #4f46e5;
+}
+.wb-test-bar__btn--launch:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Phase 37: Test mode toggle in page nav */
+.wb-page-btn--active {
+  background: #6366f1;
+  color: #fff;
+  border-color: #6366f1;
 }
 </style>

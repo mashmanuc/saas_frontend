@@ -31,6 +31,14 @@ export interface AcceptAvailability {
    * ISO 8601 format.
    */
   expires_at?: string
+  
+  /**
+   * When next accept slot will be available (if remaining_accepts = 0).
+   * 
+   * ISO 8601 format. Shows when oldest accept in 30-day rolling window expires.
+   * Present only if can_accept=false and allowance exists.
+   */
+  next_available_at?: string
 }
 
 /**

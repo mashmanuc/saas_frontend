@@ -2862,6 +2862,7 @@
       "activeStudents": "Активних учнів",
       "pendingInquiries": "Нових запитів",
       "balance": "Баланс",
+      "contactBalance": "Контактів",
       "upcomingLessons": "Майбутніх уроків",
       "activeTutors": "Активних тьюторів",
       "unreadMessages": "Непрочитаних",
@@ -6434,6 +6435,7 @@
       "page_n": "Сторінка {n}",
       "add": "Додати сторінку",
       "delete_page": "Видалити сторінку {n}",
+      "duplicate_page": "Дублювати сторінку {n}",
       "navigation": "Навігація сторінками",
       "previous": "Попередня сторінка",
       "next": "Наступна сторінка",
@@ -6917,7 +6919,8 @@
         "audio": "Аудіо",
         "video": "Відео",
         "presentation": "Презентації",
-        "youtube": "YouTube"
+        "youtube": "YouTube",
+        "document": "Документи"
       }
     },
     "templates": {
@@ -7143,6 +7146,79 @@
       "publish": "Опублікувати як урок",
       "saveAsTemplate": "Зберегти як шаблон",
       "close": "Закрити"
+    },
+    "properties": {
+      "text": "Текст",
+      "textPlaceholder": "Введіть текст...",
+      "fontSize": "Розмір шрифту",
+      "color": "Колір",
+      "stickyNote": "Нотатка",
+      "notePlaceholder": "Введіть нотатку...",
+      "background": "Фон",
+      "textColor": "Колір тексту"
+    },
+    "test": {
+      "testMode": "Режим тесту",
+      "input": "Введення",
+      "radio": "Вибір одного",
+      "checkbox": "Множинний вибір",
+      "dropdown": "Список",
+      "gapFill": "Заповни пропуски",
+      "matching": "Відповідність",
+      "edit": "✏️ Редагування",
+      "preview": "▶️ Перегляд",
+      "grade": "📊 Оцінити",
+      "exitTest": "✕ Вийти з тесту",
+      "launchTest": "Запустити тест",
+      "livePhase": "Тест активний",
+      "submitGrade": "Здати та оцінити",
+      "backToEdit": "Редагувати",
+      "reviewPhase": "Результати",
+      "retryTest": "Повторити",
+      "checkAnswer": "Перевірити відповідь",
+      "inputPlaceholder": "Введіть відповідь...",
+      "chooseAnswer": "Оберіть відповідь...",
+      "answer": "Відповідь",
+      "correct": "Правильно",
+      "gaps": "{n} пропуск(ів)",
+      "typeBadge": {
+        "input": "Введення",
+        "radio": "Вибір",
+        "checkbox": "Множинний",
+        "dropdown": "Список",
+        "gap-fill": "Пропуски",
+        "matching": "Відповідн."
+      },
+      "results": {
+        "title": "Результати тесту",
+        "close": "Закрити",
+        "pts": "б.",
+        "question": "Запитання"
+      },
+      "props": {
+        "labelQuestion": "Запитання",
+        "labelPlaceholder": "Текст запитання...",
+        "inputType": "Тип введення",
+        "textType": "Текст",
+        "numberType": "Число",
+        "correctAnswer": "Правильна відповідь",
+        "caseSensitive": "Враховувати регістр",
+        "options": "Варіанти",
+        "optionsCheckCorrect": "Варіанти (позначте правильні)",
+        "addOption": "+ Додати варіант",
+        "template": "Шаблон (використовуйте ___ для пропусків)",
+        "templatePlaceholder": "Столиця Франції — ___",
+        "gapAnswers": "Відповіді на пропуски",
+        "points": "Бали",
+        "position": "Позиція",
+        "unlock": "🔓 Розблокувати",
+        "lock": "🔒 Заблокувати",
+        "delete": "🗑 Видалити",
+        "matchingPairs": "Пари відповідностей",
+        "leftItem": "Ліва колонка",
+        "rightItem": "Права колонка",
+        "addPair": "+ Додати пару"
+      }
     }
   },
   "storage": {
@@ -7837,5 +7913,65 @@
     "geography": "Географія",
     "informatics": "Інформатика",
     "other": "Інше"
+  },
+  "invites": {
+    "createButton": "Створити запрошення",
+    "createSuccess": "Запрошення створено успішно",
+    "acceptSuccess": "Вітаємо! Ви тепер підключені до {tutorName}",
+    "cancelSuccess": "Запрошення скасовано",
+    "shareTitle": "Поділитися запрошенням",
+    "shareWhatsApp": "Поділитися через WhatsApp",
+    "shareCopy": "Скопіювати посилання",
+    "copiedToClipboard": "Посилання скопійовано!",
+    "shareHint": "Надішліть це посилання учню через будь-який месенджер",
+    "inviteUrl": "Посилання на запрошення",
+    "expiresAt": "Дійсне до",
+    "status": {
+      "active": "Активне",
+      "used": "Використане",
+      "expired": "Прострочене",
+      "cancelled": "Скасоване"
+    },
+    "list": {
+      "title": "Мої запрошення",
+      "empty": "У вас ще немає запрошень",
+      "createFirst": "Створіть перше запрошення для студента",
+      "openedCount": "Переглядів: {count}",
+      "cancel": "Скасувати"
+    },
+    "detail": {
+      "title": "Запрошення від {tutorName}",
+      "description": "{tutorName} запрошує вас приєднатися як студент",
+      "acceptButton": "Прийняти запрошення",
+      "viewProfile": "Переглянути профіль",
+      "bookLesson": "Записатися на урок",
+      "cost": "Вартість: {count} контакт | Вартість: {count} контакти | Вартість: {count} контактів",
+      "expired": "Це запрошення прострочене",
+      "used": "Це запрошення вже використане",
+      "cancelled": "Це запрошення скасоване",
+      "inactive": "Це запрошення більше не активне"
+    },
+    "viral": {
+      "title": "Чудово! Ви підключені",
+      "subtitle": "Тепер ви можете спілкуватися з {tutorName}",
+      "goToDashboard": "Перейти до мого кабінету",
+      "viewProfile": "Переглянути профіль репетитора",
+      "bookLesson": "Записатися на перший урок",
+      "exploreMore": "Знайти інших репетиторів"
+    },
+    "errors": {
+      "unknown": "Сталася помилка. Спробуйте ще раз",
+      "not_tutor": "Тільки репетитори можуть створювати запрошення",
+      "rate_limit_exceeded": "Ви досягли ліміту створення запрошень. Спробуйте пізніше",
+      "max_active_invites": "Ви досягли максимальної кількості активних запрошень (20)",
+      "invite_not_found": "Запрошення не знайдено",
+      "invite_expired": "Запрошення прострочене",
+      "invite_already_used": "Це запрошення вже використане",
+      "invite_cancelled": "Запрошення скасоване репетитором",
+      "invite_not_active": "Запрошення більше не активне",
+      "self_invite_forbidden": "Ви не можете прийняти власне запрошення",
+      "insufficient_contacts": "У репетитора недостатньо контактів",
+      "not_owner": "Тільки власник може скасувати запрошення"
+    }
   }
 }

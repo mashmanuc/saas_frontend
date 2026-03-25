@@ -43,11 +43,26 @@
       <!-- Page number label -->
       <span class="wb-thumbnail__label">{{ index + 1 }}</span>
 
+      <!-- Duplicate page button -->
+      <button
+        v-if="pages.length < MAX_PAGES"
+        type="button"
+        class="wb-thumbnail__action wb-thumbnail__duplicate"
+        :aria-label="t('winterboard.pages.duplicate_page', { n: index + 1 })"
+        :title="t('winterboard.pages.duplicate_page', { n: index + 1 })"
+        @click.stop="emit('duplicate', index)"
+      >
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3">
+          <rect x="3.5" y="3.5" width="7" height="7" rx="1" />
+          <path d="M8.5 3.5V2a1 1 0 00-1-1H2a1 1 0 00-1 1v5.5a1 1 0 001 1h1.5" />
+        </svg>
+      </button>
+
       <!-- Delete button (not for last page) -->
       <button
         v-if="pages.length > 1"
         type="button"
-        class="wb-thumbnail__delete"
+        class="wb-thumbnail__action wb-thumbnail__delete"
         :aria-label="t('winterboard.pages.delete_page', { n: index + 1 })"
         @click.stop="emit('delete', index)"
       >
@@ -65,18 +80,21 @@
       />
     </div>
 
-    <!-- Add page button -->
+    <!-- Add page button (disabled at limit) -->
     <button
       type="button"
       class="wb-thumbnail wb-thumbnail--add"
+      :class="{ 'wb-thumbnail--add-disabled': pages.length >= MAX_PAGES }"
       :aria-label="t('winterboard.pages.add')"
+      :disabled="pages.length >= MAX_PAGES"
       @click="emit('add')"
     >
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
         <line x1="10" y1="4" x2="10" y2="16" />
         <line x1="4" y1="10" x2="16" y2="10" />
       </svg>
-      <span>{{ t('winterboard.pages.add') }}</span>
+      <span v-if="pages.length >= MAX_PAGES">{{ pages.length }} / {{ MAX_PAGES }}</span>
+      <span v-else>{{ t('winterboard.pages.add') }}</span>
     </button>
   </div>
 </template>
@@ -91,6 +109,7 @@ const { t } = useI18n()
 // Thumbnail dimensions (16:9 ratio)
 const THUMB_W = 120
 const THUMB_H = 68
+const MAX_PAGES = 50
 
 // ─── Props / Emits ──────────────────────────────────────────────────────────
 
@@ -105,6 +124,7 @@ const emit = defineEmits<{
   select: [index: number]
   add: []
   delete: [index: number]
+  duplicate: [index: number]
   reorder: [fromIndex: number, toIndex: number]
 }>()
 
@@ -194,8 +214,8 @@ function renderThumbnail(canvas: HTMLCanvasElement, page: WBPage): void {
 
   ctx.clearRect(0, 0, THUMB_W, THUMB_H)
 
-  // Background
-  ctx.fillStyle = '#ffffff'
+  // Background — use per-page backgroundColor (fallback to white)
+  ctx.fillStyle = page.backgroundColor || '#ffffff'
   ctx.fillRect(0, 0, THUMB_W, THUMB_H)
 
   // Scale factor (assume canvas is ~1920x1080 → scale to 120x68)
@@ -248,24 +268,65 @@ let renderTimeout: ReturnType<typeof setTimeout> | null = null
 function scheduleRender(): void {
   if (renderTimeout) clearTimeout(renderTimeout)
   renderTimeout = setTimeout(() => {
-    renderAllThumbnails()
+    renderVisibleThumbnails()
   }, 500)
 }
 
-function renderAllThumbnails(): void {
-  for (let i = 0; i < props.pages.length; i++) {
-    const canvas = canvasMap.get(i)
-    if (canvas) {
-      renderThumbnail(canvas, props.pages[i])
+// ─── Lazy rendering: only render thumbnails visible in the scrollable sidebar ─
+const visibleIndices = new Set<number>()
+let observer: IntersectionObserver | null = null
+
+function setupObserver(): void {
+  if (observer) observer.disconnect()
+  observer = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        const idx = Number((entry.target as HTMLElement).dataset.pageIndex)
+        if (Number.isNaN(idx)) continue
+        if (entry.isIntersecting) {
+          visibleIndices.add(idx)
+          // Render this thumbnail immediately
+          const canvas = canvasMap.get(idx)
+          if (canvas && props.pages[idx]) {
+            renderThumbnail(canvas, props.pages[idx])
+          }
+        } else {
+          visibleIndices.delete(idx)
+        }
+      }
+    },
+    { rootMargin: '100px 0px', threshold: 0 },
+  )
+  // Observe all canvas elements
+  for (const [idx, canvas] of canvasMap) {
+    canvas.dataset.pageIndex = String(idx)
+    observer.observe(canvas)
+  }
+}
+
+function renderVisibleThumbnails(): void {
+  // Only re-render thumbnails currently visible (or near-visible)
+  for (const idx of visibleIndices) {
+    const canvas = canvasMap.get(idx)
+    if (canvas && props.pages[idx]) {
+      renderThumbnail(canvas, props.pages[idx])
+    }
+  }
+  // Always render current page thumbnail (even if scrolled out of view)
+  if (!visibleIndices.has(props.currentIndex)) {
+    const canvas = canvasMap.get(props.currentIndex)
+    if (canvas && props.pages[props.currentIndex]) {
+      renderThumbnail(canvas, props.pages[props.currentIndex])
     }
   }
 }
 
-// Watch for page content changes
+// Watch for page content changes (strokes, assets, backgroundColor)
 watch(
   () => props.pages.map(p => ({
     strokeCount: p.strokes?.length || 0,
     assetCount: p.assets?.length || 0,
+    bg: p.backgroundColor || '',
   })),
   () => scheduleRender(),
   { deep: true }
@@ -280,16 +341,19 @@ watch(
       if (key >= newLen) canvasMap.delete(key)
     }
     await nextTick()
-    renderAllThumbnails()
+    setupObserver()
   }
 )
 
 onMounted(() => {
-  nextTick(() => renderAllThumbnails())
+  nextTick(() => {
+    setupObserver()
+  })
 })
 
 onUnmounted(() => {
   if (renderTimeout) clearTimeout(renderTimeout)
+  if (observer) observer.disconnect()
   canvasMap.clear()
 })
 </script>
@@ -354,17 +418,17 @@ onUnmounted(() => {
   pointer-events: none;
 }
 
-.wb-thumbnail__delete {
+/* Action buttons on thumbnails (duplicate, delete) */
+.wb-thumbnail__action {
   position: absolute;
   top: 2px;
-  right: 2px;
   width: 18px;
   height: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.85);
   border-radius: 50%;
   cursor: pointer;
   opacity: 0;
@@ -372,8 +436,21 @@ onUnmounted(() => {
   color: #64748b;
 }
 
-.wb-thumbnail:hover .wb-thumbnail__delete {
+.wb-thumbnail:hover .wb-thumbnail__action {
   opacity: 1;
+}
+
+.wb-thumbnail__duplicate {
+  left: 2px;
+}
+
+.wb-thumbnail__duplicate:hover {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.wb-thumbnail__delete {
+  right: 2px;
 }
 
 .wb-thumbnail__delete:hover {
@@ -394,10 +471,16 @@ onUnmounted(() => {
   background: transparent;
 }
 
-.wb-thumbnail--add:hover {
+.wb-thumbnail--add:hover:not(:disabled) {
   border-color: #3b82f6;
   color: #3b82f6;
   background: #eff6ff;
+}
+
+.wb-thumbnail--add-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  border-color: #e2e8f0;
 }
 
 /* Drop indicator */
@@ -445,7 +528,7 @@ onUnmounted(() => {
     height: 56px;
   }
 
-  .wb-thumbnail__delete {
+  .wb-thumbnail__action {
     opacity: 1;
     width: 22px;
     height: 22px;
@@ -480,7 +563,7 @@ onUnmounted(() => {
   .wb-thumbnail {
     transition: none;
   }
-  .wb-thumbnail__delete {
+  .wb-thumbnail__action {
     transition: none;
   }
 }

@@ -12,6 +12,9 @@ const ALLOWED_UPLOAD_MIMES: Record<string, string> = {
   'video/mp4': 'video', 'video/webm': 'video', 'video/ogg': 'video',
   'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'presentation',
   'application/vnd.ms-powerpoint': 'presentation',
+  // Phase 35 B7: DOCX/Word documents
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'document',
+  'application/msword': 'document',
 }
 
 /**
@@ -92,6 +95,7 @@ export function useContentSidebar(lessonId: Ref<string | null>) {
     if (file.type.startsWith('audio/')) return 'audio'
     if (file.type.startsWith('video/')) return 'video'
     if (ALLOWED_UPLOAD_MIMES[file.type] === 'presentation') return 'presentation'
+    if (ALLOWED_UPLOAD_MIMES[file.type] === 'document') return 'document'
     return 'image'
   }
 
@@ -101,6 +105,7 @@ export function useContentSidebar(lessonId: Ref<string | null>) {
     if (file.type.startsWith('audio/')) return 'audio'
     if (file.type.startsWith('video/')) return 'video'
     if (ALLOWED_UPLOAD_MIMES[file.type] === 'presentation') return 'presentation'
+    if (ALLOWED_UPLOAD_MIMES[file.type] === 'document') return 'document'
     return 'image'
   }
 

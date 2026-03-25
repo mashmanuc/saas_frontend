@@ -225,11 +225,8 @@
           :is-tutor="classroomRole.isTeacher.value"
           @youtube-add="handleYouTubeAdd"
         />
-        <ContentPanel
+        <MaterialsBrowser
           v-else-if="activeTab === 'materials'"
-          :session-id="resolvedSessionId"
-          :lesson-id="lessonIdNum"
-          @drag-start="onContentDragStart"
         />
 
         <!-- Homework tab (C1.1) -->
@@ -270,6 +267,7 @@
         @select="handlePageSelect($event)"
         @add="handlePageAdd"
         @delete="handlePageDelete($event)"
+        @duplicate="store.duplicatePage($event)"
         @reorder="(from: number, to: number) => store.reorderPages(from, to)"
       />
 
@@ -440,7 +438,7 @@
           v-if="classroomRole.canAddPage.value"
           type="button"
           class="wb-page-btn wb-page-btn--add"
-          :disabled="store.pageCount >= 20"
+          :disabled="store.pageCount >= 50"
           :title="t('winterboard.room.addPage')"
           @click="handlePageAdd"
         >
@@ -511,6 +509,7 @@ import { useDeviceMode } from '../composables/useDeviceMode'
 // Learning Content integration
 import ContentPanel from '@/modules/learning-content/components/ContentPanel.vue'
 import ContentSidebar from '../components/sidebar/ContentSidebar.vue'
+import MaterialsBrowser from '../components/sidebar/MaterialsBrowser.vue'
 import { addYouTubeAsset } from '../api/library'
 import WBDragGhost from '../components/sidebar/WBDragGhost.vue'
 import { useContentDrop } from '../composables/useContentDrop'

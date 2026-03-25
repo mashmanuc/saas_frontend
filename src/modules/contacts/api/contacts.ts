@@ -73,23 +73,23 @@ export interface PaginatedLedgerResponse {
 export const contactsApi = {
   // Balance
   getBalance: (): Promise<ContactBalance> =>
-    apiClient.get('/billing/contacts/balance/'),
+    apiClient.get('/v1/billing/contacts/balance/'),
 
   // Ledger
   getLedger: (params?: LedgerParams): Promise<PaginatedLedgerResponse> =>
-    apiClient.get('/billing/contacts/ledger/', { params }),
+    apiClient.get('/v1/billing/contacts/ledger/', { params }),
 
   // Packages (for purchase)
   getPackages: (): Promise<ContactPackage[]> =>
-    apiClient.get('/billing/contacts/packages/'),
+    apiClient.get('/v1/billing/contact-packages/'),
 
   // Purchase
   purchaseTokens: (data: ContactPurchaseRequest): Promise<ContactPurchaseResponse> =>
-    apiClient.post('/billing/contacts/purchase/', data),
+    apiClient.post('/v1/billing/contact-packages/purchase/', data),
 
   // Grant (admin/internal only)
   grantTokens: (data: ContactGrantRequest): Promise<void> =>
-    apiClient.post('/billing/contacts/grant/', data),
+    apiClient.post('/v1/billing/contacts/grant/', data),
 
   // Monthly allowance info
   getAllowanceInfo: (): Promise<{
@@ -101,7 +101,7 @@ export const contactsApi = {
       amount: number
       plan: string
     }>
-  }> => apiClient.get('/billing/contacts/allowance/'),
+  }> => apiClient.get('/v1/billing/monthly-grants/stats/'),
 }
 
 export default contactsApi

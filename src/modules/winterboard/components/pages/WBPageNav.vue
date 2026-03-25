@@ -70,7 +70,7 @@ import { useWBStore } from '../../board/state/boardStore'
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
-const MAX_PAGES = 20
+const MAX_PAGES = 50
 
 // ─── Store ──────────────────────────────────────────────────────────────────
 

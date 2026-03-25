@@ -60,13 +60,29 @@
             @transform-end="handleStickyTransformEnd"
             @edit-text="startStickyTextEdit"
           />
-          <!-- Regular image asset -->
+          <!-- Phase 35: Image with borderRadius > 0 — wrap in Group with clipFunc -->
+          <v-group
+            v-else-if="(asset.borderRadius ?? 0) > 0"
+            :config="getClipGroupConfig(asset)"
+            @click="handleAssetClick(asset, $event)"
+            @dragend="handleAssetDragEnd(asset, $event)"
+            @transformend="handleAssetTransformEnd(asset, $event)"
+            @touchstart="(e) => handleTouchStart(asset.id, e.evt)"
+            @touchend="handleTouchEnd"
+            @touchmove="handleTouchMove"
+          >
+            <v-image :config="getClipChildImageConfig(asset)" />
+          </v-group>
+          <!-- Regular image asset (no borderRadius — no clip overhead) -->
           <v-image
             v-else
             :config="getAssetConfig(asset)"
             @click="handleAssetClick(asset, $event)"
             @dragend="handleAssetDragEnd(asset, $event)"
             @transformend="handleAssetTransformEnd(asset, $event)"
+            @touchstart="(e) => handleTouchStart(asset.id, e.evt)"
+            @touchend="handleTouchEnd"
+            @touchmove="handleTouchMove"
           />
         </template>
       </v-layer>
@@ -80,6 +96,9 @@
             :config="getStrokeConfig(stroke)"
             @click="handleStrokeClick(stroke, $event)"
             @dragend="handleStrokeDragEnd(stroke, $event)"
+            @touchstart="(e) => handleTouchStart(stroke.id, e.evt)"
+            @touchend="handleTouchEnd"
+            @touchmove="handleTouchMove"
           />
           <!-- Line -->
           <v-line
@@ -87,6 +106,9 @@
             :config="getLineConfig(stroke)"
             @click="handleStrokeClick(stroke, $event)"
             @dragend="handleStrokeDragEnd(stroke, $event)"
+            @touchstart="(e) => handleTouchStart(stroke.id, e.evt)"
+            @touchend="handleTouchEnd"
+            @touchmove="handleTouchMove"
           />
           <!-- Rectangle -->
           <v-rect
@@ -94,6 +116,9 @@
             :config="getRectConfig(stroke)"
             @click="handleStrokeClick(stroke, $event)"
             @dragend="handleStrokeDragEnd(stroke, $event)"
+            @touchstart="(e) => handleTouchStart(stroke.id, e.evt)"
+            @touchend="handleTouchEnd"
+            @touchmove="handleTouchMove"
           />
           <!-- Circle / Ellipse -->
           <v-ellipse
@@ -101,6 +126,9 @@
             :config="getCircleConfig(stroke)"
             @click="handleStrokeClick(stroke, $event)"
             @dragend="handleStrokeDragEnd(stroke, $event)"
+            @touchstart="(e) => handleTouchStart(stroke.id, e.evt)"
+            @touchend="handleTouchEnd"
+            @touchmove="handleTouchMove"
           />
           <!-- Text -->
           <v-text
@@ -109,6 +137,9 @@
             @dblclick="handleTextEdit(stroke)"
             @click="handleStrokeClick(stroke, $event)"
             @dragend="handleStrokeDragEnd(stroke, $event)"
+            @touchstart="(e) => handleTouchStart(stroke.id, e.evt)"
+            @touchend="handleTouchEnd"
+            @touchmove="handleTouchMove"
           />
         </template>
       </v-layer>
@@ -416,6 +447,19 @@ function localSendSeek(objectId: string, position: number) {
 // shallowRef avoids deep reactivity overhead on an HTMLImageElement
 const gridPatternImageEl = shallowRef<HTMLImageElement | null>(null)
 
+// Phase 35 B6: Force Konva background layer redraw when page background color changes.
+// Background layer is cached (cacheBackgroundLayer), so clearCache + batchDraw is required.
+watch(
+  () => wbStore.currentPageBgColor,
+  () => {
+    nextTick(() => {
+      const layer = backgroundLayerRef.value?.getNode?.()
+      layer?.clearCache?.()
+      layer?.batchDraw?.()
+    })
+  },
+)
+
 watch(
   () => wbStore.gridPatternDataUrl,
   (dataUrl) => {
@@ -616,7 +660,8 @@ const backgroundConfig = computed(() => ({
   y: 0,
   width: props.width,
   height: props.height,
-  fill: '#ffffff',
+  // Phase 35 B6: Per-page background color
+  fill: wbStore.currentPageBgColor || '#ffffff',
   name: 'background',
 }))
 
@@ -1857,14 +1902,41 @@ function handleMediaPointerDown(asset: WBAsset, e: PointerEvent): void {
   document.addEventListener('pointerup', onPointerUp, { once: true })
 }
 
+// ─── Phase 34 B8: Long Press for Mobile Multi-Select ───────────────────────
+
+let longPressTimer: ReturnType<typeof setTimeout> | null = null
+const LONG_PRESS_MS = 500
+
+function handleTouchStart(itemId: string, e: TouchEvent): void {
+  longPressTimer = setTimeout(() => {
+    // Toggle selection (like shift+click)
+    wbStore.toggleSelection(itemId)
+    longPressTimer = null
+  }, LONG_PRESS_MS)
+}
+
+function handleTouchEnd(): void {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer)
+    longPressTimer = null
+  }
+}
+
+function handleTouchMove(): void {
+  // Cancel long press if finger moves
+  if (longPressTimer) {
+    clearTimeout(longPressTimer)
+    longPressTimer = null
+  }
+}
+
 // ─── Selection Handlers ─────────────────────────────────────────────────────
 
 function handleStrokeClick(stroke: WBStroke, e: Konva.KonvaEventObject<MouseEvent>): void {
   if (currentTool.value !== 'select') return
   e.cancelBubble = true
 
-  // v5 A3: Locked items cannot be selected
-  if (stroke.locked) return
+  // Phase 34 FIX-1: locked items ARE selectable (but not movable/deletable)
 
   const nativeEvent = e.evt as MouseEvent
   const shiftKey = nativeEvent?.shiftKey ?? false
@@ -1958,8 +2030,7 @@ function handleAssetClick(asset: WBAsset, e: Konva.KonvaEventObject<MouseEvent>)
   if (currentTool.value !== 'select') return
   e.cancelBubble = true
 
-  // v5 A3: Locked assets cannot be selected
-  if (asset.locked) return
+  // Phase 34 FIX-1: locked assets ARE selectable (but not movable/deletable)
 
   const nativeEvent = e.evt as MouseEvent
   const shiftKey = nativeEvent?.shiftKey ?? false
@@ -2151,6 +2222,14 @@ function getCircleConfig(stroke: WBStroke): Record<string, unknown> {
   })
 }
 
+// Phase 35: Konva fontStyle = "bold italic" | "bold" | "italic" | "normal"
+function buildKonvaFontStyle(fontWeight?: number, fontStyle?: string): string {
+  const parts: string[] = []
+  if (fontWeight === 700) parts.push('bold')
+  if (fontStyle === 'italic') parts.push('italic')
+  return parts.length > 0 ? parts.join(' ') : 'normal'
+}
+
 function getTextConfig(stroke: WBStroke): Record<string, unknown> {
   if (!stroke.points[0]) return { visible: false }
 
@@ -2165,7 +2244,10 @@ function getTextConfig(stroke: WBStroke): Record<string, unknown> {
       text: stroke.text || '',
       fontSize: stroke.size || 16,
       fill: stroke.color,
-      fontFamily: 'system-ui, -apple-system, sans-serif',
+      // Phase 35: Font system — use stroke fields with safe defaults
+      fontFamily: stroke.fontFamily || 'Inter, sans-serif',
+      fontStyle: buildKonvaFontStyle(stroke.fontWeight, stroke.fontStyle),
+      align: stroke.textAlign || 'left',
       opacity: isLockedItem ? 0.85 : 1,
       draggable: selectable && !isLockedItem,
       perfectDrawEnabled: false,
@@ -2293,7 +2375,11 @@ function getAssetConfig(asset: WBAsset): Record<string, unknown> {
   // Memoize by signature — return cached config object if nothing changed.
   // This prevents Vue-Konva from detecting a new config object on every stroke render,
   // which would cause all Konva Image nodes to re-draw (the source of flickering during drawing).
-  const sig = `${asset.x}|${asset.y}|${asset.w}|${asset.h}|${asset.rotation}|${isLockedItem ? 1 : 0}|${selectable ? 1 : 0}|${hasImage ? 1 : 0}`
+  // Phase 35: Include opacity + borderRadius in cache signature
+  const baseOpacity = asset.opacity ?? 1
+  const effectiveOpacity = isLockedItem ? Math.min(baseOpacity, 0.85) : baseOpacity
+  const borderRadius = Math.min(asset.borderRadius ?? 0, 20) // FIX-8: cap at 20
+  const sig = `${asset.x}|${asset.y}|${asset.w}|${asset.h}|${asset.rotation}|${isLockedItem ? 1 : 0}|${selectable ? 1 : 0}|${hasImage ? 1 : 0}|${effectiveOpacity}|${borderRadius}`
   const cached = assetConfigCache.get(asset.id)
   if (cached && cached.sig === sig) return cached.config
 
@@ -2306,13 +2392,64 @@ function getAssetConfig(asset: WBAsset): Record<string, unknown> {
     height: asset.h,
     rotation: asset.rotation,
     image: loadedImages.get(src),
-    opacity: isLockedItem ? 0.85 : 1,
+    // Phase 35: Image opacity from asset field
+    opacity: effectiveOpacity,
     draggable: selectable && !isLockedItem,
     perfectDrawEnabled: false,
     listening: selectable,
   }
   assetConfigCache.set(asset.id, { sig, config })
   return config
+}
+
+// Phase 35: clipFunc helper for borderRadius (FIX-8: max 20px, REC-3: only when radius > 0)
+function roundedRect(ctx: CanvasRenderingContext2D, w: number, h: number, r: number) {
+  r = Math.min(r, 20) // FIX-8: cap at 20
+  ctx.beginPath()
+  ctx.moveTo(r, 0)
+  ctx.lineTo(w - r, 0)
+  ctx.quadraticCurveTo(w, 0, w, r)
+  ctx.lineTo(w, h - r)
+  ctx.quadraticCurveTo(w, h, w - r, h)
+  ctx.lineTo(r, h)
+  ctx.quadraticCurveTo(0, h, 0, h - r)
+  ctx.lineTo(0, r)
+  ctx.quadraticCurveTo(0, 0, r, 0)
+  ctx.closePath()
+}
+
+// Phase 35: Group config for image with borderRadius (wraps v-image for clipFunc)
+function getClipGroupConfig(asset: WBAsset): Record<string, unknown> {
+  const selectable = currentTool.value === 'select'
+  const isLockedItem = !!asset.locked
+  const r = Math.min(asset.borderRadius ?? 0, 20)
+  return {
+    id: asset.id,
+    name: `asset-${asset.id}`,
+    x: asset.x,
+    y: asset.y,
+    rotation: asset.rotation,
+    draggable: selectable && !isLockedItem,
+    listening: selectable,
+    clipFunc: (ctx: CanvasRenderingContext2D) => roundedRect(ctx, asset.w, asset.h, r),
+  }
+}
+
+// Phase 35: Child image config inside clip group (position = 0,0 relative to group)
+function getClipChildImageConfig(asset: WBAsset): Record<string, unknown> {
+  const src = normalizeAssetUrl(asset.src)
+  const baseOpacity = asset.opacity ?? 1
+  const isLockedItem = !!asset.locked
+  return {
+    x: 0,
+    y: 0,
+    width: asset.w,
+    height: asset.h,
+    image: loadedImages.get(src),
+    opacity: isLockedItem ? Math.min(baseOpacity, 0.85) : baseOpacity,
+    perfectDrawEnabled: false,
+    listening: false,
+  }
 }
 
 // ─── Background layer cache ─────────────────────────────────────────────────
