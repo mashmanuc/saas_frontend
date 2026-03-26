@@ -2027,6 +2027,7 @@
       "activeStudents": "Active students",
       "pendingInquiries": "New inquiries",
       "balance": "Balance",
+      "contactBalance": "Contacts",
       "upcomingLessons": "Upcoming lessons",
       "activeTutors": "Active tutors",
       "unreadMessages": "Unread",
@@ -6384,7 +6385,8 @@
         "audio": "Audio",
         "video": "Video",
         "presentation": "Presentations",
-        "youtube": "YouTube"
+        "youtube": "YouTube",
+        "document": "Documents"
       }
     },
     "templates": {
@@ -7864,6 +7866,7 @@
     "viral": {
       "title": "Great! You're connected",
       "subtitle": "You can now communicate with {tutorName}",
+      "goToDashboard": "Go to My Dashboard",
       "viewProfile": "View Tutor Profile",
       "bookLesson": "Book Your First Lesson",
       "exploreMore": "Find More Tutors"
