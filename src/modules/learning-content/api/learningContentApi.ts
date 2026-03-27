@@ -59,6 +59,10 @@ export const learningContentApi = {
     return apiClient.get(`${BASE}/items/${itemId}/`)
   },
 
+  async reprocessItem(itemId: number): Promise<{ status: string; processing_status: string }> {
+    return apiClient.post(`${BASE}/items/${itemId}/reprocess/`)
+  },
+
   async createLessonMaterial(data: CreateLessonMaterialPayload): Promise<LessonMaterial> {
     return apiClient.post(`${BASE}/lesson-materials/`, data)
   },

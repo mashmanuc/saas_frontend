@@ -76,7 +76,7 @@
 
     <!-- Empty state: processing / failed / ready but no slides -->
     <div v-else class="slide-selector__empty">
-      <MediaStatusGuard :status="item.processing_status" @retry="$emit('retry')">
+      <MediaStatusGuard :status="effectiveStatus" @retry="$emit('retry')">
         <span>{{ t('winterboard.slideSelector.noSlides') }}</span>
       </MediaStatusGuard>
     </div>
@@ -84,7 +84,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AllowedContentItem } from '../../types/sidebar'
 import { SIDEBAR_DRAG_MIME } from '../../types/boardDrop'
@@ -132,7 +132,18 @@ const effectiveItem = computed(() => {
   return { ...props.item, slides: lazySlides.value }
 })
 
-// Load slides on mount if not present in props and item is ready
+// If status='ready' but slides missing → display as 'pending'
+const effectiveStatus = computed(() => {
+  if (
+    sortedSlides.value.length === 0 &&
+    (props.item.processing_status === 'ready' || !props.item.processing_status)
+  ) {
+    return 'pending'
+  }
+  return props.item.processing_status ?? 'ready'
+})
+
+// Load slides on mount if not present in props
 onMounted(async () => {
   const hasPropSlides = props.item.slides && Object.keys(props.item.slides).length > 0
   if (hasPropSlides) return
@@ -155,6 +166,21 @@ onMounted(async () => {
   } finally {
     isLoadingSlides.value = false
   }
+})
+
+// WS listener: backend sends 'content.processing_complete' when Celery finishes
+function onProcessingComplete(e: Event) {
+  const detail = (e as CustomEvent).detail
+  if (!detail || detail.content_item_id !== props.item.content_item_id) return
+  const slides = detail.slides as Record<string, { image_url: string }> | undefined
+  if (slides && Object.keys(slides).length > 0) {
+    lazySlides.value = slides
+  }
+}
+
+window.addEventListener('content:processing-complete', onProcessingComplete)
+onUnmounted(() => {
+  window.removeEventListener('content:processing-complete', onProcessingComplete)
 })
 
 function dragSlide(e: DragEvent, slideIndex: number) {

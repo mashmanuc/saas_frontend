@@ -121,18 +121,54 @@ export function useLaserPointer(options?: UseLaserPointerOptions) {
   // === Remote lasers (other users) ===
   const remoteLasers = ref<Map<string, WBRemoteLaser>>(new Map())
 
+  // Remote trail points — generated from position updates
+  const remoteTrailPoints = ref<Array<{ x: number; y: number; t: number; userId: string }>>([])
+  // Previous positions for interpolation
+  const _remotePrevPos = new Map<string, { x: number; y: number }>()
+
   /**
    * Update remote laser position from WS broadcast.
    * Called when receiving 'laser_pointer' message from server.
+   * Now also generates trail points with interpolation.
    */
   function updateRemoteLaser(data: WBRemoteLaser): void {
     if (data.active) {
+      const now = Date.now()
+      const prev = _remotePrevPos.get(data.userId)
+
+      // Generate trail points with interpolation
+      if (prev) {
+        const dx = data.x - prev.x
+        const dy = data.y - prev.y
+        const dist = Math.sqrt(dx * dx + dy * dy)
+        const newPoints: Array<{ x: number; y: number; t: number; userId: string }> = []
+        if (dist > TRAIL_INTERPOLATION_STEP) {
+          const steps = Math.ceil(dist / TRAIL_INTERPOLATION_STEP)
+          for (let i = 1; i <= steps; i++) {
+            const ratio = i / steps
+            newPoints.push({
+              x: prev.x + dx * ratio,
+              y: prev.y + dy * ratio,
+              t: now,
+              userId: data.userId,
+            })
+          }
+        } else {
+          newPoints.push({ x: data.x, y: data.y, t: now, userId: data.userId })
+        }
+        remoteTrailPoints.value = [...remoteTrailPoints.value, ...newPoints]
+      } else {
+        remoteTrailPoints.value = [...remoteTrailPoints.value, { x: data.x, y: data.y, t: now, userId: data.userId }]
+      }
+      _remotePrevPos.set(data.userId, { x: data.x, y: data.y })
+
       remoteLasers.value = new Map(remoteLasers.value)
       remoteLasers.value.set(data.userId, {
         ...data,
-        lastUpdate: Date.now(),
+        lastUpdate: now,
       })
     } else {
+      _remotePrevPos.delete(data.userId)
       remoteLasers.value = new Map(remoteLasers.value)
       remoteLasers.value.delete(data.userId)
     }
@@ -170,6 +206,12 @@ export function useLaserPointer(options?: UseLaserPointerOptions) {
     if (filtered.length !== before) {
       trailPoints.value = filtered
     }
+    // Cleanup remote trail points too
+    const remoteBefore = remoteTrailPoints.value.length
+    const remoteFiltered = remoteTrailPoints.value.filter((p) => now - p.t < TRAIL_DURATION_MS)
+    if (remoteFiltered.length !== remoteBefore) {
+      remoteTrailPoints.value = remoteFiltered
+    }
   }, TRAIL_CLEANUP_INTERVAL_MS)
 
   onUnmounted(() => {
@@ -194,6 +236,7 @@ export function useLaserPointer(options?: UseLaserPointerOptions) {
     // Remote
     remoteLasers,
     activeRemoteLasers,
+    remoteTrailPoints,
     updateRemoteLaser,
     removeRemoteLaser,
     // Exposed for testing

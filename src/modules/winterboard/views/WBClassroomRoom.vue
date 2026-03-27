@@ -885,6 +885,7 @@ function handleStrokeUpdate(stroke: WBStroke): void {
 function handleLaserBroadcast(data: { x: number; y: number; active: boolean; page_id?: string }): void {
   if (presence.isConnected.value) {
     try {
+      console.info(`[WB:Sync] laser broadcast x=${data.x?.toFixed(0)} y=${data.y?.toFixed(0)} active=${data.active}`)
       presence.sendMessage({ type: 'laser_pointer', data })
     } catch (e) { /* silently ignore */ }
   }
@@ -1321,46 +1322,109 @@ function setupStrokeBroadcast(): void {
     }
   }
 
-  // ── updateStroke + moveSelected via $onAction (reliable Pinia API) ──
-  let _moveBroadcastTimer: ReturnType<typeof setTimeout> | null = null
+  // ── updateStroke — monkey-patch (reliable for Options API stores) ──
+  const origUpdateStroke = store.updateStroke.bind(store)
+  store.updateStroke = (stroke: any, opts?: any) => {
+    origUpdateStroke(stroke, opts)
+    if (opts?._remote) return
+    console.info(`[WB:Sync] updateStroke broadcast id=${stroke?.id?.slice?.(0, 8)}`)
+    wsBroadcast({
+      type: 'stroke.broadcast',
+      stroke,
+      pageIndex: store.currentPageIndex ?? 0,
+      action: 'stroke_update',
+    })
+  }
 
-  const _unsubOnAction = store.$onAction(({ name, args, after }) => {
-    // updateStroke (resize, transform)
-    if (name === 'updateStroke') {
-      after(() => {
-        const [stroke, opts] = args as [any, any]
-        if (opts?._remote) return
+  // ── moveSelectedUnlocked — monkey-patch + debounce ──
+  let _moveBroadcastTimer: ReturnType<typeof setTimeout> | null = null
+  const origMoveSelectedUnlocked = store.moveSelectedUnlocked.bind(store)
+  store.moveSelectedUnlocked = (dx: number, dy: number) => {
+    // Capture selectedIds BEFORE the move (they stay valid)
+    const capturedIds = [...store.selectedIds]
+    origMoveSelectedUnlocked(dx, dy)
+    if (_moveBroadcastTimer) clearTimeout(_moveBroadcastTimer)
+    _moveBroadcastTimer = setTimeout(() => {
+      const page = store.currentPage
+      if (!page || capturedIds.length === 0) return
+      const ids = new Set(capturedIds)
+      const movedStrokes = page.strokes.filter((s: any) => ids.has(s.id))
+      console.info(`[WB:Sync] moveSelectedUnlocked broadcasting ${movedStrokes.length} strokes`)
+      const pageIndex = store.currentPageIndex ?? 0
+      for (const s of movedStrokes) {
         wsBroadcast({
           type: 'stroke.broadcast',
-          stroke,
-          pageIndex: store.currentPageIndex ?? 0,
+          stroke: s,
+          pageIndex,
           action: 'stroke_update',
         })
-      })
-    }
+      }
+    }, 150)
+  }
 
-    // moveSelected / moveSelectedUnlocked (drag) — debounced
-    if (name === 'moveSelected' || name === 'moveSelectedUnlocked') {
-      after(() => {
-        if (_moveBroadcastTimer) clearTimeout(_moveBroadcastTimer)
-        _moveBroadcastTimer = setTimeout(() => {
-          const page = store.currentPage
-          if (!page) return
-          const ids = new Set(store.selectedIds)
-          const movedStrokes = page.strokes.filter((s: any) => ids.has(s.id))
-          const pageIndex = store.currentPageIndex ?? 0
-          for (const s of movedStrokes) {
-            wsBroadcast({
-              type: 'stroke.broadcast',
-              stroke: s,
-              pageIndex,
-              action: 'stroke_update',
-            })
-          }
-        }, 150)
-      })
-    }
-  })
+  // ── moveSelected (legacy) — same pattern ──
+  const origMoveSelected = store.moveSelected.bind(store)
+  store.moveSelected = (dx: number, dy: number) => {
+    const capturedIds = [...store.selectedIds]
+    origMoveSelected(dx, dy)
+    if (_moveBroadcastTimer) clearTimeout(_moveBroadcastTimer)
+    _moveBroadcastTimer = setTimeout(() => {
+      const page = store.currentPage
+      if (!page || capturedIds.length === 0) return
+      const ids = new Set(capturedIds)
+      const movedStrokes = page.strokes.filter((s: any) => ids.has(s.id))
+      console.info(`[WB:Sync] moveSelected broadcasting ${movedStrokes.length} strokes`)
+      const pageIndex = store.currentPageIndex ?? 0
+      for (const s of movedStrokes) {
+        wsBroadcast({
+          type: 'stroke.broadcast',
+          stroke: s,
+          pageIndex,
+          action: 'stroke_update',
+        })
+      }
+    }, 150)
+  }
+
+  // ── Asset sync: addAsset ──
+  const origAddAsset = store.addAsset.bind(store)
+  store.addAsset = (asset: any, opts?: any) => {
+    origAddAsset(asset, opts)
+    if (opts?._remote) return
+    wsBroadcast({
+      type: 'stroke.broadcast',
+      stroke: asset,
+      pageIndex: store.currentPageIndex ?? 0,
+      action: 'asset_add',
+    })
+  }
+
+  // ── Asset sync: updateAsset ──
+  const origUpdateAsset = store.updateAsset.bind(store)
+  store.updateAsset = (asset: any, opts?: any) => {
+    origUpdateAsset(asset, opts)
+    if (opts?._remote) return
+    console.info(`[WB:Sync] updateAsset broadcast id=${asset?.id?.slice?.(0, 8)}`)
+    wsBroadcast({
+      type: 'stroke.broadcast',
+      stroke: asset,
+      pageIndex: store.currentPageIndex ?? 0,
+      action: 'asset_update',
+    })
+  }
+
+  // ── Asset sync: deleteAsset ──
+  const origDeleteAsset = store.deleteAsset.bind(store)
+  store.deleteAsset = (assetId: string, opts?: any) => {
+    origDeleteAsset(assetId, opts)
+    if (opts?._remote) return
+    wsBroadcast({
+      type: 'stroke.broadcast',
+      strokeId: assetId,
+      pageIndex: store.currentPageIndex ?? 0,
+      action: 'asset_delete',
+    })
+  }
 
   // ── undo ── broadcast the net effect of undo
   store.undo = () => {
@@ -1401,6 +1465,15 @@ function setupStrokeBroadcast(): void {
           // Undo update → restore prev version
           if (entry.prev) wsBroadcast({ type: 'stroke.broadcast', stroke: entry.prev, pageIndex, action: 'stroke_update' })
           break
+        case 'addAsset':
+          wsBroadcast({ type: 'stroke.broadcast', strokeId: entry.asset?.id, pageIndex, action: 'asset_delete' })
+          break
+        case 'deleteAsset':
+          wsBroadcast({ type: 'stroke.broadcast', stroke: entry.asset, pageIndex, action: 'asset_add' })
+          break
+        case 'updateAsset':
+          if (entry.prev) wsBroadcast({ type: 'stroke.broadcast', stroke: entry.prev, pageIndex, action: 'asset_update' })
+          break
       }
     } else {
       // redo = re-apply the original operation
@@ -1418,6 +1491,15 @@ function setupStrokeBroadcast(): void {
         case 'updateStroke':
           if (entry.next) wsBroadcast({ type: 'stroke.broadcast', stroke: entry.next, pageIndex, action: 'stroke_update' })
           break
+        case 'addAsset':
+          wsBroadcast({ type: 'stroke.broadcast', stroke: entry.asset, pageIndex, action: 'asset_add' })
+          break
+        case 'deleteAsset':
+          wsBroadcast({ type: 'stroke.broadcast', strokeId: entry.asset?.id, pageIndex, action: 'asset_delete' })
+          break
+        case 'updateAsset':
+          if (entry.next) wsBroadcast({ type: 'stroke.broadcast', stroke: entry.next, pageIndex, action: 'asset_update' })
+          break
       }
     }
   }
@@ -1426,10 +1508,16 @@ function setupStrokeBroadcast(): void {
     store.addStroke = origAddStroke
     store.deleteStroke = origDeleteStroke
     store.deleteSelected = origDeleteSelected
+    store.updateStroke = origUpdateStroke
+    store.moveSelectedUnlocked = origMoveSelectedUnlocked
+    store.moveSelected = origMoveSelected
+    store.addAsset = origAddAsset
+    store.updateAsset = origUpdateAsset
+    store.deleteAsset = origDeleteAsset
     store.undo = origUndo
     store.redo = origRedo
     store.clearCurrentPage = origClearCurrentPage
-    _unsubOnAction()
+    if (_moveBroadcastTimer) clearTimeout(_moveBroadcastTimer)
   }
 }
 
@@ -1456,6 +1544,45 @@ function onRemoteStroke(e: Event) {
       assets: page.assets.filter((a: any) => a.locked),
     }
     store.markDirty()
+    return
+  }
+
+  // ── asset_add: add asset from remote ──
+  if (action === 'asset_add' && detail.stroke) {
+    const asset = detail.stroke
+    const aid = asset.id
+    if (aid && page.assets.some((a: any) => a.id === aid)) return // dedup
+    console.info(`[WB:Sync] onRemoteStroke ASSET_ADD from=${detail.userId} assetId=${aid?.slice?.(0, 8)} page=${targetPageIndex}`)
+    store.pages[targetPageIndex] = { ...page, assets: [...page.assets, asset] }
+    store.markDirty()
+    return
+  }
+
+  // ── asset_update: replace asset with new version ──
+  if (action === 'asset_update' && detail.stroke) {
+    const asset = detail.stroke
+    const aid = asset.id
+    console.info(`[WB:Sync] onRemoteStroke ASSET_UPDATE from=${detail.userId} assetId=${aid?.slice?.(0, 8)} page=${targetPageIndex}`)
+    const idx = page.assets.findIndex((a: any) => a.id === aid)
+    if (idx !== -1) {
+      const assets = [...page.assets]
+      assets[idx] = asset
+      store.pages[targetPageIndex] = { ...page, assets }
+      store.markDirty()
+    }
+    return
+  }
+
+  // ── asset_delete: remove asset by ID ──
+  if (action === 'asset_delete') {
+    const aid = detail.strokeId ?? detail.stroke?.id
+    if (!aid) return
+    console.info(`[WB:Sync] onRemoteStroke ASSET_DELETE from=${detail.userId} assetId=${aid?.slice?.(0, 8)} page=${targetPageIndex}`)
+    const filtered = page.assets.filter((a: any) => a.id !== aid)
+    if (filtered.length !== page.assets.length) {
+      store.pages[targetPageIndex] = { ...page, assets: filtered }
+      store.markDirty()
+    }
     return
   }
 

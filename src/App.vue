@@ -77,6 +77,13 @@ function setupNotificationsRealtime(userId) {
     wsUnsubscribe = websocketService.subscribeNotifications(
       userId,
       (event) => {
+        // Media processing complete → dispatch CustomEvent for sidebar components
+        if (event.type === 'content.processing_complete' && event.payload) {
+          window.dispatchEvent(new CustomEvent('content:processing-complete', {
+            detail: event.payload,
+          }))
+          return
+        }
         notificationsStore.handleRealtimeNotification(event)
       }
     )

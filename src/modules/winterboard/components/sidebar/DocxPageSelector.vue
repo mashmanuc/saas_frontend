@@ -55,7 +55,7 @@
 
     <!-- Empty state: processing / failed / ready but no pages -->
     <div v-else class="docx-selector__empty">
-      <MediaStatusGuard :status="item.processing_status" @retry="$emit('retry')">
+      <MediaStatusGuard :status="effectiveStatus" @retry="$emit('retry')">
         <span>No pages available</span>
       </MediaStatusGuard>
     </div>
@@ -68,7 +68,7 @@
  * Identical pattern to PdfPageSelector. Documents use content_json.pages
  * with image_url (not thumbnail_url) per page.
  */
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import type { AllowedContentItem } from '../../types/sidebar'
 import { SIDEBAR_DRAG_MIME } from '../../types/boardDrop'
 import MediaStatusGuard from '../shared/MediaStatusGuard.vue'
@@ -100,6 +100,17 @@ const sortedPages = computed(() => {
     .sort((a, b) => a.number - b.number)
 })
 
+// If status='ready' but pages missing → display as 'pending' (backend will fix via validate hook)
+const effectiveStatus = computed(() => {
+  if (
+    sortedPages.value.length === 0 &&
+    (props.item.processing_status === 'ready' || !props.item.processing_status)
+  ) {
+    return 'pending'
+  }
+  return props.item.processing_status ?? 'ready'
+})
+
 // Load pages on mount if not present in props
 onMounted(async () => {
   const hasPropPages = props.item.pages && Object.keys(props.item.pages).length > 0
@@ -123,6 +134,21 @@ onMounted(async () => {
   } finally {
     isLoadingPages.value = false
   }
+})
+
+// WS listener: backend sends 'content.processing_complete' when Celery finishes
+function onProcessingComplete(e: Event) {
+  const detail = (e as CustomEvent).detail
+  if (!detail || detail.content_item_id !== props.item.content_item_id) return
+  const pages = detail.pages as Record<string, { image_url: string }> | undefined
+  if (pages && Object.keys(pages).length > 0) {
+    lazyPages.value = pages
+  }
+}
+
+window.addEventListener('content:processing-complete', onProcessingComplete)
+onUnmounted(() => {
+  window.removeEventListener('content:processing-complete', onProcessingComplete)
 })
 
 function dragPage(e: DragEvent, pageNumber: number) {

@@ -287,6 +287,20 @@
       }"
     />
 
+    <!-- Remote laser trail — fading dots for remote users -->
+    <div
+      v-for="(tp, idx) in remoteTrailWithOpacity"
+      :key="`rtrail-${idx}`"
+      class="wb-laser-trail-dot"
+      :style="{
+        left: `${tp.x * props.zoom}px`,
+        top: `${tp.y * props.zoom}px`,
+        opacity: tp.opacity,
+        backgroundColor: tp.color,
+        transform: `translate(-50%, -50%) scale(${0.3 + tp.opacity * 0.7})`,
+      }"
+    />
+
     <!-- v5 A4: Local laser dot -->
     <div
       v-if="laserPointer.isActive.value && laserPointer.localPosition.value"
@@ -405,11 +419,13 @@ const laserPointer = useLaserPointer({
 function onRemoteLaser(e: Event) {
   const d = (e as CustomEvent).detail
   if (!d) return
+  console.info(`[WB:Sync] onRemoteLaser x=${d.x?.toFixed?.(0)} y=${d.y?.toFixed?.(0)} active=${d.active} from=${d.userId}`)
   laserPointer.updateRemoteLaser({
     userId: d.userId,
     displayName: d.displayName,
     x: d.x,
     y: d.y,
+    pageId: d.pageId ?? '',
     active: d.active,
     color: d.color ?? '#ff0000',
     lastUpdate: Date.now(),
@@ -1036,6 +1052,23 @@ const laserTrailWithOpacity = computed(() => {
     const age = now - p.t
     const opacity = Math.max(0, 1 - age / duration) * 0.8
     return { x: p.x, y: p.y, opacity }
+  }).filter((p) => p.opacity > 0.01)
+})
+
+const remoteTrailWithOpacity = computed(() => {
+  const points = laserPointer.remoteTrailPoints.value
+  if (points.length === 0) return []
+  const now = Date.now()
+  const duration = laserPointer.TRAIL_DURATION_MS
+  // Build userId→color map from active remote lasers
+  const colorMap = new Map<string, string>()
+  for (const laser of laserPointer.activeRemoteLasers.value) {
+    colorMap.set(laser.userId, laser.color ?? '#ff0000')
+  }
+  return points.map((p) => {
+    const age = now - p.t
+    const opacity = Math.max(0, 1 - age / duration) * 0.8
+    return { x: p.x, y: p.y, opacity, color: colorMap.get(p.userId) ?? '#ff0000' }
   }).filter((p) => p.opacity > 0.01)
 })
 

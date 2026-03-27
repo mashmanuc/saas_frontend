@@ -55,7 +55,7 @@
 
     <!-- Empty state: processing / failed / ready but no pages -->
     <div v-else class="pdf-selector__empty">
-      <MediaStatusGuard :status="item.processing_status" @retry="$emit('retry')">
+      <MediaStatusGuard :status="effectiveStatus" @retry="$emit('retry')">
         <span>{{ t('winterboard.pdfSelector.noPages') }}</span>
       </MediaStatusGuard>
     </div>
@@ -63,7 +63,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AllowedContentItem } from '../../types/sidebar'
 import { SIDEBAR_DRAG_MIME } from '../../types/boardDrop'
@@ -86,8 +86,6 @@ const lazyPages = ref<Record<string, { thumbnail_url: string }> | null>(null)
 const isLoadingPages = ref(false)
 
 const sortedPages = computed(() => {
-  // Prefer lazily loaded pages over prop pages (lazy-load fills gap when
-  // learningGroupApi.listMaterials doesn't return content_pages)
   const pages = lazyPages.value ?? props.item.pages ?? {}
   return Object.entries(pages)
     .map(([num, data]) => ({
@@ -97,7 +95,18 @@ const sortedPages = computed(() => {
     .sort((a, b) => a.number - b.number)
 })
 
-// Load pages on mount if not present in props and item is ready
+// If status='ready' but pages missing → display as 'pending' (backend will fix via validate hook)
+const effectiveStatus = computed(() => {
+  if (
+    sortedPages.value.length === 0 &&
+    (props.item.processing_status === 'ready' || !props.item.processing_status)
+  ) {
+    return 'pending'
+  }
+  return props.item.processing_status ?? 'ready'
+})
+
+// Load pages on mount if not present in props
 onMounted(async () => {
   const hasPropPages = props.item.pages && Object.keys(props.item.pages).length > 0
   if (hasPropPages) return
@@ -120,6 +129,21 @@ onMounted(async () => {
   } finally {
     isLoadingPages.value = false
   }
+})
+
+// WS listener: backend sends 'content.processing_complete' when Celery finishes
+function onProcessingComplete(e: Event) {
+  const detail = (e as CustomEvent).detail
+  if (!detail || detail.content_item_id !== props.item.content_item_id) return
+  const pages = detail.pages as Record<string, { thumbnail_url: string }> | undefined
+  if (pages && Object.keys(pages).length > 0) {
+    lazyPages.value = pages
+  }
+}
+
+window.addEventListener('content:processing-complete', onProcessingComplete)
+onUnmounted(() => {
+  window.removeEventListener('content:processing-complete', onProcessingComplete)
 })
 
 function dragPage(e: DragEvent, pageNumber: number) {
