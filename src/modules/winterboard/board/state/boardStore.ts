@@ -790,6 +790,11 @@ export const useWBStore = defineStore('wb-board', {
         return
       }
 
+      // Dedup: skip if stroke with same ID already exists on this page
+      if (stroke.id && page.strokes.some(s => s.id === stroke.id)) {
+        return
+      }
+
       // Phase 34: object limit guard
       if (!this.canAddObject) {
         console.warn('[WB] Object limit reached (300), cannot add stroke')

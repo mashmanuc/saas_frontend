@@ -32,6 +32,12 @@ const winterboardSessionListRoute: RouteRecordRaw = {
 // Page-level routes — mounted inside PageShell (sidebar + header)
 const winterboardPageRoutes: RouteRecordRaw[] = [
   {
+    path: 'winterboard/classroom-hub',
+    name: 'winterboard-classroom-hub',
+    component: () => import('./views/WBClassroomHub.vue'),
+    meta: { title: 'Classroom Hub', roles: ['student', 'tutor'] },
+  },
+  {
     path: 'winterboard/dashboard',
     name: 'winterboard-dashboard',
     component: () => import('./views/WBDashboard.vue'),

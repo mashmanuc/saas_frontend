@@ -397,7 +397,26 @@ const grouping = useGrouping(wbStore)
 // v5 A3: Locking composable
 const locking = useLocking(wbStore)
 // v5 A4: Laser pointer composable (ephemeral — not persisted)
-const laserPointer = useLaserPointer()
+const laserPointer = useLaserPointer({
+  onBroadcast: (data) => emit('laser-broadcast', data),
+  getPageId: () => wbStore.currentPage?.id ?? '',
+})
+// Remote laser listener (classroom sync)
+function onRemoteLaser(e: Event) {
+  const d = (e as CustomEvent).detail
+  if (!d) return
+  laserPointer.updateRemoteLaser({
+    userId: d.userId,
+    displayName: d.displayName,
+    x: d.x,
+    y: d.y,
+    active: d.active,
+    color: d.color ?? '#ff0000',
+    lastUpdate: Date.now(),
+  })
+}
+window.addEventListener('wb:remote-laser', onRemoteLaser)
+
 // v5 A5: Duplicate composable
 const duplicate = useDuplicate(wbStore)
 // v5 A9: Sticky notes composable
@@ -528,6 +547,7 @@ const emit = defineEmits<{
   'fit-to-page': []
   // v5 A4: Tool change from keyboard shortcut
   'tool-change': [tool: WBToolType]
+  'laser-broadcast': [data: { x: number; y: number; active: boolean; page_id?: string }]
 }>()
 
 // ─── Refs ───────────────────────────────────────────────────────────────────
@@ -2707,6 +2727,8 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  // Remote laser cleanup
+  window.removeEventListener('wb:remote-laser', onRemoteLaser)
   // BUG-3 FIX: Remove global mouseup listeners
   window.removeEventListener('mouseup', globalMouseUp)
   window.removeEventListener('pointerup', globalMouseUp)

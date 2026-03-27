@@ -1,5 +1,17 @@
 <template>
-  <div class="wb-classroom-room" :class="{ 'wb-classroom-room--locked': isLocked }">
+  <!-- B3: Waiting for teacher state -->
+  <div v-if="classroomSession.state.value === 'waiting_for_teacher'" class="wb-waiting-screen">
+    <div class="wb-waiting-screen__content">
+      <div class="wb-waiting-screen__spinner" />
+      <h2 class="wb-waiting-screen__title">{{ t('winterboard.classroom.waitingForTeacher') }}</h2>
+      <p class="wb-waiting-screen__text">{{ t('winterboard.classroom.waitingForTeacherHint') }}</p>
+      <button class="wb-waiting-screen__back" @click="router.push('/winterboard/classroom-hub')">
+        {{ t('winterboard.classroom.backToHub') }}
+      </button>
+    </div>
+  </div>
+
+  <div v-else class="wb-classroom-room" :class="{ 'wb-classroom-room--locked': isLocked }">
     <!-- Skip link for a11y -->
     <a href="#wb-canvas" class="wb-skip-link">{{ t('winterboard.a11y.skipToCanvas') }}</a>
 
@@ -34,14 +46,7 @@
         >
           {{ t('winterboard.lesson.start') }}
         </button>
-        <button
-          v-if="classroomRole.isTeacher.value && lessonRuntime.isActive"
-          class="wb-lesson-action-btn wb-lesson-action-btn--complete"
-          :disabled="lessonRuntime.isLoading"
-          @click="handleCompleteLesson"
-        >
-          {{ t('winterboard.lesson.complete') }}
-        </button>
+        <!-- B1: Кнопка "Готово" прибрана — завершення уроку через "Завершити сесію" -->
       </div>
 
       <!-- Center: Save status + lock indicator -->
@@ -130,15 +135,15 @@
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="12" cy="4" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="2" stroke="currentColor" stroke-width="1.5"/><path d="M5.7 7l4.6-2M5.7 9l4.6 2" stroke="currentColor" stroke-width="1.5"/></svg>
         </button>
 
-        <!-- End session (teacher only) -->
+        <!-- End session + complete lesson (teacher only, B1: single action) -->
         <button
           v-if="classroomRole.canEnd.value"
           type="button"
           class="wb-header-btn wb-header-btn--danger"
-          :title="t('winterboard.classroom.endSession')"
+          :title="t('winterboard.lesson.completeAndEnd')"
           @click="handleEndSession"
         >
-          {{ t('winterboard.classroom.endSession') }}
+          {{ t('winterboard.lesson.completeAndEnd') }}
         </button>
 
         <button type="button" class="wb-header-btn wb-header-btn--exit" @click="handleExit">
@@ -299,6 +304,7 @@
           @stroke-add="handleStrokeAdd"
           @stroke-update="handleStrokeUpdate"
           @stroke-delete="handleStrokeDelete"
+          @laser-broadcast="handleLaserBroadcast"
           @asset-add="handleAssetAdd"
           @asset-update="handleAssetUpdate"
           @asset-delete="handleAssetDelete"
@@ -464,7 +470,7 @@
 // Ref: TASK_BOARD_PHASES.md A3.1, C3.1 RBAC, LAW-05, LAW-16
 // Feature flag: VITE_WB_FEATURE_CLASSROOM
 
-import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useWBStore } from '../board/state/boardStore'
@@ -571,8 +577,8 @@ async function fetchHomework(): Promise<void> {
   homeworkLoading.value = true
   try {
     homeworkItems.value = await lessonsTemplateApi.getHomework(Number(id))
-  } catch (err) {
-    console.warn('[WB:Classroom] Failed to fetch homework:', err)
+  } catch {
+    // 404 очікуваний якщо feature flag lesson_templates вимкнений
     homeworkItems.value = []
   } finally {
     homeworkLoading.value = false
@@ -583,16 +589,41 @@ async function fetchLessonStatus(): Promise<void> {
   const id = props.lessonId
   if (!id) return
   try {
-    const res = await lessonsApi.getLesson(id)
-    const lesson = res?.data ?? res
-    lessonStatus.value = (lesson?.status?.toUpperCase() as LessonStatus) ?? null
+    // Спробувати v1 endpoint (active lessons) для отримання статусу
+    const res = await lessonsApi.getActiveLessons({ lesson_id: id })
+    const lessons = (res as any)?.data?.results ?? (res as any)?.results ?? []
+    const lesson = lessons.find((l: any) => String(l.id) === String(id))
+    if (lesson) {
+      lessonStatus.value = (lesson.status?.toUpperCase() as LessonStatus) ?? null
+    } else {
+      // Урок не в active — можливо завершений або ще не стартований
+      lessonStatus.value = null
+    }
   } catch (err) {
-    console.warn('[WB:Classroom] Failed to fetch lesson status:', err)
+    // Не блокуємо роботу дошки через невдалий запит статусу
     lessonStatus.value = null
   }
 }
 
-const autosave = useAutosave(resolvedSessionId)
+// Phase 0: Student doesn't autosave in classroom (teacher is SSOT for state)
+const isStudentInClassroom = computed(() => classroomRole.isStudent.value)
+
+const autosave = useAutosave(resolvedSessionId, {
+  disabled: isStudentInClassroom,
+  // Classroom sync: after each save, notify other participants via WS
+  onSaved: () => {
+    if (presence.isConnected.value && resolvedSessionId.value) {
+      try {
+        presence.sendMessage({
+          type: 'session.state_update',
+          rev: store.rev,
+          pageIndex: store.currentPageIndex ?? 0,
+          action: 'autosave',
+        })
+      } catch { /* WS may be closed */ }
+    }
+  },
+})
 
 // P4: Replay recorder — batch records operations for replay timeline
 const replayRecorder = useReplayRecorder({
@@ -850,6 +881,15 @@ function handleStrokeUpdate(stroke: WBStroke): void {
   if (isDrawingDisabled.value) return
   store.updateStroke(stroke)
 }
+
+function handleLaserBroadcast(data: { x: number; y: number; active: boolean; page_id?: string }): void {
+  if (presence.isConnected.value) {
+    try {
+      presence.sendMessage({ type: 'laser_pointer', data })
+    } catch (e) { /* silently ignore */ }
+  }
+}
+
 
 function handleStrokeDelete(strokeId: string): void {
   if (isDrawingDisabled.value) return
@@ -1139,8 +1179,14 @@ async function handleEndSession(): Promise<void> {
   // Simple confirmation
   if (!window.confirm(t('winterboard.classroom.endSessionConfirm'))) return
   try {
-    await winterboardApi.endSession(resolvedSessionId.value)
-    router.push('/winterboard')
+    const res = await winterboardApi.endSession(resolvedSessionId.value)
+    // B1: endSession тепер також завершує Lesson (COMPLETED + snapshot)
+    const data = (res as any)?.data ?? res
+    if (data?.lesson_completed) {
+      lessonStatus.value = 'COMPLETED' as LessonStatus
+      lessonRuntime.$reset()
+    }
+    router.push('/winterboard/classroom-hub')
   } catch (err) {
     console.error('[WB:ClassroomRoom] End session failed', err)
   }
@@ -1164,6 +1210,323 @@ async function handleCompleteLesson(): Promise<void> {
   }
 }
 
+// ─── Classroom sync: refetch state when other participant saves ──────────
+let remoteUpdateThrottled = false
+function onRemoteStateUpdate(e: Event) {
+  const detail = (e as CustomEvent).detail
+  if (remoteUpdateThrottled || !resolvedSessionId.value) return
+
+  // In classroom mode: DON'T full-refetch for students.
+  // Strokes sync via WS stroke.broadcast in real-time.
+  // Teacher is SSOT — full refetch would overwrite student's local strokes.
+  if (classroomRole.isStudent.value) {
+    // Student only updates rev to track server state version
+    if (detail?.rev && detail.rev > store.rev) {
+      store.rev = detail.rev
+    }
+    return
+  }
+
+  // Teacher: full refetch (to get student strokes that were saved)
+  remoteUpdateThrottled = true
+  setTimeout(() => { remoteUpdateThrottled = false }, 2000) // Throttle to max every 2s
+
+  winterboardApi.getSession(resolvedSessionId.value).then((freshState) => {
+    if (freshState.state && freshState.rev > store.rev) {
+      store.hydrateFromSession({
+        id: freshState.id,
+        name: freshState.name,
+        owner_id: freshState.owner_id ?? '',
+        state: freshState.state,
+        page_count: freshState.page_count,
+        thumbnail_url: freshState.thumbnail_url,
+        rev: freshState.rev,
+        created_at: freshState.created_at,
+        updated_at: freshState.updated_at,
+      })
+    }
+  }).catch(() => { /* Ignore refetch errors */ })
+}
+window.addEventListener('wb:remote-state-update', onRemoteStateUpdate)
+
+// ─── Phase 0: Stroke broadcast for classroom sync ───────────────────────
+
+// Student: intercept addStroke → send via WS instead of local-only
+// Teacher: receive remote strokes → apply to local store → autosave persists
+let _unsubStrokeInterceptor: (() => void) | null = null
+
+function setupStrokeBroadcast(): void {
+  // Both teacher and student broadcast their strokes for real-time sync
+  const origAddStroke = store.addStroke.bind(store)
+  const origDeleteStroke = store.deleteStroke.bind(store)
+  const origDeleteSelected = store.deleteSelected.bind(store)
+  const origUndo = store.undo.bind(store)
+  const origRedo = store.redo.bind(store)
+  const origClearCurrentPage = store.clearCurrentPage.bind(store)
+  const myRole = classroomRole.isTeacher.value ? 'teacher' : 'student'
+  console.info(`[WB:Sync] setupStrokeBroadcast role=${myRole} wsConnected=${presence.isConnected.value}`)
+
+  function wsBroadcast(msg: Record<string, unknown>) {
+    if (!presence.isConnected.value) return
+    try { presence.sendMessage(msg) } catch (e) { console.warn('[WB:Sync] broadcast failed', e) }
+  }
+
+  // ── addStroke ──
+  store.addStroke = (stroke: any, opts?: any) => {
+    origAddStroke(stroke, opts)
+    if (opts?._remote) return
+    wsBroadcast({
+      type: 'stroke.broadcast',
+      stroke,
+      pageIndex: store.currentPageIndex ?? 0,
+      action: 'stroke_add',
+    })
+  }
+
+  // ── deleteStroke ──
+  store.deleteStroke = (strokeId: string, opts?: any) => {
+    origDeleteStroke(strokeId, opts)
+    if (opts?._remote) return
+    wsBroadcast({
+      type: 'stroke.broadcast',
+      strokeId,
+      pageIndex: store.currentPageIndex ?? 0,
+      action: 'stroke_delete',
+    })
+  }
+
+  // ── clearCurrentPage ──
+  store.clearCurrentPage = () => {
+    origClearCurrentPage()
+    wsBroadcast({
+      type: 'stroke.broadcast',
+      pageIndex: store.currentPageIndex ?? 0,
+      action: 'page_clear',
+    })
+  }
+
+  // ── deleteSelected (selection + Delete) ──
+  store.deleteSelected = () => {
+    // Capture selected stroke IDs before delete clears them
+    const selectedIds = [...store.selectedIds]
+    origDeleteSelected()
+    const pageIndex = store.currentPageIndex ?? 0
+    for (const id of selectedIds) {
+      wsBroadcast({
+        type: 'stroke.broadcast',
+        strokeId: id,
+        pageIndex,
+        action: 'stroke_delete',
+      })
+    }
+  }
+
+  // ── updateStroke + moveSelected via $onAction (reliable Pinia API) ──
+  let _moveBroadcastTimer: ReturnType<typeof setTimeout> | null = null
+
+  const _unsubOnAction = store.$onAction(({ name, args, after }) => {
+    // updateStroke (resize, transform)
+    if (name === 'updateStroke') {
+      after(() => {
+        const [stroke, opts] = args as [any, any]
+        if (opts?._remote) return
+        wsBroadcast({
+          type: 'stroke.broadcast',
+          stroke,
+          pageIndex: store.currentPageIndex ?? 0,
+          action: 'stroke_update',
+        })
+      })
+    }
+
+    // moveSelected / moveSelectedUnlocked (drag) — debounced
+    if (name === 'moveSelected' || name === 'moveSelectedUnlocked') {
+      after(() => {
+        if (_moveBroadcastTimer) clearTimeout(_moveBroadcastTimer)
+        _moveBroadcastTimer = setTimeout(() => {
+          const page = store.currentPage
+          if (!page) return
+          const ids = new Set(store.selectedIds)
+          const movedStrokes = page.strokes.filter((s: any) => ids.has(s.id))
+          const pageIndex = store.currentPageIndex ?? 0
+          for (const s of movedStrokes) {
+            wsBroadcast({
+              type: 'stroke.broadcast',
+              stroke: s,
+              pageIndex,
+              action: 'stroke_update',
+            })
+          }
+        }, 150)
+      })
+    }
+  })
+
+  // ── undo ── broadcast the net effect of undo
+  store.undo = () => {
+    const entry = store.undoStack[store.undoStack.length - 1]
+    origUndo()
+    if (!entry) return
+    broadcastUndoRedoEffect(entry, 'undo')
+  }
+
+  // ── redo ── broadcast the net effect of redo
+  store.redo = () => {
+    const entry = store.redoStack[store.redoStack.length - 1]
+    origRedo()
+    if (!entry) return
+    broadcastUndoRedoEffect(entry, 'redo')
+  }
+
+  function broadcastUndoRedoEffect(entry: any, direction: 'undo' | 'redo') {
+    const pageIndex = entry.pageIndex ?? store.currentPageIndex ?? 0
+    if (direction === 'undo') {
+      switch (entry.type) {
+        case 'addStroke':
+          // Undo add → stroke removed
+          wsBroadcast({ type: 'stroke.broadcast', strokeId: entry.stroke?.id, pageIndex, action: 'stroke_delete' })
+          break
+        case 'deleteStroke':
+          // Undo delete → stroke restored
+          wsBroadcast({ type: 'stroke.broadcast', stroke: entry.stroke, pageIndex, action: 'stroke_add' })
+          break
+        case 'clearPage':
+        case 'clearCurrentPage':
+          // Undo clear → many strokes restored; send each one
+          for (const s of (entry.prevStrokes ?? entry.clearedStrokes ?? [])) {
+            wsBroadcast({ type: 'stroke.broadcast', stroke: s, pageIndex, action: 'stroke_add' })
+          }
+          break
+        case 'updateStroke':
+          // Undo update → restore prev version
+          if (entry.prev) wsBroadcast({ type: 'stroke.broadcast', stroke: entry.prev, pageIndex, action: 'stroke_update' })
+          break
+      }
+    } else {
+      // redo = re-apply the original operation
+      switch (entry.type) {
+        case 'addStroke':
+          wsBroadcast({ type: 'stroke.broadcast', stroke: entry.stroke, pageIndex, action: 'stroke_add' })
+          break
+        case 'deleteStroke':
+          wsBroadcast({ type: 'stroke.broadcast', strokeId: entry.stroke?.id, pageIndex, action: 'stroke_delete' })
+          break
+        case 'clearPage':
+        case 'clearCurrentPage':
+          wsBroadcast({ type: 'stroke.broadcast', pageIndex, action: 'page_clear' })
+          break
+        case 'updateStroke':
+          if (entry.next) wsBroadcast({ type: 'stroke.broadcast', stroke: entry.next, pageIndex, action: 'stroke_update' })
+          break
+      }
+    }
+  }
+
+  _unsubStrokeInterceptor = () => {
+    store.addStroke = origAddStroke
+    store.deleteStroke = origDeleteStroke
+    store.deleteSelected = origDeleteSelected
+    store.undo = origUndo
+    store.redo = origRedo
+    store.clearCurrentPage = origClearCurrentPage
+    _unsubOnAction()
+  }
+}
+
+// Teacher/Student: receive remote strokes from WS
+// Dedup set to prevent processing same stroke multiple times (WS reconnect/re-delivery)
+const _receivedStrokeIds = new Set<string>()
+const RECEIVED_STROKE_CACHE_MAX = 500
+
+function onRemoteStroke(e: Event) {
+  const detail = (e as CustomEvent).detail
+  if (!detail) return
+
+  const action = detail.action ?? 'stroke_add'
+  const targetPageIndex = detail.pageIndex ?? 0
+  const page = store.pages[targetPageIndex]
+  if (!page) return
+
+  // ── page_clear: remove all unlocked strokes on the page ──
+  if (action === 'page_clear') {
+    console.info(`[WB:Sync] onRemoteStroke PAGE_CLEAR from=${detail.userId} page=${targetPageIndex}`)
+    store.pages[targetPageIndex] = {
+      ...page,
+      strokes: page.strokes.filter((s: any) => s.locked),
+      assets: page.assets.filter((a: any) => a.locked),
+    }
+    store.markDirty()
+    return
+  }
+
+  // ── stroke_delete: remove stroke by ID ──
+  if (action === 'stroke_delete') {
+    const sid = detail.strokeId ?? detail.stroke?.id
+    if (!sid) return
+    console.info(`[WB:Sync] onRemoteStroke DELETE from=${detail.userId} strokeId=${sid?.slice?.(0, 8)} page=${targetPageIndex}`)
+    const filtered = page.strokes.filter((s: any) => s.id !== sid)
+    if (filtered.length !== page.strokes.length) {
+      store.pages[targetPageIndex] = { ...page, strokes: filtered }
+      store.markDirty()
+    }
+    return
+  }
+
+  // ── stroke_update: replace stroke with new version ──
+  if (action === 'stroke_update' && detail.stroke) {
+    const sid = detail.stroke.id
+    console.info(`[WB:Sync] onRemoteStroke UPDATE from=${detail.userId} strokeId=${sid?.slice?.(0, 8)} page=${targetPageIndex}`)
+    const idx = page.strokes.findIndex((s: any) => s.id === sid)
+    if (idx !== -1) {
+      const strokes = [...page.strokes]
+      strokes[idx] = detail.stroke
+      store.pages[targetPageIndex] = { ...page, strokes }
+      store.markDirty()
+    }
+    return
+  }
+
+  // ── stroke_add (default) ──
+  if (!detail.stroke) return
+
+  const strokeId = detail.stroke?.id
+  if (strokeId && _receivedStrokeIds.has(strokeId)) return
+  if (strokeId) {
+    _receivedStrokeIds.add(strokeId)
+    if (_receivedStrokeIds.size > RECEIVED_STROKE_CACHE_MAX) {
+      const arr = [..._receivedStrokeIds]
+      _receivedStrokeIds.clear()
+      for (let i = arr.length - 400; i < arr.length; i++) {
+        if (i >= 0) _receivedStrokeIds.add(arr[i])
+      }
+    }
+  }
+
+  // Check if stroke already exists on the page
+  if (strokeId && page.strokes.some((s: any) => s.id === strokeId)) return
+
+  console.info(`[WB:Sync] onRemoteStroke ADD from=${detail.userId} strokeId=${strokeId?.slice?.(0, 8)} page=${targetPageIndex}`)
+
+  const currentPageIndex = store.currentPageIndex
+  if (targetPageIndex === currentPageIndex) {
+    store.addStroke(detail.stroke, { skipHistory: true, _remote: true })
+  } else {
+    store.pages[targetPageIndex] = {
+      ...page,
+      strokes: [...page.strokes, detail.stroke],
+    }
+  }
+  store.markDirty()
+}
+
+window.addEventListener('wb:remote-stroke', onRemoteStroke)
+
+onUnmounted(() => {
+  window.removeEventListener('wb:remote-state-update', onRemoteStateUpdate)
+  window.removeEventListener('wb:remote-stroke', onRemoteStroke)
+  _unsubStrokeInterceptor?.()
+})
+
 // ─── Lifecycle ──────────────────────────────────────────────────────────────
 
 onMounted(async () => {
@@ -1177,10 +1540,27 @@ onMounted(async () => {
     if (classroomSession.state.value === 'no_access') {
       router.push('/winterboard')
     }
+    // B3: Waiting for teacher — show waiting UI, listen for session-ready
+    if (classroomSession.state.value === 'waiting_for_teacher') {
+      isLoading.value = false
+      const onReady = async (e: Event) => {
+        const detail = (e as CustomEvent).detail
+        if (detail) {
+          await initBoardWithSession(detail)
+        }
+      }
+      window.addEventListener('wb:session-ready', onReady, { once: true })
+      return
+    }
     isLoading.value = false
     return
   }
 
+  await initBoardWithSession(init)
+})
+
+// B3: Extracted init logic so waiting_for_teacher can call it when teacher starts
+async function initBoardWithSession(init: { sessionId: string; role: any; permissions: any; isLocked: boolean }): Promise<void> {
   // Set resolved session ID
   resolvedSessionId.value = init.sessionId
   store.workspaceId = init.sessionId
@@ -1237,7 +1617,10 @@ onMounted(async () => {
   if (classroomRole.isStudent.value) {
     followMode.startFollowing()
   }
-})
+
+  // Phase 0: Setup stroke broadcast for classroom sync
+  setupStrokeBroadcast()
+}
 
 onBeforeUnmount(async () => {
   _unsubRecorder()
@@ -1790,5 +2173,68 @@ onBeforeUnmount(async () => {
 @keyframes wb-replay-pulse {
   0%, 100% { box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35); }
   50% { box-shadow: 0 4px 24px rgba(99, 102, 241, 0.6); }
+}
+
+/* ── B3: Waiting for teacher screen ─────────────────────────────────────── */
+
+.wb-waiting-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: var(--wb-bg-tertiary, #f1f5f9);
+}
+
+.wb-waiting-screen__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+  padding: 40px;
+}
+
+.wb-waiting-screen__spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--wb-toolbar-border, #e2e8f0);
+  border-top-color: var(--wb-brand, #0066ff);
+  border-radius: 50%;
+  animation: wb-spin 1s linear infinite;
+}
+
+@keyframes wb-spin {
+  to { transform: rotate(360deg); }
+}
+
+.wb-waiting-screen__title {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--wb-fg, #0f172a);
+  margin: 0;
+}
+
+.wb-waiting-screen__text {
+  font-size: 14px;
+  color: var(--wb-fg-secondary, #94a3b8);
+  margin: 0;
+  max-width: 320px;
+}
+
+.wb-waiting-screen__back {
+  margin-top: 12px;
+  padding: 8px 20px;
+  border: 1px solid var(--wb-toolbar-border, #e2e8f0);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--wb-fg-secondary, #64748b);
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.wb-waiting-screen__back:hover {
+  border-color: var(--wb-brand, #0066ff);
+  color: var(--wb-brand, #0066ff);
 }
 </style>

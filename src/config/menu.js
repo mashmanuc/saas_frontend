@@ -71,6 +71,7 @@ export const SECTIONED_MENU_BY_ROLE = {
       key: 'winterboard',
       label: 'sidebar.section.winterboard',
       items: [
+        { label: 'sidebar.item.classroomHub', icon: 'play-circle', to: '/winterboard/classroom-hub', hint: 'sidebar.hint.classroomHub' },
         { label: 'sidebar.item.wbDashboard', icon: 'layout-dashboard', to: '/winterboard/dashboard', hint: 'sidebar.hint.wbDashboard' },
         { label: 'sidebar.item.wbLibrary', icon: 'folder', to: '/winterboard/library', hint: 'sidebar.hint.wbLibrary' },
         { label: 'sidebar.item.wbBoards', icon: 'layout', to: '/winterboard/boards', hint: 'sidebar.hint.wbBoards' },
@@ -115,6 +116,7 @@ export const SECTIONED_MENU_BY_ROLE = {
       key: 'winterboard',
       label: 'sidebar.section.winterboard',
       items: [
+        { label: 'sidebar.item.classroomHub', icon: 'play-circle', to: '/winterboard/classroom-hub' },
         { label: 'sidebar.item.wbDashboard', icon: 'layout-dashboard', to: '/winterboard/dashboard' },
         { label: 'sidebar.item.wbLibrary', icon: 'folder', to: '/winterboard/library' },
         { label: 'sidebar.item.wbBoards', icon: 'layout', to: '/winterboard/boards' },

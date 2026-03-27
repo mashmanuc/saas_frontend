@@ -80,12 +80,34 @@ interface WBPresenceErrorMsg {
   retry_after_seconds?: number
 }
 
+/** Classroom sync: state was saved by another participant */
+interface WBStateUpdateMsg {
+  type: 'session.state_update'
+  userId: string
+  rev: number
+  pageIndex: number
+  action: string
+  ts: number
+}
+
+/** Phase 0: Remote stroke from other participant */
+interface WBStrokeBroadcastMsg {
+  type: 'stroke.broadcast'
+  stroke: any
+  pageIndex: number
+  action: string
+  userId: string
+  ts: number
+}
+
 type WBServerMessage =
   | WBPresenceJoinMsg
   | WBPresenceLeaveMsg
   | WBCursorUpdateMsg
   | WBViewportUpdateMsg
   | WBPresenceErrorMsg
+  | WBStateUpdateMsg
+  | WBStrokeBroadcastMsg
 
 // ─── Options ────────────────────────────────────────────────────────────────
 
@@ -441,6 +463,47 @@ export function usePresence(options: UsePresenceOptions) {
         lastError.value = msg.message
         break
       }
+
+      // Classroom sync: another participant saved state → emit custom event for refetch
+      case 'session.state_update': {
+        if (msg.userId === userId) return // Ignore own saves
+        window.dispatchEvent(new CustomEvent('wb:remote-state-update', {
+          detail: { rev: msg.rev, pageIndex: msg.pageIndex, action: msg.action },
+        }))
+        break
+      }
+
+      // Phase 0: Receive remote stroke from other participant
+      case 'stroke.broadcast': {
+        if (msg.userId === userId) return // Ignore own strokes
+        window.dispatchEvent(new CustomEvent('wb:remote-stroke', {
+          detail: {
+            stroke: msg.stroke,
+            strokeId: msg.strokeId,
+            pageIndex: msg.pageIndex,
+            action: msg.action,
+            userId: msg.userId,
+          },
+        }))
+        break
+      }
+
+      // Laser pointer from other participant
+      case 'laser_pointer': {
+        if (msg.user_id === userId) return
+        window.dispatchEvent(new CustomEvent('wb:remote-laser', {
+          detail: {
+            userId: msg.user_id,
+            displayName: msg.display_name,
+            x: msg.x,
+            y: msg.y,
+            active: msg.active,
+            color: msg.color,
+            pageId: msg.page_id,
+          },
+        }))
+        break
+      }
     }
   }
 
@@ -552,6 +615,7 @@ export function usePresence(options: UsePresenceOptions) {
     disconnect,
     sendCursor,
     sendViewport,
+    sendMessage,
   }
 }
 

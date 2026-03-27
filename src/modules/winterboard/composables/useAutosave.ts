@@ -45,7 +45,10 @@ export interface AutosaveReturn {
 
 // ── Composable ─────────────────────────────────────────────────────────
 
-export function useAutosave(sessionId: Ref<string | null>): AutosaveReturn {
+export function useAutosave(
+  sessionId: Ref<string | null>,
+  options?: { onSaved?: () => void; disabled?: Ref<boolean> },
+): AutosaveReturn {
   const store = useWBStore()
 
   // Reactive state
@@ -177,6 +180,8 @@ export function useAutosave(sessionId: Ref<string | null>): AutosaveReturn {
   async function performSave(): Promise<void> {
     if (destroyed || !sessionId.value) return
     if (isSaving.value) return
+    // Phase 0: In classroom mode, student doesn't save (teacher is SSOT)
+    if (options?.disabled?.value) return
 
     // Guard: nothing to save
     if (!store.isDirty && pendingOps.value.length === 0) return
@@ -255,6 +260,9 @@ export function useAutosave(sessionId: Ref<string | null>): AutosaveReturn {
     store.setSyncError(null)
     saveCount.value++
     retryCount = 0
+
+    // Classroom sync: notify other participants about state change
+    options?.onSaved?.()
 
     if (import.meta.env?.DEV) {
       console.log(`[WB:autosave] Saved (#${saveCount.value})`)

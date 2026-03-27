@@ -467,8 +467,10 @@ export const winterboardApi = {
    * End a classroom session.
    * Teacher/host only.
    */
-  endSession(sessionId: string): Promise<void> {
-    return apiClient.post(`${BASE}/sessions/${sessionId}/end/`)
+  endSession(sessionId: string): Promise<{ ended: boolean; export_id?: string; lesson_completed?: boolean; lesson_id?: number }> {
+    return apiClient
+      .post(`${BASE}/sessions/${sessionId}/end/`)
+      .then((r: any) => r?.data ?? r)
   },
 
   // ── PDF Import (Phase 5: A5.1) ──────────────────────────────────────

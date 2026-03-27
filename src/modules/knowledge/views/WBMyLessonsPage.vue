@@ -138,6 +138,17 @@
 
                 <!-- Actions -->
                 <div class="mt-3 flex flex-wrap gap-2">
+                  <!-- Провести урок (Classroom Hub shortcut) -->
+                  <button
+                    type="button"
+                    class="px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
+                    :disabled="conductingLessonId === lesson.id"
+                    @click="conductLesson(lesson)"
+                  >
+                    {{ conductingLessonId === lesson.id
+                      ? '...'
+                      : $t('winterboard.classroomHub.conductLesson') }}
+                  </button>
                   <button
                     type="button"
                     class="px-3 py-1.5 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors disabled:opacity-50"
@@ -249,6 +260,51 @@
       @saved="onLessonEdited"
     />
 
+    <!-- Conduct lesson: select student dialog -->
+    <Teleport to="body">
+      <div
+        v-if="conductTarget"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+        @click.self="conductTarget = null"
+      >
+        <div class="bg-white rounded-xl p-6 w-full max-w-sm shadow-xl">
+          <h3 class="text-lg font-semibold text-gray-900 mb-1">
+            {{ $t('winterboard.classroomHub.conductLesson') }}
+          </h3>
+          <p class="text-sm text-gray-500 mb-4 truncate">{{ conductTarget.title }}</p>
+
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            {{ $t('winterboard.classroomHub.selectStudent') }}
+          </label>
+          <select
+            v-model="conductStudentId"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 mb-4"
+          >
+            <option :value="null" disabled>{{ $t('winterboard.classroomHub.chooseStudent') }}</option>
+            <option v-for="s in conductStudents" :key="s.id" :value="s.id">{{ s.name }}</option>
+          </select>
+
+          <div class="flex justify-end gap-3">
+            <button
+              type="button"
+              class="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+              @click="conductTarget = null"
+            >
+              {{ $t('common.cancel') }}
+            </button>
+            <button
+              type="button"
+              class="px-4 py-2 text-sm text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50"
+              :disabled="!conductStudentId || conductingLessonId !== null"
+              @click="executeConductLesson"
+            >
+              {{ conductingLessonId ? '...' : $t('winterboard.classroomHub.startLesson') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
     <!-- Delete confirm dialog (Phase 25) -->
     <Teleport to="body">
       <div
@@ -295,6 +351,10 @@ import { useI18n } from 'vue-i18n'
 import { lessonSaveApi } from '../api/lessonSaveApi'
 import type { MyLesson, MyLessonsParams } from '../api/lessonSaveApi'
 import { lessonViewApi } from '../api/lessonViewApi'
+import { lessonsTemplateApi } from '@/modules/lessons/api/lessonsTemplateApi'
+import { ordersApi } from '@/modules/booking/api/ordersApi'
+import type { Order } from '@/modules/booking/api/ordersApi'
+import lessonsApi from '@/api/lessons'
 import apiClient from '@/utils/apiClient'
 import WBLessonFolders from '../components/WBLessonFolders.vue'
 import LessonEditDialog from '../components/LessonEditDialog.vue'
@@ -329,9 +389,18 @@ const deleteTarget = ref<MyLesson | null>(null)
 const showEditDialog = ref(false)
 const editTarget = ref<MyLesson | null>(null)
 
+// Conduct lesson (template → student → classroom)
+const conductTarget = ref<MyLesson | null>(null)
+const conductStudentId = ref<number | null>(null)
+const conductingLessonId = ref<string | null>(null)
+const conductStudents = ref<Array<{ id: number; name: string }>>([])
+
 const PAGE_SIZE = 20
 
-onMounted(() => loadLessons())
+onMounted(() => {
+  loadLessons()
+  loadConductStudents()
+})
 
 async function loadLessons(append = false) {
   if (!append) {
@@ -516,6 +585,74 @@ function onThumbnailError(event: Event, lesson: MyLesson): void {
   const img = event.target as HTMLImageElement
   img.style.display = 'none'
   lesson.board_thumbnail_url = ''
+}
+
+// ── Conduct lesson: template → student → classroom ──────────────────
+async function loadConductStudents(): Promise<void> {
+  try {
+    const res = await ordersApi.listOrders()
+    const orders: Order[] = res.results ?? []
+    const seen = new Set<number>()
+    conductStudents.value = orders
+      .filter((o) => {
+        if (seen.has(o.student.id)) return false
+        seen.add(o.student.id)
+        return true
+      })
+      .map((o) => ({
+        id: o.student.id,
+        name: o.student.fullName || `${o.student.firstName} ${o.student.lastName}`.trim() || o.student.email,
+      }))
+  } catch (err) {
+    console.error('[WBMyLessonsPage] loadStudents failed', err)
+  }
+}
+
+function conductLesson(lesson: MyLesson): void {
+  if (conductStudents.value.length === 0) {
+    loadError.value = t('winterboard.classroomHub.loadError')
+    return
+  }
+  conductTarget.value = lesson
+  conductStudentId.value = null
+}
+
+async function executeConductLesson(): Promise<void> {
+  if (!conductTarget.value || !conductStudentId.value) return
+  conductingLessonId.value = conductTarget.value.id
+
+  try {
+    // Quick Start: один виклик створює Lesson + WBSession + IN_PROGRESS
+    // Використовує TutorStudentRelation замість ClassroomMembership
+    const now = new Date()
+    const end = new Date(now.getTime() + 60 * 60 * 1000)
+
+    const res = await lessonsApi.quickStart({
+      student_id: conductStudentId.value,
+      start: now.toISOString(),
+      end: end.toISOString(),
+      // Передаємо UUID knowledge lesson для копіювання board state
+      source_knowledge_lesson_id: conductTarget.value.id,
+    })
+
+    const data = (res as any)?.data ?? res
+    const lessonId = data?.lesson_id
+    const roomUrl = data?.room_url
+
+    // Перехід у дошку
+    conductTarget.value = null
+    if (roomUrl) {
+      router.push(roomUrl)
+    } else if (lessonId) {
+      router.push(`/winterboard/classroom/${lessonId}`)
+    }
+  } catch (err: any) {
+    console.error('[WBMyLessonsPage] conductLesson failed', err)
+    const detail = err?.response?.data?.detail || err?.response?.data?.error || err?.message
+    loadError.value = detail || t('winterboard.classroomHub.startError')
+  } finally {
+    conductingLessonId.value = null
+  }
 }
 
 // ── Phase 25: Move to folder (BUG-4) ────────────────────────────────

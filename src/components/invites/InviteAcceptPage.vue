@@ -35,7 +35,7 @@
       <!-- Viral hooks -->
       <div class="flex flex-col gap-3">
         <router-link
-          to="/student/dashboard"
+          :to="dashboardRoute"
           class="inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-3 text-sm font-semibold text-white transition hover:bg-accent/90"
         >
           {{ $t('invites.viral.goToDashboard') }}
@@ -122,16 +122,23 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useInviteDetail } from '@/composables/useInviteDetail'
 import { useInviteAccept } from '@/composables/useInviteAccept'
+import { useAuthStore } from '@/modules/auth/store/authStore'
+import { getDefaultRouteForRole } from '@/config/routes'
 
 const route = useRoute()
 const token = route.params.token as string
+const auth = useAuthStore()
 
 const { isLoading, invite, error, fetch } = useInviteDetail(token)
 const { isAccepting, result: acceptResult, accept } = useInviteAccept(token)
+
+const dashboardRoute = computed(() => {
+  return auth.user?.role ? getDefaultRouteForRole(auth.user.role) : '/student'
+})
 
 async function handleAccept() {
   await accept()

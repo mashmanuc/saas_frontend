@@ -16,13 +16,13 @@
     </div>
 
     <div class="lesson-actions">
-      <!-- [LEGACY→WB] ClassroomButton (modules/classroom) видалено — проста кнопка join -->
       <button
         v-if="lesson.can_join"
-        class="link-ghost px-3 py-1.5 text-sm"
-        @click="$emit('join', lesson)"
+        class="join-btn px-3 py-1.5 text-sm"
+        :disabled="joining"
+        @click="handleJoinClassroom"
       >
-        Приєднатися
+        {{ joining ? '...' : (isTutor ? 'Почати урок' : 'Приєднатися') }}
       </button>
       <router-link :to="`/bookings/${lesson.id}`" class="link-ghost px-3 py-1.5 text-sm">
         Деталі
@@ -32,8 +32,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-// [LEGACY→WB] ClassroomButton з modules/classroom видалено (classroom module removed)
+import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { calendarV055Api } from '@/modules/booking/api/calendarV055Api'
 import type { ActiveLesson } from '../api/dashboard'
 
 interface Props {
@@ -45,9 +46,22 @@ const props = withDefaults(defineProps<Props>(), {
   isTutor: false,
 })
 
-defineEmits<{
-  (e: 'join', lesson: ActiveLesson): void
-}>()
+const router = useRouter()
+const joining = ref(false)
+
+async function handleJoinClassroom() {
+  joining.value = true
+  try {
+    const response = await calendarV055Api.joinEventRoom(props.lesson.id)
+    if (response.room?.url) {
+      router.push(response.room.url)
+    }
+  } catch (err) {
+    console.error('[UpcomingLessonCard] Join failed:', err)
+  } finally {
+    joining.value = false
+  }
+}
 
 // Computed
 const formattedDate = computed(() => {
@@ -190,5 +204,31 @@ const statusLabel = computed(() => {
 .link-ghost:hover {
   background-color: color-mix(in srgb, var(--accent) 8%, transparent);
   border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.join-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 25px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  color: white;
+  border: none;
+  text-decoration: none;
+}
+
+.join-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #6d28d9 0%, #5b21b6 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(109, 40, 217, 0.25);
+}
+
+.join-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 </style>

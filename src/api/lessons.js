@@ -78,6 +78,45 @@ const lessonsApi = {
       .get(`/lesson-invites/${token}/resolve/`)
       .then((res) => res?.data ?? res)
   },
+
+  // ── Classroom Entry: Lesson-first ──
+
+  /**
+   * Тьютор починає урок: створює WBSession + status → IN_PROGRESS.
+   * @param {number} id - lesson ID
+   * @returns {{ lesson_id, session_id, room_url, status }}
+   */
+  startSession(id) {
+    return apiClient.post(`/v1/lessons/${id}/start-session/`)
+  },
+
+  /**
+   * Студент приєднується до уроку (або тьютор повертається).
+   * @param {number} id - lesson ID
+   * @returns {{ lesson_id, session_id, room_url, role }}
+   */
+  joinLesson(id) {
+    return apiClient.post(`/v1/lessons/${id}/join/`)
+  },
+
+  /**
+   * Список активних уроків (для Classroom Hub).
+   * @param {object} params - { status?, student_id? }
+   * @returns {{ results: ActiveLesson[] }}
+   */
+  getActiveLessons(params = {}) {
+    return apiClient.get('/v1/lessons/my/active/', { params })
+  },
+
+  /**
+   * Швидкий старт уроку: створює Lesson + WBSession + IN_PROGRESS за один виклик.
+   * Використовує TutorStudentRelation замість ClassroomMembership.
+   * @param {{ student_id: number, start?: string, end?: string }} payload
+   * @returns {{ lesson_id, session_id, room_url, status }}
+   */
+  quickStart(payload) {
+    return apiClient.post('/v1/lessons/quick-start/', payload)
+  },
 }
 
 export default lessonsApi
