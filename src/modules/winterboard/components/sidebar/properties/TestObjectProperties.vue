@@ -1,12 +1,11 @@
 <template>
   <div class="test-props">
-    <!-- Type badge -->
+    <!-- Type badge (read-only) -->
     <div class="test-props__header">
       <span class="test-props__type-badge">{{ typeBadge }}</span>
-      <span class="test-props__points">{{ object.points }} {{ t('winterboard.test.props.points').toLowerCase() }}</span>
     </div>
 
-    <!-- Label -->
+    <!-- Question / Label -->
     <div class="test-props__section">
       <label class="test-props__label">{{ t('winterboard.test.props.labelQuestion') }}</label>
       <input
@@ -19,25 +18,25 @@
       />
     </div>
 
-    <!-- Type-specific settings -->
+    <!-- ── Input type ── -->
     <template v-if="object.type === 'input'">
-      <div class="test-props__section">
-        <label class="test-props__label">{{ t('winterboard.test.props.inputType') }}</label>
-        <select class="test-props__select" :value="(object as WBTestInput).inputType" :disabled="isLocked" @change="update('inputType', ($event.target as HTMLSelectElement).value)">
-          <option value="text">{{ t('winterboard.test.props.textType') }}</option>
-          <option value="number">{{ t('winterboard.test.props.numberType') }}</option>
-        </select>
-      </div>
       <div class="test-props__section">
         <label class="test-props__label">{{ t('winterboard.test.props.correctAnswer') }}</label>
         <input type="text" class="test-props__input" :value="object.correctAnswer ?? ''" :placeholder="t('winterboard.test.props.correctAnswer')" :disabled="isLocked" @change="update('correctAnswer', ($event.target as HTMLInputElement).value)" />
       </div>
-      <label class="test-props__check">
-        <input type="checkbox" :checked="(object as WBTestInput).caseSensitive ?? false" :disabled="isLocked" @change="update('caseSensitive', ($event.target as HTMLInputElement).checked)" />
-        {{ t('winterboard.test.props.caseSensitive') }}
-      </label>
+      <div class="test-props__row-inline">
+        <select class="test-props__select test-props__select--compact" :value="(object as WBTestInput).inputType" :disabled="isLocked" @change="update('inputType', ($event.target as HTMLSelectElement).value)">
+          <option value="text">{{ t('winterboard.test.props.textType') }}</option>
+          <option value="number">{{ t('winterboard.test.props.numberType') }}</option>
+        </select>
+        <label class="test-props__check">
+          <input type="checkbox" :checked="(object as WBTestInput).caseSensitive ?? false" :disabled="isLocked" @change="update('caseSensitive', ($event.target as HTMLInputElement).checked)" />
+          {{ t('winterboard.test.props.caseSensitive') }}
+        </label>
+      </div>
     </template>
 
+    <!-- ── Radio / Dropdown ── -->
     <template v-if="object.type === 'radio' || object.type === 'dropdown'">
       <div class="test-props__section">
         <label class="test-props__label">{{ t('winterboard.test.props.options') }}</label>
@@ -62,6 +61,7 @@
       </div>
     </template>
 
+    <!-- ── Checkbox ── -->
     <template v-if="object.type === 'checkbox'">
       <div class="test-props__section">
         <label class="test-props__label">{{ t('winterboard.test.props.optionsCheckCorrect') }}</label>
@@ -85,6 +85,7 @@
       </div>
     </template>
 
+    <!-- ── Gap-fill ── -->
     <template v-if="object.type === 'gap-fill'">
       <div class="test-props__section">
         <label class="test-props__label">{{ t('winterboard.test.props.template') }}</label>
@@ -92,7 +93,7 @@
           class="test-props__textarea"
           :value="(object as WBTestGapFill).template ?? ''"
           :placeholder="t('winterboard.test.props.templatePlaceholder')"
-          rows="3"
+          rows="2"
           :disabled="isLocked"
           @change="update('template', ($event.target as HTMLTextAreaElement).value)"
         ></textarea>
@@ -112,11 +113,11 @@
       </div>
     </template>
 
+    <!-- ── Matching ── -->
     <template v-if="object.type === 'matching'">
       <div class="test-props__section">
         <label class="test-props__label">{{ t('winterboard.test.props.matchingPairs') }}</label>
         <div v-for="(left, i) in (object as WBTestMatching).leftItems" :key="i" class="test-props__matching-row">
-          <span class="test-props__gap-num">{{ i + 1 }}.</span>
           <input
             type="text"
             class="test-props__input test-props__input--sm"
@@ -140,32 +141,20 @@
       </div>
     </template>
 
-    <!-- Scoring -->
-    <div class="test-props__section">
-      <label class="test-props__label">{{ t('winterboard.test.props.points') }}</label>
-      <input type="number" class="test-props__input test-props__input--xs" :value="object.points" min="0" max="100" :disabled="isLocked" @change="update('points', Number(($event.target as HTMLInputElement).value))" />
-    </div>
+    <!-- ── Divider ── -->
+    <div class="test-props__divider" />
 
-    <!-- Position -->
-    <div class="test-props__section">
-      <label class="test-props__label">{{ t('winterboard.test.props.position') }}</label>
-      <div class="test-props__pos-row">
-        <label class="test-props__pos">X <input type="number" :value="object.x" :disabled="isLocked" @change="update('x', Number(($event.target as HTMLInputElement).value))" /></label>
-        <label class="test-props__pos">Y <input type="number" :value="object.y" :disabled="isLocked" @change="update('y', Number(($event.target as HTMLInputElement).value))" /></label>
-      </div>
-      <div class="test-props__pos-row">
-        <label class="test-props__pos">W <input type="number" :value="object.width" min="80" :disabled="isLocked" @change="update('width', Number(($event.target as HTMLInputElement).value))" /></label>
-        <label class="test-props__pos">H <input type="number" :value="object.height" min="30" :disabled="isLocked" @change="update('height', Number(($event.target as HTMLInputElement).value))" /></label>
-      </div>
-    </div>
-
-    <!-- Lock / Delete -->
+    <!-- ── Actions (compact row) ── -->
     <div class="test-props__actions">
-      <button type="button" class="test-props__btn" @click="update('locked', !object.locked)">
-        {{ object.locked ? t('winterboard.test.props.unlock') : t('winterboard.test.props.lock') }}
+      <button type="button" class="test-props__action-btn" :disabled="isLocked" :title="t('winterboard.test.props.duplicate')" @click="$emit('duplicate', object.id)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
       </button>
-      <button type="button" class="test-props__btn test-props__btn--delete" :disabled="isLocked" @click="$emit('delete', object.id)">
-        {{ t('winterboard.test.props.delete') }}
+      <button type="button" class="test-props__action-btn" :title="object.locked ? t('winterboard.test.props.unlock') : t('winterboard.test.props.lock')" @click="update('locked', !object.locked)">
+        <svg v-if="object.locked" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 019.9-1"/></svg>
+      </button>
+      <button type="button" class="test-props__action-btn test-props__action-btn--delete" :disabled="isLocked" :title="t('winterboard.test.props.delete')" @click="$emit('delete', object.id)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
       </button>
     </div>
   </div>
@@ -173,7 +162,11 @@
 
 <script setup lang="ts">
 /**
- * Phase 37: TestObjectProperties — sidebar panel for editing test object settings.
+ * TestObjectProperties — чистий sidebar для вчителя.
+ *
+ * Принцип: sidebar = тільки зміст (запитання + варіанти).
+ * Позиція, розмір, бали — прибрано (advanced mode в майбутньому).
+ * Дії — компактні іконки внизу.
  */
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -196,6 +189,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update': [payload: { id: string; updates: Record<string, unknown> }]
   'delete': [id: string]
+  'duplicate': [id: string]
 }>()
 
 const TYPE_BADGE_KEYS: Record<string, string> = {
@@ -207,9 +201,18 @@ const TYPE_BADGE_KEYS: Record<string, string> = {
   'matching': 'winterboard.test.matching',
 }
 
+const TYPE_ICONS: Record<string, string> = {
+  input: '📝',
+  radio: '⭕',
+  checkbox: '☑️',
+  dropdown: '📋',
+  'gap-fill': '🔤',
+  matching: '🔗',
+}
+
 const typeBadge = computed(() => {
   const key = TYPE_BADGE_KEYS[props.object.type]
-  const icon = { input: '📝', radio: '⭕', checkbox: '☑️', dropdown: '📋', 'gap-fill': '🔤', matching: '🔗' }[props.object.type] ?? ''
+  const icon = TYPE_ICONS[props.object.type] ?? ''
   return `${icon} ${key ? t(key) : props.object.type}`
 })
 
@@ -236,7 +239,6 @@ function removeOption(index: number) {
   const newOptions = obj.options.filter((_, i) => i !== index)
   const updates: Record<string, unknown> = { options: newOptions }
 
-  // Adjust correctIndex/correctIndices
   if ('correctIndex' in obj) {
     let ci = (obj as WBTestRadio).correctIndex
     if (ci === index) ci = 0
@@ -270,7 +272,6 @@ function updateGapAnswer(index: number, value: string) {
   emit('update', { id: props.object.id, updates: { gaps: newGaps } })
 }
 
-// Matching pair management
 function updateMatchingLeft(index: number, value: string) {
   const obj = props.object as WBTestMatching
   const newLeft = [...obj.leftItems]
@@ -280,7 +281,6 @@ function updateMatchingLeft(index: number, value: string) {
 
 function updateMatchingRight(index: number, value: string) {
   const obj = props.object as WBTestMatching
-  // right item at correctPairs[index] position
   const rightIdx = obj.correctPairs[index]
   const newRight = [...obj.rightItems]
   newRight[rightIdx] = value
@@ -312,41 +312,37 @@ function removeMatchingPair(index: number) {
 .test-props {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
+  padding: 2px 0;
 }
+
+/* ── Header (type badge) ── */
 .test-props__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
+  padding: 6px 10px;
   background: #eef2ff;
-  border-radius: 8px;
+  border-radius: 6px;
 }
 .test-props__type-badge {
   font-size: 13px;
   font-weight: 600;
   color: #4f46e5;
 }
-.test-props__points {
-  font-size: 12px;
-  font-weight: 700;
-  color: #6b7280;
-  background: #f3f4f6;
-  padding: 2px 8px;
-  border-radius: 12px;
-}
+
+/* ── Sections ── */
 .test-props__section {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 .test-props__label {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #6b7280;
+  letter-spacing: 0.4px;
+  color: #9ca3af;
 }
+
+/* ── Inputs ── */
 .test-props__input {
   height: 32px;
   padding: 0 8px;
@@ -356,6 +352,7 @@ function removeMatchingPair(index: number) {
   background: #fff;
   color: #111827;
   outline: none;
+  transition: border-color 0.12s;
 }
 .test-props__input:focus {
   border-color: #6366f1;
@@ -365,7 +362,7 @@ function removeMatchingPair(index: number) {
   color: #9ca3af;
 }
 .test-props__input--sm { flex: 1; }
-.test-props__input--xs { width: 80px; }
+
 .test-props__select {
   height: 32px;
   padding: 0 8px;
@@ -374,22 +371,41 @@ function removeMatchingPair(index: number) {
   font-size: 13px;
   background: #fff;
 }
+.test-props__select--compact {
+  height: 28px;
+  font-size: 12px;
+}
+
 .test-props__textarea {
-  padding: 8px;
+  padding: 6px 8px;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
   font-size: 13px;
   resize: vertical;
   font-family: inherit;
+  line-height: 1.4;
 }
+.test-props__textarea:focus {
+  border-color: #6366f1;
+  outline: none;
+}
+
 .test-props__check {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
-  color: #374151;
+  font-size: 12px;
+  color: #6b7280;
   cursor: pointer;
 }
+
+.test-props__row-inline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ── Options rows ── */
 .test-props__option-row {
   display: flex;
   align-items: center;
@@ -398,81 +414,80 @@ function removeMatchingPair(index: number) {
 .test-props__gap-num {
   font-size: 12px;
   font-weight: 600;
-  color: #6b7280;
-  min-width: 20px;
+  color: #9ca3af;
+  min-width: 18px;
 }
 .test-props__matching-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 .test-props__matching-arrow {
-  color: #9ca3af;
-  font-size: 14px;
+  color: #c4b5fd;
+  font-size: 13px;
   flex-shrink: 0;
 }
 .test-props__btn-add {
   background: none;
   border: 1px dashed #d1d5db;
   border-radius: 6px;
-  padding: 6px;
+  padding: 5px;
   font-size: 12px;
   color: #6366f1;
   cursor: pointer;
+  transition: border-color 0.12s;
 }
 .test-props__btn-add:hover { border-color: #6366f1; }
 .test-props__btn-remove {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border: none;
   background: none;
-  color: #ef4444;
-  font-size: 16px;
+  color: #d1d5db;
+  font-size: 15px;
   cursor: pointer;
   border-radius: 4px;
   flex-shrink: 0;
+  transition: color 0.12s;
 }
-.test-props__btn-remove:hover { background: rgba(239,68,68,0.1); }
-.test-props__pos-row {
-  display: flex;
-  gap: 8px;
+.test-props__btn-remove:hover { color: #ef4444; }
+
+/* ── Divider ── */
+.test-props__divider {
+  height: 1px;
+  background: #f3f4f6;
+  margin: 2px 0;
 }
-.test-props__pos {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  color: #6b7280;
-}
-.test-props__pos input {
-  width: 64px;
-  height: 28px;
-  padding: 0 6px;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
-  font-size: 12px;
-}
+
+/* ── Actions (compact icon row) ── */
 .test-props__actions {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 4px;
+  gap: 4px;
 }
-.test-props__btn {
-  padding: 8px 12px;
+.test-props__action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   background: #fff;
-  font-size: 13px;
-  font-weight: 500;
+  color: #6b7280;
   cursor: pointer;
-  text-align: left;
+  transition: all 0.12s;
 }
-.test-props__btn:hover { background: #f3f4f6; }
-.test-props__btn--delete {
+.test-props__action-btn:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+.test-props__action-btn--delete:hover {
+  background: rgba(239, 68, 68, 0.08);
   color: #ef4444;
   border-color: #fecaca;
 }
-.test-props__btn--delete:hover { background: rgba(239,68,68,0.08); }
-.test-props__btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.test-props__action-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
 </style>

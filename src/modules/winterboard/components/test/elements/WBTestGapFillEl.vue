@@ -74,7 +74,7 @@ function onGapInput(index: number, e: Event) {
 .test-gap-fill__template {
   font-size: 14px;
   color: #374151;
-  line-height: 2;
+  line-height: 2.2;
   word-wrap: break-word;
 }
 .test-gap-fill__text {
@@ -83,39 +83,43 @@ function onGapInput(index: number, e: Event) {
 .test-gap-fill__input {
   display: inline-block;
   width: 100px;
-  height: 28px;
-  padding: 0 6px;
-  border: 1px solid #6366f1;
-  border-radius: 4px;
+  height: 30px;
+  padding: 0 8px;
+  border: 1.5px solid rgba(99, 102, 241, 0.4);
+  border-radius: 6px;
   font-size: 13px;
-  background: #eef2ff;
+  background: rgba(238, 242, 255, 0.6);
   color: #111827;
   outline: none;
-  margin: 0 2px;
+  margin: 0 3px;
   vertical-align: middle;
+  transition: all 0.15s ease;
 }
 .test-gap-fill__input:focus {
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+  border-color: #6366f1;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
 }
 .test-gap-fill__input--readonly {
   background: #f9fafb;
+  border-color: #e5e7eb;
   cursor: default;
 }
 .test-gap-fill__blank {
   display: inline-block;
-  padding: 2px 8px;
-  background: #dcfce7;
-  color: #059669;
-  border-radius: 4px;
+  padding: 2px 10px;
+  background: rgba(99, 102, 241, 0.08);
+  color: #6366f1;
+  border-radius: 6px;
   font-weight: 600;
   font-size: 13px;
-  margin: 0 2px;
+  margin: 0 3px;
 }
 .test-gap-fill__hint {
   font-size: 11px;
-  color: #6b7280;
+  color: #9ca3af;
   font-style: italic;
   margin-top: 4px;
+  padding-left: 2px;
 }
 </style>

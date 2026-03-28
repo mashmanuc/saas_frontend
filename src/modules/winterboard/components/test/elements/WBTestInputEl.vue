@@ -44,19 +44,20 @@ function onInput(e: Event) {
 <style scoped>
 .test-input__field {
   width: 100%;
-  height: 36px;
-  padding: 0 10px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
+  height: 38px;
+  padding: 0 12px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
   font-size: 14px;
-  background: #fff;
+  background: #fafafa;
   color: #111827;
   outline: none;
-  transition: border-color 0.15s;
+  transition: all 0.15s ease;
 }
 .test-input__field:focus {
   border-color: #6366f1;
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 .test-input__field[readonly] {
   background: #f9fafb;
@@ -64,10 +65,11 @@ function onInput(e: Event) {
 }
 .test-input__hint {
   font-size: 11px;
-  color: #6b7280;
+  color: #9ca3af;
   font-style: italic;
+  padding-left: 2px;
 }
 .test-input__hint--correct {
-  color: #059669;
+  color: #6366f1;
 }
 </style>

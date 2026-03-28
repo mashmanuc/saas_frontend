@@ -91,7 +91,7 @@ const overlayStyle = computed(() => ({
   left: 0;
   width: 100%;
   height: 100%;
-  overflow: hidden;
+  overflow: visible;
   z-index: 10;
   /* Phase 38: ЗАВЖДИ passthrough — кліки йдуть крізь до canvas.
      Тестові елементи самі ловлять свої кліки через pointer-events: auto. */

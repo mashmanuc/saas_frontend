@@ -321,9 +321,10 @@
           :is-locked="!!selectedTestObject.locked"
           @update="handleTestObjectUpdate"
           @delete="handleTestObjectDelete"
+          @duplicate="handleTestObjectDuplicate"
         />
         <GroupContentSidebar
-          v-else
+          v-show="!(testStore.testMode && selectedTestObject)"
           :group-id="groupId"
           :is-tutor="true"
           @place="placeItemAtCenter"
@@ -692,7 +693,7 @@
 // WB: WBSoloRoom — main solo whiteboard view
 // Ref: TASK_BOARD.md A2.1, ManifestWinterboard_v2.md LAW-01/03/08/09
 
-import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useWBStore } from '../board/state/boardStore'
@@ -1697,6 +1698,13 @@ function handleTestObjectDelete(id: string) {
   testStore.selectTestObject(null)
 }
 
+function handleTestObjectDuplicate(id: string) {
+  const newId = store.duplicateTestObject(id)
+  if (newId) {
+    testStore.selectTestObject(newId)
+  }
+}
+
 function handleGradeTest() {
   const pageId = store.currentPage?.id
   if (!pageId) return
@@ -1719,11 +1727,15 @@ function handleRetryTest() {
 
 /** Dedup guard — prevents double creation from both click + mouseup firing */
 let _lastTestClickTs = 0
+let _pendingLabelEditId: string | null = null
 
 /** Convert DOM click to canvas coordinates and dispatch to test handler */
 function onCanvasContainerClick(e: MouseEvent) {
   // Phase 38: deselect тестового об'єкту при кліку на canvas (overlay = pointer-events:none)
-  if (testStore.selectedTestId) {
+  // НЕ десілектимо якщо клік був на самому тестовому елементі
+  const target = e.target as HTMLElement | null
+  const clickedTestEl = target?.closest('.wb-test-element')
+  if (testStore.selectedTestId && !clickedTestEl) {
     testStore.selectTestObject(null)
   }
 
@@ -1804,6 +1816,23 @@ function handleTestCanvasClick(canvasX: number, canvasY: number) {
   store.addTestObject(obj)
   testStore.selectTestObject(id)
   testStore.setActiveTestTool(null)
+  // Quick create: auto-focus label для швидкого введення запитання
+  _pendingLabelEditId = id
+  nextTick(() => {
+    nextTick(() => {
+      // Подвійний nextTick щоб DOM встиг відрендерити WBTestElement
+      if (_pendingLabelEditId) {
+        const el = document.querySelector(
+          `.wb-test-element__label[data-test-id="${_pendingLabelEditId}"]`
+        ) as HTMLElement | null
+        if (el) {
+          // Імітуємо dblclick для запуску inline edit
+          el.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+        }
+        _pendingLabelEditId = null
+      }
+    })
+  })
 }
 
 // ─── Handlers: Header ───────────────────────────────────────────────────────
@@ -2015,11 +2044,40 @@ function onGlobalKeyDown(e: KeyboardEvent) {
     e.preventDefault()
     if (showMaterialsSidebar.value) toggleSidebarCollapse()
   }
+
+  // Ctrl+D для дублювання тестового об'єкта (коли вибраний test object)
+  if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+    if (testStore.testMode && testStore.testPhase === 'edit' && testStore.selectedTestId) {
+      e.preventDefault()
+      e.stopPropagation()
+      const newId = store.duplicateTestObject(testStore.selectedTestId)
+      if (newId) {
+        testStore.selectTestObject(newId)
+      }
+    }
+  }
+
+  // Delete/Backspace для видалення тестового об'єкта
+  if ((e.key === 'Delete' || e.key === 'Backspace') && !e.ctrlKey && !e.metaKey) {
+    // Не видаляти якщо фокус у полі вводу
+    const tag = (e.target as HTMLElement)?.tagName?.toLowerCase()
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') return
+
+    if (testStore.testMode && testStore.testPhase === 'edit' && testStore.selectedTestId) {
+      const obj = store.getTestObjectById(testStore.selectedTestId)
+      if (obj && !obj.locked) {
+        e.preventDefault()
+        e.stopPropagation()
+        store.deleteTestObject(testStore.selectedTestId)
+        testStore.selectTestObject(null)
+      }
+    }
+  }
 }
-document.addEventListener('keydown', onGlobalKeyDown)
+document.addEventListener('keydown', onGlobalKeyDown, true) // capture: перехоплює РАНІШЕ за WBCanvas
 
 onBeforeUnmount(async () => {
-  document.removeEventListener('keydown', onGlobalKeyDown)
+  document.removeEventListener('keydown', onGlobalKeyDown, true)
   _unsubRecorder()
   replayRecorder.destroy()
   // BUG-1 FIX: Use shared save logic on unmount
@@ -3038,42 +3096,50 @@ watch(() => store.workspaceName, (name) => {
   50% { box-shadow: 0 4px 24px rgba(99, 102, 241, 0.6); }
 }
 
-/* Phase 37: Test mode bar */
+/* Phase 37: Test mode bar — clear EDIT → LIVE → REVIEW flow */
 .wb-test-bar {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  background: #eef2ff;
-  border-bottom: 1px solid #c7d2fe;
+  gap: 8px;
+  padding: 6px 14px;
+  background: linear-gradient(to right, #eef2ff, #f5f3ff);
+  border-bottom: 1.5px solid #c7d2fe;
+  box-shadow: 0 1px 4px rgba(99, 102, 241, 0.08);
 }
 .wb-test-bar__tools {
   display: flex;
   gap: 4px;
 }
 .wb-test-bar__btn {
-  padding: 4px 10px;
-  border: 1px solid #c7d2fe;
-  border-radius: 6px;
+  padding: 5px 12px;
+  border: 1.5px solid #c7d2fe;
+  border-radius: 8px;
   background: #fff;
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.12s, border-color 0.12s;
+  transition: all 0.15s ease;
 }
 .wb-test-bar__btn:hover {
   background: #e0e7ff;
+  border-color: #a5b4fc;
+}
+.wb-test-bar__btn:active {
+  transform: scale(0.97);
 }
 .wb-test-bar__btn--active {
   background: #6366f1;
   color: #fff;
   border-color: #6366f1;
+  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.25);
 }
 .wb-test-bar__btn--grade {
   background: #059669;
   color: #fff;
   border-color: #059669;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.25);
 }
 .wb-test-bar__btn--grade:hover {
   background: #047857;
@@ -3082,47 +3148,62 @@ watch(() => store.workspaceName, (name) => {
   margin-left: auto;
   color: #ef4444;
   border-color: #fca5a5;
+  font-weight: 500;
 }
 .wb-test-bar__btn--exit:hover {
   background: #fee2e2;
+  border-color: #f87171;
 }
 .wb-test-bar__sep {
   width: 1px;
-  height: 20px;
+  height: 22px;
   background: #c7d2fe;
   margin: 0 4px;
 }
 .wb-test-bar__phases {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 .wb-test-bar__phase-label {
   font-size: 12px;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 6px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 8px;
   white-space: nowrap;
+  letter-spacing: 0.2px;
+  animation: phase-appear 0.25s ease-out;
+}
+@keyframes phase-appear {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
 }
 .wb-test-bar__phase-label--live {
   background: #dcfce7;
   color: #166534;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.12);
 }
 .wb-test-bar__phase-label--review {
   background: #fef3c7;
   color: #92400e;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.12);
 }
 .wb-test-bar__btn--launch {
   background: #6366f1;
   color: #fff;
   border-color: #6366f1;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+  padding: 5px 16px;
 }
 .wb-test-bar__btn--launch:hover {
   background: #4f46e5;
+  box-shadow: 0 3px 12px rgba(99, 102, 241, 0.35);
 }
 .wb-test-bar__btn--launch:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 /* Phase 37: Test mode toggle in page nav */

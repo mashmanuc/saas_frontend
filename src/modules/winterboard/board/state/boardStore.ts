@@ -2712,6 +2712,26 @@ export const useWBStore = defineStore('wb-board', {
       return page.testObjects.find(t => t.id === id) ?? null
     },
 
+    /** Дублювати тестовий об'єкт з офсетом +20px */
+    duplicateTestObject(id: string): string | null {
+      const page = this.currentPage
+      if (!page?.testObjects) return null
+      const src = page.testObjects.find(t => t.id === id)
+      if (!src) return null
+
+      const newId = `test-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+      const clone: WBTestObject = {
+        ...JSON.parse(JSON.stringify(src)),
+        id: newId,
+        x: src.x + 20,
+        y: src.y + 20,
+        locked: false,
+      }
+
+      this.addTestObject(clone)
+      return newId
+    },
+
     // Phase 34 A3: Z-order actions with undo
     bringForward(id: string): void {
       const pageIndex = this.currentPageIndex

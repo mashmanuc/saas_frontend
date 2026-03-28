@@ -3,9 +3,12 @@
     <Transition name="audit-fade">
       <div
         v-if="isVisible && snapshot"
+        ref="overlayRef"
         class="audit-overlay"
         :class="`audit-overlay--${snapshot.status}`"
+        :style="positionStyle"
         data-testid="audit-overlay"
+        @pointerdown="onDragStart"
       >
         <div class="audit-overlay__row" data-testid="audit-requests">
           <span class="audit-overlay__icon">📡</span>
@@ -74,11 +77,11 @@
 /**
  * Phase 30 B2: Audit Overlay Component
  *
- * Displays real-time audit metrics in bottom-right corner.
+ * Displays real-time audit metrics. Draggable to any screen position.
  * INV-4: No API calls — only reads client-side data.
  * INV-6: All data from auditCollector via useAuditOverlay.
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useAuditOverlay } from './useAuditOverlay'
 import { DEFAULT_AUDIT_CONFIG } from './types'
 import type { AuditIssue } from './types'
@@ -86,14 +89,65 @@ import type { AuditIssue } from './types'
 const MAX_VISIBLE_ISSUES = 3
 
 const { snapshot, isVisible } = useAuditOverlay()
-const t = DEFAULT_AUDIT_CONFIG.thresholds
+const thresh = DEFAULT_AUDIT_CONFIG.thresholds
 
-// Cache hit rate as percentage
+// ── Drag state ──────────────────────────────────────────────
+const overlayRef = ref<HTMLElement>()
+const posX = ref<number | null>(null)
+const posY = ref<number | null>(null)
+
+const positionStyle = computed(() => {
+  if (posX.value !== null && posY.value !== null) {
+    return {
+      left: `${posX.value}px`,
+      top: `${posY.value}px`,
+      right: 'auto',
+      bottom: 'auto',
+    }
+  }
+  // Дефолтна позиція — bottom-right
+  return {}
+})
+
+function onDragStart(e: PointerEvent) {
+  const el = overlayRef.value
+  if (!el) return
+
+  const rect = el.getBoundingClientRect()
+  // Якщо ще не було drag — ініціалізуємо позицію з поточної
+  if (posX.value === null) {
+    posX.value = rect.left
+    posY.value = rect.top
+  }
+
+  const startX = e.clientX
+  const startY = e.clientY
+  const startPosX = posX.value!
+  const startPosY = posY.value!
+
+  el.style.cursor = 'grabbing'
+  el.setPointerCapture(e.pointerId)
+
+  function onMove(ev: PointerEvent) {
+    posX.value = Math.max(0, Math.min(startPosX + (ev.clientX - startX), window.innerWidth - 60))
+    posY.value = Math.max(0, Math.min(startPosY + (ev.clientY - startY), window.innerHeight - 40))
+  }
+
+  function onUp() {
+    el!.style.cursor = ''
+    document.removeEventListener('pointermove', onMove)
+  }
+
+  document.addEventListener('pointermove', onMove)
+  document.addEventListener('pointerup', onUp, { once: true })
+}
+
+// ── Metrics ─────────────────────────────────────────────────
+
 const cachePercent = computed(() =>
   snapshot.value ? Math.round(snapshot.value.cacheHitRate * 100) : 100
 )
 
-// Global status
 const statusIcon = computed(() => {
   if (!snapshot.value) return '⏳'
   return { ok: '✅', warn: '⚠️', error: '❌' }[snapshot.value.status]
@@ -106,29 +160,28 @@ const statusText = computed(() => {
 // Row badge icons
 const requestsIcon = computed(() => {
   if (!snapshot.value) return '✅'
-  if (snapshot.value.requests > t.requests.error) return '❌'
-  if (snapshot.value.requests > t.requests.warn) return '⚠️'
+  if (snapshot.value.requests > thresh.requests.error) return '❌'
+  if (snapshot.value.requests > thresh.requests.warn) return '⚠️'
   return '✅'
 })
 const duplicatesIcon = computed(() => {
   if (!snapshot.value) return '✅'
-  if (snapshot.value.duplicates >= t.duplicates.error) return '❌'
+  if (snapshot.value.duplicates >= thresh.duplicates.error) return '❌'
   return '✅'
 })
 const cacheIcon = computed(() => {
   if (!snapshot.value || snapshot.value.cacheTotal === 0) return '✅'
-  if (snapshot.value.cacheHitRate < t.cacheHitRate.error) return '❌'
-  if (snapshot.value.cacheHitRate < t.cacheHitRate.warn) return '⚠️'
+  if (snapshot.value.cacheHitRate < thresh.cacheHitRate.error) return '❌'
+  if (snapshot.value.cacheHitRate < thresh.cacheHitRate.warn) return '⚠️'
   return '✅'
 })
 const wsIcon = computed(() => {
   if (!snapshot.value) return '✅'
-  if (snapshot.value.wsEventsInWindow > t.wsEventsPerWindow.error) return '❌'
-  if (snapshot.value.wsEventsInWindow > t.wsEventsPerWindow.warn) return '⚠️'
+  if (snapshot.value.wsEventsInWindow > thresh.wsEventsPerWindow.error) return '❌'
+  if (snapshot.value.wsEventsInWindow > thresh.wsEventsPerWindow.warn) return '⚠️'
   return '✅'
 })
 
-// Badge CSS classes
 const requestsBadgeClass = computed(() => badgeClass(requestsIcon.value))
 const duplicatesBadgeClass = computed(() => badgeClass(duplicatesIcon.value))
 const cacheBadgeClass = computed(() => badgeClass(cacheIcon.value))
@@ -160,9 +213,12 @@ const hiddenIssuesCount = computed(() => Math.max(0, allIssues.value.length - MA
   font-size: 12px;
   line-height: 1.6;
   backdrop-filter: blur(8px);
-  pointer-events: none;
+  cursor: grab;
   user-select: none;
-  transition: all 0.3s ease;
+  transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+.audit-overlay:active {
+  cursor: grabbing;
 }
 
 .audit-overlay--ok {

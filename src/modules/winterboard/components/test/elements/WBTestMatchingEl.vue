@@ -102,7 +102,7 @@ function onPairChange(leftIndex: number, e: Event) {
 .test-matching__preview {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .test-matching__pair {
@@ -110,63 +110,67 @@ function onPairChange(leftIndex: number, e: Event) {
   align-items: center;
   gap: 8px;
   font-size: 13px;
+  padding: 2px 0;
 }
 
 .test-matching__left {
-  background: #eef2ff;
-  color: #4f46e5;
-  padding: 4px 10px;
-  border-radius: 6px;
+  background: rgba(99, 102, 241, 0.08);
+  color: #6366f1;
+  padding: 5px 12px;
+  border-radius: 8px;
   font-weight: 600;
-  min-width: 60px;
+  min-width: 50px;
+  text-align: center;
 }
 
 .test-matching__arrow {
-  color: #9ca3af;
-  font-size: 16px;
+  color: #c4b5fd;
+  font-size: 14px;
 }
 
 .test-matching__right {
-  background: #dcfce7;
-  color: #059669;
-  padding: 4px 10px;
-  border-radius: 6px;
+  background: rgba(99, 102, 241, 0.06);
+  color: #4f46e5;
+  padding: 5px 12px;
+  border-radius: 8px;
   font-weight: 600;
 }
 
 .test-matching__play {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .test-matching__row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .test-matching__left--play {
   flex: 1;
-  min-width: 80px;
+  min-width: 70px;
 }
 
 .test-matching__select {
   flex: 1;
-  height: 34px;
-  padding: 0 8px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
   font-size: 13px;
-  background: #fff;
+  background: #fafafa;
   color: #111827;
   cursor: pointer;
   outline: none;
+  transition: all 0.15s ease;
 }
 
 .test-matching__select:focus {
   border-color: #6366f1;
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 .test-matching__select:disabled {
@@ -176,8 +180,9 @@ function onPairChange(leftIndex: number, e: Event) {
 
 .test-matching__correct-hint {
   font-size: 11px;
-  color: #059669;
+  color: #6366f1;
   font-style: italic;
   white-space: nowrap;
+  opacity: 0.8;
 }
 </style>

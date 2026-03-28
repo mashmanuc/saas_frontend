@@ -147,10 +147,12 @@ import type { StorageQuota } from '@/modules/learning-content/api/learningConten
 import type { AssetCategoryGroup, AllowedContentItem } from '../../types/sidebar'
 import type { LibraryFolderTree as LibraryFolderTreeType } from '../../types/library'
 
-// Phase 38: module-level кеш quota щоб не дублювати запит при remount sidebar
+// Phase 38: module-level кеш щоб не дублювати запити при remount sidebar
 let _quotaCache: StorageQuota | null = null
 let _quotaCacheTime = 0
-const QUOTA_CACHE_MS = 30_000 // 30 секунд
+let _foldersCache: LibraryFolderTreeType[] | null = null
+let _foldersCacheTime = 0
+const CACHE_MS = 30_000 // 30 секунд
 
 const CATEGORY_ICONS: Record<string, string> = {
   problem: '📐',
@@ -190,9 +192,17 @@ function handleFolderSelect(id: number | null) {
 
 async function loadFolders() {
   if (props.groupId) return // папки тільки в library mode
+  // Phase 38: кеш щоб не дублювати при remount
+  if (_foldersCache && Date.now() - _foldersCacheTime < CACHE_MS) {
+    folders.value = _foldersCache
+    return
+  }
   isLoadingFolders.value = true
   try {
-    folders.value = await fetchFoldersTree()
+    const data = await fetchFoldersTree()
+    folders.value = data
+    _foldersCache = data
+    _foldersCacheTime = Date.now()
   } catch (e) {
     console.warn('[GroupContentSidebar] Failed to load folders:', e)
   } finally {
@@ -242,7 +252,7 @@ const storageQuota = ref<StorageQuota | null>(_quotaCache)
 
 async function loadQuota() {
   // Phase 38: не перезавантажувати якщо дані свіжі
-  if (_quotaCache && Date.now() - _quotaCacheTime < QUOTA_CACHE_MS) {
+  if (_quotaCache && Date.now() - _quotaCacheTime < CACHE_MS) {
     storageQuota.value = _quotaCache
     return
   }

@@ -53,18 +53,21 @@ function onSelect(e: Event) {
 <style scoped>
 .test-dropdown__select {
   width: 100%;
-  height: 36px;
-  padding: 0 10px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
+  height: 38px;
+  padding: 0 12px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
   font-size: 14px;
-  background: #fff;
+  background: #fafafa;
   color: #111827;
   cursor: pointer;
   outline: none;
+  transition: all 0.15s ease;
 }
 .test-dropdown__select:focus {
   border-color: #6366f1;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 .test-dropdown__select:disabled {
   background: #f9fafb;
@@ -72,8 +75,10 @@ function onSelect(e: Event) {
 }
 .test-dropdown__hint {
   font-size: 11px;
-  color: #059669;
+  color: #6366f1;
   font-style: italic;
   margin-top: 2px;
+  padding-left: 2px;
+  opacity: 0.8;
 }
 </style>
