@@ -104,8 +104,11 @@ const lessonsApi = {
    * @param {object} params - { status?, student_id? }
    * @returns {{ results: ActiveLesson[] }}
    */
-  getActiveLessons(params = {}) {
-    return apiClient.get('/v1/lessons/my/active/', { params })
+  getActiveLessons(params = {}, { silent = false } = {}) {
+    return apiClient.get('/v1/lessons/my/active/', {
+      params,
+      meta: silent ? { skipLoader: true } : undefined,
+    })
   },
 
   /**

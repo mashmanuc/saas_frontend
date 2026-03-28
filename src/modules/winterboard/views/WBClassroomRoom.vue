@@ -60,8 +60,8 @@
         </span>
       </div>
 
-      <!-- Follow mode (students) -->
-      <div v-if="followMode.canFollow.value" class="wb-follow-controls">
+      <!-- Follow mode (students only — teacher should not follow anyone) -->
+      <div v-if="classroomRole.isStudent.value && followMode.canFollow.value" class="wb-follow-controls">
         <button
           v-if="!followMode.isFollowing.value"
           type="button"
@@ -77,6 +77,22 @@
             {{ t('winterboard.room.stopFollowing') }}
           </button>
         </div>
+      </div>
+
+      <!-- Student badge (teacher view, 1:1 model) -->
+      <div v-if="classroomRole.isTeacher.value && connectedStudents.length" class="wb-student-badge">
+        <span
+          class="wb-student-badge__dot"
+          :class="connectedStudents[0].is_online ? 'wb-student-badge__dot--online' : 'wb-student-badge__dot--offline'"
+        />
+        <span class="wb-student-badge__name">{{ connectedStudents[0].display_name }}</span>
+        <span class="wb-student-badge__status">
+          {{ connectedStudents[0].is_online ? t('winterboard.classroom.online') : t('winterboard.classroom.offline') }}
+        </span>
+      </div>
+      <div v-else-if="classroomRole.isTeacher.value" class="wb-student-badge wb-student-badge--empty">
+        <span class="wb-student-badge__dot wb-student-badge__dot--offline" />
+        <span class="wb-student-badge__name">{{ t('winterboard.classroom.noStudents') }}</span>
       </div>
 
       <!-- Right: Actions -->
@@ -154,94 +170,18 @@
 
     <!-- ── Main: Sidebar (teacher) + Toolbar + Canvas ──────────────────── -->
     <div class="wb-classroom-room__main">
-      <!-- Teacher sidebar: tabs (students + materials) -->
+      <!-- Teacher sidebar: full-featured materials (same as solo board) -->
       <aside
         v-if="classroomRole.isTeacher.value"
         class="wb-classroom-room__sidebar"
         role="complementary"
-        :aria-label="t('winterboard.classroom.studentList')"
+        :aria-label="t('learningContent.panel.title')"
       >
-        <!-- Tab switcher -->
-        <div class="wb-sidebar-tabs">
-          <button
-            class="wb-sidebar-tab"
-            :class="{ 'wb-sidebar-tab--active': activeTab === 'students' }"
-            @click="activeTab = 'students'"
-          >
-            {{ t('winterboard.classroom.students') }}
-            <span class="wb-student-list__count">{{ connectedStudents.length }}</span>
-          </button>
-          <button
-            class="wb-sidebar-tab"
-            :class="{ 'wb-sidebar-tab--active': activeTab === 'materials' }"
-            @click="activeTab = 'materials'"
-          >
-            {{ t('learningContent.panel.title') }}
-          </button>
-          <button
-            class="wb-sidebar-tab"
-            :class="{ 'wb-sidebar-tab--active': activeTab === 'homework' }"
-            @click="activeTab = 'homework'"
-          >
-            {{ t('lessons.homework.title') }}
-          </button>
-        </div>
-
-        <!-- Students tab — existing HTML preserved fully -->
-        <div v-if="activeTab === 'students'" class="wb-student-list">
-          <h3 class="wb-student-list__title">
-            {{ t('winterboard.classroom.students') }}
-            <span class="wb-student-list__count">{{ connectedStudents.length }}</span>
-          </h3>
-          <ul class="wb-student-list__items" role="list">
-            <li
-              v-for="user in connectedStudents"
-              :key="user.user_id"
-              class="wb-student-item"
-              :class="{ 'wb-student-item--offline': !user.is_online }"
-            >
-              <span
-                class="wb-student-item__color"
-                :style="{ background: user.cursor_color }"
-              />
-              <span class="wb-student-item__name">{{ user.display_name }}</span>
-              <span class="wb-student-item__role">{{ user.role }}</span>
-              <button
-                v-if="classroomRole.canKick.value && user.role === 'student'"
-                type="button"
-                class="wb-student-item__kick"
-                :title="t('winterboard.classroom.kick')"
-                @click="handleKickStudent(user.user_id)"
-              >
-                ✕
-              </button>
-            </li>
-          </ul>
-          <p v-if="connectedStudents.length === 0" class="wb-student-list__empty">
-            {{ t('winterboard.classroom.noStudents') }}
-          </p>
-        </div>
-
-        <!-- Materials tab: sidebar (lesson mode) or library (browse mode) -->
-        <ContentSidebar
-          ref="contentSidebarRef"
-          v-else-if="activeTab === 'materials' && lessonIdNum"
-          :lesson-id="props.lessonId"
+        <GroupContentSidebar
+          :group-id="classroomGroupId"
           :is-tutor="classroomRole.isTeacher.value"
-          @youtube-add="handleYouTubeAdd"
+          @place="handleSidebarPlace"
         />
-        <MaterialsBrowser
-          v-else-if="activeTab === 'materials'"
-        />
-
-        <!-- Homework tab (C1.1) -->
-        <div v-else-if="activeTab === 'homework'" class="wb-homework-tab">
-          <LessonHomeworkPanel
-            :items="homeworkItems"
-            :loading="homeworkLoading"
-            @assign="fetchHomework"
-          />
-        </div>
       </aside>
 
       <!-- Toolbar (role-aware) -->
@@ -514,8 +454,8 @@ import { useDeviceMode } from '../composables/useDeviceMode'
 
 // Learning Content integration
 import ContentPanel from '@/modules/learning-content/components/ContentPanel.vue'
-import ContentSidebar from '../components/sidebar/ContentSidebar.vue'
-import MaterialsBrowser from '../components/sidebar/MaterialsBrowser.vue'
+import GroupContentSidebar from '../components/sidebar/GroupContentSidebar.vue'
+import type { AllowedContentItem } from '../types/sidebar'
 import { addYouTubeAsset } from '../api/library'
 import WBDragGhost from '../components/sidebar/WBDragGhost.vue'
 import { useContentDrop } from '../composables/useContentDrop'
@@ -548,6 +488,8 @@ const locking = useLocking(store)
 const deviceModeState = useDeviceMode()
 
 const resolvedSessionId = ref<string | null>(props.sessionId ?? null)
+/** group_id з lesson — для GroupContentSidebar у classroom */
+const classroomGroupId = ref<string | null>(null)
 
 // P2: edit/replay mode — synced to URL query for shareable links
 const mode = computed<'edit' | 'replay'>({
@@ -563,8 +505,6 @@ const mode = computed<'edit' | 'replay'>({
   },
 })
 
-// Sidebar tabs: 'students' | 'materials' | 'homework'
-const activeTab = ref<'students' | 'materials' | 'homework'>('materials')
 
 // ─── Lesson Domain state (C1.1 homework + C1.2 status) ─────────────────────
 const homeworkItems = ref<LessonHomework[]>([])
@@ -666,6 +606,21 @@ const contentDrop = useContentDrop({
   },
 })
 
+// ── Quick place: sidebar item click → place at canvas center ──
+async function handleSidebarPlace(item: AllowedContentItem) {
+  await contentDrop.handleSidebarDrop(
+    {
+      content_item_id: item.content_item_id as number,
+      asset_category: item.asset_category,
+      content_type: item.content_type,
+    },
+    {
+      x: (store.pageWidth ?? 800) / 2,
+      y: (store.pageHeight ?? 600) / 2,
+    },
+  )
+}
+
 const authStore = useAuthStore()
 const lessonRuntime = useLessonRuntimeStore()
 
@@ -717,7 +672,6 @@ const showShareDialog = ref(false)
 const replayMarkers = ref<WBLessonMarker[]>([])
 const replayActiveMarkerId = ref<string | null>(null)
 const showMarkerModal = ref(false)
-const contentSidebarRef = ref<InstanceType<typeof ContentSidebar> | null>(null)
 
 // Phase 11 B5: Board empty check for onboarding hints
 const isBoardEmpty = computed(() => {
@@ -985,7 +939,6 @@ function handleYouTubeSubmit(payload: { url: string; title?: string }): void {
 async function handleYouTubeAdd(url: string): Promise<void> {
   try {
     await addYouTubeAsset(url)
-    contentSidebarRef.value?.reload()
   } catch (e) {
     console.warn('[WBClassroomRoom] YouTube add failed:', e)
   }
@@ -1687,10 +1640,12 @@ onMounted(async () => {
 })
 
 // B3: Extracted init logic so waiting_for_teacher can call it when teacher starts
-async function initBoardWithSession(init: { sessionId: string; role: any; permissions: any; isLocked: boolean }): Promise<void> {
+async function initBoardWithSession(init: { sessionId: string; role: any; permissions: any; isLocked: boolean; groupId?: string | null }): Promise<void> {
   // Set resolved session ID
   resolvedSessionId.value = init.sessionId
   store.workspaceId = init.sessionId
+  // Зберігаємо group_id для sidebar матеріалів
+  if (init.groupId) classroomGroupId.value = init.groupId
 
   // Set role + permissions
   classroomRole.setRole(init.role, init.permissions)
@@ -1935,6 +1890,43 @@ onBeforeUnmount(async () => {
 }
 .wb-follow-stop-btn:hover { background: rgba(239, 68, 68, 0.6); }
 
+/* ── Student badge (header) ──────────────────────────────────────────────── */
+
+.wb-student-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+}
+.wb-student-badge--empty {
+  color: rgba(255, 255, 255, 0.5);
+}
+.wb-student-badge__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.wb-student-badge__dot--online {
+  background: #22c55e;
+  box-shadow: 0 0 4px rgba(34, 197, 94, 0.5);
+}
+.wb-student-badge__dot--offline {
+  background: #6b7280;
+}
+.wb-student-badge__name {
+  font-weight: 500;
+}
+.wb-student-badge__status {
+  font-size: 0.6875rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
 /* ── Actions ─────────────────────────────────────────────────────────────── */
 
 .wb-classroom-room__actions {
@@ -1993,36 +1985,18 @@ onBeforeUnmount(async () => {
   flex-direction: column;
 }
 
-.wb-sidebar-tabs {
-  display: flex;
+.wb-sidebar-header {
+  padding: 10px 12px;
   border-bottom: 1px solid var(--wb-border, #e2e8f0);
   flex-shrink: 0;
 }
-
-.wb-sidebar-tab {
-  flex: 1;
-  padding: 10px 8px;
+.wb-sidebar-header__title {
+  margin: 0;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--wb-text-secondary, #64748b);
-  background: none;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  transition: color 0.15s;
-}
-
-.wb-sidebar-tab--active {
-  color: var(--wb-accent, #4F46E5);
-  border-bottom: 2px solid var(--wb-accent, #4F46E5);
-}
-
-.wb-sidebar-tab:hover:not(.wb-sidebar-tab--active) {
-  color: var(--wb-text-primary, #1e293b);
-  background: var(--wb-bg-hover, #f1f5f9);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .wb-classroom-room__toolbar {
@@ -2041,109 +2015,6 @@ onBeforeUnmount(async () => {
 }
 
 /* ── Student list ────────────────────────────────────────────────────────── */
-
-.wb-student-list {
-  padding: 16px 12px;
-}
-
-.wb-student-list__title {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--wb-fg, #0f172a);
-  margin: 0 0 12px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.wb-student-list__count {
-  padding: 1px 6px;
-  background: var(--wb-brand, #2563eb);
-  color: white;
-  border-radius: 10px;
-  font-size: 0.6875rem;
-  font-weight: 700;
-}
-
-.wb-student-list__items {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.wb-student-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  border-radius: 6px;
-  transition: background 0.15s ease;
-}
-
-.wb-student-item:hover {
-  background: var(--wb-bg-hover, #f1f5f9);
-}
-
-.wb-student-item--offline {
-  opacity: 0.5;
-}
-
-.wb-student-item__color {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.wb-student-item__name {
-  flex: 1;
-  font-size: 0.8125rem;
-  color: var(--wb-fg, #0f172a);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.wb-student-item__role {
-  font-size: 0.625rem;
-  color: var(--wb-fg-secondary, #475569);
-  text-transform: uppercase;
-}
-
-.wb-student-item__kick {
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  border-radius: 4px;
-  color: var(--wb-fg-secondary, #475569);
-  cursor: pointer;
-  font-size: 0.75rem;
-  opacity: 0;
-  transition: opacity 0.15s ease, background 0.15s ease;
-}
-
-.wb-student-item:hover .wb-student-item__kick {
-  opacity: 1;
-}
-
-.wb-student-item__kick:hover {
-  background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
-}
-
-.wb-student-list__empty {
-  font-size: 0.75rem;
-  color: var(--wb-fg-secondary, #475569);
-  text-align: center;
-  padding: 20px 0;
-}
 
 /* ── Footer ──────────────────────────────────────────────────────────────── */
 

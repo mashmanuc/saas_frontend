@@ -6331,8 +6331,11 @@
       "waitingForTeacherHint": "The teacher hasn't started the lesson yet. You'll automatically join when they do.",
       "backToHub": "Back to classroom",
       "studentList": "Connected students",
+      "student": "Student",
       "students": "Students",
       "noStudents": "No students connected",
+      "online": "Online",
+      "offline": "Waiting",
       "kick": "Remove student",
       "roleTeacher": "Teacher",
       "roleStudent": "Student",
@@ -6380,6 +6383,9 @@
       "load_failed": "Failed to load",
       "upload_failed": "Upload failed",
       "unsupported_format": "Unsupported format",
+      "noMaterials": "No materials added to this lesson yet",
+      "addFromLibrary": "Add from library",
+      "backToLesson": "Lesson materials",
       "search": "Search materials...",
       "filterAll": "All",
       "noResults": "Nothing found",
@@ -6724,7 +6730,9 @@
       "fromTemplate": "Teach from template",
       "conductLesson": "Teach",
       "selectStudent": "Select student",
-      "chooseStudent": "— Select student —"
+      "chooseStudent": "— Select student —",
+      "tutorWaiting": "Tutor is waiting for you",
+      "joinNow": "Join now"
     },
     "library": {
       "folders": "Folders",

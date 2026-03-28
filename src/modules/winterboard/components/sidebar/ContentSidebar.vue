@@ -13,84 +13,131 @@
       </div>
     </Transition>
 
-    <!-- Phase 3.1: Storage quota bar -->
-    <StorageQuotaBar v-if="isTutor" :quota="storageQuota" />
-
-    <!-- Header -->
-    <div class="content-sidebar__header">
-      <span class="content-sidebar__title">
-        {{ t('learningContent.panel.lessonTitle') }}
-      </span>
-      <span class="content-sidebar__count">{{ sidebar.totalCount.value }}</span>
-    </div>
-
-    <!-- Phase 11 B8: YouTube URL inline input -->
-    <div v-if="isTutor" class="content-sidebar__yt-section">
+    <!-- ═══════════ MODE: LIBRARY (browse full teacher library) ═══════════ -->
+    <template v-if="mode === 'library'">
+      <!-- Back to lesson button -->
       <button
-        v-if="!showYtInput"
         type="button"
-        class="content-sidebar__yt-btn"
-        @click="showYtInput = true"
+        class="content-sidebar__back-btn"
+        @click="mode = 'lesson'"
       >
-        <svg width="14" height="14" viewBox="0 0 20 20" fill="none" style="vertical-align: -2px">
-          <rect x="2" y="4" width="16" height="12" rx="3" fill="#FF0000"/>
-          <path d="M8.5 7.5l5 2.5-5 2.5V7.5z" fill="#fff"/>
-        </svg>
-        + YouTube URL
+        <ArrowLeftIcon :size="14" />
+        {{ t('winterboard.contentSidebar.backToLesson') }}
       </button>
-      <div v-else class="content-sidebar__yt-input-row">
-        <input
-          ref="ytInputRef"
-          v-model="ytUrl"
-          type="url"
-          class="content-sidebar__yt-input"
-          placeholder="https://youtube.com/watch?v=..."
-          @keydown.enter="submitYouTube"
-          @keydown.escape="showYtInput = false"
-        />
+
+      <!-- Phase 3.1: Storage quota bar -->
+      <StorageQuotaBar v-if="isTutor" :quota="storageQuota" />
+
+      <!-- Library browser (reuses existing MaterialsBrowser) -->
+      <MaterialsBrowser :is-tutor="isTutor" @select="handleLibrarySelect" />
+    </template>
+
+    <!-- ═══════════ MODE: LESSON (lesson-specific materials) ═══════════ -->
+    <template v-else>
+      <!-- Phase 3.1: Storage quota bar -->
+      <StorageQuotaBar v-if="isTutor" :quota="storageQuota" />
+
+      <!-- Header -->
+      <div class="content-sidebar__header">
+        <span class="content-sidebar__title">
+          {{ t('learningContent.panel.lessonTitle') }}
+        </span>
+        <span v-if="sidebar.totalCount.value > 0" class="content-sidebar__count">
+          {{ sidebar.totalCount.value }}
+        </span>
+      </div>
+
+      <!-- Phase 11 B8: YouTube URL inline input -->
+      <div v-if="isTutor" class="content-sidebar__yt-section">
         <button
+          v-if="!showYtInput"
           type="button"
-          class="content-sidebar__yt-submit"
-          :disabled="!ytUrl.trim()"
-          @click="submitYouTube"
+          class="content-sidebar__yt-btn"
+          @click="showYtInput = true"
         >
-          +
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="none" style="vertical-align: -2px">
+            <rect x="2" y="4" width="16" height="12" rx="3" fill="#FF0000"/>
+            <path d="M8.5 7.5l5 2.5-5 2.5V7.5z" fill="#fff"/>
+          </svg>
+          + YouTube URL
+        </button>
+        <div v-else class="content-sidebar__yt-input-row">
+          <input
+            ref="ytInputRef"
+            v-model="ytUrl"
+            type="url"
+            class="content-sidebar__yt-input"
+            placeholder="https://youtube.com/watch?v=..."
+            @keydown.enter="submitYouTube"
+            @keydown.escape="showYtInput = false"
+          />
+          <button
+            type="button"
+            class="content-sidebar__yt-submit"
+            :disabled="!ytUrl.trim()"
+            @click="submitYouTube"
+          >
+            +
+          </button>
+        </div>
+      </div>
+
+      <!-- Loading -->
+      <div v-if="sidebar.isLoading.value" class="content-sidebar__loading">
+        {{ t('winterboard.contentSidebar.loading') }}
+      </div>
+
+      <!-- Error -->
+      <div v-else-if="sidebar.error.value" class="content-sidebar__error">
+        <span>{{ t(`winterboard.contentSidebar.${sidebar.error.value}`) }}</span>
+        <button class="content-sidebar__retry" @click="sidebar.reload">&#8635;</button>
+      </div>
+
+      <!-- Empty state with CTA (never show blank sidebar) -->
+      <div v-else-if="sidebar.totalCount.value === 0" class="content-sidebar__empty-cta">
+        <FolderOpenIcon :size="36" class="content-sidebar__empty-icon" />
+        <p class="content-sidebar__empty-text">
+          {{ t('winterboard.contentSidebar.noMaterials') }}
+        </p>
+        <button
+          v-if="isTutor"
+          type="button"
+          class="content-sidebar__add-btn content-sidebar__add-btn--primary"
+          @click="mode = 'library'"
+        >
+          <PlusIcon :size="14" />
+          {{ t('winterboard.contentSidebar.addFromLibrary') }}
         </button>
       </div>
-    </div>
 
-    <!-- Loading -->
-    <div v-if="sidebar.isLoading.value" class="content-sidebar__loading">
-      {{ t('winterboard.contentSidebar.loading') }}
-    </div>
-
-    <!-- Error -->
-    <div v-else-if="sidebar.error.value" class="content-sidebar__error">
-      <span>{{ t(`winterboard.contentSidebar.${sidebar.error.value}`) }}</span>
-      <button class="content-sidebar__retry" @click="sidebar.reload">&#8635;</button>
-    </div>
-
-    <!-- Empty -->
-    <div v-else-if="sidebar.totalCount.value === 0" class="content-sidebar__empty">
-      {{ t('learningContent.panel.lessonEmpty') }}
-    </div>
-
-    <!-- Grouped items -->
-    <template v-else>
-      <template v-for="(categoryItems, category) in sidebar.grouped.value" :key="category">
-        <div v-if="categoryItems.length > 0" class="content-sidebar__group">
-          <div class="content-sidebar__group-header">
-            {{ t(`winterboard.contentSidebar.category.${category}`) }}
-            <span class="content-sidebar__group-count">{{ categoryItems.length }}</span>
+      <!-- Grouped items -->
+      <template v-else>
+        <template v-for="(categoryItems, category) in sidebar.grouped.value" :key="category">
+          <div v-if="categoryItems.length > 0" class="content-sidebar__group">
+            <div class="content-sidebar__group-header">
+              {{ t(`winterboard.contentSidebar.category.${category}`) }}
+              <span class="content-sidebar__group-count">{{ categoryItems.length }}</span>
+            </div>
+            <ContentSidebarItem
+              v-for="item in categoryItems"
+              :key="item.id || item.content_item_id"
+              :item="item"
+              :is-tutor="isTutor"
+            />
           </div>
-          <ContentSidebarItem
-            v-for="item in categoryItems"
-            :key="item.id || item.content_item_id"
-            :item="item"
-            :is-tutor="isTutor"
-          />
-        </div>
+        </template>
       </template>
+
+      <!-- Add from library button (always visible for teacher when has materials) -->
+      <button
+        v-if="isTutor && sidebar.totalCount.value > 0"
+        type="button"
+        class="content-sidebar__add-btn content-sidebar__add-btn--secondary"
+        @click="mode = 'library'"
+      >
+        <PlusIcon :size="14" />
+        {{ t('winterboard.contentSidebar.addFromLibrary') }}
+      </button>
     </template>
   </div>
 </template>
@@ -98,9 +145,11 @@
 <script setup lang="ts">
 import { ref, toRef, onMounted, nextTick, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { ArrowLeftIcon, PlusIcon, FolderOpenIcon } from 'lucide-vue-next'
 import { useContentSidebar } from '../../composables/useContentSidebar'
 import { parseYouTubeVideoId } from '../../utils/youtubeParser'
 import ContentSidebarItem from './ContentSidebarItem.vue'
+import MaterialsBrowser from './MaterialsBrowser.vue'
 import StorageQuotaBar from '@/modules/learning-content/components/StorageQuotaBar.vue'
 import { learningContentApi } from '@/modules/learning-content/api/learningContentApi'
 import type { StorageQuota } from '@/modules/learning-content/api/learningContentApi'
@@ -112,6 +161,9 @@ const props = defineProps<{
 
 const { t } = useI18n()
 const sidebar = useContentSidebar(toRef(props, 'lessonId'))
+
+// ── Sidebar mode: lesson materials vs library browser ──
+const mode = ref<'lesson' | 'library'>('lesson')
 
 // Phase 3.1: Storage quota
 const storageQuota = ref<StorageQuota | null>(null)
@@ -127,6 +179,22 @@ async function loadQuota() {
 onMounted(loadQuota)
 
 defineExpose({ reload: () => sidebar.reload() })
+
+// ── Library → select asset → add to lesson + reload ──
+async function handleLibrarySelect(asset: { id: string; content_item_id?: number }) {
+  const lessonId = Number(props.lessonId)
+  const contentItemId = asset.content_item_id ?? Number(asset.id)
+  if (!lessonId || !contentItemId || Number.isNaN(lessonId) || Number.isNaN(contentItemId)) return
+
+  try {
+    await learningContentApi.addAllowedContent(lessonId, contentItemId)
+    // Перезавантажити матеріали уроку та повернутися до lesson mode
+    await sidebar.reload()
+    mode.value = 'lesson'
+  } catch (e) {
+    console.warn('[ContentSidebar] Failed to add content to lesson:', e)
+  }
+}
 
 // Phase 11 B8: YouTube inline input
 const showYtInput = ref(false)
@@ -155,7 +223,6 @@ function submitYouTube(): void {
 const isDragOver = ref(false)
 
 function onDragOver(e: DragEvent) {
-  // Distinguish OS file drag from sidebar content drag
   const hasFile = Array.from(e.dataTransfer?.items ?? [])
     .some(item => item.kind === 'file')
   if (hasFile && props.isTutor) {
@@ -165,13 +232,9 @@ function onDragOver(e: DragEvent) {
 
 function onDrop(e: DragEvent) {
   isDragOver.value = false
-
-  // Ignore sidebar content drag (handled by canvas)
   if (e.dataTransfer?.getData(sidebar.SIDEBAR_DRAG_MIME)) return
-
   const files = Array.from(e.dataTransfer?.files ?? [])
   if (!files.length || !props.isTutor) return
-
   sidebar.uploadFiles(files).then(loadQuota)
 }
 </script>
@@ -203,6 +266,28 @@ function onDrop(e: DragEvent) {
   z-index: 10;
   pointer-events: none;
 }
+
+/* ─── Back button (library mode) ───────────────────────────────────────── */
+.content-sidebar__back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border: none;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.content-sidebar__back-btn:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+/* ─── Header ───────────────────────────────────────────────────────────── */
 .content-sidebar__header {
   display: flex;
   align-items: center;
@@ -222,8 +307,9 @@ function onDrop(e: DragEvent) {
   padding: 1px 6px;
   border-radius: 10px;
 }
-.content-sidebar__loading,
-.content-sidebar__empty {
+
+/* ─── Loading / Error ──────────────────────────────────────────────────── */
+.content-sidebar__loading {
   padding: 32px 12px;
   text-align: center;
   color: #9ca3af;
@@ -249,6 +335,58 @@ function onDrop(e: DragEvent) {
   cursor: pointer;
   padding: 2px 8px;
 }
+
+/* ─── Empty state with CTA ─────────────────────────────────────────────── */
+.content-sidebar__empty-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 16px;
+  text-align: center;
+}
+.content-sidebar__empty-icon {
+  color: #cbd5e1;
+  margin-bottom: 12px;
+}
+.content-sidebar__empty-text {
+  font-size: 13px;
+  color: #94a3b8;
+  margin: 0 0 16px;
+  line-height: 1.4;
+}
+
+/* ─── Add from library button ──────────────────────────────────────────── */
+.content-sidebar__add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 8px 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.content-sidebar__add-btn--primary {
+  background: #3b82f6;
+  color: white;
+  border: none;
+}
+.content-sidebar__add-btn--primary:hover {
+  background: #2563eb;
+}
+.content-sidebar__add-btn--secondary {
+  background: transparent;
+  color: #3b82f6;
+  border: 1px dashed #93c5fd;
+}
+.content-sidebar__add-btn--secondary:hover {
+  background: #eff6ff;
+}
+
+/* ─── Groups ───────────────────────────────────────────────────────────── */
 .content-sidebar__group {
   margin-bottom: 4px;
 }

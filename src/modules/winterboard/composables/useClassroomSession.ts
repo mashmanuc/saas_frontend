@@ -25,6 +25,7 @@ export interface ClassroomSessionInit {
   role: WBClassroomRole
   permissions: WBClassroomPermissions
   isLocked: boolean
+  groupId: string | null
 }
 
 export type ClassroomSessionState =
@@ -196,6 +197,7 @@ export function useClassroomSession() {
       role: response.role,
       permissions: response.permissions,
       isLocked: response.is_locked,
+      groupId: response.group_id ?? null,
     }
   }
 

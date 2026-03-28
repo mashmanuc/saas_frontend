@@ -59,7 +59,7 @@
         :aria-label="t('winterboard.library.moveToFolder')"
         :title="t('winterboard.library.moveToFolder')"
         data-testid="move-asset-btn"
-        @click.stop="emit('move', asset)"
+        @click.stop="emitMove($event)"
       >
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
           <path d="M1.5 4A1.5 1.5 0 013 2.5h2.5l1 1.5H11A1.5 1.5 0 0112.5 5.5v5A1.5 1.5 0 0111 12H3A1.5 1.5 0 011.5 10.5V4z"
@@ -99,9 +99,14 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   'toggle-favorite': [asset: LibraryAsset]
-  move: [asset: LibraryAsset]
+  move: [asset: LibraryAsset, anchorRect: DOMRect]
   delete: [asset: LibraryAsset]
 }>()
+
+function emitMove(e: MouseEvent): void {
+  const btn = e.currentTarget as HTMLElement
+  emit('move', props.asset, btn.getBoundingClientRect())
+}
 
 // ─── i18n ─────────────────────────────────────────────────────────────────────
 

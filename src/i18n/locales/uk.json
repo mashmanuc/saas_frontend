@@ -6550,7 +6550,9 @@
       "fromTemplate": "Провести з шаблону",
       "conductLesson": "Провести",
       "selectStudent": "Оберіть учня",
-      "chooseStudent": "— Оберіть учня —"
+      "chooseStudent": "— Оберіть учня —",
+      "tutorWaiting": "Вчитель очікує на вас",
+      "joinNow": "Приєднатися зараз"
     },
     "library": {
       "folders": "Папки",
@@ -6891,8 +6893,11 @@
       "waitingForTeacherHint": "Вчитель ще не розпочав урок. Ви автоматично приєднаєтесь, коли він почне.",
       "backToHub": "Повернутися до кімнати",
       "studentList": "Підключені учні",
+      "student": "Учень",
       "students": "Учні",
       "noStudents": "Немає підключених учнів",
+      "online": "Онлайн",
+      "offline": "Очікує",
       "kick": "Видалити учня",
       "roleTeacher": "Вчитель",
       "roleStudent": "Учень",
@@ -6940,6 +6945,9 @@
       "load_failed": "Помилка завантаження",
       "upload_failed": "Помилка завантаження файлу",
       "unsupported_format": "Формат не підтримується",
+      "noMaterials": "Матеріали ще не додані до уроку",
+      "addFromLibrary": "Додати з бібліотеки",
+      "backToLesson": "Матеріали уроку",
       "search": "Пошук матеріалів...",
       "filterAll": "Всі",
       "noResults": "Нічого не знайдено",

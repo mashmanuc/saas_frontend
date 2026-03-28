@@ -1,7 +1,8 @@
 <template>
   <div class="move-asset-dropdown" ref="dropdownRoot">
-    <!-- Trigger: 📂 button -->
+    <!-- Trigger: 📂 button (hidden when externally triggered via anchorRect) -->
     <button
+      v-if="!anchorRect"
       type="button"
       class="move-asset-dropdown__trigger"
       :aria-label="t('winterboard.library.moveToFolder')"
@@ -78,6 +79,7 @@ interface Props {
   assetId: number
   currentFolder: number | null
   folders: LibraryFolderTree[]
+  anchorRect?: DOMRect | null
 }
 
 const props = defineProps<Props>()
@@ -128,12 +130,10 @@ function close(): void {
 }
 
 function updateMenuPosition(): void {
-  if (!dropdownRoot.value) return
-  
-  const trigger = dropdownRoot.value.querySelector('.move-asset-dropdown__trigger')
-  if (!trigger) return
-
-  const rect = trigger.getBoundingClientRect()
+  // Use anchor rect from parent (card button position) if available
+  const rect = props.anchorRect
+    ?? dropdownRoot.value?.querySelector('.move-asset-dropdown__trigger')?.getBoundingClientRect()
+  if (!rect) return
   const menuWidth = 220
   const menuMaxHeight = 280
 
@@ -187,6 +187,10 @@ function handleClickOutside(e: MouseEvent): void {
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
+  // Auto-open when parent renders via v-if (triggered by card folder icon click)
+  requestAnimationFrame(() => {
+    open()
+  })
 })
 
 onBeforeUnmount(() => {

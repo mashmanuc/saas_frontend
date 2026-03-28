@@ -285,6 +285,7 @@
       :asset-id="moveTargetAsset.id"
       :current-folder="moveTargetAsset.folder"
       :folders="foldersTree"
+      :anchor-rect="moveAnchorRect"
       @moved="onMoveConfirmed"
       @close="moveTargetAsset = null"
     />
@@ -345,6 +346,7 @@ const ytInputRef = ref<HTMLInputElement | null>(null)
 const viewMode = ref<'grid' | 'list'>('grid')
 // Phase 33 B6: move asset state
 const moveTargetAsset = ref<LibraryAsset | null>(null)
+const moveAnchorRect = ref<DOMRect | null>(null)
 
 // activeFolderId: only real folder IDs (not virtual FAVORITES/RECENT)
 const activeFolderId = computed<number | null>(() => {
@@ -591,8 +593,9 @@ function formatFileSize(bytes: number): string {
 
 // ─── Move asset (Phase 33 B6) ────────────────────────────────────────────────
 
-function showMoveDropdown(asset: LibraryAsset): void {
+function showMoveDropdown(asset: LibraryAsset, anchorRect?: DOMRect): void {
   moveTargetAsset.value = asset
+  moveAnchorRect.value = anchorRect ?? null
 }
 
 function onMoveConfirmed(assetId: number, newFolderId: number | null): void {

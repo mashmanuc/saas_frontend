@@ -37,21 +37,27 @@
             v-for="lesson in activeLessons"
             :key="lesson.id"
             class="wb-hub-card wb-hub-card--active"
+            :class="{ 'wb-hub-card--tutor-waiting': !isTutor && lesson.tutor_is_online }"
           >
             <div class="wb-hub-card__info">
               <span class="wb-hub-card__title">{{ lesson.title }}</span>
               <span class="wb-hub-card__student">
                 {{ isTutor ? lesson.student_name : lesson.tutor_name }}
               </span>
-              <span v-if="lesson.started_at" class="wb-hub-card__meta">
+              <span v-if="!isTutor && lesson.tutor_is_online" class="wb-hub-card__live-badge">
+                <span class="wb-hub-card__live-dot" />
+                {{ t('winterboard.classroomHub.tutorWaiting') }}
+              </span>
+              <span v-else-if="lesson.started_at" class="wb-hub-card__meta">
                 {{ t('winterboard.classroomHub.startedAt', { time: formatTime(lesson.started_at) }) }}
               </span>
             </div>
             <button
-              class="wb-hub-card__btn wb-hub-card__btn--resume"
+              class="wb-hub-card__btn"
+              :class="!isTutor && lesson.tutor_is_online ? 'wb-hub-card__btn--join-now' : 'wb-hub-card__btn--resume'"
               @click="handleResume(lesson)"
             >
-              {{ isTutor ? t('winterboard.classroomHub.resumeLesson') : t('winterboard.classroomHub.joinLesson') }}
+              {{ isTutor ? t('winterboard.classroomHub.resumeLesson') : (lesson.tutor_is_online ? t('winterboard.classroomHub.joinNow') : t('winterboard.classroomHub.joinLesson')) }}
             </button>
           </div>
         </div>
@@ -219,6 +225,7 @@ interface ActiveLesson {
   lesson_type: string
   has_session: boolean
   can_start: boolean
+  tutor_is_online: boolean
 }
 
 interface TemplateSummary {
@@ -258,9 +265,16 @@ const activeLessons = computed(() =>
   lessons.value.filter((l) => l.status === 'IN_PROGRESS'),
 )
 
-const readyLessons = computed(() =>
-  lessons.value.filter((l) => l.can_start || (l.status !== 'IN_PROGRESS' && !l.can_start)),
-)
+const readyLessons = computed(() => {
+  if (isTutor.value) {
+    // Тьютор бачить все, що може стартанути (DRAFT, SCHEDULED, CONFIRMED)
+    return lessons.value.filter((l) => l.can_start)
+  }
+  // Студент бачить тільки SCHEDULED/CONFIRMED — DRAFT = внутрішня кухня тьютора
+  return lessons.value.filter((l) =>
+    l.status === 'SCHEDULED' || l.status === 'CONFIRMED',
+  )
+})
 
 // ─── Data Loading ─────────────────────────────────────────────────────────
 
@@ -276,12 +290,31 @@ async function loadAll(): Promise<void> {
   }
 }
 
-async function loadLessons(): Promise<void> {
+async function loadLessons(silent = false): Promise<void> {
   try {
-    const res = await lessonsApi.getActiveLessons()
-    lessons.value = (res.data?.results ?? res.results ?? []) as ActiveLesson[]
+    const res = await lessonsApi.getActiveLessons({}, { silent })
+    const incoming = (res.data?.results ?? res.results ?? []) as ActiveLesson[]
+
+    // Smart merge: оновлюємо тільки те, що змінилось (уникаємо re-render flash)
+    if (silent && lessons.value.length > 0) {
+      const oldMap = new Map(lessons.value.map(l => [l.id, l]))
+      const changed = incoming.length !== lessons.value.length
+        || incoming.some(l => {
+          const old = oldMap.get(l.id)
+          return !old
+            || old.status !== l.status
+            || old.tutor_is_online !== l.tutor_is_online
+            || old.started_at !== l.started_at
+        })
+      if (!changed) return  // нічого не змінилось — не чіпаємо DOM
+    }
+
+    lessons.value = incoming
   } catch (err) {
-    errorMsg.value = t('winterboard.classroomHub.loadError')
+    // На background refresh не показуємо error — тільки логуємо
+    if (!silent) {
+      errorMsg.value = t('winterboard.classroomHub.loadError')
+    }
     console.error('[WB:Hub] loadLessons failed', err)
   }
 }
@@ -434,8 +467,8 @@ function formatDateTime(iso: string): string {
 
 onMounted(() => {
   loadAll()
-  // Автоматичне оновлення уроків кожні 15 секунд
-  refreshTimer = setInterval(loadLessons, 15_000)
+  // Тихе оновлення уроків кожні 15 секунд (без loader/error flash)
+  refreshTimer = setInterval(() => loadLessons(true), 15_000)
 })
 
 onUnmounted(() => {
@@ -529,6 +562,19 @@ onUnmounted(() => {
   border-left: 4px solid #22c55e;
 }
 
+.wb-hub-card--tutor-waiting {
+  border-left: 4px solid #f59e0b;
+  background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%);
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.2), 0 4px 12px rgba(245, 158, 11, 0.1);
+  animation: wb-pulse-border 2s ease-in-out infinite;
+}
+
+@keyframes wb-pulse-border {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.2), 0 4px 12px rgba(245, 158, 11, 0.1); }
+  50% { box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.3), 0 4px 16px rgba(245, 158, 11, 0.2); }
+}
+
 .wb-hub-card--template {
   border-left: 4px solid #8b5cf6;
 }
@@ -563,6 +609,28 @@ onUnmounted(() => {
   font-size: 13px;
   color: var(--wb-fg-secondary, #94a3b8);
   white-space: nowrap;
+}
+
+.wb-hub-card__live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #d97706;
+}
+
+.wb-hub-card__live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f59e0b;
+  animation: wb-live-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes wb-live-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.3); }
 }
 
 /* ── Buttons ─────────────────────────────────────────────────────────── */
@@ -600,6 +668,23 @@ onUnmounted(() => {
 
 .wb-hub-card__btn--resume:hover {
   background: #16a34a;
+}
+
+.wb-hub-card__btn--join-now {
+  background: #f59e0b;
+  color: #fff;
+  font-size: 14px;
+  padding: 10px 24px;
+  animation: wb-btn-glow 2s ease-in-out infinite;
+}
+
+.wb-hub-card__btn--join-now:hover {
+  background: #d97706;
+}
+
+@keyframes wb-btn-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+  50% { box-shadow: 0 0 12px 4px rgba(245, 158, 11, 0.3); }
 }
 
 .wb-hub-card__btn--template {

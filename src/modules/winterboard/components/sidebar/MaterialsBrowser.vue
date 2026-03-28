@@ -49,6 +49,7 @@
           v-for="asset in assets"
           :key="asset.id"
           :asset="asset"
+          @click="emit('select', asset)"
         />
       </template>
     </div>
@@ -82,8 +83,11 @@ withDefaults(defineProps<Props>(), {
   isTutor: false,
 })
 
+import type { SidebarAsset } from '../../composables/useMaterialsBrowser'
+
 const emit = defineEmits<{
   'upload-request': []
+  'select': [asset: SidebarAsset]
 }>()
 
 // ─── Composables ─────────────────────────────────────────────────────────────

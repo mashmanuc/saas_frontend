@@ -121,6 +121,8 @@ export interface WBClassroomSessionResponse {
   permissions: WBClassroomPermissions
   is_locked: boolean
   locked_by: string | null
+  /** group_id з lesson — для sidebar матеріалів (GroupContentSidebar) */
+  group_id?: string | null
 }
 
 export interface WBConnectedUser {
@@ -439,7 +441,9 @@ export const winterboardApi = {
    */
   getConnectedUsers(sessionId: string): Promise<WBConnectedUser[]> {
     return apiClient
-      .get(`${BASE}/sessions/${sessionId}/participants/`)
+      .get(`${BASE}/sessions/${sessionId}/participants/`, {
+        meta: { skipLoader: true },
+      })
       .then((r: unknown) => {
         const data = (r as { data: WBConnectedUser[] | { results: WBConnectedUser[] } }).data ?? r
         return Array.isArray(data) ? data : (data as { results: WBConnectedUser[] }).results ?? []

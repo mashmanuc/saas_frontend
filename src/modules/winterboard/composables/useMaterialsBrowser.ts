@@ -28,6 +28,8 @@ export interface SidebarAsset {
   filename: string
   cdn_url: string
   thumbnail_url?: string
+  /** ContentItem PK для додавання до уроку через LessonAllowedContent */
+  content_item_id?: number | null
 }
 
 function toSidebarAsset(a: LibraryAsset): SidebarAsset {
@@ -36,6 +38,7 @@ function toSidebarAsset(a: LibraryAsset): SidebarAsset {
     filename: a.name,
     cdn_url: a.cdn_url,
     thumbnail_url: a.thumbnail_url || undefined,
+    content_item_id: a.content_item_id ?? null,
   }
 }
 
