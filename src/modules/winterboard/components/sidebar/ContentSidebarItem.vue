@@ -2,11 +2,11 @@
   <div
     class="sidebar-item"
     :class="{
-      'sidebar-item--processing': !isReady,
+      'sidebar-item--processing': !isReady && !isPlayableMedia,
       'sidebar-item--failed': item.processing_status === 'failed',
       'sidebar-item--pdf': isPdf || isPresentation || isDocx,
     }"
-    :draggable="isTutor && isReady && !isPresentation && !isDocx"
+    :draggable="isTutor && isInteractable && !isPresentation && !isDocx"
     @dragstart="onDragStart"
     @dragend="onDragEnd"
     @click="handleClick"
@@ -57,7 +57,7 @@
     </span>
 
     <!-- Phase 11 B7: Drag hint overlay -->
-    <span v-if="isTutor && isReady && !isPresentation && !isPdf && !isDocx" class="sidebar-item__drag-hint">
+    <span v-if="isTutor && isInteractable && !isPresentation && !isPdf && !isDocx" class="sidebar-item__drag-hint">
       ↗
     </span>
 
@@ -128,6 +128,15 @@ const isReady = computed(() =>
   !props.item.processing_status || props.item.processing_status === 'ready',
 )
 
+// Audio/video можна відтворювати та перетягувати навіть без завершення processing
+// (processing лише витягує thumbnail, файл вже playable одразу після upload)
+const isPlayableMedia = computed(() =>
+  props.item.asset_category === 'audio' || props.item.asset_category === 'video',
+)
+
+// Доступний для drag/dblclick: або повністю ready, або playable media (pending допустимий)
+const isInteractable = computed(() => isReady.value || isPlayableMedia.value)
+
 const isPdf = computed(() => props.item.asset_category === 'pdf')
 const isPresentation = computed(() => props.item.asset_category === 'presentation')
 const isDocx = computed(() => props.item.asset_category === 'document')
@@ -164,14 +173,14 @@ function handleClick() {
 }
 
 function handleDblClick() {
-  if (!isReady.value || !props.isTutor) return
+  if (!isInteractable.value || !props.isTutor) return
   if (isPdf.value || isPresentation.value || isDocx.value) return // uses click → selector
   emit('place', props.item)
 }
 
 
 function onDragStart(e: DragEvent) {
-  if (!props.isTutor || !isReady.value) {
+  if (!props.isTutor || !isInteractable.value) {
     e.preventDefault()
     return
   }

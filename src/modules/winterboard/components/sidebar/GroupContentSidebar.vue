@@ -16,6 +16,26 @@
     <!-- Phase 3.1: Storage quota bar -->
     <StorageQuotaBar v-if="isTutor" :quota="storageQuota" />
 
+    <!-- Folder tree (library mode only) -->
+    <template v-if="!groupId">
+      <div v-if="isFoldersPanelOpen" class="content-sidebar__folders">
+        <LibraryFolderTree
+          :folders="folders"
+          :selected-id="selectedFolderId"
+          :loading="isLoadingFolders"
+          @select="handleFolderSelect"
+        />
+      </div>
+      <button
+        type="button"
+        class="content-sidebar__folders-toggle"
+        @click="isFoldersPanelOpen = !isFoldersPanelOpen"
+      >
+        <FolderIcon :size="14" />
+        {{ isFoldersPanelOpen ? t('winterboard.materials.hideFolders') : t('winterboard.materials.showFolders') }}
+      </button>
+    </template>
+
     <!-- Header -->
     <div class="content-sidebar__header">
       <span class="content-sidebar__title">
@@ -115,13 +135,17 @@
 <script setup lang="ts">
 import { ref, computed, toRef, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { FolderIcon } from 'lucide-vue-next'
 import { useGroupSidebar } from '../../composables/useGroupSidebar'
 import { useWBStore } from '../../board/state/boardStore'
+import { fetchFoldersTree } from '../../api/library'
 import ContentSidebarItem from './ContentSidebarItem.vue'
+import LibraryFolderTree from '../library/LibraryFolderTree.vue'
 import StorageQuotaBar from '@/modules/learning-content/components/StorageQuotaBar.vue'
 import { learningContentApi } from '@/modules/learning-content/api/learningContentApi'
 import type { StorageQuota } from '@/modules/learning-content/api/learningContentApi'
 import type { AssetCategoryGroup, AllowedContentItem } from '../../types/sidebar'
+import type { LibraryFolderTree as LibraryFolderTreeType } from '../../types/library'
 
 // Phase 38: module-level кеш quota щоб не дублювати запит при remount sidebar
 let _quotaCache: StorageQuota | null = null
@@ -150,8 +174,31 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const sidebar = useGroupSidebar(toRef(props, 'groupId'))
+
+// ── Folder navigation (library mode only) ──
+const selectedFolderId = ref<number | null>(null)
+const folders = ref<LibraryFolderTreeType[]>([])
+const isLoadingFolders = ref(false)
+const isFoldersPanelOpen = ref(false)
+
+const sidebar = useGroupSidebar(toRef(props, 'groupId'), selectedFolderId)
 const wbStore = useWBStore()
+
+function handleFolderSelect(id: number | null) {
+  selectedFolderId.value = id
+}
+
+async function loadFolders() {
+  if (props.groupId) return // папки тільки в library mode
+  isLoadingFolders.value = true
+  try {
+    folders.value = await fetchFoldersTree()
+  } catch (e) {
+    console.warn('[GroupContentSidebar] Failed to load folders:', e)
+  } finally {
+    isLoadingFolders.value = false
+  }
+}
 
 // ── Filter + Search state ──
 const activeFilter = ref<string>('all')
@@ -209,7 +256,10 @@ async function loadQuota() {
   }
 }
 
-onMounted(loadQuota)
+onMounted(() => {
+  loadQuota()
+  loadFolders()
+})
 
 function handleFileInput(e: Event) {
   const files = Array.from((e.target as HTMLInputElement).files ?? [])
@@ -239,6 +289,35 @@ function onDrop(e: DragEvent) {
 </script>
 
 <style scoped>
+/* ── Folder panel (library mode) ── */
+.content-sidebar__folders {
+  flex-shrink: 0;
+  max-height: 35%;
+  overflow-y: auto;
+  border-bottom: 1px solid var(--wb-border-color, #e5e7eb);
+  padding: 8px 0;
+}
+.content-sidebar__folders-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: none;
+  border-bottom: 1px solid var(--wb-border-color, #e5e7eb);
+  background: var(--wb-sidebar-bg, #ffffff);
+  color: var(--wb-text-secondary, #6b7280);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  width: 100%;
+  text-align: left;
+}
+.content-sidebar__folders-toggle:hover {
+  background: var(--wb-hover-bg, #f3f4f6);
+  color: var(--wb-text-primary, #111827);
+}
+
 /* ── Base sidebar ── */
 .content-sidebar {
   display: flex;

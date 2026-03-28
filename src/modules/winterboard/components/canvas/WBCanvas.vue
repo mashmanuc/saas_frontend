@@ -232,26 +232,12 @@
           left: `${asset.x * props.zoom}px`,
           top: `${asset.y * props.zoom}px`,
           width: `${asset.w * props.zoom}px`,
+          height: asset.type !== 'audio_player' ? `${asset.h * props.zoom}px` : undefined,
         }"
         @mousedown.stop
         @click.stop
         @pointerdown.stop="handleMediaPointerDown(asset, $event)"
       >
-        <!-- Drag/select handle strip at top — visible in select mode -->
-        <div
-          v-if="currentTool === 'select'"
-          class="wb-media-drag-handle"
-          title="Перетягніть, щоб перемістити"
-        >
-          <svg width="20" height="10" viewBox="0 0 20 10" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <circle cx="4" cy="3" r="1.5" fill="currentColor"/>
-            <circle cx="10" cy="3" r="1.5" fill="currentColor"/>
-            <circle cx="16" cy="3" r="1.5" fill="currentColor"/>
-            <circle cx="4" cy="8" r="1.5" fill="currentColor"/>
-            <circle cx="10" cy="8" r="1.5" fill="currentColor"/>
-            <circle cx="16" cy="8" r="1.5" fill="currentColor"/>
-          </svg>
-        </div>
         <AudioPlayerObject
           v-if="asset.type === 'audio_player'"
           :obj="asAudioAsset(asset)"
@@ -271,6 +257,23 @@
           :obj="asYouTubeAsset(asset)"
           :is-tutor="props.isTutor !== false"
         />
+        <!-- Transparent drag surface — covers video/youtube in select mode for drag -->
+        <!-- Video controls work when NOT in select mode (pen, draw, etc.) -->
+        <div
+          v-if="currentTool === 'select' && (asset.type === 'video_player' || asset.type === 'youtube_player')"
+          class="wb-media-drag-surface"
+        />
+        <!-- Resize handles for video/youtube (visible when selected in select mode) -->
+        <template v-if="isResizableMedia(asset) && wbStore.selectedIds.includes(asset.id) && currentTool === 'select'">
+          <div
+            v-for="corner in RESIZE_CORNERS"
+            :key="corner.name"
+            class="wb-media-resize-handle"
+            :class="`wb-media-resize-handle--${corner.name}`"
+            :style="{ cursor: corner.cursor }"
+            @pointerdown.stop.prevent="handleMediaResizeStart(asset, corner.name, $event)"
+          />
+        </template>
       </div>
     </template>
 
@@ -827,25 +830,20 @@ const konvaShapePreview = computed<{ type: string; config: Record<string, unknow
   return { type: '', config: {} }
 })
 
-// WOW transformer — premium Figma/Miro-like selection handles
+// Soft selection transformer — indigo palette, subtle handles
 const transformerConfig = computed(() => ({
-  // Handle size & shape
-  anchorSize: 11,
-  anchorCornerRadius: 3,
-  // Handle colors — white fill with vivid blue border
+  anchorSize: 9,
+  anchorCornerRadius: 2,
   anchorFill: '#ffffff',
-  anchorStroke: '#3b82f6',
-  anchorStrokeWidth: 2,
-  // Selection border — solid vivid blue (not dashed)
-  borderStroke: '#3b82f6',
-  borderStrokeWidth: 1.5,
-  // Breathing room between node and handles
-  padding: 4,
-  // Shadow/glow on anchors
-  anchorShadowColor: 'rgba(59, 130, 246, 0.45)',
-  anchorShadowBlur: 8,
+  anchorStroke: 'rgba(99, 102, 241, 0.7)',
+  anchorStrokeWidth: 1.5,
+  borderStroke: 'rgba(99, 102, 241, 0.45)',
+  borderStrokeWidth: 1,
+  padding: 3,
+  anchorShadowColor: 'rgba(99, 102, 241, 0.2)',
+  anchorShadowBlur: 6,
   anchorShadowOffsetX: 0,
-  anchorShadowOffsetY: 2,
+  anchorShadowOffsetY: 1,
   rotateEnabled: true,
   keepRatio: true,
   enabledAnchors: [
@@ -855,7 +853,7 @@ const transformerConfig = computed(() => ({
   ],
 }))
 
-// v5 A1: Selection rect (rubber band) — WOW design: glowing vivid blue
+// Selection rect (rubber band) — soft indigo
 const selectionRectConfig = computed(() => {
   const rect = wbStore.selectionRect
   if (!rect) return null
@@ -864,13 +862,13 @@ const selectionRectConfig = computed(() => {
     y: rect.y,
     width: rect.width,
     height: rect.height,
-    fill: 'rgba(59, 130, 246, 0.10)',
-    stroke: '#3b82f6',
-    strokeWidth: 1.5 / props.zoom,
+    fill: 'rgba(99, 102, 241, 0.06)',
+    stroke: 'rgba(99, 102, 241, 0.45)',
+    strokeWidth: 1 / props.zoom,
     dash: [5 / props.zoom, 3 / props.zoom],
     cornerRadius: 2 / props.zoom,
-    shadowColor: 'rgba(59, 130, 246, 0.3)',
-    shadowBlur: 8 / props.zoom,
+    shadowColor: 'rgba(99, 102, 241, 0.15)',
+    shadowBlur: 6 / props.zoom,
     shadowOffsetX: 0,
     shadowOffsetY: 0,
     listening: false,
@@ -887,22 +885,21 @@ const selectionIndicators = computed(() => {
   if (!page) return []
 
   const indicators: Array<{ key: string; config: Record<string, unknown> }> = []
-  const pad = 5 / props.zoom
-  const sw = 2 / props.zoom
-  const glow = 8 / props.zoom
+  const pad = 4 / props.zoom
+  const sw = 1.5 / props.zoom
+  const glow = 10 / props.zoom
 
-  // Shared WOW config for selection border
+  // Soft selection indicator — indigo glow, barely-there border
   const selConfig = (x: number, y: number, w: number, h: number) => ({
     x: x - pad,
     y: y - pad,
     width: w + pad * 2,
     height: h + pad * 2,
     cornerRadius: 3 / props.zoom,
-    stroke: '#3b82f6',
+    stroke: 'rgba(99, 102, 241, 0.4)',
     strokeWidth: sw,
-    fill: 'rgba(59, 130, 246, 0.05)',
-    // Glow/shadow for the "premium" feel
-    shadowColor: 'rgba(59, 130, 246, 0.5)',
+    fill: 'rgba(99, 102, 241, 0.03)',
+    shadowColor: 'rgba(99, 102, 241, 0.25)',
     shadowBlur: glow,
     shadowOffsetX: 0,
     shadowOffsetY: 0,
@@ -922,7 +919,7 @@ const selectionIndicators = computed(() => {
   for (const asset of page.assets) {
     if (!ids.has(asset.id)) continue
     // Media assets get CSS ring from wb-media-overlay--selected, skip Konva indicator for them
-    if (asset.type === 'audio_player' || asset.type === 'video_player') continue
+    if (asset.type === 'audio_player' || asset.type === 'video_player' || asset.type === 'youtube_player') continue
     const bbox = getAssetBBox(asset)
     indicators.push({
       key: `sel-${asset.id}`,
@@ -1030,7 +1027,7 @@ const stickyEditStyle = computed(() => {
     fontSize: `${(asset.fontSize || 14) * props.zoom}px`,
     color: asset.textColor || '#1e293b',
     backgroundColor: asset.bgColor || '#fde047',
-    border: '2px solid #3b82f6',
+    border: '1.5px solid rgba(99, 102, 241, 0.5)',
     borderRadius: '4px',
     padding: '8px',
     resize: 'none' as const,
@@ -1887,6 +1884,104 @@ async function handleDrop(e: DragEvent): Promise<void> {
 
 // A4.3: Image paste — now handled by useBoardClipboard composable in Room views
 
+// ─── Media Overlay: Resize ───────────────────────────────────────────────────
+
+const RESIZE_CORNERS = [
+  { name: 'top-left', cursor: 'nwse-resize' },
+  { name: 'top-right', cursor: 'nesw-resize' },
+  { name: 'bottom-left', cursor: 'nesw-resize' },
+  { name: 'bottom-right', cursor: 'nwse-resize' },
+] as const
+
+function isResizableMedia(asset: WBAsset): boolean {
+  return asset.type === 'video_player' || asset.type === 'youtube_player'
+}
+
+const MIN_MEDIA_SIZE = 160 // мінімальний розмір (px) для відео/YouTube
+
+/**
+ * Pointer-based resize для media overlays (video/youtube).
+ * Зберігає aspect ratio (16:9 або поточні пропорції).
+ */
+function handleMediaResizeStart(asset: WBAsset, corner: string, e: PointerEvent): void {
+  const startX = e.clientX
+  const startY = e.clientY
+  const startW = asset.w
+  const startH = asset.h
+  const startAx = asset.x
+  const startAy = asset.y
+  const aspectRatio = startW / startH
+  const zoom = props.zoom || 1
+
+  const el = (e.target as HTMLElement).closest('.wb-media-overlay') as HTMLElement
+  if (!el) return
+
+  function onPointerMove(ev: PointerEvent) {
+    const dx = (ev.clientX - startX) / zoom
+    const dy = (ev.clientY - startY) / zoom
+
+    let newW = startW
+    let newH = startH
+    let newX = startAx
+    let newY = startAy
+
+    // Визначаємо delta по домінуючій вісі та зберігаємо aspect ratio
+    if (corner === 'bottom-right') {
+      newW = Math.max(MIN_MEDIA_SIZE, startW + dx)
+      newH = newW / aspectRatio
+    } else if (corner === 'bottom-left') {
+      newW = Math.max(MIN_MEDIA_SIZE, startW - dx)
+      newH = newW / aspectRatio
+      newX = startAx + (startW - newW)
+    } else if (corner === 'top-right') {
+      newW = Math.max(MIN_MEDIA_SIZE, startW + dx)
+      newH = newW / aspectRatio
+      newY = startAy + (startH - newH)
+    } else if (corner === 'top-left') {
+      newW = Math.max(MIN_MEDIA_SIZE, startW - dx)
+      newH = newW / aspectRatio
+      newX = startAx + (startW - newW)
+      newY = startAy + (startH - newH)
+    }
+
+    // Оновити DOM напряму для smooth UX
+    el.style.width = `${newW * zoom}px`
+    el.style.height = `${newH * zoom}px`
+    el.style.left = `${newX * zoom}px`
+    el.style.top = `${newY * zoom}px`
+  }
+
+  function onPointerUp(ev: PointerEvent) {
+    document.removeEventListener('pointermove', onPointerMove)
+
+    const dx = (ev.clientX - startX) / zoom
+    let newW = startW
+    let newX = startAx
+    let newY = startAy
+
+    if (corner === 'bottom-right') {
+      newW = Math.max(MIN_MEDIA_SIZE, startW + dx)
+    } else if (corner === 'bottom-left') {
+      newW = Math.max(MIN_MEDIA_SIZE, startW - dx)
+      newX = startAx + (startW - newW)
+    } else if (corner === 'top-right') {
+      newW = Math.max(MIN_MEDIA_SIZE, startW + dx)
+    } else if (corner === 'top-left') {
+      newW = Math.max(MIN_MEDIA_SIZE, startW - dx)
+      newX = startAx + (startW - newW)
+    }
+    const newH = newW / aspectRatio
+    if (corner === 'top-right' || corner === 'top-left') {
+      newY = startAy + (startH - newH)
+    }
+
+    emit('asset-update', { ...asset, w: Math.round(newW), h: Math.round(newH), x: newX, y: newY })
+  }
+
+  document.addEventListener('pointermove', onPointerMove)
+  document.addEventListener('pointerup', onPointerUp, { once: true })
+}
+
 // ─── Media Overlay: Drag + Select ───────────────────────────────────────────
 
 /**
@@ -1904,9 +1999,9 @@ function handleMediaPointerDown(asset: WBAsset, e: PointerEvent): void {
 
   if (currentTool.value !== 'select') return
 
-  // Don't initiate drag when clicking native audio/video controls or buttons
+  // Don't initiate drag when clicking native media controls or buttons
   const target = e.target as HTMLElement
-  if (target.closest('audio, video, button, input, select, [role="button"]')) {
+  if (target.closest('audio, button, input, select, [role="button"]')) {
     // Just select, don't drag
     wbStore.selectItems([asset.id])
     selectedNode.value = null
@@ -2953,8 +3048,8 @@ defineExpose({
 }
 
 .wb-canvas:focus {
-  outline: 2px solid var(--color-brand, #2563eb);
-  outline-offset: -2px;
+  outline: 1.5px solid rgba(99, 102, 241, 0.3);
+  outline-offset: -1px;
 }
 
 .wb-preview-canvas {
@@ -3001,7 +3096,7 @@ defineExpose({
 .wb-text-edit-overlay {
   position: absolute;
   background: white;
-  border: 2px solid var(--color-brand, #2563eb);
+  border: 1.5px solid rgba(99, 102, 241, 0.4);
   padding: 8px;
   min-width: 150px;
   min-height: 32px;
@@ -3009,8 +3104,8 @@ defineExpose({
   outline: none;
   font-family: system-ui, -apple-system, sans-serif;
   z-index: 1000;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  border-radius: 4px;
+  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.12), 0 1px 4px rgba(0, 0, 0, 0.08);
+  border-radius: 6px;
 }
 
 /* v5 A4: Laser pointer cursor classes */
@@ -3090,48 +3185,64 @@ defineExpose({
   position: absolute;
   z-index: 20;
   transform-origin: top left;
-  border-radius: 8px;
-  overflow: visible; /* allow selection ring to show outside bounds */
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
-  transition: box-shadow 0.15s ease;
+  border-radius: 10px;
+  overflow: visible;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  transition: box-shadow 0.2s ease;
 }
 .wb-media-overlay--selectable {
   cursor: default;
 }
 .wb-media-overlay--selectable:hover {
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(59, 130, 246, 0.3);
-}
-/* WOW selection ring — glowing blue border around selected media asset */
-.wb-media-overlay--selected {
-  outline: 2.5px solid #3b82f6;
-  outline-offset: 3px;
-  border-radius: 10px;
   box-shadow:
-    0 0 0 5px rgba(59, 130, 246, 0.18),
-    0 4px 24px rgba(59, 130, 246, 0.25),
-    0 2px 12px rgba(0, 0, 0, 0.18);
+    0 4px 16px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+/* Soft selection — subtle glow, NO harsh outline */
+.wb-media-overlay--selected {
+  box-shadow:
+    0 0 0 1.5px rgba(99, 102, 241, 0.35),
+    0 4px 20px rgba(99, 102, 241, 0.15),
+    0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* Drag handle strip at top of media overlay */
-.wb-media-drag-handle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 18px;
-  background: linear-gradient(to bottom, rgba(241, 245, 249, 0.95), rgba(226, 232, 240, 0.9));
-  border-bottom: 1px solid rgba(203, 213, 225, 0.6);
+/* Resize handles — subtle, appear only on hover/selected */
+.wb-media-resize-handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1.5px solid rgba(99, 102, 241, 0.5);
+  border-radius: 50%;
+  z-index: 30;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: transform 0.12s, border-color 0.12s, background 0.12s;
+  opacity: 0;
+}
+.wb-media-overlay--selected .wb-media-resize-handle {
+  opacity: 1;
+}
+.wb-media-resize-handle:hover {
+  transform: scale(1.3);
+  background: #fff;
+  border-color: rgba(99, 102, 241, 0.8);
+  box-shadow: 0 1px 6px rgba(99, 102, 241, 0.3);
+}
+.wb-media-resize-handle--top-left { top: -5px; left: -5px; }
+.wb-media-resize-handle--top-right { top: -5px; right: -5px; }
+.wb-media-resize-handle--bottom-left { bottom: -5px; left: -5px; }
+.wb-media-resize-handle--bottom-right { bottom: -5px; right: -5px; }
+
+/* Transparent drag surface — covers video/youtube in select mode */
+/* Captures pointer events for drag, prevents video controls from blocking move */
+.wb-media-drag-surface {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
   cursor: grab;
-  color: #94a3b8;
-  border-radius: 8px 8px 0 0;
-  user-select: none;
-  transition: background 0.1s, color 0.1s;
+  background: transparent;
 }
-.wb-media-drag-handle:hover {
-  background: linear-gradient(to bottom, rgba(219, 234, 254, 0.95), rgba(191, 219, 254, 0.9));
-  color: #3b82f6;
-}
-.wb-media-drag-handle:active,
-.wb-media-overlay--selected .wb-media-drag-handle {
+.wb-media-drag-surface:active {
   cursor: grabbing;
 }
 </style>

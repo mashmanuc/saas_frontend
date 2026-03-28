@@ -1,7 +1,7 @@
 import { ref, computed, watch, onUnmounted, type Ref } from 'vue'
 import { groupApi as learningGroupApi } from '@/modules/groups/api/groupApi'
 import { learningContentApi } from '@/modules/learning-content/api/learningContentApi'
-import { fetchAssets } from '@/modules/winterboard/api/library'
+import { fetchAssets, fetchRecentAssets } from '@/modules/winterboard/api/library'
 import type { LibraryAsset } from '@/modules/winterboard/types/library'
 import type { AllowedContentItem, AssetCategoryGroup } from '../types/sidebar'
 import { SIDEBAR_DRAG_MIME } from '../types/boardDrop'
@@ -27,7 +27,7 @@ const POLL_INTERVAL_MS = 4000
  * Loads materials from LearningGroup API and adapts them to AllowedContentItem format.
  * Used by WBSoloRoom when navigated from Knowledge Library with ?groupId=...
  */
-export function useGroupSidebar(groupId: Ref<string | null>) {
+export function useGroupSidebar(groupId: Ref<string | null>, folderId?: Ref<number | null>) {
   const items = ref<AllowedContentItem[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
@@ -113,14 +113,17 @@ export function useGroupSidebar(groupId: Ref<string | null>) {
   /** Phase 38: guard проти дублювання запитів */
   let loadInFlight = false
   let lastLoadedGroupId: string | null | undefined = undefined
+  let lastLoadedFolderId: number | null | undefined = undefined
 
   async function load() {
-    // Dedup: не перевантажувати якщо groupId не змінився і дані вже є
+    // Dedup: не перевантажувати якщо groupId+folderId не змінились і дані вже є
+    const curFolder = folderId?.value ?? null
     if (loadInFlight) return
-    if (groupId.value === lastLoadedGroupId && items.value.length > 0) return
+    if (groupId.value === lastLoadedGroupId && curFolder === lastLoadedFolderId && items.value.length > 0) return
 
     loadInFlight = true
     lastLoadedGroupId = groupId.value
+    lastLoadedFolderId = curFolder
     isLoading.value = true
     error.value = null
     try {
@@ -143,7 +146,16 @@ export function useGroupSidebar(groupId: Ref<string | null>) {
         startPolling()
       } else {
         // Library mode: no group context — show tutor's files from Library
-        const res = await fetchAssets({ limit: 100 })
+        let res: import('../types/library').LibraryAssetListResponse
+        if (curFolder === -2) {
+          // Recent assets (virtual folder)
+          res = { results: await fetchRecentAssets(), count: 0 }
+        } else {
+          const query: Record<string, unknown> = { limit: 100 }
+          if (curFolder && curFolder > 0) query.folder = curFolder
+          if (curFolder === -1) query.favorite = true
+          res = await fetchAssets(query as import('../types/library').LibraryAssetsQuery)
+        }
         items.value = (res.results ?? []).map((a: LibraryAsset) => {
           // Phase 9: content_item_id = null для старих активів без ContentItem FK.
           // НЕ підставляємо a.id як fallback — це LibraryAsset.id, не ContentItem.id,
@@ -175,6 +187,7 @@ export function useGroupSidebar(groupId: Ref<string | null>) {
   /** Примусове перезавантаження (наприклад після upload) */
   function reload() {
     lastLoadedGroupId = undefined
+    lastLoadedFolderId = undefined
     return load()
   }
 
@@ -182,6 +195,17 @@ export function useGroupSidebar(groupId: Ref<string | null>) {
     lastLoadedGroupId = undefined // groupId змінився — дозволити load
     load()
   }, { immediate: true })
+
+  // Перезавантажити при зміні папки (library mode)
+  if (folderId) {
+    watch(folderId, () => {
+      if (!groupId.value) {
+        lastLoadedFolderId = undefined
+        lastLoadedGroupId = undefined
+        load()
+      }
+    })
+  }
 
   const grouped = computed(() => {
     const groups: Record<AssetCategoryGroup, AllowedContentItem[]> = {

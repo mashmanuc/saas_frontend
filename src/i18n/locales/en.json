@@ -6373,7 +6373,8 @@
       "play": "Play",
       "pause": "Pause",
       "playing": "▶ Playing",
-      "paused": "⏹ Paused"
+      "paused": "⏹ Paused",
+      "loadError": "Failed to load video"
     },
     "contentSidebar": {
       "loading": "Loading materials...",

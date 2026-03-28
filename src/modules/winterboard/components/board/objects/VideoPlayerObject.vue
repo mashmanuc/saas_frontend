@@ -1,7 +1,7 @@
 <template>
   <div
     class="video-object"
-    :style="{ width: obj.w + 'px', height: obj.h + 'px' }"
+    :style="{ width: '100%', height: '100%' }"
   >
     <video
       ref="videoEl"
@@ -9,43 +9,34 @@
       :poster="obj.thumbnail || undefined"
       class="video-object__video"
       preload="metadata"
+      controls
+      controlslist="nodownload"
+      playsinline
       @ended="onEnded"
+      @loadedmetadata="onLoadedMeta"
+      @error="onVideoError"
     />
 
-    <div class="video-object__controls">
-      <!-- Tutor: play/pause button -->
-      <button
-        v-if="isTutor"
-        type="button"
-        class="video-object__btn"
-        :aria-label="isPlaying ? t('winterboard.video.pause') : t('winterboard.video.play')"
-        @click="toggle"
-      >
-        {{ isPlaying ? '⏸' : '▶️' }}
-      </button>
-
-      <!-- Student: status only -->
-      <span v-else class="video-object__status">
-        {{ isPlaying ? t('winterboard.video.playing') : t('winterboard.video.paused') }}
-      </span>
-
-      <!-- Position display -->
-      <span v-if="obj.duration" class="video-object__time">
-        {{ formatTime(currentPosition) }} / {{ formatTime(obj.duration) }}
+    <!-- Fallback: показуємо якщо src пустий або відео не завантажилось -->
+    <div v-if="!obj.src || hasError" class="video-object__fallback">
+      <svg width="48" height="48" viewBox="0 0 20 20" fill="none">
+        <rect x="2" y="4" width="11" height="12" rx="2" fill="#3b82f6"/>
+        <path d="M13 8l5-2.5v9L13 12V8z" fill="#3b82f6"/>
+      </svg>
+      <span v-if="hasError" class="video-object__error-text">
+        {{ t('winterboard.video.loadError') }}
       </span>
     </div>
 
-    <!-- Tutor: seek bar -->
-    <input
-      v-if="isTutor && obj.duration"
-      type="range"
-      class="video-object__seek"
-      :min="0"
-      :max="obj.duration"
-      :step="0.5"
-      :value="currentPosition"
-      @input="onSeek"
-    />
+    <!-- Title bar -->
+    <div v-if="obj.title" class="video-object__title">
+      {{ obj.title }}
+    </div>
+
+    <!-- Sync overlay для classroom mode (WS) -->
+    <div v-if="!isTutor && syncState.playing" class="video-object__sync-indicator">
+      {{ t('winterboard.video.playing') }}
+    </div>
   </div>
 </template>
 
@@ -66,6 +57,7 @@ const props = defineProps<{
 
 const { t } = useI18n()
 const videoEl = ref<HTMLVideoElement>()
+const hasError = ref(false)
 
 // ── State from WS sync ──────────────────────────────────────
 
@@ -73,9 +65,8 @@ const syncState = computed(() =>
   props.videoStates[props.obj.id] || { playing: false, position: 0, serverTimestamp: 0 }
 )
 const isPlaying = computed(() => syncState.value.playing)
-const currentPosition = ref(0)
 
-// ── Sync video element with WS state ────────────────────────
+// ── Sync video element with WS state (classroom mode) ───────
 
 watch(isPlaying, (playing) => {
   const el = videoEl.value
@@ -93,17 +84,33 @@ watch(() => syncState.value.position, (pos) => {
   if (Math.abs(el.currentTime - pos) > 0.5) {
     el.currentTime = pos
   }
-  currentPosition.value = pos
 })
 
-// ── Local position tracking ─────────────────────────────────
+// ── Event handlers ──────────────────────────────────────────
+
+function onEnded(): void {
+  if (props.isTutor) {
+    props.sendPause(props.obj.id)
+  }
+}
+
+function onLoadedMeta(): void {
+  hasError.value = false
+}
+
+function onVideoError(): void {
+  hasError.value = true
+}
+
+// ── Local position tracking (for WS sync broadcast) ────────
 
 let positionTimer: ReturnType<typeof setInterval> | null = null
 
 onMounted(() => {
   positionTimer = setInterval(() => {
-    if (videoEl.value && isPlaying.value) {
-      currentPosition.value = videoEl.value.currentTime
+    if (videoEl.value && !videoEl.value.paused) {
+      // Якщо tutor — broadcast position для студентів
+      // (handled by parent via sendPlay/sendSeek)
     }
   }, 250)
 })
@@ -112,35 +119,12 @@ onUnmounted(() => {
   if (positionTimer) clearInterval(positionTimer)
 })
 
-// ── Tutor actions ───────────────────────────────────────────
-
-function toggle(): void {
-  if (isPlaying.value) {
-    props.sendPause(props.obj.id)
-  } else {
-    props.sendPlay(props.obj.id, videoEl.value?.currentTime ?? 0)
-  }
-}
-
-function onSeek(event: Event): void {
-  const value = parseFloat((event.target as HTMLInputElement).value)
-  props.sendSeek(props.obj.id, value)
-}
-
-function onEnded(): void {
-  if (props.isTutor) {
-    props.sendPause(props.obj.id)
-  }
-}
-
 // ── Helpers ─────────────────────────────────────────────────
 
-function formatTime(seconds: number | undefined): string {
-  if (!seconds) return '0:00'
-  const m = Math.floor(seconds / 60)
-  const s = Math.floor(seconds % 60)
-  return `${m}:${String(s).padStart(2, '0')}`
-}
+// Expose для зовнішнього контролю (classroom sync)
+defineExpose({
+  videoEl,
+})
 </script>
 
 <style scoped>
@@ -154,51 +138,62 @@ function formatTime(seconds: number | undefined): string {
 }
 .video-object__video {
   width: 100%;
-  flex: 1;
+  height: 100%;
   object-fit: contain;
   background: #000;
+  border-radius: 8px;
 }
-.video-object__controls {
+/* Приховати відео елемент якщо є fallback */
+.video-object__video[src=""],
+.video-object__video:not([src]) {
+  display: none;
+}
+.video-object__fallback {
+  position: absolute;
+  inset: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  background: rgba(0, 0, 0, 0.7);
-  color: #fff;
+  justify-content: center;
+  gap: 12px;
+  background: #1e293b;
+  color: #94a3b8;
+  font-size: 13px;
+}
+.video-object__error-text {
+  color: #f87171;
   font-size: 12px;
 }
-.video-object__btn {
-  background: none;
-  border: none;
-  font-size: 18px;
-  cursor: pointer;
-  padding: 2px;
-  line-height: 1;
+.video-object__title {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 6px 10px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, transparent 100%);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
 }
-.video-object__status {
-  font-size: 11px;
-  color: #94a3b8;
+.video-object:hover .video-object__title {
+  opacity: 1;
 }
-.video-object__time {
-  margin-left: auto;
-  font-variant-numeric: tabular-nums;
-  color: #cbd5e1;
-  font-size: 11px;
-}
-.video-object__seek {
-  width: 100%;
-  height: 4px;
-  -webkit-appearance: none;
-  appearance: none;
-  background: #374151;
-  outline: none;
-  cursor: pointer;
-}
-.video-object__seek::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: #3b82f6;
+.video-object__sync-indicator {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 2px 8px;
+  background: rgba(34, 197, 94, 0.8);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 4px;
+  pointer-events: none;
 }
 </style>

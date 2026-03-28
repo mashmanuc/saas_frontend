@@ -218,7 +218,7 @@
       </aside>
 
       <!-- Canvas area -->
-      <div id="wb-canvas" ref="canvasContainerRef" class="wb-solo-room__canvas" :class="{ 'wb-solo-room__canvas--with-sidebar': showMaterialsSidebar }" tabindex="-1" @dragover.prevent @drop="contentDrop.handleCanvasDrop($event)" @click="onCanvasContainerClick">
+      <div id="wb-canvas" ref="canvasContainerRef" class="wb-solo-room__canvas" :class="{ 'wb-solo-room__canvas--with-sidebar': showMaterialsSidebar }" tabindex="-1" @dragover.prevent @drop="contentDrop.handleCanvasDrop($event)" @click="onCanvasContainerClick" @mouseup="onCanvasContainerMouseUp">
         <!-- B6.2: Loading state -->
         <Transition name="wb-fade">
           <WBCanvasLoader v-if="isLoading" />
@@ -308,24 +308,19 @@
         <div class="wb-solo-room__resize-grip" />
       </div>
 
-      <!-- Phase 34 B5: Right sidebar - Properties (when selected) or Materials (when empty) -->
+      <!-- Right sidebar — always shows materials (selection toolbar handles object actions inline) -->
       <aside
         v-if="showMaterialsSidebar"
         class="wb-solo-room__content-sidebar"
         :style="sidebarStyle"
       >
-        <!-- Phase 37: Test object properties -->
+        <!-- Phase 37: Test object properties (тест-режим потребує окремої панелі) -->
         <TestObjectProperties
           v-if="testStore.testMode && selectedTestObject"
           :object="selectedTestObject"
           :is-locked="!!selectedTestObject.locked"
           @update="handleTestObjectUpdate"
           @delete="handleTestObjectDelete"
-        />
-        <PropertiesPanel
-          v-else-if="store.hasSelection"
-          :store="store"
-          @delete-selected="handleMultiDeleteConfirm"
         />
         <GroupContentSidebar
           v-else
@@ -725,7 +720,7 @@ import WBShareDialog from '../components/sharing/WBShareDialog.vue'
 import WBYouTubeModal from '../components/toolbar/WBYouTubeModal.vue'
 import WBExportDialog from '../components/export/WBExportDialog.vue'
 import GroupContentSidebar from '../components/sidebar/GroupContentSidebar.vue'
-import PropertiesPanel from '../components/sidebar/PropertiesPanel.vue'
+// PropertiesPanel removed — selection toolbar handles all object actions inline
 import WBPageThumbnails from '../components/pages/WBPageThumbnails.vue'
 import WBDragGhost from '../components/sidebar/WBDragGhost.vue'
 import type { AllowedContentItem } from '../types/sidebar'
@@ -1722,6 +1717,9 @@ function handleRetryTest() {
   testStore.setTestPhase('live')
 }
 
+/** Dedup guard — prevents double creation from both click + mouseup firing */
+let _lastTestClickTs = 0
+
 /** Convert DOM click to canvas coordinates and dispatch to test handler */
 function onCanvasContainerClick(e: MouseEvent) {
   // Phase 38: deselect тестового об'єкту при кліку на canvas (overlay = pointer-events:none)
@@ -1729,14 +1727,32 @@ function onCanvasContainerClick(e: MouseEvent) {
     testStore.selectTestObject(null)
   }
 
+  _dispatchTestClick(e)
+}
+
+/**
+ * Mouseup fallback — Konva canvas може поглинати click event, але mouseup
+ * завжди спрацьовує. Використовуємо для тест-об'єктів.
+ */
+function onCanvasContainerMouseUp(e: MouseEvent) {
   if (!testStore.testMode || !testStore.activeTestTool) return
-  if (testStore.testPhase !== 'edit') return // створення тільки в edit фазі
+  _dispatchTestClick(e)
+}
+
+/** Спільна логіка створення тестового об'єкта по кліку */
+function _dispatchTestClick(e: MouseEvent) {
+  if (!testStore.testMode || !testStore.activeTestTool) return
+  if (testStore.testPhase !== 'edit') return
+
+  // Dedup: не створювати двічі з click + mouseup в межах 200ms
+  const now = Date.now()
+  if (now - _lastTestClickTs < 200) return
+  _lastTestClickTs = now
 
   const container = canvasContainerRef.value
   if (!container) return
 
   const rect = container.getBoundingClientRect()
-  // Convert screen coordinates → canvas coordinates (account for zoom + scroll)
   const canvasX = (e.clientX - rect.left) / store.zoom + (store.scrollX ?? 0)
   const canvasY = (e.clientY - rect.top) / store.zoom + (store.scrollY ?? 0)
 

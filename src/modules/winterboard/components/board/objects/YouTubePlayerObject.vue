@@ -1,7 +1,7 @@
 <template>
   <div
     class="wb-youtube-player"
-    :style="{ width: obj.w + 'px', height: obj.h + 'px' }"
+    :style="{ width: '100%', height: '100%' }"
   >
     <iframe
       v-if="videoId"
