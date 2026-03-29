@@ -19,6 +19,7 @@ const MAX_WAIT_MS = 15_000       // Force save after 15s of continuous edits
 const RETRY_BASE_MS = 1_000      // Exponential backoff base
 const MAX_RETRIES = 3            // Max retry attempts
 const BEACON_THROTTLE_MS = 500   // Min interval between beacon saves
+const FAILURE_COOLDOWN_MS = 60_000  // 60s cooldown after all retries exhausted (prevent server overload)
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -61,8 +62,10 @@ export function useAutosave(
   const pendingOps = ref<WBDiffOp[]>([])
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
   let maxWaitTimer: ReturnType<typeof setTimeout> | null = null
+  let cooldownTimer: ReturnType<typeof setTimeout> | null = null
   let retryCount = 0
   let destroyed = false
+  let inCooldown = false  // True after all retries exhausted — prevents hammering dead server
 
   const pendingOpsCount = computed(() => pendingOps.value.length)
 
@@ -275,12 +278,27 @@ export function useAutosave(
     store.setSyncError(message)
     lastError.value = message
     console.error('[WB:autosave]', message)
+
+    // Circuit breaker: cooldown after total failure to prevent server overload
+    // isDirty watch will try to reschedule → block it for FAILURE_COOLDOWN_MS
+    inCooldown = true
+    console.warn(`[WB:autosave] Entering cooldown for ${FAILURE_COOLDOWN_MS / 1000}s`)
+    cooldownTimer = setTimeout(() => {
+      inCooldown = false
+      cooldownTimer = null
+      console.info('[WB:autosave] Cooldown ended, will retry on next change')
+      // If still dirty, schedule save
+      if (store.isDirty || pendingOps.value.length > 0) {
+        scheduleSave()
+      }
+    }, FAILURE_COOLDOWN_MS)
   }
 
   // ── Scheduling ─────────────────────────────────────────────────────
 
   function scheduleSave(): void {
     if (destroyed || !sessionId.value) return
+    if (inCooldown) return  // Circuit breaker: don't schedule during cooldown
 
     // Clear existing debounce
     if (debounceTimer) {
@@ -332,9 +350,15 @@ export function useAutosave(
   // ── Online/Offline detection ───────────────────────────────────────
 
   function handleOnline(): void {
-    if (status.value === 'offline') {
+    if (status.value === 'offline' || status.value === 'error') {
       status.value = 'idle'
       store.setSyncStatus('idle')
+      // Reset cooldown on network recovery — server likely back
+      inCooldown = false
+      if (cooldownTimer) {
+        clearTimeout(cooldownTimer)
+        cooldownTimer = null
+      }
       // Trigger save for any pending changes
       if (store.isDirty || pendingOps.value.length > 0) {
         scheduleSave()
@@ -392,6 +416,11 @@ export function useAutosave(
     destroyed = true
     clearTimers()
     stopDirtyWatch()
+    if (cooldownTimer) {
+      clearTimeout(cooldownTimer)
+      cooldownTimer = null
+    }
+    inCooldown = false
 
     if (typeof window !== 'undefined') {
       window.removeEventListener('online', handleOnline)

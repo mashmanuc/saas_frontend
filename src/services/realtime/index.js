@@ -12,8 +12,9 @@ const isSupportedChannel = (channel) => {
 const SUPPORTED_CHANNELS = new Set(['chat', 'board', 'presence', 'notifications', 'tutor', 'student', 'match', 'availability', 'room', 'inquiries', 'calendar'])
 const DEFAULT_HEARTBEAT_MS = 25_000
 const HEARTBEAT_TIMEOUT_MS = 60_000  // Increased from 30s for stable connections
-const MAX_BACKOFF_MS = 15_000
+const MAX_BACKOFF_MS = 30_000        // Increased: 15s → 30s to reduce load on struggling server
 const INITIAL_BACKOFF_MS = 1_000
+const MAX_RECONNECT_ATTEMPTS = 10    // Stop reconnecting after 10 failures to prevent server overload
 
 const READY_STATES = {
   CONNECTING: 'connecting',
@@ -68,6 +69,7 @@ class RealtimeService {
     this.heartbeatTimeoutTimer = null
     this.lastPongTime = null
     this.reconnectTimer = null
+    this.reconnectAttempts = 0          // Track reconnect attempts for circuit breaker
     this.tokenRefreshCallback = null
     this.lastToken = null
     this._lastConnectAttempt = 0
@@ -119,6 +121,8 @@ class RealtimeService {
       // Був закритий через auth_required — тепер маємо новий токен, підключаємось знову
       this.options.logger?.info?.('[realtime] Token refreshed after auth_required, reconnecting from CLOSED...')
       this.shouldReconnect = true
+      this.reconnectAttempts = 0          // Fresh start with new token
+      this.backoff = INITIAL_BACKOFF_MS
       this.connect()
     }
   }
@@ -261,6 +265,7 @@ class RealtimeService {
     this._openedAt = Date.now()
     if (!prevOpened || (this._openedAt - prevOpened) > 5000) {
       this.backoff = INITIAL_BACKOFF_MS
+      this.reconnectAttempts = 0   // Reset on stable connection
     }
   }
 
@@ -347,6 +352,7 @@ class RealtimeService {
       this.wsUnavailable = false
       this.shouldReconnect = true
       this.backoff = INITIAL_BACKOFF_MS
+      this.reconnectAttempts = 0          // Fresh start on network recovery
       this.connect()
     } else {
       this.emitter.emit('status', 'offline')
@@ -431,7 +437,21 @@ class RealtimeService {
 
   scheduleReconnect() {
     if (!this.shouldReconnect) return
+
+    // Circuit breaker: stop after MAX_RECONNECT_ATTEMPTS to prevent server overload
+    this.reconnectAttempts++
+    if (this.reconnectAttempts > MAX_RECONNECT_ATTEMPTS) {
+      this.options.logger?.warn?.(
+        `[realtime] Max reconnect attempts (${MAX_RECONNECT_ATTEMPTS}) reached, giving up. ` +
+        'Will retry on network change or token refresh.',
+      )
+      this.shouldReconnect = false
+      this.emitter.emit('status', 'unavailable')
+      return
+    }
+
     const delay = Math.min(this.backoff, MAX_BACKOFF_MS)
+    this.options.logger?.info?.(`[realtime] Reconnect attempt ${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS} in ${delay}ms`)
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer)
       this.reconnectTimer = null

@@ -20,6 +20,10 @@ const FLUSH_INTERVAL_MS = 5000
 const SNAPSHOT_EVERY = 200
 const MAX_PAYLOAD_BYTES = 64 * 1024  // 64KB — must match backend WBBoardOperationCreateSerializer
 
+// Circuit breaker: pause flushing after consecutive failures to prevent server overload
+const MAX_CONSECUTIVE_FAILURES = 3
+const CIRCUIT_BREAKER_COOLDOWN_MS = 30_000  // 30s pause after 3 failures
+
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export interface UseReplayRecorderOptions {
@@ -35,6 +39,9 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
   const opCount = ref(0)
   const isFlushing = ref(false)
   let flushTimer: ReturnType<typeof setInterval> | null = null
+  let consecutiveFailures = 0
+  let circuitBreakerTimer: ReturnType<typeof setTimeout> | null = null
+  let circuitOpen = false
 
   /**
    * Record a single board operation into the buffer.
@@ -112,16 +119,34 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
     const sid = options.sessionId.value
     if (buffer.length === 0 || !sid) return
     if (isFlushing.value) return // prevent concurrent flushes
+    if (circuitOpen) return       // circuit breaker: server unreachable, skip flush
 
     isFlushing.value = true
     const ops = buffer.splice(0) // drain buffer atomically
 
     try {
       await recordOperationsBatch(sid, ops)
+      consecutiveFailures = 0     // success — reset counter
     } catch (e) {
       console.warn('[ReplayRecorder] batch flush failed, re-queuing:', e)
       // Re-queue at front so order is preserved
       buffer.unshift(...ops)
+
+      // Circuit breaker: after N consecutive failures, pause to prevent server overload
+      consecutiveFailures++
+      if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+        circuitOpen = true
+        console.warn(
+          `[ReplayRecorder] Circuit breaker OPEN: ${consecutiveFailures} consecutive failures. ` +
+          `Pausing for ${CIRCUIT_BREAKER_COOLDOWN_MS / 1000}s`,
+        )
+        circuitBreakerTimer = setTimeout(() => {
+          circuitOpen = false
+          consecutiveFailures = 0
+          circuitBreakerTimer = null
+          console.info('[ReplayRecorder] Circuit breaker CLOSED — resuming flushes')
+        }, CIRCUIT_BREAKER_COOLDOWN_MS)
+      }
     } finally {
       isFlushing.value = false
     }
@@ -184,6 +209,12 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
     stop()
     buffer.length = 0
     opCount.value = 0
+    if (circuitBreakerTimer) {
+      clearTimeout(circuitBreakerTimer)
+      circuitBreakerTimer = null
+    }
+    circuitOpen = false
+    consecutiveFailures = 0
   }
 
   /**
