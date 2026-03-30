@@ -1001,7 +1001,7 @@ const groupIndicators = computed(() => {
   return indicators
 })
 
-const textEditStyle = computed(() => {
+const textEditStyle = computed((): Record<string, string> => {
   if (!editingText.value) return {}
   const stroke = editingText.value
   const w = stroke.width || 200
