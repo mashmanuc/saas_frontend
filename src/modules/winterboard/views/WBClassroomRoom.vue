@@ -332,6 +332,18 @@
       :is-empty="isBoardEmpty"
     />
 
+    <!-- Phase 38: Test teacher panel -->
+    <WBTestTeacherPanel
+      v-if="classroomRole.isTeacher.value && testStore.activeTestSessionId"
+      @grade="handleTestGrade"
+      @end="handleTestEnd"
+    />
+
+    <!-- Phase 38: Test student view -->
+    <WBTestStudentView
+      v-if="classroomRole.isStudent.value && testStore.activeTestSessionId"
+    />
+
     <!-- Phase 11: Replay entry button (teacher only, edit mode) -->
     <button
       v-if="mode === 'edit' && resolvedSessionId && (classroomRole.isTeacher.value || lessonEnded) && hasOperations"
@@ -414,6 +426,7 @@ import { ref, computed, onMounted, onBeforeUnmount, onUnmounted, watch } from 'v
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useWBStore } from '../board/state/boardStore'
+import { useTestStore } from '../board/state/testStore'
 import { useHistory } from '../composables/useHistory'
 import { useKeyboard } from '../composables/useKeyboard'
 import { useBoardClipboard } from '../composables/useBoardClipboard'
@@ -444,6 +457,8 @@ import WBLessonMap from '../components/replay/WBLessonMap.vue'
 import WBReplayBanner from '../components/replay/WBReplayBanner.vue'
 import WBMarkerCreateModal from '../components/replay/WBMarkerCreateModal.vue'
 import WBOnboardingHints from '../components/ui/WBOnboardingHints.vue'
+import WBTestTeacherPanel from '../components/test/WBTestTeacherPanel.vue'
+import WBTestStudentView from '../components/test/WBTestStudentView.vue'
 import type { BoardOperation } from '../types/replay'
 import type { WBLessonMarker } from '../types/winterboard'
 import { createLessonMarker, deleteLessonMarker } from '../api/replay'
@@ -480,6 +495,7 @@ const props = defineProps<{
 const router = useRouter()
 const route = useRoute()
 const store = useWBStore()
+const testStore = useTestStore()
 const { t } = useI18n()
 const { announce } = useAnnouncer()
 
@@ -1589,7 +1605,7 @@ function onRemoteStroke(e: Event) {
 
   const currentPageIndex = store.currentPageIndex
   if (targetPageIndex === currentPageIndex) {
-    store.addStroke(detail.stroke, { skipHistory: true, _remote: true })
+    store.addStroke(detail.stroke, { skipHistory: true } as any)
   } else {
     store.pages[targetPageIndex] = {
       ...page,
@@ -1601,9 +1617,92 @@ function onRemoteStroke(e: Event) {
 
 window.addEventListener('wb:remote-stroke', onRemoteStroke)
 
+// ─── Phase 38: Test WS Handlers ─────────────────────────────────────────────
+
+function onRemoteTestStart(e: Event) {
+  const detail = (e as CustomEvent).detail
+  testStore.onRemoteTestStart({
+    testSessionId: detail.test_session_id,
+    testObjects: detail.test_objects,
+    testMeta: detail.test_meta,
+    pageId: detail.page_id,
+  })
+
+  // RISK-3 FIX: Smart navigation - тільки якщо НЕ на test page
+  const pageIndex = store.pages.findIndex((p) => p.id === detail.page_id)
+  if (pageIndex !== -1 && pageIndex !== store.currentPageIndex) {
+    console.info('[WB:test] Auto-navigating to test page', pageIndex)
+    store.goToPage(pageIndex)
+  }
+}
+
+function onRemoteTestAnswer(e: Event) {
+  const detail = (e as CustomEvent).detail
+  // Teacher receives student answers
+  if (classroomRole.isTeacher.value) {
+    testStore.onRemoteTestAnswer({
+      studentId: detail.student_id,
+      studentName: detail.student_name,
+      objectId: detail.object_id,
+      answer: detail.answer,
+    })
+  }
+}
+
+function onRemoteTestPhase(e: Event) {
+  const detail = (e as CustomEvent).detail
+  testStore.setTestPhase(detail.phase)
+}
+
+function onRemoteTestGrade(e: Event) {
+  const detail = (e as CustomEvent).detail
+  testStore.onRemoteTestGrade({
+    results: detail.results,
+  })
+}
+
+function onRemoteTestSync(e: Event) {
+  const detail = (e as CustomEvent).detail
+  testStore.onRemoteTestSync({
+    testSessionId: detail.test_session_id,
+    testObjects: detail.test_objects,
+    testMeta: detail.test_meta,
+    phase: detail.phase,
+    pageId: detail.page_id,
+    myAnswers: detail.my_answers,
+    myResult: detail.my_result,
+    allAnswers: detail.all_answers,
+    allResults: detail.all_results,
+  })
+
+  // RISK-3 FIX: Smart navigation - тільки якщо НЕ на test page
+  const pageIndex = store.pages.findIndex((p) => p.id === detail.page_id)
+  if (pageIndex !== -1 && pageIndex !== store.currentPageIndex) {
+    console.info('[WB:test] Auto-navigating to test page (sync)', pageIndex)
+    store.goToPage(pageIndex)
+  }
+}
+
+function onRemoteTestEnd(e: Event) {
+  testStore.onRemoteTestEnd()
+}
+
+window.addEventListener('wb:test-start', onRemoteTestStart)
+window.addEventListener('wb:test-answer', onRemoteTestAnswer)
+window.addEventListener('wb:test-phase', onRemoteTestPhase)
+window.addEventListener('wb:test-grade', onRemoteTestGrade)
+window.addEventListener('wb:test-sync', onRemoteTestSync)
+window.addEventListener('wb:test-end', onRemoteTestEnd)
+
 onUnmounted(() => {
   window.removeEventListener('wb:remote-state-update', onRemoteStateUpdate)
   window.removeEventListener('wb:remote-stroke', onRemoteStroke)
+  window.removeEventListener('wb:test-start', onRemoteTestStart)
+  window.removeEventListener('wb:test-answer', onRemoteTestAnswer)
+  window.removeEventListener('wb:test-phase', onRemoteTestPhase)
+  window.removeEventListener('wb:test-grade', onRemoteTestGrade)
+  window.removeEventListener('wb:test-sync', onRemoteTestSync)
+  window.removeEventListener('wb:test-end', onRemoteTestEnd)
   _unsubStrokeInterceptor?.()
 })
 
@@ -1638,6 +1737,30 @@ onMounted(async () => {
 
   await initBoardWithSession(init)
 })
+
+// ─── Phase 38: Test Action Handlers ────────────────────────────────────────
+
+function handleTestGrade() {
+  if (presence.connectionState.value !== 'connected') {
+    console.warn('[WB:test] Cannot grade - not connected')
+    return
+  }
+
+  testStore.requestGrade((msg) => {
+    presence.sendMessage(msg as Record<string, unknown>)
+  })
+}
+
+function handleTestEnd() {
+  if (presence.connectionState.value !== 'connected') {
+    console.warn('[WB:test] Cannot end test - not connected')
+    return
+  }
+
+  testStore.endLiveTest((msg) => {
+    presence.sendMessage(msg as Record<string, unknown>)
+  })
+}
 
 // B3: Extracted init logic so waiting_for_teacher can call it when teacher starts
 async function initBoardWithSession(init: { sessionId: string; role: any; permissions: any; isLocked: boolean; groupId?: string | null }): Promise<void> {

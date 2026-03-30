@@ -28,10 +28,10 @@ function setupStores(overrides: Record<string, any> = {}) {
     grace_token: 'token123',
     ...overrides,
   }
-  vi.spyOn(acceptanceStore, 'fetchAvailability').mockImplementation(async () => {
+  vi.spyOn(acceptanceStore, 'fetchAvailability').mockImplementation((async () => {
     acceptanceStore.data = storeData as any
     acceptanceStore.status = 'ready' as any
-  })
+  }) as any)
   vi.spyOn(acceptanceStore, 'invalidate').mockImplementation(() => {
     acceptanceStore.data = { ...acceptanceStore.data!, remaining_accepts: 0 } as any
   })
@@ -82,11 +82,13 @@ describe('useInquiryAccept', () => {
     let callCount = 0
     vi.mocked(acceptanceStore.fetchAvailability).mockImplementation(async () => {
       callCount++
-      acceptanceStore.data = {
+      const result = {
         can_accept: true,
         remaining_accepts: callCount === 1 ? 3 : 2,
         grace_token: callCount === 1 ? 'old_token' : 'fresh_token',
       } as any
+      acceptanceStore.data = result
+      return result
     })
 
     const { handleAccept } = useInquiryAccept()

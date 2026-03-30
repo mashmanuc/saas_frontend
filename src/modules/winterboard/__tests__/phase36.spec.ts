@@ -286,7 +286,7 @@ describe('Phase 36: Mixed values logic', () => {
 
     // Replicate the mixed values logic from MultiSelectProperties
     const objects = store.selectedIds.map(id => store.getObjectById(id)).filter(Boolean)
-    const colors = objects.map(o => (o as Record<string, unknown>).color)
+    const colors = objects.map(o => (o as unknown as Record<string, unknown>).color)
     const allSame = colors.every(c => c === colors[0])
     expect(allSame).toBe(true)
     expect(colors[0]).toBe('#ff0000')
@@ -299,7 +299,7 @@ describe('Phase 36: Mixed values logic', () => {
     store.selectItems(['st-1', 'st-2'])
 
     const objects = store.selectedIds.map(id => store.getObjectById(id)).filter(Boolean)
-    const colors = objects.map(o => (o as Record<string, unknown>).color)
+    const colors = objects.map(o => (o as unknown as Record<string, unknown>).color)
     const allSame = colors.every(c => c === colors[0])
     expect(allSame).toBe(false)
   })

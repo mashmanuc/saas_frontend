@@ -55,7 +55,7 @@
       >
         <template #actions>
           <!-- OPEN + relation не active: показуємо кнопки Прийняти/Відхилити -->
-          <template v-if="inquiry.status === 'OPEN' && inquiry.relation_status !== 'active'">
+          <template v-if="inquiry.status === 'OPEN' && (inquiry as any).relation_status !== 'active'">
             <Button
               variant="primary"
               size="sm"
@@ -75,7 +75,7 @@
           </template>
 
           <!-- ACCEPTED або relation вже active (прийнято через dashboard): підтвердження -->
-          <div v-else-if="inquiry.status === 'ACCEPTED' || inquiry.relation_status === 'active'" class="status-message status-accepted-msg">
+          <div v-else-if="inquiry.status === 'ACCEPTED' || (inquiry as any).relation_status === 'active'" class="status-message status-accepted-msg">
             ✓ {{ $t('inquiries.tutor.acceptedMessage') }}
           </div>
 

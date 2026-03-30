@@ -1155,6 +1155,7 @@ export const marketplaceApi = {
           categories: [],
           subjects: [],
           countries: [],
+          cities: [],
           languages: [],
           priceRange: { min: 0, max: 0, avg: 0 },
           experienceRange: { min: 0, max: 0 },

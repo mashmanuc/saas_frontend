@@ -120,6 +120,49 @@ const lessonsApi = {
   quickStart(payload) {
     return apiClient.post('/v1/lessons/quick-start/', payload)
   },
+
+  // ── Phase 39: Notes API + Materials API ──
+
+  /**
+   * Отримує приватні нотатки тьютора до уроку.
+   * @param {number} id - lesson ID
+   * @returns {Promise<{ notes_text: string, updated_at: string|null }>}
+   */
+  getNotes(id) {
+    return apiClient.get(`/v1/lessons/${id}/notes/`)
+  },
+
+  /**
+   * Зберігає приватні нотатки тьютора з concurrency control.
+   * @param {number} id - lesson ID
+   * @param {string} notesText - текст нотаток
+   * @param {string|null} lastUpdatedAt - timestamp для conflict detection
+   * @returns {Promise<{ notes_text: string, updated_at: string }>}
+   */
+  saveNotes(id, notesText, lastUpdatedAt = null) {
+    const payload = { notes_text: notesText }
+    if (lastUpdatedAt) payload.last_updated_at = lastUpdatedAt
+    return apiClient.patch(`/v1/lessons/${id}/notes/`, payload)
+  },
+
+  /**
+   * Отримує список матеріалів уроку.
+   * @param {number} id - lesson ID
+   * @returns {Promise<{ results: Array<{id, title, content_type, thumbnail_url}> }>}
+   */
+  getMaterials(id) {
+    return apiClient.get(`/v1/lessons/${id}/materials/`)
+  },
+
+  /**
+   * Видаляє матеріал з уроку (тільки M2M link, не ContentItem).
+   * @param {number} lessonId - lesson ID
+   * @param {number} contentItemId - content item ID
+   * @returns {Promise<void>}
+   */
+  removeMaterial(lessonId, contentItemId) {
+    return apiClient.delete(`/v1/lessons/${lessonId}/materials/${contentItemId}/`)
+  },
 }
 
 export default lessonsApi

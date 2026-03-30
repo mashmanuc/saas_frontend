@@ -633,7 +633,7 @@ async function executeConductLesson(): Promise<void> {
       end: end.toISOString(),
       // Передаємо UUID knowledge lesson для копіювання board state
       source_knowledge_lesson_id: conductTarget.value.id,
-    })
+    } as any)
 
     const data = (res as any)?.data ?? res
     const lessonId = data?.lesson_id

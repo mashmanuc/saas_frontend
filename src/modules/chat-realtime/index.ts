@@ -17,7 +17,8 @@
  * @module chat-realtime
  */
 
-export { ChatTransportFactory, TransportType } from './factory'
+export { ChatTransportFactory } from './adapters/factory'
+export type { TransportType } from './adapters/factory'
 export { useChatTransportV2 } from './composables/useChatTransportV2'
 export type {
   ChatTransport,

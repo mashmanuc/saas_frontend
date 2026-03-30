@@ -41,6 +41,74 @@ let isRefreshingToken = false
 let isRefreshingCsrf = false
 const refreshQueue = []
 
+// ── Global Circuit Breaker ──────────────────────────────────────────────
+// Prevents self-DDOS: if backend is unreachable, stop ALL non-essential requests.
+// Resets on: network recovery (online event), manual retry, or cooldown expiry.
+const CIRCUIT_BREAKER_THRESHOLD = 5      // consecutive network failures to trip
+const CIRCUIT_BREAKER_COOLDOWN_MS = 30_000  // 30s pause before retry
+let _cbFailures = 0
+let _cbOpen = false
+let _cbTimer = null
+
+function _cbRecordFailure() {
+  _cbFailures++
+  if (_cbFailures >= CIRCUIT_BREAKER_THRESHOLD && !_cbOpen) {
+    _cbOpen = true
+    console.warn(
+      `[apiClient] Circuit breaker OPEN: ${_cbFailures} consecutive network failures. ` +
+      `Blocking requests for ${CIRCUIT_BREAKER_COOLDOWN_MS / 1000}s`,
+    )
+    // Emit event so UI can show "offline" banner
+    window.dispatchEvent(new CustomEvent('api:circuit-open'))
+
+    _cbTimer = setTimeout(() => {
+      _cbOpen = false
+      _cbFailures = 0
+      _cbTimer = null
+      console.info('[apiClient] Circuit breaker CLOSED — resuming requests')
+      window.dispatchEvent(new CustomEvent('api:circuit-close'))
+    }, CIRCUIT_BREAKER_COOLDOWN_MS)
+  }
+}
+
+function _cbRecordSuccess() {
+  if (_cbFailures > 0) {
+    _cbFailures = 0
+    if (_cbOpen) {
+      _cbOpen = false
+      if (_cbTimer) { clearTimeout(_cbTimer); _cbTimer = null }
+      console.info('[apiClient] Circuit breaker CLOSED — backend responsive')
+      window.dispatchEvent(new CustomEvent('api:circuit-close'))
+    }
+  }
+}
+
+// Reset circuit breaker on network recovery
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', () => {
+    _cbFailures = 0
+    if (_cbOpen) {
+      _cbOpen = false
+      if (_cbTimer) { clearTimeout(_cbTimer); _cbTimer = null }
+      console.info('[apiClient] Circuit breaker RESET — network back online')
+      window.dispatchEvent(new CustomEvent('api:circuit-close'))
+    }
+  })
+}
+
+/** Check if circuit breaker is open (for external consumers like autosave/replay) */
+export function isCircuitBreakerOpen() {
+  return _cbOpen
+}
+
+/** Force reset circuit breaker (manual retry button) */
+export function resetCircuitBreaker() {
+  _cbFailures = 0
+  _cbOpen = false
+  if (_cbTimer) { clearTimeout(_cbTimer); _cbTimer = null }
+  window.dispatchEvent(new CustomEvent('api:circuit-close'))
+}
+
 /**
  * Detect backend csrf:missing / csrf:invalid validation error.
  * Backend returns 400 with body like {"csrf": ["missing"]} or {"csrf": ["invalid"]}.
@@ -79,6 +147,13 @@ api.interceptors.request.use(
   (config) => {
     const store = useAuthStore()
     const loader = useLoaderStore()
+
+    // Circuit breaker: reject non-essential requests when backend is unreachable
+    if (_cbOpen && !config.meta?.bypassCircuitBreaker) {
+      if (!config.meta?.skipLoader) loader.stop()
+      return Promise.reject(new axios.Cancel('[apiClient] Circuit breaker open — request blocked'))
+    }
+
     // Пропускаємо loader для фонових запитів (polling, тощо)
     if (!config.meta?.skipLoader) {
       loader.start()
@@ -136,7 +211,10 @@ api.interceptors.response.use(
     if (!res?.config?.meta?.skipLoader) {
       loader.stop()
     }
-    
+
+    // Circuit breaker: backend responded → record success
+    _cbRecordSuccess()
+
     if (res?.config?.meta?.fullResponse) {
       return res
     }
@@ -150,11 +228,16 @@ api.interceptors.response.use(
     const store = useAuthStore()
     const original = error.config || {}
 
-    // Network or CORS problems
+    // Network or CORS problems (also includes server timeout / 5xx from proxy)
     if (!error.response) {
-      notifyError('Немає з’єднання з сервером. Перевірте мережу.')
+      _cbRecordFailure()
+      notifyError("Немає з’єднання з сервером. Перевірте мережу.")
       return Promise.reject(error)
     }
+
+    // Record success for circuit breaker (server responded, even with error)
+    // Only network failures count against the breaker
+    _cbRecordSuccess()
 
     const status = error.response.status
     const data = error.response?.data

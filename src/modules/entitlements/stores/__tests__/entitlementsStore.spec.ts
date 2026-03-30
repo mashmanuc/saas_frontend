@@ -33,19 +33,19 @@ describe('entitlementsStore', () => {
     it('should fetch entitlements successfully', async () => {
       const mockEntitlements = {
         plan: 'pro',
-        status: 'active',
+        status: 'active' as const,
         features: {
-          'analytics_advanced': { feature: 'analytics_advanced', granted: true, reason: 'active_subscription' },
-          'unlimited_contacts': { feature: 'unlimited_contacts', granted: false, reason: 'none' }
+          'analytics_advanced': { feature: 'analytics_advanced', granted: true, reason: 'active_subscription' as const },
+          'unlimited_contacts': { feature: 'unlimited_contacts', granted: false, reason: 'none' as const }
         },
         limits: {
           max_contacts_per_month: 10,
           max_students: 50,
           max_storage_gb: 5,
-          analytics_level: 'advanced'
+          analytics_level: 'advanced' as const
         }
       }
-      
+
       vi.mocked(entitlementsApi.entitlementsApi.getUserEntitlements).mockResolvedValue(mockEntitlements)
       
       const store = useEntitlementsStore()
@@ -60,9 +60,9 @@ describe('entitlementsStore', () => {
     it('should use cache when fresh', async () => {
       vi.mocked(entitlementsApi.entitlementsApi.getUserEntitlements).mockResolvedValue({
         plan: 'basic',
-        status: 'active',
+        status: 'active' as const,
         features: {},
-        limits: { max_contacts_per_month: 5, max_students: 10, max_storage_gb: 1, analytics_level: 'basic' }
+        limits: { max_contacts_per_month: 5, max_students: 10, max_storage_gb: 1, analytics_level: 'basic' as const }
       })
       
       const store = useEntitlementsStore()
@@ -78,9 +78,9 @@ describe('entitlementsStore', () => {
     it('should force fetch when requested', async () => {
       vi.mocked(entitlementsApi.entitlementsApi.getUserEntitlements).mockResolvedValue({
         plan: 'basic',
-        status: 'active',
+        status: 'active' as const,
         features: {},
-        limits: { max_contacts_per_month: 5, max_students: 10, max_storage_gb: 1, analytics_level: 'basic' }
+        limits: { max_contacts_per_month: 5, max_students: 10, max_storage_gb: 1, analytics_level: 'basic' as const }
       })
       
       const store = useEntitlementsStore()
@@ -97,11 +97,11 @@ describe('entitlementsStore', () => {
     it('should check feature from cache when fresh', async () => {
       const mockEntitlements = {
         plan: 'pro',
-        status: 'active',
+        status: 'active' as const,
         features: {
-          'test_feature': { feature: 'test_feature', granted: true, reason: 'active_subscription' }
+          'test_feature': { feature: 'test_feature', granted: true, reason: 'active_subscription' as const }
         },
-        limits: { max_contacts_per_month: 10, max_students: 50, max_storage_gb: 5, analytics_level: 'advanced' }
+        limits: { max_contacts_per_month: 10, max_students: 50, max_storage_gb: 5, analytics_level: 'advanced' as const }
       }
       
       vi.mocked(entitlementsApi.entitlementsApi.getUserEntitlements).mockResolvedValue(mockEntitlements)
@@ -117,7 +117,7 @@ describe('entitlementsStore', () => {
     })
 
     it('should check feature via API when not fresh', async () => {
-      const mockCheck = { feature: 'new_feature', granted: true, reason: 'trial' }
+      const mockCheck = { feature: 'new_feature', granted: true, reason: 'trial' as const }
       
       vi.mocked(entitlementsApi.entitlementsApi.checkFeature).mockResolvedValue(mockCheck)
       

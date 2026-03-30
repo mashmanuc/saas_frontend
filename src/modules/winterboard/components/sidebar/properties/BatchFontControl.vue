@@ -9,7 +9,7 @@
         @change="onFontChange"
       >
         <option v-if="commonFont === 'mixed'" value="mixed" disabled>— mixed —</option>
-        <option v-for="f in AVAILABLE_FONTS" :key="f" :value="f">{{ f }}</option>
+        <option v-for="f in AVAILABLE_FONTS" :key="f.value" :value="f.value">{{ f.label }}</option>
       </select>
     </div>
 
@@ -62,8 +62,8 @@ const textItems = computed(() => {
 const commonFont = computed<string>(() => {
   const items = textItems.value
   if (items.length === 0) return 'mixed'
-  const first = (items[0].obj as Record<string, unknown>).fontFamily as string | undefined ?? 'Inter'
-  return items.every(i => ((i.obj as Record<string, unknown>).fontFamily as string | undefined ?? 'Inter') === first) ? first : 'mixed'
+  const first = (items[0].obj as unknown as Record<string, unknown>).fontFamily as string | undefined ?? 'Inter'
+  return items.every(i => ((i.obj as unknown as Record<string, unknown>).fontFamily as string | undefined ?? 'Inter') === first) ? first : 'mixed'
 })
 
 const commonSize = computed<number | 'mixed'>(() => {

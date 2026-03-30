@@ -28,10 +28,13 @@
 
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import { useAcceptanceStore } from '@/stores/acceptanceStore'
 import { useAuthStore } from '@/modules/auth/store/authStore'
+
+const { t: $t } = useI18n()
 
 dayjs.extend(relativeTime)
 

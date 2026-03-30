@@ -137,6 +137,7 @@
             @dblclick="handleTextEdit(stroke)"
             @click="handleStrokeClick(stroke, $event)"
             @dragend="handleStrokeDragEnd(stroke, $event)"
+            @transformend="handleTextTransformEnd(stroke, $event)"
             @touchstart="(e) => handleTouchStart(stroke.id, e.evt)"
             @touchend="handleTouchEnd"
             @touchmove="handleTouchMove"
@@ -201,7 +202,7 @@
       class="wb-text-edit-overlay"
       :style="textEditStyle"
       @blur="finishTextEdit"
-      @keydown.enter.exact="finishTextEdit"
+      @keydown.escape="finishTextEdit"
       @mousedown.stop
       @pointerdown.stop
     />
@@ -1003,11 +1004,17 @@ const groupIndicators = computed(() => {
 const textEditStyle = computed(() => {
   if (!editingText.value) return {}
   const stroke = editingText.value
+  const w = stroke.width || 200
   return {
     left: `${stroke.points[0].x * props.zoom}px`,
     top: `${stroke.points[0].y * props.zoom}px`,
+    width: `${w * props.zoom}px`,
     fontSize: `${(stroke.size || 16) * props.zoom}px`,
     color: stroke.color,
+    fontWeight: stroke.fontWeight === 700 ? 'bold' : 'normal',
+    fontStyle: stroke.fontStyle === 'italic' ? 'italic' : 'normal',
+    textAlign: stroke.textAlign || 'left',
+    lineHeight: '1.4',
   }
 })
 
@@ -1676,6 +1683,10 @@ function createTextAtPosition(pos: WBPoint): void {
     opacity: 1,
     points: [pos],
     text: '',
+    width: 200,
+    fontWeight: 400,
+    fontStyle: 'normal',
+    textAlign: 'left',
   }
 
   textEditCreatedAt = Date.now()
@@ -2241,13 +2252,36 @@ function handleAssetTransformEnd(asset: WBAsset, e: Konva.KonvaEventObject<Event
   })
 }
 
+// Text transform: update width from resize handle
+function handleTextTransformEnd(stroke: WBStroke, e: Konva.KonvaEventObject<Event>): void {
+  const node = e.target
+  const scaleX = node.scaleX()
+
+  // Reset scale — Konva applies scale, we convert to width
+  node.scaleX(1)
+  node.scaleY(1)
+
+  const newWidth = Math.round((stroke.width || 200) * scaleX)
+  wbStore.updateObject(stroke.id, {
+    width: Math.max(50, newWidth),
+  })
+  // Update position if dragged during transform
+  const page = wbStore.currentPage
+  if (!page) return
+  const s = page.strokes.find(st => st.id === stroke.id)
+  if (s && s.points[0]) {
+    const updated = { ...s, points: [{ x: node.x(), y: node.y() }] }
+    emit('stroke-update', updated)
+  }
+}
+
 // ─── Stroke Config Generators ───────────────────────────────────────────────
 
 /** Build cache signature for any stroke */
 function buildStrokeSig(stroke: WBStroke, selectable: boolean): string {
   const last = stroke.points[stroke.points.length - 1]
   const first = stroke.points[0]
-  return `${stroke.tool}|${stroke.color}|${stroke.size}|${stroke.opacity}|${selectable ? 1 : 0}|${stroke.points.length}|${first?.x ?? 0},${first?.y ?? 0}|${last?.x ?? 0},${last?.y ?? 0}|${stroke.width ?? 0}|${stroke.height ?? 0}|${stroke.text ?? ''}|${stroke.locked ? 1 : 0}`
+  return `${stroke.tool}|${stroke.color}|${stroke.size}|${stroke.opacity}|${selectable ? 1 : 0}|${stroke.points.length}|${first?.x ?? 0},${first?.y ?? 0}|${last?.x ?? 0},${last?.y ?? 0}|${stroke.width ?? 0}|${stroke.height ?? 0}|${stroke.text ?? ''}|${stroke.locked ? 1 : 0}|${stroke.fontWeight ?? 0}|${stroke.fontStyle ?? ''}|${stroke.textAlign ?? ''}`
 }
 
 /** Get cached config or build new one */
@@ -2384,6 +2418,7 @@ function getTextConfig(stroke: WBStroke): Record<string, unknown> {
   return getCachedConfig(stroke, () => {
     const selectable = currentTool.value === 'select'
     const isLockedItem = !!stroke.locked
+    const hasWidth = stroke.width && stroke.width > 0
     return {
       id: stroke.id,
       name: `stroke-${stroke.id}`,
@@ -2396,6 +2431,9 @@ function getTextConfig(stroke: WBStroke): Record<string, unknown> {
       fontFamily: stroke.fontFamily || 'Inter, sans-serif',
       fontStyle: buildKonvaFontStyle(stroke.fontWeight, stroke.fontStyle),
       align: stroke.textAlign || 'left',
+      // Width enables text wrapping and proper resize
+      ...(hasWidth ? { width: stroke.width } : {}),
+      wrap: 'word',
       opacity: isLockedItem ? 0.85 : 1,
       draggable: selectable && !isLockedItem,
       perfectDrawEnabled: false,
@@ -3095,17 +3133,21 @@ defineExpose({
 
 .wb-text-edit-overlay {
   position: absolute;
-  background: white;
+  background: rgba(255, 255, 255, 0.95);
   border: 1.5px solid rgba(99, 102, 241, 0.4);
   padding: 8px;
   min-width: 150px;
-  min-height: 32px;
-  resize: none;
+  min-height: 40px;
+  resize: both;
   outline: none;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   z-index: 1000;
   box-shadow: 0 2px 12px rgba(99, 102, 241, 0.12), 0 1px 4px rgba(0, 0, 0, 0.08);
   border-radius: 6px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-y: auto;
+  box-sizing: border-box;
 }
 
 /* v5 A4: Laser pointer cursor classes */

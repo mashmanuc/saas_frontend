@@ -11,6 +11,7 @@ import { useWBStore } from '../board/state/boardStore'
 import { winterboardApi } from '../api/winterboardApi'
 import type { WBDiffOp } from '../api/winterboardApi'
 import type { WBSyncStatus, WBWorkspaceState } from '../types/winterboard'
+import { isCircuitBreakerOpen } from '@/utils/apiClient'
 
 // ── Config ─────────────────────────────────────────────────────────────
 
@@ -299,6 +300,7 @@ export function useAutosave(
   function scheduleSave(): void {
     if (destroyed || !sessionId.value) return
     if (inCooldown) return  // Circuit breaker: don't schedule during cooldown
+    if (isCircuitBreakerOpen()) return  // Global circuit breaker: backend unreachable
 
     // Clear existing debounce
     if (debounceTimer) {

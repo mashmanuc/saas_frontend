@@ -46,14 +46,14 @@
     <!-- Dispatch by type -->
     <WBTestInputEl
       v-if="testObject.type === 'input'"
-      :test-object="testObject"
+      :test-object="asInput"
       :mode="mode"
       :answer="answer"
       @answer="onAnswer"
     />
     <WBTestRadioEl
       v-else-if="testObject.type === 'radio'"
-      :test-object="testObject"
+      :test-object="asRadio"
       :mode="mode"
       :answer="answer"
       @answer="onAnswer"
@@ -62,7 +62,7 @@
     />
     <WBTestCheckboxEl
       v-else-if="testObject.type === 'checkbox'"
-      :test-object="testObject"
+      :test-object="asCheckbox"
       :mode="mode"
       :answer="answer"
       @answer="onAnswer"
@@ -71,21 +71,21 @@
     />
     <WBTestDropdownEl
       v-else-if="testObject.type === 'dropdown'"
-      :test-object="testObject"
+      :test-object="asDropdown"
       :mode="mode"
       :answer="answer"
       @answer="onAnswer"
     />
     <WBTestGapFillEl
       v-else-if="testObject.type === 'gap-fill'"
-      :test-object="testObject"
+      :test-object="asGapFill"
       :mode="mode"
       :answer="answer"
       @answer="onAnswer"
     />
     <WBTestMatchingEl
       v-else-if="testObject.type === 'matching'"
-      :test-object="testObject"
+      :test-object="asMatching"
       :mode="mode"
       :answer="answer"
       @answer="onAnswer"
@@ -142,7 +142,7 @@
  */
 import { computed, ref, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { WBTestObject, WBTestRadio, WBTestCheckbox } from '../../types/winterboard'
+import type { WBTestObject, WBTestInput, WBTestRadio, WBTestCheckbox, WBTestDropdown, WBTestGapFill, WBTestMatching } from '../../types/winterboard'
 import type { TestPhase, GradeResult } from '../../board/state/testStore'
 import WBTestInputEl from './elements/WBTestInputEl.vue'
 import WBTestRadioEl from './elements/WBTestRadioEl.vue'
@@ -169,6 +169,14 @@ const emit = defineEmits<{
   'answer': [payload: { objectId: string; answer: unknown }]
   'check': [objectId: string]
 }>()
+
+// Type-narrowed accessors for sub-components (avoids template cast issues)
+const asInput = computed(() => props.testObject as WBTestInput)
+const asRadio = computed(() => props.testObject as WBTestRadio)
+const asCheckbox = computed(() => props.testObject as WBTestCheckbox)
+const asDropdown = computed(() => props.testObject as WBTestDropdown)
+const asGapFill = computed(() => props.testObject as WBTestGapFill)
+const asMatching = computed(() => props.testObject as WBTestMatching)
 
 const TYPE_ICONS: Record<string, string> = {
   input: '📝', radio: '⭕', checkbox: '☑️', dropdown: '▼', 'gap-fill': '🔤', matching: '🔗',

@@ -64,10 +64,10 @@ describe('contactTokensStore', () => {
 
   describe('fetchLedger', () => {
     it('should fetch ledger successfully', async () => {
-      const mockLedger = {
+      const mockLedger: contactsApi.PaginatedLedgerResponse = {
         results: [
-          { id: 1, type: 'GRANT', amount: 5, balance_after: 5, created_at: '2026-01-01', description: 'Monthly allowance' },
-          { id: 2, type: 'DEDUCTION', amount: -1, balance_after: 4, created_at: '2026-01-02', description: 'Contact unlock' }
+          { id: 1, type: 'GRANT', delta: 5, balance_after: 5, created_at: '2026-01-01', reason: 'Monthly allowance' },
+          { id: 2, type: 'DEDUCTION', delta: -1, balance_after: 4, created_at: '2026-01-02', reason: 'Contact unlock' }
         ],
         count: 2,
         next: null,
@@ -87,10 +87,10 @@ describe('contactTokensStore', () => {
 
   describe('purchaseTokens', () => {
     it('should initiate purchase successfully', async () => {
-      const mockResponse = { 
+      const mockResponse: contactsApi.ContactPurchaseResponse = {
         provider: 'liqpay',
+        session_id: 'sess-123',
         redirect_url: 'https://payment.example.com/checkout',
-        order_id: 'order-123'
       }
       
       vi.mocked(contactsApi.contactsApi.purchaseTokens).mockResolvedValue(mockResponse)
@@ -145,7 +145,7 @@ describe('contactTokensStore', () => {
     it('should reset all state', () => {
       const store = useContactTokensStore()
       store.balance = 10
-      store.ledger = [{ id: 1, type: 'GRANT' as const, amount: 5, balance_after: 5, created_at: '', description: '' }]
+      store.ledger = [{ id: 1, type: 'GRANT' as const, delta: 5, balance_after: 5, created_at: '', reason: '' }]
       store.error = 'Some error'
       
       store.$reset()

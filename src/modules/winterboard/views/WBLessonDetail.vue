@@ -173,12 +173,14 @@
 // B16: WBLessonDetail — 3 tabs: materials / boards / notes
 // Ref: DAY18_AGENT-B.md
 
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import lessonsApi from '@/api/lessons'
 import apiClient from '@/utils/apiClient'
 import { useToast } from '../composables/useToast'
+import { useAuthStore } from '@/modules/auth/store/authStore'
+import { debounce } from '@/utils/debounce'
 
 const props = defineProps<{ lessonId: string | number }>()
 
@@ -186,8 +188,15 @@ const { t } = useI18n()
 const router = useRouter()
 const { showToast } = useToast()
 
-const TABS = ['materials', 'boards', 'notes'] as const
-type Tab = (typeof TABS)[number]
+const authStore = useAuthStore()
+const isTutor = computed(() => (authStore.user as any)?.role === 'tutor')
+
+const TABS = computed(() =>
+  isTutor.value
+    ? (['materials', 'boards', 'notes'] as const)
+    : (['materials', 'boards'] as const)
+)
+type Tab = 'materials' | 'boards' | 'notes'
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
@@ -195,6 +204,7 @@ const lesson = ref<any>(null)
 const sessions = ref<any[]>([])
 const materials = ref<{ id: number; name: string; thumbnail_url: string; content_type: string }[]>([])
 const notes = ref('')
+const notesUpdatedAt = ref<string | null>(null)
 const activeTab = ref<Tab>('materials')
 const loading = ref(false)
 const loadingSessions = ref(false)
@@ -233,9 +243,44 @@ async function loadSessions(): Promise<void> {
   }
 }
 
+async function loadMaterials(): Promise<void> {
+  try {
+    const res = await lessonsApi.getMaterials(Number(props.lessonId))
+    const items = (res as any)?.results ?? (res as any) ?? []
+    materials.value = items.map((m: any) => ({
+      id: m.id,
+      name: m.title || 'Untitled',
+      thumbnail_url: m.thumbnail_url || '',
+      content_type: m.content_type || '',
+    }))
+  } catch (err) {
+    console.error('[WB:LessonDetail] loadMaterials failed', err)
+  }
+}
+
+async function loadNotes(): Promise<void> {
+  try {
+    const res = await lessonsApi.getNotes(Number(props.lessonId))
+    notes.value = (res as any)?.notes_text ?? ''
+    notesUpdatedAt.value = (res as any)?.updated_at ?? null
+  } catch (err: any) {
+    if (err?.response?.status === 403) {
+      // Student — notes tab hidden by isTutor guard
+    } else {
+      console.error('[WB:LessonDetail] loadNotes failed', err)
+    }
+  }
+}
+
 async function loadData(): Promise<void> {
   await loadLesson()
-  if (!error.value) await loadSessions()
+  if (!error.value) {
+    await Promise.all([
+      loadMaterials(),
+      loadSessions(),
+      isTutor.value ? loadNotes() : Promise.resolve(),
+    ])
+  }
 }
 
 // ─── Actions ─────────────────────────────────────────────────────────────────
@@ -248,14 +293,43 @@ function startLesson(): void {
   router.push({ name: 'winterboard-classroom', params: { lessonId: props.lessonId } })
 }
 
-function removeMaterial(material: { id: number }): void {
-  // TODO: call real API
+async function removeMaterial(material: { id: number }): Promise<void> {
+  const prev = [...materials.value]
   materials.value = materials.value.filter((m) => m.id !== material.id)
+
+  try {
+    await lessonsApi.removeMaterial(Number(props.lessonId), material.id)
+    showToast(t('winterboard.lessons.materialRemoved'), 'success')
+  } catch (err) {
+    materials.value = prev
+    showToast(t('winterboard.lessons.materialRemoveError'), 'error')
+    console.error('[WB:LessonDetail] removeMaterial failed', err)
+  }
 }
 
+const saveNotesDebounced = debounce(async () => {
+  try {
+    const res = await lessonsApi.saveNotes(
+      Number(props.lessonId),
+      notes.value,
+      notesUpdatedAt.value
+    )
+    notesUpdatedAt.value = (res as any)?.updated_at ?? notesUpdatedAt.value
+  } catch (err: any) {
+    if (err?.response?.status === 409) {
+      const serverData = err.response.data
+      showToast(t('winterboard.lessons.notesConflict'), 'warning')
+      notes.value = serverData.server_notes_text ?? notes.value
+      notesUpdatedAt.value = serverData.server_updated_at ?? notesUpdatedAt.value
+    } else {
+      showToast(t('winterboard.lessons.notesSaveError'), 'error')
+    }
+    console.error('[WB:LessonDetail] saveNotes failed', err)
+  }
+}, 1000)
+
 function saveNotes(): void {
-  // TODO: save notes via API
-  console.log('[WB:LessonDetail] Save notes:', notes.value)
+  saveNotesDebounced()
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

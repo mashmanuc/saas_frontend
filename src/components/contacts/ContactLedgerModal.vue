@@ -42,8 +42,8 @@
           >
             <div class="item-main">
               <div class="item-type">
-                <span class="type-badge" :class="`type-${item.transaction_type.toLowerCase()}`">
-                  {{ $t(`contacts.ledger.type.${item.transaction_type.toLowerCase()}`) }}
+                <span class="type-badge" :class="`type-${(item as any).transaction_type ?? item.type.toLowerCase()}`">
+                  {{ $t(`contacts.ledger.type.${(item as any).transaction_type ?? item.type.toLowerCase()}`) }}
                 </span>
               </div>
               <div class="item-reason">{{ item.reason }}</div>

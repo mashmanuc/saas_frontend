@@ -94,10 +94,77 @@ interface WBStateUpdateMsg {
 interface WBStrokeBroadcastMsg {
   type: 'stroke.broadcast'
   stroke: any
+  strokeId?: string
   pageIndex: number
   action: string
   userId: string
   ts: number
+}
+
+/** Phase 38: Test session messages */
+interface WBTestStartMsg {
+  type: 'test.start'
+  test_session_id: string
+  test_objects: any[]
+  test_meta: Record<string, unknown>
+  page_id: string
+  started_by: string
+  ts: number
+}
+
+interface WBTestAnswerMsg {
+  type: 'test.answer'
+  test_session_id: string
+  object_id: string
+  answer: unknown
+  page_id: string
+  student_id: string
+  student_name: string
+}
+
+interface WBTestPhaseMsg {
+  type: 'test.phase'
+  test_session_id: string
+  phase: string
+  page_id: string
+}
+
+interface WBTestGradeMsg {
+  type: 'test.grade'
+  test_session_id: string
+  results: Record<string, any>
+  page_id: string
+}
+
+interface WBTestSyncMsg {
+  type: 'test.sync'
+  test_session_id: string
+  test_objects: any[]
+  test_meta: Record<string, unknown>
+  phase: string
+  page_id: string
+  started_by?: string
+  my_answers?: Record<string, unknown>
+  my_result?: any
+  all_answers?: Record<string, Record<string, unknown>>
+  all_results?: Record<string, any>
+}
+
+interface WBTestEndMsg {
+  type: 'test.end'
+  page_id: string
+  ts: number
+}
+
+interface WBLaserPointerMsg {
+  type: 'laser_pointer'
+  user_id: string
+  display_name: string
+  x: number
+  y: number
+  active: boolean
+  color: string
+  page_id: string
 }
 
 type WBServerMessage =
@@ -108,6 +175,13 @@ type WBServerMessage =
   | WBPresenceErrorMsg
   | WBStateUpdateMsg
   | WBStrokeBroadcastMsg
+  | WBLaserPointerMsg
+  | WBTestStartMsg
+  | WBTestAnswerMsg
+  | WBTestPhaseMsg
+  | WBTestGradeMsg
+  | WBTestSyncMsg
+  | WBTestEndMsg
 
 // ─── Options ────────────────────────────────────────────────────────────────
 
@@ -502,6 +576,37 @@ export function usePresence(options: UsePresenceOptions) {
             pageId: msg.page_id,
           },
         }))
+        break
+      }
+
+      // Phase 38: Test session messages
+      case 'test.start': {
+        window.dispatchEvent(new CustomEvent('wb:test-start', { detail: msg }))
+        break
+      }
+
+      case 'test.answer': {
+        window.dispatchEvent(new CustomEvent('wb:test-answer', { detail: msg }))
+        break
+      }
+
+      case 'test.phase': {
+        window.dispatchEvent(new CustomEvent('wb:test-phase', { detail: msg }))
+        break
+      }
+
+      case 'test.grade': {
+        window.dispatchEvent(new CustomEvent('wb:test-grade', { detail: msg }))
+        break
+      }
+
+      case 'test.sync': {
+        window.dispatchEvent(new CustomEvent('wb:test-sync', { detail: msg }))
+        break
+      }
+
+      case 'test.end': {
+        window.dispatchEvent(new CustomEvent('wb:test-end', { detail: msg }))
         break
       }
     }

@@ -97,7 +97,7 @@ const numberFormats = {
 }
 
 // Supported locales
-const SUPPORTED_LOCALES = ['en', 'uk', 'ru', 'pl', 'de'] as const
+const SUPPORTED_LOCALES = ['en', 'uk', 'pl', 'de'] as const
 type SupportedLocale = (typeof SUPPORTED_LOCALES)[number]
 
 const initialUkMessages = mergeMessages(ukMessages, availabilityUkMessages)

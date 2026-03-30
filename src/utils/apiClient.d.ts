@@ -6,7 +6,28 @@
  * apiClient automatically unwraps .data from AxiosResponse via interceptor
  */
 
-import type { AxiosRequestConfig } from 'axios'
+import type { AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios'
+
+// Augment axios to support custom `meta` field on request config
+declare module 'axios' {
+  interface AxiosRequestConfig {
+    meta?: {
+      skipLoader?: boolean
+      fullResponse?: boolean
+      bypassCircuitBreaker?: boolean
+    }
+  }
+  interface InternalAxiosRequestConfig {
+    meta?: {
+      skipLoader?: boolean
+      fullResponse?: boolean
+      bypassCircuitBreaker?: boolean
+    }
+    _dedupeKey?: string
+    _retry?: boolean
+    _csrfRetry?: boolean
+  }
+}
 
 interface ApiClient {
   /**
@@ -39,3 +60,6 @@ declare const apiClient: ApiClient
 
 export default apiClient
 export { apiClient }
+export function isCircuitBreakerOpen(): boolean
+export function resetCircuitBreaker(): void
+export function _getDedupeKey(config: any): string | null

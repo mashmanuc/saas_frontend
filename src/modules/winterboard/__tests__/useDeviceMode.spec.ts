@@ -219,7 +219,7 @@ describe('DeviceModeState type contract', () => {
 // ── useDeviceMode composable (requires DOM mocking) ─────────────────────
 
 describe('useDeviceMode composable', () => {
-  let matchMediaMock: vi.Mock
+  let matchMediaMock: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
     vi.useFakeTimers()

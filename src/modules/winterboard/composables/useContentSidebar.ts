@@ -67,7 +67,7 @@ export function useContentSidebar(lessonId: Ref<string | null>) {
 
   const grouped = computed(() => {
     const groups: Record<AssetCategoryGroup, AllowedContentItem[]> = {
-      problem: [], image: [], pdf: [], audio: [], video: [], presentation: [], youtube: [],
+      problem: [], image: [], pdf: [], audio: [], video: [], presentation: [], youtube: [], document: [],
     }
     for (const item of items.value) {
       const cat = item.asset_category

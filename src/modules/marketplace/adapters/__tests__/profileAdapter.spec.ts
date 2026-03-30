@@ -24,6 +24,8 @@ describe('profileAdapter', () => {
       birth_year: null,
       show_age: false,
       telegram_username: '',
+      city_code: null,
+      is_city_public: false,
     })
 
     describe('experience_years validation', () => {

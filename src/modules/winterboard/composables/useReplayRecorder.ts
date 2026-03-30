@@ -12,6 +12,7 @@
 import { ref, readonly, type Ref } from 'vue'
 import type { RecordOperationRequest } from '../types/replay'
 import { recordOperationsBatch, createSnapshot } from '../api/replay'
+import { isCircuitBreakerOpen } from '@/utils/apiClient'
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -119,7 +120,8 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
     const sid = options.sessionId.value
     if (buffer.length === 0 || !sid) return
     if (isFlushing.value) return // prevent concurrent flushes
-    if (circuitOpen) return       // circuit breaker: server unreachable, skip flush
+    if (circuitOpen) return       // local circuit breaker: server unreachable, skip flush
+    if (isCircuitBreakerOpen()) return  // global circuit breaker from apiClient
 
     isFlushing.value = true
     const ops = buffer.splice(0) // drain buffer atomically

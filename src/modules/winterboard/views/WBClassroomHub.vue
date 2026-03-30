@@ -1,6 +1,8 @@
-<!-- WB: Classroom Hub — командна панель тьютора/студента для входу в уроки
-     Ref: docs/lesson_session/CLASSROOM_ENTRY_PLAN.md
-     Секції: "Зараз проводжу" + "Готові до початку" + "Провести з шаблону" + "Інструменти" -->
+<!-- WB: Classroom Hub — командна панель тьютора/студента
+     SPEC: Classroom Pages (Student + Teacher) — FINAL
+     Teacher → primary = список учнів → detail → уроки
+     Student → тьютори (якщо >1) → уроки
+     Інваріанти: 1 lesson_id = 1 карточка, active зверху, час = primary -->
 <template>
   <div class="wb-hub">
     <!-- Header -->
@@ -26,169 +28,134 @@
     </div>
 
     <template v-else>
-      <!-- Секція: Зараз проводжу / Активні уроки (IN_PROGRESS) -->
-      <section v-if="activeLessons.length > 0" class="wb-hub__section">
-        <h2 class="wb-hub__section-title">
-          <span class="wb-hub__dot wb-hub__dot--active" />
-          {{ isTutor ? t('winterboard.classroomHub.activeSection') : t('winterboard.classroomHub.activeSectionStudent') }}
-        </h2>
-        <div class="wb-hub__cards">
-          <div
-            v-for="lesson in activeLessons"
-            :key="lesson.id"
-            class="wb-hub-card wb-hub-card--active"
-            :class="{ 'wb-hub-card--tutor-waiting': !isTutor && lesson.tutor_is_online }"
-          >
-            <div class="wb-hub-card__info">
-              <span class="wb-hub-card__title">{{ lesson.title }}</span>
-              <span class="wb-hub-card__student">
-                {{ isTutor ? lesson.student_name : lesson.tutor_name }}
-              </span>
-              <span v-if="!isTutor && lesson.tutor_is_online" class="wb-hub-card__live-badge">
-                <span class="wb-hub-card__live-dot" />
-                {{ t('winterboard.classroomHub.tutorWaiting') }}
-              </span>
-              <span v-else-if="lesson.started_at" class="wb-hub-card__meta">
-                {{ t('winterboard.classroomHub.startedAt', { time: formatTime(lesson.started_at) }) }}
-              </span>
+      <!-- ═══════════════════════════════════════════════════════════════
+           TEACHER UI: Рівень 1 = Учні, Рівень 2 = Уроки учня
+           ═══════════════════════════════════════════════════════════════ -->
+      <template v-if="isTutor">
+        <!-- Рівень 1: Список учнів (якщо учень НЕ обраний) -->
+        <template v-if="!selectedPerson">
+          <section class="wb-hub__section">
+            <h2 class="wb-hub__section-title">
+              {{ t('winterboard.classroomHub.myStudents') }}
+            </h2>
+
+            <div v-if="personList.length === 0" class="wb-hub__empty">
+              <p>{{ t('winterboard.classroomHub.noStudents') }}</p>
             </div>
-            <button
-              class="wb-hub-card__btn"
-              :class="!isTutor && lesson.tutor_is_online ? 'wb-hub-card__btn--join-now' : 'wb-hub-card__btn--resume'"
-              @click="handleResume(lesson)"
-            >
-              {{ isTutor ? t('winterboard.classroomHub.resumeLesson') : (lesson.tutor_is_online ? t('winterboard.classroomHub.joinNow') : t('winterboard.classroomHub.joinLesson')) }}
-            </button>
-          </div>
-        </div>
-      </section>
 
-      <!-- Секція: Готові до початку (DRAFT / SCHEDULED / CONFIRMED) -->
-      <section class="wb-hub__section">
-        <h2 class="wb-hub__section-title">
-          {{ t('winterboard.classroomHub.readySection') }}
-        </h2>
-
-        <div v-if="readyLessons.length === 0" class="wb-hub__empty">
-          <p>{{ t('winterboard.classroomHub.noReadyLessons') }}</p>
-        </div>
-
-        <div v-else class="wb-hub__cards">
-          <div
-            v-for="lesson in readyLessons"
-            :key="lesson.id"
-            class="wb-hub-card"
-          >
-            <div class="wb-hub-card__info">
-              <span class="wb-hub-card__title">{{ lesson.title }}</span>
-              <span class="wb-hub-card__student">
-                {{ isTutor ? lesson.student_name : lesson.tutor_name }}
-              </span>
-              <span v-if="lesson.start" class="wb-hub-card__meta">
-                {{ t('winterboard.classroomHub.scheduled', { time: formatDateTime(lesson.start) }) }}
-              </span>
+            <div v-else class="wb-hub__cards">
+              <div
+                v-for="person in personList"
+                :key="person.id"
+                class="wb-hub-card wb-hub-card--person"
+                :class="{ 'wb-hub-card--has-active': person.hasActive }"
+                @click="selectPerson(person)"
+              >
+                <div class="wb-hub-card__info">
+                  <span class="wb-hub-card__person-name">{{ person.name }}</span>
+                  <span class="wb-hub-card__meta">
+                    <span v-if="person.hasActive" class="wb-hub-card__active-indicator">●</span>
+                    {{ person.hasActive
+                      ? t('winterboard.classroomHub.hasActiveLesson')
+                      : t('winterboard.classroomHub.lastActivity', { time: formatRelativeDate(person.lastActivityAt) })
+                    }}
+                  </span>
+                  <span class="wb-hub-card__lesson-count">
+                    {{ person.lessonCount }} {{ t('winterboard.classroomHub.lessonsCount') }}
+                  </span>
+                </div>
+                <span class="wb-hub-card__arrow">›</span>
+              </div>
             </div>
-            <button
-              v-if="isTutor"
-              class="wb-hub-card__btn wb-hub-card__btn--start"
-              :disabled="startingId === lesson.id"
-              @click="handleStart(lesson)"
-            >
-              {{ startingId === lesson.id ? '...' : t('winterboard.classroomHub.startLesson') }}
-            </button>
-            <span v-else class="wb-hub-card__status">
-              {{ t('winterboard.classroomHub.waitingForTutor') }}
-            </span>
-          </div>
-        </div>
-      </section>
+          </section>
 
-      <!-- Секція: Провести з шаблону (тільки тьютор) -->
-      <section v-if="isTutor && templates.length > 0" class="wb-hub__section">
-        <h2 class="wb-hub__section-title">
-          {{ t('winterboard.classroomHub.fromTemplate') }}
-        </h2>
-
-        <!-- Компактна форма: шаблон + студент → Провести -->
-        <div v-if="!showTemplateForm" class="wb-hub__cards">
-          <div
-            v-for="tpl in templates"
-            :key="tpl.id"
-            class="wb-hub-card wb-hub-card--template"
-          >
-            <div class="wb-hub-card__info">
-              <span class="wb-hub-card__title">{{ tpl.title || `Шаблон #${tpl.id}` }}</span>
-              <span class="wb-hub-card__meta">{{ tpl.subject || tpl.lesson_type }}</span>
+          <!-- Інструменти (тільки teacher, рівень 1) -->
+          <section class="wb-hub__section">
+            <h2 class="wb-hub__section-title">{{ t('winterboard.classroomHub.tools') }}</h2>
+            <div class="wb-hub__tools">
+              <router-link :to="{ name: 'winterboard-new' }" class="wb-hub__tool-card wb-hub__tool-card--primary">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M12 4v16M4 12h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <span>{{ t('winterboard.classroomHub.newBoard') }}</span>
+              </router-link>
+              <router-link :to="{ name: 'winterboard-library' }" class="wb-hub__tool-card">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M4 19V7a2 2 0 012-2h12a2 2 0 012 2v12" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M4 19h16M9 7v12M15 7v12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                <span>{{ t('winterboard.dashboard.library') }}</span>
+              </router-link>
             </div>
-            <button
-              class="wb-hub-card__btn wb-hub-card__btn--template"
-              @click="openTemplateForm(tpl)"
-            >
-              {{ t('winterboard.classroomHub.conductLesson') }}
-            </button>
-          </div>
-        </div>
+          </section>
+        </template>
 
-        <!-- Розгорнута форма: обраний шаблон + вибір студента -->
-        <div v-if="showTemplateForm" class="wb-hub__template-form">
-          <div class="wb-hub__template-form-header">
-            <div>
-              <span class="wb-hub-card__title">{{ selectedTemplate?.title }}</span>
-              <span class="wb-hub-card__meta">{{ selectedTemplate?.subject }}</span>
+        <!-- Рівень 2: Уроки обраного учня -->
+        <template v-else>
+          <LessonsList
+            :person="selectedPerson"
+            :lessons="selectedPersonLessons"
+            :is-tutor="true"
+            :starting-id="startingId"
+            :visible-count="visibleCount"
+            @back="selectedPerson = null"
+            @start="handleStart"
+            @resume="handleResume"
+            @show-more="visibleCount += PAGE_SIZE"
+          />
+        </template>
+      </template>
+
+      <!-- ═══════════════════════════════════════════════════════════════
+           STUDENT UI: Якщо >1 тьютор → список тьюторів, інакше уроки
+           ═══════════════════════════════════════════════════════════════ -->
+      <template v-else>
+        <!-- Multi-tutor: показуємо список тьюторів -->
+        <template v-if="personList.length > 1 && !selectedPerson">
+          <section class="wb-hub__section">
+            <h2 class="wb-hub__section-title">
+              {{ t('winterboard.classroomHub.myTutors') }}
+            </h2>
+            <div class="wb-hub__cards">
+              <div
+                v-for="person in personList"
+                :key="person.id"
+                class="wb-hub-card wb-hub-card--person"
+                :class="{ 'wb-hub-card--has-active': person.hasActive }"
+                @click="selectPerson(person)"
+              >
+                <div class="wb-hub-card__info">
+                  <span class="wb-hub-card__person-name">{{ person.name }}</span>
+                  <span class="wb-hub-card__meta">
+                    <span v-if="person.hasActive" class="wb-hub-card__active-indicator">●</span>
+                    {{ person.hasActive
+                      ? t('winterboard.classroomHub.hasActiveLesson')
+                      : t('winterboard.classroomHub.lastActivity', { time: formatRelativeDate(person.lastActivityAt) })
+                    }}
+                  </span>
+                </div>
+                <span class="wb-hub-card__arrow">›</span>
+              </div>
             </div>
-            <button class="wb-hub__template-form-close" @click="closeTemplateForm">
-              &times;
-            </button>
-          </div>
+          </section>
+        </template>
 
-          <label class="wb-hub__label">
-            {{ t('winterboard.classroomHub.selectStudent') }}
-          </label>
-          <select
-            v-model="selectedStudentId"
-            class="wb-hub__select"
-          >
-            <option :value="null" disabled>
-              {{ t('winterboard.classroomHub.chooseStudent') }}
-            </option>
-            <option
-              v-for="s in students"
-              :key="s.id"
-              :value="s.id"
-            >
-              {{ s.name }}
-            </option>
-          </select>
-
-          <button
-            class="wb-hub-card__btn wb-hub-card__btn--start wb-hub__template-form-submit"
-            :disabled="!selectedStudentId || conductingTemplate"
-            @click="handleConductFromTemplate"
-          >
-            {{ conductingTemplate ? '...' : t('winterboard.classroomHub.startLesson') }}
-          </button>
-        </div>
-      </section>
-
-      <!-- Секція: Інструменти -->
-      <section v-if="isTutor" class="wb-hub__section">
-        <h2 class="wb-hub__section-title">{{ t('winterboard.classroomHub.tools') }}</h2>
-        <div class="wb-hub__tools">
-          <router-link :to="{ name: 'winterboard-new' }" class="wb-hub__tool-card wb-hub__tool-card--primary">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M12 4v16M4 12h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-            <span>{{ t('winterboard.classroomHub.newBoard') }}</span>
-          </router-link>
-          <router-link :to="{ name: 'winterboard-library' }" class="wb-hub__tool-card">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M4 19V7a2 2 0 012-2h12a2 2 0 012 2v12" stroke="currentColor" stroke-width="1.5"/>
-              <path d="M4 19h16M9 7v12M15 7v12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
-            <span>{{ t('winterboard.dashboard.library') }}</span>
-          </router-link>
-        </div>
-      </section>
+        <!-- Single tutor або вибраний тьютор → уроки -->
+        <template v-else>
+          <LessonsList
+            :person="selectedPerson || personList[0] || null"
+            :lessons="selectedPerson ? selectedPersonLessons : allLessonsDeduped"
+            :is-tutor="false"
+            :starting-id="startingId"
+            :visible-count="visibleCount"
+            :show-back="personList.length > 1"
+            @back="selectedPerson = null"
+            @start="handleStart"
+            @resume="handleResume"
+            @show-more="visibleCount += PAGE_SIZE"
+          />
+        </template>
+      </template>
     </template>
   </div>
 </template>
@@ -199,9 +166,7 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import lessonsApi from '@/api/lessons'
-import { lessonsTemplateApi } from '@/modules/lessons/api/lessonsTemplateApi'
-import { ordersApi } from '@/modules/booking/api/ordersApi'
-import type { Order } from '@/modules/booking/api/ordersApi'
+import LessonsList from '../components/LessonsList.vue'
 
 // ─── Composables ──────────────────────────────────────────────────────────
 
@@ -228,32 +193,27 @@ interface ActiveLesson {
   tutor_is_online: boolean
 }
 
-interface TemplateSummary {
-  id: number
-  title: string
-  subject?: string
-  lesson_type?: string
-}
-
-interface StudentOption {
+/** Контрагент (учень для teacher, тьютор для student) */
+export interface PersonEntry {
   id: number
   name: string
+  hasActive: boolean
+  lastActivityAt: string
+  lessonCount: number
 }
+
+// ─── Constants ────────────────────────────────────────────────────────────
+
+const PAGE_SIZE = 20
 
 // ─── State ────────────────────────────────────────────────────────────────
 
 const lessons = ref<ActiveLesson[]>([])
-const templates = ref<TemplateSummary[]>([])
-const students = ref<StudentOption[]>([])
 const loading = ref(false)
 const errorMsg = ref<string | null>(null)
 const startingId = ref<number | null>(null)
-
-// Template form state
-const showTemplateForm = ref(false)
-const selectedTemplate = ref<TemplateSummary | null>(null)
-const selectedStudentId = ref<number | null>(null)
-const conductingTemplate = ref(false)
+const selectedPerson = ref<PersonEntry | null>(null)
+const visibleCount = ref(PAGE_SIZE)
 
 let refreshTimer: ReturnType<typeof setInterval> | null = null
 
@@ -261,19 +221,65 @@ let refreshTimer: ReturnType<typeof setInterval> | null = null
 
 const isTutor = computed(() => (authStore.user as any)?.role === 'tutor')
 
-const activeLessons = computed(() =>
-  lessons.value.filter((l) => l.status === 'IN_PROGRESS'),
-)
+/** Dedup по lesson_id — кожен lesson_id = 1 карточка */
+const allLessonsDeduped = computed(() => {
+  const seen = new Set<number>()
+  return lessons.value.filter((l) => {
+    if (seen.has(l.id)) return false
+    seen.add(l.id)
+    return true
+  })
+})
 
-const readyLessons = computed(() => {
-  if (isTutor.value) {
-    // Тьютор бачить все, що може стартанути (DRAFT, SCHEDULED, CONFIRMED)
-    return lessons.value.filter((l) => l.can_start)
+/** Список контрагентів (учні для teacher, тьютори для student) */
+const personList = computed((): PersonEntry[] => {
+  const map = new Map<number, { name: string; lessons: ActiveLesson[] }>()
+
+  for (const lesson of allLessonsDeduped.value) {
+    const personId = isTutor.value ? lesson.student_id : lesson.tutor_id
+    const personName = isTutor.value ? lesson.student_name : lesson.tutor_name
+
+    if (!map.has(personId)) {
+      map.set(personId, { name: personName, lessons: [] })
+    }
+    map.get(personId)!.lessons.push(lesson)
   }
-  // Студент бачить тільки SCHEDULED/CONFIRMED — DRAFT = внутрішня кухня тьютора
-  return lessons.value.filter((l) =>
-    l.status === 'SCHEDULED' || l.status === 'CONFIRMED',
-  )
+
+  const result: PersonEntry[] = []
+  for (const [id, data] of map) {
+    const hasActive = data.lessons.some((l) => l.status === 'IN_PROGRESS')
+    const latestDate = data.lessons.reduce((latest, l) => {
+      const d = l.started_at || l.start || ''
+      return d > latest ? d : latest
+    }, '')
+
+    result.push({
+      id,
+      name: data.name,
+      hasActive,
+      lastActivityAt: latestDate,
+      lessonCount: data.lessons.length,
+    })
+  }
+
+  // Сортування: active зверху, потім за останньою активністю
+  result.sort((a, b) => {
+    if (a.hasActive !== b.hasActive) return a.hasActive ? -1 : 1
+    return b.lastActivityAt.localeCompare(a.lastActivityAt)
+  })
+
+  return result
+})
+
+/** Уроки обраного контрагента */
+const selectedPersonLessons = computed(() => {
+  if (!selectedPerson.value) return []
+  const personId = selectedPerson.value.id
+
+  return allLessonsDeduped.value.filter((l) => {
+    const id = isTutor.value ? l.student_id : l.tutor_id
+    return id === personId
+  })
 })
 
 // ─── Data Loading ─────────────────────────────────────────────────────────
@@ -282,9 +288,7 @@ async function loadAll(): Promise<void> {
   loading.value = true
   errorMsg.value = null
   try {
-    await Promise.all([loadLessons(), loadTemplates(), loadStudents()])
-  } catch {
-    // individual loaders handle their own errors
+    await loadLessons()
   } finally {
     loading.value = false
   }
@@ -292,26 +296,44 @@ async function loadAll(): Promise<void> {
 
 async function loadLessons(silent = false): Promise<void> {
   try {
-    const res = await lessonsApi.getActiveLessons({}, { silent })
-    const incoming = (res.data?.results ?? res.results ?? []) as ActiveLesson[]
+    // Завантажуємо паралельно: активні (DRAFT/SCHEDULED/CONFIRMED/IN_PROGRESS) + завершені (COMPLETED)
+    const [activeRes, completedRes] = await Promise.all([
+      lessonsApi.getActiveLessons({}, { silent }),
+      lessonsApi.getActiveLessons({ status: 'COMPLETED' }, { silent }),
+    ])
 
-    // Smart merge: оновлюємо тільки те, що змінилось (уникаємо re-render flash)
+    const activeItems = ((activeRes as any).data?.results ?? (activeRes as any).results ?? []) as ActiveLesson[]
+    const completedItems = ((completedRes as any).data?.results ?? (completedRes as any).results ?? []) as ActiveLesson[]
+
+    // Merge: активні мають пріоритет (dedup по id)
+    const seen = new Set<number>()
+    const incoming: ActiveLesson[] = []
+    for (const l of [...activeItems, ...completedItems]) {
+      if (!seen.has(l.id)) {
+        seen.add(l.id)
+        incoming.push(l)
+      }
+    }
+
+    // Smart merge: оновлюємо тільки якщо змінилось
     if (silent && lessons.value.length > 0) {
-      const oldMap = new Map(lessons.value.map(l => [l.id, l]))
-      const changed = incoming.length !== lessons.value.length
-        || incoming.some(l => {
+      const oldMap = new Map(lessons.value.map((l) => [l.id, l]))
+      const changed =
+        incoming.length !== lessons.value.length ||
+        incoming.some((l) => {
           const old = oldMap.get(l.id)
-          return !old
-            || old.status !== l.status
-            || old.tutor_is_online !== l.tutor_is_online
-            || old.started_at !== l.started_at
+          return (
+            !old ||
+            old.status !== l.status ||
+            old.tutor_is_online !== l.tutor_is_online ||
+            old.started_at !== l.started_at
+          )
         })
-      if (!changed) return  // нічого не змінилось — не чіпаємо DOM
+      if (!changed) return
     }
 
     lessons.value = incoming
   } catch (err) {
-    // На background refresh не показуємо error — тільки логуємо
     if (!silent) {
       errorMsg.value = t('winterboard.classroomHub.loadError')
     }
@@ -319,54 +341,19 @@ async function loadLessons(silent = false): Promise<void> {
   }
 }
 
-async function loadTemplates(): Promise<void> {
-  if (!isTutor.value) return
-  try {
-    const res = await lessonsTemplateApi.getTemplates()
-    const data = (res as any)?.data ?? res
-    const list = Array.isArray(data) ? data : (data?.results ?? [])
-    templates.value = list.map((t: any) => ({
-      id: t.id,
-      title: t.title,
-      subject: t.subject,
-      lesson_type: t.lesson_type,
-    }))
-  } catch (err) {
-    console.error('[WB:Hub] loadTemplates failed', err)
-    // не блокуємо — шаблони optional
-  }
-}
+// ─── Actions ─────────────────────────────────────────────────────────────
 
-async function loadStudents(): Promise<void> {
-  if (!isTutor.value) return
-  try {
-    const res = await ordersApi.listOrders()
-    const orders: Order[] = res.results ?? []
-    // Унікальні студенти з Orders
-    const seen = new Set<number>()
-    students.value = orders
-      .filter((o) => {
-        if (seen.has(o.student.id)) return false
-        seen.add(o.student.id)
-        return true
-      })
-      .map((o) => ({
-        id: o.student.id,
-        name: o.student.fullName || `${o.student.firstName} ${o.student.lastName}`.trim() || o.student.email,
-      }))
-  } catch (err) {
-    console.error('[WB:Hub] loadStudents failed', err)
-  }
+function selectPerson(person: PersonEntry): void {
+  selectedPerson.value = person
+  visibleCount.value = PAGE_SIZE
 }
-
-// ─── Lesson Actions ───────────────────────────────────────────────────────
 
 async function handleStart(lesson: ActiveLesson): Promise<void> {
   if (startingId.value) return
   startingId.value = lesson.id
   try {
     const res = await lessonsApi.startSession(lesson.id)
-    const roomUrl = res.data?.room_url ?? res.room_url
+    const roomUrl = (res as any).data?.room_url ?? res.room_url
     if (roomUrl) {
       router.push(roomUrl)
     }
@@ -382,82 +369,23 @@ async function handleResume(lesson: ActiveLesson): Promise<void> {
   router.push(`/winterboard/classroom/${lesson.id}`)
 }
 
-// ─── Template Actions ─────────────────────────────────────────────────────
-
-function openTemplateForm(tpl: TemplateSummary): void {
-  selectedTemplate.value = tpl
-  selectedStudentId.value = null
-  showTemplateForm.value = true
-}
-
-function closeTemplateForm(): void {
-  showTemplateForm.value = false
-  selectedTemplate.value = null
-  selectedStudentId.value = null
-}
-
-async function handleConductFromTemplate(): Promise<void> {
-  if (!selectedTemplate.value || !selectedStudentId.value || conductingTemplate.value) return
-  conductingTemplate.value = true
-
-  try {
-    // Крок 1: Створити Lesson з шаблону (час = зараз, тривалість 60 хв)
-    const now = new Date()
-    const end = new Date(now.getTime() + 60 * 60 * 1000)
-
-    const createRes = await lessonsTemplateApi.createLessonFromTemplate(
-      selectedTemplate.value.id,
-      {
-        student_id: selectedStudentId.value,
-        start: now.toISOString(),
-        end: end.toISOString(),
-      },
-    )
-
-    const lessonId = (createRes as any)?.data?.lesson_id ?? (createRes as any)?.lesson_id
-    if (!lessonId) {
-      throw new Error('lesson_id not returned')
-    }
-
-    // Крок 2: Почати урок (start-session)
-    const startRes = await lessonsApi.startSession(lessonId)
-    const roomUrl = (startRes as any)?.data?.room_url ?? (startRes as any)?.room_url
-
-    // Крок 3: Перехід у дошку
-    if (roomUrl) {
-      router.push(roomUrl)
-    } else {
-      router.push(`/winterboard/classroom/${lessonId}`)
-    }
-  } catch (err: any) {
-    console.error('[WB:Hub] conductFromTemplate failed', err)
-    const detail = err?.response?.data?.detail || err?.response?.data?.error || err?.message
-    errorMsg.value = detail || t('winterboard.classroomHub.startError')
-  } finally {
-    conductingTemplate.value = false
-  }
-}
-
 // ─── Helpers ──────────────────────────────────────────────────────────────
 
-function formatTime(iso: string): string {
-  try {
-    return new Date(iso).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })
-  } catch {
-    return iso
-  }
-}
-
-function formatDateTime(iso: string): string {
+function formatRelativeDate(iso: string): string {
+  if (!iso) return '—'
   try {
     const d = new Date(iso)
-    const today = new Date()
-    const isToday = d.toDateString() === today.toDateString()
-    if (isToday) {
-      return d.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })
-    }
-    return d.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' }) +
-      ' ' + d.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })
+    const now = new Date()
+    const diffMs = now.getTime() - d.getTime()
+    const diffMin = Math.floor(diffMs / 60000)
+
+    if (diffMin < 1) return t('winterboard.classroomHub.justNow')
+    if (diffMin < 60) return `${diffMin} ${t('winterboard.classroomHub.minutesAgo')}`
+
+    const diffHours = Math.floor(diffMin / 60)
+    if (diffHours < 24) return `${diffHours} ${t('winterboard.classroomHub.hoursAgo')}`
+
+    return d.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })
   } catch {
     return iso
   }
@@ -467,7 +395,6 @@ function formatDateTime(iso: string): string {
 
 onMounted(() => {
   loadAll()
-  // Тихе оновлення уроків кожні 15 секунд (без loader/error flash)
   refreshTimer = setInterval(() => loadLessons(true), 15_000)
 })
 
@@ -522,18 +449,6 @@ onUnmounted(() => {
   gap: 8px;
 }
 
-.wb-hub__dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.wb-hub__dot--active {
-  background: #22c55e;
-  box-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
-}
-
 /* ── Cards ────────────────────────────────────────────────────────────── */
 
 .wb-hub__cards {
@@ -558,25 +473,14 @@ onUnmounted(() => {
   border-color: var(--wb-brand, #0066ff);
 }
 
-.wb-hub-card--active {
+/* ── Person card (student/tutor) ──────────────────────────────────────── */
+
+.wb-hub-card--person {
+  cursor: pointer;
+}
+
+.wb-hub-card--has-active {
   border-left: 4px solid #22c55e;
-}
-
-.wb-hub-card--tutor-waiting {
-  border-left: 4px solid #f59e0b;
-  background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%);
-  border-color: #f59e0b;
-  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.2), 0 4px 12px rgba(245, 158, 11, 0.1);
-  animation: wb-pulse-border 2s ease-in-out infinite;
-}
-
-@keyframes wb-pulse-border {
-  0%, 100% { box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.2), 0 4px 12px rgba(245, 158, 11, 0.1); }
-  50% { box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.3), 0 4px 16px rgba(245, 158, 11, 0.2); }
-}
-
-.wb-hub-card--template {
-  border-left: 4px solid #8b5cf6;
 }
 
 .wb-hub-card__info {
@@ -586,173 +490,34 @@ onUnmounted(() => {
   min-width: 0;
 }
 
-.wb-hub-card__title {
-  font-size: 15px;
+.wb-hub-card__person-name {
+  font-size: 16px;
   font-weight: 600;
   color: var(--wb-fg, #0f172a);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.wb-hub-card__student {
-  font-size: 13px;
-  color: var(--wb-fg-secondary, #64748b);
 }
 
 .wb-hub-card__meta {
-  font-size: 12px;
-  color: var(--wb-fg-secondary, #94a3b8);
-}
-
-.wb-hub-card__status {
   font-size: 13px;
   color: var(--wb-fg-secondary, #94a3b8);
-  white-space: nowrap;
-}
-
-.wb-hub-card__live-badge {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.wb-hub-card__active-indicator {
+  color: #22c55e;
+  font-size: 10px;
+}
+
+.wb-hub-card__lesson-count {
   font-size: 12px;
-  font-weight: 600;
-  color: #d97706;
+  color: var(--wb-fg-secondary, #b0bec5);
 }
 
-.wb-hub-card__live-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #f59e0b;
-  animation: wb-live-pulse 1.5s ease-in-out infinite;
-}
-
-@keyframes wb-live-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(1.3); }
-}
-
-/* ── Buttons ─────────────────────────────────────────────────────────── */
-
-.wb-hub-card__btn {
-  flex-shrink: 0;
-  padding: 8px 20px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  transition: background 0.15s, opacity 0.15s;
-  white-space: nowrap;
-}
-
-.wb-hub-card__btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.wb-hub-card__btn--start {
-  background: var(--wb-brand, #0066ff);
-  color: #fff;
-}
-
-.wb-hub-card__btn--start:hover:not(:disabled) {
-  background: var(--wb-brand-hover, #0052cc);
-}
-
-.wb-hub-card__btn--resume {
-  background: #22c55e;
-  color: #fff;
-}
-
-.wb-hub-card__btn--resume:hover {
-  background: #16a34a;
-}
-
-.wb-hub-card__btn--join-now {
-  background: #f59e0b;
-  color: #fff;
-  font-size: 14px;
-  padding: 10px 24px;
-  animation: wb-btn-glow 2s ease-in-out infinite;
-}
-
-.wb-hub-card__btn--join-now:hover {
-  background: #d97706;
-}
-
-@keyframes wb-btn-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
-  50% { box-shadow: 0 0 12px 4px rgba(245, 158, 11, 0.3); }
-}
-
-.wb-hub-card__btn--template {
-  background: #8b5cf6;
-  color: #fff;
-}
-
-.wb-hub-card__btn--template:hover {
-  background: #7c3aed;
-}
-
-/* ── Template Form ───────────────────────────────────────────────────── */
-
-.wb-hub__template-form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 20px;
-  background: var(--wb-card-bg, #ffffff);
-  border: 2px solid #8b5cf6;
-  border-radius: 12px;
-}
-
-.wb-hub__template-form-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.wb-hub__template-form-close {
-  background: none;
-  border: none;
-  font-size: 22px;
+.wb-hub-card__arrow {
+  font-size: 24px;
   color: var(--wb-fg-secondary, #94a3b8);
-  cursor: pointer;
-  padding: 0 4px;
-  line-height: 1;
-}
-
-.wb-hub__template-form-close:hover {
-  color: var(--wb-fg, #0f172a);
-}
-
-.wb-hub__label {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--wb-fg, #0f172a);
-}
-
-.wb-hub__select {
-  padding: 8px 12px;
-  border: 1px solid var(--wb-toolbar-border, #e2e8f0);
-  border-radius: 8px;
-  font-size: 14px;
-  color: var(--wb-fg, #0f172a);
-  background: var(--wb-card-bg, #ffffff);
-  width: 100%;
-}
-
-.wb-hub__select:focus {
-  outline: 2px solid var(--wb-brand, #0066ff);
-  outline-offset: -1px;
-}
-
-.wb-hub__template-form-submit {
-  align-self: flex-start;
-  margin-top: 4px;
+  flex-shrink: 0;
 }
 
 /* ── Tools ────────────────────────────────────────────────────────────── */
@@ -896,14 +661,7 @@ onUnmounted(() => {
   }
 
   .wb-hub-card {
-    flex-direction: column;
-    align-items: stretch;
     gap: 12px;
-  }
-
-  .wb-hub-card__btn {
-    width: 100%;
-    text-align: center;
   }
 }
 

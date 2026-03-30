@@ -127,16 +127,8 @@ let copiedTimer: ReturnType<typeof setTimeout> | null = null
 async function fetchInvites() {
   isLoading.value = true
   try {
-    const allInvites = await invitesApi.fetchInvites()
-    // Show only active and recently used invites (hide old cancelled/expired)
-    invites.value = allInvites.filter(inv => {
-      if (inv.status === 'active' || inv.status === 'used') return true
-      // Show cancelled/expired only if created in last 7 days
-      const createdAt = new Date(inv.created_at)
-      const weekAgo = new Date()
-      weekAgo.setDate(weekAgo.getDate() - 7)
-      return createdAt > weekAgo
-    })
+    // Backend returns only ACTIVE + USED(7d) by default — no client-side filtering needed
+    invites.value = await invitesApi.fetchInvites()
   } catch (err) {
     console.error('Failed to fetch invites:', err)
   } finally {
