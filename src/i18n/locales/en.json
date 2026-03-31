@@ -5587,11 +5587,11 @@
       "clean": "Зміни відсутні",
       "saved": "Saved",
       "error": "Не вдалося зберегти чернетку",
-      "rateLimited": "Занадто багато запитів. Спробуйте пізніше.",
-      "restored": "Чернетку відновлено",
-      "savedAt": "Чернетку збережено о {time}",
-      "saving": "Автозбереження…",
-      "unsaved": "Є незбережені зміни"
+      "rateLimited": "Too many requests. Please try again later.",
+      "restored": "Draft restored",
+      "savedAt": "Saved at {time}",
+      "saving": "Saving…",
+      "unsaved": "Unsaved changes"
     },
     "avatar": {
       "title": "Avatar",
@@ -7012,6 +7012,11 @@
         "networkError": "Network error. Please try again",
         "deleteFailed": "Failed to delete audio. Please try again"
       }
+    },
+    "autosave": {
+      "boardTooLarge": "Board is too large to save. Remove some elements or split the lesson into multiple boards.",
+      "boardLargeWarning": "Board is almost full — saves may be slow.",
+      "localOnlyImages": "Some images were not saved (upload to server failed)."
     },
     "grid": {
       "toggleGrid": "Board grid",

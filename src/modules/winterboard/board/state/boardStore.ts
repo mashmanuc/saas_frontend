@@ -479,6 +479,24 @@ export const useWBStore = defineStore('wb-board', {
       }
     },
 
+    /**
+     * Serialized state stripped of data: URL assets — safe to send to server.
+     * Assets with src starting with "data:" failed to upload to S3 (CORS/rate-limit)
+     * and are kept only locally for display. Sending them would inflate the payload
+     * by ~1.3 MB per image and cause 413 errors on save-stream.
+     */
+    serializedStateForSave(state): WBWorkspaceState {
+      const pages = state.pages.map(page => ({
+        ...page,
+        assets: page.assets.map(asset =>
+          typeof asset.src === 'string' && asset.src.startsWith('data:')
+            ? { ...asset, src: '', _localOnly: true }
+            : asset,
+        ),
+      }))
+      return { pages, currentPageIndex: state.currentPageIndex }
+    },
+
     // Responsive Phase 1 A2: Viewport transform getters (INV-1)
     /** Optimal zoom to fit entire page in current container */
     optimalZoom(state): number {

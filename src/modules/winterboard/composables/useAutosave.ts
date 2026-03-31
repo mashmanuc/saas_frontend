@@ -7,11 +7,13 @@
 // - Updates useWBStore: syncStatus, lastSavedAt, rev
 
 import { ref, watch, onUnmounted, computed, type Ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useWBStore } from '../board/state/boardStore'
 import { winterboardApi } from '../api/winterboardApi'
 import type { WBDiffOp } from '../api/winterboardApi'
 import type { WBSyncStatus, WBWorkspaceState } from '../types/winterboard'
 import { isCircuitBreakerOpen } from '@/utils/apiClient'
+import { useToast } from './useToast'
 
 // ── Config ─────────────────────────────────────────────────────────────
 
@@ -21,6 +23,13 @@ const RETRY_BASE_MS = 1_000      // Exponential backoff base
 const MAX_RETRIES = 3            // Max retry attempts
 const BEACON_THROTTLE_MS = 500   // Min interval between beacon saves
 const FAILURE_COOLDOWN_MS = 60_000  // 60s cooldown after all retries exhausted (prevent server overload)
+const WARN_SIZE_BYTES = 8 * 1024 * 1024   // 8 MB — show warning
+const HARD_LIMIT_BYTES = 10 * 1024 * 1024 // 10 MB — block save (matches STREAM_MAX_BYTES)
+
+/** Returns approximate byte size of the serialized payload. */
+function estimatePayloadSizeBytes(payload: unknown): number {
+  return new Blob([JSON.stringify(payload)]).size
+}
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -52,6 +61,8 @@ export function useAutosave(
   options?: { onSaved?: () => void; disabled?: Ref<boolean> },
 ): AutosaveReturn {
   const store = useWBStore()
+  const { t } = useI18n({ useScope: 'global' })
+  const { showToast } = useToast()
 
   // Reactive state
   const status = ref<WBSyncStatus>('idle')
@@ -154,7 +165,29 @@ export function useAutosave(
     const sid = sessionId.value
     if (!sid) return false
 
-    const state = store.serializedState
+    const state = store.serializedStateForSave
+
+    // ── Pre-save size guard ──────────────────────────────────────────
+    const payloadSizeBytes = estimatePayloadSizeBytes({ state })
+
+    if (payloadSizeBytes > HARD_LIMIT_BYTES) {
+      showToast(t('winterboard.autosave.boardTooLarge'), 'error')
+      // Unrecoverable for this session — mark error but don't throw (no retry needed)
+      return false
+    }
+
+    if (payloadSizeBytes > WARN_SIZE_BYTES) {
+      showToast(t('winterboard.autosave.boardLargeWarning'), 'warning')
+    }
+
+    // ── Local-only images warning ────────────────────────────────────
+    const hasLocalOnly = state.pages.some(page =>
+      page.assets.some((a: any) => a._localOnly === true),
+    )
+    if (hasLocalOnly) {
+      showToast(t('winterboard.autosave.localOnlyImages'), 'warning')
+    }
+
     const rev = store.rev
 
     try {
@@ -231,6 +264,11 @@ export function useAutosave(
           console.error(`[WB:autosave] Stream save error: ${errStatus}`, err?.response?.data || err?.message)
           // 401 = auth expired — axios interceptor already tried refresh, no point retrying
           if (errStatus === 401) {
+            throw err // bubble up to stop retries
+          }
+          // 413 = payload too large — retrying won't help (payload is always the same)
+          if (errStatus === 413) {
+            showToast(t('winterboard.autosave.boardTooLarge'), 'error')
             throw err // bubble up to stop retries
           }
           // 412/409 = rev mismatch — sync rev from server and retry
