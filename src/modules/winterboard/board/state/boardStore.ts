@@ -319,6 +319,7 @@ export interface WBBoardState {
 
   // A10: Touch copy/paste clipboard (in-memory, session-scoped)
   clipboardAssets: WBAsset[]
+  clipboardStrokes: WBStroke[]
 
   // Phase 35: Background control
   gridSize: number            // px, range 10-100, default 20
@@ -415,6 +416,7 @@ export const useWBStore = defineStore('wb-board', {
     gridPatternDataUrl: null,
 
     clipboardAssets: [],
+    clipboardStrokes: [],
 
     // Phase 35: Background control
     gridSize: 20,                    // px, range 10-100
@@ -534,7 +536,7 @@ export const useWBStore = defineStore('wb-board', {
     canAddObject(state): boolean {
       const page = state.pages[state.currentPageIndex]
       if (!page) return false
-      return page.strokes.length + page.assets.length < 300
+      return page.strokes.length + page.assets.length < 600
     },
 
     isNearObjectLimit(state): boolean {
@@ -728,7 +730,7 @@ export const useWBStore = defineStore('wb-board', {
     },
 
     /**
-     * Copy currently selected assets to in-memory clipboard.
+     * Copy currently selected assets AND strokes to in-memory clipboard.
      * Clipboard is session-scoped (not persisted across refreshes).
      */
     copySelectedToClipboard(): void {
@@ -737,29 +739,58 @@ export const useWBStore = defineStore('wb-board', {
       this.clipboardAssets = page.assets
         .filter((a) => this.selectedIds.includes(a.id))
         .map((a) => ({ ...a }))
+      this.clipboardStrokes = page.strokes
+        .filter((s) => this.selectedIds.includes(s.id))
+        .map((s) => ({ ...s, points: s.points ? [...s.points.map(p => ({ ...p }))] : [] }))
     },
 
     /**
-     * Paste clipboard assets onto the current page with +20px offset.
-     * New assets get fresh IDs. Selection updated to pasted items.
+     * Paste clipboard assets AND strokes onto the current page with +20px offset.
+     * New items get fresh IDs. Selection updated to pasted items.
      */
     pasteFromClipboard(): void {
       const page = this.currentPage
-      if (!page || this.clipboardAssets.length === 0) return
+      if (!page || (this.clipboardAssets.length === 0 && this.clipboardStrokes.length === 0)) return
       const OFFSET = 20
       const now = Date.now()
-      const newAssets: WBAsset[] = this.clipboardAssets.map((a, i) => ({
-        ...a,
-        id: `asset-paste-${now}-${i}-${Math.random().toString(36).slice(2, 6)}`,
-        x: a.x + OFFSET,
-        y: a.y + OFFSET,
-      }))
-      const pageIndex = this.currentPageIndex
-      this.pages[pageIndex] = {
-        ...page,
-        assets: [...page.assets, ...newAssets],
+      const newIds: string[] = []
+
+      // Paste assets
+      if (this.clipboardAssets.length > 0) {
+        const newAssets: WBAsset[] = this.clipboardAssets.map((a, i) => {
+          const id = `asset-paste-${now}-${i}-${Math.random().toString(36).slice(2, 6)}`
+          newIds.push(id)
+          return { ...a, id, x: a.x + OFFSET, y: a.y + OFFSET }
+        })
+        const pageIndex = this.currentPageIndex
+        this.pages[pageIndex] = {
+          ...page,
+          assets: [...page.assets, ...newAssets],
+        }
       }
-      this.selectedIds = newAssets.map((a) => a.id)
+
+      // Paste strokes (text, shapes, etc.)
+      if (this.clipboardStrokes.length > 0) {
+        const pageIndex = this.currentPageIndex
+        const currentPage = this.pages[pageIndex]
+        const newStrokes: WBStroke[] = this.clipboardStrokes.map((s, i) => {
+          const id = `stroke-paste-${now}-${i}-${Math.random().toString(36).slice(2, 6)}`
+          newIds.push(id)
+          return {
+            ...s,
+            id,
+            points: s.points
+              ? s.points.map(p => ({ ...p, x: p.x + OFFSET, y: p.y + OFFSET }))
+              : [],
+          }
+        })
+        this.pages[pageIndex] = {
+          ...currentPage,
+          strokes: [...currentPage.strokes, ...newStrokes],
+        }
+      }
+
+      this.selectedIds = newIds
       this.markDirty()
     },
 
@@ -797,7 +828,7 @@ export const useWBStore = defineStore('wb-board', {
 
       // Phase 34: object limit guard
       if (!this.canAddObject) {
-        console.warn('[WB] Object limit reached (300), cannot add stroke')
+        console.warn('[WB] Object limit reached (600), cannot add stroke')
         return
       }
 
@@ -914,7 +945,7 @@ export const useWBStore = defineStore('wb-board', {
 
       // Phase 34: object limit guard
       if (!this.canAddObject) {
-        console.warn('[WB] Object limit reached (300), cannot add asset')
+        console.warn('[WB] Object limit reached (600), cannot add asset')
         return
       }
 

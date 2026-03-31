@@ -271,12 +271,18 @@
       :mode="mode"
       :is-locked="hasLockedInSelection"
       :bbox="selectionBBox"
+      :selected-object="selectedObjectForToolbar"
+      :session-id="resolvedSessionId ?? ''"
+      :is-tutor="classroomRole.isTeacher.value"
       @bring-to-front="store.bringToFront(store.selectedIds[0])"
       @send-to-back="store.sendToBack(store.selectedIds[0])"
       @duplicate="store.copySelectedToClipboard(); store.pasteFromClipboard()"
       @lock="locking.lockSelected()"
       @unlock="locking.unlockSelected()"
       @delete="handleDeleteSelected()"
+      @text-format="handleTextFormat"
+      @audio-uploaded="handleAudioUploaded"
+      @audio-deleted="handleAudioDeleted"
     />
 
     <!-- P3: YouTube insert modal -->
@@ -422,7 +428,7 @@
 // Ref: TASK_BOARD_PHASES.md A3.1, C3.1 RBAC, LAW-05, LAW-16
 // Feature flag: VITE_WB_FEATURE_CLASSROOM
 
-import { ref, computed, onMounted, onBeforeUnmount, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useWBStore } from '../board/state/boardStore'
@@ -739,6 +745,48 @@ const hasLockedInSelection = computed(() => {
   return store.selectedIds.some((id) => store.isItemLocked(id))
 })
 
+// Text formatting: selected object for toolbar (single selection only)
+const selectedObjectForToolbar = computed(() => {
+  if (store.selectedIds.length !== 1) return null
+  return (store.getObjectById(store.selectedIds[0]) as import('../types/winterboard').WBStroke) ?? null
+})
+
+function handleTextFormat(updates: Record<string, unknown>) {
+  if (store.selectedIds.length !== 1) return
+  const id = store.selectedIds[0]
+  store.updateObject(id, updates)
+  // Re-assert selection after store update (canvas re-render may clear Transformer)
+  nextTick(() => {
+    if (!store.selectedIds.includes(id)) {
+      store.selectedIds = [id]
+    }
+  })
+}
+
+function handleAudioUploaded(objectId: string, audioUrl: string, duration: number | null) {
+  const obj = store.getObjectById(objectId)
+  if (!obj) return
+  const isAsset = 'w' in obj && 'h' in obj && 'type' in obj
+  if (isAsset) {
+    handleAssetUpdate({ ...(obj as WBAsset), audioUrl, audioDuration: duration ?? undefined })
+  } else {
+    handleStrokeUpdate({ ...(obj as WBStroke), audioUrl, audioDuration: duration ?? undefined })
+  }
+}
+
+function handleAudioDeleted(objectId: string) {
+  const obj = store.getObjectById(objectId)
+  if (!obj) return
+  const isAsset = 'w' in obj && 'h' in obj && 'type' in obj
+  if (isAsset) {
+    const { audioUrl: _a, audioDuration: _d, ...rest } = obj as WBAsset
+    handleAssetUpdate({ ...rest, audioUrl: undefined, audioDuration: undefined } as WBAsset)
+  } else {
+    const { audioUrl: _a, audioDuration: _d, ...rest } = obj as WBStroke
+    handleStrokeUpdate({ ...rest, audioUrl: undefined, audioDuration: undefined } as WBStroke)
+  }
+}
+
 // P2: Bounding box of selected objects for WBSelectionToolbar positioning
 const selectionBBox = computed(() => {
   if (store.selectedIds.length === 0) return null
@@ -828,10 +876,24 @@ useKeyboard({
   onPageFirst: () => handlePageSelect(0),
   onPageLast: () => handlePageSelect(store.pageCount - 1),
   onZoomReset: () => handleZoomReset(),
+  onSelectAll: () => handleSelectAll(),
   onCopy: () => boardClipboard.copySelected(),
   onPaste: () => boardClipboard.pasteInternal(),
   onCut: () => boardClipboard.cutSelected(),
 })
+
+// ─── Select All (Ctrl+A) ────────────────────────────────────────────────────
+
+function handleSelectAll() {
+  const page = store.currentPage
+  if (!page) return
+  const allIds = [
+    ...page.strokes.map(s => s.id),
+    ...page.assets.map(a => a.id),
+  ]
+  store.selectedIds = allIds
+  store.setTool('select' as WBToolType)
+}
 
 // ─── Handlers: Drawing ──────────────────────────────────────────────────────
 

@@ -604,12 +604,18 @@
       :mode="mode"
       :is-locked="hasLockedInSelection"
       :bbox="selectionBBox"
+      :selected-object="selectedObjectForToolbar"
+      :session-id="sessionId ?? ''"
+      :is-tutor="isSessionOwner"
       @bring-to-front="store.bringToFront(store.selectedIds[0])"
       @send-to-back="store.sendToBack(store.selectedIds[0])"
       @duplicate="store.copySelectedToClipboard(); store.pasteFromClipboard()"
       @lock="locking.lockSelected()"
       @unlock="locking.unlockSelected()"
       @delete="handleDeleteSelected()"
+      @text-format="handleTextFormat"
+      @audio-uploaded="handleAudioUploaded"
+      @audio-deleted="handleAudioDeleted"
     />
 
     <!-- Phase 11: Replay mode banner -->
@@ -1287,6 +1293,48 @@ const hasLockedInSelection = computed(() => {
   return store.selectedIds.some((id) => store.isItemLocked(id))
 })
 
+// Text formatting: selected object for toolbar (single selection only)
+const selectedObjectForToolbar = computed(() => {
+  if (store.selectedIds.length !== 1) return null
+  return (store.getObjectById(store.selectedIds[0]) as import('../types/winterboard').WBStroke) ?? null
+})
+
+function handleTextFormat(updates: Record<string, unknown>) {
+  if (store.selectedIds.length !== 1) return
+  const id = store.selectedIds[0]
+  store.updateObject(id, updates)
+  // Re-assert selection after store update (canvas re-render may clear Transformer)
+  nextTick(() => {
+    if (!store.selectedIds.includes(id)) {
+      store.selectedIds = [id]
+    }
+  })
+}
+
+function handleAudioUploaded(objectId: string, audioUrl: string, duration: number | null) {
+  const obj = store.getObjectById(objectId)
+  if (!obj) return
+  const isAsset = 'w' in obj && 'h' in obj && 'type' in obj
+  if (isAsset) {
+    handleAssetUpdate({ ...(obj as import('../types/winterboard').WBAsset), audioUrl, audioDuration: duration ?? undefined })
+  } else {
+    handleStrokeUpdate({ ...(obj as import('../types/winterboard').WBStroke), audioUrl, audioDuration: duration ?? undefined })
+  }
+}
+
+function handleAudioDeleted(objectId: string) {
+  const obj = store.getObjectById(objectId)
+  if (!obj) return
+  const isAsset = 'w' in obj && 'h' in obj && 'type' in obj
+  if (isAsset) {
+    const { audioUrl: _a, audioDuration: _d, ...rest } = obj as import('../types/winterboard').WBAsset
+    handleAssetUpdate({ ...rest, audioUrl: undefined, audioDuration: undefined } as import('../types/winterboard').WBAsset)
+  } else {
+    const { audioUrl: _a, audioDuration: _d, ...rest } = obj as import('../types/winterboard').WBStroke
+    handleStrokeUpdate({ ...rest, audioUrl: undefined, audioDuration: undefined } as import('../types/winterboard').WBStroke)
+  }
+}
+
 // P2: Canvas rect for WBSelectionToolbar — recalculated when selection changes
 const selectionCanvasRect = computed(() => {
   // Depend on selectedIds so rect is recalculated on selection change
@@ -1364,10 +1412,24 @@ useKeyboard({
   onPageFirst: () => handlePageSelect(0),
   onPageLast: () => handlePageSelect(store.pageCount - 1),
   onZoomReset: () => handleZoomReset(),
+  onSelectAll: () => handleSelectAll(),
   onCopy: () => boardClipboard.copySelected(),
   onPaste: () => boardClipboard.pasteInternal(),
   onCut: () => boardClipboard.cutSelected(),
 })
+
+// ─── Select All (Ctrl+A) ────────────────────────────────────────────────────
+
+function handleSelectAll() {
+  const page = store.currentPage
+  if (!page) return
+  const allIds = [
+    ...page.strokes.map(s => s.id),
+    ...page.assets.map(a => a.id),
+  ]
+  store.selectedIds = allIds
+  store.setTool('select' as WBToolType)
+}
 
 // ─── Handlers: Drawing ──────────────────────────────────────────────────────
 

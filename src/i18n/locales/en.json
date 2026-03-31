@@ -6575,7 +6575,8 @@
       "duplicate": "Duplicate",
       "lock": "Lock",
       "unlock": "Unlock",
-      "delete": "Delete"
+      "delete": "Delete",
+      "deleteSelected": "Delete selected"
     },
     "clear": {
       "button": "Clear page",
@@ -6984,6 +6985,33 @@
     },
     "emptyCanvas": {
       "hint": "Start drawing here"
+    },
+    "objectAudio": {
+      "record": "Record",
+      "stop": "Stop",
+      "play": "Play",
+      "pause": "Pause",
+      "reRecord": "Re-record",
+      "delete": "Delete recording",
+      "deleteConfirm": "Delete audio from this object?",
+      "uploading": "Uploading…",
+      "limitHint": "Max: {maxSec}s · {maxMB}MB",
+      "notSupported": "Audio recording is not supported in this browser",
+      "maxDurationReached": "Maximum reached ({max}s). Recording stopped",
+      "sidebarTitle": "Audio Annotation",
+      "sidebarEmpty": "Select an object with audio",
+      "noAudio": "No audio",
+      "errors": {
+        "sizeTooLarge": "File too large ({size}). Maximum: {max}",
+        "durationTooLong": "Recording too long. Maximum: {max}s",
+        "unsupportedFormat": "Unsupported format. Allowed: WebM, MP3, OGG",
+        "quotaExceeded": "Board storage full. Delete unused files",
+        "micDenied": "Microphone access denied. Allow in browser settings",
+        "micNotFound": "Microphone not found. Connect a microphone and try again",
+        "micUnknown": "Microphone error. Please try again",
+        "networkError": "Network error. Please try again",
+        "deleteFailed": "Failed to delete audio. Please try again"
+      }
     },
     "grid": {
       "toggleGrid": "Board grid",

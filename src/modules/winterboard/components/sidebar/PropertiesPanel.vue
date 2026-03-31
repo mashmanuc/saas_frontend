@@ -21,6 +21,15 @@
     <div v-else class="properties-panel__empty">
       No selection
     </div>
+
+    <!-- Object Audio: sidebar secondary entry point (shows below properties for single selection) -->
+    <AudioAnnotationPanel
+      v-if="selectedObject && !isMultiSelect && sessionId"
+      :object="selectedObject"
+      :session-id="sessionId"
+      @audio-uploaded="(url, dur) => emit('audio-uploaded', url, dur)"
+      @audio-deleted="() => emit('audio-deleted')"
+    />
   </div>
 </template>
 
@@ -33,6 +42,7 @@
  */
 import { computed } from 'vue'
 import type { useWBStore } from '../../board/state/boardStore'
+import AudioAnnotationPanel from './AudioAnnotationPanel.vue'
 import MultiSelectProperties from './properties/MultiSelectProperties.vue'
 import StrokeProperties from './properties/StrokeProperties.vue'
 import TextProperties from './properties/TextProperties.vue'
@@ -43,10 +53,12 @@ import AssetProperties from './properties/AssetProperties.vue'
 
 type WBStore = ReturnType<typeof useWBStore>
 
-const props = defineProps<{ store: WBStore }>()
+const props = defineProps<{ store: WBStore; sessionId?: string }>()
 
 const emit = defineEmits<{
   'delete-selected': []
+  'audio-uploaded': [audioUrl: string, duration: number | null]
+  'audio-deleted': []
 }>()
 
 const selectedObject = computed(() => {

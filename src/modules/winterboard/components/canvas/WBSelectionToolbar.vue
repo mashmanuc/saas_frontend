@@ -9,6 +9,103 @@
       :aria-label="t('winterboard.selection.toolbar', 'Selection toolbar')"
       @pointerdown.stop
     >
+      <!-- ── Text formatting (only for single text object) ── -->
+      <template v-if="isTextSelected">
+        <!-- Bold -->
+        <button
+          type="button"
+          class="wb-selection-toolbar__btn"
+          :class="{ 'wb-selection-toolbar__btn--active': selectedObject?.fontWeight === 700 }"
+          :disabled="isLocked"
+          title="Bold"
+          @click="$emit('text-format', { fontWeight: selectedObject?.fontWeight === 700 ? 400 : 700 })"
+        >
+          <strong style="font-size: 14px; font-weight: 800;">B</strong>
+        </button>
+
+        <!-- Italic -->
+        <button
+          type="button"
+          class="wb-selection-toolbar__btn"
+          :class="{ 'wb-selection-toolbar__btn--active': selectedObject?.fontStyle === 'italic' }"
+          :disabled="isLocked"
+          title="Italic"
+          @click="$emit('text-format', { fontStyle: selectedObject?.fontStyle === 'italic' ? 'normal' : 'italic' })"
+        >
+          <em style="font-size: 14px;">I</em>
+        </button>
+
+        <!-- Divider -->
+        <span class="wb-selection-toolbar__divider" />
+
+        <!-- Font size dropdown -->
+        <div class="wb-selection-toolbar__size-group">
+          <button
+            type="button"
+            class="wb-selection-toolbar__btn"
+            :disabled="isLocked"
+            title="Зменшити шрифт"
+            @click="changeFontSize(-1)"
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M3 7h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </button>
+          <span class="wb-selection-toolbar__size-label">{{ currentFontSize }}</span>
+          <button
+            type="button"
+            class="wb-selection-toolbar__btn"
+            :disabled="isLocked"
+            title="Збільшити шрифт"
+            @click="changeFontSize(1)"
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M7 3v8M3 7h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Divider -->
+        <span class="wb-selection-toolbar__divider" />
+
+        <!-- Align left -->
+        <button
+          type="button"
+          class="wb-selection-toolbar__btn"
+          :class="{ 'wb-selection-toolbar__btn--active': (selectedObject?.textAlign || 'left') === 'left' }"
+          :disabled="isLocked"
+          title="Вирівняти ліворуч"
+          @click="$emit('text-format', { textAlign: 'left' })"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <rect x="2" y="3" width="12" height="1.5" rx="0.5"/>
+            <rect x="2" y="6.5" width="8" height="1.5" rx="0.5"/>
+            <rect x="2" y="10" width="12" height="1.5" rx="0.5"/>
+          </svg>
+        </button>
+
+        <!-- Align center -->
+        <button
+          type="button"
+          class="wb-selection-toolbar__btn"
+          :class="{ 'wb-selection-toolbar__btn--active': selectedObject?.textAlign === 'center' }"
+          :disabled="isLocked"
+          title="Вирівняти по центру"
+          @click="$emit('text-format', { textAlign: 'center' })"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <rect x="2" y="3" width="12" height="1.5" rx="0.5"/>
+            <rect x="4" y="6.5" width="8" height="1.5" rx="0.5"/>
+            <rect x="2" y="10" width="12" height="1.5" rx="0.5"/>
+          </svg>
+        </button>
+
+        <!-- Divider -->
+        <span class="wb-selection-toolbar__divider" />
+      </template>
+
+      <!-- ── Common actions ── -->
+
       <!-- Bring to Front -->
       <button
         type="button"
@@ -85,18 +182,120 @@
           <path d="M2 4h12M5.333 4V2.667A.667.667 0 016 2h4a.667.667 0 01.667.667V4M12.667 4v9.333a1.333 1.333 0 01-1.334 1.334H4.667a1.333 1.333 0 01-1.334-1.334V4h9.334z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </button>
+
+      <!-- ── Audio section (single object, tutor only) ── -->
+      <template v-if="showAudioSection">
+        <span class="wb-selection-toolbar__divider" />
+
+        <div
+          class="wb-selection-toolbar__audio-group"
+          :class="{
+            'wb-selection-toolbar__audio-group--recording': audio.isRecording.value,
+            'wb-selection-toolbar__audio-group--uploading': audio.isUploading.value,
+            'wb-selection-toolbar__audio-group--has-audio': audio.hasAudio.value && !audio.isRecording.value && !audio.isUploading.value,
+          }"
+        >
+          <!-- Idle: Record button -->
+          <template v-if="audio.recordingState.value === 'idle' && !audio.hasAudio.value">
+            <button
+              type="button"
+              class="wb-selection-toolbar__btn wb-selection-toolbar__btn--audio"
+              :disabled="isLocked"
+              title="Записати аудіо"
+              @click="audio.startRecording()"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <rect x="5.5" y="1" width="5" height="9" rx="2.5" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M3 7a5 5 0 0010 0M8 12v3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </template>
+
+          <!-- Recording: Timer + Stop -->
+          <template v-else-if="audio.isRecording.value">
+            <span class="wb-selection-toolbar__rec-indicator" :class="{ 'wb-selection-toolbar__rec-indicator--warn': audio.isNearLimit.value }" />
+            <span class="wb-selection-toolbar__rec-time">{{ audio.formatTime(audio.recordingTime.value) }}</span>
+            <button
+              type="button"
+              class="wb-selection-toolbar__btn wb-selection-toolbar__btn--stop"
+              title="Зупинити запис"
+              @click="audio.stopRecording()"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
+                <rect x="2" y="2" width="10" height="10" rx="2"/>
+              </svg>
+            </button>
+          </template>
+
+          <!-- Uploading: progress -->
+          <template v-else-if="audio.isUploading.value">
+            <span class="wb-selection-toolbar__upload-label">{{ Math.round(audio.uploadProgress.value) }}%</span>
+          </template>
+
+          <!-- Has audio: Play/Pause, Re-record, Delete -->
+          <template v-else-if="audio.hasAudio.value">
+            <button
+              type="button"
+              class="wb-selection-toolbar__btn"
+              :title="audio.isPlaying.value ? 'Пауза' : 'Відтворити'"
+              @click="audio.togglePlayback()"
+            >
+              <svg v-if="!audio.isPlaying.value" width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
+                <path d="M3 1.5v11l9-5.5z"/>
+              </svg>
+              <svg v-else width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
+                <rect x="2" y="1" width="3.5" height="12" rx="1"/>
+                <rect x="8.5" y="1" width="3.5" height="12" rx="1"/>
+              </svg>
+            </button>
+            <span v-if="selectedObjAudioDuration" class="wb-selection-toolbar__audio-duration">
+              {{ audio.formatTime(selectedObjAudioDuration) }}
+            </span>
+            <button
+              type="button"
+              class="wb-selection-toolbar__btn"
+              :disabled="isLocked"
+              title="Перезаписати"
+              @click="audio.reRecord()"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                <path d="M1.5 7a5.5 5.5 0 019.78-3.44M12.5 7a5.5 5.5 0 01-9.78 3.44" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M11.28 1v2.56h-2.56M2.72 13v-2.56h2.56" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+            <button
+              type="button"
+              class="wb-selection-toolbar__btn wb-selection-toolbar__btn--danger"
+              :disabled="isLocked"
+              title="Видалити аудіо"
+              @click="audio.deleteAudio()"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                <path d="M2 3.5h10M4.667 3.5V2.333A.667.667 0 015.333 1.667h3.334a.667.667 0 01.666.666V3.5M11 3.5v8a1 1 0 01-1 1H4a1 1 0 01-1-1v-8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </template>
+
+          <!-- Requesting mic -->
+          <template v-else-if="audio.recordingState.value === 'requesting_mic'">
+            <span class="wb-selection-toolbar__upload-label">...</span>
+          </template>
+        </div>
+      </template>
     </div>
   </Transition>
 </template>
 
 <script setup lang="ts">
 // WBSelectionToolbar — floating toolbar for selected objects (desktop only)
-// Ref: PHASE10_PLAN.md P2, DAY1_AGENT_B.md B2.1
-// Zone: AGENT-B (components/canvas/WBSelectionToolbar.vue)
+// Text formatting: Bold, Italic, Font Size, Align — shown when text object selected
+// Audio recording: Record, Play, Re-record, Delete — shown for single object (tutor only)
 
-import { computed, ref } from 'vue'
+import { computed, ref, watch, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDeviceMode } from '../../composables/useDeviceMode'
+import { useObjectAudio, formatTime, isRecordingSupported } from '../../composables/useObjectAudio'
+import type { WBStroke, WBAsset } from '../../types/winterboard'
 
 // ─── Props ──────────────────────────────────────────────────────────────────
 
@@ -107,6 +306,8 @@ export interface SelectionBBox {
   h: number
 }
 
+const FONT_SIZES = [12, 16, 20, 24, 32, 48, 64]
+
 const props = defineProps<{
   selectedIds: string[]
   zoom: number
@@ -114,15 +315,26 @@ const props = defineProps<{
   mode: 'edit' | 'replay'
   isLocked: boolean
   bbox: SelectionBBox | null
+  /** Вибраний об'єкт (для text formatting + audio) */
+  selectedObject?: WBStroke | null
+  /** Вибраний asset (якщо це asset, а не stroke) */
+  selectedAsset?: WBAsset | null
+  /** Session ID для audio API */
+  sessionId?: string
+  /** Чи є поточний користувач тьютором */
+  isTutor?: boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   'bring-to-front': []
   'send-to-back': []
   duplicate: []
   lock: []
   unlock: []
   delete: []
+  'text-format': [updates: Record<string, unknown>]
+  'audio-uploaded': [objectId: string, audioUrl: string, duration: number | null]
+  'audio-deleted': [objectId: string]
 }>()
 
 // ─── i18n & Device mode ─────────────────────────────────────────────────────
@@ -131,6 +343,77 @@ const { t } = useI18n({ useScope: 'global' })
 const { deviceMode } = useDeviceMode()
 
 const toolbarRef = ref<HTMLElement | null>(null)
+
+// ─── Text detection ─────────────────────────────────────────────────────────
+
+const isTextSelected = computed(() =>
+  props.selectedIds.length === 1 &&
+  props.selectedObject?.tool === 'text',
+)
+
+const currentFontSize = computed(() =>
+  props.selectedObject?.size || 16,
+)
+
+function changeFontSize(direction: 1 | -1) {
+  const current = currentFontSize.value
+  const idx = FONT_SIZES.indexOf(current)
+
+  let newSize: number
+  if (idx === -1) {
+    const closest = FONT_SIZES.reduce((prev, curr) =>
+      Math.abs(curr - current) < Math.abs(prev - current) ? curr : prev,
+    )
+    const closestIdx = FONT_SIZES.indexOf(closest)
+    newSize = FONT_SIZES[Math.max(0, Math.min(FONT_SIZES.length - 1, closestIdx + direction))]
+  } else {
+    const newIdx = idx + direction
+    if (newIdx < 0 || newIdx >= FONT_SIZES.length) return
+    newSize = FONT_SIZES[newIdx]
+  }
+
+  emit('text-format', { size: newSize })
+}
+
+// ─── Audio ──────────────────────────────────────────────────────────────────
+
+const selectedObjId = computed(() =>
+  props.selectedIds.length === 1 ? props.selectedIds[0] : '',
+)
+
+const selectedAnyObject = computed<(WBStroke | WBAsset) | null>(() =>
+  (props.selectedAsset ?? props.selectedObject) as (WBStroke | WBAsset) | null,
+)
+
+const selectedObjAudioUrl = computed(() => selectedAnyObject.value?.audioUrl)
+const selectedObjAudioDuration = computed(() => selectedAnyObject.value?.audioDuration)
+
+const audioSessionId = computed(() => props.sessionId ?? '')
+const audioObjectId = computed(() => selectedObjId.value)
+const audioUrlRef = computed(() => selectedObjAudioUrl.value)
+const audioDurationRef = computed(() => selectedObjAudioDuration.value)
+
+const showAudioSection = computed(() =>
+  props.isTutor !== false &&
+  props.selectedIds.length === 1 &&
+  selectedAnyObject.value != null &&
+  audioSessionId.value !== '' &&
+  isRecordingSupported(),
+)
+
+const audio = useObjectAudio({
+  sessionId: audioSessionId,
+  objectId: audioObjectId,
+  audioUrl: audioUrlRef,
+  audioDuration: audioDurationRef,
+  t,
+  onAudioUploaded: (audioUrl: string, duration: number | null) => {
+    emit('audio-uploaded', audioObjectId.value, audioUrl, duration)
+  },
+  onAudioDeleted: () => {
+    emit('audio-deleted', audioObjectId.value)
+  },
+})
 
 // ─── Visibility ─────────────────────────────────────────────────────────────
 
@@ -155,15 +438,16 @@ const positionStyle = computed(() => {
 
   // Canvas-space bbox → screen-space
   const screenCenterX = rect.left + props.bbox.x * zoom + (props.bbox.w * zoom) / 2
+  const screenTopY = rect.top + props.bbox.y * zoom
   const screenBottomY = rect.top + (props.bbox.y + props.bbox.h) * zoom
 
-  // Position toolbar below selection with gap
-  let top = screenBottomY + TOOLBAR_GAP
+  // Position toolbar ABOVE selection (less likely to overlap content)
+  let top = screenTopY - TOOLBAR_HEIGHT - TOOLBAR_GAP
   let left = screenCenterX
 
-  // Fallback: if toolbar goes below canvas, put it above selection
-  if (top + TOOLBAR_HEIGHT > rect.bottom) {
-    top = rect.top + props.bbox.y * zoom - TOOLBAR_HEIGHT - TOOLBAR_GAP
+  // Fallback: if toolbar goes above canvas, put it below selection
+  if (top < rect.top) {
+    top = screenBottomY + TOOLBAR_GAP
   }
 
   // Clamp to canvas bounds
@@ -225,9 +509,128 @@ const positionStyle = computed(() => {
   cursor: not-allowed;
 }
 
+.wb-selection-toolbar__btn--active {
+  background: rgba(99, 102, 241, 0.6) !important;
+  color: #ffffff !important;
+}
+
 .wb-selection-toolbar__btn--danger:hover:not(:disabled) {
   background: rgba(239, 68, 68, 0.3);
   color: #fca5a5;
+}
+
+.wb-selection-toolbar__btn--audio {
+  color: #a78bfa;
+}
+.wb-selection-toolbar__btn--audio:hover:not(:disabled) {
+  background: rgba(167, 139, 250, 0.2);
+  color: #c4b5fd;
+}
+
+/* ── Audio group container ──────────────────────────────────────────────── */
+
+.wb-selection-toolbar__audio-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 4px;
+  border-radius: 6px;
+  background: rgba(167, 139, 250, 0.1);
+  transition: background 0.2s ease;
+}
+
+.wb-selection-toolbar__audio-group--recording {
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.wb-selection-toolbar__audio-group--uploading {
+  background: rgba(96, 165, 250, 0.12);
+}
+
+.wb-selection-toolbar__audio-group--has-audio {
+  background: rgba(52, 211, 153, 0.1);
+}
+
+.wb-selection-toolbar__btn--stop {
+  color: #ef4444;
+}
+.wb-selection-toolbar__btn--stop:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+}
+
+/* ── Divider ────────────────────────────────────────────────────────────── */
+
+.wb-selection-toolbar__divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.2);
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+
+/* ── Font size group ────────────────────────────────────────────────────── */
+
+.wb-selection-toolbar__size-group {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.wb-selection-toolbar__size-label {
+  min-width: 28px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #e2e8f0;
+  user-select: none;
+}
+
+/* ── Audio recording indicator ──────────────────────────────────────────── */
+
+.wb-selection-toolbar__rec-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  flex-shrink: 0;
+  animation: wb-rec-pulse 1s infinite;
+}
+
+.wb-selection-toolbar__rec-indicator--warn {
+  background: #f59e0b;
+  animation: wb-rec-pulse 0.5s infinite;
+}
+
+@keyframes wb-rec-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.wb-selection-toolbar__rec-time {
+  font-size: 12px;
+  font-weight: 600;
+  color: #fca5a5;
+  font-variant-numeric: tabular-nums;
+  min-width: 32px;
+  text-align: center;
+}
+
+.wb-selection-toolbar__upload-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #93c5fd;
+  min-width: 28px;
+  text-align: center;
+}
+
+.wb-selection-toolbar__audio-duration {
+  font-size: 11px;
+  font-weight: 500;
+  color: #94a3b8;
+  font-variant-numeric: tabular-nums;
+  min-width: 28px;
+  text-align: center;
 }
 
 /* ── Fade transition ──────────────────────────────────────────────────────── */

@@ -67,6 +67,9 @@ export interface WBStroke {
   fontWeight?: number     // 400 (normal) | 700 (bold), default: 400
   fontStyle?: string      // 'normal' | 'italic', default: 'normal'
   textAlign?: string      // 'left' | 'center' | 'right', default: 'left'
+  // Object Audio: voice annotation attached to this stroke
+  audioUrl?: string       // CDN URL of recorded audio
+  audioDuration?: number  // duration in seconds
 }
 
 // ─── Selection (v5: A1 — Rectangle Select) ─────────────────────────────────
@@ -141,6 +144,9 @@ export interface WBAsset {
   fontWeight?: number      // 400 | 700, default: 400
   fontStyle?: string       // 'normal' | 'italic', default: 'normal'
   textAlign?: string       // 'left' | 'center' | 'right', default: 'left'
+  // Object Audio: voice annotation attached to this asset
+  audioUrl?: string        // CDN URL of recorded audio
+  audioDuration?: number   // duration in seconds
 }
 
 // Phase 10 P5: Lesson navigation marker — lightweight anchor in the replay timeline.

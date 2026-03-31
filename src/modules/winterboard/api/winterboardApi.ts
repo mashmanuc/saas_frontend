@@ -161,6 +161,20 @@ export interface ImportStatusResponse {
   error?: string
 }
 
+// ── Object Audio (OBJECT_AUDIO_PLAN.md §9) ────────────────────────────
+
+export interface WBObjectAudioUploadResponse {
+  audio_url: string
+  duration: number | null
+  content_type: string
+  file_size: number
+  storage_key: string
+}
+
+export interface WBObjectAudioUploadOptions {
+  onUploadProgress?: (event: { loaded: number; total: number; percent: number }) => void
+}
+
 // ── API Client ─────────────────────────────────────────────────────────
 
 const BASE = '/v1/winterboard'
@@ -378,6 +392,55 @@ export const winterboardApi = {
 
   revokeShare(sessionId: string): Promise<void> {
     return apiClient.delete(`${BASE}/sessions/${sessionId}/share/`)
+  },
+
+  // ── Object Audio ────────────────────────────────────────────────────
+
+  /**
+   * Upload audio annotation for a board object (stroke or asset).
+   * POST /sessions/{id}/objects/{object_id}/audio/
+   * Accepts multipart/form-data with 'file' field.
+   * Ref: OBJECT_AUDIO_PLAN.md §9
+   */
+  uploadObjectAudio(
+    sessionId: string,
+    objectId: string,
+    file: Blob,
+    options?: WBObjectAudioUploadOptions,
+  ): Promise<WBObjectAudioUploadResponse> {
+    const formData = new FormData()
+    formData.append('file', file, 'recording.webm')
+
+    return apiClient
+      .post(
+        `${BASE}/sessions/${sessionId}/objects/${objectId}/audio/`,
+        formData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          onUploadProgress: options?.onUploadProgress
+            ? (e: any) => {
+                const loaded = e.loaded ?? 0
+                const total = e.total ?? 1
+                options.onUploadProgress!({
+                  loaded,
+                  total,
+                  percent: Math.round((loaded / total) * 100),
+                })
+              }
+            : undefined,
+        },
+      )
+      .then((r: any) => r.data ?? r)
+  },
+
+  /**
+   * Delete audio annotation from a board object.
+   * DELETE /sessions/{id}/objects/{object_id}/audio/
+   */
+  deleteObjectAudio(sessionId: string, objectId: string): Promise<void> {
+    return apiClient.delete(
+      `${BASE}/sessions/${sessionId}/objects/${objectId}/audio/`,
+    )
   },
 
   getPublicSession(token: string): Promise<Record<string, unknown>> {

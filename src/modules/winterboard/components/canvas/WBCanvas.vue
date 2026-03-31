@@ -64,6 +64,7 @@
           <v-group
             v-else-if="(asset.borderRadius ?? 0) > 0"
             :config="getClipGroupConfig(asset)"
+            @mousedown="handleItemMouseDown(asset.id, $event)"
             @click="handleAssetClick(asset, $event)"
             @dragend="handleAssetDragEnd(asset, $event)"
             @transformend="handleAssetTransformEnd(asset, $event)"
@@ -77,6 +78,7 @@
           <v-image
             v-else
             :config="getAssetConfig(asset)"
+            @mousedown="handleItemMouseDown(asset.id, $event)"
             @click="handleAssetClick(asset, $event)"
             @dragend="handleAssetDragEnd(asset, $event)"
             @transformend="handleAssetTransformEnd(asset, $event)"
@@ -94,6 +96,7 @@
           <v-path
             v-if="stroke.tool === 'pen' || stroke.tool === 'highlighter'"
             :config="getStrokeConfig(stroke)"
+            @mousedown="handleItemMouseDown(stroke.id, $event)"
             @click="handleStrokeClick(stroke, $event)"
             @dragend="handleStrokeDragEnd(stroke, $event)"
             @touchstart="(e) => handleTouchStart(stroke.id, e.evt)"
@@ -104,6 +107,7 @@
           <v-line
             v-else-if="stroke.tool === 'line'"
             :config="getLineConfig(stroke)"
+            @mousedown="handleItemMouseDown(stroke.id, $event)"
             @click="handleStrokeClick(stroke, $event)"
             @dragend="handleStrokeDragEnd(stroke, $event)"
             @touchstart="(e) => handleTouchStart(stroke.id, e.evt)"
@@ -114,6 +118,7 @@
           <v-rect
             v-else-if="stroke.tool === 'rectangle'"
             :config="getRectConfig(stroke)"
+            @mousedown="handleItemMouseDown(stroke.id, $event)"
             @click="handleStrokeClick(stroke, $event)"
             @dragend="handleStrokeDragEnd(stroke, $event)"
             @touchstart="(e) => handleTouchStart(stroke.id, e.evt)"
@@ -124,6 +129,7 @@
           <v-ellipse
             v-else-if="stroke.tool === 'circle'"
             :config="getCircleConfig(stroke)"
+            @mousedown="handleItemMouseDown(stroke.id, $event)"
             @click="handleStrokeClick(stroke, $event)"
             @dragend="handleStrokeDragEnd(stroke, $event)"
             @touchstart="(e) => handleTouchStart(stroke.id, e.evt)"
@@ -134,6 +140,7 @@
           <v-text
             v-else-if="stroke.tool === 'text'"
             :config="getTextConfig(stroke)"
+            @mousedown="handleItemMouseDown(stroke.id, $event)"
             @dblclick="handleTextEdit(stroke)"
             @click="handleStrokeClick(stroke, $event)"
             @dragend="handleStrokeDragEnd(stroke, $event)"
@@ -190,6 +197,27 @@
         />
       </v-layer>
     </v-stage>
+
+    <!-- Group selection drag overlay — invisible hitbox for multi-select move -->
+    <!-- MUST intercept ALL events: pointerdown, mousedown, touchstart, click -->
+    <div
+      v-if="groupDragOverlayStyle"
+      class="wb-group-drag-overlay"
+      :style="groupDragOverlayStyle"
+      @pointerdown.stop.prevent="handleGroupDragStart"
+      @mousedown.stop.prevent
+      @touchstart.stop.prevent
+      @click.stop.prevent
+      @dblclick.stop.prevent
+    >
+      <!-- Move icon in center -->
+      <svg
+        class="wb-group-drag-overlay__icon"
+        width="24" height="24" viewBox="0 0 24 24" fill="none"
+      >
+        <path d="M12 2l3 3h-2v4h4v-2l3 3-3 3v-2h-4v4h2l-3 3-3-3h2v-4H7v2l-3-3 3-3v2h4V5H9l3-3z" fill="currentColor"/>
+      </svg>
+    </div>
 
     <!-- Offscreen preview canvas overlay -->
     <canvas ref="previewCanvasRef" class="wb-preview-canvas" />
@@ -329,6 +357,23 @@
     >
       <span class="wb-laser-dot__label" :style="{ color: laser.color }">{{ laser.displayName }}</span>
     </div>
+
+    <!-- Object Audio: Badge overlay (pointer-events: none container, only icon clickable) -->
+    <div
+      v-for="item in itemsWithAudio"
+      :key="`audio-badge-${item.id}`"
+      class="wb-audio-badge"
+      :style="audioBadgePosition(item)"
+    >
+      <AudioBadge
+        :audio-url="item.audioUrl!"
+        :is-tutor="props.isTutor !== false"
+        :object-id="item.id"
+        :state="getAudioBadgeState(item.id)"
+        @click="handleAudioBadgeClick(item)"
+      />
+    </div>
+
   </div>
 </template>
 
@@ -350,6 +395,8 @@ import { useLaserPointer } from '../../composables/useLaserPointer'
 import { useDuplicate } from '../../composables/useDuplicate'
 import { useStickyNotes } from '../../composables/useStickyNotes'
 import WBStickyNote from './WBStickyNote.vue'
+import AudioBadge from './AudioBadge.vue'
+import { audioManager } from '../../utils/audioManager'
 import AudioPlayerObject from '../board/objects/AudioPlayerObject.vue'
 import VideoPlayerObject from '../board/objects/VideoPlayerObject.vue'
 import YouTubePlayerObject, { type WBYouTubeAsset } from '../board/objects/YouTubePlayerObject.vue'
@@ -457,6 +504,116 @@ const mediaAssets = computed(() =>
 function asAudioAsset(asset: WBAsset): WBAudioAsset { return asset as unknown as WBAudioAsset }
 function asVideoAsset(asset: WBAsset): WBVideoAsset { return asset as unknown as WBVideoAsset }
 function asYouTubeAsset(asset: WBAsset): WBYouTubeAsset { return asset as unknown as WBYouTubeAsset }
+
+// ── Object Audio: badge overlay + toolbar integration ───────────────────────
+
+// Items (strokes + assets) that have an audio annotation
+const itemsWithAudio = computed(() => {
+  const result: (WBStroke | WBAsset)[] = []
+  for (const s of allStrokes.value) {
+    if (s.audioUrl) result.push(s)
+  }
+  for (const a of assets.value) {
+    if (a.audioUrl) result.push(a)
+  }
+  return result
+})
+
+// Position badge at top-right corner of object (canvas coords → screen coords)
+// FIX: include canvasOffset for correct positioning during pan/scroll
+function audioBadgePosition(item: WBStroke | WBAsset) {
+  const zoom = props.zoom
+  const offset = wbStore.canvasOffset
+  let x: number, y: number, w: number
+
+  if ('points' in item && (item as WBStroke).points) {
+    const stroke = item as WBStroke
+    if ((stroke.tool === 'rectangle' || stroke.tool === 'circle' || stroke.tool === 'line') && stroke.points[0]) {
+      x = stroke.points[0].x
+      y = stroke.points[0].y
+      w = stroke.width ?? 0
+    } else {
+      let minX = Infinity, minY = Infinity, maxX = -Infinity
+      for (const p of stroke.points) {
+        if (p.x < minX) minX = p.x
+        if (p.y < minY) minY = p.y
+        if (p.x > maxX) maxX = p.x
+      }
+      x = minX
+      y = minY
+      w = maxX - minX
+    }
+  } else {
+    const asset = item as WBAsset
+    x = asset.x
+    y = asset.y
+    w = asset.w
+  }
+
+  return {
+    position: 'absolute' as const,
+    left: `${(x + w) * zoom + offset.x - 12}px`,
+    top: `${y * zoom + offset.y - 12}px`,
+    pointerEvents: 'none' as const,
+    zIndex: 15,
+  }
+}
+
+function getAudioBadgeState(objectId: string): 'idle' | 'recording' | 'playing' | 'uploading' {
+  const obj = wbStore.getObjectById(objectId)
+  if (!obj) return 'idle'
+  const url = (obj as WBStroke).audioUrl ?? (obj as WBAsset).audioUrl
+  if (url && audioManager.isUrlPlaying(url)) return 'playing'
+  return 'idle'
+}
+
+function handleAudioBadgeClick(item: WBStroke | WBAsset) {
+  // Select the object + toggle playback
+  wbStore.selectItems([item.id])
+  const url = (item as WBStroke).audioUrl ?? (item as WBAsset).audioUrl
+  if (url) {
+    audioManager.toggle(url)
+  }
+}
+
+function handleDeleteSelected() {
+  const ids = [...wbStore.selectedIds]
+  for (const id of ids) {
+    const obj = wbStore.getObjectById(id)
+    if (!obj) continue
+    const objType = wbStore.getObjectType(obj)
+    if (objType && ['image', 'audio_player', 'video_player', 'youtube_player', 'sticky', 'pdf'].includes(objType)) {
+      emit('asset-delete', id)
+    } else {
+      emit('stroke-delete', id)
+    }
+  }
+  wbStore.clearSelection()
+}
+
+function handleAudioUploaded(objectId: string, audioUrl: string, duration: number | null) {
+  const obj = wbStore.getObjectById(objectId)
+  if (!obj) return
+  const isAsset = 'w' in obj && 'h' in obj && 'type' in obj
+  if (isAsset) {
+    emit('asset-update', { ...(obj as WBAsset), audioUrl, audioDuration: duration ?? undefined })
+  } else {
+    emit('stroke-update', { ...(obj as WBStroke), audioUrl, audioDuration: duration ?? undefined })
+  }
+}
+
+function handleAudioDeleted(objectId: string) {
+  const obj = wbStore.getObjectById(objectId)
+  if (!obj) return
+  const isAsset = 'w' in obj && 'h' in obj && 'type' in obj
+  if (isAsset) {
+    const { audioUrl: _a, audioDuration: _d, ...rest } = obj as WBAsset
+    emit('asset-update', { ...rest, audioUrl: undefined, audioDuration: undefined } as WBAsset)
+  } else {
+    const { audioUrl: _a, audioDuration: _d, ...rest } = obj as WBStroke
+    emit('stroke-update', { ...rest, audioUrl: undefined, audioDuration: undefined } as WBStroke)
+  }
+}
 
 // Phase 3C: Local video state (no WebSocket in solo mode — managed locally)
 const localVideoStates = ref<Record<string, VideoSyncState>>({})
@@ -1001,6 +1158,144 @@ const groupIndicators = computed(() => {
   return indicators
 })
 
+// ─── Group Drag Overlay ──────────────────────────────────────────────────────
+// HTML div overlay for multi-selection group move. Covers entire selection bbox.
+// This approach avoids needing to click on thin strokes — click ANYWHERE inside.
+
+const OVERLAY_PAD = 12 // px padding around selection bbox
+
+const groupDragOverlayStyle = computed(() => {
+  if (wbStore.selectedIds.length < 2) return null
+  if (currentTool.value !== 'select') return null
+
+  const page = wbStore.currentPage
+  if (!page) return null
+
+  // Compute union bbox of all selected items (canvas-space)
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+
+  for (const id of wbStore.selectedIds) {
+    const stroke = page.strokes.find(s => s.id === id)
+    if (stroke) {
+      const bbox = getStrokeBBox(stroke)
+      minX = Math.min(minX, bbox.x)
+      minY = Math.min(minY, bbox.y)
+      maxX = Math.max(maxX, bbox.x + bbox.width)
+      maxY = Math.max(maxY, bbox.y + bbox.height)
+      continue
+    }
+    const asset = page.assets.find(a => a.id === id)
+    if (asset) {
+      minX = Math.min(minX, asset.x)
+      minY = Math.min(minY, asset.y)
+      maxX = Math.max(maxX, asset.x + asset.w)
+      maxY = Math.max(maxY, asset.y + asset.h)
+    }
+  }
+
+  if (!isFinite(minX)) return null
+
+  // Canvas-space → screen-space (relative to canvas container)
+  const offset = wbStore.canvasOffset
+  const zoom = props.zoom
+
+  const left = (minX * zoom) + offset.x - OVERLAY_PAD
+  const top = (minY * zoom) + offset.y - OVERLAY_PAD
+  const width = (maxX - minX) * zoom + OVERLAY_PAD * 2
+  const height = (maxY - minY) * zoom + OVERLAY_PAD * 2
+
+  return {
+    position: 'absolute' as const,
+    left: `${left}px`,
+    top: `${top}px`,
+    width: `${width}px`,
+    height: `${height}px`,
+    zIndex: 50, // above ALL canvas layers, below text editing (1000)
+  }
+})
+
+// ── Group drag state & pointer handlers ──
+
+/**
+ * CRITICAL: Disable Konva stage event processing during overlay drag.
+ * This is the only reliable way to prevent canvas from stealing events —
+ * stopPropagation alone does NOT work because Konva listens at document/window level.
+ */
+function setStageListening(enabled: boolean): void {
+  const stage = stageRef.value?.getStage?.()
+  if (!stage) return
+  stage.listening(enabled)
+}
+
+/** Прапор: group drag overlay активний — забороняє canvas очищати selection.
+ *  MUST be ref() — used in template binding (:group-drag-active prop). */
+const groupDragActive = ref(false)
+/** Прапор: group move відбувся (drag delta > 0). Запобігає click-скиданню виділення. */
+let groupMoveOccurred = false
+let groupDragLastPos = { x: 0, y: 0 }
+let groupDragOverlayEl: HTMLElement | null = null
+
+function handleGroupDragStart(e: PointerEvent): void {
+  // Check if ALL selected are locked — skip drag
+  const allLocked = wbStore.selectedIds.every(id => wbStore.isItemLocked(id))
+  if (allLocked) return
+
+  groupDragActive.value = true
+  groupMoveOccurred = false
+  groupDragLastPos = { x: e.clientX, y: e.clientY }
+
+  // CRITICAL: Disable Konva stage — overlay becomes the ONLY event source.
+  // This prevents canvas mousedown/click from firing clearSelection().
+  setStageListening(false)
+
+  // CRITICAL: use currentTarget (the overlay div), NOT target (could be child SVG)
+  groupDragOverlayEl = e.currentTarget as HTMLElement
+
+  // Pointer capture — drag won't break even with fast mouse movement
+  groupDragOverlayEl.setPointerCapture(e.pointerId)
+  groupDragOverlayEl.addEventListener('pointermove', handleGroupDragMove)
+  groupDragOverlayEl.addEventListener('pointerup', handleGroupDragEnd)
+  groupDragOverlayEl.addEventListener('pointercancel', handleGroupDragEnd)
+  groupDragOverlayEl.addEventListener('lostpointercapture', handleGroupDragEnd)
+}
+
+function handleGroupDragMove(e: PointerEvent): void {
+  if (!groupDragActive.value) return
+
+  const zoom = props.zoom || 1
+  // Delta in canvas-space (screen pixels → canvas units)
+  const dx = (e.clientX - groupDragLastPos.x) / zoom
+  const dy = (e.clientY - groupDragLastPos.y) / zoom
+
+  if (Math.abs(dx) < 0.3 && Math.abs(dy) < 0.3) return
+
+  wbStore.moveSelectedUnlocked(dx, dy)
+  groupDragLastPos = { x: e.clientX, y: e.clientY }
+  groupMoveOccurred = true
+}
+
+function handleGroupDragEnd(e: PointerEvent): void {
+  if (!groupDragActive.value) return
+
+  // Cleanup listeners
+  if (groupDragOverlayEl) {
+    groupDragOverlayEl.removeEventListener('pointermove', handleGroupDragMove)
+    groupDragOverlayEl.removeEventListener('pointerup', handleGroupDragEnd)
+    groupDragOverlayEl.removeEventListener('pointercancel', handleGroupDragEnd)
+    groupDragOverlayEl.removeEventListener('lostpointercapture', handleGroupDragEnd)
+    try { groupDragOverlayEl.releasePointerCapture(e.pointerId) } catch { /* already released */ }
+    groupDragOverlayEl = null
+  }
+
+  // Re-enable Konva stage BEFORE clearing the flag.
+  // Delay clearing the active flag so that any bubbled click/mouseup
+  // that reaches the canvas is still blocked by the guard.
+  setStageListening(true)
+  setTimeout(() => {
+    groupDragActive.value = false
+  }, 50)
+}
+
 const textEditStyle = computed((): Record<string, string> => {
   if (!editingText.value) return {}
   const stroke = editingText.value
@@ -1392,6 +1687,9 @@ function drawPreviewCanvas(): void {
 // ─── Event Handlers ─────────────────────────────────────────────────────────
 
 function handleMouseDown(e: Konva.KonvaEventObject<MouseEvent | TouchEvent>): void {
+  // Guard: if group drag overlay is active, canvas must NOT process events
+  if (groupDragActive.value) return
+
   const pos = getPointerPosition()
   if (!pos) return
 
@@ -1456,6 +1754,8 @@ function handleMouseDown(e: Konva.KonvaEventObject<MouseEvent | TouchEvent>): vo
 }
 
 function handleMouseMove(_e: Konva.KonvaEventObject<MouseEvent | TouchEvent>): void {
+  if (groupDragActive.value) return
+
   const pos = getPointerPosition()
   if (!pos) return
 
@@ -1484,6 +1784,7 @@ function handleMouseMove(_e: Konva.KonvaEventObject<MouseEvent | TouchEvent>): v
   // v5 A1: Move selected group
   if (currentTool.value === 'select' && rectSelect.isMoving.value) {
     rectSelect.updateMoveSelected(pos)
+    groupMoveOccurred = true
     return
   }
 
@@ -1523,6 +1824,7 @@ function handleMouseMove(_e: Konva.KonvaEventObject<MouseEvent | TouchEvent>): v
 
 // BUG-3 FIX: Global mouseup handler — stops drawing when mouse released outside canvas
 function globalMouseUp(): void {
+  if (groupDragActive.value) return
   if (isDrawing.value) {
     handleMouseUp()
   }
@@ -1533,6 +1835,8 @@ function globalMouseUp(): void {
 }
 
 function handleMouseUp(): void {
+  if (groupDragActive.value) return
+
   // v5 A4: Stop laser pointer
   if (currentTool.value === 'laser') {
     laserPointer.stopLaser()
@@ -1927,6 +2231,9 @@ function handleMediaResizeStart(asset: WBAsset, corner: string, e: PointerEvent)
   const el = (e.target as HTMLElement).closest('.wb-media-overlay') as HTMLElement
   if (!el) return
 
+  // Disable Konva during resize to prevent event stealing
+  setStageListening(false)
+
   function onPointerMove(ev: PointerEvent) {
     const dx = (ev.clientX - startX) / zoom
     const dy = (ev.clientY - startY) / zoom
@@ -1964,6 +2271,8 @@ function handleMediaResizeStart(asset: WBAsset, corner: string, e: PointerEvent)
 
   function onPointerUp(ev: PointerEvent) {
     document.removeEventListener('pointermove', onPointerMove)
+    // Re-enable Konva stage after resize
+    setStageListening(true)
 
     const dx = (ev.clientX - startX) / zoom
     let newW = startW
@@ -2029,6 +2338,9 @@ function handleMediaPointerDown(asset: WBAsset, e: PointerEvent): void {
   if (transformer) transformer.nodes([])
   emit('select', asset.id)
 
+  // Disable Konva during media drag to prevent event stealing
+  setStageListening(false)
+
   // Custom pointer drag — track pointer globally, update DOM directly for smooth UX
   const startClientX = e.clientX
   const startClientY = e.clientY
@@ -2050,6 +2362,8 @@ function handleMediaPointerDown(asset: WBAsset, e: PointerEvent): void {
 
   function onPointerUp(ev: PointerEvent) {
     document.removeEventListener('pointermove', onPointerMove)
+    // Re-enable Konva stage after media drag
+    setStageListening(true)
     el.style.cursor = ''
     if (!hasMoved) return
     const dx = (ev.clientX - startClientX) / (props.zoom || 1)
@@ -2089,11 +2403,33 @@ function handleTouchMove(): void {
   }
 }
 
+// ─── Group Move: mousedown on multi-selected item (backup for Konva items) ─
+
+function handleItemMouseDown(itemId: string, e: Konva.KonvaEventObject<MouseEvent | TouchEvent>): void {
+  if (currentTool.value !== 'select') return
+
+  // Only start group move when item is part of multi-selection
+  if (wbStore.selectedIds.length > 1 && wbStore.selectedIds.includes(itemId)) {
+    e.cancelBubble = true // запобігти спрацюванню stage mousedown
+    const pos = getPointerPosition()
+    if (!pos) return
+    groupMoveOccurred = false
+    rectSelect.startMoveSelected(pos)
+    isDrawing.value = true
+  }
+}
+
 // ─── Selection Handlers ─────────────────────────────────────────────────────
 
 function handleStrokeClick(stroke: WBStroke, e: Konva.KonvaEventObject<MouseEvent>): void {
   if (currentTool.value !== 'select') return
   e.cancelBubble = true
+
+  // Guard: block during/after group drag
+  if (groupDragActive.value || groupMoveOccurred) {
+    groupMoveOccurred = false
+    return
+  }
 
   // Phase 34 FIX-1: locked items ARE selectable (but not movable/deletable)
 
@@ -2189,6 +2525,12 @@ function handleAssetClick(asset: WBAsset, e: Konva.KonvaEventObject<MouseEvent>)
   if (currentTool.value !== 'select') return
   e.cancelBubble = true
 
+  // Guard: block during/after group drag
+  if (groupDragActive.value || groupMoveOccurred) {
+    groupMoveOccurred = false
+    return
+  }
+
   // Phase 34 FIX-1: locked assets ARE selectable (but not movable/deletable)
 
   const nativeEvent = e.evt as MouseEvent
@@ -2277,11 +2619,17 @@ function handleTextTransformEnd(stroke: WBStroke, e: Konva.KonvaEventObject<Even
 
 // ─── Stroke Config Generators ───────────────────────────────────────────────
 
+/** Check if item is part of a multi-selection (>1 items selected) */
+function isInMultiSelection(itemId: string): boolean {
+  return wbStore.selectedIds.length > 1 && wbStore.selectedIds.includes(itemId)
+}
+
 /** Build cache signature for any stroke */
 function buildStrokeSig(stroke: WBStroke, selectable: boolean): string {
   const last = stroke.points[stroke.points.length - 1]
   const first = stroke.points[0]
-  return `${stroke.tool}|${stroke.color}|${stroke.size}|${stroke.opacity}|${selectable ? 1 : 0}|${stroke.points.length}|${first?.x ?? 0},${first?.y ?? 0}|${last?.x ?? 0},${last?.y ?? 0}|${stroke.width ?? 0}|${stroke.height ?? 0}|${stroke.text ?? ''}|${stroke.locked ? 1 : 0}|${stroke.fontWeight ?? 0}|${stroke.fontStyle ?? ''}|${stroke.textAlign ?? ''}`
+  const multiSel = isInMultiSelection(stroke.id) ? 1 : 0
+  return `${stroke.tool}|${stroke.color}|${stroke.size}|${stroke.opacity}|${selectable ? 1 : 0}|${stroke.points.length}|${first?.x ?? 0},${first?.y ?? 0}|${last?.x ?? 0},${last?.y ?? 0}|${stroke.width ?? 0}|${stroke.height ?? 0}|${stroke.text ?? ''}|${stroke.locked ? 1 : 0}|${stroke.fontWeight ?? 0}|${stroke.fontStyle ?? ''}|${stroke.textAlign ?? ''}|ms${multiSel}`
 }
 
 /** Get cached config or build new one */
@@ -2318,6 +2666,7 @@ function getStrokeConfig(stroke: WBStroke): Record<string, unknown> {
     )
 
     const isLockedItem = !!stroke.locked
+    const isMultiSel = isInMultiSelection(stroke.id)
     return {
       id: stroke.id,
       name: `stroke-${stroke.id}`,
@@ -2325,7 +2674,7 @@ function getStrokeConfig(stroke: WBStroke): Record<string, unknown> {
       fill: stroke.color,
       opacity: isLockedItem ? Math.min(stroke.opacity, 0.85) : stroke.opacity,
       globalCompositeOperation: stroke.tool === 'highlighter' ? 'multiply' : 'source-over',
-      draggable: selectable && !isLockedItem,
+      draggable: selectable && !isLockedItem && !isMultiSel,
       perfectDrawEnabled: false,
       listening: selectable,
     }
@@ -2340,6 +2689,7 @@ function getLineConfig(stroke: WBStroke): Record<string, unknown> {
     const start = stroke.points[0]
     const end = stroke.points[stroke.points.length - 1]
     const isLockedItem = !!stroke.locked
+    const isMultiSel = isInMultiSelection(stroke.id)
     return {
       id: stroke.id,
       name: `stroke-${stroke.id}`,
@@ -2349,7 +2699,7 @@ function getLineConfig(stroke: WBStroke): Record<string, unknown> {
       lineCap: 'round',
       lineJoin: 'round',
       opacity: isLockedItem ? Math.min(stroke.opacity, 0.85) : stroke.opacity,
-      draggable: selectable && !isLockedItem,
+      draggable: selectable && !isLockedItem && !isMultiSel,
       perfectDrawEnabled: false,
       listening: selectable,
     }
@@ -2373,7 +2723,7 @@ function getRectConfig(stroke: WBStroke): Record<string, unknown> {
       strokeWidth: stroke.size,
       fill: 'transparent',
       opacity: isLockedItem ? Math.min(stroke.opacity, 0.85) : stroke.opacity,
-      draggable: selectable && !isLockedItem,
+      draggable: selectable && !isLockedItem && !isInMultiSelection(stroke.id),
       perfectDrawEnabled: false,
       listening: selectable,
     }
@@ -2397,7 +2747,7 @@ function getCircleConfig(stroke: WBStroke): Record<string, unknown> {
       strokeWidth: stroke.size,
       fill: 'transparent',
       opacity: isLockedItem ? Math.min(stroke.opacity, 0.85) : stroke.opacity,
-      draggable: selectable && !isLockedItem,
+      draggable: selectable && !isLockedItem && !isInMultiSelection(stroke.id),
       perfectDrawEnabled: false,
       listening: selectable,
     }
@@ -2435,7 +2785,7 @@ function getTextConfig(stroke: WBStroke): Record<string, unknown> {
       ...(hasWidth ? { width: stroke.width } : {}),
       wrap: 'word',
       opacity: isLockedItem ? 0.85 : 1,
-      draggable: selectable && !isLockedItem,
+      draggable: selectable && !isLockedItem && !isInMultiSelection(stroke.id),
       perfectDrawEnabled: false,
       listening: selectable,
     }
@@ -2565,7 +2915,8 @@ function getAssetConfig(asset: WBAsset): Record<string, unknown> {
   const baseOpacity = asset.opacity ?? 1
   const effectiveOpacity = isLockedItem ? Math.min(baseOpacity, 0.85) : baseOpacity
   const borderRadius = Math.min(asset.borderRadius ?? 0, 20) // FIX-8: cap at 20
-  const sig = `${asset.x}|${asset.y}|${asset.w}|${asset.h}|${asset.rotation}|${isLockedItem ? 1 : 0}|${selectable ? 1 : 0}|${hasImage ? 1 : 0}|${effectiveOpacity}|${borderRadius}`
+  const isMultiSel = isInMultiSelection(asset.id)
+  const sig = `${asset.x}|${asset.y}|${asset.w}|${asset.h}|${asset.rotation}|${isLockedItem ? 1 : 0}|${selectable ? 1 : 0}|${hasImage ? 1 : 0}|${effectiveOpacity}|${borderRadius}|ms${isMultiSel ? 1 : 0}`
   const cached = assetConfigCache.get(asset.id)
   if (cached && cached.sig === sig) return cached.config
 
@@ -2580,7 +2931,7 @@ function getAssetConfig(asset: WBAsset): Record<string, unknown> {
     image: loadedImages.get(src),
     // Phase 35: Image opacity from asset field
     opacity: effectiveOpacity,
-    draggable: selectable && !isLockedItem,
+    draggable: selectable && !isLockedItem && !isMultiSel,
     perfectDrawEnabled: false,
     listening: selectable,
   }
@@ -2609,13 +2960,14 @@ function getClipGroupConfig(asset: WBAsset): Record<string, unknown> {
   const selectable = currentTool.value === 'select'
   const isLockedItem = !!asset.locked
   const r = Math.min(asset.borderRadius ?? 0, 20)
+  const isMultiSel = isInMultiSelection(asset.id)
   return {
     id: asset.id,
     name: `asset-${asset.id}`,
     x: asset.x,
     y: asset.y,
     rotation: asset.rotation,
-    draggable: selectable && !isLockedItem,
+    draggable: selectable && !isLockedItem && !isMultiSel,
     listening: selectable,
     clipFunc: (ctx: CanvasRenderingContext2D) => roundedRect(ctx, asset.w, asset.h, r),
   }
@@ -2969,17 +3321,14 @@ watch(
   { immediate: true },
 )
 
-// A6.2: Memory cleanup on page switch — clear caches + reset selection state
-// NOTE: loadedImages та _knownAssetIds свідомо НЕ очищуємо тут, щоб уникнути
-// джиттеру при автосейві. currentStrokes повертає новий масив-референс при
-// кожній Vue-реевалюації (напр. коли isDirty→false після save), що спричиняє
-// спрацювання цього watcher без реального переключення сторінки.
-// - loadedImages: стейл-записи нешкідливі (нові ассети мають інші ключі, тому
-//   промахнуться в кеш і завантажаться заново).
-// - _knownAssetIds: анімація нових ассетів керується watcher'ом assets нижче,
-//   який точно визначає нові ID порівнянням зі старими.
+// A6.2: Memory cleanup on page switch — clear caches + reset selection state.
+// CRITICAL FIX: Watch currentPageIndex, NOT props.strokes.
+// props.strokes changes on EVERY mutation (move, add, delete, update) which
+// was causing clearSelection() to fire during group drag — destroying the
+// selection mid-drag and making group move impossible.
+// currentPageIndex changes ONLY on actual page switch — the intended trigger.
 watch(
-  () => props.strokes,
+  () => wbStore.currentPageIndex,
   () => {
     // Clear stroke config cache (stale entries from previous page)
     strokeConfigCache.clear()
@@ -2994,6 +3343,17 @@ watch(
     const transformer = transformerRef.value?.getNode?.()
     if (transformer) transformer.nodes([])
     wbStore.clearSelection()
+  },
+)
+
+// Invalidate stroke/asset config caches when strokes change (add/delete/update).
+// Selection is NOT cleared here — only caches, so group drag keeps working.
+watch(
+  () => props.strokes,
+  () => {
+    strokeConfigCache.clear()
+    assetConfigCache.clear()
+    clearSmoothedCache()
   },
 )
 
@@ -3129,6 +3489,43 @@ defineExpose({
 
 @keyframes wb-spin {
   to { transform: rotate(360deg); }
+}
+
+/* ── Group drag overlay — invisible hitbox for multi-select movement ──────── */
+.wb-group-drag-overlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: move;
+  border: 1.5px dashed rgba(99, 102, 241, 0.4);
+  border-radius: 6px;
+  background: rgba(99, 102, 241, 0.04);
+  transition: background 0.15s ease, border-color 0.15s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  /* CRITICAL: overlay must intercept ALL pointer events, above everything */
+  pointer-events: all;
+}
+
+.wb-group-drag-overlay:hover {
+  background: rgba(99, 102, 241, 0.08);
+  border-color: rgba(99, 102, 241, 0.6);
+}
+
+.wb-group-drag-overlay:active {
+  background: rgba(99, 102, 241, 0.12);
+  border-color: rgba(99, 102, 241, 0.7);
+}
+
+.wb-group-drag-overlay__icon {
+  color: rgba(99, 102, 241, 0.35);
+  pointer-events: none;
+  transition: color 0.15s ease;
+}
+
+.wb-group-drag-overlay:hover .wb-group-drag-overlay__icon {
+  color: rgba(99, 102, 241, 0.65);
 }
 
 .wb-text-edit-overlay {
