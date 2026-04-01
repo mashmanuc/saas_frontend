@@ -75,6 +75,13 @@
 
       <!-- Right: Actions -->
       <div class="wb-solo-room__actions">
+        <!-- Phase 1: Recording controls (opt-in) — inside actions group -->
+        <WBRecordingBanner
+          v-if="mode === 'edit'"
+          :is-recording="isRecording"
+          @start-recording="isRecording = true"
+          @stop-recording="isRecording = false"
+        />
         <button
           type="button"
           class="wb-header-btn"
@@ -616,14 +623,6 @@
       @text-format="handleTextFormat"
       @audio-uploaded="handleAudioUploaded"
       @audio-deleted="handleAudioDeleted"
-    />
-
-    <!-- Phase 1: Recording controls (opt-in) -->
-    <WBRecordingBanner
-      v-if="mode === 'edit'"
-      :is-recording="isRecording"
-      @start-recording="isRecording = true"
-      @stop-recording="isRecording = false"
     />
 
     <!-- Phase 11: Replay mode banner -->

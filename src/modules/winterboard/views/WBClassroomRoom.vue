@@ -97,6 +97,13 @@
 
       <!-- Right: Actions -->
       <div class="wb-classroom-room__actions">
+        <!-- Phase 1: Recording controls (opt-in, teacher only) — inside actions group -->
+        <WBRecordingBanner
+          v-if="mode === 'edit' && classroomRole.isTeacher.value"
+          :is-recording="isRecording"
+          @start-recording="isRecording = true"
+          @stop-recording="isRecording = false"
+        />
         <!-- Lock toggle (teacher only) -->
         <button
           v-if="classroomRole.canLock.value"
@@ -300,13 +307,7 @@
       @close="showShareDialog = false"
     />
 
-    <!-- Phase 1: Recording controls (opt-in, teacher only) -->
-    <WBRecordingBanner
-      v-if="mode === 'edit' && classroomRole.isTeacher.value"
-      :is-recording="isRecording"
-      @start-recording="isRecording = true"
-      @stop-recording="isRecording = false"
-    />
+    <!-- Phase 1: Recording controls moved into header -->
 
     <!-- Phase 11: Replay mode banner -->
     <WBReplayBanner

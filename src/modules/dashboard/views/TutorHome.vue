@@ -223,7 +223,7 @@ onMounted(() => {
 
   // Пріоритет 2: другорядні дані — паралельно, не блокують рендер
   relationsStore.fetchTutorRelations().catch(() => {})
-  contactTokensStore.fetchBalance().catch(() => {})
+  contactTokensStore.fetchBalance().catch(() => {})  // dedup in apiClient catches duplicate with TopNav widget
 
   // UX-1: lessons count for QuickActions — provided via KnowledgeStatsWidget @stats-loaded emit (no separate API call)
 })

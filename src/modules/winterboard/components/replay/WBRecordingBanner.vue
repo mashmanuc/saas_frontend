@@ -42,15 +42,12 @@ const { t } = useI18n({ useScope: 'global' })
 
 <style scoped>
 .wb-recording-banner {
-  position: fixed;
-  top: 8px;
-  right: 60px;
   display: flex;
   align-items: center;
   gap: 8px;
-  z-index: 55;
   font-size: 0.75rem;
   font-weight: 600;
+  flex-shrink: 0;
 }
 
 .wb-recording-banner__btn {
