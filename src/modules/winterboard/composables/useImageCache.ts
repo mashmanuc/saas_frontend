@@ -17,6 +17,22 @@ const MAX_CACHE_SIZE = 200
 const MAX_RETRIES = 3
 const RETRY_BASE_MS = 500 // 500ms, 1s, 2s exponential backoff
 
+// ─── Media Proxy Fallback ─────────────────────────────────────────────────────
+// Якщо CORS не працює (R2 кеш без Vary: Origin), пробуємо через backend proxy
+
+const _PROXY_HOSTS = ['images.m4sh.org']
+const _apiBase = import.meta.env.VITE_API_URL || ''
+
+function _buildMediaProxyUrl(src: string): string | null {
+  try {
+    const u = new URL(src)
+    if (!_PROXY_HOSTS.includes(u.hostname)) return null
+    return `${_apiBase}/v1/uploads/media-proxy/?url=${encodeURIComponent(src)}`
+  } catch {
+    return null
+  }
+}
+
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export type WBImageLoadState = 'idle' | 'loading' | 'loaded' | 'error'
@@ -130,13 +146,65 @@ export function useImageCache(onImageLoaded?: () => void) {
           }
         }, delay)
       } else {
-        loadStates.set(url, 'error')
-        console.error(`${LOG} All retries exhausted`, { url: url.slice(0, 80) })
-        bumpVersion()
+        // Всі прямі ретраї вичерпано — пробуємо media-proxy fallback
+        loadViaProxyFallback(url)
       }
     }
 
     img.src = url
+  }
+
+  // ── Media-proxy fallback (CORS workaround) ───────────────────────
+
+  function loadViaProxyFallback(originalUrl: string): void {
+    const proxyUrl = _buildMediaProxyUrl(originalUrl)
+    if (!proxyUrl) {
+      // URL не підходить для проксі — фінальна помилка
+      loadStates.set(originalUrl, 'error')
+      console.error(`${LOG} All retries exhausted (no proxy available)`, {
+        url: originalUrl.slice(0, 80),
+      })
+      bumpVersion()
+      return
+    }
+
+    console.info(`${LOG} Retrying via media-proxy`, { url: originalUrl.slice(0, 80) })
+    loadStates.set(originalUrl, 'loading')
+
+    const imgProxy = new Image()
+    imgProxy.crossOrigin = 'anonymous'
+
+    imgProxy.onload = () => {
+      evictIfNeeded()
+      // Кешуємо під оригінальним URL
+      cache.set(originalUrl, { image: imgProxy, lastAccess: Date.now() })
+      loadStates.set(originalUrl, 'loaded')
+      retryCounters.delete(originalUrl)
+      bumpVersion()
+    }
+
+    imgProxy.onerror = () => {
+      // Proxy теж не працює — останній шанс: без crossOrigin (tainted canvas)
+      console.warn(`${LOG} Proxy failed, trying without crossOrigin (canvas will be tainted)`, {
+        url: originalUrl.slice(0, 80),
+      })
+      const imgNoCors = new Image()
+      imgNoCors.onload = () => {
+        evictIfNeeded()
+        cache.set(originalUrl, { image: imgNoCors, lastAccess: Date.now() })
+        loadStates.set(originalUrl, 'loaded')
+        retryCounters.delete(originalUrl)
+        bumpVersion()
+      }
+      imgNoCors.onerror = () => {
+        loadStates.set(originalUrl, 'error')
+        console.error(`${LOG} All fallbacks exhausted`, { url: originalUrl.slice(0, 80) })
+        bumpVersion()
+      }
+      imgNoCors.src = originalUrl
+    }
+
+    imgProxy.src = proxyUrl
   }
 
   function loadDataUrl(url: string): void {
