@@ -300,6 +300,14 @@
       @close="showShareDialog = false"
     />
 
+    <!-- Phase 1: Recording controls (opt-in, teacher only) -->
+    <WBRecordingBanner
+      v-if="mode === 'edit' && classroomRole.isTeacher.value"
+      :is-recording="isRecording"
+      @start-recording="isRecording = true"
+      @stop-recording="isRecording = false"
+    />
+
     <!-- Phase 11: Replay mode banner -->
     <WBReplayBanner
       v-if="mode === 'replay'"
@@ -461,6 +469,7 @@ import WBShareDialog from '../components/sharing/WBShareDialog.vue'
 import WBReplayControls from '../components/replay/WBReplayControls.vue'
 import WBLessonMap from '../components/replay/WBLessonMap.vue'
 import WBReplayBanner from '../components/replay/WBReplayBanner.vue'
+import WBRecordingBanner from '../components/replay/WBRecordingBanner.vue'
 import WBMarkerCreateModal from '../components/replay/WBMarkerCreateModal.vue'
 import WBOnboardingHints from '../components/ui/WBOnboardingHints.vue'
 import WBTestTeacherPanel from '../components/test/WBTestTeacherPanel.vue'
@@ -570,8 +579,10 @@ async function fetchLessonStatus(): Promise<void> {
 // Phase 0: Student doesn't autosave in classroom (teacher is SSOT for state)
 const isStudentInClassroom = computed(() => classroomRole.isStudent.value)
 
+// Phase 2: Disable stream-save during active lesson — diff-only mode
 const autosave = useAutosave(resolvedSessionId, {
   disabled: isStudentInClassroom,
+  allowStreamSave: ref(false),
   // Classroom sync: after each save, notify other participants via WS
   onSaved: () => {
     if (presence.isConnected.value && resolvedSessionId.value) {
@@ -588,9 +599,12 @@ const autosave = useAutosave(resolvedSessionId, {
 })
 
 // P4: Replay recorder — batch records operations for replay timeline
+// Phase 1: Recording is opt-in — teacher must explicitly start recording
+const isRecording = ref(false)
 const replayRecorder = useReplayRecorder({
   sessionId: resolvedSessionId,
   getBoardState: () => store.getSnapshotState(),
+  enabled: isRecording,
 })
 // Phase 20: Auto-record all store operations — no manual record() calls needed
 const _unsubRecorder = replayRecorder.connectToStore(store)
@@ -1857,7 +1871,7 @@ async function initBoardWithSession(init: { sessionId: string; role: any; permis
   }
 
   isLoading.value = false
-  replayRecorder.start()
+  // Phase 1: replayRecorder.start() removed — controlled by isRecording ref via watch
 
   // Fetch lesson status + homework (C1.1 + C1.2)
   fetchLessonStatus()

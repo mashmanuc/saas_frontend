@@ -14,6 +14,7 @@ import type { WBDiffOp } from '../api/winterboardApi'
 import type { WBSyncStatus, WBWorkspaceState } from '../types/winterboard'
 import { isCircuitBreakerOpen } from '@/utils/apiClient'
 import { useToast } from './useToast'
+import { useOpsQueue, type QueuedOp } from './useOpsQueue'
 
 // ── Config ─────────────────────────────────────────────────────────────
 
@@ -58,7 +59,14 @@ export interface AutosaveReturn {
 
 export function useAutosave(
   sessionId: Ref<string | null>,
-  options?: { onSaved?: () => void; disabled?: Ref<boolean> },
+  options?: {
+    onSaved?: () => void
+    disabled?: Ref<boolean>
+    /** Phase 2: When false, stream-save is disabled during active lesson.
+     *  Diff-save is always primary. Stream-save is only used as beacon on unload.
+     *  Default: true (backward-compat). */
+    allowStreamSave?: Ref<boolean>
+  },
 ): AutosaveReturn {
   const store = useWBStore()
   const { t } = useI18n({ useScope: 'global' })
@@ -70,8 +78,35 @@ export function useAutosave(
   const saveCount = ref(0)
   const lastError = ref<string | null>(null)
 
-  // Internal state
-  const pendingOps = ref<WBDiffOp[]>([])
+  // Phase 3: Ops queue with ACK/retry (replaces plain pendingOps array)
+  const opsQueue = useOpsQueue({
+    sessionId,
+    onFlush: async (ops: QueuedOp[]) => {
+      const rev = store.rev
+      const result = await winterboardApi.diffSave(
+        sessionId.value!,
+        { rev, ops, client_ts: new Date().toISOString() },
+        rev,
+      )
+      return {
+        rev: result.rev ?? result.next_rev,
+        ack: result.ack ?? 0,
+        assigned: result.assigned ?? [],
+      }
+    },
+    onAck: (lastSeq: number, newRev: number) => {
+      store.rev = newRev
+      store.lastSeq = lastSeq
+      store.setLastSaved(new Date())
+    },
+    onError: (err: unknown) => {
+      onSaveError(String(err))
+    },
+  })
+
+  // Legacy alias — pendingOps now delegates to opsQueue
+  const pendingOps = opsQueue.pending
+
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
   let maxWaitTimer: ReturnType<typeof setTimeout> | null = null
   let cooldownTimer: ReturnType<typeof setTimeout> | null = null
@@ -79,7 +114,7 @@ export function useAutosave(
   let destroyed = false
   let inCooldown = false  // True after all retries exhausted — prevents hammering dead server
 
-  const pendingOpsCount = computed(() => pendingOps.value.length)
+  const pendingOpsCount = opsQueue.pendingCount
 
   // ── Timer management ───────────────────────────────────────────────
 
@@ -120,41 +155,23 @@ export function useAutosave(
     return false
   }
 
-  // ── Diff save ──────────────────────────────────────────────────────
+  // ── Diff save (Phase 3: delegates to opsQueue) ────────────────────
 
   async function performDiffSave(): Promise<boolean> {
     const sid = sessionId.value
-    if (!sid || pendingOps.value.length === 0) return true
-
-    const ops = [...pendingOps.value]
-    const rev = store.rev
+    if (!sid || opsQueue.pendingCount.value === 0) return true
 
     try {
-      const result = await winterboardApi.diffSave(
-        sid,
-        {
-          rev,
-          ops,
-          client_ts: new Date().toISOString(),
-        },
-        rev,
-      )
-
-      // Success — clear saved ops, update store
-      pendingOps.value = pendingOps.value.slice(ops.length)
-      store.rev = result.next_rev
-      store.setLastSaved(new Date(result.server_ts))
+      await opsQueue.flush()
       return true
     } catch (err: any) {
-      const status = err?.response?.status
-      // 409 = rev mismatch, 422 = invalid ops → fallback to stream save
-      if (status === 409 || status === 422) {
+      const errStatus = err?.response?.status
+      if (errStatus === 409 || errStatus === 422) {
         if (import.meta.env?.DEV) {
-          console.warn(`[WB:autosave] Diff save failed (${status}), falling back to stream save`)
+          console.warn(`[WB:autosave] Diff save failed (${errStatus})`)
         }
         return false
       }
-      // Other errors → retry
       throw err
     }
   }
@@ -197,14 +214,14 @@ export function useAutosave(
       if (result.rev) {
         store.rev = result.rev
       }
-      pendingOps.value = []
+      opsQueue.clear()
       store.setLastSaved(new Date())
       return true
     } catch (err: any) {
       const status = err?.response?.status
       // 204 = no change (digest match) — still success
       if (status === 204 || err?.response?.status === 204) {
-        pendingOps.value = []
+        opsQueue.clear()
         store.setLastSaved(new Date())
         return true
       }
@@ -230,13 +247,21 @@ export function useAutosave(
     lastError.value = null
 
     try {
-      // PROB-4 FIX: If no pending diff ops, skip diff save entirely and use stream save.
-      // Previously diffSave returned true with 0 ops, marking isDirty=false without saving.
       const hasPendingOps = pendingOps.value.length > 0
+
+      // Phase 2: isDirty without ops — skip save (beacon covers on unload)
+      // Scenarios: hydrate (already isDirty=false), undo/redo (local-only), asset upload (should generate op)
+      if (!hasPendingOps && store.isDirty) {
+        if (import.meta.env?.DEV) {
+          console.warn('[WB:autosave] isDirty without ops — skipping (beacon covers)')
+        }
+        isSaving.value = false
+        return
+      }
 
       let diffSuccess = false
       if (hasPendingOps) {
-        // Strategy 1: Try diff save with retry (only when we have ops)
+        // Strategy 1: Try diff save with retry (always primary)
         diffSuccess = await retryWithBackoff(async () => {
           try {
             return await performDiffSave()
@@ -251,7 +276,19 @@ export function useAutosave(
         }
       }
 
-      // Strategy 2: Stream save — used as fallback OR when no diff ops but store is dirty
+      // Strategy 2: Stream save — only when explicitly allowed (NOT during active lesson)
+      // Phase 2: allowStreamSave defaults to true for backward-compat
+      const streamAllowed = options?.allowStreamSave?.value !== false
+
+      if (!streamAllowed) {
+        // Phase 2: diff-only mode — stream-save disabled during active lesson
+        // Diff failed after all retries → enter cooldown, beacon will cover on unload
+        if (hasPendingOps) {
+          onSaveError('Diff save failed after all retries (stream-save disabled)')
+        }
+        return
+      }
+
       if (import.meta.env?.DEV) {
         console.warn(`[WB:autosave] ${hasPendingOps ? 'Diff save exhausted, trying' : 'No pending ops, using'} stream save`)
       }
@@ -363,7 +400,7 @@ export function useAutosave(
   // ── Public API ─────────────────────────────────────────────────────
 
   function queueDiffOp(op: WBDiffOp): void {
-    pendingOps.value = [...pendingOps.value, op]
+    opsQueue.enqueue(op)
     scheduleSave()
   }
 
@@ -450,12 +487,16 @@ export function useAutosave(
     document.addEventListener('visibilitychange', handleVisibilityChange)
   }
 
+  // Phase 3: Start ops queue flush timer
+  opsQueue.start()
+
   // ── Cleanup ────────────────────────────────────────────────────────
 
   function destroy(): void {
     destroyed = true
     clearTimers()
     stopDirtyWatch()
+    opsQueue.destroy()
     if (cooldownTimer) {
       clearTimeout(cooldownTimer)
       cooldownTimer = null
@@ -470,7 +511,7 @@ export function useAutosave(
     }
 
     // Final beacon save if pending
-    if (sessionId.value && (store.isDirty || pendingOps.value.length > 0)) {
+    if (sessionId.value && (store.isDirty || opsQueue.pendingCount.value > 0)) {
       winterboardApi.beaconSave(sessionId.value, {
         state: store.serializedState,
         rev: store.rev,

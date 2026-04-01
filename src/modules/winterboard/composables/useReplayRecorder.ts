@@ -9,7 +9,7 @@
 //   - NEVER blocks UI — all network calls are fire-and-forget with error re-queuing
 //   - Designed as platform primitive: any board view (solo/classroom) can use it
 
-import { ref, readonly, type Ref } from 'vue'
+import { ref, readonly, watch, type Ref } from 'vue'
 import type { RecordOperationRequest } from '../types/replay'
 import { recordOperationsBatch, createSnapshot } from '../api/replay'
 import { isCircuitBreakerOpen } from '@/utils/apiClient'
@@ -31,6 +31,11 @@ export interface UseReplayRecorderOptions {
   sessionId: Ref<string | null>
   /** Returns serialisable board state for snapshot creation */
   getBoardState: () => Record<string, unknown>
+  /** Controls whether the recorder is active. Default: false (opt-in).
+   *  When false, record() is a no-op and flush timer is stopped.
+   *  When switched to true, starts the flush timer and connects to store.
+   *  When switched to false, flushes remaining buffer and stops timer. */
+  enabled?: Ref<boolean>
 }
 
 // ─── Composable ─────────────────────────────────────────────────────────────
@@ -76,6 +81,9 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
   }
 
   function record(op: RecordOperationRequest): void {
+    // Phase 1: Skip recording if not enabled (opt-in)
+    if (options.enabled && !options.enabled.value) return
+
     // Strip data URLs from asset payloads before size check
     if (op.payload && typeof op.payload === 'object') {
       op = { ...op, payload: _stripDataUrls(op.payload as Record<string, unknown>) }
@@ -227,6 +235,17 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
   function connectToStore(store: { onOperation: (l: (op: RecordOperationRequest) => void) => () => void }): () => void {
     return store.onOperation((op) => {
       record(op)
+    })
+  }
+
+  // Phase 1: Watch enabled ref — auto start/stop recorder
+  if (options.enabled) {
+    watch(options.enabled, (isEnabled) => {
+      if (isEnabled) {
+        start()
+      } else {
+        stop() // flushes remaining buffer
+      }
     })
   }
 

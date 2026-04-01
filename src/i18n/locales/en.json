@@ -7101,6 +7101,12 @@
       "shareMoment": "Share moment",
       "momentCopied": "Moment link copied!"
     },
+    "recording": {
+      "start": "Record lesson",
+      "startTitle": "Start recording for later replay",
+      "stop": "Stop",
+      "active": "Recording"
+    },
     "onboarding": {
       "toolbar": "Drawing tools. Pick a pen and start!",
       "materials": "Drag images, videos or YouTube from here onto the board",

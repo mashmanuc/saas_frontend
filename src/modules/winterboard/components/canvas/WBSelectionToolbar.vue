@@ -185,7 +185,7 @@
 
       <!-- ── Audio section (single object, tutor only) ── -->
       <template v-if="showAudioSection">
-        <span class="wb-selection-toolbar__divider" />
+        <span class="wb-selection-toolbar__divider wb-selection-toolbar__divider--audio" />
 
         <div
           class="wb-selection-toolbar__audio-group"

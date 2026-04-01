@@ -112,6 +112,7 @@ export function useObjectAudio(options: UseObjectAudioOptions) {
   let mediaStream: MediaStream | null = null
   let chunks: Blob[] = []
   let timerInterval: ReturnType<typeof setInterval> | null = null
+  let lastUploadTs = 0  // guard: мінімум 2с між upload-запитами
 
   // ─── Computed ─────────────────────────────────────────────────────
 
@@ -211,7 +212,9 @@ export function useObjectAudio(options: UseObjectAudioOptions) {
       cleanup()
     }
 
-    mediaRecorder.start(250) // collect chunks every 250ms
+    // No timeslice — ondataavailable fires once on stop() with full audio blob.
+    // timeslice(250ms) was causing browser issues and is unnecessary here.
+    mediaRecorder.start()
     recordingState.value = 'recording'
     startTimer()
   }
@@ -258,6 +261,14 @@ export function useObjectAudio(options: UseObjectAudioOptions) {
   // ─── Upload ───────────────────────────────────────────────────────
 
   async function uploadAudio(blob: Blob): Promise<void> {
+    // Guard: запобігаємо повторному upload протягом 2с (подвійний стоп, race condition)
+    const now = Date.now()
+    if (now - lastUploadTs < 2000) {
+      recordingState.value = 'idle'
+      return
+    }
+    lastUploadTs = now
+
     recordingState.value = 'uploading'
     uploadProgress.value = 0
 

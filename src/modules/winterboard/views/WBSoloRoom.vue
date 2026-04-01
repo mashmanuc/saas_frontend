@@ -618,6 +618,14 @@
       @audio-deleted="handleAudioDeleted"
     />
 
+    <!-- Phase 1: Recording controls (opt-in) -->
+    <WBRecordingBanner
+      v-if="mode === 'edit'"
+      :is-recording="isRecording"
+      @start-recording="isRecording = true"
+      @stop-recording="isRecording = false"
+    />
+
     <!-- Phase 11: Replay mode banner -->
     <WBReplayBanner
       v-if="mode === 'replay'"
@@ -740,6 +748,7 @@ import WBReplayControls from '../components/replay/WBReplayControls.vue'
 import WBLessonMap from '../components/replay/WBLessonMap.vue'
 import WBMarkerCreateModal from '../components/replay/WBMarkerCreateModal.vue'
 import WBReplayBanner from '../components/replay/WBReplayBanner.vue'
+import WBRecordingBanner from '../components/replay/WBRecordingBanner.vue'
 import SaveAsTemplateDialog from '@/modules/knowledge/components/SaveAsTemplateDialog.vue'
 import WBSaveLessonDialog from '@/modules/knowledge/components/WBSaveLessonDialog.vue'
 import WBOnboardingHints from '../components/ui/WBOnboardingHints.vue'
@@ -780,12 +789,18 @@ const locking = useLocking(store)
 const sessionId = ref<string | null>(null)
 
 // Autosave (AGENT-C: C2.1)
-const autosave = useAutosave(sessionId)
+// Phase 2: Disable stream-save during active lesson — diff-only mode
+const autosave = useAutosave(sessionId, {
+  allowStreamSave: ref(false),
+})
 
 // P4: Replay recorder — batch records operations for replay timeline
+// Phase 1: Recording is opt-in — teacher must explicitly start recording
+const isRecording = ref(false)
 const replayRecorder = useReplayRecorder({
   sessionId,
   getBoardState: () => store.getSnapshotState(),
+  enabled: isRecording,
 })
 // Phase 20: Auto-record all store operations — no manual record() calls needed
 const _unsubRecorder = replayRecorder.connectToStore(store)
@@ -2024,7 +2039,7 @@ onMounted(async () => {
       sessionName.value = created.name || t('winterboard.room.untitled')
       isLoading.value = false
       // Template selector modal removed — grid overlay button replaces it
-      replayRecorder.start()
+      // Phase 1: replayRecorder.start() removed — controlled by isRecording ref via watch
       await connectPresenceSafe(created.id)
       // Preserve explicit groupId in query params if present
       const query = explicitGroupId.value ? { ...route.query, groupId: explicitGroupId.value } : route.query
@@ -2090,7 +2105,7 @@ onMounted(async () => {
     } finally {
       // Always stop loading — even on error, show the canvas
       isLoading.value = false
-      replayRecorder.start()
+      // Phase 1: replayRecorder.start() removed — controlled by isRecording ref via watch
 
       // Connect presence (waits for auth bootstrap internally)
       await connectPresenceSafe(id)

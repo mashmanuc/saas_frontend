@@ -279,6 +279,8 @@ export interface WBBoardState {
   syncStatus: WBSyncStatus
   syncError: string | null
   rev: number
+  /** Phase 3: last acknowledged seq from ops queue */
+  lastSeq: number
 
   // Board data — strokes/assets inside pages (LAW-03)
   pages: WBPage[]
@@ -388,6 +390,7 @@ export const useWBStore = defineStore('wb-board', {
     syncStatus: 'idle',
     syncError: null,
     rev: 0,
+    lastSeq: 0,
 
     pages: [createEmptyPage(0)],
     currentPageIndex: 0,
@@ -577,6 +580,7 @@ export const useWBStore = defineStore('wb-board', {
       this.workspaceName = session.name
       this.ownerId = session.owner_id ?? null
       this.rev = session.rev ?? 0
+      this.lastSeq = (session as any).last_op_seq ?? 0
 
       if (session.state) {
         const state = session.state

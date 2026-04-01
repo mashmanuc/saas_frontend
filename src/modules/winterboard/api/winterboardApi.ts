@@ -60,6 +60,12 @@ export interface WBDiffSaveResponse {
   server_ts: string
   next_rev: number
   digest: string
+  /** Phase 3: canonical rev (same as next_rev, preferred) */
+  rev?: number
+  /** Phase 3: last assigned seq number */
+  ack?: number
+  /** Phase 3: mapping of op_id → assigned seq */
+  assigned?: Array<{ op_id: string; seq: number }>
 }
 
 export interface WBStreamSaveResponse {
@@ -233,16 +239,46 @@ export const winterboardApi = {
 
   /**
    * Stream save — full state upload with rev check.
+   * Phase 2: gzip compression for payloads > 100KB to reduce 504 risk.
    */
-  streamSave(
+  async streamSave(
     sessionId: string,
     state: WBWorkspaceState,
     rev: number,
   ): Promise<WBStreamSaveResponse> {
+    const payload = { state }
+    const json = JSON.stringify(payload)
+
+    // Phase 2: Compress large payloads with gzip (CompressionStream API)
+    if (json.length > 100_000 && typeof CompressionStream !== 'undefined') {
+      try {
+        const encoder = new TextEncoder()
+        const readable = new Blob([encoder.encode(json)]).stream()
+        const compressed = readable.pipeThrough(new CompressionStream('gzip'))
+        const compressedBlob = await new Response(compressed).blob()
+
+        return apiClient
+          .post(
+            `${BASE}/sessions/${sessionId}/save-stream/`,
+            compressedBlob,
+            {
+              headers: {
+                'X-Rev': String(rev),
+                'Content-Encoding': 'gzip',
+                'Content-Type': 'application/json',
+              },
+            },
+          )
+          .then((r: any) => r.data ?? r)
+      } catch {
+        // Compression failed — fallback to uncompressed
+      }
+    }
+
     return apiClient
       .post(
         `${BASE}/sessions/${sessionId}/save-stream/`,
-        { state },
+        payload,
         { headers: { 'X-Rev': String(rev) } },
       )
       .then((r: any) => r.data ?? r)
