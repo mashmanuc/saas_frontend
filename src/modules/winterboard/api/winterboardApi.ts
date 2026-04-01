@@ -238,8 +238,9 @@ export const winterboardApi = {
   },
 
   /**
-   * Stream save — full state upload with rev check.
-   * Phase 2: gzip compression for payloads > 100KB to reduce 504 risk.
+   * Stream save — full state upload (legacy fallback).
+   * Used when board mutations set isDirty but don't generate ops yet.
+   * TODO: Remove when all mutations use queueDiffOp.
    */
   async streamSave(
     sessionId: string,
@@ -249,7 +250,7 @@ export const winterboardApi = {
     const payload = { state }
     const json = JSON.stringify(payload)
 
-    // Phase 2: Compress large payloads with gzip (CompressionStream API)
+    // Compress large payloads with gzip (CompressionStream API)
     if (json.length > 100_000 && typeof CompressionStream !== 'undefined') {
       try {
         const encoder = new TextEncoder()

@@ -445,6 +445,7 @@ import { useHistory } from '../composables/useHistory'
 import { useKeyboard } from '../composables/useKeyboard'
 import { useBoardClipboard } from '../composables/useBoardClipboard'
 import { useAutosave } from '../composables/useAutosave'
+import { useOpsBridge } from '../composables/useOpsBridge'
 import { usePresence } from '../composables/usePresence'
 import { useFollowMode } from '../composables/useFollowMode'
 import { useLocking } from '../composables/useLocking'
@@ -579,10 +580,9 @@ async function fetchLessonStatus(): Promise<void> {
 // Phase 0: Student doesn't autosave in classroom (teacher is SSOT for state)
 const isStudentInClassroom = computed(() => classroomRole.isStudent.value)
 
-// Phase 2: Disable stream-save during active lesson — diff-only mode
+// Phase 4: ops-based persistence only (stream-save removed)
 const autosave = useAutosave(resolvedSessionId, {
   disabled: isStudentInClassroom,
-  allowStreamSave: ref(false),
   // Classroom sync: after each save, notify other participants via WS
   onSaved: () => {
     if (presence.isConnected.value && resolvedSessionId.value) {
@@ -597,6 +597,9 @@ const autosave = useAutosave(resolvedSessionId, {
     }
   },
 })
+
+// Phase 4a: Bridge — boardStore operations → diff ops → autosave.queueDiffOp
+const opsBridge = useOpsBridge(autosave)
 
 // P4: Replay recorder — batch records operations for replay timeline
 // Phase 1: Recording is opt-in — teacher must explicitly start recording

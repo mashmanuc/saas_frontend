@@ -715,6 +715,7 @@ import { useHistory } from '../composables/useHistory'
 import { useKeyboard } from '../composables/useKeyboard'
 import { useBoardClipboard } from '../composables/useBoardClipboard'
 import { useAutosave } from '../composables/useAutosave'
+import { useOpsBridge } from '../composables/useOpsBridge'
 import { usePresence } from '../composables/usePresence'
 import { useFollowMode } from '../composables/useFollowMode'
 import { useLocking } from '../composables/useLocking'
@@ -789,10 +790,10 @@ const locking = useLocking(store)
 const sessionId = ref<string | null>(null)
 
 // Autosave (AGENT-C: C2.1)
-// Phase 2: Disable stream-save during active lesson — diff-only mode
-const autosave = useAutosave(sessionId, {
-  allowStreamSave: ref(false),
-})
+const autosave = useAutosave(sessionId)
+
+// Phase 4a: Bridge — boardStore operations → diff ops → autosave.queueDiffOp
+const opsBridge = useOpsBridge(autosave)
 
 // P4: Replay recorder — batch records operations for replay timeline
 // Phase 1: Recording is opt-in — teacher must explicitly start recording

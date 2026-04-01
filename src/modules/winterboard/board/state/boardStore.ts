@@ -673,6 +673,9 @@ export const useWBStore = defineStore('wb-board', {
     setGridSize(size: number): void {
       this.gridSize = Math.max(10, Math.min(100, size))
       this.markDirty()
+      if (this.mode === 'edit') {
+        _emitOperation({ op_type: 'grid_update', payload: { gridSize: this.gridSize } })
+      }
     },
 
     // Phase 35: Background color (per-page only — no global fallback leak)
@@ -682,6 +685,13 @@ export const useWBStore = defineStore('wb-board', {
         page.backgroundColor = color
       }
       this.markDirty()
+      if (this.mode === 'edit') {
+        _emitOperation({
+          op_type: 'background_update',
+          page_id: page?.id ?? '',
+          payload: { color },
+        })
+      }
     },
 
     // A9: Per-page grid actions ──────────────────────────────────────────────
@@ -709,6 +719,13 @@ export const useWBStore = defineStore('wb-board', {
         grid: { ...existing, ...updates },
       }
       this.markDirty()
+      if (this.mode === 'edit') {
+        _emitOperation({
+          op_type: 'grid_update',
+          page_id: page.id ?? '',
+          payload: { grid: { ...existing, ...updates } },
+        })
+      }
     },
 
     /**
@@ -2059,6 +2076,13 @@ export const useWBStore = defineStore('wb-board', {
       this.selectedIds = [sticky.id]
       this.selectionRect = null
       this.markDirty()
+      if (this.mode === 'edit') {
+        _emitOperation({
+          op_type: 'asset_add',
+          page_id: page.id ?? '',
+          payload: { asset: sticky },
+        })
+      }
     },
 
     /**
@@ -2086,11 +2110,19 @@ export const useWBStore = defineStore('wb-board', {
       this.undoStack = trimStack([...this.undoStack, action])
       this.redoStack = []
 
+      const updatedAsset = { ...asset, text: clampedText }
       const newAssets = page.assets.map((a) =>
-        a.id === id ? { ...a, text: clampedText } : a,
+        a.id === id ? updatedAsset : a,
       )
       this.pages[pageIndex] = { ...page, assets: newAssets }
       this.markDirty()
+      if (this.mode === 'edit') {
+        _emitOperation({
+          op_type: 'asset_update',
+          page_id: page.id ?? '',
+          payload: { asset: updatedAsset },
+        })
+      }
     },
 
     /**
@@ -2134,11 +2166,19 @@ export const useWBStore = defineStore('wb-board', {
       this.undoStack = trimStack([...this.undoStack, action])
       this.redoStack = []
 
+      const updatedAsset = { ...asset, ...newStyle }
       const newAssets = page.assets.map((a) =>
-        a.id === id ? { ...a, ...newStyle } : a,
+        a.id === id ? updatedAsset : a,
       )
       this.pages[pageIndex] = { ...page, assets: newAssets }
       this.markDirty()
+      if (this.mode === 'edit') {
+        _emitOperation({
+          op_type: 'asset_update',
+          page_id: page.id ?? '',
+          payload: { asset: updatedAsset },
+        })
+      }
     },
 
     /**
@@ -2227,6 +2267,13 @@ export const useWBStore = defineStore('wb-board', {
         groups: [...existingGroups, group],
       }
       this.markDirty()
+      if (this.mode === 'edit') {
+        _emitOperation({
+          op_type: 'group_create',
+          page_id: page.id ?? '',
+          payload: { group_id: group.id, itemIds: group.itemIds },
+        })
+      }
       return group
     },
 
@@ -2248,6 +2295,13 @@ export const useWBStore = defineStore('wb-board', {
         groups: groups.filter((g) => g.id !== groupId),
       }
       this.markDirty()
+      if (this.mode === 'edit') {
+        _emitOperation({
+          op_type: 'group_delete',
+          page_id: page.id ?? '',
+          payload: { group_id: groupId },
+        })
+      }
     },
 
     /**
@@ -2312,6 +2366,13 @@ export const useWBStore = defineStore('wb-board', {
       this.selectedIds = []
       this.selectionRect = null
       this.markDirty()
+      if (this.mode === 'edit') {
+        _emitOperation({
+          op_type: 'lock_update',
+          page_id: page.id ?? '',
+          payload: { ids, locked: true, lockedBy },
+        })
+      }
     },
 
     unlockItems(ids: string[]): void {
@@ -2342,6 +2403,13 @@ export const useWBStore = defineStore('wb-board', {
 
       this.pages[pageIndex] = { ...page, strokes: newStrokes, assets: newAssets }
       this.markDirty()
+      if (this.mode === 'edit') {
+        _emitOperation({
+          op_type: 'lock_update',
+          page_id: page.id ?? '',
+          payload: { ids, locked: false },
+        })
+      }
     },
 
     isItemLocked(id: string): boolean {
@@ -2428,6 +2496,14 @@ export const useWBStore = defineStore('wb-board', {
       this.selectedIds = [...newIds]
       this.selectionRect = null
       this.markDirty()
+      if (this.mode === 'edit') {
+        for (const s of clonedStrokes) {
+          _emitOperation({ op_type: 'stroke_add', page_id: page.id ?? '', payload: { stroke: s } })
+        }
+        for (const a of clonedAssets) {
+          _emitOperation({ op_type: 'asset_add', page_id: page.id ?? '', payload: { asset: a } })
+        }
+      }
       return newIds
     },
 
@@ -2791,6 +2867,12 @@ export const useWBStore = defineStore('wb-board', {
       const page = this.pages[pageIndex]
       if (!page) return
 
+      const _emitZ = () => {
+        if (this.mode === 'edit') {
+          _emitOperation({ op_type: 'z_order', page_id: page.id ?? '', payload: { object_id: id, action: 'bringForward' } })
+        }
+      }
+
       // Check strokes
       const si = page.strokes.findIndex(s => s.id === id)
       if (si !== -1 && si < page.strokes.length - 1) {
@@ -2801,6 +2883,7 @@ export const useWBStore = defineStore('wb-board', {
         ;[arr[si], arr[si + 1]] = [arr[si + 1], arr[si]]
         this.pages[pageIndex] = { ...page, strokes: arr }
         this.markDirty()
+        _emitZ()
         return
       }
 
@@ -2814,6 +2897,7 @@ export const useWBStore = defineStore('wb-board', {
         ;[arr[ai], arr[ai + 1]] = [arr[ai + 1], arr[ai]]
         this.pages[pageIndex] = { ...page, assets: arr }
         this.markDirty()
+        _emitZ()
         return
       }
     },
@@ -2822,6 +2906,12 @@ export const useWBStore = defineStore('wb-board', {
       const pageIndex = this.currentPageIndex
       const page = this.pages[pageIndex]
       if (!page) return
+
+      const _emitZ = () => {
+        if (this.mode === 'edit') {
+          _emitOperation({ op_type: 'z_order', page_id: page.id ?? '', payload: { object_id: id, action: 'sendBackward' } })
+        }
+      }
 
       const si = page.strokes.findIndex(s => s.id === id)
       if (si > 0) {
@@ -2832,6 +2922,7 @@ export const useWBStore = defineStore('wb-board', {
         ;[arr[si], arr[si - 1]] = [arr[si - 1], arr[si]]
         this.pages[pageIndex] = { ...page, strokes: arr }
         this.markDirty()
+        _emitZ()
         return
       }
 
@@ -2844,6 +2935,7 @@ export const useWBStore = defineStore('wb-board', {
         ;[arr[ai], arr[ai - 1]] = [arr[ai - 1], arr[ai]]
         this.pages[pageIndex] = { ...page, assets: arr }
         this.markDirty()
+        _emitZ()
         return
       }
     },
@@ -2853,6 +2945,12 @@ export const useWBStore = defineStore('wb-board', {
       const pageIndex = this.currentPageIndex
       const page = this.pages[pageIndex]
       if (!page) return
+
+      const _emitZ = () => {
+        if (this.mode === 'edit') {
+          _emitOperation({ op_type: 'z_order', page_id: page.id ?? '', payload: { object_id: id, action: 'bringToFront' } })
+        }
+      }
 
       const si = page.strokes.findIndex(s => s.id === id)
       if (si !== -1 && si < page.strokes.length - 1) {
@@ -2865,6 +2963,7 @@ export const useWBStore = defineStore('wb-board', {
         arr.push(item)
         this.pages[pageIndex] = { ...page, strokes: arr }
         this.markDirty()
+        _emitZ()
         return
       }
 
@@ -2879,6 +2978,7 @@ export const useWBStore = defineStore('wb-board', {
         arr.push(item)
         this.pages[pageIndex] = { ...page, assets: arr }
         this.markDirty()
+        _emitZ()
         return
       }
     },
@@ -2888,6 +2988,12 @@ export const useWBStore = defineStore('wb-board', {
       const pageIndex = this.currentPageIndex
       const page = this.pages[pageIndex]
       if (!page) return
+
+      const _emitZ = () => {
+        if (this.mode === 'edit') {
+          _emitOperation({ op_type: 'z_order', page_id: page.id ?? '', payload: { object_id: id, action: 'sendToBack' } })
+        }
+      }
 
       const si = page.strokes.findIndex(s => s.id === id)
       if (si > 0) {
@@ -2899,6 +3005,7 @@ export const useWBStore = defineStore('wb-board', {
         arr.unshift(item)
         this.pages[pageIndex] = { ...page, strokes: arr }
         this.markDirty()
+        _emitZ()
         return
       }
 
@@ -2912,6 +3019,7 @@ export const useWBStore = defineStore('wb-board', {
         arr.unshift(item)
         this.pages[pageIndex] = { ...page, assets: arr }
         this.markDirty()
+        _emitZ()
         return
       }
     },
@@ -2958,6 +3066,14 @@ export const useWBStore = defineStore('wb-board', {
       this.selectedIds = []
       this.selectionRect = null
       this.markDirty()
+      if (this.mode === 'edit') {
+        for (const s of deletedStrokes) {
+          _emitOperation({ op_type: 'stroke_delete', page_id: page.id ?? '', payload: { stroke_id: s.id } })
+        }
+        for (const a of deletedAssets) {
+          _emitOperation({ op_type: 'asset_delete', page_id: page.id ?? '', payload: { asset_id: a.id } })
+        }
+      }
     },
 
     // ── Reset ────────────────────────────────────────────────────────────
