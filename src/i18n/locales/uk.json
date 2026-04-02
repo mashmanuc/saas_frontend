@@ -6489,6 +6489,7 @@
     },
     "boards": {
       "myBoards": "Мої дошки",
+      "myBoardsSubtitle": "Робочий простір для підготовки матеріалів",
       "newBoard": "Нова дошка",
       "empty": "Ще немає дошок",
       "emptyMessage": "Створіть першу дошку щоб почати малювати",
@@ -6507,14 +6508,44 @@
         "duplicate": "Скопіювати",
         "share": "Поділитися",
         "export": "Експорт",
-        "delete": "Видалити"
+        "delete": "Видалити",
+        "moveToFolder": "Перемістити в папку",
+        "removeFromFolder": "Прибрати з папки"
       },
+      "tabAll": "Всі",
+      "tabLessons": "У заняттях",
+      "tabStandalone": "Чернетки",
+      "searchPlaceholder": "Пошук дошок…",
+      "pagination": "Навігація по сторінках",
+      "prevPage": "Назад",
+      "nextPage": "Далі",
+      "statusActive": "У заняттях",
+      "statusDraft": "Чернетка",
+      "lessonBadge": "Прив'язано до уроку",
+      "lessonWith": "Учень: {name}",
       "confirmDelete": {
         "title": "Видалити дошку?",
         "message": "Дошку \"{name}\" буде видалено назавжди. Цю дію неможливо скасувати.",
         "confirm": "Видалити",
         "cancel": "Скасувати"
       }
+    },
+    "folders": {
+      "allBoards": "Всі дошки",
+      "noFolder": "Без папки",
+      "newFolder": "Нова папка",
+      "newSubfolder": "Нова підпапка",
+      "newFolderPlaceholder": "Назва папки…",
+      "created": "Папку створено",
+      "duplicateName": "Папка з такою назвою вже існує",
+      "createError": "Не вдалося створити папку",
+      "renameError": "Не вдалося перейменувати папку",
+      "deleted": "Папку видалено",
+      "deleteError": "Не вдалося видалити папку",
+      "moved": "Дошку переміщено",
+      "moveError": "Не вдалося перемістити дошку",
+      "sidebar": "Папки",
+      "toggleSidebar": "Показати/Сховати папки"
     },
     "dashboard": {
       "subtitle": "Ласкаво просимо до Winterboard",
@@ -6628,7 +6659,10 @@
       "moveError": "Не вдалося перемістити файл",
       "moveToFolder": "Перемістити в папку",
       "noFolder": "Без папки",
-      "undo": "Скасувати"
+      "undo": "Скасувати",
+      "assetRenamed": "Файл перейменовано",
+      "renameError": "Не вдалося перейменувати файл",
+      "renameAsset": "Перейменувати"
     },
     "materials": {
       "hideFolders": "Сховати папки",

@@ -28,6 +28,13 @@
       <h3 class="wb-board-card__title">
         {{ board.name || t('winterboard.boards.untitled') }}
       </h3>
+      <!-- Board status badge -->
+      <span
+        class="wb-board-card__status-badge"
+        :class="board.has_lesson ? 'wb-board-card__status-badge--active' : 'wb-board-card__status-badge--draft'"
+      >
+        {{ board.has_lesson ? t('winterboard.boards.statusActive') : t('winterboard.boards.statusDraft') }}
+      </span>
       <p class="wb-board-card__meta">
         <span>{{ t('winterboard.boards.pageCount', { n: board.page_count }) }}</span>
         <span class="wb-board-card__sep" aria-hidden="true">·</span>
@@ -65,6 +72,43 @@
             @click="emit('share'); menuOpen = false">
             {{ t('winterboard.boards.actions.share') }}
           </button>
+          <!-- Move to folder -->
+          <template v-if="folders.length > 0">
+            <div class="wb-board-card__menu-divider" role="separator" />
+            <div class="wb-board-card__submenu-wrap">
+              <button type="button" class="wb-board-card__menu-item" role="menuitem"
+                @click.stop="folderSubmenuOpen = !folderSubmenuOpen">
+                {{ t('winterboard.boards.actions.moveToFolder') }}
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" class="wb-board-card__chevron" aria-hidden="true">
+                  <path d="M4.5 2.5L8 6L4.5 9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+              <Transition name="wb-menu-fade">
+                <div v-if="folderSubmenuOpen" class="wb-board-card__submenu" role="menu">
+                  <button
+                    v-if="board.folder"
+                    type="button"
+                    class="wb-board-card__menu-item wb-board-card__menu-item--muted"
+                    role="menuitem"
+                    @click="emit('move-to-folder', null); menuOpen = false; folderSubmenuOpen = false"
+                  >
+                    {{ t('winterboard.boards.actions.removeFromFolder') }}
+                  </button>
+                  <button
+                    v-for="f in folders"
+                    :key="f.id"
+                    type="button"
+                    class="wb-board-card__menu-item"
+                    :class="{ 'wb-board-card__menu-item--active': board.folder === f.id }"
+                    role="menuitem"
+                    @click="emit('move-to-folder', f.id); menuOpen = false; folderSubmenuOpen = false"
+                  >
+                    {{ f.name }}
+                  </button>
+                </div>
+              </Transition>
+            </div>
+          </template>
           <div class="wb-board-card__menu-divider" role="separator" />
           <button type="button"
             class="wb-board-card__menu-item wb-board-card__menu-item--danger"
@@ -82,21 +126,25 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSeasonalLogo } from '@/composables/useSeasonalLogo'
-import type { WBSessionListItem } from '../../api/winterboardApi'
+import type { WBSessionListItem, BoardFolder } from '../../api/winterboardApi'
 
 // ─── Props & Emits ────────────────────────────────────────────────────────────
 
 interface Props {
   board: WBSessionListItem
+  folders?: { id: number; name: string }[]
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  folders: () => [],
+})
 
 const emit = defineEmits<{
   open: []
   duplicate: []
   share: []
   delete: []
+  'move-to-folder': [folderId: number | null]
 }>()
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -104,11 +152,15 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const { logoSrc } = useSeasonalLogo()
 const menuOpen = ref(false)
+const folderSubmenuOpen = ref(false)
 
 // ─── Close menu on outside click ──────────────────────────────────────────────
 
 function closeMenu(e: MouseEvent): void {
-  if (menuOpen.value) menuOpen.value = false
+  if (menuOpen.value) {
+    menuOpen.value = false
+    folderSubmenuOpen.value = false
+  }
 }
 
 onMounted(() => document.addEventListener('click', closeMenu))
@@ -189,6 +241,27 @@ function formatTimeAgo(iso: string): string {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: calc(100% - 8px);
+}
+
+.wb-board-card__status-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  width: fit-content;
+  margin-bottom: 4px;
+}
+
+.wb-board-card__status-badge--active {
+  color: #7c3aed;
+  background: #ede9fe;
+}
+
+.wb-board-card__status-badge--draft {
+  color: #64748b;
+  background: #f1f5f9;
 }
 
 .wb-board-card__meta {
@@ -283,6 +356,42 @@ function formatTimeAgo(iso: string): string {
   height: 1px;
   background: var(--wb-toolbar-border, #e2e8f0);
   margin: 4px 0;
+}
+
+/* ── Submenu (Move to folder) ────────────────────────────────────────── */
+
+.wb-board-card__submenu-wrap {
+  position: relative;
+}
+
+.wb-board-card__chevron {
+  margin-left: auto;
+  opacity: 0.5;
+}
+
+.wb-board-card__submenu {
+  position: absolute;
+  top: 0;
+  left: 100%;
+  min-width: 140px;
+  max-height: 220px;
+  overflow-y: auto;
+  background: var(--wb-card-bg, #ffffff);
+  border: 1px solid var(--wb-toolbar-border, #e2e8f0);
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.14);
+  padding: 6px 0;
+  z-index: 110;
+}
+
+.wb-board-card__menu-item--muted {
+  color: var(--wb-fg-secondary, #94a3b8);
+  font-style: italic;
+}
+
+.wb-board-card__menu-item--active {
+  font-weight: 600;
+  color: var(--wb-brand, #0066ff);
 }
 
 /* ── Menu transition ─────────────────────────────────────────────────── */

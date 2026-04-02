@@ -66,6 +66,9 @@ const BOARD_WITH_THUMB = {
   rev: 1,
   updated_at: new Date(Date.now() - 60_000).toISOString(),
   created_at: new Date(Date.now() - 3_600_000).toISOString(),
+  has_lesson: false,
+  lesson_info: null,
+  folder: null,
 }
 
 const BOARD_NO_THUMB = {
@@ -76,6 +79,9 @@ const BOARD_NO_THUMB = {
   rev: 2,
   updated_at: new Date(Date.now() - 3_600_000).toISOString(),
   created_at: new Date(Date.now() - 86_400_000).toISOString(),
+  has_lesson: true,
+  lesson_info: { id: 1, student_name: 'John', start: null, status: 'completed' },
+  folder: null,
 }
 
 const BOARDS = [BOARD_WITH_THUMB, BOARD_NO_THUMB]

@@ -14,6 +14,8 @@ import type {
 
 export interface WBSessionListResponse {
   count: number
+  next: string | null
+  previous: string | null
   results: WBSessionListItem[]
 }
 
@@ -25,6 +27,41 @@ export interface WBSessionListItem {
   rev: number
   updated_at: string
   created_at: string
+  has_lesson: boolean
+  lesson_info: {
+    id: number
+    student_name: string | null
+    start: string | null
+    status: string
+  } | null
+  folder: number | null
+}
+
+export interface ListSessionsQuery {
+  category?: 'lesson' | 'standalone'
+  search?: string
+  sort?: string
+  limit?: number
+  offset?: number
+  folder?: string | number
+}
+
+// ── Board Folder types (Level 2) ──────────────────────────────────────
+
+export interface BoardFolder {
+  id: number
+  name: string
+  parent: number | null
+  sessions_count: number
+  created_at: string
+}
+
+export interface BoardFolderTree {
+  id: number
+  name: string
+  parent: number | null
+  children: BoardFolderTree[]
+  sessions_count: number
 }
 
 export interface WBSessionDetailResponse {
@@ -188,8 +225,8 @@ const BASE = '/v1/winterboard'
 export const winterboardApi = {
   // ── Sessions CRUD ──────────────────────────────────────────────────
 
-  listSessions(): Promise<WBSessionListResponse> {
-    return apiClient.get(`${BASE}/sessions/`).then((r: any) => r.data ?? r)
+  listSessions(query?: ListSessionsQuery): Promise<WBSessionListResponse> {
+    return apiClient.get(`${BASE}/sessions/`, { params: query }).then((r: any) => r.data ?? r)
   },
 
   getSession(id: string): Promise<WBSessionDetailResponse> {
@@ -639,6 +676,28 @@ export const winterboardApi = {
     } catch {
       return false
     }
+  },
+
+  // ── Board Folders (Level 2) ──────────────────────────────────────────
+
+  listBoardFolders(): Promise<BoardFolderTree[]> {
+    return apiClient.get(`${BASE}/board-folders/`, { params: { tree: 'true' } }).then((r: any) => r.data ?? r)
+  },
+
+  createBoardFolder(data: { name: string; parent?: number | null }): Promise<BoardFolder> {
+    return apiClient.post(`${BASE}/board-folders/`, data).then((r: any) => r.data ?? r)
+  },
+
+  updateBoardFolder(id: number, data: { name?: string; parent?: number | null }): Promise<BoardFolder> {
+    return apiClient.patch(`${BASE}/board-folders/${id}/`, data).then((r: any) => r.data ?? r)
+  },
+
+  deleteBoardFolder(id: number): Promise<void> {
+    return apiClient.delete(`${BASE}/board-folders/${id}/`)
+  },
+
+  moveSessionToFolder(sessionId: string, folderId: number | null): Promise<any> {
+    return apiClient.patch(`${BASE}/sessions/${sessionId}/`, { folder: folderId }).then((r: any) => r.data ?? r)
   },
 }
 

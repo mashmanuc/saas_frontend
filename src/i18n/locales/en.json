@@ -6670,6 +6670,7 @@
     },
     "boards": {
       "myBoards": "My Boards",
+      "myBoardsSubtitle": "Workspace for preparing materials",
       "newBoard": "New Board",
       "empty": "No boards yet",
       "emptyMessage": "Create your first board to start drawing",
@@ -6688,14 +6689,44 @@
         "duplicate": "Duplicate",
         "share": "Share",
         "export": "Export",
-        "delete": "Delete"
+        "delete": "Delete",
+        "moveToFolder": "Move to folder",
+        "removeFromFolder": "Remove from folder"
       },
+      "tabAll": "All",
+      "tabLessons": "In lessons",
+      "tabStandalone": "Drafts",
+      "searchPlaceholder": "Search boards…",
+      "pagination": "Page navigation",
+      "prevPage": "Previous",
+      "nextPage": "Next",
+      "statusActive": "In lessons",
+      "statusDraft": "Draft",
+      "lessonBadge": "Linked to lesson",
+      "lessonWith": "Student: {name}",
       "confirmDelete": {
         "title": "Delete board?",
         "message": "This will permanently delete \"{name}\". This action cannot be undone.",
         "confirm": "Delete",
         "cancel": "Cancel"
       }
+    },
+    "folders": {
+      "allBoards": "All boards",
+      "noFolder": "No folder",
+      "newFolder": "New folder",
+      "newSubfolder": "New subfolder",
+      "newFolderPlaceholder": "Folder name…",
+      "created": "Folder created",
+      "duplicateName": "A folder with this name already exists",
+      "createError": "Failed to create folder",
+      "renameError": "Failed to rename folder",
+      "deleted": "Folder deleted",
+      "deleteError": "Failed to delete folder",
+      "moved": "Board moved",
+      "moveError": "Failed to move board",
+      "sidebar": "Folders",
+      "toggleSidebar": "Show/Hide folders"
     },
     "dashboard": {
       "subtitle": "Welcome to Winterboard",
@@ -6809,7 +6840,10 @@
       "moveError": "Failed to move file",
       "moveToFolder": "Move to folder",
       "noFolder": "No folder",
-      "undo": "Undo"
+      "undo": "Undo",
+      "assetRenamed": "File renamed",
+      "renameError": "Failed to rename file",
+      "renameAsset": "Rename"
     },
     "materials": {
       "hideFolders": "Hide folders",
