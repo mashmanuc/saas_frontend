@@ -59,6 +59,42 @@
       <span class="wb-folder-tree__label">{{ t('winterboard.library.recent') }}</span>
     </button>
 
+    <!-- Pasted (Phase AM-2) -->
+    <button
+      type="button"
+      class="wb-folder-tree__item"
+      :class="{ 'wb-folder-tree__item--active': selectedId === PASTED_ID }"
+      :aria-current="selectedId === PASTED_ID ? 'true' : undefined"
+      @click="emit('select', PASTED_ID)"
+    >
+      <span class="wb-folder-tree__icon wb-folder-tree__icon--paste" aria-hidden="true">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <rect x="3" y="1" width="8" height="12" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
+          <path d="M5 1V0.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5V1" stroke="currentColor" stroke-width="1"/>
+          <path d="M5.5 5h3M5.5 7.5h3M5.5 10h2" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <span class="wb-folder-tree__label">{{ t('winterboard.library.storage.pasted') }}</span>
+    </button>
+
+    <!-- Archive (Phase AM-3) -->
+    <button
+      type="button"
+      class="wb-folder-tree__item"
+      :class="{ 'wb-folder-tree__item--active': selectedId === ARCHIVED_ID }"
+      :aria-current="selectedId === ARCHIVED_ID ? 'true' : undefined"
+      @click="emit('select', ARCHIVED_ID)"
+    >
+      <span class="wb-folder-tree__icon" aria-hidden="true">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <rect x="1" y="3" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
+          <path d="M1 3h12V1.5A1.5 1.5 0 0 0 11.5 0h-9A1.5 1.5 0 0 0 1 1.5V3z" fill="currentColor" opacity="0.2"/>
+          <path d="M5 7h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <span class="wb-folder-tree__label">{{ t('winterboard.library.archive.title') }}</span>
+    </button>
+
     <!-- Divider -->
     <div v-if="flatNodes.length > 0 || editable" class="wb-folder-tree__divider" role="separator" />
 
@@ -208,6 +244,8 @@
 <script lang="ts">
 export const FAVORITES_ID = -1
 export const RECENT_ID = -2
+export const PASTED_ID = -3
+export const ARCHIVED_ID = -4
 </script>
 
 <script setup lang="ts">
@@ -343,8 +381,8 @@ const dragOverId = ref<number | null | false>(false) // false = no drag
 
 function onFolderDragOver(folderId: number | null, e: DragEvent): void {
   if (!isAssetDrag(e)) return
-  // INV-5: НЕ дозволяти drop на FAVORITES/RECENT
-  if (folderId === FAVORITES_ID || folderId === RECENT_ID) return
+  // INV-5: НЕ дозволяти drop на FAVORITES/RECENT/PASTED
+  if (folderId === FAVORITES_ID || folderId === RECENT_ID || folderId === PASTED_ID || folderId === ARCHIVED_ID) return
   dragOverId.value = folderId
 }
 
@@ -359,7 +397,7 @@ function onFolderDrop(folderId: number | null, e: DragEvent): void {
   const assetId = getAssetDragData(e)
   if (assetId === null) return
   // INV-5: НЕ дозволяти drop на virtual folders
-  if (folderId === FAVORITES_ID || folderId === RECENT_ID) return
+  if (folderId === FAVORITES_ID || folderId === RECENT_ID || folderId === PASTED_ID || folderId === ARCHIVED_ID) return
   emit('drop', { assetId, folderId })
 }
 </script>

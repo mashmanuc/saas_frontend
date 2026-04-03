@@ -16,8 +16,9 @@ import {
   fetchFoldersTree,
   fetchAssets,
   fetchRecentAssets,
+  fetchPastedItems,
 } from '../api/library'
-import { FAVORITES_ID, RECENT_ID } from '../components/library/LibraryFolderTree.vue'
+import { FAVORITES_ID, RECENT_ID, PASTED_ID, ARCHIVED_ID } from '../components/library/LibraryFolderTree.vue'
 import { useAssetMove } from './useAssetMove'
 import type { LibraryFolderTree as LibraryFolderTreeType, LibraryAsset, LibraryAssetsQuery } from '../types/library'
 
@@ -78,7 +79,25 @@ export function useMaterialsBrowser() {
     try {
       const folderId = selectedFolderId.value
 
-      if (folderId === RECENT_ID) {
+      if (folderId === PASTED_ID) {
+        // Virtual "Pasted" folder → dedicated endpoint (Phase AM-2)
+        const res = await fetchPastedItems({ limit: 50 })
+        rawAssets.value = res.results.map((p) => ({
+          id: p.id,
+          name: p.filename,
+          folder: null,
+          content_type: p.type === 'image' ? 'image/png' : p.type,
+          size_bytes: p.size_bytes,
+          cdn_url: p.cdn_url,
+          thumbnail_url: p.thumbnail_url || p.cdn_url,
+          is_favorite: false,
+          content_item_id: p.id,
+          status: 'active',
+          tags: [],
+          created_at: p.created_at,
+          updated_at: p.created_at,
+        })) as any
+      } else if (folderId === RECENT_ID) {
         // Virtual "Recent" folder → dedicated endpoint
         const recent = await fetchRecentAssets()
         rawAssets.value = recent
@@ -154,6 +173,8 @@ export function useMaterialsBrowser() {
     // Re-export for convenience
     FAVORITES_ID,
     RECENT_ID,
+    PASTED_ID,
+    ARCHIVED_ID,
   }
 }
 

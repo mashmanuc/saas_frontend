@@ -173,6 +173,7 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
           try {
             const formData = new FormData()
             formData.append('file', file)
+            formData.append('source', 'paste')
             const lid = options.lessonId?.()
             const gid = options.groupId?.()
             if (lid) formData.append('lesson_id', String(lid))

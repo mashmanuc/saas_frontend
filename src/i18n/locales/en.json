@@ -6843,7 +6843,37 @@
       "undo": "Undo",
       "assetRenamed": "File renamed",
       "renameError": "Failed to rename file",
-      "renameAsset": "Rename"
+      "renameAsset": "Rename",
+      "storage": {
+        "myFiles": "My files",
+        "pasted": "Pasted",
+        "limit": "Limit",
+        "usageBar": "{used} / {limit}",
+        "uploadsLabel": "Uploads: {size}",
+        "pastedLabel": "Pasted: {size}"
+      },
+      "pasted": {
+        "title": "Pasted",
+        "cleanAll": "Clean unused",
+        "empty": "No pasted files",
+        "count": "{count} files · {size}"
+      },
+      "cleanup": {
+        "confirmTitle": "Clean pasted files?",
+        "confirmMessage": "{count} files ({size}) will be archived. Recovery available for 90 days.",
+        "confirmButton": "Archive",
+        "success": "Archived {count} files, freed {size}",
+        "skippedPublished": "{count} files skipped (used in published lessons)",
+        "cancel": "Cancel",
+        "nothingToClean": "No files to archive"
+      },
+      "archive": {
+        "title": "Archive",
+        "expiresIn": "Deletes in {days} days",
+        "restore": "Restore",
+        "restored": "File restored",
+        "empty": "Archive is empty"
+      }
     },
     "materials": {
       "hideFolders": "Hide folders",

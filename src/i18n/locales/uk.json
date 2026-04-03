@@ -6662,7 +6662,37 @@
       "undo": "Скасувати",
       "assetRenamed": "Файл перейменовано",
       "renameError": "Не вдалося перейменувати файл",
-      "renameAsset": "Перейменувати"
+      "renameAsset": "Перейменувати",
+      "storage": {
+        "myFiles": "Мої файли",
+        "pasted": "Скопійовані",
+        "limit": "Ліміт",
+        "usageBar": "{used} / {limit}",
+        "uploadsLabel": "Завантажені: {size}",
+        "pastedLabel": "Скопійовані: {size}"
+      },
+      "pasted": {
+        "title": "Скопійовані",
+        "cleanAll": "Очистити невикористані",
+        "empty": "Скопійованих файлів немає",
+        "count": "{count} файлів · {size}"
+      },
+      "cleanup": {
+        "confirmTitle": "Очистити скопійовані файли?",
+        "confirmMessage": "{count} файлів ({size}) буде архівовано. Відновлення можливе 90 днів.",
+        "confirmButton": "Архівувати",
+        "success": "Архівовано {count} файлів, звільнено {size}",
+        "skippedPublished": "{count} файлів пропущено (використовуються в опублікованих уроках)",
+        "cancel": "Скасувати",
+        "nothingToClean": "Немає файлів для архівування"
+      },
+      "archive": {
+        "title": "Архів",
+        "expiresIn": "Видалення через {days} дн.",
+        "restore": "Відновити",
+        "restored": "Файл відновлено",
+        "empty": "Архів порожній"
+      }
     },
     "materials": {
       "hideFolders": "Сховати папки",

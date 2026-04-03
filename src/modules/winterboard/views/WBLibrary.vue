@@ -140,6 +140,72 @@
         @navigate="onSelectFolder"
       />
 
+      <!-- Storage Bar (Phase AM-2) -->
+      <div v-if="storageStats" class="wb-library__storage-bar">
+        <div class="wb-library__storage-labels">
+          <span class="wb-library__storage-label">
+            {{ t('winterboard.library.storage.uploadsLabel', { size: formatBytes(storageStats.upload_bytes) }) }}
+          </span>
+          <span class="wb-library__storage-label wb-library__storage-label--paste">
+            {{ t('winterboard.library.storage.pastedLabel', { size: formatBytes(storageStats.paste_bytes) }) }}
+          </span>
+          <span class="wb-library__storage-usage">
+            {{ t('winterboard.library.storage.usageBar', {
+              used: formatBytes(storageStats.total_bytes),
+              limit: formatBytes(storageStats.limit_bytes),
+            }) }}
+          </span>
+        </div>
+        <div class="wb-library__storage-track">
+          <div
+            class="wb-library__storage-fill wb-library__storage-fill--upload"
+            :style="{ width: uploadPercent + '%' }"
+          />
+          <div
+            class="wb-library__storage-fill wb-library__storage-fill--paste"
+            :style="{ width: pastePercent + '%' }"
+          />
+        </div>
+      </div>
+
+      <!-- Phase AM-3: Action bar for Pasted / Archive views -->
+      <div v-if="selectedFolderId === PASTED_ID && !loading && filteredAssets.length > 0" class="wb-library__action-bar">
+        <span class="wb-library__action-bar-info">
+          {{ t('winterboard.library.pasted.count', { count: total, size: formatBytes(storageStats?.paste_bytes || 0) }) }}
+        </span>
+        <button
+          class="wb-library__action-btn wb-library__action-btn--danger"
+          @click="showCleanupConfirm = true"
+        >
+          {{ t('winterboard.library.pasted.cleanAll') }}
+        </button>
+      </div>
+
+      <!-- Cleanup confirmation modal -->
+      <div v-if="showCleanupConfirm" class="wb-library__modal-overlay" @click.self="showCleanupConfirm = false">
+        <div class="wb-library__modal">
+          <h3 class="wb-library__modal-title">{{ t('winterboard.library.cleanup.confirmTitle') }}</h3>
+          <p class="wb-library__modal-text">
+            {{ t('winterboard.library.cleanup.confirmMessage', {
+              count: total,
+              size: formatBytes(storageStats?.paste_bytes || 0),
+            }) }}
+          </p>
+          <div class="wb-library__modal-actions">
+            <button class="wb-library__action-btn" @click="showCleanupConfirm = false">
+              {{ t('winterboard.library.cleanup.cancel') }}
+            </button>
+            <button
+              class="wb-library__action-btn wb-library__action-btn--danger"
+              :disabled="cleanupLoading"
+              @click="handleCleanupAll"
+            >
+              {{ cleanupLoading ? '...' : t('winterboard.library.cleanup.confirmButton') }}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Loading -->
       <div v-if="loading" class="wb-library__grid" aria-busy="true">
         <div
@@ -168,6 +234,46 @@
       </div>
 
       <!-- Asset grid view -->
+      <!-- Archive grid (Phase AM-3) -->
+      <div
+        v-else-if="selectedFolderId === ARCHIVED_ID"
+        class="wb-library__grid"
+        role="list"
+      >
+        <div v-if="filteredAssets.length === 0" class="wb-library__empty">
+          <span class="wb-library__empty-icon" aria-hidden="true">🗄</span>
+          <span>{{ t('winterboard.library.archive.empty') }}</span>
+        </div>
+        <div
+          v-for="asset in filteredAssets"
+          :key="asset.id"
+          class="library-asset-card library-asset-card--archived"
+          role="listitem"
+        >
+          <div class="library-asset-card__preview">
+            <img
+              v-if="asset.thumbnail_url"
+              :src="asset.thumbnail_url"
+              :alt="asset.name"
+              loading="lazy"
+            />
+          </div>
+          <div class="library-asset-card__info">
+            <span class="library-asset-card__name">{{ asset.name }}</span>
+            <span class="library-asset-card__meta">
+              {{ t('winterboard.library.archive.expiresIn', { days: (asset as any)._days_left || '?' }) }}
+            </span>
+          </div>
+          <button
+            class="wb-library__restore-btn"
+            @click="handleRestoreAsset(asset.id)"
+          >
+            {{ t('winterboard.library.archive.restore') }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Grid view -->
       <div
         v-else-if="viewMode === 'grid'"
         class="wb-library__grid"
@@ -182,6 +288,7 @@
           @toggle-favorite="onToggleFavorite"
           @move="showMoveDropdown"
           @delete="onDeleteAsset"
+          @rename="onRenameAsset"
         />
       </div>
 
@@ -206,10 +313,66 @@
               class="wb-library__list-img"
               loading="lazy"
             />
-            <span v-else class="wb-library__list-icon">{{ getFileIcon(asset.content_type) }}</span>
+            <span v-else class="wb-library__list-icon">
+              <!-- PDF -->
+              <svg v-if="getFileIconType(asset.content_type, asset.name) === 'pdf'" width="28" height="28" viewBox="0 0 48 48" fill="none">
+                <rect x="8" y="4" width="32" height="40" rx="3" fill="#EF4444" fill-opacity="0.1" stroke="#EF4444" stroke-width="1.5"/>
+                <text x="24" y="30" text-anchor="middle" font-size="10" font-weight="700" fill="#EF4444">PDF</text>
+              </svg>
+              <!-- Word -->
+              <svg v-else-if="getFileIconType(asset.content_type, asset.name) === 'word'" width="28" height="28" viewBox="0 0 48 48" fill="none">
+                <rect x="8" y="4" width="32" height="40" rx="3" fill="#2563EB" fill-opacity="0.1" stroke="#2563EB" stroke-width="1.5"/>
+                <text x="24" y="30" text-anchor="middle" font-size="9" font-weight="700" fill="#2563EB">DOC</text>
+              </svg>
+              <!-- PowerPoint -->
+              <svg v-else-if="getFileIconType(asset.content_type, asset.name) === 'pptx'" width="28" height="28" viewBox="0 0 48 48" fill="none">
+                <rect x="8" y="4" width="32" height="40" rx="3" fill="#EA580C" fill-opacity="0.1" stroke="#EA580C" stroke-width="1.5"/>
+                <text x="24" y="30" text-anchor="middle" font-size="9" font-weight="700" fill="#EA580C">PPT</text>
+              </svg>
+              <!-- Video -->
+              <svg v-else-if="getFileIconType(asset.content_type, asset.name) === 'video'" width="28" height="28" viewBox="0 0 48 48" fill="none">
+                <rect x="8" y="8" width="32" height="32" rx="4" fill="#8B5CF6" fill-opacity="0.1" stroke="#8B5CF6" stroke-width="1.5"/>
+                <path d="M20 18v12l10-6-10-6z" fill="#8B5CF6"/>
+              </svg>
+              <!-- Audio -->
+              <svg v-else-if="getFileIconType(asset.content_type, asset.name) === 'audio'" width="28" height="28" viewBox="0 0 48 48" fill="none">
+                <circle cx="24" cy="24" r="16" fill="#8B5CF6" fill-opacity="0.1" stroke="#8B5CF6" stroke-width="1.5"/>
+                <path d="M20 30V20l12-4v14" stroke="#8B5CF6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="18" cy="30" r="3" fill="#8B5CF6"/><circle cx="30" cy="28" r="3" fill="#8B5CF6"/>
+              </svg>
+              <!-- Image -->
+              <svg v-else-if="getFileIconType(asset.content_type, asset.name) === 'image'" width="28" height="28" viewBox="0 0 48 48" fill="none">
+                <rect x="8" y="8" width="32" height="32" rx="4" fill="#10B981" fill-opacity="0.1" stroke="#10B981" stroke-width="1.5"/>
+                <circle cx="18" cy="18" r="3" fill="#10B981"/>
+              </svg>
+              <!-- Generic -->
+              <svg v-else width="28" height="28" viewBox="0 0 48 48" fill="none">
+                <rect x="8" y="4" width="32" height="40" rx="3" fill="#94A3B8" fill-opacity="0.1" stroke="#94A3B8" stroke-width="1.5"/>
+                <path d="M16 24h16M16 30h10" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+            </span>
           </div>
           <div class="wb-library__list-info">
-            <span class="wb-library__list-name" :title="asset.name">{{ asset.name }}</span>
+            <!-- Inline rename in list view -->
+            <div v-if="listRenamingId === asset.id" class="wb-library__list-rename-row" @click.stop>
+              <input
+                ref="listRenameInputRef"
+                v-model="listRenameValue"
+                type="text"
+                maxlength="120"
+                class="wb-library__list-rename-input"
+                @keydown.enter="commitListRename(asset)"
+                @keydown.escape="cancelListRename"
+                @blur="commitListRename(asset)"
+              />
+              <span class="wb-library__list-rename-ext">{{ getFileExt(asset.name) }}</span>
+            </div>
+            <span
+              v-else
+              class="wb-library__list-name"
+              :title="asset.name"
+              @dblclick.stop="startListRename(asset)"
+            >{{ asset.name }}</span>
             <span class="wb-library__list-meta">{{ formatFileSize(asset.size_bytes) }}</span>
           </div>
           <div class="wb-library__list-actions">
@@ -297,7 +460,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
-import LibraryFolderTree, { FAVORITES_ID, RECENT_ID } from '../components/library/LibraryFolderTree.vue'
+import LibraryFolderTree, { FAVORITES_ID, RECENT_ID, PASTED_ID, ARCHIVED_ID } from '../components/library/LibraryFolderTree.vue'
 import LibraryAssetCard from '../components/library/LibraryAssetCard.vue'
 import LibraryUploadModal from '../components/library/LibraryUploadModal.vue'
 import LibraryBreadcrumb from '../components/library/LibraryBreadcrumb.vue'
@@ -308,11 +471,18 @@ import {
   fetchRecentAssets,
   toggleFavorite as apiFavorite,
   deleteAsset as apiDelete,
+  updateAsset as apiUpdateAsset,
   createFolder as apiCreateFolder,
   updateFolder as apiUpdateFolder,
   deleteFolder as apiDeleteFolder,
   addYouTubeAsset,
+  fetchStorageStats,
+  fetchPastedItems,
+  cleanupPasted,
+  restorePasted,
+  fetchArchivedItems,
 } from '../api/library'
+import type { StorageStats } from '../api/library'
 import type { LibraryFolderTree as FolderTree, LibraryAsset } from '../types/library'
 import { parseYouTubeVideoId } from '../utils/youtubeParser'
 import { useToast } from '../composables/useToast'
@@ -348,9 +518,91 @@ const viewMode = ref<'grid' | 'list'>('grid')
 const moveTargetAsset = ref<LibraryAsset | null>(null)
 const moveAnchorRect = ref<DOMRect | null>(null)
 
+// Phase AM-2: Storage stats
+const storageStats = ref<StorageStats | null>(null)
+
+const uploadPercent = computed(() => {
+  if (!storageStats.value || !storageStats.value.limit_bytes) return 0
+  return Math.min(100, (storageStats.value.upload_bytes / storageStats.value.limit_bytes) * 100)
+})
+const pastePercent = computed(() => {
+  if (!storageStats.value || !storageStats.value.limit_bytes) return 0
+  return Math.min(100 - uploadPercent.value, (storageStats.value.paste_bytes / storageStats.value.limit_bytes) * 100)
+})
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(1024))
+  return parseFloat((bytes / Math.pow(1024, i)).toFixed(1)) + ' ' + units[i]
+}
+
+async function loadStorageStats() {
+  try {
+    storageStats.value = await fetchStorageStats()
+  } catch {
+    // non-critical
+  }
+}
+
+// Phase AM-3: Cleanup & restore
+const showCleanupConfirm = ref(false)
+const cleanupLoading = ref(false)
+
+async function handleCleanupAll() {
+  cleanupLoading.value = true
+  try {
+    const res = await cleanupPasted({ all_unused: true })
+    showCleanupConfirm.value = false
+
+    if (res.archived_count > 0) {
+      showToast(
+        t('winterboard.library.cleanup.success', {
+          count: res.archived_count,
+          size: formatBytes(res.freed_bytes),
+        }),
+        'success',
+      )
+    }
+    if (res.skipped_published > 0) {
+      showToast(
+        t('winterboard.library.cleanup.skippedPublished', {
+          count: res.skipped_published,
+        }),
+        'warning',
+      )
+    }
+    if (res.archived_count === 0 && res.skipped_published === 0) {
+      showToast(t('winterboard.library.cleanup.nothingToClean'), 'info')
+    }
+
+    await Promise.all([loadAssets(), loadStorageStats()])
+  } catch (err) {
+    console.error('[WBLibrary] Cleanup failed', err)
+    showToast('Cleanup failed', 'error')
+  } finally {
+    cleanupLoading.value = false
+  }
+}
+
+async function handleRestoreAsset(assetId: number) {
+  try {
+    await restorePasted([assetId])
+    showToast(t('winterboard.library.archive.restored'), 'success')
+    await loadAssets()
+  } catch {
+    showToast('Restore failed', 'error')
+  }
+}
+
+// Inline rename state for list view
+const listRenamingId = ref<number | null>(null)
+const listRenameValue = ref('')
+const listRenameInputRef = ref<HTMLInputElement | null>(null)
+
 // activeFolderId: only real folder IDs (not virtual FAVORITES/RECENT)
 const activeFolderId = computed<number | null>(() => {
-  if (selectedFolderId.value === FAVORITES_ID || selectedFolderId.value === RECENT_ID) return null
+  if (selectedFolderId.value === FAVORITES_ID || selectedFolderId.value === RECENT_ID || selectedFolderId.value === PASTED_ID || selectedFolderId.value === ARCHIVED_ID) return null
   return selectedFolderId.value
 })
 
@@ -369,6 +621,18 @@ const breadcrumb = computed(() => {
     return [
       { id: null, name: t('winterboard.library.breadcrumbAll') },
       { id: RECENT_ID, name: t('winterboard.library.recent') }
+    ]
+  }
+  if (selectedFolderId.value === PASTED_ID) {
+    return [
+      { id: null, name: t('winterboard.library.breadcrumbAll') },
+      { id: PASTED_ID, name: t('winterboard.library.storage.pasted') }
+    ]
+  }
+  if (selectedFolderId.value === ARCHIVED_ID) {
+    return [
+      { id: null, name: t('winterboard.library.breadcrumbAll') },
+      { id: ARCHIVED_ID, name: t('winterboard.library.archive.title') }
     ]
   }
   
@@ -443,7 +707,45 @@ async function loadFolders(): Promise<void> {
 async function loadAssets(): Promise<void> {
   loading.value = true
   try {
-    if (selectedFolderId.value === RECENT_ID) {
+    if (selectedFolderId.value === ARCHIVED_ID) {
+      const res = await fetchArchivedItems()
+      assets.value = res.results.map((a) => ({
+        id: a.id,
+        name: a.filename,
+        folder: null,
+        content_type: a.type === 'image' ? 'image/png' : a.type,
+        size_bytes: a.size_bytes,
+        cdn_url: a.cdn_url,
+        thumbnail_url: a.thumbnail_url || a.cdn_url,
+        is_favorite: false,
+        content_item_id: a.id,
+        status: 'archived',
+        tags: [],
+        created_at: a.archived_at,
+        updated_at: a.archived_at,
+        _days_left: a.days_left,
+      })) as any
+      total.value = res.count
+    } else if (selectedFolderId.value === PASTED_ID) {
+      const res = await fetchPastedItems({ limit: LIMIT, offset: offset.value })
+      // Маппимо PastedItem → LibraryAsset-like для відображення
+      assets.value = res.results.map((p) => ({
+        id: p.id,
+        name: p.filename,
+        folder: null,
+        content_type: p.type === 'image' ? 'image/png' : p.type,
+        size_bytes: p.size_bytes,
+        cdn_url: p.cdn_url,
+        thumbnail_url: p.thumbnail_url || p.cdn_url,
+        is_favorite: false,
+        content_item_id: p.id,
+        status: 'active',
+        tags: [],
+        created_at: p.created_at,
+        updated_at: p.created_at,
+      })) as any
+      total.value = res.count
+    } else if (selectedFolderId.value === RECENT_ID) {
       const recent = await fetchRecentAssets()
       assets.value = recent
       total.value = recent.length
@@ -519,6 +821,18 @@ async function onToggleFavorite(asset: LibraryAsset): Promise<void> {
   }
 }
 
+async function onRenameAsset(asset: LibraryAsset, newName: string): Promise<void> {
+  try {
+    const updated = await apiUpdateAsset(asset.id, { name: newName })
+    const idx = assets.value.findIndex((a) => a.id === asset.id)
+    if (idx !== -1) assets.value[idx] = updated
+    showToast(t('winterboard.library.assetRenamed'), 'success')
+  } catch (err) {
+    console.error('[WB:Library] Rename asset failed', err)
+    showToast(t('winterboard.library.renameError'), 'error')
+  }
+}
+
 async function onDeleteAsset(asset: LibraryAsset): Promise<void> {
   try {
     await apiDelete(asset.id)
@@ -575,14 +889,68 @@ async function handleDeleteFolder(id: number, name: string): Promise<void> {
   }
 }
 
+// ─── List view inline rename ──────────────────────────────────────────────────
+
+function getFileStem(name: string): string {
+  const dot = name.lastIndexOf('.')
+  return dot > 0 ? name.slice(0, dot) : name
+}
+
+function getFileExt(name: string): string {
+  const dot = name.lastIndexOf('.')
+  return dot > 0 ? name.slice(dot) : ''
+}
+
+function startListRename(asset: LibraryAsset): void {
+  listRenamingId.value = asset.id
+  listRenameValue.value = getFileStem(asset.name)
+  nextTick(() => {
+    const el = Array.isArray(listRenameInputRef.value)
+      ? listRenameInputRef.value[0]
+      : listRenameInputRef.value
+    el?.focus()
+    el?.select()
+  })
+}
+
+function commitListRename(asset: LibraryAsset): void {
+  if (listRenamingId.value !== asset.id) return
+  const trimmed = listRenameValue.value.trim()
+  listRenamingId.value = null
+
+  if (!trimmed || trimmed === getFileStem(asset.name)) {
+    listRenameValue.value = ''
+    return
+  }
+
+  onRenameAsset(asset, trimmed)
+  listRenameValue.value = ''
+}
+
+function cancelListRename(): void {
+  listRenamingId.value = null
+  listRenameValue.value = ''
+}
+
 // ─── List view helpers ────────────────────────────────────────────────────────
 
-function getFileIcon(contentType: string): string {
-  if (contentType.startsWith('image/')) return '🖼'
-  if (contentType === 'application/pdf') return '📄'
-  if (contentType.startsWith('video/')) return '🎬'
-  if (contentType.startsWith('audio/')) return '🎵'
-  return '📁'
+function getFileIconType(contentType: string, name: string): string {
+  const lname = name.toLowerCase()
+  if (contentType === 'application/pdf') return 'pdf'
+  if (
+    contentType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+    contentType === 'application/msword' ||
+    lname.endsWith('.docx') || lname.endsWith('.doc')
+  ) return 'word'
+  if (
+    contentType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
+    contentType === 'application/vnd.ms-powerpoint' ||
+    lname.endsWith('.pptx') || lname.endsWith('.ppt')
+  ) return 'pptx'
+  if (contentType.startsWith('image/')) return 'image'
+  if (contentType.startsWith('video/')) return 'video'
+  if (contentType.startsWith('audio/')) return 'audio'
+  return 'file'
 }
 
 function formatFileSize(bytes: number): string {
@@ -635,7 +1003,7 @@ watch(selectedFolderId, () => {
 // ─── Lifecycle ────────────────────────────────────────────────────────────────
 
 onMounted(async () => {
-  await Promise.all([loadFolders(), loadAssets()])
+  await Promise.all([loadFolders(), loadAssets(), loadStorageStats()])
 })
 </script>
 
@@ -933,6 +1301,39 @@ onMounted(async () => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  cursor: default;
+}
+
+.wb-library__list-rename-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  min-width: 0;
+}
+
+.wb-library__list-rename-input {
+  flex: 1;
+  min-width: 0;
+  padding: 2px 6px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid var(--wb-brand, #0066ff);
+  border-radius: 4px;
+  outline: none;
+  background: #fff;
+  color: var(--wb-fg, #0f172a);
+}
+
+.wb-library__list-rename-input:focus {
+  box-shadow: 0 0 0 2px rgba(0, 102, 255, 0.2);
+}
+
+.wb-library__list-rename-ext {
+  font-size: 12px;
+  color: var(--wb-fg-secondary, #94a3b8);
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding-left: 1px;
 }
 
 .wb-library__list-meta {
@@ -1211,5 +1612,166 @@ onMounted(async () => {
   .wb-skeleton-pulse { animation: none; }
   .wb-dialog-fade-enter-active,
   .wb-dialog-fade-leave-active { transition: none; }
+}
+
+/* Phase AM-2: Storage bar */
+.wb-library__storage-bar {
+  padding: 8px 16px;
+  margin-bottom: 8px;
+  background: var(--wb-bg-secondary, #f8fafc);
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.wb-library__storage-labels {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--wb-text-secondary, #64748b);
+  margin-bottom: 6px;
+}
+
+.wb-library__storage-label--paste {
+  color: #7c3aed;
+}
+
+.wb-library__storage-usage {
+  margin-left: auto;
+  font-weight: 500;
+  color: var(--wb-text-primary, #334155);
+}
+
+.wb-library__storage-track {
+  display: flex;
+  height: 6px;
+  background: var(--wb-border, #e2e8f0);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.wb-library__storage-fill {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.wb-library__storage-fill--upload {
+  background: #3b82f6;
+}
+
+.wb-library__storage-fill--paste {
+  background: #7c3aed;
+}
+
+/* Phase AM-3: Action bar */
+.wb-library__action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  margin-bottom: 8px;
+  background: var(--wb-bg-secondary, #f8fafc);
+  border-radius: 8px;
+}
+
+.wb-library__action-bar-info {
+  font-size: 13px;
+  color: var(--wb-text-secondary, #64748b);
+}
+
+.wb-library__action-btn {
+  padding: 6px 14px;
+  border: 1px solid var(--wb-border, #e2e8f0);
+  border-radius: 6px;
+  background: white;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.wb-library__action-btn:hover {
+  background: var(--wb-bg-secondary, #f8fafc);
+}
+
+.wb-library__action-btn--danger {
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+.wb-library__action-btn--danger:hover {
+  background: #fef2f2;
+}
+
+.wb-library__action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Modal */
+.wb-library__modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.wb-library__modal {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 420px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+
+.wb-library__modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.wb-library__modal-text {
+  font-size: 14px;
+  color: var(--wb-text-secondary, #64748b);
+  margin: 0 0 20px;
+  line-height: 1.5;
+}
+
+.wb-library__modal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* Archive card */
+.library-asset-card--archived {
+  opacity: 0.7;
+  position: relative;
+}
+
+.library-asset-card__meta {
+  font-size: 11px;
+  color: #dc2626;
+}
+
+.wb-library__restore-btn {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  padding: 4px 10px;
+  font-size: 11px;
+  border: 1px solid #7c3aed;
+  border-radius: 4px;
+  background: white;
+  color: #7c3aed;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.wb-library__restore-btn:hover {
+  background: #ede9fe;
 }
 </style>

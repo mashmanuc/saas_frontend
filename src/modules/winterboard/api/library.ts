@@ -128,3 +128,80 @@ export async function addYouTubeAsset(youtubeUrl: string, folderId?: number | nu
 export async function fetchRecentAssets(): Promise<LibraryAsset[]> {
   return apiClient.get<LibraryAsset[]>(`${BASE}/recent/`)
 }
+
+// ─── Storage Stats (Phase AM-2) ───────────────────────────────────────
+
+export interface StorageStats {
+  total_bytes: number
+  upload_bytes: number
+  upload_count: number
+  paste_bytes: number
+  paste_count: number
+  limit_bytes: number
+}
+
+export interface PastedItem {
+  id: number
+  filename: string
+  cdn_url: string
+  thumbnail_url: string
+  size_bytes: number
+  type: string
+  created_at: string
+}
+
+export interface PastedListResponse {
+  count: number
+  total_bytes: number
+  results: PastedItem[]
+}
+
+export async function fetchStorageStats(): Promise<StorageStats> {
+  return apiClient.get<StorageStats>(`${BASE}/storage-stats/`)
+}
+
+export async function fetchPastedItems(params?: {
+  limit?: number
+  offset?: number
+}): Promise<PastedListResponse> {
+  return apiClient.get<PastedListResponse>(`${BASE}/pasted/`, { params })
+}
+
+// ─── Cleanup & Archive (Phase AM-3) ───────────────────────────────────
+
+export interface CleanupResponse {
+  archived_count: number
+  freed_bytes: number
+  skipped_published: number
+}
+
+export interface ArchivedItem {
+  id: number
+  filename: string
+  cdn_url: string
+  thumbnail_url: string
+  size_bytes: number
+  type: string
+  archived_at: string
+  days_left: number
+}
+
+export interface ArchivedListResponse {
+  count: number
+  results: ArchivedItem[]
+}
+
+export async function cleanupPasted(data: {
+  ids?: number[]
+  all_unused?: boolean
+}): Promise<CleanupResponse> {
+  return apiClient.post<CleanupResponse>(`${BASE}/pasted/cleanup/`, data)
+}
+
+export async function restorePasted(ids: number[]): Promise<{ restored_count: number }> {
+  return apiClient.post<{ restored_count: number }>(`${BASE}/pasted/restore/`, { ids })
+}
+
+export async function fetchArchivedItems(): Promise<ArchivedListResponse> {
+  return apiClient.get<ArchivedListResponse>(`${BASE}/archived/`)
+}
