@@ -835,10 +835,16 @@ async function onRenameAsset(asset: LibraryAsset, newName: string): Promise<void
 
 async function onDeleteAsset(asset: LibraryAsset): Promise<void> {
   try {
-    await apiDelete(asset.id)
+    if (selectedFolderId.value === PASTED_ID) {
+      // Paste-файли не мають LibraryAsset — архівуємо через cleanup endpoint
+      await cleanupPasted({ ids: [asset.id] })
+    } else {
+      await apiDelete(asset.id)
+    }
     assets.value = assets.value.filter((a) => a.id !== asset.id)
     total.value = Math.max(0, total.value - 1)
     showToast(t('winterboard.library.deleted'), 'success')
+    loadStorageStats()
   } catch (err) {
     console.error('[WB:Library] Delete asset failed', err)
     showToast(t('winterboard.library.deleteError'), 'error')
