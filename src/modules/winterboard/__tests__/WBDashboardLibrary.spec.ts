@@ -173,13 +173,14 @@ describe('LibraryAssetCard.vue (B15)', () => {
     const wrapper = await mountAssetCard(ASSET_NO_THUMB)
     expect(wrapper.find('.library-asset-card__img').exists()).toBe(false)
     expect(wrapper.find('.library-asset-card__icon').exists()).toBe(true)
-    expect(wrapper.find('.library-asset-card__icon').text()).toBe('📄')
+    // SVG icons replaced emoji icons — check SVG exists
+    expect(wrapper.find('.library-asset-card__icon svg').exists()).toBe(true)
   })
 
   // Test 3
   it('renders video icon for video content_type', async () => {
     const wrapper = await mountAssetCard(ASSET_VIDEO)
-    expect(wrapper.find('.library-asset-card__icon').text()).toBe('🎬')
+    expect(wrapper.find('.library-asset-card__icon svg').exists()).toBe(true)
   })
 
   // Test 4

@@ -583,7 +583,8 @@ async function handleDuplicate(id: string): Promise<void> {
   try {
     const dup = await winterboardApi.duplicateSession(id)
     showToast(t('winterboard.boards.duplicated'), 'success')
-    router.push({ name: 'winterboard-solo', params: { id: dup.id } })
+    // Додаємо копію в список без навігації — юзер відкриє сам коли захоче
+    await fetchBoards()
   } catch (err) {
     console.error('[WB:BoardList] Duplicate failed', err)
     showToast(t('winterboard.boards.duplicateError'), 'error')

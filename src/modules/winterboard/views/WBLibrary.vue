@@ -206,6 +206,27 @@
         </div>
       </div>
 
+      <!-- P0-2: Archive confirmation modal -->
+      <div v-if="archiveConfirmAsset" class="wb-library__modal-overlay" @click.self="archiveConfirmAsset = null">
+        <div class="wb-library__modal" role="dialog">
+          <h3 class="wb-library__modal-title">{{ t('winterboard.library.archiveConfirm.title') }}</h3>
+          <p class="wb-library__modal-text">
+            {{ t('winterboard.library.archiveConfirm.message', { name: archiveConfirmAsset.name }) }}
+          </p>
+          <div class="wb-library__modal-actions">
+            <button class="wb-library__action-btn" @click="archiveConfirmAsset = null">
+              {{ t('winterboard.library.cleanup.cancel') }}
+            </button>
+            <button
+              class="wb-library__action-btn wb-library__action-btn--danger"
+              @click="confirmArchiveAsset"
+            >
+              {{ t('winterboard.library.archiveConfirm.confirm') }}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Loading -->
       <div v-if="loading" class="wb-library__grid" aria-busy="true">
         <div
@@ -833,21 +854,32 @@ async function onRenameAsset(asset: LibraryAsset, newName: string): Promise<void
   }
 }
 
-async function onDeleteAsset(asset: LibraryAsset): Promise<void> {
+// P0-2: delete = archive для всіх файлів
+const archiveConfirmAsset = ref<LibraryAsset | null>(null)
+
+function onDeleteAsset(asset: LibraryAsset): void {
+  // Показуємо confirmation: "Файл буде в архіві 90 днів"
+  archiveConfirmAsset.value = asset
+}
+
+async function confirmArchiveAsset(): Promise<void> {
+  const asset = archiveConfirmAsset.value
+  if (!asset) return
+  archiveConfirmAsset.value = null
+
   try {
     if (selectedFolderId.value === PASTED_ID) {
-      // Paste-файли не мають LibraryAsset — архівуємо через cleanup endpoint
       await cleanupPasted({ ids: [asset.id] })
     } else {
       await apiDelete(asset.id)
     }
     assets.value = assets.value.filter((a) => a.id !== asset.id)
     total.value = Math.max(0, total.value - 1)
-    showToast(t('winterboard.library.deleted'), 'success')
+    showToast(t('winterboard.library.archived'), 'success')
     loadStorageStats()
   } catch (err) {
-    console.error('[WB:Library] Delete asset failed', err)
-    showToast(t('winterboard.library.deleteError'), 'error')
+    console.error('[WB:Library] Archive asset failed', err)
+    showToast(t('winterboard.library.archiveError'), 'error')
   }
 }
 

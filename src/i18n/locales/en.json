@@ -6825,7 +6825,15 @@
       "prevPage": "Previous page",
       "nextPage": "Next page",
       "favorite": "Favorite",
-      "delete": "Delete",
+      "delete": "Archive",
+      "archiveAction": "Archive",
+      "archived": "File moved to archive",
+      "archiveError": "Failed to archive file",
+      "archiveConfirm": {
+        "title": "Move to archive?",
+        "message": "File \"{name}\" will stay in archive for 90 days, then permanently deleted.",
+        "confirm": "Archive"
+      },
       "deleted": "File deleted",
       "deleteError": "Failed to delete file",
       "favoriteError": "Failed to update favorite",

@@ -142,13 +142,13 @@
       <button
         type="button"
         class="library-asset-card__action-btn library-asset-card__action-btn--danger"
-        :aria-label="t('winterboard.library.delete')"
-        :title="t('winterboard.library.delete')"
+        :aria-label="t('winterboard.library.archiveAction')"
+        :title="t('winterboard.library.archiveAction')"
         @click.stop="emit('delete', asset)"
       >
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-          <path d="M2 3.5h10M4.5 3.5V2.5A.5.5 0 015 2h4a.5.5 0 01.5.5v1M5.5 6.5v3M8.5 6.5v3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-          <path d="M2.5 3.5l.7 7.5a.5.5 0 00.5.5h6.6a.5.5 0 00.5-.5l.7-7.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <rect x="1" y="1.5" width="12" height="3" rx="0.5" stroke="currentColor" stroke-width="1.2"/>
+          <path d="M2 4.5v7a.5.5 0 00.5.5h9a.5.5 0 00.5-.5v-7M5.5 7.5h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
         </svg>
       </button>
     </div>
