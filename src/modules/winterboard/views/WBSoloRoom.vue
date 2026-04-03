@@ -166,17 +166,57 @@
       <div v-if="showSidebarOverlay" class="wb-sidebar-overlay" @click.self="showSidebarOverlay = false">
         <nav class="wb-sidebar-panel">
           <div class="wb-sidebar-panel__header">
-            <span class="wb-sidebar-panel__title">{{ t('winterboard.room.menu') }}</span>
+            <div class="wb-sidebar-panel__logo">
+              <svg class="wb-sidebar-panel__logo-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="24" height="24" rx="6" fill="currentColor" />
+                <path d="M6 17V7l4 5 4-5v10M18 7v10" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <span class="wb-sidebar-panel__logo-text">M4SH</span>
+            </div>
             <button type="button" class="wb-sidebar-panel__close" @click="showSidebarOverlay = false">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
             </button>
           </div>
-          <ul class="wb-sidebar-panel__links">
-            <li><a href="#" @click.prevent="navigateWithSave('/')">{{ t('winterboard.sidebar.home') }}</a></li>
-            <li><a href="#" @click.prevent="navigateWithSave('/winterboard')">{{ t('winterboard.sidebar.boards') }}</a></li>
-            <li><a href="#" @click.prevent="navigateWithSave('/tutor')">{{ t('winterboard.sidebar.dashboard') }}</a></li>
-            <li><a href="#" @click.prevent="navigateWithSave('/settings')">{{ t('winterboard.sidebar.settings') }}</a></li>
-          </ul>
+          <div class="wb-sidebar-panel__nav">
+            <div class="wb-sidebar-panel__section">
+              <ul class="wb-sidebar-panel__links">
+                <li>
+                  <a href="#" @click.prevent="navigateWithSave('/')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+                    <span>{{ t('winterboard.sidebar.home') }}</span>
+                  </a>
+                </li>
+              </ul>
+            </div>
+            <div class="wb-sidebar-panel__section">
+              <span class="wb-sidebar-panel__section-label">{{ t('sidebar.section.winterboard') }}</span>
+              <ul class="wb-sidebar-panel__links">
+                <li>
+                  <a href="#" @click.prevent="navigateWithSave('/winterboard')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+                    <span>{{ t('winterboard.sidebar.boards') }}</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="#" @click.prevent="navigateWithSave('/tutor')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+                    <span>{{ t('winterboard.sidebar.dashboard') }}</span>
+                  </a>
+                </li>
+              </ul>
+            </div>
+            <div class="wb-sidebar-panel__section">
+              <span class="wb-sidebar-panel__section-label">{{ t('sidebar.section.system') }}</span>
+              <ul class="wb-sidebar-panel__links">
+                <li>
+                  <a href="#" @click.prevent="navigateWithSave('/settings')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <span>{{ t('winterboard.sidebar.settings') }}</span>
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
         </nav>
       </div>
     </Transition>
@@ -2889,62 +2929,126 @@ watch(() => store.workspaceName, (name) => {
   bottom: 0;
   width: 280px;
   background: var(--wb-bg, #ffffff);
-  box-shadow: 4px 0 16px rgba(0, 0, 0, 0.15);
+  box-shadow: 4px 0 16px rgba(0, 0, 0, 0.12);
   display: flex;
   flex-direction: column;
   overflow-y: auto;
 }
 
 .wb-sidebar-panel__header {
+  height: 64px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
+  padding: 0 16px;
   border-bottom: 1px solid var(--wb-border, #e2e8f0);
+  flex-shrink: 0;
 }
 
-.wb-sidebar-panel__title {
-  font-size: 16px;
-  font-weight: 600;
+.wb-sidebar-panel__logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wb-sidebar-panel__logo-icon {
+  flex-shrink: 0;
+  color: var(--wb-brand, #047857);
+}
+
+.wb-sidebar-panel__logo-text {
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.02em;
   color: var(--wb-fg, #0f172a);
 }
 
 .wb-sidebar-panel__close {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
-  border: none;
+  background: none;
+  border: 1px solid var(--wb-border, #e2e8f0);
   border-radius: 6px;
   cursor: pointer;
   color: var(--wb-fg-secondary, #64748b);
+  transition: all 0.15s ease;
 }
 
 .wb-sidebar-panel__close:hover {
   background: var(--wb-btn-hover, #f1f5f9);
+  color: var(--wb-fg, #0f172a);
+}
+
+.wb-sidebar-panel__nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--wb-border, #e2e8f0) transparent;
+}
+
+.wb-sidebar-panel__section {
+  padding: 4px 0;
+}
+
+.wb-sidebar-panel__section + .wb-sidebar-panel__section {
+  border-top: 1px solid var(--wb-border, #e2e8f0);
+  margin-top: 4px;
+  padding-top: 8px;
+}
+
+.wb-sidebar-panel__section-label {
+  display: block;
+  padding: 4px 16px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--wb-fg-secondary, #64748b);
+  opacity: 0.7;
 }
 
 .wb-sidebar-panel__links {
   list-style: none;
   margin: 0;
-  padding: 12px 0;
+  padding: 0;
 }
 
 .wb-sidebar-panel__links li a {
-  display: block;
-  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  margin: 1px 8px;
+  border-radius: 6px;
   font-size: 14px;
   font-weight: 500;
-  color: var(--wb-fg, #0f172a);
+  color: var(--wb-fg-secondary, #64748b);
   text-decoration: none;
-  transition: background 0.15s ease;
+  transition: all 0.15s ease;
+  min-height: 40px;
+}
+
+.wb-sidebar-panel__links li a svg {
+  flex-shrink: 0;
+  opacity: 0.7;
 }
 
 .wb-sidebar-panel__links li a:hover {
+  color: var(--wb-fg, #0f172a);
   background: var(--wb-btn-hover, #f1f5f9);
-  color: var(--wb-brand, #2563eb);
+}
+
+.wb-sidebar-panel__links li a:hover svg {
+  opacity: 1;
+}
+
+.wb-sidebar-panel__links li a:active {
+  background: color-mix(in srgb, var(--wb-brand, #047857) 10%, transparent);
+  color: var(--wb-brand, #047857);
 }
 
 /* Sidebar slide-in transition */
@@ -3040,8 +3144,7 @@ watch(() => store.workspaceName, (name) => {
     padding: 16px 24px;
     font-size: 16px;
     min-height: 64px;
-    display: flex;
-    align-items: center;
+    gap: 12px;
   }
 }
 
