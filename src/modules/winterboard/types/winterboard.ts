@@ -44,6 +44,26 @@ export interface WBRemoteLaser {
   lastUpdate: number
 }
 
+// ─── Interaction Layer ──────────────────────────────────────────────────────
+// Extensible interaction model for board objects (text, hint, answer, etc.)
+// Audio stays as legacy flat fields; new interaction types go through this array.
+
+export type WBInteractionType = 'text'
+// Future: 'hint' | 'answer' | 'explanation'
+
+export interface WBInteraction {
+  /** Unique ID (UUID v4) */
+  id: string
+  /** Interaction type */
+  type: WBInteractionType
+  /** Payload — plain text, max 2000 chars */
+  content: string
+  /** Optional label ("Відповідь", "Підказка") */
+  label?: string
+  /** ISO timestamp for ordering */
+  createdAt?: string
+}
+
 // ─── Stroke ─────────────────────────────────────────────────────────────────
 
 export interface WBStroke {
@@ -70,6 +90,8 @@ export interface WBStroke {
   // Object Audio: voice annotation attached to this stroke
   audioUrl?: string       // CDN URL of recorded audio
   audioDuration?: number  // duration in seconds
+  // Interaction Layer: extensible interactions (text, hint, answer, etc.)
+  interactions?: WBInteraction[]
 }
 
 // ─── Selection (v5: A1 — Rectangle Select) ─────────────────────────────────
@@ -147,6 +169,8 @@ export interface WBAsset {
   // Object Audio: voice annotation attached to this asset
   audioUrl?: string        // CDN URL of recorded audio
   audioDuration?: number   // duration in seconds
+  // Interaction Layer: extensible interactions (text, hint, answer, etc.)
+  interactions?: WBInteraction[]
 }
 
 // Phase 10 P5: Lesson navigation marker — lightweight anchor in the replay timeline.

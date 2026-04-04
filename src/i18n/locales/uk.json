@@ -6983,6 +6983,26 @@
         "deleteFailed": "Не вдалося видалити аудіо. Спробуйте ще раз"
       }
     },
+    "interactions": {
+      "badge": "Взаємодії",
+      "showText": "Показати текст",
+      "openPresentation": "Відкрити презентацію",
+      "playAudio": "Прослухати",
+      "pauseAudio": "Пауза",
+      "close": "Закрити",
+      "addInteraction": "Додати взаємодію",
+      "addText": "Текст",
+      "editText": "Редагувати",
+      "deleteText": "Видалити",
+      "deleteConfirm": "Видалити цю взаємодію?",
+      "save": "Зберегти",
+      "cancel": "Скасувати",
+      "charCount": "{count} / {max}",
+      "maxReached": "Максимум {max} взаємодій",
+      "textPlaceholder": "Введіть текст пояснення…",
+      "presentationNotFound": "Презентацію не знайдено",
+      "presentationProcessing": "Презентація ще обробляється…"
+    },
     "autosave": {
       "boardTooLarge": "Дошка завелика для збереження. Видаліть частину елементів або розділіть урок на кілька дошок.",
       "boardLargeWarning": "Дошка майже заповнена — можливі затримки збереження.",

@@ -7088,6 +7088,26 @@
         "deleteFailed": "Failed to delete audio. Please try again"
       }
     },
+    "interactions": {
+      "badge": "Interactions",
+      "showText": "Show text",
+      "openPresentation": "Open presentation",
+      "playAudio": "Play audio",
+      "pauseAudio": "Pause",
+      "close": "Close",
+      "addInteraction": "Add interaction",
+      "addText": "Text",
+      "editText": "Edit",
+      "deleteText": "Delete",
+      "deleteConfirm": "Delete this interaction?",
+      "save": "Save",
+      "cancel": "Cancel",
+      "charCount": "{count} / {max}",
+      "maxReached": "Maximum {max} interactions",
+      "textPlaceholder": "Enter explanation text…",
+      "presentationNotFound": "Presentation not found",
+      "presentationProcessing": "Presentation is still processing…"
+    },
     "autosave": {
       "boardTooLarge": "Board is too large to save. Remove some elements or split the lesson into multiple boards.",
       "boardLargeWarning": "Board is almost full — saves may be slow.",

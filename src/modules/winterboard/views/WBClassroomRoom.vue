@@ -259,6 +259,7 @@
           @cursor-move="handleCursorMove"
           @zoom-change="handleZoomChange"
           @scroll-change="handleScrollChange"
+          @presentation-open="handlePresentationOpen"
         />
 
         <!-- Remote cursors -->
@@ -290,6 +291,18 @@
       @text-format="handleTextFormat"
       @audio-uploaded="handleAudioUploaded"
       @audio-deleted="handleAudioDeleted"
+      @interaction-add="handleInteractionAdd"
+      @interaction-update="handleInteractionUpdate"
+      @interaction-delete="handleInteractionDelete"
+      @interaction-preview="handleInteractionPreview"
+    />
+
+    <!-- Presentation player (launched from board object) -->
+    <PresentationPlayer
+      v-if="presentationPlayerItem"
+      :item="presentationPlayerItem"
+      :start-index="presentationStartSlide"
+      @close="presentationPlayerItem = null"
     />
 
     <!-- P3: YouTube insert modal -->
@@ -466,6 +479,7 @@ import WBUploadIndicator from '../components/status/WBUploadIndicator.vue'
 import WBGridButton from '../components/canvas/WBGridButton.vue'
 import WBPageThumbnails from '../components/pages/WBPageThumbnails.vue'
 import WBSelectionToolbar from '../components/canvas/WBSelectionToolbar.vue'
+import PresentationPlayer from '../components/sidebar/PresentationPlayer.vue'
 import WBYouTubeModal from '../components/toolbar/WBYouTubeModal.vue'
 import WBShareDialog from '../components/sharing/WBShareDialog.vue'
 import WBReplayControls from '../components/replay/WBReplayControls.vue'
@@ -802,6 +816,93 @@ function handleAudioDeleted(objectId: string) {
   } else {
     const { audioUrl: _a, audioDuration: _d, ...rest } = obj as WBStroke
     handleStrokeUpdate({ ...rest, audioUrl: undefined, audioDuration: undefined } as WBStroke)
+  }
+}
+
+// ── Interaction handlers (PLAN v2) ──────────────────────────────────────────
+
+function handleInteractionAdd(objectId: string, content: string, label?: string) {
+  const obj = store.getObjectById(objectId)
+  if (!obj) return
+  const existing = obj.interactions ?? []
+  const newItem: import('../types/winterboard').WBInteraction = {
+    id: crypto.randomUUID(),
+    type: 'text',
+    content: content.trim().slice(0, 2000),
+    label: label?.trim() || undefined,
+    createdAt: new Date().toISOString(),
+  }
+  _patchInteractions(objectId, obj, [...existing, newItem])
+}
+
+function handleInteractionUpdate(objectId: string, interactionId: string, content: string, label?: string) {
+  const obj = store.getObjectById(objectId)
+  if (!obj) return
+  const existing = obj.interactions ?? []
+  const updated = existing.map(i =>
+    i.id === interactionId
+      ? { ...i, content: content.trim().slice(0, 2000), label: label?.trim() || undefined }
+      : i,
+  )
+  _patchInteractions(objectId, obj, updated)
+}
+
+function handleInteractionDelete(objectId: string, interactionId: string) {
+  const obj = store.getObjectById(objectId)
+  if (!obj) return
+  const existing = obj.interactions ?? []
+  const filtered = existing.filter(i => i.id !== interactionId)
+  _patchInteractions(objectId, obj, filtered.length > 0 ? filtered : undefined)
+}
+
+function _patchInteractions(
+  objectId: string,
+  obj: WBStroke | WBAsset,
+  interactions: import('../types/winterboard').WBInteraction[] | undefined,
+) {
+  const isAsset = 'w' in obj && 'h' in obj && 'type' in obj
+  if (isAsset) {
+    handleAssetUpdate({ ...(obj as WBAsset), interactions })
+  } else {
+    handleStrokeUpdate({ ...(obj as WBStroke), interactions })
+  }
+}
+
+function handleInteractionPreview(objectId: string, interactionId: string) {
+  canvasRef.value?.toggleInteraction?.(objectId, interactionId)
+}
+
+// ── Presentation launch from board (PLAN v2 §2) ────────────────────────────
+
+const presentationPlayerItem = ref<AllowedContentItem | null>(null)
+const presentationStartSlide = ref(0)
+
+async function handlePresentationOpen(asset: WBAsset) {
+  const contentRef = (asset as any).content_ref
+  if (!contentRef?.content_id) return
+
+  try {
+    const { learningContentApi } = await import('@/modules/learning-content/api/learningContentApi')
+    const item = await learningContentApi.getItemDetail(contentRef.content_id)
+    const status = (item as any)?.processing_status
+    if (!item || status !== 'ready') {
+      const { useToast } = await import('../composables/useToast')
+      const { showToast } = useToast()
+      showToast(
+        status === 'processing'
+          ? t('winterboard.interactions.presentationProcessing')
+          : t('winterboard.interactions.presentationNotFound'),
+        'warning',
+      )
+      return
+    }
+    presentationPlayerItem.value = item as unknown as AllowedContentItem
+    const slideMatch = asset.src?.match(/slide_(\d+)\.png/)
+    presentationStartSlide.value = slideMatch ? parseInt(slideMatch[1], 10) - 1 : 0
+  } catch {
+    const { useToast } = await import('../composables/useToast')
+    const { showToast } = useToast()
+    showToast(t('winterboard.interactions.presentationNotFound'), 'error')
   }
 }
 

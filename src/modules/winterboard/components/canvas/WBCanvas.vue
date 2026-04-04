@@ -358,12 +358,12 @@
       <span class="wb-laser-dot__label" :style="{ color: laser.color }">{{ laser.displayName }}</span>
     </div>
 
-    <!-- Object Audio: Badge overlay (pointer-events: none container, only icon clickable) -->
+    <!-- Object Audio: Badge overlay for legacy audio-only objects -->
     <div
-      v-for="item in itemsWithAudio"
+      v-for="item in legacyAudioOnlyItems"
       :key="`audio-badge-${item.id}`"
       class="wb-audio-badge"
-      :style="audioBadgePosition(item)"
+      :style="objectBadgePosition(item)"
     >
       <AudioBadge
         :audio-url="item.audioUrl!"
@@ -373,6 +373,36 @@
         @click="handleAudioBadgeClick(item)"
       />
     </div>
+
+    <!-- Interaction Badge: unified badge for objects with interactions / presentation / audio+interactions -->
+    <div
+      v-for="entry in itemsWithInteractions"
+      :key="`interaction-${entry.item.id}`"
+      class="wb-interaction-badge-wrap"
+      :style="objectBadgePosition(entry.item)"
+    >
+      <InteractionBadge
+        :object-id="entry.item.id"
+        :interactions="entry.interactions"
+        :has-audio="entry.hasAudio"
+        :is-presentation="entry.isPresentation"
+        :is-audio-playing="entry.hasAudio && isAudioPlaying(entry.item)"
+        :read-only="props.readOnly"
+        @toggle-interaction="(iId: string) => handleToggleInteraction(entry.item.id, iId)"
+        @play-audio="handleAudioBadgeClick(entry.item)"
+        @open-presentation="emit('presentation-open', entry.item as WBAsset)"
+      />
+    </div>
+
+    <!-- Interaction Overlay: text popover near object -->
+    <InteractionOverlay
+      v-if="activeOverlay"
+      :interaction="activeOverlay.interaction"
+      :anchor-rect="getObjectBBox(activeOverlay.objectId)"
+      :zoom="props.zoom"
+      :canvas-offset="wbStore.canvasOffset"
+      @close="activeOverlay = null"
+    />
 
   </div>
 </template>
@@ -396,7 +426,10 @@ import { useDuplicate } from '../../composables/useDuplicate'
 import { useStickyNotes } from '../../composables/useStickyNotes'
 import WBStickyNote from './WBStickyNote.vue'
 import AudioBadge from './AudioBadge.vue'
+import InteractionBadge from './InteractionBadge.vue'
+import InteractionOverlay from './InteractionOverlay.vue'
 import { audioManager } from '../../utils/audioManager'
+import type { WBInteraction } from '../../types/winterboard'
 import AudioPlayerObject from '../board/objects/AudioPlayerObject.vue'
 import VideoPlayerObject from '../board/objects/VideoPlayerObject.vue'
 import YouTubePlayerObject, { type WBYouTubeAsset } from '../board/objects/YouTubePlayerObject.vue'
@@ -438,6 +471,8 @@ interface Props {
   background?: WBPageBackground
   /** Phase 3C: show full audio/video controls (true for tutor/solo, false for student) */
   isTutor?: boolean
+  /** Read-only mode (public view) — no editing, only interaction */
+  readOnly?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -452,6 +487,7 @@ const props = withDefaults(defineProps<Props>(), {
   // Default to tutor mode so solo boards always show controls.
   // Classroom passes isTutor explicitly based on user role.
   isTutor: true,
+  readOnly: false,
 })
 
 // v5 A1: Store + rectangle select composable
@@ -505,23 +541,105 @@ function asAudioAsset(asset: WBAsset): WBAudioAsset { return asset as unknown as
 function asVideoAsset(asset: WBAsset): WBVideoAsset { return asset as unknown as WBVideoAsset }
 function asYouTubeAsset(asset: WBAsset): WBYouTubeAsset { return asset as unknown as WBYouTubeAsset }
 
-// ── Object Audio: badge overlay + toolbar integration ───────────────────────
+// ── Object Interactions: unified badge overlay ──────────────────────────────
 
-// Items (strokes + assets) that have an audio annotation
-const itemsWithAudio = computed(() => {
+// Items that have interactions[] OR are presentation assets OR have audio + interactions
+interface InteractionEntry {
+  item: WBStroke | WBAsset
+  interactions: WBInteraction[]
+  hasAudio: boolean
+  isPresentation: boolean
+}
+
+const itemsWithInteractions = computed<InteractionEntry[]>(() => {
+  const result: InteractionEntry[] = []
+
+  for (const s of allStrokes.value) {
+    const hasInter = (s.interactions?.length ?? 0) > 0
+    if (hasInter) {
+      result.push({
+        item: s,
+        interactions: s.interactions!,
+        hasAudio: !!s.audioUrl,
+        isPresentation: false,
+      })
+    }
+  }
+
+  for (const a of assets.value) {
+    const hasInter = (a.interactions?.length ?? 0) > 0
+    const isPres = a.type === 'image' && (a as any).content_ref?.content_type === 'presentation'
+    // Show InteractionBadge if has interactions, is presentation, or has audio + interactions
+    if (hasInter || isPres) {
+      result.push({
+        item: a,
+        interactions: a.interactions ?? [],
+        hasAudio: !!a.audioUrl,
+        isPresentation: isPres,
+      })
+    }
+  }
+
+  return result
+})
+
+// Legacy: objects with ONLY audioUrl (no interactions[], not presentation) → keep old AudioBadge
+const interactionObjectIds = computed(() => {
+  const ids = new Set<string>()
+  for (const entry of itemsWithInteractions.value) {
+    ids.add(entry.item.id)
+  }
+  return ids
+})
+
+const legacyAudioOnlyItems = computed(() => {
   const result: (WBStroke | WBAsset)[] = []
   for (const s of allStrokes.value) {
-    if (s.audioUrl) result.push(s)
+    if (s.audioUrl && !interactionObjectIds.value.has(s.id)) result.push(s)
   }
   for (const a of assets.value) {
-    if (a.audioUrl) result.push(a)
+    if (a.audioUrl && !interactionObjectIds.value.has(a.id)) result.push(a)
   }
   return result
 })
 
+// Interaction overlay state
+const activeOverlay = ref<{ objectId: string; interaction: WBInteraction } | null>(null)
+
+function handleToggleInteraction(objectId: string, interactionId: string) {
+  // Toggle: if same interaction is open → close; otherwise open
+  if (activeOverlay.value?.interaction.id === interactionId) {
+    activeOverlay.value = null
+    return
+  }
+  const obj = wbStore.getObjectById(objectId)
+  if (!obj) return
+  const interaction = obj.interactions?.find((i: WBInteraction) => i.id === interactionId)
+  if (interaction) {
+    activeOverlay.value = { objectId, interaction }
+  }
+}
+
+function getObjectBBox(objectId: string): { x: number; y: number; w: number; h: number } {
+  const obj = wbStore.getObjectById(objectId)
+  if (!obj) return { x: 0, y: 0, w: 0, h: 0 }
+  if ('w' in obj && 'h' in obj) {
+    const a = obj as WBAsset
+    return { x: a.x, y: a.y, w: a.w, h: a.h }
+  }
+  const s = obj as WBStroke
+  const bbox = getStrokeBBox(s)
+  return { x: bbox.x, y: bbox.y, w: bbox.width, h: bbox.height }
+}
+
+function isAudioPlaying(item: WBStroke | WBAsset): boolean {
+  const url = (item as WBStroke).audioUrl ?? (item as WBAsset).audioUrl
+  return !!url && audioManager.isUrlPlaying(url)
+}
+
 // Position badge at top-right corner of object (canvas coords → screen coords)
 // FIX: include canvasOffset for correct positioning during pan/scroll
-function audioBadgePosition(item: WBStroke | WBAsset) {
+function objectBadgePosition(item: WBStroke | WBAsset) {
   const zoom = props.zoom
   const offset = wbStore.canvasOffset
   let x: number, y: number, w: number
@@ -725,6 +843,7 @@ const emit = defineEmits<{
   // v5 A4: Tool change from keyboard shortcut
   'tool-change': [tool: WBToolType]
   'laser-broadcast': [data: { x: number; y: number; active: boolean; page_id?: string }]
+  'presentation-open': [asset: WBAsset]
 }>()
 
 // ─── Refs ───────────────────────────────────────────────────────────────────
@@ -3409,6 +3528,7 @@ watch(
 defineExpose({
   getStage: () => stageRef.value?.getStage?.() || null,
   fitToPage: handleFitToPage,
+  toggleInteraction: handleToggleInteraction,
 })
 </script>
 
