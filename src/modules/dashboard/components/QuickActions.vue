@@ -17,7 +17,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Calendar, BookOpen, Users, Search, BarChart3 } from 'lucide-vue-next'
+import { Calendar, BookOpen, Users, Search, BarChart3, PenTool } from 'lucide-vue-next'
 import Card from '@/ui/Card.vue'
 
 const props = defineProps<{
@@ -25,6 +25,13 @@ const props = defineProps<{
 }>()
 
 const actions = [
+  // P0-7: Primary CTA — create lesson on whiteboard
+  {
+    key: 'createBoardLesson',
+    label: 'dashboard.quickActions.createBoardLesson',
+    to: '/winterboard',
+    iconComponent: PenTool,
+  },
   {
     key: 'createLesson',
     label: 'dashboard.quickActions.createLesson',
@@ -57,14 +64,14 @@ const actions = [
   },
 ]
 
-// UX-1: Progressive QuickActions — 0→1, <5→2, 5+→all
+// P0-7: Progressive QuickActions — 0→board only, <5→board+calendar, 5+→all
 const visibleActions = computed(() => {
   const count = props.lessonsCount ?? Infinity
   if (count === 0) {
-    return actions.filter(a => a.key === 'createLesson')
+    return actions.filter(a => a.key === 'createBoardLesson')
   }
   if (count < 5) {
-    return actions.filter(a => ['createLesson', 'lessonCatalog'].includes(a.key))
+    return actions.filter(a => ['createBoardLesson', 'createLesson', 'lessonCatalog'].includes(a.key))
   }
   return actions
 })

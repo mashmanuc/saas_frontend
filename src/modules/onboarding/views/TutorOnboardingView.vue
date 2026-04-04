@@ -32,8 +32,15 @@ onMounted(async () => {
 async function handleNext() {
   await store.completeCurrentStep()
   if (store.isCompleted) {
-    router.push('/tutor/dashboard')
+    // P0-5: First Value Moment — redirect to create first lesson
+    router.push('/winterboard')
   }
+}
+
+// P0-5: Create first lesson CTA
+function createFirstLesson() {
+  store.completeCurrentStep()
+  router.push('/winterboard')
 }
 
 async function handleSkip() {
@@ -153,7 +160,7 @@ function goToAvailability() {
         </div>
       </OnboardingStep>
 
-      <!-- Completion Step -->
+      <!-- Completion Step — P0-5: First Value Moment CTA -->
       <OnboardingStep
         v-else-if="currentStep?.slug === 'completion'"
         :step="currentStep"
@@ -162,11 +169,19 @@ function goToAvailability() {
           <div class="celebration">🎉</div>
           <h2>{{ t('onboarding.tutor.completion.congrats') }}</h2>
           <p>{{ t('onboarding.tutor.completion.message') }}</p>
+          <div class="fvm-cta">
+            <Button variant="primary" size="lg" @click="createFirstLesson">
+              {{ t('onboarding.tutor.completion.createLesson') }}
+            </Button>
+            <button class="fvm-skip" @click="handleNext">
+              {{ t('onboarding.tutor.completion.skipToHome') }}
+            </button>
+          </div>
         </div>
       </OnboardingStep>
     </div>
 
-    <div class="onboarding-actions">
+    <div v-if="currentStep?.slug !== 'completion'" class="onboarding-actions">
       <Button
         v-if="currentStep?.is_skippable"
         variant="outline"
@@ -274,6 +289,27 @@ function goToAvailability() {
   justify-content: center;
   gap: 12px;
   margin-top: 32px;
+}
+
+.fvm-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-top: 32px;
+}
+
+.fvm-skip {
+  font-size: 14px;
+  color: var(--text-secondary, #6b7280);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.fvm-skip:hover {
+  color: var(--text-primary, #374151);
 }
 
 </style>

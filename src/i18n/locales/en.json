@@ -2045,7 +2045,8 @@
     },
     "quickActions": {
       "title": "Quick actions",
-      "createLesson": "Create lesson",
+      "createBoardLesson": "Create board lesson",
+      "createLesson": "Schedule lesson",
       "openCalendar": "Calendar",
       "openKnowledge": "Knowledge base",
       "myStudents": "My Students",
@@ -3186,7 +3187,9 @@
       },
       "completion": {
         "congrats": "Congratulations!",
-        "message": "Your tutor profile is live. Students can now find you!"
+        "message": "Your tutor profile is live. Create your first lesson on the board!",
+        "createLesson": "Create first lesson",
+        "skipToHome": "Skip, go to dashboard"
       }
     }
   },
@@ -6638,9 +6641,9 @@
     },
     "sessions": {
       "title": "My Boards",
-      "newSession": "New Board",
+      "newSession": "New Lesson",
       "comingSoon": "Coming soon",
-      "hint": "Create your first board to get started",
+      "hint": "Create your first lesson to get started",
       "emptyTitle": "No boards yet",
       "emptyMessage": "Create your first board to start drawing",
       "createFirst": "Create Board",
@@ -6669,11 +6672,11 @@
       "duplicateError": "Failed to duplicate board"
     },
     "boards": {
-      "myBoards": "My Boards",
-      "myBoardsSubtitle": "Workspace for preparing materials",
-      "newBoard": "New Board",
-      "empty": "No boards yet",
-      "emptyMessage": "Create your first board to start drawing",
+      "myBoards": "My Lessons",
+      "myBoardsSubtitle": "Create and edit lessons on the board",
+      "newBoard": "New Lesson",
+      "empty": "No lessons yet",
+      "emptyMessage": "Create your first lesson to get started",
       "createFirst": "Create Board",
       "pageCount": "{n} pages",
       "untitled": "Untitled",

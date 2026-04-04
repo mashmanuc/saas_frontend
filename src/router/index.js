@@ -1047,6 +1047,30 @@ router.beforeEach(async (to, from, next) => {
     return next()
   }
 
+  // P0-6: Onboarding auto-trigger — redirect to onboarding if not completed
+  const isOnboardingRoute = to.path.startsWith('/onboarding') || to.path.startsWith('/checklist')
+  if (isAuthenticated && user?.role && !isOnboardingRoute) {
+    const isStudentOrTutor = [USER_ROLES.STUDENT, USER_ROLES.TUTOR].includes(user.role)
+    if (isStudentOrTutor) {
+      try {
+        const { useOnboardingStore } = await import('../modules/onboarding/stores/onboardingStore')
+        const onboardingStore = useOnboardingStore()
+        if (!onboardingStore.progress) {
+          await onboardingStore.loadProgress()
+        }
+        if (onboardingStore.shouldShowOnboarding) {
+          const onboardingPath = user.role === USER_ROLES.TUTOR
+            ? '/onboarding/tutor'
+            : '/onboarding/student'
+          return next(onboardingPath)
+        }
+      } catch (e) {
+        // Onboarding API failed — don't block navigation
+        console.warn('[router] Onboarding check failed', e)
+      }
+    }
+  }
+
   // Redirect from root path based on auth status
   if (to.path === '/') {
     if (isAuthenticated && user?.role) {

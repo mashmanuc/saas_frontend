@@ -65,7 +65,8 @@ onMounted(async () => {
 async function handleNext() {
   await store.completeCurrentStep()
   if (store.isCompleted) {
-    router.push('/dashboard')
+    // P0-5: First Value Moment — redirect to find a tutor
+    router.push('/tutors')
   }
 }
 
