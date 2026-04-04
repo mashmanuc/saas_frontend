@@ -55,6 +55,34 @@
               </button>
             </div>
 
+            <!-- P1-1: Social share buttons -->
+            <div class="wb-share-dialog__social-row">
+              <a
+                :href="`https://t.me/share/url?url=${encodeURIComponent(shareStatus.url)}&text=${encodeURIComponent(lessonTitle || 'Урок')}`"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="wb-share-dialog__social-btn wb-share-dialog__social-btn--telegram"
+              >
+                Telegram
+              </a>
+              <a
+                :href="`https://wa.me/?text=${encodeURIComponent((lessonTitle || 'Урок') + ' ' + shareStatus.url)}`"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="wb-share-dialog__social-btn wb-share-dialog__social-btn--whatsapp"
+              >
+                WhatsApp
+              </a>
+              <a
+                :href="`viber://forward?text=${encodeURIComponent((lessonTitle || 'Урок') + ' ' + shareStatus.url)}`"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="wb-share-dialog__social-btn wb-share-dialog__social-btn--viber"
+              >
+                Viber
+              </a>
+            </div>
+
             <!-- Revoke -->
             <div class="wb-share-dialog__revoke-section">
               <button
@@ -654,6 +682,49 @@ onMounted(() => {
 
 .wb-share-dialog__copy-btn:hover {
   background: var(--wb-brand-hover, #0052cc);
+}
+
+/* ── P1-1: Social share buttons ──────────────────────────────────────── */
+.wb-share-dialog__social-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.wb-share-dialog__social-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid var(--wb-toolbar-border, #e2e8f0);
+  color: var(--wb-fg, #475569);
+  background: var(--wb-canvas-bg, #f8fafc);
+  transition: all 0.15s;
+}
+
+.wb-share-dialog__social-btn:hover { transform: translateY(-1px); }
+
+.wb-share-dialog__social-btn--telegram:hover {
+  background: #e0f2fe;
+  border-color: #0ea5e9;
+  color: #0284c7;
+}
+
+.wb-share-dialog__social-btn--whatsapp:hover {
+  background: #dcfce7;
+  border-color: #22c55e;
+  color: #16a34a;
+}
+
+.wb-share-dialog__social-btn--viber:hover {
+  background: #f0e6ff;
+  border-color: #7360f2;
+  color: #7360f2;
 }
 
 /* ── Revoke ───────────────────────────────────────────────────────────── */

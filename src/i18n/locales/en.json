@@ -7577,7 +7577,13 @@
       "loadErrorTitle": "Loading error",
       "loadErrorMsg": "Could not load the lesson. Please try again later.",
       "backHome": "Home",
-      "lessonsCount": "{count} lessons"
+      "lessonsCount": "{count} lessons",
+      "ctaBanner": {
+        "title": "Learn on M4SH!",
+        "text": "Sign up for free — find a tutor or create your own lessons",
+        "registerStudent": "I'm a student",
+        "registerTutor": "I'm a tutor"
+      }
     },
     "replay": {
       "shareMoment": "Share moment",
@@ -7758,8 +7764,9 @@
       "publishing": "Publishing...",
       "success": "Lesson published!",
       "copyLink": "Copy link",
-      "sharePrompt": "Share with your student:",
+      "sharePrompt": "Share your lesson with students:",
       "shareTelegram": "Telegram",
+      "shareWhatsApp": "WhatsApp",
       "shareViber": "Viber",
       "consent": {
         "title": "Student privacy",
@@ -7780,8 +7787,11 @@
       "durationHours": "{hours} h {minutes} min"
     },
     "share": {
+      "title": "Share lesson",
       "ariaLabel": "Share lesson",
       "copyLink": "Copy link",
+      "sendTo": "Send via:",
+      "moreOptions": "More options...",
       "telegram": "Telegram",
       "qr": "QR code",
       "copied": "Link copied!",

@@ -158,6 +158,28 @@
           </router-link>
         </div>
 
+        <!-- P1-1: Registration CTA for non-authenticated users (growth engine) -->
+        <div v-if="!authStore.isAuthenticated" class="public-lesson-page__cta-banner">
+          <div class="public-lesson-page__cta-content">
+            <h3 class="public-lesson-page__cta-title">{{ t('knowledge.publicLesson.ctaBanner.title') }}</h3>
+            <p class="public-lesson-page__cta-text">{{ t('knowledge.publicLesson.ctaBanner.text') }}</p>
+          </div>
+          <div class="public-lesson-page__cta-actions">
+            <router-link
+              :to="`/auth/register/student?redirect=${encodeURIComponent(route.fullPath)}`"
+              class="public-lesson-page__cta-btn public-lesson-page__cta-btn--primary"
+            >
+              {{ t('knowledge.publicLesson.ctaBanner.registerStudent') }}
+            </router-link>
+            <router-link
+              :to="`/auth/register/tutor?redirect=${encodeURIComponent(route.fullPath)}`"
+              class="public-lesson-page__cta-btn public-lesson-page__cta-btn--secondary"
+            >
+              {{ t('knowledge.publicLesson.ctaBanner.registerTutor') }}
+            </router-link>
+          </div>
+        </div>
+
         <!-- Phase 16 INT-18: More lessons by this tutor -->
         <section v-if="relatedLessons.length > 0" class="public-lesson-page__related">
           <h2 class="public-lesson-page__related-title">{{ t('knowledge.publicLesson.moreLessons') }}</h2>
@@ -869,6 +891,87 @@ onUnmounted(() => {
 @media (prefers-reduced-motion: reduce) {
   .public-lesson-page__spinner {
     animation: none;
+  }
+}
+
+/* P1-1: Registration CTA banner */
+.public-lesson-page__cta-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 24px;
+  margin: 24px 0;
+  background: linear-gradient(135deg, #ede9fe 0%, #e0f2fe 100%);
+  border-radius: 12px;
+  border: 1px solid #c7d2fe;
+}
+
+.public-lesson-page__cta-content { flex: 1; }
+
+.public-lesson-page__cta-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e1b4b;
+  margin: 0 0 4px;
+}
+
+.public-lesson-page__cta-text {
+  font-size: 14px;
+  color: #4338ca;
+  margin: 0;
+}
+
+.public-lesson-page__cta-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.public-lesson-page__cta-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.public-lesson-page__cta-btn--primary {
+  background: #6366f1;
+  color: #fff;
+}
+
+.public-lesson-page__cta-btn--primary:hover {
+  background: #4f46e5;
+  transform: translateY(-1px);
+}
+
+.public-lesson-page__cta-btn--secondary {
+  background: rgba(255, 255, 255, 0.8);
+  color: #4338ca;
+  border: 1px solid #c7d2fe;
+}
+
+.public-lesson-page__cta-btn--secondary:hover {
+  background: #fff;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 640px) {
+  .public-lesson-page__cta-banner {
+    flex-direction: column;
+    text-align: center;
+  }
+  .public-lesson-page__cta-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  .public-lesson-page__cta-btn {
+    justify-content: center;
   }
 }
 </style>

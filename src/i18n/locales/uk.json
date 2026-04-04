@@ -7665,7 +7665,13 @@
       "loadErrorTitle": "Помилка завантаження",
       "loadErrorMsg": "Не вдалося завантажити урок. Спробуйте пізніше.",
       "backHome": "На головну",
-      "lessonsCount": "{count} уроків"
+      "lessonsCount": "{count} уроків",
+      "ctaBanner": {
+        "title": "Навчайтесь на M4SH!",
+        "text": "Реєструйтесь безкоштовно — знайдіть тьютора або створюйте уроки",
+        "registerStudent": "Я учень",
+        "registerTutor": "Я тьютор"
+      }
     },
     "replay": {
       "shareMoment": "Поділитися моментом",
@@ -7846,8 +7852,9 @@
       "publishing": "Публікація...",
       "success": "Урок опубліковано!",
       "copyLink": "Скопіювати посилання",
-      "sharePrompt": "Поділитися з учнем:",
+      "sharePrompt": "Поділіться уроком з учнями:",
       "shareTelegram": "Telegram",
+      "shareWhatsApp": "WhatsApp",
       "shareViber": "Viber",
       "consent": {
         "title": "Приватність студента",
@@ -7868,8 +7875,11 @@
       "durationHours": "{hours} год {minutes} хв"
     },
     "share": {
+      "title": "Поділитися уроком",
       "ariaLabel": "Поділитися уроком",
       "copyLink": "Копіювати посилання",
+      "sendTo": "Надіслати через:",
+      "moreOptions": "Інші варіанти...",
       "telegram": "Telegram",
       "qr": "QR-код",
       "copied": "Посилання скопійовано!",
