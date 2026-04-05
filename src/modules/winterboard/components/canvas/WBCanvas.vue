@@ -60,6 +60,18 @@
             @transform-end="handleStickyTransformEnd"
             @edit-text="startStickyTextEdit"
           />
+          <!-- PLAN_v4: Document Viewer — interactive asset with page navigation -->
+          <DocumentViewerAsset
+            v-else-if="asset.type === 'document_viewer'"
+            :asset="asset"
+            :is-selected="wbStore.selectedIds.includes(asset.id)"
+            :scale="props.zoom"
+            @select="handleDocViewerSelect"
+            @drag-end="handleDocViewerDragEnd"
+            @transform-end="handleDocViewerTransformEnd"
+            @page-change="handleDocViewerPageChange"
+            @expand="handleDocViewerExpand"
+          />
           <!-- Phase 35: Image with borderRadius > 0 — wrap in Group with clipFunc -->
           <v-group
             v-else-if="(asset.borderRadius ?? 0) > 0"
@@ -395,6 +407,7 @@ import { useLaserPointer } from '../../composables/useLaserPointer'
 import { useDuplicate } from '../../composables/useDuplicate'
 import { useStickyNotes } from '../../composables/useStickyNotes'
 import WBStickyNote from './WBStickyNote.vue'
+import DocumentViewerAsset from './DocumentViewerAsset.vue'
 import AudioBadge from './AudioBadge.vue'
 import { audioManager } from '../../utils/audioManager'
 import AudioPlayerObject from '../board/objects/AudioPlayerObject.vue'
@@ -725,6 +738,8 @@ const emit = defineEmits<{
   // v5 A4: Tool change from keyboard shortcut
   'tool-change': [tool: WBToolType]
   'laser-broadcast': [data: { x: number; y: number; active: boolean; page_id?: string }]
+  // PLAN_v4: Document Viewer expand (presentation fullscreen)
+  'presentation-expand': [asset: WBAsset]
 }>()
 
 // ─── Refs ───────────────────────────────────────────────────────────────────
@@ -1415,6 +1430,85 @@ function handleStickyDragEnd(id: string, x: number, y: number): void {
 
 function handleStickyTransformEnd(id: string, w: number, h: number): void {
   stickyNotes.updateDimensions(id, w, h)
+}
+
+// ─── PLAN_v4: Document Viewer handlers ──────────────────────────────────────
+
+function handleDocViewerSelect(id: string): void {
+  if (currentTool.value !== 'select') return
+  wbStore.selectItems([id])
+  emit('select', id)
+
+  // Find the Konva Group node for this document viewer
+  const layer = assetsLayerRef.value?.getNode?.()
+  const node = layer?.findOne(`#${id}`) ?? null
+  if (!node) return
+
+  // Set selectedNode first — this triggers v-transformer to render (v-if="selectedNode")
+  selectedNode.value = node
+
+  // After v-transformer renders, attach it to the node for resize handles
+  nextTick(() => {
+    nextTick(() => {
+      const transformer = transformerRef.value?.getNode()
+      if (transformer && node) {
+        transformer.nodes([node])
+      }
+    })
+  })
+}
+
+function handleDocViewerDragEnd(id: string, x: number, y: number): void {
+  const idx = assets.value.findIndex(a => a.id === id)
+  if (idx === -1) return
+  const updated = { ...assets.value[idx], x, y }
+  assets.value[idx] = updated
+  emit('asset-update', updated)
+}
+
+function handleDocViewerTransformEnd(id: string, w: number, h: number): void {
+  const idx = assets.value.findIndex(a => a.id === id)
+  if (idx === -1) return
+  const layer = assetsLayerRef.value?.getNode?.()
+  const node = layer?.findOne(`#${id}`)
+  if (node) {
+    // For Group nodes: compute final size from scale * original dimensions
+    const scaleX = node.scaleX()
+    const scaleY = node.scaleY()
+    const origW = assets.value[idx].w
+    const origH = assets.value[idx].h
+    const finalW = Math.max(200, Math.round(origW * scaleX))
+    const finalH = Math.max(200, Math.round(origH * scaleY))
+    // Reset scale to 1 — we store absolute w/h
+    node.scaleX(1)
+    node.scaleY(1)
+    const updated = { ...assets.value[idx], x: node.x(), y: node.y(), w: finalW, h: finalH }
+    assets.value[idx] = updated
+    emit('asset-update', updated)
+  } else {
+    // Fallback: use values from component emit
+    const updated = { ...assets.value[idx], w, h }
+    assets.value[idx] = updated
+    emit('asset-update', updated)
+  }
+}
+
+function handleDocViewerPageChange(id: string, page: number): void {
+  const idx = assets.value.findIndex(a => a.id === id)
+  if (idx === -1) return
+  const asset = assets.value[idx]
+  // Clamp page
+  const totalPages = asset.totalPages ?? 0
+  const clamped = Math.max(0, Math.min(page, totalPages - 1))
+  const updated = { ...asset, currentPage: clamped }
+  assets.value[idx] = updated
+  // Broadcast only currentPage (P3: pages[] NOT in WS)
+  emit('asset-update', updated)
+}
+
+function handleDocViewerExpand(asset: WBAsset): void {
+  // Emit to room component — it will handle fullscreen presentation
+  emit('presentation-expand', asset)
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────

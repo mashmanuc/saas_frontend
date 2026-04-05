@@ -24,7 +24,7 @@ export interface SidebarDragPayload {
 
 export interface ResolveDropResponse {
   board_object: {
-    content_ref: {
+    content_ref?: {
       content_id: number
       content_version: number
       content_type: string
@@ -37,6 +37,12 @@ export interface ResolveDropResponse {
     thumbnail?: string | null
     /** Phase 10 P3: YouTube embed URL (present when type='youtube_player') */
     youtubeUrl?: string
+    // PLAN_v4: Document Viewer fields (present when type='document_viewer')
+    currentPage?: number
+    totalPages?: number
+    /** Page URLs — present only in initial drop response, NOT in WS/state */
+    pages?: Array<{ index: number; url: string }>
+    viewerMode?: 'compact' | 'expanded'
   }
   drop_mode: string
 }
@@ -48,5 +54,6 @@ export const DEFAULT_BOARD_SIZES: Record<string, { w: number; h: number }> = {
   audio_player:   { w: 360, h: 80 },    // horizontal player widget
   video_player:   { w: 640, h: 360 },   // 16:9
   youtube_player: { w: 640, h: 360 },   // 16:9
-  presentation:   { w: 640, h: 480 },   // 4:3
+  presentation:     { w: 640, h: 480 },   // 4:3
+  document_viewer:   { w: 420, h: 594 },   // A4 ratio (1:√2) — same as pdf
 }

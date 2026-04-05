@@ -15,11 +15,11 @@
       </button>
     </div>
 
-    <!-- Drag full PDF = page 1 -->
+    <!-- PLAN_v4: Drag full PDF = document_viewer (NO extra → backend returns document_viewer) -->
     <div
       class="pdf-selector__full"
       draggable="true"
-      @dragstart="dragPage($event, 1)"
+      @dragstart="dragFullDocument($event)"
       @dragend="onDragEnd"
     >
       <span class="pdf-selector__full-icon">&#x1F4C4;</span>
@@ -169,6 +169,32 @@ function dragPage(e: DragEvent, pageNumber: number) {
   }))
 
   // Hide browser native drag ghost
+  const phantom = document.createElement('div')
+  phantom.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0'
+  document.body.appendChild(phantom)
+  e.dataTransfer!.setDragImage(phantom, 0, 0)
+  requestAnimationFrame(() => { if (phantom.parentNode) document.body.removeChild(phantom) })
+}
+
+// PLAN_v4: Drag full document — NO extra → backend returns type='document_viewer'
+function dragFullDocument(e: DragEvent) {
+  const payload = {
+    content_item_id: props.item.content_item_id,
+    asset_category: 'pdf',
+    content_type: 'pdf',
+    // NO extra → backend detects whole-document drag
+  }
+  e.dataTransfer?.setData(SIDEBAR_DRAG_MIME, JSON.stringify(payload))
+  e.dataTransfer!.effectAllowed = 'copy'
+
+  window.dispatchEvent(new CustomEvent('wb-drag-preview', {
+    detail: {
+      asset_category: 'pdf',
+      thumbnail_url: sortedPages.value[0]?.thumbnail_url ?? null,
+      title: props.item.title,
+    },
+  }))
+
   const phantom = document.createElement('div')
   phantom.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0'
   document.body.appendChild(phantom)

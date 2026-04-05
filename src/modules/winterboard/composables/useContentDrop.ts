@@ -271,6 +271,9 @@ export function useContentDrop(options: UseContentDropOptions) {
 
       const { board_object, drop_mode } = response
 
+      console.info('[WB:Drop] resolve-drop response: drop_mode=%s board_object.type=%s payload.extra=%o',
+        drop_mode, board_object.type, payload.extra)
+
       if (drop_mode === 'not_droppable') {
         console.warn('[useContentDrop] Content not droppable:', payload.content_type)
         return
@@ -325,14 +328,51 @@ export function useContentDrop(options: UseContentDropOptions) {
         return
       }
 
-      // All other modes — backend built the board_object
+      // PLAN_v4: Document Viewer — interactive asset on canvas with page navigation
       const boardType = (board_object.type as string) || 'image'
-      let sizes = DEFAULT_BOARD_SIZES[boardType] ?? { w: 400, h: 300 }
 
-      // Content-aware sizing: load actual image dimensions for all visual asset types
-      // Normalize /media//media/ → /media/ (legacy broken URL від старого _to_absolute_url)
+      // Normalize src (shared between document_viewer and generic path)
       const rawSrc = (board_object.src as string) || ''
       const src = rawSrc.replace(/^\/media\/\/media\//, '/media/')
+
+      if (boardType === 'document_viewer') {
+        const sizes = DEFAULT_BOARD_SIZES['document_viewer'] ?? { w: 420, h: 594 }
+        const contentRef = board_object.content_ref
+
+        if (!src) {
+          console.warn('[WB:Drop] document_viewer has no src — skipping')
+          return
+        }
+
+        const asset: WBAsset = {
+          id: `docviewer-${contentRef?.content_id ?? 0}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          type: 'document_viewer',
+          src,
+          x: dropPosition.x - sizes.w / 2,
+          y: dropPosition.y - sizes.h / 2,
+          w: sizes.w,
+          h: sizes.h,
+          rotation: 0,
+          locked: false,
+          // PLAN_v4 fields — pages[] is local state, NOT synced via WS
+          content_ref: contentRef ? {
+            content_id: contentRef.content_id,
+            content_type: contentRef.content_type as 'pdf' | 'document' | 'presentation',
+          } : undefined,
+          currentPage: board_object.currentPage ?? 0,
+          totalPages: board_object.totalPages ?? 0,
+          // pages[] NOT stored in asset — DocumentViewerAsset fetches on demand
+          viewerMode: 'compact',
+        }
+
+        console.info('[WB:Drop] document_viewer: pages=%d src=%s', asset.totalPages, src)
+        onAssetAdd(asset)
+        if (payload.content_item_id) trackMaterial(payload.content_item_id, dropPosition)
+        return
+      }
+
+      // All other modes — backend built the board_object
+      let sizes = DEFAULT_BOARD_SIZES[boardType] ?? { w: 400, h: 300 }
 
       console.info('[WB:Drop] drop_mode=%s boardType=%s src=%s', drop_mode, boardType, src || '(empty)')
 
@@ -352,8 +392,10 @@ export function useContentDrop(options: UseContentDropOptions) {
         }
       }
 
+      // Safe content_ref access (optional after PLAN_v4)
+      const contentId = board_object.content_ref?.content_id ?? payload.content_item_id ?? 0
       const asset: WBAsset = {
-        id: `content-${board_object.content_ref.content_id}-${Date.now()}`,
+        id: `content-${contentId}-${Date.now()}`,
         type: boardType as WBAsset['type'],
         src,
         x: dropPosition.x - sizes.w / 2,

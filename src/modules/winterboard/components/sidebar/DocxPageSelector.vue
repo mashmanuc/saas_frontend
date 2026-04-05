@@ -3,27 +3,27 @@
     <div class="docx-selector__header">
       <span class="docx-selector__title">{{ item.title }}</span>
       <span class="docx-selector__count">
-        {{ sortedPages.length }} {{ sortedPages.length === 1 ? 'page' : 'pages' }}
+        {{ sortedPages.length }} стор.
       </span>
       <button
         class="docx-selector__close"
         type="button"
-        aria-label="Close"
+        aria-label="Закрити"
         @click="$emit('close')"
       >
         &#x2715;
       </button>
     </div>
 
-    <!-- Drag full document = page 1 -->
+    <!-- PLAN_v4: Drag full document = document_viewer (NO extra → backend returns document_viewer) -->
     <div
       class="docx-selector__full"
       draggable="true"
-      @dragstart="dragPage($event, 1)"
+      @dragstart="dragFullDocx($event)"
       @dragend="onDragEnd"
     >
       <span class="docx-selector__full-icon">&#x1F4DD;</span>
-      <span>Drag full document</span>
+      <span>Перетягнути весь документ</span>
     </div>
 
     <!-- Page thumbnail grid -->
@@ -174,6 +174,32 @@ function dragPage(e: DragEvent, pageNumber: number) {
   }))
 
   // Hide browser native drag ghost
+  const phantom = document.createElement('div')
+  phantom.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0'
+  document.body.appendChild(phantom)
+  e.dataTransfer!.setDragImage(phantom, 0, 0)
+  requestAnimationFrame(() => { if (phantom.parentNode) document.body.removeChild(phantom) })
+}
+
+// PLAN_v4: Drag full DOCX — NO extra → backend returns type='document_viewer'
+function dragFullDocx(e: DragEvent) {
+  const payload = {
+    content_item_id: props.item.content_item_id,
+    asset_category: 'document',
+    content_type: 'document',
+    // NO extra → backend detects whole-document drag
+  }
+  e.dataTransfer?.setData(SIDEBAR_DRAG_MIME, JSON.stringify(payload))
+  e.dataTransfer!.effectAllowed = 'copy'
+
+  window.dispatchEvent(new CustomEvent('wb-drag-preview', {
+    detail: {
+      asset_category: 'document',
+      thumbnail_url: sortedPages.value[0]?.image_url ?? null,
+      title: props.item.title,
+    },
+  }))
+
   const phantom = document.createElement('div')
   phantom.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0'
   document.body.appendChild(phantom)

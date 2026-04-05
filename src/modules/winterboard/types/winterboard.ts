@@ -110,11 +110,28 @@ export type WBTextElement = WBStroke & {
   text: string
 }
 
+// ─── Document Viewer (PLAN_v4) ──────────────────────────────────────────────
+
+/** Content reference for document_viewer assets — links to backend ContentItem */
+export interface WBContentRef {
+  content_id: number
+  content_type: 'pdf' | 'document' | 'presentation' | string
+}
+
+/** Single page/slide in a document viewer — lightweight (thumbnail URL only) */
+export interface WBViewerPage {
+  index: number    // 0-based
+  url: string      // thumbnail_url (compressed, NOT full resolution)
+}
+
+/** Alias for backward compat — used by GenericDocumentViewer & normalizeViewerItems */
+export type ViewerSlide = WBViewerPage
+
 // ─── Asset ──────────────────────────────────────────────────────────────────
 
 export interface WBAsset {
   id: string
-  type: 'image' | 'sticky' | 'audio_player' | 'video_player' | 'youtube_player'
+  type: 'image' | 'sticky' | 'audio_player' | 'video_player' | 'youtube_player' | 'document_viewer'
   src: string
   x: number
   y: number
@@ -147,6 +164,17 @@ export interface WBAsset {
   // Object Audio: voice annotation attached to this asset
   audioUrl?: string        // CDN URL of recorded audio
   audioDuration?: number   // duration in seconds
+  // PLAN_v4: Document Viewer fields (present when type='document_viewer')
+  // viewer = canvas asset with page navigation (like sticky note but for documents)
+  content_ref?: WBContentRef
+  /** Current page/slide index (0-based) */
+  currentPage?: number
+  /** Total number of pages/slides */
+  totalPages?: number
+  /** Page URLs for navigation — NOT persisted in WS/state, hydrated from API */
+  pages?: WBViewerPage[]
+  /** Display mode: compact (default) or expanded */
+  viewerMode?: 'compact' | 'expanded'
 }
 
 // Phase 10 P5: Lesson navigation marker — lightweight anchor in the replay timeline.

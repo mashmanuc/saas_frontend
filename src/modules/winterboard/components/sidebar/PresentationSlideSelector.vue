@@ -26,11 +26,11 @@
       </button>
     </div>
 
-    <!-- Drag full presentation (slide 1) -->
+    <!-- PLAN_v4: Drag full presentation = document_viewer (NO extra → backend returns document_viewer) -->
     <div
       class="slide-selector__full"
       draggable="true"
-      @dragstart="dragSlide($event, 1)"
+      @dragstart="dragFullPresentation($event)"
       @dragend="onDragEnd"
     >
       <span class="slide-selector__full-icon">📊</span>
@@ -207,6 +207,32 @@ function dragSlide(e: DragEvent, slideIndex: number) {
   }))
 
   // Hide browser native drag ghost
+  const phantom = document.createElement('div')
+  phantom.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0'
+  document.body.appendChild(phantom)
+  e.dataTransfer!.setDragImage(phantom, 0, 0)
+  requestAnimationFrame(() => { if (phantom.parentNode) document.body.removeChild(phantom) })
+}
+
+// PLAN_v4: Drag full presentation — NO extra → backend returns type='document_viewer'
+function dragFullPresentation(e: DragEvent) {
+  const payload = {
+    content_item_id: props.item.content_item_id,
+    asset_category: 'presentation',
+    content_type: 'presentation',
+    // NO extra → backend detects whole-document drag
+  }
+  e.dataTransfer?.setData(SIDEBAR_DRAG_MIME, JSON.stringify(payload))
+  e.dataTransfer!.effectAllowed = 'copy'
+
+  window.dispatchEvent(new CustomEvent('wb-drag-preview', {
+    detail: {
+      asset_category: 'presentation',
+      thumbnail_url: sortedSlides.value[0]?.image_url ?? props.item.thumbnail_url ?? null,
+      title: props.item.title,
+    },
+  }))
+
   const phantom = document.createElement('div')
   phantom.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0'
   document.body.appendChild(phantom)

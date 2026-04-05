@@ -259,6 +259,7 @@
           @cursor-move="handleCursorMove"
           @zoom-change="handleZoomChange"
           @scroll-change="handleScrollChange"
+          @presentation-expand="handlePresentationExpand"
         />
 
         <!-- Remote cursors -->
@@ -989,6 +990,12 @@ function handleAssetDelete(assetId: string): void {
 
 function handleSelect(id: string | null): void {
   selectedId.value = id
+}
+
+// PLAN_v4: Presentation expand (fullscreen mode for presentation document_viewer)
+function handlePresentationExpand(asset: WBAsset): void {
+  console.info('[WB:Classroom] Presentation expand requested:', asset.id, asset.content_ref)
+  // TODO(PLAN_v4): Implement fullscreen presentation overlay (backlog)
 }
 
 function handleCursorMove(payload: { x: number; y: number; tool: WBToolType; color: string }): void {

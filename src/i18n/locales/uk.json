@@ -6956,6 +6956,18 @@
     "emptyCanvas": {
       "hint": "Почніть малювати тут"
     },
+    "documentViewer": {
+      "pdf": "PDF",
+      "document": "Документ",
+      "presentation": "Презентація",
+      "loading": "Завантаження…",
+      "prevPage": "Попередня сторінка",
+      "nextPage": "Наступна сторінка",
+      "expand": "Розгорнути",
+      "pageOf": "{current} / {total}",
+      "tooManyPages": "Документ має забагато сторінок. Максимум: {max}",
+      "documentNotReady": "Документ ще обробляється"
+    },
     "objectAudio": {
       "record": "Записати",
       "stop": "Стоп",
@@ -7109,7 +7121,7 @@
     "pdfSelector": {
       "pageCount": "{count} стор.",
       "close": "Закрити",
-      "dragFull": "Перетягнути (стор. 1)",
+      "dragFull": "Перетягнути весь PDF",
       "pageAlt": "Сторінка {n}",
       "noPages": "Сторінки недоступні",
       "loadingPages": "Завантаження сторінок..."
@@ -7117,7 +7129,7 @@
     "slideSelector": {
       "slideCount": "{count} сл.",
       "close": "Закрити",
-      "dragFull": "Перетягнути (слайд 1)",
+      "dragFull": "Перетягнути всю презентацію",
       "slideAlt": "Слайд {n}",
       "noSlides": "Слайди ще обробляються"
     },

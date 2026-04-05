@@ -293,6 +293,7 @@
           @cursor-move="handleCursorMove"
           @zoom-change="handleZoomChange"
           @scroll-change="handleScrollChange"
+          @presentation-expand="handlePresentationExpand"
         />
 
         <!-- B6.3: Empty canvas hint — shown when page has no strokes/assets -->
@@ -354,6 +355,16 @@
       >
         <div class="wb-solo-room__resize-grip" />
       </div>
+      <!-- Sidebar collapse/expand tab — sits outside sidebar to avoid overflow clip -->
+      <button
+        v-if="showMaterialsSidebar"
+        class="wb-solo-room__sidebar-toggle"
+        type="button"
+        :aria-label="sidebarCollapsedBefore !== null ? t('winterboard.room.sidebarExpand') : t('winterboard.room.sidebarCollapse')"
+        @click="toggleSidebarCollapse"
+      >
+        {{ sidebarCollapsedBefore !== null ? '\u25B6' : '\u25C0' }}
+      </button>
 
       <!-- Right sidebar — always shows materials (selection toolbar handles object actions inline) -->
       <aside
@@ -1256,8 +1267,8 @@ let isSidebarResizing = false
 
 /** Computed style: disables min-width when collapsed so sidebar can hide fully */
 const sidebarStyle = computed(() => ({
-  width: sidebarWidth.value + 'px',
-  ...(sidebarCollapsedBefore.value !== null ? { minWidth: '0', overflow: 'hidden' } : {}),
+  width: sidebarCollapsedBefore.value !== null ? '0px' : sidebarWidth.value + 'px',
+  ...(sidebarCollapsedBefore.value !== null ? { minWidth: '0', overflow: 'visible', borderLeft: 'none' } : {}),
 }))
 
 /** Snaps value to nearest SNAP_WIDTHS entry if within SNAP_THRESHOLD */
@@ -1561,6 +1572,13 @@ function handleAssetDelete(assetId: string): void {
 
 function handleSelect(id: string | null): void {
   selectedId.value = id
+}
+
+// PLAN_v4: Presentation expand (fullscreen mode for presentation document_viewer)
+function handlePresentationExpand(asset: WBAsset): void {
+  // MVP: log + future: open fullscreen overlay
+  console.info('[WB:Room] Presentation expand requested:', asset.id, asset.content_ref)
+  // TODO(PLAN_v4): Implement fullscreen presentation overlay (backlog)
 }
 
 // ─── Handlers: Presence / Cursors (A3.2) ─────────────────────────────────────
@@ -2452,6 +2470,7 @@ watch(() => store.workspaceName, (name) => {
   display: flex;
   flex: 1;
   overflow: hidden;
+  position: relative;
 }
 
 .wb-solo-room__toolbar {
@@ -2529,6 +2548,26 @@ watch(() => store.workspaceName, (name) => {
 .wb-solo-room__resize-handle--collapsed:hover .wb-solo-room__resize-grip {
   border-left-color: white;
   background: none;
+}
+.wb-solo-room__sidebar-toggle {
+  flex-shrink: 0;
+  width: 20px;
+  border: none;
+  border-left: 1px solid var(--wb-border, #e2e8f0);
+  background: var(--wb-bg-secondary, #f8fafc);
+  color: var(--wb-text-secondary, #64748b);
+  font-size: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 17;
+  transition: background 0.15s, color 0.15s;
+  padding: 0;
+}
+.wb-solo-room__sidebar-toggle:hover {
+  background: var(--wb-bg-hover, #f1f5f9);
+  color: var(--wb-text-primary, #334155);
 }
 
 /* ── Right content sidebar (materials from LearningGroup, resizable) ───── */

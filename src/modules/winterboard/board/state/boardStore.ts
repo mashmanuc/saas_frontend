@@ -491,11 +491,18 @@ export const useWBStore = defineStore('wb-board', {
     serializedStateForSave(state): WBWorkspaceState {
       const pages = state.pages.map(page => ({
         ...page,
-        assets: page.assets.map(asset =>
-          typeof asset.src === 'string' && asset.src.startsWith('data:')
-            ? { ...asset, src: '', _localOnly: true }
-            : asset,
-        ),
+        assets: page.assets.map(asset => {
+          // Strip data: URLs (too large for backend)
+          if (typeof asset.src === 'string' && asset.src.startsWith('data:')) {
+            return { ...asset, src: '', _localOnly: true }
+          }
+          // document_viewer: strip pages[] — NOT persisted, fetched on demand
+          if (asset.type === 'document_viewer') {
+            const { pages: _pages, ...rest } = asset
+            return rest
+          }
+          return asset
+        }),
       }))
       return { pages, currentPageIndex: state.currentPageIndex }
     },
@@ -585,7 +592,17 @@ export const useWBStore = defineStore('wb-board', {
       if (session.state) {
         const state = session.state
         if (state.pages && Array.isArray(state.pages) && state.pages.length > 0) {
-          this.pages = state.pages as WBPage[]
+          // Strip pages[] from document_viewer assets (legacy sessions may have them)
+          this.pages = (state.pages as WBPage[]).map(page => ({
+            ...page,
+            assets: page.assets.map(asset => {
+              if (asset.type === 'document_viewer' && asset.pages) {
+                const { pages: _p, ...rest } = asset
+                return rest
+              }
+              return asset
+            }),
+          }))
         } else {
           this.pages = [createEmptyPage(0)]
         }
@@ -1784,8 +1801,16 @@ export const useWBStore = defineStore('wb-board', {
       this.currentPageIndex = insertAt
       this.markDirty()
 
-      // Phase 20: emit operation for recording
+      // Phase 20: emit operation for recording (include full content for diff-save)
       if (this.mode === 'edit') {
+        // Strip document_viewer pages[] from assets (not persisted)
+        const cleanAssets = newPage.assets.map(a => {
+          if (a.type === 'document_viewer' && a.pages) {
+            const { pages: _p, ...rest } = a
+            return rest
+          }
+          return a
+        })
         _emitOperation({
           op_type: 'page_add',
           page_id: newPage.id,
@@ -1794,9 +1819,14 @@ export const useWBStore = defineStore('wb-board', {
               id: newPage.id,
               name: newPage.name,
               background: newPage.background,
+              backgroundColor: newPage.backgroundColor,
               width: newPage.width,
               height: newPage.height,
+              grid: newPage.grid,
+              strokes: newPage.strokes,
+              assets: cleanAssets,
             },
+            insertAt,
           },
           timestamp: Date.now(),
         })

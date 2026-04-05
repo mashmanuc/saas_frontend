@@ -6428,14 +6428,14 @@
     "slideSelector": {
       "slideCount": "{count} slides",
       "close": "Close",
-      "dragFull": "Drag (slide 1)",
+      "dragFull": "Drag full presentation",
       "slideAlt": "Slide {n}",
       "noSlides": "Slides still loading"
     },
     "pdfSelector": {
       "pageCount": "{count} pages",
       "close": "Close",
-      "dragFull": "Drag (page 1)",
+      "dragFull": "Drag full PDF",
       "pageAlt": "Page {n}",
       "noPages": "Pages still loading",
       "loadingPages": "Loading pages..."
@@ -7060,6 +7060,18 @@
     },
     "emptyCanvas": {
       "hint": "Start drawing here"
+    },
+    "documentViewer": {
+      "pdf": "PDF",
+      "document": "Document",
+      "presentation": "Presentation",
+      "loading": "Loading…",
+      "prevPage": "Previous page",
+      "nextPage": "Next page",
+      "expand": "Expand",
+      "pageOf": "{current} / {total}",
+      "tooManyPages": "Document has too many pages. Maximum: {max}",
+      "documentNotReady": "Document is still processing"
     },
     "objectAudio": {
       "record": "Record",
