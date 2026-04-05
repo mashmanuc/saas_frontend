@@ -293,7 +293,6 @@
           @cursor-move="handleCursorMove"
           @zoom-change="handleZoomChange"
           @scroll-change="handleScrollChange"
-          @presentation-open="handlePresentationOpen"
         />
 
         <!-- B6.3: Empty canvas hint — shown when page has no strokes/assets -->
@@ -664,18 +663,6 @@
       @text-format="handleTextFormat"
       @audio-uploaded="handleAudioUploaded"
       @audio-deleted="handleAudioDeleted"
-      @interaction-add="handleInteractionAdd"
-      @interaction-update="handleInteractionUpdate"
-      @interaction-delete="handleInteractionDelete"
-      @interaction-preview="handleInteractionPreview"
-    />
-
-    <!-- Presentation player (launched from board object) -->
-    <PresentationPlayer
-      v-if="presentationPlayerItem"
-      :item="presentationPlayerItem"
-      :start-index="presentationStartSlide"
-      @close="presentationPlayerItem = null"
     />
 
     <!-- Phase 11: Replay mode banner -->
@@ -797,7 +784,6 @@ import { BOARD_TEMPLATES } from '../data/boardTemplates'
 import WBGridButton from '../components/canvas/WBGridButton.vue'
 import WBTouchContextMenu from '../components/canvas/WBTouchContextMenu.vue'
 import WBSelectionToolbar from '../components/canvas/WBSelectionToolbar.vue'
-import PresentationPlayer from '../components/sidebar/PresentationPlayer.vue'
 import WBReplayControls from '../components/replay/WBReplayControls.vue'
 import WBLessonMap from '../components/replay/WBLessonMap.vue'
 import WBMarkerCreateModal from '../components/replay/WBMarkerCreateModal.vue'
@@ -1401,95 +1387,6 @@ function handleAudioDeleted(objectId: string) {
   } else {
     const { audioUrl: _a, audioDuration: _d, ...rest } = obj as import('../types/winterboard').WBStroke
     handleStrokeUpdate({ ...rest, audioUrl: undefined, audioDuration: undefined } as import('../types/winterboard').WBStroke)
-  }
-}
-
-// ── Interaction handlers (PLAN v2) ──────────────────────────────────────────
-
-function handleInteractionAdd(objectId: string, content: string, label?: string) {
-  const obj = store.getObjectById(objectId)
-  if (!obj) return
-  const existing = obj.interactions ?? []
-  const newItem: import('../types/winterboard').WBInteraction = {
-    id: crypto.randomUUID(),
-    type: 'text',
-    content: content.trim().slice(0, 2000),
-    label: label?.trim() || undefined,
-    createdAt: new Date().toISOString(),
-  }
-  const updated = [...existing, newItem]
-  _patchObjectInteractions(objectId, obj, updated)
-}
-
-function handleInteractionUpdate(objectId: string, interactionId: string, content: string, label?: string) {
-  const obj = store.getObjectById(objectId)
-  if (!obj) return
-  const existing = obj.interactions ?? []
-  const updated = existing.map(i =>
-    i.id === interactionId
-      ? { ...i, content: content.trim().slice(0, 2000), label: label?.trim() || undefined }
-      : i,
-  )
-  _patchObjectInteractions(objectId, obj, updated)
-}
-
-function handleInteractionDelete(objectId: string, interactionId: string) {
-  const obj = store.getObjectById(objectId)
-  if (!obj) return
-  const existing = obj.interactions ?? []
-  const filtered = existing.filter(i => i.id !== interactionId)
-  _patchObjectInteractions(objectId, obj, filtered.length > 0 ? filtered : undefined)
-}
-
-function handleInteractionPreview(objectId: string, interactionId: string) {
-  canvasRef.value?.toggleInteraction?.(objectId, interactionId)
-}
-
-// ── Presentation launch from board (PLAN v2 §2) ────────────────────────────
-
-const presentationPlayerItem = ref<AllowedContentItem | null>(null)
-const presentationStartSlide = ref(0)
-
-async function handlePresentationOpen(asset: import('../types/winterboard').WBAsset) {
-  const contentRef = (asset as any).content_ref
-  if (!contentRef?.content_id) return
-
-  try {
-    const { learningContentApi } = await import('@/modules/learning-content/api/learningContentApi')
-    const item = await learningContentApi.getItemDetail(contentRef.content_id)
-    const status = (item as any)?.processing_status
-    if (!item || status !== 'ready') {
-      const { useToast } = await import('../composables/useToast')
-      const { showToast } = useToast()
-      showToast(
-        status === 'processing'
-          ? t('winterboard.interactions.presentationProcessing')
-          : t('winterboard.interactions.presentationNotFound'),
-        'warning',
-      )
-      return
-    }
-    presentationPlayerItem.value = item as unknown as AllowedContentItem
-    // Parse slide index from src URL: ".../slide_3.png" → index 2 (0-based)
-    const slideMatch = asset.src?.match(/slide_(\d+)\.png/)
-    presentationStartSlide.value = slideMatch ? parseInt(slideMatch[1], 10) - 1 : 0
-  } catch {
-    const { useToast } = await import('../composables/useToast')
-    const { showToast } = useToast()
-    showToast(t('winterboard.interactions.presentationNotFound'), 'error')
-  }
-}
-
-function _patchObjectInteractions(
-  objectId: string,
-  obj: import('../types/winterboard').WBStroke | import('../types/winterboard').WBAsset,
-  interactions: import('../types/winterboard').WBInteraction[] | undefined,
-) {
-  const isAsset = 'w' in obj && 'h' in obj && 'type' in obj
-  if (isAsset) {
-    handleAssetUpdate({ ...(obj as import('../types/winterboard').WBAsset), interactions })
-  } else {
-    handleStrokeUpdate({ ...(obj as import('../types/winterboard').WBStroke), interactions })
   }
 }
 

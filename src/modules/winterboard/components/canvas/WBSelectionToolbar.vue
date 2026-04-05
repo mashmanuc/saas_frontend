@@ -183,117 +183,6 @@
         </svg>
       </button>
 
-      <!-- ── Text interaction section (single object, tutor only) ── -->
-      <template v-if="showTextSection">
-        <span class="wb-selection-toolbar__divider wb-selection-toolbar__divider--text" />
-
-        <div
-          class="wb-selection-toolbar__text-group"
-          :class="{
-            'wb-selection-toolbar__text-group--editing': isEditingInteraction,
-            'wb-selection-toolbar__text-group--has-text': hasTextInteraction && !isEditingInteraction,
-          }"
-        >
-          <!-- Idle: no text yet -->
-          <template v-if="!hasTextInteraction && !isEditingInteraction">
-            <button
-              type="button"
-              class="wb-selection-toolbar__btn wb-selection-toolbar__btn--text"
-              :disabled="isLocked"
-              :title="t('winterboard.interactions.addText')"
-              @click="startAddInteraction"
-            >
-              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
-                <path d="M2 3.5h11M7.5 3.5V12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-              </svg>
-            </button>
-          </template>
-
-          <!-- Has text: Show + Edit + Delete -->
-          <template v-else-if="hasTextInteraction && !isEditingInteraction">
-            <button
-              type="button"
-              class="wb-selection-toolbar__btn"
-              :title="t('winterboard.interactions.showText')"
-              @click="$emit('interaction-preview', selectedObjId, textInteraction!.id)"
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" stroke="currentColor" stroke-width="1.4"/>
-                <circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.4"/>
-              </svg>
-            </button>
-            <button
-              type="button"
-              class="wb-selection-toolbar__btn"
-              :disabled="isLocked"
-              :title="t('winterboard.interactions.editText')"
-              @click="startEditInteraction(textInteraction!)"
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                <path d="M9.5 1.5l3 3-8 8H1.5v-3l8-8z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </button>
-            <button
-              type="button"
-              class="wb-selection-toolbar__btn wb-selection-toolbar__btn--danger"
-              :disabled="isLocked"
-              :title="t('winterboard.interactions.deleteText')"
-              @click="handleDeleteInteraction(textInteraction!.id)"
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                <path d="M2 3.5h10M4.667 3.5V2.333A.667.667 0 015.333 1.667h3.334a.667.667 0 01.666.666V3.5M11 3.5v8a1 1 0 01-1 1H4a1 1 0 01-1-1v-8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </button>
-          </template>
-
-          <!-- Editing: active indicator (click to cancel) -->
-          <template v-else>
-            <button
-              type="button"
-              class="wb-selection-toolbar__btn wb-selection-toolbar__btn--text wb-selection-toolbar__btn--active"
-              :title="t('winterboard.interactions.cancel')"
-              @click="cancelEditInteraction"
-            >
-              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
-                <path d="M2 3.5h11M7.5 3.5V12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-              </svg>
-            </button>
-          </template>
-        </div>
-
-        <!-- Floating text editor (below toolbar) -->
-        <div v-if="isEditingInteraction" class="wb-selection-toolbar__text-editor" @click.stop @pointerdown.stop>
-          <textarea
-            ref="interactionTextareaRef"
-            v-model="editingText"
-            class="wb-selection-toolbar__text-textarea"
-            :placeholder="t('winterboard.interactions.textPlaceholder')"
-            :maxlength="2000"
-            rows="3"
-            @keydown.ctrl.enter="saveInteraction"
-            @keydown.escape="cancelEditInteraction"
-          />
-          <div class="wb-selection-toolbar__text-editor-footer">
-            <span class="wb-selection-toolbar__char-count">{{ editingText.length }} / 2000</span>
-            <button
-              type="button"
-              class="wb-selection-toolbar__btn--cancel"
-              @click="cancelEditInteraction"
-            >
-              {{ t('winterboard.interactions.cancel') }}
-            </button>
-            <button
-              type="button"
-              class="wb-selection-toolbar__btn--save"
-              :disabled="!editingText.trim()"
-              @click="saveInteraction"
-            >
-              {{ t('winterboard.interactions.save') }}
-            </button>
-          </div>
-        </div>
-      </template>
-
       <!-- ── Audio section (single object, tutor only) ── -->
       <template v-if="showAudioSection">
         <span class="wb-selection-toolbar__divider wb-selection-toolbar__divider--audio" />
@@ -402,11 +291,11 @@
 // Text formatting: Bold, Italic, Font Size, Align — shown when text object selected
 // Audio recording: Record, Play, Re-record, Delete — shown for single object (tutor only)
 
-import { computed, ref, watch, nextTick } from 'vue'
+import { computed, ref, watch, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDeviceMode } from '../../composables/useDeviceMode'
-import { useObjectAudio, isRecordingSupported } from '../../composables/useObjectAudio'
-import type { WBStroke, WBAsset, WBInteraction } from '../../types/winterboard'
+import { useObjectAudio, formatTime, isRecordingSupported } from '../../composables/useObjectAudio'
+import type { WBStroke, WBAsset } from '../../types/winterboard'
 
 // ─── Props ──────────────────────────────────────────────────────────────────
 
@@ -446,10 +335,6 @@ const emit = defineEmits<{
   'text-format': [updates: Record<string, unknown>]
   'audio-uploaded': [objectId: string, audioUrl: string, duration: number | null]
   'audio-deleted': [objectId: string]
-  'interaction-add': [objectId: string, content: string, label?: string]
-  'interaction-update': [objectId: string, interactionId: string, content: string, label?: string]
-  'interaction-delete': [objectId: string, interactionId: string]
-  'interaction-preview': [objectId: string, interactionId: string]
 }>()
 
 // ─── i18n & Device mode ─────────────────────────────────────────────────────
@@ -528,73 +413,6 @@ const audio = useObjectAudio({
   onAudioDeleted: () => {
     emit('audio-deleted', audioObjectId.value)
   },
-})
-
-// ─── Text interactions ───────────────────────────────────────────────────────
-
-const showTextSection = computed(() =>
-  props.isTutor !== false &&
-  props.selectedIds.length === 1 &&
-  selectedAnyObject.value != null,
-)
-
-const objectInteractions = computed<WBInteraction[]>(() =>
-  selectedAnyObject.value?.interactions ?? [],
-)
-
-const hasTextInteraction = computed(() => objectInteractions.value.length > 0)
-const textInteraction = computed<WBInteraction | null>(() => objectInteractions.value[0] ?? null)
-
-// Editing state
-const isEditingInteraction = ref(false)
-const editingInteractionId = ref<string | null>(null) // null = adding new
-const editingText = ref('')
-const interactionTextareaRef = ref<HTMLTextAreaElement | null>(null)
-
-function startAddInteraction() {
-  editingInteractionId.value = null
-  editingText.value = ''
-  isEditingInteraction.value = true
-  nextTick(() => interactionTextareaRef.value?.focus())
-}
-
-function startEditInteraction(inter: WBInteraction) {
-  editingInteractionId.value = inter.id
-  editingText.value = inter.content
-  isEditingInteraction.value = true
-  nextTick(() => interactionTextareaRef.value?.focus())
-}
-
-function cancelEditInteraction() {
-  isEditingInteraction.value = false
-  editingInteractionId.value = null
-  editingText.value = ''
-}
-
-function saveInteraction() {
-  const text = editingText.value.trim()
-  if (!text) return
-  const objId = selectedObjId.value
-  if (!objId) return
-
-  if (editingInteractionId.value) {
-    emit('interaction-update', objId, editingInteractionId.value, text)
-  } else {
-    emit('interaction-add', objId, text)
-  }
-
-  cancelEditInteraction()
-}
-
-function handleDeleteInteraction(interactionId: string) {
-  const objId = selectedObjId.value
-  if (!objId) return
-  emit('interaction-delete', objId, interactionId)
-}
-
-// Reset editing when selection changes
-watch(selectedObjId, () => {
-  cancelEditInteraction()
 })
 
 // ─── Visibility ─────────────────────────────────────────────────────────────
@@ -813,133 +631,6 @@ const positionStyle = computed(() => {
   font-variant-numeric: tabular-nums;
   min-width: 28px;
   text-align: center;
-}
-
-/* ── Divider accent colors ────────────────────────────────────────────────── */
-
-.wb-selection-toolbar__divider--audio {
-  background: rgba(167, 139, 250, 0.4);
-}
-
-.wb-selection-toolbar__divider--text {
-  background: rgba(99, 102, 241, 0.4);
-}
-
-/* ── Text group container ─────────────────────────────────────────────────── */
-
-.wb-selection-toolbar__text-group {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 2px 4px;
-  border-radius: 6px;
-  background: rgba(99, 102, 241, 0.1);
-  transition: background 0.2s ease;
-}
-
-.wb-selection-toolbar__text-group--editing {
-  background: rgba(99, 102, 241, 0.18);
-}
-
-.wb-selection-toolbar__text-group--has-text {
-  background: rgba(99, 102, 241, 0.12);
-}
-
-.wb-selection-toolbar__btn--text {
-  color: #a5b4fc;
-}
-.wb-selection-toolbar__btn--text:hover:not(:disabled) {
-  background: rgba(99, 102, 241, 0.2);
-  color: #c7d2fe;
-}
-
-/* ── Text floating editor ─────────────────────────────────────────────────── */
-
-.wb-selection-toolbar__text-editor {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(30, 41, 59, 0.97);
-  backdrop-filter: blur(8px);
-  border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
-  padding: 8px;
-  width: 280px;
-  z-index: 55;
-}
-
-.wb-selection-toolbar__text-textarea {
-  width: 100%;
-  min-height: 64px;
-  max-height: 160px;
-  resize: vertical;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 6px;
-  color: #e2e8f0;
-  font-size: 13px;
-  line-height: 1.4;
-  padding: 8px;
-  font-family: inherit;
-  box-sizing: border-box;
-}
-
-.wb-selection-toolbar__text-textarea::placeholder {
-  color: #64748b;
-}
-
-.wb-selection-toolbar__text-textarea:focus {
-  outline: none;
-  border-color: rgba(99, 102, 241, 0.5);
-}
-
-.wb-selection-toolbar__text-editor-footer {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 6px;
-  margin-top: 6px;
-}
-
-.wb-selection-toolbar__char-count {
-  font-size: 11px;
-  color: #64748b;
-  margin-right: auto;
-  font-variant-numeric: tabular-nums;
-}
-
-.wb-selection-toolbar__btn--save {
-  padding: 4px 12px;
-  font-size: 12px;
-  font-weight: 600;
-  background: #6366f1;
-  color: #fff;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  transition: background 0.12s;
-}
-.wb-selection-toolbar__btn--save:hover:not(:disabled) {
-  background: #4f46e5;
-}
-.wb-selection-toolbar__btn--save:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.wb-selection-toolbar__btn--cancel {
-  padding: 4px 8px;
-  font-size: 12px;
-  color: #94a3b8;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  border-radius: 4px;
-}
-.wb-selection-toolbar__btn--cancel:hover {
-  color: #e2e8f0;
-  background: rgba(255, 255, 255, 0.08);
 }
 
 /* ── Fade transition ──────────────────────────────────────────────────────── */

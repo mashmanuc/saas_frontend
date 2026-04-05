@@ -459,7 +459,7 @@
       v-if="showUpload"
       :folder-id="activeFolderId"
       :folders="foldersTree"
-      @close="onUploadClose"
+      @close="showUpload = false"
       @uploaded="onUploaded"
     />
 
@@ -886,14 +886,7 @@ async function confirmArchiveAsset(): Promise<void> {
 function onUploaded(asset: LibraryAsset): void {
   assets.value.unshift(asset)
   total.value += 1
-  // НЕ закриваємо модалку тут — вона сама закриється через emit('close')
-  // після завершення всіх файлів (800ms delay)
-}
-
-function onUploadClose(): void {
   showUpload.value = false
-  // Оновити статистику сховища після завантаження
-  loadStorageStats()
 }
 
 async function handleCreateFolder(name: string, parentId: number | null): Promise<void> {

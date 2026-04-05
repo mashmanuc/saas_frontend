@@ -50,17 +50,8 @@
           color="#000000"
           tool="select"
           :size="2"
-          @presentation-open="handlePresentationOpen"
         />
       </div>
-
-      <!-- Presentation player (launched from board object) -->
-      <PresentationPlayer
-        v-if="presentationPlayerItem"
-        :item="presentationPlayerItem"
-        :start-index="presentationStartSlide"
-        @close="presentationPlayerItem = null"
-      />
 
       <!-- Replay player (above footer) -->
       <PublicReplayPlayer
@@ -118,11 +109,9 @@ import { useWBStore } from '../board/state/boardStore'
 import { useReplay } from '../composables/useReplay'
 import { applyReplayOperation } from '../engine/applyReplayOperation'
 import WBCanvas from '../components/canvas/WBCanvas.vue'
-import PresentationPlayer from '../components/sidebar/PresentationPlayer.vue'
 import PublicReplayPlayer from '../components/public/PublicReplayPlayer.vue'
 import PublicMarkersList from '../components/public/PublicMarkersList.vue'
-import type { WBSession, WBAsset } from '../types/winterboard'
-import type { AllowedContentItem } from '../types/sidebar'
+import type { WBSession } from '../types/winterboard'
 import type { ReplaySpeed } from '../engine/WBReplayEngine'
 
 const { t } = useI18n()
@@ -146,23 +135,6 @@ let replay: ReturnType<typeof useReplay> | null = null
 let staticSnapshot: { pages: import('../types/winterboard').WBPage[]; currentPageIndex: number } | null = null
 
 const allowDownload = ref(false)
-
-// ── Presentation launch from board object ──
-const presentationPlayerItem = ref<AllowedContentItem | null>(null)
-const presentationStartSlide = ref(0)
-
-async function handlePresentationOpen(asset: WBAsset) {
-  const contentRef = (asset as any).content_ref
-  if (!contentRef?.content_id) return
-  try {
-    const { learningContentApi } = await import('@/modules/learning-content/api/learningContentApi')
-    const item = await learningContentApi.getItemDetail(contentRef.content_id)
-    if (!item || (item as any).processing_status !== 'ready') return
-    presentationPlayerItem.value = item as unknown as AllowedContentItem
-    const slideMatch = asset.src?.match(/slide_(\d+)\.png/)
-    presentationStartSlide.value = slideMatch ? parseInt(slideMatch[1], 10) - 1 : 0
-  } catch { /* silent — public view */ }
-}
 
 // Replay current time — derived from engine progress + estimated duration
 const replayCurrentSeconds = computed(() => {
