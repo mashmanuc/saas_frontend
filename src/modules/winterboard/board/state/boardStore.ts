@@ -359,13 +359,20 @@ function trimStack(stack: UndoAction[]): UndoAction[] {
 export type OperationListener = (op: RecordOperationRequest) => void
 
 const _operationListeners: OperationListener[] = []
+// REPLAY-INV-9: module-level mode mirror — оновлюється через setMode()
+// Дозволяє _emitOperation перевіряти mode без доступу до store instance
+let _currentMode: 'edit' | 'replay' | 'readonly' = 'edit'
 
 /** Phase 20: Reset listeners — exposed for test isolation only */
 export function _resetOperationListeners(): void {
   _operationListeners.length = 0
+  _currentMode = 'edit'
 }
 
 function _emitOperation(op: RecordOperationRequest): void {
+  // REPLAY-INV-9: NO-OP у replay mode — блокує всі listeners (recorder, telemetry, WS sync)
+  // Це гарантує що applyReplayOperation() не забруднює timeline новими ops
+  if (_currentMode === 'replay') return
   for (const listener of _operationListeners) {
     try {
       listener(op)
@@ -623,6 +630,7 @@ export const useWBStore = defineStore('wb-board', {
 
     setMode(mode: 'edit' | 'replay' | 'readonly'): void {
       this.mode = mode
+      _currentMode = mode  // REPLAY-INV-9: синхронізуємо module-level mirror
     },
 
     // Phase 20: Subscribe to board operations. Returns unsubscribe function.

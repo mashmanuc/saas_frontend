@@ -75,13 +75,8 @@
 
       <!-- Right: Actions -->
       <div class="wb-solo-room__actions">
-        <!-- Phase 1: Recording controls (opt-in) — inside actions group -->
-        <WBRecordingBanner
-          v-if="mode === 'edit'"
-          :is-recording="isRecording"
-          @start-recording="isRecording = true"
-          @stop-recording="isRecording = false"
-        />
+        <!-- REPLAY-INV-2: always-on recording indicator (informational only) -->
+        <WBRecordingBanner v-if="mode === 'edit'" />
         <button
           type="button"
           class="wb-header-btn"
@@ -686,6 +681,8 @@
     <WBReplayControls
       v-if="mode === 'replay' && sessionId"
       :session-id="sessionId"
+      :load-state="(s) => store.loadSnapshot(s as Parameters<typeof store.loadSnapshot>[0])"
+      :clear-state="() => store.resetForReplay()"
       @exit="exitReplayMode"
       @operation="onReplayOperation"
     />
@@ -845,9 +842,9 @@ const autosave = useAutosave(sessionId)
 // Phase 4a: Bridge — boardStore operations → diff ops → autosave.queueDiffOp
 const opsBridge = useOpsBridge(autosave)
 
-// P4: Replay recorder — batch records operations for replay timeline
-// Phase 1: Recording is opt-in — teacher must explicitly start recording
-const isRecording = ref(false)
+// REPLAY-INV-2: always-on recording — активний коли store.mode === 'edit'
+// Computed ref дозволяє recorder автоматично зупинятись при переході в replay mode
+const isRecording = computed(() => store.mode === 'edit')
 const replayRecorder = useReplayRecorder({
   sessionId,
   getBoardState: () => store.getSnapshotState(),
@@ -991,12 +988,42 @@ const mode = computed<'edit' | 'replay'>({
   },
 })
 
+// Зберігаємо стан дошки перед входом в replay — відновлюємо при виході
+let _savedBoardState: ReturnType<typeof store.getSnapshotState> | null = null
+
+// REPLAY-FIX-4: Sync store.mode with route query on navigation.
+// enterReplayMode() only runs on button click. For page reload with ?mode=replay
+// or route navigation, this watcher ensures store.mode is synced.
+// NOTE: resetForReplay() is NOT called here — it runs in onMounted after hydrateFromSession
+// to avoid the hydration race (hydrate overwrites the reset).
+watch(mode, (newMode, oldMode) => {
+  // Skip initial — handled in onMounted after hydration
+  if (oldMode === undefined) return
+  if (newMode === 'replay' && store.mode !== 'replay') {
+    if (!_savedBoardState) {
+      _savedBoardState = store.getSnapshotState()
+    }
+    store.setMode('replay')
+    store.resetForReplay()
+  } else if (newMode === 'edit' && store.mode !== 'edit') {
+    store.setMode('edit')
+  }
+})
+
 function enterReplayMode(): void {
-  mode.value = 'replay'
+  _savedBoardState = store.getSnapshotState()  // snapshot поточного стану
+  store.setMode('replay')    // REPLAY-INV-9: _emitOperation стає NO-OP
+  store.resetForReplay()     // чистий стан — replay накладає ops з нуля (REPLAY-INV-11)
+  mode.value = 'replay'      // URL sync
 }
 
 function exitReplayMode(): void {
-  mode.value = 'edit'
+  store.setMode('edit')      // REPLAY-INV-9: відновлюємо emitter
+  if (_savedBoardState) {
+    store.loadSnapshot(_savedBoardState)  // відновлюємо стан до replay
+    _savedBoardState = null
+  }
+  mode.value = 'edit'        // URL sync
 }
 
 // Phase 10 P5: Lesson Map marker handlers
@@ -1039,6 +1066,14 @@ async function handleMarkerDelete(id: string): Promise<void> {
 // R5: Delegate to shared applyReplayOperation (DRY)
 function onReplayOperation(op: BoardOperation): void {
   applyReplayOperation(store, op)
+  // REPLAY-FIX-6: Force Konva redraw after replay operations.
+  // Vue-Konva may not auto-trigger batchDraw when store changes via Pinia.
+  if (['stroke_add', 'stroke_update', 'stroke_delete', 'asset_add', 'asset_update', 'asset_delete', 'clear_page', 'page_navigate', 'page_change'].includes(op.op_type)) {
+    nextTick(() => {
+      const stage = canvasRef.value?.getStage?.()
+      if (stage) stage.batchDraw()
+    })
+  }
 }
 
 // A10: Touch context menu state
@@ -2164,6 +2199,14 @@ onMounted(async () => {
       // Always stop loading — even on error, show the canvas
       isLoading.value = false
       // Phase 1: replayRecorder.start() removed — controlled by isRecording ref via watch
+
+      // REPLAY-FIX-5: Reset store AFTER hydration when entering replay via URL.
+      // Must happen after hydrateFromSession, otherwise hydration overwrites the reset.
+      if (mode.value === 'replay' && store.mode !== 'replay') {
+        _savedBoardState = store.getSnapshotState()
+        store.setMode('replay')
+        store.resetForReplay()
+      }
 
       // Connect presence (waits for auth bootstrap internally)
       await connectPresenceSafe(id)

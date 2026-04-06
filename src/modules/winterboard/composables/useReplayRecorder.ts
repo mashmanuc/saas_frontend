@@ -17,9 +17,10 @@ import { isCircuitBreakerOpen } from '@/utils/apiClient'
 // ─── Constants ──────────────────────────────────────────────────────────────
 
 const BATCH_SIZE = 50
-const FLUSH_INTERVAL_MS = 5000
+const FLUSH_INTERVAL_MS = 1500          // streaming: flush кожні 1.5с (було 5с)
 const SNAPSHOT_EVERY = 200
-const MAX_PAYLOAD_BYTES = 64 * 1024  // 64KB — must match backend WBBoardOperationCreateSerializer
+const MAX_PAYLOAD_BYTES = 64 * 1024    // 64KB — must match backend WBBoardOperationCreateSerializer
+const MAX_RETRY_QUEUE_SIZE = 200       // REPLAY-INV-8: retry queue cap — не memory leak
 
 // Circuit breaker: pause flushing after consecutive failures to prevent server overload
 const MAX_CONSECUTIVE_FAILURES = 3
@@ -42,7 +43,9 @@ export interface UseReplayRecorderOptions {
 
 export function useReplayRecorder(options: UseReplayRecorderOptions) {
   const buffer: RecordOperationRequest[] = []
+  const retryQueue: RecordOperationRequest[] = []  // REPLAY-INV-8: окремий retry queue
   const opCount = ref(0)
+  const lastKnownTotal = ref(0)  // синхронізовано з BE total_operations
   const isFlushing = ref(false)
   let flushTimer: ReturnType<typeof setInterval> | null = null
   let consecutiveFailures = 0
@@ -106,16 +109,19 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
       return
     }
 
+    // REPLAY-INV-8: призначаємо op_id при enqueue якщо не переданий
+    // Незмінний при retry — BE дедуплікує по (session, op_id)
+    if (!op.op_id) {
+      op = { ...op, op_id: crypto.randomUUID() }
+    }
+
     buffer.push(op)
     opCount.value++
 
     if (buffer.length >= BATCH_SIZE) {
       flush()
-    }
-
-    // Auto-snapshot every SNAPSHOT_EVERY ops
-    if (opCount.value > 0 && opCount.value % SNAPSHOT_EVERY === 0) {
-      _createSnapshot()
+      // Snapshot перевіряється у flush() після успішного commit — не тут
+      // (race condition fix: snapshot тільки після підтвердженого BE commit)
     }
   }
 
@@ -126,21 +132,44 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
    */
   async function flush(): Promise<void> {
     const sid = options.sessionId.value
-    if (buffer.length === 0 || !sid) return
+    if (!sid) return
     if (isFlushing.value) return // prevent concurrent flushes
     if (circuitOpen) return       // local circuit breaker: server unreachable, skip flush
     if (isCircuitBreakerOpen()) return  // global circuit breaker from apiClient
 
+    // REPLAY-INV-8: спочатку retry queue, потім нові ops
+    const toSend = [...retryQueue.splice(0), ...buffer.splice(0)]
+    if (toSend.length === 0) return
+
     isFlushing.value = true
-    const ops = buffer.splice(0) // drain buffer atomically
 
     try {
-      await recordOperationsBatch(sid, ops)
+      const result = await recordOperationsBatch(sid, toSend)
       consecutiveFailures = 0     // success — reset counter
+      // Синхронізуємо lastKnownTotal з BE після підтвердженого commit
+      if (result && typeof result.total_operations === 'number') {
+        const prevTotal = lastKnownTotal.value  // зберігаємо ДО оновлення
+        lastKnownTotal.value = result.total_operations
+        // Race condition fix: snapshot тільки після підтвердженого BE commit ops —
+        // не в record() де ops ще в buffer і не збережені
+        const crossedBoundary = Math.floor(result.total_operations / SNAPSHOT_EVERY) >
+                                Math.floor(prevTotal / SNAPSHOT_EVERY)
+        if (crossedBoundary) {
+          _createSnapshot()
+        }
+      }
     } catch (e) {
-      console.warn('[ReplayRecorder] batch flush failed, re-queuing:', e)
-      // Re-queue at front so order is preserved
-      buffer.unshift(...ops)
+      console.warn('[ReplayRecorder] batch flush failed, re-queuing to retryQueue:', e)
+      // REPLAY-INV-8: retry ops йдуть в окремий retryQueue (не в buffer)
+      // cap щоб не було memory leak
+      const combined = [...toSend, ...retryQueue]
+      retryQueue.length = 0
+      if (combined.length > MAX_RETRY_QUEUE_SIZE) {
+        console.warn(`[ReplayRecorder] retryQueue cap exceeded, dropping ${combined.length - MAX_RETRY_QUEUE_SIZE} old ops`)
+        retryQueue.push(...combined.slice(combined.length - MAX_RETRY_QUEUE_SIZE))
+      } else {
+        retryQueue.push(...combined)
+      }
 
       // Circuit breaker: after N consecutive failures, pause to prevent server overload
       consecutiveFailures++
@@ -173,7 +202,9 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
     const sid = options.sessionId.value
     if (!sid) return
 
-    const opIdx = opCount.value
+    // REPLAY-INV-7: використовуємо lastKnownTotal (синхронізовано з BE) якщо є,
+    // інакше локальний opCount (менш точний, але краще ніж нічого)
+    const opIdx = lastKnownTotal.value > 0 ? lastKnownTotal.value : opCount.value
 
     try {
       const boardState = options.getBoardState()
@@ -218,7 +249,9 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
   function destroy(): void {
     stop()
     buffer.length = 0
+    retryQueue.length = 0
     opCount.value = 0
+    lastKnownTotal.value = 0
     if (circuitBreakerTimer) {
       clearTimeout(circuitBreakerTimer)
       circuitBreakerTimer = null
@@ -239,6 +272,8 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
   }
 
   // Phase 1: Watch enabled ref — auto start/stop recorder
+  // { immediate: true } — запускає start() одразу якщо enabled=true при монтуванні
+  // (без цього watch не спрацьовує для початкового значення)
   if (options.enabled) {
     watch(options.enabled, (isEnabled) => {
       if (isEnabled) {
@@ -246,7 +281,7 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
       } else {
         stop() // flushes remaining buffer
       }
-    })
+    }, { immediate: true })
   }
 
   return {
@@ -257,6 +292,7 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
     destroy,
     connectToStore,
     opCount: readonly(opCount),
+    lastKnownTotal: readonly(lastKnownTotal),
     isFlushing: readonly(isFlushing),
   }
 }

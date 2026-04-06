@@ -59,8 +59,8 @@ export async function recordOperation(
 export async function recordOperationsBatch(
   sessionId: string,
   operations: RecordOperationRequest[],  // max 100
-): Promise<{ recorded: number }> {
-  return apiClient.post<{ recorded: number }>(
+): Promise<{ recorded: number; total_operations: number }> {
+  return apiClient.post<{ recorded: number; total_operations: number }>(
     `${BASE}/sessions/${sessionId}/replay/batch/`,
     { operations },
   )

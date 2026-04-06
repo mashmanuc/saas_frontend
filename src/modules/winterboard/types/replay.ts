@@ -25,6 +25,7 @@ export interface ReplayTimeline {
 // ─── Record operation request (POST .../replay/operation/) ─────────────────
 
 export interface RecordOperationRequest {
+  op_id?: string       // REPLAY-INV-8: UUID, генерується на FE при enqueue(), незмінний при retry
   op_type: string
   page_id?: string     // optional, default ''
   payload?: Record<string, unknown>  // max 64KB

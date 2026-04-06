@@ -95,6 +95,10 @@ import type { ReplaySpeed } from '../../engine/WBReplayEngine'
 
 const props = defineProps<{
   sessionId: string  // UUID
+  /** REPLAY-INV-4: для seekToWithSnapshot — гідратує store зі snapshot board_state */
+  loadState?: (boardState: Record<string, unknown>) => void
+  /** REPLAY-INV-4: для seekToWithSnapshot — очищає store перед replay-from-zero */
+  clearState?: () => void
 }>()
 
 const emit = defineEmits<{
@@ -105,6 +109,7 @@ const emit = defineEmits<{
 const { t } = useI18n({ useScope: 'global' })
 
 const currentSpeed = ref<ReplaySpeed>(1)
+const isSeeking = ref(false)
 
 const {
   state,
@@ -118,6 +123,7 @@ const {
   stop,
   setSpeed,
   seekTo,
+  seekToWithSnapshot,
   destroy,
 } = useReplay(props.sessionId)
 
@@ -145,9 +151,20 @@ function onStop(): void {
   stop()
 }
 
-function onSeek(event: Event): void {
+async function onSeek(event: Event): Promise<void> {
   const idx = parseInt((event.target as HTMLInputElement).value, 10)
-  seekTo(idx)
+  // REPLAY-INV-4: якщо є loadState/clearState — використовуємо seekToWithSnapshot (O(1))
+  // інакше fallback на базовий seekTo (тільки переміщує pointer, не перебудовує стан)
+  if (props.loadState && props.clearState && !isSeeking.value) {
+    isSeeking.value = true
+    try {
+      await seekToWithSnapshot(idx, props.loadState, props.clearState)
+    } finally {
+      isSeeking.value = false
+    }
+  } else {
+    seekTo(idx)
+  }
 }
 
 function onSpeedChange(event: Event): void {

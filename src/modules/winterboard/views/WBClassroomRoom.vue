@@ -97,13 +97,8 @@
 
       <!-- Right: Actions -->
       <div class="wb-classroom-room__actions">
-        <!-- Phase 1: Recording controls (opt-in, teacher only) — inside actions group -->
-        <WBRecordingBanner
-          v-if="mode === 'edit' && classroomRole.isTeacher.value"
-          :is-recording="isRecording"
-          @start-recording="isRecording = true"
-          @stop-recording="isRecording = false"
-        />
+        <!-- REPLAY-INV-2: always-on recording indicator (teacher only, informational) -->
+        <WBRecordingBanner v-if="mode === 'edit' && classroomRole.isTeacher.value" />
         <!-- Lock toggle (teacher only) -->
         <button
           v-if="classroomRole.canLock.value"
@@ -320,6 +315,8 @@
     <WBReplayControls
       v-if="mode === 'replay' && resolvedSessionId"
       :session-id="resolvedSessionId"
+      :load-state="(s) => store.loadSnapshot(s as Parameters<typeof store.loadSnapshot>[0])"
+      :clear-state="() => store.resetForReplay()"
       @exit="exitReplayMode"
       @operation="onReplayOperation"
     />
@@ -603,9 +600,8 @@ const autosave = useAutosave(resolvedSessionId, {
 // Phase 4a: Bridge — boardStore operations → diff ops → autosave.queueDiffOp
 const opsBridge = useOpsBridge(autosave)
 
-// P4: Replay recorder — batch records operations for replay timeline
-// Phase 1: Recording is opt-in — teacher must explicitly start recording
-const isRecording = ref(false)
+// REPLAY-INV-2: always-on recording — активний коли store.mode === 'edit'
+const isRecording = computed(() => store.mode === 'edit')
 const replayRecorder = useReplayRecorder({
   sessionId: resolvedSessionId,
   getBoardState: () => store.getSnapshotState(),
@@ -1049,13 +1045,24 @@ async function handleYouTubeAdd(url: string): Promise<void> {
 
 // ─── Phase 11: Replay mode (teacher can review the lesson) ──────────────────
 
+// Зберігаємо стан дошки перед входом в replay — відновлюємо при виході
+let _savedBoardState: ReturnType<typeof store.getSnapshotState> | null = null
+
 function enterReplayMode(): void {
   if (!classroomRole.isTeacher.value && !lessonEnded.value) return
-  mode.value = 'replay'
+  _savedBoardState = store.getSnapshotState()  // snapshot поточного стану
+  store.setMode('replay')    // REPLAY-INV-9: _emitOperation NO-OP
+  store.resetForReplay()     // чистий стан — replay накладає ops з нуля (REPLAY-INV-11)
+  mode.value = 'replay'      // URL sync
 }
 
 function exitReplayMode(): void {
-  mode.value = 'edit'
+  store.setMode('edit')      // REPLAY-INV-9: відновлюємо emitter
+  if (_savedBoardState) {
+    store.loadSnapshot(_savedBoardState)  // відновлюємо стан до replay
+    _savedBoardState = null
+  }
+  mode.value = 'edit'        // URL sync
 }
 
 // R5: Delegate to shared applyReplayOperation (DRY)

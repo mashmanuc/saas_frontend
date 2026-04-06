@@ -180,9 +180,13 @@ const sortedMarkers = computed(() =>
 
 <style scoped>
 .wb-lesson-map {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
   width: 280px;
   min-width: 280px;
-  height: 100%;
+  z-index: 20;
   background: #0f172a;
   color: #e2e8f0;
   display: flex;

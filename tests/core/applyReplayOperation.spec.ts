@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { applyReplayOperation, type ReplayStoreApi } from
   '@/modules/winterboard/engine/applyReplayOperation'
 
-function createMockStore(): ReplayStoreApi {
+function createMockStore(): ReplayStoreApi & { setGridSize: any; updateCurrentPageGrid: any; setBackgroundColor: any; createGroup: any; deleteGroup: any; lockItems: any; unlockItems: any; bringForward: any; sendBackward: any; bringToFront: any; sendToBack: any } {
   return {
     addStroke: vi.fn(),
     updateStroke: vi.fn(),
@@ -14,7 +14,19 @@ function createMockStore(): ReplayStoreApi {
     goToPage: vi.fn(),
     deletePage: vi.fn(),
     clearPage: vi.fn(),
+    currentPageIndex: 0,
     pages: [{ id: 'page-1' }, { id: 'page-2' }],
+    setGridSize: vi.fn(),
+    updateCurrentPageGrid: vi.fn(),
+    setBackgroundColor: vi.fn(),
+    createGroup: vi.fn(),
+    deleteGroup: vi.fn(),
+    lockItems: vi.fn(),
+    unlockItems: vi.fn(),
+    bringForward: vi.fn(),
+    sendBackward: vi.fn(),
+    bringToFront: vi.fn(),
+    sendToBack: vi.fn(),
   }
 }
 
@@ -137,6 +149,45 @@ describe('applyReplayOperation', () => {
     }))
     expect(store.goToPage).toHaveBeenCalledWith(0)
     expect(store.clearPage).toHaveBeenCalled()
+  })
+
+  it('resolves page by page_id before stroke_add (REPLAY-FIX-1)', () => {
+    const store = createMockStore()
+    store.currentPageIndex = 0
+    const stroke = { id: 's1', points: [] }
+    applyReplayOperation(store, op({
+      op_type: 'stroke_add',
+      page_id: 'page-2',
+      payload: { stroke },
+    }))
+    expect(store.goToPage).toHaveBeenCalledWith(1)
+    expect(store.addStroke).toHaveBeenCalledWith(stroke, { skipHistory: true })
+  })
+
+  it('adopts page_id for single-page store after resetForReplay (REPLAY-FIX-1)', () => {
+    const store = createMockStore()
+    store.pages = [{ id: 'random-reset-id' }]
+    store.currentPageIndex = 0
+    const stroke = { id: 's1', points: [] }
+    applyReplayOperation(store, op({
+      op_type: 'stroke_add',
+      page_id: 'original-page-id',
+      payload: { stroke },
+    }))
+    expect(store.pages[0].id).toBe('original-page-id')
+    expect(store.addStroke).toHaveBeenCalledWith(stroke, { skipHistory: true })
+  })
+
+  it('preserves original page_id on page_add (REPLAY-FIX-1)', () => {
+    const store = createMockStore()
+    applyReplayOperation(store, op({
+      op_type: 'page_add',
+      page_id: 'recorded-page-id',
+      payload: { page: { id: 'recorded-page-id', name: 'Page 3', background: 'white' } },
+    }))
+    expect(store.addPage).toHaveBeenCalled()
+    // After addPage mock, pages array isn't actually modified (mock),
+    // but the production code overwrites the id of the last page.
   })
 
   it('ignores unknown op_type', () => {

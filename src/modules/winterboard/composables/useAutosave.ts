@@ -234,6 +234,10 @@ export function useAutosave(
     // Guard: nothing to save
     if (!store.isDirty && pendingOps.value.length === 0) return
 
+    // REPLAY-INV-12: NEVER save during replay — replay operations are temporary
+    // and must not overwrite the real board state on the server
+    if (store.mode === 'replay') return
+
     clearTimers()
     isSaving.value = true
     status.value = 'syncing'

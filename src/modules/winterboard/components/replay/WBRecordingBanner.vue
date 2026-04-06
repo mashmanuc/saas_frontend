@@ -1,41 +1,13 @@
 <template>
+  <!-- REPLAY-INV-2: always-on recording indicator (informational, no toggle) -->
   <div class="wb-recording-banner" role="status" aria-live="polite">
-    <button
-      v-if="!isRecording"
-      type="button"
-      class="wb-recording-banner__btn wb-recording-banner__btn--start"
-      :title="t('winterboard.recording.startTitle')"
-      @click="$emit('start-recording')"
-    >
-      <span class="wb-recording-banner__dot wb-recording-banner__dot--idle" aria-hidden="true" />
-      {{ t('winterboard.recording.start') }}
-    </button>
-    <template v-else>
-      <span class="wb-recording-banner__dot wb-recording-banner__dot--active" aria-hidden="true" />
-      <span class="wb-recording-banner__text">{{ t('winterboard.recording.active') }}</span>
-      <button
-        type="button"
-        class="wb-recording-banner__btn wb-recording-banner__btn--stop"
-        @click="$emit('stop-recording')"
-      >
-        <span class="wb-recording-banner__stop-icon" aria-hidden="true" />
-        {{ t('winterboard.recording.stop') }}
-      </button>
-    </template>
+    <span class="wb-recording-banner__dot wb-recording-banner__dot--active" aria-hidden="true" />
+    <span class="wb-recording-banner__text">{{ t('winterboard.recording.active') }}</span>
   </div>
 </template>
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-
-defineProps<{
-  isRecording: boolean
-}>()
-
-defineEmits<{
-  'start-recording': []
-  'stop-recording': []
-}>()
 
 const { t } = useI18n({ useScope: 'global' })
 </script>

@@ -7,14 +7,17 @@
 //   await replay.loadTimeline((op) => applyOpToShadowCanvas(op))
 //   replay.play()
 
-import { ref, readonly, computed, watch } from 'vue'
+import { ref, shallowRef, readonly, computed, watch } from 'vue'
 import { WBReplayEngine, type ReplaySpeed, type ReplayState } from '../engine/WBReplayEngine'
 import { fetchReplayTimeline, fetchNearestSnapshot, fetchLessonMarkers } from '../api/replay'
 import type { BoardOperation } from '../types/replay'
 import type { WBLessonMarker } from '../types/winterboard'
 
 export function useReplay(sessionId: string) {
-  const engine = ref<WBReplayEngine | null>(null)
+  // REPLAY-FIX-3: shallowRef prevents Vue from deep-proxying the class instance.
+  // ref() wraps the engine in a reactive Proxy that breaks private fields,
+  // setTimeout callbacks, and `this` context inside class methods.
+  const engine = shallowRef<WBReplayEngine | null>(null)
   const state = ref<ReplayState>('idle')
   const currentIndex = ref(0)
   const totalOperations = ref(0)
