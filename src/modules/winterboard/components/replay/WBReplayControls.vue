@@ -105,7 +105,7 @@
 //  – реальний час (MM:SS) з timestamp ops, а не індекс/total
 //  – швидкості 0.5× / 1× / 1.5× / 2× (як на YouTube)
 
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useReplay } from '../../composables/useReplay'
 import type { BoardOperation } from '../../types/replay'
@@ -126,6 +126,8 @@ const emit = defineEmits<{
   operation: [op: BoardOperation]
   // INV-T: snapshot стану на момент start_recording (фон/асети до старту запису)
   startState: [state: { pages?: unknown[]; currentPageIndex?: number }]
+  // Phase C: батько синхронізує currentOpIndex без polling
+  tick: [payload: { index: number; total: number }]
 }>()
 
 const { t } = useI18n({ useScope: 'global' })
@@ -155,6 +157,14 @@ const {
 } = useReplay(props.sessionId)
 
 void _stop // reserved
+
+// Phase C: emit tick on every index change → батько не потребує polling
+watch(
+  () => [currentIndex.value, totalOperations.value] as const,
+  ([index, total]) => {
+    emit('tick', { index, total })
+  },
+)
 
 onMounted(async () => {
   await loadTimeline(

@@ -717,6 +717,7 @@
       @exit="exitReplayMode"
       @operation="onReplayOperation"
       @start-state="onReplayStartState"
+      @tick="({ index, total }) => { replayCurrentOpIndex.value = index; replayCurrentTotalOps.value = total }"
     />
 
     <!-- Phase C: Replay comments sidebar -->
@@ -1022,7 +1023,6 @@ const replayCurrentOpIndex = ref(0)
 const replayCurrentTotalOps = ref(0)
 const commentSubmitting = ref(false)
 const replayControlsRef = ref<InstanceType<typeof WBReplayControls> | null>(null)
-let _replayPollTimer: ReturnType<typeof setInterval> | null = null
 
 const commentPoints = computed(() => {
   const total = Math.max(1, replayCurrentTotalOps.value)
@@ -1056,21 +1056,6 @@ function onCommentJump(c: { operation_index: number }): void {
   replayControlsRef.value?.jumpTo(c.operation_index)
 }
 
-function _startReplayPoll(): void {
-  if (_replayPollTimer) return
-  _replayPollTimer = setInterval(() => {
-    const r = replayControlsRef.value
-    if (!r) return
-    replayCurrentOpIndex.value = r.getCurrentIndex()
-    replayCurrentTotalOps.value = r.getTotalOperations()
-  }, 250)
-}
-function _stopReplayPoll(): void {
-  if (_replayPollTimer) {
-    clearInterval(_replayPollTimer)
-    _replayPollTimer = null
-  }
-}
 const showTemplateSelector = ref(false)
 const showSidebarOverlay = ref(false)
 const isFullscreen = ref(false)
@@ -1160,14 +1145,10 @@ watch(mode, (newMode, oldMode) => {
     store.setMode('replay')
     store.resetForReplay()
     void loadReplayComments()
-    _startReplayPoll()
   } else if (newMode === 'edit' && store.mode !== 'edit') {
     store.setMode('edit')
-    _stopReplayPoll()
   }
 })
-
-onBeforeUnmount(() => { _stopReplayPoll() })
 
 function enterReplayMode(): void {
   _savedBoardState = store.getSnapshotState()  // snapshot поточного стану
@@ -1175,11 +1156,9 @@ function enterReplayMode(): void {
   store.resetForReplay()     // чистий стан — replay накладає ops з нуля (REPLAY-INV-11)
   mode.value = 'replay'      // URL sync
   void loadReplayComments()
-  _startReplayPoll()
 }
 
 function exitReplayMode(): void {
-  _stopReplayPoll()
   store.setMode('edit')      // REPLAY-INV-9: відновлюємо emitter
   if (_savedBoardState) {
     store.loadSnapshot(_savedBoardState)  // відновлюємо стан до replay

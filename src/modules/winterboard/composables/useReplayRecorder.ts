@@ -17,6 +17,11 @@ import { isCircuitBreakerOpen } from '@/utils/apiClient'
 // ─── Constants ──────────────────────────────────────────────────────────────
 
 const BATCH_SIZE = 50
+// P0 FIX (2026-04-07): chunk autosave to 100 ops max per batch
+// Backend `/replay/batch/` має ліміт 100 операцій (views.py:3222).
+// Якщо WS лежить і buffer+retryQueue накопичили >100 ops — без chunking
+// усі retry падають з 400 і дані ВТРАЧАЮТЬСЯ.
+const MAX_OPS_PER_REQUEST = 100
 const FLUSH_INTERVAL_MS = 1500          // streaming: flush кожні 1.5с (було 5с)
 const SNAPSHOT_EVERY = 200
 const MAX_PAYLOAD_BYTES = 64 * 1024    // 64KB — must match backend WBBoardOperationCreateSerializer
@@ -143,16 +148,49 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
 
     isFlushing.value = true
 
+    // P0 FIX (2026-04-07): chunk autosave to 100 ops max per batch
+    // Розбиваємо toSend на чанки по MAX_OPS_PER_REQUEST і відправляємо
+    // ПОСЛІДОВНО (await в циклі), щоб BE міг правильно нумерувати seq.
+    // При першій помилці — зупиняємось, незаслані ops повертаються в retryQueue.
+    const chunks: RecordOperationRequest[][] = []
+    for (let i = 0; i < toSend.length; i += MAX_OPS_PER_REQUEST) {
+      chunks.push(toSend.slice(i, i + MAX_OPS_PER_REQUEST))
+    }
+    if (chunks.length > 1) {
+      console.log(`[WB:autosave] flushing ${toSend.length} ops in ${chunks.length} chunks of ${MAX_OPS_PER_REQUEST}`)
+    }
+
+    let flushedCount = 0
+    let lastResult: Awaited<ReturnType<typeof recordOperationsBatch>> | null = null
+    let flushError: unknown = null
+
     try {
-      const result = await recordOperationsBatch(sid, toSend)
+      for (let i = 0; i < chunks.length; i++) {
+        try {
+          lastResult = await recordOperationsBatch(sid, chunks[i])
+          flushedCount += chunks[i].length
+        } catch (chunkErr) {
+          console.warn(
+            `[WB:autosave] chunk ${i + 1}/${chunks.length} failed (${chunks[i].length} ops):`,
+            chunkErr,
+          )
+          flushError = chunkErr
+          break // НЕ продовжуємо наступні чанки — атомарність queue
+        }
+      }
+
+      if (flushError) {
+        throw flushError
+      }
+
       consecutiveFailures = 0     // success — reset counter
-      // Синхронізуємо lastKnownTotal з BE після підтвердженого commit
-      if (result && typeof result.total_operations === 'number') {
+      // Синхронізуємо lastKnownTotal з BE після підтвердженого commit (останнього чанка)
+      if (lastResult && typeof lastResult.total_operations === 'number') {
         const prevTotal = lastKnownTotal.value  // зберігаємо ДО оновлення
-        lastKnownTotal.value = result.total_operations
+        lastKnownTotal.value = lastResult.total_operations
         // Race condition fix: snapshot тільки після підтвердженого BE commit ops —
         // не в record() де ops ще в buffer і не збережені
-        const crossedBoundary = Math.floor(result.total_operations / SNAPSHOT_EVERY) >
+        const crossedBoundary = Math.floor(lastResult.total_operations / SNAPSHOT_EVERY) >
                                 Math.floor(prevTotal / SNAPSHOT_EVERY)
         if (crossedBoundary) {
           _createSnapshot()
@@ -160,9 +198,10 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
       }
     } catch (e) {
       console.warn('[ReplayRecorder] batch flush failed, re-queuing to retryQueue:', e)
-      // REPLAY-INV-8: retry ops йдуть в окремий retryQueue (не в buffer)
-      // cap щоб не було memory leak
-      const combined = [...toSend, ...retryQueue]
+      // P0 FIX (2026-04-07): re-queue ТІЛЬКИ ті ops що НЕ пройшли
+      // (атомарність: успішно відправлені чанки не дублюються)
+      const notFlushed = toSend.slice(flushedCount)
+      const combined = [...notFlushed, ...retryQueue]
       retryQueue.length = 0
       if (combined.length > MAX_RETRY_QUEUE_SIZE) {
         console.warn(`[ReplayRecorder] retryQueue cap exceeded, dropping ${combined.length - MAX_RETRY_QUEUE_SIZE} old ops`)

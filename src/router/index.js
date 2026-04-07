@@ -849,7 +849,18 @@ const routes = [
             path: 'health',
             name: 'staff-health',
             component: () => import('../modules/staff/views/StaffSystemHealthView.vue'),
-            meta: { 
+            meta: {
+              requiresAuth: true,
+              roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN],
+              requiresStaff: true
+            },
+          },
+          // P0 FIX: Operator Activity Console was dead code — now exposed under /staff/operator
+          {
+            path: 'operator',
+            name: 'staff-operator-console',
+            component: () => import('../modules/operator/views/ActivityConsoleView.vue'),
+            meta: {
               requiresAuth: true,
               roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN],
               requiresStaff: true
