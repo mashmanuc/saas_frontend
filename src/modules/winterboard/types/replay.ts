@@ -20,6 +20,9 @@ export interface ReplayTimeline {
   session_id: string   // UUID (НЕ int!)
   total_operations: number
   operations: BoardOperation[]
+  // INV-T: snapshot стану на момент start_recording (фон/асети/страйки до старту запису).
+  // null якщо запис ще не починався або сесія старого формату.
+  start_state?: { pages?: unknown[]; currentPageIndex?: number } | null
 }
 
 // ─── Record operation request (POST .../replay/operation/) ─────────────────

@@ -18,6 +18,7 @@ import type {
   WBTestObject,
   WBTestMeta,
 } from '../../types/winterboard'
+import { resetReplayAdoptedPages } from '../../engine/applyReplayOperation'
 import type { PdfPageResult } from '../../api/winterboardApi'
 import type { RecordOperationRequest } from '../../types/replay'
 
@@ -650,6 +651,7 @@ export const useWBStore = defineStore('wb-board', {
       this.redoStack = []
       this.isDirty = false
       this.selectedIds = []
+      resetReplayAdoptedPages()
     },
 
     /** Load full board state from snapshot (for seek optimization) */
@@ -1725,7 +1727,7 @@ export const useWBStore = defineStore('wb-board', {
       }
     },
 
-    addPage(opts?: { background?: WBPageBackground; width?: number; height?: number; name?: string }): void {
+    addPage(opts?: { background?: WBPageBackground; backgroundColor?: string; width?: number; height?: number; name?: string }): void {
       if (this.pages.length >= 50) {
         console.warn('[WB:Store] Max 50 pages reached')
         return
@@ -1738,7 +1740,7 @@ export const useWBStore = defineStore('wb-board', {
         strokes: [],
         assets: [],
         background: opts?.background ?? 'white',
-        backgroundColor: '#ffffff',
+        backgroundColor: opts?.backgroundColor ?? '#ffffff',
         width: opts?.width,
         height: opts?.height,
         grid: currentPage?.grid ? { ...currentPage.grid } : undefined,
@@ -1757,6 +1759,7 @@ export const useWBStore = defineStore('wb-board', {
               id: newPage.id,
               name: newPage.name,
               background: newPage.background,
+              backgroundColor: newPage.backgroundColor,
               width: newPage.width,
               height: newPage.height,
             },
@@ -2004,7 +2007,12 @@ export const useWBStore = defineStore('wb-board', {
         _emitOperation({
           op_type: 'page_delete',
           page_id: deletedPage.id,
-          payload: { page_id: deletedPage.id },
+          payload: {
+            page_id: deletedPage.id,
+            // INV-T2: зберігаємо bg видаленої сторінки для коректного replay/seek
+            background: deletedPage.background,
+            backgroundColor: deletedPage.backgroundColor,
+          },
           timestamp: Date.now(),
         })
       }

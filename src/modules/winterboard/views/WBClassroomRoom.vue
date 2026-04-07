@@ -97,8 +97,12 @@
 
       <!-- Right: Actions -->
       <div class="wb-classroom-room__actions">
-        <!-- REPLAY-INV-2: always-on recording indicator (teacher only, informational) -->
-        <WBRecordingBanner v-if="mode === 'edit' && classroomRole.isTeacher.value" />
+        <!-- A.1: Recording banner — classroom integration TODO (manual control буде окремо) -->
+        <WBRecordingBanner
+          v-if="mode === 'edit' && classroomRole.isTeacher.value"
+          :is-recording="false"
+          :is-frozen="false"
+        />
         <!-- Lock toggle (teacher only) -->
         <button
           v-if="classroomRole.canLock.value"
@@ -186,8 +190,8 @@
         />
       </aside>
 
-      <!-- Toolbar (role-aware) -->
-      <aside class="wb-classroom-room__toolbar">
+      <!-- Toolbar (role-aware) — приховано в replay-режимі -->
+      <aside v-if="mode !== 'replay'" class="wb-classroom-room__toolbar">
         <WBToolbar
           :current-tool="store.currentTool"
           :current-color="store.currentColor"
@@ -206,9 +210,17 @@
         />
       </aside>
 
-      <!-- Phase 11 A4: Page thumbnails (teacher only) -->
+      <!-- A.2.5: Chapters sidebar в replay -->
+      <WBReplayChaptersSidebar
+        v-if="mode === 'replay' && resolvedSessionId"
+        :markers="replayMarkers"
+        :active-marker-id="replayActiveMarkerId"
+        @seek="handleMarkerSeek"
+      />
+
+      <!-- Phase 11 A4: Page thumbnails (teacher only, hidden in replay) -->
       <WBPageThumbnails
-        v-if="classroomRole.isTeacher.value"
+        v-if="mode !== 'replay' && classroomRole.isTeacher.value"
         :pages="store.pages"
         :current-index="store.currentPageIndex"
         @select="handlePageSelect($event)"
@@ -223,10 +235,13 @@
         id="wb-canvas"
         ref="canvasContainerRef"
         class="wb-classroom-room__canvas"
+        :class="{ 'wb-classroom-room__canvas--readonly': mode === 'replay' }"
         tabindex="-1"
         @dragover.prevent
         @drop="contentDrop.handleCanvasDrop($event)"
       >
+        <!-- A.4 (INV-X): replay = read-only overlay -->
+        <div v-if="mode === 'replay'" class="wb-classroom-room__readonly-overlay" aria-hidden="true" />
         <Transition name="wb-fade">
           <WBCanvasLoader v-if="isLoading" />
         </Transition>
@@ -319,18 +334,10 @@
       :clear-state="() => store.resetForReplay()"
       @exit="exitReplayMode"
       @operation="onReplayOperation"
+      @start-state="onReplayStartState"
     />
 
-    <!-- Phase 11: Lesson Map sidebar in replay mode -->
-    <WBLessonMap
-      v-if="mode === 'replay' && resolvedSessionId"
-      :markers="replayMarkers"
-      :active-marker-id="replayActiveMarkerId"
-      :can-edit="classroomRole.isTeacher.value"
-      @seek="handleMarkerSeek"
-      @create="showMarkerModal = true"
-      @delete="handleMarkerDelete"
-    />
+    <!-- A.2.1: Lesson Map sidebar removed in replay mode (markers will move to timeline as chapters) -->
 
     <!-- Phase 11: Marker create modal -->
     <WBMarkerCreateModal
@@ -458,6 +465,7 @@ import type { WBStroke, WBAsset, WBToolType } from '../types/winterboard'
 // Components
 import WBCanvas from '../components/canvas/WBCanvas.vue'
 import WBToolbar from '../components/toolbar/WBToolbar.vue'
+import WBReplayChaptersSidebar from '../components/replay/WBReplayChaptersSidebar.vue'
 import WBRemoteCursors from '../components/cursors/WBRemoteCursors.vue'
 import WBCanvasLoader from '../components/loading/WBCanvasLoader.vue'
 import WBUploadIndicator from '../components/status/WBUploadIndicator.vue'
@@ -467,7 +475,6 @@ import WBSelectionToolbar from '../components/canvas/WBSelectionToolbar.vue'
 import WBYouTubeModal from '../components/toolbar/WBYouTubeModal.vue'
 import WBShareDialog from '../components/sharing/WBShareDialog.vue'
 import WBReplayControls from '../components/replay/WBReplayControls.vue'
-import WBLessonMap from '../components/replay/WBLessonMap.vue'
 import WBReplayBanner from '../components/replay/WBReplayBanner.vue'
 import WBRecordingBanner from '../components/replay/WBRecordingBanner.vue'
 import WBMarkerCreateModal from '../components/replay/WBMarkerCreateModal.vue'
@@ -477,7 +484,7 @@ import WBTestStudentView from '../components/test/WBTestStudentView.vue'
 import type { BoardOperation } from '../types/replay'
 import type { WBLessonMarker } from '../types/winterboard'
 import { createLessonMarker, deleteLessonMarker } from '../api/replay'
-import { applyReplayOperation } from '../engine/applyReplayOperation'
+import { applyReplayOperation, markReplayPagesEnsured } from '../engine/applyReplayOperation'
 import { useGridOverlay } from '../composables/useGridOverlay'
 import { useReplayRecorder } from '../composables/useReplayRecorder'
 import { useDeviceMode } from '../composables/useDeviceMode'
@@ -1066,6 +1073,15 @@ function exitReplayMode(): void {
 }
 
 // R5: Delegate to shared applyReplayOperation (DRY)
+// INV-T: hydrate з recording_start_state перед накаткою ops
+function onReplayStartState(state: { pages?: unknown[]; currentPageIndex?: number }): void {
+  if (state && Array.isArray(state.pages) && state.pages.length > 0) {
+    store.loadSnapshot(state as Parameters<typeof store.loadSnapshot>[0])
+    const ids = (state.pages as Array<{ id?: string }>).map(p => p?.id ?? '').filter(Boolean)
+    markReplayPagesEnsured(ids)
+  }
+}
+
 function onReplayOperation(op: BoardOperation): void {
   applyReplayOperation(store, op)
 }
@@ -2221,6 +2237,18 @@ onBeforeUnmount(async () => {
   z-index: 20;
 }
 
+/* A.4 (INV-X): read-only overlay в replay-режимі */
+.wb-classroom-room__readonly-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: transparent;
+  cursor: default;
+  pointer-events: auto;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 .wb-classroom-room__canvas {
   flex: 1;
   overflow: hidden;
@@ -2230,6 +2258,7 @@ onBeforeUnmount(async () => {
   background: var(--wb-canvas-area-bg, #e2e8f0);
   position: relative;
 }
+
 
 /* ── Student list ────────────────────────────────────────────────────────── */
 

@@ -10,6 +10,26 @@
 import type { BoardOperation } from '../types/replay'
 import type { WBStroke, WBAsset, WBPageBackground, WBPageGridSettings } from '../types/winterboard'
 
+// Множина page_id, для яких вже зроблено lazy-create під час поточного replay.
+// Гарантує що ми не створюємо ту саму сторінку двічі.
+const _ensuredPageIds = new Set<string>()
+
+/** Скинути page-tracking стан перед новим replay (викликати з resetForReplay). */
+export function resetReplayAdoptedPages(): void {
+  _ensuredPageIds.clear()
+}
+
+/**
+ * INV-T: позначити, що ці page_id вже існують в store (через loadSnapshot).
+ * Викликати після hydrate з recording_start_state — щоб lazy auto-create не
+ * створював дублікати для сторінок, що прийшли зі snapshot.
+ */
+export function markReplayPagesEnsured(pageIds: string[]): void {
+  for (const id of pageIds) {
+    if (id) _ensuredPageIds.add(id)
+  }
+}
+
 export interface ReplayStoreApi {
   addStroke: (s: WBStroke, opts?: { skipHistory?: boolean }) => void
   updateStroke: (s: WBStroke, opts?: { skipHistory?: boolean }) => void
@@ -20,6 +40,7 @@ export interface ReplayStoreApi {
   addPage: (opts?: {
     name?: string
     background?: WBPageBackground
+    backgroundColor?: string
     width?: number
     height?: number
   }) => void
@@ -48,15 +69,33 @@ export function applyReplayOperation(
 ): void {
   const payload = op.payload as Record<string, unknown>
 
-  // REPLAY-FIX-1: Resolve page by op.page_id before applying page-specific operations.
-  // Without this, strokes/assets land on currentPageIndex instead of the correct page.
-  if (op.page_id) {
+  // REPLAY-FIX-2: Resolve page by op.page_id with lazy auto-create.
+  //
+  // Перші ops у timeline можуть посилатись на сторінки, які існували у session.state
+  // на момент початку запису, але НЕ мають своїх page_add ops (бо вони були створені
+  // ще до старту recorder). Також можуть зустрічатись ghost-id з попередніх ревізій.
+  //
+  // Стратегія: якщо op має невідомий page_id і це не page_add — створюємо порожню
+  // сторінку з цим id (lazy create) і переходимо на неї. Якщо це перша lazy-create
+  // у даному replay — перевикористовуємо вже існуючу page-0 (від resetForReplay)
+  // замість того щоб лишати "сирітську" пусту сторінку.
+  if (op.page_id && op.op_type !== 'page_add') {
     let targetIdx = store.pages.findIndex((p) => p.id === op.page_id)
-    // After resetForReplay(), page-0 has a fresh random id that won't match recorded ops.
-    // Adopt the recorded page_id so subsequent ops can find it.
-    if (targetIdx < 0 && store.pages.length === 1 && op.op_type !== 'page_add') {
-      (store.pages[0] as { id: string }).id = op.page_id
-      targetIdx = 0
+    if (targetIdx < 0) {
+      if (store.pages.length === 1 && _ensuredPageIds.size === 0) {
+        // Перевикористовуємо bootstrap page-0 з resetForReplay
+        (store.pages[0] as { id: string }).id = op.page_id
+        targetIdx = 0
+      } else {
+        // Створюємо нову порожню сторінку з потрібним id
+        store.addPage({ background: 'white' })
+        const lastPage = store.pages[store.pages.length - 1]
+        if (lastPage) {
+          (lastPage as { id: string }).id = op.page_id
+        }
+        targetIdx = store.pages.length - 1
+      }
+      _ensuredPageIds.add(op.page_id)
     }
     if (targetIdx >= 0 && targetIdx !== store.currentPageIndex) {
       store.goToPage(targetIdx)
@@ -97,20 +136,31 @@ export function applyReplayOperation(
     case 'page_add': {
       const pageData = payload.page as Record<string, unknown> | undefined
       if (pageData) {
+        const originalId = (pageData.id as string) || op.page_id || ''
+        // Якщо ця сторінка вже була lazy-створена раніше (через посилання з ранішого op) —
+        // не створюємо дублікат, просто переходимо на неї.
+        if (originalId && _ensuredPageIds.has(originalId)) {
+          const existingIdx = store.pages.findIndex((p) => p.id === originalId)
+          if (existingIdx >= 0 && existingIdx !== store.currentPageIndex) {
+            store.goToPage(existingIdx)
+          }
+          break
+        }
         store.addPage({
           name: (pageData.name as string) ?? '',
           background: (pageData.background as WBPageBackground) ?? 'white',
+          // INV-T2: відновлюємо кастомний колір фону при replay
+          backgroundColor: (pageData.backgroundColor as string | undefined),
           width: pageData.width as number | undefined,
           height: pageData.height as number | undefined,
         })
         // REPLAY-FIX-1: Preserve original page_id so subsequent ops can find this page.
-        // addPage() generates a random id; we overwrite it with the recorded one.
-        const originalId = (pageData.id as string) || op.page_id
         if (originalId) {
           const lastPage = store.pages[store.pages.length - 1]
           if (lastPage) {
             (lastPage as { id: string }).id = originalId
           }
+          _ensuredPageIds.add(originalId)
         }
       }
       break

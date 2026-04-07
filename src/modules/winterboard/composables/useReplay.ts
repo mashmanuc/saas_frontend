@@ -28,6 +28,12 @@ export function useReplay(sessionId: string) {
   const markers = ref<WBLessonMarker[]>([])
   const activeMarkerId = ref<string | null>(null)
 
+  // A.2.4: real-time playback tracking (for MM:SS display)
+  const firstOpAtMs = ref(0)
+  const lastOpAtMs = ref(0)
+  const currentTimeMs = ref(0)
+  const totalDurationMs = computed(() => Math.max(0, lastOpAtMs.value - firstOpAtMs.value))
+
   // Stored onOp callback for seekToWithSnapshot to re-apply ops
   let _onOp: ((op: BoardOperation) => void) | null = null
 
@@ -40,18 +46,36 @@ export function useReplay(sessionId: string) {
   /**
    * Fetch timeline from API and wire up the engine.
    * @param onOp - callback fired for each replayed operation (render to shadow canvas)
+   * @param onStartState - optional callback to hydrate board store from snapshot at recording start.
+   *   Викликається ДО onOp, щоб replay починав з фону/асетів які існували до натискання Start.
    */
-  async function loadTimeline(onOp: (op: BoardOperation) => void): Promise<void> {
+  async function loadTimeline(
+    onOp: (op: BoardOperation) => void,
+    onStartState?: (state: { pages?: unknown[]; currentPageIndex?: number }) => void,
+  ): Promise<void> {
     _onOp = onOp
     isLoading.value = true
     error.value = null
     try {
       const timeline = await fetchReplayTimeline(sessionId)
       totalOperations.value = timeline.total_operations
+      // A.2.4: derive playback duration з timestamps крайніх ops
+      if (timeline.operations && timeline.operations.length > 0) {
+        firstOpAtMs.value = new Date(timeline.operations[0].created_at).getTime()
+        lastOpAtMs.value = new Date(timeline.operations[timeline.operations.length - 1].created_at).getTime()
+        currentTimeMs.value = 0
+      }
+      // INV-T: hydrate з recording_start_state ПЕРЕД накаткою ops
+      if (timeline.start_state && onStartState) {
+        try { onStartState(timeline.start_state) } catch (e) { console.warn('[replay] start_state hydrate failed', e) }
+      }
 
       engine.value = new WBReplayEngine(timeline)
         .on('onOperation', (op, idx) => {
           currentIndex.value = idx + 1
+          // A.2.4: update playback time
+          const tMs = new Date(op.created_at).getTime() - firstOpAtMs.value
+          currentTimeMs.value = Math.max(0, tMs)
           onOp(op)
         })
         .on('onProgress', (cur, total) => {
@@ -169,6 +193,8 @@ export function useReplay(sessionId: string) {
     seekToWithSnapshot,
     markers: readonly(markers),
     activeMarkerId: readonly(activeMarkerId),
+    currentTimeMs: readonly(currentTimeMs),
+    totalDurationMs,
     loadMarkers,
     destroy,
   }

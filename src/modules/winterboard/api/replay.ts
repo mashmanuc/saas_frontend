@@ -102,6 +102,28 @@ export async function createSnapshot(
   )
 }
 
+// ─── A.1: Manual Recording Control ────────────────────────────────────
+
+/**
+ * POST /winterboard/sessions/{uuid}/start-recording/
+ * Починає запис уроку. Тільки owner.
+ */
+export async function startRecording(
+  sessionId: string,
+): Promise<{ recording_started_at: string; recording_started_seq: number }> {
+  return apiClient.post(`${BASE}/sessions/${sessionId}/start-recording/`)
+}
+
+/**
+ * POST /winterboard/sessions/{uuid}/stop-recording/
+ * Зупиняє запис уроку. Фіксує replay boundary (INV-AF).
+ */
+export async function stopRecording(
+  sessionId: string,
+): Promise<{ recording_stopped_at: string; recording_stopped_seq: number; is_replay_frozen: boolean }> {
+  return apiClient.post(`${BASE}/sessions/${sessionId}/stop-recording/`)
+}
+
 // ─── Lesson Markers (Phase 10 P5) ─────────────────────────────────────
 
 /**

@@ -75,8 +75,16 @@
 
       <!-- Right: Actions -->
       <div class="wb-solo-room__actions">
-        <!-- REPLAY-INV-2: always-on recording indicator (informational only) -->
-        <WBRecordingBanner v-if="mode === 'edit'" />
+        <!-- A.1: Manual Recording Control — кнопка start/stop + REC таймер -->
+        <WBRecordingBanner
+          v-if="mode === 'edit' && isSessionOwner"
+          :is-recording="isManualRecording"
+          :is-frozen="isReplayFrozen"
+          :is-loading="isRecordingLoading"
+          :recording-started-at="recordingStartedAt"
+          @start="handleStartRecording"
+          @stop="handleStopRecording"
+        />
         <button
           type="button"
           class="wb-header-btn"
@@ -218,8 +226,8 @@
 
     <!-- ── Main content: Toolbar + Canvas ──────────────────────────────────── -->
     <div class="wb-solo-room__main">
-      <!-- Left Toolbar (AGENT-B: WBToolbar) -->
-      <aside class="wb-solo-room__toolbar">
+      <!-- Left Toolbar (AGENT-B: WBToolbar) — приховано в replay-режимі -->
+      <aside v-if="mode !== 'replay'" class="wb-solo-room__toolbar">
         <WBToolbar
           :current-tool="store.currentTool"
           :current-color="store.currentColor"
@@ -242,8 +250,17 @@
         />
       </aside>
 
-      <!-- ── Page thumbnails panel (collapsible) ──────────────────────────── -->
+      <!-- A.2.5: Chapters sidebar в replay-режимі (Розділи уроку) -->
+      <WBReplayChaptersSidebar
+        v-if="mode === 'replay' && sessionId"
+        :markers="replayMarkers"
+        :active-marker-id="replayActiveMarkerId"
+        @seek="handleMarkerSeek"
+      />
+
+      <!-- ── Page thumbnails panel (collapsible) — приховано в replay ── -->
       <aside
+        v-if="mode !== 'replay'"
         class="wb-solo-room__page-panel"
         :class="{ 'wb-solo-room__page-panel--open': showPagePanel }"
         aria-label="Панель сторінок"
@@ -260,7 +277,9 @@
       </aside>
 
       <!-- Canvas area -->
-      <div id="wb-canvas" ref="canvasContainerRef" class="wb-solo-room__canvas" :class="{ 'wb-solo-room__canvas--with-sidebar': showMaterialsSidebar }" tabindex="-1" @dragover.prevent @drop="contentDrop.handleCanvasDrop($event)" @click="onCanvasContainerClick" @mouseup="onCanvasContainerMouseUp">
+      <div id="wb-canvas" ref="canvasContainerRef" class="wb-solo-room__canvas" :class="{ 'wb-solo-room__canvas--with-sidebar': showMaterialsSidebar, 'wb-solo-room__canvas--readonly': mode === 'replay' }" tabindex="-1" @dragover.prevent @drop="contentDrop.handleCanvasDrop($event)" @click="onCanvasContainerClick" @mouseup="onCanvasContainerMouseUp">
+        <!-- A.4 (INV-X): replay = read-only overlay блокує всі pointer-події по канвасу -->
+        <div v-if="mode === 'replay'" class="wb-solo-room__readonly-overlay" aria-hidden="true" />
         <!-- B6.2: Loading state -->
         <Transition name="wb-fade">
           <WBCanvasLoader v-if="isLoading" />
@@ -685,18 +704,10 @@
       :clear-state="() => store.resetForReplay()"
       @exit="exitReplayMode"
       @operation="onReplayOperation"
+      @start-state="onReplayStartState"
     />
 
-    <!-- P5: Lesson Map sidebar in replay mode -->
-    <WBLessonMap
-      v-if="mode === 'replay' && sessionId"
-      :markers="replayMarkers"
-      :active-marker-id="replayActiveMarkerId"
-      :can-edit="isSessionOwner"
-      @seek="handleMarkerSeek"
-      @create="showMarkerModal = true"
-      @delete="handleMarkerDelete"
-    />
+    <!-- A.2.1: Lesson Map sidebar removed in replay mode (markers will move to timeline as chapters) -->
 
     <!-- P5: Marker create modal -->
     <WBMarkerCreateModal
@@ -713,7 +724,7 @@
 
     <!-- Phase 11: Replay entry button (edit mode only) -->
     <button
-      v-if="mode === 'edit' && sessionId && hasOperations"
+      v-if="mode === 'edit' && sessionId"
       class="wb-solo-room__replay-btn"
       data-testid="replay-button"
       :aria-label="t('winterboard.replay.viewReplay')"
@@ -793,17 +804,17 @@ import WBGridButton from '../components/canvas/WBGridButton.vue'
 import WBTouchContextMenu from '../components/canvas/WBTouchContextMenu.vue'
 import WBSelectionToolbar from '../components/canvas/WBSelectionToolbar.vue'
 import WBReplayControls from '../components/replay/WBReplayControls.vue'
-import WBLessonMap from '../components/replay/WBLessonMap.vue'
 import WBMarkerCreateModal from '../components/replay/WBMarkerCreateModal.vue'
 import WBReplayBanner from '../components/replay/WBReplayBanner.vue'
 import WBRecordingBanner from '../components/replay/WBRecordingBanner.vue'
+import WBReplayChaptersSidebar from '../components/replay/WBReplayChaptersSidebar.vue'
 import SaveAsTemplateDialog from '@/modules/knowledge/components/SaveAsTemplateDialog.vue'
 import WBSaveLessonDialog from '@/modules/knowledge/components/WBSaveLessonDialog.vue'
 import WBOnboardingHints from '../components/ui/WBOnboardingHints.vue'
 import type { BoardOperation } from '../types/replay'
 import type { WBLessonMarker } from '../types/winterboard'
 import { createLessonMarker, deleteLessonMarker } from '../api/replay'
-import { applyReplayOperation } from '../engine/applyReplayOperation'
+import { applyReplayOperation, markReplayPagesEnsured } from '../engine/applyReplayOperation'
 import { useGridOverlay } from '../composables/useGridOverlay'
 import { useReplayRecorder } from '../composables/useReplayRecorder'
 import { useCanvasResize } from '../composables/useCanvasResize'
@@ -842,16 +853,56 @@ const autosave = useAutosave(sessionId)
 // Phase 4a: Bridge — boardStore operations → diff ops → autosave.queueDiffOp
 const opsBridge = useOpsBridge(autosave)
 
-// REPLAY-INV-2: always-on recording — активний коли store.mode === 'edit'
-// Computed ref дозволяє recorder автоматично зупинятись при переході в replay mode
-const isRecording = computed(() => store.mode === 'edit')
+// A.1: Manual Recording Control
+// Ops ЗАВЖДИ записуються (append-only log) — кнопка start/stop тільки встановлює
+// recording_started_seq / recording_stopped_seq boundaries для replay.
+// Recorder працює коли mode === 'edit' (зупиняється при replay).
+const isManualRecording = ref(false)
+const recordingStartedAt = ref<string | null>(null)
+const isReplayFrozen = ref(false)
+const isRecordingLoading = ref(false)
+
+// Recorder enabled = edit mode (ЗАВЖДИ записує ops, не залежить від isManualRecording)
+const isRecorderEnabled = computed(() => store.mode === 'edit')
 const replayRecorder = useReplayRecorder({
   sessionId,
   getBoardState: () => store.getSnapshotState(),
-  enabled: isRecording,
+  enabled: isRecorderEnabled,
 })
 // Phase 20: Auto-record all store operations — no manual record() calls needed
 const _unsubRecorder = replayRecorder.connectToStore(store)
+
+async function handleStartRecording(): Promise<void> {
+  const sid = sessionId.value
+  if (!sid || isManualRecording.value || isReplayFrozen.value) return
+  isRecordingLoading.value = true
+  try {
+    const result = await import('../api/replay').then(m => m.startRecording(sid))
+    isManualRecording.value = true
+    recordingStartedAt.value = result.recording_started_at
+    isReplayFrozen.value = false
+  } catch (e) {
+    console.error('[WBSoloRoom] Failed to start recording:', e)
+  } finally {
+    isRecordingLoading.value = false
+  }
+}
+
+async function handleStopRecording(): Promise<void> {
+  const sid = sessionId.value
+  if (!sid || !isManualRecording.value) return
+  isRecordingLoading.value = true
+  try {
+    const result = await import('../api/replay').then(m => m.stopRecording(sid))
+    isManualRecording.value = false
+    recordingStartedAt.value = null
+    isReplayFrozen.value = result.is_replay_frozen
+  } catch (e) {
+    console.error('[WBSoloRoom] Failed to stop recording:', e)
+  } finally {
+    isRecordingLoading.value = false
+  }
+}
 
 // Grid overlay (background grid for the canvas)
 const gridOverlay = useGridOverlay(sessionId.value ?? 'default')
@@ -1063,6 +1114,16 @@ async function handleMarkerDelete(id: string): Promise<void> {
   }
 }
 
+// INV-T: hydrate з recording_start_state ПЕРЕД накаткою ops.
+// Це повертає фон/асети/страйки які існували до натискання Start Recording.
+function onReplayStartState(state: { pages?: unknown[]; currentPageIndex?: number }): void {
+  if (state && Array.isArray(state.pages) && state.pages.length > 0) {
+    store.loadSnapshot(state as Parameters<typeof store.loadSnapshot>[0])
+    const ids = (state.pages as Array<{ id?: string }>).map(p => p?.id ?? '').filter(Boolean)
+    markReplayPagesEnsured(ids)
+  }
+}
+
 // R5: Delegate to shared applyReplayOperation (DRY)
 function onReplayOperation(op: BoardOperation): void {
   applyReplayOperation(store, op)
@@ -1175,7 +1236,8 @@ const sessionContextLabel = computed<string | null>(() => {
 })
 const autoGroupId = ref<string | null>(null)
 const groupId = computed(() => explicitGroupId.value || autoGroupId.value)
-const showMaterialsSidebar = ref(true)
+const showMaterialsSidebar = computed(() => mode.value !== 'replay' && _showMaterialsSidebar.value)
+const _showMaterialsSidebar = ref(true)
 
 async function detectTutorGroup() {
   if (explicitGroupId.value) return
@@ -2174,6 +2236,13 @@ onMounted(async () => {
           updated_at: detail.updated_at,
         })
       }
+      // A.1: hydrate recording state from session detail
+      if (detail.recording_started_seq != null && detail.recording_stopped_seq == null) {
+        isManualRecording.value = true
+        recordingStartedAt.value = detail.recording_started_at ?? null
+      }
+      isReplayFrozen.value = detail.is_replay_frozen ?? false
+
       // Set sessionId AFTER hydration — autosave is now safe to run
       sessionId.value = id
       sessionName.value = detail.name || t('winterboard.room.untitled')
@@ -2218,6 +2287,10 @@ onMounted(async () => {
 
 // ── Keyboard shortcuts ──
 function onGlobalKeyDown(e: KeyboardEvent) {
+  // A.4 (INV-X): у replay-режимі канвас read-only — блокуємо всі mutate-shortcuts
+  if (mode.value === 'replay') {
+    return
+  }
   if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
     e.preventDefault()
     if (showMaterialsSidebar.value) toggleSidebarCollapse()
@@ -2533,6 +2606,19 @@ watch(() => store.workspaceName, (name) => {
 }
 .wb-solo-room__page-panel--open {
   width: 156px; /* 140px thumbnail + 8px padding × 2 */
+}
+
+/* A.4 (INV-X): read-only overlay в replay-режимі */
+.wb-solo-room__readonly-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: transparent;
+  cursor: default;
+  pointer-events: auto;
+  /* блокує context-menu (right-click) */
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .wb-solo-room__canvas {

@@ -23,41 +23,43 @@ const { t } = useI18n({ useScope: 'global' })
 </script>
 
 <style scoped>
+/* A.2.3: інформаційний банер (синій), не агресивний червоний.
+   Використовує глобальні токени з ui/tokens. */
 .wb-replay-banner {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: 36px;
-  background: rgba(239, 68, 68, 0.95);
-  color: white;
+  height: 32px;
+  background: var(--color-info-bg, #dbeafe);
+  color: var(--color-info-text, #1e40af);
+  border-bottom: 1px solid var(--color-info-border, #bfdbfe);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
   z-index: 60;
   font-size: 0.8125rem;
-  font-weight: 600;
-  backdrop-filter: blur(4px);
+  font-weight: 500;
 }
 
 .wb-replay-banner__indicator {
-  width: 8px;
-  height: 8px;
-  background: white;
+  width: 6px;
+  height: 6px;
+  background: var(--color-info-text, #1e40af);
   border-radius: 50%;
-  animation: wb-banner-blink 1.5s ease-in-out infinite;
+  opacity: 0.8;
 }
 
 .wb-replay-banner__text {
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
 }
 
 .wb-replay-banner__exit {
-  padding: 3px 12px;
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  padding: 2px 10px;
+  background: transparent;
+  color: var(--color-info-text, #1e40af);
+  border: 1px solid var(--color-info-border, #93c5fd);
   border-radius: 6px;
   font-size: 0.75rem;
   font-weight: 600;
@@ -66,11 +68,6 @@ const { t } = useI18n({ useScope: 'global' })
 }
 
 .wb-replay-banner__exit:hover {
-  background: rgba(255, 255, 255, 0.35);
-}
-
-@keyframes wb-banner-blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+  background: rgba(30, 64, 175, 0.08);
 }
 </style>

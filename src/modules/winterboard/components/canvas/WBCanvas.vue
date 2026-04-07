@@ -669,6 +669,21 @@ watch(
   },
 )
 
+// REPLAY-FIX-7: Page switch (page_navigate / replay) — always invalidate cached
+// background layer. Watcher на currentPageBgColor не спрацьовує, якщо у нової сторінки
+// той самий колір (або undefined→fallback), тому фон попередньої сторінки лишається
+// "запеченим" у Konva cache. Hard-redraw на зміну currentPageIndex гарантує оновлення.
+watch(
+  () => wbStore.currentPageIndex,
+  () => {
+    nextTick(() => {
+      const layer = backgroundLayerRef.value?.getNode?.()
+      layer?.clearCache?.()
+      layer?.batchDraw?.()
+    })
+  },
+)
+
 watch(
   () => wbStore.gridPatternDataUrl,
   (dataUrl) => {

@@ -7192,7 +7192,8 @@
       "start": "Record lesson",
       "startTitle": "Start recording for later replay",
       "stop": "Stop",
-      "active": "Recording"
+      "active": "Recording",
+      "frozen": "Recording finished"
     },
     "onboarding": {
       "toolbar": "Drawing tools. Pick a pen and start!",
