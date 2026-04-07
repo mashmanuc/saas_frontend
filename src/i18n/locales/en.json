@@ -7186,7 +7186,41 @@
       "viewingMode": "Viewing mode — editing disabled",
       "exitReplay": "Exit",
       "shareMoment": "Share moment",
-      "momentCopied": "Moment link copied!"
+      "momentCopied": "Moment link copied!",
+      "loading": "Loading replay…",
+      "replayReady": "Replay ready",
+      "operationsCount": "{count} operations",
+      "notFound": "Replay not found",
+      "forbidden": "Access denied",
+      "rateLimited": "Too many requests. Try again later.",
+      "loadError": "Failed to load replay",
+      "comments": {
+        "title": "Comments",
+        "empty": "No comments yet",
+        "placeholder": "Write a comment for the current moment…",
+        "send": "Send"
+      },
+      "share": {
+        "title": "Share recording",
+        "hint": "Choose who can access this replay",
+        "link": "Link",
+        "copy": "Copy",
+        "copied": "Copied",
+        "rotate": "Rotate link",
+        "private": "Private",
+        "privateDesc": "Only you have access",
+        "link_mode": "By link",
+        "linkDesc": "Access via direct link",
+        "public": "Public",
+        "publicDesc": "Visible to everyone, indexed by search engines"
+      }
+    },
+    "objectText": {
+      "view": "View text",
+      "add": "Add text",
+      "title": "Object text",
+      "placeholder": "Enter text…",
+      "delete": "Delete"
     },
     "recording": {
       "start": "Record lesson",
