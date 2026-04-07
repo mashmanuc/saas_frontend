@@ -2217,10 +2217,11 @@ async function navigateWithSave(path: string): Promise<void> {
 async function saveBeforeLeave(): Promise<void> {
   if (!sessionId.value) return
   try {
-    // Save name if changed
-    if (store.workspaceName !== 'Untitled') {
-      await winterboardApi.updateSession(sessionId.value, { name: store.workspaceName }).catch(() => {})
-    }
+    // FIX (2026-04-07): name persistence перенесено повністю в handleTitleBlur.
+    // Раніше тут робився save з hardcoded чеком `!== 'Untitled'` (англійський
+    // string), який не ловив локалізоване "Без назви" і зберігав сміттєві
+    // значення зі store.workspaceName (включно з UI-текстом, який міг туди
+    // потрапити з автотестів або race-у). Назву має зберігати тільки blur.
     // Flush all pending drawing changes
     await autosave.saveNow()
   } catch (err) {

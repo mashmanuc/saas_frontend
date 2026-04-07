@@ -159,6 +159,15 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
         uploadError.value = null
         try {
           const { assetUrl } = await uploadFileToStorage(sid, file)
+          // FIX (2026-04-07): preload CDN URL BEFORE swapping src, otherwise canvas
+          // drops the already-rendered data:URL bitmap and shows blank for ~1s while
+          // the new URL loads over the network (visible flicker on every paste).
+          await new Promise<void>((resolve) => {
+            const preload = new Image()
+            preload.onload = () => resolve()
+            preload.onerror = () => resolve() // fall through — swap anyway
+            preload.src = assetUrl
+          })
           // Update asset src from data:URL to CDN URL via store.updateAsset
           const page = store.currentPage
           if (page) {
