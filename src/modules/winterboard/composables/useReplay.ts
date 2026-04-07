@@ -121,22 +121,41 @@ export function useReplay(sessionId: string) {
   ): Promise<void> {
     if (!_onOp) return
 
-    const snapshot = await fetchNearestSnapshot(sessionId, idx)
+    // A.3 (INV-AD): seek використовує seq як SSoT.
+    // Конвертуємо op-index → seq через engine.operations[idx].seq.
+    // Якщо seq на op'і відсутній (legacy ops без seq) — fallback на index.
+    const opAtIdx = engine.value?.getOperationAt?.(idx)
+    const targetSeq = (opAtIdx && typeof (opAtIdx as { seq?: number }).seq === 'number')
+      ? (opAtIdx as { seq: number }).seq
+      : idx
 
-    if (snapshot && snapshot.operation_index <= idx) {
+    const snapshot = await fetchNearestSnapshot(sessionId, targetSeq)
+
+    // INV-AD: schema version mismatch → fallback до replay-from-zero
+    const { OPS_SCHEMA_VERSION } = await import('../types/replay')
+    const versionOk = !snapshot || (snapshot.ops_schema_version ?? 1) === OPS_SCHEMA_VERSION
+
+    if (snapshot && versionOk) {
+      const snapSeq = (snapshot.seq ?? snapshot.operation_index)
       // Load snapshot board state
       loadState(snapshot.board_state)
 
-      // Apply remaining ops from snapshot.operation_index to idx
+      // Apply remaining ops від snapSeq+1 до targetSeq.
+      // Backend offset/limit працюють по індексу — приблизна конвертація через engine.
+      const snapIdx = engine.value?.findIndexBySeq?.(snapSeq) ?? 0
       const remaining = await fetchReplayTimeline(sessionId, {
-        offset: snapshot.operation_index,
-        limit: idx - snapshot.operation_index,
+        offset: snapIdx + 1,
+        limit: Math.max(0, idx - snapIdx),
       })
       for (const op of remaining.operations) {
         _onOp(op)
       }
     } else {
-      // No snapshot — replay from beginning
+      if (snapshot && !versionOk) {
+        console.warn('[replay] snapshot schema mismatch, fallback to replay-from-zero',
+          { snapshot_v: snapshot.ops_schema_version, expected: OPS_SCHEMA_VERSION })
+      }
+      // No snapshot or schema mismatch — replay from beginning
       clearState()
       const timeline = await fetchReplayTimeline(sessionId, { limit: idx })
       for (const op of timeline.operations) {

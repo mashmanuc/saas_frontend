@@ -102,6 +102,15 @@ const winterboardStandaloneRoutes: RouteRecordRaw[] = [
     props: true,
     meta: { title: 'Winterboard', public: true, requiresAuth: false },
   },
+  // Phase B: публічний replay за share-token.
+  // INV-L: єдиний anonymous endpoint; НЕ приймає session.id.
+  {
+    path: '/replay/share/:token',
+    name: 'winterboard-replay-share',
+    component: () => import('./views/WBReplayPublicView.vue'),
+    props: true,
+    meta: { title: 'Replay', public: true, requiresAuth: false },
+  },
   {
     path: '/winterboard/:id',
     name: 'winterboard-solo',

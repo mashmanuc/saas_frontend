@@ -6,6 +6,8 @@
 
 export interface BoardOperation {
   id: number           // int PK
+  // A.3 (INV-AD): backend-authoritative monotonic seq. Може бути null для legacy ops.
+  seq?: number | null
   op_type: string      // 'stroke_add','stroke_delete','asset_add','asset_move',
                        // 'text_add','text_update','page_add','page_delete','clear_page'
   page_id: string      // може бути '' якщо не вказано
@@ -55,6 +57,15 @@ export interface ReplayQuery {
 export interface ReplaySnapshot {
   id: string
   operation_index: number
+  // A.3 (INV-AD): single source of truth — seq, не operation_index
+  seq?: number | null
+  ops_schema_version?: number
+  state_schema_version?: number
   board_state: Record<string, unknown>
   created_at: string   // ISO datetime
 }
+
+// A.3: поточна версія op-schema (frontend константа). Має співпадати з backend
+// OPS_SCHEMA_VERSION у winterboard/tasks.py. При зміні формату ops/state — інкремент.
+export const OPS_SCHEMA_VERSION = 1
+export const STATE_SCHEMA_VERSION = 1

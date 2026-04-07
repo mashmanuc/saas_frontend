@@ -49,6 +49,21 @@ export class WBReplayEngine {
   getCurrentIndex(): number { return this.currentIndex }
   getTotalOperations(): number { return this.operations.length }
 
+  // A.3: для seek-with-snapshot потрібно мапити index ↔ seq
+  getOperationAt(index: number): BoardOperation | null {
+    return this.operations[index] ?? null
+  }
+
+  findIndexBySeq(seq: number): number {
+    // Operations sorted ASC by created_at; seq must also be monotonic.
+    // Linear scan достатньо швидкий до ~10k ops; binary search можна додати пізніше.
+    for (let i = 0; i < this.operations.length; i++) {
+      const opSeq = (this.operations[i] as { seq?: number }).seq
+      if (typeof opSeq === 'number' && opSeq >= seq) return i
+    }
+    return Math.max(0, this.operations.length - 1)
+  }
+
   private setState(s: ReplayState): void {
     this.state = s
     this.callbacks.onStateChange?.(s)

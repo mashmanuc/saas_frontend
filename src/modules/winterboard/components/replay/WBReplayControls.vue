@@ -24,6 +24,17 @@
 
       <!-- Progress slider with chapter markers -->
       <div class="wb-replay-controls__timeline" :style="progressStyle">
+        <!-- Phase C.2: comment points (yellow) — окремий шар під chapters -->
+        <button
+          v-for="cp in (commentPoints || [])"
+          :key="`cmt-${cp.id}`"
+          type="button"
+          class="wb-replay-controls__comment-dot"
+          :style="{ left: `${cp.percent}%` }"
+          :title="cp.text"
+          :aria-label="cp.text"
+          @click.stop="onCommentClick(cp.operation_index)"
+        />
         <!-- A.2.5: chapter ticks (lesson markers) -->
         <button
           v-for="m in chapters"
@@ -106,6 +117,8 @@ const props = defineProps<{
   loadState?: (boardState: Record<string, unknown>) => void
   /** REPLAY-INV-4: для seekToWithSnapshot — очищає store перед replay-from-zero */
   clearState?: () => void
+  /** Phase C.2: точки коментарів на timeline (жовті), окремо від chapters (сині). */
+  commentPoints?: ReadonlyArray<{ id: string; operation_index: number; percent: number; text: string }>
 }>()
 
 const emit = defineEmits<{
@@ -176,6 +189,24 @@ function onChapterClick(idx: number): void {
     seekTo(idx)
   }
 }
+
+// Phase C.3: клік по жовтій точці коментаря → seek
+function onCommentClick(idx: number): void {
+  if (props.loadState && props.clearState) {
+    void seekToWithSnapshot(idx, props.loadState, props.clearState)
+  } else {
+    seekTo(idx)
+  }
+}
+
+// Phase C.3: parent (WBSoloRoom) може викликати seek через ref.current.jumpTo(idx)
+defineExpose({
+  jumpTo: (idx: number) => {
+    onCommentClick(idx)
+  },
+  getCurrentIndex: () => currentIndex.value,
+  getTotalOperations: () => totalOperations.value,
+})
 
 const progressStyle = computed(() => {
   const total = totalOperations.value || 1
@@ -323,6 +354,25 @@ function formatTime(ms: number): string {
 }
 .wb-replay-controls__chapter--active {
   background: var(--color-primary, #6366f1);
+}
+/* Phase C.2: comment points — жовті точки, окремо від chapter (оранжевих). */
+.wb-replay-controls__comment-dot {
+  position: absolute;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  margin-left: -4px;
+  border-radius: 50%;
+  background: #facc15;
+  border: 2px solid var(--color-surface, #ffffff);
+  transform: translateY(50%);
+  cursor: pointer;
+  padding: 0;
+  z-index: 2;
+  transition: transform 0.15s;
+}
+.wb-replay-controls__comment-dot:hover {
+  transform: translateY(50%) scale(1.4);
 }
 
 .wb-replay-controls__slider {

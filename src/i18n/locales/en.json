@@ -7602,7 +7602,41 @@
       "shareMoment": "Share moment",
       "momentCopied": "Moment link copied!",
       "momentBadge": "Moment: {time}",
-      "noOperations": "No recordings on this board yet"
+      "noOperations": "No recordings on this board yet",
+      "loading": "Loading replay…",
+      "replayReady": "Replay ready",
+      "operationsCount": "{count} operations",
+      "notFound": "Replay not found",
+      "forbidden": "Access denied",
+      "rateLimited": "Too many requests. Try again later.",
+      "loadError": "Failed to load replay",
+      "comments": {
+        "title": "Comments",
+        "empty": "No comments yet",
+        "placeholder": "Write a comment for the current moment…",
+        "send": "Send"
+      },
+      "share": {
+        "title": "Share replay",
+        "hint": "Choose who can access this replay",
+        "link": "Link",
+        "copy": "Copy",
+        "copied": "Copied",
+        "rotate": "Rotate link",
+        "private": "Private",
+        "privateDesc": "Only you have access",
+        "link_mode": "Link",
+        "linkDesc": "Anyone with the link",
+        "public": "Public",
+        "publicDesc": "Visible to everyone, indexable"
+      }
+    },
+    "objectText": {
+      "view": "View text",
+      "add": "Add text",
+      "title": "Object text",
+      "placeholder": "Enter text…",
+      "delete": "Delete"
     },
     "tabLessons": "Lessons",
     "tabTemplates": "Templates",
@@ -7998,7 +8032,25 @@
     "exitReplay": "Exit replay",
     "viewReplay": "View replay",
     "replayEnded": "Replay ended",
-    "loading": "Loading replay…"
+    "loading": "Loading replay…",
+    "chaptersTitle": "Lesson chapters",
+    "noChapters": "No chapters",
+    "untitledChapter": "Chapter",
+    "share": {
+      "button": "Share",
+      "title": "Share lesson replay",
+      "hint": "Choose who can view this lesson replay.",
+      "private": "Private",
+      "privateDesc": "Only you can see it.",
+      "link_mode": "Anyone with the link",
+      "linkDesc": "Anyone with the link can view.",
+      "public": "Public",
+      "publicDesc": "Publicly accessible and indexable.",
+      "link": "Link",
+      "copy": "Copy",
+      "copied": "Copied",
+      "rotate": "Generate new link (invalidate old one)"
+    }
   },
   "wb": {
     "ctx": {

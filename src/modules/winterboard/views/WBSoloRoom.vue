@@ -103,6 +103,16 @@
         >
           ↪
         </button>
+        <!-- Phase B: Share replay -->
+        <button
+          v-if="isSessionOwner"
+          type="button"
+          class="wb-header-btn"
+          :title="t('winterboard.replay.share.title', 'Поділитися записом')"
+          @click="showShareModal = true"
+        >
+          🔗
+        </button>
         <button
           type="button"
           class="wb-header-btn"
@@ -699,12 +709,29 @@
     <!-- A12p2: Replay mode controls -->
     <WBReplayControls
       v-if="mode === 'replay' && sessionId"
+      ref="replayControlsRef"
       :session-id="sessionId"
       :load-state="(s) => store.loadSnapshot(s as Parameters<typeof store.loadSnapshot>[0])"
       :clear-state="() => store.resetForReplay()"
+      :comment-points="commentPoints"
       @exit="exitReplayMode"
       @operation="onReplayOperation"
       @start-state="onReplayStartState"
+    />
+
+    <!-- Phase C: Replay comments sidebar -->
+    <WBReplayCommentsSidebar
+      v-if="mode === 'replay' && sessionId"
+      class="wb-solo-room__comments-sidebar"
+      :comments="replayCommentsList"
+      :current-op-index="replayCurrentOpIndex"
+      :can-comment="!!authStore.user"
+      :current-user-id="authStore.user?.id ?? null"
+      :session-owner-id="(store.ownerId as number | null) ?? null"
+      :submitting="commentSubmitting"
+      @jump="onCommentJump"
+      @delete="onCommentDelete"
+      @submit="onCommentSubmit"
     />
 
     <!-- A.2.1: Lesson Map sidebar removed in replay mode (markers will move to timeline as chapters) -->
@@ -732,6 +759,16 @@
     >
       &#9654; {{ t('winterboard.replay.viewReplay') }}
     </button>
+
+    <!-- Phase B: Share replay modal — owner only -->
+    <WBReplayShareModal
+      v-if="sessionId"
+      :visible="showShareModal"
+      :session-id="sessionId"
+      :initial-visibility="'private'"
+      :initial-token="null"
+      @close="showShareModal = false"
+    />
 
     <!-- Phase 34 B7: Multi-delete confirmation dialog -->
     <Teleport to="body">
@@ -804,6 +841,9 @@ import WBGridButton from '../components/canvas/WBGridButton.vue'
 import WBTouchContextMenu from '../components/canvas/WBTouchContextMenu.vue'
 import WBSelectionToolbar from '../components/canvas/WBSelectionToolbar.vue'
 import WBReplayControls from '../components/replay/WBReplayControls.vue'
+import WBReplayShareModal from '../components/replay/WBReplayShareModal.vue'
+import WBReplayCommentsSidebar from '../components/replay/WBReplayCommentsSidebar.vue'
+import { useReplayComments } from '../composables/useReplayComments'
 import WBMarkerCreateModal from '../components/replay/WBMarkerCreateModal.vue'
 import WBReplayBanner from '../components/replay/WBReplayBanner.vue'
 import WBRecordingBanner from '../components/replay/WBRecordingBanner.vue'
@@ -857,6 +897,9 @@ const opsBridge = useOpsBridge(autosave)
 // Ops ЗАВЖДИ записуються (append-only log) — кнопка start/stop тільки встановлює
 // recording_started_seq / recording_stopped_seq boundaries для replay.
 // Recorder працює коли mode === 'edit' (зупиняється при replay).
+// Phase B: Share modal
+const showShareModal = ref(false)
+
 const isManualRecording = ref(false)
 const recordingStartedAt = ref<string | null>(null)
 const isReplayFrozen = ref(false)
@@ -877,6 +920,9 @@ async function handleStartRecording(): Promise<void> {
   if (!sid || isManualRecording.value || isReplayFrozen.value) return
   isRecordingLoading.value = true
   try {
+    // INV-T fix: flush pending autosave щоб session.state на backend містив актуальний
+    // board state (фон/асети/страйки) ДО того як backend зробить deepcopy у recording_start_state.
+    try { await autosave.saveNow() } catch (e) { console.warn('[WBSoloRoom] saveNow before start-recording failed', e) }
     const result = await import('../api/replay').then(m => m.startRecording(sid))
     isManualRecording.value = true
     recordingStartedAt.value = result.recording_started_at
@@ -968,6 +1014,63 @@ const isSessionOwner = computed(() => {
   if (!store.ownerId || !authStore.user) return false
   return String(store.ownerId) === String(authStore.user.id)
 })
+
+// Phase C: Replay comments
+const _commentsInstance = ref<ReturnType<typeof useReplayComments> | null>(null)
+const replayCommentsList = computed(() => _commentsInstance.value?.comments.value || [])
+const replayCurrentOpIndex = ref(0)
+const replayCurrentTotalOps = ref(0)
+const commentSubmitting = ref(false)
+const replayControlsRef = ref<InstanceType<typeof WBReplayControls> | null>(null)
+let _replayPollTimer: ReturnType<typeof setInterval> | null = null
+
+const commentPoints = computed(() => {
+  const total = Math.max(1, replayCurrentTotalOps.value)
+  return replayCommentsList.value.map((c) => ({
+    id: c.id,
+    operation_index: c.operation_index,
+    percent: Math.max(0, Math.min(100, (c.operation_index / total) * 100)),
+    text: c.text,
+  }))
+})
+
+async function loadReplayComments(): Promise<void> {
+  if (!sessionId.value) return
+  _commentsInstance.value = useReplayComments(sessionId.value)
+  await _commentsInstance.value.load()
+}
+async function onCommentSubmit(text: string): Promise<void> {
+  if (!_commentsInstance.value) return
+  commentSubmitting.value = true
+  try {
+    await _commentsInstance.value.add(replayCurrentOpIndex.value, text)
+  } finally {
+    commentSubmitting.value = false
+  }
+}
+async function onCommentDelete(c: { id: string }): Promise<void> {
+  if (!_commentsInstance.value) return
+  await _commentsInstance.value.remove(c.id)
+}
+function onCommentJump(c: { operation_index: number }): void {
+  replayControlsRef.value?.jumpTo(c.operation_index)
+}
+
+function _startReplayPoll(): void {
+  if (_replayPollTimer) return
+  _replayPollTimer = setInterval(() => {
+    const r = replayControlsRef.value
+    if (!r) return
+    replayCurrentOpIndex.value = r.getCurrentIndex()
+    replayCurrentTotalOps.value = r.getTotalOperations()
+  }, 250)
+}
+function _stopReplayPoll(): void {
+  if (_replayPollTimer) {
+    clearInterval(_replayPollTimer)
+    _replayPollTimer = null
+  }
+}
 const showTemplateSelector = ref(false)
 const showSidebarOverlay = ref(false)
 const isFullscreen = ref(false)
@@ -1056,19 +1159,27 @@ watch(mode, (newMode, oldMode) => {
     }
     store.setMode('replay')
     store.resetForReplay()
+    void loadReplayComments()
+    _startReplayPoll()
   } else if (newMode === 'edit' && store.mode !== 'edit') {
     store.setMode('edit')
+    _stopReplayPoll()
   }
 })
+
+onBeforeUnmount(() => { _stopReplayPoll() })
 
 function enterReplayMode(): void {
   _savedBoardState = store.getSnapshotState()  // snapshot поточного стану
   store.setMode('replay')    // REPLAY-INV-9: _emitOperation стає NO-OP
   store.resetForReplay()     // чистий стан — replay накладає ops з нуля (REPLAY-INV-11)
   mode.value = 'replay'      // URL sync
+  void loadReplayComments()
+  _startReplayPoll()
 }
 
 function exitReplayMode(): void {
+  _stopReplayPoll()
   store.setMode('edit')      // REPLAY-INV-9: відновлюємо emitter
   if (_savedBoardState) {
     store.loadSnapshot(_savedBoardState)  // відновлюємо стан до replay

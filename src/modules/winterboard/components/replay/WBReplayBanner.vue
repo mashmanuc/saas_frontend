@@ -27,7 +27,8 @@ const { t } = useI18n({ useScope: 'global' })
    Використовує глобальні токени з ui/tokens. */
 .wb-replay-banner {
   position: fixed;
-  top: 0;
+  /* Зсунутий під хедер WBSoloRoom (56px), щоб не перекривати логотип/тайтл */
+  top: 56px;
   left: 0;
   right: 0;
   height: 32px;
