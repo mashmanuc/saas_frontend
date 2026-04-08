@@ -248,6 +248,7 @@ export function useAutosave(
       const hasPendingOps = pendingOps.value.length > 0
 
       // Strategy 1: Diff save (ops-based) — primary
+      let diffSucceeded = false
       if (hasPendingOps) {
         const diffSuccess = await retryWithBackoff(async () => {
           try {
@@ -258,8 +259,16 @@ export function useAutosave(
         })
 
         if (diffSuccess) {
-          onSaveSuccess()
-          return
+          diffSucceeded = true
+          // P0 FIX (2026-04-08): НЕ повертаємось одразу. Якщо у цьому ж циклі
+          // відбулася ops-незалежна мутація (PDF import, background change,
+          // importPdfPages, reorderPages тощо — див. markDirty() без queueDiffOp),
+          // треба ще дозаписати state через stream-save. Раніше рання return
+          // гарантовано втрачала PDF-фон і зміни порядку сторінок.
+          if (!store.isDirty) {
+            onSaveSuccess()
+            return
+          }
         }
       }
 
@@ -294,7 +303,14 @@ export function useAutosave(
 
       // Both strategies failed (or nothing to save)
       if (hasPendingOps || store.isDirty) {
+        if (diffSucceeded && !store.isDirty) {
+          // Diff встиг пройти, stream не потрібен
+          onSaveSuccess()
+          return
+        }
         onSaveError('Save failed after all retries')
+      } else if (diffSucceeded) {
+        onSaveSuccess()
       }
     } catch (err: any) {
       onSaveError(err?.message || 'Unknown save error')

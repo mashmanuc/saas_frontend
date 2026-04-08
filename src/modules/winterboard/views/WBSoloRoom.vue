@@ -260,9 +260,11 @@
         />
       </aside>
 
-      <!-- A.2.5: Chapters sidebar в replay-режимі (Розділи уроку) -->
+      <!-- A.2.5: Chapters sidebar в replay-режимі (Розділи уроку).
+           UX FIX (2026-04-08): ховаємо панель якщо markers ще не додані —
+           порожня панель "Розділів немає" плутала користувачів. -->
       <WBReplayChaptersSidebar
-        v-if="mode === 'replay' && sessionId"
+        v-if="mode === 'replay' && sessionId && replayMarkers.length > 0"
         :markers="replayMarkers"
         :active-marker-id="replayActiveMarkerId"
         @seek="handleMarkerSeek"

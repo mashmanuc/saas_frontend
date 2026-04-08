@@ -17,25 +17,22 @@
 
     <!-- Read-only canvas — store is SSOT -->
     <template v-else-if="isHydrated">
+      <!-- UX FIX (2026-04-08): спрощений header. Прибрано toggle "Переглянути replay /
+           Статичний вигляд" — публічне посилання = replay за замовчуванням.
+           Download прихована в іконку-меню (не конкурує з play). -->
       <header class="wb-public-view__header">
-        <h1 class="wb-public-view__title">{{ store.workspaceName || t('winterboard.room.untitled') }}</h1>
+        <h1 class="wb-public-view__title">{{ displayTitle }}</h1>
         <span class="wb-public-view__badge">{{ t('winterboard.public.readOnly') }}</span>
         <div class="wb-public-view__header-actions">
           <button
-            v-if="hasReplayData"
-            type="button"
-            class="wb-replay-toggle-btn"
-            @click="toggleReplayMode"
-          >
-            {{ isReplayMode ? t('winterboard.public.staticView') : t('winterboard.public.watchReplay') }}
-          </button>
-          <button
             v-if="allowDownload"
             type="button"
-            class="wb-download-btn"
+            class="wb-download-icon-btn"
+            :title="t('winterboard.public.download')"
+            :aria-label="t('winterboard.public.download')"
             @click="handleDownload"
           >
-            {{ t('winterboard.public.download') }}
+            ⬇
           </button>
         </div>
       </header>
@@ -135,6 +132,24 @@ let replay: ReturnType<typeof useReplay> | null = null
 let staticSnapshot: { pages: import('../types/winterboard').WBPage[]; currentPageIndex: number } | null = null
 
 const allowDownload = ref(false)
+const sessionCreatedAt = ref<string | null>(null)
+
+// UX FIX (2026-04-08): fallback "Урок від {дата}" якщо назви немає.
+const displayTitle = computed(() => {
+  if (store.workspaceName && store.workspaceName.trim()) return store.workspaceName
+  if (sessionCreatedAt.value) {
+    try {
+      const d = new Date(sessionCreatedAt.value)
+      const formatted = d.toLocaleDateString(undefined, {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+      })
+      return t('winterboard.public.lessonFromDate', { date: formatted })
+    } catch {
+      /* fall through */
+    }
+  }
+  return t('winterboard.room.untitled')
+})
 
 // Replay current time — derived from engine progress + estimated duration
 const replayCurrentSeconds = computed(() => {
@@ -301,6 +316,7 @@ onMounted(async () => {
 
     // allow_download is API-only field, not part of store state
     allowDownload.value = (data as unknown as Record<string, unknown>).allow_download === true
+    sessionCreatedAt.value = (data as unknown as { created_at?: string }).created_at ?? null
 
     const sessionId = data.id
     replaySessionId.value = sessionId
@@ -325,9 +341,10 @@ onMounted(async () => {
 
     isHydrated.value = true
 
-    // If ?t= is present and replay data exists, auto-enter replay mode
-    const tParam = route.query.t as string | undefined
-    if (tParam && hasReplayData.value) {
+    // UX FIX (2026-04-08): публічне посилання = replay-плеєр за замовчуванням.
+    // Якщо є replay-дані — одразу входимо в replay mode (як YouTube).
+    // ?t= deep-link seek обробляється всередині enterReplayMode().
+    if (hasReplayData.value) {
       await enterReplayMode()
     }
   } catch (err: unknown) {
@@ -441,6 +458,25 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
 }
 
+.wb-download-icon-btn {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--wb-text-muted, #64748b);
+  border: 1px solid var(--wb-border, #e2e8f0);
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.wb-download-icon-btn:hover {
+  background: var(--wb-surface-alt, #f1f5f9);
+  color: var(--wb-text, #0f172a);
+  border-color: var(--wb-border-strong, #cbd5e1);
+}
 .wb-download-btn {
   padding: 0.375rem 1rem;
   background: var(--wb-primary, #2563eb);

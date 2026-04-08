@@ -38,9 +38,15 @@
 
     <!-- Inline input: при паузі в режимі replay -->
     <form v-if="canComment" class="wb-replay-comments__form" @submit.prevent="onSubmit">
+      <!-- UX FIX (2026-04-08): видимий timestamp label — показує до якого
+           моменту прив'яжеться коментар. Раніше було незрозуміло. -->
+      <div class="wb-replay-comments__timestamp">
+        📍 {{ t('winterboard.replay.comments.pinnedTo', 'Прив’язано до моменту') }}
+        <strong>@op{{ currentOpIndex }}</strong>
+      </div>
       <textarea
         v-model="draft"
-        rows="2"
+        rows="4"
         :placeholder="t('winterboard.replay.comments.placeholder', 'Напишіть коментар до поточного моменту…')"
         :disabled="submitting"
       />
@@ -216,13 +222,24 @@ watch(
   gap: 6px;
   background: var(--color-surface-alt, #f8fafc);
 }
+.wb-replay-comments__timestamp {
+  font-size: 11px;
+  color: var(--color-text-muted, #64748b);
+  padding: 2px 2px 0;
+}
+.wb-replay-comments__timestamp strong {
+  color: var(--color-primary, #2563eb);
+  font-weight: 700;
+}
 .wb-replay-comments__form textarea {
-  resize: none;
-  padding: 8px 10px;
+  resize: vertical;
+  min-height: 72px;
+  padding: 10px 12px;
   border: 1px solid var(--color-border, #e2e8f0);
   border-radius: 6px;
   font-size: 13px;
   font-family: inherit;
+  background: #ffffff;
 }
 .wb-replay-comments__form textarea:focus {
   outline: none;
