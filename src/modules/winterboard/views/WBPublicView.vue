@@ -21,8 +21,17 @@
            Статичний вигляд" — публічне посилання = replay за замовчуванням.
            Download прихована в іконку-меню (не конкурує з play). -->
       <header class="wb-public-view__header">
-        <h1 class="wb-public-view__title">{{ displayTitle }}</h1>
-        <span class="wb-public-view__badge">{{ t('winterboard.public.readOnly') }}</span>
+        <div class="wb-public-view__brand">
+          <div class="wb-public-view__logo" aria-hidden="true">M4</div>
+          <div class="wb-public-view__brand-text">
+            <span class="wb-public-view__brand-name">M4SH</span>
+            <span class="wb-public-view__brand-tag">Winterboard</span>
+          </div>
+        </div>
+        <div class="wb-public-view__title-block">
+          <h1 class="wb-public-view__title">{{ displayTitle }}</h1>
+          <span class="wb-public-view__badge">{{ t('winterboard.public.readOnly') }}</span>
+        </div>
         <div class="wb-public-view__header-actions">
           <button
             v-if="allowDownload"
@@ -38,6 +47,7 @@
       </header>
 
       <div class="wb-public-view__canvas-area">
+        <div class="wb-public-view__canvas-frame">
         <WBCanvas
           ref="canvasRef"
           :strokes="store.currentStrokes"
@@ -48,6 +58,7 @@
           tool="select"
           :size="2"
         />
+        </div>
       </div>
 
       <!-- Replay player (above footer) -->
@@ -131,6 +142,10 @@ let replay: ReturnType<typeof useReplay> | null = null
 // Snapshot of board state before entering replay — to restore on exit
 let staticSnapshot: { pages: import('../types/winterboard').WBPage[]; currentPageIndex: number } | null = null
 
+// INV-T: recording_start_state from backend — стан дошки на момент Start Recording.
+// Зберігаємо, щоб re-apply після resetForReplay (seek-to-start, handleReplaySeek).
+let replayStartState: { pages: import('../types/winterboard').WBPage[]; currentPageIndex: number } | null = null
+
 const allowDownload = ref(false)
 const sessionCreatedAt = ref<string | null>(null)
 
@@ -198,10 +213,21 @@ async function enterReplayMode(): Promise<void> {
   // Create replay composable
   replay = useReplay(replaySessionId.value)
 
-  // Load timeline — applyReplayOperation feeds ops into store
-  await replay.loadTimeline((op) => {
-    applyReplayOperation(store, op)
-  })
+  // P0 FIX (2026-04-08): INV-T — hydrate з recording_start_state ПЕРЕД накаткою ops.
+  // Без цього public replay починав з порожнього листа і показував лише сторінки,
+  // створені під час запису, ігноруючи ті, що вже існували до Start Recording.
+  // Backend віддає session.recording_start_state у полі timeline.start_state.
+  await replay.loadTimeline(
+    (op) => {
+      applyReplayOperation(store, op)
+    },
+    (state) => {
+      replayStartState = state as { pages: import('../types/winterboard').WBPage[]; currentPageIndex: number }
+      store.loadSnapshot(replayStartState)
+      // Починаємо replay завжди з 1-ї сторінки, навіть якщо у snapshot currentPageIndex інший.
+      store.goToPage(0)
+    },
+  )
 
   // Load lesson markers
   await replay.loadMarkers()
@@ -216,6 +242,29 @@ async function enterReplayMode(): Promise<void> {
       await handleReplaySeek(seconds * 1000)
       return
     }
+  }
+
+  // UX FIX (2026-04-08): форсуємо старт з 0 (перша сторінка, початок уроку).
+  // Без цього replay міг починатися з середини, бо store був гідратований
+  // фінальним snapshot-ом, а currentIndex не скидався явно.
+  try {
+    await replay.seekToWithSnapshot(
+      0,
+      (boardState) => {
+        store.loadSnapshot(boardState as { pages: import('../types/winterboard').WBPage[]; currentPageIndex: number })
+      },
+      () => {
+        // INV-T: reset = повернутись до стану на момент Start Recording, а не до пустої дошки.
+        store.resetForReplay()
+        if (replayStartState) {
+          store.loadSnapshot(replayStartState)
+          store.goToPage(0)
+        }
+      },
+    )
+    store.goToPage(0)
+  } catch (err) {
+    console.warn('[WB:PublicView] seek-to-start failed:', err)
   }
 
   // Auto-play
@@ -263,7 +312,11 @@ async function handleReplaySeek(timeMs: number): Promise<void> {
       store.loadSnapshot(boardState as { pages: import('../types/winterboard').WBPage[]; currentPageIndex: number })
     },
     () => {
+      // INV-T: reset → re-apply recording_start_state перед накаткою ops від 0.
       store.resetForReplay()
+      if (replayStartState) {
+        store.loadSnapshot(replayStartState)
+      }
     },
   )
 }
@@ -447,10 +500,66 @@ onBeforeUnmount(() => {
 .wb-public-view__header {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 1rem;
   padding: 0.75rem 1.25rem;
   border-bottom: 1px solid var(--wb-border, #dee2e6);
-  background: var(--wb-surface, #fff);
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 60%, #2563eb 100%);
+  color: #fff;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.15);
+}
+.wb-public-view__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  flex-shrink: 0;
+}
+.wb-public-view__logo {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #38bdf8, #2563eb);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+  letter-spacing: 0.5px;
+}
+.wb-public-view__brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+.wb-public-view__brand-name {
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.5px;
+}
+.wb-public-view__brand-tag {
+  font-size: 0.6875rem;
+  opacity: 0.75;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+.wb-public-view__title-block {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-width: 0;
+  flex: 1;
+  padding-left: 1rem;
+  border-left: 1px solid rgba(255, 255, 255, 0.15);
+}
+.wb-public-view__canvas-frame {
+  position: absolute;
+  inset: 16px;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid var(--wb-border, #e2e8f0);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08), 0 2px 6px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
 }
 
 .wb-public-view__header-actions {
@@ -510,21 +619,33 @@ onBeforeUnmount(() => {
 }
 
 .wb-public-view__title {
-  font-size: 1.125rem;
+  font-size: 1.0625rem;
   font-weight: 600;
   margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: #fff;
 }
 
 .wb-public-view__badge {
-  font-size: 0.75rem;
-  padding: 0.2rem 0.5rem;
-  background: var(--wb-warning-bg, #fff3cd);
-  color: var(--wb-warning-text, #856404);
-  border-radius: 4px;
+  font-size: 0.6875rem;
+  padding: 0.2rem 0.55rem;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
   white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.wb-download-icon-btn {
+  color: #fff !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+.wb-download-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.18) !important;
 }
 
 .wb-public-view__canvas-area {
