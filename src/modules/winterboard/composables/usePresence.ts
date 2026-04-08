@@ -244,12 +244,45 @@ function sleep(ms: number): Promise<void> {
  * Get fresh decrypted JWT from authStore at call time (not stale snapshot from mount).
  * Returns null if no real JWT available (e.g. '__cookie__' placeholder or decrypt fail).
  */
+/**
+ * Перевіряє, чи access token прострочений або скоро протухне.
+ * JWT payload містить `exp` (unix seconds).
+ * Повертає true якщо лишилось < 60 секунд до expiry.
+ */
+function _isTokenExpiringSoon(jwt: string): boolean {
+  try {
+    const payload = JSON.parse(atob(jwt.split('.')[1]))
+    const exp = payload?.exp
+    if (typeof exp !== 'number') return true
+    const nowSec = Math.floor(Date.now() / 1000)
+    return exp - nowSec < 60
+  } catch {
+    return true
+  }
+}
+
 async function _getFreshTokenAsync(): Promise<string | null> {
   try {
     const { useAuthStore } = await import('@/modules/auth/store/authStore')
     const authStore = useAuthStore()
     if (!authStore.access || authStore.access === '__cookie__') return null
-    return await authStore.getDecryptedAccess()
+
+    let token = await authStore.getDecryptedAccess()
+
+    // P0 FIX (2026-04-08): access token живе 15 хв, proactive refresh — 20 хв,
+    // через що ~5 хв кожного циклу токен прострочений і WS reconnect падає
+    // у нескінченний 4401 loop (WSREJECT 349× у logs559). Якщо токен скоро
+    // протухне — примусово оновлюємо ПЕРЕД використанням у WS URL.
+    if (token && _isTokenExpiringSoon(token)) {
+      try {
+        await authStore.refreshAccess()
+        token = await authStore.getDecryptedAccess()
+      } catch (err) {
+        console.warn('[WB:presence] proactive refresh failed before WS connect:', err)
+      }
+    }
+
+    return token
   } catch {
     return null
   }
