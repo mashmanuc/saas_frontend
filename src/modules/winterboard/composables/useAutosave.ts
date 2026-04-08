@@ -327,12 +327,10 @@ export function useAutosave(
 
     // Circuit breaker: cooldown after total failure to prevent server overload
     inCooldown = true
-    opsQueue.stop()  // Stop opsQueue timer during cooldown to prevent hammering
     console.warn(`[WB:autosave] Entering cooldown for ${FAILURE_COOLDOWN_MS / 1000}s`)
     cooldownTimer = setTimeout(() => {
       inCooldown = false
       cooldownTimer = null
-      opsQueue.start()  // Resume opsQueue timer
       console.info('[WB:autosave] Cooldown ended, will retry on next change')
       if (store.isDirty || pendingOps.value.length > 0) {
         scheduleSave()
@@ -403,7 +401,6 @@ export function useAutosave(
         clearTimeout(cooldownTimer)
         cooldownTimer = null
       }
-      opsQueue.start()  // Resume opsQueue timer
       if (store.isDirty || pendingOps.value.length > 0) {
         scheduleSave()
       }
@@ -413,7 +410,6 @@ export function useAutosave(
   function handleOffline(): void {
     status.value = 'offline'
     store.setSyncStatus('offline')
-    opsQueue.stop()  // Stop opsQueue timer when offline
     clearTimers()
   }
 
@@ -452,8 +448,13 @@ export function useAutosave(
     document.addEventListener('visibilitychange', handleVisibilityChange)
   }
 
-  // Phase 3: Start ops queue flush timer
-  opsQueue.start()
+  // P0 FIX (2026-04-08): single-writer queue. Do NOT start opsQueue's internal
+  // flush timer — performSave() is the sole writer for this session so that
+  // diff-save and stream-save are strictly serialized via `isSaving` guard.
+  // Running opsQueue timer in parallel caused 409 cascade at 20+ concurrent
+  // users: opsQueue timer advanced server rev while debounced performSave()
+  // fired streamSave with a stale store.rev snapshot.
+  // opsQueue.start()
 
   // ── Cleanup ────────────────────────────────────────────────────────
 

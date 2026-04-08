@@ -17,13 +17,17 @@
 import { test, expect, type BrowserContext, type Page } from '@playwright/test'
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:5173'
-const PASSWORD = 'demo1234'
+const PASSWORD = process.env.WB_TEST_PASSWORD || 'demo1234'
 
-// Тестові юзери з локальної БД (вже існують)
-const USERS = ['m10@gmail.com', 'm11@gmail.com', 'm12@gmail.com', 'm14@gmail.com', 'm15@gmail.com']
+// Кількість паралельних юзерів. Override через WB_USERS=10 npx playwright test ...
+const N_USERS = parseInt(process.env.WB_USERS || '5', 10)
 
-const PAGES_PER_USER = 10
-const STROKES_PER_PAGE = 20
+// Юзери wbtest01..wbtest20@m4sh.test створені через Django shell.
+// Локально + прод (одні й ті ж креди).
+const USERS = Array.from({ length: N_USERS }, (_, i) => `wbtest${String(i + 1).padStart(2, '0')}@m4sh.test`)
+
+const PAGES_PER_USER = parseInt(process.env.WB_PAGES || '10', 10)
+const STROKES_PER_PAGE = parseInt(process.env.WB_STROKES || '20', 10)
 const INTER_STROKE_DELAY_MS = 40
 
 interface NetworkIssue {
