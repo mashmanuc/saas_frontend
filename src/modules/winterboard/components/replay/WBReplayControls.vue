@@ -63,7 +63,7 @@
           type="range"
           class="wb-replay-controls__slider"
           :min="0"
-          :max="Math.max(0, totalOperations - 1)"
+          :max="Math.max(0, (timelineIncomplete ? loadedOperations : totalOperations) - 1)"
           :value="currentIndex"
           :aria-label="t('replay.timeline')"
           data-testid="replay-slider"
@@ -88,6 +88,11 @@
       <!-- Status when ended -->
       <span v-if="state === 'ended'" class="wb-replay-controls__ended">
         {{ t('replay.replayEnded') }}
+      </span>
+
+      <!-- Warning: partial timeline -->
+      <span v-if="timelineIncomplete" class="wb-replay-controls__partial-warning">
+        {{ t('replay.partialTimeline', `Перемотка обмежена (${loadedOperations}/${totalOperations})`) }}
       </span>
 
     </template>
@@ -152,6 +157,8 @@ const {
   isLoading,
   error,
   retryCount,
+  loadedOperations,
+  timelineIncomplete,
   loadTimeline,
   retryLoad,
   play,
@@ -486,6 +493,12 @@ function formatTime(ms: number): string {
 .wb-replay-controls__ended {
   font-size: 13px;
   color: var(--color-success, #16a34a);
+  white-space: nowrap;
+}
+
+.wb-replay-controls__partial-warning {
+  font-size: 12px;
+  color: var(--color-warning, #f59e0b);
   white-space: nowrap;
 }
 

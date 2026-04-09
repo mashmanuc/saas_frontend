@@ -8071,6 +8071,7 @@
     "replayEnded": "Replay ended",
     "loading": "Loading replay…",
     "retry": "Retry",
+    "partialTimeline": "Seek limited ({loaded}/{total})",
     "chaptersTitle": "Lesson chapters",
     "noChapters": "No chapters",
     "untitledChapter": "Chapter",

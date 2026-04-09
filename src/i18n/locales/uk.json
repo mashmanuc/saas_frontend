@@ -8159,6 +8159,7 @@
     "replayEnded": "Відтворення завершено",
     "loading": "Завантаження відтворення…",
     "retry": "Повторити",
+    "partialTimeline": "Перемотка обмежена ({loaded}/{total})",
     "chaptersTitle": "Розділи уроку",
     "noChapters": "Розділів немає",
     "untitledChapter": "Розділ",

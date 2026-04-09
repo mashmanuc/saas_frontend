@@ -752,9 +752,9 @@
       :is-empty="isBoardEmpty"
     />
 
-    <!-- Phase 11: Replay entry button — only when recording exists (isReplayFrozen or hasOperations) -->
+    <!-- Phase 11: Replay entry button — only when board has real content -->
     <button
-      v-if="mode === 'edit' && sessionId && (isReplayFrozen || isManualRecording)"
+      v-if="mode === 'edit' && sessionId && hasOperations"
       class="wb-solo-room__replay-btn"
       data-testid="replay-button"
       :aria-label="t('winterboard.replay.viewReplay')"

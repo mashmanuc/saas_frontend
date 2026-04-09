@@ -44,6 +44,10 @@ export function useReplay(sessionId: string) {
       : 0,
   )
 
+  // True when backend has more ops than engine loaded (timeline > 2000 ops)
+  const loadedOperations = computed(() => engine.value?.getTotalOperations() ?? 0)
+  const timelineIncomplete = computed(() => loadedOperations.value < totalOperations.value)
+
   /**
    * Fetch timeline from API and wire up the engine.
    * @param onOp - callback fired for each replayed operation (render to shadow canvas)
@@ -67,7 +71,8 @@ export function useReplay(sessionId: string) {
       const timeout = setTimeout(() => controller.abort(), 15_000)
       let timeline: Awaited<ReturnType<typeof fetchReplayTimeline>>
       try {
-        timeline = await fetchReplayTimeline(sessionId, undefined, controller.signal)
+        // Request ALL ops (limit=2000 = backend max) so local seek works on full timeline
+        timeline = await fetchReplayTimeline(sessionId, { limit: 2000 }, controller.signal)
       } finally {
         clearTimeout(timeout)
       }
@@ -138,58 +143,46 @@ export function useReplay(sessionId: string) {
    * @param loadState - callback to hydrate board store from snapshot board_state
    * @param clearState - callback to clear board state before replay-from-zero
    */
+  /**
+   * Fast local seek — replay ops from engine memory, NO HTTP requests.
+   * Works for any replay where ops are already loaded in engine.
+   * clearState resets board, then ops 0..idx are re-applied locally.
+   */
   async function seekToWithSnapshot(
     idx: number,
     loadState: (boardState: Record<string, unknown>) => void,
     clearState: () => void,
   ): Promise<void> {
-    if (!_onOp) return
+    if (!_onOp || !engine.value) return
 
-    // A.3 (INV-AD): seek використовує seq як SSoT.
-    // Конвертуємо op-index → seq через engine.operations[idx].seq.
-    // Якщо seq на op'і відсутній (legacy ops без seq) — fallback на index.
-    const opAtIdx = engine.value?.getOperationAt?.(idx)
-    const targetSeq = (opAtIdx && typeof (opAtIdx as { seq?: number }).seq === 'number')
-      ? (opAtIdx as { seq: number }).seq
-      : idx
+    const totalOps = engine.value.getTotalOperations()
+    const clampedIdx = Math.max(0, Math.min(idx, totalOps - 1))
 
-    const snapshot = await fetchNearestSnapshot(sessionId, targetSeq)
-
-    // INV-AD: schema version mismatch → fallback до replay-from-zero
-    const { OPS_SCHEMA_VERSION } = await import('../types/replay')
-    const versionOk = !snapshot || (snapshot.ops_schema_version ?? 1) === OPS_SCHEMA_VERSION
-
-    if (snapshot && versionOk) {
-      const snapSeq = (snapshot.seq ?? snapshot.operation_index)
-      // Load snapshot board state
-      loadState(snapshot.board_state)
-
-      // Apply remaining ops від snapSeq+1 до targetSeq.
-      // Backend offset/limit працюють по індексу — приблизна конвертація через engine.
-      const snapIdx = engine.value?.findIndexBySeq?.(snapSeq) ?? 0
-      const remaining = await fetchReplayTimeline(sessionId, {
-        offset: snapIdx + 1,
-        limit: Math.max(0, idx - snapIdx),
-      })
-      for (const op of remaining.operations) {
-        _onOp(op)
-      }
-    } else {
-      if (snapshot && !versionOk) {
-        console.warn('[replay] snapshot schema mismatch, fallback to replay-from-zero',
-          { snapshot_v: snapshot.ops_schema_version, expected: OPS_SCHEMA_VERSION })
-      }
-      // No snapshot or schema mismatch — replay from beginning
-      clearState()
-      const timeline = await fetchReplayTimeline(sessionId, { limit: idx })
-      for (const op of timeline.operations) {
-        _onOp(op)
-      }
+    // Guard: if timeline is partial (> 2000 ops), local seek only works within loaded range
+    if (totalOps < totalOperations.value) {
+      console.warn(`[replay] partial timeline: engine has ${totalOps}/${totalOperations.value} ops. Seek clamped.`)
     }
 
-    // Sync engine position — use clamped value from engine (not raw idx)
-    const actualIdx = engine.value?.seekTo(idx) ?? idx
+    // Local seek: all ops already in engine memory — no HTTP needed.
+    // Reset board to clean state, then re-apply ops 0..target.
+    clearState()
+    for (let i = 0; i <= clampedIdx; i++) {
+      const op = engine.value.getOperationAt(i)
+      if (op) _onOp(op)
+    }
+
+    // Sync engine position
+    const actualIdx = engine.value.seekTo(clampedIdx)
     currentIndex.value = actualIdx
+
+    // Update playback time
+    if (totalOps > 0) {
+      const targetOp = engine.value.getOperationAt(clampedIdx)
+      if (targetOp) {
+        const tMs = new Date(targetOp.created_at).getTime() - firstOpAtMs.value
+        currentTimeMs.value = Math.max(0, tMs)
+      }
+    }
   }
 
   // Phase 10 P5: Auto-detect active marker during playback
@@ -241,6 +234,8 @@ export function useReplay(sessionId: string) {
     activeMarkerId: readonly(activeMarkerId),
     currentTimeMs: readonly(currentTimeMs),
     totalDurationMs,
+    loadedOperations,
+    timelineIncomplete,
     loadMarkers,
     destroy,
   }
