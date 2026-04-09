@@ -373,7 +373,7 @@ export function _resetOperationListeners(): void {
 function _emitOperation(op: RecordOperationRequest): void {
   // REPLAY-INV-9: NO-OP у replay mode — блокує всі listeners (recorder, telemetry, WS sync)
   // Це гарантує що applyReplayOperation() не забруднює timeline новими ops
-  if (_currentMode === 'replay') return
+  if (_currentMode !== 'edit') return
   for (const listener of _operationListeners) {
     try {
       listener(op)
@@ -591,6 +591,13 @@ export const useWBStore = defineStore('wb-board', {
      * Hydrate store from backend session data
      */
     hydrateFromSession(session: WBSession): void {
+      // P0 FIX: Reset module-level _currentMode on session switch.
+      // Without this, navigating from replay mode (session A) to edit mode (session B)
+      // leaves _currentMode === 'replay', silently blocking ALL _emitOperation calls.
+      // This caused zero replay/batch during entire lessons.
+      this.mode = 'edit'
+      _currentMode = 'edit'
+
       this.workspaceId = session.id
       this.workspaceName = session.name
       this.ownerId = session.owner_id ?? null
