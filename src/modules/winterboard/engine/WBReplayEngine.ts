@@ -94,7 +94,7 @@ export class WBReplayEngine {
   }
 
   setSpeed(speed: ReplaySpeed): void {
-    this.speed = speed
+    this.speed = speed || 1  // guard: never allow 0 (would cause Infinity delay)
     // If already playing — reschedule with new speed immediately
     if (this.state === 'playing') {
       this._clearTimer()

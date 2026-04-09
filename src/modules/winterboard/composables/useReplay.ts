@@ -85,15 +85,16 @@ export function useReplay(sessionId: string) {
 
       engine.value = new WBReplayEngine(timeline)
         .on('onOperation', (op, idx) => {
-          currentIndex.value = idx + 1
+          const safeIdx = typeof idx === 'number' ? idx : 0
+          currentIndex.value = safeIdx + 1
           // A.2.4: update playback time
           const tMs = new Date(op.created_at).getTime() - firstOpAtMs.value
-          currentTimeMs.value = Math.max(0, tMs)
+          currentTimeMs.value = Math.max(0, typeof tMs === 'number' ? tMs : 0)
           onOp(op)
         })
         .on('onProgress', (cur, total) => {
-          currentIndex.value = cur
-          totalOperations.value = total
+          currentIndex.value = typeof cur === 'number' ? cur : 0
+          totalOperations.value = typeof total === 'number' ? total : 0
         })
         .on('onStateChange', (s) => {
           state.value = s
@@ -215,6 +216,7 @@ export function useReplay(sessionId: string) {
     engine.value?.destroy()
     engine.value = null
     _onOp = null
+    _onStartState = null
     markers.value = []
     activeMarkerId.value = null
   }

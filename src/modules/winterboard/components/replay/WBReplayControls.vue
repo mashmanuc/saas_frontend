@@ -236,9 +236,14 @@ const progressStyle = computed(() => {
 
 // ─── Handlers ─────────────────────────────────────────────────────────────────
 
-function onPlayPause(): void {
+async function onPlayPause(): Promise<void> {
   if (state.value === 'playing') {
     pause()
+  } else if (state.value === 'ended' && props.loadState && props.clearState) {
+    // P0 FIX: Replay restart — reset board to startState before replaying from 0.
+    // Without this, ops accumulate on top of full board = duplicate strokes/assets.
+    await seekToWithSnapshot(0, props.loadState, props.clearState)
+    play()
   } else {
     play()
   }

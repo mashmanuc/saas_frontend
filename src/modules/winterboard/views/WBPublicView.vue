@@ -115,7 +115,7 @@ import { useI18n } from 'vue-i18n'
 import { winterboardApi } from '../api/winterboardApi'
 import { useWBStore } from '../board/state/boardStore'
 import { useReplay } from '../composables/useReplay'
-import { applyReplayOperation } from '../engine/applyReplayOperation'
+import { createReplayApplier } from '../engine/applyReplayOperation'
 import WBCanvas from '../components/canvas/WBCanvas.vue'
 import PublicReplayPlayer from '../components/public/PublicReplayPlayer.vue'
 import PublicMarkersList from '../components/public/PublicMarkersList.vue'
@@ -138,6 +138,7 @@ const isReplayMode = ref(false)
 const replayDurationSeconds = ref(0)
 const replaySessionId = ref<string | null>(null)
 let replay: ReturnType<typeof useReplay> | null = null
+const replayApplier = createReplayApplier()
 
 // Snapshot of board state before entering replay — to restore on exit
 let staticSnapshot: { pages: import('../types/winterboard').WBPage[]; currentPageIndex: number } | null = null
@@ -209,6 +210,7 @@ async function enterReplayMode(): Promise<void> {
   // Prepare store for replay
   store.setMode('replay')
   store.resetForReplay()
+  replayApplier.reset()  // P0: clean instance page-tracking state
 
   // Create replay composable
   replay = useReplay(replaySessionId.value)
@@ -219,7 +221,7 @@ async function enterReplayMode(): Promise<void> {
   // Backend віддає session.recording_start_state у полі timeline.start_state.
   await replay.loadTimeline(
     (op) => {
-      applyReplayOperation(store, op)
+      replayApplier.apply(store, op)
     },
     (state) => {
       replayStartState = state as { pages: import('../types/winterboard').WBPage[]; currentPageIndex: number }
@@ -228,6 +230,11 @@ async function enterReplayMode(): Promise<void> {
       store.goToPage(0)
     },
   )
+
+  // Fallback: derive duration from operation timestamps if lesson_time_seconds was missing
+  if (replayDurationSeconds.value <= 0 && replay.totalDurationMs.value > 0) {
+    replayDurationSeconds.value = Math.ceil(replay.totalDurationMs.value / 1000)
+  }
 
   // Load lesson markers
   await replay.loadMarkers()
@@ -316,6 +323,7 @@ async function handleReplaySeek(timeMs: number): Promise<void> {
       store.resetForReplay()
       if (replayStartState) {
         store.loadSnapshot(replayStartState)
+        store.goToPage(0)  // always start from page 1
       }
     },
   )

@@ -484,7 +484,7 @@ import WBTestStudentView from '../components/test/WBTestStudentView.vue'
 import type { BoardOperation } from '../types/replay'
 import type { WBLessonMarker } from '../types/winterboard'
 import { createLessonMarker, deleteLessonMarker } from '../api/replay'
-import { applyReplayOperation, markReplayPagesEnsured } from '../engine/applyReplayOperation'
+import { createReplayApplier } from '../engine/applyReplayOperation'
 import { useGridOverlay } from '../composables/useGridOverlay'
 import { useReplayRecorder } from '../composables/useReplayRecorder'
 import { useDeviceMode } from '../composables/useDeviceMode'
@@ -1072,18 +1072,21 @@ function exitReplayMode(): void {
   mode.value = 'edit'        // URL sync
 }
 
-// R5: Delegate to shared applyReplayOperation (DRY)
-// INV-T: hydrate з recording_start_state перед накаткою ops
+// P0 FIX: Instance-scoped replay applier
+const replayApplier = createReplayApplier()
+
+// R5: INV-T: hydrate з recording_start_state перед накаткою ops
 function onReplayStartState(state: { pages?: unknown[]; currentPageIndex?: number }): void {
   if (state && Array.isArray(state.pages) && state.pages.length > 0) {
     store.loadSnapshot(state as Parameters<typeof store.loadSnapshot>[0])
+    store.goToPage(0)  // replay starts from page 1
     const ids = (state.pages as Array<{ id?: string }>).map(p => p?.id ?? '').filter(Boolean)
-    markReplayPagesEnsured(ids)
+    replayApplier.markPagesEnsured(ids)
   }
 }
 
 function onReplayOperation(op: BoardOperation): void {
-  applyReplayOperation(store, op)
+  replayApplier.apply(store, op)
 }
 
 function handleMarkerSeek(marker: WBLessonMarker): void {

@@ -719,7 +719,7 @@
       @exit="exitReplayMode"
       @operation="onReplayOperation"
       @start-state="onReplayStartState"
-      @tick="({ index, total }) => { replayCurrentOpIndex.value = index; replayCurrentTotalOps.value = total }"
+      @tick="onReplayTick"
     />
 
     <!-- Phase C: Replay comments sidebar -->
@@ -857,7 +857,7 @@ import WBOnboardingHints from '../components/ui/WBOnboardingHints.vue'
 import type { BoardOperation } from '../types/replay'
 import type { WBLessonMarker } from '../types/winterboard'
 import { createLessonMarker, deleteLessonMarker } from '../api/replay'
-import { applyReplayOperation, markReplayPagesEnsured } from '../engine/applyReplayOperation'
+import { createReplayApplier } from '../engine/applyReplayOperation'
 import { useGridOverlay } from '../composables/useGridOverlay'
 import { useReplayRecorder } from '../composables/useReplayRecorder'
 import { useCanvasResize } from '../composables/useCanvasResize'
@@ -1146,6 +1146,8 @@ watch(mode, (newMode, oldMode) => {
     }
     store.setMode('replay')
     store.resetForReplay()
+    replayCurrentOpIndex.value = 0
+    replayCurrentTotalOps.value = 0
     void loadReplayComments()
   } else if (newMode === 'edit' && store.mode !== 'edit') {
     store.setMode('edit')
@@ -1156,6 +1158,9 @@ function enterReplayMode(): void {
   _savedBoardState = store.getSnapshotState()  // snapshot поточного стану
   store.setMode('replay')    // REPLAY-INV-9: _emitOperation стає NO-OP
   store.resetForReplay()     // чистий стан — replay накладає ops з нуля (REPLAY-INV-11)
+  replayApplier.reset()      // P0: clean instance page-tracking state
+  replayCurrentOpIndex.value = 0   // reset stale replay position
+  replayCurrentTotalOps.value = 0
   mode.value = 'replay'      // URL sync
   void loadReplayComments()
 }
@@ -1166,6 +1171,8 @@ function exitReplayMode(): void {
     store.loadSnapshot(_savedBoardState)  // відновлюємо стан до replay
     _savedBoardState = null
   }
+  replayCurrentOpIndex.value = 0   // cleanup stale replay state
+  replayCurrentTotalOps.value = 0
   mode.value = 'edit'        // URL sync
 }
 
@@ -1206,6 +1213,9 @@ async function handleMarkerDelete(id: string): Promise<void> {
   }
 }
 
+// P0 FIX: Instance-scoped replay applier — no global state leak between sessions.
+const replayApplier = createReplayApplier()
+
 // INV-T: hydrate з recording_start_state ПЕРЕД накаткою ops.
 // Це повертає фон/асети/страйки які існували до натискання Start Recording.
 function onReplayStartState(state: { pages?: unknown[]; currentPageIndex?: number }): void {
@@ -1214,13 +1224,21 @@ function onReplayStartState(state: { pages?: unknown[]; currentPageIndex?: numbe
     // INV-T: replay завжди починає з першої сторінки, незалежно від currentPageIndex snapshot
     store.goToPage(0)
     const ids = (state.pages as Array<{ id?: string }>).map(p => p?.id ?? '').filter(Boolean)
-    markReplayPagesEnsured(ids)
+    replayApplier.markPagesEnsured(ids)
   }
 }
 
-// R5: Delegate to shared applyReplayOperation (DRY)
+// Phase C: tick handler — named function to avoid Vue template ref unwrapping.
+// Inline `@tick="({ index, total }) => { ref.value = x }"` breaks because
+// Vue templates auto-unwrap refs, turning ref(0) into plain `0`.
+function onReplayTick({ index, total }: { index: number; total: number }): void {
+  replayCurrentOpIndex.value = index
+  replayCurrentTotalOps.value = total
+}
+
+// R5: Instance-scoped replay operation applier (DRY)
 function onReplayOperation(op: BoardOperation): void {
-  applyReplayOperation(store, op)
+  replayApplier.apply(store, op)
   // REPLAY-FIX-6: Force Konva redraw after replay operations.
   // Vue-Konva may not auto-trigger batchDraw when store changes via Pinia.
   if (['stroke_add', 'stroke_update', 'stroke_delete', 'asset_add', 'asset_update', 'asset_delete', 'clear_page', 'page_navigate', 'page_change'].includes(op.op_type)) {
