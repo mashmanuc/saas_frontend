@@ -930,6 +930,17 @@ async function handleStartRecording(): Promise<void> {
     isManualRecording.value = true
     recordingStartedAt.value = result.recording_started_at
     isReplayFrozen.value = false
+
+    // GUARD: Pipeline health check — verify recorder is alive.
+    // After 5s, check if any ops reached the buffer. If not, the pipeline is broken.
+    setTimeout(() => {
+      if (isManualRecording.value && replayRecorder.opCount.value === 0) {
+        console.error(
+          '[WB:PIPELINE] Recording started but 0 ops recorded after 5s! ' +
+          `store.mode=${store.mode} sessionId=${sessionId.value} enabled=${isRecorderEnabled.value}`,
+        )
+      }
+    }, 5000)
   } catch (e) {
     console.error('[WBSoloRoom] Failed to start recording:', e)
   } finally {

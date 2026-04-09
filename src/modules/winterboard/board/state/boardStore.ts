@@ -371,8 +371,25 @@ export function _resetOperationListeners(): void {
 }
 
 function _emitOperation(op: RecordOperationRequest): void {
-  // REPLAY-INV-9: NO-OP outside edit mode — blocks all listeners (recorder, telemetry, WS sync)
-  if (_currentMode !== 'edit') return
+  // GUARD: self-healing mode sync.
+  // If store.mode === 'edit' but module-level _currentMode drifted (e.g. after SPA navigation),
+  // auto-fix instead of silently dropping all operations.
+  // This prevents the "zero replay/batch" bug from ever recurring.
+  if (_currentMode !== 'edit') {
+    // Check if Pinia store actually IS in edit mode (desync detection)
+    try {
+      const store = useWBStore()
+      if (store.mode === 'edit') {
+        console.warn(`[WB:Store] _currentMode desync detected: module='${_currentMode}' store='edit'. Auto-healing.`)
+        _currentMode = 'edit'
+        // Fall through to emit
+      } else {
+        return // Both agree: not edit mode → correct block
+      }
+    } catch {
+      return // Store not available → safe to block
+    }
+  }
   for (const listener of _operationListeners) {
     try {
       listener(op)

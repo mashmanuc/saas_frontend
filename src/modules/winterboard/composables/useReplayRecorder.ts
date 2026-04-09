@@ -135,12 +135,24 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
    * Re-queues ops on failure (network resilience).
    * Fire-and-forget — never awaited in hot path.
    */
+  // GUARD: Track total successfully flushed ops for pipeline health monitoring
+  let _totalFlushedOps = 0
+
   async function flush(): Promise<void> {
     const sid = options.sessionId.value
-    if (!sid) return
+    if (!sid) {
+      if (buffer.length > 0) console.warn(`[WB:Recorder] flush skipped: no sessionId (${buffer.length} ops in buffer)`)
+      return
+    }
     if (isFlushing.value) return // prevent concurrent flushes
-    if (circuitOpen) return       // local circuit breaker: server unreachable, skip flush
-    if (isCircuitBreakerOpen()) return  // global circuit breaker from apiClient
+    if (circuitOpen) {
+      if (buffer.length > 0) console.warn(`[WB:Recorder] flush skipped: local circuit breaker open (${buffer.length} ops)`)
+      return
+    }
+    if (isCircuitBreakerOpen()) {
+      if (buffer.length > 0) console.warn(`[WB:Recorder] flush skipped: global circuit breaker open (${buffer.length} ops)`)
+      return
+    }
 
     // REPLAY-INV-8: спочатку retry queue, потім нові ops
     const toSend = [...retryQueue.splice(0), ...buffer.splice(0)]
@@ -184,6 +196,7 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
       }
 
       consecutiveFailures = 0     // success — reset counter
+      _totalFlushedOps += flushedCount
       // Синхронізуємо lastKnownTotal з BE після підтвердженого commit (останнього чанка)
       if (lastResult && typeof lastResult.total_operations === 'number') {
         const prevTotal = lastKnownTotal.value  // зберігаємо ДО оновлення
