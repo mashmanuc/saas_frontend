@@ -1211,6 +1211,8 @@ async function handleMarkerDelete(id: string): Promise<void> {
 function onReplayStartState(state: { pages?: unknown[]; currentPageIndex?: number }): void {
   if (state && Array.isArray(state.pages) && state.pages.length > 0) {
     store.loadSnapshot(state as Parameters<typeof store.loadSnapshot>[0])
+    // INV-T: replay завжди починає з першої сторінки, незалежно від currentPageIndex snapshot
+    store.goToPage(0)
     const ids = (state.pages as Array<{ id?: string }>).map(p => p?.id ?? '').filter(Boolean)
     markReplayPagesEnsured(ids)
   }

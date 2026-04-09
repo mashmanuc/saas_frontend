@@ -34,8 +34,9 @@ export function useReplay(sessionId: string) {
   const currentTimeMs = ref(0)
   const totalDurationMs = computed(() => Math.max(0, lastOpAtMs.value - firstOpAtMs.value))
 
-  // Stored onOp callback for seekToWithSnapshot to re-apply ops
+  // Stored callbacks for seekToWithSnapshot / retry
   let _onOp: ((op: BoardOperation) => void) | null = null
+  let _onStartState: ((state: { pages?: unknown[]; currentPageIndex?: number }) => void) | null = null
 
   const progress = computed(() =>
     totalOperations.value > 0
@@ -49,15 +50,27 @@ export function useReplay(sessionId: string) {
    * @param onStartState - optional callback to hydrate board store from snapshot at recording start.
    *   Викликається ДО onOp, щоб replay починав з фону/асетів які існували до натискання Start.
    */
+  // Retry counter for loadTimeline (exposed for Retry button)
+  const retryCount = ref(0)
+
   async function loadTimeline(
     onOp: (op: BoardOperation) => void,
     onStartState?: (state: { pages?: unknown[]; currentPageIndex?: number }) => void,
   ): Promise<void> {
     _onOp = onOp
+    _onStartState = onStartState ?? null
     isLoading.value = true
     error.value = null
     try {
-      const timeline = await fetchReplayTimeline(sessionId)
+      // Timeout: 15s max wait — prevents infinite hang when CORS/network fails silently
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 15_000)
+      let timeline: Awaited<ReturnType<typeof fetchReplayTimeline>>
+      try {
+        timeline = await fetchReplayTimeline(sessionId, undefined, controller.signal)
+      } finally {
+        clearTimeout(timeout)
+      }
       totalOperations.value = timeline.total_operations
       // A.2.4: derive playback duration з timestamps крайніх ops
       if (timeline.operations && timeline.operations.length > 0) {
@@ -89,10 +102,20 @@ export function useReplay(sessionId: string) {
           state.value = 'ended'
         })
     } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Failed to load replay'
+      const isAbort = e instanceof DOMException && e.name === 'AbortError'
+      error.value = isAbort
+        ? 'Сервер не відповідає. Натисніть «Повторити» або перезавантажте сторінку.'
+        : (e instanceof Error ? e.message : 'Failed to load replay')
+      retryCount.value++
     } finally {
       isLoading.value = false
     }
+  }
+
+  /** Retry loading timeline (for Retry button in UI) */
+  async function retryLoad(): Promise<void> {
+    if (!_onOp) return
+    await loadTimeline(_onOp, _onStartState ?? undefined)
   }
 
   function play(): void { engine.value?.play() }
@@ -203,7 +226,9 @@ export function useReplay(sessionId: string) {
     progress,
     isLoading: readonly(isLoading),
     error: readonly(error),
+    retryCount: readonly(retryCount),
     loadTimeline,
+    retryLoad,
     play,
     pause,
     stop,

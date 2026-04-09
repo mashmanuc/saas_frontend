@@ -2,7 +2,19 @@
   <div class="wb-replay-controls" :class="`wb-replay-controls--${state}`">
     <!-- Loading -->
     <div v-if="isLoading" class="wb-replay-controls__loading">
-      {{ t('replay.loading', 'Loading replay…') }}
+      {{ t('replay.loading', 'Завантаження відтворення…') }}
+    </div>
+
+    <!-- Error with Retry -->
+    <div v-else-if="error" class="wb-replay-controls__error-block">
+      <span class="wb-replay-controls__error" data-testid="replay-error">{{ error }}</span>
+      <button
+        class="wb-replay-controls__retry"
+        data-testid="replay-retry"
+        @click="onRetry"
+      >
+        ↻ {{ t('replay.retry', 'Повторити') }}
+      </button>
     </div>
 
     <template v-else>
@@ -78,10 +90,6 @@
         {{ t('replay.replayEnded') }}
       </span>
 
-      <!-- Error -->
-      <span v-if="error" class="wb-replay-controls__error" data-testid="replay-error">
-        {{ error }}
-      </span>
     </template>
 
     <!-- Exit replay button -->
@@ -143,7 +151,9 @@ const {
   totalDurationMs,
   isLoading,
   error,
+  retryCount,
   loadTimeline,
+  retryLoad,
   play,
   pause,
   stop: _stop,
@@ -245,6 +255,13 @@ async function onSeek(event: Event): Promise<void> {
     }
   } else {
     seekTo(idx)
+  }
+}
+
+async function onRetry(): Promise<void> {
+  await retryLoad()
+  if (!error.value) {
+    await loadMarkers()
   }
 }
 
@@ -451,6 +468,27 @@ function formatTime(ms: number): string {
 .wb-replay-controls__error {
   color: var(--color-danger, #dc2626);
   font-size: 13px;
+}
+
+.wb-replay-controls__error-block {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.wb-replay-controls__retry {
+  background: var(--color-primary, #6366f1);
+  color: #ffffff;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
   white-space: nowrap;
+  transition: background 0.15s;
+}
+.wb-replay-controls__retry:hover {
+  background: var(--color-primary-hover, #4f46e5);
 }
 </style>

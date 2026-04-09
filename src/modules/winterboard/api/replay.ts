@@ -25,10 +25,11 @@ const BASE = '/v1/winterboard'
 export async function fetchReplayTimeline(
   sessionId: string,  // UUID
   query?: ReplayQuery,
+  signal?: AbortSignal,
 ): Promise<ReplayTimeline> {
   return apiClient.get<ReplayTimeline>(
     `${BASE}/sessions/${sessionId}/replay/`,
-    { params: query },
+    { params: query, ...(signal ? { signal } : {}) },
   )
 }
 

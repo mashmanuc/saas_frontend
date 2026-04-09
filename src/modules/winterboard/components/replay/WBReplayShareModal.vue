@@ -97,7 +97,9 @@ const options = computed(() => [
 
 const shareUrl = computed(() => {
   if (!token.value) return ''
-  return `${window.location.origin}/replay/share/${token.value}/`
+  // Use full WBPublicView route (має канвас, брендовий хедер, replay-player, INV-T hydrate).
+  // Стара /replay/share/ сторінка — placeholder, не показує запис.
+  return `${window.location.origin}/winterboard/public/${token.value}`
 })
 
 async function onVisibilityChange(): Promise<void> {

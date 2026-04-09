@@ -104,12 +104,17 @@ const winterboardStandaloneRoutes: RouteRecordRaw[] = [
   },
   // Phase B: публічний replay за share-token.
   // INV-L: єдиний anonymous endpoint; НЕ приймає session.id.
+  // Legacy /replay/share/:token redirect → /winterboard/public/:token
+  // (стара сторінка WBReplayPublicView була placeholder без канвасу;
+  // справжнє замінено на WBPublicView з повним replay-плеєром і INV-T hydrate).
   {
     path: '/replay/share/:token',
     name: 'winterboard-replay-share',
-    component: () => import('./views/WBReplayPublicView.vue'),
-    props: true,
-    meta: { title: 'Replay', public: true, requiresAuth: false },
+    redirect: (to) => ({
+      name: 'winterboard-public',
+      params: { token: to.params.token },
+    }),
+    meta: { public: true, requiresAuth: false },
   },
   {
     path: '/winterboard/:id',
