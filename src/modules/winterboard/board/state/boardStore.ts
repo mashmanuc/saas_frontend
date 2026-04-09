@@ -371,8 +371,7 @@ export function _resetOperationListeners(): void {
 }
 
 function _emitOperation(op: RecordOperationRequest): void {
-  // REPLAY-INV-9: NO-OP у replay mode — блокує всі listeners (recorder, telemetry, WS sync)
-  // Це гарантує що applyReplayOperation() не забруднює timeline новими ops
+  // REPLAY-INV-9: NO-OP outside edit mode — blocks all listeners (recorder, telemetry, WS sync)
   if (_currentMode !== 'edit') return
   for (const listener of _operationListeners) {
     try {
