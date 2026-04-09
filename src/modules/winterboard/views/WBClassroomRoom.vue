@@ -331,7 +331,7 @@
       v-if="mode === 'replay' && resolvedSessionId"
       :session-id="resolvedSessionId"
       :load-state="(s) => store.loadSnapshot(s as Parameters<typeof store.loadSnapshot>[0])"
-      :clear-state="() => store.resetForReplay()"
+      :clear-state="() => { store.resetForReplay(); replayApplier.reset() }"
       @exit="exitReplayMode"
       @operation="onReplayOperation"
       @start-state="onReplayStartState"

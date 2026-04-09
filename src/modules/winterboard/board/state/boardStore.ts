@@ -359,10 +359,17 @@ function trimStack(stack: UndoAction[]): UndoAction[] {
 
 export type OperationListener = (op: RecordOperationRequest) => void
 
+/**
+ * MODULE-LEVEL STATE — survives SPA navigation!
+ *
+ * _operationListeners: Callbacks from connectToStore(). Cleared via unsubscribe().
+ * _currentMode: WRITE-ONLY cache. Actual mode ALWAYS read from store via _getEffectiveMode().
+ *
+ * INVARIANT: Any new module-level mutable state MUST be documented here
+ * and reset in hydrateFromSession() + _resetOperationListeners().
+ */
 const _operationListeners: OperationListener[] = []
-// REPLAY-INV-9: module-level mode mirror — оновлюється через setMode()
-// Дозволяє _emitOperation перевіряти mode без доступу до store instance
-let _currentMode: 'edit' | 'replay' | 'readonly' = 'edit'
+let _currentMode: 'edit' | 'replay' | 'readonly' = 'edit'  // write-only cache, see _getEffectiveMode
 
 /** Phase 20: Reset listeners — exposed for test isolation only */
 export function _resetOperationListeners(): void {
@@ -370,26 +377,23 @@ export function _resetOperationListeners(): void {
   _currentMode = 'edit'
 }
 
-function _emitOperation(op: RecordOperationRequest): void {
-  // GUARD: self-healing mode sync.
-  // If store.mode === 'edit' but module-level _currentMode drifted (e.g. after SPA navigation),
-  // auto-fix instead of silently dropping all operations.
-  // This prevents the "zero replay/batch" bug from ever recurring.
-  if (_currentMode !== 'edit') {
-    // Check if Pinia store actually IS in edit mode (desync detection)
-    try {
-      const store = useWBStore()
-      if (store.mode === 'edit') {
-        console.warn(`[WB:Store] _currentMode desync detected: module='${_currentMode}' store='edit'. Auto-healing.`)
-        _currentMode = 'edit'
-        // Fall through to emit
-      } else {
-        return // Both agree: not edit mode → correct block
-      }
-    } catch {
-      return // Store not available → safe to block
-    }
+/**
+ * ALWAYS read mode from Pinia store, NEVER trust module-level _currentMode.
+ * Fallback to 'edit' (fail-safe: allow recording) if store not ready.
+ */
+function _getEffectiveMode(): 'edit' | 'replay' | 'readonly' {
+  try {
+    return useWBStore().mode
+  } catch {
+    // Store not initialized yet (app bootstrap). Fail-safe to 'edit'.
+    // NEVER fall back to _currentMode — it can be stale after SPA navigation.
+    return 'edit'
   }
+}
+
+function _emitOperation(op: RecordOperationRequest): void {
+  const mode = _getEffectiveMode()
+  if (mode !== 'edit') return
   for (const listener of _operationListeners) {
     try {
       listener(op)

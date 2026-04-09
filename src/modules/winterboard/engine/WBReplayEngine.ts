@@ -102,7 +102,8 @@ export class WBReplayEngine {
     }
   }
 
-  seekTo(index: number): void {
+  /** Seek to index. Returns actual (clamped) position. */
+  seekTo(index: number): number {
     const wasPlaying = this.state === 'playing'
     if (wasPlaying) this._clearTimer()
 
@@ -115,6 +116,7 @@ export class WBReplayEngine {
     if (wasPlaying) {
       this._scheduleNext()
     }
+    return clamped
   }
 
   /** Clean up all timers and callbacks — call when component unmounts */

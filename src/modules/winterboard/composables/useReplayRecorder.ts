@@ -52,10 +52,12 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
   const opCount = ref(0)
   const lastKnownTotal = ref(0)  // синхронізовано з BE total_operations
   const isFlushing = ref(false)
+  const pipelineStatus = ref<'idle' | 'healthy' | 'degraded' | 'broken'>('idle')
   let flushTimer: ReturnType<typeof setInterval> | null = null
   let consecutiveFailures = 0
   let circuitBreakerTimer: ReturnType<typeof setTimeout> | null = null
   let circuitOpen = false
+  let _destroyed = false  // guard against zombie usage after destroy()
 
   /**
    * Record a single board operation into the buffer.
@@ -89,6 +91,7 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
   }
 
   function record(op: RecordOperationRequest): void {
+    if (_destroyed) { console.warn('[WB:Recorder] record() called after destroy'); return }
     // Phase 1: Skip recording if not enabled (opt-in)
     if (options.enabled && !options.enabled.value) return
 
@@ -139,6 +142,7 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
   let _totalFlushedOps = 0
 
   async function flush(): Promise<void> {
+    if (_destroyed) return
     const sid = options.sessionId.value
     if (!sid) {
       if (buffer.length > 0) console.warn(`[WB:Recorder] flush skipped: no sessionId (${buffer.length} ops in buffer)`)
@@ -197,6 +201,7 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
 
       consecutiveFailures = 0     // success — reset counter
       _totalFlushedOps += flushedCount
+      if (pipelineStatus.value !== 'healthy') pipelineStatus.value = 'healthy'
       // Синхронізуємо lastKnownTotal з BE після підтвердженого commit (останнього чанка)
       if (lastResult && typeof lastResult.total_operations === 'number') {
         const prevTotal = lastKnownTotal.value  // зберігаємо ДО оновлення
@@ -232,11 +237,14 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
           `Pausing for ${CIRCUIT_BREAKER_COOLDOWN_MS / 1000}s`,
         )
         circuitBreakerTimer = setTimeout(() => {
+          if (_destroyed) return  // zombie guard
           circuitOpen = false
           consecutiveFailures = 0
           circuitBreakerTimer = null
+          pipelineStatus.value = 'idle'
           console.info('[ReplayRecorder] Circuit breaker CLOSED — resuming flushes')
         }, CIRCUIT_BREAKER_COOLDOWN_MS)
+        pipelineStatus.value = 'degraded'
       }
     } finally {
       isFlushing.value = false
@@ -296,14 +304,36 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
   }
 
   /**
+   * Best-effort flush via navigator.sendBeacon for beforeunload.
+   * Unlike flush(), this is synchronous and works during page unload.
+   * May lose ops if buffer > MAX_OPS_PER_REQUEST (acceptable for unload).
+   */
+  function flushViaSendBeacon(): void {
+    const sid = options.sessionId.value
+    if (!sid) return
+    const ops = [...retryQueue.splice(0), ...buffer.splice(0)]
+    if (ops.length === 0) return
+    const batch = ops.slice(0, MAX_OPS_PER_REQUEST)
+    const apiBase = (import.meta as unknown as { env?: { VITE_API_BASE_URL?: string } }).env?.VITE_API_BASE_URL || '/api'
+    const url = `${apiBase}/v1/winterboard/sessions/${sid}/replay/batch/`
+    try {
+      navigator.sendBeacon(url, new Blob([JSON.stringify({ operations: batch })], { type: 'application/json' }))
+    } catch {
+      // sendBeacon may fail silently in some browsers — acceptable for unload
+    }
+  }
+
+  /**
    * Full cleanup — stop timer, flush remaining, clear buffer.
    */
   function destroy(): void {
+    _destroyed = true
     stop()
     buffer.length = 0
     retryQueue.length = 0
     opCount.value = 0
     lastKnownTotal.value = 0
+    pipelineStatus.value = 'idle'
     if (circuitBreakerTimer) {
       clearTimeout(circuitBreakerTimer)
       circuitBreakerTimer = null
@@ -339,6 +369,7 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
   return {
     record,
     flush,
+    flushViaSendBeacon,
     start,
     stop,
     destroy,
@@ -346,5 +377,6 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
     opCount: readonly(opCount),
     lastKnownTotal: readonly(lastKnownTotal),
     isFlushing: readonly(isFlushing),
+    pipelineStatus: readonly(pipelineStatus),
   }
 }

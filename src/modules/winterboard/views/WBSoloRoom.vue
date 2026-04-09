@@ -714,7 +714,7 @@
       ref="replayControlsRef"
       :session-id="sessionId"
       :load-state="(s) => store.loadSnapshot(s as Parameters<typeof store.loadSnapshot>[0])"
-      :clear-state="() => store.resetForReplay()"
+      :clear-state="() => { store.resetForReplay(); replayApplier.reset() }"
       :comment-points="commentPoints"
       @exit="exitReplayMode"
       @operation="onReplayOperation"
@@ -915,8 +915,18 @@ const replayRecorder = useReplayRecorder({
   getBoardState: () => store.getSnapshotState(),
   enabled: isRecorderEnabled,
 })
-// Phase 20: Auto-record all store operations — no manual record() calls needed
-const _unsubRecorder = replayRecorder.connectToStore(store)
+// Phase 20: connectToStore moved to onMounted (after hydrateFromSession)
+// to prevent stale listeners from previous session
+let _unsubRecorder: (() => void) | null = null
+
+// Lifecycle: idempotent cleanup for both route-leave and unmount
+let _recorderCleaned = false
+function cleanupRecorder(): void {
+  if (_recorderCleaned) return
+  _recorderCleaned = true
+  _unsubRecorder?.()
+  replayRecorder.destroy()
+}
 
 async function handleStartRecording(): Promise<void> {
   const sid = sessionId.value
@@ -1166,7 +1176,9 @@ watch(mode, (newMode, oldMode) => {
 })
 
 function enterReplayMode(): void {
-  _savedBoardState = store.getSnapshotState()  // snapshot поточного стану
+  if (!_savedBoardState) {
+    _savedBoardState = store.getSnapshotState()  // snapshot поточного стану (guard: no overwrite)
+  }
   store.setMode('replay')    // REPLAY-INV-9: _emitOperation стає NO-OP
   store.resetForReplay()     // чистий стан — replay накладає ops з нуля (REPLAY-INV-11)
   replayApplier.reset()      // P0: clean instance page-tracking state
@@ -2370,6 +2382,9 @@ onMounted(async () => {
       // Set sessionId AFTER hydration — autosave is now safe to run
       sessionId.value = id
       sessionName.value = detail.name || t('winterboard.room.untitled')
+
+      // Connect recorder to store AFTER hydration — prevents stale listeners
+      _unsubRecorder = replayRecorder.connectToStore(store)
     } catch (err: unknown) {
       const status = (err as Record<string, Record<string, number>>)?.response?.status
       if (status === 401) {
@@ -2451,10 +2466,20 @@ function onGlobalKeyDown(e: KeyboardEvent) {
 }
 document.addEventListener('keydown', onGlobalKeyDown, true) // capture: перехоплює РАНІШЕ за WBCanvas
 
+// B.6: Best-effort replay buffer flush on tab close via sendBeacon
+function _handleBeforeUnload(e: BeforeUnloadEvent): void {
+  replayRecorder.flushViaSendBeacon()
+  if (isManualRecording.value) {
+    e.preventDefault()
+    e.returnValue = ''
+  }
+}
+window.addEventListener('beforeunload', _handleBeforeUnload)
+
 onBeforeUnmount(async () => {
+  window.removeEventListener('beforeunload', _handleBeforeUnload)
   document.removeEventListener('keydown', onGlobalKeyDown, true)
-  _unsubRecorder()
-  replayRecorder.destroy()
+  cleanupRecorder()  // idempotent — may already be cleaned by onBeforeRouteLeave
   // BUG-1 FIX: Use shared save logic on unmount
   await saveBeforeLeave()
   autosave.destroy()
@@ -2463,7 +2488,9 @@ onBeforeUnmount(async () => {
 })
 
 // BUG-1 FIX: Route leave guard — saves before any SPA navigation away
+// Also cleanup recorder BEFORE navigation (prevents timer leaks during SPA transition)
 onBeforeRouteLeave(async (_to, _from, next) => {
+  cleanupRecorder()
   await saveBeforeLeave()
   next()
 })

@@ -63,7 +63,7 @@
           type="range"
           class="wb-replay-controls__slider"
           :min="0"
-          :max="totalOperations"
+          :max="Math.max(0, totalOperations - 1)"
           :value="currentIndex"
           :aria-label="t('replay.timeline')"
           data-testid="replay-slider"
@@ -249,14 +249,33 @@ async function onPlayPause(): Promise<void> {
   }
 }
 
+// Pending seek pattern: if user drags slider while previous seek is in-flight,
+// remember the last position and seek to it after current completes.
+// This prevents both state corruption (no fallback to simple seekTo) and missed seeks.
+let pendingSeekIdx: number | null = null
+
 async function onSeek(event: Event): Promise<void> {
   const idx = parseInt((event.target as HTMLInputElement).value, 10)
-  if (props.loadState && props.clearState && !isSeeking.value) {
+  if (isSeeking.value) {
+    pendingSeekIdx = idx  // запам'ятати, виконати після поточного
+    return
+  }
+  await runSeek(idx)
+}
+
+async function runSeek(idx: number): Promise<void> {
+  if (props.loadState && props.clearState) {
     isSeeking.value = true
     try {
       await seekToWithSnapshot(idx, props.loadState, props.clearState)
     } finally {
       isSeeking.value = false
+    }
+    // Виконати останній pending seek якщо був
+    if (pendingSeekIdx !== null) {
+      const next = pendingSeekIdx
+      pendingSeekIdx = null
+      await runSeek(next)
     }
   } else {
     seekTo(idx)

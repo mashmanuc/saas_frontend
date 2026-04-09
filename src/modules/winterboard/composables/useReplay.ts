@@ -187,9 +187,9 @@ export function useReplay(sessionId: string) {
       }
     }
 
-    // Sync engine position
-    engine.value?.seekTo(idx)
-    currentIndex.value = idx
+    // Sync engine position — use clamped value from engine (not raw idx)
+    const actualIdx = engine.value?.seekTo(idx) ?? idx
+    currentIndex.value = actualIdx
   }
 
   // Phase 10 P5: Auto-detect active marker during playback
