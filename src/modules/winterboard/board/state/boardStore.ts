@@ -628,8 +628,10 @@ export const useWBStore = defineStore('wb-board', {
         const state = session.state
         if (state.pages && Array.isArray(state.pages) && state.pages.length > 0) {
           // Strip pages[] from document_viewer assets (legacy sessions may have them)
+          // INV: ensure every page has background field (backend may omit it)
           this.pages = (state.pages as WBPage[]).map(page => ({
             ...page,
+            background: page.background ?? 'white',
             assets: page.assets.map(asset => {
               if (asset.type === 'document_viewer' && asset.pages) {
                 const { pages: _p, ...rest } = asset
@@ -684,7 +686,11 @@ export const useWBStore = defineStore('wb-board', {
     /** Load full board state from snapshot (for seek optimization) */
     loadSnapshot(state: { pages: WBPage[]; currentPageIndex: number }): void {
       if (state.pages && Array.isArray(state.pages)) {
-        this.pages = state.pages
+        // INV: ensure every page has background field (backend may omit it for page[0])
+        this.pages = state.pages.map(p => ({
+          ...p,
+          background: p.background ?? 'white',
+        })) as WBPage[]
       }
       this.currentPageIndex = state.currentPageIndex ?? 0
       this.undoStack = []

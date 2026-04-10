@@ -95,6 +95,8 @@
         @pause="handleReplayPause"
         @seek="handleReplaySeek"
         @speed-change="handleSpeedChange"
+        @step-forward="handleStepForward"
+        @step-backward="handleStepBackward"
       />
 
       <!-- Markers list (below player) -->
@@ -319,6 +321,14 @@ async function enterReplayMode(): Promise<void> {
     },
   )
 
+  // Встановлюємо hasReplayData після loadTimeline (єдиний виклик fetchPublicReplayByToken)
+  hasReplayData.value = replay.totalOperations.value > 0
+  if (!hasReplayData.value) {
+    // Нема replay даних — повертаємось в static mode
+    exitReplayMode()
+    return
+  }
+
   // Fallback: derive duration from operation timestamps if lesson_time_seconds was missing
   if (replayDurationSeconds.value <= 0 && replay.totalDurationMs.value > 0) {
     replayDurationSeconds.value = Math.ceil(replay.totalDurationMs.value / 1000)
@@ -435,6 +445,23 @@ function handleSpeedChange(speed: number): void {
   replay?.setSpeed(speed as ReplaySpeed)
 }
 
+function handleStepForward(): void {
+  replayAudio.stopAudio()  // INV I5
+  replay?.stepForward()
+}
+
+async function handleStepBackward(): Promise<void> {
+  replayAudio.stopAudio()  // INV I5
+  if (replay) {
+    await replay.stepBackward(
+      (boardState) => {
+        store.loadSnapshot(boardState as { pages: import('../types/winterboard').WBPage[]; currentPageIndex: number })
+      },
+      resetBoardForReplay,
+    )
+  }
+}
+
 // ─── Audio interaction layer (INV I2: click only) ────────────────────────────
 function handleAudioBadgeClick(url: string): void {
   if (isReplayMode.value) {
@@ -492,38 +519,15 @@ onMounted(async () => {
     const sessionId = data.id
     replaySessionId.value = sessionId
 
-    // Check for replay data via PUBLIC endpoint (no auth required)
-    const publicToken = route.params.token as string
-    if (publicToken) {
-      try {
-        const { fetchPublicReplayByToken, fetchLessonMarkers } = await import('../api/replay')
-        let timeline: { operations: Array<{ lesson_time_seconds?: number }>; total_operations: number }
-        try {
-          timeline = await fetchPublicReplayByToken(publicToken) as typeof timeline
-          // diagnostic log removed — keep console clean in production
-        } catch (replayErr) {
-          console.error('[WB:PublicView] fetchPublicReplayByToken FAILED:', replayErr)
-          timeline = { operations: [], total_operations: 0 }
-        }
-        hasReplayData.value = timeline.total_operations > 0
-        if (timeline.total_operations > 0) {
-          const ops = timeline.operations as Array<{ lesson_time_seconds?: number }>
-          const lastOp = ops[ops.length - 1]
-          if (lastOp?.lesson_time_seconds) {
-            replayDurationSeconds.value = lastOp.lesson_time_seconds
-          }
-        }
-      } catch {
-        // Replay data optional — don't block static view
-      }
-    }
-
     isHydrated.value = true
 
-    // UX FIX (2026-04-08): публічне посилання = replay-плеєр за замовчуванням.
-    // Якщо є replay-дані — одразу входимо в replay mode (як YouTube).
+    // INV: fetchPublicReplayByToken викликається ОДИН раз — всередині enterReplayMode() →
+    // loadTimeline(). Попередній pre-check був дублюванням (duplicate request).
+    // hasReplayData та replayDurationSeconds встановлюються після loadTimeline().
+    //
+    // UX: публічне посилання = replay-плеєр за замовчуванням (як YouTube).
     // ?t= deep-link seek обробляється всередині enterReplayMode().
-    if (hasReplayData.value) {
+    if (replaySessionId.value) {
       await enterReplayMode()
     }
   } catch (err: unknown) {

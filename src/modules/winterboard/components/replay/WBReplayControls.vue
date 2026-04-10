@@ -18,6 +18,17 @@
     </div>
 
     <template v-else>
+      <!-- Step backward -->
+      <button
+        class="wb-replay-controls__step"
+        :aria-label="t('replay.stepBackward')"
+        :disabled="currentIndex <= 0"
+        data-testid="replay-step-back"
+        @click="onStepBackward"
+      >
+        <span aria-hidden="true">⏮</span>
+      </button>
+
       <!-- Play / pause -->
       <button
         class="wb-replay-controls__play"
@@ -27,6 +38,17 @@
       >
         <span v-if="state === 'playing'" aria-hidden="true">⏸</span>
         <span v-else aria-hidden="true">▶</span>
+      </button>
+
+      <!-- Step forward -->
+      <button
+        class="wb-replay-controls__step"
+        :aria-label="t('replay.stepForward')"
+        :disabled="currentIndex >= totalOperations"
+        data-testid="replay-step-fwd"
+        @click="onStepForward"
+      >
+        <span aria-hidden="true">⏭</span>
       </button>
 
       <!-- Time -->
@@ -83,6 +105,7 @@
         <option value="1">1×</option>
         <option value="2">2×</option>
         <option value="4">4×</option>
+        <option value="10">10×</option>
       </select>
 
       <!-- Status when ended -->
@@ -169,6 +192,8 @@ const {
   setSpeed,
   seekTo,
   seekToWithSnapshot,
+  stepForward,
+  stepBackward,
   markers,
   activeMarkerId,
   loadMarkers,
@@ -306,6 +331,18 @@ async function onRetry(): Promise<void> {
   }
 }
 
+function onStepForward(): void {
+  emit('seekStart')  // INV I5: stop audio
+  stepForward()
+}
+
+async function onStepBackward(): Promise<void> {
+  emit('seekStart')  // INV I5: stop audio
+  if (props.loadState && props.clearState) {
+    await stepBackward(props.loadState, props.clearState)
+  }
+}
+
 function onSpeedChange(event: Event): void {
   const val = parseFloat((event.target as HTMLSelectElement).value) as ReplaySpeed
   currentSpeed.value = val
@@ -363,6 +400,29 @@ function formatTime(ms: number): string {
 }
 .wb-replay-controls__play:hover {
   background: var(--color-primary-hover, #4f46e5);
+}
+
+.wb-replay-controls__step {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-surface, #ffffff);
+  color: var(--color-text, #1e293b);
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, opacity 0.15s;
+}
+.wb-replay-controls__step:hover:not(:disabled) {
+  background: var(--color-surface-hover, #f1f5f9);
+}
+.wb-replay-controls__step:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 
 .wb-replay-controls__time {

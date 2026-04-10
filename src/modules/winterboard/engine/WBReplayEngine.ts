@@ -11,7 +11,7 @@
 import type { BoardOperation, ReplayTimeline } from '../types/replay'
 
 export type ReplayState = 'idle' | 'playing' | 'paused' | 'ended'
-export type ReplaySpeed = 0.5 | 1 | 2 | 4
+export type ReplaySpeed = 0.5 | 1 | 2 | 4 | 10
 
 export interface ReplayEngineCallbacks {
   onOperation: (op: BoardOperation, index: number) => void
@@ -117,6 +117,44 @@ export class WBReplayEngine {
       this._scheduleNext()
     }
     return clamped
+  }
+
+  /** Step forward by 1 operation. Pauses if playing. Returns op at new index (or null). */
+  stepForward(): BoardOperation | null {
+    if (this.state === 'playing') {
+      this._clearTimer()
+      this.setState('paused')
+    }
+    if (this.currentIndex >= this.operations.length) return null
+    const op = this.operations[this.currentIndex]
+    this.callbacks.onOperation?.(op, this.currentIndex)
+    this.currentIndex++
+    this.callbacks.onProgress?.(this.currentIndex, this.operations.length)
+    if (this.currentIndex >= this.operations.length) {
+      this.setState('ended')
+    } else if (this.state === 'idle') {
+      this.setState('paused')
+    }
+    return op
+  }
+
+  /**
+   * Step backward by 1 operation. Returns target index.
+   * NOTE: Caller must handle board state reset (snapshot-based seek),
+   * because operations are not reversible.
+   */
+  stepBackward(): number {
+    if (this.state === 'playing') {
+      this._clearTimer()
+      this.setState('paused')
+    }
+    const newIdx = Math.max(0, this.currentIndex - 1)
+    this.currentIndex = newIdx
+    this.callbacks.onProgress?.(newIdx, this.operations.length)
+    if (this.state === 'ended') {
+      this.setState('paused')
+    }
+    return newIdx
   }
 
   /** Clean up all timers and callbacks — call when component unmounts */

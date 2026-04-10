@@ -35,20 +35,45 @@
 
     <!-- Controls row -->
     <div class="public-replay-player__controls">
+      <!-- Step backward -->
+      <button
+        type="button"
+        class="public-replay-player__step-btn"
+        :aria-label="t('replay.stepBackward')"
+        @click="emit('step-backward')"
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <rect x="2" y="3" width="2" height="10" rx="0.5" fill="currentColor"/>
+          <path d="M13 3L6 8l7 5V3z" fill="currentColor"/>
+        </svg>
+      </button>
+
+      <!-- Play / Pause -->
       <button
         type="button"
         class="public-replay-player__play-btn"
         :aria-label="isPlaying ? t('publicLesson.player.pause') : t('publicLesson.player.play')"
         @click="isPlaying ? emit('pause') : emit('play')"
       >
-        <!-- Play icon -->
         <svg v-if="!isPlaying" width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
           <path d="M4 2.5v13l11-6.5L4 2.5z" fill="currentColor"/>
         </svg>
-        <!-- Pause icon -->
         <svg v-else width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
           <rect x="3" y="2" width="4" height="14" rx="1" fill="currentColor"/>
           <rect x="11" y="2" width="4" height="14" rx="1" fill="currentColor"/>
+        </svg>
+      </button>
+
+      <!-- Step forward -->
+      <button
+        type="button"
+        class="public-replay-player__step-btn"
+        :aria-label="t('replay.stepForward')"
+        @click="emit('step-forward')"
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M3 3l7 5-7 5V3z" fill="currentColor"/>
+          <rect x="12" y="3" width="2" height="10" rx="0.5" fill="currentColor"/>
         </svg>
       </button>
 
@@ -81,8 +106,9 @@
       >
         <option value="0.5">0.5x</option>
         <option value="1">1x</option>
-        <option value="1.5">1.5x</option>
         <option value="2">2x</option>
+        <option value="4">4x</option>
+        <option value="10">10x</option>
       </select>
     </div>
 
@@ -133,6 +159,8 @@ const emit = defineEmits<{
   'pause': []
   'seek': [timeMs: number]
   'speed-change': [speed: number]
+  'step-forward': []
+  'step-backward': []
   'share-moment': [seconds: number]
 }>()
 
@@ -284,6 +312,27 @@ function handleShareMoment(): void {
 
 .public-replay-player__play-btn:hover {
   background: var(--wb-primary-hover, #065f46);
+}
+
+.public-replay-player__step-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: transparent;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.12s;
+  flex-shrink: 0;
+}
+
+.public-replay-player__step-btn:hover {
+  color: var(--wb-brand, #047857);
+  border-color: var(--wb-brand, #047857);
+  background: rgba(4, 120, 87, 0.05);
 }
 
 .public-replay-player__time {

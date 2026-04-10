@@ -8073,6 +8073,8 @@
     "pause": "Pause",
     "stop": "Stop",
     "speed": "Playback speed",
+    "stepForward": "Step forward",
+    "stepBackward": "Step backward",
     "exit": "Exit replay",
     "exitReplay": "Exit replay",
     "viewReplay": "View replay",

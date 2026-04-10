@@ -136,6 +136,36 @@ export function useReplay(sessionId: string, publicToken?: string) {
   function setSpeed(s: ReplaySpeed): void { engine.value?.setSpeed(s) }
   function seekTo(idx: number): void { engine.value?.seekTo(idx) }
 
+  /** Step forward 1 op. Applies the operation via _onOp callback. Pauses if playing. */
+  function stepForward(): void {
+    if (!engine.value || !_onOp) return
+    const op = engine.value.stepForward()
+    if (op) {
+      _onOp(op)
+      currentIndex.value = engine.value.getCurrentIndex()
+      // Update playback time
+      const tMs = new Date(op.created_at).getTime() - firstOpAtMs.value
+      currentTimeMs.value = Math.max(0, tMs)
+    }
+    // Sync state
+    state.value = engine.value.getState()
+  }
+
+  /**
+   * Step backward 1 op. Requires snapshot-based reset because ops are not reversible.
+   * Caller must provide loadState/clearState callbacks (same as seekToWithSnapshot).
+   */
+  async function stepBackward(
+    loadState: (boardState: Record<string, unknown>) => void,
+    clearState: () => void,
+  ): Promise<void> {
+    if (!engine.value || !_onOp) return
+    const targetIdx = Math.max(0, engine.value.getCurrentIndex() - 1)
+    // Reuse seekToWithSnapshot — it resets board + replays ops 0..targetIdx
+    await seekToWithSnapshot(targetIdx, loadState, clearState)
+    state.value = engine.value.getState()
+  }
+
   /**
    * Seek to a specific operation index using snapshots for performance.
    * 1. Fetch nearest snapshot at or before idx
@@ -243,6 +273,8 @@ export function useReplay(sessionId: string, publicToken?: string) {
     setSpeed,
     seekTo,
     seekToWithSnapshot,
+    stepForward,
+    stepBackward,
     markers: readonly(markers),
     activeMarkerId: readonly(activeMarkerId),
     currentTimeMs: readonly(currentTimeMs),
