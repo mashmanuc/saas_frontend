@@ -752,16 +752,24 @@
       :is-empty="isBoardEmpty"
     />
 
-    <!-- Phase 11: Replay entry button — only when board has real content -->
-    <button
-      v-if="mode === 'edit' && sessionId && hasOperations"
-      class="wb-solo-room__replay-btn"
-      data-testid="replay-button"
-      :aria-label="t('winterboard.replay.viewReplay')"
-      @click="enterReplayMode"
-    >
-      &#9654; {{ t('winterboard.replay.viewReplay') }}
-    </button>
+    <!-- Replay entry: CTA + stats or empty state hint -->
+    <div v-if="mode === 'edit' && sessionId" class="wb-solo-room__replay-entry">
+      <button
+        v-if="hasOperations"
+        class="wb-solo-room__replay-btn"
+        data-testid="replay-button"
+        :aria-label="t('winterboard.replay.viewReplay')"
+        @click="enterReplayMode"
+      >
+        &#9654; {{ isManualRecording ? t('winterboard.replay.viewRecording') : t('winterboard.replay.viewReplay') }}
+      </button>
+      <span v-if="hasOperations" class="wb-solo-room__replay-stats">
+        {{ store.pages.length }} {{ t('winterboard.replay.statPages') }}
+      </span>
+      <span v-if="!hasOperations && !isManualRecording" class="wb-solo-room__replay-hint">
+        {{ t('winterboard.replay.emptyHint') }}
+      </span>
+    </div>
 
     <!-- Phase B: Share replay modal — owner only -->
     <WBReplayShareModal
@@ -3566,11 +3574,18 @@ watch(() => store.workspaceName, (name) => {
   background: #b91c1c;
 }
 
-/* Phase 11: Replay mode entry button — prominent, pulse animation */
-.wb-solo-room__replay-btn {
+/* Replay entry: CTA + stats row */
+.wb-solo-room__replay-entry {
   position: fixed;
   bottom: 80px;
   right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 40;
+}
+
+.wb-solo-room__replay-btn {
   background: var(--wb-brand, #6366f1);
   color: white;
   border: none;
@@ -3579,15 +3594,33 @@ watch(() => store.workspaceName, (name) => {
   cursor: pointer;
   font-size: 0.875rem;
   font-weight: 600;
-  z-index: 40;
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
   transition: background 0.15s, transform 0.1s;
-  animation: wb-replay-pulse 2s ease-in-out 3;
+  white-space: nowrap;
 }
 
 .wb-solo-room__replay-btn:hover {
   background: var(--primary-hover, #4f46e5);
   transform: translateY(-1px);
+}
+
+.wb-solo-room__replay-stats {
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #64748b);
+  background: var(--color-surface, #ffffff);
+  padding: 6px 10px;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  white-space: nowrap;
+}
+
+.wb-solo-room__replay-hint {
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #94a3b8);
+  background: var(--color-surface, #ffffff);
+  padding: 6px 12px;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
 @keyframes wb-replay-pulse {

@@ -7184,6 +7184,9 @@
     },
     "replay": {
       "viewReplay": "View lesson replay",
+      "viewRecording": "View recording",
+      "statPages": "pages",
+      "emptyHint": "Record a lesson to replay it later",
       "viewingMode": "Viewing mode — editing disabled",
       "exitReplay": "Exit",
       "shareMoment": "Share moment",

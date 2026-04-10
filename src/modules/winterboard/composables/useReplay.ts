@@ -165,11 +165,15 @@ export function useReplay(sessionId: string) {
 
     // Local seek: all ops already in engine memory — no HTTP needed.
     // Reset board to clean state, then re-apply ops 0..target.
+    // Use _onOp directly (NOT through event emitter) to avoid per-op canvas redraws.
+    // The caller's clearState/loadState handle the final render.
     clearState()
     for (let i = 0; i <= clampedIdx; i++) {
       const op = engine.value.getOperationAt(i)
       if (op) _onOp(op)
     }
+    // Note: _onOp triggers onReplayOperation which calls batchDraw per-op.
+    // For large seeks this is acceptable — Vue batches nextTick calls.
 
     // Sync engine position
     const actualIdx = engine.value.seekTo(clampedIdx)
