@@ -1287,14 +1287,29 @@ function onReplayTick({ index, total }: { index: number; total: number }): void 
 // R5: Instance-scoped replay operation applier (DRY)
 function onReplayOperation(op: BoardOperation): void {
   replayApplier.apply(store, op)
-  // REPLAY-FIX-6: Force Konva redraw after replay operations.
-  // Vue-Konva may not auto-trigger batchDraw when store changes via Pinia.
-  if (['stroke_add', 'stroke_update', 'stroke_delete', 'asset_add', 'asset_update', 'asset_delete', 'clear_page', 'page_navigate', 'page_change'].includes(op.op_type)) {
-    nextTick(() => {
-      const stage = canvasRef.value?.getStage?.()
-      if (stage) stage.batchDraw()
-    })
-  }
+
+  // Smooth appearance: fade-in new elements via Konva Tween
+  const isAdd = op.op_type === 'stroke_add' || op.op_type === 'asset_add'
+  const newId = isAdd
+    ? ((op.payload as Record<string, unknown>)?.stroke as { id?: string })?.id
+      || ((op.payload as Record<string, unknown>)?.asset as { id?: string })?.id
+    : null
+
+  nextTick(() => {
+    const stage = canvasRef.value?.getStage?.()
+    if (!stage) return
+
+    // Fade-in new elements
+    if (newId) {
+      const node = stage.findOne(`#${newId}`)
+      if (node) {
+        node.opacity(0)
+        node.to({ opacity: 1, duration: 0.25 })
+      }
+    }
+
+    stage.batchDraw()
+  })
 }
 
 // A10: Touch context menu state
@@ -2354,6 +2369,9 @@ onMounted(async () => {
       }
       sessionName.value = created.name || t('winterboard.room.untitled')
       isLoading.value = false
+      // Connect recorder to store — same as existing-session branch (line ~2427).
+      // Without this, _operationListeners stays empty → 0 ops reach recorder buffer.
+      _unsubRecorder = replayRecorder.connectToStore(store)
       // Template selector modal removed — grid overlay button replaces it
       // Phase 1: replayRecorder.start() removed — controlled by isRecording ref via watch
       await connectPresenceSafe(created.id)
@@ -2515,8 +2533,15 @@ onBeforeUnmount(async () => {
 
 // BUG-1 FIX: Route leave guard — saves before any SPA navigation away
 // Also cleanup recorder BEFORE navigation (prevents timer leaks during SPA transition)
-onBeforeRouteLeave(async (_to, _from, next) => {
-  cleanupRecorder()
+onBeforeRouteLeave(async (to, _from, next) => {
+  // GUARD: Don't destroy recorder when navigating within the same component.
+  // /winterboard/new → /winterboard/:id uses router.replace() but both routes
+  // load WBSoloRoom.vue — component is REUSED (no onMounted re-fire).
+  // If we clean up here, the recorder is dead and no one re-connects it.
+  const isSameComponent = to.name === 'winterboard-solo' || to.name === 'winterboard-new'
+  if (!isSameComponent) {
+    cleanupRecorder()
+  }
   await saveBeforeLeave()
   next()
 })

@@ -223,7 +223,7 @@ function handleShareMoment(): void {
   top: 0;
   left: 0;
   height: 100%;
-  background: #6366f1;
+  background: var(--wb-brand, #047857);
   border-radius: 4px;
   transition: width 0.1s linear;
   pointer-events: none;
@@ -234,7 +234,7 @@ function handleShareMoment(): void {
   top: -4px;
   width: 16px;
   height: 16px;
-  background: #6366f1;
+  background: var(--wb-brand, #047857);
   border: 2px solid #ffffff;
   border-radius: 50%;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
@@ -273,7 +273,7 @@ function handleShareMoment(): void {
   justify-content: center;
   width: 36px;
   height: 36px;
-  background: #6366f1;
+  background: var(--wb-brand, #047857);
   color: #ffffff;
   border: none;
   border-radius: 50%;
@@ -283,7 +283,7 @@ function handleShareMoment(): void {
 }
 
 .public-replay-player__play-btn:hover {
-  background: #4f46e5;
+  background: var(--wb-primary-hover, #065f46);
 }
 
 .public-replay-player__time {

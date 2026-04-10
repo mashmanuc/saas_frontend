@@ -23,47 +23,65 @@
       <header class="wb-public-view__header">
         <div class="wb-public-view__brand">
           <div class="wb-public-view__logo" aria-hidden="true">M4</div>
-          <div class="wb-public-view__brand-text">
-            <span class="wb-public-view__brand-name">M4SH</span>
-            <span class="wb-public-view__brand-tag">Winterboard</span>
-          </div>
+          <span class="wb-public-view__brand-name">M4SH</span>
         </div>
-        <div class="wb-public-view__title-block">
-          <h1 class="wb-public-view__title">{{ displayTitle }}</h1>
-          <span class="wb-public-view__badge">{{ t('winterboard.public.readOnly') }}</span>
-        </div>
-        <div class="wb-public-view__header-actions">
-          <button
-            v-if="allowDownload"
-            type="button"
-            class="wb-download-icon-btn"
-            :title="t('winterboard.public.download')"
-            :aria-label="t('winterboard.public.download')"
-            @click="handleDownload"
-          >
-            ⬇
-          </button>
-        </div>
+        <h1 class="wb-public-view__title">{{ displayTitle }}</h1>
+        <span v-if="ownerName" class="wb-public-view__author">{{ ownerName }}</span>
       </header>
 
-      <div class="wb-public-view__canvas-area">
+      <div ref="canvasContainerRef" class="wb-public-view__canvas-area">
         <div class="wb-public-view__canvas-frame">
-        <WBCanvas
-          ref="canvasRef"
-          :strokes="store.currentStrokes"
-          :assets="store.currentAssets"
-          :page-id="store.currentPage?.id ?? ''"
-          :read-only="true"
-          color="#000000"
-          tool="select"
-          :size="2"
-        />
+          <WBCanvas
+            ref="canvasRef"
+            :strokes="store.currentStrokes"
+            :assets="store.currentAssets"
+            :page-id="store.currentPage?.id ?? ''"
+            :read-only="true"
+            color="#000000"
+            tool="select"
+            :size="2"
+          />
+        </div>
+
+        <!-- Hero overlay: big Play button — public replay starts paused.
+             Positioned in canvas-area (not canvas-frame) for guaranteed dimensions.
+             canvas-area has flex:1 + position:relative → overlay always covers full area. -->
+        <div
+          v-if="showHeroOverlay && isReplayMode && hasReplayData"
+          class="wb-public-view__hero-overlay"
+          @click="handleHeroPlay"
+        >
+          <div class="wb-public-view__hero-eye">
+            <!-- SVG Eye icon with Play triangle inside -->
+            <svg viewBox="0 0 200 120" class="wb-public-view__hero-svg" aria-hidden="true">
+              <!-- Eye outline -->
+              <path
+                d="M10,60 Q100,-20 190,60 Q100,140 10,60 Z"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="5"
+                stroke-linejoin="round"
+              />
+              <!-- Iris circle -->
+              <circle cx="100" cy="60" r="32" fill="none" stroke="currentColor" stroke-width="4" />
+              <!-- Play triangle -->
+              <polygon points="88,42 88,78 120,60" fill="currentColor" />
+            </svg>
+          </div>
+          <div class="wb-public-view__hero-info">
+            <h2 class="wb-public-view__hero-title">{{ displayTitle }}</h2>
+            <p v-if="replayDurationSeconds > 0 || store.pageCount > 1" class="wb-public-view__hero-meta">
+              <span v-if="replayDurationSeconds > 0">{{ Math.ceil(replayDurationSeconds / 60) }} {{ t('winterboard.replay.statMinutes', 'хв') }}</span>
+              <span v-if="replayDurationSeconds > 0 && store.pageCount > 1"> · </span>
+              <span v-if="store.pageCount > 1">{{ store.pageCount }} {{ t('winterboard.replay.statPages') }}</span>
+            </p>
+          </div>
         </div>
       </div>
 
-      <!-- Replay player (above footer) -->
+      <!-- Replay player controls (visible after Play clicked) -->
       <PublicReplayPlayer
-        v-if="isReplayMode && hasReplayData"
+        v-if="isReplayMode && hasReplayData && !showHeroOverlay"
         :current-seconds="replayCurrentSeconds"
         :duration-seconds="replayDurationSeconds"
         :is-playing="replay.state.value === 'playing'"
@@ -109,13 +127,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { winterboardApi } from '../api/winterboardApi'
 import { useWBStore } from '../board/state/boardStore'
 import { useReplay } from '../composables/useReplay'
 import { createReplayApplier } from '../engine/applyReplayOperation'
+import { useCanvasResize } from '../composables/useCanvasResize'
 import WBCanvas from '../components/canvas/WBCanvas.vue'
 import PublicReplayPlayer from '../components/public/PublicReplayPlayer.vue'
 import PublicMarkersList from '../components/public/PublicMarkersList.vue'
@@ -131,10 +150,24 @@ const isLoading = ref(true)
 const loadError = ref<{ title: string; message: string } | null>(null)
 const isHydrated = ref(false)
 const canvasRef = ref<InstanceType<typeof WBCanvas> | null>(null)
+const canvasContainerRef = ref<HTMLElement | null>(null)
+
+// Auto-fit canvas to container (same as SoloRoom)
+useCanvasResize({
+  containerRef: canvasContainerRef,
+  onResize(w, h) {
+    if (w > 0 && h > 0 && store.pageWidth > 0 && store.pageHeight > 0) {
+      const fitZoom = Math.min(w / store.pageWidth, h / store.pageHeight, 1)
+      store.setZoom(fitZoom)
+    }
+  },
+  debounceMs: 100,
+})
 
 // ── Replay ──
 const hasReplayData = ref(false)
 const isReplayMode = ref(false)
+const showHeroOverlay = ref(true)  // Hero overlay shown until user clicks Play
 const replayDurationSeconds = ref(0)
 const replaySessionId = ref<string | null>(null)
 let replay: ReturnType<typeof useReplay> | null = null
@@ -148,6 +181,7 @@ let staticSnapshot: { pages: import('../types/winterboard').WBPage[]; currentPag
 let replayStartState: { pages: import('../types/winterboard').WBPage[]; currentPageIndex: number } | null = null
 
 const allowDownload = ref(false)
+const ownerName = ref('')
 const sessionCreatedAt = ref<string | null>(null)
 
 // UX FIX (2026-04-08): fallback "Урок від {дата}" якщо назви немає.
@@ -223,6 +257,19 @@ async function enterReplayMode(): Promise<void> {
   await replay.loadTimeline(
     (op) => {
       replayApplier.apply(store, op)
+      // Fade-in new elements via Konva Tween
+      const payload = op.payload as Record<string, unknown>
+      const newId = op.op_type === 'stroke_add' ? (payload?.stroke as { id?: string })?.id
+        : op.op_type === 'asset_add' ? (payload?.asset as { id?: string })?.id
+        : null
+      if (newId) {
+        nextTick(() => {
+          const stage = (canvasRef.value as unknown as { getStage?: () => { findOne: (s: string) => { opacity: (v: number) => void; to: (o: Record<string, unknown>) => void } | null; batchDraw: () => void } | null })?.getStage?.()
+          const node = stage?.findOne(`#${newId}`)
+          if (node) { node.opacity(0); node.to({ opacity: 1, duration: 0.25 }) }
+          stage?.batchDraw()
+        })
+      }
     },
     (state) => {
       replayStartState = state as { pages: import('../types/winterboard').WBPage[]; currentPageIndex: number }
@@ -241,6 +288,14 @@ async function enterReplayMode(): Promise<void> {
   await replay.loadMarkers()
 
   isReplayMode.value = true
+
+  // FIX: Watch replay state for re-showing hero overlay when replay ends.
+  // Must be set up HERE (after `replay` is assigned), not at setup level,
+  // because `replay` is a plain `let` — Vue can't track its assignment.
+  // At setup time, `replay === null` → `replay?.state.value` = undefined → no dependency → watch never fires.
+  watch(() => replay!.state.value, (s) => {
+    if (s === 'ended') showHeroOverlay.value = true
+  })
 
   // Handle ?t= URL parameter — auto-seek to time
   const tParam = route.query.t as string | undefined
@@ -275,8 +330,8 @@ async function enterReplayMode(): Promise<void> {
     console.warn('[WB:PublicView] seek-to-start failed:', err)
   }
 
-  // Auto-play
-  replay.play()
+  // Don't auto-play — user clicks hero overlay to start (YouTube-style)
+  // replay.play() is called from handleHeroPlay()
 }
 
 function exitReplayMode(): void {
@@ -298,6 +353,24 @@ function exitReplayMode(): void {
 }
 
 // ── Replay handlers ──
+
+/** Hero overlay click → dismiss overlay + start replay (or restart if ended) */
+function handleHeroPlay(): void {
+  showHeroOverlay.value = false
+  if (replay?.state.value === 'ended') {
+    // Restart from beginning
+    replay.seekToWithSnapshot(
+      0,
+      (bs) => store.loadSnapshot(bs as Parameters<typeof store.loadSnapshot>[0]),
+      () => { store.resetForReplay(); if (replayStartState) { store.loadSnapshot(replayStartState); store.goToPage(0) } },
+    ).then(() => replay?.play())
+  } else {
+    replay?.play()
+  }
+}
+
+// NOTE: watch for replay.state → showHeroOverlay is set up inside enterReplayMode()
+// (after `replay` object is created) — see FIX comment there.
 
 function handleReplayPlay(): void {
   replay?.play()
@@ -378,6 +451,7 @@ onMounted(async () => {
 
     // allow_download is API-only field, not part of store state
     allowDownload.value = (data as unknown as Record<string, unknown>).allow_download === true
+    ownerName.value = (data as unknown as Record<string, string>).owner ?? ''
     sessionCreatedAt.value = (data as unknown as { created_at?: string }).created_at ?? null
 
     const sessionId = data.id
@@ -388,7 +462,14 @@ onMounted(async () => {
     if (publicToken) {
       try {
         const { fetchPublicReplayByToken, fetchLessonMarkers } = await import('../api/replay')
-        const timeline = await fetchPublicReplayByToken(publicToken).catch(() => ({ operations: [], total_operations: 0 } as { operations: Array<{ lesson_time_seconds?: number }>; total_operations: number }))
+        let timeline: { operations: Array<{ lesson_time_seconds?: number }>; total_operations: number }
+        try {
+          timeline = await fetchPublicReplayByToken(publicToken) as typeof timeline
+          // diagnostic log removed — keep console clean in production
+        } catch (replayErr) {
+          console.error('[WB:PublicView] fetchPublicReplayByToken FAILED:', replayErr)
+          timeline = { operations: [], total_operations: 0 }
+        }
         hasReplayData.value = timeline.total_operations > 0
         if (timeline.total_operations > 0) {
           const ops = timeline.operations as Array<{ lesson_time_seconds?: number }>
@@ -445,13 +526,14 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+/* ── M4SH Public Replay — uses global theme tokens ── */
 .wb-public-view {
   display: flex;
   flex-direction: column;
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
-  background: var(--wb-bg, #f8f9fa);
+  background: var(--wb-canvas-area-bg, #f0fdf4);
 }
 
 .wb-public-view__loading {
@@ -467,8 +549,8 @@ onBeforeUnmount(() => {
 .wb-public-view__spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid var(--wb-border, #dee2e6);
-  border-top-color: var(--wb-primary, #2563eb);
+  border: 3px solid var(--wb-border, #e2e8f0);
+  border-top-color: var(--wb-brand, #047857);
   border-radius: 50%;
   animation: wb-spin 0.8s linear infinite;
 }
@@ -500,7 +582,7 @@ onBeforeUnmount(() => {
 .wb-public-view__back-btn {
   margin-top: 1rem;
   padding: 0.5rem 1.25rem;
-  background: var(--wb-primary, #2563eb);
+  background: var(--wb-brand, #047857);
   color: #fff;
   border-radius: 6px;
   text-decoration: none;
@@ -511,39 +593,47 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 0.75rem 1.25rem;
-  border-bottom: 1px solid var(--wb-border, #dee2e6);
-  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 60%, #2563eb 100%);
+  padding: 0 24px;
+  height: 56px;
+  background: var(--wb-header-bg, #047857);
   color: #fff;
-  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.15);
+  flex-shrink: 0;
 }
 .wb-public-view__brand {
   display: flex;
   align-items: center;
-  gap: 0.625rem;
+  gap: 0.5rem;
   flex-shrink: 0;
 }
 .wb-public-view__logo {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #38bdf8, #2563eb);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.2);
   color: #fff;
   font-weight: 800;
-  font-size: 0.95rem;
+  font-size: 0.8rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
-  letter-spacing: 0.5px;
-}
-.wb-public-view__brand-text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.1;
 }
 .wb-public-view__brand-name {
   font-weight: 700;
+  font-size: 0.9375rem;
+}
+.wb-public-view__title {
+  flex: 1;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wb-public-view__author {
+  font-size: 0.8125rem;
+  opacity: 0.8;
+  white-space: nowrap;
   font-size: 1rem;
   letter-spacing: 0.5px;
 }
@@ -563,12 +653,7 @@ onBeforeUnmount(() => {
   border-left: 1px solid rgba(255, 255, 255, 0.15);
 }
 .wb-public-view__canvas-frame {
-  position: absolute;
-  inset: 16px;
-  border-radius: 14px;
-  background: #fff;
-  border: 1px solid var(--wb-border, #e2e8f0);
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08), 0 2px 6px rgba(15, 23, 42, 0.04);
+  position: relative;
   overflow: hidden;
 }
 
@@ -660,8 +745,14 @@ onBeforeUnmount(() => {
 
 .wb-public-view__canvas-area {
   flex: 1;
+  min-width: 0;
+  min-height: 0;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   position: relative;
+  background: var(--wb-canvas-area-bg, #f0fdf4);
 }
 
 .wb-public-view__footer {
@@ -670,7 +761,7 @@ onBeforeUnmount(() => {
   justify-content: center;
   gap: 1rem;
   padding: 0.5rem;
-  border-top: 1px solid var(--wb-border, #dee2e6);
+  border-top: 1px solid var(--wb-border, #e2e8f0);
   background: var(--wb-surface, #fff);
 }
 
@@ -730,5 +821,62 @@ onBeforeUnmount(() => {
   .wb-public-view__spinner {
     animation: none;
   }
+}
+
+/* ── Hero overlay: big Play button (M4SH brand, theme-aware) ── */
+.wb-public-view__hero-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  background: rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  z-index: 10;
+  transition: background 0.3s;
+}
+.wb-public-view__hero-overlay:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+.wb-public-view__hero-overlay:hover .wb-public-view__hero-svg {
+  transform: scale(1.15);
+  filter: drop-shadow(0 0 48px var(--wb-brand-glow, rgba(4, 120, 87, 0.7)));
+}
+
+.wb-public-view__hero-eye {
+  width: 320px;
+  height: 200px;
+}
+
+.wb-public-view__hero-svg {
+  width: 100%;
+  height: 100%;
+  color: var(--wb-brand, #047857);
+  filter: drop-shadow(0 8px 32px var(--wb-brand-glow, rgba(4, 120, 87, 0.4)));
+  transition: transform 0.3s ease, filter 0.3s ease;
+  animation: wb-eye-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes wb-eye-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.wb-public-view__hero-info {
+  text-align: center;
+  color: white;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+}
+.wb-public-view__hero-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 6px;
+}
+.wb-public-view__hero-meta {
+  font-size: 0.9375rem;
+  opacity: 0.9;
+  margin: 0;
 }
 </style>
