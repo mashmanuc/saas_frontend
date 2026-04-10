@@ -9,11 +9,11 @@
 
 import { ref, shallowRef, readonly, computed, watch } from 'vue'
 import { WBReplayEngine, type ReplaySpeed, type ReplayState } from '../engine/WBReplayEngine'
-import { fetchReplayTimeline, fetchNearestSnapshot, fetchLessonMarkers } from '../api/replay'
+import { fetchReplayTimeline, fetchPublicReplayByToken, fetchNearestSnapshot, fetchLessonMarkers } from '../api/replay'
 import type { BoardOperation } from '../types/replay'
 import type { WBLessonMarker } from '../types/winterboard'
 
-export function useReplay(sessionId: string) {
+export function useReplay(sessionId: string, publicToken?: string) {
   // REPLAY-FIX-3: shallowRef prevents Vue from deep-proxying the class instance.
   // ref() wraps the engine in a reactive Proxy that breaks private fields,
   // setTimeout callbacks, and `this` context inside class methods.
@@ -71,8 +71,11 @@ export function useReplay(sessionId: string) {
       const timeout = setTimeout(() => controller.abort(), 15_000)
       let timeline: Awaited<ReturnType<typeof fetchReplayTimeline>>
       try {
-        // Request ALL ops (limit=2000 = backend max) so local seek works on full timeline
-        timeline = await fetchReplayTimeline(sessionId, { limit: 2000 }, controller.signal)
+        // Request ALL ops (limit=2000 = backend max) so local seek works on full timeline.
+        // Use public endpoint (no auth) when publicToken is provided.
+        timeline = publicToken
+          ? await fetchPublicReplayByToken(publicToken)
+          : await fetchReplayTimeline(sessionId, { limit: 2000 }, controller.signal)
       } finally {
         clearTimeout(timeout)
       }

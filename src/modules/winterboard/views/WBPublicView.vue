@@ -212,8 +212,9 @@ async function enterReplayMode(): Promise<void> {
   store.resetForReplay()
   replayApplier.reset()  // P0: clean instance page-tracking state
 
-  // Create replay composable
-  replay = useReplay(replaySessionId.value)
+  // Create replay composable — use public token for anonymous access
+  const token = route.params.token as string
+  replay = useReplay(replaySessionId.value, token)
 
   // P0 FIX (2026-04-08): INV-T — hydrate з recording_start_state ПЕРЕД накаткою ops.
   // Без цього public replay починав з порожнього листа і показував лише сторінки,
@@ -382,11 +383,12 @@ onMounted(async () => {
     const sessionId = data.id
     replaySessionId.value = sessionId
 
-    // Check for replay data (non-blocking)
-    if (sessionId) {
+    // Check for replay data via PUBLIC endpoint (no auth required)
+    const publicToken = route.params.token as string
+    if (publicToken) {
       try {
-        const { fetchReplayTimeline, fetchLessonMarkers } = await import('../api/replay')
-        const timeline = await fetchReplayTimeline(sessionId).catch(() => ({ operations: [], total_operations: 0 }))
+        const { fetchPublicReplayByToken, fetchLessonMarkers } = await import('../api/replay')
+        const timeline = await fetchPublicReplayByToken(publicToken).catch(() => ({ operations: [], total_operations: 0 } as { operations: Array<{ lesson_time_seconds?: number }>; total_operations: number }))
         hasReplayData.value = timeline.total_operations > 0
         if (timeline.total_operations > 0) {
           const ops = timeline.operations as Array<{ lesson_time_seconds?: number }>

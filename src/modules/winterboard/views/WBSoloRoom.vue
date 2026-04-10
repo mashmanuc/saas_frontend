@@ -771,6 +771,17 @@
       </span>
     </div>
 
+    <!-- Recording done prompt — teaches user about sharing -->
+    <div v-if="showRecordingDonePrompt" class="wb-solo-room__recording-done">
+      <span>{{ t('winterboard.replay.recordingDone') }}</span>
+      <button class="wb-solo-room__recording-done-share" @click="showShareModal = true; showRecordingDonePrompt = false">
+        {{ t('winterboard.replay.shareWithStudent') }}
+      </button>
+      <button class="wb-solo-room__recording-done-later" @click="showRecordingDonePrompt = false">
+        {{ t('winterboard.replay.later') }}
+      </button>
+    </div>
+
     <!-- Phase B: Share replay modal — owner only -->
     <WBReplayShareModal
       v-if="sessionId"
@@ -915,6 +926,8 @@ const isManualRecording = ref(false)
 const recordingStartedAt = ref<string | null>(null)
 const isReplayFrozen = ref(false)
 const isRecordingLoading = ref(false)
+const showRecordingDonePrompt = ref(false)
+let _recordingDoneTimer: number | null = null
 
 // Recorder enabled = edit mode (ЗАВЖДИ записує ops, не залежить від isManualRecording)
 const isRecorderEnabled = computed(() => store.mode === 'edit')
@@ -975,6 +988,10 @@ async function handleStopRecording(): Promise<void> {
     isManualRecording.value = false
     recordingStartedAt.value = null
     isReplayFrozen.value = result.is_replay_frozen
+
+    // Show "Recording done" prompt — teach user about sharing
+    showRecordingDonePrompt.value = true
+    _recordingDoneTimer = window.setTimeout(() => { showRecordingDonePrompt.value = false }, 15000)
   } catch (e) {
     console.error('[WBSoloRoom] Failed to stop recording:', e)
   } finally {
@@ -2487,6 +2504,7 @@ window.addEventListener('beforeunload', _handleBeforeUnload)
 onBeforeUnmount(async () => {
   window.removeEventListener('beforeunload', _handleBeforeUnload)
   document.removeEventListener('keydown', onGlobalKeyDown, true)
+  if (_recordingDoneTimer) { clearTimeout(_recordingDoneTimer); _recordingDoneTimer = null }
   cleanupRecorder()  // idempotent — may already be cleaned by onBeforeRouteLeave
   // BUG-1 FIX: Use shared save logic on unmount
   await saveBeforeLeave()
@@ -3621,6 +3639,59 @@ watch(() => store.workspaceName, (name) => {
   padding: 6px 12px;
   border-radius: 8px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* Recording done prompt — green banner after Stop Recording */
+.wb-solo-room__recording-done {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #ecfdf5;
+  border: 1px solid #6ee7b7;
+  color: #065f46;
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  z-index: 50;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.2);
+  animation: wb-recording-done-in 0.3s ease-out;
+}
+.wb-solo-room__recording-done-share {
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.wb-solo-room__recording-done-share:hover {
+  background: #059669;
+}
+.wb-solo-room__recording-done-later {
+  background: transparent;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.wb-solo-room__recording-done-later:hover {
+  background: #d1fae5;
+}
+@keyframes wb-recording-done-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
 @keyframes wb-replay-pulse {

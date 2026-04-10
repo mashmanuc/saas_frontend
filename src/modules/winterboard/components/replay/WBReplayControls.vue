@@ -236,7 +236,8 @@ defineExpose({
 })
 
 const progressStyle = computed(() => {
-  const total = totalOperations.value || 1
+  // Use loaded ops count for progress when timeline is incomplete
+  const total = (timelineIncomplete.value ? loadedOperations.value : totalOperations.value) || 1
   const pct = Math.max(0, Math.min(100, (currentIndex.value / total) * 100))
   return { '--wb-replay-progress': `${pct}%` } as Record<string, string>
 })

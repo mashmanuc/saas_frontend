@@ -7316,10 +7316,13 @@
       "viewMyLessons": "Переглянути мої уроки"
     },
     "replay": {
-      "viewReplay": "Переглянути урок",
+      "viewReplay": "Відтворити урок",
       "viewRecording": "Переглянути запис",
       "statPages": "стор.",
       "emptyHint": "Запишіть урок, щоб переглянути його",
+      "recordingDone": "Запис готовий!",
+      "shareWithStudent": "Поділитись з учнем",
+      "later": "Пізніше",
       "viewingMode": "Режим перегляду — редагування вимкнено",
       "exitReplay": "Вийти",
       "shareMoment": "Поділитися моментом",
