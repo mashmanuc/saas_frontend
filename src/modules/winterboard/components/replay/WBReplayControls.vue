@@ -141,6 +141,8 @@ const emit = defineEmits<{
   startState: [state: { pages?: unknown[]; currentPageIndex?: number }]
   // Phase C: батько синхронізує currentOpIndex без polling
   tick: [payload: { index: number; total: number }]
+  // Audio layer: emitted BEFORE seek so parent can stop audio (INV I5)
+  seekStart: []
 }>()
 
 const { t } = useI18n({ useScope: 'global' })
@@ -210,6 +212,7 @@ const chapters = computed(() => {
 })
 
 function onChapterClick(idx: number): void {
+  emit('seekStart')  // INV I5: stop audio before seek
   if (props.loadState && props.clearState) {
     void seekToWithSnapshot(idx, props.loadState, props.clearState)
   } else {
@@ -219,6 +222,7 @@ function onChapterClick(idx: number): void {
 
 // Phase C.3: клік по жовтій точці коментаря → seek
 function onCommentClick(idx: number): void {
+  emit('seekStart')  // INV I5: stop audio before seek
   if (props.loadState && props.clearState) {
     void seekToWithSnapshot(idx, props.loadState, props.clearState)
   } else {
@@ -233,6 +237,10 @@ defineExpose({
   },
   getCurrentIndex: () => currentIndex.value,
   getTotalOperations: () => totalOperations.value,
+  // Audio layer: parent needs these for useReplayAudio integration
+  play,
+  pause,
+  getState: () => state.value,
 })
 
 const progressStyle = computed(() => {
@@ -272,6 +280,7 @@ async function onSeek(event: Event): Promise<void> {
 }
 
 async function runSeek(idx: number): Promise<void> {
+  emit('seekStart')  // INV I5: stop audio before seek
   if (props.loadState && props.clearState) {
     isSeeking.value = true
     try {

@@ -167,18 +167,24 @@ export function useReplay(sessionId: string, publicToken?: string) {
     }
 
     // Local seek: all ops already in engine memory — no HTTP needed.
-    // Reset board to clean state, then re-apply ops 0..target.
+    // Reset board to clean state, then re-apply ops 0..target (EXCLUSIVE).
     // Use _onOp directly (NOT through event emitter) to avoid per-op canvas redraws.
     // The caller's clearState/loadState handle the final render.
+    //
+    // CRITICAL: loop is EXCLUSIVE (i < clampedIdx), NOT inclusive (i <= clampedIdx).
+    // seekTo(clampedIdx) sets engine.currentIndex = clampedIdx.
+    // play() fires op at currentIndex, then increments.
+    // If loop was inclusive, op at clampedIdx would be applied TWICE:
+    //   1) in the for-loop during seek
+    //   2) when play() fires from currentIndex = clampedIdx
+    // This caused: first ops duplicated on start, ALL ops visible on restart.
     clearState()
-    for (let i = 0; i <= clampedIdx; i++) {
+    for (let i = 0; i < clampedIdx; i++) {
       const op = engine.value.getOperationAt(i)
       if (op) _onOp(op)
     }
-    // Note: _onOp triggers onReplayOperation which calls batchDraw per-op.
-    // For large seeks this is acceptable — Vue batches nextTick calls.
 
-    // Sync engine position
+    // Sync engine position — play() will fire op[clampedIdx] as next
     const actualIdx = engine.value.seekTo(clampedIdx)
     currentIndex.value = actualIdx
 

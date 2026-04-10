@@ -331,7 +331,7 @@
       v-if="mode === 'replay' && resolvedSessionId"
       :session-id="resolvedSessionId"
       :load-state="(s) => store.loadSnapshot(s as Parameters<typeof store.loadSnapshot>[0])"
-      :clear-state="() => { store.resetForReplay(); replayApplier.reset() }"
+      :clear-state="resetBoardForReplay"
       @exit="exitReplayMode"
       @operation="onReplayOperation"
       @start-state="onReplayStartState"
@@ -1069,18 +1069,41 @@ function exitReplayMode(): void {
     store.loadSnapshot(_savedBoardState)  // відновлюємо стан до replay
     _savedBoardState = null
   }
+  _replayStartState = null   // cleanup snapshot reference
   mode.value = 'edit'        // URL sync
 }
 
 // P0 FIX: Instance-scoped replay applier
 const replayApplier = createReplayApplier()
 
+// REPLAY-SNAPSHOT: зберігаємо deep-clone recording_start_state для restart.
+// loadSnapshot робить this.pages = state.pages (ПОСИЛАННЯ!), тому replay-ops
+// мутують і store, і snapshot одночасно. Без clone restart показує всі ops.
+let _replayStartState: { pages: unknown[]; currentPageIndex: number } | null = null
+
+/**
+ * DRY helper: reset board + applier, load fresh clone of snapshot, mark pages.
+ * Використовується як clearState callback для seekToWithSnapshot.
+ */
+function resetBoardForReplay(): void {
+  store.resetForReplay()
+  replayApplier.reset()
+  if (_replayStartState) {
+    store.loadSnapshot(JSON.parse(JSON.stringify(_replayStartState)) as Parameters<typeof store.loadSnapshot>[0])
+    store.goToPage(0)
+    const ids = (_replayStartState.pages as Array<{ id?: string }>).map(p => p?.id ?? '').filter(Boolean)
+    replayApplier.markPagesEnsured(ids)
+  }
+}
+
 // R5: INV-T: hydrate з recording_start_state перед накаткою ops
 function onReplayStartState(state: { pages?: unknown[]; currentPageIndex?: number }): void {
   if (state && Array.isArray(state.pages) && state.pages.length > 0) {
-    store.loadSnapshot(state as Parameters<typeof store.loadSnapshot>[0])
+    // CRITICAL: deep-clone! Без цього replay-ops мутують snapshot через shared reference.
+    _replayStartState = JSON.parse(JSON.stringify(state)) as { pages: unknown[]; currentPageIndex: number }
+    store.loadSnapshot(JSON.parse(JSON.stringify(_replayStartState)) as Parameters<typeof store.loadSnapshot>[0])
     store.goToPage(0)  // replay starts from page 1
-    const ids = (state.pages as Array<{ id?: string }>).map(p => p?.id ?? '').filter(Boolean)
+    const ids = (_replayStartState.pages as Array<{ id?: string }>).map(p => p?.id ?? '').filter(Boolean)
     replayApplier.markPagesEnsured(ids)
   }
 }

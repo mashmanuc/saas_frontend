@@ -36,10 +36,15 @@
             :strokes="store.currentStrokes"
             :assets="store.currentAssets"
             :page-id="store.currentPage?.id ?? ''"
+            :background="store.currentPage?.background"
+            :width="store.pageWidth"
+            :height="store.pageHeight"
+            :zoom="store.zoom"
             :read-only="true"
             color="#000000"
             tool="select"
             :size="2"
+            @audio-badge-click="handleAudioBadgeClick"
           />
         </div>
 
@@ -133,6 +138,8 @@ import { useI18n } from 'vue-i18n'
 import { winterboardApi } from '../api/winterboardApi'
 import { useWBStore } from '../board/state/boardStore'
 import { useReplay } from '../composables/useReplay'
+import { useReplayAudio } from '../composables/useReplayAudio'
+import { audioManager } from '../utils/audioManager'
 import { createReplayApplier } from '../engine/applyReplayOperation'
 import { useCanvasResize } from '../composables/useCanvasResize'
 import WBCanvas from '../components/canvas/WBCanvas.vue'
@@ -183,6 +190,14 @@ let replayStartState: { pages: import('../types/winterboard').WBPage[]; currentP
 const allowDownload = ref(false)
 const ownerName = ref('')
 const sessionCreatedAt = ref<string | null>(null)
+
+// Audio interaction layer — pauses replay when audio plays, resumes on end (INV I1-I7)
+// `replay` is a plain `let` assigned in enterReplayMode(), closures capture the variable.
+const replayAudio = useReplayAudio({
+  getReplayState: () => replay?.state.value ?? 'idle',
+  pauseReplay: () => replay?.pause(),
+  resumeReplay: () => replay?.play(),
+})
 
 // UX FIX (2026-04-08): fallback "Урок від {дата}" якщо назви немає.
 const displayTitle = computed(() => {
@@ -235,6 +250,25 @@ async function toggleReplayMode(): Promise<void> {
   }
 }
 
+/**
+ * DRY helper: reset board + applier, load snapshot, mark pages.
+ * Called from every clearState/seekToWithSnapshot callback.
+ *
+ * CRITICAL: кожен loadSnapshot отримує СВІЖИЙ deep-clone!
+ * Бо loadSnapshot робить this.pages = state.pages (посилання),
+ * і replay ops мутують store.pages = мутують snapshot якщо не clone.
+ */
+function resetBoardForReplay(): void {
+  store.resetForReplay()
+  replayApplier.reset()
+  if (replayStartState) {
+    store.loadSnapshot(JSON.parse(JSON.stringify(replayStartState)))
+    store.goToPage(0)
+    const ids = (replayStartState.pages as Array<{ id?: string }>).map(p => p?.id ?? '').filter(Boolean)
+    replayApplier.markPagesEnsured(ids)
+  }
+}
+
 async function enterReplayMode(): Promise<void> {
   if (!replaySessionId.value) return
 
@@ -272,10 +306,16 @@ async function enterReplayMode(): Promise<void> {
       }
     },
     (state) => {
-      replayStartState = state as { pages: import('../types/winterboard').WBPage[]; currentPageIndex: number }
-      store.loadSnapshot(replayStartState)
+      // CRITICAL: deep-clone snapshot! loadSnapshot робить this.pages = state.pages (ПОСИЛАННЯ).
+      // Без clone replay-операції мутують і snapshot, і store одночасно.
+      // На restart "чистий" snapshot вже містить всі replay-додані strokes/assets.
+      replayStartState = JSON.parse(JSON.stringify(state)) as { pages: import('../types/winterboard').WBPage[]; currentPageIndex: number }
+      store.loadSnapshot(JSON.parse(JSON.stringify(replayStartState)))
       // Починаємо replay завжди з 1-ї сторінки, навіть якщо у snapshot currentPageIndex інший.
       store.goToPage(0)
+      // markPagesEnsured — повідомити applier що snapshot-сторінки вже існують.
+      const ids = (replayStartState.pages as Array<{ id?: string }>).map(p => p?.id ?? '').filter(Boolean)
+      replayApplier.markPagesEnsured(ids)
     },
   )
 
@@ -316,14 +356,7 @@ async function enterReplayMode(): Promise<void> {
       (boardState) => {
         store.loadSnapshot(boardState as { pages: import('../types/winterboard').WBPage[]; currentPageIndex: number })
       },
-      () => {
-        // INV-T: reset = повернутись до стану на момент Start Recording, а не до пустої дошки.
-        store.resetForReplay()
-        if (replayStartState) {
-          store.loadSnapshot(replayStartState)
-          store.goToPage(0)
-        }
-      },
+      resetBoardForReplay,
     )
     store.goToPage(0)
   } catch (err) {
@@ -335,6 +368,7 @@ async function enterReplayMode(): Promise<void> {
 }
 
 function exitReplayMode(): void {
+  replayAudio.stopAudio()  // INV I6: stop audio on exit replay
   // Stop and destroy replay engine
   if (replay) {
     replay.stop()
@@ -362,7 +396,7 @@ function handleHeroPlay(): void {
     replay.seekToWithSnapshot(
       0,
       (bs) => store.loadSnapshot(bs as Parameters<typeof store.loadSnapshot>[0]),
-      () => { store.resetForReplay(); if (replayStartState) { store.loadSnapshot(replayStartState); store.goToPage(0) } },
+      resetBoardForReplay,
     ).then(() => replay?.play())
   } else {
     replay?.play()
@@ -381,6 +415,7 @@ function handleReplayPause(): void {
 }
 
 async function handleReplaySeek(timeMs: number): Promise<void> {
+  replayAudio.stopAudio()  // INV I5: stop audio on seek
   if (!replay || replayDurationSeconds.value <= 0) return
 
   const ratio = (timeMs / 1000) / replayDurationSeconds.value
@@ -392,19 +427,19 @@ async function handleReplaySeek(timeMs: number): Promise<void> {
     (boardState) => {
       store.loadSnapshot(boardState as { pages: import('../types/winterboard').WBPage[]; currentPageIndex: number })
     },
-    () => {
-      // INV-T: reset → re-apply recording_start_state перед накаткою ops від 0.
-      store.resetForReplay()
-      if (replayStartState) {
-        store.loadSnapshot(replayStartState)
-        store.goToPage(0)  // always start from page 1
-      }
-    },
+    resetBoardForReplay,
   )
 }
 
 function handleSpeedChange(speed: number): void {
   replay?.setSpeed(speed as ReplaySpeed)
+}
+
+// ─── Audio interaction layer (INV I2: click only) ────────────────────────────
+function handleAudioBadgeClick(url: string): void {
+  if (isReplayMode.value) {
+    replayAudio.playObjectAudio(url)
+  }
 }
 
 // ── Download ──
@@ -516,6 +551,9 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
+  // INV I6: Stop audio + destroy watcher on unmount
+  audioManager.stop()
+  replayAudio.destroy()
   if (replay) {
     replay.stop()
     replay.destroy()

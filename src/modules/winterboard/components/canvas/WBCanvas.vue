@@ -563,12 +563,17 @@ function audioBadgePosition(item: WBStroke | WBAsset) {
     w = asset.w
   }
 
+  // INV I2: In replay mode, audio badges must be ABOVE the readonly overlay
+  // (z-index 20 in WBSoloRoom) so clicks reach the AudioBadge icon.
+  // In edit mode, z-index 15 is enough (no overlay).
+  const badgeZ = wbStore.mode === 'replay' ? 25 : 15
+
   return {
     position: 'absolute' as const,
     left: `${(x + w) * zoom + offset.x - 12}px`,
     top: `${y * zoom + offset.y - 12}px`,
     pointerEvents: 'none' as const,
-    zIndex: 15,
+    zIndex: badgeZ,
   }
 }
 
@@ -581,10 +586,16 @@ function getAudioBadgeState(objectId: string): 'idle' | 'recording' | 'playing' 
 }
 
 function handleAudioBadgeClick(item: WBStroke | WBAsset) {
-  // Select the object + toggle playback
-  wbStore.selectItems([item.id])
   const url = (item as WBStroke).audioUrl ?? (item as WBAsset).audioUrl
-  if (url) {
+  if (!url) return
+
+  // Emit for parent to handle (replay mode needs pause/resume integration)
+  emit('audio-badge-click', url)
+
+  // Default behavior: select object + toggle audio (edit mode).
+  // In replay mode, parent's handler will manage via useReplayAudio instead.
+  if (wbStore.mode !== 'replay') {
+    wbStore.selectItems([item.id])
     audioManager.toggle(url)
   }
 }
@@ -755,6 +766,9 @@ const emit = defineEmits<{
   'laser-broadcast': [data: { x: number; y: number; active: boolean; page_id?: string }]
   // PLAN_v4: Document Viewer expand (presentation fullscreen)
   'presentation-expand': [asset: WBAsset]
+  // Audio layer: emitted on audio badge click — parent decides behavior
+  // (edit mode: toggle audio; replay mode: pause replay + play audio)
+  'audio-badge-click': [url: string]
 }>()
 
 // ─── Refs ───────────────────────────────────────────────────────────────────

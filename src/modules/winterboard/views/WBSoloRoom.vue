@@ -308,6 +308,7 @@
           :width="store.pageWidth"
           :height="store.pageHeight"
           :zoom="store.zoom"
+          :background="store.currentPage?.background"
           :is-tutor="true"
           @stroke-add="handleStrokeAdd"
           @stroke-update="handleStrokeUpdate"
@@ -320,6 +321,7 @@
           @zoom-change="handleZoomChange"
           @scroll-change="handleScrollChange"
           @presentation-expand="handlePresentationExpand"
+          @audio-badge-click="handleAudioBadgeClick"
         />
 
         <!-- B6.3: Empty canvas hint — shown when page has no strokes/assets -->
@@ -714,12 +716,13 @@
       ref="replayControlsRef"
       :session-id="sessionId"
       :load-state="(s) => store.loadSnapshot(s as Parameters<typeof store.loadSnapshot>[0])"
-      :clear-state="() => { store.resetForReplay(); replayApplier.reset() }"
+      :clear-state="resetBoardForReplay"
       :comment-points="commentPoints"
       @exit="exitReplayMode"
       @operation="onReplayOperation"
       @start-state="onReplayStartState"
       @tick="onReplayTick"
+      @seek-start="replayAudio.stopAudio()"
     />
 
     <!-- Phase C: Replay comments sidebar -->
@@ -885,6 +888,8 @@ import { createLessonMarker, deleteLessonMarker } from '../api/replay'
 import { createReplayApplier } from '../engine/applyReplayOperation'
 import { useGridOverlay } from '../composables/useGridOverlay'
 import { useReplayRecorder } from '../composables/useReplayRecorder'
+import { useReplayAudio } from '../composables/useReplayAudio'
+import { audioManager } from '../utils/audioManager'
 import { useCanvasResize } from '../composables/useCanvasResize'
 import { useTouchGestures } from '../components/gestures/useTouchGestures'
 import { useDeviceMode } from '../composables/useDeviceMode'
@@ -1084,6 +1089,13 @@ const replayCurrentTotalOps = ref(0)
 const commentSubmitting = ref(false)
 const replayControlsRef = ref<InstanceType<typeof WBReplayControls> | null>(null)
 
+// Audio interaction layer — pauses replay when audio plays, resumes on end
+const replayAudio = useReplayAudio({
+  getReplayState: () => replayControlsRef.value?.getState?.() ?? 'idle',
+  pauseReplay: () => replayControlsRef.value?.pause?.(),
+  resumeReplay: () => replayControlsRef.value?.play?.(),
+})
+
 const commentPoints = computed(() => {
   const total = Math.max(1, replayCurrentTotalOps.value)
   return replayCommentsList.value.map((c) => ({
@@ -1226,11 +1238,13 @@ function enterReplayMode(): void {
 }
 
 function exitReplayMode(): void {
+  replayAudio.stopAudio()    // INV I6: stop audio on exit replay
   store.setMode('edit')      // REPLAY-INV-9: відновлюємо emitter
   if (_savedBoardState) {
     store.loadSnapshot(_savedBoardState)  // відновлюємо стан до replay
     _savedBoardState = null
   }
+  _replayStartState = null   // cleanup snapshot reference
   replayCurrentOpIndex.value = 0   // cleanup stale replay state
   replayCurrentTotalOps.value = 0
   mode.value = 'edit'        // URL sync
@@ -1276,14 +1290,38 @@ async function handleMarkerDelete(id: string): Promise<void> {
 // P0 FIX: Instance-scoped replay applier — no global state leak between sessions.
 const replayApplier = createReplayApplier()
 
+// REPLAY-SNAPSHOT: зберігаємо deep-clone recording_start_state для restart.
+// loadSnapshot робить this.pages = state.pages (ПОСИЛАННЯ!), тому replay-ops
+// мутують і store, і snapshot одночасно. Без clone restart показує всі ops.
+let _replayStartState: { pages: unknown[]; currentPageIndex: number } | null = null
+
+/**
+ * DRY helper: reset board + applier, load fresh clone of snapshot, mark pages.
+ * Використовується як clearState callback для seekToWithSnapshot.
+ *
+ * CRITICAL: кожен loadSnapshot отримує СВІЖИЙ deep-clone!
+ */
+function resetBoardForReplay(): void {
+  store.resetForReplay()
+  replayApplier.reset()
+  if (_replayStartState) {
+    store.loadSnapshot(JSON.parse(JSON.stringify(_replayStartState)) as Parameters<typeof store.loadSnapshot>[0])
+    store.goToPage(0)
+    const ids = (_replayStartState.pages as Array<{ id?: string }>).map(p => p?.id ?? '').filter(Boolean)
+    replayApplier.markPagesEnsured(ids)
+  }
+}
+
 // INV-T: hydrate з recording_start_state ПЕРЕД накаткою ops.
 // Це повертає фон/асети/страйки які існували до натискання Start Recording.
 function onReplayStartState(state: { pages?: unknown[]; currentPageIndex?: number }): void {
   if (state && Array.isArray(state.pages) && state.pages.length > 0) {
-    store.loadSnapshot(state as Parameters<typeof store.loadSnapshot>[0])
+    // CRITICAL: deep-clone! Без цього replay-ops мутують snapshot через shared reference.
+    _replayStartState = JSON.parse(JSON.stringify(state)) as { pages: unknown[]; currentPageIndex: number }
+    store.loadSnapshot(JSON.parse(JSON.stringify(_replayStartState)) as Parameters<typeof store.loadSnapshot>[0])
     // INV-T: replay завжди починає з першої сторінки, незалежно від currentPageIndex snapshot
     store.goToPage(0)
-    const ids = (state.pages as Array<{ id?: string }>).map(p => p?.id ?? '').filter(Boolean)
+    const ids = (_replayStartState.pages as Array<{ id?: string }>).map(p => p?.id ?? '').filter(Boolean)
     replayApplier.markPagesEnsured(ids)
   }
 }
@@ -1863,6 +1901,16 @@ function handlePresentationExpand(asset: WBAsset): void {
   // MVP: log + future: open fullscreen overlay
   console.info('[WB:Room] Presentation expand requested:', asset.id, asset.content_ref)
   // TODO(PLAN_v4): Implement fullscreen presentation overlay (backlog)
+}
+
+// ─── Audio interaction layer (INV I2: click only) ────────────────────────────
+
+function handleAudioBadgeClick(url: string): void {
+  if (mode.value === 'replay') {
+    // In replay mode: pause replay, play audio, resume on end
+    replayAudio.playObjectAudio(url)
+  }
+  // In edit mode: WBCanvas handles it directly (audioManager.toggle)
 }
 
 // ─── Handlers: Presence / Cursors (A3.2) ─────────────────────────────────────
@@ -2535,6 +2583,9 @@ onBeforeUnmount(async () => {
   window.removeEventListener('beforeunload', _handleBeforeUnload)
   document.removeEventListener('keydown', onGlobalKeyDown, true)
   if (_recordingDoneTimer) { clearTimeout(_recordingDoneTimer); _recordingDoneTimer = null }
+  // INV I6: Stop audio and destroy watcher on unmount
+  audioManager.stop()
+  replayAudio.destroy()
   cleanupRecorder()  // idempotent — may already be cleaned by onBeforeRouteLeave
   // BUG-1 FIX: Use shared save logic on unmount
   await saveBeforeLeave()
