@@ -58,7 +58,7 @@ const studentSteps = [
 ]
 
 onMounted(async () => {
-  await store.loadProgress()
+  await store.loadProgress(true)  // force: primary onboarding flow needs fresh data
   await store.loadSteps()
 })
 

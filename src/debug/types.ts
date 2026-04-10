@@ -54,7 +54,7 @@ export const DEFAULT_AUDIT_CONFIG: AuditConfig = {
   wsWindowMs: 5_000,
   dedupWindowMs: 5_000,
   thresholds: {
-    requests: { warn: 15, error: 25 },
+    requests: { warn: 20, error: 30 },
     duplicates: { error: 1 },
     cacheHitRate: { warn: 0.7, error: 0.5 },
     wsEventsPerWindow: { warn: 3, error: 6 },

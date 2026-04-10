@@ -284,7 +284,10 @@ export function useObjectAudio(options: UseObjectAudioOptions) {
         },
       )
 
-      recordingState.value = 'done'
+      // CRITICAL: повертаємо стан в idle після upload.
+      // WBSelectionToolbar перевіряє recordingState === 'idle' для показу кнопки 🎤.
+      // Якщо залишити 'done', мікрофон зникне на ВСІХ об'єктах до перезавантаження.
+      recordingState.value = 'idle'
       onAudioUploaded?.(result.audio_url, result.duration)
     } catch (err) {
       handleUploadError(err)

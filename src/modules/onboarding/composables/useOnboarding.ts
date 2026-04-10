@@ -13,6 +13,7 @@ export function useOnboarding() {
 
   const {
     progress,
+    progressLoaded,
     steps,
     currentStep,
     currentStepIndex,
@@ -33,7 +34,10 @@ export function useOnboarding() {
   } = storeToRefs(store)
 
   onMounted(async () => {
-    await store.loadProgress()
+    // INV: progressLoaded — надійніший guard ніж !progress (progress може бути stale/partial)
+    if (!store.progressLoaded) {
+      await store.loadProgress()
+    }
     await store.loadSteps()
 
     if (store.shouldShowOnboarding) {

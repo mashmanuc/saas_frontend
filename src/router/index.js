@@ -1066,7 +1066,7 @@ router.beforeEach(async (to, from, next) => {
       try {
         const { useOnboardingStore } = await import('../modules/onboarding/stores/onboardingStore')
         const onboardingStore = useOnboardingStore()
-        if (!onboardingStore.progress) {
+        if (!onboardingStore.progressLoaded) {
           await onboardingStore.loadProgress()
         }
         if (onboardingStore.shouldShowOnboarding) {

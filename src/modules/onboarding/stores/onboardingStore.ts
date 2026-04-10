@@ -1,17 +1,40 @@
-// F9: Onboarding Store
+// F9: Onboarding Store — thin layer over Resource Controller
+//
+// ІНВАРІАНТ: 1 resource → 1 truth → 1 запит → контрольований lifecycle
+// UI ніколи не вирішує коли фетчити — тільки resource layer.
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { createResource } from '@/core/resource'
 import { onboardingApi, OnboardingStep, OnboardingProgress } from '../api/onboarding'
 
 export const useOnboardingStore = defineStore('onboarding', () => {
-  // State
-  const progress = ref<OnboardingProgress | null>(null)
-  const steps = ref<OnboardingStep[]>([])
-  const isLoading = ref(false)
-  const isVisible = ref(false)
-  const error = ref<string | null>(null)
+  // ── Resource Controller: progress ─────────────────────────────────────────
+  // Єдина контрольна точка для GET /onboarding/progress/
+  const progressResource = createResource<OnboardingProgress>({
+    key: 'onboarding.progress',
+    fetcher: () => onboardingApi.getProgress(),
+    ttl: 5 * 60 * 1000, // 5 хв
+  })
 
-  // Computed
+  // Thin reactive aliases — backward compat для існуючих компонентів
+  const progress = computed(() => progressResource.data.value)
+  const progressLoaded = computed(() => progressResource.loaded.value)
+  const isVisible = ref(false)
+
+  // Steps (простий ресурс, без складної логіки)
+  const stepsResource = createResource<OnboardingStep[]>({
+    key: 'onboarding.steps',
+    fetcher: () => onboardingApi.getSteps(),
+    ttl: 10 * 60 * 1000, // 10 хв — steps рідко міняються
+  })
+  const steps = computed(() => stepsResource.data.value ?? [])
+
+  // ── Computed (derived from progress) ──────────────────────────────────────
+  const isLoading = computed(() =>
+    progressResource.status.value === 'loading' || stepsResource.status.value === 'loading'
+  )
+  const error = computed(() => progressResource.error.value ?? stepsResource.error.value ?? null)
+
   const currentStep = computed(() => progress.value?.current_step)
 
   const currentStepIndex = computed(() => {
@@ -46,72 +69,55 @@ export const useOnboardingStore = defineStore('onboarding', () => {
   const totalSteps = computed(() => steps.value.length)
   const completedCount = computed(() => completedSteps.value.length)
 
-  // Actions
-  async function loadProgress() {
-    if (isLoading.value) return
-    isLoading.value = true
-    error.value = null
-    try {
-      progress.value = await onboardingApi.getProgress()
-    } catch (e: any) {
-      error.value = e.message || 'Failed to load progress'
-    } finally {
-      isLoading.value = false
-    }
+  // ── Actions ───────────────────────────────────────────────────────────────
+
+  /** Завантажити progress через resource controller */
+  async function loadProgress(force = false): Promise<void> {
+    await progressResource.load({ force })
   }
 
-  async function loadSteps() {
-    try {
-      steps.value = await onboardingApi.getSteps()
-    } catch (e: any) {
-      error.value = e.message || 'Failed to load steps'
-    }
+  /** Завантажити steps через resource controller */
+  async function loadSteps(force = false): Promise<void> {
+    await stepsResource.load({ force })
   }
 
+  // Mutation actions — optimistic update via resource.set() + invalidate
   async function completeCurrentStep() {
     if (!currentStep.value) return
-    isLoading.value = true
     try {
-      progress.value = await onboardingApi.completeStep(currentStep.value.slug)
-    } catch (e: any) {
-      error.value = e.message || 'Failed to complete step'
-    } finally {
-      isLoading.value = false
+      const result = await onboardingApi.completeStep(currentStep.value.slug)
+      progressResource.set(result)
+    } catch (e: unknown) {
+      console.warn('[onboarding] completeStep failed:', e instanceof Error ? e.message : e)
     }
   }
 
   async function skipCurrentStep() {
     if (!currentStep.value) return
-    isLoading.value = true
     try {
-      progress.value = await onboardingApi.skipStep(currentStep.value.slug)
-    } catch (e: any) {
-      error.value = e.message || 'Failed to skip step'
-    } finally {
-      isLoading.value = false
+      const result = await onboardingApi.skipStep(currentStep.value.slug)
+      progressResource.set(result)
+    } catch (e: unknown) {
+      console.warn('[onboarding] skipStep failed:', e instanceof Error ? e.message : e)
     }
   }
 
   async function dismiss() {
-    isLoading.value = true
     try {
-      progress.value = await onboardingApi.dismissOnboarding()
+      const result = await onboardingApi.dismissOnboarding()
+      progressResource.set(result)
       isVisible.value = false
-    } catch (e: any) {
-      error.value = e.message || 'Failed to dismiss'
-    } finally {
-      isLoading.value = false
+    } catch (e: unknown) {
+      console.warn('[onboarding] dismiss failed:', e instanceof Error ? e.message : e)
     }
   }
 
   async function reset() {
-    isLoading.value = true
     try {
-      progress.value = await onboardingApi.resetOnboarding()
-    } catch (e: any) {
-      error.value = e.message || 'Failed to reset'
-    } finally {
-      isLoading.value = false
+      const result = await onboardingApi.resetOnboarding()
+      progressResource.set(result)
+    } catch (e: unknown) {
+      console.warn('[onboarding] reset failed:', e instanceof Error ? e.message : e)
     }
   }
 
@@ -126,25 +132,31 @@ export const useOnboardingStore = defineStore('onboarding', () => {
   function goToStep(stepSlug: string) {
     const step = steps.value.find((s) => s.slug === stepSlug)
     if (step && progress.value) {
-      progress.value.current_step = step
+      progressResource.set({
+        ...progress.value,
+        current_step: step,
+      })
     }
   }
 
   function $reset() {
-    progress.value = null
-    steps.value = []
-    isLoading.value = false
+    progressResource.reset()
+    stepsResource.reset()
     isVisible.value = false
-    error.value = null
   }
 
   return {
-    // State
+    // State (reactive aliases)
     progress,
+    progressLoaded,
     steps,
     isLoading,
     isVisible,
     error,
+
+    // Resource controllers (для прямого доступу)
+    progressResource,
+    stepsResource,
 
     // Computed
     currentStep,
