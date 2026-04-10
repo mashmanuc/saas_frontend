@@ -327,6 +327,7 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
    * Full cleanup — stop timer, flush remaining, clear buffer.
    */
   function destroy(): void {
+    console.info('[WB:Recorder] destroy() — recorder terminated')
     _destroyed = true
     stop()
     buffer.length = 0
@@ -348,6 +349,7 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
    * Returns unsubscribe function — call on unmount.
    */
   function connectToStore(store: { onOperation: (l: (op: RecordOperationRequest) => void) => () => void }): () => void {
+    console.info('[WB:Recorder] connectToStore — listener registered')
     return store.onOperation((op) => {
       record(op)
     })

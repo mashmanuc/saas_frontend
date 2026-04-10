@@ -7189,6 +7189,7 @@
       "statMinutes": "min",
       "emptyHint": "Record a lesson to replay it later",
       "recordingDone": "Recording complete!",
+      "recordingBroken": "Recording failed — reload the page and try again",
       "shareWithStudent": "Share with student",
       "later": "Later",
       "viewingMode": "Viewing mode — editing disabled",

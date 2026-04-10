@@ -782,6 +782,12 @@
       </button>
     </div>
 
+    <!-- INV: Recording broken warning — pipeline health check failed -->
+    <div v-if="recordingBrokenWarning" class="wb-solo-room__recording-broken">
+      <span>⚠️ {{ t('winterboard.replay.recordingBroken') }}</span>
+      <button class="wb-solo-room__recording-broken-dismiss" @click="recordingBrokenWarning = false">✕</button>
+    </div>
+
     <!-- Phase B: Share replay modal — owner only -->
     <WBReplayShareModal
       v-if="sessionId"
@@ -927,6 +933,7 @@ const recordingStartedAt = ref<string | null>(null)
 const isReplayFrozen = ref(false)
 const isRecordingLoading = ref(false)
 const showRecordingDonePrompt = ref(false)
+const recordingBrokenWarning = ref(false)  // INV: shown when pipeline health check fails
 let _recordingDoneTimer: number | null = null
 
 // Recorder enabled = edit mode (ЗАВЖДИ записує ops, не залежить від isManualRecording)
@@ -945,6 +952,7 @@ let _recorderCleaned = false
 function cleanupRecorder(): void {
   if (_recorderCleaned) return
   _recorderCleaned = true
+  console.info('[WB:Recorder] cleanupRecorder — unsubscribing listener + destroying')
   _unsubRecorder?.()
   replayRecorder.destroy()
 }
@@ -962,16 +970,19 @@ async function handleStartRecording(): Promise<void> {
     recordingStartedAt.value = result.recording_started_at
     isReplayFrozen.value = false
 
-    // GUARD: Pipeline health check — verify recorder is alive.
-    // After 5s, check if any ops reached the buffer. If not, the pipeline is broken.
+    // INV: Recording pipeline health check — ops MUST appear ≤ 2s after start.
+    // If recorder is dead (destroyed by navigation, missing connectToStore, etc.)
+    // this catches it immediately instead of silently losing an entire lesson.
     setTimeout(() => {
       if (isManualRecording.value && replayRecorder.opCount.value === 0) {
         console.error(
-          '[WB:PIPELINE] Recording started but 0 ops recorded after 5s! ' +
+          '[WB:PIPELINE:BROKEN] Recording started but 0 ops after 2s! ' +
           `store.mode=${store.mode} sessionId=${sessionId.value} enabled=${isRecorderEnabled.value}`,
         )
+        // UX safeguard: warn user that recording is not working
+        recordingBrokenWarning.value = true
       }
-    }, 5000)
+    }, 2000)
   } catch (e) {
     console.error('[WBSoloRoom] Failed to start recording:', e)
   } finally {
@@ -988,6 +999,7 @@ async function handleStopRecording(): Promise<void> {
     isManualRecording.value = false
     recordingStartedAt.value = null
     isReplayFrozen.value = result.is_replay_frozen
+    recordingBrokenWarning.value = false  // clear if was shown
 
     // Show "Recording done" prompt — teach user about sharing
     showRecordingDonePrompt.value = true
@@ -3717,6 +3729,36 @@ watch(() => store.workspaceName, (name) => {
 @keyframes wb-recording-done-in {
   from { opacity: 0; transform: translateX(-50%) translateY(10px); }
   to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* INV: Recording broken warning — red banner */
+.wb-solo-room__recording-broken {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  color: #991b1b;
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  z-index: 50;
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.2);
+  animation: wb-recording-done-in 0.3s ease-out;
+}
+.wb-solo-room__recording-broken-dismiss {
+  background: transparent;
+  border: none;
+  color: #991b1b;
+  font-size: 1.125rem;
+  cursor: pointer;
+  padding: 2px 6px;
+  line-height: 1;
 }
 
 @keyframes wb-replay-pulse {
