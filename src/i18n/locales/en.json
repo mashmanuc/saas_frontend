@@ -7212,17 +7212,12 @@
       },
       "share": {
         "title": "Share recording",
-        "hint": "Choose who can access this replay",
         "link": "Link",
+        "linkHint": "Anyone with this link can view the lesson recording.",
         "copy": "Copy",
         "copied": "Copied",
         "rotate": "Rotate link",
-        "private": "Private",
-        "privateDesc": "Only you have access",
-        "link_mode": "By link",
-        "linkDesc": "Access via direct link",
-        "public": "Public",
-        "publicDesc": "Visible to everyone, indexed by search engines"
+        "creating": "Creating link…"
       }
     },
     "objectText": {
@@ -7663,17 +7658,12 @@
       },
       "share": {
         "title": "Share replay",
-        "hint": "Choose who can access this replay",
         "link": "Link",
+        "linkHint": "Anyone with this link can view the lesson recording.",
         "copy": "Copy",
         "copied": "Copied",
         "rotate": "Rotate link",
-        "private": "Private",
-        "privateDesc": "Only you have access",
-        "link_mode": "Link",
-        "linkDesc": "Anyone with the link",
-        "public": "Public",
-        "publicDesc": "Visible to everyone, indexable"
+        "creating": "Creating link…"
       }
     },
     "objectText": {
@@ -8088,17 +8078,12 @@
     "share": {
       "button": "Share",
       "title": "Share lesson replay",
-      "hint": "Choose who can view this lesson replay.",
-      "private": "Private",
-      "privateDesc": "Only you can see it.",
-      "link_mode": "Anyone with the link",
-      "linkDesc": "Anyone with the link can view.",
-      "public": "Public",
-      "publicDesc": "Publicly accessible and indexable.",
       "link": "Link",
+      "linkHint": "Anyone with this link can view the lesson recording.",
       "copy": "Copy",
       "copied": "Copied",
-      "rotate": "Generate new link (invalidate old one)"
+      "rotate": "Rotate link",
+      "creating": "Creating link…"
     }
   },
   "wb": {

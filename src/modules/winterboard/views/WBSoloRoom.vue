@@ -796,8 +796,6 @@
       v-if="sessionId"
       :visible="showShareModal"
       :session-id="sessionId"
-      :initial-visibility="'private'"
-      :initial-token="null"
       @close="showShareModal = false"
     />
 
