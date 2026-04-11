@@ -702,6 +702,8 @@
       @text-format="handleTextFormat"
       @audio-uploaded="handleAudioUploaded"
       @audio-deleted="handleAudioDeleted"
+      @open-text-overlay="handleOpenTextOverlay"
+      @delete-object-text="handleDeleteObjectText"
     />
 
     <!-- Phase 11: Replay mode banner -->
@@ -1721,6 +1723,15 @@ function handleAudioDeleted(objectId: string) {
     const { audioUrl: _a, audioDuration: _d, ...rest } = obj as import('../types/winterboard').WBStroke
     handleStrokeUpdate({ ...rest, audioUrl: undefined, audioDuration: undefined } as import('../types/winterboard').WBStroke)
   }
+}
+
+function handleOpenTextOverlay(objectId: string) {
+  const canvas = canvasRef.value as unknown as { openTextOverlay?: (id: string) => void }
+  canvas?.openTextOverlay?.(objectId)
+}
+
+function handleDeleteObjectText(objectId: string) {
+  store.setObjectText(objectId, undefined)
 }
 
 // P2: Canvas rect for WBSelectionToolbar — recalculated when selection changes

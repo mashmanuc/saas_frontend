@@ -7230,6 +7230,7 @@
       "add": "Add text",
       "title": "Object text",
       "placeholder": "Enter text…",
+      "save": "Save",
       "delete": "Delete"
     },
     "recording": {
@@ -7681,6 +7682,7 @@
       "add": "Add text",
       "title": "Object text",
       "placeholder": "Enter text…",
+      "save": "Save",
       "delete": "Delete"
     },
     "tabLessons": "Lessons",

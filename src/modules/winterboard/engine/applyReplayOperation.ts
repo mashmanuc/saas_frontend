@@ -41,6 +41,8 @@ export interface ReplayStoreApi {
   sendBackward: (id: string) => void
   bringToFront: (id: string) => void
   sendToBack: (id: string) => void
+  // Text annotation on objects (interaction layer, not rendering)
+  setObjectText: (objectId: string, text: string | undefined, opts?: { silent?: boolean }) => void
   currentPageIndex: number
   pages: Array<{ id: string }>
 }
@@ -283,6 +285,16 @@ export function createReplayApplier() {
           else if (op.op_type === 'remove' && itemId)
             store.deleteAsset(itemId, { skipHistory: true })
         }
+        break
+      }
+
+      // Text annotation on objects (interaction layer)
+      case 'object_text_update': {
+        const objId = payload.object_id as string
+        const text = payload.text as string | null
+        if (!objId) break
+        // silent: true — replay НЕ створює нові ops (infinite loop guard)
+        store.setObjectText(objId, text ?? undefined, { silent: true })
         break
       }
 

@@ -16,6 +16,7 @@ function makeStore(): ReplayStoreApi & { _calls: Record<string, unknown[][]> } {
   }
   return {
     _calls: calls,
+    currentPageIndex: 0,
     pages: [{ id: 'page-1' }, { id: 'page-2' }],
     addStroke: track('addStroke') as ReplayStoreApi['addStroke'],
     updateStroke: track('updateStroke') as ReplayStoreApi['updateStroke'],
@@ -38,6 +39,7 @@ function makeStore(): ReplayStoreApi & { _calls: Record<string, unknown[][]> } {
     sendBackward: track('sendBackward') as ReplayStoreApi['sendBackward'],
     bringToFront: track('bringToFront') as ReplayStoreApi['bringToFront'],
     sendToBack: track('sendToBack') as ReplayStoreApi['sendToBack'],
+    setObjectText: track('setObjectText') as ReplayStoreApi['setObjectText'],
   }
 }
 

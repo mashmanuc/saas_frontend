@@ -2205,6 +2205,42 @@ export const useWBStore = defineStore('wb-board', {
     },
 
     /**
+     * Set text metadata on any object (stroke or asset).
+     * Text = interaction layer metadata, NOT canvas rendering.
+     *
+     * INV: op.page_id = реальна сторінка об'єкта (findInAllPages)
+     * INV: silent=true → replay НЕ створює нові ops (infinite loop guard)
+     * INV: text?.trim() || undefined → без пустих значень
+     */
+    setObjectText(objectId: string, text: string | undefined, options?: { silent?: boolean }): void {
+      const trimmed = text?.trim() || undefined
+
+      let targetPageId = ''
+      for (const page of this.pages) {
+        const stroke = page.strokes.find(s => s.id === objectId)
+        if (stroke) { stroke.text = trimmed; targetPageId = page.id; break }
+        const asset = page.assets.find(a => a.id === objectId)
+        if (asset) { asset.text = trimmed; targetPageId = page.id; break }
+      }
+
+      if (!targetPageId) {
+        console.warn('[WB:store] setObjectText: object not found', objectId)
+        return
+      }
+
+      this.markDirty()
+
+      // Op → replay + sync (ТІЛЬКИ якщо не silent — replay calls with silent=true)
+      if (!options?.silent && this.mode === 'edit') {
+        _emitOperation({
+          op_type: 'object_text_update',
+          page_id: targetPageId,
+          payload: { object_id: objectId, text: trimmed ?? null },
+        })
+      }
+    },
+
+    /**
      * Update sticky note style (bgColor, textColor, fontSize). Undoable.
      */
     updateStickyStyle(id: string, style: { bgColor?: string; textColor?: string; fontSize?: number }): void {

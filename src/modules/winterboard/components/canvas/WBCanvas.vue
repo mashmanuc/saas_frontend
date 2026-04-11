@@ -386,6 +386,36 @@
       />
     </div>
 
+    <!-- Object Text: Badge overlay (same pattern as audio) -->
+    <div
+      v-for="item in itemsWithText"
+      :key="`text-badge-${item.id}`"
+      class="wb-text-badge"
+      :style="textBadgePosition(item)"
+    >
+      <TextBadge
+        :object-id="item.id"
+        :has-text="!!(item as any).text"
+        :is-open="activeTextObjectId === item.id"
+        @click="handleTextBadgeClick(item.id)"
+      />
+    </div>
+
+    <!-- Object Text: Overlay (opens on badge click) -->
+    <div
+      v-if="activeTextObjectId && activeTextObject"
+      class="wb-text-overlay-wrapper"
+      :style="textOverlayPosition"
+    >
+      <TextOverlay
+        :text="(activeTextObject as any).text ?? ''"
+        :readonly="wbStore.mode !== 'edit'"
+        @save="handleTextOverlaySave"
+        @close="activeTextObjectId = null"
+        @delete="handleTextOverlayDelete"
+      />
+    </div>
+
   </div>
 </template>
 
@@ -409,6 +439,8 @@ import { useStickyNotes } from '../../composables/useStickyNotes'
 import WBStickyNote from './WBStickyNote.vue'
 import DocumentViewerAsset from './DocumentViewerAsset.vue'
 import AudioBadge from './AudioBadge.vue'
+import TextBadge from './TextBadge.vue'
+import TextOverlay from './TextOverlay.vue'
 import { audioManager } from '../../utils/audioManager'
 import AudioPlayerObject from '../board/objects/AudioPlayerObject.vue'
 import VideoPlayerObject from '../board/objects/VideoPlayerObject.vue'
@@ -598,6 +630,81 @@ function handleAudioBadgeClick(item: WBStroke | WBAsset) {
     wbStore.selectItems([item.id])
     audioManager.toggle(url)
   }
+}
+
+// ── Object Text: badge overlay + overlay integration ─────────────────────────
+
+const itemsWithText = computed(() => {
+  const result: (WBStroke | WBAsset)[] = []
+  for (const s of allStrokes.value) {
+    if (s.text) result.push(s)
+  }
+  for (const a of assets.value) {
+    // Exclude stickies — they have their own text rendering
+    if (a.text && a.type !== 'sticky') result.push(a)
+  }
+  return result
+})
+
+// Text badge position: offset from audio badge (shifted left)
+function textBadgePosition(item: WBStroke | WBAsset) {
+  const base = audioBadgePosition(item)
+  // Offset to the left of audio badge (or where audio badge would be)
+  const hasAudio = (item as WBStroke).audioUrl || (item as WBAsset).audioUrl
+  const leftOffset = hasAudio ? -30 : 0
+  return {
+    ...base,
+    left: `calc(${base.left} + ${leftOffset}px)`,
+  }
+}
+
+// Overlay state
+const activeTextObjectId = ref<string | null>(null)
+
+const activeTextObject = computed(() => {
+  if (!activeTextObjectId.value) return null
+  return wbStore.getObjectById(activeTextObjectId.value) ?? null
+})
+
+// Close overlay if object is deleted (watch selectedIds instead of deep pages — no perf cost)
+watch(() => wbStore.selectedIds, () => {
+  if (activeTextObjectId.value && !wbStore.getObjectById(activeTextObjectId.value)) {
+    activeTextObjectId.value = null
+  }
+})
+
+const textOverlayPosition = computed(() => {
+  if (!activeTextObject.value) return {}
+  const item = activeTextObject.value
+  const zoom = props.zoom
+  const offset = wbStore.canvasOffset
+  const isAsset = 'w' in item && 'h' in item
+  const x = isAsset ? (item as WBAsset).x : ((item as WBStroke).points?.[0]?.x ?? 0)
+  const y = isAsset ? (item as WBAsset).y + (item as WBAsset).h : ((item as WBStroke).points?.[0]?.y ?? 0) + 30
+  return {
+    position: 'absolute' as const,
+    left: `${x * zoom + offset.x}px`,
+    top: `${y * zoom + offset.y + 16}px`,
+    zIndex: 30,
+    pointerEvents: 'auto' as const,
+  }
+})
+
+function handleTextBadgeClick(objectId: string) {
+  // Toggle: click again to close
+  activeTextObjectId.value = activeTextObjectId.value === objectId ? null : objectId
+}
+
+function handleTextOverlaySave(text: string) {
+  if (!activeTextObjectId.value) return
+  wbStore.setObjectText(activeTextObjectId.value, text)
+  // Keep overlay open → it will close itself via emit('close')
+}
+
+function handleTextOverlayDelete() {
+  if (!activeTextObjectId.value) return
+  wbStore.setObjectText(activeTextObjectId.value, undefined)
+  activeTextObjectId.value = null
 }
 
 function handleDeleteSelected() {
@@ -3532,6 +3639,8 @@ watch(
 defineExpose({
   getStage: () => stageRef.value?.getStage?.() || null,
   fitToPage: handleFitToPage,
+  /** Open text overlay for object (called from WBSelectionToolbar via parent) */
+  openTextOverlay: (objectId: string) => { activeTextObjectId.value = objectId },
 })
 </script>
 

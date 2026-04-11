@@ -282,6 +282,47 @@
           </template>
         </div>
       </template>
+
+      <!-- ── Text annotation section (single object, tutor only) ── -->
+      <template v-if="showTextSection">
+        <span class="wb-selection-toolbar__divider" />
+
+        <!-- No text yet: Add button -->
+        <template v-if="!selectedObjText">
+          <button
+            type="button"
+            class="wb-selection-toolbar__btn"
+            :disabled="isLocked"
+            :title="t('winterboard.objectText.add')"
+            @click="emit('open-text-overlay', audioObjectId)"
+          >
+            <span style="font-size: 13px; font-weight: 700; font-family: Georgia, serif;">Т</span>
+          </button>
+        </template>
+
+        <!-- Has text: Show / Edit / Delete (3 buttons like audio) -->
+        <template v-else>
+          <button
+            type="button"
+            class="wb-selection-toolbar__btn"
+            :title="t('winterboard.objectText.view')"
+            @click="emit('open-text-overlay', audioObjectId)"
+          >
+            <span style="font-size: 13px; font-weight: 700; font-family: Georgia, serif; color: #d97706;">Т</span>
+          </button>
+          <button
+            type="button"
+            class="wb-selection-toolbar__btn wb-selection-toolbar__btn--danger"
+            :disabled="isLocked"
+            :title="t('winterboard.objectText.delete')"
+            @click="emit('delete-object-text', audioObjectId)"
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M2 3.5h10M4.667 3.5V2.333A.667.667 0 015.333 1.667h3.334a.667.667 0 01.666.666V3.5M11 3.5v8a1 1 0 01-1 1H4a1 1 0 01-1-1v-8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </template>
+      </template>
     </div>
   </Transition>
 </template>
@@ -335,6 +376,8 @@ const emit = defineEmits<{
   'text-format': [updates: Record<string, unknown>]
   'audio-uploaded': [objectId: string, audioUrl: string, duration: number | null]
   'audio-deleted': [objectId: string]
+  'open-text-overlay': [objectId: string]
+  'delete-object-text': [objectId: string]
 }>()
 
 // ─── i18n & Device mode ─────────────────────────────────────────────────────
@@ -400,6 +443,19 @@ const showAudioSection = computed(() =>
   audioSessionId.value !== '' &&
   isRecordingSupported(),
 )
+
+// ── Object Text ─────────────────────────────────────────────────────────────
+const showTextSection = computed(() =>
+  props.isTutor !== false &&
+  props.selectedIds.length === 1 &&
+  selectedAnyObject.value != null,
+)
+
+const selectedObjText = computed(() => {
+  const obj = selectedAnyObject.value
+  if (!obj) return ''
+  return (obj as WBStroke).text ?? (obj as WBAsset).text ?? ''
+})
 
 const audio = useObjectAudio({
   sessionId: audioSessionId,
