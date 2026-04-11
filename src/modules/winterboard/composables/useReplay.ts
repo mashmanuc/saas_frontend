@@ -211,7 +211,14 @@ export function useReplay(sessionId: string, publicToken?: string) {
     clearState()
     for (let i = 0; i < clampedIdx; i++) {
       const op = engine.value.getOperationAt(i)
-      if (op) _onOp(op)
+      if (op) {
+        try {
+          _onOp(op)
+        } catch (e) {
+          // HIGH 9: Don't break seek if single op fails — continue with remaining
+          console.warn(`[replay] failed to apply op ${i}:`, e)
+        }
+      }
     }
 
     // Sync engine position — play() will fire op[clampedIdx] as next

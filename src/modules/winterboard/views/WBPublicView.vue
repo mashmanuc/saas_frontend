@@ -90,6 +90,8 @@
         :current-seconds="replayCurrentSeconds"
         :duration-seconds="replayDurationSeconds"
         :is-playing="replay.state.value === 'playing'"
+        :current-index="replay?.currentIndex.value ?? 0"
+        :total-operations="replay?.totalOperations.value ?? 0"
         :markers="replayMarkers"
         @play="handleReplayPlay"
         @pause="handleReplayPause"
@@ -135,7 +137,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, onBeforeRouteLeave } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { winterboardApi } from '../api/winterboardApi'
 import { useWBStore } from '../board/state/boardStore'
@@ -180,6 +182,7 @@ const showHeroOverlay = ref(true)  // Hero overlay shown until user clicks Play
 const replayDurationSeconds = ref(0)
 const replaySessionId = ref<string | null>(null)
 let replay: ReturnType<typeof useReplay> | null = null
+let _replayStateWatchStop: (() => void) | null = null  // CRITICAL 1: track watch handle to prevent leaks
 const replayApplier = createReplayApplier()
 
 // Snapshot of board state before entering replay — to restore on exit
@@ -274,6 +277,18 @@ function resetBoardForReplay(): void {
 async function enterReplayMode(): Promise<void> {
   if (!replaySessionId.value) return
 
+  // CRITICAL 2: Destroy previous engine if re-entering (prevents timer leaks)
+  if (replay) {
+    replay.stop()
+    replay.destroy()
+    replay = null
+  }
+  // CRITICAL 1: Stop previous watch to prevent leak on re-entry
+  if (_replayStateWatchStop) {
+    _replayStateWatchStop()
+    _replayStateWatchStop = null
+  }
+
   // Save static snapshot before replay
   staticSnapshot = store.getSnapshotState()
 
@@ -330,8 +345,9 @@ async function enterReplayMode(): Promise<void> {
   }
 
   // Fallback: derive duration from operation timestamps if lesson_time_seconds was missing
+  // HIGH 21: minimum 1s to prevent division by zero in seek calculations
   if (replayDurationSeconds.value <= 0 && replay.totalDurationMs.value > 0) {
-    replayDurationSeconds.value = Math.ceil(replay.totalDurationMs.value / 1000)
+    replayDurationSeconds.value = Math.max(1, Math.ceil(replay.totalDurationMs.value / 1000))
   }
 
   // Load lesson markers
@@ -339,11 +355,10 @@ async function enterReplayMode(): Promise<void> {
 
   isReplayMode.value = true
 
-  // FIX: Watch replay state for re-showing hero overlay when replay ends.
+  // CRITICAL 1: Track watch handle — stop on re-entry/unmount to prevent leaks.
   // Must be set up HERE (after `replay` is assigned), not at setup level,
   // because `replay` is a plain `let` — Vue can't track its assignment.
-  // At setup time, `replay === null` → `replay?.state.value` = undefined → no dependency → watch never fires.
-  watch(() => replay!.state.value, (s) => {
+  _replayStateWatchStop = watch(() => replay!.state.value, (s) => {
     if (s === 'ended') showHeroOverlay.value = true
   })
 
@@ -426,9 +441,10 @@ function handleReplayPause(): void {
 
 async function handleReplaySeek(timeMs: number): Promise<void> {
   replayAudio.stopAudio()  // INV I5: stop audio on seek
-  if (!replay || replayDurationSeconds.value <= 0) return
+  // CRITICAL 3: guard against div/0 and missing replay
+  if (!replay || replayDurationSeconds.value <= 0 || replay.totalOperations.value <= 0) return
 
-  const ratio = (timeMs / 1000) / replayDurationSeconds.value
+  const ratio = Math.max(0, Math.min(1, (timeMs / 1000) / replayDurationSeconds.value))
   const targetIndex = Math.round(ratio * replay.totalOperations.value)
 
   // Use snapshot-based seek for performance
@@ -446,8 +462,9 @@ function handleSpeedChange(speed: number): void {
 }
 
 function handleStepForward(): void {
+  if (!replay || !hasReplayData.value) return  // CRITICAL 4: null guard
   replayAudio.stopAudio()  // INV I5
-  replay?.stepForward()
+  replay.stepForward()
 }
 
 async function handleStepBackward(): Promise<void> {
@@ -554,8 +571,21 @@ onMounted(async () => {
   }
 })
 
+// CRITICAL 5: Route guard — cleanup replay before navigation (prevents callbacks after unmount)
+onBeforeRouteLeave(() => {
+  if (_replayStateWatchStop) { _replayStateWatchStop(); _replayStateWatchStop = null }
+  audioManager.stop()
+  replayAudio.destroy()
+  if (replay) {
+    replay.stop()
+    replay.destroy()
+    replay = null
+  }
+})
+
 onBeforeUnmount(() => {
-  // INV I6: Stop audio + destroy watcher on unmount
+  // INV I6: Stop audio + destroy watcher on unmount (safety net if route guard didn't fire)
+  if (_replayStateWatchStop) { _replayStateWatchStop(); _replayStateWatchStop = null }
   audioManager.stop()
   replayAudio.destroy()
   if (replay) {

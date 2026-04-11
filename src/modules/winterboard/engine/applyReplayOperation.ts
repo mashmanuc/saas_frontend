@@ -57,35 +57,68 @@ export interface ReplayStoreApi {
  */
 export function createReplayApplier() {
   const ensuredPageIds = new Set<string>()
+  // P0-FIX: Page ID mapping — ops may use different IDs than snapshot.
+  // Example: snapshot has page-1, but ops recorded with page-175xxx (page was renamed/recreated).
+  // Without mapping, applier creates new blank pages → loses background/assets.
+  const pageIdMap = new Map<string, string>() // ops page_id → store page_id
+  let _snapshotPageIds: string[] = [] // ordered snapshot page IDs for positional mapping
 
   function reset(): void {
     ensuredPageIds.clear()
+    pageIdMap.clear()
+    _snapshotPageIds = []
   }
 
   function markPagesEnsured(pageIds: string[]): void {
-    for (const id of pageIds) {
-      if (id) ensuredPageIds.add(id)
+    _snapshotPageIds = pageIds.filter(Boolean)
+    for (const id of _snapshotPageIds) {
+      ensuredPageIds.add(id)
     }
+  }
+
+  /**
+   * Resolve op.page_id to actual store page_id.
+   * Handles mismatch between recording ops and snapshot state.
+   */
+  function _resolvePageId(opPageId: string, store: ReplayStoreApi): string {
+    // 1. Direct match — op page_id exists in store
+    if (store.pages.some(p => p.id === opPageId)) return opPageId
+    // 2. Already mapped from previous op
+    if (pageIdMap.has(opPageId)) return pageIdMap.get(opPageId)!
+    // 3. Positional mapping — first unmapped op page_id maps to first unmapped snapshot page
+    const mappedSnapshotIds = new Set(pageIdMap.values())
+    const unmappedSnapshot = _snapshotPageIds.find(id => !mappedSnapshotIds.has(id))
+    if (unmappedSnapshot && store.pages.some(p => p.id === unmappedSnapshot)) {
+      pageIdMap.set(opPageId, unmappedSnapshot)
+      ensuredPageIds.add(opPageId)
+      return unmappedSnapshot
+    }
+    // 4. Fallback: single-page adopt (legacy compat)
+    if (store.pages.length === 1 && ensuredPageIds.size === 0) {
+      const adoptId = store.pages[0].id
+      pageIdMap.set(opPageId, adoptId)
+      ensuredPageIds.add(opPageId)
+      return adoptId
+    }
+    // 5. No match — return original (will trigger addPage below)
+    return opPageId
   }
 
   function apply(store: ReplayStoreApi, op: BoardOperation): void {
     const payload = op.payload as Record<string, unknown>
 
-    // REPLAY-FIX-2: Resolve page by op.page_id with lazy auto-create.
+    // P0-FIX: Resolve page by op.page_id with ID mapping + lazy auto-create.
     if (op.page_id && op.op_type !== 'page_add') {
-      let targetIdx = store.pages.findIndex((p) => p.id === op.page_id)
+      const resolvedId = _resolvePageId(op.page_id, store)
+      let targetIdx = store.pages.findIndex((p) => p.id === resolvedId)
       if (targetIdx < 0) {
-        if (store.pages.length === 1 && ensuredPageIds.size === 0) {
-          (store.pages[0] as { id: string }).id = op.page_id
-          targetIdx = 0
-        } else {
-          store.addPage({ background: 'white' })
-          const lastPage = store.pages[store.pages.length - 1]
-          if (lastPage) {
-            (lastPage as { id: string }).id = op.page_id
-          }
-          targetIdx = store.pages.length - 1
+        // Page truly doesn't exist — create new
+        store.addPage({ background: 'white' })
+        const lastPage = store.pages[store.pages.length - 1]
+        if (lastPage) {
+          (lastPage as { id: string }).id = resolvedId
         }
+        targetIdx = store.pages.length - 1
         ensuredPageIds.add(op.page_id)
       }
       if (targetIdx >= 0 && targetIdx !== store.currentPageIndex) {

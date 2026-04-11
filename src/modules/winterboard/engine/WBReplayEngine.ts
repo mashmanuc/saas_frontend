@@ -177,11 +177,13 @@ export class WBReplayEngine {
     const nextOp = this.operations[this.currentIndex + 1]
 
     // Derive inter-op delay from real timestamps, capped at 2s, scaled by speed
+    // CRITICAL 6: minimum 4ms (browser setTimeout floor), prevents timer storm at 10x
     let delayMs = 16  // minimum frame interval
     if (nextOp) {
-      const diff = new Date(nextOp.created_at).getTime() - new Date(op.created_at).getTime()
-      const realDiff = Math.max(16, Math.min(diff, 2000))
-      delayMs = realDiff / this.speed
+      const t1 = new Date(op.created_at).getTime()
+      const t2 = new Date(nextOp.created_at).getTime()
+      const diff = (isNaN(t1) || isNaN(t2)) ? 16 : Math.max(16, Math.min(t2 - t1, 2000))
+      delayMs = Math.max(4, diff / this.speed)
     }
 
     this.playTimer = setTimeout(() => {

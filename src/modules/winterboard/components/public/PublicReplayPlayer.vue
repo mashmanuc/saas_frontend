@@ -35,11 +35,12 @@
 
     <!-- Controls row -->
     <div class="public-replay-player__controls">
-      <!-- Step backward -->
+      <!-- Step backward (HIGH 8: disabled at start) -->
       <button
         type="button"
         class="public-replay-player__step-btn"
         :aria-label="t('replay.stepBackward')"
+        :disabled="(props.currentIndex ?? 0) <= 0"
         @click="emit('step-backward')"
       >
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -64,11 +65,12 @@
         </svg>
       </button>
 
-      <!-- Step forward -->
+      <!-- Step forward (HIGH 7: disabled at end) -->
       <button
         type="button"
         class="public-replay-player__step-btn"
         :aria-label="t('replay.stepForward')"
+        :disabled="(props.currentIndex ?? 0) >= (props.totalOperations ?? 0)"
         @click="emit('step-forward')"
       >
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -150,6 +152,8 @@ const props = defineProps<{
   currentSeconds: number
   durationSeconds: number
   isPlaying: boolean
+  currentIndex?: number
+  totalOperations?: number
   markers?: ReplayMarker[]
   speed?: number
 }>()
@@ -187,6 +191,7 @@ function onTimelineClick(e: MouseEvent): void {
   const el = timelineRef.value
   if (!el) return
   const rect = el.getBoundingClientRect()
+  if (rect.width <= 0) return  // HIGH 14: guard zero-width timeline
   const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
   emit('seek', Math.round(ratio * props.durationSeconds * 1000))
 }
@@ -329,10 +334,15 @@ function handleShareMoment(): void {
   flex-shrink: 0;
 }
 
-.public-replay-player__step-btn:hover {
+.public-replay-player__step-btn:hover:not(:disabled) {
   color: var(--wb-brand, #047857);
   border-color: var(--wb-brand, #047857);
   background: rgba(4, 120, 87, 0.05);
+}
+
+.public-replay-player__step-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
 }
 
 .public-replay-player__time {
