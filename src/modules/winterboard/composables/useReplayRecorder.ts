@@ -8,6 +8,43 @@
 //   - Auto-creates snapshots every SNAPSHOT_EVERY ops for fast seek
 //   - NEVER blocks UI — all network calls are fire-and-forget with error re-queuing
 //   - Designed as platform primitive: any board view (solo/classroom) can use it
+//
+// === SNAPSHOT RACE CONDITION (known limitation) ===
+//
+// Problem:
+//   Between flush() confirming ops 1..N and _createSnapshot() calling getBoardState(),
+//   new ops N+1..M may arrive and mutate the store. The snapshot is then labeled
+//   operation_index=N but contains state from ops N+1..M.
+//
+// Failure mode:
+//   Replay from that snapshot starts with extra objects already present.
+//   When ops N+1..M are applied again, objects may be duplicated.
+//
+// Current mitigations:
+//   - op_id dedup prevents true duplicates on re-record
+//   - Boundary check prevents snapshots at same index twice
+//   - FLUSH_INTERVAL=1.5s limits the race window
+//
+// Future fix: freeze board state at flush boundary before getBoardState().
+//
+// === STALE OPS / CIRCUIT BREAKER (known limitation) ===
+//
+// Problem:
+//   After circuit breaker opens (30s pause after 3 failures), retryQueue
+//   contains ops from before the pause. During the 30s, the user continues
+//   editing — new context is created, objects may be deleted.
+//
+// Failure mode:
+//   Stale ops reference objects that no longer exist or have changed state.
+//   Example: text_update on a deleted object → silent skip (benign).
+//   Example: lock_update on a deleted group → state corruption (harmful).
+//
+// Current mitigations:
+//   - retryQueue cap (MAX_RETRY_QUEUE_SIZE=200) prevents unbounded growth
+//   - op_id dedup prevents double-apply after recovery
+//   - Most ops are create/update which are idempotent
+//
+// Future fix: backend should reject ops with client_ts > 60s old.
 
 import { ref, readonly, watch, type Ref } from 'vue'
 import type { RecordOperationRequest } from '../types/replay'

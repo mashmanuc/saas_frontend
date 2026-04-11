@@ -8,6 +8,23 @@
  *
  * All operations are applied with { skipHistory: true } because
  * replay operations are not undoable.
+ *
+ * === REPLAY INVARIANTS ===
+ *
+ * 1. DETERMINISTIC: same ops sequence → same final state.
+ *    Adding non-determinism (Math.random, Date.now) in apply() WILL break replay.
+ *
+ * 2. ORDER-SENSITIVE: ops MUST be applied in seq order.
+ *    Changing order → invalid state transitions → visual corruption.
+ *
+ * 3. NO MISSING OPS: skipping ops causes state divergence.
+ *    Every recorded op MUST be applied during replay (unknown ops → console.debug, not throw).
+ *
+ * 4. NO SIDE EFFECTS: apply() must only mutate store state via store methods.
+ *    Emitting new ops from apply() → infinite loop (use { silent: true } pattern).
+ *
+ * 5. NO PAGE RESOLUTION CHANGES without E2E replay testing.
+ *    _resolvePageId is the most fragile part — any "cleanup" breaks multi-page replay.
  */
 import type { BoardOperation } from '../types/replay'
 import type { WBStroke, WBAsset, WBPageBackground, WBPageGridSettings } from '../types/winterboard'
