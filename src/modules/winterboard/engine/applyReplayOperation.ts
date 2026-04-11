@@ -272,16 +272,16 @@ export function createReplayApplier() {
         const itemId = payload.id as string | undefined
         if (kind === 'stroke') {
           if (op.op_type === 'add' && value)
-            store.addStroke(value as WBStroke, { skipHistory: true })
+            store.addStroke(value as unknown as WBStroke, { skipHistory: true })
           else if (op.op_type === 'update' && value)
-            store.updateStroke(value as WBStroke, { skipHistory: true })
+            store.updateStroke(value as unknown as WBStroke, { skipHistory: true })
           else if (op.op_type === 'remove' && itemId)
             store.deleteStroke(itemId, { skipHistory: true })
         } else if (kind === 'asset') {
           if (op.op_type === 'add' && value)
-            store.addAsset(value as WBAsset, { skipHistory: true })
+            store.addAsset(value as unknown as WBAsset, { skipHistory: true })
           else if (op.op_type === 'update' && value)
-            store.updateAsset(value as WBAsset, { skipHistory: true })
+            store.updateAsset(value as unknown as WBAsset, { skipHistory: true })
           else if (op.op_type === 'remove' && itemId)
             store.deleteAsset(itemId, { skipHistory: true })
         }

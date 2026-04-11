@@ -76,6 +76,11 @@ export interface WBSessionDetailResponse {
   last_write_at: string | null
   created_at: string
   updated_at: string
+  // Recording control fields (present when session has recording)
+  recording_started_seq?: number | null
+  recording_stopped_seq?: number | null
+  recording_started_at?: string | null
+  is_replay_frozen?: boolean
 }
 
 export interface WBDiffOp {

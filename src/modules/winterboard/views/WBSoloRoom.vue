@@ -735,7 +735,7 @@
       :current-op-index="replayCurrentOpIndex"
       :can-comment="!!authStore.user"
       :current-user-id="authStore.user?.id ?? null"
-      :session-owner-id="(store.ownerId as number | null) ?? null"
+      :session-owner-id="store.ownerId ? Number(store.ownerId) : null"
       :submitting="commentSubmitting"
       @jump="onCommentJump"
       @delete="onCommentDelete"
@@ -1085,7 +1085,7 @@ const isSessionOwner = computed(() => {
 
 // Phase C: Replay comments
 const _commentsInstance = ref<ReturnType<typeof useReplayComments> | null>(null)
-const replayCommentsList = computed(() => _commentsInstance.value?.comments.value || [])
+const replayCommentsList = computed(() => _commentsInstance.value?.comments || [])
 const replayCurrentOpIndex = ref(0)
 const replayCurrentTotalOps = ref(0)
 const commentSubmitting = ref(false)
