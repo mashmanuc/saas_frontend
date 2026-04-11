@@ -131,6 +131,24 @@ export async function stopRecording(
   return apiClient.post(`${BASE}/sessions/${sessionId}/stop-recording/`)
 }
 
+/**
+ * POST /winterboard/sessions/{uuid}/create-replay-from-ops/
+ *
+ * Ретроспективне створення replay з УСІХ існуючих операцій.
+ * Якщо вчитель забув натиснути "Записати урок" — ops вже в базі,
+ * цей endpoint ставить recording boundaries на весь діапазон.
+ */
+export async function createReplayFromExistingOps(
+  sessionId: string,
+): Promise<{
+  recording_started_seq: number
+  recording_stopped_seq: number
+  total_operations: number
+  is_replay_frozen: boolean
+}> {
+  return apiClient.post(`${BASE}/sessions/${sessionId}/create-replay-from-ops/`)
+}
+
 // ─── Phase B: Public Replay Access ─────────────────────────────────────
 
 export type ReplayVisibility = 'private' | 'link' | 'public'

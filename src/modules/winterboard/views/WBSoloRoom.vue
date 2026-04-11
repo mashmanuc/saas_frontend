@@ -103,9 +103,9 @@
         >
           ↪
         </button>
-        <!-- Phase B: Share replay -->
+        <!-- Phase B: Share replay — показуємо коли є контент (ops створять replay автоматично) -->
         <button
-          v-if="isSessionOwner"
+          v-if="isSessionOwner && hasOperations"
           type="button"
           class="wb-header-btn"
           :title="t('winterboard.replay.share.title', 'Поділитися записом')"
@@ -134,7 +134,7 @@
           v-if="sessionId && isSessionOwner"
           type="button"
           class="wb-header-btn wb-header-btn--save-lesson"
-          :title="t('winterboard.lesson.saveButton') || 'Зберегти як урок'"
+          :title="t('winterboard.lesson.saveButton') || 'Зберегти як шаблон уроку'"
           @click="openSaveLessonDialog"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13 14H3a1 1 0 01-1-1V3a1 1 0 011-1h8l3 3v9a1 1 0 01-1 1z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 14V9H5v5M5 2v3h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -796,7 +796,9 @@
       v-if="sessionId"
       :visible="showShareModal"
       :session-id="sessionId"
+      :has-recording="isReplayFrozen || isManualRecording"
       @close="showShareModal = false"
+      @replay-created="isReplayFrozen = true"
     />
 
     <!-- Phase 34 B7: Multi-delete confirmation dialog -->

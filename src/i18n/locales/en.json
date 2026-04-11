@@ -7169,9 +7169,9 @@
       "saveSubtitle": "Save your current board state as a lesson in your library",
       "titleLabel": "Lesson title",
       "titlePlaceholder": "E.g. Equations with absolute value",
-      "saveButton": "Save as Lesson",
+      "saveButton": "Save as lesson template",
       "saving": "Saving…",
-      "saved": "Lesson saved",
+      "saved": "Lesson template saved",
       "saveError": "Failed to save lesson",
       "myLessonsTitle": "My Lessons",
       "emptyTitle": "No lessons yet",
@@ -7217,7 +7217,12 @@
         "copy": "Copy",
         "copied": "Copied",
         "rotate": "Rotate link",
-        "creating": "Creating link…"
+        "creating": "Creating link…",
+        "creatingReplay": "Creating replay from all operations…",
+        "noOps": "No actions on the board to create a recording from.",
+        "noRecordingTitle": "Lesson was conducted without recording",
+        "createAndShare": "Create lesson recording",
+        "createHint": "Recording will be created from what is already on the board"
       }
     },
     "objectText": {
@@ -7663,7 +7668,12 @@
         "copy": "Copy",
         "copied": "Copied",
         "rotate": "Rotate link",
-        "creating": "Creating link…"
+        "creating": "Creating link…",
+        "creatingReplay": "Creating replay from all operations…",
+        "noOps": "No actions on the board to create a recording from.",
+        "noRecordingTitle": "Lesson was conducted without recording",
+        "createAndShare": "Create lesson recording",
+        "createHint": "Recording will be created from what is already on the board"
       }
     },
     "objectText": {

@@ -1009,6 +1009,14 @@ router.beforeEach(async (to, from, next) => {
   const auth = useAuthStore()
   const profileStore = useProfileStore()
 
+  // P0: Public routes (requiresAuth: false) — skip bootstrap entirely.
+  // Without this, expired cookies trigger 401 → "Сесію завершено" toast → redirect to /start
+  // even though the page doesn't need auth (e.g. /winterboard/public/:token).
+  const isPublicRoute = to.matched.some((record) => record.meta?.requiresAuth === false)
+  if (isPublicRoute) {
+    return next()
+  }
+
   if (!auth.isBootstrapped) {
     await auth.bootstrap()
   }
@@ -1022,16 +1030,8 @@ router.beforeEach(async (to, from, next) => {
   const isInviteRoute = to.path.startsWith('/invite')
   const isTutorInvite = to.matched.some(r => r.meta?.isTutorInvite)
   const isStartRoute = to.path === '/start'
-  // Child route meta takes priority over parent: check from most-specific (last) to least-specific (first).
-  // If any matched record explicitly sets requiresAuth: false, the route is public.
-  const isPublicRoute = to.matched.some((record) => record.meta?.requiresAuth === false)
-  const requiresAuth = !isPublicRoute && to.matched.some((record) => record.meta?.requiresAuth !== false && record.meta?.requiresAuth !== undefined ? record.meta.requiresAuth : true)
+  const requiresAuth = to.matched.some((record) => record.meta?.requiresAuth !== false && record.meta?.requiresAuth !== undefined ? record.meta.requiresAuth : true)
   const hasRoleAccess = hasAccess(user, to)
-
-  // Public routes (requiresAuth: false) - завжди пропускаємо
-  if (isPublicRoute) {
-    return next()
-  }
 
   if (!isAuthenticated && hasAccessToken) {
     try {
