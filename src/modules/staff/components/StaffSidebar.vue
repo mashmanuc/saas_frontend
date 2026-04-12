@@ -142,6 +142,15 @@
           <span v-if="!collapsed" class="nav-label">{{ $t('staff.sidebar.subscriptionPlans') }}</span>
         </router-link>
         <router-link
+          to="/staff/platform-settings"
+          class="nav-item"
+          :class="{ active: route.path.startsWith('/staff/platform-settings') }"
+          :title="collapsed ? $t('staff.sidebar.platformSettings') : undefined"
+        >
+          <SlidersHorizontal class="nav-icon-svg" :size="18" />
+          <span v-if="!collapsed" class="nav-label">{{ $t('staff.sidebar.platformSettings') }}</span>
+        </router-link>
+        <router-link
           to="/staff/analytics"
           class="nav-item"
           :class="{ active: route.path.startsWith('/staff/analytics') }"
@@ -191,6 +200,7 @@ import {
   HeartPulse,
   PackageOpen,
   BarChart3,
+  SlidersHorizontal,
   ArrowLeft,
 } from 'lucide-vue-next'
 

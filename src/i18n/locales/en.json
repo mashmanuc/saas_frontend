@@ -589,6 +589,8 @@
     "joinCurrentLesson": "Приєднатися до уроку",
     "justNow": "Щойно",
     "later": "Пізніше",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
     "loadMore": "Завантажити ще",
     "lock": "Заблокувати",
     "min": "хв",
@@ -4284,7 +4286,13 @@
       "profileModeration": "Profile Moderation",
       "verification": "Verification",
       "subscriptionPlans": "Subscription Plans",
-      "analytics": "Analytics"
+      "analytics": "Analytics",
+      "platformSettings": "Settings"
+    },
+    "platformSettings": {
+      "title": "Platform Settings",
+      "helpText": "Manage platform behavior without server restart. Changes take effect immediately.",
+      "noSettings": "No settings found"
     },
     "breadcrumbs": {
       "staff": "Staff",

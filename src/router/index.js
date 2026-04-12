@@ -877,6 +877,16 @@ const routes = [
             },
           },
           {
+            path: 'platform-settings',
+            name: 'staff-platform-settings',
+            component: () => import('../modules/staff/views/StaffPlatformSettingsView.vue'),
+            meta: {
+              requiresAuth: true,
+              roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN],
+              requiresStaff: true
+            },
+          },
+          {
             path: 'analytics',
             name: 'staff-analytics',
             component: () => import('../modules/staff/views/StaffAnalyticsView.vue'),
