@@ -5,6 +5,7 @@
 
 import { ref, reactive, computed, onUnmounted, type Ref } from 'vue'
 import type { WBRemoteCursor, WBToolType } from '../types/winterboard'
+import { registerAuthDeathCleanup, isAuthDead } from '@/core/auth/onAuthDeath'
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -308,6 +309,12 @@ export function usePresence(options: UsePresenceOptions) {
   let lastViewportSentAt = 0
   let staleCleanupTimer: ReturnType<typeof setInterval> | null = null
 
+  // P0.0: Register cleanup on auth death — disconnect immediately, no reconnect
+  const _unregisterAuthDeath = registerAuthDeathCleanup(() => {
+    reconnectAborted = true
+    disconnect()
+  })
+
   // ── Computed ────────────────────────────────────────────────────────────
 
   const isConnected = computed(() => connectionState.value === 'connected')
@@ -319,6 +326,13 @@ export function usePresence(options: UsePresenceOptions) {
   // ── WebSocket connection ────────────────────────────────────────────────
 
   async function connect(sessionId: string): Promise<void> {
+    // P0.0: Don't connect if auth is dead — prevents stale token reconnect storms
+    if (isAuthDead()) {
+      console.warn(LOG_PREFIX, 'Auth dead, skipping connect')
+      connectionState.value = 'disconnected'
+      return
+    }
+
     // Skip WS connection if presence is not available (e.g. Cloudflare Pages)
     if (!isPresenceAvailable()) {
       console.info(LOG_PREFIX, 'Presence unavailable (no WS backend configured). Skipping.')
@@ -334,9 +348,15 @@ export function usePresence(options: UsePresenceOptions) {
       return
     }
 
+    // P1.1 FIX: Only reset reconnect state on FRESH connect (user-initiated),
+    // not on reconnect from scheduleReconnect(). reconnectAttempts is reset
+    // in onopen after successful connection — not here.
+    const isReconnecting = connectionState.value === 'reconnecting'
     disconnect()
     reconnectAborted = false
-    reconnectAttempts = 0
+    if (!isReconnecting) {
+      reconnectAttempts = 0
+    }
     connectionState.value = 'connecting'
 
     const tokenParam = `?token=${encodeURIComponent(token)}`
@@ -455,9 +475,14 @@ export function usePresence(options: UsePresenceOptions) {
   }
 
   async function scheduleReconnect(sessionId: string): Promise<void> {
-    if (reconnectAborted) return
+    if (reconnectAborted || isAuthDead()) return
     connectionState.value = 'reconnecting'
     reconnectAttempts++
+
+    // P2.0: Track reconnect attempts for storm detection
+    import('@/utils/telemetryAgent').then(
+      m => m.trackEvent('ws.reconnect', { type: 'winterboard', sessionId, attempt: reconnectAttempts }),
+    ).catch(() => {})
 
     const delay = jitter(Math.min(
       RECONNECT_BASE_MS * Math.pow(2, reconnectAttempts - 1),
@@ -736,6 +761,7 @@ export function usePresence(options: UsePresenceOptions) {
 
   onUnmounted(() => {
     disconnect()
+    _unregisterAuthDeath()
   })
 
   // ── Return ────────────────────────────────────────────────────────────

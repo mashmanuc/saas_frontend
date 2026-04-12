@@ -50,6 +50,7 @@ import { ref, readonly, watch, type Ref } from 'vue'
 import type { RecordOperationRequest } from '../types/replay'
 import { recordOperationsBatch, createSnapshot } from '../api/replay'
 import { isCircuitBreakerOpen } from '@/utils/apiClient'
+import { registerAuthDeathCleanup, isAuthDead } from '@/core/auth/onAuthDeath'
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -95,6 +96,13 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
   let circuitBreakerTimer: ReturnType<typeof setTimeout> | null = null
   let circuitOpen = false
   let _destroyed = false  // guard against zombie usage after destroy()
+
+  // P0.0: Register cleanup on auth death — try beacon flush, then destroy
+  const _unregisterAuthDeath = registerAuthDeathCleanup(() => {
+    if (_destroyed) return
+    flushViaSendBeacon()  // best-effort save remaining ops
+    destroy()
+  })
 
   /**
    * Record a single board operation into the buffer.
@@ -179,7 +187,7 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
   let _totalFlushedOps = 0
 
   async function flush(): Promise<void> {
-    if (_destroyed) return
+    if (_destroyed || isAuthDead()) return
     const sid = options.sessionId.value
     if (!sid) {
       if (buffer.length > 0) console.warn(`[WB:Recorder] flush skipped: no sessionId (${buffer.length} ops in buffer)`)
@@ -378,6 +386,7 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
     }
     circuitOpen = false
     consecutiveFailures = 0
+    _unregisterAuthDeath()
   }
 
   /**

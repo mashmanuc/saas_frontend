@@ -1013,6 +1013,17 @@ async function handleStopRecording(): Promise<void> {
     _recordingDoneTimer = window.setTimeout(() => { showRecordingDonePrompt.value = false }, 15000)
   } catch (e) {
     console.error('[WBSoloRoom] Failed to stop recording:', e)
+    // P0.5: Local fallback — if API unreachable (auth dead, CORS, network), still stop UI
+    isManualRecording.value = false
+    recordingStartedAt.value = null
+    recordingBrokenWarning.value = true
+    // P2.0: Track stop-recording failures for CORS/auth monitoring
+    import('@/utils/telemetryAgent').then(
+      m => m.trackEvent('recording.stop.failed', { sessionId: sid, error: String(e) }),
+    ).catch(() => {})
+    try {
+      localStorage.setItem(`wb:recording:${sid}:stopped_locally`, String(Date.now()))
+    } catch { /* localStorage may be full or blocked */ }
   } finally {
     isRecordingLoading.value = false
   }
@@ -2486,10 +2497,31 @@ onMounted(async () => {
           updated_at: detail.updated_at,
         })
       }
+      // Cleanup stale localStorage markers from previous sessions (P0.5 fallback)
+      try {
+        const keysToRemove: string[] = []
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i)
+          if (key?.startsWith('wb:recording:') && key.endsWith(':stopped_locally')) {
+            const ts = Number(localStorage.getItem(key))
+            if (ts && Date.now() - ts > 86_400_000) keysToRemove.push(key)  // >24h
+          }
+        }
+        keysToRemove.forEach(k => localStorage.removeItem(k))
+      } catch { /* localStorage may be unavailable */ }
+
       // A.1: hydrate recording state from session detail
       if (detail.recording_started_seq != null && detail.recording_stopped_seq == null) {
-        isManualRecording.value = true
-        recordingStartedAt.value = detail.recording_started_at ?? null
+        // P1.2: Check if recording was stopped locally (P0.5 fallback) but not on backend
+        const stoppedLocally = localStorage.getItem(`wb:recording:${id}:stopped_locally`)
+        if (stoppedLocally) {
+          // Frontend stopped recording locally during network death — show warning, don't resume recording UI
+          localStorage.removeItem(`wb:recording:${id}:stopped_locally`)
+          recordingBrokenWarning.value = true
+        } else {
+          isManualRecording.value = true
+          recordingStartedAt.value = detail.recording_started_at ?? null
+        }
       }
       isReplayFrozen.value = detail.is_replay_frozen ?? false
 

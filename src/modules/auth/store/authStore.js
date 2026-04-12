@@ -557,6 +557,12 @@ export const useAuthStore = defineStore('auth', {
           this.access = await tokenVault.encrypt(res.access)
           storage.set('auth_session', '1')
 
+          // P0.0: Auth alive again — reset death flag so subsystems can re-register
+          try {
+            const { resetAuthDeath } = await import('../../../core/auth/onAuthDeath')
+            resetAuthDeath()
+          } catch { /* not critical */ }
+
           if (!this.csrfToken) {
             await this.ensureCsrfToken()
           }
@@ -738,12 +744,17 @@ export const useAuthStore = defineStore('auth', {
       this._bootstrapPromise = null
       this.sessionExpiredNotified = false
 
-      // БАГ №2 FIX: відключаємо WS при logout щоб уникнути отримання чужих подій
+      // P0.0: Atomic auth death — зупиняє ВСІ підсистеми (gateway WS, winterboard WS,
+      // replay recorder, apiClient retry queues) одним викликом.
       try {
-        const { websocketService } = await import('../../../services/websocket')
-        websocketService.disconnect()
+        const { onAuthDeath } = await import('../../../core/auth/onAuthDeath')
+        onAuthDeath()
       } catch (_e) {
-        // WS може не бути ініціалізований — це нормально
+        // onAuthDeath може не бути ініціалізований — fallback на прямий disconnect
+        try {
+          const { websocketService } = await import('../../../services/websocket')
+          websocketService.disconnect()
+        } catch { /* ignore */ }
       }
 
       // Phase 29: очищення TanStack Query cache при logout — запобігає витоку даних

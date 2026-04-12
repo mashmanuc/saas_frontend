@@ -2,6 +2,7 @@ import { realtimeService } from './realtime'
 import { useCalendarWeekStore } from '@/modules/booking/stores/calendarWeekStore'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { WebSocketReconnectManager } from './websocketReconnect'
+import { registerAuthDeathCleanup } from '@/core/auth/onAuthDeath'
 import type { RealtimeNotificationEvent } from '@/types/notifications'
 
 export interface WebSocketEvent {
@@ -59,7 +60,10 @@ class WebSocketService {
 
   init() {
     if (this.initialized) return
-    
+
+    // P0.0: Register gateway WS cleanup on auth death
+    registerAuthDeathCleanup(() => { this.disconnect() })
+
     // NOTE: Do NOT call realtimeService.init() here!
     // realtimeStore.js already initializes realtimeService with the correct
     // tokenProvider (awaits bootstrap, filters '__cookie__' placeholder).

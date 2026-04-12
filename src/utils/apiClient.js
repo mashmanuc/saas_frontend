@@ -2,6 +2,7 @@ import axios from 'axios'
 import { useAuthStore } from '../modules/auth/store/authStore'
 import { useLoaderStore } from '../stores/loaderStore'
 import { notifyError, notifyWarning } from './notify'
+import { isAuthDead } from '../core/auth/onAuthDeath'
 
 // Debug recorder (only in debug mode)
 let debugRecorder = null
@@ -152,6 +153,16 @@ api.interceptors.request.use(
     if (_cbOpen && !config.meta?.bypassCircuitBreaker) {
       if (!config.meta?.skipLoader) loader.stop()
       return Promise.reject(new axios.Cancel('[apiClient] Circuit breaker open — request blocked'))
+    }
+
+    // P0.0: Auth death guard — reject non-auth requests after forceLogout
+    // Prevents zombie retry storms from replay recorder, polling, etc.
+    // Auth endpoints (login, register, refresh, csrf) bypass — needed for recovery
+    const _url = config.url || ''
+    const _isAuthEndpoint = _url.includes('/auth/')
+    if (isAuthDead() && !_isAuthEndpoint && !config.meta?.bypassAuthDeath) {
+      if (!config.meta?.skipLoader) loader.stop()
+      return Promise.reject(new axios.Cancel('[apiClient] Auth dead — request blocked'))
     }
 
     // Пропускаємо loader для фонових запитів (polling, тощо)
@@ -321,6 +332,10 @@ api.interceptors.response.use(
         }
 
         flushRefreshQueue(null, newAccess)
+        // P2.0: Track refresh success for fail rate calculation
+        import('./telemetryAgent').then(
+          m => m.trackEvent('auth.refresh.success'),
+        ).catch(() => {})
         // Phase 1.3: Cookie auto-sent with retry, no Authorization header needed
         // FIX: Позначаємо retry-запит щоб request interceptor не робив зайвий loader.start()
         // (loader.stop() для оригінального запиту вже відбувся вище)
@@ -330,6 +345,10 @@ api.interceptors.response.use(
       } catch (refreshError) {
         flushRefreshQueue(refreshError, null)
         const refreshStatus = refreshError?.response?.status
+        // P2.0: Track refresh failures for cascade detection
+        import('./telemetryAgent').then(
+          m => m.trackEvent('auth.refresh.fail', { status: refreshStatus }),
+        ).catch(() => {})
         // If refresh is rate-limited, do not destroy session state.
         // Let the original request fail; next user action can retry.
         if (refreshStatus === 429) {
