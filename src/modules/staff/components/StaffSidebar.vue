@@ -132,6 +132,15 @@
           <span v-if="!collapsed" class="nav-label">{{ $t('staff.sidebar.health') }}</span>
         </router-link>
         <router-link
+          to="/staff/health/realtime"
+          class="nav-item"
+          :class="{ active: route.path === '/staff/health/realtime' }"
+          :title="collapsed ? 'Realtime' : undefined"
+        >
+          <Activity class="nav-icon-svg" :size="18" />
+          <span v-if="!collapsed" class="nav-label">Realtime</span>
+        </router-link>
+        <router-link
           v-if="userRole === 'superadmin' || userRole === 'SUPERADMIN'"
           to="/staff/subscription-plans"
           class="nav-item"

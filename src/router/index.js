@@ -855,6 +855,16 @@ const routes = [
               requiresStaff: true
             },
           },
+          {
+            path: 'health/realtime',
+            name: 'staff-cascade-health',
+            component: () => import('../modules/staff/views/StaffCascadeHealthView.vue'),
+            meta: {
+              requiresAuth: true,
+              roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN],
+              requiresStaff: true
+            },
+          },
           // P0 FIX: Operator Activity Console was dead code — now exposed under /staff/operator
           {
             path: 'operator',
