@@ -290,5 +290,6 @@ export function useReplay(sessionId: string, publicToken?: string) {
     timelineIncomplete,
     loadMarkers,
     destroy,
+    getOperationAt: (idx: number) => engine.value?.getOperationAt(idx) ?? null,
   }
 }
