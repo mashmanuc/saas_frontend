@@ -1,0 +1,139 @@
+
+<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 2rem 0; min-height: 340px;">
+  <svg id="eyeSvg" width="320" height="200" viewBox="0 0 320 200" style="cursor:pointer; overflow:visible;" onclick="sendPrompt('Відтворити відео')">
+    <defs>
+      <radialGradient id="irisGrad" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#5DCAA5"/>
+        <stop offset="60%" stop-color="#1D9E75"/>
+        <stop offset="100%" stop-color="#085041"/>
+      </radialGradient>
+      <radialGradient id="pupilGrad" cx="40%" cy="35%" r="60%">
+        <stop offset="0%" stop-color="#3C3C3C"/>
+        <stop offset="100%" stop-color="#111"/>
+      </radialGradient>
+      <clipPath id="eyeShape">
+        <path d="M10 100 Q80 20 160 20 Q240 20 310 100 Q240 180 160 180 Q80 180 10 100 Z"/>
+      </clipPath>
+      <filter id="shadow">
+        <feDropShadow dx="0" dy="3" stdDeviation="8" flood-color="#1D9E75" flood-opacity="0.3"/>
+      </filter>
+    </defs>
+
+    <!-- Sclera (біле ока) -->
+    <path d="M10 100 Q80 20 160 20 Q240 20 310 100 Q240 180 160 180 Q80 180 10 100 Z"
+          fill="white" filter="url(#shadow)"/>
+
+    <!-- Iris + pupil group (рухається) -->
+    <g id="eyeball" clip-path="url(#eyeShape)">
+      <!-- Iris -->
+      <circle id="iris" cx="160" cy="100" r="52" fill="url(#irisGrad)"/>
+      <!-- Iris texture rings -->
+      <circle id="irisRing1" cx="160" cy="100" r="42" fill="none" stroke="#0F6E56" stroke-width="1" opacity="0.4"/>
+      <circle id="irisRing2" cx="160" cy="100" r="32" fill="none" stroke="#085041" stroke-width="0.8" opacity="0.3"/>
+      <!-- Pupil -->
+      <circle id="pupil" cx="160" cy="100" r="22" fill="url(#pupilGrad)"/>
+      <!-- Play triangle всередині зіниці -->
+      <g id="playIcon">
+        <polygon id="playTri" points="152,89 152,111 174,100" fill="white" opacity="0.92"/>
+      </g>
+      <!-- Glint highlight -->
+      <ellipse id="glint" cx="148" cy="88" rx="7" ry="4.5" fill="white" opacity="0.7" transform="rotate(-20 148 88)"/>
+    </g>
+
+    <!-- Eyelid outline (поверх) -->
+    <path d="M10 100 Q80 20 160 20 Q240 20 310 100 Q240 180 160 180 Q80 180 10 100 Z"
+          fill="none" stroke="#2C2C2A" stroke-width="3.5" stroke-linecap="round"/>
+
+    <!-- Upper eyelid crease -->
+    <path d="M30 80 Q160 0 290 80" fill="none" stroke="#444441" stroke-width="1.5" opacity="0.3" stroke-linecap="round"/>
+
+    <!-- Lashes top -->
+    <line x1="70"  y1="42" x2="60"  y2="26" stroke="#2C2C2A" stroke-width="2.2" stroke-linecap="round"/>
+    <line x1="100" y1="28" x2="95"  y2="11" stroke="#2C2C2A" stroke-width="2.2" stroke-linecap="round"/>
+    <line x1="132" y1="21" x2="130" y2="4"  stroke="#2C2C2A" stroke-width="2.2" stroke-linecap="round"/>
+    <line x1="162" y1="20" x2="162" y2="2"  stroke="#2C2C2A" stroke-width="2.2" stroke-linecap="round"/>
+    <line x1="192" y1="22" x2="194" y2="4"  stroke="#2C2C2A" stroke-width="2.2" stroke-linecap="round"/>
+    <line x1="222" y1="29" x2="227" y2="12" stroke="#2C2C2A" stroke-width="2.2" stroke-linecap="round"/>
+    <line x1="250" y1="44" x2="260" y2="28" stroke="#2C2C2A" stroke-width="2.2" stroke-linecap="round"/>
+
+    <!-- Lashes bottom -->
+    <line x1="80"  y1="157" x2="70"  y2="172" stroke="#2C2C2A" stroke-width="1.8" stroke-linecap="round" opacity="0.7"/>
+    <line x1="115" y1="172" x2="110" y2="188" stroke="#2C2C2A" stroke-width="1.8" stroke-linecap="round" opacity="0.7"/>
+    <line x1="162" y1="179" x2="162" y2="196" stroke="#2C2C2A" stroke-width="1.8" stroke-linecap="round" opacity="0.7"/>
+    <line x1="208" y1="172" x2="214" y2="188" stroke="#2C2C2A" stroke-width="1.8" stroke-linecap="round" opacity="0.7"/>
+    <line x1="240" y1="157" x2="250" y2="172" stroke="#2C2C2A" stroke-width="1.8" stroke-linecap="round" opacity="0.7"/>
+
+    <!-- Eyebrow -->
+    <path d="M55 10 Q160 -18 265 10" fill="none" stroke="#2C2C2A" stroke-width="4" stroke-linecap="round" opacity="0.75"/>
+  </svg>
+
+  <p style="margin-top:1.2rem; font-size:14px; color:var(--color-text-secondary); font-family:var(--font-sans);">Натисни, щоб відтворити ▶</p>
+</div>
+
+<script>
+const svg = document.getElementById('eyeSvg');
+const iris = document.getElementById('iris');
+const irisRing1 = document.getElementById('irisRing1');
+const irisRing2 = document.getElementById('irisRing2');
+const pupil = document.getElementById('pupil');
+const playTri = document.getElementById('playTri');
+const glint = document.getElementById('glint');
+
+const CENTER_X = 160;
+const CENTER_Y = 100;
+const MAX_MOVE = 22;
+
+function moveTo(tx, ty) {
+  const dx = tx - CENTER_X;
+  const dy = ty - CENTER_Y;
+  const dist = Math.sqrt(dx*dx + dy*dy);
+  const limit = Math.min(dist, MAX_MOVE);
+  const angle = Math.atan2(dy, dx);
+  const ox = Math.cos(angle) * limit;
+  const oy = Math.sin(angle) * limit;
+
+  const nx = CENTER_X + ox;
+  const ny = CENTER_Y + oy;
+
+  iris.setAttribute('cx', nx);
+  iris.setAttribute('cy', ny);
+  irisRing1.setAttribute('cx', nx);
+  irisRing1.setAttribute('cy', ny);
+  irisRing2.setAttribute('cx', nx);
+  irisRing2.setAttribute('cy', ny);
+  pupil.setAttribute('cx', nx);
+  pupil.setAttribute('cy', ny);
+
+  const px = nx - 8;
+  const py = ny - 11;
+  playTri.setAttribute('points', `${px},${py+0} ${px},${py+22} ${px+22},${py+11}`);
+
+  glint.setAttribute('cx', nx - 12 + ox*0.15);
+  glint.setAttribute('cy', ny - 12 + oy*0.15);
+}
+
+document.addEventListener('mousemove', (e) => {
+  const rect = svg.getBoundingClientRect();
+  const scaleX = 320 / rect.width;
+  const scaleY = 200 / rect.height;
+  const mx = (e.clientX - rect.left) * scaleX;
+  const my = (e.clientY - rect.top) * scaleY;
+  moveTo(mx, my);
+});
+
+// fallback: idle animation if no mouse
+let angle = 0;
+let idleActive = true;
+document.addEventListener('mousemove', () => { idleActive = false; });
+
+function idle() {
+  if (idleActive) {
+    angle += 0.012;
+    const tx = CENTER_X + Math.cos(angle) * 14;
+    const ty = CENTER_Y + Math.sin(angle * 0.7) * 8;
+    moveTo(tx, ty);
+  }
+  requestAnimationFrame(idle);
+}
+idle();
+</script>

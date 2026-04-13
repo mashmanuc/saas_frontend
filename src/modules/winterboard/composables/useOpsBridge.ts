@@ -82,6 +82,7 @@ function mapToDiffOp(recordOp: RecordOperationRequest): WBDiffOp | null {
         kind: 'meta',
         page_id: page_id ?? '',
         id: (payload as any)?.page_id ?? page_id,
+        value: { type: 'page_delete', page_id: page_id ?? '' },
       }
     case 'clear_page':
       return {
