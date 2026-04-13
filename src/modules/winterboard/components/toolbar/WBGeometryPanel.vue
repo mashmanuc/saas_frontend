@@ -37,22 +37,24 @@
         {{ t('winterboard.geometry.click_hint') }}
       </div>
 
-      <!-- Presets separator -->
-      <div class="wb-geo-panel__sep" />
-      <div class="wb-geo-panel__title">{{ t('winterboard.geometry.presets') }}</div>
-      <div class="wb-geo-panel__shapes">
-        <button
-          v-for="preset in presetButtons"
-          :key="preset.id"
-          type="button"
-          class="wb-geo-panel__shape-btn wb-geo-panel__shape-btn--preset"
-          :disabled="presetPlaying"
-          @click="emit('run-preset', preset.id)"
-        >
-          <component :is="preset.icon" />
-          <span class="wb-geo-panel__shape-label">{{ preset.label }}</span>
-        </button>
-      </div>
+      <!-- Presets separator (hidden when no presets available) -->
+      <template v-if="presetButtons.length > 0">
+        <div class="wb-geo-panel__sep" />
+        <div class="wb-geo-panel__title">{{ t('winterboard.geometry.presets') }}</div>
+        <div class="wb-geo-panel__shapes">
+          <button
+            v-for="preset in presetButtons"
+            :key="preset.id"
+            type="button"
+            class="wb-geo-panel__shape-btn wb-geo-panel__shape-btn--preset"
+            :disabled="presetPlaying"
+            @click="emit('run-preset', preset.id)"
+          >
+            <component :is="preset.icon" />
+            <span class="wb-geo-panel__shape-label">{{ preset.label }}</span>
+          </button>
+        </div>
+      </template>
     </div>
   </Transition>
 </template>
@@ -123,9 +125,8 @@ const BuildIcon = {
   ]),
 }
 
-const presetButtons = [
-  { id: 'triangle_build', label: t('winterboard.geometry.preset_triangle'), icon: BuildIcon },
-  { id: 'pythagoras', label: t('winterboard.geometry.preset_pythagoras'), icon: PythagorasIcon },
+const presetButtons: { id: string; label: string; icon: any }[] = [
+  // Presets hidden — need polish before release
 ]
 </script>
 
