@@ -334,28 +334,38 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
     _skipNextSystemPaste = true
 
     const { strokes, assets } = internalClipboard.value
-    const OFFSET = 20
+    const OFFSET = 40
+    const pastedIds: string[] = []
 
     // Clone strokes with new IDs + offset
     for (const stroke of strokes) {
+      const newId = `stroke-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
       const newStroke: WBStroke = {
         ...JSON.parse(JSON.stringify(stroke)),
-        id: `stroke-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        id: newId,
       }
       // WBPoint has {x, y, ...} — offset each point
       newStroke.points = newStroke.points.map((p) => ({ ...p, x: p.x + OFFSET, y: p.y + OFFSET }))
       store.addStroke(newStroke)
+      pastedIds.push(newId)
     }
 
     // Clone assets with new IDs + offset
     for (const asset of assets) {
+      const newId = `${asset.type}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
       const newAsset: WBAsset = {
         ...JSON.parse(JSON.stringify(asset)),
-        id: `${asset.type}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        id: newId,
         x: asset.x + OFFSET,
         y: asset.y + OFFSET,
       }
       onAssetAdd(newAsset)
+      pastedIds.push(newId)
+    }
+
+    // Auto-select all pasted objects so user can move them as a group
+    if (pastedIds.length > 0) {
+      store.selectedIds = pastedIds
     }
 
     console.info('[BoardClipboard] Pasted internal', {
