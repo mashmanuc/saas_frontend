@@ -196,6 +196,11 @@ export const useAuthStore = defineStore('auth', {
 
         const { access, user } = res || {}
         this.setAuth({ access, user })
+        // P0.0: Reset auth death flag on successful login
+        try {
+          const { resetAuthDeath } = await import('../../../core/auth/onAuthDeath')
+          resetAuthDeath()
+        } catch { /* not critical */ }
         await this.postAuthInit()
         await this.ensureCsrfToken()
         this.startProactiveRefresh()
