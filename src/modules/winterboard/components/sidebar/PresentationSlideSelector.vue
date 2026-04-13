@@ -132,15 +132,12 @@ const effectiveItem = computed(() => {
   return { ...props.item, slides: lazySlides.value }
 })
 
-// If status='ready' but slides missing → display as 'pending'
+// Trust backend processing_status — slides load lazily via onMounted fetch or WS event.
+// Don't override 'ready' to 'pending' based on missing slides — that causes permanent "Обробка...".
 const effectiveStatus = computed(() => {
-  if (
-    sortedSlides.value.length === 0 &&
-    (props.item.processing_status === 'ready' || !props.item.processing_status)
-  ) {
-    return 'pending'
-  }
-  return props.item.processing_status ?? 'ready'
+  const status = props.item.processing_status || 'pending'
+  if (status === 'pending' || status === 'processing' || status === 'failed') return status
+  return 'ready'
 })
 
 // Load slides on mount if not present in props

@@ -52,6 +52,12 @@ export interface LibraryAsset {
   updated_at: string
   /** Phase 9 SSOT FK — ContentItem PK. null для старих активів без ContentItem. */
   content_item_id?: number | null
+  /** ContentItem processing status (pending|processing|ready|failed). */
+  processing_status?: string
+  /** Presentation slide count (from ContentItem). */
+  slide_count?: number | null
+  /** PDF/DOCX page count (from ContentItem). */
+  page_count?: number | null
 }
 
 // ─── Paginated list response (GET /library/assets/) ───────────────────────

@@ -170,10 +170,13 @@ export function useGroupSidebar(groupId: Ref<string | null>, folderId?: Ref<numb
             title: a.name,
             asset_category: mimeToCategory(a.content_type),
             thumbnail_url: a.thumbnail_url || a.cdn_url || null,
-            processing_status: a.status === 'active' ? 'ready' : 'pending',
+            processing_status: a.processing_status || (a.status === 'active' ? 'ready' : 'pending'),
+            slide_count: a.slide_count ?? undefined,
+            page_count: a.page_count ?? undefined,
             cdn_url: fallbackUrl,
           }
         })
+        startPolling()  // poll processing status for library items too
       }
     } catch {
       error.value = 'load_failed'
