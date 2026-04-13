@@ -443,6 +443,8 @@ function handleToolbarKeydown(event: KeyboardEvent): void {
   overflow: visible;
   max-height: 100vh;
   z-index: 20;
+  /* GeoBoard: anchor for geometry panel absolute positioning */
+  position: relative;
 }
 
 .wb-toolbar__group {

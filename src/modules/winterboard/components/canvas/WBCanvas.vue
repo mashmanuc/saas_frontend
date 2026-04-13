@@ -2442,10 +2442,18 @@ function handleKeydown(e: KeyboardEvent): void {
 
   // v5 A4: 'L' → switch to laser tool (single-key, no modifier, not in text input)
   if (e.key === 'l' && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
-    // Don't switch tool if editing text
     if (editingText.value) return
     e.preventDefault()
     emit('tool-change', 'laser')
+    return
+  }
+
+  // GeoBoard: 'G' (no modifier) → switch to geometry tool
+  if (e.key === 'g' && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
+    if (editingText.value) return
+    if (stickyEditingId.value) return
+    e.preventDefault()
+    emit('tool-change', 'geometry')
     return
   }
 
