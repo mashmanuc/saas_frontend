@@ -31,6 +31,12 @@
       </button>
     </div>
 
+    <!-- GeoBoard: Geometry shapes panel (visible when geometry tool active) -->
+    <WBGeometryPanel
+      :visible="currentTool === 'geometry'"
+      @create-shape="handleGeometryShape"
+    />
+
     <!-- Thickness Presets (B3: conditional — hidden for eraser/select) -->
     <Transition name="wb-collapse">
       <template v-if="showThickness">
@@ -184,6 +190,8 @@ import WBIconLaser from './icons/WBIconLaser.vue'
 import WBIconSticky from './icons/WBIconSticky.vue'
 import WBIconLock from './icons/WBIconLock.vue'
 import WBIconUnlock from './icons/WBIconUnlock.vue'
+import WBIconGeometry from './icons/WBIconGeometry.vue'
+import WBGeometryPanel from './WBGeometryPanel.vue'
 import WBThicknessPresets from './WBThicknessPresets.vue'
 import WBQuickPalette from './WBQuickPalette.vue'
 
@@ -260,6 +268,7 @@ const emit = defineEmits<{
   'unlock-selected': []
   'clear-page-request': []
   'youtube-insert': []
+  'geometry-shape-select': [shape: string, sides?: number]
 }>()
 
 // ─── i18n ───────────────────────────────────────────────────────────────────
@@ -285,6 +294,7 @@ const drawingTools: ToolDef[] = [
   { id: 'eraser', icon: WBIconEraser, shortcut: 'E' },
   { id: 'laser', icon: WBIconLaser, shortcut: 'F' },
   { id: 'sticky', icon: WBIconSticky, shortcut: 'S' },
+  { id: 'geometry', icon: WBIconGeometry, shortcut: 'G' },
 ]
 
 // ─── B3: Conditional visibility ─────────────────────────────────────────────
@@ -294,6 +304,11 @@ const COLOR_TOOLS: WBToolType[] = ['pen', 'highlighter', 'line', 'rectangle', 'c
 
 const showThickness = computed(() => THICKNESS_TOOLS.includes(props.currentTool))
 const showColorPalette = computed(() => COLOR_TOOLS.includes(props.currentTool))
+
+// GeoBoard: handle shape selection from geometry panel
+function handleGeometryShape(shape: string, sides?: number): void {
+  emit('geometry-shape-select', shape, sides)
+}
 
 // B5: Tooltip text — laser gets extra hint
 function toolTooltip(tool: ToolDef): string {

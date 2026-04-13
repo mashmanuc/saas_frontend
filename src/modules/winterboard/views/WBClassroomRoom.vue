@@ -270,6 +270,7 @@
           @zoom-change="handleZoomChange"
           @scroll-change="handleScrollChange"
           @presentation-expand="handlePresentationExpand"
+          @geometry-create="handleGeometryCreate"
         />
 
         <!-- Remote cursors -->
@@ -461,6 +462,7 @@ import { useClassroomSession } from '../composables/useClassroomSession'
 import { winterboardApi } from '../api/winterboardApi'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import type { WBStroke, WBAsset, WBToolType } from '../types/winterboard'
+import { createGeometryAsset } from '../composables/useGeometryCreation'
 
 // Components
 import WBCanvas from '../components/canvas/WBCanvas.vue'
@@ -975,6 +977,15 @@ function handleAssetAdd(asset: WBAsset): void {
 function handleAssetUpdate(asset: WBAsset): void {
   if (isDrawingDisabled.value) return
   store.updateAsset(asset)
+}
+
+// GeoBoard: create geometry asset at canvas position
+function handleGeometryCreate(x: number, y: number): void {
+  if (isDrawingDisabled.value) return
+  const asset = createGeometryAsset('triangle', x, y)
+  handleAssetAdd(asset)
+  store.selectItems([asset.id])
+  store.setTool('select')
 }
 
 function handleAssetDelete(assetId: string): void {

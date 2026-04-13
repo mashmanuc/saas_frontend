@@ -633,8 +633,9 @@
     --wb-brand-hover: #065f46;
     --wb-brand-dark: #064e3b;
     --wb-btn-hover: rgba(5, 150, 105, 0.08);
-    --wb-canvas-area-bg: #f0fdf4;
+    --wb-canvas-area-bg: #d5e0d8;
     --wb-canvas-bg: #ffffff;
+    --wb-page-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
     --wb-card-bg: #ffffff;
     --wb-danger-bg: rgba(239, 68, 68, 0.1);
     --wb-error: #ef4444;
@@ -667,8 +668,9 @@
     --wb-brand-hover: #6d28d9;
     --wb-brand-dark: #5b21b6;
     --wb-btn-hover: rgba(124, 58, 237, 0.08);
-    --wb-canvas-area-bg: #f8f7fd;
+    --wb-canvas-area-bg: #ddd8ec;
     --wb-canvas-bg: #ffffff;
+    --wb-page-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
     --wb-card-bg: #ffffff;
     --wb-danger-bg: rgba(220, 38, 38, 0.1);
     --wb-error: #dc2626;
@@ -702,6 +704,7 @@
     --wb-btn-hover: #334155;
     --wb-canvas-area-bg: #0f172a;
     --wb-canvas-bg: #1e293b;
+    --wb-page-shadow: 0 2px 16px rgba(0, 0, 0, 0.4);
     --wb-card-bg: #1e293b;
     --wb-danger-bg: rgba(239, 68, 68, 0.15);
     --wb-error: #f87171;

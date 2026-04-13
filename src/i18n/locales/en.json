@@ -6611,7 +6611,16 @@
       "redo": "Redo",
       "clear": "Clear",
       "laser": "Laser pointer",
-      "sticky": "Sticky note"
+      "sticky": "Sticky note",
+      "geometry": "Geometry"
+    },
+    "geometry": {
+      "title": "Geometry",
+      "triangle": "Triangle",
+      "circle": "Circle",
+      "polygon": "Polygon",
+      "sides": "Sides",
+      "click_hint": "Click to add to the board"
     },
     "sticky": {
       "placeholder": "Type here...",

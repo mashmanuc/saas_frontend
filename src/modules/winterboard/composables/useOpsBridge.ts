@@ -162,8 +162,9 @@ function mapToDiffOp(recordOp: RecordOperationRequest): WBDiffOp | null {
         value: { type: op_type, ...(payload ?? {}) },
       }
 
-    // ── UI-only events (skip) ────────────────────
+    // ── UI-only / lightweight events (skip diff, handled by replay recorder) ──
     case 'page_navigate':
+    case 'geometry_vertex_move':
       return null
 
     default:

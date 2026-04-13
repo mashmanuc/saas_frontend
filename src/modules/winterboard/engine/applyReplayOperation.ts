@@ -60,6 +60,8 @@ export interface ReplayStoreApi {
   sendToBack: (id: string) => void
   // Text annotation on objects (interaction layer, not rendering)
   setObjectText: (objectId: string, text: string | undefined, opts?: { silent?: boolean }) => void
+  // GeoBoard: granular vertex mutation
+  updateGeometryVertex?: (assetId: string, vertexIndex: number, point: { x: number; y: number }, opts?: { skipEmit?: boolean }) => void
   currentPageIndex: number
   pages: Array<{ id: string }>
 }
@@ -301,6 +303,20 @@ export function createReplayApplier() {
             store.updateAsset(value as unknown as WBAsset, { skipHistory: true })
           else if (op.op_type === 'remove' && itemId)
             store.deleteAsset(itemId, { skipHistory: true })
+        }
+        break
+      }
+
+      // GeoBoard: lightweight vertex move op (replay drag animation)
+      case 'geometry_vertex_move': {
+        const id = payload.id as string
+        const vertexIndex = payload.vertexIndex as number
+        const x = payload.x as number
+        const y = payload.y as number
+        if (!id || typeof vertexIndex !== 'number') break
+        // Apply via updateGeometryVertex if available, else fallback to updateAsset
+        if ('updateGeometryVertex' in store) {
+          (store as any).updateGeometryVertex(id, vertexIndex, { x, y }, { skipEmit: true })
         }
         break
       }

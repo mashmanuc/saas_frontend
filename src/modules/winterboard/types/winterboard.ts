@@ -25,6 +25,7 @@ export type WBToolType =
   | 'select'
   | 'laser'
   | 'sticky'
+  | 'geometry'
 
 // ─── Laser Pointer (v5 A4 — ephemeral, not persisted) ──────────────────────
 
@@ -131,7 +132,7 @@ export type ViewerSlide = WBViewerPage
 
 export interface WBAsset {
   id: string
-  type: 'image' | 'sticky' | 'audio_player' | 'video_player' | 'youtube_player' | 'document_viewer'
+  type: 'image' | 'sticky' | 'audio_player' | 'video_player' | 'youtube_player' | 'document_viewer' | 'geometry_2d'
   src: string
   x: number
   y: number
@@ -175,6 +176,8 @@ export interface WBAsset {
   pages?: WBViewerPage[]
   /** Display mode: compact (default) or expanded */
   viewerMode?: 'compact' | 'expanded'
+  // GeoBoard: 2D geometry params (present when type='geometry_2d')
+  geometryParams?: import('./geometry').Geometry2DParams
 }
 
 // Phase 10 P5: Lesson navigation marker — lightweight anchor in the replay timeline.

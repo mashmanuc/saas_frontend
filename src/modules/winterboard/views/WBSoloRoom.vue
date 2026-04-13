@@ -257,6 +257,7 @@
           @unlock-selected="handleUnlockSelected"
           @clear-page-request="handleClearPageRequest"
           @youtube-insert="showYouTubeModal = true"
+          @geometry-shape-select="handleGeometryShapeSelect"
         />
       </aside>
 
@@ -322,6 +323,7 @@
           @scroll-change="handleScrollChange"
           @presentation-expand="handlePresentationExpand"
           @audio-badge-click="handleAudioBadgeClick"
+          @geometry-create="handleGeometryCreate"
         />
 
         <!-- B6.3: Empty canvas hint — shown when page has no strokes/assets -->
@@ -853,6 +855,7 @@ import { winterboardApi } from '../api/winterboardApi'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { groupApi as learningGroupApi } from '@/modules/groups/api/groupApi'
 import type { WBStroke, WBAsset, WBToolType } from '../types/winterboard'
+import { createGeometryAsset } from '../composables/useGeometryCreation'
 
 // Components
 import WBCanvas from '../components/canvas/WBCanvas.vue'
@@ -1895,6 +1898,25 @@ function handleAssetAdd(asset: WBAsset): void {
 
 function handleAssetUpdate(asset: WBAsset): void {
   store.updateAsset(asset)
+}
+
+// GeoBoard: create geometry asset at canvas position
+const _geometryShape = ref<import('../types/geometry').Geometry2DShape>('triangle')
+const _geometrySides = ref(6)
+
+function handleGeometryShapeSelect(shape: string, sides?: number): void {
+  _geometryShape.value = shape as import('../types/geometry').Geometry2DShape
+  if (sides != null) _geometrySides.value = sides
+}
+
+function handleGeometryCreate(x: number, y: number): void {
+  const asset = createGeometryAsset(_geometryShape.value, x, y, {
+    sides: _geometrySides.value,
+  })
+  handleAssetAdd(asset)
+  // Auto-select and switch to select tool for immediate interaction
+  store.selectItems([asset.id])
+  store.setTool('select')
 }
 
 function handleAssetDelete(assetId: string): void {
