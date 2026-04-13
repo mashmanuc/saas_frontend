@@ -123,8 +123,10 @@ export function useKeyboard(
       return
     }
 
-    // Copy: Ctrl+C — DO NOT preventDefault, allow native clipboard event to propagate
+    // Copy: Ctrl+C — preventDefault to stop browser from clearing system clipboard.
+    // copySelected() writes a marker via navigator.clipboard.writeText().
     if (ctrl && !shift && code === 'KeyC' && !isEditableTarget(event)) {
+      event.preventDefault()
       callbacks.onCopy?.()
       return
     }
@@ -136,8 +138,9 @@ export function useKeyboard(
       return
     }
 
-    // Cut: Ctrl+X — DO NOT preventDefault, allow native clipboard event
+    // Cut: Ctrl+X — preventDefault to stop browser from clearing system clipboard.
     if (ctrl && !shift && code === 'KeyX' && !isEditableTarget(event)) {
+      event.preventDefault()
       callbacks.onCut?.()
       return
     }

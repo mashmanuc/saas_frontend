@@ -61,11 +61,34 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
   async function handlePaste(e: ClipboardEvent): Promise<void> {
     if (disabled?.()) return
 
-    // If pasteInternal() already handled this Ctrl+V, skip system clipboard
+    // If pasteInternal() already handled this Ctrl+V, check if system clipboard
+    // has real content (user copied externally after our board Ctrl+C).
     if (_skipNextSystemPaste) {
       _skipNextSystemPaste = false
-      e.preventDefault()
-      return
+
+      // Check if system clipboard has real content (not our internal marker)
+      const items = e.clipboardData?.items
+      let hasRealContent = false
+      if (items) {
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i]
+          if (item.kind === 'file' && item.type.startsWith('image/')) {
+            hasRealContent = true
+            break
+          }
+          if (item.kind === 'string' && item.type === 'text/plain') {
+            // Synchronous check not possible — but if text exists and is NOT our marker,
+            // we already pasted internal objects. Accept this trade-off: internal paste wins
+            // when both internal and text are available. Images always win.
+          }
+        }
+      }
+
+      if (!hasRealContent) {
+        e.preventDefault()
+        return
+      }
+      // System clipboard has an image — fall through to handle it
     }
 
     const items = e.clipboardData?.items
@@ -267,6 +290,11 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
   }
 
   // ─── Internal copy (board objects) ─────────────────────────
+
+  // Marker written to system clipboard so Ctrl+C on board objects
+  // doesn't clear user's previous system clipboard content.
+  const WB_CLIPBOARD_MARKER = '__wb_internal_copy__'
+
   function copySelected(): void {
     const selectedIds = store.selectedIds
     if (!selectedIds || selectedIds.length === 0) return
@@ -284,6 +312,13 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
       assets: JSON.parse(JSON.stringify(copiedAssets)),
       copiedAt: Date.now(),
     }
+
+    // Write marker to system clipboard so it doesn't get cleared.
+    // Native copy event fires after this (no preventDefault in useKeyboard).
+    // Without this, browser clears system clipboard on empty copy.
+    try {
+      navigator.clipboard.writeText(WB_CLIPBOARD_MARKER).catch(() => {})
+    } catch { /* clipboard API may not be available */ }
 
     console.info('[BoardClipboard] Copied', {
       strokes: copiedStrokes.length,
