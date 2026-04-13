@@ -6620,7 +6620,10 @@
       "circle": "Circle",
       "polygon": "Polygon",
       "sides": "Sides",
-      "click_hint": "Click to add to the board"
+      "click_hint": "Click to add to the board",
+      "presets": "Animations",
+      "preset_triangle": "Triangle build",
+      "preset_pythagoras": "Pythagorean theorem"
     },
     "sticky": {
       "placeholder": "Type here...",

@@ -36,6 +36,23 @@
       <div class="wb-geo-panel__hint">
         {{ t('winterboard.geometry.click_hint') }}
       </div>
+
+      <!-- Presets separator -->
+      <div class="wb-geo-panel__sep" />
+      <div class="wb-geo-panel__title">{{ t('winterboard.geometry.presets') }}</div>
+      <div class="wb-geo-panel__shapes">
+        <button
+          v-for="preset in presetButtons"
+          :key="preset.id"
+          type="button"
+          class="wb-geo-panel__shape-btn wb-geo-panel__shape-btn--preset"
+          :disabled="presetPlaying"
+          @click="emit('run-preset', preset.id)"
+        >
+          <component :is="preset.icon" />
+          <span class="wb-geo-panel__shape-label">{{ preset.label }}</span>
+        </button>
+      </div>
     </div>
   </Transition>
 </template>
@@ -49,12 +66,14 @@ const { t } = useI18n()
 
 interface Props {
   visible: boolean
+  presetPlaying?: boolean
 }
 
 defineProps<Props>()
 
 const emit = defineEmits<{
   'create-shape': [shape: Geometry2DShape, sides?: number]
+  'run-preset': [presetId: string]
 }>()
 
 const selectedShape = ref<Geometry2DShape>('triangle')
@@ -87,6 +106,27 @@ function handleShapeClick(shape: Geometry2DShape) {
   selectedShape.value = shape
   emit('create-shape', shape, shape === 'polygon' ? polygonSides.value : undefined)
 }
+
+// Preset icons
+const PythagorasIcon = {
+  render: () => h('svg', { width: 24, height: 24, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '1.5' }, [
+    h('polygon', { points: '4,20 4,8 16,20' }),
+    h('rect', { x: 1, y: 8, width: 3, height: 12, fill: 'rgba(239,68,68,0.3)', stroke: 'none' }),
+    h('rect', { x: 4, y: 20, width: 12, height: 3, fill: 'rgba(34,197,94,0.3)', stroke: 'none' }),
+  ]),
+}
+const BuildIcon = {
+  render: () => h('svg', { width: 24, height: 24, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '1.5' }, [
+    h('line', { x1: 4, y1: 20, x2: 12, y2: 4, 'stroke-dasharray': '3 2' }),
+    h('line', { x1: 12, y1: 4, x2: 20, y2: 20 }),
+    h('line', { x1: 20, y1: 20, x2: 4, y2: 20, 'stroke-dasharray': '3 2', opacity: 0.4 }),
+  ]),
+}
+
+const presetButtons = [
+  { id: 'triangle_build', label: t('winterboard.geometry.preset_triangle'), icon: BuildIcon },
+  { id: 'pythagoras', label: t('winterboard.geometry.preset_pythagoras'), icon: PythagorasIcon },
+]
 </script>
 
 <style scoped>
@@ -168,5 +208,21 @@ function handleShapeClick(shape: Geometry2DShape) {
   font-size: 11px;
   color: var(--wb-text-tertiary, #94a3b8);
   padding: 0 2px;
+}
+
+.wb-geo-panel__sep {
+  height: 1px;
+  background: var(--wb-border, #e2e8f0);
+  margin: 8px 0;
+}
+
+.wb-geo-panel__shape-btn--preset {
+  color: var(--wb-text-secondary, #64748b);
+  font-size: 12px;
+}
+
+.wb-geo-panel__shape-btn--preset:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

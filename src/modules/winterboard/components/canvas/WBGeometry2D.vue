@@ -208,6 +208,30 @@ const measurements = computed(() => {
   return null
 })
 
+// ─── Fill fade-in (Phase 2: AD-3 — 200ms fade when buildProgress reaches 1.0) ──
+
+const fillOpacity = ref(buildProgress.value >= 1.0 ? 1 : 0)
+let _fillFadeRaf = 0
+let _fillFadeStart = 0
+const FILL_FADE_MS = 200
+
+watch(fillVisible, (visible) => {
+  if (visible && fillOpacity.value < 1) {
+    // Start fade-in animation
+    _fillFadeStart = performance.now()
+    cancelAnimationFrame(_fillFadeRaf)
+    const animate = () => {
+      const elapsed = performance.now() - _fillFadeStart
+      fillOpacity.value = Math.min(1, elapsed / FILL_FADE_MS)
+      if (fillOpacity.value < 1) _fillFadeRaf = requestAnimationFrame(animate)
+    }
+    _fillFadeRaf = requestAnimationFrame(animate)
+  } else if (!visible) {
+    cancelAnimationFrame(_fillFadeRaf)
+    fillOpacity.value = 0
+  }
+})
+
 // ─── Fill config (polygon/triangle) ─────────────────────────────────────
 
 const fillConfig = computed(() => {
@@ -224,6 +248,7 @@ const fillConfig = computed(() => {
     stroke: 'transparent',
     strokeWidth: 0,
     listening: false,
+    opacity: fillOpacity.value,
   }
 })
 
@@ -269,6 +294,7 @@ const circleFillConfig = computed(() => ({
   stroke: 'transparent',
   strokeWidth: 0,
   listening: false,
+  opacity: fillOpacity.value,
 }))
 
 const circleStrokeConfig = computed(() => {

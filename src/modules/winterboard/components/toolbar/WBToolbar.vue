@@ -34,7 +34,9 @@
     <!-- GeoBoard: Geometry shapes panel (visible when geometry tool active) -->
     <WBGeometryPanel
       :visible="currentTool === 'geometry'"
+      :preset-playing="presetPlaying"
       @create-shape="handleGeometryShape"
+      @run-preset="handleRunPreset"
     />
 
     <!-- Thickness Presets (B3: conditional — hidden for eraser/select) -->
@@ -209,6 +211,8 @@ interface Props {
   hasSelection?: boolean
   hasLockedInSelection?: boolean
   canClearPage?: boolean
+  /** GeoBoard: preset is currently playing (locks interaction) */
+  presetPlaying?: boolean
   /** Responsive Phase 2 B3: Layout variant (INV-3: one toolbar, not three) */
   variant?: ToolbarVariant
 }
@@ -269,6 +273,7 @@ const emit = defineEmits<{
   'clear-page-request': []
   'youtube-insert': []
   'geometry-shape-select': [shape: string, sides?: number]
+  'run-preset': [presetId: string]
 }>()
 
 // ─── i18n ───────────────────────────────────────────────────────────────────
@@ -308,6 +313,10 @@ const showColorPalette = computed(() => COLOR_TOOLS.includes(props.currentTool))
 // GeoBoard: handle shape selection from geometry panel
 function handleGeometryShape(shape: string, sides?: number): void {
   emit('geometry-shape-select', shape, sides)
+}
+
+function handleRunPreset(presetId: string): void {
+  emit('run-preset', presetId)
 }
 
 // B5: Tooltip text — laser gets extra hint

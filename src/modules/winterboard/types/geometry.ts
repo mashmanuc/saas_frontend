@@ -91,6 +91,23 @@ export interface VertexMovePayload {
   y: number
 }
 
+// ─── Presets (Phase 2) ───────────────────────────────────────────────────
+
+export interface PresetOp {
+  op_type: string
+  payload: Record<string, unknown>
+  /** ms from preset start (absolute, NOT relative to previous op) */
+  relativeDelay: number
+  easing?: 'linear' | 'easeInOut'
+}
+
+export interface GeometryPreset {
+  id: string
+  name: string
+  description?: string
+  ops: PresetOp[]
+}
+
 // ─── Defaults ────────────────────────────────────────────────────────────
 
 export const GEOMETRY_DEFAULTS = {
