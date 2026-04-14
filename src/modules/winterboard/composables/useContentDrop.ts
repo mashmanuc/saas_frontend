@@ -261,10 +261,23 @@ export function useContentDrop(options: UseContentDropOptions) {
     }
 
     try {
-      const res = await learningContentApi.resolveDropMode({
-        content_item_id: payload.content_item_id,
-        extra: payload.extra || {},
-      })
+      // Retry on 429 (rate limit) — drag-and-drop can trigger burst requests
+      let res: any
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          res = await learningContentApi.resolveDropMode({
+            content_item_id: payload.content_item_id,
+            extra: payload.extra || {},
+          })
+          break
+        } catch (err: any) {
+          if (err?.response?.status === 429 && attempt < 2) {
+            await new Promise(r => setTimeout(r, 1000 * (attempt + 1)))
+            continue
+          }
+          throw err
+        }
+      }
       const response: ResolveDropResponse = (res as Record<string, unknown>).data
         ? ((res as Record<string, unknown>).data as ResolveDropResponse)
         : (res as unknown as ResolveDropResponse)

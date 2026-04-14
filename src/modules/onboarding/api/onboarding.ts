@@ -46,57 +46,57 @@ export interface ChecklistSummary {
 export const onboardingApi = {
   // Onboarding
   getProgress: async (): Promise<OnboardingProgress> => {
-    const response = await apiClient.get<OnboardingProgress>('/onboarding/progress/')
+    const response = await apiClient.get<OnboardingProgress>('/v1/onboarding/progress/')
     return response
   },
 
   getSteps: async (): Promise<OnboardingStep[]> => {
-    const response = await apiClient.get<OnboardingStep[]>('/onboarding/steps/')
+    const response = await apiClient.get<OnboardingStep[]>('/v1/onboarding/steps/')
     return response
   },
 
   completeStep: async (slug: string): Promise<OnboardingProgress> => {
     const response = await apiClient.post<OnboardingProgress>(
-      `/onboarding/steps/${slug}/complete/`
+      `/v1/onboarding/steps/${slug}/complete/`
     )
     return response
   },
 
   skipStep: async (slug: string): Promise<OnboardingProgress> => {
     const response = await apiClient.post<OnboardingProgress>(
-      `/onboarding/steps/${slug}/skip/`
+      `/v1/onboarding/steps/${slug}/skip/`
     )
     return response
   },
 
   dismissOnboarding: async (): Promise<OnboardingProgress> => {
-    const response = await apiClient.post<OnboardingProgress>('/onboarding/dismiss/')
+    const response = await apiClient.post<OnboardingProgress>('/v1/onboarding/dismiss/')
     return response
   },
 
   resetOnboarding: async (): Promise<OnboardingProgress> => {
-    const response = await apiClient.post<OnboardingProgress>('/onboarding/reset/')
+    const response = await apiClient.post<OnboardingProgress>('/v1/onboarding/reset/')
     return response
   },
 
   // Checklist
   getChecklist: async (): Promise<ChecklistItem[]> => {
-    const response = await apiClient.get<ChecklistItem[]>('/checklist/')
+    const response = await apiClient.get<ChecklistItem[]>('/v1/checklist/')
     return response
   },
 
   getChecklistByCategory: async (category: string): Promise<ChecklistItem[]> => {
-    const response = await apiClient.get<ChecklistItem[]>(`/checklist/${category}/`)
+    const response = await apiClient.get<ChecklistItem[]>(`/v1/checklist/${category}/`)
     return response
   },
 
   syncChecklist: async (): Promise<ChecklistSummary> => {
-    const response = await apiClient.post<ChecklistSummary>('/checklist/sync/')
+    const response = await apiClient.post<ChecklistSummary>('/v1/checklist/sync/')
     return response
   },
 
   getCompletionPercentage: async (): Promise<{ percentage: number }> => {
-    const response = await apiClient.get<{ percentage: number }>('/checklist/percentage/')
+    const response = await apiClient.get<{ percentage: number }>('/v1/checklist/percentage/')
     return response
   },
 }
