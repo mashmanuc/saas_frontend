@@ -288,6 +288,7 @@
           @delete="handlePageDelete($event)"
           @duplicate="handlePageDuplicate($event)"
           @reorder="(from: number, to: number) => store.reorderPages(from, to)"
+          @asset-drop="handleThumbnailAssetDrop"
         />
       </aside>
 
@@ -326,6 +327,22 @@
           @presentation-expand="handlePresentationExpand"
           @audio-badge-click="handleAudioBadgeClick"
           @geometry-create="handleGeometryCreate"
+          @doc-viewer-page-jump="openPageJumpInput"
+        />
+
+        <!-- Page jump overlay for DocumentViewer (double-click on page counter) -->
+        <input
+          v-if="pageJumpAssetId"
+          ref="pageJumpInputRef"
+          type="number"
+          class="wb-page-jump-input"
+          :min="1"
+          :max="pageJumpTotal"
+          :value="pageJumpCurrent + 1"
+          :style="pageJumpStyle"
+          @keydown.enter="submitPageJump"
+          @keydown.escape="pageJumpAssetId = null"
+          @blur="pageJumpAssetId = null"
         />
 
         <!-- B6.3: Empty canvas hint — shown when page has no strokes/assets -->
@@ -889,6 +906,7 @@ import { useFollowMode } from '../composables/useFollowMode'
 import { useLocking } from '../composables/useLocking'
 import { useAnnouncer } from '../composables/useAnnouncer'
 import { useContentDrop } from '../composables/useContentDrop'
+import { useToast } from '../composables/useToast'
 import { winterboardApi } from '../api/winterboardApi'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { groupApi as learningGroupApi } from '@/modules/groups/api/groupApi'
@@ -1560,6 +1578,9 @@ async function detectTutorGroup() {
   }
 }
 
+// Toast for thumbnail asset drop feedback
+const _thumbnailDropToast = useToast()
+
 // ── Content drop: D&D from sidebar onto canvas ──
 const contentDrop = useContentDrop({
   sessionId,
@@ -2048,6 +2069,63 @@ function handlePresentationExpand(asset: WBAsset): void {
   // TODO(PLAN_v4): Implement fullscreen presentation overlay (backlog)
 }
 
+// ─── Document Viewer page jump overlay ───────────────────────────────────────
+
+const pageJumpAssetId = ref<string | null>(null)
+const pageJumpInputRef = ref<HTMLInputElement | null>(null)
+
+const pageJumpCurrent = computed(() => {
+  if (!pageJumpAssetId.value) return 0
+  const asset = store.currentAssets.find(a => a.id === pageJumpAssetId.value)
+  return asset?.currentPage ?? 0
+})
+
+const pageJumpTotal = computed(() => {
+  if (!pageJumpAssetId.value) return 1
+  const asset = store.currentAssets.find(a => a.id === pageJumpAssetId.value)
+  return asset?.totalPages ?? 1
+})
+
+const pageJumpStyle = computed(() => {
+  if (!pageJumpAssetId.value) return {}
+  const asset = store.currentAssets.find(a => a.id === pageJumpAssetId.value)
+  if (!asset) return {}
+  const zoom = store.zoom || 1
+  const rect = canvasContainerRef.value?.getBoundingClientRect()
+  if (!rect) return {}
+  // Position over the footer center of the asset
+  const left = rect.left + (asset.x + asset.w / 2) * zoom - 40
+  const top = rect.top + (asset.y + asset.h - 16) * zoom - 12
+  return {
+    position: 'fixed' as const,
+    left: `${left}px`,
+    top: `${top}px`,
+    width: '80px',
+    zIndex: 2000,
+  }
+})
+
+function openPageJumpInput(assetId: string): void {
+  pageJumpAssetId.value = assetId
+  nextTick(() => {
+    const input = pageJumpInputRef.value
+    if (input) {
+      input.focus()
+      input.select()
+    }
+  })
+}
+
+function submitPageJump(e: Event): void {
+  const input = e.target as HTMLInputElement
+  const val = parseInt(input.value, 10)
+  if (!isNaN(val) && pageJumpAssetId.value) {
+    const clamped = Math.max(1, Math.min(val, pageJumpTotal.value))
+    store.updateDocViewerPage(pageJumpAssetId.value, clamped - 1) // 0-indexed
+  }
+  pageJumpAssetId.value = null
+}
+
 // ─── Audio interaction layer (INV I2: click only) ────────────────────────────
 
 function handleAudioBadgeClick(url: string): void {
@@ -2176,6 +2254,22 @@ function handlePageAdd(): void {
 
 function handlePageDuplicate(index: number): void {
   store.duplicatePage(index)
+}
+
+/** Drag asset from sidebar → drop on page thumbnail → add to that page (centered). */
+async function handleThumbnailAssetDrop(pageIndex: number, payload: import('../types/boardDrop').SidebarDragPayload): Promise<void> {
+  const asset = await contentDrop.resolveAsset(payload)
+  if (!asset) return
+
+  // Center asset on the target page
+  asset.x = Math.max(0, (store.pageWidth - (asset.w || 400)) / 2)
+  asset.y = Math.max(0, (store.pageHeight - (asset.h || 300)) / 2)
+
+  store.addAssetToPage(pageIndex, asset)
+
+  // UX feedback: toast with page number
+  const { showToast } = _thumbnailDropToast
+  showToast(t('winterboard.pages.assetAddedToPage', { n: pageIndex + 1 }) || `Додано на сторінку ${pageIndex + 1}`, 'success')
 }
 
 function handlePageDelete(index: number): void {
@@ -2695,6 +2789,29 @@ onMounted(async () => {
 
 // ── Keyboard shortcuts ──
 function onGlobalKeyDown(e: KeyboardEvent) {
+  // Document viewer keyboard navigation (works in edit mode)
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    const tag = (e.target as HTMLElement)?.tagName?.toLowerCase()
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') return
+    if ((e.target as HTMLElement)?.isContentEditable) return
+
+    const selectedId = store.selectedIds[0]
+    if (selectedId) {
+      const asset = store.currentAssets.find(a => a.id === selectedId)
+      if (asset?.type === 'document_viewer') {
+        e.preventDefault()
+        const cur = asset.currentPage ?? 0
+        const total = asset.totalPages ?? 0
+        const delta = e.shiftKey ? 10 : 1
+        const next = e.key === 'ArrowLeft'
+          ? Math.max(0, cur - delta)
+          : Math.min(total - 1, cur + delta)
+        if (next !== cur) store.updateDocViewerPage(selectedId, next)
+        return
+      }
+    }
+  }
+
   // A.4 (INV-X): у replay-режимі канвас read-only — блокуємо всі mutate-shortcuts
   if (mode.value === 'replay') {
     return
@@ -3462,6 +3579,29 @@ watch(() => store.workspaceName, (name) => {
   font-size: 14px;
   font-weight: 500;
   color: var(--wb-fg-secondary, #64748b);
+}
+
+/* ── Page jump input overlay (document viewer) ─────────────────────────────── */
+
+.wb-page-jump-input {
+  height: 28px;
+  padding: 2px 6px;
+  border: 2px solid var(--wb-primary, #3b82f6);
+  border-radius: 6px;
+  background: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--wb-fg, #0f172a);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  outline: none;
+  /* Hide number input arrows */
+  -moz-appearance: textfield;
+}
+.wb-page-jump-input::-webkit-inner-spin-button,
+.wb-page-jump-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 /* ── B6.2: Fade transition for canvas loader ──────────────────────────────── */

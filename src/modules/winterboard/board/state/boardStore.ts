@@ -1077,6 +1077,44 @@ export const useWBStore = defineStore('wb-board', {
       }
     },
 
+    /** Add asset to a specific page (used for drag-to-thumbnail). */
+    addAssetToPage(pageIndex: number, asset: WBAsset, opts?: { skipHistory?: boolean }): void {
+      const page = this.pages[pageIndex]
+      if (!page) return
+
+      if (page.assets.length >= 600) {
+        console.warn('[WB] Object limit reached (600) on page %d', pageIndex)
+        return
+      }
+
+      if (!opts?.skipHistory) {
+        const action: UndoAddAsset = {
+          type: 'addAsset',
+          pageIndex,
+          asset,
+          index: page.assets.length,
+        }
+        this.undoStack = trimStack([...this.undoStack, action])
+        this.redoStack = []
+      }
+
+      this.pages[pageIndex] = {
+        ...page,
+        assets: [...page.assets, asset],
+      }
+
+      this.markDirty()
+
+      if (this.mode === 'edit' && !opts?.skipHistory) {
+        _emitOperation({
+          op_type: 'asset_add',
+          page_id: page.id ?? '',
+          payload: { asset },
+          timestamp: Date.now(),
+        })
+      }
+    },
+
     updateAsset(asset: WBAsset, opts?: { skipHistory?: boolean }): void {
       const pageIndex = this.currentPageIndex
       const page = this.pages[pageIndex]
@@ -1112,6 +1150,24 @@ export const useWBStore = defineStore('wb-board', {
           timestamp: Date.now(),
         })
       }
+    },
+
+    /** Change document_viewer page without polluting undo stack. */
+    updateDocViewerPage(assetId: string, page: number): void {
+      const pageIdx = this.currentPageIndex
+      const pg = this.pages[pageIdx]
+      if (!pg) return
+      const idx = pg.assets.findIndex(a => a.id === assetId)
+      if (idx === -1) return
+      const asset = pg.assets[idx]
+      if (asset.type !== 'document_viewer') return
+      const clamped = Math.max(0, Math.min(page, (asset.totalPages ?? 1) - 1))
+      if (clamped === (asset.currentPage ?? 0)) return
+      const updated = { ...asset, currentPage: clamped }
+      const newAssets = [...pg.assets]
+      newAssets[idx] = updated
+      this.pages[pageIdx] = { ...pg, assets: newAssets }
+      this.markDirty()
     },
 
     /**

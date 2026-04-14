@@ -103,6 +103,7 @@
 import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { WBPage } from '../../types/winterboard'
+import { SIDEBAR_DRAG_MIME, type SidebarDragPayload } from '../../types/boardDrop'
 
 const { t } = useI18n()
 
@@ -126,6 +127,7 @@ const emit = defineEmits<{
   delete: [index: number]
   duplicate: [index: number]
   reorder: [fromIndex: number, toIndex: number]
+  'asset-drop': [pageIndex: number, payload: SidebarDragPayload]
 }>()
 
 // FIX: Use indexed Map instead of template ref array.
@@ -168,6 +170,19 @@ function handleDragLeave(): void {
 
 function handleDrop(index: number, e: DragEvent): void {
   e.preventDefault()
+
+  // Sidebar content drop → add asset to target page
+  const sidebarRaw = e.dataTransfer?.getData(SIDEBAR_DRAG_MIME)
+  if (sidebarRaw) {
+    try {
+      const payload: SidebarDragPayload = JSON.parse(sidebarRaw)
+      emit('asset-drop', index, payload)
+    } catch { /* ignore parse errors */ }
+    resetDrag()
+    return
+  }
+
+  // Page reorder drop
   const from = dragFromIndex.value
   if (from === null || from === index) {
     resetDrag()

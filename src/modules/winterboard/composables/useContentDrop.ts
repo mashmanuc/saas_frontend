@@ -349,8 +349,13 @@ export function useContentDrop(options: UseContentDropOptions) {
       const src = rawSrc.replace(/^\/media\/\/media\//, '/media/')
 
       if (boardType === 'document_viewer') {
-        const sizes = DEFAULT_BOARD_SIZES['document_viewer'] ?? { w: 420, h: 594 }
         const contentRef = board_object.content_ref
+        // Presentation = landscape (4:3), PDF/document = portrait (A4)
+        const isPresentation = contentRef?.content_type === 'presentation'
+          || payload.asset_category === 'presentation'
+        const sizes = isPresentation
+          ? { w: 640, h: 480 }
+          : (DEFAULT_BOARD_SIZES['document_viewer'] ?? { w: 420, h: 594 })
 
         if (!src) {
           console.warn('[WB:Drop] document_viewer has no src — skipping')
@@ -521,9 +526,132 @@ export function useContentDrop(options: UseContentDropOptions) {
     console.warn('[WB:Drop] Legacy asset category not supported without ContentItem:', category)
   }
 
+  /**
+   * Resolve sidebar drag payload → WBAsset (positioned at 0,0).
+   * Caller is responsible for positioning and adding to store.
+   * Used by: handleSidebarDrop (canvas drop) and thumbnail drop.
+   */
+  async function resolveAsset(payload: SidebarDragPayload): Promise<WBAsset | null> {
+    // Legacy fallback (no ContentItem FK)
+    if (!payload.content_item_id) {
+      const category = payload.asset_category
+      const src = payload.cdn_url || ''
+      const assetId = `legacy-${category}-${Date.now()}`
+
+      if (category === 'audio') {
+        const sizes = DEFAULT_BOARD_SIZES['audio_player']
+        return { id: assetId, type: 'audio_player', src, x: 0, y: 0, w: sizes.w, h: sizes.h, rotation: 0, locked: false, title: payload.title }
+      }
+      if (category === 'video') {
+        const sizes = DEFAULT_BOARD_SIZES['video_player']
+        return { id: assetId, type: 'video_player', src, x: 0, y: 0, w: sizes.w, h: sizes.h, rotation: 0, locked: false, title: payload.title }
+      }
+      if (category === 'image' && src) {
+        const dims = await getImageDimensions(src)
+        if (!dims.loaded) return null
+        return { id: assetId, type: 'image', src, x: 0, y: 0, w: dims.w, h: dims.h, rotation: 0, locked: false }
+      }
+      return null
+    }
+
+    try {
+      let res: any
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          res = await learningContentApi.resolveDropMode({
+            content_item_id: payload.content_item_id,
+            extra: payload.extra || {},
+          })
+          break
+        } catch (err: any) {
+          if (err?.response?.status === 429 && attempt < 2) {
+            await new Promise(r => setTimeout(r, 1000 * (attempt + 1)))
+            continue
+          }
+          throw err
+        }
+      }
+      const response: ResolveDropResponse = (res as Record<string, unknown>).data
+        ? ((res as Record<string, unknown>).data as ResolveDropResponse)
+        : (res as unknown as ResolveDropResponse)
+
+      const { board_object, drop_mode } = response
+      if (drop_mode === 'not_droppable') return null
+
+      const boardType = (board_object.type as string) || 'image'
+      const rawSrc = (board_object.src as string) || ''
+      const src = rawSrc.replace(/^\/media\/\/media\//, '/media/')
+
+      // YouTube
+      if (drop_mode === 'youtube_embed') {
+        const sizes = DEFAULT_BOARD_SIZES['youtube_player'] ?? { w: 640, h: 360 }
+        return {
+          id: `yt-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          type: 'youtube_player', src: (board_object.youtubeUrl as string) || src,
+          youtubeUrl: (board_object.youtubeUrl as string) || src,
+          x: 0, y: 0, w: sizes.w, h: sizes.h, rotation: 0, locked: false,
+          title: (board_object.title as string) || '',
+          thumbnail: (board_object.thumbnail as string) || '',
+        }
+      }
+
+      // SVG render
+      if (drop_mode === 'render_svg') {
+        const detail = await learningContentApi.getItemDetail(payload.content_item_id!)
+        let dataUrl: string
+        try { dataUrl = await renderContentToSvgDataUrl(detail) }
+        catch { dataUrl = generateFallbackSvg(detail.title) }
+        return {
+          id: `content-${detail.id}-${Date.now()}`, type: 'image', src: dataUrl,
+          x: 0, y: 0, w: MAX_ASSET_W, h: MAX_ASSET_H, rotation: 0, locked: false,
+        }
+      }
+
+      // Document viewer
+      if (boardType === 'document_viewer') {
+        const contentRef = board_object.content_ref
+        // Presentation = landscape (4:3), PDF/document = portrait (A4)
+        const isPresentation = contentRef?.content_type === 'presentation'
+          || payload.asset_category === 'presentation'
+        const sizes = isPresentation
+          ? { w: 640, h: 480 }
+          : (DEFAULT_BOARD_SIZES['document_viewer'] ?? { w: 420, h: 594 })
+        if (!src) return null
+        return {
+          id: `docviewer-${contentRef?.content_id ?? 0}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          type: 'document_viewer', src, x: 0, y: 0, w: sizes.w, h: sizes.h, rotation: 0, locked: false,
+          content_ref: contentRef ? { content_id: contentRef.content_id, content_type: contentRef.content_type as 'pdf' | 'document' | 'presentation' } : undefined,
+          currentPage: board_object.currentPage ?? 0, totalPages: board_object.totalPages ?? 0, viewerMode: 'compact',
+        }
+      }
+
+      // Generic (image/audio/video/pdf/presentation)
+      let sizes = DEFAULT_BOARD_SIZES[boardType] ?? { w: 400, h: 300 }
+      const isVisualType = boardType === 'image' || boardType === 'presentation' || boardType === 'pdf'
+      if (isVisualType && !src) return null
+      if (isVisualType && src && !src.startsWith('data:')) {
+        const dims = await getImageDimensions(src)
+        if (!dims.loaded) return null
+        sizes = { w: dims.w, h: dims.h }
+      }
+
+      const contentId = board_object.content_ref?.content_id ?? payload.content_item_id ?? 0
+      return {
+        id: `content-${contentId}-${Date.now()}`,
+        type: boardType as WBAsset['type'], src, x: 0, y: 0, w: sizes.w, h: sizes.h, rotation: 0, locked: false,
+        ...(boardType === 'audio_player' && { title: board_object.title as string | undefined, duration: board_object.duration as number | undefined }),
+        ...(boardType === 'video_player' && { title: board_object.title as string | undefined, duration: board_object.duration as number | undefined, thumbnail: board_object.thumbnail as string | undefined }),
+      }
+    } catch (e) {
+      console.error('[useContentDrop] resolveAsset failed:', e)
+      return null
+    }
+  }
+
   return {
     handleCanvasDrop,
     placeItemOnCanvas,
     handleSidebarDrop,  // Phase 3A
+    resolveAsset,       // Used by thumbnail drop
   }
 }

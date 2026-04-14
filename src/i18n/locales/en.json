@@ -6648,7 +6648,8 @@
       "navigation": "Page navigation",
       "previous": "Previous page",
       "next": "Next page",
-      "showAll": "Show all pages"
+      "showAll": "Show all pages",
+      "assetAddedToPage": "Added to page {n}"
     },
     "status": {
       "idle": "Idle",

@@ -2,8 +2,10 @@
   <v-group
     :config="groupConfig"
     @click="handleClick"
+    @dblclick="handleDblClick"
     @dragend="handleDragEnd"
     @transformend="handleTransformEnd"
+    @wheel="handleWheel"
   >
     <!-- Background frame -->
     <v-rect :config="frameConfig" />
@@ -76,6 +78,7 @@ const emit = defineEmits<{
   transformEnd: [id: string, w: number, h: number]
   pageChange: [id: string, page: number]
   expand: [asset: WBAsset]
+  pageJump: [id: string]
 }>()
 
 // ─── Constants ──────────────────────────────────────────────────────────────
@@ -421,5 +424,57 @@ function handleTransformEnd(e: { target: { width: () => number; height: () => nu
   const w = Math.max(200, node.width() * node.scaleX())
   const h = Math.max(200, node.height() * node.scaleY())
   emit('transformEnd', props.asset.id, Math.round(w), Math.round(h))
+}
+
+// ─── Scroll navigation (wheel = page turn) ────────────────────────────────
+
+let _wheelThrottled = false
+
+function handleWheel(e: any): void {
+  const evt = e.evt as WheelEvent
+  if (!evt) return
+  // Ctrl+wheel = canvas zoom — don't intercept
+  if (evt.ctrlKey || evt.metaKey) return
+
+  evt.preventDefault()
+  e.cancelBubble = true
+
+  if (_wheelThrottled) return
+  _wheelThrottled = true
+  setTimeout(() => { _wheelThrottled = false }, 120)
+
+  const cur = props.asset.currentPage ?? 0
+  const total = props.asset.totalPages ?? 0
+  const next = evt.deltaY > 0
+    ? Math.min(total - 1, cur + 1)
+    : Math.max(0, cur - 1)
+
+  if (next !== cur) {
+    emit('pageChange', props.asset.id, next)
+  }
+}
+
+// ─── Double-click on footer page counter → page jump input ────────────────
+
+function handleDblClick(e: any): void {
+  const node = e.target
+  const stage = node?.getStage?.()
+  if (!stage) return
+
+  const pointer = stage.getPointerPosition()
+  if (!pointer) return
+
+  const groupNode = node.findAncestor?.('Group') || node
+  const localPos = groupNode.getAbsoluteTransform().copy().invert().point(pointer)
+
+  const footerY = props.asset.h - FOOTER_H
+  // Click must be in footer area, near center (page counter)
+  if (localPos.y >= footerY) {
+    const centerX = props.asset.w / 2
+    if (Math.abs(localPos.x - centerX) < 50) {
+      e.cancelBubble = true
+      emit('pageJump', props.asset.id)
+    }
+  }
 }
 </script>

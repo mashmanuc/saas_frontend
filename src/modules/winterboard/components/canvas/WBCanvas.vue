@@ -70,6 +70,7 @@
             @drag-end="handleDocViewerDragEnd"
             @transform-end="handleDocViewerTransformEnd"
             @page-change="handleDocViewerPageChange"
+            @page-jump="(id: string) => emit('doc-viewer-page-jump', id)"
             @expand="handleDocViewerExpand"
           />
           <!-- GeoBoard: 2D geometry rendering -->
@@ -894,6 +895,8 @@ const emit = defineEmits<{
   'audio-badge-click': [url: string]
   // GeoBoard: geometry creation at canvas position
   'geometry-create': [x: number, y: number]
+  // DocumentViewer: double-click on page counter → open page jump input
+  'doc-viewer-page-jump': [assetId: string]
 }>()
 
 // ─── Refs ───────────────────────────────────────────────────────────────────
