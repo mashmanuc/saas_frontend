@@ -26,6 +26,7 @@ const BEACON_THROTTLE_MS = 500   // Min interval between beacon saves
 const FAILURE_COOLDOWN_MS = 60_000  // 60s cooldown after all retries exhausted (prevent server overload)
 const WARN_SIZE_BYTES = 8 * 1024 * 1024   // 8 MB — show warning
 const HARD_LIMIT_BYTES = 10 * 1024 * 1024 // 10 MB — block save
+const MAX_CONSECUTIVE_422 = 3      // P2.2: switch to stream-save-only after N consecutive 422s
 
 /** Returns approximate byte size of the serialized payload. */
 function estimatePayloadSizeBytes(payload: unknown): number {
@@ -107,6 +108,17 @@ export function useAutosave(
             store.rev = serverRev
           }
         }
+        // P2.2: Track consecutive 422s — ops validation failures
+        if (errStatus === 422) {
+          consecutive422++
+          if (consecutive422 >= MAX_CONSECUTIVE_422 && !diffDisabled) {
+            diffDisabled = true
+            console.warn('[WB:autosave] %d consecutive 422s — switching to stream-save only', consecutive422)
+            showToast(t('winterboard.autosave.diffDisabled'), 'warning')
+          }
+        } else {
+          consecutive422 = 0
+        }
         throw err
       }
     },
@@ -129,6 +141,8 @@ export function useAutosave(
   let retryCount = 0
   let destroyed = false
   let inCooldown = false  // True after all retries exhausted — prevents hammering dead server
+  let consecutive422 = 0  // P2.2: track consecutive 422 failures
+  let diffDisabled = false  // P2.2: true = stream-save only mode (diff path broken)
 
   const pendingOpsCount = opsQueue.pendingCount
 
@@ -247,9 +261,16 @@ export function useAutosave(
     try {
       const hasPendingOps = pendingOps.value.length > 0
 
+      // P2.2: If diff path is disabled, drop pending ops and force stream-save
+      if (diffDisabled && hasPendingOps) {
+        opsQueue.clear()
+        store.markDirty()
+      }
+
       // Strategy 1: Diff save (ops-based) — primary
+      // P2.2: Skip diff path if disabled after consecutive 422s
       let diffSucceeded = false
-      if (hasPendingOps) {
+      if (hasPendingOps && !diffDisabled) {
         const diffSuccess = await retryWithBackoff(async () => {
           try {
             return await performDiffSave()
@@ -325,6 +346,7 @@ export function useAutosave(
     store.setSyncError(null)
     saveCount.value++
     retryCount = 0
+    consecutive422 = 0  // P2.2: reset on success
 
     // Classroom sync: notify other participants about state change
     options?.onSaved?.()
@@ -340,6 +362,9 @@ export function useAutosave(
     store.setSyncError(message)
     lastError.value = message
     console.error('[WB:autosave]', message)
+
+    // P2.2: Show toast so user knows saving is temporarily broken
+    showToast(t('winterboard.autosave.saveFailed'), 'error')
 
     // Circuit breaker: cooldown after total failure to prevent server overload
     inCooldown = true
@@ -413,6 +438,9 @@ export function useAutosave(
       status.value = 'idle'
       store.setSyncStatus('idle')
       inCooldown = false
+      // P2.2: Re-enable diff path on reconnect (server may have recovered)
+      consecutive422 = 0
+      diffDisabled = false
       if (cooldownTimer) {
         clearTimeout(cooldownTimer)
         cooldownTimer = null

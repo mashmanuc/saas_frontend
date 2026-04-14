@@ -7124,7 +7124,9 @@
     "autosave": {
       "boardTooLarge": "Board is too large to save. Remove some elements or split the lesson into multiple boards.",
       "boardLargeWarning": "Board is almost full — saves may be slow.",
-      "localOnlyImages": "Some images were not saved (upload to server failed)."
+      "localOnlyImages": "Some images were not saved (upload to server failed).",
+      "diffDisabled": "Incremental save temporarily disabled. Changes are saved as full state.",
+      "saveFailed": "Save temporarily unavailable. Will retry in a minute."
     },
     "grid": {
       "toggleGrid": "Board grid",

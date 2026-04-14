@@ -88,7 +88,18 @@ export function useOpsQueue(options: UseOpsQueueOptions) {
       ackedSeq.value = result.ack
       options.onAck(result.ack, result.rev)
       retryCount = 0
-    } catch (err) {
+    } catch (err: any) {
+      const errStatus = err?.response?.status
+
+      // P2.2: 422 = ops validation failed — drop them (retrying malformed ops is pointless)
+      if (errStatus === 422) {
+        console.warn('[WB:opsQueue] 422 — dropping %d invalid ops', inFlight.value.length)
+        inFlight.value = []
+        options.onError(err)
+        retryCount = 0
+        return
+      }
+
       retryCount++
       // NACK: return all inFlight to pending
       pending.value = [...inFlight.value, ...pending.value]
