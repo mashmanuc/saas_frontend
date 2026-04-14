@@ -35,10 +35,6 @@
     <v-rect :config="nextBtnConfig" />
     <v-text :config="nextBtnTextConfig" />
 
-    <!-- Expand button (presentations only) -->
-    <v-rect v-if="isPresentation" :config="expandBtnConfig" />
-    <v-text v-if="isPresentation" :config="expandBtnTextConfig" />
-
     <!-- Lock indicator -->
     <v-text v-if="asset.locked" :config="lockConfig" />
   </v-group>
@@ -305,54 +301,24 @@ const pageCounterConfig = computed(() => ({
 }))
 
 // Next button
-const nextBtnConfig = computed(() => {
-  const rightOffset = isPresentation.value ? BTN_W + 16 : 8
-  return {
-    x: props.asset.w - BTN_W - rightOffset,
-    y: props.asset.h - FOOTER_H + 4,
-    width: BTN_W,
-    height: BTN_H,
-    fill: canGoNext.value ? '#e2e8f0' : '#f1f5f9',
-    cornerRadius: 3,
-    listening: true,
-  }
-})
-
-const nextBtnTextConfig = computed(() => {
-  const rightOffset = isPresentation.value ? BTN_W + 16 : 8
-  return {
-    x: props.asset.w - BTN_W - rightOffset,
-    y: props.asset.h - FOOTER_H + 4,
-    width: BTN_W,
-    height: BTN_H,
-    text: '\u25B6',
-    fontSize: 12,
-    fill: canGoNext.value ? '#334155' : '#cbd5e1',
-    align: 'center',
-    verticalAlign: 'middle',
-    listening: false,
-  }
-})
-
-// Expand button (presentations only)
-const expandBtnConfig = computed(() => ({
+const nextBtnConfig = computed(() => ({
   x: props.asset.w - BTN_W - 8,
   y: props.asset.h - FOOTER_H + 4,
   width: BTN_W,
   height: BTN_H,
-  fill: '#3b82f6',
+  fill: canGoNext.value ? '#e2e8f0' : '#f1f5f9',
   cornerRadius: 3,
   listening: true,
 }))
 
-const expandBtnTextConfig = computed(() => ({
+const nextBtnTextConfig = computed(() => ({
   x: props.asset.w - BTN_W - 8,
   y: props.asset.h - FOOTER_H + 4,
   width: BTN_W,
   height: BTN_H,
-  text: '\u26F6',
-  fontSize: 14,
-  fill: '#ffffff',
+  text: '\u25B6',
+  fontSize: 12,
+  fill: canGoNext.value ? '#334155' : '#cbd5e1',
   align: 'center',
   verticalAlign: 'middle',
   listening: false,
@@ -392,22 +358,11 @@ function handleClick(e: any): void {
     }
 
     // Next button
-    const nextRightOffset = isPresentation.value ? BTN_W + 16 : 8
-    const nextX = props.asset.w - BTN_W - nextRightOffset
+    const nextX = props.asset.w - BTN_W - 8
     if (localPos.x >= nextX && localPos.x <= nextX + BTN_W && canGoNext.value) {
       e.cancelBubble = true
       emit('pageChange', props.asset.id, (props.asset.currentPage ?? 0) + 1)
       return
-    }
-
-    // Expand button (presentations)
-    if (isPresentation.value) {
-      const expandX = props.asset.w - BTN_W - 8
-      if (localPos.x >= expandX && localPos.x <= expandX + BTN_W) {
-        e.cancelBubble = true
-        emit('expand', props.asset)
-        return
-      }
     }
   }
 
