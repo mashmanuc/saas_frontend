@@ -267,7 +267,7 @@
            UX FIX (2026-04-08): ховаємо панель якщо markers ще не додані —
            порожня панель "Розділів немає" плутала користувачів. -->
       <WBReplayChaptersSidebar
-        v-if="mode === 'replay' && sessionId && replayMarkers.length > 0"
+        v-if="mode === 'replay' && sessionId && replayMarkers.length > 0 && !isMobileDevice && (!isTabletDevice || activeReplaySidebar === 'chapters')"
         :markers="replayMarkers"
         :active-marker-id="replayActiveMarkerId"
         @seek="handleMarkerSeek"
@@ -724,16 +724,20 @@
       :load-state="(s) => store.loadSnapshot(s as Parameters<typeof store.loadSnapshot>[0])"
       :clear-state="resetBoardForReplay"
       :comment-points="commentPoints"
+      :show-chapters-toggle="(isMobileDevice || isTabletDevice) && replayMarkers.length > 0"
+      :show-comments-toggle="isMobileDevice || isTabletDevice"
       @exit="exitReplayMode"
       @operation="onReplayOperation"
       @start-state="onReplayStartState"
       @tick="onReplayTick"
       @seek-start="replayAudio.stopAudio()"
+      @toggle-chapters="onToggleChapters"
+      @toggle-comments="onToggleComments"
     />
 
-    <!-- Phase C: Replay comments sidebar -->
+    <!-- Phase C: Replay comments sidebar (desktop inline, tablet single-toggle) -->
     <WBReplayCommentsSidebar
-      v-if="mode === 'replay' && sessionId"
+      v-if="mode === 'replay' && sessionId && !isMobileDevice && (!isTabletDevice || activeReplaySidebar === 'comments')"
       class="wb-solo-room__comments-sidebar"
       :comments="replayCommentsList"
       :current-op-index="replayCurrentOpIndex"
@@ -745,6 +749,38 @@
       @delete="onCommentDelete"
       @submit="onCommentSubmit"
     />
+
+    <!-- R2: Mobile bottom-sheet for chapters -->
+    <WBBottomSheet
+      :is-open="showChaptersSheet && isMobileDevice"
+      :title="t('replay.chaptersTitle', 'Розділи уроку')"
+      @close="showChaptersSheet = false"
+    >
+      <WBReplayChaptersSidebar
+        :markers="replayMarkers"
+        :active-marker-id="replayActiveMarkerId"
+        @seek="(m) => { handleMarkerSeek(m); showChaptersSheet = false }"
+      />
+    </WBBottomSheet>
+
+    <!-- R2: Mobile bottom-sheet for comments -->
+    <WBBottomSheet
+      :is-open="showCommentsSheet && isMobileDevice"
+      :title="t('winterboard.replay.comments.title', 'Коментарі')"
+      @close="showCommentsSheet = false"
+    >
+      <WBReplayCommentsSidebar
+        :comments="replayCommentsList"
+        :current-op-index="replayCurrentOpIndex"
+        :can-comment="!!authStore.user"
+        :current-user-id="authStore.user?.id ?? null"
+        :session-owner-id="store.ownerId ? Number(store.ownerId) : null"
+        :submitting="commentSubmitting"
+        @jump="(c) => { onCommentJump(c); showCommentsSheet = false }"
+        @delete="onCommentDelete"
+        @submit="onCommentSubmit"
+      />
+    </WBBottomSheet>
 
     <!-- A.2.1: Lesson Map sidebar removed in replay mode (markers will move to timeline as chapters) -->
 
@@ -888,6 +924,7 @@ import WBMarkerCreateModal from '../components/replay/WBMarkerCreateModal.vue'
 import WBReplayBanner from '../components/replay/WBReplayBanner.vue'
 import WBRecordingBanner from '../components/replay/WBRecordingBanner.vue'
 import WBReplayChaptersSidebar from '../components/replay/WBReplayChaptersSidebar.vue'
+import WBBottomSheet from '../components/layout/WBBottomSheet.vue'
 import SaveAsTemplateDialog from '@/modules/knowledge/components/SaveAsTemplateDialog.vue'
 import WBSaveLessonDialog from '@/modules/knowledge/components/WBSaveLessonDialog.vue'
 import WBOnboardingHints from '../components/ui/WBOnboardingHints.vue'
@@ -1109,6 +1146,14 @@ const replayCurrentTotalOps = ref(0)
 const commentSubmitting = ref(false)
 const replayControlsRef = ref<InstanceType<typeof WBReplayControls> | null>(null)
 
+// R2: Mobile bottom-sheet state for replay sidebars
+const showChaptersSheet = ref(false)
+const showCommentsSheet = ref(false)
+const isMobileDevice = computed(() => deviceModeState.deviceMode.value === 'mobile')
+// R3: Tablet — show one sidebar at a time (chapters OR comments)
+const isTabletDevice = computed(() => deviceModeState.deviceMode.value === 'tablet')
+const activeReplaySidebar = ref<'chapters' | 'comments' | null>('comments')
+
 // Audio interaction layer — pauses replay when audio plays, resumes on end
 const replayAudio = useReplayAudio({
   getReplayState: () => replayControlsRef.value?.getState?.() ?? 'idle',
@@ -1271,6 +1316,22 @@ function exitReplayMode(): void {
 }
 
 // Phase 10 P5: Lesson Map marker handlers
+// R2/R3: Toggle sidebar handlers for mobile (bottom-sheet) and tablet (single-sidebar)
+function onToggleChapters(): void {
+  if (isMobileDevice.value) {
+    showChaptersSheet.value = !showChaptersSheet.value
+  } else if (isTabletDevice.value) {
+    activeReplaySidebar.value = activeReplaySidebar.value === 'chapters' ? null : 'chapters'
+  }
+}
+function onToggleComments(): void {
+  if (isMobileDevice.value) {
+    showCommentsSheet.value = !showCommentsSheet.value
+  } else if (isTabletDevice.value) {
+    activeReplaySidebar.value = activeReplaySidebar.value === 'comments' ? null : 'comments'
+  }
+}
+
 function handleMarkerSeek(marker: WBLessonMarker): void {
   // Marker seek: navigate to page + scroll to board position
   if (marker.page_id) {
@@ -1482,7 +1543,8 @@ const sessionContextLabel = computed<string | null>(() => {
 const autoGroupId = ref<string | null>(null)
 const groupId = computed(() => explicitGroupId.value || autoGroupId.value)
 const showMaterialsSidebar = computed(() => mode.value !== 'replay' && _showMaterialsSidebar.value)
-const _showMaterialsSidebar = ref(true)
+// Mobile: sidebar collapsed by default (≤768px overlay too large for small screens)
+const _showMaterialsSidebar = ref(window.innerWidth > 768)
 
 async function detectTutorGroup() {
   if (explicitGroupId.value) return

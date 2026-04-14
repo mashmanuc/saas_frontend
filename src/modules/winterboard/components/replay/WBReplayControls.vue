@@ -120,6 +120,30 @@
 
     </template>
 
+    <!-- Mobile: sidebar toggle buttons (chapters & comments open as bottom-sheets) -->
+    <button
+      v-if="showChaptersToggle"
+      type="button"
+      class="wb-replay-controls__sheet-btn"
+      :aria-label="t('replay.chaptersTitle', 'Розділи')"
+      @click="$emit('toggle-chapters')"
+    >
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M2 3h12M2 7h8M2 11h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </button>
+    <button
+      v-if="showCommentsToggle"
+      type="button"
+      class="wb-replay-controls__sheet-btn"
+      :aria-label="t('winterboard.replay.comments.title', 'Коментарі')"
+      @click="$emit('toggle-comments')"
+    >
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M2 2h12v9H5l-3 3V2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+
     <!-- Exit replay button -->
     <button
       class="wb-replay-controls__exit"
@@ -155,6 +179,10 @@ const props = defineProps<{
   clearState?: () => void
   /** Phase C.2: точки коментарів на timeline (жовті), окремо від chapters (сині). */
   commentPoints?: ReadonlyArray<{ id: string; operation_index: number; percent: number; text: string }>
+  /** R2: Show chapters toggle button (mobile bottom-sheet trigger) */
+  showChaptersToggle?: boolean
+  /** R2: Show comments toggle button (mobile bottom-sheet trigger) */
+  showCommentsToggle?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -166,6 +194,9 @@ const emit = defineEmits<{
   tick: [payload: { index: number; total: number }]
   // Audio layer: emitted BEFORE seek so parent can stop audio (INV I5)
   seekStart: []
+  // R2: Mobile bottom-sheet toggles
+  'toggle-chapters': []
+  'toggle-comments': []
 }>()
 
 const { t } = useI18n({ useScope: 'global' })
@@ -368,12 +399,14 @@ function formatTime(ms: number): string {
   color: var(--color-text, #0f172a);
   border-top: 1px solid var(--color-border, #e2e8f0);
   box-shadow: 0 -2px 12px rgba(15, 23, 42, 0.06);
-  padding: 10px 20px;
+  padding: var(--wb-replay-controls-padding-y, 10px) var(--wb-replay-controls-padding-x, 20px);
+  padding-bottom: calc(var(--wb-replay-controls-padding-y, 10px) + env(safe-area-inset-bottom, 0px));
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: var(--wb-replay-controls-gap, 14px);
   z-index: 1000;
-  min-height: 56px;
+  min-height: var(--wb-replay-controls-height, 56px);
+  touch-action: manipulation;
 }
 
 .wb-replay-controls__loading {
@@ -384,8 +417,8 @@ function formatTime(ms: number): string {
 }
 
 .wb-replay-controls__play {
-  width: 38px;
-  height: 38px;
+  width: var(--wb-replay-btn-play, 38px);
+  height: var(--wb-replay-btn-play, 38px);
   border-radius: 50%;
   border: none;
   background: var(--color-primary, #6366f1);
@@ -403,8 +436,8 @@ function formatTime(ms: number): string {
 }
 
 .wb-replay-controls__step {
-  width: 32px;
-  height: 32px;
+  width: var(--wb-replay-btn-step, 32px);
+  height: var(--wb-replay-btn-step, 32px);
   border-radius: 50%;
   border: 1px solid var(--color-border, #e2e8f0);
   background: var(--color-surface, #ffffff);
@@ -516,8 +549,8 @@ function formatTime(ms: number): string {
 .wb-replay-controls__slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 14px;
-  height: 14px;
+  width: var(--wb-replay-slider-thumb, 14px);
+  height: var(--wb-replay-slider-thumb, 14px);
   border-radius: 50%;
   background: var(--color-primary, #6366f1);
   border: 2px solid #ffffff;
@@ -525,8 +558,8 @@ function formatTime(ms: number): string {
   cursor: pointer;
 }
 .wb-replay-controls__slider::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
+  width: var(--wb-replay-slider-thumb, 14px);
+  height: var(--wb-replay-slider-thumb, 14px);
   border-radius: 50%;
   background: var(--color-primary, #6366f1);
   border: 2px solid #ffffff;
@@ -539,7 +572,7 @@ function formatTime(ms: number): string {
   color: var(--color-text, #0f172a);
   padding: 4px 8px;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: 16px; /* >= 16px prevents iOS zoom on focus */
   cursor: pointer;
 }
 
@@ -597,5 +630,58 @@ function formatTime(ms: number): string {
 }
 .wb-replay-controls__retry:hover {
   background: var(--color-primary-hover, #4f46e5);
+}
+
+/* R2: Mobile sidebar toggle buttons */
+.wb-replay-controls__sheet-btn {
+  width: var(--wb-replay-btn-step, 32px);
+  height: var(--wb-replay-btn-step, 32px);
+  border-radius: 6px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-surface, #ffffff);
+  color: var(--color-text-muted, #64748b);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+.wb-replay-controls__sheet-btn:hover {
+  background: var(--color-surface-alt, #f1f5f9);
+  color: var(--color-text, #0f172a);
+}
+
+/* R3: Tablet — larger touch targets */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .wb-replay-controls__step,
+  .wb-replay-controls__sheet-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* R2: Mobile compact layout */
+@media (max-width: 639px) {
+  .wb-replay-controls {
+    flex-wrap: wrap;
+  }
+  .wb-replay-controls__timeline {
+    order: -1;
+    width: 100%;
+    flex: none;
+  }
+  .wb-replay-controls__time {
+    min-width: auto;
+    font-size: 12px;
+  }
+  .wb-replay-controls__exit {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+  .wb-replay-controls__ended,
+  .wb-replay-controls__partial-warning {
+    font-size: 11px;
+  }
 }
 </style>

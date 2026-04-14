@@ -70,6 +70,18 @@
   /* ─── Animation ────────────────────────────────────────────────── */
   --wb-transition-fast: 150ms ease;
   --wb-transition-normal: 250ms ease;
+
+  /* ─── Replay Controls ─────────────────────────────────────────── */
+  --wb-replay-btn-play: 38px;
+  --wb-replay-btn-step: 32px;
+  --wb-replay-slider-thumb: 14px;
+  --wb-replay-controls-padding-y: 10px;
+  --wb-replay-controls-padding-x: 20px;
+  --wb-replay-controls-gap: 14px;
+  --wb-replay-controls-height: 56px;
+  --wb-replay-banner-height: 32px;
+  --wb-replay-chapters-width: 240px;
+  --wb-replay-comments-width: 280px;
 }
 
 /* ─── Media Queries: Active tokens per breakpoint ────────────────────── */
@@ -79,6 +91,16 @@
   :root {
     --wb-active-touch-target: var(--wb-touch-target-mobile);
     --wb-active-spacing: var(--wb-spacing-mobile);
+    --wb-replay-btn-play: 44px;
+    --wb-replay-btn-step: 36px;
+    --wb-replay-slider-thumb: 20px;
+    --wb-replay-controls-padding-y: 8px;
+    --wb-replay-controls-padding-x: 12px;
+    --wb-replay-controls-gap: 8px;
+    --wb-replay-controls-height: 52px;
+    --wb-replay-banner-height: 28px;
+    --wb-replay-chapters-width: 100%;
+    --wb-replay-comments-width: 100%;
   }
 }
 
@@ -87,6 +109,14 @@
   :root {
     --wb-active-touch-target: var(--wb-touch-target-tablet);
     --wb-active-spacing: var(--wb-spacing-tablet);
+    --wb-replay-btn-play: 44px;
+    --wb-replay-btn-step: 36px;
+    --wb-replay-slider-thumb: 18px;
+    --wb-replay-controls-padding-x: 16px;
+    --wb-replay-controls-gap: 12px;
+    --wb-replay-banner-height: 36px;
+    --wb-replay-chapters-width: 260px;
+    --wb-replay-comments-width: 300px;
   }
 }
 
@@ -103,6 +133,16 @@
   :root {
     --wb-active-touch-target: var(--wb-touch-target-display);
     --wb-active-spacing: var(--wb-spacing-display);
+    --wb-replay-btn-play: 56px;
+    --wb-replay-btn-step: 48px;
+    --wb-replay-slider-thumb: 24px;
+    --wb-replay-controls-padding-y: 14px;
+    --wb-replay-controls-padding-x: 28px;
+    --wb-replay-controls-gap: 18px;
+    --wb-replay-controls-height: 64px;
+    --wb-replay-banner-height: 40px;
+    --wb-replay-chapters-width: 360px;
+    --wb-replay-comments-width: 400px;
   }
 }
 
@@ -120,6 +160,16 @@
   :root {
     --wb-active-touch-target: var(--wb-touch-target-display);
     --wb-active-spacing: var(--wb-spacing-display);
+    --wb-replay-btn-play: 64px;
+    --wb-replay-btn-step: 56px;
+    --wb-replay-slider-thumb: 28px;
+    --wb-replay-controls-padding-y: 16px;
+    --wb-replay-controls-padding-x: 32px;
+    --wb-replay-controls-gap: 20px;
+    --wb-replay-controls-height: 72px;
+    --wb-replay-banner-height: 48px;
+    --wb-replay-chapters-width: 400px;
+    --wb-replay-comments-width: 440px;
   }
 }
 

@@ -27,11 +27,11 @@ const { t } = useI18n({ useScope: 'global' })
    Використовує глобальні токени з ui/tokens. */
 .wb-replay-banner {
   position: fixed;
-  /* Зсунутий під хедер WBSoloRoom (56px), щоб не перекривати логотип/тайтл */
-  top: 56px;
+  /* Зсунутий під хедер WBSoloRoom */
+  top: var(--wb-header-height, 56px);
   left: 0;
   right: 0;
-  height: 32px;
+  height: var(--wb-replay-banner-height, 32px);
   background: var(--color-info-bg, #dbeafe);
   color: var(--color-info-text, #1e40af);
   border-bottom: 1px solid var(--color-info-border, #bfdbfe);
@@ -70,5 +70,27 @@ const { t } = useI18n({ useScope: 'global' })
 
 .wb-replay-banner__exit:hover {
   background: rgba(30, 64, 175, 0.08);
+}
+
+/* R3: Tablet — sync with header height */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .wb-replay-banner__exit {
+    min-height: 28px;
+    min-width: 44px;
+    padding: 4px 12px;
+  }
+}
+
+/* R2: Mobile — compact banner */
+@media (max-width: 639px) {
+  .wb-replay-banner {
+    font-size: 0.75rem;
+    gap: 8px;
+  }
+  .wb-replay-banner__exit {
+    min-height: 28px;
+    min-width: 44px;
+    padding: 4px 10px;
+  }
 }
 </style>

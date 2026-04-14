@@ -972,7 +972,7 @@ onBeforeUnmount(() => {
 .wb-public-view {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: calc(var(--wb-vh, 1vh) * 100);
   height: 100dvh;
   overflow: hidden;
   background: var(--wb-canvas-area-bg, #f0fdf4);
@@ -1035,8 +1035,8 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 0 24px;
-  height: 56px;
+  padding: 0 var(--wb-active-spacing, 24px);
+  height: var(--wb-header-height, 48px);
   background: var(--wb-header-bg, #047857);
   color: #fff;
   flex-shrink: 0;
@@ -1231,6 +1231,7 @@ onBeforeUnmount(() => {
   .wb-public-view__header {
     padding: 0.5rem 0.75rem;
     gap: 0.5rem;
+    height: var(--wb-header-height-mobile, 40px);
   }
 
   .wb-public-view__title {
@@ -1257,6 +1258,20 @@ onBeforeUnmount(() => {
     min-height: 44px;
     padding: 0.375rem 1rem;
   }
+
+  .wb-public-view__hero-overlay { gap: 16px; }
+  .wb-public-view__hero-eye { width: clamp(200px, 60vw, 320px); }
+  .wb-public-view__hero-title { font-size: 1.125rem; }
+}
+
+/* Display (large screens / multimedia boards) */
+@media (min-width: 1920px) {
+  .wb-public-view__header {
+    height: var(--wb-header-height-display, 56px);
+    padding: 0 32px;
+  }
+  .wb-public-view__hero-title { font-size: 2rem; }
+  .wb-public-view__hero-meta { font-size: 1.125rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1280,7 +1295,7 @@ onBeforeUnmount(() => {
 }
 
 .wb-public-view__hero-eye {
-  width: clamp(260px, 42vw, 420px);
+  width: clamp(260px, 42vw, 600px);
   cursor: pointer;
 }
 

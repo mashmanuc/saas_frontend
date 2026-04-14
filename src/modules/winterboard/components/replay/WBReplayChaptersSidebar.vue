@@ -53,11 +53,11 @@ function formatTime(m: WBLessonMarker): string {
 
 <style scoped>
 .wb-replay-chapters {
-  width: 240px;
+  width: var(--wb-replay-chapters-width, 240px);
   flex-shrink: 0;
   background: var(--color-surface, #ffffff);
   border-right: 1px solid var(--color-border, #e2e8f0);
-  padding: 20px 16px;
+  padding: var(--wb-active-spacing, 16px);
   overflow-y: auto;
 }
 
@@ -131,5 +131,19 @@ function formatTime(m: WBLessonMarker): string {
   font-size: 13px;
   color: var(--color-text-muted, #94a3b8);
   margin: 0;
+}
+
+/* R2: Mobile — full-width when inside bottom-sheet */
+@media (max-width: 639px) {
+  .wb-replay-chapters {
+    width: 100%;
+    border-right: none;
+    padding: 12px;
+    max-height: none;
+  }
+  .wb-replay-chapters__btn {
+    min-height: 44px;
+    padding: 10px 12px;
+  }
 }
 </style>

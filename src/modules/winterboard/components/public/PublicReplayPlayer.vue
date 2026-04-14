@@ -249,6 +249,16 @@ function handleShareMoment(): void {
   border-radius: 4px;
   cursor: pointer;
   margin-bottom: 12px;
+  touch-action: none;
+}
+/* Expanded touch area for timeline (invisible, 44px hit zone) */
+.public-replay-player__timeline::before {
+  content: '';
+  position: absolute;
+  top: -18px;
+  bottom: -18px;
+  left: 0;
+  right: 0;
 }
 
 .public-replay-player__progress {
@@ -264,14 +274,14 @@ function handleShareMoment(): void {
 
 .public-replay-player__playhead {
   position: absolute;
-  top: -4px;
-  width: 16px;
-  height: 16px;
+  top: 50%;
+  width: calc(var(--wb-replay-slider-thumb, 14px) + 2px);
+  height: calc(var(--wb-replay-slider-thumb, 14px) + 2px);
   background: var(--wb-brand, #047857);
   border: 2px solid #ffffff;
   border-radius: 50%;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
   pointer-events: none;
   transition: left 0.1s linear;
 }
@@ -297,15 +307,15 @@ function handleShareMoment(): void {
 .public-replay-player__controls {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--wb-replay-controls-gap, 12px);
 }
 
 .public-replay-player__play-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: var(--wb-replay-btn-play, 36px);
+  height: var(--wb-replay-btn-play, 36px);
   background: var(--wb-brand, #047857);
   color: #ffffff;
   border: none;
@@ -323,8 +333,8 @@ function handleShareMoment(): void {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: var(--wb-replay-btn-step, 30px);
+  height: var(--wb-replay-btn-step, 30px);
   background: transparent;
   color: #64748b;
   border: 1px solid #e2e8f0;
@@ -410,11 +420,42 @@ function handleShareMoment(): void {
   transform: translateX(-50%) translateY(4px);
 }
 
+/* R3: Tablet — larger touch targets */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .public-replay-player__step-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .public-replay-player__marker-dot {
+    width: 16px;
+    height: 16px;
+  }
+}
+
 @media (max-width: 640px) {
   .public-replay-player {
-    padding: 12px 14px;
+    padding: 10px 12px;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
   }
-
+  .public-replay-player__controls {
+    flex-wrap: wrap;
+  }
+  .public-replay-player__step-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .public-replay-player__play-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .public-replay-player__share-moment {
+    display: none;
+  }
+  .public-replay-player__time {
+    font-size: 12px;
+  }
   .public-replay-player__speed {
     font-size: 16px; /* prevent iOS zoom */
   }

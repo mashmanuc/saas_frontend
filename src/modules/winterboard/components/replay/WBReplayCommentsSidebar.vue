@@ -121,7 +121,7 @@ watch(
 
 <style scoped>
 .wb-replay-comments {
-  width: 280px;
+  width: var(--wb-replay-comments-width, 280px);
   flex-shrink: 0;
   background: var(--color-surface, #ffffff);
   border-left: 1px solid var(--color-border, #e2e8f0);
@@ -257,4 +257,19 @@ watch(
   cursor: pointer;
 }
 .wb-replay-comments__form button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* R2: Mobile — full-width when inside bottom-sheet */
+@media (max-width: 639px) {
+  .wb-replay-comments {
+    width: 100%;
+    border-left: none;
+  }
+  .wb-replay-comments__btn {
+    min-height: 44px;
+  }
+  .wb-replay-comments__form textarea {
+    min-height: 56px;
+    font-size: 16px; /* prevent iOS zoom */
+  }
+}
 </style>
