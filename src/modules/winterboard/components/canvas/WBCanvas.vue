@@ -923,6 +923,10 @@ let resizeObserver: ResizeObserver | null = null
 const isDrawing = ref(false)
 const currentPoints = ref<WBPoint[]>([])
 
+// P1.4: Stuck-drawing safeguard handlers (need setup-level scope for cleanup)
+let forceStopDrawing: (() => void) | null = null
+let onVisibilityChange: (() => void) | null = null
+
 // A4.1: Pressure sensitivity — track last native PointerEvent for pressure capture
 let lastNativePointerEvent: PointerEvent | null = null
 let currentPointerType: string = 'mouse'
@@ -3500,6 +3504,19 @@ onMounted(async () => {
   window.addEventListener('mouseup', globalMouseUp)
   window.addEventListener('pointerup', globalMouseUp)
 
+  // P1.4 FIX: Force-stop drawing on visibility/focus loss to prevent stuck pencil
+  forceStopDrawing = () => {
+    if (isDrawing.value) {
+      handleMouseUp(new MouseEvent('mouseup'))
+    }
+  }
+  onVisibilityChange = () => {
+    if (document.hidden && forceStopDrawing) forceStopDrawing()
+  }
+  document.addEventListener('visibilitychange', onVisibilityChange)
+  window.addEventListener('blur', forceStopDrawing)
+  window.addEventListener('pointercancel', forceStopDrawing)
+
   // A5.3: Register touch zoom listeners (passive: false for preventDefault)
   if (container) {
     container.addEventListener('touchstart', handleTouchStartZoom, { passive: false })
@@ -3547,6 +3564,12 @@ onUnmounted(() => {
   // BUG-3 FIX: Remove global mouseup listeners
   window.removeEventListener('mouseup', globalMouseUp)
   window.removeEventListener('pointerup', globalMouseUp)
+  // P1.4: Remove stuck-drawing safeguards
+  if (onVisibilityChange) document.removeEventListener('visibilitychange', onVisibilityChange)
+  if (forceStopDrawing) {
+    window.removeEventListener('blur', forceStopDrawing)
+    window.removeEventListener('pointercancel', forceStopDrawing)
+  }
   clearPreviewCanvas()
   currentBitmap?.close?.()
   currentBitmap = null
