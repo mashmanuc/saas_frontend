@@ -101,11 +101,18 @@ export function useAutosave(
             `(${ops.length} ops, rev=${rev})`,
           )
         }
-        // 409: rev mismatch — update store.rev from server response
+        // 409: rev mismatch or session_locked
         if (errStatus === 409) {
-          const serverRev = err?.response?.data?.server_rev
+          const data = err?.response?.data
+          const serverRev = data?.server_rev
           if (typeof serverRev === 'number') {
+            // rev_mismatch — update rev so next retry uses correct value
             store.rev = serverRev
+          }
+          // session_locked (no server_rev) — transient, will resolve on next retry
+          // Don't count as hard failure in opsQueue
+          if (data?.detail === 'session_locked') {
+            err._transient = true
           }
         }
         // P2.2: Track consecutive 422s — ops validation failures

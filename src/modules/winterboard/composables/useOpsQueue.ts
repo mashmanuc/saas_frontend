@@ -100,10 +100,14 @@ export function useOpsQueue(options: UseOpsQueueOptions) {
         return
       }
 
-      retryCount++
       // NACK: return all inFlight to pending
       pending.value = [...inFlight.value, ...pending.value]
       inFlight.value = []
+
+      // Transient errors (session_locked) don't count toward retry limit
+      if (!(err as any)?._transient) {
+        retryCount++
+      }
 
       if (retryCount >= MAX_RETRIES) {
         options.onError(err)
