@@ -2944,9 +2944,15 @@ watch(() => store.workspaceName, (name) => {
 
 .wb-header-btn--exit {
   width: auto;
-  padding: 0 12px;
+  min-width: 56px;
+  height: 32px;
+  padding: 0 14px;
   font-size: 0.8125rem;
   font-weight: 500;
+  white-space: nowrap;
+  line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ── Main ──────────────────────────────────────────────────────────────────── */
@@ -3291,8 +3297,11 @@ watch(() => store.workspaceName, (name) => {
 
   .wb-header-btn--exit {
     min-width: 44px;
-    padding: 0 8px;
+    height: 36px;
+    padding: 0 10px;
     font-size: 0.75rem;
+    white-space: nowrap;
+    line-height: 1;
   }
 
   /* Mobile: toolbar at bottom, canvas takes full width */

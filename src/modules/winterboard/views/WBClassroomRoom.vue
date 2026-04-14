@@ -2232,8 +2232,14 @@ onBeforeUnmount(async () => {
 }
 .wb-header-btn--danger:hover { background: rgba(239, 68, 68, 0.6); }
 .wb-header-btn--exit {
+  width: auto;
+  min-width: 56px;
+  padding: 0 14px;
   font-size: 0.8125rem;
   font-weight: 500;
+  white-space: nowrap;
+  line-height: 1;
+  overflow: hidden;
 }
 
 /* ── Main layout ─────────────────────────────────────────────────────────── */
