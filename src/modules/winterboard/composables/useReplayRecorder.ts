@@ -51,6 +51,8 @@ import type { RecordOperationRequest } from '../types/replay'
 import { recordOperationsBatch, createSnapshot } from '../api/replay'
 import { isCircuitBreakerOpen } from '@/utils/apiClient'
 import { registerAuthDeathCleanup, isAuthDead } from '@/core/auth/onAuthDeath'
+import { createSessionWriteLock } from './useSessionWriteLock'
+import { saveBackup, clearBackup, readBackup } from './useOpsBackup'
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -60,7 +62,11 @@ const BATCH_SIZE = 50
 // Якщо WS лежить і buffer+retryQueue накопичили >100 ops — без chunking
 // усі retry падають з 400 і дані ВТРАЧАЮТЬСЯ.
 const MAX_OPS_PER_REQUEST = 100
-const FLUSH_INTERVAL_MS = 1500          // streaming: flush кожні 1.5с (було 5с)
+// Phase ops-only (advisor): debounced flush. Замість фіксованого setInterval кожні
+// 1.5с — агрегуємо ops за 150мс вікно. Негайний flush якщо buffer >= BATCH_SIZE.
+// Таймер безпеки теж є (див. FLUSH_SAFETY_INTERVAL_MS) для idle-періодів.
+const FLUSH_DEBOUNCE_MS = 150
+const FLUSH_SAFETY_INTERVAL_MS = 2_000
 const SNAPSHOT_EVERY = 200
 const MAX_PAYLOAD_BYTES = 64 * 1024    // 64KB — must match backend WBBoardOperationCreateSerializer
 const MAX_RETRY_QUEUE_SIZE = 200       // REPLAY-INV-8: retry queue cap — не memory leak
@@ -68,6 +74,11 @@ const MAX_RETRY_QUEUE_SIZE = 200       // REPLAY-INV-8: retry queue cap — не
 // Circuit breaker: pause flushing after consecutive failures to prevent server overload
 const MAX_CONSECUTIVE_FAILURES = 3
 const CIRCUIT_BREAKER_COOLDOWN_MS = 30_000  // 30s pause after 3 failures
+
+// Phase ops-only (advisor): retry policy з jitter + upper bound
+const RETRY_BASE_MS = 200
+const RETRY_MAX_MS = 5_000
+const MAX_LOCK_RETRIES = 10      // Після N retry session_locked — тихий surrender; ops лишаються у retryQueue
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -87,15 +98,41 @@ export interface UseReplayRecorderOptions {
 export function useReplayRecorder(options: UseReplayRecorderOptions) {
   const buffer: RecordOperationRequest[] = []
   const retryQueue: RecordOperationRequest[] = []  // REPLAY-INV-8: окремий retry queue
+  const inFlight: RecordOperationRequest[] = []    // Phase ops-only: ops у поточному request — для backup
   const opCount = ref(0)
   const lastKnownTotal = ref(0)  // синхронізовано з BE total_operations
   const isFlushing = ref(false)
   const pipelineStatus = ref<'idle' | 'healthy' | 'degraded' | 'broken'>('idle')
+  // Phase ops-only: safety interval (не debounce — це fallback)
   let flushTimer: ReturnType<typeof setInterval> | null = null
+  // Phase ops-only: debounce timer для агрегації burst-ів
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null
   let consecutiveFailures = 0
+  let lockRetryCount = 0                 // Лічильник 409 session_locked підряд
   let circuitBreakerTimer: ReturnType<typeof setTimeout> | null = null
   let circuitOpen = false
   let _destroyed = false  // guard against zombie usage after destroy()
+
+  // Phase ops-only: серіалізатор записів — гарантує що backend ніколи не
+  // отримує паралельні batch-и на ту саму сесію (корінь 409 storm).
+  const writeLock = createSessionWriteLock()
+
+  // Phase ops-only: backoff helper з jitter (advisor's must-have).
+  function computeBackoff(attempt: number): number {
+    const exp = RETRY_BASE_MS * Math.pow(2, attempt)
+    const jitter = Math.random() * RETRY_BASE_MS
+    return Math.min(exp + jitter, RETRY_MAX_MS)
+  }
+
+  function sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms))
+  }
+
+  function persistBackup(): void {
+    const sid = options.sessionId.value
+    if (!sid) return
+    saveBackup(sid, [...retryQueue, ...buffer], [...inFlight])
+  }
 
   // P0.0: Register cleanup on auth death — try beacon flush, then destroy
   const _unregisterAuthDeath = registerAuthDeathCleanup(() => {
@@ -171,10 +208,21 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
     buffer.push(op)
     opCount.value++
 
+    // Phase ops-only: backup перед flush — якщо crash між enqueue та ACK,
+    // restore на наступному mount (див. _restoreBackup).
+    persistBackup()
+
     if (buffer.length >= BATCH_SIZE) {
+      // Advisor optim: instant flush коли buffer повний — не чекаємо debounce
+      if (debounceTimer) { clearTimeout(debounceTimer); debounceTimer = null }
       flush()
-      // Snapshot перевіряється у flush() після успішного commit — не тут
-      // (race condition fix: snapshot тільки після підтвердженого BE commit)
+    } else {
+      // Advisor must-have: debounce — уникнути DDoS'у коли малювання швидке
+      if (debounceTimer) clearTimeout(debounceTimer)
+      debounceTimer = setTimeout(() => {
+        debounceTimer = null
+        flush()
+      }, FLUSH_DEBOUNCE_MS)
     }
   }
 
@@ -207,6 +255,11 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
     const toSend = [...retryQueue.splice(0), ...buffer.splice(0)]
     if (toSend.length === 0) return
 
+    // Phase ops-only: track inFlight для backup (advisor must-have)
+    inFlight.length = 0
+    inFlight.push(...toSend)
+    persistBackup()
+
     isFlushing.value = true
 
     // P0 FIX (2026-04-07): chunk autosave to 100 ops max per batch
@@ -226,19 +279,56 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
     let flushError: unknown = null
 
     try {
-      for (let i = 0; i < chunks.length; i++) {
-        try {
-          lastResult = await recordOperationsBatch(sid, chunks[i])
-          flushedCount += chunks[i].length
-        } catch (chunkErr) {
-          console.warn(
-            `[WB:autosave] chunk ${i + 1}/${chunks.length} failed (${chunks[i].length} ops):`,
-            chunkErr,
-          )
-          flushError = chunkErr
-          break // НЕ продовжуємо наступні чанки — атомарність queue
+      // Phase ops-only: усі chunks — через ОДИН writeLock.run().
+      // Це гарантує що паралельні `flush()` invocations не відправлять batch-и
+      // одночасно → немає collision на backend → немає 409 storm.
+      await writeLock.run(async () => {
+        for (let i = 0; i < chunks.length; i++) {
+          try {
+            lastResult = await recordOperationsBatch(sid, chunks[i])
+            flushedCount += chunks[i].length
+            lockRetryCount = 0  // success — reset lock retry counter
+          } catch (chunkErr) {
+            // Phase ops-only (advisor): розрізняємо 409 session_locked vs
+            // generic failure. 409 — transient, не збільшуємо circuit-breaker;
+            // робимо jitter-backoff retry прямо тут, залишаючи op_id
+            // незмінним (backend дедуплікує).
+            const status = (chunkErr as { response?: { status?: number } })?.response?.status
+            const detail = (chunkErr as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+
+            if (status === 409 && detail === 'session_locked') {
+              lockRetryCount++
+              if (lockRetryCount <= MAX_LOCK_RETRIES) {
+                const delay = computeBackoff(lockRetryCount - 1)
+                console.warn(
+                  `[ReplayRecorder] 409 session_locked (${lockRetryCount}/${MAX_LOCK_RETRIES}) ` +
+                  `— retrying chunk ${i + 1}/${chunks.length} after ${delay}ms`,
+                )
+                await sleep(delay)
+                i--  // повторити ТОЙ САМИЙ chunk (op_id гарантує idempotency)
+                continue
+              }
+              // Upper bound: після MAX_LOCK_RETRIES — віддаємо у retryQueue,
+              // flush спробує пізніше (через safety timer). consecutiveFailures
+              // НЕ інкрементуємо — це lock contention, не health issue.
+              console.warn(
+                `[ReplayRecorder] 409 session_locked retry limit (${MAX_LOCK_RETRIES}) reached — ` +
+                `deferring ${chunks[i].length} ops`,
+              )
+              flushError = chunkErr
+              break
+            }
+
+            // Інший тип помилки — generic handling (circuit breaker path)
+            console.warn(
+              `[WB:autosave] chunk ${i + 1}/${chunks.length} failed (${chunks[i].length} ops):`,
+              chunkErr,
+            )
+            flushError = chunkErr
+            break
+          }
         }
-      }
+      })
 
       if (flushError) {
         throw flushError
@@ -247,6 +337,15 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
       consecutiveFailures = 0     // success — reset counter
       _totalFlushedOps += flushedCount
       if (pipelineStatus.value !== 'healthy') pipelineStatus.value = 'healthy'
+
+      // Phase ops-only: ACK → очищаємо inFlight + backup
+      inFlight.length = 0
+      if (retryQueue.length === 0 && buffer.length === 0) {
+        clearBackup(sid)
+      } else {
+        persistBackup()
+      }
+
       // Синхронізуємо lastKnownTotal з BE після підтвердженого commit (останнього чанка)
       if (lastResult && typeof lastResult.total_operations === 'number') {
         const prevTotal = lastKnownTotal.value  // зберігаємо ДО оновлення
@@ -272,24 +371,33 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
       } else {
         retryQueue.push(...combined)
       }
+      inFlight.length = 0
+      persistBackup()  // backup включає retryQueue — ops не загубляться при crash
 
-      // Circuit breaker: after N consecutive failures, pause to prevent server overload
-      consecutiveFailures++
-      if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
-        circuitOpen = true
-        console.warn(
-          `[ReplayRecorder] Circuit breaker OPEN: ${consecutiveFailures} consecutive failures. ` +
-          `Pausing for ${CIRCUIT_BREAKER_COOLDOWN_MS / 1000}s`,
-        )
-        circuitBreakerTimer = setTimeout(() => {
-          if (_destroyed) return  // zombie guard
-          circuitOpen = false
-          consecutiveFailures = 0
-          circuitBreakerTimer = null
-          pipelineStatus.value = 'idle'
-          console.info('[ReplayRecorder] Circuit breaker CLOSED — resuming flushes')
-        }, CIRCUIT_BREAKER_COOLDOWN_MS)
-        pipelineStatus.value = 'degraded'
+      // Phase ops-only: 409 session_locked НЕ інкрементує consecutiveFailures
+      // (це contention, не server health).
+      const errStatus = (e as { response?: { status?: number } })?.response?.status
+      const errDetail = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      const isLockContention = errStatus === 409 && errDetail === 'session_locked'
+
+      if (!isLockContention) {
+        consecutiveFailures++
+        if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+          circuitOpen = true
+          console.warn(
+            `[ReplayRecorder] Circuit breaker OPEN: ${consecutiveFailures} consecutive failures. ` +
+            `Pausing for ${CIRCUIT_BREAKER_COOLDOWN_MS / 1000}s`,
+          )
+          circuitBreakerTimer = setTimeout(() => {
+            if (_destroyed) return  // zombie guard
+            circuitOpen = false
+            consecutiveFailures = 0
+            circuitBreakerTimer = null
+            pipelineStatus.value = 'idle'
+            console.info('[ReplayRecorder] Circuit breaker CLOSED — resuming flushes')
+          }, CIRCUIT_BREAKER_COOLDOWN_MS)
+          pipelineStatus.value = 'degraded'
+        }
       }
     } finally {
       isFlushing.value = false
@@ -330,10 +438,30 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
 
   /**
    * Start the periodic flush timer. Call on component mount.
+   *
+   * Phase ops-only: відновлюємо ops з localStorage (advisor's must-have —
+   * антикатастрофа після crash під час in-flight request).
    */
   function start(): void {
     if (flushTimer) return // already started
-    flushTimer = setInterval(flush, FLUSH_INTERVAL_MS)
+
+    // Restore backup (якщо є) перед стартом safety-interval
+    const sid = options.sessionId.value
+    if (sid) {
+      const backup = readBackup<RecordOperationRequest>(sid)
+      if (backup && (backup.pending.length > 0 || backup.inFlight.length > 0)) {
+        // inFlight + pending → retryQueue (op_id гарантує server-side dedup,
+        // навіть якщо якась частина вже застосувалась до crash).
+        const restored = [...backup.inFlight, ...backup.pending]
+        retryQueue.unshift(...restored)
+        console.info(
+          `[WB:Recorder] Restored ${restored.length} ops from localStorage backup`,
+        )
+      }
+    }
+
+    // Safety interval — ловить ops які debounce не скинув (idle-період, long burst)
+    flushTimer = setInterval(flush, FLUSH_SAFETY_INTERVAL_MS)
   }
 
   /**
@@ -344,6 +472,10 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
     if (flushTimer) {
       clearInterval(flushTimer)
       flushTimer = null
+    }
+    if (debounceTimer) {
+      clearTimeout(debounceTimer)
+      debounceTimer = null
     }
     flush() // final flush — fire-and-forget
   }
@@ -375,10 +507,16 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
     console.info('[WB:Recorder] destroy() — recorder terminated')
     _destroyed = true
     stop()
+    if (debounceTimer) {
+      clearTimeout(debounceTimer)
+      debounceTimer = null
+    }
     buffer.length = 0
     retryQueue.length = 0
+    inFlight.length = 0
     opCount.value = 0
     lastKnownTotal.value = 0
+    lockRetryCount = 0
     pipelineStatus.value = 'idle'
     if (circuitBreakerTimer) {
       clearTimeout(circuitBreakerTimer)

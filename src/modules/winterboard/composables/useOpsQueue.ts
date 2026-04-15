@@ -1,6 +1,16 @@
 // Phase 3: Ops Queue — reliable queue with ACK/retry, batching, reconnect recovery
 // Ref: OPS_CONTRACT.md §5, CRITICAL_GAPS.md Gap 1+2+4
 //
+// @deprecated Phase ops-only migration (2026-04-15):
+//   Цей queue писав у `PATCH /diff/`, що дублювало `useReplayRecorder` → 409 storm.
+//   Нова архітектура: source of truth = `/replay/batch/`, diff endpoint —
+//   тільки manual/emergency.
+//
+//   Файл залишено для:
+//   - можливого rollback
+//   - manual triggered saves (stream-save fallback у useAutosave)
+//   - future refactor (merge у useReplayRecorder)
+//
 // Replaces pendingOps in useAutosave with proper ACK-based delivery:
 //   enqueue() → op_id assigned (crypto.randomUUID) → persist
 //   flush()   → batch send → wait for ACK (assigned list)

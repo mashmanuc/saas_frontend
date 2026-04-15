@@ -1,10 +1,20 @@
 // Phase 4a: Bridge — boardStore operation events → WBDiffOp → autosave.queueDiffOp
 //
-// Subscribes to store.onOperation() (Phase 20 listener pattern) and converts
-// RecordOperationRequest → WBDiffOp for ops-based persistence.
+// @deprecated Phase ops-only (2026-04-15): цей bridge створював DUAL-WRITE проблему.
 //
-// This allows all board mutations to generate diff ops WITHOUT modifying
-// every mutation call site — we hook into the existing event emitter.
+// Кожен stroke letify:
+//   - useReplayRecorder  → POST /replay/batch/  (primary ops log)
+//   - useOpsBridge       → autosave.queueDiffOp → PATCH /diff/  (redundant)
+//
+// На backend обидва шляхи робили `select_for_update(skip_locked=True)` на тій
+// самій WBSession → один отримує lock, інший 409 session_locked → retry storm.
+//
+// ФІКС: bridge — no-op. Source of truth — `/replay/batch/`. `queueDiffOp` залишається
+// як API для legacy caller-ів (якщо з'являться); `diff` endpoint — тільки як
+// manual/emergency fallback.
+//
+// Old implementation збережено нижче як backup для rollback (закоментовано).
+// TODO: видалити файл цілком після 2 тижнів у prod без regressions.
 
 import type { RecordOperationRequest } from '../types/replay'
 import type { WBDiffOp } from '../api/winterboardApi'
@@ -13,7 +23,12 @@ import { useWBStore } from '../board/state/boardStore'
 
 // ── Mapper ──────────────────────────────────────────────────────────────
 
-function mapToDiffOp(recordOp: RecordOperationRequest): WBDiffOp | null {
+/**
+ * @deprecated Historical mapper: RecordOperationRequest → WBDiffOp.
+ * Not called from runtime after ops-only migration. Exported to keep
+ * the mapping logic visible for potential rollback / diagnostics.
+ */
+export function mapToDiffOp(recordOp: RecordOperationRequest): WBDiffOp | null {
   const { op_type, page_id, payload } = recordOp
 
   switch (op_type) {
@@ -179,20 +194,24 @@ function mapToDiffOp(recordOp: RecordOperationRequest): WBDiffOp | null {
 // ── Composable ──────────────────────────────────────────────────────────
 
 /**
- * Bridge: subscribes to boardStore operation events and forwards them
- * as WBDiffOps to autosave.queueDiffOp() for ops-based persistence.
+ * @deprecated Phase ops-only (2026-04-15). No-op implementation.
  *
- * Call in WBSoloRoom / WBClassroomRoom after useAutosave() init.
+ * Раніше цей bridge дублював ops у `queueDiffOp` → `/diff/` endpoint.
+ * Тепер ops ідуть ТІЛЬКИ через `useReplayRecorder` → `/replay/batch/`.
+ *
+ * Call-sites залишились (WBSoloRoom/WBClassroomRoom) для сумісності, але
+ * результат — noop `destroy()`. Жодної підписки на store не створюється.
+ *
+ * Якщо потрібен був би rollback: див. historical implementation у git blame
+ * або PR що запроваджував цей фікс.
  */
-export function useOpsBridge(autosave: AutosaveReturn) {
-  const store = useWBStore()
-
-  const unsubscribe = store.onOperation((recordOp: RecordOperationRequest) => {
-    const diffOp = mapToDiffOp(recordOp)
-    if (diffOp) {
-      autosave.queueDiffOp(diffOp)
-    }
-  })
-
-  return { destroy: unsubscribe }
+export function useOpsBridge(_autosave: AutosaveReturn) {
+  // Інтентний no-op: зберігаємо сигнатуру для backward-compat call-sites.
+  // Явна підписка на store видалена — useReplayRecorder є єдиним listener.
+  void _autosave
+  return {
+    destroy: () => {
+      /* noop — жодна підписка не створювалась */
+    },
+  }
 }
