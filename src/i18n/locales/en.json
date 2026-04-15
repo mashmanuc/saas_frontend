@@ -971,7 +971,9 @@
       "students": "Students",
       "tutors": "Tutors",
       "business": "Business",
-      "system": "System"
+      "system": "System",
+      "subscription": "Subscription",
+      "profile": "Profile"
     },
     "item": {
       "dashboard": "Home",
@@ -1004,7 +1006,10 @@
       "myLessons": "My Lessons",
       "templateLibrary": "Template Library",
       "myPacks": "My Packs",
-      "knowledgeAnalytics": "Analytics"
+      "knowledgeAnalytics": "Analytics",
+      "myBoards": "My Boards",
+      "materials": "Materials",
+      "myPlan": "My Plan"
     },
     "hint": {
       "dashboard": "Home page with schedule and stats",
@@ -1927,6 +1932,46 @@
   },
   "dashboard": {
     "nextLessonAt": "Next lesson",
+    "cta": {
+      "join_lesson": {
+        "in_progress": "Lesson is in progress",
+        "now": "Lesson starts now",
+        "minutes": "Lesson in {minutes} min",
+        "label": "Join"
+      },
+      "answer_inquiry": {
+        "single": "{student} wants to start learning",
+        "multiple": "You have {count} new inquiries",
+        "label": "Reply"
+      },
+      "resume_draft": {
+        "title": "Continue lesson \"{title}\"",
+        "label": "Continue"
+      },
+      "resume_last_lesson": {
+        "title": "Back to \"{title}\"",
+        "label": "Continue"
+      },
+      "create_lesson": {
+        "title": "Create your first lesson",
+        "label": "+ Create"
+      },
+      "prepare_lesson": {
+        "title": "Next lesson with {tutor}",
+        "label": "View materials"
+      },
+      "find_tutor": {
+        "title": "Find a tutor",
+        "label": "Browse"
+      },
+      "dead_link": "This action is no longer available — refreshing the panel"
+    },
+    "secondary": {
+      "today_remaining": "Today {count} more lesson(s):",
+      "pending_inquiries": "{count} new inquiries in «Requests»",
+      "draft_lessons": "{count} draft lesson(s)",
+      "last_completed": "Last lesson with {counterpart} — replay available"
+    },
     "tutor": {
       "title": "Tutor dashboard",
       "description": "Track your students, lessons and invites.",

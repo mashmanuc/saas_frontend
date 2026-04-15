@@ -1,6 +1,6 @@
 <template>
-  <div class="space-y-6" data-testid="student-home-page">
-    <!-- Trial Banner -->
+  <div class="student-home" data-testid="student-home-page">
+    <!-- Trial banner -->
     <TrialBanner
       v-if="auth?.hasTrial"
       :days-left="auth?.trialDaysLeft ?? 0"
@@ -8,89 +8,84 @@
       :dismissible="true"
     />
 
-    <!-- Greeting -->
-    <DashboardGreeting />
-
-    <!-- Stats Row -->
-    <DashboardStatsRow :stats="dashboardStats" />
-
-    <!-- Upcoming Lessons -->
-    <TodaySchedule
-      :lessons="upcomingLessons"
-      :loading="isLoading"
-      :is-tutor="false"
+    <!-- Phase 29 (Activation) — Hero CTA (з fallback, Fix #1) -->
+    <DashboardHero
+      v-if="!isLoading"
+      :cta="heroCta"
     />
+    <div v-else class="student-home__hero-skeleton" aria-hidden="true" />
 
-    <!-- Quick Actions -->
-    <StudentQuickActions />
-
-    <!-- Active Tutors -->
-    <StudentActiveTutorsSection
-      :active-tutors="activeTutors"
-      :loading="isLoading"
-      :error="error?.message ?? null"
-    />
-
-    <!-- Empty Dashboard State -->
-    <DashboardEmptyState
-      v-if="showEmptyState"
-      :title="$t('dashboard.student.emptyState.title')"
-      :description="$t('dashboard.student.emptyState.description')"
-      :cta-label="$t('dashboard.student.emptyState.cta')"
-      cta-to="/marketplace"
-      icon="search"
+    <!-- Secondary context (last completed lesson hint) -->
+    <DashboardSecondaryContext
+      v-if="snapshot?.secondary"
+      :data="snapshot.secondary"
     />
   </div>
 </template>
 
-<script setup>
-import { computed } from 'vue'
+<script setup lang="ts">
+import { computed, defineAsyncComponent, onMounted, ref } from 'vue'
 import { useAuthStore } from '@/modules/auth/store/authStore'
-import { useStudentDashboardQuery } from '@/api/queries/useStudentDashboardQuery'
-import DashboardGreeting from '../components/DashboardGreeting.vue'
-import DashboardStatsRow from '../components/DashboardStatsRow.vue'
-import TodaySchedule from '../components/TodaySchedule.vue'
-import StudentQuickActions from '../components/StudentQuickActions.vue'
-import StudentActiveTutorsSection from '../components/StudentActiveTutorsSection.vue'
-import DashboardEmptyState from '../components/DashboardEmptyState.vue'
-import TrialBanner from '@/modules/auth/components/TrialBanner.vue'
+import DashboardHero from '../components/DashboardHero.vue'
+import DashboardSecondaryContext from '../components/DashboardSecondaryContext.vue'
+import apiClient from '@/utils/apiClient'
+import type { DashboardSnapshotV2 } from '../api/dashboard'
+import { resolveCta } from '../utils/fallbackCta'
+
+const TrialBanner = defineAsyncComponent(
+  () => import('@/modules/auth/components/TrialBanner.vue'),
+)
 
 const auth = useAuthStore()
+const snapshot = ref<DashboardSnapshotV2 | null>(null)
+const isLoading = ref(true)
 
-// Phase 29 B2: Query auto-fetches on mount. Replaces dashboardStore.fetchStudentDashboard()
-const { activeTutors, upcomingLessons, studentStats, isLoading, error } = useStudentDashboardQuery()
+// Fix #1: fallback до find_tutor якщо backend повернув null
+const heroCta = computed(() => resolveCta(snapshot.value?.primary_cta, 'student'))
 
-const dashboardStats = computed(() => [
-  {
-    key: 'upcomingLessons',
-    icon: 'calendar',
-    label: 'dashboard.stats.upcomingLessons',
-    value: upcomingLessons.value.length,
-    to: '/student/schedule',
-  },
-  {
-    key: 'activeTutors',
-    icon: 'users',
-    label: 'dashboard.stats.activeTutors',
-    value: activeTutors.value?.length ?? 0,
-  },
-  {
-    key: 'totalLessons',
-    icon: 'book-open',
-    label: 'dashboard.stats.totalLessons',
-    value: studentStats.value?.total_lessons ?? 0,
-  },
-  {
-    key: 'totalHours',
-    icon: 'clock',
-    label: 'dashboard.stats.totalHours',
-    value: studentStats.value?.total_hours ?? 0,
-  },
-])
+async function loadSnapshot() {
+  isLoading.value = true
+  try {
+    const data = await apiClient.get<DashboardSnapshotV2>('/v1/dashboard/student/snapshot/')
+    snapshot.value = data
+  } catch (err) {
+    console.error('[StudentHome] Failed to load snapshot:', err)
+  } finally {
+    isLoading.value = false
+  }
+}
 
-const showEmptyState = computed(() => {
-  return !isLoading.value
-    && !upcomingLessons.value.length
-    && !activeTutors.value?.length
+onMounted(() => {
+  loadSnapshot()
 })
 </script>
+
+<style scoped>
+.student-home {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg, 16px);
+}
+
+.student-home__hero-skeleton {
+  height: 112px;
+  border-radius: var(--radius-lg, 12px);
+  background: linear-gradient(
+    90deg,
+    var(--bg-secondary, #f3f4f6) 0%,
+    var(--border-color, #e5e7eb) 50%,
+    var(--bg-secondary, #f3f4f6) 100%
+  );
+  background-size: 200% 100%;
+  animation: hero-skeleton-shimmer 1.4s infinite;
+}
+
+@keyframes hero-skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+</style>

@@ -79,6 +79,65 @@ export interface TutorDashboardSnapshot {
   profile_status: 'draft' | 'published' | 'suspended'
 }
 
+/**
+ * Phase 29 (Activation) — Hero Primary CTA.
+ * Ref: saas_docs/plans/DASHBOARD_ACTIVATION_PLAN.md §3.4
+ *
+ * Backend обчислює priority-based CTA. Frontend лише рендерить.
+ */
+export type PrimaryCtaType =
+  | 'join_lesson'
+  | 'answer_inquiry'
+  | 'resume_draft'
+  | 'resume_last_lesson'
+  | 'create_lesson'
+  | 'prepare_lesson' // student
+  | 'find_tutor' // student
+
+export type UrgencyLevel = 'high' | 'medium' | 'low'
+
+export interface PrimaryCta {
+  type: PrimaryCtaType
+  title_key: string
+  title_params: Record<string, string | number>
+  subtitle: string | null
+  label_key: string
+  action_url: string
+  urgency: UrgencyLevel
+  metadata: Record<string, unknown>
+}
+
+export interface DashboardSecondary {
+  today_lessons_remaining?: Array<{
+    booking_id: string
+    time: string | null
+    student_name: string
+  }>
+  pending_inquiries_count?: number
+  draft_lessons?: Array<{ id: string; title: string; updated_at: string | null }>
+  upcoming_count?: number
+  last_completed_lesson?: {
+    booking_id: string
+    counterpart_name: string
+    completed_at: string | null
+  } | null
+}
+
+export interface DashboardBanners {
+  trial_days_left?: number
+  profile_published?: boolean
+}
+
+/**
+ * Phase 29: розширена форма snapshot — додано primary_cta / secondary / banners.
+ * Старі поля (todays_lessons, stats, etc.) збережено для backward-compat.
+ */
+export interface DashboardSnapshotV2 extends Partial<TutorDashboardSnapshot> {
+  primary_cta: PrimaryCta
+  secondary: DashboardSecondary
+  banners: DashboardBanners
+}
+
 // API
 export const dashboardApi = {
   // Student endpoints

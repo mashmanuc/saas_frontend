@@ -1124,7 +1124,9 @@
       "students": "Учні",
       "tutors": "Тьютори",
       "business": "Бізнес",
-      "system": "Система"
+      "system": "Система",
+      "subscription": "Підписка",
+      "profile": "Профіль"
     },
     "item": {
       "dashboard": "Головна",
@@ -1157,7 +1159,10 @@
       "myLessons": "Мої уроки",
       "templateLibrary": "Бібліотека шаблонів",
       "myPacks": "Мої серії",
-      "knowledgeAnalytics": "Аналітика"
+      "knowledgeAnalytics": "Аналітика",
+      "myBoards": "Мої дошки",
+      "materials": "Матеріали",
+      "myPlan": "Мій план"
     },
     "hint": {
       "dashboard": "Головна сторінка з розкладом і статистикою",
@@ -2758,6 +2763,46 @@
   },
   "dashboard": {
     "nextLessonAt": "Наступний урок",
+    "cta": {
+      "join_lesson": {
+        "in_progress": "Урок зараз іде",
+        "now": "Урок починається зараз",
+        "minutes": "Урок через {minutes} хв",
+        "label": "Приєднатись"
+      },
+      "answer_inquiry": {
+        "single": "{student} хоче почати навчання",
+        "multiple": "У тебе {count} нових запити",
+        "label": "Відповісти"
+      },
+      "resume_draft": {
+        "title": "Продовжити урок \"{title}\"",
+        "label": "Продовжити"
+      },
+      "resume_last_lesson": {
+        "title": "Повернутись до \"{title}\"",
+        "label": "Продовжити"
+      },
+      "create_lesson": {
+        "title": "Створи свій перший урок",
+        "label": "+ Створити"
+      },
+      "prepare_lesson": {
+        "title": "Наступний урок з {tutor}",
+        "label": "Переглянути матеріали"
+      },
+      "find_tutor": {
+        "title": "Знайди тьютора",
+        "label": "Каталог"
+      },
+      "dead_link": "Ця дія більше недоступна — ми оновлюємо панель"
+    },
+    "secondary": {
+      "today_remaining": "Сьогодні ще {count} урок(и):",
+      "pending_inquiries": "{count} нових запитів у «Запити»",
+      "draft_lessons": "{count} чернетк(и) уроків",
+      "last_completed": "Минулий урок з {counterpart} — можна повторити"
+    },
     "tutor": {
       "title": "Кабінет тьютора",
       "description": "Слідкуйте за учнями, уроками та інвайтами.",

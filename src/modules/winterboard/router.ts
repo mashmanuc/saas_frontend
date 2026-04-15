@@ -21,39 +21,52 @@ function winterboardGuard(
   }
 }
 
+// Phase 5 (Student solo-board removal):
+//   Solo-scope роути (session list, dashboard, library, boards, new, :id) — tutor-only.
+//   Classroom-scope роути (classroom-hub, classroom/:lessonId, lessons/:lessonId) — tutor + student.
+//   Public роути — no auth.
+//
+// Причина: студент не створює контент. Спробу попасти на solo URL прямим вводом
+// ловить `router.beforeEach` → `!hasRoleAccess` → redirect на `/student`.
+// Ref: memory/project_nav_decisions.md (decision #2)
+
 // FIX-5: Session list route — mounted inside PageShell for full header + sidebar
 const winterboardSessionListRoute: RouteRecordRaw = {
   path: 'winterboard',
   name: 'winterboard-sessions',
   component: () => import('./views/WBSessionList.vue'),
-  meta: { title: 'Winterboard', roles: ['student', 'tutor'] },
+  meta: { title: 'Winterboard', roles: ['tutor'] },
 }
 
 // Page-level routes — mounted inside PageShell (sidebar + header)
 const winterboardPageRoutes: RouteRecordRaw[] = [
   {
+    // Classroom hub — tutor + student (входження до уроку)
     path: 'winterboard/classroom-hub',
     name: 'winterboard-classroom-hub',
     component: () => import('./views/WBClassroomHub.vue'),
     meta: { title: 'Classroom Hub', roles: ['student', 'tutor'] },
   },
   {
+    // Solo WBDashboard — tutor-only
     path: 'winterboard/dashboard',
     name: 'winterboard-dashboard',
     component: () => import('./views/WBDashboard.vue'),
-    meta: { title: 'Winterboard — Dashboard', roles: ['student', 'tutor'] },
+    meta: { title: 'Winterboard — Dashboard', roles: ['tutor'] },
   },
   {
+    // Library з tutor матеріалами — tutor-only
     path: 'winterboard/library',
     name: 'winterboard-library',
     component: () => import('./views/WBLibrary.vue'),
-    meta: { title: 'Winterboard — Library', roles: ['student', 'tutor'] },
+    meta: { title: 'Winterboard — Library', roles: ['tutor'] },
   },
   {
     path: 'winterboard/lessons',
     redirect: { name: 'MyLessons' },
   },
   {
+    // Lesson detail — tutor + student (спільний перегляд уроку)
     path: 'winterboard/lessons/:lessonId',
     name: 'winterboard-lesson',
     component: () => import('./views/WBLessonDetail.vue'),
@@ -61,10 +74,11 @@ const winterboardPageRoutes: RouteRecordRaw[] = [
     meta: { title: 'Lesson', roles: ['student', 'tutor'] },
   },
   {
+    // Solo board list — tutor-only (це фокус Фази 5)
     path: 'winterboard/boards',
     name: 'winterboard-boards',
     component: () => import('./views/WBBoardList.vue'),
-    meta: { title: 'Winterboard — Boards', roles: ['student', 'tutor'] },
+    meta: { title: 'Winterboard — Boards', roles: ['tutor'] },
   },
   {
     path: 'winterboard/students',
@@ -77,10 +91,11 @@ const winterboardPageRoutes: RouteRecordRaw[] = [
 // Standalone routes — own layout (solo room has compact header, public has no auth)
 const winterboardStandaloneRoutes: RouteRecordRaw[] = [
   {
+    // New solo session — tutor-only
     path: '/winterboard/new',
     name: 'winterboard-new',
     component: () => import('./views/WBSoloRoom.vue'),
-    meta: { title: 'Winterboard', roles: ['student', 'tutor'] },
+    meta: { title: 'Winterboard', roles: ['tutor'] },
   },
   {
     path: '/winterboard/content-preview',
@@ -89,6 +104,7 @@ const winterboardStandaloneRoutes: RouteRecordRaw[] = [
     meta: { title: 'Winterboard — Content Preview', roles: ['tutor'] },
   },
   {
+    // Classroom runtime — tutor + student (живий урок)
     path: '/winterboard/classroom/:lessonId',
     name: 'winterboard-classroom',
     component: () => import('./views/WBClassroomRoom.vue'),
@@ -117,11 +133,12 @@ const winterboardStandaloneRoutes: RouteRecordRaw[] = [
     meta: { public: true, requiresAuth: false },
   },
   {
+    // Solo session editor — tutor-only
     path: '/winterboard/:id',
     name: 'winterboard-solo',
     component: () => import('./views/WBSoloRoom.vue'),
     props: true,
-    meta: { title: 'Winterboard', roles: ['student', 'tutor'] },
+    meta: { title: 'Winterboard', roles: ['tutor'] },
   },
 ]
 

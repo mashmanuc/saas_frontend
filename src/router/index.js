@@ -12,11 +12,9 @@ import ResetPasswordView from '../modules/auth/views/ResetPasswordView.vue'
 import InviteValidationView from '../modules/auth/views/InviteValidationView.vue'
 import InviteAcceptView from '../modules/auth/views/InviteAcceptView.vue'
 
-// R2: DashboardTutor replaced by TutorHome (new dashboard layout)
-// Legacy DashboardTutor.vue preserved in codebase but no longer imported in router.
+// Phase 29 (Activation): Dashboard as activation-focused entry point with hero CTA.
+// Legacy DashboardTutor.vue / DashboardStudent.vue deleted — see saas_docs/plans/DASHBOARD_ACTIVATION_PLAN.md.
 const TutorHome = () => import('../modules/dashboard/views/TutorHome.vue')
-// R2: DashboardStudent replaced by StudentHome (new dashboard layout)
-// Legacy DashboardStudent.vue preserved in codebase but no longer imported in router.
 const StudentHome = () => import('../modules/dashboard/views/StudentHome.vue')
 import ClassroomList from '../modules/classrooms/views/ClassroomList.vue'
 import ClassroomView from '../modules/classrooms/views/ClassroomView.vue'

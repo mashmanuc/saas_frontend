@@ -114,6 +114,10 @@ import Button from '@/ui/Button.vue'
 import Modal from '@/ui/Modal.vue'
 import CalendarWeekView from '@/modules/booking/components/calendar/CalendarWeekView.vue'
 import type { MyCalendarEvent, DaySnapshot, CalendarEvent as CalendarEventV055 } from '@/modules/booking/types/calendarV055'
+import { useScheduleDeepLink } from '@/modules/booking/composables/useScheduleDeepLink'
+
+// Phase 1.5: deep-link ?booking={id} → scroll + highlight картки
+useScheduleDeepLink()
 
 dayjs.extend(utc)
 dayjs.extend(timezone)

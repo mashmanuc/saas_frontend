@@ -77,3 +77,32 @@ body {
   font-weight: 600;
   font-size: var(--text-sm);
 }
+
+/* ========================================
+   Phase 1.5 (1-click UX) — deep-link highlight
+   Використовується composable'ом useScheduleDeepLink для підсвічення
+   картки booking у календарі при заході через CTA з ?booking={id}.
+   Duration: 2.5s (2 пульси × 1.25s) — достатньо помітно, не дратує.
+   scroll-margin: 80px — щоб sticky header не закривав картку на mobile.
+   ======================================== */
+.schedule-booking--highlight {
+  animation: schedule-highlight-pulse 1.25s ease-in-out 2;
+  border-radius: var(--radius-md, 8px);
+  position: relative;
+  z-index: 1;
+  /* Захист від sticky header'ів при scrollIntoView(block:'center') */
+  scroll-margin-top: 80px;
+  scroll-margin-bottom: 80px;
+}
+
+@keyframes schedule-highlight-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent);
+    outline: 2px solid transparent;
+  }
+  50% {
+    box-shadow: 0 0 0 8px color-mix(in srgb, var(--accent) 30%, transparent);
+    outline: 2px solid var(--accent);
+  }
+}
+

@@ -19,6 +19,10 @@ import CalendarWeekView from '@/modules/booking/components/calendar/CalendarWeek
 import OnboardingHint from '@/components/OnboardingHint.vue'
 import { TutorHintId } from '@/composables/useOnboardingHints'
 import apiClient from '@/utils/apiClient'
+import { useScheduleDeepLink } from '@/modules/booking/composables/useScheduleDeepLink'
+
+// Phase 1.5: deep-link ?booking={id} → scroll + highlight картки
+useScheduleDeepLink()
 
 // Default false = show hint immediately; hide only after API confirms has_availability=true
 const hasAvailability = ref(false)

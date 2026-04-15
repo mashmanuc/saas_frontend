@@ -345,8 +345,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { lessonSaveApi } from '../api/lessonSaveApi'
 import type { MyLesson, MyLessonsParams } from '../api/lessonSaveApi'
@@ -362,6 +362,7 @@ import MoveToFolderDropdown from '../components/MoveToFolderDropdown.vue'
 import ErrorBoundary from '@/components/ErrorBoundary.vue'
 
 const router = useRouter()
+const route = useRoute()
 const { t } = useI18n()
 
 const lessons = ref<MyLesson[]>([])
@@ -401,6 +402,50 @@ onMounted(() => {
   loadLessons()
   loadConductStudents()
 })
+
+// Phase 1.5: 1-click auto-open для resume_draft / resume_last_lesson CTA.
+//
+// Watch-sources: [lessons, isLoading, route.query.open]
+//   - [lessons, isLoading] — чекаємо поки API відповів (slow network safe)
+//   - route.query.open — ловить другий заход у той самий route з іншим ?open=
+//     (user back-ається, натискає інший CTA — компонент не remount'иться, але
+//     query змінюється, watcher знову спрацьовує з новим id)
+//
+// Race/dup protection:
+//   - openedIds: Set<id> — НЕ відкриваємо ту ж чернетку повторно навіть
+//     якщо watcher retrigger'иться до того як openLesson завершиться
+//   - openLesson має власний guard loadingLessonId → захист від паралельних викликів
+const openedIds = new Set<string>()
+
+watch(
+  [lessons, isLoading, () => route.query.open],
+  async () => {
+    if (isLoading.value) return
+
+    const openId = route.query.open
+    if (!openId || typeof openId !== 'string') return
+    if (openedIds.has(openId)) return
+
+    openedIds.add(openId)
+
+    const target = lessons.value.find((l) => l.id === openId)
+
+    // Чистимо query одразу — refresh/back не повторить open
+    await router.replace({ query: { ...route.query, open: undefined } })
+
+    if (!target) {
+      // Lesson не знайдено на першій сторінці — мовчки залишаємось на списку
+      // (lesson міг бути видалений або є на наступних сторінках пагінації)
+      console.info('[WBMyLessonsPage] open=%s not found in loaded lessons', openId)
+      return
+    }
+
+    // Auto-open: те ж саме, що ручний клік. openLesson має власний
+    // loadingLessonId guard — швидкі повторні кліки безпечні.
+    await openLesson(target)
+  },
+  { immediate: true },
+)
 
 async function loadLessons(append = false) {
   if (!append) {

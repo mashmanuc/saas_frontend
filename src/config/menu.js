@@ -46,9 +46,19 @@ export function getMenuByRole(role) {
  * Icons = Lucide icon names (kebab-case).
  * Labels = i18n keys.
  *
- * Ref: docs/onboarding/UX_PRODUCT_VISION.md §2.2, §2.3
+ * Phase 3 (Sidebar Final): затверджена структура після доменного аудиту —
+ * 5 секцій tutor / 3 секції student. Сутності розділені чітко:
+ *   - KnowledgeLesson ("Мої уроки") ≠ WBSession Solo ("Мої дошки") ≠ LibraryAsset ("Матеріали")
+ *
+ * Ref:
+ *   - saas_docs/plans/DASHBOARD_ACTIVATION_PLAN.md §10
+ *   - memory/project_nav_decisions.md (затверджена структура)
+ *   - memory/project_domain_entities_navigation.md (розрізнення сутностей)
  */
 export const SECTIONED_MENU_BY_ROLE = {
+  // ====================================================
+  // TUTOR — 5 секцій, 10 пунктів
+  // ====================================================
   tutor: [
     {
       key: 'main',
@@ -59,22 +69,13 @@ export const SECTIONED_MENU_BY_ROLE = {
       ],
     },
     {
+      // НАВЧАННЯ — три окремі сутності: уроки, дошки, матеріали
       key: 'teaching',
       label: 'sidebar.section.teaching',
       items: [
         { label: 'sidebar.item.myLessons', icon: 'book-open', to: '/knowledge/my-lessons', hint: 'sidebar.hint.myLessons' },
-        { label: 'sidebar.item.lessonCatalog', icon: 'search', to: '/knowledge/catalog', hint: 'sidebar.hint.lessonCatalog' },
-        { label: 'sidebar.item.knowledgeAnalytics', icon: 'bar-chart-3', to: '/knowledge/analytics', hint: 'sidebar.hint.knowledgeAnalytics' },
-      ],
-    },
-    {
-      key: 'winterboard',
-      label: 'sidebar.section.winterboard',
-      items: [
-        { label: 'sidebar.item.classroomHub', icon: 'play-circle', to: '/winterboard/classroom-hub', hint: 'sidebar.hint.classroomHub' },
-        { label: 'sidebar.item.wbDashboard', icon: 'layout-dashboard', to: '/winterboard/dashboard', hint: 'sidebar.hint.wbDashboard' },
-        { label: 'sidebar.item.wbLibrary', icon: 'folder', to: '/winterboard/library', hint: 'sidebar.hint.wbLibrary' },
-        { label: 'sidebar.item.wbBoards', icon: 'layout', to: '/winterboard/boards', hint: 'sidebar.hint.wbBoards' },
+        { label: 'sidebar.item.myBoards', icon: 'layout', to: '/winterboard/boards', hint: 'sidebar.hint.wbBoards' },
+        { label: 'sidebar.item.materials', icon: 'folder', to: '/winterboard/library', hint: 'sidebar.hint.wbLibrary' },
       ],
     },
     {
@@ -86,23 +87,28 @@ export const SECTIONED_MENU_BY_ROLE = {
       ],
     },
     {
-      key: 'business',
-      label: 'sidebar.section.business',
+      // ПІДПИСКА — окрема секція для SaaS-плану (готується до prod)
+      key: 'subscription',
+      label: 'sidebar.section.subscription',
       items: [
-        { label: 'sidebar.item.tutorProfile', icon: 'briefcase', to: '/tutor/profile', hint: 'sidebar.hint.tutorProfile' },
-        { label: 'sidebar.item.billing', icon: 'wallet', to: '/tutor/billing', hint: 'sidebar.hint.billing' },
+        { label: 'sidebar.item.myPlan', icon: 'wallet', to: '/tutor/billing', hint: 'sidebar.hint.billing' },
       ],
     },
     {
-      key: 'system',
-      label: 'sidebar.section.system',
+      // ПРОФІЛЬ — публічний профіль тьютора + особисті налаштування
+      key: 'profile',
+      label: 'sidebar.section.profile',
       items: [
+        { label: 'sidebar.item.tutorProfile', icon: 'briefcase', to: '/tutor/profile', hint: 'sidebar.hint.tutorProfile' },
         { label: 'sidebar.item.settings', icon: 'settings', to: '/settings', hint: 'sidebar.hint.settings' },
-        { label: 'sidebar.item.notifications', icon: 'bell', to: '/notifications', hint: 'sidebar.hint.notifications' },
       ],
     },
   ],
 
+  // ====================================================
+  // STUDENT — 3 секції, 5 пунктів
+  // Student solo-дошка прибрана повністю (memory/feedback_student_no_solo_board).
+  // ====================================================
   student: [
     {
       key: 'main',
@@ -113,27 +119,16 @@ export const SECTIONED_MENU_BY_ROLE = {
       ],
     },
     {
-      key: 'winterboard',
-      label: 'sidebar.section.winterboard',
-      items: [
-        { label: 'sidebar.item.classroomHub', icon: 'play-circle', to: '/winterboard/classroom-hub' },
-        { label: 'sidebar.item.wbDashboard', icon: 'layout-dashboard', to: '/winterboard/dashboard' },
-        { label: 'sidebar.item.wbLibrary', icon: 'folder', to: '/winterboard/library' },
-        { label: 'sidebar.item.wbBoards', icon: 'layout', to: '/winterboard/boards' },
-      ],
-    },
-    {
       key: 'tutors',
       label: 'sidebar.section.tutors',
       items: [
         { label: 'sidebar.item.findTutor', icon: 'search', to: '/marketplace' },
-        { label: 'sidebar.item.lessonCatalog', icon: 'book-open', to: '/knowledge/catalog' },
         { label: 'sidebar.item.myInquiries', icon: 'inbox', to: '/student/inquiries' },
       ],
     },
     {
-      key: 'system',
-      label: 'sidebar.section.system',
+      key: 'profile',
+      label: 'sidebar.section.profile',
       items: [
         { label: 'sidebar.item.settings', icon: 'settings', to: '/settings' },
       ],
