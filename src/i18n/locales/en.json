@@ -1009,7 +1009,8 @@
       "knowledgeAnalytics": "Analytics",
       "myBoards": "My Boards",
       "materials": "Materials",
-      "myPlan": "My Plan"
+      "myPlan": "My Plan",
+      "myReplays": "My Replays"
     },
     "hint": {
       "dashboard": "Home page with schedule and stats",
@@ -1030,7 +1031,8 @@
       "notifications": "Unread notifications",
       "templateLibrary": "Community lesson templates",
       "myPacks": "Your lesson series",
-      "knowledgeAnalytics": "View and fork statistics"
+      "knowledgeAnalytics": "View and fork statistics",
+      "myReplays": "Recordings of lessons & boards — watch and share"
     },
     "collapse": "Collapse menu",
     "expand": "Expand menu",
@@ -6301,6 +6303,27 @@
     }
   },
   "winterboard": {
+    "replayList": {
+      "title": "My Replays",
+      "subtitle": "Recordings of your lessons and boards: watch, share a link",
+      "untitled": "Untitled",
+      "loadMore": "Load more",
+      "live": "Recording in progress",
+      "empty": {
+        "title": "No replays yet",
+        "subtitle": "Press «Record lesson» while working on the board — recordings will appear here"
+      },
+      "visibility": {
+        "private": "Private",
+        "link": "By link",
+        "public": "Public"
+      },
+      "actions": {
+        "watch": "Watch",
+        "share": "Copy link",
+        "copied": "Copied ✓"
+      }
+    },
     "export": {
       "title": "Export Board",
       "format": "Format",

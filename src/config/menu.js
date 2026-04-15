@@ -69,12 +69,15 @@ export const SECTIONED_MENU_BY_ROLE = {
       ],
     },
     {
-      // НАВЧАННЯ — три окремі сутності: уроки, дошки, матеріали
+      // НАВЧАННЯ — чотири окремі сутності: уроки, дошки, записи, матеріали
+      // Phase 1.6: «Мої записи» додано для UX-gap (replays існують на backend,
+      // але тьютор не мав UI для перегляду)
       key: 'teaching',
       label: 'sidebar.section.teaching',
       items: [
         { label: 'sidebar.item.myLessons', icon: 'book-open', to: '/knowledge/my-lessons', hint: 'sidebar.hint.myLessons' },
         { label: 'sidebar.item.myBoards', icon: 'layout', to: '/winterboard/boards', hint: 'sidebar.hint.wbBoards' },
+        { label: 'sidebar.item.myReplays', icon: 'film', to: '/winterboard/replays', hint: 'sidebar.hint.myReplays' },
         { label: 'sidebar.item.materials', icon: 'folder', to: '/winterboard/library', hint: 'sidebar.hint.wbLibrary' },
       ],
     },

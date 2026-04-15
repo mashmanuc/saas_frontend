@@ -35,6 +35,14 @@ export interface WBSessionListItem {
     status: string
   } | null
   folder: number | null
+  // Phase 1.6 (Replay Surface):
+  has_recording?: boolean
+  recording_started_at?: string | null
+  recording_stopped_at?: string | null
+  recording_duration_seconds?: number | null
+  is_replay_frozen?: boolean
+  replay_visibility?: 'private' | 'link' | 'public'
+  replay_share_token?: string | null
 }
 
 export interface ListSessionsQuery {
@@ -44,6 +52,8 @@ export interface ListSessionsQuery {
   limit?: number
   offset?: number
   folder?: string | number
+  // Phase 1.6: фільтр для сторінки «Мої записи»
+  has_recording?: boolean
 }
 
 // ── Board Folder types (Level 2) ──────────────────────────────────────

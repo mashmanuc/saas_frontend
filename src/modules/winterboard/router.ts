@@ -81,6 +81,13 @@ const winterboardPageRoutes: RouteRecordRaw[] = [
     meta: { title: 'Winterboard — Boards', roles: ['tutor'] },
   },
   {
+    // Phase 1.6 (Replay Surface): список записів тьютора
+    path: 'winterboard/replays',
+    name: 'winterboard-replays',
+    component: () => import('./views/WBReplayList.vue'),
+    meta: { title: 'Winterboard — My Replays', roles: ['tutor'] },
+  },
+  {
     path: 'winterboard/students',
     name: 'winterboard-students',
     component: () => import('./views/WBStudents.vue'),
