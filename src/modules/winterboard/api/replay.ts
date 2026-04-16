@@ -127,7 +127,13 @@ export async function startRecording(
  */
 export async function stopRecording(
   sessionId: string,
-): Promise<{ recording_stopped_at: string; recording_stopped_seq: number; is_replay_frozen: boolean }> {
+): Promise<{
+  recording_stopped_at: string
+  recording_stopped_seq: number
+  is_replay_frozen: boolean
+  /** Share Layer v1: BE тепер повертає Replay id створеного hook'ом. */
+  replay_id?: string
+}> {
   return apiClient.post(`${BASE}/sessions/${sessionId}/stop-recording/`)
 }
 
@@ -145,6 +151,8 @@ export async function createReplayFromExistingOps(
   recording_stopped_seq: number
   total_operations: number
   is_replay_frozen: boolean
+  /** Share Layer v1: BE повертає Replay id для нового content-entity. */
+  replay_id?: string
 }> {
   return apiClient.post(`${BASE}/sessions/${sessionId}/create-replay-from-ops/`)
 }

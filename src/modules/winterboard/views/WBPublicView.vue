@@ -249,7 +249,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
-import { useRoute, onBeforeRouteLeave } from 'vue-router'
+import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { winterboardApi } from '../api/winterboardApi'
 import { useWBStore } from '../board/state/boardStore'
@@ -266,6 +266,7 @@ import type { ReplaySpeed } from '../engine/WBReplayEngine'
 
 const { t } = useI18n()
 const route = useRoute()
+const router = useRouter()
 const store = useWBStore()
 
 // ── UI state (NOT board state — board lives in store) ──
@@ -733,15 +734,15 @@ onMounted(async () => {
     }
   } catch (err: unknown) {
     const status = (err as { response?: { status?: number } })?.response?.status
+    if (status === 410) {
+      // Share Layer S.3: dedicated 🪦 landing для trashed replay — NOT inline error
+      router.replace({ name: 'winterboard-replay-gone' })
+      return
+    }
     if (status === 404) {
       loadError.value = {
         title: t('winterboard.public.notFound'),
         message: t('winterboard.public.sessionNotFound'),
-      }
-    } else if (status === 410) {
-      loadError.value = {
-        title: t('winterboard.public.expired'),
-        message: t('winterboard.public.linkExpired'),
       }
     } else {
       loadError.value = {

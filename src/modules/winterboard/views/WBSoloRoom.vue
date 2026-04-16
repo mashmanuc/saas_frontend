@@ -743,6 +743,7 @@
       :comment-points="commentPoints"
       :show-chapters-toggle="(isMobileDevice || isTabletDevice) && replayMarkers.length > 0"
       :show-comments-toggle="isMobileDevice || isTabletDevice"
+      :show-share-button="!!activeReplayId"
       @exit="exitReplayMode"
       @operation="onReplayOperation"
       @start-state="onReplayStartState"
@@ -750,6 +751,7 @@
       @seek-start="replayAudio.stopAudio()"
       @toggle-chapters="onToggleChapters"
       @toggle-comments="onToggleComments"
+      @share="showShareModal = true"
     />
 
     <!-- Phase C: Replay comments sidebar (desktop inline, tablet single-toggle) -->
@@ -833,16 +835,12 @@
       </span>
     </div>
 
-    <!-- Recording done prompt — teaches user about sharing -->
-    <div v-if="showRecordingDonePrompt" class="wb-solo-room__recording-done">
-      <span>{{ t('winterboard.replay.recordingDone') }}</span>
-      <button class="wb-solo-room__recording-done-share" @click="showShareModal = true; showRecordingDonePrompt = false">
-        {{ t('winterboard.replay.shareWithStudent') }}
-      </button>
-      <button class="wb-solo-room__recording-done-later" @click="showRecordingDonePrompt = false">
-        {{ t('winterboard.replay.later') }}
-      </button>
-    </div>
+    <!-- Share Layer S.2: Post-record proactive prompt з inline visibility + auto-copy -->
+    <WBRecordingDonePrompt
+      :visible="showRecordingDonePrompt"
+      :replay-id="activeReplayId"
+      @dismiss="showRecordingDonePrompt = false"
+    />
 
     <!-- INV: Recording broken warning — pipeline health check failed -->
     <div v-if="recordingBrokenWarning" class="wb-solo-room__recording-broken">
@@ -850,14 +848,14 @@
       <button class="wb-solo-room__recording-broken-dismiss" @click="recordingBrokenWarning = false">✕</button>
     </div>
 
-    <!-- Phase B: Share replay modal — owner only -->
+    <!-- Share Layer v1: Replay entity-based modal -->
     <WBReplayShareModal
       v-if="sessionId"
       :visible="showShareModal"
+      :replay-id="activeReplayId"
       :session-id="sessionId"
-      :has-recording="isReplayFrozen || isManualRecording"
       @close="showShareModal = false"
-      @replay-created="isReplayFrozen = true"
+      @replay-created="(id) => { isReplayFrozen = true; activeReplayId = id }"
     />
 
     <!-- Phase 34 B7: Multi-delete confirmation dialog -->
@@ -936,6 +934,7 @@ import WBTouchContextMenu from '../components/canvas/WBTouchContextMenu.vue'
 import WBSelectionToolbar from '../components/canvas/WBSelectionToolbar.vue'
 import WBReplayControls from '../components/replay/WBReplayControls.vue'
 import WBReplayShareModal from '../components/replay/WBReplayShareModal.vue'
+import WBRecordingDonePrompt from '../components/replay/WBRecordingDonePrompt.vue'
 import WBReplayCommentsSidebar from '../components/replay/WBReplayCommentsSidebar.vue'
 import { useReplayComments } from '../composables/useReplayComments'
 import WBMarkerCreateModal from '../components/replay/WBMarkerCreateModal.vue'
@@ -1000,6 +999,8 @@ const showShareModal = ref(false)
 const isManualRecording = ref(false)
 const recordingStartedAt = ref<string | null>(null)
 const isReplayFrozen = ref(false)
+// Share Layer v1: Replay entity id для нового content-based share flow.
+const activeReplayId = ref<string | null>(null)
 const isRecordingLoading = ref(false)
 const showRecordingDonePrompt = ref(false)
 const recordingBrokenWarning = ref(false)  // INV: shown when pipeline health check fails
@@ -1068,11 +1069,13 @@ async function handleStopRecording(): Promise<void> {
     isManualRecording.value = false
     recordingStartedAt.value = null
     isReplayFrozen.value = result.is_replay_frozen
+    activeReplayId.value = result.replay_id ?? null  // Share Layer v1
     recordingBrokenWarning.value = false  // clear if was shown
 
-    // Show "Recording done" prompt — teach user about sharing
+    // Share Layer S.2: inline post-record prompt (live while user вирішує).
+    // 45s — достатньо щоб побачити, обрати visibility, скопіювати URL.
     showRecordingDonePrompt.value = true
-    _recordingDoneTimer = window.setTimeout(() => { showRecordingDonePrompt.value = false }, 15000)
+    _recordingDoneTimer = window.setTimeout(() => { showRecordingDonePrompt.value = false }, 45000)
   } catch (e) {
     console.error('[WBSoloRoom] Failed to stop recording:', e)
     // P0.5: Local fallback — if API unreachable (auth dead, CORS, network), still stop UI
@@ -2741,6 +2744,21 @@ onMounted(async () => {
         }
       }
       isReplayFrozen.value = detail.is_replay_frozen ?? false
+
+      // Share Layer v1: якщо recording вже frozen — знайти replay.id через list API.
+      // Status='all' бо може бути у trash/archive теж. BE фільтрує по owner=request.user.
+      if (isReplayFrozen.value) {
+        try {
+          const replayApi = await import('../api/replayLifecycleApi')
+          const res = await replayApi.listReplays({ status: 'all', source_session: id })
+          activeReplayId.value = res.replays[0]?.id ?? null
+        } catch (err) {
+          console.warn('[WBSoloRoom] listReplays failed', err)
+          activeReplayId.value = null
+        }
+      } else {
+        activeReplayId.value = null
+      }
 
       // Set sessionId AFTER hydration — autosave is now safe to run
       sessionId.value = id

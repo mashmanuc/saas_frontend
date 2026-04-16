@@ -7319,9 +7319,11 @@
       "statMinutes": "min",
       "emptyHint": "Record a lesson to replay it later",
       "recordingDone": "Recording complete!",
+      "recordingDoneHint": "Choose visibility — the link will be copied automatically",
       "recordingBroken": "Recording failed — reload the page and try again",
       "shareWithStudent": "Share with student",
       "later": "Later",
+      "goToList": "Go to list",
       "viewingMode": "Viewing mode — editing disabled",
       "exitReplay": "Exit",
       "shareMoment": "Share moment",
@@ -7345,14 +7347,22 @@
         "link": "Link",
         "linkHint": "Anyone with this link can view the lesson recording.",
         "copy": "Copy",
-        "copied": "Copied",
+        "copied": "Copied ✓",
         "rotate": "Rotate link",
+        "rotateConfirm": "The previous link will become inactive. Continue?",
         "creating": "Creating link…",
         "creatingReplay": "Creating replay from all operations…",
+        "createFailed": "Failed to create recording",
         "noOps": "No actions on the board to create a recording from.",
         "noRecordingTitle": "Lesson was conducted without recording",
         "createAndShare": "Create lesson recording",
-        "createHint": "Recording will be created from what is already on the board"
+        "createHint": "Recording will be created from what is already on the board",
+        "privateHint": "Private recording is only accessible to you. Change visibility to get a shareable link.",
+        "visibilityHints": {
+          "private": "Only you have access",
+          "unlisted": "Anyone with the link can view",
+          "public": "Visible to everyone and indexed by search engines"
+        }
       }
     },
     "objectText": {
@@ -7797,13 +7807,21 @@
         "link": "Link",
         "linkHint": "Anyone with this link can view the lesson recording.",
         "copy": "Copy",
-        "copied": "Copied",
+        "copied": "Copied ✓",
         "rotate": "Rotate link",
+        "rotateConfirm": "The previous link will become inactive. Continue?",
         "creating": "Creating link…",
         "creatingReplay": "Creating replay from all operations…",
+        "createFailed": "Failed to create recording",
         "noOps": "No actions on the board to create a recording from.",
         "noRecordingTitle": "Lesson was conducted without recording",
         "createAndShare": "Create lesson recording",
+        "privateHint": "Private recording is only accessible to you. Change visibility to get a shareable link.",
+        "visibilityHints": {
+          "private": "Only you have access",
+          "unlisted": "Anyone with the link can view",
+          "public": "Visible to everyone and indexed by search engines"
+        },
         "createHint": "Recording will be created from what is already on the board"
       }
     },

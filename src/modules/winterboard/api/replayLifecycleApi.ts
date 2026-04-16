@@ -42,6 +42,7 @@ export interface ReplayListParams {
   status?: ReplayStatus | 'all'
   folder?: string | 'root' | 'all'
   search?: string
+  source_session?: string
 }
 
 // ─── List & detail ─────────────────────────────────────────────────
@@ -89,6 +90,14 @@ export async function moveReplayToFolder(
   return apiClient.post<Replay>(`${BASE}/replays/${id}/move-folder/`, {
     folder_id: folderId,
   })
+}
+
+/**
+ * Regenerate public_token — старий URL стає 404.
+ * Використовується для "відкликати share link".
+ */
+export async function rotateReplayToken(id: string): Promise<Replay> {
+  return apiClient.post<Replay>(`${BASE}/replays/${id}/rotate-token/`, {})
 }
 
 // ─── Folders ───────────────────────────────────────────────────────
