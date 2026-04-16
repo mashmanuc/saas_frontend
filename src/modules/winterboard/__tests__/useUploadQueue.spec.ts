@@ -5,6 +5,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import {
   withUploadSlot,
   UploadAbortedError,
+  useUploadQueueState,
   _getQueueState,
   _resetQueue,
 } from '../composables/useUploadQueue'
@@ -158,6 +159,39 @@ describe('useUploadQueue', () => {
     releases.forEach((r) => r())
     await Promise.all(blockers)
     expect(_getQueueState().active).toBe(0)
+  })
+
+  // ─── Reactive state ─────────────────────────────────────────────────────
+
+  it('useUploadQueueState — reactive active/waiting під час навантаження', async () => {
+    const state = useUploadQueueState()
+    expect(state.active.value).toBe(0)
+    expect(state.inFlight.value).toBe(0)
+
+    const releases: Array<() => void> = []
+    const tasks = [0, 1, 2, 3, 4].map(() =>
+      withUploadSlot(async () => {
+        await new Promise<void>((r) => releases.push(r))
+      }),
+    )
+    await new Promise((r) => setTimeout(r, 0))
+
+    // 3 active, 2 waiting → inFlight = 5
+    expect(state.active.value).toBe(3)
+    expect(state.waiting.value).toBe(2)
+    expect(state.inFlight.value).toBe(5)
+
+    // Звільняти по одному; waiting tasks додають свої releases після того
+    // як отримали slot — тому не можна forEach на snapshot.
+    while (releases.length > 0) {
+      releases.shift()!()
+      await new Promise((r) => setTimeout(r, 0))
+    }
+    await Promise.all(tasks)
+
+    expect(state.active.value).toBe(0)
+    expect(state.waiting.value).toBe(0)
+    expect(state.inFlight.value).toBe(0)
   })
 
   it('hard stop сценарій: 6 завдань, abort усього batch після 1-го виконання', async () => {

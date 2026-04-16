@@ -621,6 +621,27 @@ describe('useBoardClipboard', () => {
     restore()
   })
 
+  // ── Test: hard cap paste — >50 images → warning, НЕ upload ───────────────
+
+  it('paste >50 images — hard reject з warning toast, БЕЗ upload', async () => {
+    const restore = stubImageGlobal()
+    const clipboard = createClipboard()
+    // Створюємо clipboard event з 51 файлом
+    const event = makeImageClipboardEvent(51)
+
+    await clipboard.handlePaste(event)
+    await new Promise((r) => setTimeout(r, 50))
+
+    expect(mockUploadFileToStorage).not.toHaveBeenCalled()
+    expect(onAssetAdd).not.toHaveBeenCalled()
+    const warningToast = mockShowToast.mock.calls.find((c) => c[1] === 'warning')
+    expect(warningToast).toBeDefined()
+    // Текст містить кількість файлів і ліміт
+    expect(warningToast![0]).toMatch(/51|tooMany/)
+
+    restore()
+  })
+
   // ── Test 12: no session → toast warning, НЕ upload ───────────────────────
 
   it('paste без активної сесії — toast warning, НЕ upload', async () => {

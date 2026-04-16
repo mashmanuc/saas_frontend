@@ -7707,6 +7707,9 @@
     "upload": {
       "dropHere": "Drop file here to upload",
       "uploading": "Uploading...",
+      "uploadingMany": "Uploading {active} of {total}…",
+      "saved": "Saved",
+      "tooManyImages": "Too many images ({count}). Max {max} per paste.",
       "uploadSuccess": "File uploaded",
       "uploadError": "Upload failed"
     },

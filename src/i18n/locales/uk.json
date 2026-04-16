@@ -7795,6 +7795,9 @@
     "upload": {
       "dropHere": "Перетягніть файл сюди для завантаження",
       "uploading": "Завантаження...",
+      "uploadingMany": "Завантаження {active} з {total}…",
+      "saved": "Збережено",
+      "tooManyImages": "Забагато зображень ({count}). Максимум {max} за раз.",
       "uploadSuccess": "Файл завантажено",
       "uploadError": "Помилка завантаження"
     },

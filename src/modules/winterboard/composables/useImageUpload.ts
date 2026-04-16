@@ -6,6 +6,7 @@ import { ref, readonly } from 'vue'
 import type { WBAsset } from '../types/winterboard'
 import { winterboardApi } from '../api/winterboardApi'
 import type { WBPresignResponse } from '../api/winterboardApi'
+import { trackEvent } from '@/utils/telemetryAgent'
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -543,22 +544,44 @@ export async function uploadFileToStorage(
   signal?: AbortSignal,
 ): Promise<{ assetId: string; assetUrl: string }> {
   let attempt = 0
-  let retriesUsedForCode: Partial<Record<WBUploadErrorCode, number>> = {}
+  const retriesUsedForCode: Partial<Record<WBUploadErrorCode, number>> = {}
+  const startedAt = Date.now()
+
+  // Telemetry: start (один раз на upload, незалежно від retry)
+  trackEvent('wb.upload.start', {
+    session_id: sessionId,
+    content_type: file.type,
+  }, {
+    file_size: file.size,
+  })
 
   // eslint-disable-next-line no-constant-condition
   while (true) {
     if (signal?.aborted) {
-      throw new WBUploadError('cancelled', 'Upload cancelled before attempt')
+      const err = new WBUploadError('cancelled', 'Upload cancelled before attempt')
+      trackEvent('wb.upload.cancelled', { session_id: sessionId, code: 'cancelled' })
+      throw err
     }
 
     try {
-      return await _attemptUpload(sessionId, file, onProgress, signal)
+      const result = await _attemptUpload(sessionId, file, onProgress, signal)
+      trackEvent('wb.upload.success', {
+        session_id: sessionId,
+        asset_id: result.assetId,
+      }, {
+        duration_ms: Date.now() - startedAt,
+        attempts: attempt + 1,
+        file_size: file.size,
+      })
+      return result
     } catch (err) {
       // Cancelled з нижнього шару (API abort, sync prefix) — пробрасуємо як є.
       if (err instanceof WBUploadError && err.code === 'cancelled') {
+        trackEvent('wb.upload.cancelled', { session_id: sessionId, code: 'cancelled' })
         throw err
       }
       if (signal?.aborted) {
+        trackEvent('wb.upload.cancelled', { session_id: sessionId, code: 'cancelled' })
         throw new WBUploadError('cancelled', 'Upload cancelled during attempt')
       }
 
@@ -567,6 +590,14 @@ export async function uploadFileToStorage(
       const usedForCode = retriesUsedForCode[code] ?? 0
 
       if (usedForCode >= budget) {
+        // Final failure (нема retry-бюджету) — fire telemetry і throw
+        trackEvent('wb.upload.failure', {
+          session_id: sessionId,
+          code,
+        }, {
+          duration_ms: Date.now() - startedAt,
+          attempts: attempt + 1,
+        })
         throw err
       }
 
@@ -577,11 +608,20 @@ export async function uploadFileToStorage(
       attempt++
 
       const delay = _backoffDelay(attempt - 1)
+      trackEvent('wb.upload.retry', {
+        session_id: sessionId,
+        code,
+      }, {
+        attempt: usedForCode + 1,
+        budget,
+        delay_ms: Math.round(delay),
+      })
       console.warn(
         `${LOG} Retry ${usedForCode + 1}/${budget} after ${Math.round(delay)}ms (${code})`,
       )
       const aborted = await _sleepWithAbort(delay, signal)
       if (aborted) {
+        trackEvent('wb.upload.cancelled', { session_id: sessionId, code: 'cancelled' })
         throw new WBUploadError('cancelled', 'Upload cancelled during backoff')
       }
     }

@@ -30,7 +30,15 @@ import {
 import { withUploadSlot, UploadAbortedError } from './useUploadQueue'
 import { learningContentApi } from '@/modules/learning-content/api/learningContentApi'
 import { useToast } from './useToast'
+import { useI18n } from 'vue-i18n'
 import type { useWBStore } from '../board/state/boardStore'
+
+/**
+ * Максимум зображень за одну paste-операцію. Захист від accidental paste
+ * великого clipboard (drag-folder з 200 файлами, скрипт-вставка тощо) — щоб
+ * не флудити BE rate-limit і не лишати orphan'ів у storage.
+ */
+const MAX_PASTE_BATCH = 50
 
 type WBStore = ReturnType<typeof useWBStore>
 
@@ -73,6 +81,16 @@ function _createBatchContext(): BatchContext {
 export function useBoardClipboard(options: BoardClipboardOptions) {
   const { store, sessionId, canvasCenter, onAssetAdd, disabled } = options
   const { showToast } = useToast()
+  // i18n опціонально — у тестах поза Vue компонентом може не бути активного
+  // i18n instance. Fallback на англ. рядки не критичний.
+  let _t: ((key: string, params?: Record<string, unknown>) => string) | null = null
+  try {
+    const { t } = useI18n()
+    _t = t
+  } catch {
+    _t = null
+  }
+  const tr = (key: string, params?: Record<string, unknown>) => _t ? _t(key, params) : key
 
   const internalClipboard = ref<InternalClipboard | null>(null)
   const isUploading = ref(false)
@@ -137,6 +155,23 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
     // Handle image paste — підтримуємо MULTIPLE images (буфер може містити серію)
     if (imageFiles.length > 0) {
       e.preventDefault()
+
+      // Hard cap: захист від випадкового paste великих clipboard (drag-folder,
+      // bulk script). Hard reject — не часткове виконання, бо часткове =
+      // непередбачувано (юзер не зрозуміє чому 50 з 76).
+      if (imageFiles.length > MAX_PASTE_BATCH) {
+        console.warn('[BoardClipboard] paste batch too large:', imageFiles.length)
+        showToast(
+          tr('winterboard.upload.tooManyImages', {
+            count: imageFiles.length,
+            max: MAX_PASTE_BATCH,
+          }),
+          'warning',
+          { duration: 8000 },
+        )
+        return
+      }
+
       // Один BatchContext на весь paste-batch:
       //   - controller.abort() на першому quota_exceeded зупиняє решту pending
       //     (waiting у semaphore + retry-loop активних + реальний fetch у API)

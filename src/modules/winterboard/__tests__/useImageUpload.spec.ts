@@ -12,6 +12,12 @@ import {
 } from '../composables/useImageUpload'
 import type { ImageValidationResult } from '../composables/useImageUpload'
 
+// Mock telemetry — перевіряємо що events fire-аться у правильні моменти
+const mockTrackEvent = vi.fn()
+vi.mock('@/utils/telemetryAgent', () => ({
+  trackEvent: (...args: unknown[]) => mockTrackEvent(...args),
+}))
+
 // ── Mock winterboardApi ─────────────────────────────────────────────────
 
 const mockPresignUpload = vi.fn()
@@ -109,6 +115,7 @@ describe('uploadFileToStorage', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockTrackEvent.mockClear()
   })
 
   it('completes full presign → upload → confirm flow', async () => {
@@ -425,6 +432,86 @@ describe('uploadFileToStorage', () => {
     try { await uploadFileToStorage(SESSION_ID, file) } catch { /* expected */ }
 
     expect(mockConfirmUpload).not.toHaveBeenCalled()
+  })
+
+  // ─── Telemetry events ───────────────────────────────────────────────────
+
+  it('telemetry: success → wb.upload.start + wb.upload.success', async () => {
+    mockPresignUpload.mockResolvedValue({
+      asset_id: 'a-1', upload_url: 'https://s3/put',
+      asset_url: 'https://cdn/a-1.png', storage_key: 'key',
+    })
+    mockUploadToPresigned.mockResolvedValue(undefined)
+    mockConfirmUpload.mockResolvedValue({ confirmed: true, asset_url: 'https://cdn/a-1.png' })
+
+    const file = createFile('test.png', 2048, 'image/png')
+    await uploadFileToStorage(SESSION_ID, file)
+
+    const events = mockTrackEvent.mock.calls.map((c) => c[0])
+    expect(events).toContain('wb.upload.start')
+    expect(events).toContain('wb.upload.success')
+
+    const successCall = mockTrackEvent.mock.calls.find((c) => c[0] === 'wb.upload.success')
+    expect(successCall![1].asset_id).toBe('a-1')
+    expect(successCall![2].file_size).toBe(2048)
+    expect(successCall![2].attempts).toBe(1)
+    expect(typeof successCall![2].duration_ms).toBe('number')
+  })
+
+  it('telemetry: failure (quota) → wb.upload.start + wb.upload.failure', async () => {
+    const err = Object.assign(new Error('429'), {
+      response: { status: 429, data: { error: 'quota_exceeded' } },
+    })
+    mockPresignUpload.mockRejectedValue(err)
+
+    const file = createFile('test.png', 1024, 'image/png')
+    await expect(uploadFileToStorage(SESSION_ID, file)).rejects.toThrow()
+
+    const events = mockTrackEvent.mock.calls.map((c) => c[0])
+    expect(events).toContain('wb.upload.start')
+    expect(events).toContain('wb.upload.failure')
+
+    const failureCall = mockTrackEvent.mock.calls.find((c) => c[0] === 'wb.upload.failure')
+    expect(failureCall![1].code).toBe('quota_exceeded')
+  })
+
+  it('telemetry: rate_limited retry → wb.upload.retry events', async () => {
+    const err = Object.assign(new Error('429'), { response: { status: 429 } })
+    mockPresignUpload
+      .mockRejectedValueOnce(err)
+      .mockRejectedValueOnce(err)
+      .mockResolvedValueOnce({
+        asset_id: 'a-r', upload_url: 'https://s3/put',
+        asset_url: 'https://cdn/a-r.png', storage_key: 'key',
+      })
+    mockUploadToPresigned.mockResolvedValue(undefined)
+    mockConfirmUpload.mockResolvedValue({ confirmed: true, asset_url: 'https://cdn/a-r.png' })
+
+    const file = createFile('test.png', 1024, 'image/png')
+    vi.useFakeTimers()
+    const promise = uploadFileToStorage(SESSION_ID, file)
+    await vi.advanceTimersByTimeAsync(10_000)
+    await promise
+    vi.useRealTimers()
+
+    const retryEvents = mockTrackEvent.mock.calls.filter((c) => c[0] === 'wb.upload.retry')
+    expect(retryEvents).toHaveLength(2) // 2 fail → 2 retry
+    expect(retryEvents[0][1].code).toBe('rate_limited')
+    expect(retryEvents[0][2].attempt).toBe(1)
+    expect(retryEvents[1][2].attempt).toBe(2)
+  })
+
+  it('telemetry: AbortSignal → wb.upload.cancelled', async () => {
+    const controller = new AbortController()
+    controller.abort()
+
+    const file = createFile('test.png', 1024, 'image/png')
+    await expect(
+      uploadFileToStorage(SESSION_ID, file, undefined, controller.signal),
+    ).rejects.toMatchObject({ code: 'cancelled' })
+
+    const cancelledCall = mockTrackEvent.mock.calls.find((c) => c[0] === 'wb.upload.cancelled')
+    expect(cancelledCall).toBeDefined()
   })
 })
 

@@ -12,7 +12,7 @@
       aria-live="polite"
     >
       <span v-if="isUploading" class="wb-upload-indicator__spinner" />
-      <span v-if="isUploading">{{ t('winterboard.upload.uploading') }}</span>
+      <span v-if="isUploading">{{ uploadingText }}</span>
       <span v-else-if="showSuccess">&#10003; {{ t('winterboard.upload.saved') }}</span>
       <span v-else-if="uploadError">{{ uploadError }}</span>
     </div>
@@ -20,8 +20,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useUploadQueueState } from '../../composables/useUploadQueue'
 
 const props = defineProps<{
   isUploading: boolean
@@ -31,6 +32,23 @@ const props = defineProps<{
 const { t } = useI18n()
 const showSuccess = ref(false)
 let successTimer: ReturnType<typeof setTimeout> | null = null
+
+// Queue progress: при batch >1 показуємо "Uploading X / Y" замість generic "Uploading...".
+// Для одиночного upload (X=1, Y=1) — fallback на стандартний текст.
+const queue = useUploadQueueState()
+const uploadingText = computed(() => {
+  const total = queue.inFlight.value
+  if (total > 1) {
+    const done = total - queue.active.value - queue.waiting.value + queue.active.value
+    // active = "в роботі зараз", waiting = "в черзі"
+    // показуємо: "Uploading 2/16 (3 active)"  →  total=16 ще треба, active=3 зараз
+    return t('winterboard.upload.uploadingMany', {
+      active: queue.active.value,
+      total,
+    })
+  }
+  return t('winterboard.upload.uploading')
+})
 
 watch(() => props.isUploading, (curr, prev) => {
   // When uploading transitions from true → false without error → show success
