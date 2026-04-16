@@ -7,102 +7,179 @@
           {{ $t('winterboard.replayList.subtitle') }}
         </p>
       </div>
-      <span v-if="!isLoading && sessions.length > 0" class="replay-list__count">
-        {{ total }}
+      <span v-if="!store.isLoading && store.replays.length > 0" class="replay-list__count">
+        {{ store.replays.length }}
       </span>
     </header>
 
+    <!-- Status tabs -->
+    <nav class="replay-list__tabs" role="tablist">
+      <button
+        v-for="tab in statusTabs"
+        :key="tab.value"
+        type="button"
+        role="tab"
+        :aria-selected="store.currentStatus === tab.value"
+        class="replay-list__tab"
+        :class="{ 'replay-list__tab--active': store.currentStatus === tab.value }"
+        @click="store.setStatus(tab.value)"
+      >
+        {{ tab.label }}
+      </button>
+    </nav>
+
+    <!-- Error -->
+    <div v-if="store.error" class="replay-list__error" role="alert">
+      {{ store.error }}
+    </div>
+
     <!-- Loading -->
-    <div v-if="isLoading" class="replay-list__grid">
+    <div v-if="store.isLoading" class="replay-list__grid">
       <div v-for="i in 6" :key="i" class="replay-card replay-card--skeleton" />
     </div>
 
     <!-- Empty -->
-    <div v-else-if="sessions.length === 0" class="replay-list__empty">
-      <div class="replay-list__empty-icon">🎬</div>
+    <div v-else-if="store.replays.length === 0" class="replay-list__empty">
+      <div class="replay-list__empty-icon">{{ emptyIcon }}</div>
       <h2 class="replay-list__empty-title">
-        {{ $t('winterboard.replayList.empty.title') }}
+        {{ emptyTitle }}
       </h2>
       <p class="replay-list__empty-subtitle">
-        {{ $t('winterboard.replayList.empty.subtitle') }}
+        {{ emptySubtitle }}
       </p>
     </div>
 
     <!-- Grid -->
     <div v-else class="replay-list__grid">
       <article
-        v-for="session in sessions"
-        :key="session.id"
+        v-for="replay in store.replays"
+        :key="replay.id"
         class="replay-card"
-        :data-testid="`replay-card-${session.id}`"
+        :data-testid="`replay-card-${replay.id}`"
       >
         <div class="replay-card__thumb">
-          <img
-            v-if="session.thumbnail_url"
-            :src="session.thumbnail_url"
-            :alt="session.name"
-            loading="lazy"
-          />
-          <div v-else class="replay-card__thumb-placeholder">🎬</div>
+          <div class="replay-card__thumb-placeholder">🎬</div>
           <span
-            v-if="formatDuration(session.recording_duration_seconds) !== null"
+            v-if="formatDuration(replay.duration_ms) !== null"
             class="replay-card__duration"
           >
-            {{ formatDuration(session.recording_duration_seconds) }}
+            {{ formatDuration(replay.duration_ms) }}
           </span>
         </div>
 
         <div class="replay-card__body">
-          <h3 class="replay-card__name">{{ session.name || $t('winterboard.replayList.untitled') }}</h3>
+          <h3 class="replay-card__name">
+            {{ replay.title || $t('winterboard.replayList.untitled') }}
+          </h3>
           <div class="replay-card__meta">
-            <span v-if="session.recording_started_at">
-              {{ formatDate(session.recording_started_at) }}
-            </span>
+            <span>{{ formatDate(replay.recorded_at) }}</span>
             <span
-              v-if="session.replay_visibility && session.replay_visibility !== 'private'"
+              v-if="replay.visibility !== 'private'"
               class="replay-card__badge"
             >
-              {{ visibilityLabel(session.replay_visibility) }}
+              {{ visibilityLabel(replay.visibility) }}
             </span>
-            <span v-if="session.is_replay_frozen === false" class="replay-card__badge replay-card__badge--live">
-              {{ $t('winterboard.replayList.live') }}
+            <span
+              v-if="replay.status === 'archived'"
+              class="replay-card__badge replay-card__badge--archived"
+            >
+              {{ $t('winterboard.replayList.status.archived') }}
+            </span>
+            <span
+              v-if="replay.status === 'trashed'"
+              class="replay-card__badge replay-card__badge--trashed"
+            >
+              🪦 {{ $t('winterboard.replayList.status.trashed') }}
+            </span>
+            <span
+              v-if="replay.view_count > 0"
+              class="replay-card__views"
+              :title="$t('winterboard.replayList.viewCountTitle')"
+            >
+              👁 {{ replay.view_count }}
             </span>
           </div>
 
           <div class="replay-card__actions">
             <button
+              v-if="replay.status !== 'trashed'"
               type="button"
               class="replay-card__btn replay-card__btn--primary"
-              @click="openReplay(session)"
+              @click="openReplay(replay)"
             >
               ▶ {{ $t('winterboard.replayList.actions.watch') }}
             </button>
             <button
-              v-if="session.replay_share_token"
+              v-if="replay.public_token && replay.status !== 'trashed'"
               type="button"
               class="replay-card__btn"
-              :class="{ 'replay-card__btn--copied': copiedId === session.id }"
-              @click="copyShareLink(session)"
+              :class="{ 'replay-card__btn--copied': copiedId === replay.id }"
+              @click="copyShareLink(replay)"
             >
-              {{ copiedId === session.id
+              {{ copiedId === replay.id
                 ? $t('winterboard.replayList.actions.copied')
                 : $t('winterboard.replayList.actions.share') }}
             </button>
+
+            <!-- ⋯ menu -->
+            <div class="replay-card__menu-wrap">
+              <button
+                type="button"
+                class="replay-card__btn replay-card__btn--icon"
+                :aria-label="$t('common.menu')"
+                :data-testid="`replay-menu-${replay.id}`"
+                @click.stop="toggleMenu(replay.id)"
+              >
+                ⋯
+              </button>
+              <ul
+                v-if="openMenuId === replay.id"
+                v-click-outside="() => (openMenuId = null)"
+                class="replay-card__menu"
+                role="menu"
+              >
+                <!-- Active actions -->
+                <template v-if="replay.status === 'active'">
+                  <li role="menuitem" @click="handleRename(replay)">
+                    ✏️ {{ $t('winterboard.replayList.menu.rename') }}
+                  </li>
+                  <li class="menu-header">{{ $t('winterboard.replayList.menu.visibility') }}</li>
+                  <li
+                    v-for="v in ['private', 'unlisted', 'public'] as const"
+                    :key="v"
+                    role="menuitem"
+                    :class="{ 'menu-selected': replay.visibility === v }"
+                    @click="handleVisibility(replay, v)"
+                  >
+                    {{ visibilityLabel(v) }}
+                  </li>
+                  <li role="menuitem" @click="handleArchive(replay)">
+                    📦 {{ $t('winterboard.replayList.menu.archive') }}
+                  </li>
+                  <li role="menuitem" class="menu-danger" @click="handleTrash(replay)">
+                    🗑 {{ $t('winterboard.replayList.menu.trash') }}
+                  </li>
+                </template>
+                <!-- Archived actions -->
+                <template v-else-if="replay.status === 'archived'">
+                  <li role="menuitem" @click="handleRestore(replay)">
+                    ↩️ {{ $t('winterboard.replayList.menu.restore') }}
+                  </li>
+                  <li role="menuitem" class="menu-danger" @click="handleTrash(replay)">
+                    🗑 {{ $t('winterboard.replayList.menu.trash') }}
+                  </li>
+                </template>
+                <!-- Trashed actions -->
+                <template v-else>
+                  <li role="menuitem" @click="handleRestore(replay)">
+                    ↩️ {{ $t('winterboard.replayList.menu.restoreFromTrash') }}
+                  </li>
+                </template>
+              </ul>
+            </div>
           </div>
         </div>
       </article>
-    </div>
-
-    <!-- Load more -->
-    <div v-if="!isLoading && hasMore" class="replay-list__more">
-      <button
-        type="button"
-        class="replay-list__load-more"
-        :disabled="isLoadingMore"
-        @click="loadMore"
-      >
-        {{ isLoadingMore ? $t('common.loading') : $t('winterboard.replayList.loadMore') }}
-      </button>
     </div>
   </div>
 </template>
@@ -111,69 +188,129 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { winterboardApi, type WBSessionListItem } from '../api/winterboardApi'
+import { useReplayStore } from '../stores/replayStore'
+import type { Replay, ReplayStatus, ReplayVisibility } from '../api/replayLifecycleApi'
+
+const props = defineProps<{
+  initialStatus?: ReplayStatus
+}>()
 
 const router = useRouter()
 const { t } = useI18n()
+const store = useReplayStore()
 
-const sessions = ref<WBSessionListItem[]>([])
-const total = ref(0)
-const hasMore = ref(false)
-const isLoading = ref(true)
-const isLoadingMore = ref(false)
 const copiedId = ref<string | null>(null)
+const openMenuId = ref<string | null>(null)
 
-const PAGE_SIZE = 24
+const statusTabs = computed<Array<{ value: ReplayStatus; label: string }>>(() => [
+  { value: 'active', label: t('winterboard.replayList.tabs.active') },
+  { value: 'archived', label: t('winterboard.replayList.tabs.archived') },
+  { value: 'trashed', label: t('winterboard.replayList.tabs.trashed') },
+])
 
-async function loadSessions(append = false) {
-  if (append) {
-    isLoadingMore.value = true
-  } else {
-    isLoading.value = true
-  }
-  try {
-    const res = await winterboardApi.listSessions({
-      has_recording: true,
-      sort: '-updated_at',
-      limit: PAGE_SIZE,
-      offset: append ? sessions.value.length : 0,
-    })
-    sessions.value = append ? [...sessions.value, ...res.results] : res.results
-    total.value = res.count
-    hasMore.value = Boolean(res.next)
-  } catch (err) {
-    console.error('[WBReplayList] failed to load replays', err)
-  } finally {
-    isLoading.value = false
-    isLoadingMore.value = false
-  }
-}
-
-onMounted(() => {
-  loadSessions(false)
+const emptyIcon = computed(() => {
+  if (store.currentStatus === 'archived') return '📦'
+  if (store.currentStatus === 'trashed') return '🗑'
+  return '🎬'
+})
+const emptyTitle = computed(() => {
+  if (store.currentStatus === 'archived') return t('winterboard.replayList.empty.archivedTitle')
+  if (store.currentStatus === 'trashed') return t('winterboard.replayList.empty.trashedTitle')
+  return t('winterboard.replayList.empty.title')
+})
+const emptySubtitle = computed(() => {
+  if (store.currentStatus === 'archived') return t('winterboard.replayList.empty.archivedSubtitle')
+  if (store.currentStatus === 'trashed') return t('winterboard.replayList.empty.trashedSubtitle')
+  return t('winterboard.replayList.empty.subtitle')
 })
 
-function loadMore() {
-  if (isLoadingMore.value || !hasMore.value) return
-  loadSessions(true)
+onMounted(async () => {
+  if (props.initialStatus && store.currentStatus !== props.initialStatus) {
+    store.currentStatus = props.initialStatus
+  }
+  await store.loadReplays()
+})
+
+function toggleMenu(id: string) {
+  openMenuId.value = openMenuId.value === id ? null : id
 }
 
-// Повний шлях воркфлоу для власника: відкриваємо у solo-room,
-// де вбудований ReplayControls може запустити відтворення.
-function openReplay(session: WBSessionListItem) {
-  router.push({ name: 'winterboard-solo', params: { id: session.id } })
+function openReplay(replay: Replay) {
+  openMenuId.value = null
+  if (!replay.source_session) return
+  router.push({ name: 'winterboard-solo', params: { id: replay.source_session } })
 }
 
-function copyShareLink(session: WBSessionListItem) {
-  const token = session.replay_share_token
+function copyShareLink(replay: Replay) {
+  openMenuId.value = null
+  const token = replay.public_token
   if (!token) return
   const url = `${window.location.origin}/winterboard/public/${token}`
   navigator.clipboard.writeText(url).then(() => {
-    copiedId.value = session.id
+    copiedId.value = replay.id
     setTimeout(() => {
-      if (copiedId.value === session.id) copiedId.value = null
+      if (copiedId.value === replay.id) copiedId.value = null
     }, 2000)
   })
+}
+
+async function handleRename(replay: Replay) {
+  openMenuId.value = null
+  // eslint-disable-next-line no-alert
+  const next = window.prompt(
+    t('winterboard.replayList.prompts.renameTitle'),
+    replay.title,
+  )
+  if (next === null || next.trim() === '' || next === replay.title) return
+  try {
+    await store.renameReplay(replay.id, next.trim())
+  } catch (err) {
+    console.error('[WBReplayList] rename failed', err)
+  }
+}
+
+async function handleVisibility(replay: Replay, visibility: ReplayVisibility) {
+  openMenuId.value = null
+  if (replay.visibility === visibility) return
+  try {
+    await store.changeVisibility(replay.id, visibility)
+  } catch (err) {
+    console.error('[WBReplayList] visibility failed', err)
+  }
+}
+
+async function handleArchive(replay: Replay) {
+  openMenuId.value = null
+  try {
+    await store.archive(replay.id)
+  } catch (err) {
+    console.error('[WBReplayList] archive failed', err)
+  }
+}
+
+async function handleRestore(replay: Replay) {
+  openMenuId.value = null
+  try {
+    await store.restore(replay.id)
+  } catch (err) {
+    console.error('[WBReplayList] restore failed', err)
+  }
+}
+
+async function handleTrash(replay: Replay) {
+  openMenuId.value = null
+  const viewsWarning =
+    replay.view_count > 0
+      ? t('winterboard.replayList.prompts.trashWithViews', { count: replay.view_count }) + '\n\n'
+      : ''
+  // eslint-disable-next-line no-alert
+  const ok = window.confirm(viewsWarning + t('winterboard.replayList.prompts.trashConfirm'))
+  if (!ok) return
+  try {
+    await store.trash(replay.id)
+  } catch (err) {
+    console.error('[WBReplayList] trash failed', err)
+  }
 }
 
 function formatDate(iso: string): string {
@@ -188,18 +325,34 @@ function formatDate(iso: string): string {
   }
 }
 
-function formatDuration(seconds: number | null | undefined): string | null {
-  if (!seconds || seconds < 0) return null
+function formatDuration(ms: number | null | undefined): string | null {
+  if (!ms || ms < 0) return null
+  const seconds = Math.floor(ms / 1000)
   const m = Math.floor(seconds / 60)
   const s = seconds % 60
   if (m === 0) return `${s}с`
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
-function visibilityLabel(v: 'private' | 'link' | 'public'): string {
+function visibilityLabel(v: ReplayVisibility): string {
   if (v === 'public') return t('winterboard.replayList.visibility.public')
-  if (v === 'link') return t('winterboard.replayList.visibility.link')
+  if (v === 'unlisted') return t('winterboard.replayList.visibility.unlisted')
   return t('winterboard.replayList.visibility.private')
+}
+
+// Inline click-outside directive (невелика деталь щоб не тягнути зовнішній пакет).
+const vClickOutside = {
+  mounted(el: HTMLElement, binding: { value: () => void }) {
+    const handler = (e: Event) => {
+      if (!el.contains(e.target as Node)) binding.value()
+    }
+    ;(el as unknown as { __clickOutside__: EventListener }).__clickOutside__ = handler
+    document.addEventListener('click', handler, true)
+  },
+  unmounted(el: HTMLElement) {
+    const handler = (el as unknown as { __clickOutside__?: EventListener }).__clickOutside__
+    if (handler) document.removeEventListener('click', handler, true)
+  },
 }
 </script>
 
@@ -215,7 +368,7 @@ function visibilityLabel(v: 'private' | 'link' | 'public'): string {
   align-items: flex-end;
   justify-content: space-between;
   gap: var(--space-md, 16px);
-  margin-bottom: var(--space-lg, 24px);
+  margin-bottom: var(--space-md, 16px);
   flex-wrap: wrap;
 }
 
@@ -238,6 +391,42 @@ function visibilityLabel(v: 'private' | 'link' | 'public'): string {
   background: var(--bg-secondary);
   padding: 4px 10px;
   border-radius: 999px;
+}
+
+.replay-list__tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: var(--space-lg, 24px);
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+.replay-list__tab {
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.replay-list__tab:hover {
+  color: var(--text-primary);
+}
+
+.replay-list__tab--active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.replay-list__error {
+  padding: 12px 16px;
+  background: color-mix(in srgb, var(--color-error, #dc2626) 8%, transparent);
+  color: var(--color-error, #dc2626);
+  border-radius: var(--radius-md, 8px);
+  margin-bottom: var(--space-md, 16px);
 }
 
 .replay-list__grid {
@@ -283,13 +472,6 @@ function visibilityLabel(v: 'private' | 'link' | 'public'): string {
   aspect-ratio: 16 / 9;
   background: var(--bg-secondary);
   overflow: hidden;
-}
-
-.replay-card__thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
 }
 
 .replay-card__thumb-placeholder {
@@ -352,9 +534,19 @@ function visibilityLabel(v: 'private' | 'link' | 'public'): string {
   font-weight: 600;
 }
 
-.replay-card__badge--live {
+.replay-card__badge--archived {
+  background: color-mix(in srgb, var(--text-secondary, #6b7280) 12%, transparent);
+  color: var(--text-secondary);
+}
+
+.replay-card__badge--trashed {
   background: color-mix(in srgb, var(--color-error, #dc2626) 12%, transparent);
   color: var(--color-error, #dc2626);
+}
+
+.replay-card__views {
+  margin-left: auto;
+  font-size: 0.75rem;
 }
 
 .replay-card__actions {
@@ -362,6 +554,7 @@ function visibilityLabel(v: 'private' | 'link' | 'public'): string {
   gap: var(--space-xs, 6px);
   margin-top: auto;
   padding-top: var(--space-xs, 6px);
+  position: relative;
 }
 
 .replay-card__btn {
@@ -397,6 +590,65 @@ function visibilityLabel(v: 'private' | 'link' | 'public'): string {
   color: var(--color-success, #10b981);
 }
 
+.replay-card__btn--icon {
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  min-width: 40px;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.replay-card__menu-wrap {
+  position: relative;
+}
+
+.replay-card__menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 4px);
+  min-width: 220px;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: var(--radius-md, 8px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: 6px 0;
+  margin: 0;
+  list-style: none;
+  z-index: 50;
+}
+
+.replay-card__menu li {
+  padding: 8px 14px;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.replay-card__menu li:hover {
+  background: var(--bg-secondary);
+}
+
+.replay-card__menu .menu-header {
+  padding-top: 8px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: default;
+  pointer-events: none;
+}
+
+.replay-card__menu .menu-selected::before {
+  content: '✓ ';
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.replay-card__menu .menu-danger {
+  color: var(--color-error, #dc2626);
+}
+
 .replay-list__empty {
   text-align: center;
   padding: 80px 20px;
@@ -417,30 +669,5 @@ function visibilityLabel(v: 'private' | 'link' | 'public'): string {
 .replay-list__empty-subtitle {
   margin: 0;
   color: var(--text-secondary);
-}
-
-.replay-list__more {
-  display: flex;
-  justify-content: center;
-  margin-top: var(--space-lg, 24px);
-}
-
-.replay-list__load-more {
-  padding: 10px 20px;
-  border: 1px solid var(--border-color);
-  background: var(--card-bg);
-  border-radius: var(--radius-md, 8px);
-  color: var(--text-primary);
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.replay-list__load-more:hover:not(:disabled) {
-  background: var(--bg-secondary);
-}
-
-.replay-list__load-more:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 </style>

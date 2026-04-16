@@ -537,6 +537,7 @@
     "delete": "Delete",
     "save": "Save",
     "submit": "Submit",
+    "menu": "Menu",
     "weekdays": {
       "short": {
         "fri": "Пт",
@@ -6309,12 +6310,27 @@
       "untitled": "Untitled",
       "loadMore": "Load more",
       "live": "Recording in progress",
+      "viewCountTitle": "View count",
+      "tabs": {
+        "active": "All",
+        "archived": "Archive",
+        "trashed": "Trash"
+      },
+      "status": {
+        "archived": "Archived",
+        "trashed": "In trash"
+      },
       "empty": {
         "title": "No replays yet",
-        "subtitle": "Press «Record lesson» while working on the board — recordings will appear here"
+        "subtitle": "Press «Record lesson» while working on the board — recordings will appear here",
+        "archivedTitle": "Archive is empty",
+        "archivedSubtitle": "Archived replays are hidden from the main list, but links still work",
+        "trashedTitle": "Trash is empty",
+        "trashedSubtitle": "Trashed replays are kept for 7 days, then purged automatically"
       },
       "visibility": {
         "private": "Private",
+        "unlisted": "By link",
         "link": "By link",
         "public": "Public"
       },
@@ -6322,7 +6338,25 @@
         "watch": "Watch",
         "share": "Copy link",
         "copied": "Copied ✓"
+      },
+      "menu": {
+        "rename": "Rename",
+        "visibility": "Visibility",
+        "archive": "Archive",
+        "restore": "Restore",
+        "restoreFromTrash": "Restore from trash",
+        "trash": "Move to trash"
+      },
+      "prompts": {
+        "renameTitle": "New replay title:",
+        "trashConfirm": "Move this replay to trash? It will be permanently deleted after 7 days.",
+        "trashWithViews": "This replay has been viewed {count} times."
       }
+    },
+    "publicGone": {
+      "title": "Replay removed",
+      "subtitle": "The author has deleted this replay; it is no longer available for viewing.",
+      "home": "Home"
     },
     "export": {
       "title": "Export Board",
