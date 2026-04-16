@@ -201,15 +201,25 @@ export async function rotateReplayShareToken(
   )
 }
 
-/** GET /winterboard/replay/share/{token}/ — PUBLIC (no auth) */
+/** GET /winterboard/replay/public/{token}/ — PUBLIC (no auth).
+ *
+ * Share Layer v2: canonical endpoint resolves через Replay.public_token
+ * (не legacy WBSession.replay_share_token). Includes analytics tracking.
+ *
+ * Response superset legacy schema — додано replay_id, duration_ms, view_count.
+ */
 export async function fetchPublicReplayByToken(
   token: string,
 ): Promise<import('../types/replay').ReplayTimeline & {
   session_name?: string
   visibility?: ReplayVisibility
   tutor?: { id: number; name: string }
+  replay_id?: string
+  recorded_at?: string | null
+  duration_ms?: number
+  view_count?: number
 }> {
-  return apiClient.get(`${BASE}/replay/share/${token}/`)
+  return apiClient.get(`${BASE}/replay/public/${token}/`)
 }
 
 // ─── Phase C: Replay Comments ─────────────────────────────────────────
