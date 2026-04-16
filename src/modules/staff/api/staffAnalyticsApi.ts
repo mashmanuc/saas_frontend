@@ -380,6 +380,56 @@ export interface ExperimentResults {
   computed_at: string
 }
 
+// ── Replay Analytics (2026-04-16) ──
+
+export interface ReplayAnalyticsKPI {
+  total_views: number
+  views_7d: number
+  views_30d: number
+  unique_ips: number
+  unique_viewers_authenticated: number
+}
+
+export interface ReplayAnalyticsCounts {
+  total: number
+  active: number
+  archived: number
+  trashed: number
+}
+
+export interface ReplayAnalyticsTopReplay {
+  id: string
+  title: string
+  owner_email: string
+  owner_id: number
+  view_count: number
+  visibility: 'private' | 'unlisted' | 'public'
+  status: 'active' | 'archived' | 'trashed'
+  recorded_at: string | null
+  last_viewed_at: string | null
+}
+
+export interface ReplayAnalyticsTrendPoint {
+  day: string
+  views: number
+}
+
+export interface ReplayAnalyticsResponse {
+  generated_at: string
+  kpi: ReplayAnalyticsKPI
+  replay_counts: ReplayAnalyticsCounts
+  top_replays: ReplayAnalyticsTopReplay[]
+  trend: {
+    days: number
+    data: ReplayAnalyticsTrendPoint[]
+  }
+}
+
+export interface ReplayAnalyticsParams {
+  days?: 7 | 14 | 30 | 90
+  top?: number
+}
+
 const staffAnalyticsApi = {
   async getFunnelSnapshots(params?: FunnelSnapshotParams): Promise<FunnelSnapshotResponse> {
     const res = await apiClient.get('/v1/staff/analytics/funnel/', {
@@ -519,6 +569,15 @@ const staffAnalyticsApi = {
       meta: { skipLoader: true },
     } as any)
     return res as unknown as ExperimentResults
+  },
+
+  // ── Replay Analytics (2026-04-16) ──
+  async getReplayAnalytics(params?: ReplayAnalyticsParams): Promise<ReplayAnalyticsResponse> {
+    const res = await apiClient.get('/v1/staff/analytics/replays/', {
+      params,
+      meta: { skipLoader: true },
+    } as any)
+    return res as unknown as ReplayAnalyticsResponse
   },
 }
 
