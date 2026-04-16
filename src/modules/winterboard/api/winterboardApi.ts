@@ -41,8 +41,8 @@ export interface WBSessionListItem {
   recording_stopped_at?: string | null
   recording_duration_seconds?: number | null
   is_replay_frozen?: boolean
-  replay_visibility?: 'private' | 'link' | 'public'
-  replay_share_token?: string | null
+  // [Phase C 2026-04-16] replay_visibility / replay_share_token removed —
+  // moved to Replay entity. Use replayLifecycleApi (visibility / public_token).
 }
 
 export interface ListSessionsQuery {

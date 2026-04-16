@@ -157,49 +157,20 @@ export async function createReplayFromExistingOps(
   return apiClient.post(`${BASE}/sessions/${sessionId}/create-replay-from-ops/`)
 }
 
-// ─── Phase B: Public Replay Access ─────────────────────────────────────
+// ─── Public Replay Access (Share Layer v2) ─────────────────────────────
 
-export type ReplayVisibility = 'private' | 'link' | 'public'
+/**
+ * Replay visibility tier (canonical, Phase C).
+ *
+ * Legacy 'link' → migrated to 'unlisted' у Replay entity. Для нових
+ * операцій використовуй replayLifecycleApi.changeReplayVisibility().
+ */
+export type ReplayVisibility = 'private' | 'unlisted' | 'public'
 
-export interface ReplayVisibilityResponse {
-  visibility: ReplayVisibility
-  share_token: string | null
-}
-
-export interface ReplayShareLinkResponse {
-  share_token: string
-  visibility: ReplayVisibility
-  relative_url: string
-}
-
-/** PATCH /winterboard/sessions/{uuid}/replay/visibility/ — owner only */
-export async function updateReplayVisibility(
-  sessionId: string,
-  visibility: ReplayVisibility,
-): Promise<ReplayVisibilityResponse> {
-  return apiClient.patch<ReplayVisibilityResponse>(
-    `${BASE}/sessions/${sessionId}/replay/visibility/`,
-    { visibility },
-  )
-}
-
-/** POST /winterboard/sessions/{uuid}/replay/share-link/ — owner only */
-export async function createReplayShareLink(
-  sessionId: string,
-): Promise<ReplayShareLinkResponse> {
-  return apiClient.post<ReplayShareLinkResponse>(
-    `${BASE}/sessions/${sessionId}/replay/share-link/`,
-  )
-}
-
-/** POST /winterboard/sessions/{uuid}/replay/rotate-token/ — INV-V: old URL dies */
-export async function rotateReplayShareToken(
-  sessionId: string,
-): Promise<ReplayShareLinkResponse> {
-  return apiClient.post<ReplayShareLinkResponse>(
-    `${BASE}/sessions/${sessionId}/replay/rotate-token/`,
-  )
-}
+// [Phase C 2026-04-16] REMOVED (replaced by replayLifecycleApi):
+//   updateReplayVisibility()   → replayLifecycleApi.changeReplayVisibility(id, v)
+//   createReplayShareLink()    → auto on stop_recording (Replay.public_token)
+//   rotateReplayShareToken()   → replayLifecycleApi.rotateReplayToken(id)
 
 /** GET /winterboard/replay/public/{token}/ — PUBLIC (no auth).
  *
