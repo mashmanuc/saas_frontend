@@ -296,42 +296,183 @@ export type WBUploadErrorCode =
   | 'presign_failed'
   | 'upload_failed'
   | 'confirm_failed'
-  | 'quota_exceeded'
+  | 'quota_exceeded'   // permanent (storage/asset count quota) — НЕ retry
+  | 'rate_limited'     // transient (DRF throttle window) — retry дозволений
+  | 'unknown_429'      // 429 з body.error не у whitelist — НЕ retry (safe default)
   | 'network_error'
+  | 'cancelled'        // зовнішня cancellation через AbortSignal
+
+/** Деталі від backend для UX (показ X/Y MB у toast). */
+export interface WBUploadErrorDetails {
+  current?: number
+  limit?: number
+  current_bytes?: number
+  limit_bytes?: number
+  detail?: string
+}
 
 export class WBUploadError extends Error {
   code: WBUploadErrorCode
-  constructor(code: WBUploadErrorCode, message: string) {
+  details?: WBUploadErrorDetails
+  constructor(code: WBUploadErrorCode, message: string, details?: WBUploadErrorDetails) {
     super(message)
     this.name = 'WBUploadError'
     this.code = code
+    this.details = details
   }
+}
+
+// ─── 429 classification ─────────────────────────────────────────────────────
+
+/**
+ * Permanent backend quota codes — explicit whitelist (НЕ підрядок "quota",
+ * щоб майбутні warning-codes типу "quota_warning" або "quota_soft_limit"
+ * випадково не блокували retry).
+ *
+ * Backend контракт зафіксований у:
+ *   backend/apps/winterboard/api/views.py:1442-1466
+ *   backend/apps/winterboard/tests/test_assets.py:170,188
+ */
+const PERMANENT_QUOTA_CODES = new Set<string>(['quota_exceeded', 'storage_quota_exceeded'])
+
+/**
+ * Розрізняє три типи 429:
+ *   1. Permanent quota → exact match у PERMANENT_QUOTA_CODES → НЕ retry
+ *   2. Transient throttle → відсутній body.error (DRF UserRateThrottle) → retry
+ *   3. Невідомий 429 → body.error є, але не у whitelist → НЕ retry (safe default,
+ *      щоб не спамити запитами при невідомому permanent стані).
+ *
+ * Якщо у майбутньому backend додасть нові transient коди — їх треба явно
+ * замапити сюди, а не покладатись на fallback.
+ */
+function classify429(err: unknown): 'quota_exceeded' | 'rate_limited' | 'unknown_429' {
+  const data = (err as { response?: { data?: { error?: string } } })?.response?.data
+  const errorCode = data?.error?.toLowerCase()
+
+  if (errorCode && PERMANENT_QUOTA_CODES.has(errorCode)) {
+    return 'quota_exceeded'
+  }
+  if (!errorCode) {
+    // No body.error → DRF throttle (стандартна форма {detail: "..."})
+    return 'rate_limited'
+  }
+  // body.error є, але не у whitelist → safe default: не retry
+  return 'unknown_429'
+}
+
+/** Витягнути details з 429-помилки backend для UX. */
+function extractErrorDetails(err: unknown): WBUploadErrorDetails | undefined {
+  const data = (err as { response?: { data?: WBUploadErrorDetails } })?.response?.data
+  if (!data) return undefined
+  const { current, limit, current_bytes, limit_bytes, detail } = data
+  if (current == null && limit == null && current_bytes == null && limit_bytes == null && !detail) {
+    return undefined
+  }
+  return { current, limit, current_bytes, limit_bytes, detail }
+}
+
+// ─── Retry helpers ──────────────────────────────────────────────────────────
+
+const MAX_RETRIES_TRANSIENT = 3       // rate_limited, network_error
+const MAX_RETRIES_UNKNOWN_429 = 1     // CDN/edge throttle без body.error — 1 спроба максимум
+const RETRY_DELAYS_MS = [1000, 2000, 4000] // exponential backoff
+const RETRY_JITTER_MS = 200
+
+/**
+ * Скільки retries дозволено для коду. 0 — не retry зовсім.
+ *
+ * - rate_limited / network_error: 3 (transient, типово відновлюються)
+ * - unknown_429: 1 (CDN/проксі може дати 429 без body — даємо ОДИН шанс,
+ *   щоб не втратити upload, але й не спамити при справжньому permanent стані)
+ * - усі інші (quota_exceeded, presign/upload/confirm_failed, cancelled,
+ *   validation_failed): 0 — або юзерська помилка, або quota що не зміниться.
+ */
+function _maxRetriesFor(code: WBUploadErrorCode): number {
+  if (code === 'rate_limited' || code === 'network_error') return MAX_RETRIES_TRANSIENT
+  if (code === 'unknown_429') return MAX_RETRIES_UNKNOWN_429
+  return 0
+}
+
+function _backoffDelay(attempt: number): number {
+  const base = RETRY_DELAYS_MS[Math.min(attempt, RETRY_DELAYS_MS.length - 1)]
+  const jitter = (Math.random() - 0.5) * 2 * RETRY_JITTER_MS
+  return Math.max(0, base + jitter)
+}
+
+/**
+ * Sleep що ловить abort. Повертає `true` якщо abort трапився, `false` якщо
+ * нормально проспали. Викидати не може — викликач сам вирішує що робити.
+ */
+function _sleepWithAbort(ms: number, signal?: AbortSignal): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (signal?.aborted) { resolve(true); return }
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort)
+      resolve(false)
+    }, ms)
+    const onAbort = () => {
+      clearTimeout(timer)
+      resolve(true)
+    }
+    signal?.addEventListener('abort', onAbort, { once: true })
+  })
 }
 
 // ─── Presigned Upload Flow ──────────────────────────────────────────────────
 
 /**
- * Full presigned upload flow: presign → S3 PUT → confirm.
- * Returns the confirmed asset_url (CDN URL).
+ * Перевіряє чи помилка від axios/xhr — це AbortError. Тоді ми НЕ кидаємо
+ * presign_failed/upload_failed, а cancelled — щоб retry-loop правильно зрозумів.
  */
-export async function uploadFileToStorage(
+function _isAbortError(err: unknown): boolean {
+  if (err instanceof DOMException && err.name === 'AbortError') return true
+  const e = err as { name?: string; code?: string; message?: string }
+  if (e?.name === 'AbortError' || e?.name === 'CanceledError') return true
+  if (e?.code === 'ERR_CANCELED') return true // axios v1
+  return false
+}
+
+/**
+ * Один прохід presign → S3 PUT → confirm. Без retry.
+ * Зовнішнє API (`uploadFileToStorage`) обгортає це у retry loop.
+ *
+ * `signal` прокидається у всі три API виклики, щоб реальний HTTP request
+ * перервався при abort (інакше PUT/POST долетить до S3/R2 навіть після
+ * quota_exceeded → orphan у storage). Sync prefix теж перевіряє signal перед
+ * кожним кроком — захист від abort що прилетів між мікротасками.
+ */
+async function _attemptUpload(
   sessionId: string,
   file: File,
   onProgress?: (percent: number) => void,
+  signal?: AbortSignal,
 ): Promise<{ assetId: string; assetUrl: string }> {
   // Step 1: Presign
+  if (signal?.aborted) {
+    throw new WBUploadError('cancelled', 'Aborted before presign')
+  }
   let presign: WBPresignResponse
   try {
     presign = await winterboardApi.presignUpload(sessionId, {
       filename: file.name || `upload-${Date.now()}.${file.type.split('/')[1] || 'png'}`,
       content_type: file.type,
       file_size: file.size,
-    })
+    }, signal)
     console.info(`${LOG} Presign OK`, { assetId: presign.asset_id, size: file.size })
   } catch (err: unknown) {
+    if (_isAbortError(err)) {
+      throw new WBUploadError('cancelled', 'Presign aborted')
+    }
     const status = (err as { response?: { status?: number } })?.response?.status
     if (status === 429) {
-      throw new WBUploadError('quota_exceeded', 'Asset or storage quota exceeded')
+      const code = classify429(err)
+      const details = extractErrorDetails(err)
+      const msg = code === 'quota_exceeded'
+        ? 'Asset or storage quota exceeded'
+        : code === 'rate_limited'
+          ? 'Rate limit reached, please retry'
+          : 'Request rejected (429)'
+      throw new WBUploadError(code, msg, details)
     }
     console.error(`${LOG} Presign failed`, err)
     throw new WBUploadError('presign_failed', 'Failed to get upload URL')
@@ -340,11 +481,17 @@ export async function uploadFileToStorage(
   // Step 2: Upload to presigned URL (S3/R2 only).
   // Local backend: пропускаємо PUT — Django dev server не приймає PUT на /media/,
   // файл піде у multipart-confirm нижче.
+  if (signal?.aborted) {
+    throw new WBUploadError('cancelled', 'Aborted before S3 PUT')
+  }
   if (!presign.is_local) {
     try {
-      await winterboardApi.uploadToPresigned(presign.upload_url, file, onProgress)
+      await winterboardApi.uploadToPresigned(presign.upload_url, file, onProgress, signal)
       console.info(`${LOG} S3 PUT OK`, { assetId: presign.asset_id })
     } catch (err) {
+      if (_isAbortError(err)) {
+        throw new WBUploadError('cancelled', 'S3 PUT aborted')
+      }
       console.error(`${LOG} S3 PUT failed`, err)
       throw new WBUploadError('upload_failed', 'Failed to upload file to storage')
     }
@@ -352,17 +499,92 @@ export async function uploadFileToStorage(
 
   // Step 3: Confirm — для local передаємо файл у тому ж POST (multipart),
   // BE збереже у MEDIA_ROOT і позначить asset confirmed. Для S3 — порожній POST (HEAD).
+  if (signal?.aborted) {
+    throw new WBUploadError('cancelled', 'Aborted before confirm')
+  }
   try {
     const confirm = await winterboardApi.confirmUpload(
       sessionId,
       presign.asset_id,
       presign.is_local ? file : undefined,
+      signal,
     )
     console.info(`${LOG} Confirm OK`, { assetId: presign.asset_id, url: confirm.asset_url })
     return { assetId: presign.asset_id, assetUrl: confirm.asset_url }
   } catch (err) {
+    if (_isAbortError(err)) {
+      throw new WBUploadError('cancelled', 'Confirm aborted')
+    }
     console.error(`${LOG} Confirm failed`, err)
     throw new WBUploadError('confirm_failed', 'Failed to confirm upload')
+  }
+}
+
+/**
+ * Full presigned upload flow з автоматичним retry на transient помилках.
+ *
+ * Per-code retry budget (`_maxRetriesFor`):
+ *   rate_limited / network_error: 3 спроби (exp backoff 1s/2s/4s + jitter)
+ *   unknown_429: 1 спроба (CDN edge case)
+ *   усі решта: 0 (fail immediately)
+ *
+ * Permanent помилки (quota_exceeded, presign/upload/confirm_failed)
+ * пробрасуються одразу без повтору.
+ *
+ * Cancellation: `signal` перевіряється перед кожною спробою, у sync prefix
+ * `_attemptUpload`, прокидається у API виклики (axios/xhr), і під час backoff
+ * sleep. При abort кидається WBUploadError('cancelled') — `handleImagePaste`
+ * ловить як silent skip.
+ */
+export async function uploadFileToStorage(
+  sessionId: string,
+  file: File,
+  onProgress?: (percent: number) => void,
+  signal?: AbortSignal,
+): Promise<{ assetId: string; assetUrl: string }> {
+  let attempt = 0
+  let retriesUsedForCode: Partial<Record<WBUploadErrorCode, number>> = {}
+
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    if (signal?.aborted) {
+      throw new WBUploadError('cancelled', 'Upload cancelled before attempt')
+    }
+
+    try {
+      return await _attemptUpload(sessionId, file, onProgress, signal)
+    } catch (err) {
+      // Cancelled з нижнього шару (API abort, sync prefix) — пробрасуємо як є.
+      if (err instanceof WBUploadError && err.code === 'cancelled') {
+        throw err
+      }
+      if (signal?.aborted) {
+        throw new WBUploadError('cancelled', 'Upload cancelled during attempt')
+      }
+
+      const code = err instanceof WBUploadError ? err.code : 'network_error'
+      const budget = _maxRetriesFor(code)
+      const usedForCode = retriesUsedForCode[code] ?? 0
+
+      if (usedForCode >= budget) {
+        throw err
+      }
+
+      // Резервуємо retry slot для цього КОНКРЕТНОГО коду.
+      // Кожен код має власний бюджет — не сумарний (інакше unknown_429 з'їсть
+      // бюджет після rate_limited).
+      retriesUsedForCode[code] = usedForCode + 1
+      attempt++
+
+      const delay = _backoffDelay(attempt - 1)
+      console.warn(
+        `${LOG} Retry ${usedForCode + 1}/${budget} after ${Math.round(delay)}ms (${code})`,
+      )
+      const aborted = await _sleepWithAbort(delay, signal)
+      if (aborted) {
+        throw new WBUploadError('cancelled', 'Upload cancelled during backoff')
+      }
+    }
   }
 }
 
