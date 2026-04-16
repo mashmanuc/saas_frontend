@@ -337,18 +337,27 @@ export async function uploadFileToStorage(
     throw new WBUploadError('presign_failed', 'Failed to get upload URL')
   }
 
-  // Step 2: Upload to presigned URL
-  try {
-    await winterboardApi.uploadToPresigned(presign.upload_url, file, onProgress)
-    console.info(`${LOG} S3 PUT OK`, { assetId: presign.asset_id })
-  } catch (err) {
-    console.error(`${LOG} S3 PUT failed`, err)
-    throw new WBUploadError('upload_failed', 'Failed to upload file to storage')
+  // Step 2: Upload to presigned URL (S3/R2 only).
+  // Local backend: пропускаємо PUT — Django dev server не приймає PUT на /media/,
+  // файл піде у multipart-confirm нижче.
+  if (!presign.is_local) {
+    try {
+      await winterboardApi.uploadToPresigned(presign.upload_url, file, onProgress)
+      console.info(`${LOG} S3 PUT OK`, { assetId: presign.asset_id })
+    } catch (err) {
+      console.error(`${LOG} S3 PUT failed`, err)
+      throw new WBUploadError('upload_failed', 'Failed to upload file to storage')
+    }
   }
 
-  // Step 3: Confirm
+  // Step 3: Confirm — для local передаємо файл у тому ж POST (multipart),
+  // BE збереже у MEDIA_ROOT і позначить asset confirmed. Для S3 — порожній POST (HEAD).
   try {
-    const confirm = await winterboardApi.confirmUpload(sessionId, presign.asset_id)
+    const confirm = await winterboardApi.confirmUpload(
+      sessionId,
+      presign.asset_id,
+      presign.is_local ? file : undefined,
+    )
     console.info(`${LOG} Confirm OK`, { assetId: presign.asset_id, url: confirm.asset_url })
     return { assetId: presign.asset_id, assetUrl: confirm.asset_url }
   } catch (err) {

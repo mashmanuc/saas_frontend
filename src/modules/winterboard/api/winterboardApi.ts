@@ -147,6 +147,11 @@ export interface WBPresignResponse {
   upload_url: string
   asset_url: string
   storage_key: string
+  /**
+   * True для local backend (dev): FE має пропустити PUT і залити файл
+   * у `confirmUpload` як multipart. False/undefined для S3/R2 — звичайний presigned PUT flow.
+   */
+  is_local?: boolean
 }
 
 export interface WBConfirmResponse {
@@ -426,14 +431,24 @@ export const winterboardApi = {
   /**
    * Confirm that an asset has been uploaded successfully.
    * For S3: backend verifies file exists via HEAD.
-   * For local: optionally accepts file in request body.
+   * For local: pass `file` — буде залито multipart/form-data у тому ж POST,
+   * BE збереже у MEDIA_ROOT і одразу позначить asset як confirmed.
    */
   confirmUpload(
     sessionId: string,
     assetId: string,
+    file?: File,
   ): Promise<WBConfirmResponse> {
+    const url = `${BASE}/sessions/${sessionId}/assets/${assetId}/confirm/`
+    if (file) {
+      const form = new FormData()
+      form.append('file', file, file.name || 'upload')
+      return apiClient
+        .post(url, form, { headers: { 'Content-Type': 'multipart/form-data' } })
+        .then((r: unknown) => (r as { data: WBConfirmResponse }).data ?? r as WBConfirmResponse)
+    }
     return apiClient
-      .post(`${BASE}/sessions/${sessionId}/assets/${assetId}/confirm/`)
+      .post(url)
       .then((r: unknown) => (r as { data: WBConfirmResponse }).data ?? r as WBConfirmResponse)
   },
 
