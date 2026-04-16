@@ -12,21 +12,57 @@
       </span>
     </header>
 
-    <!-- Status tabs -->
-    <nav class="replay-list__tabs" role="tablist">
-      <button
-        v-for="tab in statusTabs"
-        :key="tab.value"
-        type="button"
-        role="tab"
-        :aria-selected="store.currentStatus === tab.value"
-        class="replay-list__tab"
-        :class="{ 'replay-list__tab--active': store.currentStatus === tab.value }"
-        @click="store.setStatus(tab.value)"
-      >
-        {{ tab.label }}
-      </button>
-    </nav>
+    <!-- Status tabs + view toggle -->
+    <div class="replay-list__toolbar">
+      <nav class="replay-list__tabs" role="tablist">
+        <button
+          v-for="tab in statusTabs"
+          :key="tab.value"
+          type="button"
+          role="tab"
+          :aria-selected="store.currentStatus === tab.value"
+          class="replay-list__tab"
+          :class="{ 'replay-list__tab--active': store.currentStatus === tab.value }"
+          @click="store.setStatus(tab.value)"
+        >
+          {{ tab.label }}
+        </button>
+      </nav>
+
+      <div class="replay-list__view-toggle" role="group" :aria-label="$t('winterboard.replayList.viewMode.label')">
+        <button
+          type="button"
+          class="replay-list__view-btn"
+          :class="{ 'replay-list__view-btn--active': viewMode === 'grid' }"
+          :aria-pressed="viewMode === 'grid'"
+          :title="$t('winterboard.replayList.viewMode.grid')"
+          @click="setViewMode('grid')"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <rect x="1.5" y="1.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5" />
+            <rect x="9.5" y="1.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5" />
+            <rect x="1.5" y="9.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5" />
+            <rect x="9.5" y="9.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5" />
+          </svg>
+          <span class="sr-only">{{ $t('winterboard.replayList.viewMode.grid') }}</span>
+        </button>
+        <button
+          type="button"
+          class="replay-list__view-btn"
+          :class="{ 'replay-list__view-btn--active': viewMode === 'list' }"
+          :aria-pressed="viewMode === 'list'"
+          :title="$t('winterboard.replayList.viewMode.list')"
+          @click="setViewMode('list')"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <line x1="2" y1="4" x2="14" y2="4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            <line x1="2" y1="12" x2="14" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+          <span class="sr-only">{{ $t('winterboard.replayList.viewMode.list') }}</span>
+        </button>
+      </div>
+    </div>
 
     <!-- Error -->
     <div v-if="store.error" class="replay-list__error" role="alert">
@@ -34,7 +70,7 @@
     </div>
 
     <!-- Loading -->
-    <div v-if="store.isLoading" class="replay-list__grid">
+    <div v-if="store.isLoading" :class="containerClass">
       <div v-for="i in 6" :key="i" class="replay-card replay-card--skeleton" />
     </div>
 
@@ -49,12 +85,13 @@
       </p>
     </div>
 
-    <!-- Grid -->
-    <div v-else class="replay-list__grid">
+    <!-- Grid / List -->
+    <div v-else :class="containerClass">
       <article
         v-for="replay in store.replays"
         :key="replay.id"
         class="replay-card"
+        :class="{ 'replay-card--list': viewMode === 'list' }"
         :data-testid="`replay-card-${replay.id}`"
       >
         <div class="replay-card__thumb">
@@ -148,6 +185,7 @@
                     v-for="v in ['private', 'unlisted', 'public'] as const"
                     :key="v"
                     role="menuitem"
+                    class="menu-item-nested"
                     :class="{ 'menu-selected': replay.visibility === v }"
                     @click="handleVisibility(replay, v)"
                   >
@@ -201,6 +239,33 @@ const store = useReplayStore()
 
 const copiedId = ref<string | null>(null)
 const openMenuId = ref<string | null>(null)
+
+// View mode: grid (плитки) або list (рядки). Persists у localStorage.
+const VIEW_MODE_KEY = 'winterboard:replays:view-mode'
+type ViewMode = 'grid' | 'list'
+const viewMode = ref<ViewMode>(loadViewMode())
+
+function loadViewMode(): ViewMode {
+  try {
+    const saved = localStorage.getItem(VIEW_MODE_KEY)
+    return saved === 'list' ? 'list' : 'grid'
+  } catch {
+    return 'grid'
+  }
+}
+
+function setViewMode(mode: ViewMode) {
+  viewMode.value = mode
+  try {
+    localStorage.setItem(VIEW_MODE_KEY, mode)
+  } catch {
+    /* no-op — storage may be disabled */
+  }
+}
+
+const containerClass = computed(() =>
+  viewMode.value === 'list' ? 'replay-list__rows' : 'replay-list__grid',
+)
 
 const statusTabs = computed<Array<{ value: ReplayStatus; label: string }>>(() => [
   { value: 'active', label: t('winterboard.replayList.tabs.active') },
@@ -393,11 +458,67 @@ const vClickOutside = {
   border-radius: 999px;
 }
 
+.replay-list__toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-md, 16px);
+  margin-bottom: var(--space-lg, 24px);
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  flex-wrap: wrap;
+}
+
 .replay-list__tabs {
   display: flex;
   gap: 4px;
-  margin-bottom: var(--space-lg, 24px);
-  border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+.replay-list__view-toggle {
+  display: inline-flex;
+  align-items: stretch;
+  margin-bottom: 4px;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: var(--radius-md, 8px);
+  overflow: hidden;
+  background: var(--card-bg, #fff);
+}
+
+.replay-list__view-btn {
+  padding: 6px 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.replay-list__view-btn + .replay-list__view-btn {
+  border-left: 1px solid var(--border-color, #e5e7eb);
+}
+
+.replay-list__view-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-secondary, #f3f4f6);
+}
+
+.replay-list__view-btn--active {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .replay-list__tab {
@@ -435,14 +556,122 @@ const vClickOutside = {
   gap: var(--space-md, 16px);
 }
 
+/* ─── List view (rows) ───────────────────────────────────────────── */
+.replay-list__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+article.replay-card--list {
+  flex-direction: row;
+  align-items: stretch;
+  min-height: 76px;
+}
+
+article.replay-card--list:hover {
+  transform: none; /* не підстрибує у list view */
+}
+
+article.replay-card--list .replay-card__thumb {
+  flex: 0 0 128px;
+  aspect-ratio: 16 / 9;
+  width: 128px;
+  min-height: 72px;
+}
+
+article.replay-card--list .replay-card__thumb-placeholder {
+  font-size: 1.75rem;
+}
+
+article.replay-card--list .replay-card__body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-md, 16px);
+  padding: var(--space-sm, 8px) var(--space-md, 16px);
+}
+
+article.replay-card--list .replay-card__name {
+  grid-column: 1;
+  grid-row: 1;
+  margin: 0;
+}
+
+article.replay-card--list .replay-card__meta {
+  grid-column: 1;
+  grid-row: 2;
+  margin-top: 2px;
+}
+
+article.replay-card--list .replay-card__actions {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  margin-top: 0;
+  padding-top: 0;
+  align-items: center;
+}
+
+article.replay-card--list .replay-card__btn--primary,
+article.replay-card--list .replay-card__btn:not(.replay-card__btn--icon) {
+  padding: 6px 12px;
+  flex: 0 0 auto;
+}
+
+/* Сховати duration overlay у list view — воно дублюється у meta-рядку,
+   і маленькі thumbnails роблять його нерозбірливим. */
+article.replay-card--list .replay-card__duration {
+  display: none;
+}
+
+/* Відповідь на вузькі екрани — list перетворюється на grid */
+@media (max-width: 640px) {
+  article.replay-card--list {
+    flex-direction: column;
+  }
+  article.replay-card--list .replay-card__thumb {
+    width: 100%;
+    flex-basis: auto;
+  }
+  article.replay-card--list .replay-card__body {
+    grid-template-columns: 1fr auto;
+  }
+  article.replay-card--list .replay-card__actions {
+    grid-column: 1 / span 2;
+    grid-row: 3;
+    padding-top: 4px;
+  }
+}
+
 .replay-card {
   background: var(--card-bg, #fff);
   border: 1px solid var(--border-color, #e5e7eb);
   border-radius: var(--radius-lg, 12px);
-  overflow: hidden;
+  /* overflow visible — щоб ⋯ menu не обрізався card'ом.
+     Округлення кутів виносимо на внутрішні елементи (thumbnail). */
+  overflow: visible;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
   display: flex;
   flex-direction: column;
+  position: relative;
+}
+
+/* Карточка з відкритим меню піднімається над сусідами (fix: list view clipping). */
+.replay-card:has(.replay-card__menu) {
+  z-index: 10;
+}
+
+.replay-card__thumb {
+  /* Явно радіусити верхні кути (grid) / ліві (list) — замість card overflow */
+  border-top-left-radius: var(--radius-lg, 12px);
+  border-top-right-radius: var(--radius-lg, 12px);
+}
+
+article.replay-card--list .replay-card__thumb {
+  border-radius: 0;
+  border-top-left-radius: var(--radius-lg, 12px);
+  border-bottom-left-radius: var(--radius-lg, 12px);
 }
 
 .replay-card:hover {
@@ -620,23 +849,41 @@ const vClickOutside = {
 .replay-card__menu li {
   padding: 8px 14px;
   font-size: 0.875rem;
-  color: var(--text-primary);
+  color: var(--text-secondary);
   cursor: pointer;
   user-select: none;
+  transition: background 0.12s, color 0.12s;
 }
 
 .replay-card__menu li:hover {
   background: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 .replay-card__menu .menu-header {
-  padding-top: 8px;
-  font-size: 0.75rem;
-  color: var(--text-secondary);
+  padding: 10px 14px 4px;
+  margin-top: 4px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--text-primary);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   cursor: default;
   pointer-events: none;
+  border-top: 1px solid var(--border-color, #e5e7eb);
+  background: color-mix(in srgb, var(--text-primary) 4%, transparent);
+}
+
+/* Перший header у меню не потребує верхньої межі (бо над ним нема items). */
+.replay-card__menu .menu-header:first-child {
+  margin-top: 0;
+  border-top: none;
+  background: transparent;
+}
+
+/* Items всередині header-ованої групи — inset (щоб візуально належали). */
+.replay-card__menu .menu-item-nested {
+  padding-left: 22px;
 }
 
 .replay-card__menu .menu-selected::before {

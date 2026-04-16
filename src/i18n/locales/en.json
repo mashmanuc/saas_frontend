@@ -6316,6 +6316,11 @@
         "archived": "Archive",
         "trashed": "Trash"
       },
+      "viewMode": {
+        "label": "View mode",
+        "grid": "Grid",
+        "list": "List"
+      },
       "status": {
         "archived": "Archived",
         "trashed": "In trash"

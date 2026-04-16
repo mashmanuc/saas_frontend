@@ -6404,6 +6404,11 @@
         "archived": "Архів",
         "trashed": "Кошик"
       },
+      "viewMode": {
+        "label": "Режим перегляду",
+        "grid": "Плитки",
+        "list": "Список"
+      },
       "status": {
         "archived": "Архів",
         "trashed": "У кошику"
