@@ -6547,6 +6547,7 @@
       "backToLesson": "Lesson materials",
       "search": "Search materials...",
       "filterAll": "All",
+      "pasteFilterTitle": "Show clipboard-pasted items only",
       "noResults": "Nothing found",
       "upload": "Upload",
       "category": {

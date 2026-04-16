@@ -7262,6 +7262,7 @@
       "backToLesson": "Матеріали уроку",
       "search": "Пошук матеріалів...",
       "filterAll": "Всі",
+      "pasteFilterTitle": "Показати лише вставлені з буферу",
       "noResults": "Нічого не знайдено",
       "upload": "Завантажити",
       "category": {
