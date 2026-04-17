@@ -22,7 +22,7 @@
         <p class="knowledge-hub__welcome-text">
           {{ t('knowledge.hub.welcomeText') }}
         </p>
-        <router-link to="/winterboard" class="knowledge-hub__welcome-btn">
+        <router-link to="/winterboard/boards" class="knowledge-hub__welcome-btn">
           <PenTool :size="18" />
           {{ t('knowledge.hub.welcomeBtn') }}
         </router-link>
@@ -67,7 +67,7 @@
       <!-- UX-1: Progressive QuickActions — 0→1 CTA (welcome), <5→2, 5+→all 4 -->
       <section class="knowledge-hub__section">
         <div class="knowledge-hub__actions">
-          <router-link to="/winterboard" class="knowledge-hub__action-card knowledge-hub__action-card--primary">
+          <router-link to="/winterboard/boards" class="knowledge-hub__action-card knowledge-hub__action-card--primary">
             <PenTool :size="22" />
             <span class="knowledge-hub__action-label">{{ t('knowledge.hub.createLesson') }}</span>
           </router-link>

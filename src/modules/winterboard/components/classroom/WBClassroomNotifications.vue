@@ -271,7 +271,7 @@ function notifyKicked(): void {
     duration: 5_000,
   })
   // Redirect after short delay
-  setTimeout(() => emit('redirect', '/winterboard'), 2_000)
+  setTimeout(() => emit('redirect', '/winterboard/boards'), 2_000)
 }
 
 function notifyEnded(): void {
@@ -282,7 +282,7 @@ function notifyEnded(): void {
     duration: 5_000,
   })
   // Redirect after short delay
-  setTimeout(() => emit('redirect', '/winterboard'), 2_000)
+  setTimeout(() => emit('redirect', '/winterboard/boards'), 2_000)
 }
 
 function notifyExportReady(downloadUrl: string): void {

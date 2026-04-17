@@ -10,7 +10,7 @@
     <div v-else-if="loadError" class="wb-public-view__error">
       <h2>{{ loadError.title }}</h2>
       <p>{{ loadError.message }}</p>
-      <router-link to="/winterboard" class="wb-public-view__back-btn">
+      <router-link to="/winterboard/boards" class="wb-public-view__back-btn">
         {{ t('winterboard.public.goBack') }}
       </router-link>
     </div>
