@@ -6373,10 +6373,10 @@
         "trashedSubtitle": "Trashed replays are kept for 7 days, then purged automatically"
       },
       "visibility": {
-        "private": "Private",
-        "unlisted": "By link",
-        "link": "By link",
-        "public": "Public"
+        "private": "🔒 Private",
+        "unlisted": "🔗 Share with students only",
+        "link": "🔗 Share with students only",
+        "public": "🌍 Make open for everyone"
       },
       "actions": {
         "watch": "Watch",
@@ -7399,9 +7399,9 @@
         "createHint": "Recording will be created from what is already on the board",
         "privateHint": "Private recording is only accessible to you. Change visibility to get a shareable link.",
         "visibilityHints": {
-          "private": "Only you have access",
-          "unlisted": "Anyone with the link can view",
-          "public": "Visible to everyone and indexed by search engines"
+          "private": "No one can see this recording",
+          "unlisted": "Only those you share the link with can view it",
+          "public": "Other platform users can find this recording"
         }
       }
     },
@@ -7861,9 +7861,9 @@
         "createAndShare": "Create lesson recording",
         "privateHint": "Private recording is only accessible to you. Change visibility to get a shareable link.",
         "visibilityHints": {
-          "private": "Only you have access",
-          "unlisted": "Anyone with the link can view",
-          "public": "Visible to everyone and indexed by search engines"
+          "private": "No one can see this recording",
+          "unlisted": "Only those you share the link with can view it",
+          "public": "Other platform users can find this recording"
         },
         "createHint": "Recording will be created from what is already on the board"
       }
