@@ -19,7 +19,7 @@ export const MENU_BY_ROLE = {
     // Не показуємо тьютору щоб не плутати два різних списки класів. Маршрут і бекенд збережено.
     // { label: 'menu.classrooms', icon: 'class', to: '/dashboard/classrooms' },
     { label: 'menu.tutorCalendar', icon: 'book', to: '/tutor/schedule' },
-    { label: 'menu.winterboard', icon: 'edit', to: '/winterboard' },
+    { label: 'menu.winterboard', icon: 'edit', to: '/winterboard/boards' },
     { label: 'menu.knowledge', icon: 'library', to: '/knowledge' },
     { label: 'menu.tutorProfile', icon: 'briefcase', to: '/tutor/profile' },
     { label: 'menu.account', icon: 'user', to: '/settings' },
@@ -30,7 +30,7 @@ export const MENU_BY_ROLE = {
     { label: 'menu.dashboard', icon: 'home', to: '/student' },
     { label: 'menu.marketplace', icon: 'users', to: '/marketplace' },
     { label: 'menu.calendar', icon: 'calendar', to: '/student/schedule' },
-    { label: 'menu.winterboard', icon: 'edit', to: '/winterboard' },
+    { label: 'menu.winterboard', icon: 'edit', to: '/winterboard/boards' },
     { label: 'menu.account', icon: 'user', to: '/settings' },
   ],
 }
