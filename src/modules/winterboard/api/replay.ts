@@ -127,7 +127,13 @@ export async function startRecording(
  */
 export async function stopRecording(
   sessionId: string,
-): Promise<{ recording_stopped_at: string; recording_stopped_seq: number; is_replay_frozen: boolean }> {
+): Promise<{
+  recording_stopped_at: string
+  recording_stopped_seq: number
+  is_replay_frozen: boolean
+  /** Share Layer v1: BE тепер повертає Replay id створеного hook'ом. */
+  replay_id?: string
+}> {
   return apiClient.post(`${BASE}/sessions/${sessionId}/stop-recording/`)
 }
 
@@ -145,63 +151,46 @@ export async function createReplayFromExistingOps(
   recording_stopped_seq: number
   total_operations: number
   is_replay_frozen: boolean
+  /** Share Layer v1: BE повертає Replay id для нового content-entity. */
+  replay_id?: string
 }> {
   return apiClient.post(`${BASE}/sessions/${sessionId}/create-replay-from-ops/`)
 }
 
-// ─── Phase B: Public Replay Access ─────────────────────────────────────
+// ─── Public Replay Access (Share Layer v2) ─────────────────────────────
 
-export type ReplayVisibility = 'private' | 'link' | 'public'
+/**
+ * Replay visibility tier (canonical, Phase C).
+ *
+ * Legacy 'link' → migrated to 'unlisted' у Replay entity. Для нових
+ * операцій використовуй replayLifecycleApi.changeReplayVisibility().
+ */
+export type ReplayVisibility = 'private' | 'unlisted' | 'public'
 
-export interface ReplayVisibilityResponse {
-  visibility: ReplayVisibility
-  share_token: string | null
-}
+// [Phase C 2026-04-16] REMOVED (replaced by replayLifecycleApi):
+//   updateReplayVisibility()   → replayLifecycleApi.changeReplayVisibility(id, v)
+//   createReplayShareLink()    → auto on stop_recording (Replay.public_token)
+//   rotateReplayShareToken()   → replayLifecycleApi.rotateReplayToken(id)
 
-export interface ReplayShareLinkResponse {
-  share_token: string
-  visibility: ReplayVisibility
-  relative_url: string
-}
-
-/** PATCH /winterboard/sessions/{uuid}/replay/visibility/ — owner only */
-export async function updateReplayVisibility(
-  sessionId: string,
-  visibility: ReplayVisibility,
-): Promise<ReplayVisibilityResponse> {
-  return apiClient.patch<ReplayVisibilityResponse>(
-    `${BASE}/sessions/${sessionId}/replay/visibility/`,
-    { visibility },
-  )
-}
-
-/** POST /winterboard/sessions/{uuid}/replay/share-link/ — owner only */
-export async function createReplayShareLink(
-  sessionId: string,
-): Promise<ReplayShareLinkResponse> {
-  return apiClient.post<ReplayShareLinkResponse>(
-    `${BASE}/sessions/${sessionId}/replay/share-link/`,
-  )
-}
-
-/** POST /winterboard/sessions/{uuid}/replay/rotate-token/ — INV-V: old URL dies */
-export async function rotateReplayShareToken(
-  sessionId: string,
-): Promise<ReplayShareLinkResponse> {
-  return apiClient.post<ReplayShareLinkResponse>(
-    `${BASE}/sessions/${sessionId}/replay/rotate-token/`,
-  )
-}
-
-/** GET /winterboard/replay/share/{token}/ — PUBLIC (no auth) */
+/** GET /winterboard/replay/public/{token}/ — PUBLIC (no auth).
+ *
+ * Share Layer v2: canonical endpoint resolves через Replay.public_token
+ * (не legacy WBSession.replay_share_token). Includes analytics tracking.
+ *
+ * Response superset legacy schema — додано replay_id, duration_ms, view_count.
+ */
 export async function fetchPublicReplayByToken(
   token: string,
 ): Promise<import('../types/replay').ReplayTimeline & {
   session_name?: string
   visibility?: ReplayVisibility
   tutor?: { id: number; name: string }
+  replay_id?: string
+  recorded_at?: string | null
+  duration_ms?: number
+  view_count?: number
 }> {
-  return apiClient.get(`${BASE}/replay/share/${token}/`)
+  return apiClient.get(`${BASE}/replay/public/${token}/`)
 }
 
 // ─── Phase C: Replay Comments ─────────────────────────────────────────

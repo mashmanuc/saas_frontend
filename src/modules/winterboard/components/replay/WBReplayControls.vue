@@ -144,6 +144,21 @@
       </svg>
     </button>
 
+    <!-- Share Layer S.4: share button — emits 'share' для batька (owner only) -->
+    <button
+      v-if="showShareButton"
+      class="wb-replay-controls__share"
+      :aria-label="t('winterboard.replay.share.title')"
+      data-testid="replay-share"
+      :title="t('winterboard.replay.share.title')"
+      @click="$emit('share')"
+    >
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M10 3.5 L14 7 L10 10.5 M3 13 Q3 8 14 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+      </svg>
+      <span>{{ t('winterboard.replayList.actions.share') }}</span>
+    </button>
+
     <!-- Exit replay button -->
     <button
       class="wb-replay-controls__exit"
@@ -183,6 +198,8 @@ const props = defineProps<{
   showChaptersToggle?: boolean
   /** R2: Show comments toggle button (mobile bottom-sheet trigger) */
   showCommentsToggle?: boolean
+  /** Share Layer S.4: show "Поділитись" button (owner only). */
+  showShareButton?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -197,6 +214,8 @@ const emit = defineEmits<{
   // R2: Mobile bottom-sheet toggles
   'toggle-chapters': []
   'toggle-comments': []
+  // Share Layer S.4: open share modal
+  share: []
 }>()
 
 const { t } = useI18n({ useScope: 'global' })
@@ -591,6 +610,27 @@ function formatTime(ms: number): string {
   color: var(--color-text, #0f172a);
   border-color: var(--color-text-muted, #94a3b8);
   background: var(--color-surface-alt, #f1f5f9);
+}
+
+/* Share Layer S.4: share button у internal player */
+.wb-replay-controls__share {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid var(--color-border, #e2e8f0);
+  color: var(--accent, #2563eb);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.wb-replay-controls__share:hover {
+  background: color-mix(in srgb, var(--accent, #2563eb) 8%, transparent);
+  border-color: var(--accent, #2563eb);
 }
 
 .wb-replay-controls__ended {

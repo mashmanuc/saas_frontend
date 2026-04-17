@@ -87,7 +87,7 @@
           <h2 class="text-lg font-semibold text-gray-700">{{ $t('winterboard.lesson.emptyTitle') }}</h2>
           <p class="text-sm text-gray-500 mt-1">{{ $t('winterboard.lesson.emptySubtitle') }}</p>
           <router-link
-            to="/winterboard"
+            to="/winterboard/boards"
             class="inline-block mt-4 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
           >
             {{ $t('knowledge.lesson.empty.createFirst') }}

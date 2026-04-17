@@ -16,7 +16,7 @@
       <div class="wb-content-preview__actions">
         <button type="button" class="wb-header-btn" :disabled="!store.canUndo" @click="store.undo()">↩</button>
         <button type="button" class="wb-header-btn" :disabled="!store.canRedo" @click="store.redo()">↪</button>
-        <button type="button" class="wb-header-btn wb-header-btn--exit" @click="$router.push('/winterboard')">
+        <button type="button" class="wb-header-btn wb-header-btn--exit" @click="$router.push('/winterboard/boards')">
           {{ t('winterboard.room.exit') }}
         </button>
       </div>

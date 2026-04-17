@@ -1260,7 +1260,7 @@ function handleTitleBlur(): void {
 }
 
 function handleExit(): void {
-  router.push('/winterboard')
+  router.push('/winterboard/boards')
 }
 
 // ─── Handlers: Classroom controls ───────────────────────────────────────────
@@ -1864,7 +1864,7 @@ onMounted(async () => {
   if (!init) {
     // No access or error
     if (classroomSession.state.value === 'no_access') {
-      router.push('/winterboard')
+      router.push('/winterboard/boards')
     }
     // B3: Waiting for teacher — show waiting UI, listen for session-ready
     if (classroomSession.state.value === 'waiting_for_teacher') {

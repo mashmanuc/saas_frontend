@@ -81,11 +81,27 @@ const winterboardPageRoutes: RouteRecordRaw[] = [
     meta: { title: 'Winterboard — Boards', roles: ['tutor'] },
   },
   {
-    // Phase 1.6 (Replay Surface): список записів тьютора
+    // Phase 1.6 → v4.1 (Replay Lifecycle): список записів тьютора з 3-tier lifecycle
     path: 'winterboard/replays',
     name: 'winterboard-replays',
     component: () => import('./views/WBReplayList.vue'),
     meta: { title: 'Winterboard — My Replays', roles: ['tutor'] },
+  },
+  {
+    // Replay Lifecycle v4.1: архів
+    path: 'winterboard/replays/archive',
+    name: 'winterboard-replays-archive',
+    component: () => import('./views/WBReplayList.vue'),
+    props: { initialStatus: 'archived' },
+    meta: { title: 'Winterboard — Archived Replays', roles: ['tutor'] },
+  },
+  {
+    // Replay Lifecycle v4.1: кошик
+    path: 'winterboard/replays/trash',
+    name: 'winterboard-replays-trash',
+    component: () => import('./views/WBReplayList.vue'),
+    props: { initialStatus: 'trashed' },
+    meta: { title: 'Winterboard — Trashed Replays', roles: ['tutor'] },
   },
   {
     path: 'winterboard/students',
@@ -124,6 +140,13 @@ const winterboardStandaloneRoutes: RouteRecordRaw[] = [
     component: () => import('./views/WBPublicView.vue'),
     props: true,
     meta: { title: 'Winterboard', public: true, requiresAuth: false },
+  },
+  {
+    // Replay Lifecycle v4.1: 🪦 landing для trashed replays (HTTP 410 Gone)
+    path: '/winterboard/replay-gone',
+    name: 'winterboard-replay-gone',
+    component: () => import('./views/PublicReplayGonePage.vue'),
+    meta: { title: 'Запис видалено', public: true, requiresAuth: false },
   },
   // Phase B: публічний replay за share-token.
   // INV-L: єдиний anonymous endpoint; НЕ приймає session.id.

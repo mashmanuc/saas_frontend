@@ -12,6 +12,12 @@ import {
 } from '../composables/useImageUpload'
 import type { ImageValidationResult } from '../composables/useImageUpload'
 
+// Mock telemetry — перевіряємо що events fire-аться у правильні моменти
+const mockTrackEvent = vi.fn()
+vi.mock('@/utils/telemetryAgent', () => ({
+  trackEvent: (...args: unknown[]) => mockTrackEvent(...args),
+}))
+
 // ── Mock winterboardApi ─────────────────────────────────────────────────
 
 const mockPresignUpload = vi.fn()
@@ -109,6 +115,7 @@ describe('uploadFileToStorage', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockTrackEvent.mockClear()
   })
 
   it('completes full presign → upload → confirm flow', async () => {
@@ -130,17 +137,19 @@ describe('uploadFileToStorage', () => {
     expect(result.assetId).toBe('asset-abc')
     expect(result.assetUrl).toBe('https://cdn.example.com/asset-abc.png')
 
+    // 4-й аргумент — `signal` (undefined коли upload без AbortController)
     expect(mockPresignUpload).toHaveBeenCalledWith(SESSION_ID, {
       filename: 'photo.png',
       content_type: 'image/png',
       file_size: 1024,
-    })
+    }, undefined)
     expect(mockUploadToPresigned).toHaveBeenCalledWith(
       'https://s3.example.com/presigned-put',
       file,
       undefined,
+      undefined,
     )
-    expect(mockConfirmUpload).toHaveBeenCalledWith(SESSION_ID, 'asset-abc')
+    expect(mockConfirmUpload).toHaveBeenCalledWith(SESSION_ID, 'asset-abc', undefined, undefined)
   })
 
   it('passes progress callback to uploadToPresigned', async () => {
@@ -164,6 +173,7 @@ describe('uploadFileToStorage', () => {
       'https://s3.example.com/put',
       file,
       onProgress,
+      undefined,
     )
   })
 
@@ -177,9 +187,10 @@ describe('uploadFileToStorage', () => {
     })
   })
 
-  it('throws WBUploadError(quota_exceeded) on 429 presign response', async () => {
+  it('throws WBUploadError(quota_exceeded) on 429 з body.error="quota_exceeded"', async () => {
+    // Backend контракт (test_assets.py:170): {error: "quota_exceeded"} → permanent
     const err = Object.assign(new Error('Too Many Requests'), {
-      response: { status: 429 },
+      response: { status: 429, data: { error: 'quota_exceeded' } },
     })
     mockPresignUpload.mockRejectedValue(err)
 
@@ -187,6 +198,184 @@ describe('uploadFileToStorage', () => {
     await expect(uploadFileToStorage(SESSION_ID, file)).rejects.toMatchObject({
       code: 'quota_exceeded',
     })
+    // Permanent error — НЕ retry: викликано лише 1 раз
+    expect(mockPresignUpload).toHaveBeenCalledTimes(1)
+  })
+
+  it('throws WBUploadError(quota_exceeded) on 429 з body.error="storage_quota_exceeded"', async () => {
+    // Backend контракт (test_assets.py:188): {error: "storage_quota_exceeded"} → permanent
+    // FE класифікатор має ловити exact match (НЕ підрядок "quota").
+    const err = Object.assign(new Error('Too Many Requests'), {
+      response: { status: 429, data: { error: 'storage_quota_exceeded' } },
+    })
+    mockPresignUpload.mockRejectedValue(err)
+
+    const file = createFile('test.png', 1024, 'image/png')
+    await expect(uploadFileToStorage(SESSION_ID, file)).rejects.toMatchObject({
+      code: 'quota_exceeded',
+    })
+    expect(mockPresignUpload).toHaveBeenCalledTimes(1)
+  })
+
+  it('повертає WBUploadError.details для quota з { current, limit }', async () => {
+    const err = Object.assign(new Error('429'), {
+      response: {
+        status: 429,
+        data: { error: 'quota_exceeded', current: 50, limit: 50, detail: 'Max 50 assets' },
+      },
+    })
+    mockPresignUpload.mockRejectedValue(err)
+
+    const file = createFile('test.png', 1024, 'image/png')
+    try {
+      await uploadFileToStorage(SESSION_ID, file)
+      expect.fail('should throw')
+    } catch (e) {
+      expect((e as Error).constructor.name).toBe('WBUploadError')
+      const wbErr = e as { code: string; details?: { current?: number; limit?: number } }
+      expect(wbErr.code).toBe('quota_exceeded')
+      expect(wbErr.details?.current).toBe(50)
+      expect(wbErr.details?.limit).toBe(50)
+    }
+  })
+
+  it('429 з невідомим body.error — unknown_429, 1 retry max (CDN edge)', async () => {
+    // Гіпотетичний майбутній код типу "quota_warning" не має тригерити
+    // повний rate_limited retry, але CDN/edge можуть дати 429 без body —
+    // даємо ОДИН retry (P1 fix), потім fail. Це баланс: не спамимо при
+    // permanent стані, але й не втрачаємо upload при transient edge throttle.
+    const err = Object.assign(new Error('429'), {
+      response: { status: 429, data: { error: 'quota_warning' } },
+    })
+    mockPresignUpload.mockRejectedValue(err)
+
+    const file = createFile('test.png', 1024, 'image/png')
+    vi.useFakeTimers()
+    const promise = uploadFileToStorage(SESSION_ID, file).catch((e) => e)
+    await vi.advanceTimersByTimeAsync(5_000)
+    const result = await promise
+    vi.useRealTimers()
+
+    expect(result.code).toBe('unknown_429')
+    // 1 початкова + 1 retry = 2 спроби (MAX_RETRIES_UNKNOWN_429 = 1)
+    expect(mockPresignUpload).toHaveBeenCalledTimes(2)
+  })
+
+  it('unknown_429: перший fail, другий success → upload проходить', async () => {
+    const err = Object.assign(new Error('429'), {
+      response: { status: 429, data: { error: 'edge_throttle' } },
+    })
+    mockPresignUpload
+      .mockRejectedValueOnce(err)
+      .mockResolvedValueOnce({
+        asset_id: 'a-recovered',
+        upload_url: 'https://s3/put',
+        asset_url: 'https://cdn/a-recovered.png',
+        storage_key: 'key',
+      })
+    mockUploadToPresigned.mockResolvedValue(undefined)
+    mockConfirmUpload.mockResolvedValue({
+      confirmed: true,
+      asset_url: 'https://cdn/a-recovered.png',
+    })
+
+    const file = createFile('test.png', 1024, 'image/png')
+    vi.useFakeTimers()
+    const promise = uploadFileToStorage(SESSION_ID, file)
+    await vi.advanceTimersByTimeAsync(5_000)
+    const result = await promise
+    vi.useRealTimers()
+
+    expect(result.assetId).toBe('a-recovered')
+    expect(mockPresignUpload).toHaveBeenCalledTimes(2)
+  })
+
+  it('AbortSignal — переривання перед attempt → cancelled', async () => {
+    const controller = new AbortController()
+    controller.abort()
+
+    const file = createFile('test.png', 1024, 'image/png')
+    await expect(
+      uploadFileToStorage(SESSION_ID, file, undefined, controller.signal),
+    ).rejects.toMatchObject({ code: 'cancelled' })
+    expect(mockPresignUpload).not.toHaveBeenCalled()
+  })
+
+  it('AbortSignal — переривання під час backoff → cancelled (без retry)', async () => {
+    const err = Object.assign(new Error('429'), { response: { status: 429 } })
+    mockPresignUpload.mockRejectedValue(err) // завжди rate_limited
+
+    const file = createFile('test.png', 1024, 'image/png')
+    const controller = new AbortController()
+
+    vi.useFakeTimers()
+    const promise = uploadFileToStorage(
+      SESSION_ID, file, undefined, controller.signal,
+    ).catch((e) => e)
+
+    // Запускаємо першу спробу → fail (rate_limited) → іде у backoff
+    await vi.advanceTimersByTimeAsync(50)
+    // Зараз спить у backoff (~1000ms). Abort ПІД ЧАС backoff.
+    controller.abort()
+    await vi.advanceTimersByTimeAsync(2000)
+    const result = await promise
+    vi.useRealTimers()
+
+    expect(result.code).toBe('cancelled')
+    expect(mockPresignUpload).toHaveBeenCalledTimes(1) // тільки перша спроба, retry не запустився
+  })
+
+  it('retries 429 без quota body як rate_limited та зрештою успіх', async () => {
+    // 3 fail (rate_limited), потім success — має пройти.
+    const err = Object.assign(new Error('Too Many Requests'), {
+      response: { status: 429 }, // без body.error → класифікація як rate_limited
+    })
+    mockPresignUpload
+      .mockRejectedValueOnce(err)
+      .mockRejectedValueOnce(err)
+      .mockResolvedValueOnce({
+        asset_id: 'a-retry',
+        upload_url: 'https://s3/put',
+        asset_url: 'https://cdn/a-retry.png',
+        storage_key: 'key',
+      })
+    mockUploadToPresigned.mockResolvedValue(undefined)
+    mockConfirmUpload.mockResolvedValue({
+      confirmed: true,
+      asset_url: 'https://cdn/a-retry.png',
+    })
+
+    const file = createFile('test.png', 1024, 'image/png')
+
+    vi.useFakeTimers()
+    const promise = uploadFileToStorage(SESSION_ID, file)
+
+    // Прокручуємо 3 backoff (1s + 2s + jitter)
+    await vi.advanceTimersByTimeAsync(10_000)
+    const result = await promise
+    vi.useRealTimers()
+
+    expect(result.assetId).toBe('a-retry')
+    expect(mockPresignUpload).toHaveBeenCalledTimes(3) // 2 fail + 1 success
+  })
+
+  it('здається після MAX_RETRIES (3) спроб', async () => {
+    const err = Object.assign(new Error('Too Many Requests'), {
+      response: { status: 429 },
+    })
+    mockPresignUpload.mockRejectedValue(err)
+
+    const file = createFile('test.png', 1024, 'image/png')
+    vi.useFakeTimers()
+    const promise = uploadFileToStorage(SESSION_ID, file).catch((e) => e)
+    await vi.advanceTimersByTimeAsync(20_000)
+    const result = await promise
+    vi.useRealTimers()
+
+    expect(result).toBeInstanceOf(Object)
+    expect(result.code).toBe('rate_limited')
+    // 1 початкова + 3 retry = 4 спроби (MAX_RETRIES = 3)
+    expect(mockPresignUpload).toHaveBeenCalledTimes(4)
   })
 
   it('throws WBUploadError(upload_failed) on S3 PUT failure', async () => {
@@ -243,6 +432,86 @@ describe('uploadFileToStorage', () => {
     try { await uploadFileToStorage(SESSION_ID, file) } catch { /* expected */ }
 
     expect(mockConfirmUpload).not.toHaveBeenCalled()
+  })
+
+  // ─── Telemetry events ───────────────────────────────────────────────────
+
+  it('telemetry: success → wb.upload.start + wb.upload.success', async () => {
+    mockPresignUpload.mockResolvedValue({
+      asset_id: 'a-1', upload_url: 'https://s3/put',
+      asset_url: 'https://cdn/a-1.png', storage_key: 'key',
+    })
+    mockUploadToPresigned.mockResolvedValue(undefined)
+    mockConfirmUpload.mockResolvedValue({ confirmed: true, asset_url: 'https://cdn/a-1.png' })
+
+    const file = createFile('test.png', 2048, 'image/png')
+    await uploadFileToStorage(SESSION_ID, file)
+
+    const events = mockTrackEvent.mock.calls.map((c) => c[0])
+    expect(events).toContain('wb.upload.start')
+    expect(events).toContain('wb.upload.success')
+
+    const successCall = mockTrackEvent.mock.calls.find((c) => c[0] === 'wb.upload.success')
+    expect(successCall![1].asset_id).toBe('a-1')
+    expect(successCall![2].file_size).toBe(2048)
+    expect(successCall![2].attempts).toBe(1)
+    expect(typeof successCall![2].duration_ms).toBe('number')
+  })
+
+  it('telemetry: failure (quota) → wb.upload.start + wb.upload.failure', async () => {
+    const err = Object.assign(new Error('429'), {
+      response: { status: 429, data: { error: 'quota_exceeded' } },
+    })
+    mockPresignUpload.mockRejectedValue(err)
+
+    const file = createFile('test.png', 1024, 'image/png')
+    await expect(uploadFileToStorage(SESSION_ID, file)).rejects.toThrow()
+
+    const events = mockTrackEvent.mock.calls.map((c) => c[0])
+    expect(events).toContain('wb.upload.start')
+    expect(events).toContain('wb.upload.failure')
+
+    const failureCall = mockTrackEvent.mock.calls.find((c) => c[0] === 'wb.upload.failure')
+    expect(failureCall![1].code).toBe('quota_exceeded')
+  })
+
+  it('telemetry: rate_limited retry → wb.upload.retry events', async () => {
+    const err = Object.assign(new Error('429'), { response: { status: 429 } })
+    mockPresignUpload
+      .mockRejectedValueOnce(err)
+      .mockRejectedValueOnce(err)
+      .mockResolvedValueOnce({
+        asset_id: 'a-r', upload_url: 'https://s3/put',
+        asset_url: 'https://cdn/a-r.png', storage_key: 'key',
+      })
+    mockUploadToPresigned.mockResolvedValue(undefined)
+    mockConfirmUpload.mockResolvedValue({ confirmed: true, asset_url: 'https://cdn/a-r.png' })
+
+    const file = createFile('test.png', 1024, 'image/png')
+    vi.useFakeTimers()
+    const promise = uploadFileToStorage(SESSION_ID, file)
+    await vi.advanceTimersByTimeAsync(10_000)
+    await promise
+    vi.useRealTimers()
+
+    const retryEvents = mockTrackEvent.mock.calls.filter((c) => c[0] === 'wb.upload.retry')
+    expect(retryEvents).toHaveLength(2) // 2 fail → 2 retry
+    expect(retryEvents[0][1].code).toBe('rate_limited')
+    expect(retryEvents[0][2].attempt).toBe(1)
+    expect(retryEvents[1][2].attempt).toBe(2)
+  })
+
+  it('telemetry: AbortSignal → wb.upload.cancelled', async () => {
+    const controller = new AbortController()
+    controller.abort()
+
+    const file = createFile('test.png', 1024, 'image/png')
+    await expect(
+      uploadFileToStorage(SESSION_ID, file, undefined, controller.signal),
+    ).rejects.toMatchObject({ code: 'cancelled' })
+
+    const cancelledCall = mockTrackEvent.mock.calls.find((c) => c[0] === 'wb.upload.cancelled')
+    expect(cancelledCall).toBeDefined()
   })
 })
 

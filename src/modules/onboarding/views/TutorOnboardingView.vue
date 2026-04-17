@@ -33,14 +33,14 @@ async function handleNext() {
   await store.completeCurrentStep()
   if (store.isCompleted) {
     // P0-5: First Value Moment — redirect to create first lesson
-    router.push('/winterboard')
+    router.push('/winterboard/boards')
   }
 }
 
 // P0-5: Create first lesson CTA
 function createFirstLesson() {
   store.completeCurrentStep()
-  router.push('/winterboard')
+  router.push('/winterboard/boards')
 }
 
 async function handleSkip() {

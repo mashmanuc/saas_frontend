@@ -257,7 +257,7 @@
           </p>
           <router-link
             v-if="isTutor"
-            to="/winterboard"
+            to="/winterboard/boards"
             class="catalog-page__empty-btn catalog-page__empty-btn--primary"
           >
             <PenTool :size="18" />
@@ -289,7 +289,7 @@
           <h3 class="catalog-page__empty-title">{{ $t('knowledge.catalog.globalEmptyTitle') }}</h3>
           <p class="catalog-page__empty-text">{{ $t('knowledge.catalog.globalEmptyText') }}</p>
           <div class="catalog-page__empty-actions">
-            <router-link to="/winterboard" class="catalog-page__empty-btn catalog-page__empty-btn--primary">
+            <router-link to="/winterboard/boards" class="catalog-page__empty-btn catalog-page__empty-btn--primary">
               <PenTool :size="18" />
               {{ $t('knowledge.catalog.createLesson') }}
             </router-link>

@@ -41,8 +41,8 @@ export interface WBSessionListItem {
   recording_stopped_at?: string | null
   recording_duration_seconds?: number | null
   is_replay_frozen?: boolean
-  replay_visibility?: 'private' | 'link' | 'public'
-  replay_share_token?: string | null
+  // [Phase C 2026-04-16] replay_visibility / replay_share_token removed —
+  // moved to Replay entity. Use replayLifecycleApi (visibility / public_token).
 }
 
 export interface ListSessionsQuery {
@@ -147,6 +147,11 @@ export interface WBPresignResponse {
   upload_url: string
   asset_url: string
   storage_key: string
+  /**
+   * True для local backend (dev): FE має пропустити PUT і залити файл
+   * у `confirmUpload` як multipart. False/undefined для S3/R2 — звичайний presigned PUT flow.
+   */
+  is_local?: boolean
 }
 
 export interface WBConfirmResponse {
@@ -380,22 +385,30 @@ export const winterboardApi = {
   presignUpload(
     sessionId: string,
     params: { filename: string; content_type: string; file_size: number },
+    signal?: AbortSignal,
   ): Promise<WBPresignResponse> {
     return apiClient
-      .post(`${BASE}/sessions/${sessionId}/assets/presign/`, params)
+      .post(`${BASE}/sessions/${sessionId}/assets/presign/`, params, { signal })
       .then((r: unknown) => (r as { data: WBPresignResponse }).data ?? r as WBPresignResponse)
   },
 
   /**
    * Upload file directly to presigned URL (S3 PUT).
    * For local backend: uses confirm endpoint with file body instead.
+   * `signal` — переривати реальний XHR при abort (інакше PUT долетить до S3
+   * навіть після quota_exceeded в іншому файлі → orphan у storage).
    */
   async uploadToPresigned(
     uploadUrl: string,
     file: File,
     onProgress?: (percent: number) => void,
+    signal?: AbortSignal,
   ): Promise<void> {
     return new Promise((resolve, reject) => {
+      if (signal?.aborted) {
+        reject(new DOMException('Aborted', 'AbortError'))
+        return
+      }
       const xhr = new XMLHttpRequest()
       xhr.open('PUT', uploadUrl, true)
       xhr.setRequestHeader('Content-Type', file.type)
@@ -408,15 +421,25 @@ export const winterboardApi = {
         })
       }
 
+      const onAbort = () => {
+        xhr.abort()
+        reject(new DOMException('Aborted', 'AbortError'))
+      }
+      signal?.addEventListener('abort', onAbort, { once: true })
+
+      const cleanup = () => signal?.removeEventListener('abort', onAbort)
+
       xhr.onload = () => {
+        cleanup()
         if (xhr.status >= 200 && xhr.status < 300) {
           resolve()
         } else {
           reject(new Error(`[WB:upload] S3 PUT failed: ${xhr.status} ${xhr.statusText}`))
         }
       }
-      xhr.onerror = () => reject(new Error('[WB:upload] Network error during S3 PUT'))
-      xhr.ontimeout = () => reject(new Error('[WB:upload] S3 PUT timed out'))
+      xhr.onerror = () => { cleanup(); reject(new Error('[WB:upload] Network error during S3 PUT')) }
+      xhr.ontimeout = () => { cleanup(); reject(new Error('[WB:upload] S3 PUT timed out')) }
+      xhr.onabort = () => { cleanup() /* reject уже викликано в onAbort */ }
       xhr.timeout = 120_000 // 2 min timeout for large files
 
       xhr.send(file)
@@ -426,14 +449,25 @@ export const winterboardApi = {
   /**
    * Confirm that an asset has been uploaded successfully.
    * For S3: backend verifies file exists via HEAD.
-   * For local: optionally accepts file in request body.
+   * For local: pass `file` — буде залито multipart/form-data у тому ж POST,
+   * BE збереже у MEDIA_ROOT і одразу позначить asset як confirmed.
    */
   confirmUpload(
     sessionId: string,
     assetId: string,
+    file?: File,
+    signal?: AbortSignal,
   ): Promise<WBConfirmResponse> {
+    const url = `${BASE}/sessions/${sessionId}/assets/${assetId}/confirm/`
+    if (file) {
+      const form = new FormData()
+      form.append('file', file, file.name || 'upload')
+      return apiClient
+        .post(url, form, { headers: { 'Content-Type': 'multipart/form-data' }, signal })
+        .then((r: unknown) => (r as { data: WBConfirmResponse }).data ?? r as WBConfirmResponse)
+    }
     return apiClient
-      .post(`${BASE}/sessions/${sessionId}/assets/${assetId}/confirm/`)
+      .post(url, undefined, { signal })
       .then((r: unknown) => (r as { data: WBConfirmResponse }).data ?? r as WBConfirmResponse)
   },
 

@@ -64,6 +64,8 @@ export interface LibraryAsset {
 
 export interface LibraryAssetListResponse {
   count: number
+  /** Total paste-sourced assets (незалежно від поточного source filter) — для UI chip. */
+  paste_count?: number
   results: LibraryAsset[]
 }
 
@@ -100,6 +102,13 @@ export interface LibraryAssetsQuery {
   favorite?: true
   content_type?: string  // prefix match: 'image', 'application/pdf'
   tag?: string
+  /**
+   * Source filter (2026-04-16):
+   * - undefined / 'upload' → default (exclude paste — уникаємо clipboard spam)
+   * - 'paste' → лише Ctrl+V картинки
+   * - 'all' → upload + paste (legacy behavior)
+   */
+  source?: 'upload' | 'paste' | 'all'
   limit?: number         // default 50, max 100
   offset?: number
 }

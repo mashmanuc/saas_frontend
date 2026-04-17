@@ -2,24 +2,43 @@
  * useBoardClipboard — unified clipboard handler for Winterboard.
  *
  * Handles:
- * - Ctrl+V image → create WBAsset{type:'image'} + background upload
+ * - Ctrl+V image → upload-first: presign → S3 PUT → confirm → addAsset з CDN URL
  * - Ctrl+V text  → create StickyNote on canvas center
  * - Ctrl+C selected objects → serialize to internal clipboard
  * - Ctrl+V internal clipboard → deserialize + new IDs + paste with offset
  * - Ctrl+X = copy + delete
  *
- * Architecture: local-first (instant preview) + background upload.
- * Ref: TASK_BOARD_PHASE_1a_2.md §8
+ * Architecture: STRICT upload-first.
+ *   Інваріант: asset_add op створюється виключно після успішного upload.
+ *   На fail asset не з'являється — користувач бачить toast із Retry.
+ *   Multi-paste обмежується глобальним semaphore (useUploadQueue) до 3 одночасних
+ *   uploads, щоб не тригерити 429 на бекенді.
+ *
+ * Ref: TASK_BOARD_PHASE_1a_2.md §8, plan lazy-kindling-simon.md
  */
 
 import { ref, onMounted, onUnmounted } from 'vue'
 import type { WBAsset, WBStroke } from '../types/winterboard'
 import { STICKY_DEFAULTS } from '../types/winterboard'
 import { parseYouTubeVideoId, getYouTubeThumbnail } from '../utils/youtubeParser'
-import { validateFile, fileToDataUrl, uploadFileToStorage } from './useImageUpload'
+import {
+  validateFile,
+  uploadFileToStorage,
+  WBUploadError,
+  type WBUploadErrorDetails,
+} from './useImageUpload'
+import { withUploadSlot, UploadAbortedError } from './useUploadQueue'
 import { learningContentApi } from '@/modules/learning-content/api/learningContentApi'
 import { useToast } from './useToast'
+import { useI18n } from 'vue-i18n'
 import type { useWBStore } from '../board/state/boardStore'
+
+/**
+ * Максимум зображень за одну paste-операцію. Захист від accidental paste
+ * великого clipboard (drag-folder з 200 файлами, скрипт-вставка тощо) — щоб
+ * не флудити BE rate-limit і не лишати orphan'ів у storage.
+ */
+const MAX_PASTE_BATCH = 50
 
 type WBStore = ReturnType<typeof useWBStore>
 
@@ -44,9 +63,34 @@ interface InternalClipboard {
   copiedAt: number
 }
 
+/**
+ * Контекст одного paste-batch: shared AbortController для hard stop при quota
+ * + прапорець quotaToastShown для singleton-toast (інакше при 16 paste, де
+ * 3 паралельні uploads хитнуть quota майже одночасно — користувач отримає
+ * 3 ідентичні error toast'и).
+ */
+interface BatchContext {
+  controller: AbortController
+  quotaToastShown: boolean
+}
+
+function _createBatchContext(): BatchContext {
+  return { controller: new AbortController(), quotaToastShown: false }
+}
+
 export function useBoardClipboard(options: BoardClipboardOptions) {
   const { store, sessionId, canvasCenter, onAssetAdd, disabled } = options
   const { showToast } = useToast()
+  // i18n опціонально — у тестах поза Vue компонентом може не бути активного
+  // i18n instance. Fallback на англ. рядки не критичний.
+  let _t: ((key: string, params?: Record<string, unknown>) => string) | null = null
+  try {
+    const { t } = useI18n()
+    _t = t
+  } catch {
+    _t = null
+  }
+  const tr = (key: string, params?: Record<string, unknown>) => _t ? _t(key, params) : key
 
   const internalClipboard = ref<InternalClipboard | null>(null)
   const isUploading = ref(false)
@@ -108,10 +152,37 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
       }
     }
 
-    // Handle image paste
+    // Handle image paste — підтримуємо MULTIPLE images (буфер може містити серію)
     if (imageFiles.length > 0) {
       e.preventDefault()
-      await handleImagePaste(imageFiles[0])
+
+      // Hard cap: захист від випадкового paste великих clipboard (drag-folder,
+      // bulk script). Hard reject — не часткове виконання, бо часткове =
+      // непередбачувано (юзер не зрозуміє чому 50 з 76).
+      if (imageFiles.length > MAX_PASTE_BATCH) {
+        console.warn('[BoardClipboard] paste batch too large:', imageFiles.length)
+        showToast(
+          tr('winterboard.upload.tooManyImages', {
+            count: imageFiles.length,
+            max: MAX_PASTE_BATCH,
+          }),
+          'warning',
+          { duration: 8000 },
+        )
+        return
+      }
+
+      // Один BatchContext на весь paste-batch:
+      //   - controller.abort() на першому quota_exceeded зупиняє решту pending
+      //     (waiting у semaphore + retry-loop активних + реальний fetch у API)
+      //   - quotaToastShown гарантує ОДИН error toast навіть якщо кілька
+      //     паралельних uploads отримали 429 quota одночасно (race до abort)
+      const batch = _createBatchContext()
+      // index захоплюємо ЗАРАЗ (не на момент upload completion), щоб offsets
+      // були передбачуваними незалежно від того, які upload закінчаться першими.
+      imageFiles.forEach((file, index) => {
+        void handleImagePaste(file, index, batch)
+      })
       return
     }
 
@@ -129,8 +200,23 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
     }
   }
 
-  // ─── Image paste: instant preview + background upload ──────
-  async function handleImagePaste(file: File): Promise<void> {
+  // ─── Image paste: STRICT upload-first ──────────────────────
+  //
+  // Інваріант: asset_add op створюється ВИКЛЮЧНО після успішного upload.
+  // На fail asset не з'являється; toast пропонує Retry. dataURL у boardStore
+  // не потрапляє ніколи — це фундаментально важливо для replay (recorder
+  // strip-ить data:URL у '', тож asset з dataURL дав би broken image у replay).
+  //
+  // batch: shared контекст на цілий paste-batch. Перший quota_exceeded
+  // викликає batch.controller.abort() → всі решта uploads негайно припиняються
+  // з кодом 'cancelled' (без додаткових toast і без зайвих BE запитів).
+  // batch.quotaToastShown — захист від дублювання error toast при race
+  // (3 паралельні uploads отримали 429 quota майже одночасно).
+  async function handleImagePaste(
+    file: File,
+    index: number = 0,
+    batch?: BatchContext,
+  ): Promise<void> {
     const validation = validateFile(file)
     if (!validation.valid) {
       console.warn('[BoardClipboard] Image rejected:', validation.error)
@@ -139,16 +225,34 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
       return
     }
 
-    const center = canvasCenter()
+    const sid = sessionId()
+    if (!sid) {
+      console.warn('[BoardClipboard] Image paste: no active session, skipping')
+      showToast('No active session', 'warning')
+      return
+    }
 
-    // Step 1: Instant preview with data:URL (local-first)
+    isUploading.value = true
+    uploadError.value = null
+
+    const signal = batch?.controller.signal
+
     try {
-      const dataUrl = await fileToDataUrl(file)
-      const img = new Image()
+      // Concurrency-обмежений upload. До 3 одночасних uploads глобально —
+      // решта чекає у черзі. Усередині є retry на 429/network.
+      // Signal прокидаємо у обидва шари: queue (skip pending), retry-loop (skip retry).
+      const { assetId, assetUrl } = await withUploadSlot(
+        () => uploadFileToStorage(sid, file, undefined, signal),
+        signal,
+      )
+
+      // Preload CDN URL у браузерному кеші ДО створення asset, щоб канвас
+      // отримав готовий bitmap і не показав порожнє місце на ~200мс.
       const dims = await new Promise<{ w: number; h: number }>((resolve) => {
-        img.onload = () => {
-          let w = img.naturalWidth
-          let h = img.naturalHeight
+        const preload = new Image()
+        preload.onload = () => {
+          let w = preload.naturalWidth || 300
+          let h = preload.naturalHeight || 300
           const maxDim = Math.max(w, h)
           if (maxDim > 300) {
             const scale = 300 / maxDim
@@ -157,89 +261,126 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
           }
           resolve({ w, h })
         }
-        img.onerror = () => resolve({ w: 300, h: 300 })
-        img.src = dataUrl
+        preload.onerror = () => resolve({ w: 300, h: 300 })
+        preload.src = assetUrl
       })
 
+      // Multi-paste offset: index захоплено в момент paste, не completion.
+      const center = canvasCenter()
+      const OFFSET_PER_INDEX = 20
       const asset: WBAsset = {
-        id: `paste-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        id: assetId, // використовуємо backend asset_id — він стабільний для replay
         type: 'image',
-        src: dataUrl,
-        x: center.x - dims.w / 2,
-        y: center.y - dims.h / 2,
+        src: assetUrl,
+        x: center.x - dims.w / 2 + index * OFFSET_PER_INDEX,
+        y: center.y - dims.h / 2 + index * OFFSET_PER_INDEX,
         w: dims.w,
         h: dims.h,
         rotation: 0,
       }
 
       onAssetAdd(asset)
-      console.info('[BoardClipboard] Image pasted (data:URL preview)')
+      console.info('[BoardClipboard] Image pasted (upload-first)', { assetId })
 
-      // Step 2: Background upload to storage (non-blocking)
-      const sid = sessionId()
-      if (sid) {
-        isUploading.value = true
-        uploadError.value = null
-        try {
-          const { assetUrl } = await uploadFileToStorage(sid, file)
-          // FIX (2026-04-07): preload CDN URL BEFORE swapping src, otherwise canvas
-          // drops the already-rendered data:URL bitmap and shows blank for ~1s while
-          // the new URL loads over the network (visible flicker on every paste).
-          await new Promise<void>((resolve) => {
-            const preload = new Image()
-            preload.onload = () => resolve()
-            preload.onerror = () => resolve() // fall through — swap anyway
-            preload.src = assetUrl
-          })
-          // Update asset src from data:URL to CDN URL via store.updateAsset
-          const page = store.currentPage
-          if (page) {
-            const existing = page.assets.find((a) => a.id === asset.id)
-            if (existing) {
-              store.updateAsset({ ...existing, src: assetUrl }, { skipHistory: true })
-            }
-          }
-          console.info('[BoardClipboard] Image uploaded to CDN')
+      // Dual-write до learning-content (non-critical, не блокує основний flow).
+      try {
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('source', 'paste')
+        const lid = options.lessonId?.()
+        const gid = options.groupId?.()
+        if (lid) formData.append('lesson_id', String(lid))
+        if (gid) formData.append('group_id', gid)
 
-          // Phase 3: Dual-write — create ContentItem in DB + auto-add to group/lesson
-          try {
-            const formData = new FormData()
-            formData.append('file', file)
-            formData.append('source', 'paste')
-            const lid = options.lessonId?.()
-            const gid = options.groupId?.()
-            if (lid) formData.append('lesson_id', String(lid))
-            if (gid) formData.append('group_id', gid)
+        const uploadRes = await learningContentApi.uploadFile(formData)
+        const contentItemId = (uploadRes as { id?: number; content_item_id?: number })?.content_item_id
+          ?? (uploadRes as { id?: number })?.id
 
-            const uploadRes = await learningContentApi.uploadFile(formData)
-            const contentItemId = (uploadRes as { id?: number; content_item_id?: number })?.content_item_id
-              ?? (uploadRes as { id?: number })?.id
-
-            if (contentItemId && options.onContentUploaded) {
-              options.onContentUploaded(contentItemId)
-            }
-            console.info('[BoardClipboard] ContentItem created:', contentItemId)
-            showToast('Saved to library', 'success', { duration: 3000 })
-          } catch (dualWriteErr) {
-            // Dual-write failure is non-critical — asset is already on the board
-            console.warn('[BoardClipboard] Dual-write failed (non-critical):', dualWriteErr)
-          }
-        } catch (err) {
-          console.error('[BoardClipboard] Background upload failed:', err)
-          uploadError.value = 'Upload failed — image saved locally only'
-          if ((err as any)?.response?.status === 507) {
-            showToast('Storage quota exceeded. Delete old materials.', 'error', { duration: 10000 })
-          } else {
-            showToast('Upload failed — image saved to board only', 'error')
-          }
-          // Asset stays with data:URL — still visible on board
-        } finally {
-          isUploading.value = false
+        if (contentItemId && options.onContentUploaded) {
+          options.onContentUploaded(contentItemId)
         }
+        console.info('[BoardClipboard] ContentItem created:', contentItemId)
+        showToast('Saved to library', 'success', { duration: 3000 })
+      } catch (dualWriteErr) {
+        // Не блокує — asset уже на дошці, у storage збережений.
+        console.warn('[BoardClipboard] Dual-write failed (non-critical):', dualWriteErr)
       }
     } catch (err) {
-      console.error('[BoardClipboard] Image paste failed:', err)
+      // ─── Cancelled (batch abort через quota в одному з паралельних) ────
+      // Silent skip: toast про quota вже показано тим, хто ініціював abort.
+      if (err instanceof UploadAbortedError) {
+        console.info('[BoardClipboard] Upload skipped — batch aborted', { index })
+        return
+      }
+      if (err instanceof WBUploadError && err.code === 'cancelled') {
+        console.info('[BoardClipboard] Upload skipped — cancelled', { index })
+        return
+      }
+
+      console.error('[BoardClipboard] Upload failed:', err)
+      const code = err instanceof WBUploadError ? err.code : 'unknown'
+      const details = err instanceof WBUploadError ? err.details : undefined
+
+      if (code === 'quota_exceeded') {
+        // Permanent: квота вичерпана, retry не допоможе.
+        // HARD STOP: скасовуємо весь решту batch — щоб не спамити BE та
+        // не лишати orphan-файлів у storage (signal перерве реальні fetch).
+        batch?.controller.abort()
+        uploadError.value = 'Storage quota exceeded'
+        // SINGLETON toast: тільки перший quota-fail у batch показує сповіщення.
+        // Решта паралельних, що могли отримати 429 quota одночасно (до того як
+        // abort долетів) — silent skip, інакше юзер побачить N однакових toast.
+        if (!batch || !batch.quotaToastShown) {
+          if (batch) batch.quotaToastShown = true
+          showToast(formatQuotaMessage(details), 'error', { duration: 10000 })
+        }
+      } else if (code === 'unknown_429') {
+        // 429 з невідомим body.error — після 1 retry (CDN edge) все ще fail.
+        uploadError.value = 'Upload rejected by server'
+        showToast(
+          details?.detail ?? 'Server rejected the request (429). Try again later.',
+          'error',
+          { duration: 10000 },
+        )
+      } else {
+        // Transient (rate_limited вичерпав retry) або presign/upload/confirm fail —
+        // пропонуємо Retry.
+        // FIX: клонуємо File у новий Blob, щоб toast closure не залежав від
+        // потенційно GC-нутого реф (особливо коли paste був з clipboard items
+        // що вже звільнились).
+        const retryFile = new File([file], file.name, { type: file.type })
+        uploadError.value = 'Upload failed'
+        showToast('Upload failed', 'error', {
+          duration: 10000,
+          action: {
+            label: 'Retry',
+            // Новий BatchContext для retry — старий уже міг бути aborted.
+            callback: () => { void handleImagePaste(retryFile, index, _createBatchContext()) },
+          },
+        })
+      }
+    } finally {
+      isUploading.value = false
     }
+  }
+
+  /**
+   * Формує UX-friendly повідомлення про вичерпану квоту з backend details.
+   * Backend повертає:
+   *   - max_assets quota: { current, limit }
+   *   - storage size quota: { current_bytes, limit_bytes }
+   *   - DRF throttle: { detail }
+   */
+  function formatQuotaMessage(details?: WBUploadErrorDetails): string {
+    if (details?.current_bytes != null && details?.limit_bytes != null) {
+      const usedMb = (details.current_bytes / (1024 * 1024)).toFixed(1)
+      const limitMb = (details.limit_bytes / (1024 * 1024)).toFixed(1)
+      return `Storage quota exceeded (${usedMb}/${limitMb} MB). Delete old materials.`
+    }
+    if (details?.current != null && details?.limit != null) {
+      return `Asset limit reached (${details.current}/${details.limit}). Delete old assets.`
+    }
+    return 'Storage quota exceeded. Delete old materials and try again.'
   }
 
   // ─── Text paste: YouTube URL → player, otherwise StickyNote ─

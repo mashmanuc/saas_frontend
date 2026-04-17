@@ -29,7 +29,7 @@ const actions = [
   {
     key: 'createBoardLesson',
     label: 'dashboard.quickActions.createBoardLesson',
-    to: '/winterboard',
+    to: '/winterboard/boards',
     iconComponent: PenTool,
   },
   {

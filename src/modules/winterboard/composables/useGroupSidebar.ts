@@ -31,6 +31,10 @@ export function useGroupSidebar(groupId: Ref<string | null>, folderId?: Ref<numb
   const items = ref<AllowedContentItem[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+  // 2026-04-16: paste-spam filter. Default false — user бачить лише upload
+  // матеріали. Чіпся «📋 Вставлене» вмикає paste-only view.
+  const showPasteOnly = ref(false)
+  const pasteCount = ref(0)
 
   // ── Processing status polling ──────────────────────────────────────────────
   let pollTimer: ReturnType<typeof setInterval> | null = null
@@ -154,7 +158,15 @@ export function useGroupSidebar(groupId: Ref<string | null>, folderId?: Ref<numb
           const query: Record<string, unknown> = { limit: 100 }
           if (curFolder && curFolder > 0) query.folder = curFolder
           if (curFolder === -1) query.favorite = true
+          // 2026-04-16: paste-spam filter.
+          // false (default) → BE returns upload-only (backend default: exclude paste).
+          // true → BE returns paste-only (source=paste).
+          if (showPasteOnly.value) query.source = 'paste'
           res = await fetchAssets(query as import('../types/library').LibraryAssetsQuery)
+          // paste_count з BE — для UI chip badge, незалежно від активного filter.
+          if (typeof res.paste_count === 'number') {
+            pasteCount.value = res.paste_count
+          }
         }
         items.value = (res.results ?? []).map((a: LibraryAsset) => {
           // Phase 9: content_item_id = null для старих активів без ContentItem FK.
@@ -209,6 +221,15 @@ export function useGroupSidebar(groupId: Ref<string | null>, folderId?: Ref<numb
       }
     })
   }
+
+  // Paste-filter toggle: reload коли user клацає chip «📋 Вставлене».
+  watch(showPasteOnly, () => {
+    if (!groupId.value) {
+      lastLoadedFolderId = undefined
+      lastLoadedGroupId = undefined
+      load()
+    }
+  })
 
   const grouped = computed(() => {
     const groups: Record<AssetCategoryGroup, AllowedContentItem[]> = {
@@ -374,5 +395,8 @@ export function useGroupSidebar(groupId: Ref<string | null>, folderId?: Ref<numb
     uploadFiles,
     isUploadAllowed,
     SIDEBAR_DRAG_MIME,
+    // Paste-filter (2026-04-16)
+    showPasteOnly,
+    pasteCount,
   }
 }

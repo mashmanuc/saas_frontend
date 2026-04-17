@@ -136,6 +136,11 @@
       <MarketplaceHealthPanel />
     </Card>
 
+    <!-- Replay Analytics (2026-04-16, Replay Lifecycle v4.2) -->
+    <Card class="section-card">
+      <ReplayAnalyticsPanel />
+    </Card>
+
     <!-- Experiments (Phase 8) -->
     <Card class="section-card">
       <h2 class="section-title">{{ $t('staff.experiments.title') }}</h2>
@@ -197,6 +202,7 @@ import EngagementPanel from '../components/EngagementPanel.vue'
 import RevenuePanel from '../components/RevenuePanel.vue'
 import MarketplaceHealthPanel from '../components/MarketplaceHealthPanel.vue'
 import ExperimentsPanel from '../components/ExperimentsPanel.vue'
+import ReplayAnalyticsPanel from '../components/ReplayAnalyticsPanel.vue'
 
 const { t } = useI18n()
 

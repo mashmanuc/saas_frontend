@@ -66,11 +66,14 @@
     </div>
 
     <!-- Filter chips -->
-    <div v-if="sidebar.totalCount.value > 0" class="content-sidebar__filters">
+    <div
+      v-if="sidebar.totalCount.value > 0 || (sidebar.pasteCount.value > 0)"
+      class="content-sidebar__filters"
+    >
       <button
         class="filter-chip"
-        :class="{ 'filter-chip--active': activeFilter === 'all' }"
-        @click="activeFilter = 'all'"
+        :class="{ 'filter-chip--active': activeFilter === 'all' && !sidebar.showPasteOnly.value }"
+        @click="onFilterAll"
       >
         {{ t('winterboard.contentSidebar.filterAll') }}
       </button>
@@ -78,15 +81,26 @@
         v-for="cat in availableCategories"
         :key="cat"
         class="filter-chip"
-        :class="{ 'filter-chip--active': activeFilter === cat }"
+        :class="{ 'filter-chip--active': activeFilter === cat && !sidebar.showPasteOnly.value }"
         :title="t(`winterboard.contentSidebar.category.${cat}`)"
-        @click="activeFilter = cat"
+        @click="onFilterCategory(cat)"
       >
         <svg v-if="cat === 'youtube'" width="14" height="10" viewBox="0 0 20 14" style="vertical-align: -1px">
           <rect x="1" y="1" width="18" height="12" rx="3" fill="#FF0000"/>
           <path d="M8 4l5 3-5 3V4z" fill="#fff"/>
         </svg>
         <span v-else>{{ CATEGORY_ICONS[cat] ?? '📎' }}</span>
+      </button>
+      <!-- Paste chip (2026-04-16) — окремо від category chips -->
+      <button
+        v-if="!groupId && sidebar.pasteCount.value > 0"
+        class="filter-chip filter-chip--paste"
+        :class="{ 'filter-chip--active': sidebar.showPasteOnly.value }"
+        :title="t('winterboard.contentSidebar.pasteFilterTitle')"
+        @click="onFilterPaste"
+      >
+        📋
+        <span class="filter-chip__counter">{{ sidebar.pasteCount.value }}</span>
       </button>
     </div>
 
@@ -213,6 +227,21 @@ async function loadFolders() {
 // ── Filter + Search state ──
 const activeFilter = ref<string>('all')
 const searchQuery = ref('')
+
+// 2026-04-16: paste filter handlers.
+// Чіпся «📋» toggle'ає paste-only view; інші chip'и повертають до default.
+function onFilterAll() {
+  sidebar.showPasteOnly.value = false
+  activeFilter.value = 'all'
+}
+function onFilterCategory(cat: string) {
+  sidebar.showPasteOnly.value = false
+  activeFilter.value = cat
+}
+function onFilterPaste() {
+  sidebar.showPasteOnly.value = !sidebar.showPasteOnly.value
+  activeFilter.value = 'all'  // у paste-only режимі category chips не активні
+}
 
 /** Categories that actually have items — shown as chips */
 const availableCategories = computed<string[]>(() => {
@@ -463,6 +492,42 @@ function onDrop(e: DragEvent) {
   border-color: #3b82f6;
   color: #1d4ed8;
   font-weight: 600;
+}
+
+/* Paste chip — візуально відрізняється (gray → amber on active) бо це не
+   category a окрема "bucket" для clipboard паст */
+.filter-chip--paste {
+  gap: 4px;
+  padding-right: 4px;
+  background: #fef3c7;
+  border-color: #fde68a;
+  color: #78350f;
+}
+.filter-chip--paste:hover {
+  background: #fde68a;
+  border-color: #fbbf24;
+  color: #7c2d12;
+}
+.filter-chip--paste.filter-chip--active {
+  background: #f59e0b;
+  border-color: #d97706;
+  color: #fff;
+}
+.filter-chip__counter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: rgba(120, 53, 15, 0.15);
+  color: inherit;
+  font-size: 10px;
+  font-weight: 700;
+}
+.filter-chip--paste.filter-chip--active .filter-chip__counter {
+  background: rgba(255, 255, 255, 0.25);
 }
 
 /* ── States ── */
