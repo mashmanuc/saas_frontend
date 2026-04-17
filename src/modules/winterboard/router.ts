@@ -30,11 +30,14 @@ function winterboardGuard(
 // ловить `router.beforeEach` → `!hasRoleAccess` → redirect на `/student`.
 // Ref: memory/project_nav_decisions.md (decision #2)
 
-// FIX-5: Session list route — mounted inside PageShell for full header + sidebar
+// FIX-5: /winterboard → redirect на /winterboard/boards (нова WBBoardList).
+// WBSessionList.vue більше не рендериться. 20+ місць у коді посилаються на
+// route name 'winterboard-sessions' (legacy redirects, ClassroomButton,
+// BookingDetailView, etc.) — redirect зберігає їх працездатність.
 const winterboardSessionListRoute: RouteRecordRaw = {
   path: 'winterboard',
   name: 'winterboard-sessions',
-  component: () => import('./views/WBSessionList.vue'),
+  redirect: { name: 'winterboard-boards' },
   meta: { title: 'Winterboard', roles: ['tutor'] },
 }
 
