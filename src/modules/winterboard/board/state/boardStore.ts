@@ -263,6 +263,12 @@ type UndoAction =
   | UndoUpdateTestObject
   | UndoZOrder
 
+// Command pattern: apply/revert call store methods → emit ops → replay works
+interface WBCommand {
+  apply: () => void
+  revert: () => void
+}
+
 // ─── Store State Interface ──────────────────────────────────────────────────
 
 export interface WBBoardState {
@@ -300,9 +306,9 @@ export interface WBBoardState {
   scrollX: number
   scrollY: number
 
-  // History (LAW-19)
-  undoStack: UndoAction[]
-  redoStack: UndoAction[]
+  // History (LAW-19) — Command pattern: apply/revert emit ops for replay
+  undoStack: WBCommand[]
+  redoStack: WBCommand[]
 
   // A6.1: Collaboration mode flag
   isCollaborative: boolean
@@ -346,7 +352,7 @@ function createEmptyPage(index: number): WBPage {
   }
 }
 
-function trimStack(stack: UndoAction[]): UndoAction[] {
+function trimStack(stack: WBCommand[]): WBCommand[] {
   if (stack.length > MAX_UNDO_STACK) {
     return stack.slice(stack.length - MAX_UNDO_STACK)
   }
@@ -401,6 +407,36 @@ function _emitOperation(op: RecordOperationRequest): void {
       console.warn('[WB:Store] operation listener error:', e)
     }
   }
+}
+
+/**
+ * Split items into chunks, each chunk's JSON size ≤ maxBytes.
+ * Used for batch ops with large stroke points arrays (prevents 64KB drop).
+ * Self-contained chunks — no batch_id/reassembly needed, each applies atomically.
+ */
+function _splitBatchBySize<T>(items: T[], maxBytes = 50_000): T[][] {
+  const chunks: T[][] = []
+  let current: T[] = []
+  let currentSize = 200  // JSON wrapper overhead
+
+  for (const item of items) {
+    const itemSize = JSON.stringify(item).length
+    if (itemSize > maxBytes) {
+      // Single item exceeds limit — put alone (will be dropped at recorder, but logged)
+      if (current.length > 0) { chunks.push(current); current = []; currentSize = 200 }
+      chunks.push([item])
+      continue
+    }
+    if (currentSize + itemSize > maxBytes && current.length > 0) {
+      chunks.push(current)
+      current = []
+      currentSize = 200
+    }
+    current.push(item)
+    currentSize += itemSize
+  }
+  if (current.length > 0) chunks.push(current)
+  return chunks
 }
 
 // ─── Store Definition ───────────────────────────────────────────────────────
@@ -850,11 +886,12 @@ export const useWBStore = defineStore('wb-board', {
     pasteFromClipboard(): void {
       const page = this.currentPage
       if (!page || (this.clipboardAssets.length === 0 && this.clipboardStrokes.length === 0)) return
+      const pageId = page.id ?? ''
       const OFFSET = 20
       const now = Date.now()
       const newIds: string[] = []
 
-      // Paste assets
+      // Paste assets — ONE batch op (avoid "typing" effect in replay)
       if (this.clipboardAssets.length > 0) {
         const newAssets: WBAsset[] = this.clipboardAssets.map((a, i) => {
           const id = `asset-paste-${now}-${i}-${Math.random().toString(36).slice(2, 6)}`
@@ -866,9 +903,10 @@ export const useWBStore = defineStore('wb-board', {
           ...page,
           assets: [...page.assets, ...newAssets],
         }
+        _emitOperation({ op_type: 'assets_add_batch', page_id: pageId, payload: { assets: newAssets } })
       }
 
-      // Paste strokes (text, shapes, etc.)
+      // Paste strokes (text, shapes, etc.) — ONE batch op
       if (this.clipboardStrokes.length > 0) {
         const pageIndex = this.currentPageIndex
         const currentPage = this.pages[pageIndex]
@@ -887,6 +925,7 @@ export const useWBStore = defineStore('wb-board', {
           ...currentPage,
           strokes: [...currentPage.strokes, ...newStrokes],
         }
+        _emitOperation({ op_type: 'strokes_add_batch', page_id: pageId, payload: { strokes: newStrokes } })
       }
 
       this.selectedIds = newIds
@@ -932,13 +971,12 @@ export const useWBStore = defineStore('wb-board', {
       }
 
       if (!opts?.skipHistory) {
-        const action: UndoAddStroke = {
-          type: 'addStroke',
-          pageIndex,
-          stroke,
-          index: page.strokes.length,
+        const _s = { ...stroke }
+        const cmd: WBCommand = {
+          apply: () => this.addStroke(_s, { skipHistory: true }),
+          revert: () => this.deleteStroke(_s.id, { skipHistory: true }),
         }
-        this.undoStack = trimStack([...this.undoStack, action])
+        this.undoStack = trimStack([...this.undoStack, cmd])
         this.redoStack = []
       }
 
@@ -950,15 +988,12 @@ export const useWBStore = defineStore('wb-board', {
 
       this.markDirty()
 
-      // Phase 20: emit operation for recording
-      if (this.mode === 'edit' && !opts?.skipHistory) {
-        _emitOperation({
-          op_type: 'stroke_add',
-          page_id: this.pages[pageIndex]?.id ?? '',
-          payload: { stroke },
-          timestamp: Date.now(),
-        })
-      }
+      // _emitOperation already guards on mode !== 'edit' — no skipHistory check needed
+      _emitOperation({
+        op_type: 'stroke_add',
+        page_id: this.pages[pageIndex]?.id ?? '',
+        payload: { stroke },
+      })
     },
 
     updateStroke(updatedStroke: WBStroke, opts?: { skipHistory?: boolean }): void {
@@ -970,14 +1005,13 @@ export const useWBStore = defineStore('wb-board', {
       if (idx === -1) return
 
       if (!opts?.skipHistory) {
-        const action: UndoUpdateStroke = {
-          type: 'updateStroke',
-          pageIndex,
-          prev: page.strokes[idx],
-          next: updatedStroke,
-          index: idx,
+        const _prev = { ...page.strokes[idx] }
+        const _next = { ...updatedStroke }
+        const cmd: WBCommand = {
+          apply: () => this.updateStroke(_next, { skipHistory: true }),
+          revert: () => this.updateStroke(_prev, { skipHistory: true }),
         }
-        this.undoStack = trimStack([...this.undoStack, action])
+        this.undoStack = trimStack([...this.undoStack, cmd])
         this.redoStack = []
       }
 
@@ -986,16 +1020,11 @@ export const useWBStore = defineStore('wb-board', {
       this.pages[pageIndex] = { ...page, strokes: newStrokes }
 
       this.markDirty()
-
-      // Phase 20: emit operation for recording
-      if (this.mode === 'edit' && !opts?.skipHistory) {
-        _emitOperation({
-          op_type: 'stroke_update',
-          page_id: this.pages[pageIndex]?.id ?? '',
-          payload: { stroke: updatedStroke },
-          timestamp: Date.now(),
-        })
-      }
+      _emitOperation({
+        op_type: 'stroke_update',
+        page_id: this.pages[pageIndex]?.id ?? '',
+        payload: { stroke: updatedStroke },
+      })
     },
 
     deleteStroke(strokeId: string, opts?: { skipHistory?: boolean }): void {
@@ -1007,13 +1036,12 @@ export const useWBStore = defineStore('wb-board', {
       if (idx === -1) return
 
       if (!opts?.skipHistory) {
-        const action: UndoDeleteStroke = {
-          type: 'deleteStroke',
-          pageIndex,
-          stroke: page.strokes[idx],
-          index: idx,
+        const _s = { ...page.strokes[idx] }
+        const cmd: WBCommand = {
+          apply: () => this.deleteStroke(_s.id, { skipHistory: true }),
+          revert: () => this.addStroke(_s, { skipHistory: true }),
         }
-        this.undoStack = trimStack([...this.undoStack, action])
+        this.undoStack = trimStack([...this.undoStack, cmd])
         this.redoStack = []
       }
 
@@ -1024,15 +1052,11 @@ export const useWBStore = defineStore('wb-board', {
 
       this.markDirty()
 
-      // Phase 20: emit operation for recording
-      if (this.mode === 'edit' && !opts?.skipHistory) {
-        _emitOperation({
-          op_type: 'stroke_delete',
-          page_id: this.pages[pageIndex]?.id ?? '',
-          payload: { stroke_id: strokeId },
-          timestamp: Date.now(),
-        })
-      }
+      _emitOperation({
+        op_type: 'stroke_delete',
+        page_id: this.pages[pageIndex]?.id ?? '',
+        payload: { stroke_id: strokeId },
+      })
     },
 
     // ── Asset Actions ────────────────────────────────────────────────────
@@ -1049,13 +1073,12 @@ export const useWBStore = defineStore('wb-board', {
       }
 
       if (!opts?.skipHistory) {
-        const action: UndoAddAsset = {
-          type: 'addAsset',
-          pageIndex,
-          asset,
-          index: page.assets.length,
+        const _a = { ...asset }
+        const cmd: WBCommand = {
+          apply: () => this.addAsset(_a, { skipHistory: true }),
+          revert: () => this.deleteAsset(_a.id, { skipHistory: true }),
         }
-        this.undoStack = trimStack([...this.undoStack, action])
+        this.undoStack = trimStack([...this.undoStack, cmd])
         this.redoStack = []
       }
 
@@ -1065,16 +1088,11 @@ export const useWBStore = defineStore('wb-board', {
       }
 
       this.markDirty()
-
-      // Phase 20: emit operation for recording
-      if (this.mode === 'edit' && !opts?.skipHistory) {
-        _emitOperation({
-          op_type: 'asset_add',
-          page_id: this.pages[pageIndex]?.id ?? '',
-          payload: { asset },
-          timestamp: Date.now(),
-        })
-      }
+      _emitOperation({
+        op_type: 'asset_add',
+        page_id: this.pages[pageIndex]?.id ?? '',
+        payload: { asset },
+      })
     },
 
     /** Add asset to a specific page (used for drag-to-thumbnail). */
@@ -1088,13 +1106,12 @@ export const useWBStore = defineStore('wb-board', {
       }
 
       if (!opts?.skipHistory) {
-        const action: UndoAddAsset = {
-          type: 'addAsset',
-          pageIndex,
-          asset,
-          index: page.assets.length,
+        const _a = { ...asset }
+        const cmd: WBCommand = {
+          apply: () => this.addAssetToPage(pageIndex, _a, { skipHistory: true }),
+          revert: () => this.deleteAsset(_a.id, { skipHistory: true }),
         }
-        this.undoStack = trimStack([...this.undoStack, action])
+        this.undoStack = trimStack([...this.undoStack, cmd])
         this.redoStack = []
       }
 
@@ -1104,15 +1121,11 @@ export const useWBStore = defineStore('wb-board', {
       }
 
       this.markDirty()
-
-      if (this.mode === 'edit' && !opts?.skipHistory) {
-        _emitOperation({
-          op_type: 'asset_add',
-          page_id: page.id ?? '',
-          payload: { asset },
-          timestamp: Date.now(),
-        })
-      }
+      _emitOperation({
+        op_type: 'asset_add',
+        page_id: page.id ?? '',
+        payload: { asset },
+      })
     },
 
     updateAsset(asset: WBAsset, opts?: { skipHistory?: boolean }): void {
@@ -1124,14 +1137,13 @@ export const useWBStore = defineStore('wb-board', {
       if (idx === -1) return
 
       if (!opts?.skipHistory) {
-        const action: UndoUpdateAsset = {
-          type: 'updateAsset',
-          pageIndex,
-          prev: page.assets[idx],
-          next: asset,
-          index: idx,
+        const _prev = { ...page.assets[idx] }
+        const _next = { ...asset }
+        const cmd: WBCommand = {
+          apply: () => this.updateAsset(_next, { skipHistory: true }),
+          revert: () => this.updateAsset(_prev, { skipHistory: true }),
         }
-        this.undoStack = trimStack([...this.undoStack, action])
+        this.undoStack = trimStack([...this.undoStack, cmd])
         this.redoStack = []
       }
 
@@ -1140,16 +1152,11 @@ export const useWBStore = defineStore('wb-board', {
       this.pages[pageIndex] = { ...page, assets: newAssets }
 
       this.markDirty()
-
-      // Phase 20: emit operation for recording
-      if (this.mode === 'edit' && !opts?.skipHistory) {
-        _emitOperation({
-          op_type: 'asset_update',
-          page_id: this.pages[pageIndex]?.id ?? '',
-          payload: { asset },
-          timestamp: Date.now(),
-        })
-      }
+      _emitOperation({
+        op_type: 'asset_update',
+        page_id: this.pages[pageIndex]?.id ?? '',
+        payload: { asset },
+      })
     },
 
     /** Change document_viewer page without polluting undo stack. */
@@ -1219,13 +1226,12 @@ export const useWBStore = defineStore('wb-board', {
       if (idx === -1) return
 
       if (!opts?.skipHistory) {
-        const action: UndoDeleteAsset = {
-          type: 'deleteAsset',
-          pageIndex,
-          asset: page.assets[idx],
-          index: idx,
+        const _a = { ...page.assets[idx] }
+        const cmd: WBCommand = {
+          apply: () => this.deleteAsset(_a.id, { skipHistory: true }),
+          revert: () => this.addAsset(_a, { skipHistory: true }),
         }
-        this.undoStack = trimStack([...this.undoStack, action])
+        this.undoStack = trimStack([...this.undoStack, cmd])
         this.redoStack = []
       }
 
@@ -1235,14 +1241,114 @@ export const useWBStore = defineStore('wb-board', {
       }
 
       this.markDirty()
+      _emitOperation({
+        op_type: 'asset_delete',
+        page_id: this.pages[pageIndex]?.id ?? '',
+        payload: { asset_id: assetId },
+      })
+    },
 
-      // Phase 20: emit operation for recording
-      if (this.mode === 'edit' && !opts?.skipHistory) {
+    /**
+     * Atomic batch add for strokes — single reactive mutation, single op.
+     * Used by paste/duplicate to avoid "typing" effect in replay.
+     * One undo entry rolls back ALL added strokes at once.
+     */
+    addStrokesBatch(strokes: WBStroke[], opts?: { skipHistory?: boolean }): void {
+      const pageIndex = this.currentPageIndex
+      const page = this.pages[pageIndex]
+      if (!page || strokes.length === 0) return
+
+      if (!opts?.skipHistory) {
+        const _strokes = strokes.map(s => ({ ...s }))
+        const _ids = _strokes.map(s => s.id)
+        const _pi = pageIndex
+        const cmd: WBCommand = {
+          apply: () => this.addStrokesBatch(_strokes, { skipHistory: true }),
+          revert: () => {
+            const p = this.pages[_pi]
+            if (!p) return
+            const idSet = new Set(_ids)
+            this.pages[_pi] = {
+              ...p,
+              strokes: p.strokes.filter(s => !idSet.has(s.id)),
+            }
+            this.markDirty()
+            const pageId = p.id ?? ''
+            for (const id of _ids) {
+              _emitOperation({ op_type: 'stroke_delete', page_id: pageId, payload: { stroke_id: id } })
+            }
+          },
+        }
+        this.undoStack = trimStack([...this.undoStack, cmd])
+        this.redoStack = []
+      }
+
+      // ONE mutation — all strokes appear together locally (no "typing" effect)
+      this.pages[pageIndex] = {
+        ...page,
+        strokes: [...page.strokes, ...strokes],
+      }
+      this.markDirty()
+      // Emit: split by payload size (64KB limit on recorder).
+      // Each chunk is self-contained atomic batch — replay applies each in ONE render.
+      // For typical paste (~5 cubes = 30 strokes) = 1-3 chunks, near-atomic replay.
+      const pageId = page.id ?? ''
+      const chunks = _splitBatchBySize(strokes, 50_000)
+      for (const chunk of chunks) {
         _emitOperation({
-          op_type: 'asset_delete',
-          page_id: this.pages[pageIndex]?.id ?? '',
-          payload: { asset_id: assetId },
-          timestamp: Date.now(),
+          op_type: 'strokes_add_batch',
+          page_id: pageId,
+          payload: { strokes: chunk },
+        })
+      }
+    },
+
+    /**
+     * Atomic batch add for assets — same pattern as addStrokesBatch.
+     */
+    addAssetsBatch(assets: WBAsset[], opts?: { skipHistory?: boolean }): void {
+      const pageIndex = this.currentPageIndex
+      const page = this.pages[pageIndex]
+      if (!page || assets.length === 0) return
+
+      if (!opts?.skipHistory) {
+        const _assets = assets.map(a => ({ ...a }))
+        const _ids = _assets.map(a => a.id)
+        const _pi = pageIndex
+        const cmd: WBCommand = {
+          apply: () => this.addAssetsBatch(_assets, { skipHistory: true }),
+          revert: () => {
+            const p = this.pages[_pi]
+            if (!p) return
+            const idSet = new Set(_ids)
+            this.pages[_pi] = {
+              ...p,
+              assets: p.assets.filter(a => !idSet.has(a.id)),
+            }
+            this.markDirty()
+            const pageId = p.id ?? ''
+            for (const id of _ids) {
+              _emitOperation({ op_type: 'asset_delete', page_id: pageId, payload: { asset_id: id } })
+            }
+          },
+        }
+        this.undoStack = trimStack([...this.undoStack, cmd])
+        this.redoStack = []
+      }
+
+      this.pages[pageIndex] = {
+        ...page,
+        assets: [...page.assets, ...assets],
+      }
+      this.markDirty()
+      // Split by size — assets usually small, but dataURLs/metadata can grow.
+      const pageId = page.id ?? ''
+      const chunks = _splitBatchBySize(assets, 50_000)
+      for (const chunk of chunks) {
+        _emitOperation({
+          op_type: 'assets_add_batch',
+          page_id: pageId,
+          payload: { assets: chunk },
         })
       }
     },
@@ -1250,546 +1356,17 @@ export const useWBStore = defineStore('wb-board', {
     // ── Undo / Redo (LAW-19) ─────────────────────────────────────────────
 
     undo(): void {
-      const action = this.undoStack.pop()
-      if (!action) return
-
-      const page = this.pages[action.pageIndex]
-      if (!page) return
-
-      switch (action.type) {
-        case 'addStroke': {
-          this.pages[action.pageIndex] = {
-            ...page,
-            strokes: page.strokes.filter((_, i) => i !== action.index),
-          }
-          break
-        }
-        case 'deleteStroke': {
-          const strokes = [...page.strokes]
-          strokes.splice(action.index, 0, action.stroke)
-          this.pages[action.pageIndex] = { ...page, strokes }
-          break
-        }
-        case 'updateStroke': {
-          const strokes = [...page.strokes]
-          strokes[action.index] = action.prev
-          this.pages[action.pageIndex] = { ...page, strokes }
-          break
-        }
-        case 'addAsset': {
-          this.pages[action.pageIndex] = {
-            ...page,
-            assets: page.assets.filter((_, i) => i !== action.index),
-          }
-          break
-        }
-        case 'deleteAsset': {
-          const assets = [...page.assets]
-          assets.splice(action.index, 0, action.asset)
-          this.pages[action.pageIndex] = { ...page, assets }
-          break
-        }
-        case 'updateAsset': {
-          const assets = [...page.assets]
-          assets[action.index] = action.prev
-          this.pages[action.pageIndex] = { ...page, assets }
-          break
-        }
-        case 'clearPage': {
-          this.pages[action.pageIndex] = {
-            ...page,
-            strokes: action.prevStrokes,
-            assets: action.prevAssets,
-          }
-          break
-        }
-        case 'createGroup': {
-          // Undo create → remove the group
-          const groups = (page.groups ?? []).filter((g) => g.id !== action.group.id)
-          this.pages[action.pageIndex] = { ...page, groups }
-          break
-        }
-        case 'deleteGroup': {
-          // Undo delete → restore the group
-          const groups = [...(page.groups ?? []), action.group]
-          this.pages[action.pageIndex] = { ...page, groups }
-          break
-        }
-        case 'lockItems': {
-          // Undo lock → restore previous lock state
-          const newStrokes = [...page.strokes]
-          const newAssets = [...page.assets]
-          for (const item of action.items) {
-            const si = newStrokes.findIndex((s) => s.id === item.id)
-            if (si !== -1) {
-              newStrokes[si] = { ...newStrokes[si], locked: item.prevLocked, lockedBy: item.prevLockedBy }
-            }
-            const ai = newAssets.findIndex((a) => a.id === item.id)
-            if (ai !== -1) {
-              newAssets[ai] = { ...newAssets[ai], locked: item.prevLocked, lockedBy: item.prevLockedBy }
-            }
-          }
-          this.pages[action.pageIndex] = { ...page, strokes: newStrokes, assets: newAssets }
-          break
-        }
-        case 'unlockItems': {
-          // Undo unlock → restore previous lock state (re-lock)
-          const newStrokes = [...page.strokes]
-          const newAssets = [...page.assets]
-          for (const item of action.items) {
-            const si = newStrokes.findIndex((s) => s.id === item.id)
-            if (si !== -1) {
-              newStrokes[si] = { ...newStrokes[si], locked: item.prevLocked, lockedBy: item.prevLockedBy }
-            }
-            const ai = newAssets.findIndex((a) => a.id === item.id)
-            if (ai !== -1) {
-              newAssets[ai] = { ...newAssets[ai], locked: item.prevLocked, lockedBy: item.prevLockedBy }
-            }
-          }
-          this.pages[action.pageIndex] = { ...page, strokes: newStrokes, assets: newAssets }
-          break
-        }
-        case 'duplicate': {
-          // Undo duplicate → remove cloned items, re-select originals
-          const dupIds = new Set(action.newIds)
-          this.pages[action.pageIndex] = {
-            ...page,
-            strokes: page.strokes.filter((s) => !dupIds.has(s.id)),
-            assets: page.assets.filter((a) => !dupIds.has(a.id)),
-          }
-          this.selectedIds = [...action.originalIds]
-          break
-        }
-        case 'align': {
-          // Undo align → reverse all moves (-dx, -dy)
-          const newStrokes = [...page.strokes]
-          const newAssets = [...page.assets]
-          for (const move of action.moves) {
-            const si = newStrokes.findIndex((s) => s.id === move.id)
-            if (si !== -1) {
-              const s = newStrokes[si]
-              newStrokes[si] = {
-                ...s,
-                points: s.points.map((p) => ({ ...p, x: p.x - move.dx, y: p.y - move.dy })),
-              }
-            }
-            const ai = newAssets.findIndex((a) => a.id === move.id)
-            if (ai !== -1) {
-              const a = newAssets[ai]
-              newAssets[ai] = { ...a, x: a.x - move.dx, y: a.y - move.dy }
-            }
-          }
-          this.pages[action.pageIndex] = { ...page, strokes: newStrokes, assets: newAssets }
-          break
-        }
-        case 'pageReorder': {
-          // Undo reorder → restore previous order
-          const pageMap = new Map(this.pages.map((p) => [p.id, p]))
-          this.pages = action.previousOrder.map((id) => pageMap.get(id)!).filter(Boolean)
-          this.currentPageIndex = Math.min(action.previousPageIndex, this.pages.length - 1)
-          break
-        }
-        case 'addPage': {
-          // Undo addPage → remove the page
-          const idx = this.pages.findIndex((p) => p.id === action.pageId)
-          if (idx !== -1) {
-            this.pages = this.pages.filter((_, i) => i !== idx)
-            if (this.currentPageIndex >= this.pages.length) {
-              this.currentPageIndex = Math.max(0, this.pages.length - 1)
-            }
-          }
-          break
-        }
-        case 'deletePage': {
-          // Undo deletePage → re-insert page at original index
-          const pages = [...this.pages]
-          pages.splice(action.index, 0, action.page)
-          this.pages = pages
-          this.currentPageIndex = action.wasCurrentIndex
-          break
-        }
-        case 'clearCurrentPage': {
-          // Undo clearCurrentPage → re-add cleared items
-          const cp = this.pages[action.pageIndex]
-          if (cp) {
-            this.pages[action.pageIndex] = {
-              ...cp,
-              strokes: [...cp.strokes, ...action.clearedStrokes],
-              assets: [...cp.assets, ...action.clearedAssets],
-            }
-          }
-          break
-        }
-        case 'addSticky': {
-          // Undo addSticky → remove the sticky
-          this.pages[action.pageIndex] = {
-            ...page,
-            assets: page.assets.filter((_, i) => i !== action.index),
-          }
-          break
-        }
-        case 'updateStickyText': {
-          // Undo text update → restore previous text
-          const assets = page.assets.map((a) =>
-            a.id === action.assetId ? { ...a, text: action.prevText } : a,
-          )
-          this.pages[action.pageIndex] = { ...page, assets }
-          break
-        }
-        case 'updateStickyStyle': {
-          // Undo style update → restore previous style
-          const assets = page.assets.map((a) =>
-            a.id === action.assetId ? { ...a, ...action.prevStyle } : a,
-          )
-          this.pages[action.pageIndex] = { ...page, assets }
-          break
-        }
-        case 'updateObject': {
-          // Phase 34: Undo updateObject → restore before values
-          if (action.objectKind === 'stroke') {
-            this.pages[action.pageIndex] = {
-              ...page,
-              strokes: page.strokes.map(s => s.id === action.objectId ? { ...s, ...action.before } : s),
-            }
-          } else {
-            this.pages[action.pageIndex] = {
-              ...page,
-              assets: page.assets.map(a => a.id === action.objectId ? { ...a, ...action.before } : a),
-            }
-          }
-          break
-        }
-        case 'batchUpdate': {
-          // Phase 36: Undo batch update → restore before values for all entries
-          let newStrokes = [...page.strokes]
-          let newAssets = [...page.assets]
-          for (const entry of action.entries) {
-            if (entry.objectKind === 'stroke') {
-              newStrokes = newStrokes.map(s => s.id === entry.objectId ? { ...s, ...entry.before } : s)
-            } else {
-              newAssets = newAssets.map(a => a.id === entry.objectId ? { ...a, ...entry.before } : a)
-            }
-          }
-          this.pages[action.pageIndex] = { ...page, strokes: newStrokes, assets: newAssets }
-          break
-        }
-        case 'addTestObject': {
-          // Undo add → remove test object
-          const testObjects = (page.testObjects ?? []).filter((_, i) => i !== action.index)
-          this.pages[action.pageIndex] = { ...page, testObjects }
-          break
-        }
-        case 'deleteTestObject': {
-          // Undo delete → restore test object at original index
-          const testObjects = [...(page.testObjects ?? [])]
-          testObjects.splice(action.index, 0, action.testObject)
-          this.pages[action.pageIndex] = { ...page, testObjects }
-          break
-        }
-        case 'updateTestObject': {
-          // Undo update → restore before values
-          const testObjects = (page.testObjects ?? []).map(t =>
-            t.id === action.objectId ? { ...t, ...action.before } as WBTestObject : t,
-          )
-          this.pages[action.pageIndex] = { ...page, testObjects }
-          break
-        }
-        case 'zOrder': {
-          // Phase 34: Undo z-order → move item from toIndex back to fromIndex
-          if (action.objectKind === 'stroke') {
-            const arr = [...page.strokes]
-            const curIdx = arr.findIndex(s => s.id === action.objectId)
-            if (curIdx !== -1) {
-              const [item] = arr.splice(curIdx, 1)
-              arr.splice(action.fromIndex, 0, item)
-              this.pages[action.pageIndex] = { ...page, strokes: arr }
-            }
-          } else {
-            const arr = [...page.assets]
-            const curIdx = arr.findIndex(a => a.id === action.objectId)
-            if (curIdx !== -1) {
-              const [item] = arr.splice(curIdx, 1)
-              arr.splice(action.fromIndex, 0, item)
-              this.pages[action.pageIndex] = { ...page, assets: arr }
-            }
-          }
-          break
-        }
-      }
-
-      this.redoStack.push(action)
-      this.markDirty()
+      const cmd = this.undoStack.pop()
+      if (!cmd) return
+      cmd.revert()
+      this.redoStack.push(cmd)
     },
 
     redo(): void {
-      const action = this.redoStack.pop()
-      if (!action) return
-
-      const page = this.pages[action.pageIndex]
-      if (!page) return
-
-      switch (action.type) {
-        case 'addStroke': {
-          const strokes = [...page.strokes]
-          strokes.splice(action.index, 0, action.stroke)
-          this.pages[action.pageIndex] = { ...page, strokes }
-          break
-        }
-        case 'deleteStroke': {
-          this.pages[action.pageIndex] = {
-            ...page,
-            strokes: page.strokes.filter((_, i) => i !== action.index),
-          }
-          break
-        }
-        case 'updateStroke': {
-          const strokes = [...page.strokes]
-          strokes[action.index] = action.next
-          this.pages[action.pageIndex] = { ...page, strokes }
-          break
-        }
-        case 'addAsset': {
-          const assets = [...page.assets]
-          assets.splice(action.index, 0, action.asset)
-          this.pages[action.pageIndex] = { ...page, assets }
-          break
-        }
-        case 'deleteAsset': {
-          this.pages[action.pageIndex] = {
-            ...page,
-            assets: page.assets.filter((_, i) => i !== action.index),
-          }
-          break
-        }
-        case 'updateAsset': {
-          const assets = [...page.assets]
-          assets[action.index] = action.next
-          this.pages[action.pageIndex] = { ...page, assets }
-          break
-        }
-        case 'clearPage': {
-          this.pages[action.pageIndex] = {
-            ...page,
-            strokes: [],
-            assets: [],
-          }
-          break
-        }
-        case 'createGroup': {
-          // Redo create → re-add the group
-          const groups = [...(page.groups ?? []), action.group]
-          this.pages[action.pageIndex] = { ...page, groups }
-          break
-        }
-        case 'deleteGroup': {
-          // Redo delete → remove the group again
-          const groups = (page.groups ?? []).filter((g) => g.id !== action.group.id)
-          this.pages[action.pageIndex] = { ...page, groups }
-          break
-        }
-        case 'lockItems': {
-          // Redo lock → re-apply lock
-          const newStrokes = [...page.strokes]
-          const newAssets = [...page.assets]
-          for (const item of action.items) {
-            const si = newStrokes.findIndex((s) => s.id === item.id)
-            if (si !== -1) {
-              newStrokes[si] = { ...newStrokes[si], locked: true, lockedBy: newStrokes[si].lockedBy ?? 'local' }
-            }
-            const ai = newAssets.findIndex((a) => a.id === item.id)
-            if (ai !== -1) {
-              newAssets[ai] = { ...newAssets[ai], locked: true, lockedBy: newAssets[ai].lockedBy ?? 'local' }
-            }
-          }
-          this.pages[action.pageIndex] = { ...page, strokes: newStrokes, assets: newAssets }
-          break
-        }
-        case 'unlockItems': {
-          // Redo unlock → re-apply unlock
-          const newStrokes = [...page.strokes]
-          const newAssets = [...page.assets]
-          for (const item of action.items) {
-            const si = newStrokes.findIndex((s) => s.id === item.id)
-            if (si !== -1) {
-              newStrokes[si] = { ...newStrokes[si], locked: false, lockedBy: undefined }
-            }
-            const ai = newAssets.findIndex((a) => a.id === item.id)
-            if (ai !== -1) {
-              newAssets[ai] = { ...newAssets[ai], locked: false, lockedBy: undefined }
-            }
-          }
-          this.pages[action.pageIndex] = { ...page, strokes: newStrokes, assets: newAssets }
-          break
-        }
-        case 'duplicate': {
-          // Redo duplicate → re-add cloned items, select them
-          this.pages[action.pageIndex] = {
-            ...page,
-            strokes: [...page.strokes, ...action.clonedStrokes],
-            assets: [...page.assets, ...action.clonedAssets],
-          }
-          this.selectedIds = [...action.newIds]
-          break
-        }
-        case 'align': {
-          // Redo align → re-apply all moves (dx, dy)
-          const newStrokes = [...page.strokes]
-          const newAssets = [...page.assets]
-          for (const move of action.moves) {
-            const si = newStrokes.findIndex((s) => s.id === move.id)
-            if (si !== -1) {
-              const s = newStrokes[si]
-              newStrokes[si] = {
-                ...s,
-                points: s.points.map((p) => ({ ...p, x: p.x + move.dx, y: p.y + move.dy })),
-              }
-            }
-            const ai = newAssets.findIndex((a) => a.id === move.id)
-            if (ai !== -1) {
-              const a = newAssets[ai]
-              newAssets[ai] = { ...a, x: a.x + move.dx, y: a.y + move.dy }
-            }
-          }
-          this.pages[action.pageIndex] = { ...page, strokes: newStrokes, assets: newAssets }
-          break
-        }
-        case 'pageReorder': {
-          // Redo reorder → apply new order
-          const pageMap = new Map(this.pages.map((p) => [p.id, p]))
-          this.pages = action.newOrder.map((id) => pageMap.get(id)!).filter(Boolean)
-          // Restore currentPageIndex to follow active page
-          const activeId = action.previousOrder[action.previousPageIndex]
-          const newIdx = this.pages.findIndex((p) => p.id === activeId)
-          this.currentPageIndex = newIdx !== -1 ? newIdx : Math.min(action.previousPageIndex, this.pages.length - 1)
-          break
-        }
-        case 'addPage': {
-          // Redo addPage → re-add the page
-          this.pages = [...this.pages, action.page]
-          this.currentPageIndex = this.pages.length - 1
-          break
-        }
-        case 'deletePage': {
-          // Redo deletePage → remove the page again
-          this.pages = this.pages.filter((p) => p.id !== action.page.id)
-          if (this.currentPageIndex >= this.pages.length) {
-            this.currentPageIndex = Math.max(0, this.pages.length - 1)
-          }
-          break
-        }
-        case 'clearCurrentPage': {
-          // Redo clearCurrentPage → remove cleared items again
-          const cp = this.pages[action.pageIndex]
-          if (cp) {
-            const clearedIds = new Set([
-              ...action.clearedStrokes.map((s) => s.id),
-              ...action.clearedAssets.map((a) => a.id),
-            ])
-            this.pages[action.pageIndex] = {
-              ...cp,
-              strokes: cp.strokes.filter((s) => !clearedIds.has(s.id)),
-              assets: cp.assets.filter((a) => !clearedIds.has(a.id)),
-            }
-          }
-          break
-        }
-        case 'addSticky': {
-          // Redo addSticky → re-add the sticky
-          const assets = [...page.assets]
-          assets.splice(action.index, 0, action.asset)
-          this.pages[action.pageIndex] = { ...page, assets }
-          break
-        }
-        case 'updateStickyText': {
-          // Redo text update → apply new text
-          const assets = page.assets.map((a) =>
-            a.id === action.assetId ? { ...a, text: action.newText } : a,
-          )
-          this.pages[action.pageIndex] = { ...page, assets }
-          break
-        }
-        case 'updateStickyStyle': {
-          // Redo style update → apply new style
-          const assets = page.assets.map((a) =>
-            a.id === action.assetId ? { ...a, ...action.newStyle } : a,
-          )
-          this.pages[action.pageIndex] = { ...page, assets }
-          break
-        }
-        case 'updateObject': {
-          // Phase 34: Redo updateObject → re-apply after values
-          if (action.objectKind === 'stroke') {
-            this.pages[action.pageIndex] = {
-              ...page,
-              strokes: page.strokes.map(s => s.id === action.objectId ? { ...s, ...action.after } : s),
-            }
-          } else {
-            this.pages[action.pageIndex] = {
-              ...page,
-              assets: page.assets.map(a => a.id === action.objectId ? { ...a, ...action.after } : a),
-            }
-          }
-          break
-        }
-        case 'batchUpdate': {
-          // Phase 36: Redo batch update → re-apply after values for all entries
-          let newStrokes = [...page.strokes]
-          let newAssets = [...page.assets]
-          for (const entry of action.entries) {
-            if (entry.objectKind === 'stroke') {
-              newStrokes = newStrokes.map(s => s.id === entry.objectId ? { ...s, ...entry.after } : s)
-            } else {
-              newAssets = newAssets.map(a => a.id === entry.objectId ? { ...a, ...entry.after } : a)
-            }
-          }
-          this.pages[action.pageIndex] = { ...page, strokes: newStrokes, assets: newAssets }
-          break
-        }
-        case 'addTestObject': {
-          // Redo add → re-add test object
-          const testObjects = [...(page.testObjects ?? []), action.testObject]
-          this.pages[action.pageIndex] = { ...page, testObjects }
-          break
-        }
-        case 'deleteTestObject': {
-          // Redo delete → remove test object again
-          const testObjects = (page.testObjects ?? []).filter(t => t.id !== action.testObject.id)
-          this.pages[action.pageIndex] = { ...page, testObjects }
-          break
-        }
-        case 'updateTestObject': {
-          // Redo update → re-apply after values
-          const testObjects = (page.testObjects ?? []).map(t =>
-            t.id === action.objectId ? { ...t, ...action.after } as WBTestObject : t,
-          )
-          this.pages[action.pageIndex] = { ...page, testObjects }
-          break
-        }
-        case 'zOrder': {
-          // Phase 34: Redo z-order → move item from fromIndex to toIndex
-          if (action.objectKind === 'stroke') {
-            const arr = [...page.strokes]
-            const curIdx = arr.findIndex(s => s.id === action.objectId)
-            if (curIdx !== -1) {
-              const [item] = arr.splice(curIdx, 1)
-              arr.splice(action.toIndex, 0, item)
-              this.pages[action.pageIndex] = { ...page, strokes: arr }
-            }
-          } else {
-            const arr = [...page.assets]
-            const curIdx = arr.findIndex(a => a.id === action.objectId)
-            if (curIdx !== -1) {
-              const [item] = arr.splice(curIdx, 1)
-              arr.splice(action.toIndex, 0, item)
-              this.pages[action.pageIndex] = { ...page, assets: arr }
-            }
-          }
-          break
-        }
-      }
-
-      this.undoStack.push(action)
-      this.markDirty()
+      const cmd = this.redoStack.pop()
+      if (!cmd) return
+      cmd.apply()
+      this.undoStack.push(cmd)
     },
 
     // ── Page Actions (LAW-03) ────────────────────────────────────────────
@@ -1799,13 +1376,33 @@ export const useWBStore = defineStore('wb-board', {
       const page = this.pages[pageIndex]
       if (!page) return
 
-      const action: UndoClearPage = {
-        type: 'clearPage',
-        pageIndex,
-        prevStrokes: [...page.strokes],
-        prevAssets: [...page.assets],
+      const _pi = pageIndex
+      const _prevStrokes = [...page.strokes]
+      const _prevAssets = [...page.assets]
+      const _pageId = page.id ?? ''
+
+      const cmd: WBCommand = {
+        apply: () => {
+          const p = this.pages[_pi]
+          if (!p) return
+          this.pages[_pi] = { ...p, strokes: [], assets: [] }
+          this.markDirty()
+          _emitOperation({ op_type: 'clear_page', page_id: _pageId, payload: {} })
+        },
+        revert: () => {
+          const p = this.pages[_pi]
+          if (!p) return
+          this.pages[_pi] = { ...p, strokes: _prevStrokes, assets: _prevAssets }
+          this.markDirty()
+          for (const s of _prevStrokes) {
+            _emitOperation({ op_type: 'stroke_add', page_id: _pageId, payload: { stroke: s } })
+          }
+          for (const a of _prevAssets) {
+            _emitOperation({ op_type: 'asset_add', page_id: _pageId, payload: { asset: a } })
+          }
+        },
       }
-      this.undoStack = trimStack([...this.undoStack, action])
+      this.undoStack = trimStack([...this.undoStack, cmd])
       this.redoStack = []
 
       this.pages[pageIndex] = { ...page, strokes: [], assets: [] }
@@ -2000,6 +1597,19 @@ export const useWBStore = defineStore('wb-board', {
 
       this.pages = [...this.pages, ...newPages]
       this.markDirty()
+      _emitOperation({
+        op_type: 'pdf_import',
+        page_id: '',
+        payload: {
+          pages: newPages.map(p => ({
+            id: p.id,
+            name: p.name,
+            background: p.background,
+            width: p.width,
+            height: p.height,
+          })),
+        },
+      })
       return firstIndex
     },
 
@@ -2032,16 +1642,36 @@ export const useWBStore = defineStore('wb-board', {
         if (newIdx !== -1) this.currentPageIndex = newIdx
       }
 
-      const action: UndoPageReorder = {
-        type: 'pageReorder',
-        pageIndex: 0,
-        previousOrder,
-        newOrder,
-        previousPageIndex,
+      const _previousOrder = [...previousOrder]
+      const _newOrder = [...newOrder]
+      const _prevPageIdx = previousPageIndex
+
+      const cmd: WBCommand = {
+        apply: () => {
+          const pageMap = new Map(this.pages.map((p) => [p.id, p]))
+          const reordered = _newOrder.map((id) => pageMap.get(id)).filter(Boolean) as WBPage[]
+          if (reordered.length > 0) this.pages = reordered
+          const curId = this.pages[this.currentPageIndex]?.id
+          if (curId) {
+            const idx = this.pages.findIndex((p) => p.id === curId)
+            if (idx !== -1) this.currentPageIndex = idx
+          }
+          this.markDirty()
+          _emitOperation({ op_type: 'page_reorder', page_id: '', payload: { pageIds: _newOrder } })
+        },
+        revert: () => {
+          const pageMap = new Map(this.pages.map((p) => [p.id, p]))
+          const reordered = _previousOrder.map((id) => pageMap.get(id)).filter(Boolean) as WBPage[]
+          if (reordered.length > 0) this.pages = reordered
+          this.currentPageIndex = _prevPageIdx
+          this.markDirty()
+          _emitOperation({ op_type: 'page_reorder', page_id: '', payload: { pageIds: _previousOrder } })
+        },
       }
-      this.undoStack = trimStack([...this.undoStack, action])
+      this.undoStack = trimStack([...this.undoStack, cmd])
       this.redoStack = []
       this.markDirty()
+      _emitOperation({ op_type: 'page_reorder', page_id: '', payload: { pageIds: newOrder } })
     },
 
     /**
@@ -2070,13 +1700,46 @@ export const useWBStore = defineStore('wb-board', {
       this.pages = [...this.pages, newPage]
       this.currentPageIndex = this.pages.length - 1
 
-      const action: UndoAddPage = {
-        type: 'addPage',
-        pageIndex: 0,
-        pageId: newPage.id,
-        page: { ...newPage },
+      const _page = { ...newPage }
+      const _pageId = newPage.id
+
+      const cmd: WBCommand = {
+        apply: () => {
+          // Re-add the page
+          this.pages = [...this.pages, _page]
+          this.currentPageIndex = this.pages.length - 1
+          this.markDirty()
+          _emitOperation({
+            op_type: 'page_add',
+            page_id: _pageId,
+            payload: {
+              page: {
+                id: _page.id,
+                name: _page.name,
+                background: _page.background,
+                width: _page.width,
+                height: _page.height,
+              },
+            },
+          })
+        },
+        revert: () => {
+          // Remove the page by ID
+          const idx = this.pages.findIndex((p) => p.id === _pageId)
+          if (idx === -1) return
+          this.pages = this.pages.filter((_, i) => i !== idx)
+          if (this.currentPageIndex >= this.pages.length) {
+            this.currentPageIndex = Math.max(0, this.pages.length - 1)
+          }
+          this.markDirty()
+          _emitOperation({
+            op_type: 'page_delete',
+            page_id: _pageId,
+            payload: { page_id: _pageId },
+          })
+        },
       }
-      this.undoStack = trimStack([...this.undoStack, action])
+      this.undoStack = trimStack([...this.undoStack, cmd])
       this.redoStack = []
       this.markDirty()
 
@@ -2120,14 +1783,59 @@ export const useWBStore = defineStore('wb-board', {
         this.currentPageIndex--
       }
 
-      const action: UndoDeletePage = {
-        type: 'deletePage',
-        pageIndex: 0,
-        page: deletedPage,
-        index,
-        wasCurrentIndex,
+      const _deletedPage = { ...deletedPage, strokes: [...deletedPage.strokes], assets: [...deletedPage.assets] }
+      const _index = index
+      const _wasCurrentIndex = wasCurrentIndex
+
+      const cmd: WBCommand = {
+        apply: () => {
+          // Re-delete the page by ID
+          const idx = this.pages.findIndex((p) => p.id === _deletedPage.id)
+          if (idx === -1) return
+          this.pages = this.pages.filter((_, i) => i !== idx)
+          if (this.currentPageIndex >= this.pages.length) {
+            this.currentPageIndex = Math.max(0, this.pages.length - 1)
+          } else if (this.currentPageIndex > idx) {
+            this.currentPageIndex--
+          }
+          this.markDirty()
+          _emitOperation({
+            op_type: 'page_delete',
+            page_id: _deletedPage.id,
+            payload: {
+              page_id: _deletedPage.id,
+              background: _deletedPage.background,
+              backgroundColor: _deletedPage.backgroundColor,
+            },
+          })
+        },
+        revert: () => {
+          // Re-insert the deleted page at original index
+          const pagesCopy = [...this.pages]
+          pagesCopy.splice(_index, 0, { ..._deletedPage, strokes: [..._deletedPage.strokes], assets: [..._deletedPage.assets] })
+          this.pages = pagesCopy
+          this.currentPageIndex = _wasCurrentIndex
+          this.markDirty()
+          _emitOperation({
+            op_type: 'page_add',
+            page_id: _deletedPage.id,
+            payload: {
+              page: {
+                id: _deletedPage.id,
+                name: _deletedPage.name,
+                background: _deletedPage.background,
+                backgroundColor: _deletedPage.backgroundColor,
+                width: _deletedPage.width,
+                height: _deletedPage.height,
+                strokes: _deletedPage.strokes,
+                assets: _deletedPage.assets,
+              },
+              insertAt: _index,
+            },
+          })
+        },
       }
-      this.undoStack = trimStack([...this.undoStack, action])
+      this.undoStack = trimStack([...this.undoStack, cmd])
       this.redoStack = []
       this.markDirty()
 
@@ -2185,13 +1893,42 @@ export const useWBStore = defineStore('wb-board', {
       // Nothing to clear?
       if (unlockedStrokes.length === 0 && unlockedAssets.length === 0) return
 
-      const action: UndoClearCurrentPage = {
-        type: 'clearCurrentPage',
-        pageIndex,
-        clearedStrokes: [...unlockedStrokes],
-        clearedAssets: [...unlockedAssets],
+      const _pi = pageIndex
+      const _clearedStrokes = [...unlockedStrokes]
+      const _clearedAssets = [...unlockedAssets]
+      const _pageId = page.id ?? ''
+
+      const cmd: WBCommand = {
+        apply: () => {
+          const p = this.pages[_pi]
+          if (!p) return
+          this.pages[_pi] = {
+            ...p,
+            strokes: p.strokes.filter((s) => s.locked),
+            assets: p.assets.filter((a) => a.locked),
+          }
+          this.selectedIds = []
+          this.markDirty()
+          _emitOperation({ op_type: 'clear_page', page_id: _pageId, payload: {} })
+        },
+        revert: () => {
+          const p = this.pages[_pi]
+          if (!p) return
+          this.pages[_pi] = {
+            ...p,
+            strokes: [...p.strokes, ..._clearedStrokes],
+            assets: [...p.assets, ..._clearedAssets],
+          }
+          this.markDirty()
+          for (const s of _clearedStrokes) {
+            _emitOperation({ op_type: 'stroke_add', page_id: _pageId, payload: { stroke: s } })
+          }
+          for (const a of _clearedAssets) {
+            _emitOperation({ op_type: 'asset_add', page_id: _pageId, payload: { asset: a } })
+          }
+        },
       }
-      this.undoStack = trimStack([...this.undoStack, action])
+      this.undoStack = trimStack([...this.undoStack, cmd])
       this.redoStack = []
 
       // Keep only locked items
@@ -2235,13 +1972,14 @@ export const useWBStore = defineStore('wb-board', {
       const page = this.pages[pageIndex]
       if (!page) return
 
-      const action: UndoAddSticky = {
-        type: 'addSticky',
-        pageIndex,
-        asset: { ...sticky },
-        index: page.assets.length,
+      const _sticky = { ...sticky }
+      const _pageId = page.id ?? ''
+
+      const cmd: WBCommand = {
+        apply: () => this.addAsset(_sticky, { skipHistory: true }),
+        revert: () => this.deleteAsset(_sticky.id, { skipHistory: true }),
       }
-      this.undoStack = trimStack([...this.undoStack, action])
+      this.undoStack = trimStack([...this.undoStack, cmd])
       this.redoStack = []
 
       this.pages[pageIndex] = {
@@ -2254,7 +1992,7 @@ export const useWBStore = defineStore('wb-board', {
       if (this.mode === 'edit') {
         _emitOperation({
           op_type: 'asset_add',
-          page_id: page.id ?? '',
+          page_id: _pageId,
           payload: { asset: sticky },
         })
       }
@@ -2275,14 +2013,35 @@ export const useWBStore = defineStore('wb-board', {
       const clampedText = text.slice(0, 500)
       if (asset.text === clampedText) return
 
-      const action: UndoUpdateStickyText = {
-        type: 'updateStickyText',
-        pageIndex,
-        assetId: id,
-        prevText: asset.text ?? '',
-        newText: clampedText,
+      const _pi = pageIndex
+      const _id = id
+      const _prevText = asset.text ?? ''
+      const _newText = clampedText
+      const _pageId = page.id ?? ''
+
+      const cmd: WBCommand = {
+        apply: () => {
+          const p = this.pages[_pi]
+          if (!p) return
+          const updated = p.assets.find((a) => a.id === _id)
+          if (!updated) return
+          const upd = { ...updated, text: _newText }
+          this.pages[_pi] = { ...p, assets: p.assets.map((a) => a.id === _id ? upd : a) }
+          this.markDirty()
+          _emitOperation({ op_type: 'asset_update', page_id: _pageId, payload: { asset: upd } })
+        },
+        revert: () => {
+          const p = this.pages[_pi]
+          if (!p) return
+          const updated = p.assets.find((a) => a.id === _id)
+          if (!updated) return
+          const upd = { ...updated, text: _prevText }
+          this.pages[_pi] = { ...p, assets: p.assets.map((a) => a.id === _id ? upd : a) }
+          this.markDirty()
+          _emitOperation({ op_type: 'asset_update', page_id: _pageId, payload: { asset: upd } })
+        },
       }
-      this.undoStack = trimStack([...this.undoStack, action])
+      this.undoStack = trimStack([...this.undoStack, cmd])
       this.redoStack = []
 
       const updatedAsset = { ...asset, text: clampedText }
@@ -2367,14 +2126,35 @@ export const useWBStore = defineStore('wb-board', {
 
       if (Object.keys(newStyle).length === 0) return
 
-      const action: UndoUpdateStickyStyle = {
-        type: 'updateStickyStyle',
-        pageIndex,
-        assetId: id,
-        prevStyle: prevStyle as { bgColor?: string; textColor?: string; fontSize?: number },
-        newStyle: newStyle as { bgColor?: string; textColor?: string; fontSize?: number },
+      const _pi = pageIndex
+      const _id = id
+      const _prevStyle = { ...prevStyle }
+      const _newStyle = { ...newStyle }
+      const _pageId = page.id ?? ''
+
+      const cmd: WBCommand = {
+        apply: () => {
+          const p = this.pages[_pi]
+          if (!p) return
+          const a = p.assets.find((x) => x.id === _id)
+          if (!a) return
+          const upd = { ...a, ..._newStyle }
+          this.pages[_pi] = { ...p, assets: p.assets.map((x) => x.id === _id ? upd : x) }
+          this.markDirty()
+          _emitOperation({ op_type: 'asset_update', page_id: _pageId, payload: { asset: upd } })
+        },
+        revert: () => {
+          const p = this.pages[_pi]
+          if (!p) return
+          const a = p.assets.find((x) => x.id === _id)
+          if (!a) return
+          const upd = { ...a, ..._prevStyle }
+          this.pages[_pi] = { ...p, assets: p.assets.map((x) => x.id === _id ? upd : x) }
+          this.markDirty()
+          _emitOperation({ op_type: 'asset_update', page_id: _pageId, payload: { asset: upd } })
+        },
       }
-      this.undoStack = trimStack([...this.undoStack, action])
+      this.undoStack = trimStack([...this.undoStack, cmd])
       this.redoStack = []
 
       const updatedAsset = { ...asset, ...newStyle }
@@ -2469,8 +2249,28 @@ export const useWBStore = defineStore('wb-board', {
         createdBy,
       }
 
-      const action: UndoCreateGroup = { type: 'createGroup', pageIndex, group }
-      this.undoStack = trimStack([...this.undoStack, action])
+      const _pi = pageIndex
+      const _group = { ...group, itemIds: [...group.itemIds] }
+      const _pageId = page.id ?? ''
+
+      const cmd: WBCommand = {
+        apply: () => {
+          const p = this.pages[_pi]
+          if (!p) return
+          const groups = p.groups ?? []
+          this.pages[_pi] = { ...p, groups: [...groups, _group] }
+          this.markDirty()
+          _emitOperation({ op_type: 'group_create', page_id: _pageId, payload: { group_id: _group.id, itemIds: _group.itemIds } })
+        },
+        revert: () => {
+          const p = this.pages[_pi]
+          if (!p) return
+          this.pages[_pi] = { ...p, groups: (p.groups ?? []).filter((g) => g.id !== _group.id) }
+          this.markDirty()
+          _emitOperation({ op_type: 'group_delete', page_id: _pageId, payload: { group_id: _group.id } })
+        },
+      }
+      this.undoStack = trimStack([...this.undoStack, cmd])
       this.redoStack = []
 
       this.pages[pageIndex] = {
@@ -2497,8 +2297,27 @@ export const useWBStore = defineStore('wb-board', {
       const group = groups.find((g) => g.id === groupId)
       if (!group) return
 
-      const action: UndoDeleteGroup = { type: 'deleteGroup', pageIndex, group }
-      this.undoStack = trimStack([...this.undoStack, action])
+      const _pi = pageIndex
+      const _group = { ...group, itemIds: [...group.itemIds] }
+      const _pageId = page.id ?? ''
+
+      const cmd: WBCommand = {
+        apply: () => {
+          const p = this.pages[_pi]
+          if (!p) return
+          this.pages[_pi] = { ...p, groups: (p.groups ?? []).filter((g) => g.id !== _group.id) }
+          this.markDirty()
+          _emitOperation({ op_type: 'group_delete', page_id: _pageId, payload: { group_id: _group.id } })
+        },
+        revert: () => {
+          const p = this.pages[_pi]
+          if (!p) return
+          this.pages[_pi] = { ...p, groups: [...(p.groups ?? []), _group] }
+          this.markDirty()
+          _emitOperation({ op_type: 'group_create', page_id: _pageId, payload: { group_id: _group.id, itemIds: _group.itemIds } })
+        },
+      }
+      this.undoStack = trimStack([...this.undoStack, cmd])
       this.redoStack = []
 
       this.pages[pageIndex] = {
@@ -2568,8 +2387,47 @@ export const useWBStore = defineStore('wb-board', {
 
       if (prevStates.length === 0) return // all already locked
 
-      const action: UndoLockItems = { type: 'lockItems', pageIndex, items: prevStates }
-      this.undoStack = trimStack([...this.undoStack, action])
+      const _pi = pageIndex
+      const _prevStates = prevStates.map((s) => ({ ...s }))
+      const _ids = [...ids]
+      const _lockedBy = lockedBy
+      const _pageId = page.id ?? ''
+
+      const cmd: WBCommand = {
+        apply: () => {
+          const p = this.pages[_pi]
+          if (!p) return
+          const idSet2 = new Set(_ids)
+          this.pages[_pi] = {
+            ...p,
+            strokes: p.strokes.map((s) => idSet2.has(s.id) ? { ...s, locked: true, lockedBy: _lockedBy } : s),
+            assets: p.assets.map((a) => idSet2.has(a.id) ? { ...a, locked: true, lockedBy: _lockedBy } : a),
+          }
+          this.selectedIds = []
+          this.selectionRect = null
+          this.markDirty()
+          _emitOperation({ op_type: 'lock_update', page_id: _pageId, payload: { ids: _ids, locked: true, lockedBy: _lockedBy } })
+        },
+        revert: () => {
+          const p = this.pages[_pi]
+          if (!p) return
+          const stateMap = new Map(_prevStates.map((s) => [s.id, s]))
+          this.pages[_pi] = {
+            ...p,
+            strokes: p.strokes.map((s) => {
+              const prev = stateMap.get(s.id)
+              return prev ? { ...s, locked: prev.prevLocked ?? false, lockedBy: prev.prevLockedBy } : s
+            }),
+            assets: p.assets.map((a) => {
+              const prev = stateMap.get(a.id)
+              return prev ? { ...a, locked: prev.prevLocked ?? false, lockedBy: prev.prevLockedBy } : a
+            }),
+          }
+          this.markDirty()
+          _emitOperation({ op_type: 'lock_update', page_id: _pageId, payload: { ids: _ids, locked: false } })
+        },
+      }
+      this.undoStack = trimStack([...this.undoStack, cmd])
       this.redoStack = []
 
       this.pages[pageIndex] = { ...page, strokes: newStrokes, assets: newAssets }
@@ -2608,8 +2466,44 @@ export const useWBStore = defineStore('wb-board', {
 
       if (prevStates.length === 0) return // none were locked
 
-      const action: UndoUnlockItems = { type: 'unlockItems', pageIndex, items: prevStates }
-      this.undoStack = trimStack([...this.undoStack, action])
+      const _pi = pageIndex
+      const _prevStates = prevStates.map((s) => ({ ...s }))
+      const _ids = [...ids]
+      const _pageId = page.id ?? ''
+
+      const cmd: WBCommand = {
+        apply: () => {
+          const p = this.pages[_pi]
+          if (!p) return
+          const idSet2 = new Set(_ids)
+          this.pages[_pi] = {
+            ...p,
+            strokes: p.strokes.map((s) => idSet2.has(s.id) ? { ...s, locked: false, lockedBy: undefined } : s),
+            assets: p.assets.map((a) => idSet2.has(a.id) ? { ...a, locked: false, lockedBy: undefined } : a),
+          }
+          this.markDirty()
+          _emitOperation({ op_type: 'lock_update', page_id: _pageId, payload: { ids: _ids, locked: false } })
+        },
+        revert: () => {
+          const p = this.pages[_pi]
+          if (!p) return
+          const stateMap = new Map(_prevStates.map((s) => [s.id, s]))
+          this.pages[_pi] = {
+            ...p,
+            strokes: p.strokes.map((s) => {
+              const prev = stateMap.get(s.id)
+              return prev ? { ...s, locked: prev.prevLocked ?? false, lockedBy: prev.prevLockedBy } : s
+            }),
+            assets: p.assets.map((a) => {
+              const prev = stateMap.get(a.id)
+              return prev ? { ...a, locked: prev.prevLocked ?? false, lockedBy: prev.prevLockedBy } : a
+            }),
+          }
+          this.markDirty()
+          _emitOperation({ op_type: 'lock_update', page_id: _pageId, payload: { ids: _ids, locked: true, lockedBy: _prevStates[0]?.prevLockedBy } })
+        },
+      }
+      this.undoStack = trimStack([...this.undoStack, cmd])
       this.redoStack = []
 
       this.pages[pageIndex] = { ...page, strokes: newStrokes, assets: newAssets }
@@ -2684,16 +2578,51 @@ export const useWBStore = defineStore('wb-board', {
 
       if (newIds.length === 0) return []
 
-      // Push undo action
-      const action: UndoDuplicate = {
-        type: 'duplicate',
-        pageIndex,
-        newIds,
-        originalIds,
-        clonedStrokes,
-        clonedAssets,
+      const _pi = pageIndex
+      const _clonedStrokes = clonedStrokes.map((s) => ({ ...s }))
+      const _clonedAssets = clonedAssets.map((a) => ({ ...a }))
+      const _newIds = [...newIds]
+      const _pageId = page.id ?? ''
+
+      const cmd: WBCommand = {
+        apply: () => {
+          const p = this.pages[_pi]
+          if (!p) return
+          this.pages[_pi] = {
+            ...p,
+            strokes: [...p.strokes, ..._clonedStrokes],
+            assets: [...p.assets, ..._clonedAssets],
+          }
+          this.selectedIds = [..._newIds]
+          this.selectionRect = null
+          this.markDirty()
+          for (const s of _clonedStrokes) {
+            _emitOperation({ op_type: 'stroke_add', page_id: _pageId, payload: { stroke: s } })
+          }
+          for (const a of _clonedAssets) {
+            _emitOperation({ op_type: 'asset_add', page_id: _pageId, payload: { asset: a } })
+          }
+        },
+        revert: () => {
+          const p = this.pages[_pi]
+          if (!p) return
+          const idSet = new Set(_newIds)
+          this.pages[_pi] = {
+            ...p,
+            strokes: p.strokes.filter((s) => !idSet.has(s.id)),
+            assets: p.assets.filter((a) => !idSet.has(a.id)),
+          }
+          this.selectedIds = []
+          this.markDirty()
+          for (const s of _clonedStrokes) {
+            _emitOperation({ op_type: 'stroke_delete', page_id: _pageId, payload: { stroke_id: s.id } })
+          }
+          for (const a of _clonedAssets) {
+            _emitOperation({ op_type: 'asset_delete', page_id: _pageId, payload: { asset_id: a.id } })
+          }
+        },
       }
-      this.undoStack = trimStack([...this.undoStack, action])
+      this.undoStack = trimStack([...this.undoStack, cmd])
       this.redoStack = []
 
       // Add clones to page
@@ -2743,8 +2672,51 @@ export const useWBStore = defineStore('wb-board', {
 
       if (effectiveMoves.length === 0) return
 
-      const action: UndoAlign = { type: 'align', pageIndex, moves: effectiveMoves }
-      this.undoStack = trimStack([...this.undoStack, action])
+      const _pi = pageIndex
+      const _moves = effectiveMoves.map((m) => ({ ...m }))
+      const _pageId = page.id ?? ''
+
+      const cmd: WBCommand = {
+        apply: () => {
+          const p = this.pages[_pi]
+          if (!p) return
+          const mm = new Map(_moves.map((m) => [m.id, m]))
+          this.pages[_pi] = {
+            ...p,
+            strokes: p.strokes.map((s) => {
+              const m = mm.get(s.id)
+              if (!m) return s
+              return { ...s, points: s.points.map((pt) => ({ ...pt, x: pt.x + m.dx, y: pt.y + m.dy })) }
+            }),
+            assets: p.assets.map((a) => {
+              const m = mm.get(a.id)
+              if (!m) return a
+              return { ...a, x: a.x + m.dx, y: a.y + m.dy }
+            }),
+          }
+          this.markDirty()
+        },
+        revert: () => {
+          const p = this.pages[_pi]
+          if (!p) return
+          const mm = new Map(_moves.map((m) => [m.id, m]))
+          this.pages[_pi] = {
+            ...p,
+            strokes: p.strokes.map((s) => {
+              const m = mm.get(s.id)
+              if (!m) return s
+              return { ...s, points: s.points.map((pt) => ({ ...pt, x: pt.x - m.dx, y: pt.y - m.dy })) }
+            }),
+            assets: p.assets.map((a) => {
+              const m = mm.get(a.id)
+              if (!m) return a
+              return { ...a, x: a.x - m.dx, y: a.y - m.dy }
+            }),
+          }
+          this.markDirty()
+        },
+      }
+      this.undoStack = trimStack([...this.undoStack, cmd])
       this.redoStack = []
 
       // Apply moves
@@ -2809,7 +2781,7 @@ export const useWBStore = defineStore('wb-board', {
       const page = this.pages[pageIndex]
       if (!page || this.selectedIds.length === 0) return
 
-      const ids = new Set(this.selectedIds)
+      const ids = new Set<string>(this.selectedIds)
 
       // Move strokes
       const newStrokes = page.strokes.map((s) => {
@@ -2828,6 +2800,7 @@ export const useWBStore = defineStore('wb-board', {
 
       this.pages[pageIndex] = { ...page, strokes: newStrokes, assets: newAssets }
       this.markDirty()
+      // NO ops here — called per-frame during drag. Ops emitted at drag END.
     },
 
     // Phase 34 A2 FIX-1: Move only unlocked selected items
@@ -2838,7 +2811,7 @@ export const useWBStore = defineStore('wb-board', {
 
       const unlockedIds = this.selectedIds.filter(id => !this.isItemLocked(id))
       if (unlockedIds.length === 0) return
-      const ids = new Set(unlockedIds)
+      const ids = new Set<string>(unlockedIds)
 
       const newStrokes = page.strokes.map((s) => {
         if (!ids.has(s.id)) return s
@@ -2855,6 +2828,38 @@ export const useWBStore = defineStore('wb-board', {
 
       this.pages[pageIndex] = { ...page, strokes: newStrokes, assets: newAssets }
       this.markDirty()
+      // NO ops here — called per-frame during drag. Ops emitted at drag END.
+    },
+
+    /** Emit move ops for selected objects — call at drag END only (not per-frame).
+     *  Strokes: one stroke_update per stroke (full points). Huge strokes (>64KB) will
+     *  be dropped at recorder level with warning — acceptable tradeoff for rare case.
+     *  Assets: one objects_move op with absolute x/y (cheap, atomic). */
+    emitMoveOpsForSelected(): void {
+      const page = this.currentPage
+      if (!page || this.selectedIds.length === 0) return
+      const ids = new Set<string>(this.selectedIds)
+      const pageId = page.id ?? ''
+
+      // Strokes: reuse existing stroke_update op (replay engine already handles)
+      for (const s of page.strokes) {
+        if (!ids.has(s.id)) continue
+        _emitOperation({
+          op_type: 'stroke_update',
+          page_id: pageId,
+          payload: { stroke: s },
+        })
+      }
+
+      // Assets: batch in one objects_move op
+      const movedAssets = page.assets.filter(a => ids.has(a.id))
+      if (movedAssets.length > 0 && movedAssets.length <= 50) {
+        _emitOperation({
+          op_type: 'objects_move',
+          page_id: pageId,
+          payload: { items: movedAssets.map(a => ({ id: a.id, x: a.x, y: a.y })) },
+        })
+      }
     },
 
     // Phase 34 A1.2: Object type resolver
@@ -2891,15 +2896,42 @@ export const useWBStore = defineStore('wb-board', {
           after[key] = updates[key]
         }
 
-        const action: UndoUpdateObject = { type: 'updateObject', pageIndex, objectId: id, objectKind: 'stroke', before, after }
-        this.undoStack = trimStack([...this.undoStack, action])
+        const _pi = pageIndex
+        const _id = id
+        const _before = { ...before }
+        const _after = { ...after }
+        const _pageId = page.id ?? ''
+
+        const cmd: WBCommand = {
+          apply: () => {
+            const p = this.pages[_pi]
+            if (!p) return
+            this.pages[_pi] = { ...p, strokes: p.strokes.map(s => s.id === _id ? { ...s, ..._after } : s) }
+            this.markDirty()
+            _emitOperation({ op_type: 'object_update', page_id: _pageId, payload: { id: _id, kind: 'stroke', changes: _after } })
+          },
+          revert: () => {
+            const p = this.pages[_pi]
+            if (!p) return
+            this.pages[_pi] = { ...p, strokes: p.strokes.map(s => s.id === _id ? { ...s, ..._before } : s) }
+            this.markDirty()
+            _emitOperation({ op_type: 'object_update', page_id: _pageId, payload: { id: _id, kind: 'stroke', changes: _before } })
+          },
+        }
+        this.undoStack = trimStack([...this.undoStack, cmd])
         this.redoStack = []
 
+        const updatedStroke = { ...page.strokes[strokeIdx], ...updates }
         this.pages[pageIndex] = {
           ...page,
-          strokes: page.strokes.map((s, i) => i === strokeIdx ? { ...s, ...updates } : s),
+          strokes: page.strokes.map((s, i) => i === strokeIdx ? updatedStroke : s),
         }
         this.markDirty()
+        _emitOperation({
+          op_type: 'object_update',
+          page_id: page.id ?? '',
+          payload: { id, kind: 'stroke', changes: updates },
+        })
         return
       }
 
@@ -2914,8 +2946,29 @@ export const useWBStore = defineStore('wb-board', {
           after[key] = updates[key]
         }
 
-        const action: UndoUpdateObject = { type: 'updateObject', pageIndex, objectId: id, objectKind: 'asset', before, after }
-        this.undoStack = trimStack([...this.undoStack, action])
+        const _pi = pageIndex
+        const _id = id
+        const _before = { ...before }
+        const _after = { ...after }
+        const _pageId = page.id ?? ''
+
+        const cmd: WBCommand = {
+          apply: () => {
+            const p = this.pages[_pi]
+            if (!p) return
+            this.pages[_pi] = { ...p, assets: p.assets.map(a => a.id === _id ? { ...a, ..._after } : a) }
+            this.markDirty()
+            _emitOperation({ op_type: 'object_update', page_id: _pageId, payload: { id: _id, kind: 'asset', changes: _after } })
+          },
+          revert: () => {
+            const p = this.pages[_pi]
+            if (!p) return
+            this.pages[_pi] = { ...p, assets: p.assets.map(a => a.id === _id ? { ...a, ..._before } : a) }
+            this.markDirty()
+            _emitOperation({ op_type: 'object_update', page_id: _pageId, payload: { id: _id, kind: 'asset', changes: _before } })
+          },
+        }
+        this.undoStack = trimStack([...this.undoStack, cmd])
         this.redoStack = []
 
         this.pages[pageIndex] = {
@@ -2923,6 +2976,11 @@ export const useWBStore = defineStore('wb-board', {
           assets: page.assets.map((a, i) => i === assetIdx ? { ...a, ...updates } : a),
         }
         this.markDirty()
+        _emitOperation({
+          op_type: 'object_update',
+          page_id: page.id ?? '',
+          payload: { id, kind: 'asset', changes: updates },
+        })
         return
       }
     },
@@ -2974,12 +3032,60 @@ export const useWBStore = defineStore('wb-board', {
 
       if (entries.length === 0) return
 
-      const action: UndoBatchUpdate = { type: 'batchUpdate', pageIndex, entries }
-      this.undoStack = trimStack([...this.undoStack, action])
+      const _pi = pageIndex
+      const _entries = entries.map((e) => ({ ...e, before: { ...e.before }, after: { ...e.after } }))
+      const _pageId = page.id ?? ''
+
+      const cmd: WBCommand = {
+        apply: () => {
+          const p = this.pages[_pi]
+          if (!p) return
+          let strokes = [...p.strokes]
+          let assets = [...p.assets]
+          for (const e of _entries) {
+            if (e.objectKind === 'stroke') {
+              strokes = strokes.map((s) => s.id === e.objectId ? { ...s, ...e.after } : s)
+            } else {
+              assets = assets.map((a) => a.id === e.objectId ? { ...a, ...e.after } : a)
+            }
+          }
+          this.pages[_pi] = { ...p, strokes, assets }
+          this.markDirty()
+          for (const e of _entries) {
+            _emitOperation({ op_type: 'object_update', page_id: _pageId, payload: { id: e.objectId, kind: e.objectKind, changes: e.after } })
+          }
+        },
+        revert: () => {
+          const p = this.pages[_pi]
+          if (!p) return
+          let strokes = [...p.strokes]
+          let assets = [...p.assets]
+          for (const e of _entries) {
+            if (e.objectKind === 'stroke') {
+              strokes = strokes.map((s) => s.id === e.objectId ? { ...s, ...e.before } : s)
+            } else {
+              assets = assets.map((a) => a.id === e.objectId ? { ...a, ...e.before } : a)
+            }
+          }
+          this.pages[_pi] = { ...p, strokes, assets }
+          this.markDirty()
+          for (const e of _entries) {
+            _emitOperation({ op_type: 'object_update', page_id: _pageId, payload: { id: e.objectId, kind: e.objectKind, changes: e.before } })
+          }
+        },
+      }
+      this.undoStack = trimStack([...this.undoStack, cmd])
       this.redoStack = []
 
       this.pages[pageIndex] = { ...page, strokes: newStrokes, assets: newAssets }
       this.markDirty()
+      for (const entry of entries) {
+        _emitOperation({
+          op_type: 'object_update',
+          page_id: page.id ?? '',
+          payload: { id: entry.objectId, kind: entry.objectKind, changes: entry.after },
+        })
+      }
     },
 
     // ── Phase 37: Test Object CRUD ──────────────────────────────────────────
@@ -2992,8 +3098,24 @@ export const useWBStore = defineStore('wb-board', {
       const testObjects = [...(page.testObjects ?? []), obj]
       const index = testObjects.length - 1
 
-      const action: UndoAddTestObject = { type: 'addTestObject', pageIndex, testObject: { ...obj }, index }
-      this.undoStack = trimStack([...this.undoStack, action])
+      const _pi = pageIndex
+      const _obj = { ...obj }
+
+      const cmd: WBCommand = {
+        apply: () => {
+          const p = this.pages[_pi]
+          if (!p) return
+          this.pages[_pi] = { ...p, testObjects: [...(p.testObjects ?? []), _obj] }
+          this.markDirty()
+        },
+        revert: () => {
+          const p = this.pages[_pi]
+          if (!p) return
+          this.pages[_pi] = { ...p, testObjects: (p.testObjects ?? []).filter((t) => t.id !== _obj.id) }
+          this.markDirty()
+        },
+      }
+      this.undoStack = trimStack([...this.undoStack, cmd])
       this.redoStack = []
 
       this.pages[pageIndex] = { ...page, testObjects }
@@ -3008,8 +3130,24 @@ export const useWBStore = defineStore('wb-board', {
       const idx = page.testObjects.findIndex(t => t.id === id)
       if (idx === -1) return
 
-      const action: UndoDeleteTestObject = { type: 'deleteTestObject', pageIndex, testObject: { ...page.testObjects[idx] }, index: idx }
-      this.undoStack = trimStack([...this.undoStack, action])
+      const _pi = pageIndex
+      const _obj = { ...page.testObjects[idx] }
+
+      const cmd: WBCommand = {
+        apply: () => {
+          const p = this.pages[_pi]
+          if (!p) return
+          this.pages[_pi] = { ...p, testObjects: (p.testObjects ?? []).filter((t) => t.id !== _obj.id) }
+          this.markDirty()
+        },
+        revert: () => {
+          const p = this.pages[_pi]
+          if (!p) return
+          this.pages[_pi] = { ...p, testObjects: [...(p.testObjects ?? []), _obj] }
+          this.markDirty()
+        },
+      }
+      this.undoStack = trimStack([...this.undoStack, cmd])
       this.redoStack = []
 
       this.pages[pageIndex] = {
@@ -3035,8 +3173,26 @@ export const useWBStore = defineStore('wb-board', {
         after[key] = updates[key]
       }
 
-      const action: UndoUpdateTestObject = { type: 'updateTestObject', pageIndex, objectId: id, before, after }
-      this.undoStack = trimStack([...this.undoStack, action])
+      const _pi = pageIndex
+      const _id = id
+      const _before = { ...before }
+      const _after = { ...after }
+
+      const cmd: WBCommand = {
+        apply: () => {
+          const p = this.pages[_pi]
+          if (!p?.testObjects) return
+          this.pages[_pi] = { ...p, testObjects: p.testObjects.map((t) => t.id === _id ? { ...t, ..._after } as WBTestObject : t) }
+          this.markDirty()
+        },
+        revert: () => {
+          const p = this.pages[_pi]
+          if (!p?.testObjects) return
+          this.pages[_pi] = { ...p, testObjects: p.testObjects.map((t) => t.id === _id ? { ...t, ..._before } as WBTestObject : t) }
+          this.markDirty()
+        },
+      }
+      this.undoStack = trimStack([...this.undoStack, cmd])
       this.redoStack = []
 
       this.pages[pageIndex] = {
@@ -3078,37 +3234,85 @@ export const useWBStore = defineStore('wb-board', {
       const page = this.pages[pageIndex]
       if (!page) return
 
-      const _emitZ = () => {
-        if (this.mode === 'edit') {
-          _emitOperation({ op_type: 'z_order', page_id: page.id ?? '', payload: { object_id: id, action: 'bringForward' } })
-        }
-      }
+      const _pi = pageIndex
+      const _id = id
+      const _pageId = page.id ?? ''
 
       // Check strokes
       const si = page.strokes.findIndex(s => s.id === id)
       if (si !== -1 && si < page.strokes.length - 1) {
-        const action: UndoZOrder = { type: 'zOrder', pageIndex, objectId: id, objectKind: 'stroke', fromIndex: si, toIndex: si + 1 }
-        this.undoStack = trimStack([...this.undoStack, action])
+        const cmd: WBCommand = {
+          apply: () => {
+            const p = this.pages[_pi]
+            if (!p) return
+            const idx = p.strokes.findIndex(s => s.id === _id)
+            if (idx === -1 || idx >= p.strokes.length - 1) return
+            const arr = [...p.strokes]
+            ;[arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]]
+            this.pages[_pi] = { ...p, strokes: arr }
+            this.markDirty()
+            _emitOperation({ op_type: 'z_order', page_id: _pageId, payload: { object_id: _id, action: 'bringForward' } })
+          },
+          revert: () => {
+            const p = this.pages[_pi]
+            if (!p) return
+            const idx = p.strokes.findIndex(s => s.id === _id)
+            if (idx <= 0) return
+            const arr = [...p.strokes]
+            ;[arr[idx], arr[idx - 1]] = [arr[idx - 1], arr[idx]]
+            this.pages[_pi] = { ...p, strokes: arr }
+            this.markDirty()
+            _emitOperation({ op_type: 'z_order', page_id: _pageId, payload: { object_id: _id, action: 'sendBackward' } })
+          },
+        }
+        this.undoStack = trimStack([...this.undoStack, cmd])
         this.redoStack = []
         const arr = [...page.strokes]
         ;[arr[si], arr[si + 1]] = [arr[si + 1], arr[si]]
         this.pages[pageIndex] = { ...page, strokes: arr }
         this.markDirty()
-        _emitZ()
+        if (this.mode === 'edit') {
+          _emitOperation({ op_type: 'z_order', page_id: _pageId, payload: { object_id: id, action: 'bringForward' } })
+        }
         return
       }
 
       // Check assets
       const ai = page.assets.findIndex(a => a.id === id)
       if (ai !== -1 && ai < page.assets.length - 1) {
-        const action: UndoZOrder = { type: 'zOrder', pageIndex, objectId: id, objectKind: 'asset', fromIndex: ai, toIndex: ai + 1 }
-        this.undoStack = trimStack([...this.undoStack, action])
+        const cmd: WBCommand = {
+          apply: () => {
+            const p = this.pages[_pi]
+            if (!p) return
+            const idx = p.assets.findIndex(a => a.id === _id)
+            if (idx === -1 || idx >= p.assets.length - 1) return
+            const arr = [...p.assets]
+            ;[arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]]
+            this.pages[_pi] = { ...p, assets: arr }
+            this.markDirty()
+            _emitOperation({ op_type: 'z_order', page_id: _pageId, payload: { object_id: _id, action: 'bringForward' } })
+          },
+          revert: () => {
+            const p = this.pages[_pi]
+            if (!p) return
+            const idx = p.assets.findIndex(a => a.id === _id)
+            if (idx <= 0) return
+            const arr = [...p.assets]
+            ;[arr[idx], arr[idx - 1]] = [arr[idx - 1], arr[idx]]
+            this.pages[_pi] = { ...p, assets: arr }
+            this.markDirty()
+            _emitOperation({ op_type: 'z_order', page_id: _pageId, payload: { object_id: _id, action: 'sendBackward' } })
+          },
+        }
+        this.undoStack = trimStack([...this.undoStack, cmd])
         this.redoStack = []
         const arr = [...page.assets]
         ;[arr[ai], arr[ai + 1]] = [arr[ai + 1], arr[ai]]
         this.pages[pageIndex] = { ...page, assets: arr }
         this.markDirty()
-        _emitZ()
+        if (this.mode === 'edit') {
+          _emitOperation({ op_type: 'z_order', page_id: _pageId, payload: { object_id: id, action: 'bringForward' } })
+        }
         return
       }
     },
@@ -3118,35 +3322,83 @@ export const useWBStore = defineStore('wb-board', {
       const page = this.pages[pageIndex]
       if (!page) return
 
-      const _emitZ = () => {
-        if (this.mode === 'edit') {
-          _emitOperation({ op_type: 'z_order', page_id: page.id ?? '', payload: { object_id: id, action: 'sendBackward' } })
-        }
-      }
+      const _pi = pageIndex
+      const _id = id
+      const _pageId = page.id ?? ''
 
       const si = page.strokes.findIndex(s => s.id === id)
       if (si > 0) {
-        const action: UndoZOrder = { type: 'zOrder', pageIndex, objectId: id, objectKind: 'stroke', fromIndex: si, toIndex: si - 1 }
-        this.undoStack = trimStack([...this.undoStack, action])
+        const cmd: WBCommand = {
+          apply: () => {
+            const p = this.pages[_pi]
+            if (!p) return
+            const idx = p.strokes.findIndex(s => s.id === _id)
+            if (idx <= 0) return
+            const arr = [...p.strokes]
+            ;[arr[idx], arr[idx - 1]] = [arr[idx - 1], arr[idx]]
+            this.pages[_pi] = { ...p, strokes: arr }
+            this.markDirty()
+            _emitOperation({ op_type: 'z_order', page_id: _pageId, payload: { object_id: _id, action: 'sendBackward' } })
+          },
+          revert: () => {
+            const p = this.pages[_pi]
+            if (!p) return
+            const idx = p.strokes.findIndex(s => s.id === _id)
+            if (idx === -1 || idx >= p.strokes.length - 1) return
+            const arr = [...p.strokes]
+            ;[arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]]
+            this.pages[_pi] = { ...p, strokes: arr }
+            this.markDirty()
+            _emitOperation({ op_type: 'z_order', page_id: _pageId, payload: { object_id: _id, action: 'bringForward' } })
+          },
+        }
+        this.undoStack = trimStack([...this.undoStack, cmd])
         this.redoStack = []
         const arr = [...page.strokes]
         ;[arr[si], arr[si - 1]] = [arr[si - 1], arr[si]]
         this.pages[pageIndex] = { ...page, strokes: arr }
         this.markDirty()
-        _emitZ()
+        if (this.mode === 'edit') {
+          _emitOperation({ op_type: 'z_order', page_id: _pageId, payload: { object_id: id, action: 'sendBackward' } })
+        }
         return
       }
 
       const ai = page.assets.findIndex(a => a.id === id)
       if (ai > 0) {
-        const action: UndoZOrder = { type: 'zOrder', pageIndex, objectId: id, objectKind: 'asset', fromIndex: ai, toIndex: ai - 1 }
-        this.undoStack = trimStack([...this.undoStack, action])
+        const cmd: WBCommand = {
+          apply: () => {
+            const p = this.pages[_pi]
+            if (!p) return
+            const idx = p.assets.findIndex(a => a.id === _id)
+            if (idx <= 0) return
+            const arr = [...p.assets]
+            ;[arr[idx], arr[idx - 1]] = [arr[idx - 1], arr[idx]]
+            this.pages[_pi] = { ...p, assets: arr }
+            this.markDirty()
+            _emitOperation({ op_type: 'z_order', page_id: _pageId, payload: { object_id: _id, action: 'sendBackward' } })
+          },
+          revert: () => {
+            const p = this.pages[_pi]
+            if (!p) return
+            const idx = p.assets.findIndex(a => a.id === _id)
+            if (idx === -1 || idx >= p.assets.length - 1) return
+            const arr = [...p.assets]
+            ;[arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]]
+            this.pages[_pi] = { ...p, assets: arr }
+            this.markDirty()
+            _emitOperation({ op_type: 'z_order', page_id: _pageId, payload: { object_id: _id, action: 'bringForward' } })
+          },
+        }
+        this.undoStack = trimStack([...this.undoStack, cmd])
         this.redoStack = []
         const arr = [...page.assets]
         ;[arr[ai], arr[ai - 1]] = [arr[ai - 1], arr[ai]]
         this.pages[pageIndex] = { ...page, assets: arr }
         this.markDirty()
-        _emitZ()
+        if (this.mode === 'edit') {
+          _emitOperation({ op_type: 'z_order', page_id: _pageId, payload: { object_id: id, action: 'sendBackward' } })
+        }
         return
       }
     },
@@ -3157,39 +3409,91 @@ export const useWBStore = defineStore('wb-board', {
       const page = this.pages[pageIndex]
       if (!page) return
 
-      const _emitZ = () => {
-        if (this.mode === 'edit') {
-          _emitOperation({ op_type: 'z_order', page_id: page.id ?? '', payload: { object_id: id, action: 'bringToFront' } })
-        }
-      }
+      const _pi = pageIndex
+      const _id = id
+      const _pageId = page.id ?? ''
 
       const si = page.strokes.findIndex(s => s.id === id)
       if (si !== -1 && si < page.strokes.length - 1) {
-        const toIndex = page.strokes.length - 1
-        const action: UndoZOrder = { type: 'zOrder', pageIndex, objectId: id, objectKind: 'stroke', fromIndex: si, toIndex }
-        this.undoStack = trimStack([...this.undoStack, action])
+        const _fromIndex = si
+        const cmd: WBCommand = {
+          apply: () => {
+            const p = this.pages[_pi]
+            if (!p) return
+            const idx = p.strokes.findIndex(s => s.id === _id)
+            if (idx === -1 || idx >= p.strokes.length - 1) return
+            const arr = [...p.strokes]
+            const [item] = arr.splice(idx, 1)
+            arr.push(item)
+            this.pages[_pi] = { ...p, strokes: arr }
+            this.markDirty()
+            _emitOperation({ op_type: 'z_order', page_id: _pageId, payload: { object_id: _id, action: 'bringToFront' } })
+          },
+          revert: () => {
+            const p = this.pages[_pi]
+            if (!p) return
+            const idx = p.strokes.findIndex(s => s.id === _id)
+            if (idx === -1) return
+            const arr = [...p.strokes]
+            const [item] = arr.splice(idx, 1)
+            arr.splice(_fromIndex, 0, item)
+            this.pages[_pi] = { ...p, strokes: arr }
+            this.markDirty()
+            _emitOperation({ op_type: 'z_order', page_id: _pageId, payload: { object_id: _id, action: 'sendToBack' } })
+          },
+        }
+        this.undoStack = trimStack([...this.undoStack, cmd])
         this.redoStack = []
         const arr = [...page.strokes]
         const [item] = arr.splice(si, 1)
         arr.push(item)
         this.pages[pageIndex] = { ...page, strokes: arr }
         this.markDirty()
-        _emitZ()
+        if (this.mode === 'edit') {
+          _emitOperation({ op_type: 'z_order', page_id: _pageId, payload: { object_id: id, action: 'bringToFront' } })
+        }
         return
       }
 
       const ai = page.assets.findIndex(a => a.id === id)
       if (ai !== -1 && ai < page.assets.length - 1) {
-        const toIndex = page.assets.length - 1
-        const action: UndoZOrder = { type: 'zOrder', pageIndex, objectId: id, objectKind: 'asset', fromIndex: ai, toIndex }
-        this.undoStack = trimStack([...this.undoStack, action])
+        const _fromIndex = ai
+        const cmd: WBCommand = {
+          apply: () => {
+            const p = this.pages[_pi]
+            if (!p) return
+            const idx = p.assets.findIndex(a => a.id === _id)
+            if (idx === -1 || idx >= p.assets.length - 1) return
+            const arr = [...p.assets]
+            const [item] = arr.splice(idx, 1)
+            arr.push(item)
+            this.pages[_pi] = { ...p, assets: arr }
+            this.markDirty()
+            _emitOperation({ op_type: 'z_order', page_id: _pageId, payload: { object_id: _id, action: 'bringToFront' } })
+          },
+          revert: () => {
+            const p = this.pages[_pi]
+            if (!p) return
+            const idx = p.assets.findIndex(a => a.id === _id)
+            if (idx === -1) return
+            const arr = [...p.assets]
+            const [item] = arr.splice(idx, 1)
+            arr.splice(_fromIndex, 0, item)
+            this.pages[_pi] = { ...p, assets: arr }
+            this.markDirty()
+            _emitOperation({ op_type: 'z_order', page_id: _pageId, payload: { object_id: _id, action: 'sendToBack' } })
+          },
+        }
+        this.undoStack = trimStack([...this.undoStack, cmd])
         this.redoStack = []
         const arr = [...page.assets]
         const [item] = arr.splice(ai, 1)
         arr.push(item)
         this.pages[pageIndex] = { ...page, assets: arr }
         this.markDirty()
-        _emitZ()
+        if (this.mode === 'edit') {
+          _emitOperation({ op_type: 'z_order', page_id: _pageId, payload: { object_id: id, action: 'bringToFront' } })
+        }
         return
       }
     },
@@ -3200,37 +3504,91 @@ export const useWBStore = defineStore('wb-board', {
       const page = this.pages[pageIndex]
       if (!page) return
 
-      const _emitZ = () => {
-        if (this.mode === 'edit') {
-          _emitOperation({ op_type: 'z_order', page_id: page.id ?? '', payload: { object_id: id, action: 'sendToBack' } })
-        }
-      }
+      const _pi = pageIndex
+      const _id = id
+      const _pageId = page.id ?? ''
 
       const si = page.strokes.findIndex(s => s.id === id)
       if (si > 0) {
-        const action: UndoZOrder = { type: 'zOrder', pageIndex, objectId: id, objectKind: 'stroke', fromIndex: si, toIndex: 0 }
-        this.undoStack = trimStack([...this.undoStack, action])
+        const _fromIndex = si
+        const cmd: WBCommand = {
+          apply: () => {
+            const p = this.pages[_pi]
+            if (!p) return
+            const idx = p.strokes.findIndex(s => s.id === _id)
+            if (idx <= 0) return
+            const arr = [...p.strokes]
+            const [item] = arr.splice(idx, 1)
+            arr.unshift(item)
+            this.pages[_pi] = { ...p, strokes: arr }
+            this.markDirty()
+            _emitOperation({ op_type: 'z_order', page_id: _pageId, payload: { object_id: _id, action: 'sendToBack' } })
+          },
+          revert: () => {
+            const p = this.pages[_pi]
+            if (!p) return
+            const idx = p.strokes.findIndex(s => s.id === _id)
+            if (idx === -1) return
+            const arr = [...p.strokes]
+            const [item] = arr.splice(idx, 1)
+            arr.splice(_fromIndex, 0, item)
+            this.pages[_pi] = { ...p, strokes: arr }
+            this.markDirty()
+            _emitOperation({ op_type: 'z_order', page_id: _pageId, payload: { object_id: _id, action: 'bringToFront' } })
+          },
+        }
+        this.undoStack = trimStack([...this.undoStack, cmd])
         this.redoStack = []
         const arr = [...page.strokes]
         const [item] = arr.splice(si, 1)
         arr.unshift(item)
         this.pages[pageIndex] = { ...page, strokes: arr }
         this.markDirty()
-        _emitZ()
+        if (this.mode === 'edit') {
+          _emitOperation({ op_type: 'z_order', page_id: _pageId, payload: { object_id: id, action: 'sendToBack' } })
+        }
         return
       }
 
       const ai = page.assets.findIndex(a => a.id === id)
       if (ai > 0) {
-        const action: UndoZOrder = { type: 'zOrder', pageIndex, objectId: id, objectKind: 'asset', fromIndex: ai, toIndex: 0 }
-        this.undoStack = trimStack([...this.undoStack, action])
+        const _fromIndex = ai
+        const cmd: WBCommand = {
+          apply: () => {
+            const p = this.pages[_pi]
+            if (!p) return
+            const idx = p.assets.findIndex(a => a.id === _id)
+            if (idx <= 0) return
+            const arr = [...p.assets]
+            const [item] = arr.splice(idx, 1)
+            arr.unshift(item)
+            this.pages[_pi] = { ...p, assets: arr }
+            this.markDirty()
+            _emitOperation({ op_type: 'z_order', page_id: _pageId, payload: { object_id: _id, action: 'sendToBack' } })
+          },
+          revert: () => {
+            const p = this.pages[_pi]
+            if (!p) return
+            const idx = p.assets.findIndex(a => a.id === _id)
+            if (idx === -1) return
+            const arr = [...p.assets]
+            const [item] = arr.splice(idx, 1)
+            arr.splice(_fromIndex, 0, item)
+            this.pages[_pi] = { ...p, assets: arr }
+            this.markDirty()
+            _emitOperation({ op_type: 'z_order', page_id: _pageId, payload: { object_id: _id, action: 'bringToFront' } })
+          },
+        }
+        this.undoStack = trimStack([...this.undoStack, cmd])
         this.redoStack = []
         const arr = [...page.assets]
         const [item] = arr.splice(ai, 1)
         arr.unshift(item)
         this.pages[pageIndex] = { ...page, assets: arr }
         this.markDirty()
-        _emitZ()
+        if (this.mode === 'edit') {
+          _emitOperation({ op_type: 'z_order', page_id: _pageId, payload: { object_id: id, action: 'sendToBack' } })
+        }
         return
       }
     },
@@ -3246,26 +3604,32 @@ export const useWBStore = defineStore('wb-board', {
       const deletedStrokes = page.strokes.filter((s) => ids.has(s.id))
       const deletedAssets = page.assets.filter((a) => ids.has(a.id))
 
-      for (const stroke of deletedStrokes) {
-        const idx = page.strokes.indexOf(stroke)
-        const action: UndoDeleteStroke = {
-          type: 'deleteStroke',
-          pageIndex,
-          stroke,
-          index: idx,
-        }
-        this.undoStack = trimStack([...this.undoStack, action])
+      const _deletedStrokes = deletedStrokes.map((s) => ({ ...s }))
+      const _deletedAssets = deletedAssets.map((a) => ({ ...a }))
+      const _pageId = page.id ?? ''
+
+      // Single command for entire batch delete (one Ctrl+Z restores all)
+      const cmd: WBCommand = {
+        apply: () => {
+          for (const s of _deletedStrokes) {
+            this.deleteStroke(s.id, { skipHistory: true })
+          }
+          for (const a of _deletedAssets) {
+            this.deleteAsset(a.id, { skipHistory: true })
+          }
+          this.selectedIds = []
+          this.selectionRect = null
+        },
+        revert: () => {
+          for (const s of _deletedStrokes) {
+            this.addStroke(s, { skipHistory: true })
+          }
+          for (const a of _deletedAssets) {
+            this.addAsset(a, { skipHistory: true })
+          }
+        },
       }
-      for (const asset of deletedAssets) {
-        const idx = page.assets.indexOf(asset)
-        const action: UndoDeleteAsset = {
-          type: 'deleteAsset',
-          pageIndex,
-          asset,
-          index: idx,
-        }
-        this.undoStack = trimStack([...this.undoStack, action])
-      }
+      this.undoStack = trimStack([...this.undoStack, cmd])
       this.redoStack = []
 
       this.pages[pageIndex] = {
@@ -3279,10 +3643,10 @@ export const useWBStore = defineStore('wb-board', {
       this.markDirty()
       if (this.mode === 'edit') {
         for (const s of deletedStrokes) {
-          _emitOperation({ op_type: 'stroke_delete', page_id: page.id ?? '', payload: { stroke_id: s.id } })
+          _emitOperation({ op_type: 'stroke_delete', page_id: _pageId, payload: { stroke_id: s.id } })
         }
         for (const a of deletedAssets) {
-          _emitOperation({ op_type: 'asset_delete', page_id: page.id ?? '', payload: { asset_id: a.id } })
+          _emitOperation({ op_type: 'asset_delete', page_id: _pageId, payload: { asset_id: a.id } })
         }
       }
     },

@@ -7321,6 +7321,7 @@
       "supportedFormats": "PNG, JPEG, WebP, SVG — макс. 10 МБ",
       "pickFile": "Обрати файл зображення",
       "uploading": "Завантаження…",
+      "uploadingMany": "Завантаження {active} з {total}…",
       "success": "Зображення завантажено",
       "error": "Помилка завантаження",
       "tooLarge": "Файл занадто великий. Максимум 10 МБ",

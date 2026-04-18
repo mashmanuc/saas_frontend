@@ -365,14 +365,19 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
       const notFlushed = toSend.slice(flushedCount)
       const combined = [...notFlushed, ...retryQueue]
       retryQueue.length = 0
-      if (combined.length > MAX_RETRY_QUEUE_SIZE) {
-        console.warn(`[ReplayRecorder] retryQueue cap exceeded, dropping ${combined.length - MAX_RETRY_QUEUE_SIZE} old ops`)
-        retryQueue.push(...combined.slice(combined.length - MAX_RETRY_QUEUE_SIZE))
-      } else {
-        retryQueue.push(...combined)
-      }
+      retryQueue.push(...combined)
       inFlight.length = 0
       persistBackup()  // backup включає retryQueue — ops не загубляться при crash
+
+      // P0.3: НІКОЛИ не дропати ops — overflow = fatal, потребує reload
+      if (retryQueue.length > MAX_RETRY_QUEUE_SIZE) {
+        circuitOpen = true
+        pipelineStatus.value = 'broken'
+        throw new Error(
+          `[ReplayRecorder] retryQueue overflow: ${retryQueue.length} ops exceed cap ${MAX_RETRY_QUEUE_SIZE}. ` +
+          'Помилка збереження. Перезавантаж сторінку.',
+        )
+      }
 
       // Phase ops-only: 409 session_locked НЕ інкрементує consecutiveFailures
       // (це contention, не server health).

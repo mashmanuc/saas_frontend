@@ -1410,6 +1410,9 @@ function setStageListening(enabled: boolean): void {
 const groupDragActive = ref(false)
 /** Прапор: group move відбувся (drag delta > 0). Запобігає click-скиданню виділення. */
 let groupMoveOccurred = false
+/** Guard проти подвійного emit: handleGroupDragEnd реєструється на 3 events
+ *  (pointerup/pointercancel/lostpointercapture). Браузер може стригерити більше одного. */
+let groupDragEndProcessed = false
 let groupDragLastPos = { x: 0, y: 0 }
 let groupDragOverlayEl: HTMLElement | null = null
 
@@ -1420,6 +1423,7 @@ function handleGroupDragStart(e: PointerEvent): void {
 
   groupDragActive.value = true
   groupMoveOccurred = false
+  groupDragEndProcessed = false
   groupDragLastPos = { x: e.clientX, y: e.clientY }
 
   // CRITICAL: Disable Konva stage — overlay becomes the ONLY event source.
@@ -1453,7 +1457,8 @@ function handleGroupDragMove(e: PointerEvent): void {
 }
 
 function handleGroupDragEnd(e: PointerEvent): void {
-  if (!groupDragActive.value) return
+  if (!groupDragActive.value || groupDragEndProcessed) return
+  groupDragEndProcessed = true  // prevent duplicate emits from multi-event triggers
 
   // Cleanup listeners
   if (groupDragOverlayEl) {
@@ -1464,6 +1469,9 @@ function handleGroupDragEnd(e: PointerEvent): void {
     try { groupDragOverlayEl.releasePointerCapture(e.pointerId) } catch { /* already released */ }
     groupDragOverlayEl = null
   }
+
+  // Emit ops for moved objects (one-time, not per-frame)
+  wbStore.emitMoveOpsForSelected()
 
   // Re-enable Konva stage BEFORE clearing the flag.
   // Delay clearing the active flag so that any bubbled click/mouseup

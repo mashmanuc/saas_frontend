@@ -70,7 +70,9 @@ describe('Phase 36: batchUpdateObjects', () => {
 
     // Single undo entry
     expect(store.undoStack.length).toBe(undoBefore + 1)
-    expect(store.undoStack[store.undoStack.length - 1].type).toBe('batchUpdate')
+    // WBCommand pattern: no .type, just apply/revert
+    expect(store.undoStack[store.undoStack.length - 1]).toHaveProperty('apply')
+    expect(store.undoStack[store.undoStack.length - 1]).toHaveProperty('revert')
   })
 
   it('skips locked objects in batch', () => {
@@ -142,7 +144,8 @@ describe('Phase 36: batchUpdateObjects', () => {
 
     expect(store.pages[0].strokes[0].color).toBe('#ff0000')
     expect(store.pages[0].assets[0].opacity).toBe(0.5)
-    expect(store.undoStack[store.undoStack.length - 1].type).toBe('batchUpdate')
+    expect(store.undoStack[store.undoStack.length - 1]).toHaveProperty('apply')
+    expect(store.undoStack[store.undoStack.length - 1]).toHaveProperty('revert')
   })
 })
 
@@ -216,7 +219,8 @@ describe('Phase 36: useAlign', () => {
     align.alignLeft()
 
     expect(store.undoStack.length).toBe(undoBefore + 1)
-    expect(store.undoStack[store.undoStack.length - 1].type).toBe('align')
+    expect(store.undoStack[store.undoStack.length - 1]).toHaveProperty('apply')
+    expect(store.undoStack[store.undoStack.length - 1]).toHaveProperty('revert')
   })
 
   it('canAlign requires 2+ items selected', () => {

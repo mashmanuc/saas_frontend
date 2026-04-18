@@ -468,6 +468,9 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
   }
 
   // ─── Internal paste (board objects) ────────────────────────
+  // BATCH: all strokes added in ONE store mutation + ONE op.
+  // Same for assets. Replay shows all pasted objects appearing together
+  // (no "typing" effect — one Vue render per batch).
   function pasteInternal(): void {
     if (!internalClipboard.value) return
 
@@ -478,22 +481,22 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
     const OFFSET = 40
     const pastedIds: string[] = []
 
-    // Clone strokes with new IDs + offset
-    for (const stroke of strokes) {
+    // Clone strokes with new IDs + offset (collect, don't add yet)
+    const newStrokes: WBStroke[] = strokes.map((stroke) => {
       const newId = `stroke-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
-      const newStroke: WBStroke = {
+      pastedIds.push(newId)
+      const cloned: WBStroke = {
         ...JSON.parse(JSON.stringify(stroke)),
         id: newId,
       }
-      // WBPoint has {x, y, ...} — offset each point
-      newStroke.points = newStroke.points.map((p) => ({ ...p, x: p.x + OFFSET, y: p.y + OFFSET }))
-      store.addStroke(newStroke)
-      pastedIds.push(newId)
-    }
+      cloned.points = cloned.points.map((p) => ({ ...p, x: p.x + OFFSET, y: p.y + OFFSET }))
+      return cloned
+    })
 
-    // Clone assets with new IDs + offset
-    for (const asset of assets) {
+    // Clone assets with new IDs + offset (collect, don't add yet)
+    const newAssets: WBAsset[] = assets.map((asset) => {
       const newId = `${asset.type}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+      pastedIds.push(newId)
       const newAsset: WBAsset = {
         ...JSON.parse(JSON.stringify(asset)),
         id: newId,
@@ -514,16 +517,19 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
           newAsset.geometryParams.cy += OFFSET
         }
       }
-      onAssetAdd(newAsset)
-      pastedIds.push(newId)
-    }
+      return newAsset
+    })
+
+    // BATCH: single mutation + single op for each kind
+    if (newStrokes.length > 0) store.addStrokesBatch(newStrokes)
+    if (newAssets.length > 0) store.addAssetsBatch(newAssets)
 
     // Auto-select all pasted objects so user can move them as a group
     if (pastedIds.length > 0) {
       store.selectedIds = pastedIds
     }
 
-    console.info('[BoardClipboard] Pasted internal', {
+    console.info('[BoardClipboard] Pasted internal (batch)', {
       strokes: strokes.length,
       assets: assets.length,
     })

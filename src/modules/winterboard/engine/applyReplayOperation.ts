@@ -321,6 +321,114 @@ export function createReplayApplier() {
         break
       }
 
+      // P0.5: Generic object property update (drag, resize, rotate, color, etc.)
+      case 'object_update': {
+        const objId = payload.id as string
+        const kind = payload.kind as string
+        const changes = payload.changes as Record<string, unknown>
+        if (!objId || !changes) break
+        const pageData = store.pages[store.currentPageIndex] as unknown as {
+          strokes?: WBStroke[]; assets?: WBAsset[]
+        }
+        if (!pageData) break
+        if (kind === 'stroke') {
+          const stroke = pageData.strokes?.find((s) => s.id === objId)
+          if (stroke) {
+            store.updateStroke({ ...stroke, ...changes } as WBStroke, { skipHistory: true })
+          }
+        } else if (kind === 'asset') {
+          const asset = pageData.assets?.find((a) => a.id === objId)
+          if (asset) {
+            store.updateAsset({ ...asset, ...changes } as WBAsset, { skipHistory: true })
+          }
+        }
+        break
+      }
+
+      // Batch add: paste/duplicate — ONE mutation for all items (no "typing" effect)
+      case 'assets_add_batch': {
+        const batchAssets = payload.assets as WBAsset[]
+        if (!Array.isArray(batchAssets) || batchAssets.length === 0) break
+        const pageData = store.pages[store.currentPageIndex] as unknown as { assets?: WBAsset[] }
+        if (!pageData) break
+        // Atomic: single reactive mutation — all assets appear together
+        ;(store as unknown as { pages: Array<Record<string, unknown>> }).pages[store.currentPageIndex] = {
+          ...pageData,
+          assets: [...(pageData.assets ?? []), ...batchAssets],
+        }
+        break
+      }
+
+      case 'strokes_add_batch': {
+        const batchStrokes = payload.strokes as WBStroke[]
+        if (!Array.isArray(batchStrokes) || batchStrokes.length === 0) break
+        const pageData = store.pages[store.currentPageIndex] as unknown as { strokes?: WBStroke[] }
+        if (!pageData) break
+        ;(store as unknown as { pages: Array<Record<string, unknown>> }).pages[store.currentPageIndex] = {
+          ...pageData,
+          strokes: [...(pageData.strokes ?? []), ...batchStrokes],
+        }
+        break
+      }
+
+      // Move assets by absolute position (idempotent, assets only, max 50)
+      case 'objects_move': {
+        const moveItems = payload.items as Array<{ id: string; x: number; y: number }>
+        if (!Array.isArray(moveItems)) break
+        const movePage = store.pages[store.currentPageIndex] as unknown as {
+          assets?: WBAsset[]
+        }
+        if (!movePage?.assets) break
+        for (const item of moveItems) {
+          const asset = movePage.assets.find((a) => a.id === item.id)
+          if (!asset) continue
+          store.updateAsset({ ...asset, x: item.x, y: item.y } as WBAsset, { skipHistory: true })
+        }
+        break
+      }
+
+      // Page reorder — set absolute page order by ID array
+      case 'page_reorder': {
+        const pageIds = payload.pageIds as string[]
+        if (!Array.isArray(pageIds)) break
+        const pageMap = new Map(store.pages.map((p) => [p.id, p]))
+        const reordered = pageIds.map((id) => pageMap.get(id)).filter(Boolean)
+        if (reordered.length > 0) {
+          ;(store as any).pages = reordered
+          // Stay on current page if possible
+          const curId = store.pages[store.currentPageIndex]?.id
+          if (curId) {
+            const idx = store.pages.findIndex((p) => p.id === curId)
+            if (idx !== -1) store.goToPage(idx)
+          }
+        }
+        break
+      }
+
+      // PDF import — add pages with PDF backgrounds
+      case 'pdf_import': {
+        const importPages = payload.pages as Array<{
+          id: string; name: string;
+          background: { type: string; url: string; assetId?: string };
+          width?: number; height?: number
+        }>
+        if (!Array.isArray(importPages)) break
+        for (const pg of importPages) {
+          store.addPage({
+            name: pg.name,
+            background: pg.background as WBPageBackground,
+            width: pg.width,
+            height: pg.height,
+          })
+          // Set correct ID
+          const lastPage = store.pages[store.pages.length - 1]
+          if (lastPage && pg.id) {
+            (lastPage as { id: string }).id = pg.id
+          }
+        }
+        break
+      }
+
       // Text annotation on objects (interaction layer)
       case 'object_text_update': {
         const objId = payload.object_id as string

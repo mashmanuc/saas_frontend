@@ -1,20 +1,20 @@
 // WB: Autosave composable for Winterboard
 // Ref: TASK_BOARD C2.1, ManifestWinterboard_v2.md LAW-02
-// - Debounced save: 3s after last change
-// - Diff save (ops-based) + stream save fallback (legacy isDirty path)
+// - Stream save: 3s debounce after last change
 // - Beacon save on beforeunload
 // - Retry with exponential backoff: 1s, 2s, 4s, max 3 retries
 // - Updates useWBStore: syncStatus, lastSavedAt, rev
+//
+// Ops pipeline: all board ops go through /replay/batch/ (useReplayRecorder).
+// Autosave handles ONLY stream-save (isDirty state) and beacon fallback.
 
 import { ref, watch, onUnmounted, computed, type Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useWBStore } from '../board/state/boardStore'
 import { winterboardApi } from '../api/winterboardApi'
-import type { WBDiffOp } from '../api/winterboardApi'
-import type { WBSyncStatus, WBWorkspaceState } from '../types/winterboard'
+import type { WBSyncStatus } from '../types/winterboard'
 import { isCircuitBreakerOpen } from '@/utils/apiClient'
 import { useToast } from './useToast'
-import { useOpsQueue, type QueuedOp } from './useOpsQueue'
 
 // ── Config ─────────────────────────────────────────────────────────────
 
@@ -22,11 +22,9 @@ const DEBOUNCE_MS = 3_000        // 3 seconds after last change
 const MAX_WAIT_MS = 15_000       // Force save after 15s of continuous edits
 const RETRY_BASE_MS = 1_000      // Exponential backoff base
 const MAX_RETRIES = 3            // Max retry attempts
-const BEACON_THROTTLE_MS = 500   // Min interval between beacon saves
 const FAILURE_COOLDOWN_MS = 60_000  // 60s cooldown after all retries exhausted (prevent server overload)
 const WARN_SIZE_BYTES = 8 * 1024 * 1024   // 8 MB — show warning
 const HARD_LIMIT_BYTES = 10 * 1024 * 1024 // 10 MB — block save
-const MAX_CONSECUTIVE_422 = 3      // P2.2: switch to stream-save-only after N consecutive 422s
 
 /** Returns approximate byte size of the serialized payload. */
 function estimatePayloadSizeBytes(payload: unknown): number {
@@ -44,14 +42,12 @@ export interface AutosaveReturn {
   saveCount: Ref<number>
   /** Last error message */
   lastError: Ref<string | null>
-  /** Pending diff operations count */
+  /** @deprecated Always 0 — ops go through /replay/batch/ (useReplayRecorder) */
   pendingOpsCount: Ref<number>
   /** Force immediate save */
   saveNow: () => Promise<void>
   /** Cancel pending save */
   cancelPendingSave: () => void
-  /** Queue a diff operation */
-  queueDiffOp: (op: WBDiffOp) => void
   /** Destroy — cleanup all listeners and timers */
   destroy: () => void
 }
@@ -75,72 +71,8 @@ export function useAutosave(
   const saveCount = ref(0)
   const lastError = ref<string | null>(null)
 
-  // Phase 3: Ops queue with ACK/retry (replaces plain pendingOps array)
-  const opsQueue = useOpsQueue({
-    sessionId,
-    onFlush: async (ops: QueuedOp[]) => {
-      const rev = store.rev
-      try {
-        const result = await winterboardApi.diffSave(
-          sessionId.value!,
-          { rev, ops, client_ts: new Date().toISOString() },
-          rev,
-        )
-        return {
-          rev: result.rev ?? result.next_rev,
-          ack: result.ack ?? 0,
-          assigned: result.assigned ?? [],
-        }
-      } catch (err: any) {
-        const errStatus = err?.response?.status
-        // Log error details for debugging
-        if (import.meta.env?.DEV) {
-          console.warn(
-            `[WB:autosave] onFlush error ${errStatus}:`,
-            err?.response?.data,
-            `(${ops.length} ops, rev=${rev})`,
-          )
-        }
-        // 409: rev mismatch or session_locked
-        if (errStatus === 409) {
-          const data = err?.response?.data
-          const serverRev = data?.server_rev
-          if (typeof serverRev === 'number') {
-            // rev_mismatch — update rev so next retry uses correct value
-            store.rev = serverRev
-          }
-          // session_locked (no server_rev) — transient, will resolve on next retry
-          // Don't count as hard failure in opsQueue
-          if (data?.detail === 'session_locked') {
-            err._transient = true
-          }
-        }
-        // P2.2: Track consecutive 422s — ops validation failures
-        if (errStatus === 422) {
-          consecutive422++
-          if (consecutive422 >= MAX_CONSECUTIVE_422 && !diffDisabled) {
-            diffDisabled = true
-            console.warn('[WB:autosave] %d consecutive 422s — switching to stream-save only', consecutive422)
-            showToast(t('winterboard.autosave.diffDisabled'), 'warning')
-          }
-        } else {
-          consecutive422 = 0
-        }
-        throw err
-      }
-    },
-    onAck: (lastSeq: number, newRev: number) => {
-      store.rev = newRev
-      store.lastSeq = lastSeq
-      store.setLastSaved(new Date())
-    },
-    onError: (err: unknown) => {
-      onSaveError(String(err))
-    },
-  })
-
-  // Legacy alias — pendingOps now delegates to opsQueue
-  const pendingOps = opsQueue.pending
+  // Ops go through /replay/batch/ (useReplayRecorder) — autosave only stream/beacon.
+  const pendingOpsCount = computed(() => 0)
 
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
   let maxWaitTimer: ReturnType<typeof setTimeout> | null = null
@@ -148,10 +80,6 @@ export function useAutosave(
   let retryCount = 0
   let destroyed = false
   let inCooldown = false  // True after all retries exhausted — prevents hammering dead server
-  let consecutive422 = 0  // P2.2: track consecutive 422 failures
-  let diffDisabled = false  // P2.2: true = stream-save only mode (diff path broken)
-
-  const pendingOpsCount = opsQueue.pendingCount
 
   // ── Timer management ───────────────────────────────────────────────
 
@@ -192,20 +120,7 @@ export function useAutosave(
     return false
   }
 
-  // ── Diff save (Phase 3: delegates to opsQueue) ────────────────────
-
-  async function performDiffSave(): Promise<boolean> {
-    const sid = sessionId.value
-    if (!sid || opsQueue.pendingCount.value === 0) return true
-
-    const countBefore = opsQueue.pendingCount.value
-    await opsQueue.flush()
-    // flush() catches errors internally — check if ops were actually consumed
-    return opsQueue.pendingCount.value < countBefore
-  }
-
-  // ── Stream save (legacy fallback for isDirty without ops) ─────────
-  // TODO: Remove when all board mutations generate ops via queueDiffOp
+  // ── Stream save ───────────────────────────────────────────────────
 
   async function performStreamSave(): Promise<boolean> {
     const sid = sessionId.value
@@ -230,13 +145,11 @@ export function useAutosave(
       if (result.rev) {
         store.rev = result.rev
       }
-      opsQueue.clear()
       store.setLastSaved(new Date())
       return true
     } catch (err: any) {
       const errStatus = err?.response?.status
       if (errStatus === 204) {
-        opsQueue.clear()
         store.setLastSaved(new Date())
         return true
       }
@@ -253,7 +166,7 @@ export function useAutosave(
     if (options?.disabled?.value) return
 
     // Guard: nothing to save
-    if (!store.isDirty && pendingOps.value.length === 0) return
+    if (!store.isDirty) return
 
     // REPLAY-INV-12: NEVER save during replay — replay operations are temporary
     // and must not overwrite the real board state on the server
@@ -266,79 +179,34 @@ export function useAutosave(
     lastError.value = null
 
     try {
-      const hasPendingOps = pendingOps.value.length > 0
-
-      // P2.2: If diff path is disabled, drop pending ops and force stream-save
-      if (diffDisabled && hasPendingOps) {
-        opsQueue.clear()
-        store.markDirty()
-      }
-
-      // Strategy 1: Diff save (ops-based) — primary
-      // P2.2: Skip diff path if disabled after consecutive 422s
-      let diffSucceeded = false
-      if (hasPendingOps && !diffDisabled) {
-        const diffSuccess = await retryWithBackoff(async () => {
-          try {
-            return await performDiffSave()
-          } catch {
-            return false
+      const streamSuccess = await retryWithBackoff(async () => {
+        try {
+          return await performStreamSave()
+        } catch (err: any) {
+          const errStatus = err?.response?.status
+          if (errStatus === 401) throw err
+          if (errStatus === 413) {
+            showToast(t('winterboard.autosave.boardTooLarge'), 'error')
+            throw err
           }
-        })
-
-        if (diffSuccess) {
-          diffSucceeded = true
-          // P0 FIX (2026-04-08): НЕ повертаємось одразу. Якщо у цьому ж циклі
-          // відбулася ops-незалежна мутація (PDF import, background change,
-          // importPdfPages, reorderPages тощо — див. markDirty() без queueDiffOp),
-          // треба ще дозаписати state через stream-save. Раніше рання return
-          // гарантовано втрачала PDF-фон і зміни порядку сторінок.
-          if (!store.isDirty) {
-            onSaveSuccess()
-            return
-          }
-        }
-      }
-
-      // Strategy 2: Stream save — fallback for isDirty without ops
-      // (legacy path: board mutations set isDirty but don't generate ops yet)
-      if (store.isDirty) {
-        const streamSuccess = await retryWithBackoff(async () => {
-          try {
-            return await performStreamSave()
-          } catch (err: any) {
-            const errStatus = err?.response?.status
-            if (errStatus === 401) throw err
-            if (errStatus === 413) {
-              showToast(t('winterboard.autosave.boardTooLarge'), 'error')
-              throw err
+          if (errStatus === 412 || errStatus === 409) {
+            const serverRev = err?.response?.data?.server_rev
+            if (typeof serverRev === 'number') {
+              store.rev = serverRev
             }
-            if (errStatus === 412 || errStatus === 409) {
-              const serverRev = err?.response?.data?.server_rev
-              if (typeof serverRev === 'number') {
-                store.rev = serverRev
-              }
-            }
-            return false
           }
-        })
-
-        if (streamSuccess) {
-          onSaveSuccess()
-          return
+          return false
         }
-      }
+      })
 
-      // Both strategies failed (or nothing to save)
-      if (hasPendingOps || store.isDirty) {
-        if (diffSucceeded && !store.isDirty) {
-          // Diff встиг пройти, stream не потрібен
-          onSaveSuccess()
-          return
-        }
-        onSaveError('Save failed after all retries')
-      } else if (diffSucceeded) {
+      if (streamSuccess) {
         onSaveSuccess()
+        return
+      }
+
+      // Save failed
+      if (store.isDirty) {
+        onSaveError('Save failed after all retries')
       }
     } catch (err: any) {
       onSaveError(err?.message || 'Unknown save error')
@@ -353,7 +221,6 @@ export function useAutosave(
     store.setSyncError(null)
     saveCount.value++
     retryCount = 0
-    consecutive422 = 0  // P2.2: reset on success
 
     // Classroom sync: notify other participants about state change
     options?.onSaved?.()
@@ -370,7 +237,6 @@ export function useAutosave(
     lastError.value = message
     console.error('[WB:autosave]', message)
 
-    // P2.2: Show toast so user knows saving is temporarily broken
     showToast(t('winterboard.autosave.saveFailed'), 'error')
 
     // Circuit breaker: cooldown after total failure to prevent server overload
@@ -380,7 +246,7 @@ export function useAutosave(
       inCooldown = false
       cooldownTimer = null
       console.info('[WB:autosave] Cooldown ended, will retry on next change')
-      if (store.isDirty || pendingOps.value.length > 0) {
+      if (store.isDirty) {
         scheduleSave()
       }
     }, FAILURE_COOLDOWN_MS)
@@ -404,7 +270,7 @@ export function useAutosave(
     if (!maxWaitTimer) {
       maxWaitTimer = setTimeout(() => {
         maxWaitTimer = null
-        if (store.isDirty || pendingOps.value.length > 0) {
+        if (store.isDirty) {
           performSave()
         }
       }, MAX_WAIT_MS)
@@ -412,11 +278,6 @@ export function useAutosave(
   }
 
   // ── Public API ─────────────────────────────────────────────────────
-
-  function queueDiffOp(op: WBDiffOp): void {
-    opsQueue.enqueue(op)
-    scheduleSave()
-  }
 
   async function saveNow(): Promise<void> {
     clearTimers()
@@ -445,14 +306,11 @@ export function useAutosave(
       status.value = 'idle'
       store.setSyncStatus('idle')
       inCooldown = false
-      // P2.2: Re-enable diff path on reconnect (server may have recovered)
-      consecutive422 = 0
-      diffDisabled = false
       if (cooldownTimer) {
         clearTimeout(cooldownTimer)
         cooldownTimer = null
       }
-      if (store.isDirty || pendingOps.value.length > 0) {
+      if (store.isDirty) {
         scheduleSave()
       }
     }
@@ -468,7 +326,7 @@ export function useAutosave(
 
   function handleBeforeUnload(_event: BeforeUnloadEvent): void {
     if (!sessionId.value) return
-    if (!store.isDirty && pendingOps.value.length === 0) return
+    if (!store.isDirty) return
 
     winterboardApi.beaconSave(sessionId.value, {
       state: store.serializedState,
@@ -479,7 +337,7 @@ export function useAutosave(
 
   function handleVisibilityChange(): void {
     if (document.visibilityState === 'hidden' && sessionId.value) {
-      if (store.isDirty || pendingOps.value.length > 0) {
+      if (store.isDirty) {
         winterboardApi.beaconSave(sessionId.value, {
           state: store.serializedState,
           rev: store.rev,
@@ -499,21 +357,12 @@ export function useAutosave(
     document.addEventListener('visibilitychange', handleVisibilityChange)
   }
 
-  // P0 FIX (2026-04-08): single-writer queue. Do NOT start opsQueue's internal
-  // flush timer — performSave() is the sole writer for this session so that
-  // diff-save and stream-save are strictly serialized via `isSaving` guard.
-  // Running opsQueue timer in parallel caused 409 cascade at 20+ concurrent
-  // users: opsQueue timer advanced server rev while debounced performSave()
-  // fired streamSave with a stale store.rev snapshot.
-  // opsQueue.start()
-
   // ── Cleanup ────────────────────────────────────────────────────────
 
   function destroy(): void {
     destroyed = true
     clearTimers()
     stopDirtyWatch()
-    opsQueue.destroy()
     if (cooldownTimer) {
       clearTimeout(cooldownTimer)
       cooldownTimer = null
@@ -528,7 +377,7 @@ export function useAutosave(
     }
 
     // Final beacon save if pending
-    if (sessionId.value && (store.isDirty || opsQueue.pendingCount.value > 0)) {
+    if (sessionId.value && store.isDirty) {
       winterboardApi.beaconSave(sessionId.value, {
         state: store.serializedState,
         rev: store.rev,
@@ -547,7 +396,6 @@ export function useAutosave(
     pendingOpsCount,
     saveNow,
     cancelPendingSave,
-    queueDiffOp,
     destroy,
   }
 }

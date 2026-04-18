@@ -6606,6 +6606,7 @@
       "supportedFormats": "PNG, JPEG, WebP, SVG — max 10 MB",
       "pickFile": "Choose image file",
       "uploading": "Uploading…",
+      "uploadingMany": "Uploading {active} of {total}…",
       "success": "Image uploaded",
       "error": "Upload failed",
       "tooLarge": "File too large. Maximum 10 MB",

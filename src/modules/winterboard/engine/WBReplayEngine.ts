@@ -166,6 +166,13 @@ export class WBReplayEngine {
 
   // ─── Private ───────────────────────────────────────────────────────────────
 
+  /**
+   * Ops emitted within BURST_THRESHOLD_MS of each other are treated as one
+   * atomic user action (paste, batch, group drag). They play in a single
+   * timer tick with 0 delay → one Vue render → no "typing" effect.
+   */
+  private static readonly BURST_THRESHOLD_MS = 16
+
   private _scheduleNext(): void {
     if (this.currentIndex >= this.operations.length) {
       this.setState('ended')
@@ -176,23 +183,40 @@ export class WBReplayEngine {
     const op = this.operations[this.currentIndex]
     const nextOp = this.operations[this.currentIndex + 1]
 
-    // Derive inter-op delay from real timestamps, capped at 2s, scaled by speed
-    // CRITICAL 6: minimum 4ms (browser setTimeout floor), prevents timer storm at 10x
-    let delayMs = 16  // minimum frame interval
+    // Derive inter-op delay from real timestamps, capped at 2s, scaled by speed.
+    // NO artificial 16ms floor — atomic ops (paste/batch) have diff ≈ 0 and must
+    // replay together. Only 4ms floor on final delay prevents timer storm at 10x.
+    let delayMs = 16
     if (nextOp) {
       const t1 = new Date(op.created_at).getTime()
       const t2 = new Date(nextOp.created_at).getTime()
-      const diff = (isNaN(t1) || isNaN(t2)) ? 16 : Math.max(16, Math.min(t2 - t1, 2000))
+      const diff = (isNaN(t1) || isNaN(t2)) ? 16 : Math.min(Math.max(0, t2 - t1), 2000)
       delayMs = Math.max(4, diff / this.speed)
     }
 
     this.playTimer = setTimeout(() => {
       if (this.state !== 'playing') return
 
+      // Apply current op
       this.callbacks.onOperation?.(op, this.currentIndex)
       this.callbacks.onProgress?.(this.currentIndex + 1, this.operations.length)
-
       this.currentIndex++
+
+      // BURST MODE: drain consecutive ops with near-zero diff in SAME tick.
+      // This is what makes paste/batch appear atomic in replay (one Vue render).
+      while (this.currentIndex < this.operations.length) {
+        const prevOp = this.operations[this.currentIndex - 1]
+        const curOp = this.operations[this.currentIndex]
+        const tp = new Date(prevOp.created_at).getTime()
+        const tc = new Date(curOp.created_at).getTime()
+        if (isNaN(tp) || isNaN(tc)) break
+        if (tc - tp >= WBReplayEngine.BURST_THRESHOLD_MS) break
+        // Within burst threshold — apply in same tick (no setTimeout between)
+        this.callbacks.onOperation?.(curOp, this.currentIndex)
+        this.callbacks.onProgress?.(this.currentIndex + 1, this.operations.length)
+        this.currentIndex++
+      }
+
       this._scheduleNext()
     }, delayMs)
   }
