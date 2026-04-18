@@ -3518,7 +3518,11 @@ onMounted(async () => {
   // P1.4 FIX: Force-stop drawing on visibility/focus loss to prevent stuck pencil
   forceStopDrawing = () => {
     if (isDrawing.value) {
-      handleMouseUp(new MouseEvent('mouseup'))
+      // handleMouseUp takes no args — it reads state from reactive refs.
+      // Previous code passed `new MouseEvent('mouseup')` which was a TS error
+      // (TS2554: expected 0 arguments) and a no-op — the fake event was never
+      // inspected. See function signature at line 2141: `function handleMouseUp(): void`.
+      handleMouseUp()
     }
   }
   onVisibilityChange = () => {
