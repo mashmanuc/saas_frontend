@@ -304,15 +304,17 @@
         <WBCanvas
           v-show="!isLoading"
           ref="canvasRef"
+          class="wb-page-fade"
+          :class="{ 'wb-page-fade--out': isPageFading }"
           :tool="store.currentTool"
           :color="store.currentColor"
           :size="store.currentSize"
-          :strokes="store.currentStrokes"
-          :assets="store.currentAssets"
+          :strokes="displayStrokes"
+          :assets="displayAssets"
           :width="store.pageWidth"
           :height="store.pageHeight"
           :zoom="store.zoom"
-          :background="store.currentPage?.background"
+          :background="displayBackground"
           :is-tutor="true"
           @stroke-add="handleStrokeAdd"
           @stroke-update="handleStrokeUpdate"
@@ -951,6 +953,7 @@ import { createLessonMarker, deleteLessonMarker } from '../api/replay'
 import { createReplayApplier } from '../engine/applyReplayOperation'
 import { collectNewIdsFromOp, applyAppearanceFadeIn } from '../engine/animation/replayFadeIn'
 import { useGridOverlay } from '../composables/useGridOverlay'
+import { usePageTransition } from '../composables/usePageTransition'
 import { useReplayRecorder } from '../composables/useReplayRecorder'
 import { useReplayAudio } from '../composables/useReplayAudio'
 import { audioManager } from '../utils/audioManager'
@@ -1285,6 +1288,31 @@ const mode = computed<'edit' | 'replay'>({
     router.replace({ query })
   },
 })
+
+// Phase 1 page transition — fade-only, editor-only.
+// See saas_docs/plans/PAGE_TRANSITION_ANIMATION_TZ.md §3.6 for scope + §3.7
+// for render vs action binding invariant. Replay mode bypasses the composable
+// and renders from logical index directly (replay animation = Phase 2, blocked
+// on replayUiStore.isSeeking).
+const pageTransition = usePageTransition(computed(() => store.currentPageIndex))
+
+// RENDER bindings — read from display index (lags up to 180ms during fade).
+// ACTION bindings (getPageId, emit handlers, toolbar state) stay on
+// store.currentPage*, which is the logical/now index — so user input
+// is always attributed to the page they logically moved to.
+const displayStrokes = computed(() => {
+  if (mode.value === 'replay') return store.currentStrokes
+  return store.pages[pageTransition.displayIndex.value]?.strokes ?? []
+})
+const displayAssets = computed(() => {
+  if (mode.value === 'replay') return store.currentAssets
+  return store.pages[pageTransition.displayIndex.value]?.assets ?? []
+})
+const displayBackground = computed(() => {
+  if (mode.value === 'replay') return store.currentPage?.background
+  return store.pages[pageTransition.displayIndex.value]?.background
+})
+const isPageFading = computed(() => mode.value === 'edit' && pageTransition.isFading.value)
 
 // Зберігаємо стан дошки перед входом в replay — відновлюємо при виході
 let _savedBoardState: ReturnType<typeof store.getSnapshotState> | null = null
@@ -3610,6 +3638,29 @@ watch(() => store.workspaceName, (name) => {
 .wb-page-jump-input::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
+}
+
+/* ── Page transition fade (Phase 1, editor-only) ───────────────────────────
+ * Wrapper around WBCanvas. Fades to opacity 0 during fade-out phase; parent
+ * composable (usePageTransition) swaps displayIndex at t=180ms, then removes
+ * the class → CSS transitions opacity back to 1 (fade-in).
+ * See saas_docs/plans/PAGE_TRANSITION_ANIMATION_TZ.md v2.1 §3.4.
+ * ──────────────────────────────────────────────────────────────────────── */
+.wb-page-fade {
+  transition: opacity 180ms ease-out;
+}
+.wb-page-fade--out {
+  opacity: 0;
+}
+
+/* Accessibility: honour user motion preference — no transition, no fade-out. */
+@media (prefers-reduced-motion: reduce) {
+  .wb-page-fade {
+    transition: none;
+  }
+  .wb-page-fade--out {
+    opacity: 1;
+  }
 }
 
 /* ── B6.2: Fade transition for canvas loader ──────────────────────────────── */
