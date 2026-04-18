@@ -1159,6 +1159,47 @@ export const useWBStore = defineStore('wb-board', {
       })
     },
 
+    /**
+     * Replay animation ONLY: batch-apply positions to multiple assets
+     * in ONE reactive mutation per call.
+     *
+     * Used by SimpleMoveAnimator (engine/animation/) for smooth replay
+     * transitions without per-object rAF thrashing (N × frames × mutations).
+     * One mutation per frame keeps Konva reconciliation manageable even
+     * for 6+ cube (50+ asset) group moves.
+     *
+     * ❗ HARD INVARIANTS (do not relax without animator redesign):
+     *   - NO _emitOperation — transient frames are visual-only, not recorded
+     *   - NO history / undo stack push — not a user-level action
+     *   - ONE page mutation — spread page with mapped assets array
+     *   - UNTOUCHED items keep reference (Vue skips their re-render)
+     *   - IDEMPOTENT — same input → same output, no side-effects
+     *   - ASSETS ONLY — strokes are NOT animated (see MoveAnimator contract)
+     *
+     * @param items - absolute positions; only id/x/y are applied
+     */
+    applyTransientPositions(
+      items: Array<{ id: string; x: number; y: number }>,
+    ): void {
+      if (!Array.isArray(items) || items.length === 0) return
+      const pageIndex = this.currentPageIndex
+      const page = this.pages[pageIndex]
+      if (!page) return
+
+      const byId = new Map(items.map((it) => [it.id, it]))
+      let changed = false
+      const newAssets = page.assets.map((a) => {
+        const pos = byId.get(a.id)
+        if (!pos) return a // untouched → keep reference
+        if (a.x === pos.x && a.y === pos.y) return a // no-op → keep reference
+        changed = true
+        return { ...a, x: pos.x, y: pos.y }
+      })
+      if (!changed) return // nothing actually moved — skip page mutation
+      this.pages[pageIndex] = { ...page, assets: newAssets }
+      this.markDirty()
+    },
+
     /** Change document_viewer page without polluting undo stack. */
     updateDocViewerPage(assetId: string, page: number): void {
       const pageIdx = this.currentPageIndex

@@ -949,6 +949,7 @@ import type { BoardOperation } from '../types/replay'
 import type { WBLessonMarker } from '../types/winterboard'
 import { createLessonMarker, deleteLessonMarker } from '../api/replay'
 import { createReplayApplier } from '../engine/applyReplayOperation'
+import { collectNewIdsFromOp, applyAppearanceFadeIn } from '../engine/animation/replayFadeIn'
 import { useGridOverlay } from '../composables/useGridOverlay'
 import { useReplayRecorder } from '../composables/useReplayRecorder'
 import { useReplayAudio } from '../composables/useReplayAudio'
@@ -1440,27 +1441,16 @@ function onReplayTick({ index, total }: { index: number; total: number }): void 
 function onReplayOperation(op: BoardOperation): void {
   replayApplier.apply(store, op)
 
-  // Smooth appearance: fade-in new elements via Konva Tween
-  const isAdd = op.op_type === 'stroke_add' || op.op_type === 'asset_add'
-  const newId = isAdd
-    ? ((op.payload as Record<string, unknown>)?.stroke as { id?: string })?.id
-      || ((op.payload as Record<string, unknown>)?.asset as { id?: string })?.id
-    : null
+  // Smooth appearance — covers stroke_add / asset_add AND their batch
+  // variants (strokes_add_batch / assets_add_batch) emitted by paste.
+  // Previously only singles got the fade, so a paste of N items read as
+  // an instant "poof". See engine/animation/replayFadeIn.ts.
+  const newIds = collectNewIdsFromOp(op)
+  if (newIds.length === 0) return
 
   nextTick(() => {
     const stage = canvasRef.value?.getStage?.()
-    if (!stage) return
-
-    // Fade-in new elements
-    if (newId) {
-      const node = stage.findOne(`#${newId}`)
-      if (node) {
-        node.opacity(0)
-        node.to({ opacity: 1, duration: 0.25 })
-      }
-    }
-
-    stage.batchDraw()
+    applyAppearanceFadeIn(stage as Parameters<typeof applyAppearanceFadeIn>[0], newIds)
   })
 }
 

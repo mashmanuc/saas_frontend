@@ -3,7 +3,8 @@
 // REPLAY-INV-11: детермінізм — apply(op) має відтворювати точний state
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { applyReplayOperation, type ReplayStoreApi } from '../engine/applyReplayOperation'
+import { applyReplayOperation, createReplayApplier, type ReplayStoreApi } from '../engine/applyReplayOperation'
+import type { MoveAnimator } from '../engine/animation/MoveAnimator'
 import type { BoardOperation } from '../types/replay'
 
 // ─── Mock Store ──────────────────────────────────────────────────────────────
@@ -256,6 +257,207 @@ describe('applyReplayOperation — z_order', () => {
     expect(() =>
       applyReplayOperation(store, makeOp('z_order', { object_id: 'obj1', action: 'unknown' }))
     ).not.toThrow()
+  })
+})
+
+// ─── objects_move (Phase 1 animation) ────────────────────────────────────────
+//
+// The applier routes `objects_move` through MoveAnimator when guards pass,
+// else falls back to synchronous per-asset updateAsset calls. Tests below
+// inject a fake animator to verify the routing decision deterministically
+// (no rAF timing).
+//
+// Invariants under test:
+//  - items.length > 20 → instant path, animator NOT called
+//  - items.length <= 20 → animator called, final commit queued
+//  - reduced motion preference → instant path
+//  - reset() cancels any in-flight animation via animator.cancel()
+//  - store without applyTransientPositions → instant path (backwards compat)
+
+function makeMoveStore(
+  assets: Array<{ id: string; x: number; y: number }>,
+  opts?: { withBatch?: boolean },
+) {
+  const base = makeStore() as ReplayStoreApi & {
+    _calls: Record<string, unknown[][]>
+    applyTransientPositions?: (items: Array<{ id: string; x: number; y: number }>) => void
+  }
+  // Override pages with live assets array so handler can find them.
+  ;(base as unknown as { pages: Array<{ id: string; assets: unknown[] }> }).pages = [
+    { id: 'page-1', assets: assets.map((a) => ({ ...a })) },
+  ]
+  if (opts?.withBatch !== false) {
+    base.applyTransientPositions = (items) => {
+      base._calls.applyTransientPositions = base._calls.applyTransientPositions ?? []
+      base._calls.applyTransientPositions.push([items])
+    }
+  }
+  return base
+}
+
+function makeFakeAnimator(): MoveAnimator & {
+  _animateCalls: unknown[][]
+  _cancelCount: number
+  _pending: Array<() => void>
+} {
+  const anim: MoveAnimator & {
+    _animateCalls: unknown[][]
+    _cancelCount: number
+    _pending: Array<() => void>
+  } = {
+    _animateCalls: [],
+    _cancelCount: 0,
+    _pending: [],
+    animate(items, ctx) {
+      anim._animateCalls.push([items, ctx])
+      return new Promise<void>((resolve) => {
+        anim._pending.push(resolve)
+      })
+    },
+    cancel() {
+      anim._cancelCount += 1
+    },
+  }
+  return anim
+}
+
+describe('applyReplayOperation — objects_move (Phase 1)', () => {
+  beforeEach(() => {
+    // Ensure reduced-motion is disabled for animated-path tests
+    vi.stubGlobal('window', {
+      matchMedia: () => ({ matches: false }) as MediaQueryList,
+    } as unknown as Window & typeof globalThis)
+  })
+
+  it('instant path when items.length > 20 (guard: MOVE_ANIMATION_MAX_ITEMS)', () => {
+    const assets = Array.from({ length: 25 }, (_, i) => ({ id: `a${i}`, x: 0, y: 0 }))
+    const store = makeMoveStore(assets)
+    const animator = makeFakeAnimator()
+    const applier = createReplayApplier({ animator })
+
+    const items = assets.map((a) => ({ id: a.id, x: 100, y: 50 }))
+    applier.apply(store, {
+      id: 1,
+      op_type: 'objects_move',
+      page_id: 'page-1',
+      payload: { items },
+      user: 1,
+      created_at: '2026-01-01T00:00:00Z',
+    })
+
+    // Animator NOT called; each asset updated synchronously.
+    expect(animator._animateCalls).toHaveLength(0)
+    expect(store._calls.updateAsset?.length).toBe(25)
+  })
+
+  it('animated path when items.length <= 20', () => {
+    const assets = Array.from({ length: 10 }, (_, i) => ({ id: `a${i}`, x: 0, y: 0 }))
+    const store = makeMoveStore(assets)
+    const animator = makeFakeAnimator()
+    const applier = createReplayApplier({ animator })
+
+    const items = assets.map((a) => ({ id: a.id, x: 100, y: 50 }))
+    applier.apply(store, {
+      id: 1,
+      op_type: 'objects_move',
+      page_id: 'page-1',
+      payload: { items },
+      user: 1,
+      created_at: '2026-01-01T00:00:00Z',
+    })
+
+    // Animator called with asset-kind items; instant updates NOT called yet.
+    expect(animator._animateCalls).toHaveLength(1)
+    const passedItems = animator._animateCalls[0][0] as Array<{ kind: string }>
+    expect(passedItems).toHaveLength(10)
+    expect(passedItems.every((it) => it.kind === 'asset')).toBe(true)
+    // No instant updateAsset during animation.
+    expect(store._calls.updateAsset).toBeUndefined()
+  })
+
+  it('final commit runs after animator resolves (idempotent)', async () => {
+    const store = makeMoveStore([{ id: 'a1', x: 0, y: 0 }])
+    const animator = makeFakeAnimator()
+    const applier = createReplayApplier({ animator })
+
+    applier.apply(store, {
+      id: 1,
+      op_type: 'objects_move',
+      page_id: 'page-1',
+      payload: { items: [{ id: 'a1', x: 100, y: 200 }] },
+      user: 1,
+      created_at: '2026-01-01T00:00:00Z',
+    })
+
+    expect(store._calls.updateAsset).toBeUndefined()
+    // Resolve animator — final commit should fire.
+    animator._pending[0]()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(store._calls.updateAsset?.length).toBe(1)
+    const [asset, opts] = (store._calls.updateAsset as unknown[][])[0]
+    expect(asset).toMatchObject({ id: 'a1', x: 100, y: 200 })
+    expect(opts).toEqual({ skipHistory: true })
+  })
+
+  it('reduced-motion preference → instant path', () => {
+    vi.stubGlobal('window', {
+      matchMedia: (q: string) =>
+        ({ matches: q === '(prefers-reduced-motion: reduce)' }) as MediaQueryList,
+    } as unknown as Window & typeof globalThis)
+
+    const store = makeMoveStore([{ id: 'a1', x: 0, y: 0 }])
+    const animator = makeFakeAnimator()
+    const applier = createReplayApplier({ animator })
+
+    applier.apply(store, {
+      id: 1,
+      op_type: 'objects_move',
+      page_id: 'page-1',
+      payload: { items: [{ id: 'a1', x: 100, y: 50 }] },
+      user: 1,
+      created_at: '2026-01-01T00:00:00Z',
+    })
+
+    expect(animator._animateCalls).toHaveLength(0)
+    expect(store._calls.updateAsset?.length).toBe(1)
+  })
+
+  it('reset() cancels in-flight animation', () => {
+    const store = makeMoveStore([{ id: 'a1', x: 0, y: 0 }])
+    const animator = makeFakeAnimator()
+    const applier = createReplayApplier({ animator })
+
+    applier.apply(store, {
+      id: 1,
+      op_type: 'objects_move',
+      page_id: 'page-1',
+      payload: { items: [{ id: 'a1', x: 100, y: 50 }] },
+      user: 1,
+      created_at: '2026-01-01T00:00:00Z',
+    })
+    expect(animator._cancelCount).toBe(0)
+    applier.reset()
+    expect(animator._cancelCount).toBe(1)
+  })
+
+  it('store without applyTransientPositions → instant path (backwards compat)', () => {
+    // Legacy ReplayStoreApi callers may not have the batch method.
+    const store = makeMoveStore([{ id: 'a1', x: 0, y: 0 }], { withBatch: false })
+    // NO injected animator — applier would lazy-init, but guard prevents it.
+    const applier = createReplayApplier()
+
+    applier.apply(store, {
+      id: 1,
+      op_type: 'objects_move',
+      page_id: 'page-1',
+      payload: { items: [{ id: 'a1', x: 100, y: 50 }] },
+      user: 1,
+      created_at: '2026-01-01T00:00:00Z',
+    })
+
+    expect(store._calls.updateAsset?.length).toBe(1)
   })
 })
 

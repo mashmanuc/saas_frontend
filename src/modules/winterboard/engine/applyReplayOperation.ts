@@ -28,6 +28,19 @@
  */
 import type { BoardOperation } from '../types/replay'
 import type { WBStroke, WBAsset, WBPageBackground, WBPageGridSettings } from '../types/winterboard'
+import {
+  createSimpleMoveAnimator,
+  prefersReducedMotion,
+  type MoveAnimator,
+  type MoveItem,
+} from './animation/MoveAnimator'
+
+// ─── Move animation guards (live in applier, not animator) ─────────────────
+// Relax only after careful perf testing. These rules prevent the Option A
+// regression (N parallel rAF × per-object mutations) from re-emerging under
+// group moves (e.g. 6 cubes = 48 strokes / many assets in a burst).
+const MOVE_ANIMATION_MAX_ITEMS = 20
+const MOVE_ANIMATION_DURATION_MS = 220
 
 export interface ReplayStoreApi {
   addStroke: (s: WBStroke, opts?: { skipHistory?: boolean }) => void
@@ -62,8 +75,19 @@ export interface ReplayStoreApi {
   setObjectText: (objectId: string, text: string | undefined, opts?: { silent?: boolean }) => void
   // GeoBoard: granular vertex mutation
   updateGeometryVertex?: (assetId: string, vertexIndex: number, point: { x: number; y: number }, opts?: { skipEmit?: boolean }) => void
+  // Replay animation batch write (no emit, no history) — used by MoveAnimator
+  applyTransientPositions?: (items: Array<{ id: string; x: number; y: number }>) => void
   currentPageIndex: number
   pages: Array<{ id: string }>
+}
+
+/**
+ * Optional factory options. `animator` lets callers inject a custom
+ * MoveAnimator (e.g. Phase 2 KonvaLayerAnimator). Default is the Phase 1
+ * SimpleMoveAnimator (batch rAF against store.applyTransientPositions).
+ */
+export interface ReplayApplierOptions {
+  animator?: MoveAnimator
 }
 
 /**
@@ -76,7 +100,7 @@ export interface ReplayStoreApi {
  *   applier.markPagesEnsured(pageIds)
  *   applier.reset()
  */
-export function createReplayApplier() {
+export function createReplayApplier(opts?: ReplayApplierOptions) {
   const ensuredPageIds = new Set<string>()
   // P0-FIX: Page ID mapping — ops may use different IDs than snapshot.
   // Example: snapshot has page-1, but ops recorded with page-175xxx (page was renamed/recreated).
@@ -84,10 +108,37 @@ export function createReplayApplier() {
   const pageIdMap = new Map<string, string>() // ops page_id → store page_id
   let _snapshotPageIds: string[] = [] // ordered snapshot page IDs for positional mapping
 
+  // Move animator: injected or lazy-initialized on first move op.
+  // See MoveAnimator.ts for contract + Phase 1 / Phase 2 evolution.
+  let _animator: MoveAnimator | null = opts?.animator ?? null
+
+  function _getAnimator(store: ReplayStoreApi): MoveAnimator | null {
+    if (_animator) return _animator
+    // Lazy-init default SimpleMoveAnimator ONLY if store supports batch writes.
+    if (typeof store.applyTransientPositions !== 'function') return null
+    // CRITICAL: pass LIVE store getters, not captured values. currentPageIndex
+    // changes during replay (page_navigate), and snapshot-time capture would
+    // point at the wrong page on later ops.
+    const applyBatch = store.applyTransientPositions
+    const liveRef = store as unknown as {
+      currentPageIndex: number
+      pages: Array<{ id: string; assets?: Array<{ id: string; x?: number; y?: number }> }>
+    }
+    _animator = createSimpleMoveAnimator({
+      get currentPageIndex() { return liveRef.currentPageIndex },
+      get pages() { return liveRef.pages },
+      applyTransientPositions: applyBatch,
+    })
+    return _animator
+  }
+
   function reset(): void {
     ensuredPageIds.clear()
     pageIdMap.clear()
     _snapshotPageIds = []
+    // Cancel any in-flight move animation — on seek/reset we apply snapshot
+    // state and intermediate frames must not trail behind.
+    if (_animator) _animator.cancel()
   }
 
   function markPagesEnsured(pageIds: string[]): void {
@@ -372,18 +423,66 @@ export function createReplayApplier() {
       }
 
       // Move assets by absolute position (idempotent, assets only, max 50)
+      //
+      // Phase 1 animation: route through MoveAnimator when guards pass,
+      // fall back to instant apply otherwise. Strokes are NOT animated here
+      // (future Phase 2 scope). See MoveAnimator.ts for invariants.
       case 'objects_move': {
         const moveItems = payload.items as Array<{ id: string; x: number; y: number }>
-        if (!Array.isArray(moveItems)) break
+        if (!Array.isArray(moveItems) || moveItems.length === 0) break
         const movePage = store.pages[store.currentPageIndex] as unknown as {
           assets?: WBAsset[]
         }
         if (!movePage?.assets) break
-        for (const item of moveItems) {
-          const asset = movePage.assets.find((a) => a.id === item.id)
-          if (!asset) continue
-          store.updateAsset({ ...asset, x: item.x, y: item.y } as WBAsset, { skipHistory: true })
+
+        // ─── Guards (cheap short-circuit to instant apply) ────────────────
+        const animator = _getAnimator(store)
+        const shouldAnimate =
+          animator !== null &&
+          moveItems.length <= MOVE_ANIMATION_MAX_ITEMS &&
+          !prefersReducedMotion()
+
+        if (!shouldAnimate) {
+          // Instant apply — current canonical path (no reactivity per-frame).
+          for (const item of moveItems) {
+            const asset = movePage.assets.find((a) => a.id === item.id)
+            if (!asset) continue
+            store.updateAsset({ ...asset, x: item.x, y: item.y } as WBAsset, { skipHistory: true })
+          }
+          break
         }
+
+        // ─── Animated path ────────────────────────────────────────────────
+        // Fire-and-forget: applier stays synchronous. If a new op arrives
+        // for the same items, animator.cancel() auto-fires from animate()
+        // re-entry. On reset/seek, applier.reset() cancels too.
+        const animItems: MoveItem[] = moveItems.map((m) => ({
+          id: m.id,
+          kind: 'asset',
+          x: m.x,
+          y: m.y,
+        }))
+        // Canonical final commit — idempotent, safe even after SimpleAnimator
+        // (last frame already wrote targets). Required for future Konva-based
+        // animators that never touch the store during animation.
+        const commitFinal = (): void => {
+          // Re-read current page (may have changed during async animation).
+          const curPage = store.pages[store.currentPageIndex] as unknown as {
+            assets?: WBAsset[]
+          }
+          if (!curPage?.assets) return
+          for (const item of moveItems) {
+            const asset = curPage.assets.find((a) => a.id === item.id)
+            if (!asset) continue
+            // Skip if already at target (avoids needless reactive churn).
+            if (asset.x === item.x && asset.y === item.y) continue
+            store.updateAsset({ ...asset, x: item.x, y: item.y } as WBAsset, { skipHistory: true })
+          }
+        }
+        animator!
+          .animate(animItems, { duration: MOVE_ANIMATION_DURATION_MS })
+          .then(commitFinal)
+          .catch(() => commitFinal())
         break
       }
 

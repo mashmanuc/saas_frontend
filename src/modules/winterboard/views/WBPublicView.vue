@@ -257,6 +257,7 @@ import { useReplay } from '../composables/useReplay'
 import { useReplayAudio } from '../composables/useReplayAudio'
 import { audioManager } from '../utils/audioManager'
 import { createReplayApplier } from '../engine/applyReplayOperation'
+import { collectNewIdsFromOp, applyAppearanceFadeIn } from '../engine/animation/replayFadeIn'
 import { useCanvasResize } from '../composables/useCanvasResize'
 import WBCanvas from '../components/canvas/WBCanvas.vue'
 import PublicReplayPlayer from '../components/public/PublicReplayPlayer.vue'
@@ -438,19 +439,15 @@ async function enterReplayMode(): Promise<void> {
   await replay.loadTimeline(
     (op) => {
       replayApplier.apply(store, op)
-      // Fade-in new elements via Konva Tween
-      const payload = op.payload as Record<string, unknown>
-      const newId = op.op_type === 'stroke_add' ? (payload?.stroke as { id?: string })?.id
-        : op.op_type === 'asset_add' ? (payload?.asset as { id?: string })?.id
-        : null
-      if (newId) {
-        nextTick(() => {
-          const stage = (canvasRef.value as unknown as { getStage?: () => { findOne: (s: string) => { opacity: (v: number) => void; to: (o: Record<string, unknown>) => void } | null; batchDraw: () => void } | null })?.getStage?.()
-          const node = stage?.findOne(`#${newId}`)
-          if (node) { node.opacity(0); node.to({ opacity: 1, duration: 0.25 }) }
-          stage?.batchDraw()
-        })
-      }
+      // Smooth appearance — covers stroke_add / asset_add AND their
+      // batch variants (strokes_add_batch / assets_add_batch) emitted by
+      // paste. See engine/animation/replayFadeIn.ts.
+      const newIds = collectNewIdsFromOp(op)
+      if (newIds.length === 0) return
+      nextTick(() => {
+        const stage = (canvasRef.value as unknown as { getStage?: () => Parameters<typeof applyAppearanceFadeIn>[0] })?.getStage?.()
+        applyAppearanceFadeIn(stage, newIds)
+      })
     },
     (state) => {
       // CRITICAL: deep-clone snapshot! loadSnapshot робить this.pages = state.pages (ПОСИЛАННЯ).
