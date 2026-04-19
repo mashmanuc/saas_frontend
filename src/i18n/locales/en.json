@@ -6395,6 +6395,9 @@
         "renameTitle": "New replay title:",
         "trashConfirm": "Move this replay to trash? It will be permanently deleted after 7 days.",
         "trashWithViews": "This replay has been viewed {count} times."
+      },
+      "errors": {
+        "sourceSessionDeleted": "Cannot open replay: the source board has been deleted."
       }
     },
     "publicGone": {

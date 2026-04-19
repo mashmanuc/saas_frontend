@@ -302,8 +302,25 @@ function toggleMenu(id: string) {
 
 function openReplay(replay: Replay) {
   openMenuId.value = null
-  if (!replay.source_session) return
-  router.push({ name: 'winterboard-solo', params: { id: replay.source_session } })
+  if (!replay.source_session) {
+    // Source session was deleted — public share endpoint would still work,
+    // but there's no own-view path for orphaned replays yet. Surface it
+    // to the user instead of silently doing nothing.
+    // eslint-disable-next-line no-alert
+    window.alert(t('winterboard.replayList.errors.sourceSessionDeleted'))
+    return
+  }
+  // CRITICAL: ?mode=replay query is required. Without it, WBSoloRoom opens
+  // the session in EDIT mode (the default), and the user sees the board
+  // editor instead of the replay player. The `mode` computed in WBSoloRoom:
+  //   mode = route.query.mode === 'replay' ? 'replay' : 'edit'
+  // and a watcher on that ref triggers store.setMode('replay') +
+  // store.resetForReplay() side effects needed for playback.
+  router.push({
+    name: 'winterboard-solo',
+    params: { id: replay.source_session },
+    query: { mode: 'replay' },
+  })
 }
 
 function copyShareLink(replay: Replay) {
