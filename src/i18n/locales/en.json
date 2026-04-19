@@ -6397,7 +6397,7 @@
         "trashWithViews": "This replay has been viewed {count} times."
       },
       "errors": {
-        "sourceSessionDeleted": "Cannot open replay: the source board has been deleted."
+        "cannotOpen": "Cannot open replay. Try «Copy link» and open the URL in your browser."
       }
     },
     "publicGone": {

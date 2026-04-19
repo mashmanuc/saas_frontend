@@ -302,25 +302,23 @@ function toggleMenu(id: string) {
 
 function openReplay(replay: Replay) {
   openMenuId.value = null
-  if (!replay.source_session) {
-    // Source session was deleted — public share endpoint would still work,
-    // but there's no own-view path for orphaned replays yet. Surface it
-    // to the user instead of silently doing nothing.
+  // Use the public share URL (the same one the "Copy link" button builds).
+  // WBPublicView already handles every scenario:
+  //   - replay exists + accessible → player loads with ops timeline
+  //   - replay trashed → 410 Gone landing page
+  //   - private visibility → access denial flow
+  //   - not found → 404
+  // This avoids the fragile `source_session` dependency — that field is
+  // null on older replays and on replays whose source board was deleted,
+  // which previously made "Переглянути" silently do nothing or show a
+  // confusing "board deleted" message even when the replay was fine.
+  if (!replay.public_token) {
     // eslint-disable-next-line no-alert
-    window.alert(t('winterboard.replayList.errors.sourceSessionDeleted'))
+    window.alert(t('winterboard.replayList.errors.cannotOpen'))
     return
   }
-  // CRITICAL: ?mode=replay query is required. Without it, WBSoloRoom opens
-  // the session in EDIT mode (the default), and the user sees the board
-  // editor instead of the replay player. The `mode` computed in WBSoloRoom:
-  //   mode = route.query.mode === 'replay' ? 'replay' : 'edit'
-  // and a watcher on that ref triggers store.setMode('replay') +
-  // store.resetForReplay() side effects needed for playback.
-  router.push({
-    name: 'winterboard-solo',
-    params: { id: replay.source_session },
-    query: { mode: 'replay' },
-  })
+  const url = `${window.location.origin}/winterboard/public/${replay.public_token}`
+  window.open(url, '_blank', 'noopener,noreferrer')
 }
 
 function copyShareLink(replay: Replay) {
