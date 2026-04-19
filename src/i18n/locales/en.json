@@ -6842,11 +6842,11 @@
       "duplicateError": "Failed to duplicate board"
     },
     "boards": {
-      "myBoards": "My Lessons",
-      "myBoardsSubtitle": "Create and edit lessons on the board",
-      "newBoard": "New Lesson",
-      "empty": "No lessons yet",
-      "emptyMessage": "Create your first lesson to get started",
+      "myBoards": "My Boards",
+      "myBoardsSubtitle": "Create and edit boards",
+      "newBoard": "New Board",
+      "empty": "No boards yet",
+      "emptyMessage": "Create your first board to get started",
       "createFirst": "Create Board",
       "pageCount": "{n} pages",
       "untitled": "Untitled",
