@@ -22,6 +22,16 @@ const currentIndexRef = ref(0)
 const totalOperationsRef = ref(5)
 const isLoadingRef = ref(false)
 const errorRef = ref<string | null>(null)
+const loadedOperationsRef = ref(5)
+const timelineIncompleteRef = ref(false)
+const markersRef = ref<Array<{ id: string; operation_index: number; title: string }>>([])
+const activeMarkerIdRef = ref<string | null>(null)
+
+const mockRetryLoad = vi.fn()
+const mockSeekToWithSnapshot = vi.fn()
+const mockStepForward = vi.fn()
+const mockStepBackward = vi.fn()
+const mockLoadMarkers = vi.fn().mockResolvedValue(undefined)
 
 vi.mock('../composables/useReplay', () => ({
   useReplay: () => ({
@@ -31,12 +41,21 @@ vi.mock('../composables/useReplay', () => ({
     isLoading: readonly(isLoadingRef),
     error: readonly(errorRef),
     progress: readonly(ref(0)),
+    loadedOperations: readonly(loadedOperationsRef),
+    timelineIncomplete: readonly(timelineIncompleteRef),
+    markers: readonly(markersRef),
+    activeMarkerId: readonly(activeMarkerIdRef),
     loadTimeline: mockLoadTimeline,
+    retryLoad: mockRetryLoad,
+    loadMarkers: mockLoadMarkers,
     play: mockPlay,
     pause: mockPause,
     stop: mockStop,
     setSpeed: mockSetSpeed,
     seekTo: mockSeekTo,
+    seekToWithSnapshot: mockSeekToWithSnapshot,
+    stepForward: mockStepForward,
+    stepBackward: mockStepBackward,
     destroy: mockDestroy,
   }),
 }))
@@ -144,13 +163,9 @@ describe('WBReplayControls — play/pause toggle', () => {
     expect(mockPause).toHaveBeenCalledOnce()
   })
 
-  it('calls stop() when clicking stop button', async () => {
-    stateRef.value = 'playing'
-    const wrapper = mountControls()
-    await flushPromises()
-    await wrapper.find('[data-testid="replay-stop"]').trigger('click')
-    expect(mockStop).toHaveBeenCalledOnce()
-  })
+  // Removed 2026-04-20: separate "stop" button eliminated from UI.
+  // Stop is now invoked internally via state transitions (play/pause toggle).
+  // useReplay.stop() still exists but isn't exposed as a dedicated button.
 })
 
 describe('WBReplayControls — seek', () => {

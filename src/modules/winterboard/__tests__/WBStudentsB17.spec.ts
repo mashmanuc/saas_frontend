@@ -157,40 +157,39 @@ describe('WBStudents.vue (B17)', () => {
 // ─── Tests: AppSidebar menu config (B18) ──────────────────────────────────────
 
 describe('AppSidebar navigation config (B18)', () => {
-  // Test 9 — tutor winterboard: dashboard, library, boards (3 items)
-  // /winterboard/lessons видалено (redirect → KnowledgeHub), /winterboard/students — в секції УЧНІ
-  it('SECTIONED_MENU_BY_ROLE tutor has winterboard section', async () => {
+  // Navigation restructured 2026-04: WB routes now live inside `teaching` section
+  // for tutors. Student navigation has NO winterboard items (per memory
+  // feedback_student_no_solo_board). Tests updated accordingly.
+
+  it('SECTIONED_MENU_BY_ROLE tutor has teaching section with WB routes', async () => {
     const { SECTIONED_MENU_BY_ROLE } = await import('@/config/menu')
     const tutorSections = SECTIONED_MENU_BY_ROLE.tutor
-    const wbSection = tutorSections.find((s: any) => s.key === 'winterboard')
-    expect(wbSection).toBeDefined()
-    expect(wbSection.items).toHaveLength(3)
+    const teachingSection = tutorSections.find((s: any) => s.key === 'teaching')
+    expect(teachingSection).toBeDefined()
+    const paths = teachingSection.items.map((i: any) => i.to)
+    // WB surfaces inside teaching: boards, replays, library
+    const wbPaths = paths.filter((p: string) => p.startsWith('/winterboard/'))
+    expect(wbPaths.length).toBeGreaterThanOrEqual(3)
   })
 
-  // Test 10
-  it('tutor winterboard section has all required routes', async () => {
+  it('tutor teaching section exposes required WB routes', async () => {
     const { SECTIONED_MENU_BY_ROLE } = await import('@/config/menu')
-    const wbSection = SECTIONED_MENU_BY_ROLE.tutor.find((s: any) => s.key === 'winterboard')
-    const paths = wbSection.items.map((i: any) => i.to)
-    expect(paths).toContain('/winterboard/dashboard')
-    expect(paths).toContain('/winterboard/library')
+    const teachingSection = SECTIONED_MENU_BY_ROLE.tutor.find(
+      (s: any) => s.key === 'teaching',
+    )
+    const paths = teachingSection.items.map((i: any) => i.to)
     expect(paths).toContain('/winterboard/boards')
+    expect(paths).toContain('/winterboard/replays')
+    expect(paths).toContain('/winterboard/library')
   })
 
-  // Test 11 — student winterboard: dashboard, library, boards (3 items)
-  it('SECTIONED_MENU_BY_ROLE student has winterboard section', async () => {
+  it('student navigation has NO winterboard routes (regression guard)', async () => {
     const { SECTIONED_MENU_BY_ROLE } = await import('@/config/menu')
     const studentSections = SECTIONED_MENU_BY_ROLE.student
-    const wbSection = studentSections.find((s: any) => s.key === 'winterboard')
-    expect(wbSection).toBeDefined()
-    expect(wbSection.items).toHaveLength(3)
-  })
-
-  // Test 12
-  it('student winterboard section has no students route', async () => {
-    const { SECTIONED_MENU_BY_ROLE } = await import('@/config/menu')
-    const wbSection = SECTIONED_MENU_BY_ROLE.student.find((s: any) => s.key === 'winterboard')
-    const paths = wbSection.items.map((i: any) => i.to)
-    expect(paths).not.toContain('/winterboard/students')
+    const allPaths = studentSections.flatMap((s: any) =>
+      s.items.map((i: any) => i.to),
+    )
+    const wbPaths = allPaths.filter((p: string) => p.startsWith('/winterboard/'))
+    expect(wbPaths).toHaveLength(0)
   })
 })

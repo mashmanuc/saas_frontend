@@ -320,30 +320,30 @@ describe('A4: Performance limits', () => {
     expect(store.objectCount).toBe(2)
   })
 
-  it('canAddObject: true when < 300', () => {
+  it('canAddObject: true when < 600', () => {
     const store = useWBStore()
     seedPage(store)
     expect(store.canAddObject).toBe(true)
   })
 
-  it('canAddObject: false when >= 300', () => {
+  it('canAddObject: false when >= 600', () => {
     const store = useWBStore()
     seedPage(store)
     const page = store.pages[0]
     const strokes: WBStroke[] = []
-    for (let i = 0; i < 300; i++) {
+    for (let i = 0; i < 600; i++) {
       strokes.push(makeStroke({ id: `fill-${i}` }))
     }
     store.pages[0] = { ...page, strokes }
     expect(store.canAddObject).toBe(false)
   })
 
-  it('addStroke: blocked when objectCount >= 300', () => {
+  it('addStroke: blocked when objectCount >= 600', () => {
     const store = useWBStore()
     seedPage(store)
     const page = store.pages[0]
     const strokes: WBStroke[] = []
-    for (let i = 0; i < 300; i++) {
+    for (let i = 0; i < 600; i++) {
       strokes.push(makeStroke({ id: `block-${i}` }))
     }
     store.pages[0] = { ...page, strokes }
@@ -352,12 +352,12 @@ describe('A4: Performance limits', () => {
     expect(store.currentStrokes.length).toBe(countBefore)
   })
 
-  it('addAsset: blocked when objectCount >= 300', () => {
+  it('addAsset: blocked when objectCount >= 600', () => {
     const store = useWBStore()
     seedPage(store)
     const page = store.pages[0]
     const strokes: WBStroke[] = []
-    for (let i = 0; i < 300; i++) {
+    for (let i = 0; i < 600; i++) {
       strokes.push(makeStroke({ id: `block-a-${i}` }))
     }
     store.pages[0] = { ...page, strokes }
