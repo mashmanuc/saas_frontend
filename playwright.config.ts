@@ -85,6 +85,41 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
       },
     },
+    // ─── Mobile viewport projects (automated complement to manual QA) ────────
+    // These do NOT replace real-device testing — Playwright mobile is Chromium
+    // with resized viewport + fake touch. Real iOS Safari quirks, camera,
+    // app lifecycle need physical devices. See:
+    // saas_docs/plans/MOBILE_QA_CHECKLIST_2026-04-20.md
+    {
+      name: 'mobile-ios',
+      testMatch: ['tests/e2e/mobile/**/*.spec.ts'],
+      retries: process.env.CI ? 1 : 0,
+      use: {
+        ...devices['iPhone 13'],
+        baseURL: DEFAULT_BASE_URL,
+        storageState: './tests/e2e/.auth/user.json',
+      },
+    },
+    {
+      name: 'mobile-android',
+      testMatch: ['tests/e2e/mobile/**/*.spec.ts'],
+      retries: process.env.CI ? 1 : 0,
+      use: {
+        ...devices['Pixel 7'],
+        baseURL: DEFAULT_BASE_URL,
+        storageState: './tests/e2e/.auth/user.json',
+      },
+    },
+    {
+      name: 'mobile-ios-small',
+      testMatch: ['tests/e2e/mobile/**/*.spec.ts'],
+      retries: process.env.CI ? 1 : 0,
+      use: {
+        ...devices['iPhone SE'],
+        baseURL: DEFAULT_BASE_URL,
+        storageState: './tests/e2e/.auth/user.json',
+      },
+    },
   ],
   webServer:
     process.env.PLAYWRIGHT_WEB_SERVER === 'none'
