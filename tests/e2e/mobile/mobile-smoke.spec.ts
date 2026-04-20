@@ -37,15 +37,13 @@ test.describe('Mobile viewport — public pages render', () => {
     await emailInput.fill('mobile-test@example.com')
     await expect(emailInput).toHaveValue('mobile-test@example.com')
 
-    // Submit button is tappable. Apple HIG recommends ≥44×44, WCAG 2.1 AA
-    // also 44×44. Current login button is 35px height — logged as UX issue
-    // to address before public launch. Threshold here catches only
-    // egregiously tiny tap targets (<30px would be blatantly unusable).
+    // Submit button tap target per Apple HIG + WCAG 2.1 SC 2.5.5 = ≥44×44.
+    // Fixed 2026-04-20 via @media (max-width: 768px) min-height: 44px in
+    // src/ui/Button.vue. Regression guard — prevents accidental rollback.
     const submit = page.locator('[data-testid="login-submit-button"]')
     await expect(submit).toBeVisible()
     const box = await submit.boundingBox()
-    expect(box?.height).toBeGreaterThanOrEqual(30)
-    // TODO(mobile-ux): bump login button height to 44px minimum per HIG
+    expect(box?.height, 'Login button must meet 44×44 minimum tap target').toBeGreaterThanOrEqual(44)
   })
 
   test('register flow entry renders on mobile viewport', async ({ page }) => {

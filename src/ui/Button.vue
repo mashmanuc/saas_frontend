@@ -114,6 +114,20 @@ const classes = computed(() => {
 .btn-md { padding: 8px 16px; font-size: 0.875rem; }
 .btn-lg { padding: 12px 20px; font-size: 1rem; }
 
+/*
+ * Mobile tap-target accessibility (Apple HIG + WCAG 2.1 SC 2.5.5).
+ * Minimum 44×44 for touch targets. On desktop the default compact sizes
+ * are fine; on touch-first devices we expand via min-height. We use
+ * width-based query (not hover/pointer) so it also catches tablets in
+ * desktop mode but stays off on resized desktop browsers.
+ */
+@media (max-width: 768px) {
+  .btn-sm,
+  .btn-md { min-height: 44px; }
+  .btn-lg { min-height: 48px; }
+  .btn-icon-only { min-width: 44px; min-height: 44px; }
+}
+
 /* ─── Primary ─── */
 .btn-primary {
   background: var(--accent);
