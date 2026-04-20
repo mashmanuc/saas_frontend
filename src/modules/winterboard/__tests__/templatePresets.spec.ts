@@ -149,8 +149,8 @@ describe('applyTemplate: blocked when canAddObject = false', () => {
     store.pages = [{ id: 'p1', name: 'P1', strokes: [], assets: [] }]
     store.currentPageIndex = 0
 
-    // Fill to 300
-    const strokes = Array.from({ length: 300 }, (_, i) => ({
+    // Fill to 600 (canAddObject threshold)
+    const strokes = Array.from({ length: 600 }, (_, i) => ({
       id: `fill-${i}`,
       tool: 'pen' as const,
       color: '#000',

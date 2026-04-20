@@ -69,6 +69,9 @@ function createMockStore(overrides: Record<string, unknown> = {}) {
     addAsset: vi.fn((a: WBAsset) => { assets.push(a) }),
     addStroke: vi.fn((s: WBStroke) => { strokes.push(s) }),
     addStickyNote: vi.fn((s: WBAsset) => { assets.push(s) }),
+    // Batch paths used by pasteInternal (single op per kind for perf)
+    addStrokesBatch: vi.fn((arr: WBStroke[]) => { strokes.push(...arr) }),
+    addAssetsBatch: vi.fn((arr: WBAsset[]) => { assets.push(...arr) }),
     updateAsset: vi.fn(),
     deleteStroke: vi.fn(),
     deleteAsset: vi.fn(),
@@ -441,9 +444,13 @@ describe('useBoardClipboard', () => {
     expect(clipboard.internalClipboard.value).not.toBeNull()
 
     clipboard.pasteInternal()
-    expect(store.addStroke).toHaveBeenCalledOnce()
-    expect(onAssetAdd).toHaveBeenCalledOnce()
-    const newAsset = onAssetAdd.mock.calls[0][0] as WBAsset
+    // pasteInternal now uses batch API (single addStrokesBatch/addAssetsBatch
+    // call per kind) to produce one mutation + one op instead of N
+    expect(store.addStrokesBatch).toHaveBeenCalledOnce()
+    expect(store.addAssetsBatch).toHaveBeenCalledOnce()
+    const pastedAssets = store.addAssetsBatch.mock.calls[0][0] as WBAsset[]
+    expect(pastedAssets).toHaveLength(1)
+    const newAsset = pastedAssets[0]
     expect(newAsset.id).not.toBe('a-1')
     // OFFSET = 40 у pasteInternal
     expect(newAsset.x).toBe(asset1.x + 40)

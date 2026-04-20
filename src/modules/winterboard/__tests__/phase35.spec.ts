@@ -189,7 +189,9 @@ describe('A3: boardStore gridSize + backgroundColor', () => {
     const store = useWBStore()
     store.isDirty = false
     store.setBackgroundColor('#f0f0f0')
-    expect(store.backgroundColor).toBe('#f0f0f0')
+    // Phase 35: setBackgroundColor writes to current page (per-page only),
+    // accessed via currentPageBgColor getter (not state-level backgroundColor)
+    expect(store.currentPageBgColor).toBe('#f0f0f0')
     expect(store.isDirty).toBe(true)
   })
 })
@@ -295,13 +297,13 @@ describe('A6: Background color integration', () => {
   it('setBackgroundColor accepts any color string', () => {
     const store = useWBStore()
     store.setBackgroundColor('rgb(200, 200, 200)')
-    expect(store.backgroundColor).toBe('rgb(200, 200, 200)')
+    expect(store.currentPageBgColor).toBe('rgb(200, 200, 200)')
   })
 
   it('setBackgroundColor accepts hex', () => {
     const store = useWBStore()
     store.setBackgroundColor('#1e293b')
-    expect(store.backgroundColor).toBe('#1e293b')
+    expect(store.currentPageBgColor).toBe('#1e293b')
   })
 
   it('updateObject can change asset opacity', () => {

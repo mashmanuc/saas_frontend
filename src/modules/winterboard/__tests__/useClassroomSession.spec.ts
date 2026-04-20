@@ -100,7 +100,9 @@ describe('useClassroomSession', () => {
     expect(mockCreateClassroomSession).toHaveBeenCalledWith('lesson-2')
   })
 
-  it('returns null with error when student tries to create (403)', async () => {
+  it('returns null with waiting_for_teacher state when student tries to create (403)', async () => {
+    // Semantic update: 403 on create means student can't create — interpreted
+    // as "lesson not started yet by teacher", not a hard error
     mockGetClassroomSession.mockRejectedValue(
       Object.assign(new Error('Not Found'), { response: { status: 404 } }),
     )
@@ -112,8 +114,10 @@ describe('useClassroomSession', () => {
     const result = await session.initClassroomSession('lesson-3')
 
     expect(result).toBeNull()
-    expect(session.state.value).toBe('error')
-    expect(session.error.value).toContain('Waiting for teacher')
+    expect(session.state.value).toBe('waiting_for_teacher')
+    // error.value is explicitly cleared in waiting_for_teacher path
+    // (the "waiting" is communicated via state, not error)
+    expect(session.error.value).toBeNull()
   })
 
   it('handles 403 access denied', async () => {

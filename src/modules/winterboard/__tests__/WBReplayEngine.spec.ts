@@ -282,17 +282,20 @@ describe('WBReplayEngine — timestamp delay capping', () => {
     expect(onOperation.mock.calls[0][0].id).toBe(1)
   })
 
-  it('uses minimum 16ms delay even for same-timestamp ops', () => {
+  it('uses minimum 4ms delay for same-timestamp ops (no 16ms floor)', () => {
+    // Engine intentionally removed the 16ms artificial floor so atomic/batch
+    // ops with diff≈0 replay together. Only a 4ms floor remains to prevent
+    // timer storm at 10x speed. See memory project_replay_move_animation_shipped.
     const sameTime = '2026-01-01T00:00:00.000Z'
     const ops = [makeOp(1, sameTime), makeOp(2, sameTime)]
     const onOperation = vi.fn()
     const engine = new WBReplayEngine(makeTimeline(ops)).on('onOperation', onOperation)
     engine.play()
 
-    vi.advanceTimersByTime(15)
+    vi.advanceTimersByTime(3)
     expect(onOperation).not.toHaveBeenCalled()
 
-    vi.advanceTimersByTime(2)  // 17ms total
+    vi.advanceTimersByTime(2)  // 5ms total — past the 4ms floor
     expect(onOperation).toHaveBeenCalled()
   })
 })

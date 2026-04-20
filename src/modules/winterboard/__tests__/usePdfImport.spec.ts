@@ -353,10 +353,20 @@ describe('usePdfImport (A5.1)', () => {
 
     it('truncates if exceeding 200 page limit', () => {
       const store = useWBStore()
-      // Fill to 198 pages
-      for (let i = 0; i < 197; i++) {
-        store.addPage()
-      }
+      // addPage() enforces MAX 50 pages (interactive guard), but importPdfPages
+      // has its own 200 cap. Seed pages directly to bypass addPage's 50 limit
+      // and isolate the importPdfPages truncation behavior.
+      const seedCount = 198
+      const seeded = Array.from({ length: seedCount }, (_, i) => ({
+        id: `seed-${i}`,
+        name: `Seed ${i + 1}`,
+        strokes: [],
+        assets: [],
+        background: 'white' as const,
+        backgroundColor: '#ffffff',
+      }))
+      store.pages = seeded
+      store.currentPageIndex = 0
       expect(store.pages.length).toBe(198)
 
       const pages = createMockPages(10) // try to add 10
