@@ -436,9 +436,30 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
   }
 
   // ─── Internal copy (board objects) ─────────────────────────
-
-  // Marker written to system clipboard so Ctrl+C on board objects
-  // doesn't clear user's previous system clipboard content.
+  //
+  // Design decision (2026-04-21 fix after recording-clipboard race bug):
+  //   We DO NOT write anything to the OS clipboard. Internal state lives
+  //   only in the local `internalClipboard` ref.
+  //
+  // Why the old MARKER approach failed:
+  //   Previously copySelected() fired navigator.clipboard.writeText(MARKER)
+  //   as fire-and-forget async. When replay recording was ON, the JS event
+  //   loop backed up (recording emits ops every few ms + batch POSTs +
+  //   snapshots), and the queued writeText executed HUNDREDS of ms later.
+  //   If the user copied external content (e.g. text from Word) in the
+  //   meantime, our delayed MARKER write overwrote it — user's external
+  //   content lost, and Ctrl+V on board pasted internal objects because
+  //   MARKER was detected in OS clipboard.
+  //
+  // Trade-off under new design:
+  //   Board Ctrl+V follows OS clipboard first (image/text), falls back to
+  //   internal only when OS clipboard is empty. To paste board objects
+  //   when OS clipboard has unrelated content, users must use the context
+  //   menu "Paste" button (which calls pasteInternal() directly).
+  //
+  // Legacy marker constant kept for handlePaste reference in case older
+  // clipboard state from prior version lingers — we still recognize and
+  // route it as internal, just no longer write it.
   const WB_CLIPBOARD_MARKER = '__wb_internal_copy__'
 
   function copySelected(): void {
@@ -459,12 +480,8 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
       copiedAt: Date.now(),
     }
 
-    // Write marker to system clipboard so it doesn't get cleared.
-    // Native copy event fires after this (no preventDefault in useKeyboard).
-    // Without this, browser clears system clipboard on empty copy.
-    try {
-      navigator.clipboard.writeText(WB_CLIPBOARD_MARKER).catch(() => {})
-    } catch { /* clipboard API may not be available */ }
+    // Intentionally NO writeText to OS clipboard — see design note above.
+    // User's external clipboard content is left untouched.
 
     console.info('[BoardClipboard] Copied', {
       strokes: copiedStrokes.length,
