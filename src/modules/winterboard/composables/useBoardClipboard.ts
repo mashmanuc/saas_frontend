@@ -96,63 +96,46 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
   const isUploading = ref(false)
   const uploadError = ref<string | null>(null)
 
-  // FIX: Flag to skip system clipboard when internal paste already handled Ctrl+V.
-  // Without this, Ctrl+V pastes BOTH the internal board object AND the system
-  // clipboard image simultaneously (double-paste bug).
-  let _skipNextSystemPaste = false
-
   // ─── Paste handler (native 'paste' event) ──────────────────
+  //
+  // Routing за вмістом OS clipboard:
+  //   1. text === WB_CLIPBOARD_MARKER → internal paste (board object)
+  //   2. image files → upload + asset_add
+  //   3. інший text → sticky note (якщо target не editable)
+  //
+  // MARKER пишеться синхронно у copySelected() через hidden textarea +
+  // execCommand('copy'). Це гарантує що між board Ctrl+C та наступним Ctrl+V
+  // OS clipboard точно має наш marker (sync write, не race-иться з навантаженим
+  // event loop під recording). Якщо юзер переключився і скопіював щось зовні —
+  // OS clipboard перезаписаний external'ом, text ≠ marker → йдемо у branch 2/3.
   async function handlePaste(e: ClipboardEvent): Promise<void> {
     if (disabled?.()) return
+    const dt = e.clipboardData
+    if (!dt) return
 
-    // If pasteInternal() already handled this Ctrl+V, check if system clipboard
-    // has real content (user copied externally after our board Ctrl+C).
-    if (_skipNextSystemPaste) {
-      _skipNextSystemPaste = false
+    // getData — SYNCHRONOUS, повертає '' якщо text/plain немає.
+    const text = dt.getData('text/plain') || ''
 
-      // Check if system clipboard has real content (not our internal marker)
-      const items = e.clipboardData?.items
-      let hasRealContent = false
-      if (items) {
-        for (let i = 0; i < items.length; i++) {
-          const item = items[i]
-          if (item.kind === 'file' && item.type.startsWith('image/')) {
-            hasRealContent = true
-            break
-          }
-          if (item.kind === 'string' && item.type === 'text/plain') {
-            // Synchronous check not possible — but if text exists and is NOT our marker,
-            // we already pasted internal objects. Accept this trade-off: internal paste wins
-            // when both internal and text are available. Images always win.
-          }
+    // Priority 1: MARKER → internal paste
+    if (text === WB_CLIPBOARD_MARKER && internalClipboard.value) {
+      e.preventDefault()
+      pasteInternal()
+      return
+    }
+
+    // Priority 2: image files
+    const items = dt.items
+    const imageFiles: File[] = []
+    if (items) {
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i]
+        if (item.kind === 'file' && item.type.startsWith('image/')) {
+          const file = item.getAsFile()
+          if (file) imageFiles.push(file)
         }
       }
-
-      if (!hasRealContent) {
-        e.preventDefault()
-        return
-      }
-      // System clipboard has an image — fall through to handle it
     }
 
-    const items = e.clipboardData?.items
-    if (!items) return
-
-    // Priority 1: Image files (screenshot, copied image)
-    const imageFiles: File[] = []
-    let textContent: string | null = null
-
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i]
-      if (item.kind === 'file' && item.type.startsWith('image/')) {
-        const file = item.getAsFile()
-        if (file) imageFiles.push(file)
-      } else if (item.kind === 'string' && item.type === 'text/plain') {
-        textContent = await new Promise<string>((resolve) => item.getAsString(resolve))
-      }
-    }
-
-    // Handle image paste — підтримуємо MULTIPLE images (буфер може містити серію)
     if (imageFiles.length > 0) {
       e.preventDefault()
 
@@ -174,28 +157,23 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
 
       // Один BatchContext на весь paste-batch:
       //   - controller.abort() на першому quota_exceeded зупиняє решту pending
-      //     (waiting у semaphore + retry-loop активних + реальний fetch у API)
-      //   - quotaToastShown гарантує ОДИН error toast навіть якщо кілька
-      //     паралельних uploads отримали 429 quota одночасно (race до abort)
+      //   - quotaToastShown гарантує ОДИН error toast при race 429
       const batch = _createBatchContext()
-      // index захоплюємо ЗАРАЗ (не на момент upload completion), щоб offsets
-      // були передбачуваними незалежно від того, які upload закінчаться першими.
       imageFiles.forEach((file, index) => {
         void handleImagePaste(file, index, batch)
       })
       return
     }
 
-    // Handle text paste (only if NOT in an editable element)
-    if (textContent && textContent.trim()) {
+    // Priority 3: text (sticky note) — тільки якщо target не editable
+    if (text && text.trim()) {
       const target = e.target as HTMLElement | null
       const isEditable = target?.tagName === 'INPUT'
         || target?.tagName === 'TEXTAREA'
         || target?.isContentEditable
       if (!isEditable) {
         e.preventDefault()
-        handleTextPaste(textContent.trim())
-        return
+        handleTextPaste(text.trim())
       }
     }
   }
@@ -454,17 +432,42 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
       copiedAt: Date.now(),
     }
 
-    // Write marker to system clipboard so it doesn't get cleared.
-    // Native copy event fires after this (no preventDefault in useKeyboard).
-    // Without this, browser clears system clipboard on empty copy.
-    try {
-      navigator.clipboard.writeText(WB_CLIPBOARD_MARKER).catch(() => {})
-    } catch { /* clipboard API may not be available */ }
+    // Synchronous marker write — критично: async navigator.clipboard.writeText
+    // під navigation recording load резолвиться із затримкою 100-700ms і може
+    // перезаписати зовнішній copy що стався у цей проміжок. execCommand
+    // синхронний — OS clipboard отримує marker до повернення keydown handler'а.
+    _writeMarkerSync()
 
     console.info('[BoardClipboard] Copied', {
       strokes: copiedStrokes.length,
       assets: copiedAssets.length,
     })
+  }
+
+  // Синхронний запис marker у OS clipboard через hidden textarea +
+  // document.execCommand('copy'). execCommand deprecated, але у 2026 лишається
+  // єдиним sync API запису у clipboard — Clipboard API повністю async.
+  // У jsdom execCommand throw/false — silent-fail (тести використовують
+  // internalClipboard напряму).
+  function _writeMarkerSync(): void {
+    const ta = document.createElement('textarea')
+    ta.value = WB_CLIPBOARD_MARKER
+    ta.setAttribute('readonly', '')
+    ta.style.position = 'fixed'
+    ta.style.top = '-9999px'
+    ta.style.left = '-9999px'
+    ta.style.opacity = '0'
+    document.body.appendChild(ta)
+    const prev = document.activeElement as HTMLElement | null
+    try {
+      ta.focus()
+      ta.select()
+      document.execCommand('copy')
+    } catch { /* jsdom / blocked */ }
+    finally {
+      try { document.body.removeChild(ta) } catch { /* */ }
+      try { prev?.focus?.() } catch { /* */ }
+    }
   }
 
   // ─── Internal paste (board objects) ────────────────────────
@@ -473,9 +476,6 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
   // (no "typing" effect — one Vue render per batch).
   function pasteInternal(): void {
     if (!internalClipboard.value) return
-
-    // Signal handlePaste() to skip system clipboard for this Ctrl+V
-    _skipNextSystemPaste = true
 
     const { strokes, assets } = internalClipboard.value
     const OFFSET = 40

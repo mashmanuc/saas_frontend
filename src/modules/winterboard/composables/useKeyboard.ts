@@ -123,20 +123,19 @@ export function useKeyboard(
       return
     }
 
-    // Copy: Ctrl+C — preventDefault to stop browser from clearing system clipboard.
-    // copySelected() writes a marker via navigator.clipboard.writeText().
+    // Copy: Ctrl+C — preventDefault to stop browser default copy.
+    // copySelected() writes MARKER synchronously via execCommand; native copy
+    // event would otherwise copy empty selection and clobber the marker.
     if (ctrl && !shift && code === 'KeyC' && !isEditableTarget(event)) {
       event.preventDefault()
       callbacks.onCopy?.()
       return
     }
 
-    // Paste: Ctrl+V — DO NOT preventDefault, native 'paste' event must fire
-    // Paste is handled by document 'paste' listener in useBoardClipboard
-    if (ctrl && !shift && code === 'KeyV' && !isEditableTarget(event)) {
-      callbacks.onPaste?.()
-      return
-    }
+    // Paste: Ctrl+V — no handler here. Native 'paste' event fires on document
+    // and is handled by useBoardClipboard.handlePaste() which routes by
+    // clipboard content (MARKER → internal, image → asset, text → sticky).
+    // onPaste callback (if passed) kept for backwards compat but unused.
 
     // Cut: Ctrl+X — preventDefault to stop browser from clearing system clipboard.
     if (ctrl && !shift && code === 'KeyX' && !isEditableTarget(event)) {
