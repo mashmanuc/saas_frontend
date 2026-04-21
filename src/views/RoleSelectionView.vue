@@ -13,6 +13,11 @@ const howItWorksRef = ref<HTMLElement | null>(null)
 const benefitsRef = ref<HTMLElement | null>(null)
 const showLanguageMenu = ref(false)
 
+// Demo-відео для секції Replay. Поклади файл у frontend/public/demo/replay.mp4.
+// Якщо файлу немає — показується placeholder з іконкою play.
+const replayVideoUrl = '/demo/replay.mp4'
+const showReplayVideo = ref(true)
+
 const currentLanguage = computed(() => {
   const lang = languages.find(l => l.code === locale.value)
   return lang?.short ?? 'УКР'
@@ -75,7 +80,7 @@ async function changeLanguage(langCode: string) {
 
     <!-- Navigation Header -->
     <nav class="nav-header">
-      <div class="nav-logo">M4SH</div>
+      <div class="nav-logo">M4SH <span class="beta-badge">{{ t('roleSelection.betaBadge') }}</span></div>
       <div class="nav-links">
         <button @click="scrollToHowItWorks" class="nav-link">{{ t('roleSelection.nav.howItWorks') }}</button>
         <button @click="scrollToBenefits" class="nav-link">{{ t('roleSelection.nav.benefits') }}</button>
@@ -112,6 +117,7 @@ async function changeLanguage(langCode: string) {
       <header class="header">
         <h1 class="title">{{ t('roleSelection.title') }}</h1>
         <p class="subtitle">{{ t('roleSelection.subtitle') }}</p>
+        <p class="beta-notice">{{ t('roleSelection.betaNotice') }}</p>
       </header>
 
       <div class="cards-container">
@@ -240,35 +246,161 @@ async function changeLanguage(langCode: string) {
         <div class="benefits-grid">
           <div class="benefit-card">
             <div class="benefit-icon">
+              <!-- Play circle зі стрілкою-перемоткою (replay) -->
               <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="8" x2="12" y2="12"></line>
-                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                <path d="M3 12a9 9 0 1 0 9-9"></path>
+                <polyline points="3 5 3 12 10 12"></polyline>
+                <polygon points="10 9 16 12 10 15 10 9" fill="currentColor" stroke="none"></polygon>
               </svg>
             </div>
             <h3 class="benefit-title">{{ t('roleSelection.benefits.noMiddlemen.title') }}</h3>
             <p class="benefit-description">{{ t('roleSelection.benefits.noMiddlemen.description') }}</p>
           </div>
-          
+
           <div class="benefit-card">
             <div class="benefit-icon">
+              <!-- Дошка + перо (whiteboard) -->
               <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="12" y1="1" x2="12" y2="23"></line>
-                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                <rect x="3" y="3" width="18" height="14" rx="2"></rect>
+                <path d="M7 21h10"></path>
+                <path d="M12 17v4"></path>
+                <path d="M7 11l3 3 7-7"></path>
               </svg>
             </div>
             <h3 class="benefit-title">{{ t('roleSelection.benefits.affordablePrices.title') }}</h3>
             <p class="benefit-description">{{ t('roleSelection.benefits.affordablePrices.description') }}</p>
           </div>
-          
+
           <div class="benefit-card">
             <div class="benefit-icon">
+              <!-- Школа + персона (dual-audience) -->
               <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                <path d="M3 21V10l6-4 6 4v11"></path>
+                <path d="M9 21v-6h3v6"></path>
+                <circle cx="18" cy="10" r="3"></circle>
+                <path d="M15 21v-2a3 3 0 0 1 6 0v2"></path>
               </svg>
             </div>
             <h3 class="benefit-title">{{ t('roleSelection.benefits.directConnection.title') }}</h3>
             <p class="benefit-description">{{ t('roleSelection.benefits.directConnection.description') }}</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Replay Demo Section -->
+      <section class="info-section replay-demo-section">
+        <div class="demo-grid">
+          <div class="demo-text">
+            <h2 class="section-title demo-title">{{ t('roleSelection.replayDemo.title') }}</h2>
+            <p class="demo-description">{{ t('roleSelection.replayDemo.description') }}</p>
+          </div>
+          <div class="demo-visual">
+            <div class="demo-frame" :aria-label="t('roleSelection.replayDemo.videoLabel')">
+              <video
+                v-show="showReplayVideo"
+                class="demo-video"
+                :src="replayVideoUrl"
+                autoplay
+                muted
+                loop
+                playsinline
+                preload="metadata"
+                @error="showReplayVideo = false"
+              ></video>
+              <div v-if="!showReplayVideo" class="demo-placeholder" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                <span class="demo-placeholder-label">{{ t('roleSelection.replayDemo.videoLabel') }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Winterboard Features Section — 6 реальних фішок з маніфесту -->
+      <section class="info-section board-features-section">
+        <h2 class="section-title">{{ t('roleSelection.boardDemo.title') }}</h2>
+        <p class="section-subtitle">{{ t('roleSelection.boardDemo.description') }}</p>
+
+        <div class="board-features-grid">
+          <!-- PDF / PPTX / DOCX -->
+          <div class="feature-tile">
+            <div class="feature-tile-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <path d="M10 13l3 3 3-3"></path>
+                <line x1="13" y1="12" x2="13" y2="18"></line>
+              </svg>
+            </div>
+            <h3 class="feature-tile-title">{{ t('roleSelection.boardDemo.features.pdfPptx.title') }}</h3>
+            <p class="feature-tile-text">{{ t('roleSelection.boardDemo.features.pdfPptx.text') }}</p>
+          </div>
+
+          <!-- YouTube -->
+          <div class="feature-tile">
+            <div class="feature-tile-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="5" width="20" height="14" rx="3"></rect>
+                <polygon points="10 9 15 12 10 15 10 9" fill="currentColor" stroke="none"></polygon>
+              </svg>
+            </div>
+            <h3 class="feature-tile-title">{{ t('roleSelection.boardDemo.features.youtube.title') }}</h3>
+            <p class="feature-tile-text">{{ t('roleSelection.boardDemo.features.youtube.text') }}</p>
+          </div>
+
+          <!-- Audio/Video plеєри -->
+          <div class="feature-tile">
+            <div class="feature-tile-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                <circle cx="12" cy="12" r="10" opacity="0.25"></circle>
+              </svg>
+            </div>
+            <h3 class="feature-tile-title">{{ t('roleSelection.boardDemo.features.media.title') }}</h3>
+            <p class="feature-tile-text">{{ t('roleSelection.boardDemo.features.media.text') }}</p>
+          </div>
+
+          <!-- Voice annotation -->
+          <div class="feature-tile">
+            <div class="feature-tile-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+              </svg>
+            </div>
+            <h3 class="feature-tile-title">{{ t('roleSelection.boardDemo.features.voiceAnnotation.title') }}</h3>
+            <p class="feature-tile-text">{{ t('roleSelection.boardDemo.features.voiceAnnotation.text') }}</p>
+          </div>
+
+          <!-- Version pinning -->
+          <div class="feature-tile">
+            <div class="feature-tile-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+            </div>
+            <h3 class="feature-tile-title">{{ t('roleSelection.boardDemo.features.versionPinning.title') }}</h3>
+            <p class="feature-tile-text">{{ t('roleSelection.boardDemo.features.versionPinning.text') }}</p>
+          </div>
+
+          <!-- Lifetime access -->
+          <div class="feature-tile">
+            <div class="feature-tile-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+                <path d="M3 10h18"></path>
+                <path d="M8 2v4"></path>
+                <path d="M16 2v4"></path>
+                <path d="M9 15l2 2 4-4"></path>
+              </svg>
+            </div>
+            <h3 class="feature-tile-title">{{ t('roleSelection.boardDemo.features.lifetimeAccess.title') }}</h3>
+            <p class="feature-tile-text">{{ t('roleSelection.boardDemo.features.lifetimeAccess.text') }}</p>
           </div>
         </div>
       </section>
@@ -306,6 +438,21 @@ async function changeLanguage(langCode: string) {
   font-weight: 700;
   color: var(--accent);
   letter-spacing: -0.5px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.beta-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--accent);
+  border-radius: 4px;
+  padding: 2px 7px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  vertical-align: middle;
 }
 
 .nav-links {
@@ -523,6 +670,14 @@ async function changeLanguage(langCode: string) {
   color: var(--text-secondary);
   margin: 0;
   font-weight: 400;
+}
+
+.beta-notice {
+  margin-top: 0.75rem;
+  font-size: 0.9rem;
+  color: var(--accent);
+  font-weight: 500;
+  opacity: 0.85;
 }
 
 .cards-container {
@@ -835,6 +990,133 @@ async function changeLanguage(langCode: string) {
   margin: 0;
 }
 
+/* Replay Demo Section */
+.replay-demo-section {
+  margin-top: 6rem;
+}
+
+.demo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  align-items: center;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.demo-text {
+  text-align: left;
+}
+
+.demo-title {
+  font-size: 2.25rem;
+  margin: 0 0 1rem 0;
+  text-align: left;
+}
+
+.demo-description {
+  font-size: 1.125rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+  text-align: left;
+}
+
+.demo-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  border-radius: 1rem;
+  overflow: hidden;
+  background: var(--card-bg);
+  box-shadow: 0 12px 24px var(--shadow-strong);
+  border: 1px solid var(--border-color);
+}
+
+.demo-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.demo-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  background: linear-gradient(135deg, var(--bg-secondary), var(--card-bg));
+  color: var(--text-secondary);
+}
+
+.demo-placeholder-label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  opacity: 0.75;
+}
+
+/* Board features grid (6 реальних фішок) */
+.board-features-section {
+  margin-top: 6rem;
+}
+
+.board-features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-top: 3rem;
+  max-width: 1100px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.feature-tile {
+  background: var(--card-bg);
+  border-radius: 1rem;
+  padding: 1.75rem 1.5rem;
+  box-shadow: 0 4px 6px var(--shadow);
+  text-align: left;
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.feature-tile:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent);
+  box-shadow: 0 8px 16px var(--shadow-strong);
+}
+
+.feature-tile-icon {
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, var(--accent), var(--info-bg));
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  margin-bottom: 1rem;
+}
+
+.feature-tile-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem 0;
+  line-height: 1.3;
+}
+
+.feature-tile-text {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .nav-header {
@@ -878,6 +1160,31 @@ async function changeLanguage(langCode: string) {
   .benefits-grid {
     grid-template-columns: 1fr;
   }
+
+  .demo-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .demo-title {
+    font-size: 1.75rem;
+    text-align: center;
+  }
+
+  .demo-description {
+    text-align: center;
+  }
+
+  .board-features-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .board-features-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 /* Dark theme adjustments */
@@ -887,14 +1194,16 @@ async function changeLanguage(langCode: string) {
 
 [data-theme="dark"] .role-card,
 [data-theme="dark"] .step-card,
-[data-theme="dark"] .benefit-card {
+[data-theme="dark"] .benefit-card,
+[data-theme="dark"] .feature-tile {
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);
 }
 
 [data-theme="dark"] .role-card:hover,
 [data-theme="dark"] .step-card:hover,
-[data-theme="dark"] .benefit-card:hover {
+[data-theme="dark"] .benefit-card:hover,
+[data-theme="dark"] .feature-tile:hover {
   background: rgba(255, 255, 255, 0.08);
 }
 </style>
