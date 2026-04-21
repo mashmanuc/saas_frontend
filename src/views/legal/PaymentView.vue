@@ -120,7 +120,7 @@
 import { computed } from 'vue'
 import Button from '@/ui/Button.vue'
 
-const lastUpdated = computed(() => '13.01.2026')
+const lastUpdated = computed(() => '22.04.2026')
 </script>
 
 <style scoped>

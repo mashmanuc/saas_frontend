@@ -405,6 +405,19 @@ async function changeLanguage(langCode: string) {
         </div>
       </section>
     </div>
+
+    <!-- Footer -->
+    <footer class="landing-footer">
+      <div class="landing-footer-inner">
+        <span class="landing-footer-copy">© {{ new Date().getFullYear() }} M4SH</span>
+        <div class="landing-footer-links">
+          <router-link to="/legal/terms">{{ t('footer.legal.terms') }}</router-link>
+          <router-link to="/legal/privacy">{{ t('footer.legal.privacy') }}</router-link>
+          <router-link to="/legal/refund">{{ t('footer.legal.refund') }}</router-link>
+          <a href="mailto:support@m4sh.org">support@m4sh.org</a>
+        </div>
+      </div>
+    </footer>
   </div>
 </template>
 
@@ -1205,5 +1218,43 @@ async function changeLanguage(langCode: string) {
 [data-theme="dark"] .benefit-card:hover,
 [data-theme="dark"] .feature-tile:hover {
   background: rgba(255, 255, 255, 0.08);
+}
+
+.landing-footer {
+  border-top: 1px solid var(--border-color, rgba(0,0,0,0.1));
+  padding: 1.5rem 2rem;
+  margin-top: 2rem;
+}
+
+.landing-footer-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.landing-footer-copy {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.landing-footer-links {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.landing-footer-links a {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.landing-footer-links a:hover {
+  color: var(--accent);
 }
 </style>

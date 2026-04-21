@@ -50,7 +50,7 @@
             Для отримання повернення коштів:
           </p>
           <ol>
-            <li>Зв'яжіться з нашою службою підтримки на <a href="mailto:refund@m4sh.com">refund@m4sh.com</a></li>
+            <li>Зв'яжіться з нашою службою підтримки на <a href="mailto:refund@m4sh.org">refund@m4sh.org</a></li>
             <li>Вкажіть причину повернення та деталі оплати</li>
             <li>Дочекайтесь розгляду вашого запиту (до 5 робочих днів)</li>
           </ol>
@@ -115,7 +115,7 @@
             З питань повернення коштів звертайтесь:
           </p>
           <p>
-            Email: <a href="mailto:refund@m4sh.com">refund@m4sh.com</a><br>
+            Email: <a href="mailto:refund@m4sh.org">refund@m4sh.org</a><br>
             Час відповіді: до 5 робочих днів
           </p>
         </section>
@@ -134,7 +134,7 @@
 import { computed } from 'vue'
 import Button from '@/ui/Button.vue'
 
-const lastUpdated = computed(() => '13.01.2026')
+const lastUpdated = computed(() => '22.04.2026')
 </script>
 
 <style scoped>
