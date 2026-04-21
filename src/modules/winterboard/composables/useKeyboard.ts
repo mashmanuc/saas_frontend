@@ -131,23 +131,10 @@ export function useKeyboard(
       return
     }
 
-    // Paste: Ctrl+V — DO NOT preventDefault, native 'paste' event must fire.
-    // Paste decision is made ENTIRELY by handlePaste() in useBoardClipboard
-    // based on e.clipboardData content (OS clipboard is the source of truth).
-    //
-    // Why no onPaste callback here:
-    //   Previously we called boardClipboard.pasteInternal() synchronously on
-    //   Ctrl+V keydown, which runs BEFORE the native 'paste' event fires.
-    //   That meant internal board objects were pasted even when the user had
-    //   copied something external to OS clipboard after the board copy —
-    //   external content was silently ignored. Root cause of "Ctrl+V stuck
-    //   on last board object" bug (2026-04-21 investigation).
-    //
-    //   Now handlePaste() reads e.clipboardData, compares text against
-    //   WB_CLIPBOARD_MARKER, and routes: marker → paste internal, real text
-    //   → sticky note, image → upload + asset. OS clipboard wins.
+    // Paste: Ctrl+V — DO NOT preventDefault, native 'paste' event must fire
+    // Paste is handled by document 'paste' listener in useBoardClipboard
     if (ctrl && !shift && code === 'KeyV' && !isEditableTarget(event)) {
-      // Let native 'paste' event propagate — handlePaste() will process it.
+      callbacks.onPaste?.()
       return
     }
 
