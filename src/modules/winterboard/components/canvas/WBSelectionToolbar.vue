@@ -144,6 +144,23 @@
         </svg>
       </button>
 
+      <!-- Send to page (only when other pages exist) -->
+      <button
+        v-if="pages && pages.length > 1"
+        ref="sendToPageBtnRef"
+        type="button"
+        class="wb-selection-toolbar__btn"
+        :class="{ 'wb-selection-toolbar__btn--active': sendToPageOpen }"
+        :title="t('winterboard.selection.sendToPage', 'Надіслати на сторінку')"
+        :disabled="isLocked"
+        @click="toggleSendToPage"
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <rect x="2" y="3" width="6" height="10" rx="1" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M9 8h5m0 0l-1.8-1.8M14 8l-1.8 1.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+
       <!-- Lock / Unlock -->
       <button
         v-if="isLocked"
@@ -325,6 +342,41 @@
       </template>
     </div>
   </Transition>
+
+  <!-- ── Send-to-page popup (teleported to body for z-index safety) ── -->
+  <Teleport to="body">
+    <Transition name="wb-picker-fade">
+      <div
+        v-if="sendToPageOpen"
+        class="wb-send-to-page"
+        :style="sendToPageStyle"
+        role="menu"
+        :aria-label="t('winterboard.selection.sendToPage', 'Надіслати на сторінку')"
+        @keydown.escape="closeSendToPage"
+      >
+        <button
+          v-for="(page, idx) in pages"
+          :key="page?.id ?? idx"
+          type="button"
+          class="wb-send-to-page__item"
+          :disabled="idx === currentPageIndex"
+          role="menuitem"
+          @click="selectSendToPage(idx)"
+        >
+          <span class="wb-send-to-page__num">{{ idx + 1 }}</span>
+          <span class="wb-send-to-page__name">{{ page?.name || `Page ${idx + 1}` }}</span>
+          <span v-if="idx === currentPageIndex" class="wb-send-to-page__current">
+            {{ t('winterboard.selection.sendToPageCurrent', 'поточна') }}
+          </span>
+        </button>
+      </div>
+    </Transition>
+    <div
+      v-if="sendToPageOpen"
+      class="wb-send-to-page-backdrop"
+      @click="closeSendToPage"
+    />
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -364,12 +416,17 @@ const props = defineProps<{
   sessionId?: string
   /** Чи є поточний користувач тьютором */
   isTutor?: boolean
+  /** Список сторінок — для popup "Надіслати на сторінку". Якщо не передано або ≤1 — кнопка приховується */
+  pages?: { id: string; name?: string }[]
+  /** Поточна сторінка — disabled у списку send-to-page */
+  currentPageIndex?: number
 }>()
 
 const emit = defineEmits<{
   'bring-to-front': []
   'send-to-back': []
   duplicate: []
+  'send-to-page': [pageIndex: number]
   lock: []
   unlock: []
   delete: []
@@ -478,6 +535,53 @@ const isVisible = computed(() =>
   props.mode === 'edit' &&
   (deviceMode.value === 'desktop' || deviceMode.value === 'display'),
 )
+
+// ─── Send-to-page popup ────────────────────────────────────────────────────
+
+const sendToPageBtnRef = ref<HTMLButtonElement | null>(null)
+const sendToPageOpen = ref(false)
+const sendToPageAnchor = ref<{ left: number; top: number } | null>(null)
+
+function toggleSendToPage(): void {
+  if (sendToPageOpen.value) {
+    closeSendToPage()
+    return
+  }
+  const btn = sendToPageBtnRef.value
+  if (!btn) return
+  const rect = btn.getBoundingClientRect()
+  // Popup під кнопкою, вирівняний по лівому краю; буде clamp-нуто у sendToPageStyle.
+  sendToPageAnchor.value = { left: rect.left, top: rect.bottom + 6 }
+  sendToPageOpen.value = true
+}
+
+function closeSendToPage(): void {
+  sendToPageOpen.value = false
+  sendToPageAnchor.value = null
+}
+
+function selectSendToPage(pageIndex: number): void {
+  if (pageIndex === props.currentPageIndex) return
+  emit('send-to-page', pageIndex)
+  closeSendToPage()
+}
+
+const sendToPageStyle = computed(() => {
+  const a = sendToPageAnchor.value
+  if (!a) return { display: 'none' }
+  // Clamp: не дати popup вийти за правий край екрана (мінімальна ширина 200px).
+  const maxLeft = (typeof window !== 'undefined' ? window.innerWidth : 1920) - 220
+  const left = Math.min(a.left, Math.max(8, maxLeft))
+  return {
+    position: 'fixed' as const,
+    left: `${left}px`,
+    top: `${a.top}px`,
+    zIndex: 10001,
+  }
+})
+
+// Закриваємо popup, якщо приховується весь toolbar (deselect, replay mode)
+watch(() => isVisible.value, (v) => { if (!v) closeSendToPage() })
 
 // ─── Positioning ────────────────────────────────────────────────────────────
 
@@ -687,6 +791,91 @@ const positionStyle = computed(() => {
   font-variant-numeric: tabular-nums;
   min-width: 28px;
   text-align: center;
+}
+
+/* ── Send-to-page popup ─────────────────────────────────────────────────── */
+
+.wb-send-to-page {
+  min-width: 200px;
+  max-width: 260px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 4px;
+  background: rgba(30, 41, 59, 0.98);
+  backdrop-filter: blur(8px);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  pointer-events: auto;
+}
+
+.wb-send-to-page__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 32px;
+  padding: 0 8px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: #e2e8f0;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.wb-send-to-page__item:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+
+.wb-send-to-page__item:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.wb-send-to-page__num {
+  min-width: 20px;
+  font-weight: 600;
+  color: #94a3b8;
+  font-variant-numeric: tabular-nums;
+}
+
+.wb-send-to-page__name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wb-send-to-page__current {
+  font-size: 11px;
+  color: #94a3b8;
+  font-style: italic;
+  flex-shrink: 0;
+}
+
+.wb-send-to-page-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: transparent;
+  pointer-events: auto;
+}
+
+/* Reuse wb-picker-fade transition name from sticky picker for consistency */
+.wb-picker-fade-enter-active,
+.wb-picker-fade-leave-active {
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+.wb-picker-fade-enter-from,
+.wb-picker-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 
 /* ── Fade transition ──────────────────────────────────────────────────────── */

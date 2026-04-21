@@ -1394,6 +1394,102 @@ export const useWBStore = defineStore('wb-board', {
       }
     },
 
+    /**
+     * Same as addStrokesBatch but targets a specific page by index.
+     * Used by "send to page" flow from selection toolbar — клон виділених
+     * strokes стає частиною іншої сторінки без перемикання currentPageIndex.
+     */
+    addStrokesBatchToPage(pageIndex: number, strokes: WBStroke[], opts?: { skipHistory?: boolean }): void {
+      const page = this.pages[pageIndex]
+      if (!page || strokes.length === 0) return
+
+      if (!opts?.skipHistory) {
+        const _strokes = strokes.map(s => ({ ...s }))
+        const _ids = _strokes.map(s => s.id)
+        const _pi = pageIndex
+        const cmd: WBCommand = {
+          apply: () => this.addStrokesBatchToPage(_pi, _strokes, { skipHistory: true }),
+          revert: () => {
+            const p = this.pages[_pi]
+            if (!p) return
+            const idSet = new Set(_ids)
+            this.pages[_pi] = {
+              ...p,
+              strokes: p.strokes.filter(s => !idSet.has(s.id)),
+            }
+            this.markDirty()
+            const pageId = p.id ?? ''
+            for (const id of _ids) {
+              _emitOperation({ op_type: 'stroke_delete', page_id: pageId, payload: { stroke_id: id } })
+            }
+          },
+        }
+        this.undoStack = trimStack([...this.undoStack, cmd])
+        this.redoStack = []
+      }
+
+      this.pages[pageIndex] = {
+        ...page,
+        strokes: [...page.strokes, ...strokes],
+      }
+      this.markDirty()
+      const pageId = page.id ?? ''
+      const chunks = _splitBatchBySize(strokes, 50_000)
+      for (const chunk of chunks) {
+        _emitOperation({
+          op_type: 'strokes_add_batch',
+          page_id: pageId,
+          payload: { strokes: chunk },
+        })
+      }
+    },
+
+    /** Same as addAssetsBatch but targets a specific page by index. */
+    addAssetsBatchToPage(pageIndex: number, assets: WBAsset[], opts?: { skipHistory?: boolean }): void {
+      const page = this.pages[pageIndex]
+      if (!page || assets.length === 0) return
+
+      if (!opts?.skipHistory) {
+        const _assets = assets.map(a => ({ ...a }))
+        const _ids = _assets.map(a => a.id)
+        const _pi = pageIndex
+        const cmd: WBCommand = {
+          apply: () => this.addAssetsBatchToPage(_pi, _assets, { skipHistory: true }),
+          revert: () => {
+            const p = this.pages[_pi]
+            if (!p) return
+            const idSet = new Set(_ids)
+            this.pages[_pi] = {
+              ...p,
+              assets: p.assets.filter(a => !idSet.has(a.id)),
+            }
+            this.markDirty()
+            const pageId = p.id ?? ''
+            for (const id of _ids) {
+              _emitOperation({ op_type: 'asset_delete', page_id: pageId, payload: { asset_id: id } })
+            }
+          },
+        }
+        this.undoStack = trimStack([...this.undoStack, cmd])
+        this.redoStack = []
+      }
+
+      this.pages[pageIndex] = {
+        ...page,
+        assets: [...page.assets, ...assets],
+      }
+      this.markDirty()
+      const pageId = page.id ?? ''
+      const chunks = _splitBatchBySize(assets, 50_000)
+      for (const chunk of chunks) {
+        _emitOperation({
+          op_type: 'assets_add_batch',
+          page_id: pageId,
+          payload: { assets: chunk },
+        })
+      }
+    },
+
     // ── Undo / Redo (LAW-19) ─────────────────────────────────────────────
 
     undo(): void {

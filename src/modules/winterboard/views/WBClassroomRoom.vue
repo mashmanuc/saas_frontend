@@ -293,9 +293,12 @@
       :selected-object="selectedObjectForToolbar"
       :session-id="resolvedSessionId ?? ''"
       :is-tutor="classroomRole.isTeacher.value"
+      :pages="store.pages"
+      :current-page-index="store.currentPageIndex"
       @bring-to-front="store.bringToFront(store.selectedIds[0])"
       @send-to-back="store.sendToBack(store.selectedIds[0])"
       @duplicate="store.copySelectedToClipboard(); store.pasteFromClipboard()"
+      @send-to-page="handleSendToPage"
       @lock="locking.lockSelected()"
       @unlock="locking.unlockSelected()"
       @delete="handleDeleteSelected()"
@@ -1025,6 +1028,38 @@ function handleDeleteSelected(): void {
   if (isStroke) store.deleteStroke(selectedId.value)
   else store.deleteAsset(selectedId.value)
   selectedId.value = null
+}
+
+// Клон виділених об'єктів на іншу сторінку (див. WBSoloRoom.handleSendToPage).
+function handleSendToPage(pageIndex: number): void {
+  if (isDrawingDisabled.value) return
+  if (pageIndex === store.currentPageIndex) return
+  const target = store.pages[pageIndex]
+  if (!target) return
+  const page = store.currentPage
+  if (!page) return
+  const selected = new Set(store.selectedIds)
+  if (selected.size === 0) return
+
+  const rnd = () => Math.random().toString(36).slice(2, 7)
+  const now = Date.now()
+
+  const newStrokes = page.strokes
+    .filter((s) => selected.has(s.id))
+    .map((s) => ({
+      ...(JSON.parse(JSON.stringify(s))),
+      id: `stroke-${now}-${rnd()}`,
+    }))
+
+  const newAssets = page.assets
+    .filter((a) => selected.has(a.id))
+    .map((a) => ({
+      ...(JSON.parse(JSON.stringify(a))),
+      id: `${a.type}-${now}-${rnd()}`,
+    }))
+
+  if (newStrokes.length > 0) store.addStrokesBatchToPage(pageIndex, newStrokes)
+  if (newAssets.length > 0) store.addAssetsBatchToPage(pageIndex, newAssets)
 }
 
 // ─── P3: YouTube insert handler ─────────────────────────────────────────────
