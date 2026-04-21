@@ -437,57 +437,30 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
 
   // ─── Internal copy (board objects) ─────────────────────────
   //
-  // Design (2026-04-21 v3, third iteration after two bugs):
+  // Design decision (2026-04-21 fix after recording-clipboard race bug):
+  //   We DO NOT write anything to the OS clipboard. Internal state lives
+  //   only in the local `internalClipboard` ref.
   //
-  // Marker written to OS clipboard SYNCHRONOUSLY via execCommand('copy').
+  // Why the old MARKER approach failed:
+  //   Previously copySelected() fired navigator.clipboard.writeText(MARKER)
+  //   as fire-and-forget async. When replay recording was ON, the JS event
+  //   loop backed up (recording emits ops every few ms + batch POSTs +
+  //   snapshots), and the queued writeText executed HUNDREDS of ms later.
+  //   If the user copied external content (e.g. text from Word) in the
+  //   meantime, our delayed MARKER write overwrote it — user's external
+  //   content lost, and Ctrl+V on board pasted internal objects because
+  //   MARKER was detected in OS clipboard.
   //
-  // Why sync matters:
-  //   v1 used navigator.clipboard.writeText(MARKER) — async fire-and-forget.
-  //   Under replay recording load, JS event loop was saturated and the
-  //   writeText promise resolved 100-700ms late. If user copied external
-  //   content in that window, our DELAYED marker write overwrote it →
-  //   Ctrl+V pasted internal object, external content silently lost.
+  // Trade-off under new design:
+  //   Board Ctrl+V follows OS clipboard first (image/text), falls back to
+  //   internal only when OS clipboard is empty. To paste board objects
+  //   when OS clipboard has unrelated content, users must use the context
+  //   menu "Paste" button (which calls pasteInternal() directly).
   //
-  //   v2 removed MARKER entirely → Ctrl+V always preferred OS clipboard
-  //   content. But OS clipboard usually has something from before, so
-  //   board-copy → Ctrl+V stopped pasting board objects (user reported:
-  //   "не можу копіювати намальований об'єкт, бо в буфері є OS-об'єкт").
-  //
-  //   v3 (this): execCommand('copy') on a hidden textarea is SYNCHRONOUS.
-  //   Marker lands in OS clipboard within the same event tick — no async
-  //   queue, no race with external copies that happen later.
-  //
-  // Flow:
-  //   Ctrl+C on board → internalClipboard set + MARKER written to OS (sync)
-  //   User copies external → OS overwritten with external content
-  //   Ctrl+V on board → handlePaste reads e.clipboardData (fresh OS):
-  //     image file         → paste image (external wins)
-  //     text === MARKER    → paste internal (marker survived, no external)
-  //     text !== MARKER    → sticky note (external overwrote marker)
-  //     empty              → pasteInternal fallback
-  //
-  // execCommand is deprecated but still supported everywhere. For a future
-  // where it's removed, we have context-menu "Paste" button as backup.
+  // Legacy marker constant kept for handlePaste reference in case older
+  // clipboard state from prior version lingers — we still recognize and
+  // route it as internal, just no longer write it.
   const WB_CLIPBOARD_MARKER = '__wb_internal_copy__'
-
-  function _writeMarkerSync(marker: string): void {
-    // Synchronous OS-clipboard write via hidden textarea + execCommand.
-    // Does not queue — completes before this function returns.
-    try {
-      const ta = document.createElement('textarea')
-      ta.value = marker
-      ta.setAttribute('readonly', '')
-      ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;pointer-events:none;'
-      document.body.appendChild(ta)
-      const prev = document.activeElement as HTMLElement | null
-      ta.select()
-      try {
-        document.execCommand('copy')
-      } catch { /* execCommand may throw in strict mode */ }
-      document.body.removeChild(ta)
-      prev?.focus?.()
-    } catch { /* DOM access failed — silently skip; internal state still set */ }
-  }
 
   function copySelected(): void {
     const selectedIds = store.selectedIds
@@ -507,8 +480,8 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
       copiedAt: Date.now(),
     }
 
-    // Write marker synchronously — no async race with subsequent external copy
-    _writeMarkerSync(WB_CLIPBOARD_MARKER)
+    // Intentionally NO writeText to OS clipboard — see design note above.
+    // User's external clipboard content is left untouched.
 
     console.info('[BoardClipboard] Copied', {
       strokes: copiedStrokes.length,
