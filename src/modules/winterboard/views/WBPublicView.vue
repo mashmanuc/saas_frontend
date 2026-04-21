@@ -21,10 +21,15 @@
            Статичний вигляд" — публічне посилання = replay за замовчуванням.
            Download прихована в іконку-меню (не конкурує з play). -->
       <header class="wb-public-view__header">
-        <div class="wb-public-view__brand">
+        <!-- MASH brand — clickable link to homepage (navigation + brand entry point) -->
+        <router-link
+          to="/"
+          class="wb-public-view__brand"
+          :aria-label="t('publicLesson.header.backToHome', 'MASH — на головну')"
+        >
           <div class="wb-public-view__logo" aria-hidden="true">M4</div>
           <span class="wb-public-view__brand-name">M4SH</span>
-        </div>
+        </router-link>
         <h1 class="wb-public-view__title">{{ displayTitle }}</h1>
         <span v-if="ownerName" class="wb-public-view__author">{{ ownerName }}</span>
       </header>
@@ -1044,6 +1049,18 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 0.5rem;
   flex-shrink: 0;
+  color: inherit;
+  text-decoration: none;
+  transition: opacity 0.12s ease;
+}
+.wb-public-view__brand:hover,
+.wb-public-view__brand:focus-visible {
+  opacity: 0.85;
+}
+.wb-public-view__brand:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.6);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 .wb-public-view__logo {
   width: 32px;

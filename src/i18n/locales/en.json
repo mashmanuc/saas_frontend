@@ -8316,7 +8316,8 @@
   "publicLesson": {
     "header": {
       "hourShort": "h",
-      "minShort": "min"
+      "minShort": "min",
+      "backToHome": "MASH — back to homepage"
     },
     "player": {
       "ariaLabel": "Lesson replay player",

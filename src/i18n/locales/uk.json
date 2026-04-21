@@ -8404,7 +8404,8 @@
   "publicLesson": {
     "header": {
       "hourShort": "год",
-      "minShort": "хв"
+      "minShort": "хв",
+      "backToHome": "MASH — на головну"
     },
     "player": {
       "ariaLabel": "Плеєр повтору уроку",

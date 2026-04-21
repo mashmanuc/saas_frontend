@@ -2,6 +2,16 @@
      Ref: PHASE12_PLAN.md B1 / Phase 13 B1.1 -->
 <template>
   <header class="public-lesson-header">
+    <!-- MASH brand logo link — navigation to home -->
+    <router-link
+      to="/"
+      class="public-lesson-header__brand"
+      :aria-label="t('publicLesson.header.backToHome', 'MASH — на головну')"
+    >
+      <span class="public-lesson-header__brand-logo" aria-hidden="true">M</span>
+      <span class="public-lesson-header__brand-name">MASH</span>
+    </router-link>
+
     <div class="public-lesson-header__top">
       <h1 class="public-lesson-header__title">{{ title }}</h1>
       <div class="public-lesson-header__badges">
@@ -118,6 +128,40 @@ const formattedDate = computed(() => {
 .public-lesson-header {
   padding: 24px 0;
   border-bottom: 1px solid #e2e8f0;
+}
+
+.public-lesson-header__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  text-decoration: none;
+  color: #0f172a;
+  transition: opacity 0.12s;
+}
+
+.public-lesson-header__brand:hover {
+  opacity: 0.75;
+}
+
+.public-lesson-header__brand-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 14px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.public-lesson-header__brand-name {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .public-lesson-header__top {
