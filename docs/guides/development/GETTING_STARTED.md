@@ -65,7 +65,7 @@ npm run dev
 
 ### Перед початком роботи
 
-1. **Backend MANIFEST.md** — `../backend/docs/manifest/MANIFEST.md`
+1. **Backend MANIFEST.md** — `../../../../saas_docs/manifest/MANIFEST.md`
 2. **Frontend README.md** — `docs/README.md`
 3. **FRONTEND_GUIDE.md** — `docs/guides/development/FRONTEND_GUIDE.md`
 

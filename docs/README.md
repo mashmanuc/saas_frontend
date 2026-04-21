@@ -8,8 +8,8 @@
 
 ### 🎯 Manifest (посилання на backend)
 Єдине джерело істини для всієї платформи знаходиться в backend:
-- **Backend MANIFEST.md** — `../backend/docs/manifest/MANIFEST.md`
-- **SSOT_REGISTRY.md** — `../backend/docs/manifest/SSOT_REGISTRY.md`
+- **Backend MANIFEST.md** — `../../saas_docs/manifest/MANIFEST.md`
+- **SSOT_REGISTRY.md** — `../../saas_docs/manifest/SSOT_REGISTRY.md`
 
 ### 📦 [domains/](./domains/) — Доменна документація
 Фронтенд-специфічна документація для кожного домену:
