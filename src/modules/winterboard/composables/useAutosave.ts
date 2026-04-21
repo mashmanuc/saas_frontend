@@ -8,7 +8,7 @@
 // Ops pipeline: all board ops go through /replay/batch/ (useReplayRecorder).
 // Autosave handles ONLY stream-save (isDirty state) and beacon fallback.
 
-import { ref, watch, onUnmounted, computed, type Ref } from 'vue'
+import { ref, onUnmounted, computed, type Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useWBStore } from '../board/state/boardStore'
 import { winterboardApi } from '../api/winterboardApi'
@@ -290,14 +290,16 @@ export function useAutosave(
 
   // ── Watch store.isDirty for auto-scheduling ────────────────────────
 
-  const stopDirtyWatch = watch(
-    () => store.isDirty,
-    (dirty) => {
-      if (dirty && sessionId.value) {
-        scheduleSave()
-      }
-    },
-  )
+  // G4 fix (2026-04-21): isDirty більше НЕ тригерить /save-stream/ у debounce.
+  // Ops-log через /replay/batch/ (useReplayRecorder) = source of truth.
+  // Persistence: ops-log + Celery worker apply_ops_and_snapshot + beacon on unload.
+  // Manual saveNow() callers (record start, template save, nav away) залишаються
+  // доступними через public API.
+  //
+  // Причина: /save-stream/ кожні 3 сек конкурував за WBSession row lock з
+  // /replay/batch/ → 409 session_locked cascade (G3 у REPLAY_PIPELINE_SSOT).
+  // Ref: saas_docs/domains/winterboard/REPLAY_PIPELINE_SSOT.md §6 G3+G4
+  const stopDirtyWatch = () => { /* noop — kept for destroy() compatibility */ }
 
   // ── Online/Offline detection ───────────────────────────────────────
 
@@ -338,12 +340,14 @@ export function useAutosave(
   function handleVisibilityChange(): void {
     if (document.visibilityState === 'hidden' && sessionId.value) {
       if (store.isDirty) {
+        // G4 fix (2026-04-21): beacon достатній при tab-hidden.
+        // Попередня версія викликала performSave() паралельно з beacon → race
+        // з одночасним /replay/batch/ за WBSession lock → 409 cascade (G3).
         winterboardApi.beaconSave(sessionId.value, {
           state: store.serializedState,
           rev: store.rev,
           client_ts: new Date().toISOString(),
         })
-        performSave().catch(() => { /* beacon already sent as fallback */ })
       }
     }
   }
