@@ -96,49 +96,35 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
   const isUploading = ref(false)
   const uploadError = ref<string | null>(null)
 
-  // FIX: Flag to skip system clipboard when internal paste already handled Ctrl+V.
-  // Without this, Ctrl+V pastes BOTH the internal board object AND the system
-  // clipboard image simultaneously (double-paste bug).
-  let _skipNextSystemPaste = false
-
-  // ─── Paste handler (native 'paste' event) ──────────────────
+  // ─── Paste handler (native 'paste' event) — SINGLE SOURCE OF TRUTH ──
+  //
+  // All Ctrl+V decisions happen here. useKeyboard no longer calls
+  // pasteInternal() directly on Ctrl+V keydown — that created a race where
+  // internal objects were pasted even when OS clipboard had fresh external
+  // content (user copies from Word after internal copy → Ctrl+V still
+  // pastes old board object).
+  //
+  // Decision tree (OS clipboard is source of truth):
+  //   1. OS clipboard has image files → paste image(s), ignore internal
+  //   2. OS clipboard has text === WB_CLIPBOARD_MARKER → paste internal
+  //      (user copied from board most recently, OS not overwritten since)
+  //   3. OS clipboard has real text (not marker) → sticky note, ignore internal
+  //   4. OS clipboard empty AND internalClipboard has content → paste internal
+  //      (fallback: no OS write perm, or OS cleared on tab focus, etc.)
   async function handlePaste(e: ClipboardEvent): Promise<void> {
     if (disabled?.()) return
 
-    // If pasteInternal() already handled this Ctrl+V, check if system clipboard
-    // has real content (user copied externally after our board Ctrl+C).
-    if (_skipNextSystemPaste) {
-      _skipNextSystemPaste = false
-
-      // Check if system clipboard has real content (not our internal marker)
-      const items = e.clipboardData?.items
-      let hasRealContent = false
-      if (items) {
-        for (let i = 0; i < items.length; i++) {
-          const item = items[i]
-          if (item.kind === 'file' && item.type.startsWith('image/')) {
-            hasRealContent = true
-            break
-          }
-          if (item.kind === 'string' && item.type === 'text/plain') {
-            // Synchronous check not possible — but if text exists and is NOT our marker,
-            // we already pasted internal objects. Accept this trade-off: internal paste wins
-            // when both internal and text are available. Images always win.
-          }
-        }
-      }
-
-      if (!hasRealContent) {
+    const items = e.clipboardData?.items
+    if (!items) {
+      // No clipboardData at all — fallback to internal if we have any
+      if (internalClipboard.value) {
         e.preventDefault()
-        return
+        pasteInternal()
       }
-      // System clipboard has an image — fall through to handle it
+      return
     }
 
-    const items = e.clipboardData?.items
-    if (!items) return
-
-    // Priority 1: Image files (screenshot, copied image)
+    // Collect everything from OS clipboard
     const imageFiles: File[] = []
     let textContent: string | null = null
 
@@ -152,7 +138,7 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
       }
     }
 
-    // Handle image paste — підтримуємо MULTIPLE images (буфер може містити серію)
+    // Priority 1: External image wins over everything
     if (imageFiles.length > 0) {
       e.preventDefault()
 
@@ -186,17 +172,36 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
       return
     }
 
-    // Handle text paste (only if NOT in an editable element)
-    if (textContent && textContent.trim()) {
-      const target = e.target as HTMLElement | null
-      const isEditable = target?.tagName === 'INPUT'
-        || target?.tagName === 'TEXTAREA'
-        || target?.isContentEditable
-      if (!isEditable) {
-        e.preventDefault()
-        handleTextPaste(textContent.trim())
+    // Priority 2: Text — route by marker
+    if (textContent !== null) {
+      // Marker = internal board copy; paste cloned objects
+      if (textContent === WB_CLIPBOARD_MARKER) {
+        if (internalClipboard.value) {
+          e.preventDefault()
+          pasteInternal()
+        }
+        // else: marker came from another tab but no local state — skip silently
         return
       }
+
+      // Real external text → sticky note (if not in input field)
+      if (textContent.trim()) {
+        const target = e.target as HTMLElement | null
+        const isEditable = target?.tagName === 'INPUT'
+          || target?.tagName === 'TEXTAREA'
+          || target?.isContentEditable
+        if (!isEditable) {
+          e.preventDefault()
+          handleTextPaste(textContent.trim())
+        }
+      }
+      return
+    }
+
+    // Priority 4: OS clipboard had no usable content → fallback to internal
+    if (internalClipboard.value) {
+      e.preventDefault()
+      pasteInternal()
     }
   }
 
@@ -474,8 +479,11 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
   function pasteInternal(): void {
     if (!internalClipboard.value) return
 
-    // Signal handlePaste() to skip system clipboard for this Ctrl+V
-    _skipNextSystemPaste = true
+    // Called from:
+    //   - handlePaste() when OS clipboard has our marker (Ctrl+V path)
+    //   - Context-menu "Paste" button (explicit user choice)
+    // No flag needed — handlePaste now checks OS clipboard content first
+    // and only calls us when internal paste is the correct action.
 
     const { strokes, assets } = internalClipboard.value
     const OFFSET = 40
