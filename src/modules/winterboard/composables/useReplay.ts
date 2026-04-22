@@ -24,6 +24,11 @@ export function useReplay(sessionId: string, publicToken?: string) {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
+  // P1: seek optimization — non-blocking chunked execution
+  const isSeeking = ref(false)
+  const seekProgress = ref(0) // 0..1 progress for UI
+  let seekRafId: number | null = null
+
   // Phase 10 P5: Lesson markers
   const markers = ref<WBLessonMarker[]>([])
   const activeMarkerId = ref<string | null>(null)
@@ -37,6 +42,16 @@ export function useReplay(sessionId: string, publicToken?: string) {
   // Stored callbacks for seekToWithSnapshot / retry
   let _onOp: ((op: BoardOperation) => void) | null = null
   let _onStartState: ((state: { pages?: unknown[]; currentPageIndex?: number }) => void) | null = null
+
+  // P1: cancel any pending seek (component unmount or new seek)
+  function cancelPendingSeek(): void {
+    if (seekRafId !== null) {
+      cancelAnimationFrame(seekRafId)
+      seekRafId = null
+    }
+    isSeeking.value = false
+    seekProgress.value = 0
+  }
 
   const progress = computed(() =>
     totalOperations.value > 0
@@ -180,6 +195,9 @@ export function useReplay(sessionId: string, publicToken?: string) {
    * Fast local seek — replay ops from engine memory, NO HTTP requests.
    * Works for any replay where ops are already loaded in engine.
    * clearState resets board, then ops 0..idx are re-applied locally.
+   *
+   * P1 OPTIMIZATION: Non-blocking chunked execution via requestAnimationFrame.
+   * Prevents UI freeze on large seek (1000+ ops) by yielding to main thread.
    */
   async function seekToWithSnapshot(
     idx: number,
@@ -196,43 +214,87 @@ export function useReplay(sessionId: string, publicToken?: string) {
       console.warn(`[replay] partial timeline: engine has ${totalOps}/${totalOperations.value} ops. Seek clamped.`)
     }
 
-    // Local seek: all ops already in engine memory — no HTTP needed.
-    // Reset board to clean state, then re-apply ops 0..target (EXCLUSIVE).
-    // Use _onOp directly (NOT through event emitter) to avoid per-op canvas redraws.
-    // The caller's clearState/loadState handle the final render.
-    //
-    // CRITICAL: loop is EXCLUSIVE (i < clampedIdx), NOT inclusive (i <= clampedIdx).
-    // seekTo(clampedIdx) sets engine.currentIndex = clampedIdx.
-    // play() fires op at currentIndex, then increments.
-    // If loop was inclusive, op at clampedIdx would be applied TWICE:
-    //   1) in the for-loop during seek
-    //   2) when play() fires from currentIndex = clampedIdx
-    // This caused: first ops duplicated on start, ALL ops visible on restart.
-    clearState()
-    for (let i = 0; i < clampedIdx; i++) {
-      const op = engine.value.getOperationAt(i)
-      if (op) {
-        try {
-          _onOp(op)
-        } catch (e) {
-          // HIGH 9: Don't break seek if single op fails — continue with remaining
-          console.warn(`[replay] failed to apply op ${i}:`, e)
+    // P1: Edge case — target = 0, nothing to do
+    if (clampedIdx === 0) {
+      clearState()
+      const actualIdx = engine.value.seekTo(0)
+      currentIndex.value = actualIdx
+      currentTimeMs.value = 0
+      return
+    }
+
+    // P1: Cancel any previous pending seek (new seek or component unmount)
+    cancelPendingSeek()
+
+    // P1: Start chunked seek
+    isSeeking.value = true
+    seekProgress.value = 0
+
+    return new Promise((resolve) => {
+      clearState()
+
+      const CHUNK_SIZE = 20 // ops per frame (yields ~16ms budget for render)
+
+      const applyChunk = (startIndex: number): void => {
+        // Component unmounted or new seek started — abort
+        if (!engine.value || !_onOp) {
+          cancelPendingSeek()
+          resolve()
+          return
+        }
+
+        const end = Math.min(startIndex + CHUNK_SIZE, clampedIdx)
+
+        // Apply chunk of ops
+        for (let i = startIndex; i < end; i++) {
+          const op = engine.value.getOperationAt(i)
+          if (op) {
+            try {
+              _onOp(op)
+            } catch (e) {
+              // HIGH 9: Don't break seek if single op fails — continue with remaining
+              console.warn(`[replay] failed to apply op ${i}:`, e)
+            }
+          }
+        }
+
+        // Update progress state for UI
+        seekProgress.value = clampedIdx > 0 ? end / clampedIdx : 0
+        currentIndex.value = end
+
+        if (end < clampedIdx) {
+          // More ops to apply — schedule next chunk
+          seekRafId = requestAnimationFrame(() => applyChunk(end))
+        } else {
+          // Done — finalize seek
+          finalizeSeek()
         }
       }
-    }
 
-    // Sync engine position — play() will fire op[clampedIdx] as next
-    const actualIdx = engine.value.seekTo(clampedIdx)
-    currentIndex.value = actualIdx
+      const finalizeSeek = (): void => {
+        seekRafId = null
+        isSeeking.value = false
+        seekProgress.value = 1
 
-    // Update playback time
-    if (totalOps > 0) {
-      const targetOp = engine.value.getOperationAt(clampedIdx)
-      if (targetOp) {
-        const tMs = new Date(targetOp.created_at).getTime() - firstOpAtMs.value
-        currentTimeMs.value = Math.max(0, tMs)
+        // Sync engine position — play() will fire op[clampedIdx] as next
+        const actualIdx = engine.value!.seekTo(clampedIdx)
+        currentIndex.value = actualIdx
+
+        // Update playback time
+        if (totalOps > 0) {
+          const targetOp = engine.value!.getOperationAt(clampedIdx)
+          if (targetOp) {
+            const tMs = new Date(targetOp.created_at).getTime() - firstOpAtMs.value
+            currentTimeMs.value = Math.max(0, tMs)
+          }
+        }
+
+        resolve()
       }
-    }
+
+      // Start first chunk
+      applyChunk(0)
+    })
   }
 
   // Phase 10 P5: Auto-detect active marker during playback
@@ -256,6 +318,8 @@ export function useReplay(sessionId: string, publicToken?: string) {
   }
 
   function destroy(): void {
+    // P1: Cancel any pending seek before destroying
+    cancelPendingSeek()
     engine.value?.destroy()
     engine.value = null
     _onOp = null
@@ -272,6 +336,9 @@ export function useReplay(sessionId: string, publicToken?: string) {
     isLoading: readonly(isLoading),
     error: readonly(error),
     retryCount: readonly(retryCount),
+    // P1: seek optimization state for UI
+    isSeeking: readonly(isSeeking),
+    seekProgress: readonly(seekProgress),
     loadTimeline,
     retryLoad,
     play,
