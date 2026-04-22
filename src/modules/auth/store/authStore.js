@@ -594,6 +594,24 @@ export const useAuthStore = defineStore('auth', {
         }
         // Reset backoff on non-429 errors
         this._rateLimitBackoffMs = null
+        // FIX (2026-04-22): refresh повертає 422 коли CSRF mismatch, або 401/403 при
+        // expired/revoked refresh token. Без явного forceLogout тут session залишалась
+        // у "zombie" стані: UI показує що все ок, а всі запити silently провалюються.
+        // Корінь — тільки на цій 1 точці, бо тут ми точно знаємо що це auth/refresh
+        // flow (не взагалі 422 у системі).
+        if ([401, 403, 422].includes(status)) {
+          await this.forceLogout('session_expired')
+          // Hard redirect — інакше user залишиться на authenticated URL з очищеним
+          // store (router guard не спрацює без navigation). auth_return_url збережений
+          // forceLogout-ом → після login user повернеться на ту саму сторінку.
+          if (typeof window !== 'undefined') {
+            const returnUrl = sessionStorage.getItem('auth_return_url')
+            const redirectParam = returnUrl && returnUrl !== '/start' && returnUrl !== '/login'
+              ? `?redirect=${encodeURIComponent(returnUrl)}`
+              : ''
+            window.location.href = `/start${redirectParam}`
+          }
+        }
         throw error
       } finally {
         this.refreshPromise = null
