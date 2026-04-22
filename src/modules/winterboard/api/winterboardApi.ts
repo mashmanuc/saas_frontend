@@ -90,7 +90,6 @@ export interface WBSessionDetailResponse {
   recording_started_seq?: number | null
   recording_stopped_seq?: number | null
   recording_started_at?: string | null
-  recording_stopped_at?: string | null
   is_replay_frozen?: boolean
 }
 

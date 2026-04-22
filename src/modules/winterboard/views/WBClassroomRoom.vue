@@ -97,16 +97,11 @@
 
       <!-- Right: Actions -->
       <div class="wb-classroom-room__actions">
-        <!-- A.1: Manual Recording Control — кнопка start/stop + REC таймер
-             (wired 2026-04-22; паритет з WBSoloRoom). -->
+        <!-- A.1: Recording banner — classroom integration TODO (manual control буде окремо) -->
         <WBRecordingBanner
           v-if="mode === 'edit' && classroomRole.isTeacher.value"
-          :is-recording="isManualRecording"
-          :is-frozen="isReplayFrozen"
-          :is-loading="isRecordingLoading"
-          :recording-started-at="recordingStartedAt"
-          @start="handleStartRecording"
-          @stop="handleStopRecording"
+          :is-recording="false"
+          :is-frozen="false"
         />
         <!-- Lock toggle (teacher only) -->
         <button
@@ -626,16 +621,6 @@ const replayRecorder = useReplayRecorder({
 })
 // Phase 20: Auto-record all store operations — no manual record() calls needed
 const _unsubRecorder = replayRecorder.connectToStore(store)
-
-// ── A.1: Manual Recording Control (classroom integration, 2026-04-22) ───
-// Паритет з WBSoloRoom: banner в header перемикає start/stop recording.
-// Hydrate зі session detail у initBoardWithSession() (bottom of file).
-const isManualRecording = ref(false)
-const isReplayFrozen = ref(false)
-const isRecordingLoading = ref(false)
-const recordingStartedAt = ref<string | null>(null)
-const recordingBrokenWarning = ref(false)
-const activeReplayId = ref<string | null>(null)
 
 // Grid overlay (background grid for the canvas)
 const gridOverlay = useGridOverlay(resolvedSessionId.value ?? 'default')
@@ -1171,67 +1156,6 @@ function onReplayStartState(state: { pages?: unknown[]; currentPageIndex?: numbe
 
 function onReplayOperation(op: BoardOperation): void {
   replayApplier.apply(store, op)
-}
-
-// ── Manual recording handlers (port from WBSoloRoom, adapted for classroom) ──
-async function handleStartRecording(): Promise<void> {
-  const sid = resolvedSessionId.value
-  if (!sid || isManualRecording.value || isReplayFrozen.value) return
-  isRecordingLoading.value = true
-  try {
-    // INV-T: flush pending autosave щоб session.state на backend містив актуальний
-    // board state ДО того як backend зробить deepcopy у recording_start_state.
-    try { await autosave.saveNow() } catch (e) {
-      console.warn('[WB:Classroom] saveNow before start-recording failed', e)
-    }
-    const result = await import('../api/replay').then(m => m.startRecording(sid))
-    isManualRecording.value = true
-    recordingStartedAt.value = result.recording_started_at
-    isReplayFrozen.value = false
-
-    // INV: Recording pipeline health check — ops MUST appear ≤ 2s after start.
-    setTimeout(() => {
-      if (isManualRecording.value && replayRecorder.opCount.value === 0) {
-        console.error(
-          '[WB:PIPELINE:BROKEN] Recording started but 0 ops after 2s! ' +
-          `store.mode=${store.mode} sessionId=${sid} enabled=${isRecording.value}`,
-        )
-        recordingBrokenWarning.value = true
-      }
-    }, 2000)
-  } catch (e) {
-    console.error('[WB:Classroom] Failed to start recording:', e)
-  } finally {
-    isRecordingLoading.value = false
-  }
-}
-
-async function handleStopRecording(): Promise<void> {
-  const sid = resolvedSessionId.value
-  if (!sid || !isManualRecording.value) return
-  isRecordingLoading.value = true
-  try {
-    const result = await import('../api/replay').then(m => m.stopRecording(sid))
-    isManualRecording.value = false
-    recordingStartedAt.value = null
-    isReplayFrozen.value = result.is_replay_frozen
-    activeReplayId.value = result.replay_id ?? null
-    recordingBrokenWarning.value = false
-  } catch (e) {
-    console.error('[WB:Classroom] Failed to stop recording:', e)
-    // Local fallback: stop UI навіть якщо API недоступне.
-    isManualRecording.value = false
-    recordingStartedAt.value = null
-    recordingBrokenWarning.value = true
-    import('@/utils/telemetryAgent').then(
-      m => m.trackEvent('recording.stop.failed', { sessionId: sid, error: String(e) }),
-    ).catch(() => {})
-    try {
-      localStorage.setItem(`wb:recording:${sid}:stopped_locally`, String(Date.now()))
-    } catch { /* localStorage may be full or blocked */ }
-  } finally {
-    isRecordingLoading.value = false
-  }
 }
 
 function handleMarkerSeek(marker: WBLessonMarker): void {
@@ -2048,18 +1972,6 @@ async function initBoardWithSession(init: { sessionId: string; role: any; permis
       })
     }
     sessionName.value = detail.name || t('winterboard.room.untitled')
-
-    // Hydrate recording state (A.1): якщо сесія вже в recording / frozen —
-    // банер має відразу показати правильний стан (REC-таймер або "frozen"),
-    // а не пустувати до першого кліку.
-    isReplayFrozen.value = Boolean(detail.is_replay_frozen)
-    if (detail.recording_started_at && !detail.recording_stopped_at) {
-      isManualRecording.value = true
-      recordingStartedAt.value = detail.recording_started_at
-    } else {
-      isManualRecording.value = false
-      recordingStartedAt.value = null
-    }
   } catch (err) {
     console.error('[WB:ClassroomRoom] Failed to load session state', err)
   }
