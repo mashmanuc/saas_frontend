@@ -8004,6 +8004,8 @@
         "generateLink": "Generate link",
         "copyLink": "Copy",
         "linkCopied": "Link copied!",
+        "linkCreated": "Share link created",
+        "publishFirst": "Publish the lesson to share it",
         "revokeLink": "Revoke link",
         "shareLesson": "Share lesson",
         "linkActive": "Link is active",

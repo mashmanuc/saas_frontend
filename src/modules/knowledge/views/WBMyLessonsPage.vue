@@ -161,8 +161,9 @@
                   </button>
                   <button
                     type="button"
-                    class="px-3 py-1.5 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+                    class="px-3 py-1.5 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     :title="$t('knowledge.lesson.share.shareLesson')"
+                    :disabled="sharingInProgress[lesson.id]"
                     @click="handleShare(lesson)"
                   >
                     🔗
@@ -356,6 +357,7 @@ import { ordersApi } from '@/modules/booking/api/ordersApi'
 import type { Order } from '@/modules/booking/api/ordersApi'
 import lessonsApi from '@/api/lessons'
 import apiClient from '@/utils/apiClient'
+import { useNotifyStore } from '@/stores/notifyStore'
 import WBLessonFolders from '../components/WBLessonFolders.vue'
 import LessonEditDialog from '../components/LessonEditDialog.vue'
 import MoveToFolderDropdown from '../components/MoveToFolderDropdown.vue'
@@ -372,6 +374,9 @@ const loadingLessonId = ref<string | null>(null)
 const shareLinkMap = ref<Record<string, string>>({})
 const copiedLessonId = ref<string | null>(null)
 const togglingId = ref<string | null>(null)
+// B3 (2026-04-22): race guard — щоб спам-кліки не тригерили дублікати API
+const sharingInProgress = ref<Record<string, boolean>>({})
+const notify = useNotifyStore()
 
 // Phase 24: search, status filter, folder
 const searchQuery = ref('')
@@ -497,12 +502,36 @@ function formatDate(iso: string): string {
 }
 
 async function handleShare(lesson: MyLesson): Promise<void> {
+  // B3 (2026-04-22): race guard — ігнор повторних кліків поки йде запит.
+  if (sharingInProgress.value[lesson.id]) return
+  sharingInProgress.value[lesson.id] = true
   try {
     const result = await lessonViewApi.generateShareLink(lesson.id)
     shareLinkMap.value[lesson.id] = result.share_url
+
+    // Auto-copy + visible feedback — раніше inline input знизу картки був
+    // занадто непомітним, user не розумів що клік спрацював (B3 evidence
+    // 2026-04-22: "натискаю Поділитися — нічого не відбувається").
+    try {
+      await navigator.clipboard.writeText(result.share_url)
+      copiedLessonId.value = lesson.id
+      setTimeout(() => { copiedLessonId.value = null }, 2000)
+      notify.success(t('knowledge.lesson.share.linkCopied'))
+    } catch {
+      // Clipboard fail (permissions / insecure context / http) — fallback
+      // toast з повідомленням про створення (input все одно видно на картці).
+      notify.success(t('knowledge.lesson.share.linkCreated'))
+    }
   } catch (err) {
     console.error('[WBMyLessonsPage] share error:', err)
-    loadError.value = t('knowledge.lesson.shareError')
+    const status = (err as { response?: { status?: number } })?.response?.status
+    if (status === 400) {
+      notify.warning(t('knowledge.lesson.share.publishFirst'))
+    } else {
+      notify.error(t('knowledge.lesson.shareError'))
+    }
+  } finally {
+    sharingInProgress.value[lesson.id] = false
   }
 }
 
