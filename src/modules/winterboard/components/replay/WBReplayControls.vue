@@ -234,6 +234,9 @@ const {
   retryCount,
   loadedOperations,
   timelineIncomplete,
+  // P2: batching flags for seek optimization
+  isBatchingSeek,
+  seekCompleted,
   loadTimeline,
   retryLoad,
   play,
@@ -262,7 +265,10 @@ watch(
 
 onMounted(async () => {
   await loadTimeline(
-    (op) => { emit('operation', op) },
+    (op) => {
+      // P2: emit operation — parent components use isBatchingSeek to skip effects
+      emit('operation', op)
+    },
     (state) => { emit('startState', state) },
   )
   // A.2.5: chapters
@@ -271,6 +277,12 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   destroy()
+})
+
+// P2: notify parent when seek completes (for single batchDraw)
+watch(() => seekCompleted.value, (done) => {
+  if (!done) return
+  emit('seekStart')  // parent does batchDraw
 })
 
 // ─── Progress fill (CSS var on slider container) ─────────────────────────────
@@ -316,6 +328,9 @@ defineExpose({
   play,
   pause,
   getState: () => state.value,
+  // P2: batching flags for seek optimization (parent guards effects/batchDraw)
+  isBatchingSeek: () => isBatchingSeek.value,
+  seekCompleted: () => seekCompleted.value,
 })
 
 const progressStyle = computed(() => {

@@ -333,6 +333,7 @@
     <!-- Phase 11: Replay mode controls (teacher only) -->
     <WBReplayControls
       v-if="mode === 'replay' && resolvedSessionId"
+      ref="replayControlsRef"
       :session-id="resolvedSessionId"
       :load-state="(s) => store.loadSnapshot(s as Parameters<typeof store.loadSnapshot>[0])"
       :clear-state="resetBoardForReplay"
@@ -1122,6 +1123,9 @@ function exitReplayMode(): void {
 // P0 FIX: Instance-scoped replay applier
 const replayApplier = createReplayApplier()
 
+// P2: ref for accessing WBReplayControls exposed batching flags
+const replayControlsRef = ref<InstanceType<typeof WBReplayControls> | null>(null)
+
 // REPLAY-SNAPSHOT: зберігаємо deep-clone recording_start_state для restart.
 // loadSnapshot робить this.pages = state.pages (ПОСИЛАННЯ!), тому replay-ops
 // мутують і store, і snapshot одночасно. Без clone restart показує всі ops.
@@ -1156,7 +1160,19 @@ function onReplayStartState(state: { pages?: unknown[]; currentPageIndex?: numbe
 
 function onReplayOperation(op: BoardOperation): void {
   replayApplier.apply(store, op)
+
+  // P2: skip per-op effects during batch seek — single redraw at end
+  if (replayControlsRef.value?.isBatchingSeek?.()) return
 }
+
+// P2: Single batchDraw at end of batch seek — prevents 1000+ redraws
+watch(() => replayControlsRef.value?.seekCompleted?.(), (done) => {
+  if (!done) return
+  requestAnimationFrame(() => {
+    const stage = canvasRef.value?.getStage?.()
+    stage?.batchDraw?.()
+  })
+})
 
 function handleMarkerSeek(marker: WBLessonMarker): void {
   if (marker.page_id) {

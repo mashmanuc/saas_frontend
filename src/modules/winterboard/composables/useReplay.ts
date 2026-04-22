@@ -29,6 +29,10 @@ export function useReplay(sessionId: string, publicToken?: string) {
   const seekProgress = ref(0) // 0..1 progress for UI
   let seekRafId: number | null = null
 
+  // P2: batching flag — tells component to skip per-op effects during seek
+  const isBatchingSeek = ref(false)
+  const seekCompleted = ref(false) // trigger for single redraw at end
+
   // Phase 10 P5: Lesson markers
   const markers = ref<WBLessonMarker[]>([])
   const activeMarkerId = ref<string | null>(null)
@@ -51,6 +55,8 @@ export function useReplay(sessionId: string, publicToken?: string) {
     }
     isSeeking.value = false
     seekProgress.value = 0
+    isBatchingSeek.value = false
+    seekCompleted.value = false
   }
 
   const progress = computed(() =>
@@ -227,8 +233,11 @@ export function useReplay(sessionId: string, publicToken?: string) {
     cancelPendingSeek()
 
     // P1: Start chunked seek
+    // P2: enable batching mode — components will skip per-op effects
     isSeeking.value = true
+    isBatchingSeek.value = true
     seekProgress.value = 0
+    seekCompleted.value = false
 
     return new Promise((resolve) => {
       clearState()
@@ -274,7 +283,11 @@ export function useReplay(sessionId: string, publicToken?: string) {
       const finalizeSeek = (): void => {
         seekRafId = null
         isSeeking.value = false
+        isBatchingSeek.value = false
         seekProgress.value = 1
+
+        // P2: signal completion — component will do single batchDraw
+        seekCompleted.value = true
 
         // Sync engine position — play() will fire op[clampedIdx] as next
         const actualIdx = engine.value!.seekTo(clampedIdx)
@@ -339,6 +352,9 @@ export function useReplay(sessionId: string, publicToken?: string) {
     // P1: seek optimization state for UI
     isSeeking: readonly(isSeeking),
     seekProgress: readonly(seekProgress),
+    // P2: batching flags — skip per-op effects during seek, single redraw at end
+    isBatchingSeek: readonly(isBatchingSeek),
+    seekCompleted: readonly(seekCompleted),
     loadTimeline,
     retryLoad,
     play,

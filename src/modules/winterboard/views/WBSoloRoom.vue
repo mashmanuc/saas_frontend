@@ -1189,6 +1189,15 @@ const replayAudio = useReplayAudio({
   resumeReplay: () => replayControlsRef.value?.play?.(),
 })
 
+// P2: Single batchDraw at end of batch seek — prevents 1000+ redraws
+watch(() => replayControlsRef.value?.seekCompleted?.(), (done) => {
+  if (!done) return
+  requestAnimationFrame(() => {
+    const stage = canvasRef.value?.getStage?.()
+    stage?.batchDraw?.()
+  })
+})
+
 const commentPoints = computed(() => {
   const total = Math.max(1, replayCurrentTotalOps.value)
   return replayCommentsList.value.map((c) => ({
@@ -1471,6 +1480,9 @@ function onReplayTick({ index, total }: { index: number; total: number }): void 
 // R5: Instance-scoped replay operation applier (DRY)
 function onReplayOperation(op: BoardOperation): void {
   replayApplier.apply(store, op)
+
+  // P2: skip per-op effects during batch seek — single redraw at end
+  if (replayControlsRef.value?.isBatchingSeek?.()) return
 
   // Smooth appearance — covers stroke_add / asset_add AND their batch
   // variants (strokes_add_batch / assets_add_batch) emitted by paste.

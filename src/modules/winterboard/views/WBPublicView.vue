@@ -444,6 +444,8 @@ async function enterReplayMode(): Promise<void> {
   await replay.loadTimeline(
     (op) => {
       replayApplier.apply(store, op)
+      // P2: skip per-op effects during batch seek — single redraw at end
+      if (replay!.isBatchingSeek.value) return
       // Smooth appearance — covers stroke_add / asset_add AND their
       // batch variants (strokes_add_batch / assets_add_batch) emitted by
       // paste. See engine/animation/replayFadeIn.ts.
@@ -492,6 +494,15 @@ async function enterReplayMode(): Promise<void> {
   // because `replay` is a plain `let` — Vue can't track its assignment.
   _replayStateWatchStop = watch(() => replay!.state.value, (s) => {
     if (s === 'ended') showHeroOverlay.value = true
+  })
+
+  // P2: Single batchDraw at end of batch seek — prevents 1000+ redraws
+  watch(() => replay!.seekCompleted.value, (done) => {
+    if (!done) return
+    requestAnimationFrame(() => {
+      const stage = (canvasRef.value as unknown as { getStage?: () => Parameters<typeof applyAppearanceFadeIn>[0] })?.getStage?.()
+      stage?.batchDraw?.()
+    })
   })
 
   // Handle ?t= URL parameter — auto-seek to time
