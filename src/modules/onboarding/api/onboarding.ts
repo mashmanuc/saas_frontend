@@ -50,15 +50,15 @@ export const onboardingApi = {
       const response = await apiClient.get<OnboardingProgress>('/onboarding/progress/')
       return response
     } catch {
-      // Defensive: API not ready → return safe default to prevent forEach crash
+      // Defensive: API not ready → return "done" state to unblock UI
       return {
         onboarding_type: 'student',
         current_step: null,
         completed_steps: [],
         skipped_steps: [],
-        is_completed: false,
-        is_dismissed: false,
-        progress_percentage: 0,
+        is_completed: true,
+        is_dismissed: true,
+        progress_percentage: 100,
       }
     }
   },
