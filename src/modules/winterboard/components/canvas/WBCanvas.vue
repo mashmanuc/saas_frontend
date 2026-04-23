@@ -2691,6 +2691,7 @@ function resolveTarget(e: Konva.KonvaEventObject<Event>): ResolvedTarget | null 
   const type = target.name?.()
 
   if (!id || !type) return null
+  if (id === 'undefined' || id === 'null') return null
 
   if (type === 'stroke') return { id, type: 'stroke' }
   if (type === 'asset') return { id, type: 'asset' }
@@ -2734,36 +2735,68 @@ function handleDragEnd(e: Konva.KonvaEventObject<Event>): void {
 // ─── ID-based wrapper functions for event delegation ────────────────────────
 
 function handleStrokeMouseDownById(id: string, e: Konva.KonvaEventObject<Event>): void {
-  const stroke = wbStore.currentStrokes.find(s => s.id === id)
-  if (!stroke) return
+  const strokes = wbStore.currentStrokes
+  if (!Array.isArray(strokes)) return
+  const stroke = strokes.find(s => s.id === id)
+  if (!stroke) {
+    console.warn('[WB] Stroke not found for id:', id)
+    return
+  }
   handleItemMouseDown(id, e as Konva.KonvaEventObject<MouseEvent | TouchEvent>)
 }
 
 function handleAssetMouseDownById(id: string, e: Konva.KonvaEventObject<Event>): void {
+  const assets = wbStore.currentAssets
+  if (!Array.isArray(assets)) return
+  const asset = assets.find(a => a.id === id)
+  if (!asset) {
+    console.warn('[WB] Asset not found for id:', id)
+    return
+  }
   handleItemMouseDown(id, e as Konva.KonvaEventObject<MouseEvent | TouchEvent>)
 }
 
 function handleStrokeClickById(id: string, e: Konva.KonvaEventObject<Event>): void {
-  const stroke = wbStore.currentStrokes.find(s => s.id === id)
-  if (!stroke) return
+  const strokes = wbStore.currentStrokes
+  if (!Array.isArray(strokes)) return
+  const stroke = strokes.find(s => s.id === id)
+  if (!stroke) {
+    console.warn('[WB] Stroke not found for id:', id)
+    return
+  }
   handleStrokeClick(stroke, e as Konva.KonvaEventObject<MouseEvent>)
 }
 
 function handleAssetClickById(id: string, e: Konva.KonvaEventObject<Event>): void {
-  const asset = wbStore.currentAssets.find(a => a.id === id)
-  if (!asset) return
+  const assets = wbStore.currentAssets
+  if (!Array.isArray(assets)) return
+  const asset = assets.find(a => a.id === id)
+  if (!asset) {
+    console.warn('[WB] Asset not found for id:', id)
+    return
+  }
   handleAssetClick(asset, e as Konva.KonvaEventObject<MouseEvent>)
 }
 
 function handleStrokeDragEndById(id: string, e: Konva.KonvaEventObject<Event>): void {
-  const stroke = wbStore.currentStrokes.find(s => s.id === id)
-  if (!stroke) return
+  const strokes = wbStore.currentStrokes
+  if (!Array.isArray(strokes)) return
+  const stroke = strokes.find(s => s.id === id)
+  if (!stroke) {
+    console.warn('[WB] Stroke not found for id:', id)
+    return
+  }
   handleStrokeDragEnd(stroke, e)
 }
 
 function handleAssetDragEndById(id: string, e: Konva.KonvaEventObject<Event>): void {
-  const asset = wbStore.currentAssets.find(a => a.id === id)
-  if (!asset) return
+  const assets = wbStore.currentAssets
+  if (!Array.isArray(assets)) return
+  const asset = assets.find(a => a.id === id)
+  if (!asset) {
+    console.warn('[WB] Asset not found for id:', id)
+    return
+  }
   handleAssetDragEnd(asset, e)
 }
 
