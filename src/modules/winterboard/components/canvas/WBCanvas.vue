@@ -90,28 +90,14 @@
           <!-- Phase 35: Image with borderRadius > 0 — wrap in Group with clipFunc -->
           <v-group
             v-else-if="(asset.borderRadius ?? 0) > 0"
-            :config="getClipGroupConfig(asset)"
-            @mousedown="handleItemMouseDown(asset.id, $event)"
-            @click="handleAssetClick(asset, $event)"
-            @dragend="handleAssetDragEnd(asset, $event)"
-            @transformend="handleAssetTransformEnd(asset, $event)"
-            @touchstart="(e) => handleTouchStart(asset.id, e.evt)"
-            @touchend="handleTouchEnd"
-            @touchmove="handleTouchMove"
+            :config="{ ...getClipGroupConfig(asset), id: asset.id, name: 'asset' }"
           >
-            <v-image :config="getClipChildImageConfig(asset)" />
+            <v-image :config="{ ...getClipChildImageConfig(asset), id: asset.id }" />
           </v-group>
           <!-- Regular image asset (no borderRadius — no clip overhead) -->
           <v-image
             v-else
-            :config="getAssetConfig(asset)"
-            @mousedown="handleItemMouseDown(asset.id, $event)"
-            @click="handleAssetClick(asset, $event)"
-            @dragend="handleAssetDragEnd(asset, $event)"
-            @transformend="handleAssetTransformEnd(asset, $event)"
-            @touchstart="(e) => handleTouchStart(asset.id, e.evt)"
-            @touchend="handleTouchEnd"
-            @touchmove="handleTouchMove"
+            :config="{ ...getAssetConfig(asset), id: asset.id, name: 'asset' }"
           />
         </template>
       </v-layer>
@@ -122,59 +108,28 @@
           <!-- Pen / Highlighter -->
           <v-path
             v-if="stroke.tool === 'pen' || stroke.tool === 'highlighter'"
-            :config="getStrokeConfig(stroke)"
-            @mousedown="handleItemMouseDown(stroke.id, $event)"
-            @click="handleStrokeClick(stroke, $event)"
-            @dragend="handleStrokeDragEnd(stroke, $event)"
-            @touchstart="(e) => handleTouchStart(stroke.id, e.evt)"
-            @touchend="handleTouchEnd"
-            @touchmove="handleTouchMove"
+            :config="{ ...getStrokeConfig(stroke), id: stroke.id, name: 'stroke' }"
           />
           <!-- Line -->
           <v-line
             v-else-if="stroke.tool === 'line'"
-            :config="getLineConfig(stroke)"
-            @mousedown="handleItemMouseDown(stroke.id, $event)"
-            @click="handleStrokeClick(stroke, $event)"
-            @dragend="handleStrokeDragEnd(stroke, $event)"
-            @touchstart="(e) => handleTouchStart(stroke.id, e.evt)"
-            @touchend="handleTouchEnd"
-            @touchmove="handleTouchMove"
+            :config="{ ...getLineConfig(stroke), id: stroke.id, name: 'stroke' }"
           />
           <!-- Rectangle -->
           <v-rect
             v-else-if="stroke.tool === 'rectangle'"
-            :config="getRectConfig(stroke)"
-            @mousedown="handleItemMouseDown(stroke.id, $event)"
-            @click="handleStrokeClick(stroke, $event)"
-            @dragend="handleStrokeDragEnd(stroke, $event)"
-            @touchstart="(e) => handleTouchStart(stroke.id, e.evt)"
-            @touchend="handleTouchEnd"
-            @touchmove="handleTouchMove"
+            :config="{ ...getRectConfig(stroke), id: stroke.id, name: 'stroke' }"
           />
           <!-- Circle / Ellipse -->
           <v-ellipse
             v-else-if="stroke.tool === 'circle'"
-            :config="getCircleConfig(stroke)"
-            @mousedown="handleItemMouseDown(stroke.id, $event)"
-            @click="handleStrokeClick(stroke, $event)"
-            @dragend="handleStrokeDragEnd(stroke, $event)"
-            @touchstart="(e) => handleTouchStart(stroke.id, e.evt)"
-            @touchend="handleTouchEnd"
-            @touchmove="handleTouchMove"
+            :config="{ ...getCircleConfig(stroke), id: stroke.id, name: 'stroke' }"
           />
           <!-- Text -->
           <v-text
             v-else-if="stroke.tool === 'text'"
-            :config="getTextConfig(stroke)"
-            @mousedown="handleItemMouseDown(stroke.id, $event)"
-            @dblclick="handleTextEdit(stroke)"
-            @click="handleStrokeClick(stroke, $event)"
-            @dragend="handleStrokeDragEnd(stroke, $event)"
-            @transformend="handleTextTransformEnd(stroke, $event)"
-            @touchstart="(e) => handleTouchStart(stroke.id, e.evt)"
-            @touchend="handleTouchEnd"
-            @touchmove="handleTouchMove"
+            :config="{ ...getTextConfig(stroke), id: stroke.id, name: 'stroke' }"
+            @transformend="(e) => handleTextTransformEnd(stroke, e)"
           />
         </template>
       </v-layer>
@@ -2715,6 +2670,103 @@ function handleTouchMove(): void {
   }
 }
 
+// ─── Event Delegation Helpers ───────────────────────────────────────────────
+
+interface ResolvedTarget {
+  id: string
+  type: 'stroke' | 'asset'
+}
+
+function resolveTarget(e: Konva.KonvaEventObject<Event>): ResolvedTarget | null {
+  const target = e.target as Konva.Node | undefined
+  if (!target) return null
+
+  // Click on layer/stage itself — ignore
+  if (target === e.currentTarget) return null
+
+  // Ignore transformer/UI nodes
+  if (target.hasName?.('transformer')) return null
+
+  const id = target.id?.()
+  const type = target.name?.()
+
+  if (!id || !type) return null
+
+  if (type === 'stroke') return { id, type: 'stroke' }
+  if (type === 'asset') return { id, type: 'asset' }
+
+  return null
+}
+
+function handlePointerDown(e: Konva.KonvaEventObject<Event>): void {
+  const res = resolveTarget(e)
+  if (!res) return
+
+  if (res.type === 'stroke') {
+    handleStrokeMouseDownById(res.id, e)
+  } else {
+    handleAssetMouseDownById(res.id, e)
+  }
+}
+
+function handleClick(e: Konva.KonvaEventObject<Event>): void {
+  const res = resolveTarget(e)
+  if (!res) return
+
+  if (res.type === 'stroke') {
+    handleStrokeClickById(res.id, e)
+  } else {
+    handleAssetClickById(res.id, e)
+  }
+}
+
+function handleDragEnd(e: Konva.KonvaEventObject<Event>): void {
+  const res = resolveTarget(e)
+  if (!res) return
+
+  if (res.type === 'stroke') {
+    handleStrokeDragEndById(res.id, e)
+  } else {
+    handleAssetDragEndById(res.id, e)
+  }
+}
+
+// ─── ID-based wrapper functions for event delegation ────────────────────────
+
+function handleStrokeMouseDownById(id: string, e: Konva.KonvaEventObject<Event>): void {
+  const stroke = wbStore.currentStrokes.find(s => s.id === id)
+  if (!stroke) return
+  handleItemMouseDown(id, e as Konva.KonvaEventObject<MouseEvent | TouchEvent>)
+}
+
+function handleAssetMouseDownById(id: string, e: Konva.KonvaEventObject<Event>): void {
+  handleItemMouseDown(id, e as Konva.KonvaEventObject<MouseEvent | TouchEvent>)
+}
+
+function handleStrokeClickById(id: string, e: Konva.KonvaEventObject<Event>): void {
+  const stroke = wbStore.currentStrokes.find(s => s.id === id)
+  if (!stroke) return
+  handleStrokeClick(stroke, e as Konva.KonvaEventObject<MouseEvent>)
+}
+
+function handleAssetClickById(id: string, e: Konva.KonvaEventObject<Event>): void {
+  const asset = wbStore.currentAssets.find(a => a.id === id)
+  if (!asset) return
+  handleAssetClick(asset, e as Konva.KonvaEventObject<MouseEvent>)
+}
+
+function handleStrokeDragEndById(id: string, e: Konva.KonvaEventObject<Event>): void {
+  const stroke = wbStore.currentStrokes.find(s => s.id === id)
+  if (!stroke) return
+  handleStrokeDragEnd(stroke, e)
+}
+
+function handleAssetDragEndById(id: string, e: Konva.KonvaEventObject<Event>): void {
+  const asset = wbStore.currentAssets.find(a => a.id === id)
+  if (!asset) return
+  handleAssetDragEnd(asset, e)
+}
+
 // ─── Group Move: mousedown on multi-selected item (backup for Konva items) ─
 
 function handleItemMouseDown(itemId: string, e: Konva.KonvaEventObject<MouseEvent | TouchEvent>): void {
@@ -2781,7 +2833,7 @@ function handleStrokeClick(stroke: WBStroke, e: Konva.KonvaEventObject<MouseEven
   }
 }
 
-function handleStrokeDragEnd(stroke: WBStroke, e: Konva.KonvaEventObject<DragEvent>): void {
+function handleStrokeDragEnd(stroke: WBStroke, e: Konva.KonvaEventObject<Event>): void {
   if (currentTool.value !== 'select') return
 
   const node = e.target
@@ -2879,7 +2931,7 @@ function handleAssetClick(asset: WBAsset, e: Konva.KonvaEventObject<MouseEvent>)
   }
 }
 
-function handleAssetDragEnd(asset: WBAsset, e: Konva.KonvaEventObject<DragEvent>): void {
+function handleAssetDragEnd(asset: WBAsset, e: Konva.KonvaEventObject<Event>): void {
   const node = e.target
   emit('asset-update', {
     ...asset,
@@ -3542,6 +3594,22 @@ onMounted(async () => {
   // A6.1: Ensure Konva is loaded (populates singleton cache for konvaLoader)
   await loadKonva()
 
+  // ED1: Event Delegation — attach listeners to layers (not individual nodes)
+  const strokesLayer = strokesLayerRef.value?.getNode()
+  const assetsLayer = assetsLayerRef.value?.getNode()
+
+  if (strokesLayer) {
+    strokesLayer.on('mousedown touchstart', handlePointerDown)
+    strokesLayer.on('click tap', handleClick)
+    strokesLayer.on('dragend', handleDragEnd)
+  }
+
+  if (assetsLayer) {
+    assetsLayer.on('mousedown touchstart', handlePointerDown)
+    assetsLayer.on('click tap', handleClick)
+    assetsLayer.on('dragend', handleDragEnd)
+  }
+
   // A6.3: ResizeObserver for responsive canvas sizing
   if (containerRef.value && typeof ResizeObserver !== 'undefined') {
     resizeObserver = new ResizeObserver((entries) => {
@@ -3620,8 +3688,21 @@ onUnmounted(() => {
   // A6.3: Disconnect ResizeObserver
   if (resizeObserver) {
     resizeObserver.disconnect()
-    resizeObserver = null
   }
+  // ED1: Remove layer event delegation listeners
+  const strokesLayer = strokesLayerRef.value?.getNode()
+  const assetsLayer = assetsLayerRef.value?.getNode()
+  if (strokesLayer) {
+    strokesLayer.off('mousedown touchstart', handlePointerDown)
+    strokesLayer.off('click tap', handleClick)
+    strokesLayer.off('dragend', handleDragEnd)
+  }
+  if (assetsLayer) {
+    assetsLayer.off('mousedown touchstart', handlePointerDown)
+    assetsLayer.off('click tap', handleClick)
+    assetsLayer.off('dragend', handleDragEnd)
+  }
+  resizeObserver = null
   // A6.2: Clear spatial index
   spatialIndex.clear()
 })
