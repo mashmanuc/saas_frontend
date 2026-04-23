@@ -42,17 +42,41 @@ export const useOnboardingStore = defineStore('onboarding', () => {
     return steps.value.findIndex((s) => s.slug === currentStep.value?.slug)
   })
 
-  const completedSteps = computed(() => progress.value?.completed_steps || [])
-  const skippedSteps = computed(() => progress.value?.skipped_steps || [])
-  const progressPercentage = computed(() => progress.value?.progress_percentage || 0)
+  const completedSteps = computed(() =>
+    Array.isArray(progress.value?.completed_steps)
+      ? progress.value.completed_steps
+      : []
+  )
+  const skippedSteps = computed(() =>
+    Array.isArray(progress.value?.skipped_steps)
+      ? progress.value.skipped_steps
+      : []
+  )
+  const progressPercentage = computed(() =>
+    typeof progress.value?.progress_percentage === 'number'
+      ? progress.value.progress_percentage
+      : 0
+  )
 
-  const isCompleted = computed(() => progress.value?.is_completed || false)
-  const isDismissed = computed(() => progress.value?.is_dismissed || false)
+  const isCompleted = computed(() =>
+    typeof progress.value?.is_completed === 'boolean'
+      ? progress.value.is_completed
+      : false
+  )
+  const isDismissed = computed(() =>
+    typeof progress.value?.is_dismissed === 'boolean'
+      ? progress.value.is_dismissed
+      : false
+  )
 
-  const onboardingType = computed(() => progress.value?.onboarding_type || 'student')
+  const onboardingType = computed(() =>
+    typeof progress.value?.onboarding_type === 'string'
+      ? progress.value.onboarding_type
+      : 'student'
+  )
 
   const shouldShowOnboarding = computed(
-    () => !isCompleted.value && !isDismissed.value && progress.value !== null
+    () => !isCompleted.value && !isDismissed.value && progress.value != null
   )
 
   const nextStep = computed(() => {

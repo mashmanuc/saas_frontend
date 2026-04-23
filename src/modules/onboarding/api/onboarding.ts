@@ -46,8 +46,21 @@ export interface ChecklistSummary {
 export const onboardingApi = {
   // Onboarding
   getProgress: async (): Promise<OnboardingProgress> => {
-    const response = await apiClient.get<OnboardingProgress>('/onboarding/progress/')
-    return response
+    try {
+      const response = await apiClient.get<OnboardingProgress>('/onboarding/progress/')
+      return response
+    } catch {
+      // Defensive: API not ready → return safe default to prevent forEach crash
+      return {
+        onboarding_type: 'student',
+        current_step: null,
+        completed_steps: [],
+        skipped_steps: [],
+        is_completed: false,
+        is_dismissed: false,
+        progress_percentage: 0,
+      }
+    }
   },
 
   getSteps: async (): Promise<OnboardingStep[]> => {
