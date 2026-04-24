@@ -348,15 +348,23 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
 
       // Синхронізуємо lastKnownTotal з BE після підтвердженого commit (останнього чанка)
       if (lastResult && typeof lastResult.total_operations === 'number') {
-        const prevTotal = lastKnownTotal.value  // зберігаємо ДО оновлення
         lastKnownTotal.value = lastResult.total_operations
-        // Race condition fix: snapshot тільки після підтвердженого BE commit ops —
-        // не в record() де ops ще в buffer і не збережені
-        const crossedBoundary = Math.floor(lastResult.total_operations / SNAPSHOT_EVERY) >
-                                Math.floor(prevTotal / SNAPSHOT_EVERY)
-        if (crossedBoundary) {
-          _createSnapshot()
-        }
+        // 2026-04-24 PROD INCIDENT FIX (b9ee847e — retryQueue overflow, 201 ops lost):
+        //
+        // Видалено автоматичний _createSnapshot() кожні SNAPSHOT_EVERY=200 ops.
+        //
+        // Root cause: FE POST /replay/snapshots/create/ з 1-5 MB board_state тримав
+        // row lock на WBSession протягом 2-10 секунд. Паралельний POST /replay/batch/
+        // отримував 409 session_locked → FE retry × 10 → retryQueue overflow → дані
+        // втрачені.
+        //
+        // Backend `ops_worker.apply_ops_and_snapshot` (Celery task) УЖЕ створює
+        // persistence snapshots автоматично кожні 100 ops через _create_snapshot()
+        // з board_state, що реконструюється з `snapshot + ops`. FE-initiated
+        // snapshot був дублем, що конкурував з worker за один і той самий lock.
+        //
+        // Залишаємо _createSnapshot() functionу і createSnapshot import для
+        // можливого manual-trigger (наприклад, перед `stop_recording` — future).
       }
     } catch (e) {
       console.warn('[ReplayRecorder] batch flush failed, re-queuing to retryQueue:', e)

@@ -206,23 +206,21 @@ describe('useReplayRecorder — circuit breaker', () => {
   })
 })
 
-// ─── Snapshot після flush (race condition fix) ────────────────────────────────
+// ─── Snapshot не створюється з FE (2026-04-24 prod incident fix) ─────────────
+// Було: FE автоматично POST /replay/snapshots/create/ кожні 200 ops з повним
+// board_state → lock contention → 409 storm → retryQueue overflow → data loss.
+// Стало: snapshots створюються тільки backend `ops_worker` кожні 100 ops.
 
-describe('useReplayRecorder — snapshot тільки після commit', () => {
-  it('snapshot НЕ створюється при record() — тільки після flush', async () => {
+describe('useReplayRecorder — FE НЕ створює snapshots (backend owns it)', () => {
+  it('snapshot НЕ викликається після flush з total_operations=200', async () => {
     mockBatch.mockResolvedValue({ recorded: 1, total_operations: 200 })
     const { recorder } = makeRecorder()
-
-    // Записуємо 1 op (не 200 — мало для snapshot при record())
     recorder.record(makeOp())
-    expect(mockSnapshot).not.toHaveBeenCalled()  // ще не flush
-
     await recorder.flush()
-    // total_operations=200 → crossed boundary at 200 → snapshot має бути
-    expect(mockSnapshot).toHaveBeenCalledOnce()
+    expect(mockSnapshot).not.toHaveBeenCalled()
   })
 
-  it('snapshot НЕ створюється якщо flush failed', async () => {
+  it('snapshot НЕ викликається якщо flush failed', async () => {
     mockBatch.mockRejectedValue(new Error('fail'))
     const { recorder } = makeRecorder()
     recorder.record(makeOp())
@@ -230,20 +228,17 @@ describe('useReplayRecorder — snapshot тільки після commit', () => 
     expect(mockSnapshot).not.toHaveBeenCalled()
   })
 
-  it('snapshot створюється коли total перетинає межу 200', async () => {
+  it('snapshot НЕ викликається навіть коли total перетинає межу 200', async () => {
     const { recorder } = makeRecorder()
-
-    // Перший flush: total=199 → no snapshot
     mockBatch.mockResolvedValueOnce({ recorded: 50, total_operations: 199 })
     recorder.record(makeOp())
     await recorder.flush()
     expect(mockSnapshot).not.toHaveBeenCalled()
 
-    // Другий flush: total=201 → snapshot!
     mockBatch.mockResolvedValueOnce({ recorded: 2, total_operations: 201 })
     recorder.record(makeOp())
     await recorder.flush()
-    expect(mockSnapshot).toHaveBeenCalledOnce()
+    expect(mockSnapshot).not.toHaveBeenCalled()
   })
 })
 

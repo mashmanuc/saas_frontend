@@ -386,11 +386,13 @@ describe('TEST 6 — long session (snapshot trigger at 200 ops)', () => {
       enabled,
     })
 
-    // 210 ops → перехід через 200 boundary → _createSnapshot() викликається
+    // 2026-04-24 fix: FE більше НЕ створює snapshot через createSnapshot API —
+    // ops_worker у backend робить це автоматично. 210 ops → 0 FE-initiated snapshots.
     for (let i = 0; i < 210; i++) recorder.record(mkOp(i))
-    await waitUntil(() => createSnapshotMock.mock.calls.length > 0, 8_000)
+    // Невелика пауза щоб усі flushes завершились.
+    await new Promise((r) => setTimeout(r, 500))
 
-    expect(createSnapshotMock).toHaveBeenCalled()
+    expect(createSnapshotMock).not.toHaveBeenCalled()
     recorder.destroy()
   }, 10_000)
 })
