@@ -3,7 +3,7 @@
 // Handles: lesson start/end, student join/leave, teacher reconnect,
 //          network disconnect, multiple tabs, browser close beacon save
 
-import { ref, readonly, onBeforeUnmount, type Ref } from 'vue'
+import { ref, readonly, onBeforeUnmount, watch, type Ref } from 'vue'
 import { winterboardApi } from '../api/winterboardApi'
 import type { WBClassroomRole } from '../api/winterboardApi'
 
@@ -120,6 +120,81 @@ export function useSessionLifecycle(
   }
 
   // ── Beacon save (browser close) ─────────────────────────────────────
+  //
+  // 2026-04-24 post-incident safeguard E:
+  // navigator.sendBeacon() не гарантує ACK від сервера — якщо beacon вилетить
+  // тільки частково (TCP reset, CDN drop, backend overload) — дані зникнуть
+  // без сліду. Тому:
+  //   1. Перед sendBeacon копіюємо payload у sessionStorage (synchronous, OK
+  //      у beforeunload handler) під ключем `wb_beacon_pending:<sid>`.
+  //   2. На наступному mount (recoverPendingBeacon) виявляємо flag, робимо
+  //      звичайний POST з ACK, після success — чистимо flag.
+  // sessionStorage обраний замість localStorage бо:
+  //   - авто-очищується при закритті останньої вкладки домену
+  //   - не засмічує storage для користувача що закривав прод-вкладку місяць тому
+
+  const BEACON_PENDING_KEY = (sid: string) => `wb_beacon_pending:${sid}`
+
+  function _persistBeaconPayload(sid: string, stateData: Record<string, unknown>): void {
+    try {
+      sessionStorage.setItem(
+        BEACON_PENDING_KEY(sid),
+        JSON.stringify({
+          state: stateData,
+          queued_at: Date.now(),
+        }),
+      )
+    } catch (e) {
+      // sessionStorage quota / disabled — не блокуємо beacon, просто лог
+      console.warn(`${LOG} Failed to persist beacon backup:`, e)
+    }
+  }
+
+  function _clearBeaconPending(sid: string): void {
+    try {
+      sessionStorage.removeItem(BEACON_PENDING_KEY(sid))
+    } catch {
+      // ignore
+    }
+  }
+
+  /**
+   * Виявляє pending beacon від попередньої browser-session (page crashed
+   * після sendBeacon, або beacon не дійшов). Відправляє звичайний POST з
+   * ACK, очищає flag на success.
+   * Викликати у onMounted для кожної сесії.
+   */
+  async function recoverPendingBeacon(sid: string): Promise<void> {
+    let raw: string | null = null
+    try {
+      raw = sessionStorage.getItem(BEACON_PENDING_KEY(sid))
+    } catch {
+      return
+    }
+    if (!raw) return
+    try {
+      const parsed = JSON.parse(raw) as { state?: Record<string, unknown>; queued_at?: number }
+      if (!parsed?.state) {
+        _clearBeaconPending(sid)
+        return
+      }
+      const ageMs = parsed.queued_at ? Date.now() - parsed.queued_at : 0
+      console.warn(
+        `${LOG} Pending beacon detected for session=${sid}, age=${Math.round(ageMs / 1000)}s — retrying via regular POST`,
+      )
+      // `beaconSave` is a fire-and-forget sendBeacon; for recovery робимо
+      // звичайний POST із ACK через streamSave (legacy save-stream endpoint).
+      // Це проходить через нормальний axios pipeline → 2xx/4xx/5xx знаємо точно.
+      await winterboardApi.streamSave(sid, parsed.state as never, 0)
+      _clearBeaconPending(sid)
+      console.info(`${LOG} Pending beacon recovered for session=${sid}`)
+    } catch (err) {
+      // Recovery fail — залишаємо flag для наступної спроби.
+      // Якщо beacon payload постійно 4xx — user отримає помилку у console
+      // і може вручну зробити дію. Важливо НЕ чистити flag на помилку.
+      console.error(`${LOG} Pending beacon recovery failed:`, err)
+    }
+  }
 
   function registerBeaconSave(getState: () => Record<string, unknown> | null): void {
     if (beaconRegistered) return
@@ -130,6 +205,9 @@ export function useSessionLifecycle(
 
       const stateData = getState()
       if (stateData) {
+        // Step 1: persist to sessionStorage BEFORE sendBeacon (recovery safety net)
+        _persistBeaconPayload(sid, stateData)
+        // Step 2: fire beacon
         winterboardApi.beaconSave(sid, stateData)
         console.info(`${LOG} Beacon save on unload`, { sessionId: sid })
       }
@@ -151,6 +229,21 @@ export function useSessionLifecycle(
       beaconRegistered = false
     }
   }
+
+  // 2026-04-24 safeguard E: auto-recover pending beacon on session mount.
+  // Fires exactly once per sessionId transition null→non-null.
+  let _lastRecoveryAttempt: string | null = null
+  watch(
+    sessionId,
+    (sid) => {
+      if (sid && sid !== _lastRecoveryAttempt) {
+        _lastRecoveryAttempt = sid
+        // Fire-and-forget; recoverPendingBeacon logs its own errors.
+        void recoverPendingBeacon(sid)
+      }
+    },
+    { immediate: true },
+  )
 
   // ── Reconnect logic ─────────────────────────────────────────────────
 
@@ -354,5 +447,7 @@ export function useSessionLifecycle(
     onDisconnect,
     handleSessionMessage,
     reset,
+    // 2026-04-24 post-incident safeguard E: recover pending beacon on mount
+    recoverPendingBeacon,
   }
 }

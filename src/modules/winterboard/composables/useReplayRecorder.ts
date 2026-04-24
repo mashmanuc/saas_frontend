@@ -53,6 +53,7 @@ import { isCircuitBreakerOpen } from '@/utils/apiClient'
 import { registerAuthDeathCleanup, isAuthDead } from '@/core/auth/onAuthDeath'
 import { createSessionWriteLock } from './useSessionWriteLock'
 import { saveBackup, clearBackup, readBackup } from './useOpsBackup'
+import { trackEvent } from '@/utils/telemetryAgent'
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -381,6 +382,24 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
       if (retryQueue.length > MAX_RETRY_QUEUE_SIZE) {
         circuitOpen = true
         pipelineStatus.value = 'broken'
+        // 2026-04-24 post-incident: надіслати telemetry ДО throw, щоб
+        // backend дізнався про катастрофу (Prometheus wb_ops_lost_total +
+        // Grafana alert). Без цього єдина ознака у console браузера.
+        try {
+          trackEvent(
+            'wb.ops.retry_queue_overflow',
+            {
+              session_id: options.sessionId.value,
+              overflow_count: retryQueue.length,
+              max_capacity: MAX_RETRY_QUEUE_SIZE,
+              buffer_size: buffer.length,
+              inFlight_size: inFlight.length,
+            },
+            { ops_lost: retryQueue.length },
+          )
+        } catch (telemetryErr) {
+          console.error('[ReplayRecorder] telemetry overflow emit failed:', telemetryErr)
+        }
         throw new Error(
           `[ReplayRecorder] retryQueue overflow: ${retryQueue.length} ops exceed cap ${MAX_RETRY_QUEUE_SIZE}. ` +
           'Помилка збереження. Перезавантаж сторінку.',
