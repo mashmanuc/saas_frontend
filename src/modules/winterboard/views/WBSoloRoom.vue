@@ -911,6 +911,7 @@ import { useAnnouncer } from '../composables/useAnnouncer'
 import { useContentDrop } from '../composables/useContentDrop'
 import { useToast } from '../composables/useToast'
 import { winterboardApi } from '../api/winterboardApi'
+import { recordOperationsBatch } from '../api/replay'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { groupApi as learningGroupApi } from '@/modules/groups/api/groupApi'
 import type { WBStroke, WBAsset, WBToolType } from '../types/winterboard'
@@ -2719,7 +2720,53 @@ onMounted(async () => {
       // Hydrate store immediately with created session data to avoid re-fetch flicker
       store.workspaceId = created.id
       sessionId.value = created.id
-      if (created.state) {
+
+      // Plan v4, Phase I Variant B (2026-04-24): initial page MUST be created
+      // through ops pipeline. POST /sessions/ returns empty state; FE emits
+      // a real `page_add` op (with real timestamp) via /replay/batch/ before
+      // hydrating the store. No more "initial page exists in state but has
+      // no corresponding op" drift (Pattern A of replay_equality fail).
+      const serverPages =
+        created.state && Array.isArray((created.state as any).pages)
+          ? ((created.state as any).pages as unknown[])
+          : []
+      if (serverPages.length === 0) {
+        const initialPageId = `page-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+        const initialPage = {
+          id: initialPageId,
+          name: 'Page 1',
+          strokes: [] as unknown[],
+          assets: [] as unknown[],
+          background: 'white',
+          backgroundColor: '#ffffff',
+        }
+        try {
+          await recordOperationsBatch(created.id, [
+            {
+              op_type: 'page_add',
+              page_id: initialPageId,
+              payload: { page: initialPage },
+            } as any,
+          ])
+        } catch (emitErr) {
+          // Non-fatal: FE still hydrates so tutor can draw; op will be retried
+          // by autosave/recorder pipeline if enabled. Log for observability.
+          console.error('[WBSoloRoom] Failed to emit initial page_add op:', emitErr)
+        }
+        store.hydrateFromSession({
+          id: created.id,
+          name: created.name,
+          owner_id: created.owner_id ?? '',
+          state: { pages: [initialPage], currentPageIndex: 0 } as any,
+          page_count: 1,
+          thumbnail_url: created.thumbnail_url,
+          rev: created.rev,
+          created_at: created.created_at,
+          updated_at: created.updated_at,
+        })
+      } else if (created.state) {
+        // Backwards-compat path for legacy servers that still populate state.
+        // Phase 5 (videlення endpoints) вимкне цей шлях остаточно.
         store.hydrateFromSession({
           id: created.id,
           name: created.name,
