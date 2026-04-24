@@ -91,6 +91,7 @@
           <v-group
             v-else-if="(asset.borderRadius ?? 0) > 0"
             :config="{ ...getClipGroupConfig(asset), id: asset.id, name: 'asset' }"
+            @transformend="handleAssetTransformEnd(asset, $event)"
           >
             <v-image :config="{ ...getClipChildImageConfig(asset), id: asset.id }" />
           </v-group>
@@ -98,6 +99,7 @@
           <v-image
             v-else
             :config="{ ...getAssetConfig(asset), id: asset.id, name: 'asset' }"
+            @transformend="handleAssetTransformEnd(asset, $event)"
           />
         </template>
       </v-layer>
@@ -2731,6 +2733,14 @@ function handleDragEnd(e: Konva.KonvaEventObject<Event>): void {
     handleAssetDragEndById(res.id, e)
   }
 }
+
+// Regression fix (46ffb40, 2026-04-23):
+// P2 event-delegation refactor переніс dragend на layer-level, але transformend
+// НЕ можна так робити — v-transformer рендериться у uiLayerRef, а не в
+// assetsLayerRef, тож `transformend` не bubble до assetsLayer. Тримаємо
+// per-node binding `@transformend="handleAssetTransformEnd(...)"` на v-image /
+// v-group (див. template). Без нього resize зображень не зберігається і
+// state зникає при перемиканні сторінки.
 
 // ─── ID-based wrapper functions for event delegation ────────────────────────
 
