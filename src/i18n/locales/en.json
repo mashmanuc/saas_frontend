@@ -6385,6 +6385,7 @@
       "title": "My Replays",
       "subtitle": "Recordings of your lessons and boards: watch, share a link",
       "untitled": "Untitled",
+      "dragHint": "Drag this replay into a folder on the left",
       "loadMore": "Load more",
       "live": "Recording in progress",
       "viewCountTitle": "View count",
@@ -6401,6 +6402,11 @@
       "status": {
         "archived": "Archived",
         "trashed": "In trash"
+      },
+      "trash": {
+        "purgeOn": "Will be deleted on {date}",
+        "purgeOverdue": "Awaiting deletion",
+        "trashedAt": "In trash since {date}"
       },
       "empty": {
         "title": "No replays yet",
@@ -6423,11 +6429,26 @@
       },
       "menu": {
         "rename": "Rename",
+        "moveToFolder": "Move to folder",
         "visibility": "Visibility",
-        "archive": "Archive",
+        "archive": "Move to archive",
         "restore": "Restore",
         "restoreFromTrash": "Restore from trash",
         "trash": "Move to trash"
+      },
+      "folders": {
+        "label": "Replay folders",
+        "all": "All replays",
+        "noFolder": "No folder",
+        "new": "New folder",
+        "name": "Folder name",
+        "rename": "Rename",
+        "delete": "Delete",
+        "createChild": "Subfolder",
+        "moveTo": "Move to folder",
+        "deleteConfirm": "Delete folder «{name}»? Replays inside will not be deleted — they move to the root.",
+        "empty": "No folders yet",
+        "emptyHint": "Create a folder in the sidebar to organize replays"
       },
       "prompts": {
         "renameTitle": "New replay title:",
