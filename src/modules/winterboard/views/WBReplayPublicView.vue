@@ -35,7 +35,7 @@
 // B.8: TODO branding bottom-right з opacity 0.7 (наразі в footer).
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { fetchPublicReplayByToken } from '../api/replay'
+import { fetchPublicReplayByToken, ReplayGoneError, ReplayNotFoundError } from '../api/replay'
 
 const props = defineProps<{ token: string }>()
 const { t } = useI18n({ useScope: 'global' })
@@ -57,15 +57,18 @@ onMounted(async () => {
       document.title = `${sessionName.value} — M4SH Replay`
     }
   } catch (e) {
-    const err = e as { status?: number; message?: string }
-    if (err.status === 404) {
+    // Phase 2.5 cache plan: fetchPublicReplayByToken тепер кидає custom errors
+    // (НЕ axios з .status). Mapping до user-friendly messages.
+    if (e instanceof ReplayNotFoundError) {
       error.value = t('winterboard.replay.notFound', 'Запис не знайдено або був видалений')
-    } else if (err.status === 403) {
-      error.value = t('winterboard.replay.forbidden', 'Доступ закрито власником')
-    } else if (err.status === 429) {
+    } else if (e instanceof ReplayGoneError) {
+      // 410 Gone — replay trashed. Backend дав localized detail.
+      error.value = e.detail || t('winterboard.replay.notFound', 'Запис видалено')
+    } else if (e instanceof Error && e.message === 'rate_limited') {
       error.value = t('winterboard.replay.rateLimited', 'Забагато запитів, спробуйте пізніше')
     } else {
-      error.value = err.message || t('winterboard.replay.loadError', 'Не вдалося завантажити запис')
+      const msg = e instanceof Error ? e.message : ''
+      error.value = msg || t('winterboard.replay.loadError', 'Не вдалося завантажити запис')
     }
   } finally {
     loading.value = false

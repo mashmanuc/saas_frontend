@@ -172,12 +172,58 @@ export type ReplayVisibility = 'private' | 'unlisted' | 'public'
 //   createReplayShareLink()    → auto on stop_recording (Replay.public_token)
 //   rotateReplayShareToken()   → replayLifecycleApi.rotateReplayToken(id)
 
+/** Custom error classes для public replay flow. */
+export class ReplayGoneError extends Error {
+  detail: string
+  trashed_at: string | null
+  constructor(data: { detail?: string; trashed_at?: string | null }) {
+    super(data.detail || 'Запис видалено автором')
+    this.name = 'ReplayGoneError'
+    this.detail = data.detail || 'Запис видалено автором'
+    this.trashed_at = data.trashed_at ?? null
+  }
+}
+
+export class ReplayNotFoundError extends Error {
+  constructor() {
+    super('Replay not found')
+    this.name = 'ReplayNotFoundError'
+  }
+}
+
+/** Resolve API base URL — match logic у apiClient.js. */
+function getApiBase(): string {
+  // import.meta.env.DEV true in vite dev server, false у production build
+  const isProduction = !import.meta.env.DEV
+  if (isProduction) {
+    return (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'https://api.m4sh.org/api'
+  }
+  return '/api'
+}
+
 /** GET /winterboard/replay/public/{token}/ — PUBLIC (no auth).
  *
  * Share Layer v2: canonical endpoint resolves через Replay.public_token
- * (не legacy WBSession.replay_share_token). Includes analytics tracking.
+ * (не legacy WBSession.replay_share_token).
+ *
+ * **Phase 2.5 cache plan (B1 fix, 2026-04-25):** використовуємо raw `fetch()`,
+ * НЕ apiClient. Причини:
+ * - apiClient interceptor додає `Authorization: Bearer <jwt>` для залогінених
+ * - CF за замовчуванням bypass-ить cache при наявності Authorization header
+ * - Залогінені тьютори (target audience продукту) ніколи не отримували HIT
+ *
+ * Тут:
+ * - `credentials: 'omit'` — НЕ слати cookies (sessionid, csrftoken)
+ * - БЕЗ Authorization header — backend все одно AllowAny
+ * - Custom error classes для 410/404 (без apiClient interceptor handling)
+ *
+ * Analytics: викликати reportReplayView(token) через 5с playback (D6 invariant).
  *
  * Response superset legacy schema — додано replay_id, duration_ms, view_count.
+ *
+ * @throws ReplayGoneError on 410 (replay trashed)
+ * @throws ReplayNotFoundError on 404 (token не існує / private)
+ * @throws Error on інші failures
  */
 export async function fetchPublicReplayByToken(
   token: string,
@@ -190,7 +236,58 @@ export async function fetchPublicReplayByToken(
   duration_ms?: number
   view_count?: number
 }> {
-  return apiClient.get(`${BASE}/replay/public/${token}/`)
+  const url = `${getApiBase()}/v1/winterboard/replay/public/${encodeURIComponent(token)}/`
+  const res = await fetch(url, {
+    method: 'GET',
+    credentials: 'omit', // C8: НЕ шлемо cookies/Authorization → CF cache friendly
+    headers: { Accept: 'application/json' },
+  })
+
+  if (res.status === 410) {
+    const data = await res.json().catch(() => ({}))
+    throw new ReplayGoneError(data)
+  }
+  if (res.status === 404) {
+    throw new ReplayNotFoundError()
+  }
+  if (res.status === 429) {
+    throw new Error('rate_limited')
+  }
+  if (!res.ok) {
+    throw new Error(`Fetch public replay failed: ${res.status}`)
+  }
+  return res.json()
+}
+
+/** POST /winterboard/replay/public/{token}/view-ping/ — analytics-only.
+ *
+ * Phase 3 cache plan: викликати ЧЕРЕЗ 5 секунд після playback start
+ * (D6: real viewers, не URL opens).
+ *
+ * Backend має 5-min debounce per ip_hash + idempotent з op_id pattern.
+ * Silent fail у catch — analytics ніколи не блокує playback.
+ *
+ * @returns true якщо ping успішно надіслано, false при failure (для дебагу)
+ */
+export async function reportReplayView(token: string): Promise<boolean> {
+  try {
+    const url = `${getApiBase()}/v1/winterboard/replay/public/${encodeURIComponent(token)}/view-ping/`
+    const res = await fetch(url, {
+      method: 'POST',
+      credentials: 'omit', // C8: і для ping — без cookies/auth
+      keepalive: true, // витривалий до closing tab у межах 64KB request
+    })
+    if (!res.ok && res.status !== 204) {
+      console.warn('[replay] view-ping non-OK', { status: res.status })
+      return false
+    }
+    return true
+  } catch (err) {
+    // Silent fail у UX, але видимий у console для debug.
+    // Типовий case: CF DDoS challenge, мережева помилка, rate limit.
+    console.warn('[replay] view-ping network error', err)
+    return false
+  }
 }
 
 // ─── Phase C: Replay Comments ─────────────────────────────────────────

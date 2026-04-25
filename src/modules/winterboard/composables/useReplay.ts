@@ -7,9 +7,15 @@
 //   await replay.loadTimeline((op) => applyOpToShadowCanvas(op))
 //   replay.play()
 
-import { ref, shallowRef, readonly, computed, watch } from 'vue'
+import { ref, shallowRef, readonly, computed, watch, onScopeDispose } from 'vue'
 import { WBReplayEngine, type ReplaySpeed, type ReplayState } from '../engine/WBReplayEngine'
-import { fetchReplayTimeline, fetchPublicReplayByToken, fetchNearestSnapshot, fetchLessonMarkers } from '../api/replay'
+import {
+  fetchReplayTimeline,
+  fetchPublicReplayByToken,
+  fetchNearestSnapshot,
+  fetchLessonMarkers,
+  reportReplayView,
+} from '../api/replay'
 import type { BoardOperation } from '../types/replay'
 import type { WBLessonMarker } from '../types/winterboard'
 
@@ -46,6 +52,12 @@ export function useReplay(sessionId: string, publicToken?: string) {
   // Stored callbacks for seekToWithSnapshot / retry
   let _onOp: ((op: BoardOperation) => void) | null = null
   let _onStartState: ((state: { pages?: unknown[]; currentPageIndex?: number }) => void) | null = null
+
+  // Phase 3 cache plan (D6 + cleanup fix): viewping timer для public replays.
+  // pingSent — idempotence per session (не пінгуємо два рази навіть при reload).
+  // pingTimer — handle для cleanup якщо user закриє вкладку до 5с.
+  const pingTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+  const pingSent = ref(false)
 
   // P1: cancel any pending seek (component unmount or new seek)
   function cancelPendingSeek(): void {
@@ -131,6 +143,21 @@ export function useReplay(sessionId: string, publicToken?: string) {
         .on('onComplete', () => {
           state.value = 'ended'
         })
+
+      // Phase 3 cache plan (D6): викликати view-ping ТІЛЬКИ для public replays
+      // через 5с після loadTimeline → user реально дивиться, не bot scan.
+      // Idempotence: pingSent flag + backend 5-min debounce per ip_hash.
+      // Cleanup: onScopeDispose нижче — якщо component unmount-ається до 5с,
+      // ping НЕ летить (real viewer threshold не досягнутий).
+      if (publicToken && !pingSent.value && timeline.operations && timeline.operations.length > 0) {
+        if (pingTimer.value) clearTimeout(pingTimer.value)
+        pingTimer.value = setTimeout(() => {
+          if (pingSent.value) return
+          pingSent.value = true
+          // Silent fail — analytics не блокує playback
+          void reportReplayView(publicToken)
+        }, 5000)
+      }
     } catch (e) {
       const isAbort = e instanceof DOMException && e.name === 'AbortError'
       error.value = isAbort
@@ -339,7 +366,23 @@ export function useReplay(sessionId: string, publicToken?: string) {
     _onStartState = null
     markers.value = []
     activeMarkerId.value = null
+    // Phase 3: clear viewping timer (якщо <5с — ping не летить)
+    if (pingTimer.value) {
+      clearTimeout(pingTimer.value)
+      pingTimer.value = null
+    }
   }
+
+  // Phase 3 cleanup: автоматичний clearTimeout при scope dispose
+  // (component unmount, або scope cleanup у parent component).
+  // Без цього ping продовжує рахувати timer навіть після того як user
+  // закрив вкладку → false-positive "real viewer".
+  onScopeDispose(() => {
+    if (pingTimer.value) {
+      clearTimeout(pingTimer.value)
+      pingTimer.value = null
+    }
+  })
 
   return {
     state: readonly(state),
