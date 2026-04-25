@@ -298,7 +298,10 @@ import { ref, computed, watch, defineAsyncComponent, onMounted, onUnmounted } fr
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { winterboardApi, type WBSessionListItem, type ListSessionsQuery, type BoardFolderTree as BoardFolderTreeType } from '../api/winterboardApi'
-import { useToast } from '../composables/useToast'
+// Toast: використовуємо глобальний notify (PageShell рендерить <ToastContainer>).
+// `useToast` з composables — не mounted (legacy), повідомлення туди "в нікуди".
+// Міграція стандартна: showToast(msg,'success') → notifySuccess(msg).
+import { notifyError, notifySuccess } from '@/utils/notify'
 import WBBoardCard from '../components/boards/WBBoardCard.vue'
 import WBBoardListItem from '../components/boards/WBBoardListItem.vue'
 import BoardFolderTree from '../components/boards/BoardFolderTree.vue'
@@ -315,7 +318,6 @@ const LIMIT = 24
 
 const { t } = useI18n()
 const router = useRouter()
-const { showToast } = useToast()
 
 // ─── Tabs ────────────────────────────────────────────────────────────────────
 
@@ -454,12 +456,12 @@ async function handleCreateFolder(name: string, parentId: number | null): Promis
   try {
     await winterboardApi.createBoardFolder({ name, parent: parentId })
     await fetchFolders()
-    showToast(t('winterboard.folders.created'), 'success')
+    notifySuccess(t('winterboard.folders.created'))
   } catch (err: any) {
     if (err?.response?.status === 409) {
-      showToast(t('winterboard.folders.duplicateName'), 'error')
+      notifyError(t('winterboard.folders.duplicateName'))
     } else {
-      showToast(t('winterboard.folders.createError'), 'error')
+      notifyError(t('winterboard.folders.createError'))
     }
   }
 }
@@ -470,9 +472,9 @@ async function handleRenameFolder(folderId: number, name: string): Promise<void>
     await fetchFolders()
   } catch (err: any) {
     if (err?.response?.status === 409) {
-      showToast(t('winterboard.folders.duplicateName'), 'error')
+      notifyError(t('winterboard.folders.duplicateName'))
     } else {
-      showToast(t('winterboard.folders.renameError'), 'error')
+      notifyError(t('winterboard.folders.renameError'))
     }
   }
 }
@@ -486,9 +488,9 @@ async function handleDeleteFolder(folderId: number): Promise<void> {
     }
     await fetchFolders()
     await fetchBoards()
-    showToast(t('winterboard.folders.deleted'), 'success')
+    notifySuccess(t('winterboard.folders.deleted'))
   } catch {
-    showToast(t('winterboard.folders.deleteError'), 'error')
+    notifyError(t('winterboard.folders.deleteError'))
   }
 }
 
@@ -497,9 +499,9 @@ async function handleMoveToFolder(sessionId: string, folderId: number | null): P
     await winterboardApi.moveSessionToFolder(sessionId, folderId)
     await fetchFolders()
     await fetchBoards()
-    showToast(t('winterboard.folders.moved'), 'success')
+    notifySuccess(t('winterboard.folders.moved'))
   } catch {
-    showToast(t('winterboard.folders.moveError'), 'error')
+    notifyError(t('winterboard.folders.moveError'))
   }
 }
 
@@ -582,12 +584,12 @@ function openBoard(id: string): void {
 async function handleDuplicate(id: string): Promise<void> {
   try {
     const dup = await winterboardApi.duplicateSession(id)
-    showToast(t('winterboard.boards.duplicated'), 'success')
+    notifySuccess(t('winterboard.boards.duplicated'))
     // Додаємо копію в список без навігації — юзер відкриє сам коли захоче
     await fetchBoards()
   } catch (err) {
     console.error('[WB:BoardList] Duplicate failed', err)
-    showToast(t('winterboard.boards.duplicateError'), 'error')
+    notifyError(t('winterboard.boards.duplicateError'))
   }
 }
 
@@ -610,13 +612,18 @@ async function handleDelete(): Promise<void> {
     await winterboardApi.deleteSession(deleteTarget.value.id)
     boards.value = boards.value.filter((b) => b.id !== deleteTarget.value!.id)
     total.value = Math.max(0, total.value - 1)
-    showToast(t('winterboard.sessions.deleted'), 'success')
+    notifySuccess(t('winterboard.sessions.deleted'))
     deleteTarget.value = null
     // Refresh folder counts
     fetchFolders()
   } catch (err) {
     console.error('[WB:BoardList] Delete failed', err)
-    showToast(t('winterboard.sessions.deleteError'), 'error')
+    // Backend для 409 віддає {error, detail, active_replays, trashed_replays}.
+    // `detail` вже локалізований на UA — показуємо його, інакше fallback.
+    // Типовий сценарій: session має Replay → видалення PROTECT-нуто (R3).
+    const anyErr = err as { response?: { data?: { detail?: string } } }
+    const backendDetail = anyErr?.response?.data?.detail
+    notifyError(backendDetail || t('winterboard.sessions.deleteError'))
   } finally {
     deleting.value = false
   }
