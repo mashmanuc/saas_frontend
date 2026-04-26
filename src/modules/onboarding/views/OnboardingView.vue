@@ -29,20 +29,8 @@ const {
 } = storeToRefs(store)
 
 onMounted(async () => {
-  // Hotfix 2026-04-26: handle completed/error states with auto-redirect.
-  // Same as TutorOnboardingView — без auto-redirect юзер міг застрягти на view
-  // якщо isCompleted/isDismissed=true (currentStep == null → пустий екран).
-  try {
-    await store.loadProgress(true)
-    if (isCompleted.value || store.isDismissed) {
-      router.push('/dashboard')
-      return
-    }
-    await store.loadSteps()
-  } catch (e) {
-    console.error('[onboarding] load failed, redirecting to fallback', e)
-    router.push('/dashboard')
-  }
+  await store.loadProgress(true)  // force: primary onboarding flow needs fresh data
+  await store.loadSteps()
 })
 
 const currentStepComponent = computed(() => {

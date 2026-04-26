@@ -25,22 +25,8 @@ const formData = ref({
 })
 
 onMounted(async () => {
-  // Hotfix 2026-04-26: handle completed/error states with auto-redirect.
-  // Без цього юзер міг застрягти на /onboarding/tutor якщо isCompleted=true
-  // (currentStep == null → жоден step не render-иться → пустий екран).
-  // Раніше silent fallback з is_dismissed:true маскував bug — fix more correct тут.
-  try {
-    await store.loadProgress(true)
-    if (store.isCompleted || store.isDismissed) {
-      router.push('/winterboard/boards')
-      return
-    }
-    await store.loadSteps()
-  } catch (e) {
-    // API error → не блокувати юзера, redirect to dashboard
-    console.error('[onboarding] load failed, redirecting to fallback', e)
-    router.push('/winterboard/boards')
-  }
+  await store.loadProgress(true)  // force: primary onboarding flow needs fresh data
+  await store.loadSteps()
 })
 
 async function handleNext() {

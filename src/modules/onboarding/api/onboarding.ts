@@ -1,7 +1,4 @@
 // F8: Onboarding API Client
-// PR-FE-1 (2026-04-26): added /v1/ prefix to all 10 endpoints (was 404 у проді).
-// PR-FE-2: removed silent fallback у getProgress (масковало 404 як is_completed=true).
-// See saas_docs/plans/API_CONTRACT_FIX_PLAN_2026-04-26.md §1.
 import apiClient from '@/utils/apiClient'
 
 export interface OnboardingStep {
@@ -49,15 +46,11 @@ export interface ChecklistSummary {
 export const onboardingApi = {
   // Onboarding
   getProgress: async (): Promise<OnboardingProgress> => {
-    // ⚠️ EMERGENCY ROLLBACK 2026-04-26: повернений silent fallback з
-    // `is_completed: true, is_dismissed: true`. PR-FE-2 видалив його
-    // що заблокувало юзера на /onboarding/tutor (currentStep == null →
-    // пустий екран). До правильного fix у view layer + auto-redirect
-    // тригерів (TODO Phase 2) — повертаємо безпечну поведінку.
     try {
-      const response = await apiClient.get<OnboardingProgress>('/v1/onboarding/progress/')
+      const response = await apiClient.get<OnboardingProgress>('/onboarding/progress/')
       return response
     } catch {
+      // Defensive: API not ready → return "done" state to unblock UI
       return {
         onboarding_type: 'student',
         current_step: null,
@@ -71,52 +64,52 @@ export const onboardingApi = {
   },
 
   getSteps: async (): Promise<OnboardingStep[]> => {
-    const response = await apiClient.get<OnboardingStep[]>('/v1/onboarding/steps/')
+    const response = await apiClient.get<OnboardingStep[]>('/onboarding/steps/')
     return response
   },
 
   completeStep: async (slug: string): Promise<OnboardingProgress> => {
     const response = await apiClient.post<OnboardingProgress>(
-      `/v1/onboarding/steps/${slug}/complete/`
+      `/onboarding/steps/${slug}/complete/`
     )
     return response
   },
 
   skipStep: async (slug: string): Promise<OnboardingProgress> => {
     const response = await apiClient.post<OnboardingProgress>(
-      `/v1/onboarding/steps/${slug}/skip/`
+      `/onboarding/steps/${slug}/skip/`
     )
     return response
   },
 
   dismissOnboarding: async (): Promise<OnboardingProgress> => {
-    const response = await apiClient.post<OnboardingProgress>('/v1/onboarding/dismiss/')
+    const response = await apiClient.post<OnboardingProgress>('/onboarding/dismiss/')
     return response
   },
 
   resetOnboarding: async (): Promise<OnboardingProgress> => {
-    const response = await apiClient.post<OnboardingProgress>('/v1/onboarding/reset/')
+    const response = await apiClient.post<OnboardingProgress>('/onboarding/reset/')
     return response
   },
 
   // Checklist
   getChecklist: async (): Promise<ChecklistItem[]> => {
-    const response = await apiClient.get<ChecklistItem[]>('/v1/checklist/')
+    const response = await apiClient.get<ChecklistItem[]>('/checklist/')
     return response
   },
 
   getChecklistByCategory: async (category: string): Promise<ChecklistItem[]> => {
-    const response = await apiClient.get<ChecklistItem[]>(`/v1/checklist/${category}/`)
+    const response = await apiClient.get<ChecklistItem[]>(`/checklist/${category}/`)
     return response
   },
 
   syncChecklist: async (): Promise<ChecklistSummary> => {
-    const response = await apiClient.post<ChecklistSummary>('/v1/checklist/sync/')
+    const response = await apiClient.post<ChecklistSummary>('/checklist/sync/')
     return response
   },
 
   getCompletionPercentage: async (): Promise<{ percentage: number }> => {
-    const response = await apiClient.get<{ percentage: number }>('/v1/checklist/percentage/')
+    const response = await apiClient.get<{ percentage: number }>('/checklist/percentage/')
     return response
   },
 }
