@@ -49,16 +49,24 @@ export interface ChecklistSummary {
 export const onboardingApi = {
   // Onboarding
   getProgress: async (): Promise<OnboardingProgress> => {
-    // PR-FE-2 (2026-04-26): Removed silent fallback that returned
-    // { is_completed: true } on any error — це масковало 404
-    // (через відсутній /v1/ prefix) як "user finished onboarding".
-    // Per INV-API-2 (NO_SILENT_FALLBACKS_IN_API_LAYER) — explicit re-throw,
-    // store/UI must handle error state.
+    // ⚠️ EMERGENCY ROLLBACK 2026-04-26: повернений silent fallback з
+    // `is_completed: true, is_dismissed: true`. PR-FE-2 видалив його
+    // що заблокувало юзера на /onboarding/tutor (currentStep == null →
+    // пустий екран). До правильного fix у view layer + auto-redirect
+    // тригерів (TODO Phase 2) — повертаємо безпечну поведінку.
     try {
-      return await apiClient.get<OnboardingProgress>('/v1/onboarding/progress/')
-    } catch (e) {
-      console.error('[onboarding] getProgress failed', e)
-      throw e
+      const response = await apiClient.get<OnboardingProgress>('/v1/onboarding/progress/')
+      return response
+    } catch {
+      return {
+        onboarding_type: 'student',
+        current_step: null,
+        completed_steps: [],
+        skipped_steps: [],
+        is_completed: true,
+        is_dismissed: true,
+        progress_percentage: 100,
+      }
     }
   },
 
