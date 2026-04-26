@@ -47,7 +47,8 @@ export interface ThreadMessagesResponse {
  * Get or create thread by inquiry ID
  */
 export async function createThread(payload: CreateThreadPayload): Promise<ChatThread> {
-  const response = await apiClient.post<ChatThread>('/api/v1/chat/threads/create/', payload)
+  // PR-FE-3 (2026-04-26): Removed double `/api/` prefix.
+  const response = await apiClient.post<ChatThread>('/v1/chat/threads/create/', payload)
   return response
 }
 

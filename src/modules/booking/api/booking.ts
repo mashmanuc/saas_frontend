@@ -267,7 +267,9 @@ export const bookingApi = {
   },
 
   async deleteSlot(slotId: number): Promise<void> {
-    await apiClient.delete(`/api/v1/availability/slots/${slotId}`)
+    // PR-FE-3 (2026-04-26): Removed double `/api/` prefix.
+    // BE route: /api/v1/availability/slots/<id>/ (Phase 4 plan v0.45).
+    await apiClient.delete(`/v1/availability/slots/${slotId}`)
   },
 
   // Bookings
@@ -326,7 +328,9 @@ export const bookingApi = {
   },
 
   async createManualBooking(data: any, idempotencyKey: string): Promise<any> {
-    const response = await apiClient.post('/api/bookings/manual/', data, {
+    // PR-FE-3 (2026-04-26): Removed double `/api/` prefix.
+    // BE route: apps/booking/urls.py:144 → /api/bookings/manual/ (unversioned).
+    const response = await apiClient.post('/bookings/manual/', data, {
       headers: {
         'Idempotency-Key': idempotencyKey,
       },
@@ -335,7 +339,10 @@ export const bookingApi = {
   },
 
   async searchStudents(query: string): Promise<any[]> {
-    const response = await apiClient.get('/api/v1/students/search', {
+    // PR-FE-3 (2026-04-26): Fixed double `/api/` prefix + dead route.
+    // Old: `/api/v1/students/search` → /api/api/v1/students/search (404, route never existed)
+    // New: BE route is `tutor/students/?q=...` (apps/users/api/urls.py:104, unversioned).
+    const response = await apiClient.get('/tutor/students/', {
       params: { q: query },
     })
     return response.data.results || []

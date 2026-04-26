@@ -52,7 +52,8 @@ export const useChatThreadsStore = defineStore('chatThreads', () => {
 
     try {
       // Створюємо або отримуємо thread через backend
-      const response = await apiClient.post('/api/v1/chat/threads/negotiation/', {
+      // PR-FE-3 (2026-04-26): Removed double `/api/` prefix.
+      const response = await apiClient.post('/v1/chat/threads/negotiation/', {
         relation_id: relationId
       })
 
@@ -86,7 +87,8 @@ export const useChatThreadsStore = defineStore('chatThreads', () => {
      * ⚠️ Оптимізація: оновлюємо state тільки якщо дані змінилися
      */
     try {
-      const response = await apiClient.get('/api/v1/chat/unread-summary/', {
+      // PR-FE-3 (2026-04-26): Removed double `/api/` prefix.
+      const response = await apiClient.get('/v1/chat/unread-summary/', {
         meta: { skipLoader: true },
       })
       
@@ -148,7 +150,8 @@ export const useChatThreadsStore = defineStore('chatThreads', () => {
      * Позначає всі повідомлення в thread як прочитані.
      */
     try {
-      await apiClient.post(`/api/v1/chat/threads/${threadId}/mark-read/`, {})
+      // PR-FE-3 (2026-04-26): Removed double `/api/` prefix.
+      await apiClient.post(`/v1/chat/threads/${threadId}/mark-read/`, {})
 
       // Оновлюємо локальний unread count
       unreadSummary.value.threads = unreadSummary.value.threads.filter(

@@ -24,27 +24,31 @@ export interface TelegramToggleResponse {
   connected: boolean
 }
 
-/** GET /api/v1/telegram/generate-link/ */
+// PR-FE-3 (2026-04-26): Removed double `/api/` prefix in all 4 endpoints.
+// baseURL already includes /api, literal `/api/v1/...` produced `/api/api/v1/...` (404).
+// BE routes verified: config/urls.py:58 mounts telegram_bot at `api/v1/telegram/`.
+
+/** Backend: GET /api/v1/telegram/generate-link/ */
 export async function generateTelegramLink(): Promise<TelegramLinkResponse> {
   // apiClient інтерцептор вже розгортає res.data, тому не деструктуризуємо
-  const result = await apiClient.get('/api/v1/telegram/generate-link/')
+  const result = await apiClient.get('/v1/telegram/generate-link/')
   return result as TelegramLinkResponse
 }
 
-/** GET /api/v1/telegram/status/ */
+/** Backend: GET /api/v1/telegram/status/ */
 export async function getTelegramStatus(): Promise<TelegramStatusResponse> {
-  const result = await apiClient.get('/api/v1/telegram/status/')
+  const result = await apiClient.get('/v1/telegram/status/')
   return result as TelegramStatusResponse
 }
 
-/** POST /api/v1/telegram/toggle/ */
+/** Backend: POST /api/v1/telegram/toggle/ */
 export async function toggleTelegramNotifications(enabled: boolean): Promise<TelegramToggleResponse> {
-  const result = await apiClient.post('/api/v1/telegram/toggle/', { enabled })
+  const result = await apiClient.post('/v1/telegram/toggle/', { enabled })
   return result as TelegramToggleResponse
 }
 
-/** POST /api/v1/telegram/disconnect/ */
+/** Backend: POST /api/v1/telegram/disconnect/ */
 export async function disconnectTelegram(): Promise<{ connected: boolean; enabled: boolean }> {
-  const result = await apiClient.post('/api/v1/telegram/disconnect/')
+  const result = await apiClient.post('/v1/telegram/disconnect/')
   return result as { connected: boolean; enabled: boolean }
 }

@@ -49,7 +49,8 @@ const relationsApi = {
    * Returns grace_token required for onboarding accepts
    */
   async getTutorAcceptAvailability() {
-    return apiClient.get('/api/tutor/accept-availability/')
+    // PR-FE-3 (2026-04-26): Removed double `/api/` prefix (baseURL already /api).
+    return apiClient.get('/tutor/accept-availability/')
   },
 
   /**
