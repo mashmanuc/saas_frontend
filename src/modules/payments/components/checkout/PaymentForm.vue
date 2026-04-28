@@ -35,7 +35,11 @@ onMounted(async () => {
       return
     }
 
-    // @ts-ignore
+    // TODO(payments): пакет stripe-js не у package.json — checkout flow не
+    // production-ready. Phase 4 enforcement: bare suppress (`ts-ignore`)
+    // заборонений; @ts-expect-error documented і валиться як тільки
+    // package встановлять (тоді можна видалити directive).
+    // @ts-expect-error — Stripe loader package not yet installed (TS2307).
     const { loadStripe } = await import('@stripe/stripe-js')
     stripe = await loadStripe(stripeKey)
 

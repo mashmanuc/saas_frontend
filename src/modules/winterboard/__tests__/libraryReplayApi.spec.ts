@@ -36,11 +36,9 @@ import {
 } from '../api/library'
 import {
   fetchReplayTimeline,
-  recordOperation,
-  recordOperationsBatch,
 } from '../api/replay'
 import type { LibraryTag, LibraryAsset, LibraryFolder, LibraryFolderTree, LibraryAssetListResponse } from '../types/library'
-import type { ReplayTimeline, BoardOperation } from '../types/replay'
+import type { ReplayTimeline } from '../types/replay'
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -285,51 +283,8 @@ describe('replay API', () => {
     )
   })
 
-  it('recordOperation: POST single operation to /replay/operation/', async () => {
-    const created: BoardOperation = {
-      id: 10, op_type: 'stroke_add', page_id: 'p1',
-      payload: { points: [0, 0, 100, 100] }, user: 42, created_at: '2026-01-01T00:02:00Z',
-    }
-    mockPost.mockResolvedValueOnce(created)
-
-    const result = await recordOperation(SESSION_UUID, {
-      op_type: 'stroke_add',
-      page_id: 'p1',
-      payload: { points: [0, 0, 100, 100] },
-    })
-
-    expect(mockPost).toHaveBeenCalledWith(
-      `/v1/winterboard/sessions/${SESSION_UUID}/replay/operation/`,
-      { op_type: 'stroke_add', page_id: 'p1', payload: { points: [0, 0, 100, 100] } },
-    )
-    expect(result.id).toBe(10)
-    expect(result.op_type).toBe('stroke_add')
-  })
-
-  it('recordOperationsBatch: POST array to /replay/batch/ returns {recorded: N}', async () => {
-    mockPost.mockResolvedValueOnce({ recorded: 3 })
-
-    const result = await recordOperationsBatch(SESSION_UUID, [
-      { op_type: 'stroke_add', page_id: 'p1' },
-      { op_type: 'asset_add', page_id: 'p1', payload: { id: 'a1' } },
-      { op_type: 'page_add' },
-    ])
-
-    expect(mockPost).toHaveBeenCalledWith(
-      `/v1/winterboard/sessions/${SESSION_UUID}/replay/batch/`,
-      { operations: expect.arrayContaining([expect.objectContaining({ op_type: 'stroke_add' })]) },
-    )
-    expect(result.recorded).toBe(3)
-  })
-
-  it('recordOperationsBatch: wraps operations in {operations} key', async () => {
-    mockPost.mockResolvedValueOnce({ recorded: 1 })
-
-    await recordOperationsBatch(SESSION_UUID, [{ op_type: 'clear_page', page_id: 'p2' }])
-
-    const callArg = mockPost.mock.calls[0][1]
-    expect(callArg).toHaveProperty('operations')
-    expect(Array.isArray(callArg.operations)).toBe(true)
-    expect(callArg.operations[0].op_type).toBe('clear_page')
-  })
+  // recordOperation/recordOperationsBatch tests DELETED у Phase 4 follow-up —
+  // /replay/operation/ endpoint видалений (порушував INV-7 + INV-10);
+  // batch endpoint тестується у test_ops_apply_service.py (BE) +
+  // useReplayRecorder integration tests (FE).
 })

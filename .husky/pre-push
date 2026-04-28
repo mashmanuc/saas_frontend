@@ -1,145 +1,162 @@
 #!/bin/sh
-# Husky calls hooks через `sh -e`. Disable errexit — гак explicitly uses `|| exit 1`
-# для блокуючих умов; intermediate grep returns exit 1 при no-match (legitimate)
-# і це НЕ означає що hook повинен fail.
+# Phase 4 pre-push — DUMB GREP enforcement.
+#
+# Правила:
+#   - кожна зона має простий grep
+#   - якщо grep returns hits → exit 1
+#   - ignore: comment lines, /tests/, /__tests__/, .spec., /archive/, /migrations/
+#   - explicit override: коментар-маркер `# noqa: INV-8` на тій самій лінії
+#   - НЕ smart filter, НЕ heuristic, НЕ grandfathering
+#
+# Reference:
+#   - saas_docs/domains/winterboard/ops_sync/SYSTEM_LAW.md §12
+#   - saas_docs/domains/winterboard/ops_sync/RECONSTRUCTION_PLAN.md Phase 4
+#
+# Husky може бути обійдено `git push --no-verify` — same checks live у
+# `.github/workflows/invariants.yml` (CI, non-bypassable).
+
 set +e
 
-# PRE-PUSH GATE — Phase 0.5 temporary hook
-# До Phase 4 повного DEV_QUALITY_GATES rollout цей файл забезпечує мінімальний enforcement.
-# Після Phase 4 → переїде у `.github/workflows/ssot-gates.yml` (non-bypassable).
-#
-# Reference: saas_docs/domains/winterboard/ops_sync/SYSTEM_LAW.md Section 12 + Section 13
-#
-# ENFORCEMENT MODES:
-#   - LEGACY_MODE=warn  (default zараз) — existing violations показуються як ⚠️, не блокують push
-#   - LEGACY_MODE=block (after Phase 3 cleanup) — будь-яка violation = exit 1
-#
-#   - NEW_MODE=block (default zавжди) — нові violations у diff vs origin/master = exit 1
-#
-# Tо switch to full strict mode після Phase 3:
-#   sed -i 's/LEGACY_MODE=warn/LEGACY_MODE=block/' .husky/pre-push
+echo "🔒 Phase 4 pre-push (dumb grep enforcement)"
 
-LEGACY_MODE=warn
-NEW_MODE=block
-
-echo "🔒 SSOT pre-push gate (Phase 0.5 — Husky temp; Phase 4 → CI)"
-
-# ─── Project root detection ──────────────────────────────────────────────
 GIT_TOPLEVEL="$(git rev-parse --show-toplevel)"
 REPO_ROOT="$(dirname "$GIT_TOPLEVEL")"
 cd "$REPO_ROOT" || exit 1
-echo "  (gate scope: $REPO_ROOT, legacy=$LEGACY_MODE, new=$NEW_MODE)"
 
-# ─── Detect changed files vs origin (for NEW violations check) ───────────
-# Pre-push context: husky може отримати refs через stdin (<local-ref> <local-sha>
-# <remote-ref> <remote-sha>), але для cross-repo monorepo цей stdin не reliable.
-# Logic:
-#   1. Try git diff origin/master..HEAD — повертає commits що пушаться.
-#   2. Якщо empty (post-push state OR origin/master не існує) — fallback до working
-#      tree diff (uncommitted changes).
-#   3. Якщо обидва empty → CHANGED_FILES = "" → is_new_file always false →
-#      ВСІ violations класифікуються як legacy. ⚠️ Це OK для post-push standalone
-#      run (немає що класифікувати), але NOT OK якщо hook викликається з commits
-#      ahead of origin без diff result. У такому випадку — defensive fallback:
-#      git ls-files -m (modified, не yet committed).
-# Determine git repo subdir name relative to REPO_ROOT (e.g. "frontend/" or "backend/")
-GIT_SUBDIR=$(basename "$GIT_TOPLEVEL")/
+FAIL=0
 
-# Run git from inside git repo, потім prefix paths so вони matched grep results
-# що використовують `frontend/src` syntax (REPO_ROOT-relative).
-_RAW_CHANGED=$(cd "$GIT_TOPLEVEL" && git diff --name-only --diff-filter=AM origin/master..HEAD 2>/dev/null)
-if [ -z "$_RAW_CHANGED" ]; then
-  _RAW_CHANGED=$(cd "$GIT_TOPLEVEL" && git diff --name-only HEAD 2>/dev/null)
-fi
-if [ -z "$_RAW_CHANGED" ]; then
-  _RAW_CHANGED=$(cd "$GIT_TOPLEVEL" && git ls-files -m 2>/dev/null)
-fi
-# Prefix кожен path з GIT_SUBDIR щоб match grep -rn output (`frontend/src/...`)
-CHANGED_FILES=$(echo "$_RAW_CHANGED" | sed "s|^|${GIT_SUBDIR}|" | grep -v "^${GIT_SUBDIR}$")
+# Common ignore-paths grep -v args.
+IGNORE_PATHS='/tests/\|/__tests__/\|\.spec\.\|\.test\.\|/archive/\|/migrations/'
+# Comment lines (Python `#`, JS `//`, `/* */`, `*` continuation).
+IGNORE_COMMENTS_PY='^[^:]*:[0-9]*:[[:space:]]*#'
+IGNORE_COMMENTS_JS='^[^:]*:[0-9]*:[[:space:]]*\(//\|\*\|/\*\)'
+# Explicit override marker.
+IGNORE_NOQA='# noqa: INV-8'
 
-is_new_file() {
-  # $1 = file path. Returns 0 if changed у поточному push, 1 інакше.
-  echo "$CHANGED_FILES" | grep -qF "$1"
-}
-
-# Helper: process violations — emit WARN or FAIL based on mode.
-report_violations() {
-  local invariant="$1"
-  local violations="$2"
-  local fix_hint="$3"
-
-  if [ -z "$violations" ]; then
-    echo "  ✅ $invariant"
-    return 0
-  fi
-
-  # Розділяємо на NEW (changed in this push) vs LEGACY (pre-existing)
-  local new_v=""
-  local legacy_v=""
-  while IFS= read -r line; do
-    [ -z "$line" ] && continue
-    local file=$(echo "$line" | cut -d: -f1)
-    if is_new_file "$file"; then
-      new_v="$new_v$line\n"
-    else
-      legacy_v="$legacy_v$line\n"
-    fi
-  done <<EOF
-$violations
-EOF
-
-  if [ -n "$new_v" ]; then
-    echo "❌ $invariant — NEW VIOLATION (NEW_MODE=$NEW_MODE):"
-    echo -e "$new_v"
-    echo "  Fix: $fix_hint"
-    [ "$NEW_MODE" = "block" ] && return 1
-  fi
-  if [ -n "$legacy_v" ]; then
-    if [ "$LEGACY_MODE" = "block" ]; then
-      echo "❌ $invariant — LEGACY VIOLATION (LEGACY_MODE=block):"
-      echo -e "$legacy_v"
-      echo "  Fix: $fix_hint"
-      return 1
-    else
-      echo "  ⚠️  $invariant — $(echo -e "$legacy_v" | grep -c .) legacy violations (LEGACY_MODE=warn → not blocking)"
-    fi
-  fi
-  return 0
-}
-
-# ─── INV-7 SERVICE-ENTRYPOINT (LAW §2): writes outside OpsApplyService ───
-INV7=$(grep -rn \
-  -e "WBSession\.objects\.create" \
-  -e "WBSession\.objects\.update" \
-  -e "WBBoardOperation\.objects\.create" \
-  -e "WBBoardOperation\.objects\.bulk_create" \
-  -e "WBBoardOperation\.objects\.update" \
+# ── INV-7 SERVICE-ENTRYPOINT ────────────────────────────────────────────
+# WBBoardOperation.objects.(create|bulk_create|update) outside OpsApplyService.
+echo ""
+echo "🔍 INV-7 SERVICE-ENTRYPOINT"
+HITS=$(grep -rEn 'WBBoardOperation\.objects\.(create|bulk_create|update)\s*\(' \
   backend/apps/winterboard --include='*.py' 2>/dev/null \
-  | grep -v "ops_apply_service\.py\|/tests/\|/management/commands/\|/migrations/")
-report_violations "INV-7 SERVICE-ENTRYPOINT" "$INV7" "route through OpsApplyService" || exit 1
+  | grep -v "ops_apply_service\.py\|$IGNORE_PATHS\|/management/commands/" \
+  | grep -v "$IGNORE_COMMENTS_PY")
+if [ -n "$HITS" ]; then
+  echo "❌ INV-7 violated:"
+  echo "$HITS"
+  echo "   Fix: route through OpsApplyService.apply()"
+  FAIL=1
+else
+  echo "✅ INV-7 OK"
+fi
 
-# ─── INV-8 NO-BYPASS (LAW §2): direct .state = mutation ─────────────────
-INV8=$(grep -rn \
-  -e "session\.state\s*=" \
-  -e "wb_session\.state\s*=" \
+# ── INV-8 NO-BYPASS ─────────────────────────────────────────────────────
+# Direct `session.state =` mutation. Override via `# noqa: INV-8` on same line.
+echo ""
+echo "🔍 INV-8 NO-BYPASS (state= assignment)"
+HITS=$(grep -rEn '\b(session|wb_session|new_session)\.state\s*=' \
   backend/apps/winterboard --include='*.py' 2>/dev/null \
-  | grep -v "ops_apply_service\.py\|/tests/\|/migrations/" \
-  | grep -v "^[^:]*:[0-9]*:[[:space:]]*#")
-report_violations "INV-8 NO-BYPASS (state mutation)" "$INV8" "only OpsApplyService.apply() may mutate state" || exit 1
+  | grep -v "ops_apply_service\.py\|$IGNORE_PATHS" \
+  | grep -v "$IGNORE_COMMENTS_PY" \
+  | grep -v "$IGNORE_NOQA")
+if [ -n "$HITS" ]; then
+  echo "❌ INV-8 violated:"
+  echo "$HITS"
+  echo "   Fix: use OpsApplyService OR add explicit `# noqa: INV-8 (<reason>)` if legitimate bypass writer"
+  FAIL=1
+else
+  echo "✅ INV-8 OK"
+fi
 
-# ─── LAW §12 FORBIDDEN PATTERNS: legacy hacks (PR3 deprecated constants) ─
-for pattern in "MAX_LOCK_RETRIES" "consecutive409" "MAX_409_PER_SESSION" "PAUSE_AFTER_CONSECUTIVE"; do
-  HACK=$(grep -rn "$pattern" \
-    frontend/src --include='*.ts' --include='*.js' --include='*.vue' 2>/dev/null \
-    | grep -v "/__tests__/\|\.spec\.\|/archive/" \
-    | grep -vE "^[^:]*:[0-9]+:[[:space:]]*(//|\*|/\*)")
-  report_violations "LAW §12 forbidden ($pattern)" "$HACK" "remove; per Phase 3 plan ці constants заборонені" || exit 1
-done
+# ── INV-9 QUERYSET-BYPASS ───────────────────────────────────────────────
+# WBSession.objects.update(state=...) bypasses save() guard.
+echo ""
+echo "🔍 INV-9 QUERYSET-BYPASS"
+HITS=$(grep -rEn 'WBSession\.objects\.(filter\([^)]*\)\.)?update\([^)]*(state|last_op_seq)\s*=' \
+  backend/apps/winterboard --include='*.py' 2>/dev/null \
+  | grep -v "$IGNORE_PATHS" \
+  | grep -v "$IGNORE_COMMENTS_PY")
+if [ -n "$HITS" ]; then
+  echo "❌ INV-9 violated:"
+  echo "$HITS"
+  echo "   Fix: queryset.update() bypasses save() guard — use OpsApplyService"
+  FAIL=1
+else
+  echo "✅ INV-9 OK"
+fi
 
-# ─── LAW §12: silent error suppression (Python only — JS empty catch не grep'aбельний просто) ─
-SILENT_PY=$(grep -rn "except.*:[[:space:]]*pass[[:space:]]*$" \
+# ── LAW §12 FE — PR3 hacks ──────────────────────────────────────────────
+echo ""
+echo "🔍 LAW §12 FE forbidden constants"
+HITS=$(grep -rEn 'MAX_LOCK_RETRIES|consecutive409|MAX_409_PER_SESSION|PAUSE_AFTER_CONSECUTIVE|lockRetryCount' \
+  frontend/src --include='*.ts' --include='*.tsx' --include='*.js' --include='*.vue' 2>/dev/null \
+  | grep -v "$IGNORE_PATHS" \
+  | grep -v "$IGNORE_COMMENTS_JS")
+if [ -n "$HITS" ]; then
+  echo "❌ LAW §12 violated (PR3 hacks):"
+  echo "$HITS"
+  echo "   Fix: remove all references; PR3 deprecated 2026-04-26"
+  FAIL=1
+else
+  echo "✅ LAW §12 FE OK"
+fi
+
+# ── LAW §12 BE — silent suppression ─────────────────────────────────────
+echo ""
+echo "🔍 LAW §12 BE silent error suppression"
+HITS=$(grep -rEn '^[[:space:]]*except[^:]*:[[:space:]]*pass[[:space:]]*$' \
   backend/apps/winterboard backend/apps/users/api 2>/dev/null \
-  | grep -v "/tests/\|/migrations/")
-report_violations "LAW §12 silent suppression" "$SILENT_PY" "handle explicitly або log + re-raise" || exit 1
+  | grep -v "$IGNORE_PATHS")
+if [ -n "$HITS" ]; then
+  echo "❌ LAW §12 silent-suppression violated:"
+  echo "$HITS"
+  echo "   Fix: log + re-raise OR explicit handle"
+  FAIL=1
+else
+  echo "✅ LAW §12 BE OK"
+fi
 
-echo "✅ SSOT pre-push gate passed"
+# ── SUPPRESS — @ts-ignore (any), file-level /* eslint-disable */ ────────
+# Per-line `eslint-disable-next-line <rule>` ALLOWED (pragmatic).
+echo ""
+echo "🔍 SUPPRESS strict (@ts-ignore, file-level /* eslint-disable */)"
+HITS=$(grep -rEn '@ts-ignore|/\*[[:space:]]*eslint-disable[[:space:]]*\*/' \
+  frontend/src --include='*.ts' --include='*.tsx' --include='*.js' --include='*.vue' 2>/dev/null \
+  | grep -v "$IGNORE_PATHS")
+if [ -n "$HITS" ]; then
+  echo "❌ SUPPRESS strict violated:"
+  echo "$HITS"
+  echo "   Fix: @ts-ignore → @ts-expect-error з explanation; file-level eslint-disable → disable specific rules"
+  FAIL=1
+else
+  echo "✅ SUPPRESS OK"
+fi
+
+# ── Anti-regression: deleted endpoints stay deleted ─────────────────────
+echo ""
+echo "🔍 Legacy endpoints stay deleted"
+HITS=$(grep -En "'/diff/'|'/save-stream/'|'/beacon/'|/replay/operation/" \
+  backend/apps/winterboard/urls.py 2>/dev/null \
+  | grep -v "^[^:]*:[0-9]*:[[:space:]]*#")
+if [ -n "$HITS" ]; then
+  echo "❌ Legacy endpoint resurrected у urls.py:"
+  echo "$HITS"
+  echo "   PR-B (commit 5db76e5) + Phase 4 follow-up DELETED these."
+  FAIL=1
+else
+  echo "✅ Legacy endpoints stay deleted"
+fi
+
+# NOTE: pnpm lint + pnpm typecheck НЕ виконуються тут — це slow checks
+# (vue-tsc full pass = 30+s), і вони мають pre-existing tech-debt failures
+# вне scope Phase 4 enforcement. Замість цього вони running у CI workflow
+# (non-bypassable). Husky тут — fast SSOT grep filter (<5s).
+# Reference: DEV_QUALITY_GATES.md "Husky <10s" rule.
+
+# ── Final ───────────────────────────────────────────────────────────────
+echo ""
+if [ "$FAIL" = "1" ]; then
+  echo "❌ pre-push BLOCKED — fix violations above"
+  exit 1
+fi
+echo "✅ pre-push gate passed"

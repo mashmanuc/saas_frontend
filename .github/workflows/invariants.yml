@@ -1,0 +1,95 @@
+name: SSOT Invariants (Frontend)
+
+# Phase 4 — DUMB GREP enforcement + lint + typecheck + tests.
+# Non-bypassable (Husky може --no-verify, CI ні).
+#
+# Branch protection: GitHub Settings → Branches → master → Require status check
+# "ssot-grep-gates-fe" + "test-frontend".
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  ssot-grep-gates-fe:
+    name: SSOT grep gates (LAW §12 FE, SUPPRESS)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: LAW §12 FE forbidden constants
+        shell: bash
+        run: |
+          set -eo pipefail
+          HITS=$(grep -rEn 'MAX_LOCK_RETRIES|consecutive409|MAX_409_PER_SESSION|PAUSE_AFTER_CONSECUTIVE|lockRetryCount' \
+            src --include='*.ts' --include='*.tsx' --include='*.js' --include='*.vue' 2>/dev/null \
+            | grep -v '/__tests__/\|\.spec\.\|\.test\.\|/archive/' \
+            | grep -vE '^[^:]+:[0-9]+:\s*(//|\*|/\*)' || true)
+          if [ -n "$HITS" ]; then
+            echo "::error::LAW §12 violated (PR3 deprecated constants):"
+            echo "$HITS"
+            exit 1
+          fi
+          echo "✅ LAW §12 FE OK"
+
+      - name: SUPPRESS strict (@ts-ignore + file-level /* eslint-disable */)
+        shell: bash
+        run: |
+          set -eo pipefail
+          HITS=$(grep -rEn '@ts-ignore|/\*[[:space:]]*eslint-disable[[:space:]]*\*/' \
+            src --include='*.ts' --include='*.tsx' --include='*.js' --include='*.vue' 2>/dev/null \
+            | grep -v '/__tests__/\|\.spec\.\|\.test\.' || true)
+          if [ -n "$HITS" ]; then
+            echo "::error::SUPPRESS strict violated:"
+            echo "$HITS"
+            echo ""
+            echo "Fix: @ts-ignore → @ts-expect-error з explanation; file-level eslint-disable → disable specific rules"
+            exit 1
+          fi
+          echo "✅ SUPPRESS OK"
+
+      - name: Legacy FE API methods stay deleted
+        shell: bash
+        run: |
+          set -eo pipefail
+          # Перевіряємо що FE-side не resurrect deleted methods.
+          HITS=$(grep -rEn '\b(diffSave|streamSave|beaconSave)\s*[:(=]' \
+            src/modules/winterboard/api 2>/dev/null \
+            | grep -vE '^[^:]+:[0-9]+:\s*(//|\*|/\*)' || true)
+          if [ -n "$HITS" ]; then
+            echo "::error::Legacy FE API methods resurrected:"
+            echo "$HITS"
+            echo "PR-A (FE commit 8026b53) DELETED these — use opsSync.flush()."
+            exit 1
+          fi
+          echo "✅ Legacy FE API methods stay deleted"
+
+  test-frontend:
+    name: Frontend lint + typecheck + tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test:unit -- --run
