@@ -1,10 +1,24 @@
 // WB: useSessionLifecycle — classroom session lifecycle management
 // Ref: TASK_BOARD_PHASES.md A3.3, C3.2 classroom-session linking
 // Handles: lesson start/end, student join/leave, teacher reconnect,
-//          network disconnect, multiple tabs, browser close beacon save
+//          network disconnect, multiple tabs.
+//
+// Phase 2 (2026-04-27) FULL LEGACY CLEANUP:
+//   ALL beacon save / streamSave recovery paths REMOVED. Single write pipeline:
+//   UI → useReplayRecorder.record() → opsSyncStore.flush() → POST /replay/batch/.
+//   Crash recovery handled by useOpsBackup (localStorage of opsSyncStore buffers)
+//   + opsSyncStore.bootstrap()/.resync() reads /sessions/{pk}/state/ для server seq
+//   reconciliation. NO duplicate paths.
+//
+// DELETED у цьому refactor:
+//   - registerBeaconSave / unregisterBeaconSave (beforeunload sendBeacon)
+//   - recoverPendingBeacon / _persistBeaconPayload / _clearBeaconPending
+//   - watch на sessionId для beacon recovery
+//   - winterboardApi.streamSave() fallback call (legacy /save-stream/)
+//   - winterboardApi.beaconSave() callsite (legacy /beacon/)
+//   - BEACON_PENDING_KEY sessionStorage logic
 
-import { ref, readonly, onBeforeUnmount, watch, type Ref } from 'vue'
-import { winterboardApi } from '../api/winterboardApi'
+import { ref, readonly, onBeforeUnmount, type Ref } from 'vue'
 import type { WBClassroomRole } from '../api/winterboardApi'
 
 // ─── Constants ──────────────────────────────────────────────────────────────
@@ -64,7 +78,6 @@ export function useSessionLifecycle(
 
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null
   let tabHeartbeatTimer: ReturnType<typeof setInterval> | null = null
-  let beaconRegistered = false
 
   // ── Tab lock (prevent duplicate sessions) ───────────────────────────
 
@@ -119,131 +132,17 @@ export function useSessionLifecycle(
     isTabActive.value = false
   }
 
-  // ── Beacon save (browser close) ─────────────────────────────────────
+  // ── Beacon save / recovery — DELETED Phase 2 (2026-04-27) ──────────
   //
-  // 2026-04-24 post-incident safeguard E:
-  // navigator.sendBeacon() не гарантує ACK від сервера — якщо beacon вилетить
-  // тільки частково (TCP reset, CDN drop, backend overload) — дані зникнуть
-  // без сліду. Тому:
-  //   1. Перед sendBeacon копіюємо payload у sessionStorage (synchronous, OK
-  //      у beforeunload handler) під ключем `wb_beacon_pending:<sid>`.
-  //   2. На наступному mount (recoverPendingBeacon) виявляємо flag, робимо
-  //      звичайний POST з ACK, після success — чистимо flag.
-  // sessionStorage обраний замість localStorage бо:
-  //   - авто-очищується при закритті останньої вкладки домену
-  //   - не засмічує storage для користувача що закривав прод-вкладку місяць тому
-
-  const BEACON_PENDING_KEY = (sid: string) => `wb_beacon_pending:${sid}`
-
-  function _persistBeaconPayload(sid: string, stateData: Record<string, unknown>): void {
-    try {
-      sessionStorage.setItem(
-        BEACON_PENDING_KEY(sid),
-        JSON.stringify({
-          state: stateData,
-          queued_at: Date.now(),
-        }),
-      )
-    } catch (e) {
-      // sessionStorage quota / disabled — не блокуємо beacon, просто лог
-      console.warn(`${LOG} Failed to persist beacon backup:`, e)
-    }
-  }
-
-  function _clearBeaconPending(sid: string): void {
-    try {
-      sessionStorage.removeItem(BEACON_PENDING_KEY(sid))
-    } catch {
-      // ignore
-    }
-  }
-
-  /**
-   * Виявляє pending beacon від попередньої browser-session (page crashed
-   * після sendBeacon, або beacon не дійшов). Відправляє звичайний POST з
-   * ACK, очищає flag на success.
-   * Викликати у onMounted для кожної сесії.
-   */
-  async function recoverPendingBeacon(sid: string): Promise<void> {
-    let raw: string | null = null
-    try {
-      raw = sessionStorage.getItem(BEACON_PENDING_KEY(sid))
-    } catch {
-      return
-    }
-    if (!raw) return
-    try {
-      const parsed = JSON.parse(raw) as { state?: Record<string, unknown>; queued_at?: number }
-      if (!parsed?.state) {
-        _clearBeaconPending(sid)
-        return
-      }
-      const ageMs = parsed.queued_at ? Date.now() - parsed.queued_at : 0
-      console.warn(
-        `${LOG} Pending beacon detected for session=${sid}, age=${Math.round(ageMs / 1000)}s — retrying via regular POST`,
-      )
-      // `beaconSave` is a fire-and-forget sendBeacon; for recovery робимо
-      // звичайний POST із ACK через streamSave (legacy save-stream endpoint).
-      // Це проходить через нормальний axios pipeline → 2xx/4xx/5xx знаємо точно.
-      await winterboardApi.streamSave(sid, parsed.state as never, 0)
-      _clearBeaconPending(sid)
-      console.info(`${LOG} Pending beacon recovered for session=${sid}`)
-    } catch (err) {
-      // Recovery fail — залишаємо flag для наступної спроби.
-      // Якщо beacon payload постійно 4xx — user отримає помилку у console
-      // і може вручну зробити дію. Важливо НЕ чистити flag на помилку.
-      console.error(`${LOG} Pending beacon recovery failed:`, err)
-    }
-  }
-
-  function registerBeaconSave(getState: () => Record<string, unknown> | null): void {
-    if (beaconRegistered) return
-
-    const handler = () => {
-      const sid = sessionId.value
-      if (!sid) return
-
-      const stateData = getState()
-      if (stateData) {
-        // Step 1: persist to sessionStorage BEFORE sendBeacon (recovery safety net)
-        _persistBeaconPayload(sid, stateData)
-        // Step 2: fire beacon
-        winterboardApi.beaconSave(sid, stateData)
-        console.info(`${LOG} Beacon save on unload`, { sessionId: sid })
-      }
-
-      releaseTabLock()
-    }
-
-    window.addEventListener('beforeunload', handler)
-    beaconRegistered = true
-
-    // Store handler ref for cleanup
-    ;(registerBeaconSave as unknown as Record<string, unknown>)._handler = handler
-  }
-
-  function unregisterBeaconSave(): void {
-    const handler = (registerBeaconSave as unknown as Record<string, unknown>)._handler as EventListener | undefined
-    if (handler) {
-      window.removeEventListener('beforeunload', handler)
-      beaconRegistered = false
-    }
-  }
-
-  // 2026-04-24 safeguard E: auto-recover pending beacon on session mount.
-  // Fires exactly once per sessionId transition null→non-null.
-  let _lastRecoveryAttempt: string | null = null
-  watch(
-    sessionId,
-    (sid) => {
-      if (sid && sid !== _lastRecoveryAttempt) {
-        _lastRecoveryAttempt = sid
-        // Fire-and-forget; recoverPendingBeacon logs its own errors.
-        void recoverPendingBeacon(sid)
-      }
-    },
-    { immediate: true },
-  )
+  // Legacy beforeunload sendBeacon → /sessions/{pk}/beacon/ removed entirely.
+  // Replaced by single write pipeline: useReplayRecorder + opsSyncStore.flush()
+  // → POST /replay/batch/. Crash recovery handled by useOpsBackup (localStorage
+  // backup of opsSyncStore buffers + restore on next mount). Server-side
+  // reconciliation via GET /sessions/{pk}/state/ (Phase 2 BE addendum).
+  //
+  // Deleted functions: registerBeaconSave / unregisterBeaconSave /
+  // recoverPendingBeacon / _persistBeaconPayload / _clearBeaconPending.
+  // Deleted watcher: sessionId-watch для beacon recovery.
 
   // ── Reconnect logic ─────────────────────────────────────────────────
 
@@ -292,12 +191,17 @@ export function useSessionLifecycle(
 
   /**
    * Called when lesson starts and teacher opens winterboard.
-   * Initializes session, acquires tab lock, registers beacon save.
+   * Initializes session + acquires tab lock.
+   *
+   * Phase 2 (2026-04-27): beacon save registration REMOVED. Save pipeline тепер
+   * UI → useReplayRecorder.record() → opsSyncStore.flush() → /replay/batch/.
+   * `getStateFn` parameter залишений у signature для backward-compat callers,
+   * але НЕ використовується (TODO Phase 3: remove parameter once callers updated).
    */
   function onLessonStart(
     sid: string,
-    connectFn: () => Promise<boolean>,
-    getStateFn: () => Record<string, unknown> | null,
+    _connectFn: () => Promise<boolean>,
+    _getStateFn: () => Record<string, unknown> | null,
   ): boolean {
     state.value = 'initializing'
     error.value = null
@@ -309,9 +213,6 @@ export function useSessionLifecycle(
       return false
     }
 
-    // Register beacon save
-    registerBeaconSave(getStateFn)
-
     // Mark active
     state.value = 'active'
     console.info(`${LOG} Lesson started`, { sessionId: sid, role: role.value })
@@ -322,12 +223,14 @@ export function useSessionLifecycle(
 
   /**
    * Called when lesson ends (teacher or student).
-   * Saves state, disconnects WS, releases tab lock.
+   * Saves state via opsSyncStore.flush() (если saveFn provided), releases tab lock.
+   *
+   * Phase 2 (2026-04-27): unregisterBeaconSave() REMOVED — no beacon registered.
    */
   async function onLessonEnd(saveFn?: () => Promise<void>): Promise<void> {
     cancelReconnect()
 
-    // Save state
+    // Save state via opsSyncStore.flush() (caller passes useAutosave.saveNow або useReplayRecorder.flush)
     if (saveFn) {
       try {
         await saveFn()
@@ -338,7 +241,6 @@ export function useSessionLifecycle(
 
     // Cleanup
     releaseTabLock()
-    unregisterBeaconSave()
     state.value = 'ended'
 
     console.info(`${LOG} Lesson ended`, { sessionId: sessionId.value })
@@ -367,7 +269,7 @@ export function useSessionLifecycle(
   function onKicked(): void {
     cancelReconnect()
     releaseTabLock()
-    unregisterBeaconSave()
+    // Phase 2: unregisterBeaconSave() REMOVED — no beacon registered post-cleanup.
     state.value = 'ended'
     error.value = 'You have been removed from this session'
 
@@ -422,7 +324,7 @@ export function useSessionLifecycle(
   function reset(): void {
     cancelReconnect()
     releaseTabLock()
-    unregisterBeaconSave()
+    // Phase 2: unregisterBeaconSave() REMOVED — no beacon registered post-cleanup.
     state.value = 'idle'
     reconnectAttempts.value = 0
     error.value = null
@@ -447,7 +349,5 @@ export function useSessionLifecycle(
     onDisconnect,
     handleSessionMessage,
     reset,
-    // 2026-04-24 post-incident safeguard E: recover pending beacon on mount
-    recoverPendingBeacon,
   }
 }

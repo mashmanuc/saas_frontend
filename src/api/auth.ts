@@ -13,8 +13,17 @@ export interface LoginResponse {
   session_id?: string
 }
 
+/**
+ * Phase 1 (2026-04-27) per OPS_SYNC_SSOT §7 + AUTH MODEL CORRECTION:
+ *   `/api/v1/auth/refresh/` повертає `{access, exp}` (was `{access}`).
+ *
+ *   - `access` — JWT access token (existing field)
+ *   - `exp` — Unix seconds коли access token expires; FE робить proactive refresh
+ *     `if (now > exp - 60s) → refresh()` instead of timestamp proxy heuristic.
+ */
 export interface RefreshResponse {
   access: string
+  exp: number  // Unix seconds (Phase 1 NEW)
 }
 
 export interface UnlockRequestPayload {

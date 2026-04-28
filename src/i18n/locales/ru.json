@@ -49,9 +49,9 @@
       "notStudent": "У вас нет доступа к профилю студента",
       "saveError": "Не удалось сохранить профиль студента"
     },
-    "demoBadge": "[TODO-RU] Demo",
-    "demoHint": "[TODO-RU] Це ваш тестовий студент. Запросіть реального студента, щоб розпочати навчання.",
-    "inviteReal": "[TODO-RU] Запросити студента"
+    "demoBadge": "Demo",
+    "demoHint": "Это ваш тестовый студент. Пригласите реального студента, чтобы начать обучение.",
+    "inviteReal": "Пригласить студента"
   },
   "tutor": {
     "profile": {
@@ -199,7 +199,7 @@
       "section_description": "Выберите город, в котором вы проводите занятия",
       "helper_text": "Это поможет студентам найти вас по местоположению",
       "breadcrumb_hint": "Поскольку вы выбрали офлайн или гибридный формат, укажите город для занятий",
-      "unmatched_warning": "[TODO-RU] Місто не знайдено в довіднику. Оберіть місто зі списку або залиште поле порожнім."
+      "unmatched_warning": "Город не найден в справочнике. Выберите город из списка или оставьте поле пустым."
     }
   },
   "limits": {
@@ -363,7 +363,7 @@
       "theme": "Тема",
       "language": "Язык"
     },
-    "learningContent": "[TODO-RU] Навчальні матеріали"
+    "learningContent": "Учебные материалы"
   },
   "notifications": {
     "title": "Уведомления",
@@ -718,8 +718,12 @@
     "hide": "Скрыть",
     "unlocked": "Разблокировано",
     "changeLanguage": "Сменить язык",
-    "title": "[TODO-RU] Заголовок",
-    "description": "[TODO-RU] Опис"
+    "title": "Заголовок",
+    "description": "Описание",
+    "create": "Создать",
+    "menu": "Меню",
+    "enabled": "Включено",
+    "disabled": "Выключено"
   },
   "ui": {
     "cancel": "Отмена",
@@ -802,13 +806,13 @@
         "rateLimited": "Слишком много неудачных попыток. Попробуйте позже",
         "unknown": "Произошла ошибка. Попробуйте еще раз"
       },
-      "otpPlaceholder": "[TODO-RU] 000000",
-      "backupCodeLabel": "[TODO-RU] Резервний код",
-      "backupCodePlaceholder": "[TODO-RU] xxxxxxxx",
-      "useTotp": "[TODO-RU] Використати код з додатку",
-      "useBackupCode": "[TODO-RU] Використати резервний код",
-      "lostPhone": "[TODO-RU] Немає доступу до телефона?",
-      "contactSupport": "[TODO-RU] Написати в підтримку"
+      "otpPlaceholder": "000000",
+      "backupCodeLabel": "Резервный код",
+      "backupCodePlaceholder": "xxxxxxxx",
+      "useTotp": "Использовать код из приложения",
+      "useBackupCode": "Использовать резервный код",
+      "lostPhone": "Нет доступа к телефону?",
+      "contactSupport": "Написать в поддержку"
     },
     "verifyEmail": {
       "title": "Подтверждение email",
@@ -924,13 +928,13 @@
           "initFailed": "Не удалось инициализировать настройку MFA",
           "invalidCode": "Неверный код подтверждения",
           "confirmFailed": "Не удалось подтвердить настройку MFA",
-          "csrfFailed": "[TODO-RU] Помилка безпеки сесії. Перезавантажте сторінку та спробуйте знову.",
-          "alreadyEnabled": "[TODO-RU] Двофакторна автентифікація вже увімкнена для цього акаунта.",
-          "sessionExpired": "[TODO-RU] Сесію завершено. Увійдіть знову та спробуйте ще раз."
+          "csrfFailed": "Ошибка безопасности сессии. Перезагрузите страницу и попробуйте снова.",
+          "alreadyEnabled": "Двухфакторная аутентификация уже включена для этого аккаунта.",
+          "sessionExpired": "Сессия завершена. Войдите снова и попробуйте ещё раз."
         },
-        "copyCodes": "[TODO-RU] Скопіювати коди",
-        "backupCodesConfirm": "[TODO-RU] Я зберіг резервні коди в безпечному місці",
-        "finish": "[TODO-RU] Завершити"
+        "copyCodes": "Скопировать коды",
+        "backupCodesConfirm": "Я сохранил резервные коды в безопасном месте",
+        "finish": "Завершить"
       },
       "verify": {
         "title": "Подтверждение входа",
@@ -968,15 +972,15 @@
           "invalidOtpFormat": "Код должен содержать 6 цифр",
           "invalidOtpCode": "Неверный код подтверждения. Проверьте код в приложении-аутентификаторе",
           "mfaNotEnabled": "Двухфакторная аутентификация не включена",
-          "otpRequired": "[TODO-RU] Введіть код підтвердження"
+          "otpRequired": "Введите код подтверждения"
         },
-        "enabledAt": "[TODO-RU] Увімкнено {date}",
-        "backupCodesRemaining": "[TODO-RU] Залишилось резервних кодів: {count}",
-        "noCodesWarning": "[TODO-RU] Згенеруйте нові коди!",
-        "otpLabel": "[TODO-RU] Код підтвердження",
-        "otpPlaceholder": "[TODO-RU] 000000",
-        "confirmDisable": "[TODO-RU] Вимкнути MFA",
-        "viewBackupCodes": "[TODO-RU] Переглянути резервні коди"
+        "enabledAt": "Включено {date}",
+        "backupCodesRemaining": "Осталось резервных кодов: {count}",
+        "noCodesWarning": "Сгенерируйте новые коды!",
+        "otpLabel": "Код подтверждения",
+        "otpPlaceholder": "000000",
+        "confirmDisable": "Отключить MFA",
+        "viewBackupCodes": "Просмотреть резервные коды"
       }
     },
     "unlock": {
@@ -1075,18 +1079,18 @@
       "error": "Не удалось изменить пароль.",
       "mismatch": "Пароли не совпадают.",
       "errors": {
-        "currentRequired": "[TODO-RU] Введіть поточний пароль.",
-        "newRequired": "[TODO-RU] Введіть новий пароль.",
-        "confirmRequired": "[TODO-RU] Повторіть новий пароль.",
-        "mismatch": "[TODO-RU] Новий пароль та підтвердження не збігаються.",
-        "wrongCurrent": "[TODO-RU] Поточний пароль введено невірно.",
-        "tooShort": "[TODO-RU] Пароль занадто короткий — мінімум 8 символів.",
-        "tooCommon": "[TODO-RU] Цей пароль занадто простий. Оберіть надійніший.",
-        "entirelyNumeric": "[TODO-RU] Пароль не може складатися лише з цифр.",
-        "tooSimilar": "[TODO-RU] Пароль занадто схожий на ваші особисті дані.",
-        "sameAsCurrent": "[TODO-RU] Новий пароль має відрізнятися від поточного.",
-        "rateLimited": "[TODO-RU] Забагато спроб. Зачекайте кілька хвилин.",
-        "network": "[TODO-RU] Помилка зʼєднання. Перевірте інтернет та спробуйте ще раз."
+        "currentRequired": "Введите текущий пароль.",
+        "newRequired": "Введите новый пароль.",
+        "confirmRequired": "Повторите новый пароль.",
+        "mismatch": "Новый пароль и подтверждение не совпадают.",
+        "wrongCurrent": "Текущий пароль введён неверно.",
+        "tooShort": "Пароль слишком короткий — минимум 8 символов.",
+        "tooCommon": "Этот пароль слишком простой. Выберите более надёжный.",
+        "entirelyNumeric": "Пароль не может состоять только из цифр.",
+        "tooSimilar": "Пароль слишком похож на ваши личные данные.",
+        "sameAsCurrent": "Новый пароль должен отличаться от текущего.",
+        "rateLimited": "Слишком много попыток. Подождите несколько минут.",
+        "network": "Ошибка соединения. Проверьте интернет и попробуйте ещё раз."
       }
     },
     "eventModal": {}
@@ -1109,8 +1113,8 @@
     "booking": "Бронирование",
     "notifications": "Уведомления",
     "knowledge": "Уроки",
-    "security": "[TODO-RU] Безпека / MFA",
-    "learningContent": "[TODO-RU] Навчальні матеріали"
+    "security": "Безопасность / MFA",
+    "learningContent": "Учебные материалы"
   },
   "sidebar": {
     "section": {
@@ -1120,7 +1124,10 @@
       "students": "Ученики",
       "tutors": "Репетиторы",
       "business": "Бизнес",
-      "system": "Система"
+      "system": "Система",
+      "winterboard": "Доска",
+      "subscription": "Подписка",
+      "profile": "Профиль"
     },
     "item": {
       "dashboard": "Главная",
@@ -1141,7 +1148,23 @@
       "classrooms": "Классы",
       "profile": "Профиль",
       "security": "Безопасность",
-      "devPlayground": "Dev Playground"
+      "devPlayground": "Dev Playground",
+      "classroomHub": "Классная комната",
+      "wbDashboard": "Панель доски",
+      "wbLibrary": "Файлы",
+      "wbLessons": "Уроки",
+      "wbBoards": "Мои доски",
+      "wbStudents": "Ученики",
+      "knowledgeHub": "База знаний",
+      "lessonCatalog": "Каталог",
+      "myLessons": "Мои уроки",
+      "templateLibrary": "Библиотека шаблонов",
+      "myPacks": "Мои серии",
+      "knowledgeAnalytics": "Аналитика",
+      "myBoards": "Мои доски",
+      "materials": "Материалы",
+      "myPlan": "Мой план",
+      "myReplays": "Мои записи"
     },
     "collapse": "Свернуть меню",
     "expand": "Развернуть меню",
@@ -1149,6 +1172,28 @@
     "closeMobile": "Закрыть меню",
     "badge": {
       "ariaLabel": "{count} новых"
+    },
+    "hint": {
+      "dashboard": "Главная страница с расписанием и статистикой",
+      "schedule": "Ваш календарь уроков и доступность",
+      "knowledgeHub": "Ваши созданные уроки, шаблоны и курсы",
+      "lessonCatalog": "Все публичные уроки от репетиторов M4SH",
+      "myLessons": "Мои сохраненные уроки с поиском и папками",
+      "classroomHub": "Начать или присоединиться к уроку",
+      "wbDashboard": "Управление досками и материалами",
+      "wbLibrary": "Ваши файлы: PDF, презентации, изображения",
+      "wbLessons": "Мои сохраненные уроки с поиском и папками",
+      "wbBoards": "Интерактивные доски для уроков",
+      "myStudents": "Список ваших активных учеников",
+      "inquiries": "Новые заявки от учеников",
+      "tutorProfile": "Ваш публичный профиль на маркетплейсе",
+      "billing": "Финансы, подписка и платежи",
+      "settings": "Настройки аккаунта и уведомлений",
+      "notifications": "Непрочитанные уведомления",
+      "templateLibrary": "Шаблоны уроков сообщества",
+      "myPacks": "Серии ваших уроков",
+      "knowledgeAnalytics": "Статистика просмотров и форков",
+      "myReplays": "Записи уроков и досок — просмотр и распространение"
     }
   },
   "loader": {
@@ -1341,10 +1386,7 @@
       "slovakia": "Словакия",
       "romania": "Румыния",
       "hungary": "Венгрия",
-      "${country.labelKey}": "{country.labelKey}",
-      "${country": {
-        "labelKey}": "[TODO-RU] {country.labelKey}"
-      }
+      "${country.labelKey}": "{country.labelKey}"
     },
     "availability": {
       "title": "Доступность репетитора",
@@ -1357,7 +1399,7 @@
       "errorHorizon": "Невозможно загрузить календарь за пределами 4 недель",
       "errorLoad": "Не удалось загрузить доступность",
       "bookSlotAria": "Забронировать слот на {time}",
-      "scheduleTitle": "[TODO-RU] Розклад викладача"
+      "scheduleTitle": "Расписание преподавателя"
     },
     "trialRequest": {
       "title": "Подтверждение пробного занятия",
@@ -1819,7 +1861,7 @@
           "subjects": "Выберите хотя бы один предмет.",
           "languages": "Выберите хотя бы один язык.",
           "teachingLanguages": "Выберите хотя бы один язык преподавания.",
-          "minChars": "[TODO-RU] Мін. {min} символів"
+          "minChars": "Мин. {min} символов"
         },
         "teachingLanguagesLabel": "Языки преподавания",
         "addTeachingLanguage": "Добавить язык преподавания",
@@ -1845,7 +1887,7 @@
         "rejected": "Отклонено",
         "suspended": "Приостановлено"
       },
-      "saveSuccess": "[TODO-RU] Зміни збережено."
+      "saveSuccess": "Изменения сохранены."
     },
     "profileV3": {
       "platformMessage": "M4SH — проверенные репетиторы для студентов, которые хотят результат",
@@ -1932,7 +1974,10 @@
     },
     "availableTimes": "Доступное время",
     "failedToLoadCalendar": "Не удалось загрузить календарь",
-    "noAvailableTimes": "Нет доступного времени"
+    "noAvailableTimes": "Нет доступного времени",
+    "lessonCatalogCTA": "Ищете готовые уроки? Посмотрите каталог уроков от наших репетиторов.",
+    "lessonCatalogCTALink": "Каталог уроков",
+    "featuredLessons": "Популярные уроки"
   },
   "calendar": {
     "today": "Сегодня",
@@ -1982,10 +2027,7 @@
         "error": "Ошибка",
         "success": "Успех",
         "warning": "Предупреждение",
-        "${activity.status}": "{activity.status}",
-        "${activity": {
-          "status}": "[TODO-RU] {activity.status}"
-        }
+        "${activity.status}": "{activity.status}"
       },
       "activity": {
         "batchEdit": "Пакетное редактирование",
@@ -2129,7 +2171,7 @@
         "platform": "Платформа",
         "custom": "Собственная"
       },
-      "no_link_placeholder": "[TODO-RU] Посилання на урок ще не налаштовано. Вкажіть його в налаштуваннях."
+      "no_link_placeholder": "Ссылка на урок ещё не настроена. Укажите её в настройках."
     },
     "no_show": {
       "select_reason": "Выберите причину no-show",
@@ -2216,12 +2258,7 @@
       "booked": "Забронировано",
       "blocked": "Заблокировано",
       "notAllow": "Не разрешено",
-      "${props.cell.status}": "{props.cell.status}",
-      "${props": {
-        "cell": {
-          "status}": "[TODO-RU] {props.cell.status}"
-        }
-      }
+      "${props.cell.status}": "{props.cell.status}"
     },
     "tooltips": {
       "clickToBook": "Нажмите, чтобы забронировать",
@@ -2264,10 +2301,7 @@
       "saving": "Сохранение...",
       "undo": "Отменить",
       "redo": "Повторить",
-      "hours": {
-        "delta": "[TODO-RU] Зміна годин",
-        "short": "[TODO-RU] год"
-      },
+      "hours": "часов",
       "hours.delta": "Изменение часов",
       "hours.short": "час",
       "grid": {
@@ -2309,27 +2343,17 @@
         "label": "Легенда",
         "title": "Легенда цветов",
         "show": "Показать легенду",
-        "available": {
-          "desc": "[TODO-RU] Час, коли можна забронювати урок"
-        },
-        "available.desc": "Час, коли можна забронювати урок",
-        "blocked": {
-          "desc": "[TODO-RU] Час недоступний для бронювання"
-        },
-        "blocked.desc": "Час недоступний для бронювання",
-        "event": {
-          "desc": "[TODO-RU] Заброньований урок або подія"
-        },
-        "event.desc": "Заброньований урок або подія",
+        "available": "Доступно",
+        "available.desc": "Время, когда можно забронировать урок",
+        "blocked": "Заблокировано",
+        "blocked.desc": "Время недоступно для бронирования",
+        "event": "Событие",
+        "event.desc": "Забронированный урок или событие",
         "draft": {
-          "add": {
-            "desc": "[TODO-RU] Час буде додано після збереження"
-          },
-          "add.desc": "Час буде додано після збереження",
-          "remove": {
-            "desc": "[TODO-RU] Час буде видалено після збереження"
-          },
-          "remove.desc": "Час буде видалено після збереження"
+          "add": "Добавить (черновик)",
+          "add.desc": "Время будет добавлено после сохранения",
+          "remove": "Удалить (черновик)",
+          "remove.desc": "Время будет удалено после сохранения"
         },
         "action": {
           "add": "Добавить время",
@@ -2343,8 +2367,8 @@
           "undo": "Ctrl+Z для отмены, Ctrl+Y для повтора"
         }
       },
-      "noFreeSlot": "[TODO-RU] Немає вільного часу для додавання нового вікна",
-      "overlapWarning": "[TODO-RU] Увага: часові вікна перекриваються. Виправте перед збереженням."
+      "noFreeSlot": "Нет свободного времени для добавления нового окна",
+      "overlapWarning": "Внимание: временные окна перекрываются. Исправьте перед сохранением."
     },
     "trialRequest": {
       "title": "Запрос на пробный урок",
@@ -2512,12 +2536,6 @@
       "${currentJob.status}": {
         "title": "{currentJob.status}",
         "details": ""
-      },
-      "${currentJob": {
-        "status}": {
-          "title": "[TODO-RU] {currentJob.status}",
-          "details": "[TODO-RU] "
-        }
       }
     },
     "editor": {
@@ -2714,12 +2732,7 @@
       "success": "Успех",
       "warning": "Предупреждение",
       "info": "Информация",
-      "${item.meta.labelKey}": "{item.meta.labelKey}",
-      "${item": {
-        "meta": {
-          "labelKey}": "[TODO-RU] {item.meta.labelKey}"
-        }
-      }
+      "${item.meta.labelKey}": "{item.meta.labelKey}"
     },
     "channels": {
       "email": "Email",
@@ -2846,7 +2859,11 @@
       "balance": "Баланс",
       "upcomingLessons": "Будущих уроков",
       "activeTutors": "Активных репетиторов",
-      "unreadMessages": "Непрочитанных"
+      "unreadMessages": "Непрочитанных",
+      "contactBalance": "Контактов",
+      "totalLessons": "Всего уроков",
+      "totalHours": "Часов обучения",
+      "publishedLessons": "Опубликованные уроки"
     },
     "todaySchedule": {
       "title": "Расписание на сегодня",
@@ -2859,7 +2876,13 @@
       "createLesson": "Создать урок",
       "openCalendar": "Календарь",
       "openKnowledge": "База знаний",
-      "myStudents": "Мои ученики"
+      "myStudents": "Мои ученики",
+      "createBoardLesson": "Создать урок на доске",
+      "findTutor": "Найти репетитора",
+      "mySchedule": "Моё расписание",
+      "messages": "Сообщения",
+      "lessonCatalog": "Каталог уроков",
+      "knowledgeAnalytics": "Аналитика знаний"
     },
     "newInquiries": {
       "title": "Новые запросы",
@@ -2872,6 +2895,46 @@
     "studentsPage": {
       "title": "Мои ученики",
       "subtitle": "Управляйте вашими учениками, запросами и коммуникацией"
+    },
+    "cta": {
+      "join_lesson": {
+        "in_progress": "Урок сейчас идёт",
+        "now": "Урок начинается сейчас",
+        "minutes": "Урок через {minutes} мин",
+        "label": "Присоединиться"
+      },
+      "answer_inquiry": {
+        "single": "{student} хочет начать обучение",
+        "multiple": "У вас {count} новых запроса(ов)",
+        "label": "Ответить"
+      },
+      "resume_draft": {
+        "title": "Продолжить урок «{title}»",
+        "label": "Продолжить"
+      },
+      "resume_last_lesson": {
+        "title": "Вернуться к «{title}»",
+        "label": "Продолжить"
+      },
+      "create_lesson": {
+        "title": "Создайте свой первый урок",
+        "label": "+ Создать"
+      },
+      "prepare_lesson": {
+        "title": "Следующий урок с {tutor}",
+        "label": "Просмотреть материалы"
+      },
+      "find_tutor": {
+        "title": "Найдите репетитора",
+        "label": "Каталог"
+      },
+      "dead_link": "Это действие больше недоступно — мы обновляем панель"
+    },
+    "secondary": {
+      "today_remaining": "Сегодня ещё {count} урок(ов):",
+      "pending_inquiries": "{count} новых запросов в «Запросах»",
+      "draft_lessons": "{count} черновик(ов) уроков",
+      "last_completed": "Прошлый урок с {counterpart} — можно повторить"
     }
   },
   "relations": {
@@ -3129,9 +3192,9 @@
           "confirmFailed": "Не удалось подтвердить MFA.",
           "loadCodesFailed": "Не удалось загрузить коды",
           "regenerateFailed": "Не удалось сгенерировать коды",
-          "invalidOtpForRegenerate": "[TODO-RU] Невірний код підтвердження. Регенерацію скасовано"
+          "invalidOtpForRegenerate": "Неверный код подтверждения. Регенерация отменена"
         },
-        "otpForRegenerate": "[TODO-RU] Введіть код підтвердження з додатку для регенерації кодів"
+        "otpForRegenerate": "Введите код подтверждения из приложения для регенерации кодов"
       },
       "sessions": {
         "title": "Активные сессии",
@@ -3403,15 +3466,7 @@
       "empty": "Пусто",
       "layers": "Слои",
       "${step.id}": "{step.id}",
-      "${steps[currentStep.value].id}Status": "",
-      "${step": {
-        "id}": "[TODO-RU] {step.id}"
-      },
-      "${steps[currentStep": {
-        "value]": {
-          "id}Status": "[TODO-RU] "
-        }
-      }
+      "${steps[currentStep.value].id}Status": ""
     },
     "tools": {
       "actions": "Действия",
@@ -3434,10 +3489,7 @@
       "circle": "Круг",
       "text": "Текст",
       "select": "Выбор",
-      "${tool.id}": "{tool.id}",
-      "${tool": {
-        "id}": "[TODO-RU] {tool.id}"
-      }
+      "${tool.id}": "{tool.id}"
     },
     "reconnect": {
       "tips": {
@@ -3499,10 +3551,7 @@
     "tabs": {
       "video": "Видео",
       "board": "Доска",
-      "${layout.id}": "{layout.id}",
-      "${layout": {
-        "id}": "[TODO-RU] {layout.id}"
-      }
+      "${layout.id}": "{layout.id}"
     },
     "list": {
       "title": "Мои классы",
@@ -3519,27 +3568,25 @@
       "loadError": "Не удалось загрузить данные класса",
       "notFound": "Класс не найден",
       "forbidden": "Нет доступа к этому классу",
-      "backToList": "[TODO-RU] До списку класів",
+      "backToList": "К списку классов",
       "remove": "Удалить",
-      "confirmRemoveStudent": "[TODO-RU] Видалити учня {name} з цього класу?",
-      "removeSuccess": "[TODO-RU] Учня видалено з класу.",
-      "removeError": "[TODO-RU] Не вдалося видалити учня.",
-      "deleteClassroom": "[TODO-RU] Видалити клас",
-      "confirmDelete": "[TODO-RU] Видалити клас «{name}»? Цю дію неможливо скасувати.",
-      "deleteSuccess": "[TODO-RU] Клас видалено.",
-      "deleteError": "[TODO-RU] Не вдалося видалити клас.",
-      "cannotDeleteDefault": "[TODO-RU] Неможливо видалити стандартний клас.",
-      "editName": "[TODO-RU] Редагувати назву",
-      "nameSaved": "[TODO-RU] Назву збережено.",
-      "nameSaveError": "[TODO-RU] Не вдалося зберегти назву."
+      "confirmRemoveStudent": "Удалить ученика {name} из этого класса?",
+      "removeSuccess": "Ученик удалён из класса.",
+      "removeError": "Не удалось удалить ученика.",
+      "deleteClassroom": "Удалить класс",
+      "confirmDelete": "Удалить класс «{name}»? Это действие невозможно отменить.",
+      "deleteSuccess": "Класс удалён.",
+      "deleteError": "Не удалось удалить класс.",
+      "cannotDeleteDefault": "Невозможно удалить стандартный класс.",
+      "editName": "Редактировать название",
+      "nameSaved": "Название сохранено.",
+      "nameSaveError": "Не удалось сохранить название."
     },
     "dashboard": {
       "title": "Мои классы",
       "subtitle": "Организуйте учеников по группам и отслеживайте прогресс.",
       "create": "Создать класс",
-      "empty": "У вас еще нет классов.",
-      "createSuccess": "Класс успешно создан.",
-      "createError": "Не удалось создать класс."
+      "empty": "У вас еще нет классов."
     },
     "card": {
       "students": "учеников"
@@ -3563,10 +3610,7 @@
       "pip": "Картинка в картинке",
       "board-focus": "Только доска",
       "video-focus": "Только видео",
-      "${layout.id}": "{layout.id}",
-      "${layout": {
-        "id}": "[TODO-RU] {layout.id}"
-      }
+      "${layout.id}": "{layout.id}"
     },
     "quality": {
       "excellent": "Отличная",
@@ -3574,45 +3618,42 @@
       "fair": "Средняя",
       "poor": "Нестабильная связь",
       "${overallQuality}": "{overallQuality}",
-      "${participant.connection_quality}": "{participant.connection_quality}",
-      "${participant": {
-        "connection_quality}": "[TODO-RU] {participant.connection_quality}"
-      }
+      "${participant.connection_quality}": "{participant.connection_quality}"
     },
     "create": {
-      "title": "[TODO-RU] Створити клас",
-      "nameLabel": "[TODO-RU] Назва класу",
-      "namePlaceholder": "[TODO-RU] Наприклад: Алгебра 8 клас",
-      "typeLabel": "[TODO-RU] Тип класу",
+      "title": "Создать класс",
+      "nameLabel": "Название класса",
+      "namePlaceholder": "Например: Алгебра 8 класс",
+      "typeLabel": "Тип класса",
       "types": {
-        "group": "[TODO-RU] Груповий",
-        "microgroup": "[TODO-RU] Мікрогрупа",
-        "individual": "[TODO-RU] Індивідуальний"
+        "group": "Групповой",
+        "microgroup": "Микрогруппа",
+        "individual": "Индивидуальный"
       },
-      "submit": "[TODO-RU] Створити",
-      "success": "[TODO-RU] Клас успішно створено.",
+      "submit": "Создать",
+      "success": "Класс успешно создан.",
       "errors": {
-        "nameRequired": "[TODO-RU] Введіть назву класу.",
-        "nameTooLong": "[TODO-RU] Назва занадто довга (макс. 255 символів).",
-        "limitReached": "[TODO-RU] Досягнуто ліміт класів. Видаліть непотрібні класи.",
-        "generic": "[TODO-RU] Не вдалося створити клас."
+        "nameRequired": "Введите название класса.",
+        "nameTooLong": "Название слишком длинное (макс. 255 символов).",
+        "limitReached": "Достигнут лимит классов. Удалите ненужные классы.",
+        "generic": "Не удалось создать класс."
       }
     },
     "addStudent": {
-      "title": "[TODO-RU] Додати учня",
-      "button": "[TODO-RU] Додати учня",
-      "searchLabel": "[TODO-RU] Пошук учня",
-      "searchPlaceholder": "[TODO-RU] Імʼя або email",
+      "title": "Добавить ученика",
+      "button": "Добавить ученика",
+      "searchLabel": "Поиск ученика",
+      "searchPlaceholder": "Имя или email",
       "add": "Добавить",
-      "empty": "[TODO-RU] Немає доступних учнів для додавання.",
-      "noStudentsYet": "[TODO-RU] У вас ще немає учнів",
-      "noStudentsHint": "[TODO-RU] Щоб додати учня до класу, спочатку потрібно встановити зв'язок. Учень може надіслати вам запит через маркетплейс, або ви можете запросити його через email.",
-      "success": "[TODO-RU] Учня додано до класу.",
+      "empty": "Нет доступных учеников для добавления.",
+      "noStudentsYet": "У вас ещё нет учеников",
+      "noStudentsHint": "Чтобы добавить ученика в класс, сначала нужно установить связь. Ученик может отправить вам запрос через маркетплейс, или вы можете пригласить его через email.",
+      "success": "Ученик добавлен в класс.",
       "errors": {
-        "alreadyMember": "[TODO-RU] Учень вже є у цьому класі.",
-        "maxReached": "[TODO-RU] Досягнуто максимальну кількість учнів у класі.",
-        "noRelation": "[TODO-RU] Цей учень ще не є вашим. Спочатку встановіть звʼязок.",
-        "generic": "[TODO-RU] Не вдалося додати учня."
+        "alreadyMember": "Ученик уже есть в этом классе.",
+        "maxReached": "Достигнуто максимальное количество учеников в классе.",
+        "noRelation": "Этот ученик ещё не ваш. Сначала установите связь.",
+        "generic": "Не удалось добавить ученика."
       }
     }
   },
@@ -3852,120 +3893,126 @@
       }
     },
     "templates": {
-      "title": "[TODO-RU] Шаблони уроків",
-      "create": "[TODO-RU] Створити шаблон",
-      "edit": "[TODO-RU] Редагувати шаблон",
-      "delete": "[TODO-RU] Видалити шаблон",
-      "empty": "[TODO-RU] Ще немає шаблонів",
-      "published": "[TODO-RU] Опубліковано",
-      "draft": "[TODO-RU] Чернетка",
-      "materialsCount": "[TODO-RU] {count} матеріалів",
-      "hasHomework": "[TODO-RU] Є домашнє завдання",
-      "subject": "[TODO-RU] Предмет",
-      "lessonType": "[TODO-RU] Тип уроку",
-      "structure": "[TODO-RU] Структура уроку",
-      "structureKeyPlaceholder": "[TODO-RU] Ключ (напр. intro)",
-      "structureValuePlaceholder": "[TODO-RU] Значення (напр. Вступ)",
-      "moderationStatus": "[TODO-RU] Статус модерації",
-      "confirmDelete": "[TODO-RU] Ви впевнені, що хочете видалити цей шаблон?",
-      "deleteSuccess": "[TODO-RU] Шаблон видалено",
-      "deleteError": "[TODO-RU] Не вдалося видалити шаблон",
-      "createSuccess": "[TODO-RU] Шаблон створено",
-      "createError": "[TODO-RU] Не вдалося створити шаблон",
-      "updateSuccess": "[TODO-RU] Шаблон оновлено",
-      "updateError": "[TODO-RU] Не вдалося оновити шаблон"
+      "title": "Шаблоны уроков",
+      "create": "Создать шаблон",
+      "edit": "Редактировать шаблон",
+      "delete": "Удалить шаблон",
+      "empty": "Пока нет шаблонов",
+      "published": "Опубликовано",
+      "draft": "Черновик",
+      "materialsCount": "{count} материалов",
+      "hasHomework": "Есть домашнее задание",
+      "subject": "Предмет",
+      "lessonType": "Тип урока",
+      "structure": "Структура урока",
+      "structureKeyPlaceholder": "Ключ (напр. intro)",
+      "structureValuePlaceholder": "Значение (напр. Вступление)",
+      "moderationStatus": "Статус модерации",
+      "confirmDelete": "Вы уверены, что хотите удалить этот шаблон?",
+      "deleteSuccess": "Шаблон удалён",
+      "deleteError": "Не удалось удалить шаблон",
+      "createSuccess": "Шаблон создан",
+      "createError": "Не удалось создать шаблон",
+      "updateSuccess": "Шаблон обновлён",
+      "updateError": "Не удалось обновить шаблон"
     },
     "homework": {
-      "title": "[TODO-RU] Домашнє завдання",
-      "assign": "[TODO-RU] Призначити ДЗ",
-      "instructions": "[TODO-RU] Інструкції",
-      "dueDate": "[TODO-RU] Крайній термін",
-      "contentItems": "[TODO-RU] Матеріали",
-      "contentItemsHint": "[TODO-RU] Введіть ID матеріалів через кому",
-      "contentItemsPlaceholder": "[TODO-RU] 42, 43, 44",
+      "title": "Домашнее задание",
+      "assign": "Назначить ДЗ",
+      "instructions": "Инструкции",
+      "dueDate": "Крайний срок",
+      "contentItems": "Материалы",
+      "contentItemsHint": "Введите ID материалов через запятую",
+      "contentItemsPlaceholder": "42, 43, 44",
       "status": {
-        "ASSIGNED": "[TODO-RU] Призначено",
-        "IN_PROGRESS": "[TODO-RU] Виконується",
-        "SUBMITTED": "[TODO-RU] Здано",
-        "REVIEWED": "[TODO-RU] Перевірено",
-        "RETURNED": "[TODO-RU] Повернуто"
+        "ASSIGNED": "Назначено",
+        "IN_PROGRESS": "Выполняется",
+        "SUBMITTED": "Сдано",
+        "REVIEWED": "Проверено",
+        "RETURNED": "Возвращено"
       },
-      "empty": "[TODO-RU] Домашнє завдання ще не призначено",
-      "assignSuccess": "[TODO-RU] Домашнє завдання призначено",
-      "assignError": "[TODO-RU] Не вдалося призначити домашнє завдання"
+      "empty": "Домашнее задание ещё не назначено",
+      "assignSuccess": "Домашнее задание назначено",
+      "assignError": "Не удалось назначить домашнее задание"
     },
     "type": {
-      "PLANNED": "[TODO-RU] Запланований",
-      "INSTANT": "[TODO-RU] Миттєвий",
-      "TEMPLATE_BASED": "[TODO-RU] За шаблоном",
-      "PRE_BUILT": "[TODO-RU] Підготовлений",
-      "DYNAMIC": "[TODO-RU] Динамічний",
-      "PACKAGE": "[TODO-RU] Пакетний",
-      "PROGRAM": "[TODO-RU] Програмний"
+      "PLANNED": "Запланированный",
+      "INSTANT": "Мгновенный",
+      "TEMPLATE_BASED": "По шаблону",
+      "PRE_BUILT": "Подготовленный",
+      "DYNAMIC": "Динамический",
+      "PACKAGE": "Пакетный",
+      "PROGRAM": "Программный"
     },
     "status": {
-      "DRAFT": "[TODO-RU] Чернетка",
-      "SCHEDULED": "[TODO-RU] Заплановано",
-      "CONFIRMED": "[TODO-RU] Підтверджено",
-      "IN_PROGRESS": "[TODO-RU] Триває",
-      "COMPLETED": "[TODO-RU] Завершено",
-      "CANCELLED": "[TODO-RU] Скасовано",
-      "DISPUTED": "[TODO-RU] Оскаржено",
-      "ARCHIVED": "[TODO-RU] Архівовано"
+      "DRAFT": "Черновик",
+      "SCHEDULED": "Запланировано",
+      "CONFIRMED": "Подтверждено",
+      "IN_PROGRESS": "Идёт",
+      "COMPLETED": "Завершено",
+      "CANCELLED": "Отменено",
+      "DISPUTED": "Оспорено",
+      "ARCHIVED": "Архивировано"
     },
     "history": {
-      "title": "[TODO-RU] Мої уроки",
-      "loading": "[TODO-RU] Завантаження...",
-      "empty": "[TODO-RU] Уроків ще немає",
-      "unknownStudent": "[TODO-RU] Невідомий учень",
-      "openBoard": "[TODO-RU] Відкрити дошку",
-      "clone": "[TODO-RU] Клонувати урок",
-      "cloneSuccess": "[TODO-RU] Урок скопійовано",
-      "cloneFailed": "[TODO-RU] Помилка копіювання уроку"
+      "title": "Мои уроки",
+      "loading": "Загрузка...",
+      "empty": "Уроков пока нет",
+      "unknownStudent": "Неизвестный ученик",
+      "openBoard": "Открыть доску",
+      "clone": "Клонировать урок",
+      "cloneSuccess": "Урок скопирован",
+      "cloneFailed": "Ошибка копирования урока"
     },
     "marketplace": {
-      "title": "[TODO-RU] Маркетплейс шаблонів",
-      "subtitle": "[TODO-RU] Знайдіть готові шаблони уроків від тьюторів",
-      "searchPlaceholder": "[TODO-RU] Пошук шаблонів...",
-      "filterSubject": "[TODO-RU] Предмет",
-      "filterType": "[TODO-RU] Тип уроку",
-      "filterPrice": "[TODO-RU] Ціна",
-      "freeOnly": "[TODO-RU] Тільки безкоштовні",
-      "sortNewest": "[TODO-RU] Найновіші",
-      "sortPopular": "[TODO-RU] Популярні",
-      "sortPriceAsc": "[TODO-RU] Ціна ↑",
-      "sortPriceDesc": "[TODO-RU] Ціна ↓",
-      "allSubjects": "[TODO-RU] Всі предмети",
-      "allTypes": "[TODO-RU] Всі типи",
-      "free": "[TODO-RU] Безкоштовно",
-      "materials": "[TODO-RU] матеріалів",
-      "hasHomework": "[TODO-RU] Є домашнє",
-      "noHomework": "[TODO-RU] Без домашнього",
-      "usedCount": "[TODO-RU] Використано: {count} разів",
-      "useTemplate": "[TODO-RU] Використати шаблон",
-      "usedSuccess": "[TODO-RU] Урок створено з шаблону",
-      "tutorsOnly": "[TODO-RU] Тільки для тьюторів",
-      "noResults": "[TODO-RU] Шаблонів не знайдено. Спробуйте змінити фільтри.",
-      "loading": "[TODO-RU] Завантаження шаблонів...",
-      "error": "[TODO-RU] Помилка завантаження. Спробуйте ще раз.",
-      "page": "[TODO-RU] Сторінка",
-      "of": "[TODO-RU] з",
-      "preview": "[TODO-RU] Попередній перегляд",
+      "title": "Маркетплейс шаблонов",
+      "subtitle": "Найдите готовые шаблоны уроков от репетиторов",
+      "searchPlaceholder": "Поиск шаблонов...",
+      "filterSubject": "Предмет",
+      "filterType": "Тип урока",
+      "filterPrice": "Цена",
+      "freeOnly": "Только бесплатные",
+      "sortNewest": "Новейшие",
+      "sortPopular": "Популярные",
+      "sortPriceAsc": "Цена ↑",
+      "sortPriceDesc": "Цена ↓",
+      "allSubjects": "Все предметы",
+      "allTypes": "Все типы",
+      "free": "Бесплатно",
+      "materials": "материалов",
+      "hasHomework": "Есть ДЗ",
+      "noHomework": "Без ДЗ",
+      "usedCount": "Использовано: {count} раз(а)",
+      "useTemplate": "Использовать шаблон",
+      "usedSuccess": "Урок создан из шаблона",
+      "tutorsOnly": "Только для репетиторов",
+      "noResults": "Шаблонов не найдено. Попробуйте изменить фильтры.",
+      "loading": "Загрузка шаблонов...",
+      "error": "Ошибка загрузки. Попробуйте ещё раз.",
+      "page": "Страница",
+      "of": "из",
+      "preview": "Предпросмотр",
       "close": "Закрыть",
-      "version": "[TODO-RU] Версія",
-      "author": "[TODO-RU] Автор",
-      "price": "[TODO-RU] Ціна"
+      "version": "Версия",
+      "author": "Автор",
+      "price": "Цена"
     },
     "purchase": {
-      "buyTemplate": "[TODO-RU] Купити шаблон",
-      "buyFor": "[TODO-RU] Купити за {price}₴",
-      "purchased": "[TODO-RU] Шаблон куплено!",
-      "alreadyPurchased": "[TODO-RU] Шаблон вже куплений",
-      "purchaseRequired": "[TODO-RU] Потрібна оплата",
-      "purchaseError": "[TODO-RU] Помилка покупки. Спробуйте ще раз.",
-      "free": "[TODO-RU] Безкоштовно",
-      "price": "[TODO-RU] Ціна"
-    }
+      "buyTemplate": "Купить шаблон",
+      "buyFor": "Купить за {price}₴",
+      "purchased": "Шаблон куплен!",
+      "alreadyPurchased": "Шаблон уже куплен",
+      "purchaseRequired": "Нужна оплата",
+      "purchaseError": "Ошибка покупки. Попробуйте ещё раз.",
+      "free": "Бесплатно",
+      "price": "Цена"
+    },
+    "searchPlaceholder": "Поиск уроков...",
+    "allCategories": "Все",
+    "filtered": "{count} уроков",
+    "clearFilters": "Сбросить фильтры",
+    "noResults": "Уроков по фильтру не найдено",
+    "filterLabel": "Фильтрация уроков"
   },
   "errors": {
     "somethingWentWrong": "Что-то пошло не так",
@@ -4198,7 +4245,9 @@
       },
       "completion": {
         "congrats": "Поздравляем!",
-        "message": "Ваш профиль репетитора активен. Студенты теперь могут вас найти!"
+        "message": "Ваш профиль репетитора активен. Студенты теперь могут вас найти!",
+        "createLesson": "Создать первый урок",
+        "skipToHome": "Пропустить, перейти на главную"
       }
     }
   },
@@ -4298,7 +4347,8 @@
         "student": "Студент",
         "duration": "Продолжительность",
         "comment": "Комментарий",
-        "joinLesson": "Присоединиться к уроку"
+        "joinLesson": "Присоединиться к уроку",
+        "openClassroom": "Открыть доску урока"
       },
       "joinPicker": {
         "title": "Выберите способ подключения",
@@ -4343,10 +4393,7 @@
         "completed": "Завершено",
         "cancelled": "Отменено",
         "failed": "Не удалось",
-        "${patch.newStatus}": "{patch.newStatus}",
-        "${patch": {
-          "newStatus}": "[TODO-RU] {patch.newStatus}"
-        }
+        "${patch.newStatus}": "{patch.newStatus}"
       }
     },
     "conflict": {
@@ -4453,10 +4500,7 @@
       "accepted": "Одобрено",
       "rejected": "Отклонено",
       "cancelled": "Отменено",
-      "${request.status}": "{request.status}",
-      "${request": {
-        "status}": "[TODO-RU] {request.status}"
-      }
+      "${request.status}": "{request.status}"
     },
     "calenderPlaceholder": "Календарь бронирований",
     "status": {
@@ -4469,10 +4513,7 @@
       "accepted": "Принято",
       "rescheduled": "Перенесено",
       "failed": "Не удалось",
-      "${patch.newStatus}": "{patch.newStatus}",
-      "${patch": {
-        "newStatus}": "[TODO-RU] {patch.newStatus}"
-      }
+      "${patch.newStatus}": "{patch.newStatus}"
     }
   },
   "oldBooking": {
@@ -4498,10 +4539,7 @@
       "invited": "Приглашение",
       "active": "Активные",
       "archived": "Архив",
-      "${match.status}": "{match.status}",
-      "${match": {
-        "status}": "[TODO-RU] {match.status}"
-      }
+      "${match.status}": "{match.status}"
     },
     "lastActivity": "Последняя активность: {time}",
     "detail": {
@@ -4593,10 +4631,7 @@
         "completed": "Завершено",
         "cancelled": "Отменено",
         "unavailable": "Недоступно",
-        "${slot.status}": "{slot.status}",
-        "${slot": {
-          "status}": "[TODO-RU] {slot.status}"
-        }
+        "${slot.status}": "{slot.status}"
       },
       "slotEditor": {
         "strategies": {
@@ -4614,11 +4649,6 @@
           },
           "${strategy.name}": {
             "title": ""
-          },
-          "${strategy": {
-            "name}": {
-              "title": "[TODO-RU] "
-            }
           }
         }
       }
@@ -4638,22 +4668,13 @@
     "calendar": {
       "analytics": {
         "status": {
-          "${activity.status}": "",
-          "${activity": {
-            "status}": "[TODO-RU] "
-          }
+          "${activity.status}": ""
         }
       },
       "jobStatus": {
         "${currentJob.status}": {
           "title": "",
           "details": ""
-        },
-        "${currentJob": {
-          "status}": {
-            "title": "[TODO-RU] ",
-            "details": "[TODO-RU] "
-          }
         }
       }
     }
@@ -4792,12 +4813,13 @@
       "system": "Система",
       "health": "Здоровье системы",
       "backToApp": "Назад к приложению",
-      "profileModeration": "[TODO-RU] Модерація профілів",
-      "verification": "[TODO-RU] Верифікація",
+      "profileModeration": "Модерация профилей",
+      "verification": "Верификация",
       "financeSection": "Финансы",
-      "payouts": "[TODO-RU] Виплати тьюторам",
-      "subscriptionPlans": "[TODO-RU] Плани підписки",
-      "analytics": "[TODO-RU] Аналітика"
+      "payouts": "Выплаты репетиторам",
+      "subscriptionPlans": "Планы подписки",
+      "analytics": "Аналитика",
+      "platformSettings": "Настройки"
     },
     "breadcrumbs": {
       "staff": "Staff",
@@ -4808,11 +4830,11 @@
       "tutorActivity": "Активность репетиторов",
       "billing": "Биллинг",
       "health": "Здоровье системы",
-      "profileModeration": "[TODO-RU] Модерація профілів",
-      "verification": "[TODO-RU] Верифікація",
-      "payouts": "[TODO-RU] Виплати",
-      "subscriptionPlans": "[TODO-RU] Плани підписки",
-      "analytics": "[TODO-RU] Аналітика"
+      "profileModeration": "Модерация профилей",
+      "verification": "Верификация",
+      "payouts": "Выплаты",
+      "subscriptionPlans": "Планы подписки",
+      "analytics": "Аналитика"
     },
     "dashboard": {
       "title": "Панель управления Staff",
@@ -4838,7 +4860,7 @@
         "tutorActivity": "Активность репетиторов",
         "tutorActivityDesc": "Просмотр и управление активностью репетиторов"
       },
-      "helpText": "[TODO-RU] Загальний огляд стану платформи. Тут ви бачите ключові показники, останню активність та можете швидко перейти до потрібного розділу."
+      "helpText": "Общий обзор состояния платформы. Здесь вы видите ключевые показатели, последнюю активность и можете быстро перейти в нужный раздел."
     },
     "users": {
       "title": "Пользователи",
@@ -4854,7 +4876,7 @@
       "bans": "Баны",
       "reports": "Жалобы",
       "plan": "План",
-      "helpText": "[TODO-RU] Пошук та перегляд усіх зареєстрованих користувачів. Натисніть на рядок для перегляду детальної інформації."
+      "helpText": "Поиск и просмотр всех зарегистрированных пользователей. Нажмите на строку для просмотра подробной информации."
     },
     "billing": {
       "title": "Обзор биллинга",
@@ -4870,16 +4892,16 @@
       "amount": "Сумма",
       "status": "Статус",
       "date": "Дата",
-      "helpText": "[TODO-RU] Фінансовий огляд платформи: підписки, незавершені платежі та останні транзакції.",
-      "pendingCheckoutsTable": "[TODO-RU] Незавершені checkout-сесії",
-      "order": "[TODO-RU] Замовлення",
-      "provider": "[TODO-RU] Провайдер",
-      "allStatuses": "[TODO-RU] Всі статуси",
-      "statusSuccess": "[TODO-RU] Успішно",
+      "helpText": "Финансовый обзор платформы: подписки, незавершённые платежи и последние транзакции.",
+      "pendingCheckoutsTable": "Незавершённые checkout-сессии",
+      "order": "Заказ",
+      "provider": "Провайдер",
+      "allStatuses": "Все статусы",
+      "statusSuccess": "Успешно",
       "statusFailed": "Ошибка",
-      "statusPending": "[TODO-RU] Очікує",
-      "paymentDetail": "[TODO-RU] Деталі платежу",
-      "showing": "[TODO-RU] {from}–{to} з {total}"
+      "statusPending": "Ожидает",
+      "paymentDetail": "Детали платежа",
+      "showing": "{from}–{to} из {total}"
     },
     "health": {
       "title": "Здоровье системы",
@@ -4887,23 +4909,23 @@
       "openReports": "Открытые жалобы",
       "activeBans": "Активные баны",
       "activeSubs": "Активные подписки",
-      "helpText": "[TODO-RU] Технічні показники стану платформи. Червоні індикатори потребують негайної уваги, жовті — моніторингу.",
-      "suspicious": "[TODO-RU] Підозрілі юзери",
-      "pendingSessions": "[TODO-RU] Незавершені сесії",
-      "activeTutors": "[TODO-RU] Активні тьютори",
-      "inactive": "[TODO-RU] неактивних",
-      "last7d": "[TODO-RU] за 7 днів",
-      "reportsHint": "[TODO-RU] Потребують розгляду",
-      "pendingHint": "[TODO-RU] Перевірте в розділі Фінанси",
-      "statusHealthy": "[TODO-RU] Система працює нормально",
-      "statusWarning": "[TODO-RU] Є попередження — перевірте деталі",
-      "statusCritical": "[TODO-RU] Критичний стан — потрібна увага!",
-      "asOf": "[TODO-RU] станом на",
-      "alertReportsCritical": "[TODO-RU] КРИТИЧНО: {count} відкритих скарг — потрібна негайна обробка",
-      "alertReportsWarning": "[TODO-RU] Попередження: {count} відкритих скарг",
-      "alertBansCritical": "[TODO-RU] КРИТИЧНО: {count} активних банів",
-      "alertPendingWarning": "[TODO-RU] Попередження: {count} незавершених платіжних сесій",
-      "errorLoad": "[TODO-RU] Не вдалося завантажити дані моніторингу"
+      "helpText": "Технические показатели состояния платформы. Красные индикаторы требуют немедленного внимания, жёлтые — мониторинга.",
+      "suspicious": "Подозрительные пользователи",
+      "pendingSessions": "Незавершённые сессии",
+      "activeTutors": "Активные репетиторы",
+      "inactive": "неактивных",
+      "last7d": "за 7 дней",
+      "reportsHint": "Требуют рассмотрения",
+      "pendingHint": "Проверьте в разделе Финансы",
+      "statusHealthy": "Система работает нормально",
+      "statusWarning": "Есть предупреждения — проверьте детали",
+      "statusCritical": "Критическое состояние — требуется внимание!",
+      "asOf": "по состоянию на",
+      "alertReportsCritical": "КРИТИЧНО: {count} открытых жалоб — требуется немедленная обработка",
+      "alertReportsWarning": "Предупреждение: {count} открытых жалоб",
+      "alertBansCritical": "КРИТИЧНО: {count} активных банов",
+      "alertPendingWarning": "Предупреждение: {count} незавершённых платёжных сессий",
+      "errorLoad": "Не удалось загрузить данные мониторинга"
     },
     "activityFeed": {
       "empty": "Нет событий",
@@ -4912,18 +4934,18 @@
       "hoursAgo": "{n} ч назад",
       "daysAgo": "{n} дн назад",
       "actions": {
-        "login": "[TODO-RU] Вхід",
-        "logout": "[TODO-RU] Вихід",
-        "register": "[TODO-RU] Реєстрація",
-        "ban_create": "[TODO-RU] Бан створено",
-        "ban_lift": "[TODO-RU] Бан знято",
-        "report_create": "[TODO-RU] Скарга подана",
-        "report_resolve": "[TODO-RU] Скарга вирішена",
-        "subscription_create": "[TODO-RU] Підписка створена",
-        "subscription_cancel": "[TODO-RU] Підписка скасована",
-        "profile_update": "[TODO-RU] Профіль оновлено",
-        "email_verify": "[TODO-RU] Email підтверджено",
-        "mfa_enable": "[TODO-RU] MFA увімкнено"
+        "login": "Вход",
+        "logout": "Выход",
+        "register": "Регистрация",
+        "ban_create": "Бан создан",
+        "ban_lift": "Бан снят",
+        "report_create": "Жалоба подана",
+        "report_resolve": "Жалоба решена",
+        "subscription_create": "Подписка создана",
+        "subscription_cancel": "Подписка отменена",
+        "profile_update": "Профиль обновлён",
+        "email_verify": "Email подтверждён",
+        "mfa_enable": "MFA включено"
       }
     },
     "nav": {
@@ -4983,7 +5005,7 @@
         "exempted": "Освобожден",
         "atRisk": "Под риском"
       },
-      "helpText": "[TODO-RU] Перегляд активності тьюторів на платформі. Можна надати звільнення від правил активності для окремих тьюторів."
+      "helpText": "Просмотр активности репетиторов на платформе. Можно дать освобождение от правил активности отдельным репетиторам."
     },
     "reports": {
       "title": "Жалобы",
@@ -5017,19 +5039,13 @@
         "HARASSMENT": "Преследование",
         "INAPPROPRIATE": "Неприемлемый контент",
         "FRAUD": "Мошенничество",
-        "OTHER": "Другое",
-        "${report": {
-          "category}": "[TODO-RU] {report.category}"
-        }
+        "OTHER": "Другое"
       },
-      "status${report.status}": "{report.status}",
       "statusOPEN": "Открыта",
       "statusDISMISSED": "Отклонена",
       "statusACTIONED": "Обработана",
-      "helpText": "[TODO-RU] Скарги від користувачів, які потребують розгляду. Відфільтруйте за статусом для зручності. Натисніть «Переглянути» для деталей.",
-      "status${report": {
-        "status}": "[TODO-RU] {report.status}"
-      }
+      "helpText": "Жалобы от пользователей, требующие рассмотрения. Отфильтруйте по статусу для удобства. Нажмите «Просмотреть» для деталей.",
+      "status${report.status}": "{report.status}"
     },
     "userOverview": {
       "title": "Обзор пользователя",
@@ -5065,468 +5081,512 @@
       "inquiries30d": "Запросов за 30 дней",
       "contactsUnlocked30d": "Контактов разблокировано за 30 дней",
       "billingOperations": "Операции биллинга (ручная финализация)",
-      "backToUsers": "[TODO-RU] Назад до користувачів",
-      "lastLogin": "[TODO-RU] Останній вхід",
-      "never": "[TODO-RU] Ще не входив",
-      "emailVerification": "[TODO-RU] Верифікація email",
-      "emailVerified": "[TODO-RU] Підтверджено",
-      "emailNotVerified": "[TODO-RU] Не підтверджено",
-      "verifyEmailButton": "[TODO-RU] Верифікувати вручну",
-      "verifyEmailSuccess": "[TODO-RU] Email успішно верифіковано",
-      "verifyEmailAlready": "[TODO-RU] Email вже верифіковано",
-      "verifyEmailError": "[TODO-RU] Не вдалося верифікувати email",
-      "accountStatus": "[TODO-RU] Статус акаунту",
+      "backToUsers": "Назад к пользователям",
+      "lastLogin": "Последний вход",
+      "never": "Ещё не входил",
+      "emailVerification": "Верификация email",
+      "emailVerified": "Подтверждён",
+      "emailNotVerified": "Не подтверждён",
+      "verifyEmailButton": "Верифицировать вручную",
+      "verifyEmailSuccess": "Email успешно верифицирован",
+      "verifyEmailAlready": "Email уже верифицирован",
+      "verifyEmailError": "Не удалось верифицировать email",
+      "accountStatus": "Статус аккаунта",
       "active": "Активный",
       "inactive": "Неактивный",
-      "activate": "[TODO-RU] Активувати",
-      "deactivate": "[TODO-RU] Деактивувати",
-      "confirmToggleActive": "[TODO-RU] Виконати дію «{action}» для {email}?",
-      "confirmVerifyEmail": "[TODO-RU] Верифікувати email {email}?\nЦе активує обліковий запис.",
-      "publicProfile": "[TODO-RU] Публічний профіль",
-      "openProfile": "[TODO-RU] Відкрити профіль",
-      "auditLog": "[TODO-RU] Історія дій",
-      "auditTotal": "[TODO-RU] Всього: {count}",
-      "auditEmpty": "[TODO-RU] Дій ще немає",
-      "confirmCancelImmediate": "[TODO-RU] Ви впевнені, що хочете скасувати підписку НЕГАЙНО? Це незворотна дія.",
-      "confirmCancelPeriodEnd": "[TODO-RU] Скасувати підписку в кінці поточного періоду?",
-      "accountManagement": "[TODO-RU] Управління акаунтом",
-      "changeRole": "[TODO-RU] Змінити роль",
-      "applyRole": "[TODO-RU] Застосувати",
-      "roleChanged": "[TODO-RU] Роль змінено на {role}",
-      "roleChangeFailed": "[TODO-RU] Не вдалося змінити роль",
-      "resetMfa": "[TODO-RU] Скидання MFA",
-      "resetMfaDesc": "[TODO-RU] Відключити двофакторну автентифікацію для користувача. Використовуйте коли користувач втратив доступ до authenticator-додатку.",
-      "resetMfaBtn": "[TODO-RU] Скинути MFA",
-      "confirmResetMfa": "[TODO-RU] Скинути MFA для {email}? Користувач повинен буде налаштувати MFA заново.",
-      "mfaResetSuccess": "[TODO-RU] MFA успішно скинуто",
-      "mfaResetFailed": "[TODO-RU] Не вдалося скинути MFA",
-      "grantSubscription": "[TODO-RU] Надати підписку",
-      "selectPlan": "[TODO-RU] Оберіть план...",
-      "days": "[TODO-RU] днів",
-      "grantBtn": "[TODO-RU] Надати",
-      "subscriptionGranted": "[TODO-RU] Підписку '{plan}' надано на {days} днів",
-      "subscriptionGrantFailed": "[TODO-RU] Не вдалося надати підписку"
+      "activate": "Активировать",
+      "deactivate": "Деактивировать",
+      "confirmToggleActive": "Выполнить действие «{action}» для {email}?",
+      "confirmVerifyEmail": "Верифицировать email {email}?\nЭто активирует учётную запись.",
+      "publicProfile": "Публичный профиль",
+      "openProfile": "Открыть профиль",
+      "auditLog": "История действий",
+      "auditTotal": "Всего: {count}",
+      "auditEmpty": "Действий ещё нет",
+      "confirmCancelImmediate": "Вы уверены, что хотите отменить подписку НЕМЕДЛЕННО? Это необратимое действие.",
+      "confirmCancelPeriodEnd": "Отменить подписку в конце текущего периода?",
+      "accountManagement": "Управление аккаунтом",
+      "changeRole": "Изменить роль",
+      "applyRole": "Применить",
+      "roleChanged": "Роль изменена на {role}",
+      "roleChangeFailed": "Не удалось изменить роль",
+      "resetMfa": "Сброс MFA",
+      "resetMfaDesc": "Отключить двухфакторную аутентификацию для пользователя. Используйте, когда пользователь потерял доступ к authenticator-приложению.",
+      "resetMfaBtn": "Сбросить MFA",
+      "confirmResetMfa": "Сбросить MFA для {email}? Пользователь должен будет настроить MFA заново.",
+      "mfaResetSuccess": "MFA успешно сброшено",
+      "mfaResetFailed": "Не удалось сбросить MFA",
+      "grantSubscription": "Выдать подписку",
+      "selectPlan": "Выберите план...",
+      "days": "дней",
+      "grantBtn": "Выдать",
+      "subscriptionGranted": "Подписка '{plan}' выдана на {days} дней",
+      "subscriptionGrantFailed": "Не удалось выдать подписку"
     },
-    "consoleName": "[TODO-RU] Адмін-панель",
+    "consoleName": "Админ-панель",
     "analytics": {
-      "title": "[TODO-RU] Аналітика воронки",
-      "helpText": "[TODO-RU] Відстеження шляху користувачів від реєстрації до ключових дій. Аналіз drop-off між кроками.",
-      "period": "[TODO-RU] Період",
-      "periodDaily": "[TODO-RU] Щоденно",
-      "periodWeekly": "[TODO-RU] Щотижнево",
-      "periodMonthly": "[TODO-RU] Щомісячно",
-      "role": "[TODO-RU] Роль",
+      "title": "Аналитика воронки",
+      "helpText": "Отслеживание пути пользователей от регистрации до ключевых действий. Анализ drop-off между шагами.",
+      "period": "Период",
+      "periodDaily": "Ежедневно",
+      "periodWeekly": "Еженедельно",
+      "periodMonthly": "Ежемесячно",
+      "role": "Роль",
       "roleAll": "Все",
-      "roleTutor": "[TODO-RU] Тьютор",
-      "roleStudent": "[TODO-RU] Студент",
-      "days": "[TODO-RU] Діапазон",
-      "daysLabel": "[TODO-RU] днів",
-      "realtimeTitle": "[TODO-RU] Сьогодні (realtime)",
-      "dropoffTitle": "[TODO-RU] Аналіз drop-off",
-      "trendTitle": "[TODO-RU] Історичний тренд",
-      "periodLabel": "[TODO-RU] Період",
-      "fromStep": "[TODO-RU] Від кроку",
-      "toStep": "[TODO-RU] До кроку",
-      "fromCount": "[TODO-RU] Від (к-ть)",
-      "toCount": "[TODO-RU] До (к-ть)",
-      "conversionRate": "[TODO-RU] Конверсія",
-      "dropRate": "[TODO-RU] Drop-off",
-      "noData": "[TODO-RU] Даних ще немає. Дані з'являться після першої агрегації.",
-      "errorLoad": "[TODO-RU] Не вдалося завантажити аналітику",
+      "roleTutor": "Репетитор",
+      "roleStudent": "Студент",
+      "days": "Диапазон",
+      "daysLabel": "дней",
+      "realtimeTitle": "Сегодня (realtime)",
+      "dropoffTitle": "Анализ drop-off",
+      "trendTitle": "Исторический тренд",
+      "periodLabel": "Период",
+      "fromStep": "От шага",
+      "toStep": "До шага",
+      "fromCount": "От (кол-во)",
+      "toCount": "До (кол-во)",
+      "conversionRate": "Конверсия",
+      "dropRate": "Drop-off",
+      "noData": "Данных пока нет. Данные появятся после первой агрегации.",
+      "errorLoad": "Не удалось загрузить аналитику",
       "steps": {
-        "registered": "[TODO-RU] Реєстрація",
-        "emailVerified": "[TODO-RU] Email підтверджено",
-        "firstLogin": "[TODO-RU] Перший логін",
-        "onboardingStarted": "[TODO-RU] Онбординг розпочато",
-        "onboardingCompleted": "[TODO-RU] Онбординг завершено",
-        "profileSaved": "[TODO-RU] Профіль збережено",
-        "profilePublished": "[TODO-RU] Профіль опубліковано",
-        "firstInquiry": "[TODO-RU] Перший запит"
+        "registered": "Регистрация",
+        "emailVerified": "Email подтверждён",
+        "firstLogin": "Первый логин",
+        "onboardingStarted": "Онбординг начат",
+        "onboardingCompleted": "Онбординг завершён",
+        "profileSaved": "Профиль сохранён",
+        "profilePublished": "Профиль опубликован",
+        "firstInquiry": "Первый запрос"
       },
       "stepsShort": {
-        "reg": "[TODO-RU] Реєстр.",
-        "email": "[TODO-RU] Email",
-        "login": "[TODO-RU] Логін",
-        "obStart": "[TODO-RU] Онб. ↗",
-        "obDone": "[TODO-RU] Онб. ✓",
-        "saved": "[TODO-RU] Збереж.",
-        "published": "[TODO-RU] Публ.",
-        "inquiry": "[TODO-RU] Запит"
+        "reg": "Регистр.",
+        "email": "Email",
+        "login": "Логин",
+        "obStart": "Онб. ↗",
+        "obDone": "Онб. ✓",
+        "saved": "Сохр.",
+        "published": "Публ.",
+        "inquiry": "Запрос"
       },
       "alerts": {
-        "title": "[TODO-RU] Сповіщення воронки",
-        "allStatuses": "[TODO-RU] Всі статуси",
-        "allSeverities": "[TODO-RU] Всі рівні",
-        "statusActive": "[TODO-RU] Активне",
-        "statusAck": "[TODO-RU] Підтверджене",
-        "statusResolved": "[TODO-RU] Вирішене",
-        "statusAcknowledged": "[TODO-RU] Підтверджене",
-        "critical": "[TODO-RU] Критичне",
-        "warning": "[TODO-RU] Попередження",
+        "title": "Уведомления воронки",
+        "allStatuses": "Все статусы",
+        "allSeverities": "Все уровни",
+        "statusActive": "Активное",
+        "statusAck": "Подтверждённое",
+        "statusResolved": "Решённое",
+        "statusAcknowledged": "Подтверждённое",
+        "critical": "Критическое",
+        "warning": "Предупреждение",
         "info": "Информация",
-        "noAlerts": "[TODO-RU] Сповіщень немає. Система моніторить воронку автоматично.",
-        "step": "[TODO-RU] Крок",
-        "ackBy": "[TODO-RU] Підтв.",
-        "acknowledge": "[TODO-RU] Підтвердити",
-        "resolve": "[TODO-RU] Вирішити"
+        "noAlerts": "Уведомлений нет. Система мониторит воронку автоматически.",
+        "step": "Шаг",
+        "ackBy": "Подтв.",
+        "acknowledge": "Подтвердить",
+        "resolve": "Решить"
       },
       "cohorts": {
-        "title": "[TODO-RU] Когортний аналіз",
-        "byWeek": "[TODO-RU] За тижнем реєстрації",
-        "byMonth": "[TODO-RU] За місяцем реєстрації",
-        "cohort": "[TODO-RU] Когорта",
-        "size": "[TODO-RU] Розмір",
-        "noData": "[TODO-RU] Даних когорт ще немає. Дані з'являться після першого обчислення.",
-        "legend": "[TODO-RU] Шкала",
+        "title": "Когортный анализ",
+        "byWeek": "По неделе регистрации",
+        "byMonth": "По месяцу регистрации",
+        "cohort": "Когорта",
+        "size": "Размер",
+        "noData": "Данных когорт пока нет. Данные появятся после первого вычисления.",
+        "legend": "Шкала",
         "milestones": {
-          "day1Verified": "[TODO-RU] D1 Email",
-          "day1VerifiedTooltip": "[TODO-RU] Email підтверджено протягом 1 дня після реєстрації",
-          "day1Login": "[TODO-RU] D1 Логін",
-          "day1LoginTooltip": "[TODO-RU] Перший логін протягом 1 дня після реєстрації",
-          "day3Onboarding": "[TODO-RU] D3 Онб.",
-          "day3OnboardingTooltip": "[TODO-RU] Онбординг завершено протягом 3 днів після реєстрації",
-          "day7Published": "[TODO-RU] D7 Публ.",
-          "day7PublishedTooltip": "[TODO-RU] Профіль опубліковано протягом 7 днів після реєстрації",
-          "day14Inquiry": "[TODO-RU] D14 Запит",
-          "day14InquiryTooltip": "[TODO-RU] Перший запит протягом 14 днів після реєстрації",
-          "day30Active": "[TODO-RU] D30 Акт.",
-          "day30ActiveTooltip": "[TODO-RU] Будь-яка активність протягом 30 днів після реєстрації"
+          "day1Verified": "D1 Email",
+          "day1VerifiedTooltip": "Email подтверждён в течение 1 дня после регистрации",
+          "day1Login": "D1 Логин",
+          "day1LoginTooltip": "Первый логин в течение 1 дня после регистрации",
+          "day3Onboarding": "D3 Онб.",
+          "day3OnboardingTooltip": "Онбординг завершён в течение 3 дней после регистрации",
+          "day7Published": "D7 Публ.",
+          "day7PublishedTooltip": "Профиль опубликован в течение 7 дней после регистрации",
+          "day14Inquiry": "D14 Запрос",
+          "day14InquiryTooltip": "Первый запрос в течение 14 дней после регистрации",
+          "day30Active": "D30 Акт.",
+          "day30ActiveTooltip": "Любая активность в течение 30 дней после регистрации"
         }
       }
     },
     "plans": {
-      "title": "[TODO-RU] Плани підписки",
-      "helpText": "[TODO-RU] Управління планами підписки платформи. Тільки суперадмін може створювати, редагувати та деактивувати плани.",
-      "createPlan": "[TODO-RU] Новий план",
-      "editPlan": "[TODO-RU] Редагувати план",
-      "total": "[TODO-RU] Всього",
-      "active": "[TODO-RU] Активних",
-      "inactive": "[TODO-RU] Неактивних",
-      "featured": "[TODO-RU] Рекомендований",
-      "unlimited": "[TODO-RU] Необмежено",
-      "lessons": "[TODO-RU] уроків/міс",
+      "title": "Планы подписки",
+      "helpText": "Управление планами подписки платформы. Только суперадмин может создавать, редактировать и деактивировать планы.",
+      "createPlan": "Новый план",
+      "editPlan": "Редактировать план",
+      "total": "Всего",
+      "active": "Активных",
+      "inactive": "Неактивных",
+      "featured": "Рекомендуемый",
+      "unlimited": "Без ограничений",
+      "lessons": "уроков/мес",
       "statusActive": "Активный",
       "statusInactive": "Неактивный",
       "edit": "Редактировать",
-      "deactivate": "[TODO-RU] Деактивувати",
-      "activate": "[TODO-RU] Активувати",
-      "empty": "[TODO-RU] Планів ще немає. Натисніть 'Новий план' щоб створити перший.",
-      "errorLoad": "[TODO-RU] Не вдалося завантажити плани",
-      "errorDeactivate": "[TODO-RU] Не вдалося деактивувати план",
-      "errorActivate": "[TODO-RU] Не вдалося активувати план",
-      "errorSave": "[TODO-RU] Не вдалося зберегти план",
-      "confirmDeactivate": "[TODO-RU] Деактивувати план '{name}'? Нові підписки на цей план будуть неможливі. Існуючі підписки залишаться активними.",
-      "deactivatedWithSubs": "[TODO-RU] План деактивовано. {count} активних підписок залишається до закінчення свого терміну.",
+      "deactivate": "Деактивировать",
+      "activate": "Активировать",
+      "empty": "Планов пока нет. Нажмите 'Новый план' чтобы создать первый.",
+      "errorLoad": "Не удалось загрузить планы",
+      "errorDeactivate": "Не удалось деактивировать план",
+      "errorActivate": "Не удалось активировать план",
+      "errorSave": "Не удалось сохранить план",
+      "confirmDeactivate": "Деактивировать план '{name}'? Новые подписки на этот план будут невозможны. Существующие подписки останутся активными.",
+      "deactivatedWithSubs": "План деактивирован. {count} активных подписок остаётся до окончания своего срока.",
       "interval": {
-        "monthly": "[TODO-RU] місяць",
-        "quarterly": "[TODO-RU] квартал",
-        "yearly": "[TODO-RU] рік"
+        "monthly": "месяц",
+        "quarterly": "квартал",
+        "yearly": "год"
       },
       "form": {
-        "name": "[TODO-RU] Назва",
-        "slug": "[TODO-RU] Slug (унікальний код)",
-        "price": "[TODO-RU] Ціна",
-        "priceHint": "[TODO-RU] в мінорних одиницях, напр. 49900 = 499 UAH",
-        "currency": "[TODO-RU] Валюта",
-        "interval": "[TODO-RU] Інтервал",
-        "lessonsPerMonth": "[TODO-RU] Уроків на місяць",
-        "description": "[TODO-RU] Опис (EN)",
-        "titleUk": "[TODO-RU] Назва (UA)",
-        "descriptionUk": "[TODO-RU] Опис (UA)",
-        "features": "[TODO-RU] Особливості",
-        "featuresHint": "[TODO-RU] кожна з нового рядка",
-        "featuresPlaceholder": "[TODO-RU] Необмежені уроки\nПріоритетна підтримка\nДоступ до аналітики",
-        "providerPriceId": "[TODO-RU] Provider Price ID",
-        "providerProductId": "[TODO-RU] Provider Product ID",
-        "isActive": "[TODO-RU] Активний план",
-        "isFeatured": "[TODO-RU] Рекомендований (featured)",
-        "displayOrder": "[TODO-RU] Порядок відображення"
+        "name": "Название",
+        "slug": "Slug (уникальный код)",
+        "price": "Цена",
+        "priceHint": "в минорных единицах, напр. 49900 = 499 UAH",
+        "currency": "Валюта",
+        "interval": "Интервал",
+        "lessonsPerMonth": "Уроков в месяц",
+        "description": "Описание (EN)",
+        "titleUk": "Название (UA)",
+        "descriptionUk": "Описание (UA)",
+        "features": "Особенности",
+        "featuresHint": "каждая с новой строки",
+        "featuresPlaceholder": "Безлимитные уроки\nПриоритетная поддержка\nДоступ к аналитике",
+        "providerPriceId": "Provider Price ID",
+        "providerProductId": "Provider Product ID",
+        "isActive": "Активный план",
+        "isFeatured": "Рекомендуемый (featured)",
+        "displayOrder": "Порядок отображения"
       }
     },
     "journey": {
-      "title": "[TODO-RU] Шлях користувача (воронка)",
-      "currentStep": "[TODO-RU] Поточний крок",
-      "daysSinceReg": "[TODO-RU] Днів з реєстрації",
-      "daysStuck": "[TODO-RU] Днів без прогресу",
-      "funnelOnly": "[TODO-RU] Тільки воронка",
-      "allActions": "[TODO-RU] Всі дії",
-      "noEvents": "[TODO-RU] Подій ще немає",
-      "missingSteps": "[TODO-RU] Пропущені кроки",
+      "title": "Путь пользователя (воронка)",
+      "currentStep": "Текущий шаг",
+      "daysSinceReg": "Дней с регистрации",
+      "daysStuck": "Дней без прогресса",
+      "funnelOnly": "Только воронка",
+      "allActions": "Все действия",
+      "noEvents": "Событий пока нет",
+      "missingSteps": "Пропущенные шаги",
       "steps": {
-        "registered": "[TODO-RU] Реєстрація",
-        "email_verified": "[TODO-RU] Email підтверджено",
-        "first_login": "[TODO-RU] Перший вхід",
-        "onboarding_started": "[TODO-RU] Онбординг почато",
-        "onboarding_completed": "[TODO-RU] Онбординг завершено",
-        "profile_saved": "[TODO-RU] Профіль збережено",
-        "profile_published": "[TODO-RU] Профіль опубліковано",
-        "first_inquiry_sent": "[TODO-RU] Перший запит"
+        "registered": "Регистрация",
+        "email_verified": "Email подтверждён",
+        "first_login": "Первый вход",
+        "onboarding_started": "Онбординг начат",
+        "onboarding_completed": "Онбординг завершён",
+        "profile_saved": "Профиль сохранён",
+        "profile_published": "Профиль опубликован",
+        "first_inquiry_sent": "Первый запрос"
       }
     },
     "engagement": {
-      "title": "[TODO-RU] Залученість користувачів",
-      "totalUsers": "[TODO-RU] Всього користувачів",
-      "avgScore": "[TODO-RU] Середній бал",
-      "allSegments": "[TODO-RU] Всі сегменти",
-      "allRoles": "[TODO-RU] Всі ролі",
-      "roleTutor": "[TODO-RU] Тьютор",
-      "roleStudent": "[TODO-RU] Студент",
-      "sortDesc": "[TODO-RU] Бал (від більшого)",
-      "sortAsc": "[TODO-RU] Бал (від меншого)",
-      "page": "[TODO-RU] Сторінка",
-      "noData": "[TODO-RU] Даних про залученість ще немає. Дані з'являться після першого обчислення.",
-      "colEmail": "[TODO-RU] Email",
-      "colRole": "[TODO-RU] Роль",
-      "colScore": "[TODO-RU] Бал",
-      "colSegment": "[TODO-RU] Сегмент",
-      "colFrequency": "[TODO-RU] Частота",
-      "colRecency": "[TODO-RU] Нещодавність",
-      "colDepth": "[TODO-RU] Глибина",
-      "colConsistency": "[TODO-RU] Стабільність",
-      "colActiveDays": "[TODO-RU] Акт. днів",
-      "colLastActivity": "[TODO-RU] Остання дія",
+      "title": "Вовлечённость пользователей",
+      "totalUsers": "Всего пользователей",
+      "avgScore": "Средний балл",
+      "allSegments": "Все сегменты",
+      "allRoles": "Все роли",
+      "roleTutor": "Репетитор",
+      "roleStudent": "Студент",
+      "sortDesc": "Балл (по убыванию)",
+      "sortAsc": "Балл (по возрастанию)",
+      "page": "Страница",
+      "noData": "Данных о вовлечённости пока нет. Данные появятся после первого вычисления.",
+      "colEmail": "Email",
+      "colRole": "Роль",
+      "colScore": "Балл",
+      "colSegment": "Сегмент",
+      "colFrequency": "Частота",
+      "colRecency": "Свежесть",
+      "colDepth": "Глубина",
+      "colConsistency": "Стабильность",
+      "colActiveDays": "Акт. дней",
+      "colLastActivity": "Последнее действие",
       "segments": {
-        "champion": "[TODO-RU] Чемпіон",
-        "loyal": "[TODO-RU] Лояльний",
-        "potential": "[TODO-RU] Потенційний",
-        "at_risk": "[TODO-RU] В зоні ризику",
-        "hibernating": "[TODO-RU] Сплячий"
+        "champion": "Чемпион",
+        "loyal": "Лояльный",
+        "potential": "Потенциальный",
+        "at_risk": "В зоне риска",
+        "hibernating": "Спящий"
       }
     },
     "revenue": {
-      "title": "[TODO-RU] Дохід",
-      "totalRevenue": "[TODO-RU] Загальний дохід",
-      "avgDaily": "[TODO-RU] Середній за день",
-      "activeSubs": "[TODO-RU] Активні підписки",
-      "netSubs": "[TODO-RU] Нетто підписок",
-      "newSubs": "[TODO-RU] Нових підписок",
-      "churned": "[TODO-RU] Відтік",
-      "periodDaily": "[TODO-RU] Щоденно",
-      "periodWeekly": "[TODO-RU] Щотижнево",
-      "periodMonthly": "[TODO-RU] Щомісяця",
-      "daysLabel": "[TODO-RU] днів",
-      "page": "[TODO-RU] Сторінка",
-      "retry": "[TODO-RU] Спробувати ще",
-      "noData": "[TODO-RU] Даних про дохід ще немає. Дані з'являться після першого обчислення.",
-      "colDate": "[TODO-RU] Дата",
-      "colRevenue": "[TODO-RU] Дохід",
-      "colArpu": "[TODO-RU] ARPU",
-      "colNewSubs": "[TODO-RU] Нові",
-      "colChurned": "[TODO-RU] Відтік",
-      "colActive": "[TODO-RU] Активні",
-      "colTrialStarts": "[TODO-RU] Тріал старт",
-      "colTrialConv": "[TODO-RU] Конверсія тріалу",
-      "colBreakdown": "[TODO-RU] По планах"
+      "title": "Доход",
+      "totalRevenue": "Общий доход",
+      "avgDaily": "Средний за день",
+      "activeSubs": "Активные подписки",
+      "netSubs": "Нетто подписок",
+      "newSubs": "Новых подписок",
+      "churned": "Отток",
+      "periodDaily": "Ежедневно",
+      "periodWeekly": "Еженедельно",
+      "periodMonthly": "Ежемесячно",
+      "daysLabel": "дней",
+      "page": "Страница",
+      "retry": "Попробовать ещё",
+      "noData": "Данных о доходе пока нет. Данные появятся после первого вычисления.",
+      "colDate": "Дата",
+      "colRevenue": "Доход",
+      "colArpu": "ARPU",
+      "colNewSubs": "Новые",
+      "colChurned": "Отток",
+      "colActive": "Активные",
+      "colTrialStarts": "Триал старт",
+      "colTrialConv": "Конверсия триала",
+      "colBreakdown": "По планам"
     },
     "marketplaceHealth": {
-      "title": "[TODO-RU] Здоров'я маркетплейсу",
-      "totalTutors": "[TODO-RU] Всього тьюторів",
-      "published": "[TODO-RU] Опубліковані",
-      "totalStudents": "[TODO-RU] Всього студентів",
-      "activeTutors7d": "[TODO-RU] Активні тьютори (7д)",
-      "activeStudents7d": "[TODO-RU] Активні студенти (7д)",
-      "sdRatio": "[TODO-RU] Співвідн. попит/пропозиція",
-      "acceptRate": "[TODO-RU] Рівень прийняття",
-      "ratioSurplus": "[TODO-RU] Надлишок тьюторів",
-      "ratioDeficit": "[TODO-RU] Дефіцит тьюторів",
-      "ratioBalanced": "[TODO-RU] Збалансовано",
-      "daysLabel": "[TODO-RU] днів",
-      "page": "[TODO-RU] Сторінка",
-      "retry": "[TODO-RU] Спробувати ще",
-      "noData": "[TODO-RU] Даних про маркетплейс ще немає. Дані з'являться після першого обчислення.",
-      "colDate": "[TODO-RU] Дата",
+      "title": "Здоровье маркетплейса",
+      "totalTutors": "Всего репетиторов",
+      "published": "Опубликованные",
+      "totalStudents": "Всего студентов",
+      "activeTutors7d": "Активные репетиторы (7д)",
+      "activeStudents7d": "Активные студенты (7д)",
+      "sdRatio": "Соотн. спрос/предложение",
+      "acceptRate": "Уровень принятия",
+      "ratioSurplus": "Излишек репетиторов",
+      "ratioDeficit": "Дефицит репетиторов",
+      "ratioBalanced": "Сбалансировано",
+      "daysLabel": "дней",
+      "page": "Страница",
+      "retry": "Попробовать ещё",
+      "noData": "Данных о маркетплейсе пока нет. Данные появятся после первого вычисления.",
+      "colDate": "Дата",
       "colTutors": "Репетиторы",
-      "colPublished": "[TODO-RU] Опубл.",
-      "colStudents": "[TODO-RU] Студенти",
+      "colPublished": "Опубл.",
+      "colStudents": "Студенты",
       "colInqCreated": "Запросы",
-      "colInqAccepted": "[TODO-RU] Прийнято",
-      "colAvgAcceptH": "[TODO-RU] Сер. час (год)",
-      "colRepeatRate": "[TODO-RU] Повт. %",
-      "colRatio": "[TODO-RU] Ratio",
-      "colSubjects": "[TODO-RU] Предмети"
+      "colInqAccepted": "Принято",
+      "colAvgAcceptH": "Сред. время (ч)",
+      "colRepeatRate": "Повт. %",
+      "colRatio": "Ratio",
+      "colSubjects": "Предметы"
     },
     "experiments": {
-      "title": "[TODO-RU] Експерименти",
-      "create": "[TODO-RU] Створити експеримент",
+      "title": "Эксперименты",
+      "create": "Создать эксперимент",
       "cancel": "Отменить",
-      "submitCreate": "[TODO-RU] Створити",
-      "fieldName": "[TODO-RU] Назва",
-      "fieldFlagName": "[TODO-RU] Flag Name",
-      "fieldHypothesis": "[TODO-RU] Гіпотеза",
-      "fieldSuccessMetric": "[TODO-RU] Метрика успіху",
-      "fieldTraffic": "[TODO-RU] Трафік",
-      "allStatuses": "[TODO-RU] Всі статуси",
-      "retry": "[TODO-RU] Спробувати ще",
-      "noData": "[TODO-RU] Експериментів ще немає.",
-      "page": "[TODO-RU] Сторінка",
-      "colName": "[TODO-RU] Назва",
-      "colFlag": "[TODO-RU] Flag",
-      "colStatus": "[TODO-RU] Статус",
-      "colTraffic": "[TODO-RU] Трафік",
-      "colAssigned": "[TODO-RU] Учасники",
-      "colMetric": "[TODO-RU] Метрика",
-      "colWinner": "[TODO-RU] Переможець",
-      "colActions": "[TODO-RU] Дії",
-      "resultsTitle": "[TODO-RU] Результати",
-      "significant": "[TODO-RU] Значущий",
-      "notSignificant": "[TODO-RU] Не значущий",
-      "winnerIs": "[TODO-RU] Переможець",
-      "recompute": "[TODO-RU] Перерахувати"
+      "submitCreate": "Создать",
+      "fieldName": "Название",
+      "fieldFlagName": "Flag Name",
+      "fieldHypothesis": "Гипотеза",
+      "fieldSuccessMetric": "Метрика успеха",
+      "fieldTraffic": "Трафик",
+      "allStatuses": "Все статусы",
+      "retry": "Попробовать ещё",
+      "noData": "Экспериментов пока нет.",
+      "page": "Страница",
+      "colName": "Название",
+      "colFlag": "Flag",
+      "colStatus": "Статус",
+      "colTraffic": "Трафик",
+      "colAssigned": "Участники",
+      "colMetric": "Метрика",
+      "colWinner": "Победитель",
+      "colActions": "Действия",
+      "resultsTitle": "Результаты",
+      "significant": "Значимый",
+      "notSignificant": "Не значимый",
+      "winnerIs": "Победитель",
+      "recompute": "Пересчитать"
     },
     "billingOps": {
-      "title": "[TODO-RU] Операції білінгу",
-      "refresh": "[TODO-RU] Оновити",
-      "loading": "[TODO-RU] Завантаження білінг-даних...",
-      "retry": "[TODO-RU] Спробувати ще",
-      "snapshotMissing": "[TODO-RU] Дані користувача відсутні",
-      "userSection": "[TODO-RU] Користувач",
-      "email": "[TODO-RU] Email",
-      "role": "[TODO-RU] Роль",
-      "entitlementSection": "[TODO-RU] Права доступу",
-      "plan": "[TODO-RU] План",
-      "expires": "[TODO-RU] Закінчується",
-      "features": "[TODO-RU] функцій",
-      "subscriptionSection": "[TODO-RU] Підписка",
-      "status": "[TODO-RU] Статус",
-      "provider": "[TODO-RU] Провайдер",
-      "periodStart": "[TODO-RU] Початок періоду",
-      "periodEnd": "[TODO-RU] Кінець періоду",
-      "cancelAtPeriodEnd": "[TODO-RU] Скасувати в кінці періоду",
+      "title": "Операции биллинга",
+      "refresh": "Обновить",
+      "loading": "Загрузка биллинг-данных...",
+      "retry": "Попробовать ещё",
+      "snapshotMissing": "Данные пользователя отсутствуют",
+      "userSection": "Пользователь",
+      "email": "Email",
+      "role": "Роль",
+      "entitlementSection": "Права доступа",
+      "plan": "План",
+      "expires": "Истекает",
+      "features": "функций",
+      "subscriptionSection": "Подписка",
+      "status": "Статус",
+      "provider": "Провайдер",
+      "periodStart": "Начало периода",
+      "periodEnd": "Конец периода",
+      "cancelAtPeriodEnd": "Отменить в конце периода",
       "yes": "Да",
-      "none": "[TODO-RU] немає",
-      "sessionsSection": "[TODO-RU] Checkout-сесії (останні 10)",
-      "noSessions": "[TODO-RU] Checkout-сесій немає",
-      "orderId": "[TODO-RU] ID замовлення",
-      "pendingSince": "[TODO-RU] Очікує з",
-      "pendingAge": "[TODO-RU] Час очікування",
-      "created": "[TODO-RU] Створено",
-      "actions": "[TODO-RU] Дії",
-      "previewFinalize": "[TODO-RU] Попередній перегляд",
-      "copyOrderId": "[TODO-RU] Копіювати ID замовлення",
-      "never": "[TODO-RU] Ніколи"
+      "none": "нет",
+      "sessionsSection": "Checkout-сессии (последние 10)",
+      "noSessions": "Checkout-сессий нет",
+      "orderId": "ID заказа",
+      "pendingSince": "Ожидает с",
+      "pendingAge": "Время ожидания",
+      "created": "Создано",
+      "actions": "Действия",
+      "previewFinalize": "Предпросмотр",
+      "copyOrderId": "Копировать ID заказа",
+      "never": "Никогда"
     },
     "profileModeration": {
-      "title": "[TODO-RU] Модерація профілів",
-      "helpText": "[TODO-RU] Перегляд та затвердження профілів тьюторів. Нові профілі потребують перевірки перед публікацією на маркетплейсі.",
-      "loading": "[TODO-RU] Завантаження профілів...",
-      "empty": "[TODO-RU] Профілів для модерації немає. Всі профілі перевірені.",
-      "allStatuses": "[TODO-RU] Всі статуси",
-      "statusPending": "[TODO-RU] Очікують",
-      "statusApproved": "[TODO-RU] Затверджені",
-      "statusRejected": "[TODO-RU] Відхилені",
-      "statusSuspended": "[TODO-RU] Призупинені",
-      "statusDraft": "[TODO-RU] Чернетки",
+      "title": "Модерация профилей",
+      "helpText": "Просмотр и утверждение профилей репетиторов. Новые профили требуют проверки перед публикацией на маркетплейсе.",
+      "loading": "Загрузка профилей...",
+      "empty": "Профилей для модерации нет. Все профили проверены.",
+      "allStatuses": "Все статусы",
+      "statusPending": "Ожидают",
+      "statusApproved": "Утверждённые",
+      "statusRejected": "Отклонённые",
+      "statusSuspended": "Приостановленные",
+      "statusDraft": "Черновики",
       "table": {
-        "tutor": "[TODO-RU] Тьютор",
-        "email": "[TODO-RU] Email",
-        "subjects": "[TODO-RU] Предмети",
-        "status": "[TODO-RU] Статус",
-        "createdAt": "[TODO-RU] Створено",
-        "actions": "[TODO-RU] Дії"
+        "tutor": "Репетитор",
+        "email": "Email",
+        "subjects": "Предметы",
+        "status": "Статус",
+        "createdAt": "Создано",
+        "actions": "Действия"
       },
-      "approve": "[TODO-RU] Затвердити",
+      "approve": "Утвердить",
       "reject": "Отклонить",
-      "viewProfile": "[TODO-RU] Переглянути профіль",
+      "viewProfile": "Просмотреть профиль",
       "rejectModal": {
-        "title": "[TODO-RU] Відхилити профіль",
-        "reasonLabel": "[TODO-RU] Причина відхилення",
-        "reasonPlaceholder": "[TODO-RU] Вкажіть причину відхилення профілю...",
+        "title": "Отклонить профиль",
+        "reasonLabel": "Причина отклонения",
+        "reasonPlaceholder": "Укажите причину отклонения профиля...",
         "cancel": "Отменить",
-        "confirm": "[TODO-RU] Відхилити профіль"
+        "confirm": "Отклонить профиль"
       },
-      "approveConfirm": "[TODO-RU] Затвердити профіль {name}? Він стане видимим на маркетплейсі.",
-      "approveSuccess": "[TODO-RU] Профіль успішно затверджено",
-      "rejectSuccess": "[TODO-RU] Профіль відхилено",
-      "error": "[TODO-RU] Не вдалося виконати дію. Спробуйте ще раз."
+      "approveConfirm": "Утвердить профиль {name}? Он станет видимым на маркетплейсе.",
+      "approveSuccess": "Профиль успешно утверждён",
+      "rejectSuccess": "Профиль отклонён",
+      "error": "Не удалось выполнить действие. Попробуйте ещё раз."
     },
     "verification": {
-      "title": "[TODO-RU] Верифікація тьюторів",
-      "helpText": "[TODO-RU] Перевірка документів тьюторів для підтвердження їх кваліфікації. Перегляньте завантажені документи та прийміть рішення.",
-      "loading": "[TODO-RU] Завантаження заявок...",
-      "empty": "[TODO-RU] Заявок на верифікацію немає. Всі документи перевірені.",
-      "allStatuses": "[TODO-RU] Всі статуси",
-      "statusPending": "[TODO-RU] Очікують",
-      "statusApproved": "[TODO-RU] Затверджені",
-      "statusRejected": "[TODO-RU] Відхилені",
+      "title": "Верификация репетиторов",
+      "helpText": "Проверка документов репетиторов для подтверждения их квалификации. Просмотрите загруженные документы и примите решение.",
+      "loading": "Загрузка заявок...",
+      "empty": "Заявок на верификацию нет. Все документы проверены.",
+      "allStatuses": "Все статусы",
+      "statusPending": "Ожидают",
+      "statusApproved": "Утверждённые",
+      "statusRejected": "Отклонённые",
       "table": {
-        "tutor": "[TODO-RU] Тьютор",
-        "email": "[TODO-RU] Email",
-        "type": "[TODO-RU] Тип документу",
-        "submittedAt": "[TODO-RU] Подано",
-        "status": "[TODO-RU] Статус",
-        "actions": "[TODO-RU] Дії"
+        "tutor": "Репетитор",
+        "email": "Email",
+        "type": "Тип документа",
+        "submittedAt": "Подано",
+        "status": "Статус",
+        "actions": "Действия"
       },
-      "approve": "[TODO-RU] Затвердити",
+      "approve": "Утвердить",
       "reject": "Отклонить",
-      "viewDocuments": "[TODO-RU] Переглянути документи",
+      "viewDocuments": "Просмотреть документы",
       "rejectModal": {
-        "title": "[TODO-RU] Відхилити верифікацію",
-        "reasonLabel": "[TODO-RU] Причина відхилення",
-        "reasonPlaceholder": "[TODO-RU] Вкажіть причину відхилення верифікації...",
+        "title": "Отклонить верификацию",
+        "reasonLabel": "Причина отклонения",
+        "reasonPlaceholder": "Укажите причину отклонения верификации...",
         "cancel": "Отменить",
-        "confirm": "[TODO-RU] Відхилити верифікацію"
+        "confirm": "Отклонить верификацию"
       },
-      "approveConfirm": "[TODO-RU] Затвердити верифікацію для {name}?",
-      "approveSuccess": "[TODO-RU] Верифікацію успішно затверджено",
-      "rejectSuccess": "[TODO-RU] Верифікацію відхилено",
-      "error": "[TODO-RU] Не вдалося виконати дію. Спробуйте ще раз."
+      "approveConfirm": "Утвердить верификацию для {name}?",
+      "approveSuccess": "Верификация успешно утверждена",
+      "rejectSuccess": "Верификация отклонена",
+      "error": "Не удалось выполнить действие. Попробуйте ещё раз."
     },
     "payouts": {
-      "title": "[TODO-RU] Виплати тьюторам",
-      "helpText": "[TODO-RU] Управління запитами на виплату від тьюторів. Перевіряйте та обробляйте запити послідовно: Pending → Approved → Processing → Completed.",
-      "allStatuses": "[TODO-RU] Всі статуси",
-      "statusPending": "[TODO-RU] Очікує",
-      "statusApproved": "[TODO-RU] Затверджено",
-      "statusProcessing": "[TODO-RU] Обробляється",
-      "statusCompleted": "[TODO-RU] Виконано",
+      "title": "Выплаты репетиторам",
+      "helpText": "Управление запросами на выплату от репетиторов. Проверяйте и обрабатывайте запросы последовательно: Pending → Approved → Processing → Completed.",
+      "allStatuses": "Все статусы",
+      "statusPending": "Ожидает",
+      "statusApproved": "Утверждено",
+      "statusProcessing": "Обрабатывается",
+      "statusCompleted": "Выполнено",
       "statusFailed": "Ошибка",
-      "statusCancelled": "[TODO-RU] Скасовано",
-      "refresh": "[TODO-RU] Оновити",
-      "loading": "[TODO-RU] Завантаження виплат...",
-      "empty": "[TODO-RU] Виплат немає. Запити від тьюторів з'являться тут.",
-      "error": "[TODO-RU] Не вдалося завантажити виплати",
-      "showing": "[TODO-RU] Показано {count} з {total}",
-      "approve": "[TODO-RU] Затвердити",
-      "process": "[TODO-RU] Обробити",
-      "complete": "[TODO-RU] Завершити",
-      "fail": "[TODO-RU] Позначити як помилку",
-      "confirmApprove": "[TODO-RU] Затвердити виплату #{id}?",
-      "confirmProcess": "[TODO-RU] Почати обробку виплати #{id}?",
+      "statusCancelled": "Отменено",
+      "refresh": "Обновить",
+      "loading": "Загрузка выплат...",
+      "empty": "Выплат нет. Запросы от репетиторов появятся здесь.",
+      "error": "Не удалось загрузить выплаты",
+      "showing": "Показано {count} из {total}",
+      "approve": "Утвердить",
+      "process": "Обработать",
+      "complete": "Завершить",
+      "fail": "Отметить как ошибку",
+      "confirmApprove": "Утвердить выплату #{id}?",
+      "confirmProcess": "Начать обработку выплаты #{id}?",
       "table": {
-        "id": "[TODO-RU] ID",
-        "tutor": "[TODO-RU] Тьютор",
-        "amount": "[TODO-RU] Сума",
-        "method": "[TODO-RU] Метод",
-        "status": "[TODO-RU] Статус",
-        "createdAt": "[TODO-RU] Дата запиту",
-        "actions": "[TODO-RU] Дії"
+        "id": "ID",
+        "tutor": "Репетитор",
+        "amount": "Сумма",
+        "method": "Метод",
+        "status": "Статус",
+        "createdAt": "Дата запроса",
+        "actions": "Действия"
       },
       "completeModal": {
-        "title": "[TODO-RU] Завершити виплату",
-        "providerIdLabel": "[TODO-RU] ID транзакції провайдера",
-        "providerIdPlaceholder": "[TODO-RU] Введіть ID транзакції (необов'язково)",
-        "confirm": "[TODO-RU] Підтвердити виплату"
+        "title": "Завершить выплату",
+        "providerIdLabel": "ID транзакции провайдера",
+        "providerIdPlaceholder": "Введите ID транзакции (необязательно)",
+        "confirm": "Подтвердить выплату"
       },
       "failModal": {
-        "title": "[TODO-RU] Позначити як помилку",
-        "reasonLabel": "[TODO-RU] Причина відмови",
-        "reasonPlaceholder": "[TODO-RU] Вкажіть причину...",
-        "confirm": "[TODO-RU] Позначити як помилку"
+        "title": "Отметить как ошибку",
+        "reasonLabel": "Причина отказа",
+        "reasonPlaceholder": "Укажите причину...",
+        "confirm": "Отметить как ошибку"
       }
     },
     "toast": {
-      "banCreated": "[TODO-RU] Бан успішно створено",
-      "banLifted": "[TODO-RU] Бан успішно знято",
-      "reportResolved": "[TODO-RU] Скаргу вирішено",
-      "billingCancelled": "[TODO-RU] Підписку скасовано",
-      "emailVerified": "[TODO-RU] Email успішно верифіковано",
-      "exemptionGranted": "[TODO-RU] Звільнення надано",
-      "profileApproved": "[TODO-RU] Профіль затверджено",
-      "profileRejected": "[TODO-RU] Профіль відхилено",
-      "verificationApproved": "[TODO-RU] Верифікацію затверджено",
-      "verificationRejected": "[TODO-RU] Верифікацію відхилено",
-      "error": "[TODO-RU] Помилка: {message}",
-      "genericError": "[TODO-RU] Сталася помилка. Спробуйте ще раз."
+      "banCreated": "Бан успешно создан",
+      "banLifted": "Бан успешно снят",
+      "reportResolved": "Жалоба решена",
+      "billingCancelled": "Подписка отменена",
+      "emailVerified": "Email успешно верифицирован",
+      "exemptionGranted": "Освобождение выдано",
+      "profileApproved": "Профиль утверждён",
+      "profileRejected": "Профиль отклонён",
+      "verificationApproved": "Верификация утверждена",
+      "verificationRejected": "Верификация отклонена",
+      "error": "Ошибка: {message}",
+      "genericError": "Произошла ошибка. Попробуйте ещё раз."
+    },
+    "platformSettings": {
+      "title": "Настройки платформы",
+      "helpText": "Управляйте поведением платформы без перезапуска сервера. Изменения вступают в силу сразу.",
+      "noSettings": "Настройки не найдены"
+    },
+    "replayAnalytics": {
+      "title": "Аналитика записей",
+      "subtitle": "Просмотры, популярные записи, тренды",
+      "period": "Период",
+      "last7d": "Последние 7 дней",
+      "last14d": "Последние 14 дней",
+      "last30d": "Последние 30 дней",
+      "last90d": "Последние 90 дней",
+      "kpi": {
+        "totalViews": "Всего просмотров",
+        "views7d": "За 7 дней",
+        "views30d": "За 30 дней",
+        "uniqueIps": "Уникальные зрители",
+        "privacyNote": "по IP-hash, приватность сохранена"
+      },
+      "counts": {
+        "total": "Всего записей"
+      },
+      "trendTitle": "Ежедневный тренд просмотров ({days} дней)",
+      "topTitle": "Топ-{count} самых просматриваемых записей",
+      "noTrend": "За выбранный период просмотров не было",
+      "noReplays": "Записей ещё нет",
+      "columns": {
+        "title": "Название",
+        "owner": "Владелец",
+        "views": "Просмотры",
+        "status": "Статус",
+        "visibility": "Видимость",
+        "lastViewed": "Последний просмотр"
+      },
+      "status": {
+        "active": "Активный",
+        "archived": "Архив",
+        "trashed": "В корзине"
+      },
+      "generatedAt": "Обновлено",
+      "error403": "Доступ запрещён. Нужна роль staff admin.",
+      "errorLoad": "Не удалось загрузить аналитику"
     }
   },
   "contact": {
@@ -5629,9 +5689,9 @@
       "WHITE_LABEL": "White-label решение",
       "DEDICATED_SUPPORT": "Выделенная поддержка",
       "ONBOARDING_ASSISTANCE": "Помощь при внедрении",
-      "BASIC_PROFILE": "[TODO-RU] Базовий профіль тьютора",
-      "BASIC_CALENDAR": "[TODO-RU] Календар та бронювання",
-      "BASIC_CHAT": "[TODO-RU] Чат зі студентами"
+      "BASIC_PROFILE": "Базовый профиль репетитора",
+      "BASIC_CALENDAR": "Календарь и бронирование",
+      "BASIC_CHAT": "Чат со студентами"
     },
     "faq": {
       "title": "Частые вопросы",
@@ -6423,7 +6483,10 @@
       "thickness_section": "Толщина линии",
       "color_section": "Палитра цветов",
       "laser_hint": "Удерживайте для указки (не сохраняется)",
-      "sticky_hint": "Нажмите, чтобы разместить заметку"
+      "sticky_hint": "Нажмите, чтобы разместить заметку",
+      "collapse": "Свернуть панель",
+      "expand": "Развернуть панель",
+      "sheetTitle": "Настройки инструментов"
     },
     "lock": {
       "lock": "Заблокировать",
@@ -6450,7 +6513,8 @@
       "duplicate": "Дублировать",
       "lock": "Заблокировать",
       "unlock": "Разблокировать",
-      "delete": "Удалить"
+      "delete": "Удалить",
+      "deleteSelected": "Удалить выделенное"
     },
     "clear": {
       "button": "Очистить страницу",
@@ -6473,7 +6537,8 @@
       "redo": "Повторить",
       "clear": "Очистить страницу",
       "laser": "Лазерная указка",
-      "sticky": "Заметка"
+      "sticky": "Заметка",
+      "geometry": "Геометрия"
     },
     "sticky": {
       "placeholder": "Введите текст...",
@@ -6493,7 +6558,13 @@
       "page_list": "Список страниц",
       "page_n": "Страница {n}",
       "add": "Добавить страницу",
-      "delete_page": "Удалить страницу {n}"
+      "delete_page": "Удалить страницу {n}",
+      "duplicate_page": "Дублировать страницу {n}",
+      "navigation": "Навигация по страницам",
+      "previous": "Предыдущая страница",
+      "next": "Следующая страница",
+      "showAll": "Показать все страницы",
+      "assetAddedToPage": "Добавлено на страницу {n}"
     },
     "status": {
       "idle": "Готово",
@@ -6534,7 +6605,8 @@
       "deleted": "Доска удалена",
       "deleteError": "Не удалось удалить доску",
       "loadError": "Не удалось загрузить доски",
-      "duplicateError": "Не удалось дублировать доску"
+      "duplicateError": "Не удалось дублировать доску",
+      "loadListError": "Не удалось загрузить сессии урока"
     },
     "share": {
       "title": "Поделиться доской",
@@ -6570,7 +6642,21 @@
         "revoked": "Отозвана"
       },
       "viewCount": "{count} просмотр | {count} просмотров",
-      "close": "Закрыть"
+      "close": "Закрыть",
+      "showMaterials": "Показывать материалы публично",
+      "lessonTitle": "Название урока",
+      "lessonTitlePlaceholder": "напр. Квадратные уравнения",
+      "customSlug": "Свой URL-slug",
+      "customSlugHint": "(необязательно)",
+      "tabShare": "Временная ссылка",
+      "tabPublish": "Опубликовать в Knowledge",
+      "lessonTitleRequired": "Введите название урока",
+      "publishLesson": "Опубликовать урок",
+      "publishSuccess": "Урок опубликован!",
+      "visibility": "Видимость",
+      "visibilityPublic": "Публичный",
+      "visibilityDemo": "Демо-урок",
+      "publishFailed": "Не удалось опубликовать урок"
     },
     "export": {
       "title": "Экспорт доски",
@@ -6643,7 +6729,11 @@
       "expired": "Ссылка просрочена",
       "linkExpired": "Срок действия этой ссылки истёк",
       "error": "Ошибка",
-      "loadFailed": "Не удалось загрузить доску"
+      "loadFailed": "Не удалось загрузить доску",
+      "watchReplay": "Просмотреть replay",
+      "staticView": "Статичный вид",
+      "replayNotAvailable": "Replay недоступен",
+      "lessonFromDate": "Урок от {date}"
     },
     "error": {
       "title": "Что-то пошло не так",
@@ -6687,10 +6777,15 @@
       "export": "Экспорт",
       "menu": "Меню",
       "home": "На главную",
-      "sidebarCollapse": "[TODO-RU] Згорнути панель (подвійний клік)",
-      "sidebarExpand": "[TODO-RU] Розгорнути панель (подвійний клік)",
-      "hidePagePanel": "[TODO-RU] Сховати панель сторінок",
-      "showPagePanel": "[TODO-RU] Показати панель сторінок"
+      "sidebarCollapse": "Свернуть панель (двойной клик)",
+      "sidebarExpand": "Развернуть панель (двойной клик)",
+      "hidePagePanel": "Скрыть панель страниц",
+      "showPagePanel": "Показать панель страниц",
+      "fullscreen": "Полноэкранный режим",
+      "exitFullscreen": "Выйти из полноэкранного режима",
+      "syncError": "Ошибка синхронизации",
+      "followMode": "Режим следования",
+      "publish": "Опубликовать урок"
     },
     "sizePresets": {
       "thin": "Тонкая",
@@ -6755,7 +6850,13 @@
         "soundOff": "Звук выключен",
         "joinLeaveOn": "Уведомления о входе/выходе включены",
         "joinLeaveOff": "Уведомления о входе/выходе выключены"
-      }
+      },
+      "waitingForTeacher": "Ожидайте учителя",
+      "waitingForTeacherHint": "Учитель ещё не начал урок. Вы автоматически присоединитесь, когда он начнёт.",
+      "backToHub": "Вернуться в комнату",
+      "student": "Ученик",
+      "online": "Онлайн",
+      "offline": "Ожидает"
     },
     "upload": {
       "dragHere": "Перетащите изображение сюда",
@@ -6769,12 +6870,13 @@
       "cancel": "Отмена",
       "emptyFile": "Файл пуст",
       "quotaExceeded": "Квота хранилища исчерпана",
-      "saved": "[TODO-RU] Збережено",
-      "savedToLibrary": "[TODO-RU] Збережено в бібліотеку",
-      "uploadFailed": "[TODO-RU] Помилка завантаження — зображення збережено тільки на дошці",
-      "invalidFormat": "[TODO-RU] Непідтримуваний формат файлу",
-      "fileTooLarge": "[TODO-RU] Файл занадто великий (макс. 10 МБ)",
-      "networkError": "[TODO-RU] Помилка мережі — спробуйте ще раз"
+      "saved": "Сохранено",
+      "savedToLibrary": "Сохранено в библиотеку",
+      "uploadFailed": "Ошибка загрузки — изображение сохранено только на доске",
+      "invalidFormat": "Неподдерживаемый формат файла",
+      "fileTooLarge": "Файл слишком большой (макс. 10 МБ)",
+      "networkError": "Ошибка сети — попробуйте ещё раз",
+      "uploadingMany": "Загрузка {active} из {total}…"
     },
     "time": {
       "justNow": "только что",
@@ -6849,98 +6951,778 @@
       "home": "Главная",
       "boards": "Мои доски",
       "dashboard": "Панель управления",
-      "settings": "Настройки"
+      "settings": "Настройки",
+      "addToBoard": "Добавить на доску",
+      "assets": "Материалы"
     },
     "grid": {
-      "toggleGrid": "[TODO-RU] Сітка на дошці",
-      "backgroundGrid": "[TODO-RU] Фон дошки",
-      "none": "[TODO-RU] Без сітки",
-      "smallGrid": "[TODO-RU] Дрібна клітинка",
-      "largeGrid": "[TODO-RU] Велика клітинка",
-      "dots": "[TODO-RU] Крапки",
-      "ruled": "[TODO-RU] Лінійки",
-      "coordinate": "[TODO-RU] Координатна площина"
+      "toggleGrid": "Сетка на доске",
+      "backgroundGrid": "Фон доски",
+      "none": "Без сетки",
+      "smallGrid": "Мелкая клетка",
+      "largeGrid": "Крупная клетка",
+      "dots": "Точки",
+      "ruled": "Линейка",
+      "coordinate": "Координатная плоскость"
     },
     "audio": {
-      "untitled": "[TODO-RU] Аудіо без назви",
-      "listening": "[TODO-RU] Аудіо (через Zoom)"
+      "untitled": "Аудио без названия",
+      "listening": "Аудио (через Zoom)"
     },
     "video": {
-      "play": "[TODO-RU] Грати",
-      "pause": "[TODO-RU] Пауза",
-      "playing": "[TODO-RU] ▶ Грає",
-      "paused": "[TODO-RU] ⏹ Пауза"
+      "play": "Играть",
+      "pause": "Пауза",
+      "playing": "▶ Играет",
+      "paused": "⏹ Пауза",
+      "loadError": "Не удалось загрузить видео"
     },
     "contentSidebar": {
-      "loading": "[TODO-RU] Завантаження матеріалів...",
-      "processing": "[TODO-RU] Обробка...",
+      "loading": "Загрузка материалов...",
+      "processing": "Обработка...",
       "failed": "Ошибка",
-      "dropToUpload": "[TODO-RU] Перетягніть файл для завантаження",
-      "load_failed": "[TODO-RU] Помилка завантаження",
-      "upload_failed": "[TODO-RU] Помилка завантаження файлу",
-      "unsupported_format": "[TODO-RU] Формат не підтримується",
-      "search": "[TODO-RU] Пошук матеріалів...",
+      "dropToUpload": "Перетащите файл для загрузки",
+      "load_failed": "Ошибка загрузки",
+      "upload_failed": "Ошибка загрузки файла",
+      "unsupported_format": "Формат не поддерживается",
+      "search": "Поиск материалов...",
       "filterAll": "Все",
-      "noResults": "[TODO-RU] Нічого не знайдено",
+      "noResults": "Ничего не найдено",
       "upload": "Загрузить",
       "category": {
-        "problem": "[TODO-RU] Задачі",
-        "image": "[TODO-RU] Зображення",
-        "pdf": "[TODO-RU] PDF",
-        "audio": "[TODO-RU] Аудіо",
-        "video": "[TODO-RU] Відео",
-        "presentation": "[TODO-RU] Презентації"
-      }
+        "problem": "Задачи",
+        "image": "Изображения",
+        "pdf": "PDF",
+        "audio": "Аудио",
+        "video": "Видео",
+        "presentation": "Презентации",
+        "youtube": "YouTube",
+        "document": "Документы"
+      },
+      "noMaterials": "Материалы ещё не добавлены к уроку",
+      "addFromLibrary": "Добавить из библиотеки",
+      "backToLesson": "Материалы урока",
+      "pasteFilterTitle": "Показать только вставленные из буфера"
     },
     "templates": {
-      "chooseTemplate": "[TODO-RU] Оберіть шаблон дошки",
-      "blank": "[TODO-RU] Порожня",
-      "blankDesc": "[TODO-RU] Чиста дошка без елементів",
-      "twoColumns": "[TODO-RU] Два стовпці",
-      "twoColumnsDesc": "[TODO-RU] Пояснення зліва, практика справа",
-      "grid2x2": "[TODO-RU] Грід 2×2",
-      "grid2x2Desc": "[TODO-RU] 4 зони для задач або ідей",
-      "timeline": "[TODO-RU] Таймлайн",
-      "timelineDesc": "[TODO-RU] Горизонтальна послідовність етапів",
+      "chooseTemplate": "Выберите шаблон доски",
+      "blank": "Пустая",
+      "blankDesc": "Чистая доска без элементов",
+      "twoColumns": "Два столбца",
+      "twoColumnsDesc": "Объяснение слева, практика справа",
+      "grid2x2": "Грид 2×2",
+      "grid2x2Desc": "4 зоны для задач или идей",
+      "timeline": "Таймлайн",
+      "timelineDesc": "Горизонтальная последовательность этапов",
       "cancel": "Отменить",
-      "apply": "[TODO-RU] Застосувати"
+      "apply": "Применить"
     },
     "pdfSelector": {
-      "pageCount": "[TODO-RU] {count} стор.",
+      "pageCount": "{count} стр.",
       "close": "Закрыть",
-      "dragFull": "[TODO-RU] Перетягнути (стор. 1)",
-      "pageAlt": "[TODO-RU] Сторінка {n}",
-      "noPages": "[TODO-RU] Сторінки ще завантажуються"
+      "dragFull": "Перетащить весь PDF",
+      "pageAlt": "Страница {n}",
+      "noPages": "Страницы недоступны",
+      "loadingPages": "Загрузка страниц..."
     },
     "slideSelector": {
-      "slideCount": "[TODO-RU] {count} сл.",
+      "slideCount": "{count} сл.",
       "close": "Закрыть",
-      "dragFull": "[TODO-RU] Перетягнути (слайд 1)",
-      "slideAlt": "[TODO-RU] Слайд {n}",
-      "noSlides": "[TODO-RU] Слайди ще обробляються"
+      "dragFull": "Перетащить всю презентацию",
+      "slideAlt": "Слайд {n}",
+      "noSlides": "Слайды ещё обрабатываются"
     },
     "player": {
-      "play": "[TODO-RU] Показати презентацію",
-      "close": "[TODO-RU] Закрити (ESC)",
-      "prev": "[TODO-RU] Попередній слайд",
-      "next": "[TODO-RU] Наступний слайд",
-      "dblClickToPlay": "[TODO-RU] Подвійний клік — відкрити з цього слайду"
+      "play": "Показать презентацию",
+      "close": "Закрыть (ESC)",
+      "prev": "Предыдущий слайд",
+      "next": "Следующий слайд",
+      "dblClickToPlay": "Двойной клик — открыть с этого слайда"
     },
     "media": {
-      "processing": "[TODO-RU] Обробка...",
-      "failed": "[TODO-RU] Помилка обробки",
-      "retry": "[TODO-RU] Повторити"
+      "processing": "Обработка...",
+      "failed": "Ошибка обработки",
+      "retry": "Повторить"
     },
     "lesson": {
-      "start": "[TODO-RU] Почати урок",
-      "complete": "[TODO-RU] Завершити урок",
-      "started": "[TODO-RU] Урок розпочато",
-      "completed": "[TODO-RU] Урок завершено",
-      "materialsBanner": "[TODO-RU] Матеріали уроку",
-      "noMaterials": "[TODO-RU] Матеріали не додані",
-      "statusDraft": "[TODO-RU] Чернетка",
-      "statusInProgress": "[TODO-RU] Урок йде",
-      "statusCompleted": "[TODO-RU] Завершено"
+      "start": "Начать урок",
+      "complete": "Завершить урок",
+      "started": "Урок начат",
+      "completed": "Урок завершён",
+      "materialsBanner": "Материалы урока",
+      "noMaterials": "Материалы не добавлены",
+      "statusDraft": "Черновик",
+      "statusInProgress": "Урок идёт",
+      "statusCompleted": "Завершено",
+      "completeAndEnd": "Завершить урок",
+      "saveTitle": "Сохранить как урок",
+      "saveSubtitle": "Сохраните текущее состояние доски как урок в вашу библиотеку",
+      "titleLabel": "Название урока",
+      "titlePlaceholder": "Например: Уравнения с модулем",
+      "saveButton": "Сохранить как шаблон урока",
+      "saving": "Сохраняю…",
+      "saved": "Шаблон урока сохранён",
+      "saveError": "Не удалось сохранить урок",
+      "myLessonsTitle": "Мои уроки",
+      "emptyTitle": "Уроков пока нет",
+      "emptySubtitle": "Сохраните свою первую доску как урок",
+      "openButton": "Открыть",
+      "opening": "Открываю…",
+      "openError": "Не удалось открыть урок",
+      "fetchError": "Не удалось загрузить уроки",
+      "viewMyLessons": "Просмотреть мои уроки"
+    },
+    "replayList": {
+      "title": "Мои записи",
+      "subtitle": "Записи уроков и досок: просмотрите, поделитесь ссылкой",
+      "untitled": "Без названия",
+      "dragHint": "Перетащите запись в папку слева",
+      "loadMore": "Загрузить ещё",
+      "live": "Запись идёт",
+      "viewCountTitle": "Количество просмотров",
+      "tabs": {
+        "active": "Все",
+        "archived": "Архив",
+        "trashed": "Корзина"
+      },
+      "viewMode": {
+        "label": "Режим просмотра",
+        "grid": "Плитки",
+        "list": "Список"
+      },
+      "status": {
+        "archived": "Архив",
+        "trashed": "В корзине"
+      },
+      "trash": {
+        "purgeOn": "Удалится {date}",
+        "purgeOverdue": "Ожидает удаления",
+        "trashedAt": "В корзине с {date}"
+      },
+      "empty": {
+        "title": "У вас пока нет записей",
+        "subtitle": "Нажмите «Записать урок» во время работы на доске — запись появится здесь",
+        "archivedTitle": "Архив пуст",
+        "archivedSubtitle": "Архивные записи скрыты из основного списка, но ссылки на них работают",
+        "trashedTitle": "Корзина пуста",
+        "trashedSubtitle": "Удалённые записи хранятся здесь 7 дней, после чего очищаются автоматически"
+      },
+      "visibility": {
+        "private": "🔒 Приватный",
+        "unlisted": "🔗 Поделиться только с учениками",
+        "link": "🔗 Поделиться только с учениками",
+        "public": "🌍 Сделать открытым для всех"
+      },
+      "actions": {
+        "watch": "Просмотреть",
+        "share": "Скопировать ссылку",
+        "copied": "Скопировано ✓"
+      },
+      "menu": {
+        "rename": "Переименовать",
+        "moveToFolder": "Переместить в папку",
+        "visibility": "Видимость",
+        "archive": "Переместить в архив",
+        "restore": "Восстановить",
+        "restoreFromTrash": "Восстановить из корзины",
+        "trash": "Переместить в корзину"
+      },
+      "folders": {
+        "label": "Папки записей",
+        "all": "Все записи",
+        "noFolder": "Без папки",
+        "new": "Новая папка",
+        "name": "Название папки",
+        "rename": "Переименовать",
+        "delete": "Удалить",
+        "createChild": "Вложенная папка",
+        "moveTo": "Переместить в папку",
+        "deleteConfirm": "Удалить папку «{name}»? Записи в ней не будут удалены — они переместятся в корень.",
+        "empty": "Пока нет папок",
+        "emptyHint": "Создайте папку в боковой панели, чтобы организовать записи"
+      },
+      "prompts": {
+        "renameTitle": "Новое название записи:",
+        "trashConfirm": "Переместить эту запись в корзину? Через 7 дней она будет окончательно удалена.",
+        "trashWithViews": "Эту запись просматривали {count} раз."
+      },
+      "errors": {
+        "cannotOpen": "Невозможно открыть запись. Попробуйте нажать «Скопировать ссылку» и открыть её в браузере."
+      }
+    },
+    "publicGone": {
+      "title": "Запись удалена",
+      "subtitle": "Автор удалил эту запись, и она больше недоступна для просмотра.",
+      "home": "На главную"
+    },
+    "geometry": {
+      "title": "Геометрия",
+      "triangle": "Треугольник",
+      "circle": "Круг",
+      "polygon": "Многоугольник",
+      "sides": "Стороны",
+      "click_hint": "Кликните, чтобы добавить на доску",
+      "presets": "Анимации",
+      "preset_triangle": "Построение треугольника",
+      "preset_pythagoras": "Теорема Пифагора"
+    },
+    "boards": {
+      "myBoards": "Мои доски",
+      "myBoardsSubtitle": "Создавайте и редактируйте доски",
+      "newBoard": "Новая доска",
+      "empty": "Пока нет досок",
+      "emptyMessage": "Создайте первую доску, чтобы начать рисовать",
+      "createFirst": "Создать доску",
+      "pageCount": "{n} стр.",
+      "untitled": "Без названия",
+      "viewGrid": "Сетка",
+      "viewList": "Список",
+      "viewToggleLabel": "Переключатель вида",
+      "loadError": "Не удалось загрузить доски",
+      "duplicated": "Доска скопирована",
+      "duplicateError": "Не удалось скопировать доску",
+      "openMenu": "Опции доски",
+      "actions": {
+        "open": "Открыть",
+        "duplicate": "Скопировать",
+        "share": "Поделиться",
+        "export": "Экспорт",
+        "delete": "Удалить",
+        "moveToFolder": "Переместить в папку",
+        "removeFromFolder": "Убрать из папки"
+      },
+      "tabAll": "Все",
+      "tabLessons": "В занятиях",
+      "tabStandalone": "Черновики",
+      "searchPlaceholder": "Поиск досок…",
+      "pagination": "Навигация по страницам",
+      "prevPage": "Назад",
+      "nextPage": "Далее",
+      "statusActive": "В занятиях",
+      "statusDraft": "Черновик",
+      "lessonBadge": "Привязано к уроку",
+      "lessonWith": "Ученик: {name}",
+      "confirmDelete": {
+        "title": "Удалить доску?",
+        "message": "Доска «{name}» будет удалена навсегда. Это действие невозможно отменить.",
+        "confirm": "Удалить",
+        "cancel": "Отменить"
+      }
+    },
+    "folders": {
+      "allBoards": "Все доски",
+      "noFolder": "Без папки",
+      "newFolder": "Новая папка",
+      "newSubfolder": "Новая подпапка",
+      "newFolderPlaceholder": "Название папки…",
+      "created": "Папка создана",
+      "duplicateName": "Папка с таким названием уже существует",
+      "createError": "Не удалось создать папку",
+      "renameError": "Не удалось переименовать папку",
+      "deleted": "Папка удалена",
+      "deleteError": "Не удалось удалить папку",
+      "moved": "Доска перемещена",
+      "moveError": "Не удалось переместить доску",
+      "sidebar": "Папки",
+      "toggleSidebar": "Показать/Скрыть папки"
+    },
+    "dashboard": {
+      "subtitle": "Добро пожаловать в Winterboard",
+      "quickActions": "Быстрые действия",
+      "library": "Библиотека",
+      "recentBoards": "Последние доски",
+      "noRecentBoards": "Пока нет досок",
+      "viewAll": "Все доски",
+      "goodMorning": "Доброе утро, {name}",
+      "goodAfternoon": "Добрый день, {name}",
+      "goodEvening": "Добрый вечер, {name}"
+    },
+    "classroomHub": {
+      "title": "Классная комната",
+      "subtitle": "Начните или продолжите урок",
+      "activeSection": "Сейчас провожу",
+      "activeSectionStudent": "Активные уроки",
+      "readySection": "Готовые к началу",
+      "noActiveLessons": "Нет активных уроков",
+      "noReadyLessons": "Нет запланированных уроков",
+      "startLesson": "Начать урок",
+      "resumeLesson": "Продолжить",
+      "joinLesson": "Присоединиться",
+      "newBoard": "Новая доска",
+      "tools": "Инструменты",
+      "scheduled": "Запланировано",
+      "startedAt": "Начато {time}",
+      "waitingForTutor": "Репетитор ещё не начал урок",
+      "waitingSubtitle": "Страница обновится автоматически",
+      "goBack": "Вернуться",
+      "loadError": "Не удалось загрузить уроки",
+      "startError": "Не удалось начать урок",
+      "joinError": "Не удалось присоединиться к уроку",
+      "fromTemplate": "Провести с шаблона",
+      "conductLesson": "Провести",
+      "selectStudent": "Выберите ученика",
+      "chooseStudent": "— Выберите ученика —",
+      "tutorWaiting": "Учитель ожидает вас",
+      "joinNow": "Присоединиться сейчас",
+      "myStudents": "Мои ученики",
+      "myTutors": "Мои репетиторы",
+      "noStudents": "Нет учеников",
+      "hasActiveLesson": "Активный урок",
+      "lastActivity": "Последний урок: {time}",
+      "lessonsCount": "уроков",
+      "backToList": "Назад",
+      "continueLesson": "Продолжить урок",
+      "history": "История",
+      "today": "Сегодня",
+      "yesterday": "Вчера",
+      "thisWeek": "Эта неделя",
+      "older": "Раньше",
+      "showMore": "Показать ещё",
+      "noLessonsYet": "Уроков пока нет",
+      "openLesson": "Открыть",
+      "completed": "Завершено",
+      "draft": "Черновик",
+      "justNow": "только что",
+      "minutesAgo": "мин. назад",
+      "hoursAgo": "ч. назад"
+    },
+    "library": {
+      "folders": "Папки",
+      "allFiles": "Все файлы",
+      "favorites": "Избранное",
+      "recent": "Недавние",
+      "noFolders": "Папок ещё нет",
+      "newFolder": "Новая папка",
+      "folderName": "Название папки",
+      "create": "Создать",
+      "folderCreated": "Папка создана",
+      "folderRenamed": "Папка переименована",
+      "folderDeleted": "Папка удалена",
+      "deleteFolderConfirm": "Удалить папку «{name}»? Файлы будут перемещены в корень.",
+      "renameFolder": "Переименовать",
+      "deleteFolder": "Удалить",
+      "createChild": "Новая подпапка",
+      "viewMode": "Вид",
+      "gridView": "Сетка",
+      "listView": "Список",
+      "createChildPlaceholder": "Название подпапки",
+      "folderError": "Не удалось выполнить операцию с папкой",
+      "search": "Поиск файлов…",
+      "upload": "Загрузить",
+      "uploadTitle": "Загрузка файлов",
+      "uploading": "Загрузка…",
+      "done": "Готово",
+      "uploadError": "Ошибка загрузки",
+      "dropOrClick": "Перетащите файлы или нажмите для выбора",
+      "acceptedTypes": "Изображения, PDF, видео, аудио, PPTX",
+      "dropZoneLabel": "Зона для перетаскивания файлов",
+      "uploadToFolder": "Загрузить в:",
+      "noFiles": "Файлов ещё нет",
+      "assetsLabel": "Файлы",
+      "pagination": "Пагинация",
+      "prevPage": "Предыдущая страница",
+      "nextPage": "Следующая страница",
+      "favorite": "Избранное",
+      "delete": "В архив",
+      "archiveAction": "В архив",
+      "archived": "Файл перемещён в архив",
+      "archiveError": "Не удалось архивировать файл",
+      "archiveConfirm": {
+        "title": "Переместить в архив?",
+        "message": "Файл «{name}» будет в архиве 90 дней. Затем удалится окончательно.",
+        "confirm": "В архив"
+      },
+      "confirmDelete": "Удалить {name}?",
+      "deleted": "Файл удалён",
+      "deleteError": "Не удалось удалить файл",
+      "favoriteError": "Не удалось обновить избранное",
+      "close": "Закрыть",
+      "ytInvalidUrl": "Неверная YouTube ссылка",
+      "ytAdded": "YouTube видео добавлено",
+      "ytError": "Не удалось добавить YouTube видео",
+      "breadcrumbAll": "Все файлы",
+      "fileMoved": "Файл перемещён",
+      "fileMovedTo": "Файл перемещён в {folder}",
+      "moveError": "Не удалось переместить файл",
+      "moveToFolder": "Переместить в папку",
+      "noFolder": "Без папки",
+      "undo": "Отменить",
+      "assetRenamed": "Файл переименован",
+      "renameError": "Не удалось переименовать файл",
+      "renameAsset": "Переименовать",
+      "storage": {
+        "myFiles": "Мои файлы",
+        "pasted": "Скопированные",
+        "limit": "Лимит",
+        "usageBar": "{used} / {limit}",
+        "uploadsLabel": "Загруженные: {size}",
+        "pastedLabel": "Скопированные: {size}"
+      },
+      "pasted": {
+        "title": "Скопированные",
+        "cleanAll": "Очистить неиспользуемые",
+        "empty": "Скопированных файлов нет",
+        "count": "{count} файлов · {size}"
+      },
+      "cleanup": {
+        "confirmTitle": "Очистить скопированные файлы?",
+        "confirmMessage": "{count} файлов ({size}) будет архивировано. Восстановление возможно 90 дней.",
+        "confirmButton": "Архивировать",
+        "success": "Архивировано {count} файлов, освобождено {size}",
+        "skippedPublished": "{count} файлов пропущено (используются в опубликованных уроках)",
+        "cancel": "Отменить",
+        "nothingToClean": "Нет файлов для архивирования"
+      },
+      "archive": {
+        "title": "Архив",
+        "expiresIn": "Удаление через {days} дн.",
+        "restore": "Восстановить",
+        "restored": "Файл восстановлен",
+        "empty": "Архив пуст"
+      }
+    },
+    "materials": {
+      "hideFolders": "Скрыть папки",
+      "showFolders": "Показать папки",
+      "emptyFolder": "Папка пуста",
+      "emptyFolderHint": "Перетащите файлы или загрузите новые",
+      "uploadFile": "Загрузить файл"
+    },
+    "selection": {
+      "toolbar": "Панель выделения",
+      "bringToFront": "Показать поверх",
+      "sendToBack": "Переместить назад",
+      "duplicate": "Дублировать",
+      "sendToPage": "Отправить на страницу",
+      "sendToPageCurrent": "текущая",
+      "lock": "Заблокировать",
+      "unlock": "Разблокировать",
+      "delete": "Удалить"
+    },
+    "youtube": {
+      "insert": "Вставить YouTube видео",
+      "modalTitle": "Вставить YouTube видео",
+      "urlLabel": "URL",
+      "urlPlaceholder": "https://www.youtube.com/watch?v=...",
+      "preview": "Предпросмотр видео",
+      "previewHint": "Вставьте URL YouTube для предпросмотра",
+      "titleLabel": "Название (опционально)",
+      "titlePlaceholder": "Название видео...",
+      "cancel": "Отменить",
+      "add": "Добавить на доску",
+      "close": "Закрыть",
+      "invalidUrl": "Неверная YouTube ссылка"
+    },
+    "lessonMap": {
+      "title": "Карта урока",
+      "empty": "Маркеров пока нет. Добавьте первый!",
+      "addMarker": "Добавить маркер",
+      "deleteMarker": "Удалить маркер",
+      "category": {
+        "theory": "Теория",
+        "formula": "Формула",
+        "example": "Пример",
+        "practice": "Практика",
+        "solution": "Решение",
+        "custom": "Другое"
+      },
+      "onboardingHint": "Добавьте метки к уроку для навигации",
+      "dismiss": "Понятно",
+      "expand": "Развернуть карту урока",
+      "collapse": "Свернуть карту урока"
+    },
+    "markerModal": {
+      "title": "Создать маркер",
+      "close": "Закрыть",
+      "nameLabel": "Название",
+      "namePlaceholder": "Введите название маркера",
+      "categoryLabel": "Категория",
+      "cancel": "Отменить",
+      "create": "Создать"
+    },
+    "responsive": {
+      "tapToShowUI": "Коснитесь, чтобы показать панель"
+    },
+    "documentViewer": {
+      "pdf": "PDF",
+      "document": "Документ",
+      "presentation": "Презентация",
+      "loading": "Загрузка…",
+      "prevPage": "Предыдущая страница",
+      "nextPage": "Следующая страница",
+      "expand": "Развернуть",
+      "pageOf": "{current} / {total}",
+      "tooManyPages": "Документ имеет слишком много страниц. Максимум: {max}",
+      "documentNotReady": "Документ ещё обрабатывается"
+    },
+    "objectAudio": {
+      "record": "Записать",
+      "stop": "Стоп",
+      "play": "Воспроизвести",
+      "pause": "Пауза",
+      "reRecord": "Перезаписать",
+      "delete": "Удалить запись",
+      "deleteConfirm": "Удалить аудио из этого объекта?",
+      "uploading": "Загрузка…",
+      "limitHint": "Макс: {maxSec} сек · {maxMB} МБ",
+      "notSupported": "Запись аудио не поддерживается в этом браузере",
+      "maxDurationReached": "Достигнут максимум ({max} сек). Запись остановлена",
+      "sidebarTitle": "Аудио аннотация",
+      "sidebarEmpty": "Выберите объект с аудио",
+      "noAudio": "Нет аудио",
+      "errors": {
+        "sizeTooLarge": "Файл слишком большой ({size}). Максимум: {max}",
+        "durationTooLong": "Запись слишком длинная. Максимум: {max} сек",
+        "unsupportedFormat": "Формат не поддерживается. Разрешено: WebM, MP3, OGG",
+        "quotaExceeded": "Место на доске закончилось. Удалите ненужные файлы",
+        "micDenied": "Доступ к микрофону запрещён. Разрешите в настройках браузера",
+        "micNotFound": "Микрофон не найден. Подключите микрофон и попробуйте ещё раз",
+        "micUnknown": "Ошибка микрофона. Попробуйте ещё раз",
+        "networkError": "Ошибка сети. Попробуйте ещё раз",
+        "deleteFailed": "Не удалось удалить аудио. Попробуйте ещё раз"
+      }
+    },
+    "autosave": {
+      "boardTooLarge": "Доска слишком большая для сохранения. Удалите часть элементов или разделите урок на несколько досок.",
+      "boardLargeWarning": "Доска почти заполнена — возможны задержки сохранения.",
+      "localOnlyImages": "Некоторые изображения не сохранены (не удалось загрузить на сервер).",
+      "diffDisabled": "Инкрементальное сохранение временно отключено. Изменения сохраняются полным стейтом.",
+      "saveFailed": "Сохранение временно недоступно. Попробуем снова через минуту."
+    },
+    "lessons": {
+      "title": "Уроки",
+      "create": "Создать урок",
+      "noLessons": "Уроков ещё нет",
+      "loadError": "Не удалось загрузить уроки",
+      "untitled": "Без названия",
+      "namePlaceholder": "Название урока...",
+      "clonePrompt": "Новое название урока:",
+      "confirmDelete": "Удалить урок «{name}»?",
+      "start": "Начать урок",
+      "materials": "Материалы",
+      "boards": "Доски",
+      "notes": "Заметки",
+      "addMaterial": "Добавить материал",
+      "noMaterials": "Материалов не добавлено",
+      "noBoards": "Досок ещё нет",
+      "notesPlaceholder": "Заметки к уроку...",
+      "pickFromLibrary": "Выбрать из библиотеки",
+      "libraryPickerComingSoon": "Выбор из библиотеки — скоро",
+      "clone": "Клонировать",
+      "delete": "Удалить",
+      "created": "Создано",
+      "createError": "Не удалось создать урок",
+      "cloned": "Урок клонирован",
+      "cloneError": "Не удалось клонировать урок",
+      "deleted": "Урок удалён",
+      "deleteError": "Не удалось удалить урок",
+      "openBoard": "Открыть доску",
+      "openClassroom": "Открыть класс",
+      "boardSessions": "Доски этого урока",
+      "noSessions": "Связанных досок нет",
+      "materialRemoved": "Материал удалён",
+      "materialRemoveError": "Не удалось удалить материал",
+      "notesSaveError": "Не удалось сохранить заметки",
+      "notesConflict": "Заметки были изменены из другого места — обновлено"
+    },
+    "students": {
+      "title": "Ученики",
+      "noStudents": "Учеников ещё нет",
+      "lastSession": "Последняя сессия",
+      "sessions": "{count} сессий",
+      "viewSessions": "Просмотреть сессии",
+      "loadError": "Не удалось загрузить учеников",
+      "unknown": "Неизвестный ученик"
+    },
+    "replay": {
+      "viewReplay": "Воспроизвести урок",
+      "viewRecording": "Просмотреть запись",
+      "statPages": "стр.",
+      "statMinutes": "мин",
+      "emptyHint": "Запишите урок, чтобы просмотреть его",
+      "recordingDone": "Запись готова!",
+      "recordingDoneHint": "Выберите видимость — ссылка скопируется автоматически",
+      "recordingBroken": "Запись не работает — перезагрузите страницу и попробуйте снова",
+      "shareWithStudent": "Поделиться с учеником",
+      "later": "Позже",
+      "goToList": "В списке записей",
+      "viewingMode": "Режим просмотра — редактирование отключено",
+      "exitReplay": "Выйти",
+      "shareMoment": "Поделиться моментом",
+      "momentCopied": "Ссылка на момент скопирована!",
+      "loading": "Загрузка replay…",
+      "replayReady": "Replay готов",
+      "operationsCount": "{count} операций",
+      "notFound": "Replay не найден",
+      "forbidden": "Доступ запрещён",
+      "rateLimited": "Слишком много запросов. Попробуйте позже.",
+      "loadError": "Не удалось загрузить replay",
+      "comments": {
+        "title": "Комментарии",
+        "empty": "Комментариев ещё нет",
+        "placeholder": "Напишите комментарий к текущему моменту…",
+        "pinnedTo": "Привязано к моменту",
+        "send": "Отправить"
+      },
+      "share": {
+        "title": "Поделиться записью",
+        "link": "Ссылка",
+        "linkHint": "Любой по этой ссылке сможет просмотреть запись урока.",
+        "copy": "Копировать",
+        "copied": "Скопировано ✓",
+        "rotate": "Обновить ссылку",
+        "rotateConfirm": "Старая ссылка станет неактивной. Продолжить?",
+        "creating": "Создаём ссылку…",
+        "creatingReplay": "Создаём запись из всех операций…",
+        "createFailed": "Не удалось создать запись",
+        "noOps": "На доске ещё нет действий для создания записи.",
+        "noRecordingTitle": "Урок уже проведён без записи",
+        "createAndShare": "Создать запись урока",
+        "createHint": "Запись будет создана из того, что уже есть на доске",
+        "privateHint": "Приватная запись доступна только вам. Измените видимость, чтобы получить ссылку.",
+        "visibilityHints": {
+          "private": "Никто не увидит эту запись",
+          "unlisted": "Откроется только тем, кому вы отправите ссылку",
+          "public": "Могут найти другие пользователи платформы"
+        }
+      }
+    },
+    "objectText": {
+      "view": "Просмотреть текст",
+      "add": "Добавить текст",
+      "title": "Текст объекта",
+      "placeholder": "Введите текст…",
+      "save": "Сохранить",
+      "delete": "Удалить"
+    },
+    "recording": {
+      "start": "Записать урок",
+      "startTitle": "Начать запись урока для дальнейшего просмотра",
+      "stop": "Остановить",
+      "active": "Запись",
+      "frozen": "Запись завершена"
+    },
+    "onboarding": {
+      "toolbar": "Инструменты рисования. Выберите карандаш и начинайте!",
+      "materials": "Перетащите изображение, видео или YouTube отсюда на доску",
+      "replay": "Здесь можно просмотреть весь урок после завершения",
+      "selection": "Кликните на объект, чтобы увидеть кнопки действий",
+      "dismiss": "Понятно"
+    },
+    "sessionEnd": {
+      "title": "Урок завершён",
+      "publish": "Опубликовать как урок",
+      "saveAsTemplate": "Сохранить как шаблон",
+      "close": "Закрыть"
+    },
+    "properties": {
+      "text": "Текст",
+      "textPlaceholder": "Введите текст...",
+      "fontSize": "Размер шрифта",
+      "color": "Цвет",
+      "stickyNote": "Заметка",
+      "notePlaceholder": "Введите заметку...",
+      "background": "Фон",
+      "textColor": "Цвет текста",
+      "width": "Ширина"
+    },
+    "test": {
+      "testMode": "Режим теста",
+      "input": "Ввод",
+      "radio": "Выбор одного",
+      "checkbox": "Выбор нескольких",
+      "match": "Соответствие",
+      "order": "Порядок",
+      "placeholder": "Введите ответ...",
+      "selectOption": "Выберите вариант",
+      "selectMultiple": "Выберите варианты",
+      "dragToMatch": "Перетащите для соответствия",
+      "dragToOrder": "Перетащите для упорядочивания",
+      "correct": "Правильно",
+      "gaps": "{n} пропуск(ов)",
+      "typeBadge": {
+        "input": "Ввод",
+        "radio": "Выбор",
+        "checkbox": "Множественный",
+        "dropdown": "Список",
+        "gap-fill": "Пропуски",
+        "matching": "Соответ."
+      },
+      "results": {
+        "addOption": "+ вариант",
+        "template": "Шаблон (используйте ___ для пропусков)",
+        "templatePlaceholder": "Столица Франции — ___",
+        "gapAnswers": "Ответы на пропуски",
+        "points": "Баллы",
+        "position": "Позиция",
+        "duplicate": "Дублировать",
+        "unlock": "Разблокировать",
+        "lock": "Заблокировать",
+        "delete": "Удалить",
+        "matchingPairs": "Пары соответствий",
+        "leftItem": "Левая колонка",
+        "rightItem": "Правая колонка",
+        "addPair": "+ Добавить пару",
+        "title": "Результаты",
+        "pts": "баллов",
+        "close": "Закрыть",
+        "question": "Вопрос"
+      },
+      "teacherPanel": {
+        "title": "Прогресс теста",
+        "totalStudents": "Студентов",
+        "totalQuestions": "Вопросов",
+        "studentProgress": "Прогресс студентов",
+        "noStudents": "Студенты ещё не присоединились",
+        "grade": "Оценить",
+        "endTest": "Завершить тест"
+      },
+      "studentView": {
+        "title": "Тест",
+        "progress": "Ответили: {answered} из {total}",
+        "yourScore": "Ваш результат",
+        "liveHint": "Отвечайте на вопросы. Ваши ответы автоматически сохраняются."
+      },
+      "phase": {
+        "edit": "Редактирование",
+        "live": "Активный",
+        "review": "Просмотр"
+      },
+      "props": {
+        "labelQuestion": "Вопрос",
+        "labelPlaceholder": "Введите вопрос...",
+        "correctAnswer": "Правильный ответ",
+        "textType": "Текст",
+        "numberType": "Число",
+        "caseSensitive": "Учитывать регистр",
+        "options": "Варианты ответов",
+        "addOption": "+ Добавить вариант",
+        "optionsCheckCorrect": "Варианты (отметьте правильные)",
+        "template": "Шаблон (используйте ___ для пропусков)",
+        "templatePlaceholder": "Столица Франции — ___",
+        "gapAnswers": "Ответы на пропуски",
+        "matchingPairs": "Пары соответствий",
+        "leftItem": "Левая колонка",
+        "rightItem": "Правая колонка",
+        "addPair": "+ Добавить пару",
+        "duplicate": "Дублировать",
+        "unlock": "Разблокировать",
+        "lock": "Заблокировать",
+        "delete": "Удалить"
+      },
+      "chooseAnswer": "Выберите ответ",
+      "inputPlaceholder": "Введите ответ...",
+      "answer": "Ответ",
+      "checkAnswer": "Проверить",
+      "launchTest": "Запустить тест",
+      "livePhase": "Активная фаза",
+      "submitGrade": "Выставить оценку",
+      "backToEdit": "Вернуться к редактированию",
+      "reviewPhase": "Фаза просмотра",
+      "retryTest": "Попробовать ещё раз",
+      "exitTest": "Выйти из теста",
+      "dropdown": "Выпадающий список",
+      "gapFill": "Заполнение пропусков",
+      "matching": "Соответствие"
     }
   },
   "knowledge": {
@@ -6983,147 +7765,811 @@
       "step2": "Выберите ученика или класс слева",
       "step3": "Добавьте нужные файлы в класс через «+»",
       "step4": "Откройте доску — файлы уже там"
+    },
+    "hub": {
+      "title": "Knowledge Hub",
+      "quickActions": "Быстрые действия",
+      "recentLessons": "Последние уроки",
+      "myLessons": "Мои уроки",
+      "mySeries": "Мои серии",
+      "achievements": "Достижения",
+      "publishLesson": "Опубликовать урок",
+      "catalogTemplates": "Каталог шаблонов",
+      "createSeries": "Создать серию",
+      "catalogLessons": "Каталог уроков",
+      "emptyTitle": "Опубликуйте свой первый урок!",
+      "emptyDescription": "Knowledge — это ваша библиотека уроков. Каждый проведённый урок можно опубликовать и сделать доступным для студентов.",
+      "emptyStep1": "Проведите урок на доске",
+      "emptyStep2": "Нажмите «Опубликовать»",
+      "emptyStep3": "Студенты увидят ваш урок",
+      "createBoard": "Создать доску",
+      "viewAll": "Все",
+      "welcomeTitle": "Добро пожаловать!",
+      "welcomeText": "Здесь будут ваши уроки, шаблоны и аналитика. Начните с доски — создайте свой первый урок.",
+      "welcomeBtn": "Создать урок на доске",
+      "stepsTitle": "Как это работает",
+      "step1Title": "Создайте урок на доске",
+      "step1Desc": "Используйте Winterboard — рисуйте, добавляйте слайды, текст",
+      "step2Title": "Опубликуйте в каталог",
+      "step2Desc": "Урок станет доступным для учеников в каталоге M4SH",
+      "exploreCatalog": "Просмотреть каталог уроков",
+      "exploreCatalogDesc": "Посмотрите, что создают другие репетиторы",
+      "createLesson": "Создать урок",
+      "noTitle": "Без названия",
+      "statusPublic": "Опубликован",
+      "statusDraft": "Черновик",
+      "hideFromCatalog": "Скрыть из каталога",
+      "publishAction": "Опубликовать",
+      "hideAction": "Скрыть",
+      "analyticsTitle": "Аналитика",
+      "analyticsDesc": "Статистика ваших уроков",
+      "collectionsTitle": "Подборки",
+      "collectionsDesc": "Тематические подборки уроков",
+      "showAll": "Показать все",
+      "showLess": "Показать последние",
+      "totalLessons": "Всего {count} уроков",
+      "deleteLesson": "Удалить",
+      "deleteLessonConfirm": "Удалить «{title}»? Урок исчезнет из каталога. Это действие нельзя отменить.",
+      "deleteLessonCancel": "Отменить",
+      "deleteLessonConfirmBtn": "Удалить",
+      "lessonDeleted": "Урок удалён",
+      "openBoard": "Открыть доску"
+    },
+    "terms": {
+      "title": "Подсказки",
+      "lesson": "Урок — запись проведённого занятия. Содержит replay доски, материалы, метки.",
+      "template": "Шаблон — урок, который можно использовать повторно. Другие репетиторы могут его форкнуть.",
+      "pack": "Серия (Pack) — последовательность уроков по теме.",
+      "fork": "Форк — копия шаблона с вашими изменениями. Автор видит форки в аналитике.",
+      "hide": "Скрыть"
+    },
+    "breadcrumbs": {
+      "catalog": "Каталог",
+      "knowledge": "Knowledge",
+      "series": "Серии",
+      "collections": "Подборки"
+    },
+    "publicLesson": {
+      "moreLessons": "Ещё уроки этого репетитора",
+      "partOfPack": "Этот урок входит в серию:",
+      "viewPack": "Смотреть серию",
+      "views": "просмотров",
+      "forks": "форков",
+      "viewAllLessons": "Все уроки этого репетитора",
+      "forkLesson": "Форкнуть урок",
+      "saveToMyLessons": "Сохранить в мои уроки",
+      "loginToFork": "Войдите, чтобы форкнуть",
+      "shareMoment": "Поделиться моментом",
+      "shareAt": "Поделиться: {title}",
+      "linkCopied": "Скопировано!",
+      "loading": "Загрузка урока…",
+      "notFoundTitle": "Урок не найден",
+      "notFoundMsg": "Неверная ссылка на урок.",
+      "notFoundMsg404": "Этот урок не существует или был удалён.",
+      "loadErrorTitle": "Ошибка загрузки",
+      "loadErrorMsg": "Не удалось загрузить урок. Попробуйте позже.",
+      "backHome": "На главную",
+      "lessonsCount": "{count} уроков",
+      "ctaBanner": {
+        "title": "Учитесь на M4SH!",
+        "text": "Регистрируйтесь бесплатно — найдите репетитора или создавайте уроки",
+        "registerStudent": "Я ученик",
+        "registerTutor": "Я репетитор"
+      }
+    },
+    "replay": {
+      "shareMoment": "Поделиться моментом",
+      "momentCopied": "Ссылка на момент скопирована!",
+      "momentBadge": "Момент: {time}",
+      "noOperations": "На этой доске ещё нет записей",
+      "loading": "Загрузка replay…",
+      "replayReady": "Replay готов",
+      "operationsCount": "{count} операций",
+      "notFound": "Replay не найден",
+      "forbidden": "Доступ запрещён",
+      "rateLimited": "Слишком много запросов. Попробуйте позже.",
+      "loadError": "Не удалось загрузить replay",
+      "comments": {
+        "title": "Комментарии",
+        "empty": "Комментариев ещё нет",
+        "placeholder": "Напишите комментарий к текущему моменту…",
+        "pinnedTo": "Привязано к моменту",
+        "send": "Отправить"
+      },
+      "share": {
+        "title": "Поделиться записью",
+        "link": "Ссылка",
+        "linkHint": "Любой по этой ссылке сможет просмотреть запись урока.",
+        "copy": "Копировать",
+        "copied": "Скопировано ✓",
+        "rotate": "Обновить ссылку",
+        "rotateConfirm": "Старая ссылка станет неактивной. Продолжить?",
+        "creating": "Создаём ссылку…",
+        "creatingReplay": "Создаём запись из всех операций…",
+        "createFailed": "Не удалось создать запись",
+        "noOps": "На доске ещё нет действий для создания записи.",
+        "noRecordingTitle": "Урок уже проведён без записи",
+        "createAndShare": "Создать запись урока",
+        "createHint": "Запись будет создана из того, что уже есть на доске",
+        "privateHint": "Приватная запись доступна только вам. Измените видимость, чтобы получить ссылку.",
+        "visibilityHints": {
+          "private": "Никто не увидит эту запись",
+          "unlisted": "Откроется только тем, кому вы отправите ссылку",
+          "public": "Могут найти другие пользователи платформы"
+        }
+      }
+    },
+    "objectText": {
+      "view": "Просмотреть текст",
+      "add": "Добавить текст",
+      "title": "Текст объекта",
+      "placeholder": "Введите текст…",
+      "save": "Сохранить",
+      "delete": "Удалить"
+    },
+    "responsive": {
+      "mobileMode": "Мобильный режим",
+      "tabletMode": "Планшетный режим",
+      "desktopMode": "Режим десктопа",
+      "displayMode": "Режим дисплея",
+      "orientationPortrait": "Портрет",
+      "orientationLandscape": "Ландшафт",
+      "inputTouch": "Сенсорный ввод",
+      "inputPen": "Ввод стилусом",
+      "inputMouse": "Ввод мышкой",
+      "fitToScreen": "Вписать в экран",
+      "autoZoom": "Автоматический масштаб",
+      "layoutChanged": "Макет изменён на режим {mode}"
+    },
+    "public": {
+      "loading": "Загрузка урока...",
+      "notFound": "Урок не найден",
+      "error": "Ошибка загрузки",
+      "restrictedMaterial": "Доступно после записи на урок"
+    },
+    "lesson": {
+      "tutor": "Репетитор",
+      "public": "Публичный",
+      "startReplay": "Просмотреть урок",
+      "exitReplay": "Назад",
+      "loadingReplay": "Загрузка контента...",
+      "retry": "Попробовать снова",
+      "error": {
+        "notFound": "Урок не найден",
+        "brokenSnapshot": "Контент урока недоступен",
+        "replayError": "Ошибка воспроизведения",
+        "serverError": "Что-то пошло не так",
+        "goBack": "Назад",
+        "goHome": "На главную"
+      },
+      "cta": {
+        "title": "Понравился урок?",
+        "subtitle": "Запишитесь на занятие с этим репетитором",
+        "bookLesson": "Записаться на урок",
+        "askTutor": "Написать репетитору"
+      },
+      "share": {
+        "generateLink": "Создать ссылку",
+        "copyLink": "Копировать",
+        "linkCopied": "Ссылка скопирована!",
+        "linkCreated": "Ссылка создана",
+        "publishFirst": "Опубликуйте урок, чтобы делиться",
+        "revokeLink": "Отменить ссылку",
+        "shareLesson": "Поделиться уроком",
+        "linkActive": "Ссылка активна",
+        "linkExpires": "Действует до {date}"
+      },
+      "reuse": {
+        "useLesson": "Использовать урок",
+        "loading": "Загрузка...",
+        "loadError": "Не удалось загрузить урок в сессию",
+        "useLessonHint": "Открыть урок в новой сессии для преподавания"
+      },
+      "search": {
+        "placeholder": "Поиск уроков...",
+        "allStatuses": "Все статусы",
+        "draft": "Черновики",
+        "public": "Публичные",
+        "clearAll": "Очистить фильтры",
+        "loadMore": "Загрузить ещё",
+        "publish": "Опубликовать",
+        "hide": "Скрыть"
+      },
+      "delete": "Удалить",
+      "deleteConfirmTitle": "Удалить урок?",
+      "deleteConfirmText": "Урок «{title}» будет скрыт. Вы сможете восстановить его позже.",
+      "deleteConfirm": "Удалить",
+      "deleteCancel": "Отменить",
+      "deleting": "Удаление...",
+      "deleteError": "Не удалось удалить урок",
+      "shareError": "Не удалось создать ссылку для распространения",
+      "toggleVisibilityError": "Не удалось изменить видимость урока",
+      "empty": {
+        "searchNoResults": "Ничего не найдено",
+        "tryDifferentQuery": "Попробуйте другой поисковый запрос",
+        "folderEmpty": "Эта папка пуста",
+        "folderEmptyHint": "Переместите уроки в эту папку или создайте новый урок",
+        "createFirst": "Создать первый урок"
+      },
+      "editTitle": "Редактировать урок",
+      "edit": {
+        "titleLabel": "Название",
+        "titlePlaceholder": "Введите название урока",
+        "descriptionLabel": "Описание",
+        "descriptionPlaceholder": "Описание урока (опционально)",
+        "subjectLabel": "Предмет",
+        "subjectPlaceholder": "math, physics, english...",
+        "editLesson": "Редактировать",
+        "save": "Сохранить",
+        "saving": "Сохранение...",
+        "cancel": "Отменить",
+        "error": "Не удалось сохранить изменения"
+      },
+      "move": {
+        "moveToFolder": "Переместить в папку",
+        "selectFolder": "Выберите папку",
+        "moving": "Перемещение...",
+        "moved": "Урок перемещён"
+      }
+    },
+    "folder": {
+      "title": "Папки",
+      "create": "Создать папку",
+      "namePlaceholder": "Название папки...",
+      "allLessons": "Все уроки",
+      "unfiled": "Без папки",
+      "createChild": "Создать подпапку",
+      "delete": "Удалить папку",
+      "deleteConfirm": "Удалить папку «{name}»? Уроки переместятся в корень.",
+      "rename": "Переименовать",
+      "renaming": "Переименование..."
+    },
+    "publish": {
+      "title": "Опубликовать урок",
+      "description": "Ваш урок станет доступным для просмотра всем",
+      "lessonTitle": "Название урока",
+      "lessonDescription": "Описание",
+      "subject": "Предмет",
+      "subjectTag": "Предмет",
+      "difficulty": "Сложность",
+      "slug": "URL-адрес (slug)",
+      "slugHint": "Будет доступен по адресу /lesson/{ваш_slug}/{url}",
+      "visibility": "Видимость",
+      "visibilityDemo": "Demo — только ваш профиль",
+      "visibilityPublic": "Public — каталог + Google",
+      "publish": "Опубликовать",
+      "publishButton": "Опубликовать",
+      "cancel": "Отменить",
+      "publishing": "Публикация...",
+      "success": "Урок опубликован!",
+      "copyLink": "Скопировать ссылку",
+      "sharePrompt": "Поделитесь уроком с учениками:",
+      "shareTelegram": "Telegram",
+      "shareWhatsApp": "WhatsApp",
+      "shareViber": "Viber",
+      "consent": {
+        "title": "Приватность студента",
+        "hasStudentData": "Урок содержит данные студента",
+        "studentConsented": "Студент дал согласие на публикацию",
+        "anonymize": "Анонимизировать данные студента",
+        "warning": "Без согласия публикация уроков с данными студента запрещена"
+      },
+      "error": "Не удалось опубликовать урок",
+      "unpublishError": "Не удалось снять с публикации",
+      "republishError": "Не удалось опубликовать урок"
+    },
+    "demo": {
+      "title": "Демо-уроки",
+      "subtitle": "Просмотрите, как проходят уроки с этим репетитором",
+      "empty": "Этот репетитор ещё не опубликовал демо-уроков",
+      "duration": "{minutes} мин",
+      "durationHours": "{hours} ч {minutes} мин"
+    },
+    "share": {
+      "title": "Поделиться уроком",
+      "ariaLabel": "Поделиться уроком",
+      "copyLink": "Копировать ссылку",
+      "sendTo": "Отправить через:",
+      "moreOptions": "Другие варианты...",
+      "telegram": "Telegram",
+      "qr": "QR-код",
+      "copied": "Ссылка скопирована!",
+      "shareMoment": "Поделиться моментом",
+      "shareMomentHint": "Ссылка откроет урок именно на этом моменте"
+    },
+    "library": {
+      "title": "Библиотека шаблонов",
+      "subtitle": "Найдите шаблон урока и начните работать быстрее",
+      "searchPlaceholder": "Поиск шаблонов...",
+      "difficulty": "Сложность",
+      "any": "Любая",
+      "sortBy": "Сортировать",
+      "sortPopular": "Популярные",
+      "sortNewest": "Новые",
+      "retry": "Попробовать снова",
+      "usedCount": "Использовано {count} раз",
+      "clone": "Клонировать",
+      "empty": "Шаблонов ещё нет",
+      "loadMore": "Загрузить ещё",
+      "totalCount": "Всего: {count}",
+      "emptyTitle": "Библиотека пуста",
+      "emptySubtitle": "Опубликуйте свой первый урок и сделайте его шаблоном!",
+      "emptyAction": "Создать урок"
+    },
+    "template": {
+      "useButton": "Использовать",
+      "usedCount": "Использовано {count} раз",
+      "community": "Сообщество",
+      "difficultyLabel": "Уровень сложности",
+      "subjectLabel": "Предмет",
+      "saveTitle": "Сохранить как шаблон",
+      "saveSubtitle": "Другие репетиторы смогут использовать ваш урок как основу",
+      "titleLabel": "Название шаблона",
+      "saveButton": "Сохранить шаблон",
+      "saving": "Сохранение...",
+      "saveFromRoom": "Сохранить как шаблон",
+      "communityToggle": "Сделать доступным для всех",
+      "communityHint": "Шаблон будет доступен в библиотеке для других репетиторов",
+      "saveSuccess": "Шаблон сохранён!",
+      "saveFailed": "Не удалось сохранить шаблон"
+    },
+    "pack": {
+      "lessonCount": "{count} уроков",
+      "status": {
+        "draft": "Черновик",
+        "public": "Опубликовано",
+        "hidden": "Скрыто"
+      },
+      "create": "Создать серию",
+      "edit": "Редактировать серию",
+      "empty": "Серий ещё нет",
+      "emptyHint": "Объедините уроки в серию для удобства"
+    },
+    "fork": {
+      "badge": "Форк от {author}",
+      "button": "Форкнуть урок",
+      "treeCount": "Форкнули {count} раз",
+      "success": "Урок форкнут!",
+      "error": "Не удалось форкнуть урок"
+    },
+    "catalog": {
+      "title": "Каталог уроков",
+      "subtitle": "Найдите лучшие уроки от сообщества",
+      "search": "Поиск уроков...",
+      "allCategories": "Все категории",
+      "sortBy": "Сортировать",
+      "sortPopular": "Популярные",
+      "sortNewest": "Новые",
+      "sortTopRated": "По рейтингу",
+      "minRating": "Мин. рейтинг",
+      "emptyTitle": "Ничего не найдено",
+      "emptySubtitle": "Попробуйте изменить фильтры или поисковый запрос",
+      "resetFilters": "Сбросить фильтры",
+      "filteredByTutor": "Уроки репетитора",
+      "globalEmptyTitle": "Каталог пока пуст",
+      "globalEmptyText": "Станьте первым! Создайте урок на доске и опубликуйте его в каталог.",
+      "createLesson": "Создать урок",
+      "goToMyLessons": "Перейти в мои уроки",
+      "loadMore": "Загрузить ещё",
+      "totalResults": "{count} уроков",
+      "recentlyAdded": "Недавно добавленные",
+      "categoryEmptyTitle": "В категории «{category}» ещё нет уроков",
+      "categoryEmptyTextTutor": "Станьте первым! Создайте урок и опубликуйте его в эту категорию.",
+      "categoryEmptyTextStudent": "Пока репетиторы не добавили уроков в эту категорию.",
+      "categoryEmptyPublish": "Опубликовать урок",
+      "categoryEmptyBack": "Вернуться в каталог",
+      "filter": {
+        "sort": "Сортировка",
+        "popular": "Популярные",
+        "newest": "Новейшие",
+        "topRated": "Высший рейтинг",
+        "minRating": "Мин. рейтинг",
+        "minStars": "Минимум {n} звёзд",
+        "difficulty": "Сложность",
+        "diffAll": "Все",
+        "diff1": "1 — Начальный",
+        "diff2": "2 — Базовый",
+        "diff3": "3 — Средний",
+        "diff4": "4 — Продвинутый",
+        "diff5": "5 — Эксперт",
+        "language": "Язык",
+        "langAll": "Все",
+        "lang": {
+          "uk": "Украинский",
+          "en": "English",
+          "pl": "Polski"
+        },
+        "retryBtn": "Попробовать снова",
+        "searchPlaceholder": "Поиск уроков…",
+        "categories": "Категории",
+        "allCategories": "Все",
+        "closeCategories": "Закрыть категории"
+      },
+      "mySubjects": "Ваши предметы",
+      "showAll": "Показать все ({count})",
+      "hideOther": "Скрыть",
+      "noCategories": "Категории отсутствуют"
+    },
+    "rating": {
+      "title": "Оцените урок",
+      "selectScore": "Выберите оценку",
+      "star": "{n} звёзд",
+      "placeholder": "Напишите краткий отзыв (необязательно)...",
+      "submit": "Оценить",
+      "submitting": "Отправка...",
+      "thankYou": "Спасибо за оценку!",
+      "alreadyRated": "Вы уже оценили этот урок",
+      "yourRating": "Ваша оценка: {score} из 5",
+      "loginToRate": "Войдите, чтобы оценить урок",
+      "average": "Средняя оценка",
+      "count": "{count} оценок",
+      "summaryAria": "Рейтинг {score} из 5, {count} оценок",
+      "submitError": "Не удалось отправить оценку"
+    },
+    "achievement": {
+      "title": "Достижения",
+      "earned": "Получено",
+      "locked": "Заблокировано",
+      "noData": "Достижений пока нет. Публикуйте уроки, чтобы получить первое!",
+      "first_lesson_published": "Опубликуйте свой первый урок",
+      "five_lessons_published": "Опубликуйте 5 уроков",
+      "first_fork_received": "Получите первый форк вашего урока",
+      "ten_forks_received": "Получите 10 форков",
+      "fifty_forks_received": "Получите 50 форков",
+      "first_template_shared": "Поделитесь первым шаблоном",
+      "template_100_uses": "Ваш шаблон использовали 100 раз",
+      "first_pack_created": "Создайте первую серию уроков",
+      "first_rating_5star": "Получите первую оценку 5 звёзд"
+    },
+    "collection": {
+      "title": "Подборки",
+      "featured": "Рекомендовано",
+      "lessonCount": "{count} уроков",
+      "seeAll": "Смотреть все подборки",
+      "emptyTitle": "Подборок пока нет",
+      "emptySubtitle": "Скоро здесь появятся лучшие подборки уроков"
+    },
+    "analytics": {
+      "title": "Аналитика",
+      "views": "Просмотры",
+      "forks": "Форки",
+      "clones": "Клоны",
+      "avgRating": "Средний рейтинг",
+      "topLessons": "Топ-5 уроков",
+      "period": "Период",
+      "days7": "7 дней",
+      "days30": "30 дней",
+      "days90": "90 дней",
+      "noData": "Недостаточно данных для отображения",
+      "networkTitle": "Сеть уроков"
+    },
+    "lessons": {
+      "title": "Уроки",
+      "noLessons": "Уроков ещё нет",
+      "loadError": "Не удалось загрузить уроки",
+      "untitled": "Без названия",
+      "openBoard": "Открыть доску",
+      "openClassroom": "Открыть класс",
+      "boardSessions": "Доски для этого урока",
+      "noSessions": "Нет связанных досок"
     }
   },
   "storage": {
-    "quotaLabel": "[TODO-RU] Сховище: {used} з {total}",
-    "quotaWarning": "[TODO-RU] Залишилось мало місця. Видаліть непотрібні файли",
-    "quotaCritical": "[TODO-RU] Сховище майже заповнене! Звільніть місце або придбайте додатковий простір",
-    "quotaExceeded": "[TODO-RU] Перевищено ліміт сховища. Видаліть непотрібні файли або придбайте додатковий простір",
-    "rateLimited": "[TODO-RU] Забагато завантажень. Зачекайте хвилину"
+    "quotaLabel": "Хранилище: {used} из {total}",
+    "quotaWarning": "Осталось мало места. Удалите ненужные файлы",
+    "quotaCritical": "Хранилище почти заполнено! Освободите место или приобретите дополнительное",
+    "quotaExceeded": "Превышен лимит хранилища. Удалите ненужные файлы или приобретите дополнительное",
+    "rateLimited": "Слишком много загрузок. Подождите минуту"
   },
   "learningContent": {
     "groups": {
-      "selectGroup": "[TODO-RU] Виберіть групу",
-      "implicitLabel": "[TODO-RU] Особисті",
-      "explicitLabel": "[TODO-RU] Групи",
-      "students": "[TODO-RU] учнів",
-      "materials": "[TODO-RU] матеріалів",
-      "empty": "[TODO-RU] Немає груп",
-      "createGroup": "[TODO-RU] Створити групу",
-      "groupTitle": "[TODO-RU] Назва групи",
-      "addMaterial": "[TODO-RU] Додати матеріал",
-      "removeMaterial": "[TODO-RU] Видалити матеріал",
-      "materialAdded": "[TODO-RU] Матеріал додано",
-      "materialRemoved": "[TODO-RU] Матеріал видалено",
-      "accessDenied": "[TODO-RU] Доступ до цього матеріалу заборонено",
-      "manager": "[TODO-RU] Управління матеріалами",
-      "subjectLabel": "[TODO-RU] Предмет",
-      "noSubject": "[TODO-RU] Без предмета",
-      "subjectImmutableWarning": "[TODO-RU] Предмет не можна змінити, поки в групі є матеріали",
-      "subjectLocked": "[TODO-RU] Предмет закріплений за цією групою",
-      "noMaterials": "[TODO-RU] Матеріалів поки немає",
-      "selectSubjectHint": "[TODO-RU] Оберіть предмет для автозаповнення стартовими матеріалами",
-      "titlePlaceholder": "[TODO-RU] Наприклад: Математика 10-Б",
-      "materialActive": "[TODO-RU] Матеріал активний",
-      "materialInactive": "[TODO-RU] Матеріал неактивний",
+      "selectGroup": "Выберите группу",
+      "implicitLabel": "Личные",
+      "explicitLabel": "Группы",
+      "students": "учеников",
+      "materials": "материалов",
+      "empty": "Нет групп",
+      "createGroup": "Создать группу",
+      "groupTitle": "Название группы",
+      "addMaterial": "Добавить материал",
+      "removeMaterial": "Удалить материал",
+      "materialAdded": "Материал добавлен",
+      "materialRemoved": "Материал удалён",
+      "accessDenied": "Доступ к этому материалу запрещён",
+      "manager": "Управление материалами",
+      "subjectLabel": "Предмет",
+      "noSubject": "Без предмета",
+      "subjectImmutableWarning": "Предмет нельзя изменить, пока в группе есть материалы",
+      "subjectLocked": "Предмет закреплён за этой группой",
+      "noMaterials": "Материалов пока нет",
+      "selectSubjectHint": "Выберите предмет для автозаполнения стартовыми материалами",
+      "titlePlaceholder": "Например: Математика 10-Б",
+      "materialActive": "Материал активен",
+      "materialInactive": "Материал неактивен",
       "sidebarTitle": "Обучение",
       "sidebarStudents": "Ученики",
-      "sidebarGroups": "[TODO-RU] Групи",
-      "sidebarEmpty": "[TODO-RU] Ще немає учнів чи груп",
-      "sidebarEmptyHint": "[TODO-RU] Учні з'являться автоматично після підтвердження зв'язку"
+      "sidebarGroups": "Группы",
+      "sidebarEmpty": "Пока нет учеников или групп",
+      "sidebarEmptyHint": "Ученики появятся автоматически после подтверждения связи"
     },
     "view": {
-      "subtitle": "[TODO-RU] Бібліотека навчальних матеріалів для використання на уроках"
+      "subtitle": "Библиотека учебных материалов для использования на уроках"
     },
     "panel": {
-      "title": "[TODO-RU] Матеріали",
-      "lessonTitle": "[TODO-RU] Матеріали уроку",
-      "lessonEmpty": "[TODO-RU] Для цього уроку немає дозволених матеріалів",
-      "subjects": "[TODO-RU] Предмети",
-      "collections": "[TODO-RU] Збірники",
-      "noContent": "[TODO-RU] Немає матеріалів",
-      "dragHint": "[TODO-RU] Оберіть предмет або знайдіть задачу",
-      "loading": "[TODO-RU] Завантаження..."
+      "title": "Материалы",
+      "lessonTitle": "Материалы урока",
+      "lessonEmpty": "Для этого урока нет разрешённых материалов",
+      "subjects": "Предметы",
+      "collections": "Сборники",
+      "noContent": "Нет материалов",
+      "dragHint": "Выберите предмет или найдите задачу",
+      "loading": "Загрузка..."
     },
     "search": {
-      "placeholder": "[TODO-RU] Пошук задач...",
-      "noResults": "[TODO-RU] Нічого не знайдено",
-      "filters": "[TODO-RU] Фільтри",
-      "difficulty": "[TODO-RU] Складність",
-      "tags": "[TODO-RU] Теги",
+      "placeholder": "Поиск задач...",
+      "noResults": "Ничего не найдено",
+      "filters": "Фильтры",
+      "difficulty": "Сложность",
+      "tags": "Теги",
       "language": "Язык"
     },
     "language": {
-      "all": "[TODO-RU] Всі мови",
-      "uk": "[TODO-RU] Українська",
-      "en": "[TODO-RU] English"
+      "all": "Все языки",
+      "uk": "Украинский",
+      "en": "English"
     },
     "item": {
-      "problem": "[TODO-RU] Задача",
-      "test": "[TODO-RU] Тест",
-      "theory": "[TODO-RU] Теорія",
-      "video": "[TODO-RU] Відео",
-      "presentation": "[TODO-RU] Презентація",
-      "link": "[TODO-RU] Посилання"
+      "problem": "Задача",
+      "test": "Тест",
+      "theory": "Теория",
+      "video": "Видео",
+      "presentation": "Презентация",
+      "link": "Ссылка"
     },
     "difficulty": {
-      "1": "[TODO-RU] Легко",
-      "2": "[TODO-RU] Нижче середнього",
-      "3": "[TODO-RU] Середньо",
-      "4": "[TODO-RU] Вище середнього",
-      "5": "[TODO-RU] Складно"
+      "1": "Легко",
+      "2": "Ниже среднего",
+      "3": "Средне",
+      "4": "Выше среднего",
+      "5": "Сложно"
     },
     "ownership": {
       "all": "Все",
-      "myItems": "[TODO-RU] Мої матеріали",
-      "PLATFORM": "[TODO-RU] Платформа",
-      "TUTOR": "[TODO-RU] Тьютор",
-      "CO_OWNED": "[TODO-RU] Спільний",
-      "LICENSED": "[TODO-RU] Ліцензія",
-      "THIRD_PARTY": "[TODO-RU] Зовнішній",
-      "USER_GENERATED": "[TODO-RU] Створено"
+      "myItems": "Мои материалы",
+      "PLATFORM": "Платформа",
+      "TUTOR": "Репетитор",
+      "CO_OWNED": "Совместный",
+      "LICENSED": "Лицензия",
+      "THIRD_PARTY": "Внешний",
+      "USER_GENERATED": "Создано"
     },
     "access": {
-      "PUBLIC": "[TODO-RU] Відкритий",
-      "PREVIEW": "[TODO-RU] Попередній перегляд",
-      "PAID": "[TODO-RU] Платний",
-      "LESSON_BOUND": "[TODO-RU] Прив'язаний до уроку",
-      "COURSE_BOUND": "[TODO-RU] Прив'язаний до курсу",
-      "SUBSCRIPTION": "[TODO-RU] За підпискою",
-      "RESTRICTED": "[TODO-RU] Обмежений",
-      "ARCHIVED": "[TODO-RU] Архівний"
+      "PUBLIC": "Открытый",
+      "PREVIEW": "Предпросмотр",
+      "PAID": "Платный",
+      "LESSON_BOUND": "Привязан к уроку",
+      "COURSE_BOUND": "Привязан к курсу",
+      "SUBSCRIPTION": "По подписке",
+      "RESTRICTED": "Ограниченный",
+      "ARCHIVED": "Архивный"
     },
     "accessCheck": {
-      "subscriptionRequired": "[TODO-RU] Потрібна підписка для доступу",
-      "purchaseRequired": "[TODO-RU] Потрібна оплата для доступу",
-      "ownerOnly": "[TODO-RU] Доступно тільки автору",
-      "restricted": "[TODO-RU] Обмежений доступ",
-      "previewOnly": "[TODO-RU] Тільки перегляд"
+      "subscriptionRequired": "Нужна подписка для доступа",
+      "purchaseRequired": "Нужна оплата для доступа",
+      "ownerOnly": "Доступно только автору",
+      "restricted": "Ограниченный доступ",
+      "previewOnly": "Только просмотр"
     },
     "actions": {
       "delete": "Удалить",
-      "deleteItem": "[TODO-RU] Видалити {title}",
-      "confirmDelete": "[TODO-RU] Підтвердити видалення",
-      "confirmDeleteMessage": "[TODO-RU] Видалити \"{title}\"? Матеріал буде переміщено в архів.",
+      "deleteItem": "Удалить {title}",
+      "confirmDelete": "Подтвердить удаление",
+      "confirmDeleteMessage": "Удалить «{title}»? Материал будет перемещён в архив.",
       "confirmDeleteBtn": "Удалить",
       "cancel": "Отменить",
-      "deleting": "[TODO-RU] Видалення..."
+      "deleting": "Удаление..."
     },
     "upload": {
-      "dropHere": "[TODO-RU] Перетягніть файл сюди для завантаження",
-      "uploading": "[TODO-RU] Завантаження...",
-      "uploadSuccess": "[TODO-RU] Файл завантажено",
-      "uploadError": "[TODO-RU] Помилка завантаження"
+      "dropHere": "Перетащите файл сюда для загрузки",
+      "uploading": "Загрузка...",
+      "uploadSuccess": "Файл загружен",
+      "uploadError": "Ошибка загрузки",
+      "uploadingMany": "Загрузка {active} из {total}…",
+      "saved": "Сохранено",
+      "tooManyImages": "Слишком много изображений ({count}). Максимум {max} за раз."
     },
     "quota": {
-      "storage": "[TODO-RU] Сховище",
-      "used": "[TODO-RU] {used} з {total}",
-      "full": "[TODO-RU] Сховище заповнено"
+      "storage": "Хранилище",
+      "used": "{used} из {total}",
+      "full": "Хранилище заполнено"
     }
   },
   "template": {
-    "saveAsTemplate": "[TODO-RU] Зберегти як шаблон",
-    "titleLabel": "[TODO-RU] Назва шаблону",
-    "titlePlaceholder": "[TODO-RU] Наприклад: Алгебра — тригонометрія",
+    "saveAsTemplate": "Сохранить как шаблон",
+    "titleLabel": "Название шаблона",
+    "titlePlaceholder": "Например: Алгебра — тригонометрия",
     "save": "Сохранить",
     "createLesson": "Создать урок",
-    "materials": "[TODO-RU] матеріалів",
-    "hasBoard": "[TODO-RU] з дошкою",
-    "noTemplates": "[TODO-RU] Шаблонів ще немає",
-    "titleRequired": "[TODO-RU] Вкажіть назву шаблону",
-    "lessonNotFound": "[TODO-RU] Урок не знайдено",
-    "saveFailed": "[TODO-RU] Помилка збереження шаблону",
-    "deleteConfirm": "[TODO-RU] Видалити шаблон?"
+    "materials": "материалов",
+    "hasBoard": "с доской",
+    "noTemplates": "Шаблонов ещё нет",
+    "titleRequired": "Укажите название шаблона",
+    "lessonNotFound": "Урок не найден",
+    "saveFailed": "Ошибка сохранения шаблона",
+    "deleteConfirm": "Удалить шаблон?"
+  },
+  "breadcrumb": {
+    "home": "Главная",
+    "knowledgeHub": "Knowledge Hub",
+    "catalog": "Каталог",
+    "library": "Библиотека",
+    "packs": "Серии",
+    "analytics": "Аналитика",
+    "collections": "Коллекции"
+  },
+  "sidebarCoaching": {
+    "step1": "Здесь будут ваши созданные уроки. Начните с доски!",
+    "step2": "Здесь вы отмечаете часы для учеников — они увидят их в маркетплейсе",
+    "step3": "Доска — здесь вы создаёте и проводите уроки",
+    "next": "Далее",
+    "done": "Понятно",
+    "skip": "Пропустить"
+  },
+  "wb": {
+    "ctx": {
+      "menu": "Контекстное меню",
+      "copy": "Копировать",
+      "paste": "Вставить",
+      "duplicate": "Дублировать",
+      "delete": "Удалить",
+      "bringToFront": "На передний план",
+      "sendToBack": "На задний план"
+    },
+    "grid": {
+      "settings": "Настройки сетки",
+      "enabled": "Показать сетку",
+      "size": "Размер ячейки",
+      "style": "Стиль сетки",
+      "dots": "Точки",
+      "lines": "Линии",
+      "opacity": "Прозрачность"
+    }
+  },
+  "publicLesson": {
+    "header": {
+      "hourShort": "ч",
+      "minShort": "мин",
+      "backToHome": "MASH — на главную"
+    },
+    "player": {
+      "ariaLabel": "Плеер повтора урока",
+      "timeline": "Шкала повтора",
+      "play": "Воспроизвести",
+      "pause": "Пауза",
+      "speed": "Скорость воспроизведения"
+    },
+    "markers": {
+      "title": "Метки урока",
+      "empty": "В этом уроке нет меток",
+      "categoryTheory": "Теория",
+      "categoryFormula": "Формула",
+      "categoryExample": "Пример",
+      "categoryPractice": "Практика",
+      "categorySolution": "Решение",
+      "categoryCustom": "Другое"
+    },
+    "materials": {
+      "title": "Материалы урока",
+      "empty": "Нет доступных материалов",
+      "open": "Открыть"
+    },
+    "cta": {
+      "priceFrom": "От {price} грн/ч",
+      "book": "Записаться на урок",
+      "viewProfile": "Посмотреть профиль",
+      "hint": "Просмотрите этот урок и запишитесь на первое занятие с репетитором",
+      "ariaLabel": "Карточка репетитора"
+    }
+  },
+  "subject": {
+    "math": "Математика",
+    "physics": "Физика",
+    "english": "Английский язык",
+    "ukrainian": "Украинский язык",
+    "chemistry": "Химия",
+    "biology": "Биология",
+    "history": "История",
+    "geography": "География",
+    "informatics": "Информатика",
+    "other": "Другое"
+  },
+  "replay": {
+    "timeline": "Временная шкала воспроизведения",
+    "play": "Воспроизвести",
+    "pause": "Пауза",
+    "stop": "Остановить",
+    "speed": "Скорость воспроизведения",
+    "stepForward": "Шаг вперёд",
+    "stepBackward": "Шаг назад",
+    "exit": "Выйти из режима воспроизведения",
+    "exitReplay": "Выйти из воспроизведения",
+    "viewReplay": "Просмотреть воспроизведение",
+    "replayEnded": "Воспроизведение завершено",
+    "loading": "Загрузка воспроизведения…",
+    "retry": "Повторить",
+    "partialTimeline": "Перемотка ограничена ({loaded}/{total})",
+    "chaptersTitle": "Разделы урока",
+    "noChapters": "Разделов нет",
+    "untitledChapter": "Раздел",
+    "share": {
+      "button": "Поделиться",
+      "title": "Поделиться записью урока",
+      "link": "Ссылка",
+      "linkHint": "Любой по этой ссылке сможет просмотреть запись урока.",
+      "copy": "Копировать",
+      "copied": "Скопировано",
+      "rotate": "Обновить ссылку",
+      "creating": "Создаём ссылку…"
+    }
+  },
+  "invites": {
+    "createButton": "Создать приглашение",
+    "createSuccess": "Приглашение успешно создано",
+    "acceptSuccess": "Поздравляем! Вы теперь подключены к {tutorName}",
+    "cancelSuccess": "Приглашение отменено",
+    "shareTitle": "Поделиться приглашением",
+    "shareWhatsApp": "Поделиться через WhatsApp",
+    "shareCopy": "Скопировать ссылку",
+    "copiedToClipboard": "Ссылка скопирована!",
+    "shareHint": "Отправьте эту ссылку ученику через любой мессенджер",
+    "inviteUrl": "Ссылка на приглашение",
+    "expiresAt": "Действительно до",
+    "status": {
+      "active": "Активно",
+      "used": "Использовано",
+      "expired": "Просрочено",
+      "cancelled": "Отменено"
+    },
+    "list": {
+      "title": "Мои приглашения",
+      "empty": "У вас ещё нет приглашений",
+      "createFirst": "Создайте первое приглашение для студента",
+      "openedCount": "Просмотров: {count}",
+      "cancel": "Отменить"
+    },
+    "detail": {
+      "title": "Приглашение от {tutorName}",
+      "description": "{tutorName} приглашает вас присоединиться как студента",
+      "acceptButton": "Принять приглашение",
+      "viewProfile": "Посмотреть профиль",
+      "bookLesson": "Записаться на урок",
+      "cost": "Стоимость: {count} контакт | Стоимость: {count} контакта | Стоимость: {count} контактов",
+      "expired": "Это приглашение просрочено",
+      "used": "Это приглашение уже использовано",
+      "cancelled": "Это приглашение отменено",
+      "inactive": "Это приглашение больше не активно"
+    },
+    "viral": {
+      "title": "Отлично! Вы подключены",
+      "subtitle": "Теперь вы можете общаться с {tutorName}",
+      "goToDashboard": "Перейти в мой кабинет",
+      "viewProfile": "Посмотреть профиль репетитора",
+      "bookLesson": "Записаться на первый урок",
+      "exploreMore": "Найти других репетиторов"
+    },
+    "errors": {
+      "unknown": "Произошла ошибка. Попробуйте ещё раз",
+      "not_tutor": "Только репетиторы могут создавать приглашения",
+      "rate_limit_exceeded": "Вы достигли лимита создания приглашений. Попробуйте позже",
+      "max_active_invites": "Вы достигли максимального количества активных приглашений (20)",
+      "invite_not_found": "Приглашение не найдено",
+      "invite_expired": "Приглашение просрочено",
+      "invite_already_used": "Это приглашение уже использовано",
+      "invite_cancelled": "Приглашение отменено репетитором",
+      "invite_not_active": "Приглашение больше не активно",
+      "self_invite_forbidden": "Вы не можете принять собственное приглашение",
+      "insufficient_contacts": "У репетитора недостаточно контактов",
+      "not_owner": "Только владелец может отменить приглашение"
+    }
   }
 }

@@ -2,6 +2,12 @@
 // Ref: DAY16_AGENT-A.md
 // Zone: AGENT-A (api/)
 // Note: apiClient response interceptor already unwraps .data — no need for .then(r => r.data)
+//
+// Phase 2 (2026-04-27) updates per `saas_docs/domains/winterboard/ops_sync/`:
+//   - INV-20: 4 winterboard write endpoints вимагають `X-Protocol-Version: v3` header.
+//     Mismatch → 400 PROTOCOL_VERSION_MISMATCH. apiClient detect + opsSyncStore.enterDesync.
+//   - SSOT §4: replay/batch contract change `{seq, ops}` → `{last_seq, applied_count}`.
+//   - INV-14: each op MUST include `op_id` (UUID NOT NULL per migration 0038).
 
 import apiClient from '@/utils/apiClient'
 import type {
@@ -14,6 +20,10 @@ import type {
 import type { WBLessonMarker } from '../types/winterboard'
 
 const BASE = '/v1/winterboard'
+
+// INV-20: required header on 4 write endpoints (replay/batch, lock, page, state-update)
+export const PROTOCOL_VERSION = 'v3'
+const PROTOCOL_HEADERS = { 'X-Protocol-Version': PROTOCOL_VERSION } as const
 
 // ─── Replay Timeline ───────────────────────────────────────────────────────
 
@@ -53,17 +63,54 @@ export async function recordOperation(
 // ─── Batch record operations ───────────────────────────────────────────────
 
 /**
- * POST /winterboard/sessions/{uuid}/replay/batch/
- * Records up to 100 operations in a single request.
- * Returns { recorded: N } — count of successfully persisted operations.
+ * Phase 1 (2026-04-27) batch contract per OPS_SYNC_SSOT §4:
+ *
+ * Request:  {seq, ops: [{op_id, op_type, page_id, payload, client_seq?}, ...]}
+ * Response: {last_seq, applied_count}
+ * Errors:
+ *   400 {error: 'PROTOCOL_VERSION_MISMATCH', client_version, server_version}
+ *   400 {error: 'validation_failed', invalid_op_index?, reason}
+ *   409 {error: 'SEQ_MISMATCH', expected_seq}
+ *   503 {error: 'SERVER_BUSY'} (with Retry-After header)
+ *
+ * Header: X-Protocol-Version: v3 REQUIRED (INV-20).
+ *
+ * Each op MUST include `op_id` (UUID NOT NULL per migration 0038, INV-14).
  */
+export interface BatchRecordResponse {
+  last_seq: number
+  applied_count: number
+}
+
 export async function recordOperationsBatch(
   sessionId: string,
-  operations: RecordOperationRequest[],  // max 100
-): Promise<{ recorded: number; total_operations: number }> {
-  return apiClient.post<{ recorded: number; total_operations: number }>(
+  seq: number,
+  ops: RecordOperationRequest[],  // max 100; кожен з op_id (UUID)
+): Promise<BatchRecordResponse> {
+  return apiClient.post<BatchRecordResponse>(
     `${BASE}/sessions/${sessionId}/replay/batch/`,
-    { operations },
+    { seq, ops },
+    { headers: PROTOCOL_HEADERS },
+  )
+}
+
+// ─── PR4 (2026-04-26): Recovery — check which op_ids already saved ─────────────
+
+/**
+ * POST /winterboard/sessions/{uuid}/replay/check-ops/
+ *
+ * Reconciliation endpoint. Викликається ТІЛЬКИ з recovery flows:
+ * retryQueue overflow або 409 storm cap hit. НЕ для routine sync.
+ *
+ * Limit: 500 op_ids per request.
+ */
+export async function checkOps(
+  sessionId: string,
+  opIds: string[],
+): Promise<{ saved: string[]; missing: string[] }> {
+  return apiClient.post<{ saved: string[]; missing: string[] }>(
+    `${BASE}/sessions/${sessionId}/replay/check-ops/`,
+    { op_ids: opIds },
   )
 }
 

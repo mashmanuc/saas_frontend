@@ -1,0 +1,21 @@
+{
+  "generatedAt": "2026-04-25T19:07:28.909Z",
+  "counts": {
+    "ukKeys": 6593,
+    "ruKeys": 6593,
+    "missingInRu": 0,
+    "extraInRu": 0,
+    "typeMismatch": 0,
+    "todoMarkers": 0,
+    "emptyInRu": 0,
+    "sameAsUk": 0,
+    "ukLeftInRu": 0
+  },
+  "missingInRu": [],
+  "todoMarkers": [],
+  "sameAsUk": [],
+  "ukLeftInRu": [],
+  "emptyInRu": [],
+  "typeMismatch": [],
+  "extraInRu": []
+}

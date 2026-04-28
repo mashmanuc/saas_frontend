@@ -50,7 +50,8 @@ export { WBSpatialIndex, getStrokeBBox } from './engine/spatialIndex'
 
 // ─── Composables (AGENT-C) ──────────────────────────────────────────────────
 export { useAutosave } from './composables/useAutosave'
-export { useOfflineQueue } from './composables/useOfflineQueue'
+// Phase 2 (2026-04-27): useOfflineQueue DELETED — dead diff-queue infrastructure (0 consumers).
+// Single write pipeline тепер через opsSyncStore + useReplayRecorder.
 export { useTelemetry } from './composables/useTelemetry'
 
 // ─── API (AGENT-C) ─────────────────────────────────────────────────────────

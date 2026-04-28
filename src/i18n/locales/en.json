@@ -6381,6 +6381,26 @@
     }
   },
   "winterboard": {
+    "errors": {
+      "protocolMismatch": {
+        "title": "App updated",
+        "body": "Your whiteboard version is incompatible with the server. Please reload the page to continue.",
+        "reload": "Reload",
+        "toast": "App updated. Please reload the page."
+      },
+      "desync": {
+        "title": "Re-syncing…",
+        "bannerLabel": "Lost sync with server",
+        "retry": "Retry",
+        "recovering": "Recovering…",
+        "reasonSeqMismatch": "Data mismatch detected — refreshing local state",
+        "reasonCrossTab": "Another tab lost sync",
+        "reasonGeneric": "Couldn't sync changes — click Retry"
+      },
+      "serverBusy": "Server temporarily busy. Try again in a minute.",
+      "seqMismatch": "Whiteboard state out of sync — click Retry in the recovery banner.",
+      "beaconUnsupported": "Couldn't save changes before page closed."
+    },
     "replayList": {
       "title": "My Replays",
       "subtitle": "Recordings of your lessons and boards: watch, share a link",

@@ -1,181 +1,142 @@
-// P4: useReplayRecorder — batch recording composable for replay operations
-// Ref: Phase 10 DAY2_AGENT_A.md — A4.1
-// Zone: AGENT-A (composables/)
+// Phase 2 (2026-04-27) — useReplayRecorder: thin wrapper над opsSyncStore.
 //
-// Architecture:
-//   - Collects board operations in a memory buffer
-//   - Flushes buffer to backend every FLUSH_INTERVAL_MS or when buffer >= BATCH_SIZE
-//   - Auto-creates snapshots every SNAPSHOT_EVERY ops for fast seek
-//   - NEVER blocks UI — all network calls are fire-and-forget with error re-queuing
-//   - Designed as platform primitive: any board view (solo/classroom) can use it
+// Refactor scope (Section D HARD CHECKPOINT):
+//   - DELETED: local buffer / retryQueue / inFlight refs (moved to opsSyncStore)
+//   - DELETED: PR3 hacks — MAX_LOCK_RETRIES, PAUSE_AFTER_CONSECUTIVE_409,
+//     PAUSE_DURATION_MS, PAUSE_JITTER_MS, MAX_409_PER_SESSION, consecutive409,
+//     total409InSession, circuitOpen, lockRetryCount, recoverFromOverflow()
+//   - DELETED: 409 burst handler block (~75 LOC) — opsSyncStore.flush() handles
+//     SSOT §4 errors (PROTOCOL_VERSION_MISMATCH / SEQ_MISMATCH / SERVER_BUSY)
+//   - DELETED: writeLock (replaced by opsSyncStore _flushPromise mutex)
+//   - DELETED: navigator.sendBeacon path (Variant A — opsSyncStore.sendBeacon throws)
+//   - PRESERVED: composable lifecycle (start/stop/destroy/connectToStore),
+//     payload size guard, data URL stripping, debounce timer, safety interval,
+//     auth death cleanup, backup/restore (crash recovery).
 //
-// === SNAPSHOT RACE CONDITION (known limitation) ===
-//
-// Problem:
-//   Between flush() confirming ops 1..N and _createSnapshot() calling getBoardState(),
-//   new ops N+1..M may arrive and mutate the store. The snapshot is then labeled
-//   operation_index=N but contains state from ops N+1..M.
-//
-// Failure mode:
-//   Replay from that snapshot starts with extra objects already present.
-//   When ops N+1..M are applied again, objects may be duplicated.
-//
-// Current mitigations:
-//   - op_id dedup prevents true duplicates on re-record
-//   - Boundary check prevents snapshots at same index twice
-//   - FLUSH_INTERVAL=1.5s limits the race window
-//
-// Future fix: freeze board state at flush boundary before getBoardState().
-//
-// === STALE OPS / CIRCUIT BREAKER (known limitation) ===
-//
-// Problem:
-//   After circuit breaker opens (30s pause after 3 failures), retryQueue
-//   contains ops from before the pause. During the 30s, the user continues
-//   editing — new context is created, objects may be deleted.
-//
-// Failure mode:
-//   Stale ops reference objects that no longer exist or have changed state.
-//   Example: text_update on a deleted object → silent skip (benign).
-//   Example: lock_update on a deleted group → state corruption (harmful).
-//
-// Current mitigations:
-//   - retryQueue cap (MAX_RETRY_QUEUE_SIZE=200) prevents unbounded growth
-//   - op_id dedup prevents double-apply after recovery
-//   - Most ops are create/update which are idempotent
-//
-// Future fix: backend should reject ops with client_ts > 60s old.
+// Why thin wrapper:
+//   - opsSyncStore (Pinia) owns persistent state across composable unmount/remount
+//   - Composable owns lifecycle (timers, watchers, store subscriptions)
+//   - Single source of truth for ops state machine
 
-import { ref, readonly, watch, type Ref } from 'vue'
+import { ref, readonly, watch, computed, type Ref } from 'vue'
 import type { RecordOperationRequest } from '../types/replay'
-import { recordOperationsBatch, createSnapshot } from '../api/replay'
-import { isCircuitBreakerOpen } from '@/utils/apiClient'
+import { createSnapshot } from '../api/replay'
 import { registerAuthDeathCleanup, isAuthDead } from '@/core/auth/onAuthDeath'
-import { createSessionWriteLock } from './useSessionWriteLock'
 import { saveBackup, clearBackup, readBackup } from './useOpsBackup'
 import { trackEvent } from '@/utils/telemetryAgent'
+import {
+  useOpsSyncStore,
+  DesyncError,
+  BeaconUnsupportedError,
+  type OpsSyncOp,
+} from '../stores/opsSyncStore'
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
-const BATCH_SIZE = 50
-// P0 FIX (2026-04-07): chunk autosave to 100 ops max per batch
-// Backend `/replay/batch/` має ліміт 100 операцій (views.py:3222).
-// Якщо WS лежить і buffer+retryQueue накопичили >100 ops — без chunking
-// усі retry падають з 400 і дані ВТРАЧАЮТЬСЯ.
-const MAX_OPS_PER_REQUEST = 100
-// Phase ops-only (advisor): debounced flush. Замість фіксованого setInterval кожні
-// 1.5с — агрегуємо ops за 150мс вікно. Негайний flush якщо buffer >= BATCH_SIZE.
-// Таймер безпеки теж є (див. FLUSH_SAFETY_INTERVAL_MS) для idle-періодів.
+// Phase 2: BATCH_SIZE визначається у opsSyncStore (FLUSH_BATCH_SIZE = 50).
+// Тут залишаємо threshold для instant-flush trigger (буфер заповнюється швидше
+// debounce window → не чекаємо tick).
+const INSTANT_FLUSH_THRESHOLD = 50
 const FLUSH_DEBOUNCE_MS = 150
 const FLUSH_SAFETY_INTERVAL_MS = 2_000
-const SNAPSHOT_EVERY = 200
-const MAX_PAYLOAD_BYTES = 64 * 1024    // 64KB — must match backend WBBoardOperationCreateSerializer
-const MAX_RETRY_QUEUE_SIZE = 200       // REPLAY-INV-8: retry queue cap — не memory leak
-
-// Circuit breaker: pause flushing after consecutive failures to prevent server overload
-const MAX_CONSECUTIVE_FAILURES = 3
-const CIRCUIT_BREAKER_COOLDOWN_MS = 30_000  // 30s pause after 3 failures
-
-// Phase ops-only (advisor): retry policy з jitter + upper bound
-const RETRY_BASE_MS = 200
-const RETRY_MAX_MS = 5_000
-const MAX_LOCK_RETRIES = 10      // Після N retry session_locked — тихий surrender; ops лишаються у retryQueue
+const MAX_PAYLOAD_BYTES = 64 * 1024  // 64KB — must match backend WBBoardOperationCreateSerializer
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export interface UseReplayRecorderOptions {
   sessionId: Ref<string | null>
-  /** Returns serialisable board state for snapshot creation */
+  /** Returns serialisable board state for snapshot creation. */
   getBoardState: () => Record<string, unknown>
-  /** Controls whether the recorder is active. Default: false (opt-in).
-   *  When false, record() is a no-op and flush timer is stopped.
-   *  When switched to true, starts the flush timer and connects to store.
-   *  When switched to false, flushes remaining buffer and stops timer. */
+  /** Controls whether the recorder is active. Default: false (opt-in). */
   enabled?: Ref<boolean>
 }
 
 // ─── Composable ─────────────────────────────────────────────────────────────
 
 export function useReplayRecorder(options: UseReplayRecorderOptions) {
-  const buffer: RecordOperationRequest[] = []
-  const retryQueue: RecordOperationRequest[] = []  // REPLAY-INV-8: окремий retry queue
-  const inFlight: RecordOperationRequest[] = []    // Phase ops-only: ops у поточному request — для backup
-  const opCount = ref(0)
-  const lastKnownTotal = ref(0)  // синхронізовано з BE total_operations
-  const isFlushing = ref(false)
-  const pipelineStatus = ref<'idle' | 'healthy' | 'degraded' | 'broken'>('idle')
-  // Phase ops-only: safety interval (не debounce — це fallback)
+  const opsSync = useOpsSyncStore()
+
+  // Lifecycle state (composable-scoped, NOT shared via store)
   let flushTimer: ReturnType<typeof setInterval> | null = null
-  // Phase ops-only: debounce timer для агрегації burst-ів
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
-  let consecutiveFailures = 0
-  let lockRetryCount = 0                 // Лічильник 409 session_locked підряд
-  let circuitBreakerTimer: ReturnType<typeof setTimeout> | null = null
-  let circuitOpen = false
-  let _destroyed = false  // guard against zombie usage after destroy()
+  let _destroyed = false
 
-  // Phase ops-only: серіалізатор записів — гарантує що backend ніколи не
-  // отримує паралельні batch-и на ту саму сесію (корінь 409 storm).
-  const writeLock = createSessionWriteLock()
+  // Telemetry counters
+  const opCount = ref(0)
+  let _totalFlushedOps = 0
 
-  // Phase ops-only: backoff helper з jitter (advisor's must-have).
-  function computeBackoff(attempt: number): number {
-    const exp = RETRY_BASE_MS * Math.pow(2, attempt)
-    const jitter = Math.random() * RETRY_BASE_MS
-    return Math.min(exp + jitter, RETRY_MAX_MS)
-  }
+  // Reactive view of store buffers (для UI status indicators)
+  const isFlushing = computed(() => opsSync.inFlightOps.length > 0)
+  const pipelineStatus = computed<'idle' | 'healthy' | 'degraded' | 'broken'>(() => {
+    if (opsSync.isDesync) return 'broken'
+    if (opsSync.inFlightOps.length > 0) return 'degraded'
+    if (_totalFlushedOps > 0) return 'healthy'
+    return 'idle'
+  })
 
-  function sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms))
-  }
-
-  function persistBackup(): void {
-    const sid = options.sessionId.value
-    if (!sid) return
-    saveBackup(sid, [...retryQueue, ...buffer], [...inFlight])
-  }
-
-  // P0.0: Register cleanup on auth death — try beacon flush, then destroy
+  // P0.0: Auth death cleanup
   const _unregisterAuthDeath = registerAuthDeathCleanup(() => {
     if (_destroyed) return
-    flushViaSendBeacon()  // best-effort save remaining ops
+    // Phase 2: sendBeacon ALWAYS throws BeaconUnsupportedError (Variant A).
+    // Catch and accept data loss — auth death = unload-equivalent context.
+    try {
+      opsSync.sendBeacon()
+    } catch (e) {
+      if (e instanceof BeaconUnsupportedError) {
+        // Expected post-Phase 1 — no fallback path available
+      } else if (e instanceof DesyncError) {
+        // Acceptable — already in DESYNC, no further action
+      } else {
+        console.warn('[WB:Recorder] auth-death sendBeacon unexpected error:', e)
+      }
+    }
     destroy()
   })
 
-  /**
-   * Record a single board operation into the buffer.
-   * Auto-flushes when buffer reaches BATCH_SIZE.
-   * Auto-creates snapshot every SNAPSHOT_EVERY ops.
-   *
-   * R4: Validates payload size before recording — rejects payloads > 64KB
-   * to match backend WBBoardOperationCreateSerializer.validate_payload.
-   */
-  /**
-   * Strip base64 data URLs from asset payloads to keep size under limit.
-   * Replay only needs the remote URL (src), not the inline data.
-   */
+  // ─── Helpers ──
+
+  /** Strip base64 data URLs from asset payloads to keep size under limit.
+   *  Replay only needs the remote URL (src), not the inline data. */
   function _stripDataUrls(payload: Record<string, unknown>): Record<string, unknown> {
     const result = { ...payload }
-    // Strip from top-level src/url if it's a data URL
     for (const key of ['src', 'url', 'thumbnail'] as const) {
       if (typeof result[key] === 'string' && (result[key] as string).startsWith('data:')) {
         result[key] = ''
       }
     }
-    // Strip from nested asset object
     if (result.asset && typeof result.asset === 'object') {
       result.asset = _stripDataUrls(result.asset as Record<string, unknown>)
     }
-    // Strip from nested stroke object
     if (result.stroke && typeof result.stroke === 'object') {
       result.stroke = _stripDataUrls(result.stroke as Record<string, unknown>)
     }
     return result
   }
 
+  function _persistBackup(): void {
+    const sid = options.sessionId.value
+    if (!sid) return
+    saveBackup(sid, [...opsSync.pendingOps], [...opsSync.inFlightOps])
+  }
+
+  // ─── Public API ──
+
+  /**
+   * Record a single board operation. Routed through opsSyncStore.record() —
+   * INV-16 NO-OP if mode=DESYNC (silent drop, hot path safe).
+   *
+   * Side effects:
+   *   - Payload size validation (skip op if >64KB)
+   *   - Data URL stripping (asset payloads)
+   *   - op_id generation if not provided (UUID v4)
+   *   - Backup snapshot to localStorage (crash recovery)
+   *   - Debounced flush trigger (instant if buffer >= INSTANT_FLUSH_THRESHOLD)
+   */
   function record(op: RecordOperationRequest): void {
-    if (_destroyed) { console.warn('[WB:Recorder] record() called after destroy'); return }
-    // Phase 1: Skip recording if not enabled (opt-in)
+    if (_destroyed) {
+      console.warn('[WB:Recorder] record() called after destroy')
+      return
+    }
     if (options.enabled && !options.enabled.value) return
 
     // Strip data URLs from asset payloads before size check
@@ -183,322 +144,212 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
       op = { ...op, payload: _stripDataUrls(op.payload as Record<string, unknown>) }
     }
 
-    // R4: Payload size guard — prevents 400 on backend
+    // Payload size guard — prevents 400 on backend
     try {
       const payloadJson = JSON.stringify(op.payload ?? {})
       const payloadBytes = new TextEncoder().encode(payloadJson).byteLength
       if (payloadBytes > MAX_PAYLOAD_BYTES) {
         console.warn(
-          `[ReplayRecorder] payload too large (${payloadBytes}B > ${MAX_PAYLOAD_BYTES}B), skipping op:`,
+          `[WB:Recorder] payload too large (${payloadBytes}B > ${MAX_PAYLOAD_BYTES}B), skipping op:`,
           op.op_type,
         )
         return
       }
     } catch {
-      // JSON.stringify failure — skip this operation
-      console.warn('[ReplayRecorder] payload serialization failed, skipping op:', op.op_type)
+      console.warn('[WB:Recorder] payload serialization failed, skipping op:', op.op_type)
       return
     }
 
-    // REPLAY-INV-8: призначаємо op_id при enqueue якщо не переданий
-    // Незмінний при retry — BE дедуплікує по (session, op_id)
+    // Phase 2 INV-14: op_id REQUIRED (BE migration 0038 enforces NOT NULL).
+    // Generate UUID v4 if caller didn't provide; stable across retry per INV-14 dedup.
     if (!op.op_id) {
       op = { ...op, op_id: crypto.randomUUID() }
     }
 
-    buffer.push(op)
+    // Route to store. INV-16: returns false якщо mode=DESYNC → silent drop (hot path safe).
+    const accepted = opsSync.record(op as unknown as OpsSyncOp)
+    if (!accepted) return  // dropped by store (DESYNC або BOOTSTRAP not done)
+
     opCount.value++
+    _persistBackup()
 
-    // Phase ops-only: backup перед flush — якщо crash між enqueue та ACK,
-    // restore на наступному mount (див. _restoreBackup).
-    persistBackup()
-
-    if (buffer.length >= BATCH_SIZE) {
-      // Advisor optim: instant flush коли buffer повний — не чекаємо debounce
-      if (debounceTimer) { clearTimeout(debounceTimer); debounceTimer = null }
-      flush()
+    if (opsSync.pendingOps.length >= INSTANT_FLUSH_THRESHOLD) {
+      // Instant flush коли buffer повний — не чекаємо debounce
+      if (debounceTimer) {
+        clearTimeout(debounceTimer)
+        debounceTimer = null
+      }
+      void flush()
     } else {
-      // Advisor must-have: debounce — уникнути DDoS'у коли малювання швидке
+      // Debounce — уникнути DDoS'у коли малювання швидке
       if (debounceTimer) clearTimeout(debounceTimer)
       debounceTimer = setTimeout(() => {
         debounceTimer = null
-        flush()
+        void flush()
       }, FLUSH_DEBOUNCE_MS)
     }
   }
 
   /**
-   * Drain buffer and send to backend in a single batch request.
-   * Re-queues ops on failure (network resilience).
-   * Fire-and-forget — never awaited in hot path.
+   * Flush pending ops через opsSyncStore. Concurrent calls share single Promise
+   * (opsSyncStore _flushPromise mutex). Errors per SSOT §4:
+   *   - DesyncError (PROTOCOL_VERSION_MISMATCH / SEQ_MISMATCH) — UI shows modal,
+   *     pendingOps + inFlightOps already dropped by store.
+   *   - 503 SERVER_BUSY — opsSyncStore.flush() throws with inFlightOps preserved
+   *     for next retry (B4 INV-12 додасть max-2 jitter orchestration).
+   *   - Other errors — propagated (caller може decide retry/drop).
+   *
+   * Telemetry: tracks total flushed ops + emits events on overflow/desync.
    */
-  // GUARD: Track total successfully flushed ops for pipeline health monitoring
-  let _totalFlushedOps = 0
-
   async function flush(): Promise<void> {
     if (_destroyed || isAuthDead()) return
     const sid = options.sessionId.value
-    if (!sid) {
-      if (buffer.length > 0) console.warn(`[WB:Recorder] flush skipped: no sessionId (${buffer.length} ops in buffer)`)
-      return
-    }
-    if (isFlushing.value) return // prevent concurrent flushes
-    if (circuitOpen) {
-      if (buffer.length > 0) console.warn(`[WB:Recorder] flush skipped: local circuit breaker open (${buffer.length} ops)`)
-      return
-    }
-    if (isCircuitBreakerOpen()) {
-      if (buffer.length > 0) console.warn(`[WB:Recorder] flush skipped: global circuit breaker open (${buffer.length} ops)`)
-      return
-    }
-
-    // REPLAY-INV-8: спочатку retry queue, потім нові ops
-    const toSend = [...retryQueue.splice(0), ...buffer.splice(0)]
-    if (toSend.length === 0) return
-
-    // Phase ops-only: track inFlight для backup (advisor must-have)
-    inFlight.length = 0
-    inFlight.push(...toSend)
-    persistBackup()
-
-    isFlushing.value = true
-
-    // P0 FIX (2026-04-07): chunk autosave to 100 ops max per batch
-    // Розбиваємо toSend на чанки по MAX_OPS_PER_REQUEST і відправляємо
-    // ПОСЛІДОВНО (await в циклі), щоб BE міг правильно нумерувати seq.
-    // При першій помилці — зупиняємось, незаслані ops повертаються в retryQueue.
-    const chunks: RecordOperationRequest[][] = []
-    for (let i = 0; i < toSend.length; i += MAX_OPS_PER_REQUEST) {
-      chunks.push(toSend.slice(i, i + MAX_OPS_PER_REQUEST))
-    }
-    if (chunks.length > 1) {
-      console.log(`[WB:autosave] flushing ${toSend.length} ops in ${chunks.length} chunks of ${MAX_OPS_PER_REQUEST}`)
-    }
-
-    let flushedCount = 0
-    let lastResult: Awaited<ReturnType<typeof recordOperationsBatch>> | null = null
-    let flushError: unknown = null
-
-    try {
-      // Phase ops-only: усі chunks — через ОДИН writeLock.run().
-      // Це гарантує що паралельні `flush()` invocations не відправлять batch-и
-      // одночасно → немає collision на backend → немає 409 storm.
-      await writeLock.run(async () => {
-        for (let i = 0; i < chunks.length; i++) {
-          try {
-            lastResult = await recordOperationsBatch(sid, chunks[i])
-            flushedCount += chunks[i].length
-            lockRetryCount = 0  // success — reset lock retry counter
-          } catch (chunkErr) {
-            // Phase ops-only (advisor): розрізняємо 409 session_locked vs
-            // generic failure. 409 — transient, не збільшуємо circuit-breaker;
-            // робимо jitter-backoff retry прямо тут, залишаючи op_id
-            // незмінним (backend дедуплікує).
-            const status = (chunkErr as { response?: { status?: number } })?.response?.status
-            const detail = (chunkErr as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-
-            if (status === 409 && detail === 'session_locked') {
-              lockRetryCount++
-              if (lockRetryCount <= MAX_LOCK_RETRIES) {
-                const delay = computeBackoff(lockRetryCount - 1)
-                console.warn(
-                  `[ReplayRecorder] 409 session_locked (${lockRetryCount}/${MAX_LOCK_RETRIES}) ` +
-                  `— retrying chunk ${i + 1}/${chunks.length} after ${delay}ms`,
-                )
-                await sleep(delay)
-                i--  // повторити ТОЙ САМИЙ chunk (op_id гарантує idempotency)
-                continue
-              }
-              // Upper bound: після MAX_LOCK_RETRIES — віддаємо у retryQueue,
-              // flush спробує пізніше (через safety timer). consecutiveFailures
-              // НЕ інкрементуємо — це lock contention, не health issue.
-              console.warn(
-                `[ReplayRecorder] 409 session_locked retry limit (${MAX_LOCK_RETRIES}) reached — ` +
-                `deferring ${chunks[i].length} ops`,
-              )
-              flushError = chunkErr
-              break
-            }
-
-            // Інший тип помилки — generic handling (circuit breaker path)
-            console.warn(
-              `[WB:autosave] chunk ${i + 1}/${chunks.length} failed (${chunks[i].length} ops):`,
-              chunkErr,
-            )
-            flushError = chunkErr
-            break
-          }
-        }
-      })
-
-      if (flushError) {
-        throw flushError
-      }
-
-      consecutiveFailures = 0     // success — reset counter
-      _totalFlushedOps += flushedCount
-      if (pipelineStatus.value !== 'healthy') pipelineStatus.value = 'healthy'
-
-      // Phase ops-only: ACK → очищаємо inFlight + backup
-      inFlight.length = 0
-      if (retryQueue.length === 0 && buffer.length === 0) {
-        clearBackup(sid)
-      } else {
-        persistBackup()
-      }
-
-      // Синхронізуємо lastKnownTotal з BE після підтвердженого commit (останнього чанка)
-      if (lastResult && typeof lastResult.total_operations === 'number') {
-        lastKnownTotal.value = lastResult.total_operations
-        // 2026-04-24 PROD INCIDENT FIX (b9ee847e — retryQueue overflow, 201 ops lost):
-        //
-        // Видалено автоматичний _createSnapshot() кожні SNAPSHOT_EVERY=200 ops.
-        //
-        // Root cause: FE POST /replay/snapshots/create/ з 1-5 MB board_state тримав
-        // row lock на WBSession протягом 2-10 секунд. Паралельний POST /replay/batch/
-        // отримував 409 session_locked → FE retry × 10 → retryQueue overflow → дані
-        // втрачені.
-        //
-        // Backend `ops_worker.apply_ops_and_snapshot` (Celery task) УЖЕ створює
-        // persistence snapshots автоматично кожні 100 ops через _create_snapshot()
-        // з board_state, що реконструюється з `snapshot + ops`. FE-initiated
-        // snapshot був дублем, що конкурував з worker за один і той самий lock.
-        //
-        // Залишаємо _createSnapshot() functionу і createSnapshot import для
-        // можливого manual-trigger (наприклад, перед `stop_recording` — future).
-      }
-    } catch (e) {
-      console.warn('[ReplayRecorder] batch flush failed, re-queuing to retryQueue:', e)
-      // P0 FIX (2026-04-07): re-queue ТІЛЬКИ ті ops що НЕ пройшли
-      // (атомарність: успішно відправлені чанки не дублюються)
-      const notFlushed = toSend.slice(flushedCount)
-      const combined = [...notFlushed, ...retryQueue]
-      retryQueue.length = 0
-      retryQueue.push(...combined)
-      inFlight.length = 0
-      persistBackup()  // backup включає retryQueue — ops не загубляться при crash
-
-      // P0.3: НІКОЛИ не дропати ops — overflow = fatal, потребує reload
-      if (retryQueue.length > MAX_RETRY_QUEUE_SIZE) {
-        circuitOpen = true
-        pipelineStatus.value = 'broken'
-        // 2026-04-24 post-incident: надіслати telemetry ДО throw, щоб
-        // backend дізнався про катастрофу (Prometheus wb_ops_lost_total +
-        // Grafana alert). Без цього єдина ознака у console браузера.
-        try {
-          trackEvent(
-            'wb.ops.retry_queue_overflow',
-            {
-              session_id: options.sessionId.value,
-              overflow_count: retryQueue.length,
-              max_capacity: MAX_RETRY_QUEUE_SIZE,
-              buffer_size: buffer.length,
-              inFlight_size: inFlight.length,
-            },
-            { ops_lost: retryQueue.length },
-          )
-        } catch (telemetryErr) {
-          console.error('[ReplayRecorder] telemetry overflow emit failed:', telemetryErr)
-        }
-        throw new Error(
-          `[ReplayRecorder] retryQueue overflow: ${retryQueue.length} ops exceed cap ${MAX_RETRY_QUEUE_SIZE}. ` +
-          'Помилка збереження. Перезавантаж сторінку.',
-        )
-      }
-
-      // Phase ops-only: 409 session_locked НЕ інкрементує consecutiveFailures
-      // (це contention, не server health).
-      const errStatus = (e as { response?: { status?: number } })?.response?.status
-      const errDetail = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-      const isLockContention = errStatus === 409 && errDetail === 'session_locked'
-
-      if (!isLockContention) {
-        consecutiveFailures++
-        if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
-          circuitOpen = true
-          console.warn(
-            `[ReplayRecorder] Circuit breaker OPEN: ${consecutiveFailures} consecutive failures. ` +
-            `Pausing for ${CIRCUIT_BREAKER_COOLDOWN_MS / 1000}s`,
-          )
-          circuitBreakerTimer = setTimeout(() => {
-            if (_destroyed) return  // zombie guard
-            circuitOpen = false
-            consecutiveFailures = 0
-            circuitBreakerTimer = null
-            pipelineStatus.value = 'idle'
-            console.info('[ReplayRecorder] Circuit breaker CLOSED — resuming flushes')
-          }, CIRCUIT_BREAKER_COOLDOWN_MS)
-          pipelineStatus.value = 'degraded'
-        }
-      }
-    } finally {
-      isFlushing.value = false
-    }
-  }
-
-  /**
-   * Create a board state snapshot at the current operation index.
-   * Called automatically every SNAPSHOT_EVERY ops — fire-and-forget.
-   *
-   * R4: Retries once on failure after 2s delay. If retry also fails,
-   * logs warning and continues — snapshots are non-critical optimization.
-   */
-  async function _createSnapshot(): Promise<void> {
-    const sid = options.sessionId.value
     if (!sid) return
 
-    // REPLAY-INV-7: використовуємо lastKnownTotal (синхронізовано з BE) якщо є,
-    // інакше локальний opCount (менш точний, але краще ніж нічого)
-    const opIdx = lastKnownTotal.value > 0 ? lastKnownTotal.value : opCount.value
+    const beforeCount = opsSync.pendingOps.length + opsSync.inFlightOps.length
+    if (beforeCount === 0) return
 
     try {
-      const boardState = options.getBoardState()
-      await createSnapshot(sid, opIdx, boardState)
-    } catch (e) {
-      console.warn('[ReplayRecorder] snapshot creation failed, retrying in 2s:', e)
-      // R4: Single retry after delay
-      setTimeout(async () => {
+      await opsSync.flush()
+      // Success — track count
+      const afterCount = opsSync.pendingOps.length + opsSync.inFlightOps.length
+      const flushed = beforeCount - afterCount
+      if (flushed > 0) _totalFlushedOps += flushed
+
+      // ACK clears localStorage backup if все відправлено
+      if (afterCount === 0) {
+        clearBackup(sid)
+      } else {
+        _persistBackup()
+      }
+    } catch (err) {
+      if (err instanceof DesyncError) {
+        // Store already entered DESYNC + cleared buffers + emitted broadcast
+        // (per SSOT §4). UI Section E shows ProtocolMismatchModal / DesyncRecoveryBanner.
         try {
-          const boardState = options.getBoardState()
-          await createSnapshot(sid, opIdx, boardState)
-        } catch (retryErr) {
-          console.warn('[ReplayRecorder] snapshot retry also failed:', retryErr)
-        }
-      }, 2000)
+          trackEvent('wb.ops.desync', {
+            session_id: sid,
+            reason: opsSync.desyncReason ?? 'unknown',
+          })
+        } catch { /* telemetry never throws */ }
+        clearBackup(sid)  // буфери вже cleared у store, синхронізуємо
+        return  // DON'T propagate (caller — timer or record() — has nothing to do)
+      }
+      if (err instanceof BeaconUnsupportedError) {
+        // Не повинно відбуватись з flush() (тільки sendBeacon throws це). Лог якщо станеться.
+        console.warn('[WB:Recorder] flush() unexpected BeaconUnsupportedError:', err)
+        return
+      }
+      // 503 SERVER_BUSY або транзієнтні мережеві помилки — inFlight preserved у store,
+      // safety interval спробує знову. Persist backup щоб не загубити при crash.
+      _persistBackup()
+      console.warn('[WB:Recorder] flush() failed (will retry on next tick):', err)
     }
   }
 
   /**
-   * Start the periodic flush timer. Call on component mount.
+   * Phase 2 (Variant A locked 2026-04-27): sendBeacon ALWAYS throws.
    *
-   * Phase ops-only: відновлюємо ops з localStorage (advisor's must-have —
-   * антикатастрофа після crash під час in-flight request).
+   * Reason: navigator.sendBeacon CANNOT set X-Protocol-Version header (LAW §10).
+   * Wrapper catches BeaconUnsupportedError + accepts data loss (no fallback path
+   * post-Phase 1). DesyncError (mode=DESYNC) also caught — already DESYNC, no-op.
+   *
+   * Caller (unload handler) MUST tolerate this — no recovery available pre-deploy
+   * of an alternative emergency-save channel.
+   */
+  function flushViaSendBeacon(): void {
+    if (_destroyed) return
+    try {
+      opsSync.sendBeacon()  // ALWAYS throws (BeaconUnsupportedError or DesyncError)
+    } catch (e) {
+      if (e instanceof BeaconUnsupportedError) {
+        // Expected — emit telemetry to track data loss visibility у production.
+        try {
+          trackEvent('wb.ops.beacon_unsupported', {
+            session_id: options.sessionId.value,
+            pending_count: opsSync.pendingOps.length,
+            in_flight_count: opsSync.inFlightOps.length,
+          })
+        } catch { /* telemetry never throws */ }
+      } else if (e instanceof DesyncError) {
+        // Already in DESYNC — nothing to send anyway
+      } else {
+        console.warn('[WB:Recorder] flushViaSendBeacon unexpected error:', e)
+      }
+    }
+  }
+
+  /**
+   * Manual snapshot trigger (Phase 2: НЕ auto-called per ops count, на відміну від
+   * Phase 1 pre-incident behavior). Backend Celery `apply_ops_and_snapshot`
+   * створює persistence snapshots automatically. FE snapshot = манual для special
+   * cases (наприклад, перед `stop_recording` у future).
+   */
+  async function manualSnapshot(): Promise<void> {
+    const sid = options.sessionId.value
+    if (!sid) return
+    try {
+      const boardState = options.getBoardState()
+      await createSnapshot(sid, opCount.value, boardState)
+    } catch (e) {
+      console.warn('[WB:Recorder] manual snapshot failed:', e)
+    }
+  }
+
+  /**
+   * Start the periodic flush timer + restore backup on mount.
+   *
+   * Crash recovery: localStorage backup → opsSyncStore.pendingOps. op_id гарантує
+   * server-side dedup (INV-14), навіть якщо deset якась частина вже застосувалась
+   * до crash.
    */
   function start(): void {
-    if (flushTimer) return // already started
+    if (flushTimer) return  // already started
 
-    // Restore backup (якщо є) перед стартом safety-interval
+    // Restore backup (якщо є) перед стартом safety-interval.
+    // Note: opsSyncStore.bootstrap() має бути вже викликано caller'ом.
     const sid = options.sessionId.value
     if (sid) {
       const backup = readBackup<RecordOperationRequest>(sid)
       if (backup && (backup.pending.length > 0 || backup.inFlight.length > 0)) {
-        // inFlight + pending → retryQueue (op_id гарантує server-side dedup,
-        // навіть якщо якась частина вже застосувалась до crash).
         const restored = [...backup.inFlight, ...backup.pending]
-        retryQueue.unshift(...restored)
-        console.info(
-          `[WB:Recorder] Restored ${restored.length} ops from localStorage backup`,
-        )
+        // Push до opsSyncStore.pendingOps (через record()) щоб state machine побачила.
+        // Mode має бути SYNC після bootstrap; якщо BOOTSTRAP — store.record() поверне
+        // false і backup лишиться у localStorage до наступної спроби.
+        for (const op of restored) {
+          opsSync.record(op as unknown as OpsSyncOp)
+        }
+        console.info(`[WB:Recorder] Restored ${restored.length} ops from localStorage backup`)
       }
     }
 
     // Safety interval — ловить ops які debounce не скинув (idle-період, long burst)
-    flushTimer = setInterval(flush, FLUSH_SAFETY_INTERVAL_MS)
+    flushTimer = setInterval(() => { void flush() }, FLUSH_SAFETY_INTERVAL_MS)
   }
 
   /**
-   * Stop the periodic flush timer and do a final flush.
-   * Call before component unmount or mode switch.
+   * Stop the periodic flush timer + final flush. Call before component unmount.
+   *
+   * Cleanup contract: timer cleanup is composable-scoped (lifecycle), but
+   * opsSyncStore state PERSISTS through unmount/remount (Pinia singleton). Це
+   * правильно — буфер не губиться при route change або page transition.
+   * Store reset() called separately via forceLogout() / setAuth({access:null}).
+   *
+   * ⚠️ DATA LOSS POSSIBLE ON UNLOAD (concern #4 — accepted design decision):
+   *   `void flush()` is fire-and-forget. На beforeunload/pagehide events:
+   *     - Browser aborts in-flight Promises after ~500ms-2s grace period
+   *     - opsSyncStore.sendBeacon() ALWAYS THROWS (Variant A, line 366) — нема
+   *       fallback channel що міг би працювати у unload context (navigator.sendBeacon
+   *       cannot set X-Protocol-Version per LAW §10 INV-20)
+   *     - useOpsBackup persists pendingOps + inFlightOps до localStorage perform
+   *       last-resort recovery on next page mount — НЕ guarantee delivery, але
+   *       reduces window of loss.
+   *
+   *   ACCEPTED: ops emitted у останніх ~150ms перед unload може бути lost. Це
+   *   architectural tradeoff per LAW §10 (no covert HTTP channel for emergency
+   *   saves; either standard authenticated POST or accept loss). Phase 3+ може
+   *   додати keepalive: true fetch як alternative до beacon якщо проблема стане
+   *   user-impacting.
    */
   function stop(): void {
     if (flushTimer) {
@@ -509,53 +360,20 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
       clearTimeout(debounceTimer)
       debounceTimer = null
     }
-    flush() // final flush — fire-and-forget
+    void flush()  // final flush — fire-and-forget; data loss on unload accepted
   }
 
   /**
-   * Best-effort flush via navigator.sendBeacon for beforeunload.
-   * Unlike flush(), this is synchronous and works during page unload.
-   * May lose ops if buffer > MAX_OPS_PER_REQUEST (acceptable for unload).
-   */
-  function flushViaSendBeacon(): void {
-    const sid = options.sessionId.value
-    if (!sid) return
-    const ops = [...retryQueue.splice(0), ...buffer.splice(0)]
-    if (ops.length === 0) return
-    const batch = ops.slice(0, MAX_OPS_PER_REQUEST)
-    const apiBase = (import.meta as unknown as { env?: { VITE_API_BASE_URL?: string } }).env?.VITE_API_BASE_URL || '/api'
-    const url = `${apiBase}/v1/winterboard/sessions/${sid}/replay/batch/`
-    try {
-      navigator.sendBeacon(url, new Blob([JSON.stringify({ operations: batch })], { type: 'application/json' }))
-    } catch {
-      // sendBeacon may fail silently in some browsers — acceptable for unload
-    }
-  }
-
-  /**
-   * Full cleanup — stop timer, flush remaining, clear buffer.
+   * Full cleanup — stop timer, deregister auth-death, reset composable counters.
+   * Does NOT reset opsSyncStore (інша composable instance може ще use).
    */
   function destroy(): void {
+    if (_destroyed) return
     console.info('[WB:Recorder] destroy() — recorder terminated')
     _destroyed = true
     stop()
-    if (debounceTimer) {
-      clearTimeout(debounceTimer)
-      debounceTimer = null
-    }
-    buffer.length = 0
-    retryQueue.length = 0
-    inFlight.length = 0
     opCount.value = 0
-    lastKnownTotal.value = 0
-    lockRetryCount = 0
-    pipelineStatus.value = 'idle'
-    if (circuitBreakerTimer) {
-      clearTimeout(circuitBreakerTimer)
-      circuitBreakerTimer = null
-    }
-    circuitOpen = false
-    consecutiveFailures = 0
+    _totalFlushedOps = 0
     _unregisterAuthDeath()
   }
 
@@ -564,22 +382,20 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
    * All operations emitted by store actions will be auto-recorded.
    * Returns unsubscribe function — call on unmount.
    */
-  function connectToStore(store: { onOperation: (l: (op: RecordOperationRequest) => void) => () => void }): () => void {
+  function connectToStore(
+    store: { onOperation: (l: (op: RecordOperationRequest) => void) => () => void },
+  ): () => void {
     console.info('[WB:Recorder] connectToStore — listener registered')
-    return store.onOperation((op) => {
-      record(op)
-    })
+    return store.onOperation((op) => { record(op) })
   }
 
   // Phase 1: Watch enabled ref — auto start/stop recorder
-  // { immediate: true } — запускає start() одразу якщо enabled=true при монтуванні
-  // (без цього watch не спрацьовує для початкового значення)
   if (options.enabled) {
     watch(options.enabled, (isEnabled) => {
       if (isEnabled) {
         start()
       } else {
-        stop() // flushes remaining buffer
+        stop()
       }
     }, { immediate: true })
   }
@@ -592,9 +408,9 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
     stop,
     destroy,
     connectToStore,
+    manualSnapshot,
     opCount: readonly(opCount),
-    lastKnownTotal: readonly(lastKnownTotal),
-    isFlushing: readonly(isFlushing),
-    pipelineStatus: readonly(pipelineStatus),
+    isFlushing,
+    pipelineStatus,
   }
 }

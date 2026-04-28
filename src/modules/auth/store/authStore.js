@@ -5,11 +5,18 @@ import { logAuthEvent, AUTH_EVENTS } from '../../../utils/telemetry/authEvents'
 import { tokenVault } from '../../../utils/tokenVault'
 
 const hasDocument = typeof document !== 'undefined'
-// JWT TTL = 60 хв (backend SIMPLE_JWT.ACCESS_TOKEN_LIFETIME).
-// Proactive refresh кожні 20 хв дає 3 спроби на 60-хвилинне вікно.
-// При поверненні до вкладки — рефреш відбувається одразу (visibilitychange handler).
-const REFRESH_INTERVAL_MS = 20 * 60 * 1000
-let refreshInterval = null
+// Phase 2 (2026-04-27) per SSOT §7 + AUTH MODEL CORRECTION:
+// startProactiveRefresh використовує dynamic interval на основі `accessExp` Unix
+// seconds (capture з refresh response). Refresh fire'иться при `accessExp - 60s`
+// → 60-секундний buffer для network/visibility/upload race conditions.
+//
+// Fallback (legacy session pre-Phase 1 BE deploy АБО exp not available):
+// REFRESH_INTERVAL_FALLBACK_MS = 20m proxy (60m TTL / 3 attempts).
+const REFRESH_INTERVAL_FALLBACK_MS = 20 * 60 * 1000
+const REFRESH_BUFFER_MS = 60 * 1000  // refresh 60s ДО expiry
+const REFRESH_MIN_DELAY_MS = 5_000   // never schedule sooner than 5s (sanity floor)
+const REFRESH_MAX_DELAY_MS = 30 * 60 * 1000  // never schedule later than 30m (sanity ceil)
+let refreshTimer = null  // setTimeout handle (replaced setInterval — dynamic)
 // Cross-tab refresh coordination
 const REFRESH_LOCK_KEY = 'auth_refresh_lock'
 const REFRESH_LOCK_TTL_MS = 30_000 // 30 seconds max for refresh operation
@@ -61,6 +68,16 @@ export const useAuthStore = defineStore('auth', {
       // Cross-tab coordination state
       _refreshLockOwned: false,
       _bc: null,
+      // PR2 (2026-04-26): proactive refresh guard.
+      // Timestamp останнього успішного refresh (або setAuth з реальним access).
+      // 0 → guard у apiClient тригерить перший refresh (захист від login race).
+      lastRefreshAt: 0,
+      // Phase 2 (2026-04-27) per SSOT §7 + AUTH MODEL CORRECTION:
+      // Unix seconds коли access token expires. Capture from refresh response.
+      // 0 → no exp known (legacy session pre-Phase 1 BE deploy, бо BE інакше не
+      // повертає exp). Fallback: lastRefreshAt + REFRESH_PROACTIVE_FALLBACK_MS proxy
+      // (apiClient.js).
+      accessExp: 0,
     }
   },
 
@@ -402,7 +419,7 @@ export const useAuthStore = defineStore('auth', {
       return user
     },
 
-    async setAuth({ access, user } = {}) {
+    async setAuth({ access, exp, user } = {}) {
       if (typeof access !== 'undefined') {
         // Phase 1.3: Keep JWT in memory for WS/beacon auth.
         // httpOnly cookie handles REST API auth.
@@ -411,6 +428,9 @@ export const useAuthStore = defineStore('auth', {
         // Pinia state holds ciphertext; decrypt() required for WS auth.
         if (access && access !== '__cookie__') {
           this.access = await tokenVault.encrypt(access)
+          // PR2: відмітити "ось щойно отримали свіжий JWT" — proactive guard
+          // у apiClient перевіряє цей timestamp перед кожним call'ом.
+          this.lastRefreshAt = Date.now()
         } else {
           this.access = access || null
         }
@@ -421,7 +441,15 @@ export const useAuthStore = defineStore('auth', {
           this.sessionExpiredNotified = false
         } else {
           storage.remove('auth_session')
+          this.lastRefreshAt = 0
+          this.accessExp = 0
         }
+      }
+      // Phase 2 (2026-04-27): capture `exp` from refresh response (SSOT §7).
+      // Used by apiClient proactive guard + startProactiveRefresh dynamic interval.
+      // accept Number type only; ignore undefined (caller didn't provide).
+      if (typeof exp === 'number' && exp > 0) {
+        this.accessExp = Math.floor(exp)
       }
 
       if (typeof user !== 'undefined') {
@@ -560,6 +588,15 @@ export const useAuthStore = defineStore('auth', {
           // httpOnly cookie is set by backend automatically.
           // Phase 2: Encrypt JWT in memory via tokenVault (AES-GCM).
           this.access = await tokenVault.encrypt(res.access)
+          // PR2 (2026-04-26): proactive guard timestamp — оновлюємо ТІЛЬКИ
+          // при успішному refresh, щоб 45-хв guard у apiClient не fire'ив зайве.
+          this.lastRefreshAt = Date.now()
+          // Phase 2 (2026-04-27) SSOT §7: capture `exp` Unix seconds для dynamic guard.
+          // BE Phase 1 V1AuthRefreshView повертає {access, exp}. Якщо exp відсутній
+          // (legacy session pre-deploy) — accessExp лишається 0 → fallback proxy.
+          if (typeof res.exp === 'number' && res.exp > 0) {
+            this.accessExp = Math.floor(res.exp)
+          }
           storage.set('auth_session', '1')
 
           // P0.0: Auth alive again — reset death flag so subsystems can re-register
@@ -636,14 +673,54 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    /**
+     * Phase 2 (2026-04-27) dynamic scheduler per SSOT §7 + AUTH MODEL CORRECTION:
+     * Compute next refresh delay базуючись на `accessExp` (Unix seconds).
+     *
+     * Returns ms until next refresh tick:
+     *   - Якщо accessExp known: (accessExp * 1000 - REFRESH_BUFFER_MS) - now
+     *   - Якщо exp absent (legacy/bootstrap): REFRESH_INTERVAL_FALLBACK_MS (20m proxy)
+     *   - Floored at REFRESH_MIN_DELAY_MS, ceiled at REFRESH_MAX_DELAY_MS (sanity bounds)
+     */
+    _computeNextRefreshDelay() {
+      const exp = this.accessExp
+      if (typeof exp !== 'number' || exp <= 0) {
+        // No exp — fallback на legacy 20m interval
+        return REFRESH_INTERVAL_FALLBACK_MS
+      }
+      const expMs = exp * 1000  // Unix seconds → ms
+      const refreshAt = expMs - REFRESH_BUFFER_MS  // 60s ДО expiry
+      const delay = refreshAt - Date.now()
+      // Clamp до sanity bounds
+      if (delay < REFRESH_MIN_DELAY_MS) return REFRESH_MIN_DELAY_MS
+      if (delay > REFRESH_MAX_DELAY_MS) return REFRESH_MAX_DELAY_MS
+      return delay
+    },
+
     startProactiveRefresh() {
-      if (refreshInterval) {
-        clearInterval(refreshInterval)
+      // Очистити попередній timer (re-entry safe — called from bootstrap, login, refreshAccess)
+      if (refreshTimer) {
+        clearTimeout(refreshTimer)
+        refreshTimer = null
       }
 
-      refreshInterval = setInterval(async () => {
-        if (!this.access) return
-        if (hasDocument && document.visibilityState !== 'visible') return
+      const _scheduleNext = () => {
+        // Dynamic delay computed from current accessExp. Re-evaluated на кожній tick.
+        const delay = this._computeNextRefreshDelay()
+        refreshTimer = setTimeout(_tick, delay)
+      }
+
+      const _tick = async () => {
+        if (!this.access) {
+          // Logged out або session loss — stop scheduler (will restart on login)
+          refreshTimer = null
+          return
+        }
+        if (hasDocument && document.visibilityState !== 'visible') {
+          // Tab hidden — defer next attempt (visibilitychange handler refreshes on focus)
+          _scheduleNext()
+          return
+        }
 
         try {
           const newToken = await this.refreshAccess()
@@ -659,10 +736,17 @@ export const useAuthStore = defineStore('auth', {
           const status = error?.response?.status
           if (status === 401) {
             await this.forceLogout()
+            return  // forceLogout зупинить scheduler через stopProactiveRefresh
           }
-          // else: skip, try again on next interval
+          // else: skip, retry on next scheduled tick (delay може бути коротшою у
+          // sanity floor якщо accessExp вже expired — 5s).
         }
-      }, REFRESH_INTERVAL_MS)
+        // Reschedule based on (potentially updated) accessExp після refreshAccess
+        _scheduleNext()
+      }
+
+      // First-tick scheduling — від current accessExp (або fallback delay)
+      _scheduleNext()
 
       // БАГ №3 FIX: при поверненні до вкладки — відразу перевіряємо токен
       // Без цього після 25+ хв у фоні перший запит дає 401
@@ -676,13 +760,21 @@ export const useAuthStore = defineStore('auth', {
             if (newToken && newToken !== '__cookie__') {
               this._ensureWsConnected()
             }
+            // Phase 2: після visibility-triggered refresh — reschedule existing timer
+            // на основі нового accessExp. Без цього old timer fire'иться на застарілому
+            // delay → подвійний refresh або late refresh.
+            if (refreshTimer) {
+              clearTimeout(refreshTimer)
+              refreshTimer = null
+            }
+            _scheduleNext()
           } catch (error) {
             // FIX-5: forceLogout ONLY on 401.
             const status = error?.response?.status
             if (status === 401) {
               await this.forceLogout()
             }
-            // else: skip — will retry on next visibility change or interval
+            // else: skip — will retry on next visibility change or scheduled tick
           }
         }
         document.addEventListener('visibilitychange', this._visibilityHandler)
@@ -707,9 +799,10 @@ export const useAuthStore = defineStore('auth', {
     },
 
     stopProactiveRefresh() {
-      if (refreshInterval) {
-        clearInterval(refreshInterval)
-        refreshInterval = null
+      // Phase 2: setTimeout-based scheduler (was setInterval pre-Phase 2).
+      if (refreshTimer) {
+        clearTimeout(refreshTimer)
+        refreshTimer = null
       }
       // БАГ №3 FIX: прибираємо listener при зупинці
       if (hasDocument && this._visibilityHandler) {
@@ -754,6 +847,8 @@ export const useAuthStore = defineStore('auth', {
 
       this.stopProactiveRefresh()
       this.access = null
+      this.lastRefreshAt = 0  // PR2: скинути guard timestamp при logout
+      this.accessExp = 0  // Phase 2: скинути exp щоб новий login отримав свіжий
       this.user = null
       this.csrfToken = null
       this.error = null

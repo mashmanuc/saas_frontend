@@ -1,6 +1,12 @@
 // WB: REST API client for Winterboard backend
 // Ref: C1.2 backend views, API_CONTRACTS_LOCK.md
 // All endpoints: /api/v1/winterboard/*
+//
+// Phase 2 (2026-04-27) updates per OPS_SYNC_SSOT §11.1 + INV-20:
+//   - lockSession contract change: request {is_locked}, response {is_locked, locked_by_id}
+//   - NEW: pageBroadcast(sid, pageIndex) — POST /sessions/{pk}/page/ (broadcast hint, no DB write)
+//   - NEW: stateUpdate(sid, payload) — POST /sessions/{pk}/state-update/ (broadcast hint)
+//   - INV-20: X-Protocol-Version: v3 header REQUIRED on lock/page/state-update.
 
 import apiClient from '@/utils/apiClient'
 import { useAuthStore } from '@/modules/auth/store/authStore'
@@ -93,38 +99,9 @@ export interface WBSessionDetailResponse {
   is_replay_frozen?: boolean
 }
 
-export interface WBDiffOp {
-  op: 'add' | 'update' | 'remove'
-  kind: 'stroke' | 'shape' | 'text' | 'asset' | 'meta'
-  id?: string
-  page_id?: string
-  value?: Record<string, unknown>
-  patch?: Record<string, unknown>
-}
-
-export interface WBDiffSavePayload {
-  rev: number
-  ops: WBDiffOp[]
-  client_ts?: string
-}
-
-export interface WBDiffSaveResponse {
-  server_ts: string
-  next_rev: number
-  digest: string
-  /** Phase 3: canonical rev (same as next_rev, preferred) */
-  rev?: number
-  /** Phase 3: last assigned seq number */
-  ack?: number
-  /** Phase 3: mapping of op_id → assigned seq */
-  assigned?: Array<{ op_id: string; seq: number }>
-}
-
-export interface WBStreamSaveResponse {
-  detail: string
-  rev: number
-  digest: string
-}
+// Phase 2 (2026-04-27): WBDiffOp / WBDiffSavePayload / WBDiffSaveResponse /
+// WBStreamSaveResponse types DELETED — dead types після legacy diff/stream save
+// methods removal. Op types now live у `RecordOperationRequest` (replay api).
 
 export interface WBShareStatus {
   is_shared: boolean
@@ -196,10 +173,32 @@ export interface WBConnectedUser {
   is_online: boolean
 }
 
+/**
+ * Phase 1 (2026-04-27) per OPS_SYNC_SSOT §11.1:
+ *   Request:  {is_locked: boolean}        (was {locked})
+ *   Response: {is_locked, locked_by_id}    (was {locked, locked_by, locked_at})
+ *   Header:   X-Protocol-Version: v3 REQUIRED (INV-20)
+ */
 export interface WBLockResponse {
-  locked: boolean
-  locked_by: string | null
-  locked_at: string | null
+  is_locked: boolean
+  locked_by_id: number | null
+}
+
+/** SSOT §11.1 broadcast payloads (received via WS, NOT request bodies). */
+export interface WBPageBroadcastPayload {
+  type: 'session.page'
+  pageIndex: number
+  userId: string
+  ts: number
+}
+
+export interface WBStateUpdateBroadcastPayload {
+  type: 'session.state_update'
+  rev: number
+  pageIndex: number
+  action: string
+  userId: string
+  ts: number
 }
 
 // ── PDF Import (Phase 5: A5.1) ────────────────────────────────────────
@@ -276,104 +275,24 @@ export const winterboardApi = {
     return apiClient.post(`${BASE}/sessions/${id}/duplicate/`).then((r: any) => r.data ?? r)
   },
 
-  // ── Save Endpoints ─────────────────────────────────────────────────
-
-  /**
-   * Diff save — incremental operations with optimistic locking.
-   * Requires X-Rev header matching server rev.
-   */
-  diffSave(
-    sessionId: string,
-    payload: WBDiffSavePayload,
-    rev: number,
-  ): Promise<WBDiffSaveResponse> {
-    return apiClient
-      .patch(`${BASE}/sessions/${sessionId}/diff/`, payload, {
-        headers: { 'X-Rev': String(rev) },
-      })
-      .then((r: any) => r.data ?? r)
-  },
-
-  /**
-   * Stream save — full state upload (legacy fallback).
-   * Used when board mutations set isDirty but don't generate ops yet.
-   * TODO: Remove when all mutations use queueDiffOp.
-   */
-  async streamSave(
-    sessionId: string,
-    state: WBWorkspaceState,
-    rev: number,
-  ): Promise<WBStreamSaveResponse> {
-    const payload = { state }
-    const json = JSON.stringify(payload)
-
-    // Compress large payloads with gzip (CompressionStream API)
-    if (json.length > 100_000 && typeof CompressionStream !== 'undefined') {
-      try {
-        const encoder = new TextEncoder()
-        const readable = new Blob([encoder.encode(json)]).stream()
-        const compressed = readable.pipeThrough(new CompressionStream('gzip'))
-        const compressedBlob = await new Response(compressed).blob()
-
-        return apiClient
-          .post(
-            `${BASE}/sessions/${sessionId}/save-stream/`,
-            compressedBlob,
-            {
-              headers: {
-                'X-Rev': String(rev),
-                'Content-Encoding': 'gzip',
-                'Content-Type': 'application/json',
-              },
-            },
-          )
-          .then((r: any) => r.data ?? r)
-      } catch {
-        // Compression failed — fallback to uncompressed
-      }
-    }
-
-    return apiClient
-      .post(
-        `${BASE}/sessions/${sessionId}/save-stream/`,
-        payload,
-        { headers: { 'X-Rev': String(rev) } },
-      )
-      .then((r: any) => r.data ?? r)
-  },
-
-  /**
-   * Beacon save — fire-and-forget for beforeunload.
-   * Uses fetch with keepalive + Authorization header.
-   * navigator.sendBeacon cannot send custom headers, so we use fetch instead.
-   */
-  beaconSave(sessionId: string, data: Record<string, unknown>): boolean {
-    const url = `${resolveBeaconUrl()}${BASE}/sessions/${sessionId}/beacon/`
-    const body = JSON.stringify(data)
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-
-    try {
-      const authStore = useAuthStore()
-      if (authStore.access) {
-        headers['Authorization'] = `Bearer ${authStore.access}`
-      }
-    } catch {
-      // Auth store unavailable — send without token (best-effort)
-    }
-
-    try {
-      fetch(url, {
-        method: 'POST',
-        body,
-        headers,
-        keepalive: true,
-        credentials: 'include',
-      })
-      return true
-    } catch {
-      return false
-    }
-  },
+  // ── Save Endpoints — DELETED Phase 2 (2026-04-27) ──────────────────
+  //
+  // Per user directive 2026-04-27 (full legacy cleanup):
+  //   diffSave    — POST /sessions/{pk}/diff/        — DELETED
+  //   streamSave  — POST /sessions/{pk}/save-stream/ — DELETED
+  //   beaconSave  — POST /sessions/{pk}/beacon/      — DELETED (fetch keepalive variant)
+  //
+  // Single write pipeline replaced ALL three:
+  //   UI → useReplayRecorder.record() → opsSyncStore.flush() → POST /replay/batch/
+  //
+  // Crash recovery: useOpsBackup (localStorage backup of opsSyncStore buffers)
+  // + opsSyncStore.bootstrap()/.resync() reads /sessions/{pk}/state/ для server seq.
+  //
+  // Reason: dual-write pipelines (legacy save-stream / diff / beacon paralel
+  // з /replay/batch/) caused 409 storms — both paths competed за WBSession row lock
+  // на BE-side. Phase 1.0 reconstruction made /replay/batch/ THE single writer
+  // через OpsApplyService (LAW §2 INV-7). FE legacy paths были обхідними shortcut
+  // що порушував INV-7 contract.
 
   // ── Assets (Phase 2: C2.1) ─────────────────────────────────────────
 
@@ -615,11 +534,62 @@ export const winterboardApi = {
   /**
    * Lock/unlock student drawing on a session.
    * Teacher/host only.
+   *
+   * Phase 1 (2026-04-27) breaking change per SSOT §11.1:
+   *   - Request body: {is_locked} (was {locked})
+   *   - Response: {is_locked, locked_by_id} (was {locked, locked_by, locked_at})
+   *   - Header X-Protocol-Version: v3 REQUIRED (INV-20)
+   *
+   * Broadcast on commit (received via WS): {type: 'session.lock', locked, userId, ts}
+   * — legacy field names preserved для FE listener compatibility.
    */
-  lockSession(sessionId: string, locked: boolean): Promise<WBLockResponse> {
+  lockSession(sessionId: string, isLocked: boolean): Promise<WBLockResponse> {
     return apiClient
-      .post(`${BASE}/sessions/${sessionId}/lock/`, { locked })
+      .post(
+        `${BASE}/sessions/${sessionId}/lock/`,
+        { is_locked: isLocked },
+        { headers: { 'X-Protocol-Version': 'v3' } },
+      )
       .then((r: unknown) => (r as { data: WBLockResponse }).data ?? r as WBLockResponse)
+  },
+
+  /**
+   * Phase 1 NEW (SSOT §11.1): teacher follow-mode hint — broadcast page change.
+   *
+   * NO DB write — pure broadcast (`session.page` event у WS room).
+   * Permission: IsTeacherOrOwner (owner OR teacher).
+   * Throttle: 60/min per user (WBSessionMetaThrottle).
+   * Header X-Protocol-Version: v3 REQUIRED.
+   */
+  pageBroadcast(sessionId: string, pageIndex: number): Promise<{ pageIndex: number }> {
+    return apiClient
+      .post<{ pageIndex: number }>(
+        `${BASE}/sessions/${sessionId}/page/`,
+        { pageIndex },
+        { headers: { 'X-Protocol-Version': 'v3' } },
+      )
+  },
+
+  /**
+   * Phase 1 NEW (SSOT §11.1): lightweight state change notification.
+   *
+   * NO DB write — pure broadcast (`session.state_update` event у WS room).
+   * Permission: IsTeacherOrOwner.
+   * Throttle: 60/min per user (WBSessionMetaThrottle).
+   * Header X-Protocol-Version: v3 REQUIRED.
+   *
+   * @param payload — {rev, pageIndex, action} per SSOT §11.1
+   */
+  stateUpdate(
+    sessionId: string,
+    payload: { rev: number; pageIndex: number; action: string },
+  ): Promise<{ ok: true }> {
+    return apiClient
+      .post<{ ok: true }>(
+        `${BASE}/sessions/${sessionId}/state-update/`,
+        payload,
+        { headers: { 'X-Protocol-Version': 'v3' } },
+      )
   },
 
   /**

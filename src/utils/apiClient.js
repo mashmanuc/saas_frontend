@@ -42,6 +42,20 @@ let isRefreshingToken = false
 let isRefreshingCsrf = false
 const refreshQueue = []
 
+// PR2 (2026-04-26) → Phase 2 (2026-04-27 SSOT §7 + AUTH MODEL CORRECTION):
+// Proactive auth refresh guard.
+//
+// Phase 2: BE V1AuthRefreshView повертає `exp` (Unix seconds) у refresh response.
+// FE caches у authStore.accessExp. Guard fire'иться при
+//     now > (accessExp * 1000 - REFRESH_BUFFER_MS)
+// → 60-секундний buffer для network/visibility/upload race.
+//
+// Fallback (legacy session pre-Phase 1 BE deploy АБО exp not yet captured):
+// timestamp proxy `lastRefreshAt + REFRESH_PROACTIVE_FALLBACK_MS` (45-хв legacy).
+// Phase 3+ після prod migration complete — fallback може бути deleted.
+const REFRESH_BUFFER_MS = 60 * 1000  // 60s ДО expiry per SSOT §7
+const REFRESH_PROACTIVE_FALLBACK_MS = 45 * 60 * 1000  // legacy timestamp proxy (no-exp sessions)
+
 // ── Global Circuit Breaker ──────────────────────────────────────────────
 // Prevents self-DDOS: if backend is unreachable, stop ALL non-essential requests.
 // Resets on: network recovery (online event), manual retry, or cooldown expiry.
@@ -145,7 +159,7 @@ const createRequestId = () =>
   (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`)
 
 api.interceptors.request.use(
-  (config) => {
+  async (config) => {
     const store = useAuthStore()
     const loader = useLoaderStore()
 
@@ -163,6 +177,44 @@ api.interceptors.request.use(
     if (isAuthDead() && !_isAuthEndpoint && !config.meta?.bypassAuthDeath) {
       if (!config.meta?.skipLoader) loader.stop()
       return Promise.reject(new axios.Cancel('[apiClient] Auth dead — request blocked'))
+    }
+
+    // Phase 2 (2026-04-27) per SSOT §7 + AUTH MODEL CORRECTION:
+    // Proactive auth refresh guard. Refresh ДО того як BE поверне 401.
+    //
+    // Primary path (post-Phase 1 BE deploy): use `accessExp` Unix seconds.
+    //   stale := now > (accessExp * 1000 - REFRESH_BUFFER_MS)
+    //   accuracy: ~60s ДО real expiry (per SSOT §7 buffer).
+    //
+    // Fallback (no exp yet — bootstrap, legacy session, або BE response без exp):
+    //   timestamp proxy `lastRefreshAt + REFRESH_PROACTIVE_FALLBACK_MS` (45m).
+    //
+    // Edge case `!lastRefreshAt && !accessExp` — після login token щойно отриманий,
+    // race conditions можуть лишити обидва на 0. Guard fire'иться (краще зайвий
+    // refresh ніж 401).
+    //
+    // Skip:
+    //   - /auth/* — щоб не зациклити refresh request сам на себе
+    //   - access='__cookie__' — bootstrap сам викличе refreshAccess()
+    //   - isRefreshingToken=true — mutex, інший call вже в процесі
+    const _hasRealAccess = store.access && store.access !== '__cookie__'
+    let _stale = false
+    if (typeof store.accessExp === 'number' && store.accessExp > 0) {
+      // Primary: dynamic guard з real exp claim
+      const _refreshAtMs = store.accessExp * 1000 - REFRESH_BUFFER_MS
+      _stale = Date.now() > _refreshAtMs
+    } else {
+      // Fallback: legacy timestamp proxy (45m hard-code preserved for migration)
+      _stale = !store.lastRefreshAt
+        || Date.now() - store.lastRefreshAt > REFRESH_PROACTIVE_FALLBACK_MS
+    }
+    if (_hasRealAccess && _stale && !_isAuthEndpoint && !isRefreshingToken) {
+      try {
+        await store.refreshAccess()
+      } catch {
+        // Якщо refresh fail — reactive 401 handler підхопить original request.
+        // Не блокуємо тут, щоб не ламати retry-flow.
+      }
     }
 
     // Пропускаємо loader для фонових запитів (polling, тощо)
@@ -390,6 +442,31 @@ api.interceptors.response.use(
           router.push('/start')
         } catch { /* navigation may fail if already at /start */ }
       }
+      return Promise.reject(error)
+    }
+
+    // Phase 2 (2026-04-27) — duplicate UX suppression per agent-A directive Section E:
+    // Winterboard ops_sync error codes (PROTOCOL_VERSION_MISMATCH / SERVER_BUSY /
+    // SEQ_MISMATCH) handled by dedicated UI gates (ProtocolMismatchModal /
+    // DesyncRecoveryBanner) wired through opsSyncStore.mode watch. Generic
+    // notifyError() on top of those gates = duplicate UX. Suppress тут.
+    //
+    // Detection: error.response.data.error string match. Status:
+    //   - 503 SERVER_BUSY     — would otherwise hit `status >= 500` toast
+    //   - 400 PROTOCOL_VERSION_MISMATCH — already silent (400 не у toast branch)
+    //   - 409 SEQ_MISMATCH    — already silent (409 не у toast branch)
+    //
+    // Suppression covers всі 3 для consistency якщо future додасть 5xx variants.
+    const _opsSyncErrorCode = data && typeof data === 'object'
+      ? data.error
+      : null
+    const _isOpsSyncGatedError =
+      _opsSyncErrorCode === 'PROTOCOL_VERSION_MISMATCH' ||
+      _opsSyncErrorCode === 'SERVER_BUSY' ||
+      _opsSyncErrorCode === 'SEQ_MISMATCH'
+
+    if (_isOpsSyncGatedError) {
+      // Skip generic notify — UI gate handles via opsSyncStore mode watch
       return Promise.reject(error)
     }
 

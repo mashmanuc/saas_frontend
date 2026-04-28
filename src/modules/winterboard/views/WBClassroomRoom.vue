@@ -12,6 +12,13 @@
   </div>
 
   <div v-else class="wb-classroom-room" :class="{ 'wb-classroom-room--locked': isLocked }">
+    <!-- Phase 2 (2026-04-27) per SSOT INV-16/INV-20:
+         DesyncRecoveryBanner — sticky top, non-blocking (board still readable).
+         ProtocolMismatchModal — full-screen blocking, single Reload button.
+         Mutually exclusive by canonical reason taxonomy у opsSyncStore. -->
+    <DesyncRecoveryBanner />
+    <ProtocolMismatchModal />
+
     <!-- Skip link for a11y -->
     <a href="#wb-canvas" class="wb-skip-link">{{ t('winterboard.a11y.skipToCanvas') }}</a>
 
@@ -99,7 +106,7 @@
       <div class="wb-classroom-room__actions">
         <!-- A.1: Recording banner — classroom integration TODO (manual control буде окремо) -->
         <WBRecordingBanner
-          v-if="mode === 'edit' && classroomRole.isTeacher.value"
+          v-if="classroomRole.isTeacher.value"
           :is-recording="false"
           :is-frozen="false"
         />
@@ -146,17 +153,6 @@
           ▶️
         </button>
 
-        <!-- Share (teacher only) -->
-        <button
-          v-if="classroomRole.isTeacher.value && sessionId"
-          type="button"
-          class="wb-header-btn"
-          :title="t('winterboard.room.share')"
-          @click="showShareDialog = true"
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="12" cy="4" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="2" stroke="currentColor" stroke-width="1.5"/><path d="M5.7 7l4.6-2M5.7 9l4.6 2" stroke="currentColor" stroke-width="1.5"/></svg>
-        </button>
-
         <!-- End session + complete lesson (teacher only, B1: single action) -->
         <button
           v-if="classroomRole.canEnd.value"
@@ -190,8 +186,8 @@
         />
       </aside>
 
-      <!-- Toolbar (role-aware) — приховано в replay-режимі -->
-      <aside v-if="mode !== 'replay'" class="wb-classroom-room__toolbar">
+      <!-- Toolbar (role-aware) -->
+      <aside class="wb-classroom-room__toolbar">
         <WBToolbar
           :current-tool="store.currentTool"
           :current-color="store.currentColor"
@@ -210,17 +206,9 @@
         />
       </aside>
 
-      <!-- A.2.5: Chapters sidebar в replay -->
-      <WBReplayChaptersSidebar
-        v-if="mode === 'replay' && resolvedSessionId"
-        :markers="replayMarkers"
-        :active-marker-id="replayActiveMarkerId"
-        @seek="handleMarkerSeek"
-      />
-
-      <!-- Phase 11 A4: Page thumbnails (teacher only, hidden in replay) -->
+      <!-- Phase 11 A4: Page thumbnails (teacher only) -->
       <WBPageThumbnails
-        v-if="mode !== 'replay' && classroomRole.isTeacher.value"
+        v-if="classroomRole.isTeacher.value"
         :pages="store.pages"
         :current-index="store.currentPageIndex"
         @select="handlePageSelect($event)"
@@ -235,13 +223,10 @@
         id="wb-canvas"
         ref="canvasContainerRef"
         class="wb-classroom-room__canvas"
-        :class="{ 'wb-classroom-room__canvas--readonly': mode === 'replay' }"
         tabindex="-1"
         @dragover.prevent
         @drop="contentDrop.handleCanvasDrop($event)"
       >
-        <!-- A.4 (INV-X): replay = read-only overlay -->
-        <div v-if="mode === 'replay'" class="wb-classroom-room__readonly-overlay" aria-hidden="true" />
         <Transition name="wb-fade">
           <WBCanvasLoader v-if="isLoading" />
         </Transition>
@@ -287,7 +272,7 @@
       :selected-ids="store.selectedIds"
       :zoom="store.zoom"
       :canvas-rect="canvasContainerRef?.getBoundingClientRect() ?? null"
-      :mode="mode"
+      :mode="'edit'"
       :is-locked="hasLockedInSelection"
       :bbox="selectionBBox"
       :selected-object="selectedObjectForToolbar"
@@ -314,46 +299,11 @@
       @submit="handleYouTubeSubmit"
     />
 
-    <!-- Share dialog -->
-    <WBShareDialog
-      v-if="showShareDialog && sessionId"
-      :session-id="sessionId"
-      :is-open="showShareDialog"
-      @close="showShareDialog = false"
-    />
-
     <!-- Phase 1: Recording controls moved into header -->
-
-    <!-- Phase 11: Replay mode banner -->
-    <WBReplayBanner
-      v-if="mode === 'replay'"
-      @exit="exitReplayMode"
-    />
-
-    <!-- Phase 11: Replay mode controls (teacher only) -->
-    <WBReplayControls
-      v-if="mode === 'replay' && resolvedSessionId"
-      ref="replayControlsRef"
-      :session-id="resolvedSessionId"
-      :load-state="(s) => store.loadSnapshot(s as Parameters<typeof store.loadSnapshot>[0])"
-      :clear-state="resetBoardForReplay"
-      @exit="exitReplayMode"
-      @operation="onReplayOperation"
-      @start-state="onReplayStartState"
-    />
-
-    <!-- A.2.1: Lesson Map sidebar removed in replay mode (markers will move to timeline as chapters) -->
-
-    <!-- Phase 11: Marker create modal -->
-    <WBMarkerCreateModal
-      :visible="showMarkerModal"
-      @close="showMarkerModal = false"
-      @submit="handleMarkerCreateFromModal"
-    />
 
     <!-- Phase 11 B5: Onboarding hints for empty board -->
     <WBOnboardingHints
-      v-if="mode === 'edit' && !isLoading"
+      v-if="!isLoading"
       :is-empty="isBoardEmpty"
     />
 
@@ -368,17 +318,6 @@
     <WBTestStudentView
       v-if="classroomRole.isStudent.value && testStore.activeTestSessionId"
     />
-
-    <!-- Phase 11: Replay entry button (teacher only, edit mode) -->
-    <button
-      v-if="mode === 'edit' && resolvedSessionId && (classroomRole.isTeacher.value || lessonEnded) && hasOperations"
-      class="wb-classroom-room__replay-btn"
-      data-testid="replay-button"
-      :aria-label="t('winterboard.replay.viewReplay')"
-      @click="enterReplayMode"
-    >
-      &#9654; {{ t('winterboard.replay.viewReplay') }}
-    </button>
 
     <!-- Phase 3: Upload progress indicator -->
     <WBUploadIndicator
@@ -456,7 +395,10 @@ import { useHistory } from '../composables/useHistory'
 import { useKeyboard } from '../composables/useKeyboard'
 import { useBoardClipboard } from '../composables/useBoardClipboard'
 import { useAutosave } from '../composables/useAutosave'
-import { useOpsBridge } from '../composables/useOpsBridge'
+// Phase 2 (2026-04-27): useOpsBridge DELETED — was no-op stub (Phase ops-only 2026-04-15)
+// Phase 2 SSOT INV-16/INV-20 UI gates (mutually exclusive by reason taxonomy)
+import ProtocolMismatchModal from '../components/dialogs/ProtocolMismatchModal.vue'
+import DesyncRecoveryBanner from '../components/dialogs/DesyncRecoveryBanner.vue'
 import { usePresence } from '../composables/usePresence'
 import { useFollowMode } from '../composables/useFollowMode'
 import { useLocking } from '../composables/useLocking'
@@ -471,7 +413,6 @@ import { createGeometryAsset } from '../composables/useGeometryCreation'
 // Components
 import WBCanvas from '../components/canvas/WBCanvas.vue'
 import WBToolbar from '../components/toolbar/WBToolbar.vue'
-import WBReplayChaptersSidebar from '../components/replay/WBReplayChaptersSidebar.vue'
 import WBRemoteCursors from '../components/cursors/WBRemoteCursors.vue'
 import WBCanvasLoader from '../components/loading/WBCanvasLoader.vue'
 import WBUploadIndicator from '../components/status/WBUploadIndicator.vue'
@@ -479,20 +420,14 @@ import WBGridButton from '../components/canvas/WBGridButton.vue'
 import WBPageThumbnails from '../components/pages/WBPageThumbnails.vue'
 import WBSelectionToolbar from '../components/canvas/WBSelectionToolbar.vue'
 import WBYouTubeModal from '../components/toolbar/WBYouTubeModal.vue'
-import WBShareDialog from '../components/sharing/WBShareDialog.vue'
-import WBReplayControls from '../components/replay/WBReplayControls.vue'
-import WBReplayBanner from '../components/replay/WBReplayBanner.vue'
 import WBRecordingBanner from '../components/replay/WBRecordingBanner.vue'
-import WBMarkerCreateModal from '../components/replay/WBMarkerCreateModal.vue'
 import WBOnboardingHints from '../components/ui/WBOnboardingHints.vue'
 import WBTestTeacherPanel from '../components/test/WBTestTeacherPanel.vue'
 import WBTestStudentView from '../components/test/WBTestStudentView.vue'
-import type { BoardOperation } from '../types/replay'
-import type { WBLessonMarker } from '../types/winterboard'
-import { createLessonMarker, deleteLessonMarker } from '../api/replay'
-import { createReplayApplier } from '../engine/applyReplayOperation'
 import { useGridOverlay } from '../composables/useGridOverlay'
 import { useReplayRecorder } from '../composables/useReplayRecorder'
+// Phase 2 G-fix (2026-04-28): opsSyncStore bootstrap wiring (single write path)
+import { useOpsSyncStore } from '../stores/opsSyncStore'
 import { useDeviceMode } from '../composables/useDeviceMode'
 
 // Learning Content integration
@@ -534,21 +469,6 @@ const deviceModeState = useDeviceMode()
 const resolvedSessionId = ref<string | null>(props.sessionId ?? null)
 /** group_id з lesson — для GroupContentSidebar у classroom */
 const classroomGroupId = ref<string | null>(null)
-
-// P2: edit/replay mode — synced to URL query for shareable links
-const mode = computed<'edit' | 'replay'>({
-  get: () => (route.query.mode === 'replay' ? 'replay' : 'edit'),
-  set: (value: 'edit' | 'replay') => {
-    const query = { ...route.query }
-    if (value === 'replay') {
-      query.mode = 'replay'
-    } else {
-      delete query.mode
-    }
-    router.replace({ query })
-  },
-})
-
 
 // ─── Lesson Domain state (C1.1 homework + C1.2 status) ─────────────────────
 const homeworkItems = ref<LessonHomework[]>([])
@@ -610,11 +530,16 @@ const autosave = useAutosave(resolvedSessionId, {
   },
 })
 
-// Phase 4a: Bridge — boardStore operations → diff ops → autosave.queueDiffOp
-const opsBridge = useOpsBridge(autosave)
+// Phase 4a: Bridge — DELETED у Phase 2 (was no-op stub since Phase ops-only 2026-04-15).
+// Ops flow: boardStore → useReplayRecorder.record() → opsSyncStore → /replay/batch/.
 
 // REPLAY-INV-2: always-on recording — активний коли store.mode === 'edit'
 const isRecording = computed(() => store.mode === 'edit')
+// Phase 2 G-fix (2026-04-28): opsSyncStore singleton — bootstrap()-ed у
+// initBoardWithSession() після resolvedSessionId set. Без wire-up store stays у
+// BOOTSTRAP mode → useReplayRecorder.record() returns false → ops silently dropped.
+const opsSync = useOpsSyncStore()
+
 const replayRecorder = useReplayRecorder({
   sessionId: resolvedSessionId,
   getBoardState: () => store.getSnapshotState(),
@@ -718,26 +643,12 @@ const sessionName = ref('Untitled')
 const selectedId = ref<string | null>(null)
 const isLoading = ref(true)
 const showYouTubeModal = ref(false)
-const showShareDialog = ref(false)
-const replayMarkers = ref<WBLessonMarker[]>([])
-const replayActiveMarkerId = ref<string | null>(null)
-const showMarkerModal = ref(false)
 
 // Phase 11 B5: Board empty check for onboarding hints
 const isBoardEmpty = computed(() => {
   const page = store.currentPage
   if (!page) return true
   return page.assets.length === 0 && page.strokes.length === 0
-})
-
-// A1.4: Hide replay button on empty boards (check all pages)
-const hasOperations = computed(() => {
-  return store.pages.some(p => p.strokes.length > 0 || p.assets.length > 0)
-})
-
-// A1.5: Detect lesson end — students can replay after lesson is completed/archived
-const lessonEnded = computed(() => {
-  return lessonStatus.value === 'COMPLETED' || lessonStatus.value === 'ARCHIVED'
 })
 
 // ─── Computed ───────────────────────────────────────────────────────────────
@@ -1094,118 +1005,6 @@ async function handleYouTubeAdd(url: string): Promise<void> {
     await addYouTubeAsset(url)
   } catch (e) {
     console.warn('[WBClassroomRoom] YouTube add failed:', e)
-  }
-}
-
-// ─── Phase 11: Replay mode (teacher can review the lesson) ──────────────────
-
-// Зберігаємо стан дошки перед входом в replay — відновлюємо при виході
-let _savedBoardState: ReturnType<typeof store.getSnapshotState> | null = null
-
-function enterReplayMode(): void {
-  if (!classroomRole.isTeacher.value && !lessonEnded.value) return
-  _savedBoardState = store.getSnapshotState()  // snapshot поточного стану
-  store.setMode('replay')    // REPLAY-INV-9: _emitOperation NO-OP
-  store.resetForReplay()     // чистий стан — replay накладає ops з нуля (REPLAY-INV-11)
-  mode.value = 'replay'      // URL sync
-}
-
-function exitReplayMode(): void {
-  store.setMode('edit')      // REPLAY-INV-9: відновлюємо emitter
-  if (_savedBoardState) {
-    store.loadSnapshot(_savedBoardState)  // відновлюємо стан до replay
-    _savedBoardState = null
-  }
-  _replayStartState = null   // cleanup snapshot reference
-  mode.value = 'edit'        // URL sync
-}
-
-// P0 FIX: Instance-scoped replay applier
-const replayApplier = createReplayApplier()
-
-// P2: ref for accessing WBReplayControls exposed batching flags
-const replayControlsRef = ref<InstanceType<typeof WBReplayControls> | null>(null)
-
-// REPLAY-SNAPSHOT: зберігаємо deep-clone recording_start_state для restart.
-// loadSnapshot робить this.pages = state.pages (ПОСИЛАННЯ!), тому replay-ops
-// мутують і store, і snapshot одночасно. Без clone restart показує всі ops.
-let _replayStartState: { pages: unknown[]; currentPageIndex: number } | null = null
-
-/**
- * DRY helper: reset board + applier, load fresh clone of snapshot, mark pages.
- * Використовується як clearState callback для seekToWithSnapshot.
- */
-function resetBoardForReplay(): void {
-  store.resetForReplay()
-  replayApplier.reset()
-  if (_replayStartState) {
-    store.loadSnapshot(JSON.parse(JSON.stringify(_replayStartState)) as Parameters<typeof store.loadSnapshot>[0])
-    store.goToPage(0)
-    const ids = (_replayStartState.pages as Array<{ id?: string }>).map(p => p?.id ?? '').filter(Boolean)
-    replayApplier.markPagesEnsured(ids)
-  }
-}
-
-// R5: INV-T: hydrate з recording_start_state перед накаткою ops
-function onReplayStartState(state: { pages?: unknown[]; currentPageIndex?: number }): void {
-  if (state && Array.isArray(state.pages) && state.pages.length > 0) {
-    // CRITICAL: deep-clone! Без цього replay-ops мутують snapshot через shared reference.
-    _replayStartState = JSON.parse(JSON.stringify(state)) as { pages: unknown[]; currentPageIndex: number }
-    store.loadSnapshot(JSON.parse(JSON.stringify(_replayStartState)) as Parameters<typeof store.loadSnapshot>[0])
-    store.goToPage(0)  // replay starts from page 1
-    const ids = (_replayStartState.pages as Array<{ id?: string }>).map(p => p?.id ?? '').filter(Boolean)
-    replayApplier.markPagesEnsured(ids)
-  }
-}
-
-function onReplayOperation(op: BoardOperation): void {
-  replayApplier.apply(store, op)
-
-  // P2: skip per-op effects during batch seek — single redraw at end
-  if (replayControlsRef.value?.isBatchingSeek?.()) return
-}
-
-// P2: Single batchDraw at end of batch seek — prevents 1000+ redraws
-watch(() => replayControlsRef.value?.seekCompleted?.(), (done) => {
-  if (!done) return
-  requestAnimationFrame(() => {
-    const stage = canvasRef.value?.getStage?.()
-    stage?.batchDraw?.()
-  })
-})
-
-function handleMarkerSeek(marker: WBLessonMarker): void {
-  if (marker.page_id) {
-    const pageIdx = store.pages.findIndex(p => p.id === marker.page_id)
-    if (pageIdx >= 0) store.goToPage(pageIdx)
-  }
-  if (marker.board_position?.x !== undefined) {
-    store.setScroll(marker.board_position.x, marker.board_position.y)
-  }
-}
-
-async function handleMarkerCreate(data: { title: string; category: string }): Promise<void> {
-  if (!resolvedSessionId.value) return
-  await createLessonMarker(resolvedSessionId.value, {
-    title: data.title,
-    operation_index: 0,
-    page_id: store.currentPage?.id ?? '',
-    board_position: { x: store.scrollX, y: store.scrollY },
-    thumbnail_url: '',
-    category: data.category as WBLessonMarker['category'],
-    order: replayMarkers.value.length,
-  })
-}
-
-async function handleMarkerCreateFromModal(data: { title: string; category: string }): Promise<void> {
-  showMarkerModal.value = false
-  await handleMarkerCreate(data)
-}
-
-async function handleMarkerDelete(id: string): Promise<void> {
-  replayMarkers.value = replayMarkers.value.filter(m => m.id !== id)
-  if (resolvedSessionId.value) {
-    deleteLessonMarker(resolvedSessionId.value, id).catch(() => {})
   }
 }
 
@@ -1967,6 +1766,16 @@ async function initBoardWithSession(init: { sessionId: string; role: any; permis
   store.workspaceId = init.sessionId
   // Зберігаємо group_id для sidebar матеріалів
   if (init.groupId) classroomGroupId.value = init.groupId
+
+  // Phase 2 G-fix (2026-04-28): bootstrap opsSyncStore (single write path).
+  // MUST be called BEFORE recorder.connectToStore + first record/flush. Sets
+  // mode SYNC + serverSeq=last_seq від BE. Без цього store stays у BOOTSTRAP →
+  // record() returns false → drawing produces 0 ops persisted.
+  try {
+    await opsSync.bootstrap(init.sessionId)
+  } catch (bootErr) {
+    console.error('[WB:ClassroomRoom] opsSync.bootstrap failed (non-fatal):', bootErr)
+  }
 
   // Set role + permissions
   classroomRole.setRole(init.role, init.permissions)

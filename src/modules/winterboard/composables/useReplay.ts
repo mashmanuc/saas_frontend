@@ -6,8 +6,12 @@
 //   const replay = useReplay(sessionId)
 //   await replay.loadTimeline((op) => applyOpToShadowCanvas(op))
 //   replay.play()
+//
+// Replay engine wrapper — public replay (WBPublicView) playback path.
+// Embedded replay (?mode=replay у SoloRoom/ClassroomRoom) видалений; цей
+// composable обслуговує тільки public path через fetchPublicReplayByToken.
 
-import { ref, shallowRef, readonly, computed, watch, onScopeDispose } from 'vue'
+import { ref, shallowRef, readonly, computed, watch, onScopeDispose, getCurrentScope } from 'vue'
 import { WBReplayEngine, type ReplaySpeed, type ReplayState } from '../engine/WBReplayEngine'
 import {
   fetchReplayTimeline,
@@ -377,12 +381,16 @@ export function useReplay(sessionId: string, publicToken?: string) {
   // (component unmount, або scope cleanup у parent component).
   // Без цього ping продовжує рахувати timer навіть після того як user
   // закрив вкладку → false-positive "real viewer".
-  onScopeDispose(() => {
-    if (pingTimer.value) {
-      clearTimeout(pingTimer.value)
-      pingTimer.value = null
-    }
-  })
+  // Guard: useReplay може викликатись з click-handler (поза setup) — у такому
+  // випадку active scope відсутній; cleanup тоді — відповідальність caller'а.
+  if (getCurrentScope()) {
+    onScopeDispose(() => {
+      if (pingTimer.value) {
+        clearTimeout(pingTimer.value)
+        pingTimer.value = null
+      }
+    })
+  }
 
   return {
     state: readonly(state),

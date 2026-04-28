@@ -67,6 +67,18 @@ export const API_ERROR_CODES = Object.freeze({
   permission_denied: () => t('errors.api.permissionDenied'),
   rate_limited: () => t('errors.api.rateLimited'),
   server_error: () => t('errors.api.serverError'),
+
+  // Phase 2 (2026-04-27) — Winterboard ops_sync error codes per
+  // OPS_SYNC_SSOT.md §4 + INV-20.
+  // UI handlers (ProtocolMismatchModal / DesyncRecoveryBanner) wired через
+  // opsSyncStore.mode watch, NOT через direct error-map detection. Map use
+  // тільки для toast/notification fallback якщо mode watch не активний (e.g.,
+  // outside winterboard route — admin endpoint що повертає такі коди).
+  PROTOCOL_VERSION_MISMATCH: () => t('winterboard.errors.protocolMismatch.toast'),
+  SERVER_BUSY: () => t('winterboard.errors.serverBusy'),
+  SEQ_MISMATCH: () => t('winterboard.errors.seqMismatch'),
+  // Variant A (2026-04-27): navigator.sendBeacon неможливий пост-Phase 1.
+  beacon_unsupported: () => t('winterboard.errors.beaconUnsupported'),
 })
 
 /**

@@ -399,6 +399,9 @@ function _getEffectiveMode(): 'edit' | 'replay' | 'readonly' {
 
 function _emitOperation(op: RecordOperationRequest): void {
   const mode = _getEffectiveMode()
+  // Public replay (WBPublicView) ставить mode='replay' / mode='readonly' для
+  // read-only render — applier викликає store.addStroke()/etc, які пробують
+  // emit. Тут тихо обриваємо emit, щоб ops не йшли у /replay/batch/.
   if (mode !== 'edit') return
   for (const listener of _operationListeners) {
     try {

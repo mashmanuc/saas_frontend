@@ -5,6 +5,13 @@
     :data-input-mode="deviceModeState.inputMode.value"
     :data-orientation="deviceModeState.orientation.value"
   >
+    <!-- Phase 2 (2026-04-27) per SSOT INV-16/INV-20:
+         DesyncRecoveryBanner — sticky top, non-blocking (board still readable).
+         ProtocolMismatchModal — full-screen blocking, single Reload button.
+         Mutually exclusive by canonical reason taxonomy у opsSyncStore. -->
+    <DesyncRecoveryBanner />
+    <ProtocolMismatchModal />
+
     <!-- B5.1: Skip to canvas link for keyboard/screen reader users -->
     <a href="#wb-canvas" class="wb-skip-link">{{ t('winterboard.a11y.skipToCanvas') }}</a>
     <!-- ── Header ──────────────────────────────────────────────────────────── -->
@@ -77,7 +84,7 @@
       <div class="wb-solo-room__actions">
         <!-- A.1: Manual Recording Control — кнопка start/stop + REC таймер -->
         <WBRecordingBanner
-          v-if="mode === 'edit' && isSessionOwner"
+          v-if="isSessionOwner"
           :is-recording="isManualRecording"
           :is-frozen="isReplayFrozen"
           :is-loading="isRecordingLoading"
@@ -120,14 +127,6 @@
           @click="showExportDialog = true"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 10v3a1 1 0 001 1h10a1 1 0 001-1v-3M8 2v8M5 5l3-3 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-        <button
-          type="button"
-          class="wb-header-btn"
-          :title="t('winterboard.room.share')"
-          @click="showShareDialog = true"
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="12" cy="4" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="2" stroke="currentColor" stroke-width="1.5"/><path d="M5.7 7l4.6-2M5.7 9l4.6 2" stroke="currentColor" stroke-width="1.5"/></svg>
         </button>
         <!-- Phase 21: Save as Lesson button -->
         <button
@@ -236,8 +235,8 @@
 
     <!-- ── Main content: Toolbar + Canvas ──────────────────────────────────── -->
     <div class="wb-solo-room__main">
-      <!-- Left Toolbar (AGENT-B: WBToolbar) — приховано в replay-режимі -->
-      <aside v-if="mode !== 'replay'" class="wb-solo-room__toolbar">
+      <!-- Left Toolbar (AGENT-B: WBToolbar) -->
+      <aside class="wb-solo-room__toolbar">
         <WBToolbar
           :current-tool="store.currentTool"
           :current-color="store.currentColor"
@@ -263,19 +262,8 @@
         />
       </aside>
 
-      <!-- A.2.5: Chapters sidebar в replay-режимі (Розділи уроку).
-           UX FIX (2026-04-08): ховаємо панель якщо markers ще не додані —
-           порожня панель "Розділів немає" плутала користувачів. -->
-      <WBReplayChaptersSidebar
-        v-if="mode === 'replay' && sessionId && replayMarkers.length > 0 && !isMobileDevice && (!isTabletDevice || activeReplaySidebar === 'chapters')"
-        :markers="replayMarkers"
-        :active-marker-id="replayActiveMarkerId"
-        @seek="handleMarkerSeek"
-      />
-
-      <!-- ── Page thumbnails panel (collapsible) — приховано в replay ── -->
+      <!-- ── Page thumbnails panel (collapsible) ── -->
       <aside
-        v-if="mode !== 'replay'"
         class="wb-solo-room__page-panel"
         :class="{ 'wb-solo-room__page-panel--open': showPagePanel }"
         aria-label="Панель сторінок"
@@ -293,9 +281,7 @@
       </aside>
 
       <!-- Canvas area -->
-      <div id="wb-canvas" ref="canvasContainerRef" class="wb-solo-room__canvas" :class="{ 'wb-solo-room__canvas--with-sidebar': showMaterialsSidebar, 'wb-solo-room__canvas--readonly': mode === 'replay' }" tabindex="-1" @dragover.prevent @drop="contentDrop.handleCanvasDrop($event)" @click="onCanvasContainerClick" @mouseup="onCanvasContainerMouseUp">
-        <!-- A.4 (INV-X): replay = read-only overlay блокує всі pointer-події по канвасу -->
-        <div v-if="mode === 'replay'" class="wb-solo-room__readonly-overlay" aria-hidden="true" />
+      <div id="wb-canvas" ref="canvasContainerRef" class="wb-solo-room__canvas" :class="{ 'wb-solo-room__canvas--with-sidebar': showMaterialsSidebar }" tabindex="-1" @dragover.prevent @drop="contentDrop.handleCanvasDrop($event)" @click="onCanvasContainerClick" @mouseup="onCanvasContainerMouseUp">
         <!-- B6.2: Loading state -->
         <Transition name="wb-fade">
           <WBCanvasLoader v-if="isLoading" />
@@ -633,14 +619,6 @@
       @submit="handleYouTubeSubmit"
     />
 
-    <!-- Share dialog -->
-    <WBShareDialog
-      v-if="showShareDialog && sessionId"
-      :session-id="sessionId"
-      :is-open="showShareDialog"
-      @close="showShareDialog = false"
-    />
-
     <!-- Phase 13 A3.3: Publish dialog (Knowledge domain) -->
     <WBShareDialog
       v-if="showPublishDialog && sessionId"
@@ -710,7 +688,7 @@
       :selected-ids="store.selectedIds"
       :zoom="store.zoom"
       :canvas-rect="selectionCanvasRect"
-      :mode="mode"
+      :mode="'edit'"
       :is-locked="hasLockedInSelection"
       :bbox="selectionBBox"
       :selected-object="selectedObjectForToolbar"
@@ -733,112 +711,11 @@
     />
 
     <!-- Phase 11: Replay mode banner -->
-    <WBReplayBanner
-      v-if="mode === 'replay'"
-      @exit="exitReplayMode"
-    />
-
-    <!-- A12p2: Replay mode controls -->
-    <WBReplayControls
-      v-if="mode === 'replay' && sessionId"
-      ref="replayControlsRef"
-      :session-id="sessionId"
-      :load-state="(s) => store.loadSnapshot(s as Parameters<typeof store.loadSnapshot>[0])"
-      :clear-state="resetBoardForReplay"
-      :comment-points="commentPoints"
-      :show-chapters-toggle="(isMobileDevice || isTabletDevice) && replayMarkers.length > 0"
-      :show-comments-toggle="isMobileDevice || isTabletDevice"
-      :show-share-button="!!activeReplayId"
-      @exit="exitReplayMode"
-      @operation="onReplayOperation"
-      @start-state="onReplayStartState"
-      @tick="onReplayTick"
-      @seek-start="replayAudio.stopAudio()"
-      @toggle-chapters="onToggleChapters"
-      @toggle-comments="onToggleComments"
-      @share="showShareModal = true"
-    />
-
-    <!-- Phase C: Replay comments sidebar (desktop inline, tablet single-toggle) -->
-    <WBReplayCommentsSidebar
-      v-if="mode === 'replay' && sessionId && !isMobileDevice && (!isTabletDevice || activeReplaySidebar === 'comments')"
-      class="wb-solo-room__comments-sidebar"
-      :comments="replayCommentsList"
-      :current-op-index="replayCurrentOpIndex"
-      :can-comment="!!authStore.user"
-      :current-user-id="authStore.user?.id ?? null"
-      :session-owner-id="store.ownerId ? Number(store.ownerId) : null"
-      :submitting="commentSubmitting"
-      @jump="onCommentJump"
-      @delete="onCommentDelete"
-      @submit="onCommentSubmit"
-    />
-
-    <!-- R2: Mobile bottom-sheet for chapters -->
-    <WBBottomSheet
-      :is-open="showChaptersSheet && isMobileDevice"
-      :title="t('replay.chaptersTitle', 'Розділи уроку')"
-      @close="showChaptersSheet = false"
-    >
-      <WBReplayChaptersSidebar
-        :markers="replayMarkers"
-        :active-marker-id="replayActiveMarkerId"
-        @seek="(m) => { handleMarkerSeek(m); showChaptersSheet = false }"
-      />
-    </WBBottomSheet>
-
-    <!-- R2: Mobile bottom-sheet for comments -->
-    <WBBottomSheet
-      :is-open="showCommentsSheet && isMobileDevice"
-      :title="t('winterboard.replay.comments.title', 'Коментарі')"
-      @close="showCommentsSheet = false"
-    >
-      <WBReplayCommentsSidebar
-        :comments="replayCommentsList"
-        :current-op-index="replayCurrentOpIndex"
-        :can-comment="!!authStore.user"
-        :current-user-id="authStore.user?.id ?? null"
-        :session-owner-id="store.ownerId ? Number(store.ownerId) : null"
-        :submitting="commentSubmitting"
-        @jump="(c) => { onCommentJump(c); showCommentsSheet = false }"
-        @delete="onCommentDelete"
-        @submit="onCommentSubmit"
-      />
-    </WBBottomSheet>
-
-    <!-- A.2.1: Lesson Map sidebar removed in replay mode (markers will move to timeline as chapters) -->
-
-    <!-- P5: Marker create modal -->
-    <WBMarkerCreateModal
-      :visible="showMarkerModal"
-      @close="showMarkerModal = false"
-      @submit="handleMarkerCreateFromModal"
-    />
-
     <!-- Phase 11 B5: Onboarding hints for empty board -->
     <WBOnboardingHints
-      v-if="mode === 'edit' && !isLoading"
+      v-if="!isLoading"
       :is-empty="isBoardEmpty"
     />
-
-    <!-- Replay entry: CTA + stats or empty state hint -->
-    <div v-if="mode === 'edit' && sessionId" class="wb-solo-room__replay-entry">
-      <button
-        v-if="hasOperations"
-        class="wb-solo-room__replay-btn"
-        data-testid="replay-button"
-        :aria-label="t('winterboard.replay.viewReplay')"
-        @click="enterReplayMode"
-      >
-        &#9654; {{ isManualRecording ? t('winterboard.replay.viewRecording') : t('winterboard.replay.viewReplay') }}
-      </button>
-      <span v-if="hasOperations" class="wb-solo-room__replay-stats">
-        {{ store.pages.length }} {{ t('winterboard.replay.statPages') }}
-      </span>
-      <span v-if="!hasOperations && !isManualRecording" class="wb-solo-room__replay-hint">
-        {{ t('winterboard.replay.emptyHint') }}
-      </span>
-    </div>
 
     <!-- Share Layer S.2: Post-record proactive prompt з inline visibility + auto-copy -->
     <WBRecordingDonePrompt
@@ -903,7 +780,10 @@ import { useHistory } from '../composables/useHistory'
 import { useKeyboard } from '../composables/useKeyboard'
 import { useBoardClipboard } from '../composables/useBoardClipboard'
 import { useAutosave } from '../composables/useAutosave'
-import { useOpsBridge } from '../composables/useOpsBridge'
+// Phase 2 (2026-04-27): useOpsBridge DELETED — was no-op stub (Phase ops-only 2026-04-15)
+// Phase 2 SSOT INV-16/INV-20 UI gates (mutually exclusive by reason taxonomy)
+import ProtocolMismatchModal from '../components/dialogs/ProtocolMismatchModal.vue'
+import DesyncRecoveryBanner from '../components/dialogs/DesyncRecoveryBanner.vue'
 import { usePresence } from '../composables/usePresence'
 import { useFollowMode } from '../composables/useFollowMode'
 import { useLocking } from '../composables/useLocking'
@@ -911,7 +791,9 @@ import { useAnnouncer } from '../composables/useAnnouncer'
 import { useContentDrop } from '../composables/useContentDrop'
 import { useToast } from '../composables/useToast'
 import { winterboardApi } from '../api/winterboardApi'
-import { recordOperationsBatch } from '../api/replay'
+// Phase 2 G-fix (2026-04-28): legacy `recordOperationsBatch` direct caller REMOVED;
+// initial page_add тепер emits через opsSyncStore.record() + flush() (single write path).
+import { useOpsSyncStore } from '../stores/opsSyncStore'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { groupApi as learningGroupApi } from '@/modules/groups/api/groupApi'
 import type { WBStroke, WBAsset, WBToolType } from '../types/winterboard'
@@ -938,28 +820,16 @@ import { BOARD_TEMPLATES } from '../data/boardTemplates'
 import WBGridButton from '../components/canvas/WBGridButton.vue'
 import WBTouchContextMenu from '../components/canvas/WBTouchContextMenu.vue'
 import WBSelectionToolbar from '../components/canvas/WBSelectionToolbar.vue'
-import WBReplayControls from '../components/replay/WBReplayControls.vue'
 import WBReplayShareModal from '../components/replay/WBReplayShareModal.vue'
 import WBRecordingDonePrompt from '../components/replay/WBRecordingDonePrompt.vue'
-import WBReplayCommentsSidebar from '../components/replay/WBReplayCommentsSidebar.vue'
-import { useReplayComments } from '../composables/useReplayComments'
-import WBMarkerCreateModal from '../components/replay/WBMarkerCreateModal.vue'
-import WBReplayBanner from '../components/replay/WBReplayBanner.vue'
 import WBRecordingBanner from '../components/replay/WBRecordingBanner.vue'
-import WBReplayChaptersSidebar from '../components/replay/WBReplayChaptersSidebar.vue'
-import WBBottomSheet from '../components/layout/WBBottomSheet.vue'
+import { registerAuthDeathCleanup } from '@/core/auth/onAuthDeath'
 import SaveAsTemplateDialog from '@/modules/knowledge/components/SaveAsTemplateDialog.vue'
 import WBSaveLessonDialog from '@/modules/knowledge/components/WBSaveLessonDialog.vue'
 import WBOnboardingHints from '../components/ui/WBOnboardingHints.vue'
-import type { BoardOperation } from '../types/replay'
-import type { WBLessonMarker } from '../types/winterboard'
-import { createLessonMarker, deleteLessonMarker } from '../api/replay'
-import { createReplayApplier } from '../engine/applyReplayOperation'
-import { collectNewIdsFromOp, applyAppearanceFadeIn } from '../engine/animation/replayFadeIn'
 import { useGridOverlay } from '../composables/useGridOverlay'
 import { usePageTransition } from '../composables/usePageTransition'
 import { useReplayRecorder } from '../composables/useReplayRecorder'
-import { useReplayAudio } from '../composables/useReplayAudio'
 import { audioManager } from '../utils/audioManager'
 import { useCanvasResize } from '../composables/useCanvasResize'
 import { useTouchGestures } from '../components/gestures/useTouchGestures'
@@ -994,13 +864,17 @@ const sessionId = ref<string | null>(null)
 // Autosave (AGENT-C: C2.1)
 const autosave = useAutosave(sessionId)
 
-// Phase 4a: Bridge — boardStore operations → diff ops → autosave.queueDiffOp
-const opsBridge = useOpsBridge(autosave)
+// Phase 2 G-fix (2026-04-28): opsSyncStore singleton — bootstrap()-ed на onMounted
+// після того як sessionId відомий. Без цього wire-up store stays у BOOTSTRAP mode
+// → useReplayRecorder.record() returns false → ops silently dropped.
+const opsSync = useOpsSyncStore()
+
+// Phase 4a: Bridge — DELETED у Phase 2 (was no-op stub since Phase ops-only 2026-04-15).
+// Ops flow: boardStore → useReplayRecorder.record() → opsSyncStore → /replay/batch/.
 
 // A.1: Manual Recording Control
 // Ops ЗАВЖДИ записуються (append-only log) — кнопка start/stop тільки встановлює
 // recording_started_seq / recording_stopped_seq boundaries для replay.
-// Recorder працює коли mode === 'edit' (зупиняється при replay).
 // Phase B: Share modal
 const showShareModal = ref(false)
 
@@ -1011,15 +885,13 @@ const isReplayFrozen = ref(false)
 const activeReplayId = ref<string | null>(null)
 const isRecordingLoading = ref(false)
 const showRecordingDonePrompt = ref(false)
-const recordingBrokenWarning = ref(false)  // INV: shown when pipeline health check fails
+const recordingBrokenWarning = ref(false)
 let _recordingDoneTimer: number | null = null
 
-// Recorder enabled = edit mode (ЗАВЖДИ записує ops, не залежить від isManualRecording)
-const isRecorderEnabled = computed(() => store.mode === 'edit')
+// Recorder завжди enabled у solo edit board.
 const replayRecorder = useReplayRecorder({
   sessionId,
   getBoardState: () => store.getSnapshotState(),
-  enabled: isRecorderEnabled,
 })
 // Phase 20: connectToStore moved to onMounted (after hydrateFromSession)
 // to prevent stale listeners from previous session
@@ -1035,6 +907,14 @@ function cleanupRecorder(): void {
   replayRecorder.destroy()
 }
 
+// Recording = user control. На auth death (logout / cross-tab logout / refresh
+// failed) скидаємо local recording UI state. Backend паралельно ставить
+// recording_stopped_seq у logout view → reconnect покаже REC = Start.
+const _unregisterRecordingAuthDeath = registerAuthDeathCleanup(() => {
+  isManualRecording.value = false
+  recordingStartedAt.value = null
+})
+
 async function handleStartRecording(): Promise<void> {
   const sid = sessionId.value
   if (!sid || isManualRecording.value || isReplayFrozen.value) return
@@ -1047,20 +927,10 @@ async function handleStartRecording(): Promise<void> {
     isManualRecording.value = true
     recordingStartedAt.value = result.recording_started_at
     isReplayFrozen.value = false
-
-    // INV: Recording pipeline health check — ops MUST appear ≤ 2s after start.
-    // If recorder is dead (destroyed by navigation, missing connectToStore, etc.)
-    // this catches it immediately instead of silently losing an entire lesson.
-    setTimeout(() => {
-      if (isManualRecording.value && replayRecorder.opCount.value === 0) {
-        console.error(
-          '[WB:PIPELINE:BROKEN] Recording started but 0 ops after 2s! ' +
-          `store.mode=${store.mode} sessionId=${sessionId.value} enabled=${isRecorderEnabled.value}`,
-        )
-        // UX safeguard: warn user that recording is not working
-        recordingBrokenWarning.value = true
-      }
-    }, 2000)
+    // Time-based pipeline health check видалений: false-positive коли юзер
+    // не малює у перші 2с після REC. Behavior-based warnings лишаються:
+    // (1) handleStopRecording catch — реальна помилка stop API;
+    // (2) onMounted stoppedLocally — recording перервано network death.
   } catch (e) {
     console.error('[WBSoloRoom] Failed to start recording:', e)
   } finally {
@@ -1152,84 +1022,19 @@ const canvasContainerRef = ref<HTMLElement | null>(null)
 const sessionName = ref('Untitled')
 const selectedId = ref<string | null>(null)
 const isLoading = ref(true)
-const showShareDialog = ref(false)
 const showPublishDialog = ref(false)
 const showSaveTemplateDialog = ref(false)
 const publishedLessonData = ref<{ id: string; title: string; subject_tag?: string } | null>(null)
 const showExportDialog = ref(false)
 const showSaveLessonDialog = ref(false)
 const showYouTubeModal = ref(false)
-const showMarkerModal = ref(false)
-const replayMarkers = ref<WBLessonMarker[]>([])
-const replayActiveMarkerId = ref<string | null>(null)
 const isSessionOwner = computed(() => {
   if (!store.ownerId || !authStore.user) return false
   return String(store.ownerId) === String(authStore.user.id)
 })
 
-// Phase C: Replay comments
-const _commentsInstance = ref<ReturnType<typeof useReplayComments> | null>(null)
-const replayCommentsList = computed(() => _commentsInstance.value?.comments || [])
-const replayCurrentOpIndex = ref(0)
-const replayCurrentTotalOps = ref(0)
-const commentSubmitting = ref(false)
-const replayControlsRef = ref<InstanceType<typeof WBReplayControls> | null>(null)
-
-// R2: Mobile bottom-sheet state for replay sidebars
-const showChaptersSheet = ref(false)
-const showCommentsSheet = ref(false)
 const isMobileDevice = computed(() => deviceModeState.deviceMode.value === 'mobile')
-// R3: Tablet — show one sidebar at a time (chapters OR comments)
 const isTabletDevice = computed(() => deviceModeState.deviceMode.value === 'tablet')
-const activeReplaySidebar = ref<'chapters' | 'comments' | null>('comments')
-
-// Audio interaction layer — pauses replay when audio plays, resumes on end
-const replayAudio = useReplayAudio({
-  getReplayState: () => replayControlsRef.value?.getState?.() ?? 'idle',
-  pauseReplay: () => replayControlsRef.value?.pause?.(),
-  resumeReplay: () => replayControlsRef.value?.play?.(),
-})
-
-// P2: Single batchDraw at end of batch seek — prevents 1000+ redraws
-watch(() => replayControlsRef.value?.seekCompleted?.(), (done) => {
-  if (!done) return
-  requestAnimationFrame(() => {
-    const stage = canvasRef.value?.getStage?.()
-    stage?.batchDraw?.()
-  })
-})
-
-const commentPoints = computed(() => {
-  const total = Math.max(1, replayCurrentTotalOps.value)
-  return replayCommentsList.value.map((c) => ({
-    id: c.id,
-    operation_index: c.operation_index,
-    percent: Math.max(0, Math.min(100, (c.operation_index / total) * 100)),
-    text: c.text,
-  }))
-})
-
-async function loadReplayComments(): Promise<void> {
-  if (!sessionId.value) return
-  _commentsInstance.value = useReplayComments(sessionId.value)
-  await _commentsInstance.value.load()
-}
-async function onCommentSubmit(text: string): Promise<void> {
-  if (!_commentsInstance.value) return
-  commentSubmitting.value = true
-  try {
-    await _commentsInstance.value.add(replayCurrentOpIndex.value, text)
-  } finally {
-    commentSubmitting.value = false
-  }
-}
-async function onCommentDelete(c: { id: string }): Promise<void> {
-  if (!_commentsInstance.value) return
-  await _commentsInstance.value.remove(c.id)
-}
-function onCommentJump(c: { operation_index: number }): void {
-  replayControlsRef.value?.jumpTo(c.operation_index)
-}
 
 const showTemplateSelector = ref(false)
 const showSidebarOverlay = ref(false)
@@ -1288,215 +1093,19 @@ const touchGestureMode = computed<'drawing' | 'selection'>(() =>
   store.currentTool === 'select' ? 'selection' : 'drawing',
 )
 
-// A12p2: Replay mode — synced to URL query for shareable links
-const mode = computed<'edit' | 'replay'>({
-  get: () => (route.query.mode === 'replay' ? 'replay' : 'edit'),
-  set: (value: 'edit' | 'replay') => {
-    const query = { ...route.query }
-    if (value === 'replay') {
-      query.mode = 'replay'
-    } else {
-      delete query.mode
-    }
-    router.replace({ query })
-  },
-})
-
 // Phase 1 page transition — fade-only, editor-only.
 // See saas_docs/plans/PAGE_TRANSITION_ANIMATION_TZ.md §3.6 for scope + §3.7
-// for render vs action binding invariant. Replay mode bypasses the composable
-// and renders from logical index directly (replay animation = Phase 2, blocked
-// on replayUiStore.isSeeking).
+// for render vs action binding invariant.
 const pageTransition = usePageTransition(computed(() => store.currentPageIndex))
 
 // RENDER bindings — read from display index (lags up to 180ms during fade).
 // ACTION bindings (getPageId, emit handlers, toolbar state) stay on
 // store.currentPage*, which is the logical/now index — so user input
 // is always attributed to the page they logically moved to.
-const displayStrokes = computed(() => {
-  if (mode.value === 'replay') return store.currentStrokes
-  return store.pages[pageTransition.displayIndex.value]?.strokes ?? []
-})
-const displayAssets = computed(() => {
-  if (mode.value === 'replay') return store.currentAssets
-  return store.pages[pageTransition.displayIndex.value]?.assets ?? []
-})
-const displayBackground = computed(() => {
-  if (mode.value === 'replay') return store.currentPage?.background
-  return store.pages[pageTransition.displayIndex.value]?.background
-})
-const isPageFading = computed(() => mode.value === 'edit' && pageTransition.isFading.value)
-
-// Зберігаємо стан дошки перед входом в replay — відновлюємо при виході
-let _savedBoardState: ReturnType<typeof store.getSnapshotState> | null = null
-
-// REPLAY-FIX-4: Sync store.mode with route query on navigation.
-// enterReplayMode() only runs on button click. For page reload with ?mode=replay
-// or route navigation, this watcher ensures store.mode is synced.
-// NOTE: resetForReplay() is NOT called here — it runs in onMounted after hydrateFromSession
-// to avoid the hydration race (hydrate overwrites the reset).
-watch(mode, (newMode, oldMode) => {
-  // Skip initial — handled in onMounted after hydration
-  if (oldMode === undefined) return
-  if (newMode === 'replay' && store.mode !== 'replay') {
-    if (!_savedBoardState) {
-      _savedBoardState = store.getSnapshotState()
-    }
-    store.setMode('replay')
-    store.resetForReplay()
-    replayCurrentOpIndex.value = 0
-    replayCurrentTotalOps.value = 0
-    void loadReplayComments()
-  } else if (newMode === 'edit' && store.mode !== 'edit') {
-    store.setMode('edit')
-  }
-})
-
-function enterReplayMode(): void {
-  if (!_savedBoardState) {
-    _savedBoardState = store.getSnapshotState()  // snapshot поточного стану (guard: no overwrite)
-  }
-  store.setMode('replay')    // REPLAY-INV-9: _emitOperation стає NO-OP
-  store.resetForReplay()     // чистий стан — replay накладає ops з нуля (REPLAY-INV-11)
-  replayApplier.reset()      // P0: clean instance page-tracking state
-  replayCurrentOpIndex.value = 0   // reset stale replay position
-  replayCurrentTotalOps.value = 0
-  mode.value = 'replay'      // URL sync
-  void loadReplayComments()
-}
-
-function exitReplayMode(): void {
-  replayAudio.stopAudio()    // INV I6: stop audio on exit replay
-  store.setMode('edit')      // REPLAY-INV-9: відновлюємо emitter
-  if (_savedBoardState) {
-    store.loadSnapshot(_savedBoardState)  // відновлюємо стан до replay
-    _savedBoardState = null
-  }
-  _replayStartState = null   // cleanup snapshot reference
-  replayCurrentOpIndex.value = 0   // cleanup stale replay state
-  replayCurrentTotalOps.value = 0
-  mode.value = 'edit'        // URL sync
-}
-
-// Phase 10 P5: Lesson Map marker handlers
-// R2/R3: Toggle sidebar handlers for mobile (bottom-sheet) and tablet (single-sidebar)
-function onToggleChapters(): void {
-  if (isMobileDevice.value) {
-    showChaptersSheet.value = !showChaptersSheet.value
-  } else if (isTabletDevice.value) {
-    activeReplaySidebar.value = activeReplaySidebar.value === 'chapters' ? null : 'chapters'
-  }
-}
-function onToggleComments(): void {
-  if (isMobileDevice.value) {
-    showCommentsSheet.value = !showCommentsSheet.value
-  } else if (isTabletDevice.value) {
-    activeReplaySidebar.value = activeReplaySidebar.value === 'comments' ? null : 'comments'
-  }
-}
-
-function handleMarkerSeek(marker: WBLessonMarker): void {
-  // Marker seek: navigate to page + scroll to board position
-  if (marker.page_id) {
-    const pageIdx = store.pages.findIndex(p => p.id === marker.page_id)
-    if (pageIdx >= 0) store.goToPage(pageIdx)
-  }
-  if (marker.board_position?.x !== undefined) {
-    store.setScroll(marker.board_position.x, marker.board_position.y)
-  }
-}
-
-async function handleMarkerCreate(data: { title: string; category: string }): Promise<void> {
-  if (!sessionId.value) return
-  await createLessonMarker(sessionId.value, {
-    title: data.title,
-    operation_index: 0,
-    page_id: store.currentPage?.id ?? '',
-    board_position: { x: store.scrollX, y: store.scrollY },
-    thumbnail_url: '',
-    category: data.category as WBLessonMarker['category'],
-    order: 0,
-  })
-}
-
-async function handleMarkerCreateFromModal(data: { title: string; category: string }): Promise<void> {
-  showMarkerModal.value = false
-  await handleMarkerCreate(data)
-}
-
-async function handleMarkerDelete(id: string): Promise<void> {
-  replayMarkers.value = replayMarkers.value.filter(m => m.id !== id)
-  if (sessionId.value) {
-    deleteLessonMarker(sessionId.value, id).catch(() => {})
-  }
-}
-
-// P0 FIX: Instance-scoped replay applier — no global state leak between sessions.
-const replayApplier = createReplayApplier()
-
-// REPLAY-SNAPSHOT: зберігаємо deep-clone recording_start_state для restart.
-// loadSnapshot робить this.pages = state.pages (ПОСИЛАННЯ!), тому replay-ops
-// мутують і store, і snapshot одночасно. Без clone restart показує всі ops.
-let _replayStartState: { pages: unknown[]; currentPageIndex: number } | null = null
-
-/**
- * DRY helper: reset board + applier, load fresh clone of snapshot, mark pages.
- * Використовується як clearState callback для seekToWithSnapshot.
- *
- * CRITICAL: кожен loadSnapshot отримує СВІЖИЙ deep-clone!
- */
-function resetBoardForReplay(): void {
-  store.resetForReplay()
-  replayApplier.reset()
-  if (_replayStartState) {
-    store.loadSnapshot(JSON.parse(JSON.stringify(_replayStartState)) as Parameters<typeof store.loadSnapshot>[0])
-    store.goToPage(0)
-    const ids = (_replayStartState.pages as Array<{ id?: string }>).map(p => p?.id ?? '').filter(Boolean)
-    replayApplier.markPagesEnsured(ids)
-  }
-}
-
-// INV-T: hydrate з recording_start_state ПЕРЕД накаткою ops.
-// Це повертає фон/асети/страйки які існували до натискання Start Recording.
-function onReplayStartState(state: { pages?: unknown[]; currentPageIndex?: number }): void {
-  if (state && Array.isArray(state.pages) && state.pages.length > 0) {
-    // CRITICAL: deep-clone! Без цього replay-ops мутують snapshot через shared reference.
-    _replayStartState = JSON.parse(JSON.stringify(state)) as { pages: unknown[]; currentPageIndex: number }
-    store.loadSnapshot(JSON.parse(JSON.stringify(_replayStartState)) as Parameters<typeof store.loadSnapshot>[0])
-    // INV-T: replay завжди починає з першої сторінки, незалежно від currentPageIndex snapshot
-    store.goToPage(0)
-    const ids = (_replayStartState.pages as Array<{ id?: string }>).map(p => p?.id ?? '').filter(Boolean)
-    replayApplier.markPagesEnsured(ids)
-  }
-}
-
-// Phase C: tick handler — named function to avoid Vue template ref unwrapping.
-// Inline `@tick="({ index, total }) => { ref.value = x }"` breaks because
-// Vue templates auto-unwrap refs, turning ref(0) into plain `0`.
-function onReplayTick({ index, total }: { index: number; total: number }): void {
-  replayCurrentOpIndex.value = index
-  replayCurrentTotalOps.value = total
-}
-
-// R5: Instance-scoped replay operation applier (DRY)
-function onReplayOperation(op: BoardOperation): void {
-  replayApplier.apply(store, op)
-
-  // P2: skip per-op effects during batch seek — single redraw at end
-  if (replayControlsRef.value?.isBatchingSeek?.()) return
-
-  // Smooth appearance — covers stroke_add / asset_add AND their batch
-  // variants (strokes_add_batch / assets_add_batch) emitted by paste.
-  // Previously only singles got the fade, so a paste of N items read as
-  // an instant "poof". See engine/animation/replayFadeIn.ts.
-  const newIds = collectNewIdsFromOp(op)
-  if (newIds.length === 0) return
-
-  nextTick(() => {
-    const stage = canvasRef.value?.getStage?.()
-    applyAppearanceFadeIn(stage as Parameters<typeof applyAppearanceFadeIn>[0], newIds)
-  })
-}
+const displayStrokes = computed(() => store.pages[pageTransition.displayIndex.value]?.strokes ?? [])
+const displayAssets = computed(() => store.pages[pageTransition.displayIndex.value]?.assets ?? [])
+const displayBackground = computed(() => store.pages[pageTransition.displayIndex.value]?.background)
+const isPageFading = computed(() => pageTransition.isFading.value)
 
 // A10: Touch context menu state
 const touchCtxVisible = ref(false)
@@ -1597,7 +1206,7 @@ const sessionContextLabel = computed<string | null>(() => {
 })
 const autoGroupId = ref<string | null>(null)
 const groupId = computed(() => explicitGroupId.value || autoGroupId.value)
-const showMaterialsSidebar = computed(() => mode.value !== 'replay' && _showMaterialsSidebar.value)
+const showMaterialsSidebar = computed(() => _showMaterialsSidebar.value)
 // Mobile: sidebar collapsed by default (≤768px overlay too large for small screens)
 const _showMaterialsSidebar = ref(window.innerWidth > 768)
 
@@ -2165,12 +1774,8 @@ function submitPageJump(e: Event): void {
 
 // ─── Audio interaction layer (INV I2: click only) ────────────────────────────
 
-function handleAudioBadgeClick(url: string): void {
-  if (mode.value === 'replay') {
-    // In replay mode: pause replay, play audio, resume on end
-    replayAudio.playObjectAudio(url)
-  }
-  // In edit mode: WBCanvas handles it directly (audioManager.toggle)
+function handleAudioBadgeClick(_url: string): void {
+  // Edit mode: WBCanvas handles audio playback directly via audioManager.toggle.
 }
 
 // ─── Handlers: Presence / Cursors (A3.2) ─────────────────────────────────────
@@ -2721,11 +2326,22 @@ onMounted(async () => {
       store.workspaceId = created.id
       sessionId.value = created.id
 
+      // Phase 2 G-fix (2026-04-28): bootstrap opsSyncStore (single write path).
+      // MUST be called BEFORE first record() / flush(). Sets mode SYNC + serverSeq=last_seq.
+      try {
+        await opsSync.bootstrap(created.id)
+      } catch (bootErr) {
+        console.error('[WBSoloRoom] opsSync.bootstrap failed (non-fatal):', bootErr)
+      }
+
       // Plan v4, Phase I Variant B (2026-04-24): initial page MUST be created
       // through ops pipeline. POST /sessions/ returns empty state; FE emits
       // a real `page_add` op (with real timestamp) via /replay/batch/ before
       // hydrating the store. No more "initial page exists in state but has
       // no corresponding op" drift (Pattern A of replay_equality fail).
+      // Phase 2 G-fix (2026-04-28): legacy `recordOperationsBatch(sid, [op])`
+      // 2-arg call REMOVED (wrong contract → BE 400 seq_must_be_int). Now emits
+      // через opsSyncStore.record() + flush() (single write path).
       const serverPages =
         created.state && Array.isArray((created.state as any).pages)
           ? ((created.state as any).pages as unknown[])
@@ -2741,16 +2357,16 @@ onMounted(async () => {
           backgroundColor: '#ffffff',
         }
         try {
-          await recordOperationsBatch(created.id, [
-            {
-              op_type: 'page_add',
-              page_id: initialPageId,
-              payload: { page: initialPage },
-            } as any,
-          ])
+          opsSync.record({
+            op_id: crypto.randomUUID(),
+            op_type: 'page_add',
+            page_id: initialPageId,
+            payload: { page: initialPage },
+          })
+          await opsSync.flush()
         } catch (emitErr) {
           // Non-fatal: FE still hydrates so tutor can draw; op will be retried
-          // by autosave/recorder pipeline if enabled. Log for observability.
+          // by recorder safety interval. Log for observability.
           console.error('[WBSoloRoom] Failed to emit initial page_add op:', emitErr)
         }
         store.hydrateFromSession({
@@ -2877,6 +2493,15 @@ onMounted(async () => {
       sessionId.value = id
       sessionName.value = detail.name || t('winterboard.room.untitled')
 
+      // Phase 2 G-fix (2026-04-28): bootstrap opsSyncStore (single write path).
+      // MUST be called BEFORE recorder.connectToStore — без bootstrap store stays
+      // у BOOTSTRAP mode → record() returns false → drawing produces 0 ops.
+      try {
+        await opsSync.bootstrap(id)
+      } catch (bootErr) {
+        console.error('[WBSoloRoom] opsSync.bootstrap failed (non-fatal):', bootErr)
+      }
+
       // Connect recorder to store AFTER hydration — prevents stale listeners
       _unsubRecorder = replayRecorder.connectToStore(store)
     } catch (err: unknown) {
@@ -2901,14 +2526,6 @@ onMounted(async () => {
       // Always stop loading — even on error, show the canvas
       isLoading.value = false
       // Phase 1: replayRecorder.start() removed — controlled by isRecording ref via watch
-
-      // REPLAY-FIX-5: Reset store AFTER hydration when entering replay via URL.
-      // Must happen after hydrateFromSession, otherwise hydration overwrites the reset.
-      if (mode.value === 'replay' && store.mode !== 'replay') {
-        _savedBoardState = store.getSnapshotState()
-        store.setMode('replay')
-        store.resetForReplay()
-      }
 
       // Connect presence (waits for auth bootstrap internally)
       await connectPresenceSafe(id)
@@ -2943,10 +2560,6 @@ function onGlobalKeyDown(e: KeyboardEvent) {
     }
   }
 
-  // A.4 (INV-X): у replay-режимі канвас read-only — блокуємо всі mutate-shortcuts
-  if (mode.value === 'replay') {
-    return
-  }
   if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
     e.preventDefault()
     if (showMaterialsSidebar.value) toggleSidebarCollapse()
@@ -2997,9 +2610,9 @@ onBeforeUnmount(async () => {
   window.removeEventListener('beforeunload', _handleBeforeUnload)
   document.removeEventListener('keydown', onGlobalKeyDown, true)
   if (_recordingDoneTimer) { clearTimeout(_recordingDoneTimer); _recordingDoneTimer = null }
-  // INV I6: Stop audio and destroy watcher on unmount
+  _unregisterRecordingAuthDeath()
+  // INV I6: Stop audio on unmount
   audioManager.stop()
-  replayAudio.destroy()
   cleanupRecorder()  // idempotent — may already be cleaned by onBeforeRouteLeave
   // BUG-1 FIX: Use shared save logic on unmount
   await saveBeforeLeave()
