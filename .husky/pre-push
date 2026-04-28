@@ -31,9 +31,31 @@ cd "$REPO_ROOT" || exit 1
 echo "  (gate scope: $REPO_ROOT, legacy=$LEGACY_MODE, new=$NEW_MODE)"
 
 # ─── Detect changed files vs origin (for NEW violations check) ───────────
-# Якщо origin/master не існує (першeпуш) — пустий diff (всі файли як NEW).
-CHANGED_FILES=$(git diff --name-only --diff-filter=AM origin/master..HEAD 2>/dev/null || \
-                git diff --name-only HEAD 2>/dev/null || echo "")
+# Pre-push context: husky може отримати refs через stdin (<local-ref> <local-sha>
+# <remote-ref> <remote-sha>), але для cross-repo monorepo цей stdin не reliable.
+# Logic:
+#   1. Try git diff origin/master..HEAD — повертає commits що пушаться.
+#   2. Якщо empty (post-push state OR origin/master не існує) — fallback до working
+#      tree diff (uncommitted changes).
+#   3. Якщо обидва empty → CHANGED_FILES = "" → is_new_file always false →
+#      ВСІ violations класифікуються як legacy. ⚠️ Це OK для post-push standalone
+#      run (немає що класифікувати), але NOT OK якщо hook викликається з commits
+#      ahead of origin без diff result. У такому випадку — defensive fallback:
+#      git ls-files -m (modified, не yet committed).
+# Determine git repo subdir name relative to REPO_ROOT (e.g. "frontend/" or "backend/")
+GIT_SUBDIR=$(basename "$GIT_TOPLEVEL")/
+
+# Run git from inside git repo, потім prefix paths so вони matched grep results
+# що використовують `frontend/src` syntax (REPO_ROOT-relative).
+_RAW_CHANGED=$(cd "$GIT_TOPLEVEL" && git diff --name-only --diff-filter=AM origin/master..HEAD 2>/dev/null)
+if [ -z "$_RAW_CHANGED" ]; then
+  _RAW_CHANGED=$(cd "$GIT_TOPLEVEL" && git diff --name-only HEAD 2>/dev/null)
+fi
+if [ -z "$_RAW_CHANGED" ]; then
+  _RAW_CHANGED=$(cd "$GIT_TOPLEVEL" && git ls-files -m 2>/dev/null)
+fi
+# Prefix кожен path з GIT_SUBDIR щоб match grep -rn output (`frontend/src/...`)
+CHANGED_FILES=$(echo "$_RAW_CHANGED" | sed "s|^|${GIT_SUBDIR}|" | grep -v "^${GIT_SUBDIR}$")
 
 is_new_file() {
   # $1 = file path. Returns 0 if changed у поточному push, 1 інакше.
