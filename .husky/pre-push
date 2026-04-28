@@ -147,6 +147,34 @@ else
   echo "✅ Legacy endpoints stay deleted"
 fi
 
+# ── CORS alignment (P0 incident 2026-04-28 anti-regression) ─────────────
+# Every header BE consumes via @require_*_header decorator MUST appear у
+# backend/config/settings.py CORS_ALLOW_HEADERS list. Misalignment → silent
+# prod-only CORS preflight failure (dev same-origin тест не catch).
+echo ""
+echo "🔍 CORS alignment (require_*_header → CORS_ALLOW_HEADERS)"
+# Currently enforced headers: x-protocol-version (Phase 1 INV-20).
+# Якщо BE has @require_protocol_version десь, but settings.py не whitelistує — fail.
+NEEDS_PROTOCOL_HEADER=$(grep -rln "require_protocol_version\|HTTP_X_PROTOCOL_VERSION" \
+  backend/apps/winterboard/api/ --include='*.py' 2>/dev/null | head -1)
+if [ -n "$NEEDS_PROTOCOL_HEADER" ]; then
+  ALLOWED=$(grep -A 20 "CORS_ALLOW_HEADERS" backend/config/settings.py 2>/dev/null \
+    | grep -v "^[[:space:]]*#" \
+    | grep -i "x-protocol-version")
+  if [ -z "$ALLOWED" ]; then
+    echo "❌ CORS misalignment: backend uses X-Protocol-Version header"
+    echo "   but settings.py CORS_ALLOW_HEADERS does NOT list 'x-protocol-version'"
+    echo "   → browser will block POST у production (cross-origin)."
+    echo "   Fix: add 'x-protocol-version' to CORS_ALLOW_HEADERS у config/settings.py"
+    echo "   Reference: PROGRESS.md 2026-04-28 P0 incident."
+    FAIL=1
+  else
+    echo "✅ CORS alignment OK (x-protocol-version whitelisted)"
+  fi
+else
+  echo "✅ CORS alignment OK (no require_protocol_version usage)"
+fi
+
 # NOTE: pnpm lint + pnpm typecheck НЕ виконуються тут — це slow checks
 # (vue-tsc full pass = 30+s), і вони мають pre-existing tech-debt failures
 # вне scope Phase 4 enforcement. Замість цього вони running у CI workflow
