@@ -190,7 +190,7 @@ const contentDrop = useContentDrop({
   sessionId: mockSessionId,
   canDraw: computed(() => true),
   onAssetAdd: (asset: WBAsset) => {
-    store.addAsset(asset)
+    store.addAsset(asset, store.currentPageId)
   },
   screenToCanvas: (x: number, y: number) => {
     const rect = canvasContainerRef.value?.getBoundingClientRect()
@@ -209,7 +209,7 @@ function handleStrokeAdd(stroke: WBStroke): void {
 }
 
 function handleAssetAdd(asset: WBAsset): void {
-  store.addAsset(asset)
+  store.addAsset(asset, store.currentPageId)
 }
 
 function onContentDragStart(_payload: ContentDragPayload): void {

@@ -507,6 +507,36 @@ export const useWBStore = defineStore('wb-board', {
     currentPage: (state): WBPage | null =>
       state.pages[state.currentPageIndex] ?? null,
 
+    /**
+     * TASK 5 (Phase O hardening 2026-04-29): page lookup by id.
+     * Replay applier MUST use this — NEVER state.pages[state.currentPageIndex] —
+     * щоб уникнути bug коли op.page_id не співпадає з поточною навігацією
+     * (e.g. solid asset_add на page-2 але replay стартує з page-0).
+     */
+    pagesById: (state): Record<string, WBPage> => {
+      const map: Record<string, WBPage> = {}
+      for (const page of state.pages) {
+        if (page?.id) map[page.id] = page
+      }
+      return map
+    },
+
+    /**
+     * Strict getter for live-edit callsites: returns current page id або throws.
+     * Replaces previous anti-pattern `store.currentPage?.id ?? ''` що проходив
+     * type-check але runtime тригерив deep throw з generic message. Тут — fail
+     * рівно у callsite з clear message ("No active page").
+     *
+     * Replay path NEVER use this — replay applier має op.page_id напряму.
+     */
+    currentPageId(state): string {
+      const page = state.pages[state.currentPageIndex]
+      if (!page?.id) {
+        throw new Error('[WB] currentPageId: no active page (pages empty?)')
+      }
+      return page.id
+    },
+
     pageCount: (state): number => state.pages.length,
 
     hasWorkspace: (state): boolean => !!state.workspaceId,
@@ -1079,10 +1109,26 @@ export const useWBStore = defineStore('wb-board', {
 
     // ── Asset Actions ────────────────────────────────────────────────────
 
-    addAsset(asset: WBAsset, opts?: { skipHistory?: boolean }): void {
-      const pageIndex = this.currentPageIndex
-      const page = this.pages[pageIndex]
-      if (!page) return
+    /**
+     * TASK 1 + 6 (Phase O hardening 2026-04-29): pageId REQUIRED + fail-fast.
+     *
+     * Раніше signature `addAsset(asset, opts?)` хардкодив `currentPageIndex` →
+     * у replay applier викликалось без page_id → asset додавався на поточну
+     * сторінку (зазвичай page-0 після resetForReplay), не на op.page_id, де
+     * він був насправді створений. Ця асиметрія == replay показував порожні
+     * сторінки замість 3D solids.
+     *
+     * Тепер CALLER MUST передати pageId явно. У live edit: `wbStore.currentPage?.id`.
+     * У replay: `op.page_id`. Якщо page не існує → throw (TASK 6 fail-fast).
+     */
+    addAsset(asset: WBAsset, pageId: string, opts?: { skipHistory?: boolean }): void {
+      if (!pageId) {
+        throw new Error('[WB] addAsset: pageId is required (TASK 1 hardening)')
+      }
+      const page = this.pagesById[pageId]
+      if (!page) {
+        throw new Error(`[WB] addAsset: page not found: ${pageId}`)
+      }
 
       // Phase 34: object limit guard
       if (!this.canAddObject) {
@@ -1092,14 +1138,21 @@ export const useWBStore = defineStore('wb-board', {
 
       if (!opts?.skipHistory) {
         const _a = { ...asset }
+        const _pid = pageId
         const cmd: WBCommand = {
-          apply: () => this.addAsset(_a, { skipHistory: true }),
+          apply: () => this.addAsset(_a, _pid, { skipHistory: true }),
           revert: () => this.deleteAsset(_a.id, { skipHistory: true }),
         }
         this.undoStack = trimStack([...this.undoStack, cmd])
         this.redoStack = []
       }
 
+      // Mutate via index to keep reactivity. pagesById is a getter, so we
+      // re-resolve via array index for the assignment.
+      const pageIndex = this.pages.findIndex(p => p.id === pageId)
+      if (pageIndex < 0) {
+        throw new Error(`[WB] addAsset: pageId resolved but index lost: ${pageId}`)
+      }
       this.pages[pageIndex] = {
         ...page,
         assets: [...page.assets, asset],
@@ -1108,7 +1161,7 @@ export const useWBStore = defineStore('wb-board', {
       this.markDirty()
       _emitOperation({
         op_type: 'asset_add',
-        page_id: this.pages[pageIndex]?.id ?? '',
+        page_id: pageId,
         payload: { asset },
       })
     },
@@ -1286,9 +1339,10 @@ export const useWBStore = defineStore('wb-board', {
 
       if (!opts?.skipHistory) {
         const _a = { ...page.assets[idx] }
+        const _pid = page.id ?? ''
         const cmd: WBCommand = {
           apply: () => this.deleteAsset(_a.id, { skipHistory: true }),
-          revert: () => this.addAsset(_a, { skipHistory: true }),
+          revert: () => this.addAsset(_a, _pid, { skipHistory: true }),
         }
         this.undoStack = trimStack([...this.undoStack, cmd])
         this.redoStack = []
@@ -2131,7 +2185,7 @@ export const useWBStore = defineStore('wb-board', {
       const _pageId = page.id ?? ''
 
       const cmd: WBCommand = {
-        apply: () => this.addAsset(_sticky, { skipHistory: true }),
+        apply: () => this.addAsset(_sticky, _pageId, { skipHistory: true }),
         revert: () => this.deleteAsset(_sticky.id, { skipHistory: true }),
       }
       this.undoStack = trimStack([...this.undoStack, cmd])
@@ -3780,7 +3834,7 @@ export const useWBStore = defineStore('wb-board', {
             this.addStroke(s, { skipHistory: true })
           }
           for (const a of _deletedAssets) {
-            this.addAsset(a, { skipHistory: true })
+            this.addAsset(a, _pageId, { skipHistory: true })
           }
         },
       }

@@ -46,7 +46,8 @@ export interface ReplayStoreApi {
   addStroke: (s: WBStroke, opts?: { skipHistory?: boolean }) => void
   updateStroke: (s: WBStroke, opts?: { skipHistory?: boolean }) => void
   deleteStroke: (id: string, opts?: { skipHistory?: boolean }) => void
-  addAsset: (a: WBAsset, opts?: { skipHistory?: boolean }) => void
+  // TASK 1 (2026-04-29): pageId required — replay applier passes op.page_id.
+  addAsset: (a: WBAsset, pageId: string, opts?: { skipHistory?: boolean }) => void
   updateAsset: (a: WBAsset, opts?: { skipHistory?: boolean }) => void
   deleteAsset: (id: string, opts?: { skipHistory?: boolean }) => void
   addPage: (opts?: {
@@ -100,6 +101,36 @@ export interface ReplayApplierOptions {
  *   applier.markPagesEnsured(pageIds)
  *   applier.reset()
  */
+// DEV mode detection — Vite injects import.meta.env.DEV at build time.
+// In tests (vitest) DEV is true unless explicitly overridden.
+const __DEV__: boolean = (import.meta as unknown as { env?: { DEV?: boolean } }).env?.DEV === true
+
+// Op types що ОБОВ'ЯЗКОВО потребують op.page_id у новій моделі (per TASK 1+2+4
+// hardening 2026-04-29). Якщо op цього типу прийде без page_id у DEV — throw,
+// щоб баг ловився одразу під час розробки/тестів. У production — skip+log.
+const REQUIRES_PAGE_ID = new Set<string>([
+  'asset_add', 'asset_update', 'asset_delete',
+  'stroke_add', 'stroke_update', 'stroke_delete',
+  'background_update', 'grid_update', 'clear_page',
+  'object_update', 'objects_move', 'object_text_update',
+  'assets_add_batch', 'strokes_add_batch',
+  'page_delete',
+  'lock_update', 'group_create', 'group_delete', 'z_order',
+])
+
+// Усі op_types які applyReplayOperation реально handle. Якщо BE/FE додасть
+// новий op_type і забуде update applier → DEV throw, production console.warn.
+// Це catch'не drift "новий op live → ops збережено у DB → replay silently
+// skip → user бачить порожній replay".
+// Включає легасі diff-format op_types ('add'/'update'/'remove').
+const KNOWN_OP_TYPES = new Set<string>([
+  ...REQUIRES_PAGE_ID,
+  'page_add', 'page_navigate', 'page_change', 'page_reorder',
+  'pdf_import', 'geometry_vertex_move',
+  // Legacy diff-format
+  'add', 'update', 'remove',
+])
+
 export function createReplayApplier(opts?: ReplayApplierOptions) {
   const ensuredPageIds = new Set<string>()
   // P0-FIX: Page ID mapping — ops may use different IDs than snapshot.
@@ -107,6 +138,11 @@ export function createReplayApplier(opts?: ReplayApplierOptions) {
   // Without mapping, applier creates new blank pages → loses background/assets.
   const pageIdMap = new Map<string, string>() // ops page_id → store page_id
   let _snapshotPageIds: string[] = [] // ordered snapshot page IDs for positional mapping
+
+  // Replay metrics (помічник 2026-04-29): track applied vs skipped ratio.
+  // ratio < 1 → ops були skipped → можливо bug у emit/store/timeline.
+  let _appliedCount = 0
+  let _skippedCount = 0
 
   // Move animator: injected or lazy-initialized on first move op.
   // See MoveAnimator.ts for contract + Phase 1 / Phase 2 evolution.
@@ -136,9 +172,34 @@ export function createReplayApplier(opts?: ReplayApplierOptions) {
     ensuredPageIds.clear()
     pageIdMap.clear()
     _snapshotPageIds = []
+    _appliedCount = 0
+    _skippedCount = 0
     // Cancel any in-flight move animation — on seek/reset we apply snapshot
     // state and intermediate frames must not trail behind.
     if (_animator) _animator.cancel()
+  }
+
+  function getStats(): {
+    applied: number
+    skipped: number
+    total: number
+    ratio: number
+  } {
+    const total = _appliedCount + _skippedCount
+    // DEV sanity: counters не повинні розходитись (early-return до інкременту,
+    // exception-eaten branch тощо). Помічник 2026-04-29 hardening.
+    if (__DEV__ && total !== _appliedCount + _skippedCount) {
+      throw new Error(
+        `[Replay DEV] counter mismatch: total=${total} ` +
+        `applied=${_appliedCount} skipped=${_skippedCount}`,
+      )
+    }
+    return {
+      applied: _appliedCount,
+      skipped: _skippedCount,
+      total,
+      ratio: total > 0 ? _appliedCount / total : 1,
+    }
   }
 
   function markPagesEnsured(pageIds: string[]): void {
@@ -179,16 +240,46 @@ export function createReplayApplier(opts?: ReplayApplierOptions) {
   function apply(store: ReplayStoreApi, op: BoardOperation): void {
     const payload = op.payload as Record<string, unknown>
 
+    // DEV invariant (помічник 2026-04-29): hard-fail у dev/test якщо op
+    // конкретного типу прийшов без page_id. Catches emit-side bugs одразу
+    // (наприклад callsite який забув передати page_id у новій моделі).
+    // Production: counter incremented + skip — replay не блокується через
+    // 1 broken op.
+    if (__DEV__ && REQUIRES_PAGE_ID.has(op.op_type) && !op.page_id) {
+      throw new Error(
+        `[Replay DEV] op.page_id missing for op_type='${op.op_type}' — ` +
+        `emit-side bug? Op id=${(op as { id?: number | string }).id}`,
+      )
+    }
+
+    // KNOWN_OP_TYPES guard (помічник 2026-04-29 round 2): drift detection.
+    // Новий op_type emitted backend/frontend без update applier → silently
+    // skipped. У DEV — throw; у production — console.warn (один раз бачимо у logs).
+    if (!KNOWN_OP_TYPES.has(op.op_type)) {
+      const msg = `[Replay] unknown op_type='${op.op_type}' — applier needs update`
+      if (__DEV__) throw new Error(msg)
+      console.warn(msg, { opId: (op as { id?: number | string }).id })
+    }
+
+    // Counter flag (помічник 2026-04-29 metric): за замовчуванням op applied.
+    // Skip points (warning + break) ставлять `opApplied = false` явно. Default
+    // case (unknown op_type) теж count як skipped.
+    let opApplied = true
+
     // P0-FIX: Resolve page by op.page_id with ID mapping + lazy auto-create.
+    // TASK 2 hardening (2026-04-29): resolvedPageId hoisted у switch scope так,
+    // щоб handlers (asset_add тощо) могли передавати mapped id, не raw op.page_id
+    // (інакше addAsset fail-fast throw, бо page під raw id не існує).
+    let resolvedPageId = op.page_id
     if (op.page_id && op.op_type !== 'page_add') {
-      const resolvedId = _resolvePageId(op.page_id, store)
-      let targetIdx = store.pages.findIndex((p) => p.id === resolvedId)
+      resolvedPageId = _resolvePageId(op.page_id, store)
+      let targetIdx = store.pages.findIndex((p) => p.id === resolvedPageId)
       if (targetIdx < 0) {
         // Page truly doesn't exist — create new
         store.addPage({ background: 'white' })
         const lastPage = store.pages[store.pages.length - 1]
         if (lastPage) {
-          (lastPage as { id: string }).id = resolvedId
+          (lastPage as { id: string }).id = resolvedPageId
         }
         targetIdx = store.pages.length - 1
         ensuredPageIds.add(op.page_id)
@@ -215,8 +306,10 @@ export function createReplayApplier(opts?: ReplayApplierOptions) {
         break
 
       case 'asset_add':
-        if (payload.asset)
-          store.addAsset(payload.asset as WBAsset, { skipHistory: true })
+        // TASK 2 (2026-04-29): use resolvedPageId (post-mapping), not raw
+        // op.page_id, інакше addAsset fail-fast throw на нерезольвлений id.
+        if (payload.asset && resolvedPageId)
+          store.addAsset(payload.asset as WBAsset, resolvedPageId, { skipHistory: true })
         break
 
       case 'asset_update':
@@ -350,8 +443,8 @@ export function createReplayApplier(opts?: ReplayApplierOptions) {
           else if (op.op_type === 'remove' && itemId)
             store.deleteStroke(itemId, { skipHistory: true })
         } else if (kind === 'asset') {
-          if (op.op_type === 'add' && value)
-            store.addAsset(value as unknown as WBAsset, { skipHistory: true })
+          if (op.op_type === 'add' && value && resolvedPageId)
+            store.addAsset(value as unknown as WBAsset, resolvedPageId, { skipHistory: true })
           else if (op.op_type === 'update' && value)
             store.updateAsset(value as unknown as WBAsset, { skipHistory: true })
           else if (op.op_type === 'remove' && itemId)
@@ -380,7 +473,16 @@ export function createReplayApplier(opts?: ReplayApplierOptions) {
         const kind = payload.kind as string
         const changes = payload.changes as Record<string, unknown>
         if (!objId || !changes) break
-        const pageData = store.pages[store.currentPageIndex] as unknown as {
+        // TASK 4 (2026-04-29 strict): replay isolation — skip+log якщо
+        // op.page_id missing. NO currentPageIndex fallback (UI state).
+        if (!resolvedPageId) {
+          console.warn('[Replay] object_update skipped — no op.page_id', { objId })
+          opApplied = false
+          break
+        }
+        const targetPageIdx = store.pages.findIndex((p) => p.id === resolvedPageId)
+        if (targetPageIdx < 0) break
+        const pageData = store.pages[targetPageIdx] as unknown as {
           strokes?: WBStroke[]; assets?: WBAsset[]
         }
         if (!pageData) break
@@ -402,10 +504,17 @@ export function createReplayApplier(opts?: ReplayApplierOptions) {
       case 'assets_add_batch': {
         const batchAssets = payload.assets as WBAsset[]
         if (!Array.isArray(batchAssets) || batchAssets.length === 0) break
-        const pageData = store.pages[store.currentPageIndex] as unknown as { assets?: WBAsset[] }
+        // TASK 4 strict: NO currentPageIndex fallback у replay.
+        if (!resolvedPageId) {
+          console.warn('[Replay] assets_add_batch skipped — no op.page_id')
+          opApplied = false
+          break
+        }
+        const batchPageIdx = store.pages.findIndex((p) => p.id === resolvedPageId)
+        if (batchPageIdx < 0) break
+        const pageData = store.pages[batchPageIdx] as unknown as { assets?: WBAsset[] }
         if (!pageData) break
-        // Atomic: single reactive mutation — all assets appear together
-        ;(store as unknown as { pages: Array<Record<string, unknown>> }).pages[store.currentPageIndex] = {
+        ;(store as unknown as { pages: Array<Record<string, unknown>> }).pages[batchPageIdx] = {
           ...pageData,
           assets: [...(pageData.assets ?? []), ...batchAssets],
         }
@@ -415,9 +524,16 @@ export function createReplayApplier(opts?: ReplayApplierOptions) {
       case 'strokes_add_batch': {
         const batchStrokes = payload.strokes as WBStroke[]
         if (!Array.isArray(batchStrokes) || batchStrokes.length === 0) break
-        const pageData = store.pages[store.currentPageIndex] as unknown as { strokes?: WBStroke[] }
+        if (!resolvedPageId) {
+          console.warn('[Replay] strokes_add_batch skipped — no op.page_id')
+          opApplied = false
+          break
+        }
+        const sBatchPageIdx = store.pages.findIndex((p) => p.id === resolvedPageId)
+        if (sBatchPageIdx < 0) break
+        const pageData = store.pages[sBatchPageIdx] as unknown as { strokes?: WBStroke[] }
         if (!pageData) break
-        ;(store as unknown as { pages: Array<Record<string, unknown>> }).pages[store.currentPageIndex] = {
+        ;(store as unknown as { pages: Array<Record<string, unknown>> }).pages[sBatchPageIdx] = {
           ...pageData,
           strokes: [...(pageData.strokes ?? []), ...batchStrokes],
         }
@@ -432,7 +548,14 @@ export function createReplayApplier(opts?: ReplayApplierOptions) {
       case 'objects_move': {
         const moveItems = payload.items as Array<{ id: string; x: number; y: number }>
         if (!Array.isArray(moveItems) || moveItems.length === 0) break
-        const movePage = store.pages[store.currentPageIndex] as unknown as {
+        if (!resolvedPageId) {
+          console.warn('[Replay] objects_move skipped — no op.page_id')
+          opApplied = false
+          break
+        }
+        const movePageIdx = store.pages.findIndex((p) => p.id === resolvedPageId)
+        if (movePageIdx < 0) break
+        const movePage = store.pages[movePageIdx] as unknown as {
           assets?: WBAsset[]
         }
         if (!movePage?.assets) break
@@ -468,8 +591,11 @@ export function createReplayApplier(opts?: ReplayApplierOptions) {
         // (last frame already wrote targets). Required for future Konva-based
         // animators that never touch the store during animation.
         const commitFinal = (): void => {
-          // Re-read current page (may have changed during async animation).
-          const curPage = store.pages[store.currentPageIndex] as unknown as {
+          // Re-read TARGET page (resolvedPageId), not UI nav state.
+          if (!resolvedPageId) return
+          const finalPageIdx = store.pages.findIndex((p) => p.id === resolvedPageId)
+          if (finalPageIdx < 0) return
+          const curPage = store.pages[finalPageIdx] as unknown as {
             assets?: WBAsset[]
           }
           if (!curPage?.assets) return
@@ -542,10 +668,14 @@ export function createReplayApplier(opts?: ReplayApplierOptions) {
 
       default:
         console.debug('[Replay] unknown op:', op.op_type)
+        opApplied = false
     }
+
+    if (opApplied) _appliedCount++
+    else _skippedCount++
   }
 
-  return { apply, reset, markPagesEnsured }
+  return { apply, reset, markPagesEnsured, getStats }
 }
 
 // ── Backwards compat: global singleton for boardStore.resetForReplay() ──

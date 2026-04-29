@@ -81,11 +81,27 @@ describe('applyReplayOperation — stroke ops', () => {
 // ─── Asset ops ───────────────────────────────────────────────────────────────
 
 describe('applyReplayOperation — asset ops', () => {
-  it('asset_add calls addAsset with skipHistory', () => {
+  it('asset_add calls addAsset з op.page_id (TASK 2 hardening 2026-04-29)', () => {
     const store = makeStore()
     const asset = { id: 'a1', type: 'image', src: 'http://x.png' }
-    applyReplayOperation(store, makeOp('asset_add', { asset }))
-    expect(store._calls.addAsset?.[0]).toEqual([asset, { skipHistory: true }])
+    applyReplayOperation(store, makeOp('asset_add', { asset }, 'page-2'))
+    // page_id переданий явно — solid/asset потрапляє на правильну сторінку,
+    // не на currentPageIndex (=0 після resetForReplay).
+    expect(store._calls.addAsset?.[0]).toEqual([asset, 'page-2', { skipHistory: true }])
+  })
+
+  it('asset_add без op.page_id у DEV throws (helper hardening 2026-04-29)', () => {
+    const store = makeStore()
+    const asset = { id: 'a1', type: 'image', src: 'http://x.png' }
+    // У DEV mode (vitest) applier throws на REQUIRES_PAGE_ID op без page_id —
+    // catches emit-side bugs якомога раніше. У production — skip+log+counter.
+    expect(() => {
+      applyReplayOperation(store, {
+        id: 1, op_type: 'asset_add', page_id: '',
+        payload: { asset }, user: 1, created_at: '2026-01-01T00:00:00Z',
+      })
+    }).toThrow(/op\.page_id missing/)
+    expect(store._calls.addAsset).toBeUndefined()
   })
 
   it('asset_update calls updateAsset with skipHistory', () => {
@@ -466,16 +482,23 @@ describe('applyReplayOperation — objects_move (Phase 1)', () => {
 // ─── Unknown op_type ─────────────────────────────────────────────────────────
 
 describe('applyReplayOperation — unknown op_type', () => {
-  it('unknown op_type does not throw', () => {
+  // Helper hardening 2026-04-29 round 2: unknown op у DEV → throw (catches
+  // FE/BE drift коли новий op_type emit'ують але applier не оновлений).
+  // Production: console.warn + skip — replay не блокується.
+  it('unknown op_type у DEV throws (KNOWN_OPS guard)', () => {
     const store = makeStore()
     expect(() =>
       applyReplayOperation(store, makeOp('future_op', { data: 'x' }))
-    ).not.toThrow()
+    ).toThrow(/unknown op_type='future_op'/)
   })
 
-  it('unknown op_type calls no store methods', () => {
+  it('unknown op_type calls no store methods (DEV throws перед switch)', () => {
     const store = makeStore()
-    applyReplayOperation(store, makeOp('future_op', {}))
+    try {
+      applyReplayOperation(store, makeOp('future_op', {}))
+    } catch (_e) {
+      // expected DEV throw
+    }
     expect(Object.keys(store._calls)).toHaveLength(0)
   })
 })

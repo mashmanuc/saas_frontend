@@ -559,7 +559,7 @@ const contentDrop = useContentDrop({
   sessionId: resolvedSessionId,
   canDraw: classroomRole.canDraw,
   onAssetAdd: (asset) => {
-    store.addAsset(asset)
+    store.addAsset(asset, store.currentPageId)
     const page = store.currentPage
     if (page) {
       try { history.recordAdd(page.id, asset, 'asset') } catch (err) {
@@ -785,7 +785,7 @@ const boardClipboard = useBoardClipboard({
     y: (store.pageHeight ?? 600) / 2,
   }),
   onAssetAdd: (asset: WBAsset) => {
-    store.addAsset(asset)
+    store.addAsset(asset, store.currentPageId)
   },
   // Teacher can always paste materials even when drawing is locked for students
   disabled: () => !classroomRole.canDraw.value && !classroomRole.isTeacher.value,
@@ -879,7 +879,7 @@ function handleStrokeDelete(strokeId: string): void {
 
 function handleAssetAdd(asset: WBAsset): void {
   if (isDrawingDisabled.value) return
-  store.addAsset(asset)
+  store.addAsset(asset, store.currentPageId)
 
   const page = store.currentPage
   if (page) {
@@ -995,7 +995,7 @@ function handleYouTubeSubmit(payload: { url: string; title?: string }): void {
     locked: false,
     zIndex: page.assets.length,
   }
-  store.addAsset(asset as any)
+  store.addAsset(asset as any, page.id ?? '')
 }
 
 // ─── Phase 11 FIX-1: YouTube sidebar add handler ────────────────────────────
@@ -1353,9 +1353,11 @@ function setupStrokeBroadcast(): void {
   }
 
   // ── Asset sync: addAsset ──
+  // TASK 1 (2026-04-29): signature changed → addAsset(asset, pageId, opts).
+  // Monkey-patch адаптується під new signature; remote ops завжди мають pageId.
   const origAddAsset = store.addAsset.bind(store)
-  store.addAsset = (asset: any, opts?: any) => {
-    origAddAsset(asset, opts)
+  store.addAsset = (asset: any, pageId: string, opts?: any) => {
+    origAddAsset(asset, pageId, opts)
     if (opts?._remote) return
     wsBroadcast({
       type: 'stroke.broadcast',

@@ -1232,7 +1232,7 @@ const contentDrop = useContentDrop({
   sessionId,
   canDraw: computed(() => true),
   onAssetAdd: (asset: WBAsset) => {
-    store.addAsset(asset)
+    store.addAsset(asset, store.currentPageId)
   },
   screenToCanvas: (x: number, y: number) => {
     const rect = canvasContainerRef.value?.getBoundingClientRect()
@@ -1316,7 +1316,7 @@ function applyTemplate(templateId: string) {
       ...assetData,
       id: `tmpl-${templateId}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     }
-    store.addAsset(asset)
+    store.addAsset(asset, store.currentPageId)
   }
 }
 
@@ -1541,7 +1541,7 @@ const boardClipboard = useBoardClipboard({
     y: (store.pageHeight ?? 600) / 2,
   }),
   onAssetAdd: (asset: WBAsset) => {
-    store.addAsset(asset)
+    store.addAsset(asset, store.currentPageId)
   },
 })
 
@@ -1616,7 +1616,7 @@ function handleStrokeDelete(strokeId: string): void {
 }
 
 function handleAssetAdd(asset: WBAsset): void {
-  store.addAsset(asset)
+  store.addAsset(asset, store.currentPageId)
 
   // A4.3: Record in history for undo/redo (non-critical)
   const page = store.currentPage
@@ -1657,7 +1657,8 @@ const presetExecutor = usePresetExecutor({
   applyOp(op) {
     const payload = op.payload as Record<string, any>
     if (op.op_type === 'asset_add' && payload.asset) {
-      store.addAsset(payload.asset as WBAsset)
+      // GeoBoard preset executor — adds на active page (live edit context)
+      store.addAsset(payload.asset as WBAsset, store.currentPageId)
     } else if (op.op_type === 'asset_update' && payload.asset) {
       store.updateAsset(payload.asset as WBAsset)
     }
@@ -1853,7 +1854,7 @@ function handleYouTubeSubmit(payload: { url: string; title?: string }): void {
     locked: false,
     zIndex: page.assets.length,
   }
-  store.addAsset(asset as any)
+  store.addAsset(asset as any, page.id ?? '')
 }
 
 // ─── Handlers: Tool / Color / Size ──────────────────────────────────────────

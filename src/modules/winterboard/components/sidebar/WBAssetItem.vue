@@ -106,7 +106,7 @@ function addToBoard(): void {
     rotation: 0,
   }
 
-  wbStore.addAsset(newAsset)
+  wbStore.addAsset(newAsset, wbStore.currentPageId)
 
   // Haptic feedback on mobile devices (INV-2: inputMode agnostic here — vibrate is safe to call)
   if (typeof navigator !== 'undefined' && navigator.vibrate) {

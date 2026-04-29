@@ -489,6 +489,27 @@ async function enterReplayMode(): Promise<void> {
 
   isReplayMode.value = true
 
+  // Replay metrics audit (помічник 2026-04-29 round 2): tiered thresholds
+  // щоб уникнути шуму на legacy ops/edge cases.
+  //   ratio >= 0.95 → silent (acceptable)
+  //   0.8 <= ratio < 0.95 → console.warn (degraded)
+  //   ratio < 0.8 → console.error (broken — surface для investigation)
+  const replayStats = replayApplier.getStats()
+  if (replayStats.total > 0 && replayStats.ratio < 0.95) {
+    const ctx = {
+      applied: replayStats.applied,
+      skipped: replayStats.skipped,
+      total: replayStats.total,
+      ratio: replayStats.ratio.toFixed(3),
+      sessionId: replaySessionId.value,
+    }
+    if (replayStats.ratio < 0.8) {
+      console.error('[Replay] CRITICAL: applied/total < 0.8 — replay broken', ctx)
+    } else {
+      console.warn('[Replay] degraded: applied/total < 0.95', ctx)
+    }
+  }
+
   // CRITICAL 1: Track watch handle — stop on re-entry/unmount to prevent leaks.
   // Must be set up HERE (after `replay` is assigned), not at setup level,
   // because `replay` is a plain `let` — Vue can't track its assignment.
