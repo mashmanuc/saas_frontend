@@ -23,6 +23,16 @@
  */
 import * as THREE from 'three'
 
+// CRITICAL P0 fix 2026-04-29: assign window.THREE at module load time,
+// NOT inside loadSolidCard() function body. Reason: Vite production
+// inlined vendor/solidCard.js IIFE INTO chunk-winterboard. Тhe IIFE
+// reads `window.THREE` SYNCHRONOUSLY на chunk load — BEFORE будь-яка
+// function executes. If we assigned THREE only inside loadSolidCard(),
+// IIFE saw window.THREE = undefined → "Cannot read properties of
+// undefined (reading 'WebGLRenderer')". Static module-level execution
+// guarantees THREE available before any subsequent module body (IIFE).
+;(globalThis as unknown as { THREE: typeof THREE }).THREE = THREE
+
 // Restricted SolidCard surface — ONLY constructor + set + destroy + rotate
 // (per SSOT §3.7.1 adapter HARD RULE). Internal methods (`_apply`,
 // `_buildSolid`, `rebuild`, `toggleFullscreen`) intentionally NOT exposed.
@@ -44,11 +54,8 @@ let _loader: Promise<{ SolidCard: SolidCardConstructor }> | null = null
 export function loadSolidCard(): Promise<{ SolidCard: SolidCardConstructor }> {
   if (!_loader) {
     _loader = (async () => {
-      // 1. Three.js — static-imported above (canonical namespace),
-      //    assign на window для legacy IIFE bridge.
-      ;(globalThis as unknown as { THREE: typeof THREE }).THREE = THREE
-
-      // 2. Завантажити vendor IIFE — виконається + assign window.SolidCard.
+      // Three.js + window.THREE assigned at module load (top-level).
+      // Завантажити vendor IIFE — виконається + assign window.SolidCard.
       // Side-effect import: import path триггерує IIFE.
       await import('../vendor/solidCard.js')
 
