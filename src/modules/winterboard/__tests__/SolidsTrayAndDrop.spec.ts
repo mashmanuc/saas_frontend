@@ -435,6 +435,8 @@ describe('SolidCardRenderer — delete button (PR-O4)', () => {
       render() {
         return h(SolidCardRenderer, {
           asset: makeAsset(),
+          // PR-O4.3: delete button visible only when selected.
+          isSelected: true,
           'onUpdate:asset': (a: SolidAsset) => { updates.push(a) },
           onDelete: () => { deletes.push(1) },
         })
@@ -464,6 +466,8 @@ describe('SolidCardRenderer — delete button (PR-O4)', () => {
       render() {
         return h(SolidCardRenderer, {
           asset: lockedAsset,
+          // PR-O4.3: even with selection, locked asset must hide delete button.
+          isSelected: true,
           'onUpdate:asset': () => {},
           onDelete: () => {},
         })

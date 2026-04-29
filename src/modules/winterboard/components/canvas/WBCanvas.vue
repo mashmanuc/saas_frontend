@@ -49,8 +49,16 @@
         <template v-for="asset in assets" :key="asset.id">
           <!-- Phase 3C: audio/video rendered as HTML overlays — skip in Konva -->
           <template v-if="asset.type === 'audio_player' || asset.type === 'video_player'" />
-          <!-- Phase O: geometry_solid rendered as HTML overlay (Three.js) — skip in Konva -->
-          <template v-else-if="asset.type === 'geometry_solid'" />
+          <!-- Phase O PR-O4.3: geometry_solid Konva proxy (invisible Rect).
+               HTML overlay (Three.js) renders ABOVE з pointer-events:none —
+               Konva proxy під ним catches drag/resize/select using existing
+               asset interaction layer (same name='asset', handleAssetTransformEnd,
+               layer-level dragend → handleAssetDragEnd). Mirrors image/pdf pattern. -->
+          <v-rect
+            v-else-if="asset.type === 'geometry_solid'"
+            :config="{ ...getSolidProxyConfig(asset), id: asset.id, name: 'asset' }"
+            @transformend="handleAssetTransformEnd(asset, $event)"
+          />
           <!-- v5 A9: Sticky note rendering -->
           <WBStickyNote
             v-else-if="asset.type === 'sticky'"
@@ -292,11 +300,15 @@
       </div>
     </template>
 
-    <!-- Phase O PR-O4: geometry_solid overlay (Three.js — non-Konva).
-         Drop -> useContentDrop emits asset_add via parent emit chain. -->
+    <!-- Phase O PR-O4 / PR-O4.3: geometry_solid overlay (Three.js — non-Konva).
+         Konva proxy в assetsLayerRef рендериться під overlay (same x/y/w/h) і
+         catches всі drag/resize/select interactions через existing asset
+         layer-level handlers. HTML overlay стоїть ABOVE з pointer-events:none
+         (toolbar внутрі sets pointer-events:auto when visible). -->
     <template v-for="asset in solidAssets" :key="`solid-${asset.id}`">
       <div
         class="wb-solid-overlay"
+        :class="{ 'wb-solid-overlay--selected': wbStore.selectedIds.includes(asset.id) }"
         :data-solid-id="asset.id"
         :data-testid="`solid-overlay-${asset.id}`"
         :style="{
@@ -305,11 +317,10 @@
           width: `${asset.w * props.zoom}px`,
           height: `${asset.h * props.zoom}px`,
         }"
-        @mousedown.stop
-        @pointerdown.stop
       >
         <SolidCardRenderer
           :asset="(asset as any)"
+          :is-selected="wbStore.selectedIds.includes(asset.id)"
           @update:asset="(updated: WBAsset) => emit('asset-update', updated)"
           @delete="emit('asset-delete', asset.id)"
         />
@@ -3383,6 +3394,42 @@ function getAssetConfig(asset: WBAsset): Record<string, unknown> {
   return config
 }
 
+/**
+ * Phase O PR-O4.3: Konva proxy config for geometry_solid asset.
+ *
+ * SolidCardRenderer renders як HTML overlay (Three.js, non-Konva). To reuse
+ * existing asset interaction layer (drag/resize/select → handleAssetDragEnd /
+ * handleAssetTransformEnd / handleAssetClick + Transformer), we render an
+ * invisible Konva rect at the same coords. HTML overlay sits ON TOP з
+ * pointer-events:none, тому всі pointer events потрапляють на Konva proxy.
+ *
+ * Mirrors getAssetConfig (image asset) — same draggable/listening flags, same
+ * id + name='asset' — резолвиться через existing resolveTarget() pipeline.
+ */
+function getSolidProxyConfig(asset: WBAsset): Record<string, unknown> {
+  const selectable = currentTool.value === 'select'
+  const isLockedItem = !!asset.locked
+  const isMultiSel = isInMultiSelection(asset.id)
+  const isSelected = wbStore.selectedIds.includes(asset.id)
+  return {
+    x: asset.x,
+    y: asset.y,
+    width: asset.w,
+    height: asset.h,
+    rotation: asset.rotation,
+    // Visible only коли selected — слабкий border для UX hint
+    // (overlay сам має visual frame через .wb-solid-overlay border).
+    fill: 'transparent',
+    stroke: isSelected ? '#3b82f6' : 'transparent',
+    strokeWidth: isSelected ? 2 : 0,
+    // hitFunc fallback не потрібен — Rect має фulfill hit area за замовчуванням
+    // навіть з fill 'transparent' (Konva listens by default if listening: true).
+    draggable: selectable && !isLockedItem && !isMultiSel,
+    listening: selectable,
+    perfectDrawEnabled: false,
+  }
+}
+
 // Phase 35: clipFunc helper for borderRadius (FIX-8: max 20px, REC-3: only when radius > 0)
 function roundedRect(ctx: CanvasRenderingContext2D, w: number, h: number, r: number) {
   r = Math.min(r, 20) // FIX-8: cap at 20
@@ -4183,7 +4230,11 @@ defineExpose({
   cursor: grabbing;
 }
 
-/* Phase O PR-O4: geometry_solid HTML overlay (Three.js widget — non-Konva) */
+/* Phase O PR-O4 / PR-O4.3: geometry_solid HTML overlay (Three.js widget — non-Konva).
+   Container itself has pointer-events:none so Konva proxy (invisible v-rect
+   у assetsLayerRef) below catches drag/resize/click. Toolbar + delete button
+   inside opt back into pointer-events:auto when visible (per
+   SolidCardRenderer.vue rules). */
 .wb-solid-overlay {
   position: absolute;
   z-index: 4;
@@ -4191,6 +4242,10 @@ defineExpose({
   border: 1px solid rgba(99, 102, 241, 0.25);
   border-radius: 6px;
   overflow: hidden;
-  pointer-events: auto;
+  pointer-events: none;
+}
+.wb-solid-overlay--selected {
+  border-color: rgba(59, 130, 246, 0.6);
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.4);
 }
 </style>

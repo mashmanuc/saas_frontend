@@ -19,12 +19,16 @@
 -->
 
 <template>
-  <div class="solid-card-renderer">
+  <div
+    class="solid-card-renderer"
+    :class="{ 'is-toolbar-visible': toolbarVisible }"
+  >
     <div ref="container" class="solid-canvas" />
 
-    <!-- Phase O PR-O4: delete button — emits 'delete', parent dispatches asset_delete op -->
+    <!-- Phase O PR-O4: delete button — emits 'delete', parent dispatches asset_delete op.
+         Phase O PR-O4.3: visible only when selected OR hovered. -->
     <button
-      v-if="!asset.locked"
+      v-if="!asset.locked && toolbarVisible"
       type="button"
       class="solid-delete"
       data-testid="solid-delete"
@@ -35,7 +39,7 @@
       ×
     </button>
 
-    <div v-if="!asset.locked" class="solid-toolbar" data-testid="solid-toolbar">
+    <div v-if="!asset.locked && toolbarVisible" class="solid-toolbar" data-testid="solid-toolbar">
       <button
         type="button"
         class="solid-toolbar__btn"
@@ -124,7 +128,10 @@ import {
   type SolidCardInstance,
 } from '../../services/solidCardLoader'
 
-const props = defineProps<{ asset: SolidAsset }>()
+const props = withDefaults(
+  defineProps<{ asset: SolidAsset; isSelected?: boolean }>(),
+  { isSelected: false },
+)
 const emit = defineEmits<{
   'update:asset': [asset: SolidAsset]
   delete: []
@@ -132,6 +139,22 @@ const emit = defineEmits<{
 
 const container = ref<HTMLElement | null>(null)
 let card: SolidCardInstance | null = null
+
+/**
+ * Phase O PR-O4.3: toolbar visibility driven by selection state from store.
+ *
+ * Hover-based reveal не реалізовано у цій PR — overlay container має
+ * `pointer-events:none` (щоб Konva proxy під ним catch'ив drag/resize/click).
+ * Hover events на самому container не fire'илися б, а ставити overlay у
+ * pointer-events:auto зламає Konva interaction layer (overlay перехопить
+ * mousedown → no drag).
+ *
+ * Альтернативний UX: toolbar з'являється коли user clicks на solid → store
+ * sets selectedIds → isSelected=true → toolbar visible. Click outside →
+ * deselect → toolbar hidden. Це reuse'ує existing selection wiring (LAW
+ * compliance — no custom interaction logic).
+ */
+const toolbarVisible = computed(() => props.isSelected)
 
 /**
  * Computed read-only view of state — direct prop reference, NOT a local mirror.
@@ -263,11 +286,24 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   position: relative;
+  /* PR-O4.3: wrapper stays pointer-events:none — Konva proxy
+     (invisible v-rect у assetsLayerRef) catches drag/resize/click через
+     existing handleAssetDragEnd / handleAssetTransformEnd / handleAssetClick.
+     Visible toolbar/delete children opt back in via pointer-events:auto
+     below (only when shown). */
+  pointer-events: none;
 }
 
 .solid-canvas {
   width: 100%;
   height: 100%;
+  /* PR-O4.3: Three.js canvas never captures pointer events — Konva proxy
+     in the assets layer catches all drag/resize/select. */
+  pointer-events: none;
+}
+
+.solid-canvas :deep(canvas) {
+  pointer-events: none;
 }
 
 .solid-toolbar {
@@ -332,6 +368,8 @@ onUnmounted(() => {
   font-size: 14px;
   line-height: 1;
   cursor: pointer;
+  /* PR-O4.3: opt back into pointer events when visible (parent has none) */
+  pointer-events: auto;
   z-index: 3;
   transition: background 120ms ease, border-color 120ms ease;
 }

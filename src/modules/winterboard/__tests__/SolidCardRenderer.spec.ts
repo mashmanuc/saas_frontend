@@ -109,23 +109,32 @@ function makeAsset(stateOverride: Partial<SolidAssetState> = {}): SolidAsset {
 interface SetupResult {
   wrapper: ReturnType<typeof mount>
   assetRef: ReturnType<typeof ref<SolidAsset>>
+  selectedRef: ReturnType<typeof ref<boolean>>
   emitted: () => SolidAsset[]
 }
 
 // Wrapper з reactive prop для watch testing + capture update:asset emits.
-async function setup(initial: SolidAsset): Promise<SetupResult> {
+// PR-O4.3: default isSelected=true так existing toolbar tests працюють
+// (toolbar visibility now driven by selection state).
+async function setup(
+  initial: SolidAsset,
+  options: { isSelected?: boolean } = {},
+): Promise<SetupResult> {
+  const { isSelected = true } = options
   const SolidCardRenderer = (
     await import('../components/board/SolidCardRenderer.vue')
   ).default
   const assetRef = ref<SolidAsset>(initial)
+  const selectedRef = ref<boolean>(isSelected)
   const emittedAssets: SolidAsset[] = []
   const Wrapper = defineComponent({
     setup() {
-      return { assetRef }
+      return { assetRef, selectedRef }
     },
     render() {
       return h(SolidCardRenderer, {
         asset: assetRef.value,
+        isSelected: selectedRef.value,
         'onUpdate:asset': (a: SolidAsset) => {
           emittedAssets.push(a)
         },
@@ -135,7 +144,7 @@ async function setup(initial: SolidAsset): Promise<SetupResult> {
   const wrapper = mount(Wrapper, { attachTo: document.body })
   await flushPromises() // resolve loadSolidCard()
   await nextTick()
-  return { wrapper, assetRef, emitted: () => emittedAssets }
+  return { wrapper, assetRef, selectedRef, emitted: () => emittedAssets }
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────
@@ -341,6 +350,55 @@ describe('SolidCardRenderer (Phase O PR-O3 toolbar wiring)', () => {
     // У unit test parent НЕ propagates emit back до prop → watch не fires →
     // card.set() ніколи не викликається безпосередньо з toggle handlers.
     expect(lastInstance!.set).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+})
+
+// ── PR-O4.3 toolbar visibility + pointer-events tests ───────────────────
+
+describe('SolidCardRenderer (Phase O PR-O4.3 selection-driven toolbar)', () => {
+  it('11. Toolbar HIDDEN when isSelected=false', async () => {
+    const { wrapper } = await setup(makeAsset(), { isSelected: false })
+    expect(wrapper.find('[data-testid="solid-toolbar"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="solid-delete"]').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('12. Toolbar VISIBLE when isSelected=true', async () => {
+    const { wrapper } = await setup(makeAsset(), { isSelected: true })
+    expect(wrapper.find('[data-testid="solid-toolbar"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="solid-delete"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('13. Toolbar reactively appears коли isSelected flips false→true', async () => {
+    const { wrapper, selectedRef } = await setup(makeAsset(), { isSelected: false })
+    expect(wrapper.find('[data-testid="solid-toolbar"]').exists()).toBe(false)
+    selectedRef.value = true
+    await nextTick()
+    expect(wrapper.find('[data-testid="solid-toolbar"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('14. .solid-card-renderer wrapper class present (CSS rule pointer-events:none у scoped block)', async () => {
+    // jsdom не парсить scoped CSS imports з SFC — перевіряємо що класи
+    // .solid-card-renderer та .solid-canvas mounted (CSS rule existence
+    // ensured static review of <style scoped> у компоненті). Контракт:
+    // wrapper має pointer-events:none; Konva proxy у WBCanvas catches drag.
+    const { wrapper } = await setup(makeAsset(), { isSelected: true })
+    expect(wrapper.find('.solid-card-renderer').exists()).toBe(true)
+    expect(wrapper.find('.solid-canvas').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('15. is-toolbar-visible class toggles with isSelected', async () => {
+    const { wrapper, selectedRef } = await setup(makeAsset(), { isSelected: false })
+    const root = wrapper.find('.solid-card-renderer')
+    expect(root.classes()).not.toContain('is-toolbar-visible')
+
+    selectedRef.value = true
+    await nextTick()
+    expect(wrapper.find('.solid-card-renderer').classes()).toContain('is-toolbar-visible')
     wrapper.unmount()
   })
 })
