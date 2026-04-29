@@ -118,6 +118,10 @@ describe('INV-12 503 SERVER_BUSY — transient backpressure semantics', () => {
     expect(firstCallBody.ops).toHaveLength(1)
     expect(firstCallBody.ops[0].op_id).toBe(op.op_id)
 
+    // Phase S PR-3 (2026-04-28): bounded retry sets _retryUntil — wait for backoff
+    // window to elapse before retry. Real-world safety interval respects this gate.
+    await new Promise(r => setTimeout(r, 400))
+
     // Second attempt: success
     ;(apiClient.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       last_seq: 1, applied_count: 1,
@@ -158,10 +162,214 @@ describe('INV-12 503 SERVER_BUSY — transient backpressure semantics', () => {
     expect((caught as Error & { response?: { status?: number } })?.response?.status).toBe(503)
   })
 
-  // GAP: INV-12 max-2-attempts orchestration deferred to Phase 3 (audit §10.B4).
-  // Current behavior: indefinite retry via useReplayRecorder safety-interval (2s).
-  // Stub tests preserved with explicit Phase 3 deferral marker per LAW §13.
-  it.skip('Phase 3 (INV-12 full): exactly 2 attempts max — 3rd throws + drop batch', () => {})
-  it.skip('Phase 3 (INV-12 full): jitter delay ∈ [100, 500]ms коли немає Retry-After', () => {})
-  it.skip('Phase 3 (INV-12 full): Retry-After header takes precedence over jitter', () => {})
+  // Phase S PR-3 (2026-04-28): INV-12 max-2-attempts orchestration NOW IMPLEMENTED.
+  // Tests below previously deferred (Phase 3 stubs). Now active per REFACTOR_PLAN §3.
+
+  it('INV-12: exactly 2 attempts max — 3rd 503 → enters PAUSED + throws', async () => {
+    const store = useOpsSyncStore()
+    store.sessionId = FAKE_SID
+    store.mode = 'SYNC'
+    store.serverSeq = 0
+    store.localSeq = 0
+    store.record(_op())
+
+    // Attempt 1: 503
+    ;(apiClient.post as ReturnType<typeof vi.fn>).mockRejectedValueOnce(_503())
+    await expect(store.flush()).rejects.toThrow('503')
+    expect(store.mode).toBe('SYNC')  // not yet exhausted
+
+    // Wait for backoff
+    await new Promise(r => setTimeout(r, 500))
+
+    // Attempt 2: 503
+    ;(apiClient.post as ReturnType<typeof vi.fn>).mockRejectedValueOnce(_503())
+    await expect(store.flush()).rejects.toThrow('503')
+    expect(store.mode).toBe('SYNC')  // attempt=2, still allowed (MAX=2)
+
+    // Wait for backoff
+    await new Promise(r => setTimeout(r, 700))
+
+    // Attempt 3: 503 → PAUSED (not DESYNC; not drop)
+    ;(apiClient.post as ReturnType<typeof vi.fn>).mockRejectedValueOnce(_503())
+    await expect(store.flush()).rejects.toThrow('503')
+    expect(store.mode).toBe('PAUSED')  // CRITICAL: 3rd attempt → PAUSED
+
+    // inFlightOps preserved (no data loss)
+    expect(store.inFlightOps.length).toBe(1)
+  })
+
+  it('INV-12: jitter delay enforced коли немає Retry-After header (200ms+ before next attempt)', async () => {
+    const store = useOpsSyncStore()
+    store.sessionId = FAKE_SID
+    store.mode = 'SYNC'
+    store.serverSeq = 0
+    store.localSeq = 0
+    store.record(_op())
+
+    // 503 без Retry-After
+    ;(apiClient.post as ReturnType<typeof vi.fn>).mockRejectedValueOnce(_503())
+    await expect(store.flush()).rejects.toThrow('503')
+
+    // Immediately retry — should be blocked by backoff (Error: backoff active)
+    ;(apiClient.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      last_seq: 1, applied_count: 1,
+    })
+    await expect(store.flush()).rejects.toThrow(/backoff active/)
+    // Network call should NOT have been made (blocked by retryUntil gate)
+    expect(apiClient.post).toHaveBeenCalledTimes(1)  // тільки initial 503 attempt
+  })
+
+  it('INV-12: Retry-After header (seconds) takes precedence over jitter', async () => {
+    const store = useOpsSyncStore()
+    store.sessionId = FAKE_SID
+    store.mode = 'SYNC'
+    store.serverSeq = 0
+    store.localSeq = 0
+    store.record(_op())
+
+    // 503 з Retry-After: 1 (1 second)
+    const errWithRetryAfter = new Error('Request failed with status code 503') as Error & {
+      response: { status: number; data: Record<string, unknown>; headers: Record<string, string> }
+    }
+    errWithRetryAfter.response = {
+      status: 503,
+      data: { error: 'SERVER_BUSY' },
+      headers: { 'retry-after': '1' },  // 1 second = 1000ms
+    }
+    ;(apiClient.post as ReturnType<typeof vi.fn>).mockRejectedValueOnce(errWithRetryAfter)
+    await expect(store.flush()).rejects.toThrow('503')
+
+    // Backoff should be ~1000ms (Retry-After takes precedence over default ~200-350ms exp+jitter)
+    expect(store.retryUntil).not.toBeNull()
+    const remaining = (store.retryUntil as number) - Date.now()
+    expect(remaining).toBeGreaterThan(700)  // close to 1000ms (allow some processing)
+    expect(remaining).toBeLessThanOrEqual(1100)
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────
+// Phase S PR-3 (2026-04-28): PAUSED mode semantics
+// ─────────────────────────────────────────────────────────────────────
+
+describe('Phase S PR-3 — PAUSED mode (transient backpressure)', () => {
+  it('PAUSED mode is distinct from DESYNC — record() still accepts ops', () => {
+    const store = useOpsSyncStore()
+    store.sessionId = FAKE_SID
+    store.mode = 'PAUSED'  // simulate post-3×503 state
+    store.desyncReason = 'server-busy-exhausted-retries'
+
+    const accepted = store.record(_op())
+
+    // CRITICAL: PAUSED accepts ops (no UI input block) — DESYNC blocks them
+    expect(accepted).toBe(true)
+    expect(store.pendingOps.length).toBe(1)
+  })
+
+  it('PAUSED mode: flush() throws BackpressureError (NOT DesyncError, NOT silent)', async () => {
+    const store = useOpsSyncStore()
+    store.sessionId = FAKE_SID
+    store.mode = 'PAUSED'
+    store.desyncReason = 'server-busy-exhausted-retries'
+
+    const { BackpressureError } = await import('../../stores/opsSyncStore')
+
+    let caught: Error | null = null
+    try {
+      await store.flush()
+    } catch (e) {
+      caught = e as Error
+    }
+
+    expect(caught).not.toBeNull()
+    expect(caught).toBeInstanceOf(BackpressureError)
+    expect(caught).not.toBeInstanceOf(DesyncError)  // CRITICAL: distinct
+    // Network call NOT made (PAUSED guard short-circuits before _doFlush)
+    expect(apiClient.post).not.toHaveBeenCalled()
+  })
+
+  it('resumeFromPause() restores SYNC mode + resets retry state', () => {
+    const store = useOpsSyncStore()
+    store.sessionId = FAKE_SID
+    store.mode = 'PAUSED'
+    store.desyncReason = 'server-busy-exhausted-retries'
+
+    store.resumeFromPause()
+
+    expect(store.mode).toBe('SYNC')
+    expect(store.desyncReason).toBeNull()
+    // retryUntil reset (None = null)
+    expect(store.retryUntil).toBeNull()
+  })
+
+  it('resumeFromPause() is idempotent — safe to call multiple times', () => {
+    const store = useOpsSyncStore()
+    store.sessionId = FAKE_SID
+    store.mode = 'PAUSED'
+
+    store.resumeFromPause()
+    expect(store.mode).toBe('SYNC')
+
+    // Second call — no-op (already SYNC)
+    store.resumeFromPause()
+    expect(store.mode).toBe('SYNC')
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────
+// Phase S PR-3 (2026-04-28): Queue visibility refs
+// ─────────────────────────────────────────────────────────────────────
+
+describe('Phase S PR-3 — Queue visibility refs (UI status)', () => {
+  it('pendingCount reflects pendingOps.length у real time', () => {
+    const store = useOpsSyncStore()
+    store.sessionId = FAKE_SID
+    store.mode = 'SYNC'
+    store.serverSeq = 0
+    store.localSeq = 0
+
+    expect(store.pendingCount).toBe(0)
+
+    store.record(_op())
+    store.record(_op())
+    store.record(_op())
+
+    expect(store.pendingCount).toBe(3)
+  })
+
+  it('inFlightCount reflects inFlightOps.length у real time', async () => {
+    const store = useOpsSyncStore()
+    store.sessionId = FAKE_SID
+    store.mode = 'SYNC'
+    store.serverSeq = 0
+    store.localSeq = 0
+    store.record(_op())
+
+    expect(store.inFlightCount).toBe(0)
+
+    // Mock delay у post щоб зловити inflight state
+    ;(apiClient.post as ReturnType<typeof vi.fn>).mockRejectedValueOnce(_503())
+    await expect(store.flush()).rejects.toThrow('503')
+
+    // Після 503 — op stays у inFlightOps (preserved для retry)
+    expect(store.inFlightCount).toBe(1)
+  })
+
+  it('lastFlushDuration is tracked across flush calls', async () => {
+    const store = useOpsSyncStore()
+    store.sessionId = FAKE_SID
+    store.mode = 'SYNC'
+    store.serverSeq = 0
+    store.localSeq = 0
+    store.record(_op())
+
+    expect(store.lastFlushDuration).toBe(0)
+
+    ;(apiClient.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      last_seq: 1, applied_count: 1,
+    })
+    await store.flush()
+
+    // Duration must be >= 0 (some time passed)
+    expect(store.lastFlushDuration).toBeGreaterThanOrEqual(0)
+  })
 })

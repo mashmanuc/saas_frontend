@@ -24,12 +24,15 @@ import { createSnapshot } from '../api/replay'
 import { registerAuthDeathCleanup, isAuthDead } from '@/core/auth/onAuthDeath'
 import { saveBackup, clearBackup, readBackup } from './useOpsBackup'
 import { trackEvent } from '@/utils/telemetryAgent'
+import { notifyWarning } from '@/utils/notify'
 import {
   useOpsSyncStore,
   DesyncError,
   BeaconUnsupportedError,
+  BackpressureError,
   type OpsSyncOp,
 } from '../stores/opsSyncStore'
+import { tryCoalesceStrokeAppend } from '../services/opsCoalescer'
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -40,6 +43,14 @@ const INSTANT_FLUSH_THRESHOLD = 50
 const FLUSH_DEBOUNCE_MS = 150
 const FLUSH_SAFETY_INTERVAL_MS = 2_000
 const MAX_PAYLOAD_BYTES = 64 * 1024  // 64KB — must match backend WBBoardOperationCreateSerializer
+
+// Phase S PR-3 (2026-04-28) — bounded batcher per REFACTOR_PLAN.md v2 §3.A.
+/** Hard cap per POST (BE accepts up to 100 ops/batch). */
+const MAX_BATCH_OPS = 100
+/** Aggregate batch ceiling per POST (defense-in-depth поверх per-op MAX_PAYLOAD_BYTES). */
+const MAX_BATCH_BYTES = 512 * 1024
+/** Coalescer trigger: коли pendingCount > N AND incoming op = stroke_append → merge. */
+const COALESCE_THRESHOLD = 50
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -144,13 +155,32 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
       op = { ...op, payload: _stripDataUrls(op.payload as Record<string, unknown>) }
     }
 
-    // Payload size guard — prevents 400 on backend
+    // Payload size guard — prevents 400 on backend.
+    //
+    // Phase S PR-3 (2026-04-28): NO silent drop. Per REFACTOR_PLAN.md §3 task #4:
+    //   - emit telemetry `wb.ops.payload_oversized` (BE inspection visibility)
+    //   - show user-facing toast (rejection observable, not invisible)
+    //   - return without recording (op rejected, NOT chunked — chunking deferred Phase P2)
     try {
       const payloadJson = JSON.stringify(op.payload ?? {})
       const payloadBytes = new TextEncoder().encode(payloadJson).byteLength
       if (payloadBytes > MAX_PAYLOAD_BYTES) {
+        try {
+          trackEvent('wb.ops.payload_oversized', {
+            op_type: op.op_type,
+            bytes: payloadBytes,
+            limit: MAX_PAYLOAD_BYTES,
+            session_id: opsSync.sessionId,
+          })
+        } catch { /* telemetry never throws */ }
+        try {
+          notifyWarning(
+            `Операція ${op.op_type} занадто велика (${Math.round(payloadBytes / 1024)}KB > ${MAX_PAYLOAD_BYTES / 1024}KB). ` +
+            'Зменшіть складність малювання або розділіть на менші частини.',
+          )
+        } catch { /* notification never throws */ }
         console.warn(
-          `[WB:Recorder] payload too large (${payloadBytes}B > ${MAX_PAYLOAD_BYTES}B), skipping op:`,
+          `[WB:Recorder] payload oversized rejected (${payloadBytes}B > ${MAX_PAYLOAD_BYTES}B):`,
           op.op_type,
         )
         return
@@ -164,6 +194,24 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
     // Generate UUID v4 if caller didn't provide; stable across retry per INV-14 dedup.
     if (!op.op_id) {
       op = { ...op, op_id: crypto.randomUUID() }
+    }
+
+    // Phase S PR-3 (2026-04-28): coalesce stroke_append ops під load.
+    // Якщо pendingCount > 50 AND incoming op = stroke_append AND last pending op
+    // has same stroke_id → merge points замість додавати новий op.
+    // Reduces op count без втрати fidelity (INV-14 + INV-15 safe — per opsCoalescer.ts).
+    if (
+      opsSync.pendingCount > COALESCE_THRESHOLD &&
+      op.op_type === 'stroke_append' &&
+      opsSync.pendingOps.length > 0
+    ) {
+      const last = opsSync.pendingOps[opsSync.pendingOps.length - 1]
+      if (last && tryCoalesceStrokeAppend(last as OpsSyncOp, op as unknown as OpsSyncOp)) {
+        // Merged into previous pending op — don't push new op
+        opCount.value++
+        _persistBackup()
+        return
+      }
     }
 
     // Route to store. INV-16: returns false якщо mode=DESYNC → silent drop (hot path safe).
@@ -209,6 +257,20 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
     const beforeCount = opsSync.pendingOps.length + opsSync.inFlightOps.length
     if (beforeCount === 0) return
 
+    // Phase S PR-3 (2026-04-28): bounded batcher invariants — defense-in-depth поверх
+    // store FLUSH_BATCH_SIZE=50. Telemetry якщо пробивають ceiling.
+    if (opsSync.pendingCount > MAX_BATCH_OPS * 2) {
+      try {
+        trackEvent('wb.ops.queue_high_watermark', {
+          pending_count: opsSync.pendingCount,
+          in_flight_count: opsSync.inFlightCount,
+          max_batch_ops: MAX_BATCH_OPS,
+          max_batch_bytes: MAX_BATCH_BYTES,
+          session_id: sid,
+        })
+      } catch { /* telemetry never throws */ }
+    }
+
     try {
       await opsSync.flush()
       // Success — track count
@@ -235,13 +297,29 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
         clearBackup(sid)  // буфери вже cleared у store, синхронізуємо
         return  // DON'T propagate (caller — timer or record() — has nothing to do)
       }
+      if (err instanceof BackpressureError) {
+        // Phase S PR-3 (2026-04-28): PAUSED mode — server backpressure exhausted retries.
+        // inFlightOps preserved у store. UI banner displays via opsSync.isPaused watch.
+        // No retry storm — wait for resumeFromPause() (user click або 30s auto-retry).
+        try {
+          trackEvent('wb.ops.paused', {
+            session_id: sid,
+            reason: opsSync.desyncReason ?? 'server-busy-exhausted-retries',
+            in_flight_count: opsSync.inFlightCount,
+            pending_count: opsSync.pendingCount,
+          })
+        } catch { /* telemetry never throws */ }
+        _persistBackup()  // crash-safety: ops preserved у localStorage
+        return
+      }
       if (err instanceof BeaconUnsupportedError) {
         // Не повинно відбуватись з flush() (тільки sendBeacon throws це). Лог якщо станеться.
         console.warn('[WB:Recorder] flush() unexpected BeaconUnsupportedError:', err)
         return
       }
       // 503 SERVER_BUSY або транзієнтні мережеві помилки — inFlight preserved у store,
-      // safety interval спробує знову. Persist backup щоб не загубити при crash.
+      // safety interval спробує знову (after retryUntil window). Persist backup щоб не
+      // загубити при crash.
       _persistBackup()
       console.warn('[WB:Recorder] flush() failed (will retry on next tick):', err)
     }
@@ -323,8 +401,17 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
       }
     }
 
-    // Safety interval — ловить ops які debounce не скинув (idle-період, long burst)
-    flushTimer = setInterval(() => { void flush() }, FLUSH_SAFETY_INTERVAL_MS)
+    // Safety interval — ловить ops які debounce не скинув (idle-період, long burst).
+    //
+    // Phase S PR-3 (2026-04-28): respect bounded retry window AND PAUSED mode.
+    // Якщо PAUSED → flush() throws BackpressureError → no-op. Якщо retryUntil active
+    // → skip tick (don't burn cycles + don't trigger nested error path).
+    flushTimer = setInterval(() => {
+      if (opsSync.isPaused) return  // PAUSED — wait for resumeFromPause()
+      const ru = opsSync.retryUntil
+      if (typeof ru === 'number' && ru > 0 && Date.now() < ru) return  // backoff active
+      void flush()
+    }, FLUSH_SAFETY_INTERVAL_MS)
   }
 
   /**

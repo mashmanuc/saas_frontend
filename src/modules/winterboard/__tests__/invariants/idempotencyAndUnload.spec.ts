@@ -71,6 +71,11 @@ describe('INV-14 IDEMPOTENT-RETRY — op_id preserves on retry, BE dedups', () =
     })
     await expect(store.flush()).rejects.toBeTruthy()
 
+    // Phase S PR-3: bounded retry sets _retryUntil — wait for backoff window
+    // to elapse before retrying (real-world: safety interval respects this).
+    // Test simulates elapsed time by advancing flush window manually.
+    await new Promise(r => setTimeout(r, 400))
+
     // Attempt 2: 201 success (BE deduplicated by op_id, applied_count tells reality)
     ;(apiClient.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       last_seq: 1,

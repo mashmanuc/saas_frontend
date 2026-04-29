@@ -41,7 +41,17 @@ import {
 
 // ─── Types ───────────────────────────────────────────────────────────
 
-export type OpsSyncMode = 'BOOTSTRAP' | 'SYNC' | 'DESYNC'
+// Phase S PR-3 (2026-04-28): PAUSED added between SYNC та DESYNC.
+//
+// PAUSED semantics (per REFACTOR_PLAN.md v2 §3 task #3):
+//   - record() ACCEPTS new ops (does NOT block UI input)
+//   - flush() THROWS BackpressureError (caller catches gracefully)
+//   - inFlightOps PRESERVED (NO drop)
+//   - UI shows non-blocking banner "Сервер тимчасово зайнятий..."
+//   - Resume on user click "Retry now" (resumeFromPause()) OR auto every 30s
+//
+// DESYNC reserved тільки для protocol/seq mismatch (INV-16 unchanged).
+export type OpsSyncMode = 'BOOTSTRAP' | 'SYNC' | 'PAUSED' | 'DESYNC'
 
 export interface OpsSyncOp {
   op_id: string
@@ -76,6 +86,16 @@ const BROADCAST_CHANNEL_NAME = 'winterboard-ops'
 /** Phase 2 default; BE дозволяє до 100 ops/batch (matches MAX_OPS_PER_REQUEST у legacy useReplayRecorder). */
 const FLUSH_BATCH_SIZE = 50
 
+// Phase S PR-3 (2026-04-28) — INV-12 BOUNDED RETRY orchestration.
+/** Max 503 attempts before entering PAUSED mode. After 2 failed attempts → PAUSED. */
+const MAX_RETRY_ATTEMPTS = 2
+/** Base delay for exp backoff: 200ms * 2^(attempt-1) + jitter(0..150ms). */
+const RETRY_BASE_DELAY_MS = 200
+/** Jitter ceiling for backoff calc. */
+const RETRY_JITTER_MAX_MS = 150
+/** Auto-retry interval у PAUSED mode (per REFACTOR_PLAN §3 task #3). */
+const PAUSE_AUTO_RETRY_MS = 30_000
+
 function _genTabId(): string {
   return `tab-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
 }
@@ -105,6 +125,16 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
    *  null = no flush in progress. Per HARD CHECKPOINT race scenario: timer + push +
    *  unload concurrent → no double-send (single in-flight POST), no in-flight loss. */
   let _flushPromise: Promise<void> | null = null
+
+  // ── Phase S PR-3 (2026-04-28): INV-12 bounded retry state ──
+  /** Current retry attempt counter for 503 SERVER_BUSY. Reset on success. Range: 0 | 1 | 2. */
+  let _retryAttempt = 0
+  /** Unix ms timestamp when next flush is allowed (after exp backoff). null = no delay. */
+  const _retryUntil = ref<number | null>(null)
+  /** Auto-retry timer для PAUSED mode (resume after PAUSE_AUTO_RETRY_MS). */
+  let _pauseTimer: ReturnType<typeof setTimeout> | null = null
+  /** Last flush() duration (ms) — exposed для queue visibility UI. */
+  const _lastFlushDuration = ref(0)
 
   // ── BroadcastChannel (INV-19) ──
   let _channel: BroadcastChannel | null = null
@@ -142,6 +172,13 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
   const isSync = computed(() => mode.value === 'SYNC')
   const isDesync = computed(() => mode.value === 'DESYNC')
   const isBootstrap = computed(() => mode.value === 'BOOTSTRAP')
+  /** Phase S PR-3: PAUSED mode (transient backpressure, NOT data loss). */
+  const isPaused = computed(() => mode.value === 'PAUSED')
+  /** Phase S PR-3: queue visibility refs (UI status indicators). */
+  const pendingCount = computed(() => pendingOps.value.length)
+  const inFlightCount = computed(() => inFlightOps.value.length)
+  const lastFlushDuration = computed(() => _lastFlushDuration.value)
+  const retryUntil = computed(() => _retryUntil.value)
 
   // ── Internal helpers ──
 
@@ -219,7 +256,9 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
    *   - false якщо dropped (mode=DESYNC або BOOTSTRAP not done)
    */
   function record(op: OpsSyncOp): boolean {
-    if (mode.value !== 'SYNC') return false  // NO-OP for DESYNC OR BOOTSTRAP
+    // Phase S PR-3 (2026-04-28): PAUSED mode ACCEPTS ops (no UI input block).
+    // DESYNC blocks (INV-16); BOOTSTRAP blocks (pre-init).
+    if (mode.value === 'DESYNC' || mode.value === 'BOOTSTRAP') return false
     pendingOps.value.push(op)
     return true
   }
@@ -255,8 +294,20 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     if (mode.value === 'DESYNC') {
       throw new DesyncError(`flush() blocked: ${desyncReason.value ?? 'unknown reason'}`)
     }
+    // Phase S PR-3 (2026-04-28): PAUSED — flush throws BackpressureError.
+    // Caller (useReplayRecorder) catches gracefully. inFlightOps preserved.
+    if (mode.value === 'PAUSED') {
+      throw new BackpressureError('flush() blocked: PAUSED (server backpressure)')
+    }
     if (mode.value === 'BOOTSTRAP') {
       throw new Error('flush() called before bootstrap() — call bootstrap(sid) first')
+    }
+    // Phase S PR-3: honor exp-backoff window — caller's safety interval should also
+    // respect this, але defensive guard тут не зашкодить (race з timer).
+    if (_retryUntil.value !== null && Date.now() < _retryUntil.value) {
+      // Throw "transient" error без entering DESYNC; caller treats як 503.
+      const remaining = _retryUntil.value - Date.now()
+      throw new Error(`flush() backoff active (${remaining}ms remaining)`)
     }
     // Concurrent flush mutex — Section D HARD CHECKPOINT compliance.
     // Якщо flush already in progress: concurrent callers await same Promise.
@@ -268,9 +319,11 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
       return _flushPromise
     }
     _flushPromise = (async () => {
+      const _start = Date.now()
       try {
         await _doFlush()
       } finally {
+        _lastFlushDuration.value = Date.now() - _start
         _flushPromise = null
       }
     })()
@@ -303,7 +356,8 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     if (inFlightOps.value.length > 0) {
       batch = inFlightOps.value.slice()  // retry existing
     } else {
-      // Move up to FLUSH_BATCH_SIZE ops з pending → inFlight (atomic, synchronous)
+      // Move up to FLUSH_BATCH_SIZE ops з pending → inFlight (atomic, synchronous).
+      // Phase S PR-3: also bound by MAX_BATCH_BYTES = 512KB aggregate ceiling.
       const taking = Math.min(pendingOps.value.length, FLUSH_BATCH_SIZE)
       batch = pendingOps.value.splice(0, taking)  // sync: remove N from pending
       inFlightOps.value.push(...batch)            // sync: add to inFlight (no await between)
@@ -320,6 +374,9 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
       inFlightOps.value = []
       serverSeq.value = response.last_seq
       localSeq.value = Math.max(localSeq.value, response.last_seq)
+      // Phase S PR-3: reset retry state on success.
+      _retryAttempt = 0
+      _retryUntil.value = null
     } catch (err) {
       if (_isProtocolMismatch(err)) {
         // INV-20: client/server version mismatch. UI ProtocolMismatchModal,
@@ -341,13 +398,62 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
         throw new DesyncError(`flush() blocked: ${reason}`)
       }
       if (_isServerBusy(err)) {
-        // Keep inFlight for next retry. B4 (INV-12) додасть max-2 attempts
-        // orchestration з jitter 100-500ms. Поки caller вирішує retry/drop.
+        // Phase S PR-3 (2026-04-28) INV-12 BOUNDED RETRY orchestration:
+        //   - increment _retryAttempt
+        //   - if > MAX_RETRY_ATTEMPTS → enter PAUSED (NOT DESYNC; NOT drop)
+        //   - else compute backoff (Retry-After header takes precedence)
+        // Keep inFlightOps preserved across all paths (no data loss).
+        _retryAttempt += 1
+
+        if (_retryAttempt > MAX_RETRY_ATTEMPTS) {
+          // 3rd 503 → PAUSED. Buffers preserved. Caller catches BackpressureError
+          // (next flush() call). Auto-retry timer starts; user can also click "Retry now".
+          enterPaused('server-busy-exhausted-retries')
+          // Keep _retryAttempt at MAX+1 — resumeFromPause() resets it to 0.
+          throw err
+        }
+
+        // Compute backoff. Retry-After header (seconds) takes precedence per LAW.
+        const retryAfter = _parseRetryAfter(err)
+        let backoffMs: number
+        if (retryAfter !== null) {
+          backoffMs = retryAfter
+        } else {
+          const exp = RETRY_BASE_DELAY_MS * Math.pow(2, _retryAttempt - 1)
+          const jitter = Math.floor(Math.random() * RETRY_JITTER_MAX_MS)
+          backoffMs = exp + jitter
+        }
+        _retryUntil.value = Date.now() + backoffMs
+
+        // Throw original error so caller (useReplayRecorder) receives 503 status
+        // and can emit telemetry. Caller's safety interval respects _retryUntil
+        // (does NOT fire flush() until window expires).
         throw err
       }
       // Other errors (network, 401, 5xx без specific handling): keep inFlight, propagate
       throw err
     }
+  }
+
+  /**
+   * Phase S PR-3 (2026-04-28): parse Retry-After header (RFC 7231).
+   *
+   * Format: integer seconds OR HTTP-date. We support seconds form only (matches
+   * BE PR-1 implementation що sets `Retry-After: <seconds>`).
+   *
+   * Returns ms або null якщо header absent/malformed.
+   */
+  function _parseRetryAfter(err: unknown): number | null {
+    const e = err as { response?: { headers?: Record<string, string> } }
+    const headers = e?.response?.headers
+    if (!headers) return null
+    const raw = headers['retry-after'] ?? headers['Retry-After']
+    if (!raw) return null
+    const seconds = parseFloat(raw)
+    if (Number.isFinite(seconds) && seconds >= 0) {
+      return Math.floor(seconds * 1000)
+    }
+    return null
   }
 
   /**
@@ -415,6 +521,64 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
   }
 
   /**
+   * Phase S PR-3 (2026-04-28): enter PAUSED mode (transient backpressure).
+   *
+   * Triggers:
+   *   - 503 SERVER_BUSY exhausted MAX_RETRY_ATTEMPTS (per INV-12)
+   *
+   * Side effects:
+   *   - Mode → PAUSED (record() still accepts; flush() throws BackpressureError)
+   *   - inFlightOps + pendingOps PRESERVED (no data loss)
+   *   - Auto-retry timer scheduled (PAUSE_AUTO_RETRY_MS)
+   *   - UI responsibility: show non-blocking banner з "Retry now" button
+   *
+   * NOT broadcast cross-tab — PAUSED — local backpressure signal, кожен tab decides
+   * самостійно (DESYNC broadcasts because contract drift affects all tabs equally).
+   */
+  function enterPaused(reason: string): void {
+    if (mode.value === 'PAUSED') return  // already there
+    if (mode.value === 'DESYNC') return  // DESYNC takes precedence (INV-16)
+    mode.value = 'PAUSED'
+    desyncReason.value = reason  // re-use field для UI banner messaging
+    // Schedule auto-retry. User can also click "Retry now" → resumeFromPause().
+    if (_pauseTimer) clearTimeout(_pauseTimer)
+    _pauseTimer = setTimeout(() => {
+      _pauseTimer = null
+      // Auto-resume only якщо ще у PAUSED (user не натиснув Retry й не з'явився DESYNC).
+      if (mode.value === 'PAUSED') {
+        resumeFromPause()
+      }
+    }, PAUSE_AUTO_RETRY_MS)
+  }
+
+  /**
+   * Phase S PR-3 (2026-04-28): resume from PAUSED mode.
+   *
+   * Triggers:
+   *   - User click "Retry now" button (UI banner)
+   *   - PAUSE_AUTO_RETRY_MS timer fires
+   *
+   * Side effects:
+   *   - Mode → SYNC (з PAUSED)
+   *   - Reset _retryAttempt = 0, _retryUntil = null
+   *   - inFlightOps preserved (next flush() retries SAME batch — INV-14 dedup safe)
+   *
+   * Caller (useReplayRecorder) typically triggers flush() shortly after resume —
+   * either via safety interval or explicit call.
+   */
+  function resumeFromPause(): void {
+    if (mode.value !== 'PAUSED') return
+    if (_pauseTimer) {
+      clearTimeout(_pauseTimer)
+      _pauseTimer = null
+    }
+    _retryAttempt = 0
+    _retryUntil.value = null
+    desyncReason.value = null
+    mode.value = 'SYNC'
+  }
+
+  /**
    * Resync: GET /sessions/{sid}/state/ → reconcile localSeq=serverSeq=last_seq.
    * Drops pending + inFlight (stale post-DESYNC).
    * Mode → SYNC (з DESYNC).
@@ -450,6 +614,14 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     desyncReason.value = null
     pendingOps.value = []
     inFlightOps.value = []
+    // Phase S PR-3: reset retry state + cancel auto-retry timer
+    _retryAttempt = 0
+    _retryUntil.value = null
+    _lastFlushDuration.value = 0
+    if (_pauseTimer) {
+      clearTimeout(_pauseTimer)
+      _pauseTimer = null
+    }
     if (_channel) {
       try { _channel.close() } catch { /* noop */ }
       _channel = null
@@ -471,6 +643,12 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     isSync,
     isDesync,
     isBootstrap,
+    // Phase S PR-3 (2026-04-28): PAUSED mode + queue visibility refs
+    isPaused,
+    pendingCount,
+    inFlightCount,
+    lastFlushDuration,
+    retryUntil,
 
     // Actions
     bootstrap,
@@ -479,12 +657,16 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     sendBeacon,
     applyServerOp,
     enterDesync,
+    // Phase S PR-3: PAUSED mode actions
+    enterPaused,
+    resumeFromPause,
     resync,
     reset,
 
     // Constants (consumer/test access)
     PROTOCOL_VERSION,
     FLUSH_BATCH_SIZE,
+    MAX_RETRY_ATTEMPTS,
   }
 })
 
@@ -516,5 +698,21 @@ export class BeaconUnsupportedError extends Error {
   constructor(message: string) {
     super(message)
     this.name = 'BeaconUnsupportedError'
+  }
+}
+
+/**
+ * Phase S PR-3 (2026-04-28): thrown by opsSyncStore.flush() коли mode=PAUSED.
+ *
+ * Semantics:
+ *   - PAUSED ≠ DESYNC: transient backpressure, NOT contract drift
+ *   - inFlightOps + pendingOps PRESERVED (no data loss)
+ *   - Caller (useReplayRecorder) catches gracefully (NO retry storm — wait for resume)
+ *   - User clicks "Retry now" OR auto-retry (30s) → resumeFromPause() → flush retried
+ */
+export class BackpressureError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'BackpressureError'
   }
 }
