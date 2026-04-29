@@ -227,6 +227,22 @@ export interface WBAsset {
   // Object Audio: voice annotation attached to this asset
   audioUrl?: string        // CDN URL of recorded audio
   audioDuration?: number   // duration in seconds
+  /**
+   * P0 UX (2026-04-28): optimistic image paste status flag — FE-only.
+   *
+   * 'uploading' — asset створений з blob: URL, S3 upload триває у фоні.
+   * 'ready'     — upload завершено, src оновлено на final S3/CDN URL.
+   * 'error'     — upload fail, показуємо retry UI.
+   *
+   * Інваріанти:
+   *   - НЕ персистимо у BE: recorder.ts strip-ає поле з payload (як і dataURL/blob URLs).
+   *   - НЕ блокує replay: якщо replay чомусь отримає asset зі status='uploading'
+   *     (race), рендер відбувається з тим src що є — graceful degradation.
+   *   - Visual indicator only — рендер компонент може показати spinner/badge.
+   */
+  status?: 'uploading' | 'ready' | 'error'
+  /** Localized error message коли status='error' (FE-only, не персистимо). */
+  errorMessage?: string
   // PLAN_v4: Document Viewer fields (present when type='document_viewer')
   // viewer = canvas asset with page navigation (like sticky note but for documents)
   content_ref?: WBContentRef

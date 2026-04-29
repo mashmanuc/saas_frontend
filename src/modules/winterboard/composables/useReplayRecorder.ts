@@ -108,15 +108,25 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
 
   // ─── Helpers ──
 
-  /** Strip base64 data URLs from asset payloads to keep size under limit.
-   *  Replay only needs the remote URL (src), not the inline data. */
+  /** Strip non-persistable URL prefixes and FE-only status flags from asset payloads.
+   *
+   *  Stripped:
+   *   - `data:` URLs — base64 inline data (replay needs only remote URL)
+   *   - `blob:` URLs — P0 UX optimistic paste (asset emitted з blob URL до S3 upload;
+   *     final URL прилітає окремим asset_update. Якщо blob потрапить у BE — replay
+   *     зламається бо blob URL валідний лише в межах однієї browser tab session.)
+   *   - `status` / `errorMessage` — FE-only optimistic flags, не персистимо. */
   function _stripDataUrls(payload: Record<string, unknown>): Record<string, unknown> {
     const result = { ...payload }
     for (const key of ['src', 'url', 'thumbnail'] as const) {
-      if (typeof result[key] === 'string' && (result[key] as string).startsWith('data:')) {
+      const value = result[key]
+      if (typeof value === 'string' && (value.startsWith('data:') || value.startsWith('blob:'))) {
         result[key] = ''
       }
     }
+    // FE-only optimistic paste status — НЕ шлемо у BE
+    if ('status' in result) delete result.status
+    if ('errorMessage' in result) delete result.errorMessage
     if (result.asset && typeof result.asset === 'object') {
       result.asset = _stripDataUrls(result.asset as Record<string, unknown>)
     }

@@ -628,6 +628,141 @@ export async function uploadFileToStorage(
   }
 }
 
+// ─── Optimistic paste API (P0 UX 2026-04-28) ────────────────────────────────
+//
+// Splits the existing presign+PUT+confirm flow into two awaitable stages,
+// so callers can render an asset on canvas immediately after presign (which
+// returns asset_id + final CDN url у <200ms у нормі) і виконувати S3 PUT +
+// confirm у фоні. Це усуває 1-2с delay між Ctrl+V і появою картинки.
+//
+// Інваріанти збережені:
+//   - presign + confirm використовують той самий asset_id з BE → жодних
+//     orphan WBAsset records.
+//   - Якщо confirm fails → asset_id вже існує у BE з status='pending'; FE
+//     має емітнути asset_delete або позначити status='error' для retry.
+//   - signal прокидається у всі шари (presign, PUT, confirm) — однаковий
+//     контракт abort як у uploadFileToStorage.
+
+/** Result of the synchronous presign stage — used to render placeholder asset. */
+export interface PresignedAssetMeta {
+  /** BE-assigned asset_id — used as canvas asset.id (INV-14 stable). */
+  assetId: string
+  /** Eventual final CDN URL — valid in BE/replay even before S3 PUT completes
+   *  (record exists; file uploads in background). */
+  assetUrl: string
+  /** Local mode: skip S3 PUT, pass file through to confirm step instead. */
+  isLocal: boolean
+  /** Internal: pre-resolved presigned PUT URL (S3/R2). */
+  uploadUrl: string
+}
+
+/**
+ * Stage 1 of optimistic upload: presign only.
+ *
+ * Returns BE-assigned asset_id and CDN URL synchronously (within network
+ * latency). Caller can then render асset на canvas з blob: URL для preview
+ * і викликати uploadAndConfirm() у фоні.
+ *
+ * Throws WBUploadError на network/quota/rate_limit. Не retry — caller
+ * вирішує політику (для optimistic paste — single attempt, на fail просто
+ * показуємо error без блокування інших pasted assets).
+ */
+export async function presignOnly(
+  sessionId: string,
+  file: File,
+  signal?: AbortSignal,
+): Promise<PresignedAssetMeta> {
+  if (signal?.aborted) {
+    throw new WBUploadError('cancelled', 'Aborted before presign')
+  }
+  try {
+    const presign = await winterboardApi.presignUpload(sessionId, {
+      filename: file.name || `upload-${Date.now()}.${file.type.split('/')[1] || 'png'}`,
+      content_type: file.type,
+      file_size: file.size,
+    }, signal)
+    console.info(`${LOG} Presign OK (optimistic)`, { assetId: presign.asset_id, size: file.size })
+    return {
+      assetId: presign.asset_id,
+      assetUrl: presign.asset_url,
+      isLocal: !!presign.is_local,
+      uploadUrl: presign.upload_url,
+    }
+  } catch (err: unknown) {
+    if (_isAbortError(err)) {
+      throw new WBUploadError('cancelled', 'Presign aborted')
+    }
+    const httpStatus = (err as { response?: { status?: number } })?.response?.status
+    if (httpStatus === 429) {
+      const code = classify429(err)
+      const details = extractErrorDetails(err)
+      const msg = code === 'quota_exceeded'
+        ? 'Asset or storage quota exceeded'
+        : code === 'rate_limited'
+          ? 'Rate limit reached, please retry'
+          : 'Request rejected (429)'
+      throw new WBUploadError(code, msg, details)
+    }
+    console.error(`${LOG} Presign failed`, err)
+    throw new WBUploadError('presign_failed', 'Failed to get upload URL')
+  }
+}
+
+/**
+ * Stage 2 of optimistic upload: S3 PUT + confirm.
+ *
+ * Викликається ПІСЛЯ presignOnly() — використовує meta.uploadUrl для PUT,
+ * meta.assetId для confirm. Одна спроба (no retry loop) — caller отримує
+ * простий fail/success і сам показує retry UI.
+ *
+ * При абortі через signal — кидає WBUploadError('cancelled').
+ */
+export async function uploadAndConfirm(
+  sessionId: string,
+  file: File,
+  meta: PresignedAssetMeta,
+  onProgress?: (percent: number) => void,
+  signal?: AbortSignal,
+): Promise<{ assetUrl: string }> {
+  // Step 2: S3 PUT (skip у local mode — файл піде через multipart confirm)
+  if (signal?.aborted) {
+    throw new WBUploadError('cancelled', 'Aborted before S3 PUT')
+  }
+  if (!meta.isLocal) {
+    try {
+      await winterboardApi.uploadToPresigned(meta.uploadUrl, file, onProgress, signal)
+      console.info(`${LOG} S3 PUT OK (optimistic)`, { assetId: meta.assetId })
+    } catch (err) {
+      if (_isAbortError(err)) {
+        throw new WBUploadError('cancelled', 'S3 PUT aborted')
+      }
+      console.error(`${LOG} S3 PUT failed`, err)
+      throw new WBUploadError('upload_failed', 'Failed to upload file to storage')
+    }
+  }
+
+  // Step 3: Confirm
+  if (signal?.aborted) {
+    throw new WBUploadError('cancelled', 'Aborted before confirm')
+  }
+  try {
+    const confirm = await winterboardApi.confirmUpload(
+      sessionId,
+      meta.assetId,
+      meta.isLocal ? file : undefined,
+      signal,
+    )
+    console.info(`${LOG} Confirm OK (optimistic)`, { assetId: meta.assetId, url: confirm.asset_url })
+    return { assetUrl: confirm.asset_url }
+  } catch (err) {
+    if (_isAbortError(err)) {
+      throw new WBUploadError('cancelled', 'Confirm aborted')
+    }
+    console.error(`${LOG} Confirm failed`, err)
+    throw new WBUploadError('confirm_failed', 'Failed to confirm upload')
+  }
+}
+
 // ─── Composable ─────────────────────────────────────────────────────────────
 
 export type WBUploadState = 'idle' | 'validating' | 'uploading' | 'confirming' | 'done' | 'error'

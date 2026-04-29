@@ -2,19 +2,38 @@
  * useBoardClipboard — unified clipboard handler for Winterboard.
  *
  * Handles:
- * - Ctrl+V image → upload-first: presign → S3 PUT → confirm → addAsset з CDN URL
+ * - Ctrl+V image → optimistic asset_add з blob URL (status='uploading'),
+ *                  background S3 upload, asset_update з final URL (status='ready')
  * - Ctrl+V text  → create StickyNote on canvas center
  * - Ctrl+C selected objects → serialize to internal clipboard
  * - Ctrl+V internal clipboard → deserialize + new IDs + paste with offset
  * - Ctrl+X = copy + delete
  *
- * Architecture: STRICT upload-first.
- *   Інваріант: asset_add op створюється виключно після успішного upload.
- *   На fail asset не з'являється — користувач бачить toast із Retry.
+ * Architecture: OPTIMISTIC paste (P0 UX 2026-04-28).
+ *
+ *   Старий "upload-first" інваріант (asset_add ТІЛЬКИ після upload) дав 1-2с
+ *   delay на render через S3 round-trip. Тепер:
+ *
+ *     1. paste → blob URL → asset_add IMMEDIATELY (status='uploading') → render <100мс
+ *     2. background presign + S3 PUT + confirm
+ *     3. asset_update з final URL (status='ready')
+ *     4. revoke blob URL
+ *     5. fail → asset_update з status='error' + retry UI
+ *
+ *   Інваріанти збережені:
+ *     - blob URL у boardStore — FE-only TEMP, замінюється до того як op потрапить
+ *       у BE. recorder.ts strip-ає blob: prefix у payload (як і data:).
+ *     - status='uploading'/'error' — FE-only (recorder strip-ає у payload).
+ *     - INV-14 op_id stable: asset.id = backend asset_id (резервується presign
+ *       синхронно перед asset_add — див. _reserveAssetId).
+ *     - Replay deterministic: BE отримує asset_add з src='' (strip), потім
+ *       asset_update з final URL — replay рендерить final state.
+ *
  *   Multi-paste обмежується глобальним semaphore (useUploadQueue) до 3 одночасних
  *   uploads, щоб не тригерити 429 на бекенді.
  *
  * Ref: TASK_BOARD_PHASE_1a_2.md §8, plan lazy-kindling-simon.md
+ *      P0 UX fix: instant image paste (2026-04-28)
  */
 
 import { ref, onMounted, onUnmounted } from 'vue'
@@ -23,9 +42,11 @@ import { STICKY_DEFAULTS } from '../types/winterboard'
 import { parseYouTubeVideoId, getYouTubeThumbnail } from '../utils/youtubeParser'
 import {
   validateFile,
-  uploadFileToStorage,
+  presignOnly,
+  uploadAndConfirm,
   WBUploadError,
   type WBUploadErrorDetails,
+  type PresignedAssetMeta,
 } from './useImageUpload'
 import { withUploadSlot, UploadAbortedError } from './useUploadQueue'
 import { learningContentApi } from '@/modules/learning-content/api/learningContentApi'
@@ -47,6 +68,14 @@ interface BoardClipboardOptions {
   sessionId: () => string | null
   canvasCenter: () => { x: number; y: number }
   onAssetAdd: (asset: WBAsset) => void
+  /**
+   * P0 UX (2026-04-28): called когда optimistic image paste завершує upload —
+   * замінити blob URL на final S3/CDN URL та зняти status='uploading'.
+   *
+   * Якщо опція не передана — fallback на store.updateAsset напряму.
+   * Caller може override для додаткової логіки (history tracking тощо).
+   */
+  onAssetUpdate?: (asset: WBAsset) => void
   disabled?: () => boolean
   /** Phase 2: Called after successful upload — used for dual-write to lesson + library */
   onContentUploaded?: (contentItemId: number) => void
@@ -80,6 +109,11 @@ function _createBatchContext(): BatchContext {
 
 export function useBoardClipboard(options: BoardClipboardOptions) {
   const { store, sessionId, canvasCenter, onAssetAdd, disabled } = options
+
+  // P0 UX: onAssetUpdate fallback — direct store call якщо caller не передав.
+  // store.updateAsset вже emit-ить asset_update op через _emitOperation.
+  const onAssetUpdate: (asset: WBAsset) => void = options.onAssetUpdate
+    ?? ((asset: WBAsset) => { store.updateAsset(asset) })
   const { showToast } = useToast()
   // i18n опціонально — у тестах поза Vue компонентом може не бути активного
   // i18n instance. Fallback на англ. рядки не критичний.
@@ -178,18 +212,28 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
     }
   }
 
-  // ─── Image paste: STRICT upload-first ──────────────────────
+  // ─── Image paste: OPTIMISTIC (P0 UX 2026-04-28) ───────────────────────
   //
-  // Інваріант: asset_add op створюється ВИКЛЮЧНО після успішного upload.
-  // На fail asset не з'являється; toast пропонує Retry. dataURL у boardStore
-  // не потрапляє ніколи — це фундаментально важливо для replay (recorder
-  // strip-ить data:URL у '', тож asset з dataURL дав би broken image у replay).
+  // Етапи:
+  //   1. presign (sync, ~50-200ms) — отримати asset_id + final CDN url від BE
+  //   2. emit asset_add IMMEDIATELY з blob URL + status='uploading' → instant render
+  //   3. background: S3 PUT + confirm (через global semaphore, до 3 паралельних)
+  //   4. confirm OK → asset_update з final src + status='ready' + revoke blob URL
+  //   5. confirm fail → asset_update з status='error', toast Retry
   //
-  // batch: shared контекст на цілий paste-batch. Перший quota_exceeded
-  // викликає batch.controller.abort() → всі решта uploads негайно припиняються
-  // з кодом 'cancelled' (без додаткових toast і без зайвих BE запитів).
-  // batch.quotaToastShown — захист від дублювання error toast при race
-  // (3 паралельні uploads отримали 429 quota майже одночасно).
+  // Інваріанти збережені:
+  //   - asset_add у BE не отримує blob URL (recorder strip-ає blob: → src='').
+  //     Final CDN url прилітає окремим asset_update після successful confirm.
+  //   - INV-14 op_id stable — asset.id = BE asset_id (з presign), той самий
+  //     для asset_add і asset_update. Replay deterministic.
+  //   - Recorder strip-ає 'status' і 'errorMessage' поля з ops payload —
+  //     FE-only optimistic flags не персистимо.
+  //   - При presign fail (403/429/quota) — НЕ додаємо asset на дошку взагалі
+  //     (немає валідного asset_id) → жодних ghost-объектів.
+  //
+  // batch: shared контекст на цілий paste-batch. Перший quota_exceeded на
+  // presign викликає batch.controller.abort() → всі решта pending presigns
+  // негайно припиняються (без додаткових toast і без зайвих BE запитів).
   async function handleImagePaste(
     file: File,
     index: number = 0,
@@ -215,22 +259,93 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
 
     const signal = batch?.controller.signal
 
+    // ─── Stage 1: presign (sync) ──────────────────────────────────
+    let meta: PresignedAssetMeta
     try {
-      // Concurrency-обмежений upload. До 3 одночасних uploads глобально —
-      // решта чекає у черзі. Усередині є retry на 429/network.
-      // Signal прокидаємо у обидва шари: queue (skip pending), retry-loop (skip retry).
-      const { assetId, assetUrl } = await withUploadSlot(
-        () => uploadFileToStorage(sid, file, undefined, signal),
+      meta = await presignOnly(sid, file, signal)
+    } catch (err) {
+      isUploading.value = false
+      _handlePresignFailure(err, file, index, batch)
+      return
+    }
+
+    // ─── Stage 2: build local placeholder з blob URL → INSTANT render ──
+    //
+    // blob URL живе тільки у FE memory; BE не побачить його — recorder strip-ає
+    // blob: → '' у asset_add op payload. Final CDN url прилетить asset_update'ом
+    // після successful confirm.
+    const blobUrl = URL.createObjectURL(file)
+    const dims = _imageDimsFromBlob(blobUrl)
+
+    const center = canvasCenter()
+    const OFFSET_PER_INDEX = 20
+    const placeholder: WBAsset = {
+      id: meta.assetId,
+      type: 'image',
+      src: blobUrl, // FE-only blob URL — recorder strip-ає до '' у BE op
+      x: center.x - dims.w / 2 + index * OFFSET_PER_INDEX,
+      y: center.y - dims.h / 2 + index * OFFSET_PER_INDEX,
+      w: dims.w,
+      h: dims.h,
+      rotation: 0,
+      status: 'uploading',
+    }
+
+    onAssetAdd(placeholder)
+    console.info('[BoardClipboard] Image pasted (optimistic)', { assetId: meta.assetId })
+
+    // ─── Stage 3: background S3 PUT + confirm (з semaphore) ───────
+    void _backgroundUpload(file, meta, blobUrl, dims, placeholder, sid, index, batch, signal)
+  }
+
+  /**
+   * Helper: read blob URL synchronously для дефолтних розмірів.
+   * Real natural dimensions заглядаються async через preload Image нижче;
+   * тут даємо safe default щоб render одразу.
+   */
+  function _imageDimsFromBlob(_blobUrl: string): { w: number; h: number } {
+    // Default — Vue/Konva re-layout автоматично коли <img> завантажиться.
+    // Можна було б зробити sync через offscreenCanvas, але overhead не вартий —
+    // користувач все одно бачить картинку у фактичних пропорціях за <50мс
+    // після завантаження blob у Image element.
+    return { w: 300, h: 300 }
+  }
+
+  /**
+   * Background stage: S3 PUT + confirm через semaphore.
+   * Окремою функцією щоб handleImagePaste повернувся одразу після emit asset_add.
+   */
+  async function _backgroundUpload(
+    file: File,
+    meta: PresignedAssetMeta,
+    blobUrl: string,
+    initialDims: { w: number; h: number },
+    placeholder: WBAsset,
+    sid: string,
+    index: number,
+    batch: BatchContext | undefined,
+    signal: AbortSignal | undefined,
+  ): Promise<void> {
+    let blobRevoked = false
+    const _revokeOnce = () => {
+      if (blobRevoked) return
+      blobRevoked = true
+      try { URL.revokeObjectURL(blobUrl) } catch { /* */ }
+    }
+
+    try {
+      await withUploadSlot(
+        () => uploadAndConfirm(sid, file, meta, undefined, signal),
         signal,
       )
 
-      // Preload CDN URL у браузерному кеші ДО створення asset, щоб канвас
-      // отримав готовий bitmap і не показав порожнє місце на ~200мс.
+      // Preload final CDN URL і отримуємо natural dims (можуть відрізнятись
+      // від blob — особливо якщо BE re-encode-ить великі картинки).
       const dims = await new Promise<{ w: number; h: number }>((resolve) => {
         const preload = new Image()
         preload.onload = () => {
-          let w = preload.naturalWidth || 300
-          let h = preload.naturalHeight || 300
+          let w = preload.naturalWidth || initialDims.w
+          let h = preload.naturalHeight || initialDims.h
           const maxDim = Math.max(w, h)
           if (maxDim > 300) {
             const scale = 300 / maxDim
@@ -239,28 +354,24 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
           }
           resolve({ w, h })
         }
-        preload.onerror = () => resolve({ w: 300, h: 300 })
-        preload.src = assetUrl
+        preload.onerror = () => resolve(initialDims)
+        preload.src = meta.assetUrl
       })
 
-      // Multi-paste offset: index захоплено в момент paste, не completion.
-      const center = canvasCenter()
-      const OFFSET_PER_INDEX = 20
-      const asset: WBAsset = {
-        id: assetId, // використовуємо backend asset_id — він стабільний для replay
-        type: 'image',
-        src: assetUrl,
-        x: center.x - dims.w / 2 + index * OFFSET_PER_INDEX,
-        y: center.y - dims.h / 2 + index * OFFSET_PER_INDEX,
+      // Stage 4: emit asset_update з final URL + status='ready'.
+      // Той самий asset.id → INV-14 stable; recorder strip-ає 'status' з payload.
+      const finalAsset: WBAsset = {
+        ...placeholder,
+        src: meta.assetUrl,
         w: dims.w,
         h: dims.h,
-        rotation: 0,
+        status: 'ready',
       }
+      onAssetUpdate(finalAsset)
+      _revokeOnce()
+      console.info('[BoardClipboard] Image upload finalized', { assetId: meta.assetId })
 
-      onAssetAdd(asset)
-      console.info('[BoardClipboard] Image pasted (upload-first)', { assetId })
-
-      // Dual-write до learning-content (non-critical, не блокує основний flow).
+      // Dual-write до learning-content (non-critical).
       try {
         const formData = new FormData()
         formData.append('file', file)
@@ -280,65 +391,123 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
         console.info('[BoardClipboard] ContentItem created:', contentItemId)
         showToast('Saved to library', 'success', { duration: 3000 })
       } catch (dualWriteErr) {
-        // Не блокує — asset уже на дошці, у storage збережений.
         console.warn('[BoardClipboard] Dual-write failed (non-critical):', dualWriteErr)
       }
     } catch (err) {
-      // ─── Cancelled (batch abort через quota в одному з паралельних) ────
-      // Silent skip: toast про quota вже показано тим, хто ініціював abort.
-      if (err instanceof UploadAbortedError) {
-        console.info('[BoardClipboard] Upload skipped — batch aborted', { index })
-        return
-      }
-      if (err instanceof WBUploadError && err.code === 'cancelled') {
-        console.info('[BoardClipboard] Upload skipped — cancelled', { index })
-        return
-      }
-
-      console.error('[BoardClipboard] Upload failed:', err)
-      const code = err instanceof WBUploadError ? err.code : 'unknown'
-      const details = err instanceof WBUploadError ? err.details : undefined
-
-      if (code === 'quota_exceeded') {
-        // Permanent: квота вичерпана, retry не допоможе.
-        // HARD STOP: скасовуємо весь решту batch — щоб не спамити BE та
-        // не лишати orphan-файлів у storage (signal перерве реальні fetch).
-        batch?.controller.abort()
-        uploadError.value = 'Storage quota exceeded'
-        // SINGLETON toast: тільки перший quota-fail у batch показує сповіщення.
-        // Решта паралельних, що могли отримати 429 quota одночасно (до того як
-        // abort долетів) — silent skip, інакше юзер побачить N однакових toast.
-        if (!batch || !batch.quotaToastShown) {
-          if (batch) batch.quotaToastShown = true
-          showToast(formatQuotaMessage(details), 'error', { duration: 10000 })
-        }
-      } else if (code === 'unknown_429') {
-        // 429 з невідомим body.error — після 1 retry (CDN edge) все ще fail.
-        uploadError.value = 'Upload rejected by server'
-        showToast(
-          details?.detail ?? 'Server rejected the request (429). Try again later.',
-          'error',
-          { duration: 10000 },
-        )
-      } else {
-        // Transient (rate_limited вичерпав retry) або presign/upload/confirm fail —
-        // пропонуємо Retry.
-        // FIX: клонуємо File у новий Blob, щоб toast closure не залежав від
-        // потенційно GC-нутого реф (особливо коли paste був з clipboard items
-        // що вже звільнились).
-        const retryFile = new File([file], file.name, { type: file.type })
-        uploadError.value = 'Upload failed'
-        showToast('Upload failed', 'error', {
-          duration: 10000,
-          action: {
-            label: 'Retry',
-            // Новий BatchContext для retry — старий уже міг бути aborted.
-            callback: () => { void handleImagePaste(retryFile, index, _createBatchContext()) },
-          },
-        })
-      }
+      _revokeOnce()
+      _handleBackgroundUploadFailure(err, file, placeholder, index, batch)
     } finally {
       isUploading.value = false
+    }
+  }
+
+  /**
+   * Presign failure handler — НЕ було emit asset_add, тож просто toast.
+   */
+  function _handlePresignFailure(
+    err: unknown,
+    file: File,
+    index: number,
+    batch: BatchContext | undefined,
+  ): void {
+    if (err instanceof UploadAbortedError) {
+      console.info('[BoardClipboard] Presign skipped — batch aborted', { index })
+      return
+    }
+    if (err instanceof WBUploadError && err.code === 'cancelled') {
+      console.info('[BoardClipboard] Presign skipped — cancelled', { index })
+      return
+    }
+
+    console.error('[BoardClipboard] Presign failed:', err)
+    const code = err instanceof WBUploadError ? err.code : 'unknown'
+    const details = err instanceof WBUploadError ? err.details : undefined
+
+    if (code === 'quota_exceeded') {
+      batch?.controller.abort()
+      uploadError.value = 'Storage quota exceeded'
+      if (!batch || !batch.quotaToastShown) {
+        if (batch) batch.quotaToastShown = true
+        showToast(formatQuotaMessage(details), 'error', { duration: 10000 })
+      }
+    } else if (code === 'unknown_429') {
+      uploadError.value = 'Upload rejected by server'
+      showToast(
+        details?.detail ?? 'Server rejected the request (429). Try again later.',
+        'error',
+        { duration: 10000 },
+      )
+    } else {
+      // Presign fail (network/rate_limit/etc) → пропонуємо Retry.
+      const retryFile = new File([file], file.name, { type: file.type })
+      uploadError.value = 'Upload failed'
+      showToast('Upload failed', 'error', {
+        duration: 10000,
+        action: {
+          label: 'Retry',
+          callback: () => { void handleImagePaste(retryFile, index, _createBatchContext()) },
+        },
+      })
+    }
+  }
+
+  /**
+   * Background upload failure handler — asset УЖЕ на дошці з blob URL.
+   * Позначаємо status='error' через asset_update щоб UI показав retry badge.
+   */
+  function _handleBackgroundUploadFailure(
+    err: unknown,
+    file: File,
+    placeholder: WBAsset,
+    index: number,
+    batch: BatchContext | undefined,
+  ): void {
+    if (err instanceof UploadAbortedError
+        || (err instanceof WBUploadError && err.code === 'cancelled')) {
+      // Aborted — позначаємо status='error' щоб юзер міг вирішити (retry / delete)
+      console.info('[BoardClipboard] Background upload aborted', { id: placeholder.id })
+      onAssetUpdate({ ...placeholder, status: 'error', errorMessage: 'Upload cancelled' })
+      return
+    }
+
+    console.error('[BoardClipboard] Background upload failed:', err)
+    const code = err instanceof WBUploadError ? err.code : 'unknown'
+    const details = err instanceof WBUploadError ? err.details : undefined
+    const message = err instanceof WBUploadError ? err.message : 'Upload failed'
+
+    // Mark asset як failed — UI може показати retry badge / red border.
+    onAssetUpdate({
+      ...placeholder,
+      status: 'error',
+      errorMessage: message,
+    })
+
+    if (code === 'quota_exceeded') {
+      batch?.controller.abort()
+      uploadError.value = 'Storage quota exceeded'
+      if (!batch || !batch.quotaToastShown) {
+        if (batch) batch.quotaToastShown = true
+        showToast(formatQuotaMessage(details), 'error', { duration: 10000 })
+      }
+    } else if (code === 'unknown_429') {
+      uploadError.value = 'Upload rejected by server'
+      showToast(
+        details?.detail ?? 'Server rejected the request (429). Try again later.',
+        'error',
+        { duration: 10000 },
+      )
+    } else {
+      const retryFile = new File([file], file.name, { type: file.type })
+      uploadError.value = 'Upload failed'
+      showToast('Upload failed', 'error', {
+        duration: 10000,
+        action: {
+          label: 'Retry',
+          // Retry повністю заново — старий placeholder потрібно видалити окремою UI дією.
+          // (Або юзер натискає retry → новий paste flow → новий asset.)
+          callback: () => { void handleImagePaste(retryFile, index, _createBatchContext()) },
+        },
+      })
     }
   }
 

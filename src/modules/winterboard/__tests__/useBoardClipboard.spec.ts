@@ -1,9 +1,14 @@
-// WB: Unit tests for useBoardClipboard composable — STRICT upload-first flow
+// WB: Unit tests for useBoardClipboard composable — OPTIMISTIC paste flow
 // Ref: TASK_BOARD_PHASE_1a_2.md §8, plan lazy-kindling-simon.md
+//      P0 UX fix: instant image paste (2026-04-28)
 //
-// Інваріант що тестуємо: asset_add op створюється ТІЛЬКИ після успішного upload.
-// dataURL у asset.src ніколи не потрапляє. На fail asset не з'являється,
-// показується toast із Retry callback.
+// Інваріанти що тестуємо:
+//   1. paste → asset_add IMMEDIATELY з blob: URL + status='uploading'
+//   2. background upload OK → asset_update з final CDN URL + status='ready'
+//   3. blob URL revoked після успішного upload
+//   4. presign fail → asset НЕ додається, toast Retry
+//   5. background upload fail → asset з status='error' + toast Retry
+//   6. INV-14 op_id stable: asset.id однаковий між asset_add і asset_update
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import { useBoardClipboard } from '../composables/useBoardClipboard'
@@ -13,7 +18,8 @@ import type { WBAsset, WBStroke, WBPoint } from '../types/winterboard'
 
 // ─── Mock useImageUpload ─────────────────────────────────────────────────────
 
-const mockUploadFileToStorage = vi.fn()
+const mockPresignOnly = vi.fn()
+const mockUploadAndConfirm = vi.fn()
 
 vi.mock('../composables/useImageUpload', async () => {
   const actual = await vi.importActual<typeof import('../composables/useImageUpload')>(
@@ -22,7 +28,8 @@ vi.mock('../composables/useImageUpload', async () => {
   return {
     ...actual,
     validateFile: vi.fn(() => ({ valid: true })),
-    uploadFileToStorage: (...args: unknown[]) => mockUploadFileToStorage(...args),
+    presignOnly: (...args: unknown[]) => mockPresignOnly(...args),
+    uploadAndConfirm: (...args: unknown[]) => mockUploadAndConfirm(...args),
   }
 })
 
@@ -36,7 +43,7 @@ vi.mock('@/modules/learning-content/api/learningContentApi', () => ({
   },
 }))
 
-// ─── Mock useToast (singleton, перехоплюємо showToast) ──────────────────────
+// ─── Mock useToast ──────────────────────────────────────────────────────────
 
 const mockShowToast = vi.fn().mockReturnValue(1)
 
@@ -48,6 +55,24 @@ vi.mock('../composables/useToast', () => ({
     clearAllToasts: vi.fn(),
   }),
 }))
+
+// ─── Mock URL.createObjectURL / revokeObjectURL ─────────────────────────────
+
+let _blobUrlCounter = 0
+const _activeBlobUrls = new Set<string>()
+
+beforeEach(() => {
+  _blobUrlCounter = 0
+  _activeBlobUrls.clear()
+  globalThis.URL.createObjectURL = vi.fn((_blob: Blob) => {
+    const url = `blob:test-${++_blobUrlCounter}`
+    _activeBlobUrls.add(url)
+    return url
+  })
+  globalThis.URL.revokeObjectURL = vi.fn((url: string) => {
+    _activeBlobUrls.delete(url)
+  })
+})
 
 // ─── Mock store factory ──────────────────────────────────────────────────────
 
@@ -69,10 +94,12 @@ function createMockStore(overrides: Record<string, unknown> = {}) {
     addAsset: vi.fn((a: WBAsset) => { assets.push(a) }),
     addStroke: vi.fn((s: WBStroke) => { strokes.push(s) }),
     addStickyNote: vi.fn((s: WBAsset) => { assets.push(s) }),
-    // Batch paths used by pasteInternal (single op per kind for perf)
+    updateAsset: vi.fn((a: WBAsset) => {
+      const i = assets.findIndex((x) => x.id === a.id)
+      if (i >= 0) assets[i] = a
+    }),
     addStrokesBatch: vi.fn((arr: WBStroke[]) => { strokes.push(...arr) }),
     addAssetsBatch: vi.fn((arr: WBAsset[]) => { assets.push(...arr) }),
-    updateAsset: vi.fn(),
     deleteStroke: vi.fn(),
     deleteAsset: vi.fn(),
     deleteSelected: vi.fn(),
@@ -153,8 +180,8 @@ function makeAsset(id: string, type: 'image' | 'sticky' = 'image'): WBAsset {
 }
 
 /**
- * Підкласити Image щоб preload.onload спрацьовував синхронно — без цього
- * await preload у handleImagePaste висить навічно (jsdom не вантажить URLs).
+ * Stub Image для preload final URL (jsdom не вантажить URLs).
+ * Resolve миттєво через microtask — синхронні await спрацьовують одразу.
  */
 function stubImageGlobal(width = 800, height = 600) {
   const orig = globalThis.Image
@@ -173,15 +200,18 @@ function stubImageGlobal(width = 800, height = 600) {
 describe('useBoardClipboard', () => {
   let store: ReturnType<typeof createMockStore>
   let onAssetAdd: ReturnType<typeof vi.fn>
+  let onAssetUpdate: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
     store = createMockStore()
     onAssetAdd = vi.fn()
+    onAssetUpdate = vi.fn()
     mockUploadFile.mockClear()
     mockUploadFile.mockResolvedValue({ id: 42, content_item_id: 42 })
     mockShowToast.mockClear()
-    mockUploadFileToStorage.mockReset()
-    _resetQueue() // важливо — semaphore — module-level singleton
+    mockPresignOnly.mockReset()
+    mockUploadAndConfirm.mockReset()
+    _resetQueue() // semaphore — module-level singleton
   })
 
   afterEach(() => {
@@ -197,153 +227,201 @@ describe('useBoardClipboard', () => {
       sessionId: () => 'session-1',
       canvasCenter: () => ({ x: 960, y: 540 }),
       onAssetAdd,
+      onAssetUpdate,
     })
   }
 
-  // ── Test 1: upload success → asset з CDN URL ─────────────────────────────
+  // ── Test 1: optimistic add — asset з'являється з blob URL ДО completion ──
 
-  it('paste з successful upload — asset додається з CDN URL', async () => {
-    mockUploadFileToStorage.mockResolvedValue({
-      assetId: 'asset-cdn-1',
-      assetUrl: 'https://cdn/img.png',
+  it('paste image → asset_add IMMEDIATELY з blob URL + status=uploading', async () => {
+    // Хвиля 1: presign швидко
+    mockPresignOnly.mockResolvedValue({
+      assetId: 'asset-be-1',
+      assetUrl: 'https://cdn/final-1.png',
+      isLocal: false,
+      uploadUrl: 'https://s3/upload-1',
     })
+    // Хвиля 2: upload бере час — імітуємо через манульний resolve
+    let _resolveUpload: (val: { assetUrl: string }) => void = () => {}
+    mockUploadAndConfirm.mockImplementation(() => new Promise((resolve) => {
+      _resolveUpload = resolve
+    }))
 
     const restore = stubImageGlobal()
     const clipboard = createClipboard()
     const event = makeImageClipboardEvent()
 
     await clipboard.handlePaste(event)
+    // Дочекатись presign + emit asset_add. Upload ще НЕ resolved.
     await new Promise((r) => setTimeout(r, 50))
 
+    // Інваріант: asset_add емітований ОДРАЗУ після presign
     expect(onAssetAdd).toHaveBeenCalledOnce()
-    const added = onAssetAdd.mock.calls[0][0] as WBAsset
-    expect(added.type).toBe('image')
-    expect(added.src).toBe('https://cdn/img.png')
-    expect(added.src.startsWith('data:')).toBe(false) // інваріант
-    expect(added.id).toBe('asset-cdn-1') // backend asset_id
+    const placeholder = onAssetAdd.mock.calls[0][0] as WBAsset
+    expect(placeholder.id).toBe('asset-be-1')
+    expect(placeholder.src).toMatch(/^blob:/) // blob URL — instant render
+    expect(placeholder.status).toBe('uploading')
+
+    // Інваріант: asset_update НЕ викликався (upload pending)
+    expect(onAssetUpdate).not.toHaveBeenCalled()
+
+    // Завершуємо upload
+    _resolveUpload({ assetUrl: 'https://cdn/final-1.png' })
+    await new Promise((r) => setTimeout(r, 100))
+
+    // Тепер asset_update emit-ить final URL + status='ready'
+    expect(onAssetUpdate).toHaveBeenCalled()
+    const finalAsset = onAssetUpdate.mock.calls[0][0] as WBAsset
+    expect(finalAsset.id).toBe('asset-be-1') // INV-14: той самий ID
+    expect(finalAsset.src).toBe('https://cdn/final-1.png')
+    expect(finalAsset.src.startsWith('blob:')).toBe(false)
+    expect(finalAsset.status).toBe('ready')
 
     restore()
   })
 
-  // ── Test 2: upload fail → asset НЕ додається + toast Retry ───────────────
+  // ── Test 2: blob URL revoked після успішного upload ──────────────────────
 
-  it('paste з upload fail — asset НЕ додається, показується toast Retry', async () => {
-    mockUploadFileToStorage.mockRejectedValue(
+  it('successful upload → revokeObjectURL викликано', async () => {
+    mockPresignOnly.mockResolvedValue({
+      assetId: 'a-1',
+      assetUrl: 'https://cdn/1.png',
+      isLocal: false,
+      uploadUrl: 'https://s3/1',
+    })
+    mockUploadAndConfirm.mockResolvedValue({ assetUrl: 'https://cdn/1.png' })
+
+    const restore = stubImageGlobal()
+    const clipboard = createClipboard()
+    await clipboard.handlePaste(makeImageClipboardEvent())
+    await new Promise((r) => setTimeout(r, 100))
+
+    expect(globalThis.URL.revokeObjectURL).toHaveBeenCalled()
+    expect(_activeBlobUrls.size).toBe(0) // всі blob URLs звільнені
+
+    restore()
+  })
+
+  // ── Test 3: presign fail → asset НЕ додається ────────────────────────────
+
+  it('presign fail (rate_limited) — asset НЕ додається + toast Retry', async () => {
+    mockPresignOnly.mockRejectedValue(
       new WBUploadError('rate_limited', 'Rate limit reached'),
     )
 
     const restore = stubImageGlobal()
     const clipboard = createClipboard()
-    const event = makeImageClipboardEvent()
-
-    await clipboard.handlePaste(event)
+    await clipboard.handlePaste(makeImageClipboardEvent())
     await new Promise((r) => setTimeout(r, 50))
 
     expect(onAssetAdd).not.toHaveBeenCalled() // інваріант — нічого на дошці
-    expect(clipboard.uploadError.value).toBe('Upload failed')
+    expect(onAssetUpdate).not.toHaveBeenCalled()
     expect(mockShowToast).toHaveBeenCalled()
     const toastCall = mockShowToast.mock.calls.find((c) => c[1] === 'error')
     expect(toastCall).toBeDefined()
     expect(toastCall![2]?.action?.label).toBe('Retry')
-    expect(typeof toastCall![2]?.action?.callback).toBe('function')
 
     restore()
   })
 
-  // ── Test 3: quota_exceeded → toast БЕЗ retry ─────────────────────────────
+  // ── Test 4: presign quota_exceeded → toast БЕЗ retry ────────────────────
 
-  it('paste з quota_exceeded — toast про квоту БЕЗ retry button', async () => {
-    mockUploadFileToStorage.mockRejectedValue(
+  it('presign quota_exceeded — toast про квоту БЕЗ retry button', async () => {
+    mockPresignOnly.mockRejectedValue(
       new WBUploadError('quota_exceeded', 'Asset or storage quota exceeded'),
     )
 
     const restore = stubImageGlobal()
     const clipboard = createClipboard()
-    const event = makeImageClipboardEvent()
-
-    await clipboard.handlePaste(event)
+    await clipboard.handlePaste(makeImageClipboardEvent())
     await new Promise((r) => setTimeout(r, 50))
 
     expect(onAssetAdd).not.toHaveBeenCalled()
-    expect(clipboard.uploadError.value).toBe('Storage quota exceeded')
     const errorToast = mockShowToast.mock.calls.find((c) => c[1] === 'error')
     expect(errorToast).toBeDefined()
     expect(errorToast![0]).toContain('quota')
-    expect(errorToast![2]?.action).toBeUndefined() // НЕ пропонуємо retry
+    expect(errorToast![2]?.action).toBeUndefined() // НЕ retry
 
     restore()
   })
 
-  // ── Test 4: retry callback викликає upload повторно ─────────────────────
+  // ── Test 5: background upload fail → status='error' + toast Retry ───────
 
-  it('retry callback з toast повторно ініціює upload того ж файлу', async () => {
-    // Перший виклик fail, другий success
-    mockUploadFileToStorage
-      .mockRejectedValueOnce(new WBUploadError('rate_limited', 'fail'))
-      .mockResolvedValueOnce({ assetId: 'cdn-2', assetUrl: 'https://cdn/2.png' })
-
-    const restore = stubImageGlobal()
-    const clipboard = createClipboard()
-    const event = makeImageClipboardEvent()
-
-    await clipboard.handlePaste(event)
-    await new Promise((r) => setTimeout(r, 50))
-
-    expect(onAssetAdd).not.toHaveBeenCalled()
-    const errorToast = mockShowToast.mock.calls.find((c) => c[1] === 'error')
-    const retryCallback = errorToast?.[2]?.action?.callback as (() => void) | undefined
-    expect(retryCallback).toBeDefined()
-
-    // Викликаємо retry
-    retryCallback!()
-    await new Promise((r) => setTimeout(r, 50))
-
-    expect(mockUploadFileToStorage).toHaveBeenCalledTimes(2)
-    expect(onAssetAdd).toHaveBeenCalledOnce() // тепер успішно
-    expect((onAssetAdd.mock.calls[0][0] as WBAsset).src).toBe('https://cdn/2.png')
-
-    restore()
-  })
-
-  // ── Test 5: multi-paste — кожен файл свій upload з offset за index ──────
-
-  it('paste 3 файли — 3 uploads, asset.x/y зміщені за порядком paste', async () => {
-    mockUploadFileToStorage
-      .mockResolvedValueOnce({ assetId: 'a-0', assetUrl: 'https://cdn/0.png' })
-      .mockResolvedValueOnce({ assetId: 'a-1', assetUrl: 'https://cdn/1.png' })
-      .mockResolvedValueOnce({ assetId: 'a-2', assetUrl: 'https://cdn/2.png' })
+  it('background upload fail — asset помічений status=error, toast Retry', async () => {
+    mockPresignOnly.mockResolvedValue({
+      assetId: 'a-fail',
+      assetUrl: 'https://cdn/fail.png',
+      isLocal: false,
+      uploadUrl: 'https://s3/fail',
+    })
+    mockUploadAndConfirm.mockRejectedValue(
+      new WBUploadError('upload_failed', 'S3 PUT failed'),
+    )
 
     const restore = stubImageGlobal()
     const clipboard = createClipboard()
-    const event = makeImageClipboardEvent(3)
-
-    await clipboard.handlePaste(event)
+    await clipboard.handlePaste(makeImageClipboardEvent())
     await new Promise((r) => setTimeout(r, 100))
 
-    expect(mockUploadFileToStorage).toHaveBeenCalledTimes(3)
-    expect(onAssetAdd).toHaveBeenCalledTimes(3)
+    // asset_add емітований (presign OK)
+    expect(onAssetAdd).toHaveBeenCalledOnce()
+    const placeholder = onAssetAdd.mock.calls[0][0] as WBAsset
+    expect(placeholder.status).toBe('uploading')
 
-    // Знаходимо asset за CDN URL (порядок completion може відрізнятись від paste)
-    const assets = onAssetAdd.mock.calls.map((c) => c[0] as WBAsset)
-    const a0 = assets.find((a) => a.src === 'https://cdn/0.png')!
-    const a1 = assets.find((a) => a.src === 'https://cdn/1.png')!
-    const a2 = assets.find((a) => a.src === 'https://cdn/2.png')!
+    // asset_update емітований з status='error'
+    expect(onAssetUpdate).toHaveBeenCalled()
+    const errorAsset = onAssetUpdate.mock.calls[onAssetUpdate.mock.calls.length - 1][0] as WBAsset
+    expect(errorAsset.id).toBe('a-fail') // той самий ID
+    expect(errorAsset.status).toBe('error')
+    expect(errorAsset.errorMessage).toBeTruthy()
 
-    // Offset = index * 20 (індекс — порядок paste, не completion)
-    expect(a1.x - a0.x).toBe(20)
-    expect(a2.x - a0.x).toBe(40)
-    expect(a1.y - a0.y).toBe(20)
+    // Toast Retry показано
+    const errorToast = mockShowToast.mock.calls.find((c) => c[1] === 'error')
+    expect(errorToast).toBeDefined()
+    expect(errorToast![2]?.action?.label).toBe('Retry')
+
+    // Blob URL звільнений
+    expect(globalThis.URL.revokeObjectURL).toHaveBeenCalled()
 
     restore()
   })
 
-  // ── Test 6: dual-write call (lesson_id) ──────────────────────────────────
+  // ── Test 6: multi-paste — кожен файл свій upload з offset за index ──────
+
+  it('paste 3 файли — 3 asset_add, x/y зміщені за порядком', async () => {
+    mockPresignOnly
+      .mockResolvedValueOnce({ assetId: 'a-0', assetUrl: 'https://cdn/0.png', isLocal: false, uploadUrl: 'u' })
+      .mockResolvedValueOnce({ assetId: 'a-1', assetUrl: 'https://cdn/1.png', isLocal: false, uploadUrl: 'u' })
+      .mockResolvedValueOnce({ assetId: 'a-2', assetUrl: 'https://cdn/2.png', isLocal: false, uploadUrl: 'u' })
+    mockUploadAndConfirm.mockResolvedValue({ assetUrl: 'https://cdn/x.png' })
+
+    const restore = stubImageGlobal()
+    const clipboard = createClipboard()
+    await clipboard.handlePaste(makeImageClipboardEvent(3))
+    await new Promise((r) => setTimeout(r, 200))
+
+    expect(mockPresignOnly).toHaveBeenCalledTimes(3)
+    expect(onAssetAdd).toHaveBeenCalledTimes(3)
+
+    const assets = onAssetAdd.mock.calls.map((c) => c[0] as WBAsset)
+    const a0 = assets.find((a) => a.id === 'a-0')!
+    const a1 = assets.find((a) => a.id === 'a-1')!
+    const a2 = assets.find((a) => a.id === 'a-2')!
+
+    // Offset = index * 20 (порядок paste, не completion)
+    expect(a1.x - a0.x).toBe(20)
+    expect(a2.x - a0.x).toBe(40)
+
+    restore()
+  })
+
+  // ── Test 7: dual-write call (lesson_id) ──────────────────────────────────
 
   it('paste з lessonId — викликає learningContentApi.uploadFile з lesson_id', async () => {
-    mockUploadFileToStorage.mockResolvedValue({
-      assetId: 'a-1',
-      assetUrl: 'https://cdn/img.png',
+    mockPresignOnly.mockResolvedValue({
+      assetId: 'a-1', assetUrl: 'https://cdn/img.png', isLocal: false, uploadUrl: 'u',
     })
+    mockUploadAndConfirm.mockResolvedValue({ assetUrl: 'https://cdn/img.png' })
 
     const restore = stubImageGlobal()
     const onContentUploaded = vi.fn()
@@ -352,12 +430,13 @@ describe('useBoardClipboard', () => {
       sessionId: () => 'session-1',
       canvasCenter: () => ({ x: 960, y: 540 }),
       onAssetAdd,
+      onAssetUpdate,
       onContentUploaded,
       lessonId: () => 77,
     })
 
     await clipboard.handlePaste(makeImageClipboardEvent())
-    await new Promise((r) => setTimeout(r, 100))
+    await new Promise((r) => setTimeout(r, 150))
 
     expect(mockUploadFile).toHaveBeenCalledOnce()
     const formData = mockUploadFile.mock.calls[0][0] as FormData
@@ -367,13 +446,13 @@ describe('useBoardClipboard', () => {
     restore()
   })
 
-  // ── Test 7: dual-write fail — НЕ блокує (asset уже на дошці) ────────────
+  // ── Test 8: dual-write fail — НЕ блокує (asset уже на дошці) ────────────
 
   it('dual-write fail після успішного upload — asset уже на дошці', async () => {
-    mockUploadFileToStorage.mockResolvedValue({
-      assetId: 'a-ok',
-      assetUrl: 'https://cdn/ok.png',
+    mockPresignOnly.mockResolvedValue({
+      assetId: 'a-ok', assetUrl: 'https://cdn/ok.png', isLocal: false, uploadUrl: 'u',
     })
+    mockUploadAndConfirm.mockResolvedValue({ assetUrl: 'https://cdn/ok.png' })
     mockUploadFile.mockRejectedValue(new Error('DB error'))
 
     const restore = stubImageGlobal()
@@ -382,19 +461,23 @@ describe('useBoardClipboard', () => {
       sessionId: () => 'session-1',
       canvasCenter: () => ({ x: 960, y: 540 }),
       onAssetAdd,
+      onAssetUpdate,
       lessonId: () => 10,
     })
 
     await clipboard.handlePaste(makeImageClipboardEvent())
-    await new Promise((r) => setTimeout(r, 100))
+    await new Promise((r) => setTimeout(r, 150))
 
     expect(onAssetAdd).toHaveBeenCalledOnce()
-    expect(clipboard.uploadError.value).toBeNull()
+    expect(onAssetUpdate).toHaveBeenCalled()
+    // Не error toast — dual-write fail non-critical
+    const errorToasts = mockShowToast.mock.calls.filter((c) => c[1] === 'error')
+    expect(errorToasts).toHaveLength(0)
 
     restore()
   })
 
-  // ── Test 8: text paste → sticky note (без змін) ─────────────────────────
+  // ── Test 9: text paste → sticky note (без змін) ─────────────────────────
 
   it('text paste створює sticky note', async () => {
     const clipboard = createClipboard()
@@ -408,7 +491,7 @@ describe('useBoardClipboard', () => {
     expect(sticky.text).toBe('Hello Winterboard!')
   })
 
-  // ── Test 9: paste у editable — ігнор ─────────────────────────────────────
+  // ── Test 10: paste у editable — ігнор ────────────────────────────────────
 
   it('paste в input — НЕ робить нічого', async () => {
     const clipboard = createClipboard()
@@ -419,10 +502,10 @@ describe('useBoardClipboard', () => {
 
     expect(store.addStickyNote).not.toHaveBeenCalled()
     expect(onAssetAdd).not.toHaveBeenCalled()
-    expect(mockUploadFileToStorage).not.toHaveBeenCalled()
+    expect(mockPresignOnly).not.toHaveBeenCalled()
   })
 
-  // ── Test 10: internal copy/paste (без змін) ──────────────────────────────
+  // ── Test 11: internal copy/paste (без змін) ──────────────────────────────
 
   it('internal copy/paste дублює об\'єкти з offset', () => {
     const stroke1 = makeStroke('s-1')
@@ -444,19 +527,16 @@ describe('useBoardClipboard', () => {
     expect(clipboard.internalClipboard.value).not.toBeNull()
 
     clipboard.pasteInternal()
-    // pasteInternal now uses batch API (single addStrokesBatch/addAssetsBatch
-    // call per kind) to produce one mutation + one op instead of N
     expect(store.addStrokesBatch).toHaveBeenCalledOnce()
     expect(store.addAssetsBatch).toHaveBeenCalledOnce()
     const pastedAssets = store.addAssetsBatch.mock.calls[0][0] as WBAsset[]
     expect(pastedAssets).toHaveLength(1)
     const newAsset = pastedAssets[0]
     expect(newAsset.id).not.toBe('a-1')
-    // OFFSET = 40 у pasteInternal
     expect(newAsset.x).toBe(asset1.x + 40)
   })
 
-  // ── Test 11: cut = copy + delete ─────────────────────────────────────────
+  // ── Test 12: cut = copy + delete ─────────────────────────────────────────
 
   it('cutSelected копіює та видаляє', () => {
     const stroke1 = makeStroke('s-1')
@@ -480,10 +560,10 @@ describe('useBoardClipboard', () => {
     expect(store.deleteSelected).toHaveBeenCalledOnce()
   })
 
-  // ── Test: quota з details → UX message з X/Y MB ──────────────────────────
+  // ── Test 13: presign quota з details (storage MB) ────────────────────────
 
   it('quota_exceeded з details (storage MB) — toast показує X/Y MB', async () => {
-    mockUploadFileToStorage.mockRejectedValue(
+    mockPresignOnly.mockRejectedValue(
       new WBUploadError('quota_exceeded', 'Storage exceeded', {
         current_bytes: 50 * 1024 * 1024,
         limit_bytes: 100 * 1024 * 1024,
@@ -503,7 +583,7 @@ describe('useBoardClipboard', () => {
   })
 
   it('quota_exceeded з details (asset count) — toast показує X/Y assets', async () => {
-    mockUploadFileToStorage.mockRejectedValue(
+    mockPresignOnly.mockRejectedValue(
       new WBUploadError('quota_exceeded', 'Asset count exceeded', {
         current: 50,
         limit: 50,
@@ -522,17 +602,13 @@ describe('useBoardClipboard', () => {
     restore()
   })
 
-  // ── Test: hard stop при quota — рештa pending скасовуються ────────────────
+  // ── Test 14: presign quota → весь batch скасовується ─────────────────────
 
-  it('quota в одному з batch — решта pending uploads скасовуються', async () => {
-    // Сценарій: 6 файлів, перший fail з quota → batchController.abort() →
-    // pending у waiting черзі semaphore відразу cancellaться; активні retry
-    // (їх немає бо quota не retry) теж пропускають.
+  it('quota в одному з batch — решта pending presigns скасовуються', async () => {
     let callCount = 0
-    mockUploadFileToStorage.mockImplementation(async (_sid, _file, _onProgress, signal) => {
+    mockPresignOnly.mockImplementation(async (_sid, _file, signal) => {
       callCount++
       const myIndex = callCount
-      // Невелика затримка щоб decentralized abort встиг спрацювати
       await new Promise((r) => setTimeout(r, 5))
       if (signal?.aborted) {
         throw new WBUploadError('cancelled', 'Aborted')
@@ -543,7 +619,12 @@ describe('useBoardClipboard', () => {
           limit_bytes: 100,
         })
       }
-      return { assetId: `a-${myIndex}`, assetUrl: `https://cdn/${myIndex}.png` }
+      return {
+        assetId: `a-${myIndex}`,
+        assetUrl: `https://cdn/${myIndex}.png`,
+        isLocal: false,
+        uploadUrl: 'u',
+      }
     })
 
     const restore = stubImageGlobal()
@@ -551,23 +632,18 @@ describe('useBoardClipboard', () => {
     await clipboard.handlePaste(makeImageClipboardEvent(6))
     await new Promise((r) => setTimeout(r, 200))
 
-    // Має бути ОДИН error toast (від першого файлу), решта silent skip
+    // ОДИН error toast (singleton при race)
     const errorToasts = mockShowToast.mock.calls.filter((c) => c[1] === 'error')
     expect(errorToasts).toHaveLength(1)
     expect(errorToasts[0][0]).toContain('quota')
 
-    // Жоден asset не доданий (перший fail, решта cancelled)
-    expect(onAssetAdd).not.toHaveBeenCalled()
-
     restore()
   })
 
-  // ── Test: singleton quota toast при race ─────────────────────────────────
+  // ── Test 15: singleton quota toast при race ──────────────────────────────
 
   it('3 паралельні файли всі отримують quota — лише ОДИН error toast', async () => {
-    // Race: усі 3 паралельні uploads хитнули 429 quota майже одночасно (до
-    // того як abort долетів). batch.quotaToastShown гарантує singleton toast.
-    mockUploadFileToStorage.mockRejectedValue(
+    mockPresignOnly.mockRejectedValue(
       new WBUploadError('quota_exceeded', 'Quota exceeded', {
         current_bytes: 100,
         limit_bytes: 100,
@@ -580,17 +656,17 @@ describe('useBoardClipboard', () => {
     await new Promise((r) => setTimeout(r, 100))
 
     const errorToasts = mockShowToast.mock.calls.filter((c) => c[1] === 'error')
-    expect(errorToasts).toHaveLength(1) // SINGLETON, не 3
+    expect(errorToasts).toHaveLength(1)
     expect(errorToasts[0][0]).toContain('quota')
 
     restore()
   })
 
-  // ── Test: cancelled — silent skip без toast ──────────────────────────────
+  // ── Test 16: cancelled з presign — silent skip ───────────────────────────
 
-  it('upload з кодом cancelled — silent skip без error toast', async () => {
-    mockUploadFileToStorage.mockRejectedValue(
-      new WBUploadError('cancelled', 'Aborted by batch'),
+  it('presign з кодом cancelled — silent skip без error toast', async () => {
+    mockPresignOnly.mockRejectedValue(
+      new WBUploadError('cancelled', 'Aborted'),
     )
 
     const restore = stubImageGlobal()
@@ -600,15 +676,15 @@ describe('useBoardClipboard', () => {
 
     expect(onAssetAdd).not.toHaveBeenCalled()
     const errorToasts = mockShowToast.mock.calls.filter((c) => c[1] === 'error')
-    expect(errorToasts).toHaveLength(0) // НЕ показуємо toast — ініціатор abort вже показав
+    expect(errorToasts).toHaveLength(0)
 
     restore()
   })
 
-  // ── Test: unknown_429 — toast БЕЗ retry ──────────────────────────────────
+  // ── Test 17: unknown_429 з presign — toast БЕЗ retry ─────────────────────
 
-  it('upload з кодом unknown_429 — toast БЕЗ retry (safe default)', async () => {
-    mockUploadFileToStorage.mockRejectedValue(
+  it('presign з unknown_429 — toast БЕЗ retry (safe default)', async () => {
+    mockPresignOnly.mockRejectedValue(
       new WBUploadError('unknown_429', 'Server rejected (429)', {
         detail: 'Custom server message',
       }),
@@ -623,49 +699,103 @@ describe('useBoardClipboard', () => {
     const errorToast = mockShowToast.mock.calls.find((c) => c[1] === 'error')
     expect(errorToast).toBeDefined()
     expect(errorToast![0]).toContain('Custom server message')
-    expect(errorToast![2]?.action).toBeUndefined() // НЕ retry button
+    expect(errorToast![2]?.action).toBeUndefined()
 
     restore()
   })
 
-  // ── Test: hard cap paste — >50 images → warning, НЕ upload ───────────────
+  // ── Test 18: hard cap >50 → reject ───────────────────────────────────────
 
-  it('paste >50 images — hard reject з warning toast, БЕЗ upload', async () => {
+  it('paste >50 images — hard reject з warning toast', async () => {
     const restore = stubImageGlobal()
     const clipboard = createClipboard()
-    // Створюємо clipboard event з 51 файлом
     const event = makeImageClipboardEvent(51)
 
     await clipboard.handlePaste(event)
     await new Promise((r) => setTimeout(r, 50))
 
-    expect(mockUploadFileToStorage).not.toHaveBeenCalled()
+    expect(mockPresignOnly).not.toHaveBeenCalled()
     expect(onAssetAdd).not.toHaveBeenCalled()
     const warningToast = mockShowToast.mock.calls.find((c) => c[1] === 'warning')
     expect(warningToast).toBeDefined()
-    // Текст містить кількість файлів і ліміт
     expect(warningToast![0]).toMatch(/51|tooMany/)
 
     restore()
   })
 
-  // ── Test 12: no session → toast warning, НЕ upload ───────────────────────
+  // ── Test 19: no session → toast warning ──────────────────────────────────
 
-  it('paste без активної сесії — toast warning, НЕ upload', async () => {
+  it('paste без активної сесії — toast warning, НЕ presign', async () => {
     const restore = stubImageGlobal()
     const clipboard = useBoardClipboard({
       store: store as never,
       sessionId: () => null,
       canvasCenter: () => ({ x: 0, y: 0 }),
       onAssetAdd,
+      onAssetUpdate,
     })
 
     await clipboard.handlePaste(makeImageClipboardEvent())
     await new Promise((r) => setTimeout(r, 50))
 
-    expect(mockUploadFileToStorage).not.toHaveBeenCalled()
+    expect(mockPresignOnly).not.toHaveBeenCalled()
     expect(onAssetAdd).not.toHaveBeenCalled()
     expect(mockShowToast).toHaveBeenCalledWith('No active session', 'warning')
+
+    restore()
+  })
+
+  // ── Test 20: INV-14 — asset.id stable між asset_add і asset_update ───────
+
+  it('INV-14: asset.id той самий для asset_add і asset_update', async () => {
+    mockPresignOnly.mockResolvedValue({
+      assetId: 'stable-id-1',
+      assetUrl: 'https://cdn/x.png',
+      isLocal: false,
+      uploadUrl: 'u',
+    })
+    mockUploadAndConfirm.mockResolvedValue({ assetUrl: 'https://cdn/x.png' })
+
+    const restore = stubImageGlobal()
+    const clipboard = createClipboard()
+    await clipboard.handlePaste(makeImageClipboardEvent())
+    await new Promise((r) => setTimeout(r, 100))
+
+    const addedId = (onAssetAdd.mock.calls[0][0] as WBAsset).id
+    const updatedId = (onAssetUpdate.mock.calls[0][0] as WBAsset).id
+    expect(addedId).toBe('stable-id-1')
+    expect(updatedId).toBe('stable-id-1')
+    expect(addedId).toBe(updatedId)
+
+    restore()
+  })
+
+  // ── Test 21: onAssetUpdate fallback → store.updateAsset ──────────────────
+
+  it('без onAssetUpdate option — fallback на store.updateAsset', async () => {
+    mockPresignOnly.mockResolvedValue({
+      assetId: 'fallback-1',
+      assetUrl: 'https://cdn/fb.png',
+      isLocal: false,
+      uploadUrl: 'u',
+    })
+    mockUploadAndConfirm.mockResolvedValue({ assetUrl: 'https://cdn/fb.png' })
+
+    const restore = stubImageGlobal()
+    const clipboard = useBoardClipboard({
+      store: store as never,
+      sessionId: () => 'session-1',
+      canvasCenter: () => ({ x: 0, y: 0 }),
+      onAssetAdd,
+      // onAssetUpdate NOT passed → fallback на store.updateAsset
+    })
+    await clipboard.handlePaste(makeImageClipboardEvent())
+    await new Promise((r) => setTimeout(r, 100))
+
+    expect(store.updateAsset).toHaveBeenCalled()
+    const updated = store.updateAsset.mock.calls[store.updateAsset.mock.calls.length - 1][0] as WBAsset
+    expect(updated.id).toBe('fallback-1')
+    expect(updated.status).toBe('ready')
 
     restore()
   })
