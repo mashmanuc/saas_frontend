@@ -399,10 +399,15 @@ function _getEffectiveMode(): 'edit' | 'replay' | 'readonly' {
 
 function _emitOperation(op: RecordOperationRequest): void {
   const mode = _getEffectiveMode()
-  // Public replay (WBPublicView) ставить mode='replay' / mode='readonly' для
-  // read-only render — applier викликає store.addStroke()/etc, які пробують
-  // emit. Тут тихо обриваємо emit, щоб ops не йшли у /replay/batch/.
-  if (mode !== 'edit') return
+  // Fix 2026-04-29: gate inverted — block ONLY у replay mode (avoid loop).
+  // Old gate `mode !== 'edit'` rejected emit якщо mode був transient (undefined,
+  // loading state, race during session load). Що means у user clicks BG picker
+  // fast → mode не settled до 'edit' → emit silently dropped → BE doesn't know
+  // → replay shows default white.
+  // NEW gate: emit unless у explicit replay mode. Public WBPublicView still
+  // safe — sets mode='replay' explicitly via setMode(); other transient states
+  // now properly emit.
+  if (mode === 'replay') return
   for (const listener of _operationListeners) {
     try {
       listener(op)
