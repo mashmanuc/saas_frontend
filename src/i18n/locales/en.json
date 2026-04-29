@@ -6793,6 +6793,9 @@
       "expand": "Expand panel",
       "sheetTitle": "Tool settings"
     },
+    "solidToolbar": {
+      "autoRotate": "Auto rotate"
+    },
     "lock": {
       "lock": "Lock",
       "unlock": "Unlock",

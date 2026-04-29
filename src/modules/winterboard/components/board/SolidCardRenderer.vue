@@ -73,6 +73,22 @@
       >
         Faces
       </button>
+      <!-- Phase O PR-O5: autoRotate toggle (default ON per solidDefaults).
+           Per SSOT §3.7.1 — autoRotate persists через WBAsset.data.state →
+           emits asset_update op (existing pattern), watch у renderer fires
+           applyState → SolidCard.set('autoRotate', value). Жодних нових ops
+           і жодних змін у SolidCard internals. -->
+      <button
+        type="button"
+        class="solid-toolbar__btn"
+        :class="{ 'is-active': state.autoRotate }"
+        :aria-pressed="state.autoRotate"
+        data-testid="solid-toggle-auto-rotate"
+        :title="t('winterboard.solidToolbar.autoRotate')"
+        @click="toggleField('autoRotate')"
+      >
+        ↻
+      </button>
       <button
         type="button"
         class="solid-toolbar__btn"
@@ -155,6 +171,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type {
   SolidAsset,
   SolidAssetData,
@@ -164,6 +181,8 @@ import {
   loadSolidCard,
   type SolidCardInstance,
 } from '../../services/solidCardLoader'
+
+const { t } = useI18n()
 
 const props = withDefaults(
   defineProps<{ asset: SolidAsset; isSelected?: boolean }>(),
