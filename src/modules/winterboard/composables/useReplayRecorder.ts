@@ -47,8 +47,10 @@ const MAX_PAYLOAD_BYTES = 64 * 1024  // 64KB — must match backend WBBoardOpera
 // Phase S PR-3 (2026-04-28) — bounded batcher per REFACTOR_PLAN.md v2 §3.A.
 /** Hard cap per POST (BE accepts up to 100 ops/batch). */
 const MAX_BATCH_OPS = 100
-/** Aggregate batch ceiling per POST (defense-in-depth поверх per-op MAX_PAYLOAD_BYTES). */
-const MAX_BATCH_BYTES = 512 * 1024
+/** Aggregate batch ceiling per POST (defense-in-depth поверх per-op MAX_PAYLOAD_BYTES).
+ *  128KB вибрано per helper review 2026-04-29 — 512KB risk: CDN/proxy/gunicorn intermediate limits.
+ *  128KB = 2× headroom over per-op 64KB; ~100 small strokes (1-1.3KB avg) fit без issue. */
+const MAX_BATCH_BYTES = 128 * 1024
 /** Coalescer trigger: коли pendingCount > N AND incoming op = stroke_append → merge. */
 const COALESCE_THRESHOLD = 50
 
