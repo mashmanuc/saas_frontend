@@ -7001,7 +7001,8 @@
       "noMaterials": "Материалы ещё не добавлены к уроку",
       "addFromLibrary": "Добавить из библиотеки",
       "backToLesson": "Материалы урока",
-      "pasteFilterTitle": "Показать только вставленные из буфера"
+      "pasteFilterTitle": "Показать только вставленные из буфера",
+      "solidsHeader": "Геометрические фигуры"
     },
     "templates": {
       "chooseTemplate": "Выберите шаблон доски",

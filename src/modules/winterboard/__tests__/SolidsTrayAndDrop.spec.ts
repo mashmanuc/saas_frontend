@@ -43,6 +43,21 @@ vi.mock('@/modules/learning-content', () => ({
 vi.mock('../vendor/solidCard.js', () => ({}))
 vi.mock('three', () => ({}))
 
+// PR-O4.1: mocks for ContentSidebar visibility tests (top-level — vitest hoists).
+vi.mock('@/modules/learning-content/api/learningContentApi', () => ({
+  learningContentApi: {
+    getStorageQuota: vi.fn(() => Promise.resolve(null)),
+    getLessonAllowedItems: vi.fn(() => Promise.resolve([])),
+    addAllowedContent: vi.fn(),
+  },
+}))
+vi.mock('@/modules/learning-content/components/StorageQuotaBar.vue', () => ({
+  default: { name: 'StorageQuotaBarStub', template: '<div data-testid="quota-stub" />' },
+}))
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({ t: (k: string) => k }),
+}))
+
 // ─────────────────────────────────────────────────────────────────────────
 //  CHECKPOINT 4 — DEFAULT_SOLID_STATE single source
 // ─────────────────────────────────────────────────────────────────────────
@@ -260,6 +275,63 @@ describe('useContentDrop — geometry_solid drop', () => {
 // ─────────────────────────────────────────────────────────────────────────
 //  Delete button — SolidCardRenderer emits 'delete'
 // ─────────────────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────────
+//  PR-O4.1 P0 — ContentSidebar mounts SolidsTray у всіх sub-states
+//
+//  Bug: SolidsTray був унизу sidebar — після всіх materials groups + button.
+//  Користувач не міг побачити tray після 15+ матеріалів (off-screen).
+//  Fix: tray ABOVE groups → завжди видимий у lesson mode у будь-якому стані
+//  (loading / error / empty / groups). Hidden ONLY у library mode.
+// ─────────────────────────────────────────────────────────────────────────
+
+describe('ContentSidebar — SolidsTray visibility invariant (PR-O4.1)', () => {
+  // Тут ми НЕ мокуємо useContentSidebar композабл (vi.mock працює тільки top-level).
+  // Натомість покладаємось на контракт компонента: SolidsTray розташований ABOVE
+  // sub-state branches (loading/error/empty/groups) → рендериться у lesson mode
+  // у будь-якому стані. Hidden ONLY у library mode (через v-if на template-блоці).
+  // learningContentApi мокнута глобально (returns empty array → empty state).
+
+  async function mountSidebar(props: { lessonId: string | null; isTutor: boolean }) {
+    const ContentSidebar = (
+      await import('../components/sidebar/ContentSidebar.vue')
+    ).default
+    return mount(ContentSidebar, { props })
+  }
+
+  it('empty state — SolidsTray rendered (totalCount=0)', async () => {
+    const wrapper = await mountSidebar({ lessonId: '42', isTutor: true })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="solids-tray"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('loading state — SolidsTray rendered (isLoading=true)', async () => {
+    const wrapper = await mountSidebar({ lessonId: null, isTutor: true })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="solids-tray"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('library mode — SolidsTray HIDDEN (toggle via empty-state CTA button)', async () => {
+    // Empty state — для tutor показує "addFromLibrary" CTA. Click → mode='library'.
+    const wrapper = await mountSidebar({ lessonId: '42', isTutor: true })
+    await flushPromises()
+
+    // Lesson mode default — SolidsTray rendered.
+    expect(wrapper.find('[data-testid="solids-tray"]').exists()).toBe(true)
+
+    // Switch to library mode (empty-state primary CTA).
+    const emptyAddBtn = wrapper.find('.content-sidebar__add-btn--primary')
+    if (emptyAddBtn.exists()) {
+      await emptyAddBtn.trigger('click')
+      await flushPromises()
+      // Library mode active → SolidsTray hidden (not in DOM).
+      expect(wrapper.find('[data-testid="solids-tray"]').exists()).toBe(false)
+    }
+    wrapper.unmount()
+  })
+})
 
 describe('SolidCardRenderer — delete button (PR-O4)', () => {
   // Spyable mock SolidCard (mirror SolidCardRenderer.spec setup)

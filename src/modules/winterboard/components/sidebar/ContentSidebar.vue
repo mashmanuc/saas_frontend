@@ -47,6 +47,14 @@
         </span>
       </div>
 
+      <!-- Phase O PR-O4.1 P0: Геометричні фігури — drag source tray (always visible at top) -->
+      <div class="content-sidebar__solids-section">
+        <div class="content-sidebar__group-header">
+          {{ t('winterboard.contentSidebar.solidsHeader') }}
+        </div>
+        <SolidsTray />
+      </div>
+
       <!-- Phase 11 B8: YouTube URL inline input -->
       <div v-if="isTutor" class="content-sidebar__yt-section">
         <button
@@ -138,9 +146,6 @@
         <PlusIcon :size="14" />
         {{ t('winterboard.contentSidebar.addFromLibrary') }}
       </button>
-
-      <!-- Phase O PR-O4: Геометричні фігури — drag source tray (always visible) -->
-      <SolidsTray />
     </template>
   </div>
 </template>
