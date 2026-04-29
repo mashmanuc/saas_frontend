@@ -66,12 +66,31 @@
     </div>
 
     <!-- Phase O PR-O4.2 P0: Геометричні фігури — drag source tray (always visible
-         at top, single mount → Solo + Classroom inherit). NO v-if conditions. -->
+         at top, single mount → Solo + Classroom inherit). NO v-if conditions.
+         Phase O Task 1 UX: collapsible header (local ref, session-only). -->
     <div class="content-sidebar__solids-section">
-      <div class="content-sidebar__group-header">
-        {{ t('winterboard.contentSidebar.solidsHeader') }}
-      </div>
-      <SolidsTray />
+      <button
+        type="button"
+        class="content-sidebar__group-header content-sidebar__group-header--collapsible"
+        :aria-expanded="isSolidsExpanded"
+        @click="isSolidsExpanded = !isSolidsExpanded"
+      >
+        <span class="content-sidebar__group-header-text">
+          {{ t('winterboard.contentSidebar.solidsHeader') }}
+        </span>
+        <span
+          class="content-sidebar__group-header-chevron"
+          :class="{ open: isSolidsExpanded }"
+          aria-hidden="true"
+        >
+          ▾
+        </span>
+      </button>
+      <Transition name="solids-collapse">
+        <div v-if="isSolidsExpanded" class="content-sidebar__solids-body">
+          <SolidsTray />
+        </div>
+      </Transition>
     </div>
 
     <!-- Filter chips -->
@@ -206,6 +225,9 @@ const selectedFolderId = ref<number | null>(null)
 const folders = ref<LibraryFolderTreeType[]>([])
 const isLoadingFolders = ref(false)
 const isFoldersPanelOpen = ref(false)
+
+// Phase O Task 1 UX: collapsible solids section (default expanded, session-only).
+const isSolidsExpanded = ref(true)
 
 const sidebar = useGroupSidebar(toRef(props, 'groupId'), selectedFolderId)
 const wbStore = useWBStore()
@@ -589,6 +611,59 @@ function onDrop(e: DragEvent) {
   color: #475569;
   padding: 1px 5px;
   border-radius: 8px;
+}
+
+/* ── Solids section (collapsible) — Phase O Task 1 UX ── */
+.content-sidebar__group-header--collapsible {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin: 0;
+  /* Inherit visual styling from .content-sidebar__group-header (font, padding,
+     bg, border-top) — only override button-specific defaults. */
+  background: #f8fafc;
+  border: none;
+  border-top: 1px solid #f1f5f9;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+.content-sidebar__group-header--collapsible:hover {
+  background: #f1f5f9;
+}
+.content-sidebar__group-header--collapsible:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: -2px;
+}
+.content-sidebar__group-header-text {
+  flex: 1;
+}
+.content-sidebar__group-header-chevron {
+  display: inline-block;
+  transition: transform 0.2s ease;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1;
+}
+.content-sidebar__group-header-chevron.open {
+  transform: rotate(180deg);
+}
+
+.solids-collapse-enter-active,
+.solids-collapse-leave-active {
+  transition: opacity 0.2s ease, max-height 0.2s ease;
+  overflow: hidden;
+}
+.solids-collapse-enter-from,
+.solids-collapse-leave-to {
+  opacity: 0;
+  max-height: 0;
+}
+.solids-collapse-enter-to,
+.solids-collapse-leave-from {
+  opacity: 1;
+  max-height: 600px;
 }
 
 /* ── Fade transition ── */

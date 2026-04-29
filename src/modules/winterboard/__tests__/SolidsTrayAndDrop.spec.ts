@@ -394,6 +394,107 @@ describe('SolidsTray — mounted у GroupContentSidebar (production sidebar) PR-
   })
 })
 
+// ─────────────────────────────────────────────────────────────────────────
+//  Phase O Task 1 UX — Collapsible solids section у GroupContentSidebar
+//
+//  Goal: header → button з chevron, click toggles SolidsTray visibility.
+//  State: local ref (NO store). Default: expanded.
+// ─────────────────────────────────────────────────────────────────────────
+
+describe('GroupContentSidebar — collapsible solids section (Phase O Task 1)', () => {
+  it('default state — solids body expanded, SolidsTray visible', async () => {
+    const GroupContentSidebar = (
+      await import('../components/sidebar/GroupContentSidebar.vue')
+    ).default
+    const wrapper = mount(GroupContentSidebar, {
+      props: { groupId: 'group-1', isTutor: true },
+    })
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="solids-tray"]').exists()).toBe(true)
+    const header = wrapper.find('.content-sidebar__group-header--collapsible')
+    expect(header.exists()).toBe(true)
+    expect(header.attributes('aria-expanded')).toBe('true')
+
+    wrapper.unmount()
+  })
+
+  it('click header → collapses (SolidsTray hidden)', async () => {
+    const GroupContentSidebar = (
+      await import('../components/sidebar/GroupContentSidebar.vue')
+    ).default
+    const wrapper = mount(GroupContentSidebar, {
+      props: { groupId: 'group-1', isTutor: true },
+    })
+    await flushPromises()
+
+    // Default: expanded.
+    expect(wrapper.find('[data-testid="solids-tray"]').exists()).toBe(true)
+
+    const header = wrapper.find('.content-sidebar__group-header--collapsible')
+    await header.trigger('click')
+    await nextTick()
+    await flushPromises()
+    // Force <Transition> drain — leave state pending може залишити DOM до наступного tick.
+    await new Promise((r) => setTimeout(r, 0))
+    await flushPromises()
+
+    expect(header.attributes('aria-expanded')).toBe('false')
+    // SolidsTray прибрано з DOM (v-if на solids-body).
+    expect(wrapper.find('[data-testid="solids-tray"]').exists()).toBe(false)
+
+    wrapper.unmount()
+  })
+
+  it('click header twice → toggles back to expanded', async () => {
+    const GroupContentSidebar = (
+      await import('../components/sidebar/GroupContentSidebar.vue')
+    ).default
+    const wrapper = mount(GroupContentSidebar, {
+      props: { groupId: 'group-1', isTutor: true },
+    })
+    await flushPromises()
+
+    const header = wrapper.find('.content-sidebar__group-header--collapsible')
+
+    // Collapse.
+    await header.trigger('click')
+    await nextTick()
+    await flushPromises()
+    expect(header.attributes('aria-expanded')).toBe('false')
+
+    // Expand back.
+    await header.trigger('click')
+    await nextTick()
+    await flushPromises()
+    expect(header.attributes('aria-expanded')).toBe('true')
+    expect(wrapper.find('[data-testid="solids-tray"]').exists()).toBe(true)
+
+    wrapper.unmount()
+  })
+
+  it('chevron has "open" class коли expanded, без неї коли collapsed', async () => {
+    const GroupContentSidebar = (
+      await import('../components/sidebar/GroupContentSidebar.vue')
+    ).default
+    const wrapper = mount(GroupContentSidebar, {
+      props: { groupId: 'group-1', isTutor: true },
+    })
+    await flushPromises()
+
+    const chevron = wrapper.find('.content-sidebar__group-header-chevron')
+    expect(chevron.exists()).toBe(true)
+    expect(chevron.classes()).toContain('open')
+
+    const header = wrapper.find('.content-sidebar__group-header--collapsible')
+    await header.trigger('click')
+    await nextTick()
+    expect(chevron.classes()).not.toContain('open')
+
+    wrapper.unmount()
+  })
+})
+
 describe('SolidCardRenderer — delete button (PR-O4)', () => {
   // Spyable mock SolidCard (mirror SolidCardRenderer.spec setup)
   class MockSolidCard {
