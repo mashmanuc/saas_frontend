@@ -5,18 +5,23 @@
  * - saas_docs/domains/winterboard/phase_O_solid_objects/PLAN.md PR-O2
  * - saas_docs/domains/winterboard/WINTERBOARD_SSOT.md §3.7.1
  *
- * Why singleton: уникає повторного download великого Three.js bundle
- * та повторного виконання IIFE у vendor/solidCard.js (яке навішує
- * `window.SolidCard` constructor). First call resolves promise, всі
- * наступні reuse same Promise.
+ * P0 fix 2026-04-29: switched from `await import('three')` (dynamic) to
+ * `import * as THREE from 'three'` (static). Reason: у Vite production
+ * dynamic namespace had unstable shape — vendor IIFE saw `window.THREE`
+ * with `WebGLRenderer` undefined → silent fail. Static import guarantees
+ * canonical ESM namespace.
  *
- * Why dynamic import: Three.js ~500KB. Завантажуємо ТІЛЬКИ коли board
- * actually renders solid asset (CHECKPOINT 1: Three.js NOT у main chunk).
+ * Lazy loading preserved: solidCardLoader.ts is itself dynamically-imported
+ * by SolidCardRenderer.vue (which is conditionally rendered tільки коли
+ * board has geometry_solid asset). Vite manualChunks rule:
+ *   if (id.includes('node_modules/three')) return 'vendor-three'
+ * → Three.js stays у separate chunk, loaded only коли цей file imported.
  *
  * Why window.THREE side-channel: vendored solid-card.js — це IIFE яке
  * читає `window.THREE` (legacy script style, NOT modified per SSOT
  * adapter pattern). Loader робить bridge between ES module import + IIFE.
  */
+import * as THREE from 'three'
 
 // Restricted SolidCard surface — ONLY constructor + set + destroy + rotate
 // (per SSOT §3.7.1 adapter HARD RULE). Internal methods (`_apply`,
@@ -39,11 +44,9 @@ let _loader: Promise<{ SolidCard: SolidCardConstructor }> | null = null
 export function loadSolidCard(): Promise<{ SolidCard: SolidCardConstructor }> {
   if (!_loader) {
     _loader = (async () => {
-      // 1. Завантажити Three.js (ESM) → assign на window для legacy IIFE
-      const THREE = await import('three')
-      // Vendor IIFE reads `window.THREE` (default + namespace exports merge).
-      // Cast through unknown — `window` augmentation у solidCard.d.ts.
-      ;(globalThis as unknown as { THREE: unknown }).THREE = THREE
+      // 1. Three.js — static-imported above (canonical namespace),
+      //    assign на window для legacy IIFE bridge.
+      ;(globalThis as unknown as { THREE: typeof THREE }).THREE = THREE
 
       // 2. Завантажити vendor IIFE — виконається + assign window.SolidCard.
       // Side-effect import: import path триггерує IIFE.
