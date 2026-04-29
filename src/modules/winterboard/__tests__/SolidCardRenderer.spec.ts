@@ -553,6 +553,254 @@ describe('SolidCardRenderer (Phase O Task 2 — ALT+drag rotation)', () => {
     expect(emitted()).toHaveLength(0)
     wrapper.unmount()
   })
+
+  // ── P0 fix: pointer capture + frame-delta + cleanup ─────────────────────
+
+  it('25. setPointerCapture called on pointerdown (smooth tracking)', async () => {
+    const { wrapper } = await setup(makeAsset(), { isSelected: true })
+    const overlay = wrapper.find('[data-testid="solid-rotate-overlay"]').element as HTMLElement
+    // Spy на setPointerCapture (jsdom не реалізує — стабаємо).
+    const captureSpy = vi.fn()
+    ;(overlay as unknown as { setPointerCapture: (id: number) => void }).setPointerCapture =
+      captureSpy
+
+    // Use real PointerEvent-like object з pointerId.
+    const downEvt = new MouseEvent('pointerdown', {
+      bubbles: true,
+      cancelable: true,
+      button: 0,
+      altKey: true,
+      clientX: 50,
+      clientY: 50,
+    }) as MouseEvent & { pointerId: number }
+    Object.defineProperty(downEvt, 'pointerId', { value: 7, configurable: true })
+    overlay.dispatchEvent(downEvt)
+    await nextTick()
+
+    expect(captureSpy).toHaveBeenCalledWith(7)
+    // Cleanup
+    window.dispatchEvent(makePointerEvent('pointerup', {}))
+    wrapper.unmount()
+  })
+
+  it('26. Frame-to-frame delta (not cumulative) — два pointermove дають коректні deltas', async () => {
+    const { wrapper } = await setup(makeAsset(), { isSelected: true })
+    ;(lastInstance!.rotate as ReturnType<typeof vi.fn>).mockClear()
+    const overlay = wrapper.find('[data-testid="solid-rotate-overlay"]').element as HTMLElement
+
+    overlay.dispatchEvent(
+      makePointerEvent('pointerdown', { altKey: true, button: 0, clientX: 100, clientY: 100 }),
+    )
+    // Move 1: from (100,100) → (110,105) → delta (10,5)
+    window.dispatchEvent(
+      makePointerEvent('pointermove', { altKey: true, clientX: 110, clientY: 105 }),
+    )
+    // Move 2: from (110,105) → (130,115) → frame delta (20,10) NOT cumulative (30,15)
+    window.dispatchEvent(
+      makePointerEvent('pointermove', { altKey: true, clientX: 130, clientY: 115 }),
+    )
+    await nextTick()
+
+    const calls = (lastInstance!.rotate as ReturnType<typeof vi.fn>).mock.calls
+    expect(calls).toHaveLength(2)
+    expect(calls[0]).toEqual([10, 5])
+    expect(calls[1]).toEqual([20, 10]) // frame-delta, NOT 30/15 cumulative
+
+    window.dispatchEvent(makePointerEvent('pointerup', {}))
+    wrapper.unmount()
+  })
+
+  it('27. Cleanup — pointerup removes window listeners (no stuck rotation)', async () => {
+    const { wrapper } = await setup(makeAsset(), { isSelected: true })
+    const overlay = wrapper.find('[data-testid="solid-rotate-overlay"]').element as HTMLElement
+
+    overlay.dispatchEvent(
+      makePointerEvent('pointerdown', { altKey: true, button: 0, clientX: 100, clientY: 100 }),
+    )
+    window.dispatchEvent(
+      makePointerEvent('pointermove', { altKey: true, clientX: 110, clientY: 110 }),
+    )
+    window.dispatchEvent(makePointerEvent('pointerup', {}))
+    await nextTick()
+
+    ;(lastInstance!.rotate as ReturnType<typeof vi.fn>).mockClear()
+    // Subsequent moves WITHOUT new pointerdown → must be ignored.
+    window.dispatchEvent(
+      makePointerEvent('pointermove', { altKey: true, clientX: 200, clientY: 200 }),
+    )
+    window.dispatchEvent(
+      makePointerEvent('pointermove', { altKey: true, clientX: 300, clientY: 300 }),
+    )
+    await nextTick()
+
+    expect(lastInstance!.rotate).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('28. Pointercancel → rotation stops, listeners removed (browser-level interrupt)', async () => {
+    const { wrapper } = await setup(makeAsset(), { isSelected: true })
+    const overlay = wrapper.find('[data-testid="solid-rotate-overlay"]').element as HTMLElement
+
+    overlay.dispatchEvent(
+      makePointerEvent('pointerdown', { altKey: true, button: 0, clientX: 100, clientY: 100 }),
+    )
+    window.dispatchEvent(makePointerEvent('pointercancel', {}))
+    await nextTick()
+
+    ;(lastInstance!.rotate as ReturnType<typeof vi.fn>).mockClear()
+    window.dispatchEvent(
+      makePointerEvent('pointermove', { altKey: true, clientX: 200, clientY: 200 }),
+    )
+    expect(lastInstance!.rotate).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+})
+
+// ── Phase O P0 fix — rotateMode toggle button + interaction priority ────
+
+describe('SolidCardRenderer (Phase O P0 — rotateMode toggle)', () => {
+  function makePointerEvent(
+    type: string,
+    init: Partial<{ altKey: boolean; button: number; clientX: number; clientY: number }>,
+  ): Event {
+    return new MouseEvent(type, {
+      bubbles: true,
+      cancelable: true,
+      button: init.button ?? 0,
+      clientX: init.clientX ?? 0,
+      clientY: init.clientY ?? 0,
+      altKey: init.altKey ?? false,
+    })
+  }
+
+  it('29. Toggle button rendered у toolbar коли selected', async () => {
+    const { wrapper } = await setup(makeAsset(), { isSelected: true })
+    const btn = wrapper.find('[data-testid="solid-toggle-rotate"]')
+    expect(btn.exists()).toBe(true)
+    expect(btn.classes()).not.toContain('is-active')
+    wrapper.unmount()
+  })
+
+  it('30. Click toggle → rotateMode=true → drag без ALT → rotates', async () => {
+    const { wrapper, emitted } = await setup(makeAsset(), { isSelected: true })
+    ;(lastInstance!.rotate as ReturnType<typeof vi.fn>).mockClear()
+
+    const btn = wrapper.find('[data-testid="solid-toggle-rotate"]')
+    await btn.trigger('click')
+    expect(btn.classes()).toContain('is-active')
+    // Toggle must NOT emit update:asset (NOT a state op — local UX flag).
+    expect(emitted()).toHaveLength(0)
+
+    // Drag без ALT → has має rotate.
+    const overlay = wrapper.find('[data-testid="solid-rotate-overlay"]').element as HTMLElement
+    overlay.dispatchEvent(
+      makePointerEvent('pointerdown', { altKey: false, button: 0, clientX: 100, clientY: 100 }),
+    )
+    window.dispatchEvent(
+      makePointerEvent('pointermove', { altKey: false, clientX: 120, clientY: 110 }),
+    )
+    await nextTick()
+
+    expect(lastInstance!.rotate).toHaveBeenCalledWith(20, 10)
+    // CRITICAL: no op emitted (visual-only).
+    expect(emitted()).toHaveLength(0)
+    window.dispatchEvent(makePointerEvent('pointerup', {}))
+    wrapper.unmount()
+  })
+
+  it('31. Click toggle twice → rotateMode=false → drag без ALT не rotates (Konva move)', async () => {
+    const { wrapper } = await setup(makeAsset(), { isSelected: true })
+    const btn = wrapper.find('[data-testid="solid-toggle-rotate"]')
+    await btn.trigger('click')
+    await btn.trigger('click')
+    expect(btn.classes()).not.toContain('is-active')
+
+    ;(lastInstance!.rotate as ReturnType<typeof vi.fn>).mockClear()
+    const overlay = wrapper.find('[data-testid="solid-rotate-overlay"]').element as HTMLElement
+    overlay.dispatchEvent(
+      makePointerEvent('pointerdown', { altKey: false, button: 0, clientX: 100, clientY: 100 }),
+    )
+    window.dispatchEvent(
+      makePointerEvent('pointermove', { altKey: false, clientX: 200, clientY: 200 }),
+    )
+    await nextTick()
+
+    expect(lastInstance!.rotate).not.toHaveBeenCalled()
+    window.dispatchEvent(makePointerEvent('pointerup', {}))
+    wrapper.unmount()
+  })
+
+  it('32. Deselect (isSelected:true→false) → rotateMode auto-resets', async () => {
+    const { wrapper, selectedRef } = await setup(makeAsset(), { isSelected: true })
+    const btn = wrapper.find('[data-testid="solid-toggle-rotate"]')
+    await btn.trigger('click')
+    expect(btn.classes()).toContain('is-active')
+
+    // Deselect.
+    selectedRef.value = false
+    await nextTick()
+    // Re-select to render toolbar again.
+    selectedRef.value = true
+    await nextTick()
+
+    const btn2 = wrapper.find('[data-testid="solid-toggle-rotate"]')
+    expect(btn2.classes()).not.toContain('is-active')
+    wrapper.unmount()
+  })
+
+  it('33. Interaction priority — rotateMode=true OR altKey=true → rotate; neither → no rotate', async () => {
+    const { wrapper } = await setup(makeAsset(), { isSelected: true })
+    const overlay = wrapper.find('[data-testid="solid-rotate-overlay"]').element as HTMLElement
+
+    // Case A: rotateMode=false, altKey=false → no rotate
+    ;(lastInstance!.rotate as ReturnType<typeof vi.fn>).mockClear()
+    overlay.dispatchEvent(
+      makePointerEvent('pointerdown', { altKey: false, button: 0, clientX: 100, clientY: 100 }),
+    )
+    window.dispatchEvent(
+      makePointerEvent('pointermove', { altKey: false, clientX: 110, clientY: 100 }),
+    )
+    await nextTick()
+    expect(lastInstance!.rotate).not.toHaveBeenCalled()
+    window.dispatchEvent(makePointerEvent('pointerup', {}))
+
+    // Case B: rotateMode=false, altKey=true → rotate
+    ;(lastInstance!.rotate as ReturnType<typeof vi.fn>).mockClear()
+    overlay.dispatchEvent(
+      makePointerEvent('pointerdown', { altKey: true, button: 0, clientX: 100, clientY: 100 }),
+    )
+    window.dispatchEvent(
+      makePointerEvent('pointermove', { altKey: true, clientX: 110, clientY: 100 }),
+    )
+    await nextTick()
+    expect(lastInstance!.rotate).toHaveBeenCalledWith(10, 0)
+    window.dispatchEvent(makePointerEvent('pointerup', {}))
+
+    // Case C: rotateMode=true, altKey=false → rotate
+    await wrapper.find('[data-testid="solid-toggle-rotate"]').trigger('click')
+    ;(lastInstance!.rotate as ReturnType<typeof vi.fn>).mockClear()
+    overlay.dispatchEvent(
+      makePointerEvent('pointerdown', { altKey: false, button: 0, clientX: 100, clientY: 100 }),
+    )
+    window.dispatchEvent(
+      makePointerEvent('pointermove', { altKey: false, clientX: 105, clientY: 105 }),
+    )
+    await nextTick()
+    expect(lastInstance!.rotate).toHaveBeenCalledWith(5, 5)
+    window.dispatchEvent(makePointerEvent('pointerup', {}))
+    wrapper.unmount()
+  })
+
+  it('34. rotateMode toggle does NOT emit update:asset (local ref, no store, no op)', async () => {
+    const { wrapper, emitted } = await setup(makeAsset(), { isSelected: true })
+    const btn = wrapper.find('[data-testid="solid-toggle-rotate"]')
+    await btn.trigger('click')
+    await btn.trigger('click')
+    await btn.trigger('click')
+    // Zero ops emitted — rotateMode is local-only.
+    expect(emitted()).toHaveLength(0)
+    wrapper.unmount()
+  })
 })
 
 // ── Phase O Task 3 — Cut plane invariant ─────────────────────────────────
