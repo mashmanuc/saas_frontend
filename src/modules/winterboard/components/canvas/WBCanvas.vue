@@ -49,6 +49,8 @@
         <template v-for="asset in assets" :key="asset.id">
           <!-- Phase 3C: audio/video rendered as HTML overlays — skip in Konva -->
           <template v-if="asset.type === 'audio_player' || asset.type === 'video_player'" />
+          <!-- Phase O: geometry_solid rendered as HTML overlay (Three.js) — skip in Konva -->
+          <template v-else-if="asset.type === 'geometry_solid'" />
           <!-- v5 A9: Sticky note rendering -->
           <WBStickyNote
             v-else-if="asset.type === 'sticky'"
@@ -290,6 +292,30 @@
       </div>
     </template>
 
+    <!-- Phase O PR-O4: geometry_solid overlay (Three.js — non-Konva).
+         Drop -> useContentDrop emits asset_add via parent emit chain. -->
+    <template v-for="asset in solidAssets" :key="`solid-${asset.id}`">
+      <div
+        class="wb-solid-overlay"
+        :data-solid-id="asset.id"
+        :data-testid="`solid-overlay-${asset.id}`"
+        :style="{
+          left: `${asset.x * props.zoom}px`,
+          top: `${asset.y * props.zoom}px`,
+          width: `${asset.w * props.zoom}px`,
+          height: `${asset.h * props.zoom}px`,
+        }"
+        @mousedown.stop
+        @pointerdown.stop
+      >
+        <SolidCardRenderer
+          :asset="(asset as any)"
+          @update:asset="(updated: WBAsset) => emit('asset-update', updated)"
+          @delete="emit('asset-delete', asset.id)"
+        />
+      </div>
+    </template>
+
     <!-- BUG-2 FIX: Laser trail — fading dots behind the pointer -->
     <div
       v-for="(tp, idx) in laserTrailWithOpacity"
@@ -424,6 +450,8 @@ import { useImageCache } from '../../composables/useImageCache'
 import { getSmoothedPoints, clearSmoothedCache } from '../../engine/smoothing'
 import { handleDrop as imageHandleDrop } from '../../composables/useImageUpload'
 import { SIDEBAR_DRAG_MIME, CONTENT_DRAG_MIME } from '../../types/boardDrop'
+import { SOLID_DRAG_MIME } from '../../constants/solidDefaults'
+import SolidCardRenderer from '../board/SolidCardRenderer.vue'
 import { loadKonva } from '../../engine/konvaLoader'
 import { PAGE_SHADOW } from '../../constants/pageShadow'
 import { WBSpatialIndex } from '../../engine/spatialIndex'
@@ -517,6 +545,11 @@ const assets = computed(() => props.assets ?? [])
 // Phase 3C: Media assets (audio/video) rendered as HTML overlays — excluded from Konva
 const mediaAssets = computed(() =>
   assets.value.filter(a => a.type === 'audio_player' || a.type === 'video_player' || a.type === 'youtube_player'),
+)
+
+// Phase O PR-O4: geometry_solid rendered as HTML overlay (Three.js widget — non-Konva)
+const solidAssets = computed(() =>
+  assets.value.filter(a => a.type === 'geometry_solid'),
 )
 
 // Phase 3C: Type cast helpers for media assets
@@ -2444,7 +2477,11 @@ async function handleDrop(e: DragEvent): Promise<void> {
   // Use dataTransfer.types (always accessible) instead of getData() for reliable detection.
   // This prevents a ghost asset being created when Chrome adds the dragged <img> to dataTransfer.files.
   const dragTypes = Array.from(e.dataTransfer?.types ?? [])
-  if (dragTypes.includes(SIDEBAR_DRAG_MIME) || dragTypes.includes(CONTENT_DRAG_MIME)) return
+  if (
+    dragTypes.includes(SIDEBAR_DRAG_MIME)
+    || dragTypes.includes(CONTENT_DRAG_MIME)
+    || dragTypes.includes(SOLID_DRAG_MIME)
+  ) return
 
   // Calculate drop position in canvas coordinates
   let dropX = props.width / 2
@@ -4144,5 +4181,16 @@ defineExpose({
 }
 .wb-media-drag-surface:active {
   cursor: grabbing;
+}
+
+/* Phase O PR-O4: geometry_solid HTML overlay (Three.js widget — non-Konva) */
+.wb-solid-overlay {
+  position: absolute;
+  z-index: 4;
+  background: rgba(15, 23, 42, 0.04);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 6px;
+  overflow: hidden;
+  pointer-events: auto;
 }
 </style>

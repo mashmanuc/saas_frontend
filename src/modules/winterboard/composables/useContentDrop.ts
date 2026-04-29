@@ -1,7 +1,7 @@
 import { type Ref } from 'vue'
 import { learningContentApi, renderContentToSvgDataUrl } from '@/modules/learning-content'
 import type { ContentDragPayload } from '@/modules/learning-content'
-import type { WBAsset } from '../types/winterboard'
+import type { WBAsset, SolidAsset, SolidType } from '../types/winterboard'
 import {
   SIDEBAR_DRAG_MIME,
   CONTENT_DRAG_MIME,
@@ -9,6 +9,19 @@ import {
   type SidebarDragPayload,
   type ResolveDropResponse,
 } from '../types/boardDrop'
+import {
+  DEFAULT_SOLID_STATE,
+  DEFAULT_SOLID_W,
+  DEFAULT_SOLID_H,
+  SOLID_DRAG_MIME,
+  type SolidDragPayload,
+} from '../constants/solidDefaults'
+
+// Phase O PR-O4: 10 fixed solid types — must match SolidType union exactly.
+const SOLID_TYPE_SET: ReadonlySet<SolidType> = new Set([
+  'cube', 'cuboid', 'sphere', 'cylinder', 'cone',
+  'tetrahedron', 'pyramid3', 'pyramid4', 'prism3', 'prism6',
+])
 
 /**
  * Options for useContentDrop composable.
@@ -53,6 +66,44 @@ export function useContentDrop(options: UseContentDropOptions) {
     event.preventDefault()
 
     if (!canDraw.value) return
+
+    // Phase O PR-O4: Geometry solid drag (highest priority — own MIME).
+    // Tray sets 'application/x-solid' з payload {src}. Drop handler сам
+    // hydrates default state — payload містить ТІЛЬКИ src per CHECKPOINT 4.
+    const solidRaw = event.dataTransfer?.getData(SOLID_DRAG_MIME)
+    if (solidRaw) {
+      let parsed: SolidDragPayload
+      try {
+        parsed = JSON.parse(solidRaw) as SolidDragPayload
+      } catch {
+        console.warn('[useContentDrop] Invalid solid drag payload')
+        return
+      }
+      if (!parsed?.src || !SOLID_TYPE_SET.has(parsed.src)) {
+        console.warn('[useContentDrop] Unknown solid src:', parsed?.src)
+        return
+      }
+      const canvasPos = screenToCanvas(event.clientX, event.clientY)
+      const asset: SolidAsset = {
+        id: `solid-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        type: 'geometry_solid',
+        src: parsed.src,
+        x: canvasPos.x - DEFAULT_SOLID_W / 2,
+        y: canvasPos.y - DEFAULT_SOLID_H / 2,
+        w: DEFAULT_SOLID_W,
+        h: DEFAULT_SOLID_H,
+        rotation: 0,
+        locked: false,
+        data: {
+          version: 1,
+          // Spread DEFAULT_SOLID_STATE — produces NEW mutable object so що
+          // Vue reactivity може tracking field changes у store/asset_update ops.
+          state: { ...DEFAULT_SOLID_STATE },
+        },
+      }
+      onAssetAdd(asset)
+      return
+    }
 
     // Phase 3A: Check sidebar MIME first
     const sidebarRaw = event.dataTransfer?.getData(SIDEBAR_DRAG_MIME)

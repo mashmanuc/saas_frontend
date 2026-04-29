@@ -22,6 +22,19 @@
   <div class="solid-card-renderer">
     <div ref="container" class="solid-canvas" />
 
+    <!-- Phase O PR-O4: delete button — emits 'delete', parent dispatches asset_delete op -->
+    <button
+      v-if="!asset.locked"
+      type="button"
+      class="solid-delete"
+      data-testid="solid-delete"
+      aria-label="Delete solid"
+      title="Delete"
+      @click="onDelete"
+    >
+      ×
+    </button>
+
     <div v-if="!asset.locked" class="solid-toolbar" data-testid="solid-toolbar">
       <button
         type="button"
@@ -200,6 +213,15 @@ function toggleCut(): void {
  * Slider input — debounce 50ms per SSOT throttling invariant (≤20 ops/sec).
  * Native input fires ~60Hz → debounce reduces до ≤20 ops/sec без втрати fidelity.
  */
+/**
+ * Phase O PR-O4: delete button handler — pure emit. Parent (WBCanvas) wires
+ * `@delete="emit('asset-delete', asset.id)"` → view → store.deleteAsset → asset_delete op.
+ * NO local mutation, NO calling card.set().
+ */
+function onDelete(): void {
+  emit('delete')
+}
+
 function onCutHeightInput(ev: Event): void {
   const target = ev.target as HTMLInputElement | null
   if (!target) return
@@ -291,5 +313,31 @@ onUnmounted(() => {
   width: 110px;
   margin-left: 4px;
   cursor: ew-resize;
+}
+
+.solid-delete {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.78);
+  color: #f8fafc;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  border-radius: 50%;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 3;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.solid-delete:hover {
+  background: #dc2626;
+  border-color: #f87171;
 }
 </style>

@@ -85,6 +85,10 @@ export default defineConfig({
           // Vendor chunks — stable caching for node_modules
           if (id.includes('node_modules/vue/') || id.includes('node_modules/@vue/') || id.includes('node_modules/vue-router') || id.includes('node_modules/pinia')) return 'vendor-vue'
           if (id.includes('node_modules/konva')) return 'vendor-konva'
+          // Phase O PR-O4: Three.js dedicated chunk — used only by lazy-loaded
+          // SolidCardRenderer (geometry_solid). Keeps main / chunk-winterboard
+          // small; loaded only коли board first renders solid asset.
+          if (id.includes('node_modules/three')) return 'vendor-three'
           if (id.includes('node_modules/lucide-vue-next')) return 'vendor-ui'
           if (id.includes('node_modules/dayjs') || id.includes('node_modules/axios')) return 'vendor-utils'
           if (id.includes('node_modules/vue-i18n')) return 'vendor-i18n'

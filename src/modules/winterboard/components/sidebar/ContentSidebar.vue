@@ -138,6 +138,9 @@
         <PlusIcon :size="14" />
         {{ t('winterboard.contentSidebar.addFromLibrary') }}
       </button>
+
+      <!-- Phase O PR-O4: Геометричні фігури — drag source tray (always visible) -->
+      <SolidsTray />
     </template>
   </div>
 </template>
@@ -150,6 +153,7 @@ import { useContentSidebar } from '../../composables/useContentSidebar'
 import { parseYouTubeVideoId } from '../../utils/youtubeParser'
 import ContentSidebarItem from './ContentSidebarItem.vue'
 import MaterialsBrowser from './MaterialsBrowser.vue'
+import SolidsTray from './SolidsTray.vue'
 import StorageQuotaBar from '@/modules/learning-content/components/StorageQuotaBar.vue'
 import { learningContentApi } from '@/modules/learning-content/api/learningContentApi'
 import type { StorageQuota } from '@/modules/learning-content/api/learningContentApi'
