@@ -65,6 +65,15 @@
       />
     </div>
 
+    <!-- Phase O PR-O4.2 P0: Геометричні фігури — drag source tray (always visible
+         at top, single mount → Solo + Classroom inherit). NO v-if conditions. -->
+    <div class="content-sidebar__solids-section">
+      <div class="content-sidebar__group-header">
+        {{ t('winterboard.contentSidebar.solidsHeader') }}
+      </div>
+      <SolidsTray />
+    </div>
+
     <!-- Filter chips -->
     <div
       v-if="sidebar.totalCount.value > 0 || (sidebar.pasteCount.value > 0)"
@@ -155,6 +164,7 @@ import { useWBStore } from '../../board/state/boardStore'
 import { fetchFoldersTree } from '../../api/library'
 import ContentSidebarItem from './ContentSidebarItem.vue'
 import LibraryFolderTree from '../library/LibraryFolderTree.vue'
+import SolidsTray from './SolidsTray.vue'
 import StorageQuotaBar from '@/modules/learning-content/components/StorageQuotaBar.vue'
 import { learningContentApi } from '@/modules/learning-content/api/learningContentApi'
 import type { StorageQuota } from '@/modules/learning-content/api/learningContentApi'

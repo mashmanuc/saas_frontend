@@ -333,6 +333,67 @@ describe('ContentSidebar — SolidsTray visibility invariant (PR-O4.1)', () => {
   })
 })
 
+// ─────────────────────────────────────────────────────────────────────────
+//  PR-O4.2 P0 — GroupContentSidebar (production sidebar) mounts SolidsTray
+//
+//  Bug: PR-O4 mounted SolidsTray у ContentSidebar.vue, але прод використовує
+//  GroupContentSidebar.vue (Solo + Classroom rooms). SolidsTray був недосяжний
+//  у production. Fix: mount <SolidsTray /> at top of content sections, NO v-if,
+//  always visible — single mount → Solo + Classroom inherit.
+// ─────────────────────────────────────────────────────────────────────────
+
+vi.mock('../composables/useGroupSidebar', () => ({
+  useGroupSidebar: () => ({
+    items: ref([]),
+    isLoading: ref(false),
+    error: ref(null),
+    grouped: ref({}),
+    totalCount: ref(0),
+    showPasteOnly: ref(false),
+    pasteCount: ref(0),
+    reload: vi.fn(),
+    uploadFiles: vi.fn(() => Promise.resolve()),
+    SIDEBAR_DRAG_MIME: 'application/x-sidebar-asset',
+  }),
+}))
+vi.mock('../board/state/boardStore', () => ({
+  useWBStore: () => ({}),
+}))
+vi.mock('../api/library', async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, unknown>
+  return {
+    ...actual,
+    fetchFoldersTree: vi.fn(() => Promise.resolve([])),
+  }
+})
+
+describe('SolidsTray — mounted у GroupContentSidebar (production sidebar) PR-O4.2', () => {
+  it('renders SolidsTray у GroupContentSidebar (always visible, no v-if)', async () => {
+    const GroupContentSidebar = (
+      await import('../components/sidebar/GroupContentSidebar.vue')
+    ).default
+    const wrapper = mount(GroupContentSidebar, {
+      props: { groupId: 'group-1', isTutor: true },
+    })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="solids-tray"]').exists()).toBe(true)
+    expect(wrapper.findComponent({ name: 'SolidsTray' }).exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('SolidsTray rendered коли groupId=null (library mode also covered)', async () => {
+    const GroupContentSidebar = (
+      await import('../components/sidebar/GroupContentSidebar.vue')
+    ).default
+    const wrapper = mount(GroupContentSidebar, {
+      props: { groupId: null, isTutor: false },
+    })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="solids-tray"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+})
+
 describe('SolidCardRenderer — delete button (PR-O4)', () => {
   // Spyable mock SolidCard (mirror SolidCardRenderer.spec setup)
   class MockSolidCard {
