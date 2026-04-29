@@ -1,8 +1,9 @@
 /**
- * Phase O PR-O2: SolidCardRenderer.vue tests — adapter pattern enforcement.
+ * Phase O PR-O2 + PR-O3: SolidCardRenderer.vue tests — adapter pattern + toolbar wiring.
  *
  * Refs:
- *   - saas_docs/domains/winterboard/phase_O_solid_objects/PLAN.md PR-O2 CHECKPOINT 5
+ *   - saas_docs/domains/winterboard/phase_O_solid_objects/PLAN.md PR-O2 CHECKPOINT 5,
+ *     PR-O3 CHECKPOINT 1-4 + 8 (throttle)
  *   - saas_docs/domains/winterboard/WINTERBOARD_SSOT.md §3.7.1
  *
  * Critical case = "force divergence":
@@ -12,6 +13,11 @@
  *   4. Assert: SolidCard reflects STORE value, not the divergent internal value
  *
  * Це доводить single source of truth = WBAsset.data.state (per SSOT §3.7.1).
+ *
+ * PR-O3 toolbar tests verify:
+ *   - Toggle buttons emit `update:asset` with patched state — NO direct card.set()
+ *   - showNet ⟂ showCut mutex enforced FE
+ *   - cutHeight slider debounced ≤20 ops/sec (CHECKPOINT 8)
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
@@ -100,24 +106,36 @@ function makeAsset(stateOverride: Partial<SolidAssetState> = {}): SolidAsset {
   }
 }
 
-// Wrapper з reactive prop для watch testing.
-async function setup(initial: SolidAsset) {
+interface SetupResult {
+  wrapper: ReturnType<typeof mount>
+  assetRef: ReturnType<typeof ref<SolidAsset>>
+  emitted: () => SolidAsset[]
+}
+
+// Wrapper з reactive prop для watch testing + capture update:asset emits.
+async function setup(initial: SolidAsset): Promise<SetupResult> {
   const SolidCardRenderer = (
     await import('../components/board/SolidCardRenderer.vue')
   ).default
   const assetRef = ref<SolidAsset>(initial)
+  const emittedAssets: SolidAsset[] = []
   const Wrapper = defineComponent({
     setup() {
       return { assetRef }
     },
     render() {
-      return h(SolidCardRenderer, { asset: assetRef.value })
+      return h(SolidCardRenderer, {
+        asset: assetRef.value,
+        'onUpdate:asset': (a: SolidAsset) => {
+          emittedAssets.push(a)
+        },
+      })
     },
   })
-  const wrapper = mount(Wrapper)
+  const wrapper = mount(Wrapper, { attachTo: document.body })
   await flushPromises() // resolve loadSolidCard()
   await nextTick()
-  return { wrapper, assetRef }
+  return { wrapper, assetRef, emitted: () => emittedAssets }
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────
@@ -143,10 +161,10 @@ describe('SolidCardRenderer (Phase O PR-O2 adapter pattern)', () => {
 
     // Reactive update — створюємо нову state object щоб watch deep fired.
     assetRef.value = {
-      ...assetRef.value,
+      ...assetRef.value!,
       data: {
         version: 1,
-        state: { ...assetRef.value.data.state, showEdges: false },
+        state: { ...assetRef.value!.data.state, showEdges: false },
       },
     }
     await nextTick()
@@ -170,10 +188,10 @@ describe('SolidCardRenderer (Phase O PR-O2 adapter pattern)', () => {
     // Workflow: store → watch → applyState → set('showEdges', true)
     // — bringing widget back у sync з store.
     assetRef.value = {
-      ...assetRef.value,
+      ...assetRef.value!,
       data: {
         version: 1,
-        state: { ...assetRef.value.data.state /* showEdges still true */ },
+        state: { ...assetRef.value!.data.state /* showEdges still true */ },
       },
     }
     await nextTick()
@@ -190,5 +208,139 @@ describe('SolidCardRenderer (Phase O PR-O2 adapter pattern)', () => {
     const destroyFn = lastInstance!.destroy
     wrapper.unmount()
     expect(destroyFn).toHaveBeenCalledTimes(1)
+  })
+})
+
+// ── PR-O3 toolbar wiring tests ──────────────────────────────────────────
+
+describe('SolidCardRenderer (Phase O PR-O3 toolbar wiring)', () => {
+  it('5. toggleField("showEdges") → emits update:asset with patched state, NO direct card.set call', async () => {
+    const { wrapper, emitted } = await setup(makeAsset({ showEdges: true }))
+    // Clear `set` history накопичений від initial applyState.
+    lastInstance!.set.mockClear()
+
+    const btn = wrapper.find('[data-testid="solid-toggle-edges"]')
+    expect(btn.exists()).toBe(true)
+    await btn.trigger('click')
+
+    // 5a. update:asset emitted з flipped showEdges
+    const events = emitted()
+    expect(events).toHaveLength(1)
+    expect(events[0].data.state.showEdges).toBe(false)
+    // version preserved
+    expect(events[0].data.version).toBe(1)
+    // інші ключі не змінилися
+    expect(events[0].data.state.showFaces).toBe(DEFAULT_STATE.showFaces)
+
+    // 5b. No direct card.set() called from toggle handler
+    // (set() can only be triggered via watch on prop update, not by emit alone)
+    expect(lastInstance!.set).not.toHaveBeenCalled()
+
+    wrapper.unmount()
+  })
+
+  it('6. toggleNet → emits with showNet:true, showCut:false (mutex)', async () => {
+    const { wrapper, emitted } = await setup(
+      makeAsset({ showNet: false, showCut: true }),
+    )
+    lastInstance!.set.mockClear()
+
+    await wrapper.find('[data-testid="solid-toggle-net"]').trigger('click')
+
+    const events = emitted()
+    expect(events).toHaveLength(1)
+    expect(events[0].data.state.showNet).toBe(true)
+    expect(events[0].data.state.showCut).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('7. toggleCut → emits with showCut:true, showNet:false (mutex)', async () => {
+    const { wrapper, emitted } = await setup(
+      makeAsset({ showNet: true, showCut: false }),
+    )
+    lastInstance!.set.mockClear()
+
+    await wrapper.find('[data-testid="solid-toggle-cut"]').trigger('click')
+
+    const events = emitted()
+    expect(events).toHaveLength(1)
+    expect(events[0].data.state.showCut).toBe(true)
+    expect(events[0].data.state.showNet).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('8. cutHeight slider — 60 input events у 1 sec → emits ≤20 ops (debounce 50ms)', async () => {
+    // Use fake timers щоб контролювати debounce setTimeout.
+    vi.useFakeTimers()
+    try {
+      // Start з showCut=true щоб slider був rendered.
+      const { wrapper, emitted } = await setup(makeAsset({ showCut: true }))
+
+      const slider = wrapper.find('[data-testid="solid-cut-slider"]')
+      expect(slider.exists()).toBe(true)
+
+      // Fire 60 input events at ~16.67ms intervals (60Hz native rate over 1 sec).
+      const inputEl = slider.element as HTMLInputElement
+      for (let i = 0; i < 60; i++) {
+        inputEl.value = (0.5 + i * 0.005).toFixed(3)
+        inputEl.dispatchEvent(new Event('input'))
+        // Advance timer 16ms — менше за debounce 50ms → попередній setTimeout cancelled.
+        vi.advanceTimersByTime(16)
+      }
+      // Flush remaining debounce (final setTimeout fires).
+      vi.advanceTimersByTime(60)
+      await nextTick()
+
+      const events = emitted()
+      // Debounce 50ms + 16ms intervals → only the FINAL setTimeout fires once
+      // (previous ones cancelled). Conservative bound: ≤20 ops/sec per SSOT.
+      expect(events.length).toBeGreaterThan(0)
+      expect(events.length).toBeLessThanOrEqual(20)
+      // Final emit має містити cutHeight (some valid range value).
+      const last = events[events.length - 1]
+      expect(typeof last.data.state.cutHeight).toBe('number')
+      wrapper.unmount()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('9. NO local state mirror — toolbar reads from props.asset only', async () => {
+    // Verify that when props update, toolbar UI reflects new state without
+    // any internal ref/reactive holding state — implicit: button active class
+    // tracks props directly via computed.
+    const { wrapper, assetRef } = await setup(makeAsset({ showEdges: false }))
+    let edgesBtn = wrapper.find('[data-testid="solid-toggle-edges"]')
+    expect(edgesBtn.classes()).not.toContain('is-active')
+
+    // Update props directly (simulating store → watch → renderer prop update).
+    assetRef.value = {
+      ...assetRef.value!,
+      data: {
+        version: 1,
+        state: { ...assetRef.value!.data.state, showEdges: true },
+      },
+    }
+    await nextTick()
+
+    edgesBtn = wrapper.find('[data-testid="solid-toggle-edges"]')
+    expect(edgesBtn.classes()).toContain('is-active')
+    wrapper.unmount()
+  })
+
+  it('10. Toolbar action does NOT directly call card.set() — only via emit→watch path', async () => {
+    const { wrapper } = await setup(makeAsset())
+    lastInstance!.set.mockClear()
+
+    // Click multiple toolbar buttons.
+    await wrapper.find('[data-testid="solid-toggle-faces"]').trigger('click')
+    await wrapper.find('[data-testid="solid-toggle-vertices"]').trigger('click')
+    await wrapper.find('[data-testid="solid-toggle-transparent"]').trigger('click')
+    await nextTick()
+
+    // У unit test parent НЕ propagates emit back до prop → watch не fires →
+    // card.set() ніколи не викликається безпосередньо з toggle handlers.
+    expect(lastInstance!.set).not.toHaveBeenCalled()
+    wrapper.unmount()
   })
 })
