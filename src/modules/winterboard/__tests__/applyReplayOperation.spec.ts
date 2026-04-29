@@ -166,10 +166,12 @@ describe('applyReplayOperation — grid_update', () => {
 })
 
 describe('applyReplayOperation — background_update', () => {
-  it('calls setBackgroundColor with color', () => {
+  it('calls setBackgroundColor with color and op.page_id (Fix 2026-04-29)', () => {
     const store = makeStore()
     applyReplayOperation(store, makeOp('background_update', { color: '#ff0000' }))
-    expect(store._calls.setBackgroundColor?.[0]).toEqual(['#ff0000'])
+    // Fix 2026-04-29: applier passes op.page_id ('page-1' default у makeOp)
+    // so target page resolves correctly during replay seek (not currentPageIndex).
+    expect(store._calls.setBackgroundColor?.[0]).toEqual(['#ff0000', 'page-1'])
   })
 
   it('missing color — no-op', () => {

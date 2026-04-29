@@ -778,13 +778,23 @@ export const useWBStore = defineStore('wb-board', {
     },
 
     // Phase 35: Background color (per-page only — no global fallback leak)
-    setBackgroundColor(color: string): void {
-      const page = this.pages[this.currentPageIndex]
+    setBackgroundColor(color: string, pageId?: string): void {
+      // Fix 2026-04-29: optional pageId — replay applier passes op.page_id
+      // so correct page mutates regardless of current navigation state.
+      // Якщо pageId undefined (live edit) → fallback до currentPageIndex.
+      const page = pageId
+        ? this.pages.find(p => p.id === pageId)
+        : this.pages[this.currentPageIndex]
       if (page) {
         page.backgroundColor = color
       }
       this.markDirty()
-      if (this.mode === 'edit') {
+      // Fix 2026-04-29 (background replay bug): loosened gate
+      // `mode === 'edit'` → `mode !== 'replay'`. Old gate failed silently коли
+      // mode був 'readonly' OR transient/undefined — local mutation rendered
+      // visually, але op не emit-ився → replay не знав про зміну.
+      // NEW gate: emit op у будь-якому state, крім явного replay (avoid loop).
+      if (this.mode !== 'replay') {
         _emitOperation({
           op_type: 'background_update',
           page_id: page?.id ?? '',

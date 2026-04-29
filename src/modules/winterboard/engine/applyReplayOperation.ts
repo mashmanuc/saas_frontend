@@ -62,7 +62,7 @@ export interface ReplayStoreApi {
   // Phase 20+ board meta ops
   setGridSize: (size: number) => void
   updateCurrentPageGrid: (updates: Partial<WBPageGridSettings>) => void
-  setBackgroundColor: (color: string) => void
+  setBackgroundColor: (color: string, pageId?: string) => void
   createGroup: (itemIds: string[]) => unknown
   deleteGroup: (groupId: string) => void
   lockItems: (ids: string[]) => void
@@ -294,7 +294,9 @@ export function createReplayApplier(opts?: ReplayApplierOptions) {
 
       case 'background_update':
         if (typeof payload.color === 'string') {
-          store.setBackgroundColor(payload.color)
+          // Fix 2026-04-29: pass op.page_id so setBackgroundColor targets
+          // correct page, NOT currentPageIndex (wrong during replay seek).
+          store.setBackgroundColor(payload.color, (op as { page_id?: string }).page_id)
         }
         break
 
