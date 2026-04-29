@@ -130,9 +130,71 @@ export type ViewerSlide = WBViewerPage
 
 // ─── Asset ──────────────────────────────────────────────────────────────────
 
+// Phase O (SSOT §3.7.1): 10 fixed geometry solid types — locked, no custom shapes
+export type SolidType =
+  | 'cube'
+  | 'cuboid'
+  | 'sphere'
+  | 'cylinder'
+  | 'cone'
+  | 'tetrahedron'
+  | 'pyramid3'
+  | 'pyramid4'
+  | 'prism3'
+  | 'prism6'
+
+/**
+ * Phase O state schema for geometry_solid asset.
+ * Persisted у WBBoardOperation.payload.asset.data — version: 1.
+ * Ref: WINTERBOARD_SSOT.md §3.7.1.
+ *
+ * NB: 'building' EXCLUDED — animation progress, ephemeral runtime-only.
+ * NB: showNet та showCut взаємовиключні (mutex per SSOT).
+ */
+export interface SolidAssetState {
+  /** mesh visibility (default true) */
+  showFaces: boolean
+  /** wireframe edges (default true) */
+  showEdges: boolean
+  /** dots + labels (default false) */
+  showVertices: boolean
+  /** opacity 0.32 vs 1.0 (default false) */
+  transparent: boolean
+  /** unfolded net — mutex з showCut (default false) */
+  showNet: boolean
+  /** cross-section plane — mutex з showNet (default false) */
+  showCut: boolean
+  /** 0.0–1.0 (default 0.5) */
+  cutHeight: number
+  /** auto-rotation (default true) */
+  autoRotate: boolean
+}
+
+/**
+ * Versioned data envelope для geometry_solid WBAsset.data.
+ * version=1 mandatory для replay schema migrations (PR-O5 reader).
+ */
+export interface SolidAssetData {
+  version: 1
+  state: SolidAssetState
+}
+
 export interface WBAsset {
   id: string
-  type: 'image' | 'sticky' | 'audio_player' | 'video_player' | 'youtube_player' | 'document_viewer' | 'geometry_2d'
+  type:
+    | 'image'
+    | 'sticky'
+    | 'audio_player'
+    | 'video_player'
+    | 'youtube_player'
+    | 'document_viewer'
+    | 'geometry_2d'
+    | 'geometry_solid'
+  /**
+   * Asset source descriptor.
+   * - URL для image/audio/video/document_viewer
+   * - SolidType для geometry_solid (one of 10 fixed shapes per SSOT §3.7.1)
+   */
   src: string
   x: number
   y: number
@@ -178,6 +240,27 @@ export interface WBAsset {
   viewerMode?: 'compact' | 'expanded'
   // GeoBoard: 2D geometry params (present when type='geometry_2d')
   geometryParams?: import('./geometry').Geometry2DParams
+  /**
+   * Phase O (SSOT §3.7.1): geometry_solid persisted state envelope.
+   * MUST be present when `type === 'geometry_solid'`.
+   * Версіонується для replay schema migrations.
+   *
+   * Type-safe access pattern:
+   *   if (asset.type === 'geometry_solid' && asset.data) {
+   *     const state = asset.data.state // SolidAssetState
+   *   }
+   */
+  data?: SolidAssetData
+}
+
+/**
+ * Phase O typed alias — assets з type='geometry_solid' гарантовано мають
+ * src: SolidType + data: SolidAssetData per SSOT §3.7.1.
+ */
+export interface SolidAsset extends WBAsset {
+  type: 'geometry_solid'
+  src: SolidType
+  data: SolidAssetData
 }
 
 // Phase 10 P5: Lesson navigation marker — lightweight anchor in the replay timeline.
