@@ -21,9 +21,28 @@
 <template>
   <div
     class="solid-card-renderer"
-    :class="{ 'is-toolbar-visible': toolbarVisible }"
+    :class="{
+      'is-toolbar-visible': toolbarVisible,
+      'is-rotating': isRotating,
+    }"
   >
     <div ref="container" class="solid-canvas" />
+
+    <!--
+      Phase O Task 2 — rotation overlay.
+      Активна (pointer-events:auto) ТІЛЬКИ коли isSelected && altPressed.
+      Без ALT → pointer-events:none → події проходять до Konva proxy.
+      Без isSelected → overlay не рендериться. Видалена клавіша ALT під час drag
+      зупиняє rotation (onPointerUp), але Konva drag не перехоплює середину
+      operation (window-level listeners).
+    -->
+    <div
+      v-if="isSelected"
+      class="solid-rotate-overlay"
+      :class="{ 'is-active': altPressed || isRotating }"
+      data-testid="solid-rotate-overlay"
+      @pointerdown="onRotationPointerDown"
+    />
 
     <!-- Phase O PR-O4: delete button — emits 'delete', parent dispatches asset_delete op.
          Phase O PR-O4.3: visible only when selected OR hovered. -->
@@ -139,6 +158,64 @@ const emit = defineEmits<{
 
 const container = ref<HTMLElement | null>(null)
 let card: SolidCardInstance | null = null
+
+/**
+ * Phase O Task 2 — ALT-drag rotation state (visual-only, NOT emitted as op).
+ *
+ * Strategy:
+ *  - Track ALT via window keydown/keyup (toggles overlay pointer-events:auto)
+ *  - When ALT held + isSelected → overlay catches pointerdown → start rotation
+ *  - Without ALT → overlay pointer-events:none → Konva proxy gets events normally
+ *  - Window-level pointermove/pointerup listeners ensure smooth rotation навіть
+ *    якщо pointer leaves overlay bounds
+ *  - NO op emitted — rotation lives тільки у SolidCard internal `root.rotation`
+ */
+const altPressed = ref(false)
+const isRotating = ref(false)
+const _rotState = { startX: 0, startY: 0 }
+
+function onAltKeyDown(e: KeyboardEvent): void {
+  if (e.key === 'Alt') altPressed.value = true
+}
+function onAltKeyUp(e: KeyboardEvent): void {
+  if (e.key === 'Alt') altPressed.value = false
+}
+
+function onRotationPointerMove(e: PointerEvent): void {
+  if (!isRotating.value || !card) return
+  const dx = e.clientX - _rotState.startX
+  const dy = e.clientY - _rotState.startY
+  _rotState.startX = e.clientX
+  _rotState.startY = e.clientY
+  card.rotate(dx, dy)
+}
+
+function onRotationPointerUp(): void {
+  if (!isRotating.value) return
+  isRotating.value = false
+  window.removeEventListener('pointermove', onRotationPointerMove)
+  window.removeEventListener('pointerup', onRotationPointerUp)
+  window.removeEventListener('pointercancel', onRotationPointerUp)
+}
+
+function onRotationPointerDown(e: PointerEvent): void {
+  // Triple guard: must be left-click, ALT held, and selected.
+  // If ANY guard fails → do NOT stop propagation → event flows нижче через CSS
+  // pointer-events:none (overlay is interactive only when CSS class is-active
+  // active, controlled by template binding). Defense-in-depth: also check у JS.
+  if (e.button !== 0) return
+  if (!e.altKey) return
+  if (!props.isSelected) return
+  // Stop propagation so Konva proxy не починає drag/select.
+  e.stopPropagation()
+  e.preventDefault()
+  isRotating.value = true
+  _rotState.startX = e.clientX
+  _rotState.startY = e.clientY
+  window.addEventListener('pointermove', onRotationPointerMove)
+  window.addEventListener('pointerup', onRotationPointerUp)
+  window.addEventListener('pointercancel', onRotationPointerUp)
+}
 
 /**
  * Phase O PR-O4.3: toolbar visibility driven by selection state from store.
@@ -263,7 +340,16 @@ onMounted(async () => {
   if (!container.value) return
   card = new SolidCard(container.value, { type: props.asset.src })
   applyState(props.asset.data.state)
+  // Phase O Task 2 — ALT key tracking для rotation overlay activation.
+  window.addEventListener('keydown', onAltKeyDown)
+  window.addEventListener('keyup', onAltKeyUp)
+  // Blur reset (alt може бути "stuck" якщо вікно втратило фокус).
+  window.addEventListener('blur', resetAltOnBlur)
 })
+
+function resetAltOnBlur(): void {
+  altPressed.value = false
+}
 
 watch(
   () => props.asset.data.state,
@@ -275,6 +361,16 @@ onUnmounted(() => {
   if (_slideTimer) {
     clearTimeout(_slideTimer)
     _slideTimer = null
+  }
+  // Phase O Task 2 — cleanup global listeners (defensive: rotation теж зніметься).
+  window.removeEventListener('keydown', onAltKeyDown)
+  window.removeEventListener('keyup', onAltKeyUp)
+  window.removeEventListener('blur', resetAltOnBlur)
+  if (isRotating.value) {
+    window.removeEventListener('pointermove', onRotationPointerMove)
+    window.removeEventListener('pointerup', onRotationPointerUp)
+    window.removeEventListener('pointercancel', onRotationPointerUp)
+    isRotating.value = false
   }
   card?.destroy()
   card = null
@@ -304,6 +400,28 @@ onUnmounted(() => {
 
 .solid-canvas :deep(canvas) {
   pointer-events: none;
+}
+
+/* Phase O Task 2 — rotation overlay.
+   Default pointer-events:none → події проходять до Konva proxy (drag/select/resize).
+   Активний (.is-active) → pointer-events:auto → перехоплює ALT+drag.
+   `.is-rotating` на root встановлює курсор на час rotation (smooth UX). */
+.solid-rotate-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1; /* над canvas, під toolbar (z:2) та delete (z:3) */
+  background: transparent;
+}
+
+.solid-rotate-overlay.is-active {
+  pointer-events: auto;
+  cursor: grab;
+}
+
+.solid-card-renderer.is-rotating .solid-rotate-overlay {
+  pointer-events: auto;
+  cursor: grabbing;
 }
 
 .solid-toolbar {

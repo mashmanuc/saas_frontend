@@ -17,6 +17,9 @@ declare global {
     ) => {
       set(key: string, value: unknown): void
       destroy(): void
+      // Phase O Task 2 — visual-only rotation (ALT+drag overlay).
+      // NOT emits op; resets autoRotate flag internally.
+      rotate(dx: number, dy: number): void
     }
   }
 }

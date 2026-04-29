@@ -18,12 +18,16 @@
  * adapter pattern). Loader робить bridge between ES module import + IIFE.
  */
 
-// Restricted SolidCard surface — ONLY constructor + set + destroy (per SSOT
-// §3.7.1 adapter HARD RULE). Internal methods (`_apply`, `_buildSolid`,
-// `rebuild`, `toggleFullscreen`) intentionally NOT exposed.
+// Restricted SolidCard surface — ONLY constructor + set + destroy + rotate
+// (per SSOT §3.7.1 adapter HARD RULE). Internal methods (`_apply`,
+// `_buildSolid`, `rebuild`, `toggleFullscreen`) intentionally NOT exposed.
+//
+// Phase O Task 2 — `rotate(dx, dy)` додано як public visual rotation API
+// (викликається adapter'ом для ALT+drag overlay; НЕ емітує op).
 export interface SolidCardInstance {
   set(key: string, value: unknown): void
   destroy(): void
+  rotate(dx: number, dy: number): void
 }
 
 export interface SolidCardConstructor {

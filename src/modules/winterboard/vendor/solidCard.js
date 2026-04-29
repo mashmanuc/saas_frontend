@@ -292,27 +292,33 @@
     }
 
     _buildCutPlane() {
+      // Phase O Task 3 — cut plane invariant: plane живе у SCENE (не у this.root),
+      // тож обертання solid НЕ обертає площину. Площина ВЖЕ паралельна world Y
+      // (rotation.x = -PI/2). При обертанні solid контур перерахується у world
+      // space у _loop().
       const planeGeom = new THREE.PlaneGeometry(3, 3);
       this.cutPlane = new THREE.Mesh(planeGeom, new THREE.MeshBasicMaterial({
         color: 0xff7849, transparent: true, opacity: 0.18, side: THREE.DoubleSide, depthWrite: false,
       }));
       this.cutPlane.rotation.x = -Math.PI / 2;
       this.cutPlane.visible = false;
-      this.root.add(this.cutPlane);
+      this.scene.add(this.cutPlane);
       this.cutOutline = new THREE.LineSegments(new THREE.EdgesGeometry(planeGeom), new THREE.LineBasicMaterial({ color: 0xff5a2e, transparent:true, opacity:0.5 }));
       this.cutOutline.rotation.x = -Math.PI / 2;
       this.cutOutline.visible = false;
-      this.root.add(this.cutOutline);
+      this.scene.add(this.cutOutline);
 
-      // Intersection contour — built each time cutHeight changes
+      // Intersection contour — будується у world space (бо solid може обертатись).
+      // Живе у scene (не у root), щоб НЕ обертатись разом з solid.
       this.cutContour = new THREE.LineSegments(
         new THREE.BufferGeometry(),
         new THREE.LineBasicMaterial({ color: 0xff3a14, linewidth: 4, depthTest: false, transparent: true })
       );
       this.cutContour.renderOrder = 10;
       this.cutContour.visible = false;
-      this.root.add(this.cutContour);
+      this.scene.add(this.cutContour);
       this._lastCutY = NaN;
+      this._lastCutMatrixHash = '';
     }
 
     _rectShape(hx, hy) { const s = new THREE.Shape(); s.moveTo(-hx,-hy); s.lineTo(hx,-hy); s.lineTo(hx,hy); s.lineTo(-hx,hy); s.closePath(); return s; }
@@ -435,6 +441,20 @@
 
     set(key, value) { this.state[key]=value; this._apply(); }
 
+    /**
+     * Phase O Task 2 — публічний rotation API для зовнішніх UI (HTML overlay).
+     * Викликається adapter'ом коли ALT+drag тримається на selected solid.
+     * NOT емітує op (visual-only state per Phase O scope).
+     *
+     * @param {number} dx — delta horizontal pointer movement (px) — Y axis rotate
+     * @param {number} dy — delta vertical pointer movement (px) — X axis rotate (clamped)
+     */
+    rotate(dx, dy) {
+      this.state.autoRotate = false; // ALT-drag override — auto-rotate stops
+      this.root.rotation.y += dx * 0.01;
+      this.root.rotation.x = Math.max(-1.2, Math.min(1.2, this.root.rotation.x + dy * 0.01));
+    }
+
     _apply() {
       this.mesh.visible = this.state.showFaces;
       this.edges.visible = this.state.showEdges;
@@ -451,6 +471,9 @@
       this.cutContour.visible = this.state.showCut;
       const y = -1.05 + 2.1 * this.state.cutHeight;
       this.cutPlane.position.y = y; this.cutOutline.position.y = y;
+      // Phase O Task 3 — rebuild контуру при зміні y.
+      // Додатково _loop() перебудовує контур якщо обертання solid'а змінилося
+      // (cutContour живе у world space, тож mesh.matrixWorld впливає).
       if (this.state.showCut && y !== this._lastCutY) {
         this._rebuildCutContour(y);
         this._lastCutY = y;
@@ -460,12 +483,17 @@
     }
 
     _rebuildCutContour(y) {
-      // Find intersection of mesh geometry with horizontal plane y=Y in LOCAL space
+      // Phase O Task 3 — обчислюємо перетин mesh з горизонтальною world-площиною Y=y
+      // у WORLD space. Це коректно при обертанні (mesh.matrixWorld містить rotation
+      // от this.root). Контур живе у scene → не обертається з solid'ом.
       const geom = this.mesh.geometry;
       const pos = geom.getAttribute('position');
       const idx = geom.getIndex();
       const segments = [];
       const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
+      // Update world matrix перед transform (root міг бути обернений).
+      this.mesh.updateWorldMatrix(true, false);
+      const m = this.mesh.matrixWorld;
       const triCount = idx ? idx.count / 3 : pos.count / 3;
       const lerpY = (p1, p2, Y) => {
         const t = (Y - p1.y) / (p2.y - p1.y);
@@ -479,9 +507,9 @@
         const i0 = idx ? idx.getX(i*3) : i*3;
         const i1 = idx ? idx.getX(i*3+1) : i*3+1;
         const i2 = idx ? idx.getX(i*3+2) : i*3+2;
-        a.fromBufferAttribute(pos, i0);
-        b.fromBufferAttribute(pos, i1);
-        c.fromBufferAttribute(pos, i2);
+        a.fromBufferAttribute(pos, i0); a.applyMatrix4(m);
+        b.fromBufferAttribute(pos, i1); b.applyMatrix4(m);
+        c.fromBufferAttribute(pos, i2); c.applyMatrix4(m);
         const da = a.y - y, db = b.y - y, dc = c.y - y;
         const eps = 1e-6;
         const sa = da > eps ? 1 : (da < -eps ? -1 : 0);
@@ -531,6 +559,18 @@
       if (this._destroyed) return;
       requestAnimationFrame(() => this._loop());
       if (this.state.autoRotate) this.root.rotation.y += 0.0045;
+
+      // Phase O Task 3 — якщо showCut активний, перебудовуємо контур кожен раз
+      // коли rotation змінилася (autoRotate, або manual ALT-rotation з overlay).
+      // Стрибки rotation у world space → треба rebuild у world space.
+      if (this.state.showCut) {
+        const rx = this.root.rotation.x, ry = this.root.rotation.y;
+        const hash = `${rx.toFixed(4)}|${ry.toFixed(4)}|${this._lastCutY.toFixed?.(4) ?? this._lastCutY}`;
+        if (hash !== this._lastCutMatrixHash) {
+          this._rebuildCutContour(this._lastCutY);
+          this._lastCutMatrixHash = hash;
+        }
+      }
 
       if (this.state.building < 1) {
         this.state.building = Math.min(1, this.state.building + 0.012);

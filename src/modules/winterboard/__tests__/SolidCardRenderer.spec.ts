@@ -47,6 +47,10 @@ class MockSolidCard {
   public destroy = vi.fn((): void => {
     /* no-op для test */
   })
+  // Phase O Task 2 — visual rotation API (NOT op-emitting).
+  public rotate = vi.fn((_dx: number, _dy: number): void => {
+    /* spyable in tests */
+  })
   public type: string
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   constructor(_container: HTMLElement, opts: { type: string }) {
@@ -399,6 +403,204 @@ describe('SolidCardRenderer (Phase O PR-O4.3 selection-driven toolbar)', () => {
     selectedRef.value = true
     await nextTick()
     expect(wrapper.find('.solid-card-renderer').classes()).toContain('is-toolbar-visible')
+    wrapper.unmount()
+  })
+})
+
+// ── Phase O Task 2 — ALT+drag rotation tests ────────────────────────────
+
+describe('SolidCardRenderer (Phase O Task 2 — ALT+drag rotation)', () => {
+  /**
+   * Helper: dispatch pointer event on overlay element.
+   * jsdom не підтримує PointerEvent повноцінно — використовуємо MouseEvent
+   * з custom property (overlay handler читає altKey, button, clientX/Y).
+   */
+  function makePointerEvent(
+    type: string,
+    init: Partial<{ altKey: boolean; button: number; clientX: number; clientY: number }>,
+  ): Event {
+    const e = new MouseEvent(type, {
+      bubbles: true,
+      cancelable: true,
+      button: init.button ?? 0,
+      clientX: init.clientX ?? 0,
+      clientY: init.clientY ?? 0,
+      altKey: init.altKey ?? false,
+    })
+    return e
+  }
+
+  it('16. Rotation overlay rendered ONLY when isSelected=true', async () => {
+    const notSel = await setup(makeAsset(), { isSelected: false })
+    expect(notSel.wrapper.find('[data-testid="solid-rotate-overlay"]').exists()).toBe(false)
+    notSel.wrapper.unmount()
+
+    const sel = await setup(makeAsset(), { isSelected: true })
+    expect(sel.wrapper.find('[data-testid="solid-rotate-overlay"]').exists()).toBe(true)
+    sel.wrapper.unmount()
+  })
+
+  it('17. ALT + leftClick + selected → card.rotate() called on pointermove (visual only, NO op emit)', async () => {
+    const { wrapper, emitted } = await setup(makeAsset(), { isSelected: true })
+    expect(lastInstance!.rotate).toBeDefined()
+    ;(lastInstance!.rotate as ReturnType<typeof vi.fn>).mockClear()
+
+    const overlay = wrapper.find('[data-testid="solid-rotate-overlay"]').element as HTMLElement
+    overlay.dispatchEvent(
+      makePointerEvent('pointerdown', { altKey: true, button: 0, clientX: 100, clientY: 100 }),
+    )
+    // Window-level pointermove
+    window.dispatchEvent(
+      makePointerEvent('pointermove', { altKey: true, clientX: 130, clientY: 110 }),
+    )
+    await nextTick()
+
+    // delta = (30, 10)
+    expect(lastInstance!.rotate).toHaveBeenCalledWith(30, 10)
+    // CRITICAL: NO update:asset emit (rotation is visual-only).
+    expect(emitted()).toHaveLength(0)
+
+    // Cleanup: pointerup
+    window.dispatchEvent(makePointerEvent('pointerup', { altKey: true }))
+    wrapper.unmount()
+  })
+
+  it('18. Without ALT → pointerdown does NOT trigger rotation (Konva proxy gets event)', async () => {
+    const { wrapper } = await setup(makeAsset(), { isSelected: true })
+    ;(lastInstance!.rotate as ReturnType<typeof vi.fn>).mockClear()
+
+    const overlay = wrapper.find('[data-testid="solid-rotate-overlay"]').element as HTMLElement
+    overlay.dispatchEvent(
+      makePointerEvent('pointerdown', { altKey: false, button: 0, clientX: 100, clientY: 100 }),
+    )
+    window.dispatchEvent(
+      makePointerEvent('pointermove', { altKey: false, clientX: 130, clientY: 110 }),
+    )
+    await nextTick()
+
+    expect(lastInstance!.rotate).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('19. Without isSelected → rotation overlay not in DOM, no rotate call possible', async () => {
+    const { wrapper } = await setup(makeAsset(), { isSelected: false })
+    ;(lastInstance!.rotate as ReturnType<typeof vi.fn>).mockClear()
+    expect(wrapper.find('[data-testid="solid-rotate-overlay"]').exists()).toBe(false)
+    expect(lastInstance!.rotate).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('20. Pointerup → rotation stops (subsequent pointermove ignored)', async () => {
+    const { wrapper } = await setup(makeAsset(), { isSelected: true })
+    ;(lastInstance!.rotate as ReturnType<typeof vi.fn>).mockClear()
+
+    const overlay = wrapper.find('[data-testid="solid-rotate-overlay"]').element as HTMLElement
+    overlay.dispatchEvent(
+      makePointerEvent('pointerdown', { altKey: true, button: 0, clientX: 100, clientY: 100 }),
+    )
+    window.dispatchEvent(
+      makePointerEvent('pointermove', { altKey: true, clientX: 110, clientY: 100 }),
+    )
+    await nextTick()
+    const callsBeforeUp = (lastInstance!.rotate as ReturnType<typeof vi.fn>).mock.calls.length
+    expect(callsBeforeUp).toBeGreaterThan(0)
+
+    // Pointer up
+    window.dispatchEvent(makePointerEvent('pointerup', {}))
+    // After up, further moves повинні бути ignored
+    window.dispatchEvent(
+      makePointerEvent('pointermove', { altKey: true, clientX: 200, clientY: 200 }),
+    )
+    await nextTick()
+
+    expect((lastInstance!.rotate as ReturnType<typeof vi.fn>).mock.calls.length).toBe(callsBeforeUp)
+    wrapper.unmount()
+  })
+
+  it('21. Right click з ALT (button=2) → no rotation triggered', async () => {
+    const { wrapper } = await setup(makeAsset(), { isSelected: true })
+    ;(lastInstance!.rotate as ReturnType<typeof vi.fn>).mockClear()
+
+    const overlay = wrapper.find('[data-testid="solid-rotate-overlay"]').element as HTMLElement
+    overlay.dispatchEvent(
+      makePointerEvent('pointerdown', { altKey: true, button: 2, clientX: 100, clientY: 100 }),
+    )
+    window.dispatchEvent(
+      makePointerEvent('pointermove', { altKey: true, clientX: 130, clientY: 110 }),
+    )
+    await nextTick()
+
+    expect(lastInstance!.rotate).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('22. ALT+drag → NO update:asset op emitted (visual-only invariant)', async () => {
+    const { wrapper, emitted } = await setup(makeAsset(), { isSelected: true })
+
+    const overlay = wrapper.find('[data-testid="solid-rotate-overlay"]').element as HTMLElement
+    // Multiple rotation cycles
+    for (let i = 0; i < 3; i++) {
+      overlay.dispatchEvent(
+        makePointerEvent('pointerdown', { altKey: true, button: 0, clientX: 100, clientY: 100 }),
+      )
+      window.dispatchEvent(
+        makePointerEvent('pointermove', { altKey: true, clientX: 100 + i * 10, clientY: 100 }),
+      )
+      window.dispatchEvent(makePointerEvent('pointerup', {}))
+      await nextTick()
+    }
+    // CRITICAL invariant: rotation never triggers asset_update op.
+    expect(emitted()).toHaveLength(0)
+    wrapper.unmount()
+  })
+})
+
+// ── Phase O Task 3 — Cut plane invariant ─────────────────────────────────
+// Note: cut plane geometry/rotation invariant is enforced inside vendored
+// solidCard.js (cutPlane added до scene, NOT root; cutContour rebuilt у world
+// space). Unit testing з vitest+jsdom не може assert against real Three.js
+// scene graph (mocked у `vi.mock('three', () => ({}))`). Натомість тестуємо
+// adapter contract: card.set() реагує на cutHeight, rotate() НЕ змінює стан
+// стану cut plane (data schema unchanged).
+
+describe('SolidCardRenderer (Phase O Task 3 — cut plane data invariants)', () => {
+  it('23. cutHeight slider emits state patch — schema preserved (no rotation field added)', async () => {
+    const { wrapper, emitted } = await setup(makeAsset({ showCut: true }))
+    const slider = wrapper.find('[data-testid="solid-cut-slider"]')
+    const input = slider.element as HTMLInputElement
+    input.value = '0.7'
+    input.dispatchEvent(new Event('input'))
+    // Wait for debounce 50ms
+    await new Promise((r) => setTimeout(r, 70))
+
+    const events = emitted()
+    expect(events.length).toBeGreaterThan(0)
+    const last = events[events.length - 1]
+    expect(last.data.state.cutHeight).toBeCloseTo(0.7)
+    // Data schema NOT extended — no rotation у data.state
+    expect('rotation' in last.data.state).toBe(false)
+    expect('rotationX' in last.data.state).toBe(false)
+    expect('rotationY' in last.data.state).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('24. ALT-rotation does NOT modify props.asset.data (replay compat)', async () => {
+    const initial = makeAsset({ showCut: true, cutHeight: 0.5 })
+    const { wrapper, assetRef } = await setup(initial, { isSelected: true })
+    const dataBefore = JSON.stringify(assetRef.value!.data)
+
+    const overlay = wrapper.find('[data-testid="solid-rotate-overlay"]').element as HTMLElement
+    overlay.dispatchEvent(
+      new MouseEvent('pointerdown', { bubbles: true, cancelable: true, button: 0, altKey: true, clientX: 100, clientY: 100 }),
+    )
+    window.dispatchEvent(
+      new MouseEvent('pointermove', { bubbles: true, altKey: true, clientX: 200, clientY: 150 }),
+    )
+    window.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }))
+    await nextTick()
+
+    // Replay invariant: data schema unchanged → saved replays still валідні.
+    expect(JSON.stringify(assetRef.value!.data)).toBe(dataBefore)
     wrapper.unmount()
   })
 })
