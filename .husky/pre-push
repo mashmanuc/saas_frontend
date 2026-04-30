@@ -175,6 +175,50 @@ else
   echo "✅ CORS alignment OK (no require_protocol_version usage)"
 fi
 
+# ── INV-ENF (Phase RS) — stray "INVARIANT VIOLATION" strings ────────────
+# Single source for emit: invariant_guard.py / invariantGuard.ts.
+# Anywhere else = bypass of metrics counter + alert routing.
+# Reference: saas_docs/domains/winterboard/phase_RS_runtime_stability/PLAN.md
+echo ""
+echo "🔍 INV-ENF stray INVARIANT VIOLATION strings"
+HITS=$(grep -rEn '\[INVARIANT VIOLATION\]' \
+  backend/apps frontend/src \
+  --include='*.py' --include='*.ts' --include='*.tsx' --include='*.js' --include='*.vue' 2>/dev/null \
+  | grep -v "invariant_guard\.py\|invariantGuard\.ts\|$IGNORE_PATHS" \
+  | grep -v "$IGNORE_COMMENTS_PY" \
+  | grep -v "$IGNORE_COMMENTS_JS")
+if [ -n "$HITS" ]; then
+  echo "❌ INV-ENF violated: stray '[INVARIANT VIOLATION]' strings outside guard module"
+  echo "$HITS"
+  echo "   Fix: from apps.core.invariant_guard import violate"
+  echo "        OR: import { violate } from '@/utils/invariantGuard'"
+  echo "   Then call: violate('CODE', 'details', **context)"
+  FAIL=1
+else
+  echo "✅ INV-ENF OK"
+fi
+
+# ── INV-FE-5 (Phase RS) — direct WebGLRenderer construction ─────────────
+# All WebGL contexts MUST be created via useThreeRenderer() composable
+# для guaranteed onUnmounted cleanup (renderer.dispose() + forceContextLoss).
+# Vendor (legacy solidCard.js) exempted — planned migration пайнує phase.
+echo ""
+echo "🔍 INV-FE-5 direct WebGLRenderer construction"
+HITS=$(grep -rEn 'new[[:space:]]+(THREE\.)?WebGLRenderer\b' \
+  frontend/src \
+  --include='*.ts' --include='*.tsx' --include='*.js' --include='*.vue' 2>/dev/null \
+  | grep -v "useThreeRenderer\.ts\|/vendor/\|$IGNORE_PATHS" \
+  | grep -v "$IGNORE_COMMENTS_JS")
+if [ -n "$HITS" ]; then
+  echo "❌ INV-FE-5 violated: direct WebGLRenderer construction"
+  echo "$HITS"
+  echo "   Fix: import { useThreeRenderer } from '@/modules/winterboard/composables/useThreeRenderer'"
+  echo "   See: saas_docs/domains/winterboard/phase_RS_runtime_stability/PLAN.md SECTION C"
+  FAIL=1
+else
+  echo "✅ INV-FE-5 OK"
+fi
+
 # NOTE: pnpm lint + pnpm typecheck НЕ виконуються тут — це slow checks
 # (vue-tsc full pass = 30+s), і вони мають pre-existing tech-debt failures
 # вне scope Phase 4 enforcement. Замість цього вони running у CI workflow

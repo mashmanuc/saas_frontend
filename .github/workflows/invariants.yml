@@ -66,6 +66,53 @@ jobs:
           fi
           echo "✅ Legacy FE API methods stay deleted"
 
+      # ──────────────────────────────────────────────────────────────────
+      # Phase RS PR-RS-ENF-2 (2026-04-30): runtime invariant enforcement
+      # ──────────────────────────────────────────────────────────────────
+
+      - name: INV-ENF stray INVARIANT VIOLATION strings (FE)
+        shell: bash
+        # Single source for emit: src/utils/invariantGuard.ts.
+        # Anywhere else = bypass of telemetry pipeline → wb_invariant_violations_total
+        # counter (BE bridge у PR-RS-E4) + alert routing.
+        run: |
+          set -eo pipefail
+          HITS=$(grep -rEn '\[INVARIANT VIOLATION\]' \
+            src --include='*.ts' --include='*.tsx' --include='*.js' --include='*.vue' 2>/dev/null \
+            | grep -v 'invariantGuard\.ts\|/__tests__/\|\.spec\.\|\.test\.\|/archive/' \
+            | grep -vE '^[^:]+:[0-9]+:\s*(//|\*|/\*)' || true)
+          if [ -n "$HITS" ]; then
+            echo "::error::INV-ENF violated — stray '[INVARIANT VIOLATION]' strings outside guard module:"
+            echo "$HITS"
+            echo ""
+            echo "Fix: import { violate } from '@/utils/invariantGuard'"
+            echo "Then call: violate('CODE', 'details', context?)"
+            echo "Reference: saas_docs/domains/winterboard/phase_RS_runtime_stability/PLAN.md SECTION ENF"
+            exit 1
+          fi
+          echo "✅ INV-ENF OK"
+
+      - name: INV-FE-5 direct WebGLRenderer construction
+        shell: bash
+        # All WebGL contexts MUST be created via useThreeRenderer() composable
+        # для guaranteed onUnmounted cleanup (renderer.dispose() + forceContextLoss).
+        # Vendor exempted — planned migration наступна phase.
+        run: |
+          set -eo pipefail
+          HITS=$(grep -rEn 'new[[:space:]]+(THREE\.)?WebGLRenderer\b' \
+            src --include='*.ts' --include='*.tsx' --include='*.js' --include='*.vue' 2>/dev/null \
+            | grep -v 'useThreeRenderer\.ts\|/vendor/\|/__tests__/\|\.spec\.\|\.test\.' \
+            | grep -vE '^[^:]+:[0-9]+:\s*(//|\*|/\*)' || true)
+          if [ -n "$HITS" ]; then
+            echo "::error::INV-FE-5 violated — direct WebGLRenderer construction:"
+            echo "$HITS"
+            echo ""
+            echo "Fix: import { useThreeRenderer } from '@/modules/winterboard/composables/useThreeRenderer'"
+            echo "See: saas_docs/domains/winterboard/phase_RS_runtime_stability/PLAN.md SECTION C"
+            exit 1
+          fi
+          echo "✅ INV-FE-5 OK"
+
   test-frontend:
     name: Frontend lint + typecheck + tests
     runs-on: ubuntu-latest
