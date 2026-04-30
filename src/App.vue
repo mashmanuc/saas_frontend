@@ -53,12 +53,16 @@ onMounted(async () => {
     setupNotificationsRealtime(authStore.user.id)
     // Anti-jank: use pollingCoordinator instead of manual startPolling
     const pollInterval = isWsConnected.value ? 300_000 : 60_000
+    // FE-P1 (2026-04-30): runImmediately = false коли WS connected — initial
+    // unread count прийде через WS handshake/server-push, не via HTTP poll
+    // (запобігає дублюванню в init burst + WS-receive). Якщо WS down → poll
+    // кожні 60s, runImmediately=true як fallback.
     unsubNotifPolling = pollingCoordinator.register({
       id: 'notifications-unread',
       fn: () => notificationsStore.pollUnreadCount(),
       interval: pollInterval,
       priority: 'low',
-      runImmediately: true,
+      runImmediately: !isWsConnected.value,
       visibilityAware: true,
     })
   }
@@ -127,12 +131,13 @@ const stopAuthWatch = watch(
       setupNotificationsRealtime(authStore.user.id)
       // Anti-jank: use pollingCoordinator
       const pollInterval = isWsConnected.value ? 300_000 : 60_000
+      // FE-P1: runImmediately gated на WS state (consistent з onMounted handler)
       unsubNotifPolling = pollingCoordinator.register({
         id: 'notifications-unread',
         fn: () => notificationsStore.pollUnreadCount(),
         interval: pollInterval,
         priority: 'low',
-        runImmediately: true,
+        runImmediately: !isWsConnected.value,
         visibilityAware: true,
       })
     } else {

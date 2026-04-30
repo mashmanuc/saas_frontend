@@ -328,8 +328,25 @@ async function loadQuota() {
 }
 
 onMounted(() => {
-  loadQuota()
-  loadFolders()
+  // FE-P1 (2026-04-30): defer non-critical sidebar fetches на 2.5s щоб не
+  // конфліктувати з initial burst (session detail + auth + me + WS connect).
+  // Quota/folders не потрібні у перші 2-3 секунди — user ще не взаємодіє з
+  // sidebar. Throttle window 1min cumulative — staggering запобігає 429 storm.
+  // Якщо cache ще валідний (`_quotaCache`/`_foldersCache` з module-level
+  // TTL=30s, e.g. remount протягом 30s) — load instant, без затримки.
+  const _quotaCached = _quotaCache && Date.now() - _quotaCacheTime < CACHE_MS
+  const _foldersCached = _foldersCache && Date.now() - _foldersCacheTime < CACHE_MS
+
+  if (_quotaCached) {
+    storageQuota.value = _quotaCache
+  } else {
+    setTimeout(loadQuota, 2500)
+  }
+  if (_foldersCached) {
+    folders.value = _foldersCache
+  } else {
+    setTimeout(loadFolders, 2700)  // різний offset для desync
+  }
 })
 
 function handleFileInput(e: Event) {
