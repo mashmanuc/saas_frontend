@@ -12,9 +12,13 @@ import { registerAuthDeathCleanup, isAuthDead } from '@/core/auth/onAuthDeath'
 const LOG_PREFIX = '[WB:Presence]'
 const CURSOR_THROTTLE_MS = 50        // Max 20 cursor updates/s (LAW-16)
 const VIEWPORT_THROTTLE_MS = 100     // Max 10 viewport updates/s (A5.2)
-const RECONNECT_MAX_ATTEMPTS = 3     // Max auto-reconnect attempts
+// Phase RS PR-RS-B0 (2026-05-01): adjusted per PLAN.md SECTION B verification.
+// Exponential backoff: 1s → 2s → 4s → 8s → 10s (cap) → 10s × N до cap of 10 attempts.
+// Total worst-case window: ~80s (sufficient для legitimate transient network blips).
+// INV-WS-2: max reconnect rate ≤ 1/30s satisfied (cap=10s × backoff > 1/30s threshold).
+const RECONNECT_MAX_ATTEMPTS = 10    // Max auto-reconnect attempts (was 3 — too aggressive give-up)
 const RECONNECT_BASE_MS = 1_000      // Exponential backoff base
-const RECONNECT_MAX_MS = 8_000       // Max backoff delay
+const RECONNECT_MAX_MS = 10_000      // Max backoff delay (was 8000 — align з PLAN INV-WS-2 cap)
 const STALE_CHECK_INTERVAL_MS = 2_000 // Check for stale cursors
 const STALE_THRESHOLD_MS = 5_000     // Remove cursors inactive >5s
 
