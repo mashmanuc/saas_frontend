@@ -24,34 +24,10 @@
 
 import * as THREE from 'three'
 import { onUnmounted } from 'vue'
-import { trackEvent } from '@/utils/telemetryAgent'
-import { violate } from '@/utils/invariantGuard'
+import { register, unregister } from './webglContextRegistry'
 
-// Module-level FE-side context counter (singleton).
-// Gauge semantics: increment on creation, decrement on disposal.
-// Mapped до BE Prometheus `wb_active_webgl_contexts` через telemetry bridge
-// (PR-RS-E4 — currently deferred; events store у Postgres TelemetryEvent table
-// + INV-FE-1 violations через invariant_guard pipeline).
-let _activeContexts = 0
-
-const INV_FE_1_MAX_CONTEXTS = 2  // primary board + 1 popup ceiling
-
-function _emitContextChange(): void {
-  // FE telemetry event — BE bridge maps до wb_active_webgl_contexts Gauge
-  // (PR-RS-E4 deferred). Always emit on change.
-  try {
-    trackEvent('wb.webgl.active', { count: _activeContexts })
-  } catch {
-    // telemetry failure не блокує renderer lifecycle
-  }
-  // INV-FE-1 enforcement
-  if (_activeContexts > INV_FE_1_MAX_CONTEXTS) {
-    violate('FE-1', 'WebGL contexts exceeded ceiling', {
-      count: _activeContexts,
-      max: INV_FE_1_MAX_CONTEXTS,
-    })
-  }
-}
+// PR-RS-C1.2: counter management delegated до webglContextRegistry — shared
+// з useSolidCardRenderer (vendor adapter). Single source for INV-FE-1.
 
 /**
  * Create THREE.WebGLRenderer з automatic disposal на onUnmounted.
@@ -85,8 +61,7 @@ export function useThreeRenderer(
     ...opts,
   })
 
-  _activeContexts += 1
-  _emitContextChange()
+  register()
 
   onUnmounted(() => {
     try {
@@ -117,22 +92,9 @@ export function useThreeRenderer(
       renderer.forceContextLoss()
     } finally {
       // Counter decrement always (fail-safe — навіть якщо disposal threw)
-      _activeContexts = Math.max(0, _activeContexts - 1)
-      _emitContextChange()
+      unregister()
     }
   })
 
   return renderer
-}
-
-// ─── Test-only accessors (do NOT use у production paths) ───────────────────
-
-/** @internal Test reset для unit tests (composable singleton state). */
-export function __testOnly_resetContexts(): void {
-  _activeContexts = 0
-}
-
-/** @internal Read current count для test assertions. */
-export function __testOnly_getActiveContexts(): number {
-  return _activeContexts
 }

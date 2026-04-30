@@ -177,10 +177,9 @@ import type {
   SolidAssetData,
   SolidAssetState,
 } from '@/modules/winterboard/types/winterboard'
-import {
-  loadSolidCard,
-  type SolidCardInstance,
-} from '../../services/solidCardLoader'
+import { useSolidCardRenderer } from '../../composables/useSolidCardRenderer'
+// Phase RS PR-RS-C1.2: vendor SolidCard creation now routed через adapter
+// composable (INV-FE-1/2 enforced; INV-FE-5 single source of construction).
 
 const { t } = useI18n()
 
@@ -195,7 +194,11 @@ const emit = defineEmits<{
 
 const container = ref<HTMLElement | null>(null)
 const rotateOverlay = ref<HTMLElement | null>(null)
-let card: SolidCardInstance | null = null
+// Phase RS PR-RS-C1.2: card lifecycle managed by adapter composable.
+// cardRef.value = SolidCardInstance (set + rotate calls); disposal automatic.
+const { cardRef, initialize: initializeCard } = useSolidCardRenderer({
+  type: props.asset.src,
+})
 
 /**
  * Phase O Task 2 + P0 fix — rotation state (visual-only, NOT emitted as op).
@@ -243,6 +246,7 @@ function shouldRotate(e: { altKey?: boolean }): boolean {
 }
 
 function onRotationPointerMove(e: PointerEvent): void {
+  const card = cardRef.value
   if (!isRotating.value || !card) return
   // Frame-to-frame delta — last position stored on previous event.
   const dx = e.clientX - _rotState.lastX
@@ -351,6 +355,7 @@ let _slideTimer: ReturnType<typeof setTimeout> | null = null
  *  - НЕ викликаємо card.set() поза цією функцією (single callsite — PR-O3 CHECKPOINT 1)
  */
 function applyState(s: SolidAssetState): void {
+  const card = cardRef.value
   if (!card) return
   // Iterate всі ключі state object — Vue reactive proxy ok для for-in.
   // No diff: every key applied щоразу. Якщо SolidCard internal state
@@ -431,10 +436,11 @@ function onCutHeightInput(ev: Event): void {
 }
 
 onMounted(async () => {
-  const { SolidCard } = await loadSolidCard()
-  // Component може unmount протягом await — guard.
+  // Phase RS PR-RS-C1.2: adapter handles vendor load + construction +
+  // counter register + INV-FE-1/2 enforcement.
   if (!container.value) return
-  card = new SolidCard(container.value, { type: props.asset.src })
+  await initializeCard(container.value)
+  if (!cardRef.value) return  // unmount during await OR initialize failure
   applyState(props.asset.data.state)
   // Phase O Task 2 — ALT key tracking для rotation overlay activation.
   window.addEventListener('keydown', onAltKeyDown)
@@ -480,8 +486,9 @@ onUnmounted(() => {
     window.removeEventListener('pointercancel', onRotationPointerUp)
     isRotating.value = false
   }
-  card?.destroy()
-  card = null
+  // Phase RS PR-RS-C1.2: card disposal handled automatically by adapter's
+  // own onUnmounted hook (full pipeline: scene traverse → vendor destroy →
+  // forceContextLoss → counter unregister). NO manual destroy here.
 })
 </script>
 
