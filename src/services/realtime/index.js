@@ -158,16 +158,26 @@ class RealtimeService {
   }
 
   async connect() {
-    // Phase RS PR-RS-B6 forensic: count connect() invocations.
-    // Якщо counter >> кількість logical reconnects → caller race
-    // (множинні модулі викликають connect одночасно).
+    // Phase RS PR-RS-B6.1 forensic: trace ВСІ виклики connect() з повним
+    // call stack — щоб identify ХТО другий caller (модуль/store/composable).
+    // Test plan: open page, чекати 5-10s БЕЗ click/drag/lesson → counter
+    // має бути 1. Якщо ≥2 — caller race; stack показує source.
+    if (typeof window !== 'undefined') {
+      window.__WS_CONNECT_COUNT__ = (window.__WS_CONNECT_COUNT__ || 0) + 1
+    }
     this._connectCallCount = (this._connectCallCount || 0) + 1
-    console.log('[WS] connect() call #', this._connectCallCount, 'socket=',
-      this.socket ? `state=${this.socket.readyState}` : 'null',
+    const callId = Math.random().toString(36).slice(2, 8)
+    const globalCount = (typeof window !== 'undefined' && window.__WS_CONNECT_COUNT__) || this._connectCallCount
+
+    console.log('[WS CONNECT]', callId,
+      'global#', globalCount,
+      'instance#', this._connectCallCount,
+      'socket=', this.socket ? `state=${this.socket.readyState}` : 'null',
       'status=', this.status)
+    console.log('[WS STACK]', callId, new Error().stack)
 
     if (this.socket && (this.status === READY_STATES.OPEN || this.status === READY_STATES.CONNECTING)) {
-      console.log('[WS] connect() guard hit — already alive, skip')
+      console.log('[WS CONNECT]', callId, 'guard hit — already alive, skip')
       return
     }
     // Burst guard: prevent rapid-fire connect() during page load / component mount storm.
