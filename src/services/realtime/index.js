@@ -158,7 +158,16 @@ class RealtimeService {
   }
 
   async connect() {
+    // Phase RS PR-RS-B6 forensic: count connect() invocations.
+    // Якщо counter >> кількість logical reconnects → caller race
+    // (множинні модулі викликають connect одночасно).
+    this._connectCallCount = (this._connectCallCount || 0) + 1
+    console.log('[WS] connect() call #', this._connectCallCount, 'socket=',
+      this.socket ? `state=${this.socket.readyState}` : 'null',
+      'status=', this.status)
+
     if (this.socket && (this.status === READY_STATES.OPEN || this.status === READY_STATES.CONNECTING)) {
+      console.log('[WS] connect() guard hit — already alive, skip')
       return
     }
     // Burst guard: prevent rapid-fire connect() during page load / component mount storm.
@@ -214,11 +223,25 @@ class RealtimeService {
       const url = new URL(this.options.url)
       url.searchParams.set('token', token)
 
+      // Phase RS PR-RS-B6 forensic: unique instance ID per socket creation.
+      // BE logs показують 2 different channel_name для user=40 — instance ID
+      // у FE console дозволяє точно диференціювати tab/window/race source.
+      const instanceId = Math.random().toString(36).slice(2, 10)
+      this._currentInstanceId = instanceId
+      console.log('[WS CREATE]', instanceId, 'url=', url.origin + url.pathname)
+
       this.socket = new WebSocket(url.toString())
-      this.socket.addEventListener('open', () => this.handleOpen())
+      this.socket._wsInstanceId = instanceId  // tag socket itself
+      this.socket.addEventListener('open', () => {
+        console.log('[WS OPEN]', instanceId)
+        this.handleOpen()
+      })
       this.socket.addEventListener('message', (event) => this.handleMessage(event))
       this.socket.addEventListener('error', (event) => this.handleError(event))
-      this.socket.addEventListener('close', (event) => this.handleClose(event))
+      this.socket.addEventListener('close', (event) => {
+        console.log('[WS CLOSE]', instanceId, 'code=', event?.code, 'reason=', event?.reason)
+        this.handleClose(event)
+      })
     } catch (error) {
       this.emitter.emit('error', error)
       this.scheduleReconnect()
@@ -421,12 +444,11 @@ class RealtimeService {
     
     this.heartbeatTimer = setInterval(() => {
       if (this.socket?.readyState === WebSocket.OPEN) {
-        // Phase RS WS-fix forensic: log ping send timestamp.
-        // Pairs з backend `PING RECEIVED user=...` log → 3 cases:
-        //   FE log + no BE log = transport/proxy drop
-        //   no FE log = setInterval throttled (background tab) or heartbeat не стартував
-        //   FE log + BE log + 4008 = backend ping_timeout логіка bug
-        console.log('[WS] ping send', Date.now())
+        // Phase RS WS-fix forensic: log ping with instance ID.
+        // Якщо різні instance IDs шлють pings → multi-instance race
+        // (множинні WS sockets, кожен з власним heartbeat).
+        const instId = this.socket._wsInstanceId || '?'
+        console.log('[WS] ping send', Date.now(), 'inst=', instId)
         this.socket.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }))
         this.startHeartbeatTimeout()
       }
