@@ -25,6 +25,12 @@ const api = axios.create({
     : '/api',  // Local: через Vite proxy
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
+  // Phase RS PR-RS-C2 (2026-05-01): explicit request timeout 30s.
+  // axios default = NO timeout → hung requests block loader indefinitely
+  // → safety timer (loaderStore) fires at 60s → INV-FE-4 violate emit.
+  // 30s ceiling: server SLA accommodates slow networks + heavy endpoints
+  // (PDF import, large session loads); aligned з safety timer threshold (60s).
+  timeout: 30_000,
 })
 
 // Phase 28: GET request deduplication (INV-2: transport-level only)
@@ -163,19 +169,23 @@ api.interceptors.request.use(
     const store = useAuthStore()
     const loader = useLoaderStore()
 
-    // Circuit breaker: reject non-essential requests when backend is unreachable
+    // Circuit breaker: reject non-essential requests when backend is unreachable.
+    // Phase RS PR-RS-C2: REMOVED orphan loader.stop() — request hadn't called
+    // .start() yet (line 222 ahead), so stop here decremented OTHER concurrent
+    // requests' counter prematurely → loader UI flickered while real reqs
+    // pending. Rejection now rouтується через response error handler (line 287)
+    // which checks meta.skipLoader та decrements ONLY якщо matching start fired.
     if (_cbOpen && !config.meta?.bypassCircuitBreaker) {
-      if (!config.meta?.skipLoader) loader.stop()
       return Promise.reject(new axios.Cancel('[apiClient] Circuit breaker open — request blocked'))
     }
 
     // P0.0: Auth death guard — reject non-auth requests after forceLogout
     // Prevents zombie retry storms from replay recorder, polling, etc.
-    // Auth endpoints (login, register, refresh, csrf) bypass — needed for recovery
+    // Auth endpoints (login, register, refresh, csrf) bypass — needed for recovery.
+    // Phase RS PR-RS-C2: same removal as CB block above (orphan stop fix).
     const _url = config.url || ''
     const _isAuthEndpoint = _url.includes('/auth/')
     if (isAuthDead() && !_isAuthEndpoint && !config.meta?.bypassAuthDeath) {
-      if (!config.meta?.skipLoader) loader.stop()
       return Promise.reject(new axios.Cancel('[apiClient] Auth dead — request blocked'))
     }
 
@@ -217,9 +227,15 @@ api.interceptors.request.use(
       }
     }
 
-    // Пропускаємо loader для фонових запитів (polling, тощо)
+    // Пропускаємо loader для фонових запитів (polling, тощо).
+    // Phase RS PR-RS-C2 (2026-05-01): track flag _loaderStarted on config щоб
+    // downstream stop callsites могли verify matching start fired (uniform
+    // balance enforcement). Старе поведінка дозволяла orphan stops у CB/auth-
+    // dead/request-rejected paths → premature decrements.
     if (!config.meta?.skipLoader) {
       loader.start()
+      config.meta = config.meta || {}
+      config.meta._loaderStarted = true
     }
 
     config.headers = config.headers || {}
@@ -261,8 +277,15 @@ api.interceptors.request.use(
   },
   (error) => {
     const loader = useLoaderStore()
-    if (!error?.config?.meta?.skipLoader) {
+    // PR-RS-C2: stop ONLY якщо matching start fired (flag-tracked balance).
+    // Combined check: !skipLoader AND _loaderStarted — handles retry path
+    // (skipLoader=true overrides inherited flag from first attempt).
+    if (
+      !error?.config?.meta?.skipLoader
+      && error?.config?.meta?._loaderStarted
+    ) {
       loader.stop()
+      error.config.meta._loaderStarted = false  // mark consumed (prevent double-stop)
     }
     return Promise.reject(error)
   }
@@ -271,8 +294,13 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (res) => {
     const loader = useLoaderStore()
-    if (!res?.config?.meta?.skipLoader) {
+    // PR-RS-C2: flag-balanced stop (combined skipLoader + _loaderStarted check).
+    if (
+      !res?.config?.meta?.skipLoader
+      && res?.config?.meta?._loaderStarted
+    ) {
       loader.stop()
+      res.config.meta._loaderStarted = false  // mark consumed
     }
 
     // Circuit breaker: backend responded → record success
@@ -285,8 +313,14 @@ api.interceptors.response.use(
   },
   async (error) => {
     const loader = useLoaderStore()
-    if (!error?.config?.meta?.skipLoader) {
+    // PR-RS-C2: flag-balanced stop. Skips orphan stops для CB-blocked /
+    // auth-dead requests rejected ДО loader.start() reached.
+    if (
+      !error?.config?.meta?.skipLoader
+      && error?.config?.meta?._loaderStarted
+    ) {
       loader.stop()
+      error.config.meta._loaderStarted = false  // mark consumed
     }
     const store = useAuthStore()
     const original = error.config || {}
