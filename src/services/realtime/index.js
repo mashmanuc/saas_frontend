@@ -191,19 +191,25 @@ class RealtimeService {
     }
     this._lastConnectAttempt = now
 
-    // Phase RS PR-RS-B4 (2026-05-01): SSoT single-socket invariant.
-    // Production observed (logs 20:43-20:56): GW_PING_TIMEOUT user=40
-    // elapsed=139.9s while FE [WS] ping send fires every 25s →
-    // ping приходить у НОВИЙ socket, старий socket залишається attached
-    // на BE без ping → 4008 close.
-    // Root cause: this.socket = new WebSocket() OVERWRITE без close
-    // попереднього socket якщо це був CLOSING/CLOSED але reference ще тут.
-    // Fix: defensive close stale socket + clear heartbeat ПЕРЕД new WS.
+    // Phase RS PR-RS-B4+B7 (2026-05-01/02): SSoT single-socket invariant
+    // + hard handler cleanup. Production observed: stale Daphne consumer
+    // instances (different channel_name на BE) survive past FE socket close.
+    // Fix: aggressively kill any old socket BEFORE new — null handlers,
+    // explicit close, drop reference. Без handler-null старі handlers
+    // могли б стрелити у handleClose з "стороннього" socket → wipe active.
     if (this.socket) {
-      this.options.logger?.warn?.(
-        '[realtime] connect: stale socket detected (state=%s) — closing before reconnect',
-        this.socket.readyState,
-      )
+      const staleId = this.socket._wsInstanceId || '?'
+      console.warn('[WS] stale socket exists before connect → force closing inst=', staleId,
+        'state=', this.socket.readyState)
+      try {
+        // Null handlers FIRST so close event won't fire our handleClose
+        this.socket.onopen = null
+        this.socket.onclose = null
+        this.socket.onerror = null
+        this.socket.onmessage = null
+      } catch {
+        // ignore
+      }
       try {
         this.socket.close(1000, 'pre-reconnect cleanup')
       } catch {
@@ -376,6 +382,36 @@ class RealtimeService {
   }
 
   handleClose(event) {
+    // Phase RS PR-RS-B7: hard cleanup + guard against stale close events.
+    // event.target is the socket that fired close. Якщо це НЕ this.socket
+    // (race з новим уже attached), не null-имо global ref щоб не wipe
+    // active socket B після late close event від socket A.
+    const closedSocket = event?.target
+    const isCurrentSocket = closedSocket === this.socket || closedSocket == null
+
+    // Null out handlers on the closed socket щоб уникнути late events
+    // (browser може fire close event навіть після TCP RST у різних timings).
+    if (closedSocket) {
+      try {
+        closedSocket.onopen = null
+        closedSocket.onclose = null
+        closedSocket.onerror = null
+        closedSocket.onmessage = null
+      } catch {
+        // ignore — handlers may be set via addEventListener (no-op)
+      }
+      const finalInstanceId = closedSocket._wsInstanceId || '?'
+      console.log('[WS FINAL CLOSE]', finalInstanceId,
+        'code=', event?.code, 'isCurrentSocket=', isCurrentSocket)
+    }
+
+    if (!isCurrentSocket) {
+      // Stale close event — не модифікуємо global state (this.socket, status,
+      // heartbeat). Active socket B продовжує жити.
+      console.warn('[realtime] late close event ignored (stale socket)')
+      return
+    }
+
     this.socket = null
     this.status = READY_STATES.CLOSED
     this.emitter.emit('status', this.status)
