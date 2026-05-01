@@ -172,6 +172,29 @@ class RealtimeService {
     }
     this._lastConnectAttempt = now
 
+    // Phase RS PR-RS-B4 (2026-05-01): SSoT single-socket invariant.
+    // Production observed (logs 20:43-20:56): GW_PING_TIMEOUT user=40
+    // elapsed=139.9s while FE [WS] ping send fires every 25s →
+    // ping приходить у НОВИЙ socket, старий socket залишається attached
+    // на BE без ping → 4008 close.
+    // Root cause: this.socket = new WebSocket() OVERWRITE без close
+    // попереднього socket якщо це був CLOSING/CLOSED але reference ще тут.
+    // Fix: defensive close stale socket + clear heartbeat ПЕРЕД new WS.
+    if (this.socket) {
+      this.options.logger?.warn?.(
+        '[realtime] connect: stale socket detected (state=%s) — closing before reconnect',
+        this.socket.readyState,
+      )
+      try {
+        this.socket.close(1000, 'pre-reconnect cleanup')
+      } catch {
+        // ignore close errors on stale socket
+      }
+      this.socket = null
+    }
+    // Stop any heartbeat that might fire on dead socket reference
+    this.clearHeartbeat()
+
     this.shouldReconnect = true
     this.status = READY_STATES.CONNECTING
     this.emitter.emit('status', this.status)
