@@ -10,7 +10,16 @@ import { registerAuthDeathCleanup, isAuthDead } from '@/core/auth/onAuthDeath'
 // ─── Constants ──────────────────────────────────────────────────────────────
 
 const LOG_PREFIX = '[WB:Presence]'
-const CURSOR_THROTTLE_MS = 50        // Max 20 cursor updates/s (LAW-16)
+// Phase RS PR-RS-C3 (2026-05-01): rAF cursor throttle (INV-INP-15).
+// Production observed (2026-04-30 logs): 4429 close cycle —
+// `Server error: rate_limited Too many cursor updates` repeating every ~1s.
+// Backend `CURSOR_UPDATES_PER_SEC = 20` (consumers.py:58); HARD_CUT_DROPS=200
+// → close 4429. Old time-based throttle 50ms === backend ліміт boundary;
+// clock jitter / concurrent calls пробивали ліміт → cumulative drops → 4429.
+// Fix: rAF batching (natural ~60fps cap) + FPS guard 15 (66.67ms min interval).
+// 15fps obrane below backend 20/sec для safety margin (≥25% buffer).
+const CURSOR_FPS_CAP = 15
+const CURSOR_MIN_INTERVAL_MS = 1000 / CURSOR_FPS_CAP  // ≈66.67ms
 const VIEWPORT_THROTTLE_MS = 100     // Max 10 viewport updates/s (A5.2)
 // Phase RS PR-RS-B0 (2026-05-01): adjusted per PLAN.md SECTION B verification.
 // Exponential backoff: 1s → 2s → 4s → 8s → 10s (cap) → 10s × N до cap of 10 attempts.
@@ -313,6 +322,18 @@ export function usePresence(options: UsePresenceOptions) {
   let lastViewportSentAt = 0
   let staleCleanupTimer: ReturnType<typeof setInterval> | null = null
 
+  // Phase RS PR-RS-C3: rAF-based cursor batching state (INV-INP-15).
+  // pendingCursor зберігає НАЙСВІЖІШУ позицію — старі drop-нуті природно (overwrite).
+  // cursorRAF=0 sentinel індикує що rAF не scheduled.
+  let cursorRAF = 0
+  let pendingCursor: {
+    x: number
+    y: number
+    pageId: string
+    tool: WBToolType
+    cursorColor?: string
+  } | null = null
+
   // P0.0: Register cleanup on auth death — disconnect immediately, no reconnect
   const _unregisterAuthDeath = registerAuthDeathCleanup(() => {
     reconnectAborted = true
@@ -451,6 +472,14 @@ export function usePresence(options: UsePresenceOptions) {
   function disconnect(): void {
     reconnectAborted = true
     stopStaleCleanup()
+
+    // Phase RS PR-RS-C3: cancel pending rAF щоб не fire після disconnect
+    // (ws closed → sendMessage no-op, але cursorRAF leak без cancelAnimationFrame).
+    if (cursorRAF) {
+      cancelAnimationFrame(cursorRAF)
+      cursorRAF = 0
+    }
+    pendingCursor = null
 
     if (ws) {
       // Send leave before closing
@@ -686,9 +715,51 @@ export function usePresence(options: UsePresenceOptions) {
   }
 
   /**
-   * Send cursor position (throttled to 50ms / 20 updates per second).
-   * Follows contract policy: throttle+drop, do not queue.
+   * Phase RS PR-RS-C3 (INV-INP-15): rAF-batched cursor send.
+   *
+   * Архітектура:
+   *   1. pointermove (від canvas) → pendingCursor = latest position (overwrite)
+   *   2. Перший виклик scheduleses requestAnimationFrame(flushPendingCursor)
+   *   3. На rAF tick: перевірка FPS guard (≥66.67ms since last) → flush або re-schedule
+   *   4. Природний 60fps rAF cap + 15fps explicit guard = ≤15 events/sec
+   *
+   * Backend ліміт CURSOR_UPDATES_PER_SEC=20 → 15fps дає 25% буфер під clock jitter.
+   * Stale positions автоматично drop-аються (overwrite у pendingCursor).
+   *
+   * NO debounce (ламає UX), NO timer-based throttle (clock jitter), NO lodash.
+   * Cleanup: cancel rAF у disconnect() (auth death + onUnmounted lifecycle).
    */
+  function _flushPendingCursor(): void {
+    cursorRAF = 0
+    if (!pendingCursor) return
+
+    const now = performance.now()
+    if (now - lastCursorSentAt < CURSOR_MIN_INTERVAL_MS) {
+      // Under FPS cap — re-schedule next rAF, keep latest pendingCursor
+      cursorRAF = requestAnimationFrame(_flushPendingCursor)
+      return
+    }
+
+    lastCursorSentAt = now
+    const c = pendingCursor
+    pendingCursor = null
+
+    if (import.meta.env.DEV) {
+      console.log('[cursor]', c.x, c.y)
+    }
+
+    sendMessage({
+      type: 'cursor.update',
+      userId,
+      displayName,
+      color: c.cursorColor ?? color,
+      x: Math.round(c.x * 10) / 10, // 1 decimal precision
+      y: Math.round(c.y * 10) / 10,
+      pageId: c.pageId,
+      tool: c.tool,
+    })
+  }
+
   function sendCursor(
     x: number,
     y: number,
@@ -696,20 +767,9 @@ export function usePresence(options: UsePresenceOptions) {
     tool: WBToolType,
     cursorColor?: string,
   ): void {
-    const now = performance.now()
-    if (now - lastCursorSentAt < CURSOR_THROTTLE_MS) return
-    lastCursorSentAt = now
-
-    sendMessage({
-      type: 'cursor.update',
-      userId,
-      displayName,
-      color: cursorColor ?? color,
-      x: Math.round(x * 10) / 10, // 1 decimal precision
-      y: Math.round(y * 10) / 10,
-      pageId,
-      tool,
-    })
+    pendingCursor = { x, y, pageId, tool, cursorColor }
+    if (cursorRAF) return
+    cursorRAF = requestAnimationFrame(_flushPendingCursor)
   }
 
   /**
