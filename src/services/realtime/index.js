@@ -158,23 +158,12 @@ class RealtimeService {
   }
 
   async connect() {
-    // Phase RS PR-RS-B6.1 forensic: trace ВСІ виклики connect() з повним
-    // call stack — щоб identify ХТО другий caller (модуль/store/composable).
-    // Test plan: open page, чекати 5-10s БЕЗ click/drag/lesson → counter
-    // має бути 1. Якщо ≥2 — caller race; stack показує source.
-    if (typeof window !== 'undefined') {
-      window.__WS_CONNECT_COUNT__ = (window.__WS_CONNECT_COUNT__ || 0) + 1
-    }
-    this._connectCallCount = (this._connectCallCount || 0) + 1
+    // Phase RS B7+B6 retained: lifecycle log on each connect() invocation.
+    // Stack trace removed (was for one-time B6.1 investigation).
     const callId = Math.random().toString(36).slice(2, 8)
-    const globalCount = (typeof window !== 'undefined' && window.__WS_CONNECT_COUNT__) || this._connectCallCount
-
     console.log('[WS CONNECT]', callId,
-      'global#', globalCount,
-      'instance#', this._connectCallCount,
       'socket=', this.socket ? `state=${this.socket.readyState}` : 'null',
       'status=', this.status)
-    console.log('[WS STACK]', callId, new Error().stack)
 
     if (this.socket && (this.status === READY_STATES.OPEN || this.status === READY_STATES.CONNECTING)) {
       console.log('[WS CONNECT]', callId, 'guard hit — already alive, skip')
@@ -490,11 +479,6 @@ class RealtimeService {
     
     this.heartbeatTimer = setInterval(() => {
       if (this.socket?.readyState === WebSocket.OPEN) {
-        // Phase RS WS-fix forensic: log ping with instance ID.
-        // Якщо різні instance IDs шлють pings → multi-instance race
-        // (множинні WS sockets, кожен з власним heartbeat).
-        const instId = this.socket._wsInstanceId || '?'
-        console.log('[WS] ping send', Date.now(), 'inst=', instId)
         this.socket.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }))
         this.startHeartbeatTimeout()
       }
