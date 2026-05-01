@@ -735,7 +735,13 @@ export function usePresence(options: UsePresenceOptions) {
 
     const now = performance.now()
     if (now - lastCursorSentAt < CURSOR_MIN_INTERVAL_MS) {
-      // Under FPS cap — re-schedule next rAF, keep latest pendingCursor
+      // Under FPS cap — re-schedule next rAF, keep latest pendingCursor.
+      // Defensive guard: re-check pendingCursor (can be nulled by disconnect()
+      // race чи зовнішнім cleanup) — без guard ризикуємо infinite rAF loop
+      // без реального send (переплановуємо кадр коли нічого не змінилось).
+      if (!pendingCursor) {
+        return
+      }
       cursorRAF = requestAnimationFrame(_flushPendingCursor)
       return
     }
