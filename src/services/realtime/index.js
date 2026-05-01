@@ -398,6 +398,12 @@ class RealtimeService {
     
     this.heartbeatTimer = setInterval(() => {
       if (this.socket?.readyState === WebSocket.OPEN) {
+        // Phase RS WS-fix forensic: log ping send timestamp.
+        // Pairs з backend `PING RECEIVED user=...` log → 3 cases:
+        //   FE log + no BE log = transport/proxy drop
+        //   no FE log = setInterval throttled (background tab) or heartbeat не стартував
+        //   FE log + BE log + 4008 = backend ping_timeout логіка bug
+        console.log('[WS] ping send', Date.now())
         this.socket.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }))
         this.startHeartbeatTimeout()
       }
