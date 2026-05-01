@@ -436,30 +436,6 @@ export function usePresence(options: UsePresenceOptions) {
         return
       }
 
-      // Phase RS PR-RS-WS-fix (2026-05-01): 4008 = anti-DDOS connection limit
-      // (consumers.py MAX_CONNECTIONS_PER_USER=2 / MAX_CONNECTIONS_PER_ROOM=60).
-      // Redis counter TTL=60s — auto-cleanup, але FE auto-reconnect prior
-      // спричиняв cycle (each reconnect inflates counter → 4008 → reconnect → ...).
-      // Fix: cooldown 65s (TTL 60s + buffer) ПЕРЕД allowing reconnect.
-      // Inform user через lastError; reconnect не fully aborted (transient state).
-      if (code === 4008) {
-        lastError.value = 'Connection limit exceeded — waiting for cleanup'
-        console.warn(
-          LOG_PREFIX,
-          '4008 connection limit hit — cooldown 65s before reconnect attempt',
-        )
-        reconnectAttempts = 0  // reset backoff counter — після cooldown це fresh start
-        if (!reconnectAborted) {
-          // Single delayed reconnect (NOT exponential — fixed 65s wait для Redis TTL)
-          setTimeout(() => {
-            if (!reconnectAborted && reconnectAttempts < RECONNECT_MAX_ATTEMPTS) {
-              void scheduleReconnect(sessionId)
-            }
-          }, 65_000)
-        }
-        return
-      }
-
       // Auto-reconnect for other close codes
       if (!reconnectAborted && reconnectAttempts < RECONNECT_MAX_ATTEMPTS) {
         void scheduleReconnect(sessionId)
