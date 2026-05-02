@@ -8,17 +8,38 @@
 
 <script setup>
 import { onMounted, onBeforeUnmount, watch, ref, computed, defineAsyncComponent } from 'vue'
+import { useRoute } from 'vue-router'
 import { PageThemeProvider } from './modules/ui/theme'
 import { DiagnosticsPanel } from './modules/diagnostics'
 import { isAuditEnabled } from '@/debug/isAuditEnabled'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 // import { useUserContextQuery } from '@/api/queries/useUserContextQuery'  // Phase 29 B1 — disabled until backend endpoint ready
 import { useNotificationsStore } from '@/stores/notificationsStore'
+import { useLayoutStore } from '@/stores/layoutStore'
 import { websocketService } from '@/services/websocket'
 import { pollingCoordinator } from '@/services/pollingCoordinator'
 import { jankDetector } from '@/utils/jankDetector'
 
 const isDev = import.meta.env.DEV
+
+// ═══════════════════════════════════════════════════
+// Layout SSoT — synchronous init BEFORE first render (INV-LAYOUT-1, R-2)
+// ═══════════════════════════════════════════════════
+// CRITICAL: must be top-level synchronous (NOT onMounted) — sets viewport
+// from window dimensions and <html data-hydrated="true"> BEFORE first commit.
+// Without this, mobile devices see 1-frame desktop layout flicker.
+// Refs: saas_docs/plans/LAYOUT_SSOT_2026-05-02.md §4.1, INV-LAYOUT-11.
+
+// Stage 5 mode (post-sweep) — listener budget tightened to ≤2 (was ≤3 transitional).
+// Legacy Dashboard composables deleted; only layoutStore + WB useDeviceMode
+// own resize-related listeners now.
+if (typeof window !== 'undefined') {
+  window.__layoutStage5Mode = true
+}
+
+const layout = useLayoutStore()
+layout.init()
+layout.bindRouteChanges(useRoute())
 
 // Phase 30 B4: Lazy-loaded audit overlay (INV-3: 0 bytes in prod if disabled)
 const AuditOverlayAsync = defineAsyncComponent(() => import('@/debug/AuditOverlay.vue'))
@@ -151,5 +172,8 @@ onBeforeUnmount(() => {
   stopAuthWatch()
   jankDetector.stop()
   pollingCoordinator.dispose()
+  // Layout SSoT cleanup — primarily for HMR/tests; in prod App rarely unmounts.
+  // HMR survival is also covered by acceptHMRUpdate hook у layoutStore.ts.
+  layout.destroy()
 })
 </script>

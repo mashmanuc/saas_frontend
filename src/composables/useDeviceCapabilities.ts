@@ -1,31 +1,28 @@
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { computed } from 'vue'
+import { useLayoutStore } from '@/stores/layoutStore'
 
+/**
+ * Device capability composable (touch / orientation / DPR / pointer).
+ *
+ * Stage 5 of LAYOUT_SSOT migration:
+ *   - isLandscape now reads from layoutStore (no own resize listener — saves listener budget).
+ *   - hasTouch / pixelRatio / isCoarsePointer — one-time reads, no listeners.
+ *
+ * Refs: saas_docs/plans/LAYOUT_SSOT_2026-05-02.md §6 Stage 5.
+ */
 export function useDeviceCapabilities() {
-  const hasTouch = ref(false)
-  const isLandscape = ref(false)
-  const pixelRatio = ref(1)
+  const layout = useLayoutStore()
 
-  function updateOrientation() {
-    if (typeof window === 'undefined') return
-    isLandscape.value = window.innerWidth > window.innerHeight
-  }
+  const hasTouch =
+    typeof window !== 'undefined' &&
+    ('ontouchstart' in window || navigator.maxTouchPoints > 0)
 
-  function onOrientationChange() {
-    setTimeout(updateOrientation, 100)
-  }
+  const pixelRatio =
+    typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1
 
-  onMounted(() => {
-    hasTouch.value = 'ontouchstart' in window || navigator.maxTouchPoints > 0
-    pixelRatio.value = window.devicePixelRatio || 1
-    updateOrientation()
-    window.addEventListener('resize', updateOrientation, { passive: true })
-    window.addEventListener('orientationchange', onOrientationChange)
-  })
-
-  onUnmounted(() => {
-    window.removeEventListener('resize', updateOrientation)
-    window.removeEventListener('orientationchange', onOrientationChange)
-  })
+  const isLandscape = computed(
+    () => layout.viewport.width > layout.viewport.height,
+  )
 
   const isCoarsePointer = computed(() => {
     if (typeof window === 'undefined') return false

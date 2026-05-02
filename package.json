@@ -12,6 +12,8 @@
     "i18n:sync-ru": "node scripts/sync-ru-from-uk.mjs",
     "i18n:check-missing": "node scripts/check-missing-i18n.mjs",
     "check:no-raw-axios": "node scripts/check-no-raw-axios.mjs",
+    "check:layout": "node scripts/check-layout.mjs",
+    "check:layout:strict": "node scripts/check-layout.mjs --strict",
     "prepare": "husky || true",
     "test": "vitest run",
     "test:unit": "vitest",

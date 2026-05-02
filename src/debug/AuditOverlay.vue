@@ -82,6 +82,10 @@
  * INV-6: All data from auditCollector via useAuditOverlay.
  */
 import { computed, ref } from 'vue'
+import { useLayoutStore } from '@/stores/layoutStore'
+
+// Layout SSoT (Stage 5) — drag positioning reads non-reactive viewport snapshot per onMove call.
+const layoutStore = useLayoutStore()
 import { useAuditOverlay } from './useAuditOverlay'
 import { DEFAULT_AUDIT_CONFIG } from './types'
 import type { AuditIssue } from './types'
@@ -129,8 +133,9 @@ function onDragStart(e: PointerEvent) {
   el.setPointerCapture(e.pointerId)
 
   function onMove(ev: PointerEvent) {
-    posX.value = Math.max(0, Math.min(startPosX + (ev.clientX - startX), window.innerWidth - 60))
-    posY.value = Math.max(0, Math.min(startPosY + (ev.clientY - startY), window.innerHeight - 40))
+    const { width: vw, height: vh } = layoutStore.getViewportSnapshot()
+    posX.value = Math.max(0, Math.min(startPosX + (ev.clientX - startX), vw - 60))
+    posY.value = Math.max(0, Math.min(startPosY + (ev.clientY - startY), vh - 40))
   }
 
   function onUp() {

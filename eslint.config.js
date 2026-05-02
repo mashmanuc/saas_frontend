@@ -55,6 +55,86 @@ export default [
       'no-restricted-imports': 'off'
     }
   },
+  // INV-RESP-3 — Winterboard must NOT import layoutStore (Dashboard/shared territory).
+  // Refs: saas_docs/plans/LAYOUT_SSOT_2026-05-02.md §0.4, INV-RESP-3.
+  // WB rooms read viewport via useDeviceMode (own breakpoint scale + INV-5 visualViewport).
+  {
+    files: ['src/modules/winterboard/**/*.{ts,tsx,vue,js}'],
+    ignores: ['**/__tests__/**', '**/tests/**'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        paths: [
+          {
+            name: 'axios',
+            message: 'Import apiClient from @/utils/apiClient instead.'
+          },
+          {
+            name: '@/stores/layoutStore',
+            message: 'INV-RESP-3: Winterboard must use useDeviceMode (own breakpoint scale + visualViewport INV-5). layoutStore is for Dashboard/shared shell only.'
+          },
+          {
+            name: '@/composables/useResponsiveLayout',
+            message: 'INV-RESP-3: Winterboard must use useDeviceMode, not useResponsiveLayout (Dashboard/shared composable, deleted in Stage 5).'
+          },
+          {
+            name: '@/composables/useSidebar',
+            message: 'INV-RESP-3: Winterboard does not have a sidebar — useDeviceMode and WBResponsiveShell handle layout. useSidebar is for Dashboard/shared shell only.'
+          }
+        ]
+      }]
+    }
+  },
+  // INV-LAYOUT-9 — Popovers/dropdowns MUST use layout.getViewportSnapshot() (non-reactive).
+  // Direct `.viewport.width` / `.viewport.height` MemberExpression subscribes to reactivity → jitter on resize.
+  // Refs: saas_docs/plans/LAYOUT_SSOT_2026-05-02.md §7.1 AST guards.
+  // Set as 'warn' until Stage 5 (consumers like PageShell are still being migrated).
+  {
+    files: ['src/**/*.{ts,tsx,vue,js}'],
+    ignores: [
+      '**/__tests__/**',
+      '**/tests/**',
+      'src/stores/layoutStore.ts',     // store itself defines viewport
+      'src/composables/useResponsiveLayout.ts',  // legacy, deleted Stage 5
+    ],
+    rules: {
+      'no-restricted-syntax': ['warn',
+        {
+          selector: "MemberExpression[object.type='MemberExpression'][object.property.name='viewport'][property.name=/^(width|height)$/]",
+          message: 'INV-LAYOUT-9: Use layout.getViewportSnapshot() for popovers (non-reactive). Direct *.viewport.{width,height} subscribes to reactivity → jitter on resize. Stage 5: this becomes error.'
+        }
+      ]
+    }
+  },
+  // Stage 5 (post-sweep) ESLint rules — ACTIVE.
+  // useResponsiveLayout + useSidebar are deleted; window.innerWidth restricted
+  // outside whitelist. WB rooms (modules/winterboard/**) are domain trust zone
+  // per INV-RESP-3 and skip these globals (they have own useDeviceMode).
+  // Refs: saas_docs/plans/LAYOUT_SSOT_2026-05-02.md §6 Stage 5.
+  {
+    files: ['src/**/*.{ts,tsx,vue,js}'],
+    ignores: [
+      '**/__tests__/**',
+      '**/tests/**',
+      'src/stores/layoutStore.ts',
+      'src/config/breakpoints.ts',
+      // WB domain — INV-RESP-3 trust zone (own viewport via useDeviceMode).
+      'src/modules/winterboard/**',
+    ],
+    rules: {
+      'no-restricted-imports': ['error', {
+        paths: [
+          {
+            name: '@/composables/useResponsiveLayout',
+            message: 'INV-LAYOUT-1: useResponsiveLayout is deleted. Use useLayoutStore from @/stores/layoutStore.'
+          },
+          {
+            name: '@/composables/useSidebar',
+            message: 'INV-LAYOUT-1: useSidebar is deleted. Use useLayoutStore from @/stores/layoutStore.'
+          }
+        ]
+      }]
+    }
+  },
   {
     plugins: {
       'custom-rules': {

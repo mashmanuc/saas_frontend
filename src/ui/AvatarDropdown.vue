@@ -171,14 +171,17 @@ import { ChevronDown, Settings, LogOut, Sun, Moon, GraduationCap } from 'lucide-
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { useThemeStore } from '@/stores/themeStore'
 import { useSettingsStore } from '@/stores/settingsStore'
-import { useResponsiveLayout } from '@/composables/useResponsiveLayout'
+import { useLayoutStore } from '@/stores/layoutStore'
+import { storeToRefs } from 'pinia'
 
 const router = useRouter()
 const auth = useAuthStore()
 const theme = useThemeStore()
 const settings = useSettingsStore()
 
-const { isMobile } = useResponsiveLayout()
+// Layout SSoT — Stage 5 migration (saas_docs/plans/LAYOUT_SSOT_2026-05-02.md).
+const layout = useLayoutStore()
+const { isMobile } = storeToRefs(layout)
 
 const rootRef = ref<HTMLElement | null>(null)
 const isOpen = ref(false)

@@ -17,6 +17,11 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useLayoutStore } from '@/stores/layoutStore'
+
+// Layout SSoT — popover positioning uses non-reactive snapshot (INV-LAYOUT-9).
+// Direct layout.viewport.* read would subscribe popover to resize → jitter.
+const layoutStore = useLayoutStore()
 
 interface Props {
   isVisible: boolean
@@ -85,9 +90,8 @@ function calculatePosition() {
       break
   }
 
-  // Keep within viewport
-  const viewportWidth = window.innerWidth
-  const viewportHeight = window.innerHeight
+  // Keep within viewport (non-reactive snapshot — INV-LAYOUT-9)
+  const { width: viewportWidth, height: viewportHeight } = layoutStore.getViewportSnapshot()
 
   if (left < 0) left = 8
   if (left + popover.width > viewportWidth) left = viewportWidth - popover.width - 8

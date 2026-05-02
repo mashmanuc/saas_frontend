@@ -3,7 +3,7 @@
     role="navigation"
     :aria-label="$t('sidebar.ariaLabel')"
     class="app-sidebar"
-    :class="{ collapsed: collapsed, 'mobile-open': mobileOpen }"
+    :class="{ collapsed: layout.sidebar.isCollapsed, 'mobile-open': layout.sidebar.isOpen }"
     data-testid="app-sidebar"
   >
     <div class="sidebar-header">
@@ -25,25 +25,25 @@
             stroke-linejoin="round"
           />
         </svg>
-        <span v-if="!collapsed" class="logo-text">M4SH</span>
+        <span v-if="!layout.sidebar.isCollapsed" class="logo-text">M4SH</span>
       </router-link>
       <button
-        v-if="!collapsed"
+        v-if="!layout.sidebar.isCollapsed"
         class="collapse-btn desktop-only"
         :title="$t('sidebar.collapse')"
         :aria-expanded="true"
         :aria-label="$t('sidebar.collapse')"
-        @click="$emit('toggle-collapse')"
+        @click="layout.toggleSidebar()"
       >
         <ChevronsLeft :size="16" />
       </button>
       <button
-        v-if="collapsed"
+        v-if="layout.sidebar.isCollapsed"
         class="collapse-btn desktop-only"
         :title="$t('sidebar.expand')"
         :aria-expanded="false"
         :aria-label="$t('sidebar.expand')"
-        @click="$emit('toggle-collapse')"
+        @click="layout.toggleSidebar()"
       >
         <ChevronsRight :size="16" />
       </button>
@@ -51,7 +51,7 @@
         class="close-btn mobile-only"
         :aria-label="$t('sidebar.closeMobile')"
         style="touch-action: manipulation;"
-        @click="$emit('close-mobile')"
+        @click="layout.closeSidebar()"
       >
         <X :size="16" />
       </button>
@@ -62,23 +62,23 @@
         v-for="section in sections"
         :key="section.key"
         :section="section"
-        :collapsed="collapsed"
+        :collapsed="layout.sidebar.isCollapsed"
       />
     </nav>
 
     <SidebarCoachingMarks />
 
-    <div class="sidebar-footer" v-if="!collapsed">
+    <div class="sidebar-footer" v-if="!layout.sidebar.isCollapsed">
       <span class="sidebar-version">v0.89</span>
     </div>
   </aside>
 
   <Transition name="overlay">
     <div
-      v-if="mobileOpen"
+      v-if="layout.sidebar.isOpen"
       class="sidebar-overlay"
       style="touch-action: auto;"
-      @click="$emit('close-mobile')"
+      @click="layout.closeSidebar()"
     />
   </Transition>
 </template>
@@ -88,17 +88,18 @@ import { ChevronsLeft, ChevronsRight, X } from 'lucide-vue-next'
 import AppSidebarSection from './AppSidebarSection.vue'
 import SidebarCoachingMarks from './SidebarCoachingMarks.vue'
 import type { SidebarSection } from './sidebar.types'
+import { useLayoutStore } from '@/stores/layoutStore'
 
+// Stage 4 of LAYOUT_SSOT migration:
+// - props (collapsed, mobileOpen) DELETED — read from store directly.
+// - emits (toggle-collapse, close-mobile) DELETED — actions called directly on store.
+// - NO local ref(...) for sidebar state. Single source of truth = layoutStore.
+// Refs: saas_docs/plans/LAYOUT_SSOT_2026-05-02.md §6 Stage 4.
 defineProps<{
   sections: SidebarSection[]
-  collapsed: boolean
-  mobileOpen: boolean
 }>()
 
-defineEmits<{
-  'toggle-collapse': []
-  'close-mobile': []
-}>()
+const layout = useLayoutStore()
 </script>
 
 <style scoped>

@@ -1,27 +1,24 @@
 <template>
   <div class="min-h-screen flex bg-page text-body">
 
-    <!-- New Sidebar -->
-    <AppSidebar
-      :sections="sidebarSections"
-      :collapsed="sidebar.collapsed.value"
-      :mobile-open="sidebar.mobileOpen.value"
-      @toggle-collapse="sidebar.toggleCollapse"
-      @close-mobile="sidebar.closeMobile"
-    />
+    <!-- Sidebar (Stage 4 done — single source of truth = layoutStore).
+         AppSidebar reads layout.sidebar.* directly + calls store actions
+         on click. PageShell only passes :sections (data, not state).
+         INV-LAYOUT-7 satisfied automatically (no bridge to race). -->
+    <AppSidebar :sections="sidebarSections" />
 
     <!-- Main area: offset for fixed sidebar -->
     <div
       class="flex-1 flex flex-col transition-[margin] duration-200"
       :class="mainAreaClass"
     >
-      <TopNav @toggle-side-nav="sidebar.openMobile" />
+      <TopNav @toggle-side-nav="layout.openSidebar()" />
 
       <main
         :class="[
           'mx-auto w-full',
-          isMobile ? 'px-3 py-4' : 'p-6',
-          isDesktop ? 'max-w-6xl' : 'max-w-full'
+          layout.isMobile ? 'px-3 py-4' : 'p-6',
+          layout.isDesktop ? 'max-w-6xl' : 'max-w-full'
         ]"
       >
         <router-view />
@@ -42,7 +39,7 @@
 </template>
 
 <script setup>
-import { computed, watch, onMounted } from 'vue'
+import { computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import AppSidebar from './AppSidebar.vue'
 import TopNav from './TopNav.vue'
@@ -50,20 +47,22 @@ import ToastContainer from './ToastContainer.vue'
 import GlobalLoader from './GlobalLoader.vue'
 import SessionRevokedBanner from '../components/SessionRevokedBanner.vue'
 import { useAuthStore } from '../modules/auth/store/authStore'
-import { useSidebar } from '../composables/useSidebar'
 import { useSidebarBadges } from '../composables/useSidebarBadges'
-import { useResponsiveLayout } from '../composables/useResponsiveLayout'
+import { useLayoutStore } from '@/stores/layoutStore'
 import { getSectionedMenuByRole } from '../config/menu'
 
 const router = useRouter()
 const authStore = useAuthStore()
-const sidebar = useSidebar()
+const layout = useLayoutStore()
 const sidebarBadges = useSidebarBadges()
-const { isMobile, isDesktop, width } = useResponsiveLayout()
 
-onMounted(() => {
-  sidebar.initFromStorage()
-})
+// Stage 3 of LAYOUT_SSOT migration — see saas_docs/plans/LAYOUT_SSOT_2026-05-02.md.
+// - Legacy composables removed (instances → singleton store).
+// - localStorage read happens у layoutStore.init() (App.vue setup).
+// - Auto-collapse breakpoint watch DELETED — D-1 LOCKED: collapse_bp == overlay_bp == lg.
+//   Sidebar collapses ONLY via manual user toggle (button or Ctrl+B).
+// - mainAreaClass reads sidebarMode + isCollapsed via store derived getters.
+//   Tailwind ml-* classes will become CSS vars in G-2 (audit).
 
 const sidebarSections = computed(() => {
   const sections = getSectionedMenuByRole(authStore.user?.role)
@@ -80,16 +79,11 @@ const sidebarSections = computed(() => {
 })
 
 const mainAreaClass = computed(() => {
-  if (!isDesktop.value) return '' // mobile/tablet — sidebar is overlay, no offset
-  if (sidebar.collapsed.value) return 'lg:ml-16'
+  // Overlay mode (mobile/tablet) — sidebar is fixed-positioned, no margin offset.
+  if (layout.sidebarMode === 'overlay') return ''
+  // Static mode (desktop) — main content offsets by sidebar width.
+  if (layout.sidebar.isCollapsed) return 'lg:ml-16'
   return 'lg:ml-[260px]'
-})
-
-// Auto-collapse sidebar when viewport < 1280px
-watch(width, (w) => {
-  if (w < 1280 && !sidebar.collapsed.value && isDesktop.value) {
-    sidebar.toggleCollapse()
-  }
 })
 
 watch(

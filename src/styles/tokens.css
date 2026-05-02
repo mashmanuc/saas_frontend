@@ -142,3 +142,18 @@
   --ui-color-border: var(--border-color, rgba(5, 150, 105, 0.2));
   --ui-overlay-bg: rgba(0, 0, 0, 0.5);
 }
+
+/* ═══════════════════════════════════════════════════
+   Layout SSoT — anti-flicker hydration guard (INV-LAYOUT-11)
+   ═══════════════════════════════════════════════════
+   Hides body until layoutStore.init() sets <html data-hydrated="true">
+   у App.vue <script setup> top-level — synchronously, BEFORE first paint.
+   Eliminates the theoretical 1-frame flicker для mobile-first users
+   на edge cases where SSR-default (1280px desktop) might leak into render.
+
+   Pairs with: frontend/src/stores/layoutStore.ts → init() / destroy().
+   Refs:       saas_docs/plans/LAYOUT_SSOT_2026-05-02.md INV-LAYOUT-11, R-2.
+*/
+html:not([data-hydrated]) {
+  visibility: hidden;
+}
