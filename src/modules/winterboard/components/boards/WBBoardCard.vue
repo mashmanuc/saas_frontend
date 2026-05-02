@@ -35,6 +35,18 @@
       >
         {{ board.has_lesson ? t('winterboard.boards.statusActive') : t('winterboard.boards.statusDraft') }}
       </span>
+      <!-- INV-KNOW-3 (Knowledge plan 2026-05-02 PR-4): folder breadcrumb.
+           PURE RENDER — value прямо з backend (BoardFolder.full_path,
+           materialized у PR-1). Без traversal, без computed, без logic.
+           Nothing for root sessions (folder_path is null).
+           CSS-truncate + native `title` tooltip → full path on hover. -->
+      <p
+        v-if="board.folder_path"
+        class="wb-board-card__path"
+        :title="board.folder_path"
+      >
+        {{ board.folder_path }}
+      </p>
       <p class="wb-board-card__meta">
         <span>{{ t('winterboard.boards.pageCount', { n: board.page_count }) }}</span>
         <span class="wb-board-card__sep" aria-hidden="true">·</span>
@@ -262,6 +274,19 @@ function formatTimeAgo(iso: string): string {
 .wb-board-card__status-badge--draft {
   color: #64748b;
   background: #f1f5f9;
+}
+
+/* INV-KNOW-3 (PR-4): folder breadcrumb — single-line truncate, hover tooltip
+   reveals full path (native `title` attr). No JS truncate logic. */
+.wb-board-card__path {
+  font-size: 11.5px;
+  color: var(--wb-fg-secondary, #94a3b8);
+  margin: 0 0 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  cursor: help;
 }
 
 .wb-board-card__meta {

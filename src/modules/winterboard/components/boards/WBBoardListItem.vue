@@ -28,6 +28,13 @@
         {{ board.name || t('winterboard.boards.untitled') }}
       </span>
       <span class="wb-board-list-item__meta">
+        <!-- INV-KNOW-3 PR-4: folder breadcrumb (rendered, not computed) -->
+        <span
+          v-if="board.folder_path"
+          class="wb-board-list-item__path"
+          :title="board.folder_path"
+        >{{ board.folder_path }}</span>
+        <span v-if="board.folder_path" aria-hidden="true"> · </span>
         {{ t('winterboard.boards.pageCount', { n: board.page_count }) }}
         <span aria-hidden="true"> · </span>
         {{ formatTimeAgo(board.updated_at) }}
@@ -180,6 +187,13 @@ function formatTimeAgo(iso: string): string {
   font-size: 12px;
   color: var(--wb-fg-secondary, #94a3b8);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* INV-KNOW-3 PR-4: inline breadcrumb segment у meta line */
+.wb-board-list-item__path {
+  cursor: help;
 }
 
 /* ── Actions ─────────────────────────────────────────────────────────── */

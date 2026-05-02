@@ -78,9 +78,13 @@
             </button>
           </div>
 
-          <!-- New board -->
+          <!-- New board.
+               INV-KNOW-1 (Knowledge plan 2026-05-02): preserve current folder
+               context through router query. WBSoloRoom reads ?folder=<id> and
+               passes to createSession. Without this query, дошка завжди
+               створювалась у root попри активну папку. -->
           <router-link
-            :to="{ name: 'winterboard-new' }"
+            :to="newBoardRoute"
             class="wb-board-list__new-btn"
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -142,6 +146,28 @@
         <span class="wb-board-list__breadcrumb-current">{{ t('winterboard.folders.noFolder') }}</span>
       </div>
 
+      <!-- INV-KNOW (Knowledge plan 2026-05-02 PR-5): info-block (onboarding).
+           STATIC layer — short bullet list + dismiss button. Persisted у
+           localStorage: dismissed once → never shown again. NOT sticky, NOT
+           reactive to layout, NOT computed. Pure presentation. -->
+      <aside v-if="showInfoBlock" class="wb-board-list__info" role="note">
+        <p class="wb-board-list__info-title">{{ t('winterboard.boards.infoTitle') }}</p>
+        <ul class="wb-board-list__info-list">
+          <li>{{ t('winterboard.boards.infoBullet1') }}</li>
+          <li>{{ t('winterboard.boards.infoBullet2') }}</li>
+          <li>{{ t('winterboard.boards.infoBullet3') }}</li>
+        </ul>
+        <button
+          type="button"
+          class="wb-board-list__info-dismiss"
+          :aria-label="t('winterboard.boards.infoDismiss')"
+          @click="dismissInfoBlock"
+        >
+          <span aria-hidden="true">×</span>
+          <span class="wb-board-list__info-dismiss-text">{{ t('winterboard.boards.infoDismiss') }}</span>
+        </button>
+      </aside>
+
       <!-- Loading: skeleton cards -->
       <div v-if="loading" class="wb-board-list__grid" aria-busy="true">
         <div v-for="i in 6" :key="i" class="wb-board-card wb-board-card--skeleton">
@@ -174,7 +200,7 @@
         </svg>
         <p class="wb-board-list__empty-title">{{ t('winterboard.boards.empty') }}</p>
         <p class="wb-board-list__empty-message">{{ t('winterboard.boards.emptyMessage') }}</p>
-        <router-link :to="{ name: 'winterboard-new' }" class="wb-board-list__cta-btn">
+        <router-link :to="newBoardRoute" class="wb-board-list__cta-btn">
           {{ t('winterboard.boards.createFirst') }}
         </router-link>
       </div>
@@ -351,6 +377,37 @@ const folderTree = ref<BoardFolderTreeType[]>([])
 const foldersLoading = ref(true)
 const selectedFolderId = ref<number | null>(null)
 const rootOnly = ref(false)
+
+// ─── PR-5: info-block (onboarding) ────────────────────────────────────────────
+// STATIC state — initialized once from localStorage, no watchers.
+// Dismiss persists per-browser; cleared by clearing site data.
+const INFO_BLOCK_DISMISSED_KEY = 'wb.boards.infoDismissed'
+function readInfoBlockDismissed(): boolean {
+  try {
+    return window.localStorage.getItem(INFO_BLOCK_DISMISSED_KEY) === '1'
+  } catch {
+    return false  // SSR / disabled storage → show by default
+  }
+}
+const showInfoBlock = ref(!readInfoBlockDismissed())
+function dismissInfoBlock(): void {
+  try {
+    window.localStorage.setItem(INFO_BLOCK_DISMISSED_KEY, '1')
+  } catch {
+    // localStorage unavailable — accept transient dismiss only.
+  }
+  showInfoBlock.value = false
+}
+
+/** INV-KNOW-1: route target для "Нова дошка" — пропагує current folder через query.
+ *  null/root → відсутність query (avoid `?folder=null` у URL).
+ *  Якщо selectedFolderId є — query.folder = id як string (Vue Router ⇒ stringify). */
+const newBoardRoute = computed(() => {
+  const id = selectedFolderId.value
+  return id !== null
+    ? { name: 'winterboard-new', query: { folder: String(id) } }
+    : { name: 'winterboard-new' }
+})
 
 /** Build breadcrumb path: [root, ..., current] */
 const breadcrumbPath = computed(() => {
@@ -883,6 +940,76 @@ onMounted(() => {
 .wb-board-list__breadcrumb-current {
   color: var(--wb-fg, #0f172a);
   font-weight: 600;
+}
+
+/* ── PR-5: Info-block (onboarding) ──────────────────────────────────── */
+/* STATIC layer. NOT sticky. Bounded width per recommended #6 to avoid
+ * inflating sidebar / wide screens. Bullets line-clamp implicitly via
+ * max-width + word-break. */
+.wb-board-list__info {
+  position: relative;
+  max-width: 480px;
+  margin: 0 0 20px;
+  padding: 14px 18px;
+  background: var(--wb-canvas-bg, #f8fafc);
+  border: 1px solid var(--wb-toolbar-border, #e2e8f0);
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--wb-fg-secondary, #475569);
+}
+
+.wb-board-list__info-title {
+  margin: 0 0 6px;
+  font-weight: 600;
+  color: var(--wb-fg, #0f172a);
+}
+
+.wb-board-list__info-list {
+  margin: 0;
+  padding-left: 18px;
+  list-style: disc;
+}
+
+.wb-board-list__info-list li {
+  margin: 2px 0;
+  /* line-clamp safety on tiny widths (i18n very-long translations) */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wb-board-list__info-dismiss {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--wb-fg-secondary, #94a3b8);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+}
+
+.wb-board-list__info-dismiss:hover,
+.wb-board-list__info-dismiss:focus-visible {
+  background: var(--wb-card-bg, #ffffff);
+  border-color: var(--wb-toolbar-border, #e2e8f0);
+  color: var(--wb-fg, #0f172a);
+}
+
+.wb-board-list__info-dismiss-text {
+  /* Hide label on narrow screens; native [×] enough */
+}
+
+@media (max-width: 480px) {
+  .wb-board-list__info-dismiss-text {
+    display: none;
+  }
 }
 
 /* ── Pagination ─────────────────────────────────────────────────────── */

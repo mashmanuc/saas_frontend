@@ -791,6 +791,7 @@ import { useAnnouncer } from '../composables/useAnnouncer'
 import { useContentDrop } from '../composables/useContentDrop'
 import { useToast } from '../composables/useToast'
 import { winterboardApi } from '../api/winterboardApi'
+import { parseFolderQuery, isFolderUnavailableError } from '../utils/folderRoute'
 // Phase 2 G-fix (2026-04-28): legacy `recordOperationsBatch` direct caller REMOVED;
 // initial page_add тепер emits через opsSyncStore.record() + flush() (single write path).
 import { useOpsSyncStore } from '../stores/opsSyncStore'
@@ -1226,6 +1227,8 @@ async function detectTutorGroup() {
 
 // Toast for thumbnail asset drop feedback
 const _thumbnailDropToast = useToast()
+// INV-KNOW-1: toast handle для folder fallback messaging при create.
+const _folderFallbackToast = useToast()
 
 // ── Content drop: D&D from sidebar onto canvas ──
 const contentDrop = useContentDrop({
@@ -2322,7 +2325,28 @@ onMounted(async () => {
         : studentNameParam
           ? `Заняття — ${studentNameParam}`
           : t('winterboard.room.untitled')
-      const created = await winterboardApi.createSession({ name: initialName })
+
+      // INV-KNOW-1 (Knowledge plan 2026-05-02): respect current folder context.
+      // Caller (WBBoardList) propagates folder via ?folder=<id>. Strict-parse
+      // protects from NaN / negative / fractional / array values.
+      const folderId = parseFolderQuery(route.query.folder)
+      let created: Awaited<ReturnType<typeof winterboardApi.createSession>>
+      try {
+        created = await winterboardApi.createSession({ name: initialName, folder: folderId })
+      } catch (err) {
+        // Graceful fallback: folder gone / forbidden / stale link.
+        // Create in root + inform user (non-blocking info toast).
+        if (folderId !== null && isFolderUnavailableError(err)) {
+          console.warn('[WBSoloRoom] folder unavailable, falling back to root:', err)
+          _folderFallbackToast.showToast(
+            t('winterboard.boards.folderUnavailableFallback'),
+            'info',
+          )
+          created = await winterboardApi.createSession({ name: initialName, folder: null })
+        } else {
+          throw err
+        }
+      }
       // Hydrate store immediately with created session data to avoid re-fetch flicker
       store.workspaceId = created.id
       sessionId.value = created.id

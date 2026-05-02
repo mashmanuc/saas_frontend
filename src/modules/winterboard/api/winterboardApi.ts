@@ -41,6 +41,10 @@ export interface WBSessionListItem {
     status: string
   } | null
   folder: number | null
+  // INV-KNOW-3 (Knowledge plan 2026-05-02 PR-1): materialized folder path
+  // ("Math/Algebra/Lesson 1"). Null for root sessions. Backend SSOT —
+  // BoardFolder.full_path stored field, do NOT compute on FE.
+  folder_path: string | null
   // Phase 1.6 (Replay Surface):
   has_recording?: boolean
   recording_started_at?: string | null
@@ -252,10 +256,20 @@ export const winterboardApi = {
     return apiClient.get(`${BASE}/sessions/${id}/`).then((r: any) => r.data ?? r)
   },
 
+  /**
+   * Create a new WB session.
+   *
+   * INV-KNOW-1 (Knowledge plan 2026-05-02): `folder` is REQUIRED in the
+   * payload type. Pass `null` for root sessions, or a positive folder id.
+   * NOT optional — TS will fail compile if a caller forgets the field.
+   * This is the single guard against the "folder context loss" regression
+   * (PR-2 root cause #1).
+   */
   createSession(data: {
     name?: string
     state?: WBWorkspaceState
     page_count?: number
+    folder: number | null
   }): Promise<WBSessionDetailResponse> {
     return apiClient.post(`${BASE}/sessions/`, data).then((r: any) => r.data ?? r)
   },
