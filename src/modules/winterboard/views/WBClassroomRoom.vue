@@ -104,11 +104,19 @@
 
       <!-- Right: Actions -->
       <div class="wb-classroom-room__actions">
-        <!-- A.1: Recording banner — classroom integration TODO (manual control буде окремо) -->
+        <!-- PR1 (2026-05-03): Classroom recording parity з Solo — same WBSession,
+             same /start-recording endpoint, same Replay model. SAFE per 7-point
+             invariant verification. Handlers below викликають opsSync.flush() +
+             autosave.saveNow() ДО POST /start-recording/, щоб backend deepcopy
+             session.state містив свіжі ops (INV-T fix). -->
         <WBRecordingBanner
           v-if="classroomRole.isTeacher.value"
-          :is-recording="false"
-          :is-frozen="false"
+          :is-recording="isManualRecording"
+          :is-frozen="isReplayFrozen"
+          :is-loading="isRecordingLoading"
+          :recording-started-at="recordingStartedAt"
+          @start="handleStartRecording"
+          @stop="handleStopRecording"
         />
         <!-- Lock toggle (teacher only) -->
         <button
@@ -299,6 +307,15 @@
       @submit="handleYouTubeSubmit"
     />
 
+    <!-- PR1 (2026-05-03): Post-record share prompt — порт із WBSoloRoom:721-725.
+         Замикає бак "Не знайдено" при відкритті replay-public-URL: вчитель
+         одразу обирає visibility (private/unlisted/public) + копіює лінк. -->
+    <WBRecordingDonePrompt
+      :visible="showRecordingDonePrompt"
+      :replay-id="activeReplayId"
+      @dismiss="showRecordingDonePrompt = false"
+    />
+
     <!-- Phase 1: Recording controls moved into header -->
 
     <!-- Phase 11 B5: Onboarding hints for empty board -->
@@ -407,6 +424,7 @@ import { useClassroomRole } from '../composables/useClassroomRole'
 import { useClassroomSession } from '../composables/useClassroomSession'
 import { winterboardApi } from '../api/winterboardApi'
 import { useAuthStore } from '@/modules/auth/store/authStore'
+import { registerAuthDeathCleanup } from '@/core/auth/onAuthDeath'
 import type { WBStroke, WBAsset, WBToolType } from '../types/winterboard'
 import { createGeometryAsset } from '../composables/useGeometryCreation'
 
@@ -421,6 +439,8 @@ import WBPageThumbnails from '../components/pages/WBPageThumbnails.vue'
 import WBSelectionToolbar from '../components/canvas/WBSelectionToolbar.vue'
 import WBYouTubeModal from '../components/toolbar/WBYouTubeModal.vue'
 import WBRecordingBanner from '../components/replay/WBRecordingBanner.vue'
+// PR1 (2026-05-03): post-record share prompt — port із WBSoloRoom для visibility toggle
+import WBRecordingDonePrompt from '../components/replay/WBRecordingDonePrompt.vue'
 import WBOnboardingHints from '../components/ui/WBOnboardingHints.vue'
 import WBTestTeacherPanel from '../components/test/WBTestTeacherPanel.vue'
 import WBTestStudentView from '../components/test/WBTestStudentView.vue'
@@ -545,8 +565,116 @@ const replayRecorder = useReplayRecorder({
   getBoardState: () => store.getSnapshotState(),
   enabled: isRecording,
 })
-// Phase 20: Auto-record all store operations — no manual record() calls needed
-const _unsubRecorder = replayRecorder.connectToStore(store)
+// Phase 20: Auto-record all store operations — no manual record() calls needed.
+// PR1 fix (2026-05-03 — blank-replay bug): connectToStore moved into onMounted
+// AFTER opsSync.bootstrap() — port із WBSoloRoom.vue:899+2531. Без цього listener
+// прикручений у setup, до bootstrap → opsSync.mode='BOOTSTRAP' → record() returns
+// false (silent drop у opsSyncStore.ts:261) → ops що spilled у вікні bootstrap
+// втрачаються → recording_start_state captures stale (empty) state →
+// replay плеєр показує чисту дошку. Solo має explicit comment про цю інваріанту
+// (line 897 + 2522).
+let _unsubRecorder: (() => void) | null = null
+
+// ─── PR1 (2026-05-03): Manual Recording Control — Classroom parity з Solo ─────
+// Port із WBSoloRoom.vue:882-974. Той самий WBSession, той самий endpoint
+// POST /winterboard/sessions/<uuid>/start-recording/, та сама Replay модель.
+// Hard verification — 7 інваріантів SAFE (jsonschema:
+// saas_docs/plans/classroom/CLASSROOM_BOARD_PARITY_PLAN_2026-05-03.md §1).
+const isManualRecording = ref(false)
+const recordingStartedAt = ref<string | null>(null)
+const isReplayFrozen = ref(false)
+const isRecordingLoading = ref(false)
+// Share Layer v1 + S.2 (port із WBSoloRoom): post-record proactive prompt.
+// Без цього UI replay створюється з default visibility=PRIVATE, і backend
+// WBPublicSessionView (views.py:1140) повертає 404 для /winterboard/public/<token>.
+// Юзер бачить "Не знайдено / Сесію не знайдено", хоча replay у списку.
+// Цей prompt показується 45s після stop та дозволяє вчителю змінити visibility
+// на unlisted/public + скопіювати посилання.
+const activeReplayId = ref<string | null>(null)
+const showRecordingDonePrompt = ref(false)
+let _recordingDoneTimer: number | null = null
+
+// На auth death (logout / cross-tab logout / refresh failed) скидаємо local
+// recording UI state. Backend паралельно ставить recording_stopped_seq у logout
+// view → reconnect покаже REC = Start.
+const _unregisterRecordingAuthDeath = registerAuthDeathCleanup(() => {
+  isManualRecording.value = false
+  recordingStartedAt.value = null
+})
+
+async function handleStartRecording(): Promise<void> {
+  const sid = resolvedSessionId.value
+  if (!sid || isManualRecording.value || isReplayFrozen.value) return
+  isRecordingLoading.value = true
+  try {
+    try {
+      await opsSync.flush()
+    } catch (e) {
+      console.warn('[WBClassroomRoom] opsSync.flush before start-recording failed', e)
+    }
+    try {
+      await autosave.saveNow()
+    } catch (e) {
+      console.warn('[WBClassroomRoom] saveNow before start-recording failed', e)
+    }
+    const result = await import('../api/replay').then(m => m.startRecording(sid))
+    isManualRecording.value = true
+    recordingStartedAt.value = result.recording_started_at
+    isReplayFrozen.value = false
+  } catch (e) {
+    console.error('[WBClassroomRoom] Failed to start recording:', e)
+  } finally {
+    isRecordingLoading.value = false
+  }
+}
+
+async function handleStopRecording(): Promise<void> {
+  const sid = resolvedSessionId.value
+  if (!sid || !isManualRecording.value) return
+  isRecordingLoading.value = true
+  try {
+    // PR1 fix (2026-05-03): flush pending ops перед stop-recording, інакше
+    // ops намальовані в останні мс не потраплять у [start_seq, stop_seq] діапазон.
+    try {
+      await opsSync.flush()
+    } catch (e) {
+      console.warn('[WBClassroomRoom] opsSync.flush before stop-recording failed', e)
+    }
+    const result = await import('../api/replay').then(m => m.stopRecording(sid))
+    isManualRecording.value = false
+    recordingStartedAt.value = null
+    isReplayFrozen.value = result.is_replay_frozen
+    activeReplayId.value = result.replay_id ?? null
+
+    // Share Layer S.2 (port із WBSoloRoom:954-957): inline post-record prompt —
+    // живий 45s, достатньо побачити, обрати visibility, скопіювати URL.
+    // Без цього prompt-у public link 404 (replay default visibility=PRIVATE).
+    if (activeReplayId.value) {
+      showRecordingDonePrompt.value = true
+      if (_recordingDoneTimer) {
+        clearTimeout(_recordingDoneTimer)
+      }
+      _recordingDoneTimer = window.setTimeout(() => {
+        showRecordingDonePrompt.value = false
+      }, 45000)
+    }
+  } catch (e) {
+    console.error('[WBClassroomRoom] Failed to stop recording:', e)
+    // P0.5 fallback (port із WBSoloRoom:958-970): API unreachable (auth dead,
+    // CORS, network) → still stop UI locally + telemetry + localStorage marker
+    // (для onMounted recovery detection при наступному заході у сесію).
+    isManualRecording.value = false
+    recordingStartedAt.value = null
+    import('@/utils/telemetryAgent').then(
+      m => m.trackEvent('recording.stop.failed', { sessionId: sid, error: String(e) }),
+    ).catch(() => { /* telemetry best-effort, never propagate */ })
+    try {
+      localStorage.setItem(`wb:recording:${sid}:stopped_locally`, String(Date.now()))
+    } catch { /* localStorage may be full or blocked */ }
+  } finally {
+    isRecordingLoading.value = false
+  }
+}
 
 // Grid overlay (background grid for the canvas)
 const gridOverlay = useGridOverlay(resolvedSessionId.value ?? 'default')
@@ -1779,6 +1907,15 @@ async function initBoardWithSession(init: { sessionId: string; role: any; permis
     console.error('[WB:ClassroomRoom] opsSync.bootstrap failed (non-fatal):', bootErr)
   }
 
+  // PR1 fix (2026-05-03): Connect recorder to store AFTER bootstrap (port із
+  // WBSoloRoom.vue:2531). Inside setup-block це ламало запис: ops що йшли через
+  // _emitOperation під час 'BOOTSTRAP' mode → opsSync.record() returns false →
+  // silent drop → recording_start_state captures empty state → blank replay.
+  // Idempotent: cleanupRecorder() handles повторний виклик safely.
+  if (!_unsubRecorder) {
+    _unsubRecorder = replayRecorder.connectToStore(store)
+  }
+
   // Set role + permissions
   classroomRole.setRole(init.role, init.permissions)
 
@@ -1837,8 +1974,18 @@ async function initBoardWithSession(init: { sessionId: string; role: any; permis
 }
 
 onBeforeUnmount(async () => {
-  _unsubRecorder()
+  // PR1 fix (2026-05-03): null-safe — initBoardWithSession може не дочекатися
+  // bootstrap (race на early unmount).
+  _unsubRecorder?.()
+  _unsubRecorder = null
   replayRecorder.destroy()
+  // PR1: cleanup auth-death listener for recording UI state
+  _unregisterRecordingAuthDeath()
+  // PR1: cleanup post-record prompt timer
+  if (_recordingDoneTimer) {
+    clearTimeout(_recordingDoneTimer)
+    _recordingDoneTimer = null
+  }
   try {
     await autosave.saveNow()
   } catch {
