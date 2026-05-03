@@ -239,6 +239,93 @@ if (cssMutationHits.length === 0) {
 }
 
 // ─────────────────────────────────────────────
+// Check 7: hardcoded layout pixel values у layout-critical files (G-2 PR-5)
+// Sidebar widths (260/64/280) and container max (1152/1400) must come from
+// tokens.css. Layout-critical files: PageShell, AppSidebar, StaffSidebar,
+// StaffLayout, calendar-responsive.css.
+// Refs: saas_docs/plans/G2_CSS_TOKENS_RESEARCH_2026-05-02.md §7 INV-G2-1/-5/-6.
+// ─────────────────────────────────────────────
+
+console.log('\nCheck 7: Hardcoded layout pixel values у layout-critical files (INV-G2-1)')
+
+const LAYOUT_CRITICAL_FILES = [
+  'src/ui/PageShell.vue',
+  'src/ui/AppSidebar.vue',
+  'src/modules/staff/components/StaffSidebar.vue',
+  'src/modules/staff/layouts/StaffLayout.vue',
+  'src/modules/booking/styles/calendar-responsive.css',
+]
+
+const LAYOUT_PIXEL_PATTERN = /(?:width|max-width|margin-left|margin-right):\s*(?:260|64|280|1152|1400)px/
+
+const layoutPixelHits = []
+for (const relPath of LAYOUT_CRITICAL_FILES) {
+  const fullPath = join(ROOT, relPath)
+  let content
+  try {
+    content = readFileSync(fullPath, 'utf8')
+  } catch {
+    continue // file may not exist
+  }
+  const lines = content.split(/\r?\n/)
+  for (let i = 0; i < lines.length; i++) {
+    if (LAYOUT_PIXEL_PATTERN.test(lines[i])) {
+      layoutPixelHits.push({ path: relPath, line: i + 1, text: lines[i].trim() })
+    }
+  }
+}
+
+if (layoutPixelHits.length === 0) {
+  pass('Layout-critical files use tokens.css vars (no hardcoded layout px)')
+} else {
+  fail(`Hardcoded layout px у layout-critical files (INV-G2-1):`)
+  layoutPixelHits.forEach((h) => console.error(`     ${h.path}:${h.line}  ${h.text}`))
+}
+
+// ─────────────────────────────────────────────
+// Check 8: tokens.css must define all required --app-* layout vars (G-2 PR-5)
+// Verify foundation is intact — if anyone removes a var у tokens.css, fail.
+// Refs: saas_docs/plans/G2_CSS_TOKENS_RESEARCH_2026-05-02.md §4.1 token candidates.
+// ─────────────────────────────────────────────
+
+console.log('\nCheck 8: tokens.css defines all required layout vars (INV-G2-1 foundation)')
+
+const REQUIRED_TOKEN_VARS = [
+  '--app-sidebar-width',
+  '--app-sidebar-width-collapsed',
+  '--app-sidebar-width-mobile',
+  '--app-max-width',
+  '--app-header-height',
+  '--app-topnav-height',
+  '--app-mobile-header-height',
+  '--app-content-padding-mobile',
+  '--app-content-padding-desktop',
+  '--bp-xs',
+  '--bp-sm',
+  '--bp-md',
+  '--bp-lg',
+  '--bp-xl',
+  '--bp-2xl',
+  '--bp-display',
+]
+
+let tokensCss = ''
+try {
+  tokensCss = readFileSync(join(ROOT, 'src/styles/tokens.css'), 'utf8')
+} catch {
+  fail('Cannot read frontend/src/styles/tokens.css — foundation missing!')
+}
+
+const missingTokens = REQUIRED_TOKEN_VARS.filter((v) => !tokensCss.includes(v + ':'))
+
+if (missingTokens.length === 0) {
+  pass(`All ${REQUIRED_TOKEN_VARS.length} required layout vars defined у tokens.css`)
+} else {
+  fail(`Missing required layout vars у tokens.css (G-2 INV-G2-1 foundation):`)
+  missingTokens.forEach((v) => console.error(`     ${v}`))
+}
+
+// ─────────────────────────────────────────────
 // Summary
 // ─────────────────────────────────────────────
 

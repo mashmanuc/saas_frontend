@@ -87,20 +87,21 @@ export default [
   // INV-LAYOUT-9 — Popovers/dropdowns MUST use layout.getViewportSnapshot() (non-reactive).
   // Direct `.viewport.width` / `.viewport.height` MemberExpression subscribes to reactivity → jitter on resize.
   // Refs: saas_docs/plans/LAYOUT_SSOT_2026-05-02.md §7.1 AST guards.
-  // Set as 'warn' until Stage 5 (consumers like PageShell are still being migrated).
+  // PR-G2.5 (Stage 5 final): promoted from 'warn' to 'error' — Stage 5 invariants enforced.
   {
     files: ['src/**/*.{ts,tsx,vue,js}'],
     ignores: [
       '**/__tests__/**',
       '**/tests/**',
       'src/stores/layoutStore.ts',     // store itself defines viewport
-      'src/composables/useResponsiveLayout.ts',  // legacy, deleted Stage 5
+      // useResponsiveLayout / useSidebar deleted in Layout SSoT Stage 5.
+      'src/composables/useDeviceCapabilities.ts',  // legitimate reactive consumer (orientation, NOT popover)
     ],
     rules: {
-      'no-restricted-syntax': ['warn',
+      'no-restricted-syntax': ['error',
         {
           selector: "MemberExpression[object.type='MemberExpression'][object.property.name='viewport'][property.name=/^(width|height)$/]",
-          message: 'INV-LAYOUT-9: Use layout.getViewportSnapshot() for popovers (non-reactive). Direct *.viewport.{width,height} subscribes to reactivity → jitter on resize. Stage 5: this becomes error.'
+          message: 'INV-LAYOUT-9: Use layout.getViewportSnapshot() for popovers (non-reactive). Direct *.viewport.{width,height} subscribes to reactivity → jitter on resize.'
         }
       ]
     }
