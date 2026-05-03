@@ -87,8 +87,9 @@ onMounted(async () => {
 }
 
 .staff-content {
+  /* G-2 Stage 2: dimensions from tokens.css. */
   flex: 1;
-  margin-left: 260px;
+  margin-left: var(--app-sidebar-width);
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -96,7 +97,7 @@ onMounted(async () => {
 }
 
 .sidebar-collapsed .staff-content {
-  margin-left: 64px;
+  margin-left: var(--app-sidebar-width-collapsed);
 }
 
 .staff-topbar {

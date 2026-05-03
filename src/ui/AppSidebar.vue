@@ -104,7 +104,8 @@ const layout = useLayoutStore()
 
 <style scoped>
 .app-sidebar {
-  width: 260px;
+  /* G-2 Stage 2: dimensions from tokens.css (INV-G2-1, INV-G2-6). */
+  width: var(--app-sidebar-width);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -118,7 +119,7 @@ const layout = useLayoutStore()
 }
 
 .app-sidebar.collapsed {
-  width: 64px;
+  width: var(--app-sidebar-width-collapsed);
 }
 
 /* ── Header ── */
@@ -269,7 +270,8 @@ const layout = useLayoutStore()
   .app-sidebar {
     transform: translateX(-100%);
     transition: transform 0.25s ease;
-    width: 280px;
+    /* G-2 INV-G2-6: mobile width = desktop (no 280→260 jump). */
+    width: var(--app-sidebar-width-mobile);
   }
 
   .app-sidebar.mobile-open {
@@ -277,7 +279,8 @@ const layout = useLayoutStore()
   }
 
   .app-sidebar.collapsed {
-    width: 280px;
+    /* In overlay mode collapsed flag is moot; keep mobile width consistent. */
+    width: var(--app-sidebar-width-mobile);
   }
 
   .mobile-only { display: flex; }

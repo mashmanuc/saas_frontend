@@ -7,10 +7,13 @@
          INV-LAYOUT-7 satisfied automatically (no bridge to race). -->
     <AppSidebar :sections="sidebarSections" />
 
-    <!-- Main area: offset for fixed sidebar -->
+    <!-- Main area: offset for fixed sidebar.
+         G-2 Stage 2 Path B (Tailwind JIT verify failed for lg:ml-[var(...)],
+         так що використовуємо Vue inline :style binding замість Tailwind class).
+         CSS vars resolve runtime через standard CSS — без Tailwind involvement. -->
     <div
       class="flex-1 flex flex-col transition-[margin] duration-200"
-      :class="mainAreaClass"
+      :style="mainAreaStyle"
     >
       <TopNav @toggle-side-nav="layout.openSidebar()" />
 
@@ -78,12 +81,23 @@ const sidebarSections = computed(() => {
   }))
 })
 
-const mainAreaClass = computed(() => {
+// G-2 Stage 2 Path B (LOCKED 2026-05-02): Tailwind JIT did NOT generate
+// `lg:ml-[var(--app-sidebar-width)]` arbitrary classes (verified via
+// `npm run build` + grep dist/assets/*.css → 0 matches). Falling back to
+// Vue inline :style binding which evaluates CSS vars at runtime through
+// standard CSS resolution (no Tailwind dependency).
+//
+// Refs: saas_docs/plans/G2_CSS_TOKENS_RESEARCH_2026-05-02.md §6 Stage 2 Path B,
+//       R-G2-3 (Tailwind JIT corner case confirmed in this codebase).
+const mainAreaStyle = computed(() => {
   // Overlay mode (mobile/tablet) — sidebar is fixed-positioned, no margin offset.
-  if (layout.sidebarMode === 'overlay') return ''
+  if (layout.sidebarMode === 'overlay') return {}
   // Static mode (desktop) — main content offsets by sidebar width.
-  if (layout.sidebar.isCollapsed) return 'lg:ml-16'
-  return 'lg:ml-[260px]'
+  return {
+    marginLeft: layout.sidebar.isCollapsed
+      ? 'var(--app-sidebar-width-collapsed)'
+      : 'var(--app-sidebar-width)',
+  }
 })
 
 watch(

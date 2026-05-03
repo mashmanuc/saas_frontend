@@ -230,7 +230,8 @@ const route = useRoute()
 
 <style scoped>
 .staff-sidebar {
-  width: 260px;
+  /* G-2 Stage 2: dimensions from tokens.css (shared with AppSidebar). */
+  width: var(--app-sidebar-width);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -244,7 +245,7 @@ const route = useRoute()
 }
 
 .staff-sidebar.collapsed {
-  width: 64px;
+  width: var(--app-sidebar-width-collapsed);
 }
 
 .sidebar-header {
@@ -406,7 +407,8 @@ const route = useRoute()
   .staff-sidebar {
     transform: translateX(-100%);
     transition: transform 0.25s ease;
-    width: 280px;
+    /* G-2 INV-G2-6: mobile width = desktop. */
+    width: var(--app-sidebar-width-mobile);
   }
 
   .staff-sidebar.mobile-open {
@@ -414,7 +416,7 @@ const route = useRoute()
   }
 
   .staff-sidebar.collapsed {
-    width: 280px;
+    width: var(--app-sidebar-width-mobile);
   }
 
   .mobile-only { display: flex; }
