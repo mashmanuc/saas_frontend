@@ -194,7 +194,11 @@
         />
       </aside>
 
-      <!-- Toolbar (role-aware) -->
+      <!-- Toolbar (role-aware) — PR2 (2026-05-04): Solo parity Group A.
+           Додано: :has-selection, :has-locked-in-selection, :can-clear-page,
+           :preset-playing пропси + @lock-selected, @unlock-selected,
+           @geometry-shape-select, @run-preset, @clear-page-request events.
+           Усі handlers RBAC-guarded через classroomRole permissions. -->
       <aside class="wb-classroom-room__toolbar">
         <WBToolbar
           :current-tool="store.currentTool"
@@ -202,6 +206,10 @@
           :current-size="store.currentSize"
           :can-undo="store.canUndo"
           :can-redo="store.canRedo"
+          :has-selection="store.hasSelection"
+          :has-locked-in-selection="hasLockedInSelection"
+          :can-clear-page="!isCanvasEmpty"
+          :preset-playing="presetExecutor.isPlaying.value"
           :disabled="isDrawingDisabled"
           :hide-clear="!classroomRole.canClear.value"
           @tool-change="handleToolChange"
@@ -210,6 +218,11 @@
           @undo="handleUndo"
           @redo="handleRedo"
           @clear="handleClear"
+          @lock-selected="handleLockSelected"
+          @unlock-selected="handleUnlockSelected"
+          @clear-page-request="handleClearPageRequest"
+          @geometry-shape-select="handleGeometryShapeSelect"
+          @run-preset="handleRunPreset"
           @youtube-insert="showYouTubeModal = true"
         />
       </aside>
@@ -427,6 +440,11 @@ import { useAuthStore } from '@/modules/auth/store/authStore'
 import { registerAuthDeathCleanup } from '@/core/auth/onAuthDeath'
 import type { WBStroke, WBAsset, WBToolType } from '../types/winterboard'
 import { createGeometryAsset } from '../composables/useGeometryCreation'
+// PR2 (2026-05-04): Solo→Classroom toolbar parity (Group A) — preset executor
+// + geometry presets для @run-preset events із WBToolbar.
+import { usePresetExecutor } from '../composables/usePresetExecutor'
+import { createTriangleBuildPreset, createPythagorasPreset } from '../engine/geometryPresets'
+import type { Geometry2DShape } from '../types/geometry'
 
 // Components
 import WBCanvas from '../components/canvas/WBCanvas.vue'
@@ -812,6 +830,37 @@ const hasLockedInSelection = computed(() => {
   return store.selectedIds.some((id) => store.isItemLocked(id))
 })
 
+// PR2 (2026-05-04 — Solo→Classroom toolbar parity, Group A) ────────────────────
+// Port із WBSoloRoom.vue:1424-1429 — для :can-clear-page WBToolbar binding.
+const isCanvasEmpty = computed(() => {
+  const page = store.currentPage
+  if (!page) return true
+  return page.strokes.length === 0 && page.assets.length === 0
+})
+
+// Geometry shape selector state (port із WBSoloRoom.vue:1640-1641).
+// User обирає shape у toolbar → handleGeometryCreate використовує ці refs
+// при drop на canvas.
+const _geometryShape = ref<Geometry2DShape>('triangle')
+const _geometrySides = ref(6)
+
+// GeoBoard preset executor (port із WBSoloRoom.vue:1659-1673). Виконує preset-
+// анімації (Піфагор, побудова трикутника). G4: під час preset switch toolbar
+// to 'select' щоб попередити випадкове малювання.
+const presetExecutor = usePresetExecutor({
+  applyOp(op) {
+    const payload = op.payload as Record<string, any>
+    if (op.op_type === 'asset_add' && payload.asset) {
+      store.addAsset(payload.asset as WBAsset, store.currentPageId)
+    } else if (op.op_type === 'asset_update' && payload.asset) {
+      store.updateAsset(payload.asset as WBAsset)
+    }
+  },
+  onStart() {
+    store.setTool('select')
+  },
+})
+
 // Text formatting: selected object for toolbar (single selection only)
 const selectedObjectForToolbar = computed(() => {
   if (store.selectedIds.length !== 1) return null
@@ -1023,12 +1072,64 @@ function handleAssetUpdate(asset: WBAsset): void {
 }
 
 // GeoBoard: create geometry asset at canvas position
+// PR2: використовуємо обрані toolbar refs (_geometryShape/_geometrySides)
+// замість hardcoded 'triangle' — port із WBSoloRoom:1648-1656.
 function handleGeometryCreate(x: number, y: number): void {
   if (isDrawingDisabled.value) return
-  const asset = createGeometryAsset('triangle', x, y)
+  const asset = createGeometryAsset(_geometryShape.value, x, y, {
+    sides: _geometrySides.value,
+  })
   handleAssetAdd(asset)
   store.selectItems([asset.id])
   store.setTool('select')
+}
+
+// ─── PR2 (2026-05-04): Toolbar handlers parity з Solo (Group A) ──────────────
+// Усі handlers RBAC-guarded через classroomRole permissions — student бачить
+// toolbar (бо canvas read-only viewing), але дії заблоковані.
+
+function handleLockSelected(): void {
+  // canLock = teacher only (per useClassroomRole.ts:78)
+  if (!classroomRole.canLock.value) return
+  locking.lockSelected()
+}
+
+function handleUnlockSelected(): void {
+  if (!classroomRole.canLock.value) return
+  locking.unlockSelected()
+}
+
+function handleGeometryShapeSelect(shape: string, sides?: number): void {
+  // Selection state — guard'имо canDraw (student не може обирати фігури бо
+  // не має права малювати на canvas).
+  if (!classroomRole.canDraw.value) return
+  _geometryShape.value = shape as Geometry2DShape
+  if (sides != null) _geometrySides.value = sides
+}
+
+function handleRunPreset(presetId: string): void {
+  // Preset виконує бgу asset_add/asset_update ops → потребує canDraw.
+  if (!classroomRole.canDraw.value) return
+  const cx = (store.pageWidth || 1920) / 2
+  const cy = (store.pageHeight || 1080) / 2
+  let preset
+  switch (presetId) {
+    case 'triangle_build':
+      preset = createTriangleBuildPreset(cx, cy)
+      break
+    case 'pythagoras':
+      preset = createPythagorasPreset(cx, cy)
+      break
+    default:
+      return
+  }
+  presetExecutor.run(preset)
+}
+
+function handleClearPageRequest(): void {
+  // canClear = teacher only. handleClear() сам визначає що робити.
+  if (!classroomRole.canClear.value) return
+  handleClear()
 }
 
 function handleAssetDelete(assetId: string): void {
