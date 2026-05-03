@@ -1,8 +1,23 @@
 /** @type {import('tailwindcss').Config} */
+// G-2 Stage 4 (PR-G2.4): import canonical breakpoint numbers from
+// frontend/src/config/breakpoints.ts (single source of truth).
+// Tailwind 3.4 uses jiti loader → can resolve .ts modules.
+// Refs: saas_docs/plans/G2_CSS_TOKENS_RESEARCH_2026-05-02.md §6 Stage 4,
+//       INV-G2-2: CSS не дублює layoutStore breakpoint numbers.
+import { BREAKPOINTS } from './src/config/breakpoints.ts'
+
+// Build Tailwind `screens` from canonical BREAKPOINTS.
+// Tailwind defaults: sm=640, md=768, lg=1024, xl=1280, 2xl=1536 (matches BREAKPOINTS).
+// Custom: xs=480, display=1920 (extensions, also matches BREAKPOINTS).
+const screens = Object.fromEntries(
+  Object.entries(BREAKPOINTS).map(([key, val]) => [key, `${val}px`]),
+)
+
 export default {
   darkMode: ['selector', '[data-theme="dark"]'],
   content: ['./index.html', './src/**/*.{vue,js,ts,jsx,tsx}'],
   theme: {
+    screens, // ← override defaults with canonical SSoT (replaces both default sm/md/lg/xl/2xl AND extends.screens.xs/display)
     extend: {
       colors: {
         // Theme-aware colors using CSS variables
@@ -40,10 +55,8 @@ export default {
         xl:   'var(--radius-xl)',
         full: 'var(--radius-full)',
       },
-      screens: {
-        'xs': '480px',
-        'display': '1920px',
-      },
+      // screens defined у theme.screens above (replaces defaults from canonical SSoT).
+      // Removed extends.screens.xs/display — duplicate now lives in BREAKPOINTS.
       boxShadow: {
         theme: '0 8px 25px var(--shadow)',
         'theme-strong': '0 12px 35px var(--shadow-strong)',
