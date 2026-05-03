@@ -71,6 +71,15 @@
   --wb-transition-fast: 150ms ease;
   --wb-transition-normal: 250ms ease;
 
+  /* ─── List/Grid card sizing (Phase WB-Responsive-11) ─────────────
+     Auto-fit min card width — used by WBBoardList, WBSessionList,
+     WBReplayList, WBLibrary та similar list grids.
+     Range: 260px (INV-WB-4 minimum) → 360px (max — за task brief).
+     Default: 280px (consistent with existing WBReplayList card baseline).
+     Refs: saas_docs/plans/WB_RESPONSIVE_GRID_GAP_2026-05-02.md. */
+  --wb-card-min: 280px;
+  --wb-card-min-compact: 160px;  /* для WBLibrary asset grid (smaller thumbnails) */
+
   /* ─── Replay Controls ─────────────────────────────────────────── */
   --wb-replay-btn-play: 38px;
   --wb-replay-btn-step: 32px;

@@ -354,21 +354,11 @@ onUnmounted(() => {
 
 /* ── Grid ────────────────────────────────────────────────────────────── */
 .wb-session-grid {
+  /* Phase WB-Responsive-11: auto-fill з мінімальною шириною картки.
+     Refs: WB_RESPONSIVE_GRID_GAP_2026-05-02.md, INV-WB-3 (one render path). */
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(auto-fill, minmax(var(--wb-card-min, 280px), 1fr));
   gap: 20px;
-}
-
-@media (min-width: 640px) {
-  .wb-session-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (min-width: 960px) {
-  .wb-session-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
 }
 
 /* ── Card ────────────────────────────────────────────────────────────── */

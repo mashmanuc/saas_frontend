@@ -1057,21 +1057,14 @@ onMounted(() => {
 /* ── Grid layout ─────────────────────────────────────────────────────── */
 
 .wb-board-list__grid {
+  /* Phase WB-Responsive-11: auto-fill з мінімальною шириною картки.
+     Однією формулою replaces 3-step responsive ladder (1→2→3 col cap).
+     Тепер: 1 col на mobile, 2 на ~580+, 3 на ~860+, 4 на ~1140+,
+     5 на ~1420+, 6 на ~1700+ — використовує доступну ширину повністю.
+     Refs: WB_RESPONSIVE_GRID_GAP_2026-05-02.md, INV-WB-3 (one render path). */
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(auto-fill, minmax(var(--wb-card-min, 280px), 1fr));
   gap: 20px;
-}
-
-@media (min-width: 640px) {
-  .wb-board-list__grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (min-width: 960px) {
-  .wb-board-list__grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
 }
 
 /* ── List layout ─────────────────────────────────────────────────────── */

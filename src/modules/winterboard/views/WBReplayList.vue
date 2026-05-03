@@ -762,8 +762,9 @@ async function onTabDrop(tab: ReplayStatus, e: DragEvent) {
 }
 
 .replay-list__grid {
+  /* Phase WB-Responsive-11: уніфіковано з WBBoardList/WBSessionList through --wb-card-min. */
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(var(--wb-card-min, 280px), 1fr));
   gap: var(--space-md, 16px);
 }
 
