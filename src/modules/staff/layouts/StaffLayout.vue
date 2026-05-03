@@ -147,9 +147,10 @@ onMounted(async () => {
 }
 
 .staff-main {
+  /* G-2 Stage 3: max-width from tokens.css (INV-G2-5). */
   flex: 1;
   padding: var(--space-lg);
-  max-width: 1400px;
+  max-width: var(--app-max-width);
   width: 100%;
   margin: 0 auto;
 }

@@ -21,8 +21,9 @@
         :class="[
           'mx-auto w-full',
           layout.isMobile ? 'px-3 py-4' : 'p-6',
-          layout.isDesktop ? 'max-w-6xl' : 'max-w-full'
+          layout.isDesktop ? '' : 'max-w-full'
         ]"
+        :style="mainContentStyle"
       >
         <router-view />
       </main>
@@ -108,6 +109,17 @@ const sidebarSections = computed(() => {
 //
 // Allowed: Tailwind utility classes for OTHER layout aspects (padding,
 // flex, grid, etc.). Forbidden ONLY for sidebar margin offsets here.
+// G-2 Stage 3 (UX-APPROVED 2026-05-02, INV-G2-5): main content max-width
+// from tokens.css. Replaces hardcoded `max-w-6xl` (1152px) with
+// `var(--app-max-width)` (1400px). Same Path B reasoning as INV-G2-7
+// (Tailwind arbitrary CSS var classes unreliable у JIT).
+//
+// Closes audit issue I-010 (max-width inconsistency 1152 vs Staff 1400).
+const mainContentStyle = computed(() => {
+  if (!layout.isDesktop) return {}
+  return { maxWidth: 'var(--app-max-width)' }
+})
+
 const mainAreaStyle = computed(() => {
   // Overlay mode (mobile/tablet) — sidebar is fixed-positioned, no margin offset.
   if (layout.sidebarMode === 'overlay') return {}

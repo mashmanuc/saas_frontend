@@ -121,7 +121,8 @@
    ======================================== */
 @media (min-width: 1441px) {
   .calendar-week-view {
-    max-width: 1400px;
+    /* G-2 Stage 3: max-width from tokens.css (INV-G2-5). */
+    max-width: var(--app-max-width);
     margin: 0 auto;
   }
 
