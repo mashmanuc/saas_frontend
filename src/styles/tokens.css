@@ -144,6 +144,52 @@
 }
 
 /* ═══════════════════════════════════════════════════
+   Layout SSoT — App-shell layout dimensions (G-2)
+   ═══════════════════════════════════════════════════
+   Single source of truth для layout dimensions.
+   Consumers: AppSidebar, PageShell, StaffSidebar, StaffLayout, calendar layouts.
+
+   Refs:
+     - saas_docs/plans/G2_CSS_TOKENS_RESEARCH_2026-05-02.md (token candidates §4.1)
+     - saas_docs/plans/LAYOUT_SSOT_2026-05-02.md (INV-LAYOUT-8: CSS = SSoT)
+     - INV-G2-1: layout values one-source у tokens.css.
+     - INV-G2-5: container max-width = 1400 (D-1 LOCKED).
+     - INV-G2-6: sidebar mobile width = desktop width (no 280→260 jump).
+
+   IMPORTANT: WB-domain має власні `--wb-*` vars у winterboard-responsive.css.
+   These `--app-*` vars are for Dashboard/Staff/shared shell ТІЛЬКИ.
+*/
+:root {
+  /* Sidebar — Dashboard + Staff shared (D-1 LOCKED у Layout SSoT INV-RESP-2) */
+  --app-sidebar-width:           260px;
+  --app-sidebar-width-collapsed:  64px;
+  --app-sidebar-width-mobile:    260px;  /* unify with desktop, closes D2-2 (no 280→260 jump) */
+
+  /* Main container max-width (closes D2-3 / audit I-010) */
+  --app-max-width:              1400px;
+
+  /* App shell heights (TopNav, AppSidebar header, mobile header) */
+  --app-header-height:           64px;
+  --app-topnav-height:           56px;
+  --app-mobile-header-height:    56px;
+
+  /* Content padding (responsive — picked у consumers) */
+  --app-content-padding-mobile:  1rem;
+  --app-content-padding-desktop: 1.5rem;
+
+  /* Breakpoint tokens (sync з frontend/src/config/breakpoints.ts).
+     Numbers MUST match BREAKPOINTS object у config/breakpoints.ts.
+     Stage 4 (PR-G2.4) автоматизує це через tailwind.config.js import. */
+  --bp-xs:      480px;
+  --bp-sm:      640px;
+  --bp-md:      768px;
+  --bp-lg:     1024px;  /* D-1: sidebar overlay/collapse boundary */
+  --bp-xl:     1280px;
+  --bp-2xl:    1536px;
+  --bp-display: 1920px;
+}
+
+/* ═══════════════════════════════════════════════════
    Layout SSoT — anti-flicker hydration guard (INV-LAYOUT-11)
    ═══════════════════════════════════════════════════
    Hides body until layoutStore.init() sets <html data-hydrated="true">
