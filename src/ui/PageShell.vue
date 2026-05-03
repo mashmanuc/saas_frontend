@@ -81,14 +81,33 @@ const sidebarSections = computed(() => {
   }))
 })
 
-// G-2 Stage 2 Path B (LOCKED 2026-05-02): Tailwind JIT did NOT generate
-// `lg:ml-[var(--app-sidebar-width)]` arbitrary classes (verified via
-// `npm run build` + grep dist/assets/*.css → 0 matches). Falling back to
-// Vue inline :style binding which evaluates CSS vars at runtime through
-// standard CSS resolution (no Tailwind dependency).
+// ═══════════════════════════════════════════════════════════════════
+// ARCHITECTURAL NOTE — Layout margins via Vue :style (LOCKED 2026-05-02)
+// ═══════════════════════════════════════════════════════════════════
 //
-// Refs: saas_docs/plans/G2_CSS_TOKENS_RESEARCH_2026-05-02.md §6 Stage 2 Path B,
-//       R-G2-3 (Tailwind JIT corner case confirmed in this codebase).
+// IMPORTANT: Tailwind JIT does NOT support CSS var arbitrary values
+// reliably in this project (`lg:ml-[var(--app-sidebar-width)]` returns
+// 0 matches у production CSS — verified via `npm run build` + grep).
+//
+// Layout margins for the main shell area are controlled via Vue :style
+// binding bound to `mainAreaStyle` computed. CSS vars resolve at runtime
+// through standard CSS engine — no Tailwind dependency.
+//
+// 🔒 DO NOT revert this to Tailwind classes (e.g. `lg:ml-[var(...)]`,
+//    `lg:ml-[260px]`, etc.). This is INV-G2-7 — architectural decision,
+//    not a temporary fallback. See:
+//      - saas_docs/plans/G2_CSS_TOKENS_RESEARCH_2026-05-02.md §12.1
+//      - INV-G2-7 (Layout margins via Vue :style)
+//
+// Why locked:
+//   - Single source of truth: layoutStore (state) + tokens.css (vars).
+//   - Layout is store-driven, consistent with rest of Layout SSoT.
+//   - Reactive: `layout.sidebar.isCollapsed` change → margin updates
+//     without Tailwind regeneration.
+//   - Simpler debug: store stress tests cover margin behavior.
+//
+// Allowed: Tailwind utility classes for OTHER layout aspects (padding,
+// flex, grid, etc.). Forbidden ONLY for sidebar margin offsets here.
 const mainAreaStyle = computed(() => {
   // Overlay mode (mobile/tablet) — sidebar is fixed-positioned, no margin offset.
   if (layout.sidebarMode === 'overlay') return {}
