@@ -2065,6 +2065,27 @@ async function initBoardWithSession(init: { sessionId: string; role: any; permis
       })
     }
     sessionName.value = detail.name || t('winterboard.room.untitled')
+
+    // ─── Phase 2A-5 (Plan v2.1 §4.5): Resume recording per INV-LIFECYCLE-5 ────
+    // Якщо BE indicates session має active recording (started_seq SET,
+    // stopped_seq NULL) → hydrate UI у "REC" state. Heartbeat composable
+    // (Phase 2A-3) auto-start через watch(isManualRecording).
+    //
+    // Без цього resume: nav back протягом 90s heartbeat window → UI shows
+    // "Записати" idle, БЕ показує active → re-click Start → 409 conflict.
+    const startedSeq = detail.recording_started_seq ?? null
+    const stoppedSeq = detail.recording_stopped_seq ?? null
+    const isActiveRecording = startedSeq !== null && stoppedSeq === null
+    if (isActiveRecording) {
+      isManualRecording.value = true
+      recordingStartedAt.value = detail.recording_started_at ?? null
+      isReplayFrozen.value = false
+      announce(t('winterboard.recording.resumed'))
+    } else {
+      isManualRecording.value = false
+      recordingStartedAt.value = null
+      isReplayFrozen.value = detail.is_replay_frozen ?? false
+    }
   } catch (err) {
     console.error('[WB:ClassroomRoom] Failed to load session state', err)
   }

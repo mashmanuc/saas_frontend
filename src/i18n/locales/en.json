@@ -7513,7 +7513,8 @@
       "startTitle": "Start recording for later replay",
       "stop": "Stop",
       "active": "Recording",
-      "frozen": "Recording finished"
+      "frozen": "Recording finished",
+      "resumed": "Recording is still active — resuming from where you left"
     },
     "onboarding": {
       "toolbar": "Drawing tools. Pick a pen and start!",

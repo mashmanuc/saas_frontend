@@ -100,6 +100,8 @@ export interface WBSessionDetailResponse {
   recording_started_seq?: number | null
   recording_stopped_seq?: number | null
   recording_started_at?: string | null
+  // Phase 2A-1 (Plan v2.1 §4.2): heartbeat timestamp для INV-LIFECYCLE-3 + 2A-5 resume
+  recording_last_heartbeat?: string | null
   is_replay_frozen?: boolean
 }
 
