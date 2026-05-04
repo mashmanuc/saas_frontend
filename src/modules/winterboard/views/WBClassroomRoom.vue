@@ -464,6 +464,7 @@ import WBTestTeacherPanel from '../components/test/WBTestTeacherPanel.vue'
 import WBTestStudentView from '../components/test/WBTestStudentView.vue'
 import { useGridOverlay } from '../composables/useGridOverlay'
 import { useReplayRecorder } from '../composables/useReplayRecorder'
+import { useRecordingHeartbeat } from '../composables/useRecordingHeartbeat'
 // Phase 2 G-fix (2026-04-28): opsSyncStore bootstrap wiring (single write path)
 import { useOpsSyncStore } from '../stores/opsSyncStore'
 import { useDeviceMode } from '../composables/useDeviceMode'
@@ -618,6 +619,16 @@ let _recordingDoneTimer: number | null = null
 const _unregisterRecordingAuthDeath = registerAuthDeathCleanup(() => {
   isManualRecording.value = false
   recordingStartedAt.value = null
+})
+
+// Phase 2A-3 (Plan v2.1 §4.3): FE heartbeat ticker для INV-LIFECYCLE-3.
+// Composable read-only consumer isManualRecording — auto start/stop через watch.
+// Wire-up = 1 рядок setup, без змін handlers/template (infrastructure addon).
+// Solo НЕ чіпаємо (per architect directive) — fallback на BE legacy 10min cutoff
+// per Plan §4.4. Classroom отримує full 90s heartbeat-based finalize window.
+useRecordingHeartbeat({
+  sessionId: resolvedSessionId,
+  isRecording: isManualRecording,
 })
 
 async function handleStartRecording(): Promise<void> {
