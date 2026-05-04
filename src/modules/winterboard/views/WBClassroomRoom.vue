@@ -2002,7 +2002,20 @@ function handleTestEnd() {
 }
 
 // B3: Extracted init logic so waiting_for_teacher can call it when teacher starts
+// Mount guard: ROOT-CAUSE protection проти repeated bootstrap. Якщо
+// функцію викликають кілька разів (HMR, race у двох callerах onMounted+wb:session-ready,
+// або re-render trigger) → re-fetch session, re-bootstrap opsSync, re-startUserPolling
+// → 429 cascade на ВСІ endpoints. Single-shot = safety floor.
+let _classroomInitialized = false
+
 async function initBoardWithSession(init: { sessionId: string; role: any; permissions: any; isLocked: boolean; groupId?: string | null }): Promise<void> {
+  if (_classroomInitialized) {
+    console.warn('[WB:ClassroomRoom] initBoardWithSession called twice — guarded (root-cause fix vs 429 storm)')
+    return
+  }
+  _classroomInitialized = true
+  console.info('[WB:ClassroomRoom] initBoardWithSession START', { sessionId: init.sessionId, ts: Date.now() })
+
   // Set resolved session ID
   resolvedSessionId.value = init.sessionId
   store.workspaceId = init.sessionId

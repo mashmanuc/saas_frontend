@@ -65,6 +65,12 @@ export function useClassroomSession() {
   // race коли poll tick + manual refresh (e.g. handleKickStudent) збігаються
   // або slow network → попередній запит ще pending коли наступний tick fires.
   let _fetchUsersInFlight = false
+  // ROOT-CAUSE flag (defense-in-depth поверх usersPollTimer check):
+  // якщо хтось викличе startUserPolling кілька разів за component lifecycle
+  // → only the first call sets up interval. Resets ТІЛЬКИ через explicit
+  // stopUserPolling() — інакше silent NO-OP. Захищає від cascade 429 storm
+  // при race у callers (initBoardWithSession × multiple).
+  let _pollingStarted = false
 
   // ── Init session ────────────────────────────────────────────────────
 
@@ -225,10 +231,19 @@ export function useClassroomSession() {
   }
 
   function startUserPolling(): void {
-    // Idempotent: якщо poll вже running — no-op. Захищає від accidental
-    // double-call (e.g. з кількох watchers/lifecycle hooks) що би створили
-    // дубль fetch immediately + interval reset → flood requests.
+    // Idempotent guard #1: якщо вже started → no-op. Захищає від root-cause
+    // 429 storm коли кілька callerів запускають polling (race у onMounted +
+    // wb:session-ready event listener, або HMR re-run).
+    if (_pollingStarted) {
+      console.warn(`${LOG} startUserPolling called twice — guarded (no double interval)`)
+      return
+    }
+    // Idempotent guard #2: defense-in-depth — якщо timer ref alive (e.g. flag
+    // race), теж no-op.
     if (usersPollTimer !== null) return
+
+    _pollingStarted = true
+    console.info(`${LOG} [Polling START] interval=${USERS_POLL_INTERVAL_MS}ms`)
     fetchConnectedUsers()
     usersPollTimer = setInterval(fetchConnectedUsers, USERS_POLL_INTERVAL_MS)
   }
@@ -238,6 +253,7 @@ export function useClassroomSession() {
       clearInterval(usersPollTimer)
       usersPollTimer = null
     }
+    _pollingStarted = false
   }
 
   // Clean up poll timers on composable teardown (prevents HMR / unmount leaks)
