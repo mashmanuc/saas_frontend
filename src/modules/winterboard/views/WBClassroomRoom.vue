@@ -1598,10 +1598,27 @@ function setupStrokeBroadcast(): void {
 
   // ── Asset sync: updateAsset ──
   const origUpdateAsset = store.updateAsset.bind(store)
+  // PR-DIAG (2026-05-04): rate counter + stack-trace для розслідування
+  // 20+ broadcasts spam loop при drop document_viewer/solid asset.
+  // TODO REMOVE після root cause знайдений + точковий fix.
+  let _updateAssetCallCount = 0
+  let _updateAssetWindowStart = Date.now()
   store.updateAsset = (asset: any, opts?: any) => {
     origUpdateAsset(asset, opts)
     if (opts?._remote) return
-    console.info(`[WB:Sync] updateAsset broadcast id=${asset?.id?.slice?.(0, 8)}`)
+    // Diagnostic: rate spike detection (>3 calls/100ms = sus)
+    const now = Date.now()
+    if (now - _updateAssetWindowStart > 1000) {
+      _updateAssetCallCount = 0
+      _updateAssetWindowStart = now
+    }
+    _updateAssetCallCount++
+    const stackLines = (new Error()).stack?.split('\n').slice(2, 7).map(s => s.trim()).join(' | ') ?? '(no stack)'
+    console.info(
+      `[WB:Sync] updateAsset broadcast id=${asset?.id?.slice?.(0, 8)} ` +
+      `count=${_updateAssetCallCount} since_window_ms=${now - _updateAssetWindowStart} ` +
+      `stack=${stackLines}`,
+    )
     wsBroadcast({
       type: 'stroke.broadcast',
       stroke: asset,
