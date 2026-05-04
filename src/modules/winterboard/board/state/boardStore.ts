@@ -21,6 +21,9 @@ import type {
 import { resetReplayAdoptedPages } from '../../engine/applyReplayOperation'
 import type { PdfPageResult } from '../../api/winterboardApi'
 import type { RecordOperationRequest } from '../../types/replay'
+// Phase 1A (Plan v1.1): Layer A whitelist filter — пропустити no-op updateAsset.
+// Plan ref: saas_docs/plans/classroom/CORE_UPDATEASSET_STABILIZATION_PLAN_2026-05-04.md §3.2
+import { assetsEqualByOpsFields } from './assetEquality'
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -1206,6 +1209,19 @@ export const useWBStore = defineStore('wb-board', {
 
       const idx = page.assets.findIndex((a) => a.id === asset.id)
       if (idx === -1) return
+
+      // Phase 1A (Plan v1.1) — Layer A whitelist filter:
+      // Якщо incoming asset whitelist-equal до current → no-op (INV-13 enforcement).
+      // Це прибирає duplicate updateAsset calls які прилітають від Konva
+      // transformend cascade, async image load reactivity, тощо.
+      // Plan ref: saas_docs/plans/classroom/CORE_UPDATEASSET_STABILIZATION_PLAN_2026-05-04.md §3.2
+      const currentAsset = page.assets[idx]
+      if (assetsEqualByOpsFields(currentAsset, asset)) {
+        // No-op skip: zero state mutation, zero op emit, zero history push.
+        // Caller side-effects (e.g., classroom WS broadcast у monkey-patch) виконуються
+        // ВСЕРЕДИНІ wrapper'а — Layer A фільтрує ДО them.
+        return
+      }
 
       if (!opts?.skipHistory) {
         const _prev = { ...page.assets[idx] }
