@@ -8,7 +8,6 @@
     @dragover.prevent
     @dragenter.prevent
     @drop.prevent="handleDrop"
-    @wheel.prevent="handleWheel"
     @mousedown.middle.prevent="handlePanStart"
   >
     <!-- A6.1: Loading spinner while Konva initializes -->
@@ -3542,12 +3541,22 @@ function isZoomBlocked(): boolean {
   return false
 }
 
-/** Ctrl+scroll = zoom to cursor position; plain scroll = vertical pan */
+/** Ctrl+scroll = zoom to cursor position; plain scroll = default browser pan.
+ *
+ * PR4 (2026-05-04): conditional preventDefault — викликаємо тільки при ctrl/meta
+ * (zoom case), щоб не блокувати default scroll thread. До PR4 був Vue
+ * `@wheel.prevent` модифікатор, який викликав preventDefault безумовно →
+ * браузер видавав violation warning ("non-passive event listener to a
+ * scroll-blocking 'wheel' event"). Тепер listener підключений вручну у
+ * onMounted з {passive: false} (бо preventDefault потрібен conditional).
+ */
 function handleWheel(e: WheelEvent): void {
   // BUG-1 FIX: Block zoom during drawing or recent pen activity
   if (isZoomBlocked()) return
 
   if (e.ctrlKey || e.metaKey) {
+    // Zoom case — preventDefault щоб браузер не зробив page zoom
+    e.preventDefault()
     // Zoom to cursor
     const rect = containerRef.value?.getBoundingClientRect()
     if (!rect) return
@@ -3565,8 +3574,7 @@ function handleWheel(e: WheelEvent): void {
     emit('zoom-change', newZoom)
     emit('scroll-change', scroll.scrollX, scroll.scrollY)
   }
-  // Plain scroll without Ctrl is default browser behavior (prevented by .prevent on template)
-  // We could add pan here if needed
+  // Plain scroll без Ctrl — пропускаємо до default behavior (scroll page).
 }
 
 /** Middle mouse button → start panning */
@@ -3688,6 +3696,13 @@ onMounted(async () => {
     container.addEventListener('pointerup', capturePointer)
     // Store refs for cleanup
     ;(container as unknown as Record<string, unknown>).__wbPointerCapture = capturePointer
+
+    // PR4 (2026-05-04): wheel listener вручну з {passive: false} —
+    // дозволяє conditional preventDefault у handleWheel (тільки при ctrl/meta).
+    // Без manual options Vue `@wheel.prevent` створював non-passive listener
+    // безумовно → "Added non-passive event listener to a scroll-blocking 'wheel'
+    // event" violation у Chrome. Тепер — passive scroll, prevent only on zoom.
+    container.addEventListener('wheel', handleWheel, { passive: false })
   }
 
   // BUG-3 FIX: Global mouseup/pointerup to stop drawing when released outside canvas
@@ -3804,6 +3819,8 @@ onUnmounted(() => {
       container.removeEventListener('pointermove', capturePointer)
       container.removeEventListener('pointerup', capturePointer)
     }
+    // PR4 (2026-05-04): cleanup manual wheel listener (paired з onMounted addEventListener).
+    container.removeEventListener('wheel', handleWheel)
     lastNativePointerEvent = null
   }
   // A5.3: Remove touch listeners

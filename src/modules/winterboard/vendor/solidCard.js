@@ -87,7 +87,11 @@
       const r = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       r.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       r.shadowMap.enabled = true;
-      r.shadowMap.type = THREE.PCFSoftShadowMap;
+      // PR4 (2026-05-04): Three.js v140+ deprecated PCFSoftShadowMap.
+      // PCFShadowMap визуально майже ідентичний для маленьких 3D-об'єктів
+      // на дошці + менше GPU обчислень per frame (значущо для multiple
+      // фігур одночасно). Прибирає console deprecation spam.
+      r.shadowMap.type = THREE.PCFShadowMap;
       r.setClearColor(0x000000, 0);
       r.setSize(this.container.clientWidth || 300, this.container.clientHeight || 300);
       this.container.appendChild(r.domElement);

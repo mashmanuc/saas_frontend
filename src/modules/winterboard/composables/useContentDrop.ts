@@ -84,6 +84,15 @@ export function useContentDrop(options: UseContentDropOptions) {
         return
       }
       const canvasPos = screenToCanvas(event.clientX, event.clientY)
+      // PR4 (2026-05-04) — INV-13 ATOMIC-APPLY invariant verified:
+      //   1 drop = 1 asset_add op = 1 broadcast.
+      //   `data.state` тут заповнюється повністю через DEFAULT_SOLID_STATE spread
+      //   (single source of truth — constants/solidDefaults.ts CHECKPOINT 4).
+      //   SolidCardRenderer.vue:456 watch не має `immediate: true` → жодного
+      //   redundant emit('update:asset') на mount. Тобто chain
+      //   addAsset → updateAsset×N (3 broadcasts на drop, як було підозрюється
+      //   у користувацьких логах) не існує — multiple updateAsset broadcasts
+      //   приходять від user actions ПІСЛЯ drop (drag/resize).
       const asset: SolidAsset = {
         id: `solid-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
         type: 'geometry_solid',
