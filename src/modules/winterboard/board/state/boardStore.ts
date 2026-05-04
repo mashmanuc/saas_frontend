@@ -24,6 +24,8 @@ import type { RecordOperationRequest } from '../../types/replay'
 // Phase 1A (Plan v1.1): Layer A whitelist filter — пропустити no-op updateAsset.
 // Plan ref: saas_docs/plans/classroom/CORE_UPDATEASSET_STABILIZATION_PLAN_2026-05-04.md §3.2
 import { assetsEqualByOpsFields } from './assetEquality'
+// Phase 1B (Plan v1.1): Layer B per-asset_id RAF coalesce — батчинг async updates.
+import { scheduleBufferedUpdate } from './assetUpdateBatcher'
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -1202,6 +1204,17 @@ export const useWBStore = defineStore('wb-board', {
       })
     },
 
+    /**
+     * Public entry для asset update.
+     *
+     * Phase 1A + 1B pipeline (Plan v1.1):
+     *   1. Layer A whitelist filter (assetEquality.ts) — early return на identical asset
+     *   2. Layer B per-asset_id RAF coalesce (assetUpdateBatcher.ts) — батч consecutive
+     *      different updates на той самий asset_id у 16ms frame
+     *   3. _applyAssetUpdate (internal) — real mutation + history + emit op
+     *
+     * Plan ref: saas_docs/plans/classroom/CORE_UPDATEASSET_STABILIZATION_PLAN_2026-05-04.md
+     */
     updateAsset(asset: WBAsset, opts?: { skipHistory?: boolean }): void {
       const pageIndex = this.currentPageIndex
       const page = this.pages[pageIndex]
@@ -1210,16 +1223,47 @@ export const useWBStore = defineStore('wb-board', {
       const idx = page.assets.findIndex((a) => a.id === asset.id)
       if (idx === -1) return
 
-      // Phase 1A (Plan v1.1) — Layer A whitelist filter:
-      // Якщо incoming asset whitelist-equal до current → no-op (INV-13 enforcement).
-      // Це прибирає duplicate updateAsset calls які прилітають від Konva
-      // transformend cascade, async image load reactivity, тощо.
-      // Plan ref: saas_docs/plans/classroom/CORE_UPDATEASSET_STABILIZATION_PLAN_2026-05-04.md §3.2
+      // Phase 1A — Layer A: whitelist filter
       const currentAsset = page.assets[idx]
       if (assetsEqualByOpsFields(currentAsset, asset)) {
-        // No-op skip: zero state mutation, zero op emit, zero history push.
-        // Caller side-effects (e.g., classroom WS broadcast у monkey-patch) виконуються
-        // ВСЕРЕДИНІ wrapper'а — Layer A фільтрує ДО them.
+        return
+      }
+
+      // Phase 1B — Layer B: RAF coalesce per-asset_id.
+      // Buffer last-wins → flush у наступний frame через requestAnimationFrame.
+      // Drag-end природно проходить через last-wins (per Konva contract:
+      // pointermove передує pointerup → drag-end values перекривають prior).
+      // На flush — re-fetch current asset (state може змінитись між schedule і flush)
+      // + повторний Layer A check (final asset може стати ідентичним до new current).
+      scheduleBufferedUpdate(asset, opts, (finalAsset, finalOpts) => {
+        this._applyAssetUpdate(finalAsset, finalOpts)
+      })
+    },
+
+    /**
+     * Internal: real mutation + history + emit op.
+     *
+     * INVARIANT: викликається ТІЛЬКИ з:
+     *   - assetUpdateBatcher RAF flush (нормальний path)
+     *   - flushPendingUpdates (cleanup на unmount/route-leave)
+     *   - undo/redo apply (per WBCommand.apply: () => updateAsset(_next, {skipHistory:true}))
+     *     ⚠️ undo/redo path ПОТРАПЛЯЄ через public updateAsset → batcher → flush → _applyAssetUpdate.
+     *     Flow коректний бо undo emit з skipHistory:true → нова undo entry не push'иться.
+     *
+     * Re-runs Layer A check на flush — final state може стати identical до поточного
+     * (наприклад Konva fired transformend з тим самим x/y/w/h що уже applied).
+     */
+    _applyAssetUpdate(asset: WBAsset, opts?: { skipHistory?: boolean }): void {
+      const pageIndex = this.currentPageIndex
+      const page = this.pages[pageIndex]
+      if (!page) return
+
+      const idx = page.assets.findIndex((a) => a.id === asset.id)
+      if (idx === -1) return
+
+      // Re-run Layer A на flush (state могло змінитись між schedule і flush).
+      const currentAsset = page.assets[idx]
+      if (assetsEqualByOpsFields(currentAsset, asset)) {
         return
       }
 
