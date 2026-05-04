@@ -61,6 +61,10 @@ export function useClassroomSession() {
   let usersPollTimer: ReturnType<typeof setInterval> | null = null
   let waitingPollTimer: ReturnType<typeof setInterval> | null = null
   let waitingRetries = 0
+  // In-flight guard: skip overlapping fetchConnectedUsers calls. Захищає від
+  // race коли poll tick + manual refresh (e.g. handleKickStudent) збігаються
+  // або slow network → попередній запит ще pending коли наступний tick fires.
+  let _fetchUsersInFlight = false
 
   // ── Init session ────────────────────────────────────────────────────
 
@@ -206,16 +210,25 @@ export function useClassroomSession() {
   async function fetchConnectedUsers(): Promise<void> {
     const sid = sessionId.value
     if (!sid) return
+    // In-flight guard: drop overlapping calls (poll tick + manual refresh race,
+    // або slow network де попередній GET ще pending коли наступний tick fires).
+    if (_fetchUsersInFlight) return
+    _fetchUsersInFlight = true
 
     try {
       connectedUsers.value = await winterboardApi.getConnectedUsers(sid)
     } catch (err) {
       console.warn(`${LOG} fetchConnectedUsers failed`, { err })
+    } finally {
+      _fetchUsersInFlight = false
     }
   }
 
   function startUserPolling(): void {
-    stopUserPolling()
+    // Idempotent: якщо poll вже running — no-op. Захищає від accidental
+    // double-call (e.g. з кількох watchers/lifecycle hooks) що би створили
+    // дубль fetch immediately + interval reset → flood requests.
+    if (usersPollTimer !== null) return
     fetchConnectedUsers()
     usersPollTimer = setInterval(fetchConnectedUsers, USERS_POLL_INTERVAL_MS)
   }
