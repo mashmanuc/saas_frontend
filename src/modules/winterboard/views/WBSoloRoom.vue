@@ -82,14 +82,11 @@
 
       <!-- Right: Actions -->
       <div class="wb-solo-room__actions">
-        <!-- A.1: Manual Recording Control — Solo single-button UX (no pause/resume).
-             Plan v2.3 SOLO REVERT (2026-05-05): single-button-mode=true forces
-             banner у Solo's classic 2-state UI (idle → record → recording → stop → idle).
-             @pause event maps до handleStopRecording (= finalizeRecording API call). -->
+        <!-- A.1: Solo recording — 2-state UI (idle → recording → stop=finalize).
+             @pause maps до handleStopRecording (= finalizeRecording API call). -->
         <WBRecordingBanner
           v-if="isSessionOwner"
           :recording-state="soloRecordingState"
-          :single-button-mode="true"
           :is-loading="isRecordingLoading"
           :recording-started-at="recordingStartedAt"
           @start="handleStartRecording"
@@ -892,10 +889,7 @@ const showRecordingDonePrompt = ref(false)
 const recordingBrokenWarning = ref(false)
 let _recordingDoneTimer: number | null = null
 
-// Plan v2.3 (2026-05-05) SOLO REVERT: derive RecordingState enum для banner.
-// Solo single-button UX — no pause/resume. Banner uses single-button-mode prop
-// → 1 button "Записати урок" / "Зупинити" / "Записати знову" (after finalize).
-// soloHasContent removed — single-button-mode не залежить від canvas content.
+// Solo recording state — 2 states: recording or not (no pause/resume).
 import type { RecordingState as ApiRecordingState } from '../api/replay'
 const soloRecordingState = computed<ApiRecordingState>(() => {
   if (isManualRecording.value) return 'recording'
@@ -938,10 +932,7 @@ async function handleStartRecording(): Promise<void> {
     // INV-T fix: flush pending autosave щоб session.state на backend містив актуальний
     // board state (фон/асети/страйки) ДО того як backend зробить deepcopy у recording_start_state.
     try { await autosave.saveNow() } catch (e) { console.warn('[WBSoloRoom] saveNow before start-recording failed', e) }
-    // Plan v2.2 INV-REC-MODE: BE rejects without mode (400). Solo preserves
-    // existing behavior (snapshot of current canvas) → mode='continue'.
-    // No UI change у Solo per feedback_dont_touch_working — contract-only update.
-    const result = await import('../api/replay').then(m => m.startRecording(sid, 'continue'))
+    const result = await import('../api/replay').then(m => m.startRecording(sid))
     isManualRecording.value = true
     recordingStartedAt.value = result.recording_started_at
     isReplayFrozen.value = false

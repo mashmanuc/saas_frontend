@@ -159,46 +159,29 @@ export async function createSnapshot(
 // ─── A.1: Manual Recording Control ────────────────────────────────────
 
 /**
- * RecordingMode (Plan v2.2 — INV-REC-MODE).
- *
- * - `continue`: replay shows snapshot of current canvas + animated new ops
- * - `new`: replay starts from empty canvas + animated only new ops
- *
- * INV-REC-START-EXPLICIT: mode REQUIRED — no implicit default.
- */
-export type RecordingMode = 'continue' | 'new'
-
-/**
- * RecordingState (Plan v2.3 — INV-REC-SESSION 2026-05-05).
- * State machine для recording lifecycle. Server-authoritative.
+ * RecordingState (Plan v3 — server-authoritative state machine).
  */
 export type RecordingState = 'idle' | 'recording' | 'paused' | 'finalized'
 
 /**
  * POST /winterboard/sessions/{uuid}/start-recording/
- * Plan v2.3: branch logic — IDLE→RECORDING (start), PAUSED→RECORDING (resume),
- * FINALIZED→RECORDING (re-record). Mode REQUIRED.
- *
- * @param mode — REQUIRED. Backend rejects without mode (400 mode_required).
- *               Mode applies to start_state ONLY (на resume — ignored).
+ * IDLE → RECORDING (start) або FINALIZED → RECORDING (re-record).
+ * BE handles BC routing: PAUSED → routes to resume internally.
  */
 export async function startRecording(
   sessionId: string,
-  mode: RecordingMode,
 ): Promise<{
   status: 'started' | 'resumed'
   recording_state: RecordingState
   recording_started_at: string | null
   recording_started_seq: number
-  mode: RecordingMode
 }> {
-  return apiClient.post(`${BASE}/sessions/${sessionId}/start-recording/`, { mode })
+  return apiClient.post(`${BASE}/sessions/${sessionId}/start-recording/`)
 }
 
 /**
- * POST /winterboard/sessions/{uuid}/stop-recording/
- * Plan v2.3: PAUSE semantics. RECORDING → PAUSED. NO Replay yet.
- * Caller MUST explicitly call finalizeRecording() to create Replay.
+ * POST /winterboard/sessions/{uuid}/pause-recording/
+ * RECORDING → PAUSED. NO Replay yet.
  */
 export async function pauseRecording(
   sessionId: string,
@@ -207,7 +190,21 @@ export async function pauseRecording(
   recording_state: RecordingState
   recording_started_seq: number
 }> {
-  return apiClient.post(`${BASE}/sessions/${sessionId}/stop-recording/`)
+  return apiClient.post(`${BASE}/sessions/${sessionId}/pause-recording/`)
+}
+
+/**
+ * POST /winterboard/sessions/{uuid}/resume-recording/
+ * PAUSED → RECORDING. Продовжує той самий Replay.
+ */
+export async function resumeRecording(
+  sessionId: string,
+): Promise<{
+  status: 'resumed'
+  recording_state: RecordingState
+  recording_started_seq: number
+}> {
+  return apiClient.post(`${BASE}/sessions/${sessionId}/resume-recording/`)
 }
 
 /**
@@ -228,8 +225,6 @@ export async function finalizeRecording(
   return apiClient.post(`${BASE}/sessions/${sessionId}/finalize-recording/`)
 }
 
-/** @deprecated Plan v2.3: stopRecording renamed to pauseRecording. */
-export const stopRecording = pauseRecording
 
 /**
  * POST /winterboard/sessions/{uuid}/create-replay-from-ops/

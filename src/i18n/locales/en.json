@@ -7511,10 +7511,6 @@
     "recording": {
       "start": "Record lesson",
       "startTitle": "Start recording for later replay",
-      "startContinue": "Record with background",
-      "startContinueTitle": "Replay will show all existing board strokes as background + new recording",
-      "startNew": "Record from blank",
-      "startNewTitle": "Replay will show ONLY the new recording — existing strokes stay on board live but NOT in replay",
       "stop": "Stop",
       "pause": "Pause",
       "pauseTitle": "Pause recording — resume later WITHOUT creating a new replay",

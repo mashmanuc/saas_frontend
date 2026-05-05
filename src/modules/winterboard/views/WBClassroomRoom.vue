@@ -109,10 +109,9 @@
              invariant verification. Handlers below викликають opsSync.flush() +
              autosave.saveNow() ДО POST /start-recording/, щоб backend deepcopy
              session.state містив свіжі ops (INV-T fix). -->
-        <WBRecordingBanner
+        <WBClassroomRecordingControls
           v-if="classroomRole.isTeacher.value"
           :recording-state="recordingState"
-          :has-board-content="hasBoardContent"
           :is-loading="isRecordingLoading"
           :recording-started-at="recordingStartedAt"
           @start="handleStartRecording"
@@ -458,7 +457,7 @@ import WBGridButton from '../components/canvas/WBGridButton.vue'
 import WBPageThumbnails from '../components/pages/WBPageThumbnails.vue'
 import WBSelectionToolbar from '../components/canvas/WBSelectionToolbar.vue'
 import WBYouTubeModal from '../components/toolbar/WBYouTubeModal.vue'
-import WBRecordingBanner from '../components/replay/WBRecordingBanner.vue'
+import WBClassroomRecordingControls from '../components/replay/WBClassroomRecordingControls.vue'
 // PR1 (2026-05-03): post-record share prompt — port із WBSoloRoom для visibility toggle
 import WBRecordingDonePrompt from '../components/replay/WBRecordingDonePrompt.vue'
 import WBOnboardingHints from '../components/ui/WBOnboardingHints.vue'
@@ -596,10 +595,10 @@ const replayRecorder = useReplayRecorder({
 // (line 897 + 2522).
 let _unsubRecorder: (() => void) | null = null
 
-// ─── Plan v2.3 (2026-05-05): Recording lifecycle через state machine ─────────
+// ─── Plan v3: Recording lifecycle через state machine ─────────────────────────
 // Server-authoritative recording_state ∈ {idle, recording, paused, finalized}.
 // FE syncs from BE responses + initBoardWithSession resume hydrate.
-// Buttons emit start/pause/resume/finalize events via WBRecordingBanner.
+// Buttons emit start/pause/resume/finalize events via WBClassroomRecordingControls.
 import type { RecordingState as ApiRecordingState } from '../api/replay'
 const recordingState = ref<ApiRecordingState>('idle')
 const recordingStartedAt = ref<string | null>(null)
@@ -609,19 +608,6 @@ const isRecordingLoading = ref(false)
 const isSessionActive = computed(
   () => recordingState.value === 'recording' || recordingState.value === 'paused',
 )
-
-// Bug fix 2026-05-05 issue #1: smart default — на truly empty canvas
-// (no strokes/assets/shapes/texts) показуємо тільки single "Записати урок"
-// (continue mode default). 2 кнопки (continue + new) показуємо тільки коли
-// є контент — щоб user мав вибір "записати з фоном" vs "записати з нуля".
-const hasBoardContent = computed(() => {
-  return (store.pages ?? []).some((p: any) =>
-    (p.strokes?.length ?? 0) > 0
-    || (p.assets?.length ?? 0) > 0
-    || (p.shapes?.length ?? 0) > 0
-    || (p.texts?.length ?? 0) > 0,
-  )
-})
 
 // Share Layer v1: post-finalize prompt (replay sharing).
 const activeReplayId = ref<string | null>(null)
@@ -641,9 +627,9 @@ useRecordingHeartbeat({
   isRecording: isSessionActive,
 })
 
-async function handleStartRecording(mode: 'continue' | 'new'): Promise<void> {
+async function handleStartRecording(): Promise<void> {
   const sid = resolvedSessionId.value
-  if (!sid || recordingState.value === 'recording') return
+  if (!sid || isRecordingLoading.value || recordingState.value === 'recording') return
   isRecordingLoading.value = true
   try {
     try {
@@ -656,14 +642,12 @@ async function handleStartRecording(mode: 'continue' | 'new'): Promise<void> {
     } catch (e) {
       console.warn('[WBClassroomRoom] saveNow before start-recording failed', e)
     }
-    const result = await import('../api/replay').then(m => m.startRecording(sid, mode))
+    const result = await import('../api/replay').then(m => m.startRecording(sid))
     recordingState.value = result.recording_state
     if (result.recording_started_at) {
       recordingStartedAt.value = result.recording_started_at
     }
-    console.info('[WBClassroomRoom] start-recording', {
-      status: result.status, mode: result.mode, state: result.recording_state, sid,
-    })
+    console.info('[WBClassroomRoom] start-recording', { status: result.status, state: result.recording_state, sid })
   } catch (e) {
     console.error('[WBClassroomRoom] Failed to start recording:', e)
   } finally {
@@ -672,13 +656,24 @@ async function handleStartRecording(mode: 'continue' | 'new'): Promise<void> {
 }
 
 async function handleResumeRecording(): Promise<void> {
-  // Resume від PAUSED — mode echo'd as 'continue' (BE preserves start_state).
-  await handleStartRecording('continue')
+  const sid = resolvedSessionId.value
+  if (!sid || isRecordingLoading.value || recordingState.value !== 'paused') return
+  isRecordingLoading.value = true
+  try {
+    await opsSync.flush().catch((e: unknown) => console.warn('[WBClassroomRoom] flush before resume failed', e))
+    const result = await import('../api/replay').then(m => m.resumeRecording(sid))
+    recordingState.value = result.recording_state
+    console.info('[WBClassroomRoom] resume-recording', { state: result.recording_state, sid })
+  } catch (e) {
+    console.error('[WBClassroomRoom] Failed to resume recording:', e)
+  } finally {
+    isRecordingLoading.value = false
+  }
 }
 
 async function handlePauseRecording(): Promise<void> {
   const sid = resolvedSessionId.value
-  if (!sid || recordingState.value !== 'recording') return
+  if (!sid || isRecordingLoading.value || recordingState.value !== 'recording') return
   isRecordingLoading.value = true
   try {
     try {
@@ -698,7 +693,7 @@ async function handlePauseRecording(): Promise<void> {
 
 async function handleFinalizeRecording(): Promise<void> {
   const sid = resolvedSessionId.value
-  if (!sid || (recordingState.value !== 'recording' && recordingState.value !== 'paused')) return
+  if (!sid || isRecordingLoading.value || (recordingState.value !== 'recording' && recordingState.value !== 'paused')) return
   isRecordingLoading.value = true
   try {
     try {
