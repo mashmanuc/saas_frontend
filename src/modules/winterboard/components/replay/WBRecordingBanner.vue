@@ -1,9 +1,13 @@
 <template>
   <!-- A.1: Manual Recording Control — start/stop + REC indicator with timer -->
   <div class="wb-recording-banner" role="status" aria-live="polite">
-    <!-- Стан: не записується, можна почати -->
+    <!-- isRecording = false → ALWAYS show START button (re-record на frozen
+         session тепер OK після Phase 2A-6 — backend archives previous Replay).
+         Bug fix 2026-05-05: раніше було `!isRecording && !isFrozen` → після
+         stop кнопка зникала, юзер не міг перезаписати.
+         Frozen indicator виноситься окремо як supplementary badge. -->
     <button
-      v-if="!isRecording && !isFrozen"
+      v-if="!isRecording"
       type="button"
       class="wb-recording-banner__btn wb-recording-banner__btn--start"
       :title="t('winterboard.recording.startTitle')"
@@ -30,8 +34,8 @@
       </button>
     </template>
 
-    <!-- Стан: запис завершено (frozen) -->
-    <div v-if="isFrozen && !isRecording" class="wb-recording-banner__frozen">
+    <!-- Supplementary: frozen badge (не блокує кнопку, показує що є попередній replay) -->
+    <div v-if="isFrozen && !isRecording" class="wb-recording-banner__frozen" aria-hidden="false">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
         <path d="M8 1v14M1 8h14M4.5 4.5l7 7M11.5 4.5l-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
       </svg>

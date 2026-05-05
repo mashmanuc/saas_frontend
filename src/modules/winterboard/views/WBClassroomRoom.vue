@@ -633,7 +633,10 @@ useRecordingHeartbeat({
 
 async function handleStartRecording(): Promise<void> {
   const sid = resolvedSessionId.value
-  if (!sid || isManualRecording.value || isReplayFrozen.value) return
+  // Bug fix 2026-05-05: removed `isReplayFrozen.value` block. Backend Phase 2A-6
+  // (WBRecordingStartView) тепер archives попередній Replay і resets is_replay_frozen
+  // → re-record на frozen session дозволено. FE block був stale від pre-2A-6 era.
+  if (!sid || isManualRecording.value) return
   isRecordingLoading.value = true
   try {
     try {
