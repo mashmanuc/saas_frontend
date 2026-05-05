@@ -1,15 +1,46 @@
 <template>
   <!-- Plan v2.3 (2026-05-05): 3-state UI per recording_state enum.
-       IDLE/FINALIZED:
-         - empty canvas + idle → single "Записати урок" (continue mode default)
-         - canvas з контентом OR finalized → 2 buttons (continue|new) для choice
-       RECORDING → Pause button + REC + timer.
-       PAUSED → Resume + Finalize buttons.
-       UI source of truth = recordingState prop + hasBoardContent. NO derived flags. -->
+       Two modes:
+         singleButtonMode=true (Solo): IDLE/FINALIZED → 1 button "Записати"
+                                         RECORDING → 1 button "Зупинити" (= finalize via @pause)
+         singleButtonMode=false (Classroom):
+           IDLE+empty → 1 button | IDLE+content → 2 buttons (continue+new) | FINALIZED → 2 buttons
+           RECORDING → Pause button | PAUSED → Resume + Finalize. -->
   <div class="wb-recording-banner" role="status" aria-live="polite">
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- SINGLE-BUTTON MODE (Solo): IDLE/FINALIZED → 1 button -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <template
+      v-if="singleButtonMode && (recordingState === 'idle' || recordingState === 'finalized')"
+    >
+      <button
+        type="button"
+        class="wb-recording-banner__btn wb-recording-banner__btn--start"
+        :title="t('winterboard.recording.startTitle')"
+        :disabled="isLoading"
+        @click="$emit('start', 'continue')"
+      >
+        <span class="wb-recording-banner__dot wb-recording-banner__dot--idle" aria-hidden="true" />
+        <span>{{ t('winterboard.recording.start') }}</span>
+      </button>
+      <!-- Supplementary frozen badge (FINALIZED — попередній replay є) -->
+      <div
+        v-if="recordingState === 'finalized'"
+        class="wb-recording-banner__frozen"
+      >
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M8 1v14M1 8h14M4.5 4.5l7 7M11.5 4.5l-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <span>{{ t('winterboard.recording.frozen') }}</span>
+      </div>
+    </template>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- LIFECYCLE MODE (Classroom): IDLE/FINALIZED → 1 or 2 buttons -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- IDLE на empty canvas → single button (modes equivalent на empty) -->
     <template
-      v-if="recordingState === 'idle' && !hasBoardContent"
+      v-else-if="!singleButtonMode && recordingState === 'idle' && !hasBoardContent"
     >
       <button
         type="button"
@@ -25,7 +56,7 @@
 
     <!-- IDLE+content OR FINALIZED → 2 explicit buttons (continue|new з фоном/без) -->
     <template
-      v-else-if="recordingState === 'idle' || recordingState === 'finalized'"
+      v-else-if="!singleButtonMode && (recordingState === 'idle' || recordingState === 'finalized')"
     >
       <button
         type="button"
@@ -47,7 +78,6 @@
         <span class="wb-recording-banner__dot wb-recording-banner__dot--idle" aria-hidden="true" />
         <span>{{ t('winterboard.recording.startNew') }}</span>
       </button>
-      <!-- Supplementary frozen badge (FINALIZED state — попередній replay є) -->
       <div
         v-if="recordingState === 'finalized'"
         class="wb-recording-banner__frozen"
@@ -59,8 +89,24 @@
       </div>
     </template>
 
-    <!-- RECORDING: REC indicator + Pause button -->
-    <template v-if="recordingState === 'recording'">
+    <!-- RECORDING (single-button-mode): REC + single "Зупинити" button (Solo) -->
+    <template v-if="singleButtonMode && recordingState === 'recording'">
+      <span class="wb-recording-banner__dot wb-recording-banner__dot--active" aria-hidden="true" />
+      <span class="wb-recording-banner__text">REC</span>
+      <span class="wb-recording-banner__timer">{{ formattedDuration }}</span>
+      <button
+        type="button"
+        class="wb-recording-banner__btn wb-recording-banner__btn--stop"
+        :disabled="isLoading"
+        @click="$emit('pause')"
+      >
+        <span class="wb-recording-banner__stop-icon" aria-hidden="true" />
+        <span>{{ t('winterboard.recording.stop') }}</span>
+      </button>
+    </template>
+
+    <!-- RECORDING (lifecycle-mode): REC + Pause button (Classroom) -->
+    <template v-else-if="!singleButtonMode && recordingState === 'recording'">
       <span class="wb-recording-banner__dot wb-recording-banner__dot--active" aria-hidden="true" />
       <span class="wb-recording-banner__text">REC</span>
       <span class="wb-recording-banner__timer">{{ formattedDuration }}</span>
@@ -116,11 +162,17 @@ const props = defineProps<{
   /** Plan v2.3: server-authoritative recording_state. UI derives all visibility from this. */
   recordingState: RecordingState
   /**
-   * 2026-05-05 issue #1: на truly empty canvas (no strokes/assets/etc.)
-   * показуємо single "Записати урок" — modes equivalent на empty.
-   * 2 кнопки (continue + new) тільки коли є контент → user має вибір.
+   * 2026-05-05 issue #1 (Classroom only): на truly empty canvas
+   * показуємо single "Записати урок". 2 кнопки тільки коли є контент.
    */
   hasBoardContent?: boolean
+  /**
+   * 2026-05-05 SOLO REVERT: Solo не має pause/resume/finalize lifecycle.
+   * single-button-mode → IDLE/FINALIZED → 1 button "Записати урок";
+   * RECORDING → 1 button "Зупинити" (emits @pause, Solo handler maps до finalize).
+   * Solo NEVER reaches PAUSED state (handler chain skips it).
+   */
+  singleButtonMode?: boolean
   isLoading?: boolean
   recordingStartedAt?: string | null
 }>()

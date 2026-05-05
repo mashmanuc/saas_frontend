@@ -82,18 +82,18 @@
 
       <!-- Right: Actions -->
       <div class="wb-solo-room__actions">
-        <!-- A.1: Manual Recording Control — Solo has no pause/resume UI.
-             Plan v2.3: derive recording_state from existing refs.
-             Stop click maps to @finalize handler (Solo skips pause). -->
+        <!-- A.1: Manual Recording Control — Solo single-button UX (no pause/resume).
+             Plan v2.3 SOLO REVERT (2026-05-05): single-button-mode=true forces
+             banner у Solo's classic 2-state UI (idle → record → recording → stop → idle).
+             @pause event maps до handleStopRecording (= finalizeRecording API call). -->
         <WBRecordingBanner
           v-if="isSessionOwner"
           :recording-state="soloRecordingState"
-          :has-board-content="soloHasContent"
+          :single-button-mode="true"
           :is-loading="isRecordingLoading"
           :recording-started-at="recordingStartedAt"
           @start="handleStartRecording"
           @pause="handleStopRecording"
-          @finalize="handleStopRecording"
         />
         <button
           type="button"
@@ -892,23 +892,15 @@ const showRecordingDonePrompt = ref(false)
 const recordingBrokenWarning = ref(false)
 let _recordingDoneTimer: number | null = null
 
-// Plan v2.3 (2026-05-05): derive RecordingState enum для WBRecordingBanner.
-// Solo has no pause/resume UI — only idle | recording | finalized.
+// Plan v2.3 (2026-05-05) SOLO REVERT: derive RecordingState enum для banner.
+// Solo single-button UX — no pause/resume. Banner uses single-button-mode prop
+// → 1 button "Записати урок" / "Зупинити" / "Записати знову" (after finalize).
+// soloHasContent removed — single-button-mode не залежить від canvas content.
 import type { RecordingState as ApiRecordingState } from '../api/replay'
 const soloRecordingState = computed<ApiRecordingState>(() => {
   if (isManualRecording.value) return 'recording'
   if (isReplayFrozen.value) return 'finalized'
   return 'idle'
-})
-// 2026-05-05 issue #1: smart default. Show 2 buttons (continue + new) тільки
-// якщо canvas має контент. На empty canvas — single "Записати урок" button.
-const soloHasContent = computed(() => {
-  return (store.pages ?? []).some((p: any) =>
-    (p.strokes?.length ?? 0) > 0
-    || (p.assets?.length ?? 0) > 0
-    || (p.shapes?.length ?? 0) > 0
-    || (p.texts?.length ?? 0) > 0,
-  )
 })
 
 // Recorder завжди enabled у solo edit board.
