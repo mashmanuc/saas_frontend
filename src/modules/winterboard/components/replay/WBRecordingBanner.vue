@@ -1,12 +1,32 @@
 <template>
   <!-- Plan v2.3 (2026-05-05): 3-state UI per recording_state enum.
-       IDLE/FINALIZED → 2 start buttons (continue|new).
+       IDLE/FINALIZED:
+         - empty canvas + idle → single "Записати урок" (continue mode default)
+         - canvas з контентом OR finalized → 2 buttons (continue|new) для choice
        RECORDING → Pause button + REC + timer.
        PAUSED → Resume + Finalize buttons.
-       UI source of truth = recordingState prop. NO derived flags. -->
+       UI source of truth = recordingState prop + hasBoardContent. NO derived flags. -->
   <div class="wb-recording-banner" role="status" aria-live="polite">
-    <!-- IDLE / FINALIZED: 2 explicit start buttons -->
-    <template v-if="recordingState === 'idle' || recordingState === 'finalized'">
+    <!-- IDLE на empty canvas → single button (modes equivalent на empty) -->
+    <template
+      v-if="recordingState === 'idle' && !hasBoardContent"
+    >
+      <button
+        type="button"
+        class="wb-recording-banner__btn wb-recording-banner__btn--start"
+        :title="t('winterboard.recording.startTitle')"
+        :disabled="isLoading"
+        @click="$emit('start', 'continue')"
+      >
+        <span class="wb-recording-banner__dot wb-recording-banner__dot--idle" aria-hidden="true" />
+        <span>{{ t('winterboard.recording.start') }}</span>
+      </button>
+    </template>
+
+    <!-- IDLE+content OR FINALIZED → 2 explicit buttons (continue|new з фоном/без) -->
+    <template
+      v-else-if="recordingState === 'idle' || recordingState === 'finalized'"
+    >
       <button
         type="button"
         class="wb-recording-banner__btn wb-recording-banner__btn--start"
@@ -68,7 +88,7 @@
         :disabled="isLoading"
         @click="$emit('resume')"
       >
-        <span class="wb-recording-banner__dot wb-recording-banner__dot--idle" aria-hidden="true" />
+        <span class="wb-recording-banner__resume-icon" aria-hidden="true">▶</span>
         <span>{{ t('winterboard.recording.resume') }}</span>
       </button>
       <button
@@ -95,6 +115,12 @@ const { t } = useI18n({ useScope: 'global' })
 const props = defineProps<{
   /** Plan v2.3: server-authoritative recording_state. UI derives all visibility from this. */
   recordingState: RecordingState
+  /**
+   * 2026-05-05 issue #1: на truly empty canvas (no strokes/assets/etc.)
+   * показуємо single "Записати урок" — modes equivalent на empty.
+   * 2 кнопки (continue + new) тільки коли є контент → user має вибір.
+   */
+  hasBoardContent?: boolean
   isLoading?: boolean
   recordingStartedAt?: string | null
 }>()
@@ -270,6 +296,14 @@ const formattedDuration = computed(() => {
   height: 8px;
   border-left: 2px solid currentColor;
   border-right: 2px solid currentColor;
+  flex-shrink: 0;
+}
+
+/* Resume icon — play arrow ▶ inline */
+.wb-recording-banner__resume-icon {
+  display: inline-block;
+  font-size: 0.7rem;
+  line-height: 1;
   flex-shrink: 0;
 }
 

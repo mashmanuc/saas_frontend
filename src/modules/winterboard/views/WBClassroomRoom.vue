@@ -112,6 +112,7 @@
         <WBRecordingBanner
           v-if="classroomRole.isTeacher.value"
           :recording-state="recordingState"
+          :has-board-content="hasBoardContent"
           :is-loading="isRecordingLoading"
           :recording-started-at="recordingStartedAt"
           @start="handleStartRecording"
@@ -604,10 +605,23 @@ const recordingState = ref<ApiRecordingState>('idle')
 const recordingStartedAt = ref<string | null>(null)
 const isRecordingLoading = ref(false)
 // Computed: heartbeat ticks while session is recording OR paused (BE expects
-// liveness for both states — paused user может resume at any time).
+// liveness for both states — paused user може resume at any time).
 const isSessionActive = computed(
   () => recordingState.value === 'recording' || recordingState.value === 'paused',
 )
+
+// Bug fix 2026-05-05 issue #1: smart default — на truly empty canvas
+// (no strokes/assets/shapes/texts) показуємо тільки single "Записати урок"
+// (continue mode default). 2 кнопки (continue + new) показуємо тільки коли
+// є контент — щоб user мав вибір "записати з фоном" vs "записати з нуля".
+const hasBoardContent = computed(() => {
+  return (store.pages ?? []).some((p: any) =>
+    (p.strokes?.length ?? 0) > 0
+    || (p.assets?.length ?? 0) > 0
+    || (p.shapes?.length ?? 0) > 0
+    || (p.texts?.length ?? 0) > 0,
+  )
+})
 
 // Share Layer v1: post-finalize prompt (replay sharing).
 const activeReplayId = ref<string | null>(null)

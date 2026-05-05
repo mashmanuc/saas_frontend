@@ -83,14 +83,12 @@
       <!-- Right: Actions -->
       <div class="wb-solo-room__actions">
         <!-- A.1: Manual Recording Control — Solo has no pause/resume UI.
-             Plan v2.3: derive recording_state from existing refs:
-               isManualRecording=true → 'recording'
-               isManualRecording=false, isReplayFrozen=true → 'finalized'
-               else → 'idle'
+             Plan v2.3: derive recording_state from existing refs.
              Stop click maps to @finalize handler (Solo skips pause). -->
         <WBRecordingBanner
           v-if="isSessionOwner"
           :recording-state="soloRecordingState"
+          :has-board-content="soloHasContent"
           :is-loading="isRecordingLoading"
           :recording-started-at="recordingStartedAt"
           @start="handleStartRecording"
@@ -901,6 +899,16 @@ const soloRecordingState = computed<ApiRecordingState>(() => {
   if (isManualRecording.value) return 'recording'
   if (isReplayFrozen.value) return 'finalized'
   return 'idle'
+})
+// 2026-05-05 issue #1: smart default. Show 2 buttons (continue + new) тільки
+// якщо canvas має контент. На empty canvas — single "Записати урок" button.
+const soloHasContent = computed(() => {
+  return (store.pages ?? []).some((p: any) =>
+    (p.strokes?.length ?? 0) > 0
+    || (p.assets?.length ?? 0) > 0
+    || (p.shapes?.length ?? 0) > 0
+    || (p.texts?.length ?? 0) > 0,
+  )
 })
 
 // Recorder завжди enabled у solo edit board.
