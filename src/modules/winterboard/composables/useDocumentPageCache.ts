@@ -4,20 +4,29 @@
  * Shared across ALL viewer instances — one API call per content_id.
  * Pages are fetched lazily from content_json (pages/slides).
  *
- * Error policy (post 2026-05-05 audit):
- * - Fetch failure → cache STAYS (resolves з empty Map). Reactive consumers
- *   (e.g. DocumentViewerAsset watch on currentPage) НЕ re-fire запит.
- * - Error tracked у `_errors` Map для introspection + manual retry.
- * - Retry дозволено ТІЛЬКИ через explicit `retryDocumentPageCache(contentId)` —
- *   user-driven action, не automatic refetch що могло би створити infinite loop
- *   при sustained 429.
+ * Error policy (post 2026-05-05 audit + P1 TTL upgrade):
+ * - Fetch failure → cache STAYS (resolves з empty Map) на ERROR_TTL_MS.
+ *   Reactive consumers (e.g. DocumentViewerAsset watch on currentPage) НЕ
+ *   re-fire запит у вікні TTL → no infinite 429 loop.
+ * - Після TTL expiry — cache invalidated → наступний `getDocumentPageMap` call
+ *   fetch'не fresh data. Це уникає "вічно порожнього документа" коли 429
+ *   прокинеться, але backend bucket cool down'не.
+ * - Error tracked у `_errors` Map для introspection + immediate manual retry.
+ * - Manual retry (button click) — `retryDocumentPageCache(contentId)`.
  */
 import { learningContentApi } from '@/modules/learning-content/api/learningContentApi'
+
+/**
+ * Cooldown після помилки перед auto-refetch. Захищає від 429 storm
+ * (reactive consumers не зможуть hit'ити backend частіше за 10s/contentId)
+ * але не залишає документ "вічно порожнім" якщо backend оживе.
+ */
+const ERROR_TTL_MS = 10_000
 
 /** Global: content_id → Promise<Map<pageIndex, url>> (resolves навіть при error → empty Map) */
 const _cache = new Map<number, Promise<Map<number, string>>>()
 
-/** Last error per contentId — for introspection by error UI / manual retry. */
+/** Last error per contentId — TTL gate + introspection by error UI / manual retry. */
 const _errors = new Map<number, { error: unknown; ts: number }>()
 
 /**
@@ -33,6 +42,16 @@ export function getDocumentPageMap(
   contentId: number,
   contentType: string,
 ): Promise<Map<number, string>> {
+  // TTL gate: якщо cache resolves з error AND TTL expired → invalidate щоб
+  // наступний call refetched. У вікні TTL — keep cached empty Map (loop guard).
+  // Це балансує "no infinite refire" (loop protection) проти "no permanent
+  // empty document" (recovery після 429 cooldown).
+  const error = _errors.get(contentId)
+  if (error && Date.now() - error.ts >= ERROR_TTL_MS) {
+    _cache.delete(contentId)
+    _errors.delete(contentId)
+  }
+
   const existing = _cache.get(contentId)
   if (existing) return existing
 
