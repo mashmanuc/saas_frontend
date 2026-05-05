@@ -93,8 +93,15 @@ export function useGroupSidebar(groupId: Ref<string | null>, folderId?: Ref<numb
             })
           }
         }
-      } catch {
-        // Non-critical: silently skip failed status checks
+      } catch (e) {
+        // Non-critical per-item poll failure (status check). LAW §12 ban на
+        // empty catch — log за event taxonomy для observability. Loop'у тут нема
+        // (sequential `for...of`), але silent suppress'ення мало приховувало 429.
+        const status = (e as { response?: { status?: number } })?.response?.status
+        console.warn('[GroupSidebar] poll item status check failed', {
+          contentItemId: item.content_item_id,
+          status,
+        })
       }
     }
 

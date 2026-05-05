@@ -90,10 +90,12 @@ const CORNER_R = 4
 const currentPageImage = ref<HTMLImageElement | null>(null)
 const isFetchingPage = ref(false)
 
+// Reactive trigger ТІЛЬКИ на user-driven page change.
+// `immediate: true` видалено — initial load робить onMounted нижче.
+// Це уникає duplicate fire при mount → 1 HTTP call замість 2.
 watch(
   () => props.asset.currentPage,
   () => loadCurrentPage(),
-  { immediate: true },
 )
 
 async function loadCurrentPage() {
