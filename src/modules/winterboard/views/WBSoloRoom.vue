@@ -924,7 +924,10 @@ async function handleStartRecording(): Promise<void> {
     // INV-T fix: flush pending autosave щоб session.state на backend містив актуальний
     // board state (фон/асети/страйки) ДО того як backend зробить deepcopy у recording_start_state.
     try { await autosave.saveNow() } catch (e) { console.warn('[WBSoloRoom] saveNow before start-recording failed', e) }
-    const result = await import('../api/replay').then(m => m.startRecording(sid))
+    // Plan v2.2 INV-REC-MODE: BE rejects without mode (400). Solo preserves
+    // existing behavior (snapshot of current canvas) → mode='continue'.
+    // No UI change у Solo per feedback_dont_touch_working — contract-only update.
+    const result = await import('../api/replay').then(m => m.startRecording(sid, 'continue'))
     isManualRecording.value = true
     recordingStartedAt.value = result.recording_started_at
     isReplayFrozen.value = false

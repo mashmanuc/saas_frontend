@@ -7511,6 +7511,10 @@
     "recording": {
       "start": "Record lesson",
       "startTitle": "Start recording for later replay",
+      "startContinue": "Continue lesson",
+      "startContinueTitle": "Record with current board state as background",
+      "startNew": "New recording",
+      "startNewTitle": "Record from blank canvas — previous strokes stay on board live but NOT in new replay",
       "stop": "Stop",
       "active": "Recording",
       "frozen": "Recording finished",

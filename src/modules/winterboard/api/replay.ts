@@ -159,13 +159,32 @@ export async function createSnapshot(
 // ─── A.1: Manual Recording Control ────────────────────────────────────
 
 /**
+ * RecordingMode (Plan v2.2 — INV-REC-MODE 2026-05-05).
+ *
+ * - `continue`: replay shows snapshot of current canvas + animated new ops
+ *   (background для context — pre-existing strokes видимі у viewer)
+ * - `new`: replay starts from empty canvas + animated only new ops
+ *   (clean recording — попередні strokes не у viewer)
+ *
+ * INV-REC-START-EXPLICIT: mode REQUIRED — no implicit default.
+ */
+export type RecordingMode = 'continue' | 'new'
+
+/**
  * POST /winterboard/sessions/{uuid}/start-recording/
  * Починає запис уроку. Тільки owner.
+ *
+ * @param mode — REQUIRED. Backend rejects without mode (400 mode_required).
  */
 export async function startRecording(
   sessionId: string,
-): Promise<{ recording_started_at: string; recording_started_seq: number }> {
-  return apiClient.post(`${BASE}/sessions/${sessionId}/start-recording/`)
+  mode: RecordingMode,
+): Promise<{
+  recording_started_at: string
+  recording_started_seq: number
+  mode: RecordingMode
+}> {
+  return apiClient.post(`${BASE}/sessions/${sessionId}/start-recording/`, { mode })
 }
 
 /**

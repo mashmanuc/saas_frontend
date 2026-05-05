@@ -1,24 +1,34 @@
 <template>
-  <!-- A.1: Manual Recording Control — start/stop + REC indicator with timer -->
+  <!-- A.1: Manual Recording Control — start/stop + REC indicator with timer.
+       Plan v2.2 INV-REC-MODE 2026-05-05: explicit mode selection (continue|new).
+       UI MUST показувати explicit choice — NO hidden default behavior. -->
   <div class="wb-recording-banner" role="status" aria-live="polite">
-    <!-- isRecording = false → ALWAYS show START button (re-record на frozen
-         session тепер OK після Phase 2A-6 — backend archives previous Replay).
-         Bug fix 2026-05-05: раніше було `!isRecording && !isFrozen` → після
-         stop кнопка зникала, юзер не міг перезаписати.
-         Frozen indicator виноситься окремо як supplementary badge. -->
-    <button
-      v-if="!isRecording"
-      type="button"
-      class="wb-recording-banner__btn wb-recording-banner__btn--start"
-      :title="t('winterboard.recording.startTitle')"
-      :disabled="isLoading"
-      @click="$emit('start')"
-    >
-      <span class="wb-recording-banner__dot wb-recording-banner__dot--idle" aria-hidden="true" />
-      <span>{{ t('winterboard.recording.start') }}</span>
-    </button>
+    <!-- Idle state: 2 explicit start buttons (continue / new). Both visible
+         завжди коли !isRecording. NO dependency on isFrozen / started_seq. -->
+    <template v-if="!isRecording">
+      <button
+        type="button"
+        class="wb-recording-banner__btn wb-recording-banner__btn--start"
+        :title="t('winterboard.recording.startContinueTitle')"
+        :disabled="isLoading"
+        @click="$emit('start', 'continue')"
+      >
+        <span class="wb-recording-banner__dot wb-recording-banner__dot--idle" aria-hidden="true" />
+        <span>{{ t('winterboard.recording.startContinue') }}</span>
+      </button>
+      <button
+        type="button"
+        class="wb-recording-banner__btn wb-recording-banner__btn--start-new"
+        :title="t('winterboard.recording.startNewTitle')"
+        :disabled="isLoading"
+        @click="$emit('start', 'new')"
+      >
+        <span class="wb-recording-banner__dot wb-recording-banner__dot--idle" aria-hidden="true" />
+        <span>{{ t('winterboard.recording.startNew') }}</span>
+      </button>
+    </template>
 
-    <!-- Стан: запис активний -->
+    <!-- Active recording: STOP + REC + timer -->
     <template v-if="isRecording">
       <span class="wb-recording-banner__dot wb-recording-banner__dot--active" aria-hidden="true" />
       <span class="wb-recording-banner__text">REC</span>
@@ -34,7 +44,7 @@
       </button>
     </template>
 
-    <!-- Supplementary: frozen badge (не блокує кнопку, показує що є попередній replay) -->
+    <!-- Supplementary frozen badge (контекст для user — попередній replay є). -->
     <div v-if="isFrozen && !isRecording" class="wb-recording-banner__frozen" aria-hidden="false">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
         <path d="M8 1v14M1 8h14M4.5 4.5l7 7M11.5 4.5l-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -47,6 +57,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import type { RecordingMode } from '../../api/replay'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -58,7 +69,8 @@ const props = defineProps<{
 }>()
 
 defineEmits<{
-  start: []
+  /** Plan v2.2 — INV-REC-MODE: emit explicit mode. */
+  start: [mode: RecordingMode]
   stop: []
 }>()
 
@@ -138,6 +150,18 @@ const formattedDuration = computed(() => {
 .wb-recording-banner__btn--start:hover:not(:disabled) {
   background: #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* "Новий запис" — accent border щоб візуально відрізнити від CONTINUE */
+.wb-recording-banner__btn--start-new {
+  background: rgba(59, 130, 246, 0.05);
+  color: #1d4ed8;
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.wb-recording-banner__btn--start-new:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.1);
+  box-shadow: 0 1px 3px rgba(59, 130, 246, 0.15);
 }
 
 .wb-recording-banner__btn--stop {

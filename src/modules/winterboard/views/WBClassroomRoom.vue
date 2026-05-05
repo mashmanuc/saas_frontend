@@ -631,11 +631,12 @@ useRecordingHeartbeat({
   isRecording: isManualRecording,
 })
 
-async function handleStartRecording(): Promise<void> {
+async function handleStartRecording(mode: 'continue' | 'new'): Promise<void> {
   const sid = resolvedSessionId.value
   // Bug fix 2026-05-05: removed `isReplayFrozen.value` block. Backend Phase 2A-6
   // (WBRecordingStartView) тепер archives попередній Replay і resets is_replay_frozen
   // → re-record на frozen session дозволено. FE block був stale від pre-2A-6 era.
+  // Plan v2.2 INV-REC-START-EXPLICIT: mode REQUIRED, BE rejects without it (400).
   if (!sid || isManualRecording.value) return
   isRecordingLoading.value = true
   try {
@@ -649,10 +650,11 @@ async function handleStartRecording(): Promise<void> {
     } catch (e) {
       console.warn('[WBClassroomRoom] saveNow before start-recording failed', e)
     }
-    const result = await import('../api/replay').then(m => m.startRecording(sid))
+    const result = await import('../api/replay').then(m => m.startRecording(sid, mode))
     isManualRecording.value = true
     recordingStartedAt.value = result.recording_started_at
     isReplayFrozen.value = false
+    console.info('[WBClassroomRoom] Recording started', { mode: result.mode, sid })
   } catch (e) {
     console.error('[WBClassroomRoom] Failed to start recording:', e)
   } finally {
