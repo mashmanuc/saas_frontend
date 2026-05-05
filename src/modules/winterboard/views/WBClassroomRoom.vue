@@ -111,12 +111,13 @@
              session.state містив свіжі ops (INV-T fix). -->
         <WBRecordingBanner
           v-if="classroomRole.isTeacher.value"
-          :is-recording="isManualRecording"
-          :is-frozen="isReplayFrozen"
+          :recording-state="recordingState"
           :is-loading="isRecordingLoading"
           :recording-started-at="recordingStartedAt"
           @start="handleStartRecording"
-          @stop="handleStopRecording"
+          @pause="handlePauseRecording"
+          @resume="handleResumeRecording"
+          @finalize="handleFinalizeRecording"
         />
         <!-- Lock toggle (teacher only) -->
         <button
@@ -594,50 +595,41 @@ const replayRecorder = useReplayRecorder({
 // (line 897 + 2522).
 let _unsubRecorder: (() => void) | null = null
 
-// ─── PR1 (2026-05-03): Manual Recording Control — Classroom parity з Solo ─────
-// Port із WBSoloRoom.vue:882-974. Той самий WBSession, той самий endpoint
-// POST /winterboard/sessions/<uuid>/start-recording/, та сама Replay модель.
-// Hard verification — 7 інваріантів SAFE (jsonschema:
-// saas_docs/plans/classroom/CLASSROOM_BOARD_PARITY_PLAN_2026-05-03.md §1).
-const isManualRecording = ref(false)
+// ─── Plan v2.3 (2026-05-05): Recording lifecycle через state machine ─────────
+// Server-authoritative recording_state ∈ {idle, recording, paused, finalized}.
+// FE syncs from BE responses + initBoardWithSession resume hydrate.
+// Buttons emit start/pause/resume/finalize events via WBRecordingBanner.
+import type { RecordingState as ApiRecordingState } from '../api/replay'
+const recordingState = ref<ApiRecordingState>('idle')
 const recordingStartedAt = ref<string | null>(null)
-const isReplayFrozen = ref(false)
 const isRecordingLoading = ref(false)
-// Share Layer v1 + S.2 (port із WBSoloRoom): post-record proactive prompt.
-// Без цього UI replay створюється з default visibility=PRIVATE, і backend
-// WBPublicSessionView (views.py:1140) повертає 404 для /winterboard/public/<token>.
-// Юзер бачить "Не знайдено / Сесію не знайдено", хоча replay у списку.
-// Цей prompt показується 45s після stop та дозволяє вчителю змінити visibility
-// на unlisted/public + скопіювати посилання.
+// Computed: heartbeat ticks while session is recording OR paused (BE expects
+// liveness for both states — paused user может resume at any time).
+const isSessionActive = computed(
+  () => recordingState.value === 'recording' || recordingState.value === 'paused',
+)
+
+// Share Layer v1: post-finalize prompt (replay sharing).
 const activeReplayId = ref<string | null>(null)
 const showRecordingDonePrompt = ref(false)
 let _recordingDoneTimer: number | null = null
 
-// На auth death (logout / cross-tab logout / refresh failed) скидаємо local
-// recording UI state. Backend паралельно ставить recording_stopped_seq у logout
-// view → reconnect покаже REC = Start.
+// На auth death — reset UI state.
 const _unregisterRecordingAuthDeath = registerAuthDeathCleanup(() => {
-  isManualRecording.value = false
+  recordingState.value = 'idle'
   recordingStartedAt.value = null
 })
 
-// Phase 2A-3 (Plan v2.1 §4.3): FE heartbeat ticker для INV-LIFECYCLE-3.
-// Composable read-only consumer isManualRecording — auto start/stop через watch.
-// Wire-up = 1 рядок setup, без змін handlers/template (infrastructure addon).
-// Solo НЕ чіпаємо (per architect directive) — fallback на BE legacy 10min cutoff
-// per Plan §4.4. Classroom отримує full 90s heartbeat-based finalize window.
+// Phase 2A-3: heartbeat ticker. Plan v2.3: ticks while session active (recording
+// OR paused) — BE auto_finalize timeout still fires if user closes tab.
 useRecordingHeartbeat({
   sessionId: resolvedSessionId,
-  isRecording: isManualRecording,
+  isRecording: isSessionActive,
 })
 
 async function handleStartRecording(mode: 'continue' | 'new'): Promise<void> {
   const sid = resolvedSessionId.value
-  // Bug fix 2026-05-05: removed `isReplayFrozen.value` block. Backend Phase 2A-6
-  // (WBRecordingStartView) тепер archives попередній Replay і resets is_replay_frozen
-  // → re-record на frozen session дозволено. FE block був stale від pre-2A-6 era.
-  // Plan v2.2 INV-REC-START-EXPLICIT: mode REQUIRED, BE rejects without it (400).
-  if (!sid || isManualRecording.value) return
+  if (!sid || recordingState.value === 'recording') return
   isRecordingLoading.value = true
   try {
     try {
@@ -651,10 +643,13 @@ async function handleStartRecording(mode: 'continue' | 'new'): Promise<void> {
       console.warn('[WBClassroomRoom] saveNow before start-recording failed', e)
     }
     const result = await import('../api/replay').then(m => m.startRecording(sid, mode))
-    isManualRecording.value = true
-    recordingStartedAt.value = result.recording_started_at
-    isReplayFrozen.value = false
-    console.info('[WBClassroomRoom] Recording started', { mode: result.mode, sid })
+    recordingState.value = result.recording_state
+    if (result.recording_started_at) {
+      recordingStartedAt.value = result.recording_started_at
+    }
+    console.info('[WBClassroomRoom] start-recording', {
+      status: result.status, mode: result.mode, state: result.recording_state, sid,
+    })
   } catch (e) {
     console.error('[WBClassroomRoom] Failed to start recording:', e)
   } finally {
@@ -662,27 +657,47 @@ async function handleStartRecording(mode: 'continue' | 'new'): Promise<void> {
   }
 }
 
-async function handleStopRecording(): Promise<void> {
+async function handleResumeRecording(): Promise<void> {
+  // Resume від PAUSED — mode echo'd as 'continue' (BE preserves start_state).
+  await handleStartRecording('continue')
+}
+
+async function handlePauseRecording(): Promise<void> {
   const sid = resolvedSessionId.value
-  if (!sid || !isManualRecording.value) return
+  if (!sid || recordingState.value !== 'recording') return
   isRecordingLoading.value = true
   try {
-    // PR1 fix (2026-05-03): flush pending ops перед stop-recording, інакше
-    // ops намальовані в останні мс не потраплять у [start_seq, stop_seq] діапазон.
     try {
       await opsSync.flush()
     } catch (e) {
-      console.warn('[WBClassroomRoom] opsSync.flush before stop-recording failed', e)
+      console.warn('[WBClassroomRoom] opsSync.flush before pause failed', e)
     }
-    const result = await import('../api/replay').then(m => m.stopRecording(sid))
-    isManualRecording.value = false
-    recordingStartedAt.value = null
-    isReplayFrozen.value = result.is_replay_frozen
-    activeReplayId.value = result.replay_id ?? null
+    const result = await import('../api/replay').then(m => m.pauseRecording(sid))
+    recordingState.value = result.recording_state  // expect 'paused'
+    console.info('[WBClassroomRoom] pause-recording', { state: result.recording_state, sid })
+  } catch (e) {
+    console.error('[WBClassroomRoom] Failed to pause recording:', e)
+  } finally {
+    isRecordingLoading.value = false
+  }
+}
 
-    // Share Layer S.2 (port із WBSoloRoom:954-957): inline post-record prompt —
-    // живий 45s, достатньо побачити, обрати visibility, скопіювати URL.
-    // Без цього prompt-у public link 404 (replay default visibility=PRIVATE).
+async function handleFinalizeRecording(): Promise<void> {
+  const sid = resolvedSessionId.value
+  if (!sid || (recordingState.value !== 'recording' && recordingState.value !== 'paused')) return
+  isRecordingLoading.value = true
+  try {
+    try {
+      await opsSync.flush()
+    } catch (e) {
+      console.warn('[WBClassroomRoom] opsSync.flush before finalize failed', e)
+    }
+    const result = await import('../api/replay').then(m => m.finalizeRecording(sid))
+    recordingState.value = result.recording_state  // expect 'finalized'
+    recordingStartedAt.value = null
+    activeReplayId.value = result.replay_id
+
+    // Post-finalize sharing prompt (Share Layer S.2)
     if (activeReplayId.value) {
       showRecordingDonePrompt.value = true
       if (_recordingDoneTimer) {
@@ -692,19 +707,19 @@ async function handleStopRecording(): Promise<void> {
         showRecordingDonePrompt.value = false
       }, 45000)
     }
+    console.info('[WBClassroomRoom] finalize-recording', {
+      state: result.recording_state, replay_id: result.replay_id, sid,
+    })
   } catch (e) {
-    console.error('[WBClassroomRoom] Failed to stop recording:', e)
-    // P0.5 fallback (port із WBSoloRoom:958-970): API unreachable (auth dead,
-    // CORS, network) → still stop UI locally + telemetry + localStorage marker
-    // (для onMounted recovery detection при наступному заході у сесію).
-    isManualRecording.value = false
+    console.error('[WBClassroomRoom] Failed to finalize recording:', e)
+    // P0.5 fallback: API unreachable → still local-only state reset for UX.
     recordingStartedAt.value = null
     import('@/utils/telemetryAgent').then(
-      m => m.trackEvent('recording.stop.failed', { sessionId: sid, error: String(e) }),
-    ).catch(() => { /* telemetry best-effort, never propagate */ })
+      m => m.trackEvent('recording.finalize.failed', { sessionId: sid, error: String(e) }),
+    ).catch(() => {})
     try {
-      localStorage.setItem(`wb:recording:${sid}:stopped_locally`, String(Date.now()))
-    } catch { /* localStorage may be full or blocked */ }
+      localStorage.setItem(`wb:recording:${sid}:finalize_failed`, String(Date.now()))
+    } catch { /* localStorage blocked */ }
   } finally {
     isRecordingLoading.value = false
   }
@@ -2067,25 +2082,20 @@ async function initBoardWithSession(init: { sessionId: string; role: any; permis
     }
     sessionName.value = detail.name || t('winterboard.room.untitled')
 
-    // ─── Phase 2A-5 (Plan v2.1 §4.5): Resume recording per INV-LIFECYCLE-5 ────
-    // Якщо BE indicates session має active recording (started_seq SET,
-    // stopped_seq NULL) → hydrate UI у "REC" state. Heartbeat composable
-    // (Phase 2A-3) auto-start через watch(isManualRecording).
-    //
-    // Без цього resume: nav back протягом 90s heartbeat window → UI shows
-    // "Записати" idle, БЕ показує active → re-click Start → 409 conflict.
-    const startedSeq = detail.recording_started_seq ?? null
-    const stoppedSeq = detail.recording_stopped_seq ?? null
-    const isActiveRecording = startedSeq !== null && stoppedSeq === null
-    if (isActiveRecording) {
-      isManualRecording.value = true
+    // ─── Plan v2.3 (2026-05-05): Resume recording per INV-REC-SESSION ────────
+    // recording_state з BE — server-authoritative. FE syncs directly:
+    //   - 'recording' → REC banner + Pause button + heartbeat ticks
+    //   - 'paused' → PAUSED banner + Resume + Finalize buttons + heartbeat continues
+    //   - 'idle' / 'finalized' → 2 start buttons
+    // Без resume: nav back протягом 90s heartbeat window → button visibility
+    // wrong, BE thinks active, FE thinks idle → state desync.
+    const beRecordingState = detail.recording_state ?? 'idle'
+    recordingState.value = beRecordingState
+    if (beRecordingState === 'recording' || beRecordingState === 'paused') {
       recordingStartedAt.value = detail.recording_started_at ?? null
-      isReplayFrozen.value = false
       announce(t('winterboard.recording.resumed'))
     } else {
-      isManualRecording.value = false
       recordingStartedAt.value = null
-      isReplayFrozen.value = detail.is_replay_frozen ?? false
     }
   } catch (err) {
     console.error('[WB:ClassroomRoom] Failed to load session state', err)

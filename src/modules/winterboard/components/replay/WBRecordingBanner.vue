@@ -1,11 +1,12 @@
 <template>
-  <!-- A.1: Manual Recording Control — start/stop + REC indicator with timer.
-       Plan v2.2 INV-REC-MODE 2026-05-05: explicit mode selection (continue|new).
-       UI MUST показувати explicit choice — NO hidden default behavior. -->
+  <!-- Plan v2.3 (2026-05-05): 3-state UI per recording_state enum.
+       IDLE/FINALIZED → 2 start buttons (continue|new).
+       RECORDING → Pause button + REC + timer.
+       PAUSED → Resume + Finalize buttons.
+       UI source of truth = recordingState prop. NO derived flags. -->
   <div class="wb-recording-banner" role="status" aria-live="polite">
-    <!-- Idle state: 2 explicit start buttons (continue / new). Both visible
-         завжди коли !isRecording. NO dependency on isFrozen / started_seq. -->
-    <template v-if="!isRecording">
+    <!-- IDLE / FINALIZED: 2 explicit start buttons -->
+    <template v-if="recordingState === 'idle' || recordingState === 'finalized'">
       <button
         type="button"
         class="wb-recording-banner__btn wb-recording-banner__btn--start"
@@ -26,53 +27,93 @@
         <span class="wb-recording-banner__dot wb-recording-banner__dot--idle" aria-hidden="true" />
         <span>{{ t('winterboard.recording.startNew') }}</span>
       </button>
+      <!-- Supplementary frozen badge (FINALIZED state — попередній replay є) -->
+      <div
+        v-if="recordingState === 'finalized'"
+        class="wb-recording-banner__frozen"
+      >
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M8 1v14M1 8h14M4.5 4.5l7 7M11.5 4.5l-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <span>{{ t('winterboard.recording.frozen') }}</span>
+      </div>
     </template>
 
-    <!-- Active recording: STOP + REC + timer -->
-    <template v-if="isRecording">
+    <!-- RECORDING: REC indicator + Pause button -->
+    <template v-if="recordingState === 'recording'">
       <span class="wb-recording-banner__dot wb-recording-banner__dot--active" aria-hidden="true" />
       <span class="wb-recording-banner__text">REC</span>
       <span class="wb-recording-banner__timer">{{ formattedDuration }}</span>
       <button
         type="button"
-        class="wb-recording-banner__btn wb-recording-banner__btn--stop"
+        class="wb-recording-banner__btn wb-recording-banner__btn--pause"
+        :title="t('winterboard.recording.pauseTitle')"
         :disabled="isLoading"
-        @click="$emit('stop')"
+        @click="$emit('pause')"
       >
-        <span class="wb-recording-banner__stop-icon" aria-hidden="true" />
-        <span>{{ t('winterboard.recording.stop') }}</span>
+        <span class="wb-recording-banner__pause-icon" aria-hidden="true" />
+        <span>{{ t('winterboard.recording.pause') }}</span>
       </button>
     </template>
 
-    <!-- Supplementary frozen badge (контекст для user — попередній replay є). -->
-    <div v-if="isFrozen && !isRecording" class="wb-recording-banner__frozen" aria-hidden="false">
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <path d="M8 1v14M1 8h14M4.5 4.5l7 7M11.5 4.5l-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-      </svg>
-      <span>{{ t('winterboard.recording.frozen') }}</span>
-    </div>
+    <!-- PAUSED: PAUSED indicator + Resume + Finalize buttons -->
+    <template v-if="recordingState === 'paused'">
+      <span class="wb-recording-banner__dot wb-recording-banner__dot--paused" aria-hidden="true" />
+      <span class="wb-recording-banner__text wb-recording-banner__text--paused">PAUSED</span>
+      <span class="wb-recording-banner__timer">{{ formattedDuration }}</span>
+      <button
+        type="button"
+        class="wb-recording-banner__btn wb-recording-banner__btn--resume"
+        :title="t('winterboard.recording.resumeTitle')"
+        :disabled="isLoading"
+        @click="$emit('resume')"
+      >
+        <span class="wb-recording-banner__dot wb-recording-banner__dot--idle" aria-hidden="true" />
+        <span>{{ t('winterboard.recording.resume') }}</span>
+      </button>
+      <button
+        type="button"
+        class="wb-recording-banner__btn wb-recording-banner__btn--finalize"
+        :title="t('winterboard.recording.finalizeTitle')"
+        :disabled="isLoading"
+        @click="$emit('finalize')"
+      >
+        <span class="wb-recording-banner__stop-icon" aria-hidden="true" />
+        <span>{{ t('winterboard.recording.finalize') }}</span>
+      </button>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { RecordingMode } from '../../api/replay'
+import type { RecordingMode, RecordingState } from '../../api/replay'
 
 const { t } = useI18n({ useScope: 'global' })
 
 const props = defineProps<{
-  isRecording: boolean
-  isFrozen: boolean
+  /** Plan v2.3: server-authoritative recording_state. UI derives all visibility from this. */
+  recordingState: RecordingState
   isLoading?: boolean
   recordingStartedAt?: string | null
 }>()
 
 defineEmits<{
-  /** Plan v2.2 — INV-REC-MODE: emit explicit mode. */
+  /** IDLE/FINALIZED → start (continue|new). */
   start: [mode: RecordingMode]
-  stop: []
+  /** RECORDING → pause (PAUSED). */
+  pause: []
+  /** PAUSED → resume (RECORDING). Mode echo'd as 'continue', BE preserves start_state. */
+  resume: []
+  /** RECORDING|PAUSED → finalize (creates Replay). */
+  finalize: []
 }>()
+
+// Compute boolean isRecording for timer logic.
+const isRecording = computed(
+  () => props.recordingState === 'recording' || props.recordingState === 'paused'
+)
 
 // ── Timer ──
 const elapsed = ref(0)
@@ -96,8 +137,10 @@ function stopTimer() {
   }
 }
 
-watch(() => props.isRecording, (recording) => {
-  if (recording) {
+// Plan v2.3: timer ticks during 'recording' state. PAUSED stops timer але
+// preserves elapsed (timer continues on resume з recordingStartedAt anchor).
+watch(() => props.recordingState, (state) => {
+  if (state === 'recording') {
     startTimer()
   } else {
     stopTimer()
@@ -164,14 +207,38 @@ const formattedDuration = computed(() => {
   box-shadow: 0 1px 3px rgba(59, 130, 246, 0.15);
 }
 
-.wb-recording-banner__btn--stop {
+.wb-recording-banner__btn--stop,
+.wb-recording-banner__btn--finalize {
   background: rgba(239, 68, 68, 0.1);
   color: #dc2626;
   border-color: rgba(239, 68, 68, 0.3);
 }
 
-.wb-recording-banner__btn--stop:hover:not(:disabled) {
+.wb-recording-banner__btn--stop:hover:not(:disabled),
+.wb-recording-banner__btn--finalize:hover:not(:disabled) {
   background: rgba(239, 68, 68, 0.2);
+}
+
+/* Plan v2.3: PAUSE button — amber щоб відрізнити від finalize destructive red */
+.wb-recording-banner__btn--pause {
+  background: rgba(245, 158, 11, 0.1);
+  color: #b45309;
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.wb-recording-banner__btn--pause:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.18);
+}
+
+/* Resume = green accent */
+.wb-recording-banner__btn--resume {
+  background: rgba(34, 197, 94, 0.1);
+  color: #15803d;
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.wb-recording-banner__btn--resume:hover:not(:disabled) {
+  background: rgba(34, 197, 94, 0.18);
 }
 
 .wb-recording-banner__dot {
@@ -189,6 +256,25 @@ const formattedDuration = computed(() => {
 .wb-recording-banner__dot--active {
   background: #ef4444;
   animation: wb-rec-blink 1s ease-in-out infinite;
+}
+
+/* Plan v2.3: PAUSED state — solid amber dot (не blinking) */
+.wb-recording-banner__dot--paused {
+  background: #f59e0b;
+}
+
+/* Pause icon — two vertical bars */
+.wb-recording-banner__pause-icon {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-left: 2px solid currentColor;
+  border-right: 2px solid currentColor;
+  flex-shrink: 0;
+}
+
+.wb-recording-banner__text--paused {
+  color: #b45309;
 }
 
 .wb-recording-banner__stop-icon {

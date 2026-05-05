@@ -82,15 +82,20 @@
 
       <!-- Right: Actions -->
       <div class="wb-solo-room__actions">
-        <!-- A.1: Manual Recording Control — кнопка start/stop + REC таймер -->
+        <!-- A.1: Manual Recording Control — Solo has no pause/resume UI.
+             Plan v2.3: derive recording_state from existing refs:
+               isManualRecording=true → 'recording'
+               isManualRecording=false, isReplayFrozen=true → 'finalized'
+               else → 'idle'
+             Stop click maps to @finalize handler (Solo skips pause). -->
         <WBRecordingBanner
           v-if="isSessionOwner"
-          :is-recording="isManualRecording"
-          :is-frozen="isReplayFrozen"
+          :recording-state="soloRecordingState"
           :is-loading="isRecordingLoading"
           :recording-started-at="recordingStartedAt"
           @start="handleStartRecording"
-          @stop="handleStopRecording"
+          @pause="handleStopRecording"
+          @finalize="handleStopRecording"
         />
         <button
           type="button"
@@ -889,6 +894,15 @@ const showRecordingDonePrompt = ref(false)
 const recordingBrokenWarning = ref(false)
 let _recordingDoneTimer: number | null = null
 
+// Plan v2.3 (2026-05-05): derive RecordingState enum для WBRecordingBanner.
+// Solo has no pause/resume UI — only idle | recording | finalized.
+import type { RecordingState as ApiRecordingState } from '../api/replay'
+const soloRecordingState = computed<ApiRecordingState>(() => {
+  if (isManualRecording.value) return 'recording'
+  if (isReplayFrozen.value) return 'finalized'
+  return 'idle'
+})
+
 // Recorder завжди enabled у solo edit board.
 const replayRecorder = useReplayRecorder({
   sessionId,
@@ -947,7 +961,10 @@ async function handleStopRecording(): Promise<void> {
   if (!sid || !isManualRecording.value) return
   isRecordingLoading.value = true
   try {
-    const result = await import('../api/replay').then(m => m.stopRecording(sid))
+    // Plan v2.3 (2026-05-05): BE /stop-recording/ now means PAUSE (no Replay).
+    // Solo preserves old "stop = finalize" UX → call /finalize-recording/ directly.
+    // This skips pause state entirely — Solo has no pause/resume UI anyway.
+    const result = await import('../api/replay').then(m => m.finalizeRecording(sid))
     isManualRecording.value = false
     recordingStartedAt.value = null
     isReplayFrozen.value = result.is_replay_frozen

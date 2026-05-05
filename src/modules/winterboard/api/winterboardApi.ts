@@ -103,6 +103,9 @@ export interface WBSessionDetailResponse {
   // Phase 2A-1 (Plan v2.1 §4.2): heartbeat timestamp для INV-LIFECYCLE-3 + 2A-5 resume
   recording_last_heartbeat?: string | null
   is_replay_frozen?: boolean
+  // Plan v2.3 (2026-05-05): state machine field — server-authoritative.
+  // Default 'idle' for sessions without recording. FE syncs this directly.
+  recording_state?: 'idle' | 'recording' | 'paused' | 'finalized'
 }
 
 // Phase 2 (2026-04-27): WBDiffOp / WBDiffSavePayload / WBDiffSaveResponse /

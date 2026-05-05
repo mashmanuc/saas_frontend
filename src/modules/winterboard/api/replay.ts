@@ -159,28 +159,36 @@ export async function createSnapshot(
 // ─── A.1: Manual Recording Control ────────────────────────────────────
 
 /**
- * RecordingMode (Plan v2.2 — INV-REC-MODE 2026-05-05).
+ * RecordingMode (Plan v2.2 — INV-REC-MODE).
  *
  * - `continue`: replay shows snapshot of current canvas + animated new ops
- *   (background для context — pre-existing strokes видимі у viewer)
  * - `new`: replay starts from empty canvas + animated only new ops
- *   (clean recording — попередні strokes не у viewer)
  *
  * INV-REC-START-EXPLICIT: mode REQUIRED — no implicit default.
  */
 export type RecordingMode = 'continue' | 'new'
 
 /**
+ * RecordingState (Plan v2.3 — INV-REC-SESSION 2026-05-05).
+ * State machine для recording lifecycle. Server-authoritative.
+ */
+export type RecordingState = 'idle' | 'recording' | 'paused' | 'finalized'
+
+/**
  * POST /winterboard/sessions/{uuid}/start-recording/
- * Починає запис уроку. Тільки owner.
+ * Plan v2.3: branch logic — IDLE→RECORDING (start), PAUSED→RECORDING (resume),
+ * FINALIZED→RECORDING (re-record). Mode REQUIRED.
  *
  * @param mode — REQUIRED. Backend rejects without mode (400 mode_required).
+ *               Mode applies to start_state ONLY (на resume — ignored).
  */
 export async function startRecording(
   sessionId: string,
   mode: RecordingMode,
 ): Promise<{
-  recording_started_at: string
+  status: 'started' | 'resumed'
+  recording_state: RecordingState
+  recording_started_at: string | null
   recording_started_seq: number
   mode: RecordingMode
 }> {
@@ -189,19 +197,39 @@ export async function startRecording(
 
 /**
  * POST /winterboard/sessions/{uuid}/stop-recording/
- * Зупиняє запис уроку. Фіксує replay boundary (INV-AF).
+ * Plan v2.3: PAUSE semantics. RECORDING → PAUSED. NO Replay yet.
+ * Caller MUST explicitly call finalizeRecording() to create Replay.
  */
-export async function stopRecording(
+export async function pauseRecording(
   sessionId: string,
 ): Promise<{
-  recording_stopped_at: string
-  recording_stopped_seq: number
-  is_replay_frozen: boolean
-  /** Share Layer v1: BE тепер повертає Replay id створеного hook'ом. */
-  replay_id?: string
+  status: 'paused'
+  recording_state: RecordingState
+  recording_started_seq: number
 }> {
   return apiClient.post(`${BASE}/sessions/${sessionId}/stop-recording/`)
 }
+
+/**
+ * POST /winterboard/sessions/{uuid}/finalize-recording/
+ * Plan v2.3: RECORDING|PAUSED → FINALIZED. Creates Replay exactly once.
+ * INV-REC-FINALIZE.
+ */
+export async function finalizeRecording(
+  sessionId: string,
+): Promise<{
+  status: 'finalized'
+  recording_state: RecordingState
+  recording_stopped_at: string | null
+  recording_stopped_seq: number
+  is_replay_frozen: boolean
+  replay_id: string
+}> {
+  return apiClient.post(`${BASE}/sessions/${sessionId}/finalize-recording/`)
+}
+
+/** @deprecated Plan v2.3: stopRecording renamed to pauseRecording. */
+export const stopRecording = pauseRecording
 
 /**
  * POST /winterboard/sessions/{uuid}/create-replay-from-ops/

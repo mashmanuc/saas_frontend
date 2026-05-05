@@ -7516,6 +7516,12 @@
       "startNew": "New recording",
       "startNewTitle": "Record from blank canvas — previous strokes stay on board live but NOT in new replay",
       "stop": "Stop",
+      "pause": "Pause",
+      "pauseTitle": "Pause recording — resume later without creating a new replay",
+      "resume": "Resume",
+      "resumeTitle": "Resume the paused recording",
+      "finalize": "Finalize lesson",
+      "finalizeTitle": "Finalize recording and create the replay",
       "active": "Recording",
       "frozen": "Recording finished",
       "resumed": "Recording is still active — resuming from where you left"
