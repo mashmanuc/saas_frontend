@@ -384,7 +384,11 @@ const __GC = (function () {
         // Strict v1: enabled only if exactly 1 param exists AND used by some
         // explicit-Y curve. Else falls through to point/pan.
         const forcePan = !!e.altKey || e.button === 2;
-        if (e.shiftKey && !forcePan) {
+        // Phase G4 (2026-05-06): toggle button у Vue layer sets opts.interactionMode
+        // = 'param'. Either Shift held OR toggle on activates drag-param mode.
+        // g4_inv_3: Shift wins у conflict (both → still 'param'; effectively same).
+        const paramModeActive = e.shiftKey || this.opts.interactionMode === 'param';
+        if (paramModeActive && !forcePan) {
           // Phase G3 v1.1 polish: pass cursor coords для activation zone +
           // closest-curve picker (when multiple expressions share param).
           const r0 = this.canvas.getBoundingClientRect();

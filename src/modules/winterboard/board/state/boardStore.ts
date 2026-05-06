@@ -1491,6 +1491,65 @@ export const useWBStore = defineStore('wb-board', {
      * Snapshot path ensures BE materialization stamps new `last_snapshot_seq`
      * → subsequent `graph_param_set` ops have valid `base_seq` (inv-21.12).
      */
+    /**
+     * Phase G4 — append a new expression to an existing graph_calculator asset.
+     * Used by context sidebar quick-add buttons (templates).
+     *
+     * Architecture:
+     *   - Single asset_update snapshot (no new op_type, g4_inv_1)
+     *   - UUID generated externally (FE-RULE-3)
+     *   - Default color cycled з existing palette (vendor-style)
+     *   - Subsequent param-sync triggered automatically коли renderer's
+     *     displayExpressions watch fires after asset prop refresh.
+     */
+    graphAddExpression(
+      assetId: string,
+      src: string,
+      opts?: { id?: string; color?: string },
+    ): void {
+      if (typeof src !== 'string' || src.length === 0) return
+      let foundAsset: WBAsset | undefined
+      for (let i = 0; i < this.pages.length; i++) {
+        const a = this.pages[i].assets.find((x) => x.id === assetId)
+        if (a) { foundAsset = a; break }
+      }
+      if (!foundAsset || foundAsset.type !== 'graph_calculator') return
+
+      type Expr = { id: string; src: string; color: string; hidden: boolean }
+      type GState = { expressions: Expr[]; params: Record<string, unknown>; viewport: unknown; points?: Record<string, unknown> }
+      const data = (foundAsset.data ?? {}) as { version?: number; state?: Partial<GState>; meta?: { last_snapshot_seq?: number } }
+      const prevState: GState = {
+        expressions: Array.isArray(data.state?.expressions) ? (data.state!.expressions as Expr[]) : [],
+        params: (data.state?.params as Record<string, unknown>) || {},
+        viewport: (data.state?.viewport as unknown) || { cx: 0, cy: 0, scale: 38 },
+        ...(data.state?.points ? { points: data.state.points as Record<string, unknown> } : {}),
+      }
+
+      const exprId = opts?.id || (
+        (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
+          ? crypto.randomUUID()
+          : `expr-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+      )
+      // Vendor palette: cycle through 5 colors based on existing length.
+      const PALETTE = ['#c4622a', '#3b7b9b', '#7b9b3b', '#9b3b7b', '#3b9b9b']
+      const color = opts?.color || PALETTE[prevState.expressions.length % PALETTE.length]
+
+      const newExpr: Expr = { id: exprId, src, color, hidden: false }
+
+      const snapshot: WBAsset = {
+        ...foundAsset,
+        data: {
+          ...(foundAsset.data || {}),
+          version: 1 as const,
+          state: {
+            ...prevState,
+            expressions: [...prevState.expressions, newExpr],
+          },
+        } as any,
+      }
+      this.updateAsset(snapshot, { skipHistory: true })
+    },
+
     graphSyncParams(
       assetId: string,
       usedNames: ReadonlyArray<string>,

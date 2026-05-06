@@ -36,6 +36,25 @@
 
     <header class="gc-header">
       <span class="gc-title">f(x)</span>
+      <!-- Phase G4 (2026-05-06): param-mode toggle button (Shift-equivalent).
+           Disabled if no drag-param candidate (paramEntries.length !== 1). -->
+      <button
+        v-if="interactive"
+        type="button"
+        class="gc-param-mode-btn"
+        :class="{ 'is-active': uiState.paramMode }"
+        :disabled="!paramModeAvailable"
+        :title="paramModeAvailable
+          ? (uiState.paramMode
+              ? 'Param mode ON — drag по графіку керує параметром. Click щоб вимкнути.'
+              : 'Param mode OFF. Click щоб увімкнути керування параметром drag-ом.')
+          : 'Drag-param доступний тільки коли є рівно 1 параметр'"
+        data-testid="graph-calc-param-mode-btn"
+        @click.stop="onToggleParamMode"
+      >
+        <span class="gc-param-mode-icon">↕</span>
+        <span class="gc-param-mode-label">{{ paramEntries.length === 1 ? paramEntries[0].name : 'a' }}</span>
+      </button>
       <button
         v-if="interactive && !asset.locked"
         type="button"
@@ -108,6 +127,26 @@
           data-testid="graph-calc-add-expr"
           @click="onAddExpression"
         >+ add</button>
+
+        <!-- Phase G4: inline quick-add templates (заміщає sidebar context panel).
+             Compact pill buttons під «+ add» — не ламає layout, лишається у renderer. -->
+        <div class="gc-quick-add">
+          <button
+            v-for="tpl in QUICK_TEMPLATES"
+            :key="tpl.src"
+            type="button"
+            class="gc-quick-btn"
+            :title="`Додати: ${tpl.src}`"
+            :data-testid="`graph-calc-quick-${tpl.id}`"
+            @click="onQuickAdd(tpl.src)"
+          >{{ tpl.label }}</button>
+        </div>
+
+        <!-- Phase G4: help hint під параметрами (видно тільки коли є params). -->
+        <div v-if="paramEntries.length > 0" class="gc-help-hint">
+          <span class="gc-help-hint__icon">💡</span>
+          <span><kbd>Shift</kbd>+drag або <kbd>↕</kbd> — керує параметром</span>
+        </div>
 
         <!-- Phase G2: interactive points. List + add button. Drag mechanism — engine canvas. -->
         <div v-if="pointEntries.length > 0 || canAddPoints" class="gc-points">
@@ -247,6 +286,9 @@ import {
   detectAmbiguousImplicitMultiply,
   type ImplicitMultiplyHint,
 } from '../../../utils/graphCalculatorUtils'
+// Phase G4: shared per-asset UI state (toggle param mode).
+// Module-level reactive — renderer + sidebar context panel see same value.
+import { getGraphCalcUi, toggleGraphCalcParamMode } from '../../../board/state/graphCalculatorUiState'
 
 interface Props {
   asset: WBAsset
@@ -348,6 +390,48 @@ const paramExpanded = ref<Record<string, boolean>>({})
 
 /** Phase G3 v1 review (dp_inv_3): floating label state during drag-param. */
 const activeDragParam = ref<{ name: string; value: number } | null>(null)
+
+// ─── Phase G4: param-mode toggle (g4_inv_1..10) ───────────────────────
+// uiState shared via module — sidebar context panel reads/writes same entry.
+const uiState = computed(() => getGraphCalcUi(props.asset.id))
+
+/** Shift key state — tracked at document level. */
+const shiftKeyHeld = ref(false)
+
+/** Effective mode = Shift OR toggle (g4_inv_3: Shift wins у конфлікті
+ *  технічно — обидва шляхи дають 'param', тож пріоритет тривіальний). */
+const effectiveMode = computed<'normal' | 'param'>(() =>
+  shiftKeyHeld.value || uiState.value.paramMode ? 'param' : 'normal',
+)
+
+/** Toggle button enabled тільки якщо є рівно 1 param (як `_findParamDragCandidate`
+ *  fundamentally requires single param + explicit-Y curve). Якщо paramEntries
+ *  ≠ 1 — engine все одно поверне null candidate і drag не активується. */
+const paramModeAvailable = computed(() => paramEntries.value.length === 1)
+
+function onToggleParamMode() {
+  if (!props.interactive) return
+  if (!paramModeAvailable.value) return
+  toggleGraphCalcParamMode(props.asset.id)
+}
+
+function onWindowKeyDown(e: KeyboardEvent) {
+  if (e.key === 'Shift' && !shiftKeyHeld.value) shiftKeyHeld.value = true
+}
+function onWindowKeyUp(e: KeyboardEvent) {
+  if (e.key === 'Shift') shiftKeyHeld.value = false
+}
+function onWindowBlur() {
+  // Window lost focus mid-drag (e.g., Alt+Tab) — release Shift state.
+  shiftKeyHeld.value = false
+  // Phase G4 hardening (2026-05-06): also flush any pending param/sync/snapshot.
+  // Window blur може настати mid-drag без pointerup (Alt+Tab, OS notification,
+  // app switch on tablet) → engine.onParamDragEnd НЕ викликається → pending
+  // throttle лежить у setTimeout. Flush явно щоб final value лендився як op.
+  flushParam()
+  flushSyncParams()
+  flushSnapshot()
+}
 
 /**
  * Phase G review #3 (2026-05-06): per-expression UX hints for ambiguous
@@ -643,6 +727,8 @@ function mountEngine() {
   try {
     calc = new GraphCalculator(plotEl.value, {
       disableAnimation: props.disableAnimation,
+      // Phase G4: initial interactionMode (subsequent changes via watch).
+      interactionMode: effectiveMode.value,
     })
   } finally {
     isApplyingExternalState = false
@@ -847,6 +933,26 @@ function onAddExpression() {
   // calc.onChange wrapper auto-fires snapshot debounce.
 }
 
+// Phase G4: inline quick-add templates (під «+ add» button).
+// Click → calc.addExpression(src, uuid) — same path як manual add, тільки src
+// preset. Renderer's existing onChange → debounced snapshot → asset_update op.
+// Param-sync triggered automatically через scheduleSyncParams (existing flow).
+const QUICK_TEMPLATES = [
+  { id: 'linear',   label: 'a·x',    src: 'y = a*x' },
+  { id: 'sin',      label: 'a·sin',  src: 'y = a*sin(x)' },
+  { id: 'parabola', label: 'a·x²',   src: 'y = a*x^2' },
+  { id: 'circle',   label: 'circle', src: '(x)^2 + (y)^2 = r^2' },
+] as const
+
+function onQuickAdd(src: string) {
+  if (!calc || !props.interactive) return
+  const id = genId()
+  flushSnapshot()
+  calc.addExpression(src, id)
+  // Trigger param-sync after expression with vars added (a, r, etc.).
+  scheduleSyncParams()
+}
+
 function onRemoveExpression(id: string) {
   if (!calc || !props.interactive) return
   calc.removeExpression(id)
@@ -956,17 +1062,59 @@ onMounted(() => {
   // Flush hooks (FE-RULE-10 partial — visibilitychange + beforeunload).
   document.addEventListener('visibilitychange', onVisibilityChange)
   window.addEventListener('beforeunload', onBeforeUnload)
+  // Phase G4: track Shift у window scope (canvas can lose focus during drag).
+  window.addEventListener('keydown', onWindowKeyDown)
+  window.addEventListener('keyup', onWindowKeyUp)
+  window.addEventListener('blur', onWindowBlur)
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('visibilitychange', onVisibilityChange)
   window.removeEventListener('beforeunload', onBeforeUnload)
+  window.removeEventListener('keydown', onWindowKeyDown)
+  window.removeEventListener('keyup', onWindowKeyUp)
+  window.removeEventListener('blur', onWindowBlur)
   // FE-RULE-10: order matters — flush BEFORE destroy.
   flushSyncParams()
   flushSnapshot()
   flushParam()
   unmountEngine()
 })
+
+// Phase G4: sync effectiveMode → engine.opts.interactionMode (read by
+// pointerdown handler у engine). Engine stays stateless about UI toggle —
+// receives runtime opt only (g4_inv_2).
+//
+// Phase G4 hardening (2026-05-06): when leaving 'param' mode mid-drag
+// (e.g., Shift released without pointerup, toggle clicked off mid-drag),
+// flush pending throttle so final value не губиться. Engine's local
+// `mode` resets only at pointerup, so onParamDragEnd is the canonical
+// flush path — this watch is belt-and-suspenders for edge cases де
+// pointerup ніколи не fired (window blur вже handled окремо).
+//
+// Known limitation (Risk 4 — animation × drag): engine has internal rAF
+// animation (setParamAnimating(id, on) API), але у поточному UI ми її
+// НЕ експонуємо (немає ▶ button у нашому renderer panel). Animation × drag
+// conflict thus unreachable у v1.
+//
+// 🚨 GATE для майбутнього: якщо додаєш UI control для запуску animation
+// (slider play button, або auto-animate checkbox) — MUST disable / hide
+// той control коли effectiveMode === 'param', або викликати
+// calc.setParamAnimating(exprId, false) у watch effectiveMode при entry.
+// Інакше: animation rAF (~60fps) + drag throttle (~30fps) → race,
+// останній value wins per throttle pending → jittery emits.
+watch(
+  effectiveMode,
+  (mode, prev) => {
+    if (calc && (calc as any).opts) {
+      ;(calc as any).opts.interactionMode = mode
+    }
+    if (prev === 'param' && mode !== 'param') {
+      flushParam()
+    }
+  },
+  { immediate: true },
+)
 
 function onVisibilityChange() {
   if (document.visibilityState === 'hidden') {
@@ -1051,7 +1199,8 @@ defineExpose({
 .gc-row-del,
 .gc-add-btn,
 .gc-swatch,
-.gc-plot {
+.gc-plot,
+.gc-param-mode-btn {
   pointer-events: auto;
 }
 
@@ -1074,6 +1223,51 @@ defineExpose({
   line-height: 1;
   color: #a83a5b;
   padding: 0 4px;
+}
+
+/* Phase G4: param-mode toggle button */
+.gc-param-mode-btn {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  margin-right: 4px;
+  padding: 2px 8px;
+  border: 1px solid rgba(59, 123, 155, 0.4);
+  border-radius: 10px;
+  background: transparent;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: #5a4a3a;
+  line-height: 1.2;
+  transition: background 120ms ease, color 120ms ease;
+}
+.gc-param-mode-btn:hover:not(:disabled) {
+  background: rgba(59, 123, 155, 0.08);
+  color: #3b7b9b;
+}
+.gc-param-mode-btn.is-active {
+  background: #3b7b9b;
+  color: #fffaf0;
+  border-color: #3b7b9b;
+  animation: gc-param-mode-pulse 1.4s ease-in-out infinite;
+}
+.gc-param-mode-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+.gc-param-mode-icon {
+  font-size: 12px;
+  line-height: 1;
+}
+.gc-param-mode-label {
+  letter-spacing: 0.02em;
+}
+@keyframes gc-param-mode-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 123, 155, 0.4); }
+  50% { box-shadow: 0 0 0 4px rgba(59, 123, 155, 0); }
 }
 
 .gc-body {
@@ -1195,6 +1389,50 @@ defineExpose({
   padding: 4px;
   font-size: 12px;
   color: #3b7b9b;
+}
+
+/* Phase G4: inline quick-add templates row (під «+ add») */
+.gc-quick-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 4px;
+  pointer-events: auto;
+}
+.gc-quick-btn {
+  cursor: pointer;
+  background: rgba(196, 98, 42, 0.06);
+  border: 1px solid rgba(196, 98, 42, 0.3);
+  border-radius: 3px;
+  padding: 2px 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #c4622a;
+  pointer-events: auto;
+  transition: background 120ms ease;
+}
+.gc-quick-btn:hover { background: rgba(196, 98, 42, 0.16); }
+
+/* Phase G4: help hint під params section */
+.gc-help-hint {
+  margin-top: 6px;
+  padding: 4px 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: #5a4a3a;
+  background: rgba(43, 33, 24, 0.04);
+  border-radius: 3px;
+  line-height: 1.3;
+}
+.gc-help-hint__icon { font-size: 11px; }
+.gc-help-hint kbd {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  padding: 0 3px;
+  background: rgba(43, 33, 24, 0.1);
+  border-radius: 2px;
 }
 
 .gc-plot {
