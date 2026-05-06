@@ -89,6 +89,9 @@
       <Transition name="solids-collapse">
         <div v-if="isSolidsExpanded" class="content-sidebar__solids-body">
           <SolidsTray />
+          <!-- Phase G (2026-05-06): interactive graph_calculator tray inside the
+               same collapsible "solids/interactive widgets" section. -->
+          <GraphCalculatorTray />
         </div>
       </Transition>
     </div>
@@ -184,6 +187,8 @@ import { fetchFoldersTree } from '../../api/library'
 import ContentSidebarItem from './ContentSidebarItem.vue'
 import LibraryFolderTree from '../library/LibraryFolderTree.vue'
 import SolidsTray from './SolidsTray.vue'
+// Phase G (2026-05-06): graph_calculator interactive widget tray
+import GraphCalculatorTray from './GraphCalculatorTray.vue'
 import StorageQuotaBar from '@/modules/learning-content/components/StorageQuotaBar.vue'
 import { learningContentApi } from '@/modules/learning-content/api/learningContentApi'
 import type { StorageQuota } from '@/modules/learning-content/api/learningContentApi'

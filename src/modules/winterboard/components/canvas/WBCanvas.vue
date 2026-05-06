@@ -58,6 +58,15 @@
             :config="{ ...getSolidProxyConfig(asset), id: asset.id, name: 'asset' }"
             @transformend="handleAssetTransformEnd(asset, $event)"
           />
+          <!-- Phase G (2026-05-06): graph_calculator Konva proxy (invisible Rect).
+               HTML overlay вище з pointer-events:none НЕ перехоплює селекцію —
+               Konva proxy ловить drag/resize/select через існуючий
+               handleAssetTransformEnd / layer-level handleAssetDragEnd flow. -->
+          <v-rect
+            v-else-if="asset.type === 'graph_calculator'"
+            :config="{ ...getSolidProxyConfig(asset), id: asset.id, name: 'asset' }"
+            @transformend="handleAssetTransformEnd(asset, $event)"
+          />
           <!-- v5 A9: Sticky note rendering -->
           <WBStickyNote
             v-else-if="asset.type === 'sticky'"
@@ -326,6 +335,42 @@
       </div>
     </template>
 
+    <!-- Phase G (2026-05-06): graph_calculator overlay (canvas, non-Konva).
+         Per OPS_SYNC_SSOT.md INV-21 + UX-RULE-5/6/8/10:
+         - HTML overlay above Konva, isolated pointer events for inner inputs
+         - interactive=false during replay → panel hidden, listeners skipped
+         - disableAnimation=true during replay → no local rAF (inv-21.13) -->
+    <template v-for="asset in graphCalculatorAssets" :key="`gc-${asset.id}`">
+      <div
+        class="wb-graph-calculator-overlay"
+        :class="{ 'wb-graph-calculator-overlay--selected': wbStore.selectedIds.includes(asset.id) }"
+        :data-graph-calculator-id="asset.id"
+        :data-testid="`graph-calculator-overlay-${asset.id}`"
+        :style="{
+          left: `${asset.x * props.zoom}px`,
+          top: `${asset.y * props.zoom}px`,
+          width: `${asset.w * props.zoom}px`,
+          height: `${asset.h * props.zoom}px`,
+        }"
+      >
+        <GraphCalculatorRenderer
+          :asset="asset"
+          :is-selected="wbStore.selectedIds.includes(asset.id)"
+          :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
+          :disable-animation="wbStore.mode === 'replay'"
+          @update:asset="(updated: WBAsset) => emit('asset-update', updated)"
+          @param-set="(name: string, value: number) => wbStore.graphParamSet(asset.id, name, value)"
+          @param-sync="(names: string[]) => wbStore.graphSyncParams(asset.id, names)"
+          @range-set="(name: string, range: { min: number; max: number; step: number }) => wbStore.graphSetParamRange(asset.id, name, range)"
+          @point-add="(id: string, x: number, y: number, mode: 'free' | 'onCurve', curveExprId?: string) => wbStore.graphPointAdd(asset.id, id, x, y, mode, curveExprId)"
+          @point-set="(id: string, x: number, y: number) => wbStore.graphPointSet(asset.id, id, x, Number.isFinite(y) ? y : undefined)"
+          @point-delete="(id: string) => wbStore.graphPointDelete(asset.id, id)"
+          @point-promote="(id: string, curveExprId: string) => wbStore.graphPointPromote(asset.id, id, curveExprId)"
+          @delete="emit('asset-delete', asset.id)"
+        />
+      </div>
+    </template>
+
     <!-- BUG-2 FIX: Laser trail — fading dots behind the pointer -->
     <div
       v-for="(tp, idx) in laserTrailWithOpacity"
@@ -462,6 +507,8 @@ import { handleDrop as imageHandleDrop } from '../../composables/useImageUpload'
 import { SIDEBAR_DRAG_MIME, CONTENT_DRAG_MIME } from '../../types/boardDrop'
 import { SOLID_DRAG_MIME } from '../../constants/solidDefaults'
 import SolidCardRenderer from '../board/SolidCardRenderer.vue'
+// Phase G (2026-05-06): graph_calculator HTML overlay renderer
+import GraphCalculatorRenderer from '../board/objects/GraphCalculatorRenderer.vue'
 import { loadKonva } from '../../engine/konvaLoader'
 import { PAGE_SHADOW } from '../../constants/pageShadow'
 import { WBSpatialIndex } from '../../engine/spatialIndex'
@@ -560,6 +607,12 @@ const mediaAssets = computed(() =>
 // Phase O PR-O4: geometry_solid rendered as HTML overlay (Three.js widget — non-Konva)
 const solidAssets = computed(() =>
   assets.value.filter(a => a.type === 'geometry_solid'),
+)
+
+// Phase G (2026-05-06): graph_calculator rendered as HTML overlay (canvas-based, non-Konva).
+// Per OPS_SYNC_SSOT.md INV-21 + UX-RULE-5/6/8.
+const graphCalculatorAssets = computed(() =>
+  assets.value.filter(a => a.type === 'graph_calculator'),
 )
 
 // Phase 3C: Type cast helpers for media assets
@@ -4264,5 +4317,22 @@ defineExpose({
 .wb-solid-overlay--selected {
   border-color: rgba(59, 130, 246, 0.6);
   box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.4);
+}
+
+/* Phase G (2026-05-06): graph_calculator overlay — UX-RULE-5/8 layering.
+   Pattern mirrors .wb-solid-overlay — outer pointer-events:none делегує
+   selection/drag/resize до Konva proxy (v-rect у assetsLayer), а внутрішні
+   interactive elements (input, slider, button, canvas) самі встановлюють
+   pointer-events:auto where needed. */
+.wb-graph-calculator-overlay {
+  position: absolute;
+  z-index: 5;
+  border-radius: 6px;
+  overflow: visible;
+  pointer-events: none;
+}
+.wb-graph-calculator-overlay--selected {
+  outline: 2px solid rgba(59, 123, 155, 0.7);
+  outline-offset: 1px;
 }
 </style>

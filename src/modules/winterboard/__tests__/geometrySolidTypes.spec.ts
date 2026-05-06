@@ -191,7 +191,9 @@ describe('Phase O — WBAsset.type accepts geometry_solid', () => {
       },
     }
     if (a.type === 'geometry_solid' && a.data) {
-      const s: SolidAssetState = a.data.state
+      // Phase G: WBAsset.data union'd із GraphCalculatorData — narrow по type='geometry_solid'
+      // гарантує SolidAssetData payload.
+      const s = a.data.state as SolidAssetState
       expect(s.showVertices).toBe(true)
     } else {
       throw new Error('narrow failed')

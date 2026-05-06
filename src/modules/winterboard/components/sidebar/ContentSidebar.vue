@@ -55,6 +55,11 @@
         <SolidsTray />
       </div>
 
+      <!-- Phase G (2026-05-06): graph_calculator drag source tray (interactive widget). -->
+      <div class="content-sidebar__graph-calc-section">
+        <GraphCalculatorTray />
+      </div>
+
       <!-- Phase 11 B8: YouTube URL inline input -->
       <div v-if="isTutor" class="content-sidebar__yt-section">
         <button
@@ -159,6 +164,8 @@ import { parseYouTubeVideoId } from '../../utils/youtubeParser'
 import ContentSidebarItem from './ContentSidebarItem.vue'
 import MaterialsBrowser from './MaterialsBrowser.vue'
 import SolidsTray from './SolidsTray.vue'
+// Phase G (2026-05-06): graph_calculator interactive widget tray
+import GraphCalculatorTray from './GraphCalculatorTray.vue'
 import StorageQuotaBar from '@/modules/learning-content/components/StorageQuotaBar.vue'
 import { learningContentApi } from '@/modules/learning-content/api/learningContentApi'
 import type { StorageQuota } from '@/modules/learning-content/api/learningContentApi'

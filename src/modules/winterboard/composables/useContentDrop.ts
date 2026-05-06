@@ -16,6 +16,12 @@ import {
   SOLID_DRAG_MIME,
   type SolidDragPayload,
 } from '../constants/solidDefaults'
+import {
+  DEFAULT_GRAPH_STATE,
+  DEFAULT_GRAPH_WIDTH,
+  DEFAULT_GRAPH_HEIGHT,
+  GRAPH_CALCULATOR_MIME,
+} from '../constants/graphCalculatorDefaults'
 
 // Phase O PR-O4: 10 fixed solid types — must match SolidType union exactly.
 const SOLID_TYPE_SET: ReadonlySet<SolidType> = new Set([
@@ -66,6 +72,43 @@ export function useContentDrop(options: UseContentDropOptions) {
     event.preventDefault()
 
     if (!canDraw.value) return
+
+    // Phase G (2026-05-06): graph_calculator drag (own MIME, highest priority).
+    // Per OPS_SYNC_SSOT.md INV-21 + UX-RULE-1/3/4:
+    //   - Pure handler: payload empty, default state hydrated here.
+    //   - asset_add includes full state + meta envelope.
+    //   - meta.last_snapshot_seq=0 placeholder; BE materialization stamps at apply.
+    const graphRaw = event.dataTransfer?.getData(GRAPH_CALCULATOR_MIME)
+    if (graphRaw !== undefined && graphRaw !== '' && graphRaw !== null) {
+      const canvasPos = screenToCanvas(event.clientX, event.clientY)
+      const id = (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
+        ? `gc-${crypto.randomUUID()}`
+        : `gc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+      const asset: WBAsset = {
+        id,
+        type: 'graph_calculator',
+        // src field — kept for WBAsset shape compat; graph_calculator не використовує src.
+        src: '',
+        x: canvasPos.x - DEFAULT_GRAPH_WIDTH / 2,
+        y: canvasPos.y - DEFAULT_GRAPH_HEIGHT / 2,
+        w: DEFAULT_GRAPH_WIDTH,
+        h: DEFAULT_GRAPH_HEIGHT,
+        rotation: 0,
+        locked: false,
+        // UX-RULE-1: full snapshot — version + state (deep-clone DEFAULT) + meta.
+        data: {
+          version: 1,
+          state: {
+            expressions: [...DEFAULT_GRAPH_STATE.expressions],
+            params: { ...DEFAULT_GRAPH_STATE.params },
+            viewport: { ...DEFAULT_GRAPH_STATE.viewport },
+          },
+          meta: { last_snapshot_seq: 0 },
+        } as unknown as WBAsset['data'],
+      }
+      onAssetAdd(asset)
+      return
+    }
 
     // Phase O PR-O4: Geometry solid drag (highest priority — own MIME).
     // Tray sets 'application/x-solid' з payload {src}. Drop handler сам

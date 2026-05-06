@@ -127,9 +127,31 @@ const KNOWN_OP_TYPES = new Set<string>([
   ...REQUIRES_PAGE_ID,
   'page_add', 'page_navigate', 'page_change', 'page_reorder',
   'pdf_import', 'geometry_vertex_move',
+  // Phase G (2026-05-06): graph_calculator high-frequency param delta (INV-21)
+  'graph_param_set',
+  // Phase G2 (2026-05-06): interactive points (granular drag only;
+  // add/delete = snapshot via asset_update)
+  'graph_point_set',
   // Legacy diff-format
   'add', 'update', 'remove',
 ])
+
+/**
+ * Phase G inv-21.12: embed `last_snapshot_seq` у asset.data.meta перед
+ * `store.addAsset/updateAsset`. Mutating asset payload IN PLACE гарантує що
+ * stamp survive RAF batch flush (post-add stamp губився би на replace).
+ *
+ * Monotonic: never decreases.
+ */
+function stampGraphCalculatorMeta(asset: WBAsset, seq: number | null | undefined): void {
+  if (asset.type !== 'graph_calculator') return
+  if (typeof seq !== 'number' || !Number.isInteger(seq) || seq <= 0) return
+  const data = (asset.data ?? {}) as { meta?: { last_snapshot_seq?: number } }
+  if (!asset.data) (asset as { data: typeof data }).data = data
+  if (!data.meta) data.meta = {}
+  const cur = (data.meta.last_snapshot_seq as number) ?? 0
+  if (seq > cur) data.meta.last_snapshot_seq = seq
+}
 
 export function createReplayApplier(opts?: ReplayApplierOptions) {
   const ensuredPageIds = new Set<string>()
@@ -305,17 +327,28 @@ export function createReplayApplier(opts?: ReplayApplierOptions) {
           store.deleteStroke(payload.stroke_id as string, { skipHistory: true })
         break
 
-      case 'asset_add':
+      case 'asset_add': {
         // TASK 2 (2026-04-29): use resolvedPageId (post-mapping), not raw
         // op.page_id, інакше addAsset fail-fast throw на нерезольвлений id.
-        if (payload.asset && resolvedPageId)
-          store.addAsset(payload.asset as WBAsset, resolvedPageId, { skipHistory: true })
+        if (payload.asset && resolvedPageId) {
+          const a = payload.asset as WBAsset
+          // Phase G inv-21.12: embed last_snapshot_seq у asset.data.meta BEFORE
+          // store.addAsset, бо updateAsset uses RAF batch — пост-stamp губився
+          // би при flush replace.
+          stampGraphCalculatorMeta(a, op.seq)
+          store.addAsset(a, resolvedPageId, { skipHistory: true })
+        }
         break
+      }
 
-      case 'asset_update':
-        if (payload.asset)
-          store.updateAsset(payload.asset as WBAsset, { skipHistory: true })
+      case 'asset_update': {
+        if (payload.asset) {
+          const a = payload.asset as WBAsset
+          stampGraphCalculatorMeta(a, op.seq)
+          store.updateAsset(a, { skipHistory: true })
+        }
         break
+      }
 
       case 'asset_delete':
         if (payload.asset_id)
@@ -449,6 +482,77 @@ export function createReplayApplier(opts?: ReplayApplierOptions) {
             store.updateAsset(value as unknown as WBAsset, { skipHistory: true })
           else if (op.op_type === 'remove' && itemId)
             store.deleteAsset(itemId, { skipHistory: true })
+        }
+        break
+      }
+
+      // Phase G (2026-05-06): graph_calculator high-frequency param delta.
+      // Per OPS_SYNC_SSOT.md INV-21 + STORE-RULES 6/10:
+      //   - inv-21.12 race guard: drop op silently if base_seq < current
+      //     asset.data.meta.last_snapshot_seq (BE drops too — defence-in-depth)
+      //   - skipEmit:true (replay path mutation only, no echo)
+      case 'graph_param_set': {
+        const assetId = payload.asset_id as string | undefined
+        const name = payload.name as string | undefined
+        const value = payload.value as number | undefined
+        const baseSeq = payload.base_seq as number | undefined
+        if (!assetId || typeof name !== 'string' || typeof value !== 'number') break
+
+        // STORE-RULE-10 race guard (FE-side): if asset has newer snapshot
+        // already applied locally (e.g. interleaved broadcast) → drop stale.
+        let isStale = false
+        for (const page of store.pages) {
+          const asset = page.assets.find((a) => a.id === assetId)
+          if (!asset) continue
+          if (asset.type !== 'graph_calculator') break
+          const meta = (asset.data as { meta?: { last_snapshot_seq?: number } } | undefined)
+            ?.meta
+          const lastSnap = (meta?.last_snapshot_seq as number) ?? 0
+          if (typeof baseSeq === 'number' && baseSeq < lastSnap) isStale = true
+          break
+        }
+        if (isStale) {
+          opApplied = false
+          break
+        }
+
+        // STORE-RULE-3: skipEmit blocks emit; mutates local state only.
+        if ('graphParamSet' in store) {
+          ;(store as unknown as {
+            graphParamSet: (
+              id: string,
+              name: string,
+              value: number,
+              opts?: { skipEmit?: boolean },
+            ) => void
+          }).graphParamSet(assetId, name, value, { skipEmit: true })
+        }
+        break
+      }
+
+      // Phase G2 (2026-05-06): interactive points — ONLY graph_point_set
+      // (granular drag delta). add/delete arrive як asset_update snapshot.
+      case 'graph_point_set': {
+        const assetId = payload.asset_id as string | undefined
+        const id = payload.id as string | undefined
+        const x = payload.x as number | undefined
+        const y = payload.y as number | undefined  // optional (onCurve omits y)
+        const baseSeq = payload.base_seq as number | undefined
+        if (!assetId || !id || typeof x !== 'number') break
+        // Race guard: drop if base_seq < current last_snapshot_seq
+        let isStale = false
+        for (const page of store.pages) {
+          const a = page.assets.find((x2) => x2.id === assetId)
+          if (!a) continue
+          if (a.type !== 'graph_calculator') break
+          const meta = (a.data as { meta?: { last_snapshot_seq?: number } } | undefined)?.meta
+          const lastSnap = (meta?.last_snapshot_seq as number) ?? 0
+          if (typeof baseSeq === 'number' && baseSeq < lastSnap) isStale = true
+          break
+        }
+        if (isStale) { opApplied = false; break }
+        if ('graphPointSet' in store) {
+          ;(store as any).graphPointSet(assetId, id, x, y, { skipEmit: true })
         }
         break
       }

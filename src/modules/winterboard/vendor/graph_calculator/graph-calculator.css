@@ -1,0 +1,85 @@
+/* Graph Calculator — styles. Reuses palette tokens from styles.css when present. */
+.gc-card{background:var(--paper,#fffaf0);border:1px solid var(--line,rgba(43,33,24,0.14));border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--shadow-1,0 1px 2px rgba(43,33,24,0.06),0 4px 16px rgba(43,33,24,0.07));}
+.gc-card .gc-head{display:flex;align-items:center;gap:10px;padding:12px 14px 10px;border-bottom:1px solid var(--line,rgba(43,33,24,0.14));}
+.gc-card .gc-head .grip{font-family:'JetBrains Mono',monospace;color:var(--ink-3,#8a7860);letter-spacing:-2px;font-size:14px;cursor:grab;}
+.gc-card .gc-title{font-size:15px;font-weight:600;flex:1;letter-spacing:-0.01em;}
+.gc-card .gc-meta{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--ink-3,#8a7860);}
+.gc-card .gc-expand{background:transparent;border:1px solid var(--line,rgba(43,33,24,0.14));border-radius:6px;width:28px;height:28px;cursor:pointer;color:var(--ink-2,#5a4a3a);font-size:14px;display:grid;place-items:center;}
+.gc-card .gc-expand:hover{background:var(--accent-soft,#f3d9c2);border-color:var(--accent,#c4622a);color:var(--accent,#c4622a);}
+
+.gc-body{display:grid;grid-template-columns:240px 1fr;min-height:340px;}
+.gc-body.compact{grid-template-columns:200px 1fr;min-height:280px;}
+.gc-body.stacked{grid-template-columns:1fr;}
+
+/* Expressions panel */
+.gc-panel{border-right:1px solid var(--line,rgba(43,33,24,0.14));background:linear-gradient(180deg,rgba(244,237,224,0.4),rgba(244,237,224,0.7));display:flex;flex-direction:column;min-width:0;}
+.gc-list{flex:1;overflow-y:auto;padding:0;list-style:none;margin:0;}
+.gc-row{display:grid;grid-template-columns:24px 1fr 24px;gap:6px;align-items:start;padding:8px 8px 8px 6px;border-bottom:1px solid var(--line,rgba(43,33,24,0.14));position:relative;}
+.gc-row.invalid{background:rgba(168,58,91,0.06);}
+.gc-row.needs{background:rgba(196,98,42,0.08);}
+.gc-swatch{width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(43,33,24,0.18);margin-top:8px;cursor:pointer;justify-self:center;}
+.gc-swatch.hidden{background:transparent !important;border-color:rgba(43,33,24,0.18);box-shadow:0 0 0 1px rgba(43,33,24,0.18) inset;}
+.gc-input-wrap{display:flex;flex-direction:column;gap:4px;min-width:0;}
+.gc-input{font-family:'JetBrains Mono',monospace;font-size:13px;border:1px solid transparent;background:transparent;padding:6px 6px;border-radius:5px;outline:none;color:var(--ink,#2b2118);width:100%;min-width:0;}
+.gc-input:focus{border-color:var(--accent,#c4622a);background:#fff;}
+.gc-error{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#a83a5b;line-height:1.3;padding:0 4px;}
+.gc-tag{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3,#8a7860);padding:0 4px;text-transform:uppercase;letter-spacing:0.06em;}
+
+/* Suggestion to convert unknown variable → parameter slider */
+.gc-suggest{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:4px 4px 2px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-2,#5a4a3a);}
+.gc-suggest-txt{color:var(--ink-2,#5a4a3a);}
+.gc-suggest-btn{display:inline-flex;align-items:center;gap:4px;background:var(--accent,#c4622a);color:#fffaf0;border:0;border-radius:999px;padding:3px 9px 3px 4px;font-family:inherit;font-size:11px;cursor:pointer;font-weight:600;}
+.gc-suggest-btn .ck{display:inline-grid;place-items:center;width:14px;height:14px;border-radius:50%;background:rgba(255,250,240,0.25);font-size:12px;line-height:1;}
+.gc-suggest-btn:hover{filter:brightness(1.08);}
+
+/* Param row: animate (▶) button + slider + value + range bounds */
+.gc-play{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;border:1px solid var(--line,rgba(43,33,24,0.14));background:var(--paper,#fffaf0);font-size:10px;color:var(--ink-2,#5a4a3a);cursor:pointer;font-family:inherit;padding:0;line-height:1;flex-shrink:0;}
+.gc-play.on{background:var(--accent,#c4622a);color:#fffaf0;border-color:var(--accent,#c4622a);}
+.gc-play:hover{border-color:var(--line-2,rgba(43,33,24,0.28));}
+.gc-lab{font-weight:600;color:var(--ink,#2b2118);}
+.gc-del{background:transparent;border:0;color:var(--ink-3,#8a7860);font-size:18px;line-height:1;cursor:pointer;padding:6px 4px 0;justify-self:end;opacity:0;transition:opacity 0.15s;}
+.gc-row:hover .gc-del{opacity:1;}
+.gc-del:hover{color:#a83a5b;}
+
+/* Param row: slider replaces input on hover-out (always visible below) */
+.gc-row.param .gc-input-wrap{gap:2px;}
+.gc-slider-row{display:flex;align-items:center;gap:6px;padding:0 4px 2px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-2,#5a4a3a);}
+.gc-slider-row .gc-rng{flex:1;height:3px;appearance:none;background:rgba(43,33,24,0.16);border-radius:2px;outline:none;min-width:0;}
+.gc-slider-row .gc-rng::-webkit-slider-thumb{appearance:none;width:12px;height:12px;background:var(--accent,#c4622a);border-radius:50%;cursor:pointer;border:2px solid var(--paper,#fffaf0);}
+.gc-slider-row .gc-val{font-variant-numeric:tabular-nums;min-width:36px;text-align:right;color:var(--ink,#2b2118);}
+.gc-bounds{display:flex;align-items:center;gap:3px;}
+.gc-bounds input{width:32px;font-family:inherit;font-size:10.5px;border:1px solid var(--line,rgba(43,33,24,0.14));border-radius:3px;padding:1px 2px;background:rgba(255,250,240,0.6);color:var(--ink-2,#5a4a3a);text-align:center;}
+.gc-bounds input:focus{outline:none;border-color:var(--accent,#c4622a);}
+
+.gc-add{display:flex;align-items:stretch;padding:0;border-bottom:1px solid var(--line,rgba(43,33,24,0.14));background:rgba(255,250,240,0.5);}
+.gc-add-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;background:var(--ink,#2b2118);color:var(--paper,#fffaf0);border:0;padding:12px 14px;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:500;cursor:pointer;letter-spacing:0.02em;transition:background 0.15s;}
+.gc-add-btn:hover{background:var(--accent,#c4622a);}
+.gc-add-plus{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--paper,#fffaf0);color:var(--ink,#2b2118);font-size:14px;font-weight:600;line-height:1;}
+.gc-add-btn:hover .gc-add-plus{background:#fffaf0;color:var(--accent,#c4622a);}
+
+/* Param row swatch — slider icon, no color */
+.gc-swatch.param-icon{cursor:default;background:transparent !important;border:1px solid var(--line,rgba(43,33,24,0.14));display:inline-grid;place-items:center;}
+.gc-hint{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3,#8a7860);padding:6px 10px 8px;line-height:1.5;border-top:1px solid var(--line,rgba(43,33,24,0.14));background:rgba(244,237,224,0.4);}
+
+/* Plot canvas area */
+.gc-plot{position:relative;min-height:0;min-width:0;overflow:hidden;background:var(--paper,#fffaf0);}
+.gc-root{position:relative;width:100%;height:100%;min-height:0;min-width:0;}
+.gc-canvas{display:block;position:absolute;inset:0;width:100%;height:100%;cursor:grab;}
+.gc-zoom{position:absolute;top:8px;right:8px;display:flex;flex-direction:column;gap:3px;}
+.gc-zb{width:28px;height:28px;border:1px solid var(--line,rgba(43,33,24,0.14));background:rgba(255,250,240,0.85);backdrop-filter:blur(4px);border-radius:6px;cursor:pointer;font-size:14px;color:var(--ink,#2b2118);font-family:inherit;}
+.gc-zb:hover{background:#fff;border-color:var(--line-2,rgba(43,33,24,0.28));}
+
+/* Color swatch popover */
+.gc-cpop{position:absolute;background:#fff;border:1px solid var(--line,rgba(43,33,24,0.14));border-radius:8px;padding:6px;display:grid;grid-template-columns:repeat(4,18px);gap:4px;box-shadow:var(--shadow-2,0 12px 40px rgba(43,33,24,0.18));z-index:30;}
+.gc-cpop button{width:18px;height:18px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(43,33,24,0.18);cursor:pointer;padding:0;}
+.gc-cpop button:hover{transform:scale(1.15);}
+
+/* Compact mode (board item) */
+.gc-card.gc-mini{box-shadow:none;border:0;border-radius:0;}
+.gc-card.gc-mini .gc-head{display:none;}
+.gc-card.gc-mini .gc-body{min-height:0;height:100%;grid-template-columns:160px 1fr;}
+.gc-card.gc-mini .gc-input{font-size:11px;padding:4px;}
+.gc-card.gc-mini .gc-row{padding:4px 4px 4px 4px;}
+.gc-card.gc-mini .gc-hint{display:none;}
+.gc-card.gc-mini .gc-zb{width:22px;height:22px;font-size:12px;}
+.gc-card.gc-mini .gc-tag{display:none;}

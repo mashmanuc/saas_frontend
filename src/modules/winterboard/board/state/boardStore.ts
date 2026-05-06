@@ -1389,6 +1389,453 @@ export const useWBStore = defineStore('wb-board', {
       }
     },
 
+    /**
+     * Phase G (2026-05-06) — graph_calculator high-frequency param delta.
+     *
+     * Per OPS_SYNC_SSOT.md INV-21 + STORE-RULES 1-10:
+     *   - STORE-RULE-1: base_seq читається з asset.data.meta.last_snapshot_seq
+     *   - STORE-RULE-2: local mutation BEFORE emit (UI immediate)
+     *   - STORE-RULE-3: skipEmit fully gates emit (replay path)
+     *   - STORE-RULE-4: NEVER triggers updateAsset/snapshot
+     *   - STORE-RULE-5/8: throttle/coalesce — caller responsibility (renderer)
+     *   - STORE-RULE-9: no read-back from engine; works with asset.data.state
+     *
+     * No undo history (per analogous geometry_vertex_move pattern AD-2 — undo
+     * handled via undo_group on slider release if needed; param flow ephemeral).
+     */
+    graphParamSet(
+      assetId: string,
+      name: string,
+      value: number,
+      opts?: { skipEmit?: boolean },
+    ): void {
+      // HARD SPEC: graph_param_set mutates ONLY params[name].value.
+      let foundAsset: WBAsset | undefined
+      let foundPageId = ''
+      for (const page of this.pages) {
+        const a = page.assets.find((x) => x.id === assetId)
+        if (a) {
+          foundAsset = a
+          foundPageId = page.id ?? ''
+          break
+        }
+      }
+      if (!foundAsset) return
+      if (foundAsset.type !== 'graph_calculator') return
+      if (!Number.isFinite(value)) return
+
+      const data = (foundAsset.data ?? {}) as {
+        version?: number
+        state?: {
+          params?: Record<string, { value: number; min: number; max: number; step: number }>
+          expressions?: unknown[]
+          viewport?: unknown
+        }
+        meta?: { last_snapshot_seq?: number }
+      }
+      const baseSeq = (data.meta?.last_snapshot_seq as number) ?? 0
+
+      if (!data.state) {
+        ;(foundAsset as { data: typeof data }).data = {
+          version: 1,
+          state: { expressions: [], params: {}, viewport: { cx: 0, cy: 0, scale: 38 } as unknown },
+          ...(data.meta ? { meta: data.meta } : {}),
+        }
+      }
+      const state = (foundAsset.data as {
+        state: { params: Record<string, { value: number; min: number; max: number; step: number }> }
+      }).state
+      if (!state.params || typeof state.params !== 'object') state.params = {}
+
+      // INV: mutate ONLY .value. If entry missing — defensive create (replay
+      // path safety: snapshot+param_set might arrive у тому самому batch і
+      // applier could process param_set first if asset_update RAF не flushed).
+      const entry = state.params[name]
+      if (!entry || typeof entry !== 'object') {
+        state.params[name] = { value, min: -10, max: 10, step: 0.1 }
+      } else {
+        entry.value = value
+      }
+      this.markDirty()
+
+      if (this.mode === 'edit' && !opts?.skipEmit) {
+        _emitOperation({
+          op_type: 'graph_param_set',
+          page_id: foundPageId,
+          payload: {
+            asset_id: assetId,
+            name,
+            value,
+            base_seq: baseSeq,
+          },
+          timestamp: Date.now(),
+        })
+      }
+    },
+
+    /**
+     * Phase G (refactored 2026-05-06) — sync `state.params` to match the set
+     * of currently used variables from expressions.
+     *
+     * **CRITICAL ARCHITECTURE RULE:** `params` is derived state from
+     * `expressions`. Renderer detects used variables on expression commit
+     * (blur / Enter / remove) and emits `param-sync` with the canonical list.
+     * This action:
+     *   - Adds missing names with `defaultValue=1` (preserve existing values)
+     *   - Removes names not present у `usedNames`
+     *   - Emits ONE asset_update snapshot if anything changed (no-op if same)
+     *
+     * Replaces the old `graphAddParam` (which violated SSoT — params could
+     * outlive their expressions, no auto-cleanup).
+     *
+     * Snapshot path ensures BE materialization stamps new `last_snapshot_seq`
+     * → subsequent `graph_param_set` ops have valid `base_seq` (inv-21.12).
+     */
+    graphSyncParams(
+      assetId: string,
+      usedNames: ReadonlyArray<string>,
+      opts?: { skipEmit?: boolean; defaultValue?: number },
+    ): void {
+      let foundAsset: WBAsset | undefined
+      let foundPageIndex = -1
+      for (let i = 0; i < this.pages.length; i++) {
+        const a = this.pages[i].assets.find((x) => x.id === assetId)
+        if (a) { foundAsset = a; foundPageIndex = i; break }
+      }
+      if (!foundAsset || foundAsset.type !== 'graph_calculator') return
+
+      type ParamEntry = { value: number; min: number; max: number; step: number }
+      const data = (foundAsset.data ?? {}) as {
+        version?: number
+        state?: { expressions?: unknown[]; params?: Record<string, ParamEntry>; viewport?: unknown }
+        meta?: { last_snapshot_seq?: number }
+      }
+      if (!data.state) {
+        ;(foundAsset as { data: typeof data }).data = {
+          version: 1,
+          state: { expressions: [], params: {}, viewport: { cx: 0, cy: 0, scale: 38 } as unknown },
+          ...(data.meta ? { meta: data.meta } : {}),
+        }
+      }
+      const state = (foundAsset.data as { state: { params: Record<string, ParamEntry> } }).state
+      if (!state.params || typeof state.params !== 'object') state.params = {}
+
+      const used = new Set(usedNames)
+      const current = state.params
+      const next: Record<string, ParamEntry> = {}
+      let changed = false
+
+      const DEFAULT_PARAM: ParamEntry = { value: 1, min: -10, max: 10, step: 0.1 }
+
+      // HARD SPEC INV-2: FULL REPLACE. Preserve full entry (value+range)
+      // for names still used; create defaults for new; drop unused.
+      for (const name of usedNames) {
+        const e = current[name]
+        if (e && typeof e === 'object'
+            && Number.isFinite(e.value)
+            && Number.isFinite(e.min)
+            && Number.isFinite(e.max)
+            && Number.isFinite(e.step)) {
+          next[name] = e  // preserve
+        } else {
+          next[name] = { ...DEFAULT_PARAM }
+          changed = true
+        }
+      }
+      for (const name of Object.keys(current)) {
+        if (!used.has(name)) changed = true
+      }
+      if (!changed) return
+
+      if (opts?.skipEmit) {
+        state.params = next
+        this.markDirty()
+        if (foundPageIndex >= 0) {
+          this.pages[foundPageIndex] = { ...this.pages[foundPageIndex] }
+        }
+        return
+      }
+
+      // Edit path: snapshot via updateAsset → emit asset_update
+      // (assetUpdateBatcher → _applyAssetUpdate → _emitOperation).
+      const snapshot: WBAsset = {
+        ...foundAsset,
+        data: {
+          ...(foundAsset.data || {}),
+          version: 1 as const,
+          state: {
+            ...((foundAsset.data as any).state || {}),
+            params: next,
+          },
+        } as any,
+      }
+      this.updateAsset(snapshot, { skipHistory: true })
+    },
+
+    /**
+     * Phase G — set per-param slider range {min, max, step}.
+     * User-driven via inline range editor у renderer's params section.
+     * Emits ONE asset_update snapshot if range actually changed.
+     *
+     * Validates: finite floats, min < max, step > 0; rejects malformed
+     * silently (no emit, no mutation).
+     */
+    graphSetParamRange(
+      assetId: string,
+      name: string,
+      range: { min: number; max: number; step: number },
+      opts?: { skipEmit?: boolean },
+    ): void {
+      // Validate
+      if (!range || typeof range !== 'object') return
+      const { min, max, step } = range
+      if (![min, max, step].every((v) => typeof v === 'number' && Number.isFinite(v))) return
+      if (min >= max) return
+      if (step <= 0) return
+
+      let foundAsset: WBAsset | undefined
+      let foundPageIndex = -1
+      for (let i = 0; i < this.pages.length; i++) {
+        const a = this.pages[i].assets.find((x) => x.id === assetId)
+        if (a) { foundAsset = a; foundPageIndex = i; break }
+      }
+      if (!foundAsset || foundAsset.type !== 'graph_calculator') return
+
+      type ParamEntry = { value: number; min: number; max: number; step: number }
+      const data = (foundAsset.data ?? {}) as {
+        version?: number
+        state?: { expressions?: unknown[]; params?: Record<string, ParamEntry>; viewport?: unknown }
+        meta?: { last_snapshot_seq?: number }
+      }
+      if (!data.state) return
+      const state = data.state
+      const existing = state.params?.[name]
+      // Param must exist у state.params (sync first via expressions).
+      if (!existing || typeof existing !== 'object') return
+      if (existing.min === min && existing.max === max && existing.step === step) {
+        return // no-op
+      }
+
+      // HARD SPEC: range_set updates ONLY .min/.max/.step (preserve .value).
+      // Clamp value to new range if поза bounds.
+      const clampedValue = Math.min(Math.max(existing.value, min), max)
+      const nextEntry: ParamEntry = { value: clampedValue, min, max, step }
+
+      if (opts?.skipEmit) {
+        state.params[name] = nextEntry
+        this.markDirty()
+        if (foundPageIndex >= 0) {
+          this.pages[foundPageIndex] = { ...this.pages[foundPageIndex] }
+        }
+        return
+      }
+
+      const snapshot: WBAsset = {
+        ...foundAsset,
+        data: {
+          ...(foundAsset.data || {}),
+          version: 1 as const,
+          state: {
+            ...state,
+            params: { ...state.params, [name]: nextEntry },
+          },
+        } as any,
+      }
+      this.updateAsset(snapshot, { skipHistory: true })
+    },
+
+    /**
+     * Phase G2 (2026-05-06) — interactive point actions.
+     * graphPointAdd / graphPointDelete = snapshot trigger (asset_update).
+     * graphPointSet = high-frequency drag delta (graph_point_set op).
+     */
+    graphPointAdd(
+      assetId: string,
+      pointId: string,
+      x: number,
+      y: number,
+      mode: 'free' | 'onCurve',
+      curveExprId?: string,
+      opts?: { skipEmit?: boolean },
+    ): void {
+      // HARD RULE (review #4): one user action → ONE op. add = SNAPSHOT only
+      // (asset_update), NEVER paired granular emit. Dual emit creates ghost
+      // points у replay log.
+      if (!Number.isFinite(x)) return
+      if (mode === 'onCurve' && !curveExprId) return
+      // y validation only for 'free' mode; onCurve y derived at render.
+      if (mode === 'free' && !Number.isFinite(y)) return
+      let foundAsset: WBAsset | undefined
+      for (const page of this.pages) {
+        const a = page.assets.find((x) => x.id === assetId)
+        if (a) { foundAsset = a; break }
+      }
+      if (!foundAsset || foundAsset.type !== 'graph_calculator') return
+      const data = (foundAsset.data ?? {}) as any
+      const state = data.state ?? {}
+      const points = { ...(state.points || {}) }
+      const entry: { x: number; y?: number; mode: 'free' | 'onCurve'; curveExprId?: string } = {
+        x, mode,
+      }
+      if (mode === 'free') entry.y = y
+      if (mode === 'onCurve' && curveExprId) entry.curveExprId = curveExprId
+      points[pointId] = entry
+      const snapshot: WBAsset = {
+        ...foundAsset,
+        data: { ...data, version: 1, state: { ...state, points } } as any,
+      }
+      if (opts?.skipEmit) {
+        ;(foundAsset as any).data = snapshot.data
+        this.markDirty()
+        return
+      }
+      // Snapshot via updateAsset → emit asset_update. NO granular point_add op.
+      this.updateAsset(snapshot, { skipHistory: true })
+    },
+
+    graphPointSet(
+      assetId: string,
+      pointId: string,
+      x: number,
+      y: number | undefined,
+      opts?: { skipEmit?: boolean },
+    ): void {
+      // y is OPTIONAL: omitted for onCurve points (Y derived from curveExprId
+      // at render time). Required for free mode.
+      if (!Number.isFinite(x)) return
+      let foundAsset: WBAsset | undefined
+      let foundPageId = ''
+      for (const page of this.pages) {
+        const a = page.assets.find((x) => x.id === assetId)
+        if (a) { foundAsset = a; foundPageId = page.id ?? ''; break }
+      }
+      if (!foundAsset || foundAsset.type !== 'graph_calculator') return
+      const data = (foundAsset.data ?? {}) as any
+      const baseSeq = (data.meta?.last_snapshot_seq as number) ?? 0
+      const points = data.state?.points
+      if (!points || typeof points !== 'object') return
+      const entry = points[pointId]
+      if (!entry || typeof entry !== 'object') return
+      // Mutate x always; mutate y only for free mode (onCurve y is derived).
+      entry.x = x
+      if (entry.mode !== 'onCurve' && Number.isFinite(y)) entry.y = y as number
+      this.markDirty()
+      if (this.mode === 'edit' && !opts?.skipEmit) {
+        const payload: Record<string, unknown> = {
+          asset_id: assetId, id: pointId, x, base_seq: baseSeq,
+        }
+        if (entry.mode !== 'onCurve' && Number.isFinite(y)) payload.y = y
+        _emitOperation({
+          op_type: 'graph_point_set',
+          page_id: foundPageId,
+          payload,
+          timestamp: Date.now(),
+        })
+      }
+    },
+
+    /**
+     * Phase G3 review (2026-05-06) — promote free point → onCurve.
+     * Triggered by drag-release when snap-to-curve detected. Removes stored
+     * y (derived at render from curveExprId), sets mode='onCurve'. Snapshot
+     * via updateAsset (single source of truth).
+     */
+    graphPointPromote(
+      assetId: string,
+      pointId: string,
+      curveExprId: string,
+      opts?: { skipEmit?: boolean },
+    ): void {
+      if (!curveExprId) return
+      let foundAsset: WBAsset | undefined
+      for (const page of this.pages) {
+        const a = page.assets.find((x) => x.id === assetId)
+        if (a) { foundAsset = a; break }
+      }
+      if (!foundAsset || foundAsset.type !== 'graph_calculator') return
+      const data = (foundAsset.data ?? {}) as any
+      const points = data.state?.points
+      if (!points || !points[pointId]) return
+      const cur = points[pointId]
+      // No-op якщо already onCurve з same curve
+      if (cur.mode === 'onCurve' && cur.curveExprId === curveExprId) return
+
+      const next = { ...points, [pointId]: { x: cur.x, mode: 'onCurve', curveExprId } }
+      const snapshot: WBAsset = {
+        ...foundAsset,
+        data: { ...data, version: 1, state: { ...data.state, points: next } } as any,
+      }
+      if (opts?.skipEmit) {
+        ;(foundAsset as any).data = snapshot.data
+        this.markDirty()
+        return
+      }
+      this.updateAsset(snapshot, { skipHistory: true })
+    },
+
+    graphPointDelete(
+      assetId: string,
+      pointId: string,
+      opts?: { skipEmit?: boolean },
+    ): void {
+      // HARD RULE (review #4): delete = SNAPSHOT only (asset_update),
+      // NEVER paired granular emit.
+      let foundAsset: WBAsset | undefined
+      for (const page of this.pages) {
+        const a = page.assets.find((x) => x.id === assetId)
+        if (a) { foundAsset = a; break }
+      }
+      if (!foundAsset || foundAsset.type !== 'graph_calculator') return
+      const data = (foundAsset.data ?? {}) as any
+      const points = data.state?.points
+      if (!points || !points[pointId]) return
+      const nextPoints = { ...points }
+      delete nextPoints[pointId]
+      const snapshot: WBAsset = {
+        ...foundAsset,
+        data: { ...data, version: 1, state: { ...data.state, points: nextPoints } } as any,
+      }
+      if (opts?.skipEmit) {
+        ;(foundAsset as any).data = snapshot.data
+        this.markDirty()
+        return
+      }
+      // Snapshot via updateAsset only — NO granular point_delete op.
+      this.updateAsset(snapshot, { skipHistory: true })
+    },
+
+    /**
+     * Phase G inv-21.12 — stamp `meta.last_snapshot_seq` after replay applier
+     * applies an asset_add / asset_update for a graph_calculator asset. Mirrors
+     * BE-side `_stamp_graph_calculator_snapshot_seq` у diff.py — gives FE the
+     * same race-protection signal during local replay (replay applier never
+     * сходить через BE materialization так що цей stamp потрібен тут).
+     *
+     * Monotonic: NEVER decreases (multi-worker race protection).
+     * No emit (replay path only).
+     */
+    stampGraphCalculatorSnapshotSeq(assetId: string, seq: number): void {
+      if (!Number.isInteger(seq) || seq <= 0) return
+      for (const page of this.pages) {
+        const asset = page.assets.find((a) => a.id === assetId)
+        if (!asset) continue
+        if (asset.type !== 'graph_calculator') return
+        const data = (asset.data ?? {}) as {
+          version?: number
+          state?: unknown
+          meta?: { last_snapshot_seq?: number }
+        }
+        if (!asset.data) {
+          ;(asset as { data: typeof data }).data = { version: 1 } as typeof data
+        }
+        const dRef = asset.data as { meta?: { last_snapshot_seq?: number } }
+        if (!dRef.meta) dRef.meta = {}
+        const cur = (dRef.meta.last_snapshot_seq as number) ?? 0
+        if (seq > cur) dRef.meta.last_snapshot_seq = seq
+        return
+      }
+    },
+
     deleteAsset(assetId: string, opts?: { skipHistory?: boolean }): void {
       const pageIndex = this.currentPageIndex
       const page = this.pages[pageIndex]

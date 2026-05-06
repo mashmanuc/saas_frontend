@@ -125,12 +125,23 @@ export function assetsEqualByOpsFields(a: WBAsset, b: WBAsset): boolean {
     }
   }
 
-  // data envelope (Phase O SolidAssetData)
+  // data envelope (Phase O SolidAssetData / Phase G GraphCalculatorData)
   const aData = a.data
   const bData = b.data
   if (aData !== bData) {
     if (!aData || !bData) return false  // one is undefined, other is set
     if (aData.version !== bData.version) return false
+    // Phase G: graph_calculator state shape ≠ SolidAssetState. Diff via
+    // JSON stringify (state ≤ 64KB per inv-21 constraints, ≤ 32 expressions,
+    // ≤ 16 params — cheap enough; no false-positive risk per fail-safe contract).
+    if (a.type === 'graph_calculator' || b.type === 'graph_calculator') {
+      try {
+        // Compare full data (state + meta) bo meta.last_snapshot_seq teж relevant.
+        return JSON.stringify(aData) === JSON.stringify(bData)
+      } catch {
+        return false
+      }
+    }
     const aState = aData.state
     const bState = bData.state
     if (aState !== bState) {

@@ -190,6 +190,8 @@ export interface WBAsset {
     | 'document_viewer'
     | 'geometry_2d'
     | 'geometry_solid'
+    /** Phase G (2026-05-05) — interactive graph_calculator per OPS_SYNC_SSOT INV-21 */
+    | 'graph_calculator'
   /**
    * Asset source descriptor.
    * - URL для image/audio/video/document_viewer
@@ -259,14 +261,18 @@ export interface WBAsset {
   /**
    * Phase O (SSOT §3.7.1): geometry_solid persisted state envelope.
    * MUST be present when `type === 'geometry_solid'`.
+   * Phase G (INV-21): graph_calculator data envelope.
    * Версіонується для replay schema migrations.
    *
    * Type-safe access pattern:
    *   if (asset.type === 'geometry_solid' && asset.data) {
-   *     const state = asset.data.state // SolidAssetState
+   *     const state = asset.data.state as SolidAssetState
+   *   }
+   *   if (asset.type === 'graph_calculator' && asset.data) {
+   *     const state = asset.data.state as GraphCalculatorState
    *   }
    */
-  data?: SolidAssetData
+  data?: SolidAssetData | import('./graphCalculator').GraphCalculatorData
 }
 
 /**
