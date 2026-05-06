@@ -31,11 +31,18 @@
       @drop="handleDrop(index, $event)"
       @dragend="handleDragEnd"
     >
-      <!-- Thumbnail canvas preview -->
+      <!-- Thumbnail canvas preview.
+           BUG FIX 2026-05-06: ref keyed by page.id (stable), not index.
+           Index-keyed refs raced коли pages.splice() insert у середину/край:
+           Vue cleanup callback `setCanvasRef(null, oldIndex)` спрацьовував
+           ПІСЛЯ `setCanvasRef(newCanvas, oldIndex)` для нової сторінки →
+           canvasMap.delete(oldIndex) стирав щойно записану нову canvas →
+           thumbnail для нової/перенесеної сторінки ніколи не малювався.
+           Stable page.id eliminates race. -->
       <canvas
-        :ref="(el) => setCanvasRef(el as HTMLCanvasElement | null, index)"
+        :ref="(el) => setCanvasRef(el as HTMLCanvasElement | null, page.id)"
         class="wb-thumbnail__canvas"
-        :data-page-index="index"
+        :data-page-id="page.id"
         :width="THUMB_W"
         :height="THUMB_H"
       />
@@ -130,16 +137,21 @@ const emit = defineEmits<{
   'asset-drop': [pageIndex: number, payload: SidebarDragPayload]
 }>()
 
-// FIX: Use indexed Map instead of template ref array.
-// Vue 3 does NOT guarantee ref array order matches v-for order.
-// This caused thumbnails to render wrong page content (visual page reversal).
-const canvasMap = new Map<number, HTMLCanvasElement>()
+// FIX 2026-05-06: Map keyed by page.id (stable), NOT by index.
+// Index-keyed Map raced при pages.splice() insert у середину:
+// Vue ref cleanup callback `setCanvasRef(null, oldIndex)` для перенесеного
+// canvas-у спрацьовував ПІСЛЯ `setCanvasRef(newCanvas, oldIndex)` для свіжо-
+// вставленої сторінки → canvasMap.delete(oldIndex) стирав щойно записану
+// нову canvas → thumbnail для нової сторінки ніколи не малювався.
+// Stable page.id key eliminates race — Vue cleanup для page-X завжди
+// видаляє canvasMap[page-X-id] (правильний slot, не shared).
+const canvasMap = new Map<string, HTMLCanvasElement>()
 
-function setCanvasRef(el: HTMLCanvasElement | null, index: number): void {
+function setCanvasRef(el: HTMLCanvasElement | null, pageId: string): void {
   if (el) {
-    canvasMap.set(index, el)
+    canvasMap.set(pageId, el)
   } else {
-    canvasMap.delete(index)
+    canvasMap.delete(pageId)
   }
 }
 
@@ -288,50 +300,59 @@ function scheduleRender(): void {
 }
 
 // ─── Lazy rendering: only render thumbnails visible in the scrollable sidebar ─
-const visibleIndices = new Set<number>()
+// FIX 2026-05-06: visibleIds keyed by page.id (stable), не by index.
+// Reorder/insert у v-for раніше робив stale dataset.pageIndex.
+const visibleIds = new Set<string>()
 let observer: IntersectionObserver | null = null
+
+function pageById(id: string) {
+  return props.pages.find(p => p.id === id)
+}
 
 function setupObserver(): void {
   if (observer) observer.disconnect()
   observer = new IntersectionObserver(
     (entries) => {
       for (const entry of entries) {
-        const idx = Number((entry.target as HTMLElement).dataset.pageIndex)
-        if (Number.isNaN(idx)) continue
+        const id = (entry.target as HTMLElement).dataset.pageId
+        if (!id) continue
         if (entry.isIntersecting) {
-          visibleIndices.add(idx)
+          visibleIds.add(id)
           // Render this thumbnail immediately
-          const canvas = canvasMap.get(idx)
-          if (canvas && props.pages[idx]) {
-            renderThumbnail(canvas, props.pages[idx])
+          const canvas = canvasMap.get(id)
+          const page = pageById(id)
+          if (canvas && page) {
+            renderThumbnail(canvas, page)
           }
         } else {
-          visibleIndices.delete(idx)
+          visibleIds.delete(id)
         }
       }
     },
     { rootMargin: '100px 0px', threshold: 0 },
   )
   // Observe all canvas elements
-  for (const [idx, canvas] of canvasMap) {
-    canvas.dataset.pageIndex = String(idx)
+  for (const [id, canvas] of canvasMap) {
+    canvas.dataset.pageId = id
     observer.observe(canvas)
   }
 }
 
 function renderVisibleThumbnails(): void {
   // Only re-render thumbnails currently visible (or near-visible)
-  for (const idx of visibleIndices) {
-    const canvas = canvasMap.get(idx)
-    if (canvas && props.pages[idx]) {
-      renderThumbnail(canvas, props.pages[idx])
+  for (const id of visibleIds) {
+    const canvas = canvasMap.get(id)
+    const page = pageById(id)
+    if (canvas && page) {
+      renderThumbnail(canvas, page)
     }
   }
   // Always render current page thumbnail (even if scrolled out of view)
-  if (!visibleIndices.has(props.currentIndex)) {
-    const canvas = canvasMap.get(props.currentIndex)
-    if (canvas && props.pages[props.currentIndex]) {
-      renderThumbnail(canvas, props.pages[props.currentIndex])
+  const currentPage = props.pages[props.currentIndex]
+  if (currentPage && !visibleIds.has(currentPage.id)) {
+    const canvas = canvasMap.get(currentPage.id)
+    if (canvas) {
+      renderThumbnail(canvas, currentPage)
     }
   }
 }
@@ -347,14 +368,14 @@ watch(
   { deep: true }
 )
 
-// Watch for page list changes (add/delete/reorder)
+// Watch for page list changes (add/delete/reorder).
+// FIX 2026-05-06: id-based canvasMap — Vue's ref cleanup callback вже викликає
+// `setCanvasRef(null, deletedPage.id)` для DELETED canvases, тож manual cleanup
+// `canvasMap.delete(key)` НЕ потрібен (раніше робив `key >= newLen` що
+// корумпувало Map при insert). Залишаємо тільки re-observe.
 watch(
-  () => props.pages.length,
-  async (newLen) => {
-    // Clean up stale canvas refs for removed pages
-    for (const key of canvasMap.keys()) {
-      if (key >= newLen) canvasMap.delete(key)
-    }
+  () => props.pages.map(p => p.id).join('|'),
+  async () => {
     await nextTick()
     setupObserver()
   }
