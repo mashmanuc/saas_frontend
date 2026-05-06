@@ -259,23 +259,39 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
 
     const signal = batch?.controller.signal
 
-    // ─── Stage 1: presign (sync) ──────────────────────────────────
+    // ─── Stage 1: presign + blob dim preload IN PARALLEL ──────────
+    //
+    // Bug fix 2026-05-06: попередня версія використовувала hardcoded 300×300
+    // для placeholder → Konva.Image розтягувала landscape/portrait картинки
+    // у квадрат до завершення upload, потім re-layout у correct ratio →
+    // visible "squish then jump" jank.
+    //
+    // Тепер: blob dim preload (~10-50ms — local file decode) запускається
+    // PARALLEL з presign network roundtrip (50-200ms). Effective extra
+    // latency = 0 (preload завершується до presign-у). Placeholder одразу
+    // має правильні пропорції.
+    const blobUrl = URL.createObjectURL(file)
+    const dimsPromise = _imageDimsFromBlob(blobUrl).catch(() => ({ w: 300, h: 300 }))
+
     let meta: PresignedAssetMeta
     try {
       meta = await presignOnly(sid, file, signal)
     } catch (err) {
+      try { URL.revokeObjectURL(blobUrl) } catch { /* */ }
       isUploading.value = false
       _handlePresignFailure(err, file, index, batch)
       return
     }
+
+    // Dims зазвичай готові до цього моменту (presign повільніший за local
+    // image decode), але await на всякий випадок.
+    const dims = await dimsPromise
 
     // ─── Stage 2: build local placeholder з blob URL → INSTANT render ──
     //
     // blob URL живе тільки у FE memory; BE не побачить його — recorder strip-ає
     // blob: → '' у asset_add op payload. Final CDN url прилетить asset_update'ом
     // після successful confirm.
-    const blobUrl = URL.createObjectURL(file)
-    const dims = _imageDimsFromBlob(blobUrl)
 
     const center = canvasCenter()
     const OFFSET_PER_INDEX = 20
@@ -292,23 +308,45 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
     }
 
     onAssetAdd(placeholder)
-    console.info('[BoardClipboard] Image pasted (optimistic)', { assetId: meta.assetId })
+    console.info('[BoardClipboard] Image pasted (optimistic)', { assetId: meta.assetId, w: dims.w, h: dims.h })
 
     // ─── Stage 3: background S3 PUT + confirm (з semaphore) ───────
     void _backgroundUpload(file, meta, blobUrl, dims, placeholder, sid, index, batch, signal)
   }
 
   /**
-   * Helper: read blob URL synchronously для дефолтних розмірів.
-   * Real natural dimensions заглядаються async через preload Image нижче;
-   * тут даємо safe default щоб render одразу.
+   * Async preload natural dimensions з blob URL.
+   *
+   * Local blob decode швидкий (~10-50ms typical) — не додає видимої затримки
+   * бо запускається parallel з presign (50-200ms network). Scale до 300px max
+   * зберігаючи aspect ratio, мінімальний lower bound 1px.
+   *
+   * Caller має ловити reject (network error на blob URL малоймовірно, але
+   * defensive). Fallback до 300×300 на caller-side.
    */
-  function _imageDimsFromBlob(_blobUrl: string): { w: number; h: number } {
-    // Default — Vue/Konva re-layout автоматично коли <img> завантажиться.
-    // Можна було б зробити sync через offscreenCanvas, але overhead не вартий —
-    // користувач все одно бачить картинку у фактичних пропорціях за <50мс
-    // після завантаження blob у Image element.
-    return { w: 300, h: 300 }
+  function _imageDimsFromBlob(blobUrl: string): Promise<{ w: number; h: number }> {
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      img.onload = () => {
+        let w = img.naturalWidth || 0
+        let h = img.naturalHeight || 0
+        if (w <= 0 || h <= 0) {
+          reject(new Error('[BoardClipboard] Invalid blob image dimensions'))
+          return
+        }
+        const maxDim = Math.max(w, h)
+        if (maxDim > 300) {
+          const scale = 300 / maxDim
+          w = Math.round(w * scale)
+          h = Math.round(h * scale)
+        }
+        resolve({ w, h })
+      }
+      img.onerror = () => {
+        reject(new Error('[BoardClipboard] Failed to load blob for dimensions'))
+      }
+      img.src = blobUrl
+    })
   }
 
   /**
@@ -360,16 +398,29 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
 
       // Stage 4: emit asset_update з final URL + status='ready'.
       // Той самий asset.id → INV-14 stable; recorder strip-ає 'status' з payload.
-      const finalAsset: WBAsset = {
-        ...placeholder,
-        src: meta.assetUrl,
-        w: dims.w,
-        h: dims.h,
-        status: 'ready',
-      }
+      //
+      // Bug fix 2026-05-06: якщо CDN-side dims === blob-side dims (typical
+      // case — BE re-encode не змінює resolution), preserve placeholder w/h
+      // У asset_update без зміни. Avoids re-layout flicker (Vue reactivity
+      // на same primitive value не ре-рендерить, але defensive — fewer ops
+      // payload size теж краще).
+      //
+      // src + status MUST update завжди (replay invariant: BE asset_add отримує
+      // blob: → '' від recorder; final CDN url прилітає тільки через цей
+      // asset_update). Тож "skip update entirely" неможливо без порушення
+      // replay determinism — мінімум src swap обов'язковий.
+      const dimsUnchanged = dims.w === placeholder.w && dims.h === placeholder.h
+      const finalAsset: WBAsset = dimsUnchanged
+        ? { ...placeholder, src: meta.assetUrl, status: 'ready' }
+        : { ...placeholder, src: meta.assetUrl, w: dims.w, h: dims.h, status: 'ready' }
       onAssetUpdate(finalAsset)
       _revokeOnce()
-      console.info('[BoardClipboard] Image upload finalized', { assetId: meta.assetId })
+      console.info('[BoardClipboard] Image upload finalized', {
+        assetId: meta.assetId,
+        dimsUnchanged,
+        finalW: finalAsset.w,
+        finalH: finalAsset.h,
+      })
 
       // Dual-write до learning-content (non-critical).
       try {

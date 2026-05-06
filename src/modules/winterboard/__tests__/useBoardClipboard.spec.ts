@@ -799,4 +799,172 @@ describe('useBoardClipboard', () => {
 
     restore()
   })
+
+  // ─── Image dimension preload (Bug fix 2026-05-06: squish-then-jump) ─────
+  //
+  // Before fix: placeholder used hardcoded { w: 300, h: 300 } → landscape /
+  // portrait images squished into squares until upload completed and final
+  // CDN URL preloaded. After fix: blob URL preload reads naturalWidth /
+  // naturalHeight у parallel з presign → placeholder з'являється з
+  // correct ratio з першого render.
+
+  describe('image dimension preload — visual jank fix', () => {
+    function setupPresignAndUpload(assetUrl = 'https://cdn/final.png') {
+      mockPresignOnly.mockResolvedValue({
+        assetId: 'asset-dim-1',
+        assetUrl,
+        isLocal: false,
+        uploadUrl: 'https://s3/dim-1',
+      })
+      mockUploadAndConfirm.mockResolvedValue({ assetUrl })
+    }
+
+    it('landscape image (1920×1080) → placeholder з correct ratio (300×169)', async () => {
+      setupPresignAndUpload()
+      const restore = stubImageGlobal(1920, 1080)
+      const clipboard = createClipboard()
+      await clipboard.handlePaste(makeImageClipboardEvent())
+      await new Promise((r) => setTimeout(r, 50))
+
+      expect(onAssetAdd).toHaveBeenCalledOnce()
+      const placeholder = onAssetAdd.mock.calls[0][0] as WBAsset
+      expect(placeholder.w).toBe(300)
+      expect(placeholder.h).toBe(169) // 1080/1920*300 ≈ 168.75 → 169
+      expect(placeholder.src).toMatch(/^blob:/)
+      expect(placeholder.status).toBe('uploading')
+      restore()
+    })
+
+    it('portrait image (600×1200) → placeholder 150×300', async () => {
+      setupPresignAndUpload()
+      const restore = stubImageGlobal(600, 1200)
+      const clipboard = createClipboard()
+      await clipboard.handlePaste(makeImageClipboardEvent())
+      await new Promise((r) => setTimeout(r, 50))
+
+      const placeholder = onAssetAdd.mock.calls[0][0] as WBAsset
+      expect(placeholder.w).toBe(150)
+      expect(placeholder.h).toBe(300)
+      restore()
+    })
+
+    it('square image (800×800) → placeholder 300×300', async () => {
+      setupPresignAndUpload()
+      const restore = stubImageGlobal(800, 800)
+      const clipboard = createClipboard()
+      await clipboard.handlePaste(makeImageClipboardEvent())
+      await new Promise((r) => setTimeout(r, 50))
+
+      const placeholder = onAssetAdd.mock.calls[0][0] as WBAsset
+      expect(placeholder.w).toBe(300)
+      expect(placeholder.h).toBe(300)
+      restore()
+    })
+
+    it('tiny image (50×50) → placeholder NOT upscaled (stays 50×50)', async () => {
+      setupPresignAndUpload()
+      const restore = stubImageGlobal(50, 50)
+      const clipboard = createClipboard()
+      await clipboard.handlePaste(makeImageClipboardEvent())
+      await new Promise((r) => setTimeout(r, 50))
+
+      const placeholder = onAssetAdd.mock.calls[0][0] as WBAsset
+      expect(placeholder.w).toBe(50)
+      expect(placeholder.h).toBe(50)
+      restore()
+    })
+
+    it('blob preload error → 300×300 fallback (safe default)', async () => {
+      setupPresignAndUpload()
+      // Mock Image yet that fires onerror instead of onload.
+      const orig = globalThis.Image
+      globalThis.Image = class FailingImage {
+        onload: (() => void) | null = null
+        onerror: (() => void) | null = null
+        naturalWidth = 0
+        naturalHeight = 0
+        set src(_v: string) { queueMicrotask(() => this.onerror?.()) }
+      } as unknown as typeof Image
+
+      const clipboard = createClipboard()
+      await clipboard.handlePaste(makeImageClipboardEvent())
+      await new Promise((r) => setTimeout(r, 50))
+
+      const placeholder = onAssetAdd.mock.calls[0][0] as WBAsset
+      expect(placeholder.w).toBe(300)
+      expect(placeholder.h).toBe(300)
+
+      globalThis.Image = orig
+    })
+
+    it('CDN dims === placeholder dims → final asset_update preserves w/h без change', async () => {
+      // Placeholder + CDN both 1920×1080 → scale to 300×169 once. asset_update
+      // має emit src+status зміну, але w/h НЕ повинні змінитись від placeholder.
+      setupPresignAndUpload()
+      const restore = stubImageGlobal(1920, 1080)
+      const clipboard = createClipboard()
+      await clipboard.handlePaste(makeImageClipboardEvent())
+      await new Promise((r) => setTimeout(r, 100))
+
+      const placeholder = onAssetAdd.mock.calls[0][0] as WBAsset
+      const finalAsset = onAssetUpdate.mock.calls[0][0] as WBAsset
+
+      // src + status оновились (replay invariant)
+      expect(finalAsset.src).toBe('https://cdn/final.png')
+      expect(finalAsset.status).toBe('ready')
+      // dims preserved — exactly same primitive values як у placeholder
+      expect(finalAsset.w).toBe(placeholder.w)
+      expect(finalAsset.h).toBe(placeholder.h)
+      expect(finalAsset.w).toBe(300)
+      expect(finalAsset.h).toBe(169)
+      restore()
+    })
+
+    it('CDN dims ≠ placeholder dims (BE re-encode) → asset_update передає нові w/h', async () => {
+      // Edge case: BE може re-encode і повернути іншу resolution. Тоді
+      // asset_update мусить нести нові w/h (no shortcut).
+      setupPresignAndUpload()
+      // First Image instance (blob preload) returns 1920×1080;
+      // second (CDN preload) returns 1280×720 → 300×169 again — same scaled.
+      // Щоб симулювати РІЗНІ scaled dims робимо blob 800×600 → 300×225,
+      // CDN 400×400 → 300×300.
+      let callCount = 0
+      const orig = globalThis.Image
+      globalThis.Image = class MockImage {
+        onload: (() => void) | null = null
+        onerror: (() => void) | null = null
+        naturalWidth = 0
+        naturalHeight = 0
+        set src(_v: string) {
+          callCount++
+          // call 1: blob preload (handleImagePaste) → 800×600
+          // call 2: CDN preload (_backgroundUpload) → 400×400
+          if (callCount === 1) {
+            this.naturalWidth = 800
+            this.naturalHeight = 600
+          } else {
+            this.naturalWidth = 400
+            this.naturalHeight = 400
+          }
+          queueMicrotask(() => this.onload?.())
+        }
+      } as unknown as typeof Image
+
+      const clipboard = createClipboard()
+      await clipboard.handlePaste(makeImageClipboardEvent())
+      await new Promise((r) => setTimeout(r, 100))
+
+      const placeholder = onAssetAdd.mock.calls[0][0] as WBAsset
+      const finalAsset = onAssetUpdate.mock.calls[0][0] as WBAsset
+
+      expect(placeholder.w).toBe(300) // 800→300
+      expect(placeholder.h).toBe(225) // 600→225
+      expect(finalAsset.w).toBe(300) // 400→300 (square scale)
+      expect(finalAsset.h).toBe(300)
+      // dims actually CHANGED — final differs from placeholder
+      expect(finalAsset.h).not.toBe(placeholder.h)
+
+      globalThis.Image = orig
+    })
+  })
 })
