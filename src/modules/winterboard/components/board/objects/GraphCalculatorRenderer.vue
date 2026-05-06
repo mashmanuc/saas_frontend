@@ -292,6 +292,10 @@ const emit = defineEmits<{
 // ─── Refs / state ──────────────────────────────────────────────────────
 const plotEl = ref<HTMLDivElement | null>(null)
 let calc: InstanceType<typeof GraphCalculator> | null = null
+/** Phase G3 hotfix: original engine.setParamValue (pre-monkey-patch). Used
+ *  by onParamDrag to bypass monkey-patch (avoids double-emit).
+ *  Set у mountEngine. */
+let origSetParamRef: ((name: string, value: number) => void) | null = null
 
 /** FE-RULE-4 / FE-RULE-6: suppress onChange echoes during setState. */
 let isApplyingExternalState = false
@@ -667,7 +671,11 @@ function mountEngine() {
   // FE-RULE-9: intercept setParamValue для emit param-set throttled.
   // Vendor's _kickAnimLoop проходить через setParamValue (Phase G patch),
   // тож animation теж генерує param-set ops.
+  // Phase G3 hotfix (2026-05-06): origSetParam exposed via closure so що
+  // onParamDrag callback може mutate engine WITHOUT triggering double emit
+  // (monkey-patched setParamValue would emit too — race з explicit emit).
   const origSetParam = calc.setParamValue.bind(calc)
+  origSetParamRef = origSetParam
   calc.setParamValue = (name: string, value: number) => {
     origSetParam(name, value)
     if (!isApplyingExternalState) {
@@ -709,27 +717,29 @@ function mountEngine() {
     if (!props.interactive) return
     if (isApplyingExternalState) return
     if (!Number.isFinite(value)) return
+    // dp_inv_5: NaN/Infinity → no emit (already guarded above).
     // Early exit якщо delta tiny (UX-INV avoid emit storm).
     const cur = (calc as any).params?.[name]
     const curValue = (cur && typeof cur === 'object' && Number.isFinite(cur.value))
       ? cur.value : (typeof cur === 'number' ? cur : NaN)
     if (Number.isFinite(curValue) && Math.abs(value - curValue) < 1e-4) return
-    // Phase G3 v1.1 polish: visual LERP 0.2 (smooth feel). LERP applies ONLY
-    // to engine.params[name].value (display) — emit goes RAW value (deterministic
-    // replay). Inv: store and ops use unsmoothed; only screen pixels lerped.
-    const LERP = 0.2
-    const lerpedValue = Number.isFinite(curValue)
-      ? curValue + (value - curValue) * LERP
-      : value
-    // Mutate engine (render cache) for immediate visual feedback (lerped).
-    ;(calc as any).setParamValue(name, lerpedValue)
-    // dp_inv_3: floating label показує lerped value (matches what user sees).
-    activeDragParam.value = { name, value: lerpedValue }
-    // Emit RAW target value — deterministic for replay.
+
+    // Phase G3 hotfix (2026-05-06): SINGLE emit pipeline.
+    // BYPASS monkey-patched setParamValue (would emit duplicate). Use
+    // origSetParam directly — engine internal mutation для immediate render,
+    // NO automatic emit (we explicitly emit below).
+    if (origSetParamRef) origSetParamRef(name, value)
+    else (calc as any).params[name].value = value  // fallback
+
+    // dp_inv_3: floating label з actual emit value (matches user expectation).
+    activeDragParam.value = { name, value }
+    // Single emit per drag tick — deterministic for replay.
     emitParamSetThrottled(name, value)
   }
   ;(calc as any).onParamDragEnd = (name: string | undefined) => {
     if (!name) return
+    // CRITICAL: flush pending throttle so final value lands як op.
+    // Without flush — last drag tick stuck у timeout, replay misses end state.
     flushParam()
     // Hide floating label
     activeDragParam.value = null
