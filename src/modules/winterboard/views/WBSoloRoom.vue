@@ -724,6 +724,15 @@
       @dismiss="showRecordingDonePrompt = false"
     />
 
+    <!-- INV-22 PR-1b: finalize barrier blocking modal (504 / 429) -->
+    <WBFinalizeBarrierModal
+      :state="finalizeBarrierState"
+      :expected-seq="finalizeBarrierExpectedSeq"
+      :current-seq="finalizeBarrierCurrentSeq"
+      :retry-after-ms="finalizeBarrierRetryAfterMs"
+      @retry="onFinalizeBarrierRetry"
+    />
+
     <!-- INV: Recording broken warning — pipeline health check failed -->
     <div v-if="recordingBrokenWarning" class="wb-solo-room__recording-broken">
       <span>⚠️ {{ t('winterboard.replay.recordingBroken') }}</span>
@@ -823,6 +832,7 @@ import WBTouchContextMenu from '../components/canvas/WBTouchContextMenu.vue'
 import WBSelectionToolbar from '../components/canvas/WBSelectionToolbar.vue'
 import WBReplayShareModal from '../components/replay/WBReplayShareModal.vue'
 import WBRecordingDonePrompt from '../components/replay/WBRecordingDonePrompt.vue'
+import WBFinalizeBarrierModal from '../components/replay/WBFinalizeBarrierModal.vue'
 import WBRecordingBanner from '../components/replay/WBRecordingBanner.vue'
 import { registerAuthDeathCleanup } from '@/core/auth/onAuthDeath'
 import SaveAsTemplateDialog from '@/modules/knowledge/components/SaveAsTemplateDialog.vue'
@@ -947,41 +957,155 @@ async function handleStartRecording(): Promise<void> {
   }
 }
 
+// ── INV-22 PR-1b: barrier modal state for Solo finalize flow ──
+type BarrierModalState = 'closed' | 'waiting' | 'timeout' | 'contention'
+const finalizeBarrierState = ref<BarrierModalState>('closed')
+const finalizeBarrierExpectedSeq = ref<number | null>(null)
+const finalizeBarrierCurrentSeq = ref<number | null>(null)
+const finalizeBarrierRetryAfterMs = ref<number>(0)
+
+// FE-local single-flight guard for finalize barrier attempts.
+// Prevents double-click race that would otherwise fire 2 network requests
+// (server's SETNX 429 catches it, but local-first guard is cleaner UX —
+// 429 becomes defense-in-depth, not normal path). Set BEFORE await chain
+// of `_attemptFinalizeWithBarrier`, cleared у same function's finally.
+const _finalizeAttemptInFlight = ref(false)
+
+// Mount-state guard — prevents stale state mutations after room unmount.
+// If user clicks "Stop" then navigates away mid-fetch, the resolve fires
+// after `onBeforeUnmount` — without this, we'd touch dead refs (Vue tolerates
+// it but it's wasted work + risks late timer schedules). Set false у
+// `onBeforeUnmount`. All barrier-related async paths check this before
+// mutating refs / scheduling timers.
+const _isFinalizeMounted = ref(true)
+
+onBeforeUnmount(() => {
+  // INV-22 §22.7 — modal lifecycle cleanup on room unmount.
+  // Reset all barrier refs and inhibit further mutations from in-flight
+  // promises. Modal component's own `onBeforeUnmount` clears its interval
+  // tick (contention countdown), so we only need to reset our refs here.
+  _isFinalizeMounted.value = false
+  finalizeBarrierState.value = 'closed'
+  finalizeBarrierExpectedSeq.value = null
+  finalizeBarrierCurrentSeq.value = null
+  finalizeBarrierRetryAfterMs.value = 0
+  _finalizeAttemptInFlight.value = false
+})
+
 async function handleStopRecording(): Promise<void> {
   const sid = sessionId.value
   if (!sid || !isManualRecording.value) return
+  // FE-local single-flight: BEFORE network. 429 from BE remains the
+  // defense-in-depth safety net per §22.2.
+  if (_finalizeAttemptInFlight.value) return
+  if (isRecordingLoading.value) return
   isRecordingLoading.value = true
-  try {
-    // Plan v2.3 (2026-05-05): BE /stop-recording/ now means PAUSE (no Replay).
-    // Solo preserves old "stop = finalize" UX → call /finalize-recording/ directly.
-    // This skips pause state entirely — Solo has no pause/resume UI anyway.
-    const result = await import('../api/replay').then(m => m.finalizeRecording(sid))
-    isManualRecording.value = false
-    recordingStartedAt.value = null
-    isReplayFrozen.value = result.is_replay_frozen
-    activeReplayId.value = result.replay_id ?? null  // Share Layer v1
-    recordingBrokenWarning.value = false  // clear if was shown
+  finalizeBarrierState.value = 'waiting'
+  await _attemptFinalizeWithBarrier(sid)
+}
 
-    // Share Layer S.2: inline post-record prompt (live while user вирішує).
-    // 45s — достатньо щоб побачити, обрати visibility, скопіювати URL.
-    showRecordingDonePrompt.value = true
-    _recordingDoneTimer = window.setTimeout(() => { showRecordingDonePrompt.value = false }, 45000)
-  } catch (e) {
-    console.error('[WBSoloRoom] Failed to stop recording:', e)
-    // P0.5: Local fallback — if API unreachable (auth dead, CORS, network), still stop UI
-    isManualRecording.value = false
-    recordingStartedAt.value = null
-    recordingBrokenWarning.value = true
-    // P2.0: Track stop-recording failures for CORS/auth monitoring
-    import('@/utils/telemetryAgent').then(
-      m => m.trackEvent('recording.stop.failed', { sessionId: sid, error: String(e) }),
-    ).catch(() => {})
+/**
+ * INV-22 PR-1b — single finalize attempt with barrier confirmation.
+ * Called once per user action; retry comes via modal user click.
+ *
+ * NO auto retry (LAW §12, INV-22 §22.7). NO DESYNC trigger on 429/504.
+ *
+ * Single-flight guarded via `_finalizeAttemptInFlight` — re-entry returns
+ * immediately. Mount state checked у every async chain step before touching
+ * refs (post-unmount safety per §22.7 lifecycle cleanup).
+ */
+async function _attemptFinalizeWithBarrier(sid: string): Promise<void> {
+  if (_finalizeAttemptInFlight.value) return
+  _finalizeAttemptInFlight.value = true
+  try {
+    // INV-22 §22.3: pre-flush ensures any drawn ops between last flush і
+    // user clicking "Stop" reach BE before we ask for finalize. After
+    // flush() resolves, opsSync.serverSeq = max seq accepted by BE.
     try {
-      localStorage.setItem(`wb:recording:${sid}:stopped_locally`, String(Date.now()))
-    } catch { /* localStorage may be full or blocked */ }
+      await opsSync.flush()
+    } catch (flushErr) {
+      if (!_isFinalizeMounted.value) return
+      // Per INV-22 §22.7 + LAW §12: NO silent swallow of flush errors.
+      finalizeBarrierState.value = 'closed'
+      _handleFinalizeFailureFallback(sid, flushErr)
+      isRecordingLoading.value = false
+      return
+    }
+
+    if (!_isFinalizeMounted.value) return  // unmounted during flush
+    const flushed_last_seq = opsSync.serverSeq
+    const replayApi = await import('../api/replay')
+    if (!_isFinalizeMounted.value) return  // unmounted during dynamic import
+    try {
+      const result = await replayApi.finalizeWithBarrier(sid, flushed_last_seq)
+      if (!_isFinalizeMounted.value) return  // unmounted during await
+      finalizeBarrierState.value = 'closed'
+      isManualRecording.value = false
+      recordingStartedAt.value = null
+      isReplayFrozen.value = result.is_replay_frozen
+      activeReplayId.value = result.replay_id ?? null
+      recordingBrokenWarning.value = false
+      showRecordingDonePrompt.value = true
+      _recordingDoneTimer = window.setTimeout(() => { showRecordingDonePrompt.value = false }, 45000)
+    } catch (err: unknown) {
+      if (!_isFinalizeMounted.value) return
+      if (err instanceof replayApi.FinalizeBarrierTimeoutError) {
+        // 504 — apply pipeline lagging. Show retry modal. NO auto retry.
+        finalizeBarrierExpectedSeq.value = err.expected_seq
+        finalizeBarrierCurrentSeq.value = err.current_seq
+        finalizeBarrierRetryAfterMs.value = 0
+        finalizeBarrierState.value = 'timeout'
+        return
+      }
+      if (err instanceof replayApi.FinalizeBarrierContentionError) {
+        // 429 — concurrent finalize active. Same modal, retry disabled briefly.
+        finalizeBarrierExpectedSeq.value = null
+        finalizeBarrierCurrentSeq.value = null
+        finalizeBarrierRetryAfterMs.value = err.retry_after_ms
+        finalizeBarrierState.value = 'contention'
+        return
+      }
+      if (err instanceof replayApi.FinalizeBarrierContractError) {
+        console.error('[WBSoloRoom] FINALIZE_CONTRACT_ERROR:', err)
+      }
+      finalizeBarrierState.value = 'closed'
+      _handleFinalizeFailureFallback(sid, err)
+    } finally {
+      if (_isFinalizeMounted.value && finalizeBarrierState.value === 'closed') {
+        isRecordingLoading.value = false
+      }
+    }
   } finally {
-    isRecordingLoading.value = false
+    // Single-flight guard always released regardless of outcome (per
+    // §22.4 cleanup contract spirit). User retry → guard re-acquired у next call.
+    _finalizeAttemptInFlight.value = false
   }
+}
+
+function onFinalizeBarrierRetry(): void {
+  const sid = sessionId.value
+  if (!sid) return
+  // FE-local single-flight ALSO у retry path — protects against double-click
+  // on "Спробувати ще раз" before reactive button-disable kicks у.
+  if (_finalizeAttemptInFlight.value) return
+  // User clicked "Спробувати ще раз" — fire EXACTLY ONE new attempt.
+  finalizeBarrierState.value = 'waiting'
+  void _attemptFinalizeWithBarrier(sid)
+}
+
+function _handleFinalizeFailureFallback(sid: string, e: unknown): void {
+  console.error('[WBSoloRoom] Failed to stop recording:', e)
+  // P0.5: Local fallback — if API unreachable (auth dead, CORS, network), still stop UI
+  isManualRecording.value = false
+  recordingStartedAt.value = null
+  recordingBrokenWarning.value = true
+  // P2.0: Track stop-recording failures for CORS/auth monitoring
+  import('@/utils/telemetryAgent').then(
+    m => m.trackEvent('recording.stop.failed', { sessionId: sid, error: String(e) }),
+  ).catch(() => {})
+  try {
+    localStorage.setItem(`wb:recording:${sid}:stopped_locally`, String(Date.now()))
+  } catch { /* localStorage may be full or blocked */ }
 }
 
 // Grid overlay (background grid for the canvas)

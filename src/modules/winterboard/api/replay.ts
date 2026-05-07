@@ -211,18 +211,152 @@ export async function resumeRecording(
  * POST /winterboard/sessions/{uuid}/finalize-recording/
  * Plan v2.3: RECORDING|PAUSED → FINALIZED. Creates Replay exactly once.
  * INV-REC-FINALIZE.
+ *
+ * INV-22 §22.3 (PR-1b): legacy signature retained for backwards compat
+ * (graceful migration). New callers MUST use `finalizeWithBarrier()`
+ * which supplies `flushed_last_seq` to gate against apply-pipeline lag.
  */
-export async function finalizeRecording(
-  sessionId: string,
-): Promise<{
+export interface FinalizeRecordingResult {
   status: 'finalized'
   recording_state: RecordingState
   recording_stopped_at: string | null
   recording_stopped_seq: number
   is_replay_frozen: boolean
   replay_id: string
-}> {
+}
+
+export async function finalizeRecording(
+  sessionId: string,
+): Promise<FinalizeRecordingResult> {
   return apiClient.post(`${BASE}/sessions/${sessionId}/finalize-recording/`)
+}
+
+// ─── INV-22 FINALIZE-BARRIER (PR-1b) ──────────────────────────────────────
+//
+// Per OPS_SYNC_SSOT.md INV-22 v4 + FIRST_FIX_SPRINT_PROPOSAL §1:
+//   FE flushes pending ops, then calls finalize with the seq up to which
+//   apply pipeline must catch up. BE blocks bounded 10s waiting for
+//   `session.snapshot_seq >= flushed_last_seq`. On lag → 504 (blocking
+//   modal, user-driven retry). On concurrent attempt → 429.
+//
+// Status code rules (per §22.13):
+//   200 → success, replay materialized
+//   400 → FLUSHED_SEQ_REQUIRED (programmer error — should never reach prod)
+//   429 → FINALIZE_ALREADY_PENDING (another barrier active for session)
+//   504 → APPLY_BACKLOG_TIMEOUT (apply pipeline lagging)
+//
+// HARD INVARIANT (per §22.7): 429 / 504 from this endpoint MUST NOT trigger
+// DESYNC. They are operational states, not consistency corruption. The
+// `finalizeWithBarrier()` helper translates them into typed errors that
+// callers handle через blocking modal — opsSyncStore stays SYNC.
+
+export interface FinalizeBarrierTimeoutPayload {
+  error: 'APPLY_BACKLOG_TIMEOUT'
+  expected_seq: number
+  current_seq: number
+  waited_ms: number
+}
+
+export interface FinalizeBarrierContentionPayload {
+  error: 'FINALIZE_ALREADY_PENDING'
+  detail?: string
+  retry_after_ms: number
+}
+
+/**
+ * Thrown when BE returns 504 — apply pipeline did not catch up within 10s.
+ * Caller MUST show blocking modal з retry button. NO auto retry (LAW §12).
+ */
+export class FinalizeBarrierTimeoutError extends Error {
+  readonly expected_seq: number
+  readonly current_seq: number
+  readonly waited_ms: number
+  constructor(payload: FinalizeBarrierTimeoutPayload) {
+    super(`APPLY_BACKLOG_TIMEOUT: expected_seq=${payload.expected_seq} current_seq=${payload.current_seq} waited_ms=${payload.waited_ms}`)
+    this.name = 'FinalizeBarrierTimeoutError'
+    this.expected_seq = payload.expected_seq
+    this.current_seq = payload.current_seq
+    this.waited_ms = payload.waited_ms
+  }
+}
+
+/**
+ * Thrown when BE returns 429 — another concurrent finalize is active for
+ * this session (double-click, multi-tab, or network retry storm). Caller
+ * shows the same blocking modal; retry button disabled for retry_after_ms.
+ */
+export class FinalizeBarrierContentionError extends Error {
+  readonly retry_after_ms: number
+  constructor(payload: FinalizeBarrierContentionPayload) {
+    super(`FINALIZE_ALREADY_PENDING (retry_after_ms=${payload.retry_after_ms})`)
+    this.name = 'FinalizeBarrierContentionError'
+    this.retry_after_ms = payload.retry_after_ms
+  }
+}
+
+/**
+ * Thrown when BE returns 400 FLUSHED_SEQ_REQUIRED. Programmer error —
+ * indicates a regression у the helper itself. Surfaces loudly (not silent).
+ */
+export class FinalizeBarrierContractError extends Error {
+  constructor(detail: string) {
+    super(`FLUSHED_SEQ_REQUIRED: ${detail}`)
+    this.name = 'FinalizeBarrierContractError'
+  }
+}
+
+/**
+ * INV-22 PR-1b — finalize із barrier confirmation that apply pipeline
+ * caught up to a specified seq.
+ *
+ * Caller is responsible for flushing the ops queue first (e.g. via
+ * `opsSync.flush()`) and providing the resulting `flushed_last_seq`
+ * (typically `opsSync.serverSeq.value` after flush resolves).
+ *
+ * Throws (caller MUST catch):
+ *   - FinalizeBarrierTimeoutError (504 — show blocking modal, manual retry)
+ *   - FinalizeBarrierContentionError (429 — same modal, retry disabled)
+ *   - FinalizeBarrierContractError (400 — programmer error)
+ *   - other errors propagate as-is (network / 500 / etc.)
+ *
+ * Returns FinalizeRecordingResult on 200.
+ *
+ * Forbidden: NO auto retry inside this helper (LAW §12, INV-22 §22.7).
+ * User-driven retry only — caller decides via UI action.
+ */
+export async function finalizeWithBarrier(
+  sessionId: string,
+  flushed_last_seq: number,
+): Promise<FinalizeRecordingResult> {
+  if (!Number.isInteger(flushed_last_seq) || flushed_last_seq < 0) {
+    throw new FinalizeBarrierContractError(
+      `flushed_last_seq must be non-negative integer, got ${String(flushed_last_seq)}`,
+    )
+  }
+  try {
+    return await apiClient.post(
+      `${BASE}/sessions/${sessionId}/finalize-recording/`,
+      { flushed_last_seq },
+      // INV-22 §22.7 — suppress generic 5xx toast for 504 only (FE renders
+      // its own blocking modal). Single-purpose flag (NOT a generic
+      // `_skipErrorToastOnStatus` array — see apiClient.js FORBIDDEN comment).
+      // 429 doesn't need it (apiClient already silent on 429).
+      { _finalizeBarrierToastSuppressed: true } as any,
+    )
+  } catch (err) {
+    const status = (err as any)?.response?.status
+    const data = (err as any)?.response?.data
+    if (status === 504 && data?.error === 'APPLY_BACKLOG_TIMEOUT') {
+      throw new FinalizeBarrierTimeoutError(data as FinalizeBarrierTimeoutPayload)
+    }
+    if (status === 429 && data?.error === 'FINALIZE_ALREADY_PENDING') {
+      throw new FinalizeBarrierContentionError(data as FinalizeBarrierContentionPayload)
+    }
+    if (status === 400 && data?.error === 'FLUSHED_SEQ_REQUIRED') {
+      throw new FinalizeBarrierContractError(data?.detail ?? 'unknown')
+    }
+    throw err
+  }
 }
 
 

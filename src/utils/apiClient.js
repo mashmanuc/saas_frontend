@@ -504,9 +504,28 @@ api.interceptors.response.use(
       return Promise.reject(error)
     }
 
+    // ── INV-22 PR-1b — single-purpose toast suppression for finalize barrier ──
+    //
+    // FORBIDDEN: Adding new opt-out flags or expanding _finalizeBarrierToastSuppressed
+    //            to other endpoints WITHOUT explicit SSOT review. Per OPS_SYNC_SSOT.md
+    //            INV-22 §22.7 + LAW §12 spirit: transport-layer error semantics must
+    //            stay strict; per-endpoint UX overrides become slippery slope where
+    //            "every service mutes its own errors" → users miss real failures.
+    //
+    // Allowed use: ONLY у `finalizeWithBarrier()` helper (api/replay.ts) — flag
+    // suppresses the generic 5xx toast for 504 APPLY_BACKLOG_TIMEOUT because the
+    // caller renders its own blocking modal з retry UX.
+    //
+    // If you find yourself wanting to add another flag here for another endpoint
+    // → STOP, write SSOT for that case, get review, then add explicit named flag
+    // (NOT a generic array of "skip these statuses").
+    const isFinalizeBarrierTimeout = (
+      original?._finalizeBarrierToastSuppressed === true && status === 504
+    )
+
     if (status === 403) {
       notifyError('Доступ заборонено. Зверніться до адміністратора.')
-    } else if (status >= 500) {
+    } else if (status >= 500 && !isFinalizeBarrierTimeout) {
       notifyError(requestId ? `На сервері сталася помилка. Спробуйте пізніше. request_id: ${requestId}` : 'На сервері сталася помилка. Спробуйте пізніше.')
     }
 

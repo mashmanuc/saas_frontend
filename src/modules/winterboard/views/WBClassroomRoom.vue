@@ -330,6 +330,15 @@
       @dismiss="showRecordingDonePrompt = false"
     />
 
+    <!-- INV-22 PR-1b: finalize barrier blocking modal (504 / 429) -->
+    <WBFinalizeBarrierModal
+      :state="finalizeBarrierState"
+      :expected-seq="finalizeBarrierExpectedSeq"
+      :current-seq="finalizeBarrierCurrentSeq"
+      :retry-after-ms="finalizeBarrierRetryAfterMs"
+      @retry="onFinalizeBarrierRetry"
+    />
+
     <!-- Phase 1: Recording controls moved into header -->
 
     <!-- Phase 11 B5: Onboarding hints for empty board -->
@@ -460,6 +469,7 @@ import WBYouTubeModal from '../components/toolbar/WBYouTubeModal.vue'
 import WBClassroomRecordingControls from '../components/replay/WBClassroomRecordingControls.vue'
 // PR1 (2026-05-03): post-record share prompt — port із WBSoloRoom для visibility toggle
 import WBRecordingDonePrompt from '../components/replay/WBRecordingDonePrompt.vue'
+import WBFinalizeBarrierModal from '../components/replay/WBFinalizeBarrierModal.vue'
 import WBOnboardingHints from '../components/ui/WBOnboardingHints.vue'
 import WBTestTeacherPanel from '../components/test/WBTestTeacherPanel.vue'
 import WBTestStudentView from '../components/test/WBTestStudentView.vue'
@@ -691,47 +701,135 @@ async function handlePauseRecording(): Promise<void> {
   }
 }
 
+// ── INV-22 PR-1b: barrier modal state for Classroom finalize flow ──
+type BarrierModalState = 'closed' | 'waiting' | 'timeout' | 'contention'
+const finalizeBarrierState = ref<BarrierModalState>('closed')
+const finalizeBarrierExpectedSeq = ref<number | null>(null)
+const finalizeBarrierCurrentSeq = ref<number | null>(null)
+const finalizeBarrierRetryAfterMs = ref<number>(0)
+
+// FE-local single-flight guard (mirror of Solo). Prevents double-click race
+// before reactive disable kicks у. 429 from BE = defense-in-depth, not normal.
+const _finalizeAttemptInFlight = ref(false)
+// Mount-state guard prevents stale state mutation after route change /
+// room leave. Reset у onBeforeUnmount.
+const _isFinalizeMounted = ref(true)
+
+onBeforeUnmount(() => {
+  // INV-22 §22.7 — modal lifecycle cleanup on Classroom unmount.
+  _isFinalizeMounted.value = false
+  finalizeBarrierState.value = 'closed'
+  finalizeBarrierExpectedSeq.value = null
+  finalizeBarrierCurrentSeq.value = null
+  finalizeBarrierRetryAfterMs.value = 0
+  _finalizeAttemptInFlight.value = false
+})
+
 async function handleFinalizeRecording(): Promise<void> {
   const sid = resolvedSessionId.value
   if (!sid || isRecordingLoading.value || (recordingState.value !== 'recording' && recordingState.value !== 'paused')) return
+  // FE-local single-flight: BEFORE network. 429 from BE remains defense-in-depth.
+  if (_finalizeAttemptInFlight.value) return
   isRecordingLoading.value = true
+  finalizeBarrierState.value = 'waiting'
+  await _attemptFinalizeWithBarrier(sid)
+}
+
+/**
+ * INV-22 PR-1b — single finalize attempt with barrier confirmation.
+ * Mirror of WBSoloRoom._attemptFinalizeWithBarrier — Solo/Classroom parity
+ * per FIRST_FIX_SPRINT_PROPOSAL §1.
+ *
+ * NO auto retry (LAW §12, INV-22 §22.7). NO DESYNC trigger on 429/504.
+ * Replaces previous silent `try/catch` swallow of flush errors (per
+ * BACKLOG_REPLAY_FINALIZE_FLUSH_RACE.md root cause).
+ */
+async function _attemptFinalizeWithBarrier(sid: string): Promise<void> {
+  if (_finalizeAttemptInFlight.value) return
+  _finalizeAttemptInFlight.value = true
   try {
+    // Pre-flush: BACKLOG_REPLAY_FINALIZE_FLUSH_RACE explicitly forbids the
+    // legacy `try/catch (e) { console.warn() }` swallow here. If flush fails,
+    // we surface via fallback path so user knows last actions may not be saved.
     try {
       await opsSync.flush()
-    } catch (e) {
-      console.warn('[WBClassroomRoom] opsSync.flush before finalize failed', e)
+    } catch (flushErr) {
+      if (!_isFinalizeMounted.value) return
+      finalizeBarrierState.value = 'closed'
+      _handleFinalizeFailureFallback(sid, flushErr)
+      isRecordingLoading.value = false
+      return
     }
-    const result = await import('../api/replay').then(m => m.finalizeRecording(sid))
-    recordingState.value = result.recording_state  // expect 'finalized'
-    recordingStartedAt.value = null
-    activeReplayId.value = result.replay_id
 
-    // Post-finalize sharing prompt (Share Layer S.2)
-    if (activeReplayId.value) {
-      showRecordingDonePrompt.value = true
-      if (_recordingDoneTimer) {
-        clearTimeout(_recordingDoneTimer)
-      }
-      _recordingDoneTimer = window.setTimeout(() => {
-        showRecordingDonePrompt.value = false
-      }, 45000)
-    }
-    console.info('[WBClassroomRoom] finalize-recording', {
-      state: result.recording_state, replay_id: result.replay_id, sid,
-    })
-  } catch (e) {
-    console.error('[WBClassroomRoom] Failed to finalize recording:', e)
-    // P0.5 fallback: API unreachable → still local-only state reset for UX.
-    recordingStartedAt.value = null
-    import('@/utils/telemetryAgent').then(
-      m => m.trackEvent('recording.finalize.failed', { sessionId: sid, error: String(e) }),
-    ).catch(() => {})
+    if (!_isFinalizeMounted.value) return
+    const flushed_last_seq = opsSync.serverSeq
+    const replayApi = await import('../api/replay')
+    if (!_isFinalizeMounted.value) return
     try {
-      localStorage.setItem(`wb:recording:${sid}:finalize_failed`, String(Date.now()))
-    } catch { /* localStorage blocked */ }
+      const result = await replayApi.finalizeWithBarrier(sid, flushed_last_seq)
+      if (!_isFinalizeMounted.value) return
+      finalizeBarrierState.value = 'closed'
+      recordingState.value = result.recording_state  // expect 'finalized'
+      recordingStartedAt.value = null
+      activeReplayId.value = result.replay_id
+
+      if (activeReplayId.value) {
+        showRecordingDonePrompt.value = true
+        if (_recordingDoneTimer) clearTimeout(_recordingDoneTimer)
+        _recordingDoneTimer = window.setTimeout(() => { showRecordingDonePrompt.value = false }, 45000)
+      }
+      console.info('[WBClassroomRoom] finalize-recording', {
+        state: result.recording_state, replay_id: result.replay_id, sid,
+      })
+    } catch (err: unknown) {
+      if (!_isFinalizeMounted.value) return
+      if (err instanceof replayApi.FinalizeBarrierTimeoutError) {
+        finalizeBarrierExpectedSeq.value = err.expected_seq
+        finalizeBarrierCurrentSeq.value = err.current_seq
+        finalizeBarrierRetryAfterMs.value = 0
+        finalizeBarrierState.value = 'timeout'
+        return
+      }
+      if (err instanceof replayApi.FinalizeBarrierContentionError) {
+        finalizeBarrierExpectedSeq.value = null
+        finalizeBarrierCurrentSeq.value = null
+        finalizeBarrierRetryAfterMs.value = err.retry_after_ms
+        finalizeBarrierState.value = 'contention'
+        return
+      }
+      if (err instanceof replayApi.FinalizeBarrierContractError) {
+        console.error('[WBClassroomRoom] FINALIZE_CONTRACT_ERROR:', err)
+      }
+      finalizeBarrierState.value = 'closed'
+      _handleFinalizeFailureFallback(sid, err)
+    } finally {
+      if (_isFinalizeMounted.value && finalizeBarrierState.value === 'closed') {
+        isRecordingLoading.value = false
+      }
+    }
   } finally {
-    isRecordingLoading.value = false
+    _finalizeAttemptInFlight.value = false
   }
+}
+
+function onFinalizeBarrierRetry(): void {
+  const sid = resolvedSessionId.value
+  if (!sid) return
+  // FE-local single-flight guard у retry path (double-click protection).
+  if (_finalizeAttemptInFlight.value) return
+  finalizeBarrierState.value = 'waiting'
+  void _attemptFinalizeWithBarrier(sid)
+}
+
+function _handleFinalizeFailureFallback(sid: string, e: unknown): void {
+  console.error('[WBClassroomRoom] Failed to finalize recording:', e)
+  recordingStartedAt.value = null
+  import('@/utils/telemetryAgent').then(
+    m => m.trackEvent('recording.finalize.failed', { sessionId: sid, error: String(e) }),
+  ).catch(() => {})
+  try {
+    localStorage.setItem(`wb:recording:${sid}:finalize_failed`, String(Date.now()))
+  } catch { /* localStorage blocked */ }
 }
 
 // Grid overlay (background grid for the canvas)
