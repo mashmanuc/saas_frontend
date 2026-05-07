@@ -2777,32 +2777,39 @@ watch(() => store.workspaceName, (name) => {
   align-items: center;
   gap: 6px;
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.7);
+  /* Solid white — на зеленому header (#047857) alpha blend rgba(255,255,255,0.7)
+     виглядав greenish. */
+  color: #ffffff;
 }
 
 .wb-save-indicator__dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #94a3b8;
+  background: #cbd5e1;
+  /* White ring → dot видимий на ЛЮБОМУ кольоровому header (зелений / фіолетовий /
+     темний). Без цього зелені dots зливалися з зеленим header. */
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.85);
   transition: background 0.3s ease;
+  flex-shrink: 0;
 }
 
+/* Lighter pastel colors → contrast vs зелений header #047857. */
 .wb-save-indicator--saved .wb-save-indicator__dot {
-  background: #22c55e;
+  background: #86efac;
 }
 
 .wb-save-indicator--syncing .wb-save-indicator__dot {
-  background: #eab308;
+  background: #fde047;
   animation: wb-pulse 1s infinite;
 }
 
 .wb-save-indicator--error .wb-save-indicator__dot {
-  background: #ef4444;
+  background: #fca5a5;
 }
 
 .wb-save-indicator--offline .wb-save-indicator__dot {
-  background: #f97316;
+  background: #fdba74;
 }
 
 @keyframes wb-pulse {

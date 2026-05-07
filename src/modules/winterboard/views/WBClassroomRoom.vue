@@ -2282,21 +2282,28 @@ onBeforeUnmount(async () => {
   align-items: center;
   gap: 6px;
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.7);
+  /* Solid white instead of rgba(255,255,255,0.7) — на зеленому header (#047857)
+     alpha blend давав greenish tint. */
+  color: #ffffff;
 }
 
 .wb-save-indicator__dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #94a3b8;
+  background: #cbd5e1;
+  /* White ring навколо dot щоб він був видимим на ЛЮБОМУ кольоровому header
+     (зеленому, фіолетовому, темному). */
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.85);
   transition: background 0.3s ease;
+  flex-shrink: 0;
 }
 
-.wb-save-indicator--saved .wb-save-indicator__dot { background: #22c55e; }
-.wb-save-indicator--syncing .wb-save-indicator__dot { background: #eab308; animation: wb-pulse 1s infinite; }
-.wb-save-indicator--error .wb-save-indicator__dot { background: #ef4444; }
-.wb-save-indicator--offline .wb-save-indicator__dot { background: #f97316; }
+/* Lighter dot colors + white ring → видимі на зеленому header (#047857). */
+.wb-save-indicator--saved .wb-save-indicator__dot { background: #86efac; }
+.wb-save-indicator--syncing .wb-save-indicator__dot { background: #fde047; animation: wb-pulse 1s infinite; }
+.wb-save-indicator--error .wb-save-indicator__dot { background: #fca5a5; }
+.wb-save-indicator--offline .wb-save-indicator__dot { background: #fdba74; }
 
 @keyframes wb-pulse {
   0%, 100% { opacity: 1; }
@@ -2346,34 +2353,39 @@ onBeforeUnmount(async () => {
   align-items: center;
   gap: 6px;
   padding: 4px 10px;
-  background: rgba(255, 255, 255, 0.08);
+  /* Slightly stronger background opacity для better separation від green header. */
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 8px;
   font-size: 0.8125rem;
-  color: rgba(255, 255, 255, 0.9);
+  /* Solid white — alpha blend на #047857 давав greenish tint для status text. */
+  color: #ffffff;
   white-space: nowrap;
 }
 .wb-student-badge--empty {
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.7);
 }
 .wb-student-badge__dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
+  /* White ring → dot видимий на зеленому header. */
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.85);
 }
 .wb-student-badge__dot--online {
-  background: #22c55e;
-  box-shadow: 0 0 4px rgba(34, 197, 94, 0.5);
+  /* Lighter green з white ring → contrasts з #047857. */
+  background: #86efac;
 }
 .wb-student-badge__dot--offline {
-  background: #6b7280;
+  background: #cbd5e1;
 }
 .wb-student-badge__name {
   font-weight: 500;
 }
 .wb-student-badge__status {
   font-size: 0.6875rem;
-  color: rgba(255, 255, 255, 0.5);
+  /* Solid light gray (instead of rgba alpha) — no greenish tint. */
+  color: #e2e8f0;
 }
 
 /* ── Actions ─────────────────────────────────────────────────────────────── */
