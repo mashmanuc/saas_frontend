@@ -3070,9 +3070,17 @@ watch(() => store.workspaceName, (name) => {
   background: var(--wb-bg-secondary, #f8fafc);
   border-right: 1px solid var(--wb-border, #e2e8f0);
   z-index: 15;
+  /* 2026-05-09 fix: collapsed panel (width:0; overflow:hidden) clips visuals
+     але `WBPageThumbnails` діти лишаються hit-testable. Без цього guard
+     `.wb-thumbnail--add` button reachable через elementFromPoint() — clicks
+     потрапляли на toolbar (z-index:20) поверх collapsed panel (z-index:15),
+     дзеркало як "intercepts pointer events" у Playwright + reproducible 65%
+     fail rate у 20-min stress test (run-20260509-003548). */
+  pointer-events: none;
 }
 .wb-solo-room__page-panel--open {
   width: 156px; /* 140px thumbnail + 8px padding × 2 */
+  pointer-events: auto;
 }
 
 /* A.4 (INV-X): read-only overlay в replay-режимі */
