@@ -312,12 +312,22 @@ const __GC = (function () {
   class GraphCalculator {
     constructor(container, opts = {}) {
       this.container = container;
+      // P0 refactor (2026-05-08): палітра читається з CSS-vars (`--gc-*`),
+      // визначених у tokens.css. Fallback дорівнює legacy hardcoded значенню,
+      // тож standalone-використання vendor (без WB-cascade) працює як раніше.
+      const _cs = (typeof window !== 'undefined' && container && container.ownerDocument)
+        ? window.getComputedStyle(container) : null;
+      const _v = (name, fallback) => {
+        if (!_cs) return fallback;
+        const raw = _cs.getPropertyValue(name);
+        return (raw && raw.trim()) || fallback;
+      };
       this.opts = Object.assign({
-        bg: '#fffaf0',
-        gridMinor: 'rgba(43,33,24,0.07)',
-        gridMajor: 'rgba(43,33,24,0.16)',
-        axis: '#2b2118',
-        axisLabel: '#5a4a3a',
+        bg:        _v('--gc-paper',      '#fffaf0'),
+        gridMinor: _v('--gc-grid-minor', 'rgba(43,33,24,0.07)'),
+        gridMajor: _v('--gc-grid-major', 'rgba(43,33,24,0.16)'),
+        axis:      _v('--gc-axis',       '#2b2118'),
+        axisLabel: _v('--gc-ink-2',      '#5a4a3a'),
         labelFont: '11px JetBrains Mono, monospace',
       }, opts);
       this.expressions = []; // {id, src, color, hidden, classified, paramValue?, paramRange?}
@@ -327,7 +337,15 @@ const __GC = (function () {
       this.onPointDragEnd = null; // (id, x, y) callback (drag release)
       this._dragParamTargetExprId = null; // Phase G3 v1.1: highlight target during drag
       this.viewport = { cx: 0, cy: 0, scale: 38 }; // px per math unit
-      this.palette = ['#c4622a', '#3b7b9b', '#7a8b3a', '#a83a5b', '#5a4a8a', '#2b6e58', '#c08820'];
+      this.palette = [
+        _v('--gc-series-1', '#c4622a'),
+        _v('--gc-series-2', '#3b7b9b'),
+        _v('--gc-series-3', '#7a8b3a'),
+        _v('--gc-series-4', '#a83a5b'),
+        _v('--gc-series-5', '#5a4a8a'),
+        _v('--gc-series-6', '#2b6e58'),
+        _v('--gc-series-7', '#c08820'),
+      ];
       this._nextId = 1;
       this._buildDom();
       this._bindInteraction();
@@ -1323,7 +1341,8 @@ const __GC = (function () {
       const w = this.canvas.width, h = this.canvas.height;
       const o = this._mathToPx(0, 0);
       ctx.strokeStyle = this.opts.axis;
-      ctx.lineWidth = 1.5 * (this._dpr || 1);
+      // P1 (2026-05-08): 1.5*dpr → 1.0*dpr — axis is hierarchy-2, not -1.
+      ctx.lineWidth = 1.0 * (this._dpr || 1);
       ctx.beginPath();
       ctx.moveTo(0, o.y); ctx.lineTo(w, o.y);
       ctx.moveTo(o.x, 0); ctx.lineTo(o.x, h);

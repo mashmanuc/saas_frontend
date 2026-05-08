@@ -203,3 +203,81 @@
 html:not([data-hydrated]) {
   visibility: hidden;
 }
+
+/* ═══════════════════════════════════════════════════
+   WB-domain — Graph Calculator (warm-paper) palette
+   ═══════════════════════════════════════════════════
+   Namespace: `--gc-*`. Винесено з GraphCalculatorRenderer.vue
+   та vendor/graph_calculator/graph-calculator.js (P0 refactor 2026-05-08).
+
+   Refactor-only: fallbacks у вживанні дорівнюють попереднім hardcoded
+   значенням, тож візуально нічого не змінюється. Сенс — зробити graph
+   object темізованим / a11y-готовим / brand-consistent.
+*/
+:root {
+  /* Surfaces / ink */
+  --gc-paper:           #fffaf0;
+  --gc-ink:             #2b2118;
+  --gc-ink-2:           #5a4a3a;
+  --gc-ink-3:           #8a7860;
+
+  /* Brown line/divider scale (alpha on ink) */
+  --gc-line-faintest:   rgba(43, 33, 24, 0.04);
+  --gc-line-faint:      rgba(43, 33, 24, 0.05);
+  --gc-line-soft:       rgba(43, 33, 24, 0.10);
+  --gc-line:            rgba(43, 33, 24, 0.15);
+  --gc-line-strong:     rgba(43, 33, 24, 0.20);
+  --gc-toast-bg:        rgba(43, 33, 24, 0.85);
+
+  /* Primary accent — orange (hint, quick-add, points-free) */
+  --gc-accent:          #c4622a;
+  --gc-accent-faint:    rgba(196, 98, 42, 0.06);
+  --gc-accent-soft:     rgba(196, 98, 42, 0.08);
+  --gc-accent-active:   rgba(196, 98, 42, 0.16);
+  --gc-accent-hover:    rgba(196, 98, 42, 0.18);
+  --gc-accent-mid:      rgba(196, 98, 42, 0.30);
+  --gc-accent-strong:   rgba(196, 98, 42, 0.40);
+
+  /* Secondary accent — blue (param mode, on-curve points) */
+  --gc-accent-2:        #3b7b9b;
+  --gc-accent-2-faint:  rgba(59, 123, 155, 0.08);
+  --gc-accent-2-soft:   rgba(59, 123, 155, 0.10);
+  --gc-accent-2-strong: rgba(59, 123, 155, 0.40);
+  --gc-accent-2-tint:   #c4d3df;
+
+  /* Status */
+  --gc-error:           #a83a5b;
+  --gc-mute-fg:         #94a3b8;
+  --gc-mute-bg:         rgba(148, 163, 184, 0.10);
+
+  /* Canvas axes/grid (читається vendor JS через getComputedStyle).
+     P1 (2026-05-08): --gc-axis softened from #2b2118 → --gc-ink-2 щоб
+     осі стали hierarchy-2, не домінували над контентом. */
+  --gc-grid-minor:      rgba(43, 33, 24, 0.07);
+  --gc-grid-major:      rgba(43, 33, 24, 0.16);
+  --gc-axis:            #5a4a3a;
+
+  /* Glass surface (drag-param toast P1). Warm-paper з blur. */
+  --gc-glass-bg:        rgba(255, 250, 240, 0.92);
+
+  /* Series palette (function-line кольори, vendor.js) */
+  --gc-series-1:        #c4622a;
+  --gc-series-2:        #3b7b9b;
+  --gc-series-3:        #7a8b3a;
+  --gc-series-4:        #a83a5b;
+  --gc-series-5:        #5a4a8a;
+  --gc-series-6:        #2b6e58;
+  --gc-series-7:        #c08820;
+
+  /* Shape */
+  --gc-radius-input:    3px;
+  --gc-radius-btn:      4px;
+  --gc-radius-card:     6px;
+  --gc-radius-pill:    10px;
+  --gc-shadow-card:     0 2px 6px rgba(0, 0, 0, 0.08);
+  --gc-shadow-toast:    0 2px 4px rgba(0, 0, 0, 0.20);
+
+  /* Typography / motion */
+  --gc-font-mono:       'JetBrains Mono', monospace;
+  --gc-transition:      120ms ease;
+}

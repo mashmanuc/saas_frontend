@@ -21,7 +21,13 @@
 <template>
   <div
     class="graph-calc-renderer"
-    :class="{ 'is-readonly': !interactive, 'is-selected': isSelected }"
+    ref="rootEl"
+    :class="{
+      'is-readonly': !interactive,
+      'is-selected': isSelected,
+      'is-presenting': uiState.presenting,
+      'is-compact': isCompact,
+    }"
   >
     <!-- Phase G3 v1 review: floating label під час drag-param (dp_inv_3:
          param value MUST be visible during drag). -->
@@ -36,6 +42,19 @@
 
     <header class="gc-header">
       <span class="gc-title">f(x)</span>
+      <!-- P2 (2026-05-08): режим презентації — приховує панель, plot 100%.
+           Module-level UI state (NOT persisted, NOT replayed). -->
+      <button
+        v-if="interactive"
+        type="button"
+        class="gc-present-btn"
+        :class="{ 'is-active': uiState.presenting }"
+        :title="uiState.presenting
+          ? 'Вийти з режиму презентації'
+          : 'Режим презентації — приховати панель, plot на весь розмір'"
+        data-testid="graph-calc-present-btn"
+        @click.stop="onTogglePresenting"
+      >{{ uiState.presenting ? '◧' : '◨' }}</button>
       <!-- Phase G4 (2026-05-06): param-mode toggle button (Shift-equivalent).
            Disabled if no drag-param candidate (paramEntries.length !== 1). -->
       <button
@@ -85,14 +104,46 @@
               type="text"
               class="gc-input"
               :value="expr.src"
-              :placeholder="idx === 0 ? 'y = x^2' : ''"
+              :placeholder="idx === 0 ? 'y = x^2  (натисни / для шаблонів)' : ''"
               @input="onSrcInput(expr.id, ($event.target as HTMLInputElement).value)"
-              @blur="onExpressionCommit(expr.id)"
-              @keydown.enter.prevent="onExpressionCommit(expr.id)"
+              @blur="onInputBlur(expr.id)"
+              @keydown.enter.prevent="onEnterPress(expr.id)"
+              @keydown.down.prevent="onArrowNav(expr.id, 1)"
+              @keydown.up.prevent="onArrowNav(expr.id, -1)"
+              @keydown.esc="closeSlashPopup"
               @keydown.stop
               @keypress.stop
               @keyup.stop
             />
+
+            <!-- P2 #9 (2026-05-08): slash-command popup. Активний тільки для
+                 input з матчевим exprId. ↓/↑ — навігація, Enter — apply,
+                 Esc / blur — close. -->
+            <div
+              v-if="slashPopup?.exprId === expr.id"
+              class="gc-slash-popup"
+              role="listbox"
+              data-testid="graph-calc-slash-popup"
+              @mousedown.prevent
+            >
+              <div
+                v-for="(tpl, tplIdx) in slashFilteredTemplates"
+                :key="tpl.id"
+                class="gc-slash-item"
+                :class="{ 'is-selected': tplIdx === slashPopup.selectedIdx }"
+                role="option"
+                :aria-selected="tplIdx === slashPopup.selectedIdx"
+                :data-testid="`graph-calc-slash-item-${tpl.id}`"
+                @click.stop="applySlashTemplate(expr.id, tpl)"
+                @mouseenter="slashPopup && (slashPopup.selectedIdx = tplIdx)"
+              >
+                <span class="gc-slash-item-key">/{{ tpl.id }}</span>
+                <span class="gc-slash-item-label">{{ tpl.label }}</span>
+              </div>
+              <div v-if="slashFilteredTemplates.length === 0" class="gc-slash-empty">
+                Нема шаблонів за «{{ slashPopup.query }}»
+              </div>
+            </div>
             <!-- Phase G: inline slider removed; sliders rendered ТІЛЬКИ у
                  окремій gc-params section (single source per state.params). -->
 
@@ -288,7 +339,7 @@ import {
 } from '../../../utils/graphCalculatorUtils'
 // Phase G4: shared per-asset UI state (toggle param mode).
 // Module-level reactive — renderer + sidebar context panel see same value.
-import { getGraphCalcUi, toggleGraphCalcParamMode } from '../../../board/state/graphCalculatorUiState'
+import { getGraphCalcUi, toggleGraphCalcParamMode, toggleGraphCalcPresenting } from '../../../board/state/graphCalculatorUiState'
 
 interface Props {
   asset: WBAsset
@@ -414,6 +465,19 @@ function onToggleParamMode() {
   if (!paramModeAvailable.value) return
   toggleGraphCalcParamMode(props.asset.id)
 }
+
+function onTogglePresenting() {
+  if (!props.interactive) return
+  toggleGraphCalcPresenting(props.asset.id)
+}
+
+// ─── P2 #8 (2026-05-08): responsive layout ────────────────────────────
+// Коли width < COMPACT_THRESHOLD_PX, layout перевертається на column-reverse
+// (plot зверху, панель внизу як bottom-sheet). НЕ персиститься — суто візуальне.
+const rootEl = ref<HTMLElement | null>(null)
+const isCompact = ref(false)
+const COMPACT_THRESHOLD_PX = 360
+let resizeObserver: ResizeObserver | null = null
 
 function onWindowKeyDown(e: KeyboardEvent) {
   if (e.key === 'Shift' && !shiftKeyHeld.value) shiftKeyHeld.value = true
@@ -960,8 +1024,89 @@ function onRemoveExpression(id: string) {
   scheduleSyncParams()
 }
 
+// P2 #9 (2026-05-08): inline slash-command templates. Trigger — input starts
+// with `/`. Filter by query, navigate Up/Down/Enter/Esc, click to apply.
+// Більший набір ніж видимі quick-add chips (8 vs 4) — chips для discoverability,
+// slash для швидкого pro-flow без дотягування миші.
+const SLASH_TEMPLATES = [
+  { id: 'linear',   label: 'a·x',           keyword: 'linear line',          src: 'y = a*x' },
+  { id: 'sin',      label: 'a·sin(x)',      keyword: 'sin sine',             src: 'y = a*sin(x)' },
+  { id: 'cos',      label: 'a·cos(x)',      keyword: 'cos cosine',           src: 'y = a*cos(x)' },
+  { id: 'parabola', label: 'a·x²',          keyword: 'parabola poly2 quad',  src: 'y = a*x^2' },
+  { id: 'cubic',    label: 'a·x³',          keyword: 'cubic poly3',          src: 'y = a*x^3' },
+  { id: 'sqrt',     label: '√x',            keyword: 'sqrt root',            src: 'y = sqrt(x)' },
+  { id: 'log',      label: 'log(x)',        keyword: 'log',                  src: 'y = log(x)' },
+  { id: 'circle',   label: 'x² + y² = r²',  keyword: 'circle',               src: '(x)^2 + (y)^2 = r^2' },
+] as const
+type SlashTemplate = typeof SLASH_TEMPLATES[number]
+
+const slashPopup = ref<{ exprId: string; query: string; selectedIdx: number } | null>(null)
+
+const slashFilteredTemplates = computed<readonly SlashTemplate[]>(() => {
+  if (!slashPopup.value) return []
+  const q = slashPopup.value.query.toLowerCase().trim()
+  if (!q) return SLASH_TEMPLATES
+  return SLASH_TEMPLATES.filter((t) =>
+    t.id.toLowerCase().includes(q) ||
+    t.keyword.toLowerCase().includes(q),
+  )
+})
+
+function applySlashTemplate(exprId: string, tpl: SlashTemplate | undefined) {
+  if (!tpl || !calc || !props.interactive) return
+  // Engine update fires onChange → displayExpressions re-derived → input
+  // :value reflects new src reactively (FE-RULE-2/4 path).
+  calc.updateExpression(exprId, tpl.src)
+  slashPopup.value = null
+  scheduleSyncParams()
+}
+
+function closeSlashPopup() {
+  slashPopup.value = null
+}
+
+function onInputBlur(exprId: string) {
+  // Delay close to allow click on popup item to fire first.
+  setTimeout(() => {
+    if (slashPopup.value?.exprId === exprId) slashPopup.value = null
+  }, 120)
+  onExpressionCommit(exprId)
+}
+
+function onEnterPress(exprId: string) {
+  if (slashPopup.value?.exprId === exprId) {
+    const items = slashFilteredTemplates.value
+    applySlashTemplate(exprId, items[slashPopup.value.selectedIdx])
+    return
+  }
+  onExpressionCommit(exprId)
+}
+
+function onArrowNav(exprId: string, delta: 1 | -1) {
+  if (slashPopup.value?.exprId !== exprId) return
+  const len = slashFilteredTemplates.value.length
+  if (len === 0) return
+  const next = (slashPopup.value.selectedIdx + delta + len) % len
+  slashPopup.value.selectedIdx = next
+}
+
 function onSrcInput(id: string, src: string) {
   if (!calc || !props.interactive) return
+  // P2 #9: leading-slash → open/update popup, skip engine update.
+  // (Engine would mark expression invalid for `/foo` syntax — visually
+  // distracting за popup'ом.)
+  if (src.startsWith('/')) {
+    const query = src.slice(1)
+    if (slashPopup.value?.exprId === id) {
+      slashPopup.value.query = query
+      slashPopup.value.selectedIdx = 0
+    } else {
+      slashPopup.value = { exprId: id, query, selectedIdx: 0 }
+    }
+    return
+  }
+  // Closed popup if value no longer starts with '/'.
+  if (slashPopup.value?.exprId === id) slashPopup.value = null
   calc.updateExpression(id, src)
 }
 
@@ -1066,6 +1211,15 @@ onMounted(() => {
   window.addEventListener('keydown', onWindowKeyDown)
   window.addEventListener('keyup', onWindowKeyUp)
   window.addEventListener('blur', onWindowBlur)
+  // P2 #8: responsive — switch до compact (panel-bottom) layout при <360px.
+  if (rootEl.value && typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        isCompact.value = entry.contentRect.width < COMPACT_THRESHOLD_PX
+      }
+    })
+    resizeObserver.observe(rootEl.value)
+  }
 })
 
 onBeforeUnmount(() => {
@@ -1074,6 +1228,11 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', onWindowKeyDown)
   window.removeEventListener('keyup', onWindowKeyUp)
   window.removeEventListener('blur', onWindowBlur)
+  // P2 #8: disconnect RO BEFORE unmountEngine — RO must not fire on tear-down.
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+    resizeObserver = null
+  }
   // FE-RULE-10: order matters — flush BEFORE destroy.
   flushSyncParams()
   flushSnapshot()
@@ -1169,10 +1328,10 @@ defineExpose({
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: #fffaf0;
-  border: 1px solid rgba(43, 33, 24, 0.15);
-  border-radius: 6px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  background: var(--gc-paper, #fffaf0);
+  border: 1px solid var(--gc-line, rgba(43, 33, 24, 0.15));
+  border-radius: var(--gc-radius-card, 6px);
+  box-shadow: var(--gc-shadow-card, 0 2px 6px rgba(0, 0, 0, 0.08));
   overflow: hidden;
   user-select: none;
   /* Bug fix (2026-05-06): outer container НЕ перехоплює pointer events —
@@ -1182,12 +1341,116 @@ defineExpose({
 }
 
 .graph-calc-renderer.is-selected {
-  outline: 2px solid #3b7b9b;
+  outline: 2px solid var(--gc-accent-2, #3b7b9b);
   outline-offset: 1px;
 }
 
 .graph-calc-renderer.is-readonly {
   pointer-events: none;
+}
+
+/* P2 (2026-05-08): режим презентації — панель прихована, plot заповнює body.
+   Header ховається, окрім toggle-кнопки яка стає floating top-right glass-pill,
+   щоб учитель міг повернутись до edit-режиму. */
+.graph-calc-renderer.is-presenting .gc-panel {
+  display: none;
+}
+.graph-calc-renderer.is-presenting .gc-title,
+.graph-calc-renderer.is-presenting .gc-param-mode-btn,
+.graph-calc-renderer.is-presenting .gc-delete {
+  display: none;
+}
+.graph-calc-renderer.is-presenting .gc-header {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 6;
+  padding: 0;
+  background: transparent;
+  border-bottom: 0;
+}
+.graph-calc-renderer.is-presenting .gc-present-btn {
+  background: var(--gc-glass-bg, rgba(255, 250, 240, 0.92));
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--gc-accent-2, #3b7b9b);
+  border-color: var(--gc-line, rgba(43, 33, 24, 0.15));
+}
+
+/* P2 #8 (2026-05-08): responsive — на overlay шириною <360px перевертаємо
+   gc-body у column-reverse: plot зверху (математика у фокусі), панель з
+   виразами знизу як bottom-sheet з власним вертикальним скролом. */
+.graph-calc-renderer.is-compact .gc-body {
+  flex-direction: column-reverse;
+}
+.graph-calc-renderer.is-compact .gc-panel {
+  width: 100%;
+  max-height: 50%;
+  border-right: 0;
+  border-top: 1px solid var(--gc-line-soft, rgba(43, 33, 24, 0.1));
+  padding: 4px 6px;
+}
+.graph-calc-renderer.is-compact .gc-plot {
+  min-height: 50%;
+}
+
+/* P2 #9 (2026-05-08): slash-command popup. Floating під рядком expression,
+   glass-pill estetiка узгоджена з drag-param-label. Selected item — accent-2-soft
+   bg, mono key зліва (типу VS Code command palette). */
+.gc-slash-popup {
+  grid-column: 2 / -1;
+  margin-top: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 3px;
+  background: var(--gc-glass-bg, rgba(255, 250, 240, 0.92));
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--gc-line, rgba(43, 33, 24, 0.15));
+  border-radius: var(--gc-radius-btn, 4px);
+  box-shadow: var(--gc-shadow-card, 0 2px 6px rgba(0, 0, 0, 0.08));
+  pointer-events: auto;
+  z-index: 4;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.gc-slash-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 6px;
+  border-radius: var(--gc-radius-input, 3px);
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--gc-ink-2, #5a4a3a);
+  transition: background var(--gc-transition, 120ms ease);
+}
+.gc-slash-item.is-selected {
+  background: var(--gc-accent-2-soft, rgba(59, 123, 155, 0.1));
+  color: var(--gc-accent-2, #3b7b9b);
+}
+.gc-slash-item-key {
+  font-family: var(--gc-font-mono, 'JetBrains Mono', monospace);
+  font-size: 10px;
+  color: var(--gc-ink-3, #8a7860);
+  font-feature-settings: "tnum";
+}
+.gc-slash-item.is-selected .gc-slash-item-key {
+  color: var(--gc-accent-2, #3b7b9b);
+}
+.gc-slash-item-label {
+  font-family: var(--gc-font-mono, 'JetBrains Mono', monospace);
+  font-feature-settings: "tnum";
+  text-align: right;
+}
+.gc-slash-empty {
+  padding: 6px 6px;
+  font-size: 10px;
+  color: var(--gc-ink-3, #8a7860);
+  text-align: center;
+  font-style: italic;
 }
 
 /* Re-enable pointer events for interactive parts (delete button, panel
@@ -1200,7 +1463,8 @@ defineExpose({
 .gc-add-btn,
 .gc-swatch,
 .gc-plot,
-.gc-param-mode-btn {
+.gc-param-mode-btn,
+.gc-present-btn {
   pointer-events: auto;
 }
 
@@ -1209,10 +1473,13 @@ defineExpose({
   align-items: center;
   justify-content: space-between;
   padding: 4px 8px;
-  background: rgba(43, 33, 24, 0.05);
+  /* P1 (2026-05-08): прибрано background — header розчиняється у paper.
+     Замість контрастної смуги — лише hairline divider знизу. */
+  background: transparent;
+  border-bottom: 1px solid var(--gc-line-soft, rgba(43, 33, 24, 0.1));
   font-size: 12px;
   font-weight: 600;
-  color: #2b2118;
+  color: var(--gc-ink, #2b2118);
 }
 
 .gc-delete {
@@ -1221,8 +1488,43 @@ defineExpose({
   background: transparent;
   font-size: 16px;
   line-height: 1;
-  color: #a83a5b;
+  color: var(--gc-error, #a83a5b);
   padding: 0 4px;
+}
+
+/* P2 (2026-05-08): presentation toggle — той самий visual stack що й
+   gc-param-mode-btn, але icon-only, gap 4px перед param-mode/delete. */
+.gc-present-btn {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  margin-right: 4px;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--gc-line, rgba(43, 33, 24, 0.15));
+  border-radius: var(--gc-radius-btn, 4px);
+  background: transparent;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--gc-ink-2, #5a4a3a);
+  transition: background var(--gc-transition, 120ms ease), color var(--gc-transition, 120ms ease);
+}
+.gc-present-btn:hover {
+  background: var(--gc-accent-2-faint, rgba(59, 123, 155, 0.08));
+  color: var(--gc-accent-2, #3b7b9b);
+  border-color: var(--gc-accent-2-strong, rgba(59, 123, 155, 0.4));
+}
+.gc-present-btn.is-active {
+  background: var(--gc-accent-2, #3b7b9b);
+  color: var(--gc-paper, #fffaf0);
+  border-color: var(--gc-accent-2, #3b7b9b);
+}
+/* Якщо present-btn активний, наступний margin-left:auto уже не потрібен,
+   бо gc-present-btn сам розіпхався. Скасуємо у sibling param-mode-btn. */
+.gc-present-btn ~ .gc-param-mode-btn {
+  margin-left: 0;
 }
 
 /* Phase G4: param-mode toggle button */
@@ -1234,24 +1536,24 @@ defineExpose({
   margin-left: auto;
   margin-right: 4px;
   padding: 2px 8px;
-  border: 1px solid rgba(59, 123, 155, 0.4);
-  border-radius: 10px;
+  border: 1px solid var(--gc-accent-2-strong, rgba(59, 123, 155, 0.4));
+  border-radius: var(--gc-radius-pill, 10px);
   background: transparent;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--gc-font-mono, 'JetBrains Mono', monospace);
   font-size: 11px;
   font-weight: 600;
-  color: #5a4a3a;
+  color: var(--gc-ink-2, #5a4a3a);
   line-height: 1.2;
-  transition: background 120ms ease, color 120ms ease;
+  transition: background var(--gc-transition, 120ms ease), color var(--gc-transition, 120ms ease);
 }
 .gc-param-mode-btn:hover:not(:disabled) {
-  background: rgba(59, 123, 155, 0.08);
-  color: #3b7b9b;
+  background: var(--gc-accent-2-faint, rgba(59, 123, 155, 0.08));
+  color: var(--gc-accent-2, #3b7b9b);
 }
 .gc-param-mode-btn.is-active {
-  background: #3b7b9b;
-  color: #fffaf0;
-  border-color: #3b7b9b;
+  background: var(--gc-accent-2, #3b7b9b);
+  color: var(--gc-paper, #fffaf0);
+  border-color: var(--gc-accent-2, #3b7b9b);
   animation: gc-param-mode-pulse 1.4s ease-in-out infinite;
 }
 .gc-param-mode-btn:disabled {
@@ -1266,7 +1568,7 @@ defineExpose({
   letter-spacing: 0.02em;
 }
 @keyframes gc-param-mode-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 123, 155, 0.4); }
+  0%, 100% { box-shadow: 0 0 0 0 var(--gc-accent-2-strong, rgba(59, 123, 155, 0.4)); }
   50% { box-shadow: 0 0 0 4px rgba(59, 123, 155, 0); }
 }
 
@@ -1281,7 +1583,7 @@ defineExpose({
   display: flex;
   flex-direction: column;
   padding: 6px;
-  border-right: 1px solid rgba(43, 33, 24, 0.1);
+  border-right: 1px solid var(--gc-line-soft, rgba(43, 33, 24, 0.1));
   overflow-y: auto;
 }
 
@@ -1302,10 +1604,10 @@ defineExpose({
 }
 
 .gc-input {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--gc-font-mono, 'JetBrains Mono', monospace);
   font-size: 12px;
-  border: 1px solid rgba(43, 33, 24, 0.2);
-  border-radius: 3px;
+  border: 1px solid var(--gc-line-strong, rgba(43, 33, 24, 0.2));
+  border-radius: var(--gc-radius-input, 3px);
   padding: 2px 4px;
   background: #fff;
   min-width: 0;
@@ -1320,7 +1622,7 @@ defineExpose({
   cursor: pointer;
   background: transparent;
   border: none;
-  color: #a83a5b;
+  color: var(--gc-error, #a83a5b);
   font-size: 14px;
   line-height: 1;
 }
@@ -1334,21 +1636,26 @@ defineExpose({
   display: flex;
   align-items: center;
   gap: 6px;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--gc-font-mono, 'JetBrains Mono', monospace);
   font-size: 13px;
   font-weight: 600;
-  color: #fffaf0;
-  background: rgba(43, 33, 24, 0.85);
+  /* P1 (2026-05-08): glass-pill — світла warm-paper з blur замість dark
+     toast. Не схоже на error-notification, у дусі brand. */
+  color: var(--gc-ink, #2b2118);
+  background: var(--gc-glass-bg, rgba(255, 250, 240, 0.92));
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--gc-line, rgba(43, 33, 24, 0.15));
   padding: 4px 10px;
-  border-radius: 4px;
+  border-radius: var(--gc-radius-pill, 10px);
   pointer-events: none;
   user-select: none;
   letter-spacing: 0.02em;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--gc-shadow-toast, 0 2px 4px rgba(0, 0, 0, 0.2));
 }
 .gc-drag-param-icon {
   font-size: 14px;
-  color: #c4d3df;
+  color: var(--gc-accent-2, #3b7b9b);
   animation: gc-drag-pulse 1.2s ease-in-out infinite;
 }
 .gc-drag-param-text { white-space: nowrap; }
@@ -1367,29 +1674,34 @@ defineExpose({
 }
 .gc-hint-btn {
   cursor: pointer;
-  background: rgba(196, 98, 42, 0.08);
-  border: 1px dashed rgba(196, 98, 42, 0.4);
-  border-radius: 3px;
+  background: var(--gc-accent-soft, rgba(196, 98, 42, 0.08));
+  border: 1px dashed var(--gc-accent-strong, rgba(196, 98, 42, 0.4));
+  border-radius: var(--gc-radius-input, 3px);
   padding: 1px 5px;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--gc-font-mono, 'JetBrains Mono', monospace);
   font-size: 10px;
-  color: #c4622a;
+  color: var(--gc-accent, #c4622a);
   pointer-events: auto;
 }
 .gc-hint-btn:hover {
-  background: rgba(196, 98, 42, 0.18);
+  background: var(--gc-accent-hover, rgba(196, 98, 42, 0.18));
 }
 
 .gc-add-btn {
   margin-top: 4px;
   cursor: pointer;
-  background: rgba(59, 123, 155, 0.1);
-  border: 1px dashed rgba(59, 123, 155, 0.4);
-  border-radius: 4px;
-  padding: 4px;
+  /* P1 (2026-05-08): solid soft fill, no dashed border — outlinkий "drop zone"
+     vibe замінено на native pill button. */
+  background: var(--gc-accent-2-soft, rgba(59, 123, 155, 0.1));
+  border: 0;
+  border-radius: var(--gc-radius-pill, 10px);
+  padding: 4px 10px;
   font-size: 12px;
-  color: #3b7b9b;
+  font-weight: 500;
+  color: var(--gc-accent-2, #3b7b9b);
+  transition: background var(--gc-transition, 120ms ease);
 }
+.gc-add-btn:hover { background: var(--gc-accent-2-faint, rgba(59, 123, 155, 0.16)); }
 
 /* Phase G4: inline quick-add templates row (під «+ add») */
 .gc-quick-add {
@@ -1401,17 +1713,19 @@ defineExpose({
 }
 .gc-quick-btn {
   cursor: pointer;
-  background: rgba(196, 98, 42, 0.06);
-  border: 1px solid rgba(196, 98, 42, 0.3);
-  border-radius: 3px;
-  padding: 2px 6px;
-  font-family: 'JetBrains Mono', monospace;
+  /* P1 (2026-05-08): chips — pill, no border, tabular nums for monospace формули. */
+  background: var(--gc-accent-soft, rgba(196, 98, 42, 0.08));
+  border: 0;
+  border-radius: var(--gc-radius-pill, 10px);
+  padding: 2px 8px;
+  font-family: var(--gc-font-mono, 'JetBrains Mono', monospace);
+  font-feature-settings: "tnum";
   font-size: 10px;
-  color: #c4622a;
+  color: var(--gc-accent, #c4622a);
   pointer-events: auto;
-  transition: background 120ms ease;
+  transition: background var(--gc-transition, 120ms ease);
 }
-.gc-quick-btn:hover { background: rgba(196, 98, 42, 0.16); }
+.gc-quick-btn:hover { background: var(--gc-accent-active, rgba(196, 98, 42, 0.16)); }
 
 /* Phase G4: help hint під params section */
 .gc-help-hint {
@@ -1421,17 +1735,17 @@ defineExpose({
   align-items: center;
   gap: 4px;
   font-size: 10px;
-  color: #5a4a3a;
-  background: rgba(43, 33, 24, 0.04);
-  border-radius: 3px;
+  color: var(--gc-ink-2, #5a4a3a);
+  background: var(--gc-line-faintest, rgba(43, 33, 24, 0.04));
+  border-radius: var(--gc-radius-input, 3px);
   line-height: 1.3;
 }
 .gc-help-hint__icon { font-size: 11px; }
 .gc-help-hint kbd {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--gc-font-mono, 'JetBrains Mono', monospace);
   font-size: 9px;
   padding: 0 3px;
-  background: rgba(43, 33, 24, 0.1);
+  background: var(--gc-line-soft, rgba(43, 33, 24, 0.1));
   border-radius: 2px;
 }
 
@@ -1446,12 +1760,12 @@ defineExpose({
 .gc-points {
   margin-top: 8px;
   padding-top: 6px;
-  border-top: 1px solid rgba(43, 33, 24, 0.1);
+  border-top: 1px solid var(--gc-line-soft, rgba(43, 33, 24, 0.1));
 }
 .gc-points-header {
   font-size: 11px;
   font-weight: 600;
-  color: #5a4a3a;
+  color: var(--gc-ink-2, #5a4a3a);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin-bottom: 4px;
@@ -1467,19 +1781,19 @@ defineExpose({
 .gc-point-mark {
   width: 8px; height: 8px;
   border-radius: 50%;
-  background: #c4622a;
-  border: 1px solid #fffaf0;
+  background: var(--gc-accent, #c4622a);
+  border: 1px solid var(--gc-paper, #fffaf0);
 }
-.gc-point-mark.is-on-curve { background: #3b7b9b; }
+.gc-point-mark.is-on-curve { background: var(--gc-accent-2, #3b7b9b); }
 .gc-point-coords {
-  font-family: 'JetBrains Mono', monospace;
-  color: #2b2118;
+  font-family: var(--gc-font-mono, 'JetBrains Mono', monospace);
+  color: var(--gc-ink, #2b2118);
 }
 .gc-point-del {
   cursor: pointer;
   background: transparent;
   border: none;
-  color: #a83a5b;
+  color: var(--gc-error, #a83a5b);
   font-size: 14px;
   line-height: 1;
 }
@@ -1488,12 +1802,12 @@ defineExpose({
 .gc-params {
   margin-top: 8px;
   padding-top: 6px;
-  border-top: 1px solid rgba(43, 33, 24, 0.1);
+  border-top: 1px solid var(--gc-line-soft, rgba(43, 33, 24, 0.1));
 }
 .gc-params-header {
   font-size: 11px;
   font-weight: 600;
-  color: #5a4a3a;
+  color: var(--gc-ink-2, #5a4a3a);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin-bottom: 4px;
@@ -1505,17 +1819,17 @@ defineExpose({
 .gc-params-hint {
   font-size: 9px;
   font-weight: 500;
-  color: #3b7b9b;
+  color: var(--gc-accent-2, #3b7b9b);
   text-transform: none;
   letter-spacing: 0;
-  background: rgba(59, 123, 155, 0.1);
+  background: var(--gc-accent-2-soft, rgba(59, 123, 155, 0.1));
   padding: 1px 5px;
-  border-radius: 3px;
+  border-radius: var(--gc-radius-input, 3px);
   cursor: help;
 }
 .gc-params-hint--disabled {
-  color: #94a3b8;
-  background: rgba(148, 163, 184, 0.1);
+  color: var(--gc-mute-fg, #94a3b8);
+  background: var(--gc-mute-bg, rgba(148, 163, 184, 0.1));
 }
 .gc-param-row {
   display: grid;
@@ -1525,9 +1839,9 @@ defineExpose({
   margin-bottom: 3px;
 }
 .gc-param-name {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--gc-font-mono, 'JetBrains Mono', monospace);
   font-size: 11px;
-  color: #2b2118;
+  color: var(--gc-ink, #2b2118);
   background: transparent;
   border: none;
   padding: 0;
@@ -1537,17 +1851,17 @@ defineExpose({
   user-select: none;
 }
 .gc-param-name:hover {
-  color: #3b7b9b;
+  color: var(--gc-accent-2, #3b7b9b);
   text-decoration: underline dotted;
 }
 .gc-param-row.is-expanded .gc-param-name {
-  color: #3b7b9b;
+  color: var(--gc-accent-2, #3b7b9b);
   font-weight: 600;
 }
 .gc-param-value {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--gc-font-mono, 'JetBrains Mono', monospace);
   font-size: 11px;
-  color: #5a4a3a;
+  color: var(--gc-ink-2, #5a4a3a);
   text-align: right;
 }
 
@@ -1558,23 +1872,23 @@ defineExpose({
   gap: 4px;
   margin-top: 4px;
   padding: 4px;
-  background: rgba(43, 33, 24, 0.04);
-  border-radius: 4px;
+  background: var(--gc-line-faintest, rgba(43, 33, 24, 0.04));
+  border-radius: var(--gc-radius-btn, 4px);
 }
 .gc-range-field {
   display: flex;
   flex-direction: column;
   gap: 2px;
   font-size: 10px;
-  color: #5a4a3a;
+  color: var(--gc-ink-2, #5a4a3a);
 }
 .gc-range-input {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--gc-font-mono, 'JetBrains Mono', monospace);
   font-size: 11px;
   width: 100%;
   padding: 1px 3px;
-  border: 1px solid rgba(43, 33, 24, 0.2);
-  border-radius: 3px;
+  border: 1px solid var(--gc-line-strong, rgba(43, 33, 24, 0.2));
+  border-radius: var(--gc-radius-input, 3px);
   background: #fff;
   pointer-events: auto;
   box-sizing: border-box;
