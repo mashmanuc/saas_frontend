@@ -751,8 +751,12 @@ async function _attemptFinalizeWithBarrier(sid: string): Promise<void> {
     // Pre-flush: BACKLOG_REPLAY_FINALIZE_FLUSH_RACE explicitly forbids the
     // legacy `try/catch (e) { console.warn() }` swallow here. If flush fails,
     // we surface via fallback path so user knows last actions may not be saved.
+    //
+    // 2026-05-08 hotfix: MUST use `flushAll()` (drains ALL batches), NOT
+    // `flush()` (which processes only first FLUSH_BATCH_SIZE=50 ops).
+    // See WBSoloRoom.vue same change для full bug history.
     try {
-      await opsSync.flush()
+      await opsSync.flushAll()
     } catch (flushErr) {
       if (!_isFinalizeMounted.value) return
       finalizeBarrierState.value = 'closed'

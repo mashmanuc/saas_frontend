@@ -1018,11 +1018,13 @@ async function _attemptFinalizeWithBarrier(sid: string): Promise<void> {
   if (_finalizeAttemptInFlight.value) return
   _finalizeAttemptInFlight.value = true
   try {
-    // INV-22 §22.3: pre-flush ensures any drawn ops between last flush і
-    // user clicking "Stop" reach BE before we ask for finalize. After
-    // flush() resolves, opsSync.serverSeq = max seq accepted by BE.
+    // INV-22 §22.3 + 2026-05-08 hotfix: pre-flush ensures ALL drawn ops reach BE
+    // before finalize. MUST use `flushAll()` (drains all batches) — `flush()`
+    // alone processes only first FLUSH_BATCH_SIZE=50 ops, leaving rest у
+    // pendingOps → barrier sees stale serverSeq → replay tail truncated.
+    // Bug history: 2026-05-08 prod regression after 250+ strokes (~1500 ops).
     try {
-      await opsSync.flush()
+      await opsSync.flushAll()
     } catch (flushErr) {
       if (!_isFinalizeMounted.value) return
       // Per INV-22 §22.7 + LAW §12: NO silent swallow of flush errors.

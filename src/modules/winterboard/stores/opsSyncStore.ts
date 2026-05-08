@@ -330,6 +330,48 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     return _flushPromise
   }
 
+  /**
+   * Drain ALL queued ops (pendingOps + inFlightOps) by calling flush() repeatedly
+   * until both queues empty.
+   *
+   * **Why this exists:** `flush()` processes only ONE batch (FLUSH_BATCH_SIZE = 50 ops)
+   * per call. Callers що need ALL ops sent before continuing (e.g. finalize barrier
+   * у INV-22) MUST use flushAll() — otherwise ops 51+ stay у pendingOps and never
+   * reach BE → INV-22 §22.0 invariant violated (replay tail truncated).
+   *
+   * **Bug history (2026-05-08):** PR-1b finalize flow called `await opsSync.flush()`
+   * once. After 250+ strokes (~1500 ops), only first 50 reached BE; rest lost.
+   * Backend barrier returned IMMEDIATE/WAITED for `serverSeq=50`, BE finalized
+   * Replay з `recording_stopped_seq≈50`. User saw blank/truncated replay.
+   *
+   * **Behavior:**
+   * - Iterates calling `flush()` until both queues empty.
+   * - On any flush() throw (DESYNC / PAUSED / PROTOCOL_VERSION_MISMATCH / 503
+   *   backoff / network) → propagates to caller. Caller decides retry.
+   * - Bounded by `maxIterations` (default 100 = up to 5000 ops з 50/batch).
+   *   Throws Error если drain не completes — protects against pathological loops.
+   * - Concurrent record() calls during await ARE handled: each iteration takes
+   *   fresh slice of pendingOps. UI MUST disable input during finalize (caller's
+   *   responsibility) щоб уникнути monotonic-fill races.
+   */
+  async function flushAll(opts: { maxIterations?: number } = {}): Promise<void> {
+    const max = opts.maxIterations ?? 100
+    for (let i = 0; i < max; i++) {
+      if (pendingOps.value.length === 0 && inFlightOps.value.length === 0) {
+        return  // fully drained
+      }
+      // Single bounded flush — propagates throws (DESYNC / PAUSED / 503 / etc.).
+      // Caller catches per existing flush() error contract.
+      await flush()
+    }
+    throw new Error(
+      `flushAll: drain incomplete after ${max} iterations ` +
+      `(pending=${pendingOps.value.length}, inFlight=${inFlightOps.value.length}). ` +
+      `Possible causes: record() filling faster than flush() drains, OR network ` +
+      `pathology causing zero-progress flushes.`,
+    )
+  }
+
   async function _doFlush(): Promise<void> {
     const sid = sessionId.value
     if (!sid) {
@@ -654,6 +696,7 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     bootstrap,
     record,
     flush,
+    flushAll,
     sendBeacon,
     applyServerOp,
     enterDesync,
