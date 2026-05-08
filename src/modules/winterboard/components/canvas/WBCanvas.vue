@@ -3902,6 +3902,11 @@ onUnmounted(() => {
   resizeObserver = null
   // A6.2: Clear spatial index
   spatialIndex.clear()
+  // Memory cleanup: image caches (HTMLImageElement retains decoded bitmap у MB-scale).
+  // Safe on unmount — Konva nodes also destroyed, no rendering refs остаються.
+  loadedImages.clear()
+  failedImages.clear()
+  _knownAssetIds.clear()
 })
 
 watch(
@@ -3949,6 +3954,12 @@ watch(
     assetConfigCache.clear()
     // Clear smoothing cache
     clearSmoothedCache()
+    // Memory cleanup: image caches grow unbounded across pages. Trade-off — re-decode
+    // on page revisit, але limits peak memory у multi-page sessions. _knownAssetIds
+    // НЕ clear here — інакше всі assets нової сторінки виглядали б "fresh" і
+    // тригерили drop-animation у smart-drop watcher.
+    loadedImages.clear()
+    failedImages.clear()
     // GHOST FIX: Stale selectedNode causes the Konva transformer to render a ghost
     // rectangle on the new page (transformer renders at the old node's last position).
     // Must clear selection state whenever the page changes.
@@ -4332,7 +4343,10 @@ defineExpose({
   pointer-events: none;
 }
 .wb-graph-calculator-overlay--selected {
-  outline: 2px solid rgba(59, 123, 155, 0.7);
-  outline-offset: 1px;
+  /* P1 (2026-05-08): softer selection — 1px outline + glow halo, less aggressive
+     than 2px solid blue box. Matches modern editor selection language. */
+  outline: 1px solid var(--gc-accent-2-strong, rgba(59, 123, 155, 0.55));
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--gc-accent-2-faint, rgba(59, 123, 155, 0.12));
 }
 </style>

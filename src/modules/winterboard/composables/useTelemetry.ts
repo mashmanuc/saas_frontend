@@ -148,7 +148,11 @@ export function useTelemetry(sessionId: Ref<string | null>): TelemetryReturn {
   }
 
   function trackSaveLatency(ms: number): void {
-    metrics.value.saveLatencyMs.push(ms)
+    const arr = metrics.value.saveLatencyMs
+    arr.push(ms)
+    // Cap to last 100 entries — unbounded growth was a 1-h soak suspect (~3600
+    // pushes for normal lesson). Last-100 sufficient для p50/p95/p99 sampling.
+    if (arr.length > 100) arr.splice(0, arr.length - 100)
     pushEvent('save.latency', { latency_ms: ms })
   }
 

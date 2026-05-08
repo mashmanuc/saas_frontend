@@ -143,6 +143,27 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
     saveBackup(sid, [...opsSync.pendingOps], [...opsSync.inFlightOps])
   }
 
+  // Trailing throttle для hot record() path. Reduces allocator pressure від
+  // per-op array spread + JSON.stringify (1h soak: 1444 cycles → cap ~3600 у
+  // worst-case at 1/s). Error / lifecycle / flush paths still call _persistBackup()
+  // immediately для crash safety.
+  const PERSIST_BACKUP_THROTTLE_MS = 1_000
+  let _persistBackupTimer: ReturnType<typeof setTimeout> | null = null
+  function _persistBackupThrottled(): void {
+    if (_persistBackupTimer !== null) return
+    _persistBackupTimer = setTimeout(() => {
+      _persistBackupTimer = null
+      _persistBackup()
+    }, PERSIST_BACKUP_THROTTLE_MS)
+  }
+  function _flushPersistBackupTimer(): void {
+    if (_persistBackupTimer !== null) {
+      clearTimeout(_persistBackupTimer)
+      _persistBackupTimer = null
+      _persistBackup()  // ensure pending state hits localStorage on stop/destroy
+    }
+  }
+
   // ─── Public API ──
 
   /**
@@ -222,7 +243,7 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
       if (last && tryCoalesceStrokeAppend(last as OpsSyncOp, op as unknown as OpsSyncOp)) {
         // Merged into previous pending op — don't push new op
         opCount.value++
-        _persistBackup()
+        _persistBackupThrottled()
         return
       }
     }
@@ -232,7 +253,7 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
     if (!accepted) return  // dropped by store (DESYNC або BOOTSTRAP not done)
 
     opCount.value++
-    _persistBackup()
+    _persistBackupThrottled()
 
     if (opsSync.pendingOps.length >= INSTANT_FLUSH_THRESHOLD) {
       // Instant flush коли buffer повний — не чекаємо debounce
@@ -482,6 +503,9 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
       clearTimeout(debounceTimer)
       debounceTimer = null
     }
+    // Force pending throttled backup to localStorage перед unload — інакше
+    // ops emitted у last <1s могли б бути lost on crash.
+    _flushPersistBackupTimer()
     void flush()  // final flush — fire-and-forget; data loss on unload accepted
   }
 
