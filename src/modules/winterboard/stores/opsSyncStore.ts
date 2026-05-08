@@ -214,6 +214,44 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
     return e?.response?.status === 503
   }
 
+  /**
+   * INV-23 §23.4 Guard 1 — detect 409 lifecycle write-rejection responses.
+   *
+   * Per §23.12 status table, 3 codes ARE entity-conflict (Taxonomy B per
+   * TRANSPORT_ERROR_SEMANTICS) — they MUST NOT trigger DESYNC:
+   *   - SESSION_ARCHIVED
+   *   - REPLAY_FROZEN_NO_WRITE
+   *   - PAUSED_RECORDING_READ_ONLY
+   *
+   * Returns enum string OR null. Caller throws typed `LifecycleStateError`.
+   */
+  function _isLifecycleError(err: unknown): {
+    code: 'SESSION_ARCHIVED' | 'REPLAY_FROZEN_NO_WRITE' | 'PAUSED_RECORDING_READ_ONLY' | null
+    recordingState?: string
+    isArchived?: boolean
+  } {
+    const e = err as {
+      response?: {
+        status?: number
+        data?: { error?: string; recording_state?: string; is_archived?: boolean }
+      }
+    }
+    if (e?.response?.status !== 409) return { code: null }
+    const code = e.response.data?.error
+    if (
+      code === 'SESSION_ARCHIVED' ||
+      code === 'REPLAY_FROZEN_NO_WRITE' ||
+      code === 'PAUSED_RECORDING_READ_ONLY'
+    ) {
+      return {
+        code,
+        recordingState: e.response.data?.recording_state,
+        isArchived: e.response.data?.is_archived,
+      }
+    }
+    return { code: null }
+  }
+
   // ── Actions ──
 
   /**
@@ -438,6 +476,22 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
         inFlightOps.value = []
         pendingOps.value = []
         throw new DesyncError(`flush() blocked: ${reason}`)
+      }
+      // INV-23 §23.4 Guard 1 — BE rejected write через invalid lifecycle state.
+      // Taxonomy B per TRANSPORT_ERROR_SEMANTICS: NOT DESYNC — entity-conflict
+      // routes до own UX (toast). Drop pending+inFlight: archived/frozen sessions
+      // never accept writes; paused = read-only per §23.0.B (FE retry після
+      // explicit user resume). Caller (useReplayRecorder) catches LifecycleStateError
+      // → emits toast per §23.12.
+      const lifecycle = _isLifecycleError(err)
+      if (lifecycle.code) {
+        inFlightOps.value = []
+        pendingOps.value = []
+        throw new LifecycleStateError(
+          lifecycle.code,
+          lifecycle.recordingState,
+          lifecycle.isArchived,
+        )
       }
       if (_isServerBusy(err)) {
         // Phase S PR-3 (2026-04-28) INV-12 BOUNDED RETRY orchestration:
@@ -724,6 +778,37 @@ export class DesyncError extends Error {
   constructor(message: string) {
     super(message)
     this.name = 'DesyncError'
+  }
+}
+
+/**
+ * INV-23 §23.4 Guard 1 — thrown by opsSyncStore.flush() коли BE rejects writes
+ * через invalid lifecycle state. Taxonomy B per TRANSPORT_ERROR_SEMANTICS
+ * (entity-conflict, NOT DESYNC).
+ *
+ * `code` — one of 3 enum values per §23.12:
+ *   - SESSION_ARCHIVED
+ *   - REPLAY_FROZEN_NO_WRITE
+ *   - PAUSED_RECORDING_READ_ONLY
+ *
+ * Caller (useReplayRecorder) MUST catch + route до toast per §23.12. NEVER
+ * route through DESYNC recovery (that would corrupt FE state model).
+ */
+export class LifecycleStateError extends Error {
+  public readonly code: 'SESSION_ARCHIVED' | 'REPLAY_FROZEN_NO_WRITE' | 'PAUSED_RECORDING_READ_ONLY'
+  public readonly recordingState?: string
+  public readonly isArchived?: boolean
+
+  constructor(
+    code: 'SESSION_ARCHIVED' | 'REPLAY_FROZEN_NO_WRITE' | 'PAUSED_RECORDING_READ_ONLY',
+    recordingState?: string,
+    isArchived?: boolean,
+  ) {
+    super(`flush() blocked: lifecycle ${code} (state=${recordingState ?? 'unknown'} archived=${isArchived ?? 'unknown'})`)
+    this.name = 'LifecycleStateError'
+    this.code = code
+    this.recordingState = recordingState
+    this.isArchived = isArchived
   }
 }
 

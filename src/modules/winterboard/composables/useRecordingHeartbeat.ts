@@ -96,9 +96,22 @@ export function useRecordingHeartbeat(opts: UseHeartbeatOptions): UseHeartbeatRe
         stop()
       }
     } catch (e: unknown) {
-      const status = (e as { response?: { status?: number } })?.response?.status
+      const errResp = (e as { response?: { status?: number; data?: { error?: string } } })?.response
+      const status = errResp?.status
       if (status === 401 || status === 403) {
         console.warn(LOG, { event: 'auth_dead', status, sessionId: sid })
+        stop()
+        return
+      }
+      // INV-23 §23.4 Guard 3 + §23.12: 409 HEARTBEAT_NOT_APPLICABLE = recording
+      // state changed (BE auto-finalize або explicit stop race). Silently stop
+      // ticker per §23.12 — UI re-fetch'не state через інший signal.
+      if (status === 409 && errResp?.data?.error === 'HEARTBEAT_NOT_APPLICABLE') {
+        console.warn(LOG, {
+          event: 'be_reports_not_applicable',
+          recording_state: (errResp?.data as { recording_state?: string })?.recording_state,
+          sessionId: sid,
+        })
         stop()
         return
       }

@@ -24,12 +24,13 @@ import { createSnapshot } from '../api/replay'
 import { registerAuthDeathCleanup, isAuthDead } from '@/core/auth/onAuthDeath'
 import { saveBackup, clearBackup, readBackup } from './useOpsBackup'
 import { trackEvent } from '@/utils/telemetryAgent'
-import { notifyWarning } from '@/utils/notify'
+import { notifyWarning, notifyError } from '@/utils/notify'
 import {
   useOpsSyncStore,
   DesyncError,
   BeaconUnsupportedError,
   BackpressureError,
+  LifecycleStateError,
   type OpsSyncOp,
 } from '../stores/opsSyncStore'
 import { tryCoalesceStrokeAppend } from '../services/opsCoalescer'
@@ -322,6 +323,28 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
           })
         } catch { /* telemetry never throws */ }
         _persistBackup()  // crash-safety: ops preserved у localStorage
+        return
+      }
+      if (err instanceof LifecycleStateError) {
+        // INV-23 §23.4 Guard 1 + §23.12 — BE rejected ops через invalid lifecycle.
+        // NOT DESYNC (Taxonomy B). Store вже cleared pendingOps + inFlightOps.
+        // Toast per §23.12 + telemetry, clear backup (ops won't be retryable).
+        try {
+          trackEvent('wb.ops.lifecycle_blocked', {
+            session_id: sid,
+            code: err.code,
+            recording_state: err.recordingState ?? null,
+            is_archived: err.isArchived ?? null,
+          })
+        } catch { /* telemetry never throws */ }
+        if (err.code === 'SESSION_ARCHIVED') {
+          notifyError('Сесію архівовано — створіть нову дошку')
+        } else if (err.code === 'REPLAY_FROZEN_NO_WRITE') {
+          notifyWarning('Запис закінчено — щоб продовжити, перейдіть у нову дошку')
+        } else if (err.code === 'PAUSED_RECORDING_READ_ONLY') {
+          notifyWarning('Запис на паузі — продовжте запис перед малюванням')
+        }
+        clearBackup(sid)
         return
       }
       if (err instanceof BeaconUnsupportedError) {
