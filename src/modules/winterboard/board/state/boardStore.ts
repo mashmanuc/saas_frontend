@@ -423,6 +423,79 @@ function _emitOperation(op: RecordOperationRequest): void {
 }
 
 /**
+ * Decomposes a "full page restoration" emit into a series of small ops.
+ *
+ * Замість одного giant `page_add { page: { ..., strokes: [...], assets: [...] } }`
+ * (потенційно > MAX_PAYLOAD_BYTES recorder cap, що silent-droрав op-и під час
+ * 2026-05-08 finalize regression), emit'имо:
+ *   1. `page_add` з METADATA only (≤ 1KB)
+ *   2. `stroke_add` per stroke (single-entity ops, кожен ~1-5KB)
+ *   3. `asset_add` per asset (з 'data:'/'blob:' URLs stripped recorder'ом)
+ *
+ * Replay engine reconstructs same final state бо `applyReplayOperation`
+ * уже handles ці op types як first-class citizens (engine.ts §128 / §315 / §330).
+ *
+ * Used by `duplicatePage()` + `deletePageUndoable.revert` (undo-of-delete must
+ * restore strokes/assets). Other page_add callsites emit metadata only and не
+ * проходять через цей helper.
+ */
+function _emitPageAddDecomposed(
+  page: WBPage,
+  options?: { insertAt?: number; timestamp?: number },
+): void {
+  const ts = options?.timestamp ?? Date.now()
+  const insertAt = options?.insertAt
+  // Strip document_viewer pages[] from assets (not persisted) — same logic
+  // as inline у duplicatePage перед refactor.
+  const cleanAssets = page.assets.map(a => {
+    if (a.type === 'document_viewer' && a.pages) {
+      const { pages: _p, ...rest } = a
+      return rest
+    }
+    return a
+  })
+
+  // 1. page_add (metadata only) — small, always fits per-op payload cap.
+  _emitOperation({
+    op_type: 'page_add',
+    page_id: page.id,
+    payload: {
+      page: {
+        id: page.id,
+        name: page.name,
+        background: page.background,
+        backgroundColor: page.backgroundColor,
+        width: page.width,
+        height: page.height,
+        grid: page.grid,
+      },
+      ...(insertAt !== undefined ? { insertAt } : {}),
+    },
+    timestamp: ts,
+  })
+
+  // 2. stroke_add per stroke — each ≤ FLUSH per-op cap.
+  for (const stroke of page.strokes) {
+    _emitOperation({
+      op_type: 'stroke_add',
+      page_id: page.id,
+      payload: { stroke },
+      timestamp: ts,
+    })
+  }
+
+  // 3. asset_add per asset.
+  for (const asset of cleanAssets) {
+    _emitOperation({
+      op_type: 'asset_add',
+      page_id: page.id,
+      payload: { asset },
+      timestamp: ts,
+    })
+  }
+}
+
+/**
  * Split items into chunks, each chunk's JSON size ≤ maxBytes.
  * Used for batch ops with large stroke points arrays (prevents 64KB drop).
  * Self-contained chunks — no batch_id/reassembly needed, each applies atomically.
@@ -2313,35 +2386,12 @@ export const useWBStore = defineStore('wb-board', {
       this.currentPageIndex = insertAt
       this.markDirty()
 
-      // Phase 20: emit operation for recording (include full content for diff-save)
+      // Phase 20: emit operation for recording.
+      // 2026-05-08 hotfix: decompose у series of small ops (page_add metadata +
+      // stroke_add×N + asset_add×M) щоб не перевищити recorder per-op
+      // MAX_PAYLOAD_BYTES при дублюванні image-heavy pages.
       if (this.mode === 'edit') {
-        // Strip document_viewer pages[] from assets (not persisted)
-        const cleanAssets = newPage.assets.map(a => {
-          if (a.type === 'document_viewer' && a.pages) {
-            const { pages: _p, ...rest } = a
-            return rest
-          }
-          return a
-        })
-        _emitOperation({
-          op_type: 'page_add',
-          page_id: newPage.id,
-          payload: {
-            page: {
-              id: newPage.id,
-              name: newPage.name,
-              background: newPage.background,
-              backgroundColor: newPage.backgroundColor,
-              width: newPage.width,
-              height: newPage.height,
-              grid: newPage.grid,
-              strokes: newPage.strokes,
-              assets: cleanAssets,
-            },
-            insertAt,
-          },
-          timestamp: Date.now(),
-        })
+        _emitPageAddDecomposed(newPage, { insertAt })
       }
     },
 
@@ -2591,23 +2641,8 @@ export const useWBStore = defineStore('wb-board', {
           this.pages = pagesCopy
           this.currentPageIndex = _wasCurrentIndex
           this.markDirty()
-          _emitOperation({
-            op_type: 'page_add',
-            page_id: _deletedPage.id,
-            payload: {
-              page: {
-                id: _deletedPage.id,
-                name: _deletedPage.name,
-                background: _deletedPage.background,
-                backgroundColor: _deletedPage.backgroundColor,
-                width: _deletedPage.width,
-                height: _deletedPage.height,
-                strokes: _deletedPage.strokes,
-                assets: _deletedPage.assets,
-              },
-              insertAt: _index,
-            },
-          })
+          // 2026-05-08 hotfix: decompose у small ops (same reason as duplicatePage).
+          _emitPageAddDecomposed(_deletedPage as WBPage, { insertAt: _index })
         },
       }
       this.undoStack = trimStack([...this.undoStack, cmd])
