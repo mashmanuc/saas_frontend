@@ -1067,6 +1067,20 @@ async function _attemptFinalizeWithBarrier(sid: string): Promise<void> {
         finalizeBarrierState.value = 'contention'
         return
       }
+      if (err instanceof replayApi.FinalizeBarrierNetworkError) {
+        // 2026-05-09 (Option C Part B): CORS-shadowed 504 OR genuine network
+        // glitch. Same UX як TimeoutError — show retry modal so user can retry
+        // (apply pipeline catches up по time of click). НЕ "Запис не працює"
+        // banner. Real-world: під 10× concurrent finalize stress test 504 без
+        // CORS header → axios throws Network Error → раніше fall-through до
+        // recording-broken banner. Тепер retry modal.
+        console.warn('[WBSoloRoom] finalize network error (CORS-shadowed?):', err.causeMessage)
+        finalizeBarrierExpectedSeq.value = null
+        finalizeBarrierCurrentSeq.value = null
+        finalizeBarrierRetryAfterMs.value = 0
+        finalizeBarrierState.value = 'timeout'  // reuse timeout modal — same UX
+        return
+      }
       if (err instanceof replayApi.FinalizeBarrierContractError) {
         console.error('[WBSoloRoom] FINALIZE_CONTRACT_ERROR:', err)
       }

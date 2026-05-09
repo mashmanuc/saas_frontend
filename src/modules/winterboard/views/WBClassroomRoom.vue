@@ -801,6 +801,17 @@ async function _attemptFinalizeWithBarrier(sid: string): Promise<void> {
         finalizeBarrierState.value = 'contention'
         return
       }
+      if (err instanceof replayApi.FinalizeBarrierNetworkError) {
+        // 2026-05-09 parity з WBSoloRoom: CORS-shadowed 504 / network glitch
+        // → reuse timeout modal (retry button). Apply pipeline catches up по
+        // time of user click. НЕ "Запис не працює" banner.
+        console.warn('[WBClassroomRoom] finalize network error (CORS-shadowed?):', err.causeMessage)
+        finalizeBarrierExpectedSeq.value = null
+        finalizeBarrierCurrentSeq.value = null
+        finalizeBarrierRetryAfterMs.value = 0
+        finalizeBarrierState.value = 'timeout'
+        return
+      }
       if (err instanceof replayApi.FinalizeBarrierContractError) {
         console.error('[WBClassroomRoom] FINALIZE_CONTRACT_ERROR:', err)
       }

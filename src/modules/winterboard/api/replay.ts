@@ -306,6 +306,29 @@ export class FinalizeBarrierContractError extends Error {
 }
 
 /**
+ * Thrown when finalize-recording HTTP call fails з network-level error
+ * (no `response` on axios error). Включає:
+ *   - CORS-shadowed 5xx (BE response stripped CORS header → browser blocks)
+ *   - Genuine network glitches (DNS, connection reset, TLS timeout)
+ *   - Fly proxy intermediary failures (502/504 без CORS)
+ *
+ * 2026-05-09: added after 10×60min stress test показав що під 10× concurrent
+ * finalize, 5/20 fail with CORS-shadowed 504 → axios throws `Network Error`
+ * без `err.response` → раніше fall-through to recording-broken banner ("Запис
+ * не працює"). Тепер surfaces typed error → caller shows retry modal (same
+ * UX як TimeoutError). Apply pipeline catches up по time of user retry.
+ */
+export class FinalizeBarrierNetworkError extends Error {
+  readonly causeMessage: string
+  constructor(cause: unknown) {
+    const msg = (cause as { message?: string })?.message ?? String(cause)
+    super(`Finalize network error: ${msg}`)
+    this.name = 'FinalizeBarrierNetworkError'
+    this.causeMessage = msg
+  }
+}
+
+/**
  * INV-22 PR-1b — finalize із barrier confirmation that apply pipeline
  * caught up to a specified seq.
  *
@@ -344,8 +367,9 @@ export async function finalizeWithBarrier(
       { _finalizeBarrierToastSuppressed: true } as any,
     )
   } catch (err) {
-    const status = (err as any)?.response?.status
-    const data = (err as any)?.response?.data
+    const response = (err as any)?.response
+    const status = response?.status
+    const data = response?.data
     if (status === 504 && data?.error === 'APPLY_BACKLOG_TIMEOUT') {
       throw new FinalizeBarrierTimeoutError(data as FinalizeBarrierTimeoutPayload)
     }
@@ -354,6 +378,15 @@ export async function finalizeWithBarrier(
     }
     if (status === 400 && data?.error === 'FLUSHED_SEQ_REQUIRED') {
       throw new FinalizeBarrierContractError(data?.detail ?? 'unknown')
+    }
+    // Network-level error (no `response` on axios error) — could be CORS-shadowed
+    // 504 (BE returned 504 but Fly proxy / middleware stripped CORS header → browser
+    // blocks → axios sees no response) OR genuine network glitch. Surface як typed
+    // error so caller може show retry modal замість scary "Запис не працює" banner.
+    // Server-side state likely transitions cleanly on retry (apply pipeline catches
+    // up). Auto_finalize_stale_recordings Celery task ще acts як safety net.
+    if (!response) {
+      throw new FinalizeBarrierNetworkError(err)
     }
     throw err
   }
