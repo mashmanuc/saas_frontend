@@ -80,6 +80,20 @@ export async function recordOperation(
 export interface BatchRecordResponse {
   last_seq: number
   applied_count: number
+  /**
+   * Phase V Round 2 (2026-05-10) — transport-internal metadata extracted from
+   * `X-WB-Write-Path` response header (BE adds when feature flag enabled).
+   *
+   * NOT part of API contract (`{last_seq, applied_count}` залишається canonical).
+   * `_` prefix marks transport-internal field, не business data.
+   *
+   * Possible values: 'solo' | 'legacy' | undefined (header absent during
+   * mid-rollout / older BE deploy). Phase V scope reduction (2026-05-10):
+   * 'classroom' value removed — data model permits max 1 student per WBSession
+   * (Lesson.wb_session OneToOneField) so multi-writer contention scenario does
+   * not exist у production. Ref: VARIANT_D_COORDINATION.md §11.
+   */
+  _writePath?: string
 }
 
 export async function recordOperationsBatch(
@@ -87,11 +101,33 @@ export async function recordOperationsBatch(
   seq: number,
   ops: RecordOperationRequest[],  // max 100; кожен з op_id (UUID)
 ): Promise<BatchRecordResponse> {
-  return apiClient.post<BatchRecordResponse>(
+  // Phase V Round 2 (2026-05-10): use fullResponse meta so we can read
+  // `X-WB-Write-Path` header. Body shape unchanged — `_writePath` додається
+  // як transport-internal field (NOT API contract — see BatchRecordResponse).
+  const res = (await apiClient.post(
     `${BASE}/sessions/${sessionId}/replay/batch/`,
     { seq, ops },
-    { headers: PROTOCOL_HEADERS },
-  )
+    {
+      headers: PROTOCOL_HEADERS,
+      meta: { fullResponse: true },
+    },
+  )) as { data: BatchRecordResponse; headers?: Record<string, unknown> }
+
+  const body: BatchRecordResponse = res?.data
+  // Header lookup case-insensitive (axios lowercases response headers, але
+  // bracket access безпечний для both cases). Header present → string value;
+  // absent → undefined.
+  const headers = res?.headers ?? {}
+  const rawHeader =
+    (headers as Record<string, unknown>)['x-wb-write-path']
+    ?? (headers as Record<string, unknown>)['X-WB-Write-Path']
+  const writePath = typeof rawHeader === 'string' && rawHeader.length > 0
+    ? rawHeader
+    : undefined
+
+  return writePath !== undefined
+    ? { ...body, _writePath: writePath }
+    : body
 }
 
 // ─── PR4 (2026-04-26): Recovery — check which op_ids already saved ─────────────

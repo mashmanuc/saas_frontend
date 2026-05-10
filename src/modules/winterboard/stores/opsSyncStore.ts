@@ -38,6 +38,7 @@ import {
   recordOperationsBatch,
   type BatchRecordResponse,
 } from '../api/replay'
+import { emitWritePathEvent } from '../telemetry/writePathTelemetry'
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -443,6 +444,36 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
       inFlightOps.value.push(...batch)            // sync: add to inFlight (no await between)
     }
 
+    // Phase V WS3 (2026-05-10): write-path telemetry — capture roundtrip_ms.
+    // Uses performance.now() для monotonic clock (`Date.now()` may regress on NTP sync).
+    const _now = (): number =>
+      typeof performance !== 'undefined' && typeof performance.now === 'function'
+        ? performance.now()
+        : Date.now()
+    const _seqSent = serverSeq.value
+    const _opsCount = batch.length
+    const _t0 = _now()
+    /** Emit telemetry без throw. NEVER blocks recorder (LAW §12 justified exception:
+     *  failure surfaces у writePathTelemetry's одноразовому console.warn).
+     *
+     *  Phase V Round 2 (2026-05-10): optional `writePath` arg — populated only on
+     *  successful response when BE returned `X-WB-Write-Path` header. Absence
+     *  (older BE deploy / mid-rollout / error path) → field omitted з event. */
+    const _emit = (status: number, writePath?: string): void => {
+      try {
+        emitWritePathEvent(sid, {
+          seq: _seqSent,
+          ops_count: _opsCount,
+          roundtrip_ms: _now() - _t0,
+          status,
+          ...(writePath !== undefined ? { write_path: writePath } : {}),
+        })
+      } catch {
+        // Swallowed: telemetry never blocks the write path. writePathTelemetry
+        // вже emits warn on its own failure path.
+      }
+    }
+
     try {
       const response: BatchRecordResponse = await recordOperationsBatch(
         sid,
@@ -450,6 +481,8 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
         // recordOperationsBatch type expects RecordOperationRequest — runtime shape compatible
         batch as unknown as Parameters<typeof recordOperationsBatch>[2],
       )
+      // Phase V Round 2: read transport-internal `_writePath` (if BE sent header).
+      _emit(201, response._writePath)
       // Success — clear inFlight, advance seq
       inFlightOps.value = []
       serverSeq.value = response.last_seq
@@ -458,6 +491,10 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
       _retryAttempt = 0
       _retryUntil.value = null
     } catch (err) {
+      // Read HTTP status (0 для network-level failure без response).
+      const _status =
+        ((err as { response?: { status?: number } })?.response?.status as number | undefined) ?? 0
+      _emit(_status)
       if (_isProtocolMismatch(err)) {
         // INV-20: client/server version mismatch. UI ProtocolMismatchModal,
         // user must reload. inFlightOps lost (acceptable — version drift means
