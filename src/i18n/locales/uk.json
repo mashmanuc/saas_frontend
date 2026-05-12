@@ -7583,6 +7583,7 @@
     "replay": {
       "viewReplay": "Відтворити урок",
       "viewRecording": "Переглянути запис",
+      "seeking": "Перемотування…",
       "statPages": "стор.",
       "statMinutes": "хв",
       "emptyHint": "Запишіть урок, щоб переглянути його",

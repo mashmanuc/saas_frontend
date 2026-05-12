@@ -7450,6 +7450,7 @@
     "replay": {
       "viewReplay": "View lesson replay",
       "viewRecording": "View recording",
+      "seeking": "Seeking…",
       "statPages": "pages",
       "statMinutes": "min",
       "emptyHint": "Record a lesson to replay it later",
