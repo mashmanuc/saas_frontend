@@ -81,9 +81,19 @@ function getFormatTags(subject: any) {
 
     <!-- Info -->
     <div class="tc-info">
-      <RouterLink :to="`/marketplace/tutors/${tutor.slug}`" class="tc-name">
-        {{ (tutor.display_name || tutor.full_name) || t('common.notSpecified') }}
-      </RouterLink>
+      <div class="tc-name-row">
+        <RouterLink :to="`/marketplace/tutors/${tutor.slug}`" class="tc-name">
+          {{ (tutor.display_name || tutor.full_name) || t('common.notSpecified') }}
+        </RouterLink>
+        <span
+          v-if="tutor.is_pro"
+          class="tc-pro-badge"
+          :aria-label="t('marketplace.card.proBadgeAria')"
+          :title="t('marketplace.card.proBadgeAria')"
+        >
+          {{ t('marketplace.card.proBadge') }}
+        </span>
+      </div>
 
       <div class="tc-tagline">{{ headlineText }}</div>
 
@@ -213,15 +223,37 @@ function getFormatTags(subject: any) {
 }
 
 /* Info */
+.tc-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 3px;
+}
+
 .tc-name {
-  display: block;
   font-size: 17px;
   font-weight: 800;
   color: var(--text, #111816);
-  margin-bottom: 3px;
   line-height: 1.2;
   text-decoration: none;
   transition: color 0.15s;
+}
+
+/* PRO badge — soft monetization presentation only */
+.tc-pro-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .tc-name:hover {

@@ -30,6 +30,10 @@
       <p class="text-sm text-muted-foreground">
         {{ $t('billing.noPlanState.subtitle') }}
       </p>
+      <!-- Sprint 2 §4.3: inline soft upgrade hint (presentation-only, не блокує). -->
+      <div class="mt-3">
+        <UpgradeHint context="feature" variant="standalone" />
+      </div>
     </div>
 
     <div v-else class="space-y-4">
@@ -112,6 +116,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Card from '@/ui/Card.vue'
 import Button from '@/ui/Button.vue'
+import UpgradeHint from './UpgradeHint.vue'
 
 const props = defineProps({
   planCode: {

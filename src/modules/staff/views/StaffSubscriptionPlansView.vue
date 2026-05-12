@@ -74,6 +74,17 @@
             <span v-for="f in plan.features" :key="f" class="feature-tag">{{ f }}</span>
           </div>
 
+          <div v-if="plan.limits && Object.keys(plan.limits).length" class="plan-limits">
+            <span
+              v-for="(val, key) in plan.limits"
+              :key="key"
+              class="limit-tag"
+              :title="$t('staff.plans.limitsTitle', { key })"
+            >
+              {{ key }}: {{ val === null ? '∞' : val }}
+            </span>
+          </div>
+
           <div v-if="plan.description_uk || plan.description" class="plan-desc">
             {{ plan.description_uk || plan.description }}
           </div>
@@ -197,6 +208,20 @@
               />
             </div>
 
+            <div class="form-group">
+              <label>
+                {{ $t('staff.plans.form.limits') }}
+                <span class="hint">({{ $t('staff.plans.form.limitsHint') }})</span>
+              </label>
+              <textarea
+                v-model="limitsRaw"
+                rows="3"
+                class="form-textarea mono"
+                :placeholder="$t('staff.plans.form.limitsPlaceholder')"
+              />
+              <div v-if="limitsParseError" class="field-error">{{ limitsParseError }}</div>
+            </div>
+
             <div class="form-row two-col">
               <div class="form-group">
                 <label>{{ $t('staff.plans.form.providerPriceId') }}</label>
@@ -249,6 +274,7 @@ import {
   deactivateSubscriptionPlan,
   type PlanItem,
   type PlanCreatePayload,
+  type PlanLimits,
 } from '../api/subscriptionPlansApi'
 
 const { t } = useI18n()
@@ -261,6 +287,8 @@ const editingPlan = ref<PlanItem | null>(null)
 const submitting = ref(false)
 const submitError = ref('')
 const featuresRaw = ref('')
+const limitsRaw = ref('')
+const limitsParseError = ref('')
 
 const defaultForm = (): PlanCreatePayload => ({
   name: '',
@@ -273,6 +301,7 @@ const defaultForm = (): PlanCreatePayload => ({
   interval: 'monthly',
   lessons_per_month: 0,
   features: [],
+  limits: {},
   provider: 'stripe',
   provider_price_id: '',
   provider_product_id: '',
@@ -303,6 +332,8 @@ function openCreateModal() {
   editingPlan.value = null
   form.value = defaultForm()
   featuresRaw.value = ''
+  limitsRaw.value = ''
+  limitsParseError.value = ''
   submitError.value = ''
   modalOpen.value = true
 }
@@ -320,6 +351,7 @@ function openEditModal(plan: PlanItem) {
     interval: plan.interval,
     lessons_per_month: plan.lessons_per_month,
     features: [...plan.features],
+    limits: { ...(plan.limits || {}) },
     provider: plan.provider,
     provider_price_id: plan.provider_price_id,
     provider_product_id: plan.provider_product_id,
@@ -328,6 +360,10 @@ function openEditModal(plan: PlanItem) {
     display_order: plan.display_order,
   }
   featuresRaw.value = plan.features.join('\n')
+  limitsRaw.value = plan.limits && Object.keys(plan.limits).length
+    ? JSON.stringify(plan.limits, null, 2)
+    : ''
+  limitsParseError.value = ''
   submitError.value = ''
   modalOpen.value = true
 }
@@ -335,7 +371,41 @@ function openEditModal(plan: PlanItem) {
 function closeModal() {
   modalOpen.value = false
   editingPlan.value = null
+  limitsParseError.value = ''
   submitError.value = ''
+}
+
+function parseLimits(): PlanLimits | null {
+  limitsParseError.value = ''
+  const raw = limitsRaw.value.trim()
+  if (!raw) return {}
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    limitsParseError.value = t('staff.plans.form.limitsInvalidJson')
+    return null
+  }
+
+  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    limitsParseError.value = t('staff.plans.form.limitsMustBeObject')
+    return null
+  }
+
+  const limits: PlanLimits = {}
+  for (const [key, val] of Object.entries(parsed as Record<string, unknown>)) {
+    if (val === null) {
+      limits[key] = null
+      continue
+    }
+    if (typeof val !== 'number' || !Number.isInteger(val) || val <= 0) {
+      limitsParseError.value = t('staff.plans.form.limitsInvalidValue', { key })
+      return null
+    }
+    limits[key] = val
+  }
+  return limits
 }
 
 async function handleSubmit() {
@@ -348,7 +418,14 @@ async function handleSubmit() {
     .map(f => f.trim())
     .filter(Boolean)
 
-  const payload = { ...form.value, features }
+  // Parse limits (JSON). Валідація: null або positive int, 0 заборонено.
+  const limits = parseLimits()
+  if (limits === null) {
+    submitting.value = false
+    return
+  }
+
+  const payload = { ...form.value, features, limits }
 
   try {
     if (editingPlan.value) {
@@ -623,6 +700,28 @@ onMounted(loadPlans)
   color: var(--accent);
   border-radius: 999px;
   font-weight: 500;
+}
+
+.plan-limits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.limit-tag {
+  font-size: 0.7rem;
+  padding: 2px 7px;
+  background: color-mix(in srgb, #f59e0b 12%, transparent);
+  color: #b45309;
+  border-radius: 999px;
+  font-weight: 500;
+  font-family: monospace;
+}
+
+.field-error {
+  font-size: var(--text-xs);
+  color: #ef4444;
+  margin-top: 4px;
 }
 
 .plan-desc {

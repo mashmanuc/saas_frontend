@@ -8,6 +8,15 @@ import apiClient from '@/utils/apiClient'
 
 const BASE = '/v1/staff/subscription-plans'
 
+/**
+ * Quota limits map.
+ * Semantics (Sprint 1 — Entitlement Access Plan v2.0):
+ *  - null або відсутній ключ = unlimited
+ *  - positive integer = quota cap
+ *  - 0 заборонено (валідація на backend)
+ */
+export type PlanLimits = Record<string, number | null>
+
 export interface PlanItem {
   id: number
   name: string
@@ -21,6 +30,7 @@ export interface PlanItem {
   interval: 'monthly' | 'quarterly' | 'yearly'
   lessons_per_month: number
   features: string[]
+  limits: PlanLimits
   provider: string
   provider_price_id: string
   provider_product_id: string
@@ -47,6 +57,7 @@ export interface PlanCreatePayload {
   interval?: 'monthly' | 'quarterly' | 'yearly'
   lessons_per_month?: number
   features?: string[]
+  limits?: PlanLimits
   provider?: string
   provider_price_id?: string
   provider_product_id?: string

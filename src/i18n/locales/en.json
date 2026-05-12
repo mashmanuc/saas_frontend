@@ -1078,7 +1078,9 @@
       "noObligation": "No obligation to start"
     },
     "card": {
-      "viewProfile": "View profile"
+      "viewProfile": "View profile",
+      "proBadge": "PRO",
+      "proBadgeAria": "Tutor on a PRO subscription — verified status"
     },
     "filters": {
       "subjects": "Subjects",
@@ -4466,6 +4468,7 @@
       "errorSave": "Failed to save plan",
       "confirmDeactivate": "Deactivate plan '{name}'? New subscriptions to this plan will no longer be possible. Existing subscriptions will remain active.",
       "deactivatedWithSubs": "Plan deactivated. {count} active subscriptions remain until their expiry.",
+      "limitsTitle": "Quota: {key}",
       "interval": {
         "monthly": "month",
         "quarterly": "quarter",
@@ -4485,6 +4488,12 @@
         "features": "Features",
         "featuresHint": "one per line",
         "featuresPlaceholder": "Unlimited lessons\nPriority support\nAnalytics access",
+        "limits": "Limits (quotas)",
+        "limitsHint": "JSON format. null = unlimited. 0 is forbidden.",
+        "limitsPlaceholder": "{\n  \"monthly_contacts\": 10,\n  \"monthly_lessons\": null\n}",
+        "limitsInvalidJson": "Invalid JSON format for limits.",
+        "limitsMustBeObject": "Limits must be a JSON object (e.g. {\"monthly_contacts\": 10}).",
+        "limitsInvalidValue": "Limit \"{key}\" must be null (unlimited) or a positive integer. 0 and negative values are forbidden.",
         "providerPriceId": "Provider Price ID",
         "providerProductId": "Provider Product ID",
         "isActive": "Active plan",
@@ -5325,7 +5334,19 @@
       "message": "Для доступу до цієї функції необхідна активна підписка",
       "title": "Потрібна підписка",
       "unlockFeatures": "Розблокуйте можливості:"
-    }
+    },
+    "trialActivation": {
+      "title": "14 days of PRO for free",
+      "subtitle": "Try all PRO benefits with no commitment",
+      "noCard": "No card required. Cancel anytime.",
+      "bulletDuration": "{days} days of full access",
+      "bulletContacts": "{count} contact tokens included",
+      "bulletCancelAnytime": "One-click cancellation, no auto-renewal",
+      "cta": "Start free trial",
+      "dismiss": "Later"
+    },
+    "upgradeHint": "Available on PRO",
+    "upgradeCta": "Learn more"
   },
   "commonExtended": {
     "accept": "Прийняти",

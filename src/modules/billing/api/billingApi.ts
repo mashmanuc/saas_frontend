@@ -137,6 +137,56 @@ export async function startCheckout(planCode: string): Promise<CheckoutResponse>
 }
 
 /**
+ * Trial eligibility for current user (Sprint 2 §4.1).
+ *
+ * Backend поверне:
+ *   - eligible: true → можна показати TrialActivationModal
+ *   - eligible: false з reason: "already_used" | "active_subscription" | "<other>"
+ */
+export interface TrialEligibilityDto {
+  eligible: boolean
+  trial_used: boolean
+  reason: 'already_used' | 'active_subscription' | string | null
+}
+
+export async function getTrialEligibility(): Promise<TrialEligibilityDto> {
+  try {
+    return await apiClient.get<TrialEligibilityDto>('/v1/billing/trial/eligibility/') as unknown as TrialEligibilityDto
+  } catch (error) {
+    throw parseDomainError(error)
+  }
+}
+
+/**
+ * Start a trial subscription (PRO/BUSINESS, 14 днів).
+ *
+ * Backend контракт: POST /v1/billing/trial/start/ {plan: "PRO"|"BUSINESS"}.
+ */
+export interface TrialStartResponseDto {
+  message: string
+  subscription: {
+    id: string
+    plan: string
+    status: string
+    trial_start: string
+    trial_end: string
+    trial_duration_days: number
+    trial_contacts: number
+  }
+}
+
+export async function startTrial(plan: 'PRO' | 'BUSINESS' = 'PRO'): Promise<TrialStartResponseDto> {
+  try {
+    return await apiClient.post<TrialStartResponseDto>(
+      '/v1/billing/trial/start/',
+      { plan },
+    ) as unknown as TrialStartResponseDto
+  } catch (error) {
+    throw parseDomainError(error)
+  }
+}
+
+/**
  * Cancel current subscription
  * 
  * CONTRACT: POST /v1/billing/cancel/

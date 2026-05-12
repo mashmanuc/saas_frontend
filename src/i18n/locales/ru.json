@@ -1214,7 +1214,9 @@
       "noObligation": "Без обязательств на старте"
     },
     "card": {
-      "viewProfile": "Посмотреть профиль"
+      "viewProfile": "Посмотреть профиль",
+      "proBadge": "PRO",
+      "proBadgeAria": "Репетитор с PRO-подпиской — проверенный статус"
     },
     "filters": {
       "subjects": "Предметы",
@@ -5233,6 +5235,7 @@
       "errorSave": "Не удалось сохранить план",
       "confirmDeactivate": "Деактивировать план '{name}'? Новые подписки на этот план будут невозможны. Существующие подписки останутся активными.",
       "deactivatedWithSubs": "План деактивирован. {count} активных подписок остаётся до окончания своего срока.",
+      "limitsTitle": "Квота: {key}",
       "interval": {
         "monthly": "месяц",
         "quarterly": "квартал",
@@ -5252,6 +5255,12 @@
         "features": "Особенности",
         "featuresHint": "каждая с новой строки",
         "featuresPlaceholder": "Безлимитные уроки\nПриоритетная поддержка\nДоступ к аналитике",
+        "limits": "Лимиты (квоты)",
+        "limitsHint": "JSON формат. null = без ограничений. 0 запрещено.",
+        "limitsPlaceholder": "{\n  \"monthly_contacts\": 10,\n  \"monthly_lessons\": null\n}",
+        "limitsInvalidJson": "Неверный JSON формат лимитов.",
+        "limitsMustBeObject": "Лимиты должны быть JSON-объектом (например {\"monthly_contacts\": 10}).",
+        "limitsInvalidValue": "Лимит \"{key}\" должен быть null (без ограничений) или положительным целым числом. 0 и отрицательные значения запрещены.",
         "providerPriceId": "Provider Price ID",
         "providerProductId": "Provider Product ID",
         "isActive": "Активный план",
@@ -5833,7 +5842,19 @@
       "message": "Для доступа к этой функции необходима активная подписка",
       "defaultMessage": "Обновите свой план, чтобы получить доступ к расширенным возможностям",
       "unlockFeatures": "Разблокируйте возможности:"
-    }
+    },
+    "trialActivation": {
+      "title": "14 дней PRO бесплатно",
+      "subtitle": "Попробуйте все преимущества PRO без обязательств",
+      "noCard": "Карта не нужна. Отменить можно в любой момент.",
+      "bulletDuration": "{days} дней полного доступа",
+      "bulletContacts": "{count} контактных токенов в подарок",
+      "bulletCancelAnytime": "Отмена одним кликом, без auto-renewal",
+      "cta": "Активировать пробный период",
+      "dismiss": "Позже"
+    },
+    "upgradeHint": "Доступно в PRO",
+    "upgradeCta": "Узнать больше"
   },
   "footer": {
     "tagline": "Платформа для репетиторов и студентов",
@@ -7546,6 +7567,7 @@
     "replay": {
       "viewReplay": "Воспроизвести урок",
       "viewRecording": "Просмотреть запись",
+      "seeking": "Перемотка…",
       "statPages": "стр.",
       "statMinutes": "мин",
       "emptyHint": "Запишите урок, чтобы просмотреть его",

@@ -505,6 +505,7 @@ export interface TutorListItem {
   city_name?: string | null  // v1.0: City name if tutor opted in
   gender?: string | null  // v1.0: Only if show_gender=true
   has_certifications?: boolean  // v1.0: Whether tutor has approved public certifications
+  is_pro?: boolean  // Sprint 2: PRO/BUSINESS plan owner (presentation only — not access)
   hourly_rate: number
   currency: string
   average_rating: number

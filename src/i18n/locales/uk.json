@@ -1234,7 +1234,9 @@
       "noObligation": "Без зобов'язань на старті"
     },
     "card": {
-      "viewProfile": "Переглянути профіль"
+      "viewProfile": "Переглянути профіль",
+      "proBadge": "PRO",
+      "proBadgeAria": "Тьютор з PRO-підпискою — перевірений статус"
     },
     "filters": {
       "subjects": "Предмети",
@@ -4968,6 +4970,7 @@
       "errorSave": "Не вдалося зберегти план",
       "confirmDeactivate": "Деактивувати план '{name}'? Нові підписки на цей план будуть неможливі. Існуючі підписки залишаться активними.",
       "deactivatedWithSubs": "План деактивовано. {count} активних підписок залишається до закінчення свого терміну.",
+      "limitsTitle": "Квота: {key}",
       "interval": {
         "monthly": "місяць",
         "quarterly": "квартал",
@@ -4987,6 +4990,12 @@
         "features": "Особливості",
         "featuresHint": "кожна з нового рядка",
         "featuresPlaceholder": "Необмежені уроки\nПріоритетна підтримка\nДоступ до аналітики",
+        "limits": "Ліміти (квоти)",
+        "limitsHint": "JSON формат. null = безліміт. 0 заборонено.",
+        "limitsPlaceholder": "{\n  \"monthly_contacts\": 10,\n  \"monthly_lessons\": null\n}",
+        "limitsInvalidJson": "Невірний JSON формат лімітів.",
+        "limitsMustBeObject": "Ліміти мають бути JSON-об'єктом (наприклад {\"monthly_contacts\": 10}).",
+        "limitsInvalidValue": "Ліміт \"{key}\" має бути null (безліміт) або додатне ціле число. 0 та від'ємні значення заборонені.",
         "providerPriceId": "Provider Price ID",
         "providerProductId": "Provider Product ID",
         "isActive": "Активний план",
@@ -5850,7 +5859,19 @@
       "message": "Для доступу до цієї функції необхідна активна підписка",
       "defaultMessage": "Оновіть свій план, щоб отримати доступ до розширених можливостей",
       "unlockFeatures": "Розблокуйте можливості:"
-    }
+    },
+    "trialActivation": {
+      "title": "14 днів PRO безкоштовно",
+      "subtitle": "Спробуйте всі переваги PRO без зобов'язань",
+      "noCard": "Картка не потрібна. Скасувати можна будь-коли.",
+      "bulletDuration": "{days} днів повного доступу",
+      "bulletContacts": "{count} контактних токенів у подарунок",
+      "bulletCancelAnytime": "Скасування одним кліком, без auto-renewal",
+      "cta": "Активувати пробний період",
+      "dismiss": "Пізніше"
+    },
+    "upgradeHint": "Доступно у PRO",
+    "upgradeCta": "Дізнатись більше"
   },
   "footer": {
     "tagline": "Платформа для репетиторів та студентів",

@@ -35,6 +35,12 @@
         </router-link>
       </template>
     </OnboardingHint>
+
+    <!-- Sprint 2: trial offer modal — показуємо тільки якщо вже був завершений урок -->
+    <TrialActivationModal
+      v-model="trial.modalOpen.value"
+      :trigger="trial.trigger.value"
+    />
   </div>
 </template>
 
@@ -48,14 +54,23 @@ import { TutorHintId } from '@/composables/useOnboardingHints'
 import apiClient from '@/utils/apiClient'
 import type { DashboardSnapshotV2 } from '../api/dashboard'
 import { resolveCta } from '../utils/fallbackCta'
+// Sprint 2: trial-offer trigger (composable + lazy modal).
+import { useTrialActivation } from '@/modules/billing/composables/useTrialActivation'
 
 const TrialBanner = defineAsyncComponent(
   () => import('@/modules/auth/components/TrialBanner.vue'),
+)
+const TrialActivationModal = defineAsyncComponent(
+  () => import('@/modules/billing/components/TrialActivationModal.vue'),
 )
 
 const auth = useAuthStore()
 const snapshot = ref<DashboardSnapshotV2 | null>(null)
 const isLoading = ref(true)
+
+// Сигнал first-lesson: snapshot.secondary.last_completed_lesson != null.
+// localStorage flag + backend eligibility-probe запобігають повторним показам.
+const trial = useTrialActivation()
 
 // Fix #1: якщо backend повернув null/broken primary_cta — fallback до create_lesson
 const heroCta = computed(() => resolveCta(snapshot.value?.primary_cta, 'tutor'))
@@ -65,6 +80,13 @@ async function loadSnapshot() {
   try {
     const data = await apiClient.get<DashboardSnapshotV2>('/v1/dashboard/tutor/snapshot/')
     snapshot.value = data
+
+    // Sprint 2 trial-offer: тільки якщо вже був завершений урок.
+    // Не показуємо при signup (snapshot буде, але last_completed_lesson=null).
+    if (data?.secondary?.last_completed_lesson) {
+      // best-effort, не блокуємо UX — composable сам логує помилки в DEV.
+      void trial.maybeOfferTrial({ trigger: 'first_lesson' })
+    }
   } catch (err) {
     console.error('[TutorHome] Failed to load snapshot:', err)
   } finally {
