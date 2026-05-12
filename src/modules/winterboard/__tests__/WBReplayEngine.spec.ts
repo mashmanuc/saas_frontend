@@ -299,3 +299,76 @@ describe('WBReplayEngine — timestamp delay capping', () => {
     expect(onOperation).toHaveBeenCalled()
   })
 })
+
+// findIndexByTimeMs — REPLAY_MANIFEST §1: ops як часова координата.
+// Лінійне ratio*totalOps було причиною стрибків повзунка при нерівномірному розподілі ops.
+describe('WBReplayEngine — findIndexByTimeMs / getOperationTimeMs', () => {
+  it('returns 0 for empty timeline', () => {
+    const engine = new WBReplayEngine(makeTimeline([]))
+    expect(engine.findIndexByTimeMs(1000)).toBe(0)
+  })
+
+  it('returns 0 for targetMs <= 0', () => {
+    const engine = new WBReplayEngine(makeTimeline3())
+    expect(engine.findIndexByTimeMs(0)).toBe(0)
+    expect(engine.findIndexByTimeMs(-100)).toBe(0)
+  })
+
+  it('returns last index when targetMs exceeds duration', () => {
+    const engine = new WBReplayEngine(makeTimeline3())
+    expect(engine.findIndexByTimeMs(999_999)).toBe(2)
+  })
+
+  it('finds exact-match index (op offsets 0/100/200ms)', () => {
+    const engine = new WBReplayEngine(makeTimeline3())
+    expect(engine.findIndexByTimeMs(0)).toBe(0)
+    expect(engine.findIndexByTimeMs(100)).toBe(1)
+    expect(engine.findIndexByTimeMs(200)).toBe(2)
+  })
+
+  it('finds first op ≥ targetMs for between-op time', () => {
+    const engine = new WBReplayEngine(makeTimeline3())
+    // 50ms — між op[0]@0 та op[1]@100 → перша op з offset ≥ 50 це op[1]
+    expect(engine.findIndexByTimeMs(50)).toBe(1)
+    expect(engine.findIndexByTimeMs(150)).toBe(2)
+  })
+
+  // Ключовий regression test: нерівномірний розподіл (90% ops у останні 10% часу).
+  // Лінійний ratio*totalOps дав би idx=50 для t=duration/2 — реально це майже кінець timeline.
+  it('handles non-uniform op distribution correctly (regression: linear ratio bug)', () => {
+    // 100 ops: 10 розподілені 0..1000ms, потім 90 у 9000..10000ms (бурст наприкінці).
+    const ops: BoardOperation[] = []
+    for (let i = 0; i < 10; i++) {
+      ops.push(makeOp(i, new Date(i * 100).toISOString()))
+    }
+    for (let i = 0; i < 90; i++) {
+      ops.push(makeOp(10 + i, new Date(9000 + i * 10).toISOString()))
+    }
+    const engine = new WBReplayEngine(makeTimeline(ops))
+    // Клік на 50% timeline (t=5000ms) — лежить у мертвій зоні між op[9]@900ms та op[10]@9000ms.
+    // findIndexByTimeMs має знайти першу op з offset ≥ 5000 — це op[10] @ 9000ms.
+    // Лінійна мапа дала б idx = 50 (op[50] @ 9400ms) — далеко не там, де клікнув user.
+    expect(engine.findIndexByTimeMs(5000)).toBe(10)
+    // Клік на 95% (t=9500ms) → перша op з offset ≥ 9500 це op[10 + 50] = op[60] @ 9500ms.
+    expect(engine.findIndexByTimeMs(9500)).toBe(60)
+  })
+
+  it('getOperationTimeMs returns 0 for invalid index', () => {
+    const engine = new WBReplayEngine(makeTimeline3())
+    expect(engine.getOperationTimeMs(-1)).toBe(0)
+    expect(engine.getOperationTimeMs(999)).toBe(0)
+  })
+
+  it('getOperationTimeMs returns offset from first op', () => {
+    const engine = new WBReplayEngine(makeTimeline3())
+    expect(engine.getOperationTimeMs(0)).toBe(0)
+    expect(engine.getOperationTimeMs(1)).toBe(100)
+    expect(engine.getOperationTimeMs(2)).toBe(200)
+  })
+
+  it('getFirstOpAtMs returns first op timestamp; 0 for empty', () => {
+    const engine = new WBReplayEngine(makeTimeline3())
+    expect(engine.getFirstOpAtMs()).toBe(new Date('2026-01-01T00:00:00.000Z').getTime())
+    expect(new WBReplayEngine(makeTimeline([])).getFirstOpAtMs()).toBe(0)
+  })
+})

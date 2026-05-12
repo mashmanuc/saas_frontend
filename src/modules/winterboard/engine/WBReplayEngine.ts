@@ -26,11 +26,17 @@ export class WBReplayEngine {
   private speed: ReplaySpeed = 1
   private state: ReplayState = 'idle'
   private playTimer: ReturnType<typeof setTimeout> | null = null
+  // Кеш timestamp першої операції — основа часової координати (REPLAY_MANIFEST §1).
+  private firstOpAtMs: number = 0
 
   private callbacks: Partial<ReplayEngineCallbacks> = {}
 
   constructor(timeline: ReplayTimeline) {
     this.operations = [...timeline.operations]
+    if (this.operations.length > 0) {
+      const t = new Date(this.operations[0].created_at).getTime()
+      this.firstOpAtMs = isNaN(t) ? 0 : t
+    }
   }
 
   // ─── Callbacks ─────────────────────────────────────────────────────────────
@@ -52,6 +58,44 @@ export class WBReplayEngine {
   // A.3: для seek-with-snapshot потрібно мапити index ↔ seq
   getOperationAt(index: number): BoardOperation | null {
     return this.operations[index] ?? null
+  }
+
+  /** Timestamp першої операції (анкор часової шкали). 0 якщо ops порожні. */
+  getFirstOpAtMs(): number { return this.firstOpAtMs }
+
+  /**
+   * Знайти індекс першої операції, чий offset (created_at − firstOpAt) ≥ targetMs.
+   * Бінарний пошук O(log n). Використовується для seek-by-time та позиціонування маркерів.
+   *
+   * Edge cases:
+   *  - ops порожні → 0
+   *  - targetMs ≤ 0 → 0
+   *  - targetMs ≥ duration → останній індекс
+   */
+  findIndexByTimeMs(targetMs: number): number {
+    const n = this.operations.length
+    if (n === 0) return 0
+    if (targetMs <= 0) return 0
+    let lo = 0
+    let hi = n - 1
+    while (lo < hi) {
+      const mid = (lo + hi) >>> 1
+      const t = new Date(this.operations[mid].created_at).getTime() - this.firstOpAtMs
+      if (isNaN(t) || t < targetMs) lo = mid + 1
+      else hi = mid
+    }
+    const tLo = new Date(this.operations[lo].created_at).getTime() - this.firstOpAtMs
+    if (isNaN(tLo) || tLo < targetMs) return n - 1
+    return lo
+  }
+
+  /** Offset (мс) між op[index] та першою операцією. 0 якщо index невалідний. */
+  getOperationTimeMs(index: number): number {
+    const op = this.operations[index]
+    if (!op) return 0
+    const t = new Date(op.created_at).getTime()
+    if (isNaN(t)) return 0
+    return Math.max(0, t - this.firstOpAtMs)
   }
 
   findIndexBySeq(seq: number): number {

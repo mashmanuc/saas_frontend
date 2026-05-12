@@ -357,25 +357,23 @@ const displayTitle = computed(() => {
   return t('winterboard.room.untitled')
 })
 
-// Replay current time — derived from engine progress + estimated duration
+// Replay current time — реальний offset поточної op від першої (REPLAY_MANIFEST §1).
+// Раніше: currentIndex/totalOps × duration → повзунок стрибав у бурстах і завмирав у паузах,
+// бо ops розподілені у часі нерівномірно. Тепер єдине джерело — engine.currentTimeMs.
 const replayCurrentSeconds = computed(() => {
-  if (!replay || replayDurationSeconds.value <= 0) return 0
-  const total = replay.totalOperations.value
-  if (total <= 0) return 0
-  return (replay.currentIndex.value / total) * replayDurationSeconds.value
+  if (!replay) return 0
+  return Math.max(0, replay.currentTimeMs.value / 1000)
 })
 
-// Map lesson markers → replay marker format
+// Map lesson markers → replay marker format.
+// lesson_time_seconds беремо з реального timestamp op[operation_index], а не з лінійного idx/total,
+// інакше крапка маркера на тайлайні і момент, куди веде клік, розʼїжджаються.
 const replayMarkers = computed(() => {
   if (!replay) return []
-  const totalOps = replay.totalOperations.value
-  const duration = replayDurationSeconds.value || 1
   return replay.markers.value.map(m => ({
     id: m.id,
     title: m.title,
-    lesson_time_seconds: totalOps > 0
-      ? (m.operation_index / totalOps) * duration
-      : 0,
+    lesson_time_seconds: replay!.getOperationTimeMs(m.operation_index) / 1000,
     category: m.category,
     page_id: m.page_id,
   }))
@@ -615,11 +613,12 @@ function handleReplayPause(): void {
 
 async function handleReplaySeek(timeMs: number): Promise<void> {
   replayAudio.stopAudio()  // INV I5: stop audio on seek
-  // CRITICAL 3: guard against div/0 and missing replay
-  if (!replay || replayDurationSeconds.value <= 0 || replay.totalOperations.value <= 0) return
+  // CRITICAL 3: guard against missing replay / empty timeline
+  if (!replay || replay.totalOperations.value <= 0) return
 
-  const ratio = Math.max(0, Math.min(1, (timeMs / 1000) / replayDurationSeconds.value))
-  const targetIndex = Math.round(ratio * replay.totalOperations.value)
+  // Time-based seek: знаходимо першу op з offset ≥ timeMs (бінарний пошук у engine).
+  // Лінійне ratio*totalOps було причиною "стрибків" повзунка — ops розподілені у часі нерівномірно.
+  const targetIndex = replay.findIndexByTimeMs(Math.max(0, timeMs))
 
   // Use snapshot-based seek for performance
   await replay.seekToWithSnapshot(

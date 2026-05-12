@@ -425,5 +425,8 @@ export function useReplay(sessionId: string, publicToken?: string) {
     loadMarkers,
     destroy,
     getOperationAt: (idx: number) => engine.value?.getOperationAt(idx) ?? null,
+    // Часова навігація — REPLAY_MANIFEST §1: ops як часова координата, не індексна.
+    findIndexByTimeMs: (ms: number) => engine.value?.findIndexByTimeMs(ms) ?? 0,
+    getOperationTimeMs: (idx: number) => engine.value?.getOperationTimeMs(idx) ?? 0,
   }
 }
