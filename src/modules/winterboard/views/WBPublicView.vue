@@ -35,10 +35,7 @@
       </header>
 
       <div ref="canvasContainerRef" class="wb-public-view__canvas-area">
-        <div
-          class="wb-public-view__canvas-frame"
-          :class="{ 'is-seek-frozen': isCanvasSeekFrozen }"
-        >
+        <div class="wb-public-view__canvas-frame">
           <WBCanvas
             ref="canvasRef"
             :strokes="store.currentStrokes"
@@ -54,13 +51,6 @@
             :size="2"
             @audio-badge-click="handleAudioBadgeClick"
           />
-        </div>
-
-        <!-- Seek freeze overlay (v2.1.1): прикриває chunked re-apply під час перемотки.
-             Без цього user бачить "fast forward" пройдених ops. -->
-        <div v-if="isCanvasSeekFrozen" class="wb-public-view__seek-overlay" aria-live="polite">
-          <div class="wb-public-view__seek-spinner" aria-hidden="true" />
-          <span class="wb-public-view__seek-label">{{ t('winterboard.replay.seeking', 'Перемотування...') }}</span>
         </div>
 
         <!-- Hero overlay: big Play button — public replay starts paused.
@@ -327,12 +317,47 @@ const isReplayMode = ref(false)
 const showHeroOverlay = ref(true)  // Hero overlay shown until user clicks Play
 const replayDurationSeconds = ref(0)
 const replaySessionId = ref<string | null>(null)
-// Seek freeze (v2.1.1): під час chunked seek приховуємо canvas, бо інакше
-// користувач бачить "швидку перемотку" — ops re-apply від 0 до target візуально проступає.
-const isCanvasSeekFrozen = ref(false)
 let replay: ReturnType<typeof useReplay> | null = null
 let _replayStateWatchStop: (() => void) | null = null  // CRITICAL 1: track watch handle to prevent leaks
-let _seekFreezeWatchStop: (() => void) | null = null
+let _playheadWatchStop: (() => void) | null = null
+
+// Smooth playhead rAF ticker — advances at real wall-clock speed between op-fires.
+// Prevents jerkiness caused by large timestamp gaps between ops (pauses in lesson).
+const playheadMs = ref(0)
+let _playheadRaf: number | null = null
+let _playAnchorWall = 0    // performance.now() at playback start (or resync)
+let _playAnchorReplay = 0  // currentTimeMs at that anchor moment
+let _playSpeed = 1
+
+function _startPlayheadTick(): void {
+  if (_playheadRaf !== null) cancelAnimationFrame(_playheadRaf)
+  _playAnchorWall = performance.now()
+  _playAnchorReplay = replay?.currentTimeMs.value ?? 0
+  const total = replay?.totalDurationMs.value ?? 0
+  const tick = (): void => {
+    if (!replay || replay.state.value !== 'playing') {
+      _playheadRaf = null
+      return
+    }
+    const elapsed = performance.now() - _playAnchorWall
+    playheadMs.value = Math.min(_playAnchorReplay + elapsed * _playSpeed, total)
+    _playheadRaf = requestAnimationFrame(tick)
+  }
+  _playheadRaf = requestAnimationFrame(tick)
+}
+
+function _stopPlayheadTick(): void {
+  if (_playheadRaf !== null) {
+    cancelAnimationFrame(_playheadRaf)
+    _playheadRaf = null
+  }
+  if (replay) playheadMs.value = replay.currentTimeMs.value
+}
+
+function _resyncPlayheadAnchor(): void {
+  _playAnchorWall = performance.now()
+  _playAnchorReplay = replay?.currentTimeMs.value ?? 0
+}
 const replayApplier = createReplayApplier()
 
 // Snapshot of board state before entering replay — to restore on exit
@@ -371,13 +396,10 @@ const displayTitle = computed(() => {
   return t('winterboard.room.untitled')
 })
 
-// Replay current time — реальний offset поточної op від першої (REPLAY_MANIFEST §1).
-// Раніше: currentIndex/totalOps × duration → повзунок стрибав у бурстах і завмирав у паузах,
-// бо ops розподілені у часі нерівномірно. Тепер єдине джерело — engine.currentTimeMs.
-const replayCurrentSeconds = computed(() => {
-  if (!replay) return 0
-  return Math.max(0, replay.currentTimeMs.value / 1000)
-})
+// Replay current time — плавний rAF-інтерполятор між op-fires.
+// playheadMs: просувається у реальному часі між подіями, уникає стрибків при паузах у записі.
+// Seek-цільова позиція береться з findIndexByTimeMs (REPLAY_MANIFEST §1, time-axis single source).
+const replayCurrentSeconds = computed(() => Math.max(0, playheadMs.value / 1000))
 
 // Map lesson markers → replay marker format.
 // lesson_time_seconds беремо з реального timestamp op[operation_index], а не з лінійного idx/total,
@@ -431,16 +453,17 @@ async function enterReplayMode(): Promise<void> {
     replay.destroy()
     replay = null
   }
-  // CRITICAL 1: Stop previous watch to prevent leak on re-entry
+  // CRITICAL 1: Stop previous watches to prevent leaks on re-entry
   if (_replayStateWatchStop) {
     _replayStateWatchStop()
     _replayStateWatchStop = null
   }
-  if (_seekFreezeWatchStop) {
-    _seekFreezeWatchStop()
-    _seekFreezeWatchStop = null
+  if (_playheadWatchStop) {
+    _playheadWatchStop()
+    _playheadWatchStop = null
   }
-  isCanvasSeekFrozen.value = false
+  _stopPlayheadTick()
+  playheadMs.value = 0
 
   // Save static snapshot before replay
   staticSnapshot = store.getSnapshotState()
@@ -535,20 +558,23 @@ async function enterReplayMode(): Promise<void> {
   })
 
   // P2: Single batchDraw at end of batch seek — prevents 1000+ redraws
-  // v2.1.1: + unfreeze canvas після batchDraw, щоб користувач побачив одразу фінальний стан
   watch(() => replay!.seekCompleted.value, (done) => {
     if (!done) return
     requestAnimationFrame(() => {
       const stage = (canvasRef.value as unknown as { getStage?: () => Parameters<typeof applyAppearanceFadeIn>[0] })?.getStage?.()
       stage?.batchDraw?.()
-      // Після фінального draw — знімаємо freeze (наступний rAF: дочекатися, поки браузер відобразить).
-      requestAnimationFrame(() => { isCanvasSeekFrozen.value = false })
     })
   })
 
-  // v2.1.1: Заморожуємо canvas щойно стартує batched seek — користувач не бачить chunked re-apply.
-  _seekFreezeWatchStop = watch(() => replay!.isBatchingSeek.value, (active) => {
-    if (active) isCanvasSeekFrozen.value = true
+  // Smooth playhead: start/stop rAF tick on state change.
+  // Resync anchor on each transition to 'playing' (handles seek → play correctly).
+  _playheadWatchStop = watch(() => replay!.state.value, (s) => {
+    if (s === 'playing') {
+      _resyncPlayheadAnchor()
+      _startPlayheadTick()
+    } else {
+      _stopPlayheadTick()
+    }
   })
 
   // Handle ?t= URL parameter — auto-seek to time
@@ -584,6 +610,12 @@ async function enterReplayMode(): Promise<void> {
 function exitReplayMode(): void {
   replayAudio.stopAudio()  // INV I6: stop audio on exit replay
   // Stop and destroy replay engine
+  if (_playheadWatchStop) {
+    _playheadWatchStop()
+    _playheadWatchStop = null
+  }
+  _stopPlayheadTick()
+  playheadMs.value = 0
   if (replay) {
     replay.stop()
     replay.destroy()
@@ -645,9 +677,15 @@ async function handleReplaySeek(timeMs: number): Promise<void> {
 
   // Time-based seek: знаходимо першу op з offset ≥ timeMs (бінарний пошук у engine).
   // Лінійне ratio*totalOps було причиною "стрибків" повзунка — ops розподілені у часі нерівномірно.
-  const targetIndex = replay.findIndexByTimeMs(Math.max(0, timeMs))
+  const targetTimeMs = Math.max(0, timeMs)
+  const targetIndex = replay.findIndexByTimeMs(targetTimeMs)
 
-  // Use snapshot-based seek for performance
+  // Snap playhead to target immediately so slider responds before canvas catches up.
+  // Also update the rAF anchor so the running tick doesn't overwrite this value.
+  playheadMs.value = targetTimeMs
+  _playAnchorWall = performance.now()
+  _playAnchorReplay = targetTimeMs
+
   await replay.seekToWithSnapshot(
     targetIndex,
     (boardState) => {
@@ -655,9 +693,14 @@ async function handleReplaySeek(timeMs: number): Promise<void> {
     },
     resetBoardForReplay,
   )
+
+  // Resync anchor to actual seeked position (currentTimeMs updated by finalizeSeek).
+  _resyncPlayheadAnchor()
 }
 
 function handleSpeedChange(speed: number): void {
+  _playSpeed = speed
+  if (replay?.state.value === 'playing') _resyncPlayheadAnchor()
   replay?.setSpeed(speed as ReplaySpeed)
 }
 
@@ -819,8 +862,8 @@ onMounted(async () => {
 // CRITICAL 5: Route guard — cleanup replay before navigation (prevents callbacks after unmount)
 onBeforeRouteLeave(() => {
   if (_replayStateWatchStop) { _replayStateWatchStop(); _replayStateWatchStop = null }
-  if (_seekFreezeWatchStop) { _seekFreezeWatchStop(); _seekFreezeWatchStop = null }
-  isCanvasSeekFrozen.value = false
+  if (_playheadWatchStop) { _playheadWatchStop(); _playheadWatchStop = null }
+  _stopPlayheadTick()
   audioManager.stop()
   replayAudio.destroy()
   if (replay) {
@@ -1017,8 +1060,8 @@ watch(_heroOverlayVisible, (show) => {
 onBeforeUnmount(() => {
   // INV I6: Stop audio + destroy watcher on unmount (safety net if route guard didn't fire)
   if (_replayStateWatchStop) { _replayStateWatchStop(); _replayStateWatchStop = null }
-  if (_seekFreezeWatchStop) { _seekFreezeWatchStop(); _seekFreezeWatchStop = null }
-  isCanvasSeekFrozen.value = false
+  if (_playheadWatchStop) { _playheadWatchStop(); _playheadWatchStop = null }
+  _stopPlayheadTick()
   audioManager.stop()
   replayAudio.destroy()
   if (replay) {
@@ -1176,49 +1219,6 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
-/* v2.1.1: Канвас приховуємо під час chunked seek, щоб не бачити "fast forward". */
-.wb-public-view__canvas-frame.is-seek-frozen {
-  visibility: hidden;
-}
-
-.wb-public-view__seek-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  background: rgba(248, 250, 252, 0.85);
-  z-index: 5;
-  pointer-events: none;
-  animation: wb-seek-overlay-in 0.12s ease-out;
-}
-
-.wb-public-view__seek-spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid rgba(4, 120, 87, 0.18);
-  border-top-color: var(--wb-brand, #047857);
-  border-radius: 50%;
-  animation: wb-seek-spin 0.8s linear infinite;
-}
-
-.wb-public-view__seek-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--wb-text-muted, #64748b);
-  letter-spacing: 0.01em;
-}
-
-@keyframes wb-seek-spin {
-  to { transform: rotate(360deg); }
-}
-
-@keyframes wb-seek-overlay-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
 
 .wb-public-view__header-actions {
   margin-left: auto;
