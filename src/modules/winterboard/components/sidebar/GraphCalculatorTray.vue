@@ -8,23 +8,26 @@
 -->
 <template>
   <div class="gc-tray" data-testid="graph-calculator-tray">
-    <div class="gc-tray__header">Інтерактивні</div>
+    <div class="gc-tray__header">{{ t('winterboard.contentSidebar.interactiveHeader') }}</div>
     <button
       type="button"
       class="gc-tray__btn"
       data-testid="graph-calculator-tray-btn"
       :draggable="true"
-      title="Графічний калькулятор"
+      :title="t('winterboard.contentSidebar.graphCalcLabel')"
       @dragstart="onDragStart"
     >
       <span class="gc-tray__icon">f(x)</span>
-      <span class="gc-tray__label">Графічний калькулятор</span>
+      <span class="gc-tray__label">{{ t('winterboard.contentSidebar.graphCalcLabel') }}</span>
     </button>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { GRAPH_CALCULATOR_MIME } from '../../constants/graphCalculatorDefaults'
+
+const { t } = useI18n()
 
 function onDragStart(e: DragEvent): void {
   if (!e.dataTransfer) return

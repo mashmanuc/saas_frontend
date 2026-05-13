@@ -1,0 +1,57 @@
+/* geo2d.css — additions for the dynamic 2D geometry gallery */
+
+/* highlight free vs derived points on hover */
+.geo-pt.geo-free:hover { filter: brightness(1.1); }
+
+.gallery-switch {
+  display: inline-flex;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px;
+  gap: 2px;
+  margin-bottom: 18px;
+}
+.gallery-switch a {
+  padding: 7px 14px;
+  font-size: 13px;
+  color: var(--ink-2);
+  text-decoration: none;
+  border-radius: 999px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+}
+.gallery-switch a.active {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* Make geo stage have crisp paper bg */
+.geo-stage {
+  background:
+    radial-gradient(ellipse at center, rgba(196,98,42,0.04) 0%, transparent 70%),
+    var(--paper);
+}
+
+/* Tighter card meta for geometry list */
+.card-meta-geo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  color: var(--ink-3);
+}
+.card-meta-geo .pill {
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(196, 98, 42, 0.12);
+  color: var(--accent);
+}
+
+/* Drag handle hint on the board: a tiny chip */
+.board-item-geo .bi-head { background: rgba(59,123,155,0.08); }
+
+/* Make the toolbar wrap nicely with more toggles */
+.toolbar { gap: 6px; }
+.tool { white-space: nowrap; }

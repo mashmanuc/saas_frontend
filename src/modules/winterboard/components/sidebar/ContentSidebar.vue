@@ -60,6 +60,11 @@
         <GraphCalculatorTray />
       </div>
 
+      <!-- Phase G PR-G1 (2026-05-13): geometry_2d_v2 drag source tray (dynamic geometry skeleton). -->
+      <div class="content-sidebar__geo2dv2-section">
+        <Geometry2DTray />
+      </div>
+
       <!-- Phase 11 B8: YouTube URL inline input -->
       <div v-if="isTutor" class="content-sidebar__yt-section">
         <button
@@ -166,6 +171,8 @@ import MaterialsBrowser from './MaterialsBrowser.vue'
 import SolidsTray from './SolidsTray.vue'
 // Phase G (2026-05-06): graph_calculator interactive widget tray
 import GraphCalculatorTray from './GraphCalculatorTray.vue'
+// Phase G PR-G1 (2026-05-13): geometry_2d_v2 dynamic geometry tray (skeleton)
+import Geometry2DTray from './Geometry2DTray.vue'
 import StorageQuotaBar from '@/modules/learning-content/components/StorageQuotaBar.vue'
 import { learningContentApi } from '@/modules/learning-content/api/learningContentApi'
 import type { StorageQuota } from '@/modules/learning-content/api/learningContentApi'

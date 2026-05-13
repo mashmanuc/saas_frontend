@@ -67,6 +67,15 @@
             :config="{ ...getSolidProxyConfig(asset), id: asset.id, name: 'asset' }"
             @transformend="handleAssetTransformEnd(asset, $event)"
           />
+          <!-- Phase G PR-G1 (2026-05-13): geometry_2d_v2 Konva proxy (invisible Rect).
+               HTML overlay (SVG placeholder / JSXGraph у PR-G2) renders ABOVE з
+               pointer-events:none. Reuses getSolidProxyConfig — той самий
+               drag/resize/select pipeline через existing asset layer handlers. -->
+          <v-rect
+            v-else-if="asset.type === 'geometry_2d_v2'"
+            :config="{ ...getSolidProxyConfig(asset), id: asset.id, name: 'asset' }"
+            @transformend="handleAssetTransformEnd(asset, $event)"
+          />
           <!-- v5 A9: Sticky note rendering -->
           <WBStickyNote
             v-else-if="asset.type === 'sticky'"
@@ -371,6 +380,33 @@
       </div>
     </template>
 
+    <!-- Phase G PR-G1 (2026-05-13): geometry_2d_v2 overlay (HTML, non-Konva).
+         Mirror .wb-solid-overlay layout: container pointer-events:none, Konva
+         proxy під ним catches drag/resize/select. Inner delete button opt-in
+         via pointer-events:auto. JSXGraph board буде вставлений у PR-G2. -->
+    <template v-for="asset in geometry2dV2Assets" :key="`geo2dv2-${asset.id}`">
+      <div
+        class="wb-geo2dv2-overlay"
+        :class="{ 'wb-geo2dv2-overlay--selected': wbStore.selectedIds.includes(asset.id) }"
+        :data-geo2dv2-id="asset.id"
+        :data-testid="`geometry-2d-v2-overlay-${asset.id}`"
+        :style="{
+          left: `${asset.x * props.zoom}px`,
+          top: `${asset.y * props.zoom}px`,
+          width: `${asset.w * props.zoom}px`,
+          height: `${asset.h * props.zoom}px`,
+        }"
+      >
+        <Geometry2DRenderer
+          :asset="(asset as any)"
+          :is-selected="wbStore.selectedIds.includes(asset.id)"
+          :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
+          @update:asset="(updated: WBAsset) => emit('asset-update', updated)"
+          @delete="emit('asset-delete', asset.id)"
+        />
+      </div>
+    </template>
+
     <!-- BUG-2 FIX: Laser trail — fading dots behind the pointer -->
     <div
       v-for="(tp, idx) in laserTrailWithOpacity"
@@ -507,6 +543,8 @@ import { handleDrop as imageHandleDrop } from '../../composables/useImageUpload'
 import { SIDEBAR_DRAG_MIME, CONTENT_DRAG_MIME } from '../../types/boardDrop'
 import { SOLID_DRAG_MIME } from '../../constants/solidDefaults'
 import SolidCardRenderer from '../board/SolidCardRenderer.vue'
+// Phase G PR-G1 (2026-05-13): geometry_2d_v2 HTML overlay renderer (skeleton)
+import Geometry2DRenderer from '../board/objects/Geometry2DRenderer.vue'
 // Phase G (2026-05-06): graph_calculator HTML overlay renderer
 import GraphCalculatorRenderer from '../board/objects/GraphCalculatorRenderer.vue'
 import { loadKonva } from '../../engine/konvaLoader'
@@ -613,6 +651,12 @@ const solidAssets = computed(() =>
 // Per OPS_SYNC_SSOT.md INV-21 + UX-RULE-5/6/8.
 const graphCalculatorAssets = computed(() =>
   assets.value.filter(a => a.type === 'graph_calculator'),
+)
+
+// Phase G PR-G1 (2026-05-13): geometry_2d_v2 rendered as HTML overlay (SVG placeholder у PR-G1,
+// JSXGraph у PR-G2). Mirror solid/graph overlay pattern. Per PLAN.md PR-G1.
+const geometry2dV2Assets = computed(() =>
+  assets.value.filter(a => a.type === 'geometry_2d_v2'),
 )
 
 // Phase 3C: Type cast helpers for media assets
@@ -4348,5 +4392,23 @@ defineExpose({
   outline: 1px solid var(--gc-accent-2-strong, rgba(59, 123, 155, 0.55));
   outline-offset: 2px;
   box-shadow: 0 0 0 4px var(--gc-accent-2-faint, rgba(59, 123, 155, 0.12));
+}
+
+/* Phase G PR-G1 (2026-05-13): geometry_2d_v2 HTML overlay — mirror solid overlay.
+   Outer pointer-events:none делегує selection/drag/resize до Konva proxy
+   (v-rect у assetsLayer); внутрішня delete button сама вмикає
+   pointer-events:auto when visible. PR-G2 додасть JSXGraph SVG layer. */
+.wb-geo2dv2-overlay {
+  position: absolute;
+  z-index: 4;
+  background: rgba(15, 23, 42, 0.03);
+  border: 1px solid rgba(59, 130, 246, 0.22);
+  border-radius: 6px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.wb-geo2dv2-overlay--selected {
+  border-color: rgba(59, 130, 246, 0.6);
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.4);
 }
 </style>

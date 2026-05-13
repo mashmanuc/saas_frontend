@@ -189,6 +189,8 @@ export interface WBAsset {
     | 'youtube_player'
     | 'document_viewer'
     | 'geometry_2d'
+    /** Phase G v2 (2026-05-13) — dynamic geometry v2 (JSXGraph engine у PR-G2; PR-G1 skeleton only). */
+    | 'geometry_2d_v2'
     | 'geometry_solid'
     /** Phase G (2026-05-05) — interactive graph_calculator per OPS_SYNC_SSOT INV-21 */
     | 'graph_calculator'
@@ -272,7 +274,10 @@ export interface WBAsset {
    *     const state = asset.data.state as GraphCalculatorState
    *   }
    */
-  data?: SolidAssetData | import('./graphCalculator').GraphCalculatorData
+  data?:
+    | SolidAssetData
+    | import('./graphCalculator').GraphCalculatorData
+    | import('./geometry2dV2').Geometry2DV2Data
 }
 
 /**

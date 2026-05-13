@@ -22,6 +22,15 @@ import {
   DEFAULT_GRAPH_HEIGHT,
   GRAPH_CALCULATOR_MIME,
 } from '../constants/graphCalculatorDefaults'
+// Phase G v2 — Geometry 2D v2 drop wiring (bundle-backed).
+import {
+  GEOMETRY_2D_V2_DRAG_MIME,
+  DEFAULT_GEOMETRY_2D_V2_W,
+  DEFAULT_GEOMETRY_2D_V2_H,
+  buildDefaultGeometry2DV2Data,
+  type Geometry2DV2DragPayload,
+} from '../constants/geometry2dV2Defaults'
+import type { Geometry2DV2Asset } from '../types/geometry2dV2'
 
 // Phase O PR-O4: 10 fixed solid types — must match SolidType union exactly.
 const SOLID_TYPE_SET: ReadonlySet<SolidType> = new Set([
@@ -107,6 +116,48 @@ export function useContentDrop(options: UseContentDropOptions) {
         } as unknown as WBAsset['data'],
       }
       onAssetAdd(asset)
+      return
+    }
+
+    // Phase G v2 — Geometry 2D v2 drag (MIME 'application/x-geo2d').
+    // Payload {preset, name?} — preset валідуємо проти runtime registry
+    // (window.Geo2D.PRESETS), щоб додавання нової картки у bundle не потребувало
+    // зміни drop handler. Default data hydrate-ється у buildDefaultGeometry2DV2Data.
+    // 1 drop = 1 asset_add op = 1 broadcast (INV-13 ATOMIC-APPLY).
+    const geo2dV2Raw = event.dataTransfer?.getData(GEOMETRY_2D_V2_DRAG_MIME)
+    if (geo2dV2Raw) {
+      let parsed: Geometry2DV2DragPayload
+      try {
+        parsed = JSON.parse(geo2dV2Raw) as Geometry2DV2DragPayload
+      } catch {
+        console.warn('[useContentDrop] Invalid geometry_2d_v2 drag payload')
+        return
+      }
+      if (!parsed?.preset || typeof parsed.preset !== 'string') {
+        console.warn('[useContentDrop] geometry_2d_v2 preset missing:', parsed?.preset)
+        return
+      }
+      // Runtime validation проти Geo2D.PRESETS — extensible (нова картка
+      // зареєстрована у bundle автоматично проходить валідацію).
+      const W = window as unknown as { Geo2D?: { PRESETS?: Record<string, unknown> } }
+      if (W.Geo2D?.PRESETS && !(parsed.preset in W.Geo2D.PRESETS)) {
+        console.warn('[useContentDrop] Unknown geometry_2d_v2 preset:', parsed.preset)
+        return
+      }
+      const canvasPos = screenToCanvas(event.clientX, event.clientY)
+      const asset: Geometry2DV2Asset = {
+        id: `geo2dv2-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        type: 'geometry_2d_v2',
+        src: '',
+        x: canvasPos.x - DEFAULT_GEOMETRY_2D_V2_W / 2,
+        y: canvasPos.y - DEFAULT_GEOMETRY_2D_V2_H / 2,
+        w: DEFAULT_GEOMETRY_2D_V2_W,
+        h: DEFAULT_GEOMETRY_2D_V2_H,
+        rotation: 0,
+        locked: false,
+        data: buildDefaultGeometry2DV2Data(parsed.preset),
+      }
+      onAssetAdd(asset as unknown as WBAsset)
       return
     }
 

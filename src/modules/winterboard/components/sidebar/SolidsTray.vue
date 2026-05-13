@@ -15,7 +15,7 @@
 <template>
   <div class="solids-tray" data-testid="solids-tray">
     <div class="solids-tray__header">
-      Геометричні фігури
+      {{ t('winterboard.contentSidebar.solidsHeader') }}
     </div>
     <div class="solids-tray__grid">
       <button
@@ -25,16 +25,17 @@
         class="solids-tray__btn"
         :data-testid="`solid-tray-${item.type}`"
         :draggable="true"
-        :title="item.label"
+        :title="solidName(item)"
         @dragstart="onDragStart($event, item.type)"
       >
-        {{ item.label }}
+        {{ solidName(item) }}
       </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import {
   SOLID_TYPES,
   SOLID_DRAG_MIME,
@@ -42,7 +43,17 @@ import {
 } from '../../constants/solidDefaults'
 import type { SolidType } from '../../types/winterboard'
 
+const { t, te } = useI18n()
 const items = SOLID_TYPES
+
+/**
+ * Translated solid name з fallback на hardcoded українську (item.label).
+ * Дозволяє додавати нові solid types без обов'язкового i18n update.
+ */
+function solidName(item: { type: SolidType; label: string }): string {
+  const key = `winterboard.solid.${item.type}`
+  return te(key) ? t(key) : item.label
+}
 
 function onDragStart(e: DragEvent, src: SolidType): void {
   if (!e.dataTransfer) return
