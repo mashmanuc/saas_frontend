@@ -17,7 +17,12 @@
 //   1. pop ops з pendingOps → push у inFlightOps
 //   2. POST /replay/batch/ {seq: localSeq, ops: inFlightOps[]} з X-Protocol-Version
 //   3. on 201: clear inFlightOps; localSeq = response.last_seq
-//   4. on 409 SEQ_MISMATCH: enterDesync (caller resync()-ить)
+//   4. on 409 SEQ_MISMATCH: AUTO-RESYNC (serverSeq = expected_seq, drop inFlight,
+//      keep pending) → throw SeqResyncError. Mode stays SYNC (NO DESYNC).
+//      Caller (useReplayRecorder) catches SeqResyncError → logs, next tick retries
+//      remaining pendingOps with correct seq. Transparent recovery, no user action.
+//      Old behavior (enterDesync) dropped all ops — data loss. SeqResyncError preserves
+//      pendingOps that haven't reached server yet.
 //   5. on 400 PROTOCOL_VERSION_MISMATCH: enterDesync (UI ProtocolMismatchModal)
 //   6. on 503 SERVER_BUSY: keep inFlightOps, throw (B4 INV-12 додасть retry orchestration)
 //
@@ -506,13 +511,30 @@ export const useOpsSyncStore = defineStore('opsSync', () => {
       }
       const seqMismatch = _isSeqMismatch(err)
       if (seqMismatch.mismatch) {
-        // Per SSOT §4: seq mismatch → caller (or auto-recovery) resync()-ить.
-        // Drop inFlight + pending — resync re-bootstraps з clean slate.
-        const reason = `seq-mismatch (server expected ${seqMismatch.expectedSeq})`
-        enterDesync(reason)
-        inFlightOps.value = []
-        pendingOps.value = []
-        throw new DesyncError(`flush() blocked: ${reason}`)
+        // 2026-05-13: AUTO-RESYNC instead of DESYNC (Def 1 fix).
+        //
+        // 409 SEQ_MISMATCH means server is at `expected_seq` — client had a stale
+        // serverSeq (usually because an in-flight batch succeeded on server but client
+        // lost the response, e.g. during network drop / WS 1006 incident).
+        //
+        // Old behavior: enterDesync + drop all ops → user must click "Sync" banner
+        //               → all ops lost.
+        //
+        // New behavior: correct serverSeq using `expected_seq` from 409 body →
+        //   - inFlightOps: DROP (were already processed by server or are stale)
+        //   - pendingOps: KEEP (haven't reached server, still valid for next flush)
+        //   - mode: stays SYNC (no user action required)
+        //   - throw SeqResyncError so caller can log without escalating to DESYNC
+        //
+        // Safety: SYSTEM_LAW §12 forbids retry loops. SeqResyncError doesn't retry
+        // immediately — caller returns, safety interval fires naturally next tick.
+        const correctedSeq = seqMismatch.expectedSeq ?? (serverSeq.value + 1)
+        serverSeq.value = correctedSeq
+        localSeq.value = Math.max(localSeq.value, correctedSeq)
+        inFlightOps.value = []  // stale — server either processed or rejected
+        // pendingOps preserved — will be sent in next flush() with correct seq
+        const reason = `seq-mismatch auto-resynced (serverSeq → ${correctedSeq})`
+        throw new SeqResyncError(reason)
       }
       // INV-23 §23.4 Guard 1 — BE rejected write через invalid lifecycle state.
       // Taxonomy B per TRANSPORT_ERROR_SEMANTICS: NOT DESYNC — entity-conflict
@@ -879,5 +901,27 @@ export class BackpressureError extends Error {
   constructor(message: string) {
     super(message)
     this.name = 'BackpressureError'
+  }
+}
+
+/**
+ * 2026-05-13 (Def 1): thrown by opsSyncStore.flush() after 409 SEQ_MISMATCH
+ * AUTO-RESYNC (instead of DESYNC).
+ *
+ * Semantics:
+ *   - 409 received → serverSeq corrected from `expected_seq` in response body
+ *   - inFlightOps DROPPED (server processed them or rejected — can't resend)
+ *   - pendingOps PRESERVED (haven't reached server — will be sent with correct seq)
+ *   - Mode stays SYNC — NO user action required, NO DesyncRecoveryBanner
+ *
+ * Caller (useReplayRecorder.flush()) MUST catch + log + persist backup.
+ * Next safety interval will flush remaining pendingOps with corrected serverSeq.
+ *
+ * MUST NOT be confused with DesyncError — this is self-healing, not a hard lock.
+ */
+export class SeqResyncError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'SeqResyncError'
   }
 }

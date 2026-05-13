@@ -31,6 +31,7 @@ import {
   BeaconUnsupportedError,
   BackpressureError,
   LifecycleStateError,
+  SeqResyncError,
   type OpsSyncOp,
 } from '../stores/opsSyncStore'
 import { tryCoalesceStrokeAppend } from '../services/opsCoalescer'
@@ -371,6 +372,14 @@ export function useReplayRecorder(options: UseReplayRecorderOptions) {
       if (err instanceof BeaconUnsupportedError) {
         // Не повинно відбуватись з flush() (тільки sendBeacon throws це). Лог якщо станеться.
         console.warn('[WB:Recorder] flush() unexpected BeaconUnsupportedError:', err)
+        return
+      }
+      if (err instanceof SeqResyncError) {
+        // 2026-05-13 Def 1: 409 SEQ_MISMATCH auto-resynced by store.
+        // serverSeq corrected to expected_seq; inFlight dropped; pendingOps preserved.
+        // No DESYNC, no user action required. Next safety interval will flush pending.
+        console.info('[WB:Recorder] 409 seq auto-resynced:', err.message)
+        _persistBackup()  // crash-safety: pending ops that were preserved
         return
       }
       // 503 SERVER_BUSY або транзієнтні мережеві помилки — inFlight preserved у store,

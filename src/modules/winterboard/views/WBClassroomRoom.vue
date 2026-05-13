@@ -633,6 +633,20 @@ async function handleStartRecording(): Promise<void> {
   if (!sid || isRecordingLoading.value || recordingState.value === 'recording') return
   isRecordingLoading.value = true
   try {
+    // Def 5 (2026-05-13): ensure serverSeq is fresh before /start-recording/.
+    // If opsSync is in DESYNC/BOOTSTRAP (e.g. bootstrap failed at mount, or 409
+    // during session pushed to DESYNC before Def 1 auto-resync landed), the next
+    // flush() after start-recording would use stale seq → 409 → loop.
+    // resync() = GET /state/ → correct serverSeq → mode SYNC.
+    // Drops pendingOps (absorbed into start-recording snapshot) — acceptable.
+    if (opsSync.mode !== 'SYNC') {
+      try {
+        await opsSync.resync(sid)
+        console.info('[WBClassroomRoom] resynced before start-recording (mode was:', opsSync.mode, ')')
+      } catch (e) {
+        console.warn('[WBClassroomRoom] resync before start-recording failed (continuing):', e)
+      }
+    }
     try {
       await opsSync.flush()
     } catch (e) {
