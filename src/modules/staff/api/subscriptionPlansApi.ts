@@ -28,9 +28,13 @@ export interface PlanItem {
   price_decimal: number
   currency: 'UAH' | 'USD'
   interval: 'monthly' | 'quarterly' | 'yearly'
+  // Sprint 3 Task 2: lessons_per_month лишається у DTO як read-only legacy поле
+  // (backend все ще повертає його). Quota керується через limits.monthly_lessons.
   lessons_per_month: number
   features: string[]
   limits: PlanLimits
+  /** Sprint 3 Task 1: contact tokens granted on subscription activation. */
+  contact_grant_on_purchase: number
   provider: string
   provider_price_id: string
   provider_product_id: string
@@ -55,9 +59,11 @@ export interface PlanCreatePayload {
   price: number
   currency?: 'UAH' | 'USD'
   interval?: 'monthly' | 'quarterly' | 'yearly'
-  lessons_per_month?: number
+  // lessons_per_month прибрано з payload — read-only у Staff API (Sprint 3 Task 2).
   features?: string[]
   limits?: PlanLimits
+  /** Sprint 3 Task 1: contact tokens granted on subscription activation. */
+  contact_grant_on_purchase?: number
   provider?: string
   provider_price_id?: string
   provider_product_id?: string

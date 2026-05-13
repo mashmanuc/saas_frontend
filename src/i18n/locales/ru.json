@@ -5236,6 +5236,7 @@
       "confirmDeactivate": "Деактивировать план '{name}'? Новые подписки на этот план будут невозможны. Существующие подписки останутся активными.",
       "deactivatedWithSubs": "План деактивирован. {count} активных подписок остаётся до окончания своего срока.",
       "limitsTitle": "Квота: {key}",
+      "contactTokens": "контактных токенов",
       "interval": {
         "monthly": "месяц",
         "quarterly": "квартал",
@@ -5261,6 +5262,8 @@
         "limitsInvalidJson": "Неверный JSON формат лимитов.",
         "limitsMustBeObject": "Лимиты должны быть JSON-объектом (например {\"monthly_contacts\": 10}).",
         "limitsInvalidValue": "Лимит \"{key}\" должен быть null (без ограничений) или положительным целым числом. 0 и отрицательные значения запрещены.",
+        "contactGrant": "Контактных токенов при покупке",
+        "contactGrantHint": "0 = не выдавать. PRO=10, BUSINESS=50",
         "providerPriceId": "Provider Price ID",
         "providerProductId": "Provider Product ID",
         "isActive": "Активный план",

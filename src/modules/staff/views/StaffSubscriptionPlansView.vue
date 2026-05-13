@@ -63,7 +63,10 @@
           <div class="plan-meta">
             <span class="meta-item">
               <BookOpen :size="13" />
-              {{ plan.lessons_per_month === 0 ? $t('staff.plans.unlimited') : plan.lessons_per_month + ' ' + $t('staff.plans.lessons') }}
+              {{ getLessonLimit(plan) }}
+            </span>
+            <span v-if="(plan.contact_grant_on_purchase ?? 0) > 0" class="meta-item">
+              🎟 {{ plan.contact_grant_on_purchase }} {{ $t('staff.plans.contactTokens') }}
             </span>
             <span v-if="plan.provider_price_id" class="meta-item mono">
               <Zap :size="13" /> {{ plan.provider_price_id }}
@@ -172,8 +175,17 @@
                 </select>
               </div>
               <div class="form-group">
-                <label>{{ $t('staff.plans.form.lessonsPerMonth') }} <span class="hint">(0 = {{ $t('staff.plans.unlimited') }})</span></label>
-                <input v-model.number="form.lessons_per_month" type="number" min="0" class="form-input" />
+                <!-- Sprint 3 Task 1d: contact grant — single source of truth для початкових токенів. -->
+                <label>
+                  {{ $t('staff.plans.form.contactGrant') }}
+                  <span class="hint">({{ $t('staff.plans.form.contactGrantHint') }})</span>
+                </label>
+                <input
+                  v-model.number="form.contact_grant_on_purchase"
+                  type="number"
+                  min="0"
+                  class="form-input"
+                />
               </div>
             </div>
 
@@ -299,9 +311,11 @@ const defaultForm = (): PlanCreatePayload => ({
   price: 0,
   currency: 'UAH',
   interval: 'monthly',
-  lessons_per_month: 0,
+  // Sprint 3 Task 2: lessons_per_month прибрано з форми.
+  // Квотою керує limits.monthly_lessons. Backend Plan-default=0 (unlimited у старій моделі).
   features: [],
   limits: {},
+  contact_grant_on_purchase: 0,
   provider: 'stripe',
   provider_price_id: '',
   provider_product_id: '',
@@ -309,6 +323,18 @@ const defaultForm = (): PlanCreatePayload => ({
   is_featured: false,
   display_order: 0,
 })
+
+/**
+ * Sprint 3 Task 2: відображення квоти уроків у plan card.
+ * Source-of-truth — limits.monthly_lessons (null/absent = unlimited).
+ * Поле `plan.lessons_per_month` лишається у DTO для legacy awareness,
+ * але staff редагує через limits.
+ */
+function getLessonLimit(plan: PlanItem): string {
+  const v = plan.limits?.monthly_lessons
+  if (v === null || v === undefined) return t('staff.plans.unlimited')
+  return `${v} ${t('staff.plans.lessons')}`
+}
 
 const form = ref<PlanCreatePayload>(defaultForm())
 
@@ -349,9 +375,10 @@ function openEditModal(plan: PlanItem) {
     price: plan.price,
     currency: plan.currency,
     interval: plan.interval,
-    lessons_per_month: plan.lessons_per_month,
+    // Sprint 3 Task 2: lessons_per_month прибрано (керується через limits.monthly_lessons).
     features: [...plan.features],
     limits: { ...(plan.limits || {}) },
+    contact_grant_on_purchase: plan.contact_grant_on_purchase ?? 0,
     provider: plan.provider,
     provider_price_id: plan.provider_price_id,
     provider_product_id: plan.provider_product_id,

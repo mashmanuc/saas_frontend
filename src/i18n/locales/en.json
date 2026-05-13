@@ -4469,6 +4469,7 @@
       "confirmDeactivate": "Deactivate plan '{name}'? New subscriptions to this plan will no longer be possible. Existing subscriptions will remain active.",
       "deactivatedWithSubs": "Plan deactivated. {count} active subscriptions remain until their expiry.",
       "limitsTitle": "Quota: {key}",
+      "contactTokens": "contact tokens",
       "interval": {
         "monthly": "month",
         "quarterly": "quarter",
@@ -4494,6 +4495,8 @@
         "limitsInvalidJson": "Invalid JSON format for limits.",
         "limitsMustBeObject": "Limits must be a JSON object (e.g. {\"monthly_contacts\": 10}).",
         "limitsInvalidValue": "Limit \"{key}\" must be null (unlimited) or a positive integer. 0 and negative values are forbidden.",
+        "contactGrant": "Contact tokens on purchase",
+        "contactGrantHint": "0 = none. PRO=10, BUSINESS=50",
         "providerPriceId": "Provider Price ID",
         "providerProductId": "Provider Product ID",
         "isActive": "Active plan",
