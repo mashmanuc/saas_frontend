@@ -563,21 +563,10 @@ async function fetchLessonStatus(): Promise<void> {
 const isStudentInClassroom = computed(() => classroomRole.isStudent.value)
 
 // Phase 4: ops-based persistence only (stream-save removed)
+// onSaved callback removed (2026-05-13): session.state_update via WS is deprecated (INV-17).
+// Cross-client sync handled by ops broadcast after each /replay/batch/ — no manual WS notify needed.
 const autosave = useAutosave(resolvedSessionId, {
   disabled: isStudentInClassroom,
-  // Classroom sync: after each save, notify other participants via WS
-  onSaved: () => {
-    if (presence.isConnected.value && resolvedSessionId.value) {
-      try {
-        presence.sendMessage({
-          type: 'session.state_update',
-          rev: store.rev,
-          pageIndex: store.currentPageIndex ?? 0,
-          action: 'autosave',
-        })
-      } catch { /* WS may be closed */ }
-    }
-  },
 })
 
 // Phase 4a: Bridge — DELETED у Phase 2 (was no-op stub since Phase ops-only 2026-04-15).
