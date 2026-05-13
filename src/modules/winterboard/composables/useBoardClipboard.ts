@@ -130,6 +130,22 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
   const isUploading = ref(false)
   const uploadError = ref<string | null>(null)
 
+  // Def 3 (2026-05-13): File-key dedup — prevent duplicate concurrent uploads.
+  //
+  // Scenario: user holds Ctrl+V / presses 9× → 9 paste events with same clipboard file
+  // → 9 handleImagePaste() concurrent → 9 assets on canvas + 9 ContentItem uploads
+  //   (server returns same content_item_id for identical file content).
+  //
+  // Key: "${size}:${type}:${name}" — stable across paste events for same file.
+  // Lifecycle: added on handleImagePaste start → deleted in finally block.
+  // Effect: while an upload is in progress, subsequent pastes of the same file are
+  //         silently dropped. Once upload completes (success or failure), the key is
+  //         removed and the file can be pasted again.
+  const _inProgressFileKeys = new Set<string>()
+  function _fileKey(file: File): string {
+    return `${file.size}:${file.type}:${file.name}`
+  }
+
   // ─── Paste handler (native 'paste' event) ──────────────────
   //
   // Routing за вмістом OS clipboard:
@@ -239,6 +255,20 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
     index: number = 0,
     batch?: BatchContext,
   ): Promise<void> {
+    // Def 3 (2026-05-13): dedup — skip if same file is already being uploaded concurrently.
+    // Key: size+type+name — stable for same clipboard file across paste events.
+    // Key is deleted: in _backgroundUpload's finally (success or failure), OR
+    //   in this function's finally if background upload was never launched.
+    const fileKey = _fileKey(file)
+    if (_inProgressFileKeys.has(fileKey)) {
+      console.info('[BoardClipboard] Duplicate paste skipped (same file in progress):', fileKey)
+      return
+    }
+    _inProgressFileKeys.add(fileKey)
+    // Track whether _backgroundUpload was launched. If not (early exit / presign fail),
+    // we delete the key here; otherwise _backgroundUpload owns deletion via its finally.
+    let _bgLaunched = false
+    try {
     const validation = validateFile(file)
     if (!validation.valid) {
       console.warn('[BoardClipboard] Image rejected:', validation.error)
@@ -311,7 +341,14 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
     console.info('[BoardClipboard] Image pasted (optimistic)', { assetId: meta.assetId, w: dims.w, h: dims.h })
 
     // ─── Stage 3: background S3 PUT + confirm (з semaphore) ───────
-    void _backgroundUpload(file, meta, blobUrl, dims, placeholder, sid, index, batch, signal)
+    // Pass fileKey so _backgroundUpload can release the dedup lock when done.
+    void _backgroundUpload(file, meta, blobUrl, dims, placeholder, sid, index, batch, signal, fileKey)
+    _bgLaunched = true
+    } finally {
+      // If _backgroundUpload was never launched (validation/session/presign failure),
+      // release the dedup key here. Otherwise _backgroundUpload owns it via its finally.
+      if (!_bgLaunched) _inProgressFileKeys.delete(fileKey)
+    }
   }
 
   /**
@@ -363,6 +400,7 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
     index: number,
     batch: BatchContext | undefined,
     signal: AbortSignal | undefined,
+    fileKey: string,  // Def 3: dedup key — released in finally
   ): Promise<void> {
     let blobRevoked = false
     const _revokeOnce = () => {
@@ -454,6 +492,8 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
       _handleBackgroundUploadFailure(err, file, placeholder, index, batch)
     } finally {
       isUploading.value = false
+      // Def 3: release dedup key — file can now be pasted again
+      _inProgressFileKeys.delete(fileKey)
     }
   }
 
