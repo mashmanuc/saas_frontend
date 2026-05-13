@@ -315,6 +315,11 @@ export interface WBBoardState {
   undoStack: WBCommand[]
   redoStack: WBCommand[]
 
+  // UX: object limit signal (2026-05-13)
+  // null = не досягнуто; Date.now() = timestamp останнього хіту ліміту.
+  // WBClassroomRoom watch-ає і показує toast при кожному новому значенні.
+  objectLimitHitAt: number | null
+
   // A6.1: Collaboration mode flag
   isCollaborative: boolean
 
@@ -558,6 +563,8 @@ export const useWBStore = defineStore('wb-board', {
     undoStack: [],
     redoStack: [],
 
+    objectLimitHitAt: null,
+
     isCollaborative: false,
 
     selectedIds: [],
@@ -750,7 +757,9 @@ export const useWBStore = defineStore('wb-board', {
     isNearObjectLimit(state): boolean {
       const page = state.pages[state.currentPageIndex]
       if (!page) return false
-      return page.strokes.length + page.assets.length >= 280
+      // 480 = 80% of 600 limit — warn user while they still have room to wrap up
+      // Previously was 280 (46.7%) which fired too early and couldn't be silenced.
+      return page.strokes.length + page.assets.length >= 480
     },
   },
 
@@ -1093,6 +1102,9 @@ export const useWBStore = defineStore('wb-board', {
       // Phase 34: object limit guard
       if (!this.canAddObject) {
         console.warn('[WB] Object limit reached (600), cannot add stroke')
+        // Signal to UI (WBClassroomRoom watch → toast) — timestamp ensures
+        // watch triggers even on repeated hits (new value each time).
+        this.objectLimitHitAt = Date.now()
         return
       }
 
@@ -1211,6 +1223,7 @@ export const useWBStore = defineStore('wb-board', {
       // Phase 34: object limit guard
       if (!this.canAddObject) {
         console.warn('[WB] Object limit reached (600), cannot add asset')
+        this.objectLimitHitAt = Date.now()
         return
       }
 

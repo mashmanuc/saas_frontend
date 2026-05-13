@@ -36,7 +36,7 @@
  *      P0 UX fix: instant image paste (2026-04-28)
  */
 
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import type { WBAsset, WBStroke } from '../types/winterboard'
 import { STICKY_DEFAULTS } from '../types/winterboard'
 import { parseYouTubeVideoId, getYouTubeThumbnail } from '../utils/youtubeParser'
@@ -414,6 +414,11 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
         ? { ...placeholder, src: meta.assetUrl, status: 'ready' }
         : { ...placeholder, src: meta.assetUrl, w: dims.w, h: dims.h, status: 'ready' }
       onAssetUpdate(finalAsset)
+      // 2026-05-13: чекаємо Vue tick перед revoke blob URL.
+      // onAssetUpdate() оновлює Pinia store синхронно, але DOM commit (canvas re-render)
+      // відбувається в наступному tick. Без nextTick: canvas ще читає blob: src,
+      // а ми вже revoke → ERR_FILE_NOT_FOUND (спостерігалось у реальній сесії n36).
+      await nextTick()
       _revokeOnce()
       console.info('[BoardClipboard] Image upload finalized', {
         assetId: meta.assetId,

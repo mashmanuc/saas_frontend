@@ -321,6 +321,10 @@ export function usePresence(options: UsePresenceOptions) {
   let lastCursorSentAt = 0
   let lastViewportSentAt = 0
   let staleCleanupTimer: ReturnType<typeof setInterval> | null = null
+  // 2026-05-13: після 4429 rate-limit disconnect — suppress cursor updates на 5s.
+  // Без cooldown: reconnect → presence.join → cursor spam → сервер rate-limit знову.
+  // Спостерігалось в real session: 15+ 4429 cycles через immediate reconnect.
+  let cursor4429SuppressedUntil = 0
 
   // Phase RS PR-RS-C3: rAF-based cursor batching state (INV-INP-15).
   // pendingCursor зберігає НАЙСВІЖІШУ позицію — старі drop-нуті природно (overwrite).
@@ -455,6 +459,11 @@ export function usePresence(options: UsePresenceOptions) {
           }
         })()
         return
+      }
+
+      // 4429 = server rate-limited cursor updates → suppress cursor для 5s після reconnect
+      if (code === 4429) {
+        cursor4429SuppressedUntil = Date.now() + 5_000
       }
 
       // Auto-reconnect for other close codes
@@ -773,6 +782,8 @@ export function usePresence(options: UsePresenceOptions) {
     tool: WBToolType,
     cursorColor?: string,
   ): void {
+    // 4429 cooldown: після rate-limit disconnect не спамити cursor відразу після reconnect
+    if (Date.now() < cursor4429SuppressedUntil) return
     pendingCursor = { x, y, pageId, tool, cursorColor }
     if (cursorRAF) return
     cursorRAF = requestAnimationFrame(_flushPendingCursor)

@@ -8419,6 +8419,8 @@
     }
   },
   "wb": {
+    "objectLimitReached": "Board limit reached ({limit} objects). New elements cannot be added.",
+    "objectLimitNear": "Board is {pct}% full ({limit} object limit). You are approaching the limit.",
     "ctx": {
       "menu": "Context menu",
       "copy": "Copy",

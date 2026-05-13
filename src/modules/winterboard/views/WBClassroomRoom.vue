@@ -455,6 +455,7 @@ import { createGeometryAsset } from '../composables/useGeometryCreation'
 import { usePresetExecutor } from '../composables/usePresetExecutor'
 import { createTriangleBuildPreset, createPythagorasPreset } from '../engine/geometryPresets'
 import type { Geometry2DShape } from '../types/geometry'
+import { useToast } from '../composables/useToast'
 
 // Components
 import WBCanvas from '../components/canvas/WBCanvas.vue'
@@ -511,6 +512,7 @@ const store = useWBStore()
 const testStore = useTestStore()
 const { t } = useI18n()
 const { announce } = useAnnouncer()
+const { showToast } = useToast()
 
 const history = useHistory({ maxSize: 100 })
 const locking = useLocking(store)
@@ -921,6 +923,31 @@ watch(
     const pageId = store.currentPage?.id ?? ''
     presence.sendViewport(store.scrollX, store.scrollY, store.zoom, pageId)
   },
+)
+
+// ─── Object limit UX (2026-05-13) ───────────────────────────────────────────
+
+// Показуємо blocking toast при кожному хіті ліміту (600 об'єктів).
+// objectLimitHitAt — timestamp: кожен новий хіт = нове значення → watch спрацьовує.
+watch(
+  () => store.objectLimitHitAt,
+  (hitAt) => {
+    if (!hitAt) return
+    showToast(t('wb.objectLimitReached', { limit: 600 }), 'error', { duration: 4000 })
+  },
+)
+
+// Показуємо одноразовий warning коли дошка заповнена на 80% (480 об'єктів).
+// immediate: false — не тригерити при mount якщо вже >= 480 (replay/hydrate).
+let nearLimitWarningShown = false
+watch(
+  () => store.isNearObjectLimit,
+  (isNear) => {
+    if (!isNear || nearLimitWarningShown) return
+    nearLimitWarningShown = true
+    showToast(t('wb.objectLimitNear', { pct: 80, limit: 600 }), 'warning', { duration: 6000 })
+  },
+  { immediate: false },
 )
 
 // ─── Refs ───────────────────────────────────────────────────────────────────
