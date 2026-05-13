@@ -259,6 +259,7 @@ import { useI18n } from 'vue-i18n'
 import { winterboardApi } from '../api/winterboardApi'
 import { useWBStore } from '../board/state/boardStore'
 import { useReplay } from '../composables/useReplay'
+import { useReplayV2 } from '../composables/useReplayV2'
 import { useReplayAudio } from '../composables/useReplayAudio'
 import { audioManager } from '../utils/audioManager'
 import { createReplayApplier } from '../engine/applyReplayOperation'
@@ -474,8 +475,12 @@ async function enterReplayMode(): Promise<void> {
   replayApplier.reset()  // P0: clean instance page-tracking state
 
   // Create replay composable — use public token for anonymous access
+  // INV-V2-5: feature flag runtime-only (?replay=v2), no build-time env check
   const token = route.params.token as string
-  replay = useReplay(replaySessionId.value, token)
+  const useV2 = route.query['replay'] === 'v2'
+  replay = useV2
+    ? useReplayV2(replaySessionId.value!, token)
+    : useReplay(replaySessionId.value, token)
 
   // P0 FIX (2026-04-08): INV-T — hydrate з recording_start_state ПЕРЕД накаткою ops.
   // Без цього public replay починав з порожнього листа і показував лише сторінки,
