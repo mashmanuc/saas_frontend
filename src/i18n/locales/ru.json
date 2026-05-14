@@ -7696,6 +7696,20 @@
       "save": "Сохранить",
       "delete": "Удалить"
     },
+    "linkAttachment": {
+      "dialogTitle": "Прикрепить ссылку",
+      "add": "Добавить ссылку",
+      "edit": "Редактировать ссылку",
+      "remove": "Удалить ссылку",
+      "open": "Открыть",
+      "titleLabel": "Название",
+      "optional": "необязательно",
+      "urlPlaceholder": "https://example.com/article",
+      "titlePlaceholder": "Как назвать эту ссылку?",
+      "invalidUrl": "Неверная ссылка — поддерживаются только http:// и https://",
+      "hintHttps": "Адрес будет нормализован до https:// автоматически.",
+      "hintExample": "Пример: https://ru.wikipedia.org/wiki/..."
+    },
     "recording": {
       "start": "Записать урок",
       "startTitle": "Начать запись урока для дальнейшего просмотра",

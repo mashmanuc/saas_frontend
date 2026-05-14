@@ -340,8 +340,38 @@
           </button>
         </template>
       </template>
+
+      <!-- ── Link attachment section (single object, tutor only) ── -->
+      <template v-if="showLinkSection">
+        <span class="wb-selection-toolbar__divider" />
+        <button
+          type="button"
+          class="wb-selection-toolbar__btn"
+          :class="{ 'wb-selection-toolbar__btn--active': !!selectedObjLinkUrl }"
+          :disabled="isLocked"
+          :title="selectedObjLinkUrl
+            ? t('winterboard.linkAttachment.edit')
+            : t('winterboard.linkAttachment.add')"
+          @click="onOpenLinkModal"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M9.172 14.828a4 4 0 0 1 0-5.656l3-3a4 4 0 1 1 5.656 5.656l-1.5 1.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M14.828 9.172a4 4 0 0 1 0 5.656l-3 3a4 4 0 0 1-5.656-5.656l1.5-1.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </template>
     </div>
   </Transition>
+
+  <!-- Link attachment modal — opens via 🔗 button. add/edit/remove. -->
+  <LinkAttachmentModal
+    v-if="linkModalOpen"
+    :initial-url="selectedObjLinkUrl ?? ''"
+    :initial-title="selectedObjLinkTitle ?? ''"
+    @save="onLinkSave"
+    @remove="onLinkRemove"
+    @cancel="linkModalOpen = false"
+  />
 
   <!-- ── Send-to-page popup (teleported to body for z-index safety) ── -->
   <Teleport to="body">
@@ -388,6 +418,7 @@ import { computed, ref, watch, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDeviceMode } from '../../composables/useDeviceMode'
 import { useObjectAudio, formatTime, isRecordingSupported } from '../../composables/useObjectAudio'
+import LinkAttachmentModal from './LinkAttachmentModal.vue'
 import type { WBStroke, WBAsset } from '../../types/winterboard'
 
 // ─── Props ──────────────────────────────────────────────────────────────────
@@ -435,6 +466,10 @@ const emit = defineEmits<{
   'audio-deleted': [objectId: string]
   'open-text-overlay': [objectId: string]
   'delete-object-text': [objectId: string]
+  /** Link attached/edited (URL already validated + normalized). */
+  'link-saved': [objectId: string, url: string, title: string]
+  /** Link removed via modal "Remove" button. */
+  'link-removed': [objectId: string]
 }>()
 
 // ─── i18n & Device mode ─────────────────────────────────────────────────────
@@ -513,6 +548,46 @@ const selectedObjText = computed(() => {
   if (!obj) return ''
   return (obj as WBStroke).text ?? (obj as WBAsset).text ?? ''
 })
+
+// ── Object Link ─────────────────────────────────────────────────────────────
+const showLinkSection = computed(() =>
+  props.isTutor !== false &&
+  props.selectedIds.length === 1 &&
+  selectedAnyObject.value != null,
+)
+
+const selectedObjLinkUrl = computed(() => {
+  const obj = selectedAnyObject.value
+  if (!obj) return undefined
+  return (obj as WBStroke).linkUrl ?? (obj as WBAsset).linkUrl
+})
+
+const selectedObjLinkTitle = computed(() => {
+  const obj = selectedAnyObject.value
+  if (!obj) return undefined
+  return (obj as WBStroke).linkTitle ?? (obj as WBAsset).linkTitle
+})
+
+const linkModalOpen = ref(false)
+
+function onOpenLinkModal(): void {
+  if (!audioObjectId.value) return
+  linkModalOpen.value = true
+}
+
+function onLinkSave(url: string, title: string): void {
+  const id = audioObjectId.value
+  if (!id) return
+  emit('link-saved', id, url, title)
+  linkModalOpen.value = false
+}
+
+function onLinkRemove(): void {
+  const id = audioObjectId.value
+  if (!id) return
+  emit('link-removed', id)
+  linkModalOpen.value = false
+}
 
 const audio = useObjectAudio({
   sessionId: audioSessionId,

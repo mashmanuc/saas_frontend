@@ -7742,6 +7742,20 @@
       "save": "Зберегти",
       "delete": "Видалити"
     },
+    "linkAttachment": {
+      "dialogTitle": "Прикріпити посилання",
+      "add": "Додати посилання",
+      "edit": "Редагувати посилання",
+      "remove": "Видалити посилання",
+      "open": "Відкрити",
+      "titleLabel": "Назва",
+      "optional": "необов'язково",
+      "urlPlaceholder": "https://example.com/article",
+      "titlePlaceholder": "Як ви хочете назвати посилання?",
+      "invalidUrl": "Невірне посилання — підтримуються лише http:// та https://",
+      "hintHttps": "Адресу буде доповнено до https:// автоматично.",
+      "hintExample": "Приклад: https://uk.wikipedia.org/wiki/..."
+    },
     "recording": {
       "start": "Записати урок",
       "startTitle": "Почати запис уроку для подальшого перегляду",

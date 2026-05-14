@@ -59,6 +59,9 @@ const TOP_LEVEL_FIELDS: readonly (keyof WBAsset)[] = [
   'youtubeUrl',
   'audioUrl',
   'audioDuration',
+  // Object link attachment (Phase Link, 2026-05-14): mirror audio pattern.
+  'linkUrl',
+  'linkTitle',
   // Image properties (Phase 35)
   'opacity',
   'borderRadius',

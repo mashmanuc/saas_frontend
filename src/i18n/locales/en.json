@@ -7609,6 +7609,20 @@
       "save": "Save",
       "delete": "Delete"
     },
+    "linkAttachment": {
+      "dialogTitle": "Attach a link",
+      "add": "Add link",
+      "edit": "Edit link",
+      "remove": "Remove link",
+      "open": "Open",
+      "titleLabel": "Label",
+      "optional": "optional",
+      "urlPlaceholder": "https://example.com/article",
+      "titlePlaceholder": "What to call this link?",
+      "invalidUrl": "Invalid URL — only http:// and https:// are allowed",
+      "hintHttps": "The address will be normalized to https:// automatically.",
+      "hintExample": "Example: https://en.wikipedia.org/wiki/..."
+    },
     "recording": {
       "start": "Record lesson",
       "startTitle": "Start recording for later replay",

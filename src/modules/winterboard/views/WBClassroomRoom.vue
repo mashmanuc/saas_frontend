@@ -307,6 +307,8 @@
       @text-format="handleTextFormat"
       @audio-uploaded="handleAudioUploaded"
       @audio-deleted="handleAudioDeleted"
+      @link-saved="handleLinkSaved"
+      @link-removed="handleLinkRemoved"
     />
 
     <!-- P3: YouTube insert modal -->
@@ -1049,6 +1051,35 @@ function handleAudioDeleted(objectId: string) {
   } else {
     const { audioUrl: _a, audioDuration: _d, ...rest } = obj as WBStroke
     handleStrokeUpdate({ ...rest, audioUrl: undefined, audioDuration: undefined } as WBStroke)
+  }
+}
+
+// Object link attachment — RBAC-guarded через classroomRole.canDraw.
+// Sync через stroke_update/asset_update (mirror audio pattern, не окремий op).
+function handleLinkSaved(objectId: string, url: string, title: string) {
+  if (!classroomRole.canDraw.value) return
+  const obj = store.getObjectById(objectId)
+  if (!obj) return
+  const linkTitle = title.trim() || undefined
+  const isAsset = 'w' in obj && 'h' in obj && 'type' in obj
+  if (isAsset) {
+    handleAssetUpdate({ ...(obj as WBAsset), linkUrl: url, linkTitle })
+  } else {
+    handleStrokeUpdate({ ...(obj as WBStroke), linkUrl: url, linkTitle })
+  }
+}
+
+function handleLinkRemoved(objectId: string) {
+  if (!classroomRole.canDraw.value) return
+  const obj = store.getObjectById(objectId)
+  if (!obj) return
+  const isAsset = 'w' in obj && 'h' in obj && 'type' in obj
+  if (isAsset) {
+    const { linkUrl: _u, linkTitle: _t, ...rest } = obj as WBAsset
+    handleAssetUpdate({ ...rest, linkUrl: undefined, linkTitle: undefined } as WBAsset)
+  } else {
+    const { linkUrl: _u, linkTitle: _t, ...rest } = obj as WBStroke
+    handleStrokeUpdate({ ...rest, linkUrl: undefined, linkTitle: undefined } as WBStroke)
   }
 }
 

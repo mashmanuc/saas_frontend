@@ -479,6 +479,21 @@
       />
     </div>
 
+    <!-- Object Link: Badge overlay (mirror text/audio). Click → opens у новій
+         вкладці (window.open via <a target=_blank rel=noopener noreferrer>). -->
+    <div
+      v-for="item in itemsWithLink"
+      :key="`link-badge-${item.id}`"
+      class="wb-link-badge"
+      :style="linkBadgePosition(item)"
+    >
+      <LinkBadge
+        :link-url="(item as any).linkUrl!"
+        :link-title="(item as any).linkTitle"
+        :object-id="item.id"
+      />
+    </div>
+
     <!-- Object Text: Overlay (opens on badge click) -->
     <div
       v-if="activeTextObjectId && activeTextObject"
@@ -519,6 +534,7 @@ import DocumentViewerAsset from './DocumentViewerAsset.vue'
 import AudioBadge from './AudioBadge.vue'
 import TextBadge from './TextBadge.vue'
 import TextOverlay from './TextOverlay.vue'
+import LinkBadge from './LinkBadge.vue'
 import { audioManager } from '../../utils/audioManager'
 import AudioPlayerObject from '../board/objects/AudioPlayerObject.vue'
 import VideoPlayerObject from '../board/objects/VideoPlayerObject.vue'
@@ -754,6 +770,37 @@ function textBadgePosition(item: WBStroke | WBAsset) {
   // Offset to the left of audio badge (or where audio badge would be)
   const hasAudio = (item as WBStroke).audioUrl || (item as WBAsset).audioUrl
   const leftOffset = hasAudio ? -30 : 0
+  return {
+    ...base,
+    left: `calc(${base.left} + ${leftOffset}px)`,
+  }
+}
+
+// ── Object Link: badge overlay (mirror audio/text pattern) ─────────────────
+
+const itemsWithLink = computed(() => {
+  const result: (WBStroke | WBAsset)[] = []
+  for (const s of allStrokes.value) {
+    if (s.linkUrl) result.push(s)
+  }
+  for (const a of assets.value) {
+    if (a.linkUrl) result.push(a)
+  }
+  return result
+})
+
+/**
+ * Link badge — shifted ще лівіше від text badge (badge stack: audio | text | link).
+ * Offsets:
+ *   audio = 0          (rightmost — closest to corner)
+ *   text  = -30         (when audio present, else 0)
+ *   link  = -60         (when audio+text present; degrades when fewer)
+ */
+function linkBadgePosition(item: WBStroke | WBAsset) {
+  const base = audioBadgePosition(item)
+  const hasAudio = !!((item as WBStroke).audioUrl || (item as WBAsset).audioUrl)
+  const hasText = !!((item as WBStroke).text || (item as WBAsset).text)
+  const leftOffset = (hasAudio ? -30 : 0) + (hasText ? -30 : 0)
   return {
     ...base,
     left: `calc(${base.left} + ${leftOffset}px)`,

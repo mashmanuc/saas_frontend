@@ -70,6 +70,11 @@ export interface WBStroke {
   // Object Audio: voice annotation attached to this stroke
   audioUrl?: string       // CDN URL of recorded audio
   audioDuration?: number  // duration in seconds
+  // Object Link: external URL attachment — click opens у новій вкладці.
+  // Дотримуємось audio-style sync pattern (через stroke_update, без окремого op).
+  // Validation: http: / https: only (utils/urlSafety.ts).
+  linkUrl?: string        // http(s):// URL
+  linkTitle?: string      // user-friendly label (optional)
 }
 
 // ─── Selection (v5: A1 — Rectangle Select) ─────────────────────────────────
@@ -229,6 +234,9 @@ export interface WBAsset {
   // Object Audio: voice annotation attached to this asset
   audioUrl?: string        // CDN URL of recorded audio
   audioDuration?: number   // duration in seconds
+  // Object Link: external URL — opens у новій вкладці. Validated http(s).
+  linkUrl?: string         // http(s):// URL
+  linkTitle?: string       // user-friendly label
   /**
    * P0 UX (2026-04-28): optimistic image paste status flag — FE-only.
    *

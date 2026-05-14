@@ -735,6 +735,8 @@
       @audio-deleted="handleAudioDeleted"
       @open-text-overlay="handleOpenTextOverlay"
       @delete-object-text="handleDeleteObjectText"
+      @link-saved="handleLinkSaved"
+      @link-removed="handleLinkRemoved"
     />
 
     <!-- Phase 11: Replay mode banner -->
@@ -1647,6 +1649,33 @@ function handleAudioDeleted(objectId: string) {
   } else {
     const { audioUrl: _a, audioDuration: _d, ...rest } = obj as import('../types/winterboard').WBStroke
     handleStrokeUpdate({ ...rest, audioUrl: undefined, audioDuration: undefined } as import('../types/winterboard').WBStroke)
+  }
+}
+
+// Object link attachment — mirror audio handler pattern (per helper recommendation:
+// link sync через stroke_update/asset_update, без custom op type, на відміну від text).
+function handleLinkSaved(objectId: string, url: string, title: string) {
+  const obj = store.getObjectById(objectId)
+  if (!obj) return
+  const linkTitle = title.trim() || undefined
+  const isAsset = 'w' in obj && 'h' in obj && 'type' in obj
+  if (isAsset) {
+    handleAssetUpdate({ ...(obj as import('../types/winterboard').WBAsset), linkUrl: url, linkTitle })
+  } else {
+    handleStrokeUpdate({ ...(obj as import('../types/winterboard').WBStroke), linkUrl: url, linkTitle })
+  }
+}
+
+function handleLinkRemoved(objectId: string) {
+  const obj = store.getObjectById(objectId)
+  if (!obj) return
+  const isAsset = 'w' in obj && 'h' in obj && 'type' in obj
+  if (isAsset) {
+    const { linkUrl: _u, linkTitle: _t, ...rest } = obj as import('../types/winterboard').WBAsset
+    handleAssetUpdate({ ...rest, linkUrl: undefined, linkTitle: undefined } as import('../types/winterboard').WBAsset)
+  } else {
+    const { linkUrl: _u, linkTitle: _t, ...rest } = obj as import('../types/winterboard').WBStroke
+    handleStrokeUpdate({ ...rest, linkUrl: undefined, linkTitle: undefined } as import('../types/winterboard').WBStroke)
   }
 }
 
