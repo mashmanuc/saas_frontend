@@ -461,6 +461,26 @@ export function usePresence(options: UsePresenceOptions) {
         return
       }
 
+      // 4008 = per-user or per-room connection limit exceeded (Redis counter)
+      // BE: MAX_CONNECTIONS_PER_USER=2, conn_user_key TTL=60s (consumers.py:62,145)
+      // Rapid retries (1s, 2s, 4s...) all fail while Redis counter is elevated.
+      // Fix: wait 30s before single retry — gives disconnect() handler time to decr counter.
+      // Observed: room_37 student got 4008 → 5 failed retries over 31s → success at 31s.
+      // With this fix: wait 30s once → success (same total time, zero wasted retries).
+      // S7.1 fix (2026-05-14).
+      if (code === 4008) {
+        console.info(LOG_PREFIX, 'Connection limit (4008) — waiting 30s for Redis counter reset')
+        lastError.value = 'Connection limit reached, retrying...'
+        void (async () => {
+          await sleep(30_000)
+          if (!reconnectAborted && reconnectAttempts < RECONNECT_MAX_ATTEMPTS) {
+            lastError.value = null
+            void scheduleReconnect(sessionId)
+          }
+        })()
+        return
+      }
+
       // 4429 = server rate-limited cursor updates → suppress cursor для 5s після reconnect
       if (code === 4429) {
         cursor4429SuppressedUntil = Date.now() + 5_000
