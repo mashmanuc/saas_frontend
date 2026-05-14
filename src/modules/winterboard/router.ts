@@ -163,6 +163,17 @@ const winterboardStandaloneRoutes: RouteRecordRaw[] = [
     meta: { public: true, requiresAuth: false },
   },
   {
+    // Short alias /wb/public/:token → /winterboard/public/:token (зберігає query params — ?replay=v2 тощо)
+    path: '/wb/public/:token',
+    name: 'winterboard-public-short',
+    redirect: (to) => ({
+      name: 'winterboard-public',
+      params: { token: to.params.token },
+      query: to.query,
+    }),
+    meta: { public: true, requiresAuth: false },
+  },
+  {
     // Solo session editor — tutor-only
     path: '/winterboard/:id',
     name: 'winterboard-solo',

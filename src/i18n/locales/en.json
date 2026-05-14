@@ -6882,7 +6882,10 @@
       "sticky_hint": "Click to place a sticky note",
       "collapse": "Collapse panel",
       "expand": "Expand panel",
-      "sheetTitle": "Tool settings"
+      "sheetTitle": "Tool settings",
+      "pen_colors": "Color",
+      "custom_color": "Custom color",
+      "highlighter_colors": "Highlighter"
     },
     "solidToolbar": {
       "autoRotate": "Auto rotate"
@@ -7346,7 +7349,8 @@
       "showPagePanel": "Show page panel",
       "syncError": "Sync error",
       "followMode": "Follow mode",
-      "publish": "Publish lesson"
+      "publish": "Publish lesson",
+      "materials": "Materials"
     },
     "selection": {
       "toolbar": "Selection toolbar",
