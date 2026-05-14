@@ -45,6 +45,11 @@
           @blur="handleTitleBlur"
           @keydown.enter="($event.target as HTMLInputElement).blur()"
         />
+        <span class="wb-title-edit-hint" aria-hidden="true">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+            <path d="M11.5 1.5a1.5 1.5 0 0 1 2.12 2.12L5 12.24l-3 .76.76-3L11.5 1.5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
       </div>
 
       <!-- Phase 16 INT-33: Session context bar -->
@@ -2817,6 +2822,23 @@ watch(() => store.workspaceName, (name) => {
 .wb-solo-room__title {
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.wb-title-edit-hint {
+  display: inline-flex;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.45);
+  opacity: 0;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.wb-solo-room__title:hover .wb-title-edit-hint {
+  opacity: 1;
 }
 
 .wb-title-input {

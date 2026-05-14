@@ -34,8 +34,11 @@
     <!-- ── МАТЕРІАЛИ tab ── -->
     <template v-if="activeTab === 'materials'">
 
-    <!-- Phase 3.1: Storage quota bar -->
-    <StorageQuotaBar v-if="isTutor" :quota="storageQuota" />
+    <!-- Phase 3.1: Storage quota bar — shown only when usage ≥ 70% to reduce noise -->
+    <StorageQuotaBar
+      v-if="isTutor && storageQuota && (storageQuota.usage_percent ?? 0) >= 70"
+      :quota="storageQuota"
+    />
 
     <!-- Folder tree (library mode only) -->
     <template v-if="!groupId">
@@ -170,9 +173,11 @@
 
     <!-- ── ІНСТРУМЕНТИ tab ── -->
     <template v-else>
-      <SolidsTray />
-      <GraphCalculatorTray />
-      <Geometry2DTray />
+      <div class="content-sidebar__tools-tab">
+        <SolidsTray />
+        <GraphCalculatorTray />
+        <Geometry2DTray />
+      </div>
     </template>
 
   </div>
@@ -737,6 +742,12 @@ function onDrop(e: DragEvent) {
 .solids-collapse-leave-from {
   opacity: 1;
   max-height: 600px;
+}
+
+/* ── Tools tab wrapper — removes redundant top border on first tray section ── */
+.content-sidebar__tools-tab :deep(.solids-tray) {
+  border-top: none;
+  padding-top: 14px;
 }
 
 /* ── Fade transition ── */

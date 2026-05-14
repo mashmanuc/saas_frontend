@@ -434,9 +434,9 @@ function handleToolbarKeydown(event: KeyboardEvent): void {
 /* Thin sub-separator between tool sub-groups (lighter than main sep) */
 .wb-toolbar__subsep {
   height: 1px;
-  margin: 3px 8px;
+  margin: 4px 6px;
   background: var(--wb-toolbar-border, #e2e8f0);
-  opacity: 0.5;
+  opacity: 0.7;
 }
 
 /* Tool button — 44×44 touch-friendly (LAW-22: min 44px for a11y) */
