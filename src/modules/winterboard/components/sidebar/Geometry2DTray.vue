@@ -39,10 +39,7 @@
         <span class="geo2dv2-tray__icon" aria-hidden="true">
           <PresetIcon :type="item.type" />
         </span>
-        <span class="geo2dv2-tray__labels">
-          <span class="geo2dv2-tray__label">{{ presetLabel(item) }}</span>
-          <span class="geo2dv2-tray__sublabel">{{ item.short }}</span>
-        </span>
+        <span class="geo2dv2-tray__label">{{ presetLabel(item) }}</span>
       </button>
     </div>
     <div class="geo2dv2-tray__hint">
@@ -236,26 +233,13 @@ const PresetIcon: FunctionalComponent<{ type: string }> = (props) => {
   flex-shrink: 0;
 }
 
-.geo2dv2-tray__labels {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  min-width: 0;
-}
-
 .geo2dv2-tray__label {
   font-weight: 600;
+  font-size: 11px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.geo2dv2-tray__sublabel {
-  font-size: 9px;
-  color: #64748b;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .geo2dv2-tray__hint {
