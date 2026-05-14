@@ -175,7 +175,7 @@
                     @moved="onLessonMoved(lesson, $event)"
                   />
                   <router-link
-                    :to="{ name: 'LessonView', params: { lessonSlug: lesson.slug } }"
+                    :to="{ name: 'LessonView', params: { lessonSlug: lesson.slug }, query: { preview: '1' } }"
                     class="px-3 py-1.5 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors inline-flex items-center"
                     :title="$t('knowledge.lesson.startReplay')"
                   >

@@ -91,6 +91,11 @@ onMounted(async () => {
       return
     }
 
+    // ?preview=1 — from "Мої уроки" eye button: skip hero, open board directly
+    if (route.query.preview === '1') {
+      startReplay()
+    }
+
     // Phase 27: view logging moved to backend (auto-log on GET PublicLessonDetailView)
   } catch (err) {
     const status = err?.response?.status
@@ -114,9 +119,10 @@ function startReplay() {
   if (lesson.value?.snapshot_url) {
     replayStarted.value = true
   } else {
+    // Урок ще не містить контенту дошки (жодного запису або порожній шаблон)
     errorState.value = {
       type: 'broken_snapshot',
-      message: 'Lesson content is not available for replay.',
+      message: 'Урок ще не містить контенту дошки. Проведіть урок, щоб він з\'явився тут.',
     }
   }
 }
