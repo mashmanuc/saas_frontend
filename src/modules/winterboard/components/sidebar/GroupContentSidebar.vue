@@ -13,6 +13,27 @@
       </div>
     </Transition>
 
+    <!-- Tab switcher -->
+    <div class="content-sidebar__tabs" role="tablist">
+      <button
+        class="content-sidebar__tab"
+        :class="{ 'content-sidebar__tab--active': activeTab === 'materials' }"
+        role="tab"
+        :aria-selected="activeTab === 'materials'"
+        @click="activeTab = 'materials'"
+      >{{ t('winterboard.contentSidebar.tabMaterials') }}</button>
+      <button
+        class="content-sidebar__tab"
+        :class="{ 'content-sidebar__tab--active': activeTab === 'tools' }"
+        role="tab"
+        :aria-selected="activeTab === 'tools'"
+        @click="activeTab = 'tools'"
+      >{{ t('winterboard.contentSidebar.tabTools') }}</button>
+    </div>
+
+    <!-- ── МАТЕРІАЛИ tab ── -->
+    <template v-if="activeTab === 'materials'">
+
     <!-- Phase 3.1: Storage quota bar -->
     <StorageQuotaBar v-if="isTutor" :quota="storageQuota" />
 
@@ -63,39 +84,6 @@
         :placeholder="t('winterboard.contentSidebar.search')"
         autocomplete="off"
       />
-    </div>
-
-    <!-- Phase O PR-O4.2 P0: Геометричні фігури — drag source tray (always visible
-         at top, single mount → Solo + Classroom inherit). NO v-if conditions.
-         Phase O Task 1 UX: collapsible header (local ref, session-only). -->
-    <div class="content-sidebar__solids-section">
-      <button
-        type="button"
-        class="content-sidebar__group-header content-sidebar__group-header--collapsible"
-        :aria-expanded="isSolidsExpanded"
-        @click="isSolidsExpanded = !isSolidsExpanded"
-      >
-        <span class="content-sidebar__group-header-text">
-          {{ t('winterboard.contentSidebar.solidsHeader') }}
-        </span>
-        <span
-          class="content-sidebar__group-header-chevron"
-          :class="{ open: isSolidsExpanded }"
-          aria-hidden="true"
-        >
-          ▾
-        </span>
-      </button>
-      <Transition name="solids-collapse">
-        <div v-if="isSolidsExpanded" class="content-sidebar__solids-body">
-          <SolidsTray />
-          <!-- Phase G (2026-05-06): interactive graph_calculator tray inside the
-               same collapsible "solids/interactive widgets" section. -->
-          <GraphCalculatorTray />
-          <!-- Phase G PR-G1 (2026-05-13): geometry_2d_v2 dynamic geometry tray (skeleton). -->
-          <Geometry2DTray />
-        </div>
-      </Transition>
     </div>
 
     <!-- Filter chips -->
@@ -177,6 +165,16 @@
         </div>
       </template>
     </template>
+
+    </template><!-- /materials tab -->
+
+    <!-- ── ІНСТРУМЕНТИ tab ── -->
+    <template v-else>
+      <SolidsTray />
+      <GraphCalculatorTray />
+      <Geometry2DTray />
+    </template>
+
   </div>
 </template>
 
@@ -236,8 +234,8 @@ const folders = ref<LibraryFolderTreeType[]>([])
 const isLoadingFolders = ref(false)
 const isFoldersPanelOpen = ref(false)
 
-// Phase O Task 1 UX: collapsible solids section (default expanded, session-only).
-const isSolidsExpanded = ref(true)
+// Tab switcher: 'materials' | 'tools'
+const activeTab = ref<'materials' | 'tools'>('materials')
 
 const sidebar = useGroupSidebar(toRef(props, 'groupId'), selectedFolderId)
 const wbStore = useWBStore()
@@ -414,6 +412,45 @@ function onDrop(e: DragEvent) {
 .content-sidebar__folders-toggle:hover {
   background: var(--wb-hover-bg, #f3f4f6);
   color: var(--wb-text-primary, #111827);
+}
+
+/* ── Tab switcher ── */
+.content-sidebar__tabs {
+  display: flex;
+  flex-shrink: 0;
+  border-bottom: 2px solid #f1f5f9;
+  background: #ffffff;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.content-sidebar__tab {
+  flex: 1;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  letter-spacing: 0.01em;
+}
+
+.content-sidebar__tab:hover {
+  color: #475569;
+  background: #f8fafc;
+}
+
+.content-sidebar__tab--active {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
 }
 
 /* ── Base sidebar ── */
