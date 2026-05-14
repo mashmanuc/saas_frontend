@@ -1,3 +1,22 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// LEGACY COMPOSABLE (V1) — заморожений після Replay V2 rollout
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// СТАТУС: ❄️ FROZEN (аналогічно WBReplayEngine.ts)
+//   Нових фіч — заборонено. Тільки критичні production fixes.
+//
+// ПОТОЧНА РОЛЬ у WBPublicView.vue:
+//   Дефолтний composable коли ?replay= відсутній або невідомий.
+//   Активний для всіх публічних посилань без feature flag.
+//
+// ROLLOUT PLAN (Phase C — коли зрілий):
+//   Крок 1: useReplayV2 стає дефолтом у WBPublicView (один рядок)
+//   Крок 2: useReplay залишається як fallback import (ще ~4 тижні)
+//   Крок 3: після stable metrics → видалити useReplay + WBReplayEngine
+//   Trigger checklist: див. WBReplayEngine.ts header
+//
+// ═══════════════════════════════════════════════════════════════════════════
+//
 // A12: useReplay — Vue composable wrapping WBReplayEngine
 // Ref: DAY17_AGENT-A.md
 // Zone: AGENT-A (composables/)

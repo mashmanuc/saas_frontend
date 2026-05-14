@@ -1,3 +1,59 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// LEGACY REPLAY ENGINE (V1) — заморожений після Replay V2 rollout
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// СТАТУС: ❄️ FROZEN
+//   - Нових фіч: заборонено
+//   - Тільки критичні production fixes (data loss, crash)
+//   - Видалення: після ≥1 місяця V2 stable у prod (mobile + long sessions)
+//
+// ЧОМ V1 БУВ ПРОБЛЕМНИЙ:
+//   1. seek = re-execution від op[0] → O(N) complexity. Для 2000 ops seek
+//      до кінця = 2000 rAF frames → 3–10 секунд на mobile.
+//   2. Seek loop рвався якщо user seekав знову під час активного seek
+//      (race condition між rAF callbacks і state updates).
+//   3. Full apply = memory spike (всі N ops проходять через Vue reactive
+//      pipeline одночасно) → 300–900ms long task на weak devices.
+//   4. Playback залежав від браузерного requestAnimationFrame timing →
+//      різна швидкість на різних пристроях, Safari vs Chrome розбіжності.
+//   5. Немає CDN acceleration: кожен seek бив origin (без snapshot caching).
+//
+// ЧОМ З'ЯВИВСЯ V2 (WBReplayEngineV2 + useReplayV2):
+//   - Snapshot-based seek: load nearest snapshot → apply bounded delta ≤150 ops
+//   - O(1) seek замість O(N): snapshot load + 0–150 sync ops vs 0–5000 rAF frames
+//   - CDN-cacheable snapshots: CF edge serves snapshot, не Django
+//   - Race protection: _seekVersion increment guarantees last-seek-wins
+//   - INV-V2-PUB-6: будь-яка помилка snapshot → null → fallback на V1 rAF path
+//     тобто V2 ніколи не ламає replay — snapshot = acceleration layer, не SSOT
+//
+// ІНВАРІАНТИ V2 (повна специфікація у useReplayV2.ts):
+//   INV-V2-1: НЕ імпортує з useReplay.ts або WBReplayEngine.ts
+//   INV-V2-2: Snapshot load = atomic replace (clearState → loadState)
+//   INV-V2-3: Delta apply bounded — MAX_DELTA_OPS = 150
+//   INV-V2-4: NullSnapshotProvider = pure noop (0 HTTP для anonymous без Phase B)
+//   INV-V2-PUB-1..6: Public snapshot transport invariants
+//
+// ЧОМУ full replay apply — погана модель:
+//   - Script re-execution: не "яким був стан?", а "як ми до нього дійшли?"
+//   - Не масштабується: O(N) де N = total ops (зростає з часом уроку)
+//   - Не cache-friendly: кожен seek = унікальний обчислювальний шлях
+//   - Fragile: один broken op у ланцюжку = corrupted state для всіх наступних
+//   - Memory: весь replay history у пам'яті + DOM mutations per op
+//   Правильна модель: snapshot (state jump) + bounded delta (incremental patch)
+//
+// V1 ЗАРАЗ = "аварійний двигун":
+//   - Fallback коли snapshot недоступний (404, network, no snapshots created)
+//   - INV-V2-6 гарантує що V1 fallback path завжди є
+//   - НЕ видаляти поки V2 не проживе ≥1 місяць у prod зі стабільними метриками
+//
+// TRIGGER для видалення V1 (checklist):
+//   □ V2 ≥4 тижні у prod (mobile + long sessions + live classroom)
+//   □ snapshot_fallback_total ≈ 0% (DevTools: window.__replayV2Metrics)
+//   □ 0 memory leak evidence (heap profiler before/after 50 seeks)
+//   □ Safari/iOS verified (не тільки Chrome desktop)
+//   □ Replay з 3000+ ops verified
+// ═══════════════════════════════════════════════════════════════════════════
+//
 // A12: WBReplayEngine — client-side replay engine for board operation timeline
 // Ref: DAY17_AGENT-A.md
 // Zone: AGENT-A (engine/)
