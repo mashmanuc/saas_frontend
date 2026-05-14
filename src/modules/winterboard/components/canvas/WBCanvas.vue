@@ -219,7 +219,9 @@
     <!-- Offscreen preview canvas overlay -->
     <canvas ref="previewCanvasRef" class="wb-preview-canvas" />
 
-    <!-- Text editing overlay (v-if ensures clean mount/unmount cycle) -->
+    <!-- Text editing overlay (v-if ensures clean mount/unmount cycle).
+         Enter (без Shift) = save+exit; Shift+Enter = newline (стандарт multi-line);
+         Escape = exit; blur = save+exit (клік поза). -->
     <textarea
       v-if="editingText"
       ref="textareaRef"
@@ -227,7 +229,8 @@
       class="wb-text-edit-overlay"
       :style="textEditStyle"
       @blur="finishTextEdit"
-      @keydown.escape="finishTextEdit"
+      @keydown.escape.prevent="finishTextEdit"
+      @keydown.enter.exact.prevent="finishTextEdit"
       @mousedown.stop
       @pointerdown.stop
     />
@@ -2074,6 +2077,17 @@ function handleMouseDown(e: Konva.KonvaEventObject<MouseEvent | TouchEvent>): vo
 
   // Text tool
   if (currentTool.value === 'text') {
+    // Якщо вже у режимі text editing → finalize текущий ПЕРЕД новим.
+    // Раніше race: stage pointerdown переписував editingText.value = newStroke,
+    // editingTextValue.value = '' до того як blur встигав finishTextEdit() →
+    // user-ський текст втрачався. Тепер save-first-then-exit pattern, новий
+    // text потребує другого click (UX consistency: один клік = exit edit).
+    // force:true — bypass blur-guard (300ms phantom-focus protection): це user-
+    // intent click, не fantom blur від Konva focus-steal.
+    if (editingText.value) {
+      finishTextEdit({ force: true })
+      return
+    }
     createTextAtPosition(pos)
     return
   }
@@ -2371,11 +2385,15 @@ function handleTextEdit(stroke: WBStroke): void {
   })
 }
 
-function finishTextEdit(): void {
+function finishTextEdit(eventOrForce?: Event | { force?: boolean }): void {
   if (!editingText.value) return
-  // Guard: ignore blur events that fire immediately after textarea creation
-  // (caused by Konva stage reclaiming focus during its event processing)
-  if (Date.now() - textEditCreatedAt < TEXT_BLUR_GUARD_MS) return
+  // Guard: ignore PHANTOM blur events that fire immediately after textarea
+  // creation (Konva stage reclaiming focus). Enter / Escape / explicit click-
+  // outside проходять через guard, бо викликаються після `keydown` user-intent.
+  const isExplicitEvent = eventOrForce instanceof Event
+    && (eventOrForce.type === 'keydown' || (eventOrForce as KeyboardEvent).key !== undefined)
+  const isForced = !(eventOrForce instanceof Event) && !!(eventOrForce?.force)
+  if (!isExplicitEvent && !isForced && Date.now() - textEditCreatedAt < TEXT_BLUR_GUARD_MS) return
 
   const stroke: WBStroke = {
     ...editingText.value,
