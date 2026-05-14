@@ -283,23 +283,39 @@ export function useReplayV2(sessionId: string, publicToken?: string, options: Us
         // Race check: another seek started while we were fetching
         if (_seekVersion !== myVersion) return
 
-        if (
-          snap?.board_state &&
-          typeof snap.operation_index === 'number' &&
-          snap.operation_index > 0 &&
-          snap.operation_index < clampedIdx &&
-          (clampedIdx - snap.operation_index) <= MAX_DELTA_OPS   // INV-V2-3
-        ) {
-          snapshotStartIdx = snap.operation_index
-          snapshotBoardState = snap.board_state as Record<string, unknown>
+        // C9: snap.operation_index = SESSION-level count (absolute from session start).
+        // clampedIdx = ENGINE index (0-based within replay's op range).
+        // For replays that start mid-session these numbers differ → comparing them
+        // directly always rejects the snapshot → V2 degrades to rAF O(N) fallback.
+        // Fix: convert snap.seq → engine index via findIndexBySeq().
+        if (snap?.board_state) {
+          const snapEngineIdx = typeof snap.seq === 'number'
+            ? engine.value.findIndexBySeq(snap.seq)
+            : -1
+
+          const deltaOps = snapEngineIdx >= 0 ? clampedIdx - snapEngineIdx : Infinity
+
+          if (snapEngineIdx >= 0 && snapEngineIdx < clampedIdx && deltaOps <= MAX_DELTA_OPS) {   // INV-V2-3
+            snapshotStartIdx = snapEngineIdx
+            snapshotBoardState = snap.board_state as Record<string, unknown>
+          } else {
+            // snapshot found but not usable (seq not in replay range or delta > MAX_DELTA_OPS)
+            _snapMetrics.fallbackCount++
+            console.info(
+              '[replay:v2] snapshot_fallback target_idx=%d fetch_ms=%.1f reason=%s snap_engine_idx=%d',
+              clampedIdx,
+              _fetchMs,
+              snapEngineIdx < 0 ? 'seq_not_in_replay' : `delta_too_large(${deltaOps})`,
+              snapEngineIdx,
+            )
+          }
         } else {
-          // snapshot missing or delta too large → fallback
+          // no snapshot returned
           _snapMetrics.fallbackCount++
           console.info(
-            '[replay:v2] snapshot_fallback target_idx=%d fetch_ms=%.1f reason=%s',
+            '[replay:v2] snapshot_fallback target_idx=%d fetch_ms=%.1f reason=no_snapshot',
             clampedIdx,
             _fetchMs,
-            snap ? `delta_too_large(${clampedIdx - (snap.operation_index ?? 0)})` : 'no_snapshot',
           )
         }
       }

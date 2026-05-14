@@ -89,6 +89,36 @@ export class WBReplayEngineV2 {
     return Math.max(0, t - this.firstOpAtMs)
   }
 
+  /**
+   * Знайти останній ENGINE індекс з op.seq ≤ targetSeq. Бінарний пошук O(log n).
+   *
+   * Повертає -1 якщо ops порожні, seq відсутні або всі ops мають seq > targetSeq.
+   *
+   * ВАЖЛИВО — чому потрібен саме цей метод:
+   *   snap.operation_index = SESSION-level лічильник (абсолютний від початку сесії).
+   *   engine index          = 0-based від першого оп у replay (replay-relative).
+   *   Для replay що починається не з op[0] сесії ці числа РІЗНІ.
+   *   Порівнювати snap.operation_index з engine index напряму — бага:
+   *   snapshot завжди відхиляється, V2 деградує до rAF fallback (O(N)).
+   *   Правильна конвертація: snap.seq → findIndexBySeq(snap.seq) → engine index.
+   */
+  findIndexBySeq(targetSeq: number): number {
+    const n = this.operations.length
+    if (n === 0) return -1
+    let lo = 0, hi = n - 1, result = -1
+    while (lo <= hi) {
+      const mid = (lo + hi) >>> 1
+      const opSeq = (this.operations[mid] as { seq?: number }).seq
+      if (typeof opSeq === 'number' && opSeq <= targetSeq) {
+        result = mid
+        lo = mid + 1
+      } else {
+        hi = mid - 1
+      }
+    }
+    return result
+  }
+
   // ─── Playback control ──────────────────────────────────────────────────────
 
   play(): void {
