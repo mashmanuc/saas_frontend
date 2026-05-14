@@ -29,6 +29,20 @@ const MAX_DELTA_OPS = 150
 // Мінімальна кількість ops від початку, за якої має сенс робити HTTP за snapshot.
 const MIN_SEEK_FOR_SNAPSHOT = 30
 
+// ─── Snapshot observability (advisor 2026-05-14) ───────────────────────────
+// Module-level counters — видно як window.__replayV2Metrics у DevTools (dev-only).
+// Sentry захопить console.info як breadcrumbs якщо виникне exception.
+const _snapMetrics = {
+  fetchCount: 0,
+  fallbackCount: 0,
+  fetchTotalMs: 0,
+  applyTotalMs: 0,
+}
+if (import.meta.env.DEV) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ;(window as any).__replayV2Metrics = _snapMetrics
+}
+
 export interface UseReplayV2Options {
   /**
    * INV-V2-PUB Phase B: якщо true + publicToken присутній → PublicSnapshotProvider.
@@ -253,13 +267,18 @@ export function useReplayV2(sessionId: string, publicToken?: string, options: Us
     // ── Step 1: try to fetch snapshot (async) ────────────────────────────────
     let snapshotStartIdx = 0  // 0 = no snapshot → full apply
     let snapshotBoardState: Record<string, unknown> | null = null
+    let _fetchMs = 0
 
     if (clampedIdx >= MIN_SEEK_FOR_SNAPSHOT) {
       const targetOp = engine.value.getOperationAt(clampedIdx)
       const targetSeq = typeof targetOp?.seq === 'number' ? targetOp.seq : null
 
       if (targetSeq !== null) {
+        const _t0 = performance.now()
         const snap = await provider.fetchNearest(targetSeq)
+        _fetchMs = performance.now() - _t0
+        _snapMetrics.fetchCount++
+        _snapMetrics.fetchTotalMs += _fetchMs
 
         // Race check: another seek started while we were fetching
         if (_seekVersion !== myVersion) return
@@ -273,6 +292,15 @@ export function useReplayV2(sessionId: string, publicToken?: string, options: Us
         ) {
           snapshotStartIdx = snap.operation_index
           snapshotBoardState = snap.board_state as Record<string, unknown>
+        } else {
+          // snapshot missing or delta too large → fallback
+          _snapMetrics.fallbackCount++
+          console.info(
+            '[replay:v2] snapshot_fallback target_idx=%d fetch_ms=%.1f reason=%s',
+            clampedIdx,
+            _fetchMs,
+            snap ? `delta_too_large(${clampedIdx - (snap.operation_index ?? 0)})` : 'no_snapshot',
+          )
         }
       }
     }
@@ -286,6 +314,8 @@ export function useReplayV2(sessionId: string, publicToken?: string, options: Us
       loadState(snapshotBoardState)
 
       // Sync apply of bounded delta ops (≤ MAX_DELTA_OPS — fast, no rAF needed)
+      const _applyT0 = performance.now()
+      const _deltaCount = clampedIdx - snapshotStartIdx
       for (let i = snapshotStartIdx; i < clampedIdx; i++) {
         if (!engine.value || !_onOp) break
         const op = engine.value.getOperationAt(i)
@@ -293,6 +323,14 @@ export function useReplayV2(sessionId: string, publicToken?: string, options: Us
           try { _onOp(op) } catch (e) { console.warn(`[replay:v2] delta op ${i}:`, e) }
         }
       }
+      const _applyMs = performance.now() - _applyT0
+      _snapMetrics.applyTotalMs += _applyMs
+
+      console.info(
+        '[replay:v2] snapshot_hit target_idx=%d snap_idx=%d delta_ops=%d '
+        + 'fetch_ms=%.1f apply_ms=%.1f',
+        clampedIdx, snapshotStartIdx, _deltaCount, _fetchMs, _applyMs,
+      )
 
       _finalizeSeek(clampedIdx)
       return
