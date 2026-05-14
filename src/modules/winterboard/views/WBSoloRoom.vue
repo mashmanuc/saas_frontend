@@ -272,9 +272,6 @@
           @unlock-selected="handleUnlockSelected"
           @clear-page-request="handleClearPageRequest"
           @youtube-insert="showYouTubeModal = true"
-          @geometry-shape-select="handleGeometryShapeSelect"
-          @run-preset="handleRunPreset"
-          :preset-playing="presetExecutor.isPlaying.value"
         />
       </aside>
 
@@ -330,7 +327,6 @@
           @scroll-change="handleScrollChange"
           @presentation-expand="handlePresentationExpand"
           @audio-badge-click="handleAudioBadgeClick"
-          @geometry-create="handleGeometryCreate"
           @doc-viewer-page-jump="openPageJumpInput"
         />
 
@@ -830,9 +826,6 @@ import { useOpsSyncStore } from '../stores/opsSyncStore'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { groupApi as learningGroupApi } from '@/modules/groups/api/groupApi'
 import type { WBStroke, WBAsset, WBToolType } from '../types/winterboard'
-import { createGeometryAsset } from '../composables/useGeometryCreation'
-import { usePresetExecutor } from '../composables/usePresetExecutor'
-import { createTriangleBuildPreset, createPythagorasPreset } from '../engine/geometryPresets'
 
 // Components
 import WBCanvas from '../components/canvas/WBCanvas.vue'
@@ -1808,61 +1801,6 @@ function handleAssetAdd(asset: WBAsset): void {
 
 function handleAssetUpdate(asset: WBAsset): void {
   store.updateAsset(asset)
-}
-
-// GeoBoard: create geometry asset at canvas position
-const _geometryShape = ref<import('../types/geometry').Geometry2DShape>('triangle')
-const _geometrySides = ref(6)
-
-function handleGeometryShapeSelect(shape: string, sides?: number): void {
-  _geometryShape.value = shape as import('../types/geometry').Geometry2DShape
-  if (sides != null) _geometrySides.value = sides
-}
-
-function handleGeometryCreate(x: number, y: number): void {
-  const asset = createGeometryAsset(_geometryShape.value, x, y, {
-    sides: _geometrySides.value,
-  })
-  handleAssetAdd(asset)
-  // Auto-select and switch to select tool for immediate interaction
-  store.selectItems([asset.id])
-  store.setTool('select')
-}
-
-// GeoBoard Phase 2: Preset executor
-const presetExecutor = usePresetExecutor({
-  applyOp(op) {
-    const payload = op.payload as Record<string, any>
-    if (op.op_type === 'asset_add' && payload.asset) {
-      // GeoBoard preset executor — adds на active page (live edit context)
-      store.addAsset(payload.asset as WBAsset, store.currentPageId)
-    } else if (op.op_type === 'asset_update' && payload.asset) {
-      store.updateAsset(payload.asset as WBAsset)
-    }
-  },
-  onStart() {
-    // G4: switch to select tool to prevent drawing during preset
-    store.setTool('select')
-  },
-})
-
-function handleRunPreset(presetId: string): void {
-  // Place preset at center of the page
-  const cx = (store.pageWidth || 1920) / 2
-  const cy = (store.pageHeight || 1080) / 2
-
-  let preset
-  switch (presetId) {
-    case 'triangle_build':
-      preset = createTriangleBuildPreset(cx, cy)
-      break
-    case 'pythagoras':
-      preset = createPythagorasPreset(cx, cy)
-      break
-    default:
-      return
-  }
-  presetExecutor.run(preset)
 }
 
 function handleAssetDelete(assetId: string): void {

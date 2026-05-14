@@ -31,14 +31,6 @@
       </button>
     </div>
 
-    <!-- GeoBoard: Geometry shapes panel (visible when geometry tool active) -->
-    <WBGeometryPanel
-      :visible="currentTool === 'geometry'"
-      :preset-playing="presetPlaying"
-      @create-shape="handleGeometryShape"
-      @run-preset="handleRunPreset"
-    />
-
     <!-- Stroke style flyout: thickness + color combined (B3: hidden for eraser/select) -->
     <Transition name="wb-collapse">
       <template v-if="showColorPalette">
@@ -178,8 +170,6 @@ import WBIconLaser from './icons/WBIconLaser.vue'
 import WBIconSticky from './icons/WBIconSticky.vue'
 import WBIconLock from './icons/WBIconLock.vue'
 import WBIconUnlock from './icons/WBIconUnlock.vue'
-import WBIconGeometry from './icons/WBIconGeometry.vue'
-import WBGeometryPanel from './WBGeometryPanel.vue'
 import WBColorFlyout from './WBColorFlyout.vue'
 
 // ─── Props ──────────────────────────────────────────────────────────────────
@@ -196,8 +186,6 @@ interface Props {
   hasSelection?: boolean
   hasLockedInSelection?: boolean
   canClearPage?: boolean
-  /** GeoBoard: preset is currently playing (locks interaction) */
-  presetPlaying?: boolean
   /** Responsive Phase 2 B3: Layout variant (INV-3: one toolbar, not three) */
   variant?: ToolbarVariant
 }
@@ -257,8 +245,6 @@ const emit = defineEmits<{
   'unlock-selected': []
   'clear-page-request': []
   'youtube-insert': []
-  'geometry-shape-select': [shape: string, sides?: number]
-  'run-preset': [presetId: string]
 }>()
 
 // ─── i18n ───────────────────────────────────────────────────────────────────
@@ -284,7 +270,6 @@ const drawingTools: ToolDef[] = [
   { id: 'eraser', icon: WBIconEraser, shortcut: 'E' },
   { id: 'laser', icon: WBIconLaser, shortcut: 'F' },
   { id: 'sticky', icon: WBIconSticky, shortcut: 'S' },
-  { id: 'geometry', icon: WBIconGeometry, shortcut: 'G' },
 ]
 
 // ─── B3: Conditional visibility ─────────────────────────────────────────────
@@ -294,15 +279,6 @@ const COLOR_TOOLS: WBToolType[] = ['pen', 'highlighter', 'line', 'rectangle', 'c
 
 const showThickness = computed(() => THICKNESS_TOOLS.includes(props.currentTool))
 const showColorPalette = computed(() => COLOR_TOOLS.includes(props.currentTool))
-
-// GeoBoard: handle shape selection from geometry panel
-function handleGeometryShape(shape: string, sides?: number): void {
-  emit('geometry-shape-select', shape, sides)
-}
-
-function handleRunPreset(presetId: string): void {
-  emit('run-preset', presetId)
-}
 
 // B5: Tooltip text — laser gets extra hint
 function toolTooltip(tool: ToolDef): string {
@@ -428,7 +404,6 @@ function handleToolbarKeydown(event: KeyboardEvent): void {
   overflow: visible;
   max-height: 100vh;
   z-index: 20;
-  /* GeoBoard: anchor for geometry panel absolute positioning */
   position: relative;
 }
 

@@ -29,7 +29,6 @@ import type { WBAsset } from '../../types/winterboard'
  *   - status: 'uploading'|'ready'|'error' (line 243 — strip-нуто recorder.ts)
  *   - errorMessage (line 245 — FE-only)
  *   - pages: WBViewerPage[] (line 253-254 — hydrated from API, NOT in WS/state)
- *   - geometryParams: ?  (нативний для type='geometry_2d', включений нижче як-data.geometryParams)
  *
  * Note: 'id' навмисно не у списку — comparison ВСЕГДА між asset.id === current.id
  * (filter спрацьовує лише після lookup за id у `boardStore.updateAsset`).
@@ -142,8 +141,13 @@ export function assetsEqualByOpsFields(a: WBAsset, b: WBAsset): boolean {
         return false
       }
     }
-    const aState = aData.state
-    const bState = bData.state
+    // Phase G v2: geometry_2d_v2 data envelope не має поля 'state' — JSON-diff.
+    if (a.type === 'geometry_2d_v2' || b.type === 'geometry_2d_v2') {
+      try { return JSON.stringify(aData) === JSON.stringify(bData) } catch { return false }
+    }
+    // Solid path: ABi data is SolidAssetData з полем 'state'.
+    const aState = (aData as { state: unknown }).state
+    const bState = (bData as { state: unknown }).state
     if (aState !== bState) {
       if (!aState || !bState) return false
       // Iterate ALL known SolidAssetState keys (primitive contract per SSOT §3.7.1)

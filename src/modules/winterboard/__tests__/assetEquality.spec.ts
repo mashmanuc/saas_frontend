@@ -234,13 +234,6 @@ describe('assetsEqualByOpsFields — non-whitelisted fields ignored → equal', 
     expect(assetsEqualByOpsFields(a, b)).toBe(true)
   })
 
-  it('ignores `geometryParams` field (rendered locally for geometry_2d)', () => {
-    const a = makeImageAsset()
-    // @ts-expect-error - geometryParams is type-narrowed; testing whitelist behavior
-    a.geometryParams = { vertices: [] }
-    const b = makeImageAsset()
-    expect(assetsEqualByOpsFields(a, b)).toBe(true)
-  })
 })
 
 // ─── Critical regression scenarios ──────────────────────────────────────────

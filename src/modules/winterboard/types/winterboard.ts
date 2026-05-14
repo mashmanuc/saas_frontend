@@ -25,7 +25,6 @@ export type WBToolType =
   | 'select'
   | 'laser'
   | 'sticky'
-  | 'geometry'
 
 // ─── Laser Pointer (v5 A4 — ephemeral, not persisted) ──────────────────────
 
@@ -188,8 +187,7 @@ export interface WBAsset {
     | 'video_player'
     | 'youtube_player'
     | 'document_viewer'
-    | 'geometry_2d'
-    /** Phase G v2 (2026-05-13) — dynamic geometry v2 (JSXGraph engine у PR-G2; PR-G1 skeleton only). */
+    /** Phase G v2 (2026-05-13) — dynamic geometry, bundle-backed (vendor/geo2d/). */
     | 'geometry_2d_v2'
     | 'geometry_solid'
     /** Phase G (2026-05-05) — interactive graph_calculator per OPS_SYNC_SSOT INV-21 */
@@ -258,8 +256,6 @@ export interface WBAsset {
   pages?: WBViewerPage[]
   /** Display mode: compact (default) or expanded */
   viewerMode?: 'compact' | 'expanded'
-  // GeoBoard: 2D geometry params (present when type='geometry_2d')
-  geometryParams?: import('./geometry').Geometry2DParams
   /**
    * Phase O (SSOT §3.7.1): geometry_solid persisted state envelope.
    * MUST be present when `type === 'geometry_solid'`.

@@ -606,7 +606,7 @@ function scheduleSnapshot() {
     if (!calc) return
     const asset = buildSnapshotAsset()
     // Update local signature so the inbound watch (echo) is suppressed.
-    const sig = snapshotSignature(asset.data!.state as GraphCalculatorState)
+    const sig = snapshotSignature((asset.data as { state: GraphCalculatorState }).state)
     lastAppliedSignature = sig
     emit('update:asset', asset)
   }, GRAPH_THROTTLE_SNAPSHOT_MS)
@@ -619,7 +619,7 @@ function flushSnapshot() {
     snapshotTimer = null
     if (!calc) return
     const asset = buildSnapshotAsset()
-    lastAppliedSignature = snapshotSignature(asset.data!.state as GraphCalculatorState)
+    lastAppliedSignature = snapshotSignature((asset.data as { state: GraphCalculatorState }).state)
     emit('update:asset', asset)
   }
 }

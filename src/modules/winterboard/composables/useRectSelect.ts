@@ -52,28 +52,6 @@ export function getStrokeBBox(stroke: WBStroke): WBSelectionRect {
 }
 
 export function getAssetBBox(asset: WBAsset): WBSelectionRect {
-  // GeoBoard: geometry_2d uses absolute vertices, not asset.x/y/w/h
-  if (asset.type === 'geometry_2d' && asset.geometryParams) {
-    const params = asset.geometryParams
-    if (params.shape === 'circle' && params.cx != null && params.cy != null && params.radius != null) {
-      return {
-        x: params.cx - params.radius,
-        y: params.cy - params.radius,
-        width: params.radius * 2,
-        height: params.radius * 2,
-      }
-    }
-    if (params.vertices && params.vertices.length > 0) {
-      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
-      for (const v of params.vertices) {
-        if (v.x < minX) minX = v.x
-        if (v.y < minY) minY = v.y
-        if (v.x > maxX) maxX = v.x
-        if (v.y > maxY) maxY = v.y
-      }
-      return { x: minX, y: minY, width: maxX - minX, height: maxY - minY }
-    }
-  }
   return { x: asset.x, y: asset.y, width: asset.w, height: asset.h }
 }
 

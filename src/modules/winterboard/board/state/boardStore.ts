@@ -1436,46 +1436,6 @@ export const useWBStore = defineStore('wb-board', {
     },
 
     /**
-     * GeoBoard S1: Granular vertex mutation — updates only vertices[i],
-     * not the whole asset. Vue reactivity re-renders only the affected vertex.
-     * Emits lightweight geometry_vertex_move op (not full asset_update).
-     * No undo history — undo handled via undo_group on mouseup (AD-2).
-     */
-    updateGeometryVertex(
-      assetId: string,
-      vertexIndex: number,
-      point: { x: number; y: number },
-      opts?: { skipEmit?: boolean },
-    ): void {
-      const pageIndex = this.currentPageIndex
-      const page = this.pages[pageIndex]
-      if (!page) return
-
-      const idx = page.assets.findIndex((a) => a.id === assetId)
-      if (idx === -1) return
-
-      const asset = page.assets[idx]
-      if (asset.type !== 'geometry_2d' || !asset.geometryParams?.vertices) return
-      if (vertexIndex < 0 || vertexIndex >= asset.geometryParams.vertices.length) return
-
-      // S1: point mutation — only update the specific vertex
-      asset.geometryParams.vertices[vertexIndex] = { x: point.x, y: point.y }
-
-      // No undo push — handled by undo_group on drag end (AD-2)
-      this.markDirty()
-
-      // Emit lightweight op for recording
-      if (this.mode === 'edit' && !opts?.skipEmit) {
-        _emitOperation({
-          op_type: 'geometry_vertex_move',
-          page_id: this.pages[pageIndex]?.id ?? '',
-          payload: { id: assetId, vertexIndex, x: point.x, y: point.y },
-          timestamp: Date.now(),
-        })
-      }
-    },
-
-    /**
      * Phase G (2026-05-06) — graph_calculator high-frequency param delta.
      *
      * Per OPS_SYNC_SSOT.md INV-21 + STORE-RULES 1-10:
@@ -1486,8 +1446,8 @@ export const useWBStore = defineStore('wb-board', {
      *   - STORE-RULE-5/8: throttle/coalesce — caller responsibility (renderer)
      *   - STORE-RULE-9: no read-back from engine; works with asset.data.state
      *
-     * No undo history (per analogous geometry_vertex_move pattern AD-2 — undo
-     * handled via undo_group on slider release if needed; param flow ephemeral).
+     * No undo history (param flow ephemeral; undo handled via undo_group on
+     * slider release if needed).
      */
     graphParamSet(
       assetId: string,

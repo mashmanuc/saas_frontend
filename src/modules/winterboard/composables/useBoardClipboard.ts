@@ -768,20 +768,6 @@ export function useBoardClipboard(options: BoardClipboardOptions) {
         x: asset.x + OFFSET,
         y: asset.y + OFFSET,
       }
-      // S5: geometry_2d — offset absolute vertices/center (not just asset.x/y)
-      if (newAsset.type === 'geometry_2d' && newAsset.geometryParams) {
-        if (newAsset.geometryParams.vertices) {
-          newAsset.geometryParams.vertices = newAsset.geometryParams.vertices.map(
-            (v: { x: number; y: number }) => ({ x: v.x + OFFSET, y: v.y + OFFSET }),
-          )
-        }
-        if (newAsset.geometryParams.cx != null) {
-          newAsset.geometryParams.cx += OFFSET
-        }
-        if (newAsset.geometryParams.cy != null) {
-          newAsset.geometryParams.cy += OFFSET
-        }
-      }
       return newAsset
     })
 

@@ -74,8 +74,6 @@ export interface ReplayStoreApi {
   sendToBack: (id: string) => void
   // Text annotation on objects (interaction layer, not rendering)
   setObjectText: (objectId: string, text: string | undefined, opts?: { silent?: boolean }) => void
-  // GeoBoard: granular vertex mutation
-  updateGeometryVertex?: (assetId: string, vertexIndex: number, point: { x: number; y: number }, opts?: { skipEmit?: boolean }) => void
   // Replay animation batch write (no emit, no history) — used by MoveAnimator
   applyTransientPositions?: (items: Array<{ id: string; x: number; y: number }>) => void
   currentPageIndex: number
@@ -557,17 +555,11 @@ export function createReplayApplier(opts?: ReplayApplierOptions) {
         break
       }
 
-      // GeoBoard: lightweight vertex move op (replay drag animation)
+      // Legacy GeoBoard geometry_vertex_move (removed 2026-05-14 cleanup) —
+      // у replay сесій до cleanup'а ці ops просто пропускаються. Старий
+      // geometry_2d type більше не рендериться → vertex updates безсенсовні.
       case 'geometry_vertex_move': {
-        const id = payload.id as string
-        const vertexIndex = payload.vertexIndex as number
-        const x = payload.x as number
-        const y = payload.y as number
-        if (!id || typeof vertexIndex !== 'number') break
-        // Apply via updateGeometryVertex if available, else fallback to updateAsset
-        if ('updateGeometryVertex' in store) {
-          (store as any).updateGeometryVertex(id, vertexIndex, { x, y }, { skipEmit: true })
-        }
+        // intentional no-op для backward compat replay log
         break
       }
 

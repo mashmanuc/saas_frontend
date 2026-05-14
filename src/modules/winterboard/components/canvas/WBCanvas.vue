@@ -100,20 +100,6 @@
             @page-jump="(id: string) => emit('doc-viewer-page-jump', id)"
             @expand="handleDocViewerExpand"
           />
-          <!-- GeoBoard: 2D geometry rendering -->
-          <WBGeometry2D
-            v-else-if="asset.type === 'geometry_2d'"
-            :asset="asset"
-            :is-selected="wbStore.selectedIds.includes(asset.id)"
-            :scale="props.zoom"
-            :interactive="currentTool === 'select'"
-            @select="(id) => handleStickySelect(id)"
-            @vertex-move="handleGeometryVertexMove"
-            @vertex-drag-start="handleGeometryVertexDragStart"
-            @vertex-drag-end="handleGeometryVertexDragEnd"
-            @circle-move="handleGeometryCircleMove"
-            @circle-drag-end="handleGeometryCircleDragEnd"
-          />
           <!-- Phase 35: Image with borderRadius > 0 — wrap in Group with clipFunc -->
           <v-group
             v-else-if="(asset.borderRadius ?? 0) > 0"
@@ -526,7 +512,6 @@ import { useLaserPointer } from '../../composables/useLaserPointer'
 import { useDuplicate } from '../../composables/useDuplicate'
 import { useStickyNotes } from '../../composables/useStickyNotes'
 import WBStickyNote from './WBStickyNote.vue'
-import WBGeometry2D from './WBGeometry2D.vue'
 import DocumentViewerAsset from './DocumentViewerAsset.vue'
 import AudioBadge from './AudioBadge.vue'
 import TextBadge from './TextBadge.vue'
@@ -990,8 +975,6 @@ const emit = defineEmits<{
   // Audio layer: emitted on audio badge click — parent decides behavior
   // (edit mode: toggle audio; replay mode: pause replay + play audio)
   'audio-badge-click': [url: string]
-  // GeoBoard: geometry creation at canvas position
-  'geometry-create': [x: number, y: number]
   // DocumentViewer: double-click on page counter → open page jump input
   'doc-viewer-page-jump': [assetId: string]
 }>()
@@ -1779,38 +1762,6 @@ function handleDocViewerExpand(asset: WBAsset): void {
   emit('presentation-expand', asset)
 }
 
-// ─── GeoBoard: Geometry 2D handlers ────────────────────────────────────────
-
-function handleGeometryVertexMove(assetId: string, vertexIndex: number, x: number, y: number): void {
-  // S1: granular Pinia mutation — only update the specific vertex
-  wbStore.updateGeometryVertex(assetId, vertexIndex, { x, y })
-}
-
-function handleGeometryVertexDragStart(_assetId: string, _vertexIndex: number): void {
-  // S3: undo blocked during active vertex drag — handled by disabling undo hotkey
-  // in WBCanvas keydown handler when isDraggingGeometryVertex is true
-}
-
-function handleGeometryVertexDragEnd(asset: WBAsset): void {
-  // G9: emit authoritative final state (full asset_update with all vertices)
-  emit('asset-update', asset)
-}
-
-function handleGeometryCircleMove(assetId: string, cx: number, cy: number, radius: number): void {
-  const idx = assets.value.findIndex(a => a.id === assetId)
-  if (idx === -1) return
-  const asset = assets.value[idx]
-  if (!asset.geometryParams) return
-  const updated: WBAsset = {
-    ...asset,
-    geometryParams: { ...asset.geometryParams, cx, cy, radius },
-  }
-  emit('asset-update', updated)
-}
-
-function handleGeometryCircleDragEnd(asset: WBAsset): void {
-  emit('asset-update', asset)
-}
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -2130,12 +2081,6 @@ function handleMouseDown(e: Konva.KonvaEventObject<MouseEvent | TouchEvent>): vo
   // BUG-4 FIX: Sticky note tool — create sticky at click position
   if (currentTool.value === 'sticky') {
     stickyNotes.createSticky(pos.x, pos.y)
-    return
-  }
-
-  // GeoBoard: Geometry tool — emit creation event to parent
-  if (currentTool.value === 'geometry') {
-    emit('geometry-create', pos.x, pos.y)
     return
   }
 
@@ -2557,15 +2502,6 @@ function handleKeydown(e: KeyboardEvent): void {
     if (editingText.value) return
     e.preventDefault()
     emit('tool-change', 'laser')
-    return
-  }
-
-  // GeoBoard: 'G' (no modifier) → switch to geometry tool
-  if (e.key === 'g' && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
-    if (editingText.value) return
-    if (stickyEditingId.value) return
-    e.preventDefault()
-    emit('tool-change', 'geometry')
     return
   }
 
