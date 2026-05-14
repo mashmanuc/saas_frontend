@@ -295,27 +295,23 @@ export function useReplayV2(sessionId: string, publicToken?: string, options: Us
 
           const deltaOps = snapEngineIdx >= 0 ? clampedIdx - snapEngineIdx : Infinity
 
-          if (snapEngineIdx >= 0 && snapEngineIdx < clampedIdx && deltaOps <= MAX_DELTA_OPS) {   // INV-V2-3
+          // C9b: snapEngineIdx === clampedIdx = snapshot exactly at target → delta=0 → use it.
+          if (snapEngineIdx >= 0 && snapEngineIdx <= clampedIdx && deltaOps <= MAX_DELTA_OPS) {   // INV-V2-3
             snapshotStartIdx = snapEngineIdx
             snapshotBoardState = snap.board_state as Record<string, unknown>
           } else {
             // snapshot found but not usable (seq not in replay range or delta > MAX_DELTA_OPS)
             _snapMetrics.fallbackCount++
+            const _reason = snapEngineIdx < 0 ? 'seq_not_in_replay' : `delta_too_large(${deltaOps})`
             console.info(
-              '[replay:v2] snapshot_fallback target_idx=%d fetch_ms=%.1f reason=%s snap_engine_idx=%d',
-              clampedIdx,
-              _fetchMs,
-              snapEngineIdx < 0 ? 'seq_not_in_replay' : `delta_too_large(${deltaOps})`,
-              snapEngineIdx,
+              `[replay:v2] snapshot_fallback target_idx=${clampedIdx} fetch_ms=${_fetchMs.toFixed(1)} reason=${_reason} snap_engine_idx=${snapEngineIdx}`,
             )
           }
         } else {
           // no snapshot returned
           _snapMetrics.fallbackCount++
           console.info(
-            '[replay:v2] snapshot_fallback target_idx=%d fetch_ms=%.1f reason=no_snapshot',
-            clampedIdx,
-            _fetchMs,
+            `[replay:v2] snapshot_fallback target_idx=${clampedIdx} fetch_ms=${_fetchMs.toFixed(1)} reason=no_snapshot`,
           )
         }
       }
@@ -343,9 +339,7 @@ export function useReplayV2(sessionId: string, publicToken?: string, options: Us
       _snapMetrics.applyTotalMs += _applyMs
 
       console.info(
-        '[replay:v2] snapshot_hit target_idx=%d snap_idx=%d delta_ops=%d '
-        + 'fetch_ms=%.1f apply_ms=%.1f',
-        clampedIdx, snapshotStartIdx, _deltaCount, _fetchMs, _applyMs,
+        `[replay:v2] snapshot_hit target_idx=${clampedIdx} snap_idx=${snapshotStartIdx} delta_ops=${_deltaCount} fetch_ms=${_fetchMs.toFixed(1)} apply_ms=${_applyMs.toFixed(1)}`,
       )
 
       _finalizeSeek(clampedIdx)

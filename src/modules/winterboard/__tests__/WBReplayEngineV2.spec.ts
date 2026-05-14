@@ -109,17 +109,40 @@ describe('WBReplayEngineV2 — findIndexBySeq (C9 fix)', () => {
     const snapEngineIdx = engine.findIndexBySeq(3900)
     expect(snapEngineIdx).toBe(2900)  // seq 3900 = index 1000+2900=3900 → ops[2900]
 
-    // With the fix: 2900 < 3000 (TRUE) and delta = 100 ≤ 150 (MAX_DELTA_OPS)
+    // With the fix: 2900 <= 3000 (TRUE) and delta = 100 ≤ 150 (MAX_DELTA_OPS)
     // → snapshot should be accepted
     const clampedIdx = 3000
     const MAX_DELTA_OPS = 150
     expect(snapEngineIdx >= 0).toBe(true)
-    expect(snapEngineIdx < clampedIdx).toBe(true)
+    expect(snapEngineIdx <= clampedIdx).toBe(true)  // C9b: <= (not <), handles snapIdx==target
     expect(clampedIdx - snapEngineIdx).toBeLessThanOrEqual(MAX_DELTA_OPS)
 
     // Without the fix: snap.operation_index (3900) < clampedIdx (3000) was FALSE
     const buggySessionLevelIndex = 3900
     expect(buggySessionLevelIndex < clampedIdx).toBe(false) // confirms the original bug
+  })
+
+  it('C9b regression: snapEngineIdx === clampedIdx (snapshot exactly at target) must be accepted (delta=0)', () => {
+    // Bug observed in prod logs: target_idx=2088, snap_engine_idx=2088 → fallback with `<`
+    // Fix: condition changed to `<=` so delta=0 snapshot is accepted and loaded directly.
+    const ops: BoardOperation[] = []
+    for (let i = 0; i < 100; i++) {
+      ops.push(makeOp(i, 1000 + i, '2026-01-01T00:00:00.000Z'))
+    }
+    const engine = new WBReplayEngineV2(makeTimeline(ops))
+    // Snapshot at seq=1050 → engine index 50
+    const snapEngineIdx = engine.findIndexBySeq(1050)
+    expect(snapEngineIdx).toBe(50)
+
+    // seek target is also engine index 50 (snapshot exactly at target)
+    const clampedIdx = 50
+    const MAX_DELTA_OPS = 150
+    const deltaOps = clampedIdx - snapEngineIdx  // = 0
+
+    // With <= condition: 50 <= 50 AND 0 <= 150 → snapshot accepted
+    expect(snapEngineIdx >= 0 && snapEngineIdx <= clampedIdx && deltaOps <= MAX_DELTA_OPS).toBe(true)
+    // With old < condition: 50 < 50 → FALSE → wrongly rejected
+    expect(snapEngineIdx < clampedIdx).toBe(false) // confirms the C9b bug
   })
 
   it('C9: findIndexBySeq at index 0 (snapshot at session start of replay)', () => {
