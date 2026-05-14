@@ -5,15 +5,15 @@
 // СТАТУС: ❄️ FROZEN (аналогічно WBReplayEngine.ts)
 //   Нових фіч — заборонено. Тільки критичні production fixes.
 //
-// ПОТОЧНА РОЛЬ у WBPublicView.vue:
-//   Дефолтний composable коли ?replay= відсутній або невідомий.
-//   Активний для всіх публічних посилань без feature flag.
+// ПОТОЧНА РОЛЬ у WBPublicView.vue (Phase C, 2026-05-14):
+//   Активний ТІЛЬКИ при явному ?replay=v1 (rollback escape hatch).
+//   Всі публічні посилання без flag → V2 (useReplayV2 + PublicSnapshotProvider).
 //
-// ROLLOUT PLAN (Phase C — коли зрілий):
-//   Крок 1: useReplayV2 стає дефолтом у WBPublicView (один рядок)
-//   Крок 2: useReplay залишається як fallback import (ще ~4 тижні)
-//   Крок 3: після stable metrics → видалити useReplay + WBReplayEngine
-//   Trigger checklist: див. WBReplayEngine.ts header
+// ROLLOUT STATUS (Phase C — SHIPPED):
+//   ✅ Крок 1: useReplayV2 став дефолтом (2026-05-14)
+//   ⏳ Крок 2: useReplay лишається як ?replay=v1 fallback (~4 тижні soak)
+//   📋 Крок 3: після stable metrics → видалити useReplay + WBReplayEngine
+//   Trigger checklist: div. WBReplayEngine.ts header
 //
 // ═══════════════════════════════════════════════════════════════════════════
 //

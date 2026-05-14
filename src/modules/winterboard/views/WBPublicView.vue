@@ -474,17 +474,22 @@ async function enterReplayMode(): Promise<void> {
   store.resetForReplay()
   replayApplier.reset()  // P0: clean instance page-tracking state
 
-  // Create replay composable — use public token for anonymous access
+  // Create replay composable — Phase C (2026-05-14): V2 is now the default.
   // INV-V2-5: feature flag runtime-only, no build-time env check.
-  //   ?replay=v2        → V2 engine, AuthSnapshotProvider (owner) / NullProvider (anon)
-  //   ?replay=v2-public → V2 engine + PublicSnapshotProvider (Phase B, gradual rollout)
+  //
+  // Flag routing:
+  //   (no flag)       → V2 + PublicSnapshotProvider  [DEFAULT — snapshot-accelerated seek]
+  //   ?replay=v2      → V2 + AuthSnapshotProvider / NullProvider (explicit: no public snap)
+  //   ?replay=v2-public → V2 + PublicSnapshotProvider (explicit Phase B — same as default now)
+  //   ?replay=v1      → V1 legacy engine [ROLLBACK ESCAPE HATCH — remove after Phase C soak]
   const token = route.params.token as string
   const replayFlag = route.query['replay']
-  const useV2 = replayFlag === 'v2' || replayFlag === 'v2-public'
-  const usePublicSnapshots = replayFlag === 'v2-public'  // INV-V2-PUB: Phase B flag
-  replay = useV2
-    ? useReplayV2(replaySessionId.value!, token, { usePublicSnapshots })
-    : useReplay(replaySessionId.value, token)
+  const useV1 = replayFlag === 'v1'  // explicit rollback only
+  // Public snapshots = on by default; off only for explicit ?replay=v2 (auth owner view)
+  const usePublicSnapshots = !useV1 && replayFlag !== 'v2'
+  replay = useV1
+    ? useReplay(replaySessionId.value, token)
+    : useReplayV2(replaySessionId.value!, token, { usePublicSnapshots })
 
   // P0 FIX (2026-04-08): INV-T — hydrate з recording_start_state ПЕРЕД накаткою ops.
   // Без цього public replay починав з порожнього листа і показував лише сторінки,
