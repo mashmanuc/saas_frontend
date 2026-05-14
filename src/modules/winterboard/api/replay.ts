@@ -177,6 +177,27 @@ export async function fetchNearestSnapshot(
 }
 
 /**
+ * Phase B: GET /winterboard/replay/public/{token}/snapshots/nearest/?seq=N
+ * Anonymous snapshot endpoint для ReplayV2 fast seek (public viewers).
+ *
+ * INV-V2-PUB-1: тільки publicToken — НЕ знає sessionId.
+ * INV-V2-PUB-6: silent null при будь-якій помилці (404/429/timeout) → fallback.
+ */
+export async function fetchPublicNearestSnapshot(
+  publicToken: string,
+  targetSeq: number,
+): Promise<ReplaySnapshot | null> {
+  try {
+    return await apiClient.get<ReplaySnapshot>(
+      `${BASE}/replay/public/${publicToken}/snapshots/nearest/`,
+      { params: { seq: targetSeq } },
+    )
+  } catch {
+    return null
+  }
+}
+
+/**
  * POST /winterboard/sessions/{uuid}/replay/snapshots/create/
  * Creates a board state snapshot at the given operation index.
  * Called automatically by useReplayRecorder every SNAPSHOT_EVERY ops.

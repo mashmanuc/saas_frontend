@@ -4,13 +4,15 @@
 // INV-V2-2: Snapshot load = atomic replace (clearState → loadState).
 // INV-V2-3: Delta apply bounded — MAX_DELTA_OPS = 150.
 // INV-V2-4: NullSnapshotProvider = pure noop.
+// INV-V2-PUB: Phase B — usePublicSnapshots = true activates PublicSnapshotProvider.
 //
 // Return shape = той самий що useReplay (drop-in replacement).
-// Підключення: WBPublicView.vue feature flag ?replay=v2.
+// Підключення: WBPublicView.vue feature flag ?replay=v2 / ?replay=v2-public.
 
 import { ref, shallowRef, readonly, computed, watch, onScopeDispose, getCurrentScope } from 'vue'
 import { WBReplayEngineV2, type ReplaySpeedV2, type ReplayStateV2 } from '../engine/WBReplayEngineV2'
 import { AuthSnapshotProvider } from '../engine/snapshot/AuthSnapshotProvider'
+import { PublicSnapshotProvider } from '../engine/snapshot/PublicSnapshotProvider'
 import { NullSnapshotProvider, type ReplaySnapshotProvider } from '../engine/snapshot/SnapshotProvider'
 import {
   fetchPublicReplayByToken,
@@ -27,7 +29,16 @@ const MAX_DELTA_OPS = 150
 // Мінімальна кількість ops від початку, за якої має сенс робити HTTP за snapshot.
 const MIN_SEEK_FOR_SNAPSHOT = 30
 
-export function useReplayV2(sessionId: string, publicToken?: string) {
+export interface UseReplayV2Options {
+  /**
+   * INV-V2-PUB Phase B: якщо true + publicToken присутній → PublicSnapshotProvider.
+   * false = NullSnapshotProvider для anonymous (Phase A поведінка).
+   * Rollout: активується через ?replay=v2-public feature flag.
+   */
+  usePublicSnapshots?: boolean
+}
+
+export function useReplayV2(sessionId: string, publicToken?: string, options: UseReplayV2Options = {}) {
   const engine = shallowRef<WBReplayEngineV2 | null>(null)
   const state = ref<ReplayStateV2>('idle')
   const currentIndex = ref(0)
@@ -56,12 +67,16 @@ export function useReplayV2(sessionId: string, publicToken?: string) {
   let _onOp: ((op: BoardOperation) => void) | null = null
   let _onStartState: ((state: { pages?: unknown[]; currentPageIndex?: number }) => void) | null = null
 
-  // SnapshotProvider: AuthSnapshotProvider для залогінених (silent null при failure),
-  // NullSnapshotProvider для anonymous (INV-V2-4).
-  // Завжди пробуємо Auth — якщо не власник → 403 → null → fallback.
-  const provider: ReplaySnapshotProvider = sessionId
-    ? new AuthSnapshotProvider(sessionId)
-    : new NullSnapshotProvider()
+  // SnapshotProvider selection:
+  //   ?replay=v2-public (usePublicSnapshots=true) + publicToken → PublicSnapshotProvider (Phase B)
+  //   sessionId present                                         → AuthSnapshotProvider (owner: silent null on 403)
+  //   anonymous, no public snapshots                            → NullSnapshotProvider (INV-V2-4)
+  const provider: ReplaySnapshotProvider =
+    (options.usePublicSnapshots && publicToken)
+      ? new PublicSnapshotProvider(publicToken)        // INV-V2-PUB-1: token only, no sessionId
+      : sessionId
+        ? new AuthSnapshotProvider(sessionId)
+        : new NullSnapshotProvider()
 
   // Race protection: кожен seek отримує версію; після await — перевіряємо актуальність.
   let _seekVersion = 0

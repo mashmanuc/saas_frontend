@@ -475,11 +475,15 @@ async function enterReplayMode(): Promise<void> {
   replayApplier.reset()  // P0: clean instance page-tracking state
 
   // Create replay composable — use public token for anonymous access
-  // INV-V2-5: feature flag runtime-only (?replay=v2), no build-time env check
+  // INV-V2-5: feature flag runtime-only, no build-time env check.
+  //   ?replay=v2        → V2 engine, AuthSnapshotProvider (owner) / NullProvider (anon)
+  //   ?replay=v2-public → V2 engine + PublicSnapshotProvider (Phase B, gradual rollout)
   const token = route.params.token as string
-  const useV2 = route.query['replay'] === 'v2'
+  const replayFlag = route.query['replay']
+  const useV2 = replayFlag === 'v2' || replayFlag === 'v2-public'
+  const usePublicSnapshots = replayFlag === 'v2-public'  // INV-V2-PUB: Phase B flag
   replay = useV2
-    ? useReplayV2(replaySessionId.value!, token)
+    ? useReplayV2(replaySessionId.value!, token, { usePublicSnapshots })
     : useReplay(replaySessionId.value, token)
 
   // P0 FIX (2026-04-08): INV-T — hydrate з recording_start_state ПЕРЕД накаткою ops.
