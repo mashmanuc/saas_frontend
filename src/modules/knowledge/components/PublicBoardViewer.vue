@@ -194,6 +194,7 @@ interface ParsedPage {
   name: string
   strokes: BoardStroke[]
   assets: BoardAsset[]
+  backgroundColor?: string
 }
 
 const currentPageIdx = ref(0)
@@ -203,7 +204,7 @@ const allPages = computed<ParsedPage[]>(() => {
   const state = props.boardState
   if (!state) return []
 
-  // Format 1: snapshot array — { pages: [{id, name, strokes, assets}, ...] }
+  // Format 1: snapshot array — { pages: [{id, name, strokes, assets, backgroundColor}, ...] }
   if (Array.isArray(state.pages)) {
     return (state.pages as Array<Record<string, unknown>>).map((p, i) => ({
       id: (p.id as string) || `page-${i}`,
@@ -217,17 +218,19 @@ const allPages = computed<ParsedPage[]>(() => {
           height: raw.height ?? raw.h,
         } as BoardAsset
       }),
+      backgroundColor: (p.backgroundColor as string) || undefined,
     }))
   }
 
-  // Format 2: replay object map — { pages: { [pageId]: { strokes, assets } } }
+  // Format 2: replay object map — { pages: { [pageId]: { strokes, assets, backgroundColor } } }
   if (state.pages && typeof state.pages === 'object') {
-    const pagesMap = state.pages as Record<string, { strokes?: BoardStroke[]; assets?: BoardAsset[] }>
+    const pagesMap = state.pages as Record<string, { strokes?: BoardStroke[]; assets?: BoardAsset[]; backgroundColor?: string }>
     return Object.entries(pagesMap).map(([id, p], i) => ({
       id,
       name: `Page ${i + 1}`,
       strokes: Array.isArray(p.strokes) ? p.strokes : [],
       assets: Array.isArray(p.assets) ? p.assets : [],
+      backgroundColor: p.backgroundColor || undefined,
     }))
   }
 
@@ -302,7 +305,7 @@ const backgroundConfig = computed(() => ({
   y: 0,
   width: PAGE_WIDTH,
   height: PAGE_HEIGHT,
-  fill: '#ffffff',
+  fill: allPages.value[currentPageIdx.value]?.backgroundColor || '#ffffff',
   listening: false,
 }))
 
