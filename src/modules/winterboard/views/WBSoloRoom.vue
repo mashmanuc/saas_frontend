@@ -563,11 +563,14 @@
         </select>
         <!-- Phase 35 B6: Background color picker -->
         <div class="wb-bg-color">
-          <label class="wb-bg-color__label">BG</label>
+          <label class="wb-bg-color__label" :title="t('winterboard.room.bgColor', 'Фон сторінки')">
+            {{ t('winterboard.room.bgColorShort', 'BG') }}
+          </label>
           <input
             type="color"
             class="wb-bg-color__input"
             :value="store.currentPageBgColor"
+            :title="t('winterboard.room.bgColor', 'Фон сторінки')"
             @input="onBgColorChange"
             @change="onBgColorChange"
           />
@@ -3238,10 +3241,10 @@ watch(() => store.workspaceName, (name) => {
   color: var(--wb-text-secondary, #6b7280);
 }
 .wb-bg-color__input {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border: 1px solid var(--wb-border, #e2e8f0);
-  border-radius: 4px;
+  border-radius: 6px;
   padding: 1px;
   cursor: pointer;
   background: none;

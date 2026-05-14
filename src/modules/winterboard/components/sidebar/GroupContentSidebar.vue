@@ -118,11 +118,12 @@
         :title="t(`winterboard.contentSidebar.category.${cat}`)"
         @click="onFilterCategory(cat)"
       >
-        <svg v-if="cat === 'youtube'" width="14" height="10" viewBox="0 0 20 14" style="vertical-align: -1px">
+        <svg v-if="cat === 'youtube'" width="12" height="9" viewBox="0 0 20 14" aria-hidden="true" style="flex-shrink:0">
           <rect x="1" y="1" width="18" height="12" rx="3" fill="#FF0000"/>
           <path d="M8 4l5 3-5 3V4z" fill="#fff"/>
         </svg>
-        <span v-else>{{ CATEGORY_ICONS[cat] ?? '📎' }}</span>
+        <span v-else class="filter-chip__icon" aria-hidden="true">{{ CATEGORY_ICONS[cat] ?? '📎' }}</span>
+        <span class="filter-chip__label">{{ t(`winterboard.contentSidebar.category.${cat}`) }}</span>
       </button>
       <!-- Paste chip (2026-04-16) — окремо від category chips -->
       <button
@@ -527,17 +528,26 @@ function onDrop(e: DragEvent) {
 .filter-chip {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  min-width: 32px;
-  height: 26px;
+  gap: 4px;
+  height: 28px;
   padding: 0 8px;
   border: 1px solid #e2e8f0;
   border-radius: 20px;
   background: #f8fafc;
   color: #475569;
-  font-size: 12px;
+  font-size: 11px;
   cursor: pointer;
   transition: background 0.12s, border-color 0.12s, color 0.12s;
+  line-height: 1;
+  white-space: nowrap;
+}
+.filter-chip__icon {
+  font-size: 11px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.filter-chip__label {
+  font-size: 11px;
   line-height: 1;
 }
 .filter-chip:hover {

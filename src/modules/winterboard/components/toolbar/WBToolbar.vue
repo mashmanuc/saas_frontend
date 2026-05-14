@@ -13,22 +13,25 @@
     :aria-label="t('winterboard.toolbar.title')"
     @keydown="handleToolbarKeydown"
   >
-    <!-- Drawing Tools -->
+    <!-- Drawing Tools (4 visual sub-groups with thin separators) -->
     <div class="wb-toolbar__group" role="group" :aria-label="t('winterboard.toolbar.drawingTools')">
-      <button
-        v-for="(tool, idx) in drawingTools"
-        :key="tool.id"
-        type="button"
-        class="wb-toolbar__btn wb-toolbar__btn--tooltip"
-        :class="{ 'wb-toolbar__btn--active': currentTool === tool.id }"
-        :aria-pressed="currentTool === tool.id"
-        :aria-label="`${t(`winterboard.tools.${tool.id}`)} (${tool.shortcut})`"
-        :data-tooltip="toolTooltip(tool)"
-        :tabindex="getTabIndex(0, idx)"
-        @click="emit('tool-change', tool.id)"
-      >
-        <component :is="tool.icon" class="wb-toolbar__icon" />
-      </button>
+      <template v-for="(subGroup, si) in toolSubGroups" :key="si">
+        <div v-if="si > 0" class="wb-toolbar__subsep" aria-hidden="true" />
+        <button
+          v-for="tool in subGroup"
+          :key="tool.id"
+          type="button"
+          class="wb-toolbar__btn wb-toolbar__btn--tooltip"
+          :class="{ 'wb-toolbar__btn--active': currentTool === tool.id }"
+          :aria-pressed="currentTool === tool.id"
+          :aria-label="`${t(`winterboard.tools.${tool.id}`)} (${tool.shortcut})`"
+          :data-tooltip="toolTooltip(tool)"
+          :tabindex="getTabIndex(0, drawingTools.findIndex(t => t.id === tool.id))"
+          @click="emit('tool-change', tool.id)"
+        >
+          <component :is="tool.icon" class="wb-toolbar__icon" />
+        </button>
+      </template>
     </div>
 
     <!-- Stroke style flyout: thickness + color combined (B3: hidden for eraser/select) -->
@@ -272,6 +275,15 @@ const drawingTools: ToolDef[] = [
   { id: 'sticky', icon: WBIconSticky, shortcut: 'S' },
 ]
 
+// Visual sub-groups with thin separators between them. Логіка:
+// 1. Виділення | 2. Вільне малювання | 3. Фігури | 4. Текст + утиліти
+const toolSubGroups: ToolDef[][] = [
+  drawingTools.slice(0, 1),  // select
+  drawingTools.slice(1, 3),  // pen, highlighter
+  drawingTools.slice(3, 6),  // line, rectangle, circle
+  drawingTools.slice(6),     // text, eraser, laser, sticky
+]
+
 // ─── B3: Conditional visibility ─────────────────────────────────────────────
 
 const THICKNESS_TOOLS: WBToolType[] = ['pen', 'highlighter', 'line', 'rectangle', 'circle']
@@ -417,6 +429,14 @@ function handleToolbarKeydown(event: KeyboardEvent): void {
   height: 1px;
   margin: 6px 4px;
   background: var(--wb-toolbar-border, #e2e8f0);
+}
+
+/* Thin sub-separator between tool sub-groups (lighter than main sep) */
+.wb-toolbar__subsep {
+  height: 1px;
+  margin: 3px 8px;
+  background: var(--wb-toolbar-border, #e2e8f0);
+  opacity: 0.5;
 }
 
 /* Tool button — 44×44 touch-friendly (LAW-22: min 44px for a11y) */
@@ -630,6 +650,12 @@ function handleToolbarKeydown(event: KeyboardEvent): void {
   width: 1px;
   height: 32px;
   margin: 6px 4px;
+}
+.wb-toolbar[data-variant="mobile"] .wb-toolbar__subsep {
+  width: 1px;
+  height: 20px;
+  margin: 0 2px;
+  opacity: 0.4;
 }
 .wb-toolbar[data-variant="mobile"] .wb-toolbar__btn {
   width: 48px;
