@@ -181,6 +181,9 @@ export async function fetchNearestSnapshot(
  * Anonymous snapshot endpoint для ReplayV2 fast seek (public viewers).
  *
  * INV-V2-PUB-1: тільки publicToken — НЕ знає sessionId.
+ * INV-V2-PUB-3: raw fetch() + credentials:'omit' → CF cache friendly.
+ *   apiClient використовує withCredentials:true (sends cookies) → CF bypass cache
+ *   навіть для anonymous viewers з session cookie. Аналогічно fetchPublicReplayByToken.
  * INV-V2-PUB-6: silent null при будь-якій помилці (404/429/timeout) → fallback.
  */
 export async function fetchPublicNearestSnapshot(
@@ -188,12 +191,16 @@ export async function fetchPublicNearestSnapshot(
   targetSeq: number,
 ): Promise<ReplaySnapshot | null> {
   try {
-    return await apiClient.get<ReplaySnapshot>(
-      `${BASE}/replay/public/${publicToken}/snapshots/nearest/`,
-      { params: { seq: targetSeq } },
-    )
+    const url = `${getApiBase()}/v1/winterboard/replay/public/${encodeURIComponent(publicToken)}/snapshots/nearest/?seq=${encodeURIComponent(targetSeq)}`
+    const res = await fetch(url, {
+      method: 'GET',
+      credentials: 'omit',  // C8: НЕ шлемо cookies → CF cache friendly (snapshot immutable)
+      headers: { Accept: 'application/json' },
+    })
+    if (!res.ok) return null  // INV-V2-PUB-6: будь-яка помилка → null → fallback
+    return res.json() as Promise<ReplaySnapshot>
   } catch {
-    return null
+    return null  // INV-V2-PUB-6: network error → null → full rAF apply fallback
   }
 }
 
