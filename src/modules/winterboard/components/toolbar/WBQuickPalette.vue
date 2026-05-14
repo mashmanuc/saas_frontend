@@ -227,8 +227,8 @@ function handleKeydown(event: KeyboardEvent): void {
 }
 
 .wb-quick-palette__btn {
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   border: 2px solid transparent;
   cursor: pointer;
@@ -277,8 +277,8 @@ function handleKeydown(event: KeyboardEvent): void {
   }
 
   .wb-quick-palette__btn {
-    width: 28px;
-    height: 28px;
+    width: 36px;
+    height: 36px;
     margin: 0;
   }
 }

@@ -39,23 +39,7 @@
       @run-preset="handleRunPreset"
     />
 
-    <!-- Thickness Presets (B3: conditional — hidden for eraser/select) -->
-    <Transition name="wb-collapse">
-      <template v-if="showThickness">
-        <div class="wb-toolbar__sep" role="separator" aria-hidden="true" />
-      </template>
-    </Transition>
-    <Transition name="wb-collapse">
-      <div v-if="showThickness" class="wb-toolbar__group" role="group" :aria-label="t('winterboard.toolbar.thickness_section')">
-        <WBThicknessPresets
-          :model-value="currentSize"
-          :current-color="currentColor"
-          @update:model-value="emit('size-change', $event)"
-        />
-      </div>
-    </Transition>
-
-    <!-- Color Palette (B3: conditional — hidden for eraser/select) -->
+    <!-- Stroke style flyout: thickness + color combined (B3: hidden for eraser/select) -->
     <Transition name="wb-collapse">
       <template v-if="showColorPalette">
         <div class="wb-toolbar__sep" role="separator" aria-hidden="true" />
@@ -63,10 +47,12 @@
     </Transition>
     <Transition name="wb-collapse">
       <div v-if="showColorPalette" class="wb-toolbar__group" role="group" :aria-label="t('winterboard.toolbar.color_section')">
-        <WBQuickPalette
+        <WBColorFlyout
           :model-value="currentColor"
           :current-tool="currentTool"
+          :current-size="currentSize"
           @update:model-value="emit('color-change', $event)"
+          @update:current-size="emit('size-change', $event)"
         />
       </div>
     </Transition>
@@ -194,8 +180,7 @@ import WBIconLock from './icons/WBIconLock.vue'
 import WBIconUnlock from './icons/WBIconUnlock.vue'
 import WBIconGeometry from './icons/WBIconGeometry.vue'
 import WBGeometryPanel from './WBGeometryPanel.vue'
-import WBThicknessPresets from './WBThicknessPresets.vue'
-import WBQuickPalette from './WBQuickPalette.vue'
+import WBColorFlyout from './WBColorFlyout.vue'
 
 // ─── Props ──────────────────────────────────────────────────────────────────
 

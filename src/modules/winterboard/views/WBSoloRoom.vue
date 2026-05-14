@@ -167,6 +167,22 @@
           <svg v-if="!isFullscreen" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
           <svg v-else width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 2v4H2M10 6h4V2M10 14v-4h4M6 10H2v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
+        <!-- Mobile: toggle materials/shapes sidebar as drawer -->
+        <button
+          v-if="isMobileDevice"
+          type="button"
+          class="wb-header-btn wb-header-btn--materials"
+          :title="t('winterboard.room.materials', 'Матеріали')"
+          :aria-pressed="showMaterialsSidebar"
+          @click="_showMaterialsSidebar = !_showMaterialsSidebar"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <rect x="1.5" y="1.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
+            <rect x="9.5" y="1.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
+            <rect x="1.5" y="9.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
+            <rect x="9.5" y="9.5" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+        </button>
         <button type="button" class="wb-header-btn wb-header-btn--exit" @click="handleExit">
           {{ t('winterboard.room.exit') }}
         </button>
@@ -378,6 +394,13 @@
       <WBUploadIndicator
         :is-uploading="boardClipboard.isUploading.value"
         :upload-error="boardClipboard.uploadError.value"
+      />
+
+      <!-- Mobile: backdrop overlay to close materials drawer on outside tap -->
+      <div
+        v-if="showMaterialsSidebar && isMobileDevice"
+        class="wb-sidebar-materials-backdrop"
+        @click="_showMaterialsSidebar = false"
       />
 
       <!-- Resize handle for right sidebar -->
@@ -3206,15 +3229,32 @@ watch(() => store.workspaceName, (name) => {
   .wb-solo-room__content-sidebar {
     position: absolute;
     right: 0;
-    top: 56px;
-    bottom: 44px;
-    min-width: 240px;
-    width: 240px !important;
-    box-shadow: -4px 0 12px rgba(0, 0, 0, 0.1);
+    top: 0;
+    bottom: 0;
+    min-width: 280px;
+    width: 300px !important;
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.18);
+    z-index: 15;
   }
   .wb-solo-room__resize-handle {
     display: none;
   }
+  .wb-solo-room__sidebar-toggle {
+    display: none;
+  }
+}
+
+/* Mobile backdrop — dims canvas when materials drawer is open */
+.wb-sidebar-materials-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.32);
+  z-index: 14;
+}
+
+/* Materials toggle button — only rendered on mobile via v-if */
+.wb-header-btn--materials {
+  display: flex;
 }
 
 /* ── Footer ────────────────────────────────────────────────────────────────── */

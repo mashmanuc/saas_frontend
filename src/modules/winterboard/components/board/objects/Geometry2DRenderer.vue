@@ -329,13 +329,17 @@ function onDelete(): void { emit('delete') }
 
 .geo2dv2-toolbar-host {
   flex: 0 0 auto;
-  display: block;
-  padding: 4px 6px;
+  padding: 5px 6px;
   background: rgba(15, 23, 42, 0.04);
   border-top: 1px solid rgba(148, 163, 184, 0.25);
   pointer-events: auto;
-  max-height: 35%;
-  overflow-y: auto;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.geo2dv2-toolbar-host::-webkit-scrollbar {
+  display: none;
 }
 
 /* Read-only mode — toolbar теж пропускає events щоб user міг малювати поверх. */
@@ -349,41 +353,47 @@ function onDelete(): void { emit('delete') }
 
 .geo2dv2-toolbar-host :deep(.toolbar) {
   display: flex;
-  flex-wrap: wrap;
-  gap: 3px;
+  flex-wrap: nowrap;
+  gap: 4px;
+  align-items: center;
 }
 
 .geo2dv2-toolbar-host :deep(button.tool) {
-  font-size: 11px;
-  line-height: 1;
-  min-height: 22px;
-  padding: 4px 8px;
-  border-radius: 4px;
-  border: 1px solid rgba(148, 163, 184, 0.5);
-  background: #f8fafc;
-  color: #1e293b;
-  cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  flex-shrink: 0;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 5px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: #f8fafc;
+  color: #1e293b;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.1s, border-color 0.1s;
 }
 
 .geo2dv2-toolbar-host :deep(button.tool:hover) {
   background: #e2e8f0;
+  border-color: #94a3b8;
 }
 
 .geo2dv2-toolbar-host :deep(button.tool.active) {
-  background: #2563eb;
-  border-color: #3b82f6;
-  color: #f8fafc;
+  background: rgba(37, 99, 235, 0.12);
+  border-color: rgba(37, 99, 235, 0.4);
+  color: #1d4ed8;
+  font-weight: 500;
 }
 
 .geo2dv2-toolbar-host :deep(.tool-icon) {
+  font-size: 12px;
   font-weight: 700;
+  flex-shrink: 0;
 }
 
 .geo2dv2-toolbar-host :deep(.tool-label) {
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .geo2dv2-delete {

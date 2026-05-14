@@ -14,9 +14,6 @@
 -->
 <template>
   <div class="solids-tray" data-testid="solids-tray">
-    <div class="solids-tray__header">
-      {{ t('winterboard.contentSidebar.solidsHeader') }}
-    </div>
     <div class="solids-tray__grid">
       <button
         v-for="item in items"
@@ -70,14 +67,6 @@ function onDragStart(e: DragEvent, src: SolidType): void {
   display: flex;
   flex-direction: column;
   gap: 6px;
-}
-
-.solids-tray__header {
-  font-size: 12px;
-  font-weight: 600;
-  color: #475569;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 
 .solids-tray__grid {
