@@ -220,10 +220,25 @@ watch(() => props.asset.data.mode, async (next, prev) => {
   await mount()
 })
 
-// Reflect external state changes (e.g., replay, multi-user broadcast).
+// Sync expr окремим watch — flush:'sync' гарантує одразу після reactive change
+// (без чекання на microtask), а deep compare unneeded — рядок vs рядок.
+watch(
+  () => props.asset.data.expr,
+  (next) => {
+    if (!card || typeof next !== 'string') return
+    // Якщо input у фокусі — НЕ перетираємо exprDraft (user пише). Engine
+    // оновити можна — двостороння sync.
+    if (document.activeElement?.tagName !== 'INPUT') {
+      exprDraft.value = next
+    }
+    if (card.opts.expr !== next) card.setExpression(next)
+  },
+  { flush: 'sync' },
+)
+
+// Решта state-полів — звичайний watch на arr.
 watch(
   () => [
-    props.asset.data.expr,
     props.asset.data.x0,
     props.asset.data.showSecant,
     props.asset.data.h,
@@ -236,14 +251,7 @@ watch(
   ],
   () => {
     if (!card) return
-    // exprDraft sync (тільки якщо input не у фокусі).
-    if (document.activeElement?.tagName !== 'INPUT') {
-      exprDraft.value = props.asset.data.expr
-    }
-    // Re-apply кожне поле через bundle's setOption / setExpression. Тільки
-    // те що change-нулося — щоб уникнути redundant rerenders.
     const d = props.asset.data
-    if (card.opts.expr !== d.expr) card.setExpression(d.expr)
     const keys: (keyof typeof d)[] = ['x0', 'showSecant', 'h', 'showDerivTrace', 'a', 'b', 'riemann', 'N', 'showF']
     for (const k of keys) {
       const v = d[k as keyof typeof d]
@@ -306,7 +314,10 @@ function onNChange(e: Event): void {
 }
 
 function onExprInput(): void {
-  // Live preview без emit — only on Enter/blur commit.
+  // Direct engine update — instant graph redraw на кожен символ.
+  // Bundle's setExpression parse-ить + scheduleRender(rAF) — graph оновлюється
+  // у наступному frame (~16ms). Snapshot емітиться через card.onChange →
+  // scheduleSnapshot (150ms debounce), тому store не страждає від типу-flood.
   if (card) card.setExpression(exprDraft.value)
 }
 
@@ -317,7 +328,11 @@ function onExprCommit(): void {
 }
 
 function onExprPreset(expr: string): void {
+  // Update input value, engine directly, AND store — all three sync щоб
+  // не чекати reactive flush. Раніше тільки patch() → watch → setExpression
+  // мав delay у який graph не оновлювався поки watch не fired.
   exprDraft.value = expr
+  if (card) card.setExpression(expr)
   patch({ expr })
 }
 
