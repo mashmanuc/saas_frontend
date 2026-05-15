@@ -35,6 +35,7 @@ export interface MyLesson {
   updated_at: string
   has_presentation: boolean
   chunk_count: number
+  page_count: number              // кількість сторінок у поточному snapshot
   tutor_slug?: string
   board_thumbnail_url?: string    // Phase 25 BUG-6
 }

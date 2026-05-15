@@ -22,6 +22,13 @@
 
     <!-- Hero preview -->
     <template v-else-if="lesson && access">
+      <!-- Back nav: owner завжди може повернутись до "Мої уроки" -->
+      <nav v-if="access.source === 'OWNER'" class="lesson-view-page__back-nav">
+        <button @click="goBack" class="lesson-view-page__back-btn">
+          {{ $t('knowledge.lesson.backToMyLessons') }}
+        </button>
+      </nav>
+
       <LessonHero
         :lesson="lesson"
         :access="access"
@@ -128,7 +135,17 @@ function startReplay() {
 }
 
 function exitReplay() {
-  replayStarted.value = false
+  // Якщо прийшли з "Мої уроки" (eye button ?preview=1) → повертаємось туди напряму.
+  // Якщо зайшли на Hero і запустили replay вручну → повертаємось на Hero.
+  if (route.query.preview === '1') {
+    router.push({ name: 'MyLessons' })
+  } else {
+    replayStarted.value = false
+  }
+}
+
+function goBack() {
+  router.push({ name: 'MyLessons' })
 }
 
 async function useLessonInSession() {
@@ -172,6 +189,33 @@ async function useLessonInSession() {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* Back nav: sticky top bar для owner */
+.lesson-view-page__back-nav {
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
+  background: var(--color-bg-primary, #fff);
+}
+
+.lesson-view-page__back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-secondary, #555);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.lesson-view-page__back-btn:hover {
+  color: var(--color-text-primary, #111);
+  background: var(--color-bg-secondary, #f5f5f5);
 }
 
 .lesson-view-page__owner-cta {

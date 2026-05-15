@@ -122,9 +122,22 @@
                 <h3 class="font-semibold text-gray-900 truncate" :title="lesson.title">
                   {{ lesson.title }}
                 </h3>
-                <p class="text-xs text-gray-400 mt-1">
-                  {{ formatDate(lesson.created_at) }}
-                </p>
+                <div class="flex items-center gap-2 mt-1">
+                  <p class="text-xs text-gray-400">
+                    {{ formatDate(lesson.created_at) }}
+                  </p>
+                  <!-- Лічильник сторінок -->
+                  <span
+                    v-if="lesson.page_count > 1"
+                    class="inline-flex items-center gap-0.5 text-xs text-gray-400"
+                    :title="`${lesson.page_count} сторінок`"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    {{ lesson.page_count }}
+                  </span>
+                </div>
                 <div class="mt-1 inline-flex items-center gap-1">
                   <span
                     class="inline-block px-2 py-0.5 text-xs rounded-full"
@@ -174,13 +187,16 @@
                     :current-folder="lesson.folder"
                     @moved="onLessonMoved(lesson, $event)"
                   />
-                  <router-link
-                    :to="{ name: 'LessonView', params: { lessonSlug: lesson.slug }, query: { preview: '1' } }"
-                    class="px-3 py-1.5 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors inline-flex items-center"
+                  <!-- Eye: оновлює snapshot перед переглядом (best-effort), потім навігує -->
+                  <button
+                    type="button"
+                    class="px-3 py-1.5 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors inline-flex items-center disabled:opacity-50 disabled:cursor-wait"
                     :title="$t('knowledge.lesson.startReplay')"
+                    :disabled="previewingLessonId === lesson.id"
+                    @click="handlePreview(lesson)"
                   >
-                    👁
-                  </router-link>
+                    {{ previewingLessonId === lesson.id ? '⏳' : '👁' }}
+                  </button>
                   <!-- Edit button (Phase 25 B1) -->
                   <button
                     type="button"
@@ -390,6 +406,9 @@ let searchTimeout: ReturnType<typeof setTimeout> | null = null
 // Phase 25: Delete
 const deletingId = ref<string | null>(null)
 const deleteTarget = ref<MyLesson | null>(null)
+
+// Preview: loading guard поки оновлюємо snapshot
+const previewingLessonId = ref<string | null>(null)
 
 // Phase 25: Edit
 const showEditDialog = ref(false)
@@ -620,6 +639,28 @@ async function openLesson(lesson: MyLesson): Promise<void> {
   } finally {
     loadingLessonId.value = null
   }
+}
+
+// ── Preview: auto-refresh snapshot перед переглядом ──────────────────
+// source_session_id є в серіалайзері → оновлюємо snapshot з поточного
+// стану WBSession. Best-effort: помилка не блокує навігацію.
+async function handlePreview(lesson: MyLesson): Promise<void> {
+  if (previewingLessonId.value) return
+  previewingLessonId.value = lesson.id
+  try {
+    if (lesson.source_session_id) {
+      await lessonViewApi.updateSnapshot(lesson.id, lesson.source_session_id)
+    }
+  } catch {
+    // best-effort: якщо snapshot не оновився — відкриємо наявний
+  } finally {
+    previewingLessonId.value = null
+  }
+  router.push({
+    name: 'LessonView',
+    params: { lessonSlug: lesson.slug },
+    query: { preview: '1' },
+  })
 }
 
 // ── Phase 25: Delete ─────────────────────────────────────────────────
