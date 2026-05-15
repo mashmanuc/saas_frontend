@@ -42,8 +42,11 @@ export interface GeoCardInstance {
   toggleState: Record<string, boolean>
   setToggle(key: string, on: boolean): void
   setOption(key: string, value: unknown): void
+  setFreePoints(snapshot: Record<string, { x: number; y: number }>): void
   rebuild(): void
   destroy(): void
+  /** Set by renderer to receive point-move notifications (drag + drag-end). */
+  onPointMove?: ((points: Record<string, { x: number; y: number }>) => void) | null
 }
 
 declare global {

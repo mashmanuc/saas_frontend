@@ -15,11 +15,12 @@
         · toolbar buttons
     - Selection works через "empty header zone" → click passes to Konva proxy.
 
-  PERSISTENCE LIMITATION (acknowledged):
-    - Bundle engine має internal Construction state. Drag free-points оновлює
-      візуальний render моментально (sols-board), але coords не syncяться у store.
-    - Collaboration sync — окремий PR-G5 scope.
-    - Toolbar toggles → emit asset_update з updated `toggles` (працює зараз).
+  PERSISTENCE MODEL:
+    - Toolbar toggles → emit asset_update з updated `toggles`.
+    - Free-point drag → debounced 400ms → emit asset_update з `pointsSnapshot`
+      (PR-G5: GeoCard.onPointMove callback wired у wirePointMovePersistence).
+    - On mount: applyPersistedPoints() restores snapshot via GeoCard.setFreePoints().
+    - Collaboration sync via standard asset_update broadcast (ws relay).
 -->
 <template>
   <div
@@ -90,6 +91,7 @@ const toolbarRef = ref<HTMLElement | null>(null)
 let card: GeoCardInstance | null = null
 let toolbarEl: HTMLElement | null = null
 let bundleReady = false
+let _pointMoveTimer: ReturnType<typeof setTimeout> | null = null
 
 const presetLabel = computed(() => {
   const meta = (window.GEO_PRESETS || []).find((m: GeoPresetMeta) => m.type === props.asset.data.preset)
@@ -118,6 +120,8 @@ async function mount(): Promise<void> {
     card = new W.GeoCard(stageRef.value, { type: presetKey })
   }
   applyPersistedToggles()
+  applyPersistedPoints()
+  wirePointMovePersistence()
   if (toolbarRef.value) {
     toolbarEl = W.makeGeoToolbar(card, toolbarRef.value)
     wireToolbarPersistence()
@@ -161,6 +165,22 @@ function applyPersistedToggles(): void {
   }
 }
 
+function applyPersistedPoints(): void {
+  if (!card || !props.asset.data.pointsSnapshot) return
+  card.setFreePoints(props.asset.data.pointsSnapshot)
+}
+
+function wirePointMovePersistence(): void {
+  if (!card) return
+  card.onPointMove = (points) => {
+    if (_pointMoveTimer) clearTimeout(_pointMoveTimer)
+    _pointMoveTimer = setTimeout(() => {
+      _pointMoveTimer = null
+      emitDataPatch({ pointsSnapshot: points })
+    }, 400)
+  }
+}
+
 function wireToolbarPersistence(): void {
   if (!toolbarEl || !card) return
   toolbarEl.addEventListener(
@@ -181,7 +201,9 @@ function wireToolbarPersistence(): void {
 }
 
 function destroyCard(): void {
+  if (_pointMoveTimer) { clearTimeout(_pointMoveTimer); _pointMoveTimer = null }
   if (card) {
+    card.onPointMove = null
     try { card.destroy() } catch { /* idempotent */ }
     card = null
   }

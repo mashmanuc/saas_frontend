@@ -23,6 +23,35 @@
         if (on) t.apply(this.con, true);
       });
       this.renderer.render();
+      // Wire point-move callback — fires on drag (rAF-throttled) and drag end.
+      this.renderer.onChange = () => {
+        if (this.onPointMove) this.onPointMove(this._getFreePoints());
+      };
+    }
+
+    /** Returns {id: {x,y}} for every movable point in the current construction. */
+    _getFreePoints() {
+      const pts = {};
+      for (const o of this.con.objects) {
+        if (o.movable && typeof o.x === 'number' && typeof o.y === 'number') {
+          pts[o.id] = { x: o.x, y: o.y };
+        }
+      }
+      return pts;
+    }
+
+    /**
+     * Restore free-point positions from a saved snapshot.
+     * Called by the renderer on mount when asset.data.pointsSnapshot exists.
+     */
+    setFreePoints(snapshot) {
+      if (!snapshot || !this.con || !this.renderer) return;
+      for (const [id, pos] of Object.entries(snapshot)) {
+        const o = this.con.get(id);
+        if (o && typeof o.setTo === 'function') o.setTo(pos.x, pos.y, this.con);
+      }
+      this.con.recompute();
+      this.renderer.render();
     }
 
     setToggle(key, on) {
@@ -41,6 +70,8 @@
     rebuild() {
       this.renderer.destroy();
       this._build();
+      // Notify with reset positions so store clears stale snapshot.
+      if (this.onPointMove) this.onPointMove(this._getFreePoints());
     }
 
     destroy() {
