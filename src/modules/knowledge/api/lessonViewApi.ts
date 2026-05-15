@@ -63,6 +63,12 @@ export interface LoadToSessionResponse {
   session_id: string
   board_id: string
   name: string
+  lesson_id: string
+}
+
+export interface UpdateSnapshotResponse {
+  snapshot_url: string
+  version: number
 }
 
 // ─── API ────────────────────────────────────────────────────────────────
@@ -115,6 +121,16 @@ export const lessonViewApi = {
    */
   async loadToSession(lessonId: string): Promise<LoadToSessionResponse> {
     const res = await api.post(`${BASE}/lessons/${lessonId}/load-to-session/`)
+    return res.data ?? res
+  },
+
+  /**
+   * POST /api/v1/knowledge/lessons/{id}/update-snapshot/
+   * Re-save existing lesson snapshot from current WBSession state.
+   * Call after opsSync.flush() so session.state is current.
+   */
+  async updateSnapshot(lessonId: string, sessionId: string): Promise<UpdateSnapshotResponse> {
+    const res = await api.post(`${BASE}/lessons/${lessonId}/update-snapshot/`, { session_id: sessionId })
     return res.data ?? res
   },
 }

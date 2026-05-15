@@ -143,6 +143,19 @@
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13 14H3a1 1 0 01-1-1V3a1 1 0 011-1h8l3 3v9a1 1 0 01-1 1z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 14V9H5v5M5 2v3h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
+        <!-- Оновити шаблон: показується коли board відкрито з існуючого уроку (?source_lesson=) -->
+        <button
+          v-if="sourceLessonId && sessionId && isSessionOwner"
+          type="button"
+          class="wb-header-btn wb-header-btn--update-lesson"
+          :title="t('knowledge.lesson.updateSnapshot')"
+          :disabled="isUpdatingSnapshot"
+          @click="handleUpdateLessonSnapshot"
+        >
+          <svg v-if="!isUpdatingSnapshot" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 8a6 6 0 1 0 1.5-3.9M2 4v4h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg v-else width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" class="wb-spinner"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5" stroke-dasharray="28" stroke-dashoffset="10"/></svg>
+          {{ t('knowledge.lesson.updateSnapshot') }}
+        </button>
         <!-- Phase 13 A3.3: Publish button — прихована: дублює Save as Lesson flow -->
         <!-- <button
           v-if="sessionId && store.currentStrokes.length > 0"
@@ -863,6 +876,7 @@ import WBRecordingBanner from '../components/replay/WBRecordingBanner.vue'
 import { registerAuthDeathCleanup } from '@/core/auth/onAuthDeath'
 import SaveAsTemplateDialog from '@/modules/knowledge/components/SaveAsTemplateDialog.vue'
 import WBSaveLessonDialog from '@/modules/knowledge/components/WBSaveLessonDialog.vue'
+import { lessonViewApi } from '@/modules/knowledge/api/lessonViewApi'
 import WBOnboardingHints from '../components/ui/WBOnboardingHints.vue'
 import { useGridOverlay } from '../composables/useGridOverlay'
 import { usePageTransition } from '../composables/usePageTransition'
@@ -1206,6 +1220,14 @@ const publishedLessonData = ref<{ id: string; title: string; subject_tag?: strin
 const showExportDialog = ref(false)
 const showSaveLessonDialog = ref(false)
 const showYouTubeModal = ref(false)
+
+// ── "Оновити шаблон" — коли solo board відкрито з існуючого уроку ──────
+// WBMyLessonsPage/KnowledgeHubPage передає ?source_lesson=<lesson_id> у query.
+const sourceLessonId = computed<string | null>(() => {
+  const q = route.query.source_lesson
+  return typeof q === 'string' && q.length > 0 ? q : null
+})
+const isUpdatingSnapshot = ref(false)
 const isSessionOwner = computed(() => {
   if (!store.ownerId || !authStore.user) return false
   return String(store.ownerId) === String(authStore.user.id)
@@ -2404,6 +2426,29 @@ function handleTemplateSaved(): void {
 async function openSaveLessonDialog(): Promise<void> {
   await autosave.saveNow()
   showSaveLessonDialog.value = true
+}
+
+// Оновити шаблон — перезберегти snapshot існуючого уроку з поточного стану WBSession.
+// Flush ops → session.state в БД = поточний стан → resave_lesson → новий snapshot.
+const _updateLessonToast = useToast()
+async function handleUpdateLessonSnapshot(): Promise<void> {
+  const lessonId = sourceLessonId.value
+  const sid = sessionId.value
+  if (!lessonId || !sid || isUpdatingSnapshot.value) return
+  isUpdatingSnapshot.value = true
+  try {
+    // Flush усі pending ops щоб session.state в БД був свіжим
+    try { await opsSync.flush() } catch (e) {
+      console.warn('[WBSoloRoom] flush before update-snapshot failed (continuing):', e)
+    }
+    await lessonViewApi.updateSnapshot(lessonId, sid)
+    _updateLessonToast.showToast(t('knowledge.lesson.snapshotUpdated'), 'success')
+  } catch (e) {
+    console.error('[WBSoloRoom] update-snapshot failed:', e)
+    _updateLessonToast.showToast(t('knowledge.lesson.snapshotUpdateError'), 'error')
+  } finally {
+    isUpdatingSnapshot.value = false
+  }
 }
 
 // Phase 21: Handle lesson saved

@@ -608,8 +608,12 @@ async function openLesson(lesson: MyLesson): Promise<void> {
   loadError.value = null
 
   try {
-    const { session_id } = await lessonViewApi.loadToSession(lesson.id)
-    await router.push({ name: 'winterboard-solo', params: { id: session_id } })
+    const { session_id, lesson_id } = await lessonViewApi.loadToSession(lesson.id)
+    await router.push({
+      name: 'winterboard-solo',
+      params: { id: session_id },
+      query: { source_lesson: lesson_id },
+    })
   } catch (err) {
     console.error('[WBMyLessonsPage] load lesson error:', err)
     loadError.value = t('knowledge.lesson.reuse.loadError')

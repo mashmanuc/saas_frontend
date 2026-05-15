@@ -8280,6 +8280,9 @@
         "loadError": "Не вдалося завантажити урок у сесію",
         "useLessonHint": "Відкрити урок у новій сесії для викладання"
       },
+      "updateSnapshot": "Оновити шаблон",
+      "snapshotUpdated": "Шаблон оновлено ✓",
+      "snapshotUpdateError": "Не вдалося оновити шаблон. Спробуйте ще раз.",
       "search": {
         "placeholder": "Пошук уроків...",
         "allStatuses": "Всі статуси",

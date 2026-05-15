@@ -8192,6 +8192,9 @@
         "loadError": "Failed to load lesson into session",
         "useLessonHint": "Open lesson in a new session for teaching"
       },
+      "updateSnapshot": "Update template",
+      "snapshotUpdated": "Template updated ✓",
+      "snapshotUpdateError": "Failed to update template. Please try again.",
       "search": {
         "placeholder": "Search lessons...",
         "allStatuses": "All statuses",

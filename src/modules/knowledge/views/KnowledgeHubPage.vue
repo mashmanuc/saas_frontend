@@ -372,8 +372,12 @@ async function useLessonInSession(lesson: RecentLesson): Promise<void> {
   loadingLessonId.value = lesson.id
   loadLessonError.value = null
   try {
-    const { session_id } = await lessonViewApi.loadToSession(lesson.id)
-    await router.push({ name: 'winterboard-solo', params: { id: session_id } })
+    const { session_id, lesson_id } = await lessonViewApi.loadToSession(lesson.id)
+    await router.push({
+      name: 'winterboard-solo',
+      params: { id: session_id },
+      query: { source_lesson: lesson_id },
+    })
   } catch (err) {
     console.error('[KnowledgeHubPage] load lesson error:', err)
     loadLessonError.value = t('knowledge.lesson.reuse.loadError')
