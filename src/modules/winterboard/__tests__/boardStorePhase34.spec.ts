@@ -65,7 +65,7 @@ describe('A1: getObjectById', () => {
     const store = useWBStore()
     seedPage(store)
     const a = makeAsset({ id: 'asset-1' })
-    store.addAsset(a, { skipHistory: true })
+    store.addAsset(a, 'page-1', { skipHistory: true })
     expect(store.getObjectById('asset-1')).toBeTruthy()
     expect(store.getObjectById('asset-1')!.id).toBe('asset-1')
   })
@@ -114,7 +114,7 @@ describe('A1: updateObject', () => {
     const store = useWBStore()
     seedPage(store)
     const a = makeAsset({ id: 'upd-a1', x: 100 })
-    store.addAsset(a, { skipHistory: true })
+    store.addAsset(a, 'page-1', { skipHistory: true })
     store.updateObject('upd-a1', { x: 200 })
     const found = store.getObjectById('upd-a1') as WBAsset
     expect(found.x).toBe(200)
@@ -316,7 +316,7 @@ describe('A4: Performance limits', () => {
     const store = useWBStore()
     seedPage(store)
     store.addStroke(makeStroke(), { skipHistory: true })
-    store.addAsset(makeAsset(), { skipHistory: true })
+    store.addAsset(makeAsset(), 'page-1', { skipHistory: true })
     expect(store.objectCount).toBe(2)
   })
 
@@ -362,7 +362,7 @@ describe('A4: Performance limits', () => {
     }
     store.pages[0] = { ...page, strokes }
     const countBefore = store.currentAssets.length
-    store.addAsset(makeAsset({ id: 'overflow-a' }))
+    store.addAsset(makeAsset({ id: 'overflow-a' }), 'page-1')
     expect(store.currentAssets.length).toBe(countBefore)
   })
 

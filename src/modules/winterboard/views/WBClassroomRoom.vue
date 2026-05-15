@@ -1500,7 +1500,7 @@ async function handleToggleLock(): Promise<void> {
   if (!classroomRole.canLock.value || !resolvedSessionId.value) return
   try {
     const result = await winterboardApi.lockSession(resolvedSessionId.value, !isLocked.value)
-    classroomSession.setLocked(result.locked)
+    classroomSession.setLocked(result.is_locked)
   } catch (err) {
     console.error('[WB:ClassroomRoom] Lock toggle failed', err)
   }

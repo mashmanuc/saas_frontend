@@ -74,14 +74,14 @@ export function useTeacherControls(
 
     try {
       const result = await winterboardApi.lockSession(sid, locked)
-      isLocked.value = result.locked
+      isLocked.value = result.is_locked
 
       broadcast({
         type: 'session.lock',
-        payload: { locked: result.locked, locked_by: result.locked_by },
+        payload: { locked: result.is_locked, locked_by_id: result.locked_by_id },
       })
 
-      console.info(`${LOG} Lock ${result.locked ? 'ON' : 'OFF'}`, { sessionId: sid })
+      console.info(`${LOG} Lock ${result.is_locked ? 'ON' : 'OFF'}`, { sessionId: sid })
       return true
     } catch (err) {
       lastError.value = `Failed to ${locked ? 'lock' : 'unlock'} session`

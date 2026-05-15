@@ -69,6 +69,7 @@ const BOARD_WITH_THUMB = {
   has_lesson: false,
   lesson_info: null,
   folder: null,
+  folder_path: null,
 }
 
 const BOARD_NO_THUMB = {
@@ -82,6 +83,7 @@ const BOARD_NO_THUMB = {
   has_lesson: true,
   lesson_info: { id: 1, student_name: 'John', start: null, status: 'completed' },
   folder: null,
+  folder_path: null,
 }
 
 const BOARDS = [BOARD_WITH_THUMB, BOARD_NO_THUMB]

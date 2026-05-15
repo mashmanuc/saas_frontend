@@ -65,6 +65,7 @@ const MOCK_LESSONS = [
     updated_at: '2026-03-18T10:00:00Z',
     has_presentation: false,
     chunk_count: 0,
+    page_count: 1,
   },
   {
     id: 'lesson-2',
@@ -81,6 +82,7 @@ const MOCK_LESSONS = [
     updated_at: '2026-03-17T08:00:00Z',
     has_presentation: false,
     chunk_count: 0,
+    page_count: 1,
   },
 ]
 
@@ -147,6 +149,7 @@ describe('WBMyLessonsPage', () => {
       session_id: 'new-session-abc',
       board_id: 'board-1',
       name: 'Algebra Basics',
+      lesson_id: 'lesson-1',
     })
 
     const wrapper = createWrapper()
@@ -168,6 +171,7 @@ describe('WBMyLessonsPage', () => {
       session_id: 'session-xyz',
       board_id: 'board-1',
       name: 'Algebra Basics',
+      lesson_id: 'lesson-1',
     })
 
     const wrapper = createWrapper()

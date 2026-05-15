@@ -27,7 +27,7 @@ vi.mock('../../modules/auth/store/authStore', () => ({
     get access() { return _storeState.access },
     get csrfToken() { return _storeState.csrfToken },
     get lastRefreshAt() { return _storeState.lastRefreshAt },
-    get sessionExpiredNotified() { return _storeState.sessionExpiredNotified },
+    get sessionExpiredNotified() { return _storeState.sessionExpiredNotified as boolean },
     set sessionExpiredNotified(v: boolean) { _storeState.sessionExpiredNotified = v },
     refreshAccess: mockRefreshAccess,
     ensureCsrfToken: mockEnsureCsrf,
@@ -82,7 +82,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   resetState()
   // overwrite axios adapter for each test (apiClient.defaults.adapter — wrapped dedup adapter)
-  ;(apiClient.defaults as unknown as { adapter: typeof mockAdapter }).adapter = mockAdapter
+  ;(apiClient as unknown as { defaults: { adapter: typeof mockAdapter } }).defaults.adapter = mockAdapter
 })
 
 // ─── Tests ───────────────────────────────────────────────────────────────────

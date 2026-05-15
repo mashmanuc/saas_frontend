@@ -77,7 +77,7 @@ export interface ReplayStoreApi {
   // Replay animation batch write (no emit, no history) — used by MoveAnimator
   applyTransientPositions?: (items: Array<{ id: string; x: number; y: number }>) => void
   currentPageIndex: number
-  pages: Array<{ id: string }>
+  pages: Array<{ id: string; assets?: WBAsset[] }>
 }
 
 /**

@@ -50,7 +50,7 @@ export function enterReplayMode(): void {
   // Freeze current board state for restoration
   // Note: state.$state for Pinia stores
   const boardStore = useWBStore()
-  state.frozenState = deepClone(boardStore.$state || boardStore.state)
+  state.frozenState = deepClone(boardStore.$state)
   
   // Disable autosave
   disableAutosave(boardStore)
@@ -86,7 +86,7 @@ export function exitReplayMode(): void {
   if (state.frozenState) {
     const boardStore = useWBStore()
     // Check if state diverged
-    const currentState = boardStore.$state || boardStore.state
+    const currentState = boardStore.$state
     if (JSON.stringify(currentState) !== JSON.stringify(state.frozenState)) {
       console.warn('[REPLAY_MODE] State mutation detected during replay, restoring...')
       // Restore via patch or direct assign
