@@ -261,11 +261,15 @@ function scheduleSnapshot(): void {
   snapshotTimer = setTimeout(() => {
     snapshotTimer = null
     if (!card) return
+    // ВАЖЛИВО: включаємо expr щоб live-editing (live `card.setExpression`)
+    // не перетирався back-watch-ем після emit. Раніше snapshot містив тільки
+    // x0/a/b/viewport, а watch порівнював `card.opts.expr` (cos(x)) з
+    // `props.asset.data.expr` (x^2) → відрізнялось → resetting expr назад.
     const patched: CalculusAsset = {
       ...props.asset,
       data: {
         ...props.asset.data,
-        // Read mutable opts back from card (drag updates).
+        expr: card.opts.expr,
         x0: card.opts.x0,
         a: card.opts.a,
         b: card.opts.b,
