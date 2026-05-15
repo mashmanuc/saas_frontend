@@ -36,6 +36,7 @@ export type ClassroomSessionState =
   | 'error'
   | 'no_access'
   | 'waiting_for_teacher'
+  | 'lesson_completed'
 
 // ─── Composable ─────────────────────────────────────────────────────────────
 
@@ -102,6 +103,14 @@ export function useClassroomSession() {
         state.value = 'waiting_for_teacher'
         error.value = null
         startWaitingPoll(lessonId)
+        return null
+      }
+
+      // 410 = lesson already completed — classroom session cannot be opened
+      if (status === 410) {
+        state.value = 'lesson_completed'
+        error.value = null
+        console.info(`${LOG} Lesson already completed`, { lessonId })
         return null
       }
 

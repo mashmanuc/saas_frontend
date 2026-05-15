@@ -11,6 +11,18 @@
     </div>
   </div>
 
+  <!-- Lesson already completed — cannot re-enter classroom -->
+  <div v-else-if="classroomSession.state.value === 'lesson_completed'" class="wb-waiting-screen">
+    <div class="wb-waiting-screen__content">
+      <div class="wb-waiting-screen__icon">✅</div>
+      <h2 class="wb-waiting-screen__title">{{ t('winterboard.classroom.lessonCompleted') }}</h2>
+      <p class="wb-waiting-screen__text">{{ t('winterboard.classroom.lessonCompletedHint') }}</p>
+      <button class="wb-waiting-screen__back" @click="router.push('/winterboard/classroom-hub')">
+        {{ t('winterboard.classroom.backToHub') }}
+      </button>
+    </div>
+  </div>
+
   <div v-else class="wb-classroom-room" :class="{ 'wb-classroom-room--locked': isLocked }">
     <!-- Phase 2 (2026-04-27) per SSOT INV-16/INV-20:
          DesyncRecoveryBanner — sticky top, non-blocking (board still readable).
@@ -2099,6 +2111,11 @@ onMounted(async () => {
       window.addEventListener('wb:session-ready', onReady, { once: true })
       return
     }
+    // Lesson completed — show info screen (no redirect, user reads the message first)
+    if (classroomSession.state.value === 'lesson_completed') {
+      isLoading.value = false
+      return
+    }
     isLoading.value = false
     return
   }
@@ -2814,5 +2831,11 @@ onBeforeUnmount(async () => {
 .wb-waiting-screen__back:hover {
   border-color: var(--wb-brand, #0066ff);
   color: var(--wb-brand, #0066ff);
+}
+
+.wb-waiting-screen__icon {
+  font-size: 48px;
+  line-height: 1;
+  margin-bottom: 8px;
 }
 </style>
