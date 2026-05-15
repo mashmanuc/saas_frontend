@@ -7456,6 +7456,7 @@
       "geo2dHeader": "Геометрія 2D",
       "trayDragHint": "Перетягніть на дошку",
       "graphCalcLabel": "Графічний калькулятор",
+      "calculusHeader": "Похідна · Первісна",
       "search": "Пошук матеріалів...",
       "filterAll": "Всі",
       "pasteFilterTitle": "Показати лише вставлені з буферу",
@@ -7743,6 +7744,18 @@
       "placeholder": "Введіть текст…",
       "save": "Зберегти",
       "delete": "Видалити"
+    },
+    "calculus": {
+      "exprPlaceholder": "y = f(x), напр. x^2",
+      "mode": {
+        "derivative": { "full": "Похідна", "desc": "дотична · нахил · слід f′(x)" },
+        "integral":   { "full": "Первісна", "desc": "площа · Ріман L/M/R · F(x)" }
+      },
+      "toggle": {
+        "secant": "Січна",
+        "derivTrace": "Слід f′(x)",
+        "antiderivative": "Крива F(x)"
+      }
     },
     "linkAttachment": {
       "dialogTitle": "Прикріпити посилання",
@@ -8247,6 +8260,7 @@
       "public": "Публічний",
       "startReplay": "Переглянути урок",
       "exitReplay": "Назад",
+      "backToMyLessons": "← Мої уроки",
       "loadingReplay": "Завантаження контенту...",
       "retry": "Спробувати знову",
       "error": {

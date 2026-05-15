@@ -177,6 +177,7 @@
         <SolidsTray />
         <GraphCalculatorTray />
         <Geometry2DTray />
+        <CalculusTray />
       </div>
     </template>
 
@@ -195,6 +196,8 @@ import LibraryFolderTree from '../library/LibraryFolderTree.vue'
 import SolidsTray from './SolidsTray.vue'
 // Phase G PR-G1 (2026-05-13): geometry_2d_v2 dynamic geometry tray (skeleton)
 import Geometry2DTray from './Geometry2DTray.vue'
+// Phase Calculus (2026-05-15): derivative + integral cards tray
+import CalculusTray from './CalculusTray.vue'
 // Phase G (2026-05-06): graph_calculator interactive widget tray
 import GraphCalculatorTray from './GraphCalculatorTray.vue'
 import StorageQuotaBar from '@/modules/learning-content/components/StorageQuotaBar.vue'

@@ -197,6 +197,8 @@ export interface WBAsset {
     | 'geometry_solid'
     /** Phase G (2026-05-05) — interactive graph_calculator per OPS_SYNC_SSOT INV-21 */
     | 'graph_calculator'
+    /** Phase Calculus (2026-05-15) — derivative + antiderivative cards. */
+    | 'calculus_card'
   /**
    * Asset source descriptor.
    * - URL для image/audio/video/document_viewer
@@ -282,6 +284,7 @@ export interface WBAsset {
     | SolidAssetData
     | import('./graphCalculator').GraphCalculatorData
     | import('./geometry2dV2').Geometry2DV2Data
+    | import('./calculus').CalculusData
 }
 
 /**

@@ -31,6 +31,16 @@ import {
   type Geometry2DV2DragPayload,
 } from '../constants/geometry2dV2Defaults'
 import type { Geometry2DV2Asset } from '../types/geometry2dV2'
+// Phase Calculus (2026-05-15) — derivative + integral cards drop wiring.
+import {
+  CALCULUS_DRAG_MIME,
+  CALCULUS_MODE_SET,
+  DEFAULT_CALCULUS_W,
+  DEFAULT_CALCULUS_H,
+  buildDefaultCalculusData,
+  type CalculusDragPayload,
+} from '../constants/calculusDefaults'
+import type { CalculusAsset } from '../types/calculus'
 
 // Phase O PR-O4: 10 fixed solid types — must match SolidType union exactly.
 const SOLID_TYPE_SET: ReadonlySet<SolidType> = new Set([
@@ -116,6 +126,39 @@ export function useContentDrop(options: UseContentDropOptions) {
         } as unknown as WBAsset['data'],
       }
       onAssetAdd(asset)
+      return
+    }
+
+    // Phase Calculus (2026-05-15) — derivative / integral card drag.
+    // Payload {mode}; default state hydrates через buildDefaultCalculusData.
+    // 1 drop = 1 asset_add = 1 broadcast (INV-13 ATOMIC-APPLY).
+    const calcRaw = event.dataTransfer?.getData(CALCULUS_DRAG_MIME)
+    if (calcRaw) {
+      let parsed: CalculusDragPayload
+      try {
+        parsed = JSON.parse(calcRaw) as CalculusDragPayload
+      } catch {
+        console.warn('[useContentDrop] Invalid calculus drag payload')
+        return
+      }
+      if (!parsed?.mode || !CALCULUS_MODE_SET.has(parsed.mode)) {
+        console.warn('[useContentDrop] Unknown calculus mode:', parsed?.mode)
+        return
+      }
+      const canvasPos = screenToCanvas(event.clientX, event.clientY)
+      const asset: CalculusAsset = {
+        id: `calc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        type: 'calculus_card',
+        src: '',
+        x: canvasPos.x - DEFAULT_CALCULUS_W / 2,
+        y: canvasPos.y - DEFAULT_CALCULUS_H / 2,
+        w: DEFAULT_CALCULUS_W,
+        h: DEFAULT_CALCULUS_H,
+        rotation: 0,
+        locked: false,
+        data: buildDefaultCalculusData(parsed.mode),
+      }
+      onAssetAdd(asset as unknown as WBAsset)
       return
     }
 

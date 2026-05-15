@@ -65,6 +65,11 @@
         <Geometry2DTray />
       </div>
 
+      <!-- Phase Calculus (2026-05-15): похідна + первісна. -->
+      <div class="content-sidebar__calculus-section">
+        <CalculusTray />
+      </div>
+
       <!-- Phase 11 B8: YouTube URL inline input -->
       <div v-if="isTutor" class="content-sidebar__yt-section">
         <button
@@ -173,6 +178,8 @@ import SolidsTray from './SolidsTray.vue'
 import GraphCalculatorTray from './GraphCalculatorTray.vue'
 // Phase G PR-G1 (2026-05-13): geometry_2d_v2 dynamic geometry tray (skeleton)
 import Geometry2DTray from './Geometry2DTray.vue'
+// Phase Calculus (2026-05-15): derivative + integral cards tray
+import CalculusTray from './CalculusTray.vue'
 import StorageQuotaBar from '@/modules/learning-content/components/StorageQuotaBar.vue'
 import { learningContentApi } from '@/modules/learning-content/api/learningContentApi'
 import type { StorageQuota } from '@/modules/learning-content/api/learningContentApi'

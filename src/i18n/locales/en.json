@@ -6724,6 +6724,7 @@
       "geo2dHeader": "2D Geometry",
       "trayDragHint": "Drag onto the board",
       "graphCalcLabel": "Function plotter",
+      "calculusHeader": "Derivative · Integral",
       "search": "Search materials...",
       "filterAll": "All",
       "pasteFilterTitle": "Show clipboard-pasted items only",
@@ -7611,6 +7612,18 @@
       "save": "Save",
       "delete": "Delete"
     },
+    "calculus": {
+      "exprPlaceholder": "y = f(x), e.g. x^2",
+      "mode": {
+        "derivative": { "full": "Derivative", "desc": "tangent · slope · f′(x) trail" },
+        "integral":   { "full": "Antiderivative", "desc": "area · Riemann L/M/R · F(x)" }
+      },
+      "toggle": {
+        "secant": "Secant",
+        "derivTrace": "f′(x) trail",
+        "antiderivative": "F(x) curve"
+      }
+    },
     "linkAttachment": {
       "dialogTitle": "Attach a link",
       "add": "Add link",
@@ -8159,6 +8172,7 @@
       "public": "Public",
       "startReplay": "Watch Lesson",
       "exitReplay": "Back",
+      "backToMyLessons": "← My Lessons",
       "loadingReplay": "Loading content...",
       "retry": "Try again",
       "error": {

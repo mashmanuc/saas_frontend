@@ -7096,7 +7096,8 @@
       "interactiveHeader": "Интерактивные",
       "geo2dHeader": "Геометрия 2D",
       "trayDragHint": "Перетащите на доску",
-      "graphCalcLabel": "Графический калькулятор"
+      "graphCalcLabel": "Графический калькулятор",
+      "calculusHeader": "Производная · Первообразная"
     },
     "templates": {
       "chooseTemplate": "Выберите шаблон доски",
@@ -7696,6 +7697,18 @@
       "save": "Сохранить",
       "delete": "Удалить"
     },
+    "calculus": {
+      "exprPlaceholder": "y = f(x), напр. x^2",
+      "mode": {
+        "derivative": { "full": "Производная", "desc": "касательная · наклон · след f′(x)" },
+        "integral":   { "full": "Первообразная", "desc": "площадь · Риман L/M/R · F(x)" }
+      },
+      "toggle": {
+        "secant": "Секущая",
+        "derivTrace": "След f′(x)",
+        "antiderivative": "Кривая F(x)"
+      }
+    },
     "linkAttachment": {
       "dialogTitle": "Прикрепить ссылку",
       "add": "Добавить ссылку",
@@ -8048,6 +8061,7 @@
       "public": "Публичный",
       "startReplay": "Просмотреть урок",
       "exitReplay": "Назад",
+      "backToMyLessons": "← Мои уроки",
       "loadingReplay": "Загрузка контента...",
       "retry": "Попробовать снова",
       "error": {
