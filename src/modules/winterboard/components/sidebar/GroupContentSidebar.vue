@@ -178,6 +178,7 @@
         <GraphCalculatorTray />
         <Geometry2DTray />
         <CalculusTray />
+        <TrigCircleTray />
       </div>
     </template>
 
@@ -198,6 +199,8 @@ import SolidsTray from './SolidsTray.vue'
 import Geometry2DTray from './Geometry2DTray.vue'
 // Phase Calculus (2026-05-15): derivative + integral cards tray
 import CalculusTray from './CalculusTray.vue'
+// TrigCircle (2026-05-16): unit circle ↔ sin/cos/tg/ctg graph tray
+import TrigCircleTray from './TrigCircleTray.vue'
 // Phase G (2026-05-06): graph_calculator interactive widget tray
 import GraphCalculatorTray from './GraphCalculatorTray.vue'
 import StorageQuotaBar from '@/modules/learning-content/components/StorageQuotaBar.vue'

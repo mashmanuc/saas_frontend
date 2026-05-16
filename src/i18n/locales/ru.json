@@ -7062,8 +7062,7 @@
         "circle":       { "full": "Окружность",              "desc": "хорда · касательная · угол" },
         "polygon":      { "full": "Четырёхугольник",         "desc": "диагонали · Вариньон" },
         "pythagoras":   { "full": "Пифагор",                 "desc": "квадраты на сторонах" },
-        "thales":       { "full": "Фалес",                   "desc": "3 параллельных · ratios" },
-        "unitCircle":   { "full": "Тригонометрический круг", "desc": "sin · cos · tg · ctg" }
+        "thales":       { "full": "Фалес",                   "desc": "3 параллельных · ratios" }
       }
     },
     "contentSidebar": {
@@ -7097,7 +7096,8 @@
       "geo2dHeader": "Геометрия 2D",
       "trayDragHint": "Перетащите на доску",
       "graphCalcLabel": "Графический калькулятор",
-      "calculusHeader": "Производная · Первообразная"
+      "calculusHeader": "Производная · Первообразная",
+      "trigCircleHeader": "Тригонометрия"
     },
     "templates": {
       "chooseTemplate": "Выберите шаблон доски",
@@ -7696,6 +7696,11 @@
       "placeholder": "Введите текст…",
       "save": "Сохранить",
       "delete": "Удалить"
+    },
+    "trigCircle": {
+      "cardTitle": "Тригонометрический круг",
+      "btnLabel": "Тригонометрия",
+      "btnTitle": "Единичная окружность ↔ график sin · cos · tg · ctg"
     },
     "calculus": {
       "exprPlaceholder": "y = f(x), напр. x^2",

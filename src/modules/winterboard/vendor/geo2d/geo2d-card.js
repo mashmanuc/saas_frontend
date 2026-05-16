@@ -149,6 +149,5 @@
     { type: 'polygon',     short: '4 верш.',     full: 'Чотирикутник',      desc: 'діагоналі · Варіньон' },
     { type: 'pythagoras',  short: 'a²+b²',       full: 'Піфагор',           desc: 'квадрати на сторонах' },
     { type: 'thales',      short: '‖',           full: 'Фалес',             desc: '3 паралельні · ratios' },
-    { type: 'unitCircle',  short: 'sin·cos',     full: 'Тригонометричне коло', desc: 'sin · cos · tg · ctg' },
   ];
 })();

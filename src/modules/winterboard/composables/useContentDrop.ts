@@ -41,6 +41,14 @@ import {
   type CalculusDragPayload,
 } from '../constants/calculusDefaults'
 import type { CalculusAsset } from '../types/calculus'
+// TrigCircle (2026-05-16) — unit circle ↔ sin/cos/tg/ctg graph widget drop wiring.
+import {
+  TRIG_CIRCLE_DRAG_MIME,
+  DEFAULT_TRIG_CIRCLE_W,
+  DEFAULT_TRIG_CIRCLE_H,
+  buildDefaultTrigCircleData,
+} from '../constants/trigCircleDefaults'
+import type { TrigCircleAsset } from '../types/trigCircle'
 
 // Phase O PR-O4: 10 fixed solid types — must match SolidType union exactly.
 const SOLID_TYPE_SET: ReadonlySet<SolidType> = new Set([
@@ -157,6 +165,28 @@ export function useContentDrop(options: UseContentDropOptions) {
         rotation: 0,
         locked: false,
         data: buildDefaultCalculusData(parsed.mode),
+      }
+      onAssetAdd(asset as unknown as WBAsset)
+      return
+    }
+
+    // TrigCircle (2026-05-16) — unit circle ↔ sin/cos graph widget drag.
+    // Payload {type:'trig_circle'}; default state hydrates через buildDefaultTrigCircleData.
+    // 1 drop = 1 asset_add = 1 broadcast (INV-13 ATOMIC-APPLY).
+    const trigRaw = event.dataTransfer?.getData(TRIG_CIRCLE_DRAG_MIME)
+    if (trigRaw) {
+      const canvasPos = screenToCanvas(event.clientX, event.clientY)
+      const asset: TrigCircleAsset = {
+        id: `trig-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        type: 'trig_circle',
+        src: '',
+        x: canvasPos.x - DEFAULT_TRIG_CIRCLE_W / 2,
+        y: canvasPos.y - DEFAULT_TRIG_CIRCLE_H / 2,
+        w: DEFAULT_TRIG_CIRCLE_W,
+        h: DEFAULT_TRIG_CIRCLE_H,
+        rotation: 0,
+        locked: false,
+        data: buildDefaultTrigCircleData(),
       }
       onAssetAdd(asset as unknown as WBAsset)
       return

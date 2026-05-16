@@ -7433,8 +7433,7 @@
         "circle":       { "full": "Коло",                "desc": "хорда · дотична · кут" },
         "polygon":      { "full": "Чотирикутник",        "desc": "діагоналі · Варіньон" },
         "pythagoras":   { "full": "Піфагор",             "desc": "квадрати на сторонах" },
-        "thales":       { "full": "Фалес",               "desc": "3 паралельні · ratios" },
-        "unitCircle":   { "full": "Тригонометричне коло","desc": "sin · cos · tg · ctg" }
+        "thales":       { "full": "Фалес",               "desc": "3 паралельні · ratios" }
       }
     },
     "contentSidebar": {
@@ -7457,6 +7456,7 @@
       "trayDragHint": "Перетягніть на дошку",
       "graphCalcLabel": "Графічний калькулятор",
       "calculusHeader": "Похідна · Первісна",
+      "trigCircleHeader": "Тригонометрія",
       "search": "Пошук матеріалів...",
       "filterAll": "Всі",
       "pasteFilterTitle": "Показати лише вставлені з буферу",
@@ -7744,6 +7744,11 @@
       "placeholder": "Введіть текст…",
       "save": "Зберегти",
       "delete": "Видалити"
+    },
+    "trigCircle": {
+      "cardTitle": "Тригонометричне коло",
+      "btnLabel": "Тригонометрія",
+      "btnTitle": "Одиничне коло ↔ графік sin · cos · tg · ctg"
     },
     "calculus": {
       "exprPlaceholder": "y = f(x), напр. x^2",

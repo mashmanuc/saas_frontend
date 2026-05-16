@@ -6701,8 +6701,7 @@
         "circle":       { "full": "Circle",                  "desc": "chord · tangent · angle" },
         "polygon":      { "full": "Quadrilateral",           "desc": "diagonals · Varignon" },
         "pythagoras":   { "full": "Pythagoras",              "desc": "squares on sides" },
-        "thales":       { "full": "Thales",                  "desc": "3 parallels · ratios" },
-        "unitCircle":   { "full": "Unit circle",             "desc": "sin · cos · tan · cot" }
+        "thales":       { "full": "Thales",                  "desc": "3 parallels · ratios" }
       }
     },
     "contentSidebar": {
@@ -6725,6 +6724,7 @@
       "trayDragHint": "Drag onto the board",
       "graphCalcLabel": "Function plotter",
       "calculusHeader": "Derivative · Integral",
+      "trigCircleHeader": "Trigonometry",
       "search": "Search materials...",
       "filterAll": "All",
       "pasteFilterTitle": "Show clipboard-pasted items only",
@@ -7611,6 +7611,11 @@
       "placeholder": "Enter text…",
       "save": "Save",
       "delete": "Delete"
+    },
+    "trigCircle": {
+      "cardTitle": "Unit circle",
+      "btnLabel": "Trigonometry",
+      "btnTitle": "Unit circle ↔ sin · cos · tan · cot graph"
     },
     "calculus": {
       "exprPlaceholder": "y = f(x), e.g. x^2",

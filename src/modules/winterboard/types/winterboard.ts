@@ -199,6 +199,8 @@ export interface WBAsset {
     | 'graph_calculator'
     /** Phase Calculus (2026-05-15) — derivative + antiderivative cards. */
     | 'calculus_card'
+    /** TrigCircle (2026-05-16) — unit circle ↔ sin/cos/tg/ctg graph widget. */
+    | 'trig_circle'
   /**
    * Asset source descriptor.
    * - URL для image/audio/video/document_viewer
@@ -285,6 +287,7 @@ export interface WBAsset {
     | import('./graphCalculator').GraphCalculatorData
     | import('./geometry2dV2').Geometry2DV2Data
     | import('./calculus').CalculusData
+    | import('./trigCircle').TrigCircleData
 }
 
 /**
