@@ -6,15 +6,22 @@
 
   Bundle: vendor/trig/* — window.TrigCircle exposed after side-effect import.
 
-  POINTER-EVENTS MODEL (mirror calculus 2026-05 pattern):
+  POINTER-EVENTS MODEL:
     - Root .trig-circle-renderer = pointer-events:none → Konva proxy catches drag/select.
-    - Header bg = inherit none → drag handle картки.
     - Stage canvas = auto (drag point P).
     - Toolbar = auto (toggles / sliders / presets).
-    - У read-only mode (pen/highlighter active): all = none, pen draws over card.
+    - У read-only mode: all = none.
 
-  PERSISTENCE: opts → onChange callback → debounce 300ms → emit asset_update.
-  Animate + partialCurves are local-only (not persisted — always off on mount).
+  PERSISTENCE:
+    opts → onChange callback → debounce 300ms → emit asset_update.
+    animate + partialCurves — local-only (not persisted).
+
+  LOCAL STATE RATIONALE:
+    toggle() / jumpTo() / onSpeedInput() читають та оновлюють `local` reactive mirror
+    миттєво, не чекаючи 300мс snapshot → store → props cycle.
+    Без цього швидкий подвійний клік читає застарілий props.asset.data і
+    обидва кліки йдуть в одну сторону (один з них — no-op).
+    remote ops sync: watch на props.asset.data → оновлює local + engine.
 -->
 <template>
   <div
@@ -49,8 +56,8 @@
           :key="fn.key"
           type="button"
           class="trig-btn"
-          :class="{ 'is-active': !!asset.data[fn.key as keyof TrigCircleData] }"
-          @click.stop="toggle(fn.key as BoolKey)"
+          :class="{ 'is-active': !!local[fn.key] }"
+          @click.stop="toggle(fn.key)"
           @mousedown.stop
           @pointerdown.stop
         >{{ fn.label }}</button>
@@ -63,8 +70,8 @@
           :key="lb.key"
           type="button"
           class="trig-btn"
-          :class="{ 'is-active': !!asset.data[lb.key as keyof TrigCircleData] }"
-          @click.stop="toggle(lb.key as BoolKey)"
+          :class="{ 'is-active': !!local[lb.key] }"
+          @click.stop="toggle(lb.key)"
           @mousedown.stop
           @pointerdown.stop
         >{{ lb.label }}</button>
@@ -77,8 +84,8 @@
           :key="gr.key"
           type="button"
           class="trig-btn"
-          :class="{ 'is-active': !!asset.data[gr.key as keyof TrigCircleData] }"
-          @click.stop="toggle(gr.key as BoolKey)"
+          :class="{ 'is-active': !!local[gr.key] }"
+          @click.stop="toggle(gr.key)"
           @mousedown.stop
           @pointerdown.stop
         >{{ gr.label }}</button>
@@ -87,7 +94,7 @@
       <!-- Рядок 2: рух + швидкість + пресети кутів -->
       <div class="trig-toolbar__row">
         <span class="trig-group-label">рух:</span>
-        <!-- Намалюй синусоїду -->
+
         <button
           type="button"
           class="trig-btn"
@@ -97,7 +104,6 @@
           @pointerdown.stop
         >✎ Синусоїда</button>
 
-        <!-- Обертання -->
         <button
           type="button"
           class="trig-btn"
@@ -107,11 +113,10 @@
           @pointerdown.stop
         >▶ Обертання</button>
 
-        <!-- snap π/12 -->
         <button
           type="button"
           class="trig-btn"
-          :class="{ 'is-active': asset.data.snapPi12 }"
+          :class="{ 'is-active': local.snapPi12 }"
           @click.stop="toggle('snapPi12')"
           @mousedown.stop
           @pointerdown.stop
@@ -119,7 +124,6 @@
 
         <span class="trig-sep" />
 
-        <!-- Швидкість -->
         <label class="trig-slider">
           <span>швидкість</span>
           <input
@@ -127,7 +131,7 @@
             min="0.1"
             max="3"
             step="0.05"
-            :value="asset.data.speed"
+            :value="local.speed"
             @input="onSpeedInput"
             @mousedown.stop
             @pointerdown.stop
@@ -153,7 +157,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { TrigCircleAsset, TrigCircleData } from '../../../types/trigCircle'
 import type { TrigCircleInstance } from '../../../vendor/trig'
@@ -184,30 +188,62 @@ const SNAPSHOT_DEBOUNCE_MS = 300
 const animating = ref(false)
 const drawMode  = ref(false)
 
-/* ────── toolbar definitions ────── */
-
-type BoolKey = keyof {
-  [K in keyof TrigCircleData as TrigCircleData[K] extends boolean ? K : never]: true
+/**
+ * LOCAL STATE MIRROR — читати/писати тільки звідси у toggle/jumpTo/onSpeedInput.
+ *
+ * Чому потрібно: props.asset.data оновлюється лише після 300мс snapshot → emit → store.
+ * Якщо toggle читає props.asset.data, то 2-й швидкий клік бачить застарілий стан і
+ * йде в ту ж сторону що й 1-й (no-op). local оновлюється миттєво → кнопки реагують.
+ *
+ * Синхронізація:
+ *   local → engine:  toggle() / jumpTo() / onSpeedInput()
+ *   engine → store:  onChange() → scheduleSnapshot() → emit (300ms debounce)
+ *   store → local:   watch(props.asset.data SYNC_KEYS) → оновити local + engine
+ */
+type LocalState = {
+  showSin: boolean; showCos: boolean; showTan: boolean; showCot: boolean
+  showSpecialPoints: boolean; showRefLabels: boolean
+  showDeg: boolean; showRad: boolean
+  showExactGrid: boolean; showInscribed: boolean
+  showGraphs: boolean; snapPi12: boolean; speed: number
 }
 
+const local = reactive<LocalState>({
+  showSin:           props.asset.data.showSin,
+  showCos:           props.asset.data.showCos,
+  showTan:           props.asset.data.showTan,
+  showCot:           props.asset.data.showCot,
+  showSpecialPoints: props.asset.data.showSpecialPoints,
+  showRefLabels:     props.asset.data.showRefLabels,
+  showDeg:           props.asset.data.showDeg,
+  showRad:           props.asset.data.showRad,
+  showExactGrid:     props.asset.data.showExactGrid,
+  showInscribed:     props.asset.data.showInscribed,
+  showGraphs:        props.asset.data.showGraphs,
+  snapPi12:          props.asset.data.snapPi12,
+  speed:             props.asset.data.speed,
+})
+
+/* ────── toolbar definitions ────── */
+
 const FUNC_TOGGLES = [
-  { key: 'showSin', label: 'sin' },
-  { key: 'showCos', label: 'cos' },
-  { key: 'showTan', label: 'tg'  },
-  { key: 'showCot', label: 'ctg' },
-] as const
+  { key: 'showSin' as const, label: 'sin' },
+  { key: 'showCos' as const, label: 'cos' },
+  { key: 'showTan' as const, label: 'tg'  },
+  { key: 'showCot' as const, label: 'ctg' },
+]
 
 const LABEL_TOGGLES = [
-  { key: 'showDeg',       label: 'градуси'  },
-  { key: 'showRad',       label: 'радіани'  },
-  { key: 'showRefLabels', label: 'значення' },
-] as const
+  { key: 'showDeg'       as const, label: 'градуси'  },
+  { key: 'showRad'       as const, label: 'радіани'  },
+  { key: 'showRefLabels' as const, label: 'значення' },
+]
 
 const GRID_TOGGLES = [
-  { key: 'showExactGrid',     label: 'осі ½·√2/2·√3/2' },
-  { key: 'showInscribed',     label: 'вписані фігури'  },
-  { key: 'showSpecialPoints', label: 'особл. точки'    },
-] as const
+  { key: 'showExactGrid'     as const, label: 'осі ½·√2/2·√3/2' },
+  { key: 'showInscribed'     as const, label: 'вписані фігури'  },
+  { key: 'showSpecialPoints' as const, label: 'особл. точки'    },
+]
 
 const ANGLE_PRESETS = [
   { label: '0',    t: 0 },
@@ -222,7 +258,7 @@ const ANGLE_PRESETS = [
 ] as const
 
 const speedLabel = computed(() =>
-  (props.asset.data.speed ?? 0.6).toFixed(1).replace('.', ',') + '×',
+  local.speed.toFixed(1).replace('.', ',') + '×',
 )
 
 /* ────── lifecycle ────── */
@@ -262,8 +298,6 @@ async function mount(): Promise<void> {
     partialCurves:     false,
   })
 
-  // onChange fires on drag + setOption + setTheta + animation tick.
-  // Debounced snapshot → store via asset_update op.
   trig.onChange = () => scheduleSnapshot()
 }
 
@@ -280,9 +314,9 @@ function destroyTrig(): void {
 onMounted(() => { void mount() })
 onUnmounted(() => { destroyTrig() })
 
-/* ────── remote-op sync ────── */
+/* ────── remote-op sync: store → local + engine ────── */
 
-const SYNC_KEYS: (keyof TrigCircleData)[] = [
+const SYNC_KEYS: (keyof LocalState)[] = [
   'showSin', 'showCos', 'showTan', 'showCot',
   'showSpecialPoints', 'showRefLabels',
   'showDeg', 'showRad',
@@ -296,9 +330,14 @@ watch(
     if (!trig) return
     const d = props.asset.data
     for (const k of SYNC_KEYS) {
-      const v = d[k]
-      if (v !== undefined && (trig.opts as Record<string, unknown>)[k as string] !== v) {
-        trig.setOption(k as never, v as never)
+      const storeVal = d[k]
+      if (storeVal === undefined) continue
+      if ((local[k] as unknown) !== storeVal) {
+        // Update local mirror first (no reactivity loop — watch reads props not local)
+        (local as Record<string, unknown>)[k] = storeVal
+      }
+      if ((trig.opts as Record<string, unknown>)[k as string] !== storeVal) {
+        trig.setOption(k as never, storeVal as never)
       }
     }
   },
@@ -308,24 +347,22 @@ watch(
   () => props.asset.data.theta,
   (next) => {
     if (!trig) return
-    if (Math.abs(trig.opts.theta - next) > 0.0001) {
-      trig.setTheta(next)
-    }
+    if (Math.abs(trig.opts.theta - next) > 0.0001) trig.setTheta(next)
   },
 )
 
 /* ────── toolbar handlers ────── */
 
-function toggle(key: BoolKey): void {
+/** Toggle boolean opt: updates local mirror immediately, engine syncs, onChange → snapshot. */
+function toggle(key: keyof LocalState): void {
   if (!trig) return
-  const next = !props.asset.data[key]
-  trig.setOption(key as never, next as never)
-  // onChange fires → scheduleSnapshot → emit
+  const next = !local[key]
+  ;(local as Record<string, unknown>)[key] = next  // immediate UI update
+  trig.setOption(key as never, next as never)       // onChange → scheduleSnapshot
 }
 
 function jumpTo(theta: number): void {
   if (!trig) return
-  // Stop draw mode if active
   if (drawMode.value) {
     drawMode.value = false
     trig.setOption('partialCurves', false)
@@ -337,7 +374,6 @@ function jumpTo(theta: number): void {
 
 function toggleAnimate(): void {
   if (!trig) return
-  // Disable draw mode first
   if (drawMode.value) {
     drawMode.value = false
     trig.setOption('partialCurves', false)
@@ -352,11 +388,7 @@ function toggleDraw(): void {
   const next = !drawMode.value
   drawMode.value = next
   if (next) {
-    // Stop rotation if running
-    if (animating.value) {
-      animating.value = false
-      trig.setOption('animate', false)
-    }
+    if (animating.value) { animating.value = false; trig.setOption('animate', false) }
     trig.setTheta(0)
     trig.setOption('partialCurves', true)
     trig.setOption('animate', true)
@@ -372,8 +404,8 @@ function onSpeedInput(e: Event): void {
   if (!trig) return
   const v = parseFloat((e.target as HTMLInputElement).value)
   if (!Number.isFinite(v)) return
-  trig.setOption('speed', v)
-  // onChange → scheduleSnapshot — speed persisted
+  local.speed = v                    // immediate label update
+  trig.setOption('speed', v)         // onChange → scheduleSnapshot
 }
 
 /* ────── snapshot → store ────── */
@@ -541,7 +573,6 @@ function onDelete(): void { emit('delete') }
   font-size: 10px;
 }
 
-/* Speed slider */
 .trig-slider {
   display: inline-flex;
   align-items: center;
@@ -562,7 +593,6 @@ function onDelete(): void { emit('delete') }
   font-size: 10px;
 }
 
-/* Delete button */
 .trig-circle-delete {
   flex: 0 0 auto;
   width: 18px;
