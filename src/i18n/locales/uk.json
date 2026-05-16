@@ -7457,6 +7457,7 @@
       "graphCalcLabel": "Графічний калькулятор",
       "calculusHeader": "Похідна · Первісна",
       "trigCircleHeader": "Тригонометрія",
+      "helixHeader": "Гелікс 3D",
       "search": "Пошук матеріалів...",
       "filterAll": "Всі",
       "pasteFilterTitle": "Показати лише вставлені з буферу",
@@ -7749,6 +7750,11 @@
       "cardTitle": "Тригонометричне коло",
       "btnLabel": "Тригонометрія",
       "btnTitle": "Одиничне коло ↔ графік sin · cos · tg · ctg"
+    },
+    "helix": {
+      "cardTitle": "Гелікс 3D",
+      "btnLabel": "Гелікс",
+      "btnTitle": "3D-гелікс P = (θ, sin θ, cos θ) — три проєкції"
     },
     "calculus": {
       "exprPlaceholder": "y = f(x), напр. x^2",

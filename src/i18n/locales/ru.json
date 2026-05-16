@@ -7097,7 +7097,8 @@
       "trayDragHint": "Перетащите на доску",
       "graphCalcLabel": "Графический калькулятор",
       "calculusHeader": "Производная · Первообразная",
-      "trigCircleHeader": "Тригонометрия"
+      "trigCircleHeader": "Тригонометрия",
+      "helixHeader": "Геликс 3D"
     },
     "templates": {
       "chooseTemplate": "Выберите шаблон доски",
@@ -7701,6 +7702,11 @@
       "cardTitle": "Тригонометрический круг",
       "btnLabel": "Тригонометрия",
       "btnTitle": "Единичная окружность ↔ график sin · cos · tg · ctg"
+    },
+    "helix": {
+      "cardTitle": "Геликс 3D",
+      "btnLabel": "Геликс",
+      "btnTitle": "3D-геликс P = (θ, sin θ, cos θ) — три проекции"
     },
     "calculus": {
       "exprPlaceholder": "y = f(x), напр. x^2",

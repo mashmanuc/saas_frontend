@@ -49,6 +49,14 @@ import {
   buildDefaultTrigCircleData,
 } from '../constants/trigCircleDefaults'
 import type { TrigCircleAsset } from '../types/trigCircle'
+// Helix (2026-05-17) — 3D helix P=(θ, sin θ, cos θ) visualization widget drop wiring.
+import {
+  HELIX_DRAG_MIME,
+  DEFAULT_HELIX_W,
+  DEFAULT_HELIX_H,
+  buildDefaultHelixData,
+} from '../constants/helixDefaults'
+import type { HelixAsset } from '../types/helix'
 
 // Phase O PR-O4: 10 fixed solid types — must match SolidType union exactly.
 const SOLID_TYPE_SET: ReadonlySet<SolidType> = new Set([
@@ -187,6 +195,28 @@ export function useContentDrop(options: UseContentDropOptions) {
         rotation: 0,
         locked: false,
         data: buildDefaultTrigCircleData(),
+      }
+      onAssetAdd(asset as unknown as WBAsset)
+      return
+    }
+
+    // Helix (2026-05-17) — 3D helix P=(θ, sin θ, cos θ) widget drag.
+    // Payload {type:'helix'}; default state hydrates через buildDefaultHelixData.
+    // 1 drop = 1 asset_add = 1 broadcast (INV-13 ATOMIC-APPLY).
+    const helixRaw = event.dataTransfer?.getData(HELIX_DRAG_MIME)
+    if (helixRaw) {
+      const canvasPos = screenToCanvas(event.clientX, event.clientY)
+      const asset: HelixAsset = {
+        id: `helix-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        type: 'helix',
+        src: '',
+        x: canvasPos.x - DEFAULT_HELIX_W / 2,
+        y: canvasPos.y - DEFAULT_HELIX_H / 2,
+        w: DEFAULT_HELIX_W,
+        h: DEFAULT_HELIX_H,
+        rotation: 0,
+        locked: false,
+        data: buildDefaultHelixData(),
       }
       onAssetAdd(asset as unknown as WBAsset)
       return

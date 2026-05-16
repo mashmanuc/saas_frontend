@@ -92,6 +92,14 @@
             :config="{ ...getSolidProxyConfig(asset), id: asset.id, name: 'asset' }"
             @transformend="handleAssetTransformEnd(asset, $event)"
           />
+          <!-- Helix (2026-05-17): helix Konva proxy (invisible Rect).
+               HTML overlay (canvas через bundle's HelixView) ABOVE з
+               pointer-events:none — Konva proxy ловить drag/resize/select. -->
+          <v-rect
+            v-else-if="asset.type === 'helix'"
+            :config="{ ...getSolidProxyConfig(asset), id: asset.id, name: 'asset' }"
+            @transformend="handleAssetTransformEnd(asset, $event)"
+          />
           <!-- v5 A9: Sticky note rendering -->
           <WBStickyNote
             v-else-if="asset.type === 'sticky'"
@@ -462,6 +470,31 @@
       </div>
     </template>
 
+    <!-- Helix (2026-05-17): helix overlay (HTML, non-Konva).
+         Mirror .wb-trig-circle-overlay pattern. -->
+    <template v-for="asset in helixAssets" :key="`helix-${asset.id}`">
+      <div
+        class="wb-helix-overlay"
+        :class="{ 'wb-helix-overlay--selected': wbStore.selectedIds.includes(asset.id) }"
+        :data-helix-id="asset.id"
+        :data-testid="`helix-overlay-${asset.id}`"
+        :style="{
+          left: `${asset.x * props.zoom}px`,
+          top: `${asset.y * props.zoom}px`,
+          width: `${asset.w * props.zoom}px`,
+          height: `${asset.h * props.zoom}px`,
+        }"
+      >
+        <HelixRenderer
+          :asset="(asset as any)"
+          :is-selected="wbStore.selectedIds.includes(asset.id)"
+          :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
+          @update:asset="(updated: any) => emit('asset-update', updated as WBAsset)"
+          @delete="emit('asset-delete', asset.id)"
+        />
+      </div>
+    </template>
+
     <!-- BUG-2 FIX: Laser trail — fading dots behind the pointer -->
     <div
       v-for="(tp, idx) in laserTrailWithOpacity"
@@ -619,6 +652,8 @@ import Geometry2DRenderer from '../board/objects/Geometry2DRenderer.vue'
 import CalculusRenderer from '../board/objects/CalculusRenderer.vue'
 // TrigCircle (2026-05-16): unit circle ↔ sin/cos/tg/ctg graph renderer
 import TrigCircleRenderer from '../board/objects/TrigCircleRenderer.vue'
+// Helix (2026-05-17): 3D helix P=(θ, sin θ, cos θ) renderer
+import HelixRenderer from '../board/objects/HelixRenderer.vue'
 // Phase G (2026-05-06): graph_calculator HTML overlay renderer
 import GraphCalculatorRenderer from '../board/objects/GraphCalculatorRenderer.vue'
 import { loadKonva } from '../../engine/konvaLoader'
@@ -743,6 +778,11 @@ const calculusAssets = computed(() =>
 // (canvas через bundle's TrigCircle). Mirror calculus overlay pattern.
 const trigCircleAssets = computed(() =>
   assets.value.filter(a => a.type === 'trig_circle'),
+)
+// Helix (2026-05-17): helix rendered as HTML overlay
+// (canvas через bundle's HelixView). Mirror trig_circle overlay pattern.
+const helixAssets = computed(() =>
+  assets.value.filter(a => a.type === 'helix'),
 )
 
 // Phase 3C: Type cast helpers for media assets
@@ -4524,5 +4564,20 @@ defineExpose({
 .wb-trig-circle-overlay--selected {
   border-color: rgba(168, 58, 91, 0.6);
   box-shadow: 0 0 0 1px rgba(168, 58, 91, 0.4);
+}
+
+/* Helix (2026-05-17) — 3D helix P=(θ, sin θ, cos θ) overlay
+   (mirror .wb-trig-circle-overlay). helix color = #c4622a. */
+.wb-helix-overlay {
+  position: absolute;
+  z-index: 4;
+  border: 1px solid rgba(196, 98, 42, 0.22);
+  border-radius: 6px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.wb-helix-overlay--selected {
+  border-color: rgba(196, 98, 42, 0.6);
+  box-shadow: 0 0 0 1px rgba(196, 98, 42, 0.4);
 }
 </style>

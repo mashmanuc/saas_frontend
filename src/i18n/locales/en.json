@@ -6725,6 +6725,7 @@
       "graphCalcLabel": "Function plotter",
       "calculusHeader": "Derivative · Integral",
       "trigCircleHeader": "Trigonometry",
+      "helixHeader": "Helix 3D",
       "search": "Search materials...",
       "filterAll": "All",
       "pasteFilterTitle": "Show clipboard-pasted items only",
@@ -7616,6 +7617,11 @@
       "cardTitle": "Unit circle",
       "btnLabel": "Trigonometry",
       "btnTitle": "Unit circle ↔ sin · cos · tan · cot graph"
+    },
+    "helix": {
+      "cardTitle": "Helix 3D",
+      "btnLabel": "Helix",
+      "btnTitle": "3D helix P = (θ, sin θ, cos θ) — three projections"
     },
     "calculus": {
       "exprPlaceholder": "y = f(x), e.g. x^2",

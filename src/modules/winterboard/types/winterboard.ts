@@ -201,6 +201,8 @@ export interface WBAsset {
     | 'calculus_card'
     /** TrigCircle (2026-05-16) — unit circle ↔ sin/cos/tg/ctg graph widget. */
     | 'trig_circle'
+    /** Helix (2026-05-17) — 3D helix P=(θ, sin θ, cos θ) visualization widget. */
+    | 'helix'
   /**
    * Asset source descriptor.
    * - URL для image/audio/video/document_viewer
@@ -288,6 +290,7 @@ export interface WBAsset {
     | import('./geometry2dV2').Geometry2DV2Data
     | import('./calculus').CalculusData
     | import('./trigCircle').TrigCircleData
+    | import('./helix').HelixData
 }
 
 /**

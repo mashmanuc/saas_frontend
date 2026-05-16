@@ -179,6 +179,7 @@
         <Geometry2DTray />
         <CalculusTray />
         <TrigCircleTray />
+        <HelixTray />
       </div>
     </template>
 
@@ -201,6 +202,8 @@ import Geometry2DTray from './Geometry2DTray.vue'
 import CalculusTray from './CalculusTray.vue'
 // TrigCircle (2026-05-16): unit circle ↔ sin/cos/tg/ctg graph tray
 import TrigCircleTray from './TrigCircleTray.vue'
+// Helix (2026-05-17): 3D helix P=(θ, sin θ, cos θ) visualization tray
+import HelixTray from './HelixTray.vue'
 // Phase G (2026-05-06): graph_calculator interactive widget tray
 import GraphCalculatorTray from './GraphCalculatorTray.vue'
 import StorageQuotaBar from '@/modules/learning-content/components/StorageQuotaBar.vue'
