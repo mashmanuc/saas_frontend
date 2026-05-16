@@ -24,18 +24,29 @@
     remote ops sync: watch на props.asset.data → оновлює local + engine.
 -->
 <template>
+  <Teleport :disabled="!expanded" to="body">
   <div
     class="trig-circle-renderer"
     :class="{
       'is-selected': isSelected,
       'is-readonly': !interactive,
+      'is-expanded': expanded,
     }"
     :data-testid="`trig-circle-renderer-${asset.id}`"
   >
     <header class="trig-circle-header">
       <span class="trig-circle-title">{{ t('winterboard.trigCircle.cardTitle') }}</span>
+      <!-- Expand / collapse button — always visible -->
       <button
-        v-if="!asset.locked && isSelected"
+        type="button"
+        class="trig-circle-expand"
+        :title="expanded ? 'Згорнути' : 'Розгорнути на цілу дошку'"
+        @click.stop="expanded = !expanded"
+        @mousedown.stop
+        @pointerdown.stop
+      >{{ expanded ? '⊠' : '⛶' }}</button>
+      <button
+        v-if="!asset.locked && isSelected && !expanded"
         type="button"
         class="trig-circle-delete"
         :title="t('common.delete')"
@@ -154,6 +165,7 @@
       </div>
     </div>
   </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -187,6 +199,8 @@ const SNAPSHOT_DEBOUNCE_MS = 300
 /** Local-only runtime state — not persisted. */
 const animating = ref(false)
 const drawMode  = ref(false)
+/** Fullscreen expand state — local-only, not persisted. */
+const expanded  = ref(false)
 
 /**
  * LOCAL STATE MIRROR — читати/писати тільки звідси у toggle/jumpTo/onSpeedInput.
@@ -311,8 +325,16 @@ function destroyTrig(): void {
   }
 }
 
-onMounted(() => { void mount() })
-onUnmounted(() => { destroyTrig() })
+function _onEsc(e: KeyboardEvent) { if (e.key === 'Escape') expanded.value = false }
+
+onMounted(() => {
+  void mount()
+  window.addEventListener('keydown', _onEsc)
+})
+onUnmounted(() => {
+  destroyTrig()
+  window.removeEventListener('keydown', _onEsc)
+})
 
 /* ────── remote-op sync: store → local + engine ────── */
 
@@ -619,5 +641,58 @@ function onDelete(): void { emit('delete') }
 .trig-circle-delete:hover {
   background: #dc2626;
   border-color: #f87171;
+}
+
+/* ── Expand button ── */
+.trig-circle-expand {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.55);
+  color: #f8fafc;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  border-radius: 4px;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.trig-circle-expand:hover {
+  background: #475569;
+  border-color: #94a3b8;
+}
+.trig-circle-renderer.is-readonly .trig-circle-expand {
+  pointer-events: none;
+  opacity: 0.35;
+}
+
+/* ── Fullscreen (expanded) ── */
+.trig-circle-renderer.is-expanded {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: all;
+  border-radius: 0;
+  width: 100vw;
+  height: 100dvh;
+  box-shadow: none;
+}
+.trig-circle-renderer.is-expanded .trig-circle-header {
+  cursor: default;
+  padding: 6px 12px;
+  font-size: 13px;
+  background: rgba(168, 58, 91, 0.14);
+}
+.trig-circle-renderer.is-expanded .trig-circle-expand {
+  width: 24px;
+  height: 24px;
+  font-size: 13px;
+}
+.trig-circle-renderer.is-expanded .trig-toolbar {
+  padding: 7px 10px;
 }
 </style>

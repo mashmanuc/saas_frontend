@@ -12,18 +12,29 @@
   animate + animateCamera — local-only (не персистяться).
 -->
 <template>
+  <Teleport :disabled="!expanded" to="body">
   <div
     class="helix-renderer"
     :class="{
       'is-selected': isSelected,
       'is-readonly': !interactive,
+      'is-expanded': expanded,
     }"
     :data-testid="`helix-renderer-${asset.id}`"
   >
     <header class="helix-header">
       <span class="helix-title">{{ t('winterboard.helix.cardTitle') }}</span>
+      <!-- Expand / collapse button — always visible -->
       <button
-        v-if="!asset.locked && isSelected"
+        type="button"
+        class="helix-expand"
+        :title="expanded ? 'Згорнути' : 'Розгорнути на цілу дошку'"
+        @click.stop="expanded = !expanded"
+        @mousedown.stop
+        @pointerdown.stop
+      >{{ expanded ? '⊠' : '⛶' }}</button>
+      <button
+        v-if="!asset.locked && isSelected && !expanded"
         type="button"
         class="helix-delete"
         :title="t('common.delete')"
@@ -139,6 +150,7 @@
       </div>
     </div>
   </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -172,6 +184,8 @@ const SNAPSHOT_DEBOUNCE_MS = 300
 /** Local-only runtime state — не персистяться. */
 const animating    = ref(false)
 const animatingCam = ref(false)
+/** Fullscreen expand state — local-only, not persisted. */
+const expanded     = ref(false)
 
 /* ────── toolbar definitions ────── */
 
@@ -278,8 +292,16 @@ function destroyHelix(): void {
   }
 }
 
-onMounted(() => { void mount() })
-onUnmounted(() => { destroyHelix() })
+function _onEsc(e: KeyboardEvent) { if (e.key === 'Escape') expanded.value = false }
+
+onMounted(() => {
+  void mount()
+  window.addEventListener('keydown', _onEsc)
+})
+onUnmounted(() => {
+  destroyHelix()
+  window.removeEventListener('keydown', _onEsc)
+})
 
 /* ────── remote-op sync: store → local + engine ────── */
 
@@ -555,5 +577,58 @@ function onDelete(): void { emit('delete') }
 .helix-delete:hover {
   background: #dc2626;
   border-color: #f87171;
+}
+
+/* ── Expand button ── */
+.helix-expand {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.55);
+  color: #f8fafc;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  border-radius: 4px;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.helix-expand:hover {
+  background: #475569;
+  border-color: #94a3b8;
+}
+.helix-renderer.is-readonly .helix-expand {
+  pointer-events: none;
+  opacity: 0.35;
+}
+
+/* ── Fullscreen (expanded) ── */
+.helix-renderer.is-expanded {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: all;
+  border-radius: 0;
+  width: 100vw;
+  height: 100dvh;
+  box-shadow: none;
+}
+.helix-renderer.is-expanded .helix-header {
+  cursor: default;
+  padding: 6px 12px;
+  font-size: 13px;
+  background: rgba(196, 98, 42, 0.14);
+}
+.helix-renderer.is-expanded .helix-expand {
+  width: 24px;
+  height: 24px;
+  font-size: 13px;
+}
+.helix-renderer.is-expanded .helix-toolbar {
+  padding: 7px 10px;
 }
 </style>
