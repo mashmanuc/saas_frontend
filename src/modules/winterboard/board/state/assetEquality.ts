@@ -148,6 +148,15 @@ export function assetsEqualByOpsFields(a: WBAsset, b: WBAsset): boolean {
     if (a.type === 'geometry_2d_v2' || b.type === 'geometry_2d_v2') {
       try { return JSON.stringify(aData) === JSON.stringify(bData) } catch { return false }
     }
+    // Phase Calculus (2026-05-15): calculus_card data — flat envelope з полями
+    // expr/mode/x0/showSecant/h/showDerivTrace/a/b/riemann/N/showF/viewport.
+    // НЕ має поля 'state' (як solid), не вписується у SOLID_STATE_KEYS check.
+    // JSON.stringify — single source of truth для toggle/slider state.
+    // БЕЗ цієї гілки toggle('showF') silent-skip'ався Layer-A filter-ом →
+    // showF up до bundle ніколи не доходив → крива F(x) не рендерилась.
+    if (a.type === 'calculus_card' || b.type === 'calculus_card') {
+      try { return JSON.stringify(aData) === JSON.stringify(bData) } catch { return false }
+    }
     // Solid path: ABi data is SolidAssetData з полем 'state'.
     const aState = (aData as { state: unknown }).state
     const bState = (bData as { state: unknown }).state
