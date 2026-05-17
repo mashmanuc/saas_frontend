@@ -175,7 +175,6 @@
     <template v-else>
       <div class="content-sidebar__tools-tab">
         <SolidsTray />
-        <GraphCalculatorTray />
         <Geometry2DTray />
         <CalculusTray />
         <TrigCircleTray />
@@ -202,8 +201,7 @@ import CalculusTray from './CalculusTray.vue'
 // TrigCircle (2026-05-16): unit circle ↔ sin/cos/tg/ctg graph tray
 import TrigCircleTray from './TrigCircleTray.vue'
 
-// Phase G (2026-05-06): graph_calculator interactive widget tray
-import GraphCalculatorTray from './GraphCalculatorTray.vue'
+
 import StorageQuotaBar from '@/modules/learning-content/components/StorageQuotaBar.vue'
 import { learningContentApi } from '@/modules/learning-content/api/learningContentApi'
 import type { StorageQuota } from '@/modules/learning-content/api/learningContentApi'

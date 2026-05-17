@@ -12,13 +12,12 @@
   animate + animateCamera — local-only (не персистяться).
 -->
 <template>
-  <Teleport :disabled="!expanded" to="body">
   <div
     class="helix-renderer"
     :class="{
       'is-selected': isSelected,
       'is-readonly': !interactive,
-      'is-expanded': expanded,
+      'is-expanded': isExpanded,
     }"
     :data-testid="`helix-renderer-${asset.id}`"
   >
@@ -28,13 +27,13 @@
       <button
         type="button"
         class="helix-expand"
-        :title="expanded ? 'Згорнути' : 'Розгорнути на цілу дошку'"
-        @click.stop="expanded = !expanded"
+        :title="isExpanded ? 'Згорнути' : 'Розгорнути на цілу дошку'"
+        @click.stop="$emit('expand')"
         @mousedown.stop
         @pointerdown.stop
-      >{{ expanded ? '⊠' : '⛶' }}</button>
+      >{{ isExpanded ? '⊠' : '⛶' }}</button>
       <button
-        v-if="!asset.locked && isSelected && !expanded"
+        v-if="!asset.locked && isSelected && !isExpanded"
         type="button"
         class="helix-delete"
         :title="t('common.delete')"
@@ -150,7 +149,6 @@
       </div>
     </div>
   </div>
-  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -166,13 +164,15 @@ const props = withDefaults(
     asset: HelixAsset
     isSelected?: boolean
     interactive?: boolean
+    isExpanded?: boolean
   }>(),
-  { isSelected: false, interactive: true },
+  { isSelected: false, interactive: true, isExpanded: false },
 )
 
 const emit = defineEmits<{
   'update:asset': [asset: HelixAsset]
   delete: []
+  expand: []
 }>()
 
 const stageRef = ref<HTMLElement | null>(null)
@@ -184,8 +184,6 @@ const SNAPSHOT_DEBOUNCE_MS = 300
 /** Local-only runtime state — не персистяться. */
 const animating    = ref(false)
 const animatingCam = ref(false)
-/** Fullscreen expand state — local-only, not persisted. */
-const expanded     = ref(false)
 
 /* ────── toolbar definitions ────── */
 
@@ -292,7 +290,7 @@ function destroyHelix(): void {
   }
 }
 
-function _onEsc(e: KeyboardEvent) { if (e.key === 'Escape') expanded.value = false }
+function _onEsc(e: KeyboardEvent) { if (e.key === 'Escape' && props.isExpanded) emit('expand') }
 
 onMounted(() => {
   void mount()
@@ -606,16 +604,9 @@ function onDelete(): void { emit('delete') }
   opacity: 0.35;
 }
 
-/* ── Fullscreen (expanded) ── */
+/* ── Board-expanded (overlay розширено WBCanvas до inset:0) ── */
 .helix-renderer.is-expanded {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  pointer-events: all;
   border-radius: 0;
-  width: 100vw;
-  height: 100dvh;
-  box-shadow: none;
 }
 .helix-renderer.is-expanded .helix-header {
   cursor: default;

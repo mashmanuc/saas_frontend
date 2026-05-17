@@ -450,22 +450,24 @@
     <template v-for="asset in trigCircleAssets" :key="`trig-${asset.id}`">
       <div
         class="wb-trig-circle-overlay"
-        :class="{ 'wb-trig-circle-overlay--selected': wbStore.selectedIds.includes(asset.id) }"
+        :class="{
+          'wb-trig-circle-overlay--selected': wbStore.selectedIds.includes(asset.id),
+          'wb-overlay--board-expanded': expandedAssetId === asset.id,
+        }"
         :data-trig-id="asset.id"
         :data-testid="`trig-circle-overlay-${asset.id}`"
-        :style="{
-          left: `${asset.x * props.zoom}px`,
-          top: `${asset.y * props.zoom}px`,
-          width: `${asset.w * props.zoom}px`,
-          height: `${asset.h * props.zoom}px`,
-        }"
+        :style="expandedAssetId === asset.id
+          ? { position: 'absolute', left: '0', top: '0', width: '100%', height: '100%', zIndex: '50' }
+          : { left: `${asset.x * props.zoom}px`, top: `${asset.y * props.zoom}px`, width: `${asset.w * props.zoom}px`, height: `${asset.h * props.zoom}px` }"
       >
         <TrigCircleRenderer
           :asset="(asset as any)"
           :is-selected="wbStore.selectedIds.includes(asset.id)"
           :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
+          :is-expanded="expandedAssetId === asset.id"
           @update:asset="(updated: any) => emit('asset-update', updated as WBAsset)"
           @delete="emit('asset-delete', asset.id)"
+          @expand="expandedAssetId = expandedAssetId === asset.id ? null : asset.id"
         />
       </div>
     </template>
@@ -475,22 +477,24 @@
     <template v-for="asset in helixAssets" :key="`helix-${asset.id}`">
       <div
         class="wb-helix-overlay"
-        :class="{ 'wb-helix-overlay--selected': wbStore.selectedIds.includes(asset.id) }"
+        :class="{
+          'wb-helix-overlay--selected': wbStore.selectedIds.includes(asset.id),
+          'wb-overlay--board-expanded': expandedAssetId === asset.id,
+        }"
         :data-helix-id="asset.id"
         :data-testid="`helix-overlay-${asset.id}`"
-        :style="{
-          left: `${asset.x * props.zoom}px`,
-          top: `${asset.y * props.zoom}px`,
-          width: `${asset.w * props.zoom}px`,
-          height: `${asset.h * props.zoom}px`,
-        }"
+        :style="expandedAssetId === asset.id
+          ? { position: 'absolute', left: '0', top: '0', width: '100%', height: '100%', zIndex: '50' }
+          : { left: `${asset.x * props.zoom}px`, top: `${asset.y * props.zoom}px`, width: `${asset.w * props.zoom}px`, height: `${asset.h * props.zoom}px` }"
       >
         <HelixRenderer
           :asset="(asset as any)"
           :is-selected="wbStore.selectedIds.includes(asset.id)"
           :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
+          :is-expanded="expandedAssetId === asset.id"
           @update:asset="(updated: any) => emit('asset-update', updated as WBAsset)"
           @delete="emit('asset-delete', asset.id)"
+          @expand="expandedAssetId = expandedAssetId === asset.id ? null : asset.id"
         />
       </div>
     </template>
@@ -784,6 +788,12 @@ const trigCircleAssets = computed(() =>
 const helixAssets = computed(() =>
   assets.value.filter(a => a.type === 'helix'),
 )
+
+// Expand-to-board: одночасно може бути розгорнутий тільки один asset.
+// Зберігає id розгорнутого asset, null = нічого не розгорнуто.
+// Expanded overlay займає position:absolute;inset:0 у межах .wb-canvas
+// (не full-viewport) — toolbar/sidebar залишаються видимими.
+const expandedAssetId = ref<string | null>(null)
 
 // Phase 3C: Type cast helpers for media assets
 function asAudioAsset(asset: WBAsset): WBAudioAsset { return asset as unknown as WBAudioAsset }
@@ -4579,5 +4589,13 @@ defineExpose({
 .wb-helix-overlay--selected {
   border-color: rgba(196, 98, 42, 0.6);
   box-shadow: 0 0 0 1px rgba(196, 98, 42, 0.4);
+}
+
+/* Board-expand state (shared) — overlay займає всю дошку;
+   позиція задається inline style, тут лише скидаємо border/radius. */
+.wb-overlay--board-expanded {
+  border-radius: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 </style>

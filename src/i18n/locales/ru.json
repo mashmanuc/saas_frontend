@@ -7096,7 +7096,7 @@
       "geo2dHeader": "Геометрия 2D",
       "trayDragHint": "Перетащите на доску",
       "graphCalcLabel": "Графический калькулятор",
-      "calculusHeader": "Производная · Первообразная",
+      "calculusHeader": "Анализ функций",
       "trigCircleHeader": "Тригонометрия",
       "helixHeader": "Геликс 3D"
     },

@@ -24,13 +24,12 @@
     remote ops sync: watch на props.asset.data → оновлює local + engine.
 -->
 <template>
-  <Teleport :disabled="!expanded" to="body">
   <div
     class="trig-circle-renderer"
     :class="{
       'is-selected': isSelected,
       'is-readonly': !interactive,
-      'is-expanded': expanded,
+      'is-expanded': isExpanded,
     }"
     :data-testid="`trig-circle-renderer-${asset.id}`"
   >
@@ -40,13 +39,13 @@
       <button
         type="button"
         class="trig-circle-expand"
-        :title="expanded ? 'Згорнути' : 'Розгорнути на цілу дошку'"
-        @click.stop="expanded = !expanded"
+        :title="isExpanded ? 'Згорнути' : 'Розгорнути на цілу дошку'"
+        @click.stop="$emit('expand')"
         @mousedown.stop
         @pointerdown.stop
-      >{{ expanded ? '⊠' : '⛶' }}</button>
+      >{{ isExpanded ? '⊠' : '⛶' }}</button>
       <button
-        v-if="!asset.locked && isSelected && !expanded"
+        v-if="!asset.locked && isSelected && !isExpanded"
         type="button"
         class="trig-circle-delete"
         :title="t('common.delete')"
@@ -165,7 +164,6 @@
       </div>
     </div>
   </div>
-  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -181,13 +179,15 @@ const props = withDefaults(
     asset: TrigCircleAsset
     isSelected?: boolean
     interactive?: boolean
+    isExpanded?: boolean
   }>(),
-  { isSelected: false, interactive: true },
+  { isSelected: false, interactive: true, isExpanded: false },
 )
 
 const emit = defineEmits<{
   'update:asset': [asset: TrigCircleAsset]
   delete: []
+  expand: []
 }>()
 
 const stageRef = ref<HTMLElement | null>(null)
@@ -199,8 +199,6 @@ const SNAPSHOT_DEBOUNCE_MS = 300
 /** Local-only runtime state — not persisted. */
 const animating = ref(false)
 const drawMode  = ref(false)
-/** Fullscreen expand state — local-only, not persisted. */
-const expanded  = ref(false)
 
 /**
  * LOCAL STATE MIRROR — читати/писати тільки звідси у toggle/jumpTo/onSpeedInput.
@@ -325,7 +323,7 @@ function destroyTrig(): void {
   }
 }
 
-function _onEsc(e: KeyboardEvent) { if (e.key === 'Escape') expanded.value = false }
+function _onEsc(e: KeyboardEvent) { if (e.key === 'Escape' && props.isExpanded) emit('expand') }
 
 onMounted(() => {
   void mount()
@@ -670,16 +668,9 @@ function onDelete(): void { emit('delete') }
   opacity: 0.35;
 }
 
-/* ── Fullscreen (expanded) ── */
+/* ── Board-expanded (overlay розширено WBCanvas до inset:0) ── */
 .trig-circle-renderer.is-expanded {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  pointer-events: all;
   border-radius: 0;
-  width: 100vw;
-  height: 100dvh;
-  box-shadow: none;
 }
 .trig-circle-renderer.is-expanded .trig-circle-header {
   cursor: default;
