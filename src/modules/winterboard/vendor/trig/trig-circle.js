@@ -117,6 +117,10 @@
       if (k === 'animate') {
         if (v) { this._animLast = performance.now(); requestAnimationFrame(this._tickAnim); }
       }
+      // snap π/12 enabled → immediately snap current theta to nearest multiple
+      if (k === 'snapPi12' && v) {
+        this.opts.theta = Math.round(this.opts.theta / (Math.PI / 12)) * (Math.PI / 12);
+      }
       this._render();
       if (this.onChange) this.onChange();
     }
