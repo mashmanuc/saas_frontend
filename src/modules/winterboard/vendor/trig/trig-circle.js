@@ -318,7 +318,7 @@
           { v: 1,           lab: '1',    sign: 1 },
         ];
         ctx.fillStyle = PAL.axisLab;
-        ctx.font = `${10*dpr}px JetBrains Mono, monospace`;
+        ctx.font = `${13*dpr}px JetBrains Mono, monospace`;
         ctx.textAlign = 'center'; ctx.textBaseline = 'top';
         for (const t of ticks) {
           for (const s of [-1, 1]) {
@@ -327,7 +327,7 @@
             ctx.moveTo(cx + dx, cy - 4*dpr);
             ctx.lineTo(cx + dx, cy + 4*dpr);
             ctx.stroke();
-            ctx.fillText(s < 0 ? '−' + t.lab : t.lab, cx + dx, cy + 6*dpr);
+            ctx.fillText(s < 0 ? '−' + t.lab : t.lab, cx + dx, cy + 8*dpr);
           }
         }
         ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
@@ -338,7 +338,7 @@
             ctx.moveTo(cx - 4*dpr, cy + dy);
             ctx.lineTo(cx + 4*dpr, cy + dy);
             ctx.stroke();
-            ctx.fillText(s < 0 ? '−' + t.lab : t.lab, cx - 6*dpr, cy + dy);
+            ctx.fillText(s < 0 ? '−' + t.lab : t.lab, cx - 8*dpr, cy + dy);
           }
         }
         // inscribed shapes (square, hex, equilateral pair) using special angle dots
@@ -363,9 +363,9 @@
 
       // special-angle labels (deg / rad)
       if (this.opts.showDeg || this.opts.showRad) {
-        ctx.font = `600 ${11*dpr}px JetBrains Mono, monospace`;
+        ctx.font = `600 ${14*dpr}px JetBrains Mono, monospace`;
         for (const a of SPECIAL_ANGLES) {
-          const off = 18 * dpr;
+          const off = 22 * dpr;
           const lx = cx + (r + off) * Math.cos(a.rad);
           const ly = cy - (r + off) * Math.sin(a.rad);
           // text-align based on quadrant
@@ -375,7 +375,7 @@
           const degTxt = a.deg + '°';
           const radTxt = piFractionLabel(a.num, a.den);
           // stack lines
-          const lh = 13 * dpr;
+          const lh = 16 * dpr;
           if (this.opts.showDeg && this.opts.showRad) {
             ctx.fillStyle = PAL.rad;
             ctx.fillText(radTxt, lx, ly);
@@ -413,10 +413,10 @@
         if (this.opts.showRefLabels) {
           const value = Math.sin(theta);
           ctx.fillStyle = PAL.sin;
-          ctx.font = `600 ${11*dpr}px JetBrains Mono, monospace`;
+          ctx.font = `600 ${14*dpr}px JetBrains Mono, monospace`;
           ctx.textAlign = P.x > cx ? 'left' : 'right';
           ctx.textBaseline = 'middle';
-          ctx.fillText('sin θ = ' + exactLabel(value), P.x + (P.x > cx ? 8*dpr : -8*dpr), (foot.y + P.y) / 2);
+          ctx.fillText('sin θ = ' + exactLabel(value), P.x + (P.x > cx ? 10*dpr : -10*dpr), (foot.y + P.y) / 2);
         }
       }
       // cos segment — horizontal from O to (cosθ,0)  (blue)
@@ -427,9 +427,9 @@
         if (this.opts.showRefLabels) {
           const value = Math.cos(theta);
           ctx.fillStyle = PAL.cos;
-          ctx.font = `600 ${11*dpr}px JetBrains Mono, monospace`;
+          ctx.font = `600 ${14*dpr}px JetBrains Mono, monospace`;
           ctx.textAlign = 'center'; ctx.textBaseline = P.y > cy ? 'top' : 'bottom';
-          const off = P.y > cy ? 8*dpr : -8*dpr;
+          const off = P.y > cy ? 10*dpr : -10*dpr;
           ctx.fillText('cos θ = ' + exactLabel(value), (cx + P.x) / 2, cy + off);
         }
       }
@@ -473,7 +473,7 @@
       ctx.fillStyle = '#2b2118';
       ctx.beginPath(); ctx.arc(cx, cy, 3 * dpr, 0, TAU); ctx.fill();
       ctx.fillStyle = PAL.axisLab;
-      ctx.font = `${11*dpr}px JetBrains Mono, monospace`;
+      ctx.font = `${13*dpr}px JetBrains Mono, monospace`;
       ctx.textAlign = 'right'; ctx.textBaseline = 'top';
       ctx.fillText('O', cx - 5*dpr, cy + 4*dpr);
 
@@ -531,7 +531,7 @@
       // gridlines at sin/cos values ±½, ±√2/2, ±√3/2, ±1
       ctx.strokeStyle = PAL.gridMinor; ctx.lineWidth = 1 * dpr;
       ctx.fillStyle = PAL.axisLab;
-      ctx.font = `${10*dpr}px JetBrains Mono, monospace`;
+      ctx.font = `${13*dpr}px JetBrains Mono, monospace`;
       ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
       const vals = [
         { v: 0.5, lab: '½' },
@@ -544,10 +544,11 @@
           const y = mid - s * t.v * half;
           ctx.beginPath(); ctx.moveTo(G.x0, y); ctx.lineTo(G.x1, y); ctx.stroke();
           ctx.fillStyle = PAL.axisLab;
-          ctx.fillText(s < 0 ? '−' + t.lab : t.lab, G.x0 - 4 * dpr, y);
+          ctx.fillText(s < 0 ? '−' + t.lab : t.lab, G.x0 - 6 * dpr, y);
         }
       }
       // vertical gridlines + π-fraction labels along x
+      ctx.font = `${10*dpr}px JetBrains Mono, monospace`;
       const labels = [
         { t: 0, lab: '0' },
         { t: 1/12, lab: 'π/6' },
