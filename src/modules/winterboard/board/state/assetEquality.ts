@@ -131,6 +131,8 @@ const FLAT_DATA_ASSET_TYPES = new Set<WBAsset['type']>([
   'calculus_card',     // §3.7.4 — mode, expr, x0/a/b/riemann/N/showF/viewport
   'trig_circle',       // §3.7.5 — theta, showSin/Cos/Tan/Cot, snapPi12, speed, ...
   'helix',             // §3.7.6 — theta, phi, pitch, showHelix/Sin/Cos/Circle, ...
+  'trig_equation',     // §3.7.7 — func, value, showFormula, showAngles
+  'trig_inequality',   // §3.7.8 — func, sign, value, showInterval
 ])
 
 /**

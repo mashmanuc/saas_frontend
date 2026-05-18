@@ -87,7 +87,7 @@ import { watch, type WatchOptions } from 'vue'
  *   (c, toggles) => {
  *     if (!toggles) return
  *     for (const [k, on] of Object.entries(toggles)) {
- *       try { c.setToggle(k, on as boolean) } catch { /* unknown toggle — safe */ }
+ *       try { c.setToggle(k, on as boolean) } catch { } // unknown toggle — safe
  *     }
  *   },
  *   { deep: true },

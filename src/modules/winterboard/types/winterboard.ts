@@ -203,6 +203,10 @@ export interface WBAsset {
     | 'trig_circle'
     /** Helix (2026-05-17) — 3D helix P=(θ, sin θ, cos θ) visualization widget. */
     | 'helix'
+    /** TrigEquation (2026-05-19) — trig equation solver (§3.7.7). */
+    | 'trig_equation'
+    /** TrigInequality (2026-05-19) — trig inequality solver (§3.7.8). */
+    | 'trig_inequality'
   /**
    * Asset source descriptor.
    * - URL для image/audio/video/document_viewer
@@ -291,6 +295,8 @@ export interface WBAsset {
     | import('./calculus').CalculusData
     | import('./trigCircle').TrigCircleData
     | import('./helix').HelixData
+    | import('./trigEquation').TrigEquationData
+    | import('./trigInequality').TrigInequalityData
 }
 
 /**

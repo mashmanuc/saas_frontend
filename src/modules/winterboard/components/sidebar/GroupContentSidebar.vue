@@ -178,6 +178,7 @@
         <Geometry2DTray />
         <CalculusTray />
         <TrigCircleTray />
+        <TrigSolverTray />
       </div>
     </template>
 
@@ -200,6 +201,8 @@ import Geometry2DTray from './Geometry2DTray.vue'
 import CalculusTray from './CalculusTray.vue'
 // TrigCircle (2026-05-16): unit circle ↔ sin/cos/tg/ctg graph tray
 import TrigCircleTray from './TrigCircleTray.vue'
+// TrigSolver (2026-05-19): trig equation & inequality solver trays (§3.7.7/3.7.8)
+import TrigSolverTray from './TrigSolverTray.vue'
 
 
 import StorageQuotaBar from '@/modules/learning-content/components/StorageQuotaBar.vue'

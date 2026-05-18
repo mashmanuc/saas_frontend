@@ -15,6 +15,8 @@
 
 // TrigCircle IIFE — sets window.TrigCircle.
 import './trig-circle.js'
+// TrigSolver IIFE — sets window.TrigEquation + window.TrigInequality.
+import './trig-solver.js'
 
 /* ─── runtime types ──────────────────────────────────────────────────────── */
 
@@ -52,5 +54,49 @@ declare global {
       container: HTMLElement,
       opts: TrigCircleOpts,
     ) => TrigCircleInstance
+    TrigEquation: new (
+      container: HTMLElement,
+      opts: TrigSolverOpts,
+    ) => TrigEquationInstance
+    TrigInequality: new (
+      container: HTMLElement,
+      opts: TrigInequalityOpts,
+    ) => TrigInequalityInstance
   }
+}
+
+// ── TrigEquation ─────────────────────────────────────────────────────────────
+
+export type TrigFunc = 'sin' | 'cos' | 'tan' | 'cot'
+
+export interface TrigSolverOpts {
+  func?:        TrigFunc
+  value?:       number   // right-hand side 'a'
+  showFormula?: boolean  // show general solution formula (equation)
+  showAngles?:  boolean  // draw angle labels on circle
+}
+
+export interface TrigEquationInstance {
+  opts: Required<TrigSolverOpts>
+  setOption<K extends keyof TrigSolverOpts>(key: K, value: TrigSolverOpts[K]): void
+  destroy(): void
+  onChange?: (() => void) | null
+}
+
+// ── TrigInequality ────────────────────────────────────────────────────────────
+
+export type IneqSign = '>' | '<' | '≥' | '≤'
+
+export interface TrigInequalityOpts {
+  func?:          TrigFunc
+  sign?:          IneqSign
+  value?:         number
+  showInterval?:  boolean
+}
+
+export interface TrigInequalityInstance {
+  opts: Required<TrigInequalityOpts>
+  setOption<K extends keyof TrigInequalityOpts>(key: K, value: TrigInequalityOpts[K]): void
+  destroy(): void
+  onChange?: (() => void) | null
 }
