@@ -157,6 +157,18 @@ export function assetsEqualByOpsFields(a: WBAsset, b: WBAsset): boolean {
     if (a.type === 'calculus_card' || b.type === 'calculus_card') {
       try { return JSON.stringify(aData) === JSON.stringify(bData) } catch { return false }
     }
+    // TrigCircle (2026-05-18): trig_circle data — flat envelope (theta, showSin,
+    // showCos, showTan, showCot, snapPi12, speed, ...). НЕ має поля 'state' —
+    // без цієї гілки solid-path returns true (aState/bState = undefined) →
+    // silent skip: theta/toggle changes never reach ops.
+    if (a.type === 'trig_circle' || b.type === 'trig_circle') {
+      try { return JSON.stringify(aData) === JSON.stringify(bData) } catch { return false }
+    }
+    // Helix (2026-05-18): helix data — flat envelope (theta, phi, pitch, showHelix, …).
+    // Same structural issue як trig_circle — solid-path false positive equality.
+    if (a.type === 'helix' || b.type === 'helix') {
+      try { return JSON.stringify(aData) === JSON.stringify(bData) } catch { return false }
+    }
     // Solid path: ABi data is SolidAssetData з полем 'state'.
     const aState = (aData as { state: unknown }).state
     const bState = (bData as { state: unknown }).state

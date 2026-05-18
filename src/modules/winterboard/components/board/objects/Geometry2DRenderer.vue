@@ -222,6 +222,32 @@ watch(() => props.asset.data.preset, async (next, prev) => {
   await mount()
 })
 
+// ── Replay sync: store → GeoCard ─────────────────────────────────────────────
+// When replay applies asset_update (store.updateAsset with skipHistory), Vue
+// reactively updates props.asset. These watchers push the new state into the
+// live GeoCard so the geometry visually reflects the replay operation.
+// No feedback loop: card.setToggle/setFreePoints are JS calls, NOT DOM events —
+// wireToolbarPersistence only listens on toolbarEl.click, so no double-emit.
+watch(
+  () => props.asset.data.toggles,
+  (newToggles) => {
+    if (!card || !newToggles) return
+    for (const [key, on] of Object.entries(newToggles)) {
+      try { card.setToggle(key, on as boolean) } catch { /* preset missing toggle */ }
+    }
+  },
+  { deep: true },
+)
+
+watch(
+  () => props.asset.data.pointsSnapshot,
+  (snapshot) => {
+    if (!card || !snapshot) return
+    card.setFreePoints(snapshot)
+  },
+  { deep: true },
+)
+
 /* ────── pointer-events sync (interactive vs draw-over mode) ──────
  * Коли !interactive — увесь bundle's SVG має пропускати pointer events до
  * Konva strokes layer, щоб pen/highlighter/eraser малювали поверх картки.
