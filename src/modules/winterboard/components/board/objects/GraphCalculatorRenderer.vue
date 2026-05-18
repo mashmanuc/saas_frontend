@@ -1348,6 +1348,9 @@ defineExpose({
 .graph-calc-renderer.is-readonly {
   pointer-events: none;
 }
+.graph-calc-renderer.is-readonly .gc-header {
+  display: none;
+}
 
 /* P2 (2026-05-08): режим презентації — панель прихована, plot заповнює body.
    Header ховається, окрім toggle-кнопки яка стає floating top-right glass-pill,

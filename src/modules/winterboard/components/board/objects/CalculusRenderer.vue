@@ -356,12 +356,13 @@ function onDelete(): void { emit('delete') }
 .calculus-renderer.is-readonly {
   background: transparent;
 }
-.calculus-renderer.is-readonly .calculus-stage,
-.calculus-renderer.is-readonly .calculus-toolbar,
-.calculus-renderer.is-readonly .calculus-header {
+.calculus-renderer.is-readonly .calculus-stage {
   pointer-events: none;
 }
-.calculus-renderer.is-readonly .calculus-toolbar { opacity: 0.55; }
+.calculus-renderer.is-readonly .calculus-header,
+.calculus-renderer.is-readonly .calculus-toolbar {
+  display: none;
+}
 
 .calculus-header {
   flex: 0 0 auto;

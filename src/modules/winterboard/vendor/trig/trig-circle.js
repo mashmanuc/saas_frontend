@@ -182,13 +182,13 @@
       const pad = 24 * dpr;
       if (!this.opts.showGraphs || w < 600 * dpr) {
         // single-panel: just the circle, centered
-        const size = Math.min(w, h) - pad * 2;
+        const size = Math.max(0, Math.min(w, h) - pad * 2);
         return {
           dual: false,
           circle: {
             cx: w / 2,
             cy: h / 2,
-            r: size / 2 - 40 * dpr,
+            r: Math.max(1, size / 2 - 40 * dpr),
           },
         };
       }
@@ -300,6 +300,7 @@
     _drawCircle(L) {
       const ctx = this.ctx, dpr = this._dpr || 1;
       const { cx, cy, r } = L.circle;
+      if (r <= 1) return; // container too small — skip render to avoid arc() errors
       const theta = this.opts.theta;
       const P = this._circlePt(theta);
 

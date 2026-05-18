@@ -432,12 +432,13 @@ function onDelete(): void { emit('delete') }
 .helix-renderer.is-readonly {
   background: transparent;
 }
-.helix-renderer.is-readonly .helix-stage,
-.helix-renderer.is-readonly .helix-toolbar,
-.helix-renderer.is-readonly .helix-header {
+.helix-renderer.is-readonly .helix-stage {
   pointer-events: none;
 }
-.helix-renderer.is-readonly .helix-toolbar { opacity: 0.5; }
+.helix-renderer.is-readonly .helix-header,
+.helix-renderer.is-readonly .helix-toolbar {
+  display: none;
+}
 
 /* ── Header ── */
 .helix-header {

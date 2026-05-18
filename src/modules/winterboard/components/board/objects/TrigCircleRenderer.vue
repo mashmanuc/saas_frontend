@@ -479,13 +479,12 @@ function onDelete(): void { emit('delete') }
 .trig-circle-renderer.is-readonly {
   background: transparent;
 }
-.trig-circle-renderer.is-readonly .trig-circle-stage,
-.trig-circle-renderer.is-readonly .trig-toolbar,
-.trig-circle-renderer.is-readonly .trig-circle-header {
+.trig-circle-renderer.is-readonly .trig-circle-stage {
   pointer-events: none;
 }
+.trig-circle-renderer.is-readonly .trig-circle-header,
 .trig-circle-renderer.is-readonly .trig-toolbar {
-  opacity: 0.5;
+  display: none;
 }
 
 /* ── Header ── */

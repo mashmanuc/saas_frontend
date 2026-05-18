@@ -52,8 +52,8 @@
 
     <!-- Toolbar host — bundle inject-ить туди button.tool elements (preset toggles:
          Медіани · Висоти · Бісектриси · Медіатриси · Вписане · Описане · Сер. лінія
-         + Сітка · Осі · Скинути). Завжди visible — як у standalone bundle demo,
-         щоб toggles були доступні без обов'язкової селекції. -->
+         + Сітка · Осі · Скинути). Видимий лише при is-selected — без вибору
+         показуємо тільки малюнок (CSS: :not(.is-selected) → display:none). -->
     <div
       ref="toolbarRef"
       class="geo2dv2-toolbar-host"
@@ -364,10 +364,12 @@ function onDelete(): void { emit('delete') }
   display: none;
 }
 
-/* Read-only mode — toolbar теж пропускає events щоб user міг малювати поверх. */
+/* Read-only (pen/highlighter/eraser) — hover toolbar/header, тільки малюнок. */
+.geo2dv2-renderer.is-readonly .geo2dv2-header {
+  display: none;
+}
 .geo2dv2-renderer.is-readonly .geo2dv2-toolbar-host {
-  pointer-events: none;
-  opacity: 0.55;
+  display: none;
 }
 .geo2dv2-renderer.is-readonly .geo2dv2-toolbar-host :deep(button) {
   pointer-events: none;
