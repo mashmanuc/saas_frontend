@@ -458,7 +458,8 @@
     </template>
 
     <!-- TrigSolver (2026-05-19): unified trig eq+ineq overlay (HTML, non-Konva).
-         Uses handleOverlayPointerDown for HTML-level select+drag (mirrors media pattern). -->
+         Uses handleOverlayPointerDown for HTML-level select+drag (mirrors media pattern).
+         Resize handles (4 corners) appear when selected + select tool. -->
     <template v-for="asset in trigSolverAssets" :key="`tslv-${asset.id}`">
       <div
         class="wb-trig-solver-overlay"
@@ -480,6 +481,17 @@
           @update:asset="(updated: any) => emit('asset-update', updated as WBAsset)"
           @delete="emit('asset-delete', asset.id)"
         />
+        <!-- Resize handles — 4 corners, visible when selected + select tool -->
+        <template v-if="wbStore.selectedIds.includes(asset.id) && currentTool === 'select'">
+          <div
+            v-for="corner in RESIZE_CORNERS"
+            :key="corner.name"
+            class="wb-trig-solver-resize-handle"
+            :class="`wb-trig-solver-resize-handle--${corner.name}`"
+            :style="{ cursor: corner.cursor }"
+            @pointerdown.stop.prevent="handleTrigSolverResizeStart(asset, corner.name, $event)"
+          />
+        </template>
       </div>
     </template>
 
@@ -2960,6 +2972,92 @@ function handleOverlayPointerDown(asset: WBAsset, e: PointerEvent): void {
   document.addEventListener('pointerup', onPointerUp, { once: true })
 }
 
+// ─── TrigSolver: free resize (no aspect ratio) ──────────────────────────────
+
+const MIN_TRIG_SOLVER_SIZE = 280
+
+function handleTrigSolverResizeStart(asset: WBAsset, corner: string, e: PointerEvent): void {
+  const startX = e.clientX
+  const startY = e.clientY
+  const startW = asset.w
+  const startH = asset.h
+  const startAx = asset.x
+  const startAy = asset.y
+  const zoom = props.zoom || 1
+
+  const el = (e.target as HTMLElement).closest('.wb-trig-solver-overlay') as HTMLElement
+  if (!el) return
+
+  setStageListening(false)
+
+  function onPointerMove(ev: PointerEvent) {
+    const dx = (ev.clientX - startX) / zoom
+    const dy = (ev.clientY - startY) / zoom
+    let newW = startW, newH = startH, newX = startAx, newY = startAy
+
+    if (corner === 'bottom-right') {
+      newW = Math.max(MIN_TRIG_SOLVER_SIZE, startW + dx)
+      newH = Math.max(MIN_TRIG_SOLVER_SIZE, startH + dy)
+    } else if (corner === 'bottom-left') {
+      newW = Math.max(MIN_TRIG_SOLVER_SIZE, startW - dx)
+      newH = Math.max(MIN_TRIG_SOLVER_SIZE, startH + dy)
+      newX = startAx + (startW - newW)
+    } else if (corner === 'top-right') {
+      newW = Math.max(MIN_TRIG_SOLVER_SIZE, startW + dx)
+      newH = Math.max(MIN_TRIG_SOLVER_SIZE, startH - dy)
+      newY = startAy + (startH - newH)
+    } else if (corner === 'top-left') {
+      newW = Math.max(MIN_TRIG_SOLVER_SIZE, startW - dx)
+      newH = Math.max(MIN_TRIG_SOLVER_SIZE, startH - dy)
+      newX = startAx + (startW - newW)
+      newY = startAy + (startH - newH)
+    }
+
+    el.style.width = `${newW * zoom}px`
+    el.style.height = `${newH * zoom}px`
+    el.style.left = `${newX * zoom}px`
+    el.style.top = `${newY * zoom}px`
+  }
+
+  function onPointerUp(ev: PointerEvent) {
+    document.removeEventListener('pointermove', onPointerMove)
+    setStageListening(true)
+
+    const dx = (ev.clientX - startX) / zoom
+    const dy = (ev.clientY - startY) / zoom
+    let newW = startW, newH = startH, newX = startAx, newY = startAy
+
+    if (corner === 'bottom-right') {
+      newW = Math.max(MIN_TRIG_SOLVER_SIZE, startW + dx)
+      newH = Math.max(MIN_TRIG_SOLVER_SIZE, startH + dy)
+    } else if (corner === 'bottom-left') {
+      newW = Math.max(MIN_TRIG_SOLVER_SIZE, startW - dx)
+      newH = Math.max(MIN_TRIG_SOLVER_SIZE, startH + dy)
+      newX = startAx + (startW - newW)
+    } else if (corner === 'top-right') {
+      newW = Math.max(MIN_TRIG_SOLVER_SIZE, startW + dx)
+      newH = Math.max(MIN_TRIG_SOLVER_SIZE, startH - dy)
+      newY = startAy + (startH - newH)
+    } else if (corner === 'top-left') {
+      newW = Math.max(MIN_TRIG_SOLVER_SIZE, startW - dx)
+      newH = Math.max(MIN_TRIG_SOLVER_SIZE, startH - dy)
+      newX = startAx + (startW - newW)
+      newY = startAy + (startH - newH)
+    }
+
+    emit('asset-update', {
+      ...asset,
+      w: Math.round(newW),
+      h: Math.round(newH),
+      x: Math.round(newX),
+      y: Math.round(newY),
+    })
+  }
+
+  document.addEventListener('pointermove', onPointerMove)
+  document.addEventListener('pointerup', onPointerUp, { once: true })
+}
+
 // ─── Phase 34 B8: Long Press for Mobile Multi-Select ───────────────────────
 
 let longPressTimer: ReturnType<typeof setTimeout> | null = null
@@ -4644,11 +4742,35 @@ defineExpose({
   z-index: 4;
   border: 1px solid rgba(196, 98, 42, 0.22);
   border-radius: 6px;
-  overflow: hidden;
+  overflow: visible; /* must be visible so resize handles can stick out 5px */
   pointer-events: none;
 }
 .wb-trig-solver-overlay--selected {
   border-color: rgba(196, 98, 42, 0.6);
   box-shadow: 0 0 0 1px rgba(196, 98, 42, 0.4);
 }
+
+/* Resize handles — same pattern as wb-media-resize-handle */
+.wb-trig-solver-resize-handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1.5px solid rgba(196, 98, 42, 0.6);
+  border-radius: 50%;
+  z-index: 30;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  pointer-events: auto; /* override parent pointer-events:none */
+  transition: transform 0.12s, border-color 0.12s, background 0.12s;
+}
+.wb-trig-solver-resize-handle:hover {
+  transform: scale(1.3);
+  background: #fff;
+  border-color: rgba(196, 98, 42, 0.9);
+  box-shadow: 0 1px 6px rgba(196, 98, 42, 0.35);
+}
+.wb-trig-solver-resize-handle--top-left { top: -5px; left: -5px; cursor: nwse-resize; }
+.wb-trig-solver-resize-handle--top-right { top: -5px; right: -5px; cursor: nesw-resize; }
+.wb-trig-solver-resize-handle--bottom-left { bottom: -5px; left: -5px; cursor: nesw-resize; }
+.wb-trig-solver-resize-handle--bottom-right { bottom: -5px; right: -5px; cursor: nwse-resize; }
 </style>

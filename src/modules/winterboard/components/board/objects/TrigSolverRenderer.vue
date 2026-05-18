@@ -148,7 +148,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import type { TrigSolverAsset, TrigSolverFunc, TrigSolverSign, TrigSolverMode } from '../../../types/trigSolver'
 import type { TrigSolverOpts, TrigInequalityOpts } from '../../../vendor/trig'
 
@@ -363,6 +363,13 @@ function toggleInfo(): void {
 }
 
 // ── Replay sync: store → engine ───────────────────────────────────────────
+
+// Remount engine when card dimensions change so canvas pixel buffer is correct.
+watch([() => props.asset.w, () => props.asset.h], async () => {
+  destroyEngine()
+  await nextTick()
+  await mountEngine()
+})
 
 watch(() => props.asset.data.mode, async (v) => {
   if (local.mode === v) return
