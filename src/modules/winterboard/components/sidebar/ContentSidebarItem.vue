@@ -56,6 +56,16 @@
       {{ item.title }}
     </span>
 
+    <!-- Place on board button (shown on hover) -->
+    <button
+      v-if="isTutor && isInteractable"
+      type="button"
+      class="sidebar-item__add-btn"
+      :title="t('winterboard.contentSidebar.addToBoard')"
+      @click.stop="handleAddBtn"
+      @mousedown.stop
+    >+</button>
+
     <!-- Phase 11 B7: Drag hint overlay -->
     <span v-if="isTutor && isInteractable && !isPresentation && !isPdf && !isDocx" class="sidebar-item__drag-hint">
       ↗
@@ -178,6 +188,16 @@ function handleDblClick() {
   emit('place', props.item)
 }
 
+function handleAddBtn() {
+  if (!isInteractable.value) return
+  // PDF / presentation / docx → open inline selector (same as single click)
+  if (isPdf.value || isPresentation.value || isDocx.value) {
+    handleClick()
+    return
+  }
+  emit('place', props.item)
+}
+
 
 function onDragStart(e: DragEvent) {
   if (!props.isTutor || !isInteractable.value) {
@@ -297,6 +317,34 @@ function onDragEnd() {
 }
 .sidebar-item:hover .sidebar-item__drag-hint {
   display: inline;
+}
+
+/* ── Add-to-board button ── */
+.sidebar-item__add-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 5px;
+  border: 1px solid #c7d2fe;
+  background: #f5f3ff;
+  color: #6366f1;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.sidebar-item:hover .sidebar-item__add-btn {
+  display: flex;
+}
+.sidebar-item__add-btn:hover {
+  background: #ede9fe;
+  border-color: #818cf8;
+  color: #4338ca;
 }
 .sidebar-item__pdf-inline {
   display: block;

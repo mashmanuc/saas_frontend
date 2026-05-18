@@ -6722,6 +6722,7 @@
       "interactiveHeader": "Interactive",
       "geo2dHeader": "2D Geometry",
       "trayDragHint": "Drag onto the board",
+      "addToBoard": "Add to board",
       "graphCalcLabel": "Function plotter",
       "calculusHeader": "Function analysis",
       "trigCircleHeader": "Trigonometry",

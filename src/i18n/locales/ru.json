@@ -7095,6 +7095,7 @@
       "interactiveHeader": "Интерактивные",
       "geo2dHeader": "Геометрия 2D",
       "trayDragHint": "Перетащите на доску",
+      "addToBoard": "Добавить на доску",
       "graphCalcLabel": "Графический калькулятор",
       "calculusHeader": "Анализ функций",
       "trigCircleHeader": "Тригонометрия",

@@ -260,13 +260,13 @@ const ModeIcon: FunctionalComponent<{ mode: CalculusMode }> = (props) => {
   position: absolute;
   top: 3px;
   right: 3px;
-  width: 16px;
-  height: 16px;
-  background: #2563eb;
-  color: #fff;
-  border: none;
-  border-radius: 3px;
-  font-size: 13px;
+  width: 18px;
+  height: 18px;
+  background: #f5f3ff;
+  color: #6366f1;
+  border: 1px solid #c7d2fe;
+  border-radius: 4px;
+  font-size: 14px;
   font-weight: 700;
   line-height: 1;
   cursor: pointer;
@@ -276,7 +276,7 @@ const ModeIcon: FunctionalComponent<{ mode: CalculusMode }> = (props) => {
   padding: 0;
   z-index: 2;
   opacity: 0;
-  transition: opacity 0.12s, background 0.12s;
+  transition: opacity 0.12s, background 0.12s, border-color 0.12s, color 0.12s;
   pointer-events: none;
 }
 
@@ -286,6 +286,8 @@ const ModeIcon: FunctionalComponent<{ mode: CalculusMode }> = (props) => {
 }
 
 .tray-add-btn:hover {
-  background: #1d4ed8;
+  background: #ede9fe;
+  border-color: #818cf8;
+  color: #4338ca;
 }
 </style>
