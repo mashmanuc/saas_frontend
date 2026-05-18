@@ -17,40 +17,56 @@
     </div>
     <div class="trig-circle-tray__grid">
       <!-- TrigCircle button -->
-      <button
-        type="button"
-        class="trig-circle-tray__btn"
-        data-testid="trig-circle-tray-btn"
-        :draggable="true"
-        :title="t('winterboard.trigCircle.btnTitle')"
-        @dragstart="onDragStartTrig"
-      >
-        <span class="trig-circle-tray__icon" aria-hidden="true">
-          <TrigCircleIcon />
-        </span>
-        <span class="trig-circle-tray__labels">
-          <span class="trig-circle-tray__label">{{ t('winterboard.trigCircle.btnLabel') }}</span>
-          <span class="trig-circle-tray__sublabel">sin · cos · tg · ctg</span>
-        </span>
-      </button>
+      <div class="trig-circle-tray__card-wrap">
+        <button
+          type="button"
+          class="trig-circle-tray__btn"
+          data-testid="trig-circle-tray-btn"
+          :draggable="true"
+          :title="t('winterboard.trigCircle.btnTitle')"
+          @dragstart="onDragStartTrig"
+        >
+          <span class="trig-circle-tray__icon" aria-hidden="true">
+            <TrigCircleIcon />
+          </span>
+          <span class="trig-circle-tray__labels">
+            <span class="trig-circle-tray__label">{{ t('winterboard.trigCircle.btnLabel') }}</span>
+            <span class="trig-circle-tray__sublabel">sin · cos · tg · ctg</span>
+          </span>
+        </button>
+        <button
+          type="button"
+          class="tray-add-btn"
+          :title="`Додати «${t('winterboard.trigCircle.btnLabel')}» на дошку`"
+          @click.stop="addToolToBoard(TRIG_CIRCLE_DRAG_MIME, JSON.stringify({ type: 'trig_circle' }))"
+        >+</button>
+      </div>
 
       <!-- Helix 3D button -->
-      <button
-        type="button"
-        class="trig-circle-tray__btn trig-circle-tray__btn--helix"
-        data-testid="helix-tray-btn"
-        :draggable="true"
-        :title="t('winterboard.helix.btnTitle')"
-        @dragstart="onDragStartHelix"
-      >
-        <span class="trig-circle-tray__icon trig-circle-tray__icon--helix" aria-hidden="true">
-          <HelixIcon />
-        </span>
-        <span class="trig-circle-tray__labels">
-          <span class="trig-circle-tray__label">{{ t('winterboard.helix.btnLabel') }}</span>
-          <span class="trig-circle-tray__sublabel">P = (θ, sin θ, cos θ)</span>
-        </span>
-      </button>
+      <div class="trig-circle-tray__card-wrap">
+        <button
+          type="button"
+          class="trig-circle-tray__btn trig-circle-tray__btn--helix"
+          data-testid="helix-tray-btn"
+          :draggable="true"
+          :title="t('winterboard.helix.btnTitle')"
+          @dragstart="onDragStartHelix"
+        >
+          <span class="trig-circle-tray__icon trig-circle-tray__icon--helix" aria-hidden="true">
+            <HelixIcon />
+          </span>
+          <span class="trig-circle-tray__labels">
+            <span class="trig-circle-tray__label">{{ t('winterboard.helix.btnLabel') }}</span>
+            <span class="trig-circle-tray__sublabel">P = (θ, sin θ, cos θ)</span>
+          </span>
+        </button>
+        <button
+          type="button"
+          class="tray-add-btn"
+          :title="`Додати «${t('winterboard.helix.btnLabel')}» на дошку`"
+          @click.stop="addToolToBoard(HELIX_DRAG_MIME, JSON.stringify({ type: 'helix' }))"
+        >+</button>
+      </div>
     </div>
     <div class="trig-circle-tray__hint">
       {{ t('winterboard.contentSidebar.trayDragHint') }}
@@ -63,8 +79,10 @@ import { h, type FunctionalComponent } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { TRIG_CIRCLE_DRAG_MIME, type TrigCircleDragPayload } from '../../constants/trigCircleDefaults'
 import { HELIX_DRAG_MIME, type HelixDragPayload } from '../../constants/helixDefaults'
+import { useAddToolToBoard } from '../../composables/useAddToolToBoard'
 
 const { t } = useI18n()
+const addToolToBoard = useAddToolToBoard()
 
 function onDragStartTrig(e: DragEvent): void {
   if (!e.dataTransfer) return
@@ -210,5 +228,47 @@ const HelixIcon: FunctionalComponent = () =>
   font-size: 11px;
   color: #94a3b8;
   padding: 0 2px;
+}
+
+/* ── Card wrapper + add button ── */
+.trig-circle-tray__card-wrap {
+  position: relative;
+}
+
+.trig-circle-tray__card-wrap .trig-circle-tray__btn {
+  width: 100%;
+}
+
+.tray-add-btn {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 16px;
+  height: 16px;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.12s, background 0.12s;
+  pointer-events: none;
+}
+
+.trig-circle-tray__card-wrap:hover .tray-add-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.tray-add-btn:hover {
+  background: #1d4ed8;
 }
 </style>

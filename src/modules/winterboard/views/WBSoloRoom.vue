@@ -823,7 +823,7 @@
 // WB: WBSoloRoom — main solo whiteboard view
 // Ref: TASK_BOARD.md A2.1, ManifestWinterboard_v2.md LAW-01/03/08/09
 
-import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick, provide } from 'vue'
 import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useWBStore } from '../board/state/boardStore'
@@ -840,6 +840,7 @@ import { useFollowMode } from '../composables/useFollowMode'
 import { useLocking } from '../composables/useLocking'
 import { useAnnouncer } from '../composables/useAnnouncer'
 import { useContentDrop } from '../composables/useContentDrop'
+import { ADD_TOOL_TO_BOARD_KEY } from '../composables/useAddToolToBoard'
 import { useToast } from '../composables/useToast'
 import { winterboardApi } from '../api/winterboardApi'
 import { parseFolderQuery, isFolderUnavailableError } from '../utils/folderRoute'
@@ -1446,6 +1447,16 @@ const contentDrop = useContentDrop({
     }
     return { x: (store.pageWidth ?? 800) / 2, y: 100 }
   },
+})
+
+// ── Tray "+" button: add tool to viewport center ──
+provide(ADD_TOOL_TO_BOARD_KEY, (mime: string, payloadStr: string) => {
+  const container = canvasContainerRef.value
+  if (!container) return
+  const zoom = store.zoom || 1
+  const cx = (container.scrollLeft + container.clientWidth / 2) / zoom
+  const cy = (container.scrollTop + container.clientHeight / 2) / zoom
+  contentDrop.addAtPosition(mime, payloadStr, { x: cx, y: cy })
 })
 
 // ── Quick Gallery: dblclick places item at canvas center ──

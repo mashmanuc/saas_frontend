@@ -26,21 +26,31 @@
       {{ t('winterboard.contentSidebar.loading') }}
     </div>
     <div v-else class="geo2dv2-tray__grid">
-      <button
+      <div
         v-for="item in items"
         :key="item.type"
-        type="button"
-        class="geo2dv2-tray__btn"
-        :data-testid="`geometry-2d-v2-tray-${item.type}`"
-        :draggable="true"
-        :title="`${presetLabel(item)} — ${presetDesc(item)}`"
-        @dragstart="onDragStart($event, item.type, presetLabel(item))"
+        class="geo2dv2-tray__card-wrap"
       >
-        <span class="geo2dv2-tray__icon" aria-hidden="true">
-          <PresetIcon :type="item.type" />
-        </span>
-        <span class="geo2dv2-tray__label">{{ presetLabel(item) }}</span>
-      </button>
+        <button
+          type="button"
+          class="geo2dv2-tray__btn"
+          :data-testid="`geometry-2d-v2-tray-${item.type}`"
+          :draggable="true"
+          :title="`${presetLabel(item)} — ${presetDesc(item)}`"
+          @dragstart="onDragStart($event, item.type, presetLabel(item))"
+        >
+          <span class="geo2dv2-tray__icon" aria-hidden="true">
+            <PresetIcon :type="item.type" />
+          </span>
+          <span class="geo2dv2-tray__label">{{ presetLabel(item) }}</span>
+        </button>
+        <button
+          type="button"
+          class="tray-add-btn"
+          :title="`Додати «${presetLabel(item)}» на дошку`"
+          @click.stop="addToolToBoard(GEOMETRY_2D_V2_DRAG_MIME, JSON.stringify({ preset: item.type }))"
+        >+</button>
+      </div>
     </div>
     <div class="geo2dv2-tray__hint">
       {{ t('winterboard.contentSidebar.trayDragHint') }}
@@ -56,6 +66,9 @@ import {
   type Geometry2DV2DragPayload,
 } from '../../constants/geometry2dV2Defaults'
 import type { GeoPresetMeta } from '../../vendor/geo2d'
+import { useAddToolToBoard } from '../../composables/useAddToolToBoard'
+
+const addToolToBoard = useAddToolToBoard()
 
 const { t, te } = useI18n()
 const items = ref<GeoPresetMeta[]>([])
@@ -246,5 +259,47 @@ const PresetIcon: FunctionalComponent<{ type: string }> = (props) => {
   font-size: 11px;
   color: #94a3b8;
   padding: 0 2px;
+}
+
+/* ── Card wrapper + add button ── */
+.geo2dv2-tray__card-wrap {
+  position: relative;
+}
+
+.geo2dv2-tray__card-wrap .geo2dv2-tray__btn {
+  width: 100%;
+}
+
+.tray-add-btn {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 16px;
+  height: 16px;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.12s, background 0.12s;
+  pointer-events: none;
+}
+
+.geo2dv2-tray__card-wrap:hover .tray-add-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.tray-add-btn:hover {
+  background: #1d4ed8;
 }
 </style>

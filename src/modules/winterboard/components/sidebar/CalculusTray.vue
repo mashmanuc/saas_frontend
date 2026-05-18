@@ -18,40 +18,58 @@
     </div>
     <div class="calculus-tray__grid">
       <!-- Графічний калькулятор — повна ширина (перший рядок) -->
-      <button
-        type="button"
-        class="calculus-tray__btn calculus-tray__btn--graph"
-        data-testid="graph-calculator-tray-btn"
-        :draggable="true"
-        :title="t('winterboard.contentSidebar.graphCalcLabel')"
-        @dragstart="onDragStartGraph"
-      >
-        <span class="calculus-tray__icon calculus-tray__icon--graph" aria-hidden="true">f(x)</span>
-        <span class="calculus-tray__labels">
-          <span class="calculus-tray__label">{{ t('winterboard.contentSidebar.graphCalcLabel') }}</span>
-          <span class="calculus-tray__sublabel">y = f(x) · графік · функції</span>
-        </span>
-      </button>
+      <div class="calculus-tray__card-wrap calculus-tray__card-wrap--graph">
+        <button
+          type="button"
+          class="calculus-tray__btn calculus-tray__btn--graph"
+          data-testid="graph-calculator-tray-btn"
+          :draggable="true"
+          :title="t('winterboard.contentSidebar.graphCalcLabel')"
+          @dragstart="onDragStartGraph"
+        >
+          <span class="calculus-tray__icon calculus-tray__icon--graph" aria-hidden="true">f(x)</span>
+          <span class="calculus-tray__labels">
+            <span class="calculus-tray__label">{{ t('winterboard.contentSidebar.graphCalcLabel') }}</span>
+            <span class="calculus-tray__sublabel">y = f(x) · графік · функції</span>
+          </span>
+        </button>
+        <button
+          type="button"
+          class="tray-add-btn"
+          :title="`Додати «${t('winterboard.contentSidebar.graphCalcLabel')}» на дошку`"
+          @click.stop="addToolToBoard(GRAPH_CALCULATOR_MIME, '{}')"
+        >+</button>
+      </div>
 
       <!-- Похідна + Первісна — 2 кнопки у другому рядку -->
-      <button
+      <div
         v-for="item in items"
         :key="item.mode"
-        type="button"
-        class="calculus-tray__btn"
-        :data-testid="`calculus-tray-${item.mode}`"
-        :draggable="true"
-        :title="`${modeLabel(item.mode)} — ${modeDesc(item.mode)}`"
-        @dragstart="onDragStart($event, item.mode)"
+        class="calculus-tray__card-wrap"
       >
-        <span class="calculus-tray__icon" aria-hidden="true">
-          <ModeIcon :mode="item.mode" />
-        </span>
-        <span class="calculus-tray__labels">
-          <span class="calculus-tray__label">{{ modeLabel(item.mode) }}</span>
-          <span class="calculus-tray__sublabel">{{ item.short }}</span>
-        </span>
-      </button>
+        <button
+          type="button"
+          class="calculus-tray__btn"
+          :data-testid="`calculus-tray-${item.mode}`"
+          :draggable="true"
+          :title="`${modeLabel(item.mode)} — ${modeDesc(item.mode)}`"
+          @dragstart="onDragStart($event, item.mode)"
+        >
+          <span class="calculus-tray__icon" aria-hidden="true">
+            <ModeIcon :mode="item.mode" />
+          </span>
+          <span class="calculus-tray__labels">
+            <span class="calculus-tray__label">{{ modeLabel(item.mode) }}</span>
+            <span class="calculus-tray__sublabel">{{ item.short }}</span>
+          </span>
+        </button>
+        <button
+          type="button"
+          class="tray-add-btn"
+          :title="`Додати «${modeLabel(item.mode)}» на дошку`"
+          @click.stop="addToolToBoard(CALCULUS_DRAG_MIME, JSON.stringify({ mode: item.mode }))"
+        >+</button>
+      </div>
     </div>
     <div class="calculus-tray__hint">
       {{ t('winterboard.contentSidebar.trayDragHint') }}
@@ -69,6 +87,9 @@ import {
 } from '../../constants/calculusDefaults'
 import { GRAPH_CALCULATOR_MIME } from '../../constants/graphCalculatorDefaults'
 import type { CalculusMode } from '../../vendor/calculus'
+import { useAddToolToBoard } from '../../composables/useAddToolToBoard'
+
+const addToolToBoard = useAddToolToBoard()
 
 const { t } = useI18n()
 const items = CALCULUS_PRESETS
@@ -220,5 +241,51 @@ const ModeIcon: FunctionalComponent<{ mode: CalculusMode }> = (props) => {
   font-size: 11px;
   color: #94a3b8;
   padding: 0 2px;
+}
+
+/* ── Card wrapper + add button ── */
+.calculus-tray__card-wrap {
+  position: relative;
+}
+
+.calculus-tray__card-wrap--graph {
+  grid-column: 1 / -1;
+}
+
+.calculus-tray__card-wrap .calculus-tray__btn {
+  width: 100%;
+}
+
+.tray-add-btn {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 16px;
+  height: 16px;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.12s, background 0.12s;
+  pointer-events: none;
+}
+
+.calculus-tray__card-wrap:hover .tray-add-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.tray-add-btn:hover {
+  background: #1d4ed8;
 }
 </style>

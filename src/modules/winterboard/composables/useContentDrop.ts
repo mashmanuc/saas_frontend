@@ -905,10 +905,123 @@ export function useContentDrop(options: UseContentDropOptions) {
     }
   }
 
+  /**
+   * Place a tool asset at explicit canvas coordinates (used by tray "+" buttons).
+   * Same asset-building logic as handleCanvasDrop but without a DragEvent.
+   *
+   * HARD RULE: Asset creation is here (drop handler), NOT in trays.
+   */
+  function addAtPosition(mime: string, payloadStr: string, pos: { x: number; y: number }): void {
+    if (!canDraw.value) return
+
+    if (mime === GRAPH_CALCULATOR_MIME) {
+      const id = (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
+        ? `gc-${crypto.randomUUID()}`
+        : `gc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+      const asset: WBAsset = {
+        id,
+        type: 'graph_calculator',
+        src: '',
+        x: pos.x - DEFAULT_GRAPH_WIDTH / 2,
+        y: pos.y - DEFAULT_GRAPH_HEIGHT / 2,
+        w: DEFAULT_GRAPH_WIDTH,
+        h: DEFAULT_GRAPH_HEIGHT,
+        rotation: 0,
+        locked: false,
+        data: {
+          version: 1,
+          state: {
+            expressions: [...DEFAULT_GRAPH_STATE.expressions],
+            params: { ...DEFAULT_GRAPH_STATE.params },
+            viewport: { ...DEFAULT_GRAPH_STATE.viewport },
+          },
+          meta: { last_snapshot_seq: 0 },
+        } as unknown as WBAsset['data'],
+      }
+      onAssetAdd(asset)
+      return
+    }
+
+    if (mime === CALCULUS_DRAG_MIME) {
+      let parsed: CalculusDragPayload
+      try { parsed = JSON.parse(payloadStr) as CalculusDragPayload } catch { return }
+      if (!parsed?.mode || !CALCULUS_MODE_SET.has(parsed.mode)) return
+      const asset: CalculusAsset = {
+        id: `calc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        type: 'calculus_card', src: '',
+        x: pos.x - DEFAULT_CALCULUS_W / 2, y: pos.y - DEFAULT_CALCULUS_H / 2,
+        w: DEFAULT_CALCULUS_W, h: DEFAULT_CALCULUS_H,
+        rotation: 0, locked: false,
+        data: buildDefaultCalculusData(parsed.mode),
+      }
+      onAssetAdd(asset as unknown as WBAsset)
+      return
+    }
+
+    if (mime === TRIG_CIRCLE_DRAG_MIME) {
+      const asset: TrigCircleAsset = {
+        id: `trig-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        type: 'trig_circle', src: '',
+        x: pos.x - DEFAULT_TRIG_CIRCLE_W / 2, y: pos.y - DEFAULT_TRIG_CIRCLE_H / 2,
+        w: DEFAULT_TRIG_CIRCLE_W, h: DEFAULT_TRIG_CIRCLE_H,
+        rotation: 0, locked: false,
+        data: buildDefaultTrigCircleData(),
+      }
+      onAssetAdd(asset as unknown as WBAsset)
+      return
+    }
+
+    if (mime === HELIX_DRAG_MIME) {
+      const asset: HelixAsset = {
+        id: `helix-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        type: 'helix', src: '',
+        x: pos.x - DEFAULT_HELIX_W / 2, y: pos.y - DEFAULT_HELIX_H / 2,
+        w: DEFAULT_HELIX_W, h: DEFAULT_HELIX_H,
+        rotation: 0, locked: false,
+        data: buildDefaultHelixData(),
+      }
+      onAssetAdd(asset as unknown as WBAsset)
+      return
+    }
+
+    if (mime === GEOMETRY_2D_V2_DRAG_MIME) {
+      let parsed: Geometry2DV2DragPayload
+      try { parsed = JSON.parse(payloadStr) as Geometry2DV2DragPayload } catch { return }
+      if (!parsed?.preset || typeof parsed.preset !== 'string') return
+      const asset: Geometry2DV2Asset = {
+        id: `geo2dv2-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        type: 'geometry_2d_v2', src: '',
+        x: pos.x - DEFAULT_GEOMETRY_2D_V2_W / 2, y: pos.y - DEFAULT_GEOMETRY_2D_V2_H / 2,
+        w: DEFAULT_GEOMETRY_2D_V2_W, h: DEFAULT_GEOMETRY_2D_V2_H,
+        rotation: 0, locked: false,
+        data: buildDefaultGeometry2DV2Data(parsed.preset),
+      }
+      onAssetAdd(asset as unknown as WBAsset)
+      return
+    }
+
+    if (mime === SOLID_DRAG_MIME) {
+      let parsed: SolidDragPayload
+      try { parsed = JSON.parse(payloadStr) as SolidDragPayload } catch { return }
+      if (!parsed?.src || !SOLID_TYPE_SET.has(parsed.src)) return
+      const asset: SolidAsset = {
+        id: `solid-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        type: 'geometry_solid', src: parsed.src,
+        x: pos.x - DEFAULT_SOLID_W / 2, y: pos.y - DEFAULT_SOLID_H / 2,
+        w: DEFAULT_SOLID_W, h: DEFAULT_SOLID_H,
+        rotation: 0, locked: false,
+        data: { version: 1, state: { ...DEFAULT_SOLID_STATE } },
+      }
+      onAssetAdd(asset)
+      return
+    }
+  }
+
   return {
     handleCanvasDrop,
     placeItemOnCanvas,
     handleSidebarDrop,  // Phase 3A
     resolveAsset,       // Used by thumbnail drop
+    addAtPosition,      // Used by tray "+" buttons (sidebar quick-add)
   }
 }

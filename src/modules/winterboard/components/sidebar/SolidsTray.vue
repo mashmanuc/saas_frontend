@@ -16,21 +16,31 @@
   <div class="solids-tray" data-testid="solids-tray">
     <div class="solids-tray__header">{{ t('winterboard.contentSidebar.solidsSectionHeader') }}</div>
     <div class="solids-tray__grid">
-      <button
+      <div
         v-for="item in items"
         :key="item.type"
-        type="button"
-        class="solids-tray__btn"
-        :data-testid="`solid-tray-${item.type}`"
-        :draggable="true"
-        :title="solidName(item)"
-        @dragstart="onDragStart($event, item.type)"
+        class="solids-tray__card-wrap"
       >
-        <span class="solids-tray__icon" aria-hidden="true">
-          <SolidIcon :type="item.type" />
-        </span>
-        <span class="solids-tray__label">{{ solidName(item) }}</span>
-      </button>
+        <button
+          type="button"
+          class="solids-tray__btn"
+          :data-testid="`solid-tray-${item.type}`"
+          :draggable="true"
+          :title="solidName(item)"
+          @dragstart="onDragStart($event, item.type)"
+        >
+          <span class="solids-tray__icon" aria-hidden="true">
+            <SolidIcon :type="item.type" />
+          </span>
+          <span class="solids-tray__label">{{ solidName(item) }}</span>
+        </button>
+        <button
+          type="button"
+          class="tray-add-btn"
+          :title="`Додати «${solidName(item)}» на дошку`"
+          @click.stop="addToolToBoard(SOLID_DRAG_MIME, JSON.stringify({ src: item.type }))"
+        >+</button>
+      </div>
     </div>
   </div>
 </template>
@@ -44,6 +54,9 @@ import {
   type SolidDragPayload,
 } from '../../constants/solidDefaults'
 import type { SolidType } from '../../types/winterboard'
+import { useAddToolToBoard } from '../../composables/useAddToolToBoard'
+
+const addToolToBoard = useAddToolToBoard()
 
 const { t, te } = useI18n()
 const items = SOLID_TYPES
@@ -205,5 +218,47 @@ const SolidIcon: FunctionalComponent<{ type: SolidType }> = (props) => {
 
 .solids-tray__btn:active {
   cursor: grabbing;
+}
+
+/* ── Card wrapper + add button ── */
+.solids-tray__card-wrap {
+  position: relative;
+}
+
+.solids-tray__card-wrap .solids-tray__btn {
+  width: 100%;
+}
+
+.tray-add-btn {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 16px;
+  height: 16px;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.12s, background 0.12s;
+  pointer-events: none;
+}
+
+.solids-tray__card-wrap:hover .tray-add-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.tray-add-btn:hover {
+  background: #1d4ed8;
 }
 </style>
