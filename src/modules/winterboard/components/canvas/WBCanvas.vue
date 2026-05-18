@@ -457,14 +457,14 @@
       </div>
     </template>
 
-    <!-- TrigEquation (2026-05-19): trig_equation overlay (HTML, non-Konva).
+    <!-- TrigSolver (2026-05-19): unified trig eq+ineq overlay (HTML, non-Konva).
          Mirror .wb-helix-overlay pattern. -->
-    <template v-for="asset in trigEquationAssets" :key="`treq-${asset.id}`">
+    <template v-for="asset in trigSolverAssets" :key="`tslv-${asset.id}`">
       <div
-        class="wb-treq-overlay"
-        :class="{ 'wb-treq-overlay--selected': wbStore.selectedIds.includes(asset.id) }"
-        :data-treq-id="asset.id"
-        :data-testid="`trig-eq-overlay-${asset.id}`"
+        class="wb-trig-solver-overlay"
+        :class="{ 'wb-trig-solver-overlay--selected': wbStore.selectedIds.includes(asset.id) }"
+        :data-tslv-id="asset.id"
+        :data-testid="`trig-solver-overlay-${asset.id}`"
         :style="{
           left: `${asset.x * props.zoom}px`,
           top: `${asset.y * props.zoom}px`,
@@ -472,32 +472,7 @@
           height: `${asset.h * props.zoom}px`,
         }"
       >
-        <TrigEquationRenderer
-          :asset="(asset as any)"
-          :is-selected="wbStore.selectedIds.includes(asset.id)"
-          :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
-          @update:asset="(updated: any) => emit('asset-update', updated as WBAsset)"
-          @delete="emit('asset-delete', asset.id)"
-        />
-      </div>
-    </template>
-
-    <!-- TrigInequality (2026-05-19): trig_inequality overlay (HTML, non-Konva).
-         Mirror .wb-treq-overlay pattern. -->
-    <template v-for="asset in trigInequalityAssets" :key="`tineq-${asset.id}`">
-      <div
-        class="wb-tineq-overlay"
-        :class="{ 'wb-tineq-overlay--selected': wbStore.selectedIds.includes(asset.id) }"
-        :data-tineq-id="asset.id"
-        :data-testid="`trig-ineq-overlay-${asset.id}`"
-        :style="{
-          left: `${asset.x * props.zoom}px`,
-          top: `${asset.y * props.zoom}px`,
-          width: `${asset.w * props.zoom}px`,
-          height: `${asset.h * props.zoom}px`,
-        }"
-      >
-        <TrigInequalityRenderer
+        <TrigSolverRenderer
           :asset="(asset as any)"
           :is-selected="wbStore.selectedIds.includes(asset.id)"
           :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
@@ -666,10 +641,8 @@ import CalculusRenderer from '../board/objects/CalculusRenderer.vue'
 import TrigCircleRenderer from '../board/objects/TrigCircleRenderer.vue'
 // Helix (2026-05-17): 3D helix P=(θ, sin θ, cos θ) renderer
 import HelixRenderer from '../board/objects/HelixRenderer.vue'
-// TrigEquation (2026-05-19): trig equation solver (§3.7.7)
-import TrigEquationRenderer from '../board/objects/TrigEquationRenderer.vue'
-// TrigInequality (2026-05-19): trig inequality solver (§3.7.8)
-import TrigInequalityRenderer from '../board/objects/TrigInequalityRenderer.vue'
+// TrigSolver (2026-05-19): unified trig equation + inequality solver (§3.7.7)
+import TrigSolverRenderer from '../board/objects/TrigSolverRenderer.vue'
 // Phase G (2026-05-06): graph_calculator HTML overlay renderer
 import GraphCalculatorRenderer from '../board/objects/GraphCalculatorRenderer.vue'
 import { loadKonva } from '../../engine/konvaLoader'
@@ -783,8 +756,7 @@ const KONVA_PROXY_TYPES = new Set<WBAsset['type']>([
   'calculus_card',     // §3.7.4 — Calculus visualizer           → CalculusRenderer
   'trig_circle',       // §3.7.5 — Trig unit circle              → TrigCircleRenderer
   'helix',             // §3.7.6 — 3D helix                      → HelixRenderer
-  'trig_equation',     // §3.7.7 — Trig equation solver          → TrigEquationRenderer
-  'trig_inequality',   // §3.7.8 — Trig inequality solver        → TrigInequalityRenderer
+  'trig_solver',       // §3.7.7 — Unified trig eq+ineq solver   → TrigSolverRenderer
 ])
 
 // Per-type filters for the HTML overlay template blocks below.
@@ -795,8 +767,7 @@ const geometry2dV2Assets   = computed(() => assets.value.filter(a => a.type === 
 const calculusAssets       = computed(() => assets.value.filter(a => a.type === 'calculus_card'))
 const trigCircleAssets     = computed(() => assets.value.filter(a => a.type === 'trig_circle'))
 const helixAssets          = computed(() => assets.value.filter(a => a.type === 'helix'))
-const trigEquationAssets   = computed(() => assets.value.filter(a => a.type === 'trig_equation'))
-const trigInequalityAssets = computed(() => assets.value.filter(a => a.type === 'trig_inequality'))
+const trigSolverAssets     = computed(() => assets.value.filter(a => a.type === 'trig_solver'))
 
 // Expand-to-board: одночасно може бути розгорнутий тільки один asset.
 // Зберігає id розгорнутого asset, null = нічого не розгорнуто.
@@ -4608,31 +4579,17 @@ defineExpose({
   box-shadow: none !important;
 }
 
-/* TrigEquation (§3.7.7) — pink/rose theme */
-.wb-treq-overlay {
+/* TrigSolver (§3.7.7) — unified eq+ineq card, warm amber border */
+.wb-trig-solver-overlay {
   position: absolute;
   z-index: 4;
-  border: 1px solid rgba(168, 58, 91, 0.22);
+  border: 1px solid rgba(196, 98, 42, 0.22);
   border-radius: 6px;
   overflow: hidden;
   pointer-events: none;
 }
-.wb-treq-overlay--selected {
-  border-color: rgba(168, 58, 91, 0.6);
-  box-shadow: 0 0 0 1px rgba(168, 58, 91, 0.4);
-}
-
-/* TrigInequality (§3.7.8) — green theme */
-.wb-tineq-overlay {
-  position: absolute;
-  z-index: 4;
-  border: 1px solid rgba(58, 138, 79, 0.22);
-  border-radius: 6px;
-  overflow: hidden;
-  pointer-events: none;
-}
-.wb-tineq-overlay--selected {
-  border-color: rgba(58, 138, 79, 0.6);
-  box-shadow: 0 0 0 1px rgba(58, 138, 79, 0.4);
+.wb-trig-solver-overlay--selected {
+  border-color: rgba(196, 98, 42, 0.6);
+  box-shadow: 0 0 0 1px rgba(196, 98, 42, 0.4);
 }
 </style>

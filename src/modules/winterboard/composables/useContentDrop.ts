@@ -57,24 +57,15 @@ import {
   buildDefaultHelixData,
 } from '../constants/helixDefaults'
 import type { HelixAsset } from '../types/helix'
-// TrigEquation (2026-05-19) — §3.7.7 trig equation solver drop wiring.
+// TrigSolver (2026-05-19) — §3.7.7 unified trig equation + inequality solver drop wiring.
 import {
-  TRIG_EQUATION_DRAG_MIME,
-  DEFAULT_TRIG_EQUATION_W,
-  DEFAULT_TRIG_EQUATION_H,
-  buildDefaultTrigEquationData,
-  type TrigEquationDragPayload,
-} from '../constants/trigEquationDefaults'
-import type { TrigEquationAsset } from '../types/trigEquation'
-// TrigInequality (2026-05-19) — §3.7.8 trig inequality solver drop wiring.
-import {
-  TRIG_INEQUALITY_DRAG_MIME,
-  DEFAULT_TRIG_INEQUALITY_W,
-  DEFAULT_TRIG_INEQUALITY_H,
-  buildDefaultTrigInequalityData,
-  type TrigInequalityDragPayload,
-} from '../constants/trigInequalityDefaults'
-import type { TrigInequalityAsset } from '../types/trigInequality'
+  TRIG_SOLVER_DRAG_MIME,
+  DEFAULT_TRIG_SOLVER_W,
+  DEFAULT_TRIG_SOLVER_H,
+  buildDefaultTrigSolverData,
+  type TrigSolverDragPayload,
+} from '../constants/trigSolverDefaults'
+import type { TrigSolverAsset } from '../types/trigSolver'
 
 // Phase O PR-O4: 10 fixed solid types — must match SolidType union exactly.
 const SOLID_TYPE_SET: ReadonlySet<SolidType> = new Set([
@@ -240,43 +231,22 @@ export function useContentDrop(options: UseContentDropOptions) {
       return
     }
 
-    // TrigEquation (2026-05-19) — §3.7.7 drag.
-    const treqRaw = event.dataTransfer?.getData(TRIG_EQUATION_DRAG_MIME)
-    if (treqRaw) {
-      let parsed: TrigEquationDragPayload
-      try { parsed = JSON.parse(treqRaw) as TrigEquationDragPayload } catch { return }
+    // TrigSolver (2026-05-19) — §3.7.7 unified trig eq+ineq drag.
+    const tslvRaw = event.dataTransfer?.getData(TRIG_SOLVER_DRAG_MIME)
+    if (tslvRaw) {
+      let parsed: TrigSolverDragPayload
+      try { parsed = JSON.parse(tslvRaw) as TrigSolverDragPayload } catch { return }
       const func = parsed?.func
       if (!func || !['sin', 'cos', 'tan', 'cot'].includes(func)) return
       const canvasPos = screenToCanvas(event.clientX, event.clientY)
-      const asset: TrigEquationAsset = {
-        id: `treq-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        type: 'trig_equation', src: '',
-        x: canvasPos.x - DEFAULT_TRIG_EQUATION_W / 2,
-        y: canvasPos.y - DEFAULT_TRIG_EQUATION_H / 2,
-        w: DEFAULT_TRIG_EQUATION_W, h: DEFAULT_TRIG_EQUATION_H,
+      const asset: TrigSolverAsset = {
+        id: `tslv-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        type: 'trig_solver', src: '',
+        x: canvasPos.x - DEFAULT_TRIG_SOLVER_W / 2,
+        y: canvasPos.y - DEFAULT_TRIG_SOLVER_H / 2,
+        w: DEFAULT_TRIG_SOLVER_W, h: DEFAULT_TRIG_SOLVER_H,
         rotation: 0, locked: false,
-        data: buildDefaultTrigEquationData(func),
-      }
-      onAssetAdd(asset as unknown as WBAsset)
-      return
-    }
-
-    // TrigInequality (2026-05-19) — §3.7.8 drag.
-    const tineqRaw = event.dataTransfer?.getData(TRIG_INEQUALITY_DRAG_MIME)
-    if (tineqRaw) {
-      let parsed: TrigInequalityDragPayload
-      try { parsed = JSON.parse(tineqRaw) as TrigInequalityDragPayload } catch { return }
-      const func = parsed?.func
-      if (!func || !['sin', 'cos', 'tan', 'cot'].includes(func)) return
-      const canvasPos = screenToCanvas(event.clientX, event.clientY)
-      const asset: TrigInequalityAsset = {
-        id: `tineq-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        type: 'trig_inequality', src: '',
-        x: canvasPos.x - DEFAULT_TRIG_INEQUALITY_W / 2,
-        y: canvasPos.y - DEFAULT_TRIG_INEQUALITY_H / 2,
-        w: DEFAULT_TRIG_INEQUALITY_W, h: DEFAULT_TRIG_INEQUALITY_H,
-        rotation: 0, locked: false,
-        data: buildDefaultTrigInequalityData(func),
+        data: buildDefaultTrigSolverData(func),
       }
       onAssetAdd(asset as unknown as WBAsset)
       return
@@ -1044,35 +1014,18 @@ export function useContentDrop(options: UseContentDropOptions) {
       return
     }
 
-    if (mime === TRIG_EQUATION_DRAG_MIME) {
-      let parsed: TrigEquationDragPayload
-      try { parsed = JSON.parse(payloadStr) as TrigEquationDragPayload } catch { return }
+    if (mime === TRIG_SOLVER_DRAG_MIME) {
+      let parsed: TrigSolverDragPayload
+      try { parsed = JSON.parse(payloadStr) as TrigSolverDragPayload } catch { return }
       const func = parsed?.func
       if (!func || !['sin', 'cos', 'tan', 'cot'].includes(func)) return
-      const asset: TrigEquationAsset = {
-        id: `treq-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        type: 'trig_equation', src: '',
-        x: pos.x - DEFAULT_TRIG_EQUATION_W / 2, y: pos.y - DEFAULT_TRIG_EQUATION_H / 2,
-        w: DEFAULT_TRIG_EQUATION_W, h: DEFAULT_TRIG_EQUATION_H,
+      const asset: TrigSolverAsset = {
+        id: `tslv-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        type: 'trig_solver', src: '',
+        x: pos.x - DEFAULT_TRIG_SOLVER_W / 2, y: pos.y - DEFAULT_TRIG_SOLVER_H / 2,
+        w: DEFAULT_TRIG_SOLVER_W, h: DEFAULT_TRIG_SOLVER_H,
         rotation: 0, locked: false,
-        data: buildDefaultTrigEquationData(func),
-      }
-      onAssetAdd(asset as unknown as WBAsset)
-      return
-    }
-
-    if (mime === TRIG_INEQUALITY_DRAG_MIME) {
-      let parsed: TrigInequalityDragPayload
-      try { parsed = JSON.parse(payloadStr) as TrigInequalityDragPayload } catch { return }
-      const func = parsed?.func
-      if (!func || !['sin', 'cos', 'tan', 'cot'].includes(func)) return
-      const asset: TrigInequalityAsset = {
-        id: `tineq-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        type: 'trig_inequality', src: '',
-        x: pos.x - DEFAULT_TRIG_INEQUALITY_W / 2, y: pos.y - DEFAULT_TRIG_INEQUALITY_H / 2,
-        w: DEFAULT_TRIG_INEQUALITY_W, h: DEFAULT_TRIG_INEQUALITY_H,
-        rotation: 0, locked: false,
-        data: buildDefaultTrigInequalityData(func),
+        data: buildDefaultTrigSolverData(func),
       }
       onAssetAdd(asset as unknown as WBAsset)
       return

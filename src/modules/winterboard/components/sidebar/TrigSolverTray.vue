@@ -1,80 +1,49 @@
 <!--
-  TrigSolverTray — tray секція «Рівняння / Нерівності».
-  4 кнопки рівнянь (sin/cos/tan/cot) + 4 кнопки нерівностей.
-  Mirror pattern: TrigCircleTray.vue + Geometry2DTray.vue.
+  TrigSolverTray — tray секція «Тригонометрія».
+  4 кнопки (sin/cos/tan/cot) — кожна додає trig_solver картку (equation mode за замовчуванням).
+  Режим рівняння/нерівності перемикається всередині картки.
+
+  Mirror pattern: TrigCircleTray.vue.
 
   HARD RULES:
-    - Tray ONLY initiates drag з MIME + payload {type, func}.
+    - Tray ONLY initiates drag з MIME + payload {func}.
     - NO local asset create — all asset building is in useContentDrop.addAtPosition.
     - Tray не знає про boardStore/ops.
 -->
 <template>
   <div class="trig-solver-tray" data-testid="trig-solver-tray">
+    <div class="trig-solver-tray__header">
+      Тригонометрія
+      <span class="trig-solver-tray__tag">рівняння / нерівності</span>
+    </div>
 
-    <!-- Equations section -->
-    <div class="trig-solver-tray__header">Рівняння  <span class="trig-solver-tray__tag">f(x) = a</span></div>
     <div class="trig-solver-tray__grid">
       <div
         v-for="fn in FUNC_LIST"
-        :key="`eq-${fn}`"
+        :key="fn"
         class="trig-solver-tray__card-wrap"
       >
         <button
           type="button"
-          class="trig-solver-tray__btn trig-solver-tray__btn--eq"
+          class="trig-solver-tray__btn"
           :draggable="true"
-          :title="`${fn}(x) = a — рівняння`"
-          :data-testid="`trig-eq-tray-${fn}`"
-          @dragstart="onDragEq(fn, $event)"
+          :title="`${fn}(x) — рівняння / нерівність`"
+          :data-testid="`trig-solver-tray-${fn}`"
+          @dragstart="onDrag(fn, $event)"
         >
-          <span class="trig-solver-tray__icon trig-solver-tray__icon--eq" aria-hidden="true">
-            <EqIcon :func="fn" />
+          <span class="trig-solver-tray__icon" aria-hidden="true">
+            <SolverIcon :func="fn" />
           </span>
           <span class="trig-solver-tray__labels">
-            <span class="trig-solver-tray__label">{{ fn }}(x) = a</span>
-            <span class="trig-solver-tray__sublabel">рівняння</span>
+            <span class="trig-solver-tray__label">{{ fn }}(x)</span>
+            <span class="trig-solver-tray__sublabel">рівн. / нерівн.</span>
           </span>
         </button>
         <button
           type="button"
           class="tray-add-btn"
-          :title="`Додати «${fn}(x) = a» на дошку`"
-          @click.stop="addToolToBoard(TRIG_EQUATION_DRAG_MIME, JSON.stringify({ type: 'trig_equation', func: fn }))"
-        >+</button>
-      </div>
-    </div>
-
-    <!-- Inequalities section -->
-    <div class="trig-solver-tray__header trig-solver-tray__header--ineq">
-      Нерівності <span class="trig-solver-tray__tag trig-solver-tray__tag--ineq">f(x) &gt; a</span>
-    </div>
-    <div class="trig-solver-tray__grid">
-      <div
-        v-for="fn in FUNC_LIST"
-        :key="`ineq-${fn}`"
-        class="trig-solver-tray__card-wrap"
-      >
-        <button
-          type="button"
-          class="trig-solver-tray__btn trig-solver-tray__btn--ineq"
-          :draggable="true"
-          :title="`${fn}(x) > a — нерівність`"
-          :data-testid="`trig-ineq-tray-${fn}`"
-          @dragstart="onDragIneq(fn, $event)"
-        >
-          <span class="trig-solver-tray__icon trig-solver-tray__icon--ineq" aria-hidden="true">
-            <IneqIcon :func="fn" />
-          </span>
-          <span class="trig-solver-tray__labels">
-            <span class="trig-solver-tray__label">{{ fn }}(x) &gt; a</span>
-            <span class="trig-solver-tray__sublabel">нерівність</span>
-          </span>
-        </button>
-        <button
-          type="button"
-          class="tray-add-btn"
-          :title="`Додати «${fn}(x) > a» на дошку`"
-          @click.stop="addToolToBoard(TRIG_INEQUALITY_DRAG_MIME, JSON.stringify({ type: 'trig_inequality', func: fn }))"
+          :title="`Додати «${fn}(x)» на дошку`"
+          @click.stop="addToolToBoard(TRIG_SOLVER_DRAG_MIME, JSON.stringify({ func: fn }))"
         >+</button>
       </div>
     </div>
@@ -86,74 +55,40 @@
 <script setup lang="ts">
 import { h, type FunctionalComponent } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { TRIG_EQUATION_DRAG_MIME }   from '../../constants/trigEquationDefaults'
-import { TRIG_INEQUALITY_DRAG_MIME } from '../../constants/trigInequalityDefaults'
+import { TRIG_SOLVER_DRAG_MIME } from '../../constants/trigSolverDefaults'
 import { useAddToolToBoard } from '../../composables/useAddToolToBoard'
-import type { TrigEqFunc }   from '../../types/trigEquation'
-import type { TrigIneqFunc } from '../../types/trigInequality'
+import type { TrigSolverFunc } from '../../types/trigSolver'
 
 const { t } = useI18n()
 const addToolToBoard = useAddToolToBoard()
 
-type FuncKey = 'sin' | 'cos' | 'tan' | 'cot'
-const FUNC_LIST: FuncKey[] = ['sin', 'cos', 'tan', 'cot']
+const FUNC_LIST: TrigSolverFunc[] = ['sin', 'cos', 'tan', 'cot']
 
-function onDragEq(fn: FuncKey, e: DragEvent): void {
+function onDrag(fn: TrigSolverFunc, e: DragEvent): void {
   if (!e.dataTransfer) return
-  e.dataTransfer.setData(TRIG_EQUATION_DRAG_MIME, JSON.stringify({ type: 'trig_equation', func: fn }))
+  e.dataTransfer.setData(TRIG_SOLVER_DRAG_MIME, JSON.stringify({ func: fn }))
   e.dataTransfer.effectAllowed = 'copy'
 }
 
-function onDragIneq(fn: FuncKey, e: DragEvent): void {
-  if (!e.dataTransfer) return
-  e.dataTransfer.setData(TRIG_INEQUALITY_DRAG_MIME, JSON.stringify({ type: 'trig_inequality', func: fn }))
-  e.dataTransfer.effectAllowed = 'copy'
-}
+// ── Inline SVG icon ───────────────────────────────────────────────────────
 
-// ── Inline SVG icons ──────────────────────────────────────────────────────
-
-const FUNC_COLORS: Record<FuncKey, string> = {
+const FUNC_COLORS: Record<TrigSolverFunc, string> = {
   sin: '#a83a5b', cos: '#3b7b9b', tan: '#3a8a4f', cot: '#7b6193',
 }
 
-const EqIcon: FunctionalComponent<{ func: FuncKey }> = ({ func }) => {
+const SolverIcon: FunctionalComponent<{ func: TrigSolverFunc }> = ({ func }) => {
   const c = FUNC_COLORS[func]
-  const sw = '1.6'
   return h('svg', { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none' }, [
     // Unit circle
     h('circle', { cx: 9, cy: 12, r: 5.5, stroke: '#2b2118', 'stroke-width': '1.2' }),
-    // Guide line (y=a for sin, x=a for cos)
-    h('line', {
-      x1: 3, y1: func === 'cos' ? 12 : 10,
-      x2: 15, y2: func === 'cos' ? 12 : 10,
-      stroke: '#94a3b8', 'stroke-width': '1', 'stroke-dasharray': '2 1.5',
-      transform: func === 'cos' ? 'rotate(90 9 12)' : '',
-    }),
     // Radius line + point
-    h('line', { x1: 9, y1: 12, x2: 12.9, y2: 8.5, stroke: c, 'stroke-width': sw }),
+    h('line', { x1: 9, y1: 12, x2: 12.9, y2: 8.5, stroke: c, 'stroke-width': '1.6' }),
     h('circle', { cx: 12.9, cy: 8.5, r: 1.8, fill: c }),
-    // "=" sign on right
+    // Guide line (y=a)
+    h('line', { x1: 3, y1: 8.5, x2: 15, y2: 8.5, stroke: '#94a3b8', 'stroke-width': '1', 'stroke-dasharray': '2 1.5' }),
+    // "=" or ">" on right
     h('line', { x1: 17, y1: 10.5, x2: 21, y2: 10.5, stroke: '#475569', 'stroke-width': '1.5' }),
     h('line', { x1: 17, y1: 13.5, x2: 21, y2: 13.5, stroke: '#475569', 'stroke-width': '1.5' }),
-    h('text', { x: 17, y: 18, 'font-size': '5', fill: '#475569', 'font-family': 'sans-serif' }, 'a'),
-  ])
-}
-
-const IneqIcon: FunctionalComponent<{ func: FuncKey }> = ({ func }) => {
-  const c = FUNC_COLORS[func]
-  return h('svg', { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none' }, [
-    // Circle
-    h('circle', { cx: 9, cy: 12, r: 5.5, stroke: '#2b2118', 'stroke-width': '1.2' }),
-    // Shaded arc (upper)
-    h('path', {
-      d: 'M4.7 9.5 A5.5 5.5 0 0 1 13.3 9.5',
-      stroke: c, 'stroke-width': '2.5', fill: 'none', opacity: '0.55',
-    }),
-    // Guide line
-    h('line', { x1: 3, y1: 9.5, x2: 15, y2: 9.5, stroke: '#94a3b8', 'stroke-width': '1', 'stroke-dasharray': '2 1.5' }),
-    // ">" sign on right
-    h('path', { d: 'M17 9 L21 12 L17 15', stroke: '#475569', 'stroke-width': '1.5', fill: 'none' }),
-    h('text', { x: 17, y: 20, 'font-size': '5', fill: '#475569', 'font-family': 'sans-serif' }, 'a'),
   ])
 }
 </script>
@@ -178,25 +113,15 @@ const IneqIcon: FunctionalComponent<{ func: FuncKey }> = ({ func }) => {
   gap: 6px;
 }
 
-.trig-solver-tray__header--ineq {
-  margin-top: 4px;
-}
-
 .trig-solver-tray__tag {
   font-size: 9px;
   padding: 1px 5px;
   border-radius: 3px;
-  background: #fce7f3;
-  color: #be185d;
+  background: #fef3c7;
+  color: #92400e;
   font-weight: 600;
   letter-spacing: 0;
   text-transform: none;
-  font-family: 'JetBrains Mono', monospace;
-}
-
-.trig-solver-tray__tag--ineq {
-  background: #dcfce7;
-  color: #15803d;
 }
 
 .trig-solver-tray__grid {
@@ -227,20 +152,10 @@ const IneqIcon: FunctionalComponent<{ func: FuncKey }> = ({ func }) => {
   min-height: 34px;
   width: 100%;
 }
-
-.trig-solver-tray__btn--eq:hover {
-  background: #fce7f3;
-  border-color: #f9a8d4;
+.trig-solver-tray__btn:hover {
+  background: #fff7ed;
+  border-color: rgba(196, 98, 42, 0.4);
 }
-
-.trig-solver-tray__btn--ineq {
-  border-color: rgba(58,138,79,0.3);
-}
-.trig-solver-tray__btn--ineq:hover {
-  background: #f0fdf4;
-  border-color: #86efac;
-}
-
 .trig-solver-tray__btn:active { cursor: grabbing; }
 
 .trig-solver-tray__icon {
@@ -301,12 +216,10 @@ const IneqIcon: FunctionalComponent<{ func: FuncKey }> = ({ func }) => {
   transition: opacity 0.12s;
   pointer-events: none;
 }
-
 .trig-solver-tray__card-wrap:hover .tray-add-btn {
   opacity: 1;
   pointer-events: auto;
 }
-
 .tray-add-btn:hover {
   background: #ede9fe;
   border-color: #818cf8;
